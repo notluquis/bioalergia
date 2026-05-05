@@ -2999,6 +2999,14 @@ export class SchemaType implements SchemaDef {
                     type: "String",
                     optional: true
                 },
+                patientId: {
+                    name: "patientId",
+                    type: "Int",
+                    optional: true,
+                    foreignKeyFor: [
+                        "patient"
+                    ] as readonly string[]
+                },
                 patientName: {
                     name: "patientName",
                     type: "String",
@@ -3079,6 +3087,12 @@ export class SchemaType implements SchemaDef {
                     type: "DateTime",
                     updatedAt: true,
                     default: ExpressionUtils.call("now") as FieldDefault
+                },
+                patient: {
+                    name: "patient",
+                    type: "Patient",
+                    optional: true,
+                    relation: { opposite: "clinicalSeries", fields: ["patientId"], references: ["id"], onDelete: "SetNull" }
                 },
                 events: {
                     name: "events",
@@ -6734,6 +6748,12 @@ export class SchemaType implements SchemaDef {
                 shipments: {
                     name: "shipments",
                     type: "Shipment",
+                    array: true,
+                    relation: { opposite: "patient" }
+                },
+                clinicalSeries: {
+                    name: "clinicalSeries",
+                    type: "ClinicalSeries",
                     array: true,
                     relation: { opposite: "patient" }
                 }

@@ -302,6 +302,46 @@ export const patientsContract = {
     .route({ method: "POST", path: "/sources/dte/sync" })
     .input(syncPatientDteSourcesInputSchema)
     .output(patientDteSyncResponseSchema),
+  getClinicalSeries: oc
+    .route({ method: "GET", path: "/{patientId}/clinical-series" })
+    .input(z.object({ patientId: z.number().int() }))
+    .output(
+      z.object({
+        items: z.array(
+          z.object({
+            id: z.number(),
+            kind: z.string(),
+            status: z.string(),
+            displayName: z.string().nullable(),
+            patientName: z.string().nullable(),
+            patientRut: z.string().nullable(),
+            skinTestsCount: z.number(),
+            eventsCount: z.number(),
+            createdAt: z.string(),
+          }),
+        ),
+      }),
+    ),
+  getSkinTests: oc
+    .route({ method: "GET", path: "/{patientId}/skin-tests" })
+    .input(z.object({ patientId: z.number().int() }))
+    .output(
+      z.object({
+        items: z.array(
+          z.object({
+            id: z.string(),
+            testDate: z.string(),
+            patientName: z.string().nullable(),
+            patientRut: z.string().nullable(),
+            panelTitle: z.string().nullable(),
+            physicianName: z.string().nullable(),
+            resultsCount: z.number(),
+            seriesId: z.number(),
+            seriesKind: z.string(),
+          }),
+        ),
+      }),
+    ),
 };
 
 export type PatientsContract = typeof patientsContract;

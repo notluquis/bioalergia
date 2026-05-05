@@ -712,6 +712,107 @@ const patientsORPCRouterBase = {
         status: "ok",
       };
     }),
+
+  getClinicalSeries: readPatients
+    .route({ method: "GET", path: "/:patientId/clinical-series", tags: ["Patients"] })
+    .input(z.object({ patientId: z.number().int() }))
+    .output(
+      z.object({
+        items: z.array(
+          z.object({
+            id: z.number(),
+            kind: z.string(),
+            status: z.string(),
+            displayName: z.string().nullable(),
+            patientName: z.string().nullable(),
+            patientRut: z.string().nullable(),
+            skinTestsCount: z.number(),
+            eventsCount: z.number(),
+            createdAt: z.string(),
+          }),
+        ),
+      }),
+    )
+    .handler(async ({ input }) => {
+      const series = await db.clinicalSeries.findMany({
+        where: { patientId: input.patientId },
+        orderBy: { createdAt: "desc" },
+        select: {
+          id: true,
+          kind: true,
+          status: true,
+          displayName: true,
+          patientName: true,
+          patientRut: true,
+          createdAt: true,
+          _count: { select: { skinTests: true, events: true } },
+        },
+      });
+      return {
+        items: series.map((s) => ({
+          id: s.id,
+          kind: s.kind,
+          status: s.status,
+          displayName: s.displayName,
+          patientName: s.patientName,
+          patientRut: s.patientRut,
+          skinTestsCount: s._count.skinTests,
+          eventsCount: s._count.events,
+          createdAt: s.createdAt.toISOString(),
+        })),
+      };
+    }),
+
+  getSkinTests: readPatients
+    .route({ method: "GET", path: "/:patientId/skin-tests", tags: ["Patients"] })
+    .input(z.object({ patientId: z.number().int() }))
+    .output(
+      z.object({
+        items: z.array(
+          z.object({
+            id: z.string(),
+            testDate: z.string(),
+            patientName: z.string().nullable(),
+            patientRut: z.string().nullable(),
+            panelTitle: z.string().nullable(),
+            physicianName: z.string().nullable(),
+            resultsCount: z.number(),
+            seriesId: z.number(),
+            seriesKind: z.string(),
+          }),
+        ),
+      }),
+    )
+    .handler(async ({ input }) => {
+      const tests = await db.clinicalSkinTest.findMany({
+        where: { clinicalSeries: { patientId: input.patientId } },
+        orderBy: { testDate: "desc" },
+        select: {
+          id: true,
+          testDate: true,
+          patientName: true,
+          patientRut: true,
+          panelTitle: true,
+          physicianName: true,
+          clinicalSeriesId: true,
+          clinicalSeries: { select: { kind: true } },
+          _count: { select: { results: true } },
+        },
+      });
+      return {
+        items: tests.map((t) => ({
+          id: t.id,
+          testDate: t.testDate.toISOString().split("T")[0],
+          patientName: t.patientName,
+          patientRut: t.patientRut,
+          panelTitle: t.panelTitle,
+          physicianName: t.physicianName,
+          resultsCount: t._count.results,
+          seriesId: t.clinicalSeriesId,
+          seriesKind: t.clinicalSeries.kind,
+        })),
+      };
+    }),
 };
 
 export const patientsORPCRouter = base.prefix("/api/orpc/patients").router(patientsORPCRouterBase);

@@ -4,6 +4,7 @@ import { createFileRoute, useNavigate, useParams } from "@tanstack/react-router"
 import type { ColumnDef } from "@tanstack/react-table";
 import dayjs from "dayjs";
 import {
+  Activity,
   Calendar,
   ChevronLeft,
   Clock,
@@ -11,6 +12,7 @@ import {
   Download,
   ExternalLink,
   FileText,
+  FlaskConical,
   Mail,
   MapPin,
   Phone,
@@ -22,7 +24,9 @@ import {
 import { useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
 import { fetchPatient } from "@/features/patients/api";
+import { ClinicalSeriesList } from "@/features/patients/components/ClinicalSeriesList";
 import { NewAttachmentModal } from "@/features/patients/components/NewAttachmentModal";
+import { SkinTestsList } from "@/features/patients/components/SkinTestsList";
 import { ShipmentsList } from "@/features/shipments/components/ShipmentsList";
 import { useLazyTabs } from "@/hooks/use-lazy-tabs";
 
@@ -56,10 +60,26 @@ function PatientDetailsPage() {
   const navigate = useNavigate();
   const [isAttachmentModalOpen, setIsAttachmentModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<
-    "budgets" | "certificates" | "docs" | "history" | "info" | "payments" | "shipments"
+    | "budgets"
+    | "certificates"
+    | "clinical-series"
+    | "docs"
+    | "history"
+    | "info"
+    | "payments"
+    | "shipments"
+    | "skin-tests"
   >("history");
   const { isTabMounted, markTabAsMounted } = useLazyTabs<
-    "budgets" | "certificates" | "docs" | "history" | "info" | "payments" | "shipments"
+    | "budgets"
+    | "certificates"
+    | "clinical-series"
+    | "docs"
+    | "history"
+    | "info"
+    | "payments"
+    | "shipments"
+    | "skin-tests"
   >("history");
 
   const { data: patientData, isLoading } = useQuery({
@@ -153,17 +173,21 @@ function PatientDetailsPage() {
               const nextTab:
                 | "budgets"
                 | "certificates"
+                | "clinical-series"
                 | "docs"
                 | "history"
                 | "info"
                 | "payments"
-                | "shipments" =
+                | "shipments"
+                | "skin-tests" =
                 keyValue === "certificates" ||
                 keyValue === "budgets" ||
                 keyValue === "payments" ||
                 keyValue === "docs" ||
                 keyValue === "info" ||
-                keyValue === "shipments"
+                keyValue === "shipments" ||
+                keyValue === "clinical-series" ||
+                keyValue === "skin-tests"
                   ? keyValue
                   : "history";
               setActiveTab(nextTab);
@@ -208,6 +232,16 @@ function PatientDetailsPage() {
                 <Tabs.Tab id="shipments" className="min-w-max gap-2 font-semibold">
                   <Truck size={18} />
                   <span>Despachos</span>
+                  <Tabs.Indicator />
+                </Tabs.Tab>
+                <Tabs.Tab id="clinical-series" className="min-w-max gap-2 font-semibold">
+                  <Activity size={18} />
+                  <span>Series Clínicas</span>
+                  <Tabs.Indicator />
+                </Tabs.Tab>
+                <Tabs.Tab id="skin-tests" className="min-w-max gap-2 font-semibold">
+                  <FlaskConical size={18} />
+                  <span>Tests Cutáneos</span>
                   <Tabs.Indicator />
                 </Tabs.Tab>
               </Tabs.List>
@@ -332,6 +366,16 @@ function PatientDetailsPage() {
                   patientName={`${person.names} ${person.fatherName}`.trim()}
                 />
               ) : null}
+            </Tabs.Panel>
+
+            <Tabs.Panel id="clinical-series" className="py-4">
+              {isTabMounted("clinical-series") ? (
+                <ClinicalSeriesList patientId={patient.id} />
+              ) : null}
+            </Tabs.Panel>
+
+            <Tabs.Panel id="skin-tests" className="py-4">
+              {isTabMounted("skin-tests") ? <SkinTestsList patientId={patient.id} /> : null}
             </Tabs.Panel>
 
             <Tabs.Panel id="info" className="py-4">

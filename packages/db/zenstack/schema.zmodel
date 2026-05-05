@@ -936,6 +936,7 @@ model ClinicalSeries {
   kind             ClinicalSeriesKind
   status           ClinicalSeriesStatus      @default(ACTIVE)
   displayName      String?                   @map("display_name")
+  patientId        Int?                      @map("patient_id")
   patientName      String?                   @map("patient_name")
   patientRut       String?                   @map("patient_rut")
   patientPhones    Json?                     @map("patient_phones")
@@ -952,6 +953,7 @@ model ClinicalSeries {
   completedAt      DateTime?                 @map("completed_at")
   createdAt        DateTime                  @default(now()) @map("created_at")
   updatedAt        DateTime                  @default(now()) @updatedAt @map("updated_at")
+  patient          Patient?                  @relation(fields: [patientId], references: [id], onDelete: SetNull)
   events     Event[]
   mergeLogs  ClinicalSeriesMergeLog[]
   abandonmentContacts AbandonmentContact[]
@@ -963,6 +965,7 @@ model ClinicalSeries {
   @@allow('create,update,delete', auth().status == 'ACTIVE')
 
   @@index([kind, status])
+  @@index([patientId])
   @@index([patientRut])
   @@index([beneficiaryRut])
   @@map("clinical_series")
@@ -2444,6 +2447,7 @@ model Patient {
   attachments         PatientAttachment[]
   dteSaleSources      PatientDteSaleSource[]
   shipments           Shipment[]
+  clinicalSeries      ClinicalSeries[]
 
   @@deny('all', auth() == null)
   @@allow('read', auth().status == 'ACTIVE')

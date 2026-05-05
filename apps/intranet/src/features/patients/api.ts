@@ -180,3 +180,19 @@ export async function syncPatientDteSources(input: {
     throw toPatientsApiError(error);
   }
 }
+
+export async function fetchPatientClinicalSeries(patientId: number) {
+  try {
+    return await patientsORPCClient.getClinicalSeries({ patientId });
+  } catch (error) {
+    throw toPatientsApiError(error);
+  }
+}
+
+export async function fetchPatientSkinTests(patientId: number) {
+  try {
+    return await patientsORPCClient.getSkinTests({ patientId });
+  } catch (error) {
+    throw toPatientsApiError(error);
+  }
+}
