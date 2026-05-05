@@ -114,7 +114,7 @@ export const listShipmentsOutputSchema = z.object({
 
 export const shipmentWithPatientSchema = shipmentSchema.extend({
   patientName: z.string(),
-  patientRut: z.string(),
+  patientRut: z.string().nullable(),
 });
 
 export const listAllShipmentsOutputSchema = z.object({

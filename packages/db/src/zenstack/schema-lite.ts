@@ -23,7 +23,8 @@ export class SchemaType implements SchemaDef {
                 rut: {
                     name: "rut",
                     type: "String",
-                    unique: true
+                    unique: true,
+                    optional: true
                 },
                 names: {
                     name: "names",

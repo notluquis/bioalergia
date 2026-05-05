@@ -29,7 +29,7 @@ plugin ts {
 
 model Person {
   id         Int        @id @default(autoincrement())
-  rut        String     @unique @db.VarChar(20)
+  rut        String?    @unique @db.VarChar(20)
   names      String
   fatherName String?    @map("father_name")
   motherName String?    @map("mother_name")

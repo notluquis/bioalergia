@@ -124,7 +124,7 @@ export const personSchema = z.object({
   names: z.string(),
   personType: z.string(),
   phone: z.string().nullable().optional(),
-  rut: z.string(),
+  rut: z.string().nullable(),
   updatedAt: z.coerce.date(),
 });
 

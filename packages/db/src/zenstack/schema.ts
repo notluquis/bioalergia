@@ -25,6 +25,7 @@ export class SchemaType implements SchemaDef {
                     name: "rut",
                     type: "String",
                     unique: true,
+                    optional: true,
                     attributes: [{ name: "@unique" }, { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(20) }] }] as readonly AttributeApplication[]
                 },
                 names: {

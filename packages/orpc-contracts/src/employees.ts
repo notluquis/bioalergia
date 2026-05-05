@@ -10,7 +10,7 @@ export const employeePersonSchema = z
     motherName: z.string().nullable(),
     names: z.string(),
     personType: z.enum(["JURIDICAL", "NATURAL"]),
-    rut: z.string(),
+    rut: z.string().nullable(),
     updatedAt: z.coerce.date(),
   })
   .passthrough();

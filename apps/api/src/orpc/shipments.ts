@@ -134,7 +134,7 @@ const shipmentsRouterBase = {
         shipments: z.array(
           serializedShipmentSchema.extend({
             patientName: z.string(),
-            patientRut: z.string(),
+            patientRut: z.string().nullable(),
           }),
         ),
       }),
