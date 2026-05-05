@@ -45,7 +45,9 @@ describe("normalizeDecimalValues", () => {
   it("passes Date objects nested in arrays through unchanged", () => {
     const d = new Date("2026-05-05T04:50:11.33Z");
     const result = normalizeDecimalValues([{ createdAt: d }]) as Array<Record<string, unknown>>;
-    expect(result[0].createdAt).toBe(d);
+    const first = result[0];
+    expect(first).toBeDefined();
+    expect(first?.createdAt).toBe(d);
   });
 });
 
@@ -54,14 +56,18 @@ describe("PatientListSchema", () => {
     const patient = makePatient();
     const result = PatientListSchema.parse(normalizeDecimalValues([patient]));
     expect(result).toHaveLength(1);
-    expect(result[0].createdAt).toBeInstanceOf(Date);
-    expect(result[0].person.createdAt).toBeInstanceOf(Date);
+    const first = result[0];
+    expect(first).toBeDefined();
+    expect(first?.createdAt).toBeInstanceOf(Date);
+    expect(first?.person.createdAt).toBeInstanceOf(Date);
   });
 
   it("parses patient with null rut", () => {
     const patient = makePatient({ person: { ...makePatient().person, rut: null } });
     const result = PatientListSchema.parse(normalizeDecimalValues([patient]));
-    expect(result[0].person.rut).toBeNull();
+    const first = result[0];
+    expect(first).toBeDefined();
+    expect(first?.person.rut).toBeNull();
   });
 
   it("parses patient with 2dp timestamp string (pre-SuperJSON shape)", () => {
@@ -75,6 +81,8 @@ describe("PatientListSchema", () => {
       },
     });
     const result = PatientListSchema.parse(normalizeDecimalValues([patient]));
-    expect(result[0].createdAt).toBeInstanceOf(Date);
+    const first = result[0];
+    expect(first).toBeDefined();
+    expect(first?.createdAt).toBeInstanceOf(Date);
   });
 });
