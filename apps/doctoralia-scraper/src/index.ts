@@ -172,7 +172,7 @@ async function performLoginWithBrowser(session: ImpitSession, config: ScraperCon
     ];
     let frcSelector: string | null = null;
     for (const sel of FRC_SELECTORS) {
-      const el = await page.waitForSelector(sel, { timeout: 15_000 }).catch(() => null);
+      const el = await page.waitForSelector(sel, { timeout: 15_000, state: "attached" }).catch(() => null);
       if (el) { frcSelector = sel; break; }
     }
 
