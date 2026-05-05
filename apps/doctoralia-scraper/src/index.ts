@@ -125,6 +125,60 @@ async function askStdin(prompt: string): Promise<string> {
 const LOGIN_URL = "https://l.doctoralia.cl/";
 const SPA_SHELL_MARKER = /<div id="vuesaas">/i;
 
+async function performLoginWithBrowser(session: ImpitSession, config: ScraperConfig): Promise<void> {
+  log("switching to Playwright browser-based login (captcha detected)...");
+  const { chromium } = await import("playwright");
+  const browser = await chromium.launch({ headless: true });
+  try {
+    const context = await browser.newContext({
+      locale: "es-CL",
+      userAgent:
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    });
+    const page = await context.newPage();
+
+    log("  browser: navigating to", LOGIN_URL);
+    await page.goto(LOGIN_URL, { waitUntil: "networkidle" });
+
+    await page.fill('input[type="email"], input[name="email"], input[name="_username"]', config.email);
+    await page.fill('input[type="password"], input[name="password"], input[name="_password"]', config.password);
+
+    // Wait for Friendly Captcha PoW puzzle to solve (fills hidden input with hash solution).
+    // Without this, submitting too early sends an empty/pending token and the server rejects it.
+    const hasFrc = await page.$('[name="frc-captcha-solution"]');
+    if (hasFrc) {
+      log("  browser: waiting for Friendly Captcha PoW to complete...");
+      await page.waitForFunction(
+        () => {
+          const el = document.querySelector<HTMLInputElement>('[name="frc-captcha-solution"]');
+          return el != null && el.value !== "" && el.value !== ".";
+        },
+        { timeout: 30_000 }
+      );
+      log("  browser: captcha solved");
+    }
+
+    log("  browser: submitting form...");
+    await Promise.all([
+      page.waitForURL(/docplanner\.doctoralia\.cl/, { timeout: 30_000 }),
+      page.click('button[type="submit"], input[type="submit"]'),
+    ]);
+
+    log("  browser: redirected to panel, extracting cookies...");
+    const playwrightCookies = await context.cookies();
+
+    session.jar.clear();
+    for (const c of playwrightCookies) {
+      const expiresMs = c.expires > 0 ? Math.floor(c.expires * 1000) : undefined;
+      session.jar.setRaw(c.name, c.value, c.domain, c.path, expiresMs);
+    }
+
+    log(`  browser: extracted ${playwrightCookies.length} cookies`);
+  } finally {
+    await browser.close();
+  }
+}
+
 async function performLogin(session: ImpitSession, config: ScraperConfig): Promise<void> {
   log("not logged in — fetching login page at", LOGIN_URL);
   const loginPage = await session.request(LOGIN_URL);
@@ -139,8 +193,9 @@ async function performLogin(session: ImpitSession, config: ScraperConfig): Promi
   }
 
   if (/data-form-field-captcha=/i.test(loginPage.text)) {
-    log("⚠️ login form uses Friendly Captcha / reCAPTCHA — JS-less POST will likely be rejected.");
-    log("   proceeding anyway to see what the server returns.");
+    log("⚠️ login form uses Friendly Captcha / reCAPTCHA — switching to browser-based login.");
+    await performLoginWithBrowser(session, config);
+    return;
   }
 
   const form = extractLoginForm(loginPage.text, loginPage.url);
@@ -171,6 +226,13 @@ async function performLogin(session: ImpitSession, config: ScraperConfig): Promi
 
   const bouncedToLogin = /l\.doctoralia\.cl/i.test(loginRes.url);
   if (bouncedToLogin) {
+    const hasCaptchaInResponse = /data-form-field-captcha=/i.test(loginRes.text);
+    if (hasCaptchaInResponse) {
+      log("  HTTP login bounced with captcha — retrying via Playwright browser.");
+      await performLoginWithBrowser(session, config);
+      return;
+    }
+
     const errorMatch = loginRes.text.match(/<div[^>]*(?:alert|error|flash)[^>]*>([\s\S]*?)<\/div>/i);
     if (errorMatch) {
       const msg = errorMatch[1].replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().slice(0, 300);

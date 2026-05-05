@@ -114,6 +114,10 @@ export class CookieJar {
     this.cookies.clear();
   }
 
+  setRaw(name: string, value: string, domain?: string, path?: string, expiresMs?: number): void {
+    this.cookies.set(name, { name, value, domain, path, expires: expiresMs });
+  }
+
   size(): number {
     return this.cookies.size;
   }

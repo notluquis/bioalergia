@@ -59,14 +59,17 @@ RUN --mount=type=cache,id=s/4990f681-049b-467f-9034-ef5c74a55f0a-/pnpm/store,tar
     pnpm --filter=@finanzas/doctoralia-scraper --prod deploy /app/deploy
 
 # ============================================================================
-# STAGE 4: Runner — minimal runtime image
+# STAGE 4: Runner — Playwright image for browser-based login fallback
 # ============================================================================
-FROM node:slim AS runner
+# mcr.microsoft.com/playwright/node includes Chromium + all system deps needed
+# for headless browser login when Doctoralia's captcha blocks HTTP form POST.
+FROM mcr.microsoft.com/playwright/node:22-noble AS runner
 WORKDIR /app
 ENV NODE_ENV=production
+ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 
 COPY --from=build /app/deploy/ .
 
-USER node
+USER pwuser
 
 CMD ["node", "--import", "tsx", "src/index.ts"]
