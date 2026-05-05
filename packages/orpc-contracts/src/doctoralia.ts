@@ -272,6 +272,19 @@ export const scraperRunOverrideStatusSchema = z.object({
   status: z.literal("ok"),
 });
 
+export const calendarSyncNowResponseSchema = z.object({
+  status: z.enum(["ok", "skip", "error"]),
+  message: z.string(),
+  data: z
+    .object({
+      alertsFetched: z.number().int(),
+      pendingAlertsFetched: z.number().int(),
+      appointmentsInserted: z.number().int(),
+      appointmentsUpdated: z.number().int(),
+    })
+    .nullable(),
+});
+
 export const calendarAppointmentsSchema = z.object({
   data: z.object({
     appointments: z.array(
