@@ -2,10 +2,11 @@ import { Button, Chip, Modal } from "@heroui/react";
 import { useQuery } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 import dayjs from "dayjs";
-import { PackageCheck, PlusCircle, Search, Truck } from "lucide-react";
+import { PackageCheck, PlusCircle, Search, Truck, UserPlus } from "lucide-react";
 import { useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
 import { fetchPatients } from "@/features/patients/api";
+import { CreatePatientModal } from "@/features/patients/components/CreatePatientModal";
 import { fetchAllShipments } from "../api";
 import { CreateShipmentWizard } from "../components/CreateShipmentWizard";
 
@@ -113,10 +114,12 @@ function PatientSelectModal({
   isOpen,
   onClose,
   onSelect,
+  onCreateNew,
 }: {
   isOpen: boolean;
   onClose: () => void;
   onSelect: (patient: Patient) => void;
+  onCreateNew: () => void;
 }) {
   const [search, setSearch] = useState("");
 
@@ -129,6 +132,7 @@ function PatientSelectModal({
   return (
     <Modal>
       <Modal.Backdrop
+        className="bg-black/40 backdrop-blur-[2px]"
         isOpen={isOpen}
         onOpenChange={(open) => {
           if (!open) onClose();
@@ -146,13 +150,14 @@ function PatientSelectModal({
                   className="absolute left-3 top-1/2 -translate-y-1/2 text-default-400"
                 />
                 <input
+                  autoFocus
                   className="w-full rounded-lg border border-default-200 bg-default-50 py-2 pl-9 pr-3 text-sm outline-none focus:border-primary"
                   placeholder="Buscar por nombre o RUT..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                 />
               </div>
-              <div className="max-h-72 overflow-y-auto space-y-1">
+              <div className="max-h-64 overflow-y-auto space-y-1">
                 {isLoading ? (
                   <p className="py-4 text-center text-default-400 text-sm">Buscando...</p>
                 ) : patients.length === 0 ? (
@@ -162,7 +167,7 @@ function PatientSelectModal({
                     <button
                       key={p.id}
                       type="button"
-                      className="w-full rounded-lg px-3 py-2 text-left hover:bg-default-100 transition-colors"
+                      className="w-full rounded-lg px-3 py-2 text-left transition-colors hover:bg-default-100"
                       onClick={() => onSelect(p)}
                     >
                       <div className="font-medium text-sm">
@@ -172,6 +177,12 @@ function PatientSelectModal({
                     </button>
                   ))
                 )}
+              </div>
+              <div className="border-default-100 border-t pt-3">
+                <Button size="sm" variant="ghost" className="w-full gap-2" onPress={onCreateNew}>
+                  <UserPlus size={15} />
+                  Registrar nuevo paciente
+                </Button>
               </div>
             </Modal.Body>
           </Modal.Dialog>
@@ -183,6 +194,7 @@ function PatientSelectModal({
 
 export function ShipmentsPage() {
   const [selectPatientOpen, setSelectPatientOpen] = useState(false);
+  const [createPatientOpen, setCreatePatientOpen] = useState(false);
   const [wizardOpen, setWizardOpen] = useState(false);
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
 
@@ -196,6 +208,11 @@ export function ShipmentsPage() {
     setSelectedPatient(patient);
     setSelectPatientOpen(false);
     setWizardOpen(true);
+  }
+
+  function handleCreateNew() {
+    setSelectPatientOpen(false);
+    setCreatePatientOpen(true);
   }
 
   return (
@@ -230,6 +247,15 @@ export function ShipmentsPage() {
         isOpen={selectPatientOpen}
         onClose={() => setSelectPatientOpen(false)}
         onSelect={handlePatientSelect}
+        onCreateNew={handleCreateNew}
+      />
+
+      <CreatePatientModal
+        isOpen={createPatientOpen}
+        onClose={() => {
+          setCreatePatientOpen(false);
+          setSelectPatientOpen(true);
+        }}
       />
 
       {wizardOpen && selectedPatient && (
