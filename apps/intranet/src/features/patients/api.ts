@@ -11,9 +11,13 @@ import {
   PatientPaymentSchema,
 } from "./schemas";
 
-function normalizeDecimalValues<T>(value: T): T {
+export function normalizeDecimalValues<T>(value: T): T {
   if (Decimal.isDecimal(value)) {
     return value.toNumber() as T;
+  }
+
+  if (value instanceof Date) {
+    return value;
   }
 
   if (Array.isArray(value)) {
