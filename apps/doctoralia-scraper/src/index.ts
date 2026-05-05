@@ -164,25 +164,37 @@ async function performLoginWithBrowser(session: ImpitSession, config: ScraperCon
       document.querySelector("form")?.dispatchEvent(new Event("focusin", { bubbles: true }));
     });
 
-    // Wait for the hidden input to appear in the DOM (Vue widget renders it async).
-    // All Friendly Captcha "not ready" states start with "." (.UNSTARTED, .HEADLESS_ERROR, .ERROR).
-    // A real PoW solution hash does NOT start with ".".
-    const frcInput = await page
-      .waitForSelector('[name="frc-captcha-solution"]', { timeout: 10_000 })
-      .catch(() => null);
-    if (frcInput) {
-      log("  browser: waiting for Friendly Captcha PoW to complete...");
+    // FC v1 used name="frc-captcha-solution"; FC v2 uses name="frc-captcha-response".
+    // Try v2 first, fall back to v1. All "not ready" sentinels start with ".".
+    const FRC_SELECTORS = [
+      '[name="frc-captcha-response"]', // Friendly Captcha v2
+      '[name="frc-captcha-solution"]', // Friendly Captcha v1
+    ];
+    let frcSelector: string | null = null;
+    for (const sel of FRC_SELECTORS) {
+      const el = await page.waitForSelector(sel, { timeout: 15_000 }).catch(() => null);
+      if (el) { frcSelector = sel; break; }
+    }
+
+    if (frcSelector) {
+      log(`  browser: found captcha input (${frcSelector}), waiting for PoW to complete...`);
       await page.waitForFunction(
-        () => {
-          const el = document.querySelector<HTMLInputElement>('[name="frc-captcha-solution"]');
+        (sel) => {
+          const el = document.querySelector<HTMLInputElement>(sel);
           if (!el || el.value === "" || el.value.startsWith(".")) return false;
           return true;
         },
-        { timeout: 30_000 }
+        frcSelector,
+        { timeout: 60_000, polling: 500 }
       );
       log("  browser: captcha solved");
     } else {
-      log("  browser: no frc-captcha-solution input found — submitting without captcha token");
+      // Dump visible inputs to help diagnose future selector changes.
+      const inputNames = await page.evaluate(() =>
+        Array.from(document.querySelectorAll("input")).map((i) => `${i.name}|${i.type}`)
+      );
+      log("  browser: no frc captcha input found — page inputs:", inputNames.join(", "));
+      log("  browser: submitting without captcha token (may fail)");
     }
 
     log("  browser: submitting form...");
