@@ -1,7 +1,7 @@
 import * as XLSX from "xlsx";
 import { validateRut, formatRut } from "../lib/rut.js";
 
-export const SKIN_TEST_PARSER_VERSION = "2026-05-05.7";
+export const SKIN_TEST_PARSER_VERSION = "2026-05-05.8";
 
 export interface SkinTestIssue {
   code: string;
@@ -229,7 +229,7 @@ function extractHeader(cells: CellPoint[]): ParsedSkinTestHeader {
   const name =
     extractLabelValue(joined, /nombre\s*:?\s*([^\n\r]+)/i) ?? extractRowLabelValue(cells, "nombre");
   const rut = normalizeRut(
-    extractLabelValue(joined, /rut\s*:?\s*([0-9.,\-\skK]+)/i) ??
+    extractLabelValue(joined, /rut\s*:?\s*([A-Z0-9.,\-\skK]+)/i) ??
       extractRowLabelValue(cells, "rut") ??
       extractStandaloneRut(cells)
   );
@@ -353,12 +353,29 @@ function extractEmail(text: string): null | string {
 
 export function normalizeRut(value: null | string): null | string {
   if (!value) return null;
-  if (!validateRut(value)) return null;
-  const formatted = formatRut(value);
-  if (!formatted) return null;
-  const body = Number(formatted.split("-")[0]?.replace(/\./g, ""));
-  if (!Number.isFinite(body) || body < 1_000_000 || body > 30_000_000) return null;
-  return formatted;
+  const trimmed = value.trim();
+
+  // 1. Chilean RUT (módulo 11): natural persons 1M–30M + SII provisional 46M–50M
+  if (validateRut(trimmed)) {
+    const formatted = formatRut(trimmed);
+    if (!formatted) return null;
+    const body = Number(formatted.split("-")[0]?.replace(/\./g, ""));
+    if (!Number.isFinite(body)) return null;
+    const inPersonRange = body >= 1_000_000 && body <= 30_000_000;
+    const inProvisionalRange = body >= 46_000_000 && body <= 50_000_000;
+    if (!inPersonRange && !inProvisionalRange) return null;
+    return formatted;
+  }
+
+  // 2. Venezuelan / Colombian CI: V or E + 6–8 digits  e.g. V-12345678
+  const compact = trimmed.toUpperCase().replace(/[\s.\-,]/g, "");
+  if (/^[VE]\d{6,8}$/.test(compact)) return compact.replace(/^([VE])/, "$1-");
+
+  // 3. ICAO-style passport: 1–2 uppercase letters followed by 6–9 digits (no pure alpha)
+  //    e.g. RD5539724, P1234567. Require at least one digit to exclude section labels.
+  if (/^[A-Z]{1,2}\d{6,9}$/.test(compact)) return compact;
+
+  return null;
 }
 
 export function parseDateToISO(value: null | string): null | string {

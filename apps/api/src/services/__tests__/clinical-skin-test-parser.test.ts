@@ -45,9 +45,18 @@ describe("clinical skin test parser", () => {
     expect(normalizeRut("202-5")).toBeNull();
     expect(normalizeRut("16.201-7")).toBeNull();
     expect(normalizeRut("808.202-5")).toBeNull();
-    // Company RUTs (body < 1.000.000 or > 30.000.000) — not attended
+    // Company RUTs (outside person range) — not attended
     expect(normalizeRut("76.354.771-K")).toBeNull();
     expect(normalizeRut("96.500.000-1")).toBeNull();
+    // Venezuelan CI: V/E prefix + digits
+    expect(normalizeRut("V-12345678")).toBe("V-12345678");
+    expect(normalizeRut("E-9876543")).toBe("E-9876543");
+    // ICAO passport (letters + digits)
+    expect(normalizeRut("RD5539724")).toBe("RD5539724");
+    expect(normalizeRut("AP233585")).toBe("AP233585");
+    // Pure alpha section labels must NOT match
+    expect(normalizeRut("ALTERNARIAS")).toBeNull();
+    expect(normalizeRut("GRAMINEAS")).toBeNull();
     expect(parseDateToISO("06-01-2025")).toBe("2025-01-06");
     expect(parseDateToISO("23 - 05-2022")).toBe("2022-05-23");
     expect(parseDateToISO("10 DE OCTUBRE DE 2017")).toBe("2017-10-10");
