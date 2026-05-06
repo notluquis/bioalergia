@@ -353,7 +353,9 @@ function extractEmail(text: string): null | string {
 
 export function normalizeRut(value: null | string): null | string {
   if (!value) return null;
-  const trimmed = value.trim();
+  // extractLabelValue capture group includes \s which can bleed across newlines;
+  // take only the first line to avoid "RD5539724\nCORREO" → null false negative.
+  const trimmed = value.replace(/[\n\r].*/s, "").trim();
 
   // 1. Chilean RUT (módulo 11): natural persons 1M–30M + SII provisional 46M–50M
   if (validateRut(trimmed)) {

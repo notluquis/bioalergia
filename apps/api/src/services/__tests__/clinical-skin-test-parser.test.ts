@@ -57,6 +57,8 @@ describe("clinical skin test parser", () => {
     // Pure alpha section labels must NOT match
     expect(normalizeRut("ALTERNARIAS")).toBeNull();
     expect(normalizeRut("GRAMINEAS")).toBeNull();
+    // newline bleed from extractLabelValue capture group must not corrupt result
+    expect(normalizeRut("RD5539724\nCORREO")).toBe("RD5539724");
     expect(parseDateToISO("06-01-2025")).toBe("2025-01-06");
     expect(parseDateToISO("23 - 05-2022")).toBe("2022-05-23");
     expect(parseDateToISO("10 DE OCTUBRE DE 2017")).toBe("2017-10-10");
