@@ -358,15 +358,14 @@ export function normalizeRut(value: null | string): null | string {
   // take only the first line to avoid "RD5539724\nCORREO" → null false negative.
   const trimmed = value.replace(/[\n\r].*/s, "").trim();
 
-  // 1. Chilean RUT (módulo 11): natural persons 1M–30M + SII provisional 46M–50M
+  // 1. Chilean RUT (módulo 11): natural persons up to 50M
+  //    Includes SII-assigned foreign resident RUTs (e.g. 41M, 46M-50M).
   if (validateRut(trimmed)) {
     const formatted = formatRut(trimmed);
     if (!formatted) return null;
     const body = Number(formatted.split("-")[0]?.replace(/\./g, ""));
     if (!Number.isFinite(body)) return null;
-    const inPersonRange = body >= 1_000_000 && body <= 30_000_000;
-    const inProvisionalRange = body >= 46_000_000 && body <= 50_000_000;
-    if (!inPersonRange && !inProvisionalRange) return null;
+    if (body < 1_000_000 || body > 50_000_000) return null;
     return formatted;
   }
 

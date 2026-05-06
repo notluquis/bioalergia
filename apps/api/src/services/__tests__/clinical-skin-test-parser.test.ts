@@ -45,9 +45,11 @@ describe("clinical skin test parser", () => {
     expect(normalizeRut("202-5")).toBeNull();
     expect(normalizeRut("16.201-7")).toBeNull();
     expect(normalizeRut("808.202-5")).toBeNull();
-    // Company RUTs (outside person range) — not attended
+    // Company RUTs (above 50M) — not attended
     expect(normalizeRut("76.354.771-K")).toBeNull();
     expect(normalizeRut("96.500.000-1")).toBeNull();
+    // SII-assigned foreign RUTs in 30M-50M range (e.g. 41M) — valid
+    expect(normalizeRut("41.436.738-0")).toBe("41.436.738-0");
     // Venezuelan CI: V/E prefix + digits
     expect(normalizeRut("V-12345678")).toBe("V-12345678");
     expect(normalizeRut("E-9876543")).toBe("E-9876543");
