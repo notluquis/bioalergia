@@ -699,6 +699,29 @@ describe("clinical skin test parser", () => {
     );
   });
 
+  it("does not capture right-panel allergen sequence numbers as measurements (two-column panel)", async () => {
+    // Left panel: codes B, names D, measurements E/F. Right panel: codes H, names I, measurements J/K.
+    // Parser must not capture H-column allergen number (e.g. "17") as the papule of the left panel.
+    const buf = makeBuffer("Test", {
+      E7: s("NOMBRE: "),
+      G7: s("JUAN PEREZ"),
+      I7: s("FECHA:"),
+      E10: s("P"), F10: s("E"), G10: s("mm"),
+      B11: s("1"), D11: s("LECHE FRESCA"), H11: s("17"), I11: s("CERDO"),
+      B12: s("2"), D12: s("CASEINA"),     H12: s("18"), I12: s("VACA"),
+      // Left panel has no measurements filled in; right panel numbers should NOT appear as metrics
+    });
+    const parsed = await parseSkinTestWorkbookBuffer(buf);
+    // Left panel allergens parsed but with null measurements (no data filled in)
+    for (const result of parsed.results) {
+      expect(result.papuleMm).toBeNull();
+      expect(result.erythemaMm).toBeNull();
+    }
+    // Right-panel sequence numbers (17, 18) must not appear as papule values
+    const wrongResults = parsed.results.filter((r) => r.papuleMm === 17 || r.papuleMm === 18);
+    expect(wrongResults).toHaveLength(0);
+  });
+
   it("parses date from 'FECHA DEL TEST:' label with value two columns right (AGREE format)", async () => {
     const buf = makeBuffer("Test", {
       B4: s("I N F O R M E    T E S T    D E    P A R C H E"),

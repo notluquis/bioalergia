@@ -1,6 +1,6 @@
 import * as XLSX from "xlsx";
 
-export const SKIN_TEST_PARSER_VERSION = "2026-05-05.2";
+export const SKIN_TEST_PARSER_VERSION = "2026-05-05.3";
 
 export interface SkinTestIssue {
   code: string;
@@ -531,7 +531,10 @@ function extractResultRowsFromRow(
     if (!isControl && /^panel\s+\d+\b/i.test(normalizeText(allergenName))) continue;
     if (!isControl && (normalizeCode(allergenName) || allergenName.startsWith(":"))) continue;
 
-    const numericCells = collectMetricCells(cells, index + (isControl ? 1 : 2), isControl);
+    // Limit metric search to 5 cols past the code cell to avoid grabbing allergen
+    // sequence numbers from an adjacent panel block in the same row.
+    const metricMaxCol = cell.col + 5;
+    const numericCells = collectMetricCells(cells, index + (isControl ? 1 : 2), isControl, metricMaxCol);
     if (numericCells.length === 0) continue;
     const byMetric = assignResultMetrics(ws, rowNumber, numericCells);
     const papule = byMetric.sawHeader ? byMetric.papule : (numericCells[0]?.text ?? null);
@@ -634,15 +637,16 @@ function isAllergenNameCell(
 function collectMetricCells(
   cells: Array<{ col: number; text: string }>,
   startIndex: number,
-  isControl: boolean
+  isControl: boolean,
+  maxCol = Infinity
 ): Array<{ col: number; text: string }> {
   const metricCells: Array<{ col: number; text: string }> = [];
-  // 4 slots: up to 2 non-metric pass-through columns (% / N°) + 2 metric columns (48H/96H or P/E)
-  const maxMetricCells = isControl ? 4 : 4;
+  const maxMetricCells = 4;
 
   for (let index = startIndex; index < cells.length; index += 1) {
     const candidate = cells[index];
     if (!candidate?.text) continue;
+    if (candidate.col > maxCol) break;
     if (isResultValue(candidate.text)) {
       metricCells.push(candidate);
       if (metricCells.length >= maxMetricCells) break;
