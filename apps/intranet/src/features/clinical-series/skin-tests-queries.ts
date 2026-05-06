@@ -23,6 +23,7 @@ export interface SkinTestImportFilters {
   pageSize?: number;
   query?: string;
   snapshotStatus?: SkinTestSnapshotStatus;
+  sortBy?: "testDate" | "updatedAt";
   status?: SkinTestImportStatus;
 }
 

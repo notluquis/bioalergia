@@ -249,6 +249,7 @@ export function SkinTestImportPanel() {
   const [snapshotStatus, setSnapshotStatus] = useState<SkinTestSnapshotStatus | undefined>(
     undefined
   );
+  const [sortBy, setSortBy] = useState<"testDate" | "updatedAt">("updatedAt");
   const [importsPage, setImportsPage] = useState(1);
   const [archiveLimit, setArchiveLimit] = useState(100);
   const [isRereadAllOpen, setIsRereadAllOpen] = useState(false);
@@ -260,9 +261,10 @@ export function SkinTestImportPanel() {
       pageSize: IMPORTS_PAGE_SIZE,
       query: query.trim() || undefined,
       snapshotStatus,
+      sortBy,
       status,
     }),
-    [importsPage, query, snapshotStatus, status]
+    [importsPage, query, snapshotStatus, sortBy, status]
   );
   const oneDrive = useOneDriveSkinTestStatus();
   const imports = useSkinTestImports(filters);
@@ -864,7 +866,9 @@ export function SkinTestImportPanel() {
                   ? `Mostrando ${visibleStart}-${visibleEnd} de ${importsTotal}`
                   : "Sin resultados"}
               </span>
-              <span>· Ordenado por última actualización</span>
+              <span>
+                · Ordenado por {sortBy === "testDate" ? "fecha del test" : "última actualización"}
+              </span>
               {status && (
                 <Chip size="sm" color={STATUS_COLORS[status]} variant="soft">
                   {STATUS_LABELS[status]}
@@ -872,8 +876,8 @@ export function SkinTestImportPanel() {
               )}
             </div>
           </div>
-          <div className="grid gap-3 md:grid-cols-[minmax(240px,1fr)_220px] xl:w-[640px]">
-            <TextField value={query} onChange={setQuery}>
+          <div className="grid gap-3 sm:grid-cols-3 xl:w-[700px]">
+            <TextField className="sm:col-span-3" value={query} onChange={setQuery}>
               <Label>Buscar</Label>
               <Input placeholder="Paciente, RUT o archivo" />
             </TextField>
@@ -934,6 +938,29 @@ export function SkinTestImportPanel() {
                   </ListBox.Item>
                   <ListBox.Item id="ERROR" textValue="Error">
                     Error
+                    <ListBox.ItemIndicator />
+                  </ListBox.Item>
+                </ListBox>
+              </Select.Popover>
+            </Select>
+            <Select
+              value={sortBy as Key}
+              onChange={(key) => setSortBy(key as "testDate" | "updatedAt")}
+              variant="secondary"
+            >
+              <Label>Ordenar por</Label>
+              <Select.Trigger>
+                <Select.Value />
+                <Select.Indicator />
+              </Select.Trigger>
+              <Select.Popover>
+                <ListBox>
+                  <ListBox.Item id="updatedAt" textValue="Última actualización">
+                    Última actualización
+                    <ListBox.ItemIndicator />
+                  </ListBox.Item>
+                  <ListBox.Item id="testDate" textValue="Fecha del test">
+                    Fecha del test
                     <ListBox.ItemIndicator />
                   </ListBox.Item>
                 </ListBox>

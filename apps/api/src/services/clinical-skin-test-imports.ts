@@ -85,6 +85,7 @@ export interface SkinTestImportListInput {
   pageSize?: number;
   query?: string;
   snapshotStatus?: "ARCHIVED" | "ERROR" | "MISSING" | "STALE";
+  sortBy?: "testDate" | "updatedAt";
   status?: SkinTestImportStatus;
 }
 
@@ -1459,7 +1460,9 @@ export async function listSkinTestImports(input: SkinTestImportListInput = {}) {
       LEFT JOIN clinical_skin_test_workbook_snapshots ws ON ws.source_import_id = i.id
       LEFT JOIN clinical_skin_test_workbook_files wf ON wf.id = ws.workbook_file_id
       WHERE ${whereSql}
-      ORDER BY i.updated_at DESC
+      ORDER BY ${input.sortBy === "testDate"
+        ? sql`(i.parsed_payload->'header'->>'testDate')::date DESC NULLS LAST, i.updated_at DESC`
+        : sql`i.updated_at DESC`}
       LIMIT ${pageSize}
       OFFSET ${offset}
     `.execute(kysely),

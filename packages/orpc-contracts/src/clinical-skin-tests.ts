@@ -151,6 +151,7 @@ export const skinTestImportListInputSchema = z.object({
   pageSize: z.number().int().positive().max(100).default(20),
   query: z.string().optional(),
   snapshotStatus: z.enum(["MISSING", "ARCHIVED", "ERROR", "STALE"]).optional(),
+  sortBy: z.enum(["updatedAt", "testDate"]).default("updatedAt"),
   status: skinTestImportStatusSchema.optional(),
 });
 
