@@ -131,3 +131,6 @@ data/
 **/credentials.json
 **/secrets.json
 **/config.local.json
+
+# Local Claude context (not for repo)
+CLAUDE.local.md
