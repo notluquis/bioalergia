@@ -5,18 +5,18 @@ import { useLazyTabs } from "./use-lazy-tabs";
 
 describe("useLazyTabs", () => {
   it("mounts the initial tab on creation", () => {
-    const { result } = renderHook(() => useLazyTabs("overview"));
+    const { result } = renderHook(() => useLazyTabs<string>("overview"));
     expect(result.current.isTabMounted("overview")).toBe(true);
   });
 
   it("does not mount other tabs initially", () => {
-    const { result } = renderHook(() => useLazyTabs("overview"));
+    const { result } = renderHook(() => useLazyTabs<string>("overview"));
     expect(result.current.isTabMounted("details")).toBe(false);
     expect(result.current.isTabMounted("settings")).toBe(false);
   });
 
   it("markTabAsMounted mounts a new tab", () => {
-    const { result } = renderHook(() => useLazyTabs("overview"));
+    const { result } = renderHook(() => useLazyTabs<string>("overview"));
     act(() => {
       result.current.markTabAsMounted("details");
     });
@@ -24,7 +24,7 @@ describe("useLazyTabs", () => {
   });
 
   it("markTabAsMounted is idempotent (no duplicate tabs)", () => {
-    const { result } = renderHook(() => useLazyTabs("overview"));
+    const { result } = renderHook(() => useLazyTabs<string>("overview"));
     act(() => {
       result.current.markTabAsMounted("details");
       result.current.markTabAsMounted("details");
@@ -34,7 +34,7 @@ describe("useLazyTabs", () => {
   });
 
   it("initial tab stays mounted after marking another tab", () => {
-    const { result } = renderHook(() => useLazyTabs("overview"));
+    const { result } = renderHook(() => useLazyTabs<string>("overview"));
     act(() => {
       result.current.markTabAsMounted("settings");
     });
@@ -53,7 +53,7 @@ describe("useLazyTabs", () => {
   });
 
   it("isTabMounted returns false for never-mounted tabs", () => {
-    const { result } = renderHook(() => useLazyTabs("a"));
+    const { result } = renderHook(() => useLazyTabs<string>("a"));
     expect(result.current.isTabMounted("b")).toBe(false);
   });
 
@@ -69,7 +69,7 @@ describe("useLazyTabs", () => {
   });
 
   it("exposes stable function references (useCallback)", () => {
-    const { result, rerender } = renderHook(() => useLazyTabs("tab1"));
+    const { result, rerender } = renderHook(() => useLazyTabs<string>("tab1"));
     const initialMarkFn = result.current.markTabAsMounted;
     const initialIsFn = result.current.isTabMounted;
     rerender();
