@@ -229,8 +229,9 @@ function extractHeader(cells: CellPoint[]): ParsedSkinTestHeader {
   const name =
     extractLabelValue(joined, /nombre\s*:?\s*([^\n\r]+)/i) ?? extractRowLabelValue(cells, "nombre");
   const rut = normalizeRut(
-    extractLabelValue(joined, /rut\s*:?\s*([A-Z0-9.,\-\skK]+)/i) ??
+    extractLabelValue(joined, /\b(?:rut|pasaporte)\b\s*:?\s*([A-Z0-9.,\-\skK]+)/i) ??
       extractRowLabelValue(cells, "rut") ??
+      extractRowLabelValue(cells, "pasaporte") ??
       extractStandaloneRut(cells)
   );
   const age =
