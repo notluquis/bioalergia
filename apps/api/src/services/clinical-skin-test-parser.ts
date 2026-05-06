@@ -1,7 +1,7 @@
 import * as XLSX from "xlsx";
 import { validateRut, formatRut } from "../lib/rut.js";
 
-export const SKIN_TEST_PARSER_VERSION = "2026-05-05.6";
+export const SKIN_TEST_PARSER_VERSION = "2026-05-05.7";
 
 export interface SkinTestIssue {
   code: string;
@@ -229,7 +229,7 @@ function extractHeader(cells: CellPoint[]): ParsedSkinTestHeader {
   const name =
     extractLabelValue(joined, /nombre\s*:?\s*([^\n\r]+)/i) ?? extractRowLabelValue(cells, "nombre");
   const rut = normalizeRut(
-    extractLabelValue(joined, /rut\s*:?\s*([0-9.\-\skK]+)/i) ??
+    extractLabelValue(joined, /rut\s*:?\s*([0-9.,\-\skK]+)/i) ??
       extractRowLabelValue(cells, "rut") ??
       extractStandaloneRut(cells)
   );
@@ -333,7 +333,7 @@ function extractRowLabelValue(cells: CellPoint[], label: string): null | string 
 }
 
 function extractStandaloneRut(cells: CellPoint[]): null | string {
-  const rutPattern = /\b(?:\d{1,2}[\s.]?\d{3}[\s.]?\d{3}|\d{7,8})\s*-\s*[\dkK]\b/;
+  const rutPattern = /\b(?:\d{1,2}[\s.,]?\d{3}[\s.,]?\d{3}|\d{7,8})\s*-\s*[\dkK]\b/;
   const candidate = cells
     .filter((cell) => cell.row <= 12)
     .sort((left, right) => left.row - right.row || left.col - right.col)
