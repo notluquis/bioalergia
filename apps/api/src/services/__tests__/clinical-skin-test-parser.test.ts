@@ -636,6 +636,30 @@ describe("clinical skin test parser", () => {
     );
   });
 
+  it("parses date when extractLabelValue truncates on internal spaces (e.g. '16   -  10  -2025')", async () => {
+    const buf = makeBuffer("Test", {
+      B4: s("MULTITEST CUTÁNEO"),
+      B7: s("NOMBRE : PACIENTE TEST"),
+      H7: s("EDAD : 30 AÑOS"),
+      B8: s("RUT            : 24.339.894-0"),
+      H8: s("FECHA      :    16   -  10  -2025"),
+      B9: s("CORREO:test@test.cl"),
+      H9: s("CELULAR : 999999999"),
+      B12: s("D1"),
+      C12: s("MEZCLA ACAROS"),
+      D12: s("P"),
+      E12: s("E"),
+      C13: s("ACAROS"),
+      D13: s("5"),
+      E13: s("10"),
+    });
+    const parsed = await parseSkinTestWorkbookBuffer(buf);
+    expect(parsed.header.testDate).toBe("2025-10-16");
+    expect(parsed.issues).not.toEqual(
+      expect.arrayContaining([expect.objectContaining({ code: "missing_date" })])
+    );
+  });
+
   it("parses date with no space between digit and 'DE' (e.g. '16DE NOVIEMBRE DE 2017')", () => {
     expect(parseDateToISO("16DE NOVIEMBRE DE 2017")).toBe("2017-11-16");
     expect(parseDateToISO("FECHA: 16DE NOVIEMBRE DE 2017")).toBe("2017-11-16");

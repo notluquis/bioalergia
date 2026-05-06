@@ -1,6 +1,6 @@
 import * as XLSX from "xlsx";
 
-export const SKIN_TEST_PARSER_VERSION = "2026-05-05.1";
+export const SKIN_TEST_PARSER_VERSION = "2026-05-05.2";
 
 export interface SkinTestIssue {
   code: string;
@@ -234,10 +234,13 @@ function extractHeader(cells: CellPoint[]): ParsedSkinTestHeader {
   );
   const age =
     extractLabelValue(joined, /edad\s*:?\s*([^\n\r]+)/i) ?? extractRowLabelValue(cells, "edad");
-  const dateRaw =
-    extractLabelValue(joined, /fecha[^:\n\r]*:[^\S\n]*(\S[^\n\r]*)/i) ??
-    extractRowLabelValue(cells, "fecha del test") ??
-    extractRowLabelValue(cells, "fecha");
+  // Try each date candidate in order; extractLabelValue may return a truncated partial
+  // value (e.g. "16" from "16   -  10  -2025") that is non-null but unparseable, so
+  // we run parseDateToISO on each candidate rather than relying on the ?? chain.
+  const testDate =
+    parseDateToISO(extractLabelValue(joined, /fecha[^:\n\r]*:[^\S\n]*(\S[^\n\r]*)/i)) ??
+    parseDateToISO(extractRowLabelValue(cells, "fecha del test")) ??
+    parseDateToISO(extractRowLabelValue(cells, "fecha"));
   const email = extractEmail(joined);
   const phone =
     extractLabelValue(joined, /celular\s*:?\s*([+0-9\s]+)/i) ??
@@ -250,7 +253,7 @@ function extractHeader(cells: CellPoint[]): ParsedSkinTestHeader {
     patientPhone: cleanHeaderValue(phone)?.replace(/\s+/g, "") ?? null,
     patientRut: rut,
     panelTitle: null,
-    testDate: parseDateToISO(dateRaw),
+    testDate,
   };
 }
 
