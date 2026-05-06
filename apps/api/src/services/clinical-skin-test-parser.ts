@@ -1,7 +1,7 @@
 import * as XLSX from "xlsx";
 import { validateRut, formatRut } from "../lib/rut.js";
 
-export const SKIN_TEST_PARSER_VERSION = "2026-05-05.5";
+export const SKIN_TEST_PARSER_VERSION = "2026-05-05.6";
 
 export interface SkinTestIssue {
   code: string;
@@ -354,7 +354,11 @@ function extractEmail(text: string): null | string {
 export function normalizeRut(value: null | string): null | string {
   if (!value) return null;
   if (!validateRut(value)) return null;
-  return formatRut(value);
+  const formatted = formatRut(value);
+  if (!formatted) return null;
+  const body = Number(formatted.split("-")[0]?.replace(/\./g, ""));
+  if (!Number.isFinite(body) || body < 1_000_000 || body > 30_000_000) return null;
+  return formatted;
 }
 
 export function parseDateToISO(value: null | string): null | string {

@@ -45,6 +45,9 @@ describe("clinical skin test parser", () => {
     expect(normalizeRut("202-5")).toBeNull();
     expect(normalizeRut("16.201-7")).toBeNull();
     expect(normalizeRut("808.202-5")).toBeNull();
+    // Company RUTs (body < 1.000.000 or > 30.000.000) — not attended
+    expect(normalizeRut("76.354.771-K")).toBeNull();
+    expect(normalizeRut("96.500.000-1")).toBeNull();
     expect(parseDateToISO("06-01-2025")).toBe("2025-01-06");
     expect(parseDateToISO("23 - 05-2022")).toBe("2022-05-23");
     expect(parseDateToISO("10 DE OCTUBRE DE 2017")).toBe("2017-10-10");
