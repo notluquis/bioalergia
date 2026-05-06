@@ -1,6 +1,7 @@
 import * as XLSX from "xlsx";
+import { validateRut, formatRut } from "../lib/rut.js";
 
-export const SKIN_TEST_PARSER_VERSION = "2026-05-05.4";
+export const SKIN_TEST_PARSER_VERSION = "2026-05-05.5";
 
 export interface SkinTestIssue {
   code: string;
@@ -352,12 +353,8 @@ function extractEmail(text: string): null | string {
 
 export function normalizeRut(value: null | string): null | string {
   if (!value) return null;
-  const compact = value.replace(/[^0-9kK]/g, "").toUpperCase();
-  // RUT body must be 7-8 digits (1.000.000 – 99.999.999), plus 1 check digit = 8-9 total
-  if (compact.length < 8 || compact.length > 9) return null;
-  const body = compact.slice(0, -1);
-  const dv = compact.slice(-1);
-  return `${Number(body).toLocaleString("es-CL")}-${dv}`;
+  if (!validateRut(value)) return null;
+  return formatRut(value);
 }
 
 export function parseDateToISO(value: null | string): null | string {

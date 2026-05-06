@@ -38,8 +38,10 @@ describe("clinical skin test parser", () => {
   it("normalizes Chilean RUTs and numeric/textual dates", () => {
     expect(normalizeRut("26.813.410-7")).toBe("26.813.410-7");
     expect(normalizeRut("268134107")).toBe("26.813.410-7");
-    expect(normalizeRut("26813410K")).toBe("26.813.410-K");
-    // Too short — allergen numbers, partial dates, etc. must be rejected
+    expect(normalizeRut("26 813 410 7")).toBe("26.813.410-7");
+    // Wrong check digit → invalid
+    expect(normalizeRut("26.813.410-5")).toBeNull();
+    // Too short / clearly not a RUT — allergen numbers, partial dates
     expect(normalizeRut("202-5")).toBeNull();
     expect(normalizeRut("16.201-7")).toBeNull();
     expect(normalizeRut("808.202-5")).toBeNull();
