@@ -1,6 +1,6 @@
 import * as XLSX from "xlsx";
 
-export const SKIN_TEST_PARSER_VERSION = "2026-05-05.3";
+export const SKIN_TEST_PARSER_VERSION = "2026-05-05.4";
 
 export interface SkinTestIssue {
   code: string;
@@ -353,7 +353,8 @@ function extractEmail(text: string): null | string {
 export function normalizeRut(value: null | string): null | string {
   if (!value) return null;
   const compact = value.replace(/[^0-9kK]/g, "").toUpperCase();
-  if (compact.length < 2) return null;
+  // RUT body must be 7-8 digits (1.000.000 – 99.999.999), plus 1 check digit = 8-9 total
+  if (compact.length < 8 || compact.length > 9) return null;
   const body = compact.slice(0, -1);
   const dv = compact.slice(-1);
   return `${Number(body).toLocaleString("es-CL")}-${dv}`;
@@ -531,14 +532,16 @@ function extractResultRowsFromRow(
     if (!isControl && /^panel\s+\d+\b/i.test(normalizeText(allergenName))) continue;
     if (!isControl && (normalizeCode(allergenName) || allergenName.startsWith(":"))) continue;
 
-    // Limit metric search to 5 cols past the code cell to avoid grabbing allergen
-    // sequence numbers from an adjacent panel block in the same row.
-    const metricMaxCol = cell.col + 5;
-    const numericCells = collectMetricCells(cells, index + (isControl ? 1 : 2), isControl, metricMaxCol);
+    const numericCells = collectMetricCells(cells, index + (isControl ? 1 : 2), isControl);
     if (numericCells.length === 0) continue;
     const byMetric = assignResultMetrics(ws, rowNumber, numericCells);
-    const papule = byMetric.sawHeader ? byMetric.papule : (numericCells[0]?.text ?? null);
-    const erythema = byMetric.sawHeader ? byMetric.erythema : (numericCells[1]?.text ?? null);
+    // When no metric header found, use positional fallback but only for cells within
+    // 3 columns of the code cell — prevents adjacent-panel allergen numbers (which are
+    // also valid isResultValue integers) from being mistaken for measurements.
+    const nearCells = byMetric.sawHeader ? numericCells : numericCells.filter((c) => c.col <= cell.col + 3);
+    const papule = byMetric.sawHeader ? byMetric.papule : (nearCells[0]?.text ?? null);
+    const erythema = byMetric.sawHeader ? byMetric.erythema : (nearCells[1]?.text ?? null);
+    if (!byMetric.sawHeader && nearCells.length === 0) continue;
     const section = isControl
       ? "Controles"
       : (sectionByBlock.get(blockForColumn(cell.col)) ?? "Sin sección");
@@ -637,8 +640,7 @@ function isAllergenNameCell(
 function collectMetricCells(
   cells: Array<{ col: number; text: string }>,
   startIndex: number,
-  isControl: boolean,
-  maxCol = Infinity
+  isControl: boolean
 ): Array<{ col: number; text: string }> {
   const metricCells: Array<{ col: number; text: string }> = [];
   const maxMetricCells = 4;
@@ -646,7 +648,6 @@ function collectMetricCells(
   for (let index = startIndex; index < cells.length; index += 1) {
     const candidate = cells[index];
     if (!candidate?.text) continue;
-    if (candidate.col > maxCol) break;
     if (isResultValue(candidate.text)) {
       metricCells.push(candidate);
       if (metricCells.length >= maxMetricCells) break;
