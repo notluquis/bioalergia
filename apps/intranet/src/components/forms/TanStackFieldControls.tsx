@@ -33,10 +33,13 @@ interface TanStackInputFieldProps<TValue> {
 }
 
 interface TanStackSelectFieldProps<TValue> {
+  description?: string;
   emptyOption?: { label: string; value: string };
   field: TanStackFieldLike<TValue>;
+  isDisabled?: boolean;
   label: string;
   options: Array<{ label: string; value: string }>;
+  placeholder?: string;
   required?: boolean;
 }
 
@@ -133,10 +136,13 @@ export function TanStackTextAreaField<TValue>({
 }
 
 export function TanStackSelectField<TValue>({
+  description,
   emptyOption,
   field,
+  isDisabled,
   label,
   options,
+  placeholder,
   required,
 }: Readonly<TanStackSelectFieldProps<TValue>>) {
   const errorText = getFieldError(field.state.meta.errors);
@@ -147,17 +153,20 @@ export function TanStackSelectField<TValue>({
 
   return (
     <Select
+      isDisabled={isDisabled}
       isInvalid={Boolean(errorText)}
       isRequired={required}
-      onBlur={field.handleBlur}
       onChange={(value) => {
         if (value === null) {
           field.handleChange(() => "" as TValue);
+          field.handleBlur();
           return;
         }
         const next = String(value);
         field.handleChange(() => (emptyOption && next === emptyOption.value ? "" : next) as TValue);
+        field.handleBlur();
       }}
+      placeholder={placeholder}
       value={selectedValue}
     >
       <Label>{label}</Label>
@@ -168,15 +177,20 @@ export function TanStackSelectField<TValue>({
       <Select.Popover>
         <ListBox>
           {emptyOption ? (
-            <ListBox.Item id={emptyOption.value}>{emptyOption.label}</ListBox.Item>
+            <ListBox.Item id={emptyOption.value} textValue={emptyOption.label}>
+              {emptyOption.label}
+              <ListBox.ItemIndicator />
+            </ListBox.Item>
           ) : null}
           {options.map((option) => (
-            <ListBox.Item id={option.value} key={option.value}>
+            <ListBox.Item id={option.value} key={option.value} textValue={option.label}>
               {option.label}
+              <ListBox.ItemIndicator />
             </ListBox.Item>
           ))}
         </ListBox>
       </Select.Popover>
+      {description ? <Description>{description}</Description> : null}
       {errorText ? <FieldError>{errorText}</FieldError> : null}
     </Select>
   );
