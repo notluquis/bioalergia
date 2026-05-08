@@ -134,3 +134,7 @@ data/
 
 # Local Claude context (not for repo)
 CLAUDE.local.md
+
+# Loose debug/query scripts in apps/api root (keep config files only)
+apps/api/*.ts
+!apps/api/vitest.config.ts
