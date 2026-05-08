@@ -150,15 +150,15 @@ export function TanStackSelectField<TValue>({
       isInvalid={Boolean(errorText)}
       isRequired={required}
       onBlur={field.handleBlur}
-      onChange={(key) => {
-        if (!key) {
+      onSelectionChange={(key) => {
+        if (key === null) {
           field.handleChange(() => "" as TValue);
           return;
         }
         const next = String(key);
         field.handleChange(() => (emptyOption && next === emptyOption.value ? "" : next) as TValue);
       }}
-      value={selectedValue}
+      selectedKey={selectedValue}
     >
       <Label>{label}</Label>
       <Select.Trigger>

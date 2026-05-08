@@ -282,9 +282,9 @@ function CoverageStep({
       <div className="space-y-4">
         <Select
           isRequired
-          selectedKey={regionId}
+          selectedKey={regionId || null}
           onSelectionChange={(key) => {
-            setRegionId(String(key));
+            setRegionId(key !== null ? String(key) : "");
             setCoverageCode("");
             setCommuneName("");
             setOfficeId("");
@@ -310,12 +310,11 @@ function CoverageStep({
         <Select
           isRequired
           isDisabled={!regionId}
-          selectedKey={coverageCode}
+          selectedKey={coverageCode || null}
           onSelectionChange={(key) => {
-            const selected = communesData?.communes.find(
-              (c) => c.coverageRegionCode === String(key)
-            );
-            setCoverageCode(String(key));
+            const next = key !== null ? String(key) : "";
+            const selected = communesData?.communes.find((c) => c.coverageRegionCode === next);
+            setCoverageCode(next);
             setCommuneName(selected?.countyName ?? "");
             setOfficeId("");
             setOfficeName("");
@@ -340,10 +339,11 @@ function CoverageStep({
         <Select
           isRequired
           isDisabled={!coverageCode}
-          selectedKey={officeId}
+          selectedKey={officeId || null}
           onSelectionChange={(key) => {
-            const selected = officesData?.offices.find((o) => o.commercialOfficeId === String(key));
-            setOfficeId(String(key));
+            const next = key !== null ? String(key) : "";
+            const selected = officesData?.offices.find((o) => o.commercialOfficeId === next);
+            setOfficeId(next);
             setOfficeName(selected?.commercialOfficeName ?? "");
           }}
         >
