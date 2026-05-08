@@ -1,18 +1,19 @@
-import type { Selection } from "@heroui/react";
+import type { Key } from "@heroui/react";
 import {
   Button,
-  Dropdown,
   FieldError,
   Form,
   Input,
   Label,
+  ListBox,
   Modal,
   NumberField,
+  Select,
   TextField,
 } from "@heroui/react";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CheckCircle, ChevronDown, MapPin, Package, PackageCheck, Truck } from "lucide-react";
+import { CheckCircle, MapPin, Package, PackageCheck, Truck } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/context/ToastContext";
 import { fetchPatient } from "@/features/patients/api";
@@ -236,10 +237,10 @@ function CoverageStep({
   patientAddress: null | string;
   onNext: (data: Partial<WizardState>) => void;
 }) {
-  const [regionId, setRegionId] = useState(state.regionId ?? "");
-  const [coverageCode, setCoverageCode] = useState(state.coverageRegionCode ?? "");
+  const [regionId, setRegionId] = useState<Key | null>(state.regionId ?? null);
+  const [coverageCode, setCoverageCode] = useState<Key | null>(state.coverageRegionCode ?? null);
   const [communeName, setCommuneName] = useState(state.communeName ?? "");
-  const [officeId, setOfficeId] = useState(state.commercialOfficeId ?? "");
+  const [officeId, setOfficeId] = useState<Key | null>(state.commercialOfficeId ?? null);
   const [officeName, setOfficeName] = useState(state.commercialOfficeName ?? "");
 
   const { data: regionsData, isLoading: loadingRegions } = useQuery({
@@ -250,14 +251,14 @@ function CoverageStep({
 
   const { data: communesData, isLoading: loadingCommunes } = useQuery({
     queryKey: ["cx-communes", regionId],
-    queryFn: () => fetchCommunes(regionId),
+    queryFn: () => fetchCommunes(String(regionId)),
     enabled: Boolean(regionId),
     staleTime: 1000 * 60 * 60,
   });
 
   const { data: officesData, isLoading: loadingOffices } = useQuery({
     queryKey: ["cx-offices", coverageCode],
-    queryFn: () => fetchCommercialOffices(coverageCode),
+    queryFn: () => fetchCommercialOffices(String(coverageCode)),
     enabled: Boolean(coverageCode),
     staleTime: 1000 * 60 * 60,
   });
@@ -280,136 +281,108 @@ function CoverageStep({
       )}
 
       <div className="space-y-4">
-        <div className="flex flex-col gap-1">
+        <Select
+          isDisabled={loadingRegions}
+          isRequired
+          onChange={(value) => {
+            setRegionId(value as Key | null);
+            setCoverageCode(null);
+            setCommuneName("");
+            setOfficeId(null);
+            setOfficeName("");
+          }}
+          placeholder="Selecciona una región"
+          value={regionId}
+        >
           <Label>Región</Label>
-          <Dropdown>
-            <Button
-              aria-label="Región"
-              className="w-full justify-between"
-              isDisabled={loadingRegions}
-              variant="secondary"
-            >
-              <span className={regionId ? "" : "text-default-500"}>
-                {regionsData?.regions.find((r) => r.regionId === regionId)?.regionName ??
-                  "Selecciona una región"}
-              </span>
-              <ChevronDown size={16} />
-            </Button>
-            <Dropdown.Popover className="min-w-[var(--trigger-width)]">
-              <Dropdown.Menu
-                onSelectionChange={(keys: Selection) => {
-                  const next =
-                    keys === "all" ? "" : ((Array.from(keys)[0] as string | undefined) ?? "");
-                  setRegionId(next);
-                  setCoverageCode("");
-                  setCommuneName("");
-                  setOfficeId("");
-                  setOfficeName("");
-                }}
-                selectedKeys={regionId ? new Set([regionId]) : new Set()}
-                selectionMode="single"
-              >
-                {(regionsData?.regions ?? []).map((r) => (
-                  <Dropdown.Item id={r.regionId} key={r.regionId} textValue={r.regionName}>
-                    <Dropdown.ItemIndicator />
-                    <Label>{r.regionName}</Label>
-                  </Dropdown.Item>
-                ))}
-              </Dropdown.Menu>
-            </Dropdown.Popover>
-          </Dropdown>
-        </div>
+          <Select.Trigger>
+            <Select.Value />
+            <Select.Indicator />
+          </Select.Trigger>
+          <Select.Popover>
+            <ListBox>
+              {(regionsData?.regions ?? []).map((r) => (
+                <ListBox.Item id={r.regionId} key={r.regionId} textValue={r.regionName}>
+                  {r.regionName}
+                  <ListBox.ItemIndicator />
+                </ListBox.Item>
+              ))}
+            </ListBox>
+          </Select.Popover>
+        </Select>
 
-        <div className="flex flex-col gap-1">
+        <Select
+          isDisabled={!regionId || loadingCommunes}
+          isRequired
+          onChange={(value) => {
+            const next = (value as string | null) ?? null;
+            const selected = communesData?.communes.find((c) => c.coverageRegionCode === next);
+            setCoverageCode(next);
+            setCommuneName(selected?.countyName ?? "");
+            setOfficeId(null);
+            setOfficeName("");
+          }}
+          placeholder="Selecciona una comuna"
+          value={coverageCode}
+        >
           <Label>Comuna</Label>
-          <Dropdown>
-            <Button
-              aria-label="Comuna"
-              className="w-full justify-between"
-              isDisabled={!regionId || loadingCommunes}
-              variant="secondary"
-            >
-              <span className={coverageCode ? "" : "text-default-500"}>
-                {communeName || "Selecciona una comuna"}
-              </span>
-              <ChevronDown size={16} />
-            </Button>
-            <Dropdown.Popover className="min-w-[var(--trigger-width)]">
-              <Dropdown.Menu
-                onSelectionChange={(keys: Selection) => {
-                  const next =
-                    keys === "all" ? "" : ((Array.from(keys)[0] as string | undefined) ?? "");
-                  const selected = communesData?.communes.find(
-                    (c) => c.coverageRegionCode === next
-                  );
-                  setCoverageCode(next);
-                  setCommuneName(selected?.countyName ?? "");
-                  setOfficeId("");
-                  setOfficeName("");
-                }}
-                selectedKeys={coverageCode ? new Set([coverageCode]) : new Set()}
-                selectionMode="single"
-              >
-                {(communesData?.communes ?? []).map((c) => (
-                  <Dropdown.Item
-                    id={c.coverageRegionCode}
-                    key={c.coverageRegionCode}
-                    textValue={c.countyName}
-                  >
-                    <Dropdown.ItemIndicator />
-                    <Label>{c.countyName}</Label>
-                  </Dropdown.Item>
-                ))}
-              </Dropdown.Menu>
-            </Dropdown.Popover>
-          </Dropdown>
-        </div>
+          <Select.Trigger>
+            <Select.Value />
+            <Select.Indicator />
+          </Select.Trigger>
+          <Select.Popover>
+            <ListBox>
+              {(communesData?.communes ?? []).map((c) => (
+                <ListBox.Item
+                  id={c.coverageRegionCode}
+                  key={c.coverageRegionCode}
+                  textValue={c.countyName}
+                >
+                  {c.countyName}
+                  <ListBox.ItemIndicator />
+                </ListBox.Item>
+              ))}
+            </ListBox>
+          </Select.Popover>
+        </Select>
 
-        <div className="flex flex-col gap-1">
+        <Select
+          isDisabled={!coverageCode || loadingOffices}
+          isRequired
+          onChange={(value) => {
+            const next = (value as string | null) ?? null;
+            const selected = officesData?.offices.find((o) => o.commercialOfficeId === next);
+            setOfficeId(next);
+            setOfficeName(selected?.commercialOfficeName ?? "");
+          }}
+          placeholder="Selecciona una sucursal"
+          value={officeId}
+        >
           <Label>Sucursal ChileExpress</Label>
-          <Dropdown>
-            <Button
-              aria-label="Sucursal ChileExpress"
-              className="w-full justify-between"
-              isDisabled={!coverageCode || loadingOffices}
-              variant="secondary"
-            >
-              <span className={officeId ? "" : "text-default-500"}>
-                {officeName || "Selecciona una sucursal"}
-              </span>
-              <ChevronDown size={16} />
-            </Button>
-            <Dropdown.Popover className="min-w-[var(--trigger-width)]">
-              <Dropdown.Menu
-                onSelectionChange={(keys: Selection) => {
-                  const next =
-                    keys === "all" ? "" : ((Array.from(keys)[0] as string | undefined) ?? "");
-                  const selected = officesData?.offices.find((o) => o.commercialOfficeId === next);
-                  setOfficeId(next);
-                  setOfficeName(selected?.commercialOfficeName ?? "");
-                }}
-                selectedKeys={officeId ? new Set([officeId]) : new Set()}
-                selectionMode="single"
-              >
-                {(officesData?.offices ?? []).map((o) => (
-                  <Dropdown.Item
-                    id={o.commercialOfficeId}
-                    key={o.commercialOfficeId}
-                    textValue={o.commercialOfficeName}
-                  >
-                    <Dropdown.ItemIndicator />
-                    <div>
-                      <div className="font-medium">{o.commercialOfficeName}</div>
-                      <div className="text-default-500 text-xs">
-                        {o.street} {o.number}
-                      </div>
+          <Select.Trigger>
+            <Select.Value />
+            <Select.Indicator />
+          </Select.Trigger>
+          <Select.Popover>
+            <ListBox>
+              {(officesData?.offices ?? []).map((o) => (
+                <ListBox.Item
+                  id={o.commercialOfficeId}
+                  key={o.commercialOfficeId}
+                  textValue={o.commercialOfficeName}
+                >
+                  <div>
+                    <div className="font-medium">{o.commercialOfficeName}</div>
+                    <div className="text-default-500 text-xs">
+                      {o.street} {o.number}
                     </div>
-                  </Dropdown.Item>
-                ))}
-              </Dropdown.Menu>
-            </Dropdown.Popover>
-          </Dropdown>
-        </div>
+                  </div>
+                  <ListBox.ItemIndicator />
+                </ListBox.Item>
+              ))}
+            </ListBox>
+          </Select.Popover>
+        </Select>
       </div>
 
       <div className="flex justify-end pt-2">
@@ -417,10 +390,10 @@ function CoverageStep({
           isDisabled={!canContinue}
           onPress={() =>
             onNext({
-              regionId,
-              coverageRegionCode: coverageCode,
+              regionId: String(regionId ?? ""),
+              coverageRegionCode: String(coverageCode ?? ""),
               communeName,
-              commercialOfficeId: officeId,
+              commercialOfficeId: String(officeId ?? ""),
               commercialOfficeName: officeName,
             })
           }
