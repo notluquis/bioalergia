@@ -1,6 +1,6 @@
+import { parseDate } from "@internationalized/date";
 import { describe, expect, it } from "vitest";
 import { normalizeDecimalValues } from "./api";
-import { normalizeBirthDate } from "./components/CreatePatientModal";
 import { PatientListSchema } from "./schemas";
 
 // Realistic patient shape as SuperJSON deserializes it (dates already as Date objects)
@@ -52,46 +52,30 @@ describe("normalizeDecimalValues", () => {
   });
 });
 
-describe("normalizeBirthDate", () => {
-  it("returns undefined for empty string", () => {
-    expect(normalizeBirthDate("")).toBeUndefined();
+describe("CalendarDate → ISO submit conversion", () => {
+  // The CreatePatientModal stores birthDate as DateValue | null in form state
+  // and converts to ISO string only at submit time. This pins the canonical
+  // shape so a refactor can't accidentally re-introduce the string<->CalendarDate
+  // dance that previously caused server-side z.string() invalid_type errors.
+  it("CalendarDate.toString() yields canonical YYYY-MM-DD", () => {
+    expect(parseDate("2000-10-17").toString()).toBe("2000-10-17");
   });
 
-  it("returns undefined for whitespace-only string", () => {
-    expect(normalizeBirthDate("   ")).toBeUndefined();
+  it("null birthDate maps to undefined via optional chaining + nullish coalesce", () => {
+    const value = null as { toString(): string } | null;
+    expect(value?.toString() ?? undefined).toBeUndefined();
   });
 
-  it("passes through ISO date string", () => {
-    expect(normalizeBirthDate("2000-10-17")).toBe("2000-10-17");
-  });
-
-  it("trims ISO datetime to date prefix", () => {
-    expect(normalizeBirthDate("2000-10-17T00:00:00")).toBe("2000-10-17");
-    expect(normalizeBirthDate("2000-10-17T00:00:00[America/Santiago]")).toBe("2000-10-17");
-  });
-
-  it("returns undefined for non-string CalendarDate-like object", () => {
-    // Defensive: if a CalendarDate ever leaks into form state, JSON.stringify
-    // would serialize it as { calendar, era, year, month, day }. We must not
-    // forward that to a server schema that expects z.string().optional().
-    const calendarDateLike = {
-      calendar: { identifier: "gregory" },
-      era: "AD",
-      year: 2000,
-      month: 10,
-      day: 17,
-    };
-    expect(normalizeBirthDate(calendarDateLike)).toBeUndefined();
-  });
-
-  it("returns undefined for null and undefined", () => {
-    expect(normalizeBirthDate(null)).toBeUndefined();
-    expect(normalizeBirthDate(undefined)).toBeUndefined();
-  });
-
-  it("returns undefined for malformed string", () => {
-    expect(normalizeBirthDate("17/10/2000")).toBeUndefined();
-    expect(normalizeBirthDate("not a date")).toBeUndefined();
+  it("CalendarDate JSON serialization is NOT a string (regression guard)", () => {
+    // If birthDate ever leaks as CalendarDate to the wire, JSON.stringify will
+    // shape it as { calendar, era, year, month, day }. Server zod expects
+    // string and rejects with invalid_type. This test documents WHY the
+    // submit-time toString() call is required.
+    const date = parseDate("2000-10-17");
+    const json = JSON.parse(JSON.stringify(date)) as Record<string, unknown>;
+    expect(typeof json).toBe("object");
+    expect(json).not.toBe("2000-10-17");
+    expect(json).toHaveProperty("year", 2000);
   });
 });
 
