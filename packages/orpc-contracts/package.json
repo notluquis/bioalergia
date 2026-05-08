@@ -13,6 +13,11 @@
       "import": "./dist/index.js",
       "default": "./dist/index.js"
     },
+    "./addresses": {
+      "types": "./dist/addresses.d.ts",
+      "import": "./dist/addresses.js",
+      "default": "./dist/addresses.js"
+    },
     "./attendance": {
       "types": "./dist/attendance.d.ts",
       "import": "./dist/attendance.js",

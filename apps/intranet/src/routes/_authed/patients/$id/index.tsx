@@ -14,7 +14,6 @@ import {
   FileText,
   FlaskConical,
   Mail,
-  MapPin,
   Phone,
   PlusCircle,
   Trash2,
@@ -22,6 +21,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
+import { AddressList } from "@/features/addresses/components/AddressList";
 import { fetchPatient } from "@/features/patients/api";
 import { ClinicalSeriesList } from "@/features/patients/components/ClinicalSeriesList";
 import { NewAttachmentModal } from "@/features/patients/components/NewAttachmentModal";
@@ -133,9 +133,8 @@ function PatientDetailsPage() {
                       {person.phone || "Sin teléfono"}
                     </span>
                   </div>
-                  <div className="flex items-center gap-3 text-sm">
-                    <MapPin size={16} className="text-default-300" />
-                    <span className="text-default-700">Sin dirección</span>
+                  <div className="border-default-100 border-t pt-3">
+                    <AddressList personId={person.id} />
                   </div>
                   <div className="flex items-center gap-3 border-default-100 border-t pt-3 text-sm">
                     <Clock size={16} className="text-default-300" />
@@ -381,7 +380,9 @@ function PatientDetailsPage() {
 
                       <DetailRow label="Email" value={person.email || "N/A"} />
                       <DetailRow label="Teléfono" value={person.phone || "N/A"} />
-                      <DetailRow label="Dirección" value="N/A" className="md:col-span-2" />
+                      <div className="md:col-span-2">
+                        <AddressList personId={person.id} />
+                      </div>
                     </div>
                   </Card.Content>
                 </Card>

@@ -37,6 +37,7 @@ import { loansOpenAPIHandler, loansORPCHandler } from "./orpc/loans";
 import { mercadopagoOpenAPIHandler, mercadopagoORPCHandler } from "./orpc/mercadopago";
 import { notificationsOpenAPIHandler, notificationsORPCHandler } from "./orpc/notifications";
 import { outreachOpenAPIHandler, outreachORPCHandler } from "./orpc/outreach";
+import { addressesOpenAPIHandler, addressesORPCHandler } from "./orpc/addresses";
 import { patientsOpenAPIHandler, patientsORPCHandler } from "./orpc/patients";
 import {
   patientCampaignsOpenAPIHandler,
@@ -1200,6 +1201,31 @@ app.use("/api/orpc/auth/rpc/*", async (c, next) => {
 app.use("/api/orpc/patients/rpc/*", async (c, next) => {
   const { matched, response } = await patientsORPCHandler.handle(createHonoORPCRequest(c), {
     prefix: "/api/orpc/patients/rpc",
+    context: { hono: c },
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  return next();
+});
+
+app.use("/api/orpc/addresses/rpc/*", async (c, next) => {
+  const { matched, response } = await addressesORPCHandler.handle(createHonoORPCRequest(c), {
+    prefix: "/api/orpc/addresses/rpc",
+    context: { hono: c },
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  return next();
+});
+
+app.use("/api/orpc/addresses/*", async (c, next) => {
+  const { matched, response } = await addressesOpenAPIHandler.handle(createHonoORPCRequest(c), {
     context: { hono: c },
   });
 
