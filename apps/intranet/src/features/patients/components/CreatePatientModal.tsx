@@ -26,6 +26,22 @@ import { formatRut, validateRut } from "@/lib/rut";
 
 const BLOOD_TYPES = ["O+", "O-", "A+", "A-", "B+", "B-", "AB+", "AB-"];
 
+const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+// Defensive normalizer: form state should always be a string (date picker
+// onChange uses value?.toString()), but if anything ever leaves a CalendarDate
+// or null in there, fall back to undefined instead of letting the server
+// receive a non-string birthDate (Zod input rejects with invalid_type).
+export function normalizeBirthDate(value: unknown): string | undefined {
+  if (typeof value !== "string") return undefined;
+  const trimmed = value.trim();
+  if (trimmed.length === 0) return undefined;
+  // Accept full ISO date or longer ISO strings (slice the date prefix).
+  if (ISO_DATE_RE.test(trimmed)) return trimmed;
+  const prefix = trimmed.slice(0, 10);
+  return ISO_DATE_RE.test(prefix) ? prefix : undefined;
+}
+
 interface PatientFormState {
   rut: string;
   names: string;
@@ -83,7 +99,7 @@ export function CreatePatientModal({ isOpen, onClose }: Readonly<CreatePatientMo
       }
       await createPatientMutation.mutateAsync({
         ...value,
-        birthDate: value.birthDate || undefined,
+        birthDate: normalizeBirthDate(value.birthDate),
       });
     },
   });
