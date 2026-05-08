@@ -8,7 +8,6 @@ interface ProfileStepProps {
     names: string;
     rut: string;
     phone: string;
-    address: string;
     fatherName: string;
     motherName: string;
   };
@@ -103,17 +102,6 @@ export function ProfileStep(props: ProfileStepProps) {
           <Label>Teléfono</Label>
           <Input />
         </TextField>
-
-        <div className="md:col-span-2">
-          <TextField
-            name="address"
-            onChange={(v) => onProfileChange("address", v)}
-            value={profile.address}
-          >
-            <Label>Dirección</Label>
-            <Input />
-          </TextField>
-        </div>
       </div>
       <div className="mt-6 flex justify-end">
         <Button

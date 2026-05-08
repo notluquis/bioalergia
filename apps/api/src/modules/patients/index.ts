@@ -435,7 +435,6 @@ patientsRoutes.post(
           motherName: input.motherName,
           email: input.email || person.email,
           phone: input.phone || person.phone,
-          address: input.address || person.address,
         },
       });
     } else {
@@ -448,7 +447,6 @@ patientsRoutes.post(
           motherName: input.motherName,
           email: input.email,
           phone: input.phone,
-          address: input.address,
         },
       });
     }
@@ -516,7 +514,6 @@ patientsRoutes.put(
       input.motherName ||
       input.email !== undefined ||
       input.phone ||
-      input.address ||
       input.rut
     ) {
       await db.person.update({
@@ -528,7 +525,6 @@ patientsRoutes.put(
           motherName: input.motherName,
           email: input.email,
           phone: input.phone,
-          address: input.address,
         },
       });
     }

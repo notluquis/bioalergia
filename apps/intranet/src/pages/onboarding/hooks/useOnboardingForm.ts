@@ -19,7 +19,6 @@ export const profileSchema = z.object({
     .min(1, "El RUT es requerido")
     .refine(validateRut, "El RUT ingresado no es válido"),
   phone: z.string().optional().default(""),
-  address: z.string().optional().default(""),
   fatherName: z.string().optional().default(""),
   motherName: z.string().optional().default(""),
 });
@@ -59,7 +58,6 @@ interface OnboardingValues {
   names: string;
   rut: string;
   phone: string;
-  address: string;
   fatherName: string;
   motherName: string;
   bankName: string;
@@ -86,7 +84,6 @@ export function useOnboardingForm() {
     names: userProfile?.names ?? "",
     rut: userProfile?.rut ?? "",
     phone: userProfile?.phone ?? "",
-    address: userProfile?.address ?? "",
     fatherName: userProfile?.fatherName ?? "",
     motherName: userProfile?.motherName ?? "",
     bankName: userProfile?.bankName ?? "",
@@ -169,7 +166,6 @@ export function useOnboardingForm() {
         names: values.names.trim(),
         rut: values.rut,
         phone: values.phone,
-        address: values.address,
         fatherName: values.fatherName.trim(),
         motherName: values.motherName.trim(),
         bankName: values.bankName,
@@ -223,7 +219,6 @@ export function useOnboardingForm() {
       names: values.names,
       rut: values.rut,
       phone: values.phone,
-      address: values.address,
       fatherName: values.fatherName,
       motherName: values.motherName,
       bankName: values.bankName,

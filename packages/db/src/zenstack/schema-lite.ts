@@ -51,11 +51,6 @@ export class SchemaType implements SchemaDef {
                     type: "String",
                     optional: true
                 },
-                address: {
-                    name: "address",
-                    type: "String",
-                    optional: true
-                },
                 personType: {
                     name: "personType",
                     type: "PersonType",
@@ -89,6 +84,12 @@ export class SchemaType implements SchemaDef {
                     type: "Patient",
                     optional: true,
                     relation: { opposite: "person" }
+                },
+                addresses: {
+                    name: "addresses",
+                    type: "Address",
+                    array: true,
+                    relation: { opposite: "person" }
                 }
             },
             idFields: ["id"],
@@ -96,6 +97,105 @@ export class SchemaType implements SchemaDef {
                 id: { type: "Int" },
                 rut: { type: "String" },
                 email: { type: "String" }
+            }
+        },
+        Address: {
+            name: "Address",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                personId: {
+                    name: "personId",
+                    type: "Int",
+                    foreignKeyFor: [
+                        "person"
+                    ] as readonly string[]
+                },
+                label: {
+                    name: "label",
+                    type: "String",
+                    default: "Principal" as FieldDefault
+                },
+                street: {
+                    name: "street",
+                    type: "String"
+                },
+                number: {
+                    name: "number",
+                    type: "String"
+                },
+                supplement: {
+                    name: "supplement",
+                    type: "String",
+                    optional: true
+                },
+                reference: {
+                    name: "reference",
+                    type: "String",
+                    optional: true
+                },
+                postalCode: {
+                    name: "postalCode",
+                    type: "String",
+                    optional: true
+                },
+                comuna: {
+                    name: "comuna",
+                    type: "String"
+                },
+                region: {
+                    name: "region",
+                    type: "String"
+                },
+                coverageCode: {
+                    name: "coverageCode",
+                    type: "String",
+                    optional: true
+                },
+                regionCode: {
+                    name: "regionCode",
+                    type: "String",
+                    optional: true
+                },
+                countryCode: {
+                    name: "countryCode",
+                    type: "String",
+                    default: "CL" as FieldDefault
+                },
+                isPrimary: {
+                    name: "isPrimary",
+                    type: "Boolean",
+                    default: false as FieldDefault
+                },
+                isActive: {
+                    name: "isActive",
+                    type: "Boolean",
+                    default: true as FieldDefault
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                person: {
+                    name: "person",
+                    type: "Person",
+                    relation: { opposite: "addresses", fields: ["personId"], references: ["id"], onDelete: "Cascade" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" }
             }
         },
         User: {

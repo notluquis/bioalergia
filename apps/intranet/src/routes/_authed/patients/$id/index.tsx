@@ -135,7 +135,7 @@ function PatientDetailsPage() {
                   </div>
                   <div className="flex items-center gap-3 text-sm">
                     <MapPin size={16} className="text-default-300" />
-                    <span className="text-default-700">{person.address || "Sin dirección"}</span>
+                    <span className="text-default-700">Sin dirección</span>
                   </div>
                   <div className="flex items-center gap-3 border-default-100 border-t pt-3 text-sm">
                     <Clock size={16} className="text-default-300" />
@@ -381,11 +381,7 @@ function PatientDetailsPage() {
 
                       <DetailRow label="Email" value={person.email || "N/A"} />
                       <DetailRow label="Teléfono" value={person.phone || "N/A"} />
-                      <DetailRow
-                        label="Dirección"
-                        value={person.address || "N/A"}
-                        className="md:col-span-2"
-                      />
+                      <DetailRow label="Dirección" value="N/A" className="md:col-span-2" />
                     </div>
                   </Card.Content>
                 </Card>
@@ -480,7 +476,7 @@ function PatientDetailsHeader({
       search: {
         patientName: person.names,
         rut: person.rut ?? undefined,
-        address: person.address || "",
+        address: "",
         birthDate: birthDate || undefined,
       },
     });

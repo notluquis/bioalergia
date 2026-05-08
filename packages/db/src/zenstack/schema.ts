@@ -56,11 +56,6 @@ export class SchemaType implements SchemaDef {
                     type: "String",
                     optional: true
                 },
-                address: {
-                    name: "address",
-                    type: "String",
-                    optional: true
-                },
                 personType: {
                     name: "personType",
                     type: "PersonType",
@@ -97,6 +92,12 @@ export class SchemaType implements SchemaDef {
                     type: "Patient",
                     optional: true,
                     relation: { opposite: "person" }
+                },
+                addresses: {
+                    name: "addresses",
+                    type: "Address",
+                    array: true,
+                    relation: { opposite: "person" }
                 }
             },
             attributes: [
@@ -110,6 +111,125 @@ export class SchemaType implements SchemaDef {
                 id: { type: "Int" },
                 rut: { type: "String" },
                 email: { type: "String" }
+            }
+        },
+        Address: {
+            name: "Address",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                personId: {
+                    name: "personId",
+                    type: "Int",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("person_id") }] }] as readonly AttributeApplication[],
+                    foreignKeyFor: [
+                        "person"
+                    ] as readonly string[]
+                },
+                label: {
+                    name: "label",
+                    type: "String",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("Principal") }] }] as readonly AttributeApplication[],
+                    default: "Principal" as FieldDefault
+                },
+                street: {
+                    name: "street",
+                    type: "String"
+                },
+                number: {
+                    name: "number",
+                    type: "String"
+                },
+                supplement: {
+                    name: "supplement",
+                    type: "String",
+                    optional: true
+                },
+                reference: {
+                    name: "reference",
+                    type: "String",
+                    optional: true
+                },
+                postalCode: {
+                    name: "postalCode",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("postal_code") }] }] as readonly AttributeApplication[]
+                },
+                comuna: {
+                    name: "comuna",
+                    type: "String"
+                },
+                region: {
+                    name: "region",
+                    type: "String"
+                },
+                coverageCode: {
+                    name: "coverageCode",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("coverage_code") }] }] as readonly AttributeApplication[]
+                },
+                regionCode: {
+                    name: "regionCode",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("region_code") }] }] as readonly AttributeApplication[]
+                },
+                countryCode: {
+                    name: "countryCode",
+                    type: "String",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("CL") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("country_code") }] }] as readonly AttributeApplication[],
+                    default: "CL" as FieldDefault
+                },
+                isPrimary: {
+                    name: "isPrimary",
+                    type: "Boolean",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(false) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("is_primary") }] }] as readonly AttributeApplication[],
+                    default: false as FieldDefault
+                },
+                isActive: {
+                    name: "isActive",
+                    type: "Boolean",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(true) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("is_active") }] }] as readonly AttributeApplication[],
+                    default: true as FieldDefault
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@updatedAt" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                person: {
+                    name: "person",
+                    type: "Person",
+                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("personId")]) }, { name: "references", value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("Cascade") }] }] as readonly AttributeApplication[],
+                    relation: { opposite: "addresses", fields: ["personId"], references: ["id"], onDelete: "Cascade" }
+                }
+            },
+            attributes: [
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("personId")]) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("personId"), ExpressionUtils.field("isPrimary")]) }] },
+                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.literal(true) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
+                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("addresses") }] }
+            ] as readonly AttributeApplication[],
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" }
             }
         },
         User: {

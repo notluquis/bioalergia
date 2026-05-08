@@ -324,7 +324,6 @@ const usersORPCRouterBase = {
             : null,
           person: user.person
             ? {
-                address: user.person.address,
                 names: user.person.names,
                 fatherName: user.person.fatherName,
                 motherName: user.person.motherName,
@@ -377,7 +376,6 @@ const usersORPCRouterBase = {
           notificationEmail,
           loginEmail: effectiveLoginEmail,
           phone: user.person.phone,
-          address: user.person.address,
           bankName: user.person.employee?.bankName,
           bankAccountType: user.person.employee?.bankAccountType,
           bankAccountNumber: user.person.employee?.bankAccountNumber,
@@ -468,7 +466,6 @@ const usersORPCRouterBase = {
           motherName: input.motherName,
           rut: input.rut,
           phone: input.phone,
-          address: input.address,
         },
       });
 
@@ -595,7 +592,6 @@ const usersORPCRouterBase = {
         await tx.person.update({
           where: { id: targetUser.personId },
           data: {
-            address: toNullableText(input.payload.address),
             email: normalizedNotificationEmail,
             fatherName: toNullableText(input.payload.fatherName),
             motherName: toNullableText(input.payload.motherName),

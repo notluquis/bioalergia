@@ -26,7 +26,6 @@ export const setupUserSchema = z.object({
   loginEmail: z.email("Email de login inválido").optional(),
   rut: z.string().min(1),
   phone: z.string().optional(),
-  address: z.string().optional(),
   bankName: z.string().optional(),
   bankAccountType: z.string().optional(),
   bankAccountNumber: z.string().optional(),
@@ -54,7 +53,6 @@ export const toggleMfaSchema = z.object({
 
 export const updateUserProfileSchema = z
   .object({
-    address: z.string().max(255).nullable().optional(),
     bankAccountNumber: z.string().max(120).nullable().optional(),
     bankAccountType: z.string().max(80).nullable().optional(),
     bankName: z.string().max(120).nullable().optional(),
@@ -81,7 +79,6 @@ export const updateUserProfileSchema = z
   });
 
 export const userPersonSchema = z.object({
-  address: z.string().nullable(),
   fatherName: z.string().nullable(),
   motherName: z.string().nullable(),
   names: z.string(),
@@ -114,7 +111,6 @@ export const userListItemSchema = z.object({
 });
 
 export const userProfileSchema = z.object({
-  address: z.string().nullable().optional(),
   bankAccountNumber: z.string().nullable().optional(),
   bankAccountType: z.string().nullable().optional(),
   bankName: z.string().nullable().optional(),

@@ -33,7 +33,6 @@ interface PatientFormState {
   motherName: string;
   email: string;
   phone: string;
-  address: string;
   birthDate: DateValue | null;
   bloodType: string;
   notes: string;
@@ -71,7 +70,6 @@ export function CreatePatientModal({ isOpen, onClose }: Readonly<CreatePatientMo
       motherName: "",
       email: "",
       phone: "",
-      address: "",
       birthDate: null,
       bloodType: "",
       notes: "",
@@ -327,18 +325,6 @@ export function CreatePatientModal({ isOpen, onClose }: Readonly<CreatePatientMo
                         />
                       )}
                     </form.Field>
-
-                    <div className="md:col-span-2">
-                      <form.Field name="address">
-                        {(field) => (
-                          <TanStackInputField
-                            field={field}
-                            label="Direccion"
-                            placeholder="Calle, Numero, Depto, Comuna"
-                          />
-                        )}
-                      </form.Field>
-                    </div>
                   </div>
                 </div>
 

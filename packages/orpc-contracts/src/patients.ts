@@ -18,7 +18,6 @@ export const createBudgetInputSchema = z.object({
 });
 
 export const createPatientInputSchema = z.object({
-  address: z.string().optional(),
   birthDate: z.string().optional(),
   bloodType: z.string().optional(),
   email: z.string().optional(),
@@ -115,7 +114,6 @@ export const budgetSchema = z.object({
 });
 
 export const personSchema = z.object({
-  address: z.string().nullable().optional(),
   createdAt: z.coerce.date(),
   email: z.string().nullable().optional(),
   fatherName: z.string().nullable().optional(),

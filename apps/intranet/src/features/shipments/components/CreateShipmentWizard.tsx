@@ -125,7 +125,7 @@ export function CreateShipmentWizard({
               {step === "coverage" && (
                 <CoverageStep
                   state={state}
-                  patientAddress={patientData?.person.address ?? null}
+                  patientAddress={null}
                   onNext={(data) => {
                     merge(data);
                     setStep("quote");

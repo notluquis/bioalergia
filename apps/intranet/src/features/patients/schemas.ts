@@ -4,7 +4,6 @@ import { zDateString } from "@/lib/api-validate";
 const DecimalSchema = z.union([z.number(), z.string()]);
 
 export const PersonSchema = z.object({
-  address: z.string().nullable().optional(),
   createdAt: z.coerce.date(),
   email: z.string().nullable().optional(),
   fatherName: z.string().nullable().optional(),

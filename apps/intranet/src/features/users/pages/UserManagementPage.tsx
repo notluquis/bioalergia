@@ -43,7 +43,6 @@ dayjs.locale("es");
 
 type RoleOption = { id: number; name: string };
 type UserDetailsFormState = {
-  address: string;
   bankAccountNumber: string;
   bankAccountType: string;
   bankName: string;
@@ -320,7 +319,6 @@ export function UserManagementPage() {
   const updateUserProfileMutation = useMutation({
     mutationFn: async ({ payload, userId }: { payload: UserDetailsFormState; userId: number }) =>
       updateUserProfile(userId, {
-        address: toNullableField(payload.address),
         bankAccountNumber: toNullableField(payload.bankAccountNumber),
         bankAccountType: toNullableField(payload.bankAccountType),
         bankName: toNullableField(payload.bankName),
@@ -563,7 +561,6 @@ function toNullableField(value: string): null | string {
 
 function createDetailsFormState(user: User): UserDetailsFormState {
   return {
-    address: user.person.address ?? "",
     bankAccountNumber: user.employee?.bankAccountNumber ?? "",
     bankAccountType: user.employee?.bankAccountType ?? "",
     bankName: user.employee?.bankName ?? "",
@@ -800,12 +797,6 @@ function EditUserDetailsModalContent({
                     <Label>Teléfono</Label>
                     <Input />
                   </TextField>
-                  <div className="md:col-span-2">
-                    <TextField value={form.address} onChange={(v) => onChange("address", v)}>
-                      <Label>Dirección</Label>
-                      <Input />
-                    </TextField>
-                  </div>
                   <TextField value={form.position} onChange={(v) => onChange("position", v)}>
                     <Label>Cargo</Label>
                     <Input />

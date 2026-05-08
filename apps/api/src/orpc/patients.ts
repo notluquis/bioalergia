@@ -55,7 +55,6 @@ const createBudgetInputSchema = z.object({
 });
 
 const createPatientInputSchema = z.object({
-  address: z.string().optional(),
   birthDate: z.string().optional(),
   bloodType: z.string().optional(),
   email: z.string().optional(),
@@ -383,7 +382,6 @@ const patientsORPCRouterBase = {
             motherName: input.motherName,
             email: input.email || person.email,
             phone: input.phone || person.phone,
-            address: input.address || person.address,
           },
         });
       } else {
@@ -395,7 +393,6 @@ const patientsORPCRouterBase = {
             motherName: input.motherName,
             email: input.email,
             phone: input.phone,
-            address: input.address,
           },
         });
       }

@@ -5,9 +5,16 @@
 
 /* eslint-disable */
 
-import { schema as $schema, type SchemaType as $Schema } from "./schema-lite.js";
+import { schema as $schema, type SchemaType as $Schema } from "./schema-lite";
 import type { ModelResult as $ModelResult } from "@zenstackhq/orm";
 export type Person = $ModelResult<$Schema, "Person">;
+/**
+ * Structured postal/shipping address for a Person.
+ * Multiple per person allowed (home, work, etc). One marked isPrimary.
+ * Fields beyond user input (coverageCode, regionCode) are derived from
+ * the carrier's coverage API at the time the user picks region/comuna.
+ */
+export type Address = $ModelResult<$Schema, "Address">;
 export type User = $ModelResult<$Schema, "User">;
 export type DebugToken = $ModelResult<$Schema, "DebugToken">;
 export type Passkey = $ModelResult<$Schema, "Passkey">;

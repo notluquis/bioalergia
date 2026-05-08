@@ -53,7 +53,6 @@ export async function createPatientBudget(input: {
 }
 
 export async function createPatient(input: {
-  address?: string;
   birthDate?: string;
   bloodType?: string;
   email?: string;
