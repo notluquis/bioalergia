@@ -6,6 +6,66 @@ import { downloadMediaUrl, uploadMedia } from "../modules/wa-cloud/graph-client.
 
 export const waCloudMediaRoutes = new Hono();
 
+waCloudMediaRoutes.get("/conversations/:id/export", async (c) => {
+  const session = await getSessionUser(c);
+  if (!session) return c.text("Unauthorized", 401);
+  const id = Number.parseInt(c.req.param("id"), 10);
+  if (!Number.isFinite(id)) return c.text("Bad id", 400);
+  const format = (c.req.query("format") ?? "txt").toLowerCase();
+  const conv = await db.waConversation.findUnique({
+    where: { id },
+    include: { contact: true },
+  });
+  if (!conv) return c.text("Not found", 404);
+  const messages = await db.waMessage.findMany({
+    where: { conversationId: id },
+    orderBy: { timestamp: "asc" },
+    select: {
+      id: true,
+      timestamp: true,
+      direction: true,
+      type: true,
+      body: true,
+      status: true,
+      metaMessageId: true,
+    },
+  });
+  const contactName = conv.contact.name ?? conv.contact.pushName ?? conv.contact.phoneE164;
+  if (format === "json") {
+    return c.json(
+      {
+        contact: { name: contactName, phoneE164: conv.contact.phoneE164 },
+        exportedAt: new Date().toISOString(),
+        messages,
+      },
+      200,
+      {
+        "Content-Disposition": `attachment; filename="wa-${conv.contact.phoneE164}-${id}.json"`,
+      },
+    );
+  }
+  const lines: string[] = [
+    `Conversación WhatsApp · ${contactName} (${conv.contact.phoneE164})`,
+    `Exportado: ${new Date().toISOString()}`,
+    `Mensajes: ${messages.length}`,
+    "─".repeat(60),
+    "",
+  ];
+  for (const m of messages) {
+    const ts = m.timestamp.toISOString().replace("T", " ").slice(0, 19);
+    const who = m.direction === "OUTBOUND" ? "Yo" : contactName;
+    const body =
+      m.type === "TEXT"
+        ? (m.body ?? "")
+        : `[${m.type.toLowerCase()}]${m.body ? " " + m.body : ""}`;
+    lines.push(`[${ts}] ${who}: ${body}`);
+  }
+  return c.text(lines.join("\n"), 200, {
+    "Content-Type": "text/plain; charset=utf-8",
+    "Content-Disposition": `attachment; filename="wa-${conv.contact.phoneE164}-${id}.txt"`,
+  });
+});
+
 /**
  * Multipart upload from intranet → Meta media endpoint. Returns the Meta
  * media id which the frontend then passes to the sendMedia ORPC route.

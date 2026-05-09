@@ -313,6 +313,72 @@ export const listWebhookLogsResponseSchema = z.object({
   logs: z.array(waWebhookLogSchema),
 });
 
+// ── Templates create / delete ────────────────────────────────────────────────
+
+export const createTemplateInputSchema = z.object({
+  accountId: z.number().int().positive(),
+  name: z
+    .string()
+    .min(1)
+    .max(512)
+    .regex(/^[a-z0-9_]+$/, "Solo minúsculas, números y guion bajo"),
+  language: z.string().min(2).max(10),
+  category: z.enum(["MARKETING", "UTILITY", "AUTHENTICATION"]),
+  components: z.array(z.unknown()).min(1),
+});
+
+export const createTemplateResponseSchema = z.object({
+  id: z.string(),
+  status: z.string(),
+  category: z.string(),
+});
+
+export const deleteTemplateInputSchema = z.object({
+  accountId: z.number().int().positive(),
+  name: z.string().min(1),
+  hsmId: z.string().optional(),
+});
+
+// ── Search + media gallery ───────────────────────────────────────────────────
+
+export const searchMessagesInputSchema = z.object({
+  q: z.string().min(2).max(200),
+  conversationId: z.number().int().positive().optional(),
+  limit: z.number().int().min(1).max(100).default(50),
+});
+
+export const searchMessagesResponseSchema = z.object({
+  results: z.array(
+    z.object({
+      messageId: z.number().int(),
+      conversationId: z.number().int(),
+      contactName: z.string().nullable(),
+      phoneE164: z.string(),
+      direction: waMessageDirectionSchema,
+      type: waMessageTypeSchema,
+      body: z.string().nullable(),
+      timestamp: z.coerce.date(),
+    }),
+  ),
+});
+
+export const listConversationMediaInputSchema = z.object({
+  conversationId: z.number().int().positive(),
+  limit: z.number().int().min(1).max(200).default(100),
+});
+
+export const listConversationMediaResponseSchema = z.object({
+  media: z.array(
+    z.object({
+      messageId: z.number().int(),
+      type: waMessageTypeSchema,
+      body: z.string().nullable(),
+      timestamp: z.coerce.date(),
+      out: z.boolean(),
+    }),
+  ),
+});
+
 // ── Outbound location / contacts / edit ──────────────────────────────────────
 
 export const sendLocationInputSchema = z.object({
@@ -562,6 +628,25 @@ export const waCloudContract = {
     .route({ method: "POST", path: "/messages/edit-text", tags: ["WA Cloud"] })
     .input(editTextInputSchema)
     .output(sendMessageResponseSchema),
+
+  createTemplate: oc
+    .route({ method: "POST", path: "/templates/create", tags: ["WA Cloud"] })
+    .input(createTemplateInputSchema)
+    .output(createTemplateResponseSchema),
+  deleteTemplate: oc
+    .route({ method: "POST", path: "/templates/delete", tags: ["WA Cloud"] })
+    .input(deleteTemplateInputSchema)
+    .output(waOkResponseSchema),
+
+  searchMessages: oc
+    .route({ method: "POST", path: "/messages/search", tags: ["WA Cloud"] })
+    .input(searchMessagesInputSchema)
+    .output(searchMessagesResponseSchema),
+
+  listConversationMedia: oc
+    .route({ method: "POST", path: "/messages/media-list", tags: ["WA Cloud"] })
+    .input(listConversationMediaInputSchema)
+    .output(listConversationMediaResponseSchema),
 
   // Templates
   listTemplates: oc

@@ -213,6 +213,42 @@ export async function uploadWaMedia(
   return res.json();
 }
 
+export function useCreateTemplate() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: Parameters<typeof waCloudORPCClient.createTemplate>[0]) =>
+      waCloudORPCClient.createTemplate(input),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: [...KEY, "templates"] }),
+  });
+}
+
+export function useDeleteTemplate() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: Parameters<typeof waCloudORPCClient.deleteTemplate>[0]) =>
+      waCloudORPCClient.deleteTemplate(input),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: [...KEY, "templates"] }),
+  });
+}
+
+export function useSearchMessages(input: Parameters<typeof waCloudORPCClient.searchMessages>[0] | null) {
+  return useQuery({
+    queryKey: [...KEY, "search", input],
+    enabled: Boolean(input && input.q.length >= 2),
+    queryFn: () => waCloudORPCClient.searchMessages(input!),
+    staleTime: 10_000,
+  });
+}
+
+export function useConversationMedia(conversationId: number | undefined) {
+  return useQuery({
+    queryKey: [...KEY, "media", conversationId],
+    enabled: Boolean(conversationId),
+    queryFn: () => waCloudORPCClient.listConversationMedia({ conversationId: conversationId! }),
+    staleTime: 30_000,
+  });
+}
+
 export function useTemplates(accountId?: number) {
   return useQuery({
     queryKey: [...KEY, "templates", accountId],

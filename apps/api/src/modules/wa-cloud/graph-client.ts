@@ -468,6 +468,41 @@ export async function getConversationAnalytics(params: ConversationAnalyticsPara
   return graphGet<Resp>(path, account.systemUserToken, account.graphApiVersion);
 }
 
+export type CreateTemplateInput = {
+  accountId: number;
+  name: string;
+  language: string;
+  category: "MARKETING" | "UTILITY" | "AUTHENTICATION";
+  components: unknown[];
+};
+
+export async function createTemplate(input: CreateTemplateInput) {
+  const account = await db.waBusinessAccount.findUnique({ where: { id: input.accountId } });
+  if (!account?.systemUserToken) throw new Error("Account sin token");
+  const v = account.graphApiVersion;
+  const token = account.systemUserToken;
+  return graphPost<{ id: string; status: string; category: string }>(
+    `/${account.wabaId}/message_templates`,
+    {
+      name: input.name,
+      language: input.language,
+      category: input.category,
+      components: input.components,
+    },
+    token,
+    v,
+  );
+}
+
+export async function deleteTemplate(accountId: number, name: string, hsmId?: string) {
+  const account = await db.waBusinessAccount.findUnique({ where: { id: accountId } });
+  if (!account?.systemUserToken) throw new Error("Account sin token");
+  const v = account.graphApiVersion;
+  const qs = new URLSearchParams({ name });
+  if (hsmId) qs.set("hsm_id", hsmId);
+  return graphDelete(`/${account.wabaId}/message_templates?${qs.toString()}`, {}, account.systemUserToken, v);
+}
+
 export type SendLocationInput = {
   phoneNumberId: number;
   toE164: string;

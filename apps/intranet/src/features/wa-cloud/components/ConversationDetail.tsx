@@ -467,9 +467,7 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
 
       <LabelStrip
         labels={c.conversation.etiquetas}
-        onChange={(next) =>
-          updateConv.mutate({ id: conversationId, etiquetas: next })
-        }
+        onChange={(next) => updateConv.mutate({ id: conversationId, etiquetas: next })}
       />
 
       <Card.Content className="flex flex-1 flex-col overflow-hidden p-0">
@@ -1471,9 +1469,7 @@ function LabelStrip({
   return (
     <div className="flex flex-wrap items-center gap-1.5 border-default-200 border-b bg-content1 px-3 py-2">
       <Tag size={12} className="text-default-400" />
-      {labels.length === 0 && (
-        <span className="text-default-400 text-xs">Sin etiquetas</span>
-      )}
+      {labels.length === 0 && <span className="text-default-400 text-xs">Sin etiquetas</span>}
       {labels.map((l) => (
         <Chip key={l} size="sm" color="accent" variant="soft">
           <Chip.Label>{l}</Chip.Label>

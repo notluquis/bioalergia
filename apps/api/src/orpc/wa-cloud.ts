@@ -8,14 +8,21 @@ import {
   conversationIdInput,
   conversationDetailResponseSchema,
   accountResponseSchema,
+  createTemplateInputSchema,
+  createTemplateResponseSchema,
+  deleteTemplateInputSchema,
   editTextInputSchema,
   listAccountsResponseSchema,
   listBlockedResponseSchema,
+  listConversationMediaInputSchema,
+  listConversationMediaResponseSchema,
   listConversationsInputSchema,
   listConversationsResponseSchema,
   listTemplatesResponseSchema,
   listWebhookLogsInputSchema,
   listWebhookLogsResponseSchema,
+  searchMessagesInputSchema,
+  searchMessagesResponseSchema,
   markReadInputSchema,
   phoneHealthResponseSchema,
   waPhoneIdInput,
@@ -47,6 +54,8 @@ import { logError } from "../lib/logger.ts";
 import { configureSuperjson } from "../lib/superjson-config.ts";
 import {
   blockUsers,
+  createTemplate,
+  deleteTemplate,
   editTextMessage,
   getBusinessProfile,
   getConversationAnalytics,
@@ -870,6 +879,119 @@ const waRouterBase = {
         data: { body: input.body },
       });
       return { message: updated };
+    }),
+
+  createTemplate: createWa
+    .route({ method: "POST", path: "/templates/create", tags: ["WA Cloud"] })
+    .input(createTemplateInputSchema)
+    .output(createTemplateResponseSchema)
+    .handler(async ({ input }) => {
+      const r = await createTemplate({
+        accountId: input.accountId,
+        name: input.name,
+        language: input.language,
+        category: input.category,
+        components: input.components,
+      });
+      // Best-effort local persistence so it shows up in the list before sync.
+      try {
+        await db.waTemplate.upsert({
+          where: {
+            accountId_name_language: {
+              accountId: input.accountId,
+              name: input.name,
+              language: input.language,
+            },
+          },
+          create: {
+            accountId: input.accountId,
+            metaTemplateId: r.id,
+            name: input.name,
+            language: input.language,
+            category: input.category,
+            status: r.status as "PENDING" | "APPROVED" | "REJECTED" | "DISABLED" | "PAUSED",
+            components: input.components as never,
+          },
+          update: {
+            metaTemplateId: r.id,
+            status: r.status as "PENDING" | "APPROVED" | "REJECTED" | "DISABLED" | "PAUSED",
+          },
+        });
+      } catch (err) {
+        logError("[wa-cloud.createTemplate] persist failed", { err });
+      }
+      return r;
+    }),
+
+  deleteTemplate: deleteWa
+    .route({ method: "POST", path: "/templates/delete", tags: ["WA Cloud"] })
+    .input(deleteTemplateInputSchema)
+    .output(waOkResponseSchema)
+    .handler(async ({ input }) => {
+      await deleteTemplate(input.accountId, input.name, input.hsmId);
+      try {
+        await db.waTemplate.deleteMany({
+          where: { accountId: input.accountId, name: input.name },
+        });
+      } catch (err) {
+        logError("[wa-cloud.deleteTemplate] local cleanup failed", { err });
+      }
+      return { status: "ok" as const };
+    }),
+
+  searchMessages: readWa
+    .route({ method: "POST", path: "/messages/search", tags: ["WA Cloud"] })
+    .input(searchMessagesInputSchema)
+    .output(searchMessagesResponseSchema)
+    .handler(async ({ input }) => {
+      const where: Record<string, unknown> = {
+        body: { contains: input.q, mode: "insensitive" },
+      };
+      if (input.conversationId) where.conversationId = input.conversationId;
+      const rows = await db.waMessage.findMany({
+        where,
+        orderBy: { timestamp: "desc" },
+        take: input.limit,
+        include: { conversation: { include: { contact: true } } },
+      });
+      return {
+        results: rows.map((r) => ({
+          messageId: r.id,
+          conversationId: r.conversationId,
+          contactName:
+            r.conversation.contact.name ?? r.conversation.contact.pushName ?? null,
+          phoneE164: r.conversation.contact.phoneE164,
+          direction: r.direction,
+          type: r.type,
+          body: r.body,
+          timestamp: r.timestamp,
+        })),
+      };
+    }),
+
+  listConversationMedia: readWa
+    .route({ method: "POST", path: "/messages/media-list", tags: ["WA Cloud"] })
+    .input(listConversationMediaInputSchema)
+    .output(listConversationMediaResponseSchema)
+    .handler(async ({ input }) => {
+      const rows = await db.waMessage.findMany({
+        where: {
+          conversationId: input.conversationId,
+          type: { in: ["IMAGE", "VIDEO", "AUDIO", "DOCUMENT", "STICKER"] },
+        },
+        orderBy: { timestamp: "desc" },
+        take: input.limit,
+        select: { id: true, type: true, body: true, timestamp: true, direction: true },
+      });
+      return {
+        media: rows.map((r) => ({
+          messageId: r.id,
+          type: r.type,
+          body: r.body,
+          timestamp: r.timestamp,
+          out: r.direction === "OUTBOUND",
+        })),
+      };
     }),
 
   listTemplates: readWa

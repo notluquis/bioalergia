@@ -1,13 +1,5 @@
-import { Button, Modal, Spinner } from "@heroui/react";
-import {
-  Download,
-  FileText,
-  Image as ImageIcon,
-  Pause,
-  Play,
-  Video as VideoIcon,
-  X,
-} from "lucide-react";
+import { Button, Modal, Skeleton, Spinner } from "@heroui/react";
+import { Download, FileText, Pause, Play, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 type Props = {
@@ -40,38 +32,17 @@ export function MediaAttachment({ messageId, type, caption, out = false }: Props
 
   const url = `/api/wa-cloud/media/${messageId}`;
 
-  const placeholder = (
-    <div className="flex h-40 w-60 items-center justify-center rounded-xl bg-default-100">
-      {errored ? (
-        <span className="text-danger text-xs">No se pudo cargar</span>
-      ) : visible ? (
-        <Spinner size="sm" />
-      ) : (
-        <PlaceholderIcon type={type} />
-      )}
-    </div>
-  );
-
   if (type === "STICKER") {
     return (
       <div ref={ref}>
-        {visible && !errored ? (
-          <img
-            src={url}
-            alt="sticker"
-            className="size-32 select-none object-contain"
-            onError={() => setErrored(true)}
-          />
-        ) : (
-          <div className="flex size-32 items-center justify-center">
-            {errored ? (
-              <span className="text-danger text-xs">x</span>
-            ) : visible ? (
-              <Spinner size="sm" />
-            ) : (
-              <ImageIcon className="size-8 text-default-400" />
-            )}
+        {errored ? (
+          <div className="flex size-32 items-center justify-center rounded-xl bg-default-100 text-danger text-xs">
+            <X size={20} />
           </div>
+        ) : visible ? (
+          <StickerImage src={url} onError={() => setErrored(true)} />
+        ) : (
+          <Skeleton className="size-32 rounded-xl" />
         )}
       </div>
     );
@@ -80,7 +51,13 @@ export function MediaAttachment({ messageId, type, caption, out = false }: Props
   if (type === "IMAGE") {
     return (
       <div ref={ref}>
-        {visible && !errored ? <ImageLightbox src={url} alt={caption ?? "imagen"} /> : placeholder}
+        {errored ? (
+          <ErrorBox label="No se pudo cargar la imagen" />
+        ) : visible ? (
+          <ImageLightbox src={url} alt={caption ?? "imagen"} onError={() => setErrored(true)} />
+        ) : (
+          <Skeleton className="h-72 w-full max-w-xs rounded-lg" />
+        )}
         {caption && (
           <p className="mt-1 whitespace-pre-wrap break-words text-sm leading-snug">{caption}</p>
         )}
@@ -91,10 +68,12 @@ export function MediaAttachment({ messageId, type, caption, out = false }: Props
   if (type === "VIDEO") {
     return (
       <div ref={ref}>
-        {visible && !errored ? (
+        {errored ? (
+          <ErrorBox label="No se pudo cargar el video" />
+        ) : visible ? (
           <VideoLightbox src={url} onError={() => setErrored(true)} />
         ) : (
-          placeholder
+          <Skeleton className="h-72 w-full max-w-xs rounded-lg" />
         )}
         {caption && (
           <p className="mt-1 whitespace-pre-wrap break-words text-sm leading-snug">{caption}</p>
@@ -106,10 +85,12 @@ export function MediaAttachment({ messageId, type, caption, out = false }: Props
   if (type === "AUDIO") {
     return (
       <div ref={ref}>
-        {visible && !errored ? (
+        {errored ? (
+          <ErrorBox label="No se pudo cargar el audio" />
+        ) : visible ? (
           <AudioPlayer src={url} out={out} onError={() => setErrored(true)} />
         ) : (
-          <div className="h-12 w-64 rounded-full bg-default-100" />
+          <Skeleton className="h-12 w-64 rounded-full" />
         )}
       </div>
     );
@@ -137,19 +118,59 @@ export function MediaAttachment({ messageId, type, caption, out = false }: Props
   );
 }
 
-function ImageLightbox({ src, alt }: { src: string; alt: string }) {
+function ErrorBox({ label }: { label: string }) {
+  return (
+    <div className="flex h-40 w-60 items-center justify-center rounded-xl bg-danger-50 text-danger text-xs">
+      {label}
+    </div>
+  );
+}
+
+function StickerImage({ src, onError }: { src: string; onError: () => void }) {
+  const [loaded, setLoaded] = useState(false);
+  return (
+    <div className="relative size-32">
+      {!loaded && <Skeleton className="absolute inset-0 size-32 rounded-xl" />}
+      <img
+        src={src}
+        alt="sticker"
+        className={`size-32 select-none object-contain transition-opacity ${
+          loaded ? "opacity-100" : "opacity-0"
+        }`}
+        onLoad={() => setLoaded(true)}
+        onError={onError}
+      />
+    </div>
+  );
+}
+
+function ImageLightbox({
+  src,
+  alt,
+  onError,
+}: {
+  src: string;
+  alt: string;
+  onError?: () => void;
+}) {
   const [open, setOpen] = useState(false);
+  const [loaded, setLoaded] = useState(false);
   return (
     <>
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="block max-w-xs overflow-hidden rounded-lg"
+        className="relative block max-w-xs overflow-hidden rounded-lg"
       >
+        {!loaded && <Skeleton className="absolute inset-0 h-72 w-full max-w-xs rounded-lg" />}
         <img
           src={src}
           alt={alt}
-          className="max-h-72 w-full max-w-xs cursor-zoom-in object-cover transition hover:opacity-95"
+          className={`max-h-72 w-full max-w-xs cursor-zoom-in object-cover transition-opacity hover:opacity-95 ${
+            loaded ? "opacity-100" : "opacity-0"
+          }`}
+          onLoad={() => setLoaded(true)}
+          onError={onError}
         />
       </button>
       <Modal>
@@ -202,6 +223,7 @@ function ImageLightbox({ src, alt }: { src: string; alt: string }) {
 
 function VideoLightbox({ src, onError }: { src: string; onError: () => void }) {
   const [open, setOpen] = useState(false);
+  const [loaded, setLoaded] = useState(false);
   return (
     <>
       <button
@@ -209,18 +231,24 @@ function VideoLightbox({ src, onError }: { src: string; onError: () => void }) {
         onClick={() => setOpen(true)}
         className="relative block w-full max-w-xs overflow-hidden rounded-lg bg-black"
       >
+        {!loaded && <Skeleton className="absolute inset-0 h-72 w-full max-w-xs rounded-lg" />}
         <video
           src={src}
-          className="max-h-72 w-full max-w-xs object-cover"
+          className={`max-h-72 w-full max-w-xs object-cover transition-opacity ${
+            loaded ? "opacity-100" : "opacity-0"
+          }`}
           preload="metadata"
           muted
+          onLoadedMetadata={() => setLoaded(true)}
           onError={onError}
         >
           <track kind="captions" />
         </video>
-        <span className="-translate-x-1/2 -translate-y-1/2 absolute top-1/2 left-1/2 flex size-12 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur">
-          <Play size={24} className="ml-0.5" />
-        </span>
+        {loaded && (
+          <span className="-translate-x-1/2 -translate-y-1/2 absolute top-1/2 left-1/2 flex size-12 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur">
+            <Play size={24} className="ml-0.5" />
+          </span>
+        )}
       </button>
       <Modal>
         <Modal.Backdrop
@@ -252,11 +280,20 @@ function VideoLightbox({ src, onError }: { src: string; onError: () => void }) {
   );
 }
 
-function AudioPlayer({ src, out, onError }: { src: string; out: boolean; onError: () => void }) {
+function AudioPlayer({
+  src,
+  out,
+  onError,
+}: {
+  src: string;
+  out: boolean;
+  onError: () => void;
+}) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const [playing, setPlaying] = useState(false);
   const [duration, setDuration] = useState(0);
   const [current, setCurrent] = useState(0);
+  const [loaded, setLoaded] = useState(false);
 
   const fmt = (s: number) => {
     if (!Number.isFinite(s)) return "0:00";
@@ -289,14 +326,24 @@ function AudioPlayer({ src, out, onError }: { src: string; out: boolean; onError
       <button
         type="button"
         onClick={toggle}
-        className={`flex size-9 shrink-0 items-center justify-center rounded-full ${iconBg} transition hover:opacity-90`}
+        disabled={!loaded}
+        className={`flex size-9 shrink-0 items-center justify-center rounded-full ${iconBg} transition hover:opacity-90 disabled:opacity-50`}
         aria-label={playing ? "Pausar" : "Reproducir"}
       >
-        {playing ? <Pause size={16} /> : <Play size={16} className="ml-0.5" />}
+        {!loaded ? (
+          <Spinner size="sm" />
+        ) : playing ? (
+          <Pause size={16} />
+        ) : (
+          <Play size={16} className="ml-0.5" />
+        )}
       </button>
       <div className="flex-1">
         <div className={`relative h-1 w-full overflow-hidden rounded-full ${trackBg}`}>
-          <div className={`absolute top-0 left-0 h-full ${fillBg}`} style={{ width: `${pct}%` }} />
+          <div
+            className={`absolute top-0 left-0 h-full ${fillBg}`}
+            style={{ width: `${pct}%` }}
+          />
           <input
             type="range"
             min={0}
@@ -304,13 +351,12 @@ function AudioPlayer({ src, out, onError }: { src: string; out: boolean; onError
             step={0.1}
             value={current}
             onChange={seek}
+            disabled={!loaded}
             className="absolute inset-0 cursor-pointer opacity-0"
             aria-label="Posición"
           />
         </div>
-        <p
-          className={`mt-0.5 text-[10px] ${out ? "text-success-foreground/80" : "text-default-500"}`}
-        >
+        <p className={`mt-0.5 text-[10px] ${out ? "text-success-foreground/80" : "text-default-500"}`}>
           {fmt(current)} / {fmt(duration)}
         </p>
       </div>
@@ -321,7 +367,10 @@ function AudioPlayer({ src, out, onError }: { src: string; out: boolean; onError
         onPlay={() => setPlaying(true)}
         onPause={() => setPlaying(false)}
         onEnded={() => setPlaying(false)}
-        onLoadedMetadata={(e) => setDuration(e.currentTarget.duration)}
+        onLoadedMetadata={(e) => {
+          setDuration(e.currentTarget.duration);
+          setLoaded(true);
+        }}
         onTimeUpdate={(e) => setCurrent(e.currentTarget.currentTime)}
         onError={onError}
       >
@@ -331,9 +380,3 @@ function AudioPlayer({ src, out, onError }: { src: string; out: boolean; onError
   );
 }
 
-function PlaceholderIcon({ type }: { type: string }) {
-  const cls = "size-8 text-default-400";
-  if (type === "VIDEO") return <VideoIcon className={cls} />;
-  if (type === "DOCUMENT") return <FileText className={cls} />;
-  return <ImageIcon className={cls} />;
-}

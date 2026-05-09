@@ -30,7 +30,7 @@ export function WaCloudAnalyticsPage() {
         label: a.displayName ?? a.wabaId,
       })),
     ],
-    [accounts.data],
+    [accounts.data]
   );
 
   const { startUnix, endUnix } = useMemo(() => {
@@ -48,7 +48,7 @@ export function WaCloudAnalyticsPage() {
           endUnix,
           granularity: "DAILY",
         }
-      : null,
+      : null
   );
 
   const points = analytics.data?.dataPoints ?? [];
@@ -240,15 +240,7 @@ export function WaCloudAnalyticsPage() {
   );
 }
 
-function KpiCard({
-  icon,
-  label,
-  value,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-}) {
+function KpiCard({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
     <Card>
       <Card.Content className="space-y-1 p-4">
