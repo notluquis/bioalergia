@@ -1803,10 +1803,7 @@ function ScheduleSendModal({
                   </p>
                   <ul className="space-y-1">
                     {pending.map((s) => (
-                      <li
-                        key={s.id}
-                        className="flex items-center justify-between gap-2 text-xs"
-                      >
+                      <li key={s.id} className="flex items-center justify-between gap-2 text-xs">
                         <div className="min-w-0 flex-1">
                           <p className="font-mono text-default-500">
                             {dayjs(s.scheduledAt).format("DD-MM HH:mm")}

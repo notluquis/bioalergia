@@ -8,8 +8,13 @@ import {
   conversationIdInput,
   conversationDetailResponseSchema,
   accountResponseSchema,
+  broadcastDetailResponseSchema,
+  broadcastIdInputSchema,
+  broadcastSummarySchema,
   cancelScheduledInputSchema,
+  createBroadcastInputSchema,
   createTemplateInputSchema,
+  listBroadcastsResponseSchema,
   createTemplateResponseSchema,
   deleteTemplateInputSchema,
   editTextInputSchema,
@@ -941,6 +946,102 @@ const waRouterBase = {
       } catch (err) {
         logError("[wa-cloud.deleteTemplate] local cleanup failed", { err });
       }
+      return { status: "ok" as const };
+    }),
+
+  createBroadcast: createWa
+    .route({ method: "POST", path: "/broadcasts/create", tags: ["WA Cloud"] })
+    .input(createBroadcastInputSchema)
+    .output(broadcastSummarySchema)
+    .handler(async ({ context, input }) => {
+      const bc = await db.waBroadcast.create({
+        data: {
+          accountId: input.accountId,
+          phoneNumberId: input.phoneNumberId,
+          name: input.name,
+          templateName: input.templateName,
+          templateLanguage: input.templateLanguage,
+          scheduledAt: input.scheduledAt ?? null,
+          rateLimitPerSecond: input.rateLimitPerSecond,
+          totalRecipients: input.recipients.length,
+          createdByUserId: context.user.id,
+          status: input.scheduledAt ? "QUEUED" : "DRAFT",
+          recipients: {
+            create: input.recipients.map((r) => ({
+              phoneE164: r.phoneE164,
+              variables: r.variables as never,
+            })),
+          },
+        },
+      });
+      return bc;
+    }),
+
+  listBroadcasts: readWa
+    .route({ method: "GET", path: "/broadcasts", tags: ["WA Cloud"] })
+    .input(z.object({}).optional())
+    .output(listBroadcastsResponseSchema)
+    .handler(async () => {
+      const rows = await db.waBroadcast.findMany({
+        orderBy: { createdAt: "desc" },
+        take: 100,
+      });
+      return { broadcasts: rows };
+    }),
+
+  getBroadcast: readWa
+    .route({ method: "POST", path: "/broadcasts/get", tags: ["WA Cloud"] })
+    .input(broadcastIdInputSchema)
+    .output(broadcastDetailResponseSchema)
+    .handler(async ({ input }) => {
+      const bc = await db.waBroadcast.findUnique({ where: { id: input.id } });
+      if (!bc) throw new ORPCError("NOT_FOUND", { message: "Broadcast no encontrado" });
+      const recipients = await db.waBroadcastRecipient.findMany({
+        where: { broadcastId: bc.id },
+        orderBy: { id: "asc" },
+        take: 1000,
+      });
+      return {
+        broadcast: bc,
+        recipients: recipients.map((r) => ({
+          ...r,
+          variables: (r.variables as unknown as string[]) ?? [],
+        })),
+      };
+    }),
+
+  startBroadcast: writeWa
+    .route({ method: "POST", path: "/broadcasts/start", tags: ["WA Cloud"] })
+    .input(broadcastIdInputSchema)
+    .output(broadcastSummarySchema)
+    .handler(async ({ input }) => {
+      const bc = await db.waBroadcast.findUnique({ where: { id: input.id } });
+      if (!bc) throw new ORPCError("NOT_FOUND", { message: "Broadcast no encontrado" });
+      if (bc.status !== "DRAFT" && bc.status !== "QUEUED") {
+        throw new ORPCError("BAD_REQUEST", {
+          message: `Estado ${bc.status} no permite iniciar`,
+        });
+      }
+      const updated = await db.waBroadcast.update({
+        where: { id: bc.id },
+        data: { status: "QUEUED", scheduledAt: bc.scheduledAt ?? new Date() },
+      });
+      return updated;
+    }),
+
+  cancelBroadcast: deleteWa
+    .route({ method: "POST", path: "/broadcasts/cancel", tags: ["WA Cloud"] })
+    .input(broadcastIdInputSchema)
+    .output(waOkResponseSchema)
+    .handler(async ({ input }) => {
+      await db.waBroadcast.update({
+        where: { id: input.id },
+        data: { status: "CANCELLED", finishedAt: new Date() },
+      });
+      await db.waBroadcastRecipient.updateMany({
+        where: { broadcastId: input.id, status: "PENDING" },
+        data: { status: "SKIPPED", errorMessage: "Broadcast cancelado" },
+      });
       return { status: "ok" as const };
     }),
 

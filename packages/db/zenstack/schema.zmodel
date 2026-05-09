@@ -3210,6 +3210,7 @@ model WaBusinessAccount {
 
   phoneNumbers        WaPhoneNumber[]
   templates           WaTemplate[]
+  broadcasts          WaBroadcast[]
 
   @@deny('all', auth() == null)
   @@allow('read,create,update,delete', auth().status == 'ACTIVE')
@@ -3231,6 +3232,7 @@ model WaPhoneNumber {
   messages            WaMessage[]
   conversations       WaConversationChannel[]
   scheduledMessages   WaScheduledMessage[]
+  broadcasts          WaBroadcast[]
 
   @@index([accountId])
   @@deny('all', auth() == null)
@@ -3391,6 +3393,76 @@ enum WaScheduledStatus {
   SENT
   FAILED
   CANCELLED
+}
+
+enum WaBroadcastStatus {
+  DRAFT
+  QUEUED
+  SENDING
+  DONE
+  CANCELLED
+  FAILED
+}
+
+enum WaBroadcastRecipientStatus {
+  PENDING
+  SENT
+  FAILED
+  SKIPPED
+}
+
+model WaBroadcast {
+  id                   Int                  @id @default(autoincrement())
+  accountId            Int                  @map("account_id")
+  phoneNumberId        Int                  @map("phone_number_id")
+  name                 String
+  templateName         String               @map("template_name")
+  templateLanguage     String               @map("template_language")
+  status               WaBroadcastStatus    @default(DRAFT)
+  scheduledAt          DateTime?            @map("scheduled_at")
+  startedAt            DateTime?            @map("started_at")
+  finishedAt           DateTime?            @map("finished_at")
+  totalRecipients      Int                  @default(0) @map("total_recipients")
+  sentCount            Int                  @default(0) @map("sent_count")
+  failedCount          Int                  @default(0) @map("failed_count")
+  rateLimitPerSecond   Int                  @default(5) @map("rate_limit_per_second")
+  createdByUserId      Int                  @map("created_by_user_id")
+  errorMessage         String?              @map("error_message")
+  createdAt            DateTime             @default(now()) @map("created_at")
+  updatedAt            DateTime             @default(now()) @updatedAt @map("updated_at")
+
+  account              WaBusinessAccount    @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  phoneNumber          WaPhoneNumber        @relation(fields: [phoneNumberId], references: [id], onDelete: Cascade)
+  recipients           WaBroadcastRecipient[]
+
+  @@index([status])
+  @@index([scheduledAt])
+  @@deny('all', auth() == null)
+  @@allow('read,create,update,delete', auth().status == 'ACTIVE')
+  @@map("wa_broadcasts")
+}
+
+model WaBroadcastRecipient {
+  id              Int                          @id @default(autoincrement())
+  broadcastId     Int                          @map("broadcast_id")
+  phoneE164       String                       @map("phone_e164")
+  variables       Json                         @default("[]")
+  status          WaBroadcastRecipientStatus   @default(PENDING)
+  sentMessageId   Int?                         @map("sent_message_id")
+  metaMessageId   String?                      @map("meta_message_id")
+  errorMessage    String?                      @map("error_message")
+  attempts        Int                          @default(0)
+  sentAt          DateTime?                    @map("sent_at")
+  createdAt       DateTime                     @default(now()) @map("created_at")
+  updatedAt       DateTime                     @default(now()) @updatedAt @map("updated_at")
+
+  broadcast       WaBroadcast                  @relation(fields: [broadcastId], references: [id], onDelete: Cascade)
+
+  @@unique([broadcastId, phoneE164])
+  @@index([broadcastId, status])
+  @@deny('all', auth() == null)
+  @@allow('read,create,update,delete', auth().status == 'ACTIVE')
+  @@map("wa_broadcast_recipients")
 }
 
 model WaScheduledMessage {

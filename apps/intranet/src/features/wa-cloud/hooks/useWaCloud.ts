@@ -213,6 +213,54 @@ export async function uploadWaMedia(
   return res.json();
 }
 
+export function useBroadcasts() {
+  return useQuery({
+    queryKey: [...KEY, "broadcasts"],
+    queryFn: () => waCloudORPCClient.listBroadcasts({}),
+    refetchInterval: 5000,
+  });
+}
+
+export function useBroadcast(id: number | undefined) {
+  return useQuery({
+    queryKey: [...KEY, "broadcast", id],
+    enabled: Boolean(id),
+    queryFn: () => waCloudORPCClient.getBroadcast({ id: id! }),
+    refetchInterval: 3000,
+  });
+}
+
+export function useCreateBroadcast() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: Parameters<typeof waCloudORPCClient.createBroadcast>[0]) =>
+      waCloudORPCClient.createBroadcast(input),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: [...KEY, "broadcasts"] }),
+  });
+}
+
+export function useStartBroadcast() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => waCloudORPCClient.startBroadcast({ id }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: [...KEY, "broadcasts"] });
+      void qc.invalidateQueries({ queryKey: [...KEY, "broadcast"] });
+    },
+  });
+}
+
+export function useCancelBroadcast() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => waCloudORPCClient.cancelBroadcast({ id }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: [...KEY, "broadcasts"] });
+      void qc.invalidateQueries({ queryKey: [...KEY, "broadcast"] });
+    },
+  });
+}
+
 export function useScheduleMessage() {
   const qc = useQueryClient();
   return useMutation({

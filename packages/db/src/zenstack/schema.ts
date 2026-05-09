@@ -10626,6 +10626,12 @@ export class SchemaType implements SchemaDef {
                     type: "WaTemplate",
                     array: true,
                     relation: { opposite: "account" }
+                },
+                broadcasts: {
+                    name: "broadcasts",
+                    type: "WaBroadcast",
+                    array: true,
+                    relation: { opposite: "account" }
                 }
             },
             attributes: [
@@ -10719,6 +10725,12 @@ export class SchemaType implements SchemaDef {
                 scheduledMessages: {
                     name: "scheduledMessages",
                     type: "WaScheduledMessage",
+                    array: true,
+                    relation: { opposite: "phoneNumber" }
+                },
+                broadcasts: {
+                    name: "broadcasts",
+                    type: "WaBroadcast",
                     array: true,
                     relation: { opposite: "phoneNumber" }
                 }
@@ -11357,6 +11369,247 @@ export class SchemaType implements SchemaDef {
             idFields: ["id"],
             uniqueFields: {
                 id: { type: "Int" }
+            }
+        },
+        WaBroadcast: {
+            name: "WaBroadcast",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                accountId: {
+                    name: "accountId",
+                    type: "Int",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("account_id") }] }] as readonly AttributeApplication[],
+                    foreignKeyFor: [
+                        "account"
+                    ] as readonly string[]
+                },
+                phoneNumberId: {
+                    name: "phoneNumberId",
+                    type: "Int",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("phone_number_id") }] }] as readonly AttributeApplication[],
+                    foreignKeyFor: [
+                        "phoneNumber"
+                    ] as readonly string[]
+                },
+                name: {
+                    name: "name",
+                    type: "String"
+                },
+                templateName: {
+                    name: "templateName",
+                    type: "String",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("template_name") }] }] as readonly AttributeApplication[]
+                },
+                templateLanguage: {
+                    name: "templateLanguage",
+                    type: "String",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("template_language") }] }] as readonly AttributeApplication[]
+                },
+                status: {
+                    name: "status",
+                    type: "WaBroadcastStatus",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("DRAFT") }] }] as readonly AttributeApplication[],
+                    default: "DRAFT" as FieldDefault
+                },
+                scheduledAt: {
+                    name: "scheduledAt",
+                    type: "DateTime",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("scheduled_at") }] }] as readonly AttributeApplication[]
+                },
+                startedAt: {
+                    name: "startedAt",
+                    type: "DateTime",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("started_at") }] }] as readonly AttributeApplication[]
+                },
+                finishedAt: {
+                    name: "finishedAt",
+                    type: "DateTime",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("finished_at") }] }] as readonly AttributeApplication[]
+                },
+                totalRecipients: {
+                    name: "totalRecipients",
+                    type: "Int",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("total_recipients") }] }] as readonly AttributeApplication[],
+                    default: 0 as FieldDefault
+                },
+                sentCount: {
+                    name: "sentCount",
+                    type: "Int",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("sent_count") }] }] as readonly AttributeApplication[],
+                    default: 0 as FieldDefault
+                },
+                failedCount: {
+                    name: "failedCount",
+                    type: "Int",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("failed_count") }] }] as readonly AttributeApplication[],
+                    default: 0 as FieldDefault
+                },
+                rateLimitPerSecond: {
+                    name: "rateLimitPerSecond",
+                    type: "Int",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(5) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("rate_limit_per_second") }] }] as readonly AttributeApplication[],
+                    default: 5 as FieldDefault
+                },
+                createdByUserId: {
+                    name: "createdByUserId",
+                    type: "Int",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_by_user_id") }] }] as readonly AttributeApplication[]
+                },
+                errorMessage: {
+                    name: "errorMessage",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("error_message") }] }] as readonly AttributeApplication[]
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@updatedAt" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                account: {
+                    name: "account",
+                    type: "WaBusinessAccount",
+                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("accountId")]) }, { name: "references", value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("Cascade") }] }] as readonly AttributeApplication[],
+                    relation: { opposite: "broadcasts", fields: ["accountId"], references: ["id"], onDelete: "Cascade" }
+                },
+                phoneNumber: {
+                    name: "phoneNumber",
+                    type: "WaPhoneNumber",
+                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("phoneNumberId")]) }, { name: "references", value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("Cascade") }] }] as readonly AttributeApplication[],
+                    relation: { opposite: "broadcasts", fields: ["phoneNumberId"], references: ["id"], onDelete: "Cascade" }
+                },
+                recipients: {
+                    name: "recipients",
+                    type: "WaBroadcastRecipient",
+                    array: true,
+                    relation: { opposite: "broadcast" }
+                }
+            },
+            attributes: [
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("WaBroadcastStatus", [ExpressionUtils.field("status")]) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("DateTime", [ExpressionUtils.field("scheduledAt")]) }] },
+                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read,create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
+                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("wa_broadcasts") }] }
+            ] as readonly AttributeApplication[],
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" }
+            }
+        },
+        WaBroadcastRecipient: {
+            name: "WaBroadcastRecipient",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                broadcastId: {
+                    name: "broadcastId",
+                    type: "Int",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("broadcast_id") }] }] as readonly AttributeApplication[],
+                    foreignKeyFor: [
+                        "broadcast"
+                    ] as readonly string[]
+                },
+                phoneE164: {
+                    name: "phoneE164",
+                    type: "String",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("phone_e164") }] }] as readonly AttributeApplication[]
+                },
+                variables: {
+                    name: "variables",
+                    type: "Json",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("[]") }] }] as readonly AttributeApplication[],
+                    default: "[]" as FieldDefault
+                },
+                status: {
+                    name: "status",
+                    type: "WaBroadcastRecipientStatus",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("PENDING") }] }] as readonly AttributeApplication[],
+                    default: "PENDING" as FieldDefault
+                },
+                sentMessageId: {
+                    name: "sentMessageId",
+                    type: "Int",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("sent_message_id") }] }] as readonly AttributeApplication[]
+                },
+                metaMessageId: {
+                    name: "metaMessageId",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("meta_message_id") }] }] as readonly AttributeApplication[]
+                },
+                errorMessage: {
+                    name: "errorMessage",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("error_message") }] }] as readonly AttributeApplication[]
+                },
+                attempts: {
+                    name: "attempts",
+                    type: "Int",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }] as readonly AttributeApplication[],
+                    default: 0 as FieldDefault
+                },
+                sentAt: {
+                    name: "sentAt",
+                    type: "DateTime",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("sent_at") }] }] as readonly AttributeApplication[]
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@updatedAt" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                broadcast: {
+                    name: "broadcast",
+                    type: "WaBroadcast",
+                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("broadcastId")]) }, { name: "references", value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("Cascade") }] }] as readonly AttributeApplication[],
+                    relation: { opposite: "recipients", fields: ["broadcastId"], references: ["id"], onDelete: "Cascade" }
+                }
+            },
+            attributes: [
+                { name: "@@unique", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("broadcastId"), ExpressionUtils.field("phoneE164")]) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("broadcastId"), ExpressionUtils.field("status")]) }] },
+                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read,create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
+                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("wa_broadcast_recipients") }] }
+            ] as readonly AttributeApplication[],
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" },
+                broadcastId_phoneE164: { broadcastId: { type: "Int" }, phoneE164: { type: "String" } }
             }
         },
         WaScheduledMessage: {
@@ -12457,6 +12710,26 @@ export class SchemaType implements SchemaDef {
                 SENT: "SENT",
                 FAILED: "FAILED",
                 CANCELLED: "CANCELLED"
+            }
+        },
+        WaBroadcastStatus: {
+            name: "WaBroadcastStatus",
+            values: {
+                DRAFT: "DRAFT",
+                QUEUED: "QUEUED",
+                SENDING: "SENDING",
+                DONE: "DONE",
+                CANCELLED: "CANCELLED",
+                FAILED: "FAILED"
+            }
+        },
+        WaBroadcastRecipientStatus: {
+            name: "WaBroadcastRecipientStatus",
+            values: {
+                PENDING: "PENDING",
+                SENT: "SENT",
+                FAILED: "FAILED",
+                SKIPPED: "SKIPPED"
             }
         },
         ExpenseScope: {

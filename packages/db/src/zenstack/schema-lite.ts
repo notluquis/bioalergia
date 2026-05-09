@@ -8674,6 +8674,12 @@ export class SchemaType implements SchemaDef {
                     type: "WaTemplate",
                     array: true,
                     relation: { opposite: "account" }
+                },
+                broadcasts: {
+                    name: "broadcasts",
+                    type: "WaBroadcast",
+                    array: true,
+                    relation: { opposite: "account" }
                 }
             },
             idFields: ["id"],
@@ -8753,6 +8759,12 @@ export class SchemaType implements SchemaDef {
                 scheduledMessages: {
                     name: "scheduledMessages",
                     type: "WaScheduledMessage",
+                    array: true,
+                    relation: { opposite: "phoneNumber" }
+                },
+                broadcasts: {
+                    name: "broadcasts",
+                    type: "WaBroadcast",
                     array: true,
                     relation: { opposite: "phoneNumber" }
                 }
@@ -9270,6 +9282,201 @@ export class SchemaType implements SchemaDef {
             idFields: ["id"],
             uniqueFields: {
                 id: { type: "Int" }
+            }
+        },
+        WaBroadcast: {
+            name: "WaBroadcast",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                accountId: {
+                    name: "accountId",
+                    type: "Int",
+                    foreignKeyFor: [
+                        "account"
+                    ] as readonly string[]
+                },
+                phoneNumberId: {
+                    name: "phoneNumberId",
+                    type: "Int",
+                    foreignKeyFor: [
+                        "phoneNumber"
+                    ] as readonly string[]
+                },
+                name: {
+                    name: "name",
+                    type: "String"
+                },
+                templateName: {
+                    name: "templateName",
+                    type: "String"
+                },
+                templateLanguage: {
+                    name: "templateLanguage",
+                    type: "String"
+                },
+                status: {
+                    name: "status",
+                    type: "WaBroadcastStatus",
+                    default: "DRAFT" as FieldDefault
+                },
+                scheduledAt: {
+                    name: "scheduledAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                startedAt: {
+                    name: "startedAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                finishedAt: {
+                    name: "finishedAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                totalRecipients: {
+                    name: "totalRecipients",
+                    type: "Int",
+                    default: 0 as FieldDefault
+                },
+                sentCount: {
+                    name: "sentCount",
+                    type: "Int",
+                    default: 0 as FieldDefault
+                },
+                failedCount: {
+                    name: "failedCount",
+                    type: "Int",
+                    default: 0 as FieldDefault
+                },
+                rateLimitPerSecond: {
+                    name: "rateLimitPerSecond",
+                    type: "Int",
+                    default: 5 as FieldDefault
+                },
+                createdByUserId: {
+                    name: "createdByUserId",
+                    type: "Int"
+                },
+                errorMessage: {
+                    name: "errorMessage",
+                    type: "String",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                account: {
+                    name: "account",
+                    type: "WaBusinessAccount",
+                    relation: { opposite: "broadcasts", fields: ["accountId"], references: ["id"], onDelete: "Cascade" }
+                },
+                phoneNumber: {
+                    name: "phoneNumber",
+                    type: "WaPhoneNumber",
+                    relation: { opposite: "broadcasts", fields: ["phoneNumberId"], references: ["id"], onDelete: "Cascade" }
+                },
+                recipients: {
+                    name: "recipients",
+                    type: "WaBroadcastRecipient",
+                    array: true,
+                    relation: { opposite: "broadcast" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" }
+            }
+        },
+        WaBroadcastRecipient: {
+            name: "WaBroadcastRecipient",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                broadcastId: {
+                    name: "broadcastId",
+                    type: "Int",
+                    foreignKeyFor: [
+                        "broadcast"
+                    ] as readonly string[]
+                },
+                phoneE164: {
+                    name: "phoneE164",
+                    type: "String"
+                },
+                variables: {
+                    name: "variables",
+                    type: "Json",
+                    default: "[]" as FieldDefault
+                },
+                status: {
+                    name: "status",
+                    type: "WaBroadcastRecipientStatus",
+                    default: "PENDING" as FieldDefault
+                },
+                sentMessageId: {
+                    name: "sentMessageId",
+                    type: "Int",
+                    optional: true
+                },
+                metaMessageId: {
+                    name: "metaMessageId",
+                    type: "String",
+                    optional: true
+                },
+                errorMessage: {
+                    name: "errorMessage",
+                    type: "String",
+                    optional: true
+                },
+                attempts: {
+                    name: "attempts",
+                    type: "Int",
+                    default: 0 as FieldDefault
+                },
+                sentAt: {
+                    name: "sentAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                broadcast: {
+                    name: "broadcast",
+                    type: "WaBroadcast",
+                    relation: { opposite: "recipients", fields: ["broadcastId"], references: ["id"], onDelete: "Cascade" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" },
+                broadcastId_phoneE164: { broadcastId: { type: "Int" }, phoneE164: { type: "String" } }
             }
         },
         WaScheduledMessage: {
@@ -10274,6 +10481,26 @@ export class SchemaType implements SchemaDef {
                 SENT: "SENT",
                 FAILED: "FAILED",
                 CANCELLED: "CANCELLED"
+            }
+        },
+        WaBroadcastStatus: {
+            name: "WaBroadcastStatus",
+            values: {
+                DRAFT: "DRAFT",
+                QUEUED: "QUEUED",
+                SENDING: "SENDING",
+                DONE: "DONE",
+                CANCELLED: "CANCELLED",
+                FAILED: "FAILED"
+            }
+        },
+        WaBroadcastRecipientStatus: {
+            name: "WaBroadcastRecipientStatus",
+            values: {
+                PENDING: "PENDING",
+                SENT: "SENT",
+                FAILED: "FAILED",
+                SKIPPED: "SKIPPED"
             }
         },
         ExpenseScope: {

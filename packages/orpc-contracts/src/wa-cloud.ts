@@ -313,6 +313,82 @@ export const listWebhookLogsResponseSchema = z.object({
   logs: z.array(waWebhookLogSchema),
 });
 
+// ── Broadcasts / campaigns ───────────────────────────────────────────────────
+
+export const waBroadcastStatusSchema = z.enum([
+  "DRAFT",
+  "QUEUED",
+  "SENDING",
+  "DONE",
+  "CANCELLED",
+  "FAILED",
+]);
+
+export const waBroadcastRecipientStatusSchema = z.enum([
+  "PENDING",
+  "SENT",
+  "FAILED",
+  "SKIPPED",
+]);
+
+export const broadcastRecipientInputSchema = z.object({
+  phoneE164: z.string().min(8).max(20),
+  variables: z.array(z.string()).max(10).default([]),
+});
+
+export const createBroadcastInputSchema = z.object({
+  accountId: z.number().int().positive(),
+  phoneNumberId: z.number().int().positive(),
+  name: z.string().min(1).max(120),
+  templateName: z.string().min(1).max(512),
+  templateLanguage: z.string().min(2).max(10),
+  scheduledAt: z.coerce.date().optional(),
+  rateLimitPerSecond: z.number().int().min(1).max(80).default(5),
+  recipients: z.array(broadcastRecipientInputSchema).min(1).max(5000),
+});
+
+export const broadcastSummarySchema = z.object({
+  id: z.number().int(),
+  accountId: z.number().int(),
+  phoneNumberId: z.number().int(),
+  name: z.string(),
+  templateName: z.string(),
+  templateLanguage: z.string(),
+  status: waBroadcastStatusSchema,
+  scheduledAt: z.coerce.date().nullable(),
+  startedAt: z.coerce.date().nullable(),
+  finishedAt: z.coerce.date().nullable(),
+  totalRecipients: z.number().int(),
+  sentCount: z.number().int(),
+  failedCount: z.number().int(),
+  rateLimitPerSecond: z.number().int(),
+  errorMessage: z.string().nullable(),
+  createdAt: z.coerce.date(),
+});
+
+export const broadcastDetailRecipientSchema = z.object({
+  id: z.number().int(),
+  phoneE164: z.string(),
+  variables: z.array(z.string()),
+  status: waBroadcastRecipientStatusSchema,
+  sentMessageId: z.number().int().nullable(),
+  metaMessageId: z.string().nullable(),
+  errorMessage: z.string().nullable(),
+  attempts: z.number().int(),
+  sentAt: z.coerce.date().nullable(),
+});
+
+export const broadcastDetailResponseSchema = z.object({
+  broadcast: broadcastSummarySchema,
+  recipients: z.array(broadcastDetailRecipientSchema),
+});
+
+export const listBroadcastsResponseSchema = z.object({
+  broadcasts: z.array(broadcastSummarySchema),
+});
+
+export const broadcastIdInputSchema = z.object({ id: z.number().int().positive() });
+
 // ── Scheduled messages ───────────────────────────────────────────────────────
 
 export const waScheduledStatusSchema = z.enum(["PENDING", "SENT", "FAILED", "CANCELLED"]);
@@ -684,6 +760,27 @@ export const waCloudContract = {
   deleteTemplate: oc
     .route({ method: "POST", path: "/templates/delete", tags: ["WA Cloud"] })
     .input(deleteTemplateInputSchema)
+    .output(waOkResponseSchema),
+
+  createBroadcast: oc
+    .route({ method: "POST", path: "/broadcasts/create", tags: ["WA Cloud"] })
+    .input(createBroadcastInputSchema)
+    .output(broadcastSummarySchema),
+  listBroadcasts: oc
+    .route({ method: "GET", path: "/broadcasts", tags: ["WA Cloud"] })
+    .input(z.object({}).optional())
+    .output(listBroadcastsResponseSchema),
+  getBroadcast: oc
+    .route({ method: "POST", path: "/broadcasts/get", tags: ["WA Cloud"] })
+    .input(broadcastIdInputSchema)
+    .output(broadcastDetailResponseSchema),
+  startBroadcast: oc
+    .route({ method: "POST", path: "/broadcasts/start", tags: ["WA Cloud"] })
+    .input(broadcastIdInputSchema)
+    .output(broadcastSummarySchema),
+  cancelBroadcast: oc
+    .route({ method: "POST", path: "/broadcasts/cancel", tags: ["WA Cloud"] })
+    .input(broadcastIdInputSchema)
     .output(waOkResponseSchema),
 
   scheduleMessage: oc
