@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { zDateString } from "@/lib/api-validate";
+import { zApiDateOnly, zDateString } from "@/lib/api-validate";
 
 const DecimalSchema = z.union([z.number(), z.string()]);
 
@@ -17,7 +17,7 @@ export const PersonSchema = z.object({
 });
 
 export const PatientListItemSchema = z.object({
-  birthDate: zDateString.nullable().optional(),
+  birthDate: zApiDateOnly.nullable().optional(),
   bloodType: z.string().nullable().optional(),
   createdAt: z.coerce.date(),
   id: z.number(),
@@ -113,7 +113,7 @@ export const AttachmentSchema = z.strictObject({
 
 export const PatientDetailSchema = z.strictObject({
   attachments: z.array(AttachmentSchema),
-  birthDate: zDateString.nullable().optional(),
+  birthDate: zApiDateOnly.nullable().optional(),
   bloodType: z.string().nullable().optional(),
   budgets: z.array(BudgetSchema),
   consultations: z.array(ConsultationSchema),

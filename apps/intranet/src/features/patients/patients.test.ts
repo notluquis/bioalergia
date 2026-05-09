@@ -98,6 +98,20 @@ describe("PatientListSchema", () => {
     expect(first?.person.rut).toBeNull();
   });
 
+  it("parses patient with birthDate as Date object (SuperJSON wire shape)", () => {
+    const patient = makePatient({ birthDate: new Date("2000-10-17T00:00:00.000Z") });
+    const result = PatientListSchema.parse(normalizeDecimalValues([patient]));
+    const first = result[0];
+    expect(first).toBeDefined();
+    expect(first?.birthDate).toBe("2000-10-17");
+  });
+
+  it("parses patient with birthDate as ISO date-only string", () => {
+    const patient = makePatient({ birthDate: "2000-10-17" });
+    const result = PatientListSchema.parse(normalizeDecimalValues([patient]));
+    expect(result[0]?.birthDate).toBe("2000-10-17");
+  });
+
   it("parses patient with 2dp timestamp string (pre-SuperJSON shape)", () => {
     const patient = makePatient({
       createdAt: "2026-05-05T04:50:11.33Z",
