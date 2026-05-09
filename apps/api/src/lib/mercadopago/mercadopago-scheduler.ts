@@ -369,7 +369,18 @@ async function processPendingWebhooks(
 }
 
 function resolveWebhookReportType(reportType: string): ReportType {
-  return reportType.includes("settlement") ? "settlement" : "release";
+  const t = reportType.toLowerCase();
+  if (
+    t.includes("settlement") ||
+    t.includes("liquidaci") ||
+    t.includes("account_money") ||
+    t.includes("all_transactions") ||
+    t.includes("todas_las_transacciones") ||
+    t.includes("todas-las-transacciones")
+  ) {
+    return "settlement";
+  }
+  return "release";
 }
 
 function isCsvWebhookFile(file: { name: string; type?: string }) {

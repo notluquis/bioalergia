@@ -118,9 +118,10 @@ async function enqueueAndTrigger(payload: ReportWebhookPayload) {
     return;
   }
 
+  const normalizedType = normalizeReportType(payload.report_type, validFiles[0]?.name);
   const entry: QueuedWebhook = {
     transaction_id: payload.transaction_id ?? "",
-    report_type: payload.report_type ?? "release",
+    report_type: normalizedType,
     files: validFiles,
     createdAt: new Date().toISOString(),
   };
@@ -144,6 +145,21 @@ async function enqueueAndTrigger(payload: ReportWebhookPayload) {
   void runMercadoPagoAutoSync({ trigger: `webhook:${entry.transaction_id}` }).catch((err) =>
     logError("mercadopago.report_webhook.autosync_trigger_error", err),
   );
+}
+
+function normalizeReportType(reportType: string | undefined, fileName: string | undefined): string {
+  const haystack = `${reportType ?? ""} ${fileName ?? ""}`.toLowerCase();
+  if (
+    haystack.includes("settlement") ||
+    haystack.includes("liquidaci") ||
+    haystack.includes("account_money") ||
+    haystack.includes("all_transactions") ||
+    haystack.includes("todas_las_transacciones") ||
+    haystack.includes("todas-las-transacciones")
+  ) {
+    return "settlement";
+  }
+  return "release";
 }
 
 async function loadQueue(): Promise<QueuedWebhook[]> {

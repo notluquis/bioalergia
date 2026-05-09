@@ -162,6 +162,22 @@ describe("MercadoPago report webhook", () => {
     expect(parsed[0].files[0].name).toBe("ok.csv");
   });
 
+  it.each([
+    ["settlement", "settlement"],
+    ["settlement_v2", "settlement"],
+    ["account_money", "settlement"],
+    ["all_transactions", "settlement"],
+    ["liquidaciones", "settlement"],
+    ["release", "release"],
+    ["released_money", "release"],
+    ["", "release"],
+  ])("normalizes report_type %s -> %s", async (input, expected) => {
+    await post(buildPayload({ report_type: input }));
+    await new Promise((r) => setTimeout(r, 10));
+    const parsed = JSON.parse(settingsStore.get(PENDING_KEY) ?? "[]");
+    expect(parsed[0].report_type).toBe(expected);
+  });
+
   it("returns 503 when MP_WEBHOOK_PASSWORD is empty", async () => {
     vi.resetModules();
     vi.doMock("../../services/mercadopago", () => ({ MP_WEBHOOK_PASSWORD: "" }));
