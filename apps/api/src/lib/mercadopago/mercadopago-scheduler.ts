@@ -168,6 +168,8 @@ interface MPReportSummary {
   file_name?: string;
   status?: string;
   date_created?: string;
+  is_test?: boolean;
+  is_reserve?: boolean;
 }
 
 function parseReportList(raw: unknown): MPReportSummary[] {
@@ -181,6 +183,8 @@ function parseReportList(raw: unknown): MPReportSummary[] {
     return (
       (r.file_name === undefined || typeof r.file_name === "string") &&
       (r.status === undefined || typeof r.status === "string") &&
+      (r.is_test === undefined || typeof r.is_test === "boolean") &&
+      (r.is_reserve === undefined || typeof r.is_reserve === "boolean") &&
       (r.begin_date === undefined || typeof r.begin_date === "string") &&
       (r.end_date === undefined || typeof r.end_date === "string") &&
       (r.date_created === undefined || typeof r.date_created === "string")
@@ -297,7 +301,13 @@ async function processReadyReports(
   let processedCount = 0;
 
   const readyReports = reports
-    .filter((report) => report.file_name && isReportReady(report.status))
+    .filter(
+      (report) =>
+        report.file_name &&
+        isReportReady(report.status) &&
+        report.is_test !== true &&
+        report.is_reserve !== true,
+    )
     .sort((a, b) => (a.date_created ?? "").localeCompare(b.date_created ?? ""));
 
   for (const report of readyReports) {
