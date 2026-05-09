@@ -192,10 +192,19 @@ waCloudMediaRoutes.get("/:messageId", async (c) => {
 
     const contentType =
       upstream.headers.get("content-type") ?? meta.mime_type ?? message.mediaMimeType ?? "application/octet-stream";
+    // Inline disposition so PDFs / images / video render directly in the
+    // browser via <iframe>, <img>, <video>. Honour ?download=1 to switch
+    // to attachment for forced downloads.
+    const filename = (message as unknown as { mediaCaption?: string | null }).mediaCaption ?? `wa-${messageId}`;
+    const wantsDownload = c.req.query("download") === "1";
+    const disposition = wantsDownload
+      ? `attachment; filename="${filename.replace(/"/g, "")}"`
+      : `inline; filename="${filename.replace(/"/g, "")}"`;
     return new Response(upstream.body, {
       status: 200,
       headers: {
         "Content-Type": contentType,
+        "Content-Disposition": disposition,
         // 5 min cache: matches Meta URL TTL, avoids re-fetching on scroll-back
         "Cache-Control": "private, max-age=300",
       },

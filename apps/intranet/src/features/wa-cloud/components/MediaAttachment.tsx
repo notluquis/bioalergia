@@ -96,25 +96,99 @@ export function MediaAttachment({ messageId, type, caption, out = false }: Props
     );
   }
 
-  // DOCUMENT
+  // DOCUMENT — PDF gets a richer preview tile + Vista/Descargar; others
+  // fall back to a labelled icon link.
   return (
-    <div
-      ref={ref}
-      className="flex items-center gap-3 rounded-lg border border-default-200 bg-content2 px-3 py-2"
-    >
-      <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-accent-100 text-accent-700">
-        <FileText size={20} />
-      </div>
-      <a
-        href={url}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="flex-1 truncate text-sm underline-offset-2 hover:underline"
-      >
-        {caption ?? "Documento"}
-      </a>
-      <Download size={16} className="text-default-500" />
+    <div ref={ref}>
+      <DocumentPreview url={url} caption={caption ?? null} />
     </div>
+  );
+}
+
+function DocumentPreview({ url, caption }: { url: string; caption: string | null }) {
+  const [open, setOpen] = useState(false);
+  const filename = caption ?? "Documento";
+  const isLikelyPdf = /\.pdf(\?|$)/i.test(filename) || filename.toLowerCase().includes("pdf");
+
+  return (
+    <>
+      <div className="flex w-72 max-w-full flex-col overflow-hidden rounded-lg border border-default-200 bg-content2">
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="flex w-full items-center gap-3 px-3 py-2 text-left transition hover:bg-content3"
+        >
+          <div className="flex size-12 shrink-0 items-center justify-center rounded-lg bg-accent-100 text-accent-700">
+            <FileText size={22} />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="truncate font-medium text-sm">{filename}</p>
+            <p className="text-default-500 text-xs">
+              {isLikelyPdf ? "PDF · click para vista previa" : "Click para abrir"}
+            </p>
+          </div>
+        </button>
+        <div className="flex border-default-200 border-t">
+          <button
+            type="button"
+            onClick={() => setOpen(true)}
+            className="flex flex-1 items-center justify-center gap-1 py-2 text-accent text-xs hover:bg-content3"
+          >
+            <FileText size={12} /> Vista previa
+          </button>
+          <a
+            href={`${url}?download=1`}
+            download={filename}
+            className="flex flex-1 items-center justify-center gap-1 border-default-200 border-l py-2 text-default-700 text-xs hover:bg-content3"
+          >
+            <Download size={12} /> Descargar
+          </a>
+        </div>
+      </div>
+
+      <Modal>
+        <Modal.Backdrop
+          isOpen={open}
+          onOpenChange={(o) => !o && setOpen(false)}
+          isDismissable
+          className="bg-black/85 backdrop-blur"
+        >
+          <Modal.Container placement="center">
+            <Modal.Dialog className="relative h-[92vh] w-[92vw] max-w-5xl bg-background p-0 shadow-2xl">
+              <div className="flex items-center justify-between border-default-200 border-b bg-content1 px-3 py-2">
+                <p className="truncate font-medium text-sm">{filename}</p>
+                <div className="flex items-center gap-1">
+                  <a href={`${url}?download=1`} download={filename}>
+                    <Button isIconOnly size="sm" variant="outline" aria-label="Descargar">
+                      <Download size={14} />
+                    </Button>
+                  </a>
+                  <a href={url} target="_blank" rel="noopener noreferrer">
+                    <Button size="sm" variant="outline">
+                      Abrir en pestaña
+                    </Button>
+                  </a>
+                  <Button
+                    isIconOnly
+                    size="sm"
+                    variant="outline"
+                    onPress={() => setOpen(false)}
+                    aria-label="Cerrar"
+                  >
+                    <X size={14} />
+                  </Button>
+                </div>
+              </div>
+              <iframe
+                src={`${url}#toolbar=1&view=FitH`}
+                title={filename}
+                className="size-full"
+              />
+            </Modal.Dialog>
+          </Modal.Container>
+        </Modal.Backdrop>
+      </Modal>
+    </>
   );
 }
 

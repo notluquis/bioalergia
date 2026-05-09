@@ -768,12 +768,16 @@ function ChatBubble({
 
   return (
     <div className={`group relative flex ${wrapper}`}>
-      <div className="relative">
+      <div
+        className={`relative ${
+          isSticker ? "max-w-[12rem]" : "max-w-[min(560px,78%)] min-w-[60px]"
+        }`}
+      >
         {actions}
         <div
-          className={`max-w-[78%] ${radius} ${isSticker ? "" : "px-3 py-2 shadow-sm"} ${bubbleColor} ${
-            isPending ? "opacity-70" : ""
-          }`}
+          className={`${radius} ${isSticker ? "" : "w-fit min-w-[60px] max-w-full px-3 py-2 shadow-sm"} ${bubbleColor} ${
+            out ? "ml-auto" : "mr-auto"
+          } ${isPending ? "opacity-70" : ""}`}
         >
           <ForwardedBadge payload={row.payload as Record<string, unknown> | null} />
           {row.quotedSnippet && (

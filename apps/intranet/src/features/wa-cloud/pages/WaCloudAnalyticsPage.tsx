@@ -66,12 +66,10 @@ export function WaCloudAnalyticsPage() {
       convs += p.conversation;
       cost += p.cost ?? 0;
       if (p.pricing_category) {
-        byCategory[p.pricing_category] =
-          (byCategory[p.pricing_category] ?? 0) + p.conversation;
+        byCategory[p.pricing_category] = (byCategory[p.pricing_category] ?? 0) + p.conversation;
       }
       if (p.pricing_type) {
-        byPricingType[p.pricing_type] =
-          (byPricingType[p.pricing_type] ?? 0) + p.conversation;
+        byPricingType[p.pricing_type] = (byPricingType[p.pricing_type] ?? 0) + p.conversation;
       }
       if (p.country) {
         byCountry[p.country] = (byCountry[p.country] ?? 0) + p.conversation;
