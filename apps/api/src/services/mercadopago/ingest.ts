@@ -1,7 +1,7 @@
 import { createInterface } from "node:readline";
 import { Readable } from "node:stream";
 import { db } from "@finanzas/db";
-import { checkMpConfig, MP_ACCESS_TOKEN } from "./client";
+import { checkMpConfig, MP_ACCESS_TOKEN, redactMpUrl } from "./client";
 import { mapRowToReleaseTransaction, mapRowToSettlementTransaction } from "./mappers";
 
 // Batch size for insertions
@@ -99,7 +99,7 @@ export async function processReportUrl(url: string, reportType: string): Promise
 
   try {
     checkMpConfig();
-    console.log(`[MP Ingest] Downloading report from ${url}`);
+    console.log(`[MP Ingest] Downloading report from ${redactMpUrl(url)}`);
 
     const res = await fetch(url, {
       headers: { Authorization: `Bearer ${MP_ACCESS_TOKEN}` },

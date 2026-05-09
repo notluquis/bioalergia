@@ -34,7 +34,6 @@ export const MercadoPagoService = {
     const urlWithQuery = appendReportRange(baseUrl, range);
     const res = await mpFetch("", urlWithQuery, {
       method: "POST",
-      body: JSON.stringify(range),
     });
     const data = await safeMpJson(res);
     console.log(`[MP Service] ${type} report creation response:`, data);

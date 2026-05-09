@@ -103,7 +103,7 @@ export async function runMercadoPagoAutoSync({ trigger }: { trigger: string }) {
     };
     const refreshedReportsByType = new Map<ReportType, MPReportSummary[]>();
     for (const [index, type] of types.entries()) {
-      const reports = lists[index] as MPReportSummary[];
+      const reports = parseReportList(lists[index]);
       const refreshed = await ensureDailyReport(type, reports);
       refreshedReportsByType.set(type, refreshed);
     }
@@ -163,6 +163,24 @@ interface MPReportSummary {
   file_name?: string;
   status?: string;
   date_created?: string;
+}
+
+function parseReportList(raw: unknown): MPReportSummary[] {
+  if (!Array.isArray(raw)) {
+    logWarn("mp.parseReportList.invalid_shape", { kind: typeof raw });
+    return [];
+  }
+  return raw.filter((item): item is MPReportSummary => {
+    if (!item || typeof item !== "object") return false;
+    const r = item as Record<string, unknown>;
+    return (
+      (r.file_name === undefined || typeof r.file_name === "string") &&
+      (r.status === undefined || typeof r.status === "string") &&
+      (r.begin_date === undefined || typeof r.begin_date === "string") &&
+      (r.end_date === undefined || typeof r.end_date === "string") &&
+      (r.date_created === undefined || typeof r.date_created === "string")
+    );
+  });
 }
 
 async function ensureDailyReport(
@@ -237,9 +255,9 @@ async function pollUntilReady(
     if (attempt > 0) {
       await new Promise((resolve) => setTimeout(resolve, REPORT_POLL_INTERVAL_MS));
     }
-    const refreshed = (await MercadoPagoService.listReports(type, {
-      silent: true,
-    })) as MPReportSummary[];
+    const refreshed = parseReportList(
+      await MercadoPagoService.listReports(type, { silent: true }),
+    );
     const target = refreshed.find((r) => reportCoversRange(r, range.beginDate, range.endDate));
     if (target?.file_name && isReportReady(target.status)) {
       logEvent("mp.autoSync.reportReady", {
@@ -260,7 +278,7 @@ async function pollUntilReady(
     maxAttempts: REPORT_POLL_MAX_ATTEMPTS,
     intervalMs: REPORT_POLL_INTERVAL_MS,
   });
-  return (await MercadoPagoService.listReports(type, { silent: true })) as MPReportSummary[];
+  return parseReportList(await MercadoPagoService.listReports(type, { silent: true }));
 }
 
 async function processReadyReports(
