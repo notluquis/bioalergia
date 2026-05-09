@@ -164,13 +164,7 @@ export function WaCloudTemplatesPage() {
   );
 }
 
-function CreateTemplateModal({
-  isOpen,
-  onClose,
-}: {
-  isOpen: boolean;
-  onClose: () => void;
-}) {
+function CreateTemplateModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   const accounts = useAccounts();
   const create = useCreateTemplate();
 
@@ -281,9 +275,7 @@ function CreateTemplateModal({
               <SelectInput
                 label="Categoría"
                 value={category}
-                onValueChange={(v) =>
-                  setCategory(v as "UTILITY" | "MARKETING" | "AUTHENTICATION")
-                }
+                onValueChange={(v) => setCategory(v as "UTILITY" | "MARKETING" | "AUTHENTICATION")}
                 options={CATEGORY_OPTIONS}
               />
               <TextInput

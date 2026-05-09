@@ -25,6 +25,7 @@ import {
   Images,
   Layers,
   MapPin,
+  Mic,
   Paperclip,
   Pencil,
   Plus,
@@ -945,6 +946,10 @@ function TextComposer({
           </Dropdown.Popover>
         </Dropdown>
         <EmojiPickerButton onSelect={insertEmoji} />
+        <VoiceRecorderButton
+          onSend={onAttachFile}
+          isDisabled={isDisabled || attachPending}
+        />
         <div className="flex-1">
           <TextArea
             ref={ref}
@@ -1638,6 +1643,143 @@ function EditTextModal({
   );
 }
 
+function VoiceRecorderButton({
+  onSend,
+  isDisabled,
+}: {
+  onSend: (file: File) => void;
+  isDisabled: boolean;
+}) {
+  const [recording, setRecording] = useState(false);
+  const [elapsed, setElapsed] = useState(0);
+  const [preview, setPreview] = useState<{ blob: Blob; url: string } | null>(null);
+  const recorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+  const tickRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const startedAtRef = useRef<number>(0);
+
+  useEffect(() => {
+    return () => {
+      if (preview?.url) URL.revokeObjectURL(preview.url);
+      tickRef.current && clearInterval(tickRef.current);
+    };
+  }, [preview]);
+
+  const start = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mime = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
+        ? "audio/webm;codecs=opus"
+        : MediaRecorder.isTypeSupported("audio/mp4")
+          ? "audio/mp4"
+          : "";
+      const rec = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
+      chunksRef.current = [];
+      rec.ondataavailable = (e) => {
+        if (e.data.size > 0) chunksRef.current.push(e.data);
+      };
+      rec.onstop = () => {
+        stream.getTracks().forEach((t) => t.stop());
+        const blob = new Blob(chunksRef.current, { type: rec.mimeType || "audio/webm" });
+        const url = URL.createObjectURL(blob);
+        setPreview({ blob, url });
+        setRecording(false);
+        if (tickRef.current) {
+          clearInterval(tickRef.current);
+          tickRef.current = null;
+        }
+      };
+      recorderRef.current = rec;
+      rec.start();
+      startedAtRef.current = Date.now();
+      setElapsed(0);
+      setRecording(true);
+      tickRef.current = setInterval(() => {
+        setElapsed(Math.floor((Date.now() - startedAtRef.current) / 1000));
+      }, 250);
+    } catch (err) {
+      toast.error(`No se pudo acceder al micrófono: ${String(err)}`);
+    }
+  };
+
+  const stop = () => {
+    if (recorderRef.current && recorderRef.current.state !== "inactive") {
+      recorderRef.current.stop();
+    }
+  };
+
+  const cancel = () => {
+    if (preview?.url) URL.revokeObjectURL(preview.url);
+    setPreview(null);
+  };
+
+  const send = () => {
+    if (!preview) return;
+    const ext = preview.blob.type.includes("mp4") ? "m4a" : "ogg";
+    const file = new File([preview.blob], `voice-${Date.now()}.${ext}`, {
+      type: preview.blob.type,
+    });
+    onSend(file);
+    URL.revokeObjectURL(preview.url);
+    setPreview(null);
+  };
+
+  const fmt = (s: number) =>
+    `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, "0")}`;
+
+  if (preview) {
+    return (
+      <div className="flex items-center gap-1 rounded-full border border-default-200 bg-content2 px-2 py-1">
+        <audio src={preview.url} controls className="h-8" />
+        <Button
+          size="sm"
+          variant="outline"
+          isIconOnly
+          aria-label="Descartar nota de voz"
+          onPress={cancel}
+        >
+          <X size={14} />
+        </Button>
+        <Button size="sm" isIconOnly aria-label="Enviar nota de voz" onPress={send}>
+          <Send size={14} />
+        </Button>
+      </div>
+    );
+  }
+
+  if (recording) {
+    return (
+      <div className="flex items-center gap-1 rounded-full border border-danger-200 bg-danger-50 px-2 py-1">
+        <span className="size-2 animate-pulse rounded-full bg-danger" />
+        <span className="font-mono text-danger text-xs tabular-nums">{fmt(elapsed)}</span>
+        <Button
+          size="sm"
+          variant="outline"
+          isIconOnly
+          aria-label="Detener grabación"
+          onPress={stop}
+          className="ml-1"
+        >
+          <Check size={14} />
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <Button
+      size="sm"
+      variant="outline"
+      isIconOnly
+      aria-label="Grabar nota de voz"
+      onPress={start}
+      isDisabled={isDisabled}
+    >
+      <Mic size={16} />
+    </Button>
+  );
+}
+
 function MediaGalleryModal({
   isOpen,
   onClose,
@@ -1714,7 +1856,12 @@ function MediaGalleryModal({
                           rel="noopener noreferrer"
                           className="relative flex aspect-square items-center justify-center overflow-hidden rounded-lg border border-default-200 bg-black"
                         >
-                          <video src={url} className="size-full object-cover" muted preload="metadata">
+                          <video
+                            src={url}
+                            className="size-full object-cover"
+                            muted
+                            preload="metadata"
+                          >
                             <track kind="captions" />
                           </video>
                           <span className="absolute inset-0 flex items-center justify-center">

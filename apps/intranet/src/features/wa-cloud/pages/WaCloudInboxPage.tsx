@@ -17,12 +17,7 @@ import { Filter, Inbox, MessageSquareText, Phone } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import type { WaConversationStatus } from "@finanzas/orpc-contracts/wa-cloud";
 import { ConversationDetail } from "../components/ConversationDetail";
-import {
-  useAccounts,
-  useConversations,
-  useMarkRead,
-  useSearchMessages,
-} from "../hooks/useWaCloud";
+import { useAccounts, useConversations, useMarkRead, useSearchMessages } from "../hooks/useWaCloud";
 
 const STATUS_OPTIONS: { value: "" | WaConversationStatus; label: string }[] = [
   { value: "", label: "Todos" },
@@ -82,7 +77,7 @@ export function WaCloudInboxPage() {
   });
   const markRead = useMarkRead();
   const messageHits = useSearchMessages(
-    search.trim().length >= 2 ? { q: search.trim(), limit: 20 } : null,
+    search.trim().length >= 2 ? { q: search.trim(), limit: 20 } : null
   );
 
   useEffect(() => {
