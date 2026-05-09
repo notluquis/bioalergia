@@ -126,21 +126,30 @@ export function CreatePatientModal({ isOpen, onClose }: Readonly<CreatePatientMo
     staleTime: 1000 * 30,
   });
 
-  const exactDuplicate = rutMatches?.find((p) => {
-    const pRut = (p.person.rut ?? "").replace(/\./g, "").replace(/-/g, "").toUpperCase();
-    return pRut === normalizedRut;
-  });
-
-  const similarByName = nameMatches?.filter((p) => !rutMatches?.some((r) => r.id === p.id)) ?? [];
-
-  // Detect existing Person (employee/user) without patient profile so we can
-  // pre-fill the form and tell the user we'll just attach a patient profile.
+  // Look up existing Person by RUT (canonical normalized server-side).
+  // The patients-list search uses contains and misses RUTs whose stored
+  // format differs from the typed format (dots vs no dots), so the Person
+  // lookup is the authoritative dedup signal.
   const { data: existingPerson } = useQuery({
     queryKey: ["person-by-rut", debouncedRut],
     queryFn: () => findPersonByRut(debouncedRut),
-    enabled: normalizedRut.length >= 7 && validateRut(debouncedRut) && !exactDuplicate,
+    enabled: normalizedRut.length >= 7 && validateRut(debouncedRut),
     staleTime: 1000 * 30,
   });
+
+  const personWithPatient = existingPerson as
+    | (NonNullable<typeof existingPerson> & { patient?: unknown })
+    | null
+    | undefined;
+  const hasExistingPatient = Boolean(personWithPatient?.patient);
+
+  const exactDuplicate =
+    rutMatches?.find((p) => {
+      const pRut = (p.person.rut ?? "").replace(/\./g, "").replace(/-/g, "").toUpperCase();
+      return pRut === normalizedRut;
+    }) ?? (hasExistingPatient && existingPerson ? { person: existingPerson } : undefined);
+
+  const similarByName = nameMatches?.filter((p) => !rutMatches?.some((r) => r.id === p.id)) ?? [];
 
   const linkExistingPerson = () => {
     if (!existingPerson) return;
