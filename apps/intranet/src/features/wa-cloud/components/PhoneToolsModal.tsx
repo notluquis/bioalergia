@@ -275,4 +275,3 @@ function ProfileCard({ phoneNumberId }: { phoneNumberId: number }) {
     </Card>
   );
 }
-

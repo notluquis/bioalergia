@@ -7,9 +7,6 @@ import { startDTESyncScheduler } from "./lib/dte/dte-sync-cron.ts";
 import { startClinicalSkinTestImportScheduler } from "./lib/clinical-skin-tests/clinical-skin-test-scheduler.ts";
 import { startGoogleCalendarScheduler } from "./lib/google/google-calendar-scheduler.ts";
 import { scheduleWatchChannelSetup } from "./lib/google/google-calendar-watch.ts";
-import { initBaileysSocket } from "./lib/whatsapp/baileys-socket.ts";
-import { startWhatsappScheduler } from "./lib/whatsapp/whatsapp-scheduler.ts";
-import { getSetting } from "./services/settings.ts";
 
 const port = Number(process.env.PORT) || 3000;
 console.log(`🚀 Finanzas API starting on port ${port}`);
@@ -28,21 +25,6 @@ if (process.env.NODE_ENV === "production" || process.env.ENABLE_DTE_AUTO_SYNC ==
 
 if (process.env.ENABLE_DOCTORALIA_CALENDAR_SYNC === "true") {
   startDoctoraliaCalendarScheduler();
-}
-
-// Initialize Baileys WhatsApp connection if enabled and has stored credentials
-getSetting("whatsapp.enabled").then(async (val) => {
-  if (val !== "true") return;
-  const { hasStoredCreds } = await import("./lib/whatsapp/baileys-auth-state.ts");
-  if (await hasStoredCreds()) {
-    initBaileysSocket().catch((err) => console.error("Failed to initialize Baileys:", err));
-  } else {
-    console.log("[Baileys] No stored credentials — skipping auto-init. Scan QR from settings page.");
-  }
-}).catch(() => {});
-
-if (process.env.ENABLE_WHATSAPP_NOTIFICATIONS === "true") {
-  startWhatsappScheduler();
 }
 
 if (process.env.ENABLE_DOCTORALIA_IMAP === "true") {

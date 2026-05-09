@@ -181,23 +181,6 @@ const ORDER_HINT = [
   "HaulmerSyncLog",
   "DoctoraliaEmailNotification",
   "DoctoraliaCookieStore",
-  "WhatsappContact",
-  "WhatsappChat",
-  "WhatsappGroup",
-  "WhatsappGroupParticipant",
-  "WhatsappBlockedJid",
-  "WhatsappBusinessQuickReply",
-  "WhatsappBusinessLabel",
-  "WhatsappBusinessChatLabel",
-  "WhatsappBusinessMessageLabel",
-  "WhatsappPresenceState",
-  "WhatsappConversationState",
-  "WhatsappMessage",
-  "WhatsappMessageReaction",
-  "WhatsappMessageReceipt",
-  "WhatsappNotification",
-  "BaileysAuthCreds",
-  "BaileysAuthKeys",
   "PatientCampaign",
   "PatientCampaignRecipient",
 ];
@@ -253,10 +236,6 @@ function normalizeRow(modelName: string, row: unknown) {
     delete copy.metadata;
   }
 
-  if (modelName === "WhatsappMessage") {
-    if (copy.rawMessageJson === null) delete copy.rawMessageJson;
-    if (copy.rawContentJson === null) delete copy.rawContentJson;
-  }
 
   if (modelName === "CalendarSyncLog" && copy.changeDetails === null) {
     delete copy.changeDetails;

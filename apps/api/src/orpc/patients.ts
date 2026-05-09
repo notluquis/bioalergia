@@ -488,41 +488,34 @@ const patientsORPCRouterBase = {
     .output(attachmentResponseSchema)
     .handler(async ({ context, input }) => {
       const arrayBuffer = await input.file.arrayBuffer();
-      const { filepath, cleanup } = await writeTempUpload(
-        Buffer.from(arrayBuffer),
-        input.file.name,
+      await using temp = await writeTempUpload(Buffer.from(arrayBuffer), input.file.name);
+
+      const attachmentName = input.name?.trim() || input.file.name;
+      const { fileId, webViewLink } = await uploadPatientAttachmentToDrive(
+        temp.filepath,
+        attachmentName,
+        input.file.type || "application/octet-stream",
+        String(input.patientId),
       );
 
-      try {
-        const attachmentName = input.name?.trim() || input.file.name;
-        const { fileId, webViewLink } = await uploadPatientAttachmentToDrive(
-          filepath,
-          attachmentName,
-          input.file.type || "application/octet-stream",
-          String(input.patientId),
-        );
+      const attachment = await db.patientAttachment.create({
+        data: {
+          driveFileId: fileId,
+          mimeType: input.file.type || null,
+          name: attachmentName,
+          patientId: input.patientId,
+          type: input.type as "CONSENT" | "EXAM" | "OTHER" | "RECIPE",
+          uploadedBy: context.user.id,
+        },
+      });
 
-        const attachment = await db.patientAttachment.create({
-          data: {
-            driveFileId: fileId,
-            mimeType: input.file.type || null,
-            name: attachmentName,
-            patientId: input.patientId,
-            type: input.type as "CONSENT" | "EXAM" | "OTHER" | "RECIPE",
-            uploadedBy: context.user.id,
-          },
-        });
-
-        return {
-          attachment: {
-            ...attachment,
-            webViewLink: webViewLink ?? undefined,
-          },
-          status: "ok" as const,
-        };
-      } finally {
-        await cleanup();
-      }
+      return {
+        attachment: {
+          ...attachment,
+          webViewLink: webViewLink ?? undefined,
+        },
+        status: "ok" as const,
+      };
     }),
 
   createBudget: createBudgets

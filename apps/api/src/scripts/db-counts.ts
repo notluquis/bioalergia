@@ -23,8 +23,6 @@ async function main() {
     "waContact",
     "waConversation",
     "waMessage",
-    "whatsappMessage",
-    "whatsappContact",
   ] as const;
   console.log("Conteos:");
   for (const t of tables) {

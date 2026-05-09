@@ -809,35 +809,31 @@ patientsRoutes.post(
     }
 
     const arrayBuffer = await file.arrayBuffer();
-    const { filepath, cleanup } = await writeTempUpload(Buffer.from(arrayBuffer), file.name);
+    await using temp = await writeTempUpload(Buffer.from(arrayBuffer), file.name);
 
-    try {
-      const { fileId, webViewLink } = await uploadPatientAttachmentToDrive(
-        filepath,
-        name,
-        file.type,
-        id,
-      );
+    const { fileId, webViewLink } = await uploadPatientAttachmentToDrive(
+      temp.filepath,
+      name,
+      file.type,
+      id,
+    );
 
-      const attachmentType: AttachmentType =
-        type === "CONSENT" || type === "EXAM" || type === "RECIPE" || type === "OTHER"
-          ? type
-          : "OTHER";
-      const attachment = await db.patientAttachment.create({
-        data: {
-          patientId: Number(id),
-          name: name,
-          type: attachmentType,
-          driveFileId: fileId,
-          mimeType: file.type,
-          uploadedBy: user.id,
-        },
-      });
+    const attachmentType: AttachmentType =
+      type === "CONSENT" || type === "EXAM" || type === "RECIPE" || type === "OTHER"
+        ? type
+        : "OTHER";
+    const attachment = await db.patientAttachment.create({
+      data: {
+        patientId: Number(id),
+        name: name,
+        type: attachmentType,
+        driveFileId: fileId,
+        mimeType: file.type,
+        uploadedBy: user.id,
+      },
+    });
 
-      return replyRaw(c, { ...attachment, webViewLink });
-    } finally {
-      await cleanup();
-    }
+    return replyRaw(c, { ...attachment, webViewLink });
   } catch (error) {
     if (error instanceof AppError) {
       throw error;

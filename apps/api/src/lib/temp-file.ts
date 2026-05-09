@@ -19,7 +19,7 @@ export function sanitizeUploadFilename(input: string | undefined): string {
   return cleaned.slice(0, MAX_NAME_LENGTH);
 }
 
-export interface TempUpload {
+export interface TempUpload extends AsyncDisposable {
   filepath: string;
   cleanup: () => Promise<void>;
 }
@@ -27,8 +27,9 @@ export interface TempUpload {
 // Writes `data` to a uniquely-named file inside a freshly-created temp
 // directory owned by this call. The caller-supplied `preferredName` is only
 // used as a hint for the on-disk basename; it is sanitized so path traversal
-// is impossible even if the whitelist regex were ever weakened. Always pair
-// with `cleanup()` in a `finally` block.
+// is impossible even if the whitelist regex were ever weakened. Use
+// `await using temp = await writeTempUpload(...)` for automatic cleanup, or
+// pair with `cleanup()` in a `finally` block.
 export async function writeTempUpload(
   data: Buffer,
   preferredName?: string,
@@ -37,10 +38,12 @@ export async function writeTempUpload(
   const safeName = sanitizeUploadFilename(preferredName) || `${randomUUID()}.bin`;
   const filepath = path.join(dir, safeName);
   await writeFile(filepath, data);
+  const cleanup = async () => {
+    await rm(dir, { recursive: true, force: true });
+  };
   return {
     filepath,
-    cleanup: async () => {
-      await rm(dir, { recursive: true, force: true });
-    },
+    cleanup,
+    [Symbol.asyncDispose]: cleanup,
   };
 }

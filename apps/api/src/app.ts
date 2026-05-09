@@ -75,7 +75,6 @@ import {
   utilityBillsORPCHandler,
 } from "./orpc/utility-bills.ts";
 import { waCloudOpenAPIHandler, waCloudORPCHandler } from "./orpc/wa-cloud.ts";
-import { whatsappOpenAPIHandler, whatsappORPCHandler } from "./orpc/whatsapp.ts";
 import { shipmentsOpenAPIHandler, shipmentsORPCHandler } from "./orpc/shipments.ts";
 import { doctoraliaScraperRoutes } from "./routes/doctoralia-scraper.ts";
 import { googleCalendarWebhookRoutes } from "./routes/google-calendar-webhook.ts";
@@ -1821,31 +1820,6 @@ app.use("/api/orpc/shipments/rpc/*", async (c, next) => {
 app.use("/api/orpc/shipments/*", async (c, next) => {
   const { matched, response } = await shipmentsOpenAPIHandler.handle(createHonoORPCRequest(c), {
     context: {},
-  });
-
-  if (matched) {
-    return c.newResponse(response.body, response);
-  }
-
-  return next();
-});
-
-app.use("/api/orpc/whatsapp/rpc/*", async (c, next) => {
-  const { matched, response } = await whatsappORPCHandler.handle(createHonoORPCRequest(c), {
-    prefix: "/api/orpc/whatsapp/rpc",
-    context: { hono: c },
-  });
-
-  if (matched) {
-    return c.newResponse(response.body, response);
-  }
-
-  return next();
-});
-
-app.use("/api/orpc/whatsapp/*", async (c, next) => {
-  const { matched, response } = await whatsappOpenAPIHandler.handle(createHonoORPCRequest(c), {
-    context: { hono: c },
   });
 
   if (matched) {

@@ -54,20 +54,3 @@ export * from "./transactions-insights.ts";
 export * from "./users.ts";
 export * from "./utility-bills.ts";
 export * from "./wa-cloud.ts";
-export {
-  listWhatsappContactStatesResponseSchema,
-  whatsappContract,
-  whatsappConnectionStateSchema,
-  whatsappConnectionStatusSchema,
-  whatsappContactStateSchema,
-  whatsappNotificationSchema,
-  whatsappNotificationStatusSchema,
-  whatsappOptInStatusSchema,
-  whatsappOverviewSchema,
-  whatsappSetContactConsentInputSchema,
-  whatsappStatsSchema,
-  listWhatsappNotificationsResponseSchema,
-  whatsappCustomMessageInputSchema,
-  whatsappStatusResponseSchema,
-  type WhatsappContract,
-} from "./whatsapp.ts";
