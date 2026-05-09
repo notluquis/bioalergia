@@ -8,10 +8,19 @@ export interface CxRegion {
 }
 
 export interface CxCommune {
+  // Chilexpress /coverage-areas returns countyCode (e.g. "LCON"), countyName,
+  // regionCode (e.g. "RM"), ineCountyCode, queryMode, coverageName, plus
+  // ind_ppd / ind_rd flags. The fields below are the ones we consume.
   countyCode: string;
   countyName: string;
+  regionCode: string;
+  // Aliases the rest of the codebase already expects. Provided by the
+  // client mapper so consumers don't have to remember Chilexpress' exact
+  // field naming.
   regionId: string;
   coverageRegionCode: string;
+  coverageName?: string;
+  ineCountyCode?: number;
 }
 
 export interface CxCommercialOffice {
