@@ -148,7 +148,6 @@ export interface WhatsappConfig {
   templateName: string | null;
   templateLanguage: null | string;
   requireOptIn: boolean;
-  webhookVerifyToken: string | null;
   appSecret: string | null;
   pollCron: string;
   imapHost: string | null;
@@ -183,7 +182,6 @@ export const whatsappConfig: WhatsappConfig | null =
         senderFilter: process.env.DOCTORALIA_EMAIL_SENDER_FILTER ?? "doctoralia",
         templateLanguage: process.env.WHATSAPP_TEMPLATE_LANGUAGE ?? null,
         templateName: process.env.WHATSAPP_TEMPLATE_NAME ?? null,
-        webhookVerifyToken: process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN ?? null,
       }
     : null;
 
