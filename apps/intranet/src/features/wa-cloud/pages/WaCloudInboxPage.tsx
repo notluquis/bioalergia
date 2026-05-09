@@ -138,8 +138,7 @@ export function WaCloudInboxPage() {
               <ul className="divide-y divide-default-200">
                 {items.map((c) => {
                   const sel = selectedId === c.id;
-                  const name =
-                    c.contact.name ?? c.contact.pushName ?? c.contact.phoneE164;
+                  const name = c.contact.name ?? c.contact.pushName ?? c.contact.phoneE164;
                   const initials = initialsOf(name);
                   const avatarColor = colorFor(c.contact.phoneE164);
                   return (
@@ -207,8 +206,8 @@ export function WaCloudInboxPage() {
                 <MessageSquareText size={48} className="mx-auto text-default-300" />
                 <p className="mt-3 font-semibold text-base">Selecciona una conversación</p>
                 <p className="mt-1 text-default-500 text-sm">
-                  Tus mensajes WhatsApp aparecen en la bandeja de la izquierda. Click en
-                  cualquiera para responder.
+                  Tus mensajes WhatsApp aparecen en la bandeja de la izquierda. Click en cualquiera
+                  para responder.
                 </p>
               </EmptyState>
             </div>
@@ -270,10 +269,7 @@ function FilterDropdown({
         </button>
       </Dropdown.Trigger>
       <Dropdown.Popover className="w-72 space-y-3 p-3">
-        <Select
-          value={status}
-          onChange={(k) => onStatusChange((k as WaConversationStatus) ?? "")}
-        >
+        <Select value={status} onChange={(k) => onStatusChange((k as WaConversationStatus) ?? "")}>
           <Label>Estado</Label>
           <Select.Trigger>
             <Select.Value />
