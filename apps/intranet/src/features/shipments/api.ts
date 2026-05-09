@@ -44,6 +44,14 @@ export async function searchStreets(input: { countyName: string; query: string }
   }
 }
 
+export async function getStreetNumbers(streetNameId: number) {
+  try {
+    return await shipmentsORPCClient.getStreetNumbers({ streetNameId });
+  } catch (error) {
+    throw toShipmentsApiError(error);
+  }
+}
+
 export async function geocodeAddress(input: {
   streetName: string;
   countyName: string;

@@ -3,6 +3,7 @@ import {
   Button,
   Checkbox,
   ComboBox,
+  Description,
   FieldError,
   Form,
   Input,
@@ -17,7 +18,12 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Home, Save } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useToast } from "@/context/ToastContext";
-import { fetchCommunes, fetchRegions, searchStreets } from "@/features/shipments/api";
+import {
+  fetchCommunes,
+  fetchRegions,
+  getStreetNumbers,
+  searchStreets,
+} from "@/features/shipments/api";
 import { createAddress, updateAddress } from "../api";
 
 interface AddressFormState {
@@ -136,6 +142,18 @@ export function AddressFormModal({
     communes.find((c) => c.coverageRegionCode === String(form.state.values.comuna ?? ""))
       ?.countyName ?? "";
 
+  const [pickedStreetId, setPickedStreetId] = useState<number | null>(null);
+
+  const { data: streetNumbersData } = useQuery({
+    queryKey: ["cx-street-numbers", pickedStreetId],
+    queryFn: () => getStreetNumbers(pickedStreetId!),
+    enabled: pickedStreetId != null,
+    staleTime: 1000 * 60 * 30,
+  });
+  const validNumbers = (streetNumbersData?.numbers ?? []).map((n) => n.number);
+  const minNumber = validNumbers.length ? Math.min(...validNumbers) : null;
+  const maxNumber = validNumbers.length ? Math.max(...validNumbers) : null;
+
   const createAddressMutation = useMutation({
     mutationFn: createAddress,
     onError: (err) => toastError(err instanceof Error ? err.message : "Error al guardar dirección"),
@@ -211,23 +229,45 @@ export function AddressFormModal({
                       {(field) => (
                         <StreetAutocomplete
                           countyName={selectedCommuneName}
-                          onChange={(value) => field.handleChange(value)}
+                          onChange={(value) => {
+                            field.handleChange(value);
+                            setPickedStreetId(null);
+                          }}
+                          onSelectStreet={(streetId) => setPickedStreetId(streetId)}
                           value={field.state.value}
                         />
                       )}
                     </form.Field>
                   </div>
                   <form.Field name="number">
-                    {(field) => (
-                      <TextField
-                        isRequired
-                        onChange={(v) => field.handleChange(v)}
-                        value={field.state.value}
-                      >
-                        <Label>Número</Label>
-                        <Input placeholder="1234" />
-                      </TextField>
-                    )}
+                    {(field) => {
+                      const num = Number(field.state.value);
+                      const outOfRange =
+                        validNumbers.length > 0 &&
+                        Number.isFinite(num) &&
+                        num > 0 &&
+                        !validNumbers.includes(num);
+                      return (
+                        <TextField
+                          isRequired
+                          onChange={(v) => field.handleChange(v)}
+                          value={field.state.value}
+                        >
+                          <Label>Número</Label>
+                          <Input placeholder="1234" />
+                          {minNumber != null && maxNumber != null ? (
+                            <Description>
+                              Rango Chilexpress: {minNumber} – {maxNumber}
+                            </Description>
+                          ) : null}
+                          {outOfRange ? (
+                            <Description className="text-warning">
+                              Número fuera del rango registrado
+                            </Description>
+                          ) : null}
+                        </TextField>
+                      );
+                    }}
                   </form.Field>
                 </div>
 
@@ -382,9 +422,15 @@ interface StreetAutocompleteProps {
   countyName: string;
   value: string;
   onChange: (value: string) => void;
+  onSelectStreet?: (streetId: number, streetName: string) => void;
 }
 
-function StreetAutocomplete({ countyName, value, onChange }: Readonly<StreetAutocompleteProps>) {
+function StreetAutocomplete({
+  countyName,
+  value,
+  onChange,
+  onSelectStreet,
+}: Readonly<StreetAutocompleteProps>) {
   // Local input separate from form value so user typing does not commit
   // partial text until they pick a suggestion (or type custom value).
   const [inputValue, setInputValue] = useState(value);
@@ -424,6 +470,7 @@ function StreetAutocomplete({ countyName, value, onChange }: Readonly<StreetAuto
         if (street) {
           setInputValue(street.streetName);
           onChange(street.streetName);
+          onSelectStreet?.(street.streetId, street.streetName);
         }
       }}
     >

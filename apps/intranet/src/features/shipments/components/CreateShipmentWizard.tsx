@@ -36,6 +36,7 @@ import {
   createShipment,
   fetchCommercialOffices,
   fetchCommunes,
+  fetchNearbyOffices,
   fetchRegions,
   quoteShipment,
 } from "../api";
@@ -293,7 +294,7 @@ function CoverageStep({
       {mode === "home" ? (
         <HomeAddressPicker personId={personId} state={state} onNext={onNext} />
       ) : (
-        <OfficePicker state={state} onNext={onNext} />
+        <OfficePicker personId={personId} state={state} onNext={onNext} />
       )}
     </div>
   );
@@ -433,9 +434,11 @@ function HomeAddressPicker({
 // ─── Step 1b: Office picker (Chilexpress sucursal) ────────────────────────────
 
 function OfficePicker({
+  personId,
   state,
   onNext,
 }: {
+  personId: number;
   state: Partial<WizardState>;
   onNext: (data: Partial<WizardState>) => void;
 }) {
@@ -471,12 +474,69 @@ function OfficePicker({
     staleTime: 1000 * 60 * 60,
   });
 
+  // Suggest nearby Chilexpress offices using the patient's primary
+  // address geocoding (filled by addresses.create / .update via
+  // /addresses/georeference). Only enabled when we have a chilexpress
+  // addressId on file.
+  const { data: addressesData } = useQuery({
+    queryKey: ["addresses", personId],
+    queryFn: () => listAddresses(personId),
+    staleTime: 1000 * 60,
+  });
+  const primaryAddressId = (addressesData ?? []).find(
+    (a) => a.isPrimary && (a as { chilexpressAddressId?: number | null }).chilexpressAddressId
+  ) as { chilexpressAddressId?: number | null } | undefined;
+  const nearbyAddressId = primaryAddressId?.chilexpressAddressId ?? null;
+
+  const { data: nearbyData } = useQuery({
+    queryKey: ["cx-nearby-offices", nearbyAddressId],
+    queryFn: () => fetchNearbyOffices(nearbyAddressId!),
+    enabled: nearbyAddressId != null,
+    staleTime: 1000 * 60 * 30,
+  });
+  const nearbyOffices = nearbyData?.offices ?? [];
+
   const canContinue = Boolean(coverageCode && officeId);
   const offices = officesData?.offices ?? [];
   const selectedOffice = offices.find((o) => o.commercialOfficeId === String(officeId));
 
   return (
     <div className="space-y-4">
+      {nearbyOffices.length > 0 && (
+        <div className="space-y-2 rounded-xl border border-accent/30 bg-accent/5 p-3">
+          <div className="flex items-center gap-2 font-semibold text-accent text-sm">
+            <MapPin size={14} />
+            Sucursales cerca del domicilio del paciente
+          </div>
+          <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+            {nearbyOffices.slice(0, 4).map(({ distance, office }) => (
+              <button
+                key={office.commercialOfficeId}
+                onClick={() => {
+                  setRegionId(office.regionCode);
+                  setCoverageCode(office.countyCode ?? "");
+                  setCommuneName(office.commune);
+                  setOfficeId(office.commercialOfficeId);
+                  setOfficeName(office.commercialOfficeName);
+                }}
+                type="button"
+                className="rounded-lg border border-default-200 bg-background p-3 text-left hover:border-primary/40"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-medium text-sm">{office.commercialOfficeName}</span>
+                  <Chip color="accent" size="sm" variant="soft">
+                    {Number(distance).toFixed(1)} km
+                  </Chip>
+                </div>
+                <p className="text-default-500 text-xs">
+                  {office.street} {office.number}, {office.commune}
+                </p>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <Select
           isDisabled={loadingRegions}
@@ -680,158 +740,167 @@ function QuoteStep({
     length: state.length ?? 10,
     declaredValue: state.declaredValue ?? 10000,
   });
-  const [selectedService, setSelectedService] = useState<{
-    code: string;
-    description: string;
-    value: number;
-  } | null>(
-    state.serviceTypeCode
-      ? {
-          code: state.serviceTypeCode,
-          description: state.serviceDescription ?? "",
-          value: state.serviceValue ?? 0,
-        }
-      : null
-  );
+  const [selectedCode, setSelectedCode] = useState<string | null>(state.serviceTypeCode ?? null);
 
-  const quoteMutation = useMutation({
-    mutationFn: () =>
+  // Debounce dims so re-typing a value doesn't blast Chilexpress.
+  const [debouncedDims, setDebouncedDims] = useState(dims);
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedDims(dims), 400);
+    return () => clearTimeout(t);
+  }, [dims]);
+
+  // Auto re-quote whenever dimensions stabilise (incl. on first mount).
+  const {
+    data: quote,
+    isFetching,
+    isError,
+    error,
+  } = useQuery({
+    queryKey: [
+      "cx-quote",
+      state.coverageRegionCode,
+      debouncedDims.weight,
+      debouncedDims.height,
+      debouncedDims.width,
+      debouncedDims.length,
+      debouncedDims.declaredValue,
+    ],
+    queryFn: () =>
       quoteShipment({
         originCoverageCode: state.coverageRegionCode ?? "",
         destinationCoverageCode: state.coverageRegionCode ?? "",
-        ...dims,
+        ...debouncedDims,
       }),
+    enabled: Boolean(state.coverageRegionCode),
+    staleTime: 1000 * 60,
   });
+
+  const services = quote?.services ?? [];
+
+  // Pre-select cheapest service automatically once a quote arrives.
+  useEffect(() => {
+    if (services.length === 0) return;
+    if (selectedCode && services.some((s) => s.serviceTypeCode === selectedCode)) return;
+    const cheapest = services.reduce((acc, s) => (s.serviceValue < acc.serviceValue ? s : acc));
+    setSelectedCode(cheapest.serviceTypeCode);
+  }, [services, selectedCode]);
+
+  const cheapestCode = services.length
+    ? services.reduce((acc, s) => (s.serviceValue < acc.serviceValue ? s : acc)).serviceTypeCode
+    : null;
+
+  const selectedService = services.find((s) => s.serviceTypeCode === selectedCode) ?? null;
 
   return (
     <div className="space-y-5">
       <div className="flex items-center gap-2 text-default-600 text-sm">
         <Package size={16} />
-        Ingresa las dimensiones del paquete para cotizar
+        Ajusta las dimensiones — la cotización se actualiza automáticamente.
       </div>
 
-      <Form
-        className="space-y-4"
-        validationBehavior="aria"
-        onSubmit={(e) => {
-          e.preventDefault();
-          quoteMutation.mutate();
-          setSelectedService(null);
-        }}
-      >
-        <div className="grid grid-cols-2 gap-4">
-          <NumberField
-            isRequired
-            minValue={0.1}
-            value={dims.weight}
-            onChange={(v) => setDims((d) => ({ ...d, weight: v }))}
-          >
-            <Label>Peso (kg)</Label>
-            <NumberField.Group>
-              <NumberField.Input />
-            </NumberField.Group>
-          </NumberField>
-          <NumberField
-            isRequired
-            minValue={1}
-            value={dims.declaredValue}
-            onChange={(v) => setDims((d) => ({ ...d, declaredValue: v }))}
-          >
-            <Label>Valor declarado ($)</Label>
-            <NumberField.Group>
-              <NumberField.Input />
-            </NumberField.Group>
-          </NumberField>
-          <NumberField
-            isRequired
-            minValue={1}
-            value={dims.height}
-            onChange={(v) => setDims((d) => ({ ...d, height: v }))}
-          >
-            <Label>Alto (cm)</Label>
-            <NumberField.Group>
-              <NumberField.Input />
-            </NumberField.Group>
-          </NumberField>
-          <NumberField
-            isRequired
-            minValue={1}
-            value={dims.width}
-            onChange={(v) => setDims((d) => ({ ...d, width: v }))}
-          >
-            <Label>Ancho (cm)</Label>
-            <NumberField.Group>
-              <NumberField.Input />
-            </NumberField.Group>
-          </NumberField>
-          <NumberField
-            isRequired
-            minValue={1}
-            value={dims.length}
-            className="col-span-2"
-            onChange={(v) => setDims((d) => ({ ...d, length: v }))}
-          >
-            <Label>Largo (cm)</Label>
-            <NumberField.Group>
-              <NumberField.Input />
-            </NumberField.Group>
-          </NumberField>
-        </div>
-
-        <Button
-          type="submit"
-          variant="outline"
-          isPending={quoteMutation.isPending}
-          className="w-full gap-2"
+      <div className="grid grid-cols-2 gap-4">
+        <NumberField
+          isRequired
+          minValue={0.1}
+          value={dims.weight}
+          onChange={(v) => setDims((d) => ({ ...d, weight: v }))}
         >
-          <Truck size={16} />
-          Cotizar
-        </Button>
-      </Form>
+          <Label>Peso (kg)</Label>
+          <NumberField.Group>
+            <NumberField.Input />
+          </NumberField.Group>
+        </NumberField>
+        <NumberField
+          isRequired
+          minValue={1}
+          value={dims.declaredValue}
+          onChange={(v) => setDims((d) => ({ ...d, declaredValue: v }))}
+        >
+          <Label>Valor declarado ($)</Label>
+          <NumberField.Group>
+            <NumberField.Input />
+          </NumberField.Group>
+        </NumberField>
+        <NumberField
+          isRequired
+          minValue={1}
+          value={dims.height}
+          onChange={(v) => setDims((d) => ({ ...d, height: v }))}
+        >
+          <Label>Alto (cm)</Label>
+          <NumberField.Group>
+            <NumberField.Input />
+          </NumberField.Group>
+        </NumberField>
+        <NumberField
+          isRequired
+          minValue={1}
+          value={dims.width}
+          onChange={(v) => setDims((d) => ({ ...d, width: v }))}
+        >
+          <Label>Ancho (cm)</Label>
+          <NumberField.Group>
+            <NumberField.Input />
+          </NumberField.Group>
+        </NumberField>
+        <NumberField
+          isRequired
+          minValue={1}
+          value={dims.length}
+          className="col-span-2"
+          onChange={(v) => setDims((d) => ({ ...d, length: v }))}
+        >
+          <Label>Largo (cm)</Label>
+          <NumberField.Group>
+            <NumberField.Input />
+          </NumberField.Group>
+        </NumberField>
+      </div>
 
-      {quoteMutation.isSuccess && (
-        <div className="space-y-2">
-          <p className="font-semibold text-sm">Servicios disponibles:</p>
-          {(quoteMutation.data?.services ?? []).length === 0 ? (
-            <p className="text-danger text-sm">Sin cobertura para este destino.</p>
-          ) : (
-            <div className="space-y-2">
-              {(quoteMutation.data?.services ?? []).map((svc) => (
-                <button
-                  key={svc.serviceTypeCode}
-                  type="button"
-                  onClick={() =>
-                    setSelectedService({
-                      code: svc.serviceTypeCode,
-                      description: svc.serviceDescription,
-                      value: svc.serviceValue,
-                    })
-                  }
-                  className={`w-full rounded-xl border px-4 py-3 text-left transition-colors ${
-                    selectedService?.code === svc.serviceTypeCode
-                      ? "border-primary bg-primary/10"
-                      : "border-default-200 hover:border-primary/40"
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium text-sm">{svc.serviceDescription}</span>
-                    <span className="font-bold text-primary text-sm">
-                      {CLP.format(svc.serviceValue)}
-                    </span>
-                  </div>
-                  {svc.deliveryTime && (
-                    <span className="text-default-500 text-xs">{svc.deliveryTime}</span>
-                  )}
-                </button>
-              ))}
-            </div>
-          )}
+      {isFetching ? (
+        <div className="flex items-center justify-center gap-2 py-4 text-default-500 text-sm">
+          <Spinner size="sm" />
+          Cotizando…
         </div>
-      )}
+      ) : services.length === 0 && !isError ? (
+        <p className="rounded-xl bg-default-50 px-4 py-3 text-default-500 text-sm">
+          Sin cobertura para este destino y dimensiones.
+        </p>
+      ) : services.length > 0 ? (
+        <RadioGroup
+          className="space-y-2"
+          onChange={(value) => setSelectedCode(value)}
+          value={selectedCode ?? ""}
+        >
+          {services.map((svc) => (
+            <Radio key={svc.serviceTypeCode} value={svc.serviceTypeCode}>
+              <Radio.Control>
+                <Radio.Indicator />
+              </Radio.Control>
+              <Radio.Content className="w-full">
+                <div className="flex items-center justify-between gap-2">
+                  <Label>{svc.serviceDescription}</Label>
+                  <span className="font-bold text-primary text-sm">
+                    {CLP.format(svc.serviceValue)}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  {svc.deliveryTime && <Description>{svc.deliveryTime}</Description>}
+                  {svc.serviceTypeCode === cheapestCode && (
+                    <Chip color="success" size="sm" variant="soft">
+                      Más barato
+                    </Chip>
+                  )}
+                </div>
+              </Radio.Content>
+            </Radio>
+          ))}
+        </RadioGroup>
+      ) : null}
 
-      {quoteMutation.isError && (
+      {isError && (
         <p className="text-danger text-sm">
-          Error al cotizar: {(quoteMutation.error as Error).message}
+          Error al cotizar: {(error as Error)?.message ?? "desconocido"}
         </p>
       )}
 
@@ -843,10 +912,10 @@ function QuoteStep({
           isDisabled={!selectedService}
           onPress={() =>
             onNext({
-              ...dims,
-              serviceTypeCode: selectedService!.code,
-              serviceDescription: selectedService!.description,
-              serviceValue: selectedService!.value,
+              ...debouncedDims,
+              serviceTypeCode: selectedService!.serviceTypeCode,
+              serviceDescription: selectedService!.serviceDescription,
+              serviceValue: selectedService!.serviceValue,
             })
           }
         >
