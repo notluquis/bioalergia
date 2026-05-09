@@ -81,6 +81,7 @@ import { doctoraliaScraperRoutes } from "./routes/doctoralia-scraper.ts";
 import { googleCalendarWebhookRoutes } from "./routes/google-calendar-webhook.ts";
 import { mercadopagoReportWebhookRoutes } from "./routes/mercadopago-report-webhook.ts";
 import { onedriveWebhookRoutes } from "./routes/onedrive-webhook.ts";
+import { waCloudMediaRoutes } from "./routes/wa-cloud-media.ts";
 import { waCloudWebhookRoutes } from "./routes/wa-cloud-webhook.ts";
 import { errorReply } from "./utils/error-reply.ts";
 import { normalizeErrorResponse } from "./utils/normalize-error-response.ts";
@@ -1860,6 +1861,7 @@ app.use("/api/orpc/whatsapp/*", async (c, next) => {
 app.route("/api/webhooks/google", googleCalendarWebhookRoutes);
 app.route("/api/webhooks/onedrive", onedriveWebhookRoutes);
 app.route("/api/webhooks/meta", waCloudWebhookRoutes);
+app.route("/api/wa-cloud/media", waCloudMediaRoutes);
 app.route("/api/webhooks/mercadopago", mercadopagoReportWebhookRoutes);
 
 // Bearer-auth ingress for the Doctoralia scraper bot (reads/writes manual cookies).

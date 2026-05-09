@@ -5,6 +5,8 @@ import { AlertCircle, Check, CheckCheck, Clock, FileText, Send, Settings2 } from
 import { useEffect, useMemo, useRef, useState } from "react";
 import { SelectInput, TextInput } from "@/features/outreach/components/FormField";
 import { toast } from "@/lib/toast-interceptor";
+import { EmojiPickerButton } from "./EmojiPickerButton";
+import { MediaAttachment } from "./MediaAttachment";
 import {
   useAccounts,
   useConversation,
@@ -203,6 +205,7 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
     | {
         kind: "message";
         key: string;
+        messageId: number | null;
         out: boolean;
         body: string | null;
         type: string;
@@ -242,6 +245,7 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
     allMessages.push({
       kind: "message",
       key: `${m._src}-${m.id}`,
+      messageId: m._src === "server" ? Number(m.id) : null,
       out: m.direction === "OUTBOUND",
       body: m.body,
       type: m.type,
@@ -348,6 +352,7 @@ function ChatBubble({
   row,
 }: {
   row: {
+    messageId: number | null;
     out: boolean;
     body: string | null;
     type: string;
@@ -368,24 +373,33 @@ function ChatBubble({
       : "bg-success-100 text-foreground"
     : "bg-background text-foreground";
   const radius = out ? "rounded-l-2xl rounded-tr-2xl" : "rounded-r-2xl rounded-tl-2xl";
-  const label =
-    row.body ??
-    (row.templateName ? `[plantilla] ${row.templateName}` : `[${row.type.toLowerCase()}]`);
+  const isMedia = ["IMAGE", "STICKER", "VIDEO", "AUDIO", "DOCUMENT"].includes(row.type);
+  const fallbackLabel = row.templateName
+    ? `[plantilla] ${row.templateName}`
+    : `[${row.type.toLowerCase()}]`;
 
   return (
     <div className={`flex ${wrapper}`}>
       <div
-        className={`max-w-[78%] ${radius} px-3 py-2 shadow-sm ${bubbleColor} ${
+        className={`max-w-[78%] ${radius} ${row.type === "STICKER" ? "" : "px-3 py-2 shadow-sm"} ${bubbleColor} ${
           isPending ? "opacity-70" : ""
         }`}
       >
-        <p className="whitespace-pre-wrap break-words text-sm leading-snug">{label}</p>
-        <div className="mt-1 flex items-center justify-end gap-1 text-default-500 text-[10px]">
+        {isMedia && row.messageId ? (
+          <MediaAttachment messageId={row.messageId} type={row.type} caption={row.body} />
+        ) : (
+          <p className="whitespace-pre-wrap break-words text-sm leading-snug">
+            {row.body ?? fallbackLabel}
+          </p>
+        )}
+        <div
+          className={`flex items-center justify-end gap-1 text-default-500 text-[10px] ${row.type === "STICKER" ? "px-2 pb-1" : "mt-1"}`}
+        >
           <span>{dayjs(row.timestamp).format("HH:mm")}</span>
           {out && <StatusTicks status={row.status} />}
         </div>
         {failed && row.errorTitle && (
-          <p className="mt-1 text-[11px] text-danger">
+          <p className="mt-1 px-3 pb-1 text-[11px] text-danger">
             {row.errorTitle}
             {row.errorDetails ? `: ${row.errorDetails}` : ""}
           </p>
@@ -426,6 +440,23 @@ function TextComposer({
     }
   };
 
+  const insertEmoji = (emoji: string) => {
+    const el = ref.current;
+    if (!el) {
+      setBody(body + emoji);
+      return;
+    }
+    const start = el.selectionStart ?? body.length;
+    const end = el.selectionEnd ?? body.length;
+    const next = body.slice(0, start) + emoji + body.slice(end);
+    setBody(next);
+    requestAnimationFrame(() => {
+      el.focus();
+      const pos = start + emoji.length;
+      el.setSelectionRange(pos, pos);
+    });
+  };
+
   return (
     <div className="flex items-end gap-2">
       <Button
@@ -437,6 +468,7 @@ function TextComposer({
       >
         <FileText size={16} />
       </Button>
+      <EmojiPickerButton onSelect={insertEmoji} />
       <div className="flex-1">
         <textarea
           ref={ref}
