@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { formatRut, normalizeRut, validateRut } from "../rut";
+import {
+  canonicalRutFilter,
+  formatRut,
+  normalizeRut,
+  requireCanonicalRut,
+  validateRut,
+} from "../rut";
 
 describe("rut", () => {
   describe("normalizeRut", () => {
@@ -113,6 +119,72 @@ describe("rut", () => {
     // body 11222333 -> dv 9
     it("validates RUT 11.222.333-9", () => {
       expect(validateRut("11222333-9")).toBe(true);
+    });
+  });
+
+  describe("requireCanonicalRut", () => {
+    it("returns canonical form for dotted input", () => {
+      expect(requireCanonicalRut("20.275.995-5")).toBe("20275995-5");
+    });
+
+    it("returns canonical form when already canonical", () => {
+      expect(requireCanonicalRut("20275995-5")).toBe("20275995-5");
+    });
+
+    it("uppercases K check digit", () => {
+      expect(requireCanonicalRut("11222333-k")).toBe("11222333-K");
+    });
+
+    it("strips whitespace and dots", () => {
+      expect(requireCanonicalRut("  20.275.995 - 5  ")).toBe("20275995-5");
+    });
+
+    it("throws on null", () => {
+      expect(() => requireCanonicalRut(null)).toThrow();
+    });
+
+    it("throws on undefined", () => {
+      expect(() => requireCanonicalRut(undefined)).toThrow();
+    });
+
+    it("throws on empty string", () => {
+      expect(() => requireCanonicalRut("")).toThrow();
+    });
+
+    it("throws on garbage input", () => {
+      expect(() => requireCanonicalRut("---")).toThrow();
+    });
+
+    it("preserves identity across the helper boundary (idempotent)", () => {
+      const once = requireCanonicalRut("20.275.995-5");
+      const twice = requireCanonicalRut(once);
+      expect(once).toBe(twice);
+    });
+  });
+
+  describe("canonicalRutFilter", () => {
+    it("returns canonical form for dotted input", () => {
+      expect(canonicalRutFilter("20.275.995-5")).toBe("20275995-5");
+    });
+
+    it("returns canonical form when already canonical", () => {
+      expect(canonicalRutFilter("20275995-5")).toBe("20275995-5");
+    });
+
+    it("returns null on null/undefined/empty", () => {
+      expect(canonicalRutFilter(null)).toBeNull();
+      expect(canonicalRutFilter(undefined)).toBeNull();
+      expect(canonicalRutFilter("")).toBeNull();
+    });
+
+    it("returns null on non-RUT garbage so DB filters match nothing", () => {
+      expect(canonicalRutFilter("---")).toBeNull();
+      expect(canonicalRutFilter("abc")).toBeNull();
+    });
+
+    it("treats whitespace-trimming inputs equivalently", () => {
+      expect(canonicalRutFilter("20.275.995-5")).toBe(canonicalRutFilter("20275995-5"));
+      expect(canonicalRutFilter(" 20.275.995-5 ")).toBe(canonicalRutFilter("20275995-5"));
     });
   });
 

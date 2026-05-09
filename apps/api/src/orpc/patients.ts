@@ -261,6 +261,43 @@ function parseDateOnly(value: string) {
   return dayjs.tz(value, "YYYY-MM-DD", TIMEZONE).toDate();
 }
 
+/**
+ * Build the where clause used by the patient search endpoint. Each token
+ * is canonicalized with canonicalRutFilter so that "20.275.995-5" and
+ * "20275995-5" both resolve to the same DB-stored canonical RUT. Names
+ * still match by raw contains (case-insensitive). Exported for unit
+ * testing.
+ */
+export function buildPatientSearchWhere(query: string | undefined) {
+  const tokens = query
+    ? query
+        .trim()
+        .split(/\s+/)
+        .filter((t) => t.length > 0)
+    : [];
+  if (tokens.length === 0) return {};
+  return {
+    person: {
+      AND: tokens.map((token) => {
+        const canonicalRut = canonicalRutFilter(token);
+        return {
+          OR: [
+            { names: { contains: token, mode: "insensitive" as const } },
+            { fatherName: { contains: token, mode: "insensitive" as const } },
+            { motherName: { contains: token, mode: "insensitive" as const } },
+            {
+              rut: {
+                contains: canonicalRut ?? token,
+                mode: "insensitive" as const,
+              },
+            },
+          ],
+        };
+      }),
+    },
+  };
+}
+
 const authed = base.use(async ({ context, next }) => {
   const user = await getSessionUser(context.hono);
 
@@ -644,39 +681,7 @@ const patientsORPCRouterBase = {
     .input(listPatientsInputSchema)
     .output(patientListResponseSchema)
     .handler(async ({ input }) => {
-      const tokens = input.q
-        ? input.q
-            .trim()
-            .split(/\s+/)
-            .filter((t) => t.length > 0)
-        : [];
-      const where = tokens.length > 0
-        ? {
-            person: {
-              AND: tokens.map((token) => {
-                // Normalize each token to canonical RUT (e.g. "20.275.995-5"
-                // ⇒ "20275995-5") so the contains match works against the DB
-                // canonical form regardless of input formatting. If the
-                // token isn't a RUT shape, normalizeRut returns null and we
-                // fall back to the raw token.
-                const canonicalRut = canonicalRutFilter(token);
-                return {
-                  OR: [
-                    { names: { contains: token, mode: "insensitive" as const } },
-                    { fatherName: { contains: token, mode: "insensitive" as const } },
-                    { motherName: { contains: token, mode: "insensitive" as const } },
-                    {
-                      rut: {
-                        contains: canonicalRut ?? token,
-                        mode: "insensitive" as const,
-                      },
-                    },
-                  ],
-                };
-              }),
-            },
-          }
-        : {};
+      const where = buildPatientSearchWhere(input.q);
 
       const patients = await db.patient.findMany({
         where,
