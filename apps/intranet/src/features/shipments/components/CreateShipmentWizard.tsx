@@ -510,28 +510,30 @@ function OfficePicker({
           </div>
           <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
             {nearbyOffices.slice(0, 4).map(({ distance, office }) => (
-              <button
+              <Button
                 key={office.commercialOfficeId}
-                onClick={() => {
+                className="h-auto justify-start whitespace-normal p-3 text-left"
+                onPress={() => {
                   setRegionId(office.regionCode);
                   setCoverageCode(office.countyCode ?? "");
                   setCommuneName(office.commune);
                   setOfficeId(office.commercialOfficeId);
                   setOfficeName(office.commercialOfficeName);
                 }}
-                type="button"
-                className="rounded-lg border border-default-200 bg-background p-3 text-left hover:border-primary/40"
+                variant="secondary"
               >
-                <div className="flex items-center justify-between gap-2">
-                  <span className="font-medium text-sm">{office.commercialOfficeName}</span>
-                  <Chip color="accent" size="sm" variant="soft">
-                    {Number(distance).toFixed(1)} km
-                  </Chip>
+                <div className="flex w-full flex-col gap-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-medium text-sm">{office.commercialOfficeName}</span>
+                    <Chip color="accent" size="sm" variant="soft">
+                      {Number(distance).toFixed(1)} km
+                    </Chip>
+                  </div>
+                  <span className="text-default-500 text-xs">
+                    {office.street} {office.number}, {office.commune}
+                  </span>
                 </div>
-                <p className="text-default-500 text-xs">
-                  {office.street} {office.number}, {office.commune}
-                </p>
-              </button>
+              </Button>
             ))}
           </div>
         </div>
@@ -1022,34 +1024,32 @@ function RecipientStep({
 
       <form.Field name="cashOnDelivery">
         {(field) => (
-          <div className="space-y-2">
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={() => field.handleChange(0)}
-                className={`flex-1 rounded-xl border px-4 py-3 text-center text-sm transition-colors ${
-                  field.state.value === 0
-                    ? "border-primary bg-primary/10 font-semibold text-primary"
-                    : "border-default-200 hover:border-primary/40"
-                }`}
-              >
-                Prepagado
-                <div className="text-default-500 text-xs">La clínica paga el envío</div>
-              </button>
-              <button
-                type="button"
-                onClick={() => field.handleChange(state.serviceValue ?? 0)}
-                className={`flex-1 rounded-xl border px-4 py-3 text-center text-sm transition-colors ${
-                  field.state.value > 0
-                    ? "border-primary bg-primary/10 font-semibold text-primary"
-                    : "border-default-200 hover:border-primary/40"
-                }`}
-              >
-                Flete por cobrar
-                <div className="text-default-500 text-xs">El paciente paga al recibir</div>
-              </button>
-            </div>
-          </div>
+          <RadioGroup
+            onChange={(value) => {
+              field.handleChange(value === "ppd" ? (state.serviceValue ?? 0) : 0);
+            }}
+            orientation="horizontal"
+            value={field.state.value > 0 ? "ppd" : "prepaid"}
+          >
+            <Radio value="prepaid">
+              <Radio.Control>
+                <Radio.Indicator />
+              </Radio.Control>
+              <Radio.Content>
+                <Label>Prepagado</Label>
+                <Description>La clínica paga el envío</Description>
+              </Radio.Content>
+            </Radio>
+            <Radio value="ppd">
+              <Radio.Control>
+                <Radio.Indicator />
+              </Radio.Control>
+              <Radio.Content>
+                <Label>Flete por cobrar</Label>
+                <Description>El paciente paga al recibir</Description>
+              </Radio.Content>
+            </Radio>
+          </RadioGroup>
         )}
       </form.Field>
 
