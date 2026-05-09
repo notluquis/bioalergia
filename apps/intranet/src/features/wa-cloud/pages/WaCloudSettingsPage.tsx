@@ -151,9 +151,7 @@ function AccountCard({ acc }: { acc: AccountSummary }) {
         {validateResult && (
           <div
             className={`rounded-lg p-3 text-sm ${
-              validateResult.ok
-                ? "bg-success/10 text-success"
-                : "bg-danger/10 text-danger"
+              validateResult.ok ? "bg-success/10 text-success" : "bg-danger/10 text-danger"
             }`}
           >
             {validateResult.ok
@@ -256,11 +254,7 @@ function AccountCard({ acc }: { acc: AccountSummary }) {
         accountId={acc.id}
         wabaId={acc.wabaId}
       />
-      <PhoneAddModal
-        isOpen={phoneOpen}
-        onClose={() => setPhoneOpen(false)}
-        accountId={acc.id}
-      />
+      <PhoneAddModal isOpen={phoneOpen} onClose={() => setPhoneOpen(false)} accountId={acc.id} />
       <ConfirmDeleteModal
         isOpen={confirmDel}
         onClose={() => setConfirmDel(false)}
@@ -313,11 +307,7 @@ function CredentialsModal({
     onClose();
   };
 
-  const saveLabel = async (
-    phoneId: number,
-    phoneNumberId: string,
-    displayPhoneNumber: string
-  ) => {
+  const saveLabel = async (phoneId: number, phoneNumberId: string, displayPhoneNumber: string) => {
     await upPhone.mutateAsync({
       id: phoneId,
       accountId: acc.id,
@@ -376,9 +366,7 @@ function CredentialsModal({
                         <p className="font-mono text-default-500 text-xs">{p.displayPhoneNumber}</p>
                         <TextInput
                           value={labelEdits[p.id] ?? p.label ?? ""}
-                          onValueChange={(v) =>
-                            setLabelEdits((m) => ({ ...m, [p.id]: v }))
-                          }
+                          onValueChange={(v) => setLabelEdits((m) => ({ ...m, [p.id]: v }))}
                           placeholder="Recepción / Doctor / Sandbox"
                         />
                       </div>

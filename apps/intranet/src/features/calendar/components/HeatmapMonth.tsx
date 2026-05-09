@@ -228,7 +228,7 @@ function HeatmapMonthComponent({
                     selectedDate === cell.isoDate && !cell.isToday,
                 },
                 !cell.isToday &&
-                  "hover:z-10 hover:scale-110 hover:shadow-lg hover:ring-2 hover:ring-primary hover:ring-offset-2 hover:ring-offset-content1",
+                  "hover:z-10 hover:scale-110 hover:shadow-lg hover:ring-2 hover:ring-primary hover:ring-offset-2 hover:ring-offset-content1"
               )}
               onPress={() => onDayClick?.(cell.isoDate)}
               size="sm"
@@ -238,7 +238,7 @@ function HeatmapMonthComponent({
               <span
                 className={clsx(
                   "absolute top-0.5 left-1 text-[10px] leading-none opacity-60",
-                  cell.total > 0 && "font-normal text-[9px] opacity-80",
+                  cell.total > 0 && "font-normal text-[9px] opacity-80"
                 )}
               >
                 {cell.dayNumber}

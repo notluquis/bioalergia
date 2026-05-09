@@ -142,7 +142,8 @@ export function DoctoraliaCookieStorePanel() {
 
         <TextField value={cookieHeader} onChange={setCookieHeader}>
           <Label>Cookie header</Label>
-          <TextArea variant="secondary"
+          <TextArea
+            variant="secondary"
             placeholder="PHPSESSID=…; XSRF-TOKEN=…; csrf=…"
             rows={4}
             spellCheck={false}

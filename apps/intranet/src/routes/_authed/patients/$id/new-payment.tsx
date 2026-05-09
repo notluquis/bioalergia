@@ -190,7 +190,8 @@ function NewPaymentPage() {
 
             <form.Field name="amount">
               {(field) => (
-                <NumberField variant="secondary"
+                <NumberField
+                  variant="secondary"
                   formatOptions={{
                     currency: "CLP",
                     currencyDisplay: "symbol",

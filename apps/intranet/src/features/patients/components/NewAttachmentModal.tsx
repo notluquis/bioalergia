@@ -74,7 +74,12 @@ export function NewAttachmentModal({ isOpen, onClose, patientId }: NewAttachment
                         <div className="flex-1 truncate rounded-lg bg-primary/10 p-3 font-bold text-primary text-sm">
                           {file.name}
                         </div>
-                        <Button variant="outline" size="sm" isIconOnly onPress={() => setFile(null)}>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          isIconOnly
+                          onPress={() => setFile(null)}
+                        >
                           <X size={18} />
                         </Button>
                       </div>

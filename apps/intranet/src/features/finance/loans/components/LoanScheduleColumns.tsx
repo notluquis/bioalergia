@@ -20,7 +20,7 @@ export const getColumns = (
     onRegisterPayment: (schedule: LoanSchedule) => void;
     onUnlinkPayment: (schedule: LoanSchedule) => void;
   },
-  canManage: boolean,
+  canManage: boolean
 ): ColumnDef<LoanSchedule>[] => [
   {
     accessorKey: "installment_number",

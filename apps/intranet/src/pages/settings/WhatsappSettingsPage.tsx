@@ -2407,7 +2407,11 @@ export function WhatsappSettingsPage() {
 
                   <TextField onChange={setHistoryTypeFilter} value={historyTypeFilter}>
                     <Label>Tipo</Label>
-                    <Input variant="secondary" placeholder="image, conversation, reaction..." type="text" />
+                    <Input
+                      variant="secondary"
+                      placeholder="image, conversation, reaction..."
+                      type="text"
+                    />
                   </TextField>
 
                   <TextField onChange={setHistoryPhoneFilter} value={historyPhoneFilter}>
@@ -2544,7 +2548,11 @@ export function WhatsappSettingsPage() {
                   <div className="grid gap-4 md:grid-cols-2">
                     <TextField onChange={setBusinessEmail} value={businessEmail}>
                       <Label>Email</Label>
-                      <Input variant="secondary" placeholder="contacto@bioalergia.cl" type="email" />
+                      <Input
+                        variant="secondary"
+                        placeholder="contacto@bioalergia.cl"
+                        type="email"
+                      />
                     </TextField>
 
                     <TextField onChange={setBusinessTimezone} value={businessTimezone}>
@@ -2555,7 +2563,11 @@ export function WhatsappSettingsPage() {
 
                   <TextField onChange={setBusinessAddress} value={businessAddress}>
                     <Label>Dirección</Label>
-                    <Input variant="secondary" placeholder="Av. Ejemplo 123, Providencia" type="text" />
+                    <Input
+                      variant="secondary"
+                      placeholder="Av. Ejemplo 123, Providencia"
+                      type="text"
+                    />
                   </TextField>
 
                   <TextField onChange={setBusinessWebsites} value={businessWebsites}>
@@ -2671,7 +2683,11 @@ export function WhatsappSettingsPage() {
                     </div>
                     <TextField onChange={setCoverPhotoIdToRemove} value={coverPhotoIdToRemove}>
                       <Label>Cover photo ID</Label>
-                      <Input variant="secondary" placeholder="ID retornado por Baileys" type="text" />
+                      <Input
+                        variant="secondary"
+                        placeholder="ID retornado por Baileys"
+                        type="text"
+                      />
                     </TextField>
                     <Button
                       isDisabled={
@@ -2717,7 +2733,11 @@ export function WhatsappSettingsPage() {
                     </TextField>
                     <TextField onChange={setQuickReplyKeywords} value={quickReplyKeywords}>
                       <Label>Keywords</Label>
-                      <Input variant="secondary" placeholder="hola, recepción, agenda" type="text" />
+                      <Input
+                        variant="secondary"
+                        placeholder="hola, recepción, agenda"
+                        type="text"
+                      />
                     </TextField>
                     <Button
                       isDisabled={
@@ -2904,7 +2924,8 @@ export function WhatsappSettingsPage() {
                     <div className="grid gap-4 md:grid-cols-2">
                       <TextField onChange={setChatLabelJid} value={chatLabelJid}>
                         <Label>Chat JID</Label>
-                        <Input variant="secondary"
+                        <Input
+                          variant="secondary"
                           placeholder={selectedChatJid ?? "569...@s.whatsapp.net"}
                           type="text"
                         />
@@ -2975,7 +2996,8 @@ export function WhatsappSettingsPage() {
                     <div className="grid gap-4 md:grid-cols-3">
                       <TextField onChange={setMessageLabelJid} value={messageLabelJid}>
                         <Label>Chat JID</Label>
-                        <Input variant="secondary"
+                        <Input
+                          variant="secondary"
                           placeholder={selectedChatJid ?? "569...@s.whatsapp.net"}
                           type="text"
                         />

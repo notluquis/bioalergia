@@ -165,7 +165,11 @@ export function DoctoraliaEmailPatientsPage() {
                         : "—"}
                     </Table.Cell>
                     <Table.Cell className="text-right">
-                      <Button onPress={() => setSelectedPatient(patient)} size="sm" variant="outline">
+                      <Button
+                        onPress={() => setSelectedPatient(patient)}
+                        size="sm"
+                        variant="outline"
+                      >
                         Ver historial
                       </Button>
                     </Table.Cell>

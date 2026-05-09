@@ -119,7 +119,8 @@ function NewBudgetPage() {
 
             <form.Field name="discount">
               {(field) => (
-                <NumberField variant="secondary"
+                <NumberField
+                  variant="secondary"
                   formatOptions={{
                     currency: "CLP",
                     currencyDisplay: "symbol",
@@ -195,7 +196,8 @@ function NewBudgetPage() {
                       <div className="col-span-4 sm:col-span-2">
                         <form.Field name={`items[${index}].quantity`}>
                           {(subField) => (
-                            <NumberField variant="secondary"
+                            <NumberField
+                              variant="secondary"
                               isInvalid={subField.state.meta.errors.length > 0}
                               minValue={1}
                               onChange={(value) => subField.handleChange(value ?? 1)}
@@ -215,7 +217,8 @@ function NewBudgetPage() {
                       <div className="col-span-6 sm:col-span-3">
                         <form.Field name={`items[${index}].unitPrice`}>
                           {(subField) => (
-                            <NumberField variant="secondary"
+                            <NumberField
+                              variant="secondary"
                               formatOptions={{
                                 currency: "CLP",
                                 currencyDisplay: "symbol",

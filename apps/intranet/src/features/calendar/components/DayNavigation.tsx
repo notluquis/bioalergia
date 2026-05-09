@@ -27,7 +27,7 @@ export function DayNavigation({
   const today = dayjs();
   const allowedSet = useMemo(
     () => (allowedWeekdays?.length ? new Set(allowedWeekdays) : null),
-    [allowedWeekdays],
+    [allowedWeekdays]
   );
 
   const isAllowed = useCallback(
@@ -37,7 +37,7 @@ export function DayNavigation({
       }
       return allowedSet.has(date.day());
     },
-    [allowedSet],
+    [allowedSet]
   );
 
   const findAdjacentAllowed = useCallback(
@@ -51,7 +51,7 @@ export function DayNavigation({
       }
       return date;
     },
-    [isAllowed],
+    [isAllowed]
   );
 
   const normalizeToAllowed = useCallback(
@@ -61,7 +61,7 @@ export function DayNavigation({
       }
       return findAdjacentAllowed(date, 1);
     },
-    [findAdjacentAllowed, isAllowed],
+    [findAdjacentAllowed, isAllowed]
   );
 
   // Generate range of dates (-4 to +4 around selected = 9 days)
@@ -125,7 +125,7 @@ export function DayNavigation({
                   isSelected
                     ? "z-10 scale-105 bg-primary font-semibold text-primary-foreground shadow-md"
                     : "text-foreground-500 hover:bg-default-100",
-                  isToday && !isSelected && "bg-default-100 font-medium text-foreground",
+                  isToday && !isSelected && "bg-default-100 font-medium text-foreground"
                 )}
                 key={date.toString()}
                 onPress={() => {
@@ -140,7 +140,7 @@ export function DayNavigation({
                 <span
                   className={cn(
                     "text-[10px] uppercase tracking-wider",
-                    isSelected ? "text-primary-foreground/90" : "text-foreground-500",
+                    isSelected ? "text-primary-foreground/90" : "text-foreground-500"
                   )}
                 >
                   {date.format("ddd")}

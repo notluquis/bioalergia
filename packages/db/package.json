@@ -45,8 +45,8 @@
     }
   },
   "scripts": {
-    "build": "zen generate --lite && pnpm fix-imports && tsc",
-    "type-check": "tsc --noEmit",
+    "build": "zen generate --lite && pnpm fix-imports && NODE_OPTIONS=--max-old-space-size=8192 tsc",
+    "type-check": "NODE_OPTIONS=--max-old-space-size=8192 tsc --noEmit",
     "fix-imports": "node scripts/fix-imports.mjs",
     "generate": "zen generate --lite",
     "zen:watch": "zen generate --watch",
@@ -66,20 +66,20 @@
     "@zenstackhq/server": "^3.6.4",
     "@zenstackhq/tanstack-query": "^3.6.4",
     "@zenstackhq/zod": "^3.6.4",
-    "hono": "^4.12.15",
-    "kysely": "^0.28.16",
+    "hono": "^4.12.18",
+    "kysely": "^0.28.17",
     "pg": "8.20.0",
     "pg-types": "^4.1.0",
-    "zod": "^4.3.6"
+    "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@tanstack/react-query": "^5.100.6",
-    "@types/node": "^25.6.0",
+    "@tanstack/react-query": "^5.100.9",
+    "@types/node": "^25.6.2",
     "@types/pg": "^8.20.0",
     "@types/react": "^19.2.14",
     "@zenstackhq/cli": "^3.6.4",
     "@zenstackhq/sdk": "^3.6.4",
-    "react": "^19.2.5",
+    "react": "^19.2.6",
     "ts-morph": "^28.0.0",
     "ts-pattern": "^5.9.0",
     "typescript": "^6.0.3"

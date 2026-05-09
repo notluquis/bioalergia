@@ -135,7 +135,7 @@ function buildBankSummary(row: ParticipantCounterpartRow) {
     parts.push(
       row.bankAccountType
         ? `${row.bankAccountType} · ${row.bankAccountNumber}`
-        : row.bankAccountNumber,
+        : row.bankAccountNumber
     );
   }
   if (row.bankBranch) {

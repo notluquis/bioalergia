@@ -68,7 +68,12 @@ export function ParticipantInsightsPage() {
               onChange={(v) => setParticipantId(v)}
             >
               <Label>ID participante</Label>
-              <Input variant="secondary" enterKeyHint="search" inputMode="numeric" placeholder="123861706983" />
+              <Input
+                variant="secondary"
+                enterKeyHint="search"
+                inputMode="numeric"
+                placeholder="123861706983"
+              />
             </TextField>
 
             <Select

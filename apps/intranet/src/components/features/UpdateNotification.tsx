@@ -43,7 +43,7 @@ export function UpdateNotification() {
             () => {
               resolve();
             },
-            { once: true },
+            { once: true }
           );
           // Generous timeout for slow connections (was 3000ms)
           setTimeout(resolve, 5000);
@@ -84,7 +84,7 @@ export function UpdateNotification() {
             () => {
               resolve();
             },
-            { once: true },
+            { once: true }
           );
           setTimeout(resolve, 5000);
         });

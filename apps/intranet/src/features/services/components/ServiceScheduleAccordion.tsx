@@ -70,7 +70,7 @@ function buildScheduleGroups(schedules: ServiceSchedule[]): ScheduleGroup[] {
   }
 
   const sorted = [...schedules].toSorted(
-    (a, b) => dayjs(a.dueDate).valueOf() - dayjs(b.dueDate).valueOf(),
+    (a, b) => dayjs(a.dueDate).valueOf() - dayjs(b.dueDate).valueOf()
   );
   const todayDate = dayjs().startOf("day");
   const map = new Map<string, ScheduleGroup>();

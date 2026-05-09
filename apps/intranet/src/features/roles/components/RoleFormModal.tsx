@@ -96,7 +96,7 @@ function RoleBaseForm({ onClose, roleEntity, userData }: RoleBaseFormProps) {
         const issues = errorWithDetails.details
           .map(
             (i: { message: string; path: (number | string)[] }) =>
-              `${i.path.join(".")}: ${i.message}`,
+              `${i.path.join(".")}: ${i.message}`
           )
           .join("\n");
         message = `Datos inválidos:\n${issues}`;
@@ -106,7 +106,7 @@ function RoleBaseForm({ onClose, roleEntity, userData }: RoleBaseFormProps) {
     onSuccess: () => {
       toast.success(
         "Los cambios se han guardado correctamente.",
-        roleEntity ? "Rol actualizado" : "Rol creado",
+        roleEntity ? "Rol actualizado" : "Rol creado"
       );
       void queryClient.invalidateQueries({ queryKey: roleKeys.all });
       onClose();
