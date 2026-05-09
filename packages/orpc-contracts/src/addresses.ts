@@ -87,6 +87,10 @@ export const addressesContract = {
     .route({ method: "DELETE", path: "/{id}" })
     .input(addressIdInputSchema)
     .output(addressDeleteResponseSchema),
+  geocode: oc
+    .route({ method: "POST", path: "/{id}/geocode" })
+    .input(addressIdInputSchema)
+    .output(addressResponseSchema),
   list: oc
     .route({ method: "GET", path: "/" })
     .input(listAddressesInputSchema)

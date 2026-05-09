@@ -15,10 +15,41 @@ import { ORPCError, onError, os } from "@orpc/server";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import type { Context as HonoContext } from "hono";
 import type { z } from "zod";
+import { Decimal } from "decimal.js";
 import { getSessionUser, hasPermission } from "../auth";
 import { logError } from "../lib/logger";
 import { configureSuperjson } from "../lib/superjson-config";
+import { geocodeAddress } from "../services/shipments";
 import { SuperJSONRPCHandler } from "./superjson";
+
+/**
+ * Best-effort geocoding via Chilexpress' /addresses/georeference endpoint.
+ * Failures are swallowed (logged) so address persistence never blocks on
+ * a slow/unavailable carrier API. Returns the lat/lng/addressId triple
+ * when Chilexpress can place the address; otherwise null.
+ */
+async function tryGeocodeAddress(input: {
+  street: string;
+  number: string;
+  comuna: string;
+}): Promise<{ latitude: Decimal; longitude: Decimal; chilexpressAddressId: number | null } | null> {
+  try {
+    const result = await geocodeAddress({
+      streetName: input.street,
+      countyName: input.comuna,
+      number: input.number,
+    });
+    if (!result || !result.latitude || !result.longitude) return null;
+    return {
+      latitude: new Decimal(result.latitude),
+      longitude: new Decimal(result.longitude),
+      chilexpressAddressId: result.addressId ?? null,
+    };
+  } catch (error) {
+    logError("addresses.geocode.failed", error, { input });
+    return null;
+  }
+}
 
 configureSuperjson();
 
@@ -77,6 +108,12 @@ const addressesORPCRouterBase = {
       const existingCount = await db.address.count({ where: { personId: input.personId } });
       const shouldBePrimary = existingCount === 0 || input.isPrimary === true;
 
+      const geo = await tryGeocodeAddress({
+        street: input.street,
+        number: input.number,
+        comuna: input.comuna,
+      });
+
       const address = await db.address.create({
         data: {
           personId: input.personId,
@@ -94,6 +131,9 @@ const addressesORPCRouterBase = {
           ineCountyCode: input.ineCountyCode ?? null,
           supportsCashOnDelivery: input.supportsCashOnDelivery ?? null,
           supportsReturn: input.supportsReturn ?? null,
+          latitude: geo?.latitude ?? null,
+          longitude: geo?.longitude ?? null,
+          chilexpressAddressId: geo?.chilexpressAddressId ?? null,
           countryCode: input.countryCode ?? "CL",
           isPrimary: shouldBePrimary,
           isActive: true,
@@ -171,15 +211,64 @@ const addressesORPCRouterBase = {
         throw new ORPCError("NOT_FOUND", { message: "Dirección no encontrada" });
       }
 
+      // Re-geocode when street/number/comuna change so cached lat/lng
+      // doesn't drift from the actual address.
+      const street = input.payload.street ?? existing.street;
+      const number = input.payload.number ?? existing.number;
+      const comuna = input.payload.comuna ?? existing.comuna;
+      const shouldGeocode =
+        input.payload.street !== undefined ||
+        input.payload.number !== undefined ||
+        input.payload.comuna !== undefined;
+      const geo = shouldGeocode
+        ? await tryGeocodeAddress({ street, number, comuna })
+        : null;
+
       const address = await db.address.update({
         where: { id: input.id },
-        data: input.payload,
+        data: {
+          ...input.payload,
+          ...(geo
+            ? {
+                latitude: geo.latitude,
+                longitude: geo.longitude,
+                chilexpressAddressId: geo.chilexpressAddressId,
+              }
+            : {}),
+        },
       });
 
       if (input.payload.isPrimary === true) {
         await ensureSinglePrimary(existing.personId, address.id);
       }
 
+      return { address };
+    }),
+
+  geocode: updatePersons
+    .route({ method: "POST", path: "/{id}/geocode", tags: ["Addresses"] })
+    .input(addressIdInputSchema)
+    .output(addressResponseSchema)
+    .handler(async ({ input }) => {
+      const existing = await db.address.findUnique({ where: { id: input.id } });
+      if (!existing) {
+        throw new ORPCError("NOT_FOUND", { message: "Dirección no encontrada" });
+      }
+      const geo = await tryGeocodeAddress({
+        street: existing.street,
+        number: existing.number,
+        comuna: existing.comuna,
+      });
+      const address = await db.address.update({
+        where: { id: input.id },
+        data: geo
+          ? {
+              latitude: geo.latitude,
+              longitude: geo.longitude,
+              chilexpressAddressId: geo.chilexpressAddressId,
+            }
+          : {},
+      });
       return { address };
     }),
 };

@@ -2,6 +2,7 @@ import type { Key } from "@heroui/react";
 import {
   Button,
   Checkbox,
+  ComboBox,
   FieldError,
   Form,
   Input,
@@ -14,8 +15,9 @@ import {
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Home, Save } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useToast } from "@/context/ToastContext";
-import { fetchCommunes, fetchRegions } from "@/features/shipments/api";
+import { fetchCommunes, fetchRegions, searchStreets } from "@/features/shipments/api";
 import { createAddress, updateAddress } from "../api";
 
 interface AddressFormState {
@@ -130,6 +132,10 @@ export function AddressFormModal({
   });
   const communes = communesResponse?.communes ?? [];
 
+  const selectedCommuneName =
+    communes.find((c) => c.coverageRegionCode === String(form.state.values.comuna ?? ""))
+      ?.countyName ?? "";
+
   const createAddressMutation = useMutation({
     mutationFn: createAddress,
     onError: (err) => toastError(err instanceof Error ? err.message : "Error al guardar dirección"),
@@ -203,14 +209,11 @@ export function AddressFormModal({
                   <div className="md:col-span-2">
                     <form.Field name="street">
                       {(field) => (
-                        <TextField
-                          isRequired
-                          onChange={(v) => field.handleChange(v)}
+                        <StreetAutocomplete
+                          countyName={selectedCommuneName}
+                          onChange={(value) => field.handleChange(value)}
                           value={field.state.value}
-                        >
-                          <Label>Calle</Label>
-                          <Input placeholder="Av. Apoquindo" />
-                        </TextField>
+                        />
                       )}
                     </form.Field>
                   </div>
@@ -372,5 +375,88 @@ export function AddressFormModal({
         </Modal.Container>
       </Modal.Backdrop>
     </Modal>
+  );
+}
+
+interface StreetAutocompleteProps {
+  countyName: string;
+  value: string;
+  onChange: (value: string) => void;
+}
+
+function StreetAutocomplete({ countyName, value, onChange }: Readonly<StreetAutocompleteProps>) {
+  // Local input separate from form value so user typing does not commit
+  // partial text until they pick a suggestion (or type custom value).
+  const [inputValue, setInputValue] = useState(value);
+  const [debounced, setDebounced] = useState(inputValue);
+
+  useEffect(() => {
+    setInputValue(value);
+  }, [value]);
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebounced(inputValue), 300);
+    return () => clearTimeout(t);
+  }, [inputValue]);
+
+  const { data: streetsResponse, isLoading } = useQuery({
+    queryKey: ["cx-streets", countyName, debounced],
+    queryFn: () => searchStreets({ countyName, query: debounced }),
+    enabled: countyName.length > 0 && debounced.trim().length >= 2,
+    staleTime: 1000 * 60 * 10,
+  });
+  const streets = streetsResponse?.streets ?? [];
+
+  return (
+    <ComboBox
+      allowsCustomValue
+      inputValue={inputValue}
+      isDisabled={countyName.length === 0}
+      items={streets}
+      menuTrigger="input"
+      onInputChange={(next) => {
+        setInputValue(next);
+        onChange(next);
+      }}
+      onSelectionChange={(key) => {
+        if (key == null) return;
+        const street = streets.find((s) => String(s.streetNameId) === String(key));
+        if (street) {
+          setInputValue(street.streetName);
+          onChange(street.streetName);
+        }
+      }}
+    >
+      <Label>Calle</Label>
+      <ComboBox.InputGroup>
+        <Input placeholder={countyName ? "Av. Apoquindo" : "Selecciona una comuna primero"} />
+        <ComboBox.Trigger />
+      </ComboBox.InputGroup>
+      <ComboBox.Popover>
+        <ListBox>
+          {isLoading ? (
+            <ListBox.Item id="__loading__" textValue="Buscando...">
+              Buscando...
+            </ListBox.Item>
+          ) : streets.length === 0 ? (
+            <ListBox.Item id="__empty__" textValue="Sin sugerencias">
+              {debounced.length < 2
+                ? "Escribe al menos 2 caracteres"
+                : "Sin sugerencias para esta comuna"}
+            </ListBox.Item>
+          ) : (
+            streets.map((s) => (
+              <ListBox.Item
+                id={String(s.streetNameId)}
+                key={s.streetNameId}
+                textValue={s.streetName}
+              >
+                {s.streetName}
+              </ListBox.Item>
+            ))
+          )}
+        </ListBox>
+      </ComboBox.Popover>
+    </ComboBox>
   );
 }
