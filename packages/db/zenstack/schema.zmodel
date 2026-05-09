@@ -594,6 +594,7 @@ model ReleaseTransaction {
 
   orderMp                 String?           @map("order_mp")
   purchaseId              String?           @map("purchase_id")
+  isReleased              Boolean?          @map("is_released")
 
   createdAt               DateTime          @default(now()) @map("created_at")
   updatedAt               DateTime          @default(now()) @updatedAt @map("updated_at")

@@ -1808,6 +1808,11 @@ export class SchemaType implements SchemaDef {
                     type: "String",
                     optional: true
                 },
+                isReleased: {
+                    name: "isReleased",
+                    type: "Boolean",
+                    optional: true
+                },
                 createdAt: {
                     name: "createdAt",
                     type: "DateTime",

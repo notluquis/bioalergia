@@ -260,5 +260,6 @@ export function mapRowToReleaseTransaction(row: MercadoPagoRowRaw): ReleaseTrans
     orderMp: toNullableString(row.ORDER_MP),
     purchaseId: toNullableString(row.PURCHASE_ID),
     shippingOrderId: toNullableString(row.SHIPPING_ORDER_ID),
+    isReleased: parseBoolean(row.IS_RELEASED),
   };
 }
