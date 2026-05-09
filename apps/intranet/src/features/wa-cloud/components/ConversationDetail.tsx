@@ -294,7 +294,10 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
       </Card.Header>
 
       <Card.Content className="flex flex-1 flex-col overflow-hidden p-0">
-        <div ref={scrollRef} className="flex-1 space-y-2 overflow-y-auto bg-default-50 px-4 py-3">
+        <div
+          ref={scrollRef}
+          className="flex-1 space-y-2 overflow-y-auto bg-[#efeae2] px-4 py-3 dark:bg-[#0b141a]"
+        >
           {allMessages.length === 0 ? (
             <p className="py-8 text-center text-default-400 text-sm">
               Sin mensajes aún en esta conversación.
@@ -303,7 +306,7 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
             allMessages.map((row) =>
               row.kind === "divider" ? (
                 <div key={row.key} className="flex justify-center py-2">
-                  <span className="rounded-full bg-default-200 px-3 py-0.5 text-default-600 text-xs">
+                  <span className="rounded-md bg-white px-3 py-0.5 text-zinc-700 text-xs shadow-sm dark:bg-[#1f2c34] dark:text-zinc-300">
                     {row.label}
                   </span>
                 </div>
@@ -367,11 +370,13 @@ function ChatBubble({
   const isPending = row.status === "PENDING";
   const failed = row.status === "FAILED";
   const wrapper = out ? "justify-end" : "justify-start";
+  // WhatsApp-style bubble palette (explicit hex so dark/light always contrast).
+  // Outbound = WhatsApp green-ish; inbound = surface white/dark gray.
   const bubbleColor = out
     ? failed
-      ? "bg-danger-50 text-danger-900"
-      : "bg-success-100 text-foreground"
-    : "bg-background text-foreground";
+      ? "bg-danger-100 text-danger-foreground"
+      : "bg-[#d9fdd3] text-zinc-900 dark:bg-[#005c4b] dark:text-zinc-50"
+    : "bg-white text-zinc-900 dark:bg-[#1f2c34] dark:text-zinc-50 border border-default-200/40 dark:border-transparent";
   const radius = out ? "rounded-l-2xl rounded-tr-2xl" : "rounded-r-2xl rounded-tl-2xl";
   const isMedia = ["IMAGE", "STICKER", "VIDEO", "AUDIO", "DOCUMENT"].includes(row.type);
   const fallbackLabel = row.templateName
@@ -393,7 +398,7 @@ function ChatBubble({
           </p>
         )}
         <div
-          className={`flex items-center justify-end gap-1 text-default-500 text-[10px] ${row.type === "STICKER" ? "px-2 pb-1" : "mt-1"}`}
+          className={`flex items-center justify-end gap-1 text-[10px] ${out ? "text-zinc-600 dark:text-zinc-300" : "text-zinc-500 dark:text-zinc-400"} ${row.type === "STICKER" ? "px-2 pb-1" : "mt-1"}`}
         >
           <span>{dayjs(row.timestamp).format("HH:mm")}</span>
           {out && <StatusTicks status={row.status} />}

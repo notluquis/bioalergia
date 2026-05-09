@@ -110,12 +110,7 @@ export function MediaAttachment({ messageId, type, caption }: Props) {
     return (
       <div ref={ref} className="min-w-[240px]">
         {visible && !errored ? (
-          <audio
-            src={url}
-            controls
-            className="w-full"
-            onError={() => setErrored(true)}
-          >
+          <audio src={url} controls className="w-full" onError={() => setErrored(true)}>
             <track kind="captions" />
           </audio>
         ) : (
