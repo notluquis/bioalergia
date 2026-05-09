@@ -29,6 +29,7 @@ import {
   Send,
   Settings2,
   Smile,
+  Tag,
   X,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -463,6 +464,13 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
           />
         </div>
       </Card.Header>
+
+      <LabelStrip
+        labels={c.conversation.etiquetas}
+        onChange={(next) =>
+          updateConv.mutate({ id: conversationId, etiquetas: next })
+        }
+      />
 
       <Card.Content className="flex flex-1 flex-col overflow-hidden p-0">
         <div ref={scrollRef} className="flex-1 space-y-2 overflow-y-auto bg-content2 px-4 py-3">
@@ -1437,6 +1445,70 @@ function ContactsSendModal({
         </Modal.Container>
       </Modal.Backdrop>
     </Modal>
+  );
+}
+
+function LabelStrip({
+  labels,
+  onChange,
+}: {
+  labels: string[];
+  onChange: (next: string[]) => void;
+}) {
+  const [draft, setDraft] = useState("");
+  const add = () => {
+    const v = draft.trim();
+    if (!v) return;
+    if (labels.includes(v)) {
+      setDraft("");
+      return;
+    }
+    onChange([...labels, v]);
+    setDraft("");
+  };
+  const remove = (l: string) => onChange(labels.filter((x) => x !== l));
+
+  return (
+    <div className="flex flex-wrap items-center gap-1.5 border-default-200 border-b bg-content1 px-3 py-2">
+      <Tag size={12} className="text-default-400" />
+      {labels.length === 0 && (
+        <span className="text-default-400 text-xs">Sin etiquetas</span>
+      )}
+      {labels.map((l) => (
+        <Chip key={l} size="sm" color="accent" variant="soft">
+          <Chip.Label>{l}</Chip.Label>
+          <button
+            type="button"
+            onClick={() => remove(l)}
+            className="ml-1 rounded-full hover:bg-accent-200/50"
+            aria-label={`Quitar ${l}`}
+          >
+            <X size={10} />
+          </button>
+        </Chip>
+      ))}
+      <Popover>
+        <Popover.Trigger>
+          <Button size="sm" variant="outline" isIconOnly aria-label="Agregar etiqueta">
+            <Plus size={12} />
+          </Button>
+        </Popover.Trigger>
+        <Popover.Content className="rounded-lg border border-default-200 bg-content1 p-2 shadow-md">
+          <Popover.Dialog className="flex items-center gap-2 p-0">
+            <TextInput
+              label=""
+              value={draft}
+              onValueChange={setDraft}
+              placeholder="nueva etiqueta"
+            />
+            <Button size="sm" onPress={add} isDisabled={!draft.trim()}>
+              <Check size={12} />
+              Agregar
+            </Button>
+          </Popover.Dialog>
+        </Popover.Content>
+      </Popover>
+    </div>
   );
 }
 

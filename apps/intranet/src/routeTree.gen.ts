@@ -36,7 +36,7 @@ import { Route as AuthedClinicalIndexRouteImport } from "./routes/_authed/clinic
 import { Route as AuthedWaCloudWebhooksRouteImport } from "./routes/_authed/wa-cloud/webhooks"
 import { Route as AuthedWaCloudPlantillasRouteImport } from "./routes/_authed/wa-cloud/plantillas"
 import { Route as AuthedWaCloudConfiguracionRouteImport } from "./routes/_authed/wa-cloud/configuracion"
-import { Route as AuthedSettingsWhatsappRouteImport } from "./routes/_authed/settings/whatsapp"
+import { Route as AuthedWaCloudAnalyticsRouteImport } from "./routes/_authed/wa-cloud/analytics"
 import { Route as AuthedSettingsRolesRouteImport } from "./routes/_authed/settings/roles"
 import { Route as AuthedSettingsMercadopagoRouteImport } from "./routes/_authed/settings/mercadopago"
 import { Route as AuthedSettingsInventarioRouteImport } from "./routes/_authed/settings/inventario"
@@ -225,10 +225,10 @@ const AuthedWaCloudConfiguracionRoute =
     path: "/configuracion",
     getParentRoute: () => AuthedWaCloudRoute,
   } as any)
-const AuthedSettingsWhatsappRoute = AuthedSettingsWhatsappRouteImport.update({
-  id: "/whatsapp",
-  path: "/whatsapp",
-  getParentRoute: () => AuthedSettingsRoute,
+const AuthedWaCloudAnalyticsRoute = AuthedWaCloudAnalyticsRouteImport.update({
+  id: "/analytics",
+  path: "/analytics",
+  getParentRoute: () => AuthedWaCloudRoute,
 } as any)
 const AuthedSettingsRolesRoute = AuthedSettingsRolesRouteImport.update({
   id: "/roles",
@@ -572,7 +572,7 @@ export interface FileRoutesByFullPath {
   "/settings/inventario": typeof AuthedSettingsInventarioRoute
   "/settings/mercadopago": typeof AuthedSettingsMercadopagoRoute
   "/settings/roles": typeof AuthedSettingsRolesRoute
-  "/settings/whatsapp": typeof AuthedSettingsWhatsappRoute
+  "/wa-cloud/analytics": typeof AuthedWaCloudAnalyticsRoute
   "/wa-cloud/configuracion": typeof AuthedWaCloudConfiguracionRoute
   "/wa-cloud/plantillas": typeof AuthedWaCloudPlantillasRoute
   "/wa-cloud/webhooks": typeof AuthedWaCloudWebhooksRoute
@@ -647,7 +647,7 @@ export interface FileRoutesByTo {
   "/settings/inventario": typeof AuthedSettingsInventarioRoute
   "/settings/mercadopago": typeof AuthedSettingsMercadopagoRoute
   "/settings/roles": typeof AuthedSettingsRolesRoute
-  "/settings/whatsapp": typeof AuthedSettingsWhatsappRoute
+  "/wa-cloud/analytics": typeof AuthedWaCloudAnalyticsRoute
   "/wa-cloud/configuracion": typeof AuthedWaCloudConfiguracionRoute
   "/wa-cloud/plantillas": typeof AuthedWaCloudPlantillasRoute
   "/wa-cloud/webhooks": typeof AuthedWaCloudWebhooksRoute
@@ -730,7 +730,7 @@ export interface FileRoutesById {
   "/_authed/settings/inventario": typeof AuthedSettingsInventarioRoute
   "/_authed/settings/mercadopago": typeof AuthedSettingsMercadopagoRoute
   "/_authed/settings/roles": typeof AuthedSettingsRolesRoute
-  "/_authed/settings/whatsapp": typeof AuthedSettingsWhatsappRoute
+  "/_authed/wa-cloud/analytics": typeof AuthedWaCloudAnalyticsRoute
   "/_authed/wa-cloud/configuracion": typeof AuthedWaCloudConfiguracionRoute
   "/_authed/wa-cloud/plantillas": typeof AuthedWaCloudPlantillasRoute
   "/_authed/wa-cloud/webhooks": typeof AuthedWaCloudWebhooksRoute
@@ -813,7 +813,7 @@ export interface FileRouteTypes {
     | "/settings/inventario"
     | "/settings/mercadopago"
     | "/settings/roles"
-    | "/settings/whatsapp"
+    | "/wa-cloud/analytics"
     | "/wa-cloud/configuracion"
     | "/wa-cloud/plantillas"
     | "/wa-cloud/webhooks"
@@ -888,7 +888,7 @@ export interface FileRouteTypes {
     | "/settings/inventario"
     | "/settings/mercadopago"
     | "/settings/roles"
-    | "/settings/whatsapp"
+    | "/wa-cloud/analytics"
     | "/wa-cloud/configuracion"
     | "/wa-cloud/plantillas"
     | "/wa-cloud/webhooks"
@@ -970,7 +970,7 @@ export interface FileRouteTypes {
     | "/_authed/settings/inventario"
     | "/_authed/settings/mercadopago"
     | "/_authed/settings/roles"
-    | "/_authed/settings/whatsapp"
+    | "/_authed/wa-cloud/analytics"
     | "/_authed/wa-cloud/configuracion"
     | "/_authed/wa-cloud/plantillas"
     | "/_authed/wa-cloud/webhooks"
@@ -1192,12 +1192,12 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof AuthedWaCloudConfiguracionRouteImport
       parentRoute: typeof AuthedWaCloudRoute
     }
-    "/_authed/settings/whatsapp": {
-      id: "/_authed/settings/whatsapp"
-      path: "/whatsapp"
-      fullPath: "/settings/whatsapp"
-      preLoaderRoute: typeof AuthedSettingsWhatsappRouteImport
-      parentRoute: typeof AuthedSettingsRoute
+    "/_authed/wa-cloud/analytics": {
+      id: "/_authed/wa-cloud/analytics"
+      path: "/analytics"
+      fullPath: "/wa-cloud/analytics"
+      preLoaderRoute: typeof AuthedWaCloudAnalyticsRouteImport
+      parentRoute: typeof AuthedWaCloudRoute
     }
     "/_authed/settings/roles": {
       id: "/_authed/settings/roles"
@@ -1770,7 +1770,6 @@ interface AuthedSettingsRouteChildren {
   AuthedSettingsInventarioRoute: typeof AuthedSettingsInventarioRoute
   AuthedSettingsMercadopagoRoute: typeof AuthedSettingsMercadopagoRoute
   AuthedSettingsRolesRoute: typeof AuthedSettingsRolesRoute
-  AuthedSettingsWhatsappRoute: typeof AuthedSettingsWhatsappRoute
   AuthedSettingsIndexRoute: typeof AuthedSettingsIndexRoute
   AuthedSettingsUsersAddRoute: typeof AuthedSettingsUsersAddRoute
   AuthedSettingsUsersIndexRoute: typeof AuthedSettingsUsersIndexRoute
@@ -1784,7 +1783,6 @@ const AuthedSettingsRouteChildren: AuthedSettingsRouteChildren = {
   AuthedSettingsInventarioRoute: AuthedSettingsInventarioRoute,
   AuthedSettingsMercadopagoRoute: AuthedSettingsMercadopagoRoute,
   AuthedSettingsRolesRoute: AuthedSettingsRolesRoute,
-  AuthedSettingsWhatsappRoute: AuthedSettingsWhatsappRoute,
   AuthedSettingsIndexRoute: AuthedSettingsIndexRoute,
   AuthedSettingsUsersAddRoute: AuthedSettingsUsersAddRoute,
   AuthedSettingsUsersIndexRoute: AuthedSettingsUsersIndexRoute,
@@ -1795,6 +1793,7 @@ const AuthedSettingsRouteWithChildren = AuthedSettingsRoute._addFileChildren(
 )
 
 interface AuthedWaCloudRouteChildren {
+  AuthedWaCloudAnalyticsRoute: typeof AuthedWaCloudAnalyticsRoute
   AuthedWaCloudConfiguracionRoute: typeof AuthedWaCloudConfiguracionRoute
   AuthedWaCloudPlantillasRoute: typeof AuthedWaCloudPlantillasRoute
   AuthedWaCloudWebhooksRoute: typeof AuthedWaCloudWebhooksRoute
@@ -1802,6 +1801,7 @@ interface AuthedWaCloudRouteChildren {
 }
 
 const AuthedWaCloudRouteChildren: AuthedWaCloudRouteChildren = {
+  AuthedWaCloudAnalyticsRoute: AuthedWaCloudAnalyticsRoute,
   AuthedWaCloudConfiguracionRoute: AuthedWaCloudConfiguracionRoute,
   AuthedWaCloudPlantillasRoute: AuthedWaCloudPlantillasRoute,
   AuthedWaCloudWebhooksRoute: AuthedWaCloudWebhooksRoute,
