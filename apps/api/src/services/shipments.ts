@@ -181,17 +181,20 @@ export async function createShipment(input: CreateShipmentInput) {
     ],
   });
 
-  const result = response.data?.operationDetails?.[0];
-  if (!result?.otNumber) {
+  const result = response.data?.detail?.[0];
+  if (!result?.transportOrderNumber) {
     throw new Error(
-      `ChileExpress no devolvió OT. Mensaje: ${response.message ?? "sin detalles"}`,
+      `ChileExpress no devolvió OT. Mensaje: ${response.statusDescription ?? response.message ?? "sin detalles"}`,
     );
   }
+
+  const otNumber = result.transportOrderNumber;
+  const labelBase64 = result.label?.labelData ?? null;
 
   const shipment = await db.shipment.create({
     data: {
       patientId: input.patientId,
-      otNumber: result.otNumber,
+      otNumber,
       serviceTypeCode: input.serviceTypeCode,
       serviceDescription: input.serviceDescription,
       cashOnDelivery: new Decimal(input.cashOnDelivery),
@@ -207,15 +210,15 @@ export async function createShipment(input: CreateShipmentInput) {
       commercialOfficeName: input.commercialOfficeName ?? "",
       coverageCode: input.destinationCoverageCode,
       contentDescription: input.contentDescription,
-      labelBase64: result.labelData ?? null,
+      labelBase64,
       status: "CREATED",
     },
   });
 
   return {
     shipment: serializeShipment(shipment),
-    otNumber: result.otNumber,
-    labelBase64: result.labelData ?? null,
+    otNumber,
+    labelBase64,
   };
 }
 

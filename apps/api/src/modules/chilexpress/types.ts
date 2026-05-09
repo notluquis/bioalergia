@@ -114,16 +114,42 @@ export interface CxTransportOrderInput {
   }>;
 }
 
+/**
+ * Per the live Chilexpress response from /transport-orders/api/v1.0/transport-orders:
+ * {
+ *   data: {
+ *     header: { certificateNumber: number },
+ *     detail: [
+ *       {
+ *         transportOrderNumber: string,
+ *         reference: string,
+ *         serviceDescriptionFull: string,
+ *         barcode: string,
+ *         label?: { labelData: string, labelType: number }
+ *       }
+ *     ]
+ *   },
+ *   statusCode: number,
+ *   statusDescription: string,
+ * }
+ */
 export interface CxTransportOrderResult {
-  otNumber: string;
-  barCode: string;
-  labelData?: string;
+  transportOrderNumber: string;
+  reference?: string;
+  serviceDescriptionFull?: string;
+  barcode: string;
+  label?: {
+    labelData: string;
+    labelType: number;
+  };
 }
 
 export interface CxTransportOrderResponse {
   data?: {
-    operationDetails?: CxTransportOrderResult[];
+    header?: { certificateNumber: number };
+    detail?: CxTransportOrderResult[];
   };
   statusCode?: number;
+  statusDescription?: string;
   message?: string;
 }
