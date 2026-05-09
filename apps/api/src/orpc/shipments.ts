@@ -65,10 +65,13 @@ const shipmentsRouterBase = {
 
   getCommunes: base
     .route({ method: "GET", path: "/communes", summary: "List communes by region", tags: ["Shipments"] })
-    .input(z.object({ regionId: z.string() }))
+    .input(z.object({ regionId: z.string(), type: z.enum(["1", "2"]).optional() }))
     .output(z.object({ communes: z.array(communeSchema) }))
     .handler(async ({ input }) => {
-      const communes = await fetchCommunes(input.regionId);
+      const communes = await fetchCommunes(
+        input.regionId,
+        input.type ? (Number(input.type) as 1 | 2) : 1,
+      );
       return { communes };
     }),
 

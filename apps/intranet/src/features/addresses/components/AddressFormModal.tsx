@@ -142,6 +142,21 @@ export function AddressFormModal({
     communes.find((c) => c.coverageRegionCode === String(form.state.values.comuna ?? ""))
       ?.countyName ?? "";
 
+  // Optional sub-sector picker (Chilexpress coverage type=2). When the
+  // user is in a fringe sub-zone of a comuna (e.g. "BUIN - LINDEROS"),
+  // selecting it overrides the comuna's coverageCode so Chilexpress
+  // tarification matches the actual delivery area.
+  const { data: subzonesData } = useQuery({
+    queryKey: ["cx-communes-type2", regionValue],
+    queryFn: () => fetchCommunes(regionValue, "2"),
+    enabled: regionValue.length > 0,
+    staleTime: 1000 * 60 * 60,
+  });
+  const allSubzones = subzonesData?.communes ?? [];
+  const subzonesForCommune = allSubzones.filter(
+    (s) => s.countyName === selectedCommuneName && s.coverageRegionCode !== form.state.values.comuna
+  );
+
   const [pickedStreetId, setPickedStreetId] = useState<number | null>(null);
 
   const { data: streetNumbersData } = useQuery({
@@ -350,6 +365,44 @@ export function AddressFormModal({
                     )}
                   </form.Field>
                 </div>
+
+                {subzonesForCommune.length > 0 && (
+                  <form.Field name="comuna">
+                    {(field) => (
+                      <Select
+                        onChange={(value) => {
+                          if (!value) return;
+                          // Replace the form's coverageCode with the
+                          // sub-zone's countyCode so Chilexpress quotes
+                          // and shipments use the more specific area.
+                          field.handleChange(value as Key);
+                        }}
+                        placeholder="Sin sub-sector específico"
+                        value={field.state.value}
+                      >
+                        <Label>Sub-sector específico (opcional)</Label>
+                        <Select.Trigger>
+                          <Select.Value />
+                          <Select.Indicator />
+                        </Select.Trigger>
+                        <Select.Popover>
+                          <ListBox>
+                            {subzonesForCommune.map((s) => (
+                              <ListBox.Item
+                                id={s.coverageRegionCode}
+                                key={s.coverageRegionCode}
+                                textValue={s.coverageName ?? s.countyName}
+                              >
+                                {s.coverageName ?? s.countyName}
+                                <ListBox.ItemIndicator />
+                              </ListBox.Item>
+                            ))}
+                          </ListBox>
+                        </Select.Popover>
+                      </Select>
+                    )}
+                  </form.Field>
+                )}
 
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <form.Field name="postalCode">

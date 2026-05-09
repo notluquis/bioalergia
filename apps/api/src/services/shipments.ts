@@ -53,9 +53,9 @@ export async function fetchRegions() {
   return getRegions(cfg);
 }
 
-export async function fetchCommunes(regionId: string) {
+export async function fetchCommunes(regionId: string, type: 1 | 2 = 1) {
   const cfg = requireCxConfig();
-  return getCommunes(cfg, regionId);
+  return getCommunes(cfg, regionId, type);
 }
 
 export async function fetchCommercialOffices(options: {

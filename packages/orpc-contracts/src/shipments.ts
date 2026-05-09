@@ -221,7 +221,7 @@ export const shipmentsContract = {
 
   getCommunes: oc
     .route({ method: "GET", path: "/communes" })
-    .input(z.object({ regionId: z.string() }))
+    .input(z.object({ regionId: z.string(), type: z.enum(["1", "2"]).optional() }))
     .output(z.object({ communes: z.array(cxCommuneSchema) })),
 
   getCommercialOffices: oc

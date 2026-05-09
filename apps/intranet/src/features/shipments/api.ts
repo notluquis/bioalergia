@@ -8,9 +8,9 @@ export async function fetchRegions() {
   }
 }
 
-export async function fetchCommunes(regionId: string) {
+export async function fetchCommunes(regionId: string, type?: "1" | "2") {
   try {
-    return await shipmentsORPCClient.getCommunes({ regionId });
+    return await shipmentsORPCClient.getCommunes({ regionId, type });
   } catch (error) {
     throw toShipmentsApiError(error);
   }

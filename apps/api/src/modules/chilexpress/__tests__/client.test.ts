@@ -53,6 +53,30 @@ describe("chilexpress client", () => {
     );
   });
 
+  it("getCommunes(type=2) requests sub-sectors", async () => {
+    fetchSpy.mockReturnValueOnce(
+      mockJson({
+        coverageAreas: [
+          {
+            countyCode: "LIND",
+            countyName: "BUIN",
+            regionCode: "RM",
+            coverageName: "BUIN - LINDEROS",
+            ind_ppd: 1,
+            ind_rd: 1,
+          },
+        ],
+      }),
+    );
+    const r = await getCommunes(cfg, "RM", 2);
+    expect(r[0]).toMatchObject({
+      countyCode: "LIND",
+      coverageRegionCode: "LIND",
+      coverageName: "BUIN - LINDEROS",
+    });
+    expect(fetchSpy.mock.calls[0]?.[0]).toContain("/coverage-areas?RegionCode=RM&type=2");
+  });
+
   it("getCommunes maps ind_ppd / ind_rd to capability flags", async () => {
     fetchSpy.mockReturnValueOnce(
       mockJson({

@@ -75,9 +75,10 @@ export async function getRegions(config: ChilexpressConfig): Promise<CxRegion[]>
 export async function getCommunes(
   config: ChilexpressConfig,
   regionCode: string,
+  type: 1 | 2 = 1,
 ): Promise<CxCommune[]> {
-  // type=1 returns one entry per comuna (no sub-zone duplicates).
-  // (type=0 = all coverage zones; type=2 = sectores dentro de comuna.)
+  // type=1 = one entry per comuna (no sub-zone duplicates, default).
+  // type=2 = sub-sectores within comunas (e.g. "BUIN - LINDEROS").
   const data = await cxFetch<{
     coverageAreas?: Array<{
       countyCode: string;
@@ -91,7 +92,7 @@ export async function getCommunes(
   }>(
     config,
     "georeference",
-    `/coverage-areas?RegionCode=${encodeURIComponent(regionCode)}&type=1`,
+    `/coverage-areas?RegionCode=${encodeURIComponent(regionCode)}&type=${type}`,
   );
   return (data.coverageAreas ?? []).map((c) => ({
     countyCode: c.countyCode,
@@ -101,7 +102,6 @@ export async function getCommunes(
     ineCountyCode: c.ineCountyCode,
     supportsCashOnDelivery: c.ind_ppd === 1,
     supportsReturn: c.ind_rd === 1,
-    // Aliases consumed elsewhere in the app.
     regionId: c.regionCode,
     coverageRegionCode: c.countyCode,
   }));
