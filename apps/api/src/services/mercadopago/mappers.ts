@@ -154,7 +154,7 @@ export function mapRowToSettlementTransaction(row: MercadoPagoRowRaw): Settlemen
     site: toNullableString(row.SITE),
     transactionType: toText(row.TRANSACTION_TYPE, "Unknown"),
     transactionAmount: parseDecimal(row.TRANSACTION_AMOUNT, 0),
-    transactionCurrency: toText(row.TRANSACTION_CURRENCY, "ARS"),
+    transactionCurrency: toText(row.TRANSACTION_CURRENCY, "CLP"),
     sellerAmount: parseDecimal(row.SELLER_AMOUNT),
     feeAmount: parseDecimal(row.FEE_AMOUNT),
     settlementNetAmount: parseDecimal(row.SETTLEMENT_NET_AMOUNT),
