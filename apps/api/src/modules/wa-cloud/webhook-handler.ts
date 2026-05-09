@@ -1,7 +1,7 @@
 import { db } from "@finanzas/db";
 import { createHmac, timingSafeEqual } from "node:crypto";
-import { logEvent, logWarn } from "../../lib/logger";
-import { normalizeToE164 } from "./phone";
+import { logEvent, logWarn } from "../../lib/logger.ts";
+import { normalizeToE164 } from "./phone.ts";
 
 type MetaWebhookPayload = {
   object?: string;
@@ -135,6 +135,15 @@ export type ProcessResult = { events: number; errors: string[] };
 export async function processWebhookPayload(payload: MetaWebhookPayload): Promise<ProcessResult> {
   const out: ProcessResult = { events: 0, errors: [] };
   for (const entry of payload.entry ?? []) {
+    // Meta dashboard "Send test event" / Subscribe button: entry.id === "0" with
+    // sample payload (fake phone_number_id, fake message ids). Skip silently so
+    // subscription enable does not appear as failed in our logs / Meta UI.
+    if (entry.id === "0") {
+      logEvent("[wa-cloud.webhook] sample/test event from Meta dashboard, skipped", {
+        fields: entry.changes?.map((c) => c.field),
+      });
+      continue;
+    }
     for (const change of entry.changes ?? []) {
       const FIELD = change.field;
       const v = change.value;
