@@ -7,6 +7,7 @@ import { startDTESyncScheduler } from "./lib/dte/dte-sync-cron.ts";
 import { startClinicalSkinTestImportScheduler } from "./lib/clinical-skin-tests/clinical-skin-test-scheduler.ts";
 import { startGoogleCalendarScheduler } from "./lib/google/google-calendar-scheduler.ts";
 import { scheduleWatchChannelSetup } from "./lib/google/google-calendar-watch.ts";
+import { startScheduledMessageRunner } from "./modules/wa-cloud/scheduled-sender.ts";
 
 const port = Number(process.env.PORT) || 3000;
 console.log(`🚀 Finanzas API starting on port ${port}`);
@@ -34,5 +35,8 @@ if (process.env.ENABLE_DOCTORALIA_IMAP === "true") {
 if (process.env.ENABLE_SKIN_TEST_IMPORT_SYNC === "true") {
   startClinicalSkinTestImportScheduler();
 }
+
+// WA Cloud scheduled message runner (always-on; cheap 30s poll)
+startScheduledMessageRunner();
 
 serve({ fetch: app.fetch, port });

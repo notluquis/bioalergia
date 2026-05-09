@@ -313,6 +313,54 @@ export const listWebhookLogsResponseSchema = z.object({
   logs: z.array(waWebhookLogSchema),
 });
 
+// ── Scheduled messages ───────────────────────────────────────────────────────
+
+export const waScheduledStatusSchema = z.enum(["PENDING", "SENT", "FAILED", "CANCELLED"]);
+
+export const scheduleMessageInputSchema = z
+  .object({
+    conversationId: z.number().int().positive(),
+    phoneNumberId: z.number().int().positive(),
+    scheduledAt: z.coerce.date(),
+    type: z.enum(["TEXT", "TEMPLATE"]),
+    body: z.string().max(4096).optional(),
+    templateName: z.string().optional(),
+    templateLanguage: z.string().optional(),
+    templateVars: z.array(z.string()).optional(),
+    contextMetaMessageId: z.string().optional(),
+  })
+  .refine((v) => v.type === "TEXT" ? Boolean(v.body) : Boolean(v.templateName && v.templateLanguage), {
+    message: "TEXT requires body; TEMPLATE requires templateName+templateLanguage",
+  });
+
+export const scheduledMessageSchema = z.object({
+  id: z.number().int(),
+  conversationId: z.number().int(),
+  phoneNumberId: z.number().int(),
+  scheduledAt: z.coerce.date(),
+  status: waScheduledStatusSchema,
+  type: waMessageTypeSchema,
+  body: z.string().nullable(),
+  templateName: z.string().nullable(),
+  templateLanguage: z.string().nullable(),
+  templateVars: z.array(z.string()),
+  errorMessage: z.string().nullable(),
+  sentMessageId: z.number().int().nullable(),
+  createdAt: z.coerce.date(),
+});
+
+export const listScheduledInputSchema = z.object({
+  conversationId: z.number().int().positive(),
+});
+
+export const listScheduledResponseSchema = z.object({
+  scheduled: z.array(scheduledMessageSchema),
+});
+
+export const cancelScheduledInputSchema = z.object({
+  id: z.number().int().positive(),
+});
+
 // ── Templates create / delete ────────────────────────────────────────────────
 
 export const createTemplateInputSchema = z.object({
@@ -636,6 +684,19 @@ export const waCloudContract = {
   deleteTemplate: oc
     .route({ method: "POST", path: "/templates/delete", tags: ["WA Cloud"] })
     .input(deleteTemplateInputSchema)
+    .output(waOkResponseSchema),
+
+  scheduleMessage: oc
+    .route({ method: "POST", path: "/scheduled/create", tags: ["WA Cloud"] })
+    .input(scheduleMessageInputSchema)
+    .output(scheduledMessageSchema),
+  listScheduled: oc
+    .route({ method: "POST", path: "/scheduled/list", tags: ["WA Cloud"] })
+    .input(listScheduledInputSchema)
+    .output(listScheduledResponseSchema),
+  cancelScheduled: oc
+    .route({ method: "POST", path: "/scheduled/cancel", tags: ["WA Cloud"] })
+    .input(cancelScheduledInputSchema)
     .output(waOkResponseSchema),
 
   searchMessages: oc

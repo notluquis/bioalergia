@@ -15,6 +15,7 @@ import dayjs from "dayjs";
 import {
   AlertCircle,
   Ban,
+  CalendarClock,
   Check,
   CheckCheck,
   Clock,
@@ -51,6 +52,9 @@ import {
   uploadWaMedia,
   useAccounts,
   useBlockContact,
+  useCancelScheduled,
+  useListScheduled,
+  useScheduleMessage,
   useConversation,
   useConversationMedia,
   useEditText,
@@ -119,6 +123,10 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
     body: string;
   } | null>(null);
   const [galleryOpen, setGalleryOpen] = useState(false);
+  const [scheduleOpen, setScheduleOpen] = useState(false);
+  const scheduleMsg = useScheduleMessage();
+  const cancelScheduled = useCancelScheduled();
+  const scheduledList = useListScheduled(conversationId);
   const updateConv = useUpdateConversation();
   const typingDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [replyTo, setReplyTo] = useState<{
@@ -540,6 +548,7 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
               onOpenFlow={() => setFlowOpen(true)}
               onOpenLocation={() => setLocationOpen(true)}
               onOpenContacts={() => setContactsOpen(true)}
+              onOpenSchedule={() => setScheduleOpen(true)}
             />
           ) : (
             <TemplateComposer
@@ -591,6 +600,25 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
         isOpen={galleryOpen}
         onClose={() => setGalleryOpen(false)}
         conversationId={conversationId}
+      />
+      <ScheduleSendModal
+        isOpen={scheduleOpen}
+        onClose={() => setScheduleOpen(false)}
+        conversationId={conversationId}
+        phoneNumberId={phoneId ? Number(phoneId) : null}
+        defaultBody={body}
+        scheduled={scheduledList.data?.scheduled ?? []}
+        onSchedule={(input) =>
+          scheduleMsg.mutate(input, {
+            onSuccess: () => {
+              toast.success("Mensaje programado");
+              setBody("");
+            },
+            onError: (e) => toast.error(`Error: ${String(e)}`),
+          })
+        }
+        onCancel={(id) => cancelScheduled.mutate(id)}
+        isPending={scheduleMsg.isPending}
       />
     </>
   );
@@ -804,6 +832,7 @@ function TextComposer({
   onOpenFlow,
   onOpenLocation,
   onOpenContacts,
+  onOpenSchedule,
 }: {
   body: string;
   setBody: (v: string) => void;
@@ -818,6 +847,7 @@ function TextComposer({
   onOpenFlow: () => void;
   onOpenLocation: () => void;
   onOpenContacts: () => void;
+  onOpenSchedule: () => void;
 }) {
   const ref = useRef<HTMLTextAreaElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -942,14 +972,19 @@ function TextComposer({
                 <Layers size={14} className="text-default-500" />
                 <span>Formulario (Flow)</span>
               </ListBox.Item>
+              <ListBox.Item
+                id="schedule"
+                onAction={onOpenSchedule}
+                className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm data-[hovered]:bg-default-100"
+              >
+                <CalendarClock size={14} className="text-warning" />
+                <span>Programar envío</span>
+              </ListBox.Item>
             </ListBox>
           </Dropdown.Popover>
         </Dropdown>
         <EmojiPickerButton onSelect={insertEmoji} />
-        <VoiceRecorderButton
-          onSend={onAttachFile}
-          isDisabled={isDisabled || attachPending}
-        />
+        <VoiceRecorderButton onSend={onAttachFile} isDisabled={isDisabled || attachPending} />
         <div className="flex-1">
           <TextArea
             ref={ref}
@@ -1643,6 +1678,175 @@ function EditTextModal({
   );
 }
 
+function ScheduleSendModal({
+  isOpen,
+  onClose,
+  conversationId,
+  phoneNumberId,
+  defaultBody,
+  scheduled,
+  onSchedule,
+  onCancel,
+  isPending,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  conversationId: number;
+  phoneNumberId: number | null;
+  defaultBody: string;
+  scheduled: Array<{
+    id: number;
+    scheduledAt: Date;
+    status: "PENDING" | "SENT" | "FAILED" | "CANCELLED";
+    type: string;
+    body: string | null;
+    templateName: string | null;
+    errorMessage: string | null;
+  }>;
+  onSchedule: (input: {
+    conversationId: number;
+    phoneNumberId: number;
+    scheduledAt: Date;
+    type: "TEXT";
+    body: string;
+  }) => void;
+  onCancel: (id: number) => void;
+  isPending: boolean;
+}) {
+  const minLocal = (() => {
+    const d = new Date(Date.now() + 60_000);
+    const tz = d.getTimezoneOffset() * 60_000;
+    return new Date(d.getTime() - tz).toISOString().slice(0, 16);
+  })();
+  const [when, setWhen] = useState(minLocal);
+  const [body, setBody] = useState(defaultBody);
+
+  useEffect(() => {
+    if (isOpen) {
+      setBody(defaultBody);
+      setWhen(minLocal);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]);
+
+  const submit = () => {
+    if (!phoneNumberId) {
+      toast.error("Selecciona un número primero");
+      return;
+    }
+    if (!body.trim()) {
+      toast.error("Mensaje vacío");
+      return;
+    }
+    const at = new Date(when);
+    if (at.getTime() < Date.now() + 30_000) {
+      toast.error("Programa al menos 30 segundos en el futuro");
+      return;
+    }
+    onSchedule({
+      conversationId,
+      phoneNumberId,
+      scheduledAt: at,
+      type: "TEXT",
+      body: body.trim(),
+    });
+    onClose();
+  };
+
+  const pending = scheduled.filter((s) => s.status === "PENDING");
+
+  return (
+    <Modal>
+      <Modal.Backdrop
+        isOpen={isOpen}
+        onOpenChange={(o) => !o && onClose()}
+        isDismissable
+        className="bg-black/40 backdrop-blur-[2px]"
+      >
+        <Modal.Container placement="center">
+          <Modal.Dialog className="relative w-full max-w-md rounded-[28px] bg-background p-6 shadow-2xl">
+            <Modal.Header className="mb-4">
+              <Modal.Heading className="font-bold text-primary text-xl">
+                Programar mensaje
+              </Modal.Heading>
+              <p className="text-default-500 text-xs">
+                El runner intenta enviar cada 30s. Recuerda: la ventana 24h debe estar abierta al
+                momento del envío para texto libre.
+              </p>
+            </Modal.Header>
+            <Modal.Body className="max-h-[70vh] space-y-3 overflow-y-auto">
+              <div>
+                <label className="mb-1 block font-medium text-sm">Fecha y hora</label>
+                <input
+                  type="datetime-local"
+                  value={when}
+                  min={minLocal}
+                  onChange={(e) => setWhen(e.currentTarget.value)}
+                  className="w-full rounded-lg border border-default-200 bg-content2 px-3 py-2 text-sm outline-none focus:border-success"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block font-medium text-sm">Mensaje</label>
+                <TextArea
+                  variant="secondary"
+                  value={body}
+                  onChange={(e) => setBody(e.currentTarget.value)}
+                  rows={4}
+                  fullWidth
+                />
+              </div>
+
+              {pending.length > 0 && (
+                <div className="space-y-1 rounded-lg border border-default-200 bg-content2 p-3">
+                  <p className="font-medium text-default-700 text-xs uppercase">
+                    Programados ({pending.length})
+                  </p>
+                  <ul className="space-y-1">
+                    {pending.map((s) => (
+                      <li
+                        key={s.id}
+                        className="flex items-center justify-between gap-2 text-xs"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <p className="font-mono text-default-500">
+                            {dayjs(s.scheduledAt).format("DD-MM HH:mm")}
+                          </p>
+                          <p className="line-clamp-1 text-default-700">
+                            {s.body ?? `[${s.type.toLowerCase()}]`}
+                          </p>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="danger-soft"
+                          isIconOnly
+                          aria-label="Cancelar"
+                          onPress={() => onCancel(s.id)}
+                        >
+                          <X size={12} />
+                        </Button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </Modal.Body>
+            <Modal.Footer className="mt-4 flex justify-end gap-2">
+              <Button variant="outline" onPress={onClose}>
+                <X size={14} />
+                Cerrar
+              </Button>
+              <Button onPress={submit} isPending={isPending}>
+                <CalendarClock size={14} />
+                Programar
+              </Button>
+            </Modal.Footer>
+          </Modal.Dialog>
+        </Modal.Container>
+      </Modal.Backdrop>
+    </Modal>
+  );
+}
+
 function VoiceRecorderButton({
   onSend,
   isDisabled,
@@ -1724,8 +1928,7 @@ function VoiceRecorderButton({
     setPreview(null);
   };
 
-  const fmt = (s: number) =>
-    `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, "0")}`;
+  const fmt = (s: number) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, "0")}`;
 
   if (preview) {
     return (

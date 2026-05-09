@@ -3230,6 +3230,7 @@ model WaPhoneNumber {
   account             WaBusinessAccount     @relation(fields: [accountId], references: [id], onDelete: Cascade)
   messages            WaMessage[]
   conversations       WaConversationChannel[]
+  scheduledMessages   WaScheduledMessage[]
 
   @@index([accountId])
   @@deny('all', auth() == null)
@@ -3252,6 +3253,7 @@ model WaContact {
 
   conversations       WaConversation[]
   messages            WaMessage[]
+  scheduledMessages   WaScheduledMessage[]
 
   @@index([patientRut])
   @@deny('all', auth() == null)
@@ -3276,6 +3278,7 @@ model WaConversation {
   contact             WaContact             @relation(fields: [contactId], references: [id], onDelete: Cascade)
   channels            WaConversationChannel[]
   messages            WaMessage[]
+  scheduledMessages   WaScheduledMessage[]
 
   @@unique([contactId])
   @@index([status])
@@ -3381,6 +3384,43 @@ model WaWebhookLog {
   @@deny('all', auth() == null)
   @@allow('read,create,update,delete', auth().status == 'ACTIVE')
   @@map("wa_webhook_logs")
+}
+
+enum WaScheduledStatus {
+  PENDING
+  SENT
+  FAILED
+  CANCELLED
+}
+
+model WaScheduledMessage {
+  id                   Int                @id @default(autoincrement())
+  conversationId       Int                @map("conversation_id")
+  contactId            Int                @map("contact_id")
+  phoneNumberId        Int                @map("phone_number_id")
+  scheduledAt          DateTime           @map("scheduled_at")
+  status               WaScheduledStatus  @default(PENDING)
+  type                 WaMessageType
+  body                 String?
+  templateName         String?            @map("template_name")
+  templateLanguage     String?            @map("template_language")
+  templateVars         Json               @default("[]") @map("template_vars")
+  contextMetaMessageId String?            @map("context_meta_message_id")
+  createdByUserId      Int                @map("created_by_user_id")
+  sentMessageId        Int?               @map("sent_message_id")
+  errorMessage         String?            @map("error_message")
+  createdAt            DateTime           @default(now()) @map("created_at")
+  updatedAt            DateTime           @default(now()) @updatedAt @map("updated_at")
+
+  conversation         WaConversation     @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  contact              WaContact          @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  phoneNumber          WaPhoneNumber      @relation(fields: [phoneNumberId], references: [id], onDelete: Cascade)
+
+  @@index([status, scheduledAt])
+  @@index([conversationId])
+  @@deny('all', auth() == null)
+  @@allow('read,create,update,delete', auth().status == 'ACTIVE')
+  @@map("wa_scheduled_messages")
 }
 
 // ─── Expenses ────────────────────────────────────────────────────────────────

@@ -213,6 +213,34 @@ export async function uploadWaMedia(
   return res.json();
 }
 
+export function useScheduleMessage() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: Parameters<typeof waCloudORPCClient.scheduleMessage>[0]) =>
+      waCloudORPCClient.scheduleMessage(input),
+    onSuccess: (_, vars) => {
+      void qc.invalidateQueries({ queryKey: [...KEY, "scheduled", vars.conversationId] });
+    },
+  });
+}
+
+export function useListScheduled(conversationId: number | undefined) {
+  return useQuery({
+    queryKey: [...KEY, "scheduled", conversationId],
+    enabled: Boolean(conversationId),
+    queryFn: () => waCloudORPCClient.listScheduled({ conversationId: conversationId! }),
+    refetchInterval: 30_000,
+  });
+}
+
+export function useCancelScheduled() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => waCloudORPCClient.cancelScheduled({ id }),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: [...KEY, "scheduled"] }),
+  });
+}
+
 export function useCreateTemplate() {
   const qc = useQueryClient();
   return useMutation({

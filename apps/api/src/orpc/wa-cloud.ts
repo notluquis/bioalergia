@@ -8,10 +8,15 @@ import {
   conversationIdInput,
   conversationDetailResponseSchema,
   accountResponseSchema,
+  cancelScheduledInputSchema,
   createTemplateInputSchema,
   createTemplateResponseSchema,
   deleteTemplateInputSchema,
   editTextInputSchema,
+  listScheduledInputSchema,
+  listScheduledResponseSchema,
+  scheduleMessageInputSchema,
+  scheduledMessageSchema,
   listAccountsResponseSchema,
   listBlockedResponseSchema,
   listConversationMediaInputSchema,
@@ -936,6 +941,71 @@ const waRouterBase = {
       } catch (err) {
         logError("[wa-cloud.deleteTemplate] local cleanup failed", { err });
       }
+      return { status: "ok" as const };
+    }),
+
+  scheduleMessage: writeWa
+    .route({ method: "POST", path: "/scheduled/create", tags: ["WA Cloud"] })
+    .input(scheduleMessageInputSchema)
+    .output(scheduledMessageSchema)
+    .handler(async ({ context, input }) => {
+      const conv = await db.waConversation.findUnique({
+        where: { id: input.conversationId },
+        select: { id: true, contactId: true },
+      });
+      if (!conv) throw new ORPCError("NOT_FOUND", { message: "Conversación no encontrada" });
+      if (input.scheduledAt.getTime() <= Date.now() + 30_000) {
+        throw new ORPCError("BAD_REQUEST", {
+          message: "Programa al menos 30 segundos en el futuro",
+        });
+      }
+      const created = await db.waScheduledMessage.create({
+        data: {
+          conversationId: conv.id,
+          contactId: conv.contactId,
+          phoneNumberId: input.phoneNumberId,
+          scheduledAt: input.scheduledAt,
+          type: input.type,
+          body: input.body ?? null,
+          templateName: input.templateName ?? null,
+          templateLanguage: input.templateLanguage ?? null,
+          templateVars: (input.templateVars ?? []) as never,
+          contextMetaMessageId: input.contextMetaMessageId ?? null,
+          createdByUserId: context.user.id,
+        },
+      });
+      return {
+        ...created,
+        templateVars: (created.templateVars as unknown as string[]) ?? [],
+      };
+    }),
+
+  listScheduled: readWa
+    .route({ method: "POST", path: "/scheduled/list", tags: ["WA Cloud"] })
+    .input(listScheduledInputSchema)
+    .output(listScheduledResponseSchema)
+    .handler(async ({ input }) => {
+      const rows = await db.waScheduledMessage.findMany({
+        where: { conversationId: input.conversationId },
+        orderBy: { scheduledAt: "asc" },
+      });
+      return {
+        scheduled: rows.map((r) => ({
+          ...r,
+          templateVars: (r.templateVars as unknown as string[]) ?? [],
+        })),
+      };
+    }),
+
+  cancelScheduled: deleteWa
+    .route({ method: "POST", path: "/scheduled/cancel", tags: ["WA Cloud"] })
+    .input(cancelScheduledInputSchema)
+    .output(waOkResponseSchema)
+    .handler(async ({ input }) => {
+      await db.waScheduledMessage.update({
+        where: { id: input.id },
+        data: { status: "CANCELLED" },
+      });
       return { status: "ok" as const };
     }),
 

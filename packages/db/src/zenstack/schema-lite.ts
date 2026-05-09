@@ -8749,6 +8749,12 @@ export class SchemaType implements SchemaDef {
                     type: "WaConversationChannel",
                     array: true,
                     relation: { opposite: "phoneNumber" }
+                },
+                scheduledMessages: {
+                    name: "scheduledMessages",
+                    type: "WaScheduledMessage",
+                    array: true,
+                    relation: { opposite: "phoneNumber" }
                 }
             },
             idFields: ["id"],
@@ -8827,6 +8833,12 @@ export class SchemaType implements SchemaDef {
                 messages: {
                     name: "messages",
                     type: "WaMessage",
+                    array: true,
+                    relation: { opposite: "contact" }
+                },
+                scheduledMessages: {
+                    name: "scheduledMessages",
+                    type: "WaScheduledMessage",
                     array: true,
                     relation: { opposite: "contact" }
                 }
@@ -8919,6 +8931,12 @@ export class SchemaType implements SchemaDef {
                 messages: {
                     name: "messages",
                     type: "WaMessage",
+                    array: true,
+                    relation: { opposite: "conversation" }
+                },
+                scheduledMessages: {
+                    name: "scheduledMessages",
+                    type: "WaScheduledMessage",
                     array: true,
                     relation: { opposite: "conversation" }
                 }
@@ -9247,6 +9265,120 @@ export class SchemaType implements SchemaDef {
                     name: "eventCount",
                     type: "Int",
                     default: 0 as FieldDefault
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" }
+            }
+        },
+        WaScheduledMessage: {
+            name: "WaScheduledMessage",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                conversationId: {
+                    name: "conversationId",
+                    type: "Int",
+                    foreignKeyFor: [
+                        "conversation"
+                    ] as readonly string[]
+                },
+                contactId: {
+                    name: "contactId",
+                    type: "Int",
+                    foreignKeyFor: [
+                        "contact"
+                    ] as readonly string[]
+                },
+                phoneNumberId: {
+                    name: "phoneNumberId",
+                    type: "Int",
+                    foreignKeyFor: [
+                        "phoneNumber"
+                    ] as readonly string[]
+                },
+                scheduledAt: {
+                    name: "scheduledAt",
+                    type: "DateTime"
+                },
+                status: {
+                    name: "status",
+                    type: "WaScheduledStatus",
+                    default: "PENDING" as FieldDefault
+                },
+                type: {
+                    name: "type",
+                    type: "WaMessageType"
+                },
+                body: {
+                    name: "body",
+                    type: "String",
+                    optional: true
+                },
+                templateName: {
+                    name: "templateName",
+                    type: "String",
+                    optional: true
+                },
+                templateLanguage: {
+                    name: "templateLanguage",
+                    type: "String",
+                    optional: true
+                },
+                templateVars: {
+                    name: "templateVars",
+                    type: "Json",
+                    default: "[]" as FieldDefault
+                },
+                contextMetaMessageId: {
+                    name: "contextMetaMessageId",
+                    type: "String",
+                    optional: true
+                },
+                createdByUserId: {
+                    name: "createdByUserId",
+                    type: "Int"
+                },
+                sentMessageId: {
+                    name: "sentMessageId",
+                    type: "Int",
+                    optional: true
+                },
+                errorMessage: {
+                    name: "errorMessage",
+                    type: "String",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                conversation: {
+                    name: "conversation",
+                    type: "WaConversation",
+                    relation: { opposite: "scheduledMessages", fields: ["conversationId"], references: ["id"], onDelete: "Cascade" }
+                },
+                contact: {
+                    name: "contact",
+                    type: "WaContact",
+                    relation: { opposite: "scheduledMessages", fields: ["contactId"], references: ["id"], onDelete: "Cascade" }
+                },
+                phoneNumber: {
+                    name: "phoneNumber",
+                    type: "WaPhoneNumber",
+                    relation: { opposite: "scheduledMessages", fields: ["phoneNumberId"], references: ["id"], onDelete: "Cascade" }
                 }
             },
             idFields: ["id"],
@@ -10133,6 +10265,15 @@ export class SchemaType implements SchemaDef {
                 MARKETING: "MARKETING",
                 UTILITY: "UTILITY",
                 AUTHENTICATION: "AUTHENTICATION"
+            }
+        },
+        WaScheduledStatus: {
+            name: "WaScheduledStatus",
+            values: {
+                PENDING: "PENDING",
+                SENT: "SENT",
+                FAILED: "FAILED",
+                CANCELLED: "CANCELLED"
             }
         },
         ExpenseScope: {
