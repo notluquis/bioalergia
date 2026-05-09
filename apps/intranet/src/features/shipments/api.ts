@@ -16,9 +16,57 @@ export async function fetchCommunes(regionId: string) {
   }
 }
 
-export async function fetchCommercialOffices(options: { regionCode: string; countyName: string }) {
+export async function fetchCommercialOffices(options: {
+  regionCode: string;
+  countyName: string;
+  type?: "0" | "4";
+}) {
   try {
     return await shipmentsORPCClient.getCommercialOffices(options);
+  } catch (error) {
+    throw toShipmentsApiError(error);
+  }
+}
+
+export async function fetchNearbyOffices(addressId: number) {
+  try {
+    return await shipmentsORPCClient.getNearbyOffices({ addressId });
+  } catch (error) {
+    throw toShipmentsApiError(error);
+  }
+}
+
+export async function searchStreets(input: { countyName: string; query: string }) {
+  try {
+    return await shipmentsORPCClient.searchStreets(input);
+  } catch (error) {
+    throw toShipmentsApiError(error);
+  }
+}
+
+export async function geocodeAddress(input: {
+  streetName: string;
+  countyName: string;
+  number: string;
+}) {
+  try {
+    return await shipmentsORPCClient.geocodeAddress(input);
+  } catch (error) {
+    throw toShipmentsApiError(error);
+  }
+}
+
+export async function reprintLabel(shipmentId: number) {
+  try {
+    return await shipmentsORPCClient.reprintLabel({ shipmentId });
+  } catch (error) {
+    throw toShipmentsApiError(error);
+  }
+}
+
+export async function trackShipment(shipmentId: number) {
+  try {
+    return await shipmentsORPCClient.trackShipment({ shipmentId });
   } catch (error) {
     throw toShipmentsApiError(error);
   }

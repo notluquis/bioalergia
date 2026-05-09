@@ -1,6 +1,7 @@
 import type { Key } from "@heroui/react";
 import {
   Button,
+  Chip,
   Description,
   FieldError,
   Form,
@@ -131,7 +132,7 @@ export function CreateShipmentWizard({
         }}
       >
         <Modal.Container placement="center">
-          <Modal.Dialog className="relative w-full max-w-xl rounded-[28px] bg-background p-6 shadow-2xl">
+          <Modal.Dialog className="relative w-full max-w-3xl rounded-[28px] bg-background p-6 shadow-2xl">
             <Modal.Header className="mb-4">
               <Modal.Heading className="flex items-center gap-2 font-bold text-primary text-xl">
                 <Truck size={20} />
@@ -443,6 +444,7 @@ function OfficePicker({
   const [communeName, setCommuneName] = useState(state.communeName ?? "");
   const [officeId, setOfficeId] = useState<Key | null>(state.commercialOfficeId ?? null);
   const [officeName, setOfficeName] = useState(state.commercialOfficeName ?? "");
+  const [officeKind, setOfficeKind] = useState<"0" | "4">("0");
 
   const { data: regionsData, isLoading: loadingRegions } = useQuery({
     queryKey: ["cx-regions"],
@@ -458,122 +460,185 @@ function OfficePicker({
   });
 
   const { data: officesData, isLoading: loadingOffices } = useQuery({
-    queryKey: ["cx-offices", regionId, communeName],
+    queryKey: ["cx-offices", regionId, communeName, officeKind],
     queryFn: () =>
       fetchCommercialOffices({
         regionCode: String(regionId),
         countyName: communeName,
+        type: officeKind,
       }),
     enabled: Boolean(regionId && communeName),
     staleTime: 1000 * 60 * 60,
   });
 
   const canContinue = Boolean(coverageCode && officeId);
+  const offices = officesData?.offices ?? [];
+  const selectedOffice = offices.find((o) => o.commercialOfficeId === String(officeId));
 
   return (
     <div className="space-y-4">
-      <Select
-        isDisabled={loadingRegions}
-        isRequired
-        onChange={(value) => {
-          setRegionId(value as Key | null);
-          setCoverageCode(null);
-          setCommuneName("");
-          setOfficeId(null);
-          setOfficeName("");
-        }}
-        placeholder="Selecciona una región"
-        value={regionId}
-      >
-        <Label>Región</Label>
-        <Select.Trigger>
-          <Select.Value />
-          <Select.Indicator />
-        </Select.Trigger>
-        <Select.Popover>
-          <ListBox>
-            {(regionsData?.regions ?? []).map((r) => (
-              <ListBox.Item id={r.regionId} key={r.regionId} textValue={r.regionName}>
-                {r.regionName}
-                <ListBox.ItemIndicator />
-              </ListBox.Item>
-            ))}
-          </ListBox>
-        </Select.Popover>
-      </Select>
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <Select
+          isDisabled={loadingRegions}
+          isRequired
+          onChange={(value) => {
+            setRegionId(value as Key | null);
+            setCoverageCode(null);
+            setCommuneName("");
+            setOfficeId(null);
+            setOfficeName("");
+          }}
+          placeholder="Selecciona una región"
+          value={regionId}
+        >
+          <Label>Región</Label>
+          <Select.Trigger>
+            <Select.Value />
+            <Select.Indicator />
+          </Select.Trigger>
+          <Select.Popover>
+            <ListBox>
+              {(regionsData?.regions ?? []).map((r) => (
+                <ListBox.Item id={r.regionId} key={r.regionId} textValue={r.regionName}>
+                  {r.regionName}
+                  <ListBox.ItemIndicator />
+                </ListBox.Item>
+              ))}
+            </ListBox>
+          </Select.Popover>
+        </Select>
 
-      <Select
-        isDisabled={!regionId || loadingCommunes}
-        isRequired
-        onChange={(value) => {
-          const next = (value as string | null) ?? null;
-          const selected = communesData?.communes.find((c) => c.coverageRegionCode === next);
-          setCoverageCode(next);
-          setCommuneName(selected?.countyName ?? "");
-          setOfficeId(null);
-          setOfficeName("");
-        }}
-        placeholder="Selecciona una comuna"
-        value={coverageCode}
-      >
-        <Label>Comuna</Label>
-        <Select.Trigger>
-          <Select.Value />
-          <Select.Indicator />
-        </Select.Trigger>
-        <Select.Popover>
-          <ListBox>
-            {(communesData?.communes ?? []).map((c) => (
-              <ListBox.Item
-                id={c.coverageRegionCode}
-                key={c.coverageRegionCode}
-                textValue={c.countyName}
-              >
-                {c.countyName}
-                <ListBox.ItemIndicator />
-              </ListBox.Item>
-            ))}
-          </ListBox>
-        </Select.Popover>
-      </Select>
+        <Select
+          isDisabled={!regionId || loadingCommunes}
+          isRequired
+          onChange={(value) => {
+            const next = (value as string | null) ?? null;
+            const selected = communesData?.communes.find((c) => c.coverageRegionCode === next);
+            setCoverageCode(next);
+            setCommuneName(selected?.countyName ?? "");
+            setOfficeId(null);
+            setOfficeName("");
+          }}
+          placeholder="Selecciona una comuna"
+          value={coverageCode}
+        >
+          <Label>Comuna</Label>
+          <Select.Trigger>
+            <Select.Value />
+            <Select.Indicator />
+          </Select.Trigger>
+          <Select.Popover>
+            <ListBox>
+              {(communesData?.communes ?? []).map((c) => (
+                <ListBox.Item
+                  id={c.coverageRegionCode}
+                  key={c.coverageRegionCode}
+                  textValue={c.countyName}
+                >
+                  {c.countyName}
+                  {c.supportsCashOnDelivery ? " · PPD" : ""}
+                  <ListBox.ItemIndicator />
+                </ListBox.Item>
+              ))}
+            </ListBox>
+          </Select.Popover>
+        </Select>
+      </div>
 
-      <Select
-        isDisabled={!coverageCode || loadingOffices}
-        isRequired
-        onChange={(value) => {
-          const next = (value as string | null) ?? null;
-          const selected = officesData?.offices.find((o) => o.commercialOfficeId === next);
-          setOfficeId(next);
-          setOfficeName(selected?.commercialOfficeName ?? "");
-        }}
-        placeholder="Selecciona una sucursal"
-        value={officeId}
-      >
-        <Label>Sucursal ChileExpress</Label>
-        <Select.Trigger>
-          <Select.Value />
-          <Select.Indicator />
-        </Select.Trigger>
-        <Select.Popover>
-          <ListBox>
-            {(officesData?.offices ?? []).map((o) => (
-              <ListBox.Item
-                id={o.commercialOfficeId}
-                key={o.commercialOfficeId}
-                textValue={o.commercialOfficeName}
-              >
-                <div>
-                  <div className="font-medium">{o.commercialOfficeName}</div>
-                  <div className="text-default-500 text-xs">
-                    {o.street} {o.number}
-                  </div>
-                </div>
-                <ListBox.ItemIndicator />
-              </ListBox.Item>
-            ))}
-          </ListBox>
-        </Select.Popover>
-      </Select>
+      {coverageCode && (
+        <div className="space-y-3">
+          <RadioGroup
+            onChange={(value) => {
+              setOfficeKind(value as "0" | "4");
+              setOfficeId(null);
+              setOfficeName("");
+            }}
+            orientation="horizontal"
+            value={officeKind}
+          >
+            <Radio value="0">
+              <Radio.Control>
+                <Radio.Indicator />
+              </Radio.Control>
+              <Radio.Content>
+                <Label>Sucursales Chilexpress</Label>
+              </Radio.Content>
+            </Radio>
+            <Radio value="4">
+              <Radio.Control>
+                <Radio.Indicator />
+              </Radio.Control>
+              <Radio.Content>
+                <Label>Pickup partners</Label>
+              </Radio.Content>
+            </Radio>
+          </RadioGroup>
+
+          {loadingOffices ? (
+            <div className="flex items-center justify-center py-6">
+              <Spinner size="sm" />
+            </div>
+          ) : offices.length === 0 ? (
+            <p className="rounded-lg bg-default-50 px-4 py-3 text-default-500 text-sm">
+              No hay {officeKind === "0" ? "sucursales propias" : "pickup partners"} para esta
+              comuna.
+            </p>
+          ) : (
+            <RadioGroup
+              className="grid grid-cols-1 gap-2 md:grid-cols-2"
+              onChange={(value) => {
+                setOfficeId(value);
+                const selected = offices.find((o) => o.commercialOfficeId === value);
+                setOfficeName(selected?.commercialOfficeName ?? "");
+              }}
+              value={officeId != null ? String(officeId) : ""}
+            >
+              {offices.map((o) => (
+                <Radio key={o.commercialOfficeId} value={o.commercialOfficeId}>
+                  <Radio.Control>
+                    <Radio.Indicator />
+                  </Radio.Control>
+                  <Radio.Content className="w-full">
+                    <div className="flex items-center justify-between gap-2">
+                      <Label>{o.commercialOfficeName}</Label>
+                      {o.officeType === 4 && (
+                        <Chip size="sm" variant="soft" color="accent">
+                          Pickup
+                        </Chip>
+                      )}
+                    </div>
+                    <Description>
+                      {o.street} {o.number}
+                      {o.complement ? `, ${o.complement}` : ""}
+                    </Description>
+                    {o.phone && <Description className="text-xs">📞 {o.phone}</Description>}
+                    {o.schedules && (
+                      <Description className="line-clamp-2 text-xs">🕐 {o.schedules}</Description>
+                    )}
+                  </Radio.Content>
+                </Radio>
+              ))}
+            </RadioGroup>
+          )}
+
+          {selectedOffice && selectedOffice.services.length > 0 && (
+            <div className="rounded-lg border border-default-100 p-3">
+              <p className="mb-2 font-semibold text-default-700 text-xs">
+                Servicios disponibles en {selectedOffice.commercialOfficeName}
+              </p>
+              <div className="flex flex-wrap gap-1">
+                {selectedOffice.services
+                  .filter((s) => s.serviceStatusCode === 1)
+                  .map((s) => (
+                    <Chip key={s.serviceTypeCode} size="sm" variant="soft">
+                      {s.serviceDescription}
+                    </Chip>
+                  ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="flex justify-end pt-2">
         <Button
