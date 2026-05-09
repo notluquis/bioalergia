@@ -10,6 +10,17 @@ const { settingsStore, runAutoSync } = vi.hoisted(() => ({
 
 vi.mock("../../services/mercadopago", () => ({
   MP_WEBHOOK_PASSWORD: "test-secret-123",
+  isSettlementReport: (...inputs: Array<string | undefined | null>) => {
+    const haystack = inputs.filter(Boolean).join(" ").toLowerCase();
+    return [
+      "settlement",
+      "liquidaci",
+      "account_money",
+      "all_transactions",
+      "todas_las_transacciones",
+      "todas-las-transacciones",
+    ].some((hint) => haystack.includes(hint));
+  },
 }));
 
 vi.mock("../../services/settings", () => ({
@@ -180,7 +191,10 @@ describe("MercadoPago report webhook", () => {
 
   it("returns 503 when MP_WEBHOOK_PASSWORD is empty", async () => {
     vi.resetModules();
-    vi.doMock("../../services/mercadopago", () => ({ MP_WEBHOOK_PASSWORD: "" }));
+    vi.doMock("../../services/mercadopago", () => ({
+      MP_WEBHOOK_PASSWORD: "",
+      isSettlementReport: () => false,
+    }));
     vi.doMock("../../services/settings", () => ({
       getSetting: vi.fn(),
       updateSetting: vi.fn(),

@@ -2,7 +2,7 @@ import bcrypt from "bcryptjs";
 import { Hono } from "hono";
 import { runMercadoPagoAutoSync } from "../lib/mercadopago/mercadopago-scheduler";
 import { logError, logEvent, logWarn } from "../lib/logger";
-import { MP_WEBHOOK_PASSWORD } from "../services/mercadopago";
+import { isSettlementReport, MP_WEBHOOK_PASSWORD } from "../services/mercadopago";
 import { getSetting, updateSetting } from "../services/settings";
 
 export const mercadopagoReportWebhookRoutes = new Hono();
@@ -148,18 +148,7 @@ async function enqueueAndTrigger(payload: ReportWebhookPayload) {
 }
 
 function normalizeReportType(reportType: string | undefined, fileName: string | undefined): string {
-  const haystack = `${reportType ?? ""} ${fileName ?? ""}`.toLowerCase();
-  if (
-    haystack.includes("settlement") ||
-    haystack.includes("liquidaci") ||
-    haystack.includes("account_money") ||
-    haystack.includes("all_transactions") ||
-    haystack.includes("todas_las_transacciones") ||
-    haystack.includes("todas-las-transacciones")
-  ) {
-    return "settlement";
-  }
-  return "release";
+  return isSettlementReport(reportType, fileName) ? "settlement" : "release";
 }
 
 async function loadQueue(): Promise<QueuedWebhook[]> {

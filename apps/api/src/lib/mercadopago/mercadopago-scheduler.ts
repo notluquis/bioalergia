@@ -1,6 +1,11 @@
 import { db } from "@finanzas/db";
 import cron from "node-cron";
-import { formatMpDate, type ImportStats, MercadoPagoService } from "../../services/mercadopago";
+import {
+  formatMpDate,
+  type ImportStats,
+  isSettlementReport,
+  MercadoPagoService,
+} from "../../services/mercadopago";
 import { createMpSyncLogEntry, finalizeMpSyncLogEntry } from "../../services/mercadopago-sync";
 import { getSetting, updateSetting } from "../../services/settings";
 import {
@@ -369,18 +374,7 @@ async function processPendingWebhooks(
 }
 
 function resolveWebhookReportType(reportType: string): ReportType {
-  const t = reportType.toLowerCase();
-  if (
-    t.includes("settlement") ||
-    t.includes("liquidaci") ||
-    t.includes("account_money") ||
-    t.includes("all_transactions") ||
-    t.includes("todas_las_transacciones") ||
-    t.includes("todas-las-transacciones")
-  ) {
-    return "settlement";
-  }
-  return "release";
+  return isSettlementReport(reportType) ? "settlement" : "release";
 }
 
 function isCsvWebhookFile(file: { name: string; type?: string }) {

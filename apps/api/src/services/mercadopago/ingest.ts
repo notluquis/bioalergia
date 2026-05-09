@@ -2,6 +2,7 @@ import { createInterface } from "node:readline";
 import { Readable } from "node:stream";
 import { db } from "@finanzas/db";
 import { checkMpConfig, MP_ACCESS_TOKEN, redactMpUrl } from "./client";
+import { isSettlementReport } from "./index";
 import { mapRowToReleaseTransaction, mapRowToSettlementTransaction } from "./mappers";
 
 // Batch size for insertions
@@ -336,7 +337,7 @@ const cleanCsvRow = (row: Record<string, string | undefined>) => {
 
 const mapReportRow = (reportType: string, row: Record<string, string | undefined>) => {
   try {
-    const record = reportType.toLowerCase().includes("settlement")
+    const record = isSettlementReport(reportType)
       ? mapRowToSettlementTransaction(row)
       : mapRowToReleaseTransaction(row);
     return record.sourceId ? record : null;
@@ -535,9 +536,7 @@ async function insertBatch(reportType: string, rows: ReportRowInput[]) {
     return 0;
   }
 
-  const type = reportType.toLowerCase();
-
-  if (type.includes("settlement")) {
+  if (isSettlementReport(reportType)) {
     const result = await db.settlementTransaction.createMany({
       data: rows as SettlementInput[],
       skipDuplicates: true,
