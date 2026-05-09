@@ -11,7 +11,9 @@ import {
   listWebhookLogsInputSchema,
   listWebhookLogsResponseSchema,
   markReadInputSchema,
+  sendMediaInputSchema,
   sendMessageResponseSchema,
+  sendReactionInputSchema,
   sendTemplateInputSchema,
   sendTextInputSchema,
   syncTemplatesResponseSchema,
@@ -34,6 +36,9 @@ import { configureSuperjson } from "../lib/superjson-config.ts";
 import {
   listAccountPhoneNumbers,
   listAccountTemplates,
+  markMessageRead,
+  sendMediaMessage,
+  sendReaction,
   sendTemplateMessage,
   sendTextMessage,
 } from "../modules/wa-cloud/graph-client.ts";
@@ -374,6 +379,25 @@ const waRouterBase = {
     .input(markReadInputSchema)
     .output(waOkResponseSchema)
     .handler(async ({ input }) => {
+      // Tell Meta the most recent inbound message has been read so the patient
+      // sees the blue ticks. Best-effort: errors here should not block clearing
+      // the local unread badge.
+      const latestInbound = await db.waMessage.findFirst({
+        where: {
+          conversationId: input.conversationId,
+          direction: "INBOUND",
+          metaMessageId: { not: null },
+        },
+        orderBy: { timestamp: "desc" },
+        select: { metaMessageId: true, phoneNumberId: true },
+      });
+      if (latestInbound?.metaMessageId) {
+        try {
+          await markMessageRead(latestInbound.phoneNumberId, latestInbound.metaMessageId);
+        } catch (err) {
+          logError("[wa-cloud.markRead] Meta mark-read failed", { err });
+        }
+      }
       await db.waConversation.update({
         where: { id: input.conversationId },
         data: { unreadCount: 0 },
@@ -505,6 +529,115 @@ const waRouterBase = {
       await db.waConversation.update({
         where: { id: conv.id },
         data: { lastMessageAt: now, lastMessagePreview: preview },
+      });
+      return { message };
+    }),
+
+  sendReaction: writeWa
+    .route({ method: "POST", path: "/messages/send-reaction", tags: ["WA Cloud"] })
+    .input(sendReactionInputSchema)
+    .output(sendMessageResponseSchema)
+    .handler(async ({ context, input }) => {
+      const conv = await db.waConversation.findUnique({
+        where: { id: input.conversationId },
+        include: { contact: true },
+      });
+      if (!conv) throw new ORPCError("NOT_FOUND", { message: "Conversación no encontrada" });
+      const apiResp = await sendReaction(
+        input.phoneNumberId,
+        conv.contact.phoneE164,
+        input.metaMessageId,
+        input.emoji,
+      );
+      const metaId = apiResp.messages?.[0]?.id ?? null;
+      const now = new Date();
+      const message = await db.waMessage.create({
+        data: {
+          conversationId: conv.id,
+          contactId: conv.contactId,
+          phoneNumberId: input.phoneNumberId,
+          metaMessageId: metaId,
+          direction: "OUTBOUND",
+          type: "REACTION",
+          status: "SENT",
+          body: input.emoji || null,
+          contextMetaMessageId: input.metaMessageId,
+          sentByUserId: context.user.id,
+          timestamp: now,
+        },
+      });
+      return { message };
+    }),
+
+  sendMedia: writeWa
+    .route({ method: "POST", path: "/messages/send-media", tags: ["WA Cloud"] })
+    .input(sendMediaInputSchema)
+    .output(sendMessageResponseSchema)
+    .handler(async ({ context, input }) => {
+      const conv = await db.waConversation.findUnique({
+        where: { id: input.conversationId },
+        include: { contact: true },
+      });
+      if (!conv) throw new ORPCError("NOT_FOUND", { message: "Conversación no encontrada" });
+      if (!input.mediaId && !input.link) {
+        throw new ORPCError("BAD_REQUEST", { message: "Falta mediaId o link" });
+      }
+      const lastInbound = conv.lastInboundAt;
+      const windowOpen = lastInbound
+        ? Date.now() - lastInbound.getTime() < WINDOW_HOURS * 60 * 60 * 1000
+        : false;
+      if (!windowOpen) {
+        throw new ORPCError("BAD_REQUEST", {
+          message: "Ventana 24h cerrada. Solo plantillas pueden reactivar la conversación.",
+        });
+      }
+      const apiResp = await sendMediaMessage({
+        phoneNumberId: input.phoneNumberId,
+        toE164: conv.contact.phoneE164,
+        type: input.type,
+        mediaId: input.mediaId,
+        link: input.link,
+        caption: input.caption,
+        filename: input.filename,
+      });
+      const metaId = apiResp.messages?.[0]?.id ?? null;
+      const now = new Date();
+      const typeMap: Record<string, "IMAGE" | "DOCUMENT" | "AUDIO" | "VIDEO" | "STICKER"> = {
+        image: "IMAGE",
+        document: "DOCUMENT",
+        audio: "AUDIO",
+        video: "VIDEO",
+        sticker: "STICKER",
+      };
+      const preview =
+        input.caption ?? (input.filename ? input.filename : `[${input.type}]`);
+      const message = await db.waMessage.create({
+        data: {
+          conversationId: conv.id,
+          contactId: conv.contactId,
+          phoneNumberId: input.phoneNumberId,
+          metaMessageId: metaId,
+          direction: "OUTBOUND",
+          type: typeMap[input.type]!,
+          status: "SENT",
+          body: input.caption ?? null,
+          mediaCaption: input.caption ?? null,
+          contextMetaMessageId: input.contextMetaMessageId ?? null,
+          sentByUserId: context.user.id,
+          payload: {
+            [input.type]: {
+              id: input.mediaId,
+              link: input.link,
+              caption: input.caption,
+              filename: input.filename,
+            },
+          } as never,
+          timestamp: now,
+        },
+      });
+      await db.waConversation.update({
+        where: { id: conv.id },
+        data: { lastMessageAt: now, lastMessagePreview: preview.slice(0, 200) },
       });
       return { message };
     }),

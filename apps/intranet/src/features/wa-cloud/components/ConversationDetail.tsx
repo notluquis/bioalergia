@@ -1,20 +1,37 @@
-import { Avatar, Button, Card, Chip, Dropdown, Spinner } from "@heroui/react";
+import { Avatar, Button, Card, Chip, Dropdown, Popover, Spinner, TextArea } from "@heroui/react";
 import { useQueryClient } from "@tanstack/react-query";
 import dayjs from "dayjs";
-import { AlertCircle, Check, CheckCheck, Clock, FileText, Send, Settings2 } from "lucide-react";
+import {
+  AlertCircle,
+  Check,
+  CheckCheck,
+  Clock,
+  CornerUpLeft,
+  FileText,
+  Paperclip,
+  Send,
+  Settings2,
+  Smile,
+  X,
+} from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { SelectInput, TextInput } from "@/features/outreach/components/FormField";
 import { toast } from "@/lib/toast-interceptor";
 import { EmojiPickerButton } from "./EmojiPickerButton";
 import { MediaAttachment } from "./MediaAttachment";
 import {
+  uploadWaMedia,
   useAccounts,
   useConversation,
+  useSendMedia,
+  useSendReaction,
   useSendTemplate,
   useSendText,
   useTemplates,
   useUpdateConversation,
 } from "../hooks/useWaCloud";
+
+const QUICK_REACTIONS = ["👍", "❤️", "😂", "😮", "😢", "🙏"];
 
 type MessageStatus = "SENT" | "DELIVERED" | "READ" | "FAILED" | "PENDING";
 
@@ -51,7 +68,14 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
   const accounts = useAccounts();
   const sendText = useSendText();
   const sendTemplate = useSendTemplate();
+  const sendReaction = useSendReaction();
+  const sendMedia = useSendMedia();
   const updateConv = useUpdateConversation();
+  const [replyTo, setReplyTo] = useState<{
+    metaMessageId: string;
+    snippet: string;
+    out: boolean;
+  } | null>(null);
 
   const [body, setBody] = useState("");
   const [phoneId, setPhoneId] = useState<string>("");
@@ -163,10 +187,17 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
     const text = body.trim();
     const cid = `tmp-${Date.now()}-${Math.random().toString(36).slice(2)}`;
     const pn = Number.parseInt(phoneId, 10);
+    const ctxId = replyTo?.metaMessageId;
     setBody("");
+    setReplyTo(null);
     setPending((p) => [...p, { cid, body: text, timestamp: new Date(), status: "PENDING" }]);
     sendText.mutate(
-      { conversationId, phoneNumberId: pn, body: text },
+      {
+        conversationId,
+        phoneNumberId: pn,
+        body: text,
+        ...(ctxId ? { contextMetaMessageId: ctxId } : {}),
+      },
       {
         onSuccess: () => {
           void qc.invalidateQueries({ queryKey: ["wa-cloud", "conversation", conversationId] });
@@ -177,6 +208,47 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
         },
       }
     );
+  };
+
+  const handleReact = (metaMessageId: string, emoji: string) => {
+    if (!phoneId) return;
+    sendReaction.mutate({
+      conversationId,
+      phoneNumberId: Number.parseInt(phoneId, 10),
+      metaMessageId,
+      emoji,
+    });
+  };
+
+  const handleAttachFile = async (file: File) => {
+    if (!phoneId) {
+      toast.error("Selecciona un número primero");
+      return;
+    }
+    const pn = Number.parseInt(phoneId, 10);
+    const mime = file.type || "application/octet-stream";
+    let type: "image" | "document" | "audio" | "video" | "sticker" = "document";
+    if (mime.startsWith("image/")) type = mime === "image/webp" ? "sticker" : "image";
+    else if (mime.startsWith("video/")) type = "video";
+    else if (mime.startsWith("audio/")) type = "audio";
+    try {
+      toast.info("Subiendo archivo…");
+      const upload = await uploadWaMedia(file, pn);
+      await sendMedia.mutateAsync({
+        conversationId,
+        phoneNumberId: pn,
+        type,
+        mediaId: upload.id,
+        caption: body.trim() || undefined,
+        filename: type === "document" ? file.name : undefined,
+        ...(replyTo?.metaMessageId ? { contextMetaMessageId: replyTo.metaMessageId } : {}),
+      });
+      setBody("");
+      setReplyTo(null);
+      toast.success("Archivo enviado");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Error al subir archivo");
+    }
   };
 
   const handleSendTemplate = async () => {
@@ -200,12 +272,14 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
   };
 
   // Build a unified, day-grouped feed (server messages + pending).
+  type ReactionInfo = { emoji: string; out: boolean };
   type Row =
     | { kind: "divider"; key: string; label: string }
     | {
         kind: "message";
         key: string;
         messageId: number | null;
+        metaMessageId: string | null;
         out: boolean;
         body: string | null;
         type: string;
@@ -214,11 +288,34 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
         errorTitle?: string | null;
         errorDetails?: string | null;
         templateName?: string | null;
+        quotedSnippet?: { body: string; out: boolean } | null;
+        reactions?: ReactionInfo[];
       };
+
+  // Index server messages by metaMessageId so we can resolve quoted replies.
+  const byMetaId = new Map<string, (typeof c.messages)[number]>();
+  for (const m of c.messages) {
+    if (m.metaMessageId) byMetaId.set(m.metaMessageId, m);
+  }
+  // Group REACTION messages by their target metaMessageId so they can render
+  // as floating chips on the original bubble (and not as standalone rows).
+  const reactionsByTarget = new Map<string, ReactionInfo[]>();
+  for (const m of c.messages) {
+    if (m.type === "REACTION" && m.contextMetaMessageId) {
+      const arr = reactionsByTarget.get(m.contextMetaMessageId) ?? [];
+      // Empty body = reaction removed; skip
+      if (m.body && m.body.trim()) {
+        arr.push({ emoji: m.body.trim(), out: m.direction === "OUTBOUND" });
+        reactionsByTarget.set(m.contextMetaMessageId, arr);
+      }
+    }
+  }
 
   const allMessages: Row[] = [];
   let lastDay = "";
-  const serverMsgs = c.messages.map((m) => ({ ...m, _src: "server" as const }));
+  const serverMsgs = c.messages
+    .filter((m) => m.type !== "REACTION")
+    .map((m) => ({ ...m, _src: "server" as const }));
   const pendingMsgs = pending.map((p) => ({
     id: p.cid,
     direction: "OUTBOUND" as const,
@@ -229,6 +326,8 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
     errorTitle: null,
     errorDetails: null,
     templateName: null,
+    metaMessageId: null,
+    contextMetaMessageId: null,
     _src: "pending" as const,
   }));
   type Combined = (typeof serverMsgs)[number] | (typeof pendingMsgs)[number];
@@ -242,10 +341,21 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
       allMessages.push({ kind: "divider", key: `d-${day}`, label: dayLabel(d) });
       lastDay = day;
     }
+    let quoted: { body: string; out: boolean } | null = null;
+    if (m.contextMetaMessageId) {
+      const target = byMetaId.get(m.contextMetaMessageId);
+      if (target) {
+        quoted = {
+          body: target.body ?? `[${target.type.toLowerCase()}]`,
+          out: target.direction === "OUTBOUND",
+        };
+      }
+    }
     allMessages.push({
       kind: "message",
       key: `${m._src}-${m.id}`,
       messageId: m._src === "server" ? Number(m.id) : null,
+      metaMessageId: m.metaMessageId ?? null,
       out: m.direction === "OUTBOUND",
       body: m.body,
       type: m.type,
@@ -254,6 +364,8 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
       errorTitle: m.errorTitle,
       errorDetails: m.errorDetails,
       templateName: m.templateName,
+      quotedSnippet: quoted,
+      reactions: m.metaMessageId ? reactionsByTarget.get(m.metaMessageId) : undefined,
     });
   }
 
@@ -308,7 +420,18 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
                   </Chip>
                 </div>
               ) : (
-                <ChatBubble key={row.key} row={row} />
+                <ChatBubble
+                  key={row.key}
+                  row={row}
+                  onReply={(r) =>
+                    setReplyTo({
+                      metaMessageId: r.metaMessageId!,
+                      snippet: r.body ?? `[${r.type.toLowerCase()}]`,
+                      out: r.out,
+                    })
+                  }
+                  onReact={(r, emoji) => handleReact(r.metaMessageId!, emoji)}
+                />
               )
             )
           )}
@@ -329,6 +452,10 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
                     : null
               }
               onSwitchTemplate={() => setMode("template")}
+              replyTo={replyTo}
+              onCancelReply={() => setReplyTo(null)}
+              onAttachFile={handleAttachFile}
+              attachPending={sendMedia.isPending}
             />
           ) : (
             <TemplateComposer
@@ -350,9 +477,12 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
 
 function ChatBubble({
   row,
+  onReply,
+  onReact,
 }: {
   row: {
     messageId: number | null;
+    metaMessageId: string | null;
     out: boolean;
     body: string | null;
     type: string;
@@ -361,12 +491,25 @@ function ChatBubble({
     errorTitle?: string | null;
     errorDetails?: string | null;
     templateName?: string | null;
+    quotedSnippet?: { body: string; out: boolean } | null;
+    reactions?: { emoji: string; out: boolean }[];
   };
+  onReply: (row: {
+    metaMessageId: string | null;
+    body: string | null;
+    type: string;
+    out: boolean;
+  }) => void;
+  onReact: (
+    row: { metaMessageId: string | null; out: boolean },
+    emoji: string
+  ) => void;
 }) {
   const out = row.out;
   const isPending = row.status === "PENDING";
   const failed = row.status === "FAILED";
   const wrapper = out ? "justify-end" : "justify-start";
+  const canInteract = row.metaMessageId !== null;
   // 100% HeroUI semantic tokens. Outbound uses success (clinic green),
   // inbound uses content1 (raised surface), failed uses danger.
   const bubbleColor = out
@@ -380,31 +523,102 @@ function ChatBubble({
     ? `[plantilla] ${row.templateName}`
     : `[${row.type.toLowerCase()}]`;
 
-  return (
-    <div className={`flex ${wrapper}`}>
-      <div
-        className={`max-w-[78%] ${radius} ${row.type === "STICKER" ? "" : "px-3 py-2 shadow-sm"} ${bubbleColor} ${
-          isPending ? "opacity-70" : ""
-        }`}
+  const actions = canInteract ? (
+    <div
+      className={`absolute top-1 ${out ? "right-full mr-1" : "left-full ml-1"} hidden gap-1 group-hover:flex`}
+    >
+      <Popover>
+        <Popover.Trigger>
+          <Button size="sm" variant="outline" isIconOnly aria-label="Reaccionar">
+            <Smile size={14} />
+          </Button>
+        </Popover.Trigger>
+        <Popover.Content className="rounded-full border border-default-200 bg-content1 px-1 py-1 shadow-md">
+          <Popover.Dialog className="flex gap-0.5 p-0">
+            {QUICK_REACTIONS.map((e) => (
+              <Button
+                key={e}
+                size="sm"
+                variant="outline"
+                isIconOnly
+                aria-label={`Reaccionar ${e}`}
+                onPress={() => onReact({ metaMessageId: row.metaMessageId, out }, e)}
+                className="rounded-full border-0 text-lg"
+              >
+                {e}
+              </Button>
+            ))}
+          </Popover.Dialog>
+        </Popover.Content>
+      </Popover>
+      <Button
+        size="sm"
+        variant="outline"
+        isIconOnly
+        aria-label="Responder"
+        onPress={() =>
+          onReply({
+            metaMessageId: row.metaMessageId,
+            body: row.body,
+            type: row.type,
+            out,
+          })
+        }
       >
-        {isMedia && row.messageId ? (
-          <MediaAttachment messageId={row.messageId} type={row.type} caption={row.body} />
-        ) : (
-          <p className="whitespace-pre-wrap break-words text-sm leading-snug">
-            {row.body ?? fallbackLabel}
-          </p>
-        )}
+        <CornerUpLeft size={14} />
+      </Button>
+    </div>
+  ) : null;
+
+  return (
+    <div className={`group relative flex ${wrapper}`}>
+      <div className="relative">
+        {actions}
         <div
-          className={`flex items-center justify-end gap-1 text-[10px] ${out ? "text-success-foreground/80" : "text-default-500"} ${row.type === "STICKER" ? "px-2 pb-1" : "mt-1"}`}
+          className={`max-w-[78%] ${radius} ${row.type === "STICKER" ? "" : "px-3 py-2 shadow-sm"} ${bubbleColor} ${
+            isPending ? "opacity-70" : ""
+          }`}
         >
-          <span>{dayjs(row.timestamp).format("HH:mm")}</span>
-          {out && <StatusTicks status={row.status} />}
+          {row.quotedSnippet && (
+            <div
+              className={`mb-1 rounded border-l-4 px-2 py-1 text-xs ${row.quotedSnippet.out ? "border-l-accent bg-accent/10 text-accent-foreground/80" : "border-l-default-400 bg-default-100/40 text-default-700"}`}
+            >
+              <p className="line-clamp-2">{row.quotedSnippet.body}</p>
+            </div>
+          )}
+          {isMedia && row.messageId ? (
+            <MediaAttachment messageId={row.messageId} type={row.type} caption={row.body} />
+          ) : (
+            <p className="whitespace-pre-wrap break-words text-sm leading-snug">
+              {row.body ?? fallbackLabel}
+            </p>
+          )}
+          <div
+            className={`flex items-center justify-end gap-1 text-[10px] ${out ? "text-success-foreground/80" : "text-default-500"} ${row.type === "STICKER" ? "px-2 pb-1" : "mt-1"}`}
+          >
+            <span>{dayjs(row.timestamp).format("HH:mm")}</span>
+            {out && <StatusTicks status={row.status} />}
+          </div>
+          {failed && row.errorTitle && (
+            <p className="mt-1 px-3 pb-1 text-[11px] text-danger">
+              {row.errorTitle}
+              {row.errorDetails ? `: ${row.errorDetails}` : ""}
+            </p>
+          )}
         </div>
-        {failed && row.errorTitle && (
-          <p className="mt-1 px-3 pb-1 text-[11px] text-danger">
-            {row.errorTitle}
-            {row.errorDetails ? `: ${row.errorDetails}` : ""}
-          </p>
+        {row.reactions && row.reactions.length > 0 && (
+          <div
+            className={`absolute -bottom-2.5 ${out ? "right-2" : "left-2"} flex items-center gap-0.5 rounded-full bg-content1 px-1.5 py-0.5 shadow-sm ring-1 ring-default-200`}
+          >
+            {row.reactions.slice(0, 3).map((r, i) => (
+              <span key={i} className="text-xs leading-none">
+                {r.emoji}
+              </span>
+            ))}
+            {row.reactions.length > 1 && (
+              <span className="ml-0.5 text-[10px] text-default-500">{row.reactions.length}</span>
+            )}
+          </div>
         )}
       </div>
     </div>
@@ -418,6 +632,10 @@ function TextComposer({
   isDisabled,
   disabledReason,
   onSwitchTemplate,
+  replyTo,
+  onCancelReply,
+  onAttachFile,
+  attachPending,
 }: {
   body: string;
   setBody: (v: string) => void;
@@ -425,8 +643,13 @@ function TextComposer({
   isDisabled: boolean;
   disabledReason: string | null;
   onSwitchTemplate: () => void;
+  replyTo: { snippet: string; out: boolean } | null;
+  onCancelReply: () => void;
+  onAttachFile: (file: File) => void;
+  attachPending: boolean;
 }) {
   const ref = useRef<HTMLTextAreaElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
   // auto-grow
   useEffect(() => {
     const el = ref.current;
@@ -460,7 +683,33 @@ function TextComposer({
   };
 
   return (
-    <div className="flex items-end gap-2">
+    <div className="space-y-2">
+      {replyTo && (
+        <div className="flex items-center gap-2 rounded-lg border-l-4 border-l-success bg-content2 px-3 py-2">
+          <CornerUpLeft size={14} className="shrink-0 text-success" />
+          <div className="min-w-0 flex-1">
+            <p className="text-default-500 text-xs">
+              Respondiendo a {replyTo.out ? "tu mensaje" : "el paciente"}
+            </p>
+            <p className="line-clamp-1 text-foreground text-sm">{replyTo.snippet}</p>
+          </div>
+          <Button size="sm" variant="outline" isIconOnly onPress={onCancelReply} aria-label="Cancelar respuesta">
+            <X size={14} />
+          </Button>
+        </div>
+      )}
+      <input
+        ref={fileRef}
+        type="file"
+        className="hidden"
+        accept="image/*,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,audio/*,video/*"
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          if (f) onAttachFile(f);
+          if (fileRef.current) fileRef.current.value = "";
+        }}
+      />
+      <div className="flex items-end gap-2">
       <Button
         size="sm"
         variant="outline"
@@ -470,12 +719,23 @@ function TextComposer({
       >
         <FileText size={16} />
       </Button>
+      <Button
+        size="sm"
+        variant="outline"
+        isIconOnly
+        aria-label="Adjuntar archivo"
+        onPress={() => fileRef.current?.click()}
+        isDisabled={isDisabled || attachPending}
+      >
+        <Paperclip size={16} />
+      </Button>
       <EmojiPickerButton onSelect={insertEmoji} />
       <div className="flex-1">
-        <textarea
+        <TextArea
           ref={ref}
+          variant="secondary"
           value={body}
-          onChange={(e) => setBody(e.target.value)}
+          onChange={(e) => setBody(e.currentTarget.value)}
           onKeyDown={handleKey}
           placeholder={
             isDisabled
@@ -484,7 +744,8 @@ function TextComposer({
           }
           disabled={isDisabled}
           rows={1}
-          className="w-full resize-none rounded-2xl border border-default-200 bg-default-100 px-4 py-2 text-sm placeholder:text-default-400 focus:border-success focus:bg-default-50 focus:outline-none disabled:opacity-60"
+          className="w-full resize-none rounded-2xl"
+          fullWidth
         />
       </div>
       <Button
@@ -496,6 +757,7 @@ function TextComposer({
       >
         <Send size={16} />
       </Button>
+      </div>
     </div>
   );
 }

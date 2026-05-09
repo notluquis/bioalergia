@@ -12,24 +12,24 @@
     }
   },
   "rules": {
-    // ESM Import Extensions (Golden Standard 2026)
-    // Rule: { "js": "always", "ts": "never", "ignorePackages": true }
-    // 
-    // Why this breaks production but not dev:
-    // - Dev (TypeScript): Uses Bundler resolver (Vite/esbuild) → auto-resolves .ts without extension
-    // - Prod (Node.js ESM): Direct ESM execution → REQUIRES .js extension (RFC 8089)
-    // - Build output: TypeScript compiles .ts → .js, so imports must have .js for runtime
+    // ESM Import Extensions (Golden Standard 2026, post Node 26 + native TS)
+    // Rule: { "js": "always", "ts": "always", "ignorePackages": true }
+    //
+    // Node 26 runs TypeScript natively via type stripping; like all Node
+    // ESM it has no loader-style fallback for extensionless relative
+    // specifiers. So both `.ts` and `.js` must be written explicitly.
     //
     // Examples:
-    // ✅ import timezone from "dayjs/plugin/timezone.js";  // Prod: works in Node.js ESM
-    // ✅ import { z } from "zod";                          // Packages: no extension needed
-    // ❌ import timezone from "dayjs/plugin/timezone";     // Prod: ERR_MODULE_NOT_FOUND
+    // ✅ import { foo } from "./foo.ts";                   // server source
+    // ✅ import timezone from "dayjs/plugin/timezone.js";  // package subpath
+    // ✅ import { z } from "zod";                          // bare specifier
+    // ❌ import { foo } from "./foo";                      // ERR_MODULE_NOT_FOUND
     //
-    // Reference: https://oxc.rs/docs/guide/usage/linter/rules/import/extensions
+    // Reference: https://nodejs.org/api/typescript.html
     "react/only-export-components": ["warn", { "allowConstantExport": true }],
     "import/extensions": [
       "error",
-      { "js": "always", "ts": "never", "ignorePackages": true }
+      { "js": "always", "ts": "always", "ignorePackages": true }
     ],
     "typescript/no-floating-promises": "error",
     "typescript/no-unsafe-assignment": "warn",

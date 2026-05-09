@@ -2133,7 +2133,7 @@ class SeriesAssignmentContext {
 
     if (entry.patientRut) {
       const key = `${normalizeRut(entry.patientRut)}:${entry.kind}`;
-      if (!this.rutKindIndex.has(key)) this.rutKindIndex.set(key, entry.id);
+      this.rutKindIndex.getOrInsert(key, entry.id);
     }
     if (entry.patientName) {
       const key = `${normalizeName(entry.patientName)}:${entry.kind}`;

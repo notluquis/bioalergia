@@ -58,11 +58,7 @@ export class DoctoraliaCalendarSyncService {
     // 2. Group appointments by schedule ID
     const appointmentsBySchedule = new Map<number, typeof response.appointments>();
     for (const appointment of response.appointments) {
-      const scheduleId = appointment.scheduleId;
-      if (!appointmentsBySchedule.has(scheduleId)) {
-        appointmentsBySchedule.set(scheduleId, []);
-      }
-      appointmentsBySchedule.get(scheduleId)?.push(appointment);
+      appointmentsBySchedule.getOrInsertComputed(appointment.scheduleId, () => []).push(appointment);
     }
 
     // 3. Sync appointments for each schedule
@@ -79,11 +75,7 @@ export class DoctoraliaCalendarSyncService {
     // 4. Group work periods by schedule ID
     const workPeriodsBySchedule = new Map<number, typeof response.workperiods>();
     for (const period of response.workperiods) {
-      const scheduleId = period.scheduleId;
-      if (!workPeriodsBySchedule.has(scheduleId)) {
-        workPeriodsBySchedule.set(scheduleId, []);
-      }
-      workPeriodsBySchedule.get(scheduleId)?.push(period);
+      workPeriodsBySchedule.getOrInsertComputed(period.scheduleId, () => []).push(period);
     }
 
     // 5. Sync work periods for each schedule

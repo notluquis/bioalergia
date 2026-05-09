@@ -473,6 +473,10 @@ export async function processWebhookPayload(payload: MetaWebhookPayload): Promis
             const ts = Number.isFinite(tsMs) ? new Date(tsMs) : new Date();
             const preview = previewFromMessage(m);
 
+            // For REACTION messages the "original" is in m.reaction.message_id
+            // (not in m.context). Normalise both into contextMetaMessageId so
+            // the UI can always find the target message.
+            const ctxId = m.reaction?.message_id ?? m.context?.id ?? null;
             await db.waMessage.create({
               data: {
                 conversationId: convId,
@@ -485,12 +489,28 @@ export async function processWebhookPayload(payload: MetaWebhookPayload): Promis
                 body,
                 mediaCaption,
                 mediaMimeType: mediaMime,
-                contextMetaMessageId: m.context?.id ?? null,
+                contextMetaMessageId: ctxId,
                 payload: m as never,
                 timestamp: ts,
                 deliveredAt: ts,
               },
             });
+
+            // Auto-tag conversation when patient clicks a Quick Reply button
+            // from a template (e.g. "Confirmar asistencia" / "Reagendar"). The
+            // payload is set per template; clinic staff can search by tag.
+            if (m.type === "button" && m.button?.payload) {
+              const conv = await db.waConversation.findUnique({
+                where: { id: convId },
+                select: { etiquetas: true },
+              });
+              const newTag = `btn:${m.button.payload.slice(0, 64)}`;
+              const next = Array.from(new Set([...(conv?.etiquetas ?? []), newTag]));
+              await db.waConversation.update({
+                where: { id: convId },
+                data: { etiquetas: next },
+              });
+            }
 
             await db.waConversation.update({
               where: { id: convId },

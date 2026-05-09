@@ -128,6 +128,47 @@ export function useSendTemplate() {
   });
 }
 
+export function useSendReaction() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: Parameters<typeof waCloudORPCClient.sendReaction>[0]) =>
+      waCloudORPCClient.sendReaction(input),
+    onSuccess: (_, vars) => {
+      void qc.invalidateQueries({ queryKey: [...KEY, "conversation", vars.conversationId] });
+    },
+  });
+}
+
+export function useSendMedia() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: Parameters<typeof waCloudORPCClient.sendMedia>[0]) =>
+      waCloudORPCClient.sendMedia(input),
+    onSuccess: (_, vars) => {
+      void qc.invalidateQueries({ queryKey: [...KEY, "conversation", vars.conversationId] });
+    },
+  });
+}
+
+export async function uploadWaMedia(
+  file: File,
+  phoneNumberId: number
+): Promise<{ id: string; mimeType: string; filename: string }> {
+  const form = new FormData();
+  form.append("file", file);
+  form.append("phoneNumberId", String(phoneNumberId));
+  const res = await fetch("/api/wa-cloud/media/upload", {
+    method: "POST",
+    body: form,
+    credentials: "include",
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(`Upload failed (${res.status}): ${text.slice(0, 200)}`);
+  }
+  return res.json();
+}
+
 export function useTemplates(accountId?: number) {
   return useQuery({
     queryKey: [...KEY, "templates", accountId],

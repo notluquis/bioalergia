@@ -2,9 +2,40 @@ import { db } from "@finanzas/db";
 import { Hono } from "hono";
 import { getSessionUser } from "../auth.ts";
 import { logWarn } from "../lib/logger.ts";
-import { downloadMediaUrl } from "../modules/wa-cloud/graph-client.ts";
+import { downloadMediaUrl, uploadMedia } from "../modules/wa-cloud/graph-client.ts";
 
 export const waCloudMediaRoutes = new Hono();
+
+/**
+ * Multipart upload from intranet → Meta media endpoint. Returns the Meta
+ * media id which the frontend then passes to the sendMedia ORPC route.
+ *
+ * Body: multipart/form-data with `file` and optional `phoneNumberId` (form
+ * field). Auth: PASETO session.
+ */
+waCloudMediaRoutes.post("/upload", async (c) => {
+  const session = await getSessionUser(c);
+  if (!session) return c.text("Unauthorized", 401);
+  const form = await c.req.formData();
+  const file = form.get("file");
+  const phoneNumberIdRaw = form.get("phoneNumberId");
+  if (!(file instanceof Blob)) return c.text("Missing file", 400);
+  const phoneNumberId = Number.parseInt(String(phoneNumberIdRaw ?? ""), 10);
+  if (!Number.isFinite(phoneNumberId)) return c.text("Missing phoneNumberId", 400);
+  const filename = (file as File).name ?? "upload";
+  const mimeType = file.type || "application/octet-stream";
+  // Meta size limits per type (image 5MB, document 100MB, video 16MB, audio 16MB).
+  const MAX = 100 * 1024 * 1024;
+  if (file.size > MAX) return c.text("File too large", 413);
+  try {
+    const result = await uploadMedia(phoneNumberId, file, mimeType, filename);
+    return c.json({ id: result.id, mimeType, filename, size: file.size });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    logWarn("[wa-cloud.media] upload failed", { error: msg });
+    return c.text(msg, 502);
+  }
+});
 
 /**
  * Proxy media binaries (image / sticker / video / audio / document) for WA

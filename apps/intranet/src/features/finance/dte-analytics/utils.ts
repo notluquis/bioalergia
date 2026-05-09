@@ -158,11 +158,7 @@ export function buildComparisonChartData(summary: DTESummaryRaw[]): ComparisonCh
     if (!monthYearMap.has(monthStr)) {
       monthYearMap.set(monthStr, []);
     }
-
-    const monthData = monthYearMap.get(monthStr);
-    if (monthData) {
-      monthData.push({ ...item, year });
-    }
+    monthYearMap.get(monthStr)?.push({ ...item, year });
   }
 
   // Transform to chart data structure

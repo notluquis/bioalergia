@@ -192,6 +192,27 @@ export const markReadInputSchema = z.object({
   conversationId: z.number().int().positive(),
 });
 
+export const sendReactionInputSchema = z.object({
+  conversationId: z.number().int().positive(),
+  phoneNumberId: z.number().int().positive(),
+  // metaMessageId of the original message being reacted to
+  metaMessageId: z.string().min(1),
+  // empty string removes the reaction
+  emoji: z.string().max(8),
+});
+
+export const sendMediaInputSchema = z.object({
+  conversationId: z.number().int().positive(),
+  phoneNumberId: z.number().int().positive(),
+  type: z.enum(["image", "document", "audio", "video", "sticker"]),
+  // either mediaId (after upload) or external link
+  mediaId: z.string().min(1).optional(),
+  link: z.string().url().optional(),
+  caption: z.string().max(1024).optional(),
+  filename: z.string().max(120).optional(),
+  contextMetaMessageId: z.string().optional(),
+});
+
 export const updateWaContactInputSchema = z.object({
   id: z.number().int().positive(),
   name: z.string().nullable().optional(),
@@ -344,6 +365,14 @@ export const waCloudContract = {
   sendTemplate: oc
     .route({ method: "POST", path: "/messages/send-template", tags: ["WA Cloud"] })
     .input(sendTemplateInputSchema)
+    .output(sendMessageResponseSchema),
+  sendReaction: oc
+    .route({ method: "POST", path: "/messages/send-reaction", tags: ["WA Cloud"] })
+    .input(sendReactionInputSchema)
+    .output(sendMessageResponseSchema),
+  sendMedia: oc
+    .route({ method: "POST", path: "/messages/send-media", tags: ["WA Cloud"] })
+    .input(sendMediaInputSchema)
     .output(sendMessageResponseSchema),
 
   // Templates

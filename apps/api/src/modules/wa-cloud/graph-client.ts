@@ -157,6 +157,63 @@ export async function sendMediaMessage(input: SendMediaInput) {
   );
 }
 
+export async function sendReaction(
+  phoneNumberId: number,
+  toE164: string,
+  metaMessageId: string,
+  // empty string removes the reaction
+  emoji: string,
+) {
+  const phone = await getAccountForPhoneNumber(phoneNumberId);
+  const v = phone.account.graphApiVersion;
+  const token = phone.account.systemUserToken!;
+  return graphPost<{ messages: Array<{ id: string }> }>(
+    `/${phone.phoneNumberId}/messages`,
+    {
+      messaging_product: "whatsapp",
+      recipient_type: "individual",
+      to: toE164.replace(/^\+/, ""),
+      type: "reaction",
+      reaction: { message_id: metaMessageId, emoji },
+    },
+    token,
+    v,
+  );
+}
+
+/**
+ * Upload media to Meta (multipart). Returns the media id usable with
+ * sendMediaMessage. Meta keeps uploaded media for 30 days.
+ */
+export async function uploadMedia(
+  phoneNumberId: number,
+  file: Blob,
+  mimeType: string,
+  filename: string,
+): Promise<{ id: string }> {
+  const phone = await getAccountForPhoneNumber(phoneNumberId);
+  const v = phone.account.graphApiVersion;
+  const token = phone.account.systemUserToken!;
+  const form = new FormData();
+  form.append("messaging_product", "whatsapp");
+  form.append("type", mimeType);
+  form.append("file", file, filename);
+  const res = await fetch(`${GRAPH_BASE}/${v}/${phone.phoneNumberId}/media`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+    body: form,
+  });
+  const text = await res.text();
+  if (!res.ok) {
+    logWarn("[wa-cloud.graph] media upload failed", {
+      status: res.status,
+      body: text.slice(0, 500),
+    });
+    throw new Error(`Graph media upload ${res.status}: ${text.slice(0, 300)}`);
+  }
+  return JSON.parse(text) as { id: string };
+}
+
 export async function markMessageRead(phoneNumberId: number, metaMessageId: string) {
   const phone = await getAccountForPhoneNumber(phoneNumberId);
   const v = phone.account.graphApiVersion;

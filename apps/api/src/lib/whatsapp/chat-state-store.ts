@@ -670,7 +670,7 @@ export async function listChatSidebar(args?: {
     .execute();
   const latestPresence = new Map<string, WhatsappPresenceStateRow>();
   for (const row of presenceRows) {
-    if (!latestPresence.has(row.chat_jid)) latestPresence.set(row.chat_jid, row);
+    latestPresence.getOrInsert(row.chat_jid, row);
   }
 
   return chats.map((chat) => {
