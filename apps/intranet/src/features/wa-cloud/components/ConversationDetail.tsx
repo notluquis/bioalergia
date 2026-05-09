@@ -490,9 +490,7 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
                     })
                   }
                   onReact={(r, emoji) => handleReact(r.metaMessageId!, emoji)}
-                  onEdit={(r) =>
-                    setEditTarget({ messageId: r.messageId!, body: r.body ?? "" })
-                  }
+                  onEdit={(r) => setEditTarget({ messageId: r.messageId!, body: r.body ?? "" })}
                 />
               )
             )
@@ -1247,7 +1245,7 @@ function LocationSendModal({
         setLat(pos.coords.latitude.toFixed(6));
         setLng(pos.coords.longitude.toFixed(6));
       },
-      () => toast.error("No se pudo obtener tu ubicación"),
+      () => toast.error("No se pudo obtener tu ubicación")
     );
   };
 

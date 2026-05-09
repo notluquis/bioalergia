@@ -3473,6 +3473,8 @@ enum UtilityProvider {
   ESSBIO
   CGE
   OTHER
+
+  @@schema("personal")
 }
 
 model UtilityAccount {

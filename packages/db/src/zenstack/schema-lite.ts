@@ -5,7 +5,7 @@
 
 /* eslint-disable */
 
-import { type SchemaDef, type FieldDefault, ExpressionUtils } from "@zenstackhq/schema";
+import { type SchemaDef, type AttributeApplication, type FieldDefault, ExpressionUtils } from "@zenstackhq/schema";
 export class SchemaType implements SchemaDef {
     provider = {
         type: "postgresql"
@@ -10172,7 +10172,10 @@ export class SchemaType implements SchemaDef {
                 ESSBIO: "ESSBIO",
                 CGE: "CGE",
                 OTHER: "OTHER"
-            }
+            },
+            attributes: [
+                { name: "@@schema", args: [{ name: "map", value: ExpressionUtils.literal("personal") }] }
+            ] as readonly AttributeApplication[]
         }
     } as const;
     authType = "User" as const;

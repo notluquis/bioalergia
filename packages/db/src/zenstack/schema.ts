@@ -12330,7 +12330,10 @@ export class SchemaType implements SchemaDef {
                 ESSBIO: "ESSBIO",
                 CGE: "CGE",
                 OTHER: "OTHER"
-            }
+            },
+            attributes: [
+                { name: "@@schema", args: [{ name: "map", value: ExpressionUtils.literal("personal") }] }
+            ] as readonly AttributeApplication[]
         }
     } as const;
     authType = "User" as const;
