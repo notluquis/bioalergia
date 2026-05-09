@@ -17,7 +17,7 @@ import { createSchemaFactory, schema } from "@finanzas/db/zod";
 import { z } from "zod";
 import { getSessionUser, hasPermission } from "../auth";
 import { logError } from "../lib/logger";
-import { canonicalRutFilter, requireCanonicalRut } from "../lib/rut";
+import { requireCanonicalRut } from "../lib/rut";
 import { configureSuperjson } from "../lib/superjson-config";
 import { writeTempUpload } from "../lib/temp-file";
 import { uploadPatientAttachmentToDrive } from "../services/patient-attachments-drive.js";
@@ -262,11 +262,17 @@ function parseDateOnly(value: string) {
 }
 
 /**
- * Build the where clause used by the patient search endpoint. Each token
- * is canonicalized with canonicalRutFilter so that "20.275.995-5" and
- * "20275995-5" both resolve to the same DB-stored canonical RUT. Names
- * still match by raw contains (case-insensitive). Exported for unit
- * testing.
+ * Build the where clause used by the patient search endpoint.
+ *
+ * For each token, name fields use raw contains (case-insensitive). The
+ * rut field uses the same token but with dots and whitespace stripped,
+ * so "20.275" matches the canonical-stored "20275995-5" via contains.
+ * Full RUT inputs ("20.275.995-5") collapse to canonical
+ * ("20275995-5") naturally; partial prefixes ("2027") still match
+ * because we never reshape the token into a fake canonical form. K is
+ * uppercased so "11222333-k" matches DB "11222333-K".
+ *
+ * Exported for unit testing.
  */
 export function buildPatientSearchWhere(query: string | undefined) {
   const tokens = query
@@ -279,18 +285,13 @@ export function buildPatientSearchWhere(query: string | undefined) {
   return {
     person: {
       AND: tokens.map((token) => {
-        const canonicalRut = canonicalRutFilter(token);
+        const rutToken = token.replace(/[.\s]/g, "").toUpperCase();
         return {
           OR: [
             { names: { contains: token, mode: "insensitive" as const } },
             { fatherName: { contains: token, mode: "insensitive" as const } },
             { motherName: { contains: token, mode: "insensitive" as const } },
-            {
-              rut: {
-                contains: canonicalRut ?? token,
-                mode: "insensitive" as const,
-              },
-            },
+            { rut: { contains: rutToken, mode: "insensitive" as const } },
           ],
         };
       }),

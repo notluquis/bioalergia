@@ -24,11 +24,30 @@ describe("buildPatientSearchWhere", () => {
   });
 
   it("uppercases K check digit before search", () => {
-    const w = buildPatientSearchWhere("11.222.333-k") as {
+    const w = buildPatientSearchWhere("11222333-k") as {
       person: { AND: Array<{ OR: Array<Record<string, unknown>> }> };
     };
     const rutClause = w.person.AND[0]!.OR.find((c) => "rut" in c)!.rut as { contains: string };
     expect(rutClause.contains).toBe("11222333-K");
+  });
+
+  it("matches partial RUT prefixes via contains", () => {
+    // "2027" must search for "2027" so it can match canonical
+    // "20275995-5"; if we collapsed to canonicalRutFilter it would
+    // produce a fake "202-7" and miss real records.
+    const w = buildPatientSearchWhere("2027") as {
+      person: { AND: Array<{ OR: Array<Record<string, unknown>> }> };
+    };
+    const rutClause = w.person.AND[0]!.OR.find((c) => "rut" in c)!.rut as { contains: string };
+    expect(rutClause.contains).toBe("2027");
+  });
+
+  it("strips dots from a partial dotted prefix", () => {
+    const w = buildPatientSearchWhere("20.275") as {
+      person: { AND: Array<{ OR: Array<Record<string, unknown>> }> };
+    };
+    const rutClause = w.person.AND[0]!.OR.find((c) => "rut" in c)!.rut as { contains: string };
+    expect(rutClause.contains).toBe("20275");
   });
 
   it("falls back to raw token for non-RUT shaped queries (name search)", () => {
@@ -36,7 +55,7 @@ describe("buildPatientSearchWhere", () => {
       person: { AND: Array<{ OR: Array<Record<string, unknown>> }> };
     };
     const rutClause = w.person.AND[0]!.OR.find((c) => "rut" in c)!.rut as { contains: string };
-    expect(rutClause.contains).toBe("Lucas");
+    expect(rutClause.contains).toBe("LUCAS");
   });
 
   it("splits multi-word queries into independent AND tokens", () => {
