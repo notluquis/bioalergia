@@ -1,11 +1,7 @@
 import { Button, Card, Chip, Modal, ProgressBar, Spinner, Table } from "@heroui/react";
 import { CalendarClock, Megaphone, Play, Plus, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import {
-  SelectInput,
-  TextAreaInput,
-  TextInput,
-} from "@/features/outreach/components/FormField";
+import { SelectInput, TextAreaInput, TextInput } from "@/features/outreach/components/FormField";
 import { toast } from "@/lib/toast-interceptor";
 import {
   useAccounts,
@@ -125,47 +121,27 @@ export function WaCloudBroadcastsPage() {
         </Card>
       )}
 
-      {selectedId && (
-        <BroadcastDetail id={selectedId} onClose={() => setSelectedId(null)} />
-      )}
+      {selectedId && <BroadcastDetail id={selectedId} onClose={() => setSelectedId(null)} />}
 
       <CreateBroadcastModal isOpen={createOpen} onClose={() => setCreateOpen(false)} />
     </div>
   );
 }
 
-function ProgressLine({
-  sent,
-  failed,
-  total,
-}: {
-  sent: number;
-  failed: number;
-  total: number;
-}) {
+function ProgressLine({ sent, failed, total }: { sent: number; failed: number; total: number }) {
   const pct = total > 0 ? Math.floor(((sent + failed) / total) * 100) : 0;
   return (
     <div className="min-w-[180px] space-y-0.5">
-      <ProgressBar
-        value={pct}
-        maxValue={100}
-        aria-label={`${pct}%`}
-        className="h-2 w-full"
-      />
+      <ProgressBar value={pct} maxValue={100} aria-label={`${pct}%`} className="h-2 w-full" />
       <p className="font-mono text-default-500 text-xs">
-        {sent} / {total} enviados {failed > 0 && <span className="text-danger">· {failed} fail</span>}
+        {sent} / {total} enviados{" "}
+        {failed > 0 && <span className="text-danger">· {failed} fail</span>}
       </p>
     </div>
   );
 }
 
-function BroadcastActions({
-  broadcastId,
-  status,
-}: {
-  broadcastId: number;
-  status: string;
-}) {
+function BroadcastActions({ broadcastId, status }: { broadcastId: number; status: string }) {
   const start = useStartBroadcast();
   const cancel = useCancelBroadcast();
   const canStart = status === "DRAFT";
@@ -278,13 +254,7 @@ function BroadcastDetail({ id, onClose }: { id: number; onClose: () => void }) {
   );
 }
 
-function CreateBroadcastModal({
-  isOpen,
-  onClose,
-}: {
-  isOpen: boolean;
-  onClose: () => void;
-}) {
+function CreateBroadcastModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   const accounts = useAccounts();
   const create = useCreateBroadcast();
   const [accountId, setAccountId] = useState("");
@@ -337,7 +307,7 @@ function CreateBroadcastModal({
           label: `${t.name} (${t.language})`,
         })),
     ],
-    [templates.data],
+    [templates.data]
   );
 
   const parseRecipients = () => {
@@ -386,7 +356,7 @@ function CreateBroadcastModal({
       toast.success(
         scheduledAt
           ? `Campaña creada y programada (${recipients.length} destinatarios)`
-          : `Campaña creada en DRAFT (${recipients.length} destinatarios). Click ▶ para iniciar.`,
+          : `Campaña creada en DRAFT (${recipients.length} destinatarios). Click ▶ para iniciar.`
       );
       onClose();
     } catch (err) {
@@ -465,7 +435,9 @@ function CreateBroadcastModal({
                 label="Destinatarios (uno por línea: teléfono[,var1,var2,…])"
                 value={recipientsRaw}
                 onValueChange={setRecipientsRaw}
-                placeholder={"+56912345678,Juan,2026-05-12 10:00\n+56987654321,María,2026-05-12 11:30"}
+                placeholder={
+                  "+56912345678,Juan,2026-05-12 10:00\n+56987654321,María,2026-05-12 11:30"
+                }
                 rows={8}
               />
               <p className="text-default-500 text-xs">

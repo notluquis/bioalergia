@@ -2,7 +2,7 @@ import { Button, Card, Chip, EmptyState, Spinner } from "@heroui/react";
 import { BarChart3, MessageSquareText, RefreshCw, TrendingUp } from "lucide-react";
 import { useMemo, useState } from "react";
 import { SelectInput } from "@/features/outreach/components/FormField";
-import { useAccounts, useConversationAnalytics } from "../hooks/useWaCloud";
+import { useAccounts, useConversationAnalyticsExtended } from "../hooks/useWaCloud";
 
 const RANGES: { value: "7d" | "30d" | "90d"; label: string; days: number }[] = [
   { value: "7d", label: "Últimos 7 días", days: 7 },
@@ -40,18 +40,20 @@ export function WaCloudAnalyticsPage() {
     return { startUnix: start, endUnix: end };
   }, [range]);
 
-  const analytics = useConversationAnalytics(
+  const analytics = useConversationAnalyticsExtended(
     accountId
       ? {
           accountId: Number(accountId),
           startUnix,
           endUnix,
           granularity: "DAILY",
+          includePricing: true,
         }
       : null
   );
 
-  const points = analytics.data?.dataPoints ?? [];
+  const points = analytics.data?.conversation ?? [];
+  const pricing = analytics.data?.pricing ?? [];
 
   const totals = useMemo(() => {
     let convs = 0;
@@ -234,6 +236,141 @@ export function WaCloudAnalyticsPage() {
               </div>
             </Card.Content>
           </Card>
+
+          <PricingPanel pricing={pricing} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PricingPanel({
+  pricing,
+}: {
+  pricing: Array<{
+    start: number;
+    end: number;
+    volume: number;
+    cost?: number | null;
+    conversation_category?: string | null;
+    country?: string | null;
+    pricing_type?: string | null;
+    tier?: string | null;
+  }>;
+}) {
+  const byCategory: Record<string, { volume: number; cost: number }> = {};
+  const byCountry: Record<string, { volume: number; cost: number }> = {};
+  const byTier: Record<string, number> = {};
+  const byPricingType: Record<string, number> = {};
+  let totalCost = 0;
+  let totalVolume = 0;
+
+  for (const p of pricing) {
+    totalCost += p.cost ?? 0;
+    totalVolume += p.volume;
+    if (p.conversation_category) {
+      const k = p.conversation_category;
+      byCategory[k] = byCategory[k] ?? { volume: 0, cost: 0 };
+      byCategory[k].volume += p.volume;
+      byCategory[k].cost += p.cost ?? 0;
+    }
+    if (p.country) {
+      const k = p.country;
+      byCountry[k] = byCountry[k] ?? { volume: 0, cost: 0 };
+      byCountry[k].volume += p.volume;
+      byCountry[k].cost += p.cost ?? 0;
+    }
+    if (p.tier) byTier[p.tier] = (byTier[p.tier] ?? 0) + p.volume;
+    if (p.pricing_type)
+      byPricingType[p.pricing_type] = (byPricingType[p.pricing_type] ?? 0) + p.volume;
+  }
+
+  if (pricing.length === 0) {
+    return (
+      <Card>
+        <Card.Header>
+          <Card.Title className="text-sm">Pricing breakdown (Meta)</Card.Title>
+        </Card.Header>
+        <Card.Content className="text-default-400 text-xs">Sin datos de pricing aún.</Card.Content>
+      </Card>
+    );
+  }
+
+  return (
+    <Card>
+      <Card.Header>
+        <Card.Title className="text-sm">Pricing breakdown (Meta)</Card.Title>
+        <Card.Description>
+          Total {totalVolume} conversaciones · USD {totalCost.toFixed(2)}
+        </Card.Description>
+      </Card.Header>
+      <Card.Content className="space-y-4">
+        <BreakdownGrid title="Por categoría" rows={byCategory} />
+        <BreakdownGrid title="Por país" rows={byCountry} />
+        <div>
+          <p className="mb-1 font-medium text-default-700 text-xs uppercase">Por tier</p>
+          <div className="flex flex-wrap gap-2">
+            {Object.entries(byTier).length === 0 ? (
+              <span className="text-default-400 text-xs">—</span>
+            ) : (
+              Object.entries(byTier)
+                .sort(([, a], [, b]) => b - a)
+                .map(([k, v]) => (
+                  <Chip key={k} size="sm" color="default" variant="soft">
+                    <Chip.Label>
+                      {k}: <strong className="ml-1">{v}</strong>
+                    </Chip.Label>
+                  </Chip>
+                ))
+            )}
+          </div>
+        </div>
+        <div>
+          <p className="mb-1 font-medium text-default-700 text-xs uppercase">Tipo</p>
+          <div className="flex flex-wrap gap-2">
+            {Object.entries(byPricingType).length === 0 ? (
+              <span className="text-default-400 text-xs">—</span>
+            ) : (
+              Object.entries(byPricingType)
+                .sort(([, a], [, b]) => b - a)
+                .map(([k, v]) => (
+                  <Chip key={k} size="sm" color="accent" variant="soft">
+                    <Chip.Label>
+                      {k}: <strong className="ml-1">{v}</strong>
+                    </Chip.Label>
+                  </Chip>
+                ))
+            )}
+          </div>
+        </div>
+      </Card.Content>
+    </Card>
+  );
+}
+
+function BreakdownGrid({
+  title,
+  rows,
+}: {
+  title: string;
+  rows: Record<string, { volume: number; cost: number }>;
+}) {
+  const entries = Object.entries(rows).sort(([, a], [, b]) => b.cost - a.cost);
+  return (
+    <div>
+      <p className="mb-1 font-medium text-default-700 text-xs uppercase">{title}</p>
+      {entries.length === 0 ? (
+        <p className="text-default-400 text-xs">—</p>
+      ) : (
+        <div className="grid grid-cols-1 gap-1 text-xs sm:grid-cols-2">
+          {entries.map(([k, v]) => (
+            <div key={k} className="flex items-center justify-between rounded bg-content2 px-2 py-1">
+              <span className="font-medium">{k}</span>
+              <span className="font-mono text-default-600">
+                {v.volume} convs · USD {v.cost.toFixed(2)}
+              </span>
+            </div>
+          ))}
         </div>
       )}
     </div>

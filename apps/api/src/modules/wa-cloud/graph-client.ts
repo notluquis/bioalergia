@@ -68,6 +68,7 @@ export type SendTextInput = {
   toE164: string;
   body: string;
   contextMessageId?: string;
+  bizOpaqueCallbackData?: string;
 };
 
 export async function sendTextMessage(input: SendTextInput) {
@@ -83,6 +84,9 @@ export async function sendTextMessage(input: SendTextInput) {
   };
   if (input.contextMessageId) {
     payload.context = { message_id: input.contextMessageId };
+  }
+  if (input.bizOpaqueCallbackData) {
+    payload.biz_opaque_callback_data = input.bizOpaqueCallbackData;
   }
   return graphPost<{ messages: Array<{ id: string }> }>(
     `/${phone.phoneNumberId}/messages`,
@@ -113,13 +117,14 @@ export type SendTemplateInput = {
   templateName: string;
   language: string;
   components?: TemplateComponentInput[];
+  bizOpaqueCallbackData?: string;
 };
 
 export async function sendTemplateMessage(input: SendTemplateInput) {
   const phone = await getAccountForPhoneNumber(input.phoneNumberId);
   const v = phone.account.graphApiVersion;
   const token = phone.account.systemUserToken!;
-  const payload = {
+  const payload: Record<string, unknown> = {
     messaging_product: "whatsapp",
     recipient_type: "individual",
     to: input.toE164.replace(/^\+/, ""),
@@ -130,6 +135,9 @@ export async function sendTemplateMessage(input: SendTemplateInput) {
       components: input.components ?? [],
     },
   };
+  if (input.bizOpaqueCallbackData) {
+    payload.biz_opaque_callback_data = input.bizOpaqueCallbackData;
+  }
   return graphPost<{ messages: Array<{ id: string }> }>(
     `/${phone.phoneNumberId}/messages`,
     payload,
@@ -329,6 +337,8 @@ export type BusinessProfileFields = {
     | "OTHER";
   websites?: string[];
   profile_picture_handle?: string;
+  // alias allowed by Meta:
+  profile_picture_url?: never;
 };
 
 export async function getBusinessProfile(phoneNumberId: number) {
@@ -433,21 +443,30 @@ export type ConversationAnalyticsParams = {
   endUnix: number;
   granularity?: "HALF_HOUR" | "DAILY" | "MONTHLY";
   phoneNumbers?: string[];
+  // When true, also request the pricing_analytics field with cost breakdown.
+  includePricing?: boolean;
 };
 
 export async function getConversationAnalytics(params: ConversationAnalyticsParams) {
   const account = await db.waBusinessAccount.findUnique({ where: { id: params.accountId } });
   if (!account?.systemUserToken) throw new Error("Account sin token");
   const granularity = params.granularity ?? "DAILY";
-  const qs = new URLSearchParams({
-    start: String(params.startUnix),
-    end: String(params.endUnix),
-    granularity,
-  });
+
+  const dims = '["CONVERSATION_CATEGORY","CONVERSATION_DIRECTION","COUNTRY","PHONE"]';
+  let convField = `conversation_analytics.start(${params.startUnix}).end(${params.endUnix}).granularity(${granularity}).dimensions(${dims})`;
   if (params.phoneNumbers && params.phoneNumbers.length > 0) {
-    qs.set("phone_numbers", JSON.stringify(params.phoneNumbers));
+    convField += `.phone_numbers(${JSON.stringify(params.phoneNumbers)})`;
   }
-  const path = `/${account.wabaId}?fields=conversation_analytics.start(${params.startUnix}).end(${params.endUnix}).granularity(${granularity})`;
+
+  const fields: string[] = [convField];
+  if (params.includePricing) {
+    const pricingDims = '["CONVERSATION_CATEGORY","COUNTRY","PHONE"]';
+    fields.push(
+      `pricing_analytics.start(${params.startUnix}).end(${params.endUnix}).granularity(DAILY).dimensions(${pricingDims})`,
+    );
+  }
+
+  const path = `/${account.wabaId}?fields=${fields.join(",")}`;
   type Resp = {
     conversation_analytics?: {
       data: Array<{
@@ -461,6 +480,21 @@ export async function getConversationAnalytics(params: ConversationAnalyticsPara
           conversation_direction?: string;
           conversation_category?: string;
           cost?: number;
+        }>;
+      }>;
+    };
+    pricing_analytics?: {
+      data: Array<{
+        data_points: Array<{
+          start: number;
+          end: number;
+          volume: number;
+          cost?: number;
+          conversation_category?: string;
+          country?: string;
+          phone_number?: string;
+          pricing_type?: string;
+          tier?: string;
         }>;
       }>;
     };
@@ -501,6 +535,168 @@ export async function deleteTemplate(accountId: number, name: string, hsmId?: st
   const qs = new URLSearchParams({ name });
   if (hsmId) qs.set("hsm_id", hsmId);
   return graphDelete(`/${account.wabaId}/message_templates?${qs.toString()}`, {}, account.systemUserToken, v);
+}
+
+export type SendInteractiveListInput = {
+  phoneNumberId: number;
+  toE164: string;
+  bodyText: string;
+  buttonText: string;
+  sections: Array<{
+    title?: string;
+    rows: Array<{ id: string; title: string; description?: string }>;
+  }>;
+  headerText?: string;
+  footerText?: string;
+  contextMessageId?: string;
+  bizOpaqueCallbackData?: string;
+};
+
+export async function sendInteractiveListMessage(input: SendInteractiveListInput) {
+  const phone = await getAccountForPhoneNumber(input.phoneNumberId);
+  const v = phone.account.graphApiVersion;
+  const token = phone.account.systemUserToken!;
+  const interactive: Record<string, unknown> = {
+    type: "list",
+    body: { text: input.bodyText },
+    action: {
+      button: input.buttonText,
+      sections: input.sections,
+    },
+  };
+  if (input.headerText) interactive.header = { type: "text", text: input.headerText };
+  if (input.footerText) interactive.footer = { text: input.footerText };
+  const payload: Record<string, unknown> = {
+    messaging_product: "whatsapp",
+    recipient_type: "individual",
+    to: input.toE164.replace(/^\+/, ""),
+    type: "interactive",
+    interactive,
+  };
+  if (input.contextMessageId) payload.context = { message_id: input.contextMessageId };
+  if (input.bizOpaqueCallbackData)
+    payload.biz_opaque_callback_data = input.bizOpaqueCallbackData;
+  return graphPost<{ messages: Array<{ id: string }> }>(
+    `/${phone.phoneNumberId}/messages`,
+    payload,
+    token,
+    v,
+  );
+}
+
+export type SendAddressMessageInput = {
+  phoneNumberId: number;
+  toE164: string;
+  bodyText: string;
+  country: string; // ISO 3166-1 alpha-2 (e.g. CL, IN, MX)
+  saveAddressLabel?: string;
+  contextMessageId?: string;
+  bizOpaqueCallbackData?: string;
+};
+
+export async function sendAddressMessage(input: SendAddressMessageInput) {
+  const phone = await getAccountForPhoneNumber(input.phoneNumberId);
+  const v = phone.account.graphApiVersion;
+  const token = phone.account.systemUserToken!;
+  const interactive = {
+    type: "address_message",
+    body: { text: input.bodyText },
+    action: {
+      name: "address_message",
+      parameters: {
+        country: input.country,
+        ...(input.saveAddressLabel ? { save_address: { label: input.saveAddressLabel } } : {}),
+      },
+    },
+  };
+  const payload: Record<string, unknown> = {
+    messaging_product: "whatsapp",
+    recipient_type: "individual",
+    to: input.toE164.replace(/^\+/, ""),
+    type: "interactive",
+    interactive,
+  };
+  if (input.contextMessageId) payload.context = { message_id: input.contextMessageId };
+  if (input.bizOpaqueCallbackData)
+    payload.biz_opaque_callback_data = input.bizOpaqueCallbackData;
+  return graphPost<{ messages: Array<{ id: string }> }>(
+    `/${phone.phoneNumberId}/messages`,
+    payload,
+    token,
+    v,
+  );
+}
+
+// ── Phone admin ──────────────────────────────────────────────────────────────
+
+export async function registerPhoneNumber(phoneNumberId: number, pin: string) {
+  const phone = await getAccountForPhoneNumber(phoneNumberId);
+  const v = phone.account.graphApiVersion;
+  const token = phone.account.systemUserToken!;
+  return graphPost(
+    `/${phone.phoneNumberId}/register`,
+    { messaging_product: "whatsapp", pin },
+    token,
+    v,
+  );
+}
+
+export async function deregisterPhoneNumber(phoneNumberId: number) {
+  const phone = await getAccountForPhoneNumber(phoneNumberId);
+  const v = phone.account.graphApiVersion;
+  const token = phone.account.systemUserToken!;
+  return graphPost(`/${phone.phoneNumberId}/deregister`, {}, token, v);
+}
+
+export async function setTwoStepPin(phoneNumberId: number, pin: string) {
+  const phone = await getAccountForPhoneNumber(phoneNumberId);
+  const v = phone.account.graphApiVersion;
+  const token = phone.account.systemUserToken!;
+  return graphPost(`/${phone.phoneNumberId}`, { pin }, token, v);
+}
+
+// ── Business profile picture (resumable upload) ──────────────────────────────
+
+export async function uploadProfilePictureHandle(
+  phoneNumberId: number,
+  file: Blob,
+  filename: string,
+): Promise<string> {
+  // Resumable upload requires app id + access token. Use the account's appId
+  // when present, otherwise extract from the systemUserToken context — the
+  // token works against /{app-id}/uploads using the same token.
+  const phone = await getAccountForPhoneNumber(phoneNumberId);
+  const v = phone.account.graphApiVersion;
+  const token = phone.account.systemUserToken!;
+  const appId = phone.account.appId;
+  if (!appId) throw new Error("Account sin appId — configura en Settings antes de subir foto");
+
+  // Step 1: start session
+  const startUrl = `${GRAPH_BASE}/${v}/${appId}/uploads?file_name=${encodeURIComponent(filename)}&file_length=${file.size}&file_type=${encodeURIComponent(file.type || "image/jpeg")}&access_token=${encodeURIComponent(token)}`;
+  const startRes = await fetch(startUrl, { method: "POST" });
+  const startText = await startRes.text();
+  if (!startRes.ok) {
+    throw new Error(`Resumable start ${startRes.status}: ${startText.slice(0, 300)}`);
+  }
+  const { id: sessionId } = JSON.parse(startText) as { id: string };
+
+  // Step 2: upload bytes (single chunk for typical avatar sizes)
+  const buf = await file.arrayBuffer();
+  const uploadUrl = `${GRAPH_BASE}/${v}/${sessionId}`;
+  const uploadRes = await fetch(uploadUrl, {
+    method: "POST",
+    headers: {
+      Authorization: `OAuth ${token}`,
+      file_offset: "0",
+    },
+    body: buf,
+  });
+  const uploadText = await uploadRes.text();
+  if (!uploadRes.ok) {
+    throw new Error(`Resumable upload ${uploadRes.status}: ${uploadText.slice(0, 300)}`);
+  }
+  const { h } = JSON.parse(uploadText) as { h: string };
+  return h;
 }
 
 export type SendLocationInput = {

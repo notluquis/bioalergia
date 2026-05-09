@@ -503,6 +503,95 @@ export const listConversationMediaResponseSchema = z.object({
   ),
 });
 
+// ── Interactive list + address + phone admin + analytics ─────────────────────
+
+export const sendInteractiveListInputSchema = z.object({
+  conversationId: z.number().int().positive(),
+  phoneNumberId: z.number().int().positive(),
+  bodyText: z.string().min(1).max(1024),
+  buttonText: z.string().min(1).max(20),
+  sections: z
+    .array(
+      z.object({
+        title: z.string().max(24).optional(),
+        rows: z
+          .array(
+            z.object({
+              id: z.string().min(1).max(200),
+              title: z.string().min(1).max(24),
+              description: z.string().max(72).optional(),
+            }),
+          )
+          .min(1)
+          .max(10),
+      }),
+    )
+    .min(1)
+    .max(10),
+  headerText: z.string().max(60).optional(),
+  footerText: z.string().max(60).optional(),
+  contextMetaMessageId: z.string().optional(),
+  bizOpaqueCallbackData: z.string().max(512).optional(),
+});
+
+export const sendAddressInputSchema = z.object({
+  conversationId: z.number().int().positive(),
+  phoneNumberId: z.number().int().positive(),
+  bodyText: z.string().min(1).max(1024),
+  country: z.string().length(2).default("CL"),
+  saveAddressLabel: z.string().max(60).optional(),
+  contextMetaMessageId: z.string().optional(),
+  bizOpaqueCallbackData: z.string().max(512).optional(),
+});
+
+export const registerPhoneInputSchema = z.object({
+  phoneNumberId: z.number().int().positive(),
+  pin: z.string().regex(/^\d{6}$/, "PIN debe ser 6 dígitos"),
+});
+
+export const setTwoStepPinInputSchema = z.object({
+  phoneNumberId: z.number().int().positive(),
+  pin: z.string().regex(/^\d{6}$/, "PIN debe ser 6 dígitos"),
+});
+
+export const conversationAnalyticsExtendedInputSchema = z.object({
+  accountId: z.number().int().positive(),
+  startUnix: z.number().int(),
+  endUnix: z.number().int(),
+  granularity: z.enum(["HALF_HOUR", "DAILY", "MONTHLY"]).default("DAILY"),
+  phoneNumbers: z.array(z.string()).optional(),
+  includePricing: z.boolean().default(true),
+});
+
+export const conversationAnalyticsExtendedResponseSchema = z.object({
+  conversation: z.array(
+    z.object({
+      start: z.number(),
+      end: z.number(),
+      conversation: z.number(),
+      cost: z.number().nullish(),
+      phone_number: z.string().nullish(),
+      country: z.string().nullish(),
+      conversation_type: z.string().nullish(),
+      conversation_direction: z.string().nullish(),
+      conversation_category: z.string().nullish(),
+    }),
+  ),
+  pricing: z.array(
+    z.object({
+      start: z.number(),
+      end: z.number(),
+      volume: z.number(),
+      cost: z.number().nullish(),
+      conversation_category: z.string().nullish(),
+      country: z.string().nullish(),
+      phone_number: z.string().nullish(),
+      pricing_type: z.string().nullish(),
+      tier: z.string().nullish(),
+    }),
+  ),
+});
+
 // ── Outbound location / contacts / edit ──────────────────────────────────────
 
 export const sendLocationInputSchema = z.object({
@@ -740,6 +829,14 @@ export const waCloudContract = {
     .route({ method: "POST", path: "/messages/send-flow", tags: ["WA Cloud"] })
     .input(sendFlowInputSchema)
     .output(sendMessageResponseSchema),
+  sendInteractiveList: oc
+    .route({ method: "POST", path: "/messages/send-list", tags: ["WA Cloud"] })
+    .input(sendInteractiveListInputSchema)
+    .output(sendMessageResponseSchema),
+  sendAddress: oc
+    .route({ method: "POST", path: "/messages/send-address", tags: ["WA Cloud"] })
+    .input(sendAddressInputSchema)
+    .output(sendMessageResponseSchema),
   sendLocation: oc
     .route({ method: "POST", path: "/messages/send-location", tags: ["WA Cloud"] })
     .input(sendLocationInputSchema)
@@ -826,6 +923,22 @@ export const waCloudContract = {
     .route({ method: "POST", path: "/profile/update", tags: ["WA Cloud"] })
     .input(updateBusinessProfileInputSchema)
     .output(waOkResponseSchema),
+
+  // Phone admin
+  registerPhone: oc
+    .route({ method: "POST", path: "/phones/register", tags: ["WA Cloud"] })
+    .input(registerPhoneInputSchema)
+    .output(waOkResponseSchema),
+  setTwoStepPin: oc
+    .route({ method: "POST", path: "/phones/two-step-pin", tags: ["WA Cloud"] })
+    .input(setTwoStepPinInputSchema)
+    .output(waOkResponseSchema),
+
+  // Extended analytics with pricing
+  getConversationAnalyticsExtended: oc
+    .route({ method: "POST", path: "/analytics/conversations/extended", tags: ["WA Cloud"] })
+    .input(conversationAnalyticsExtendedInputSchema)
+    .output(conversationAnalyticsExtendedResponseSchema),
 
   // Phone health
   getPhoneHealth: oc

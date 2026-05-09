@@ -23,8 +23,10 @@ import {
   CornerUpLeft,
   Download,
   FileText,
+  Home,
   Images,
   Layers,
+  List,
   MapPin,
   Mic,
   Paperclip,
@@ -54,6 +56,8 @@ import {
   useBlockContact,
   useCancelScheduled,
   useListScheduled,
+  useSendAddress,
+  useSendInteractiveList,
   useScheduleMessage,
   useConversation,
   useConversationMedia,
@@ -112,6 +116,8 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
   const sendFlow = useSendFlow();
   const sendLocation = useSendLocation();
   const sendContacts = useSendContacts();
+  const sendList = useSendInteractiveList();
+  const sendAddress = useSendAddress();
   const editText = useEditText();
   const setTyping = useSetTyping();
   const blockContact = useBlockContact();
@@ -123,6 +129,8 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
     body: string;
   } | null>(null);
   const [galleryOpen, setGalleryOpen] = useState(false);
+  const [listOpen, setListOpen] = useState(false);
+  const [addressOpen, setAddressOpen] = useState(false);
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const scheduleMsg = useScheduleMessage();
   const cancelScheduled = useCancelScheduled();
@@ -549,6 +557,8 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
               onOpenLocation={() => setLocationOpen(true)}
               onOpenContacts={() => setContactsOpen(true)}
               onOpenSchedule={() => setScheduleOpen(true)}
+              onOpenList={() => setListOpen(true)}
+              onOpenAddress={() => setAddressOpen(true)}
             />
           ) : (
             <TemplateComposer
@@ -600,6 +610,22 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
         isOpen={galleryOpen}
         onClose={() => setGalleryOpen(false)}
         conversationId={conversationId}
+      />
+      <InteractiveListModal
+        isOpen={listOpen}
+        onClose={() => setListOpen(false)}
+        conversationId={conversationId}
+        phoneNumberId={phoneId ? Number(phoneId) : null}
+        onSend={(input) => sendList.mutate(input)}
+        isPending={sendList.isPending}
+      />
+      <AddressMessageModal
+        isOpen={addressOpen}
+        onClose={() => setAddressOpen(false)}
+        conversationId={conversationId}
+        phoneNumberId={phoneId ? Number(phoneId) : null}
+        onSend={(input) => sendAddress.mutate(input)}
+        isPending={sendAddress.isPending}
       />
       <ScheduleSendModal
         isOpen={scheduleOpen}
@@ -833,6 +859,8 @@ function TextComposer({
   onOpenLocation,
   onOpenContacts,
   onOpenSchedule,
+  onOpenList,
+  onOpenAddress,
 }: {
   body: string;
   setBody: (v: string) => void;
@@ -848,6 +876,8 @@ function TextComposer({
   onOpenLocation: () => void;
   onOpenContacts: () => void;
   onOpenSchedule: () => void;
+  onOpenList: () => void;
+  onOpenAddress: () => void;
 }) {
   const ref = useRef<HTMLTextAreaElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -971,6 +1001,22 @@ function TextComposer({
               >
                 <Layers size={14} className="text-default-500" />
                 <span>Formulario (Flow)</span>
+              </ListBox.Item>
+              <ListBox.Item
+                id="list"
+                onAction={onOpenList}
+                className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm data-[hovered]:bg-default-100"
+              >
+                <List size={14} className="text-accent" />
+                <span>Lista interactiva</span>
+              </ListBox.Item>
+              <ListBox.Item
+                id="address"
+                onAction={onOpenAddress}
+                className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm data-[hovered]:bg-default-100"
+              >
+                <Home size={14} className="text-success" />
+                <span>Pedir dirección</span>
               </ListBox.Item>
               <ListBox.Item
                 id="schedule"
@@ -1835,6 +1881,286 @@ function ScheduleSendModal({
               <Button onPress={submit} isPending={isPending}>
                 <CalendarClock size={14} />
                 Programar
+              </Button>
+            </Modal.Footer>
+          </Modal.Dialog>
+        </Modal.Container>
+      </Modal.Backdrop>
+    </Modal>
+  );
+}
+
+function InteractiveListModal({
+  isOpen,
+  onClose,
+  conversationId,
+  phoneNumberId,
+  onSend,
+  isPending,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  conversationId: number;
+  phoneNumberId: number | null;
+  onSend: (input: {
+    conversationId: number;
+    phoneNumberId: number;
+    bodyText: string;
+    buttonText: string;
+    headerText?: string;
+    footerText?: string;
+    sections: Array<{
+      title?: string;
+      rows: Array<{ id: string; title: string; description?: string }>;
+    }>;
+  }) => void;
+  isPending: boolean;
+}) {
+  const [headerText, setHeaderText] = useState("");
+  const [bodyText, setBodyText] = useState("");
+  const [footerText, setFooterText] = useState("");
+  const [buttonText, setButtonText] = useState("Ver opciones");
+  const [sectionTitle, setSectionTitle] = useState("Opciones");
+  // rows entered as: id|title|description per line
+  const [rowsRaw, setRowsRaw] = useState("");
+
+  useEffect(() => {
+    if (!isOpen) {
+      setHeaderText("");
+      setBodyText("");
+      setFooterText("");
+      setButtonText("Ver opciones");
+      setSectionTitle("Opciones");
+      setRowsRaw("");
+    }
+  }, [isOpen]);
+
+  const submit = () => {
+    if (!phoneNumberId) {
+      toast.error("Selecciona un número primero");
+      return;
+    }
+    if (!bodyText.trim() || !buttonText.trim()) {
+      toast.error("Body y texto del botón son obligatorios");
+      return;
+    }
+    const lines = rowsRaw.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+    if (lines.length === 0) {
+      toast.error("Agrega al menos una fila");
+      return;
+    }
+    if (lines.length > 10) {
+      toast.error("Máximo 10 filas por lista");
+      return;
+    }
+    const rows = lines.map((line) => {
+      const parts = line.split("|").map((p) => p.trim());
+      return {
+        id: parts[0] ?? `row_${Date.now()}_${Math.random()}`,
+        title: parts[1] ?? parts[0] ?? "Opción",
+        description: parts[2] || undefined,
+      };
+    });
+    onSend({
+      conversationId,
+      phoneNumberId,
+      bodyText: bodyText.trim(),
+      buttonText: buttonText.trim(),
+      headerText: headerText.trim() || undefined,
+      footerText: footerText.trim() || undefined,
+      sections: [{ title: sectionTitle.trim() || undefined, rows }],
+    });
+    onClose();
+  };
+
+  return (
+    <Modal>
+      <Modal.Backdrop
+        isOpen={isOpen}
+        onOpenChange={(o) => !o && onClose()}
+        isDismissable
+        className="bg-black/40 backdrop-blur-[2px]"
+      >
+        <Modal.Container placement="center">
+          <Modal.Dialog className="relative w-full max-w-md rounded-[28px] bg-background p-6 shadow-2xl">
+            <Modal.Header className="mb-4">
+              <Modal.Heading className="font-bold text-primary text-xl">
+                Lista interactiva
+              </Modal.Heading>
+              <p className="text-default-500 text-xs">
+                Hasta 10 filas. Solo durante ventana 24h. Formato fila:{" "}
+                <code>id|título|descripción</code> (descripción opcional)
+              </p>
+            </Modal.Header>
+            <Modal.Body className="max-h-[70vh] space-y-3 overflow-y-auto">
+              <TextInput
+                label="Encabezado (opcional)"
+                value={headerText}
+                onValueChange={setHeaderText}
+                placeholder="Motivo de consulta"
+              />
+              <TextInput
+                label="Body"
+                value={bodyText}
+                onValueChange={setBodyText}
+                placeholder="Selecciona el motivo de tu consulta"
+              />
+              <div className="grid grid-cols-2 gap-3">
+                <TextInput
+                  label="Texto botón (máx 20)"
+                  value={buttonText}
+                  onValueChange={setButtonText}
+                />
+                <TextInput
+                  label="Título sección"
+                  value={sectionTitle}
+                  onValueChange={setSectionTitle}
+                />
+              </div>
+              <div>
+                <label className="mb-1 block font-medium text-sm">
+                  Filas (una por línea, máx 10)
+                </label>
+                <TextArea
+                  variant="secondary"
+                  value={rowsRaw}
+                  onChange={(e) => setRowsRaw(e.currentTarget.value)}
+                  rows={6}
+                  fullWidth
+                  placeholder={"alergia_rinitis|Rinitis crónica|Estornudos frecuentes\nalergia_asma|Asma|Falta de aire\nimmuno_inicio|Iniciar tratamiento|Vacuna ácaros"}
+                />
+              </div>
+              <TextInput
+                label="Pie (opcional)"
+                value={footerText}
+                onValueChange={setFooterText}
+                placeholder="Bioalergia"
+              />
+            </Modal.Body>
+            <Modal.Footer className="mt-4 flex justify-end gap-2">
+              <Button variant="outline" onPress={onClose}>
+                <X size={14} />
+                Cancelar
+              </Button>
+              <Button onPress={submit} isPending={isPending}>
+                <List size={14} />
+                Enviar lista
+              </Button>
+            </Modal.Footer>
+          </Modal.Dialog>
+        </Modal.Container>
+      </Modal.Backdrop>
+    </Modal>
+  );
+}
+
+function AddressMessageModal({
+  isOpen,
+  onClose,
+  conversationId,
+  phoneNumberId,
+  onSend,
+  isPending,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  conversationId: number;
+  phoneNumberId: number | null;
+  onSend: (input: {
+    conversationId: number;
+    phoneNumberId: number;
+    bodyText: string;
+    country: string;
+    saveAddressLabel?: string;
+  }) => void;
+  isPending: boolean;
+}) {
+  const [bodyText, setBodyText] = useState(
+    "Por favor comparte tu dirección para envío de muestras",
+  );
+  const [country, setCountry] = useState("CL");
+  const [label, setLabel] = useState("");
+
+  useEffect(() => {
+    if (!isOpen) {
+      setBodyText("Por favor comparte tu dirección para envío de muestras");
+      setCountry("CL");
+      setLabel("");
+    }
+  }, [isOpen]);
+
+  const submit = () => {
+    if (!phoneNumberId) {
+      toast.error("Selecciona un número primero");
+      return;
+    }
+    if (!bodyText.trim()) {
+      toast.error("Body obligatorio");
+      return;
+    }
+    if (!/^[A-Z]{2}$/.test(country)) {
+      toast.error("Country code ISO-2 (ej: CL, MX, IN)");
+      return;
+    }
+    onSend({
+      conversationId,
+      phoneNumberId,
+      bodyText: bodyText.trim(),
+      country,
+      saveAddressLabel: label.trim() || undefined,
+    });
+    onClose();
+  };
+
+  return (
+    <Modal>
+      <Modal.Backdrop
+        isOpen={isOpen}
+        onOpenChange={(o) => !o && onClose()}
+        isDismissable
+        className="bg-black/40 backdrop-blur-[2px]"
+      >
+        <Modal.Container placement="center">
+          <Modal.Dialog className="relative w-full max-w-md rounded-[28px] bg-background p-6 shadow-2xl">
+            <Modal.Header className="mb-4">
+              <Modal.Heading className="font-bold text-primary text-xl">
+                Pedir dirección
+              </Modal.Heading>
+              <p className="text-default-500 text-xs">
+                Address Message tiene cobertura limitada por país (Meta lo lanzó por etapas).
+                Si falla, usa CTA URL o pídele dirección como texto.
+              </p>
+            </Modal.Header>
+            <Modal.Body className="max-h-[70vh] space-y-3 overflow-y-auto">
+              <TextInput
+                label="Body"
+                value={bodyText}
+                onValueChange={setBodyText}
+                placeholder="Comparte tu dirección"
+              />
+              <div className="grid grid-cols-2 gap-3">
+                <TextInput
+                  label="País (ISO-2)"
+                  value={country}
+                  onValueChange={(v) => setCountry(v.toUpperCase().slice(0, 2))}
+                  placeholder="CL"
+                />
+                <TextInput
+                  label="Label guardar (opcional)"
+                  value={label}
+                  onValueChange={setLabel}
+                  placeholder="Casa"
+                />
+              </div>
+            </Modal.Body>
+            <Modal.Footer className="mt-4 flex justify-end gap-2">
+              <Button variant="outline" onPress={onClose}>
+                <X size={14} />
+                Cancelar
+              </Button>
+              <Button onPress={submit} isPending={isPending}>
+                <Home size={14} />
+                Pedir dirección
               </Button>
             </Modal.Footer>
           </Modal.Dialog>

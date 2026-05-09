@@ -150,6 +150,72 @@ export function useSendFlow() {
   });
 }
 
+export function useSendInteractiveList() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: Parameters<typeof waCloudORPCClient.sendInteractiveList>[0]) =>
+      waCloudORPCClient.sendInteractiveList(input),
+    onSuccess: (_, vars) => {
+      void qc.invalidateQueries({ queryKey: [...KEY, "conversation", vars.conversationId] });
+    },
+  });
+}
+
+export function useSendAddress() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: Parameters<typeof waCloudORPCClient.sendAddress>[0]) =>
+      waCloudORPCClient.sendAddress(input),
+    onSuccess: (_, vars) => {
+      void qc.invalidateQueries({ queryKey: [...KEY, "conversation", vars.conversationId] });
+    },
+  });
+}
+
+export function useRegisterPhone() {
+  return useMutation({
+    mutationFn: (input: Parameters<typeof waCloudORPCClient.registerPhone>[0]) =>
+      waCloudORPCClient.registerPhone(input),
+  });
+}
+
+export function useSetTwoStepPin() {
+  return useMutation({
+    mutationFn: (input: Parameters<typeof waCloudORPCClient.setTwoStepPin>[0]) =>
+      waCloudORPCClient.setTwoStepPin(input),
+  });
+}
+
+export function useConversationAnalyticsExtended(
+  input: Parameters<typeof waCloudORPCClient.getConversationAnalyticsExtended>[0] | null,
+) {
+  return useQuery({
+    queryKey: [...KEY, "analytics-ext", input],
+    enabled: Boolean(input),
+    queryFn: () => waCloudORPCClient.getConversationAnalyticsExtended(input!),
+    staleTime: 5 * 60_000,
+  });
+}
+
+export async function uploadProfilePicture(
+  file: File,
+  phoneNumberId: number,
+): Promise<{ ok: boolean; handle: string }> {
+  const form = new FormData();
+  form.append("file", file);
+  form.append("phoneNumberId", String(phoneNumberId));
+  const res = await fetch("/api/wa-cloud/media/profile-picture", {
+    method: "POST",
+    body: form,
+    credentials: "include",
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(`Upload failed (${res.status}): ${text.slice(0, 200)}`);
+  }
+  return res.json();
+}
+
 export function useSendLocation() {
   const qc = useQueryClient();
   return useMutation({

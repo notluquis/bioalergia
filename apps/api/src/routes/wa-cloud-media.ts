@@ -2,7 +2,12 @@ import { db } from "@finanzas/db";
 import { Hono } from "hono";
 import { getSessionUser } from "../auth.ts";
 import { logWarn } from "../lib/logger.ts";
-import { downloadMediaUrl, uploadMedia } from "../modules/wa-cloud/graph-client.ts";
+import {
+  downloadMediaUrl,
+  updateBusinessProfile,
+  uploadMedia,
+  uploadProfilePictureHandle,
+} from "../modules/wa-cloud/graph-client.ts";
 
 export const waCloudMediaRoutes = new Hono();
 
@@ -73,6 +78,30 @@ waCloudMediaRoutes.get("/conversations/:id/export", async (c) => {
  * Body: multipart/form-data with `file` and optional `phoneNumberId` (form
  * field). Auth: PASETO session.
  */
+waCloudMediaRoutes.post("/profile-picture", async (c) => {
+  const session = await getSessionUser(c);
+  if (!session) return c.text("Unauthorized", 401);
+  const form = await c.req.formData();
+  const file = form.get("file");
+  const phoneNumberIdRaw = form.get("phoneNumberId");
+  if (!(file instanceof Blob)) return c.text("Missing file", 400);
+  const phoneNumberId = Number.parseInt(String(phoneNumberIdRaw ?? ""), 10);
+  if (!Number.isFinite(phoneNumberId)) return c.text("Missing phoneNumberId", 400);
+  // WhatsApp profile picture: square JPEG/PNG, 192x192 to 640x640, max 5MB
+  const MAX = 5 * 1024 * 1024;
+  if (file.size > MAX) return c.text("File too large (max 5MB)", 413);
+  const filename = (file as File).name ?? "avatar.jpg";
+  try {
+    const handle = await uploadProfilePictureHandle(phoneNumberId, file, filename);
+    await updateBusinessProfile(phoneNumberId, { profile_picture_handle: handle });
+    return c.json({ ok: true, handle });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    logWarn("[wa-cloud.profile-picture] upload failed", { error: msg });
+    return c.text(msg, 502);
+  }
+});
+
 waCloudMediaRoutes.post("/upload", async (c) => {
   const session = await getSessionUser(c);
   if (!session) return c.text("Unauthorized", 401);

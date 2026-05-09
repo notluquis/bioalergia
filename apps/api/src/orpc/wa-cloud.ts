@@ -3,8 +3,14 @@ import {
   accountIdInput,
   blockContactInputSchema,
   businessProfileResponseSchema,
+  conversationAnalyticsExtendedInputSchema,
+  conversationAnalyticsExtendedResponseSchema,
   conversationAnalyticsInputSchema,
   conversationAnalyticsResponseSchema,
+  registerPhoneInputSchema,
+  sendAddressInputSchema,
+  sendInteractiveListInputSchema,
+  setTwoStepPinInputSchema,
   conversationIdInput,
   conversationDetailResponseSchema,
   accountResponseSchema,
@@ -74,13 +80,17 @@ import {
   listAccountTemplates,
   listBlockedUsers,
   markMessageRead,
+  registerPhoneNumber,
+  sendAddressMessage,
   sendContactsMessage,
   sendFlowMessage,
+  sendInteractiveListMessage,
   sendLocationMessage,
   sendMediaMessage,
   sendReaction,
   sendTemplateMessage,
   sendTextMessage,
+  setTwoStepPin,
   unblockUsers,
   updateBusinessProfile,
 } from "../modules/wa-cloud/graph-client.ts";
@@ -744,6 +754,121 @@ const waRouterBase = {
       return { message };
     }),
 
+  sendInteractiveList: writeWa
+    .route({ method: "POST", path: "/messages/send-list", tags: ["WA Cloud"] })
+    .input(sendInteractiveListInputSchema)
+    .output(sendMessageResponseSchema)
+    .handler(async ({ context, input }) => {
+      const conv = await db.waConversation.findUnique({
+        where: { id: input.conversationId },
+        include: { contact: true },
+      });
+      if (!conv) throw new ORPCError("NOT_FOUND", { message: "Conversación no encontrada" });
+      const lastInbound = conv.lastInboundAt;
+      const windowOpen = lastInbound
+        ? Date.now() - lastInbound.getTime() < WINDOW_HOURS * 60 * 60 * 1000
+        : false;
+      if (!windowOpen) {
+        throw new ORPCError("BAD_REQUEST", {
+          message: "Ventana 24h cerrada. Las listas interactivas requieren ventana abierta.",
+        });
+      }
+      const apiResp = await sendInteractiveListMessage({
+        phoneNumberId: input.phoneNumberId,
+        toE164: conv.contact.phoneE164,
+        bodyText: input.bodyText,
+        buttonText: input.buttonText,
+        sections: input.sections,
+        headerText: input.headerText,
+        footerText: input.footerText,
+        contextMessageId: input.contextMetaMessageId,
+        bizOpaqueCallbackData: input.bizOpaqueCallbackData,
+      });
+      const metaId = apiResp.messages?.[0]?.id ?? null;
+      const now = new Date();
+      const message = await db.waMessage.create({
+        data: {
+          conversationId: conv.id,
+          contactId: conv.contactId,
+          phoneNumberId: input.phoneNumberId,
+          metaMessageId: metaId,
+          direction: "OUTBOUND",
+          type: "INTERACTIVE",
+          status: "SENT",
+          body: input.bodyText,
+          sentByUserId: context.user.id,
+          contextMetaMessageId: input.contextMetaMessageId ?? null,
+          payload: {
+            interactive_type: "list",
+            button: input.buttonText,
+            sections: input.sections,
+          } as never,
+          timestamp: now,
+        },
+      });
+      await db.waConversation.update({
+        where: { id: conv.id },
+        data: { lastMessageAt: now, lastMessagePreview: `[lista] ${input.buttonText}` },
+      });
+      return { message };
+    }),
+
+  sendAddress: writeWa
+    .route({ method: "POST", path: "/messages/send-address", tags: ["WA Cloud"] })
+    .input(sendAddressInputSchema)
+    .output(sendMessageResponseSchema)
+    .handler(async ({ context, input }) => {
+      const conv = await db.waConversation.findUnique({
+        where: { id: input.conversationId },
+        include: { contact: true },
+      });
+      if (!conv) throw new ORPCError("NOT_FOUND", { message: "Conversación no encontrada" });
+      const lastInbound = conv.lastInboundAt;
+      const windowOpen = lastInbound
+        ? Date.now() - lastInbound.getTime() < WINDOW_HOURS * 60 * 60 * 1000
+        : false;
+      if (!windowOpen) {
+        throw new ORPCError("BAD_REQUEST", {
+          message: "Ventana 24h cerrada. El address message requiere ventana abierta.",
+        });
+      }
+      const apiResp = await sendAddressMessage({
+        phoneNumberId: input.phoneNumberId,
+        toE164: conv.contact.phoneE164,
+        bodyText: input.bodyText,
+        country: input.country,
+        saveAddressLabel: input.saveAddressLabel,
+        contextMessageId: input.contextMetaMessageId,
+        bizOpaqueCallbackData: input.bizOpaqueCallbackData,
+      });
+      const metaId = apiResp.messages?.[0]?.id ?? null;
+      const now = new Date();
+      const message = await db.waMessage.create({
+        data: {
+          conversationId: conv.id,
+          contactId: conv.contactId,
+          phoneNumberId: input.phoneNumberId,
+          metaMessageId: metaId,
+          direction: "OUTBOUND",
+          type: "INTERACTIVE",
+          status: "SENT",
+          body: input.bodyText,
+          sentByUserId: context.user.id,
+          contextMetaMessageId: input.contextMetaMessageId ?? null,
+          payload: {
+            interactive_type: "address_message",
+            country: input.country,
+          } as never,
+          timestamp: now,
+        },
+      });
+      await db.waConversation.update({
+        where: { id: conv.id },
+        data: { lastMessageAt: now, lastMessagePreview: "[solicitar dirección]" },
+      });
+      return { message };
+    }),
+
   sendLocation: writeWa
     .route({ method: "POST", path: "/messages/send-location", tags: ["WA Cloud"] })
     .input(sendLocationInputSchema)
@@ -1242,6 +1367,67 @@ const waRouterBase = {
     .handler(async ({ input }) => {
       await updateBusinessProfile(input.phoneNumberId, input.fields);
       return { status: "ok" as const };
+    }),
+
+  // ── Phone admin (register + 2FA PIN) ───────────────────────────────────────
+  registerPhone: writeWa
+    .route({ method: "POST", path: "/phones/register", tags: ["WA Cloud"] })
+    .input(registerPhoneInputSchema)
+    .output(waOkResponseSchema)
+    .handler(async ({ input }) => {
+      await registerPhoneNumber(input.phoneNumberId, input.pin);
+      return { status: "ok" as const };
+    }),
+
+  setTwoStepPin: writeWa
+    .route({ method: "POST", path: "/phones/two-step-pin", tags: ["WA Cloud"] })
+    .input(setTwoStepPinInputSchema)
+    .output(waOkResponseSchema)
+    .handler(async ({ input }) => {
+      await setTwoStepPin(input.phoneNumberId, input.pin);
+      return { status: "ok" as const };
+    }),
+
+  // ── Extended analytics with pricing ────────────────────────────────────────
+  getConversationAnalyticsExtended: readWa
+    .route({ method: "POST", path: "/analytics/conversations/extended", tags: ["WA Cloud"] })
+    .input(conversationAnalyticsExtendedInputSchema)
+    .output(conversationAnalyticsExtendedResponseSchema)
+    .handler(async ({ input }) => {
+      const r = await getConversationAnalytics({
+        accountId: input.accountId,
+        startUnix: input.startUnix,
+        endUnix: input.endUnix,
+        granularity: input.granularity,
+        phoneNumbers: input.phoneNumbers,
+        includePricing: input.includePricing,
+      });
+      const conv = r.conversation_analytics?.data?.[0]?.data_points ?? [];
+      const pricing = r.pricing_analytics?.data?.[0]?.data_points ?? [];
+      return {
+        conversation: conv.map((p) => ({
+          start: p.start,
+          end: p.end,
+          conversation: p.conversation,
+          cost: p.cost ?? null,
+          phone_number: p.phone_number ?? null,
+          country: p.country ?? null,
+          conversation_type: p.conversation_type ?? null,
+          conversation_direction: p.conversation_direction ?? null,
+          conversation_category: p.conversation_category ?? null,
+        })),
+        pricing: pricing.map((p) => ({
+          start: p.start,
+          end: p.end,
+          volume: p.volume,
+          cost: p.cost ?? null,
+          conversation_category: p.conversation_category ?? null,
+          country: p.country ?? null,
+          phone_number: p.phone_number ?? null,
+          pricing_type: p.pricing_type ?? null,
+          tier: p.tier ?? null,
+        })),
+      };
     }),
 
   // ── Phone health ───────────────────────────────────────────────────────────

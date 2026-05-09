@@ -1,9 +1,16 @@
 import { Button, Card, Chip, Modal, Spinner } from "@heroui/react";
-import { Activity, Building2, Check, Save, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Activity, Building2, Check, ImageUp, KeyRound, Save, ShieldCheck, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { SelectInput, TextAreaInput, TextInput } from "@/features/outreach/components/FormField";
 import { toast } from "@/lib/toast-interceptor";
-import { useBusinessProfile, usePhoneHealth, useUpdateBusinessProfile } from "../hooks/useWaCloud";
+import {
+  uploadProfilePicture,
+  useBusinessProfile,
+  usePhoneHealth,
+  useRegisterPhone,
+  useSetTwoStepPin,
+  useUpdateBusinessProfile,
+} from "../hooks/useWaCloud";
 
 const VERTICAL_OPTIONS = [
   { value: "", label: "Sin categoría" },
@@ -61,7 +68,9 @@ export function PhoneToolsModal({ isOpen, onClose, phoneNumberId, displayPhoneNu
             </Modal.Header>
             <Modal.Body className="max-h-[75vh] space-y-6 overflow-y-auto">
               <HealthCard phoneNumberId={phoneNumberId} />
+              <ProfilePictureCard phoneNumberId={phoneNumberId} />
               <ProfileCard phoneNumberId={phoneNumberId} />
+              <PhoneRegistrationCard phoneNumberId={phoneNumberId} />
             </Modal.Body>
             <Modal.Footer className="mt-4 flex justify-end gap-2">
               <Button variant="outline" onPress={onClose}>
@@ -271,6 +280,168 @@ function ProfileCard({ phoneNumberId }: { phoneNumberId: number }) {
             </div>
           </>
         )}
+      </Card.Content>
+    </Card>
+  );
+}
+
+function ProfilePictureCard({ phoneNumberId }: { phoneNumberId: number }) {
+  const profile = useBusinessProfile(phoneNumberId);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [pending, setPending] = useState(false);
+
+  const onFile = async (file: File) => {
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Máximo 5MB");
+      return;
+    }
+    if (!/^image\/(jpeg|png)$/.test(file.type)) {
+      toast.error("Solo JPG o PNG");
+      return;
+    }
+    setPending(true);
+    try {
+      await uploadProfilePicture(file, phoneNumberId);
+      toast.success("Foto de perfil actualizada en Meta");
+      void profile.refetch();
+    } catch (err) {
+      toast.error(`Error: ${String(err)}`);
+    } finally {
+      setPending(false);
+    }
+  };
+
+  return (
+    <Card>
+      <Card.Header className="flex items-center gap-2 border-default-200 border-b">
+        <ImageUp size={16} className="text-accent" />
+        <p className="font-semibold text-sm">Foto de perfil</p>
+      </Card.Header>
+      <Card.Content className="flex items-center gap-4 p-4">
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/jpeg,image/png"
+          className="hidden"
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) void onFile(f);
+            if (fileRef.current) fileRef.current.value = "";
+          }}
+        />
+        {profile.data?.profile_picture_url ? (
+          <img
+            src={profile.data.profile_picture_url}
+            alt="Perfil"
+            className="size-20 shrink-0 rounded-full object-cover ring-2 ring-default-200"
+          />
+        ) : (
+          <div className="flex size-20 shrink-0 items-center justify-center rounded-full bg-default-100 text-default-400">
+            <ImageUp size={28} />
+          </div>
+        )}
+        <div className="flex-1 space-y-1">
+          <p className="text-default-500 text-xs">
+            Cuadrada, 192-640px, JPG/PNG, máx 5MB. Visible para todos los pacientes.
+          </p>
+          <Button
+            size="sm"
+            variant="outline"
+            isPending={pending}
+            onPress={() => fileRef.current?.click()}
+          >
+            <ImageUp size={14} />
+            {profile.data?.profile_picture_url ? "Reemplazar foto" : "Subir foto"}
+          </Button>
+        </div>
+      </Card.Content>
+    </Card>
+  );
+}
+
+function PhoneRegistrationCard({ phoneNumberId }: { phoneNumberId: number }) {
+  const register = useRegisterPhone();
+  const setPin = useSetTwoStepPin();
+  const [pin, setPinValue] = useState("");
+  const [twoStepPin, setTwoStepPin] = useState("");
+
+  const doRegister = async () => {
+    if (!/^\d{6}$/.test(pin)) {
+      toast.error("PIN debe ser 6 dígitos");
+      return;
+    }
+    try {
+      await register.mutateAsync({ phoneNumberId, pin });
+      toast.success("Número registrado en Cloud API");
+      setPinValue("");
+    } catch (err) {
+      toast.error(`Error: ${String(err)}`);
+    }
+  };
+
+  const doSetPin = async () => {
+    if (!/^\d{6}$/.test(twoStepPin)) {
+      toast.error("PIN debe ser 6 dígitos");
+      return;
+    }
+    try {
+      await setPin.mutateAsync({ phoneNumberId, pin: twoStepPin });
+      toast.success("PIN 2FA actualizado");
+      setTwoStepPin("");
+    } catch (err) {
+      toast.error(`Error: ${String(err)}`);
+    }
+  };
+
+  return (
+    <Card>
+      <Card.Header className="flex items-center gap-2 border-default-200 border-b">
+        <KeyRound size={16} className="text-accent" />
+        <p className="font-semibold text-sm">Registro y 2FA</p>
+      </Card.Header>
+      <Card.Content className="space-y-4 p-4">
+        <div className="space-y-2 rounded-lg border border-default-200 bg-content2 p-3">
+          <p className="font-medium text-sm">Registrar número (POST /register)</p>
+          <p className="text-default-500 text-xs">
+            Activa el número en Cloud API. Usa el PIN 2FA configurado en Meta. Se hace una vez tras
+            verificación inicial.
+          </p>
+          <div className="flex items-end gap-2">
+            <div className="flex-1">
+              <TextInput
+                label="PIN 2FA (6 dígitos)"
+                value={pin}
+                onValueChange={(v) => setPinValue(v.replace(/\D/g, "").slice(0, 6))}
+                placeholder="123456"
+              />
+            </div>
+            <Button onPress={doRegister} isPending={register.isPending} size="sm">
+              <Check size={14} />
+              Registrar
+            </Button>
+          </div>
+        </div>
+
+        <div className="space-y-2 rounded-lg border border-default-200 bg-content2 p-3">
+          <p className="font-medium text-sm">Cambiar PIN 2FA</p>
+          <p className="text-default-500 text-xs">
+            Actualiza el PIN de verificación en dos pasos del número. Anti-hijack.
+          </p>
+          <div className="flex items-end gap-2">
+            <div className="flex-1">
+              <TextInput
+                label="Nuevo PIN (6 dígitos)"
+                value={twoStepPin}
+                onValueChange={(v) => setTwoStepPin(v.replace(/\D/g, "").slice(0, 6))}
+                placeholder="987654"
+              />
+            </div>
+            <Button onPress={doSetPin} isPending={setPin.isPending} size="sm">
+              <ShieldCheck size={14} />
+              Actualizar
+            </Button>
+          </div>
+        </div>
       </Card.Content>
     </Card>
   );
