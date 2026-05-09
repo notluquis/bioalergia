@@ -24,7 +24,7 @@ function StatusTicks({ status }: { status: MessageStatus }) {
   if (status === "FAILED")
     return <AlertCircle className={`${cls} text-danger`} size={14} aria-label="falló" />;
   if (status === "READ")
-    return <CheckCheck className={`${cls} text-sky-500`} size={14} aria-label="leído" />;
+    return <CheckCheck className={`${cls} text-accent`} size={14} aria-label="leído" />;
   if (status === "DELIVERED")
     return <CheckCheck className={cls} size={14} aria-label="entregado" />;
   return <Check className={cls} size={14} aria-label="enviado" />;
@@ -296,7 +296,7 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
       <Card.Content className="flex flex-1 flex-col overflow-hidden p-0">
         <div
           ref={scrollRef}
-          className="flex-1 space-y-2 overflow-y-auto bg-[#efeae2] px-4 py-3 dark:bg-[#0b141a]"
+          className="flex-1 space-y-2 overflow-y-auto bg-content2 px-4 py-3"
         >
           {allMessages.length === 0 ? (
             <p className="py-8 text-center text-default-400 text-sm">
@@ -306,9 +306,9 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
             allMessages.map((row) =>
               row.kind === "divider" ? (
                 <div key={row.key} className="flex justify-center py-2">
-                  <span className="rounded-md bg-white px-3 py-0.5 text-zinc-700 text-xs shadow-sm dark:bg-[#1f2c34] dark:text-zinc-300">
-                    {row.label}
-                  </span>
+                  <Chip size="sm" variant="soft">
+                    <Chip.Label>{row.label}</Chip.Label>
+                  </Chip>
                 </div>
               ) : (
                 <ChatBubble key={row.key} row={row} />
@@ -370,13 +370,13 @@ function ChatBubble({
   const isPending = row.status === "PENDING";
   const failed = row.status === "FAILED";
   const wrapper = out ? "justify-end" : "justify-start";
-  // WhatsApp-style bubble palette (explicit hex so dark/light always contrast).
-  // Outbound = WhatsApp green-ish; inbound = surface white/dark gray.
+  // 100% HeroUI semantic tokens. Outbound uses success (clinic green),
+  // inbound uses content1 (raised surface), failed uses danger.
   const bubbleColor = out
     ? failed
-      ? "bg-danger-100 text-danger-foreground"
-      : "bg-[#d9fdd3] text-zinc-900 dark:bg-[#005c4b] dark:text-zinc-50"
-    : "bg-white text-zinc-900 dark:bg-[#1f2c34] dark:text-zinc-50 border border-default-200/40 dark:border-transparent";
+      ? "bg-danger text-danger-foreground"
+      : "bg-success text-success-foreground"
+    : "bg-content1 text-foreground border border-default-200";
   const radius = out ? "rounded-l-2xl rounded-tr-2xl" : "rounded-r-2xl rounded-tl-2xl";
   const isMedia = ["IMAGE", "STICKER", "VIDEO", "AUDIO", "DOCUMENT"].includes(row.type);
   const fallbackLabel = row.templateName
@@ -398,7 +398,7 @@ function ChatBubble({
           </p>
         )}
         <div
-          className={`flex items-center justify-end gap-1 text-[10px] ${out ? "text-zinc-600 dark:text-zinc-300" : "text-zinc-500 dark:text-zinc-400"} ${row.type === "STICKER" ? "px-2 pb-1" : "mt-1"}`}
+          className={`flex items-center justify-end gap-1 text-[10px] ${out ? "text-success-foreground/80" : "text-default-500"} ${row.type === "STICKER" ? "px-2 pb-1" : "mt-1"}`}
         >
           <span>{dayjs(row.timestamp).format("HH:mm")}</span>
           {out && <StatusTicks status={row.status} />}
