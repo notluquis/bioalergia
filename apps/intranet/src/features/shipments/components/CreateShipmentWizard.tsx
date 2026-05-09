@@ -458,9 +458,13 @@ function OfficePicker({
   });
 
   const { data: officesData, isLoading: loadingOffices } = useQuery({
-    queryKey: ["cx-offices", coverageCode],
-    queryFn: () => fetchCommercialOffices(String(coverageCode)),
-    enabled: Boolean(coverageCode),
+    queryKey: ["cx-offices", regionId, communeName],
+    queryFn: () =>
+      fetchCommercialOffices({
+        regionCode: String(regionId),
+        countyName: communeName,
+      }),
+    enabled: Boolean(regionId && communeName),
     staleTime: 1000 * 60 * 60,
   });
 

@@ -94,10 +94,13 @@ const shipmentsRouterBase = {
 
   getCommercialOffices: base
     .route({ method: "GET", path: "/commercial-offices", summary: "List ChileExpress offices", tags: ["Shipments"] })
-    .input(z.object({ coverageRegionCode: z.string() }))
+    .input(z.object({ regionCode: z.string(), countyName: z.string() }))
     .output(z.object({ offices: z.array(officeSchema) }))
     .handler(async ({ input }) => {
-      const offices = await fetchCommercialOffices(input.coverageRegionCode);
+      const offices = await fetchCommercialOffices({
+        regionCode: input.regionCode,
+        countyName: input.countyName,
+      });
       return { offices };
     }),
 

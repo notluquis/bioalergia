@@ -52,9 +52,12 @@ export async function fetchCommunes(regionId: string) {
   return getCommunes(cfg, regionId);
 }
 
-export async function fetchCommercialOffices(coverageRegionCode: string) {
+export async function fetchCommercialOffices(options: {
+  regionCode: string;
+  countyName: string;
+}) {
   const cfg = requireCxConfig();
-  return getCommercialOffices(cfg, coverageRegionCode);
+  return getCommercialOffices(cfg, options);
 }
 
 export async function quoteShipment(input: {

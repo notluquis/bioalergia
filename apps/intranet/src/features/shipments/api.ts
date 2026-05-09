@@ -16,9 +16,9 @@ export async function fetchCommunes(regionId: string) {
   }
 }
 
-export async function fetchCommercialOffices(coverageRegionCode: string) {
+export async function fetchCommercialOffices(options: { regionCode: string; countyName: string }) {
   try {
-    return await shipmentsORPCClient.getCommercialOffices({ coverageRegionCode });
+    return await shipmentsORPCClient.getCommercialOffices(options);
   } catch (error) {
     throw toShipmentsApiError(error);
   }

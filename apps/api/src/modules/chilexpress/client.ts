@@ -74,8 +74,8 @@ export async function getCommunes(
   config: ChilexpressConfig,
   regionCode: string,
 ): Promise<CxCommune[]> {
-  // Chilexpress exposes communes through /coverage-areas (the /communes
-  // path returns 404). type=0 returns delivery-eligible coverage entries.
+  // type=1 returns one entry per comuna (no sub-zone duplicates).
+  // (type=0 = all coverage zones; type=2 = sectores dentro de comuna.)
   const data = await cxFetch<{
     coverageAreas?: Array<{
       countyCode: string;
@@ -87,7 +87,7 @@ export async function getCommunes(
   }>(
     config,
     "georeference",
-    `/coverage-areas?RegionCode=${encodeURIComponent(regionCode)}&type=0`,
+    `/coverage-areas?RegionCode=${encodeURIComponent(regionCode)}&type=1`,
   );
   return (data.coverageAreas ?? []).map((c) => ({
     countyCode: c.countyCode,
@@ -101,16 +101,60 @@ export async function getCommunes(
   }));
 }
 
+/**
+ * Chilexpress' canonical office endpoint is
+ * `GET /georeference/api/v1.0/offices?Type=0&RegionCode=...&CountyName=...`
+ * Type=0 lists "Sucursales propias" (drop-off / pickup at Chilexpress
+ * branches). The earlier client used a non-existent `/commercial-offices`
+ * path that returned 404 for every query.
+ */
 export async function getCommercialOffices(
   config: ChilexpressConfig,
-  coverageRegionCode: string,
+  options: { regionCode: string; countyName: string },
 ): Promise<CxCommercialOffice[]> {
-  const data = await cxFetch<{ commercialOffices?: CxCommercialOffice[] }>(
+  type CxRawOffice = {
+    addressId: number;
+    countyName: string;
+    regionName: string;
+    officeName: string;
+    officeType: number;
+    streetName: string;
+    streetNumber: number;
+    complement?: string;
+    latitude?: string;
+    longitude?: string;
+    telephone?: string;
+    businessHour?: Array<{
+      day: string;
+      initialStartHour: string;
+      initialEndHour: string;
+      finalStartHour: string;
+      finalEndHour: string;
+    }>;
+  };
+  const data = await cxFetch<{ offices?: CxRawOffice[] }>(
     config,
     "georeference",
-    `/commercial-offices?coverageRegionCode=${encodeURIComponent(coverageRegionCode)}`,
+    `/offices?Type=0&RegionCode=${encodeURIComponent(options.regionCode)}&CountyName=${encodeURIComponent(options.countyName)}`,
   );
-  return data.commercialOffices ?? [];
+  return (data.offices ?? []).map((o) => ({
+    commercialOfficeId: String(o.addressId),
+    commercialOfficeName: o.officeName,
+    street: o.streetName,
+    number: String(o.streetNumber),
+    commune: o.countyName,
+    region: o.regionName,
+    schedules: (o.businessHour ?? [])
+      .map(
+        (b) =>
+          `${b.day}: ${b.initialStartHour}-${b.initialEndHour}${
+            b.finalStartHour ? ` / ${b.finalStartHour}-${b.finalEndHour}` : ""
+          }`,
+      )
+      .join(" · "),
+    latitude: o.latitude ? Number(o.latitude) : undefined,
+    longitude: o.longitude ? Number(o.longitude) : undefined,
+  }));
 }
 
 // ─── Rating ───────────────────────────────────────────────────────────────────

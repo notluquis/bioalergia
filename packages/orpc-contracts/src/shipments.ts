@@ -143,7 +143,7 @@ export const shipmentsContract = {
 
   getCommercialOffices: oc
     .route({ method: "GET", path: "/commercial-offices" })
-    .input(z.object({ coverageRegionCode: z.string() }))
+    .input(z.object({ regionCode: z.string(), countyName: z.string() }))
     .output(z.object({ offices: z.array(cxCommercialOfficeSchema) })),
 
   quote: oc
