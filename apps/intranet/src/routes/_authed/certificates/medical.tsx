@@ -293,7 +293,7 @@ function MedicalCertificatePage() {
                     onChange={(v) => field.handleChange(Number(v))}
                   >
                     <Label>Días de Reposo</Label>
-                    <Input min={0} onBlur={field.handleBlur} />
+                    <Input variant="secondary" min={0} onBlur={field.handleBlur} />
                   </TextField>
                 )}
               </form.Field>
@@ -430,7 +430,7 @@ function MedicalCertificatePage() {
           <div className="flex justify-end gap-3 border-default-200 border-t pt-4">
             <Button
               type="button"
-              variant="ghost"
+              variant="outline"
               onPress={() => form.reset()}
               isDisabled={generateMutation.isPending}
             >

@@ -106,7 +106,7 @@ export function Sidebar({ isMobile, isOpen, onClose, sidebarId }: SidebarProps) 
             <Button
               aria-label="Abrir menu de usuario"
               type="button"
-              variant="ghost"
+              variant="outline"
               className={cn(
                 "group flex cursor-pointer items-center outline-none hover:bg-default-50/50",
                 isMobile

@@ -144,7 +144,7 @@ export function UpdateNotification() {
                     setNeedRefresh(false);
                   }}
                   size="sm"
-                  variant="ghost"
+                  variant="outline"
                 >
                   <X className="h-4 w-4" />
                 </Button>
@@ -183,7 +183,7 @@ export function UpdateNotification() {
                   >
                     {isUpdating ? "Actualizando..." : "Limpiar y actualizar"}
                   </Button>
-                  <Button onPress={() => setIsConfirmOpen(false)} size="sm" variant="ghost">
+                  <Button onPress={() => setIsConfirmOpen(false)} size="sm" variant="outline">
                     Cancelar
                   </Button>
                 </div>

@@ -51,7 +51,7 @@ function AllergyInventoryView() {
             Agrupados por tipo/categoría. Revisa stock, precio y cuentas disponibles.
           </Description>
         </div>
-        <Button isDisabled={isFetching} onPress={() => void refetch()} size="sm" variant="ghost">
+        <Button isDisabled={isFetching} onPress={() => void refetch()} size="sm" variant="outline">
           {isFetching ? "Actualizando" : "Refrescar"}
         </Button>
       </div>

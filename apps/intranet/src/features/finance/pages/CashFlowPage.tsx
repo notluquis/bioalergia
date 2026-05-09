@@ -2119,7 +2119,7 @@ export function CashFlowPage() {
                             <Button
                               className="group h-auto w-full justify-start rounded-md border border-default-200 p-0 text-left hover:bg-default-100/60"
                               key={`summary-income-category-${item.type}-${item.categoryId ?? "none"}`}
-                              variant="ghost"
+                              variant="outline"
                               onPress={() => navigateToMovementsBySummaryCategory(item)}
                             >
                               <div className="w-full space-y-1.5 px-2.5 py-2">
@@ -2185,7 +2185,7 @@ export function CashFlowPage() {
                             <Button
                               className="group h-auto w-full justify-start rounded-md border border-default-200 p-0 text-left hover:bg-default-100/60"
                               key={`summary-expense-category-${item.type}-${item.categoryId ?? "none"}`}
-                              variant="ghost"
+                              variant="outline"
                               onPress={() => navigateToMovementsBySummaryCategory(item)}
                             >
                               <div className="w-full space-y-1.5 px-2.5 py-2">
@@ -2988,14 +2988,14 @@ export function CashFlowPage() {
                                   <div className="flex items-center gap-3">
                                     <Button
                                       size="sm"
-                                      variant="ghost"
+                                      variant="outline"
                                       onPress={() => handleStartEditCategory(category)}
                                     >
                                       Editar
                                     </Button>
                                     <Button
                                       size="sm"
-                                      variant="ghost"
+                                      variant="outline"
                                       className="text-danger"
                                       onPress={() => handleDeleteCategory(category)}
                                       isPending={deleteCategoryMutation.isPending}
@@ -3124,7 +3124,7 @@ export function CashFlowPage() {
                               }`}
                               key={profile.id}
                               onPress={() => setSelectedCompensationProfileId(profile.id)}
-                              variant="ghost"
+                              variant="outline"
                             >
                               <p className="text-sm font-medium">{profile.name}</p>
                               <p className="text-tiny text-default-500">
@@ -3701,14 +3701,14 @@ export function CashFlowPage() {
                                 <div className="flex items-center gap-2">
                                   <Button
                                     size="sm"
-                                    variant="ghost"
+                                    variant="outline"
                                     onPress={() => handleStartEditRule(rule)}
                                   >
                                     Editar
                                   </Button>
                                   <Button
                                     size="sm"
-                                    variant="ghost"
+                                    variant="outline"
                                     className="text-danger"
                                     isPending={deleteAutoCategoryRuleMutation.isPending}
                                     onPress={() => handleDeleteRule(rule)}

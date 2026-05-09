@@ -74,7 +74,7 @@ export function PasswordStep({
       </div>
 
       <div className="mt-6 flex justify-end gap-3">
-        <Button isDisabled={isLoading} onPress={onPrev} type="button" variant="ghost">
+        <Button isDisabled={isLoading} onPress={onPrev} type="button" variant="outline">
           Atrás
         </Button>
         <Button

@@ -3,6 +3,8 @@ import type { ReactNode } from "react";
 
 export type SelectOption = { value: string; label: string };
 
+type FieldVariant = "primary" | "secondary";
+
 export type TextInputProps = {
   label?: string;
   value: string | number | null | undefined;
@@ -15,6 +17,7 @@ export type TextInputProps = {
   max?: number;
   defaultValue?: string;
   className?: string;
+  variant?: FieldVariant;
   onBlur?: () => void;
   onKeyDown?: React.KeyboardEventHandler<HTMLInputElement>;
 };
@@ -31,6 +34,7 @@ export function TextInput({
   max,
   defaultValue,
   className,
+  variant = "secondary",
   onBlur,
   onKeyDown,
 }: TextInputProps) {
@@ -46,7 +50,13 @@ export function TextInput({
       className={className}
     >
       {label && <Label>{label}</Label>}
-      <Input placeholder={placeholder} min={min} max={max} onKeyDown={onKeyDown} />
+      <Input
+        variant={variant}
+        placeholder={placeholder}
+        min={min}
+        max={max}
+        onKeyDown={onKeyDown}
+      />
     </TextField>
   );
 }
@@ -60,6 +70,7 @@ export type TextAreaInputProps = {
   isDisabled?: boolean;
   placeholder?: string;
   className?: string;
+  variant?: FieldVariant;
   onBlur?: () => void;
 };
 
@@ -72,6 +83,7 @@ export function TextAreaInput({
   isDisabled,
   placeholder,
   className,
+  variant = "secondary",
   onBlur,
 }: TextAreaInputProps) {
   return (
@@ -84,7 +96,7 @@ export function TextAreaInput({
       className={className}
     >
       {label && <Label>{label}</Label>}
-      <TextArea rows={rows} placeholder={placeholder} />
+      <TextArea variant={variant} rows={rows} placeholder={placeholder} />
     </TextField>
   );
 }

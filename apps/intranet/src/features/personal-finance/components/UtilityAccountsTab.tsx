@@ -217,7 +217,7 @@ export function UtilityAccountsTab() {
                   <Button
                     isIconOnly
                     size="sm"
-                    variant="ghost"
+                    variant="outline"
                     isDisabled={refreshMutation.isPending}
                     onPress={() => refreshMutation.mutate(account.id)}
                     aria-label="Refrescar"
@@ -227,7 +227,7 @@ export function UtilityAccountsTab() {
                   <Button
                     isIconOnly
                     size="sm"
-                    variant="ghost"
+                    variant="outline"
                     onPress={() =>
                       setEditTarget({
                         id: account.id,
@@ -379,7 +379,7 @@ function AccountFormModal({
                 </TextField>
 
                 <div className="flex justify-end gap-2 pt-2">
-                  <Button variant="ghost" onPress={onClose} type="button">
+                  <Button variant="outline" onPress={onClose} type="button">
                     Cancelar
                   </Button>
                   <Button variant="primary" type="submit" isDisabled={isPending}>

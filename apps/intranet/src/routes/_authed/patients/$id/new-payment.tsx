@@ -113,7 +113,7 @@ function NewPaymentPage() {
     <div className={PAGE_CONTAINER}>
       <div className="mb-6">
         <Button
-          variant="ghost"
+          variant="outline"
           onPress={() => navigate({ to: "/patients/$id", params: { id: String(id) } })}
           className="gap-2"
         >
@@ -190,7 +190,7 @@ function NewPaymentPage() {
 
             <form.Field name="amount">
               {(field) => (
-                <NumberField
+                <NumberField variant="secondary"
                   formatOptions={{
                     currency: "CLP",
                     currencyDisplay: "symbol",
@@ -275,7 +275,7 @@ function NewPaymentPage() {
           <div className="flex justify-end gap-3 border-default-100 border-t pt-4">
             <Button
               type="button"
-              variant="ghost"
+              variant="outline"
               onPress={() => navigate({ to: "/patients/$id", params: { id: String(id) } })}
               isDisabled={mutation.isPending}
             >

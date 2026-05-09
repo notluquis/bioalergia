@@ -80,7 +80,7 @@ export function MultiSelectFilter({
               isCompact ? "h-9 text-[13px]" : "h-9 text-sm"
             }`}
             fullWidth
-            variant="ghost"
+            variant="outline"
           >
             <span className="truncate font-medium">{displayText}</span>
             <ChevronDown className="h-4 w-4 shrink-0 text-foreground-500" />

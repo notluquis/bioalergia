@@ -67,7 +67,7 @@ export function CalendarSyncHistoryPage() {
                 onPress={() => refetch()}
                 size="sm"
                 type="button"
-                variant="ghost"
+                variant="outline"
               >
                 <RefreshCw className={cn("h-4 w-4", isLoading && "")} />
               </Button>

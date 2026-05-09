@@ -75,7 +75,7 @@ const columns: ColumnDef<Shipment>[] = [
       row.original.labelBase64 ? (
         <Button
           size="sm"
-          variant="ghost"
+          variant="outline"
           isIconOnly
           onPress={() => downloadLabel(row.original.otNumber, row.original.labelBase64!)}
         >

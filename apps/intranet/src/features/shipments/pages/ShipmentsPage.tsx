@@ -188,7 +188,7 @@ function PatientSelectModal({
               </div>
 
               <div className="border-default-100 border-t pt-3">
-                <Button size="sm" variant="ghost" className="w-full gap-2" onPress={onCreateNew}>
+                <Button size="sm" variant="outline" className="w-full gap-2" onPress={onCreateNew}>
                   <UserPlus size={15} />
                   Registrar nuevo paciente
                 </Button>
@@ -243,7 +243,7 @@ export function ShipmentsPage() {
                 isIconOnly
                 onPress={() => downloadLabel(row.original.otNumber, row.original.labelBase64!)}
                 size="sm"
-                variant="ghost"
+                variant="outline"
               >
                 <PackageCheck size={16} />
               </Button>
@@ -254,7 +254,7 @@ export function ShipmentsPage() {
               isIconOnly
               onPress={() => reprintMutation.mutate(row.original.id)}
               size="sm"
-              variant="ghost"
+              variant="outline"
             >
               <RefreshCw size={16} />
             </Button>
@@ -263,7 +263,7 @@ export function ShipmentsPage() {
               isIconOnly
               onPress={() => setTracking({ id: row.original.id, otNumber: row.original.otNumber })}
               size="sm"
-              variant="ghost"
+              variant="outline"
             >
               <Activity size={16} />
             </Button>

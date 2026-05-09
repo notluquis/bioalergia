@@ -61,7 +61,7 @@ export function CounterpartList({
                     onSelectCounterpart(item.id);
                   }}
                   type="button"
-                  variant="ghost"
+                  variant="outline"
                 >
                   <span className="flex items-start justify-between gap-2">
                     <span className="block font-medium text-foreground tracking-tight">

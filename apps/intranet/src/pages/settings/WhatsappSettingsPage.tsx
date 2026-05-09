@@ -1212,7 +1212,7 @@ export function WhatsappSettingsPage() {
                             })
                           }
                           size="sm"
-                          variant="ghost"
+                          variant="outline"
                         >
                           {activeSidebarChat?.isArchived ? "Desarchivar" : "Archivar"}
                         </Button>
@@ -1226,7 +1226,7 @@ export function WhatsappSettingsPage() {
                             })
                           }
                           size="sm"
-                          variant="ghost"
+                          variant="outline"
                         >
                           {activeSidebarChat?.isMuted ? "Quitar mute" : "Silenciar 8h"}
                         </Button>
@@ -1238,7 +1238,7 @@ export function WhatsappSettingsPage() {
                             })
                           }
                           size="sm"
-                          variant="ghost"
+                          variant="outline"
                         >
                           {(activeSidebarChat?.unreadCount ?? 0) > 0
                             ? "Marcar leído"
@@ -1252,7 +1252,7 @@ export function WhatsappSettingsPage() {
                             })
                           }
                           size="sm"
-                          variant="ghost"
+                          variant="outline"
                         >
                           {chatMetaQuery.data?.disappearingDuration
                             ? "Quitar temporales"
@@ -1407,7 +1407,7 @@ export function WhatsappSettingsPage() {
                                         setChatReplyMessageId(message.messageId);
                                       }}
                                       size="sm"
-                                      variant="ghost"
+                                      variant="outline"
                                     >
                                       Responder
                                     </Button>
@@ -1420,7 +1420,7 @@ export function WhatsappSettingsPage() {
                                         setComposerMessageId(message.messageId);
                                       }}
                                       size="sm"
-                                      variant="ghost"
+                                      variant="outline"
                                     >
                                       Reaccionar
                                     </Button>
@@ -1434,7 +1434,7 @@ export function WhatsappSettingsPage() {
                                         })
                                       }
                                       size="sm"
-                                      variant="ghost"
+                                      variant="outline"
                                     >
                                       {message.starred ? "Quitar estrella" : "Destacar"}
                                     </Button>
@@ -2058,7 +2058,7 @@ export function WhatsappSettingsPage() {
 
                   <TextField onChange={setComposerPhone} value={composerPhone}>
                     <Label>Teléfono destino</Label>
-                    <Input placeholder="+56912345678" type="tel" />
+                    <Input variant="secondary" placeholder="+56912345678" type="tel" />
                   </TextField>
 
                   {renderComposerFields({
@@ -2215,7 +2215,7 @@ export function WhatsappSettingsPage() {
                             : "border-default-200"
                         }`}
                         onPress={() => setSelectedChatJid(chat.jid)}
-                        variant="ghost"
+                        variant="outline"
                       >
                         <div className="flex items-start justify-between gap-3">
                           <div>
@@ -2263,7 +2263,7 @@ export function WhatsappSettingsPage() {
                 <Card.Content className="space-y-3">
                   <TextField onChange={setHistoryPhoneFilter} value={historyPhoneFilter}>
                     <Label>Filtrar por teléfono</Label>
-                    <Input placeholder="+56912345678" type="tel" />
+                    <Input variant="secondary" placeholder="+56912345678" type="tel" />
                   </TextField>
 
                   {threadQuery.isPending ? (
@@ -2407,12 +2407,12 @@ export function WhatsappSettingsPage() {
 
                   <TextField onChange={setHistoryTypeFilter} value={historyTypeFilter}>
                     <Label>Tipo</Label>
-                    <Input placeholder="image, conversation, reaction..." type="text" />
+                    <Input variant="secondary" placeholder="image, conversation, reaction..." type="text" />
                   </TextField>
 
                   <TextField onChange={setHistoryPhoneFilter} value={historyPhoneFilter}>
                     <Label>Teléfono</Label>
-                    <Input placeholder="+56912345678" type="tel" />
+                    <Input variant="secondary" placeholder="+56912345678" type="tel" />
                   </TextField>
                 </div>
 
@@ -2544,18 +2544,18 @@ export function WhatsappSettingsPage() {
                   <div className="grid gap-4 md:grid-cols-2">
                     <TextField onChange={setBusinessEmail} value={businessEmail}>
                       <Label>Email</Label>
-                      <Input placeholder="contacto@bioalergia.cl" type="email" />
+                      <Input variant="secondary" placeholder="contacto@bioalergia.cl" type="email" />
                     </TextField>
 
                     <TextField onChange={setBusinessTimezone} value={businessTimezone}>
                       <Label>Timezone</Label>
-                      <Input placeholder="America/Santiago" type="text" />
+                      <Input variant="secondary" placeholder="America/Santiago" type="text" />
                     </TextField>
                   </div>
 
                   <TextField onChange={setBusinessAddress} value={businessAddress}>
                     <Label>Dirección</Label>
-                    <Input placeholder="Av. Ejemplo 123, Providencia" type="text" />
+                    <Input variant="secondary" placeholder="Av. Ejemplo 123, Providencia" type="text" />
                   </TextField>
 
                   <TextField onChange={setBusinessWebsites} value={businessWebsites}>
@@ -2611,7 +2611,7 @@ export function WhatsappSettingsPage() {
                               }
                               value={entry.openTimeInMinutes}
                             >
-                              <Input placeholder="540" type="number" />
+                              <Input variant="secondary" placeholder="540" type="number" />
                             </TextField>
                             <TextField
                               isDisabled={entry.mode !== "specific_hours"}
@@ -2620,7 +2620,7 @@ export function WhatsappSettingsPage() {
                               }
                               value={entry.closeTimeInMinutes}
                             >
-                              <Input placeholder="1080" type="number" />
+                              <Input variant="secondary" placeholder="1080" type="number" />
                             </TextField>
                           </div>
                         );
@@ -2654,7 +2654,7 @@ export function WhatsappSettingsPage() {
                   <Card.Content className="space-y-4">
                     <TextField onChange={setCoverPhotoLink} value={coverPhotoLink}>
                       <Label>URL pública de imagen</Label>
-                      <Input placeholder="https://..." type="url" />
+                      <Input variant="secondary" placeholder="https://..." type="url" />
                     </TextField>
                     <div className="flex gap-2">
                       <Button
@@ -2671,7 +2671,7 @@ export function WhatsappSettingsPage() {
                     </div>
                     <TextField onChange={setCoverPhotoIdToRemove} value={coverPhotoIdToRemove}>
                       <Label>Cover photo ID</Label>
-                      <Input placeholder="ID retornado por Baileys" type="text" />
+                      <Input variant="secondary" placeholder="ID retornado por Baileys" type="text" />
                     </TextField>
                     <Button
                       isDisabled={
@@ -2700,11 +2700,11 @@ export function WhatsappSettingsPage() {
                     <div className="grid gap-4 md:grid-cols-2">
                       <TextField onChange={setQuickReplyShortcut} value={quickReplyShortcut}>
                         <Label>Shortcut</Label>
-                        <Input placeholder="/hola" type="text" />
+                        <Input variant="secondary" placeholder="/hola" type="text" />
                       </TextField>
                       <TextField onChange={setQuickReplyTimestamp} value={quickReplyTimestamp}>
                         <Label>Timestamp</Label>
-                        <Input placeholder="auto si está vacío" type="text" />
+                        <Input variant="secondary" placeholder="auto si está vacío" type="text" />
                       </TextField>
                     </div>
                     <TextField onChange={setQuickReplyMessage} value={quickReplyMessage}>
@@ -2717,7 +2717,7 @@ export function WhatsappSettingsPage() {
                     </TextField>
                     <TextField onChange={setQuickReplyKeywords} value={quickReplyKeywords}>
                       <Label>Keywords</Label>
-                      <Input placeholder="hola, recepción, agenda" type="text" />
+                      <Input variant="secondary" placeholder="hola, recepción, agenda" type="text" />
                     </TextField>
                     <Button
                       isDisabled={
@@ -2816,15 +2816,15 @@ export function WhatsappSettingsPage() {
                   <div className="grid gap-4 md:grid-cols-3">
                     <TextField onChange={setLabelId} value={labelId}>
                       <Label>ID</Label>
-                      <Input placeholder="auto si está vacío" type="text" />
+                      <Input variant="secondary" placeholder="auto si está vacío" type="text" />
                     </TextField>
                     <TextField onChange={setLabelName} value={labelName}>
                       <Label>Nombre</Label>
-                      <Input placeholder="Paciente nuevo" type="text" />
+                      <Input variant="secondary" placeholder="Paciente nuevo" type="text" />
                     </TextField>
                     <TextField onChange={setLabelColor} value={labelColor}>
                       <Label>Color (0-19)</Label>
-                      <Input placeholder="0" type="number" />
+                      <Input variant="secondary" placeholder="0" type="number" />
                     </TextField>
                   </div>
                   <Button
@@ -2904,14 +2904,14 @@ export function WhatsappSettingsPage() {
                     <div className="grid gap-4 md:grid-cols-2">
                       <TextField onChange={setChatLabelJid} value={chatLabelJid}>
                         <Label>Chat JID</Label>
-                        <Input
+                        <Input variant="secondary"
                           placeholder={selectedChatJid ?? "569...@s.whatsapp.net"}
                           type="text"
                         />
                       </TextField>
                       <TextField onChange={setChatLabelId} value={chatLabelId}>
                         <Label>Label ID</Label>
-                        <Input placeholder="label id" type="text" />
+                        <Input variant="secondary" placeholder="label id" type="text" />
                       </TextField>
                     </div>
                     <div className="flex gap-2">
@@ -2975,18 +2975,18 @@ export function WhatsappSettingsPage() {
                     <div className="grid gap-4 md:grid-cols-3">
                       <TextField onChange={setMessageLabelJid} value={messageLabelJid}>
                         <Label>Chat JID</Label>
-                        <Input
+                        <Input variant="secondary"
                           placeholder={selectedChatJid ?? "569...@s.whatsapp.net"}
                           type="text"
                         />
                       </TextField>
                       <TextField onChange={setMessageLabelMessageId} value={messageLabelMessageId}>
                         <Label>Message ID</Label>
-                        <Input placeholder="ABGGFl..." type="text" />
+                        <Input variant="secondary" placeholder="ABGGFl..." type="text" />
                       </TextField>
                       <TextField onChange={setMessageLabelId} value={messageLabelId}>
                         <Label>Label ID</Label>
-                        <Input placeholder="label id" type="text" />
+                        <Input variant="secondary" placeholder="label id" type="text" />
                       </TextField>
                     </div>
                     <div className="flex gap-2">
@@ -3062,7 +3062,7 @@ export function WhatsappSettingsPage() {
               </Card.Header>
               <Card.Content className="space-y-4">
                 <TextField className="w-full" onChange={setConsentPhone} value={consentPhone}>
-                  <Input placeholder="+56912345678" type="tel" />
+                  <Input variant="secondary" placeholder="+56912345678" type="tel" />
                 </TextField>
 
                 <div className="flex flex-wrap gap-2">

@@ -1012,7 +1012,7 @@ function AbandonmentContactSection({ seriesId }: { seriesId: number }) {
           <div className="flex gap-2 justify-end">
             <Button
               size="sm"
-              variant="ghost"
+              variant="outline"
               onPress={() => {
                 setShowForm(false);
                 setOutcome("");
@@ -1335,7 +1335,7 @@ export function ClinicalSeriesView() {
             <Button
               isPending={isCheckingDuplicates}
               onPress={() => void checkDuplicates()}
-              variant="ghost"
+              variant="outline"
               size="sm"
             >
               {({ isPending }: { isPending: boolean }) => (
@@ -1419,7 +1419,7 @@ export function ClinicalSeriesView() {
               </Alert.Description>
               <Button
                 size="sm"
-                variant="ghost"
+                variant="outline"
                 className="text-warning text-xs h-auto py-1 mt-1"
                 onPress={() => setDuplicatesModalOpen(true)}
               >
@@ -1649,7 +1649,7 @@ export function ClinicalSeriesView() {
 
                     <div className="flex items-end justify-end">
                       {hasFilters ? (
-                        <Button onPress={clearFilters} size="sm" variant="ghost">
+                        <Button onPress={clearFilters} size="sm" variant="outline">
                           Limpiar
                         </Button>
                       ) : (
@@ -1918,7 +1918,7 @@ export function ClinicalSeriesView() {
 
                     <div className="flex items-end justify-end">
                       {hasFilters ? (
-                        <Button onPress={clearFilters} size="sm" variant="ghost">
+                        <Button onPress={clearFilters} size="sm" variant="outline">
                           Limpiar
                         </Button>
                       ) : (
@@ -2010,7 +2010,7 @@ export function ClinicalSeriesView() {
                         : "No hay series clínicas"}
                   </p>
                   {hasFilters && (
-                    <Button onPress={clearFilters} variant="ghost" size="sm">
+                    <Button onPress={clearFilters} variant="outline" size="sm">
                       Limpiar filtros
                     </Button>
                   )}
@@ -2582,7 +2582,7 @@ export function ClinicalSeriesView() {
                               className="flex w-full items-center justify-between gap-2 px-2 py-1.5 text-sm font-semibold"
                               slot="trigger"
                               size="sm"
-                              variant="ghost"
+                              variant="outline"
                             >
                               <span className="flex items-center gap-2">
                                 <Megaphone size={14} className="text-foreground-400" />
@@ -2727,7 +2727,7 @@ export function ClinicalSeriesView() {
                                                 <Button
                                                   className="mt-2"
                                                   size="sm"
-                                                  variant="ghost"
+                                                  variant="outline"
                                                   onPress={() =>
                                                     setSelectedSeriesEvent(
                                                       toCalendarEventDetail(event)
@@ -2816,7 +2816,7 @@ function SourceEventsList({ sourceId }: { sourceId: number }) {
         onPress={() => {
           setOpen((v) => !v);
         }}
-        variant="ghost"
+        variant="outline"
       >
         {open ? "▲ Ocultar eventos" : "▾ Ver eventos"}
       </Button>
@@ -2941,7 +2941,7 @@ function DuplicatesModal({
                     <Button
                       className="h-auto w-full justify-between rounded-none p-3 text-left hover:bg-surface-200"
                       onPress={() => setExpandedTarget(isExpanded ? null : group.targetId)}
-                      variant="ghost"
+                      variant="outline"
                     >
                       <div className="flex-1 min-w-0 space-y-1">
                         <p className="text-sm font-medium truncate">
@@ -3041,7 +3041,7 @@ function DuplicatesModal({
                                     : new Set(group.dups.map((d) => d.sourceId))
                                 );
                               }}
-                              variant="ghost"
+                              variant="outline"
                             >
                               {allSelected ? "Deseleccionar todos" : "Seleccionar todos"}
                             </Button>
@@ -3077,7 +3077,7 @@ function DuplicatesModal({
                 <div className="flex items-center gap-2">
                   <Button
                     size="sm"
-                    variant="ghost"
+                    variant="outline"
                     isDisabled={page === 1}
                     onPress={() => setPage((p) => p - 1)}
                   >
@@ -3088,7 +3088,7 @@ function DuplicatesModal({
                   </span>
                   <Button
                     size="sm"
-                    variant="ghost"
+                    variant="outline"
                     isDisabled={page === totalPages}
                     onPress={() => setPage((p) => p + 1)}
                   >
@@ -3098,7 +3098,7 @@ function DuplicatesModal({
               ) : (
                 <span />
               )}
-              <Button variant="ghost" onPress={onClose}>
+              <Button variant="outline" onPress={onClose}>
                 Cerrar
               </Button>
             </div>
@@ -3156,7 +3156,7 @@ function RebuildModal({
               )}
             </Modal.Body>
             <div className="flex justify-end gap-2 pt-2">
-              <Button variant="ghost" onPress={onClose}>
+              <Button variant="outline" onPress={onClose}>
                 Cancelar
               </Button>
               <Button variant="primary" onPress={() => onConfirm(autoMerge)}>

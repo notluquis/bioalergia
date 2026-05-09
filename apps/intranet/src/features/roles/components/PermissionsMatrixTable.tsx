@@ -94,7 +94,7 @@ export function PermissionsMatrixTable({
                 <Dropdown>
                   <Dropdown.Trigger>
                     <Button
-                      variant="ghost"
+                      variant="outline"
                       size="sm"
                       className="h-7 w-full gap-1 font-normal text-default-500 hover:text-foreground"
                     >
@@ -153,7 +153,7 @@ export function PermissionsMatrixTable({
                   toggleSection(section.title);
                 }}
                 type="button"
-                variant="ghost"
+                variant="outline"
               >
                 {openSections[section.title] ? (
                   <ChevronDown className="h-4 w-4" />
@@ -199,7 +199,7 @@ export function PermissionsMatrixTable({
                               toggleItem(itemKey);
                             }}
                             type="button"
-                            variant="ghost"
+                            variant="outline"
                           >
                             <div className="flex h-4 w-4 items-center justify-center text-default-300">
                               {isOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}

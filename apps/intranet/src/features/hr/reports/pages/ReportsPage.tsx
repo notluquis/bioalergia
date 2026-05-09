@@ -486,7 +486,7 @@ function ReportsFiltersPanel({
             <span className="font-medium text-sm">Empleados ({selectedEmployeeIds.length})</span>
             <Button
               size="sm"
-              variant="ghost"
+              variant="outline"
               onPress={handleSelectAll}
               className="text-primary text-xs"
             >
@@ -515,7 +515,7 @@ function ReportsFiltersPanel({
                     <Button
                       isIconOnly
                       size="sm"
-                      variant="ghost"
+                      variant="outline"
                       onPress={() => {
                         handleEmployeeToggle(id);
                       }}

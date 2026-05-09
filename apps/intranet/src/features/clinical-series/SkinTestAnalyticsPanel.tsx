@@ -340,7 +340,7 @@ export function SkinTestAnalyticsPanel() {
                           <Button
                             aria-label="Abrir archivo origen"
                             size="sm"
-                            variant="ghost"
+                            variant="outline"
                             onPress={() => window.open(test.oneDriveWebUrl!, "_blank", "noopener")}
                           >
                             <ExternalLink size={14} />

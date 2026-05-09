@@ -74,7 +74,7 @@ export function NewAttachmentModal({ isOpen, onClose, patientId }: NewAttachment
                         <div className="flex-1 truncate rounded-lg bg-primary/10 p-3 font-bold text-primary text-sm">
                           {file.name}
                         </div>
-                        <Button variant="ghost" size="sm" isIconOnly onPress={() => setFile(null)}>
+                        <Button variant="outline" size="sm" isIconOnly onPress={() => setFile(null)}>
                           <X size={18} />
                         </Button>
                       </div>
@@ -91,7 +91,7 @@ export function NewAttachmentModal({ isOpen, onClose, patientId }: NewAttachment
                           onPress={() => inputRef.current?.click()}
                           size="sm"
                           type="button"
-                          variant="ghost"
+                          variant="outline"
                         >
                           Seleccionar archivo
                         </Button>
@@ -152,7 +152,7 @@ export function NewAttachmentModal({ isOpen, onClose, patientId }: NewAttachment
                 </div>
 
                 <div className="flex justify-end gap-3 border-default-100 border-t pt-4">
-                  <Button variant="ghost" onPress={handleClose} isDisabled={mutation.isPending}>
+                  <Button variant="outline" onPress={handleClose} isDisabled={mutation.isPending}>
                     Cancelar
                   </Button>
                   <Button

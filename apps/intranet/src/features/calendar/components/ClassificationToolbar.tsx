@@ -42,7 +42,7 @@ export function ClassificationToolbar({
         onPress={onRefetch}
         size="sm"
         type="button"
-        variant="ghost"
+        variant="outline"
       >
         <RefreshCw className="h-4 w-4" />
         <span className="hidden sm:inline">{loading ? "Cargando..." : "Actualizar"}</span>
@@ -101,7 +101,7 @@ export function ClassificationToolbar({
             isIconOnly
             onPress={onReclassifyAll}
             size="sm"
-            variant="ghost"
+            variant="outline"
           >
             <RefreshCw className="h-4 w-4" />
           </Button>
@@ -123,7 +123,7 @@ export function ClassificationToolbar({
             isIconOnly
             onPress={onSync}
             size="sm"
-            variant="ghost"
+            variant="outline"
           >
             <ArrowDownToLine className="h-4 w-4" />
           </Button>
@@ -145,7 +145,7 @@ export function ClassificationToolbar({
             isIconOnly
             onPress={onRebuild}
             size="sm"
-            variant="ghost"
+            variant="outline"
           >
             <Settings className="h-4 w-4" />
           </Button>

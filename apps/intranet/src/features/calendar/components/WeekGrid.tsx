@@ -634,7 +634,7 @@ function EventItem({ endHour, event, onEventClick, startHour, tooltipTrigger }: 
         width: `calc(${columnWidth}% - ${padding * 2}px)`,
         ...paletteStyle,
       }}
-      variant="ghost"
+      variant="outline"
     >
       <EventButtonContent
         displayMode={displayMode}

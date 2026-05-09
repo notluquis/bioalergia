@@ -313,7 +313,7 @@ const StatusCell = ({
               aria-label="Ver detalles"
               className={`cursor-help font-bold ${bangColor}`}
               type="button"
-              variant="ghost"
+              variant="outline"
               size="sm"
               isIconOnly
             >

@@ -128,7 +128,7 @@ export function FileListItem({
       {/* Remove Button */}
       {canRemove && onRemove && (
         <Button
-          variant="ghost"
+          variant="outline"
           size="sm"
           isIconOnly
           onPress={() => onRemove(id)}

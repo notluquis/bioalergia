@@ -155,7 +155,7 @@ export function InventorySettingsPage() {
                       setIsCreating(false);
                     }}
                     type="button"
-                    variant="ghost"
+                    variant="outline"
                   >
                     Cancelar
                   </Button>
@@ -240,7 +240,7 @@ function InventoryList({
                 }}
                 type="button"
                 aria-label={isExpanded ? "Colapsar" : "Expandir"}
-                variant="ghost"
+                variant="outline"
               >
                 <span className="flex h-6 w-6 items-center justify-center text-default-400 ">
                   {isExpanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
@@ -256,7 +256,7 @@ function InventoryList({
                 </Chip>
               </Button>
               <div className="flex gap-1 opacity-100 sm:opacity-70 sm:group-hover:opacity-100">
-                <Button isIconOnly size="sm" variant="ghost">
+                <Button isIconOnly size="sm" variant="outline">
                   <Edit2 size={14} />
                 </Button>
                 <Button
@@ -266,7 +266,7 @@ function InventoryList({
                     onDeleteCategory(category.id);
                   }}
                   size="sm"
-                  variant="ghost"
+                  variant="outline"
                 >
                   <Trash2 size={14} />
                 </Button>
@@ -322,7 +322,7 @@ function InventoryList({
               }}
               type="button"
               aria-label={expandedCategories.has(0) ? "Colapsar" : "Expandir"}
-              variant="ghost"
+              variant="outline"
             >
               <span className="flex h-6 w-6 items-center justify-center text-default-400">
                 {expandedCategories.has(0) ? <ChevronDown size={18} /> : <ChevronRight size={18} />}

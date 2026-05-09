@@ -131,7 +131,7 @@ export function MfaStep({
             isDisabled={isLoading}
             onPress={onSkip}
             size="sm"
-            variant="ghost"
+            variant="outline"
           >
             Omitir por ahora
           </Button>

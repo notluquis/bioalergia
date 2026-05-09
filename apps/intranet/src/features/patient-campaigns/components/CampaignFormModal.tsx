@@ -176,7 +176,7 @@ export function CampaignFormModal({ isOpen, onClose, campaign }: Readonly<Campai
                 </form.Field>
 
                 <div className="flex justify-end gap-2 pt-2">
-                  <Button variant="ghost" onPress={handleClose} isDisabled={isPending}>
+                  <Button variant="outline" onPress={handleClose} isDisabled={isPending}>
                     Cancelar
                   </Button>
                   <Button type="submit" variant="primary" isPending={isPending}>

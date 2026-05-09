@@ -73,7 +73,7 @@ export function ChunkLoadErrorPage() {
           </Button>
           <Button
             fullWidth
-            variant="ghost"
+            variant="outline"
             className="text-xs"
             onPress={() => (globalThis.location.href = "/login")}
           >

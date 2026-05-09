@@ -456,7 +456,7 @@ function CalendarSchedulePage() {
                 aria-label="Semana anterior"
                 isIconOnly
                 onPress={goToPreviousWeek}
-                variant="ghost"
+                variant="outline"
               >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
@@ -473,7 +473,7 @@ function CalendarSchedulePage() {
                 aria-label="Semana siguiente"
                 isIconOnly
                 onPress={goToNextWeek}
-                variant="ghost"
+                variant="outline"
               >
                 <ChevronRight className="h-4 w-4" />
               </Button>

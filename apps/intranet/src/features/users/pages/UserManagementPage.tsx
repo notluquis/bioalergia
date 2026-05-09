@@ -698,7 +698,7 @@ function EditRoleModalContent({
                 </div>
 
                 <div className="mt-6 flex justify-end gap-2">
-                  <Button onPress={onCancel} variant="ghost">
+                  <Button onPress={onCancel} variant="outline">
                     Cancelar
                   </Button>
                   <Button
@@ -841,7 +841,7 @@ function EditUserDetailsModalContent({
                 </div>
               )}
               <div className="mt-6 flex justify-end gap-2">
-                <Button onPress={onCancel} variant="ghost">
+                <Button onPress={onCancel} variant="outline">
                   Cancelar
                 </Button>
                 <Button
@@ -904,7 +904,7 @@ function ResetPasswordModalContent({
                 </div>
 
                 <div className="flex justify-end gap-2">
-                  <Button onPress={() => void onCopy()} variant="ghost">
+                  <Button onPress={() => void onCopy()} variant="outline">
                     <Copy size={16} />
                     Copiar
                   </Button>

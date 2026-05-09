@@ -257,7 +257,7 @@ export function GenerateReportModal({ onClose, open, reportType }: Props) {
                     isDisabled={mutation.isPending}
                     onPress={handleClose}
                     type="button"
-                    variant="ghost"
+                    variant="outline"
                   >
                     Cancelar
                   </Button>

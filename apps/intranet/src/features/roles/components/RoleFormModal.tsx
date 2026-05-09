@@ -194,7 +194,7 @@ function RoleBaseForm({ onClose, roleEntity, userData }: RoleBaseFormProps) {
       )}
 
       <div className="mt-4 flex justify-end gap-2">
-        <Button variant="ghost" onPress={onClose}>
+        <Button variant="outline" onPress={onClose}>
           Cancelar
         </Button>
         <Button

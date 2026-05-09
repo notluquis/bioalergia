@@ -45,7 +45,7 @@ export function CalendarActionModal({
             <Modal.Body className="space-y-4 text-foreground">{body}</Modal.Body>
 
             <Modal.Footer className="mt-6 flex justify-end gap-3">
-              <Button isDisabled={isPending} onPress={onClose} type="button" variant="ghost">
+              <Button isDisabled={isPending} onPress={onClose} type="button" variant="outline">
                 Cancelar
               </Button>
               <Button

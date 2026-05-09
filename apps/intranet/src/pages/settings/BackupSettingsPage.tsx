@@ -458,7 +458,7 @@ function BackupRow({ backup, onSuccess }: { backup: BackupFile; onSuccess: () =>
           className="flex h-auto min-h-16 w-full cursor-pointer items-start justify-between px-5 py-3.5 text-left hover:bg-default-50/60 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:ring-inset"
           slot="trigger"
           type="button"
-          variant="ghost"
+          variant="outline"
         >
           <div className="flex min-w-0 flex-1 items-start gap-3">
             <Disclosure.Indicator className="mt-1 size-4 shrink-0 text-default-300" />
@@ -576,7 +576,7 @@ function BackupTablesList({
           <AlertTriangle className="mt-0.5 size-4 shrink-0" />
           <span>{message}</span>
         </div>
-        <Button onPress={() => void refetch()} size="sm" variant="ghost">
+        <Button onPress={() => void refetch()} size="sm" variant="outline">
           <RefreshCw className="size-4" />
           Reintentar
         </Button>
@@ -594,7 +594,7 @@ function BackupTablesList({
               className="text-primary text-xs hover:underline"
               onPress={selectAll}
               type="button"
-              variant="ghost"
+              variant="outline"
             >
               {selectedTables.length === tables.length ? "Ninguna" : "Todas"}
             </Button>

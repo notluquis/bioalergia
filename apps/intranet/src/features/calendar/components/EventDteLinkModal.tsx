@@ -562,7 +562,7 @@ export function EventDteLinkModal({ event, isOpen, onClose, onLinked }: EventDte
                                       <Popover>
                                         <Button
                                           size="sm"
-                                          variant="ghost"
+                                          variant="outline"
                                           className="text-warning text-xs h-auto py-1"
                                         >
                                           Ver{" "}

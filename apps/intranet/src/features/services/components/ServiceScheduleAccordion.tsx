@@ -165,7 +165,7 @@ function ServiceScheduleAccordion({
                   toggleGroup(group.dateKey);
                 }}
                 type="button"
-                variant="ghost"
+                variant="outline"
               >
                 <div>
                   <span className="block font-semibold text-foreground text-sm capitalize">

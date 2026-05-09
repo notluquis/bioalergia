@@ -124,7 +124,7 @@ function PatientsListPage() {
               })
             }
             size="sm"
-            variant="ghost"
+            variant="outline"
           >
             <ArrowRight size={16} />
           </Button>

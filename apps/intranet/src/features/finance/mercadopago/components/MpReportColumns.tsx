@@ -115,7 +115,7 @@ export const getMpReportColumns = (
                 handleDownload(report.file_name);
               }
             }}
-            variant="ghost"
+            variant="outline"
           >
             {({ isPending }) =>
               isPending ? <Spinner color="current" size="sm" /> : <Download className="h-5 w-5" />
@@ -131,7 +131,7 @@ export const getMpReportColumns = (
                 handleProcess(report.file_name);
               }
             }}
-            variant="ghost"
+            variant="outline"
           >
             {({ isPending }) =>
               isPending ? <Spinner color="current" size="sm" /> : <RefreshCw className="h-5 w-5" />

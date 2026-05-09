@@ -61,7 +61,7 @@ export function ScheduleCalendar({
               setSelectedEvent(null);
             }}
             size="sm"
-            variant="ghost"
+            variant="outline"
           >
             <X size={14} />
           </Button>

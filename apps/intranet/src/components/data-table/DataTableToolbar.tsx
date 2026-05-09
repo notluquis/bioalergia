@@ -113,7 +113,7 @@ export function DataTableToolbar<TData>({
             onPress={() => {
               table.resetColumnFilters();
             }}
-            variant="ghost"
+            variant="outline"
           >
             Reset
             <X className="ml-2 h-4 w-4" />

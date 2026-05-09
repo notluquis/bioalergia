@@ -177,7 +177,7 @@ function AuthedLayout() {
           <span>VISTA PREVIA: {impersonatedRole.name}</span>
           <Button
             size="sm"
-            variant="ghost"
+            variant="outline"
             className="border-none bg-black/20 text-current hover:bg-black/30"
             onPress={stopImpersonating}
           >
@@ -202,7 +202,7 @@ function AuthedLayout() {
           className="fixed top-[calc(env(safe-area-inset-top)+0.5rem)] left-4 z-40 inline-flex items-center gap-2 rounded-full border border-default-200/70 bg-background/85 px-3 py-2 font-semibold text-foreground text-sm shadow-lg backdrop-blur-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-1 md:hidden"
           onPress={toggleSidebar}
           type="button"
-          variant="ghost"
+          variant="outline"
         >
           <span
             aria-hidden="true"
@@ -259,7 +259,7 @@ function AuthedLayout() {
                       aria-label="Créditos"
                       className="min-w-0 px-2 text-danger"
                       size="sm"
-                      variant="ghost"
+                      variant="outline"
                     >
                       ♥
                     </Button>

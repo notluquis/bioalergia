@@ -223,7 +223,7 @@ export function OutreachEstablishmentDetailPage() {
             </Button>
             <Button
               size="sm"
-              variant="ghost"
+              variant="outline"
               isDisabled={recompute.isPending}
               onPress={() => recompute.mutate(e.rbd)}
             >
@@ -351,7 +351,7 @@ export function OutreachEstablishmentDetailPage() {
                       {c.cargo} · {c.email ?? "sin email"} · {c.telefono ?? "sin tel"}
                     </p>
                   </div>
-                  <Button size="sm" variant="ghost" onPress={() => deleteContact.mutate(c.id)}>
+                  <Button size="sm" variant="outline" onPress={() => deleteContact.mutate(c.id)}>
                     Eliminar
                   </Button>
                 </li>
@@ -463,7 +463,7 @@ export function OutreachEstablishmentDetailPage() {
                       <p className="mt-1 text-default-500 text-xs">→ {i.resultado}</p>
                     )}
                   </div>
-                  <Button size="sm" variant="ghost" onPress={() => deleteInter.mutate(i.id)}>
+                  <Button size="sm" variant="outline" onPress={() => deleteInter.mutate(i.id)}>
                     Eliminar
                   </Button>
                 </div>

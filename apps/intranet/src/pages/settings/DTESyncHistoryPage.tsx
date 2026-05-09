@@ -113,7 +113,7 @@ export function DTESyncHistoryPage() {
           <Button
             isIconOnly
             isPending={isLoading}
-            variant="ghost"
+            variant="outline"
             onPress={() => {
               void queryClient.invalidateQueries({ queryKey: ["dte-sync-history"] });
             }}

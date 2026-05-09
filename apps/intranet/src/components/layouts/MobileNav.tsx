@@ -81,7 +81,7 @@ export function BottomNav({ buildLabel, isHidden = false }: Readonly<BottomNavPr
                 void navigate({ to: item.to as "/" });
               }}
               type="button"
-              variant="ghost"
+              variant="outline"
             >
               {/* Active Background Pill */}
               {active && (

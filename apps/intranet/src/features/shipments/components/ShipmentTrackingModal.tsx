@@ -86,7 +86,7 @@ export function ShipmentTrackingModal({
                   isPending={isFetching}
                   onPress={() => void refetch()}
                   size="sm"
-                  variant="ghost"
+                  variant="outline"
                 >
                   <RefreshCw size={14} />
                   Refrescar

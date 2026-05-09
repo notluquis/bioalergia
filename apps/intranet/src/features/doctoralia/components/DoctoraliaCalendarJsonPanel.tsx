@@ -286,7 +286,7 @@ export function DoctoraliaCalendarJsonPanel() {
               disabled={isImporting}
             />
             {files.length > 0 && (
-              <Button variant="ghost" size="sm" onPress={handleReset} isDisabled={isImporting}>
+              <Button variant="outline" size="sm" onPress={handleReset} isDisabled={isImporting}>
                 <RotateCcw className="h-3.5 w-3.5" />
                 Limpiar
               </Button>
@@ -319,7 +319,7 @@ export function DoctoraliaCalendarJsonPanel() {
                     </p>
                   </div>
                   <Button
-                    variant="ghost"
+                    variant="outline"
                     size="sm"
                     onPress={() => handleRemoveFile(index)}
                     isDisabled={isImporting}

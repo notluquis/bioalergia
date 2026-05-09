@@ -485,7 +485,7 @@ export function AddressFormModal({
                     isDisabled={isPending}
                     onPress={handleClose}
                     type="button"
-                    variant="ghost"
+                    variant="outline"
                   >
                     Cancelar
                   </Button>

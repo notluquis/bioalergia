@@ -108,7 +108,7 @@ export function FinancialDashboardPage() {
         <div className="space-y-6">
           <div className="flex items-center justify-between">
             <h2 className="font-semibold text-xl">Gastos</h2>
-            <Button size="sm" variant="ghost">
+            <Button size="sm" variant="outline">
               + Nuevo Gasto
             </Button>
           </div>

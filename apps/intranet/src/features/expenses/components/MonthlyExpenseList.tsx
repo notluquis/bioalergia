@@ -42,7 +42,7 @@ export function MonthlyExpenseList({
                 onSelect(expense.publicId);
               }}
               type="button"
-              variant="ghost"
+              variant="outline"
             >
               <div className="flex items-center justify-between gap-3">
                 <div>

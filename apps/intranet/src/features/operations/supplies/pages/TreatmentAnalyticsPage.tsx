@@ -772,7 +772,7 @@ function AnalyticsHeader({
           <Button
             isDisabled={isRefetching}
             isIconOnly
-            variant="ghost"
+            variant="outline"
             size="sm"
             onPress={onRefresh}
           >
@@ -786,7 +786,7 @@ function AnalyticsHeader({
             <Popover.Trigger>
               <Button
                 isIconOnly
-                variant="ghost"
+                variant="outline"
                 size="sm"
                 className={isFilterOpen ? "bg-primary/10 text-primary" : ""}
               >
@@ -890,7 +890,7 @@ function AnalyticsFilters({
           <div className="flex flex-wrap gap-2">
             <Button
               size="sm"
-              variant="ghost"
+              variant="outline"
               onPress={() => applyQuickRange(7)}
               className="text-xs"
             >
@@ -898,7 +898,7 @@ function AnalyticsFilters({
             </Button>
             <Button
               size="sm"
-              variant="ghost"
+              variant="outline"
               onPress={() => applyQuickRange(30)}
               className="text-xs"
             >
@@ -906,7 +906,7 @@ function AnalyticsFilters({
             </Button>
             <Button
               size="sm"
-              variant="ghost"
+              variant="outline"
               onPress={() => applyQuickRange(90)}
               className="text-xs"
             >
@@ -994,7 +994,7 @@ function AnalyticsFilters({
           <div className="flex flex-wrap gap-2">
             <Button
               size="sm"
-              variant="ghost"
+              variant="outline"
               onPress={() => onMonthSelect(dayjs().subtract(1, "month").format("YYYY-MM"))}
               className="text-xs"
             >
@@ -1002,7 +1002,7 @@ function AnalyticsFilters({
             </Button>
             <Button
               size="sm"
-              variant="ghost"
+              variant="outline"
               onPress={() => onMonthSelect(dayjs().format("YYYY-MM"))}
               className="text-xs"
             >
@@ -1010,7 +1010,7 @@ function AnalyticsFilters({
             </Button>
             <Button
               size="sm"
-              variant="ghost"
+              variant="outline"
               onPress={() => onMonthSelect(dayjs().add(1, "month").format("YYYY-MM"))}
               className="text-xs"
             >

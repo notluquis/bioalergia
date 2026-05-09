@@ -763,7 +763,7 @@ export function HaulmerSyncPage() {
                   slot="trigger"
                   className="w-fit px-0 font-mono text-danger text-xs"
                   size="sm"
-                  variant="ghost"
+                  variant="outline"
                 >
                   Respuesta del servidor
                   <Disclosure.Indicator />

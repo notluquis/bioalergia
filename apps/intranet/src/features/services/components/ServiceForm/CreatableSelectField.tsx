@@ -104,7 +104,7 @@ export function CreatableSelectField({
         isDisabled={isDisabled}
         onPress={() => setIsCreateOpen(true)}
         size="sm"
-        variant="ghost"
+        variant="outline"
       >
         {createButtonLabel}
       </Button>

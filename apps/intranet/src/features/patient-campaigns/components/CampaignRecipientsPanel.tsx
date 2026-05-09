@@ -184,7 +184,7 @@ export function CampaignRecipientsPanel({ campaign }: Readonly<CampaignRecipient
                   <div className="flex gap-1">
                     <Dropdown>
                       <Dropdown.Trigger>
-                        <Button size="sm" variant="ghost">
+                        <Button size="sm" variant="outline">
                           Cambiar
                         </Button>
                       </Dropdown.Trigger>
@@ -214,7 +214,7 @@ export function CampaignRecipientsPanel({ campaign }: Readonly<CampaignRecipient
                     </Dropdown>
                     <Button
                       size="sm"
-                      variant="ghost"
+                      variant="outline"
                       onPress={() => void handleDelete(recipient.id, recipient.patientName)}
                     >
                       <Trash2 size={12} />

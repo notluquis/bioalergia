@@ -53,7 +53,7 @@ export const getLeaderboardColumns = (): ColumnDef<LeaderboardDisplayRow>[] => [
           isDisabled={meta.detailLoading || !participantKey}
           onPress={() => participantKey && meta.onSelect(participantKey)}
           size="sm"
-          variant="ghost"
+          variant="outline"
         >
           {meta.detailLoading && isActive ? "Cargando..." : "Ver detalle"}
         </Button>

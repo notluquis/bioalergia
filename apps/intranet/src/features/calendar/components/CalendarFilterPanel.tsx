@@ -210,7 +210,7 @@ export function CalendarFilterPanel({
         <div className="flex items-center justify-between pt-1">
           <Button
             type="button"
-            variant="ghost"
+            variant="outline"
             size="sm"
             onPress={onReset}
             className="h-9 rounded-lg px-2.5 font-medium text-default-400 hover:text-foreground"

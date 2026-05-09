@@ -438,7 +438,7 @@ function PatientNotFoundState({ onBack }: { onBack: () => void }) {
   return (
     <div className="p-12 text-center">
       <h2 className="font-bold text-xl">Paciente no encontrado</h2>
-      <Button className="mt-4" onPress={onBack} variant="ghost">
+      <Button className="mt-4" onPress={onBack} variant="outline">
         Volver a la lista
       </Button>
     </div>
@@ -488,7 +488,7 @@ function PatientDetailsHeader({
         <Button
           className="h-10 w-10 min-w-0 rounded-full p-0"
           onPress={goBackToPatients}
-          variant="ghost"
+          variant="outline"
         >
           <ChevronLeft size={24} />
         </Button>
@@ -550,7 +550,7 @@ const consultationColumns: ColumnDef<Consultation>[] = [
     id: "actions",
     cell: () => (
       <div className="flex justify-end gap-2">
-        <Button size="sm" variant="ghost" isIconOnly>
+        <Button size="sm" variant="outline" isIconOnly>
           <ExternalLink size={16} />
         </Button>
       </div>
@@ -634,10 +634,10 @@ const attachmentColumns: ColumnDef<PatientAttachment>[] = [
     id: "actions",
     cell: () => (
       <div className="flex justify-end gap-2">
-        <Button size="sm" variant="ghost" isIconOnly>
+        <Button size="sm" variant="outline" isIconOnly>
           <Download size={16} />
         </Button>
-        <Button size="sm" variant="ghost" isIconOnly className="text-danger">
+        <Button size="sm" variant="outline" isIconOnly className="text-danger">
           <Trash2 size={16} />
         </Button>
       </div>

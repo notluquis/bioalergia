@@ -551,7 +551,7 @@ function ActiveCounterpartCard({
               onEdit(counterpart);
             }}
             size="sm"
-            variant="ghost"
+            variant="outline"
           >
             {!canUpdate && <Lock className="mr-2 h-3 w-3" />}
             Editar contraparte
@@ -822,7 +822,7 @@ function AddAccountModal({
                   </TextField>
                 </div>
                 <div className="flex justify-end gap-2">
-                  <Button onPress={onClose} variant="ghost">
+                  <Button onPress={onClose} variant="outline">
                     Cancelar
                   </Button>
                   <Button isDisabled={addPending} onPress={onAddAccount}>

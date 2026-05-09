@@ -31,7 +31,7 @@ export function LoginPage() {
           className="rounded-full border border-default-200/70 bg-background/80 text-foreground shadow-sm"
           isIconOnly
           onPress={toggleTheme}
-          variant="ghost"
+          variant="outline"
         >
           {isDark ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
         </Button>
@@ -215,7 +215,7 @@ function CredentialsStep({
             isDisabled={isLoading}
             onPress={switchToPasskey}
             type="button"
-            variant="ghost"
+            variant="outline"
             aria-label="Volver a biometría"
           >
             Atrás
@@ -279,7 +279,7 @@ function MfaStep({
             isDisabled={isLoading}
             onPress={switchToCredentialsFromMfa}
             type="button"
-            variant="ghost"
+            variant="outline"
             aria-label="Volver a credenciales"
           >
             Atrás

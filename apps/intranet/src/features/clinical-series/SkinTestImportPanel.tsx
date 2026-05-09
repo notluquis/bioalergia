@@ -532,7 +532,7 @@ export function SkinTestImportPanel() {
           <div className="flex flex-wrap gap-2">
             <Button
               size="sm"
-              variant="ghost"
+              variant="outline"
               className="text-danger"
               onPress={() => void handleCancelSync()}
               isDisabled={
@@ -573,7 +573,7 @@ export function SkinTestImportPanel() {
                 </Button>
                 <Button
                   size="sm"
-                  variant="ghost"
+                  variant="outline"
                   onPress={() => setIsRereadAllOpen(true)}
                   isDisabled={!oneDrive.data?.connected || isSyncInProgress}
                 >
@@ -802,7 +802,7 @@ export function SkinTestImportPanel() {
             </div>
             {["completed", "failed", "cancelled"].includes(currentJob.status) && (
               <div className="mt-2 flex justify-end">
-                <Button size="sm" variant="ghost" onPress={() => setActiveJobId(null)}>
+                <Button size="sm" variant="outline" onPress={() => setActiveJobId(null)}>
                   Ocultar
                 </Button>
               </div>
@@ -844,7 +844,7 @@ export function SkinTestImportPanel() {
             <div className="flex justify-end">
               <Button
                 size="sm"
-                variant="ghost"
+                variant="outline"
                 onPress={() => void handleConnect()}
                 isPending={authUrlQuery.isFetching || connectOneDrive.isPending}
               >
@@ -1101,7 +1101,7 @@ export function SkinTestImportPanel() {
               minutos dependiendo de la cantidad de archivos.
             </AlertDialog.Body>
             <AlertDialog.Footer>
-              <Button variant="ghost" onPress={() => setIsReprocessPendingOpen(false)}>
+              <Button variant="outline" onPress={() => setIsReprocessPendingOpen(false)}>
                 Cancelar
               </Button>
               <Button
@@ -1138,7 +1138,7 @@ export function SkinTestImportPanel() {
               clasifica exámenes.
             </AlertDialog.Body>
             <AlertDialog.Footer>
-              <Button variant="ghost" onPress={() => setIsRereadAllOpen(false)}>
+              <Button variant="outline" onPress={() => setIsRereadAllOpen(false)}>
                 Cancelar
               </Button>
               <Button
@@ -1278,7 +1278,7 @@ function OneDriveAccountRow({
           </Button>
           <Button
             size="sm"
-            variant="ghost"
+            variant="outline"
             onPress={() => onSync(true, { accountId: account.accountId })}
             isDisabled={isSyncing}
           >
@@ -1287,7 +1287,7 @@ function OneDriveAccountRow({
           </Button>
           <Button
             size="sm"
-            variant="ghost"
+            variant="outline"
             onPress={() =>
               onSync(false, {
                 accountId: account.accountId,
@@ -1307,7 +1307,7 @@ function OneDriveAccountRow({
                 isIconOnly
                 aria-label="Renovar webhook"
                 size="sm"
-                variant="ghost"
+                variant="outline"
                 onPress={() => void handleRenew()}
                 isPending={renewSubscription.isPending}
               >
@@ -1322,7 +1322,7 @@ function OneDriveAccountRow({
                 isIconOnly
                 aria-label="Desconectar cuenta"
                 size="sm"
-                variant="ghost"
+                variant="outline"
                 className="text-danger"
                 onPress={() => void handleDisconnect()}
                 isPending={disconnect.isPending}
@@ -1429,7 +1429,7 @@ function OneDriveFolderPickerModal({
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                   <Breadcrumbs className="text-xs">
                     <Breadcrumbs.Item>
-                      <Button size="sm" variant="ghost" onPress={() => setStack([])}>
+                      <Button size="sm" variant="outline" onPress={() => setStack([])}>
                         <Home size={14} />
                         Raíz
                       </Button>
@@ -1438,7 +1438,7 @@ function OneDriveFolderPickerModal({
                       <Breadcrumbs.Item key={`${item.driveId ?? "me"}-${item.id}`}>
                         <Button
                           size="sm"
-                          variant="ghost"
+                          variant="outline"
                           onPress={() => setStack((items) => items.slice(0, index + 1))}
                         >
                           {item.name}
@@ -1563,7 +1563,7 @@ function OneDriveFolderPickerModal({
                                   isIconOnly
                                   aria-label="Abrir en OneDrive"
                                   size="sm"
-                                  variant="ghost"
+                                  variant="outline"
                                   className="shrink-0 text-foreground-400 hover:text-foreground"
                                   onPress={() => window.open(file.webUrl!, "_blank")}
                                 >
@@ -1737,14 +1737,14 @@ function SkinTestImportRow({
           {item.oneDriveWebUrl && (
             <Button
               size="sm"
-              variant="ghost"
+              variant="outline"
               onPress={() => window.open(item.oneDriveWebUrl!, "_blank")}
             >
               <ExternalLink size={14} />
               Abrir archivo
             </Button>
           )}
-          <Button size="sm" variant="ghost" onPress={() => setExpanded((value) => !value)}>
+          <Button size="sm" variant="outline" onPress={() => setExpanded((value) => !value)}>
             {expanded ? "Ocultar" : "Ver"}
           </Button>
           {item.status === "PENDING_REVIEW" && (
@@ -1753,7 +1753,7 @@ function SkinTestImportRow({
                 <Check size={14} />
                 Aprobar
               </Button>
-              <Button size="sm" variant="ghost" onPress={() => void runAction("reject")}>
+              <Button size="sm" variant="outline" onPress={() => void runAction("reject")}>
                 <X size={14} />
                 Rechazar
               </Button>

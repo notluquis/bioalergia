@@ -56,7 +56,7 @@ export function LoanList({
                 onSelect(loan.public_id);
               }}
               type="button"
-              variant="ghost"
+              variant="outline"
             >
               <div className="flex items-center justify-between gap-3">
                 <div>

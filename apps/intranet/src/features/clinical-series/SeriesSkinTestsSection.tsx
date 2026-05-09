@@ -28,7 +28,7 @@ export function SeriesSkinTestsSection({ seriesId }: { seriesId: number }) {
               className="flex w-full items-center justify-between gap-2 px-2 py-1.5 text-sm font-semibold"
               slot="trigger"
               size="sm"
-              variant="ghost"
+              variant="outline"
             >
               <span className="flex items-center gap-2">
                 <FileSpreadsheet size={14} className="text-foreground-400" />
@@ -59,7 +59,7 @@ export function SeriesSkinTestsSection({ seriesId }: { seriesId: number }) {
                     {test.oneDriveWebUrl && (
                       <Button
                         size="sm"
-                        variant="ghost"
+                        variant="outline"
                         className="ml-auto"
                         onPress={() => window.open(test.oneDriveWebUrl!, "_blank")}
                       >
@@ -114,7 +114,7 @@ export function SeriesSkinTestsSection({ seriesId }: { seriesId: number }) {
               className="flex w-full items-center justify-between gap-2 px-2 py-1.5 text-sm font-semibold"
               slot="trigger"
               size="sm"
-              variant="ghost"
+              variant="outline"
             >
               <span className="flex items-center gap-2">
                 <FileText size={14} className="text-foreground-400" />
@@ -137,7 +137,7 @@ export function SeriesSkinTestsSection({ seriesId }: { seriesId: number }) {
                     {document.oneDriveWebUrl && (
                       <Button
                         size="sm"
-                        variant="ghost"
+                        variant="outline"
                         className="ml-auto"
                         onPress={() => window.open(document.oneDriveWebUrl!, "_blank")}
                       >

@@ -467,7 +467,7 @@ function HomeAddressPicker({
       )}
 
       <div className="flex items-center justify-between pt-2">
-        <Button onPress={() => setAddressModalOpen(true)} size="sm" variant="ghost">
+        <Button onPress={() => setAddressModalOpen(true)} size="sm" variant="outline">
           <Plus size={14} />
           Nueva dirección
         </Button>
@@ -1014,7 +1014,7 @@ function QuoteStep({
       )}
 
       <div className="flex justify-between pt-2">
-        <Button variant="ghost" onPress={onBack}>
+        <Button variant="outline" onPress={onBack}>
           Atrás
         </Button>
         <Button
@@ -1161,7 +1161,7 @@ function RecipientStep({
       </form.Field>
 
       <div className="flex justify-between pt-2">
-        <Button variant="ghost" onPress={onBack} type="button">
+        <Button variant="outline" onPress={onBack} type="button">
           Atrás
         </Button>
         <form.Subscribe selector={(s) => [s.canSubmit, s.isSubmitting]}>
@@ -1254,7 +1254,7 @@ function ConfirmStep({
       )}
 
       <div className="flex justify-between pt-2">
-        <Button variant="ghost" onPress={onBack} isDisabled={createMutation.isPending}>
+        <Button variant="outline" onPress={onBack} isDisabled={createMutation.isPending}>
           Atrás
         </Button>
         <Button isPending={createMutation.isPending} onPress={() => createMutation.mutate()}>

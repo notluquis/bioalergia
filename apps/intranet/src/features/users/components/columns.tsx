@@ -173,7 +173,7 @@ export const getColumns = (actions: {
       return (
         <Dropdown>
           <Dropdown.Trigger>
-            <Button isIconOnly size="sm" variant="ghost">
+            <Button isIconOnly size="sm" variant="outline">
               <MoreVertical size={16} />
             </Button>
           </Dropdown.Trigger>

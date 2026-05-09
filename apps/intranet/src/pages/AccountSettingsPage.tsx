@@ -211,7 +211,7 @@ export function AccountSettingsPage() {
                     isDisabled={disableMfaMutation.isPending}
                     onPress={handleDisableMfa}
                     size="sm"
-                    variant="ghost"
+                    variant="outline"
                   >
                     Desactivar
                   </Button>
@@ -268,7 +268,7 @@ export function AccountSettingsPage() {
                           setMfaSecret(null);
                         }}
                         size="sm"
-                        variant="ghost"
+                        variant="outline"
                       >
                         Cancelar
                       </Button>
@@ -316,7 +316,7 @@ export function AccountSettingsPage() {
                     isDisabled={deletePasskeyMutation.isPending}
                     onPress={handleDeletePasskey}
                     size="sm"
-                    variant="ghost"
+                    variant="outline"
                   >
                     Eliminar
                   </Button>
@@ -326,7 +326,7 @@ export function AccountSettingsPage() {
                       registerPasskeyMutation.mutate();
                     }}
                     size="sm"
-                    variant="ghost"
+                    variant="outline"
                   >
                     Reemplazar
                   </Button>

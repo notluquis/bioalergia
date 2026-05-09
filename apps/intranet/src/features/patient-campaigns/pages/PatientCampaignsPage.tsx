@@ -145,13 +145,13 @@ export function PatientCampaignsPage() {
                         >
                           Ver
                         </Button>
-                        <Button size="sm" variant="ghost" onPress={() => handleEdit(campaign)}>
+                        <Button size="sm" variant="outline" onPress={() => handleEdit(campaign)}>
                           <Pencil size={12} />
                           Editar
                         </Button>
                         <Button
                           size="sm"
-                          variant="ghost"
+                          variant="outline"
                           onPress={() => void handleDelete(campaign)}
                         >
                           <Trash2 size={12} />

@@ -121,7 +121,7 @@ export function PatientCampaignDrawerSection({
                   </div>
                   <Dropdown>
                     <Dropdown.Trigger>
-                      <Button size="sm" variant="ghost" className="w-full justify-start">
+                      <Button size="sm" variant="outline" className="w-full justify-start">
                         Cambiar estado
                       </Button>
                     </Dropdown.Trigger>

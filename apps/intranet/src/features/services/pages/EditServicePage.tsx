@@ -165,7 +165,7 @@ export function ServiceEditPage() {
             onPress={() => {
               void navigate({ to: "/services" });
             }}
-            variant="ghost"
+            variant="outline"
           >
             Volver
           </Button>

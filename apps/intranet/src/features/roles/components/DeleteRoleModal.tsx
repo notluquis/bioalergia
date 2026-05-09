@@ -55,7 +55,7 @@ export function DeleteRoleModal({ allRoles, isOpen, onClose, role }: DeleteRoleM
                       </Alert.Content>
                     </Alert>
                     <div className="mt-6 flex justify-end">
-                      <Button variant="ghost" onPress={onClose}>
+                      <Button variant="outline" onPress={onClose}>
                         Cerrar
                       </Button>
                     </div>
@@ -193,7 +193,7 @@ function DeleteRoleForm({
       </div>
 
       <div className="mt-6 flex justify-end gap-2">
-        <Button variant="ghost" onPress={onClose}>
+        <Button variant="outline" onPress={onClose}>
           Cancelar
         </Button>
         <Button

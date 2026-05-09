@@ -154,7 +154,7 @@ export function EmployeesPage() {
             <h2 className="font-semibold text-lg text-primary">
               {editingEmployee ? "Editar empleado" : "Agregar nuevo empleado"}
             </h2>
-            <Button onPress={handleCancel} size="sm" variant="ghost">
+            <Button onPress={handleCancel} size="sm" variant="outline">
               <ChevronUp className="h-4 w-4" />
               Cerrar
             </Button>

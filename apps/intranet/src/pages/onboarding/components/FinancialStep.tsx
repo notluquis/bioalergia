@@ -88,7 +88,7 @@ export function FinancialStep({
       </div>
 
       <div className="mt-6 flex justify-end gap-3">
-        <Button isDisabled={isLoading} onPress={onPrev} type="button" variant="ghost">
+        <Button isDisabled={isLoading} onPress={onPrev} type="button" variant="outline">
           Atrás
         </Button>
         <Button className="px-8" isDisabled={isLoading} type="submit" variant="primary">

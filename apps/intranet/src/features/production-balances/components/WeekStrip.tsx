@@ -43,10 +43,10 @@ export function WeekStrip({
           <Skeleton className="h-4 w-24 rounded-lg" />
         )}
         <div className="flex items-center gap-2">
-          <Button isIconOnly size="sm" variant="ghost" onPress={onPrevWeek}>
+          <Button isIconOnly size="sm" variant="outline" onPress={onPrevWeek}>
             <ChevronLeft className="size-4" />
           </Button>
-          <Button isIconOnly size="sm" variant="ghost" onPress={onNextWeek}>
+          <Button isIconOnly size="sm" variant="outline" onPress={onNextWeek}>
             <ChevronRight className="size-4" />
           </Button>
         </div>
@@ -59,13 +59,13 @@ export function WeekStrip({
       {/* Week header */}
       <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-2 overflow-x-auto">
-          <Button isIconOnly size="sm" variant="ghost" onPress={onPrevWeek}>
+          <Button isIconOnly size="sm" variant="outline" onPress={onPrevWeek}>
             <ChevronLeft className="size-4" />
           </Button>
           <span className="font-medium text-default-700 text-sm">
             SEM {weekData?.weekLabel ?? "..."}
           </span>
-          <Button isIconOnly size="sm" variant="ghost" onPress={onNextWeek}>
+          <Button isIconOnly size="sm" variant="outline" onPress={onNextWeek}>
             <ChevronRight className="size-4" />
           </Button>
         </div>
@@ -128,7 +128,7 @@ function DayCellButton({
       fullWidth
       onPress={onPress}
       type="button"
-      variant="ghost"
+      variant="outline"
     >
       {/* Status dot */}
       <div className={cn("absolute top-2 right-2 size-2 rounded-full", statusColors[day.status])} />

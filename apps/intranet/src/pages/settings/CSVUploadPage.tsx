@@ -984,7 +984,7 @@ function UpdateSelectionCard({
                 isDisabled={isLoadingDetails}
                 onPress={onLoadDetails}
                 size="sm"
-                variant="ghost"
+                variant="outline"
               >
                 {isLoadingDetails ? <Loader2 className="mr-2 h-4 w-4 " /> : null}
                 Recargar detalle
@@ -1007,7 +1007,7 @@ function UpdateSelectionCard({
           >
             Seleccionar todas
           </Button>
-          <Button onPress={() => onSelectionChange({})} size="sm" variant="ghost">
+          <Button onPress={() => onSelectionChange({})} size="sm" variant="outline">
             Limpiar selección
           </Button>
         </div>
@@ -1094,7 +1094,7 @@ function ImportModeCard({
             )}
             onPress={() => onModeChange("insert-only")}
             type="button"
-            variant="ghost"
+            variant="outline"
           >
             <div className="flex items-center gap-3">
               <Chip
@@ -1123,7 +1123,7 @@ function ImportModeCard({
             )}
             onPress={() => onModeChange("insert-or-update")}
             type="button"
-            variant="ghost"
+            variant="outline"
           >
             <div className="flex items-center gap-3">
               <Chip
@@ -1152,7 +1152,7 @@ function ImportModeCard({
             )}
             onPress={() => onModeChange("update-only")}
             type="button"
-            variant="ghost"
+            variant="outline"
           >
             <div className="flex items-center gap-3">
               <Chip

@@ -690,7 +690,7 @@ export function CounterpartsPage() {
                     {derived.assignPreviewMessage}
                   </p>
                   <div className="flex justify-end gap-2">
-                    <Button onPress={state.resetAssignRutModalState} variant="ghost">
+                    <Button onPress={state.resetAssignRutModalState} variant="outline">
                       Cancelar
                     </Button>
                     <Button
@@ -1068,11 +1068,11 @@ function CounterpartsToolbar({
                   isDisabled={!selectedCounterpart}
                   onPress={onClearSelection}
                   size="sm"
-                  variant="ghost"
+                  variant="outline"
                 >
                   Limpiar selección
                 </Button>
-                <Button onPress={onResetFilters} size="sm" variant="ghost">
+                <Button onPress={onResetFilters} size="sm" variant="outline">
                   <Filter className="mr-1.5 h-3.5 w-3.5" />
                   Limpiar filtros
                 </Button>
@@ -1111,7 +1111,7 @@ function CounterpartDetailPane({
             Selecciona una contraparte para revisar su resumen, movimientos y cuentas asociadas.
           </p>
           {canCreate ? (
-            <Button onPress={onCreate} size="sm" variant="ghost">
+            <Button onPress={onCreate} size="sm" variant="outline">
               Crear nueva contraparte
             </Button>
           ) : null}

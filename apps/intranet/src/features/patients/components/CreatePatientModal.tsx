@@ -424,7 +424,7 @@ export function CreatePatientModal({ isOpen, onClose }: Readonly<CreatePatientMo
                     isDisabled={createPatientMutation.isPending}
                     onPress={handleClose}
                     type="button"
-                    variant="ghost"
+                    variant="outline"
                   >
                     Cancelar
                   </Button>

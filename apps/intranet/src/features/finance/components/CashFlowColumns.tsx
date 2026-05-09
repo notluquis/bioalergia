@@ -185,7 +185,7 @@ export const columns: ColumnDef<CashFlowTransaction>[] = [
     header: ({ column }) => {
       return (
         <Button
-          variant="ghost"
+          variant="outline"
           onPress={() => column.toggleSorting(column.getIsSorted() === "asc")}
           className="-ml-3 h-8 data-[state=open]:bg-accent"
         >
@@ -464,7 +464,7 @@ export const columns: ColumnDef<CashFlowTransaction>[] = [
             className="h-7 w-7 min-w-7 p-0"
             isIconOnly
             size="sm"
-            variant="ghost"
+            variant="outline"
             onPress={() => table.options.meta?.onReallocate?.(row.original)}
           >
             <ArrowRightLeft className="h-3.5 w-3.5" />
@@ -474,7 +474,7 @@ export const columns: ColumnDef<CashFlowTransaction>[] = [
             className="h-7 w-7 min-w-7 p-0"
             isIconOnly
             size="sm"
-            variant="ghost"
+            variant="outline"
             onPress={() => table.options.meta?.onEdit?.(row.original)}
           >
             <Pencil className="h-3.5 w-3.5" />

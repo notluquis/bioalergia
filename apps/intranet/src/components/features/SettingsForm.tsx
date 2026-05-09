@@ -694,7 +694,7 @@ function InternalSettingsSection() {
               internalMutation.mutate({});
             }}
             type="button"
-            variant="ghost"
+            variant="outline"
           >
             Eliminar ajuste
           </Button>

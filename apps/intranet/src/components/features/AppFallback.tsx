@@ -179,7 +179,7 @@ export function AppFallback() {
                   >
                     {isWorking ? "Limpiando..." : "Limpiar y recargar"}
                   </Button>
-                  <Button onPress={() => setIsConfirmOpen(false)} size="sm" variant="ghost">
+                  <Button onPress={() => setIsConfirmOpen(false)} size="sm" variant="outline">
                     Cancelar
                   </Button>
                 </div>

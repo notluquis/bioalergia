@@ -232,7 +232,7 @@ function HeatmapMonthComponent({
               )}
               onPress={() => onDayClick?.(cell.isoDate)}
               size="sm"
-              variant="ghost"
+              variant="outline"
             >
               {/* Day Number */}
               <span
@@ -308,7 +308,7 @@ function HeatmapMonthComponent({
           <div className="flex flex-wrap gap-x-3 gap-y-1">
             <Tooltip delay={0} isDisabled={tooltipTrigger === "focus"} trigger={tooltipTrigger}>
               <Tooltip.Trigger>
-                <Button className="h-auto min-w-0 px-0 text-[10px]" size="sm" variant="ghost">
+                <Button className="h-auto min-w-0 px-0 text-[10px]" size="sm" variant="outline">
                   Esperado:{" "}
                   <span className="font-medium text-foreground">
                     {fmtCLP(monthTotals.expected)}
@@ -324,7 +324,7 @@ function HeatmapMonthComponent({
             </Tooltip>
             <Tooltip delay={0} isDisabled={tooltipTrigger === "focus"} trigger={tooltipTrigger}>
               <Tooltip.Trigger>
-                <Button className="h-auto min-w-0 px-0 text-[10px]" size="sm" variant="ghost">
+                <Button className="h-auto min-w-0 px-0 text-[10px]" size="sm" variant="outline">
                   Pagado:{" "}
                   <span className="font-medium text-foreground">{fmtCLP(monthTotals.paid)}</span>
                 </Button>
@@ -342,7 +342,7 @@ function HeatmapMonthComponent({
                   <Button
                     className="h-auto min-w-0 px-0 text-[10px] text-warning"
                     size="sm"
-                    variant="ghost"
+                    variant="outline"
                   >
                     No cobrado:{" "}
                     <span className="font-medium">{fmtCLP(monthTotals.unclassified)}</span>
@@ -358,7 +358,7 @@ function HeatmapMonthComponent({
             )}
             <Tooltip delay={0} isDisabled={tooltipTrigger === "focus"} trigger={tooltipTrigger}>
               <Tooltip.Trigger>
-                <Button className="h-auto min-w-0 px-0 text-[10px]" size="sm" variant="ghost">
+                <Button className="h-auto min-w-0 px-0 text-[10px]" size="sm" variant="outline">
                   Restante:{" "}
                   <span className="font-medium text-foreground">
                     {fmtCLP(monthTotals.remaining)}

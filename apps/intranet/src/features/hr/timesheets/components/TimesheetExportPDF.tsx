@@ -245,7 +245,7 @@ export function TimesheetExportPDF({
                     setShowOptions(false);
                   }}
                   size="sm"
-                  variant="ghost"
+                  variant="outline"
                 >
                   Cerrar
                 </Button>
@@ -253,7 +253,7 @@ export function TimesheetExportPDF({
                   className="text-primary text-xs"
                   onPress={() => handleExport(true)}
                   size="sm"
-                  variant="ghost"
+                  variant="outline"
                 >
                   Vista previa
                 </Button>
@@ -261,7 +261,7 @@ export function TimesheetExportPDF({
                   className="text-primary text-xs"
                   onPress={() => handleExport(false)}
                   size="sm"
-                  variant="ghost"
+                  variant="outline"
                 >
                   Descargar
                 </Button>

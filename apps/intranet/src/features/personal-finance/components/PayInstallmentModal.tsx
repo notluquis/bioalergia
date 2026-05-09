@@ -196,7 +196,7 @@ export function PayInstallmentModal({
                       onPress={() => {
                         setOpen(false);
                       }}
-                      variant="ghost"
+                      variant="outline"
                     >
                       Cancelar
                     </Button>

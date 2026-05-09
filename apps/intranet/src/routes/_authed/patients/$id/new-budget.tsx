@@ -87,7 +87,7 @@ function NewBudgetPage() {
     <div className={PAGE_CONTAINER}>
       <div className="mb-6">
         <Button
-          variant="ghost"
+          variant="outline"
           onPress={() => navigate({ to: "/patients/$id", params: { id: String(id) } })}
           className="gap-2"
         >
@@ -119,7 +119,7 @@ function NewBudgetPage() {
 
             <form.Field name="discount">
               {(field) => (
-                <NumberField
+                <NumberField variant="secondary"
                   formatOptions={{
                     currency: "CLP",
                     currencyDisplay: "symbol",
@@ -195,7 +195,7 @@ function NewBudgetPage() {
                       <div className="col-span-4 sm:col-span-2">
                         <form.Field name={`items[${index}].quantity`}>
                           {(subField) => (
-                            <NumberField
+                            <NumberField variant="secondary"
                               isInvalid={subField.state.meta.errors.length > 0}
                               minValue={1}
                               onChange={(value) => subField.handleChange(value ?? 1)}
@@ -215,7 +215,7 @@ function NewBudgetPage() {
                       <div className="col-span-6 sm:col-span-3">
                         <form.Field name={`items[${index}].unitPrice`}>
                           {(subField) => (
-                            <NumberField
+                            <NumberField variant="secondary"
                               formatOptions={{
                                 currency: "CLP",
                                 currencyDisplay: "symbol",
@@ -242,7 +242,7 @@ function NewBudgetPage() {
                       </div>
                       <div className="col-span-2 flex justify-center pb-2 sm:col-span-1">
                         <Button
-                          variant="ghost"
+                          variant="outline"
                           size="sm"
                           isIconOnly
                           className="text-danger"
@@ -263,7 +263,7 @@ function NewBudgetPage() {
         <div className="flex justify-end gap-3">
           <Button
             type="button"
-            variant="ghost"
+            variant="outline"
             onPress={() => navigate({ to: "/patients/$id", params: { id: String(id) } })}
           >
             Cancelar

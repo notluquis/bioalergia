@@ -29,7 +29,7 @@ export function NotificationHistory() {
         <div className="relative inline-block">
           <Button
             isIconOnly
-            variant="ghost"
+            variant="outline"
             aria-label="Notificaciones"
             className="relative rounded-full text-default-500 hover:bg-default-100"
           >
@@ -61,7 +61,7 @@ export function NotificationHistory() {
               <Button
                 aria-label="Marcar todas como leídas"
                 size="sm"
-                variant="ghost"
+                variant="outline"
                 isIconOnly
                 onPress={() => markAllAsRead()}
               >
@@ -72,7 +72,7 @@ export function NotificationHistory() {
               <Button
                 aria-label="Borrar historial"
                 size="sm"
-                variant="ghost"
+                variant="outline"
                 isIconOnly
                 className="text-danger"
                 onPress={() => clearAll()}
@@ -169,7 +169,7 @@ function NotificationItem({ notification, onRead, onRemove }: Readonly<Notificat
             onRemove(notification.id);
           }}
           className="absolute top-2 right-2 rounded-full p-1 text-default-400 opacity-0 hover:text-danger group-hover:opacity-100"
-          variant="ghost"
+          variant="outline"
           isIconOnly
           size="sm"
         >

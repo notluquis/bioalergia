@@ -323,7 +323,7 @@ function PeriodSelectionPanel({
       {quickRange === "custom" && (
         <Disclosure isExpanded={customWeeksOpen} onExpandedChange={setCustomWeeksOpen}>
           <Disclosure.Heading className="mt-4 rounded-xl bg-default-50/50">
-            <Button className="w-full justify-between px-4 py-3" slot="trigger" variant="ghost">
+            <Button className="w-full justify-between px-4 py-3" slot="trigger" variant="outline">
               <span>Personalizar semanas específicas</span>
               <Disclosure.Indicator />
             </Button>
@@ -362,7 +362,7 @@ function PeriodSelectionPanel({
                     className="text-primary text-sm"
                     onPress={handleSelectAllWeeks}
                     size="sm"
-                    variant="ghost"
+                    variant="outline"
                   >
                     {selectedWeekKeys.length === weeksForMonth.length
                       ? "Deseleccionar todas"
@@ -384,7 +384,7 @@ function PeriodSelectionPanel({
                       )}
                       key={week.key}
                       onPress={() => handleWeekToggle(week.key)}
-                      variant="ghost"
+                      variant="outline"
                     >
                       <div className="font-medium text-sm">{week.label}</div>
                     </Button>
@@ -447,7 +447,7 @@ function EmployeeSelectionPanel({
                 <Button
                   isIconOnly
                   size="sm"
-                  variant="ghost"
+                  variant="outline"
                   aria-label={`Quitar ${emp.full_name}`}
                   className="h-5 w-5 min-w-5 p-0"
                   onPress={() => {
@@ -464,7 +464,7 @@ function EmployeeSelectionPanel({
               className="text-danger text-sm"
               onPress={handleClearEmployees}
               size="sm"
-              variant="ghost"
+              variant="outline"
             >
               Limpiar todos
             </Button>
@@ -649,7 +649,7 @@ function LegendPanel({
       onExpandedChange={onToggle}
     >
       <Disclosure.Heading>
-        <Button className="w-full justify-between px-4 py-3" slot="trigger" variant="ghost">
+        <Button className="w-full justify-between px-4 py-3" slot="trigger" variant="outline">
           <span>📋 Guía de interpretación</span>
           <Disclosure.Indicator />
         </Button>

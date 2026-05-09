@@ -144,7 +144,7 @@ export const getColumns = (
                       actions.onUnlinkPayment(schedule);
                     }}
                     size="sm"
-                    variant="ghost"
+                    variant="outline"
                   >
                     Desvincular
                   </Button>

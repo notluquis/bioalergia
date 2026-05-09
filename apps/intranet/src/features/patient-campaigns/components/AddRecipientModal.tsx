@@ -130,7 +130,7 @@ export function AddRecipientModal({
 
                 <div className="flex justify-end gap-2 pt-2">
                   <Button
-                    variant="ghost"
+                    variant="outline"
                     onPress={handleClose}
                     isDisabled={upsertMutation.isPending}
                   >

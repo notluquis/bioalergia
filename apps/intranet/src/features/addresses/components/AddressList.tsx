@@ -116,7 +116,7 @@ export function AddressList({ personId }: Readonly<AddressListProps>) {
                           isDisabled={setPrimaryMutation.isPending}
                           onPress={() => setPrimaryMutation.mutate(addr.id)}
                           size="sm"
-                          variant="ghost"
+                          variant="outline"
                         >
                           <Star size={14} />
                         </Button>
@@ -138,7 +138,7 @@ export function AddressList({ personId }: Readonly<AddressListProps>) {
                           })
                         }
                         size="sm"
-                        variant="ghost"
+                        variant="outline"
                       >
                         <Edit2 size={14} />
                       </Button>
@@ -151,7 +151,7 @@ export function AddressList({ personId }: Readonly<AddressListProps>) {
                           }
                         }}
                         size="sm"
-                        variant="ghost"
+                        variant="outline"
                       >
                         <Trash2 size={14} className="text-danger" />
                       </Button>

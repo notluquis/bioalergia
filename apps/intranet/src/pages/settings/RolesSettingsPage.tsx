@@ -211,7 +211,7 @@ export function RolesSettingsPage() {
               <Button
                 isIconOnly
                 size="sm"
-                variant="ghost"
+                variant="outline"
                 isDisabled={isSyncing}
                 onPress={() => {
                   syncMutation.mutate();

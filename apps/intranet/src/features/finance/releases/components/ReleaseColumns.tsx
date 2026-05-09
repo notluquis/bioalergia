@@ -41,7 +41,7 @@ export const columns: ColumnDef<ReleaseTransaction>[] = [
           }}
           isIconOnly
           size="sm"
-          variant="ghost"
+          variant="outline"
           className="h-6 w-6 rounded-md p-0 hover:bg-default-50"
         >
           {row.getIsExpanded() ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
