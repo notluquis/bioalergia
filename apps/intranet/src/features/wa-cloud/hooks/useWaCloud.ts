@@ -186,3 +186,72 @@ export function useTemplates(accountId?: number) {
     queryFn: () => waCloudORPCClient.listTemplates({ accountId }),
   });
 }
+
+export function useBusinessProfile(phoneNumberId?: number) {
+  return useQuery({
+    queryKey: [...KEY, "profile", phoneNumberId],
+    enabled: Boolean(phoneNumberId),
+    queryFn: () => waCloudORPCClient.getBusinessProfile({ phoneNumberId: phoneNumberId! }),
+    staleTime: 60_000,
+  });
+}
+
+export function useUpdateBusinessProfile() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: Parameters<typeof waCloudORPCClient.updateBusinessProfile>[0]) =>
+      waCloudORPCClient.updateBusinessProfile(input),
+    onSuccess: (_, vars) => {
+      void qc.invalidateQueries({ queryKey: [...KEY, "profile", vars.phoneNumberId] });
+    },
+  });
+}
+
+export function usePhoneHealth(phoneNumberId?: number) {
+  return useQuery({
+    queryKey: [...KEY, "health", phoneNumberId],
+    enabled: Boolean(phoneNumberId),
+    queryFn: () => waCloudORPCClient.getPhoneHealth({ phoneNumberId: phoneNumberId! }),
+    staleTime: 30_000,
+  });
+}
+
+export function useBlockContact() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: Parameters<typeof waCloudORPCClient.blockContact>[0]) =>
+      waCloudORPCClient.blockContact(input),
+    onSuccess: (_, vars) => {
+      void qc.invalidateQueries({ queryKey: [...KEY, "conversation", vars.conversationId] });
+      void qc.invalidateQueries({ queryKey: [...KEY, "conversations"] });
+    },
+  });
+}
+
+export function useUnblockContact() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: Parameters<typeof waCloudORPCClient.unblockContact>[0]) =>
+      waCloudORPCClient.unblockContact(input),
+    onSuccess: (_, vars) => {
+      void qc.invalidateQueries({ queryKey: [...KEY, "conversation", vars.conversationId] });
+    },
+  });
+}
+
+export function useSetTyping() {
+  return useMutation({
+    mutationFn: (conversationId: number) => waCloudORPCClient.setTyping({ conversationId }),
+  });
+}
+
+export function useConversationAnalytics(
+  input: Parameters<typeof waCloudORPCClient.getConversationAnalytics>[0] | null,
+) {
+  return useQuery({
+    queryKey: [...KEY, "analytics", input],
+    enabled: Boolean(input),
+    queryFn: () => waCloudORPCClient.getConversationAnalytics(input!),
+    staleTime: 5 * 60_000,
+  });
+}

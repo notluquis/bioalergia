@@ -46,6 +46,23 @@ async function graphGet<T>(path: string, token: string, version: string): Promis
   return JSON.parse(text) as T;
 }
 
+async function graphDelete<T>(path: string, body: unknown, token: string, version: string): Promise<T> {
+  const res = await fetch(`${GRAPH_BASE}/${version}${path}`, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
+  });
+  const text = await res.text();
+  if (!res.ok) {
+    logWarn("[wa-cloud.graph] DELETE failed", { path, status: res.status, body: text.slice(0, 500) });
+    throw new Error(`Graph API ${res.status}: ${text.slice(0, 300)}`);
+  }
+  return JSON.parse(text) as T;
+}
+
 export type SendTextInput = {
   phoneNumberId: number;
   toE164: string;
@@ -267,20 +284,188 @@ export async function uploadMedia(
   return JSON.parse(text) as { id: string };
 }
 
-export async function markMessageRead(phoneNumberId: number, metaMessageId: string) {
+export async function markMessageRead(
+  phoneNumberId: number,
+  metaMessageId: string,
+  showTyping = false,
+) {
+  const phone = await getAccountForPhoneNumber(phoneNumberId);
+  const v = phone.account.graphApiVersion;
+  const token = phone.account.systemUserToken!;
+  const body: Record<string, unknown> = {
+    messaging_product: "whatsapp",
+    status: "read",
+    message_id: metaMessageId,
+  };
+  if (showTyping) {
+    body.typing_indicator = { type: "text" };
+  }
+  return graphPost(`/${phone.phoneNumberId}/messages`, body, token, v);
+}
+
+export type BusinessProfileFields = {
+  about?: string;
+  address?: string;
+  description?: string;
+  email?: string;
+  vertical?:
+    | "AUTO"
+    | "BEAUTY"
+    | "APPAREL"
+    | "EDU"
+    | "ENTERTAIN"
+    | "EVENT_PLAN"
+    | "FINANCE"
+    | "GROCERY"
+    | "GOVT"
+    | "HOTEL"
+    | "HEALTH"
+    | "NONPROFIT"
+    | "PROF_SERVICES"
+    | "RETAIL"
+    | "TRAVEL"
+    | "RESTAURANT"
+    | "NOT_A_BIZ"
+    | "OTHER";
+  websites?: string[];
+  profile_picture_handle?: string;
+};
+
+export async function getBusinessProfile(phoneNumberId: number) {
+  const phone = await getAccountForPhoneNumber(phoneNumberId);
+  const v = phone.account.graphApiVersion;
+  const token = phone.account.systemUserToken!;
+  type Resp = {
+    data: Array<{
+      about?: string;
+      address?: string;
+      description?: string;
+      email?: string;
+      messaging_product?: string;
+      profile_picture_url?: string;
+      vertical?: string;
+      websites?: string[];
+    }>;
+  };
+  const fields = "about,address,description,email,profile_picture_url,vertical,websites";
+  const data = await graphGet<Resp>(
+    `/${phone.phoneNumberId}/whatsapp_business_profile?fields=${fields}`,
+    token,
+    v,
+  );
+  return data.data[0] ?? null;
+}
+
+export async function updateBusinessProfile(phoneNumberId: number, fields: BusinessProfileFields) {
   const phone = await getAccountForPhoneNumber(phoneNumberId);
   const v = phone.account.graphApiVersion;
   const token = phone.account.systemUserToken!;
   return graphPost(
-    `/${phone.phoneNumberId}/messages`,
+    `/${phone.phoneNumberId}/whatsapp_business_profile`,
+    { messaging_product: "whatsapp", ...fields },
+    token,
+    v,
+  );
+}
+
+export async function getPhoneHealth(phoneNumberId: number) {
+  const phone = await getAccountForPhoneNumber(phoneNumberId);
+  const v = phone.account.graphApiVersion;
+  const token = phone.account.systemUserToken!;
+  type Resp = {
+    id: string;
+    display_phone_number?: string;
+    verified_name?: string;
+    code_verification_status?: string;
+    quality_rating?: string;
+    name_status?: string;
+    messaging_limit_tier?: string;
+    platform_type?: string;
+    throughput?: { level?: string };
+    health_status?: { can_send_message?: string; entities?: unknown[] };
+  };
+  const fields =
+    "display_phone_number,verified_name,code_verification_status,quality_rating,name_status,messaging_limit_tier,platform_type,throughput,health_status";
+  return graphGet<Resp>(`/${phone.phoneNumberId}?fields=${fields}`, token, v);
+}
+
+export async function blockUsers(phoneNumberId: number, e164List: string[]) {
+  const phone = await getAccountForPhoneNumber(phoneNumberId);
+  const v = phone.account.graphApiVersion;
+  const token = phone.account.systemUserToken!;
+  return graphPost(
+    `/${phone.phoneNumberId}/block_users`,
     {
       messaging_product: "whatsapp",
-      status: "read",
-      message_id: metaMessageId,
+      block_users: e164List.map((u) => ({ user: u.replace(/^\+/, "") })),
     },
     token,
     v,
   );
+}
+
+export async function unblockUsers(phoneNumberId: number, e164List: string[]) {
+  const phone = await getAccountForPhoneNumber(phoneNumberId);
+  const v = phone.account.graphApiVersion;
+  const token = phone.account.systemUserToken!;
+  return graphDelete(
+    `/${phone.phoneNumberId}/block_users`,
+    {
+      messaging_product: "whatsapp",
+      block_users: e164List.map((u) => ({ user: u.replace(/^\+/, "") })),
+    },
+    token,
+    v,
+  );
+}
+
+export async function listBlockedUsers(phoneNumberId: number) {
+  const phone = await getAccountForPhoneNumber(phoneNumberId);
+  const v = phone.account.graphApiVersion;
+  const token = phone.account.systemUserToken!;
+  type Resp = { data: Array<{ wa_id?: string; input?: string }> };
+  return graphGet<Resp>(`/${phone.phoneNumberId}/block_users`, token, v);
+}
+
+export type ConversationAnalyticsParams = {
+  accountId: number;
+  startUnix: number;
+  endUnix: number;
+  granularity?: "HALF_HOUR" | "DAILY" | "MONTHLY";
+  phoneNumbers?: string[];
+};
+
+export async function getConversationAnalytics(params: ConversationAnalyticsParams) {
+  const account = await db.waBusinessAccount.findUnique({ where: { id: params.accountId } });
+  if (!account?.systemUserToken) throw new Error("Account sin token");
+  const granularity = params.granularity ?? "DAILY";
+  const qs = new URLSearchParams({
+    start: String(params.startUnix),
+    end: String(params.endUnix),
+    granularity,
+  });
+  if (params.phoneNumbers && params.phoneNumbers.length > 0) {
+    qs.set("phone_numbers", JSON.stringify(params.phoneNumbers));
+  }
+  const path = `/${account.wabaId}?fields=conversation_analytics.start(${params.startUnix}).end(${params.endUnix}).granularity(${granularity})`;
+  type Resp = {
+    conversation_analytics?: {
+      data: Array<{
+        data_points: Array<{
+          start: number;
+          end: number;
+          conversation: number;
+          phone_number?: string;
+          country?: string;
+          conversation_type?: string;
+          conversation_direction?: string;
+          conversation_category?: string;
+          cost?: number;
+        }>;
+      }>;
+    };
+  };
+  return graphGet<Resp>(path, account.systemUserToken, account.graphApiVersion);
 }
 
 export async function downloadMediaUrl(mediaId: string, accountId: number) {

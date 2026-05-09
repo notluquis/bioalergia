@@ -80,11 +80,7 @@ export function MediaAttachment({ messageId, type, caption, out = false }: Props
   if (type === "IMAGE") {
     return (
       <div ref={ref}>
-        {visible && !errored ? (
-          <ImageLightbox src={url} alt={caption ?? "imagen"} />
-        ) : (
-          placeholder
-        )}
+        {visible && !errored ? <ImageLightbox src={url} alt={caption ?? "imagen"} /> : placeholder}
         {caption && (
           <p className="mt-1 whitespace-pre-wrap break-words text-sm leading-snug">{caption}</p>
         )}
@@ -160,6 +156,7 @@ function ImageLightbox({ src, alt }: { src: string; alt: string }) {
         <Modal.Backdrop
           isOpen={open}
           onOpenChange={(o) => !o && setOpen(false)}
+          isDismissable
           className="bg-black/85 backdrop-blur"
         >
           <Modal.Container placement="center">
@@ -229,6 +226,7 @@ function VideoLightbox({ src, onError }: { src: string; onError: () => void }) {
         <Modal.Backdrop
           isOpen={open}
           onOpenChange={(o) => !o && setOpen(false)}
+          isDismissable
           className="bg-black/85 backdrop-blur"
         >
           <Modal.Container placement="center">
@@ -243,12 +241,7 @@ function VideoLightbox({ src, onError }: { src: string; onError: () => void }) {
               >
                 <X size={16} />
               </Button>
-              <video
-                src={src}
-                controls
-                autoPlay
-                className="max-h-[92vh] max-w-[92vw] rounded-lg"
-              >
+              <video src={src} controls autoPlay className="max-h-[92vh] max-w-[92vw] rounded-lg">
                 <track kind="captions" />
               </video>
             </Modal.Dialog>
@@ -259,15 +252,7 @@ function VideoLightbox({ src, onError }: { src: string; onError: () => void }) {
   );
 }
 
-function AudioPlayer({
-  src,
-  out,
-  onError,
-}: {
-  src: string;
-  out: boolean;
-  onError: () => void;
-}) {
+function AudioPlayer({ src, out, onError }: { src: string; out: boolean; onError: () => void }) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const [playing, setPlaying] = useState(false);
   const [duration, setDuration] = useState(0);
@@ -311,10 +296,7 @@ function AudioPlayer({
       </button>
       <div className="flex-1">
         <div className={`relative h-1 w-full overflow-hidden rounded-full ${trackBg}`}>
-          <div
-            className={`absolute top-0 left-0 h-full ${fillBg}`}
-            style={{ width: `${pct}%` }}
-          />
+          <div className={`absolute top-0 left-0 h-full ${fillBg}`} style={{ width: `${pct}%` }} />
           <input
             type="range"
             min={0}
@@ -326,7 +308,9 @@ function AudioPlayer({
             aria-label="Posición"
           />
         </div>
-        <p className={`mt-0.5 text-[10px] ${out ? "text-success-foreground/80" : "text-default-500"}`}>
+        <p
+          className={`mt-0.5 text-[10px] ${out ? "text-success-foreground/80" : "text-default-500"}`}
+        >
           {fmt(current)} / {fmt(duration)}
         </p>
       </div>

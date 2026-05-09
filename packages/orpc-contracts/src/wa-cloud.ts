@@ -313,6 +313,104 @@ export const listWebhookLogsResponseSchema = z.object({
   logs: z.array(waWebhookLogSchema),
 });
 
+// ── Block / Profile / Health / Analytics ─────────────────────────────────────
+
+export const waPhoneIdInput = z.object({ phoneNumberId: z.number().int().positive() });
+
+export const businessProfileFieldsSchema = z.object({
+  about: z.string().max(139).optional(),
+  address: z.string().max(256).optional(),
+  description: z.string().max(512).optional(),
+  email: z.string().email().max(128).optional(),
+  vertical: z
+    .enum([
+      "AUTO",
+      "BEAUTY",
+      "APPAREL",
+      "EDU",
+      "ENTERTAIN",
+      "EVENT_PLAN",
+      "FINANCE",
+      "GROCERY",
+      "GOVT",
+      "HOTEL",
+      "HEALTH",
+      "NONPROFIT",
+      "PROF_SERVICES",
+      "RETAIL",
+      "TRAVEL",
+      "RESTAURANT",
+      "NOT_A_BIZ",
+      "OTHER",
+    ])
+    .optional(),
+  websites: z.array(z.string().url()).max(2).optional(),
+});
+
+export const businessProfileResponseSchema = z.object({
+  about: z.string().nullish(),
+  address: z.string().nullish(),
+  description: z.string().nullish(),
+  email: z.string().nullish(),
+  profile_picture_url: z.string().nullish(),
+  vertical: z.string().nullish(),
+  websites: z.array(z.string()).nullish(),
+});
+
+export const updateBusinessProfileInputSchema = waPhoneIdInput.extend({
+  fields: businessProfileFieldsSchema,
+});
+
+export const phoneHealthResponseSchema = z.object({
+  id: z.string(),
+  display_phone_number: z.string().nullish(),
+  verified_name: z.string().nullish(),
+  code_verification_status: z.string().nullish(),
+  quality_rating: z.string().nullish(),
+  name_status: z.string().nullish(),
+  messaging_limit_tier: z.string().nullish(),
+  platform_type: z.string().nullish(),
+  throughput: z.object({ level: z.string().nullish() }).nullish(),
+  health_status: z
+    .object({
+      can_send_message: z.string().nullish(),
+      entities: z.array(z.unknown()).nullish(),
+    })
+    .nullish(),
+});
+
+export const blockContactInputSchema = z.object({
+  conversationId: z.number().int().positive(),
+  phoneNumberId: z.number().int().positive(),
+});
+
+export const listBlockedResponseSchema = z.object({
+  blocked: z.array(z.object({ wa_id: z.string().nullish(), input: z.string().nullish() })),
+});
+
+export const conversationAnalyticsInputSchema = z.object({
+  accountId: z.number().int().positive(),
+  startUnix: z.number().int(),
+  endUnix: z.number().int(),
+  granularity: z.enum(["HALF_HOUR", "DAILY", "MONTHLY"]).default("DAILY"),
+  phoneNumbers: z.array(z.string()).optional(),
+});
+
+export const conversationAnalyticsResponseSchema = z.object({
+  dataPoints: z.array(
+    z.object({
+      start: z.number(),
+      end: z.number(),
+      conversation: z.number(),
+      cost: z.number().nullish(),
+      phone_number: z.string().nullish(),
+      conversation_type: z.string().nullish(),
+      conversation_direction: z.string().nullish(),
+      conversation_category: z.string().nullish(),
+    }),
+  ),
+});
+
 // ── Contract ────────────────────────────────────────────────────────────────
 
 export const waCloudContract = {
@@ -404,6 +502,48 @@ export const waCloudContract = {
     .route({ method: "POST", path: "/webhook-logs", tags: ["WA Cloud"] })
     .input(listWebhookLogsInputSchema)
     .output(listWebhookLogsResponseSchema),
+
+  // Business profile
+  getBusinessProfile: oc
+    .route({ method: "POST", path: "/profile/get", tags: ["WA Cloud"] })
+    .input(waPhoneIdInput)
+    .output(businessProfileResponseSchema.nullable()),
+  updateBusinessProfile: oc
+    .route({ method: "POST", path: "/profile/update", tags: ["WA Cloud"] })
+    .input(updateBusinessProfileInputSchema)
+    .output(waOkResponseSchema),
+
+  // Phone health
+  getPhoneHealth: oc
+    .route({ method: "POST", path: "/phones/health", tags: ["WA Cloud"] })
+    .input(waPhoneIdInput)
+    .output(phoneHealthResponseSchema),
+
+  // Block / unblock
+  blockContact: oc
+    .route({ method: "POST", path: "/contacts/block", tags: ["WA Cloud"] })
+    .input(blockContactInputSchema)
+    .output(waOkResponseSchema),
+  unblockContact: oc
+    .route({ method: "POST", path: "/contacts/unblock", tags: ["WA Cloud"] })
+    .input(blockContactInputSchema)
+    .output(waOkResponseSchema),
+  listBlocked: oc
+    .route({ method: "POST", path: "/contacts/blocked", tags: ["WA Cloud"] })
+    .input(waPhoneIdInput)
+    .output(listBlockedResponseSchema),
+
+  // Typing indicator
+  setTyping: oc
+    .route({ method: "POST", path: "/conversations/typing", tags: ["WA Cloud"] })
+    .input(z.object({ conversationId: z.number().int().positive() }))
+    .output(waOkResponseSchema),
+
+  // Analytics
+  getConversationAnalytics: oc
+    .route({ method: "POST", path: "/analytics/conversations", tags: ["WA Cloud"] })
+    .input(conversationAnalyticsInputSchema)
+    .output(conversationAnalyticsResponseSchema),
 };
 
 export type WaCloudContract = typeof waCloudContract;

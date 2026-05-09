@@ -1,16 +1,23 @@
 import { db } from "@finanzas/db";
 import {
   accountIdInput,
+  blockContactInputSchema,
+  businessProfileResponseSchema,
+  conversationAnalyticsInputSchema,
+  conversationAnalyticsResponseSchema,
   conversationIdInput,
   conversationDetailResponseSchema,
   accountResponseSchema,
   listAccountsResponseSchema,
+  listBlockedResponseSchema,
   listConversationsInputSchema,
   listConversationsResponseSchema,
   listTemplatesResponseSchema,
   listWebhookLogsInputSchema,
   listWebhookLogsResponseSchema,
   markReadInputSchema,
+  phoneHealthResponseSchema,
+  waPhoneIdInput,
   sendFlowInputSchema,
   sendMediaInputSchema,
   sendMessageResponseSchema,
@@ -18,6 +25,7 @@ import {
   sendTemplateInputSchema,
   sendTextInputSchema,
   syncTemplatesResponseSchema,
+  updateBusinessProfileInputSchema,
   updateConversationInputSchema,
   updateWaContactInputSchema,
   upsertAccountInputSchema,
@@ -35,14 +43,21 @@ import { getSessionUser, hasPermission } from "../auth.ts";
 import { logError } from "../lib/logger.ts";
 import { configureSuperjson } from "../lib/superjson-config.ts";
 import {
+  blockUsers,
+  getBusinessProfile,
+  getConversationAnalytics,
+  getPhoneHealth,
   listAccountPhoneNumbers,
   listAccountTemplates,
+  listBlockedUsers,
   markMessageRead,
   sendFlowMessage,
   sendMediaMessage,
   sendReaction,
   sendTemplateMessage,
   sendTextMessage,
+  unblockUsers,
+  updateBusinessProfile,
 } from "../modules/wa-cloud/graph-client.ts";
 import { SuperJSONRPCHandler } from "./superjson.ts";
 
@@ -753,6 +768,152 @@ const waRouterBase = {
             preview,
           };
         }),
+      };
+    }),
+
+  // ── Business profile ───────────────────────────────────────────────────────
+  getBusinessProfile: readWa
+    .route({ method: "POST", path: "/profile/get", tags: ["WA Cloud"] })
+    .input(waPhoneIdInput)
+    .output(businessProfileResponseSchema.nullable())
+    .handler(async ({ input }) => {
+      const p = await getBusinessProfile(input.phoneNumberId);
+      if (!p) return null;
+      return {
+        about: p.about ?? null,
+        address: p.address ?? null,
+        description: p.description ?? null,
+        email: p.email ?? null,
+        profile_picture_url: p.profile_picture_url ?? null,
+        vertical: p.vertical ?? null,
+        websites: p.websites ?? null,
+      };
+    }),
+  updateBusinessProfile: writeWa
+    .route({ method: "POST", path: "/profile/update", tags: ["WA Cloud"] })
+    .input(updateBusinessProfileInputSchema)
+    .output(waOkResponseSchema)
+    .handler(async ({ input }) => {
+      await updateBusinessProfile(input.phoneNumberId, input.fields);
+      return { status: "ok" as const };
+    }),
+
+  // ── Phone health ───────────────────────────────────────────────────────────
+  getPhoneHealth: readWa
+    .route({ method: "POST", path: "/phones/health", tags: ["WA Cloud"] })
+    .input(waPhoneIdInput)
+    .output(phoneHealthResponseSchema)
+    .handler(async ({ input }) => {
+      const h = await getPhoneHealth(input.phoneNumberId);
+      // Persist quality_rating snapshot for offline charts.
+      try {
+        if (h.quality_rating) {
+          await db.waPhoneNumber.update({
+            where: { id: input.phoneNumberId },
+            data: { qualityRating: h.quality_rating },
+          });
+        }
+      } catch (err) {
+        logError("[wa-cloud.getPhoneHealth] persist failed", { err });
+      }
+      return h;
+    }),
+
+  // ── Block / unblock ────────────────────────────────────────────────────────
+  blockContact: writeWa
+    .route({ method: "POST", path: "/contacts/block", tags: ["WA Cloud"] })
+    .input(blockContactInputSchema)
+    .output(waOkResponseSchema)
+    .handler(async ({ input }) => {
+      const conv = await db.waConversation.findUnique({
+        where: { id: input.conversationId },
+        include: { contact: true },
+      });
+      if (!conv) throw new ORPCError("NOT_FOUND", { message: "Conversación no encontrada" });
+      await blockUsers(input.phoneNumberId, [conv.contact.phoneE164]);
+      await db.waConversation.update({
+        where: { id: input.conversationId },
+        data: { status: "ARCHIVED" },
+      });
+      return { status: "ok" as const };
+    }),
+  unblockContact: writeWa
+    .route({ method: "POST", path: "/contacts/unblock", tags: ["WA Cloud"] })
+    .input(blockContactInputSchema)
+    .output(waOkResponseSchema)
+    .handler(async ({ input }) => {
+      const conv = await db.waConversation.findUnique({
+        where: { id: input.conversationId },
+        include: { contact: true },
+      });
+      if (!conv) throw new ORPCError("NOT_FOUND", { message: "Conversación no encontrada" });
+      await unblockUsers(input.phoneNumberId, [conv.contact.phoneE164]);
+      return { status: "ok" as const };
+    }),
+  listBlocked: readWa
+    .route({ method: "POST", path: "/contacts/blocked", tags: ["WA Cloud"] })
+    .input(waPhoneIdInput)
+    .output(listBlockedResponseSchema)
+    .handler(async ({ input }) => {
+      const r = await listBlockedUsers(input.phoneNumberId);
+      return {
+        blocked: (r.data ?? []).map((b) => ({
+          wa_id: b.wa_id ?? null,
+          input: b.input ?? null,
+        })),
+      };
+    }),
+
+  // ── Typing indicator ───────────────────────────────────────────────────────
+  setTyping: writeWa
+    .route({ method: "POST", path: "/conversations/typing", tags: ["WA Cloud"] })
+    .input(z.object({ conversationId: z.number().int().positive() }))
+    .output(waOkResponseSchema)
+    .handler(async ({ input }) => {
+      const latest = await db.waMessage.findFirst({
+        where: {
+          conversationId: input.conversationId,
+          direction: "INBOUND",
+          metaMessageId: { not: null },
+        },
+        orderBy: { timestamp: "desc" },
+        select: { metaMessageId: true, phoneNumberId: true },
+      });
+      if (latest?.metaMessageId) {
+        try {
+          await markMessageRead(latest.phoneNumberId, latest.metaMessageId, true);
+        } catch (err) {
+          logError("[wa-cloud.setTyping] failed", { err });
+        }
+      }
+      return { status: "ok" as const };
+    }),
+
+  // ── Analytics ──────────────────────────────────────────────────────────────
+  getConversationAnalytics: readWa
+    .route({ method: "POST", path: "/analytics/conversations", tags: ["WA Cloud"] })
+    .input(conversationAnalyticsInputSchema)
+    .output(conversationAnalyticsResponseSchema)
+    .handler(async ({ input }) => {
+      const r = await getConversationAnalytics({
+        accountId: input.accountId,
+        startUnix: input.startUnix,
+        endUnix: input.endUnix,
+        granularity: input.granularity,
+        phoneNumbers: input.phoneNumbers,
+      });
+      const points = r.conversation_analytics?.data?.[0]?.data_points ?? [];
+      return {
+        dataPoints: points.map((p) => ({
+          start: p.start,
+          end: p.end,
+          conversation: p.conversation,
+          cost: p.cost ?? null,
+          phone_number: p.phone_number ?? null,
+          conversation_type: p.conversation_type ?? null,
+          conversation_direction: p.conversation_direction ?? null,
+          conversation_category: p.conversation_category ?? null,
+        })),
       };
     }),
 };

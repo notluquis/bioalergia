@@ -13,6 +13,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import {
   AlertCircle,
+  Ban,
   Check,
   CheckCheck,
   Clock,
@@ -40,12 +41,14 @@ import {
 import {
   uploadWaMedia,
   useAccounts,
+  useBlockContact,
   useConversation,
   useSendFlow,
   useSendMedia,
   useSendReaction,
   useSendTemplate,
   useSendText,
+  useSetTyping,
   useTemplates,
   useUpdateConversation,
 } from "../hooks/useWaCloud";
@@ -90,8 +93,11 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
   const sendReaction = useSendReaction();
   const sendMedia = useSendMedia();
   const sendFlow = useSendFlow();
+  const setTyping = useSetTyping();
+  const blockContact = useBlockContact();
   const [flowOpen, setFlowOpen] = useState(false);
   const updateConv = useUpdateConversation();
+  const typingDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [replyTo, setReplyTo] = useState<{
     metaMessageId: string;
     snippet: string;
@@ -424,6 +430,19 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
             phoneOptions={phoneOptions}
             onPhoneChange={setPhoneId}
             onRelease={() => updateConv.mutate({ id: conversationId, assignedToUserId: null })}
+            onBlock={() => {
+              if (!phoneId) {
+                toast.error("Selecciona un número primero");
+                return;
+              }
+              if (!confirm("¿Bloquear este contacto en WhatsApp? No podrá enviarte mensajes."))
+                return;
+              blockContact.mutate({
+                conversationId,
+                phoneNumberId: Number(phoneId),
+              });
+            }}
+            blockPending={blockContact.isPending}
           />
         </div>
       </Card.Header>
@@ -464,7 +483,15 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
           {mode === "text" ? (
             <TextComposer
               body={body}
-              setBody={setBody}
+              setBody={(v) => {
+                setBody(v);
+                if (typingDebounce.current) clearTimeout(typingDebounce.current);
+                typingDebounce.current = setTimeout(() => {
+                  if (v.trim().length > 0) {
+                    setTyping.mutate(conversationId);
+                  }
+                }, 400);
+              }}
               onSend={handleSendText}
               isDisabled={!c.windowOpen || !phoneId}
               disabledReason={
@@ -562,7 +589,7 @@ function ChatBubble({
 
   const actions = canInteract ? (
     <div
-      className={`absolute top-1 ${out ? "right-full mr-1" : "left-full ml-1"} hidden gap-1 group-hover:flex`}
+      className={`absolute top-1 ${out ? "right-full mr-1" : "left-full ml-1"} flex gap-1 opacity-0 transition pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto`}
     >
       <Popover>
         <Popover.Trigger>
@@ -909,11 +936,15 @@ function ConvSettingsMenu({
   phoneOptions,
   onPhoneChange,
   onRelease,
+  onBlock,
+  blockPending,
 }: {
   phoneId: string;
   phoneOptions: { value: string; label: string }[];
   onPhoneChange: (v: string) => void;
   onRelease: () => void;
+  onBlock: () => void;
+  blockPending: boolean;
 }) {
   return (
     <Dropdown>
@@ -932,6 +963,16 @@ function ConvSettingsMenu({
           />
           <Button size="sm" variant="outline" fullWidth onPress={onRelease}>
             Liberar asignación
+          </Button>
+          <Button
+            size="sm"
+            variant="danger-soft"
+            fullWidth
+            onPress={onBlock}
+            isPending={blockPending}
+          >
+            <Ban size={14} />
+            Bloquear contacto
           </Button>
         </div>
       </Dropdown.Popover>

@@ -9,11 +9,13 @@ import {
   ShieldCheck,
   Tag,
   Trash2,
+  Wrench,
   X,
 } from "lucide-react";
 import { useState } from "react";
 import { TextInput } from "@/features/outreach/components/FormField";
 import { toast } from "@/lib/toast-interceptor";
+import { PhoneToolsModal } from "../components/PhoneToolsModal";
 import {
   useAccounts,
   useDeleteAccount,
@@ -113,6 +115,7 @@ function AccountCard({ acc }: { acc: AccountSummary }) {
   const [credsOpen, setCredsOpen] = useState(false);
   const [phoneOpen, setPhoneOpen] = useState(false);
   const [confirmDel, setConfirmDel] = useState(false);
+  const [toolsPhone, setToolsPhone] = useState<{ id: number; display: string } | null>(null);
 
   const validateResult = validate.data;
 
@@ -175,7 +178,7 @@ function AccountCard({ acc }: { acc: AccountSummary }) {
                   key={p.id}
                   className="flex items-center justify-between gap-3 rounded-lg bg-default-100 px-3 py-2"
                 >
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1">
                     <p className="truncate font-medium text-sm">{p.displayPhoneNumber}</p>
                     <p className="truncate text-default-500 text-xs">
                       {p.label ?? "Sin etiqueta"} · ID {p.phoneNumberId}
@@ -187,9 +190,20 @@ function AccountCard({ acc }: { acc: AccountSummary }) {
                       color={QUALITY_COLOR[p.qualityRating] ?? "default"}
                       variant="soft"
                     >
-                      {p.qualityRating}
+                      <Chip.Label>{p.qualityRating}</Chip.Label>
                     </Chip>
                   )}
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    isIconOnly
+                    aria-label="Herramientas del número"
+                    onPress={() =>
+                      setToolsPhone({ id: p.id, display: p.displayPhoneNumber })
+                    }
+                  >
+                    <Wrench size={14} />
+                  </Button>
                 </li>
               ))}
             </ul>
@@ -249,6 +263,14 @@ function AccountCard({ acc }: { acc: AccountSummary }) {
         wabaId={acc.wabaId}
       />
       <PhoneAddModal isOpen={phoneOpen} onClose={() => setPhoneOpen(false)} accountId={acc.id} />
+      {toolsPhone && (
+        <PhoneToolsModal
+          isOpen={Boolean(toolsPhone)}
+          onClose={() => setToolsPhone(null)}
+          phoneNumberId={toolsPhone.id}
+          displayPhoneNumber={toolsPhone.display}
+        />
+      )}
       <ConfirmDeleteModal
         isOpen={confirmDel}
         onClose={() => setConfirmDel(false)}
