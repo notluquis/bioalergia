@@ -2,6 +2,7 @@ import type { Key } from "@heroui/react";
 import {
   Button,
   Checkbox,
+  Chip,
   ComboBox,
   Description,
   FieldError,
@@ -13,7 +14,7 @@ import {
   Select,
   TextField,
 } from "@heroui/react";
-import { useForm } from "@tanstack/react-form";
+import { useForm, useStore } from "@tanstack/react-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Home, Save } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -128,7 +129,12 @@ export function AddressFormModal({
     },
   });
 
-  const regionValue = String(form.state.values.region ?? "");
+  // Subscribe via form.useStore so outer queries (communes, sub-zones,
+  // street lookup) re-fire when the user picks a region / comuna inside
+  // a form.Field. Reading form.state directly only resolves once at
+  // render and never reactively updates.
+  const regionValue = useStore(form.store, (state) => String(state.values.region ?? ""));
+  const comunaValue = useStore(form.store, (state) => String(state.values.comuna ?? ""));
 
   const { data: communesResponse, isLoading: loadingCommunes } = useQuery({
     queryKey: ["cx-communes", regionValue],
@@ -139,8 +145,7 @@ export function AddressFormModal({
   const communes = communesResponse?.communes ?? [];
 
   const selectedCommuneName =
-    communes.find((c) => c.coverageRegionCode === String(form.state.values.comuna ?? ""))
-      ?.countyName ?? "";
+    communes.find((c) => c.coverageRegionCode === comunaValue)?.countyName ?? "";
 
   // Optional sub-sector picker (Chilexpress coverage type=2). When the
   // user is in a fringe sub-zone of a comuna (e.g. "BUIN - LINDEROS"),
@@ -154,7 +159,7 @@ export function AddressFormModal({
   });
   const allSubzones = subzonesData?.communes ?? [];
   const subzonesForCommune = allSubzones.filter(
-    (s) => s.countyName === selectedCommuneName && s.coverageRegionCode !== form.state.values.comuna
+    (s) => s.countyName === selectedCommuneName && s.coverageRegionCode !== comunaValue
   );
 
   const [pickedStreetId, setPickedStreetId] = useState<number | null>(null);
@@ -238,63 +243,8 @@ export function AddressFormModal({
                   )}
                 </form.Field>
 
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                  <div className="md:col-span-2">
-                    <form.Field name="street">
-                      {(field) => (
-                        <StreetAutocomplete
-                          countyName={selectedCommuneName}
-                          onChange={(value) => {
-                            field.handleChange(value);
-                            setPickedStreetId(null);
-                          }}
-                          onSelectStreet={(streetId) => setPickedStreetId(streetId)}
-                          value={field.state.value}
-                        />
-                      )}
-                    </form.Field>
-                  </div>
-                  <form.Field name="number">
-                    {(field) => {
-                      const num = Number(field.state.value);
-                      const outOfRange =
-                        validNumbers.length > 0 &&
-                        Number.isFinite(num) &&
-                        num > 0 &&
-                        !validNumbers.includes(num);
-                      return (
-                        <TextField
-                          isRequired
-                          onChange={(v) => field.handleChange(v)}
-                          value={field.state.value}
-                        >
-                          <Label>Número</Label>
-                          <Input placeholder="1234" />
-                          {minNumber != null && maxNumber != null ? (
-                            <Description>
-                              Rango Chilexpress: {minNumber} – {maxNumber}
-                            </Description>
-                          ) : null}
-                          {outOfRange ? (
-                            <Description className="text-warning">
-                              Número fuera del rango registrado
-                            </Description>
-                          ) : null}
-                        </TextField>
-                      );
-                    }}
-                  </form.Field>
-                </div>
-
-                <form.Field name="supplement">
-                  {(field) => (
-                    <TextField onChange={(v) => field.handleChange(v)} value={field.state.value}>
-                      <Label>Depto / Casa (opcional)</Label>
-                      <Input placeholder="Depto 502, Casa 5, etc." />
-                    </TextField>
-                  )}
-                </form.Field>
-
+                {/* Cobertura primero: la búsqueda de calle depende de la
+                    comuna, así que región + comuna se piden antes. */}
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <form.Field name="region">
                     {(field) => (
@@ -353,14 +303,30 @@ export function AddressFormModal({
                                 key={c.coverageRegionCode}
                                 textValue={c.countyName}
                               >
-                                {c.countyName}
-                                {c.supportsCashOnDelivery ? " · PPD" : ""}
-                                {!c.supportsReturn ? " · Sin retorno" : ""}
+                                <span className="flex w-full items-center justify-between gap-2">
+                                  <span>{c.countyName}</span>
+                                  <span className="flex items-center gap-1">
+                                    {!c.supportsCashOnDelivery && (
+                                      <Chip color="warning" size="sm" variant="soft">
+                                        Solo prepago
+                                      </Chip>
+                                    )}
+                                    {!c.supportsReturn && (
+                                      <Chip color="default" size="sm" variant="soft">
+                                        Sin retorno
+                                      </Chip>
+                                    )}
+                                  </span>
+                                </span>
                                 <ListBox.ItemIndicator />
                               </ListBox.Item>
                             ))}
                           </ListBox>
                         </Select.Popover>
+                        <Description>
+                          "Solo prepago" = comuna no acepta flete por cobrar (PPD); paga la clínica.
+                          "Sin retorno" = no hay servicio de retorno de documentos.
+                        </Description>
                       </Select>
                     )}
                   </form.Field>
@@ -372,9 +338,6 @@ export function AddressFormModal({
                       <Select
                         onChange={(value) => {
                           if (!value) return;
-                          // Replace the form's coverageCode with the
-                          // sub-zone's countyCode so Chilexpress quotes
-                          // and shipments use the more specific area.
                           field.handleChange(value as Key);
                         }}
                         placeholder="Sin sub-sector específico"
@@ -404,6 +367,63 @@ export function AddressFormModal({
                   </form.Field>
                 )}
 
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                  <div className="md:col-span-2">
+                    <form.Field name="street">
+                      {(field) => (
+                        <StreetAutocomplete
+                          countyName={selectedCommuneName}
+                          onChange={(value) => {
+                            field.handleChange(value);
+                            setPickedStreetId(null);
+                          }}
+                          onSelectStreet={(streetId) => setPickedStreetId(streetId)}
+                          value={field.state.value}
+                        />
+                      )}
+                    </form.Field>
+                  </div>
+                  <form.Field name="number">
+                    {(field) => {
+                      const num = Number(field.state.value);
+                      const outOfRange =
+                        validNumbers.length > 0 &&
+                        Number.isFinite(num) &&
+                        num > 0 &&
+                        !validNumbers.includes(num);
+                      return (
+                        <TextField
+                          isRequired
+                          onChange={(v) => field.handleChange(v)}
+                          value={field.state.value}
+                        >
+                          <Label>Número</Label>
+                          <Input placeholder="1234" />
+                          {minNumber != null && maxNumber != null ? (
+                            <Description>
+                              Rango Chilexpress: {minNumber} – {maxNumber}
+                            </Description>
+                          ) : null}
+                          {outOfRange ? (
+                            <Description className="text-warning">
+                              Número fuera del rango registrado
+                            </Description>
+                          ) : null}
+                        </TextField>
+                      );
+                    }}
+                  </form.Field>
+                </div>
+
+                <form.Field name="supplement">
+                  {(field) => (
+                    <TextField onChange={(v) => field.handleChange(v)} value={field.state.value}>
+                      <Label>Depto / Casa (opcional)</Label>
+                      <Input placeholder="Depto 502, Casa 5, etc." />
+                    </TextField>
+                  )}
+                </form.Field>
+
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <form.Field name="postalCode">
                     {(field) => (
@@ -429,8 +449,12 @@ export function AddressFormModal({
                       isSelected={field.state.value}
                       onChange={(value) => field.handleChange(value)}
                     >
-                      <Checkbox.Indicator />
-                      <Label>Marcar como dirección principal</Label>
+                      <Checkbox.Control>
+                        <Checkbox.Indicator />
+                      </Checkbox.Control>
+                      <Checkbox.Content>
+                        <Label>Marcar como dirección principal</Label>
+                      </Checkbox.Content>
                     </Checkbox>
                   )}
                 </form.Field>

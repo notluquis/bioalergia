@@ -21,9 +21,11 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertTriangle,
   CheckCircle,
+  Clock,
   MapPin,
   Package,
   PackageCheck,
+  Phone,
   Plus,
   Truck,
 } from "lucide-react";
@@ -247,6 +249,71 @@ function StepIndicator({ step }: { step: Step }) {
       ))}
     </div>
   );
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+const DAY_SHORT: Record<string, string> = {
+  Lunes: "Lun",
+  Martes: "Mar",
+  Miercoles: "Mié",
+  Miércoles: "Mié",
+  Jueves: "Jue",
+  Viernes: "Vie",
+  Sabado: "Sáb",
+  Sábado: "Sáb",
+  Domingo: "Dom",
+};
+
+interface BusinessHour {
+  day: string;
+  initialStartHour: string;
+  initialEndHour: string;
+  finalStartHour?: string;
+  finalEndHour?: string;
+}
+
+// Collapse the businessHour list to a compact human label.
+// Empty initialStartHour means closed that day; we drop those rows.
+// If every open day shares the same range we render "Lun–Vie 09:00–18:00".
+// Otherwise we list the first open day and show a count chip for the rest.
+function summariseHours(hours: BusinessHour[]): {
+  primary: string | null;
+  extraDays: number;
+} {
+  const open = hours.filter((h) => h.initialStartHour && h.initialEndHour);
+  if (open.length === 0) return { primary: null, extraDays: 0 };
+
+  const range = (h: BusinessHour) => {
+    const am = `${h.initialStartHour}–${h.initialEndHour}`;
+    if (h.finalStartHour && h.finalEndHour) {
+      return `${am}, ${h.finalStartHour}–${h.finalEndHour}`;
+    }
+    return am;
+  };
+
+  const allSame = open.every((h) => range(h) === range(open[0]!));
+  if (allSame) {
+    const first = DAY_SHORT[open[0]!.day] ?? open[0]!.day;
+    const last = DAY_SHORT[open[open.length - 1]!.day] ?? open[open.length - 1]!.day;
+    const span = open.length === 1 ? first : `${first}–${last}`;
+    return { primary: `${span} ${range(open[0]!)}`, extraDays: 0 };
+  }
+
+  const first = open[0]!;
+  return {
+    primary: `${DAY_SHORT[first.day] ?? first.day} ${range(first)}`,
+    extraDays: open.length - 1,
+  };
+}
+
+// Treat "0" / empty / "—" as missing — Chilexpress sometimes returns
+// "0" as a sentinel for "no phone".
+function cleanPhone(raw: string | undefined | null): string | null {
+  if (!raw) return null;
+  const trimmed = raw.trim();
+  if (!trimmed || trimmed === "0" || trimmed === "—") return null;
+  return trimmed;
 }
 
 // ─── Step 1: Coverage ─────────────────────────────────────────────────────────
@@ -497,7 +564,12 @@ function OfficePicker({
   const nearbyOffices = nearbyData?.offices ?? [];
 
   const canContinue = Boolean(coverageCode && officeId);
-  const offices = officesData?.offices ?? [];
+  const allOffices = officesData?.offices ?? [];
+  // Chilexpress API: Type=0 returns mixed (sucursales propias + pickup
+  // partners). When the user picked "Sucursales Chilexpress" we filter
+  // out pickup partners (officeType === 4) so the lists actually match
+  // the toggle label.
+  const offices = officeKind === "0" ? allOffices.filter((o) => o.officeType !== 4) : allOffices;
   const selectedOffice = offices.find((o) => o.commercialOfficeId === String(officeId));
 
   return (
@@ -597,13 +669,22 @@ function OfficePicker({
                   key={c.coverageRegionCode}
                   textValue={c.countyName}
                 >
-                  {c.countyName}
-                  {c.supportsCashOnDelivery ? " · PPD" : ""}
+                  <span className="flex w-full items-center justify-between gap-2">
+                    <span>{c.countyName}</span>
+                    {!c.supportsCashOnDelivery && (
+                      <Chip color="warning" size="sm" variant="soft">
+                        Solo prepago
+                      </Chip>
+                    )}
+                  </span>
                   <ListBox.ItemIndicator />
                 </ListBox.Item>
               ))}
             </ListBox>
           </Select.Popover>
+          <Description>
+            "Solo prepago" = comuna no acepta flete por cobrar (PPD). Envío debe pagarlo la clínica.
+          </Description>
         </Select>
       </div>
 
@@ -655,31 +736,60 @@ function OfficePicker({
               }}
               value={officeId != null ? String(officeId) : ""}
             >
-              {offices.map((o) => (
-                <Radio key={o.commercialOfficeId} value={o.commercialOfficeId}>
-                  <Radio.Control>
-                    <Radio.Indicator />
-                  </Radio.Control>
-                  <Radio.Content className="w-full">
-                    <div className="flex items-center justify-between gap-2">
-                      <Label>{o.commercialOfficeName}</Label>
-                      {o.officeType === 4 && (
-                        <Chip size="sm" variant="soft" color="accent">
-                          Pickup
-                        </Chip>
-                      )}
-                    </div>
-                    <Description>
-                      {o.street} {o.number}
-                      {o.complement ? `, ${o.complement}` : ""}
-                    </Description>
-                    {o.phone && <Description className="text-xs">📞 {o.phone}</Description>}
-                    {o.schedules && (
-                      <Description className="line-clamp-2 text-xs">🕐 {o.schedules}</Description>
-                    )}
-                  </Radio.Content>
-                </Radio>
-              ))}
+              {offices.map((o) => {
+                const phone = cleanPhone(o.phone);
+                const { primary: hoursLabel, extraDays } = summariseHours(o.businessHour ?? []);
+                const address = [o.street, o.number].filter(Boolean).join(" ");
+                const fullAddress = o.complement ? `${address}, ${o.complement}` : address;
+                return (
+                  <Radio key={o.commercialOfficeId} value={o.commercialOfficeId}>
+                    <Radio.Control>
+                      <Radio.Indicator />
+                    </Radio.Control>
+                    <Radio.Content className="w-full">
+                      <div className="flex items-start justify-between gap-2">
+                        <Label className="font-semibold">{o.commercialOfficeName}</Label>
+                        {o.officeType === 4 && (
+                          <Chip color="accent" size="sm" variant="soft">
+                            Pickup
+                          </Chip>
+                        )}
+                      </div>
+                      <div className="mt-1 flex items-start gap-1.5 text-default-600 text-xs">
+                        <MapPin className="mt-0.5 shrink-0" size={12} />
+                        <span>{fullAddress || "Dirección no disponible"}</span>
+                      </div>
+                      <div className="mt-0.5 flex items-center gap-1.5 text-default-600 text-xs">
+                        <Phone className="shrink-0" size={12} />
+                        {phone ? (
+                          <span>{phone}</span>
+                        ) : (
+                          <Chip color="default" size="sm" variant="soft">
+                            Sin teléfono
+                          </Chip>
+                        )}
+                      </div>
+                      <div className="mt-0.5 flex items-center gap-1.5 text-default-600 text-xs">
+                        <Clock className="shrink-0" size={12} />
+                        {hoursLabel ? (
+                          <span className="flex items-center gap-1">
+                            <span>{hoursLabel}</span>
+                            {extraDays > 0 && (
+                              <Chip color="default" size="sm" variant="soft">
+                                +{extraDays} {extraDays === 1 ? "día" : "días"}
+                              </Chip>
+                            )}
+                          </span>
+                        ) : (
+                          <Chip color="default" size="sm" variant="soft">
+                            Horario no disponible
+                          </Chip>
+                        )}
+                      </div>
+                    </Radio.Content>
+                  </Radio>
+                );
+              })}
             </RadioGroup>
           )}
 

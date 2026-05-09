@@ -162,8 +162,8 @@ function mapOffice(o: CxRawOffice): CxCommercialOffice {
     distance: o.distance,
     officeCode: o.officeCode,
     ineCountyId: o.ineCountyId,
-    businessHour: o.businessHour ?? [],
-    services: o.officeServices ?? [],
+    businessHour: (o.businessHour ?? []).filter((b): b is CxOfficeBusinessHour => b != null),
+    services: (o.officeServices ?? []).filter((s): s is CxOfficeService => s != null),
     schedules: (o.businessHour ?? [])
       .filter((b) => b.initialStartHour)
       .map(
