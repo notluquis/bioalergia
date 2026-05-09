@@ -12,6 +12,51 @@ import { type ImportStats, processReportUrl } from "./ingest";
 export type { ImportStats };
 export { MP_WEBHOOK_PASSWORD };
 
+export interface MPReportTask {
+  id?: number;
+  user_id?: number;
+  account_id?: number;
+  begin_date?: string;
+  end_date?: string;
+  created_from?: "manual" | "schedule";
+  is_test?: boolean;
+  is_reserve?: boolean;
+  status?: "pending" | "processing" | "processed" | "failed" | "deleted";
+  report_type?: string;
+  generation_date?: string;
+  report_id?: number | null;
+  last_modified?: string;
+  retries?: number;
+  sub_type?: string | null;
+  currency_id?: string;
+  format?: "CSV" | "XLSX";
+  file_name?: string | null;
+}
+
+export interface MPSearchResultItem {
+  id?: number;
+  user_id?: number;
+  begin_date?: string;
+  end_date?: string;
+  file_name?: string;
+  created_from?: string;
+  date_created?: string;
+  download_date?: string | null;
+  status?: string;
+  origin?: string;
+  sub_type?: string | null;
+  metadata?: string;
+  model?: string;
+  account_id?: number;
+  currency_id?: string;
+  format?: string;
+}
+
+export interface MPSearchResponse {
+  paging?: { total?: number; limit?: number; offset?: number };
+  results?: MPSearchResultItem[];
+}
+
 const SETTLEMENT_HINTS = [
   "settlement",
   "liquidaci",
@@ -101,6 +146,72 @@ export const MercadoPagoService = {
     }
 
     return await processReportUrl(downloadUrl, type);
+  },
+
+  /**
+   * Search reports with paginated filters (preferred over /list — returns file_name reliably)
+   */
+  async searchReports(
+    type: "release" | "settlement",
+    filters: {
+      id?: number;
+      file_name?: string;
+      begin_date?: string;
+      end_date?: string;
+      created_from?: "manual" | "schedule" | "manual,schedule";
+      currency_id?: string;
+      format?: "CSV" | "XLSX";
+      offset?: number;
+      limit?: number;
+      range?: "date_created";
+      range_begin_date?: string;
+      range_end_date?: string;
+    } = {},
+    options?: { silent?: boolean },
+  ): Promise<MPSearchResponse> {
+    const baseUrl = type === "release" ? MP_API.RELEASE : MP_API.SETTLEMENT;
+    const params = new URLSearchParams();
+    for (const [key, value] of Object.entries(filters)) {
+      if (value !== undefined && value !== null) {
+        params.set(key, String(value));
+      }
+    }
+    const query = params.toString();
+    const url = query ? `/search?${query}` : "/search";
+    const res = await mpFetch(url, baseUrl, { log: !options?.silent });
+    return (await safeMpJson(res)) as MPSearchResponse;
+  },
+
+  /**
+   * Look up a single report-creation task by its id (created from createReport response)
+   */
+  async getReportTask(
+    type: "release" | "settlement",
+    taskId: number | string,
+    options?: { silent?: boolean },
+  ): Promise<MPReportTask> {
+    const baseUrl = type === "release" ? MP_API.RELEASE : MP_API.SETTLEMENT;
+    const res = await mpFetch(`/task/${taskId}`, baseUrl, { log: !options?.silent });
+    return (await safeMpJson(res)) as MPReportTask;
+  },
+
+  /**
+   * Enable MP-side automatic schedule for the configured frequency.
+   * Hits POST /schedule and flips the `scheduled` flag to true.
+   */
+  async enableSchedule(type: "release" | "settlement") {
+    const baseUrl = type === "release" ? MP_API.RELEASE : MP_API.SETTLEMENT;
+    const res = await mpFetch("/schedule", baseUrl, { method: "POST" });
+    return safeMpJson(res);
+  },
+
+  /**
+   * Disable MP-side automatic schedule.
+   */
+  async disableSchedule(type: "release" | "settlement") {
+    const baseUrl = type === "release" ? MP_API.RELEASE : MP_API.SETTLEMENT;
+    const res = await mpFetch("/schedule", baseUrl, { method: "DELETE" });
+    return safeMpJson(res);
   },
 
   async syncCashFlow(userId?: number, options?: { sourceIds?: string[] }) {

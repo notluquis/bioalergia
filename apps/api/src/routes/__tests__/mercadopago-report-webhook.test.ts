@@ -3,13 +3,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const SECRET = "test-secret-123";
 
-const { settingsStore, runAutoSync } = vi.hoisted(() => ({
-  settingsStore: new Map<string, string>(),
-  runAutoSync: vi.fn(),
+const { processReport } = vi.hoisted(() => ({
+  processReport: vi.fn(),
 }));
 
 vi.mock("../../services/mercadopago", () => ({
   MP_WEBHOOK_PASSWORD: "test-secret-123",
+  MercadoPagoService: {
+    processReport,
+  },
   isSettlementReport: (...inputs: Array<string | undefined | null>) => {
     const haystack = inputs.filter(Boolean).join(" ").toLowerCase();
     return [
@@ -23,17 +25,6 @@ vi.mock("../../services/mercadopago", () => ({
   },
 }));
 
-vi.mock("../../services/settings", () => ({
-  getSetting: vi.fn(async (key: string) => settingsStore.get(key) ?? null),
-  updateSetting: vi.fn(async (key: string, value: string) => {
-    settingsStore.set(key, value);
-  }),
-}));
-
-vi.mock("../../lib/mercadopago/mercadopago-scheduler", () => ({
-  runMercadoPagoAutoSync: runAutoSync,
-}));
-
 vi.mock("../../lib/logger", () => ({
   logEvent: vi.fn(),
   logWarn: vi.fn(),
@@ -41,8 +32,6 @@ vi.mock("../../lib/logger", () => ({
 }));
 
 import { mercadopagoReportWebhookRoutes } from "../mercadopago-report-webhook";
-
-const PENDING_KEY = "mp:webhook:pending";
 
 function buildPayload(overrides: Record<string, unknown> = {}) {
   const transaction_id = "tx-001";
@@ -70,11 +59,12 @@ async function post(body: unknown) {
   });
 }
 
+const flush = () => new Promise((r) => setTimeout(r, 10));
+
 describe("MercadoPago report webhook", () => {
   beforeEach(() => {
-    settingsStore.clear();
-    runAutoSync.mockReset();
-    runAutoSync.mockResolvedValue(undefined);
+    processReport.mockReset();
+    processReport.mockResolvedValue({ inserted: 0, updated: 0, skipped: 0, excluded: 0, errors: [] });
   });
 
   afterEach(() => {
@@ -113,46 +103,26 @@ describe("MercadoPago report webhook", () => {
     expect(res.status).toBe(401);
   });
 
-  it("accepts valid signature with 202 and enqueues file", async () => {
+  it("accepts valid signature with 202 and ingests file", async () => {
     const res = await post(buildPayload());
     expect(res.status).toBe(202);
-
-    // Wait microtasks: enqueue runs in fire-and-forget
-    await new Promise((r) => setTimeout(r, 10));
-
-    const stored = settingsStore.get(PENDING_KEY);
-    expect(stored).toBeTruthy();
-    const parsed = JSON.parse(stored ?? "[]");
-    expect(parsed).toHaveLength(1);
-    expect(parsed[0].transaction_id).toBe("tx-001");
-    expect(parsed[0].files[0].name).toBe("release-2026-05.csv");
-    expect(runAutoSync).toHaveBeenCalledOnce();
+    await flush();
+    expect(processReport).toHaveBeenCalledOnce();
+    expect(processReport).toHaveBeenCalledWith("release", { url: "https://example.com/file.csv" });
   });
 
   it("skips processing when is_test=true", async () => {
     const res = await post(buildPayload({ is_test: true }));
     expect(res.status).toBe(202);
-    await new Promise((r) => setTimeout(r, 10));
-    expect(settingsStore.get(PENDING_KEY)).toBeUndefined();
-    expect(runAutoSync).not.toHaveBeenCalled();
+    await flush();
+    expect(processReport).not.toHaveBeenCalled();
   });
 
-  it("dedupes by transaction_id", async () => {
-    await post(buildPayload());
-    await new Promise((r) => setTimeout(r, 10));
-    await post(buildPayload());
-    await new Promise((r) => setTimeout(r, 10));
-
-    const stored = settingsStore.get(PENDING_KEY);
-    const parsed = JSON.parse(stored ?? "[]");
-    expect(parsed).toHaveLength(1);
-  });
-
-  it("does not enqueue when files array is empty", async () => {
+  it("does not call processReport when files array is empty", async () => {
     const res = await post(buildPayload({ files: [] }));
     expect(res.status).toBe(202);
-    await new Promise((r) => setTimeout(r, 10));
-    expect(settingsStore.get(PENDING_KEY)).toBeUndefined();
+    await flush();
+    expect(processReport).not.toHaveBeenCalled();
   });
 
   it("filters out files missing name or url", async () => {
@@ -166,11 +136,22 @@ describe("MercadoPago report webhook", () => {
       }),
     );
     expect(res.status).toBe(202);
-    await new Promise((r) => setTimeout(r, 10));
+    await flush();
+    expect(processReport).toHaveBeenCalledOnce();
+    expect(processReport).toHaveBeenCalledWith("release", { url: "https://example.com/ok.csv" });
+  });
 
-    const parsed = JSON.parse(settingsStore.get(PENDING_KEY) ?? "[]");
-    expect(parsed[0].files).toHaveLength(1);
-    expect(parsed[0].files[0].name).toBe("ok.csv");
+  it("skips non-csv files (xlsx) but still 202", async () => {
+    const res = await post(
+      buildPayload({
+        files: [
+          { name: "report.xlsx", url: "https://example.com/r.xlsx", type: ".xlsx" },
+        ],
+      }),
+    );
+    expect(res.status).toBe(202);
+    await flush();
+    expect(processReport).not.toHaveBeenCalled();
   });
 
   it.each([
@@ -182,25 +163,18 @@ describe("MercadoPago report webhook", () => {
     ["release", "release"],
     ["released_money", "release"],
     ["", "release"],
-  ])("normalizes report_type %s -> %s", async (input, expected) => {
+  ])("routes report_type %s -> %s table", async (input, expected) => {
     await post(buildPayload({ report_type: input }));
-    await new Promise((r) => setTimeout(r, 10));
-    const parsed = JSON.parse(settingsStore.get(PENDING_KEY) ?? "[]");
-    expect(parsed[0].report_type).toBe(expected);
+    await flush();
+    expect(processReport).toHaveBeenCalledWith(expected, expect.any(Object));
   });
 
   it("returns 503 when MP_WEBHOOK_PASSWORD is empty", async () => {
     vi.resetModules();
     vi.doMock("../../services/mercadopago", () => ({
       MP_WEBHOOK_PASSWORD: "",
+      MercadoPagoService: { processReport: vi.fn() },
       isSettlementReport: () => false,
-    }));
-    vi.doMock("../../services/settings", () => ({
-      getSetting: vi.fn(),
-      updateSetting: vi.fn(),
-    }));
-    vi.doMock("../../lib/mercadopago/mercadopago-scheduler", () => ({
-      runMercadoPagoAutoSync: vi.fn(),
     }));
     vi.doMock("../../lib/logger", () => ({
       logEvent: vi.fn(),
