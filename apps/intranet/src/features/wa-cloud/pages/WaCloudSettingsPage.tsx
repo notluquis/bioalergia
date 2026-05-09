@@ -51,18 +51,12 @@ export function WaCloudSettingsPage() {
 
   return (
     <div className="mx-auto max-w-5xl space-y-6 p-6">
-      <header className="flex items-center justify-between gap-3">
-        <div>
-          <h1 className="font-bold text-2xl">WhatsApp Cloud — Configuración</h1>
-          <p className="text-default-500 text-sm">
-            Cuentas WABA, números, credenciales Meta y webhook.
-          </p>
-        </div>
+      <div className="flex justify-end">
         <Button onPress={() => setCreateOpen(true)}>
           <Plus size={16} />
           Nueva cuenta WABA
         </Button>
-      </header>
+      </div>
 
       <WebhookCard url={webhookBase} />
 

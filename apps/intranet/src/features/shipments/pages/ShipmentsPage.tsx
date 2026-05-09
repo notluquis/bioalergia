@@ -11,7 +11,7 @@ import {
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 import dayjs from "dayjs";
-import { Activity, PackageCheck, PlusCircle, RefreshCw, Truck, UserPlus } from "lucide-react";
+import { Activity, PackageCheck, PlusCircle, RefreshCw, UserPlus } from "lucide-react";
 import { useMemo, useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
 import { useToast } from "@/context/ToastContext";
@@ -288,15 +288,9 @@ export function ShipmentsPage() {
   return (
     <div className="mx-auto max-w-7xl space-y-6 p-6">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Truck size={24} className="text-primary" />
-          <div>
-            <h1 className="font-bold text-xl">Despachos</h1>
-            <p className="text-default-500 text-sm">
-              {data?.shipments.length ?? 0} despacho(s) en total
-            </p>
-          </div>
-        </div>
+        <p className="text-default-500 text-sm">
+          {data?.shipments.length ?? 0} despacho(s) en total
+        </p>
         <Button size="sm" className="gap-2" onPress={() => setSelectPatientOpen(true)}>
           <PlusCircle size={16} />
           Nuevo Despacho

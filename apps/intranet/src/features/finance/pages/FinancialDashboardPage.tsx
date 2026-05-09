@@ -33,12 +33,9 @@ export function FinancialDashboardPage() {
     <div className="space-y-8 p-6 md:p-8">
       {/* Header & Filters */}
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h2 className="font-bold text-2xl tracking-tight">Tablero Financiero</h2>
-          <p className="text-default-500 text-sm">
-            Resumen de ingresos por tratamientos y gastos operativos.
-          </p>
-        </div>
+        <p className="text-default-500 text-sm">
+          Resumen de ingresos por tratamientos y gastos operativos.
+        </p>
 
         <DateRangePicker
           className="w-full md:w-auto"
