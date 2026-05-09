@@ -18,7 +18,7 @@ import {
 import { useForm, useStore } from "@tanstack/react-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Home, Save } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useToast } from "@/context/ToastContext";
 import {
   fetchCommunes,
@@ -547,39 +547,71 @@ function StreetAutocomplete({
   });
   const streets = streetsResponse?.streets ?? [];
 
-  // React Aria collections (ComboBox/ListBox) require stable item ids. When
-  // we mixed dynamic street ids with static placeholder items at the same
-  // collection position the React Aria collection threw "Cannot change the
-  // id of an item" because position 0 went from "__loading__" → "12345".
-  // Canonical fix: pass a single `items` array with unique ids per state,
-  // render via the children render-function so React Aria treats every
-  // entry as a separate collection node, and mark placeholders disabled.
   type StreetRow =
     | { kind: "street"; id: string; label: string; streetId: number }
     | { kind: "placeholder"; id: string; label: string };
 
-  const items: StreetRow[] = (() => {
+  // React Aria's ComboBox + ListBox build their collection from the
+  // `items` prop and use each item's `id` as the stable identity. The
+  // previous implementation rendered different ListBox.Item branches
+  // conditionally (loading / empty / streets), which made React Aria see
+  // the same React position holding different ids on consecutive renders
+  // and threw "Cannot change the id of an item".
+  //
+  // Canonical pattern (per https://react-aria.adobe.com/ComboBox):
+  //   * Build one items[] array per render covering every state.
+  //   * Each entry has a globally unique id; placeholder ids are namespaced
+  //     so they never collide with real street ids.
+  //   * Pass the array to <ComboBox items=...> and to <ListBox> children
+  //     via a render function. Mark placeholders unselectable through
+  //     `disabledKeys`.
+  //   * useMemo the collection so React Aria gets the same array reference
+  //     when nothing actually changed (avoids re-running the collection
+  //     diff on every keystroke).
+  const { items, disabledIds } = useMemo<{
+    items: StreetRow[];
+    disabledIds: string[];
+  }>(() => {
     if (countyName.length === 0) {
-      return [{ kind: "placeholder", id: "__no-county__", label: "Selecciona una comuna primero" }];
+      return {
+        items: [
+          { kind: "placeholder", id: "__no-county__", label: "Selecciona una comuna primero" },
+        ],
+        disabledIds: ["__no-county__"],
+      };
     }
     if (debounced.trim().length < 2) {
-      return [{ kind: "placeholder", id: "__too-short__", label: "Escribe al menos 2 caracteres" }];
+      return {
+        items: [
+          { kind: "placeholder", id: "__too-short__", label: "Escribe al menos 2 caracteres" },
+        ],
+        disabledIds: ["__too-short__"],
+      };
     }
     if (isLoading) {
-      return [{ kind: "placeholder", id: "__loading__", label: "Buscando…" }];
+      return {
+        items: [{ kind: "placeholder", id: "__loading__", label: "Buscando…" }],
+        disabledIds: ["__loading__"],
+      };
     }
     if (streets.length === 0) {
-      return [{ kind: "placeholder", id: "__empty__", label: "Sin sugerencias para esta comuna" }];
+      return {
+        items: [
+          { kind: "placeholder", id: "__empty__", label: "Sin sugerencias para esta comuna" },
+        ],
+        disabledIds: ["__empty__"],
+      };
     }
-    return streets.map((s) => ({
-      kind: "street" as const,
-      id: `s-${s.streetId}`,
-      label: s.streetName,
-      streetId: s.streetId,
-    }));
-  })();
-
-  const disabledIds = items.filter((i) => i.kind === "placeholder").map((i) => i.id);
+    return {
+      items: streets.map((s) => ({
+        kind: "street" as const,
+        id: `s-${s.streetId}`,
+        label: s.streetName,
+        streetId: s.streetId,
+      })),
+      disabledIds: [],
+    };
+  }, [countyName, debounced, isLoading, streets]);
 
   return (
     <ComboBox
