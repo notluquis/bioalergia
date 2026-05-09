@@ -28,10 +28,16 @@ function serializeShipment(s: Shipment): SerializedShipment {
 import { chilexpressConfig } from "../config";
 import {
   createTransportOrder,
+  georeferenceAddress,
   getCommercialOffices,
   getCommunes,
+  getNearbyOffices,
   getRegions,
+  getStreetNumbers,
   quoteCourier,
+  reprintLabel,
+  searchStreets,
+  trackTransportOrder,
 } from "../modules/chilexpress/client";
 import type { CreateShipmentInput } from "../orpc/shipments";
 
@@ -55,9 +61,66 @@ export async function fetchCommunes(regionId: string) {
 export async function fetchCommercialOffices(options: {
   regionCode: string;
   countyName: string;
+  type?: 0 | 4;
 }) {
   const cfg = requireCxConfig();
   return getCommercialOffices(cfg, options);
+}
+
+export async function fetchNearbyOffices(addressId: number) {
+  const cfg = requireCxConfig();
+  return getNearbyOffices(cfg, addressId);
+}
+
+export async function fetchStreets(options: { countyName: string; query: string }) {
+  const cfg = requireCxConfig();
+  return searchStreets(cfg, options);
+}
+
+export async function fetchStreetNumbers(streetNameId: number) {
+  const cfg = requireCxConfig();
+  return getStreetNumbers(cfg, streetNameId);
+}
+
+export async function geocodeAddress(input: {
+  streetName: string;
+  countyName: string;
+  number: string;
+}) {
+  const cfg = requireCxConfig();
+  return georeferenceAddress(cfg, input);
+}
+
+export async function reprintShipmentLabel(shipmentId: number) {
+  const cfg = requireCxConfig();
+  const shipment = await db.shipment.findUnique({ where: { id: shipmentId } });
+  if (!shipment) throw new Error("Shipment no encontrado");
+  const result = await reprintLabel(cfg, {
+    transportOrderNumber: shipment.otNumber,
+    labelType: shipment.labelType ?? 2,
+  });
+  if (result.label) {
+    await db.shipment.update({
+      where: { id: shipmentId },
+      data: { labelBase64: result.label, barcode: result.barcode ?? shipment.barcode },
+    });
+  }
+  return result;
+}
+
+export async function refreshShipmentTracking(shipmentId: number) {
+  const cfg = requireCxConfig();
+  const shipment = await db.shipment.findUnique({ where: { id: shipmentId } });
+  if (!shipment) throw new Error("Shipment no encontrado");
+  const tracking = await trackTransportOrder(cfg, shipment.otNumber);
+  await db.shipment.update({
+    where: { id: shipmentId },
+    data: {
+      trackingStatus: tracking.statusDescription ?? null,
+      trackingUpdatedAt: new Date(),
+    },
+  });
+  return tracking;
 }
 
 export async function quoteShipment(input: {
@@ -197,6 +260,7 @@ export async function createShipment(input: CreateShipmentInput) {
       otNumber,
       serviceTypeCode: input.serviceTypeCode,
       serviceDescription: input.serviceDescription,
+      serviceFullDesc: result.serviceDescriptionFull ?? null,
       cashOnDelivery: new Decimal(input.cashOnDelivery),
       declaredValue: new Decimal(input.declaredValue),
       weight: new Decimal(input.weight),
@@ -210,7 +274,11 @@ export async function createShipment(input: CreateShipmentInput) {
       commercialOfficeName: input.commercialOfficeName ?? "",
       coverageCode: input.destinationCoverageCode,
       contentDescription: input.contentDescription,
+      certificateNumber: response.data?.header?.certificateNumber ?? null,
+      reference: result.reference ?? null,
+      barcode: result.barcode ?? null,
       labelBase64,
+      labelType: result.label?.labelType ?? null,
       status: "CREATED",
     },
   });
@@ -218,6 +286,8 @@ export async function createShipment(input: CreateShipmentInput) {
   return {
     shipment: serializeShipment(shipment),
     otNumber,
+    barcode: result.barcode ?? null,
+    certificateNumber: response.data?.header?.certificateNumber ?? null,
     labelBase64,
   };
 }

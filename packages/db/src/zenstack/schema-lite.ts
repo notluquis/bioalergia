@@ -161,6 +161,41 @@ export class SchemaType implements SchemaDef {
                     type: "String",
                     optional: true
                 },
+                ineRegionCode: {
+                    name: "ineRegionCode",
+                    type: "Int",
+                    optional: true
+                },
+                ineCountyCode: {
+                    name: "ineCountyCode",
+                    type: "Int",
+                    optional: true
+                },
+                supportsCashOnDelivery: {
+                    name: "supportsCashOnDelivery",
+                    type: "Boolean",
+                    optional: true
+                },
+                supportsReturn: {
+                    name: "supportsReturn",
+                    type: "Boolean",
+                    optional: true
+                },
+                latitude: {
+                    name: "latitude",
+                    type: "Decimal",
+                    optional: true
+                },
+                longitude: {
+                    name: "longitude",
+                    type: "Decimal",
+                    optional: true
+                },
+                chilexpressAddressId: {
+                    name: "chilexpressAddressId",
+                    type: "Int",
+                    optional: true
+                },
                 countryCode: {
                     name: "countryCode",
                     type: "String",
@@ -6894,6 +6929,11 @@ export class SchemaType implements SchemaDef {
                     name: "serviceDescription",
                     type: "String"
                 },
+                serviceFullDesc: {
+                    name: "serviceFullDesc",
+                    type: "String",
+                    optional: true
+                },
                 cashOnDelivery: {
                     name: "cashOnDelivery",
                     type: "Decimal"
@@ -6947,9 +6987,39 @@ export class SchemaType implements SchemaDef {
                     name: "contentDescription",
                     type: "String"
                 },
+                certificateNumber: {
+                    name: "certificateNumber",
+                    type: "Int",
+                    optional: true
+                },
+                reference: {
+                    name: "reference",
+                    type: "String",
+                    optional: true
+                },
+                barcode: {
+                    name: "barcode",
+                    type: "String",
+                    optional: true
+                },
                 labelBase64: {
                     name: "labelBase64",
                     type: "String",
+                    optional: true
+                },
+                labelType: {
+                    name: "labelType",
+                    type: "Int",
+                    optional: true
+                },
+                trackingStatus: {
+                    name: "trackingStatus",
+                    type: "String",
+                    optional: true
+                },
+                trackingUpdatedAt: {
+                    name: "trackingUpdatedAt",
+                    type: "DateTime",
                     optional: true
                 },
                 status: {

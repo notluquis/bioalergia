@@ -83,6 +83,8 @@ export async function getCommunes(
       regionCode: string;
       coverageName?: string;
       ineCountyCode?: number;
+      ind_ppd?: number;
+      ind_rd?: number;
     }>;
   }>(
     config,
@@ -95,6 +97,8 @@ export async function getCommunes(
     regionCode: c.regionCode,
     coverageName: c.coverageName,
     ineCountyCode: c.ineCountyCode,
+    supportsCashOnDelivery: c.ind_ppd === 1,
+    supportsReturn: c.ind_rd === 1,
     // Aliases consumed elsewhere in the app.
     regionId: c.regionCode,
     coverageRegionCode: c.countyCode,
@@ -102,49 +106,64 @@ export async function getCommunes(
 }
 
 /**
- * Chilexpress' canonical office endpoint is
- * `GET /georeference/api/v1.0/offices?Type=0&RegionCode=...&CountyName=...`
- * Type=0 lists "Sucursales propias" (drop-off / pickup at Chilexpress
- * branches). The earlier client used a non-existent `/commercial-offices`
- * path that returned 404 for every query.
+ * Chilexpress' canonical office endpoint:
+ *   GET /georeference/api/v1.0/offices?Type=0&RegionCode=...&CountyName=...
+ *
+ * Type=0 lists "Sucursales propias", Type=4 lists "Tiendas Pick Up"
+ * (partner stores with extended hours). The earlier client used a
+ * non-existent `/commercial-offices` path that returned 404 for every
+ * query.
+ *
+ * Returns the FULL office payload so the frontend can render schedules,
+ * services, telephone, manager, distance, etc.
  */
-export async function getCommercialOffices(
-  config: ChilexpressConfig,
-  options: { regionCode: string; countyName: string },
-): Promise<CxCommercialOffice[]> {
-  type CxRawOffice = {
-    addressId: number;
-    countyName: string;
-    regionName: string;
-    officeName: string;
-    officeType: number;
-    streetName: string;
-    streetNumber: number;
-    complement?: string;
-    latitude?: string;
-    longitude?: string;
-    telephone?: string;
-    businessHour?: Array<{
-      day: string;
-      initialStartHour: string;
-      initialEndHour: string;
-      finalStartHour: string;
-      finalEndHour: string;
-    }>;
-  };
-  const data = await cxFetch<{ offices?: CxRawOffice[] }>(
-    config,
-    "georeference",
-    `/offices?Type=0&RegionCode=${encodeURIComponent(options.regionCode)}&CountyName=${encodeURIComponent(options.countyName)}`,
-  );
-  return (data.offices ?? []).map((o) => ({
+type CxRawOffice = {
+  addressId: number;
+  countyName: string;
+  regionName: string;
+  regionCode?: string;
+  countyCoverageCode?: string | null;
+  officeName: string;
+  officeType: number;
+  officeCode?: number;
+  ineCountyId?: number;
+  streetName: string;
+  streetNumber: number;
+  complement?: string;
+  latitude?: string;
+  longitude?: string;
+  telephone?: string;
+  managerName?: string;
+  eMail?: string;
+  distance?: number;
+  businessHour?: CxOfficeBusinessHour[];
+  officeServices?: CxOfficeService[];
+};
+
+function mapOffice(o: CxRawOffice): CxCommercialOffice {
+  return {
     commercialOfficeId: String(o.addressId),
     commercialOfficeName: o.officeName,
+    officeType: o.officeType,
     street: o.streetName,
     number: String(o.streetNumber),
+    complement: o.complement,
     commune: o.countyName,
     region: o.regionName,
+    regionCode: o.regionCode ?? "",
+    countyCode: o.countyCoverageCode ?? undefined,
+    manager: o.managerName,
+    phone: o.telephone,
+    email: o.eMail || undefined,
+    latitude: o.latitude ? Number(o.latitude) : undefined,
+    longitude: o.longitude ? Number(o.longitude) : undefined,
+    distance: o.distance,
+    officeCode: o.officeCode,
+    ineCountyId: o.ineCountyId,
+    businessHour: o.businessHour ?? [],
+    services: o.officeServices ?? [],
     schedules: (o.businessHour ?? [])
+      .filter((b) => b.initialStartHour)
       .map(
         (b) =>
           `${b.day}: ${b.initialStartHour}-${b.initialEndHour}${
@@ -152,9 +171,78 @@ export async function getCommercialOffices(
           }`,
       )
       .join(" · "),
-    latitude: o.latitude ? Number(o.latitude) : undefined,
-    longitude: o.longitude ? Number(o.longitude) : undefined,
+  };
+}
+
+export async function getCommercialOffices(
+  config: ChilexpressConfig,
+  options: { regionCode: string; countyName: string; type?: 0 | 4 },
+): Promise<CxCommercialOffice[]> {
+  const type = options.type ?? 0;
+  const data = await cxFetch<{ offices?: CxRawOffice[] }>(
+    config,
+    "georeference",
+    `/offices?Type=${type}&RegionCode=${encodeURIComponent(options.regionCode)}&CountyName=${encodeURIComponent(options.countyName)}`,
+  );
+  return (data.offices ?? []).map(mapOffice);
+}
+
+// ─── Nearby offices ───────────────────────────────────────────────────────────
+
+export async function getNearbyOffices(
+  config: ChilexpressConfig,
+  addressId: number,
+): Promise<Array<{ distance: string; office: CxCommercialOffice }>> {
+  const data = await cxFetch<{
+    nearbyOffices?: Array<{ distance: string; office: CxRawOffice }>;
+  }>(config, "georeference", `/nearby-offices/${addressId}`);
+  return (data.nearbyOffices ?? []).map((entry) => ({
+    distance: entry.distance,
+    office: mapOffice(entry.office),
   }));
+}
+
+// ─── Streets autocomplete ────────────────────────────────────────────────────
+
+export async function searchStreets(
+  config: ChilexpressConfig,
+  options: { countyName: string; query: string },
+): Promise<Array<{ streetNameId: number; streetName: string }>> {
+  const data = await cxFetch<{
+    streets?: Array<{ streetNameId: number; streetName: string }>;
+  }>(
+    config,
+    "georeference",
+    `/streets/search?CountyName=${encodeURIComponent(options.countyName)}&StreetName=${encodeURIComponent(options.query)}`,
+  );
+  return data.streets ?? [];
+}
+
+export async function getStreetNumbers(
+  config: ChilexpressConfig,
+  streetNameId: number,
+): Promise<Array<{ streetNumber: number; addressId: number }>> {
+  const data = await cxFetch<{
+    streetNumbers?: Array<{ streetNumber: number; addressId: number }>;
+  }>(config, "georeference", `/streets/${streetNameId}/numbers`);
+  return data.streetNumbers ?? [];
+}
+
+// ─── Geocoding ────────────────────────────────────────────────────────────────
+
+export async function georeferenceAddress(
+  config: ChilexpressConfig,
+  input: { streetName: string; countyName: string; number: string },
+): Promise<{ latitude?: string; longitude?: string; addressId?: number } | null> {
+  const data = await cxFetch<{
+    data?: { latitude?: string; longitude?: string; addressId?: number };
+    statusCode?: number;
+  }>(config, "georeference", "/addresses/georeference", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+  if (data.statusCode !== 0 || !data.data) return null;
+  return data.data;
 }
 
 // ─── Rating ───────────────────────────────────────────────────────────────────
@@ -179,4 +267,70 @@ export async function createTransportOrder(
     method: "POST",
     body: JSON.stringify(input),
   });
+}
+
+export async function reprintLabel(
+  config: ChilexpressConfig,
+  input: { transportOrderNumber: string; labelType?: number; reportType?: number },
+): Promise<{ label?: string; barcode?: string; reference?: string }> {
+  const body = {
+    transportOrderNumber: input.transportOrderNumber,
+    labelType: input.labelType ?? 2,
+    reportType: input.reportType ?? 0,
+  };
+  const res = await cxFetch<{
+    data?: {
+      detail?: {
+        transportOrderNumber: string;
+        reference?: string;
+        barcode?: string;
+      };
+      label?: string;
+    };
+    statusCode?: number;
+    statusDescription?: string;
+  }>(config, "transport-orders", "/transport-orders-labels", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+  if (res.statusCode !== 0 || !res.data) {
+    throw new Error(`Chilexpress reprint failed: ${res.statusDescription ?? "unknown"}`);
+  }
+  return {
+    label: res.data.label,
+    barcode: res.data.detail?.barcode,
+    reference: res.data.detail?.reference,
+  };
+}
+
+export async function trackTransportOrder(
+  config: ChilexpressConfig,
+  transportOrderNumber: string,
+): Promise<{
+  statusCodeReference?: string;
+  statusDescription?: string;
+  events: Array<{ date?: string; name?: string; location?: string }>;
+}> {
+  const res = await cxFetch<{
+    data?: {
+      transportOrderNumber?: string;
+      statusCodeReference?: string;
+      statusDescription?: string;
+      events?: Array<{ eventDate?: string; eventName?: string; eventLocation?: string }>;
+    };
+    statusCode?: number;
+    statusDescription?: string;
+  }>(config, "transport-orders", "/tracking", {
+    method: "POST",
+    body: JSON.stringify({ transportOrderNumber }),
+  });
+  return {
+    statusCodeReference: res.data?.statusCodeReference,
+    statusDescription: res.data?.statusDescription,
+    events: (res.data?.events ?? []).map((e) => ({
+      date: e.eventDate,
+      name: e.eventName,
+      location: e.eventLocation,
+    })),
+  };
 }

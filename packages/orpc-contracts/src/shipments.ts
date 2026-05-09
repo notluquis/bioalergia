@@ -12,19 +12,89 @@ export const cxCommuneSchema = z.object({
   countyCode: z.string(),
   countyName: z.string(),
   regionId: z.string(),
+  regionCode: z.string().optional(),
   coverageRegionCode: z.string(),
+  coverageName: z.string().optional(),
+  ineCountyCode: z.number().optional(),
+  supportsCashOnDelivery: z.boolean(),
+  supportsReturn: z.boolean(),
+});
+
+export const cxOfficeBusinessHourSchema = z.object({
+  day: z.string(),
+  initialStartHour: z.string(),
+  initialEndHour: z.string(),
+  finalStartHour: z.string(),
+  finalEndHour: z.string(),
+});
+
+export const cxOfficeServiceSchema = z.object({
+  serviceTypeCode: z.number(),
+  serviceDescription: z.string(),
+  serviceStatusCode: z.number(),
 });
 
 export const cxCommercialOfficeSchema = z.object({
   commercialOfficeId: z.string(),
   commercialOfficeName: z.string(),
+  officeType: z.number(),
   street: z.string(),
   number: z.string(),
+  complement: z.string().optional(),
   commune: z.string(),
   region: z.string(),
-  schedules: z.string(),
+  regionCode: z.string(),
+  countyCode: z.string().optional(),
+  manager: z.string().optional(),
+  phone: z.string().optional(),
+  email: z.string().optional(),
   latitude: z.number().optional(),
   longitude: z.number().optional(),
+  distance: z.number().optional(),
+  officeCode: z.number().optional(),
+  ineCountyId: z.number().optional(),
+  businessHour: z.array(cxOfficeBusinessHourSchema),
+  services: z.array(cxOfficeServiceSchema),
+  schedules: z.string(),
+});
+
+export const cxNearbyOfficeSchema = z.object({
+  distance: z.string(),
+  office: cxCommercialOfficeSchema,
+});
+
+export const cxStreetSchema = z.object({
+  streetNameId: z.number(),
+  streetName: z.string(),
+});
+
+export const cxStreetNumberSchema = z.object({
+  streetNumber: z.number(),
+  addressId: z.number(),
+});
+
+export const cxGeocodeSchema = z.object({
+  latitude: z.string().optional(),
+  longitude: z.string().optional(),
+  addressId: z.number().optional(),
+});
+
+export const cxTrackingEventSchema = z.object({
+  date: z.string().optional(),
+  name: z.string().optional(),
+  location: z.string().optional(),
+});
+
+export const cxTrackingResultSchema = z.object({
+  statusCodeReference: z.string().optional(),
+  statusDescription: z.string().optional(),
+  events: z.array(cxTrackingEventSchema),
+});
+
+export const cxReprintLabelResultSchema = z.object({
+  label: z.string().optional(),
+  barcode: z.string().optional(),
+  reference: z.string().optional(),
 });
 
 // ─── Quote ────────────────────────────────────────────────────────────────────
@@ -85,6 +155,7 @@ export const shipmentSchema = z.object({
   otNumber: z.string(),
   serviceTypeCode: z.string(),
   serviceDescription: z.string(),
+  serviceFullDesc: z.string().nullable().optional(),
   cashOnDelivery: z.number(),
   declaredValue: z.number(),
   weight: z.number(),
@@ -98,15 +169,23 @@ export const shipmentSchema = z.object({
   commercialOfficeName: z.string(),
   coverageCode: z.string(),
   contentDescription: z.string(),
+  certificateNumber: z.number().int().nullable().optional(),
+  reference: z.string().nullable().optional(),
+  barcode: z.string().nullable().optional(),
   labelBase64: z.string().nullable(),
+  labelType: z.number().int().nullable().optional(),
+  trackingStatus: z.string().nullable().optional(),
+  trackingUpdatedAt: z.coerce.date().nullable().optional(),
   status: z.string(),
-  createdAt: z.date(),
-  updatedAt: z.date(),
+  createdAt: z.coerce.date(),
+  updatedAt: z.coerce.date(),
 });
 
 export const createShipmentOutputSchema = z.object({
   shipment: shipmentSchema,
   otNumber: z.string(),
+  barcode: z.string().nullable(),
+  certificateNumber: z.number().int().nullable(),
   labelBase64: z.string().nullable(),
 });
 
@@ -143,8 +222,50 @@ export const shipmentsContract = {
 
   getCommercialOffices: oc
     .route({ method: "GET", path: "/commercial-offices" })
-    .input(z.object({ regionCode: z.string(), countyName: z.string() }))
+    .input(
+      z.object({
+        regionCode: z.string(),
+        countyName: z.string(),
+        type: z.enum(["0", "4"]).optional(),
+      }),
+    )
     .output(z.object({ offices: z.array(cxCommercialOfficeSchema) })),
+
+  getNearbyOffices: oc
+    .route({ method: "GET", path: "/nearby-offices" })
+    .input(z.object({ addressId: z.number().int() }))
+    .output(z.object({ offices: z.array(cxNearbyOfficeSchema) })),
+
+  searchStreets: oc
+    .route({ method: "GET", path: "/streets" })
+    .input(z.object({ countyName: z.string(), query: z.string().min(2) }))
+    .output(z.object({ streets: z.array(cxStreetSchema) })),
+
+  getStreetNumbers: oc
+    .route({ method: "GET", path: "/streets/{streetNameId}/numbers" })
+    .input(z.object({ streetNameId: z.number().int() }))
+    .output(z.object({ numbers: z.array(cxStreetNumberSchema) })),
+
+  geocodeAddress: oc
+    .route({ method: "POST", path: "/geocode" })
+    .input(
+      z.object({
+        streetName: z.string().min(1),
+        countyName: z.string().min(1),
+        number: z.string().min(1),
+      }),
+    )
+    .output(z.object({ result: cxGeocodeSchema.nullable() })),
+
+  reprintLabel: oc
+    .route({ method: "POST", path: "/{shipmentId}/reprint-label" })
+    .input(z.object({ shipmentId: z.number().int() }))
+    .output(z.object({ result: cxReprintLabelResultSchema })),
+
+  trackShipment: oc
+    .route({ method: "GET", path: "/{shipmentId}/tracking" })
+    .input(z.object({ shipmentId: z.number().int() }))
+    .output(z.object({ tracking: cxTrackingResultSchema })),
 
   quote: oc
     .route({ method: "POST", path: "/quote" })

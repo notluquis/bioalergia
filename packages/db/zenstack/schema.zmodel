@@ -75,6 +75,19 @@ model Address {
   coverageCode String?  @map("coverage_code")        // "LCON" — countyCode
   regionCode   String?  @map("region_code")          // "RM" — regionId
 
+  // INE codes — bridges with SII / national stats
+  ineRegionCode  Int?   @map("ine_region_code")
+  ineCountyCode  Int?   @map("ine_county_code")
+
+  // Carrier capability flags cached at coverage selection
+  supportsCashOnDelivery Boolean? @map("supports_cash_on_delivery")
+  supportsReturn         Boolean? @map("supports_return")
+
+  // Geocoding (filled async via Chilexpress addresses/georeference)
+  latitude     Decimal? @db.Decimal(10, 7)
+  longitude    Decimal? @db.Decimal(10, 7)
+  chilexpressAddressId Int? @map("chilexpress_address_id")
+
   // Country (ISO-3166-1 alpha-2). Hardcoded "CL" for now.
   countryCode  String   @default("CL") @map("country_code")
 
@@ -2508,6 +2521,7 @@ model Shipment {
   otNumber             String   @unique @map("ot_number")
   serviceTypeCode      String   @map("service_type_code")
   serviceDescription   String   @map("service_description")
+  serviceFullDesc      String?  @map("service_full_desc")
   cashOnDelivery       Decimal  @map("cash_on_delivery") @db.Decimal(12, 2)
   declaredValue        Decimal  @map("declared_value") @db.Decimal(12, 2)
   weight               Decimal  @db.Decimal(8, 2)
@@ -2521,7 +2535,15 @@ model Shipment {
   commercialOfficeName String   @map("commercial_office_name")
   coverageCode         String   @map("coverage_code")
   contentDescription   String   @map("content_description")
+  // Etiqueta y números devueltos por Chilexpress al crear la OT.
+  certificateNumber    Int?     @map("certificate_number")
+  reference            String?
+  barcode              String?
   labelBase64          String?  @map("label_base64") @db.Text
+  labelType            Int?     @map("label_type")
+  // Tracking
+  trackingStatus       String?  @map("tracking_status")
+  trackingUpdatedAt    DateTime? @map("tracking_updated_at")
   status               String   @default("CREATED")
   createdAt            DateTime @default(now()) @map("created_at")
   updatedAt            DateTime @default(now()) @updatedAt @map("updated_at")

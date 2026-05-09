@@ -79,6 +79,7 @@ import { whatsappOpenAPIHandler, whatsappORPCHandler } from "./orpc/whatsapp";
 import { shipmentsOpenAPIHandler, shipmentsORPCHandler } from "./orpc/shipments";
 import { doctoraliaScraperRoutes } from "./routes/doctoralia-scraper";
 import { googleCalendarWebhookRoutes } from "./routes/google-calendar-webhook";
+import { mercadopagoReportWebhookRoutes } from "./routes/mercadopago-report-webhook";
 import { onedriveWebhookRoutes } from "./routes/onedrive-webhook";
 import { waCloudWebhookRoutes } from "./routes/wa-cloud-webhook";
 import { errorReply } from "./utils/error-reply";
@@ -1859,6 +1860,7 @@ app.use("/api/orpc/whatsapp/*", async (c, next) => {
 app.route("/api/webhooks/google", googleCalendarWebhookRoutes);
 app.route("/api/webhooks/onedrive", onedriveWebhookRoutes);
 app.route("/api/webhooks/meta", waCloudWebhookRoutes);
+app.route("/api/webhooks/mercadopago", mercadopagoReportWebhookRoutes);
 
 // Bearer-auth ingress for the Doctoralia scraper bot (reads/writes manual cookies).
 app.route("/api/scraper/doctoralia", doctoraliaScraperRoutes);

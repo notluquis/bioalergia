@@ -181,6 +181,48 @@ export class SchemaType implements SchemaDef {
                     optional: true,
                     attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("region_code") }] }] as readonly AttributeApplication[]
                 },
+                ineRegionCode: {
+                    name: "ineRegionCode",
+                    type: "Int",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("ine_region_code") }] }] as readonly AttributeApplication[]
+                },
+                ineCountyCode: {
+                    name: "ineCountyCode",
+                    type: "Int",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("ine_county_code") }] }] as readonly AttributeApplication[]
+                },
+                supportsCashOnDelivery: {
+                    name: "supportsCashOnDelivery",
+                    type: "Boolean",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("supports_cash_on_delivery") }] }] as readonly AttributeApplication[]
+                },
+                supportsReturn: {
+                    name: "supportsReturn",
+                    type: "Boolean",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("supports_return") }] }] as readonly AttributeApplication[]
+                },
+                latitude: {
+                    name: "latitude",
+                    type: "Decimal",
+                    optional: true,
+                    attributes: [{ name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(10) }, { name: "s", value: ExpressionUtils.literal(7) }] }] as readonly AttributeApplication[]
+                },
+                longitude: {
+                    name: "longitude",
+                    type: "Decimal",
+                    optional: true,
+                    attributes: [{ name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(10) }, { name: "s", value: ExpressionUtils.literal(7) }] }] as readonly AttributeApplication[]
+                },
+                chilexpressAddressId: {
+                    name: "chilexpressAddressId",
+                    type: "Int",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("chilexpress_address_id") }] }] as readonly AttributeApplication[]
+                },
                 countryCode: {
                     name: "countryCode",
                     type: "String",
@@ -8474,6 +8516,12 @@ export class SchemaType implements SchemaDef {
                     type: "String",
                     attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("service_description") }] }] as readonly AttributeApplication[]
                 },
+                serviceFullDesc: {
+                    name: "serviceFullDesc",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("service_full_desc") }] }] as readonly AttributeApplication[]
+                },
                 cashOnDelivery: {
                     name: "cashOnDelivery",
                     type: "Decimal",
@@ -8540,11 +8588,45 @@ export class SchemaType implements SchemaDef {
                     type: "String",
                     attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("content_description") }] }] as readonly AttributeApplication[]
                 },
+                certificateNumber: {
+                    name: "certificateNumber",
+                    type: "Int",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("certificate_number") }] }] as readonly AttributeApplication[]
+                },
+                reference: {
+                    name: "reference",
+                    type: "String",
+                    optional: true
+                },
+                barcode: {
+                    name: "barcode",
+                    type: "String",
+                    optional: true
+                },
                 labelBase64: {
                     name: "labelBase64",
                     type: "String",
                     optional: true,
                     attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("label_base64") }] }, { name: "@db.Text" }] as readonly AttributeApplication[]
+                },
+                labelType: {
+                    name: "labelType",
+                    type: "Int",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("label_type") }] }] as readonly AttributeApplication[]
+                },
+                trackingStatus: {
+                    name: "trackingStatus",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("tracking_status") }] }] as readonly AttributeApplication[]
+                },
+                trackingUpdatedAt: {
+                    name: "trackingUpdatedAt",
+                    type: "DateTime",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("tracking_updated_at") }] }] as readonly AttributeApplication[]
                 },
                 status: {
                     name: "status",

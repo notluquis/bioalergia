@@ -4,9 +4,20 @@ import { onError, os } from "@orpc/server";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import {
   createShipmentInputSchema,
+  createShipmentOutputSchema,
+  cxCommercialOfficeSchema,
+  cxCommuneSchema,
+  cxGeocodeSchema,
+  cxNearbyOfficeSchema,
+  cxRegionSchema,
+  cxReprintLabelResultSchema,
+  cxStreetNumberSchema,
+  cxStreetSchema,
+  cxTrackingResultSchema,
   listShipmentsInputSchema,
   quoteShipmentInputSchema,
   quoteShipmentOutputSchema,
+  shipmentSchema,
 } from "@finanzas/orpc-contracts/shipments";
 import { z } from "zod";
 import { logError } from "../lib/logger";
@@ -14,10 +25,16 @@ import {
   createShipment,
   fetchCommercialOffices,
   fetchCommunes,
+  fetchNearbyOffices,
   fetchRegions,
+  fetchStreetNumbers,
+  fetchStreets,
+  geocodeAddress,
   listAllShipments,
   listShipmentsByPatient,
   quoteShipment,
+  refreshShipmentTracking,
+  reprintShipmentLabel,
 } from "../services/shipments";
 import { configureSuperjson } from "../lib/superjson-config";
 import { SuperJSONRPCHandler } from "./superjson";
@@ -26,52 +43,15 @@ configureSuperjson();
 
 export type CreateShipmentInput = z.infer<typeof createShipmentInputSchema>;
 
-const serializedShipmentSchema = z.object({
-  id: z.number().int(),
-  patientId: z.number().int(),
-  otNumber: z.string(),
-  serviceTypeCode: z.string(),
-  serviceDescription: z.string(),
-  cashOnDelivery: z.number(),
-  declaredValue: z.number(),
-  weight: z.number(),
-  height: z.number(),
-  width: z.number(),
-  length: z.number(),
-  recipientName: z.string(),
-  recipientPhone: z.string(),
-  recipientEmail: z.string().nullable(),
-  commercialOfficeId: z.string(),
-  commercialOfficeName: z.string(),
-  coverageCode: z.string(),
-  contentDescription: z.string(),
-  labelBase64: z.string().nullable(),
-  status: z.string(),
-  createdAt: z.date(),
-  updatedAt: z.date(),
-});
+// Re-use the canonical contract schemas so the server output matches the
+// shape the intranet client expects byte-for-byte.
+const serializedShipmentSchema = shipmentSchema;
+const regionSchema = cxRegionSchema;
+const communeSchema = cxCommuneSchema;
+const officeSchema = cxCommercialOfficeSchema;
 
 const base = os.$context<Record<string, never>>();
 const emptySchema = z.object({});
-
-const regionSchema = z.object({ regionId: z.string(), regionName: z.string() });
-const communeSchema = z.object({
-  countyCode: z.string(),
-  countyName: z.string(),
-  regionId: z.string(),
-  coverageRegionCode: z.string(),
-});
-const officeSchema = z.object({
-  commercialOfficeId: z.string(),
-  commercialOfficeName: z.string(),
-  street: z.string(),
-  number: z.string(),
-  commune: z.string(),
-  region: z.string(),
-  schedules: z.string(),
-  latitude: z.number().optional(),
-  longitude: z.number().optional(),
-});
 
 const shipmentsRouterBase = {
   getRegions: base
@@ -94,14 +74,81 @@ const shipmentsRouterBase = {
 
   getCommercialOffices: base
     .route({ method: "GET", path: "/commercial-offices", summary: "List ChileExpress offices", tags: ["Shipments"] })
-    .input(z.object({ regionCode: z.string(), countyName: z.string() }))
+    .input(
+      z.object({
+        regionCode: z.string(),
+        countyName: z.string(),
+        type: z.enum(["0", "4"]).optional(),
+      }),
+    )
     .output(z.object({ offices: z.array(officeSchema) }))
     .handler(async ({ input }) => {
       const offices = await fetchCommercialOffices({
         regionCode: input.regionCode,
         countyName: input.countyName,
+        type: input.type ? (Number(input.type) as 0 | 4) : 0,
       });
       return { offices };
+    }),
+
+  getNearbyOffices: base
+    .route({ method: "GET", path: "/nearby-offices", tags: ["Shipments"] })
+    .input(z.object({ addressId: z.number().int() }))
+    .output(z.object({ offices: z.array(cxNearbyOfficeSchema) }))
+    .handler(async ({ input }) => {
+      const offices = await fetchNearbyOffices(input.addressId);
+      return { offices };
+    }),
+
+  searchStreets: base
+    .route({ method: "GET", path: "/streets", tags: ["Shipments"] })
+    .input(z.object({ countyName: z.string(), query: z.string().min(2) }))
+    .output(z.object({ streets: z.array(cxStreetSchema) }))
+    .handler(async ({ input }) => {
+      const streets = await fetchStreets(input);
+      return { streets };
+    }),
+
+  getStreetNumbers: base
+    .route({ method: "GET", path: "/streets/{streetNameId}/numbers", tags: ["Shipments"] })
+    .input(z.object({ streetNameId: z.number().int() }))
+    .output(z.object({ numbers: z.array(cxStreetNumberSchema) }))
+    .handler(async ({ input }) => {
+      const numbers = await fetchStreetNumbers(input.streetNameId);
+      return { numbers };
+    }),
+
+  geocodeAddress: base
+    .route({ method: "POST", path: "/geocode", tags: ["Shipments"] })
+    .input(
+      z.object({
+        streetName: z.string().min(1),
+        countyName: z.string().min(1),
+        number: z.string().min(1),
+      }),
+    )
+    .output(z.object({ result: cxGeocodeSchema.nullable() }))
+    .handler(async ({ input }) => {
+      const result = await geocodeAddress(input);
+      return { result };
+    }),
+
+  reprintLabel: base
+    .route({ method: "POST", path: "/{shipmentId}/reprint-label", tags: ["Shipments"] })
+    .input(z.object({ shipmentId: z.number().int() }))
+    .output(z.object({ result: cxReprintLabelResultSchema }))
+    .handler(async ({ input }) => {
+      const result = await reprintShipmentLabel(input.shipmentId);
+      return { result };
+    }),
+
+  trackShipment: base
+    .route({ method: "GET", path: "/{shipmentId}/tracking", tags: ["Shipments"] })
+    .input(z.object({ shipmentId: z.number().int() }))
+    .output(z.object({ tracking: cxTrackingResultSchema }))
+    .handler(async ({ input }) => {
+      const tracking = await refreshShipmentTracking(input.shipmentId);
+      return { tracking };
     }),
 
   quote: base
@@ -116,7 +163,7 @@ const shipmentsRouterBase = {
   create: base
     .route({ method: "POST", path: "/", summary: "Create ChileExpress transport order", tags: ["Shipments"] })
     .input(createShipmentInputSchema)
-    .output(z.object({ shipment: serializedShipmentSchema, otNumber: z.string(), labelBase64: z.string().nullable() }))
+    .output(createShipmentOutputSchema)
     .handler(async ({ input }) => {
       return createShipment(input);
     }),
