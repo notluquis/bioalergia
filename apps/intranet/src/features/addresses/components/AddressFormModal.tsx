@@ -84,9 +84,8 @@ export function AddressFormModal({
         toastError("Selecciona región y comuna");
         return;
       }
-      const regionDisplay =
-        regions.find((r) => r.regionId === String(value.region))?.regionName ??
-        String(value.region);
+      const region = regions.find((r) => r.regionId === String(value.region));
+      const regionDisplay = region?.regionName ?? String(value.region);
       const communes = await queryClient.fetchQuery({
         queryKey: ["cx-communes", String(value.region)],
         queryFn: () => fetchCommunes(String(value.region)),
@@ -106,6 +105,10 @@ export function AddressFormModal({
         comuna: comunaDisplay,
         regionCode: String(value.region),
         coverageCode: String(value.comuna),
+        ineRegionCode: (region as { ineRegionCode?: number } | undefined)?.ineRegionCode ?? null,
+        ineCountyCode: communa?.ineCountyCode ?? null,
+        supportsCashOnDelivery: communa?.supportsCashOnDelivery ?? null,
+        supportsReturn: communa?.supportsReturn ?? null,
         isPrimary: value.isPrimary,
       };
 
@@ -293,6 +296,8 @@ export function AddressFormModal({
                                 textValue={c.countyName}
                               >
                                 {c.countyName}
+                                {c.supportsCashOnDelivery ? " · PPD" : ""}
+                                {!c.supportsReturn ? " · Sin retorno" : ""}
                                 <ListBox.ItemIndicator />
                               </ListBox.Item>
                             ))}

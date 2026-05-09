@@ -1,6 +1,8 @@
 import type {
   CxCommercialOffice,
   CxCommune,
+  CxOfficeBusinessHour,
+  CxOfficeService,
   CxRateInput,
   CxRateResponse,
   CxRegion,
