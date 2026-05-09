@@ -1,8 +1,8 @@
 import { db } from "@finanzas/db";
 import { Hono } from "hono";
-import { getSessionUser } from "../auth";
-import { logWarn } from "../lib/logger";
-import { downloadMediaUrl } from "../modules/wa-cloud/graph-client";
+import { getSessionUser } from "../auth.ts";
+import { logWarn } from "../lib/logger.ts";
+import { downloadMediaUrl } from "../modules/wa-cloud/graph-client.ts";
 
 export const waCloudMediaRoutes = new Hono();
 

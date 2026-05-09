@@ -294,10 +294,7 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
       </Card.Header>
 
       <Card.Content className="flex flex-1 flex-col overflow-hidden p-0">
-        <div
-          ref={scrollRef}
-          className="flex-1 space-y-2 overflow-y-auto bg-content2 px-4 py-3"
-        >
+        <div ref={scrollRef} className="flex-1 space-y-2 overflow-y-auto bg-content2 px-4 py-3">
           {allMessages.length === 0 ? (
             <p className="py-8 text-center text-default-400 text-sm">
               Sin mensajes aún en esta conversación.
