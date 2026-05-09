@@ -302,13 +302,15 @@ async function processReadyReports(
 
   const readyReports = reports
     .filter(
-      (report) =>
-        report.file_name &&
-        isReportReady(report.status) &&
-        report.is_test !== true &&
-        report.is_reserve !== true,
+      (report) => report.file_name && isReportReady(report.status) && report.is_test !== true,
     )
     .sort((a, b) => (a.date_created ?? "").localeCompare(b.date_created ?? ""));
+
+  for (const r of readyReports) {
+    if (r.is_reserve) {
+      logEvent("mp.autoSync.reserveReportDetected", { type, fileName: r.file_name ?? null });
+    }
+  }
 
   for (const report of readyReports) {
     if (processedCount >= MAX_PROCESS_PER_RUN) {
