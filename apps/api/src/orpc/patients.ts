@@ -423,13 +423,30 @@ const patientsORPCRouterBase = {
           throw new ORPCError("CONFLICT", { message: "El paciente ya está registrado" });
         }
 
+        // Refuse to rewrite the identity of a Person already linked to a User.
+        // Otherwise a patient form with a typo'd RUT silently overwrites an
+        // existing employee/admin's name, father, and mother fields.
+        const linkedUser = await db.user.findFirst({
+          where: { personId: person.id },
+          select: { id: true },
+        });
+        const namesDiffer =
+          (person.names ?? "") !== input.names ||
+          (person.fatherName ?? "") !== (input.fatherName ?? "") ||
+          (person.motherName ?? "") !== (input.motherName ?? "");
+        if (linkedUser && namesDiffer) {
+          throw new ORPCError("CONFLICT", {
+            message: `El RUT ${canonicalRut} ya pertenece a otro usuario del sistema (${person.names ?? ""} ${person.fatherName ?? ""} ${person.motherName ?? ""}). Verifica el RUT del paciente.`,
+          });
+        }
+
         person = await db.person.update({
           where: { id: person.id },
           data: {
             rut: canonicalRut, // re-write canonical form to bring legacy rows in line
-            names: input.names,
-            fatherName: input.fatherName,
-            motherName: input.motherName,
+            names: linkedUser ? person.names : input.names,
+            fatherName: linkedUser ? person.fatherName : input.fatherName,
+            motherName: linkedUser ? person.motherName : input.motherName,
             email: input.email || person.email,
             phone: input.phone || person.phone,
           },

@@ -433,14 +433,30 @@ patientsRoutes.post(
         });
       }
 
-      // Update person details if provided
+      // Refuse to rewrite a Person already linked to a User. A patient form
+      // with a typo'd RUT must not silently overwrite an employee's name.
+      const linkedUser = await db.user.findFirst({
+        where: { personId: person.id },
+        select: { id: true },
+      });
+      const namesDiffer =
+        (person.names ?? "") !== input.names ||
+        (person.fatherName ?? "") !== (input.fatherName ?? "") ||
+        (person.motherName ?? "") !== (input.motherName ?? "");
+      if (linkedUser && namesDiffer) {
+        throw new AppError(409, {
+          code: "CONFLICT",
+          message: `El RUT ${canonicalRut} ya pertenece a otro usuario del sistema (${person.names ?? ""} ${person.fatherName ?? ""} ${person.motherName ?? ""}). Verifica el RUT del paciente.`,
+        });
+      }
+
       person = await db.person.update({
         where: { id: person.id },
         data: {
           rut: canonicalRut,
-          names: input.names,
-          fatherName: input.fatherName,
-          motherName: input.motherName,
+          names: linkedUser ? person.names : input.names,
+          fatherName: linkedUser ? person.fatherName : input.fatherName,
+          motherName: linkedUser ? person.motherName : input.motherName,
           email: input.email || person.email,
           phone: input.phone || person.phone,
         },
