@@ -1,16 +1,23 @@
-import { Spinner } from "@heroui/react";
-import { Download, FileText, Image as ImageIcon, Video as VideoIcon } from "lucide-react";
+import { Button, Modal, Spinner } from "@heroui/react";
+import {
+  Download,
+  FileText,
+  Image as ImageIcon,
+  Pause,
+  Play,
+  Video as VideoIcon,
+  X,
+} from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 type Props = {
   messageId: number;
   type: string;
   caption?: string | null;
+  out?: boolean;
 };
 
-// Lazy: only fetch the proxied media when the bubble actually scrolls into
-// view. Avoids hitting Meta + our DB for every old message in the history.
-export function MediaAttachment({ messageId, type, caption }: Props) {
+export function MediaAttachment({ messageId, type, caption, out = false }: Props) {
   const [visible, setVisible] = useState(false);
   const [errored, setErrored] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -47,16 +54,24 @@ export function MediaAttachment({ messageId, type, caption }: Props) {
 
   if (type === "STICKER") {
     return (
-      <div ref={ref} className="p-2">
+      <div ref={ref}>
         {visible && !errored ? (
           <img
             src={url}
             alt="sticker"
-            className="h-40 w-40 object-contain"
+            className="size-32 select-none object-contain"
             onError={() => setErrored(true)}
           />
         ) : (
-          placeholder
+          <div className="flex size-32 items-center justify-center">
+            {errored ? (
+              <span className="text-danger text-xs">x</span>
+            ) : visible ? (
+              <Spinner size="sm" />
+            ) : (
+              <ImageIcon className="size-8 text-default-400" />
+            )}
+          </div>
         )}
       </div>
     );
@@ -66,14 +81,7 @@ export function MediaAttachment({ messageId, type, caption }: Props) {
     return (
       <div ref={ref}>
         {visible && !errored ? (
-          <a href={url} target="_blank" rel="noopener noreferrer">
-            <img
-              src={url}
-              alt={caption ?? "imagen"}
-              className="max-h-80 w-full max-w-sm rounded-lg object-cover"
-              onError={() => setErrored(true)}
-            />
-          </a>
+          <ImageLightbox src={url} alt={caption ?? "imagen"} />
         ) : (
           placeholder
         )}
@@ -88,14 +96,7 @@ export function MediaAttachment({ messageId, type, caption }: Props) {
     return (
       <div ref={ref}>
         {visible && !errored ? (
-          <video
-            src={url}
-            controls
-            className="max-h-80 w-full max-w-sm rounded-lg"
-            onError={() => setErrored(true)}
-          >
-            <track kind="captions" />
-          </video>
+          <VideoLightbox src={url} onError={() => setErrored(true)} />
         ) : (
           placeholder
         )}
@@ -108,13 +109,11 @@ export function MediaAttachment({ messageId, type, caption }: Props) {
 
   if (type === "AUDIO") {
     return (
-      <div ref={ref} className="min-w-[240px]">
+      <div ref={ref}>
         {visible && !errored ? (
-          <audio src={url} controls className="w-full" onError={() => setErrored(true)}>
-            <track kind="captions" />
-          </audio>
+          <AudioPlayer src={url} out={out} onError={() => setErrored(true)} />
         ) : (
-          placeholder
+          <div className="h-12 w-64 rounded-full bg-default-100" />
         )}
       </div>
     );
@@ -122,8 +121,13 @@ export function MediaAttachment({ messageId, type, caption }: Props) {
 
   // DOCUMENT
   return (
-    <div ref={ref} className="flex items-center gap-2 rounded-lg bg-default-50 px-3 py-2">
-      <FileText size={20} className="shrink-0 text-default-500" />
+    <div
+      ref={ref}
+      className="flex items-center gap-3 rounded-lg border border-default-200 bg-content2 px-3 py-2"
+    >
+      <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-accent-100 text-accent-700">
+        <FileText size={20} />
+      </div>
       <a
         href={url}
         target="_blank"
@@ -133,6 +137,212 @@ export function MediaAttachment({ messageId, type, caption }: Props) {
         {caption ?? "Documento"}
       </a>
       <Download size={16} className="text-default-500" />
+    </div>
+  );
+}
+
+function ImageLightbox({ src, alt }: { src: string; alt: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="block max-w-xs overflow-hidden rounded-lg"
+      >
+        <img
+          src={src}
+          alt={alt}
+          className="max-h-72 w-full max-w-xs cursor-zoom-in object-cover transition hover:opacity-95"
+        />
+      </button>
+      <Modal>
+        <Modal.Backdrop
+          isOpen={open}
+          onOpenChange={(o) => !o && setOpen(false)}
+          className="bg-black/85 backdrop-blur"
+        >
+          <Modal.Container placement="center">
+            <Modal.Dialog className="relative max-h-[92vh] max-w-[92vw] bg-transparent p-0 shadow-none">
+              <Button
+                isIconOnly
+                size="sm"
+                variant="outline"
+                onPress={() => setOpen(false)}
+                className="absolute top-2 right-2 z-10 bg-content1/80 backdrop-blur"
+                aria-label="Cerrar"
+              >
+                <X size={16} />
+              </Button>
+              <a
+                href={src}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="absolute top-2 right-12 z-10"
+              >
+                <Button
+                  isIconOnly
+                  size="sm"
+                  variant="outline"
+                  className="bg-content1/80 backdrop-blur"
+                  aria-label="Descargar"
+                >
+                  <Download size={16} />
+                </Button>
+              </a>
+              <img
+                src={src}
+                alt={alt}
+                className="max-h-[92vh] max-w-[92vw] rounded-lg object-contain"
+              />
+            </Modal.Dialog>
+          </Modal.Container>
+        </Modal.Backdrop>
+      </Modal>
+    </>
+  );
+}
+
+function VideoLightbox({ src, onError }: { src: string; onError: () => void }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="relative block w-full max-w-xs overflow-hidden rounded-lg bg-black"
+      >
+        <video
+          src={src}
+          className="max-h-72 w-full max-w-xs object-cover"
+          preload="metadata"
+          muted
+          onError={onError}
+        >
+          <track kind="captions" />
+        </video>
+        <span className="-translate-x-1/2 -translate-y-1/2 absolute top-1/2 left-1/2 flex size-12 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur">
+          <Play size={24} className="ml-0.5" />
+        </span>
+      </button>
+      <Modal>
+        <Modal.Backdrop
+          isOpen={open}
+          onOpenChange={(o) => !o && setOpen(false)}
+          className="bg-black/85 backdrop-blur"
+        >
+          <Modal.Container placement="center">
+            <Modal.Dialog className="relative max-h-[92vh] max-w-[92vw] bg-transparent p-0 shadow-none">
+              <Button
+                isIconOnly
+                size="sm"
+                variant="outline"
+                onPress={() => setOpen(false)}
+                className="absolute top-2 right-2 z-10 bg-content1/80 backdrop-blur"
+                aria-label="Cerrar"
+              >
+                <X size={16} />
+              </Button>
+              <video
+                src={src}
+                controls
+                autoPlay
+                className="max-h-[92vh] max-w-[92vw] rounded-lg"
+              >
+                <track kind="captions" />
+              </video>
+            </Modal.Dialog>
+          </Modal.Container>
+        </Modal.Backdrop>
+      </Modal>
+    </>
+  );
+}
+
+function AudioPlayer({
+  src,
+  out,
+  onError,
+}: {
+  src: string;
+  out: boolean;
+  onError: () => void;
+}) {
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const [playing, setPlaying] = useState(false);
+  const [duration, setDuration] = useState(0);
+  const [current, setCurrent] = useState(0);
+
+  const fmt = (s: number) => {
+    if (!Number.isFinite(s)) return "0:00";
+    const m = Math.floor(s / 60);
+    const sec = Math.floor(s % 60);
+    return `${m}:${sec.toString().padStart(2, "0")}`;
+  };
+
+  const toggle = () => {
+    const a = audioRef.current;
+    if (!a) return;
+    if (a.paused) void a.play();
+    else a.pause();
+  };
+
+  const seek = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const a = audioRef.current;
+    if (!a) return;
+    a.currentTime = Number(e.target.value);
+  };
+
+  const trackBg = out ? "bg-success-700/40" : "bg-default-300";
+  const fillBg = out ? "bg-success-foreground" : "bg-success";
+  const iconBg = out ? "bg-success-foreground text-success" : "bg-success text-success-foreground";
+
+  const pct = duration > 0 ? (current / duration) * 100 : 0;
+
+  return (
+    <div className="flex w-64 items-center gap-3 py-1">
+      <button
+        type="button"
+        onClick={toggle}
+        className={`flex size-9 shrink-0 items-center justify-center rounded-full ${iconBg} transition hover:opacity-90`}
+        aria-label={playing ? "Pausar" : "Reproducir"}
+      >
+        {playing ? <Pause size={16} /> : <Play size={16} className="ml-0.5" />}
+      </button>
+      <div className="flex-1">
+        <div className={`relative h-1 w-full overflow-hidden rounded-full ${trackBg}`}>
+          <div
+            className={`absolute top-0 left-0 h-full ${fillBg}`}
+            style={{ width: `${pct}%` }}
+          />
+          <input
+            type="range"
+            min={0}
+            max={duration || 0}
+            step={0.1}
+            value={current}
+            onChange={seek}
+            className="absolute inset-0 cursor-pointer opacity-0"
+            aria-label="Posición"
+          />
+        </div>
+        <p className={`mt-0.5 text-[10px] ${out ? "text-success-foreground/80" : "text-default-500"}`}>
+          {fmt(current)} / {fmt(duration)}
+        </p>
+      </div>
+      <audio
+        ref={audioRef}
+        src={src}
+        preload="metadata"
+        onPlay={() => setPlaying(true)}
+        onPause={() => setPlaying(false)}
+        onEnded={() => setPlaying(false)}
+        onLoadedMetadata={(e) => setDuration(e.currentTarget.duration)}
+        onTimeUpdate={(e) => setCurrent(e.currentTarget.currentTime)}
+        onError={onError}
+      >
+        <track kind="captions" />
+      </audio>
     </div>
   );
 }

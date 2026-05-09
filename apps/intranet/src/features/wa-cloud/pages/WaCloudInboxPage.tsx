@@ -197,7 +197,7 @@ export function WaCloudInboxPage() {
           </div>
         </aside>
 
-        <section className="flex h-full flex-col overflow-hidden">
+        <section className="flex h-full flex-col overflow-hidden bg-content1">
           {selectedId ? (
             <ConversationDetail conversationId={selectedId} />
           ) : (

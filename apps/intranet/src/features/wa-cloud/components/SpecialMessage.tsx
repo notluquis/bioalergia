@@ -1,5 +1,14 @@
 import { Chip } from "@heroui/react";
-import { ExternalLink, Mail, MapPin, Phone, User } from "lucide-react";
+import {
+  AlertTriangle,
+  BarChart3,
+  CalendarDays,
+  ExternalLink,
+  Mail,
+  MapPin,
+  Phone,
+  User,
+} from "lucide-react";
 
 type Payload = Record<string, unknown> | null | undefined;
 
@@ -14,19 +23,18 @@ export function ForwardedBadge({ payload }: { payload: Payload }) {
 }
 
 export function LocationBubble({ payload }: { payload: Payload }) {
-  const loc = (payload as { location?: { latitude: number; longitude: number; name?: string; address?: string } } | null)?.location;
+  const loc = (
+    payload as {
+      location?: { latitude: number; longitude: number; name?: string; address?: string };
+    } | null
+  )?.location;
   if (!loc) return <p className="text-sm">[ubicación]</p>;
   const { latitude, longitude, name, address } = loc;
   // OpenStreetMap static — no API key required, public CDN.
   const staticMap = `https://staticmap.openstreetmap.de/staticmap.php?center=${latitude},${longitude}&zoom=15&size=300x180&markers=${latitude},${longitude},red-pushpin`;
   const gmapsUrl = `https://www.google.com/maps?q=${latitude},${longitude}`;
   return (
-    <a
-      href={gmapsUrl}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="block max-w-xs"
-    >
+    <a href={gmapsUrl} target="_blank" rel="noopener noreferrer" className="block max-w-xs">
       <img
         src={staticMap}
         alt={name ?? "Ubicación compartida"}
@@ -96,7 +104,11 @@ export function ContactsBubble({ payload }: { payload: Payload }) {
 }
 
 export function InteractiveBubble({ payload, body }: { payload: Payload; body: string | null }) {
-  const it = (payload as { interactive?: { type?: string; nfm_reply?: { name?: string; response_json?: string } } } | null)?.interactive;
+  const it = (
+    payload as {
+      interactive?: { type?: string; nfm_reply?: { name?: string; response_json?: string } };
+    } | null
+  )?.interactive;
   // Inbound flow response (nfm_reply)
   if (it?.type === "nfm_reply" && it.nfm_reply) {
     let parsed: Record<string, unknown> = {};
@@ -123,7 +135,11 @@ export function InteractiveBubble({ payload, body }: { payload: Payload; body: s
     );
   }
   // Outbound flow placeholder
-  const flowMeta = (payload as { interactive_type?: string; flow_cta?: string; flow_id?: string } | null);
+  const flowMeta = payload as {
+    interactive_type?: string;
+    flow_cta?: string;
+    flow_id?: string;
+  } | null;
   if (flowMeta?.interactive_type === "flow") {
     return (
       <div className="space-y-1">
@@ -136,4 +152,66 @@ export function InteractiveBubble({ payload, body }: { payload: Payload; body: s
     );
   }
   return <p className="text-sm">{body ?? "[interactivo]"}</p>;
+}
+
+type UnsupportedShape = {
+  type?: string;
+  errors?: { code?: number; title?: string; message?: string }[];
+  poll?: unknown;
+  event?: unknown;
+  interactive?: { type?: string };
+};
+
+export function UnsupportedBubble({ payload }: { payload: Payload }) {
+  const p = payload as UnsupportedShape | null;
+  const rawType = p?.type ?? "unknown";
+
+  // Poll detection (Meta sends polls as unsupported with hint in errors or raw type)
+  const isPoll =
+    rawType === "poll" ||
+    Boolean(p?.poll) ||
+    p?.interactive?.type === "poll" ||
+    p?.errors?.some((e) => /poll/i.test(e.title ?? "") || /poll/i.test(e.message ?? ""));
+
+  // Event detection (calendar invites, WhatsApp events)
+  const isEvent =
+    rawType === "event" ||
+    Boolean(p?.event) ||
+    p?.interactive?.type === "event" ||
+    p?.errors?.some((e) => /event/i.test(e.title ?? ""));
+
+  if (isPoll) {
+    return (
+      <div className="flex items-center gap-2">
+        <BarChart3 size={18} className="text-accent" />
+        <div>
+          <p className="font-medium text-sm">Encuesta</p>
+          <p className="text-default-500 text-xs">Vista no disponible vía Cloud API</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (isEvent) {
+    return (
+      <div className="flex items-center gap-2">
+        <CalendarDays size={18} className="text-accent" />
+        <div>
+          <p className="font-medium text-sm">Evento de WhatsApp</p>
+          <p className="text-default-500 text-xs">Vista no disponible vía Cloud API</p>
+        </div>
+      </div>
+    );
+  }
+
+  const errTitle = p?.errors?.[0]?.title;
+  return (
+    <div className="flex items-center gap-2">
+      <AlertTriangle size={18} className="text-warning" />
+      <div>
+        <p className="font-medium text-sm">Mensaje no soportado</p>
+        <p className="text-default-500 text-xs">{errTitle ?? `Tipo "${rawType}"`}</p>
+      </div>
+    </div>
+  );
 }
