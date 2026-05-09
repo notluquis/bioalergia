@@ -4,6 +4,7 @@ import {
   Card,
   Chip,
   Dropdown,
+  ListBox,
   Modal,
   Popover,
   Spinner,
@@ -17,10 +18,14 @@ import {
   Check,
   CheckCheck,
   Clock,
+  Contact as ContactIcon,
   CornerUpLeft,
   FileText,
   Layers,
+  MapPin,
   Paperclip,
+  Pencil,
+  Plus,
   Send,
   Settings2,
   Smile,
@@ -43,7 +48,10 @@ import {
   useAccounts,
   useBlockContact,
   useConversation,
+  useEditText,
+  useSendContacts,
   useSendFlow,
+  useSendLocation,
   useSendMedia,
   useSendReaction,
   useSendTemplate,
@@ -93,9 +101,18 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
   const sendReaction = useSendReaction();
   const sendMedia = useSendMedia();
   const sendFlow = useSendFlow();
+  const sendLocation = useSendLocation();
+  const sendContacts = useSendContacts();
+  const editText = useEditText();
   const setTyping = useSetTyping();
   const blockContact = useBlockContact();
   const [flowOpen, setFlowOpen] = useState(false);
+  const [locationOpen, setLocationOpen] = useState(false);
+  const [contactsOpen, setContactsOpen] = useState(false);
+  const [editTarget, setEditTarget] = useState<{
+    messageId: number;
+    body: string;
+  } | null>(null);
   const updateConv = useUpdateConversation();
   const typingDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [replyTo, setReplyTo] = useState<{
@@ -473,6 +490,9 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
                     })
                   }
                   onReact={(r, emoji) => handleReact(r.metaMessageId!, emoji)}
+                  onEdit={(r) =>
+                    setEditTarget({ messageId: r.messageId!, body: r.body ?? "" })
+                  }
                 />
               )
             )
@@ -507,6 +527,8 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
               onAttachFile={handleAttachFile}
               attachPending={sendMedia.isPending}
               onOpenFlow={() => setFlowOpen(true)}
+              onOpenLocation={() => setLocationOpen(true)}
+              onOpenContacts={() => setContactsOpen(true)}
             />
           ) : (
             <TemplateComposer
@@ -530,6 +552,30 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
         onSend={(input) => sendFlow.mutate(input)}
         isPending={sendFlow.isPending}
       />
+      <LocationSendModal
+        isOpen={locationOpen}
+        onClose={() => setLocationOpen(false)}
+        conversationId={conversationId}
+        phoneNumberId={phoneId ? Number(phoneId) : null}
+        onSend={(input) => sendLocation.mutate(input)}
+        isPending={sendLocation.isPending}
+      />
+      <ContactsSendModal
+        isOpen={contactsOpen}
+        onClose={() => setContactsOpen(false)}
+        conversationId={conversationId}
+        phoneNumberId={phoneId ? Number(phoneId) : null}
+        onSend={(input) => sendContacts.mutate(input)}
+        isPending={sendContacts.isPending}
+      />
+      <EditTextModal
+        target={editTarget}
+        onClose={() => setEditTarget(null)}
+        conversationId={conversationId}
+        phoneNumberId={phoneId ? Number(phoneId) : null}
+        onSubmit={(input) => editText.mutate(input)}
+        isPending={editText.isPending}
+      />
     </>
   );
 }
@@ -538,6 +584,7 @@ function ChatBubble({
   row,
   onReply,
   onReact,
+  onEdit,
 }: {
   row: {
     messageId: number | null;
@@ -561,6 +608,7 @@ function ChatBubble({
     out: boolean;
   }) => void;
   onReact: (row: { metaMessageId: string | null; out: boolean }, emoji: string) => void;
+  onEdit: (row: { messageId: number | null; body: string | null }) => void;
 }) {
   const out = row.out;
   const isPending = row.status === "PENDING";
@@ -631,6 +679,20 @@ function ChatBubble({
       >
         <CornerUpLeft size={14} />
       </Button>
+      {out &&
+        row.type === "TEXT" &&
+        row.messageId !== null &&
+        Date.now() - row.timestamp.getTime() < 15 * 60 * 1000 && (
+          <Button
+            size="sm"
+            variant="outline"
+            isIconOnly
+            aria-label="Editar"
+            onPress={() => onEdit({ messageId: row.messageId, body: row.body })}
+          >
+            <Pencil size={14} />
+          </Button>
+        )}
     </div>
   ) : null;
 
@@ -724,6 +786,8 @@ function TextComposer({
   onAttachFile,
   attachPending,
   onOpenFlow,
+  onOpenLocation,
+  onOpenContacts,
 }: {
   body: string;
   setBody: (v: string) => void;
@@ -736,6 +800,8 @@ function TextComposer({
   onAttachFile: (file: File) => void;
   attachPending: boolean;
   onOpenFlow: () => void;
+  onOpenLocation: () => void;
+  onOpenContacts: () => void;
 }) {
   const ref = useRef<HTMLTextAreaElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -814,26 +880,55 @@ function TextComposer({
         >
           <FileText size={16} />
         </Button>
-        <Button
-          size="sm"
-          variant="outline"
-          isIconOnly
-          aria-label="Adjuntar archivo"
-          onPress={() => fileRef.current?.click()}
-          isDisabled={isDisabled || attachPending}
-        >
-          <Paperclip size={16} />
-        </Button>
-        <Button
-          size="sm"
-          variant="outline"
-          isIconOnly
-          aria-label="Enviar formulario"
-          onPress={onOpenFlow}
-          isDisabled={isDisabled}
-        >
-          <Layers size={16} />
-        </Button>
+        <Dropdown>
+          <Dropdown.Trigger>
+            <Button
+              size="sm"
+              variant="outline"
+              isIconOnly
+              aria-label="Adjuntar"
+              isDisabled={isDisabled || attachPending}
+            >
+              <Plus size={16} />
+            </Button>
+          </Dropdown.Trigger>
+          <Dropdown.Popover className="w-56 p-1">
+            <ListBox aria-label="Adjuntar opciones" className="space-y-0.5">
+              <ListBox.Item
+                id="file"
+                onAction={() => fileRef.current?.click()}
+                className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm data-[hovered]:bg-default-100"
+              >
+                <Paperclip size={14} className="text-default-500" />
+                <span>Archivo / foto / video</span>
+              </ListBox.Item>
+              <ListBox.Item
+                id="location"
+                onAction={onOpenLocation}
+                className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm data-[hovered]:bg-default-100"
+              >
+                <MapPin size={14} className="text-success" />
+                <span>Ubicación</span>
+              </ListBox.Item>
+              <ListBox.Item
+                id="contact"
+                onAction={onOpenContacts}
+                className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm data-[hovered]:bg-default-100"
+              >
+                <ContactIcon size={14} className="text-accent" />
+                <span>Contacto</span>
+              </ListBox.Item>
+              <ListBox.Item
+                id="flow"
+                onAction={onOpenFlow}
+                className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm data-[hovered]:bg-default-100"
+              >
+                <Layers size={14} className="text-default-500" />
+                <span>Formulario (Flow)</span>
+              </ListBox.Item>
+            </ListBox>
+          </Dropdown.Popover>
+        </Dropdown>
         <EmojiPickerButton onSelect={insertEmoji} />
         <div className="flex-1">
           <TextArea
@@ -1097,6 +1192,336 @@ function FlowSendModal({
               <Button onPress={submit} isPending={isPending}>
                 <Send size={14} />
                 Enviar
+              </Button>
+            </Modal.Footer>
+          </Modal.Dialog>
+        </Modal.Container>
+      </Modal.Backdrop>
+    </Modal>
+  );
+}
+
+function LocationSendModal({
+  isOpen,
+  onClose,
+  conversationId,
+  phoneNumberId,
+  onSend,
+  isPending,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  conversationId: number;
+  phoneNumberId: number | null;
+  onSend: (input: {
+    conversationId: number;
+    phoneNumberId: number;
+    latitude: number;
+    longitude: number;
+    name?: string;
+    address?: string;
+  }) => void;
+  isPending: boolean;
+}) {
+  const [lat, setLat] = useState("");
+  const [lng, setLng] = useState("");
+  const [name, setName] = useState("");
+  const [address, setAddress] = useState("");
+
+  useEffect(() => {
+    if (!isOpen) {
+      setLat("");
+      setLng("");
+      setName("");
+      setAddress("");
+    }
+  }, [isOpen]);
+
+  const useCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      toast.error("Tu navegador no soporta geolocalización");
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setLat(pos.coords.latitude.toFixed(6));
+        setLng(pos.coords.longitude.toFixed(6));
+      },
+      () => toast.error("No se pudo obtener tu ubicación"),
+    );
+  };
+
+  const submit = () => {
+    if (!phoneNumberId) {
+      toast.error("Selecciona un número primero");
+      return;
+    }
+    const latN = Number(lat);
+    const lngN = Number(lng);
+    if (!Number.isFinite(latN) || !Number.isFinite(lngN)) {
+      toast.error("Latitud / longitud inválidas");
+      return;
+    }
+    onSend({
+      conversationId,
+      phoneNumberId,
+      latitude: latN,
+      longitude: lngN,
+      name: name.trim() || undefined,
+      address: address.trim() || undefined,
+    });
+    onClose();
+  };
+
+  return (
+    <Modal>
+      <Modal.Backdrop
+        className="bg-black/40 backdrop-blur-[2px]"
+        isOpen={isOpen}
+        onOpenChange={(o) => !o && onClose()}
+        isDismissable
+      >
+        <Modal.Container placement="center">
+          <Modal.Dialog className="relative w-full max-w-md rounded-[28px] bg-background p-6 shadow-2xl">
+            <Modal.Header className="mb-4">
+              <Modal.Heading className="font-bold text-primary text-xl">
+                Compartir ubicación
+              </Modal.Heading>
+            </Modal.Header>
+            <Modal.Body className="max-h-[70vh] space-y-3 overflow-y-auto">
+              <div className="grid grid-cols-2 gap-3">
+                <TextInput
+                  label="Latitud"
+                  value={lat}
+                  onValueChange={setLat}
+                  placeholder="-33.4159"
+                />
+                <TextInput
+                  label="Longitud"
+                  value={lng}
+                  onValueChange={setLng}
+                  placeholder="-70.6062"
+                />
+              </div>
+              <Button size="sm" variant="outline" onPress={useCurrentLocation}>
+                <MapPin size={14} />
+                Usar mi ubicación actual
+              </Button>
+              <TextInput
+                label="Nombre (opcional)"
+                value={name}
+                onValueChange={setName}
+                placeholder="Bioalergia · Centro Médico"
+              />
+              <TextInput
+                label="Dirección (opcional)"
+                value={address}
+                onValueChange={setAddress}
+                placeholder="Av. Apoquindo 1234, Las Condes"
+              />
+            </Modal.Body>
+            <Modal.Footer className="mt-4 flex justify-end gap-2">
+              <Button variant="outline" onPress={onClose}>
+                <X size={14} />
+                Cancelar
+              </Button>
+              <Button onPress={submit} isPending={isPending}>
+                <Send size={14} />
+                Enviar
+              </Button>
+            </Modal.Footer>
+          </Modal.Dialog>
+        </Modal.Container>
+      </Modal.Backdrop>
+    </Modal>
+  );
+}
+
+function ContactsSendModal({
+  isOpen,
+  onClose,
+  conversationId,
+  phoneNumberId,
+  onSend,
+  isPending,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  conversationId: number;
+  phoneNumberId: number | null;
+  onSend: (input: {
+    conversationId: number;
+    phoneNumberId: number;
+    contacts: {
+      name: { formatted_name: string; first_name?: string; last_name?: string };
+      phones?: { phone: string; type?: string }[];
+      emails?: { email: string; type?: string }[];
+    }[];
+  }) => void;
+  isPending: boolean;
+}) {
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
+
+  useEffect(() => {
+    if (!isOpen) {
+      setName("");
+      setPhone("");
+      setEmail("");
+    }
+  }, [isOpen]);
+
+  const submit = () => {
+    if (!phoneNumberId) {
+      toast.error("Selecciona un número primero");
+      return;
+    }
+    if (!name.trim()) {
+      toast.error("Nombre obligatorio");
+      return;
+    }
+    const card = {
+      name: { formatted_name: name.trim() },
+      phones: phone.trim() ? [{ phone: phone.trim(), type: "CELL" }] : undefined,
+      emails: email.trim() ? [{ email: email.trim(), type: "WORK" }] : undefined,
+    };
+    onSend({ conversationId, phoneNumberId, contacts: [card] });
+    onClose();
+  };
+
+  return (
+    <Modal>
+      <Modal.Backdrop
+        className="bg-black/40 backdrop-blur-[2px]"
+        isOpen={isOpen}
+        onOpenChange={(o) => !o && onClose()}
+        isDismissable
+      >
+        <Modal.Container placement="center">
+          <Modal.Dialog className="relative w-full max-w-md rounded-[28px] bg-background p-6 shadow-2xl">
+            <Modal.Header className="mb-4">
+              <Modal.Heading className="font-bold text-primary text-xl">
+                Compartir contacto
+              </Modal.Heading>
+            </Modal.Header>
+            <Modal.Body className="max-h-[70vh] space-y-3 overflow-y-auto">
+              <TextInput
+                label="Nombre completo"
+                value={name}
+                onValueChange={setName}
+                placeholder="Dra. Andrea Pulgar"
+              />
+              <TextInput
+                label="Teléfono"
+                value={phone}
+                onValueChange={setPhone}
+                placeholder="+56912345678"
+              />
+              <TextInput
+                label="Email"
+                value={email}
+                onValueChange={setEmail}
+                placeholder="contacto@bioalergia.cl"
+              />
+            </Modal.Body>
+            <Modal.Footer className="mt-4 flex justify-end gap-2">
+              <Button variant="outline" onPress={onClose}>
+                <X size={14} />
+                Cancelar
+              </Button>
+              <Button onPress={submit} isPending={isPending}>
+                <Send size={14} />
+                Enviar
+              </Button>
+            </Modal.Footer>
+          </Modal.Dialog>
+        </Modal.Container>
+      </Modal.Backdrop>
+    </Modal>
+  );
+}
+
+function EditTextModal({
+  target,
+  onClose,
+  conversationId,
+  phoneNumberId,
+  onSubmit,
+  isPending,
+}: {
+  target: { messageId: number; body: string } | null;
+  onClose: () => void;
+  conversationId: number;
+  phoneNumberId: number | null;
+  onSubmit: (input: {
+    conversationId: number;
+    phoneNumberId: number;
+    messageId: number;
+    body: string;
+  }) => void;
+  isPending: boolean;
+}) {
+  const [body, setBody] = useState("");
+
+  useEffect(() => {
+    setBody(target?.body ?? "");
+  }, [target]);
+
+  const submit = () => {
+    if (!target) return;
+    if (!phoneNumberId) {
+      toast.error("Selecciona un número primero");
+      return;
+    }
+    if (!body.trim()) {
+      toast.error("El mensaje no puede estar vacío");
+      return;
+    }
+    onSubmit({
+      conversationId,
+      phoneNumberId,
+      messageId: target.messageId,
+      body: body.trim(),
+    });
+    onClose();
+  };
+
+  return (
+    <Modal>
+      <Modal.Backdrop
+        className="bg-black/40 backdrop-blur-[2px]"
+        isOpen={Boolean(target)}
+        onOpenChange={(o) => !o && onClose()}
+        isDismissable
+      >
+        <Modal.Container placement="center">
+          <Modal.Dialog className="relative w-full max-w-md rounded-[28px] bg-background p-6 shadow-2xl">
+            <Modal.Header className="mb-4">
+              <Modal.Heading className="font-bold text-primary text-xl">
+                Editar mensaje
+              </Modal.Heading>
+              <p className="text-default-500 text-xs">
+                Solo dentro de los primeros 15 minutos. Cloud API limitará si excede.
+              </p>
+            </Modal.Header>
+            <Modal.Body className="max-h-[70vh] space-y-3 overflow-y-auto">
+              <TextArea
+                variant="secondary"
+                value={body}
+                onChange={(e) => setBody(e.currentTarget.value)}
+                rows={4}
+                fullWidth
+              />
+            </Modal.Body>
+            <Modal.Footer className="mt-4 flex justify-end gap-2">
+              <Button variant="outline" onPress={onClose}>
+                <X size={14} />
+                Cancelar
+              </Button>
+              <Button onPress={submit} isPending={isPending}>
+                <Pencil size={14} />
+                Guardar
               </Button>
             </Modal.Footer>
           </Modal.Dialog>
