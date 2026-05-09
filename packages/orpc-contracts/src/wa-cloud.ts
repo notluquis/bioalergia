@@ -503,6 +503,58 @@ export const listConversationMediaResponseSchema = z.object({
   ),
 });
 
+// ── Account events / alerts ─────────────────────────────────────────────────
+
+export const waAccountEventKindSchema = z.enum([
+  "ACCOUNT_ALERT",
+  "ACCOUNT_REVIEW",
+  "ACCOUNT_SETTINGS",
+  "ACCOUNT_UPDATE",
+  "BUSINESS_CAPABILITY",
+  "BUSINESS_STATUS",
+  "SECURITY",
+  "PARTNER_SOLUTIONS",
+  "PAYMENT_CONFIG",
+  "USER_PREFERENCES",
+  "PHONE_QUALITY",
+  "PHONE_NAME",
+  "TEMPLATE_STATUS",
+  "TEMPLATE_QUALITY",
+  "TEMPLATE_CATEGORY",
+  "AUTOMATIC",
+  "TRACKING",
+  "OTHER",
+]);
+
+export const accountEventSchema = z.object({
+  id: z.number().int(),
+  accountId: z.number().int().nullable(),
+  phoneNumberId: z.number().int().nullable(),
+  kind: waAccountEventKindSchema,
+  field: z.string(),
+  severity: z.string(),
+  title: z.string(),
+  description: z.string().nullable(),
+  acknowledged: z.boolean(),
+  acknowledgedAt: z.coerce.date().nullable(),
+  receivedAt: z.coerce.date(),
+});
+
+export const listAccountEventsInputSchema = z.object({
+  acknowledged: z.boolean().optional(),
+  severity: z.string().optional(),
+  limit: z.number().int().min(1).max(200).default(100),
+});
+
+export const listAccountEventsResponseSchema = z.object({
+  events: z.array(accountEventSchema),
+  unacknowledgedCount: z.number().int(),
+});
+
+export const acknowledgeAccountEventInputSchema = z.object({
+  id: z.number().int().positive(),
+});
+
 // ── Interactive list + address + phone admin + analytics ─────────────────────
 
 export const sendInteractiveListInputSchema = z.object({
@@ -922,6 +974,16 @@ export const waCloudContract = {
   updateBusinessProfile: oc
     .route({ method: "POST", path: "/profile/update", tags: ["WA Cloud"] })
     .input(updateBusinessProfileInputSchema)
+    .output(waOkResponseSchema),
+
+  // Account events / alerts
+  listAccountEvents: oc
+    .route({ method: "POST", path: "/account-events/list", tags: ["WA Cloud"] })
+    .input(listAccountEventsInputSchema)
+    .output(listAccountEventsResponseSchema),
+  acknowledgeAccountEvent: oc
+    .route({ method: "POST", path: "/account-events/ack", tags: ["WA Cloud"] })
+    .input(acknowledgeAccountEventInputSchema)
     .output(waOkResponseSchema),
 
   // Phone admin

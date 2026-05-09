@@ -150,6 +150,22 @@ export function useSendFlow() {
   });
 }
 
+export function useAccountEvents(input?: Parameters<typeof waCloudORPCClient.listAccountEvents>[0]) {
+  return useQuery({
+    queryKey: [...KEY, "account-events", input],
+    queryFn: () => waCloudORPCClient.listAccountEvents(input ?? { limit: 100 }),
+    refetchInterval: 30_000,
+  });
+}
+
+export function useAcknowledgeAccountEvent() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => waCloudORPCClient.acknowledgeAccountEvent({ id }),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: [...KEY, "account-events"] }),
+  });
+}
+
 export function useSendInteractiveList() {
   const qc = useQueryClient();
   return useMutation({
@@ -187,7 +203,7 @@ export function useSetTwoStepPin() {
 }
 
 export function useConversationAnalyticsExtended(
-  input: Parameters<typeof waCloudORPCClient.getConversationAnalyticsExtended>[0] | null,
+  input: Parameters<typeof waCloudORPCClient.getConversationAnalyticsExtended>[0] | null
 ) {
   return useQuery({
     queryKey: [...KEY, "analytics-ext", input],
@@ -199,7 +215,7 @@ export function useConversationAnalyticsExtended(
 
 export async function uploadProfilePicture(
   file: File,
-  phoneNumberId: number,
+  phoneNumberId: number
 ): Promise<{ ok: boolean; handle: string }> {
   const form = new FormData();
   form.append("file", file);

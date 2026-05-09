@@ -8680,6 +8680,12 @@ export class SchemaType implements SchemaDef {
                     type: "WaBroadcast",
                     array: true,
                     relation: { opposite: "account" }
+                },
+                accountEvents: {
+                    name: "accountEvents",
+                    type: "WaAccountEvent",
+                    array: true,
+                    relation: { opposite: "account" }
                 }
             },
             idFields: ["id"],
@@ -8767,6 +8773,12 @@ export class SchemaType implements SchemaDef {
                     type: "WaBroadcast",
                     array: true,
                     relation: { opposite: "phoneNumber" }
+                },
+                accountEvents: {
+                    name: "accountEvents",
+                    type: "WaAccountEvent",
+                    array: true,
+                    relation: { opposite: "phoneNumber" }
                 }
             },
             idFields: ["id"],
@@ -8835,6 +8847,16 @@ export class SchemaType implements SchemaDef {
                     type: "DateTime",
                     updatedAt: true,
                     default: ExpressionUtils.call("now") as FieldDefault
+                },
+                marketingOptIn: {
+                    name: "marketingOptIn",
+                    type: "Boolean",
+                    optional: true
+                },
+                marketingOptInAt: {
+                    name: "marketingOptInAt",
+                    type: "DateTime",
+                    optional: true
                 },
                 conversations: {
                     name: "conversations",
@@ -9117,6 +9139,76 @@ export class SchemaType implements SchemaDef {
                     type: "String",
                     optional: true
                 },
+                conversationWindowId: {
+                    name: "conversationWindowId",
+                    type: "String",
+                    optional: true
+                },
+                conversationOrigin: {
+                    name: "conversationOrigin",
+                    type: "String",
+                    optional: true
+                },
+                pricingBillable: {
+                    name: "pricingBillable",
+                    type: "Boolean",
+                    optional: true
+                },
+                pricingModel: {
+                    name: "pricingModel",
+                    type: "String",
+                    optional: true
+                },
+                pricingCategory: {
+                    name: "pricingCategory",
+                    type: "String",
+                    optional: true
+                },
+                bizCallbackData: {
+                    name: "bizCallbackData",
+                    type: "String",
+                    optional: true
+                },
+                referralSourceUrl: {
+                    name: "referralSourceUrl",
+                    type: "String",
+                    optional: true
+                },
+                referralSourceType: {
+                    name: "referralSourceType",
+                    type: "String",
+                    optional: true
+                },
+                referralSourceId: {
+                    name: "referralSourceId",
+                    type: "String",
+                    optional: true
+                },
+                referralCtwaClid: {
+                    name: "referralCtwaClid",
+                    type: "String",
+                    optional: true
+                },
+                referralHeadline: {
+                    name: "referralHeadline",
+                    type: "String",
+                    optional: true
+                },
+                referralBodyText: {
+                    name: "referralBodyText",
+                    type: "String",
+                    optional: true
+                },
+                referralMediaType: {
+                    name: "referralMediaType",
+                    type: "String",
+                    optional: true
+                },
+                referralMediaUrl: {
+                    name: "referralMediaUrl",
+                    type: "String",
+                    optional: true
+                },
                 timestamp: {
                     name: "timestamp",
                     type: "DateTime"
@@ -9277,6 +9369,95 @@ export class SchemaType implements SchemaDef {
                     name: "eventCount",
                     type: "Int",
                     default: 0 as FieldDefault
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" }
+            }
+        },
+        WaAccountEvent: {
+            name: "WaAccountEvent",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                accountId: {
+                    name: "accountId",
+                    type: "Int",
+                    optional: true,
+                    foreignKeyFor: [
+                        "account"
+                    ] as readonly string[]
+                },
+                phoneNumberId: {
+                    name: "phoneNumberId",
+                    type: "Int",
+                    optional: true,
+                    foreignKeyFor: [
+                        "phoneNumber"
+                    ] as readonly string[]
+                },
+                kind: {
+                    name: "kind",
+                    type: "WaAccountEventKind"
+                },
+                field: {
+                    name: "field",
+                    type: "String"
+                },
+                severity: {
+                    name: "severity",
+                    type: "String",
+                    default: "info" as FieldDefault
+                },
+                title: {
+                    name: "title",
+                    type: "String"
+                },
+                description: {
+                    name: "description",
+                    type: "String",
+                    optional: true
+                },
+                payload: {
+                    name: "payload",
+                    type: "Json"
+                },
+                acknowledged: {
+                    name: "acknowledged",
+                    type: "Boolean",
+                    default: false as FieldDefault
+                },
+                acknowledgedAt: {
+                    name: "acknowledgedAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                acknowledgedByUserId: {
+                    name: "acknowledgedByUserId",
+                    type: "Int",
+                    optional: true
+                },
+                receivedAt: {
+                    name: "receivedAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                account: {
+                    name: "account",
+                    type: "WaBusinessAccount",
+                    optional: true,
+                    relation: { opposite: "accountEvents", fields: ["accountId"], references: ["id"], onDelete: "SetNull" }
+                },
+                phoneNumber: {
+                    name: "phoneNumber",
+                    type: "WaPhoneNumber",
+                    optional: true,
+                    relation: { opposite: "accountEvents", fields: ["phoneNumberId"], references: ["id"], onDelete: "SetNull" }
                 }
             },
             idFields: ["id"],
@@ -10481,6 +10662,29 @@ export class SchemaType implements SchemaDef {
                 SENT: "SENT",
                 FAILED: "FAILED",
                 CANCELLED: "CANCELLED"
+            }
+        },
+        WaAccountEventKind: {
+            name: "WaAccountEventKind",
+            values: {
+                ACCOUNT_ALERT: "ACCOUNT_ALERT",
+                ACCOUNT_REVIEW: "ACCOUNT_REVIEW",
+                ACCOUNT_SETTINGS: "ACCOUNT_SETTINGS",
+                ACCOUNT_UPDATE: "ACCOUNT_UPDATE",
+                BUSINESS_CAPABILITY: "BUSINESS_CAPABILITY",
+                BUSINESS_STATUS: "BUSINESS_STATUS",
+                SECURITY: "SECURITY",
+                PARTNER_SOLUTIONS: "PARTNER_SOLUTIONS",
+                PAYMENT_CONFIG: "PAYMENT_CONFIG",
+                USER_PREFERENCES: "USER_PREFERENCES",
+                PHONE_QUALITY: "PHONE_QUALITY",
+                PHONE_NAME: "PHONE_NAME",
+                TEMPLATE_STATUS: "TEMPLATE_STATUS",
+                TEMPLATE_QUALITY: "TEMPLATE_QUALITY",
+                TEMPLATE_CATEGORY: "TEMPLATE_CATEGORY",
+                AUTOMATIC: "AUTOMATIC",
+                TRACKING: "TRACKING",
+                OTHER: "OTHER"
             }
         },
         WaBroadcastStatus: {

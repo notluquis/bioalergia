@@ -84,6 +84,18 @@ export async function runOnce() {
   }
 
   const intervalMs = Math.max(50, Math.floor(1000 / bc.rateLimitPerSecond));
+  // For MARKETING templates, gate recipients by marketingOptIn === true.
+  // Lookup the template category once (best-effort).
+  const tplLocal = await db.waTemplate.findFirst({
+    where: {
+      accountId: bc.accountId,
+      name: bc.templateName,
+      language: bc.templateLanguage,
+    },
+    select: { category: true },
+  });
+  const isMarketing = tplLocal?.category === "MARKETING";
+
   for (const rec of recipients) {
     try {
       let toE164: string;
@@ -99,6 +111,21 @@ export async function runOnce() {
           },
         });
         continue;
+      }
+      // Marketing opt-out gate (Meta requires opt-in for marketing)
+      if (isMarketing) {
+        const cont = await db.waContact.findUnique({ where: { phoneE164: toE164 } });
+        if (cont && cont.marketingOptIn === false) {
+          await db.waBroadcastRecipient.update({
+            where: { id: rec.id },
+            data: {
+              status: "SKIPPED",
+              errorMessage: "Marketing opt-out: contacto rechazó marketing",
+              attempts: rec.attempts + 1,
+            },
+          });
+          continue;
+        }
       }
       const vars = (rec.variables as unknown as string[]) ?? [];
       const components: Array<{

@@ -39,6 +39,21 @@ type MetaMessage = {
   reaction?: { message_id: string; emoji: string };
   context?: { from?: string; id?: string };
   errors?: Array<{ code: number; title: string }>;
+  // Click-to-WhatsApp ad referral attribution
+  referral?: {
+    source_url?: string;
+    source_type?: string;
+    source_id?: string;
+    headline?: string;
+    body?: string;
+    media_type?: string;
+    image_url?: string;
+    video_url?: string;
+    thumbnail_url?: string;
+    ctwa_clid?: string;
+  };
+  identity?: { acknowledged?: boolean; created_timestamp?: string; hash?: string };
+  system?: { body?: string; type?: string };
 };
 
 type MetaStatus = {
@@ -49,6 +64,7 @@ type MetaStatus = {
   conversation?: { id: string; origin?: { type?: string } };
   pricing?: { billable?: boolean; pricing_model?: string; category?: string };
   errors?: Array<{ code: number; title: string; message?: string; error_data?: { details?: string } }>;
+  biz_opaque_callback_data?: string;
 };
 
 const TYPE_MAP: Record<string, string> = {
@@ -67,6 +83,121 @@ const TYPE_MAP: Record<string, string> = {
   system: "SYSTEM",
   unsupported: "UNSUPPORTED",
 };
+
+// Map raw Meta webhook field names to our normalized WaAccountEventKind enum +
+// pick a sensible severity. Defaults to OTHER + info.
+function mapEventKind(field: string): { kind:
+  | "ACCOUNT_ALERT" | "ACCOUNT_REVIEW" | "ACCOUNT_SETTINGS" | "ACCOUNT_UPDATE"
+  | "BUSINESS_CAPABILITY" | "BUSINESS_STATUS" | "SECURITY" | "PARTNER_SOLUTIONS"
+  | "PAYMENT_CONFIG" | "USER_PREFERENCES" | "PHONE_QUALITY" | "PHONE_NAME"
+  | "TEMPLATE_STATUS" | "TEMPLATE_QUALITY" | "TEMPLATE_CATEGORY"
+  | "AUTOMATIC" | "TRACKING" | "OTHER"; severity: "info" | "warning" | "critical" } {
+  switch (field) {
+    case "account_alerts": return { kind: "ACCOUNT_ALERT", severity: "warning" };
+    case "account_review_update": return { kind: "ACCOUNT_REVIEW", severity: "warning" };
+    case "account_settings_update": return { kind: "ACCOUNT_SETTINGS", severity: "info" };
+    case "account_update": return { kind: "ACCOUNT_UPDATE", severity: "info" };
+    case "business_capability_update": return { kind: "BUSINESS_CAPABILITY", severity: "info" };
+    case "business_status_update": return { kind: "BUSINESS_STATUS", severity: "warning" };
+    case "security": return { kind: "SECURITY", severity: "critical" };
+    case "partner_solutions": return { kind: "PARTNER_SOLUTIONS", severity: "info" };
+    case "payment_configuration_update": return { kind: "PAYMENT_CONFIG", severity: "warning" };
+    case "user_preferences": return { kind: "USER_PREFERENCES", severity: "info" };
+    case "phone_number_quality_update": return { kind: "PHONE_QUALITY", severity: "warning" };
+    case "phone_number_name_update": return { kind: "PHONE_NAME", severity: "info" };
+    case "automatic_events": return { kind: "AUTOMATIC", severity: "info" };
+    case "tracking_events": return { kind: "TRACKING", severity: "info" };
+    default: return { kind: "OTHER", severity: "info" };
+  }
+}
+
+function summarizeEvent(field: string, v: Record<string, unknown>): { title: string; description: string | null } {
+  const get = (k: string) => v[k];
+  switch (field) {
+    case "account_alerts": {
+      const t = (get("alert_severity") as string | undefined) ?? "alert";
+      const reason = (get("alert_description") as string | undefined) ?? null;
+      return { title: `Alerta de cuenta: ${t}`, description: reason };
+    }
+    case "account_review_update":
+      return { title: "Meta revisó la cuenta", description: (get("decision") as string | undefined) ?? null };
+    case "business_capability_update": {
+      const tier = get("max_daily_conversation_per_phone");
+      return { title: `Cambio de tier`, description: tier ? `Nuevo límite diario: ${tier}` : null };
+    }
+    case "business_status_update":
+      return { title: "Estado del negocio cambió", description: (get("business_verification_status") as string | undefined) ?? null };
+    case "security":
+      return { title: "Evento de seguridad", description: (get("text") as string | undefined) ?? null };
+    case "phone_number_quality_update": {
+      const cur = get("current_limit") ?? get("event");
+      return { title: `Calidad de número: ${cur}`, description: null };
+    }
+    case "phone_number_name_update":
+      return { title: "Cambio de nombre de número", description: (get("decision") as string | undefined) ?? null };
+    case "user_preferences":
+      return { title: "Preferencias de usuario", description: null };
+    case "tracking_events":
+      return { title: "Tracking event", description: null };
+    case "calls":
+      return { title: "Evento de llamada", description: null };
+    case "flows":
+      return { title: "Evento de Flow", description: null };
+    default:
+      return { title: field, description: null };
+  }
+}
+
+async function persistAccountEvent(args: {
+  accountId: number | null;
+  phoneNumberId: number | null;
+  field: string;
+  value: Record<string, unknown>;
+}) {
+  const { kind, severity } = mapEventKind(args.field);
+  const { title, description } = summarizeEvent(args.field, args.value);
+  await db.waAccountEvent.create({
+    data: {
+      accountId: args.accountId,
+      phoneNumberId: args.phoneNumberId,
+      kind: kind as never,
+      field: args.field,
+      severity,
+      title,
+      description,
+      payload: args.value as never,
+    },
+  });
+}
+
+async function applyUserPreferences(v: Record<string, unknown>) {
+  // Meta payload: { contacts:[{wa_id}], user_preferences:[{category, value}] }
+  const contacts = (v.contacts as Array<{ wa_id?: string }> | undefined) ?? [];
+  const prefs = (v.user_preferences as Array<{ category?: string; value?: string }> | undefined) ?? [];
+  if (contacts.length === 0 || prefs.length === 0) return;
+  for (const c of contacts) {
+    if (!c.wa_id) continue;
+    const phoneE164 = normalizeToE164(c.wa_id);
+    const existing = await db.waContact.findUnique({ where: { phoneE164 } });
+    if (!existing) continue;
+    for (const p of prefs) {
+      if (p.category === "marketing_messages") {
+        const optIn = p.value === "resume" || p.value === "OPTED_IN" || p.value === "opted_in";
+        const optOut = p.value === "stop" || p.value === "OPTED_OUT" || p.value === "opted_out";
+        if (optIn || optOut) {
+          await db.waContact.update({
+            where: { id: existing.id },
+            data: {
+              marketingOptIn: optIn,
+              marketingOptInAt: new Date(),
+              optInStatus: optIn ? "OPTED_IN" : "OPTED_OUT",
+            },
+          });
+        }
+      }
+    }
+  }
+}
 
 export function verifyMetaSignature(rawBody: string, signatureHeader: string | undefined, appSecret: string | undefined): boolean {
   if (!appSecret || !signatureHeader) return false;
@@ -214,7 +345,8 @@ export async function processWebhookPayload(payload: MetaWebhookPayload): Promis
         continue;
       }
 
-      // account_*: log + opcionalmente actualizar account (sin fields aún en schema)
+      // account_* / business_* / security / partner / payment / user_preferences:
+      // persist as WaAccountEvent so the inbox UI can surface them.
       if (
         FIELD === "account_alerts" ||
         FIELD === "account_review_update" ||
@@ -229,7 +361,21 @@ export async function processWebhookPayload(payload: MetaWebhookPayload): Promis
         FIELD === "user_preferences"
       ) {
         out.events += 1;
-        logEvent(`[wa-cloud.webhook] ${FIELD}`, { wabaId, value: v });
+        try {
+          const account = await db.waBusinessAccount.findUnique({ where: { wabaId } });
+          await persistAccountEvent({
+            accountId: account?.id ?? null,
+            phoneNumberId: null,
+            field: FIELD,
+            value: v as unknown as Record<string, unknown>,
+          });
+          // user_preferences: also update WaContact.marketingOptIn
+          if (FIELD === "user_preferences") {
+            await applyUserPreferences(v as unknown as Record<string, unknown>);
+          }
+        } catch (err) {
+          out.errors.push(`${FIELD}: ${err instanceof Error ? err.message : String(err)}`);
+        }
         continue;
       }
 
@@ -248,7 +394,7 @@ export async function processWebhookPayload(payload: MetaWebhookPayload): Promis
         continue;
       }
 
-      // ── phone_number_*: actualizar WaPhoneNumber ──
+      // ── phone_number_*: actualizar WaPhoneNumber + persist event ──
       if (FIELD === "phone_number_quality_update") {
         out.events += 1;
         try {
@@ -256,6 +402,12 @@ export async function processWebhookPayload(payload: MetaWebhookPayload): Promis
           await db.waPhoneNumber.update({
             where: { id: phoneRow.id },
             data: { qualityRating: p.current_limit ?? p.event ?? null },
+          });
+          await persistAccountEvent({
+            accountId: phoneRow.accountId,
+            phoneNumberId: phoneRow.id,
+            field: FIELD,
+            value: v as unknown as Record<string, unknown>,
           });
         } catch (err) {
           out.errors.push(`phone quality: ${err instanceof Error ? err.message : String(err)}`);
@@ -272,14 +424,19 @@ export async function processWebhookPayload(payload: MetaWebhookPayload): Promis
               data: { displayPhoneNumber: p.display_phone_number },
             });
           }
-          logEvent("[wa-cloud.webhook] phone name update", { decision: p.decision });
+          await persistAccountEvent({
+            accountId: phoneRow.accountId,
+            phoneNumberId: phoneRow.id,
+            field: FIELD,
+            value: v as unknown as Record<string, unknown>,
+          });
         } catch (err) {
           out.errors.push(`phone name: ${err instanceof Error ? err.message : String(err)}`);
         }
         continue;
       }
 
-      // ── calls / flows / messaging_handovers / standby / tracking_events: log ──
+      // ── calls / flows / messaging_handovers / standby / tracking_events ──
       if (
         FIELD === "calls" ||
         FIELD === "flows" ||
@@ -292,7 +449,16 @@ export async function processWebhookPayload(payload: MetaWebhookPayload): Promis
         FIELD === "group_status_update"
       ) {
         out.events += 1;
-        logEvent(`[wa-cloud.webhook] ${FIELD}`, { phoneNumberId, value: v });
+        try {
+          await persistAccountEvent({
+            accountId: phoneRow.accountId,
+            phoneNumberId: phoneRow.id,
+            field: FIELD,
+            value: v as unknown as Record<string, unknown>,
+          });
+        } catch (err) {
+          out.errors.push(`${FIELD}: ${err instanceof Error ? err.message : String(err)}`);
+        }
         continue;
       }
 
@@ -481,6 +647,11 @@ export async function processWebhookPayload(payload: MetaWebhookPayload): Promis
             // (not in m.context). Normalise both into contextMetaMessageId so
             // the UI can always find the target message.
             const ctxId = m.reaction?.message_id ?? m.context?.id ?? null;
+            // System message body (e.g. "User changed phone number to ...")
+            const sysBody = m.system?.body ?? null;
+            const finalBody = body ?? sysBody;
+            // Referral attribution for Click-to-WhatsApp ad messages
+            const r = m.referral;
             await db.waMessage.create({
               data: {
                 conversationId: convId,
@@ -490,15 +661,49 @@ export async function processWebhookPayload(payload: MetaWebhookPayload): Promis
                 direction: "INBOUND",
                 type: msgType as never,
                 status: "DELIVERED",
-                body,
+                body: finalBody,
                 mediaCaption,
                 mediaMimeType: mediaMime,
                 contextMetaMessageId: ctxId,
                 payload: m as never,
                 timestamp: ts,
                 deliveredAt: ts,
+                referralSourceUrl: r?.source_url ?? null,
+                referralSourceType: r?.source_type ?? null,
+                referralSourceId: r?.source_id ?? null,
+                referralCtwaClid: r?.ctwa_clid ?? null,
+                referralHeadline: r?.headline ?? null,
+                referralBodyText: r?.body ?? null,
+                referralMediaType: r?.media_type ?? null,
+                referralMediaUrl: r?.image_url ?? r?.video_url ?? r?.thumbnail_url ?? null,
               },
             });
+
+            // Referral → tag conversation with utm-style label so staff filter
+            if (r?.source_id) {
+              try {
+                const conv = await db.waConversation.findUnique({
+                  where: { id: convId },
+                  select: { etiquetas: true },
+                });
+                const tag = `ad:${r.source_id}`;
+                const next = Array.from(new Set([...(conv?.etiquetas ?? []), tag]));
+                await db.waConversation.update({
+                  where: { id: convId },
+                  data: { etiquetas: next },
+                });
+              } catch {
+                // ignore tagging failure
+              }
+            }
+
+            // Identity changed (m.identity.acknowledged): update local pushName timestamp
+            if (m.identity?.acknowledged) {
+              await db.waContact.update({
+                where: { id: contactId },
+                data: { updatedAt: new Date() },
+              }).catch(() => undefined);
+            }
 
             // Auto-tag conversation when patient clicks a Quick Reply button
             // from a template (e.g. "Confirmar asistencia" / "Reagendar"). The
@@ -563,6 +768,15 @@ export async function processWebhookPayload(payload: MetaWebhookPayload): Promis
               data.errorTitle = s.errors[0]!.title;
               data.errorDetails = s.errors[0]!.error_data?.details ?? s.errors[0]!.message ?? null;
             }
+            // Status enrichment fields (Meta sends these on each status event)
+            if (s.conversation?.id) data.conversationWindowId = s.conversation.id;
+            if (s.conversation?.origin?.type) data.conversationOrigin = s.conversation.origin.type;
+            if (s.pricing) {
+              if (typeof s.pricing.billable === "boolean") data.pricingBillable = s.pricing.billable;
+              if (s.pricing.pricing_model) data.pricingModel = s.pricing.pricing_model;
+              if (s.pricing.category) data.pricingCategory = s.pricing.category;
+            }
+            if (s.biz_opaque_callback_data) data.bizCallbackData = s.biz_opaque_callback_data;
             await db.waMessage.updateMany({
               where: { metaMessageId: s.id },
               data,

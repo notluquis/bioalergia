@@ -1944,7 +1944,10 @@ function InteractiveListModal({
       toast.error("Body y texto del botón son obligatorios");
       return;
     }
-    const lines = rowsRaw.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+    const lines = rowsRaw
+      .split(/\r?\n/)
+      .map((l) => l.trim())
+      .filter(Boolean);
     if (lines.length === 0) {
       toast.error("Agrega al menos una fila");
       return;
@@ -2027,7 +2030,9 @@ function InteractiveListModal({
                   onChange={(e) => setRowsRaw(e.currentTarget.value)}
                   rows={6}
                   fullWidth
-                  placeholder={"alergia_rinitis|Rinitis crónica|Estornudos frecuentes\nalergia_asma|Asma|Falta de aire\nimmuno_inicio|Iniciar tratamiento|Vacuna ácaros"}
+                  placeholder={
+                    "alergia_rinitis|Rinitis crónica|Estornudos frecuentes\nalergia_asma|Asma|Falta de aire\nimmuno_inicio|Iniciar tratamiento|Vacuna ácaros"
+                  }
                 />
               </div>
               <TextInput
@@ -2076,7 +2081,7 @@ function AddressMessageModal({
   isPending: boolean;
 }) {
   const [bodyText, setBodyText] = useState(
-    "Por favor comparte tu dirección para envío de muestras",
+    "Por favor comparte tu dirección para envío de muestras"
   );
   const [country, setCountry] = useState("CL");
   const [label, setLabel] = useState("");
@@ -2127,8 +2132,8 @@ function AddressMessageModal({
                 Pedir dirección
               </Modal.Heading>
               <p className="text-default-500 text-xs">
-                Address Message tiene cobertura limitada por país (Meta lo lanzó por etapas).
-                Si falla, usa CTA URL o pídele dirección como texto.
+                Address Message tiene cobertura limitada por país (Meta lo lanzó por etapas). Si
+                falla, usa CTA URL o pídele dirección como texto.
               </p>
             </Modal.Header>
             <Modal.Body className="max-h-[70vh] space-y-3 overflow-y-auto">

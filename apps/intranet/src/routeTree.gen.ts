@@ -38,6 +38,7 @@ import { Route as AuthedWaCloudPlantillasRouteImport } from "./routes/_authed/wa
 import { Route as AuthedWaCloudConfiguracionRouteImport } from "./routes/_authed/wa-cloud/configuracion"
 import { Route as AuthedWaCloudBroadcastsRouteImport } from "./routes/_authed/wa-cloud/broadcasts"
 import { Route as AuthedWaCloudAnalyticsRouteImport } from "./routes/_authed/wa-cloud/analytics"
+import { Route as AuthedWaCloudAlertasRouteImport } from "./routes/_authed/wa-cloud/alertas"
 import { Route as AuthedSettingsRolesRouteImport } from "./routes/_authed/settings/roles"
 import { Route as AuthedSettingsMercadopagoRouteImport } from "./routes/_authed/settings/mercadopago"
 import { Route as AuthedSettingsInventarioRouteImport } from "./routes/_authed/settings/inventario"
@@ -234,6 +235,11 @@ const AuthedWaCloudBroadcastsRoute = AuthedWaCloudBroadcastsRouteImport.update({
 const AuthedWaCloudAnalyticsRoute = AuthedWaCloudAnalyticsRouteImport.update({
   id: "/analytics",
   path: "/analytics",
+  getParentRoute: () => AuthedWaCloudRoute,
+} as any)
+const AuthedWaCloudAlertasRoute = AuthedWaCloudAlertasRouteImport.update({
+  id: "/alertas",
+  path: "/alertas",
   getParentRoute: () => AuthedWaCloudRoute,
 } as any)
 const AuthedSettingsRolesRoute = AuthedSettingsRolesRouteImport.update({
@@ -578,6 +584,7 @@ export interface FileRoutesByFullPath {
   "/settings/inventario": typeof AuthedSettingsInventarioRoute
   "/settings/mercadopago": typeof AuthedSettingsMercadopagoRoute
   "/settings/roles": typeof AuthedSettingsRolesRoute
+  "/wa-cloud/alertas": typeof AuthedWaCloudAlertasRoute
   "/wa-cloud/analytics": typeof AuthedWaCloudAnalyticsRoute
   "/wa-cloud/broadcasts": typeof AuthedWaCloudBroadcastsRoute
   "/wa-cloud/configuracion": typeof AuthedWaCloudConfiguracionRoute
@@ -654,6 +661,7 @@ export interface FileRoutesByTo {
   "/settings/inventario": typeof AuthedSettingsInventarioRoute
   "/settings/mercadopago": typeof AuthedSettingsMercadopagoRoute
   "/settings/roles": typeof AuthedSettingsRolesRoute
+  "/wa-cloud/alertas": typeof AuthedWaCloudAlertasRoute
   "/wa-cloud/analytics": typeof AuthedWaCloudAnalyticsRoute
   "/wa-cloud/broadcasts": typeof AuthedWaCloudBroadcastsRoute
   "/wa-cloud/configuracion": typeof AuthedWaCloudConfiguracionRoute
@@ -738,6 +746,7 @@ export interface FileRoutesById {
   "/_authed/settings/inventario": typeof AuthedSettingsInventarioRoute
   "/_authed/settings/mercadopago": typeof AuthedSettingsMercadopagoRoute
   "/_authed/settings/roles": typeof AuthedSettingsRolesRoute
+  "/_authed/wa-cloud/alertas": typeof AuthedWaCloudAlertasRoute
   "/_authed/wa-cloud/analytics": typeof AuthedWaCloudAnalyticsRoute
   "/_authed/wa-cloud/broadcasts": typeof AuthedWaCloudBroadcastsRoute
   "/_authed/wa-cloud/configuracion": typeof AuthedWaCloudConfiguracionRoute
@@ -822,6 +831,7 @@ export interface FileRouteTypes {
     | "/settings/inventario"
     | "/settings/mercadopago"
     | "/settings/roles"
+    | "/wa-cloud/alertas"
     | "/wa-cloud/analytics"
     | "/wa-cloud/broadcasts"
     | "/wa-cloud/configuracion"
@@ -898,6 +908,7 @@ export interface FileRouteTypes {
     | "/settings/inventario"
     | "/settings/mercadopago"
     | "/settings/roles"
+    | "/wa-cloud/alertas"
     | "/wa-cloud/analytics"
     | "/wa-cloud/broadcasts"
     | "/wa-cloud/configuracion"
@@ -981,6 +992,7 @@ export interface FileRouteTypes {
     | "/_authed/settings/inventario"
     | "/_authed/settings/mercadopago"
     | "/_authed/settings/roles"
+    | "/_authed/wa-cloud/alertas"
     | "/_authed/wa-cloud/analytics"
     | "/_authed/wa-cloud/broadcasts"
     | "/_authed/wa-cloud/configuracion"
@@ -1216,6 +1228,13 @@ declare module "@tanstack/react-router" {
       path: "/analytics"
       fullPath: "/wa-cloud/analytics"
       preLoaderRoute: typeof AuthedWaCloudAnalyticsRouteImport
+      parentRoute: typeof AuthedWaCloudRoute
+    }
+    "/_authed/wa-cloud/alertas": {
+      id: "/_authed/wa-cloud/alertas"
+      path: "/alertas"
+      fullPath: "/wa-cloud/alertas"
+      preLoaderRoute: typeof AuthedWaCloudAlertasRouteImport
       parentRoute: typeof AuthedWaCloudRoute
     }
     "/_authed/settings/roles": {
@@ -1812,6 +1831,7 @@ const AuthedSettingsRouteWithChildren = AuthedSettingsRoute._addFileChildren(
 )
 
 interface AuthedWaCloudRouteChildren {
+  AuthedWaCloudAlertasRoute: typeof AuthedWaCloudAlertasRoute
   AuthedWaCloudAnalyticsRoute: typeof AuthedWaCloudAnalyticsRoute
   AuthedWaCloudBroadcastsRoute: typeof AuthedWaCloudBroadcastsRoute
   AuthedWaCloudConfiguracionRoute: typeof AuthedWaCloudConfiguracionRoute
@@ -1821,6 +1841,7 @@ interface AuthedWaCloudRouteChildren {
 }
 
 const AuthedWaCloudRouteChildren: AuthedWaCloudRouteChildren = {
+  AuthedWaCloudAlertasRoute: AuthedWaCloudAlertasRoute,
   AuthedWaCloudAnalyticsRoute: AuthedWaCloudAnalyticsRoute,
   AuthedWaCloudBroadcastsRoute: AuthedWaCloudBroadcastsRoute,
   AuthedWaCloudConfiguracionRoute: AuthedWaCloudConfiguracionRoute,

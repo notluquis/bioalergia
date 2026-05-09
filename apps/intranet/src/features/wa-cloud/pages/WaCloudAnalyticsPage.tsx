@@ -364,7 +364,10 @@ function BreakdownGrid({
       ) : (
         <div className="grid grid-cols-1 gap-1 text-xs sm:grid-cols-2">
           {entries.map(([k, v]) => (
-            <div key={k} className="flex items-center justify-between rounded bg-content2 px-2 py-1">
+            <div
+              key={k}
+              className="flex items-center justify-between rounded bg-content2 px-2 py-1"
+            >
               <span className="font-medium">{k}</span>
               <span className="font-mono text-default-600">
                 {v.volume} convs · USD {v.cost.toFixed(2)}

@@ -3,8 +3,11 @@ import {
   accountIdInput,
   blockContactInputSchema,
   businessProfileResponseSchema,
+  acknowledgeAccountEventInputSchema,
   conversationAnalyticsExtendedInputSchema,
   conversationAnalyticsExtendedResponseSchema,
+  listAccountEventsInputSchema,
+  listAccountEventsResponseSchema,
   conversationAnalyticsInputSchema,
   conversationAnalyticsResponseSchema,
   registerPhoneInputSchema,
@@ -1366,6 +1369,42 @@ const waRouterBase = {
     .output(waOkResponseSchema)
     .handler(async ({ input }) => {
       await updateBusinessProfile(input.phoneNumberId, input.fields);
+      return { status: "ok" as const };
+    }),
+
+  // ── Account events / alerts ───────────────────────────────────────────────
+  listAccountEvents: readWa
+    .route({ method: "POST", path: "/account-events/list", tags: ["WA Cloud"] })
+    .input(listAccountEventsInputSchema)
+    .output(listAccountEventsResponseSchema)
+    .handler(async ({ input }) => {
+      const where: Record<string, unknown> = {};
+      if (input.acknowledged !== undefined) where.acknowledged = input.acknowledged;
+      if (input.severity) where.severity = input.severity;
+      const [events, unacknowledgedCount] = await Promise.all([
+        db.waAccountEvent.findMany({
+          where,
+          orderBy: { receivedAt: "desc" },
+          take: input.limit,
+        }),
+        db.waAccountEvent.count({ where: { acknowledged: false } }),
+      ]);
+      return { events, unacknowledgedCount };
+    }),
+
+  acknowledgeAccountEvent: writeWa
+    .route({ method: "POST", path: "/account-events/ack", tags: ["WA Cloud"] })
+    .input(acknowledgeAccountEventInputSchema)
+    .output(waOkResponseSchema)
+    .handler(async ({ context, input }) => {
+      await db.waAccountEvent.update({
+        where: { id: input.id },
+        data: {
+          acknowledged: true,
+          acknowledgedAt: new Date(),
+          acknowledgedByUserId: context.user.id,
+        },
+      });
       return { status: "ok" as const };
     }),
 

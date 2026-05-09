@@ -3211,6 +3211,7 @@ model WaBusinessAccount {
   phoneNumbers        WaPhoneNumber[]
   templates           WaTemplate[]
   broadcasts          WaBroadcast[]
+  accountEvents       WaAccountEvent[]
 
   @@deny('all', auth() == null)
   @@allow('read,create,update,delete', auth().status == 'ACTIVE')
@@ -3233,6 +3234,7 @@ model WaPhoneNumber {
   conversations       WaConversationChannel[]
   scheduledMessages   WaScheduledMessage[]
   broadcasts          WaBroadcast[]
+  accountEvents       WaAccountEvent[]
 
   @@index([accountId])
   @@deny('all', auth() == null)
@@ -3252,6 +3254,10 @@ model WaContact {
   metadata            Json      @default("{}")
   createdAt           DateTime  @default(now()) @map("created_at")
   updatedAt           DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  // user_preferences webhook (per-category opt-in/out, e.g. marketing)
+  marketingOptIn      Boolean?  @map("marketing_opt_in")
+  marketingOptInAt    DateTime? @map("marketing_opt_in_at")
 
   conversations       WaConversation[]
   messages            WaMessage[]
@@ -3329,6 +3335,22 @@ model WaMessage {
   errorDetails        String?              @map("error_details")
   sentByUserId        Int?                 @map("sent_by_user_id")
   contextMetaMessageId String?             @map("context_meta_message_id")
+  // Status enrichment (Meta status webhook)
+  conversationWindowId String?             @map("conversation_window_id")
+  conversationOrigin  String?              @map("conversation_origin")
+  pricingBillable     Boolean?             @map("pricing_billable")
+  pricingModel        String?              @map("pricing_model")
+  pricingCategory     String?              @map("pricing_category")
+  bizCallbackData     String?              @map("biz_callback_data")
+  // Click-to-WhatsApp ad referral attribution (inbound only)
+  referralSourceUrl   String?              @map("referral_source_url")
+  referralSourceType  String?              @map("referral_source_type")
+  referralSourceId    String?              @map("referral_source_id")
+  referralCtwaClid    String?              @map("referral_ctwa_clid")
+  referralHeadline    String?              @map("referral_headline")
+  referralBodyText    String?              @map("referral_body_text")
+  referralMediaType   String?              @map("referral_media_type")
+  referralMediaUrl    String?              @map("referral_media_url")
   timestamp           DateTime
   deliveredAt         DateTime?            @map("delivered_at")
   readAt              DateTime?            @map("read_at")
@@ -3393,6 +3415,53 @@ enum WaScheduledStatus {
   SENT
   FAILED
   CANCELLED
+}
+
+enum WaAccountEventKind {
+  ACCOUNT_ALERT
+  ACCOUNT_REVIEW
+  ACCOUNT_SETTINGS
+  ACCOUNT_UPDATE
+  BUSINESS_CAPABILITY
+  BUSINESS_STATUS
+  SECURITY
+  PARTNER_SOLUTIONS
+  PAYMENT_CONFIG
+  USER_PREFERENCES
+  PHONE_QUALITY
+  PHONE_NAME
+  TEMPLATE_STATUS
+  TEMPLATE_QUALITY
+  TEMPLATE_CATEGORY
+  AUTOMATIC
+  TRACKING
+  OTHER
+}
+
+model WaAccountEvent {
+  id                   Int                  @id @default(autoincrement())
+  accountId            Int?                 @map("account_id")
+  phoneNumberId        Int?                 @map("phone_number_id")
+  kind                 WaAccountEventKind
+  field                String
+  severity             String               @default("info")
+  title                String
+  description          String?
+  payload              Json
+  acknowledged         Boolean              @default(false)
+  acknowledgedAt       DateTime?            @map("acknowledged_at")
+  acknowledgedByUserId Int?                 @map("acknowledged_by_user_id")
+  receivedAt           DateTime             @default(now()) @map("received_at")
+
+  account              WaBusinessAccount?   @relation(fields: [accountId], references: [id], onDelete: SetNull)
+  phoneNumber          WaPhoneNumber?       @relation(fields: [phoneNumberId], references: [id], onDelete: SetNull)
+
+  @@index([acknowledged, receivedAt])
+  @@index([accountId])
+  @@index([severity])
+  @@deny('all', auth() == null)
+  @@allow('read,create,update,delete', auth().status == 'ACTIVE')
+  @@map("wa_account_events")
 }
 
 enum WaBroadcastStatus {
