@@ -500,10 +500,7 @@ function ChatBubble({
     type: string;
     out: boolean;
   }) => void;
-  onReact: (
-    row: { metaMessageId: string | null; out: boolean },
-    emoji: string
-  ) => void;
+  onReact: (row: { metaMessageId: string | null; out: boolean }, emoji: string) => void;
 }) {
   const out = row.out;
   const isPending = row.status === "PENDING";
@@ -693,7 +690,13 @@ function TextComposer({
             </p>
             <p className="line-clamp-1 text-foreground text-sm">{replyTo.snippet}</p>
           </div>
-          <Button size="sm" variant="outline" isIconOnly onPress={onCancelReply} aria-label="Cancelar respuesta">
+          <Button
+            size="sm"
+            variant="outline"
+            isIconOnly
+            onPress={onCancelReply}
+            aria-label="Cancelar respuesta"
+          >
             <X size={14} />
           </Button>
         </div>
@@ -710,53 +713,53 @@ function TextComposer({
         }}
       />
       <div className="flex items-end gap-2">
-      <Button
-        size="sm"
-        variant="outline"
-        isIconOnly
-        aria-label="Cambiar a plantilla"
-        onPress={onSwitchTemplate}
-      >
-        <FileText size={16} />
-      </Button>
-      <Button
-        size="sm"
-        variant="outline"
-        isIconOnly
-        aria-label="Adjuntar archivo"
-        onPress={() => fileRef.current?.click()}
-        isDisabled={isDisabled || attachPending}
-      >
-        <Paperclip size={16} />
-      </Button>
-      <EmojiPickerButton onSelect={insertEmoji} />
-      <div className="flex-1">
-        <TextArea
-          ref={ref}
-          variant="secondary"
-          value={body}
-          onChange={(e) => setBody(e.currentTarget.value)}
-          onKeyDown={handleKey}
-          placeholder={
-            isDisabled
-              ? (disabledReason ?? "")
-              : "Escribe un mensaje. Enter para enviar, Shift+Enter para nueva línea."
-          }
-          disabled={isDisabled}
-          rows={1}
-          className="w-full resize-none rounded-2xl"
-          fullWidth
-        />
-      </div>
-      <Button
-        size="sm"
-        isIconOnly
-        aria-label="Enviar"
-        onPress={onSend}
-        isDisabled={isDisabled || !body.trim()}
-      >
-        <Send size={16} />
-      </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          isIconOnly
+          aria-label="Cambiar a plantilla"
+          onPress={onSwitchTemplate}
+        >
+          <FileText size={16} />
+        </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          isIconOnly
+          aria-label="Adjuntar archivo"
+          onPress={() => fileRef.current?.click()}
+          isDisabled={isDisabled || attachPending}
+        >
+          <Paperclip size={16} />
+        </Button>
+        <EmojiPickerButton onSelect={insertEmoji} />
+        <div className="flex-1">
+          <TextArea
+            ref={ref}
+            variant="secondary"
+            value={body}
+            onChange={(e) => setBody(e.currentTarget.value)}
+            onKeyDown={handleKey}
+            placeholder={
+              isDisabled
+                ? (disabledReason ?? "")
+                : "Escribe un mensaje. Enter para enviar, Shift+Enter para nueva línea."
+            }
+            disabled={isDisabled}
+            rows={1}
+            className="w-full resize-none rounded-2xl"
+            fullWidth
+          />
+        </div>
+        <Button
+          size="sm"
+          isIconOnly
+          aria-label="Enviar"
+          onPress={onSend}
+          isDisabled={isDisabled || !body.trim()}
+        >
+          <Send size={16} />
+        </Button>
       </div>
     </div>
   );
