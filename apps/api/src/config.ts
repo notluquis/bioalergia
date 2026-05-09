@@ -139,58 +139,6 @@ if (googleCalendarEnvMissing.length > 0) {
   );
 }
 
-// WhatsApp Config
-export interface WhatsappConfig {
-  accessToken: string;
-  autoOptInOnInbound: boolean;
-  phoneNumberId: string;
-  graphApiVersion: string;
-  templateName: string | null;
-  templateLanguage: null | string;
-  requireOptIn: boolean;
-  appSecret: string | null;
-  pollCron: string;
-  imapHost: string | null;
-  imapPort: number;
-  imapUser: string | null;
-  imapPass: string | null;
-  imapMailbox: string;
-  senderFilter: string;
-}
-
-const whatsappMissing: string[] = [];
-const waAccessToken = process.env.WHATSAPP_ACCESS_TOKEN;
-if (!waAccessToken) whatsappMissing.push("WHATSAPP_ACCESS_TOKEN");
-const waPhoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
-if (!waPhoneNumberId) whatsappMissing.push("WHATSAPP_PHONE_NUMBER_ID");
-
-export const whatsappConfig: WhatsappConfig | null =
-  waAccessToken && waPhoneNumberId
-    ? {
-        accessToken: waAccessToken,
-        appSecret: process.env.WHATSAPP_APP_SECRET ?? null,
-        autoOptInOnInbound: process.env.WHATSAPP_AUTO_OPT_IN_ON_INBOUND !== "false",
-        graphApiVersion: process.env.WHATSAPP_GRAPH_API_VERSION ?? "v25.0",
-        imapHost: process.env.DOCTORALIA_IMAP_HOST ?? null,
-        imapMailbox: process.env.DOCTORALIA_IMAP_MAILBOX ?? "INBOX",
-        imapPass: process.env.DOCTORALIA_IMAP_PASS ?? null,
-        imapPort: parseInt(process.env.DOCTORALIA_IMAP_PORT ?? "993", 10),
-        imapUser: process.env.DOCTORALIA_IMAP_USER ?? null,
-        phoneNumberId: waPhoneNumberId,
-        pollCron: process.env.WHATSAPP_POLL_CRON ?? "*/2 * * * *",
-        requireOptIn: process.env.WHATSAPP_REQUIRE_OPT_IN !== "false",
-        senderFilter: process.env.DOCTORALIA_EMAIL_SENDER_FILTER ?? "doctoralia",
-        templateLanguage: process.env.WHATSAPP_TEMPLATE_LANGUAGE ?? null,
-        templateName: process.env.WHATSAPP_TEMPLATE_NAME ?? null,
-      }
-    : null;
-
-if (whatsappMissing.length > 0) {
-  console.warn(
-    `[config] WhatsApp deshabilitado. Variables faltantes: ${whatsappMissing.join(", ")}`,
-  );
-}
-
 // Doctoralia Scraper Config (bearer token compartido con el bot)
 export const doctoraliaScraperApiToken: string | null =
   process.env.DOCTORALIA_SCRAPER_API_TOKEN?.trim() || null;
