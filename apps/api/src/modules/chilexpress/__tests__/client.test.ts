@@ -144,26 +144,71 @@ describe("chilexpress client", () => {
   });
 
   it("getNearbyOffices threads addressId in path", async () => {
-    fetchSpy.mockReturnValueOnce(mockJson({ nearbyOffices: [] }));
+    fetchSpy.mockReturnValueOnce(mockJson({ nearbyOffice: [] }));
     await getNearbyOffices(cfg, 7159420);
     expect(fetchSpy.mock.calls[0]?.[0]).toContain("/nearby-offices/7159420");
   });
 
-  it("searchStreets passes CountyName + StreetName", async () => {
-    fetchSpy.mockReturnValueOnce(mockJson({ streets: [{ streetNameId: 1, streetName: "MAIPU" }] }));
-    const r = await searchStreets(cfg, { countyName: "CONCEPCION", query: "MAI" });
-    expect(r[0]?.streetName).toBe("MAIPU");
-    expect(fetchSpy.mock.calls[0]?.[0]).toContain(
-      "/streets/search?CountyName=CONCEPCION&StreetName=MAI",
+  it("getNearbyOffices accepts singular nearbyOffice key from spec", async () => {
+    fetchSpy.mockReturnValueOnce(
+      mockJson({
+        nearbyOffice: [
+          {
+            distance: "566.31",
+            office: {
+              addressId: 1,
+              officeName: "X",
+              officeType: 3,
+              countyName: "C",
+              regionName: "R",
+              streetName: "S",
+              streetNumber: 1,
+              businessHour: [],
+              officeServices: [],
+            },
+          },
+        ],
+      }),
     );
+    const r = await getNearbyOffices(cfg, 1);
+    expect(r).toHaveLength(1);
+    expect(r[0]?.distance).toBe("566.31");
   });
 
-  it("getStreetNumbers reads streetNumbers[]", async () => {
+  it("searchStreets POSTs with countyName + streetName body", async () => {
     fetchSpy.mockReturnValueOnce(
-      mockJson({ streetNumbers: [{ streetNumber: 583, addressId: 7159420 }] }),
+      mockJson({
+        streets: [{ streetId: 1, streetName: "MAIPU", countyName: "CONCEPCION", roadType: "CALLE" }],
+      }),
+    );
+    const r = await searchStreets(cfg, { countyName: "CONCEPCION", query: "MAI" });
+    expect(r[0]).toMatchObject({ streetId: 1, streetName: "MAIPU" });
+    expect(fetchSpy.mock.calls[0]?.[0]).toContain("/streets/search?limit=25");
+    const init = fetchSpy.mock.calls[0]?.[1] as RequestInit;
+    expect(init.method).toBe("POST");
+    expect(JSON.parse(init.body as string)).toMatchObject({
+      countyName: "CONCEPCION",
+      streetName: "MAI",
+      pointsOfInterestEnabled: true,
+      streetNameEnabled: true,
+    });
+  });
+
+  it("getStreetNumbers reads streetNumbers[] with number + lat/lng", async () => {
+    fetchSpy.mockReturnValueOnce(
+      mockJson({
+        streetNumbers: [
+          { number: 583, latitude: -33.44, longitude: -70.65, addressId: 7159420 },
+        ],
+      }),
     );
     const r = await getStreetNumbers(cfg, 1);
-    expect(r[0]).toMatchObject({ streetNumber: 583, addressId: 7159420 });
+    expect(r[0]).toMatchObject({
+      number: 583,
+      latitude: -33.44,
+      longitude: -70.65,
+      addressId: 7159420,
+    });
   });
 
   it("georeferenceAddress returns null when statusCode !== 0", async () => {

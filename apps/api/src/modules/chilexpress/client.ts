@@ -195,10 +195,14 @@ export async function getNearbyOffices(
   config: ChilexpressConfig,
   addressId: number,
 ): Promise<Array<{ distance: string; office: CxCommercialOffice }>> {
+  // Per spec the response key is "nearbyOffice" (singular). Also
+  // tolerate "nearbyOffices" in case the API ever harmonises.
   const data = await cxFetch<{
+    nearbyOffice?: Array<{ distance: string; office: CxRawOffice }>;
     nearbyOffices?: Array<{ distance: string; office: CxRawOffice }>;
   }>(config, "georeference", `/nearby-offices/${addressId}`);
-  return (data.nearbyOffices ?? []).map((entry) => ({
+  const list = data.nearbyOffice ?? data.nearbyOffices ?? [];
+  return list.map((entry) => ({
     distance: entry.distance,
     office: mapOffice(entry.office),
   }));
@@ -206,26 +210,59 @@ export async function getNearbyOffices(
 
 // ─── Streets autocomplete ────────────────────────────────────────────────────
 
+/**
+ * Per the official spec /streets/search is POST with a JSON body. Response
+ * uses `streetId` (not `streetNameId`). The `pointsOfInterestEnabled`
+ * flag includes plazas/landmarks; `streetNameEnabled` toggles street
+ * names. We default both true so the user gets the widest match set.
+ */
 export async function searchStreets(
   config: ChilexpressConfig,
-  options: { countyName: string; query: string },
-): Promise<Array<{ streetNameId: number; streetName: string }>> {
+  options: {
+    countyName: string;
+    query: string;
+    pointsOfInterestEnabled?: boolean;
+    streetNameEnabled?: boolean;
+    roadType?: number;
+    limit?: number;
+  },
+): Promise<Array<{ streetId: number; streetName: string; countyName?: string; roadType?: string }>> {
+  const limit = options.limit ?? 25;
   const data = await cxFetch<{
-    streets?: Array<{ streetNameId: number; streetName: string }>;
-  }>(
-    config,
-    "georeference",
-    `/streets/search?CountyName=${encodeURIComponent(options.countyName)}&StreetName=${encodeURIComponent(options.query)}`,
-  );
+    streets?: Array<{
+      streetId: number;
+      streetName: string;
+      countyName?: string;
+      roadType?: string;
+    }>;
+  }>(config, "georeference", `/streets/search?limit=${limit}`, {
+    method: "POST",
+    body: JSON.stringify({
+      countyName: options.countyName,
+      streetName: options.query,
+      pointsOfInterestEnabled: options.pointsOfInterestEnabled ?? true,
+      streetNameEnabled: options.streetNameEnabled ?? true,
+      roadType: options.roadType ?? 0,
+    }),
+  });
   return data.streets ?? [];
 }
 
+/**
+ * Spec response field is `number` (not `streetNumber`); each entry
+ * includes lat/lng for the exact street number.
+ */
 export async function getStreetNumbers(
   config: ChilexpressConfig,
   streetNameId: number,
-): Promise<Array<{ streetNumber: number; addressId: number }>> {
+): Promise<Array<{ number: number; latitude?: number; longitude?: number; addressId: number }>> {
   const data = await cxFetch<{
-    streetNumbers?: Array<{ streetNumber: number; addressId: number }>;
+    streetNumbers?: Array<{
+      number: number;
+      latitude?: number;
+      longitude?: number;
+      addressId: number;
+    }>;
   }>(config, "georeference", `/streets/${streetNameId}/numbers`);
   return data.streetNumbers ?? [];
 }

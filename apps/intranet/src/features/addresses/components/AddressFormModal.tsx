@@ -420,7 +420,7 @@ function StreetAutocomplete({ countyName, value, onChange }: Readonly<StreetAuto
       }}
       onSelectionChange={(key) => {
         if (key == null) return;
-        const street = streets.find((s) => String(s.streetNameId) === String(key));
+        const street = streets.find((s) => String(s.streetId) === String(key));
         if (street) {
           setInputValue(street.streetName);
           onChange(street.streetName);
@@ -446,11 +446,7 @@ function StreetAutocomplete({ countyName, value, onChange }: Readonly<StreetAuto
             </ListBox.Item>
           ) : (
             streets.map((s) => (
-              <ListBox.Item
-                id={String(s.streetNameId)}
-                key={s.streetNameId}
-                textValue={s.streetName}
-              >
+              <ListBox.Item id={String(s.streetId)} key={s.streetId} textValue={s.streetName}>
                 {s.streetName}
               </ListBox.Item>
             ))

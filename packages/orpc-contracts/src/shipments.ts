@@ -64,12 +64,16 @@ export const cxNearbyOfficeSchema = z.object({
 });
 
 export const cxStreetSchema = z.object({
-  streetNameId: z.number(),
+  streetId: z.number(),
   streetName: z.string(),
+  countyName: z.string().optional(),
+  roadType: z.string().optional(),
 });
 
 export const cxStreetNumberSchema = z.object({
-  streetNumber: z.number(),
+  number: z.number(),
+  latitude: z.number().optional(),
+  longitude: z.number().optional(),
   addressId: z.number(),
 });
 
