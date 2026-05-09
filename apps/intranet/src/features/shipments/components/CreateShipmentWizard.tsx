@@ -682,9 +682,6 @@ function OfficePicker({
               ))}
             </ListBox>
           </Select.Popover>
-          <Description>
-            "Solo prepago" = comuna no acepta flete por cobrar (PPD). Envío debe pagarlo la clínica.
-          </Description>
         </Select>
       </div>
 

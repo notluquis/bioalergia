@@ -1,5 +1,6 @@
 import type { Key } from "@heroui/react";
 import {
+  Alert,
   Button,
   Checkbox,
   Chip,
@@ -163,6 +164,20 @@ export function AddressFormModal({
   );
 
   const [pickedStreetId, setPickedStreetId] = useState<number | null>(null);
+  const [limitsAcknowledged, setLimitsAcknowledged] = useState(false);
+
+  // Reset the ack flag whenever the user picks a different comuna so we
+  // never silently submit with a previously-acknowledged comuna's limits.
+  useEffect(() => {
+    setLimitsAcknowledged(false);
+  }, [comunaValue]);
+
+  const selectedCommune = communes.find((c) => c.coverageRegionCode === comunaValue);
+  const hasLimits = Boolean(
+    selectedCommune &&
+    (selectedCommune.supportsCashOnDelivery === false || selectedCommune.supportsReturn === false)
+  );
+  const ackBlocking = hasLimits && !limitsAcknowledged;
 
   const { data: streetNumbersData } = useQuery({
     queryKey: ["cx-street-numbers", pickedStreetId],
@@ -323,14 +338,16 @@ export function AddressFormModal({
                             ))}
                           </ListBox>
                         </Select.Popover>
-                        <Description>
-                          "Solo prepago" = comuna no acepta flete por cobrar (PPD); paga la clínica.
-                          "Sin retorno" = no hay servicio de retorno de documentos.
-                        </Description>
                       </Select>
                     )}
                   </form.Field>
                 </div>
+
+                <ComunaLimitsAlert
+                  commune={communes.find((c) => c.coverageRegionCode === comunaValue)}
+                  isAcknowledged={limitsAcknowledged}
+                  onAcknowledge={setLimitsAcknowledged}
+                />
 
                 {subzonesForCommune.length > 0 && (
                   <form.Field name="comuna">
@@ -476,7 +493,7 @@ export function AddressFormModal({
                     {([canSubmit, isSubmitting]) => (
                       <Button
                         className="gap-2"
-                        isDisabled={!canSubmit || isPending}
+                        isDisabled={!canSubmit || isPending || ackBlocking}
                         isPending={isSubmitting || isPending}
                         type="submit"
                       >
@@ -530,12 +547,46 @@ function StreetAutocomplete({
   });
   const streets = streetsResponse?.streets ?? [];
 
+  // React Aria collections (ComboBox/ListBox) require stable item ids. When
+  // we mixed dynamic street ids with static placeholder items at the same
+  // collection position the React Aria collection threw "Cannot change the
+  // id of an item" because position 0 went from "__loading__" → "12345".
+  // Canonical fix: pass a single `items` array with unique ids per state,
+  // render via the children render-function so React Aria treats every
+  // entry as a separate collection node, and mark placeholders disabled.
+  type StreetRow =
+    | { kind: "street"; id: string; label: string; streetId: number }
+    | { kind: "placeholder"; id: string; label: string };
+
+  const items: StreetRow[] = (() => {
+    if (countyName.length === 0) {
+      return [{ kind: "placeholder", id: "__no-county__", label: "Selecciona una comuna primero" }];
+    }
+    if (debounced.trim().length < 2) {
+      return [{ kind: "placeholder", id: "__too-short__", label: "Escribe al menos 2 caracteres" }];
+    }
+    if (isLoading) {
+      return [{ kind: "placeholder", id: "__loading__", label: "Buscando…" }];
+    }
+    if (streets.length === 0) {
+      return [{ kind: "placeholder", id: "__empty__", label: "Sin sugerencias para esta comuna" }];
+    }
+    return streets.map((s) => ({
+      kind: "street" as const,
+      id: `s-${s.streetId}`,
+      label: s.streetName,
+      streetId: s.streetId,
+    }));
+  })();
+
+  const disabledIds = items.filter((i) => i.kind === "placeholder").map((i) => i.id);
+
   return (
     <ComboBox
       allowsCustomValue
       inputValue={inputValue}
       isDisabled={countyName.length === 0}
-      items={streets}
+      items={items}
       menuTrigger="input"
       onInputChange={(next) => {
         setInputValue(next);
@@ -543,11 +594,11 @@ function StreetAutocomplete({
       }}
       onSelectionChange={(key) => {
         if (key == null) return;
-        const street = streets.find((s) => String(s.streetId) === String(key));
-        if (street) {
-          setInputValue(street.streetName);
-          onChange(street.streetName);
-          onSelectStreet?.(street.streetId, street.streetName);
+        const row = items.find((i) => i.id === String(key));
+        if (row && row.kind === "street") {
+          setInputValue(row.label);
+          onChange(row.label);
+          onSelectStreet?.(row.streetId, row.label);
         }
       }}
     >
@@ -557,26 +608,72 @@ function StreetAutocomplete({
         <ComboBox.Trigger />
       </ComboBox.InputGroup>
       <ComboBox.Popover>
-        <ListBox>
-          {isLoading ? (
-            <ListBox.Item id="__loading__" textValue="Buscando...">
-              Buscando...
+        <ListBox disabledKeys={disabledIds}>
+          {(item: StreetRow) => (
+            <ListBox.Item id={item.id} textValue={item.label}>
+              {item.label}
             </ListBox.Item>
-          ) : streets.length === 0 ? (
-            <ListBox.Item id="__empty__" textValue="Sin sugerencias">
-              {debounced.length < 2
-                ? "Escribe al menos 2 caracteres"
-                : "Sin sugerencias para esta comuna"}
-            </ListBox.Item>
-          ) : (
-            streets.map((s) => (
-              <ListBox.Item id={String(s.streetId)} key={s.streetId} textValue={s.streetName}>
-                {s.streetName}
-              </ListBox.Item>
-            ))
           )}
         </ListBox>
       </ComboBox.Popover>
     </ComboBox>
+  );
+}
+
+// ─── ComunaLimitsAlert ────────────────────────────────────────────────────────
+
+interface ComunaLimitsAlertProps {
+  commune:
+    | {
+        countyName: string;
+        supportsCashOnDelivery: boolean;
+        supportsReturn: boolean;
+      }
+    | undefined;
+  isAcknowledged: boolean;
+  onAcknowledge: (next: boolean) => void;
+}
+
+function ComunaLimitsAlert({
+  commune,
+  isAcknowledged,
+  onAcknowledge,
+}: Readonly<ComunaLimitsAlertProps>) {
+  if (!commune) return null;
+  const noPpd = commune.supportsCashOnDelivery === false;
+  const noReturn = commune.supportsReturn === false;
+  if (!noPpd && !noReturn) return null;
+
+  return (
+    <Alert status="warning">
+      <Alert.Indicator />
+      <Alert.Content>
+        <Alert.Title>Restricciones de cobertura en {commune.countyName}</Alert.Title>
+        <Alert.Description>
+          <ul className="mt-1 list-inside list-disc space-y-1">
+            {noPpd && (
+              <li>
+                <strong>Sin pago contra entrega:</strong> el envío no acepta flete por cobrar; lo
+                debe pagar la clínica al despachar.
+              </li>
+            )}
+            {noReturn && (
+              <li>
+                <strong>Sin retorno de documentos:</strong> Chilexpress no devuelve la guía firmada
+                ni documentación física a la clínica desde esta comuna.
+              </li>
+            )}
+          </ul>
+          <Checkbox className="mt-3" isSelected={isAcknowledged} onChange={onAcknowledge}>
+            <Checkbox.Control>
+              <Checkbox.Indicator />
+            </Checkbox.Control>
+            <Checkbox.Content>
+              <Label>Entiendo y deseo continuar con esta comuna</Label>
+            </Checkbox.Content>
+          </Checkbox>
+        </Alert.Description>
+      </Alert.Content>
+    </Alert>
   );
 }
