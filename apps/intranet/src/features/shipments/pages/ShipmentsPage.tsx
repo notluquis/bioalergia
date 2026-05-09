@@ -8,16 +8,18 @@ import {
   SearchField,
   Spinner,
 } from "@heroui/react";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 import dayjs from "dayjs";
-import { PackageCheck, PlusCircle, Truck, UserPlus } from "lucide-react";
-import { useState } from "react";
+import { Activity, PackageCheck, PlusCircle, RefreshCw, Truck, UserPlus } from "lucide-react";
+import { useMemo, useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
+import { useToast } from "@/context/ToastContext";
 import { fetchPatients } from "@/features/patients/api";
 import { CreatePatientModal } from "@/features/patients/components/CreatePatientModal";
-import { fetchAllShipments } from "../api";
+import { fetchAllShipments, reprintLabel } from "../api";
 import { CreateShipmentWizard } from "../components/CreateShipmentWizard";
+import { ShipmentTrackingModal } from "../components/ShipmentTrackingModal";
 
 type Shipment = Awaited<ReturnType<typeof fetchAllShipments>>["shipments"][number];
 type Patient = Awaited<ReturnType<typeof fetchPatients>>[number];
@@ -29,7 +31,7 @@ const STATUS_COLOR: Record<string, "success" | "warning" | "default"> = {
   PENDING: "warning",
 };
 
-const columns: ColumnDef<Shipment>[] = [
+const baseColumns: ColumnDef<Shipment>[] = [
   {
     header: "OT",
     accessorKey: "otNumber",
@@ -90,20 +92,6 @@ const columns: ColumnDef<Shipment>[] = [
     header: "Fecha",
     accessorKey: "createdAt",
     cell: ({ row }) => dayjs(row.original.createdAt).format("DD/MM/YYYY HH:mm"),
-  },
-  {
-    id: "label",
-    cell: ({ row }) =>
-      row.original.labelBase64 ? (
-        <Button
-          size="sm"
-          variant="ghost"
-          isIconOnly
-          onPress={() => downloadLabel(row.original.otNumber, row.original.labelBase64!)}
-        >
-          <PackageCheck size={16} />
-        </Button>
-      ) : null,
   },
 ];
 
@@ -214,16 +202,77 @@ function PatientSelectModal({
 }
 
 export function ShipmentsPage() {
+  const queryClient = useQueryClient();
+  const { error: toastError, success } = useToast();
   const [selectPatientOpen, setSelectPatientOpen] = useState(false);
   const [createPatientOpen, setCreatePatientOpen] = useState(false);
   const [wizardOpen, setWizardOpen] = useState(false);
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
+  const [tracking, setTracking] = useState<{ id: number; otNumber: string } | null>(null);
 
   const { data, isLoading, refetch } = useQuery({
     queryKey: ["shipments-all"],
     queryFn: fetchAllShipments,
     staleTime: 1000 * 60,
   });
+
+  const reprintMutation = useMutation({
+    mutationFn: (shipmentId: number) => reprintLabel(shipmentId),
+    onError: (e) => toastError(e instanceof Error ? e.message : "Error al reimprimir"),
+    onSuccess: (res, shipmentId) => {
+      if (res.result.label) {
+        const ot = data?.shipments.find((s) => s.id === shipmentId)?.otNumber ?? String(shipmentId);
+        downloadLabel(ot, res.result.label);
+        success("Etiqueta reimpresa");
+        void queryClient.invalidateQueries({ queryKey: ["shipments-all"] });
+      }
+    },
+  });
+
+  const columns = useMemo<ColumnDef<Shipment>[]>(
+    () => [
+      ...baseColumns,
+      {
+        id: "actions",
+        header: "Acciones",
+        cell: ({ row }) => (
+          <div className="flex items-center gap-1">
+            {row.original.labelBase64 && (
+              <Button
+                aria-label="Descargar etiqueta"
+                isIconOnly
+                onPress={() => downloadLabel(row.original.otNumber, row.original.labelBase64!)}
+                size="sm"
+                variant="ghost"
+              >
+                <PackageCheck size={16} />
+              </Button>
+            )}
+            <Button
+              aria-label="Reimprimir etiqueta"
+              isDisabled={reprintMutation.isPending}
+              isIconOnly
+              onPress={() => reprintMutation.mutate(row.original.id)}
+              size="sm"
+              variant="ghost"
+            >
+              <RefreshCw size={16} />
+            </Button>
+            <Button
+              aria-label="Tracking"
+              isIconOnly
+              onPress={() => setTracking({ id: row.original.id, otNumber: row.original.otNumber })}
+              size="sm"
+              variant="ghost"
+            >
+              <Activity size={16} />
+            </Button>
+          </div>
+        ),
+      },
+    ],
+    [data?.shipments, reprintMutation]
+  );
 
   function handlePatientSelect(patient: Patient) {
     setSelectedPatient(patient);
@@ -291,6 +340,13 @@ export function ShipmentsPage() {
           patientName={`${selectedPatient.person.names} ${selectedPatient.person.fatherName}`.trim()}
         />
       )}
+
+      <ShipmentTrackingModal
+        isOpen={tracking != null}
+        onClose={() => setTracking(null)}
+        otNumber={tracking?.otNumber ?? null}
+        shipmentId={tracking?.id ?? null}
+      />
     </div>
   );
 }
