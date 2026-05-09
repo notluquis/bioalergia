@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("@finanzas/db", () => ({ db: {} }));
 
 const { extractIdentityHints, extractPatientHints, inferHealthInsurance, resolveClinicalIdentity } =
-  await import("../clinical-series");
+  await import("../clinical-series.ts");
 
 describe("extractPatientHints", () => {
   describe("patientName — capitalized names", () => {

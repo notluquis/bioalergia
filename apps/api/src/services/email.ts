@@ -1,5 +1,5 @@
-import { logEvent } from "../lib/logger";
-import { buildTimesheetEmailComposition } from "./timesheet-email-template";
+import { logEvent } from "../lib/logger.ts";
+import { buildTimesheetEmailComposition } from "./timesheet-email-template.ts";
 
 /**
  * Genera un archivo .eml que el usuario puede abrir con Outlook/Mail

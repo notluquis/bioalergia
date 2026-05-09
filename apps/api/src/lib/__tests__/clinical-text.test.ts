@@ -3,7 +3,7 @@ import {
   joinClinicalText,
   normalizeClinicalText,
   normalizeClinicalTextLower,
-} from "../clinical-text";
+} from "../clinical-text.ts";
 
 describe("clinical-text", () => {
   describe("normalizeClinicalText", () => {

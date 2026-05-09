@@ -6,7 +6,7 @@ import {
   RICH_CONFIG,
   SANITIZE_CONFIG,
   sanitizeHtml,
-} from "../html-sanitizer";
+} from "../html-sanitizer.ts";
 
 // NOTE: sanitizeHtmlWithOptions and htmlSanitizerMiddleware are excluded because they
 // depend on rate-limiting infrastructure (getGlobalMonitor) and Hono middleware context.

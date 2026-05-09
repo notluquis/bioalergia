@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isJWTExpired } from "../auth";
+import { isJWTExpired } from "../auth.ts";
 
 describe("isJWTExpired", () => {
   it("returns false for future expiry beyond 5-minute buffer", () => {

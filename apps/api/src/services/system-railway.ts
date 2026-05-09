@@ -1,4 +1,4 @@
-import { logError } from "../lib/logger";
+import { logError } from "../lib/logger.ts";
 import { z } from "zod";
 
 const RAILWAY_GRAPHQL_ENDPOINT =

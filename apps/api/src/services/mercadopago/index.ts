@@ -1,4 +1,4 @@
-import { syncFinancialTransactions, syncFinancialTransactionsBySourceIds } from "../finance";
+import { syncFinancialTransactions, syncFinancialTransactionsBySourceIds } from "../finance.ts";
 import {
   checkMpConfig,
   MP_ACCESS_TOKEN,
@@ -6,8 +6,8 @@ import {
   MP_WEBHOOK_PASSWORD,
   mpFetch,
   safeMpJson,
-} from "./client";
-import { type ImportStats, processReportUrl } from "./ingest";
+} from "./client.ts";
+import { type ImportStats, processReportUrl } from "./ingest.ts";
 
 export type { ImportStats };
 export { MP_WEBHOOK_PASSWORD };

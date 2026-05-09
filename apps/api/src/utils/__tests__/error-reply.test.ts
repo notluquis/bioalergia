@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import superjson from "superjson";
 import { describe, expect, it } from "vitest";
 
-import { errorReply } from "../error-reply";
+import { errorReply } from "../error-reply.ts";
 
 /**
  * error-reply tests.

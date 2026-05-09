@@ -7,7 +7,7 @@
 # ============================================================================
 # STAGE 1: Prune — minimal lockfile for the scraper workspace
 # ============================================================================
-FROM node:slim AS pruner
+FROM node:26-slim AS pruner
 WORKDIR /app
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
@@ -19,7 +19,7 @@ RUN TURBO_TELEMETRY_DISABLED=1 pnpm dlx turbo@2.9.1 prune @finanzas/doctoralia-s
 # ============================================================================
 # STAGE 2: Base — install deps for pruned workspace
 # ============================================================================
-FROM node:slim AS base
+FROM node:26-slim AS base
 WORKDIR /app
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
@@ -61,7 +61,7 @@ RUN --mount=type=cache,id=s/4990f681-049b-467f-9034-ef5c74a55f0a-/pnpm/store,tar
 # ============================================================================
 # STAGE 4: Runner — installs Chromium for browser-based login fallback
 # ============================================================================
-FROM node:22-bookworm AS runner
+FROM node:26-bookworm AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
@@ -75,4 +75,4 @@ RUN npx playwright@1.59.1 install --with-deps chromium \
 
 USER node
 
-CMD ["node", "--import", "tsx", "src/index.ts"]
+CMD ["node", "src/index.ts"]

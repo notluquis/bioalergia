@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { db } from "@finanzas/db";
-import { startClinicalSkinTestImportJob } from "../lib/clinical-skin-tests/clinical-skin-test-scheduler";
-import { logError, logEvent, logWarn } from "../lib/logger";
+import { startClinicalSkinTestImportJob } from "../lib/clinical-skin-tests/clinical-skin-test-scheduler.ts";
+import { logError, logEvent, logWarn } from "../lib/logger.ts";
 
 export const onedriveWebhookRoutes = new Hono();
 const ONEDRIVE_WEBHOOK_CLIENT_STATE = "bioalergia-onedrive-sync";

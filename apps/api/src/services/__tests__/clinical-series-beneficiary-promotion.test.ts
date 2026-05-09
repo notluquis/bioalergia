@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { shouldPromoteBeneficiaryToPatientIdentity } from "../clinical-series";
+import { shouldPromoteBeneficiaryToPatientIdentity } from "../clinical-series.ts";
 
 describe("clinical series beneficiary to patient promotion", () => {
   it("promotes boleta identity when it matches the patient name", () => {

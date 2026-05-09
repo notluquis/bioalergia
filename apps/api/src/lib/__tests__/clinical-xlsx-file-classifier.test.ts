@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { classifyClinicalXlsxFilename } from "../clinical-xlsx-file-classifier";
+import { classifyClinicalXlsxFilename } from "../clinical-xlsx-file-classifier.ts";
 
 describe("clinical xlsx file classifier", () => {
   it("routes skin-test filenames to the skin-test module", () => {

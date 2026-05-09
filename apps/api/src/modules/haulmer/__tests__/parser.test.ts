@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { normalizeColumnName, normalizeRowHeaders, parseCSVText } from "../parser";
+import { normalizeColumnName, normalizeRowHeaders, parseCSVText } from "../parser.ts";
 
 describe("normalizeColumnName", () => {
   it("maps known Spanish column names to camelCase keys", () => {

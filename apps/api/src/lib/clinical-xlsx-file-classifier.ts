@@ -1,4 +1,4 @@
-import { isSkinTestCandidateFilename } from "./skin-test-file-filter";
+import { isSkinTestCandidateFilename } from "./skin-test-file-filter.ts";
 
 export type ClinicalXlsxFileClassification = "CLINICAL_DOCUMENT" | "OTHER" | "SKIN_TEST";
 

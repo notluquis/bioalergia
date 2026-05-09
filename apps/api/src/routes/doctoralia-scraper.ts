@@ -1,10 +1,10 @@
 import { db } from "@finanzas/db";
 import { Hono } from "hono";
-import { doctoraliaScraperApiToken } from "../config";
-import type { DoctoraliaCalendarResponse } from "../lib/doctoralia/doctoralia-calendar-types";
-import { logError, logEvent } from "../lib/logger";
-import { doctoraliaCalendarSyncService } from "../services/doctoralia-calendar";
-import { consumeDoctoraliaScraperForceRun } from "../services/doctoralia-scraper-run-control";
+import { doctoraliaScraperApiToken } from "../config.ts";
+import type { DoctoraliaCalendarResponse } from "../lib/doctoralia/doctoralia-calendar-types.ts";
+import { logError, logEvent } from "../lib/logger.ts";
+import { doctoraliaCalendarSyncService } from "../services/doctoralia-calendar.ts";
+import { consumeDoctoraliaScraperForceRun } from "../services/doctoralia-scraper-run-control.ts";
 
 export const doctoraliaScraperRoutes = new Hono();
 

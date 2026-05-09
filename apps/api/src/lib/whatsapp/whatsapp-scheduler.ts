@@ -1,6 +1,6 @@
 import cron from "node-cron";
-import { logError, logEvent, logWarn } from "../logger";
-import { runImapPoll } from "./imap-monitor";
+import { logError, logEvent, logWarn } from "../logger.ts";
+import { runImapPoll } from "./imap-monitor.ts";
 
 const DEFAULT_CRON = "*/2 * * * *";
 const DEFAULT_TIMEZONE = "America/Santiago";

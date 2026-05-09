@@ -12,12 +12,12 @@ import { ORPCError, onError, os } from "@orpc/server";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import type { Context as HonoContext } from "hono";
 import type { z } from "zod";
-import { getSessionUser, hasPermission } from "../auth";
-import { logError } from "../lib/logger";
-import { type AppSettings, settingsKeyToDbKey } from "../lib/settings";
-import { configureSuperjson } from "../lib/superjson-config";
-import { loadSettings, updateSettings as persistSettings } from "../services/settings";
-import { SuperJSONRPCHandler } from "./superjson";
+import { getSessionUser, hasPermission } from "../auth.ts";
+import { logError } from "../lib/logger.ts";
+import { type AppSettings, settingsKeyToDbKey } from "../lib/settings.ts";
+import { configureSuperjson } from "../lib/superjson-config.ts";
+import { loadSettings, updateSettings as persistSettings } from "../services/settings.ts";
+import { SuperJSONRPCHandler } from "./superjson.ts";
 
 configureSuperjson();
 

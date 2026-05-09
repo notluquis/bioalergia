@@ -13,7 +13,7 @@ import {
 import type { ServiceInclude } from "@finanzas/db/input";
 import dayjs from "dayjs";
 import { Decimal } from "decimal.js";
-import "../lib/time";
+import "../lib/time.ts";
 
 type ServicePayload = {
   name: string;

@@ -1,17 +1,17 @@
 import type { DailyProductionBalance } from "@finanzas/db";
 import dayjs from "dayjs";
 import { Hono } from "hono";
-import { getSessionUser, hasPermission } from "../auth";
+import { getSessionUser, hasPermission } from "../auth.ts";
 import {
   productionBalancePayloadSchema,
   productionBalanceQuerySchema,
-} from "../lib/financial-schemas";
+} from "../lib/financial-schemas.ts";
 import {
   createProductionBalance,
   listProductionBalances,
   updateProductionBalance,
-} from "../services/daily-production-balances";
-import { reply } from "../utils/reply";
+} from "../services/daily-production-balances.ts";
+import { reply } from "../utils/reply.ts";
 
 const app = new Hono();
 

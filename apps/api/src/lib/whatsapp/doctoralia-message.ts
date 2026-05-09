@@ -1,6 +1,6 @@
-import { getSetting } from "../../services/settings";
-import { formatChileDateTime } from "../time";
-import { parseDoctoraliaEmail } from "./email-parser";
+import { getSetting } from "../../services/settings.ts";
+import { formatChileDateTime } from "../time.ts";
+import { parseDoctoraliaEmail } from "./email-parser.ts";
 
 const WHATSAPP_FREEFORM_MESSAGE_SETTING_KEY = "whatsapp.freeformMessage";
 

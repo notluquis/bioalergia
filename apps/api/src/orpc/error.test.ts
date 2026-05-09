@@ -1,8 +1,8 @@
 import { ORPCError } from "@orpc/server";
 import { describe, expect, it } from "vitest";
-import { AppError } from "../lib/app-error";
-import { GoogleApiError } from "../lib/google/google-errors";
-import { toORPCError } from "./error";
+import { AppError } from "../lib/app-error.ts";
+import { GoogleApiError } from "../lib/google/google-errors.ts";
+import { toORPCError } from "./error.ts";
 
 describe("toORPCError", () => {
   it("maps Google Drive errors to stable oRPC errors", () => {

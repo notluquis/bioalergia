@@ -3,7 +3,7 @@ import type { ValidationTargets } from "hono";
 import type { ZodType } from "zod";
 import { z } from "zod";
 
-import { errorReply } from "../utils/error-reply";
+import { errorReply } from "../utils/error-reply.ts";
 
 export const zValidator = <T extends ZodType, Target extends keyof ValidationTargets>(
   target: Target,

@@ -5,7 +5,7 @@ import {
   MISSING_QUERY_TO_SERVICE_FILTER,
   isMissingClassificationFilterKey,
   toTestMetadata,
-} from "../calendar-reclassify";
+} from "../calendar-reclassify.ts";
 
 describe("calendar-reclassify (pure helpers)", () => {
   // ──────────────────────────────────────────────────────────────────────────

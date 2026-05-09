@@ -22,12 +22,12 @@ import { ORPCError, onError, os } from "@orpc/server";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import type { Context as HonoContext } from "hono";
 import { z } from "zod";
-import { getSessionUser, hasPermission } from "../auth";
-import { hashPassword } from "../lib/crypto";
-import { logError } from "../lib/logger";
-import { normalizeRut, requireCanonicalRut } from "../lib/rut";
-import { configureSuperjson } from "../lib/superjson-config";
-import { SuperJSONRPCHandler } from "./superjson";
+import { getSessionUser, hasPermission } from "../auth.ts";
+import { hashPassword } from "../lib/crypto.ts";
+import { logError } from "../lib/logger.ts";
+import { normalizeRut, requireCanonicalRut } from "../lib/rut.ts";
+import { configureSuperjson } from "../lib/superjson-config.ts";
+import { SuperJSONRPCHandler } from "./superjson.ts";
 
 configureSuperjson();
 

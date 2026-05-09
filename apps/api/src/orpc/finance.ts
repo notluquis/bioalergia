@@ -33,12 +33,12 @@ import {
   financeUpdateTransactionSchema,
   financeUpsertCompensationBudgetSchema,
 } from "@finanzas/orpc-contracts/finance";
-import Decimal from "decimal.js";
+import { Decimal } from "decimal.js";
 import type { Context as HonoContext } from "hono";
 import { z } from "zod";
-import { getSessionUser, hasPermission } from "../auth";
-import { logError } from "../lib/logger";
-import { configureSuperjson } from "../lib/superjson-config";
+import { getSessionUser, hasPermission } from "../auth.ts";
+import { logError } from "../lib/logger.ts";
+import { configureSuperjson } from "../lib/superjson-config.ts";
 import {
   createCompensationProfile,
   createFinancialAutoCategoryRule,
@@ -62,8 +62,8 @@ import {
   updateFinancialTransaction,
   updateTransactionCategory,
   upsertCompensationPeriodBudget,
-} from "../services/finance";
-import { SuperJSONRPCHandler } from "./superjson";
+} from "../services/finance.ts";
+import { SuperJSONRPCHandler } from "./superjson.ts";
 
 configureSuperjson();
 

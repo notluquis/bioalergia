@@ -4,87 +4,87 @@ import { cors } from "hono/cors";
 import { HTTPException } from "hono/http-exception";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 import { rateLimiter } from "hono-rate-limiter";
-import { getSessionUser, hasPermission } from "./auth";
-import { AppError } from "./lib/app-error";
-import { htmlSanitizerMiddleware } from "./lib/html-sanitizer";
-import { logError } from "./lib/logger";
-import { configureSuperjson } from "./lib/superjson-config";
-import { authOpenAPIHandler, authORPCHandler } from "./orpc/auth";
-import { backupsOpenAPIHandler, backupsORPCHandler } from "./orpc/backups";
-import { getCurrentJobs as getCurrentBackupJobs } from "./services/backups";
-import { balancesOpenAPIHandler, balancesORPCHandler } from "./orpc/balances";
-import { calendarOpenAPIHandler, calendarORPCHandler } from "./orpc/calendar";
-import { certificatesOpenAPIHandler, certificatesORPCHandler } from "./orpc/certificates";
-import { clinicalSeriesOpenAPIHandler, clinicalSeriesORPCHandler } from "./orpc/clinical-series";
+import { getSessionUser, hasPermission } from "./auth.ts";
+import { AppError } from "./lib/app-error.ts";
+import { htmlSanitizerMiddleware } from "./lib/html-sanitizer.ts";
+import { logError } from "./lib/logger.ts";
+import { configureSuperjson } from "./lib/superjson-config.ts";
+import { authOpenAPIHandler, authORPCHandler } from "./orpc/auth.ts";
+import { backupsOpenAPIHandler, backupsORPCHandler } from "./orpc/backups.ts";
+import { getCurrentJobs as getCurrentBackupJobs } from "./services/backups.ts";
+import { balancesOpenAPIHandler, balancesORPCHandler } from "./orpc/balances.ts";
+import { calendarOpenAPIHandler, calendarORPCHandler } from "./orpc/calendar.ts";
+import { certificatesOpenAPIHandler, certificatesORPCHandler } from "./orpc/certificates.ts";
+import { clinicalSeriesOpenAPIHandler, clinicalSeriesORPCHandler } from "./orpc/clinical-series.ts";
 import {
   clinicalSkinTestsOpenAPIHandler,
   clinicalSkinTestsORPCHandler,
-} from "./orpc/clinical-skin-tests";
-import { getCurrentRebuildJob } from "./services/clinical-series";
-import { counterpartsOpenAPIHandler, counterpartsORPCHandler } from "./orpc/counterparts";
-import { csvUploadOpenAPIHandler, csvUploadORPCHandler } from "./orpc/csv-upload";
-import { doctoraliaOpenAPIHandler, doctoraliaORPCHandler } from "./orpc/doctoralia";
-import { dteOpenAPIHandler, dteORPCHandler } from "./orpc/dte";
-import { dteAnalyticsOpenAPIHandler, dteAnalyticsORPCHandler } from "./orpc/dte-analytics";
-import { dteEventLinksOpenAPIHandler, dteEventLinksORPCHandler } from "./orpc/dte-event-links";
-import { employeesOpenAPIHandler, employeesORPCHandler } from "./orpc/employees";
-import { expensesOpenAPIHandler, expensesORPCHandler } from "./orpc/expenses";
-import { financeOpenAPIHandler, financeORPCHandler } from "./orpc/finance";
-import { haulmerOpenAPIHandler, haulmerORPCHandler } from "./orpc/haulmer";
-import { integrationsOpenAPIHandler, integrationsORPCHandler } from "./orpc/integrations";
-import { inventoryOpenAPIHandler, inventoryORPCHandler } from "./orpc/inventory";
-import { loansOpenAPIHandler, loansORPCHandler } from "./orpc/loans";
-import { mercadopagoOpenAPIHandler, mercadopagoORPCHandler } from "./orpc/mercadopago";
-import { notificationsOpenAPIHandler, notificationsORPCHandler } from "./orpc/notifications";
-import { outreachOpenAPIHandler, outreachORPCHandler } from "./orpc/outreach";
-import { addressesOpenAPIHandler, addressesORPCHandler } from "./orpc/addresses";
-import { patientsOpenAPIHandler, patientsORPCHandler } from "./orpc/patients";
+} from "./orpc/clinical-skin-tests.ts";
+import { getCurrentRebuildJob } from "./services/clinical-series.ts";
+import { counterpartsOpenAPIHandler, counterpartsORPCHandler } from "./orpc/counterparts.ts";
+import { csvUploadOpenAPIHandler, csvUploadORPCHandler } from "./orpc/csv-upload.ts";
+import { doctoraliaOpenAPIHandler, doctoraliaORPCHandler } from "./orpc/doctoralia.ts";
+import { dteOpenAPIHandler, dteORPCHandler } from "./orpc/dte.ts";
+import { dteAnalyticsOpenAPIHandler, dteAnalyticsORPCHandler } from "./orpc/dte-analytics.ts";
+import { dteEventLinksOpenAPIHandler, dteEventLinksORPCHandler } from "./orpc/dte-event-links.ts";
+import { employeesOpenAPIHandler, employeesORPCHandler } from "./orpc/employees.ts";
+import { expensesOpenAPIHandler, expensesORPCHandler } from "./orpc/expenses.ts";
+import { financeOpenAPIHandler, financeORPCHandler } from "./orpc/finance.ts";
+import { haulmerOpenAPIHandler, haulmerORPCHandler } from "./orpc/haulmer.ts";
+import { integrationsOpenAPIHandler, integrationsORPCHandler } from "./orpc/integrations.ts";
+import { inventoryOpenAPIHandler, inventoryORPCHandler } from "./orpc/inventory.ts";
+import { loansOpenAPIHandler, loansORPCHandler } from "./orpc/loans.ts";
+import { mercadopagoOpenAPIHandler, mercadopagoORPCHandler } from "./orpc/mercadopago.ts";
+import { notificationsOpenAPIHandler, notificationsORPCHandler } from "./orpc/notifications.ts";
+import { outreachOpenAPIHandler, outreachORPCHandler } from "./orpc/outreach.ts";
+import { addressesOpenAPIHandler, addressesORPCHandler } from "./orpc/addresses.ts";
+import { patientsOpenAPIHandler, patientsORPCHandler } from "./orpc/patients.ts";
 import {
   patientCampaignsOpenAPIHandler,
   patientCampaignsORPCHandler,
-} from "./orpc/patient-campaigns";
-import { peopleOpenAPIHandler, peopleORPCHandler } from "./orpc/people";
-import { personalFinanceOpenAPIHandler, personalFinanceORPCHandler } from "./orpc/personal-finance";
+} from "./orpc/patient-campaigns.ts";
+import { peopleOpenAPIHandler, peopleORPCHandler } from "./orpc/people.ts";
+import { personalFinanceOpenAPIHandler, personalFinanceORPCHandler } from "./orpc/personal-finance.ts";
 import {
   productionBalancesOpenAPIHandler,
   productionBalancesORPCHandler,
-} from "./orpc/production-balances";
+} from "./orpc/production-balances.ts";
 import {
   releaseTransactionsOpenAPIHandler,
   releaseTransactionsORPCHandler,
-} from "./orpc/release-transactions";
-import { rolesOpenAPIHandler, rolesORPCHandler } from "./orpc/roles";
-import { servicesOpenAPIHandler, servicesORPCHandler } from "./orpc/services";
-import { settingsOpenAPIHandler, settingsORPCHandler } from "./orpc/settings";
+} from "./orpc/release-transactions.ts";
+import { rolesOpenAPIHandler, rolesORPCHandler } from "./orpc/roles.ts";
+import { servicesOpenAPIHandler, servicesORPCHandler } from "./orpc/services.ts";
+import { settingsOpenAPIHandler, settingsORPCHandler } from "./orpc/settings.ts";
 import {
   settlementTransactionsOpenAPIHandler,
   settlementTransactionsORPCHandler,
-} from "./orpc/settlement-transactions";
-import { createHonoORPCRequest } from "./orpc/superjson";
-import { suppliesOpenAPIHandler, suppliesORPCHandler } from "./orpc/supplies";
-import { systemOpenAPIHandler, systemORPCHandler } from "./orpc/system";
-import { attendanceOpenAPIHandler, attendanceORPCHandler } from "./orpc/attendance";
-import { timesheetsOpenAPIHandler, timesheetsORPCHandler } from "./orpc/timesheets";
+} from "./orpc/settlement-transactions.ts";
+import { createHonoORPCRequest } from "./orpc/superjson.ts";
+import { suppliesOpenAPIHandler, suppliesORPCHandler } from "./orpc/supplies.ts";
+import { systemOpenAPIHandler, systemORPCHandler } from "./orpc/system.ts";
+import { attendanceOpenAPIHandler, attendanceORPCHandler } from "./orpc/attendance.ts";
+import { timesheetsOpenAPIHandler, timesheetsORPCHandler } from "./orpc/timesheets.ts";
 import {
   transactionsInsightsOpenAPIHandler,
   transactionsInsightsORPCHandler,
-} from "./orpc/transactions-insights";
-import { usersOpenAPIHandler, usersORPCHandler } from "./orpc/users";
+} from "./orpc/transactions-insights.ts";
+import { usersOpenAPIHandler, usersORPCHandler } from "./orpc/users.ts";
 import {
   utilityBillsOpenAPIHandler,
   utilityBillsORPCHandler,
-} from "./orpc/utility-bills";
-import { waCloudOpenAPIHandler, waCloudORPCHandler } from "./orpc/wa-cloud";
-import { whatsappOpenAPIHandler, whatsappORPCHandler } from "./orpc/whatsapp";
-import { shipmentsOpenAPIHandler, shipmentsORPCHandler } from "./orpc/shipments";
-import { doctoraliaScraperRoutes } from "./routes/doctoralia-scraper";
-import { googleCalendarWebhookRoutes } from "./routes/google-calendar-webhook";
-import { mercadopagoReportWebhookRoutes } from "./routes/mercadopago-report-webhook";
-import { onedriveWebhookRoutes } from "./routes/onedrive-webhook";
-import { waCloudWebhookRoutes } from "./routes/wa-cloud-webhook";
-import { errorReply } from "./utils/error-reply";
-import { normalizeErrorResponse } from "./utils/normalize-error-response";
-import { reply, replyRaw } from "./utils/reply";
+} from "./orpc/utility-bills.ts";
+import { waCloudOpenAPIHandler, waCloudORPCHandler } from "./orpc/wa-cloud.ts";
+import { whatsappOpenAPIHandler, whatsappORPCHandler } from "./orpc/whatsapp.ts";
+import { shipmentsOpenAPIHandler, shipmentsORPCHandler } from "./orpc/shipments.ts";
+import { doctoraliaScraperRoutes } from "./routes/doctoralia-scraper.ts";
+import { googleCalendarWebhookRoutes } from "./routes/google-calendar-webhook.ts";
+import { mercadopagoReportWebhookRoutes } from "./routes/mercadopago-report-webhook.ts";
+import { onedriveWebhookRoutes } from "./routes/onedrive-webhook.ts";
+import { waCloudWebhookRoutes } from "./routes/wa-cloud-webhook.ts";
+import { errorReply } from "./utils/error-reply.ts";
+import { normalizeErrorResponse } from "./utils/normalize-error-response.ts";
+import { reply, replyRaw } from "./utils/reply.ts";
 
 configureSuperjson();
 

@@ -4,7 +4,7 @@ import type {
   OutreachContact,
   OutreachEstablishment,
 } from "@finanzas/orpc-contracts/outreach";
-import { renderTemplate } from "./template";
+import { renderTemplate } from "./template.ts";
 
 export type CandidateRow = {
   establishment: OutreachEstablishment;

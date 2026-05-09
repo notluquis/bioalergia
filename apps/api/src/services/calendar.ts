@@ -1,8 +1,8 @@
 import { db } from "@finanzas/db";
 
-import type { CalendarEventRecord } from "../lib/google/google-calendar";
-import { calendarSyncService } from "../modules/calendar/service";
-import { extractIdentityHints, syncClinicalSeriesForExternalEvents } from "./clinical-series";
+import type { CalendarEventRecord } from "../lib/google/google-calendar.ts";
+import { calendarSyncService } from "../modules/calendar/service.ts";
+import { extractIdentityHints, syncClinicalSeriesForExternalEvents } from "./clinical-series.ts";
 
 export type CalendarSyncLogEntryPayload = {
   attributes?: null | Record<string, unknown>;
@@ -434,7 +434,7 @@ export async function updateCalendarEventClassification(
   await syncClinicalSeriesForExternalEvents([{ calendarId, eventId }]);
 }
 
-import type { EventCreateInput } from "../lib/db-types";
+import type { EventCreateInput } from "../lib/db-types.ts";
 
 export async function createCalendarEvent(data: CalendarEventRecord) {
   // Look up internal calendar ID

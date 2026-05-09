@@ -3,4 +3,4 @@
  * This makes them publicly available from the @finanzas/db package
  */
 
-export * from "./zenstack/input.js";
+export * from "./zenstack/input.ts";

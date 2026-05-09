@@ -5,7 +5,7 @@ import {
   buildDangerousPermissionsWhereClause,
   filterSafePermissions,
   isDangerousPermission,
-} from "../permission-validator";
+} from "../permission-validator.ts";
 
 describe("permission-validator", () => {
   describe("DANGEROUS_PERMISSION_PATTERNS", () => {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { AppError } from "../app-error";
+import { AppError } from "../app-error.ts";
 
 describe("AppError", () => {
   it("constructs with status, code and message", () => {

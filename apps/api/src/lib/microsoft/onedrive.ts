@@ -1,5 +1,5 @@
 import { db } from "@finanzas/db";
-import { logError, logEvent, logWarn } from "../logger";
+import { logError, logEvent, logWarn } from "../logger.ts";
 
 const MICROSOFT_TOKEN_URL = "https://login.microsoftonline.com/consumers/oauth2/v2.0/token";
 const MICROSOFT_AUTH_URL = "https://login.microsoftonline.com/consumers/oauth2/v2.0/authorize";
@@ -102,42 +102,46 @@ export interface OneDriveFolderItem {
   xlsxCount: number;
 }
 
+export interface OneDriveSubscriptionErrorDetails {
+  body?: string;
+  clientRequestId?: string | null;
+  code?: string | null;
+  requestId?: string | null;
+  status?: number;
+  webhookUrl?: string;
+}
+
 export class OneDriveSubscriptionError extends Error {
-  constructor(
-    message: string,
-    public readonly details: {
-      body?: string;
-      clientRequestId?: string | null;
-      code?: string | null;
-      requestId?: string | null;
-      status?: number;
-      webhookUrl?: string;
-    } = {}
-  ) {
+  readonly details: OneDriveSubscriptionErrorDetails;
+  constructor(message: string, details: OneDriveSubscriptionErrorDetails = {}) {
     super(message);
     this.name = "OneDriveSubscriptionError";
+    this.details = details;
   }
 }
 
+interface MicrosoftGraphErrorParsed {
+  error?: {
+    code?: string;
+    innerError?: {
+      "client-request-id"?: string;
+      "request-id"?: string;
+      date?: string;
+    };
+    message?: string;
+  };
+}
+
 class MicrosoftGraphError extends Error {
-  constructor(
-    message: string,
-    public readonly status: number,
-    public readonly body: string,
-    public readonly parsed?: {
-      error?: {
-        code?: string;
-        innerError?: {
-          "client-request-id"?: string;
-          "request-id"?: string;
-          date?: string;
-        };
-        message?: string;
-      };
-    }
-  ) {
+  readonly status: number;
+  readonly body: string;
+  readonly parsed?: MicrosoftGraphErrorParsed;
+  constructor(message: string, status: number, body: string, parsed?: MicrosoftGraphErrorParsed) {
     super(message);
     this.name = "MicrosoftGraphError";
+    this.status = status;
+    this.body = body;
+    this.parsed = parsed;
   }
 }
 

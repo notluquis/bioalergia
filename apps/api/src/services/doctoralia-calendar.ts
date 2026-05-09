@@ -1,6 +1,6 @@
 import dayjs from "dayjs";
-import { getCalendarAlerts, getCalendarEvents } from "../lib/doctoralia/doctoralia-calendar-client";
-import { TIMEZONE } from "../lib/time";
+import { getCalendarAlerts, getCalendarEvents } from "../lib/doctoralia/doctoralia-calendar-client.ts";
+import { TIMEZONE } from "../lib/time.ts";
 import {
   applyDoctoraliaAlertUpdates,
   createDoctoraliaSyncLog,
@@ -8,12 +8,12 @@ import {
   upsertDoctoraliaAppointments,
   upsertDoctoraliaSchedules,
   upsertDoctoraliaWorkPeriods,
-} from "../lib/doctoralia/doctoralia-calendar-store";
+} from "../lib/doctoralia/doctoralia-calendar-store.ts";
 import type {
   DoctoraliaCalendarAlert,
   DoctoraliaCalendarResponse,
-} from "../lib/doctoralia/doctoralia-calendar-types";
-import { getSetting, updateSetting } from "./settings";
+} from "../lib/doctoralia/doctoralia-calendar-types.ts";
+import { getSetting, updateSetting } from "./settings.ts";
 
 const SETTINGS_KEYS = {
   lastAlertId: "doctoralia:calendar:lastAlertId",

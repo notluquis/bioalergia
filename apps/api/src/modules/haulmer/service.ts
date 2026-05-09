@@ -4,10 +4,10 @@
  */
 
 import { db } from "@finanzas/db";
-import { importDtePurchaseRow, importDteSaleRow } from "../../lib/dte-import";
-import { captureHaulmerJWT, type HaulmerConfig, isJWTExpired } from "./auth";
-import { downloadHaulmerCSV } from "./downloader";
-import { normalizeColumnName, parseCSVText } from "./parser";
+import { importDtePurchaseRow, importDteSaleRow } from "../../lib/dte-import.ts";
+import { captureHaulmerJWT, type HaulmerConfig, isJWTExpired } from "./auth.ts";
+import { downloadHaulmerCSV } from "./downloader.ts";
+import { normalizeColumnName, parseCSVText } from "./parser.ts";
 
 export interface HaulmerSyncOptions {
   rut: string;

@@ -13,17 +13,17 @@ import { ORPCError, onError, os } from "@orpc/server";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import type { Context as HonoContext } from "hono";
 import type { z } from "zod";
-import { getSessionUser, hasPermission } from "../auth";
-import { logError } from "../lib/logger";
-import { configureSuperjson } from "../lib/superjson-config";
+import { getSessionUser, hasPermission } from "../auth.ts";
+import { logError } from "../lib/logger.ts";
+import { configureSuperjson } from "../lib/superjson-config.ts";
 import {
   createEmployee,
   deactivateEmployee,
   getEmployeeById,
   listEmployees,
   updateEmployee,
-} from "../services/employees";
-import { SuperJSONRPCHandler } from "./superjson";
+} from "../services/employees.ts";
+import { SuperJSONRPCHandler } from "./superjson.ts";
 
 configureSuperjson();
 

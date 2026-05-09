@@ -9,11 +9,11 @@ import {
   dteSyncResponseSchema,
 } from "@finanzas/orpc-contracts/dte";
 import type { Context as HonoContext } from "hono";
-import { getSessionUser, hasPermission } from "../auth";
-import { logError } from "../lib/logger";
-import { configureSuperjson } from "../lib/superjson-config";
-import { getDTESyncHistory, syncDTEs } from "../services/dte-sync";
-import { SuperJSONRPCHandler } from "./superjson";
+import { getSessionUser, hasPermission } from "../auth.ts";
+import { logError } from "../lib/logger.ts";
+import { configureSuperjson } from "../lib/superjson-config.ts";
+import { getDTESyncHistory, syncDTEs } from "../services/dte-sync.ts";
+import { SuperJSONRPCHandler } from "./superjson.ts";
 
 configureSuperjson();
 

@@ -11,15 +11,15 @@ import { ORPCError, onError, os } from "@orpc/server";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import dayjs from "dayjs";
 import type { Context as HonoContext } from "hono";
-import { getSessionUser, hasPermission } from "../auth";
-import { logError } from "../lib/logger";
-import { configureSuperjson } from "../lib/superjson-config";
+import { getSessionUser, hasPermission } from "../auth.ts";
+import { logError } from "../lib/logger.ts";
+import { configureSuperjson } from "../lib/superjson-config.ts";
 import {
   createProductionBalance,
   listProductionBalances,
   updateProductionBalance,
-} from "../services/daily-production-balances";
-import { SuperJSONRPCHandler } from "./superjson";
+} from "../services/daily-production-balances.ts";
+import { SuperJSONRPCHandler } from "./superjson.ts";
 
 configureSuperjson();
 

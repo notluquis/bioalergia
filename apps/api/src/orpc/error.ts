@@ -1,6 +1,6 @@
 import { ORPCError } from "@orpc/server";
-import { AppError } from "../lib/app-error";
-import { GoogleApiError } from "../lib/google/google-errors";
+import { AppError } from "../lib/app-error.ts";
+import { GoogleApiError } from "../lib/google/google-errors.ts";
 
 function mapHttpStatusToORPCCode(status: number): string {
   if (status === 400 || status === 422) {

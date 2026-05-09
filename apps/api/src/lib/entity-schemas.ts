@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { dateRegex, moneySchema } from "./financial-schemas";
+import { dateRegex, moneySchema } from "./financial-schemas.ts";
 
 // --- Service Schemas ---
 

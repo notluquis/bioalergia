@@ -10,12 +10,12 @@ import {
   getOneDriveSha1Hash,
   listOneDriveDeltaItems,
   type OneDriveItem,
-} from "../lib/microsoft/onedrive";
+} from "../lib/microsoft/onedrive.ts";
 import {
   classifyClinicalXlsxFilename,
   type ClinicalXlsxFileClassification,
-} from "../lib/clinical-xlsx-file-classifier";
-import { isImportableSkinTestFilename } from "../lib/skin-test-file-filter";
+} from "../lib/clinical-xlsx-file-classifier.ts";
+import { isImportableSkinTestFilename } from "../lib/skin-test-file-filter.ts";
 import {
   parseSkinTestWorkbookBuffer,
   SKIN_TEST_PARSER_VERSION,
@@ -23,8 +23,8 @@ import {
   type ParsedSkinTestResult,
   type ParsedSkinTestWorkbook,
   type SkinTestIssue,
-} from "./clinical-skin-test-parser";
-import { persistSkinTestWorkbookSnapshot } from "./clinical-skin-test-workbook-snapshots";
+} from "./clinical-skin-test-parser.ts";
+import { persistSkinTestWorkbookSnapshot } from "./clinical-skin-test-workbook-snapshots.ts";
 
 const AUTO_IMPORT_MIN_CONFIDENCE = 80;
 const JOB_TYPE = "clinical-skin-test-import-sync";

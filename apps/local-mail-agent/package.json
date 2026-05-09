@@ -9,11 +9,11 @@
     "prestart": "node ./scripts/free-port.mjs",
     "start": "node ./scripts/run-agent.mjs start",
     "lint": "oxlint",
-    "type-check": "tsc --noEmit",
-    "test:send-self": "tsx src/scripts/send-self-test.ts",
-    "import:eml": "tsx src/scripts/import-eml-backup.ts",
-    "import:list-folders": "tsx src/scripts/list-imap-folders.ts",
-    "purge:today": "tsx src/scripts/purge-today-imports.ts"
+    "type-check": "NODE_OPTIONS=--max-old-space-size=8192 tsc --noEmit",
+    "test:send-self": "node src/scripts/send-self-test.ts",
+    "import:eml": "node src/scripts/import-eml-backup.ts",
+    "import:list-folders": "node src/scripts/list-imap-folders.ts",
+    "purge:today": "node src/scripts/purge-today-imports.ts"
   },
   "dependencies": {
     "@hono/node-server": "^2.0.2",
@@ -27,11 +27,10 @@
     "@types/cli-progress": "^3.11.6",
     "@types/node": "^25.6.2",
     "@types/nodemailer": "^8.0.0",
-    "tsx": "^4.21.0",
     "typescript": "^6.0.3"
   },
   "engines": {
-    "node": ">=25",
+    "node": ">=26",
     "npm": ">=10.0.0"
   }
 }

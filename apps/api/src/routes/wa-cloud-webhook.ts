@@ -1,7 +1,7 @@
 import { db } from "@finanzas/db";
 import { Hono } from "hono";
-import { logWarn } from "../lib/logger";
-import { processWebhookPayload, verifyMetaSignature } from "../modules/wa-cloud/webhook-handler";
+import { logWarn } from "../lib/logger.ts";
+import { processWebhookPayload, verifyMetaSignature } from "../modules/wa-cloud/webhook-handler.ts";
 
 export const waCloudWebhookRoutes = new Hono();
 

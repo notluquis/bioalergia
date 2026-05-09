@@ -6,7 +6,7 @@ import {
   normalizeDate,
   normalizeSearch,
   toStringValues,
-} from "../query-helpers";
+} from "../query-helpers.ts";
 
 describe("toStringValues", () => {
   it("wraps a string in array", () => {

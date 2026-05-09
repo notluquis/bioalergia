@@ -2,18 +2,18 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import { performance } from "node:perf_hooks";
 // Removed self-import
-// import { CalendarEventRecord } from "./google-calendar";
+// import { CalendarEventRecord } from "./google-calendar.ts";
 import { db } from "@finanzas/db";
 import { calendar, type calendar_v3 } from "@googleapis/calendar";
 import dayjs from "dayjs";
 import { JWT } from "google-auth-library";
-import { compileExcludePatterns, googleCalendarConfig } from "../../config";
-import { joinClinicalText } from "../../lib/clinical-text";
-import { parseCalendarMetadata } from "../../lib/parsers";
-import { loadSettings } from "../../services/settings";
-import { logEvent, logWarn } from "../logger";
-import { removeGoogleCalendarEvents, upsertGoogleCalendarEvents } from "./google-calendar-store";
-import { retryGoogleCall } from "./google-errors";
+import { compileExcludePatterns, googleCalendarConfig } from "../../config.ts";
+import { joinClinicalText } from "../../lib/clinical-text.ts";
+import { parseCalendarMetadata } from "../../lib/parsers.ts";
+import { loadSettings } from "../../services/settings.ts";
+import { logEvent, logWarn } from "../logger.ts";
+import { removeGoogleCalendarEvents, upsertGoogleCalendarEvents } from "./google-calendar-store.ts";
+import { retryGoogleCall } from "./google-errors.ts";
 
 const CALENDAR_SCOPES = ["https://www.googleapis.com/auth/calendar.readonly"];
 const STORAGE_ROOT = path.resolve(process.cwd(), "storage", "google-calendar");

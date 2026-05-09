@@ -22,26 +22,26 @@
 import { db } from "@finanzas/db";
 import { createId } from "@paralleldrive/cuid2";
 import { type FetchMessageObject, ImapFlow } from "imapflow";
-import { logError, logEvent, logWarn } from "../logger";
-import { resolveDoctoraliaSenderSearchTerms } from "./imap-search";
+import { logError, logEvent, logWarn } from "../logger.ts";
+import { resolveDoctoraliaSenderSearchTerms } from "./imap-search.ts";
 import {
   DOCTORALIA_STATUS_CANCELLED_BY_PATIENT,
   buildDoctoraliaMatchWindow,
   normalizePatientNameForMatch,
-} from "./name-match";
-import { sendText } from "../whatsapp/baileys-socket";
+} from "./name-match.ts";
+import { sendText } from "../whatsapp/baileys-socket.ts";
 import {
   getWhatsappConversationState,
   setWhatsappContactConsent,
-} from "../whatsapp/conversation-state";
-import { buildDoctoraliaMessage } from "../whatsapp/doctoralia-message";
+} from "../whatsapp/conversation-state.ts";
+import { buildDoctoraliaMessage } from "../whatsapp/doctoralia-message.ts";
 import {
   decodeEmailBody,
   htmlToText,
   isLikelyDoctoraliaEmail,
   parseDoctoraliaEmail,
-} from "../whatsapp/email-parser";
-import { normalizePhone, phoneToJid } from "../whatsapp/jid";
+} from "../whatsapp/email-parser.ts";
+import { normalizePhone, phoneToJid } from "../whatsapp/jid.ts";
 
 interface ImapConfig {
   host: string;

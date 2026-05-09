@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildPatientSearchWhere } from "../patients";
+import { buildPatientSearchWhere } from "../patients.ts";
 
 describe("buildPatientSearchWhere", () => {
   it("returns empty object for undefined query", () => {

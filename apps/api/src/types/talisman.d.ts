@@ -1,4 +1,4 @@
-declare module "talisman/metrics/jaro-winkler" {
+declare module "talisman/metrics/jaro-winkler.js" {
   /**
    * Returns the Jaro-Winkler similarity score between two strings.
    * Range: 0 (no similarity) – 1 (identical).
@@ -7,7 +7,7 @@ declare module "talisman/metrics/jaro-winkler" {
   export default jaroWinkler;
 }
 
-declare module "talisman/metrics/monge-elkan" {
+declare module "talisman/metrics/monge-elkan.js" {
   /**
    * Monge-Elkan similarity.
    *

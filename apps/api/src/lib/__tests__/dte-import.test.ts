@@ -4,7 +4,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { buildDtePurchaseDetail, buildDteSaleDetail, parseAmount, parseDate } from "../dte-import";
+import { buildDtePurchaseDetail, buildDteSaleDetail, parseAmount, parseDate } from "../dte-import.ts";
 
 describe("parseDate", () => {
   describe("Haulmer CSV format (YYYY-MM-DD)", () => {

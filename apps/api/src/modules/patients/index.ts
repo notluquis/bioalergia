@@ -7,14 +7,14 @@ import utc from "dayjs/plugin/utc.js";
 import { Decimal } from "decimal.js";
 import { Hono } from "hono";
 import { sql } from "kysely";
-import type { AuthSession } from "../../auth.js";
-import { AppError } from "../../lib/app-error";
-import { requirePermission, requireSession } from "../../lib/legacy-route";
-import { canonicalRutFilter, normalizeRut, requireCanonicalRut } from "../../lib/rut.js";
-import { writeTempUpload } from "../../lib/temp-file.js";
-import { zValidator } from "../../lib/zod-validator";
-import { uploadPatientAttachmentToDrive } from "../../services/patient-attachments-drive.js";
-import { replyRaw } from "../../utils/reply";
+import type { AuthSession } from "../../auth.ts";
+import { AppError } from "../../lib/app-error.ts";
+import { requirePermission, requireSession } from "../../lib/legacy-route.ts";
+import { canonicalRutFilter, normalizeRut, requireCanonicalRut } from "../../lib/rut.ts";
+import { writeTempUpload } from "../../lib/temp-file.ts";
+import { zValidator } from "../../lib/zod-validator.ts";
+import { uploadPatientAttachmentToDrive } from "../../services/patient-attachments-drive.ts";
+import { replyRaw } from "../../utils/reply.ts";
 import {
   createBudgetSchema,
   createConsultationSchema,
@@ -23,7 +23,7 @@ import {
   listDtePatientSourcesQuerySchema,
   syncPatientsFromDteSalesSchema,
   updatePatientSchema,
-} from "./patients.schema.js";
+} from "./patients.schema.ts";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);

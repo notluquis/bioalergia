@@ -15,7 +15,7 @@ describe("MercadoPago client", () => {
 
   describe("redactMpUrl", () => {
     it("masks access_token query param", async () => {
-      const { redactMpUrl } = await import("../client");
+      const { redactMpUrl } = await import("../client.ts");
       const out = redactMpUrl("https://api.mercadopago.com/v1/foo?access_token=secret123&other=ok");
       expect(out).toContain("access_token=REDACTED");
       expect(out).not.toContain("secret123");
@@ -23,13 +23,13 @@ describe("MercadoPago client", () => {
     });
 
     it("returns url unchanged when no access_token param", async () => {
-      const { redactMpUrl } = await import("../client");
+      const { redactMpUrl } = await import("../client.ts");
       const url = "https://api.mercadopago.com/v1/foo?bar=1";
       expect(redactMpUrl(url)).toBe(url);
     });
 
     it("returns input string for malformed URL", async () => {
-      const { redactMpUrl } = await import("../client");
+      const { redactMpUrl } = await import("../client.ts");
       expect(redactMpUrl("not-a-url")).toBe("not-a-url");
     });
   });
@@ -38,19 +38,19 @@ describe("MercadoPago client", () => {
     it("throws when MP_ACCESS_TOKEN is empty", async () => {
       process.env.MP_ACCESS_TOKEN = "";
       vi.resetModules();
-      const { checkMpConfig } = await import("../client");
+      const { checkMpConfig } = await import("../client.ts");
       expect(() => checkMpConfig()).toThrow("MP_ACCESS_TOKEN not configured");
     });
 
     it("does not throw when token is set", async () => {
-      const { checkMpConfig } = await import("../client");
+      const { checkMpConfig } = await import("../client.ts");
       expect(() => checkMpConfig()).not.toThrow();
     });
   });
 
   describe("mpFetch", () => {
     it("retries on 500 then succeeds", async () => {
-      const { mpFetch } = await import("../client");
+      const { mpFetch } = await import("../client.ts");
       const fetchSpy = vi
         .spyOn(globalThis, "fetch")
         .mockResolvedValueOnce(new Response("err", { status: 500 }))
@@ -66,7 +66,7 @@ describe("MercadoPago client", () => {
     });
 
     it("retries on 429 (rate limit)", async () => {
-      const { mpFetch } = await import("../client");
+      const { mpFetch } = await import("../client.ts");
       const fetchSpy = vi
         .spyOn(globalThis, "fetch")
         .mockResolvedValueOnce(new Response("rate", { status: 429 }))
@@ -77,7 +77,7 @@ describe("MercadoPago client", () => {
     });
 
     it("does NOT retry on 4xx (except 429)", async () => {
-      const { mpFetch } = await import("../client");
+      const { mpFetch } = await import("../client.ts");
       const fetchSpy = vi
         .spyOn(globalThis, "fetch")
         .mockImplementation(async () => new Response("bad", { status: 400 }));
@@ -89,7 +89,7 @@ describe("MercadoPago client", () => {
     });
 
     it("retries on network error (TypeError)", async () => {
-      const { mpFetch } = await import("../client");
+      const { mpFetch } = await import("../client.ts");
       const fetchSpy = vi
         .spyOn(globalThis, "fetch")
         .mockRejectedValueOnce(new TypeError("network down"))
@@ -100,7 +100,7 @@ describe("MercadoPago client", () => {
     });
 
     it("sets Authorization Bearer header", async () => {
-      const { mpFetch } = await import("../client");
+      const { mpFetch } = await import("../client.ts");
       const fetchSpy = vi
         .spyOn(globalThis, "fetch")
         .mockImplementation(async () => new Response("{}", { status: 200 }));
@@ -112,7 +112,7 @@ describe("MercadoPago client", () => {
     });
 
     it("gives up after maxRetries 5xx and throws", async () => {
-      const { mpFetch } = await import("../client");
+      const { mpFetch } = await import("../client.ts");
       const fetchSpy = vi
         .spyOn(globalThis, "fetch")
         .mockImplementation(async () => new Response("err", { status: 503 }));
@@ -126,25 +126,25 @@ describe("MercadoPago client", () => {
 
   describe("safeMpJson", () => {
     it("returns success object for 204", async () => {
-      const { safeMpJson } = await import("../client");
+      const { safeMpJson } = await import("../client.ts");
       const out = await safeMpJson(new Response(null, { status: 204 }));
       expect(out.status).toBe("success");
     });
 
     it("returns success object for empty body", async () => {
-      const { safeMpJson } = await import("../client");
+      const { safeMpJson } = await import("../client.ts");
       const out = await safeMpJson(new Response("", { status: 200 }));
       expect(out.status).toBe("success");
     });
 
     it("parses JSON body", async () => {
-      const { safeMpJson } = await import("../client");
+      const { safeMpJson } = await import("../client.ts");
       const out = await safeMpJson(new Response('{"foo":42}', { status: 200 }));
       expect(out).toEqual({ foo: 42 });
     });
 
     it("throws on invalid JSON", async () => {
-      const { safeMpJson } = await import("../client");
+      const { safeMpJson } = await import("../client.ts");
       await expect(
         safeMpJson(new Response("<html>no json</html>", { status: 200 })),
       ).rejects.toThrow(/Failed to parse MP response/);

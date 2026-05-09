@@ -1,5 +1,5 @@
 import { db } from "@finanzas/db";
-import { parseCalendarMetadata } from "./parsers";
+import { parseCalendarMetadata } from "./parsers.ts";
 
 export const MISSING_CLASSIFICATION_FILTERS = [
   { key: "missingCategory", label: "Sin categoría" },
@@ -60,7 +60,7 @@ export function toTestMetadata(value: unknown): null | TestMetadata {
   };
 }
 
-type JobQueueModule = Awaited<typeof import("../lib/jobQueue")>;
+type JobQueueModule = Awaited<typeof import("../lib/jobQueue.ts")>;
 type JobQueueFns = Pick<JobQueueModule, "completeJob" | "failJob" | "updateJobProgress">;
 
 type PartialReclassifyEvent = {
@@ -512,7 +512,7 @@ export async function startReclassifyMissingFieldsJob(input?: {
   filterMode?: "AND" | "OR";
   missing?: MissingClassificationFilterKey[];
 }) {
-  const { startJob, updateJobProgress, completeJob, failJob } = await import("../lib/jobQueue");
+  const { startJob, updateJobProgress, completeJob, failJob } = await import("../lib/jobQueue.ts");
   const selectedMissingFilters = new Set<MissingClassificationFilterKey>(input?.missing ?? []);
   const filterMode = input?.filterMode ?? "OR";
   const now = new Date();
@@ -600,7 +600,7 @@ export async function startReclassifyMissingFieldsJob(input?: {
 }
 
 export async function startReclassifyAllEventsJob() {
-  const { startJob, updateJobProgress, completeJob, failJob } = await import("../lib/jobQueue");
+  const { startJob, updateJobProgress, completeJob, failJob } = await import("../lib/jobQueue.ts");
 
   const events = await db.event.findMany({
     select: {
@@ -624,6 +624,6 @@ export async function startReclassifyAllEventsJob() {
 }
 
 export async function getCalendarJobStatus(jobId: string) {
-  const { getJobStatus } = await import("../lib/jobQueue");
+  const { getJobStatus } = await import("../lib/jobQueue.ts");
   return getJobStatus(jobId);
 }

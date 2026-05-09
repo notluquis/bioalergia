@@ -20,7 +20,7 @@ import {
   shipmentSchema,
 } from "@finanzas/orpc-contracts/shipments";
 import { z } from "zod";
-import { logError } from "../lib/logger";
+import { logError } from "../lib/logger.ts";
 import {
   createShipment,
   fetchCommercialOffices,
@@ -35,9 +35,9 @@ import {
   quoteShipment,
   refreshShipmentTracking,
   reprintShipmentLabel,
-} from "../services/shipments";
-import { configureSuperjson } from "../lib/superjson-config";
-import { SuperJSONRPCHandler } from "./superjson";
+} from "../services/shipments.ts";
+import { configureSuperjson } from "../lib/superjson-config.ts";
+import { SuperJSONRPCHandler } from "./superjson.ts";
 
 configureSuperjson();
 

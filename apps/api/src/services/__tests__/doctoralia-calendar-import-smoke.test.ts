@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { DoctoraliaCalendarResponse } from "../../lib/doctoralia/doctoralia-calendar-types";
+import type { DoctoraliaCalendarResponse } from "../../lib/doctoralia/doctoralia-calendar-types.ts";
 
 const mockUpsertSchedules = vi.fn();
 const mockUpsertAppointments = vi.fn();
@@ -26,7 +26,7 @@ vi.mock("../settings", () => ({
   updateSetting: vi.fn(async () => undefined),
 }));
 
-const { DoctoraliaCalendarSyncService } = await import("../doctoralia-calendar");
+const { DoctoraliaCalendarSyncService } = await import("../doctoralia-calendar.ts");
 
 const FIXTURE_PATH =
   process.env.DOCTORALIA_CALENDAR_FIXTURE ??

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { addCurrency, roundCurrency } from "../currency";
+import { addCurrency, roundCurrency } from "../currency.ts";
 
 describe("currency", () => {
   describe("roundCurrency", () => {

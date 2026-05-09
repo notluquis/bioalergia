@@ -3,8 +3,8 @@ import dayjs from "dayjs";
 import timezone from "dayjs/plugin/timezone.js";
 import utc from "dayjs/plugin/utc.js";
 import { sql } from "kysely";
-import { googleCalendarConfig } from "../../config";
-import { parseCalendarMetadata } from "../../lib/parsers";
+import { googleCalendarConfig } from "../../config.ts";
+import { parseCalendarMetadata } from "../../lib/parsers.ts";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);

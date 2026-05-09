@@ -6,12 +6,12 @@
 import { db } from "@finanzas/db";
 import { createId } from "@paralleldrive/cuid2";
 import { ImapFlow } from "imapflow";
-import { resolveDoctoraliaSenderSearchTerms } from "../doctoralia/imap-search";
-import { logError, logEvent, logWarn } from "../logger";
-import { sendText } from "./baileys-socket";
-import { buildDoctoraliaMessage } from "./doctoralia-message";
-import { decodeEmailBody, htmlToText, isLikelyDoctoraliaEmail, parseDoctoraliaEmail } from "./email-parser";
-import { normalizePhone } from "./jid";
+import { resolveDoctoraliaSenderSearchTerms } from "../doctoralia/imap-search.ts";
+import { logError, logEvent, logWarn } from "../logger.ts";
+import { sendText } from "./baileys-socket.ts";
+import { buildDoctoraliaMessage } from "./doctoralia-message.ts";
+import { decodeEmailBody, htmlToText, isLikelyDoctoraliaEmail, parseDoctoraliaEmail } from "./email-parser.ts";
+import { normalizePhone } from "./jid.ts";
 
 interface ImapConfig {
   host: string;

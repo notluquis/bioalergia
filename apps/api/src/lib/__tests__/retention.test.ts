@@ -3,7 +3,7 @@ import {
   formatRetentionPercent,
   getEffectiveRetentionRate,
   getRetentionRateForYear,
-} from "../retention";
+} from "../retention.ts";
 
 describe("retention", () => {
   describe("getRetentionRateForYear", () => {

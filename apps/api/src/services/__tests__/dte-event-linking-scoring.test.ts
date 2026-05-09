@@ -10,7 +10,7 @@ const {
   scoreCandidate,
   selectGlobalAutoLinkHypotheses,
 } =
-  await import("../dte-event-linking");
+  await import("../dte-event-linking.ts");
 
 describe("isReembolsoBundleEvent", () => {
   it("returns true for retiro/retira events when Roxair is present", () => {

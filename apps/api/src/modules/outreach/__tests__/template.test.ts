@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { renderTemplate } from "../template";
+import { renderTemplate } from "../template.ts";
 
 const BASE_EST = {
   rbd: "12345",

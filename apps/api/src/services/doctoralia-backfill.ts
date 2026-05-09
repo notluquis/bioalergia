@@ -3,9 +3,9 @@ import isoWeek from "dayjs/plugin/isoWeek.js";
 import timezone from "dayjs/plugin/timezone.js";
 import utc from "dayjs/plugin/utc.js";
 
-import { TIMEZONE } from "../lib/time";
-import { logEvent, logWarn } from "../lib/logger";
-import { doctoraliaCalendarSyncService } from "./doctoralia-calendar";
+import { TIMEZONE } from "../lib/time.ts";
+import { logEvent, logWarn } from "../lib/logger.ts";
+import { doctoraliaCalendarSyncService } from "./doctoralia-calendar.ts";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);

@@ -2,8 +2,8 @@ import { db } from "@finanzas/db";
 import dayjs from "dayjs";
 import { type Context, Hono, type Next } from "hono";
 import { z } from "zod";
-import { getSessionUser, hasPermission } from "../auth";
-import { googleCalendarConfig } from "../config";
+import { getSessionUser, hasPermission } from "../auth.ts";
+import { googleCalendarConfig } from "../config.ts";
 import {
   type CalendarEventFilters,
   getCalendarAggregates,
@@ -11,7 +11,7 @@ import {
   getTreatmentAnalytics,
   type TreatmentAnalyticsFilters,
   type TreatmentAnalyticsGranularity,
-} from "../lib/google/google-calendar-queries";
+} from "../lib/google/google-calendar-queries.ts";
 import {
   CATEGORY_CHOICES,
   isIgnoredEvent,
@@ -19,9 +19,9 @@ import {
   parseCalendarMetadata,
   TEST_SUBTYPE_CHOICES,
   TREATMENT_STAGE_CHOICES,
-} from "../lib/parsers";
-import { updateClassificationSchema } from "../lib/schemas";
-import { zValidator } from "../lib/zod-validator";
+} from "../lib/parsers.ts";
+import { updateClassificationSchema } from "../lib/schemas.ts";
+import { zValidator } from "../lib/zod-validator.ts";
 import {
   type CalendarSyncLogEntryPayload,
   calendarSyncService,
@@ -32,8 +32,8 @@ import {
   loadSettings,
   type UnclassifiedEvent,
   updateCalendarEventClassification,
-} from "../services/calendar"; // Ensure calendarSyncService is exported from services/calendar OR import directly from modules/calendar/service
-import { reply } from "../utils/reply";
+} from "../services/calendar.ts"; // Ensure calendarSyncService is exported from services/calendar OR import directly from modules/calendar/service
+import { reply } from "../utils/reply.ts";
 
 function buildStructuredSyncLogEntries(params: {
   errorMessage?: string;
@@ -135,7 +135,7 @@ const calendarQuerySchema = z.object({
 });
 
 type CalendarQuery = z.infer<typeof calendarQuerySchema>;
-type JobQueueModule = Awaited<typeof import("../lib/jobQueue")>;
+type JobQueueModule = Awaited<typeof import("../lib/jobQueue.ts")>;
 type JobQueueFns = Pick<JobQueueModule, "completeJob" | "failJob" | "updateJobProgress">;
 type TestMetadata = {
   firstReading: boolean;
@@ -1546,7 +1546,7 @@ calendarRoutes.post(
     }
 
     // Dynamic import to avoid cycles if any, though imports up top are fine
-    const { startJob, updateJobProgress, completeJob, failJob } = await import("../lib/jobQueue");
+    const { startJob, updateJobProgress, completeJob, failJob } = await import("../lib/jobQueue.ts");
     const body = c.req.valid("json");
     const selectedMissingFilters = new Set<MissingClassificationFilterKey>(body.missing ?? []);
     const filterMode = body.filterMode ?? "OR";
@@ -1646,7 +1646,7 @@ calendarRoutes.post("/events/reclassify-all", requireAuth, async (c) => {
     return reply(c, { status: "error", message: "Forbidden" }, 403);
   }
 
-  const { startJob, updateJobProgress, completeJob, failJob } = await import("../lib/jobQueue");
+  const { startJob, updateJobProgress, completeJob, failJob } = await import("../lib/jobQueue.ts");
 
   const events = await db.event.findMany({
     select: {
@@ -1670,7 +1670,7 @@ calendarRoutes.post("/events/reclassify-all", requireAuth, async (c) => {
 });
 
 calendarRoutes.get("/events/job/:jobId", requireAuth, async (c) => {
-  const { getJobStatus } = await import("../lib/jobQueue");
+  const { getJobStatus } = await import("../lib/jobQueue.ts");
   const jobId = c.req.param("jobId");
   if (!jobId) {
     return reply(c, { status: "error", message: "Missing job ID" }, 400);

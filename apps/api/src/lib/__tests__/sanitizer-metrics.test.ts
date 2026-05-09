@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { SanitizationAuditLog, SanitizationMonitor, SanitizationRateLimiter } from "../sanitizer-metrics";
+import { SanitizationAuditLog, SanitizationMonitor, SanitizationRateLimiter } from "../sanitizer-metrics.ts";
 
 describe("SanitizationRateLimiter", () => {
   it("allows operations within limit", () => {

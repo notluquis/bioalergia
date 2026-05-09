@@ -1,9 +1,9 @@
 import { createInterface } from "node:readline";
 import { Readable } from "node:stream";
 import { db } from "@finanzas/db";
-import { checkMpConfig, MP_ACCESS_TOKEN, redactMpUrl } from "./client";
-import { isSettlementReport } from "./index";
-import { mapRowToReleaseTransaction, mapRowToSettlementTransaction } from "./mappers";
+import { checkMpConfig, MP_ACCESS_TOKEN, redactMpUrl } from "./client.ts";
+import { isSettlementReport } from "./index.ts";
+import { mapRowToReleaseTransaction, mapRowToSettlementTransaction } from "./mappers.ts";
 
 // Batch size for insertions
 const BATCH_SIZE = 100;

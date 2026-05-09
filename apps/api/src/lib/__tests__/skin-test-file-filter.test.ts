@@ -3,7 +3,7 @@ import {
   isImportableSkinTestFilename,
   isSkinTestCandidateFilename,
   isSkinTestTemplateFilename,
-} from "../skin-test-file-filter";
+} from "../skin-test-file-filter.ts";
 
 describe("skin test file filter", () => {
   it("accepts multitest, prick test and test cutaneo filename variants", () => {

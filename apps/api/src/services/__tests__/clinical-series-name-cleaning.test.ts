@@ -3,7 +3,7 @@ import {
   extractPatientHints,
   resolveClinicalIdentity,
   selectRepresentativeClinicalIdentity,
-} from "../clinical-series";
+} from "../clinical-series.ts";
 
 type NameCase =
   | readonly [summary: string, expectedName: string]

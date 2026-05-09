@@ -1,15 +1,7 @@
 import { Avatar, Button, Card, Chip, Dropdown, Spinner } from "@heroui/react";
 import { useQueryClient } from "@tanstack/react-query";
 import dayjs from "dayjs";
-import {
-  AlertCircle,
-  Check,
-  CheckCheck,
-  Clock,
-  FileText,
-  Send,
-  Settings2,
-} from "lucide-react";
+import { AlertCircle, Check, CheckCheck, Clock, FileText, Send, Settings2 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { SelectInput, TextInput } from "@/features/outreach/components/FormField";
 import { toast } from "@/lib/toast-interceptor";
@@ -81,9 +73,7 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
     }
     return map;
   }, [accounts.data]);
-  const activeAccountId = phoneId
-    ? accountByPhone.get(Number.parseInt(phoneId, 10))
-    : undefined;
+  const activeAccountId = phoneId ? accountByPhone.get(Number.parseInt(phoneId, 10)) : undefined;
   const templates = useTemplates(activeAccountId);
 
   const allPhones = useMemo(
@@ -125,9 +115,7 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
       setTplVars([]);
       return;
     }
-    const tpl = templates.data?.templates.find(
-      (t) => `${t.id}|${t.name}|${t.language}` === tplKey
-    );
+    const tpl = templates.data?.templates.find((t) => `${t.id}|${t.name}|${t.language}` === tplKey);
     if (!tpl) return;
     const tplBody = (tpl.components as Array<{ type: string; text?: string }>).find(
       (c) => c.type === "BODY" || c.type === "body"
@@ -154,9 +142,7 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
     const serverBodies = new Set(
       conv.data.messages.filter((m) => m.direction === "OUTBOUND").map((m) => m.body)
     );
-    setPending((prev) =>
-      prev.filter((p) => p.status === "FAILED" || !serverBodies.has(p.body))
-    );
+    setPending((prev) => prev.filter((p) => p.status === "FAILED" || !serverBodies.has(p.body)));
   }, [conv.data, pending.length]);
 
   if (conv.isLoading || !conv.data) {
@@ -176,10 +162,7 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
     const cid = `tmp-${Date.now()}-${Math.random().toString(36).slice(2)}`;
     const pn = Number.parseInt(phoneId, 10);
     setBody("");
-    setPending((p) => [
-      ...p,
-      { cid, body: text, timestamp: new Date(), status: "PENDING" },
-    ]);
+    setPending((p) => [...p, { cid, body: text, timestamp: new Date(), status: "PENDING" }]);
     sendText.mutate(
       { conversationId, phoneNumberId: pn, body: text },
       {
@@ -187,9 +170,7 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
           void qc.invalidateQueries({ queryKey: ["wa-cloud", "conversation", conversationId] });
         },
         onError: (err) => {
-          setPending((p) =>
-            p.map((it) => (it.cid === cid ? { ...it, status: "FAILED" } : it))
-          );
+          setPending((p) => p.map((it) => (it.cid === cid ? { ...it, status: "FAILED" } : it)));
           toast.error(err instanceof Error ? err.message : "Error al enviar mensaje");
         },
       }
@@ -303,18 +284,13 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
             phoneId={phoneId}
             phoneOptions={phoneOptions}
             onPhoneChange={setPhoneId}
-            onRelease={() =>
-              updateConv.mutate({ id: conversationId, assignedToUserId: null })
-            }
+            onRelease={() => updateConv.mutate({ id: conversationId, assignedToUserId: null })}
           />
         </div>
       </Card.Header>
 
       <Card.Content className="flex flex-1 flex-col overflow-hidden p-0">
-        <div
-          ref={scrollRef}
-          className="flex-1 space-y-2 overflow-y-auto bg-default-50 px-4 py-3"
-        >
+        <div ref={scrollRef} className="flex-1 space-y-2 overflow-y-auto bg-default-50 px-4 py-3">
           {allMessages.length === 0 ? (
             <p className="py-8 text-center text-default-400 text-sm">
               Sin mensajes aún en esta conversación.

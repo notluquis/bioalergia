@@ -9,7 +9,7 @@ import {
   reprintLabel,
   searchStreets,
   trackTransportOrder,
-} from "../client";
+} from "../client.ts";
 
 const cfg = {
   coverageApiKey: "k1",

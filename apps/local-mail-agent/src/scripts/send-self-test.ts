@@ -1,5 +1,5 @@
 import nodemailer from "nodemailer";
-import { readKeychainSecret } from "../keychain";
+import { readKeychainSecret } from "../keychain.ts";
 
 const SERVICE_NAME = "bioalergia-local-mail-agent";
 const SMTP_HOST = "mail.spacemail.com";

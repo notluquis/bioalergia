@@ -5,7 +5,7 @@ import {
   htmlToText,
   isLikelyDoctoraliaEmail,
   parseDoctoraliaEmail,
-} from "../whatsapp/email-parser";
+} from "../whatsapp/email-parser.ts";
 
 const realDoctoraliaHtmlQuotedPrintable = `<!DOCTYPE html><html><body>
 <h1>Tiene una nueva reserva de cita desde Doctoralia</h1>

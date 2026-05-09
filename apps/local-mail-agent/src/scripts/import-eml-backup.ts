@@ -19,7 +19,7 @@ import { readdir, readFile, stat } from "node:fs/promises";
 import { join } from "node:path";
 import { MultiBar, Presets } from "cli-progress";
 import { ImapFlow } from "imapflow";
-import { readKeychainSecret } from "../keychain";
+import { readKeychainSecret } from "../keychain.ts";
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 

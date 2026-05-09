@@ -1,31 +1,31 @@
-export * from "./addresses";
-export * from "./attendance";
-export * from "./shipments";
-export * from "./auth";
-export * from "./balances";
-export * from "./backups";
-export * from "./calendar";
-export * from "./certificates";
-export * from "./clinical-series";
-export * from "./clinical-skin-tests";
-export * from "./counterparts";
-export * from "./csv-upload";
-export * from "./dte";
-export * from "./dte-event-links";
-export * from "./dte-analytics";
-export * from "./employees";
-export * from "./expenses";
-export * from "./finance";
-export * from "./haulmer";
-export * from "./inventory";
-export * from "./integrations";
-export * from "./loans";
+export * from "./addresses.ts";
+export * from "./attendance.ts";
+export * from "./shipments.ts";
+export * from "./auth.ts";
+export * from "./balances.ts";
+export * from "./backups.ts";
+export * from "./calendar.ts";
+export * from "./certificates.ts";
+export * from "./clinical-series.ts";
+export * from "./clinical-skin-tests.ts";
+export * from "./counterparts.ts";
+export * from "./csv-upload.ts";
+export * from "./dte.ts";
+export * from "./dte-event-links.ts";
+export * from "./dte-analytics.ts";
+export * from "./employees.ts";
+export * from "./expenses.ts";
+export * from "./finance.ts";
+export * from "./haulmer.ts";
+export * from "./inventory.ts";
+export * from "./integrations.ts";
+export * from "./loans.ts";
 export {
   calendarAppointmentsSchema as doctoraliaCalendarAppointmentsSchema,
   doctoraliaContract,
   syncLogsResponseSchema as doctoraliaSyncLogsResponseSchema,
   type DoctoraliaContract,
-} from "./doctoralia";
+} from "./doctoralia.ts";
 export {
   listReportsResponseSchema as mercadopagoListReportsResponseSchema,
   mercadopagoContract,
@@ -34,26 +34,26 @@ export {
   syncLogSchema as mercadopagoSyncLogSchema,
   syncLogsResponseSchema as mercadopagoSyncLogsResponseSchema,
   type MercadopagoContract,
-} from "./mercadopago";
-export * from "./notifications";
-export * from "./outreach";
-export { patientsContract, type PatientsContract } from "./patients";
-export * from "./patient-campaigns";
-export * from "./people";
-export * from "./personal-finance";
-export * from "./production-balances";
-export * from "./release-transactions";
-export * from "./roles";
-export * from "./settlement-transactions";
-export * from "./supplies";
-export { servicesContract, type ServicesContract } from "./services";
-export * from "./settings";
-export * from "./system";
-export * from "./timesheets";
-export * from "./transactions-insights";
-export * from "./users";
-export * from "./utility-bills";
-export * from "./wa-cloud";
+} from "./mercadopago.ts";
+export * from "./notifications.ts";
+export * from "./outreach.ts";
+export { patientsContract, type PatientsContract } from "./patients.ts";
+export * from "./patient-campaigns.ts";
+export * from "./people.ts";
+export * from "./personal-finance.ts";
+export * from "./production-balances.ts";
+export * from "./release-transactions.ts";
+export * from "./roles.ts";
+export * from "./settlement-transactions.ts";
+export * from "./supplies.ts";
+export { servicesContract, type ServicesContract } from "./services.ts";
+export * from "./settings.ts";
+export * from "./system.ts";
+export * from "./timesheets.ts";
+export * from "./transactions-insights.ts";
+export * from "./users.ts";
+export * from "./utility-bills.ts";
+export * from "./wa-cloud.ts";
 export {
   listWhatsappContactStatesResponseSchema,
   whatsappContract,
@@ -70,4 +70,4 @@ export {
   whatsappCustomMessageInputSchema,
   whatsappStatusResponseSchema,
   type WhatsappContract,
-} from "./whatsapp";
+} from "./whatsapp.ts";

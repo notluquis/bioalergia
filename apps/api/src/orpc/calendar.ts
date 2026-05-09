@@ -59,8 +59,8 @@ import { ORPCError, onError, os } from "@orpc/server";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import type { Context as HonoContext } from "hono";
 import { z } from "zod";
-import { getSessionUser, hasPermission } from "../auth";
-import { googleCalendarConfig } from "../config";
+import { getSessionUser, hasPermission } from "../auth.ts";
+import { googleCalendarConfig } from "../config.ts";
 import {
   getCalendarJobStatus,
   isMissingClassificationFilterKey,
@@ -68,7 +68,7 @@ import {
   startReclassifyAllEventsJob,
   startReclassifyMissingFieldsJob,
   toTestMetadata,
-} from "../lib/calendar-reclassify";
+} from "../lib/calendar-reclassify.ts";
 import {
   type CalendarEventFilters,
   getCalendarAggregates,
@@ -76,16 +76,16 @@ import {
   getTreatmentAnalytics,
   type TreatmentAnalyticsFilters,
   type TreatmentAnalyticsGranularity,
-} from "../lib/google/google-calendar-queries";
-import { logError } from "../lib/logger";
+} from "../lib/google/google-calendar-queries.ts";
+import { logError } from "../lib/logger.ts";
 import {
   CATEGORY_CHOICES,
   isIgnoredEvent,
   PATCH_READING_CHOICES,
   TEST_SUBTYPE_CHOICES,
   TREATMENT_STAGE_CHOICES,
-} from "../lib/parsers";
-import { configureSuperjson } from "../lib/superjson-config";
+} from "../lib/parsers.ts";
+import { configureSuperjson } from "../lib/superjson-config.ts";
 import {
   type CalendarSyncLogEntryPayload,
   calendarSyncService,
@@ -95,9 +95,9 @@ import {
   listUnclassifiedCalendarEvents,
   loadSettings,
   updateCalendarEventClassification,
-} from "../services/calendar";
-import { rebuildClinicalSeries } from "../services/clinical-series";
-import { SuperJSONRPCHandler } from "./superjson";
+} from "../services/calendar.ts";
+import { rebuildClinicalSeries } from "../services/clinical-series.ts";
+import { SuperJSONRPCHandler } from "./superjson.ts";
 
 configureSuperjson();
 

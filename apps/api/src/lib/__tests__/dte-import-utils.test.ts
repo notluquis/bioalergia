@@ -1,6 +1,6 @@
-import Decimal from "decimal.js";
+import { Decimal } from "decimal.js";
 import { describe, expect, it } from "vitest";
-import { areDataDifferent, parseAmount, parseDate } from "../dte-import";
+import { areDataDifferent, parseAmount, parseDate } from "../dte-import.ts";
 
 describe("parseAmount", () => {
   it("returns null for null/empty", () => {

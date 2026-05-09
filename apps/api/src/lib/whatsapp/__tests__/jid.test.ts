@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isWhatsappUserJid, jidToPhone, normalizePhone, phoneToJid } from "../jid";
+import { isWhatsappUserJid, jidToPhone, normalizePhone, phoneToJid } from "../jid.ts";
 
 describe("normalizePhone", () => {
   it("passes through valid E.164 numbers unchanged", () => {

@@ -2,8 +2,8 @@ import { db } from "@finanzas/db";
 import { Decimal } from "decimal.js";
 import { Hono } from "hono";
 import { z } from "zod";
-import { getSessionUser, hasPermission } from "../auth";
-import { reply } from "../utils/reply";
+import { getSessionUser, hasPermission } from "../auth.ts";
+import { reply } from "../utils/reply.ts";
 
 const app = new Hono();
 

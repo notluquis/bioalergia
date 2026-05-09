@@ -1,6 +1,6 @@
 import * as XLSX from "xlsx";
 import { describe, expect, it } from "vitest";
-import { extractSkinTestWorkbookSnapshot } from "../clinical-skin-test-workbook-snapshots";
+import { extractSkinTestWorkbookSnapshot } from "../clinical-skin-test-workbook-snapshots.ts";
 
 describe("clinical skin test workbook snapshots", () => {
   it("extracts only the first worksheet cells, merges, formulas, notes, and basic style hints", async () => {

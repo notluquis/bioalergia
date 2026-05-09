@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   mapRowToReleaseTransaction,
   mapRowToSettlementTransaction,
-} from "../mappers";
+} from "../mappers.ts";
 
 describe("mapRowToSettlementTransaction", () => {
   it("maps a complete settlement row", () => {

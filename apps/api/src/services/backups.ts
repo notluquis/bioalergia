@@ -4,7 +4,7 @@ import { pipeline } from "node:stream/promises";
 import { createGzip } from "node:zlib";
 import { db, schema } from "@finanzas/db";
 
-import { uploadToDrive } from "./drive";
+import { uploadToDrive } from "./drive.ts";
 
 export interface BackupResult {
   filename: string;
@@ -345,7 +345,7 @@ export function startBackup() {
     .then(async (res) => {
       // Deduplication Check
       try {
-        const { listBackups } = await import("./drive");
+        const { listBackups } = await import("./drive.ts");
         const existingBackups = await listBackups();
         const lastBackup = existingBackups[0];
 
@@ -443,7 +443,7 @@ export function startBackup() {
  * Returns granular differences per table.
  */
 export async function getBackupDiff(fileId: string) {
-  const { getBackupStats } = await import("./drive");
+  const { getBackupStats } = await import("./drive.ts");
   const backupStats = await getBackupStats(fileId);
 
   if (!backupStats) {

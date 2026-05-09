@@ -10,8 +10,8 @@
  *  - Old (2025):  charset=iso-8859-1, sender @doctoralia.com, 24h time or range
  */
 
-import { buildChileDate } from "../time";
-import { normalizePhone } from "./jid";
+import { buildChileDate } from "../time.ts";
+import { normalizePhone } from "./jid.ts";
 
 export type DoctoraliaEmailEventType = "BOOKING" | "MODIFICATION" | "CANCELLATION";
 

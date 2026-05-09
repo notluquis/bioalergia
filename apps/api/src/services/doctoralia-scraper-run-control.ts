@@ -1,6 +1,6 @@
 import { db } from "@finanzas/db";
 
-import { deleteSetting, getSetting, updateSetting } from "./settings";
+import { deleteSetting, getSetting, updateSetting } from "./settings.ts";
 
 const DOCTORALIA_SCRAPER_FORCE_NEXT_RUN_KEY = "doctoralia:scraper:force_next_run";
 const DEFAULT_FORCE_RUN_TTL_MINUTES = 120;

@@ -13,9 +13,9 @@ import { ORPCError, onError, os } from "@orpc/server";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import type { Context as HonoContext } from "hono";
 import { z } from "zod";
-import { getSessionUser } from "../auth";
-import { logError } from "../lib/logger";
-import { configureSuperjson } from "../lib/superjson-config";
+import { getSessionUser } from "../auth.ts";
+import { logError } from "../lib/logger.ts";
+import { configureSuperjson } from "../lib/superjson-config.ts";
 import {
   createUtilityAccount,
   deleteUtilityAccount,
@@ -24,8 +24,8 @@ import {
   listUtilityAccounts,
   refreshUtilityAccount,
   updateUtilityAccount,
-} from "../services/utility-bills";
-import { SuperJSONRPCHandler } from "./superjson";
+} from "../services/utility-bills.ts";
+import { SuperJSONRPCHandler } from "./superjson.ts";
 
 configureSuperjson();
 

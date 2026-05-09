@@ -5,27 +5,27 @@ import { ORPCError, onError, os } from "@orpc/server";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import type { Context as HonoContext } from "hono";
 import { z } from "zod";
-import { getSessionUser, hasPermission } from "../auth";
+import { getSessionUser, hasPermission } from "../auth.ts";
 import {
   getDoctoraliaImapListenerStatus,
   runDoctoraliaImapIngestOnce,
-} from "../lib/doctoralia/imap-idle";
-import { logError, logEvent } from "../lib/logger";
-import { configureSuperjson } from "../lib/superjson-config";
-import { listDoctoraliaSyncLogs } from "../services/doctoralia";
+} from "../lib/doctoralia/imap-idle.ts";
+import { logError, logEvent } from "../lib/logger.ts";
+import { configureSuperjson } from "../lib/superjson-config.ts";
+import { listDoctoraliaSyncLogs } from "../services/doctoralia.ts";
 import {
   DOCTORALIA_BACKFILL_MIN_DATE,
   getDoctoraliaBackfillStatus,
   isDoctoraliaBackfillRunning,
   requestDoctoraliaBackfillCancel,
   startDoctoraliaBackfill,
-} from "../services/doctoralia-backfill";
+} from "../services/doctoralia-backfill.ts";
 import {
   clearDoctoraliaScraperForceRun,
   getDoctoraliaScraperForceRunStatus,
   requestDoctoraliaScraperForceRun,
-} from "../services/doctoralia-scraper-run-control";
-import { SuperJSONRPCHandler } from "./superjson";
+} from "../services/doctoralia-scraper-run-control.ts";
+import { SuperJSONRPCHandler } from "./superjson.ts";
 
 configureSuperjson();
 
@@ -392,9 +392,9 @@ const doctoraliaORPCRouterBase = {
           process.env.DOCTORALIA_CALENDAR_APPOINTMENTS_REFRESH_MS || "120000",
         );
         const { runDoctoraliaCalendarAutoSync } = await import(
-          "../lib/doctoralia/doctoralia-calendar-scheduler.js"
+          "../lib/doctoralia/doctoralia-calendar-scheduler.ts"
         );
-        const { getSetting } = await import("../services/settings.js");
+        const { getSetting } = await import("../services/settings.ts");
         const lastSuccessAtRaw = await getSetting("doctoralia:calendar:lastSuccessAt");
         const lastSuccessAt = lastSuccessAtRaw ? new Date(lastSuccessAtRaw).getTime() : 0;
         const shouldRefresh =
@@ -480,13 +480,13 @@ const doctoraliaORPCRouterBase = {
     .output(calendarImportResponseSchema)
     .handler(async ({ context, input }) => {
       const { doctoraliaCalendarSyncService } = await import(
-        "../services/doctoralia-calendar.js"
+        "../services/doctoralia-calendar.ts"
       );
 
       const entries = input.entries as Array<{
         ts?: string;
         src?: string;
-        data: import("../lib/doctoralia/doctoralia-calendar-types.js").DoctoraliaCalendarResponse;
+        data: import("../lib/doctoralia/doctoralia-calendar-types.ts").DoctoraliaCalendarResponse;
       }>;
 
       const result = await doctoraliaCalendarSyncService.importFromJsonEntries(entries);
@@ -1199,7 +1199,7 @@ const doctoraliaORPCRouterBase = {
       }
 
       const { hasCalendarApiToken } = await import(
-        "../lib/doctoralia/doctoralia-calendar-client.js"
+        "../lib/doctoralia/doctoralia-calendar-client.ts"
       );
       const hasToken = await hasCalendarApiToken();
       if (!hasToken) {
@@ -1212,7 +1212,7 @@ const doctoraliaORPCRouterBase = {
 
       try {
         const { doctoraliaCalendarSyncService } = await import(
-          "../services/doctoralia-calendar.js"
+          "../services/doctoralia-calendar.ts"
         );
         const result = await doctoraliaCalendarSyncService.syncFromAlerts(
           3,

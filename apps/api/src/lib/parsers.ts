@@ -13,7 +13,7 @@ import dayjs from "dayjs";
 import timezone from "dayjs/plugin/timezone.js";
 import utc from "dayjs/plugin/utc.js";
 import { z } from "zod";
-import { joinClinicalText, normalizeClinicalText } from "./clinical-text";
+import { joinClinicalText, normalizeClinicalText } from "./clinical-text.ts";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);

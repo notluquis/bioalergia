@@ -15,9 +15,9 @@ import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import { Decimal } from "decimal.js";
 import type { Context as HonoContext } from "hono";
 import { z } from "zod";
-import { getSessionUser, hasPermission } from "../auth";
-import { logError } from "../lib/logger";
-import { configureSuperjson } from "../lib/superjson-config";
+import { getSessionUser, hasPermission } from "../auth.ts";
+import { logError } from "../lib/logger.ts";
+import { configureSuperjson } from "../lib/superjson-config.ts";
 import {
   createService,
   deleteService,
@@ -26,8 +26,8 @@ import {
   listServices,
   syncServiceSchedulesWithFinancialTransactions,
   updateService,
-} from "../services/services";
-import { SuperJSONRPCHandler } from "./superjson";
+} from "../services/services.ts";
+import { SuperJSONRPCHandler } from "./superjson.ts";
 
 configureSuperjson();
 

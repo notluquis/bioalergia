@@ -1,7 +1,7 @@
 import bcrypt from "bcryptjs";
 import { Hono } from "hono";
-import { logError, logEvent, logWarn } from "../lib/logger";
-import { isSettlementReport, MercadoPagoService, MP_WEBHOOK_PASSWORD } from "../services/mercadopago";
+import { logError, logEvent, logWarn } from "../lib/logger.ts";
+import { isSettlementReport, MercadoPagoService, MP_WEBHOOK_PASSWORD } from "../services/mercadopago/index.ts";
 
 export const mercadopagoReportWebhookRoutes = new Hono();
 

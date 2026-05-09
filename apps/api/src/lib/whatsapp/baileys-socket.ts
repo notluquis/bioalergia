@@ -18,8 +18,8 @@ import makeWASocket, {
   type WASocket,
 } from "baileys";
 import qrcode from "qrcode";
-import { logError, logEvent, logWarn } from "../logger";
-import { clearAuthState, usePostgresAuthState } from "./baileys-auth-state";
+import { logError, logEvent, logWarn } from "../logger.ts";
+import { clearAuthState, usePostgresAuthState } from "./baileys-auth-state.ts";
 import {
   applyWhatsappBlockedJidsUpdate,
   applyWhatsappGroupParticipantsUpdate,
@@ -31,7 +31,7 @@ import {
   upsertWhatsappMessageReceiptUpdates,
   upsertWhatsappMessageReactionEvents,
   upsertWhatsappPresenceUpdate,
-} from "./chat-state-store";
+} from "./chat-state-store.ts";
 import {
   markWhatsappBusinessQuickReplyDeleted,
   removeWhatsappBusinessChatLabel,
@@ -40,11 +40,11 @@ import {
   upsertWhatsappBusinessLabel,
   upsertWhatsappBusinessMessageLabel,
   upsertWhatsappBusinessQuickReply,
-} from "./business-store";
+} from "./business-store.ts";
 import {
   recordInboundWhatsappCall,
   recordInboundWhatsappMessage,
-} from "./conversation-state";
+} from "./conversation-state.ts";
 import {
   applyWhatsappMessageUpdate,
   getLatestWhatsappMinimalMessage,
@@ -54,8 +54,8 @@ import {
   upsertWhatsappChats,
   upsertWhatsappContacts,
   upsertWhatsappMessage,
-} from "./history-store";
-import { isWhatsappUserJid, jidToPhone, normalizePhone, phoneToJid } from "./jid";
+} from "./history-store.ts";
+import { isWhatsappUserJid, jidToPhone, normalizePhone, phoneToJid } from "./jid.ts";
 
 let sock: WASocket | null = null;
 let connectionState: "close" | "connecting" | "open" = "close";

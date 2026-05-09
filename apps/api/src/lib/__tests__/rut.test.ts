@@ -5,7 +5,7 @@ import {
   normalizeRut,
   requireCanonicalRut,
   validateRut,
-} from "../rut";
+} from "../rut.ts";
 
 describe("rut", () => {
   describe("normalizeRut", () => {

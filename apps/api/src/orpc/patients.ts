@@ -5,7 +5,7 @@ import { ORPCError, onError, os } from "@orpc/server";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import dayjs from "dayjs";
 import timezone from "dayjs/plugin/timezone.js";
-import Decimal from "decimal.js";
+import { Decimal } from "decimal.js";
 import type { Context as HonoContext } from "hono";
 import type {
   Consultation,
@@ -15,16 +15,16 @@ import type {
 } from "@finanzas/db/models";
 import { createSchemaFactory, schema } from "@finanzas/db/zod";
 import { z } from "zod";
-import { getSessionUser, hasPermission } from "../auth";
-import { logError } from "../lib/logger";
-import { requireCanonicalRut } from "../lib/rut";
-import { configureSuperjson } from "../lib/superjson-config";
-import { writeTempUpload } from "../lib/temp-file";
-import { uploadPatientAttachmentToDrive } from "../services/patient-attachments-drive.js";
+import { getSessionUser, hasPermission } from "../auth.ts";
+import { logError } from "../lib/logger.ts";
+import { requireCanonicalRut } from "../lib/rut.ts";
+import { configureSuperjson } from "../lib/superjson-config.ts";
+import { writeTempUpload } from "../lib/temp-file.ts";
+import { uploadPatientAttachmentToDrive } from "../services/patient-attachments-drive.ts";
 import {
   syncPatientDteSaleSources,
-} from "../modules/patients";
-import { SuperJSONRPCHandler } from "./superjson";
+} from "../modules/patients/index.ts";
+import { SuperJSONRPCHandler } from "./superjson.ts";
 
 configureSuperjson();
 dayjs.extend(timezone);

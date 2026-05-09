@@ -25,9 +25,9 @@ import {
 } from "@finanzas/orpc-contracts/counterparts";
 import type { Context as HonoContext } from "hono";
 import type { z } from "zod";
-import { getSessionUser, hasPermission } from "../auth";
-import { logError } from "../lib/logger";
-import { configureSuperjson } from "../lib/superjson-config";
+import { getSessionUser, hasPermission } from "../auth.ts";
+import { logError } from "../lib/logger.ts";
+import { configureSuperjson } from "../lib/superjson-config.ts";
 import {
   assignRutToPayoutAccounts,
   attachRutToCounterpart,
@@ -41,8 +41,8 @@ import {
   updateCounterpart,
   updateCounterpartAccount,
   upsertCounterpartAccount,
-} from "../services/counterparts";
-import { SuperJSONRPCHandler } from "./superjson";
+} from "../services/counterparts.ts";
+import { SuperJSONRPCHandler } from "./superjson.ts";
 
 configureSuperjson();
 

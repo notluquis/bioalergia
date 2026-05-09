@@ -5,7 +5,7 @@ import {
   DOCTORALIA_STATUS_CANCELLED_BY_PATIENT,
   buildDoctoraliaMatchWindow,
   normalizePatientNameForMatch,
-} from "../name-match";
+} from "../name-match.ts";
 
 describe("normalizePatientNameForMatch", () => {
   it("lowercases and removes accents", () => {

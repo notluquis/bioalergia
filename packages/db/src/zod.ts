@@ -31,4 +31,4 @@
 export { createSchemaFactory } from "@zenstackhq/zod";
 
 // The generated schema definition (heavy type — instantiate lazily per module)
-export { schema } from "./zenstack/schema.js";
+export { schema } from "./zenstack/schema.ts";

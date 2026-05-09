@@ -1,7 +1,7 @@
 import { db, schema } from "@finanzas/db";
 import type { RoleCreateArgs, RoleUpdateArgs } from "@finanzas/db/input";
-import { filterSafePermissions } from "../lib/permission-validator";
-import { getSetting, updateSetting } from "./settings";
+import { filterSafePermissions } from "../lib/permission-validator.ts";
+import { getSetting, updateSetting } from "./settings.ts";
 
 // Extract input types from Zenstack args
 type RoleCreateInput = NonNullable<RoleCreateArgs["data"]>;

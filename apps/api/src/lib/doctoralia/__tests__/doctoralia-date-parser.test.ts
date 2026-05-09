@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { parseDoctoraliaDateTime } from "../doctoralia-date-parser";
+import { parseDoctoraliaDateTime } from "../doctoralia-date-parser.ts";
 
 describe("parseDoctoraliaDateTime", () => {
   it("treats naive ISO strings as Chile local time", () => {

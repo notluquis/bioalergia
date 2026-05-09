@@ -4,7 +4,7 @@
  */
 
 import { db } from "@finanzas/db";
-import Decimal from "decimal.js";
+import { Decimal } from "decimal.js";
 import {
   completeJob,
   failJob,
@@ -13,11 +13,11 @@ import {
   isJobCancelled,
   startJob,
   updateJobProgress,
-} from "../../lib/jobQueue";
-import type { HaulmerConfig } from "./auth";
-import { captureHaulmerJWT, isJWTExpired } from "./auth";
-import { tryDownloadDteXml } from "./xml-downloader";
-import { parseDteXml, type DteXmlLineItem } from "./xml-parser";
+} from "../../lib/jobQueue.ts";
+import type { HaulmerConfig } from "./auth.ts";
+import { captureHaulmerJWT, isJWTExpired } from "./auth.ts";
+import { tryDownloadDteXml } from "./xml-downloader.ts";
+import { parseDteXml, type DteXmlLineItem } from "./xml-parser.ts";
 
 const XML_FETCH_JOB_TYPE = "dte-xml-fetch";
 

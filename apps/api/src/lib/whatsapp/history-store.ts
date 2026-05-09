@@ -10,7 +10,7 @@ import {
   WAMessageStatus,
   type WAMessageUpdate,
 } from "baileys";
-import { isWhatsappUserJid, jidToPhone } from "./jid";
+import { isWhatsappUserJid, jidToPhone } from "./jid.ts";
 
 type WhatsappMessageDirection = "INBOUND" | "OUTBOUND";
 type WhatsappMessageStatus = "DELIVERED" | "FAILED" | "PENDING" | "PLAYED" | "READ" | "RECEIVED" | "SENT";

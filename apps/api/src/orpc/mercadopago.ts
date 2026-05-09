@@ -15,16 +15,16 @@ import { ORPCError, onError, os } from "@orpc/server";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import type { Context as HonoContext } from "hono";
 import { z } from "zod";
-import { getSessionUser, hasPermission } from "../auth";
-import { logError } from "../lib/logger";
-import { configureSuperjson } from "../lib/superjson-config";
-import { formatMpDate, MercadoPagoService } from "../services/mercadopago";
+import { getSessionUser, hasPermission } from "../auth.ts";
+import { logError } from "../lib/logger.ts";
+import { configureSuperjson } from "../lib/superjson-config.ts";
+import { formatMpDate, MercadoPagoService } from "../services/mercadopago/index.ts";
 import {
   createMpSyncLogEntry,
   finalizeMpSyncLogEntry,
   listMpSyncLogs,
-} from "../services/mercadopago-sync";
-import { SuperJSONRPCHandler } from "./superjson";
+} from "../services/mercadopago-sync.ts";
+import { SuperJSONRPCHandler } from "./superjson.ts";
 
 configureSuperjson();
 

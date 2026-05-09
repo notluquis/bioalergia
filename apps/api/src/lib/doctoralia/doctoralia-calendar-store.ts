@@ -1,12 +1,12 @@
 import { db, type JsonValue } from "@finanzas/db";
 
-import { parseDoctoraliaDateTime } from "./doctoralia-date-parser";
+import { parseDoctoraliaDateTime } from "./doctoralia-date-parser.ts";
 import type {
   DoctoraliaAppointment,
   DoctoraliaCalendarAlert,
   DoctoraliaCalendarSchedule,
   DoctoraliaWorkPeriod,
-} from "./doctoralia-calendar-types";
+} from "./doctoralia-calendar-types.ts";
 
 function toJsonValue(value: unknown): JsonValue {
   return JSON.parse(JSON.stringify(value)) as JsonValue;

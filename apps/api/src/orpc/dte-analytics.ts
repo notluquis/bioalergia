@@ -24,11 +24,11 @@ import dayjs from "dayjs";
 import type { Context as HonoContext } from "hono";
 import { sql } from "kysely";
 import type { z } from "zod";
-import { getSessionUser, hasPermission } from "../auth";
-import { logError } from "../lib/logger";
-import { configureSuperjson } from "../lib/superjson-config";
-import { TIMEZONE } from "../lib/time";
-import { SuperJSONRPCHandler } from "./superjson";
+import { getSessionUser, hasPermission } from "../auth.ts";
+import { logError } from "../lib/logger.ts";
+import { configureSuperjson } from "../lib/superjson-config.ts";
+import { TIMEZONE } from "../lib/time.ts";
+import { SuperJSONRPCHandler } from "./superjson.ts";
 
 const parsePeriodStart = (period: string) =>
   dayjs.tz(`${period}-01`, "YYYY-MM-DD", TIMEZONE).startOf("month");
@@ -610,7 +610,7 @@ const dteAnalyticsORPCRouterBase = {
     .input(dteFetchXmlInputSchema)
     .output(dteFetchXmlResponseSchema)
     .handler(async ({ input }: { input: z.output<typeof dteFetchXmlInputSchema> }) => {
-      const { haulmerConfig: cfg } = await import("../config");
+      const { haulmerConfig: cfg } = await import("../config.ts");
       if (!cfg) {
         throw new ORPCError("INTERNAL_SERVER_ERROR", {
           message: "Haulmer not configured (missing env vars)",
@@ -618,7 +618,7 @@ const dteAnalyticsORPCRouterBase = {
       }
 
       const { fetchSaleXmlLineItems, fetchPurchaseXmlLineItems } = await import(
-        "../modules/haulmer/xml-service"
+        "../modules/haulmer/xml-service.ts"
       );
 
       const result =
@@ -635,7 +635,7 @@ const dteAnalyticsORPCRouterBase = {
     .output(dteFetchXmlByPeriodResponseSchema)
     .handler(
       async ({ input }: { input: z.output<typeof dteFetchXmlByPeriodInputSchema> }) => {
-        const { haulmerConfig: cfg } = await import("../config");
+        const { haulmerConfig: cfg } = await import("../config.ts");
         if (!cfg) {
           throw new ORPCError("INTERNAL_SERVER_ERROR", {
             message: "Haulmer not configured (missing env vars)",
@@ -671,7 +671,7 @@ const dteAnalyticsORPCRouterBase = {
           return { jobId: "none", total: 0, status: "success" as const };
         }
 
-        const { startXmlFetchJob } = await import("../modules/haulmer/xml-service");
+        const { startXmlFetchJob } = await import("../modules/haulmer/xml-service.ts");
         const jobId = startXmlFetchJob(dteIds, input.direction, cfg);
 
         return { jobId, total: dteIds.length, status: "success" as const };
@@ -682,8 +682,8 @@ const dteAnalyticsORPCRouterBase = {
     .route({ method: "GET", path: "/xml-job-status" })
     .output(dteXmlJobStatusResponseSchema)
     .handler(async () => {
-      const { getActiveXmlFetchJob } = await import("../modules/haulmer/xml-service");
-      const { getJobStatus } = await import("../lib/jobQueue");
+      const { getActiveXmlFetchJob } = await import("../modules/haulmer/xml-service.ts");
+      const { getJobStatus } = await import("../lib/jobQueue.ts");
 
       const activeJob = getActiveXmlFetchJob();
       if (activeJob) {

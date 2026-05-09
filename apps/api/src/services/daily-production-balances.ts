@@ -1,6 +1,6 @@
 import { db } from "@finanzas/db";
 import dayjs from "dayjs";
-import "../lib/time";
+import "../lib/time.ts";
 
 export type ProductionBalancePayload = {
   balanceDate: string;

@@ -1,6 +1,6 @@
 import type { Context } from "hono";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
-import { reply } from "./reply";
+import { reply } from "./reply.ts";
 
 interface ErrorReplyOptions {
   code?: string;

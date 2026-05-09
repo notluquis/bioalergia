@@ -8,8 +8,8 @@
 import { createReadStream, createWriteStream } from "node:fs";
 import dayjs from "dayjs";
 
-import { getBackupFolderId, getDriveClient } from "../lib/google/google-core";
-import { GoogleApiError, parseGoogleError, retryGoogleCall } from "../lib/google/google-errors";
+import { getBackupFolderId, getDriveClient } from "../lib/google/google-core.ts";
+import { GoogleApiError, parseGoogleError, retryGoogleCall } from "../lib/google/google-errors.ts";
 
 export interface BackupFile {
   id: string;

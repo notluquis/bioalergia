@@ -32,17 +32,17 @@ import type {
 import type { Context as HonoContext } from "hono";
 import { deleteCookie, getCookie, setCookie } from "hono/cookie";
 import { randomUUID } from "node:crypto";
-import { getSessionUser, hasPermission, resolveSessionUserFromToken } from "../auth";
-import { logError } from "../lib/logger";
-import { signToken, verifyToken } from "../lib/paseto";
-import { configureSuperjson } from "../lib/superjson-config";
+import { getSessionUser, hasPermission, resolveSessionUserFromToken } from "../auth.ts";
+import { logError } from "../lib/logger.ts";
+import { signToken, verifyToken } from "../lib/paseto.ts";
+import { configureSuperjson } from "../lib/superjson-config.ts";
 import {
   consumeDebugTokenRecord,
   createDebugTokenRecord,
   ensureDebugTokenSupportEnabled,
-} from "../services/debug-tokens";
-import { getAbilityRulesForUser } from "../services/authz";
-import { SuperJSONRPCHandler } from "./superjson";
+} from "../services/debug-tokens.ts";
+import { getAbilityRulesForUser } from "../services/authz.ts";
+import { SuperJSONRPCHandler } from "./superjson.ts";
 
 configureSuperjson();
 
@@ -270,7 +270,7 @@ const authORPCRouterBase = {
         authError("UNAUTHORIZED", "Credenciales incorrectas");
       }
 
-      const { hashPassword, verifyPassword } = await import("../lib/crypto.js");
+      const { hashPassword, verifyPassword } = await import("../lib/crypto.ts");
       const { needsRehash, valid } = await verifyPassword(input.password, user.passwordHash);
 
       if (!valid) {
@@ -304,7 +304,7 @@ const authORPCRouterBase = {
       });
       setCookie(context.hono, COOKIE_NAME, token, COOKIE_OPTIONS);
 
-      const { getAbilityRulesForUser } = await import("../services/authz.js");
+      const { getAbilityRulesForUser } = await import("../services/authz.ts");
       const abilityRules = (await getAbilityRulesForUser(user.id)) as RawRuleOf<AnyAbility>[];
 
       return {
@@ -340,7 +340,7 @@ const authORPCRouterBase = {
         authError("BAD_REQUEST", "MFA no configurado");
       }
 
-      const { verifyMfaToken } = await import("../services/mfa.js");
+      const { verifyMfaToken } = await import("../services/mfa.ts");
       const isValid = await verifyMfaToken(input.token, user.mfaSecret);
 
       if (!isValid) {
@@ -358,7 +358,7 @@ const authORPCRouterBase = {
       });
       setCookie(context.hono, COOKIE_NAME, token, COOKIE_OPTIONS);
 
-      const { getAbilityRulesForUser } = await import("../services/authz.js");
+      const { getAbilityRulesForUser } = await import("../services/authz.ts");
       const abilityRules = (await getAbilityRulesForUser(user.id)) as RawRuleOf<AnyAbility>[];
 
       return {
@@ -624,7 +624,7 @@ const authORPCRouterBase = {
         authError("BAD_REQUEST", "MFA setup no iniciado");
       }
 
-      const { verifyMfaToken } = await import("../services/mfa.js");
+      const { verifyMfaToken } = await import("../services/mfa.ts");
       const isValid = await verifyMfaToken(input.token, user.mfaSecret);
       if (!isValid) {
         authError("BAD_REQUEST", "Código incorrecto");
@@ -649,7 +649,7 @@ const authORPCRouterBase = {
         authError("UNAUTHORIZED", "Token inválido");
       }
 
-      const { generateMfaSecret } = await import("../services/mfa.js");
+      const { generateMfaSecret } = await import("../services/mfa.ts");
       const { qrCodeUrl, secret } = await generateMfaSecret(session.email);
 
       await db.user.update({
@@ -778,7 +778,7 @@ const authORPCRouterBase = {
       });
       setCookie(context.hono, COOKIE_NAME, token, COOKIE_OPTIONS);
 
-      const { getAbilityRulesForUser } = await import("../services/authz.js");
+      const { getAbilityRulesForUser } = await import("../services/authz.ts");
       const abilityRules = (await getAbilityRulesForUser(user.id)) as RawRuleOf<AnyAbility>[];
 
       return {

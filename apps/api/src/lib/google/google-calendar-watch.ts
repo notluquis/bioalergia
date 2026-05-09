@@ -4,7 +4,7 @@ import path from "node:path";
 import { db } from "@finanzas/db";
 import { calendar, type calendar_v3 } from "@googleapis/calendar";
 import { JWT } from "google-auth-library";
-import { logEvent, logWarn } from "../logger";
+import { logEvent, logWarn } from "../logger.ts";
 
 const CALENDAR_SCOPES = ["https://www.googleapis.com/auth/calendar.readonly"];
 const CREDENTIALS_PATH = path.resolve(

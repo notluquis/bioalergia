@@ -4,8 +4,8 @@ vi.mock("../../services/settings", () => ({
   getSetting: vi.fn(async () => null),
 }));
 
-import { buildDoctoraliaMessage } from "../whatsapp/doctoralia-message";
-import { formatChileDateTime } from "../time";
+import { buildDoctoraliaMessage } from "../whatsapp/doctoralia-message.ts";
+import { formatChileDateTime } from "../time.ts";
 
 describe("doctoralia whatsapp message", () => {
   it("uses the shared Chile datetime formatter", () => {

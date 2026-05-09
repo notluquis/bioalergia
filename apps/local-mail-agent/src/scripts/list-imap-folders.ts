@@ -4,7 +4,7 @@
  */
 
 import { ImapFlow } from "imapflow";
-import { readKeychainSecret } from "../keychain";
+import { readKeychainSecret } from "../keychain.ts";
 
 const IMAP_HOST = process.env.LOCAL_AGENT_IMAP_HOST ?? "mail.spacemail.com";
 const IMAP_PORT = Number.parseInt(process.env.LOCAL_AGENT_IMAP_PORT ?? "993", 10);

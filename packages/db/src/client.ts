@@ -6,7 +6,7 @@ import { PostgresDialect } from "@zenstackhq/orm/dialects/postgres";
 import { PolicyPlugin } from "@zenstackhq/plugin-policy";
 import { Pool, types } from "pg";
 
-import { schema } from "./zenstack/schema.js";
+import { schema } from "./zenstack/schema.ts";
 
 // Configure pg driver to parse numeric/decimal as JavaScript number natively
 // This is the ZenStack/Kysely recommended approach for Decimal handling
@@ -70,7 +70,7 @@ export const authDb = db.$use(new PolicyPlugin());
 // Direct Kysely access for complex queries
 import { Kysely } from "kysely";
 
-import type { SchemaType } from "./zenstack/schema.js";
+import type { SchemaType } from "./zenstack/schema.ts";
 
 export const kysely = new Kysely<SchemaType>({
   dialect: new PostgresDialect({ pool }),
@@ -82,12 +82,12 @@ export const kysely = new Kysely<SchemaType>({
 // export { useClientQueries } from "@zenstackhq/tanstack-query/react";
 
 // Export generated types and models
-export * from "./zenstack/models.js";
-export type { SchemaType } from "./zenstack/schema.js";
+export * from "./zenstack/models.ts";
+export type { SchemaType } from "./zenstack/schema.ts";
 
 // Export schemas for runtime usage with useClientQueries
-export { schema } from "./zenstack/schema.js";
-export { schema as schemaLite } from "./zenstack/schema-lite.js";
+export { schema } from "./zenstack/schema.ts";
+export { schema as schemaLite } from "./zenstack/schema-lite.ts";
 export const EmployeeStatus = {
   ACTIVE: "ACTIVE",
   INACTIVE: "INACTIVE",

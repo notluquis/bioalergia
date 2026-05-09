@@ -11,13 +11,13 @@ import {
 } from "@finanzas/orpc-contracts/haulmer";
 import type { Context as HonoContext } from "hono";
 import type { z } from "zod";
-import { getSessionUser, hasPermission } from "../auth";
-import { haulmerConfig } from "../config";
-import { logError } from "../lib/logger";
-import { configureSuperjson } from "../lib/superjson-config";
-import { captureHaulmerJWT } from "../modules/haulmer/auth";
-import { syncPeriods } from "../modules/haulmer/service";
-import { SuperJSONRPCHandler } from "./superjson";
+import { getSessionUser, hasPermission } from "../auth.ts";
+import { haulmerConfig } from "../config.ts";
+import { logError } from "../lib/logger.ts";
+import { configureSuperjson } from "../lib/superjson-config.ts";
+import { captureHaulmerJWT } from "../modules/haulmer/auth.ts";
+import { syncPeriods } from "../modules/haulmer/service.ts";
+import { SuperJSONRPCHandler } from "./superjson.ts";
 
 configureSuperjson();
 

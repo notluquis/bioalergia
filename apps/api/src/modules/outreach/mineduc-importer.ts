@@ -1,7 +1,7 @@
 import { db } from "@finanzas/db";
 import Papa from "papaparse";
-import { GRAN_CONCEPCION_COMUNAS, normalizeComuna } from "./comunas";
-import { mapDependencia } from "./dependencia";
+import { GRAN_CONCEPCION_COMUNAS, normalizeComuna } from "./comunas.ts";
+import { mapDependencia } from "./dependencia.ts";
 
 export const MINEDUC_DEFAULT_URL =
   "https://datosabiertos.mineduc.cl/wp-content/uploads/2024/08/20240201_Directorio_Establecimientos_Educacionales.csv";

@@ -4,7 +4,7 @@ import {
   normalizeRut,
   parseDateToISO,
   parseSkinTestWorkbookBuffer,
-} from "../clinical-skin-test-parser";
+} from "../clinical-skin-test-parser.ts";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 

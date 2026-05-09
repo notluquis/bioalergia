@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { resolveErrorCode } from "../error-code-resolver";
+import { resolveErrorCode } from "../error-code-resolver.ts";
 
 describe("resolveErrorCode", () => {
   it.each([

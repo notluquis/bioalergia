@@ -25,9 +25,9 @@ import { ORPCError, onError, os } from "@orpc/server";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import type { Context as HonoContext } from "hono";
 import { z } from "zod";
-import { getSessionUser, hasPermission } from "../auth";
-import { logError } from "../lib/logger";
-import { configureSuperjson } from "../lib/superjson-config";
+import { getSessionUser, hasPermission } from "../auth.ts";
+import { logError } from "../lib/logger.ts";
+import { configureSuperjson } from "../lib/superjson-config.ts";
 import {
   autoLinkAllEventPeriods,
   autoLinkAllEventPeriodsWithProgress,
@@ -40,8 +40,8 @@ import {
   listEventDteLinksByDate,
   normalizeLinkDate,
   unlinkEventDteLink,
-} from "../services/dte-event-linking";
-import { SuperJSONRPCHandler } from "./superjson";
+} from "../services/dte-event-linking.ts";
+import { SuperJSONRPCHandler } from "./superjson.ts";
 
 configureSuperjson();
 
@@ -160,7 +160,7 @@ const autoLinkJobStatus = readEventLinkJobs
   .input(dteEventLinksJobStatusInputSchema)
   .output(dteEventLinksJobStatusResponseSchema)
   .handler(async ({ input }) => {
-    const { getJobStatus } = await import("../lib/jobQueue");
+    const { getJobStatus } = await import("../lib/jobQueue.ts");
     const job = getJobStatus(input.jobId);
 
     if (!job || job.type !== "dte-auto-link-all-periods") {
@@ -273,7 +273,7 @@ const startAutoLinkAllPeriods = writeEventLinks
   .output(dteEventLinksAutoLinkAllPeriodsStartResponseSchema)
   .handler(async ({ context, input }) => {
     const parsedInput = dteEventLinksAutoLinkAllPeriodsInputSchema.parse(input);
-    const { completeJob, failJob, startJob, updateJobProgress } = await import("../lib/jobQueue");
+    const { completeJob, failJob, startJob, updateJobProgress } = await import("../lib/jobQueue.ts");
     const periods = await listAutoLinkEligiblePeriods();
     const jobId = startJob("dte-auto-link-all-periods", Math.max(periods.length, 1));
 

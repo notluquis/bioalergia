@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { priorityFromScore } from "../scoring";
+import { priorityFromScore } from "../scoring.ts";
 
 describe("priorityFromScore", () => {
   it("returns ALTA for scores >= 70", () => {

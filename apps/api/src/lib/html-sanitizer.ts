@@ -1,8 +1,8 @@
 import type { MiddlewareHandler } from "hono";
 import { clearWindow, sanitize } from "isomorphic-dompurify";
-import type { LinkValidationConfig } from "./sanitizer-hooks";
-import { clearAllHooks, registerLinkValidationHook } from "./sanitizer-hooks";
-import { getGlobalMonitor } from "./sanitizer-metrics";
+import type { LinkValidationConfig } from "./sanitizer-hooks.ts";
+import { clearAllHooks, registerLinkValidationHook } from "./sanitizer-hooks.ts";
+import { getGlobalMonitor } from "./sanitizer-metrics.ts";
 
 /**
  * DOMPurify Configuration Presets

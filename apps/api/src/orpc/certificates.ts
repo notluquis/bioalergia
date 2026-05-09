@@ -16,17 +16,17 @@ import dayjs from "dayjs";
 import timezone from "dayjs/plugin/timezone.js";
 import type { Context as HonoContext } from "hono";
 import { z } from "zod";
-import { getSessionUser, hasPermission } from "../auth";
-import { medicalCertificateSchema } from "../modules/certificates/certificate.schema";
+import { getSessionUser, hasPermission } from "../auth.ts";
+import { medicalCertificateSchema } from "../modules/certificates/certificate.schema.ts";
 import {
   generateMedicalCertificatePdf,
   generateQRCode,
   signPdf,
-} from "../modules/certificates/certificate.service";
-import { logError } from "../lib/logger";
-import { configureSuperjson } from "../lib/superjson-config";
-import { uploadCertificateToDrive } from "../services/certificates-drive";
-import { SuperJSONRPCHandler } from "./superjson";
+} from "../modules/certificates/certificate.service.ts";
+import { logError } from "../lib/logger.ts";
+import { configureSuperjson } from "../lib/superjson-config.ts";
+import { uploadCertificateToDrive } from "../services/certificates-drive.ts";
+import { SuperJSONRPCHandler } from "./superjson.ts";
 
 configureSuperjson();
 dayjs.extend(timezone);

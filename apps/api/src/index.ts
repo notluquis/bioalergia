@@ -1,15 +1,15 @@
 // apps/api/src/index.ts - Server Entry Point
 import { serve } from "@hono/node-server";
-import { app } from "./app";
-import { startDoctoraliaCalendarScheduler } from "./lib/doctoralia/doctoralia-calendar-scheduler";
-import { startDoctoraliaImapListener } from "./lib/doctoralia/imap-idle";
-import { startDTESyncScheduler } from "./lib/dte/dte-sync-cron";
-import { startClinicalSkinTestImportScheduler } from "./lib/clinical-skin-tests/clinical-skin-test-scheduler";
-import { startGoogleCalendarScheduler } from "./lib/google/google-calendar-scheduler";
-import { scheduleWatchChannelSetup } from "./lib/google/google-calendar-watch";
-import { initBaileysSocket } from "./lib/whatsapp/baileys-socket";
-import { startWhatsappScheduler } from "./lib/whatsapp/whatsapp-scheduler";
-import { getSetting } from "./services/settings";
+import { app } from "./app.ts";
+import { startDoctoraliaCalendarScheduler } from "./lib/doctoralia/doctoralia-calendar-scheduler.ts";
+import { startDoctoraliaImapListener } from "./lib/doctoralia/imap-idle.ts";
+import { startDTESyncScheduler } from "./lib/dte/dte-sync-cron.ts";
+import { startClinicalSkinTestImportScheduler } from "./lib/clinical-skin-tests/clinical-skin-test-scheduler.ts";
+import { startGoogleCalendarScheduler } from "./lib/google/google-calendar-scheduler.ts";
+import { scheduleWatchChannelSetup } from "./lib/google/google-calendar-watch.ts";
+import { initBaileysSocket } from "./lib/whatsapp/baileys-socket.ts";
+import { startWhatsappScheduler } from "./lib/whatsapp/whatsapp-scheduler.ts";
+import { getSetting } from "./services/settings.ts";
 
 const port = Number(process.env.PORT) || 3000;
 console.log(`🚀 Finanzas API starting on port ${port}`);
@@ -33,7 +33,7 @@ if (process.env.ENABLE_DOCTORALIA_CALENDAR_SYNC === "true") {
 // Initialize Baileys WhatsApp connection if enabled and has stored credentials
 getSetting("whatsapp.enabled").then(async (val) => {
   if (val !== "true") return;
-  const { hasStoredCreds } = await import("./lib/whatsapp/baileys-auth-state");
+  const { hasStoredCreds } = await import("./lib/whatsapp/baileys-auth-state.ts");
   if (await hasStoredCreds()) {
     initBaileysSocket().catch((err) => console.error("Failed to initialize Baileys:", err));
   } else {

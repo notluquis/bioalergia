@@ -7,7 +7,7 @@
 
 import { createHash } from "node:crypto";
 import { V3 } from "paseto";
-import { getOrCreateTokenSecret } from "./token-secret";
+import { getOrCreateTokenSecret } from "./token-secret.ts";
 
 // Key is initialized lazily on first token operation
 let KEY: Buffer | null = null;

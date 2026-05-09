@@ -38,15 +38,15 @@ import { ORPCError, onError, os } from "@orpc/server";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import type { Context as HonoContext } from "hono";
 import { z } from "zod";
-import { getSessionUser, hasPermission } from "../auth";
+import { getSessionUser, hasPermission } from "../auth.ts";
 import {
   startClinicalSkinTestArchiveSnapshotsJob,
   startClinicalSkinTestImportJob,
   startClinicalSkinTestProcessDiscoveredJob,
   startClinicalSkinTestReprocessPendingJob,
   startClinicalXlsxLibraryReclassifyJob,
-} from "../lib/clinical-skin-tests/clinical-skin-test-scheduler";
-import { cancelJob, getActiveJobsByType, getJobStatus } from "../lib/jobQueue";
+} from "../lib/clinical-skin-tests/clinical-skin-test-scheduler.ts";
+import { cancelJob, getActiveJobsByType, getJobStatus } from "../lib/jobQueue.ts";
 import {
   connectOneDriveWithCode,
   disconnectOneDrive,
@@ -56,9 +56,9 @@ import {
   listOneDriveFolderChildren,
   renewOneDriveSubscriptionNow,
   setOneDriveFolderPath,
-} from "../lib/microsoft/onedrive";
-import { logError } from "../lib/logger";
-import { configureSuperjson } from "../lib/superjson-config";
+} from "../lib/microsoft/onedrive.ts";
+import { logError } from "../lib/logger.ts";
+import { configureSuperjson } from "../lib/superjson-config.ts";
 import {
   approveSkinTestImport,
   getSkinTestAnalytics,
@@ -70,8 +70,8 @@ import {
   processSkinTestImports,
   rejectSkinTestImport,
   reprocessSkinTestImport,
-} from "../services/clinical-skin-test-imports";
-import { SuperJSONRPCHandler } from "./superjson";
+} from "../services/clinical-skin-test-imports.ts";
+import { SuperJSONRPCHandler } from "./superjson.ts";
 
 configureSuperjson();
 

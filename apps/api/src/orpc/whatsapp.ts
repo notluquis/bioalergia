@@ -68,13 +68,13 @@ import { ORPCError, onError, os } from "@orpc/server";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import type { Context as HonoContext } from "hono";
 import { z } from "zod";
-import { getSessionUser, hasPermission } from "../auth";
-import { logError } from "../lib/logger";
+import { getSessionUser, hasPermission } from "../auth.ts";
+import { logError } from "../lib/logger.ts";
 import {
   getWhatsappConsentSummary,
   listWhatsappConversationStates,
   setWhatsappContactConsent,
-} from "../lib/whatsapp/conversation-state";
+} from "../lib/whatsapp/conversation-state.ts";
 import {
   archiveChat,
   assignBusinessChatLabel,
@@ -113,7 +113,7 @@ import {
   starMessages,
   updateBusinessCoverPhoto,
   updateBusinessProfile,
-} from "../lib/whatsapp/baileys-socket";
+} from "../lib/whatsapp/baileys-socket.ts";
 import {
   getChatMeta,
   getChatThread,
@@ -121,23 +121,23 @@ import {
   listMessageReactions,
   listMessageReceipts,
   listPresenceStates,
-} from "../lib/whatsapp/chat-state-store";
+} from "../lib/whatsapp/chat-state-store.ts";
 import {
   listWhatsappBusinessChatLabels,
   listWhatsappBusinessLabels,
   listWhatsappBusinessMessageLabels,
   listWhatsappBusinessQuickReplies,
-} from "../lib/whatsapp/business-store";
+} from "../lib/whatsapp/business-store.ts";
 import {
   getWhatsappConversationThread,
   listWhatsappChats,
   listWhatsappMessageHistory,
-} from "../lib/whatsapp/history-store";
-import { normalizePhone, phoneToJid } from "../lib/whatsapp/jid";
-import { runWhatsappPoll } from "../lib/whatsapp/whatsapp-scheduler";
-import { getSetting, updateSetting } from "../services/settings";
-import { configureSuperjson } from "../lib/superjson-config";
-import { SuperJSONRPCHandler } from "./superjson";
+} from "../lib/whatsapp/history-store.ts";
+import { normalizePhone, phoneToJid } from "../lib/whatsapp/jid.ts";
+import { runWhatsappPoll } from "../lib/whatsapp/whatsapp-scheduler.ts";
+import { getSetting, updateSetting } from "../services/settings.ts";
+import { configureSuperjson } from "../lib/superjson-config.ts";
+import { SuperJSONRPCHandler } from "./superjson.ts";
 
 configureSuperjson();
 

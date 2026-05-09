@@ -1,6 +1,6 @@
-import type { AuthSession } from "../auth";
-import { getSessionUser, hasPermission } from "../auth";
-import { AppError } from "./app-error";
+import type { AuthSession } from "../auth.ts";
+import { getSessionUser, hasPermission } from "../auth.ts";
+import { AppError } from "./app-error.ts";
 import { createMiddleware } from "hono/factory";
 
 export type LegacyRouteVariables = {

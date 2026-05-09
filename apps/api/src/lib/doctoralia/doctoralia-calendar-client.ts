@@ -11,7 +11,7 @@ import type {
   DoctoraliaCalendarAlert,
   DoctoraliaCalendarRequest,
   DoctoraliaCalendarResponse,
-} from "./doctoralia-calendar-types.js";
+} from "./doctoralia-calendar-types.ts";
 
 const CALENDAR_API_BASE = "https://docplanner.doctoralia.cl/api";
 const DEFAULT_COOKIES_LABEL = process.env.DOCTORALIA_SCRAPER_COOKIES_LABEL || "default";

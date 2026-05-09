@@ -3,15 +3,15 @@ import path from "node:path";
 import readline from "node:readline/promises";
 import { stdin, stdout } from "node:process";
 import { Impit, type HttpMethod } from "impit";
-import { loadConfig, type ScraperConfig } from "./config.js";
-import { CookieJar } from "./cookies.js";
-import { type CapturedEntry, postToImportEndpoint } from "./submit.js";
+import { loadConfig, type ScraperConfig } from "./config.ts";
+import { CookieJar } from "./cookies.ts";
+import { type CapturedEntry, postToImportEndpoint } from "./submit.ts";
 import {
   forcedCurrentWeekWindow,
   getTickDebugInfo,
   selectWindowsForTick,
   type WindowRequest,
-} from "./window-selector.js";
+} from "./window-selector.ts";
 
 const discoverMode = process.argv.includes("--discover");
 

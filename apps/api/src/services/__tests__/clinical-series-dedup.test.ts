@@ -19,7 +19,7 @@ vi.mock("@finanzas/db", () => ({
   kysely: {},
 }));
 
-const { detectDuplicateSeries, findMatchingSeries, selectRepresentativeClinicalIdentity } = await import("../clinical-series");
+const { detectDuplicateSeries, findMatchingSeries, selectRepresentativeClinicalIdentity } = await import("../clinical-series.ts");
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 

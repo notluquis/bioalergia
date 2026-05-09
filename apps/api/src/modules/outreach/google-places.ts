@@ -1,6 +1,6 @@
 import { db } from "@finanzas/db";
-import { logEvent, logWarn } from "../../lib/logger";
-import { TYPE_TO_PROSPECT_KIND } from "./zonas";
+import { logEvent, logWarn } from "../../lib/logger.ts";
+import { TYPE_TO_PROSPECT_KIND } from "./zonas.ts";
 
 // Places API (New) — places.googleapis.com/v1
 // Docs: https://developers.google.com/maps/documentation/places/web-service/op-overview

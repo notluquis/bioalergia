@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { mapTransaction } from "../mappers";
+import { mapTransaction } from "../mappers.ts";
 
 const BASE_ROW = {
   id: 1,

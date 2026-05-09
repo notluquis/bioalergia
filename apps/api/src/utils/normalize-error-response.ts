@@ -1,5 +1,5 @@
 import type { Context } from "hono";
-import { resolveErrorCode } from "./error-code-resolver";
+import { resolveErrorCode } from "./error-code-resolver.ts";
 
 type ErrorShape = {
   code?: unknown;

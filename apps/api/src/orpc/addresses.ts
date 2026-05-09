@@ -16,11 +16,11 @@ import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import type { Context as HonoContext } from "hono";
 import type { z } from "zod";
 import { Decimal } from "decimal.js";
-import { getSessionUser, hasPermission } from "../auth";
-import { logError } from "../lib/logger";
-import { configureSuperjson } from "../lib/superjson-config";
-import { geocodeAddress } from "../services/shipments";
-import { SuperJSONRPCHandler } from "./superjson";
+import { getSessionUser, hasPermission } from "../auth.ts";
+import { logError } from "../lib/logger.ts";
+import { configureSuperjson } from "../lib/superjson-config.ts";
+import { geocodeAddress } from "../services/shipments.ts";
+import { SuperJSONRPCHandler } from "./superjson.ts";
 
 /**
  * Best-effort geocoding via Chilexpress' /addresses/georeference endpoint.

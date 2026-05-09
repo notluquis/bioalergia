@@ -19,7 +19,7 @@ import {
   TIMEZONE,
   toChileDateString,
   toChilePeriod,
-} from "../time";
+} from "../time.ts";
 
 describe("time", () => {
   describe("TIMEZONE", () => {

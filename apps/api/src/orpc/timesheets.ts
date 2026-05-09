@@ -36,11 +36,11 @@ import timezone from "dayjs/plugin/timezone.js";
 import utc from "dayjs/plugin/utc.js";
 import type { Context as HonoContext } from "hono";
 import { z } from "zod";
-import { getSessionUser, hasPermission } from "../auth";
-import { logError } from "../lib/logger";
-import { configureSuperjson } from "../lib/superjson-config";
-import { getEmployeeById } from "../services/employees";
-import { buildTimesheetEmailComposition } from "../services/timesheet-email-template";
+import { getSessionUser, hasPermission } from "../auth.ts";
+import { logError } from "../lib/logger.ts";
+import { configureSuperjson } from "../lib/superjson-config.ts";
+import { getEmployeeById } from "../services/employees.ts";
+import { buildTimesheetEmailComposition } from "../services/timesheet-email-template.ts";
 import {
   buildMonthlySummary,
   deleteTimesheetEntry,
@@ -49,8 +49,8 @@ import {
   type UpsertTimesheetPayload,
   updateTimesheetEntry,
   upsertTimesheetEntry,
-} from "../services/timesheets";
-import { SuperJSONRPCHandler } from "./superjson";
+} from "../services/timesheets.ts";
+import { SuperJSONRPCHandler } from "./superjson.ts";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);

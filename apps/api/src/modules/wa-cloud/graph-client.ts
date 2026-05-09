@@ -1,5 +1,5 @@
 import { db } from "@finanzas/db";
-import { logWarn } from "../../lib/logger";
+import { logWarn } from "../../lib/logger.ts";
 
 const GRAPH_BASE = "https://graph.facebook.com";
 

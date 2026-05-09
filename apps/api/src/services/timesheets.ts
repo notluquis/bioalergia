@@ -15,12 +15,12 @@ const TIME_FORMAT_PATTERN = /^[0-9]{1,2}:[0-9]{2}(:[0-9]{2})?$/;
 const TIME_EXTRACT_PATTERN = /^(\d{1,2}):(\d{2})(?::(\d{2}))?$/;
 const TIME_ONLY_PATTERN = /^(\d{1,2}):(\d{2})/;
 
-import { roundCurrency } from "../lib/currency";
-import type { EmployeeTimesheet, EmployeeTimesheetUpdateInput } from "../lib/db-types";
-import { logEvent, logWarn } from "../lib/logger";
-import { getEffectiveRetentionRate } from "../lib/retention";
-import { formatDateOnly, getNthBusinessDay } from "../lib/time";
-import { getEmployeeById, listEmployees } from "./employees";
+import { roundCurrency } from "../lib/currency.ts";
+import type { EmployeeTimesheet, EmployeeTimesheetUpdateInput } from "../lib/db-types.ts";
+import { logEvent, logWarn } from "../lib/logger.ts";
+import { getEffectiveRetentionRate } from "../lib/retention.ts";
+import { formatDateOnly, getNthBusinessDay } from "../lib/time.ts";
+import { getEmployeeById, listEmployees } from "./employees.ts";
 
 // Types
 export interface TimesheetEntry {

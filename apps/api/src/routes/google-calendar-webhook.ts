@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { handleGoogleCalendarWebhook } from "./calendar";
+import { handleGoogleCalendarWebhook } from "./calendar.ts";
 
 export const googleCalendarWebhookRoutes = new Hono();
 

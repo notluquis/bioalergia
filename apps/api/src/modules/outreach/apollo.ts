@@ -1,5 +1,5 @@
 import { db } from "@finanzas/db";
-import { logWarn } from "../../lib/logger";
+import { logWarn } from "../../lib/logger.ts";
 
 const APOLLO_BASE = "https://api.apollo.io/api/v1";
 

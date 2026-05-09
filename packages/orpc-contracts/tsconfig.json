@@ -2,6 +2,8 @@
   "compilerOptions": {
     "module": "ESNext",
     "moduleResolution": "Bundler",
+    "allowImportingTsExtensions": true,
+    "rewriteRelativeImportExtensions": true,
     "target": "esnext",
     "sourceMap": true,
     "outDir": "dist",

@@ -2,8 +2,8 @@ import { db } from "@finanzas/db";
 import dayjs from "dayjs";
 import { randomUUID } from "node:crypto";
 import { Decimal } from "decimal.js";
-import { AppError } from "../lib/app-error";
-import "../lib/time";
+import { AppError } from "../lib/app-error.ts";
+import "../lib/time.ts";
 
 type LoanStatus = "ACTIVE" | "COMPLETED" | "DEFAULTED";
 type LoanBorrowerType = "COMPANY" | "PERSON";

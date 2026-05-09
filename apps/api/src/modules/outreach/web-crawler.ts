@@ -1,6 +1,6 @@
 import { db } from "@finanzas/db";
 import * as cheerio from "cheerio";
-import { logWarn } from "../../lib/logger";
+import { logWarn } from "../../lib/logger.ts";
 
 const PATHS_CONTACTO = [
   "/contacto",

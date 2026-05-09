@@ -1,5 +1,5 @@
 import * as XLSX from "xlsx";
-import { validateRut, formatRut } from "../lib/rut.js";
+import { validateRut, formatRut } from "../lib/rut.ts";
 
 export const SKIN_TEST_PARSER_VERSION = "2026-05-05.8";
 

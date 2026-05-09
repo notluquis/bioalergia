@@ -3,10 +3,10 @@ import dayjs from "dayjs";
 import timezone from "dayjs/plugin/timezone.js";
 import utc from "dayjs/plugin/utc.js";
 import { sql } from "kysely";
-import jaroWinkler from "talisman/metrics/jaro-winkler";
-import { joinClinicalText, normalizeClinicalText } from "../lib/clinical-text";
-import { parseCalendarMetadata } from "../lib/parsers";
-import { normalizeRut, validateRut } from "../lib/rut";
+import jaroWinkler from "talisman/metrics/jaro-winkler.js";
+import { joinClinicalText, normalizeClinicalText } from "../lib/clinical-text.ts";
+import { parseCalendarMetadata } from "../lib/parsers.ts";
+import { normalizeRut, validateRut } from "../lib/rut.ts";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);

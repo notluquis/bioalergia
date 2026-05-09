@@ -10,15 +10,15 @@ import {
   csvUploadPreviewResponseSchema,
   type csvUploadModeSchema,
 } from "@finanzas/orpc-contracts/csv-upload";
-import Decimal from "decimal.js";
+import { Decimal } from "decimal.js";
 import type { Context as HonoContext } from "hono";
 import type { z } from "zod";
 
-import { getSessionUser, hasPermission } from "../auth";
-import { logError } from "../lib/logger";
-import { configureSuperjson } from "../lib/superjson-config";
-import { parseChileDateTime } from "../lib/time";
-import { SuperJSONRPCHandler } from "./superjson";
+import { getSessionUser, hasPermission } from "../auth.ts";
+import { logError } from "../lib/logger.ts";
+import { configureSuperjson } from "../lib/superjson-config.ts";
+import { parseChileDateTime } from "../lib/time.ts";
+import { SuperJSONRPCHandler } from "./superjson.ts";
 
 configureSuperjson();
 

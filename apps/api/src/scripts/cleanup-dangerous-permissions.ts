@@ -9,7 +9,7 @@ config({ path: resolve(__dirname, "../../../../packages/db/.env") });
 async function main() {
   // Dynamic import AFTER env is loaded
   const { db } = await import("@finanzas/db");
-  const { buildDangerousPermissionsWhereClause } = await import("../lib/permission-validator");
+  const { buildDangerousPermissionsWhereClause } = await import("../lib/permission-validator.ts");
 
   console.log("🧹 Starting Security Cleanup: Purging Dangerous Permissions...");
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { mapDependencia } from "../dependencia";
+import { mapDependencia } from "../dependencia.ts";
 
 describe("mapDependencia", () => {
   it("maps code '1' to MUNICIPAL", () => {

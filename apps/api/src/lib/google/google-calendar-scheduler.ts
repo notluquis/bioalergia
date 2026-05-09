@@ -1,9 +1,9 @@
 import cron from "node-cron";
-import { googleCalendarConfig } from "../../config";
-import { createCalendarSyncLogEntry, finalizeCalendarSyncLogEntry } from "../../services/calendar";
+import { googleCalendarConfig } from "../../config.ts";
+import { createCalendarSyncLogEntry, finalizeCalendarSyncLogEntry } from "../../services/calendar.ts";
 
-import { logEvent, logWarn } from "../logger";
-import { syncGoogleCalendarOnce } from "./google-calendar.js";
+import { logEvent, logWarn } from "../logger.ts";
+import { syncGoogleCalendarOnce } from "./google-calendar.ts";
 
 // Polling disabled by user request (relying on Webhooks)
 const CRON_JOBS: { expression: string; label: string }[] = [];

@@ -1,6 +1,6 @@
 import { kysely, type SchemaType } from "@finanzas/db";
 import type { Kysely } from "kysely";
-import { normalizePhone } from "./jid";
+import { normalizePhone } from "./jid.ts";
 
 const CUSTOMER_SERVICE_WINDOW_MS = 24 * 60 * 60 * 1000;
 

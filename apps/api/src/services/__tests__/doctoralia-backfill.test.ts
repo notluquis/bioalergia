@@ -7,11 +7,11 @@ import {
   isDoctoraliaBackfillRunning,
   planDoctoraliaBackfill,
   startDoctoraliaBackfill,
-} from "../doctoralia-backfill";
+} from "../doctoralia-backfill.ts";
 
 // We don't stub @finanzas/db because we never reach the sync layer in plan tests.
 // For startDoctoraliaBackfill tests we mock the sync service to avoid DB access.
-vi.mock("../doctoralia-calendar", () => ({
+vi.mock("../doctoralia-calendar.ts", () => ({
   doctoraliaCalendarSyncService: {
     syncCalendar: vi.fn().mockResolvedValue({
       success: true,
@@ -76,7 +76,7 @@ describe("startDoctoraliaBackfill (single-flight)", () => {
     // Pick a date that yields just 1 week so the loop finishes quickly;
     // slow the sync slightly so the first start is still in flight when we
     // try the second one.
-    const { doctoraliaCalendarSyncService } = await import("../doctoralia-calendar");
+    const { doctoraliaCalendarSyncService } = await import("../doctoralia-calendar.ts");
     const slow = vi
       .mocked(doctoraliaCalendarSyncService.syncCalendar)
       .mockImplementation(

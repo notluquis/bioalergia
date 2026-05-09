@@ -34,8 +34,8 @@ import type { StandardHandlerOptions } from "@orpc/server/standard";
 import { StandardHandler, StandardRPCCodec, StandardRPCMatcher } from "@orpc/server/standard";
 import { isAsyncIteratorObject } from "@orpc/shared";
 import type { Context as HonoContext } from "hono";
-import { configureSuperjson } from "../lib/superjson-config";
-import { toORPCError as normalizeServerError } from "./error";
+import { configureSuperjson } from "../lib/superjson-config.ts";
+import { toORPCError as normalizeServerError } from "./error.ts";
 
 const superjson = configureSuperjson();
 

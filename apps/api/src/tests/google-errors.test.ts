@@ -1,6 +1,6 @@
 import { GaxiosError, type GaxiosOptionsPrepared, type GaxiosResponse } from "gaxios";
 import { describe, expect, it, vi } from "vitest";
-import { GoogleApiError, parseGoogleError, retryGoogleCall } from "../lib/google/google-errors";
+import { GoogleApiError, parseGoogleError, retryGoogleCall } from "../lib/google/google-errors.ts";
 
 type MinimalResponse = {
   status: number;

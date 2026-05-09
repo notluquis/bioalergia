@@ -2,16 +2,16 @@ import { db } from "@finanzas/db";
 import dayjs from "dayjs";
 import timezone from "dayjs/plugin/timezone.js";
 import utc from "dayjs/plugin/utc.js";
-import jaroWinkler from "talisman/metrics/jaro-winkler";
-import { symmetric as mongeElkanSymmetric } from "talisman/metrics/monge-elkan";
-import { joinClinicalText } from "../lib/clinical-text";
-import { normalizeRut } from "../lib/rut";
+import jaroWinkler from "talisman/metrics/jaro-winkler.js";
+import { symmetric as mongeElkanSymmetric } from "talisman/metrics/monge-elkan.js";
+import { joinClinicalText } from "../lib/clinical-text.ts";
+import { normalizeRut } from "../lib/rut.ts";
 import {
   type ClinicalSeriesSnapshot,
   extractIdentityHints,
   getClinicalSeriesSnapshotByExternalEvent,
   syncClinicalSeriesForInternalEventId,
-} from "./clinical-series";
+} from "./clinical-series.ts";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);

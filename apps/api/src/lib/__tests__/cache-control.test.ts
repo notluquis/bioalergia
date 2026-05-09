@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { describe, expect, it } from "vitest";
 
-import { cacheControl } from "../cache-control";
+import { cacheControl } from "../cache-control.ts";
 
 /**
  * cache-control middleware tests.

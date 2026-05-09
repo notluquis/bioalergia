@@ -16,10 +16,10 @@ import {
   clearDriveClientCache,
   getOAuthClientBase,
   validateOAuthToken,
-} from "../lib/google/google-core";
-import { logError, logEvent } from "../lib/logger";
-import { configureSuperjson } from "../lib/superjson-config";
-import { SuperJSONRPCHandler } from "./superjson";
+} from "../lib/google/google-core.ts";
+import { logError, logEvent } from "../lib/logger.ts";
+import { configureSuperjson } from "../lib/superjson-config.ts";
+import { SuperJSONRPCHandler } from "./superjson.ts";
 
 configureSuperjson();
 

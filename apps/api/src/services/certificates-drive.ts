@@ -1,6 +1,6 @@
 import { createReadStream } from "node:fs";
-import { getDriveClient } from "../lib/google/google-core";
-import { parseGoogleError, retryGoogleCall } from "../lib/google/google-errors";
+import { getDriveClient } from "../lib/google/google-core.ts";
+import { parseGoogleError, retryGoogleCall } from "../lib/google/google-errors.ts";
 
 const CERTIFICATES_FOLDER_NAME = "Medical Certificates";
 

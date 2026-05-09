@@ -5,7 +5,7 @@ import {
   SCRAPER_TIMEZONE,
   selectWindowsForTick,
   type TierKey,
-} from "./window-selector";
+} from "./window-selector.ts";
 
 // Build a Date that corresponds to the given wall-clock in America/Santiago.
 // We assume the Chile offset because the scraper runs against that locale.

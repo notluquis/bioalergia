@@ -8,16 +8,16 @@
     "tsconfig.json"
   ],
   "scripts": {
-    "dev": "tsx watch src/index.ts",
-    "build": "node -e \"console.log('@finanzas/api uses the tsx runtime in production; no JS bundle is emitted during build.')\"",
-    "start": "node --import tsx src/index.ts",
+    "dev": "node --watch src/index.ts",
+    "build": "node -e \"console.log('@finanzas/api runs TypeScript natively via Node.js (>=25.2 type stripping); no JS bundle is emitted during build.')\"",
+    "start": "node src/index.ts",
     "type-check": "NODE_OPTIONS=--max-old-space-size=8192 tsc --noEmit --pretty false",
     "type-check:watch": "NODE_OPTIONS=--max-old-space-size=8192 tsc --watch --pretty false",
-    "google:auth": "tsx src/scripts/google-auth.ts",
-    "doctoralia:diagnose-login": "tsx src/scripts/diagnose-doctoralia-login.ts",
-    "doctoralia:import-history": "tsx src/scripts/import-doctoralia-history.ts",
-    "debug:intranet-request": "tsx src/scripts/debug-intranet-request.ts",
-    "debug:mp-download": "tsx src/scripts/debug-intranet-request.ts",
+    "google:auth": "node src/scripts/google-auth.ts",
+    "doctoralia:diagnose-login": "node src/scripts/diagnose-doctoralia-login.ts",
+    "doctoralia:import-history": "node src/scripts/import-doctoralia-history.ts",
+    "debug:intranet-request": "node src/scripts/debug-intranet-request.ts",
+    "debug:mp-download": "node src/scripts/debug-intranet-request.ts",
     "lint": "oxlint",
     "lint:fix": "oxlint --fix",
     "format": "oxfmt",
@@ -80,7 +80,6 @@
     "stream-json": "^2.1.0",
     "superjson": "^2.2.6",
     "talisman": "^1.1.4",
-    "tsx": "^4.21.0",
     "web-push": "^3.6.7",
     "xlsx": "https://cdn.sheetjs.com/xlsx-latest/xlsx-latest.tgz",
     "zod": "^4.4.3"
@@ -97,7 +96,7 @@
     "vitest": "^4.1.5"
   },
   "engines": {
-    "node": ">=25",
+    "node": ">=26",
     "npm": ">=10.0.0"
   }
 }

@@ -7,7 +7,7 @@ import {
   reclassifyClinicalXlsxLibrary,
   syncClinicalSkinTestImports,
   type SkinTestImportStatus,
-} from "../../services/clinical-skin-test-imports";
+} from "../../services/clinical-skin-test-imports.ts";
 import {
   cancelJob,
   completeJob,
@@ -16,9 +16,9 @@ import {
   isJobCancelled,
   startJob,
   updateJobProgress,
-} from "../jobQueue";
-import { logError, logEvent, logWarn } from "../logger";
-import { renewAllOneDriveSubscriptions } from "../microsoft/onedrive";
+} from "../jobQueue.ts";
+import { logError, logEvent, logWarn } from "../logger.ts";
+import { renewAllOneDriveSubscriptions } from "../microsoft/onedrive.ts";
 
 const DEFAULT_CRON = "*/30 * * * *";
 const DEFAULT_TIMEZONE = "America/Santiago";

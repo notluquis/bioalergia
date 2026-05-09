@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseCalendarMetadata } from "./parsers";
+import { parseCalendarMetadata } from "./parsers.ts";
 
 describe("parseCalendarMetadata - Classification Issues", () => {
   it("should classify 'vacuna clust 0,5ml' as Tratamiento subcutáneo with Mantención stage", () => {

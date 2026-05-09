@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { GRAN_CONCEPCION_COMUNAS, isGranConcepcion, normalizeComuna } from "../comunas";
+import { GRAN_CONCEPCION_COMUNAS, isGranConcepcion, normalizeComuna } from "../comunas.ts";
 
 describe("normalizeComuna", () => {
   it("uppercases and trims", () => {

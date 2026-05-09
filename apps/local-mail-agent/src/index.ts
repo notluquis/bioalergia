@@ -13,7 +13,7 @@ import type SMTPPool from "nodemailer/lib/smtp-pool";
 import type SMTPTransport from "nodemailer/lib/smtp-transport";
 import type StreamTransport from "nodemailer/lib/stream-transport";
 import { z } from "zod";
-import { readKeychainSecret } from "./keychain";
+import { readKeychainSecret } from "./keychain.ts";
 
 const SERVICE_NAME = "bioalergia-local-mail-agent";
 const SMTP_HOST = "mail.spacemail.com";

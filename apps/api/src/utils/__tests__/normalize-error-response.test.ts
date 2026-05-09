@@ -1,6 +1,6 @@
 import superjson from "superjson";
 import { describe, expect, it } from "vitest";
-import { normalizeErrorResponse } from "../normalize-error-response";
+import { normalizeErrorResponse } from "../normalize-error-response.ts";
 
 type MockContext = {
   req: { method: string; path: string };

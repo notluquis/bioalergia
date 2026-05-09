@@ -58,26 +58,26 @@ import { ORPCError, onError, os } from "@orpc/server";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import type { Context as HonoContext } from "hono";
 import { z } from "zod";
-import { getSessionUser, hasPermission } from "../auth";
-import { logError } from "../lib/logger";
-import { configureSuperjson } from "../lib/superjson-config";
+import { getSessionUser, hasPermission } from "../auth.ts";
+import { logError } from "../lib/logger.ts";
+import { configureSuperjson } from "../lib/superjson-config.ts";
 import {
   completeJob,
   failJob,
   getJobStatus,
   startJob,
   updateJobProgress,
-} from "../lib/job-queue/jobQueue";
-import { enrichProspectWithApollo } from "../modules/outreach/apollo";
-import { buildCampaignDeliveries, selectCandidates } from "../modules/outreach/campaign-builder";
-import { discoverGooglePlaces } from "../modules/outreach/google-places";
-import { hunterEnrichProspect, verifyEmail } from "../modules/outreach/hunter";
-import { importMineducDataset } from "../modules/outreach/mineduc-importer";
-import { recomputeProspectScore } from "../modules/outreach/scoring";
-import { renderTemplate } from "../modules/outreach/template";
-import { crawlProspect as runCrawler } from "../modules/outreach/web-crawler";
-import { CATEGORIAS_GOOGLE_PLACES, ZONAS } from "../modules/outreach/zonas";
-import { SuperJSONRPCHandler } from "./superjson";
+} from "../lib/job-queue/jobQueue.ts";
+import { enrichProspectWithApollo } from "../modules/outreach/apollo.ts";
+import { buildCampaignDeliveries, selectCandidates } from "../modules/outreach/campaign-builder.ts";
+import { discoverGooglePlaces } from "../modules/outreach/google-places.ts";
+import { hunterEnrichProspect, verifyEmail } from "../modules/outreach/hunter.ts";
+import { importMineducDataset } from "../modules/outreach/mineduc-importer.ts";
+import { recomputeProspectScore } from "../modules/outreach/scoring.ts";
+import { renderTemplate } from "../modules/outreach/template.ts";
+import { crawlProspect as runCrawler } from "../modules/outreach/web-crawler.ts";
+import { CATEGORIAS_GOOGLE_PLACES, ZONAS } from "../modules/outreach/zonas.ts";
+import { SuperJSONRPCHandler } from "./superjson.ts";
 
 configureSuperjson();
 

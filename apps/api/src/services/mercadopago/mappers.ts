@@ -1,6 +1,6 @@
 import type { db, JsonValue } from "@finanzas/db";
 import { Decimal } from "decimal.js";
-import { parseChileDateTime } from "../../lib/time";
+import { parseChileDateTime } from "../../lib/time.ts";
 
 // Infer Input types from the db client
 type SettlementManyArgs = Parameters<typeof db.settlementTransaction.createMany>[0];

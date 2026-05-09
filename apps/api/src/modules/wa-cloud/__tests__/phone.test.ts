@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { normalizeToE164, stripPlus } from "../phone";
+import { normalizeToE164, stripPlus } from "../phone.ts";
 
 describe("normalizeToE164", () => {
   it("keeps E.164 number unchanged (strips non-digits then re-adds +)", () => {

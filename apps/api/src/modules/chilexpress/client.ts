@@ -8,7 +8,7 @@ import type {
   CxRegion,
   CxTransportOrderInput,
   CxTransportOrderResponse,
-} from "./types";
+} from "./types.ts";
 
 export interface ChilexpressConfig {
   coverageApiKey: string;

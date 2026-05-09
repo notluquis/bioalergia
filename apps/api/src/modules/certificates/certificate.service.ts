@@ -5,8 +5,8 @@ import { PDFDocument, type PDFFont, rgb, StandardFonts } from "pdf-lib";
 import "dayjs/locale/es.js";
 import QRCode from "qrcode";
 
-import type { MedicalCertificateInput } from "./certificate.schema.js";
-import { defaultDoctorInfo } from "./certificate.schema.js";
+import type { MedicalCertificateInput } from "./certificate.schema.ts";
+import { defaultDoctorInfo } from "./certificate.schema.ts";
 
 dayjs.locale("es");
 

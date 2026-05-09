@@ -13,7 +13,7 @@ import {
   getSetting,
   loadSettings,
   updateSetting,
-} from "../settings";
+} from "../settings.ts";
 
 const hasDb = Boolean(process.env.DATABASE_URL);
 

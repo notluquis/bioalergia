@@ -25,7 +25,7 @@ function serializeShipment(s: Shipment): SerializedShipment {
     length: Number(s.length),
   };
 }
-import { chilexpressConfig } from "../config";
+import { chilexpressConfig } from "../config.ts";
 import {
   createTransportOrder,
   georeferenceAddress,
@@ -38,8 +38,8 @@ import {
   reprintLabel,
   searchStreets,
   trackTransportOrder,
-} from "../modules/chilexpress/client";
-import type { CreateShipmentInput } from "../orpc/shipments";
+} from "../modules/chilexpress/client.ts";
+import type { CreateShipmentInput } from "../orpc/shipments.ts";
 
 function requireCxConfig() {
   if (!chilexpressConfig) {

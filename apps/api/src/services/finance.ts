@@ -1,13 +1,13 @@
 import type { TransactionType } from "@finanzas/db";
 import { db } from "@finanzas/db";
-import Decimal from "decimal.js";
-import { AppError } from "../lib/app-error";
-import { getPeriodRange, toChilePeriod } from "../lib/time";
+import { Decimal } from "decimal.js";
+import { AppError } from "../lib/app-error.ts";
+import { getPeriodRange, toChilePeriod } from "../lib/time.ts";
 import {
   fetchMergedTransactions,
   fetchMergedTransactionsBySourceIds,
   type UnifiedTransaction,
-} from "./transactions";
+} from "./transactions.ts";
 
 const SETTLEMENT_CASHBACK_TYPE = "CASHBACK";
 const MP_CARD_CATEGORY_NAME = "Tarjeta Mercadopago";

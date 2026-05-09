@@ -39,7 +39,7 @@ config({ path: path.resolve(process.cwd(), ".env") });
 // Dynamic import after env is loaded
 const { db } = await import("@finanzas/db");
 const { decodeEmailBody, htmlToText, isLikelyDoctoraliaEmail, parseDoctoraliaEmail } = await import(
-  "../lib/whatsapp/email-parser.js"
+  "../lib/whatsapp/email-parser.ts"
 );
 
 // ---------------------------------------------------------------------------

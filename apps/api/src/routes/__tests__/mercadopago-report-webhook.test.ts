@@ -31,7 +31,7 @@ vi.mock("../../lib/logger", () => ({
   logError: vi.fn(),
 }));
 
-import { mercadopagoReportWebhookRoutes } from "../mercadopago-report-webhook";
+import { mercadopagoReportWebhookRoutes } from "../mercadopago-report-webhook.ts";
 
 function buildPayload(overrides: Record<string, unknown> = {}) {
   const transaction_id = "tx-001";
@@ -182,7 +182,7 @@ describe("MercadoPago report webhook", () => {
       logError: vi.fn(),
     }));
 
-    const mod = await import("../mercadopago-report-webhook");
+    const mod = await import("../mercadopago-report-webhook.ts");
     const res = await mod.mercadopagoReportWebhookRoutes.request("/", {
       method: "POST",
       headers: { "Content-Type": "application/json" },

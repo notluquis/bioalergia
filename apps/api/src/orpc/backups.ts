@@ -14,13 +14,13 @@ import {
 } from "@finanzas/orpc-contracts/backups";
 import type { Context as HonoContext } from "hono";
 import { z } from "zod";
-import { getSessionUser, hasPermission } from "../auth";
-import { isOAuthConfigured } from "../lib/google/google-core";
-import { logError } from "../lib/logger";
-import { configureSuperjson } from "../lib/superjson-config";
-import { getCurrentJobs, getJobHistory, getLogs, startBackup } from "../services/backups";
-import { getBackupTables, listBackups } from "../services/drive";
-import { SuperJSONRPCHandler } from "./superjson";
+import { getSessionUser, hasPermission } from "../auth.ts";
+import { isOAuthConfigured } from "../lib/google/google-core.ts";
+import { logError } from "../lib/logger.ts";
+import { configureSuperjson } from "../lib/superjson-config.ts";
+import { getCurrentJobs, getJobHistory, getLogs, startBackup } from "../services/backups.ts";
+import { getBackupTables, listBackups } from "../services/drive.ts";
+import { SuperJSONRPCHandler } from "./superjson.ts";
 
 configureSuperjson();
 
