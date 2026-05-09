@@ -157,6 +157,59 @@ export async function sendMediaMessage(input: SendMediaInput) {
   );
 }
 
+export type SendFlowInput = {
+  phoneNumberId: number;
+  toE164: string;
+  flowId: string;
+  flowCta: string;
+  bodyText: string;
+  headerText?: string;
+  footerText?: string;
+  flowToken?: string;
+  initialScreen?: string;
+};
+
+export async function sendFlowMessage(input: SendFlowInput) {
+  const phone = await getAccountForPhoneNumber(input.phoneNumberId);
+  const v = phone.account.graphApiVersion;
+  const token = phone.account.systemUserToken!;
+  const interactive: Record<string, unknown> = {
+    type: "flow",
+    body: { text: input.bodyText },
+    action: {
+      name: "flow",
+      parameters: {
+        flow_message_version: "3",
+        flow_action: "navigate",
+        flow_token: input.flowToken ?? `tok_${Date.now()}`,
+        flow_id: input.flowId,
+        flow_cta: input.flowCta,
+        ...(input.initialScreen
+          ? { flow_action_payload: { screen: input.initialScreen } }
+          : {}),
+      },
+    },
+  };
+  if (input.headerText) {
+    interactive.header = { type: "text", text: input.headerText };
+  }
+  if (input.footerText) {
+    interactive.footer = { text: input.footerText };
+  }
+  return graphPost<{ messages: Array<{ id: string }> }>(
+    `/${phone.phoneNumberId}/messages`,
+    {
+      messaging_product: "whatsapp",
+      recipient_type: "individual",
+      to: input.toE164.replace(/^\+/, ""),
+      type: "interactive",
+      interactive,
+    },
+    token,
+    v,
+  );
+}
+
 export async function sendReaction(
   phoneNumberId: number,
   toE164: string,

@@ -1,4 +1,14 @@
-import { Avatar, Button, Card, Chip, Dropdown, Popover, Spinner, TextArea } from "@heroui/react";
+import {
+  Avatar,
+  Button,
+  Card,
+  Chip,
+  Dropdown,
+  Modal,
+  Popover,
+  Spinner,
+  TextArea,
+} from "@heroui/react";
 import { useQueryClient } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import {
@@ -8,6 +18,7 @@ import {
   Clock,
   CornerUpLeft,
   FileText,
+  Layers,
   Paperclip,
   Send,
   Settings2,
@@ -20,9 +31,16 @@ import { toast } from "@/lib/toast-interceptor";
 import { EmojiPickerButton } from "./EmojiPickerButton";
 import { MediaAttachment } from "./MediaAttachment";
 import {
+  ContactsBubble,
+  ForwardedBadge,
+  InteractiveBubble,
+  LocationBubble,
+} from "./SpecialMessage";
+import {
   uploadWaMedia,
   useAccounts,
   useConversation,
+  useSendFlow,
   useSendMedia,
   useSendReaction,
   useSendTemplate,
@@ -70,6 +88,8 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
   const sendTemplate = useSendTemplate();
   const sendReaction = useSendReaction();
   const sendMedia = useSendMedia();
+  const sendFlow = useSendFlow();
+  const [flowOpen, setFlowOpen] = useState(false);
   const updateConv = useUpdateConversation();
   const [replyTo, setReplyTo] = useState<{
     metaMessageId: string;
@@ -290,6 +310,7 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
         templateName?: string | null;
         quotedSnippet?: { body: string; out: boolean } | null;
         reactions?: ReactionInfo[];
+        payload?: unknown;
       };
 
   // Index server messages by metaMessageId so we can resolve quoted replies.
@@ -366,6 +387,7 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
       templateName: m.templateName,
       quotedSnippet: quoted,
       reactions: m.metaMessageId ? reactionsByTarget.get(m.metaMessageId) : undefined,
+      payload: "payload" in m ? (m as { payload?: unknown }).payload : undefined,
     });
   }
 
@@ -456,6 +478,7 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
               onCancelReply={() => setReplyTo(null)}
               onAttachFile={handleAttachFile}
               attachPending={sendMedia.isPending}
+              onOpenFlow={() => setFlowOpen(true)}
             />
           ) : (
             <TemplateComposer
@@ -471,6 +494,14 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
           )}
         </div>
       </Card.Content>
+      <FlowSendModal
+        isOpen={flowOpen}
+        onClose={() => setFlowOpen(false)}
+        conversationId={conversationId}
+        phoneNumberId={phoneId ? Number(phoneId) : null}
+        onSend={(input) => sendFlow.mutate(input)}
+        isPending={sendFlow.isPending}
+      />
     </>
   );
 }
@@ -493,6 +524,7 @@ function ChatBubble({
     templateName?: string | null;
     quotedSnippet?: { body: string; out: boolean } | null;
     reactions?: { emoji: string; out: boolean }[];
+    payload?: unknown;
   };
   onReply: (row: {
     metaMessageId: string | null;
@@ -576,6 +608,7 @@ function ChatBubble({
             isPending ? "opacity-70" : ""
           }`}
         >
+          <ForwardedBadge payload={row.payload as Record<string, unknown> | null} />
           {row.quotedSnippet && (
             <div
               className={`mb-1 rounded border-l-4 px-2 py-1 text-xs ${row.quotedSnippet.out ? "border-l-accent bg-accent/10 text-accent-foreground/80" : "border-l-default-400 bg-default-100/40 text-default-700"}`}
@@ -583,7 +616,16 @@ function ChatBubble({
               <p className="line-clamp-2">{row.quotedSnippet.body}</p>
             </div>
           )}
-          {isMedia && row.messageId ? (
+          {row.type === "LOCATION" ? (
+            <LocationBubble payload={row.payload as Record<string, unknown> | null} />
+          ) : row.type === "CONTACTS" ? (
+            <ContactsBubble payload={row.payload as Record<string, unknown> | null} />
+          ) : row.type === "INTERACTIVE" ? (
+            <InteractiveBubble
+              payload={row.payload as Record<string, unknown> | null}
+              body={row.body}
+            />
+          ) : isMedia && row.messageId ? (
             <MediaAttachment messageId={row.messageId} type={row.type} caption={row.body} />
           ) : (
             <p className="whitespace-pre-wrap break-words text-sm leading-snug">
@@ -633,6 +675,7 @@ function TextComposer({
   onCancelReply,
   onAttachFile,
   attachPending,
+  onOpenFlow,
 }: {
   body: string;
   setBody: (v: string) => void;
@@ -644,6 +687,7 @@ function TextComposer({
   onCancelReply: () => void;
   onAttachFile: (file: File) => void;
   attachPending: boolean;
+  onOpenFlow: () => void;
 }) {
   const ref = useRef<HTMLTextAreaElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -731,6 +775,16 @@ function TextComposer({
           isDisabled={isDisabled || attachPending}
         >
           <Paperclip size={16} />
+        </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          isIconOnly
+          aria-label="Enviar formulario"
+          onPress={onOpenFlow}
+          isDisabled={isDisabled}
+        >
+          <Layers size={16} />
         </Button>
         <EmojiPickerButton onSelect={insertEmoji} />
         <div className="flex-1">
@@ -861,5 +915,131 @@ function ConvSettingsMenu({
         </div>
       </Dropdown.Popover>
     </Dropdown>
+  );
+}
+
+function FlowSendModal({
+  isOpen,
+  onClose,
+  conversationId,
+  phoneNumberId,
+  onSend,
+  isPending,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  conversationId: number;
+  phoneNumberId: number | null;
+  onSend: (input: {
+    conversationId: number;
+    phoneNumberId: number;
+    flowId: string;
+    flowCta: string;
+    bodyText: string;
+    headerText?: string;
+    footerText?: string;
+  }) => void;
+  isPending: boolean;
+}) {
+  const [flowId, setFlowId] = useState("");
+  const [flowCta, setFlowCta] = useState("Iniciar");
+  const [bodyText, setBodyText] = useState("");
+  const [headerText, setHeaderText] = useState("");
+  const [footerText, setFooterText] = useState("");
+
+  useEffect(() => {
+    if (!isOpen) {
+      setFlowId("");
+      setFlowCta("Iniciar");
+      setBodyText("");
+      setHeaderText("");
+      setFooterText("");
+    }
+  }, [isOpen]);
+
+  const submit = () => {
+    if (!phoneNumberId) {
+      toast.error("Selecciona un número primero");
+      return;
+    }
+    if (!flowId.trim() || !bodyText.trim() || !flowCta.trim()) {
+      toast.error("Flow ID, CTA y mensaje son obligatorios");
+      return;
+    }
+    onSend({
+      conversationId,
+      phoneNumberId,
+      flowId: flowId.trim(),
+      flowCta: flowCta.trim(),
+      bodyText: bodyText.trim(),
+      headerText: headerText.trim() || undefined,
+      footerText: footerText.trim() || undefined,
+    });
+    onClose();
+  };
+
+  return (
+    <Modal>
+      <Modal.Backdrop
+        className="bg-black/40 backdrop-blur-[2px]"
+        isOpen={isOpen}
+        onOpenChange={(o) => !o && onClose()}
+      >
+        <Modal.Container placement="center">
+          <Modal.Dialog className="relative w-full max-w-md rounded-[28px] bg-background p-6 shadow-2xl">
+            <Modal.Header className="mb-4">
+              <Modal.Heading className="font-bold text-primary text-xl">
+                Enviar formulario (Flow)
+              </Modal.Heading>
+              <p className="text-default-500 text-sm">
+                Mensaje interactivo con CTA que abre un Flow de Meta.
+              </p>
+            </Modal.Header>
+            <Modal.Body className="max-h-[70vh] space-y-3 overflow-y-auto">
+              <TextInput
+                label="Flow ID"
+                value={flowId}
+                onValueChange={setFlowId}
+                placeholder="123456789012345"
+              />
+              <TextInput
+                label="Texto del botón (CTA)"
+                value={flowCta}
+                onValueChange={setFlowCta}
+                placeholder="Iniciar"
+              />
+              <TextInput
+                label="Mensaje (body)"
+                value={bodyText}
+                onValueChange={setBodyText}
+                placeholder="Completa este formulario para agendar tu cita"
+              />
+              <TextInput
+                label="Encabezado (opcional)"
+                value={headerText}
+                onValueChange={setHeaderText}
+                placeholder="Anamnesis previa"
+              />
+              <TextInput
+                label="Pie (opcional)"
+                value={footerText}
+                onValueChange={setFooterText}
+                placeholder="Solo toma 2 minutos"
+              />
+            </Modal.Body>
+            <Modal.Footer className="mt-4 flex justify-end gap-2">
+              <Button variant="outline" onPress={onClose}>
+                <X size={14} />
+                Cancelar
+              </Button>
+              <Button onPress={submit} isPending={isPending}>
+                <Send size={14} />
+                Enviar
+              </Button>
+            </Modal.Footer>
+          </Modal.Dialog>
+        </Modal.Container>
+      </Modal.Backdrop>
+    </Modal>
   );
 }

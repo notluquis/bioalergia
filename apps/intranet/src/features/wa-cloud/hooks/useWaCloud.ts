@@ -139,6 +139,17 @@ export function useSendReaction() {
   });
 }
 
+export function useSendFlow() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: Parameters<typeof waCloudORPCClient.sendFlow>[0]) =>
+      waCloudORPCClient.sendFlow(input),
+    onSuccess: (_, vars) => {
+      void qc.invalidateQueries({ queryKey: [...KEY, "conversation", vars.conversationId] });
+    },
+  });
+}
+
 export function useSendMedia() {
   const qc = useQueryClient();
   return useMutation({

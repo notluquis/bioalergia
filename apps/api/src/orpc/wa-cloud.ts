@@ -11,6 +11,7 @@ import {
   listWebhookLogsInputSchema,
   listWebhookLogsResponseSchema,
   markReadInputSchema,
+  sendFlowInputSchema,
   sendMediaInputSchema,
   sendMessageResponseSchema,
   sendReactionInputSchema,
@@ -37,6 +38,7 @@ import {
   listAccountPhoneNumbers,
   listAccountTemplates,
   markMessageRead,
+  sendFlowMessage,
   sendMediaMessage,
   sendReaction,
   sendTemplateMessage,
@@ -638,6 +640,66 @@ const waRouterBase = {
       await db.waConversation.update({
         where: { id: conv.id },
         data: { lastMessageAt: now, lastMessagePreview: preview.slice(0, 200) },
+      });
+      return { message };
+    }),
+
+  sendFlow: writeWa
+    .route({ method: "POST", path: "/messages/send-flow", tags: ["WA Cloud"] })
+    .input(sendFlowInputSchema)
+    .output(sendMessageResponseSchema)
+    .handler(async ({ context, input }) => {
+      const conv = await db.waConversation.findUnique({
+        where: { id: input.conversationId },
+        include: { contact: true },
+      });
+      if (!conv) throw new ORPCError("NOT_FOUND", { message: "Conversación no encontrada" });
+      const lastInbound = conv.lastInboundAt;
+      const windowOpen = lastInbound
+        ? Date.now() - lastInbound.getTime() < WINDOW_HOURS * 60 * 60 * 1000
+        : false;
+      if (!windowOpen) {
+        throw new ORPCError("BAD_REQUEST", {
+          message:
+            "Ventana 24h cerrada. Solo plantillas pueden reactivar la conversación; los flows requieren ventana abierta.",
+        });
+      }
+      const apiResp = await sendFlowMessage({
+        phoneNumberId: input.phoneNumberId,
+        toE164: conv.contact.phoneE164,
+        flowId: input.flowId,
+        flowCta: input.flowCta,
+        bodyText: input.bodyText,
+        headerText: input.headerText,
+        footerText: input.footerText,
+        flowToken: input.flowToken,
+        initialScreen: input.initialScreen,
+      });
+      const metaId = apiResp.messages?.[0]?.id ?? null;
+      const now = new Date();
+      const preview = `[flow] ${input.flowCta}`;
+      const message = await db.waMessage.create({
+        data: {
+          conversationId: conv.id,
+          contactId: conv.contactId,
+          phoneNumberId: input.phoneNumberId,
+          metaMessageId: metaId,
+          direction: "OUTBOUND",
+          type: "INTERACTIVE",
+          status: "SENT",
+          body: input.bodyText,
+          sentByUserId: context.user.id,
+          payload: {
+            interactive_type: "flow",
+            flow_id: input.flowId,
+            flow_cta: input.flowCta,
+          } as never,
+          timestamp: now,
+        },
+      });
+      await db.waConversation.update({
+        where: { id: conv.id },
+        data: { lastMessageAt: now, lastMessagePreview: preview },
       });
       return { message };
     }),

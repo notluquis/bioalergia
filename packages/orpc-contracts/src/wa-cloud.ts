@@ -113,6 +113,9 @@ export const waMessageSchema = z.object({
   timestamp: z.coerce.date(),
   deliveredAt: z.coerce.date().nullable(),
   readAt: z.coerce.date().nullable(),
+  // Raw Meta payload — needed to render location lat/lng, contacts vCard,
+  // forwarded flag, interactive replies, etc. Free-form JSON.
+  payload: z.unknown().nullable().optional(),
 });
 
 export const waTemplateSchema = z.object({
@@ -199,6 +202,18 @@ export const sendReactionInputSchema = z.object({
   metaMessageId: z.string().min(1),
   // empty string removes the reaction
   emoji: z.string().max(8),
+});
+
+export const sendFlowInputSchema = z.object({
+  conversationId: z.number().int().positive(),
+  phoneNumberId: z.number().int().positive(),
+  flowId: z.string().min(1),
+  flowCta: z.string().min(1).max(20).default("Iniciar"),
+  bodyText: z.string().min(1).max(1024),
+  headerText: z.string().max(60).optional(),
+  footerText: z.string().max(60).optional(),
+  flowToken: z.string().min(1).optional(),
+  initialScreen: z.string().optional(),
 });
 
 export const sendMediaInputSchema = z.object({
@@ -373,6 +388,10 @@ export const waCloudContract = {
   sendMedia: oc
     .route({ method: "POST", path: "/messages/send-media", tags: ["WA Cloud"] })
     .input(sendMediaInputSchema)
+    .output(sendMessageResponseSchema),
+  sendFlow: oc
+    .route({ method: "POST", path: "/messages/send-flow", tags: ["WA Cloud"] })
+    .input(sendFlowInputSchema)
     .output(sendMessageResponseSchema),
 
   // Templates

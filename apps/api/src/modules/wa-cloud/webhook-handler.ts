@@ -123,8 +123,12 @@ function previewFromMessage(m: MetaMessage): string {
   if (m.document) return m.document.filename ?? m.document.caption ?? "[documento]";
   if (m.sticker) return "[sticker]";
   if (m.location) return `[ubicación] ${m.location.name ?? ""}`.trim();
-  if (m.contacts) return "[contactos]";
-  if (m.interactive) return "[interactivo]";
+  if (m.contacts) return "[contacto compartido]";
+  if (m.interactive) {
+    const it = m.interactive as { type?: string; nfm_reply?: { name?: string } };
+    if (it.type === "nfm_reply") return `[respuesta flow ${it.nfm_reply?.name ?? ""}]`.trim();
+    return "[interactivo]";
+  }
   if (m.button) return m.button.text;
   if (m.reaction) return `[reacción] ${m.reaction.emoji}`;
   return `[${m.type}]`;
