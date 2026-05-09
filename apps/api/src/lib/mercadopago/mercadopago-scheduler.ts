@@ -31,7 +31,7 @@ const REPORT_POLL_MAX_ATTEMPTS = 20; // hasta 10 minutos
 const ADVISORY_LOCK_KEY = 924_017_221;
 const JITTER_MAX_MS = 45_000;
 const PROCESSED_TTL_DAYS = 45;
-const REPORT_READY_REGEX = /ready|generated|available|finished|success/i;
+const REPORT_READY_REGEX = /ready|generated|available|finished|success|processed|completed/i;
 
 const SETTINGS_KEYS = {
   lastGenerated: (type: ReportType) => `mp:lastGenerated:${type}`,

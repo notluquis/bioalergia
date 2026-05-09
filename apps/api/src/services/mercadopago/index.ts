@@ -48,10 +48,15 @@ export const MercadoPagoService = {
   ) {
     console.log(`[MP Service] Creating ${type} report with range:`, range);
     const baseUrl = type === "release" ? MP_API.RELEASE : MP_API.SETTLEMENT;
-    const urlWithQuery = appendReportRange(baseUrl, range);
-    const res = await mpFetch("", urlWithQuery, {
+    const res = await mpFetch("", baseUrl, {
       method: "POST",
+      body: JSON.stringify(range),
     });
+    if (res.status === 203) {
+      throw new Error(
+        `MP API 203 Non-Authoritative: report could not be created for range ${range.begin_date}..${range.end_date}; retry needed`,
+      );
+    }
     const data = await safeMpJson(res);
     console.log(`[MP Service] ${type} report creation response:`, data);
     return data;
@@ -112,17 +117,3 @@ export function formatMpDate(date: Date) {
   return date.toISOString().replace(MP_DATE_TRIM_REGEX, "Z");
 }
 
-function appendReportRange(baseUrl: string, range: { begin_date: string; end_date: string }) {
-  const params = new URLSearchParams();
-  if (range.begin_date) {
-    params.set("begin_date", range.begin_date);
-  }
-  if (range.end_date) {
-    params.set("end_date", range.end_date);
-  }
-  const query = params.toString();
-  if (!query) {
-    return baseUrl;
-  }
-  return `${baseUrl}?${query}`;
-}
