@@ -1,6 +1,7 @@
 import type { Key } from "@heroui/react";
 import {
   Button,
+  Description,
   FieldError,
   Form,
   Input,
@@ -271,12 +272,20 @@ function CoverageStep({
         orientation="horizontal"
       >
         <Radio value="home">
-          <Radio.Indicator />
-          <Label>Domicilio del paciente</Label>
+          <Radio.Control>
+            <Radio.Indicator />
+          </Radio.Control>
+          <Radio.Content>
+            <Label>Domicilio del paciente</Label>
+          </Radio.Content>
         </Radio>
         <Radio value="office">
-          <Radio.Indicator />
-          <Label>Sucursal Chilexpress</Label>
+          <Radio.Control>
+            <Radio.Indicator />
+          </Radio.Control>
+          <Radio.Content>
+            <Label>Sucursal Chilexpress</Label>
+          </Radio.Content>
         </Radio>
       </RadioGroup>
 
@@ -358,23 +367,25 @@ function HomeAddressPicker({
   return (
     <>
       <RadioGroup
-        onChange={(value) => setSelectedId(Number(value))}
-        value={selectedId != null ? String(selectedId) : null}
         className="space-y-2"
+        onChange={(value) => setSelectedId(Number(value))}
+        value={selectedId != null ? String(selectedId) : ""}
       >
         {addresses.map((addr) => (
-          <Radio key={addr.id} value={String(addr.id)} className="w-full">
-            <Radio.Indicator />
-            <div className="flex-1">
+          <Radio key={addr.id} value={String(addr.id)}>
+            <Radio.Control>
+              <Radio.Indicator />
+            </Radio.Control>
+            <Radio.Content>
               <div className="flex items-center gap-2">
-                <span className="font-semibold text-foreground text-sm">{addr.label}</span>
+                <Label>{addr.label}</Label>
                 {addr.isPrimary && <span className="text-accent text-xs">· Principal</span>}
               </div>
-              <p className="text-default-700 text-xs">
+              <Description>
                 {addr.street} {addr.number}
                 {addr.supplement ? `, ${addr.supplement}` : ""} — {addr.comuna}, {addr.region}
-              </p>
-            </div>
+              </Description>
+            </Radio.Content>
           </Radio>
         ))}
       </RadioGroup>
