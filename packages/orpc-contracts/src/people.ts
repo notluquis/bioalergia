@@ -38,8 +38,17 @@ export const personDetailResponseSchema = z.object({
   person: personSchema,
 });
 
+export const findByRutInputSchema = z.object({
+  rut: z.string().min(1),
+});
+
+export const findByRutResponseSchema = z.object({
+  person: personSchema.nullable(),
+});
+
 export const peopleContract = {
   detail: oc.route({ method: "GET", path: "/{id}" }).input(personIdSchema).output(personDetailResponseSchema),
+  findByRut: oc.route({ method: "GET", path: "/by-rut" }).input(findByRutInputSchema).output(findByRutResponseSchema),
   list: oc.route({ method: "GET", path: "/" }).input(peopleListInputSchema).output(peopleListResponseSchema),
 };
 

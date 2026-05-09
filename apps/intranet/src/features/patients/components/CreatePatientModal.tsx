@@ -22,6 +22,7 @@ import {
 } from "@/components/forms/TanStackFieldControls";
 import { useToast } from "@/context/ToastContext";
 import { createPatient, fetchPatients } from "@/features/patients/api";
+import { findPersonByRut } from "@/features/people/api";
 import { formatRut, validateRut } from "@/lib/rut";
 
 const BLOOD_TYPES = ["O+", "O-", "A+", "A-", "B+", "B-", "AB+", "AB-"];
@@ -131,6 +132,24 @@ export function CreatePatientModal({ isOpen, onClose }: Readonly<CreatePatientMo
   });
 
   const similarByName = nameMatches?.filter((p) => !rutMatches?.some((r) => r.id === p.id)) ?? [];
+
+  // Detect existing Person (employee/user) without patient profile so we can
+  // pre-fill the form and tell the user we'll just attach a patient profile.
+  const { data: existingPerson } = useQuery({
+    queryKey: ["person-by-rut", debouncedRut],
+    queryFn: () => findPersonByRut(debouncedRut),
+    enabled: normalizedRut.length >= 7 && validateRut(debouncedRut) && !exactDuplicate,
+    staleTime: 1000 * 30,
+  });
+
+  const linkExistingPerson = () => {
+    if (!existingPerson) return;
+    if (existingPerson.names) form.setFieldValue("names", existingPerson.names);
+    if (existingPerson.fatherName) form.setFieldValue("fatherName", existingPerson.fatherName);
+    if (existingPerson.motherName) form.setFieldValue("motherName", existingPerson.motherName);
+    if (existingPerson.email) form.setFieldValue("email", existingPerson.email);
+    if (existingPerson.phone) form.setFieldValue("phone", existingPerson.phone);
+  };
 
   return (
     <Modal>
@@ -358,6 +377,29 @@ export function CreatePatientModal({ isOpen, onClose }: Readonly<CreatePatientMo
                         — {exactDuplicate.person.rut}
                       </p>
                     </div>
+                  </div>
+                )}
+
+                {!exactDuplicate && existingPerson && (
+                  <div className="flex items-start justify-between gap-3 rounded-xl border border-accent/30 bg-accent/10 px-4 py-3 text-sm">
+                    <div className="flex items-start gap-2">
+                      <User size={16} className="mt-0.5 shrink-0 text-accent" />
+                      <div>
+                        <p className="font-semibold text-accent">
+                          Esta persona ya existe en el sistema
+                        </p>
+                        <p className="text-default-600 text-xs">
+                          {existingPerson.names} {existingPerson.fatherName ?? ""}{" "}
+                          {existingPerson.motherName ?? ""}
+                          {existingPerson.hasEmployee ? " · empleado" : ""}
+                          {existingPerson.hasUser ? " · usuario" : ""}. Se enlazará el perfil de
+                          paciente a este registro existente.
+                        </p>
+                      </div>
+                    </div>
+                    <Button onPress={linkExistingPerson} size="sm" variant="secondary">
+                      Rellenar datos
+                    </Button>
                   </div>
                 )}
 

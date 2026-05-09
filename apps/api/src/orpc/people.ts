@@ -1,5 +1,7 @@
 import { db } from "@finanzas/db";
 import {
+  findByRutInputSchema,
+  findByRutResponseSchema,
   peopleListInputSchema,
   peopleListResponseSchema,
   personDetailResponseSchema,
@@ -12,6 +14,7 @@ import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import type { Context as HonoContext } from "hono";
 import { getSessionUser, hasPermission } from "../auth";
 import { logError } from "../lib/logger";
+import { normalizeRut } from "../lib/rut";
 import { configureSuperjson } from "../lib/superjson-config";
 import { SuperJSONRPCHandler } from "./superjson";
 
@@ -71,6 +74,32 @@ const peopleORPCRouterBase = {
         throw new ORPCError("NOT_FOUND", { message: "Persona no encontrada" });
       }
 
+      return {
+        person: {
+          ...person,
+          hasUser: Boolean(person.user),
+          hasEmployee: Boolean(person.employee),
+        },
+      };
+    }),
+
+  findByRut: readPeople
+    .route({
+      method: "GET",
+      path: "/by-rut",
+      summary: "Find a person by RUT (returns null if none)",
+      tags: ["People"],
+    })
+    .input(findByRutInputSchema)
+    .output(findByRutResponseSchema)
+    .handler(async ({ input }) => {
+      const canonical = normalizeRut(input.rut);
+      if (!canonical) return { person: null };
+      const person = await db.person.findFirst({
+        where: { rut: canonical },
+        include: { employee: true, user: true, patient: true },
+      });
+      if (!person) return { person: null };
       return {
         person: {
           ...person,

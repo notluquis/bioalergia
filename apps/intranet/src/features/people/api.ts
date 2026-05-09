@@ -102,6 +102,15 @@ export async function fetchPerson(id: number | string): Promise<PersonWithExtras
   }
 }
 
+export async function findPersonByRut(rut: string): Promise<null | PersonWithExtras> {
+  try {
+    const res = await peopleORPCClient.findByRut({ rut });
+    return (res.person ?? null) as null | PersonWithExtras;
+  } catch (error) {
+    throw toPeopleApiError(error);
+  }
+}
+
 // ============================================================================
 // Query Keys
 // ============================================================================
