@@ -150,7 +150,9 @@ export function useSendFlow() {
   });
 }
 
-export function useAccountEvents(input?: Parameters<typeof waCloudORPCClient.listAccountEvents>[0]) {
+export function useAccountEvents(
+  input?: Parameters<typeof waCloudORPCClient.listAccountEvents>[0]
+) {
   return useQuery({
     queryKey: [...KEY, "account-events", input],
     queryFn: () => waCloudORPCClient.listAccountEvents(input ?? { limit: 100 }),

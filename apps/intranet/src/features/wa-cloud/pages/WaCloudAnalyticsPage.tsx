@@ -59,25 +59,29 @@ export function WaCloudAnalyticsPage() {
     let convs = 0;
     let cost = 0;
     const byCategory: Record<string, number> = {};
-    const byDirection: Record<string, number> = {};
+    const byPricingType: Record<string, number> = {};
+    const byCountry: Record<string, number> = {};
     const byDay: Record<string, number> = {};
     for (const p of points) {
       convs += p.conversation;
       cost += p.cost ?? 0;
-      if (p.conversation_category) {
-        byCategory[p.conversation_category] =
-          (byCategory[p.conversation_category] ?? 0) + p.conversation;
+      if (p.pricing_category) {
+        byCategory[p.pricing_category] =
+          (byCategory[p.pricing_category] ?? 0) + p.conversation;
       }
-      if (p.conversation_direction) {
-        byDirection[p.conversation_direction] =
-          (byDirection[p.conversation_direction] ?? 0) + p.conversation;
+      if (p.pricing_type) {
+        byPricingType[p.pricing_type] =
+          (byPricingType[p.pricing_type] ?? 0) + p.conversation;
+      }
+      if (p.country) {
+        byCountry[p.country] = (byCountry[p.country] ?? 0) + p.conversation;
       }
       const day = new Date(p.start * 1000).toISOString().slice(0, 10);
       byDay[day] = (byDay[day] ?? 0) + p.conversation;
     }
     const sortedDays = Object.entries(byDay).sort(([a], [b]) => a.localeCompare(b));
     const maxDay = Math.max(1, ...sortedDays.map(([, v]) => v));
-    return { convs, cost, byCategory, byDirection, sortedDays, maxDay };
+    return { convs, cost, byCategory, byPricingType, byCountry, sortedDays, maxDay };
   }, [points]);
 
   return (
@@ -196,24 +200,43 @@ export function WaCloudAnalyticsPage() {
 
           <Card>
             <Card.Header>
-              <Card.Title className="text-sm">Por dirección</Card.Title>
+              <Card.Title className="text-sm">Por tipo de pricing</Card.Title>
             </Card.Header>
             <Card.Content className="flex flex-wrap gap-2">
-              {Object.keys(totals.byDirection).length === 0 ? (
-                <span className="text-default-400 text-xs">Sin desglose por dirección</span>
+              {Object.keys(totals.byPricingType).length === 0 ? (
+                <span className="text-default-400 text-xs">Sin desglose</span>
               ) : (
-                Object.entries(totals.byDirection)
+                Object.entries(totals.byPricingType)
                   .sort(([, a], [, b]) => b - a)
-                  .map(([dir, n]) => (
-                    <Chip key={dir} size="md" color="default" variant="soft">
+                  .map(([t, n]) => (
+                    <Chip key={t} size="md" color="default" variant="soft">
                       <Chip.Label>
-                        {dir}: <strong className="ml-1">{n}</strong>
+                        {t}: <strong className="ml-1">{n}</strong>
                       </Chip.Label>
                     </Chip>
                   ))
               )}
             </Card.Content>
           </Card>
+
+          {Object.keys(totals.byCountry).length > 0 && (
+            <Card>
+              <Card.Header>
+                <Card.Title className="text-sm">Por país</Card.Title>
+              </Card.Header>
+              <Card.Content className="flex flex-wrap gap-2">
+                {Object.entries(totals.byCountry)
+                  .sort(([, a], [, b]) => b - a)
+                  .map(([c, n]) => (
+                    <Chip key={c} size="md" color="default" variant="soft">
+                      <Chip.Label>
+                        {c}: <strong className="ml-1">{n}</strong>
+                      </Chip.Label>
+                    </Chip>
+                  ))}
+              </Card.Content>
+            </Card>
+          )}
 
           <Card>
             <Card.Header>
@@ -252,7 +275,7 @@ function PricingPanel({
     end: number;
     volume: number;
     cost?: number | null;
-    conversation_category?: string | null;
+    pricing_category?: string | null;
     country?: string | null;
     pricing_type?: string | null;
     tier?: string | null;
@@ -268,8 +291,8 @@ function PricingPanel({
   for (const p of pricing) {
     totalCost += p.cost ?? 0;
     totalVolume += p.volume;
-    if (p.conversation_category) {
-      const k = p.conversation_category;
+    if (p.pricing_category) {
+      const k = p.pricing_category;
       byCategory[k] = byCategory[k] ?? { volume: 0, cost: 0 };
       byCategory[k].volume += p.volume;
       byCategory[k].cost += p.cost ?? 0;

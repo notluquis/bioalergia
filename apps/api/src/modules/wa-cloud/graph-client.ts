@@ -452,7 +452,10 @@ export async function getConversationAnalytics(params: ConversationAnalyticsPara
   if (!account?.systemUserToken) throw new Error("Account sin token");
   const granularity = params.granularity ?? "DAILY";
 
-  const dims = '["CONVERSATION_CATEGORY","CONVERSATION_DIRECTION","COUNTRY","PHONE"]';
+  // Meta's valid dimensions per docs: PHONE, COUNTRY, PRICING_TYPE,
+  // PRICING_CATEGORY, TIER. (Older docs mentioned CONVERSATION_CATEGORY /
+  // CONVERSATION_DIRECTION but Graph API rejects them.)
+  const dims = '["PHONE","COUNTRY","PRICING_CATEGORY","PRICING_TYPE","TIER"]';
   let convField = `conversation_analytics.start(${params.startUnix}).end(${params.endUnix}).granularity(${granularity}).dimensions(${dims})`;
   if (params.phoneNumbers && params.phoneNumbers.length > 0) {
     convField += `.phone_numbers(${JSON.stringify(params.phoneNumbers)})`;
@@ -460,7 +463,8 @@ export async function getConversationAnalytics(params: ConversationAnalyticsPara
 
   const fields: string[] = [convField];
   if (params.includePricing) {
-    const pricingDims = '["CONVERSATION_CATEGORY","COUNTRY","PHONE"]';
+    // pricing_analytics field — same dimension constraints
+    const pricingDims = '["PHONE","COUNTRY","PRICING_CATEGORY","PRICING_TYPE","TIER"]';
     fields.push(
       `pricing_analytics.start(${params.startUnix}).end(${params.endUnix}).granularity(DAILY).dimensions(${pricingDims})`,
     );
@@ -476,9 +480,9 @@ export async function getConversationAnalytics(params: ConversationAnalyticsPara
           conversation: number;
           phone_number?: string;
           country?: string;
-          conversation_type?: string;
-          conversation_direction?: string;
-          conversation_category?: string;
+          pricing_category?: string;
+          pricing_type?: string;
+          tier?: string;
           cost?: number;
         }>;
       }>;
@@ -490,7 +494,7 @@ export async function getConversationAnalytics(params: ConversationAnalyticsPara
           end: number;
           volume: number;
           cost?: number;
-          conversation_category?: string;
+          pricing_category?: string;
           country?: string;
           phone_number?: string;
           pricing_type?: string;

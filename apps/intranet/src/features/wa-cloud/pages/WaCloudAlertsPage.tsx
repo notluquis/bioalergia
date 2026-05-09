@@ -92,9 +92,7 @@ export function WaCloudAlertsPage() {
                         {dayjs(e.receivedAt).format("DD-MM HH:mm")}
                       </span>
                     </div>
-                    {e.description && (
-                      <p className="text-default-600 text-sm">{e.description}</p>
-                    )}
+                    {e.description && <p className="text-default-600 text-sm">{e.description}</p>}
                     <p className="font-mono text-default-400 text-[10px]">{e.field}</p>
                   </div>
                   {!e.acknowledged ? (
