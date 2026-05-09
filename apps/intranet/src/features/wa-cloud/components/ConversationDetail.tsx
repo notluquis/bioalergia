@@ -14,7 +14,6 @@ import {
 export function ConversationDetail({ conversationId }: { conversationId: number }) {
   const conv = useConversation(conversationId);
   const accounts = useAccounts();
-  const templates = useTemplates();
   const sendText = useSendText();
   const sendTemplate = useSendTemplate();
   const updateConv = useUpdateConversation();
@@ -24,6 +23,19 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
   const [mode, setMode] = useState<"text" | "template">("text");
   const [tplKey, setTplKey] = useState("");
   const [tplVars, setTplVars] = useState<string[]>([]);
+
+  const accountByPhone = useMemo(() => {
+    const map = new Map<number, number>();
+    for (const a of accounts.data?.accounts ?? []) {
+      for (const p of a.phoneNumbers) map.set(p.id, a.id);
+    }
+    return map;
+  }, [accounts.data]);
+
+  const activeAccountId = phoneId
+    ? accountByPhone.get(Number.parseInt(phoneId, 10))
+    : undefined;
+  const templates = useTemplates(activeAccountId);
 
   const allPhones = useMemo(
     () => (accounts.data?.accounts ?? []).flatMap((a) => a.phoneNumbers),
@@ -35,7 +47,7 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
   }));
   const tplOptions = useMemo(
     () => [
-      { value: "", label: "—" },
+      { value: "", label: activeAccountId ? "—" : "Selecciona un número primero" },
       ...(templates.data?.templates ?? [])
         .filter((t) => t.status === "APPROVED")
         .map((t) => ({
@@ -43,8 +55,14 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
           label: `${t.name} (${t.language})`,
         })),
     ],
-    [templates.data]
+    [templates.data, activeAccountId]
   );
+
+  // Reset selected template when phone (and therefore WABA) changes so a stale
+  // tplKey from another account never gets posted.
+  useEffect(() => {
+    setTplKey("");
+  }, [activeAccountId]);
 
   useEffect(() => {
     if (!phoneId && conv.data?.channels[0]) {
