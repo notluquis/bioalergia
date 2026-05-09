@@ -500,7 +500,9 @@ function SecuritySection({ form }: Pick<AddUserFormCardProps, "form">) {
               <Checkbox.Control>
                 <Checkbox.Indicator />
               </Checkbox.Control>
-              Forzar passkey o MFA
+              <Checkbox.Content>
+                <Label>Forzar passkey o MFA</Label>
+              </Checkbox.Content>
             </Checkbox>
           )}
         </form.Field>

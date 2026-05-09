@@ -384,7 +384,9 @@ export function LoanForm({ onCancel, onSubmit }: LoanFormProps) {
                 <Checkbox.Control>
                   <Checkbox.Indicator />
                 </Checkbox.Control>
-                Generar cronograma automáticamente
+                <Checkbox.Content>
+                  <Label>Generar cronograma automáticamente</Label>
+                </Checkbox.Content>
               </Checkbox>
 
               {field.state.meta.errors.length > 0 && (
