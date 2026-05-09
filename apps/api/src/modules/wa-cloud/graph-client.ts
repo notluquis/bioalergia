@@ -468,6 +468,104 @@ export async function getConversationAnalytics(params: ConversationAnalyticsPara
   return graphGet<Resp>(path, account.systemUserToken, account.graphApiVersion);
 }
 
+export type SendLocationInput = {
+  phoneNumberId: number;
+  toE164: string;
+  latitude: number;
+  longitude: number;
+  name?: string;
+  address?: string;
+  contextMessageId?: string;
+};
+
+export async function sendLocationMessage(input: SendLocationInput) {
+  const phone = await getAccountForPhoneNumber(input.phoneNumberId);
+  const v = phone.account.graphApiVersion;
+  const token = phone.account.systemUserToken!;
+  const location: Record<string, unknown> = {
+    latitude: input.latitude,
+    longitude: input.longitude,
+  };
+  if (input.name) location.name = input.name;
+  if (input.address) location.address = input.address;
+  const payload: Record<string, unknown> = {
+    messaging_product: "whatsapp",
+    recipient_type: "individual",
+    to: input.toE164.replace(/^\+/, ""),
+    type: "location",
+    location,
+  };
+  if (input.contextMessageId) payload.context = { message_id: input.contextMessageId };
+  return graphPost<{ messages: Array<{ id: string }> }>(
+    `/${phone.phoneNumberId}/messages`,
+    payload,
+    token,
+    v,
+  );
+}
+
+export type ContactCardInput = {
+  name: { formatted_name: string; first_name?: string; last_name?: string };
+  phones?: { phone: string; type?: string; wa_id?: string }[];
+  emails?: { email: string; type?: string }[];
+  org?: { company?: string; title?: string };
+  addresses?: { street?: string; city?: string; country?: string; type?: string }[];
+};
+
+export type SendContactsInput = {
+  phoneNumberId: number;
+  toE164: string;
+  contacts: ContactCardInput[];
+  contextMessageId?: string;
+};
+
+export async function sendContactsMessage(input: SendContactsInput) {
+  const phone = await getAccountForPhoneNumber(input.phoneNumberId);
+  const v = phone.account.graphApiVersion;
+  const token = phone.account.systemUserToken!;
+  const payload: Record<string, unknown> = {
+    messaging_product: "whatsapp",
+    recipient_type: "individual",
+    to: input.toE164.replace(/^\+/, ""),
+    type: "contacts",
+    contacts: input.contacts,
+  };
+  if (input.contextMessageId) payload.context = { message_id: input.contextMessageId };
+  return graphPost<{ messages: Array<{ id: string }> }>(
+    `/${phone.phoneNumberId}/messages`,
+    payload,
+    token,
+    v,
+  );
+}
+
+export type EditTextMessageInput = {
+  phoneNumberId: number;
+  toE164: string;
+  metaMessageId: string;
+  body: string;
+};
+
+export async function editTextMessage(input: EditTextMessageInput) {
+  const phone = await getAccountForPhoneNumber(input.phoneNumberId);
+  const v = phone.account.graphApiVersion;
+  const token = phone.account.systemUserToken!;
+  const payload = {
+    messaging_product: "whatsapp",
+    recipient_type: "individual",
+    to: input.toE164.replace(/^\+/, ""),
+    edit: { message_id: input.metaMessageId },
+    type: "text",
+    text: { body: input.body, preview_url: false },
+  };
+  return graphPost<{ messages: Array<{ id: string }> }>(
+    `/${phone.phoneNumberId}/messages`,
+    payload,
+    token,
+    v,
+  );
+}
+
 export async function downloadMediaUrl(mediaId: string, accountId: number) {
   const account = await db.waBusinessAccount.findUnique({ where: { id: accountId } });
   if (!account?.systemUserToken) throw new Error("Account sin token");

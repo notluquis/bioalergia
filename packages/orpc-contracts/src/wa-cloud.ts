@@ -313,6 +313,65 @@ export const listWebhookLogsResponseSchema = z.object({
   logs: z.array(waWebhookLogSchema),
 });
 
+// ── Outbound location / contacts / edit ──────────────────────────────────────
+
+export const sendLocationInputSchema = z.object({
+  conversationId: z.number().int().positive(),
+  phoneNumberId: z.number().int().positive(),
+  latitude: z.number().min(-90).max(90),
+  longitude: z.number().min(-180).max(180),
+  name: z.string().max(120).optional(),
+  address: z.string().max(256).optional(),
+  contextMetaMessageId: z.string().optional(),
+});
+
+export const contactCardSchema = z.object({
+  name: z.object({
+    formatted_name: z.string().min(1).max(256),
+    first_name: z.string().max(128).optional(),
+    last_name: z.string().max(128).optional(),
+  }),
+  phones: z
+    .array(
+      z.object({
+        phone: z.string().min(1).max(40),
+        type: z.string().max(40).optional(),
+        wa_id: z.string().max(40).optional(),
+      }),
+    )
+    .max(10)
+    .optional(),
+  emails: z
+    .array(
+      z.object({
+        email: z.string().email().max(128),
+        type: z.string().max(40).optional(),
+      }),
+    )
+    .max(10)
+    .optional(),
+  org: z
+    .object({
+      company: z.string().max(128).optional(),
+      title: z.string().max(128).optional(),
+    })
+    .optional(),
+});
+
+export const sendContactsInputSchema = z.object({
+  conversationId: z.number().int().positive(),
+  phoneNumberId: z.number().int().positive(),
+  contacts: z.array(contactCardSchema).min(1).max(10),
+  contextMetaMessageId: z.string().optional(),
+});
+
+export const editTextInputSchema = z.object({
+  conversationId: z.number().int().positive(),
+  phoneNumberId: z.number().int().positive(),
+  messageId: z.number().int().positive(),
+  body: z.string().min(1).max(4096),
+});
+
 // ── Block / Profile / Health / Analytics ─────────────────────────────────────
 
 export const waPhoneIdInput = z.object({ phoneNumberId: z.number().int().positive() });
@@ -490,6 +549,18 @@ export const waCloudContract = {
   sendFlow: oc
     .route({ method: "POST", path: "/messages/send-flow", tags: ["WA Cloud"] })
     .input(sendFlowInputSchema)
+    .output(sendMessageResponseSchema),
+  sendLocation: oc
+    .route({ method: "POST", path: "/messages/send-location", tags: ["WA Cloud"] })
+    .input(sendLocationInputSchema)
+    .output(sendMessageResponseSchema),
+  sendContacts: oc
+    .route({ method: "POST", path: "/messages/send-contacts", tags: ["WA Cloud"] })
+    .input(sendContactsInputSchema)
+    .output(sendMessageResponseSchema),
+  editText: oc
+    .route({ method: "POST", path: "/messages/edit-text", tags: ["WA Cloud"] })
+    .input(editTextInputSchema)
     .output(sendMessageResponseSchema),
 
   // Templates

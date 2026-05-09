@@ -150,6 +150,39 @@ export function useSendFlow() {
   });
 }
 
+export function useSendLocation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: Parameters<typeof waCloudORPCClient.sendLocation>[0]) =>
+      waCloudORPCClient.sendLocation(input),
+    onSuccess: (_, vars) => {
+      void qc.invalidateQueries({ queryKey: [...KEY, "conversation", vars.conversationId] });
+    },
+  });
+}
+
+export function useSendContacts() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: Parameters<typeof waCloudORPCClient.sendContacts>[0]) =>
+      waCloudORPCClient.sendContacts(input),
+    onSuccess: (_, vars) => {
+      void qc.invalidateQueries({ queryKey: [...KEY, "conversation", vars.conversationId] });
+    },
+  });
+}
+
+export function useEditText() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: Parameters<typeof waCloudORPCClient.editText>[0]) =>
+      waCloudORPCClient.editText(input),
+    onSuccess: (_, vars) => {
+      void qc.invalidateQueries({ queryKey: [...KEY, "conversation", vars.conversationId] });
+    },
+  });
+}
+
 export function useSendMedia() {
   const qc = useQueryClient();
   return useMutation({
