@@ -42,6 +42,7 @@ import { z } from "zod";
 import { getSessionUser, hasPermission } from "../auth.ts";
 import { logError } from "../lib/logger.ts";
 import { configureSuperjson } from "../lib/superjson-config.ts";
+import { migrateBaileysToWaCloud } from "../modules/wa-cloud/baileys-migration.ts";
 import {
   blockUsers,
   getBusinessProfile,
@@ -887,6 +888,32 @@ const waRouterBase = {
         }
       }
       return { status: "ok" as const };
+    }),
+
+  // ── Baileys migration ──────────────────────────────────────────────────────
+  migrateBaileys: createWa
+    .route({ method: "POST", path: "/migrate/baileys", tags: ["WA Cloud"] })
+    .input(
+      z.object({
+        phoneNumberId: z.number().int().positive(),
+        dryRun: z.boolean().default(true),
+      }),
+    )
+    .output(
+      z.object({
+        dryRun: z.boolean(),
+        contactsImported: z.number(),
+        contactsSkipped: z.number(),
+        conversationsImported: z.number(),
+        conversationsSkipped: z.number(),
+        messagesImported: z.number(),
+        messagesSkipped: z.number(),
+        errors: z.array(z.string()),
+      }),
+    )
+    .handler(async ({ input }) => {
+      const r = await migrateBaileysToWaCloud(input.phoneNumberId, input.dryRun);
+      return r;
     }),
 
   // ── Analytics ──────────────────────────────────────────────────────────────

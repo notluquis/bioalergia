@@ -544,6 +544,28 @@ export const waCloudContract = {
     .route({ method: "POST", path: "/analytics/conversations", tags: ["WA Cloud"] })
     .input(conversationAnalyticsInputSchema)
     .output(conversationAnalyticsResponseSchema),
+
+  // Baileys → WaCloud migration
+  migrateBaileys: oc
+    .route({ method: "POST", path: "/migrate/baileys", tags: ["WA Cloud"] })
+    .input(
+      z.object({
+        phoneNumberId: z.number().int().positive(),
+        dryRun: z.boolean().default(true),
+      }),
+    )
+    .output(
+      z.object({
+        dryRun: z.boolean(),
+        contactsImported: z.number(),
+        contactsSkipped: z.number(),
+        conversationsImported: z.number(),
+        conversationsSkipped: z.number(),
+        messagesImported: z.number(),
+        messagesSkipped: z.number(),
+        errors: z.array(z.string()),
+      }),
+    ),
 };
 
 export type WaCloudContract = typeof waCloudContract;

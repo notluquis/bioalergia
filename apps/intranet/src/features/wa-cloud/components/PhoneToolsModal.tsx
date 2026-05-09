@@ -1,17 +1,9 @@
 import { Button, Card, Chip, Modal, Spinner } from "@heroui/react";
 import { Activity, Building2, Check, Save, X } from "lucide-react";
 import { useEffect, useState } from "react";
-import {
-  SelectInput,
-  TextAreaInput,
-  TextInput,
-} from "@/features/outreach/components/FormField";
+import { SelectInput, TextAreaInput, TextInput } from "@/features/outreach/components/FormField";
 import { toast } from "@/lib/toast-interceptor";
-import {
-  useBusinessProfile,
-  usePhoneHealth,
-  useUpdateBusinessProfile,
-} from "../hooks/useWaCloud";
+import { useBusinessProfile, usePhoneHealth, useUpdateBusinessProfile } from "../hooks/useWaCloud";
 
 const VERTICAL_OPTIONS = [
   { value: "", label: "Sin categoría" },
@@ -172,9 +164,24 @@ function ProfileCard({ phoneNumberId }: { phoneNumberId: number }) {
 
   const save = async () => {
     type VerticalEnum =
-      | "AUTO" | "BEAUTY" | "APPAREL" | "EDU" | "ENTERTAIN" | "EVENT_PLAN"
-      | "FINANCE" | "GROCERY" | "GOVT" | "HOTEL" | "HEALTH" | "NONPROFIT"
-      | "PROF_SERVICES" | "RETAIL" | "TRAVEL" | "RESTAURANT" | "NOT_A_BIZ" | "OTHER";
+      | "AUTO"
+      | "BEAUTY"
+      | "APPAREL"
+      | "EDU"
+      | "ENTERTAIN"
+      | "EVENT_PLAN"
+      | "FINANCE"
+      | "GROCERY"
+      | "GOVT"
+      | "HOTEL"
+      | "HEALTH"
+      | "NONPROFIT"
+      | "PROF_SERVICES"
+      | "RETAIL"
+      | "TRAVEL"
+      | "RESTAURANT"
+      | "NOT_A_BIZ"
+      | "OTHER";
     const fields: {
       about?: string;
       description?: string;
@@ -268,3 +275,4 @@ function ProfileCard({ phoneNumberId }: { phoneNumberId: number }) {
     </Card>
   );
 }
+

@@ -198,9 +198,7 @@ function AccountCard({ acc }: { acc: AccountSummary }) {
                     variant="outline"
                     isIconOnly
                     aria-label="Herramientas del número"
-                    onPress={() =>
-                      setToolsPhone({ id: p.id, display: p.displayPhoneNumber })
-                    }
+                    onPress={() => setToolsPhone({ id: p.id, display: p.displayPhoneNumber })}
                   >
                     <Wrench size={14} />
                   </Button>

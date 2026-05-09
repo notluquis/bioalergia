@@ -245,8 +245,22 @@ export function useSetTyping() {
   });
 }
 
+export function useMigrateBaileys() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: Parameters<typeof waCloudORPCClient.migrateBaileys>[0]) =>
+      waCloudORPCClient.migrateBaileys(input),
+    onSuccess: (r) => {
+      if (!r.dryRun) {
+        void qc.invalidateQueries({ queryKey: [...KEY, "conversations"] });
+        void qc.invalidateQueries({ queryKey: [...KEY, "accounts"] });
+      }
+    },
+  });
+}
+
 export function useConversationAnalytics(
-  input: Parameters<typeof waCloudORPCClient.getConversationAnalytics>[0] | null,
+  input: Parameters<typeof waCloudORPCClient.getConversationAnalytics>[0] | null
 ) {
   return useQuery({
     queryKey: [...KEY, "analytics", input],
