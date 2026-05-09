@@ -1,8 +1,17 @@
-import { Button, Chip, Modal } from "@heroui/react";
+import {
+  Button,
+  Chip,
+  Description,
+  Label,
+  ListBox,
+  Modal,
+  SearchField,
+  Spinner,
+} from "@heroui/react";
 import { useQuery } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 import dayjs from "dayjs";
-import { PackageCheck, PlusCircle, Search, Truck, UserPlus } from "lucide-react";
+import { PackageCheck, PlusCircle, Truck, UserPlus } from "lucide-react";
 import { useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
 import { fetchPatients } from "@/features/patients/api";
@@ -144,40 +153,52 @@ function PatientSelectModal({
               <Modal.Heading>Seleccionar Paciente</Modal.Heading>
             </Modal.Header>
             <Modal.Body className="gap-4">
-              <div className="relative">
-                <Search
-                  size={16}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-default-400"
-                />
-                <input
-                  autoFocus
-                  className="w-full rounded-lg border border-default-200 bg-default-50 py-2 pl-9 pr-3 text-sm outline-none focus:border-primary"
-                  placeholder="Buscar por nombre o RUT..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                />
-              </div>
-              <div className="max-h-64 overflow-y-auto space-y-1">
+              <SearchField
+                aria-label="Buscar paciente"
+                fullWidth
+                onChange={setSearch}
+                value={search}
+              >
+                <SearchField.Group>
+                  <SearchField.SearchIcon />
+                  <SearchField.Input autoFocus placeholder="Buscar por nombre o RUT..." />
+                  <SearchField.ClearButton />
+                </SearchField.Group>
+              </SearchField>
+
+              <div className="max-h-64 overflow-y-auto">
                 {isLoading ? (
-                  <p className="py-4 text-center text-default-400 text-sm">Buscando...</p>
+                  <div className="flex items-center justify-center gap-2 py-4 text-default-400 text-sm">
+                    <Spinner size="sm" />
+                    Buscando...
+                  </div>
                 ) : patients.length === 0 ? (
                   <p className="py-4 text-center text-default-400 text-sm">Sin resultados</p>
                 ) : (
-                  patients.map((p) => (
-                    <button
-                      key={p.id}
-                      type="button"
-                      className="w-full rounded-lg px-3 py-2 text-left transition-colors hover:bg-default-100"
-                      onClick={() => onSelect(p)}
-                    >
-                      <div className="font-medium text-sm">
-                        {p.person.names} {p.person.fatherName}
-                      </div>
-                      <div className="font-mono text-default-400 text-xs">{p.person.rut}</div>
-                    </button>
-                  ))
+                  <ListBox
+                    aria-label="Pacientes"
+                    onAction={(key) => {
+                      const patient = patients.find((p) => String(p.id) === String(key));
+                      if (patient) onSelect(patient);
+                    }}
+                    selectionMode="none"
+                  >
+                    {patients.map((p) => (
+                      <ListBox.Item
+                        id={String(p.id)}
+                        key={p.id}
+                        textValue={`${p.person.names} ${p.person.fatherName ?? ""}`}
+                      >
+                        <Label>
+                          {p.person.names} {p.person.fatherName ?? ""}
+                        </Label>
+                        <Description className="font-mono">{p.person.rut ?? "Sin RUT"}</Description>
+                      </ListBox.Item>
+                    ))}
+                  </ListBox>
                 )}
               </div>
+
               <div className="border-default-100 border-t pt-3">
                 <Button size="sm" variant="ghost" className="w-full gap-2" onPress={onCreateNew}>
                   <UserPlus size={15} />
