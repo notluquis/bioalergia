@@ -88,6 +88,58 @@ export async function quoteShipment(input: {
 export async function createShipment(input: CreateShipmentInput) {
   const cfg = requireCxConfig();
 
+  // Resolve delivery payload based on chosen mode. Single shape so TS
+  // doesn't try to union two narrowed literals into the contract type.
+  let streetName: string;
+  let streetNumber: string;
+  let supplement: string;
+  let coverageRegionCode: string;
+  let deliveryOnCommercialOffice: boolean;
+  let commercialOfficeId: string;
+  let observation: string;
+  if (input.deliveryMode === "home") {
+    if (!input.addressId) {
+      throw new Error("Para despacho a domicilio se requiere addressId");
+    }
+    const address = await db.address.findUnique({ where: { id: input.addressId } });
+    if (!address) {
+      throw new Error("Dirección no encontrada");
+    }
+    if (!address.coverageCode) {
+      throw new Error(
+        "La dirección guardada no tiene coverageCode de Chilexpress; vuelve a editarla y selecciona la comuna",
+      );
+    }
+    streetName = address.street;
+    streetNumber = address.number;
+    supplement = address.supplement ?? "";
+    coverageRegionCode = address.coverageCode;
+    deliveryOnCommercialOffice = false;
+    commercialOfficeId = "";
+    observation = address.reference ?? "";
+  } else {
+    if (!input.commercialOfficeId) {
+      throw new Error("Para despacho a sucursal se requiere commercialOfficeId");
+    }
+    streetName = "A sucursal";
+    streetNumber = "0";
+    supplement = "";
+    coverageRegionCode = input.destinationCoverageCode;
+    deliveryOnCommercialOffice = true;
+    commercialOfficeId = input.commercialOfficeId;
+    observation = "";
+  }
+  const deliveryAddress = {
+    streetName,
+    streetNumber,
+    supplement,
+    county: { coverageRegionCode },
+    isOrigin: false as const,
+    deliveryOnCommercialOffice,
+    commercialOfficeId,
+    observation,
+  };
+
   const response = await createTransportOrder(cfg, {
     header: {
       certificateNumber: 0,
@@ -98,18 +150,7 @@ export async function createShipment(input: CreateShipmentInput) {
     details: [
       {
         addresses: {
-          deliveryAddress: {
-            streetName: "A sucursal",
-            streetNumber: "0",
-            supplement: "",
-            county: {
-              coverageRegionCode: input.destinationCoverageCode,
-            },
-            isOrigin: false,
-            deliveryOnCommercialOffice: true,
-            commercialOfficeId: input.commercialOfficeId,
-            observation: "",
-          },
+          deliveryAddress,
         },
         contacts: {
           recipient: {
@@ -159,8 +200,8 @@ export async function createShipment(input: CreateShipmentInput) {
       recipientName: input.recipientName,
       recipientPhone: input.recipientPhone,
       recipientEmail: input.recipientEmail ?? null,
-      commercialOfficeId: input.commercialOfficeId,
-      commercialOfficeName: input.commercialOfficeName,
+      commercialOfficeId: input.commercialOfficeId ?? "",
+      commercialOfficeName: input.commercialOfficeName ?? "",
       coverageCode: input.destinationCoverageCode,
       contentDescription: input.contentDescription,
       labelBase64: result.labelData ?? null,

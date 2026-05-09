@@ -42,11 +42,13 @@ export async function quoteShipment(input: {
 
 export async function createShipment(input: {
   patientId: number;
+  deliveryMode?: "home" | "office";
+  addressId?: number;
   serviceTypeCode: string;
   serviceDescription: string;
   destinationCoverageCode: string;
-  commercialOfficeId: string;
-  commercialOfficeName: string;
+  commercialOfficeId?: string;
+  commercialOfficeName?: string;
   recipientName: string;
   recipientPhone: string;
   recipientEmail?: string;

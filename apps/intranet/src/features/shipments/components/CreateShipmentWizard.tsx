@@ -8,14 +8,27 @@ import {
   ListBox,
   Modal,
   NumberField,
+  Radio,
+  RadioGroup,
   Select,
+  Spinner,
   TextField,
 } from "@heroui/react";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CheckCircle, MapPin, Package, PackageCheck, Truck } from "lucide-react";
-import { useState } from "react";
+import {
+  AlertTriangle,
+  CheckCircle,
+  MapPin,
+  Package,
+  PackageCheck,
+  Plus,
+  Truck,
+} from "lucide-react";
+import { useEffect, useState } from "react";
 import { useToast } from "@/context/ToastContext";
+import { listAddresses } from "@/features/addresses/api";
+import { AddressFormModal } from "@/features/addresses/components/AddressFormModal";
 import { fetchPatient } from "@/features/patients/api";
 import {
   createShipment,
@@ -30,11 +43,16 @@ const CLP = new Intl.NumberFormat("es-CL", { style: "currency", currency: "CLP" 
 type Step = "coverage" | "quote" | "recipient" | "confirm" | "done";
 
 interface WizardState {
+  deliveryMode: "home" | "office";
+  // Home delivery
+  addressId: number | null;
+  // Office delivery
   regionId: string;
   coverageRegionCode: string;
   communeName: string;
   commercialOfficeId: string;
   commercialOfficeName: string;
+  // Common
   serviceTypeCode: string;
   serviceDescription: string;
   serviceValue: number;
@@ -67,6 +85,7 @@ export function CreateShipmentWizard({
   const { error: toastError, success } = useToast();
   const [step, setStep] = useState<Step>("coverage");
   const [state, setState] = useState<Partial<WizardState>>({
+    deliveryMode: "home",
     weight: 1,
     height: 10,
     width: 10,
@@ -87,6 +106,7 @@ export function CreateShipmentWizard({
   const handleClose = () => {
     setStep("coverage");
     setState({
+      deliveryMode: "home",
       weight: 1,
       height: 10,
       width: 10,
@@ -122,10 +142,10 @@ export function CreateShipmentWizard({
             <StepIndicator step={step} />
 
             <Modal.Body className="mt-4 max-h-[70vh] overflow-y-auto overscroll-contain">
-              {step === "coverage" && (
+              {step === "coverage" && patientData && (
                 <CoverageStep
                   state={state}
-                  patientAddress={null}
+                  personId={patientData.person.id}
                   onNext={(data) => {
                     merge(data);
                     setStep("quote");
@@ -230,11 +250,181 @@ function StepIndicator({ step }: { step: Step }) {
 
 function CoverageStep({
   state,
-  patientAddress,
+  personId,
   onNext,
 }: {
   state: Partial<WizardState>;
-  patientAddress: null | string;
+  personId: number;
+  onNext: (data: Partial<WizardState>) => void;
+}) {
+  const [mode, setMode] = useState<"home" | "office">(state.deliveryMode ?? "home");
+  return (
+    <div className="space-y-5">
+      <div className="flex items-center gap-2 text-default-600 text-sm">
+        <MapPin size={16} />
+        ¿A dónde despachar?
+      </div>
+
+      <RadioGroup
+        onChange={(value) => setMode(value as "home" | "office")}
+        value={mode}
+        orientation="horizontal"
+      >
+        <Radio value="home">
+          <Radio.Indicator />
+          <Label>Domicilio del paciente</Label>
+        </Radio>
+        <Radio value="office">
+          <Radio.Indicator />
+          <Label>Sucursal Chilexpress</Label>
+        </Radio>
+      </RadioGroup>
+
+      {mode === "home" ? (
+        <HomeAddressPicker personId={personId} state={state} onNext={onNext} />
+      ) : (
+        <OfficePicker state={state} onNext={onNext} />
+      )}
+    </div>
+  );
+}
+
+// ─── Step 1a: Home address picker ─────────────────────────────────────────────
+
+function HomeAddressPicker({
+  personId,
+  state,
+  onNext,
+}: {
+  personId: number;
+  state: Partial<WizardState>;
+  onNext: (data: Partial<WizardState>) => void;
+}) {
+  const { data: addresses = [], isLoading } = useQuery({
+    queryKey: ["addresses", personId],
+    queryFn: () => listAddresses(personId),
+  });
+  // Auto-select primary (or first) on first render. User can override.
+  const initialId =
+    state.addressId ?? addresses.find((a) => a.isPrimary)?.id ?? addresses[0]?.id ?? null;
+  const [selectedId, setSelectedId] = useState<number | null>(initialId);
+  // Re-sync when addresses load.
+  useEffect(() => {
+    if (selectedId == null && addresses.length > 0) {
+      setSelectedId(addresses.find((a) => a.isPrimary)?.id ?? addresses[0]?.id ?? null);
+    }
+  }, [addresses, selectedId]);
+  const [addressModalOpen, setAddressModalOpen] = useState(false);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-6">
+        <Spinner size="sm" />
+      </div>
+    );
+  }
+
+  if (addresses.length === 0) {
+    return (
+      <>
+        <div className="rounded-xl border border-warning/30 bg-warning/10 px-4 py-3 text-sm">
+          <div className="mb-2 flex items-center gap-2 font-semibold text-warning-700 dark:text-warning-300">
+            <AlertTriangle size={15} />
+            Este paciente no tiene direcciones registradas
+          </div>
+          <p className="text-default-600 text-xs">
+            Agrega una dirección estructurada para poder despachar a domicilio. La región y comuna
+            que selecciones quedarán guardadas y se reutilizarán para Chilexpress.
+          </p>
+        </div>
+        <div className="flex justify-end">
+          <Button onPress={() => setAddressModalOpen(true)} size="sm" variant="primary">
+            <Plus size={14} />
+            Agregar dirección
+          </Button>
+        </div>
+        <AddressFormModal
+          isOpen={addressModalOpen}
+          onClose={() => setAddressModalOpen(false)}
+          personId={personId}
+        />
+      </>
+    );
+  }
+
+  const selected = addresses.find((a) => a.id === selectedId) ?? null;
+  const canContinue = Boolean(selected?.coverageCode);
+
+  return (
+    <>
+      <RadioGroup
+        onChange={(value) => setSelectedId(Number(value))}
+        value={selectedId != null ? String(selectedId) : null}
+        className="space-y-2"
+      >
+        {addresses.map((addr) => (
+          <Radio key={addr.id} value={String(addr.id)} className="w-full">
+            <Radio.Indicator />
+            <div className="flex-1">
+              <div className="flex items-center gap-2">
+                <span className="font-semibold text-foreground text-sm">{addr.label}</span>
+                {addr.isPrimary && <span className="text-accent text-xs">· Principal</span>}
+              </div>
+              <p className="text-default-700 text-xs">
+                {addr.street} {addr.number}
+                {addr.supplement ? `, ${addr.supplement}` : ""} — {addr.comuna}, {addr.region}
+              </p>
+            </div>
+          </Radio>
+        ))}
+      </RadioGroup>
+
+      {selected && !selected.coverageCode && (
+        <div className="rounded-xl border border-danger/30 bg-danger/10 px-4 py-3 text-danger text-sm">
+          Esta dirección no tiene coverageCode de Chilexpress. Edítala y selecciona la comuna otra
+          vez para regenerar los códigos.
+        </div>
+      )}
+
+      <div className="flex items-center justify-between pt-2">
+        <Button onPress={() => setAddressModalOpen(true)} size="sm" variant="ghost">
+          <Plus size={14} />
+          Nueva dirección
+        </Button>
+        <Button
+          isDisabled={!canContinue}
+          onPress={() =>
+            onNext({
+              deliveryMode: "home",
+              addressId: selected!.id,
+              coverageRegionCode: selected!.coverageCode ?? "",
+              communeName: selected!.comuna,
+              regionId: selected!.regionCode ?? "",
+              commercialOfficeId: "",
+              commercialOfficeName: "",
+            })
+          }
+        >
+          Continuar
+        </Button>
+      </div>
+
+      <AddressFormModal
+        isOpen={addressModalOpen}
+        onClose={() => setAddressModalOpen(false)}
+        personId={personId}
+      />
+    </>
+  );
+}
+
+// ─── Step 1b: Office picker (Chilexpress sucursal) ────────────────────────────
+
+function OfficePicker({
+  state,
+  onNext,
+}: {
+  state: Partial<WizardState>;
   onNext: (data: Partial<WizardState>) => void;
 }) {
   const [regionId, setRegionId] = useState<Key | null>(state.regionId ?? null);
@@ -266,130 +456,117 @@ function CoverageStep({
   const canContinue = Boolean(coverageCode && officeId);
 
   return (
-    <div className="space-y-5">
-      <div className="flex items-center gap-2 text-default-600 text-sm">
-        <MapPin size={16} />
-        Selecciona la sucursal de destino del paciente
-      </div>
-      {patientAddress && (
-        <div className="flex items-start gap-2 rounded-lg bg-default-50 px-3 py-2 text-default-600 text-xs">
-          <MapPin size={13} className="mt-0.5 shrink-0 text-default-400" />
-          <span>
-            Dirección del paciente: <span className="font-medium">{patientAddress}</span>
-          </span>
-        </div>
-      )}
+    <div className="space-y-4">
+      <Select
+        isDisabled={loadingRegions}
+        isRequired
+        onChange={(value) => {
+          setRegionId(value as Key | null);
+          setCoverageCode(null);
+          setCommuneName("");
+          setOfficeId(null);
+          setOfficeName("");
+        }}
+        placeholder="Selecciona una región"
+        value={regionId}
+      >
+        <Label>Región</Label>
+        <Select.Trigger>
+          <Select.Value />
+          <Select.Indicator />
+        </Select.Trigger>
+        <Select.Popover>
+          <ListBox>
+            {(regionsData?.regions ?? []).map((r) => (
+              <ListBox.Item id={r.regionId} key={r.regionId} textValue={r.regionName}>
+                {r.regionName}
+                <ListBox.ItemIndicator />
+              </ListBox.Item>
+            ))}
+          </ListBox>
+        </Select.Popover>
+      </Select>
 
-      <div className="space-y-4">
-        <Select
-          isDisabled={loadingRegions}
-          isRequired
-          onChange={(value) => {
-            setRegionId(value as Key | null);
-            setCoverageCode(null);
-            setCommuneName("");
-            setOfficeId(null);
-            setOfficeName("");
-          }}
-          placeholder="Selecciona una región"
-          value={regionId}
-        >
-          <Label>Región</Label>
-          <Select.Trigger>
-            <Select.Value />
-            <Select.Indicator />
-          </Select.Trigger>
-          <Select.Popover>
-            <ListBox>
-              {(regionsData?.regions ?? []).map((r) => (
-                <ListBox.Item id={r.regionId} key={r.regionId} textValue={r.regionName}>
-                  {r.regionName}
-                  <ListBox.ItemIndicator />
-                </ListBox.Item>
-              ))}
-            </ListBox>
-          </Select.Popover>
-        </Select>
+      <Select
+        isDisabled={!regionId || loadingCommunes}
+        isRequired
+        onChange={(value) => {
+          const next = (value as string | null) ?? null;
+          const selected = communesData?.communes.find((c) => c.coverageRegionCode === next);
+          setCoverageCode(next);
+          setCommuneName(selected?.countyName ?? "");
+          setOfficeId(null);
+          setOfficeName("");
+        }}
+        placeholder="Selecciona una comuna"
+        value={coverageCode}
+      >
+        <Label>Comuna</Label>
+        <Select.Trigger>
+          <Select.Value />
+          <Select.Indicator />
+        </Select.Trigger>
+        <Select.Popover>
+          <ListBox>
+            {(communesData?.communes ?? []).map((c) => (
+              <ListBox.Item
+                id={c.coverageRegionCode}
+                key={c.coverageRegionCode}
+                textValue={c.countyName}
+              >
+                {c.countyName}
+                <ListBox.ItemIndicator />
+              </ListBox.Item>
+            ))}
+          </ListBox>
+        </Select.Popover>
+      </Select>
 
-        <Select
-          isDisabled={!regionId || loadingCommunes}
-          isRequired
-          onChange={(value) => {
-            const next = (value as string | null) ?? null;
-            const selected = communesData?.communes.find((c) => c.coverageRegionCode === next);
-            setCoverageCode(next);
-            setCommuneName(selected?.countyName ?? "");
-            setOfficeId(null);
-            setOfficeName("");
-          }}
-          placeholder="Selecciona una comuna"
-          value={coverageCode}
-        >
-          <Label>Comuna</Label>
-          <Select.Trigger>
-            <Select.Value />
-            <Select.Indicator />
-          </Select.Trigger>
-          <Select.Popover>
-            <ListBox>
-              {(communesData?.communes ?? []).map((c) => (
-                <ListBox.Item
-                  id={c.coverageRegionCode}
-                  key={c.coverageRegionCode}
-                  textValue={c.countyName}
-                >
-                  {c.countyName}
-                  <ListBox.ItemIndicator />
-                </ListBox.Item>
-              ))}
-            </ListBox>
-          </Select.Popover>
-        </Select>
-
-        <Select
-          isDisabled={!coverageCode || loadingOffices}
-          isRequired
-          onChange={(value) => {
-            const next = (value as string | null) ?? null;
-            const selected = officesData?.offices.find((o) => o.commercialOfficeId === next);
-            setOfficeId(next);
-            setOfficeName(selected?.commercialOfficeName ?? "");
-          }}
-          placeholder="Selecciona una sucursal"
-          value={officeId}
-        >
-          <Label>Sucursal ChileExpress</Label>
-          <Select.Trigger>
-            <Select.Value />
-            <Select.Indicator />
-          </Select.Trigger>
-          <Select.Popover>
-            <ListBox>
-              {(officesData?.offices ?? []).map((o) => (
-                <ListBox.Item
-                  id={o.commercialOfficeId}
-                  key={o.commercialOfficeId}
-                  textValue={o.commercialOfficeName}
-                >
-                  <div>
-                    <div className="font-medium">{o.commercialOfficeName}</div>
-                    <div className="text-default-500 text-xs">
-                      {o.street} {o.number}
-                    </div>
+      <Select
+        isDisabled={!coverageCode || loadingOffices}
+        isRequired
+        onChange={(value) => {
+          const next = (value as string | null) ?? null;
+          const selected = officesData?.offices.find((o) => o.commercialOfficeId === next);
+          setOfficeId(next);
+          setOfficeName(selected?.commercialOfficeName ?? "");
+        }}
+        placeholder="Selecciona una sucursal"
+        value={officeId}
+      >
+        <Label>Sucursal ChileExpress</Label>
+        <Select.Trigger>
+          <Select.Value />
+          <Select.Indicator />
+        </Select.Trigger>
+        <Select.Popover>
+          <ListBox>
+            {(officesData?.offices ?? []).map((o) => (
+              <ListBox.Item
+                id={o.commercialOfficeId}
+                key={o.commercialOfficeId}
+                textValue={o.commercialOfficeName}
+              >
+                <div>
+                  <div className="font-medium">{o.commercialOfficeName}</div>
+                  <div className="text-default-500 text-xs">
+                    {o.street} {o.number}
                   </div>
-                  <ListBox.ItemIndicator />
-                </ListBox.Item>
-              ))}
-            </ListBox>
-          </Select.Popover>
-        </Select>
-      </div>
+                </div>
+                <ListBox.ItemIndicator />
+              </ListBox.Item>
+            ))}
+          </ListBox>
+        </Select.Popover>
+      </Select>
 
       <div className="flex justify-end pt-2">
         <Button
           isDisabled={!canContinue}
           onPress={() =>
             onNext({
+              deliveryMode: "office",
+              addressId: null,
               regionId: String(regionId ?? ""),
               coverageRegionCode: String(coverageCode ?? ""),
               communeName,
@@ -762,11 +939,14 @@ function ConfirmStep({
     mutationFn: () =>
       createShipment({
         patientId,
+        deliveryMode: state.deliveryMode,
+        addressId: state.deliveryMode === "home" ? (state.addressId ?? undefined) : undefined,
         serviceTypeCode: state.serviceTypeCode,
         serviceDescription: state.serviceDescription,
         destinationCoverageCode: state.coverageRegionCode,
-        commercialOfficeId: state.commercialOfficeId,
-        commercialOfficeName: state.commercialOfficeName,
+        commercialOfficeId: state.deliveryMode === "office" ? state.commercialOfficeId : undefined,
+        commercialOfficeName:
+          state.deliveryMode === "office" ? state.commercialOfficeName : undefined,
         recipientName: state.recipientName,
         recipientPhone: state.recipientPhone,
         recipientEmail: state.recipientEmail || undefined,

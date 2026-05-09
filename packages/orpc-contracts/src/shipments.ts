@@ -54,11 +54,19 @@ export const quoteShipmentOutputSchema = z.object({
 
 export const createShipmentInputSchema = z.object({
   patientId: z.number().int(),
+  // Delivery mode: "office" = pickup at Chilexpress sucursal (legacy default).
+  //                "home"   = home delivery to a structured Address row.
+  deliveryMode: z.enum(["home", "office"]).default("office"),
   serviceTypeCode: z.string(),
   serviceDescription: z.string(),
   destinationCoverageCode: z.string(),
-  commercialOfficeId: z.string(),
-  commercialOfficeName: z.string(),
+  // Required only when deliveryMode === "office".
+  commercialOfficeId: z.string().optional(),
+  commercialOfficeName: z.string().optional(),
+  // Required only when deliveryMode === "home". Pulled from the patient's
+  // Address[] so we have street/number/supplement and the canonical
+  // coverageCode already resolved at registration time.
+  addressId: z.number().int().optional(),
   recipientName: z.string().min(1),
   recipientPhone: z.string().min(1),
   recipientEmail: z.string().optional(),
