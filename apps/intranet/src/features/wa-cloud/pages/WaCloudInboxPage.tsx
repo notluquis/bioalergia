@@ -17,7 +17,12 @@ import { Filter, Inbox, MessageSquareText, Phone } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import type { WaConversationStatus } from "@finanzas/orpc-contracts/wa-cloud";
 import { ConversationDetail } from "../components/ConversationDetail";
-import { useAccounts, useConversations, useMarkRead } from "../hooks/useWaCloud";
+import {
+  useAccounts,
+  useConversations,
+  useMarkRead,
+  useSearchMessages,
+} from "../hooks/useWaCloud";
 
 const STATUS_OPTIONS: { value: "" | WaConversationStatus; label: string }[] = [
   { value: "", label: "Todos" },
@@ -76,6 +81,9 @@ export function WaCloudInboxPage() {
     pageSize: 50,
   });
   const markRead = useMarkRead();
+  const messageHits = useSearchMessages(
+    search.trim().length >= 2 ? { q: search.trim(), limit: 20 } : null,
+  );
 
   useEffect(() => {
     if (selectedId) markRead.mutate(selectedId);
@@ -193,6 +201,36 @@ export function WaCloudInboxPage() {
                   );
                 })}
               </ul>
+            )}
+            {messageHits.data && messageHits.data.results.length > 0 && (
+              <div className="border-default-200 border-t bg-content2 p-2">
+                <p className="px-2 pb-1 font-semibold text-default-500 text-xs uppercase">
+                  Mensajes ({messageHits.data.results.length})
+                </p>
+                <ul className="space-y-1">
+                  {messageHits.data.results.map((m) => (
+                    <li key={m.messageId}>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedId(m.conversationId)}
+                        className="flex w-full flex-col gap-0.5 rounded-md px-2 py-1.5 text-left transition hover:bg-default-100"
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="truncate font-medium text-xs">
+                            {m.contactName ?? m.phoneE164}
+                          </span>
+                          <span className="shrink-0 text-default-400 text-[10px]">
+                            {dayjs(m.timestamp).format("DD-MM HH:mm")}
+                          </span>
+                        </div>
+                        <p className="line-clamp-2 text-default-600 text-xs">
+                          {m.body ?? `[${m.type.toLowerCase()}]`}
+                        </p>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             )}
           </div>
         </aside>

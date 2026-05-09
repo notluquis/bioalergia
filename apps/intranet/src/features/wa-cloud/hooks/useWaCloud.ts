@@ -231,7 +231,9 @@ export function useDeleteTemplate() {
   });
 }
 
-export function useSearchMessages(input: Parameters<typeof waCloudORPCClient.searchMessages>[0] | null) {
+export function useSearchMessages(
+  input: Parameters<typeof waCloudORPCClient.searchMessages>[0] | null
+) {
   return useQuery({
     queryKey: [...KEY, "search", input],
     enabled: Boolean(input && input.q.length >= 2),

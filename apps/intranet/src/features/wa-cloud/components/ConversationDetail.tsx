@@ -20,7 +20,9 @@ import {
   Clock,
   Contact as ContactIcon,
   CornerUpLeft,
+  Download,
   FileText,
+  Images,
   Layers,
   MapPin,
   Paperclip,
@@ -49,6 +51,7 @@ import {
   useAccounts,
   useBlockContact,
   useConversation,
+  useConversationMedia,
   useEditText,
   useSendContacts,
   useSendFlow,
@@ -114,6 +117,7 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
     messageId: number;
     body: string;
   } | null>(null);
+  const [galleryOpen, setGalleryOpen] = useState(false);
   const updateConv = useUpdateConversation();
   const typingDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [replyTo, setReplyTo] = useState<{
@@ -444,9 +448,11 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
             </Chip>
           )}
           <ConvSettingsMenu
+            conversationId={conversationId}
             phoneId={phoneId}
             phoneOptions={phoneOptions}
             onPhoneChange={setPhoneId}
+            onOpenGallery={() => setGalleryOpen(true)}
             onRelease={() => updateConv.mutate({ id: conversationId, assignedToUserId: null })}
             onBlock={() => {
               if (!phoneId) {
@@ -579,6 +585,11 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
         phoneNumberId={phoneId ? Number(phoneId) : null}
         onSubmit={(input) => editText.mutate(input)}
         isPending={editText.isPending}
+      />
+      <MediaGalleryModal
+        isOpen={galleryOpen}
+        onClose={() => setGalleryOpen(false)}
+        conversationId={conversationId}
       />
     </>
   );
@@ -1031,19 +1042,23 @@ function TemplateComposer({
 }
 
 function ConvSettingsMenu({
+  conversationId,
   phoneId,
   phoneOptions,
   onPhoneChange,
   onRelease,
   onBlock,
   blockPending,
+  onOpenGallery,
 }: {
+  conversationId: number;
   phoneId: string;
   phoneOptions: { value: string; label: string }[];
   onPhoneChange: (v: string) => void;
   onRelease: () => void;
   onBlock: () => void;
   blockPending: boolean;
+  onOpenGallery: () => void;
 }) {
   return (
     <Dropdown>
@@ -1060,6 +1075,32 @@ function ConvSettingsMenu({
             onValueChange={onPhoneChange}
             options={phoneOptions}
           />
+          <Button size="sm" variant="outline" fullWidth onPress={onOpenGallery}>
+            <Images size={14} />
+            Ver galería de medios
+          </Button>
+          <div className="grid grid-cols-2 gap-2">
+            <a
+              href={`/api/wa-cloud/conversations/${conversationId}/export?format=txt`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <Button size="sm" variant="outline" fullWidth>
+                <Download size={14} />
+                TXT
+              </Button>
+            </a>
+            <a
+              href={`/api/wa-cloud/conversations/${conversationId}/export?format=json`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <Button size="sm" variant="outline" fullWidth>
+                <Download size={14} />
+                JSON
+              </Button>
+            </a>
+          </div>
           <Button size="sm" variant="outline" fullWidth onPress={onRelease}>
             Liberar asignación
           </Button>
@@ -1590,6 +1631,118 @@ function EditTextModal({
                 Guardar
               </Button>
             </Modal.Footer>
+          </Modal.Dialog>
+        </Modal.Container>
+      </Modal.Backdrop>
+    </Modal>
+  );
+}
+
+function MediaGalleryModal({
+  isOpen,
+  onClose,
+  conversationId,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  conversationId: number;
+}) {
+  const media = useConversationMedia(isOpen ? conversationId : undefined);
+  const items = media.data?.media ?? [];
+
+  return (
+    <Modal>
+      <Modal.Backdrop
+        isOpen={isOpen}
+        onOpenChange={(o) => !o && onClose()}
+        isDismissable
+        className="bg-black/40 backdrop-blur-[2px]"
+      >
+        <Modal.Container placement="center">
+          <Modal.Dialog className="relative w-full max-w-2xl rounded-[28px] bg-background p-6 shadow-2xl">
+            <Modal.Header className="mb-4 flex items-center justify-between">
+              <div>
+                <Modal.Heading className="font-bold text-primary text-xl">
+                  <Images size={20} className="mr-2 inline" />
+                  Galería de medios
+                </Modal.Heading>
+                <p className="text-default-500 text-xs">
+                  {items.length} archivo{items.length === 1 ? "" : "s"}
+                </p>
+              </div>
+              <Button isIconOnly size="sm" variant="outline" onPress={onClose} aria-label="Cerrar">
+                <X size={14} />
+              </Button>
+            </Modal.Header>
+            <Modal.Body className="max-h-[70vh] overflow-y-auto">
+              {media.isLoading ? (
+                <div className="flex justify-center py-12">
+                  <Spinner />
+                </div>
+              ) : items.length === 0 ? (
+                <p className="py-12 text-center text-default-500 text-sm">
+                  Aún no hay medios en esta conversación.
+                </p>
+              ) : (
+                <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+                  {items.map((m) => {
+                    const url = `/api/wa-cloud/media/${m.messageId}`;
+                    if (m.type === "IMAGE" || m.type === "STICKER") {
+                      return (
+                        <a
+                          key={m.messageId}
+                          href={url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="aspect-square overflow-hidden rounded-lg border border-default-200 bg-default-100"
+                        >
+                          <img
+                            src={url}
+                            alt={m.body ?? m.type}
+                            loading="lazy"
+                            className="size-full object-cover"
+                          />
+                        </a>
+                      );
+                    }
+                    if (m.type === "VIDEO") {
+                      return (
+                        <a
+                          key={m.messageId}
+                          href={url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="relative flex aspect-square items-center justify-center overflow-hidden rounded-lg border border-default-200 bg-black"
+                        >
+                          <video src={url} className="size-full object-cover" muted preload="metadata">
+                            <track kind="captions" />
+                          </video>
+                          <span className="absolute inset-0 flex items-center justify-center">
+                            <span className="rounded-full bg-black/60 p-2 text-white">
+                              <FileText size={14} />
+                            </span>
+                          </span>
+                        </a>
+                      );
+                    }
+                    return (
+                      <a
+                        key={m.messageId}
+                        href={url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex aspect-square flex-col items-center justify-center gap-1 rounded-lg border border-default-200 bg-content2 p-2 text-center"
+                      >
+                        <FileText size={20} className="text-accent" />
+                        <span className="line-clamp-2 text-default-700 text-[10px]">
+                          {m.body ?? m.type.toLowerCase()}
+                        </span>
+                      </a>
+                    );
+                  })}
+                </div>
+              )}
+            </Modal.Body>
           </Modal.Dialog>
         </Modal.Container>
       </Modal.Backdrop>

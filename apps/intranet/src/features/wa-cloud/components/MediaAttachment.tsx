@@ -144,15 +144,7 @@ function StickerImage({ src, onError }: { src: string; onError: () => void }) {
   );
 }
 
-function ImageLightbox({
-  src,
-  alt,
-  onError,
-}: {
-  src: string;
-  alt: string;
-  onError?: () => void;
-}) {
+function ImageLightbox({ src, alt, onError }: { src: string; alt: string; onError?: () => void }) {
   const [open, setOpen] = useState(false);
   const [loaded, setLoaded] = useState(false);
   return (
@@ -280,15 +272,7 @@ function VideoLightbox({ src, onError }: { src: string; onError: () => void }) {
   );
 }
 
-function AudioPlayer({
-  src,
-  out,
-  onError,
-}: {
-  src: string;
-  out: boolean;
-  onError: () => void;
-}) {
+function AudioPlayer({ src, out, onError }: { src: string; out: boolean; onError: () => void }) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const [playing, setPlaying] = useState(false);
   const [duration, setDuration] = useState(0);
@@ -340,10 +324,7 @@ function AudioPlayer({
       </button>
       <div className="flex-1">
         <div className={`relative h-1 w-full overflow-hidden rounded-full ${trackBg}`}>
-          <div
-            className={`absolute top-0 left-0 h-full ${fillBg}`}
-            style={{ width: `${pct}%` }}
-          />
+          <div className={`absolute top-0 left-0 h-full ${fillBg}`} style={{ width: `${pct}%` }} />
           <input
             type="range"
             min={0}
@@ -356,7 +337,9 @@ function AudioPlayer({
             aria-label="Posición"
           />
         </div>
-        <p className={`mt-0.5 text-[10px] ${out ? "text-success-foreground/80" : "text-default-500"}`}>
+        <p
+          className={`mt-0.5 text-[10px] ${out ? "text-success-foreground/80" : "text-default-500"}`}
+        >
           {fmt(current)} / {fmt(duration)}
         </p>
       </div>
@@ -379,4 +362,3 @@ function AudioPlayer({
     </div>
   );
 }
-
