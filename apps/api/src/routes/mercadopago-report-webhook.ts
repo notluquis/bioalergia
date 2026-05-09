@@ -1,9 +1,14 @@
 import bcrypt from "bcryptjs";
 import { Hono } from "hono";
+import { runMercadoPagoAutoSync } from "../lib/mercadopago/mercadopago-scheduler";
 import { logError, logEvent, logWarn } from "../lib/logger";
-import { MercadoPagoService, MP_WEBHOOK_PASSWORD } from "../services/mercadopago";
+import { MP_WEBHOOK_PASSWORD } from "../services/mercadopago";
+import { getSetting, updateSetting } from "../services/settings";
 
 export const mercadopagoReportWebhookRoutes = new Hono();
+
+const PENDING_WEBHOOKS_SETTING = "mp:webhook:pending";
+const MAX_QUEUE_SIZE = 100;
 
 type ReportWebhookFile = {
   name?: string;
@@ -21,6 +26,13 @@ type ReportWebhookPayload = {
   report_type?: string;
   is_test?: boolean;
   signature?: string;
+};
+
+type QueuedWebhook = {
+  transaction_id: string;
+  report_type: string;
+  files: Array<{ name: string; type: string; url: string }>;
+  createdAt: string;
 };
 
 mercadopagoReportWebhookRoutes.post("/", async (c) => {
@@ -41,25 +53,40 @@ mercadopagoReportWebhookRoutes.post("/", async (c) => {
     return c.text("Service Unavailable", 503);
   }
 
+  if (!payload.transaction_id || !payload.generation_date) {
+    logWarn("mercadopago.report_webhook.missing_fields", {
+      hasTransactionId: Boolean(payload.transaction_id),
+      hasGenerationDate: Boolean(payload.generation_date),
+    });
+    return c.text("Bad Request", 400);
+  }
+
   if (!(await verifySignature(payload, MP_WEBHOOK_PASSWORD))) {
     logWarn("mercadopago.report_webhook.signature_invalid", {
       hasSignature: Boolean(payload.signature),
-      transactionId: payload.transaction_id ?? null,
+      transactionId: payload.transaction_id,
     });
     return c.text("Unauthorized", 401);
   }
 
   logEvent("mercadopago.report_webhook.received", {
-    transactionId: payload.transaction_id ?? null,
-    generationDate: payload.generation_date ?? null,
+    transactionId: payload.transaction_id,
+    generationDate: payload.generation_date,
     reportType: payload.report_type ?? null,
     status: payload.status ?? null,
     isTest: payload.is_test ?? null,
     fileCount: payload.files?.length ?? 0,
   });
 
-  void processReportNotification(payload).catch((err) =>
-    logError("mercadopago.report_webhook.processing_error", err),
+  if (payload.is_test) {
+    logEvent("mercadopago.report_webhook.test_skipped", {
+      transactionId: payload.transaction_id,
+    });
+    return c.text("Accepted", 202);
+  }
+
+  void enqueueAndTrigger(payload).catch((err) =>
+    logError("mercadopago.report_webhook.enqueue_error", err),
   );
 
   return c.text("Accepted", 202);
@@ -79,41 +106,53 @@ async function verifySignature(payload: ReportWebhookPayload, secret: string): P
   }
 }
 
-async function processReportNotification(payload: ReportWebhookPayload) {
-  if (payload.is_test) {
-    logEvent("mercadopago.report_webhook.test_skipped", {
-      transactionId: payload.transaction_id ?? null,
-    });
-    return;
-  }
+async function enqueueAndTrigger(payload: ReportWebhookPayload) {
+  const validFiles = (payload.files ?? [])
+    .filter((f): f is { name: string; url: string; type?: string } => Boolean(f.name && f.url))
+    .map((f) => ({ name: f.name, url: f.url, type: f.type ?? "" }));
 
-  const reportType = inferReportType(payload);
-  const files = payload.files ?? [];
-
-  if (files.length === 0) {
+  if (validFiles.length === 0) {
     logWarn("mercadopago.report_webhook.no_files", {
       transactionId: payload.transaction_id ?? null,
     });
     return;
   }
 
-  for (const file of files) {
-    const url = file.url;
-    const fileName = file.name;
-    if (!url && !fileName) continue;
+  const entry: QueuedWebhook = {
+    transaction_id: payload.transaction_id ?? "",
+    report_type: payload.report_type ?? "release",
+    files: validFiles,
+    createdAt: new Date().toISOString(),
+  };
 
-    const stats = await MercadoPagoService.processReport(reportType, { url, fileName });
-    logEvent("mercadopago.report_webhook.processed", {
-      transactionId: payload.transaction_id ?? null,
-      reportType,
-      fileName: fileName ?? null,
-      stats,
+  const existing = await loadQueue();
+  if (existing.some((q) => q.transaction_id === entry.transaction_id)) {
+    logEvent("mercadopago.report_webhook.duplicate_skip", {
+      transactionId: entry.transaction_id,
     });
+    return;
   }
+
+  const next = [...existing, entry].slice(-MAX_QUEUE_SIZE);
+  await updateSetting(PENDING_WEBHOOKS_SETTING, JSON.stringify(next));
+
+  logEvent("mercadopago.report_webhook.enqueued", {
+    transactionId: entry.transaction_id,
+    queueSize: next.length,
+  });
+
+  void runMercadoPagoAutoSync({ trigger: `webhook:${entry.transaction_id}` }).catch((err) =>
+    logError("mercadopago.report_webhook.autosync_trigger_error", err),
+  );
 }
 
-function inferReportType(payload: ReportWebhookPayload): "release" | "settlement" {
-  const raw = (payload.report_type ?? "").toLowerCase();
-  if (raw.includes("settlement") || raw.includes("liquidaci")) return "settlement";
-  return "release";
+async function loadQueue(): Promise<QueuedWebhook[]> {
+  const raw = await getSetting(PENDING_WEBHOOKS_SETTING);
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? (parsed as QueuedWebhook[]) : [];
+  } catch {
+    return [];
+  }
 }
