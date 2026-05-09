@@ -25,7 +25,7 @@ import { z } from "zod";
 import { getSessionUser, hasPermission } from "../auth";
 import { hashPassword } from "../lib/crypto";
 import { logError } from "../lib/logger";
-import { normalizeRut } from "../lib/rut";
+import { normalizeRut, requireCanonicalRut } from "../lib/rut";
 import { configureSuperjson } from "../lib/superjson-config";
 import { SuperJSONRPCHandler } from "./superjson";
 
@@ -88,14 +88,21 @@ async function resolveInvitePersonId(
 ) {
   if (!personId) {
     const names = payload.names?.trim();
-    const rut = payload.rut?.trim();
+    const rawRut = payload.rut?.trim();
 
     if (!names) {
       throw new ORPCError("BAD_REQUEST", { message: "Nombres son requeridos" });
     }
 
-    if (!rut) {
+    if (!rawRut) {
       throw new ORPCError("BAD_REQUEST", { message: "RUT es requerido" });
+    }
+
+    let rut: string;
+    try {
+      rut = requireCanonicalRut(rawRut);
+    } catch {
+      throw new ORPCError("BAD_REQUEST", { message: "RUT inválido" });
     }
 
     const person = await db.person.create({
@@ -458,13 +465,20 @@ const usersORPCRouterBase = {
         throw new ORPCError("CONFLICT", { message: "El correo de login ya está en uso" });
       }
 
+      let setupRut: string;
+      try {
+        setupRut = requireCanonicalRut(input.rut);
+      } catch {
+        throw new ORPCError("BAD_REQUEST", { message: "RUT inválido" });
+      }
+
       await db.person.update({
         where: { id: user.personId },
         data: {
           names: input.names,
           fatherName: input.fatherName,
           motherName: input.motherName,
-          rut: input.rut,
+          rut: setupRut,
           phone: input.phone,
         },
       });

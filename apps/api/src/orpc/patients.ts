@@ -17,7 +17,7 @@ import { createSchemaFactory, schema } from "@finanzas/db/zod";
 import { z } from "zod";
 import { getSessionUser, hasPermission } from "../auth";
 import { logError } from "../lib/logger";
-import { normalizeRut } from "../lib/rut";
+import { canonicalRutFilter, requireCanonicalRut } from "../lib/rut";
 import { configureSuperjson } from "../lib/superjson-config";
 import { writeTempUpload } from "../lib/temp-file";
 import { uploadPatientAttachmentToDrive } from "../services/patient-attachments-drive.js";
@@ -362,8 +362,18 @@ const patientsORPCRouterBase = {
     .input(createPatientInputSchema)
     .output(patientResponseSchema)
     .handler(async ({ input }) => {
-      let person = await db.person.findUnique({
-        where: { rut: input.rut },
+      let canonicalRut: string;
+      try {
+        canonicalRut = requireCanonicalRut(input.rut);
+      } catch {
+        throw new ORPCError("BAD_REQUEST", { message: "RUT inválido" });
+      }
+
+      // Use findFirst (not findUnique) until all existing person.rut values
+      // are canonicalized — there may be legacy duplicates with the same RUT
+      // stored in different formats.
+      let person = await db.person.findFirst({
+        where: { rut: canonicalRut },
       });
 
       if (person) {
@@ -378,6 +388,7 @@ const patientsORPCRouterBase = {
         person = await db.person.update({
           where: { id: person.id },
           data: {
+            rut: canonicalRut, // re-write canonical form to bring legacy rows in line
             names: input.names,
             fatherName: input.fatherName,
             motherName: input.motherName,
@@ -388,7 +399,7 @@ const patientsORPCRouterBase = {
       } else {
         person = await db.person.create({
           data: {
-            rut: input.rut,
+            rut: canonicalRut,
             names: input.names,
             fatherName: input.fatherName,
             motherName: input.motherName,
@@ -648,7 +659,7 @@ const patientsORPCRouterBase = {
                 // canonical form regardless of input formatting. If the
                 // token isn't a RUT shape, normalizeRut returns null and we
                 // fall back to the raw token.
-                const canonicalRut = normalizeRut(token);
+                const canonicalRut = canonicalRutFilter(token);
                 return {
                   OR: [
                     { names: { contains: token, mode: "insensitive" as const } },

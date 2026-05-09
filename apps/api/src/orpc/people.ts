@@ -14,7 +14,7 @@ import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import type { Context as HonoContext } from "hono";
 import { getSessionUser, hasPermission } from "../auth";
 import { logError } from "../lib/logger";
-import { normalizeRut } from "../lib/rut";
+import { canonicalRutFilter } from "../lib/rut";
 import { configureSuperjson } from "../lib/superjson-config";
 import { SuperJSONRPCHandler } from "./superjson";
 
@@ -93,7 +93,7 @@ const peopleORPCRouterBase = {
     .input(findByRutInputSchema)
     .output(findByRutResponseSchema)
     .handler(async ({ input }) => {
-      const canonical = normalizeRut(input.rut);
+      const canonical = canonicalRutFilter(input.rut);
       if (!canonical) return { person: null };
       const person = await db.person.findFirst({
         where: { rut: canonical },

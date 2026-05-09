@@ -8,6 +8,7 @@ import type {
   EmployeeWhereInput,
   PersonUpdateInput,
 } from "../lib/db-types";
+import { canonicalRutFilter, requireCanonicalRut } from "../lib/rut";
 
 // Type for the frontend payload (snake_case)
 interface EmployeePayload {
@@ -107,7 +108,7 @@ function mapToPersonData(payload: EmployeePayload): PersonUpdateInput {
     data.email = payload.email;
   }
   if (payload.rut !== undefined) {
-    data.rut = payload.rut ?? undefined;
+    data.rut = payload.rut ? requireCanonicalRut(payload.rut) : undefined;
   }
 
   return data;
@@ -169,10 +170,11 @@ export async function createEmployee(payload: EmployeePayload & { names: string;
     const cleanNames = payload.names.trim();
     const cleanFatherName = payload.fatherName?.trim() || null;
     const cleanMotherName = payload.motherName?.trim() || null;
+    const canonicalRut = requireCanonicalRut(payload.rut);
 
-    // First create or find Person by RUT
+    // First create or find Person by canonical RUT
     const person = await tx.person.upsert({
-      where: { rut: payload.rut },
+      where: { rut: canonicalRut },
       update: {
         names: cleanNames,
         fatherName: cleanFatherName,
@@ -180,7 +182,7 @@ export async function createEmployee(payload: EmployeePayload & { names: string;
         email: payload.email,
       },
       create: {
-        rut: payload.rut,
+        rut: canonicalRut,
         names: cleanNames,
         fatherName: cleanFatherName,
         motherName: cleanMotherName,

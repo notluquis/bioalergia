@@ -10,7 +10,7 @@ import { sql } from "kysely";
 import type { AuthSession } from "../../auth.js";
 import { AppError } from "../../lib/app-error";
 import { requirePermission, requireSession } from "../../lib/legacy-route";
-import { normalizeRut } from "../../lib/rut.js";
+import { canonicalRutFilter, normalizeRut, requireCanonicalRut } from "../../lib/rut.js";
 import { writeTempUpload } from "../../lib/temp-file.js";
 import { zValidator } from "../../lib/zod-validator";
 import { uploadPatientAttachmentToDrive } from "../../services/patient-attachments-drive.js";
@@ -408,9 +408,16 @@ patientsRoutes.post(
   async (c) => {
   const input = c.req.valid("json");
   try {
-    // 1. Check if person exists by RUT
-    let person = await db.person.findUnique({
-      where: { rut: input.rut },
+    let canonicalRut: string;
+    try {
+      canonicalRut = requireCanonicalRut(input.rut);
+    } catch {
+      throw new AppError(400, { code: "BAD_REQUEST", message: "RUT inválido" });
+    }
+
+    // 1. Check if person exists by canonical RUT
+    let person = await db.person.findFirst({
+      where: { rut: canonicalRut },
     });
 
     if (person) {
@@ -430,6 +437,7 @@ patientsRoutes.post(
       person = await db.person.update({
         where: { id: person.id },
         data: {
+          rut: canonicalRut,
           names: input.names,
           fatherName: input.fatherName,
           motherName: input.motherName,
@@ -441,7 +449,7 @@ patientsRoutes.post(
       // Create new person
       person = await db.person.create({
         data: {
-          rut: input.rut,
+          rut: canonicalRut,
           names: input.names,
           fatherName: input.fatherName,
           motherName: input.motherName,
@@ -516,10 +524,14 @@ patientsRoutes.put(
       input.phone ||
       input.rut
     ) {
+      const canonicalRut = input.rut ? canonicalRutFilter(input.rut) : undefined;
+      if (input.rut && !canonicalRut) {
+        throw new AppError(400, { code: "BAD_REQUEST", message: "RUT inválido" });
+      }
       await db.person.update({
         where: { id: patient.personId },
         data: {
-          rut: input.rut,
+          rut: canonicalRut,
           names: input.names,
           fatherName: input.fatherName,
           motherName: input.motherName,

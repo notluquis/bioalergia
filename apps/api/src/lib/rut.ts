@@ -54,6 +54,28 @@ export function validateRut(value: string | null | undefined): boolean {
   return dvCalculated === dvRaw;
 }
 
+/**
+ * Returns the canonical RUT or throws. Use at every persistence boundary
+ * (Person/Employee/User/Patient writes, identity lookups) so that no two
+ * records can ever exist for the same identity in different formats.
+ */
+export function requireCanonicalRut(value: string | null | undefined): string {
+  const canonical = normalizeRut(value);
+  if (!canonical) {
+    throw new Error(`RUT inválido: ${String(value)}`);
+  }
+  return canonical;
+}
+
+/**
+ * Best-effort canonicalize. Returns null when the input cannot be parsed,
+ * unlike `requireCanonicalRut` which throws. Use for filters and reads
+ * where a malformed input should match nothing.
+ */
+export function canonicalRutFilter(value: string | null | undefined): null | string {
+  return normalizeRut(value);
+}
+
 export function formatRut(value: string | null | undefined): string {
   const normalized = normalizeRut(value);
   if (!normalized) {

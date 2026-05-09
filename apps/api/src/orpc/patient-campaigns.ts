@@ -116,8 +116,17 @@ async function buildCampaignWithCounts(campaignId: number) {
   return { ...campaign, statusCounts, totalRecipients };
 }
 
+// Local normalizer mirrors the canonical lib/rut helper so that
+// patient_campaigns.patientRut and people.rut share the same key space.
 function normalizeRut(rut: string) {
-  return rut.trim().replace(/\s+/g, "").toUpperCase();
+  // Inline implementation duplicates lib/rut canonicalRutFilter logic to
+  // avoid pulling additional imports in this module's hot paths.
+  const cleaned = rut.toUpperCase().replace(/[^0-9K]/g, "");
+  if (!cleaned) return rut.trim().toUpperCase();
+  const body = cleaned.slice(0, -1);
+  const dv = cleaned.slice(-1);
+  if (!body || !/^[0-9]+$/.test(body)) return rut.trim().toUpperCase();
+  return `${Number.parseInt(body, 10)}-${dv}`;
 }
 
 const patientCampaignsRouterBase = {
