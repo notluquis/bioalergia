@@ -696,15 +696,27 @@ function ComunaLimitsAlert({
               </li>
             )}
           </ul>
-          <Checkbox className="mt-3" isSelected={isAcknowledged} onChange={onAcknowledge}>
-            <Checkbox.Control>
-              <Checkbox.Indicator />
-            </Checkbox.Control>
-            <Checkbox.Content>
-              <Label>Entiendo y deseo continuar con esta comuna</Label>
-            </Checkbox.Content>
-          </Checkbox>
         </Alert.Description>
+        {/*
+          Checkbox lives as a sibling of Alert.Description (not inside it),
+          per HeroUI Alert anatomy — Description renders as prose styling
+          that hides the unchecked Control box. Use variant="secondary"
+          because Alert is a low-emphasis surface and the docs recommend
+          the secondary checkbox there.
+        */}
+        <Checkbox
+          className="mt-3"
+          isSelected={isAcknowledged}
+          onChange={onAcknowledge}
+          variant="secondary"
+        >
+          <Checkbox.Control>
+            <Checkbox.Indicator />
+          </Checkbox.Control>
+          <Checkbox.Content>
+            <Label>Entiendo y deseo continuar con esta comuna</Label>
+          </Checkbox.Content>
+        </Checkbox>
       </Alert.Content>
     </Alert>
   );
