@@ -21,6 +21,22 @@ function escapeRegex(s: string) {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+// Mineduc stores `dependencia` upper-cased ("MUNICIPAL", "PARTICULAR
+// SUBVENCIONADO", "CORPORACIÓN MUNICIPAL"). Templates are read by
+// directors / parents — we render the value title-cased so the email
+// body is not shouting at them.
+function titleCaseEs(value: string): string {
+  return value
+    .toLocaleLowerCase("es")
+    .split(/(\s+)/)
+    .map((segment, idx) => {
+      if (idx % 2 === 1) return segment;
+      if (!segment) return segment;
+      return segment.charAt(0).toLocaleUpperCase("es") + segment.slice(1);
+    })
+    .join("");
+}
+
 export function renderTemplate(template: string, ctx: TemplateContext): string {
   if (!template) return "";
   const values: Record<string, string> = {
@@ -28,7 +44,7 @@ export function renderTemplate(template: string, ctx: TemplateContext): string {
     nombre_director: ctx.establishment.directorMineduc ?? "Director/a",
     nombre_contacto: ctx.contact?.nombre ?? ctx.establishment.directorMineduc ?? "Director/a",
     comuna: ctx.establishment.comuna,
-    dependencia: ctx.establishment.dependencia,
+    dependencia: titleCaseEs(ctx.establishment.dependencia),
     rbd: ctx.establishment.rbd,
   };
   let out = template;

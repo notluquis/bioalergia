@@ -102,11 +102,18 @@ function looksLikePatientAllergenFilename(spaced: string): boolean {
   const nameWords = parts.slice(0, allergenIdx);
   if (nameWords.length === 0) return false;
 
+  const joined = nameWords.join(" ");
   const hasSkinTestQualifier =
-    /\b(?:tests?|prick|parches?|multi|panel|aeroalergenos?|alimentarios?|grupo)\b/.test(
-      nameWords.join(" ")
-    );
+    /\b(?:tests?|prick|parches?|multi|panel|aeroalergenos?|alimentarios?|grupo)\b/.test(joined);
   if (hasSkinTestQualifier) return false;
+
+  // Medical / clinical condition stems that frequently appear in skin
+  // test filenames alongside the patient name (e.g. "MARTIN TORO RINITIA
+  // ACAROS"). When any name token matches one of these, the filename is
+  // a skin-test candidate, not a bare patient + allergen pair.
+  const conditionStems =
+    /\b(?:rinit\w+|asma\w*|dermat\w+|urtic\w+|sinusit\w+|conjuntiv\w+|alerg\w+|atopi\w+)\b/;
+  if (conditionStems.test(joined)) return false;
 
   return nameWords.every((w) => /^[a-zñ]+$/.test(w) && w.length >= 2);
 }
