@@ -17,6 +17,7 @@ import { createSchemaFactory, schema } from "@finanzas/db/zod";
 import { z } from "zod";
 import { getSessionUser, hasPermission } from "../auth";
 import { logError } from "../lib/logger";
+import { normalizeRut } from "../lib/rut";
 import { configureSuperjson } from "../lib/superjson-config";
 import { writeTempUpload } from "../lib/temp-file";
 import { uploadPatientAttachmentToDrive } from "../services/patient-attachments-drive.js";
@@ -641,14 +642,27 @@ const patientsORPCRouterBase = {
       const where = tokens.length > 0
         ? {
             person: {
-              AND: tokens.map((token) => ({
-                OR: [
-                  { names: { contains: token, mode: "insensitive" as const } },
-                  { fatherName: { contains: token, mode: "insensitive" as const } },
-                  { motherName: { contains: token, mode: "insensitive" as const } },
-                  { rut: { contains: token, mode: "insensitive" as const } },
-                ],
-              })),
+              AND: tokens.map((token) => {
+                // Normalize each token to canonical RUT (e.g. "20.275.995-5"
+                // ⇒ "20275995-5") so the contains match works against the DB
+                // canonical form regardless of input formatting. If the
+                // token isn't a RUT shape, normalizeRut returns null and we
+                // fall back to the raw token.
+                const canonicalRut = normalizeRut(token);
+                return {
+                  OR: [
+                    { names: { contains: token, mode: "insensitive" as const } },
+                    { fatherName: { contains: token, mode: "insensitive" as const } },
+                    { motherName: { contains: token, mode: "insensitive" as const } },
+                    {
+                      rut: {
+                        contains: canonicalRut ?? token,
+                        mode: "insensitive" as const,
+                      },
+                    },
+                  ],
+                };
+              }),
             },
           }
         : {};

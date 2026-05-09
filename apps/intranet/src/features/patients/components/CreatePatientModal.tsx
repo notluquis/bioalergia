@@ -95,7 +95,6 @@ export function CreatePatientModal({ isOpen, onClose }: Readonly<CreatePatientMo
     onClose();
   };
 
-  // Dedup: debounced RUT + name for similar patient search
   const rutValue = useStore(form.store, (s) => s.values.rut);
   const nameValue = useStore(form.store, (s) => s.values.names);
   const [debouncedRut, setDebouncedRut] = useState("");
@@ -111,14 +110,23 @@ export function CreatePatientModal({ isOpen, onClose }: Readonly<CreatePatientMo
     return () => clearTimeout(t);
   }, [nameValue]);
 
-  const normalizedRut = debouncedRut.replace(/\./g, "").replace(/-/g, "").toUpperCase();
-  const { data: rutMatches } = useQuery({
-    queryKey: ["patients", debouncedRut],
-    queryFn: () => fetchPatients(debouncedRut),
-    enabled: normalizedRut.length >= 7,
+  // RUT-based dedup uses the canonical /people/by-rut lookup so the same
+  // RUT in any input format (dots/no-dots) resolves to the same Person.
+  // person.patient existing ⇒ already a patient ⇒ block submit.
+  // person without patient ⇒ employee/user etc. ⇒ offer to autofill and
+  // attach a patient profile to the same Person on submit.
+  const { data: existingPerson } = useQuery({
+    queryKey: ["person-by-rut", debouncedRut],
+    queryFn: () => findPersonByRut(debouncedRut),
+    enabled: validateRut(debouncedRut),
     staleTime: 1000 * 30,
   });
 
+  const hasExistingPatient = Boolean(
+    (existingPerson as { patient?: unknown } | null | undefined)?.patient
+  );
+
+  // Name-based "similar patients" hint stays as best-effort contains match.
   const { data: nameMatches } = useQuery({
     queryKey: ["patients", debouncedName],
     queryFn: () => fetchPatients(debouncedName),
@@ -126,30 +134,7 @@ export function CreatePatientModal({ isOpen, onClose }: Readonly<CreatePatientMo
     staleTime: 1000 * 30,
   });
 
-  // Look up existing Person by RUT (canonical normalized server-side).
-  // The patients-list search uses contains and misses RUTs whose stored
-  // format differs from the typed format (dots vs no dots), so the Person
-  // lookup is the authoritative dedup signal.
-  const { data: existingPerson } = useQuery({
-    queryKey: ["person-by-rut", debouncedRut],
-    queryFn: () => findPersonByRut(debouncedRut),
-    enabled: normalizedRut.length >= 7 && validateRut(debouncedRut),
-    staleTime: 1000 * 30,
-  });
-
-  const personWithPatient = existingPerson as
-    | (NonNullable<typeof existingPerson> & { patient?: unknown })
-    | null
-    | undefined;
-  const hasExistingPatient = Boolean(personWithPatient?.patient);
-
-  const exactDuplicate =
-    rutMatches?.find((p) => {
-      const pRut = (p.person.rut ?? "").replace(/\./g, "").replace(/-/g, "").toUpperCase();
-      return pRut === normalizedRut;
-    }) ?? (hasExistingPatient && existingPerson ? { person: existingPerson } : undefined);
-
-  const similarByName = nameMatches?.filter((p) => !rutMatches?.some((r) => r.id === p.id)) ?? [];
+  const similarByName = nameMatches?.filter((p) => p.person.id !== existingPerson?.id) ?? [];
 
   const linkExistingPerson = () => {
     if (!existingPerson) return;
@@ -373,23 +358,23 @@ export function CreatePatientModal({ isOpen, onClose }: Readonly<CreatePatientMo
                   </form.Field>
                 </div>
 
-                {exactDuplicate && (
+                {hasExistingPatient && existingPerson && (
                   <div className="flex items-start gap-2 rounded-xl border border-danger/30 bg-danger/10 px-4 py-3 text-danger text-sm">
                     <OctagonX size={16} className="mt-0.5 shrink-0" />
                     <div>
-                      <p className="font-semibold">RUT duplicado</p>
+                      <p className="font-semibold">Paciente ya registrado</p>
                       <p className="text-xs">
-                        Ya existe:{" "}
+                        Ya existe un perfil de paciente para{" "}
                         <span className="font-medium">
-                          {exactDuplicate.person.names} {exactDuplicate.person.fatherName}
+                          {existingPerson.names} {existingPerson.fatherName ?? ""}
                         </span>{" "}
-                        — {exactDuplicate.person.rut}
+                        — {existingPerson.rut}
                       </p>
                     </div>
                   </div>
                 )}
 
-                {!exactDuplicate && existingPerson && (
+                {!hasExistingPatient && existingPerson && (
                   <div className="flex items-start justify-between gap-3 rounded-xl border border-accent/30 bg-accent/10 px-4 py-3 text-sm">
                     <div className="flex items-start gap-2">
                       <User size={16} className="mt-0.5 shrink-0 text-accent" />
@@ -412,7 +397,7 @@ export function CreatePatientModal({ isOpen, onClose }: Readonly<CreatePatientMo
                   </div>
                 )}
 
-                {!exactDuplicate && similarByName.length > 0 && (
+                {!hasExistingPatient && similarByName.length > 0 && (
                   <div className="rounded-xl border border-warning/30 bg-warning/10 px-4 py-3 text-sm text-warning-700 dark:text-warning-300">
                     <div className="mb-2 flex items-center gap-2 font-semibold">
                       <AlertTriangle size={15} />
@@ -448,7 +433,7 @@ export function CreatePatientModal({ isOpen, onClose }: Readonly<CreatePatientMo
                       <Button
                         className="min-w-37.5"
                         isDisabled={
-                          !canSubmit || createPatientMutation.isPending || Boolean(exactDuplicate)
+                          !canSubmit || createPatientMutation.isPending || hasExistingPatient
                         }
                         isPending={isSubmitting || createPatientMutation.isPending}
                         type="submit"
