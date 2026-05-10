@@ -104,12 +104,31 @@ export type TemplateComponentParam =
   | { type: "document"; document: { link?: string; id?: string; filename?: string } }
   | { type: "video"; video: { link?: string; id?: string } };
 
-export type TemplateComponentInput = {
+export type TemplateComponentBase = {
   type: "header" | "body" | "footer" | "button";
   sub_type?: "quick_reply" | "url" | "copy_code";
   index?: number;
   parameters?: TemplateComponentParam[];
 };
+
+// Meta 2026: carousel template — body parent + N cards each with header
+// (image), body (variables), buttons (quick_reply/url). Up to 10 cards.
+export type TemplateCarouselCard = {
+  card_index: number;
+  components: Array<{
+    type: "header" | "body" | "button";
+    sub_type?: "quick_reply" | "url";
+    index?: number;
+    parameters?: TemplateComponentParam[];
+  }>;
+};
+
+export type TemplateCarouselComponent = {
+  type: "carousel";
+  cards: TemplateCarouselCard[];
+};
+
+export type TemplateComponentInput = TemplateComponentBase | TemplateCarouselComponent;
 
 export type SendTemplateInput = {
   phoneNumberId: number;

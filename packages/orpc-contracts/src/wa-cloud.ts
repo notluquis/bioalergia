@@ -177,6 +177,19 @@ export const sendTextInputSchema = z.object({
   contextMetaMessageId: z.string().optional(),
 });
 
+// Per-card carousel inputs: each card supplies its image media id (uploaded
+// previously to Meta) + body variables + button payloads. Cards are 0-indexed
+// and Meta requires they match the order of cards configured in the template.
+export const carouselCardInputSchema = z.object({
+  cardIndex: z.number().int().min(0).max(9),
+  imageMediaId: z.string().optional(),
+  bodyParams: z.array(z.string()).optional(),
+  // For QUICK_REPLY buttons in cards: array of payloads in order
+  quickReplyPayloads: z.array(z.string()).optional(),
+  // For URL button cards: tail to append to the template URL (Meta spec)
+  urlButtonSuffix: z.string().optional(),
+});
+
 export const sendTemplateInputSchema = z.object({
   conversationId: z.number().int().positive(),
   phoneNumberId: z.number().int().positive(),
@@ -184,6 +197,8 @@ export const sendTemplateInputSchema = z.object({
   language: z.string().min(2),
   bodyParams: z.array(z.string()).optional(),
   headerParams: z.array(z.string()).optional(),
+  // Optional: when sending a CAROUSEL template, pass per-card payloads
+  cards: z.array(carouselCardInputSchema).max(10).optional(),
 });
 
 export const updateConversationInputSchema = z.object({

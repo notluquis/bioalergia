@@ -1046,18 +1046,12 @@ function SnippetsTab() {
   );
 }
 
-function SnippetEditModal({
-  target,
-  onClose,
-}: {
-  target: SnippetEditState;
-  onClose: () => void;
-}) {
+function SnippetEditModal({ target, onClose }: { target: SnippetEditState; onClose: () => void }) {
   const upsert = useUpsertSnippet();
   const accounts = useAccounts();
   const allPhones = useMemo(
     () => (accounts.data?.accounts ?? []).flatMap((a) => a.phoneNumbers),
-    [accounts.data],
+    [accounts.data]
   );
   const fileRef = useRef<HTMLInputElement>(null);
   const [s, setS] = useState<SnippetEditState>(target);
@@ -1113,7 +1107,10 @@ function SnippetEditModal({
       if (s.ctaFooter.trim()) input.ctaFooter = s.ctaFooter.trim();
     }
     if (s.kind === "REPLY_BUTTONS") {
-      const lines = s.replyButtonsRaw.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+      const lines = s.replyButtonsRaw
+        .split(/\r?\n/)
+        .map((l) => l.trim())
+        .filter(Boolean);
       if (lines.length === 0 || lines.length > 3) {
         toast.error("1-3 botones, formato id|título por línea");
         return;

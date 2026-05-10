@@ -568,10 +568,7 @@ const waRouterBase = {
           message: "Contacto bloqueado. Desbloquéalo desde el menú de la conversación primero.",
         });
       }
-      const components: Array<{
-        type: "header" | "body" | "footer" | "button";
-        parameters?: Array<{ type: "text"; text: string }>;
-      }> = [];
+      const components: Array<Record<string, unknown>> = [];
       if (input.headerParams?.length) {
         components.push({
           type: "header",
@@ -584,12 +581,49 @@ const waRouterBase = {
           parameters: input.bodyParams.map((t) => ({ type: "text", text: t })),
         });
       }
+      // Carousel template (Meta 2026): build cards array with per-card image
+      // header + body params + button payloads.
+      if (input.cards && input.cards.length > 0) {
+        const cards = input.cards.map((card) => {
+          const cardComponents: Array<Record<string, unknown>> = [];
+          if (card.imageMediaId) {
+            cardComponents.push({
+              type: "header",
+              parameters: [{ type: "image", image: { id: card.imageMediaId } }],
+            });
+          }
+          if (card.bodyParams?.length) {
+            cardComponents.push({
+              type: "body",
+              parameters: card.bodyParams.map((t) => ({ type: "text", text: t })),
+            });
+          }
+          (card.quickReplyPayloads ?? []).forEach((payload, idx) => {
+            cardComponents.push({
+              type: "button",
+              sub_type: "quick_reply",
+              index: idx,
+              parameters: [{ type: "payload", payload }],
+            });
+          });
+          if (card.urlButtonSuffix) {
+            cardComponents.push({
+              type: "button",
+              sub_type: "url",
+              index: 0,
+              parameters: [{ type: "text", text: card.urlButtonSuffix }],
+            });
+          }
+          return { card_index: card.cardIndex, components: cardComponents };
+        });
+        components.push({ type: "carousel", cards });
+      }
       const apiResp = await sendTemplateMessage({
         phoneNumberId: input.phoneNumberId,
         toE164: conv.contact.phoneE164,
         templateName: input.templateName,
         language: input.language,
-        components,
+        components: components as never,
       });
       const metaId = apiResp.messages?.[0]?.id ?? null;
       const now = new Date();
