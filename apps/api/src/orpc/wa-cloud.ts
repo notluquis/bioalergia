@@ -63,6 +63,8 @@ import {
   searchMessagesResponseSchema,
   markReadInputSchema,
   phoneHealthResponseSchema,
+  phoneQualitySummaryInputSchema,
+  phoneQualitySummaryResponseSchema,
   waPhoneIdInput,
   sendContactsInputSchema,
   sendFlowInputSchema,
@@ -2297,6 +2299,60 @@ const waRouterBase = {
         logError("[wa-cloud.getPhoneHealth] persist failed", { err });
       }
       return h;
+    }),
+
+  // Cheap local-DB summary for the conversation header badge. Reads the
+  // qualityRating snapshot (kept fresh by the webhook handler) and counts
+  // unacknowledged critical / warning events for this phone.
+  getPhoneQualitySummary: readWa
+    .route({
+      method: "POST",
+      path: "/phones/quality-summary",
+      tags: ["WA Cloud"],
+    })
+    .input(phoneQualitySummaryInputSchema)
+    .output(phoneQualitySummaryResponseSchema)
+    .handler(async ({ input }) => {
+      const phone = await db.waPhoneNumber.findUnique({
+        where: { id: input.phoneNumberId },
+        select: { id: true, qualityRating: true },
+      });
+      if (!phone) {
+        throw new ORPCError("NOT_FOUND", { message: "Phone no encontrado" });
+      }
+      const [critical, warning, last] = await Promise.all([
+        db.waAccountEvent.count({
+          where: {
+            phoneNumberId: input.phoneNumberId,
+            severity: "critical",
+            acknowledged: false,
+          },
+        }),
+        db.waAccountEvent.count({
+          where: {
+            phoneNumberId: input.phoneNumberId,
+            severity: "warning",
+            acknowledged: false,
+          },
+        }),
+        db.waAccountEvent.findFirst({
+          where: { phoneNumberId: input.phoneNumberId },
+          orderBy: { receivedAt: "desc" },
+          select: { receivedAt: true },
+        }),
+      ]);
+      const allowed = ["GREEN", "YELLOW", "RED"] as const;
+      const rating =
+        phone.qualityRating && (allowed as readonly string[]).includes(phone.qualityRating)
+          ? (phone.qualityRating as "GREEN" | "YELLOW" | "RED")
+          : null;
+      return {
+        phoneNumberId: phone.id,
+        qualityRating: rating,
+        criticalUnacknowledged: critical,
+        warningUnacknowledged: warning,
+        lastEventAt: last?.receivedAt ?? null,
+      };
     }),
 
   // ── Block / unblock ────────────────────────────────────────────────────────

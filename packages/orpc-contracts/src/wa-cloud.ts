@@ -1011,6 +1011,21 @@ export const phoneHealthResponseSchema = z.object({
     .nullish(),
 });
 
+// Lightweight quality summary for the conversation header badge. Reads
+// from local snapshot (WaPhoneNumber.qualityRating) + counts unacknowledged
+// critical events. Cheap, no Meta call required.
+export const phoneQualitySummaryInputSchema = z.object({
+  phoneNumberId: z.number().int().positive(),
+});
+
+export const phoneQualitySummaryResponseSchema = z.object({
+  phoneNumberId: z.number().int(),
+  qualityRating: z.enum(["GREEN", "YELLOW", "RED"]).nullable(),
+  criticalUnacknowledged: z.number().int(),
+  warningUnacknowledged: z.number().int(),
+  lastEventAt: z.coerce.date().nullable(),
+});
+
 export const blockContactInputSchema = z.object({
   conversationId: z.number().int().positive(),
   phoneNumberId: z.number().int().positive(),
@@ -1331,6 +1346,12 @@ export const waCloudContract = {
     .route({ method: "POST", path: "/phones/health", tags: ["WA Cloud"] })
     .input(waPhoneIdInput)
     .output(phoneHealthResponseSchema),
+
+  // Quality summary (local snapshot, used by header badge)
+  getPhoneQualitySummary: oc
+    .route({ method: "POST", path: "/phones/quality-summary", tags: ["WA Cloud"] })
+    .input(phoneQualitySummaryInputSchema)
+    .output(phoneQualitySummaryResponseSchema),
 
   // Block / unblock
   blockContact: oc

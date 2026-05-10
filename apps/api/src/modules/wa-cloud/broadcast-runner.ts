@@ -53,6 +53,39 @@ export async function runOnce() {
   const bc = await pickBroadcast();
   if (!bc) return;
 
+  // Quality gate: pause sending if Meta has flagged the phone number RED.
+  // Continuing would worsen quality + risk a ban. Operator must investigate
+  // (alerts page) and manually flip status back to QUEUED.
+  const phone = await db.waPhoneNumber.findUnique({
+    where: { id: bc.phoneNumberId },
+    select: { qualityRating: true },
+  });
+  if (phone?.qualityRating === "RED") {
+    await db.waBroadcast.update({
+      where: { id: bc.id },
+      data: {
+        status: "FAILED",
+        errorMessage: "Auto-paused: phone quality is RED. Reactivate from Alertas page.",
+        finishedAt: new Date(),
+      },
+    });
+    await db.waAccountEvent.create({
+      data: {
+        accountId: bc.accountId,
+        phoneNumberId: bc.phoneNumberId,
+        kind: "AUTOMATIC",
+        field: "broadcast_paused_quality_red",
+        severity: "critical",
+        title: `Broadcast "${bc.name}" pausado: calidad RED`,
+        description:
+          "El runner detuvo el envío para evitar empeorar la calidad. Investiga la causa antes de reanudar.",
+        payload: { broadcastId: bc.id } as never,
+      },
+    });
+    logEvent("wa-cloud.broadcast.paused-red", { id: bc.id });
+    return;
+  }
+
   // Process up to rateLimitPerSecond * 5s = burst per tick.
   const burst = Math.max(1, bc.rateLimitPerSecond * 5);
   const recipients = await db.waBroadcastRecipient.findMany({

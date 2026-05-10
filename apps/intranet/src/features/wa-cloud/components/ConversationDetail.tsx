@@ -17,8 +17,10 @@ import {
   ScheduleSendModal,
   TextComposer,
 } from "./ConversationParts";
+import { QualityBadge } from "./QualityBadge";
 import { type CarouselCardState, TemplateComposer } from "./TemplateComposer";
 import { dayLabel, initialsOf, type MessageStatus } from "./_shared";
+import { useQualityAlerts } from "../hooks/useQualityAlerts";
 import {
   uploadWaMedia,
   useAccounts,
@@ -101,6 +103,8 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
   }, [accounts.data]);
   const activeAccountId = phoneId ? accountByPhone.get(Number.parseInt(phoneId, 10)) : undefined;
   const templates = useTemplates(activeAccountId);
+  // Surface toast when quality drops to RED or new critical events arrive.
+  useQualityAlerts(phoneId ? Number.parseInt(phoneId, 10) : undefined);
 
   const allPhones = useMemo(
     () => (accounts.data?.accounts ?? []).flatMap((a) => a.phoneNumbers),
@@ -447,6 +451,7 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
               <Chip.Label>Ventana cerrada · solo plantilla</Chip.Label>
             </Chip>
           )}
+          <QualityBadge phoneNumberId={phoneId ? Number.parseInt(phoneId, 10) : undefined} />
           <ConvSettingsMenu
             conversationId={conversationId}
             phoneId={phoneId}

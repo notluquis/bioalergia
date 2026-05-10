@@ -115,6 +115,19 @@ export function useConversation(id: number | undefined) {
   });
 }
 
+// Cheap per-phone quality summary (snapshot from DB + unack counts) for
+// the conversation header badge. Refreshed every 60s; UI overlays a toast
+// on top when criticalUnacknowledged grows.
+export function usePhoneQualitySummary(phoneNumberId: number | undefined) {
+  return useQuery({
+    queryKey: [...KEY, "phone-quality-summary", phoneNumberId],
+    enabled: Boolean(phoneNumberId),
+    queryFn: () =>
+      waCloudORPCClient.getPhoneQualitySummary({ phoneNumberId: phoneNumberId! }),
+    refetchInterval: 60_000,
+  });
+}
+
 export function useUpdateConversation() {
   const qc = useQueryClient();
   return useMutation({

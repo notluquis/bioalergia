@@ -104,7 +104,8 @@ function mapEventKind(field: string): { kind:
     case "partner_solutions": return { kind: "PARTNER_SOLUTIONS", severity: "info" };
     case "payment_configuration_update": return { kind: "PAYMENT_CONFIG", severity: "warning" };
     case "user_preferences": return { kind: "USER_PREFERENCES", severity: "info" };
-    case "phone_number_quality_update": return { kind: "PHONE_QUALITY", severity: "warning" };
+    case "phone_number_quality_update": return { kind: "PHONE_QUALITY", severity: "info" /* upgraded by inspector */ };
+    case "messaging_limit_tier_update": return { kind: "BUSINESS_CAPABILITY", severity: "info" /* upgraded by inspector */ };
     case "phone_number_name_update": return { kind: "PHONE_NAME", severity: "info" };
     case "automatic_events": return { kind: "AUTOMATIC", severity: "info" };
     case "tracking_events": return { kind: "TRACKING", severity: "info" };
@@ -149,6 +150,50 @@ function summarizeEvent(field: string, v: Record<string, unknown>): { title: str
   }
 }
 
+// Derives a stricter severity for quality/tier events based on the payload.
+// Meta sends current_limit + event in phone_number_quality_update, and
+// new tier numbers in messaging_limit_tier_update.
+function inspectSeverity(
+  baseField: string,
+  baseSeverity: "info" | "warning" | "critical",
+  v: Record<string, unknown>,
+): "info" | "warning" | "critical" {
+  const lower = (x: unknown) => (typeof x === "string" ? x.toUpperCase() : "");
+  if (baseField === "phone_number_quality_update") {
+    const q = lower(v.event ?? v.current_limit ?? v.new_quality ?? "");
+    if (q.includes("RED") || q.includes("FLAGGED")) return "critical";
+    if (q.includes("YELLOW")) return "warning";
+    return "info";
+  }
+  if (baseField === "messaging_limit_tier_update" || baseField === "business_capability_update") {
+    const decision = lower(v.decision ?? v.event ?? "");
+    if (decision.includes("DOWNGRADE") || decision.includes("REVOKED") || decision.includes("DECREASED"))
+      return "critical";
+    if (decision.includes("UPGRADE") || decision.includes("INCREASED")) return "info";
+  }
+  return baseSeverity;
+}
+
+// Persists quality info to WaPhoneNumber so the UI badge can read it
+// without re-querying Meta. Best-effort — failure does not block the event.
+async function snapshotQualityToPhone(
+  phoneNumberId: number | null,
+  v: Record<string, unknown>,
+) {
+  if (!phoneNumberId) return;
+  const raw = (v.event ?? v.current_limit ?? v.new_quality) as string | undefined;
+  if (!raw) return;
+  const upper = raw.toUpperCase();
+  let rating: string | null = null;
+  if (upper.includes("RED")) rating = "RED";
+  else if (upper.includes("YELLOW")) rating = "YELLOW";
+  else if (upper.includes("GREEN")) rating = "GREEN";
+  if (!rating) return;
+  await db.waPhoneNumber
+    .update({ where: { id: phoneNumberId }, data: { qualityRating: rating } })
+    .catch(() => undefined);
+}
+
 async function persistAccountEvent(args: {
   accountId: number | null;
   phoneNumberId: number | null;
@@ -156,6 +201,7 @@ async function persistAccountEvent(args: {
   value: Record<string, unknown>;
 }) {
   const { kind, severity } = mapEventKind(args.field);
+  const finalSeverity = inspectSeverity(args.field, severity, args.value);
   const { title, description } = summarizeEvent(args.field, args.value);
   await db.waAccountEvent.create({
     data: {
@@ -163,12 +209,15 @@ async function persistAccountEvent(args: {
       phoneNumberId: args.phoneNumberId,
       kind: kind as never,
       field: args.field,
-      severity,
+      severity: finalSeverity,
       title,
       description,
       payload: args.value as never,
     },
   });
+  if (args.field === "phone_number_quality_update") {
+    await snapshotQualityToPhone(args.phoneNumberId, args.value);
+  }
 }
 
 async function applyUserPreferences(v: Record<string, unknown>) {
