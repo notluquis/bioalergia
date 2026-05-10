@@ -65,8 +65,12 @@ import {
   cloneTemplateFromLibraryInputSchema,
   cloneTemplateFromLibraryResponseSchema,
   conversationalAutomationSchema,
+  embeddedSignupInputSchema,
   listTemplateLibraryInputSchema,
   listTemplateLibraryResponseSchema,
+  requestPhoneCodeInputSchema,
+  sendMultiProductInputSchema,
+  verifyPhoneCodeInputSchema,
   phoneHealthResponseSchema,
   phoneQualitySummaryInputSchema,
   phoneQualitySummaryResponseSchema,
@@ -111,7 +115,10 @@ import {
   getConversationalAutomation,
   getPhoneHealth,
   listTemplateLibrary,
+  requestPhoneVerificationCode,
+  sendMultiProductMessage,
   updateConversationalAutomation,
+  verifyPhoneCode,
   listAccountFlows,
   listAccountPhoneNumbers,
   listAccountTemplates,
@@ -2304,6 +2311,133 @@ const waRouterBase = {
     .handler(async ({ input }) => {
       await setTwoStepPin(input.phoneNumberId, input.pin);
       return { status: "ok" as const };
+    }),
+
+  // ── Phone migration between WABAs ──────────────────────────────────────────
+  requestPhoneCode: writeWa
+    .route({ method: "POST", path: "/phones/request-code", tags: ["WA Cloud"] })
+    .input(requestPhoneCodeInputSchema)
+    .output(waOkResponseSchema)
+    .handler(async ({ input }) => {
+      await requestPhoneVerificationCode(
+        input.phoneNumberId,
+        input.codeMethod,
+        input.language,
+      );
+      return { status: "ok" as const };
+    }),
+
+  verifyPhoneCode: writeWa
+    .route({ method: "POST", path: "/phones/verify-code", tags: ["WA Cloud"] })
+    .input(verifyPhoneCodeInputSchema)
+    .output(waOkResponseSchema)
+    .handler(async ({ input }) => {
+      await verifyPhoneCode(input.phoneNumberId, input.code);
+      return { status: "ok" as const };
+    }),
+
+  // ── Embedded Signup callback (Solution Partner / OBO onboarding) ──────────
+  embeddedSignupComplete: createWa
+    .route({ method: "POST", path: "/embedded-signup", tags: ["WA Cloud"] })
+    .input(embeddedSignupInputSchema)
+    .output(accountResponseSchema)
+    .handler(async ({ input }) => {
+      // Upsert WaBusinessAccount by wabaId, encrypting the system-user
+      // token at rest. Reuses the same encryption path as the manual
+      // upsert handler so rotation tooling covers it automatically.
+      const existing = await db.waBusinessAccount.findUnique({
+        where: { wabaId: input.wabaId },
+      });
+      const data = {
+        wabaId: input.wabaId,
+        metaBusinessId: input.metaBusinessId ?? null,
+        appId: input.appId ?? null,
+        systemUserToken: encryptSecret(input.systemUserToken),
+        graphApiVersion: "v21.0",
+        displayName: input.displayName ?? null,
+        active: true,
+      };
+      const acc = existing
+        ? await db.waBusinessAccount.update({ where: { id: existing.id }, data })
+        : await db.waBusinessAccount.create({ data });
+      // Upsert the phone row by Meta phoneNumberId.
+      const phoneExisting = await db.waPhoneNumber.findUnique({
+        where: { phoneNumberId: input.phoneNumberId },
+      });
+      const phoneData = {
+        accountId: acc.id,
+        phoneNumberId: input.phoneNumberId,
+        displayPhoneNumber: input.displayPhoneNumber,
+        label: input.displayName ?? null,
+        active: true,
+      };
+      if (phoneExisting) {
+        await db.waPhoneNumber.update({ where: { id: phoneExisting.id }, data: phoneData });
+      } else {
+        await db.waPhoneNumber.create({ data: phoneData });
+      }
+      return { account: await buildAccountWithPhones(acc.id) };
+    }),
+
+  // ── Multi-Product Message (Meta Commerce) ─────────────────────────────────
+  sendMultiProduct: writeWa
+    .route({ method: "POST", path: "/messages/send-multi-product", tags: ["WA Cloud"] })
+    .input(sendMultiProductInputSchema)
+    .output(sendMessageResponseSchema)
+    .handler(async ({ context, input }) => {
+      const conv = await db.waConversation.findUnique({
+        where: { id: input.conversationId },
+        include: { contact: true },
+      });
+      if (!conv) throw new ORPCError("NOT_FOUND", { message: "Conversación no encontrada" });
+      const lastInbound = conv.lastInboundAt;
+      const windowOpen = lastInbound
+        ? Date.now() - lastInbound.getTime() < WINDOW_HOURS * 60 * 60 * 1000
+        : false;
+      if (!windowOpen) {
+        throw new ORPCError("BAD_REQUEST", {
+          message: "Ventana 24h cerrada. MPM requiere ventana abierta.",
+        });
+      }
+      const apiResp = await sendMultiProductMessage({
+        phoneNumberId: input.phoneNumberId,
+        toE164: conv.contact.phoneE164,
+        catalogId: input.catalogId,
+        bodyText: input.bodyText,
+        headerText: input.headerText,
+        footerText: input.footerText,
+        sections: input.sections,
+        contextMessageId: input.contextMetaMessageId,
+      });
+      const metaId = apiResp.messages?.[0]?.id ?? null;
+      const now = new Date();
+      const total = input.sections.reduce((n, s) => n + s.product_items.length, 0);
+      const preview = `[catálogo] ${input.headerText} (${total} productos)`;
+      const message = await db.waMessage.create({
+        data: {
+          conversationId: conv.id,
+          contactId: conv.contactId,
+          phoneNumberId: input.phoneNumberId,
+          metaMessageId: metaId,
+          direction: "OUTBOUND",
+          type: "INTERACTIVE",
+          status: "SENT",
+          body: input.bodyText,
+          sentByUserId: context.user.id,
+          contextMetaMessageId: input.contextMetaMessageId ?? null,
+          payload: {
+            interactive_type: "product_list",
+            catalog_id: input.catalogId,
+            sections: input.sections,
+          } as never,
+          timestamp: now,
+        },
+      });
+      await db.waConversation.update({
+        where: { id: conv.id },
+        data: { lastMessageAt: now, lastMessagePreview: preview.slice(0, 200) },
+      });
+      return { message };
     }),
 
   // ── Extended analytics with pricing ────────────────────────────────────────

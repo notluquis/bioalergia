@@ -115,11 +115,49 @@ export function useConversation(id: number | undefined) {
   });
 }
 
+// Phone migration between WABAs (request OTP + verify).
+export function useRequestPhoneCode() {
+  return useMutation({
+    mutationFn: (input: Parameters<typeof waCloudORPCClient.requestPhoneCode>[0]) =>
+      waCloudORPCClient.requestPhoneCode(input),
+  });
+}
+export function useVerifyPhoneCode() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: Parameters<typeof waCloudORPCClient.verifyPhoneCode>[0]) =>
+      waCloudORPCClient.verifyPhoneCode(input),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: [...KEY, "accounts"] }),
+  });
+}
+
+// Multi-Product Message (Meta Commerce catalog).
+export function useSendMultiProduct() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: Parameters<typeof waCloudORPCClient.sendMultiProduct>[0]) =>
+      waCloudORPCClient.sendMultiProduct(input),
+    onSuccess: (_, vars) => {
+      void qc.invalidateQueries({ queryKey: [...KEY, "conversation", vars.conversationId] });
+    },
+  });
+}
+
+// Embedded Signup callback consumer (Solution Partner / OBO).
+export function useEmbeddedSignupComplete() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: Parameters<typeof waCloudORPCClient.embeddedSignupComplete>[0]) =>
+      waCloudORPCClient.embeddedSignupComplete(input),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: [...KEY, "accounts"] }),
+  });
+}
+
 // Template library (Meta-curated catalog) + clone mutation. The list is
 // per-account + filters; clone refetches the local templates list so the
 // new entry appears immediately.
 export function useTemplateLibrary(
-  input: Parameters<typeof waCloudORPCClient.listTemplateLibrary>[0] | undefined,
+  input: Parameters<typeof waCloudORPCClient.listTemplateLibrary>[0] | undefined
 ) {
   return useQuery({
     queryKey: [...KEY, "template-library", input],
@@ -132,9 +170,8 @@ export function useTemplateLibrary(
 export function useCloneTemplateFromLibrary() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (
-      input: Parameters<typeof waCloudORPCClient.cloneTemplateFromLibrary>[0],
-    ) => waCloudORPCClient.cloneTemplateFromLibrary(input),
+    mutationFn: (input: Parameters<typeof waCloudORPCClient.cloneTemplateFromLibrary>[0]) =>
+      waCloudORPCClient.cloneTemplateFromLibrary(input),
     onSuccess: (_, vars) => {
       void qc.invalidateQueries({ queryKey: [...KEY, "templates", vars.accountId] });
     },

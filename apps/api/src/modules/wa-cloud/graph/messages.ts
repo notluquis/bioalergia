@@ -39,10 +39,25 @@ export type TemplateComponentParam =
   | { type: "date_time"; date_time: { fallback_value: string } }
   | { type: "image"; image: { link?: string; id?: string } }
   | { type: "document"; document: { link?: string; id?: string; filename?: string } }
-  | { type: "video"; video: { link?: string; id?: string } };
+  | { type: "video"; video: { link?: string; id?: string } }
+  // Meta 2026: COPY_CODE button parameter — value the patient gets
+  // copied to clipboard with one tap. Used for coupon codes, order ids,
+  // pre-filled RUTs, etc.
+  | { type: "coupon_code"; coupon_code: string }
+  // Meta 2026: LIMITED_TIME_OFFER component parameter — countdown
+  // timestamp + button URL with embedded expiration. Pair with a URL
+  // button component on the same template.
+  | {
+      type: "limited_time_offer";
+      limited_time_offer: { expiration_time_ms: number };
+    }
+  // URL button suffix (existing in tu base) + payload for copy_code etc.
+  | { type: "payload"; payload: string };
 
 export type TemplateComponentBase = {
-  type: "header" | "body" | "footer" | "button";
+  // Adds "limited_time_offer" so LTO templates can pass the countdown
+  // expiration. Other types unchanged.
+  type: "header" | "body" | "footer" | "button" | "limited_time_offer";
   sub_type?: "quick_reply" | "url" | "copy_code";
   index?: number;
   parameters?: TemplateComponentParam[];
@@ -368,6 +383,56 @@ export async function sendContactsMessage(input: SendContactsInput) {
     contacts: input.contacts,
   };
   if (input.contextMessageId) payload.context = { message_id: input.contextMessageId };
+  return graphPost<{ messages: Array<{ id: string }> }>(
+    `/${phone.phoneNumberId}/messages`,
+    payload,
+    token,
+    v,
+  );
+}
+
+// Multi-Product Message (Meta 2026 Commerce). Renders a carousel of
+// catalog products in WhatsApp. Requires the WABA to be linked to a
+// Meta Commerce catalog with the listed retailer ids active.
+export type SendMultiProductInput = {
+  phoneNumberId: number;
+  toE164: string;
+  catalogId: string;
+  bodyText: string;
+  headerText: string;
+  footerText?: string;
+  sections: Array<{
+    title: string;
+    product_items: Array<{ product_retailer_id: string }>;
+  }>;
+  contextMessageId?: string;
+  bizOpaqueCallbackData?: string;
+};
+
+export async function sendMultiProductMessage(input: SendMultiProductInput) {
+  const phone = await getAccountForPhoneNumber(input.phoneNumberId);
+  const v = phone.account.graphApiVersion;
+  const token = phone.account.systemUserToken!;
+  const interactive = {
+    type: "product_list",
+    header: { type: "text", text: input.headerText },
+    body: { text: input.bodyText },
+    ...(input.footerText ? { footer: { text: input.footerText } } : {}),
+    action: {
+      catalog_id: input.catalogId,
+      sections: input.sections,
+    },
+  };
+  const payload: Record<string, unknown> = {
+    messaging_product: "whatsapp",
+    recipient_type: "individual",
+    to: input.toE164.replace(/^\+/, ""),
+    type: "interactive",
+    interactive,
+  };
+  if (input.contextMessageId) payload.context = { message_id: input.contextMessageId };
+  if (input.bizOpaqueCallbackData)
+    payload.biz_opaque_callback_data = input.bizOpaqueCallbackData;
   return graphPost<{ messages: Array<{ id: string }> }>(
     `/${phone.phoneNumberId}/messages`,
     payload,

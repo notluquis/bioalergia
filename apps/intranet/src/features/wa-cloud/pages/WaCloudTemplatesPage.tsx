@@ -345,7 +345,7 @@ function LibraryModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
           language: language || undefined,
           category: category || undefined,
         }
-      : undefined,
+      : undefined
   );
   const clone = useCloneTemplateFromLibrary();
 
@@ -357,7 +357,7 @@ function LibraryModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
   const handleClone = (template: { name: string; language: string; category: string }) => {
     if (!numericAccountId) return;
     const validCategory = ["MARKETING", "UTILITY", "AUTHENTICATION"].includes(
-      template.category.toUpperCase(),
+      template.category.toUpperCase()
     )
       ? (template.category.toUpperCase() as "MARKETING" | "UTILITY" | "AUTHENTICATION")
       : "UTILITY";
@@ -373,7 +373,7 @@ function LibraryModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
           toast.success(`Clonada "${template.name}". Aprobada al instante por Meta.`);
         },
         onError: (e) => toast.error(`Clone falló: ${String(e)}`),
-      },
+      }
     );
   };
 
@@ -408,10 +408,7 @@ function LibraryModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
                   label="Categoría"
                   value={category}
                   onValueChange={setCategory}
-                  options={[
-                    { value: "", label: "Todas" },
-                    ...CATEGORY_OPTIONS,
-                  ]}
+                  options={[{ value: "", label: "Todas" }, ...CATEGORY_OPTIONS]}
                 />
                 <SelectInput
                   label="Idioma"
@@ -461,9 +458,7 @@ function LibraryModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
                             {t.body}
                           </p>
                         )}
-                        {t.use_case && (
-                          <p className="text-default-400 text-[10px]">{t.use_case}</p>
-                        )}
+                        {t.use_case && <p className="text-default-400 text-[10px]">{t.use_case}</p>}
                       </div>
                       <Button
                         size="sm"

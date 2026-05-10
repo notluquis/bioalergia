@@ -16,6 +16,8 @@ import { useState } from "react";
 import { TextInput } from "@/features/outreach/components/FormField";
 import { toast } from "@/lib/toast-interceptor";
 import { ConversationalAutomationCard } from "../components/ConversationalAutomationCard";
+import { EmbeddedSignupButton } from "../components/EmbeddedSignupButton";
+import { PhoneMigrationCard } from "../components/PhoneMigrationCard";
 import { PhoneToolsModal } from "../components/PhoneToolsModal";
 import {
   useAccounts,
@@ -54,7 +56,8 @@ export function WaCloudSettingsPage() {
 
   return (
     <div className="mx-auto max-w-5xl space-y-6 p-6">
-      <div className="flex justify-end">
+      <div className="flex justify-end gap-2">
+        <EmbeddedSignupButton />
         <Button onPress={() => setCreateOpen(true)}>
           <Plus size={16} />
           Nueva cuenta WABA
@@ -74,6 +77,7 @@ export function WaCloudSettingsPage() {
       )}
 
       {accounts.data.accounts.length > 0 && <ConversationalAutomationCard />}
+      {accounts.data.accounts.length > 0 && <PhoneMigrationCard />}
 
       <CreateAccountModal isOpen={createOpen} onClose={() => setCreateOpen(false)} />
     </div>

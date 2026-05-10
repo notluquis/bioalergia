@@ -9,6 +9,7 @@ export {
   type SendInteractiveListInput,
   type SendLocationInput,
   type SendMediaInput,
+  type SendMultiProductInput,
   type SendTemplateInput,
   type SendTextInput,
   type TemplateCarouselCard,
@@ -23,6 +24,7 @@ export {
   sendInteractiveListMessage,
   sendLocationMessage,
   sendMediaMessage,
+  sendMultiProductMessage,
   sendReaction,
   sendTemplateMessage,
   sendTextMessage,
@@ -44,7 +46,9 @@ export {
   getPhoneHealth,
   listAccountPhoneNumbers,
   registerPhoneNumber,
+  requestPhoneVerificationCode,
   setTwoStepPin,
+  verifyPhoneCode,
 } from "./graph/phone.ts";
 export { blockUsers, listBlockedUsers, unblockUsers } from "./graph/blocks.ts";
 export {

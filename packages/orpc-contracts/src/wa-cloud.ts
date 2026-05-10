@@ -1011,6 +1011,60 @@ export const phoneHealthResponseSchema = z.object({
     .nullish(),
 });
 
+// Phone number migration between WABAs (Meta 2026). The new WABA must
+// have already added the number; the old WABA must have deregistered.
+// requestPhoneCode triggers an OTP via SMS or VOICE; verifyPhoneCode
+// completes the migration.
+export const requestPhoneCodeInputSchema = z.object({
+  phoneNumberId: z.number().int().positive(),
+  codeMethod: z.enum(["SMS", "VOICE"]),
+  language: z.string().min(2).max(8).default("es"),
+});
+
+export const verifyPhoneCodeInputSchema = z.object({
+  phoneNumberId: z.number().int().positive(),
+  code: z.string().regex(/^\d{6}$/, "Código de 6 dígitos"),
+});
+
+// Multi-Product Message (Meta Commerce 2026). Renders catalog products
+// in WhatsApp. Requires the WABA to be linked to a Meta Commerce catalog.
+export const sendMultiProductInputSchema = z.object({
+  conversationId: z.number().int().positive(),
+  phoneNumberId: z.number().int().positive(),
+  catalogId: z.string().min(1),
+  bodyText: z.string().min(1).max(1024),
+  headerText: z.string().min(1).max(60),
+  footerText: z.string().max(60).optional(),
+  sections: z
+    .array(
+      z.object({
+        title: z.string().min(1).max(24),
+        product_items: z
+          .array(z.object({ product_retailer_id: z.string().min(1) }))
+          .min(1)
+          .max(30),
+      }),
+    )
+    .min(1)
+    .max(10),
+  contextMetaMessageId: z.string().optional(),
+});
+
+// Embedded Signup (Solution Partner / OBO). Frontend opens Meta JS SDK
+// FB.login with config_id for whatsapp_embedded_signup; on success the
+// callback returns phone_number_id + waba_id + access_token. This input
+// hands those to the API which creates the WaBusinessAccount + the
+// WaPhoneNumber row, all secrets encrypted at rest by upsertAccount.
+export const embeddedSignupInputSchema = z.object({
+  wabaId: z.string().min(1),
+  metaBusinessId: z.string().optional(),
+  appId: z.string().optional(),
+  systemUserToken: z.string().min(1),
+  phoneNumberId: z.string().min(1),
+  displayPhoneNumber: z.string().min(1),
+  displayName: z.string().optional(),
+});
+
 // Template library (Meta 2026): pre-curated templates that can be cloned
 // without going through approval review. listTemplateLibrary fetches the
 // catalog; cloneTemplateFromLibrary copies a chosen entry into the WABA.
@@ -1415,6 +1469,45 @@ export const waCloudContract = {
     .route({ method: "POST", path: "/phones/health", tags: ["WA Cloud"] })
     .input(waPhoneIdInput)
     .output(phoneHealthResponseSchema),
+
+  // Phone number migration (request OTP + verify)
+  requestPhoneCode: oc
+    .route({
+      method: "POST",
+      path: "/phones/request-code",
+      tags: ["WA Cloud"],
+    })
+    .input(requestPhoneCodeInputSchema)
+    .output(waOkResponseSchema),
+
+  verifyPhoneCode: oc
+    .route({
+      method: "POST",
+      path: "/phones/verify-code",
+      tags: ["WA Cloud"],
+    })
+    .input(verifyPhoneCodeInputSchema)
+    .output(waOkResponseSchema),
+
+  // Multi-Product Message (Meta Commerce)
+  sendMultiProduct: oc
+    .route({
+      method: "POST",
+      path: "/messages/send-multi-product",
+      tags: ["WA Cloud"],
+    })
+    .input(sendMultiProductInputSchema)
+    .output(sendMessageResponseSchema),
+
+  // Embedded Signup callback handler (Solution Partner onboarding)
+  embeddedSignupComplete: oc
+    .route({
+      method: "POST",
+      path: "/embedded-signup",
+      tags: ["WA Cloud"],
+    })
+    .input(embeddedSignupInputSchema)
+    .output(accountResponseSchema),
 
   // Template library: list + clone
   listTemplateLibrary: oc

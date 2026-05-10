@@ -47,6 +47,34 @@ export async function setTwoStepPin(phoneNumberId: number, pin: string) {
   return graphPost(`/${phone.phoneNumberId}`, { pin }, token, v);
 }
 
+// Number migration between WABAs (Meta 2026):
+//  - request_code: Meta sends an OTP to the SIM via SMS or VOICE
+//  - verify_code: confirm migration once the operator reads the OTP
+// Both operate on the new WABA's phoneNumberId — the source WABA must
+// have already deregistered the number first.
+export async function requestPhoneVerificationCode(
+  phoneNumberId: number,
+  codeMethod: "SMS" | "VOICE",
+  language: string,
+) {
+  const phone = await getAccountForPhoneNumber(phoneNumberId);
+  const v = phone.account.graphApiVersion;
+  const token = phone.account.systemUserToken!;
+  return graphPost(
+    `/${phone.phoneNumberId}/request_code`,
+    { code_method: codeMethod, language },
+    token,
+    v,
+  );
+}
+
+export async function verifyPhoneCode(phoneNumberId: number, code: string) {
+  const phone = await getAccountForPhoneNumber(phoneNumberId);
+  const v = phone.account.graphApiVersion;
+  const token = phone.account.systemUserToken!;
+  return graphPost(`/${phone.phoneNumberId}/verify_code`, { code }, token, v);
+}
+
 export async function listAccountPhoneNumbers(accountId: number) {
   const account = await loadAccount(accountId);
   if (!account?.systemUserToken) throw new Error("Account sin token");
