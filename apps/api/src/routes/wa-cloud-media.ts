@@ -2,6 +2,7 @@ import { db } from "@finanzas/db";
 import { type Context, Hono } from "hono";
 import { getSessionUser, hasPermission } from "../auth.ts";
 import { logWarn } from "../lib/logger.ts";
+import { decryptSecret } from "../lib/secret-cipher.ts";
 import {
   downloadMediaUrl,
   updateBusinessProfile,
@@ -203,10 +204,11 @@ waCloudMediaRoutes.get("/:messageId", async (c) => {
       where: { id: message.phoneNumber.accountId },
       select: { systemUserToken: true },
     });
-    if (!account?.systemUserToken) return c.text("Account token missing", 500);
+    const accToken = decryptSecret(account?.systemUserToken);
+    if (!accToken) return c.text("Account token missing", 500);
 
     const upstream = await fetch(meta.url, {
-      headers: { Authorization: `Bearer ${account.systemUserToken}` },
+      headers: { Authorization: `Bearer ${accToken}` },
     });
     if (!upstream.ok || !upstream.body) {
       const body = await upstream.text().catch(() => "");

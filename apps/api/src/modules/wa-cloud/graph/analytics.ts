@@ -1,5 +1,4 @@
-import { db } from "@finanzas/db";
-import { graphGet } from "./_http.ts";
+import { graphGet, loadAccount } from "./_http.ts";
 
 export type ConversationAnalyticsParams = {
   accountId: number;
@@ -12,7 +11,7 @@ export type ConversationAnalyticsParams = {
 };
 
 export async function getConversationAnalytics(params: ConversationAnalyticsParams) {
-  const account = await db.waBusinessAccount.findUnique({ where: { id: params.accountId } });
+  const account = await loadAccount(params.accountId);
   if (!account?.systemUserToken) throw new Error("Account sin token");
   const granularity = params.granularity ?? "DAILY";
 

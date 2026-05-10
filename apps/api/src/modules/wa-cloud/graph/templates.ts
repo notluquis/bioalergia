@@ -1,5 +1,4 @@
-import { db } from "@finanzas/db";
-import { graphDelete, graphGet, graphPost } from "./_http.ts";
+import { graphDelete, graphGet, graphPost, loadAccount } from "./_http.ts";
 
 export type CreateTemplateInput = {
   accountId: number;
@@ -10,7 +9,7 @@ export type CreateTemplateInput = {
 };
 
 export async function createTemplate(input: CreateTemplateInput) {
-  const account = await db.waBusinessAccount.findUnique({ where: { id: input.accountId } });
+  const account = await loadAccount(input.accountId);
   if (!account?.systemUserToken) throw new Error("Account sin token");
   const v = account.graphApiVersion;
   const token = account.systemUserToken;
@@ -28,7 +27,7 @@ export async function createTemplate(input: CreateTemplateInput) {
 }
 
 export async function deleteTemplate(accountId: number, name: string, hsmId?: string) {
-  const account = await db.waBusinessAccount.findUnique({ where: { id: accountId } });
+  const account = await loadAccount(accountId);
   if (!account?.systemUserToken) throw new Error("Account sin token");
   const v = account.graphApiVersion;
   const qs = new URLSearchParams({ name });
@@ -42,7 +41,7 @@ export async function deleteTemplate(accountId: number, name: string, hsmId?: st
 }
 
 export async function listAccountTemplates(accountId: number) {
-  const account = await db.waBusinessAccount.findUnique({ where: { id: accountId } });
+  const account = await loadAccount(accountId);
   if (!account?.systemUserToken) throw new Error("Account sin token");
   type TemplateApi = {
     id: string;

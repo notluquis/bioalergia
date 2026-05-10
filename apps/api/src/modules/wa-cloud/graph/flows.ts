@@ -1,8 +1,7 @@
-import { db } from "@finanzas/db";
-import { graphGet } from "./_http.ts";
+import { graphGet, loadAccount } from "./_http.ts";
 
 export async function listAccountFlows(accountId: number) {
-  const account = await db.waBusinessAccount.findUnique({ where: { id: accountId } });
+  const account = await loadAccount(accountId);
   if (!account?.systemUserToken) throw new Error("Account sin token");
   type FlowApi = {
     id: string;

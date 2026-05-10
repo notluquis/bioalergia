@@ -1,6 +1,5 @@
-import { db } from "@finanzas/db";
 import { logWarn } from "../../../lib/logger.ts";
-import { GRAPH_BASE, getAccountForPhoneNumber, graphGet, graphPost } from "./_http.ts";
+import { GRAPH_BASE, getAccountForPhoneNumber, graphGet, graphPost, loadAccount } from "./_http.ts";
 
 export type WaMediaUploadResult = { id: string };
 
@@ -57,7 +56,7 @@ export async function markMessageRead(
 }
 
 export async function downloadMediaUrl(mediaId: string, accountId: number) {
-  const account = await db.waBusinessAccount.findUnique({ where: { id: accountId } });
+  const account = await loadAccount(accountId);
   if (!account?.systemUserToken) throw new Error("Account sin token");
   const meta = await graphGet<{ url: string; mime_type: string; sha256: string; file_size: number }>(
     `/${mediaId}`,

@@ -89,6 +89,7 @@ import type { Context as HonoContext } from "hono";
 import { z } from "zod";
 import { getSessionUser, hasPermission } from "../auth.ts";
 import { logError } from "../lib/logger.ts";
+import { decryptSecret, encryptSecret } from "../lib/secret-cipher.ts";
 import { configureSuperjson } from "../lib/superjson-config.ts";
 import {
   blockUsers,
@@ -205,13 +206,20 @@ const waRouterBase = {
     .input(upsertAccountInputSchema)
     .output(accountResponseSchema)
     .handler(async ({ input }) => {
+      // All three secrets are encrypted at rest (AES-256-GCM, prefix
+      // `enc:v1:`). Plaintext input from the operator is encrypted here
+      // before any DB write.
+      const encOrUndef = (v: string | undefined) =>
+        v === undefined ? undefined : v ? encryptSecret(v) : null;
       const data = {
         wabaId: input.wabaId,
         metaBusinessId: input.metaBusinessId ?? null,
         appId: input.appId ?? null,
-        appSecret: input.appSecret ?? undefined,
-        systemUserToken: input.systemUserToken ?? undefined,
-        webhookVerifyToken: input.webhookVerifyToken ?? undefined,
+        appSecret: input.appSecret ? encryptSecret(input.appSecret) : undefined,
+        systemUserToken: input.systemUserToken ? encryptSecret(input.systemUserToken) : undefined,
+        webhookVerifyToken: input.webhookVerifyToken
+          ? encryptSecret(input.webhookVerifyToken)
+          : undefined,
         graphApiVersion: input.graphApiVersion ?? "v21.0",
         displayName: input.displayName ?? null,
         active: input.active ?? true,
@@ -221,12 +229,12 @@ const waRouterBase = {
             where: { id: input.id },
             data: {
               ...data,
-              ...(input.appSecret !== undefined ? { appSecret: input.appSecret || null } : {}),
+              ...(input.appSecret !== undefined ? { appSecret: encOrUndef(input.appSecret) } : {}),
               ...(input.systemUserToken !== undefined
-                ? { systemUserToken: input.systemUserToken || null }
+                ? { systemUserToken: encOrUndef(input.systemUserToken) }
                 : {}),
               ...(input.webhookVerifyToken !== undefined
-                ? { webhookVerifyToken: input.webhookVerifyToken || null }
+                ? { webhookVerifyToken: encOrUndef(input.webhookVerifyToken) }
                 : {}),
             },
           })
@@ -273,24 +281,27 @@ const waRouterBase = {
     .output(accountResponseSchema)
     .handler(async ({ input }) => {
       const phones = await listAccountPhoneNumbers(input.id);
-      for (const p of phones) {
-        const existing = await db.waPhoneNumber.findUnique({
-          where: { phoneNumberId: p.id },
-        });
-        const data = {
-          accountId: input.id,
-          phoneNumberId: p.id,
-          displayPhoneNumber: p.display_phone_number,
-          label: existing?.label ?? p.verified_name ?? null,
-          qualityRating: p.quality_rating ?? null,
-          active: true,
-        };
-        if (existing) {
-          await db.waPhoneNumber.update({ where: { id: existing.id }, data });
-        } else {
-          await db.waPhoneNumber.create({ data });
-        }
-      }
+      // Batch existing rows once instead of N findUnique queries.
+      const existingRows = await db.waPhoneNumber.findMany({
+        where: { phoneNumberId: { in: phones.map((p) => p.id) } },
+      });
+      const existingByMetaId = new Map(existingRows.map((r) => [r.phoneNumberId, r]));
+      await Promise.all(
+        phones.map((p) => {
+          const existing = existingByMetaId.get(p.id);
+          const data = {
+            accountId: input.id,
+            phoneNumberId: p.id,
+            displayPhoneNumber: p.display_phone_number,
+            label: existing?.label ?? p.verified_name ?? null,
+            qualityRating: p.quality_rating ?? null,
+            active: true,
+          };
+          return existing
+            ? db.waPhoneNumber.update({ where: { id: existing.id }, data })
+            : db.waPhoneNumber.create({ data });
+        }),
+      );
       return { account: await buildAccountWithPhones(input.id) };
     }),
 
@@ -300,33 +311,35 @@ const waRouterBase = {
     .output(syncTemplatesResponseSchema)
     .handler(async ({ input }) => {
       const apiTpls = await listAccountTemplates(input.id);
-      for (const t of apiTpls) {
-        const existing = await db.waTemplate.findUnique({
-          where: {
-            accountId_name_language: {
-              accountId: input.id,
-              name: t.name,
-              language: t.language,
-            },
-          },
-        });
-        const data = {
-          accountId: input.id,
-          name: t.name,
-          language: t.language,
-          category: t.category as never,
-          status: t.status as never,
-          components: t.components as never,
-          qualityScore: t.quality_score?.score ?? null,
-          metaTemplateId: t.id,
-          syncedAt: new Date(),
-        };
-        if (existing) {
-          await db.waTemplate.update({ where: { id: existing.id }, data });
-        } else {
-          await db.waTemplate.create({ data });
-        }
-      }
+      // Single batched lookup: all existing templates for this account in
+      // one query, indexed by composite key (name, language). Replaces the
+      // N findUnique sequential roundtrips.
+      const existingRows = await db.waTemplate.findMany({
+        where: { accountId: input.id },
+        select: { id: true, name: true, language: true },
+      });
+      const existingByKey = new Map(
+        existingRows.map((r) => [`${r.name} ${r.language}`, r.id]),
+      );
+      await Promise.all(
+        apiTpls.map((t) => {
+          const data = {
+            accountId: input.id,
+            name: t.name,
+            language: t.language,
+            category: t.category as never,
+            status: t.status as never,
+            components: t.components as never,
+            qualityScore: t.quality_score?.score ?? null,
+            metaTemplateId: t.id,
+            syncedAt: new Date(),
+          };
+          const existingId = existingByKey.get(`${t.name} ${t.language}`);
+          return existingId
+            ? db.waTemplate.update({ where: { id: existingId }, data })
+            : db.waTemplate.create({ data });
+        }),
+      );
       const all = await db.waTemplate.findMany({
         where: { accountId: input.id },
         orderBy: { name: "asc" },
@@ -1583,7 +1596,8 @@ const waRouterBase = {
           where: { id: input.phoneNumberId },
           include: { account: true },
         });
-        if (!phone?.account.systemUserToken)
+        const ctaToken = decryptSecret(phone?.account.systemUserToken);
+        if (!phone || !ctaToken)
           throw new ORPCError("BAD_REQUEST", { message: "Account sin token" });
         const interactive: Record<string, unknown> = {
           type: "cta_url",
@@ -1600,7 +1614,7 @@ const waRouterBase = {
         const res = await fetch(url, {
           method: "POST",
           headers: {
-            Authorization: `Bearer ${phone.account.systemUserToken}`,
+            Authorization: `Bearer ${ctaToken}`,
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
@@ -1629,7 +1643,8 @@ const waRouterBase = {
           where: { id: input.phoneNumberId },
           include: { account: true },
         });
-        if (!phone?.account.systemUserToken)
+        const replyToken = decryptSecret(phone?.account.systemUserToken);
+        if (!phone || !replyToken)
           throw new ORPCError("BAD_REQUEST", { message: "Account sin token" });
         const interactive: Record<string, unknown> = {
           type: "button",
@@ -1648,7 +1663,7 @@ const waRouterBase = {
         const res = await fetch(url, {
           method: "POST",
           headers: {
-            Authorization: `Bearer ${phone.account.systemUserToken}`,
+            Authorization: `Bearer ${replyToken}`,
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
@@ -1895,40 +1910,44 @@ const waRouterBase = {
     .handler(async ({ context, input }) => {
       const remote = await listAccountFlows(input.accountId);
       const now = new Date();
-      let upserted = 0;
-      for (const f of remote) {
-        const existing = await db.waSavedFlow.findUnique({ where: { flowId: f.id } });
-        const meta = {
-          metaStatus: f.status ?? null,
-          metaCategories: f.categories ?? [],
-          metaHealth: f.health?.can_send_message ?? null,
-          metaSyncedAt: now,
-        };
-        if (existing) {
-          await db.waSavedFlow.update({
-            where: { flowId: f.id },
-            data: {
-              ...meta,
-              accountId: existing.accountId ?? input.accountId,
-              // Refresh display name from Meta unless user already customized
-              name: existing.name === existing.flowId ? f.name : existing.name,
-            },
-          });
-        } else {
-          await db.waSavedFlow.create({
-            data: {
-              accountId: input.accountId,
-              name: f.name ?? f.id,
-              flowId: f.id,
-              defaultBody: `Completa el formulario "${f.name ?? f.id}"`,
-              defaultCta: "Iniciar",
-              ...meta,
-              createdByUserId: context.user.id,
-            },
-          });
-        }
-        upserted++;
-      }
+      // Batch existing rows for all remote flow ids in one query.
+      const existingRows = await db.waSavedFlow.findMany({
+        where: { flowId: { in: remote.map((f) => f.id) } },
+      });
+      const existingById = new Map(existingRows.map((r) => [r.flowId, r]));
+      await Promise.all(
+        remote.map((f) => {
+          const existing = existingById.get(f.id);
+          const meta = {
+            metaStatus: f.status ?? null,
+            metaCategories: f.categories ?? [],
+            metaHealth: f.health?.can_send_message ?? null,
+            metaSyncedAt: now,
+          };
+          return existing
+            ? db.waSavedFlow.update({
+                where: { flowId: f.id },
+                data: {
+                  ...meta,
+                  accountId: existing.accountId ?? input.accountId,
+                  // Refresh display name unless user customized it.
+                  name: existing.name === existing.flowId ? f.name : existing.name,
+                },
+              })
+            : db.waSavedFlow.create({
+                data: {
+                  accountId: input.accountId,
+                  name: f.name ?? f.id,
+                  flowId: f.id,
+                  defaultBody: `Completa el formulario "${f.name ?? f.id}"`,
+                  defaultCta: "Iniciar",
+                  ...meta,
+                  createdByUserId: context.user.id,
+                },
+              });
+        }),
+      );
+      const upserted = remote.length;
       const flows = await db.waSavedFlow.findMany({
         where: { archived: false },
         orderBy: { name: "asc" },

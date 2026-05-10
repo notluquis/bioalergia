@@ -2,6 +2,7 @@ import { db } from "@finanzas/db";
 import { Hono } from "hono";
 import { timingSafeEqual } from "node:crypto";
 import { logWarn } from "../lib/logger.ts";
+import { decryptSecret } from "../lib/secret-cipher.ts";
 import { processWebhookPayload, verifyMetaSignature } from "../modules/wa-cloud/webhook-handler.ts";
 
 function timingSafeStringEq(a: string, b: string): boolean {
@@ -30,9 +31,10 @@ waCloudWebhookRoutes.get("/whatsapp", async (c) => {
     where: { active: true, webhookVerifyToken: { not: null } },
     select: { webhookVerifyToken: true },
   });
-  const ok = accounts.some(
-    (a) => a.webhookVerifyToken && timingSafeStringEq(a.webhookVerifyToken, token),
-  );
+  const ok = accounts.some((a) => {
+    const decrypted = decryptSecret(a.webhookVerifyToken);
+    return decrypted ? timingSafeStringEq(decrypted, token) : false;
+  });
   if (!ok) return c.text("Token mismatch", 403);
   return c.text(challenge, 200);
 });
@@ -49,7 +51,8 @@ waCloudWebhookRoutes.post("/whatsapp", async (c) => {
     select: { appSecret: true },
   });
   for (const a of accounts) {
-    if (a.appSecret && verifyMetaSignature(rawBody, sig, a.appSecret)) {
+    const sec = decryptSecret(a.appSecret);
+    if (sec && verifyMetaSignature(rawBody, sig, sec)) {
       signatureValid = true;
       break;
     }

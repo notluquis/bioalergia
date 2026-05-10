@@ -1,5 +1,4 @@
-import { db } from "@finanzas/db";
-import { getAccountForPhoneNumber, graphGet, graphPost } from "./_http.ts";
+import { getAccountForPhoneNumber, graphGet, graphPost, loadAccount } from "./_http.ts";
 
 export async function getPhoneHealth(phoneNumberId: number) {
   const phone = await getAccountForPhoneNumber(phoneNumberId);
@@ -49,7 +48,7 @@ export async function setTwoStepPin(phoneNumberId: number, pin: string) {
 }
 
 export async function listAccountPhoneNumbers(accountId: number) {
-  const account = await db.waBusinessAccount.findUnique({ where: { id: accountId } });
+  const account = await loadAccount(accountId);
   if (!account?.systemUserToken) throw new Error("Account sin token");
   type PhoneApi = {
     id: string;
