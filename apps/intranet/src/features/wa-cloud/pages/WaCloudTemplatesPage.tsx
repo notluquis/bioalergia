@@ -1,12 +1,14 @@
 import { Button, Card, Chip, Modal, Spinner, Table } from "@heroui/react";
-import { Plus, Trash2, X } from "lucide-react";
+import { BookOpen, Plus, Trash2, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { SelectInput, TextAreaInput, TextInput } from "@/features/outreach/components/FormField";
 import { toast } from "@/lib/toast-interceptor";
 import {
   useAccounts,
+  useCloneTemplateFromLibrary,
   useCreateTemplate,
   useDeleteTemplate,
+  useTemplateLibrary,
   useTemplates,
 } from "../hooks/useWaCloud";
 
@@ -28,6 +30,7 @@ export function WaCloudTemplatesPage() {
   const tpl = useTemplates();
   const del = useDeleteTemplate();
   const [createOpen, setCreateOpen] = useState(false);
+  const [libraryOpen, setLibraryOpen] = useState(false);
   const [confirmDel, setConfirmDel] = useState<{
     id: number;
     accountId: number;
@@ -44,7 +47,11 @@ export function WaCloudTemplatesPage() {
 
   return (
     <div className="space-y-4 p-6">
-      <div className="flex justify-end">
+      <div className="flex justify-end gap-2">
+        <Button variant="outline" onPress={() => setLibraryOpen(true)}>
+          <BookOpen size={14} />
+          Catálogo Meta
+        </Button>
         <Button onPress={() => setCreateOpen(true)}>
           <Plus size={14} />
           Nueva plantilla
@@ -113,6 +120,7 @@ export function WaCloudTemplatesPage() {
       </Card>
 
       <CreateTemplateModal isOpen={createOpen} onClose={() => setCreateOpen(false)} />
+      <LibraryModal isOpen={libraryOpen} onClose={() => setLibraryOpen(false)} />
 
       <Modal>
         <Modal.Backdrop
@@ -306,6 +314,179 @@ function CreateTemplateModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
               <Button onPress={submit} isPending={create.isPending}>
                 <Plus size={14} />
                 Crear y enviar a revisión
+              </Button>
+            </Modal.Footer>
+          </Modal.Dialog>
+        </Modal.Container>
+      </Modal.Backdrop>
+    </Modal>
+  );
+}
+
+function LibraryModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+  const accounts = useAccounts();
+  const [accountId, setAccountId] = useState("");
+  const [search, setSearch] = useState("");
+  const [language, setLanguage] = useState("");
+  const [category, setCategory] = useState("");
+
+  useEffect(() => {
+    if (!accountId && accounts.data?.accounts[0]) {
+      setAccountId(String(accounts.data.accounts[0].id));
+    }
+  }, [accounts.data, accountId]);
+
+  const numericAccountId = accountId ? Number.parseInt(accountId, 10) : undefined;
+  const lib = useTemplateLibrary(
+    numericAccountId
+      ? {
+          accountId: numericAccountId,
+          search: search.trim() || undefined,
+          language: language || undefined,
+          category: category || undefined,
+        }
+      : undefined,
+  );
+  const clone = useCloneTemplateFromLibrary();
+
+  const accountOptions = (accounts.data?.accounts ?? []).map((a) => ({
+    value: String(a.id),
+    label: a.displayName ?? a.wabaId,
+  }));
+
+  const handleClone = (template: { name: string; language: string; category: string }) => {
+    if (!numericAccountId) return;
+    const validCategory = ["MARKETING", "UTILITY", "AUTHENTICATION"].includes(
+      template.category.toUpperCase(),
+    )
+      ? (template.category.toUpperCase() as "MARKETING" | "UTILITY" | "AUTHENTICATION")
+      : "UTILITY";
+    clone.mutate(
+      {
+        accountId: numericAccountId,
+        libraryTemplateName: template.name,
+        language: template.language,
+        category: validCategory,
+      },
+      {
+        onSuccess: () => {
+          toast.success(`Clonada "${template.name}". Aprobada al instante por Meta.`);
+        },
+        onError: (e) => toast.error(`Clone falló: ${String(e)}`),
+      },
+    );
+  };
+
+  return (
+    <Modal>
+      <Modal.Backdrop
+        isOpen={isOpen}
+        onOpenChange={(o) => !o && onClose()}
+        isDismissable
+        className="bg-black/40 backdrop-blur-[2px]"
+      >
+        <Modal.Container placement="center">
+          <Modal.Dialog className="relative w-full max-w-3xl rounded-[28px] bg-background p-6 shadow-2xl">
+            <Modal.Header className="mb-4">
+              <Modal.Heading className="font-bold text-primary text-xl">
+                <BookOpen size={20} className="mr-2 inline" />
+                Catálogo Meta de plantillas
+              </Modal.Heading>
+              <p className="text-default-500 text-xs">
+                Plantillas pre-aprobadas por Meta. Clonarlas evita el delay de approval.
+              </p>
+            </Modal.Header>
+            <Modal.Body className="max-h-[70vh] space-y-3 overflow-y-auto">
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-4">
+                <SelectInput
+                  label="Cuenta"
+                  value={accountId}
+                  onValueChange={setAccountId}
+                  options={accountOptions}
+                />
+                <SelectInput
+                  label="Categoría"
+                  value={category}
+                  onValueChange={setCategory}
+                  options={[
+                    { value: "", label: "Todas" },
+                    ...CATEGORY_OPTIONS,
+                  ]}
+                />
+                <SelectInput
+                  label="Idioma"
+                  value={language}
+                  onValueChange={setLanguage}
+                  options={[{ value: "", label: "Todos" }, ...LANG_OPTIONS]}
+                />
+                <TextInput
+                  label="Buscar"
+                  value={search}
+                  onValueChange={setSearch}
+                  placeholder="appointment…"
+                />
+              </div>
+              {lib.isLoading ? (
+                <div className="flex justify-center py-12">
+                  <Spinner />
+                </div>
+              ) : (lib.data?.templates ?? []).length === 0 ? (
+                <p className="py-12 text-center text-default-500 text-sm">
+                  Sin resultados. Cambia los filtros o quita la búsqueda.
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {(lib.data?.templates ?? []).map((t) => (
+                    <div
+                      key={t.id}
+                      className="flex items-start gap-3 rounded-lg border border-default-200 bg-content1 p-3"
+                    >
+                      <div className="min-w-0 flex-1 space-y-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="truncate font-medium text-sm">{t.name}</p>
+                          <Chip size="sm" variant="soft" color="default">
+                            <Chip.Label>{t.language}</Chip.Label>
+                          </Chip>
+                          <Chip size="sm" variant="soft" color="accent">
+                            <Chip.Label>{t.category}</Chip.Label>
+                          </Chip>
+                          {t.topic && (
+                            <Chip size="sm" variant="soft" color="default">
+                              <Chip.Label>{t.topic}</Chip.Label>
+                            </Chip>
+                          )}
+                        </div>
+                        {t.body && (
+                          <p className="line-clamp-2 text-default-600 text-xs whitespace-pre-wrap">
+                            {t.body}
+                          </p>
+                        )}
+                        {t.use_case && (
+                          <p className="text-default-400 text-[10px]">{t.use_case}</p>
+                        )}
+                      </div>
+                      <Button
+                        size="sm"
+                        onPress={() =>
+                          handleClone({
+                            name: t.name,
+                            language: t.language,
+                            category: t.category,
+                          })
+                        }
+                        isPending={clone.isPending}
+                      >
+                        Clonar
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Modal.Body>
+            <Modal.Footer className="mt-4 flex justify-end">
+              <Button variant="outline" onPress={onClose}>
+                <X size={14} />
+                Cerrar
               </Button>
             </Modal.Footer>
           </Modal.Dialog>

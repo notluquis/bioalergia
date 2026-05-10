@@ -115,14 +115,39 @@ export function useConversation(id: number | undefined) {
   });
 }
 
+// Template library (Meta-curated catalog) + clone mutation. The list is
+// per-account + filters; clone refetches the local templates list so the
+// new entry appears immediately.
+export function useTemplateLibrary(
+  input: Parameters<typeof waCloudORPCClient.listTemplateLibrary>[0] | undefined,
+) {
+  return useQuery({
+    queryKey: [...KEY, "template-library", input],
+    enabled: Boolean(input?.accountId),
+    queryFn: () => waCloudORPCClient.listTemplateLibrary(input!),
+    staleTime: 5 * 60_000,
+  });
+}
+
+export function useCloneTemplateFromLibrary() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (
+      input: Parameters<typeof waCloudORPCClient.cloneTemplateFromLibrary>[0],
+    ) => waCloudORPCClient.cloneTemplateFromLibrary(input),
+    onSuccess: (_, vars) => {
+      void qc.invalidateQueries({ queryKey: [...KEY, "templates", vars.accountId] });
+    },
+  });
+}
+
 // Conversational automation (ice breakers + commands + welcome flag).
 // Read-only fetch + write mutation. Cache key per phone.
 export function useConversationalAutomation(phoneNumberId: number | undefined) {
   return useQuery({
     queryKey: [...KEY, "conversational-automation", phoneNumberId],
     enabled: Boolean(phoneNumberId),
-    queryFn: () =>
-      waCloudORPCClient.getConversationalAutomation({ phoneNumberId: phoneNumberId! }),
+    queryFn: () => waCloudORPCClient.getConversationalAutomation({ phoneNumberId: phoneNumberId! }),
     staleTime: 60_000,
   });
 }
@@ -130,9 +155,8 @@ export function useConversationalAutomation(phoneNumberId: number | undefined) {
 export function useUpdateConversationalAutomation() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (
-      input: Parameters<typeof waCloudORPCClient.updateConversationalAutomation>[0],
-    ) => waCloudORPCClient.updateConversationalAutomation(input),
+    mutationFn: (input: Parameters<typeof waCloudORPCClient.updateConversationalAutomation>[0]) =>
+      waCloudORPCClient.updateConversationalAutomation(input),
     onSuccess: (_, vars) => {
       void qc.invalidateQueries({
         queryKey: [...KEY, "conversational-automation", vars.phoneNumberId],

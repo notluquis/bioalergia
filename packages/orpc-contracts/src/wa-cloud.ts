@@ -1011,6 +1011,53 @@ export const phoneHealthResponseSchema = z.object({
     .nullish(),
 });
 
+// Template library (Meta 2026): pre-curated templates that can be cloned
+// without going through approval review. listTemplateLibrary fetches the
+// catalog; cloneTemplateFromLibrary copies a chosen entry into the WABA.
+export const libraryTemplateSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  language: z.string(),
+  category: z.string(),
+  topic: z.string().nullish(),
+  industry: z.array(z.string()).nullish(),
+  use_case: z.string().nullish(),
+  body: z.string().nullish(),
+  header: z.string().nullish(),
+  footer: z.string().nullish(),
+  buttons: z
+    .array(z.object({ type: z.string(), text: z.string(), url: z.string().nullish() }))
+    .nullish(),
+  parameter_format: z.string().nullish(),
+});
+
+export const listTemplateLibraryInputSchema = z.object({
+  accountId: z.number().int().positive(),
+  category: z.string().optional(),
+  topic: z.string().optional(),
+  industry: z.string().optional(),
+  language: z.string().optional(),
+  search: z.string().optional(),
+});
+
+export const listTemplateLibraryResponseSchema = z.object({
+  templates: z.array(libraryTemplateSchema),
+});
+
+export const cloneTemplateFromLibraryInputSchema = z.object({
+  accountId: z.number().int().positive(),
+  libraryTemplateName: z.string().min(1),
+  newName: z.string().min(1).max(512).optional(),
+  language: z.string().min(2),
+  category: z.enum(["MARKETING", "UTILITY", "AUTHENTICATION"]),
+});
+
+export const cloneTemplateFromLibraryResponseSchema = z.object({
+  id: z.string(),
+  status: z.string(),
+  category: z.string(),
+});
+
 // Conversational automation (Meta 2026): ice breakers + commands +
 // welcome-message toggle. Configured per phone, rendered natively in the
 // patient's WhatsApp client.
@@ -1368,6 +1415,25 @@ export const waCloudContract = {
     .route({ method: "POST", path: "/phones/health", tags: ["WA Cloud"] })
     .input(waPhoneIdInput)
     .output(phoneHealthResponseSchema),
+
+  // Template library: list + clone
+  listTemplateLibrary: oc
+    .route({
+      method: "POST",
+      path: "/templates/library/list",
+      tags: ["WA Cloud"],
+    })
+    .input(listTemplateLibraryInputSchema)
+    .output(listTemplateLibraryResponseSchema),
+
+  cloneTemplateFromLibrary: oc
+    .route({
+      method: "POST",
+      path: "/templates/library/clone",
+      tags: ["WA Cloud"],
+    })
+    .input(cloneTemplateFromLibraryInputSchema)
+    .output(cloneTemplateFromLibraryResponseSchema),
 
   // Conversational automation (ice breakers + commands + welcome flag)
   getConversationalAutomation: oc

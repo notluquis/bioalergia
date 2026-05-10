@@ -62,7 +62,11 @@ import {
   searchMessagesInputSchema,
   searchMessagesResponseSchema,
   markReadInputSchema,
+  cloneTemplateFromLibraryInputSchema,
+  cloneTemplateFromLibraryResponseSchema,
   conversationalAutomationSchema,
+  listTemplateLibraryInputSchema,
+  listTemplateLibraryResponseSchema,
   phoneHealthResponseSchema,
   phoneQualitySummaryInputSchema,
   phoneQualitySummaryResponseSchema,
@@ -98,6 +102,7 @@ import { configureSuperjson } from "../lib/superjson-config.ts";
 import { emitWaEvent } from "../modules/wa-cloud/events.ts";
 import {
   blockUsers,
+  cloneTemplateFromLibrary,
   createTemplate,
   deleteTemplate,
   editTextMessage,
@@ -105,6 +110,7 @@ import {
   getConversationAnalytics,
   getConversationalAutomation,
   getPhoneHealth,
+  listTemplateLibrary,
   updateConversationalAutomation,
   listAccountFlows,
   listAccountPhoneNumbers,
@@ -1141,6 +1147,64 @@ const waRouterBase = {
         });
       } catch (err) {
         logError("[wa-cloud.createTemplate] persist failed", { err });
+      }
+      return r;
+    }),
+
+  // Template library (Meta-curated catalog, no approval review)
+  listTemplateLibrary: readWa
+    .route({ method: "POST", path: "/templates/library/list", tags: ["WA Cloud"] })
+    .input(listTemplateLibraryInputSchema)
+    .output(listTemplateLibraryResponseSchema)
+    .handler(async ({ input }) => {
+      const templates = await listTemplateLibrary(input.accountId, {
+        category: input.category,
+        topic: input.topic,
+        industry: input.industry,
+        language: input.language,
+        search: input.search,
+      });
+      return { templates };
+    }),
+
+  cloneTemplateFromLibrary: createWa
+    .route({ method: "POST", path: "/templates/library/clone", tags: ["WA Cloud"] })
+    .input(cloneTemplateFromLibraryInputSchema)
+    .output(cloneTemplateFromLibraryResponseSchema)
+    .handler(async ({ input }) => {
+      const r = await cloneTemplateFromLibrary({
+        accountId: input.accountId,
+        libraryTemplateName: input.libraryTemplateName,
+        newName: input.newName,
+        language: input.language,
+        category: input.category,
+      });
+      // Persist locally so it appears in the templates list immediately.
+      try {
+        await db.waTemplate.upsert({
+          where: {
+            accountId_name_language: {
+              accountId: input.accountId,
+              name: input.newName ?? input.libraryTemplateName,
+              language: input.language,
+            },
+          },
+          create: {
+            accountId: input.accountId,
+            metaTemplateId: r.id,
+            name: input.newName ?? input.libraryTemplateName,
+            language: input.language,
+            category: input.category,
+            status: r.status as "PENDING" | "APPROVED" | "REJECTED" | "DISABLED" | "PAUSED",
+            components: [] as never,
+          },
+          update: {
+            metaTemplateId: r.id,
+            status: r.status as "PENDING" | "APPROVED" | "REJECTED" | "DISABLED" | "PAUSED",
+          },
+        });
+      } catch (err) {
+        logError("[wa-cloud.cloneTemplateFromLibrary] persist failed", { err });
       }
       return r;
     }),

@@ -19,7 +19,7 @@ export function ConversationalAutomationCard() {
   const accounts = useAccounts();
   const allPhones =
     (accounts.data?.accounts ?? []).flatMap((a) =>
-      a.phoneNumbers.map((p) => ({ id: p.id, label: `${p.label ?? p.displayPhoneNumber}` })),
+      a.phoneNumbers.map((p) => ({ id: p.id, label: `${p.label ?? p.displayPhoneNumber}` }))
     ) ?? [];
   const [phoneId, setPhoneId] = useState("");
   useEffect(() => {
@@ -96,7 +96,7 @@ export function ConversationalAutomationCard() {
       {
         onSuccess: () => toast.success("Configuración enviada a Meta"),
         onError: (e) => toast.error(`Error Meta: ${String(e)}`),
-      },
+      }
     );
   };
 
