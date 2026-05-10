@@ -341,7 +341,8 @@ const authORPCRouterBase = {
       }
 
       const { verifyMfaToken } = await import("../services/mfa.ts");
-      const isValid = await verifyMfaToken(input.token, user.mfaSecret);
+      const { decryptSecret } = await import("../lib/secret-cipher.ts");
+      const isValid = await verifyMfaToken(input.token, decryptSecret(user.mfaSecret) ?? "");
 
       if (!isValid) {
         authError("UNAUTHORIZED", "Código incorrecto");
@@ -625,7 +626,8 @@ const authORPCRouterBase = {
       }
 
       const { verifyMfaToken } = await import("../services/mfa.ts");
-      const isValid = await verifyMfaToken(input.token, user.mfaSecret);
+      const { decryptSecret } = await import("../lib/secret-cipher.ts");
+      const isValid = await verifyMfaToken(input.token, decryptSecret(user.mfaSecret) ?? "");
       if (!isValid) {
         authError("BAD_REQUEST", "Código incorrecto");
       }
@@ -652,9 +654,13 @@ const authORPCRouterBase = {
       const { generateMfaSecret } = await import("../services/mfa.ts");
       const { qrCodeUrl, secret } = await generateMfaSecret(session.email);
 
+      // mfaSecret is sensitive (allows OTP forgery if leaked) — encrypt
+      // at rest with the same WA_SECRET_KEY/rotation infrastructure
+      // used for Meta secrets. Verify path decrypts before TOTP check.
+      const { encryptSecret } = await import("../lib/secret-cipher.ts");
       await db.user.update({
         where: { id: session.id },
-        data: { mfaEnabled: false, mfaSecret: secret },
+        data: { mfaEnabled: false, mfaSecret: encryptSecret(secret) },
       });
 
       return {

@@ -1,9 +1,11 @@
 // apps/api/src/app.ts
 import { Hono } from "hono";
+import { bodyLimit } from "hono/body-limit";
 import { cors } from "hono/cors";
 import { csrf } from "hono/csrf";
 import { HTTPException } from "hono/http-exception";
 import { secureHeaders } from "hono/secure-headers";
+import { timeout } from "hono/timeout";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 import { rateLimiter } from "hono-rate-limiter";
 import { getSessionUser, hasPermission } from "./auth.ts";
@@ -254,6 +256,24 @@ const webhookRateLimiter = rateLimiter({
   skip: (c) => c.req.method === "OPTIONS",
 });
 app.use("/api/webhooks/*", webhookRateLimiter);
+
+// Body size cap on webhook ingress: Meta payloads top out near 100KB,
+// OneDrive validation tokens are small. 1 MB is a safe ceiling that
+// blocks DoS amplification (an attacker firing 100 MB JSON to keep our
+// JSON.parse busy) without rejecting any legitimate payload.
+app.use(
+  "/api/webhooks/*",
+  bodyLimit({
+    maxSize: 1 * 1024 * 1024,
+    onError: (c) => c.text("Payload too large", 413),
+  }),
+);
+
+// Hard request timeout: anything that takes longer than 30s is almost
+// certainly a runaway query / external API hang. Webhooks excluded —
+// they fire-and-forget downstream work after the 200.
+app.use("/api/orpc/*", timeout(30_000));
+app.use("/api/wa-cloud/*", timeout(30_000));
 
 // All endpoints except the compatibility surfaces below
 // are now exclusively served via oRPC at /api/orpc/{endpoint}/rpc/*

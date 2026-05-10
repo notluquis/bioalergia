@@ -7,6 +7,7 @@
 
 import { randomBytes } from "node:crypto";
 import { db } from "@finanzas/db";
+import { decryptSecret, encryptSecret } from "./secret-cipher.ts";
 
 const SECRET_KEY = "system.tokenSecret";
 let cachedSecret: string | null = null;
@@ -31,24 +32,29 @@ export async function getOrCreateTokenSecret(): Promise<string> {
     return cachedSecret;
   }
 
-  // Try to get from database
+  // Try to get from database. Stored value may be plaintext (legacy)
+  // or `enc:v1:`/`enc:v2:` encrypted; decryptSecret handles both
+  // transparently. Encrypting the session signing key at rest is
+  // critical: a DB dump exposing it would let an attacker mint valid
+  // PASETO tokens for any user without hitting the login flow.
   const existing = await db.setting.findFirst({
     where: { key: SECRET_KEY },
   });
 
   if (existing?.value) {
-    cachedSecret = existing.value;
-    return cachedSecret;
+    const plain = decryptSecret(existing.value);
+    if (plain) {
+      cachedSecret = plain;
+      return cachedSecret;
+    }
   }
 
-  // Generate new secret (32 bytes = 64 hex chars)
+  // Generate new secret (32 bytes = 64 hex chars), persist encrypted.
   const newSecret = randomBytes(32).toString("hex");
-
-  // Store in database
   await db.setting.upsert({
     where: { key: SECRET_KEY },
-    update: { value: newSecret },
-    create: { key: SECRET_KEY, value: newSecret },
+    update: { value: encryptSecret(newSecret) },
+    create: { key: SECRET_KEY, value: encryptSecret(newSecret) },
   });
 
   console.log("🔐 Generated new token signing secret");

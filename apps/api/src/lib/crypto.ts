@@ -1,10 +1,12 @@
 import argon2 from "argon2";
 
-// 2026 Standard Configuration for Argon2
+// 2026 Standard Configuration for Argon2id (OWASP ASVS 5.0).
+// Bumped to m=64MB/t=3 (OWASP 2026 floor). argon2.needsRehash() flags
+// legacy hashes for transparent re-encryption on next successful verify.
 const ARGON2_OPTIONS = {
   type: argon2.argon2id,
-  memoryCost: 19456, // ~19 MB
-  timeCost: 2,
+  memoryCost: 65536, // 64 MB
+  timeCost: 3,
   parallelism: 1,
 };
 
