@@ -651,6 +651,29 @@ const waRouterBase = {
         });
         components.push({ type: "carousel", cards });
       }
+      // LIMITED_TIME_OFFER countdown (Meta 2026): inserts the expiration
+      // timestamp into the offer component so the patient sees the live
+      // timer in the chat bubble.
+      if (input.ltoExpirationMs) {
+        components.push({
+          type: "limited_time_offer",
+          parameters: [
+            {
+              type: "limited_time_offer",
+              limited_time_offer: { expiration_time_ms: input.ltoExpirationMs },
+            },
+          ],
+        });
+      }
+      // COPY_CODE button (Meta 2026): one-tap copy to clipboard.
+      if (input.copyCodeButton) {
+        components.push({
+          type: "button",
+          sub_type: "copy_code",
+          index: input.copyCodeButton.index,
+          parameters: [{ type: "coupon_code", coupon_code: input.copyCodeButton.value }],
+        });
+      }
       const apiResp = await sendTemplateMessage({
         phoneNumberId: input.phoneNumberId,
         toE164: conv.contact.phoneE164,

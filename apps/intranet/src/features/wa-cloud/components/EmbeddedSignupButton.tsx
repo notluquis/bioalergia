@@ -23,7 +23,7 @@ declare global {
           authResponse?: { code?: string; accessToken?: string };
           status?: string;
         }) => void,
-        opts?: Record<string, unknown>,
+        opts?: Record<string, unknown>
       ) => void;
     };
     fbAsyncInit?: () => void;
@@ -120,7 +120,7 @@ export function EmbeddedSignupButton() {
           response_type: "code",
           override_default_response_type: true,
           extras: { feature: "whatsapp_embedded_signup", version: 2 },
-        },
+        }
       );
     } catch (e) {
       toast.error(String(e));

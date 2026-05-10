@@ -14,7 +14,7 @@ export function PhoneMigrationCard() {
     a.phoneNumbers.map((p) => ({
       id: p.id,
       label: `${p.label ?? p.displayPhoneNumber} (${a.displayName ?? a.wabaId})`,
-    })),
+    }))
   );
   const [phoneId, setPhoneId] = useState("");
   const [method, setMethod] = useState<"SMS" | "VOICE">("SMS");
@@ -34,7 +34,7 @@ export function PhoneMigrationCard() {
       {
         onSuccess: () => toast.success(`Código enviado vía ${method}. Revisa el teléfono físico.`),
         onError: (e) => toast.error(`Meta: ${String(e)}`),
-      },
+      }
     );
   };
 
@@ -55,7 +55,7 @@ export function PhoneMigrationCard() {
           setCode("");
         },
         onError: (e) => toast.error(`Verify falló: ${String(e)}`),
-      },
+      }
     );
   };
 

@@ -18,7 +18,7 @@ import {
   TextComposer,
 } from "./ConversationParts";
 import { QualityBadge } from "./QualityBadge";
-import { type CarouselCardState, TemplateComposer } from "./TemplateComposer";
+import { type CarouselCardState, type CopyCodeState, TemplateComposer } from "./TemplateComposer";
 import { dayLabel, initialsOf, type MessageStatus } from "./_shared";
 import { useQualityAlerts } from "../hooks/useQualityAlerts";
 import {
@@ -84,6 +84,12 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
   const [tplVars, setTplVars] = useState<string[]>([]);
   // Carousel template state — array of cards with image + per-card body vars
   const [tplCards, setTplCards] = useState<CarouselCardState[]>([]);
+  // LTO + COPY_CODE per-template state. Detected from selected template's
+  // components (see useEffect below); operator fills the values at send time.
+  const [tplLtoExpiration, setTplLtoExpiration] = useState<string>("");
+  const [tplCopyCode, setTplCopyCode] = useState<CopyCodeState>(null);
+  const [hasLto, setHasLto] = useState(false);
+  const [copyCodeButtonIndex, setCopyCodeButtonIndex] = useState<number | null>(null);
   // Optimistic outbound messages keyed by client id, removed when refetch
   // brings the real message back.
   type Pending = {
@@ -144,14 +150,20 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
     if (!tplKey) {
       setTplVars([]);
       setTplCards([]);
+      setHasLto(false);
+      setCopyCodeButtonIndex(null);
+      setTplLtoExpiration("");
+      setTplCopyCode(null);
       return;
     }
     const tpl = templates.data?.templates.find((t) => `${t.id}|${t.name}|${t.language}` === tplKey);
     if (!tpl) return;
+    type TplBtn = { type?: string };
     type TplComp = {
       type: string;
       text?: string;
       cards?: Array<{ components?: Array<{ type: string; text?: string }> }>;
+      buttons?: TplBtn[];
     };
     const components = tpl.components as Array<TplComp>;
     const tplBody = components.find((c) => c.type === "BODY" || c.type === "body");
@@ -177,6 +189,24 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
     } else {
       setTplCards([]);
     }
+
+    // LIMITED_TIME_OFFER detection
+    const lto = components.some(
+      (c) => c.type === "LIMITED_TIME_OFFER" || c.type === "limited_time_offer",
+    );
+    setHasLto(lto);
+    setTplLtoExpiration("");
+
+    // COPY_CODE button detection — find the index of the button in the
+    // BUTTONS component (Meta orders by buttons[] array). Only one
+    // copy_code per template is supported in our UI.
+    const buttonsComp = components.find((c) => c.type === "BUTTONS" || c.type === "buttons");
+    const copyIdx =
+      buttonsComp?.buttons?.findIndex(
+        (b) => (b.type ?? "").toUpperCase() === "COPY_CODE",
+      ) ?? -1;
+    setCopyCodeButtonIndex(copyIdx >= 0 ? copyIdx : null);
+    setTplCopyCode(null);
   }, [tplKey, templates.data]);
 
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -295,6 +325,24 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
           return;
         }
       }
+      // LTO validation: if template requires expiration, must be set + future
+      let ltoMs: number | undefined;
+      if (hasLto) {
+        if (!tplLtoExpiration) {
+          toast.error("Define la fecha/hora de expiración LTO");
+          return;
+        }
+        ltoMs = new Date(tplLtoExpiration).getTime();
+        if (!Number.isFinite(ltoMs) || ltoMs < Date.now() + 60_000) {
+          toast.error("LTO debe expirar al menos 1 minuto en el futuro");
+          return;
+        }
+      }
+      // COPY_CODE validation
+      if (copyCodeButtonIndex !== null && (!tplCopyCode?.value || !tplCopyCode.value.trim())) {
+        toast.error("Ingresa el código para el botón Copiar código");
+        return;
+      }
       await sendTemplate.mutateAsync({
         conversationId,
         phoneNumberId: Number.parseInt(phoneId, 10),
@@ -308,10 +356,14 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
               bodyParams: c.bodyParams.length ? c.bodyParams : undefined,
             }))
           : undefined,
+        ...(ltoMs ? { ltoExpirationMs: ltoMs } : {}),
+        ...(tplCopyCode ? { copyCodeButton: tplCopyCode } : {}),
       });
       setTplKey("");
       setTplVars([]);
       setTplCards([]);
+      setTplLtoExpiration("");
+      setTplCopyCode(null);
       toast.success("Plantilla enviada");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Error al enviar plantilla");
@@ -601,6 +653,12 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
               setTplVars={setTplVars}
               tplCards={tplCards}
               setTplCards={setTplCards}
+              tplLtoExpiration={tplLtoExpiration}
+              setTplLtoExpiration={setTplLtoExpiration}
+              tplCopyCode={tplCopyCode}
+              setTplCopyCode={setTplCopyCode}
+              hasLto={hasLto}
+              copyCodeButtonIndex={copyCodeButtonIndex}
               phoneId={phoneId}
               isPending={sendTemplate.isPending}
               onSend={handleSendTemplate}

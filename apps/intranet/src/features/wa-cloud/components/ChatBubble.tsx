@@ -159,6 +159,8 @@ export function ChatBubble({
               payload={row.payload as Record<string, unknown> | null}
               body={row.body}
             />
+          ) : row.type === "TEMPLATE" && hasCarouselPayload(row.payload) ? (
+            <CarouselPreview payload={row.payload as Record<string, unknown>} templateName={row.templateName} />
           ) : row.type === "UNSUPPORTED" ? (
             <UnsupportedBubble payload={row.payload as Record<string, unknown> | null} />
           ) : isMedia && row.messageId ? (
@@ -206,6 +208,90 @@ export function ChatBubble({
             )}
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+// Detects whether an outbound TEMPLATE message carries a carousel payload
+// (we persist the components array on send). Inbound payloads from Meta
+// for templates also carry the same shape.
+function hasCarouselPayload(payload: unknown): boolean {
+  if (!payload || typeof payload !== "object") return false;
+  const components = (payload as { components?: unknown }).components;
+  if (!Array.isArray(components)) return false;
+  return components.some(
+    (c) => c && typeof c === "object" && (c as { type?: string }).type === "carousel",
+  );
+}
+
+// Mini horizontal carousel preview for outbound TEMPLATE messages so the
+// operator sees what cards were dispatched. Each card shows its image
+// (via Meta media id, served by the wa-cloud media proxy) + body text.
+function CarouselPreview({
+  payload,
+  templateName,
+}: {
+  payload: Record<string, unknown>;
+  templateName?: string | null;
+}) {
+  type CardComp = {
+    type?: string;
+    text?: string;
+    parameters?: Array<{
+      type?: string;
+      image?: { id?: string; link?: string };
+      text?: string;
+    }>;
+  };
+  type Card = { card_index?: number; components?: CardComp[] };
+  const components = (payload.components ?? []) as Array<{ type?: string; cards?: Card[] }>;
+  const carousel = components.find((c) => c.type === "carousel");
+  const cards = carousel?.cards ?? [];
+
+  return (
+    <div className="space-y-1">
+      <p className="text-xs text-success-foreground/80">
+        [carousel] {templateName ?? "plantilla"}
+      </p>
+      <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
+        {cards.map((card, idx) => {
+          const header = card.components?.find((c) => c.type === "header");
+          const imgParam = header?.parameters?.find((p) => p.type === "image");
+          const body = card.components?.find((c) => c.type === "body");
+          const bodyText = body?.parameters?.[0]?.text ?? "";
+          return (
+            <div
+              key={card.card_index ?? idx}
+              className="w-40 shrink-0 rounded-lg bg-content1/80 text-foreground shadow-sm"
+            >
+              {imgParam?.image?.id ? (
+                <div className="aspect-square w-full overflow-hidden rounded-t-lg bg-default-100">
+                  <img
+                    src={`/api/wa-cloud/media/by-meta-id/${imgParam.image.id}`}
+                    alt={`carousel ${idx + 1}`}
+                    className="size-full object-cover"
+                    loading="lazy"
+                    onError={(e) => {
+                      // Fallback: hide broken image (Meta media ids expire 30d)
+                      e.currentTarget.style.display = "none";
+                    }}
+                  />
+                </div>
+              ) : (
+                <div className="aspect-square w-full rounded-t-lg bg-default-100" />
+              )}
+              <div className="p-2">
+                <p className="font-medium text-[10px] text-default-500 uppercase">
+                  Tarjeta {(card.card_index ?? idx) + 1}
+                </p>
+                {bodyText && (
+                  <p className="mt-0.5 line-clamp-3 text-[11px] leading-snug">{bodyText}</p>
+                )}
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );

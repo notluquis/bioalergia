@@ -199,6 +199,17 @@ export const sendTemplateInputSchema = z.object({
   headerParams: z.array(z.string()).optional(),
   // Optional: when sending a CAROUSEL template, pass per-card payloads
   cards: z.array(carouselCardInputSchema).max(10).optional(),
+  // Meta 2026: LIMITED_TIME_OFFER expiration (ms epoch). Pair with the
+  // template's countdown component + URL button.
+  ltoExpirationMs: z.number().int().positive().optional(),
+  // Meta 2026: COPY_CODE button — value the patient gets copied with one
+  // tap. Index matches the buttons[] order in the template definition.
+  copyCodeButton: z
+    .object({
+      index: z.number().int().min(0).max(9),
+      value: z.string().min(1).max(15),
+    })
+    .optional(),
 });
 
 export const updateConversationInputSchema = z.object({

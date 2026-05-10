@@ -12,6 +12,8 @@ export type CarouselCardState = {
   bodyParams: string[];
 };
 
+export type CopyCodeState = { index: number; value: string } | null;
+
 export function TemplateComposer({
   tplKey,
   setTplKey,
@@ -20,6 +22,12 @@ export function TemplateComposer({
   setTplVars,
   tplCards,
   setTplCards,
+  tplLtoExpiration,
+  setTplLtoExpiration,
+  tplCopyCode,
+  setTplCopyCode,
+  hasLto,
+  copyCodeButtonIndex,
   phoneId,
   isPending,
   onSend,
@@ -32,6 +40,17 @@ export function TemplateComposer({
   setTplVars: React.Dispatch<React.SetStateAction<string[]>>;
   tplCards: CarouselCardState[];
   setTplCards: React.Dispatch<React.SetStateAction<CarouselCardState[]>>;
+  // Local datetime string (YYYY-MM-DDTHH:mm) for LTO expiration. Empty
+  // when the template has no LIMITED_TIME_OFFER component.
+  tplLtoExpiration: string;
+  setTplLtoExpiration: (v: string) => void;
+  // COPY_CODE button state. null when the template has no copy_code
+  // button. The index lives in the template definition; the value is
+  // operator-supplied at send time.
+  tplCopyCode: CopyCodeState;
+  setTplCopyCode: React.Dispatch<React.SetStateAction<CopyCodeState>>;
+  hasLto: boolean;
+  copyCodeButtonIndex: number | null;
   phoneId: string;
   isPending: boolean;
   onSend: () => void;
@@ -91,6 +110,36 @@ export function TemplateComposer({
               />
             ))}
           </div>
+        </div>
+      )}
+      {hasLto && (
+        <div className="space-y-1 rounded-lg border border-warning-200 bg-warning-50 p-3">
+          <p className="font-medium text-sm">Oferta limitada (countdown)</p>
+          <p className="text-default-600 text-xs">
+            Fecha y hora de expiración. WhatsApp muestra el contador en vivo al paciente.
+          </p>
+          <input
+            type="datetime-local"
+            value={tplLtoExpiration}
+            onChange={(e) => setTplLtoExpiration(e.currentTarget.value)}
+            className="w-full rounded-md border border-default-200 bg-content1 px-3 py-1.5 text-sm"
+          />
+        </div>
+      )}
+      {copyCodeButtonIndex !== null && (
+        <div className="space-y-1 rounded-lg border border-accent-200 bg-accent-50 p-3">
+          <p className="font-medium text-sm">Botón Copiar código</p>
+          <p className="text-default-600 text-xs">
+            Valor que el paciente copia con un tap (max 15 chars).
+          </p>
+          <TextInput
+            label="Código"
+            value={tplCopyCode?.value ?? ""}
+            onValueChange={(v) =>
+              setTplCopyCode({ index: copyCodeButtonIndex, value: v.slice(0, 15) })
+            }
+            placeholder="CLINICA20"
+          />
         </div>
       )}
       <div className="flex justify-end">
