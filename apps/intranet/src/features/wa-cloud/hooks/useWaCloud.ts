@@ -115,6 +115,29 @@ export function useConversation(id: number | undefined) {
   });
 }
 
+// Upload a sample header image/video/document for template approval.
+// Returns the Meta resumable upload handle (h:... ) which the operator
+// pastes into the createTemplate components header.example field.
+export async function uploadTemplateHeaderSample(
+  file: File,
+  phoneNumberId: number,
+): Promise<{ handle: string; filename: string; size: number; mimeType: string | null }> {
+  const form = new FormData();
+  form.append("file", file);
+  form.append("phoneNumberId", String(phoneNumberId));
+  const res = await fetch("/api/wa-cloud/media/template-header-sample", {
+    method: "POST",
+    body: form,
+    credentials: "include",
+    headers: csrfHeaders(),
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(`Upload falló (${res.status}): ${text.slice(0, 200)}`);
+  }
+  return res.json();
+}
+
 // Phone migration between WABAs (request OTP + verify).
 export function useRequestPhoneCode() {
   return useMutation({

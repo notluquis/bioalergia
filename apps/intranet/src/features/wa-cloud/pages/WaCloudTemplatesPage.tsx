@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { SelectInput, TextAreaInput, TextInput } from "@/features/outreach/components/FormField";
 import { toast } from "@/lib/toast-interceptor";
 import {
+  uploadTemplateHeaderSample,
   useAccounts,
   useCloneTemplateFromLibrary,
   useCreateTemplate,
@@ -180,7 +181,13 @@ function CreateTemplateModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
   const [name, setName] = useState("");
   const [language, setLanguage] = useState("es");
   const [category, setCategory] = useState<"UTILITY" | "MARKETING" | "AUTHENTICATION">("UTILITY");
+  const [headerKind, setHeaderKind] = useState<"NONE" | "TEXT" | "IMAGE" | "VIDEO" | "DOCUMENT">(
+    "NONE",
+  );
   const [headerText, setHeaderText] = useState("");
+  const [headerHandle, setHeaderHandle] = useState("");
+  const [headerFilename, setHeaderFilename] = useState("");
+  const [headerUploading, setHeaderUploading] = useState(false);
   const [bodyText, setBodyText] = useState("");
   const [footerText, setFooterText] = useState("");
 
@@ -190,11 +197,38 @@ function CreateTemplateModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
       setName("");
       setLanguage("es");
       setCategory("UTILITY");
+      setHeaderKind("NONE");
       setHeaderText("");
+      setHeaderHandle("");
+      setHeaderFilename("");
       setBodyText("");
       setFooterText("");
     }
   }, [isOpen]);
+
+  // Sample header media upload — Meta requires a sample for IMAGE/VIDEO/
+  // DOCUMENT headers during template approval. Operator picks a phone
+  // number for the upload (resumable upload runs against any phone in
+  // the account); the resulting handle goes into header.example.
+  const onHeaderFile = async (file: File) => {
+    const acc = accounts.data?.accounts.find((a) => String(a.id) === accountId);
+    const phoneId = acc?.phoneNumbers[0]?.id;
+    if (!phoneId) {
+      toast.error("Selecciona la cuenta y asegúrate que tenga un número activo");
+      return;
+    }
+    setHeaderUploading(true);
+    try {
+      const r = await uploadTemplateHeaderSample(file, phoneId);
+      setHeaderHandle(r.handle);
+      setHeaderFilename(r.filename);
+      toast.success(`Sample subida (${r.filename})`);
+    } catch (e) {
+      toast.error(`Upload sample falló: ${String(e)}`);
+    } finally {
+      setHeaderUploading(false);
+    }
+  };
 
   const accountOptions = [
     { value: "", label: "Selecciona cuenta WABA" },
@@ -218,8 +252,18 @@ function CreateTemplateModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
       return;
     }
     const components: Array<Record<string, unknown>> = [];
-    if (headerText.trim()) {
+    if (headerKind === "TEXT" && headerText.trim()) {
       components.push({ type: "HEADER", format: "TEXT", text: headerText.trim() });
+    } else if (headerKind === "IMAGE" || headerKind === "VIDEO" || headerKind === "DOCUMENT") {
+      if (!headerHandle) {
+        toast.error(`Sube una sample de ${headerKind} antes de crear`);
+        return;
+      }
+      components.push({
+        type: "HEADER",
+        format: headerKind,
+        example: { header_handle: [headerHandle] },
+      });
     }
     components.push({ type: "BODY", text: bodyText.trim() });
     if (footerText.trim()) {
@@ -286,12 +330,57 @@ function CreateTemplateModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
                 onValueChange={(v) => setCategory(v as "UTILITY" | "MARKETING" | "AUTHENTICATION")}
                 options={CATEGORY_OPTIONS}
               />
-              <TextInput
-                label="Encabezado (opcional, máx 60)"
-                value={headerText}
-                onValueChange={setHeaderText}
-                placeholder="Recordatorio de cita"
+              <SelectInput
+                label="Tipo de encabezado"
+                value={headerKind}
+                onValueChange={(v) =>
+                  setHeaderKind(v as "NONE" | "TEXT" | "IMAGE" | "VIDEO" | "DOCUMENT")
+                }
+                options={[
+                  { value: "NONE", label: "Sin encabezado" },
+                  { value: "TEXT", label: "Texto" },
+                  { value: "IMAGE", label: "Imagen" },
+                  { value: "VIDEO", label: "Video" },
+                  { value: "DOCUMENT", label: "Documento" },
+                ]}
               />
+              {headerKind === "TEXT" && (
+                <TextInput
+                  label="Encabezado (máx 60)"
+                  value={headerText}
+                  onValueChange={setHeaderText}
+                  placeholder="Recordatorio de cita"
+                />
+              )}
+              {(headerKind === "IMAGE" || headerKind === "VIDEO" || headerKind === "DOCUMENT") && (
+                <div className="space-y-1 rounded-lg border border-default-200 bg-content2 p-3">
+                  <p className="font-medium text-sm">Sample {headerKind.toLowerCase()}</p>
+                  <p className="text-default-500 text-xs">
+                    Meta requiere una muestra del medio para aprobar la plantilla.
+                  </p>
+                  <input
+                    type="file"
+                    accept={
+                      headerKind === "IMAGE"
+                        ? "image/jpeg,image/png"
+                        : headerKind === "VIDEO"
+                          ? "video/mp4,video/3gpp"
+                          : "application/pdf"
+                    }
+                    disabled={headerUploading || !accountId}
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (f) void onHeaderFile(f);
+                    }}
+                    className="block w-full text-xs"
+                  />
+                  {headerHandle && (
+                    <p className="font-mono text-[10px] text-default-500">
+                      handle subido: {headerFilename}
+                    </p>
+                  )}
+                </div>
+              )}
               <TextAreaInput
                 label="Body (obligatorio, máx 1024)"
                 value={bodyText}

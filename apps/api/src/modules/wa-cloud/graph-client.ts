@@ -32,6 +32,7 @@ export {
 export {
   type WaMediaUploadResult,
   downloadMediaUrl,
+  markMessageDelivered,
   markMessageRead,
   uploadMedia,
   uploadProfilePictureHandle,

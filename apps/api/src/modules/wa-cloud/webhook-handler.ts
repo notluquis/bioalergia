@@ -1,5 +1,6 @@
 import { db } from "@finanzas/db";
 import { createHmac, timingSafeEqual } from "node:crypto";
+import { markMessageDelivered } from "./graph/media.ts";
 import { emitWaEvent } from "./events.ts";
 import { logEvent, logWarn } from "../../lib/logger.ts";
 import { normalizeToE164 } from "./phone.ts";
@@ -824,6 +825,14 @@ export async function processWebhookPayload(payload: MetaWebhookPayload): Promis
               },
               data: { lastMessageAt: ts },
             });
+
+            // Fire-and-forget delivered confirmation back to Meta so the
+            // patient sees double-gray ticks immediately (Meta's auto
+            // delivery tracking can lag a few seconds). Skip reactions
+            // and system messages (Meta doesn't accept delivered for them).
+            if (m.type !== "reaction" && m.type !== "system") {
+              markMessageDelivered(phoneRow.id, m.id).catch(() => undefined);
+            }
 
             // Push to any open SSE streams so the intranet refreshes
             // immediately instead of waiting for the next poll tick.

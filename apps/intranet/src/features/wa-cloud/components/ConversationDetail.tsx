@@ -192,7 +192,7 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
 
     // LIMITED_TIME_OFFER detection
     const lto = components.some(
-      (c) => c.type === "LIMITED_TIME_OFFER" || c.type === "limited_time_offer",
+      (c) => c.type === "LIMITED_TIME_OFFER" || c.type === "limited_time_offer"
     );
     setHasLto(lto);
     setTplLtoExpiration("");
@@ -202,9 +202,7 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
     // copy_code per template is supported in our UI.
     const buttonsComp = components.find((c) => c.type === "BUTTONS" || c.type === "buttons");
     const copyIdx =
-      buttonsComp?.buttons?.findIndex(
-        (b) => (b.type ?? "").toUpperCase() === "COPY_CODE",
-      ) ?? -1;
+      buttonsComp?.buttons?.findIndex((b) => (b.type ?? "").toUpperCase() === "COPY_CODE") ?? -1;
     setCopyCodeButtonIndex(copyIdx >= 0 ? copyIdx : null);
     setTplCopyCode(null);
   }, [tplKey, templates.data]);

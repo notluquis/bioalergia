@@ -55,6 +55,30 @@ export async function markMessageRead(
   return graphPost(`/${phone.phoneNumberId}/messages`, body, token, v);
 }
 
+// Explicit delivered confirmation. Meta auto-tracks delivery on the
+// outbound side; this endpoint lets us tell Meta we have stored an
+// inbound message even before the operator opens the conversation,
+// improving end-to-end tracking + giving the patient earlier "two
+// gray ticks" feedback.
+export async function markMessageDelivered(
+  phoneNumberId: number,
+  metaMessageId: string,
+) {
+  const phone = await getAccountForPhoneNumber(phoneNumberId);
+  const v = phone.account.graphApiVersion;
+  const token = phone.account.systemUserToken!;
+  return graphPost(
+    `/${phone.phoneNumberId}/messages`,
+    {
+      messaging_product: "whatsapp",
+      status: "delivered",
+      message_id: metaMessageId,
+    },
+    token,
+    v,
+  );
+}
+
 export async function downloadMediaUrl(mediaId: string, accountId: number) {
   const account = await loadAccount(accountId);
   if (!account?.systemUserToken) throw new Error("Account sin token");

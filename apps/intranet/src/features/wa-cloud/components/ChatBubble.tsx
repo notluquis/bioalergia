@@ -160,7 +160,10 @@ export function ChatBubble({
               body={row.body}
             />
           ) : row.type === "TEMPLATE" && hasCarouselPayload(row.payload) ? (
-            <CarouselPreview payload={row.payload as Record<string, unknown>} templateName={row.templateName} />
+            <CarouselPreview
+              payload={row.payload as Record<string, unknown>}
+              templateName={row.templateName}
+            />
           ) : row.type === "UNSUPPORTED" ? (
             <UnsupportedBubble payload={row.payload as Record<string, unknown> | null} />
           ) : isMedia && row.messageId ? (
@@ -221,7 +224,7 @@ function hasCarouselPayload(payload: unknown): boolean {
   const components = (payload as { components?: unknown }).components;
   if (!Array.isArray(components)) return false;
   return components.some(
-    (c) => c && typeof c === "object" && (c as { type?: string }).type === "carousel",
+    (c) => c && typeof c === "object" && (c as { type?: string }).type === "carousel"
   );
 }
 
@@ -251,9 +254,7 @@ function CarouselPreview({
 
   return (
     <div className="space-y-1">
-      <p className="text-xs text-success-foreground/80">
-        [carousel] {templateName ?? "plantilla"}
-      </p>
+      <p className="text-xs text-success-foreground/80">[carousel] {templateName ?? "plantilla"}</p>
       <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
         {cards.map((card, idx) => {
           const header = card.components?.find((c) => c.type === "header");

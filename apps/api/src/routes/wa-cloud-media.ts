@@ -128,6 +128,33 @@ waCloudMediaRoutes.post("/profile-picture", async (c) => {
   }
 });
 
+// Resumable upload that returns a Meta media handle (h:...). Used for
+// template create's sample header media (image/video/document) so Meta
+// can review the visual during template approval. Same upload mechanic
+// as the profile-picture handle endpoint, just any phoneNumberId.
+waCloudMediaRoutes.post("/template-header-sample", async (c) => {
+  const form = await c.req.formData();
+  const file = form.get("file");
+  const phoneNumberIdRaw = form.get("phoneNumberId");
+  if (!(file instanceof Blob)) return c.text("Missing file", 400);
+  const phoneNumberId = Number.parseInt(String(phoneNumberIdRaw ?? ""), 10);
+  if (!Number.isFinite(phoneNumberId)) return c.text("Missing phoneNumberId", 400);
+  const auth = await requireWaPhone(c, phoneNumberId, "create");
+  if (!auth.ok) return c.text(auth.msg, auth.status);
+  const filename = (file as File).name ?? "header-sample";
+  // Meta limits: image 5MB, video 16MB, document 100MB.
+  const MAX = 100 * 1024 * 1024;
+  if (file.size > MAX) return c.text("File too large", 413);
+  try {
+    const handle = await uploadProfilePictureHandle(phoneNumberId, file, filename);
+    return c.json({ handle, filename, size: file.size, mimeType: file.type || null });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    logWarn("[wa-cloud.template-header-sample] upload failed", { error: msg });
+    return c.text(msg, 502);
+  }
+});
+
 waCloudMediaRoutes.post("/upload", async (c) => {
   const form = await c.req.formData();
   const file = form.get("file");
