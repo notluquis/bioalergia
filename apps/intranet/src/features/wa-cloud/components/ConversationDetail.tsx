@@ -665,4 +665,3 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
     </>
   );
 }
-

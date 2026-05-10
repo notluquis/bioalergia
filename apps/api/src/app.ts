@@ -2,6 +2,7 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { HTTPException } from "hono/http-exception";
+import { secureHeaders } from "hono/secure-headers";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 import { rateLimiter } from "hono-rate-limiter";
 import { getSessionUser, hasPermission } from "./auth.ts";
@@ -90,6 +91,26 @@ configureSuperjson();
 
 export const app = new Hono();
 
+// Standard security headers (CSP set separately below for Vite/Cloudflare)
+app.use(
+  "*",
+  secureHeaders({
+    contentSecurityPolicy: undefined, // we set CSP manually below
+    strictTransportSecurity:
+      process.env.NODE_ENV === "production" ? "max-age=31536000; includeSubDomains" : false,
+    xFrameOptions: "DENY",
+    xContentTypeOptions: "nosniff",
+    referrerPolicy: "strict-origin-when-cross-origin",
+    permissionsPolicy: { camera: [], geolocation: [], microphone: ["self"] },
+    crossOriginOpenerPolicy: "same-origin",
+    crossOriginResourcePolicy: "same-site",
+    xPermittedCrossDomainPolicies: "none",
+    originAgentCluster: "?1",
+    xDownloadOptions: "noopen",
+    xDnsPrefetchControl: "off",
+  }),
+);
+
 // Security headers and CSP for Cloudflare + Vite
 app.use("*", async (c, next) => {
   await next();
@@ -100,18 +121,26 @@ app.use("*", async (c, next) => {
     c.res.headers.set("Content-Type", "application/json; charset=utf-8");
   }
 
-  // Content Security Policy - Allow Cloudflare + Vite assets
+  // Content Security Policy - Allow Cloudflare + Vite assets. unsafe-eval
+  // only kept in dev for Vite HMR; production build does not need it.
+  const isProd = process.env.NODE_ENV === "production";
+  const scriptSrc = isProd
+    ? "script-src 'self' 'unsafe-inline' https://cdn.cloudflare.com https://static.cloudflareinsights.com https://challenges.cloudflare.com"
+    : "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.cloudflare.com https://static.cloudflareinsights.com https://challenges.cloudflare.com";
   const csp = [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.cloudflare.com https://static.cloudflareinsights.com https://challenges.cloudflare.com",
+    scriptSrc,
     "script-src-elem 'self' 'unsafe-inline' https://cdn.cloudflare.com https://static.cloudflareinsights.com https://challenges.cloudflare.com",
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: https:",
+    "media-src 'self' blob:",
     "font-src 'self' data:",
     "connect-src 'self' https://api.cloudflare.com",
     "worker-src 'self' blob:",
     "manifest-src 'self'",
     "frame-ancestors 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
   ].join("; ");
 
   c.res.headers.set("Content-Security-Policy", csp);
@@ -128,32 +157,41 @@ app.use("*", async (c, next) => {
   await normalizeErrorResponse(c);
 });
 
-// CORS for frontend (same-origin in prod, localhost in dev)
+// CORS for frontend (same-origin in prod, localhost in dev). With
+// credentials:true the browser refuses '*'; we always echo back the exact
+// origin or null. Production REQUIRES CORS_ORIGIN — wildcards there would
+// allow CSRF since cookies travel with credentialed requests.
+const allowedProdOrigins = (process.env.CORS_ORIGIN ?? "")
+  .split(",")
+  .map((s) => s.trim())
+  .filter(Boolean);
+if (process.env.NODE_ENV === "production" && allowedProdOrigins.length === 0) {
+  // Loud warning so the operator notices missing CORS config in prod logs.
+  // Cross-origin browser requests will be rejected until CORS_ORIGIN is set
+  // (comma-separated list of full origins, e.g. "https://intranet.bioalergia.cl").
+  // eslint-disable-next-line no-console
+  console.warn(
+    "[security] CORS_ORIGIN is empty in production — all cross-origin browser requests will be rejected. Set CORS_ORIGIN env to your intranet origin.",
+  );
+}
 app.use(
   "/api/*",
   cors({
     origin: (origin) => {
-      // No origin = same-origin request (always allowed)
-      if (!origin) {
-        return "*";
-      }
+      // No origin header = same-origin / curl / server-to-server. Hono
+      // returns no ACAO header when callback returns null/empty for null
+      // origin, which is what we want (no CORS check applies).
+      if (!origin) return "";
 
-      // Explicit CORS_ORIGIN env var (production)
-      if (process.env.CORS_ORIGIN && origin === process.env.CORS_ORIGIN) {
+      // Explicit allow-list (comma-separated) for production
+      if (allowedProdOrigins.includes(origin)) return origin;
+
+      // Development: localhost only
+      if (process.env.NODE_ENV !== "production" && /^https?:\/\/localhost(:\d+)?$/.test(origin)) {
         return origin;
       }
 
-      // Development: allow localhost
-      if (process.env.NODE_ENV !== "production" && origin.includes("localhost")) {
-        return origin;
-      }
-
-      // Production without CORS_ORIGIN: accept any (Railway same-domain deployment)
-      if (process.env.NODE_ENV === "production" && !process.env.CORS_ORIGIN) {
-        return origin;
-      }
-
-      // Reject
+      // Reject all other cross-origin requests
       return null;
     },
     credentials: true,
@@ -179,6 +217,19 @@ const authRateLimiter = rateLimiter({
 
 // Apply rate limiting to sensitive routes
 app.use("/api/auth/*", authRateLimiter);
+
+// Webhook ingress rate limit — Meta retries up to ~3x per minute per event
+// per WABA, so ~120/min is a generous ceiling. Caps abusive floods that
+// could DoS the DB by inserting WaWebhookLog rows for invalid signatures.
+const webhookRateLimiter = rateLimiter({
+  windowMs: 60 * 1000,
+  limit: 120,
+  standardHeaders: "draft-6",
+  keyGenerator: (c) =>
+    c.req.header("x-forwarded-for") || c.req.header("x-real-ip") || "anonymous",
+  skip: (c) => c.req.method === "OPTIONS",
+});
+app.use("/api/webhooks/*", webhookRateLimiter);
 
 // All endpoints except the compatibility surfaces below
 // are now exclusively served via oRPC at /api/orpc/{endpoint}/rpc/*

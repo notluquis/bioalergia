@@ -1,6 +1,6 @@
 import { db } from "@finanzas/db";
-import { Hono } from "hono";
-import { getSessionUser } from "../auth.ts";
+import { type Context, Hono } from "hono";
+import { getSessionUser, hasPermission } from "../auth.ts";
 import { logWarn } from "../lib/logger.ts";
 import {
   downloadMediaUrl,
@@ -11,9 +11,31 @@ import {
 
 export const waCloudMediaRoutes = new Hono();
 
+// Centralized auth check for any operation tied to a phoneNumberId. Verifies
+// the session user holds the requested action on WaBusinessAccount.
+async function requireWaPhone(
+  c: Context,
+  phoneNumberId: number,
+  action: "read" | "create" | "update" | "delete",
+) {
+  const session = await getSessionUser(c);
+  if (!session) return { ok: false as const, status: 401 as const, msg: "Unauthorized" };
+  const ok = await hasPermission(session, action, "WaBusinessAccount");
+  if (!ok) return { ok: false as const, status: 403 as const, msg: "Forbidden" };
+  const phone = await db.waPhoneNumber.findUnique({
+    where: { id: phoneNumberId },
+    select: { id: true, accountId: true },
+  });
+  if (!phone) return { ok: false as const, status: 404 as const, msg: "Phone not found" };
+  return { ok: true as const, session, phone };
+}
+
 waCloudMediaRoutes.get("/conversations/:id/export", async (c) => {
   const session = await getSessionUser(c);
   if (!session) return c.text("Unauthorized", 401);
+  if (!(await hasPermission(session, "read", "WaBusinessAccount"))) {
+    return c.text("Forbidden", 403);
+  }
   const id = Number.parseInt(c.req.param("id"), 10);
   if (!Number.isFinite(id)) return c.text("Bad id", 400);
   const format = (c.req.query("format") ?? "txt").toLowerCase();
@@ -79,17 +101,20 @@ waCloudMediaRoutes.get("/conversations/:id/export", async (c) => {
  * field). Auth: PASETO session.
  */
 waCloudMediaRoutes.post("/profile-picture", async (c) => {
-  const session = await getSessionUser(c);
-  if (!session) return c.text("Unauthorized", 401);
   const form = await c.req.formData();
   const file = form.get("file");
   const phoneNumberIdRaw = form.get("phoneNumberId");
   if (!(file instanceof Blob)) return c.text("Missing file", 400);
   const phoneNumberId = Number.parseInt(String(phoneNumberIdRaw ?? ""), 10);
   if (!Number.isFinite(phoneNumberId)) return c.text("Missing phoneNumberId", 400);
+  const auth = await requireWaPhone(c, phoneNumberId, "update");
+  if (!auth.ok) return c.text(auth.msg, auth.status);
   // WhatsApp profile picture: square JPEG/PNG, 192x192 to 640x640, max 5MB
   const MAX = 5 * 1024 * 1024;
   if (file.size > MAX) return c.text("File too large (max 5MB)", 413);
+  if (!/^image\/(jpeg|png)$/.test(file.type || "")) {
+    return c.text("Only JPEG/PNG allowed", 415);
+  }
   const filename = (file as File).name ?? "avatar.jpg";
   try {
     const handle = await uploadProfilePictureHandle(phoneNumberId, file, filename);
@@ -103,14 +128,14 @@ waCloudMediaRoutes.post("/profile-picture", async (c) => {
 });
 
 waCloudMediaRoutes.post("/upload", async (c) => {
-  const session = await getSessionUser(c);
-  if (!session) return c.text("Unauthorized", 401);
   const form = await c.req.formData();
   const file = form.get("file");
   const phoneNumberIdRaw = form.get("phoneNumberId");
   if (!(file instanceof Blob)) return c.text("Missing file", 400);
   const phoneNumberId = Number.parseInt(String(phoneNumberIdRaw ?? ""), 10);
   if (!Number.isFinite(phoneNumberId)) return c.text("Missing phoneNumberId", 400);
+  const auth = await requireWaPhone(c, phoneNumberId, "create");
+  if (!auth.ok) return c.text(auth.msg, auth.status);
   const filename = (file as File).name ?? "upload";
   const mimeType = file.type || "application/octet-stream";
   // Meta size limits per type (image 5MB, document 100MB, video 16MB, audio 16MB).
@@ -138,6 +163,9 @@ waCloudMediaRoutes.post("/upload", async (c) => {
 waCloudMediaRoutes.get("/:messageId", async (c) => {
   const session = await getSessionUser(c);
   if (!session) return c.text("Unauthorized", 401);
+  if (!(await hasPermission(session, "read", "WaBusinessAccount"))) {
+    return c.text("Forbidden", 403);
+  }
 
   const messageIdRaw = c.req.param("messageId");
   const messageId = Number.parseInt(messageIdRaw, 10);
@@ -209,9 +237,12 @@ waCloudMediaRoutes.get("/:messageId", async (c) => {
       else if (lowerName.endsWith(".mp3")) contentType = "audio/mpeg";
     }
     const wantsDownload = c.req.query("download") === "1";
+    // Strip quote and any control char from caption-derived filename to
+    // prevent header injection. RFC 6266 also lets us drop CR/LF.
+    const safeFilename = filename.replace(/[\x00-\x1f\x7f"\\]/g, "_").slice(0, 200);
     const disposition = wantsDownload
-      ? `attachment; filename="${filename.replace(/"/g, "")}"`
-      : `inline; filename="${filename.replace(/"/g, "")}"`;
+      ? `attachment; filename="${safeFilename}"`
+      : `inline; filename="${safeFilename}"`;
     return new Response(upstream.body, {
       status: 200,
       headers: {

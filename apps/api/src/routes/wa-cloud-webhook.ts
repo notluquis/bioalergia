@@ -1,7 +1,19 @@
 import { db } from "@finanzas/db";
 import { Hono } from "hono";
+import { timingSafeEqual } from "node:crypto";
 import { logWarn } from "../lib/logger.ts";
 import { processWebhookPayload, verifyMetaSignature } from "../modules/wa-cloud/webhook-handler.ts";
+
+function timingSafeStringEq(a: string, b: string): boolean {
+  const ab = Buffer.from(a);
+  const bb = Buffer.from(b);
+  if (ab.length !== bb.length) return false;
+  try {
+    return timingSafeEqual(ab, bb);
+  } catch {
+    return false;
+  }
+}
 
 export const waCloudWebhookRoutes = new Hono();
 
@@ -18,7 +30,9 @@ waCloudWebhookRoutes.get("/whatsapp", async (c) => {
     where: { active: true, webhookVerifyToken: { not: null } },
     select: { webhookVerifyToken: true },
   });
-  const ok = accounts.some((a) => a.webhookVerifyToken === token);
+  const ok = accounts.some(
+    (a) => a.webhookVerifyToken && timingSafeStringEq(a.webhookVerifyToken, token),
+  );
   if (!ok) return c.text("Token mismatch", 403);
   return c.text(challenge, 200);
 });

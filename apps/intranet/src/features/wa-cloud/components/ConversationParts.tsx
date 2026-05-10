@@ -407,7 +407,12 @@ export function LabelStrip({
         </Popover.Trigger>
         <Popover.Content className="rounded-lg border border-default-200 bg-content1 p-2 shadow-md">
           <Popover.Dialog className="flex items-center gap-2 p-0">
-            <TextInput label="" value={draft} onValueChange={setDraft} placeholder="nueva etiqueta" />
+            <TextInput
+              label=""
+              value={draft}
+              onValueChange={setDraft}
+              placeholder="nueva etiqueta"
+            />
             <Button size="sm" onPress={add} isDisabled={!draft.trim()}>
               <Check size={12} />
               Agregar
@@ -490,9 +495,24 @@ export function ContactsSendModal({
               </Modal.Heading>
             </Modal.Header>
             <Modal.Body className="max-h-[70vh] space-y-3 overflow-y-auto">
-              <TextInput label="Nombre completo" value={name} onValueChange={setName} placeholder="Dra. Andrea Pulgar" />
-              <TextInput label="Teléfono" value={phone} onValueChange={setPhone} placeholder="+56912345678" />
-              <TextInput label="Email" value={email} onValueChange={setEmail} placeholder="contacto@bioalergia.cl" />
+              <TextInput
+                label="Nombre completo"
+                value={name}
+                onValueChange={setName}
+                placeholder="Dra. Andrea Pulgar"
+              />
+              <TextInput
+                label="Teléfono"
+                value={phone}
+                onValueChange={setPhone}
+                placeholder="+56912345678"
+              />
+              <TextInput
+                label="Email"
+                value={email}
+                onValueChange={setEmail}
+                placeholder="contacto@bioalergia.cl"
+              />
             </Modal.Body>
             <Modal.Footer className="mt-4 flex justify-end gap-2">
               <Button variant="outline" onPress={onClose}>
@@ -567,7 +587,9 @@ export function EditTextModal({
         <Modal.Container placement="center">
           <Modal.Dialog className="relative w-full max-w-md rounded-[28px] bg-background p-6 shadow-2xl">
             <Modal.Header className="mb-4">
-              <Modal.Heading className="font-bold text-primary text-xl">Editar mensaje</Modal.Heading>
+              <Modal.Heading className="font-bold text-primary text-xl">
+                Editar mensaje
+              </Modal.Heading>
               <p className="text-default-500 text-xs">
                 Solo dentro de los primeros 15 minutos. Cloud API limitará si excede.
               </p>
@@ -683,7 +705,9 @@ export function ScheduleSendModal({
         <Modal.Container placement="center">
           <Modal.Dialog className="relative w-full max-w-md rounded-[28px] bg-background p-6 shadow-2xl">
             <Modal.Header className="mb-4">
-              <Modal.Heading className="font-bold text-primary text-xl">Programar mensaje</Modal.Heading>
+              <Modal.Heading className="font-bold text-primary text-xl">
+                Programar mensaje
+              </Modal.Heading>
               <p className="text-default-500 text-xs">
                 El runner intenta enviar cada 30s. Recuerda: la ventana 24h debe estar abierta al
                 momento del envío para texto libre.
@@ -884,7 +908,13 @@ function VoiceRecorderButton({
     return (
       <div className="flex items-center gap-1 rounded-full border border-default-200 bg-content2 px-2 py-1">
         <audio src={preview.url} controls className="h-8" />
-        <Button size="sm" variant="outline" isIconOnly aria-label="Descartar nota de voz" onPress={cancel}>
+        <Button
+          size="sm"
+          variant="outline"
+          isIconOnly
+          aria-label="Descartar nota de voz"
+          onPress={cancel}
+        >
           <X size={14} />
         </Button>
         <Button size="sm" isIconOnly aria-label="Enviar nota de voz" onPress={send}>
@@ -1003,7 +1033,12 @@ export function MediaGalleryModal({
                           rel="noopener noreferrer"
                           className="relative flex aspect-square items-center justify-center overflow-hidden rounded-lg border border-default-200 bg-black"
                         >
-                          <video src={url} className="size-full object-cover" muted preload="metadata">
+                          <video
+                            src={url}
+                            className="size-full object-cover"
+                            muted
+                            preload="metadata"
+                          >
                             <track kind="captions" />
                           </video>
                           <span className="absolute inset-0 flex items-center justify-center">
@@ -1339,7 +1374,12 @@ function SnippetsButton({
                         <Pencil size={12} />
                       </Button>
                     )}
-                    <Button size="sm" isIconOnly aria-label="Enviar ahora" onPress={() => onSendSnippet(s.id)}>
+                    <Button
+                      size="sm"
+                      isIconOnly
+                      aria-label="Enviar ahora"
+                      onPress={() => onSendSnippet(s.id)}
+                    >
                       <Send size={12} />
                     </Button>
                   </div>
@@ -1526,7 +1566,12 @@ function ShortcutAutocomplete({
                 <Pencil size={12} />
               </Button>
             )}
-            <Button size="sm" isIconOnly aria-label="Enviar snippet" onPress={() => sendDirect(s.id)}>
+            <Button
+              size="sm"
+              isIconOnly
+              aria-label="Enviar snippet"
+              onPress={() => sendDirect(s.id)}
+            >
               <Send size={12} />
             </Button>
           </div>
