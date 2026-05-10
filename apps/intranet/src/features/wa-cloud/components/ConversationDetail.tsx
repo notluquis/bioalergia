@@ -161,6 +161,14 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
   const [mode, setMode] = useState<"text" | "template">("text");
   const [tplKey, setTplKey] = useState("");
   const [tplVars, setTplVars] = useState<string[]>([]);
+  // Carousel template state — array of cards with image + per-card body vars
+  type CarouselCardState = {
+    cardIndex: number;
+    imageMediaId: string | null;
+    imageFilename: string | null;
+    bodyParams: string[];
+  };
+  const [tplCards, setTplCards] = useState<CarouselCardState[]>([]);
   // Optimistic outbound messages keyed by client id, removed when refetch
   // brings the real message back.
   type Pending = {
@@ -218,15 +226,42 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
   useEffect(() => {
     if (!tplKey) {
       setTplVars([]);
+      setTplCards([]);
       return;
     }
     const tpl = templates.data?.templates.find((t) => `${t.id}|${t.name}|${t.language}` === tplKey);
     if (!tpl) return;
-    const tplBody = (tpl.components as Array<{ type: string; text?: string }>).find(
-      (c) => c.type === "BODY" || c.type === "body"
-    );
+    type TplComp = {
+      type: string;
+      text?: string;
+      cards?: Array<{ components?: Array<{ type: string; text?: string }> }>;
+    };
+    const components = tpl.components as Array<TplComp>;
+    const tplBody = components.find((c) => c.type === "BODY" || c.type === "body");
     const matches = tplBody?.text?.match(/\{\{(\d+)\}\}/g) ?? [];
     setTplVars(new Array(matches.length).fill(""));
+
+    // Carousel detection (Meta 2026): top-level component type=CAROUSEL with
+    // cards[]. Each card's BODY has its own variables.
+    const carousel = components.find((c) => c.type === "CAROUSEL" || c.type === "carousel");
+    if (carousel?.cards?.length) {
+      setTplCards(
+        carousel.cards.map((card, idx) => {
+          const cardBody = card.components?.find(
+            (c) => c.type === "BODY" || c.type === "body",
+          );
+          const cardMatches = cardBody?.text?.match(/\{\{(\d+)\}\}/g) ?? [];
+          return {
+            cardIndex: idx,
+            imageMediaId: null,
+            imageFilename: null,
+            bodyParams: new Array(cardMatches.length).fill(""),
+          };
+        }),
+      );
+    } else {
+      setTplCards([]);
+    }
   }, [tplKey, templates.data]);
 
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -335,15 +370,33 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
     const [, name, language] = tplKey.split("|");
     if (!name || !language) return;
     try {
+      // Validate carousel cards have images when applicable
+      if (tplCards.length > 0) {
+        const missingImg = tplCards.filter((c) => !c.imageMediaId);
+        if (missingImg.length > 0) {
+          toast.error(
+            `Sube imagen para tarjeta(s): ${missingImg.map((c) => c.cardIndex + 1).join(", ")}`,
+          );
+          return;
+        }
+      }
       await sendTemplate.mutateAsync({
         conversationId,
         phoneNumberId: Number.parseInt(phoneId, 10),
         templateName: name,
         language,
         bodyParams: tplVars.length ? tplVars : undefined,
+        cards: tplCards.length
+          ? tplCards.map((c) => ({
+              cardIndex: c.cardIndex,
+              imageMediaId: c.imageMediaId ?? undefined,
+              bodyParams: c.bodyParams.length ? c.bodyParams : undefined,
+            }))
+          : undefined,
       });
       setTplKey("");
       setTplVars([]);
+      setTplCards([]);
       toast.success("Plantilla enviada");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Error al enviar plantilla");
@@ -630,6 +683,9 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
               tplOptions={tplOptions}
               tplVars={tplVars}
               setTplVars={setTplVars}
+              tplCards={tplCards}
+              setTplCards={setTplCards}
+              phoneId={phoneId}
               isPending={sendTemplate.isPending}
               onSend={handleSendTemplate}
               onSwitchText={c.windowOpen ? () => setMode("text") : undefined}
@@ -1081,7 +1137,7 @@ function TextComposer({
         />
         <EmojiPickerButton onSelect={insertEmoji} />
         <VoiceRecorderButton onSend={onAttachFile} isDisabled={isDisabled || attachPending} />
-        <div className="flex-1">
+        <div className="relative flex-1">
           <TextArea
             ref={ref}
             variant="secondary"
@@ -1091,12 +1147,18 @@ function TextComposer({
             placeholder={
               isDisabled
                 ? (disabledReason ?? "")
-                : "Escribe un mensaje. Enter para enviar, Shift+Enter para nueva línea."
+                : "Escribe un mensaje. Enter para enviar, Shift+Enter para nueva línea. Tip: /atajo para snippets."
             }
             disabled={isDisabled}
             rows={1}
             className="w-full resize-none rounded-2xl"
             fullWidth
+          />
+          <ShortcutAutocomplete
+            body={body}
+            setBody={setBody}
+            onSendSnippet={onSendSnippet}
+            isDisabled={isDisabled}
           />
         </div>
         <Button
@@ -1113,12 +1175,22 @@ function TextComposer({
   );
 }
 
+type CarouselCardState = {
+  cardIndex: number;
+  imageMediaId: string | null;
+  imageFilename: string | null;
+  bodyParams: string[];
+};
+
 function TemplateComposer({
   tplKey,
   setTplKey,
   tplOptions,
   tplVars,
   setTplVars,
+  tplCards,
+  setTplCards,
+  phoneId,
   isPending,
   onSend,
   onSwitchText,
@@ -1128,6 +1200,9 @@ function TemplateComposer({
   tplOptions: { value: string; label: string }[];
   tplVars: string[];
   setTplVars: React.Dispatch<React.SetStateAction<string[]>>;
+  tplCards: CarouselCardState[];
+  setTplCards: React.Dispatch<React.SetStateAction<CarouselCardState[]>>;
+  phoneId: string;
   isPending: boolean;
   onSend: () => void;
   onSwitchText?: () => void;
@@ -1167,12 +1242,114 @@ function TemplateComposer({
           ))}
         </div>
       )}
+      {tplCards.length > 0 && (
+        <div className="space-y-2 rounded-lg border border-default-200 bg-content2 p-3">
+          <p className="font-medium text-sm">
+            Tarjetas del carousel ({tplCards.length})
+          </p>
+          <div className="space-y-3">
+            {tplCards.map((card, i) => (
+              <CarouselCardEditor
+                key={i}
+                card={card}
+                phoneId={phoneId}
+                onChange={(next) =>
+                  setTplCards((arr) => {
+                    const n = [...arr];
+                    n[i] = next;
+                    return n;
+                  })
+                }
+              />
+            ))}
+          </div>
+        </div>
+      )}
       <div className="flex justify-end">
         <Button onPress={onSend} isPending={isPending} isDisabled={!tplKey}>
           <Send size={14} />
           Enviar plantilla
         </Button>
       </div>
+    </div>
+  );
+}
+
+function CarouselCardEditor({
+  card,
+  phoneId,
+  onChange,
+}: {
+  card: CarouselCardState;
+  phoneId: string;
+  onChange: (next: CarouselCardState) => void;
+}) {
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+
+  const upload = async (file: File) => {
+    if (!phoneId) {
+      toast.error("Selecciona un número primero");
+      return;
+    }
+    setUploading(true);
+    try {
+      const r = await uploadWaMedia(file, Number(phoneId));
+      onChange({ ...card, imageMediaId: r.id, imageFilename: r.filename });
+      toast.success(`Imagen lista (${r.filename})`);
+    } catch (e) {
+      toast.error(`Upload falló: ${String(e)}`);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  return (
+    <div className="rounded-md border border-default-200 bg-content1 p-2">
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <p className="font-medium text-sm">Tarjeta {card.cardIndex + 1}</p>
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/jpeg,image/png"
+          className="hidden"
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) void upload(f);
+            if (fileRef.current) fileRef.current.value = "";
+          }}
+        />
+        <Button
+          size="sm"
+          variant="outline"
+          isPending={uploading}
+          onPress={() => fileRef.current?.click()}
+        >
+          <Images size={12} />
+          {card.imageMediaId ? "Cambiar imagen" : "Subir imagen"}
+        </Button>
+      </div>
+      {card.imageMediaId && (
+        <p className="mb-2 truncate font-mono text-default-500 text-[10px]">
+          {card.imageFilename ?? "imagen"} · id:{card.imageMediaId.slice(0, 12)}…
+        </p>
+      )}
+      {card.bodyParams.length > 0 && (
+        <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+          {card.bodyParams.map((v, i) => (
+            <TextInput
+              key={i}
+              label={`Var {{${i + 1}}}`}
+              value={v}
+              onValueChange={(val) => {
+                const next = [...card.bodyParams];
+                next[i] = val;
+                onChange({ ...card, bodyParams: next });
+              }}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -2382,5 +2559,99 @@ function FlowSelectorModal({
         </Modal.Container>
       </Modal.Backdrop>
     </Modal>
+  );
+}
+
+function ShortcutAutocomplete({
+  body,
+  setBody,
+  onSendSnippet,
+  isDisabled,
+}: {
+  body: string;
+  setBody: (v: string) => void;
+  onSendSnippet: (snippetId: number) => void;
+  isDisabled: boolean;
+}) {
+  // Match the trailing "/word" pattern at end of body, where word is at least
+  // 1 char (alphanumeric/underscore). Stops on whitespace.
+  const match = body.match(/(?:^|\s)\/([\w-]+)$/);
+  const shortcut = match?.[1] ?? "";
+  const list = useSnippets(shortcut.length >= 1 ? { q: shortcut } : undefined);
+  const filtered = (list.data?.snippets ?? [])
+    .filter(
+      (s) =>
+        (s.shortcut ?? "").toLowerCase().includes(shortcut.toLowerCase()) ||
+        s.name.toLowerCase().includes(shortcut.toLowerCase()),
+    )
+    .slice(0, 5);
+
+  if (isDisabled || shortcut.length < 1 || filtered.length === 0) return null;
+
+  const replaceWith = (text: string) => {
+    // Strip the trailing "/word" then append text
+    const next = body.replace(/(?:^|\s)\/([\w-]+)$/, (_match, _w, offset: number) =>
+      offset === 0 ? text : ` ${text}`,
+    );
+    setBody(next);
+  };
+
+  const sendDirect = (id: number) => {
+    onSendSnippet(id);
+    // Clean the shortcut from input
+    setBody(body.replace(/(?:^|\s)\/([\w-]+)$/, "").trim());
+  };
+
+  return (
+    <div className="-translate-y-1 absolute bottom-full left-0 right-0 mb-1 max-h-60 overflow-y-auto rounded-xl border border-default-200 bg-content1 shadow-lg">
+      <div className="border-default-200 border-b bg-content2 px-3 py-1 text-default-500 text-[10px] uppercase">
+        Snippets · /{shortcut}
+      </div>
+      {filtered.map((s) => (
+        <div
+          key={s.id}
+          className="flex items-start gap-2 border-default-100 border-b px-3 py-2 last:border-b-0 hover:bg-default-100"
+        >
+          <Zap size={12} className="mt-0.5 shrink-0 text-warning" />
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <p className="truncate font-medium text-sm">{s.name}</p>
+              {s.shortcut && (
+                <code className="shrink-0 rounded bg-default-200 px-1 text-[10px]">
+                  {s.shortcut}
+                </code>
+              )}
+              <Chip size="sm" variant="soft" color="default">
+                <Chip.Label>{s.kind}</Chip.Label>
+              </Chip>
+            </div>
+            {s.bodyText && (
+              <p className="line-clamp-1 text-default-500 text-xs">{s.bodyText}</p>
+            )}
+          </div>
+          <div className="flex shrink-0 gap-1">
+            {s.kind === "TEXT" && s.bodyText && (
+              <Button
+                size="sm"
+                variant="outline"
+                isIconOnly
+                aria-label="Insertar texto"
+                onPress={() => replaceWith(s.bodyText!)}
+              >
+                <Pencil size={12} />
+              </Button>
+            )}
+            <Button
+              size="sm"
+              isIconOnly
+              aria-label="Enviar snippet"
+              onPress={() => sendDirect(s.id)}
+            >
+              <Send size={12} />
+            </Button>
+          </div>
+        </div>
+      ))}
+    </div>
   );
 }
