@@ -11793,6 +11793,192 @@ export class SchemaType implements SchemaDef {
                 flowId: { type: "String" }
             }
         },
+        WaSnippet: {
+            name: "WaSnippet",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                accountId: {
+                    name: "accountId",
+                    type: "Int",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("account_id") }] }] as readonly AttributeApplication[]
+                },
+                kind: {
+                    name: "kind",
+                    type: "WaSnippetKind"
+                },
+                category: {
+                    name: "category",
+                    type: "String",
+                    optional: true
+                },
+                name: {
+                    name: "name",
+                    type: "String"
+                },
+                description: {
+                    name: "description",
+                    type: "String",
+                    optional: true
+                },
+                shortcut: {
+                    name: "shortcut",
+                    type: "String",
+                    optional: true
+                },
+                bodyText: {
+                    name: "bodyText",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("body_text") }] }] as readonly AttributeApplication[]
+                },
+                ctaUrl: {
+                    name: "ctaUrl",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("cta_url") }] }] as readonly AttributeApplication[]
+                },
+                ctaButtonText: {
+                    name: "ctaButtonText",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("cta_button_text") }] }] as readonly AttributeApplication[]
+                },
+                ctaHeader: {
+                    name: "ctaHeader",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("cta_header") }] }] as readonly AttributeApplication[]
+                },
+                ctaFooter: {
+                    name: "ctaFooter",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("cta_footer") }] }] as readonly AttributeApplication[]
+                },
+                replyButtons: {
+                    name: "replyButtons",
+                    type: "Json",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("reply_buttons") }] }] as readonly AttributeApplication[]
+                },
+                replyHeader: {
+                    name: "replyHeader",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("reply_header") }] }] as readonly AttributeApplication[]
+                },
+                replyFooter: {
+                    name: "replyFooter",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("reply_footer") }] }] as readonly AttributeApplication[]
+                },
+                mediaHandle: {
+                    name: "mediaHandle",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("media_handle") }] }] as readonly AttributeApplication[]
+                },
+                mediaHandleExpiresAt: {
+                    name: "mediaHandleExpiresAt",
+                    type: "DateTime",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("media_handle_expires_at") }] }] as readonly AttributeApplication[]
+                },
+                mediaUrl: {
+                    name: "mediaUrl",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("media_url") }] }] as readonly AttributeApplication[]
+                },
+                mediaMimeType: {
+                    name: "mediaMimeType",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("media_mime_type") }] }] as readonly AttributeApplication[]
+                },
+                mediaFilename: {
+                    name: "mediaFilename",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("media_filename") }] }] as readonly AttributeApplication[]
+                },
+                mediaSize: {
+                    name: "mediaSize",
+                    type: "Int",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("media_size") }] }] as readonly AttributeApplication[]
+                },
+                mediaUploadedByPhoneNumberId: {
+                    name: "mediaUploadedByPhoneNumberId",
+                    type: "Int",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("media_uploaded_by_phone_number_id") }] }] as readonly AttributeApplication[]
+                },
+                variables: {
+                    name: "variables",
+                    type: "String",
+                    array: true,
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.array("Any", []) }] }] as readonly AttributeApplication[],
+                    default: [] as FieldDefault
+                },
+                archived: {
+                    name: "archived",
+                    type: "Boolean",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(false) }] }] as readonly AttributeApplication[],
+                    default: false as FieldDefault
+                },
+                hitCount: {
+                    name: "hitCount",
+                    type: "Int",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("hit_count") }] }] as readonly AttributeApplication[],
+                    default: 0 as FieldDefault
+                },
+                lastUsedAt: {
+                    name: "lastUsedAt",
+                    type: "DateTime",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("last_used_at") }] }] as readonly AttributeApplication[]
+                },
+                createdByUserId: {
+                    name: "createdByUserId",
+                    type: "Int",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_by_user_id") }] }] as readonly AttributeApplication[]
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@updatedAt" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                }
+            },
+            attributes: [
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("Boolean", [ExpressionUtils.field("archived"), ExpressionUtils.field("kind")]) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("category")]) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("shortcut")]) }] },
+                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read,create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
+                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("wa_snippets") }] }
+            ] as readonly AttributeApplication[],
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" }
+            }
+        },
         WaAccountEvent: {
             name: "WaAccountEvent",
             fields: {
@@ -13230,6 +13416,19 @@ export class SchemaType implements SchemaDef {
                 MARKETING: "MARKETING",
                 UTILITY: "UTILITY",
                 AUTHENTICATION: "AUTHENTICATION"
+            }
+        },
+        WaSnippetKind: {
+            name: "WaSnippetKind",
+            values: {
+                TEXT: "TEXT",
+                MEDIA_DOCUMENT: "MEDIA_DOCUMENT",
+                MEDIA_IMAGE: "MEDIA_IMAGE",
+                MEDIA_VIDEO: "MEDIA_VIDEO",
+                MEDIA_AUDIO: "MEDIA_AUDIO",
+                MEDIA_STICKER: "MEDIA_STICKER",
+                CTA_URL: "CTA_URL",
+                REPLY_BUTTONS: "REPLY_BUTTONS"
             }
         },
         WaScheduledStatus: {

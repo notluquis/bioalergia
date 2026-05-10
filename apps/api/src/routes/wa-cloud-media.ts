@@ -190,12 +190,24 @@ waCloudMediaRoutes.get("/:messageId", async (c) => {
       return c.text("Upstream error", 502);
     }
 
-    const contentType =
-      upstream.headers.get("content-type") ?? meta.mime_type ?? message.mediaMimeType ?? "application/octet-stream";
-    // Inline disposition so PDFs / images / video render directly in the
-    // browser via <iframe>, <img>, <video>. Honour ?download=1 to switch
-    // to attachment for forced downloads.
     const filename = (message as unknown as { mediaCaption?: string | null }).mediaCaption ?? `wa-${messageId}`;
+    // Pick the best MIME: prefer upstream → meta → stored → infer from filename.
+    let contentType =
+      upstream.headers.get("content-type") ?? meta.mime_type ?? message.mediaMimeType ?? "application/octet-stream";
+    // Meta sometimes serves PDFs as application/octet-stream — browsers refuse
+    // to render those in <iframe>. Override based on extension when needed.
+    const lowerName = filename.toLowerCase();
+    if (contentType === "application/octet-stream" || contentType === "binary/octet-stream") {
+      if (lowerName.endsWith(".pdf")) contentType = "application/pdf";
+      else if (lowerName.endsWith(".png")) contentType = "image/png";
+      else if (lowerName.endsWith(".jpg") || lowerName.endsWith(".jpeg"))
+        contentType = "image/jpeg";
+      else if (lowerName.endsWith(".webp")) contentType = "image/webp";
+      else if (lowerName.endsWith(".mp4")) contentType = "video/mp4";
+      else if (lowerName.endsWith(".webm")) contentType = "video/webm";
+      else if (lowerName.endsWith(".ogg")) contentType = "audio/ogg";
+      else if (lowerName.endsWith(".mp3")) contentType = "audio/mpeg";
+    }
     const wantsDownload = c.req.query("download") === "1";
     const disposition = wantsDownload
       ? `attachment; filename="${filename.replace(/"/g, "")}"`
@@ -205,7 +217,8 @@ waCloudMediaRoutes.get("/:messageId", async (c) => {
       headers: {
         "Content-Type": contentType,
         "Content-Disposition": disposition,
-        // 5 min cache: matches Meta URL TTL, avoids re-fetching on scroll-back
+        // Allow same-origin iframe embedding for the PDF viewer modal.
+        "X-Frame-Options": "SAMEORIGIN",
         "Cache-Control": "private, max-age=300",
       },
     });

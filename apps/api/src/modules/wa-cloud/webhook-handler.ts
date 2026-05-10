@@ -456,6 +456,32 @@ export async function processWebhookPayload(payload: MetaWebhookPayload): Promis
             field: FIELD,
             value: v as unknown as Record<string, unknown>,
           });
+          // Flows: keep WaSavedFlow.metaStatus in sync without polling
+          if (FIELD === "flows") {
+            const fp = v as unknown as { method?: string; flow_id?: string };
+            if (fp.flow_id) {
+              const statusMap: Record<string, string> = {
+                PUBLISHED: "PUBLISHED",
+                UNPUBLISHED: "DRAFT",
+                DEPRECATED: "DEPRECATED",
+                BLOCKED: "BLOCKED",
+                UNBLOCKED: "PUBLISHED",
+                DELETED: "DELETED",
+                THROTTLED: "THROTTLED",
+              };
+              const newStatus = fp.method ? statusMap[fp.method] ?? fp.method : null;
+              if (newStatus) {
+                await db.waSavedFlow.updateMany({
+                  where: { flowId: fp.flow_id },
+                  data: {
+                    metaStatus: newStatus,
+                    metaSyncedAt: new Date(),
+                    archived: newStatus === "DELETED",
+                  },
+                });
+              }
+            }
+          }
         } catch (err) {
           out.errors.push(`${FIELD}: ${err instanceof Error ? err.message : String(err)}`);
         }

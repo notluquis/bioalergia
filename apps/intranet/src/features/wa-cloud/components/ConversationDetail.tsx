@@ -803,7 +803,9 @@ function ChatBubble({
     <div className={`group relative flex ${wrapper}`}>
       <div
         className={`relative ${
-          isSticker ? "max-w-[12rem]" : "max-w-[min(560px,78%)] min-w-[60px]"
+          isSticker
+            ? "max-w-[12rem]"
+            : "w-fit max-w-[78%] min-w-[60px] lg:max-w-[480px]"
         }`}
       >
         {actions}
@@ -1526,9 +1528,7 @@ function ScheduleSendModal({
 }) {
   const tz = getLocalTimeZone();
   const minDt = now(tz).add({ minutes: 1 });
-  const [when, setWhen] = useState<CalendarDateTime | ZonedDateTime>(
-    minDt.add({ minutes: 4 }),
-  );
+  const [when, setWhen] = useState<CalendarDateTime | ZonedDateTime>(minDt.add({ minutes: 4 }));
   const [body, setBody] = useState(defaultBody);
 
   useEffect(() => {

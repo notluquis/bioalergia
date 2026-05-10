@@ -3486,6 +3486,61 @@ model WaSavedFlow {
   @@map("wa_saved_flows")
 }
 
+enum WaSnippetKind {
+  TEXT
+  MEDIA_DOCUMENT
+  MEDIA_IMAGE
+  MEDIA_VIDEO
+  MEDIA_AUDIO
+  MEDIA_STICKER
+  CTA_URL
+  REPLY_BUTTONS
+}
+
+model WaSnippet {
+  id                  Int            @id @default(autoincrement())
+  accountId           Int?           @map("account_id")
+  kind                WaSnippetKind
+  category            String?
+  name                String
+  description         String?
+  shortcut            String?        // e.g. "/horario" for inline insert
+  // TEXT / CTA_URL / REPLY_BUTTONS / media caption
+  bodyText            String?        @map("body_text")
+  // CTA_URL
+  ctaUrl              String?        @map("cta_url")
+  ctaButtonText       String?        @map("cta_button_text")
+  ctaHeader           String?        @map("cta_header")
+  ctaFooter           String?        @map("cta_footer")
+  // REPLY_BUTTONS — JSON array of {id, title}
+  replyButtons        Json?          @map("reply_buttons")
+  replyHeader         String?        @map("reply_header")
+  replyFooter         String?        @map("reply_footer")
+  // Media (Meta media id is account-scoped, valid 30 days)
+  mediaHandle         String?        @map("media_handle")
+  mediaHandleExpiresAt DateTime?     @map("media_handle_expires_at")
+  mediaUrl            String?        @map("media_url")
+  mediaMimeType       String?        @map("media_mime_type")
+  mediaFilename       String?        @map("media_filename")
+  mediaSize           Int?           @map("media_size")
+  mediaUploadedByPhoneNumberId Int?  @map("media_uploaded_by_phone_number_id")
+  // Variables {{1}}, {{2}}, …
+  variables           String[]       @default([])
+  archived            Boolean        @default(false)
+  hitCount            Int            @default(0) @map("hit_count")
+  lastUsedAt          DateTime?      @map("last_used_at")
+  createdByUserId     Int            @map("created_by_user_id")
+  createdAt           DateTime       @default(now()) @map("created_at")
+  updatedAt           DateTime       @default(now()) @updatedAt @map("updated_at")
+
+  @@index([archived, kind])
+  @@index([category])
+  @@index([shortcut])
+  @@deny('all', auth() == null)
+  @@allow('read,create,update,delete', auth().status == 'ACTIVE')
+  @@map("wa_snippets")
+}
+
 enum WaScheduledStatus {
   PENDING
   SENT

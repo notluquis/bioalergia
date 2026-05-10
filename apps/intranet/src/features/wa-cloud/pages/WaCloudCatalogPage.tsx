@@ -1,20 +1,7 @@
 import { Button, Card, Chip, Modal, Spinner, Table } from "@heroui/react";
-import {
-  CheckCircle2,
-  Layers,
-  List,
-  MapPin,
-  Plus,
-  RefreshCw,
-  Trash2,
-  X,
-} from "lucide-react";
+import { CheckCircle2, Layers, List, MapPin, Plus, RefreshCw, Trash2, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import {
-  SelectInput,
-  TextAreaInput,
-  TextInput,
-} from "@/features/outreach/components/FormField";
+import { SelectInput, TextAreaInput, TextInput } from "@/features/outreach/components/FormField";
 import { toast } from "@/lib/toast-interceptor";
 import {
   useAccounts,
@@ -87,17 +74,14 @@ function TabBtn({
 function LocationsTab() {
   const list = useSavedLocations();
   const archive = useArchiveSavedLocation();
-  const [editing, setEditing] = useState<
-    | null
-    | {
-        id?: number;
-        name: string;
-        latitude: string;
-        longitude: string;
-        address: string;
-        isDefault: boolean;
-      }
-  >(null);
+  const [editing, setEditing] = useState<null | {
+    id?: number;
+    name: string;
+    latitude: string;
+    longitude: string;
+    address: string;
+    isDefault: boolean;
+  }>(null);
   const items = list.data?.locations ?? [];
 
   return (
@@ -193,9 +177,7 @@ function LocationsTab() {
           </Card.Content>
         </Card>
       )}
-      {editing && (
-        <LocationEditModal target={editing} onClose={() => setEditing(null)} />
-      )}
+      {editing && <LocationEditModal target={editing} onClose={() => setEditing(null)} />}
     </div>
   );
 }
@@ -231,7 +213,7 @@ function LocationEditModal({
         setLat(p.coords.latitude.toFixed(6));
         setLng(p.coords.longitude.toFixed(6));
       },
-      () => toast.error("No se pudo obtener ubicación"),
+      () => toast.error("No se pudo obtener ubicación")
     );
   };
 
@@ -316,20 +298,17 @@ function LocationEditModal({
 function ListsTab() {
   const list = useSavedInteractiveLists();
   const archive = useArchiveSavedInteractiveList();
-  const [editing, setEditing] = useState<
-    | null
-    | {
-        id?: number;
-        name: string;
-        description: string;
-        headerText: string;
-        bodyText: string;
-        footerText: string;
-        buttonText: string;
-        sectionTitle: string;
-        rowsRaw: string;
-      }
-  >(null);
+  const [editing, setEditing] = useState<null | {
+    id?: number;
+    name: string;
+    description: string;
+    headerText: string;
+    bodyText: string;
+    footerText: string;
+    buttonText: string;
+    sectionTitle: string;
+    rowsRaw: string;
+  }>(null);
   const items = list.data?.lists ?? [];
 
   return (
@@ -384,8 +363,9 @@ function ListsTab() {
                               const rowsText = l.sections
                                 .flatMap((s) =>
                                   s.rows.map(
-                                    (r) => `${r.id}|${r.title}${r.description ? `|${r.description}` : ""}`,
-                                  ),
+                                    (r) =>
+                                      `${r.id}|${r.title}${r.description ? `|${r.description}` : ""}`
+                                  )
                                 )
                                 .join("\n");
                               setEditing({
@@ -408,9 +388,7 @@ function ListsTab() {
                           )}
                         </Table.Cell>
                         <Table.Cell>{l.buttonText}</Table.Cell>
-                        <Table.Cell>
-                          {l.sections.reduce((n, s) => n + s.rows.length, 0)}
-                        </Table.Cell>
+                        <Table.Cell>{l.sections.reduce((n, s) => n + s.rows.length, 0)}</Table.Cell>
                         <Table.Cell>{l.hitCount}×</Table.Cell>
                         <Table.Cell>
                           <Button
@@ -472,7 +450,10 @@ function ListEditModal({
       toast.error("Nombre, body y botón obligatorios");
       return;
     }
-    const lines = rowsRaw.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+    const lines = rowsRaw
+      .split(/\r?\n/)
+      .map((l) => l.trim())
+      .filter(Boolean);
     if (lines.length === 0) {
       toast.error("Agrega filas");
       return;
@@ -542,7 +523,11 @@ function ListEditModal({
               />
               <div className="grid grid-cols-2 gap-3">
                 <TextInput label="Texto botón" value={buttonText} onValueChange={setButtonText} />
-                <TextInput label="Título sección" value={sectionTitle} onValueChange={setSectionTitle} />
+                <TextInput
+                  label="Título sección"
+                  value={sectionTitle}
+                  onValueChange={setSectionTitle}
+                />
               </div>
               <TextAreaInput
                 label="Filas (id|título|descripción opcional, una por línea, máx 10)"
@@ -550,11 +535,7 @@ function ListEditModal({
                 onValueChange={setRowsRaw}
                 rows={6}
               />
-              <TextInput
-                label="Pie (opcional)"
-                value={footerText}
-                onValueChange={setFooterText}
-              />
+              <TextInput label="Pie (opcional)" value={footerText} onValueChange={setFooterText} />
             </Modal.Body>
             <Modal.Footer className="mt-4 flex justify-end gap-2">
               <Button variant="outline" onPress={onClose}>
@@ -576,22 +557,23 @@ function FlowsTab() {
   const accounts = useAccounts();
   const sync = useSyncFlows();
   const archive = useArchiveSavedFlow();
-  const [editing, setEditing] = useState<
-    | null
-    | {
-        id?: number;
-        accountId?: number;
-        name: string;
-        description: string;
-        flowId: string;
-        defaultBody: string;
-        defaultCta: string;
-      }
-  >(null);
+  const [editing, setEditing] = useState<null | {
+    id?: number;
+    accountId?: number;
+    name: string;
+    description: string;
+    flowId: string;
+    defaultBody: string;
+    defaultCta: string;
+  }>(null);
   const items = list.data?.flows ?? [];
   const accountOptions = useMemo(
-    () => (accounts.data?.accounts ?? []).map((a) => ({ value: String(a.id), label: a.displayName ?? a.wabaId })),
-    [accounts.data],
+    () =>
+      (accounts.data?.accounts ?? []).map((a) => ({
+        value: String(a.id),
+        label: a.displayName ?? a.wabaId,
+      })),
+    [accounts.data]
   );
 
   return (
@@ -762,7 +744,7 @@ function FlowEditModal({
 }) {
   const upsert = useUpsertSavedFlow();
   const [accountId, setAccountId] = useState(
-    target.accountId ? String(target.accountId) : (accountOptions[0]?.value ?? ""),
+    target.accountId ? String(target.accountId) : (accountOptions[0]?.value ?? "")
   );
   const [name, setName] = useState(target.name);
   const [description, setDescription] = useState(target.description);

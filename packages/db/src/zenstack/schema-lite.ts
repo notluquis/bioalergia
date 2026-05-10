@@ -9633,6 +9633,160 @@ export class SchemaType implements SchemaDef {
                 flowId: { type: "String" }
             }
         },
+        WaSnippet: {
+            name: "WaSnippet",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                accountId: {
+                    name: "accountId",
+                    type: "Int",
+                    optional: true
+                },
+                kind: {
+                    name: "kind",
+                    type: "WaSnippetKind"
+                },
+                category: {
+                    name: "category",
+                    type: "String",
+                    optional: true
+                },
+                name: {
+                    name: "name",
+                    type: "String"
+                },
+                description: {
+                    name: "description",
+                    type: "String",
+                    optional: true
+                },
+                shortcut: {
+                    name: "shortcut",
+                    type: "String",
+                    optional: true
+                },
+                bodyText: {
+                    name: "bodyText",
+                    type: "String",
+                    optional: true
+                },
+                ctaUrl: {
+                    name: "ctaUrl",
+                    type: "String",
+                    optional: true
+                },
+                ctaButtonText: {
+                    name: "ctaButtonText",
+                    type: "String",
+                    optional: true
+                },
+                ctaHeader: {
+                    name: "ctaHeader",
+                    type: "String",
+                    optional: true
+                },
+                ctaFooter: {
+                    name: "ctaFooter",
+                    type: "String",
+                    optional: true
+                },
+                replyButtons: {
+                    name: "replyButtons",
+                    type: "Json",
+                    optional: true
+                },
+                replyHeader: {
+                    name: "replyHeader",
+                    type: "String",
+                    optional: true
+                },
+                replyFooter: {
+                    name: "replyFooter",
+                    type: "String",
+                    optional: true
+                },
+                mediaHandle: {
+                    name: "mediaHandle",
+                    type: "String",
+                    optional: true
+                },
+                mediaHandleExpiresAt: {
+                    name: "mediaHandleExpiresAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                mediaUrl: {
+                    name: "mediaUrl",
+                    type: "String",
+                    optional: true
+                },
+                mediaMimeType: {
+                    name: "mediaMimeType",
+                    type: "String",
+                    optional: true
+                },
+                mediaFilename: {
+                    name: "mediaFilename",
+                    type: "String",
+                    optional: true
+                },
+                mediaSize: {
+                    name: "mediaSize",
+                    type: "Int",
+                    optional: true
+                },
+                mediaUploadedByPhoneNumberId: {
+                    name: "mediaUploadedByPhoneNumberId",
+                    type: "Int",
+                    optional: true
+                },
+                variables: {
+                    name: "variables",
+                    type: "String",
+                    array: true,
+                    default: [] as FieldDefault
+                },
+                archived: {
+                    name: "archived",
+                    type: "Boolean",
+                    default: false as FieldDefault
+                },
+                hitCount: {
+                    name: "hitCount",
+                    type: "Int",
+                    default: 0 as FieldDefault
+                },
+                lastUsedAt: {
+                    name: "lastUsedAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                createdByUserId: {
+                    name: "createdByUserId",
+                    type: "Int"
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now") as FieldDefault
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" }
+            }
+        },
         WaAccountEvent: {
             name: "WaAccountEvent",
             fields: {
@@ -10910,6 +11064,19 @@ export class SchemaType implements SchemaDef {
                 MARKETING: "MARKETING",
                 UTILITY: "UTILITY",
                 AUTHENTICATION: "AUTHENTICATION"
+            }
+        },
+        WaSnippetKind: {
+            name: "WaSnippetKind",
+            values: {
+                TEXT: "TEXT",
+                MEDIA_DOCUMENT: "MEDIA_DOCUMENT",
+                MEDIA_IMAGE: "MEDIA_IMAGE",
+                MEDIA_VIDEO: "MEDIA_VIDEO",
+                MEDIA_AUDIO: "MEDIA_AUDIO",
+                MEDIA_STICKER: "MEDIA_STICKER",
+                CTA_URL: "CTA_URL",
+                REPLY_BUTTONS: "REPLY_BUTTONS"
             }
         },
         WaScheduledStatus: {

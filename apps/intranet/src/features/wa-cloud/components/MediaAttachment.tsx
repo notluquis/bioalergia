@@ -342,18 +342,45 @@ function VideoLightbox({ src, onError }: { src: string; onError: () => void }) {
   );
 }
 
+const SPEED_CYCLE = [1, 1.5, 2] as const;
+type Speed = (typeof SPEED_CYCLE)[number];
+
 function AudioPlayer({ src, out, onError }: { src: string; out: boolean; onError: () => void }) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const [playing, setPlaying] = useState(false);
   const [duration, setDuration] = useState(0);
   const [current, setCurrent] = useState(0);
   const [loaded, setLoaded] = useState(false);
+  const [speed, setSpeed] = useState<Speed>(1);
+  const probedRef = useRef(false);
 
   const fmt = (s: number) => {
-    if (!Number.isFinite(s)) return "0:00";
+    if (!Number.isFinite(s) || s <= 0) return "0:00";
     const m = Math.floor(s / 60);
     const sec = Math.floor(s % 60);
     return `${m}:${sec.toString().padStart(2, "0")}`;
+  };
+
+  // Chrome bug: opus/webm audio may report duration === Infinity until you
+  // force a seek. Workaround: seek to a huge value, then back to 0.
+  const probeDuration = () => {
+    const a = audioRef.current;
+    if (!a || probedRef.current) return;
+    probedRef.current = true;
+    const onDurChange = () => {
+      if (Number.isFinite(a.duration) && a.duration > 0) {
+        setDuration(a.duration);
+        setLoaded(true);
+        a.currentTime = 0;
+        a.removeEventListener("durationchange", onDurChange);
+      }
+    };
+    a.addEventListener("durationchange", onDurChange);
+    try {
+      a.currentTime = 1e10;
+    } catch {
+      // ignore
+    }
   };
 
   const toggle = () => {
@@ -369,14 +396,24 @@ function AudioPlayer({ src, out, onError }: { src: string; out: boolean; onError
     a.currentTime = Number(e.target.value);
   };
 
+  const cycleSpeed = () => {
+    const idx = SPEED_CYCLE.indexOf(speed);
+    const next = SPEED_CYCLE[(idx + 1) % SPEED_CYCLE.length]!;
+    setSpeed(next);
+    if (audioRef.current) audioRef.current.playbackRate = next;
+  };
+
   const trackBg = out ? "bg-success-700/40" : "bg-default-300";
   const fillBg = out ? "bg-success-foreground" : "bg-success";
   const iconBg = out ? "bg-success-foreground text-success" : "bg-success text-success-foreground";
+  const speedBg = out
+    ? "bg-success-700/40 text-success-foreground hover:bg-success-700/60"
+    : "bg-default-200 text-default-700 hover:bg-default-300";
 
   const pct = duration > 0 ? (current / duration) * 100 : 0;
 
   return (
-    <div className="flex w-64 items-center gap-3 py-1">
+    <div className="flex w-64 items-center gap-2 py-1">
       <button
         type="button"
         onClick={toggle}
@@ -413,6 +450,16 @@ function AudioPlayer({ src, out, onError }: { src: string; out: boolean; onError
           {fmt(current)} / {fmt(duration)}
         </p>
       </div>
+      <button
+        type="button"
+        onClick={cycleSpeed}
+        disabled={!loaded}
+        className={`shrink-0 rounded-full px-2 py-0.5 font-mono text-[11px] tabular-nums transition disabled:opacity-50 ${speedBg}`}
+        aria-label={`Velocidad ${speed}×`}
+        title="Cambiar velocidad"
+      >
+        {speed}×
+      </button>
       <audio
         ref={audioRef}
         src={src}
@@ -421,8 +468,21 @@ function AudioPlayer({ src, out, onError }: { src: string; out: boolean; onError
         onPause={() => setPlaying(false)}
         onEnded={() => setPlaying(false)}
         onLoadedMetadata={(e) => {
-          setDuration(e.currentTarget.duration);
-          setLoaded(true);
+          const d = e.currentTarget.duration;
+          if (Number.isFinite(d) && d > 0) {
+            setDuration(d);
+            setLoaded(true);
+          } else {
+            // Trigger Chrome opus duration workaround
+            probeDuration();
+          }
+        }}
+        onDurationChange={(e) => {
+          const d = e.currentTarget.duration;
+          if (Number.isFinite(d) && d > 0) {
+            setDuration(d);
+            setLoaded(true);
+          }
         }}
         onTimeUpdate={(e) => setCurrent(e.currentTarget.currentTime)}
         onError={onError}
