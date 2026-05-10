@@ -91,6 +91,7 @@ import { getSessionUser, hasPermission } from "../auth.ts";
 import { logError } from "../lib/logger.ts";
 import { decryptSecret, encryptSecret } from "../lib/secret-cipher.ts";
 import { configureSuperjson } from "../lib/superjson-config.ts";
+import { emitWaEvent } from "../modules/wa-cloud/events.ts";
 import {
   blockUsers,
   createTemplate,

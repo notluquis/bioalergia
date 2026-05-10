@@ -1,5 +1,6 @@
 import { db } from "@finanzas/db";
 import { createHmac, timingSafeEqual } from "node:crypto";
+import { emitWaEvent } from "./events.ts";
 import { logEvent, logWarn } from "../../lib/logger.ts";
 import { normalizeToE164 } from "./phone.ts";
 
@@ -686,7 +687,7 @@ export async function processWebhookPayload(payload: MetaWebhookPayload): Promis
             const finalBody = body ?? sysBody;
             // Referral attribution for Click-to-WhatsApp ad messages
             const r = m.referral;
-            await db.waMessage.create({
+            const insertedInbound = await db.waMessage.create({
               data: {
                 conversationId: convId,
                 contactId,
@@ -774,6 +775,19 @@ export async function processWebhookPayload(payload: MetaWebhookPayload): Promis
               },
               data: { lastMessageAt: ts },
             });
+
+            // Push to any open SSE streams so the intranet refreshes
+            // immediately instead of waiting for the next poll tick.
+            emitWaEvent(convId, {
+              kind: m.type === "reaction" ? "reaction" : "message",
+              ...(m.type === "reaction"
+                ? {
+                    metaMessageId: m.reaction?.message_id ?? m.id,
+                    emoji: m.reaction?.emoji ?? "",
+                  }
+                : { messageId: insertedInbound.id, direction: "INBOUND" as const }),
+              ts: ts.getTime(),
+            } as never);
           } catch (err) {
             const msg = err instanceof Error ? err.message : String(err);
             out.errors.push(`msg ${m.id}: ${msg}`);
@@ -815,6 +829,20 @@ export async function processWebhookPayload(payload: MetaWebhookPayload): Promis
               where: { metaMessageId: s.id },
               data,
             });
+            // Find the conversation id for this message so SSE listeners
+            // can refresh just that conversation. One extra cheap lookup.
+            const owner = await db.waMessage.findUnique({
+              where: { metaMessageId: s.id },
+              select: { conversationId: true },
+            });
+            if (owner) {
+              emitWaEvent(owner.conversationId, {
+                kind: "status",
+                metaMessageId: s.id,
+                status,
+                ts: ts.getTime(),
+              });
+            }
           } catch (err) {
             const msg = err instanceof Error ? err.message : String(err);
             out.errors.push(`status ${s.id}: ${msg}`);

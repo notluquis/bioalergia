@@ -1,7 +1,34 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { waCloudORPCClient } from "../orpc";
 
 const KEY = ["wa-cloud"] as const;
+
+// Subscribe to server-sent events for one conversation. The hook owns
+// EventSource lifetime (open on mount/id change, close on cleanup) and
+// invalidates the React Query cache on each event so the UI re-renders
+// from authoritative server state instead of trying to merge partial
+// payloads. See apps/api/src/routes/wa-cloud-sse.ts for the event shapes.
+export function useConversationSse(id: number | undefined) {
+  const qc = useQueryClient();
+  useEffect(() => {
+    if (!id) return;
+    const url = `/api/wa-cloud/sse/${id}`;
+    const es = new EventSource(url, { withCredentials: true });
+    const refetch = () => {
+      void qc.invalidateQueries({ queryKey: [...KEY, "conversation", id] });
+      void qc.invalidateQueries({ queryKey: [...KEY, "conversations"] });
+    };
+    es.addEventListener("message", refetch);
+    es.addEventListener("status", refetch);
+    es.addEventListener("reaction", refetch);
+    es.addEventListener("deleted", refetch);
+    // 'open' / 'ping' / 'error' do not trigger a refetch.
+    return () => {
+      es.close();
+    };
+  }, [id, qc]);
+}
 
 export function useAccounts() {
   return useQuery({
@@ -62,16 +89,21 @@ export function useConversations(input: Parameters<typeof waCloudORPCClient.list
   return useQuery({
     queryKey: [...KEY, "conversations", input],
     queryFn: () => waCloudORPCClient.listConversations(input),
-    refetchInterval: 5000,
+    // SSE invalidates this key on every new event for any open conv.
+    // Keep a slow safety poll for newly-created convs that the user
+    // doesn't have open yet.
+    refetchInterval: 30_000,
   });
 }
 
 export function useConversation(id: number | undefined) {
+  // SSE pushes invalidations; we poll only as a slow fallback.
+  useConversationSse(id);
   return useQuery({
     queryKey: [...KEY, "conversation", id],
     enabled: Boolean(id),
     queryFn: () => waCloudORPCClient.getConversation({ id: id! }),
-    refetchInterval: 3000,
+    refetchInterval: 30_000,
   });
 }
 

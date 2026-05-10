@@ -1,6 +1,7 @@
 // apps/api/src/app.ts
 import { Hono } from "hono";
 import { cors } from "hono/cors";
+import { csrf } from "hono/csrf";
 import { HTTPException } from "hono/http-exception";
 import { secureHeaders } from "hono/secure-headers";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
@@ -82,6 +83,7 @@ import { googleCalendarWebhookRoutes } from "./routes/google-calendar-webhook.ts
 import { mercadopagoReportWebhookRoutes } from "./routes/mercadopago-report-webhook.ts";
 import { onedriveWebhookRoutes } from "./routes/onedrive-webhook.ts";
 import { waCloudMediaRoutes } from "./routes/wa-cloud-media.ts";
+import { waCloudSseRoutes } from "./routes/wa-cloud-sse.ts";
 import { waCloudWebhookRoutes } from "./routes/wa-cloud-webhook.ts";
 import { errorReply } from "./utils/error-reply.ts";
 import { normalizeErrorResponse } from "./utils/normalize-error-response.ts";
@@ -217,6 +219,21 @@ const authRateLimiter = rateLimiter({
 
 // Apply rate limiting to sensitive routes
 app.use("/api/auth/*", authRateLimiter);
+
+// CSRF: validate Origin / Sec-Fetch-Site for all state-changing API calls.
+// Defense in depth on top of SameSite=Lax cookies + the CORS allow-list.
+// Webhooks excluded (Meta / Google / OneDrive cross-site by design and
+// already authenticated via HMAC signatures).
+const csrfAllowedOrigin = (origin: string, c: import("hono").Context): boolean => {
+  // Same-origin (matches request URL) is always allowed by hono/csrf default.
+  if (allowedProdOrigins.includes(origin)) return true;
+  if (process.env.NODE_ENV !== "production") {
+    return /^https?:\/\/localhost(:\d+)?$/.test(origin);
+  }
+  return false;
+};
+app.use("/api/orpc/*", csrf({ origin: csrfAllowedOrigin }));
+app.use("/api/wa-cloud/*", csrf({ origin: csrfAllowedOrigin }));
 
 // Webhook ingress rate limit — Meta retries up to ~3x per minute per event
 // per WABA, so ~120/min is a generous ceiling. Caps abusive floods that
@@ -1887,6 +1904,7 @@ app.route("/api/webhooks/google", googleCalendarWebhookRoutes);
 app.route("/api/webhooks/onedrive", onedriveWebhookRoutes);
 app.route("/api/webhooks/meta", waCloudWebhookRoutes);
 app.route("/api/wa-cloud/media", waCloudMediaRoutes);
+app.route("/api/wa-cloud/sse", waCloudSseRoutes);
 app.route("/api/webhooks/mercadopago", mercadopagoReportWebhookRoutes);
 
 // Bearer-auth ingress for the Doctoralia scraper bot (reads/writes manual cookies).

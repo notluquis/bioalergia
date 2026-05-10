@@ -1,18 +1,30 @@
 #!/usr/bin/env tsx
-// One-shot CLI: encrypt all plaintext WaBusinessAccount secrets in-place.
-// Safe to run multiple times (idempotent — already-encrypted rows are skipped).
+// Idempotent CLI: encrypt all WaBusinessAccount secrets in-place. Doubles
+// as a key-rotation tool — values already encrypted with an older key are
+// re-encrypted with the current WA_SECRET_KEY.
 //
 // Usage:
-//   WA_SECRET_KEY=$(openssl rand -hex 32) DATABASE_URL=... pnpm tsx \
-//     apps/api/scripts/migrate-encrypt-wa-secrets.ts
+//   # First-time encryption rollout
+//   WA_SECRET_KEY=$(openssl rand -hex 32) DATABASE_URL=... \
+//     pnpm tsx apps/api/scripts/migrate-encrypt-wa-secrets.ts
 //
-// IMPORTANT: persist WA_SECRET_KEY in Railway env BEFORE running this. Once
-// encrypted, the values are unreadable without the same key. Losing the key
-// = losing access to Meta API; you would need to re-enter the secrets via
-// the Settings UI.
+//   # Key rotation: keep old key available for decrypt, set new for write
+//   WA_SECRET_KEY=$NEW_KEY \
+//   WA_SECRET_KEYS_OLD=$OLD_KEY \
+//   DATABASE_URL=... \
+//     pnpm tsx apps/api/scripts/migrate-encrypt-wa-secrets.ts
+//
+//   # After all rows show key id = fingerprint(NEW_KEY) you can drop
+//   # WA_SECRET_KEYS_OLD from the env. (Plaintext fallback is preserved
+//   # for legacy values that were never encrypted.)
+//
+// IMPORTANT: persist WA_SECRET_KEY in Railway BEFORE running. Once
+// encrypted, the values are unreadable without the same key. Losing the
+// key = losing access to Meta API; you would need to re-enter the secrets
+// via the Settings UI.
 
 import { db } from "@finanzas/db";
-import { ensureEncrypted, isEncrypted } from "../src/lib/secret-cipher.ts";
+import { ensureEncrypted, isEncrypted, keyIdOf } from "../src/lib/secret-cipher.ts";
 
 async function main() {
   if (!process.env.WA_SECRET_KEY) {
@@ -29,34 +41,33 @@ async function main() {
     },
   });
   let updated = 0;
+  const summarize = (val: string | null) => {
+    if (!val) return "null";
+    if (!isEncrypted(val)) return "plain→enc";
+    const id = keyIdOf(val);
+    return id ? `enc:v2:${id}` : "enc:v1";
+  };
   for (const a of accounts) {
     const next = {
       systemUserToken: ensureEncrypted(a.systemUserToken),
       appSecret: ensureEncrypted(a.appSecret),
       webhookVerifyToken: ensureEncrypted(a.webhookVerifyToken),
     };
+    const before = {
+      token: summarize(a.systemUserToken),
+      secret: summarize(a.appSecret),
+      verify: summarize(a.webhookVerifyToken),
+    };
+    const after = {
+      token: summarize(next.systemUserToken),
+      secret: summarize(next.appSecret),
+      verify: summarize(next.webhookVerifyToken),
+    };
     const changed =
       next.systemUserToken !== a.systemUserToken ||
       next.appSecret !== a.appSecret ||
       next.webhookVerifyToken !== a.webhookVerifyToken;
-    const status = {
-      token: a.systemUserToken
-        ? isEncrypted(a.systemUserToken)
-          ? "already-enc"
-          : "plain→enc"
-        : "null",
-      secret: a.appSecret
-        ? isEncrypted(a.appSecret)
-          ? "already-enc"
-          : "plain→enc"
-        : "null",
-      verify: a.webhookVerifyToken
-        ? isEncrypted(a.webhookVerifyToken)
-          ? "already-enc"
-          : "plain→enc"
-        : "null",
-    };
-    console.log(`account ${a.id} (waba=${a.wabaId}):`, status);
+    console.log(`account ${a.id} (waba=${a.wabaId}):`, before, "→", after);
     if (changed) {
       await db.waBusinessAccount.update({ where: { id: a.id }, data: next });
       updated++;
