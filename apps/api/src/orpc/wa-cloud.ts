@@ -4,6 +4,11 @@ import {
   blockContactInputSchema,
   businessProfileResponseSchema,
   acknowledgeAccountEventInputSchema,
+  listSnippetsInputSchema,
+  listSnippetsResponseSchema,
+  sendSnippetInputSchema,
+  snippetSchema,
+  upsertSnippetInputSchema,
   allScheduledItemSchema,
   conversationAnalyticsExtendedInputSchema,
   conversationAnalyticsExtendedResponseSchema,
@@ -1395,6 +1400,307 @@ const waRouterBase = {
     .handler(async ({ input }) => {
       await updateBusinessProfile(input.phoneNumberId, input.fields);
       return { status: "ok" as const };
+    }),
+
+  // ── Snippets / quick replies ──────────────────────────────────────────────
+  listSnippets: readWa
+    .route({ method: "POST", path: "/snippets/list", tags: ["WA Cloud"] })
+    .input(listSnippetsInputSchema)
+    .output(listSnippetsResponseSchema)
+    .handler(async ({ input }) => {
+      const where: Record<string, unknown> = { archived: false };
+      if (input.kind) where.kind = input.kind;
+      if (input.category) where.category = input.category;
+      if (input.q && input.q.length >= 1) {
+        where.OR = [
+          { name: { contains: input.q, mode: "insensitive" } },
+          { description: { contains: input.q, mode: "insensitive" } },
+          { shortcut: { contains: input.q, mode: "insensitive" } },
+          { bodyText: { contains: input.q, mode: "insensitive" } },
+        ];
+      }
+      const rows = await db.waSnippet.findMany({
+        where,
+        orderBy: [{ hitCount: "desc" }, { name: "asc" }],
+        take: 200,
+      });
+      return {
+        snippets: rows.map((r) => ({
+          ...r,
+          replyButtons: (r.replyButtons as unknown as Array<{ id: string; title: string }> | null) ?? null,
+          variables: (r.variables as unknown as string[]) ?? [],
+        })),
+      };
+    }),
+
+  upsertSnippet: createWa
+    .route({ method: "POST", path: "/snippets/upsert", tags: ["WA Cloud"] })
+    .input(upsertSnippetInputSchema)
+    .output(snippetSchema)
+    .handler(async ({ context, input }) => {
+      const data = {
+        accountId: input.accountId ?? null,
+        kind: input.kind,
+        category: input.category ?? null,
+        name: input.name,
+        description: input.description ?? null,
+        shortcut: input.shortcut ?? null,
+        bodyText: input.bodyText ?? null,
+        ctaUrl: input.ctaUrl ?? null,
+        ctaButtonText: input.ctaButtonText ?? null,
+        ctaHeader: input.ctaHeader ?? null,
+        ctaFooter: input.ctaFooter ?? null,
+        replyButtons: (input.replyButtons as never) ?? undefined,
+        replyHeader: input.replyHeader ?? null,
+        replyFooter: input.replyFooter ?? null,
+        mediaHandle: input.mediaHandle ?? null,
+        // Meta media handles valid 30 days
+        mediaHandleExpiresAt: input.mediaHandle
+          ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+          : null,
+        mediaUrl: input.mediaUrl ?? null,
+        mediaMimeType: input.mediaMimeType ?? null,
+        mediaFilename: input.mediaFilename ?? null,
+        mediaSize: input.mediaSize ?? null,
+        variables: input.variables ?? [],
+      };
+      const row = input.id
+        ? await db.waSnippet.update({ where: { id: input.id }, data })
+        : await db.waSnippet.create({
+            data: { ...data, createdByUserId: context.user.id },
+          });
+      return {
+        ...row,
+        replyButtons: (row.replyButtons as unknown as Array<{ id: string; title: string }> | null) ?? null,
+        variables: (row.variables as unknown as string[]) ?? [],
+      };
+    }),
+
+  archiveSnippet: deleteWa
+    .route({ method: "POST", path: "/snippets/archive", tags: ["WA Cloud"] })
+    .input(z.object({ id: z.number().int().positive() }))
+    .output(waOkResponseSchema)
+    .handler(async ({ input }) => {
+      await db.waSnippet.update({ where: { id: input.id }, data: { archived: true } });
+      return { status: "ok" as const };
+    }),
+
+  sendSnippet: writeWa
+    .route({ method: "POST", path: "/snippets/send", tags: ["WA Cloud"] })
+    .input(sendSnippetInputSchema)
+    .output(sendMessageResponseSchema)
+    .handler(async ({ context, input }) => {
+      const snip = await db.waSnippet.findUnique({ where: { id: input.snippetId } });
+      if (!snip || snip.archived)
+        throw new ORPCError("NOT_FOUND", { message: "Snippet no existe" });
+      const conv = await db.waConversation.findUnique({
+        where: { id: input.conversationId },
+        include: { contact: true },
+      });
+      if (!conv) throw new ORPCError("NOT_FOUND", { message: "Conversación no encontrada" });
+      if (conv.contact.blockedAt) {
+        throw new ORPCError("BAD_REQUEST", { message: "Contacto bloqueado" });
+      }
+      const lastInbound = conv.lastInboundAt;
+      const windowOpen = lastInbound
+        ? Date.now() - lastInbound.getTime() < WINDOW_HOURS * 60 * 60 * 1000
+        : false;
+      if (!windowOpen) {
+        throw new ORPCError("BAD_REQUEST", {
+          message: "Ventana 24h cerrada. Snippets requieren ventana abierta (usa template).",
+        });
+      }
+
+      // Variable substitution
+      const subs = input.variableValues ?? [];
+      const resolve = (text: string | null) => {
+        if (!text) return text;
+        return text.replace(/\{\{(\d+)\}\}/g, (_, idx) => subs[Number(idx) - 1] ?? `{{${idx}}}`);
+      };
+
+      const toE164 = conv.contact.phoneE164;
+      const now = new Date();
+      let metaId: string | null = null;
+      let preview = "";
+      let messageType:
+        | "TEXT"
+        | "IMAGE"
+        | "VIDEO"
+        | "AUDIO"
+        | "DOCUMENT"
+        | "STICKER"
+        | "INTERACTIVE" = "TEXT";
+      let payload: Record<string, unknown> = { snippet_id: snip.id };
+
+      if (snip.kind === "TEXT") {
+        const body = resolve(snip.bodyText) ?? "";
+        if (!body.trim()) throw new ORPCError("BAD_REQUEST", { message: "Snippet sin body" });
+        const r = await sendTextMessage({ phoneNumberId: input.phoneNumberId, toE164, body });
+        metaId = r.messages?.[0]?.id ?? null;
+        preview = body.slice(0, 200);
+        messageType = "TEXT";
+        payload = { ...payload, body };
+      } else if (snip.kind === "CTA_URL") {
+        const body = resolve(snip.bodyText) ?? "";
+        if (!snip.ctaUrl || !snip.ctaButtonText)
+          throw new ORPCError("BAD_REQUEST", { message: "Snippet CTA sin url/buttonText" });
+        // Cloud API: interactive type=cta_url
+        const phone = await db.waPhoneNumber.findUnique({
+          where: { id: input.phoneNumberId },
+          include: { account: true },
+        });
+        if (!phone?.account.systemUserToken)
+          throw new ORPCError("BAD_REQUEST", { message: "Account sin token" });
+        const interactive: Record<string, unknown> = {
+          type: "cta_url",
+          body: { text: body },
+          action: {
+            name: "cta_url",
+            parameters: { display_text: snip.ctaButtonText, url: snip.ctaUrl },
+          },
+        };
+        if (snip.ctaHeader)
+          interactive.header = { type: "text", text: resolve(snip.ctaHeader) };
+        if (snip.ctaFooter) interactive.footer = { text: resolve(snip.ctaFooter) };
+        const url = `https://graph.facebook.com/${phone.account.graphApiVersion}/${phone.phoneNumberId}/messages`;
+        const res = await fetch(url, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${phone.account.systemUserToken}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            messaging_product: "whatsapp",
+            recipient_type: "individual",
+            to: toE164.replace(/^\+/, ""),
+            type: "interactive",
+            interactive,
+          }),
+        });
+        const text = await res.text();
+        if (!res.ok) {
+          throw new ORPCError("BAD_GATEWAY", { message: `Meta CTA ${res.status}: ${text.slice(0, 200)}` });
+        }
+        const json = JSON.parse(text) as { messages: Array<{ id: string }> };
+        metaId = json.messages?.[0]?.id ?? null;
+        preview = `[CTA] ${snip.ctaButtonText}`;
+        messageType = "INTERACTIVE";
+        payload = { ...payload, interactive_type: "cta_url", body, button: snip.ctaButtonText, url: snip.ctaUrl };
+      } else if (snip.kind === "REPLY_BUTTONS") {
+        const buttons = (snip.replyButtons as unknown as Array<{ id: string; title: string }>) ?? [];
+        if (buttons.length === 0)
+          throw new ORPCError("BAD_REQUEST", { message: "Snippet sin botones" });
+        const body = resolve(snip.bodyText) ?? "";
+        const phone = await db.waPhoneNumber.findUnique({
+          where: { id: input.phoneNumberId },
+          include: { account: true },
+        });
+        if (!phone?.account.systemUserToken)
+          throw new ORPCError("BAD_REQUEST", { message: "Account sin token" });
+        const interactive: Record<string, unknown> = {
+          type: "button",
+          body: { text: body },
+          action: {
+            buttons: buttons.map((b) => ({
+              type: "reply",
+              reply: { id: b.id, title: b.title },
+            })),
+          },
+        };
+        if (snip.replyHeader)
+          interactive.header = { type: "text", text: resolve(snip.replyHeader) };
+        if (snip.replyFooter) interactive.footer = { text: resolve(snip.replyFooter) };
+        const url = `https://graph.facebook.com/${phone.account.graphApiVersion}/${phone.phoneNumberId}/messages`;
+        const res = await fetch(url, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${phone.account.systemUserToken}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            messaging_product: "whatsapp",
+            recipient_type: "individual",
+            to: toE164.replace(/^\+/, ""),
+            type: "interactive",
+            interactive,
+          }),
+        });
+        const text = await res.text();
+        if (!res.ok) {
+          throw new ORPCError("BAD_GATEWAY", { message: `Meta buttons ${res.status}: ${text.slice(0, 200)}` });
+        }
+        const json = JSON.parse(text) as { messages: Array<{ id: string }> };
+        metaId = json.messages?.[0]?.id ?? null;
+        preview = `[botones] ${buttons.map((b) => b.title).join(" / ")}`;
+        messageType = "INTERACTIVE";
+        payload = { ...payload, interactive_type: "button", body, buttons };
+      } else if (
+        snip.kind === "MEDIA_DOCUMENT" ||
+        snip.kind === "MEDIA_IMAGE" ||
+        snip.kind === "MEDIA_VIDEO" ||
+        snip.kind === "MEDIA_AUDIO" ||
+        snip.kind === "MEDIA_STICKER"
+      ) {
+        const typeMap = {
+          MEDIA_DOCUMENT: "document",
+          MEDIA_IMAGE: "image",
+          MEDIA_VIDEO: "video",
+          MEDIA_AUDIO: "audio",
+          MEDIA_STICKER: "sticker",
+        } as const;
+        if (!snip.mediaHandle && !snip.mediaUrl)
+          throw new ORPCError("BAD_REQUEST", { message: "Snippet media sin handle/url" });
+        if (
+          snip.mediaHandle &&
+          snip.mediaHandleExpiresAt &&
+          snip.mediaHandleExpiresAt.getTime() < Date.now()
+        ) {
+          throw new ORPCError("BAD_REQUEST", {
+            message: "Media handle expirado (>30 días). Re-sube el archivo en Catálogo.",
+          });
+        }
+        const r = await sendMediaMessage({
+          phoneNumberId: input.phoneNumberId,
+          toE164,
+          type: typeMap[snip.kind],
+          mediaId: snip.mediaHandle ?? undefined,
+          link: snip.mediaUrl ?? undefined,
+          caption: resolve(snip.bodyText) ?? undefined,
+          filename: snip.mediaFilename ?? undefined,
+        });
+        metaId = r.messages?.[0]?.id ?? null;
+        preview = `[${snip.kind.toLowerCase()}] ${snip.name}`;
+        messageType = typeMap[snip.kind].toUpperCase() as
+          | "DOCUMENT" | "IMAGE" | "VIDEO" | "AUDIO" | "STICKER";
+        payload = { ...payload, kind: snip.kind, mediaId: snip.mediaHandle };
+      } else {
+        throw new ORPCError("BAD_REQUEST", { message: `Tipo ${snip.kind} no implementado` });
+      }
+
+      const message = await db.waMessage.create({
+        data: {
+          conversationId: conv.id,
+          contactId: conv.contactId,
+          phoneNumberId: input.phoneNumberId,
+          metaMessageId: metaId,
+          direction: "OUTBOUND",
+          type: messageType,
+          status: "SENT",
+          body: snip.bodyText,
+          sentByUserId: context.user.id,
+          payload: payload as never,
+          timestamp: now,
+        },
+      });
+      await db.waConversation.update({
+        where: { id: conv.id },
+        data: { lastMessageAt: now, lastMessagePreview: preview },
+      });
+      await db.waSnippet.update({
+        where: { id: snip.id },
+        data: { hitCount: { increment: 1 }, lastUsedAt: now },
+      });
+      return { message };
     }),
 
   // ── Saved entities catalog ────────────────────────────────────────────────

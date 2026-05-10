@@ -505,6 +505,94 @@ export const listConversationMediaResponseSchema = z.object({
   ),
 });
 
+// ── Snippets / quick replies ────────────────────────────────────────────────
+
+export const waSnippetKindSchema = z.enum([
+  "TEXT",
+  "MEDIA_DOCUMENT",
+  "MEDIA_IMAGE",
+  "MEDIA_VIDEO",
+  "MEDIA_AUDIO",
+  "MEDIA_STICKER",
+  "CTA_URL",
+  "REPLY_BUTTONS",
+]);
+
+export const replyButtonSchema = z.object({
+  id: z.string().min(1).max(256),
+  title: z.string().min(1).max(20),
+});
+
+export const snippetSchema = z.object({
+  id: z.number().int(),
+  accountId: z.number().int().nullable(),
+  kind: waSnippetKindSchema,
+  category: z.string().nullable(),
+  name: z.string(),
+  description: z.string().nullable(),
+  shortcut: z.string().nullable(),
+  bodyText: z.string().nullable(),
+  ctaUrl: z.string().nullable(),
+  ctaButtonText: z.string().nullable(),
+  ctaHeader: z.string().nullable(),
+  ctaFooter: z.string().nullable(),
+  replyButtons: z.array(replyButtonSchema).nullable(),
+  replyHeader: z.string().nullable(),
+  replyFooter: z.string().nullable(),
+  mediaHandle: z.string().nullable(),
+  mediaHandleExpiresAt: z.coerce.date().nullable(),
+  mediaUrl: z.string().nullable(),
+  mediaMimeType: z.string().nullable(),
+  mediaFilename: z.string().nullable(),
+  mediaSize: z.number().int().nullable(),
+  variables: z.array(z.string()),
+  archived: z.boolean(),
+  hitCount: z.number().int(),
+  lastUsedAt: z.coerce.date().nullable(),
+});
+
+export const upsertSnippetInputSchema = z.object({
+  id: z.number().int().positive().optional(),
+  accountId: z.number().int().positive().optional(),
+  kind: waSnippetKindSchema,
+  category: z.string().max(64).optional(),
+  name: z.string().min(1).max(120),
+  description: z.string().max(256).optional(),
+  shortcut: z.string().max(32).optional(),
+  bodyText: z.string().max(4096).optional(),
+  ctaUrl: z.string().url().optional(),
+  ctaButtonText: z.string().max(20).optional(),
+  ctaHeader: z.string().max(60).optional(),
+  ctaFooter: z.string().max(60).optional(),
+  replyButtons: z.array(replyButtonSchema).max(3).optional(),
+  replyHeader: z.string().max(60).optional(),
+  replyFooter: z.string().max(60).optional(),
+  mediaHandle: z.string().optional(),
+  mediaUrl: z.string().url().optional(),
+  mediaMimeType: z.string().max(120).optional(),
+  mediaFilename: z.string().max(256).optional(),
+  mediaSize: z.number().int().optional(),
+  variables: z.array(z.string()).optional(),
+});
+
+export const listSnippetsResponseSchema = z.object({
+  snippets: z.array(snippetSchema),
+});
+
+export const listSnippetsInputSchema = z.object({
+  kind: waSnippetKindSchema.optional(),
+  category: z.string().optional(),
+  q: z.string().optional(),
+});
+
+export const sendSnippetInputSchema = z.object({
+  conversationId: z.number().int().positive(),
+  phoneNumberId: z.number().int().positive(),
+  snippetId: z.number().int().positive(),
+  // Variable substitution {{1}}, {{2}}, …
+  variableValues: z.array(z.string()).optional(),
+});
+
 // ── Saved entities (curated catalog) ─────────────────────────────────────────
 
 export const savedLocationSchema = z.object({
@@ -1113,6 +1201,24 @@ export const waCloudContract = {
     .route({ method: "POST", path: "/profile/update", tags: ["WA Cloud"] })
     .input(updateBusinessProfileInputSchema)
     .output(waOkResponseSchema),
+
+  // Snippets / quick replies
+  listSnippets: oc
+    .route({ method: "POST", path: "/snippets/list", tags: ["WA Cloud"] })
+    .input(listSnippetsInputSchema)
+    .output(listSnippetsResponseSchema),
+  upsertSnippet: oc
+    .route({ method: "POST", path: "/snippets/upsert", tags: ["WA Cloud"] })
+    .input(upsertSnippetInputSchema)
+    .output(snippetSchema),
+  archiveSnippet: oc
+    .route({ method: "POST", path: "/snippets/archive", tags: ["WA Cloud"] })
+    .input(z.object({ id: z.number().int().positive() }))
+    .output(waOkResponseSchema),
+  sendSnippet: oc
+    .route({ method: "POST", path: "/snippets/send", tags: ["WA Cloud"] })
+    .input(sendSnippetInputSchema)
+    .output(sendMessageResponseSchema),
 
   // Saved entities catalog
   listSavedLocations: oc

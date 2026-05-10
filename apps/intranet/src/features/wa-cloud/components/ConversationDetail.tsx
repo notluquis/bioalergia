@@ -47,6 +47,7 @@ import {
   Smile,
   Tag,
   X,
+  Zap,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { SelectInput, TextInput } from "@/features/outreach/components/FormField";
@@ -80,6 +81,8 @@ import {
   useSendSavedFlow,
   useSendSavedList,
   useSendSavedLocation,
+  useSendSnippet,
+  useSnippets,
   useSendTemplate,
   useSendText,
   useSetTyping,
@@ -127,6 +130,7 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
   const sendReaction = useSendReaction();
   const sendMedia = useSendMedia();
   const sendContacts = useSendContacts();
+  const sendSnippet = useSendSnippet();
   const editText = useEditText();
   const setTyping = useSetTyping();
   const blockContact = useBlockContact();
@@ -606,6 +610,18 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
               onOpenContacts={() => setContactsOpen(true)}
               onOpenSchedule={() => setScheduleOpen(true)}
               onOpenList={() => setListOpen(true)}
+              onSendSnippet={(snippetId) => {
+                if (!phoneId) {
+                  toast.error("Selecciona un número primero");
+                  return;
+                }
+                sendSnippet.mutate(
+                  { conversationId, phoneNumberId: Number(phoneId), snippetId },
+                  {
+                    onError: (e) => toast.error(`Error: ${String(e)}`),
+                  },
+                );
+              }}
             />
           ) : (
             <TemplateComposer
@@ -803,9 +819,7 @@ function ChatBubble({
     <div className={`group relative flex ${wrapper}`}>
       <div
         className={`relative ${
-          isSticker
-            ? "max-w-[12rem]"
-            : "w-fit max-w-[78%] min-w-[60px] lg:max-w-[480px]"
+          isSticker ? "max-w-[12rem]" : "w-fit max-w-[78%] min-w-[60px] lg:max-w-[480px]"
         }`}
       >
         {actions}
@@ -899,6 +913,7 @@ function TextComposer({
   onOpenContacts,
   onOpenSchedule,
   onOpenList,
+  onSendSnippet,
 }: {
   body: string;
   setBody: (v: string) => void;
@@ -915,6 +930,7 @@ function TextComposer({
   onOpenContacts: () => void;
   onOpenSchedule: () => void;
   onOpenList: () => void;
+  onSendSnippet: (snippetId: number) => void;
 }) {
   const ref = useRef<HTMLTextAreaElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -1058,6 +1074,11 @@ function TextComposer({
             </ListBox>
           </Dropdown.Popover>
         </Dropdown>
+        <SnippetsButton
+          onPickText={(text) => setBody(text)}
+          onSendSnippet={onSendSnippet}
+          isDisabled={isDisabled}
+        />
         <EmojiPickerButton onSelect={insertEmoji} />
         <VoiceRecorderButton onSend={onAttachFile} isDisabled={isDisabled || attachPending} />
         <div className="flex-1">
@@ -2149,6 +2170,118 @@ function InteractiveListSelectorModal({
         </Modal.Container>
       </Modal.Backdrop>
     </Modal>
+  );
+}
+
+function SnippetsButton({
+  onPickText,
+  onSendSnippet,
+  isDisabled,
+}: {
+  onPickText: (text: string) => void;
+  onSendSnippet: (snippetId: number) => void;
+  isDisabled: boolean;
+}) {
+  const [q, setQ] = useState("");
+  const list = useSnippets({ q: q.trim().length >= 1 ? q.trim() : undefined });
+  const items = list.data?.snippets ?? [];
+
+  const KIND_ICON: Record<string, React.ReactNode> = {
+    TEXT: <FileText size={14} className="text-default-500" />,
+    CTA_URL: <Send size={14} className="text-accent" />,
+    REPLY_BUTTONS: <List size={14} className="text-warning" />,
+    MEDIA_DOCUMENT: <FileText size={14} className="text-accent" />,
+    MEDIA_IMAGE: <Images size={14} className="text-success" />,
+    MEDIA_VIDEO: <Images size={14} className="text-success" />,
+    MEDIA_AUDIO: <Mic size={14} className="text-warning" />,
+    MEDIA_STICKER: <Smile size={14} className="text-default-500" />,
+  };
+
+  return (
+    <Popover>
+      <Popover.Trigger>
+        <Button
+          size="sm"
+          variant="outline"
+          isIconOnly
+          aria-label="Snippets / respuestas guardadas"
+          isDisabled={isDisabled}
+        >
+          <Zap size={16} />
+        </Button>
+      </Popover.Trigger>
+      <Popover.Content className="w-[360px] rounded-2xl border border-default-200 bg-background p-2 shadow-lg">
+        <Popover.Dialog className="space-y-2 p-1">
+          <input
+            type="text"
+            value={q}
+            onChange={(e) => setQ(e.currentTarget.value)}
+            placeholder="Buscar snippet…"
+            className="w-full rounded-lg border border-default-200 bg-content2 px-3 py-1.5 text-sm outline-none focus:border-success"
+            autoFocus
+          />
+          <div className="max-h-80 space-y-0.5 overflow-y-auto">
+            {list.isLoading ? (
+              <div className="flex justify-center py-4">
+                <Spinner size="sm" />
+              </div>
+            ) : items.length === 0 ? (
+              <p className="py-6 text-center text-default-400 text-xs">
+                Sin snippets. Crea en Catálogo → Snippets.
+              </p>
+            ) : (
+              items.map((s) => (
+                <div
+                  key={s.id}
+                  className="flex items-start gap-2 rounded-md px-2 py-1.5 hover:bg-default-100"
+                >
+                  <span className="mt-0.5 shrink-0">{KIND_ICON[s.kind] ?? <Zap size={14} />}</span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <p className="truncate font-medium text-sm">{s.name}</p>
+                      {s.shortcut && (
+                        <code className="shrink-0 rounded bg-default-200 px-1 text-[10px]">
+                          {s.shortcut}
+                        </code>
+                      )}
+                      {s.category && (
+                        <Chip size="sm" variant="soft" color="default">
+                          <Chip.Label>{s.category}</Chip.Label>
+                        </Chip>
+                      )}
+                    </div>
+                    {s.bodyText && (
+                      <p className="line-clamp-1 text-default-500 text-xs">{s.bodyText}</p>
+                    )}
+                  </div>
+                  <div className="flex shrink-0 gap-1">
+                    {s.kind === "TEXT" && s.bodyText && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        isIconOnly
+                        aria-label="Insertar"
+                        onPress={() => onPickText(s.bodyText!)}
+                      >
+                        <Pencil size={12} />
+                      </Button>
+                    )}
+                    <Button
+                      size="sm"
+                      isIconOnly
+                      aria-label="Enviar ahora"
+                      onPress={() => onSendSnippet(s.id)}
+                    >
+                      <Send size={12} />
+                    </Button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </Popover.Dialog>
+      </Popover.Content>
+    </Popover>
   );
 }
 

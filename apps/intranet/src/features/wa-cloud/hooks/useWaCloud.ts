@@ -150,6 +150,41 @@ export function useSendFlow() {
   });
 }
 
+// Snippets
+export function useSnippets(input?: Parameters<typeof waCloudORPCClient.listSnippets>[0]) {
+  return useQuery({
+    queryKey: [...KEY, "snippets", input],
+    queryFn: () => waCloudORPCClient.listSnippets(input ?? {}),
+    staleTime: 30_000,
+  });
+}
+export function useUpsertSnippet() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: Parameters<typeof waCloudORPCClient.upsertSnippet>[0]) =>
+      waCloudORPCClient.upsertSnippet(input),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: [...KEY, "snippets"] }),
+  });
+}
+export function useArchiveSnippet() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => waCloudORPCClient.archiveSnippet({ id }),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: [...KEY, "snippets"] }),
+  });
+}
+export function useSendSnippet() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: Parameters<typeof waCloudORPCClient.sendSnippet>[0]) =>
+      waCloudORPCClient.sendSnippet(input),
+    onSuccess: (_, vars) => {
+      void qc.invalidateQueries({ queryKey: [...KEY, "conversation", vars.conversationId] });
+      void qc.invalidateQueries({ queryKey: [...KEY, "snippets"] });
+    },
+  });
+}
+
 // Saved entities catalog
 export function useSavedLocations() {
   return useQuery({

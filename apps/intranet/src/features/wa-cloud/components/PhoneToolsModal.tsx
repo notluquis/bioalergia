@@ -1,6 +1,7 @@
 import { Button, Card, Chip, Modal, Spinner } from "@heroui/react";
 import { Activity, Building2, Check, ImageUp, KeyRound, Save, ShieldCheck, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import Cropper from "react-easy-crop";
 import { SelectInput, TextAreaInput, TextInput } from "@/features/outreach/components/FormField";
 import { toast } from "@/lib/toast-interceptor";
 import {
@@ -289,64 +290,25 @@ function ProfilePictureCard({ phoneNumberId }: { phoneNumberId: number }) {
   const profile = useBusinessProfile(phoneNumberId);
   const fileRef = useRef<HTMLInputElement>(null);
   const [pending, setPending] = useState(false);
+  const [cropTarget, setCropTarget] = useState<string | null>(null);
 
-  // Resize + center-crop to 640x640 JPEG so Meta accepts (192-640 px square).
-  const resizeToSquare = (file: File): Promise<File> =>
-    new Promise((resolve, reject) => {
-      const img = new Image();
-      const url = URL.createObjectURL(file);
-      img.onload = () => {
-        URL.revokeObjectURL(url);
-        const TARGET = 640;
-        const canvas = document.createElement("canvas");
-        canvas.width = TARGET;
-        canvas.height = TARGET;
-        const ctx = canvas.getContext("2d");
-        if (!ctx) {
-          reject(new Error("Canvas no disponible"));
-          return;
-        }
-        ctx.fillStyle = "#ffffff";
-        ctx.fillRect(0, 0, TARGET, TARGET);
-        // Cover-crop centered
-        const scale = Math.max(TARGET / img.width, TARGET / img.height);
-        const w = img.width * scale;
-        const h = img.height * scale;
-        const x = (TARGET - w) / 2;
-        const y = (TARGET - h) / 2;
-        ctx.drawImage(img, x, y, w, h);
-        canvas.toBlob(
-          (blob) => {
-            if (!blob) {
-              reject(new Error("Error creando JPEG"));
-              return;
-            }
-            resolve(new File([blob], "profile.jpg", { type: "image/jpeg" }));
-          },
-          "image/jpeg",
-          0.9
-        );
-      };
-      img.onerror = () => {
-        URL.revokeObjectURL(url);
-        reject(new Error("No se pudo leer la imagen"));
-      };
-      img.src = url;
-    });
-
-  const onFile = async (file: File) => {
+  const onFile = (file: File) => {
     if (!/^image\/(jpeg|png|webp)$/.test(file.type)) {
       toast.error("Solo JPG, PNG o WEBP");
       return;
     }
+    if (file.size > 20 * 1024 * 1024) {
+      toast.error("Original muy grande (>20MB)");
+      return;
+    }
+    setCropTarget(URL.createObjectURL(file));
+  };
+
+  const onCropConfirmed = async (cropped: File) => {
+    setCropTarget(null);
     setPending(true);
     try {
-      const resized = await resizeToSquare(file);
-      if (resized.size > 5 * 1024 * 1024) {
-        toast.error("Imagen final >5MB. Usa una imagen más pequeña.");
-        return;
-      }
-      await uploadProfilePicture(resized, phoneNumberId);
+      await uploadProfilePicture(cropped, phoneNumberId);
       toast.success("Foto de perfil actualizada en Meta");
       void profile.refetch();
     } catch (err) {
@@ -358,50 +320,202 @@ function ProfilePictureCard({ phoneNumberId }: { phoneNumberId: number }) {
   };
 
   return (
-    <Card>
-      <Card.Header className="flex items-center gap-2 border-default-200 border-b">
-        <ImageUp size={16} className="text-accent" />
-        <p className="font-semibold text-sm">Foto de perfil</p>
-      </Card.Header>
-      <Card.Content className="flex items-center gap-4 p-4">
-        <input
-          ref={fileRef}
-          type="file"
-          accept="image/jpeg,image/png"
-          className="hidden"
-          onChange={(e) => {
-            const f = e.target.files?.[0];
-            if (f) void onFile(f);
-            if (fileRef.current) fileRef.current.value = "";
-          }}
-        />
-        {profile.data?.profile_picture_url ? (
-          <img
-            src={profile.data.profile_picture_url}
-            alt="Perfil"
-            className="size-20 shrink-0 rounded-full object-cover ring-2 ring-default-200"
+    <>
+      <Card>
+        <Card.Header className="flex items-center gap-2 border-default-200 border-b">
+          <ImageUp size={16} className="text-accent" />
+          <p className="font-semibold text-sm">Foto de perfil</p>
+        </Card.Header>
+        <Card.Content className="flex items-center gap-4 p-4">
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            className="hidden"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) onFile(f);
+              if (fileRef.current) fileRef.current.value = "";
+            }}
           />
-        ) : (
-          <div className="flex size-20 shrink-0 items-center justify-center rounded-full bg-default-100 text-default-400">
-            <ImageUp size={28} />
+          {profile.data?.profile_picture_url ? (
+            <img
+              src={profile.data.profile_picture_url}
+              alt="Perfil"
+              className="size-20 shrink-0 rounded-full object-cover ring-2 ring-default-200"
+            />
+          ) : (
+            <div className="flex size-20 shrink-0 items-center justify-center rounded-full bg-default-100 text-default-400">
+              <ImageUp size={28} />
+            </div>
+          )}
+          <div className="flex-1 space-y-1">
+            <p className="text-default-500 text-xs">
+              Cuadrada, 192-640px, JPG/PNG/WEBP. Recortas + zoom antes de subir.
+            </p>
+            <Button
+              size="sm"
+              variant="outline"
+              isPending={pending}
+              onPress={() => fileRef.current?.click()}
+            >
+              <ImageUp size={14} />
+              {profile.data?.profile_picture_url ? "Reemplazar foto" : "Subir foto"}
+            </Button>
           </div>
-        )}
-        <div className="flex-1 space-y-1">
-          <p className="text-default-500 text-xs">
-            Cuadrada, 192-640px, JPG/PNG, máx 5MB. Visible para todos los pacientes.
-          </p>
-          <Button
-            size="sm"
-            variant="outline"
-            isPending={pending}
-            onPress={() => fileRef.current?.click()}
-          >
-            <ImageUp size={14} />
-            {profile.data?.profile_picture_url ? "Reemplazar foto" : "Subir foto"}
-          </Button>
-        </div>
-      </Card.Content>
-    </Card>
+        </Card.Content>
+      </Card>
+      {cropTarget && (
+        <CropModal
+          src={cropTarget}
+          onCancel={() => {
+            URL.revokeObjectURL(cropTarget);
+            setCropTarget(null);
+          }}
+          onConfirm={onCropConfirmed}
+        />
+      )}
+    </>
+  );
+}
+
+function CropModal({
+  src,
+  onCancel,
+  onConfirm,
+}: {
+  src: string;
+  onCancel: () => void;
+  onConfirm: (file: File) => void;
+}) {
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [pixels, setPixels] = useState<{
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  } | null>(null);
+  const [pending, setPending] = useState(false);
+
+  const onCropComplete = (
+    _area: unknown,
+    croppedAreaPixels: { x: number; y: number; width: number; height: number },
+  ) => {
+    setPixels(croppedAreaPixels);
+  };
+
+  const buildFile = async (): Promise<File> => {
+    if (!pixels) throw new Error("Sin selección");
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    await new Promise<void>((resolve, reject) => {
+      img.onload = () => resolve();
+      img.onerror = () => reject(new Error("No se pudo cargar imagen"));
+      img.src = src;
+    });
+    const TARGET = 640;
+    const canvas = document.createElement("canvas");
+    canvas.width = TARGET;
+    canvas.height = TARGET;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error("Canvas no disponible");
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, TARGET, TARGET);
+    ctx.drawImage(
+      img,
+      pixels.x,
+      pixels.y,
+      pixels.width,
+      pixels.height,
+      0,
+      0,
+      TARGET,
+      TARGET,
+    );
+    const blob: Blob = await new Promise((resolve, reject) =>
+      canvas.toBlob(
+        (b) => (b ? resolve(b) : reject(new Error("toBlob fail"))),
+        "image/jpeg",
+        0.9,
+      ),
+    );
+    return new File([blob], "profile.jpg", { type: "image/jpeg" });
+  };
+
+  const submit = async () => {
+    setPending(true);
+    try {
+      const f = await buildFile();
+      onConfirm(f);
+    } catch (e) {
+      toast.error(`Error: ${String(e)}`);
+    } finally {
+      setPending(false);
+    }
+  };
+
+  return (
+    <Modal>
+      <Modal.Backdrop
+        isOpen
+        onOpenChange={(o) => !o && onCancel()}
+        isDismissable
+        className="bg-black/70 backdrop-blur-[2px]"
+      >
+        <Modal.Container placement="center">
+          <Modal.Dialog className="relative w-full max-w-lg rounded-[28px] bg-background p-6 shadow-2xl">
+            <Modal.Header className="mb-3">
+              <Modal.Heading className="font-bold text-primary text-lg">
+                Recortar foto de perfil
+              </Modal.Heading>
+              <p className="text-default-500 text-xs">
+                Arrastra para mover, scroll/slider para zoom. Resultado 640×640 JPEG.
+              </p>
+            </Modal.Header>
+            <Modal.Body className="space-y-3">
+              <div className="relative h-80 w-full overflow-hidden rounded-lg bg-black">
+                <Cropper
+                  image={src}
+                  crop={crop}
+                  zoom={zoom}
+                  aspect={1}
+                  cropShape="round"
+                  showGrid={false}
+                  onCropChange={setCrop}
+                  onZoomChange={setZoom}
+                  onCropComplete={onCropComplete}
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-default-500 text-xs">Zoom</span>
+                <input
+                  type="range"
+                  min={1}
+                  max={4}
+                  step={0.05}
+                  value={zoom}
+                  onChange={(e) => setZoom(Number(e.currentTarget.value))}
+                  className="flex-1 accent-success"
+                  aria-label="Zoom"
+                />
+                <span className="font-mono text-default-500 text-xs">{zoom.toFixed(2)}×</span>
+              </div>
+            </Modal.Body>
+            <Modal.Footer className="mt-4 flex justify-end gap-2">
+              <Button variant="outline" onPress={onCancel}>
+                <X size={14} />
+                Cancelar
+              </Button>
+              <Button onPress={submit} isPending={pending}>
+                <Check size={14} />
+                Recortar y subir
+              </Button>
+            </Modal.Footer>
+          </Modal.Dialog>
+        </Modal.Container>
+      </Modal.Backdrop>
+    </Modal>
   );
 }
 
