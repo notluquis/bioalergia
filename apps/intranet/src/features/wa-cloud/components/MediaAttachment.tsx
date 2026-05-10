@@ -179,11 +179,7 @@ function DocumentPreview({ url, caption }: { url: string; caption: string | null
                   </Button>
                 </div>
               </div>
-              <iframe
-                src={`${url}#toolbar=1&view=FitH`}
-                title={filename}
-                className="size-full"
-              />
+              <iframe src={`${url}#toolbar=1&view=FitH`} title={filename} className="size-full" />
             </Modal.Dialog>
           </Modal.Container>
         </Modal.Backdrop>

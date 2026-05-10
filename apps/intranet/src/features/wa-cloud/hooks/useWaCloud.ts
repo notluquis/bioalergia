@@ -150,6 +150,112 @@ export function useSendFlow() {
   });
 }
 
+// Saved entities catalog
+export function useSavedLocations() {
+  return useQuery({
+    queryKey: [...KEY, "saved-locations"],
+    queryFn: () => waCloudORPCClient.listSavedLocations({}),
+  });
+}
+export function useUpsertSavedLocation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: Parameters<typeof waCloudORPCClient.upsertSavedLocation>[0]) =>
+      waCloudORPCClient.upsertSavedLocation(input),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: [...KEY, "saved-locations"] }),
+  });
+}
+export function useArchiveSavedLocation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => waCloudORPCClient.archiveSavedLocation({ id }),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: [...KEY, "saved-locations"] }),
+  });
+}
+
+export function useSavedInteractiveLists() {
+  return useQuery({
+    queryKey: [...KEY, "saved-lists"],
+    queryFn: () => waCloudORPCClient.listSavedInteractiveLists({}),
+  });
+}
+export function useUpsertSavedInteractiveList() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: Parameters<typeof waCloudORPCClient.upsertSavedInteractiveList>[0]) =>
+      waCloudORPCClient.upsertSavedInteractiveList(input),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: [...KEY, "saved-lists"] }),
+  });
+}
+export function useArchiveSavedInteractiveList() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => waCloudORPCClient.archiveSavedInteractiveList({ id }),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: [...KEY, "saved-lists"] }),
+  });
+}
+
+export function useSavedFlows() {
+  return useQuery({
+    queryKey: [...KEY, "saved-flows"],
+    queryFn: () => waCloudORPCClient.listSavedFlows({}),
+  });
+}
+export function useUpsertSavedFlow() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: Parameters<typeof waCloudORPCClient.upsertSavedFlow>[0]) =>
+      waCloudORPCClient.upsertSavedFlow(input),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: [...KEY, "saved-flows"] }),
+  });
+}
+export function useArchiveSavedFlow() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => waCloudORPCClient.archiveSavedFlow({ id }),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: [...KEY, "saved-flows"] }),
+  });
+}
+
+export function useSendSavedLocation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: Parameters<typeof waCloudORPCClient.sendSavedLocation>[0]) =>
+      waCloudORPCClient.sendSavedLocation(input),
+    onSuccess: (_, vars) => {
+      void qc.invalidateQueries({ queryKey: [...KEY, "conversation", vars.conversationId] });
+    },
+  });
+}
+export function useSendSavedList() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: Parameters<typeof waCloudORPCClient.sendSavedList>[0]) =>
+      waCloudORPCClient.sendSavedList(input),
+    onSuccess: (_, vars) => {
+      void qc.invalidateQueries({ queryKey: [...KEY, "conversation", vars.conversationId] });
+    },
+  });
+}
+export function useSendSavedFlow() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: Parameters<typeof waCloudORPCClient.sendSavedFlow>[0]) =>
+      waCloudORPCClient.sendSavedFlow(input),
+    onSuccess: (_, vars) => {
+      void qc.invalidateQueries({ queryKey: [...KEY, "conversation", vars.conversationId] });
+    },
+  });
+}
+
+export function useAllScheduled(input?: Parameters<typeof waCloudORPCClient.listAllScheduled>[0]) {
+  return useQuery({
+    queryKey: [...KEY, "scheduled-all", input],
+    queryFn: () => waCloudORPCClient.listAllScheduled(input ?? { limit: 200 }),
+    refetchInterval: 30_000,
+  });
+}
+
 export function useAccountEvents(
   input?: Parameters<typeof waCloudORPCClient.listAccountEvents>[0]
 ) {

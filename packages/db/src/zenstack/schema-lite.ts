@@ -8858,6 +8858,16 @@ export class SchemaType implements SchemaDef {
                     type: "DateTime",
                     optional: true
                 },
+                blockedAt: {
+                    name: "blockedAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                blockedByUserId: {
+                    name: "blockedByUserId",
+                    type: "Int",
+                    optional: true
+                },
                 conversations: {
                     name: "conversations",
                     type: "WaConversation",
@@ -9374,6 +9384,227 @@ export class SchemaType implements SchemaDef {
             idFields: ["id"],
             uniqueFields: {
                 id: { type: "Int" }
+            }
+        },
+        WaSavedLocation: {
+            name: "WaSavedLocation",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                name: {
+                    name: "name",
+                    type: "String"
+                },
+                latitude: {
+                    name: "latitude",
+                    type: "Float"
+                },
+                longitude: {
+                    name: "longitude",
+                    type: "Float"
+                },
+                address: {
+                    name: "address",
+                    type: "String",
+                    optional: true
+                },
+                isDefault: {
+                    name: "isDefault",
+                    type: "Boolean",
+                    default: false as FieldDefault
+                },
+                archived: {
+                    name: "archived",
+                    type: "Boolean",
+                    default: false as FieldDefault
+                },
+                createdByUserId: {
+                    name: "createdByUserId",
+                    type: "Int"
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now") as FieldDefault
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" }
+            }
+        },
+        WaSavedInteractiveList: {
+            name: "WaSavedInteractiveList",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                name: {
+                    name: "name",
+                    type: "String"
+                },
+                description: {
+                    name: "description",
+                    type: "String",
+                    optional: true
+                },
+                headerText: {
+                    name: "headerText",
+                    type: "String",
+                    optional: true
+                },
+                bodyText: {
+                    name: "bodyText",
+                    type: "String"
+                },
+                footerText: {
+                    name: "footerText",
+                    type: "String",
+                    optional: true
+                },
+                buttonText: {
+                    name: "buttonText",
+                    type: "String"
+                },
+                sections: {
+                    name: "sections",
+                    type: "Json"
+                },
+                archived: {
+                    name: "archived",
+                    type: "Boolean",
+                    default: false as FieldDefault
+                },
+                hitCount: {
+                    name: "hitCount",
+                    type: "Int",
+                    default: 0 as FieldDefault
+                },
+                lastUsedAt: {
+                    name: "lastUsedAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                createdByUserId: {
+                    name: "createdByUserId",
+                    type: "Int"
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now") as FieldDefault
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" }
+            }
+        },
+        WaSavedFlow: {
+            name: "WaSavedFlow",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                name: {
+                    name: "name",
+                    type: "String"
+                },
+                description: {
+                    name: "description",
+                    type: "String",
+                    optional: true
+                },
+                flowId: {
+                    name: "flowId",
+                    type: "String"
+                },
+                flowToken: {
+                    name: "flowToken",
+                    type: "String",
+                    optional: true
+                },
+                initialScreen: {
+                    name: "initialScreen",
+                    type: "String",
+                    optional: true
+                },
+                defaultBody: {
+                    name: "defaultBody",
+                    type: "String"
+                },
+                defaultHeader: {
+                    name: "defaultHeader",
+                    type: "String",
+                    optional: true
+                },
+                defaultFooter: {
+                    name: "defaultFooter",
+                    type: "String",
+                    optional: true
+                },
+                defaultCta: {
+                    name: "defaultCta",
+                    type: "String",
+                    default: "Iniciar" as FieldDefault
+                },
+                archived: {
+                    name: "archived",
+                    type: "Boolean",
+                    default: false as FieldDefault
+                },
+                hitCount: {
+                    name: "hitCount",
+                    type: "Int",
+                    default: 0 as FieldDefault
+                },
+                lastUsedAt: {
+                    name: "lastUsedAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                createdByUserId: {
+                    name: "createdByUserId",
+                    type: "Int"
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now") as FieldDefault
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" },
+                flowId: { type: "String" }
             }
         },
         WaAccountEvent: {

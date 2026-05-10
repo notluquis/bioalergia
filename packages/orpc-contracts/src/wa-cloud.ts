@@ -76,6 +76,8 @@ export const waContactSchema = z.object({
   notas: z.string().nullable(),
   etiquetas: z.array(z.string()),
   patientRut: z.string().nullable(),
+  blockedAt: z.coerce.date().nullable(),
+  marketingOptIn: z.boolean().nullable(),
 });
 
 export const waConversationSchema = z.object({
@@ -503,6 +505,126 @@ export const listConversationMediaResponseSchema = z.object({
   ),
 });
 
+// ── Saved entities (curated catalog) ─────────────────────────────────────────
+
+export const savedLocationSchema = z.object({
+  id: z.number().int(),
+  name: z.string(),
+  latitude: z.number(),
+  longitude: z.number(),
+  address: z.string().nullable(),
+  isDefault: z.boolean(),
+  archived: z.boolean(),
+});
+export const upsertSavedLocationInputSchema = z.object({
+  id: z.number().int().positive().optional(),
+  name: z.string().min(1).max(120),
+  latitude: z.number().min(-90).max(90),
+  longitude: z.number().min(-180).max(180),
+  address: z.string().max(256).optional(),
+  isDefault: z.boolean().default(false),
+});
+
+export const interactiveListSectionSchema = z.object({
+  title: z.string().max(24).optional(),
+  rows: z.array(
+    z.object({
+      id: z.string().min(1).max(200),
+      title: z.string().min(1).max(24),
+      description: z.string().max(72).optional(),
+    }),
+  ).min(1).max(10),
+});
+
+export const savedInteractiveListSchema = z.object({
+  id: z.number().int(),
+  name: z.string(),
+  description: z.string().nullable(),
+  headerText: z.string().nullable(),
+  bodyText: z.string(),
+  footerText: z.string().nullable(),
+  buttonText: z.string(),
+  sections: z.array(interactiveListSectionSchema),
+  archived: z.boolean(),
+  hitCount: z.number().int(),
+  lastUsedAt: z.coerce.date().nullable(),
+});
+export const upsertSavedInteractiveListInputSchema = z.object({
+  id: z.number().int().positive().optional(),
+  name: z.string().min(1).max(120),
+  description: z.string().max(256).optional(),
+  headerText: z.string().max(60).optional(),
+  bodyText: z.string().min(1).max(1024),
+  footerText: z.string().max(60).optional(),
+  buttonText: z.string().min(1).max(20),
+  sections: z.array(interactiveListSectionSchema).min(1).max(10),
+});
+
+export const savedFlowSchema = z.object({
+  id: z.number().int(),
+  name: z.string(),
+  description: z.string().nullable(),
+  flowId: z.string(),
+  flowToken: z.string().nullable(),
+  initialScreen: z.string().nullable(),
+  defaultBody: z.string(),
+  defaultHeader: z.string().nullable(),
+  defaultFooter: z.string().nullable(),
+  defaultCta: z.string(),
+  archived: z.boolean(),
+  hitCount: z.number().int(),
+});
+export const upsertSavedFlowInputSchema = z.object({
+  id: z.number().int().positive().optional(),
+  name: z.string().min(1).max(120),
+  description: z.string().max(256).optional(),
+  flowId: z.string().min(1).max(64),
+  flowToken: z.string().max(256).optional(),
+  initialScreen: z.string().max(64).optional(),
+  defaultBody: z.string().min(1).max(1024),
+  defaultHeader: z.string().max(60).optional(),
+  defaultFooter: z.string().max(60).optional(),
+  defaultCta: z.string().min(1).max(20).default("Iniciar"),
+});
+
+// Send commands using a saved entity
+export const sendSavedLocationInputSchema = z.object({
+  conversationId: z.number().int().positive(),
+  phoneNumberId: z.number().int().positive(),
+  savedLocationId: z.number().int().positive(),
+  contextMetaMessageId: z.string().optional(),
+});
+export const sendSavedListInputSchema = z.object({
+  conversationId: z.number().int().positive(),
+  phoneNumberId: z.number().int().positive(),
+  savedListId: z.number().int().positive(),
+  contextMetaMessageId: z.string().optional(),
+});
+export const sendSavedFlowInputSchema = z.object({
+  conversationId: z.number().int().positive(),
+  phoneNumberId: z.number().int().positive(),
+  savedFlowId: z.number().int().positive(),
+  // optional override fields
+  bodyText: z.string().max(1024).optional(),
+  flowCta: z.string().max(20).optional(),
+  contextMetaMessageId: z.string().optional(),
+});
+
+// Global scheduled list (cross-conversation)
+export const listAllScheduledInputSchema = z.object({
+  status: waScheduledStatusSchema.optional(),
+  limit: z.number().int().min(1).max(500).default(200),
+});
+
+export const allScheduledItemSchema = scheduledMessageSchema.extend({
+  contactName: z.string().nullable(),
+  phoneE164: z.string(),
+});
+
+export const listAllScheduledResponseSchema = z.object({
+  scheduled: z.array(allScheduledItemSchema),
+});
+
 // ── Account events / alerts ─────────────────────────────────────────────────
 
 export const waAccountEventKindSchema = z.enum([
@@ -624,9 +746,9 @@ export const conversationAnalyticsExtendedResponseSchema = z.object({
       cost: z.number().nullish(),
       phone_number: z.string().nullish(),
       country: z.string().nullish(),
-      pricing_category: z.string().nullish(),
-      pricing_type: z.string().nullish(),
-      tier: z.string().nullish(),
+      conversation_type: z.string().nullish(),
+      conversation_direction: z.string().nullish(),
+      conversation_category: z.string().nullish(),
     }),
   ),
   pricing: z.array(
@@ -975,6 +1097,66 @@ export const waCloudContract = {
     .route({ method: "POST", path: "/profile/update", tags: ["WA Cloud"] })
     .input(updateBusinessProfileInputSchema)
     .output(waOkResponseSchema),
+
+  // Saved entities catalog
+  listSavedLocations: oc
+    .route({ method: "GET", path: "/saved/locations", tags: ["WA Cloud"] })
+    .input(z.object({}).optional())
+    .output(z.object({ locations: z.array(savedLocationSchema) })),
+  upsertSavedLocation: oc
+    .route({ method: "POST", path: "/saved/locations/upsert", tags: ["WA Cloud"] })
+    .input(upsertSavedLocationInputSchema)
+    .output(savedLocationSchema),
+  archiveSavedLocation: oc
+    .route({ method: "POST", path: "/saved/locations/archive", tags: ["WA Cloud"] })
+    .input(z.object({ id: z.number().int().positive() }))
+    .output(waOkResponseSchema),
+
+  listSavedInteractiveLists: oc
+    .route({ method: "GET", path: "/saved/lists", tags: ["WA Cloud"] })
+    .input(z.object({}).optional())
+    .output(z.object({ lists: z.array(savedInteractiveListSchema) })),
+  upsertSavedInteractiveList: oc
+    .route({ method: "POST", path: "/saved/lists/upsert", tags: ["WA Cloud"] })
+    .input(upsertSavedInteractiveListInputSchema)
+    .output(savedInteractiveListSchema),
+  archiveSavedInteractiveList: oc
+    .route({ method: "POST", path: "/saved/lists/archive", tags: ["WA Cloud"] })
+    .input(z.object({ id: z.number().int().positive() }))
+    .output(waOkResponseSchema),
+
+  listSavedFlows: oc
+    .route({ method: "GET", path: "/saved/flows", tags: ["WA Cloud"] })
+    .input(z.object({}).optional())
+    .output(z.object({ flows: z.array(savedFlowSchema) })),
+  upsertSavedFlow: oc
+    .route({ method: "POST", path: "/saved/flows/upsert", tags: ["WA Cloud"] })
+    .input(upsertSavedFlowInputSchema)
+    .output(savedFlowSchema),
+  archiveSavedFlow: oc
+    .route({ method: "POST", path: "/saved/flows/archive", tags: ["WA Cloud"] })
+    .input(z.object({ id: z.number().int().positive() }))
+    .output(waOkResponseSchema),
+
+  // Send using saved entity (chiquillas no editan, solo eligen)
+  sendSavedLocation: oc
+    .route({ method: "POST", path: "/messages/send-saved-location", tags: ["WA Cloud"] })
+    .input(sendSavedLocationInputSchema)
+    .output(sendMessageResponseSchema),
+  sendSavedList: oc
+    .route({ method: "POST", path: "/messages/send-saved-list", tags: ["WA Cloud"] })
+    .input(sendSavedListInputSchema)
+    .output(sendMessageResponseSchema),
+  sendSavedFlow: oc
+    .route({ method: "POST", path: "/messages/send-saved-flow", tags: ["WA Cloud"] })
+    .input(sendSavedFlowInputSchema)
+    .output(sendMessageResponseSchema),
+
+  // Global scheduled list
+  listAllScheduled: oc
+    .route({ method: "POST", path: "/scheduled/list-all", tags: ["WA Cloud"] })
+    .input(listAllScheduledInputSchema)
+    .output(listAllScheduledResponseSchema),
 
   // Account events / alerts
   listAccountEvents: oc

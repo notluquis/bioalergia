@@ -34,6 +34,7 @@ import { Route as AuthedOutreachIndexRouteImport } from "./routes/_authed/outrea
 import { Route as AuthedHrIndexRouteImport } from "./routes/_authed/hr/index"
 import { Route as AuthedClinicalIndexRouteImport } from "./routes/_authed/clinical/index"
 import { Route as AuthedWaCloudWebhooksRouteImport } from "./routes/_authed/wa-cloud/webhooks"
+import { Route as AuthedWaCloudProgramadosRouteImport } from "./routes/_authed/wa-cloud/programados"
 import { Route as AuthedWaCloudPlantillasRouteImport } from "./routes/_authed/wa-cloud/plantillas"
 import { Route as AuthedWaCloudConfiguracionRouteImport } from "./routes/_authed/wa-cloud/configuracion"
 import { Route as AuthedWaCloudBroadcastsRouteImport } from "./routes/_authed/wa-cloud/broadcasts"
@@ -216,6 +217,12 @@ const AuthedWaCloudWebhooksRoute = AuthedWaCloudWebhooksRouteImport.update({
   path: "/webhooks",
   getParentRoute: () => AuthedWaCloudRoute,
 } as any)
+const AuthedWaCloudProgramadosRoute =
+  AuthedWaCloudProgramadosRouteImport.update({
+    id: "/programados",
+    path: "/programados",
+    getParentRoute: () => AuthedWaCloudRoute,
+  } as any)
 const AuthedWaCloudPlantillasRoute = AuthedWaCloudPlantillasRouteImport.update({
   id: "/plantillas",
   path: "/plantillas",
@@ -589,6 +596,7 @@ export interface FileRoutesByFullPath {
   "/wa-cloud/broadcasts": typeof AuthedWaCloudBroadcastsRoute
   "/wa-cloud/configuracion": typeof AuthedWaCloudConfiguracionRoute
   "/wa-cloud/plantillas": typeof AuthedWaCloudPlantillasRoute
+  "/wa-cloud/programados": typeof AuthedWaCloudProgramadosRoute
   "/wa-cloud/webhooks": typeof AuthedWaCloudWebhooksRoute
   "/clinical/": typeof AuthedClinicalIndexRoute
   "/hr/": typeof AuthedHrIndexRoute
@@ -666,6 +674,7 @@ export interface FileRoutesByTo {
   "/wa-cloud/broadcasts": typeof AuthedWaCloudBroadcastsRoute
   "/wa-cloud/configuracion": typeof AuthedWaCloudConfiguracionRoute
   "/wa-cloud/plantillas": typeof AuthedWaCloudPlantillasRoute
+  "/wa-cloud/programados": typeof AuthedWaCloudProgramadosRoute
   "/wa-cloud/webhooks": typeof AuthedWaCloudWebhooksRoute
   "/clinical": typeof AuthedClinicalIndexRoute
   "/hr": typeof AuthedHrIndexRoute
@@ -751,6 +760,7 @@ export interface FileRoutesById {
   "/_authed/wa-cloud/broadcasts": typeof AuthedWaCloudBroadcastsRoute
   "/_authed/wa-cloud/configuracion": typeof AuthedWaCloudConfiguracionRoute
   "/_authed/wa-cloud/plantillas": typeof AuthedWaCloudPlantillasRoute
+  "/_authed/wa-cloud/programados": typeof AuthedWaCloudProgramadosRoute
   "/_authed/wa-cloud/webhooks": typeof AuthedWaCloudWebhooksRoute
   "/_authed/clinical/": typeof AuthedClinicalIndexRoute
   "/_authed/hr/": typeof AuthedHrIndexRoute
@@ -836,6 +846,7 @@ export interface FileRouteTypes {
     | "/wa-cloud/broadcasts"
     | "/wa-cloud/configuracion"
     | "/wa-cloud/plantillas"
+    | "/wa-cloud/programados"
     | "/wa-cloud/webhooks"
     | "/clinical/"
     | "/hr/"
@@ -913,6 +924,7 @@ export interface FileRouteTypes {
     | "/wa-cloud/broadcasts"
     | "/wa-cloud/configuracion"
     | "/wa-cloud/plantillas"
+    | "/wa-cloud/programados"
     | "/wa-cloud/webhooks"
     | "/clinical"
     | "/hr"
@@ -997,6 +1009,7 @@ export interface FileRouteTypes {
     | "/_authed/wa-cloud/broadcasts"
     | "/_authed/wa-cloud/configuracion"
     | "/_authed/wa-cloud/plantillas"
+    | "/_authed/wa-cloud/programados"
     | "/_authed/wa-cloud/webhooks"
     | "/_authed/clinical/"
     | "/_authed/hr/"
@@ -1200,6 +1213,13 @@ declare module "@tanstack/react-router" {
       path: "/webhooks"
       fullPath: "/wa-cloud/webhooks"
       preLoaderRoute: typeof AuthedWaCloudWebhooksRouteImport
+      parentRoute: typeof AuthedWaCloudRoute
+    }
+    "/_authed/wa-cloud/programados": {
+      id: "/_authed/wa-cloud/programados"
+      path: "/programados"
+      fullPath: "/wa-cloud/programados"
+      preLoaderRoute: typeof AuthedWaCloudProgramadosRouteImport
       parentRoute: typeof AuthedWaCloudRoute
     }
     "/_authed/wa-cloud/plantillas": {
@@ -1836,6 +1856,7 @@ interface AuthedWaCloudRouteChildren {
   AuthedWaCloudBroadcastsRoute: typeof AuthedWaCloudBroadcastsRoute
   AuthedWaCloudConfiguracionRoute: typeof AuthedWaCloudConfiguracionRoute
   AuthedWaCloudPlantillasRoute: typeof AuthedWaCloudPlantillasRoute
+  AuthedWaCloudProgramadosRoute: typeof AuthedWaCloudProgramadosRoute
   AuthedWaCloudWebhooksRoute: typeof AuthedWaCloudWebhooksRoute
   AuthedWaCloudIndexRoute: typeof AuthedWaCloudIndexRoute
 }
@@ -1846,6 +1867,7 @@ const AuthedWaCloudRouteChildren: AuthedWaCloudRouteChildren = {
   AuthedWaCloudBroadcastsRoute: AuthedWaCloudBroadcastsRoute,
   AuthedWaCloudConfiguracionRoute: AuthedWaCloudConfiguracionRoute,
   AuthedWaCloudPlantillasRoute: AuthedWaCloudPlantillasRoute,
+  AuthedWaCloudProgramadosRoute: AuthedWaCloudProgramadosRoute,
   AuthedWaCloudWebhooksRoute: AuthedWaCloudWebhooksRoute,
   AuthedWaCloudIndexRoute: AuthedWaCloudIndexRoute,
 }

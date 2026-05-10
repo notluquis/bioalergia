@@ -4,10 +4,22 @@ import {
   blockContactInputSchema,
   businessProfileResponseSchema,
   acknowledgeAccountEventInputSchema,
+  allScheduledItemSchema,
   conversationAnalyticsExtendedInputSchema,
   conversationAnalyticsExtendedResponseSchema,
   listAccountEventsInputSchema,
   listAccountEventsResponseSchema,
+  listAllScheduledInputSchema,
+  listAllScheduledResponseSchema,
+  savedFlowSchema,
+  savedInteractiveListSchema,
+  savedLocationSchema,
+  sendSavedFlowInputSchema,
+  sendSavedListInputSchema,
+  sendSavedLocationInputSchema,
+  upsertSavedFlowInputSchema,
+  upsertSavedInteractiveListInputSchema,
+  upsertSavedLocationInputSchema,
   conversationAnalyticsInputSchema,
   conversationAnalyticsResponseSchema,
   registerPhoneInputSchema,
@@ -484,6 +496,11 @@ const waRouterBase = {
         include: { contact: true },
       });
       if (!conv) throw new ORPCError("NOT_FOUND", { message: "Conversación no encontrada" });
+      if (conv.contact.blockedAt) {
+        throw new ORPCError("BAD_REQUEST", {
+          message: "Contacto bloqueado. Desbloquéalo desde el menú de la conversación primero.",
+        });
+      }
       const lastInbound = conv.lastInboundAt;
       const windowOpen = lastInbound
         ? Date.now() - lastInbound.getTime() < WINDOW_HOURS * 60 * 60 * 1000
@@ -538,6 +555,11 @@ const waRouterBase = {
         include: { contact: true },
       });
       if (!conv) throw new ORPCError("NOT_FOUND", { message: "Conversación no encontrada" });
+      if (conv.contact.blockedAt) {
+        throw new ORPCError("BAD_REQUEST", {
+          message: "Contacto bloqueado. Desbloquéalo desde el menú de la conversación primero.",
+        });
+      }
       const components: Array<{
         type: "header" | "body" | "footer" | "button";
         parameters?: Array<{ type: "text"; text: string }>;
@@ -1372,6 +1394,382 @@ const waRouterBase = {
       return { status: "ok" as const };
     }),
 
+  // ── Saved entities catalog ────────────────────────────────────────────────
+  listSavedLocations: readWa
+    .route({ method: "GET", path: "/saved/locations", tags: ["WA Cloud"] })
+    .input(z.object({}).optional())
+    .output(z.object({ locations: z.array(savedLocationSchema) }))
+    .handler(async () => {
+      const rows = await db.waSavedLocation.findMany({
+        where: { archived: false },
+        orderBy: [{ isDefault: "desc" }, { name: "asc" }],
+      });
+      return { locations: rows };
+    }),
+  upsertSavedLocation: createWa
+    .route({ method: "POST", path: "/saved/locations/upsert", tags: ["WA Cloud"] })
+    .input(upsertSavedLocationInputSchema)
+    .output(savedLocationSchema)
+    .handler(async ({ context, input }) => {
+      if (input.isDefault) {
+        await db.waSavedLocation.updateMany({
+          where: { isDefault: true },
+          data: { isDefault: false },
+        });
+      }
+      const row = input.id
+        ? await db.waSavedLocation.update({
+            where: { id: input.id },
+            data: {
+              name: input.name,
+              latitude: input.latitude,
+              longitude: input.longitude,
+              address: input.address ?? null,
+              isDefault: input.isDefault,
+            },
+          })
+        : await db.waSavedLocation.create({
+            data: {
+              name: input.name,
+              latitude: input.latitude,
+              longitude: input.longitude,
+              address: input.address ?? null,
+              isDefault: input.isDefault,
+              createdByUserId: context.user.id,
+            },
+          });
+      return row;
+    }),
+  archiveSavedLocation: deleteWa
+    .route({ method: "POST", path: "/saved/locations/archive", tags: ["WA Cloud"] })
+    .input(z.object({ id: z.number().int().positive() }))
+    .output(waOkResponseSchema)
+    .handler(async ({ input }) => {
+      await db.waSavedLocation.update({
+        where: { id: input.id },
+        data: { archived: true },
+      });
+      return { status: "ok" as const };
+    }),
+
+  listSavedInteractiveLists: readWa
+    .route({ method: "GET", path: "/saved/lists", tags: ["WA Cloud"] })
+    .input(z.object({}).optional())
+    .output(z.object({ lists: z.array(savedInteractiveListSchema) }))
+    .handler(async () => {
+      const rows = await db.waSavedInteractiveList.findMany({
+        where: { archived: false },
+        orderBy: { name: "asc" },
+      });
+      return {
+        lists: rows.map((r) => ({
+          ...r,
+          sections: (r.sections as unknown as Array<{
+            title?: string;
+            rows: Array<{ id: string; title: string; description?: string }>;
+          }>) ?? [],
+        })),
+      };
+    }),
+  upsertSavedInteractiveList: createWa
+    .route({ method: "POST", path: "/saved/lists/upsert", tags: ["WA Cloud"] })
+    .input(upsertSavedInteractiveListInputSchema)
+    .output(savedInteractiveListSchema)
+    .handler(async ({ context, input }) => {
+      const data = {
+        name: input.name,
+        description: input.description ?? null,
+        headerText: input.headerText ?? null,
+        bodyText: input.bodyText,
+        footerText: input.footerText ?? null,
+        buttonText: input.buttonText,
+        sections: input.sections as never,
+      };
+      const row = input.id
+        ? await db.waSavedInteractiveList.update({ where: { id: input.id }, data })
+        : await db.waSavedInteractiveList.create({
+            data: { ...data, createdByUserId: context.user.id },
+          });
+      return {
+        ...row,
+        sections: (row.sections as unknown as Array<{
+          title?: string;
+          rows: Array<{ id: string; title: string; description?: string }>;
+        }>) ?? [],
+      };
+    }),
+  archiveSavedInteractiveList: deleteWa
+    .route({ method: "POST", path: "/saved/lists/archive", tags: ["WA Cloud"] })
+    .input(z.object({ id: z.number().int().positive() }))
+    .output(waOkResponseSchema)
+    .handler(async ({ input }) => {
+      await db.waSavedInteractiveList.update({
+        where: { id: input.id },
+        data: { archived: true },
+      });
+      return { status: "ok" as const };
+    }),
+
+  listSavedFlows: readWa
+    .route({ method: "GET", path: "/saved/flows", tags: ["WA Cloud"] })
+    .input(z.object({}).optional())
+    .output(z.object({ flows: z.array(savedFlowSchema) }))
+    .handler(async () => {
+      const rows = await db.waSavedFlow.findMany({
+        where: { archived: false },
+        orderBy: { name: "asc" },
+      });
+      return { flows: rows };
+    }),
+  upsertSavedFlow: createWa
+    .route({ method: "POST", path: "/saved/flows/upsert", tags: ["WA Cloud"] })
+    .input(upsertSavedFlowInputSchema)
+    .output(savedFlowSchema)
+    .handler(async ({ context, input }) => {
+      const data = {
+        name: input.name,
+        description: input.description ?? null,
+        flowId: input.flowId,
+        flowToken: input.flowToken ?? null,
+        initialScreen: input.initialScreen ?? null,
+        defaultBody: input.defaultBody,
+        defaultHeader: input.defaultHeader ?? null,
+        defaultFooter: input.defaultFooter ?? null,
+        defaultCta: input.defaultCta,
+      };
+      const row = input.id
+        ? await db.waSavedFlow.update({ where: { id: input.id }, data })
+        : await db.waSavedFlow.create({
+            data: { ...data, createdByUserId: context.user.id },
+          });
+      return row;
+    }),
+  archiveSavedFlow: deleteWa
+    .route({ method: "POST", path: "/saved/flows/archive", tags: ["WA Cloud"] })
+    .input(z.object({ id: z.number().int().positive() }))
+    .output(waOkResponseSchema)
+    .handler(async ({ input }) => {
+      await db.waSavedFlow.update({
+        where: { id: input.id },
+        data: { archived: true },
+      });
+      return { status: "ok" as const };
+    }),
+
+  // ── Send via saved entity (chiquillas eligen, no editan) ──────────────────
+  sendSavedLocation: writeWa
+    .route({ method: "POST", path: "/messages/send-saved-location", tags: ["WA Cloud"] })
+    .input(sendSavedLocationInputSchema)
+    .output(sendMessageResponseSchema)
+    .handler(async ({ context, input }) => {
+      const saved = await db.waSavedLocation.findUnique({
+        where: { id: input.savedLocationId },
+      });
+      if (!saved || saved.archived) throw new ORPCError("NOT_FOUND", { message: "Ubicación no existe" });
+      const conv = await db.waConversation.findUnique({
+        where: { id: input.conversationId },
+        include: { contact: true },
+      });
+      if (!conv) throw new ORPCError("NOT_FOUND", { message: "Conversación no encontrada" });
+      const apiResp = await sendLocationMessage({
+        phoneNumberId: input.phoneNumberId,
+        toE164: conv.contact.phoneE164,
+        latitude: saved.latitude,
+        longitude: saved.longitude,
+        name: saved.name,
+        address: saved.address ?? undefined,
+        contextMessageId: input.contextMetaMessageId,
+      });
+      const metaId = apiResp.messages?.[0]?.id ?? null;
+      const now = new Date();
+      const message = await db.waMessage.create({
+        data: {
+          conversationId: conv.id,
+          contactId: conv.contactId,
+          phoneNumberId: input.phoneNumberId,
+          metaMessageId: metaId,
+          direction: "OUTBOUND",
+          type: "LOCATION",
+          status: "SENT",
+          body: saved.name,
+          sentByUserId: context.user.id,
+          contextMetaMessageId: input.contextMetaMessageId ?? null,
+          payload: {
+            location: {
+              latitude: saved.latitude,
+              longitude: saved.longitude,
+              name: saved.name,
+              address: saved.address,
+            },
+            saved_location_id: saved.id,
+          } as never,
+          timestamp: now,
+        },
+      });
+      await db.waConversation.update({
+        where: { id: conv.id },
+        data: { lastMessageAt: now, lastMessagePreview: `[ubicación] ${saved.name}` },
+      });
+      return { message };
+    }),
+
+  sendSavedList: writeWa
+    .route({ method: "POST", path: "/messages/send-saved-list", tags: ["WA Cloud"] })
+    .input(sendSavedListInputSchema)
+    .output(sendMessageResponseSchema)
+    .handler(async ({ context, input }) => {
+      const saved = await db.waSavedInteractiveList.findUnique({
+        where: { id: input.savedListId },
+      });
+      if (!saved || saved.archived) throw new ORPCError("NOT_FOUND", { message: "Lista no existe" });
+      const conv = await db.waConversation.findUnique({
+        where: { id: input.conversationId },
+        include: { contact: true },
+      });
+      if (!conv) throw new ORPCError("NOT_FOUND", { message: "Conversación no encontrada" });
+      const lastInbound = conv.lastInboundAt;
+      const windowOpen = lastInbound
+        ? Date.now() - lastInbound.getTime() < WINDOW_HOURS * 60 * 60 * 1000
+        : false;
+      if (!windowOpen) {
+        throw new ORPCError("BAD_REQUEST", { message: "Ventana 24h cerrada" });
+      }
+      const sections = (saved.sections as unknown as Array<{
+        title?: string;
+        rows: Array<{ id: string; title: string; description?: string }>;
+      }>) ?? [];
+      const apiResp = await sendInteractiveListMessage({
+        phoneNumberId: input.phoneNumberId,
+        toE164: conv.contact.phoneE164,
+        bodyText: saved.bodyText,
+        buttonText: saved.buttonText,
+        sections,
+        headerText: saved.headerText ?? undefined,
+        footerText: saved.footerText ?? undefined,
+        contextMessageId: input.contextMetaMessageId,
+      });
+      const metaId = apiResp.messages?.[0]?.id ?? null;
+      const now = new Date();
+      const message = await db.waMessage.create({
+        data: {
+          conversationId: conv.id,
+          contactId: conv.contactId,
+          phoneNumberId: input.phoneNumberId,
+          metaMessageId: metaId,
+          direction: "OUTBOUND",
+          type: "INTERACTIVE",
+          status: "SENT",
+          body: saved.bodyText,
+          sentByUserId: context.user.id,
+          contextMetaMessageId: input.contextMetaMessageId ?? null,
+          payload: {
+            interactive_type: "list",
+            button: saved.buttonText,
+            sections,
+            saved_list_id: saved.id,
+          } as never,
+          timestamp: now,
+        },
+      });
+      await db.waConversation.update({
+        where: { id: conv.id },
+        data: { lastMessageAt: now, lastMessagePreview: `[lista] ${saved.name}` },
+      });
+      // bump hit count
+      await db.waSavedInteractiveList.update({
+        where: { id: saved.id },
+        data: { hitCount: { increment: 1 }, lastUsedAt: now },
+      });
+      return { message };
+    }),
+
+  sendSavedFlow: writeWa
+    .route({ method: "POST", path: "/messages/send-saved-flow", tags: ["WA Cloud"] })
+    .input(sendSavedFlowInputSchema)
+    .output(sendMessageResponseSchema)
+    .handler(async ({ context, input }) => {
+      const saved = await db.waSavedFlow.findUnique({ where: { id: input.savedFlowId } });
+      if (!saved || saved.archived) throw new ORPCError("NOT_FOUND", { message: "Flow no existe" });
+      const conv = await db.waConversation.findUnique({
+        where: { id: input.conversationId },
+        include: { contact: true },
+      });
+      if (!conv) throw new ORPCError("NOT_FOUND", { message: "Conversación no encontrada" });
+      const lastInbound = conv.lastInboundAt;
+      const windowOpen = lastInbound
+        ? Date.now() - lastInbound.getTime() < WINDOW_HOURS * 60 * 60 * 1000
+        : false;
+      if (!windowOpen) {
+        throw new ORPCError("BAD_REQUEST", { message: "Ventana 24h cerrada" });
+      }
+      const apiResp = await sendFlowMessage({
+        phoneNumberId: input.phoneNumberId,
+        toE164: conv.contact.phoneE164,
+        flowId: saved.flowId,
+        flowCta: input.flowCta ?? saved.defaultCta,
+        bodyText: input.bodyText ?? saved.defaultBody,
+        headerText: saved.defaultHeader ?? undefined,
+        footerText: saved.defaultFooter ?? undefined,
+        flowToken: saved.flowToken ?? undefined,
+        initialScreen: saved.initialScreen ?? undefined,
+      });
+      const metaId = apiResp.messages?.[0]?.id ?? null;
+      const now = new Date();
+      const message = await db.waMessage.create({
+        data: {
+          conversationId: conv.id,
+          contactId: conv.contactId,
+          phoneNumberId: input.phoneNumberId,
+          metaMessageId: metaId,
+          direction: "OUTBOUND",
+          type: "INTERACTIVE",
+          status: "SENT",
+          body: input.bodyText ?? saved.defaultBody,
+          sentByUserId: context.user.id,
+          payload: {
+            interactive_type: "flow",
+            flow_id: saved.flowId,
+            flow_cta: input.flowCta ?? saved.defaultCta,
+            saved_flow_id: saved.id,
+          } as never,
+          timestamp: now,
+        },
+      });
+      await db.waConversation.update({
+        where: { id: conv.id },
+        data: { lastMessageAt: now, lastMessagePreview: `[flow] ${saved.name}` },
+      });
+      await db.waSavedFlow.update({
+        where: { id: saved.id },
+        data: { hitCount: { increment: 1 }, lastUsedAt: now },
+      });
+      return { message };
+    }),
+
+  // ── Global scheduled list ─────────────────────────────────────────────────
+  listAllScheduled: readWa
+    .route({ method: "POST", path: "/scheduled/list-all", tags: ["WA Cloud"] })
+    .input(listAllScheduledInputSchema)
+    .output(listAllScheduledResponseSchema)
+    .handler(async ({ input }) => {
+      const where = input.status ? { status: input.status } : {};
+      const rows = await db.waScheduledMessage.findMany({
+        where,
+        orderBy: { scheduledAt: "asc" },
+        take: input.limit,
+        include: { conversation: { include: { contact: true } } },
+      });
+      return {
+        scheduled: rows.map((r) => ({
+          ...r,
+          templateVars: (r.templateVars as unknown as string[]) ?? [],
+          contactName:
+            r.conversation.contact.name ?? r.conversation.contact.pushName ?? null,
+          phoneE164: r.conversation.contact.phoneE164,
+        })),
+      };
+    }),
+
   // ── Account events / alerts ───────────────────────────────────────────────
   listAccountEvents: readWa
     .route({ method: "POST", path: "/account-events/list", tags: ["WA Cloud"] })
@@ -1451,9 +1849,9 @@ const waRouterBase = {
           cost: p.cost ?? null,
           phone_number: p.phone_number ?? null,
           country: p.country ?? null,
-          pricing_category: p.pricing_category ?? null,
-          pricing_type: p.pricing_type ?? null,
-          tier: p.tier ?? null,
+          conversation_type: p.conversation_type ?? null,
+          conversation_direction: p.conversation_direction ?? null,
+          conversation_category: p.conversation_category ?? null,
         })),
         pricing: pricing.map((p) => ({
           start: p.start,
@@ -1495,13 +1893,18 @@ const waRouterBase = {
     .route({ method: "POST", path: "/contacts/block", tags: ["WA Cloud"] })
     .input(blockContactInputSchema)
     .output(waOkResponseSchema)
-    .handler(async ({ input }) => {
+    .handler(async ({ context, input }) => {
       const conv = await db.waConversation.findUnique({
         where: { id: input.conversationId },
         include: { contact: true },
       });
       if (!conv) throw new ORPCError("NOT_FOUND", { message: "Conversación no encontrada" });
       await blockUsers(input.phoneNumberId, [conv.contact.phoneE164]);
+      const now = new Date();
+      await db.waContact.update({
+        where: { id: conv.contactId },
+        data: { blockedAt: now, blockedByUserId: context.user.id },
+      });
       await db.waConversation.update({
         where: { id: input.conversationId },
         data: { status: "ARCHIVED" },
@@ -1519,6 +1922,14 @@ const waRouterBase = {
       });
       if (!conv) throw new ORPCError("NOT_FOUND", { message: "Conversación no encontrada" });
       await unblockUsers(input.phoneNumberId, [conv.contact.phoneE164]);
+      await db.waContact.update({
+        where: { id: conv.contactId },
+        data: { blockedAt: null, blockedByUserId: null },
+      });
+      await db.waConversation.update({
+        where: { id: input.conversationId },
+        data: { status: "OPEN" },
+      });
       return { status: "ok" as const };
     }),
   listBlocked: readWa
@@ -1581,9 +1992,9 @@ const waRouterBase = {
           conversation: p.conversation,
           cost: p.cost ?? null,
           phone_number: p.phone_number ?? null,
-          conversation_type: null,
-          conversation_direction: null,
-          conversation_category: p.pricing_category ?? null,
+          conversation_type: p.conversation_type ?? null,
+          conversation_direction: p.conversation_direction ?? null,
+          conversation_category: p.conversation_category ?? null,
         })),
       };
     }),

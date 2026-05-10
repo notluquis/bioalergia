@@ -23,7 +23,6 @@ import {
   CornerUpLeft,
   Download,
   FileText,
-  Home,
   Images,
   Layers,
   List,
@@ -54,19 +53,22 @@ import {
   uploadWaMedia,
   useAccounts,
   useBlockContact,
+  useUnblockContact,
   useCancelScheduled,
   useListScheduled,
-  useSendAddress,
-  useSendInteractiveList,
   useScheduleMessage,
   useConversation,
   useConversationMedia,
   useEditText,
+  useSavedFlows,
+  useSavedInteractiveLists,
+  useSavedLocations,
   useSendContacts,
-  useSendFlow,
-  useSendLocation,
   useSendMedia,
   useSendReaction,
+  useSendSavedFlow,
+  useSendSavedList,
+  useSendSavedLocation,
   useSendTemplate,
   useSendText,
   useSetTyping,
@@ -113,14 +115,11 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
   const sendTemplate = useSendTemplate();
   const sendReaction = useSendReaction();
   const sendMedia = useSendMedia();
-  const sendFlow = useSendFlow();
-  const sendLocation = useSendLocation();
   const sendContacts = useSendContacts();
-  const sendList = useSendInteractiveList();
-  const sendAddress = useSendAddress();
   const editText = useEditText();
   const setTyping = useSetTyping();
   const blockContact = useBlockContact();
+  const unblockContactMut = useUnblockContact();
   const [flowOpen, setFlowOpen] = useState(false);
   const [locationOpen, setLocationOpen] = useState(false);
   const [contactsOpen, setContactsOpen] = useState(false);
@@ -130,7 +129,6 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
   } | null>(null);
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [listOpen, setListOpen] = useState(false);
-  const [addressOpen, setAddressOpen] = useState(false);
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const scheduleMsg = useScheduleMessage();
   const cancelScheduled = useCancelScheduled();
@@ -439,7 +437,7 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
 
   return (
     <>
-      <Card.Header className="flex items-center justify-between gap-3 border-default-200 border-b p-3">
+      <Card.Header className="!flex !flex-row !items-center !justify-between gap-3 border-default-200 border-b p-3">
         <div className="flex min-w-0 items-center gap-3">
           <Avatar className="size-10 shrink-0 bg-success-200 text-success-900">
             <Avatar.Fallback className="font-semibold text-sm">{initials}</Avatar.Fallback>
@@ -453,6 +451,12 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-2">
+          {c.contact.blockedAt && (
+            <Chip color="danger" variant="soft" size="sm">
+              <Ban size={12} />
+              <Chip.Label>Bloqueado</Chip.Label>
+            </Chip>
+          )}
           {c.windowOpen ? (
             <Chip color="success" variant="soft" size="sm">
               <Chip.Label>
@@ -526,6 +530,34 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
           )}
         </div>
 
+        {c.contact.blockedAt && (
+          <div className="flex items-center justify-between gap-3 border-default-200 border-t bg-danger-50 px-4 py-2 text-danger text-sm">
+            <span className="flex items-center gap-2">
+              <Ban size={14} />
+              Contacto bloqueado · no puedes enviar mensajes hasta desbloquearlo
+            </span>
+            <Button
+              size="sm"
+              variant="outline"
+              onPress={() => {
+                if (!phoneId) {
+                  toast.error("Selecciona un número primero");
+                  return;
+                }
+                if (!confirm("¿Desbloquear este contacto en WhatsApp?")) return;
+                blockContact.reset();
+                void unblockContactMut.mutateAsync({
+                  conversationId,
+                  phoneNumberId: Number(phoneId),
+                }).then(() => {
+                  toast.success("Contacto desbloqueado");
+                }).catch((e) => toast.error(`Error: ${String(e)}`));
+              }}
+            >
+              Desbloquear
+            </Button>
+          </div>
+        )}
         <div className="border-default-200 border-t bg-background p-3">
           {mode === "text" ? (
             <TextComposer
@@ -540,9 +572,11 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
                 }, 400);
               }}
               onSend={handleSendText}
-              isDisabled={!c.windowOpen || !phoneId}
+              isDisabled={!c.windowOpen || !phoneId || Boolean(c.contact.blockedAt)}
               disabledReason={
-                !c.windowOpen
+                c.contact.blockedAt
+                  ? "Contacto bloqueado"
+                  : !c.windowOpen
                   ? "Ventana 24h cerrada. Cambia a plantilla."
                   : !phoneId
                     ? "Selecciona un número en ⚙ ajustes"
@@ -558,7 +592,6 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
               onOpenContacts={() => setContactsOpen(true)}
               onOpenSchedule={() => setScheduleOpen(true)}
               onOpenList={() => setListOpen(true)}
-              onOpenAddress={() => setAddressOpen(true)}
             />
           ) : (
             <TemplateComposer
@@ -574,21 +607,17 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
           )}
         </div>
       </Card.Content>
-      <FlowSendModal
+      <FlowSelectorModal
         isOpen={flowOpen}
         onClose={() => setFlowOpen(false)}
         conversationId={conversationId}
         phoneNumberId={phoneId ? Number(phoneId) : null}
-        onSend={(input) => sendFlow.mutate(input)}
-        isPending={sendFlow.isPending}
       />
-      <LocationSendModal
+      <LocationSelectorModal
         isOpen={locationOpen}
         onClose={() => setLocationOpen(false)}
         conversationId={conversationId}
         phoneNumberId={phoneId ? Number(phoneId) : null}
-        onSend={(input) => sendLocation.mutate(input)}
-        isPending={sendLocation.isPending}
       />
       <ContactsSendModal
         isOpen={contactsOpen}
@@ -611,21 +640,11 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
         onClose={() => setGalleryOpen(false)}
         conversationId={conversationId}
       />
-      <InteractiveListModal
+      <InteractiveListSelectorModal
         isOpen={listOpen}
         onClose={() => setListOpen(false)}
         conversationId={conversationId}
         phoneNumberId={phoneId ? Number(phoneId) : null}
-        onSend={(input) => sendList.mutate(input)}
-        isPending={sendList.isPending}
-      />
-      <AddressMessageModal
-        isOpen={addressOpen}
-        onClose={() => setAddressOpen(false)}
-        conversationId={conversationId}
-        phoneNumberId={phoneId ? Number(phoneId) : null}
-        onSend={(input) => sendAddress.mutate(input)}
-        isPending={sendAddress.isPending}
       />
       <ScheduleSendModal
         isOpen={scheduleOpen}
@@ -864,7 +883,6 @@ function TextComposer({
   onOpenContacts,
   onOpenSchedule,
   onOpenList,
-  onOpenAddress,
 }: {
   body: string;
   setBody: (v: string) => void;
@@ -881,7 +899,6 @@ function TextComposer({
   onOpenContacts: () => void;
   onOpenSchedule: () => void;
   onOpenList: () => void;
-  onOpenAddress: () => void;
 }) {
   const ref = useRef<HTMLTextAreaElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -1015,20 +1032,12 @@ function TextComposer({
                 <span>Lista interactiva</span>
               </ListBox.Item>
               <ListBox.Item
-                id="address"
-                onAction={onOpenAddress}
-                className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm data-[hovered]:bg-default-100"
-              >
-                <Home size={14} className="text-success" />
-                <span>Pedir dirección</span>
-              </ListBox.Item>
-              <ListBox.Item
                 id="schedule"
                 onAction={onOpenSchedule}
                 className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm data-[hovered]:bg-default-100"
               >
                 <CalendarClock size={14} className="text-warning" />
-                <span>Programar envío</span>
+                <span>Programar mensaje</span>
               </ListBox.Item>
             </ListBox>
           </Dropdown.Popover>
@@ -1207,268 +1216,6 @@ function ConvSettingsMenu({
         </div>
       </Dropdown.Popover>
     </Dropdown>
-  );
-}
-
-function FlowSendModal({
-  isOpen,
-  onClose,
-  conversationId,
-  phoneNumberId,
-  onSend,
-  isPending,
-}: {
-  isOpen: boolean;
-  onClose: () => void;
-  conversationId: number;
-  phoneNumberId: number | null;
-  onSend: (input: {
-    conversationId: number;
-    phoneNumberId: number;
-    flowId: string;
-    flowCta: string;
-    bodyText: string;
-    headerText?: string;
-    footerText?: string;
-  }) => void;
-  isPending: boolean;
-}) {
-  const [flowId, setFlowId] = useState("");
-  const [flowCta, setFlowCta] = useState("Iniciar");
-  const [bodyText, setBodyText] = useState("");
-  const [headerText, setHeaderText] = useState("");
-  const [footerText, setFooterText] = useState("");
-
-  useEffect(() => {
-    if (!isOpen) {
-      setFlowId("");
-      setFlowCta("Iniciar");
-      setBodyText("");
-      setHeaderText("");
-      setFooterText("");
-    }
-  }, [isOpen]);
-
-  const submit = () => {
-    if (!phoneNumberId) {
-      toast.error("Selecciona un número primero");
-      return;
-    }
-    if (!flowId.trim() || !bodyText.trim() || !flowCta.trim()) {
-      toast.error("Flow ID, CTA y mensaje son obligatorios");
-      return;
-    }
-    onSend({
-      conversationId,
-      phoneNumberId,
-      flowId: flowId.trim(),
-      flowCta: flowCta.trim(),
-      bodyText: bodyText.trim(),
-      headerText: headerText.trim() || undefined,
-      footerText: footerText.trim() || undefined,
-    });
-    onClose();
-  };
-
-  return (
-    <Modal>
-      <Modal.Backdrop
-        className="bg-black/40 backdrop-blur-[2px]"
-        isOpen={isOpen}
-        onOpenChange={(o) => !o && onClose()}
-      >
-        <Modal.Container placement="center">
-          <Modal.Dialog className="relative w-full max-w-md rounded-[28px] bg-background p-6 shadow-2xl">
-            <Modal.Header className="mb-4">
-              <Modal.Heading className="font-bold text-primary text-xl">
-                Enviar formulario (Flow)
-              </Modal.Heading>
-              <p className="text-default-500 text-sm">
-                Mensaje interactivo con CTA que abre un Flow de Meta.
-              </p>
-            </Modal.Header>
-            <Modal.Body className="max-h-[70vh] space-y-3 overflow-y-auto">
-              <TextInput
-                label="Flow ID"
-                value={flowId}
-                onValueChange={setFlowId}
-                placeholder="123456789012345"
-              />
-              <TextInput
-                label="Texto del botón (CTA)"
-                value={flowCta}
-                onValueChange={setFlowCta}
-                placeholder="Iniciar"
-              />
-              <TextInput
-                label="Mensaje (body)"
-                value={bodyText}
-                onValueChange={setBodyText}
-                placeholder="Completa este formulario para agendar tu cita"
-              />
-              <TextInput
-                label="Encabezado (opcional)"
-                value={headerText}
-                onValueChange={setHeaderText}
-                placeholder="Anamnesis previa"
-              />
-              <TextInput
-                label="Pie (opcional)"
-                value={footerText}
-                onValueChange={setFooterText}
-                placeholder="Solo toma 2 minutos"
-              />
-            </Modal.Body>
-            <Modal.Footer className="mt-4 flex justify-end gap-2">
-              <Button variant="outline" onPress={onClose}>
-                <X size={14} />
-                Cancelar
-              </Button>
-              <Button onPress={submit} isPending={isPending}>
-                <Send size={14} />
-                Enviar
-              </Button>
-            </Modal.Footer>
-          </Modal.Dialog>
-        </Modal.Container>
-      </Modal.Backdrop>
-    </Modal>
-  );
-}
-
-function LocationSendModal({
-  isOpen,
-  onClose,
-  conversationId,
-  phoneNumberId,
-  onSend,
-  isPending,
-}: {
-  isOpen: boolean;
-  onClose: () => void;
-  conversationId: number;
-  phoneNumberId: number | null;
-  onSend: (input: {
-    conversationId: number;
-    phoneNumberId: number;
-    latitude: number;
-    longitude: number;
-    name?: string;
-    address?: string;
-  }) => void;
-  isPending: boolean;
-}) {
-  const [lat, setLat] = useState("");
-  const [lng, setLng] = useState("");
-  const [name, setName] = useState("");
-  const [address, setAddress] = useState("");
-
-  useEffect(() => {
-    if (!isOpen) {
-      setLat("");
-      setLng("");
-      setName("");
-      setAddress("");
-    }
-  }, [isOpen]);
-
-  const useCurrentLocation = () => {
-    if (!navigator.geolocation) {
-      toast.error("Tu navegador no soporta geolocalización");
-      return;
-    }
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setLat(pos.coords.latitude.toFixed(6));
-        setLng(pos.coords.longitude.toFixed(6));
-      },
-      () => toast.error("No se pudo obtener tu ubicación")
-    );
-  };
-
-  const submit = () => {
-    if (!phoneNumberId) {
-      toast.error("Selecciona un número primero");
-      return;
-    }
-    const latN = Number(lat);
-    const lngN = Number(lng);
-    if (!Number.isFinite(latN) || !Number.isFinite(lngN)) {
-      toast.error("Latitud / longitud inválidas");
-      return;
-    }
-    onSend({
-      conversationId,
-      phoneNumberId,
-      latitude: latN,
-      longitude: lngN,
-      name: name.trim() || undefined,
-      address: address.trim() || undefined,
-    });
-    onClose();
-  };
-
-  return (
-    <Modal>
-      <Modal.Backdrop
-        className="bg-black/40 backdrop-blur-[2px]"
-        isOpen={isOpen}
-        onOpenChange={(o) => !o && onClose()}
-        isDismissable
-      >
-        <Modal.Container placement="center">
-          <Modal.Dialog className="relative w-full max-w-md rounded-[28px] bg-background p-6 shadow-2xl">
-            <Modal.Header className="mb-4">
-              <Modal.Heading className="font-bold text-primary text-xl">
-                Compartir ubicación
-              </Modal.Heading>
-            </Modal.Header>
-            <Modal.Body className="max-h-[70vh] space-y-3 overflow-y-auto">
-              <div className="grid grid-cols-2 gap-3">
-                <TextInput
-                  label="Latitud"
-                  value={lat}
-                  onValueChange={setLat}
-                  placeholder="-33.4159"
-                />
-                <TextInput
-                  label="Longitud"
-                  value={lng}
-                  onValueChange={setLng}
-                  placeholder="-70.6062"
-                />
-              </div>
-              <Button size="sm" variant="outline" onPress={useCurrentLocation}>
-                <MapPin size={14} />
-                Usar mi ubicación actual
-              </Button>
-              <TextInput
-                label="Nombre (opcional)"
-                value={name}
-                onValueChange={setName}
-                placeholder="Bioalergia · Centro Médico"
-              />
-              <TextInput
-                label="Dirección (opcional)"
-                value={address}
-                onValueChange={setAddress}
-                placeholder="Av. Apoquindo 1234, Las Condes"
-              />
-            </Modal.Body>
-            <Modal.Footer className="mt-4 flex justify-end gap-2">
-              <Button variant="outline" onPress={onClose}>
-                <X size={14} />
-                Cancelar
-              </Button>
-              <Button onPress={submit} isPending={isPending}>
-                <Send size={14} />
-                Enviar
-              </Button>
-            </Modal.Footer>
-          </Modal.Dialog>
-        </Modal.Container>
-      </Modal.Backdrop>
-    </Modal>
   );
 }
 
@@ -1894,291 +1641,6 @@ function ScheduleSendModal({
   );
 }
 
-function InteractiveListModal({
-  isOpen,
-  onClose,
-  conversationId,
-  phoneNumberId,
-  onSend,
-  isPending,
-}: {
-  isOpen: boolean;
-  onClose: () => void;
-  conversationId: number;
-  phoneNumberId: number | null;
-  onSend: (input: {
-    conversationId: number;
-    phoneNumberId: number;
-    bodyText: string;
-    buttonText: string;
-    headerText?: string;
-    footerText?: string;
-    sections: Array<{
-      title?: string;
-      rows: Array<{ id: string; title: string; description?: string }>;
-    }>;
-  }) => void;
-  isPending: boolean;
-}) {
-  const [headerText, setHeaderText] = useState("");
-  const [bodyText, setBodyText] = useState("");
-  const [footerText, setFooterText] = useState("");
-  const [buttonText, setButtonText] = useState("Ver opciones");
-  const [sectionTitle, setSectionTitle] = useState("Opciones");
-  // rows entered as: id|title|description per line
-  const [rowsRaw, setRowsRaw] = useState("");
-
-  useEffect(() => {
-    if (!isOpen) {
-      setHeaderText("");
-      setBodyText("");
-      setFooterText("");
-      setButtonText("Ver opciones");
-      setSectionTitle("Opciones");
-      setRowsRaw("");
-    }
-  }, [isOpen]);
-
-  const submit = () => {
-    if (!phoneNumberId) {
-      toast.error("Selecciona un número primero");
-      return;
-    }
-    if (!bodyText.trim() || !buttonText.trim()) {
-      toast.error("Body y texto del botón son obligatorios");
-      return;
-    }
-    const lines = rowsRaw
-      .split(/\r?\n/)
-      .map((l) => l.trim())
-      .filter(Boolean);
-    if (lines.length === 0) {
-      toast.error("Agrega al menos una fila");
-      return;
-    }
-    if (lines.length > 10) {
-      toast.error("Máximo 10 filas por lista");
-      return;
-    }
-    const rows = lines.map((line) => {
-      const parts = line.split("|").map((p) => p.trim());
-      return {
-        id: parts[0] ?? `row_${Date.now()}_${Math.random()}`,
-        title: parts[1] ?? parts[0] ?? "Opción",
-        description: parts[2] || undefined,
-      };
-    });
-    onSend({
-      conversationId,
-      phoneNumberId,
-      bodyText: bodyText.trim(),
-      buttonText: buttonText.trim(),
-      headerText: headerText.trim() || undefined,
-      footerText: footerText.trim() || undefined,
-      sections: [{ title: sectionTitle.trim() || undefined, rows }],
-    });
-    onClose();
-  };
-
-  return (
-    <Modal>
-      <Modal.Backdrop
-        isOpen={isOpen}
-        onOpenChange={(o) => !o && onClose()}
-        isDismissable
-        className="bg-black/40 backdrop-blur-[2px]"
-      >
-        <Modal.Container placement="center">
-          <Modal.Dialog className="relative w-full max-w-md rounded-[28px] bg-background p-6 shadow-2xl">
-            <Modal.Header className="mb-4">
-              <Modal.Heading className="font-bold text-primary text-xl">
-                Lista interactiva
-              </Modal.Heading>
-              <p className="text-default-500 text-xs">
-                Hasta 10 filas. Solo durante ventana 24h. Formato fila:{" "}
-                <code>id|título|descripción</code> (descripción opcional)
-              </p>
-            </Modal.Header>
-            <Modal.Body className="max-h-[70vh] space-y-3 overflow-y-auto">
-              <TextInput
-                label="Encabezado (opcional)"
-                value={headerText}
-                onValueChange={setHeaderText}
-                placeholder="Motivo de consulta"
-              />
-              <TextInput
-                label="Body"
-                value={bodyText}
-                onValueChange={setBodyText}
-                placeholder="Selecciona el motivo de tu consulta"
-              />
-              <div className="grid grid-cols-2 gap-3">
-                <TextInput
-                  label="Texto botón (máx 20)"
-                  value={buttonText}
-                  onValueChange={setButtonText}
-                />
-                <TextInput
-                  label="Título sección"
-                  value={sectionTitle}
-                  onValueChange={setSectionTitle}
-                />
-              </div>
-              <div>
-                <label className="mb-1 block font-medium text-sm">
-                  Filas (una por línea, máx 10)
-                </label>
-                <TextArea
-                  variant="secondary"
-                  value={rowsRaw}
-                  onChange={(e) => setRowsRaw(e.currentTarget.value)}
-                  rows={6}
-                  fullWidth
-                  placeholder={
-                    "alergia_rinitis|Rinitis crónica|Estornudos frecuentes\nalergia_asma|Asma|Falta de aire\nimmuno_inicio|Iniciar tratamiento|Vacuna ácaros"
-                  }
-                />
-              </div>
-              <TextInput
-                label="Pie (opcional)"
-                value={footerText}
-                onValueChange={setFooterText}
-                placeholder="Bioalergia"
-              />
-            </Modal.Body>
-            <Modal.Footer className="mt-4 flex justify-end gap-2">
-              <Button variant="outline" onPress={onClose}>
-                <X size={14} />
-                Cancelar
-              </Button>
-              <Button onPress={submit} isPending={isPending}>
-                <List size={14} />
-                Enviar lista
-              </Button>
-            </Modal.Footer>
-          </Modal.Dialog>
-        </Modal.Container>
-      </Modal.Backdrop>
-    </Modal>
-  );
-}
-
-function AddressMessageModal({
-  isOpen,
-  onClose,
-  conversationId,
-  phoneNumberId,
-  onSend,
-  isPending,
-}: {
-  isOpen: boolean;
-  onClose: () => void;
-  conversationId: number;
-  phoneNumberId: number | null;
-  onSend: (input: {
-    conversationId: number;
-    phoneNumberId: number;
-    bodyText: string;
-    country: string;
-    saveAddressLabel?: string;
-  }) => void;
-  isPending: boolean;
-}) {
-  const [bodyText, setBodyText] = useState(
-    "Por favor comparte tu dirección para envío de muestras"
-  );
-  const [country, setCountry] = useState("CL");
-  const [label, setLabel] = useState("");
-
-  useEffect(() => {
-    if (!isOpen) {
-      setBodyText("Por favor comparte tu dirección para envío de muestras");
-      setCountry("CL");
-      setLabel("");
-    }
-  }, [isOpen]);
-
-  const submit = () => {
-    if (!phoneNumberId) {
-      toast.error("Selecciona un número primero");
-      return;
-    }
-    if (!bodyText.trim()) {
-      toast.error("Body obligatorio");
-      return;
-    }
-    if (!/^[A-Z]{2}$/.test(country)) {
-      toast.error("Country code ISO-2 (ej: CL, MX, IN)");
-      return;
-    }
-    onSend({
-      conversationId,
-      phoneNumberId,
-      bodyText: bodyText.trim(),
-      country,
-      saveAddressLabel: label.trim() || undefined,
-    });
-    onClose();
-  };
-
-  return (
-    <Modal>
-      <Modal.Backdrop
-        isOpen={isOpen}
-        onOpenChange={(o) => !o && onClose()}
-        isDismissable
-        className="bg-black/40 backdrop-blur-[2px]"
-      >
-        <Modal.Container placement="center">
-          <Modal.Dialog className="relative w-full max-w-md rounded-[28px] bg-background p-6 shadow-2xl">
-            <Modal.Header className="mb-4">
-              <Modal.Heading className="font-bold text-primary text-xl">
-                Pedir dirección
-              </Modal.Heading>
-              <p className="text-default-500 text-xs">
-                Address Message tiene cobertura limitada por país (Meta lo lanzó por etapas). Si
-                falla, usa CTA URL o pídele dirección como texto.
-              </p>
-            </Modal.Header>
-            <Modal.Body className="max-h-[70vh] space-y-3 overflow-y-auto">
-              <TextInput
-                label="Body"
-                value={bodyText}
-                onValueChange={setBodyText}
-                placeholder="Comparte tu dirección"
-              />
-              <div className="grid grid-cols-2 gap-3">
-                <TextInput
-                  label="País (ISO-2)"
-                  value={country}
-                  onValueChange={(v) => setCountry(v.toUpperCase().slice(0, 2))}
-                  placeholder="CL"
-                />
-                <TextInput
-                  label="Label guardar (opcional)"
-                  value={label}
-                  onValueChange={setLabel}
-                  placeholder="Casa"
-                />
-              </div>
-            </Modal.Body>
-            <Modal.Footer className="mt-4 flex justify-end gap-2">
-              <Button variant="outline" onPress={onClose}>
-                <X size={14} />
-                Cancelar
-              </Button>
-              <Button onPress={submit} isPending={isPending}>
-                <Home size={14} />
-                Pedir dirección
-              </Button>
-            </Modal.Footer>
-          </Modal.Dialog>
-        </Modal.Container>
-      </Modal.Backdrop>
-    </Modal>
-  );
-}
-
 function VoiceRecorderButton({
   onSend,
   isDisabled,
@@ -2425,6 +1887,312 @@ function MediaGalleryModal({
                 </div>
               )}
             </Modal.Body>
+          </Modal.Dialog>
+        </Modal.Container>
+      </Modal.Backdrop>
+    </Modal>
+  );
+}
+
+function LocationSelectorModal({
+  isOpen,
+  onClose,
+  conversationId,
+  phoneNumberId,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  conversationId: number;
+  phoneNumberId: number | null;
+}) {
+  const list = useSavedLocations();
+  const send = useSendSavedLocation();
+  const items = list.data?.locations ?? [];
+
+  return (
+    <Modal>
+      <Modal.Backdrop
+        isOpen={isOpen}
+        onOpenChange={(o) => !o && onClose()}
+        isDismissable
+        className="bg-black/40 backdrop-blur-[2px]"
+      >
+        <Modal.Container placement="center">
+          <Modal.Dialog className="relative w-full max-w-md rounded-[28px] bg-background p-6 shadow-2xl">
+            <Modal.Header className="mb-4">
+              <Modal.Heading className="font-bold text-primary text-xl">
+                <MapPin className="mr-2 inline" size={20} />
+                Compartir ubicación
+              </Modal.Heading>
+              <p className="text-default-500 text-xs">
+                Selecciona una ubicación pre-guardada. Para crear nuevas, ve a
+                Ajustes WA → Catálogo.
+              </p>
+            </Modal.Header>
+            <Modal.Body className="max-h-[60vh] space-y-2 overflow-y-auto">
+              {list.isLoading ? (
+                <div className="flex justify-center py-6">
+                  <Spinner size="sm" />
+                </div>
+              ) : items.length === 0 ? (
+                <p className="py-6 text-center text-default-500 text-sm">
+                  Sin ubicaciones guardadas. Pídele a un admin que cree una.
+                </p>
+              ) : (
+                items.map((loc) => (
+                  <button
+                    key={loc.id}
+                    type="button"
+                    onClick={() => {
+                      if (!phoneNumberId) {
+                        toast.error("Selecciona un número primero");
+                        return;
+                      }
+                      send.mutate(
+                        {
+                          conversationId,
+                          phoneNumberId,
+                          savedLocationId: loc.id,
+                        },
+                        {
+                          onSuccess: () => {
+                            toast.success(`Enviada: ${loc.name}`);
+                            onClose();
+                          },
+                          onError: (e) => toast.error(`Error: ${String(e)}`),
+                        },
+                      );
+                    }}
+                    className="flex w-full items-start gap-3 rounded-lg border border-default-200 bg-content1 p-3 text-left transition hover:bg-content2"
+                  >
+                    <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-success-100 text-success-700">
+                      <MapPin size={18} />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <p className="truncate font-medium text-sm">{loc.name}</p>
+                        {loc.isDefault && (
+                          <Chip size="sm" color="success" variant="soft">
+                            <Chip.Label>default</Chip.Label>
+                          </Chip>
+                        )}
+                      </div>
+                      {loc.address && (
+                        <p className="line-clamp-2 text-default-500 text-xs">{loc.address}</p>
+                      )}
+                      <p className="mt-0.5 font-mono text-default-400 text-[10px]">
+                        {loc.latitude.toFixed(5)}, {loc.longitude.toFixed(5)}
+                      </p>
+                    </div>
+                  </button>
+                ))
+              )}
+            </Modal.Body>
+            <Modal.Footer className="mt-3 flex justify-end">
+              <Button variant="outline" onPress={onClose}>
+                <X size={14} />
+                Cerrar
+              </Button>
+            </Modal.Footer>
+          </Modal.Dialog>
+        </Modal.Container>
+      </Modal.Backdrop>
+    </Modal>
+  );
+}
+
+function InteractiveListSelectorModal({
+  isOpen,
+  onClose,
+  conversationId,
+  phoneNumberId,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  conversationId: number;
+  phoneNumberId: number | null;
+}) {
+  const list = useSavedInteractiveLists();
+  const send = useSendSavedList();
+  const items = list.data?.lists ?? [];
+
+  return (
+    <Modal>
+      <Modal.Backdrop
+        isOpen={isOpen}
+        onOpenChange={(o) => !o && onClose()}
+        isDismissable
+        className="bg-black/40 backdrop-blur-[2px]"
+      >
+        <Modal.Container placement="center">
+          <Modal.Dialog className="relative w-full max-w-md rounded-[28px] bg-background p-6 shadow-2xl">
+            <Modal.Header className="mb-4">
+              <Modal.Heading className="font-bold text-primary text-xl">
+                <List className="mr-2 inline" size={20} />
+                Lista interactiva
+              </Modal.Heading>
+              <p className="text-default-500 text-xs">
+                Selecciona una lista pre-configurada. Solo durante ventana 24h.
+              </p>
+            </Modal.Header>
+            <Modal.Body className="max-h-[60vh] space-y-2 overflow-y-auto">
+              {list.isLoading ? (
+                <div className="flex justify-center py-6">
+                  <Spinner size="sm" />
+                </div>
+              ) : items.length === 0 ? (
+                <p className="py-6 text-center text-default-500 text-sm">
+                  Sin listas guardadas. Crea una en Ajustes WA → Catálogo.
+                </p>
+              ) : (
+                items.map((it) => (
+                  <button
+                    key={it.id}
+                    type="button"
+                    onClick={() => {
+                      if (!phoneNumberId) {
+                        toast.error("Selecciona un número primero");
+                        return;
+                      }
+                      send.mutate(
+                        {
+                          conversationId,
+                          phoneNumberId,
+                          savedListId: it.id,
+                        },
+                        {
+                          onSuccess: () => {
+                            toast.success(`Enviada: ${it.name}`);
+                            onClose();
+                          },
+                          onError: (e) => toast.error(`Error: ${String(e)}`),
+                        },
+                      );
+                    }}
+                    className="flex w-full items-start gap-3 rounded-lg border border-default-200 bg-content1 p-3 text-left transition hover:bg-content2"
+                  >
+                    <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-accent-100 text-accent-700">
+                      <List size={18} />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-medium text-sm">{it.name}</p>
+                      {it.description && (
+                        <p className="line-clamp-1 text-default-500 text-xs">{it.description}</p>
+                      )}
+                      <p className="mt-0.5 text-default-400 text-[10px]">
+                        {it.sections.reduce((n, s) => n + s.rows.length, 0)} opciones · usado{" "}
+                        {it.hitCount}×
+                      </p>
+                    </div>
+                  </button>
+                ))
+              )}
+            </Modal.Body>
+            <Modal.Footer className="mt-3 flex justify-end">
+              <Button variant="outline" onPress={onClose}>
+                <X size={14} />
+                Cerrar
+              </Button>
+            </Modal.Footer>
+          </Modal.Dialog>
+        </Modal.Container>
+      </Modal.Backdrop>
+    </Modal>
+  );
+}
+
+function FlowSelectorModal({
+  isOpen,
+  onClose,
+  conversationId,
+  phoneNumberId,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  conversationId: number;
+  phoneNumberId: number | null;
+}) {
+  const list = useSavedFlows();
+  const send = useSendSavedFlow();
+  const items = list.data?.flows ?? [];
+
+  return (
+    <Modal>
+      <Modal.Backdrop
+        isOpen={isOpen}
+        onOpenChange={(o) => !o && onClose()}
+        isDismissable
+        className="bg-black/40 backdrop-blur-[2px]"
+      >
+        <Modal.Container placement="center">
+          <Modal.Dialog className="relative w-full max-w-md rounded-[28px] bg-background p-6 shadow-2xl">
+            <Modal.Header className="mb-4">
+              <Modal.Heading className="font-bold text-primary text-xl">
+                <Layers className="mr-2 inline" size={20} />
+                Enviar formulario (Flow)
+              </Modal.Heading>
+              <p className="text-default-500 text-xs">
+                Los Flows se diseñan en Meta Business Manager. Aquí solo eliges cuál enviar.
+              </p>
+            </Modal.Header>
+            <Modal.Body className="max-h-[60vh] space-y-2 overflow-y-auto">
+              {list.isLoading ? (
+                <div className="flex justify-center py-6">
+                  <Spinner size="sm" />
+                </div>
+              ) : items.length === 0 ? (
+                <p className="py-6 text-center text-default-500 text-sm">
+                  Sin Flows guardados. Configúralos en Ajustes WA → Catálogo (necesitas el flow_id de Meta).
+                </p>
+              ) : (
+                items.map((f) => (
+                  <button
+                    key={f.id}
+                    type="button"
+                    onClick={() => {
+                      if (!phoneNumberId) {
+                        toast.error("Selecciona un número primero");
+                        return;
+                      }
+                      send.mutate(
+                        {
+                          conversationId,
+                          phoneNumberId,
+                          savedFlowId: f.id,
+                        },
+                        {
+                          onSuccess: () => {
+                            toast.success(`Enviado: ${f.name}`);
+                            onClose();
+                          },
+                          onError: (e) => toast.error(`Error: ${String(e)}`),
+                        },
+                      );
+                    }}
+                    className="flex w-full items-start gap-3 rounded-lg border border-default-200 bg-content1 p-3 text-left transition hover:bg-content2"
+                  >
+                    <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-warning-100 text-warning-700">
+                      <Layers size={18} />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-medium text-sm">{f.name}</p>
+                      {f.description && (
+                        <p className="line-clamp-1 text-default-500 text-xs">{f.description}</p>
+                      )}
+                      <p className="mt-0.5 font-mono text-default-400 text-[10px]">
+                        flow_id: {f.flowId} · CTA: {f.defaultCta}
+                      </p>
+                    </div>
+                  </button>
+                ))
+              )}
+            </Modal.Body>
+            <Modal.Footer className="mt-3 flex justify-end">
+              <Button variant="outline" onPress={onClose}>
+                <X size={14} />
+                Cerrar
+              </Button>
+            </Modal.Footer>
           </Modal.Dialog>
         </Modal.Container>
       </Modal.Backdrop>

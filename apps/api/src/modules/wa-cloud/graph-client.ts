@@ -452,19 +452,21 @@ export async function getConversationAnalytics(params: ConversationAnalyticsPara
   if (!account?.systemUserToken) throw new Error("Account sin token");
   const granularity = params.granularity ?? "DAILY";
 
-  // Meta's valid dimensions per docs: PHONE, COUNTRY, PRICING_TYPE,
-  // PRICING_CATEGORY, TIER. (Older docs mentioned CONVERSATION_CATEGORY /
-  // CONVERSATION_DIRECTION but Graph API rejects them.)
-  const dims = '["PHONE","COUNTRY","PRICING_CATEGORY","PRICING_TYPE","TIER"]';
-  let convField = `conversation_analytics.start(${params.startUnix}).end(${params.endUnix}).granularity(${granularity}).dimensions(${dims})`;
+  // Each Meta field accepts a different dimension set:
+  //  conversation_analytics → PHONE, COUNTRY, CONVERSATION_TYPE,
+  //                           CONVERSATION_DIRECTION, CONVERSATION_CATEGORY
+  //  pricing_analytics      → PHONE, COUNTRY, PRICING_TYPE,
+  //                           PRICING_CATEGORY, TIER
+  const convDims =
+    '["PHONE","COUNTRY","CONVERSATION_TYPE","CONVERSATION_DIRECTION","CONVERSATION_CATEGORY"]';
+  let convField = `conversation_analytics.start(${params.startUnix}).end(${params.endUnix}).granularity(${granularity}).dimensions(${convDims})`;
   if (params.phoneNumbers && params.phoneNumbers.length > 0) {
     convField += `.phone_numbers(${JSON.stringify(params.phoneNumbers)})`;
   }
 
   const fields: string[] = [convField];
   if (params.includePricing) {
-    // pricing_analytics field — same dimension constraints
-    const pricingDims = '["PHONE","COUNTRY","PRICING_CATEGORY","PRICING_TYPE","TIER"]';
+    const pricingDims = '["PHONE","COUNTRY","PRICING_TYPE","PRICING_CATEGORY","TIER"]';
     fields.push(
       `pricing_analytics.start(${params.startUnix}).end(${params.endUnix}).granularity(DAILY).dimensions(${pricingDims})`,
     );
@@ -480,9 +482,9 @@ export async function getConversationAnalytics(params: ConversationAnalyticsPara
           conversation: number;
           phone_number?: string;
           country?: string;
-          pricing_category?: string;
-          pricing_type?: string;
-          tier?: string;
+          conversation_type?: string;
+          conversation_direction?: string;
+          conversation_category?: string;
           cost?: number;
         }>;
       }>;

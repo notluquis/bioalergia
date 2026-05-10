@@ -3258,6 +3258,9 @@ model WaContact {
   // user_preferences webhook (per-category opt-in/out, e.g. marketing)
   marketingOptIn      Boolean?  @map("marketing_opt_in")
   marketingOptInAt    DateTime? @map("marketing_opt_in_at")
+  // Block status (set after successful POST /{phone-id}/block_users)
+  blockedAt           DateTime? @map("blocked_at")
+  blockedByUserId     Int?      @map("blocked_by_user_id")
 
   conversations       WaConversation[]
   messages            WaMessage[]
@@ -3408,6 +3411,73 @@ model WaWebhookLog {
   @@deny('all', auth() == null)
   @@allow('read,create,update,delete', auth().status == 'ACTIVE')
   @@map("wa_webhook_logs")
+}
+
+// ── Saved interactive entities (curated catalog) ────────────────────────────
+
+model WaSavedLocation {
+  id          Int      @id @default(autoincrement())
+  name        String
+  latitude    Float
+  longitude   Float
+  address     String?
+  isDefault   Boolean  @default(false) @map("is_default")
+  archived    Boolean  @default(false)
+  createdByUserId Int  @map("created_by_user_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@index([archived])
+  @@deny('all', auth() == null)
+  @@allow('read,create,update,delete', auth().status == 'ACTIVE')
+  @@map("wa_saved_locations")
+}
+
+model WaSavedInteractiveList {
+  id           Int      @id @default(autoincrement())
+  name         String
+  description  String?
+  headerText   String?  @map("header_text")
+  bodyText     String   @map("body_text")
+  footerText   String?  @map("footer_text")
+  buttonText   String   @map("button_text")
+  sections     Json
+  archived     Boolean  @default(false)
+  hitCount     Int      @default(0) @map("hit_count")
+  lastUsedAt   DateTime? @map("last_used_at")
+  createdByUserId Int   @map("created_by_user_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@index([archived])
+  @@deny('all', auth() == null)
+  @@allow('read,create,update,delete', auth().status == 'ACTIVE')
+  @@map("wa_saved_interactive_lists")
+}
+
+model WaSavedFlow {
+  id            Int      @id @default(autoincrement())
+  name          String
+  description   String?
+  flowId        String   @map("flow_id")
+  flowToken     String?  @map("flow_token")
+  initialScreen String?  @map("initial_screen")
+  defaultBody   String   @map("default_body")
+  defaultHeader String?  @map("default_header")
+  defaultFooter String?  @map("default_footer")
+  defaultCta    String   @default("Iniciar") @map("default_cta")
+  archived      Boolean  @default(false)
+  hitCount      Int      @default(0) @map("hit_count")
+  lastUsedAt    DateTime? @map("last_used_at")
+  createdByUserId Int    @map("created_by_user_id")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@unique([flowId])
+  @@index([archived])
+  @@deny('all', auth() == null)
+  @@allow('read,create,update,delete', auth().status == 'ACTIVE')
+  @@map("wa_saved_flows")
 }
 
 enum WaScheduledStatus {

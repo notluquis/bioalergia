@@ -290,22 +290,68 @@ function ProfilePictureCard({ phoneNumberId }: { phoneNumberId: number }) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [pending, setPending] = useState(false);
 
+  // Resize + center-crop to 640x640 JPEG so Meta accepts (192-640 px square).
+  const resizeToSquare = (file: File): Promise<File> =>
+    new Promise((resolve, reject) => {
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        const TARGET = 640;
+        const canvas = document.createElement("canvas");
+        canvas.width = TARGET;
+        canvas.height = TARGET;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+          reject(new Error("Canvas no disponible"));
+          return;
+        }
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, TARGET, TARGET);
+        // Cover-crop centered
+        const scale = Math.max(TARGET / img.width, TARGET / img.height);
+        const w = img.width * scale;
+        const h = img.height * scale;
+        const x = (TARGET - w) / 2;
+        const y = (TARGET - h) / 2;
+        ctx.drawImage(img, x, y, w, h);
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) {
+              reject(new Error("Error creando JPEG"));
+              return;
+            }
+            resolve(new File([blob], "profile.jpg", { type: "image/jpeg" }));
+          },
+          "image/jpeg",
+          0.9,
+        );
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(url);
+        reject(new Error("No se pudo leer la imagen"));
+      };
+      img.src = url;
+    });
+
   const onFile = async (file: File) => {
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error("Máximo 5MB");
-      return;
-    }
-    if (!/^image\/(jpeg|png)$/.test(file.type)) {
-      toast.error("Solo JPG o PNG");
+    if (!/^image\/(jpeg|png|webp)$/.test(file.type)) {
+      toast.error("Solo JPG, PNG o WEBP");
       return;
     }
     setPending(true);
     try {
-      await uploadProfilePicture(file, phoneNumberId);
+      const resized = await resizeToSquare(file);
+      if (resized.size > 5 * 1024 * 1024) {
+        toast.error("Imagen final >5MB. Usa una imagen más pequeña.");
+        return;
+      }
+      await uploadProfilePicture(resized, phoneNumberId);
       toast.success("Foto de perfil actualizada en Meta");
       void profile.refetch();
     } catch (err) {
-      toast.error(`Error: ${String(err)}`);
+      const msg = err instanceof Error ? err.message : String(err);
+      toast.error(`Error: ${msg.slice(0, 200)}`);
     } finally {
       setPending(false);
     }
