@@ -38,6 +38,7 @@ import {
   Plus,
   Send,
   Settings2,
+  ShoppingBag,
   Smile,
   Tag,
   X,
@@ -76,6 +77,7 @@ export function TextComposer({
   onOpenContacts,
   onOpenSchedule,
   onOpenList,
+  onOpenCommerce,
   onSendSnippet,
 }: {
   body: string;
@@ -93,6 +95,7 @@ export function TextComposer({
   onOpenContacts: () => void;
   onOpenSchedule: () => void;
   onOpenList: () => void;
+  onOpenCommerce: () => void;
   onSendSnippet: (snippetId: number) => void;
 }) {
   const ref = useRef<HTMLTextAreaElement>(null);
@@ -232,6 +235,14 @@ export function TextComposer({
               >
                 <CalendarClock size={14} className="text-warning" />
                 <span>Programar mensaje</span>
+              </ListBox.Item>
+              <ListBox.Item
+                id="commerce"
+                onAction={onOpenCommerce}
+                className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm data-[hovered]:bg-default-100"
+              >
+                <ShoppingBag size={14} className="text-success" />
+                <span>Producto del catálogo</span>
               </ListBox.Item>
             </ListBox>
           </Dropdown.Popover>

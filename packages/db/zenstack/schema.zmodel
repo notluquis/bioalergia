@@ -3205,6 +3205,11 @@ model WaBusinessAccount {
   graphApiVersion     String    @default("v21.0") @map("graph_api_version")
   displayName         String?   @map("display_name")
   active              Boolean   @default(true)
+  // Meta Commerce catalog id linked to this WABA. Set to enable
+  // single-product / multi-product (MPM) interactive messages. Configured
+  // once in Meta Business Suite and stored here; we do not manage the
+  // catalog itself, only reference it.
+  commerceCatalogId   String?   @map("commerce_catalog_id")
   createdAt           DateTime  @default(now()) @map("created_at")
   updatedAt           DateTime  @default(now()) @updatedAt @map("updated_at")
 

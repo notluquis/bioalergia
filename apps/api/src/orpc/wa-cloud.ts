@@ -64,6 +64,10 @@ import {
   markReadInputSchema,
   cloneTemplateFromLibraryInputSchema,
   cloneTemplateFromLibraryResponseSchema,
+  listCommerceProductsInputSchema,
+  listCommerceProductsResponseSchema,
+  sendSingleProductInputSchema,
+  setCommerceCatalogInputSchema,
   conversationalAutomationSchema,
   embeddedSignupInputSchema,
   listTemplateLibraryInputSchema,
@@ -114,9 +118,11 @@ import {
   getConversationAnalytics,
   getConversationalAutomation,
   getPhoneHealth,
+  listCommerceProducts,
   listTemplateLibrary,
   requestPhoneVerificationCode,
   sendMultiProductMessage,
+  sendSingleProductMessage,
   updateConversationalAutomation,
   verifyPhoneCode,
   listAccountFlows,
@@ -2402,6 +2408,107 @@ const waRouterBase = {
       return { account: await buildAccountWithPhones(acc.id) };
     }),
 
+  // ── Meta Commerce: catalog config + product browser + send ───────────────
+  setCommerceCatalog: writeWa
+    .route({ method: "POST", path: "/accounts/commerce-catalog", tags: ["WA Cloud"] })
+    .input(setCommerceCatalogInputSchema)
+    .output(waOkResponseSchema)
+    .handler(async ({ input }) => {
+      await db.waBusinessAccount.update({
+        where: { id: input.accountId },
+        data: { commerceCatalogId: input.catalogId },
+      });
+      return { status: "ok" as const };
+    }),
+
+  listCommerceProducts: readWa
+    .route({ method: "POST", path: "/commerce/products/list", tags: ["WA Cloud"] })
+    .input(listCommerceProductsInputSchema)
+    .output(listCommerceProductsResponseSchema)
+    .handler(async ({ input }) => {
+      const account = await db.waBusinessAccount.findUnique({
+        where: { id: input.accountId },
+        select: { commerceCatalogId: true },
+      });
+      if (!account?.commerceCatalogId) {
+        return { catalogId: null, products: [] };
+      }
+      const products = await listCommerceProducts(
+        account.commerceCatalogId,
+        input.accountId,
+        input.search,
+        input.limit,
+      );
+      return { catalogId: account.commerceCatalogId, products };
+    }),
+
+  sendSingleProduct: writeWa
+    .route({ method: "POST", path: "/messages/send-single-product", tags: ["WA Cloud"] })
+    .input(sendSingleProductInputSchema)
+    .output(sendMessageResponseSchema)
+    .handler(async ({ context, input }) => {
+      const conv = await db.waConversation.findUnique({
+        where: { id: input.conversationId },
+        include: { contact: true },
+      });
+      if (!conv) throw new ORPCError("NOT_FOUND", { message: "Conversación no encontrada" });
+      const phone = await db.waPhoneNumber.findUnique({
+        where: { id: input.phoneNumberId },
+        select: { account: { select: { commerceCatalogId: true } } },
+      });
+      if (!phone?.account.commerceCatalogId) {
+        throw new ORPCError("BAD_REQUEST", {
+          message: "Catálogo Meta Commerce no configurado en esta cuenta",
+        });
+      }
+      const lastInbound = conv.lastInboundAt;
+      const windowOpen = lastInbound
+        ? Date.now() - lastInbound.getTime() < WINDOW_HOURS * 60 * 60 * 1000
+        : false;
+      if (!windowOpen) {
+        throw new ORPCError("BAD_REQUEST", {
+          message: "Ventana 24h cerrada. El producto único requiere ventana abierta.",
+        });
+      }
+      const apiResp = await sendSingleProductMessage({
+        phoneNumberId: input.phoneNumberId,
+        toE164: conv.contact.phoneE164,
+        catalogId: phone.account.commerceCatalogId,
+        productRetailerId: input.productRetailerId,
+        bodyText: input.bodyText,
+        footerText: input.footerText,
+        contextMessageId: input.contextMetaMessageId,
+      });
+      const metaId = apiResp.messages?.[0]?.id ?? null;
+      const now = new Date();
+      const preview = `[producto] ${input.productRetailerId}`;
+      const message = await db.waMessage.create({
+        data: {
+          conversationId: conv.id,
+          contactId: conv.contactId,
+          phoneNumberId: input.phoneNumberId,
+          metaMessageId: metaId,
+          direction: "OUTBOUND",
+          type: "INTERACTIVE",
+          status: "SENT",
+          body: input.bodyText ?? null,
+          sentByUserId: context.user.id,
+          contextMetaMessageId: input.contextMetaMessageId ?? null,
+          payload: {
+            interactive_type: "product",
+            catalog_id: phone.account.commerceCatalogId,
+            product_retailer_id: input.productRetailerId,
+          } as never,
+          timestamp: now,
+        },
+      });
+      await db.waConversation.update({
+        where: { id: conv.id },
+        data: { lastMessageAt: now, lastMessagePreview: preview.slice(0, 200) },
+      });
+      return { message };
+    }),
+
   // ── Multi-Product Message (Meta Commerce) ─────────────────────────────────
   sendMultiProduct: writeWa
     .route({ method: "POST", path: "/messages/send-multi-product", tags: ["WA Cloud"] })
@@ -2413,6 +2520,15 @@ const waRouterBase = {
         include: { contact: true },
       });
       if (!conv) throw new ORPCError("NOT_FOUND", { message: "Conversación no encontrada" });
+      const phone = await db.waPhoneNumber.findUnique({
+        where: { id: input.phoneNumberId },
+        select: { account: { select: { commerceCatalogId: true } } },
+      });
+      if (!phone?.account.commerceCatalogId) {
+        throw new ORPCError("BAD_REQUEST", {
+          message: "Catálogo Meta Commerce no configurado en esta cuenta",
+        });
+      }
       const lastInbound = conv.lastInboundAt;
       const windowOpen = lastInbound
         ? Date.now() - lastInbound.getTime() < WINDOW_HOURS * 60 * 60 * 1000
@@ -2425,7 +2541,7 @@ const waRouterBase = {
       const apiResp = await sendMultiProductMessage({
         phoneNumberId: input.phoneNumberId,
         toE164: conv.contact.phoneE164,
-        catalogId: input.catalogId,
+        catalogId: phone.account.commerceCatalogId,
         bodyText: input.bodyText,
         headerText: input.headerText,
         footerText: input.footerText,
@@ -2450,7 +2566,7 @@ const waRouterBase = {
           contextMetaMessageId: input.contextMetaMessageId ?? null,
           payload: {
             interactive_type: "product_list",
-            catalog_id: input.catalogId,
+            catalog_id: phone.account.commerceCatalogId,
             sections: input.sections,
           } as never,
           timestamp: now,

@@ -120,7 +120,7 @@ export function useConversation(id: number | undefined) {
 // pastes into the createTemplate components header.example field.
 export async function uploadTemplateHeaderSample(
   file: File,
-  phoneNumberId: number,
+  phoneNumberId: number
 ): Promise<{ handle: string; filename: string; size: number; mimeType: string | null }> {
   const form = new FormData();
   form.append("file", file);
@@ -136,6 +136,36 @@ export async function uploadTemplateHeaderSample(
     throw new Error(`Upload falló (${res.status}): ${text.slice(0, 200)}`);
   }
   return res.json();
+}
+
+// Meta Commerce: catalog config + products + send single product.
+export function useSetCommerceCatalog() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: Parameters<typeof waCloudORPCClient.setCommerceCatalog>[0]) =>
+      waCloudORPCClient.setCommerceCatalog(input),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: [...KEY, "accounts"] }),
+  });
+}
+export function useCommerceProducts(
+  input: Parameters<typeof waCloudORPCClient.listCommerceProducts>[0] | undefined,
+) {
+  return useQuery({
+    queryKey: [...KEY, "commerce-products", input],
+    enabled: Boolean(input?.accountId),
+    queryFn: () => waCloudORPCClient.listCommerceProducts(input!),
+    staleTime: 60_000,
+  });
+}
+export function useSendSingleProduct() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: Parameters<typeof waCloudORPCClient.sendSingleProduct>[0]) =>
+      waCloudORPCClient.sendSingleProduct(input),
+    onSuccess: (_, vars) => {
+      void qc.invalidateQueries({ queryKey: [...KEY, "conversation", vars.conversationId] });
+    },
+  });
 }
 
 // Phone migration between WABAs (request OTP + verify).

@@ -182,7 +182,7 @@ function CreateTemplateModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
   const [language, setLanguage] = useState("es");
   const [category, setCategory] = useState<"UTILITY" | "MARKETING" | "AUTHENTICATION">("UTILITY");
   const [headerKind, setHeaderKind] = useState<"NONE" | "TEXT" | "IMAGE" | "VIDEO" | "DOCUMENT">(
-    "NONE",
+    "NONE"
   );
   const [headerText, setHeaderText] = useState("");
   const [headerHandle, setHeaderHandle] = useState("");

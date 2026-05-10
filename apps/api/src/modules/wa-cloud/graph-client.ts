@@ -75,3 +75,9 @@ export {
   cloneTemplateFromLibrary,
   listTemplateLibrary,
 } from "./graph/template-library.ts";
+export {
+  type CommerceProduct,
+  type SendSingleProductInput,
+  listCommerceProducts,
+  sendSingleProductMessage,
+} from "./graph/commerce.ts";

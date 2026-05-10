@@ -5,6 +5,7 @@ import { Ban } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "@/lib/toast-interceptor";
 import { ChatBubble } from "./ChatBubble";
+import { CommerceSelectorModal } from "./CommerceSelectorModal";
 import {
   ContactsSendModal,
   ConvSettingsMenu,
@@ -66,6 +67,7 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [listOpen, setListOpen] = useState(false);
   const [scheduleOpen, setScheduleOpen] = useState(false);
+  const [commerceOpen, setCommerceOpen] = useState(false);
   const scheduleMsg = useScheduleMessage();
   const cancelScheduled = useCancelScheduled();
   const scheduledList = useListScheduled(conversationId);
@@ -629,6 +631,7 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
               onOpenContacts={() => setContactsOpen(true)}
               onOpenSchedule={() => setScheduleOpen(true)}
               onOpenList={() => setListOpen(true)}
+              onOpenCommerce={() => setCommerceOpen(true)}
               onSendSnippet={(snippetId) => {
                 if (!phoneId) {
                   toast.error("Selecciona un número primero");
@@ -701,6 +704,12 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
       <InteractiveListSelectorModal
         isOpen={listOpen}
         onClose={() => setListOpen(false)}
+        conversationId={conversationId}
+        phoneNumberId={phoneId ? Number(phoneId) : null}
+      />
+      <CommerceSelectorModal
+        isOpen={commerceOpen}
+        onClose={() => setCommerceOpen(false)}
         conversationId={conversationId}
         phoneNumberId={phoneId ? Number(phoneId) : null}
       />

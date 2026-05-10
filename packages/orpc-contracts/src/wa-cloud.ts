@@ -1022,6 +1022,44 @@ export const phoneHealthResponseSchema = z.object({
     .nullish(),
 });
 
+// Meta Commerce: catalog config + product browser + single-product send.
+// Multi-product (MPM) lives below in sendMultiProductInputSchema.
+export const setCommerceCatalogInputSchema = z.object({
+  accountId: z.number().int().positive(),
+  catalogId: z.string().nullable(), // pass null to unlink
+});
+
+export const commerceProductSchema = z.object({
+  id: z.string(),
+  retailer_id: z.string(),
+  name: z.string(),
+  description: z.string().nullish(),
+  price: z.string().nullish(),
+  currency: z.string().nullish(),
+  image_url: z.string().nullish(),
+  availability: z.string().nullish(),
+});
+
+export const listCommerceProductsInputSchema = z.object({
+  accountId: z.number().int().positive(),
+  search: z.string().optional(),
+  limit: z.number().int().min(1).max(200).default(100),
+});
+
+export const listCommerceProductsResponseSchema = z.object({
+  catalogId: z.string().nullable(),
+  products: z.array(commerceProductSchema),
+});
+
+export const sendSingleProductInputSchema = z.object({
+  conversationId: z.number().int().positive(),
+  phoneNumberId: z.number().int().positive(),
+  productRetailerId: z.string().min(1),
+  bodyText: z.string().max(1024).optional(),
+  footerText: z.string().max(60).optional(),
+  contextMetaMessageId: z.string().optional(),
+});
+
 // Phone number migration between WABAs (Meta 2026). The new WABA must
 // have already added the number; the old WABA must have deregistered.
 // requestPhoneCode triggers an OTP via SMS or VOICE; verifyPhoneCode
@@ -1038,11 +1076,11 @@ export const verifyPhoneCodeInputSchema = z.object({
 });
 
 // Multi-Product Message (Meta Commerce 2026). Renders catalog products
-// in WhatsApp. Requires the WABA to be linked to a Meta Commerce catalog.
+// in WhatsApp. Catalog id is read from WaBusinessAccount.commerceCatalogId
+// (set in Settings); operator just picks products.
 export const sendMultiProductInputSchema = z.object({
   conversationId: z.number().int().positive(),
   phoneNumberId: z.number().int().positive(),
-  catalogId: z.string().min(1),
   bodyText: z.string().min(1).max(1024),
   headerText: z.string().min(1).max(60),
   footerText: z.string().max(60).optional(),
@@ -1480,6 +1518,34 @@ export const waCloudContract = {
     .route({ method: "POST", path: "/phones/health", tags: ["WA Cloud"] })
     .input(waPhoneIdInput)
     .output(phoneHealthResponseSchema),
+
+  // Meta Commerce: catalog config + products + single-product send
+  setCommerceCatalog: oc
+    .route({
+      method: "POST",
+      path: "/accounts/commerce-catalog",
+      tags: ["WA Cloud"],
+    })
+    .input(setCommerceCatalogInputSchema)
+    .output(waOkResponseSchema),
+
+  listCommerceProducts: oc
+    .route({
+      method: "POST",
+      path: "/commerce/products/list",
+      tags: ["WA Cloud"],
+    })
+    .input(listCommerceProductsInputSchema)
+    .output(listCommerceProductsResponseSchema),
+
+  sendSingleProduct: oc
+    .route({
+      method: "POST",
+      path: "/messages/send-single-product",
+      tags: ["WA Cloud"],
+    })
+    .input(sendSingleProductInputSchema)
+    .output(sendMessageResponseSchema),
 
   // Phone number migration (request OTP + verify)
   requestPhoneCode: oc

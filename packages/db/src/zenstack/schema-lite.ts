@@ -8652,6 +8652,11 @@ export class SchemaType implements SchemaDef {
                     type: "Boolean",
                     default: true as FieldDefault
                 },
+                commerceCatalogId: {
+                    name: "commerceCatalogId",
+                    type: "String",
+                    optional: true
+                },
                 createdAt: {
                     name: "createdAt",
                     type: "DateTime",

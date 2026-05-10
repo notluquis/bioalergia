@@ -15,6 +15,7 @@ import {
 import { useState } from "react";
 import { TextInput } from "@/features/outreach/components/FormField";
 import { toast } from "@/lib/toast-interceptor";
+import { CommerceCatalogCard } from "../components/CommerceCatalogCard";
 import { ConversationalAutomationCard } from "../components/ConversationalAutomationCard";
 import { EmbeddedSignupButton } from "../components/EmbeddedSignupButton";
 import { PhoneMigrationCard } from "../components/PhoneMigrationCard";
@@ -77,6 +78,7 @@ export function WaCloudSettingsPage() {
       )}
 
       {accounts.data.accounts.length > 0 && <ConversationalAutomationCard />}
+      {accounts.data.accounts.length > 0 && <CommerceCatalogCard />}
       {accounts.data.accounts.length > 0 && <PhoneMigrationCard />}
 
       <CreateAccountModal isOpen={createOpen} onClose={() => setCreateOpen(false)} />
