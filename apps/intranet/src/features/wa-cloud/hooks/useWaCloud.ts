@@ -209,6 +209,14 @@ export function useUpsertSavedFlow() {
     onSuccess: () => void qc.invalidateQueries({ queryKey: [...KEY, "saved-flows"] }),
   });
 }
+export function useSyncFlows() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (accountId: number) => waCloudORPCClient.syncFlows({ accountId }),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: [...KEY, "saved-flows"] }),
+  });
+}
+
 export function useArchiveSavedFlow() {
   const qc = useQueryClient();
   return useMutation({

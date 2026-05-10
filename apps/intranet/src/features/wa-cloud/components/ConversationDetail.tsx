@@ -1,15 +1,26 @@
 import {
   Avatar,
   Button,
+  Calendar,
   Card,
   Chip,
+  DateField,
+  DatePicker,
+  Description,
   Dropdown,
+  Label,
   ListBox,
   Modal,
   Popover,
   Spinner,
   TextArea,
 } from "@heroui/react";
+import {
+  type CalendarDateTime,
+  getLocalTimeZone,
+  now,
+  type ZonedDateTime,
+} from "@internationalized/date";
 import { useQueryClient } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import {
@@ -546,12 +557,15 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
                 }
                 if (!confirm("¿Desbloquear este contacto en WhatsApp?")) return;
                 blockContact.reset();
-                void unblockContactMut.mutateAsync({
-                  conversationId,
-                  phoneNumberId: Number(phoneId),
-                }).then(() => {
-                  toast.success("Contacto desbloqueado");
-                }).catch((e) => toast.error(`Error: ${String(e)}`));
+                void unblockContactMut
+                  .mutateAsync({
+                    conversationId,
+                    phoneNumberId: Number(phoneId),
+                  })
+                  .then(() => {
+                    toast.success("Contacto desbloqueado");
+                  })
+                  .catch((e) => toast.error(`Error: ${String(e)}`));
               }}
             >
               Desbloquear
@@ -577,10 +591,10 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
                 c.contact.blockedAt
                   ? "Contacto bloqueado"
                   : !c.windowOpen
-                  ? "Ventana 24h cerrada. Cambia a plantilla."
-                  : !phoneId
-                    ? "Selecciona un número en ⚙ ajustes"
-                    : null
+                    ? "Ventana 24h cerrada. Cambia a plantilla."
+                    : !phoneId
+                      ? "Selecciona un número en ⚙ ajustes"
+                      : null
               }
               onSwitchTemplate={() => setMode("template")}
               replyTo={replyTo}
@@ -1510,18 +1524,17 @@ function ScheduleSendModal({
   onCancel: (id: number) => void;
   isPending: boolean;
 }) {
-  const minLocal = (() => {
-    const d = new Date(Date.now() + 60_000);
-    const tz = d.getTimezoneOffset() * 60_000;
-    return new Date(d.getTime() - tz).toISOString().slice(0, 16);
-  })();
-  const [when, setWhen] = useState(minLocal);
+  const tz = getLocalTimeZone();
+  const minDt = now(tz).add({ minutes: 1 });
+  const [when, setWhen] = useState<CalendarDateTime | ZonedDateTime>(
+    minDt.add({ minutes: 4 }),
+  );
   const [body, setBody] = useState(defaultBody);
 
   useEffect(() => {
     if (isOpen) {
       setBody(defaultBody);
-      setWhen(minLocal);
+      setWhen(now(tz).add({ minutes: 5 }));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
@@ -1535,7 +1548,7 @@ function ScheduleSendModal({
       toast.error("Mensaje vacío");
       return;
     }
-    const at = new Date(when);
+    const at = "toDate" in when ? when.toDate(tz) : new Date(String(when));
     if (at.getTime() < Date.now() + 30_000) {
       toast.error("Programa al menos 30 segundos en el futuro");
       return;
@@ -1572,16 +1585,54 @@ function ScheduleSendModal({
               </p>
             </Modal.Header>
             <Modal.Body className="max-h-[70vh] space-y-3 overflow-y-auto">
-              <div>
-                <label className="mb-1 block font-medium text-sm">Fecha y hora</label>
-                <input
-                  type="datetime-local"
-                  value={when}
-                  min={minLocal}
-                  onChange={(e) => setWhen(e.currentTarget.value)}
-                  className="w-full rounded-lg border border-default-200 bg-content2 px-3 py-2 text-sm outline-none focus:border-success"
-                />
-              </div>
+              <DatePicker
+                value={when}
+                onChange={(v) => v && setWhen(v as CalendarDateTime | ZonedDateTime)}
+                granularity="minute"
+                minValue={minDt}
+                hideTimeZone
+                hourCycle={24}
+              >
+                <Label>Fecha y hora</Label>
+                <DateField.Group fullWidth variant="secondary">
+                  <DateField.Input>
+                    {(segment) => <DateField.Segment segment={segment} />}
+                  </DateField.Input>
+                  <DateField.Suffix>
+                    <DatePicker.Trigger>
+                      <DatePicker.TriggerIndicator />
+                    </DatePicker.Trigger>
+                  </DateField.Suffix>
+                </DateField.Group>
+                <DatePicker.Popover>
+                  <Calendar aria-label="Fecha y hora">
+                    <Calendar.Header>
+                      <Calendar.YearPickerTrigger>
+                        <Calendar.YearPickerTriggerHeading />
+                        <Calendar.YearPickerTriggerIndicator />
+                      </Calendar.YearPickerTrigger>
+                      <Calendar.NavButton slot="previous" />
+                      <Calendar.NavButton slot="next" />
+                    </Calendar.Header>
+                    <Calendar.Grid>
+                      <Calendar.GridHeader>
+                        {(day) => <Calendar.HeaderCell>{day}</Calendar.HeaderCell>}
+                      </Calendar.GridHeader>
+                      <Calendar.GridBody>
+                        {(date) => <Calendar.Cell date={date} />}
+                      </Calendar.GridBody>
+                    </Calendar.Grid>
+                    <Calendar.YearPickerGrid>
+                      <Calendar.YearPickerGridBody>
+                        {({ year }) => <Calendar.YearPickerCell year={year} />}
+                      </Calendar.YearPickerGridBody>
+                    </Calendar.YearPickerGrid>
+                  </Calendar>
+                </DatePicker.Popover>
+              </DatePicker>
+              <Description className="text-default-500 text-xs">
+                Mínimo 30 segundos en el futuro
+              </Description>
               <div>
                 <label className="mb-1 block font-medium text-sm">Mensaje</label>
                 <TextArea
@@ -1925,8 +1976,8 @@ function LocationSelectorModal({
                 Compartir ubicación
               </Modal.Heading>
               <p className="text-default-500 text-xs">
-                Selecciona una ubicación pre-guardada. Para crear nuevas, ve a
-                Ajustes WA → Catálogo.
+                Selecciona una ubicación pre-guardada. Para crear nuevas, ve a Ajustes WA →
+                Catálogo.
               </p>
             </Modal.Header>
             <Modal.Body className="max-h-[60vh] space-y-2 overflow-y-auto">
@@ -1960,7 +2011,7 @@ function LocationSelectorModal({
                             onClose();
                           },
                           onError: (e) => toast.error(`Error: ${String(e)}`),
-                        },
+                        }
                       );
                     }}
                     className="flex w-full items-start gap-3 rounded-lg border border-default-200 bg-content1 p-3 text-left transition hover:bg-content2"
@@ -2066,7 +2117,7 @@ function InteractiveListSelectorModal({
                             onClose();
                           },
                           onError: (e) => toast.error(`Error: ${String(e)}`),
-                        },
+                        }
                       );
                     }}
                     className="flex w-full items-start gap-3 rounded-lg border border-default-200 bg-content1 p-3 text-left transition hover:bg-content2"
@@ -2142,7 +2193,8 @@ function FlowSelectorModal({
                 </div>
               ) : items.length === 0 ? (
                 <p className="py-6 text-center text-default-500 text-sm">
-                  Sin Flows guardados. Configúralos en Ajustes WA → Catálogo (necesitas el flow_id de Meta).
+                  Sin Flows guardados. Configúralos en Ajustes WA → Catálogo (necesitas el flow_id
+                  de Meta).
                 </p>
               ) : (
                 items.map((f) => (
@@ -2166,7 +2218,7 @@ function FlowSelectorModal({
                             onClose();
                           },
                           onError: (e) => toast.error(`Error: ${String(e)}`),
-                        },
+                        }
                       );
                     }}
                     className="flex w-full items-start gap-3 rounded-lg border border-default-200 bg-content1 p-3 text-left transition hover:bg-content2"

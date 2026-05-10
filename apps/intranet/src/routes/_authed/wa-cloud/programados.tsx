@@ -3,7 +3,12 @@ import { WaCloudScheduledPage } from "@/features/wa-cloud/pages/WaCloudScheduled
 
 export const Route = createFileRoute("/_authed/wa-cloud/programados")({
   staticData: {
-    nav: { iconKey: "CalendarClock", label: "WA Programados", order: 30, section: "Comunicaciones" },
+    nav: {
+      iconKey: "CalendarClock",
+      label: "WA Programados",
+      order: 30,
+      section: "Comunicaciones",
+    },
     permission: { action: "read", subject: "WaBusinessAccount" },
     title: "WhatsApp Cloud — Programados",
   },

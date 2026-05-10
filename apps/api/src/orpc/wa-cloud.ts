@@ -14,6 +14,8 @@ import {
   savedFlowSchema,
   savedInteractiveListSchema,
   savedLocationSchema,
+  syncFlowsInputSchema,
+  syncFlowsResponseSchema,
   sendSavedFlowInputSchema,
   sendSavedListInputSchema,
   sendSavedLocationInputSchema,
@@ -91,6 +93,7 @@ import {
   getBusinessProfile,
   getConversationAnalytics,
   getPhoneHealth,
+  listAccountFlows,
   listAccountPhoneNumbers,
   listAccountTemplates,
   listBlockedUsers,
@@ -1527,6 +1530,7 @@ const waRouterBase = {
     .output(savedFlowSchema)
     .handler(async ({ context, input }) => {
       const data = {
+        accountId: input.accountId ?? null,
         name: input.name,
         description: input.description ?? null,
         flowId: input.flowId,
@@ -1543,6 +1547,53 @@ const waRouterBase = {
             data: { ...data, createdByUserId: context.user.id },
           });
       return row;
+    }),
+  syncFlows: writeWa
+    .route({ method: "POST", path: "/saved/flows/sync", tags: ["WA Cloud"] })
+    .input(syncFlowsInputSchema)
+    .output(syncFlowsResponseSchema)
+    .handler(async ({ context, input }) => {
+      const remote = await listAccountFlows(input.accountId);
+      const now = new Date();
+      let upserted = 0;
+      for (const f of remote) {
+        const existing = await db.waSavedFlow.findUnique({ where: { flowId: f.id } });
+        const meta = {
+          metaStatus: f.status ?? null,
+          metaCategories: f.categories ?? [],
+          metaHealth: f.health?.can_send_message ?? null,
+          metaSyncedAt: now,
+        };
+        if (existing) {
+          await db.waSavedFlow.update({
+            where: { flowId: f.id },
+            data: {
+              ...meta,
+              accountId: existing.accountId ?? input.accountId,
+              // Refresh display name from Meta unless user already customized
+              name: existing.name === existing.flowId ? f.name : existing.name,
+            },
+          });
+        } else {
+          await db.waSavedFlow.create({
+            data: {
+              accountId: input.accountId,
+              name: f.name ?? f.id,
+              flowId: f.id,
+              defaultBody: `Completa el formulario "${f.name ?? f.id}"`,
+              defaultCta: "Iniciar",
+              ...meta,
+              createdByUserId: context.user.id,
+            },
+          });
+        }
+        upserted++;
+      }
+      const flows = await db.waSavedFlow.findMany({
+        where: { archived: false },
+        orderBy: { name: "asc" },
+      });
+      return { fetched: remote.length, upserted, flows };
     }),
   archiveSavedFlow: deleteWa
     .route({ method: "POST", path: "/saved/flows/archive", tags: ["WA Cloud"] })

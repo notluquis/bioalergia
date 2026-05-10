@@ -26,7 +26,7 @@ export function WaCloudScheduledPage() {
   const all = useAllScheduled(
     status
       ? { status: status as "PENDING" | "SENT" | "FAILED" | "CANCELLED", limit: 200 }
-      : undefined,
+      : undefined
   );
   const cancel = useCancelScheduled();
   const items = all.data?.scheduled ?? [];
@@ -42,9 +42,7 @@ export function WaCloudScheduledPage() {
           <SelectInput
             label=""
             value={status}
-            onValueChange={(v) =>
-              setStatus(v as "" | "PENDING" | "SENT" | "FAILED" | "CANCELLED")
-            }
+            onValueChange={(v) => setStatus(v as "" | "PENDING" | "SENT" | "FAILED" | "CANCELLED")}
             options={STATUS_OPTIONS}
           />
         </div>
@@ -87,9 +85,7 @@ export function WaCloudScheduledPage() {
                             <p className="truncate font-medium text-sm">
                               {s.contactName ?? s.phoneE164}
                             </p>
-                            <p className="font-mono text-default-400 text-[10px]">
-                              {s.phoneE164}
-                            </p>
+                            <p className="font-mono text-default-400 text-[10px]">{s.phoneE164}</p>
                           </div>
                         </Table.Cell>
                         <Table.Cell>
@@ -99,8 +95,7 @@ export function WaCloudScheduledPage() {
                         </Table.Cell>
                         <Table.Cell>
                           <p className="line-clamp-2 max-w-md text-default-700 text-xs">
-                            {s.body ??
-                              (s.templateName ? `[plantilla] ${s.templateName}` : "—")}
+                            {s.body ?? (s.templateName ? `[plantilla] ${s.templateName}` : "—")}
                           </p>
                         </Table.Cell>
                         <Table.Cell>

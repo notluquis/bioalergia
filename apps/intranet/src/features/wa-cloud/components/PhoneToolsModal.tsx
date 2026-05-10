@@ -324,7 +324,7 @@ function ProfilePictureCard({ phoneNumberId }: { phoneNumberId: number }) {
             resolve(new File([blob], "profile.jpg", { type: "image/jpeg" }));
           },
           "image/jpeg",
-          0.9,
+          0.9
         );
       };
       img.onerror = () => {

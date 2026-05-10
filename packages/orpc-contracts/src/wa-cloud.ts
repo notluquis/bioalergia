@@ -562,6 +562,7 @@ export const upsertSavedInteractiveListInputSchema = z.object({
 
 export const savedFlowSchema = z.object({
   id: z.number().int(),
+  accountId: z.number().int().nullable(),
   name: z.string(),
   description: z.string().nullable(),
   flowId: z.string(),
@@ -571,11 +572,16 @@ export const savedFlowSchema = z.object({
   defaultHeader: z.string().nullable(),
   defaultFooter: z.string().nullable(),
   defaultCta: z.string(),
+  metaStatus: z.string().nullable(),
+  metaCategories: z.array(z.string()),
+  metaHealth: z.string().nullable(),
+  metaSyncedAt: z.coerce.date().nullable(),
   archived: z.boolean(),
   hitCount: z.number().int(),
 });
 export const upsertSavedFlowInputSchema = z.object({
   id: z.number().int().positive().optional(),
+  accountId: z.number().int().positive().optional(),
   name: z.string().min(1).max(120),
   description: z.string().max(256).optional(),
   flowId: z.string().min(1).max(64),
@@ -585,6 +591,16 @@ export const upsertSavedFlowInputSchema = z.object({
   defaultHeader: z.string().max(60).optional(),
   defaultFooter: z.string().max(60).optional(),
   defaultCta: z.string().min(1).max(20).default("Iniciar"),
+});
+
+export const syncFlowsInputSchema = z.object({
+  accountId: z.number().int().positive(),
+});
+
+export const syncFlowsResponseSchema = z.object({
+  fetched: z.number().int(),
+  upserted: z.number().int(),
+  flows: z.array(savedFlowSchema),
 });
 
 // Send commands using a saved entity
@@ -1133,6 +1149,10 @@ export const waCloudContract = {
     .route({ method: "POST", path: "/saved/flows/upsert", tags: ["WA Cloud"] })
     .input(upsertSavedFlowInputSchema)
     .output(savedFlowSchema),
+  syncFlows: oc
+    .route({ method: "POST", path: "/saved/flows/sync", tags: ["WA Cloud"] })
+    .input(syncFlowsInputSchema)
+    .output(syncFlowsResponseSchema),
   archiveSavedFlow: oc
     .route({ method: "POST", path: "/saved/flows/archive", tags: ["WA Cloud"] })
     .input(z.object({ id: z.number().int().positive() }))

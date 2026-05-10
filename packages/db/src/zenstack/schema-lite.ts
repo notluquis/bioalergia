@@ -9528,6 +9528,11 @@ export class SchemaType implements SchemaDef {
                     id: true,
                     default: ExpressionUtils.call("autoincrement") as FieldDefault
                 },
+                accountId: {
+                    name: "accountId",
+                    type: "Int",
+                    optional: true
+                },
                 name: {
                     name: "name",
                     type: "String"
@@ -9569,6 +9574,27 @@ export class SchemaType implements SchemaDef {
                     name: "defaultCta",
                     type: "String",
                     default: "Iniciar" as FieldDefault
+                },
+                metaStatus: {
+                    name: "metaStatus",
+                    type: "String",
+                    optional: true
+                },
+                metaCategories: {
+                    name: "metaCategories",
+                    type: "String",
+                    array: true,
+                    default: [] as FieldDefault
+                },
+                metaHealth: {
+                    name: "metaHealth",
+                    type: "String",
+                    optional: true
+                },
+                metaSyncedAt: {
+                    name: "metaSyncedAt",
+                    type: "DateTime",
+                    optional: true
                 },
                 archived: {
                     name: "archived",

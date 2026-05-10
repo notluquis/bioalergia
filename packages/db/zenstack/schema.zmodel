@@ -3456,22 +3456,28 @@ model WaSavedInteractiveList {
 }
 
 model WaSavedFlow {
-  id            Int      @id @default(autoincrement())
-  name          String
-  description   String?
-  flowId        String   @map("flow_id")
-  flowToken     String?  @map("flow_token")
-  initialScreen String?  @map("initial_screen")
-  defaultBody   String   @map("default_body")
-  defaultHeader String?  @map("default_header")
-  defaultFooter String?  @map("default_footer")
-  defaultCta    String   @default("Iniciar") @map("default_cta")
-  archived      Boolean  @default(false)
-  hitCount      Int      @default(0) @map("hit_count")
-  lastUsedAt    DateTime? @map("last_used_at")
-  createdByUserId Int    @map("created_by_user_id")
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @default(now()) @updatedAt @map("updated_at")
+  id              Int      @id @default(autoincrement())
+  accountId       Int?     @map("account_id")
+  name            String
+  description     String?
+  flowId          String   @map("flow_id")
+  flowToken       String?  @map("flow_token")
+  initialScreen   String?  @map("initial_screen")
+  defaultBody     String   @map("default_body")
+  defaultHeader   String?  @map("default_header")
+  defaultFooter   String?  @map("default_footer")
+  defaultCta      String   @default("Iniciar") @map("default_cta")
+  // Meta-synced metadata (refreshed via syncFlows)
+  metaStatus      String?  @map("meta_status")
+  metaCategories  String[] @default([]) @map("meta_categories")
+  metaHealth      String?  @map("meta_health")
+  metaSyncedAt    DateTime? @map("meta_synced_at")
+  archived        Boolean  @default(false)
+  hitCount        Int      @default(0) @map("hit_count")
+  lastUsedAt      DateTime? @map("last_used_at")
+  createdByUserId Int      @map("created_by_user_id")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @default(now()) @updatedAt @map("updated_at")
 
   @@unique([flowId])
   @@index([archived])

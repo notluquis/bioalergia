@@ -11663,6 +11663,12 @@ export class SchemaType implements SchemaDef {
                     attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }] }] as readonly AttributeApplication[],
                     default: ExpressionUtils.call("autoincrement") as FieldDefault
                 },
+                accountId: {
+                    name: "accountId",
+                    type: "Int",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("account_id") }] }] as readonly AttributeApplication[]
+                },
                 name: {
                     name: "name",
                     type: "String"
@@ -11711,6 +11717,31 @@ export class SchemaType implements SchemaDef {
                     type: "String",
                     attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("Iniciar") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("default_cta") }] }] as readonly AttributeApplication[],
                     default: "Iniciar" as FieldDefault
+                },
+                metaStatus: {
+                    name: "metaStatus",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("meta_status") }] }] as readonly AttributeApplication[]
+                },
+                metaCategories: {
+                    name: "metaCategories",
+                    type: "String",
+                    array: true,
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.array("Any", []) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("meta_categories") }] }] as readonly AttributeApplication[],
+                    default: [] as FieldDefault
+                },
+                metaHealth: {
+                    name: "metaHealth",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("meta_health") }] }] as readonly AttributeApplication[]
+                },
+                metaSyncedAt: {
+                    name: "metaSyncedAt",
+                    type: "DateTime",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("meta_synced_at") }] }] as readonly AttributeApplication[]
                 },
                 archived: {
                     name: "archived",
