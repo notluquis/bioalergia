@@ -118,8 +118,25 @@ function toStructuredORPCErrorResponse(response: Response, rawBody: string): Res
   });
 }
 
+// Reads csrf_token from document.cookie. The server's
+// csrf-double-submit middleware rejects state-changing requests whose
+// X-CSRF-Token header doesn't match this cookie value. Cookie is not
+// httpOnly so the SPA can mirror it here.
+function readCsrfCookie(): string | null {
+  if (typeof document === "undefined") return null;
+  const m = document.cookie.match(/(?:^|; )csrf_token=([^;]+)/);
+  return m ? decodeURIComponent(m[1]!) : null;
+}
+
 async function orpcFetch(request: RequestInfo | URL, init?: RequestInit): Promise<Response> {
-  const response = await fetch(request, { ...init, credentials: "include" });
+  const csrf = readCsrfCookie();
+  const headers = new Headers(init?.headers);
+  if (csrf) headers.set("X-CSRF-Token", csrf);
+  const response = await fetch(request, {
+    ...init,
+    headers,
+    credentials: "include",
+  });
 
   if (response.ok) {
     return response;

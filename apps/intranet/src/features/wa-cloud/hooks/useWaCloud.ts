@@ -2,6 +2,14 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { waCloudORPCClient } from "../orpc";
 
+// Mirror of orpc-client's CSRF cookie reader. Multipart uploads bypass the
+// oRPC fetch wrapper, so they need to add the X-CSRF-Token header here.
+function csrfHeaders(): Record<string, string> {
+  if (typeof document === "undefined") return {};
+  const m = document.cookie.match(/(?:^|; )csrf_token=([^;]+)/);
+  return m ? { "X-CSRF-Token": decodeURIComponent(m[1]!) } : {};
+}
+
 const KEY = ["wa-cloud"] as const;
 
 // Subscribe to server-sent events for one conversation. The hook owns
@@ -407,6 +415,7 @@ export async function uploadProfilePicture(
     method: "POST",
     body: form,
     credentials: "include",
+    headers: csrfHeaders(),
   });
   if (!res.ok) {
     const text = await res.text().catch(() => "");
@@ -470,6 +479,7 @@ export async function uploadWaMedia(
     method: "POST",
     body: form,
     credentials: "include",
+    headers: csrfHeaders(),
   });
   if (!res.ok) {
     const text = await res.text().catch(() => "");

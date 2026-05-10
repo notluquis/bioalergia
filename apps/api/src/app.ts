@@ -8,6 +8,7 @@ import type { ContentfulStatusCode } from "hono/utils/http-status";
 import { rateLimiter } from "hono-rate-limiter";
 import { getSessionUser, hasPermission } from "./auth.ts";
 import { AppError } from "./lib/app-error.ts";
+import { csrfDoubleSubmit } from "./lib/csrf-double-submit.ts";
 import { htmlSanitizerMiddleware } from "./lib/html-sanitizer.ts";
 import { logError } from "./lib/logger.ts";
 import { configureSuperjson } from "./lib/superjson-config.ts";
@@ -234,6 +235,12 @@ const csrfAllowedOrigin = (origin: string, c: import("hono").Context): boolean =
 };
 app.use("/api/orpc/*", csrf({ origin: csrfAllowedOrigin }));
 app.use("/api/wa-cloud/*", csrf({ origin: csrfAllowedOrigin }));
+
+// Double-submit token CSRF on top of the Origin/Sec-Fetch-Site check.
+// SSE GET routes need cookie issuance but skip the header compare (safe
+// method).
+app.use("/api/orpc/*", csrfDoubleSubmit());
+app.use("/api/wa-cloud/*", csrfDoubleSubmit());
 
 // Webhook ingress rate limit — Meta retries up to ~3x per minute per event
 // per WABA, so ~120/min is a generous ceiling. Caps abusive floods that
