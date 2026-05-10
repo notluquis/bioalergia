@@ -8868,6 +8868,12 @@ export class SchemaType implements SchemaDef {
                     type: "Int",
                     optional: true
                 },
+                bsuid: {
+                    name: "bsuid",
+                    type: "String",
+                    unique: true,
+                    optional: true
+                },
                 conversations: {
                     name: "conversations",
                     type: "WaConversation",
@@ -8890,7 +8896,8 @@ export class SchemaType implements SchemaDef {
             idFields: ["id"],
             uniqueFields: {
                 id: { type: "Int" },
-                phoneE164: { type: "String" }
+                phoneE164: { type: "String" },
+                bsuid: { type: "String" }
             }
         },
         WaConversation: {

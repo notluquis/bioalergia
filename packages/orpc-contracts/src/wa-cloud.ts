@@ -78,6 +78,7 @@ export const waContactSchema = z.object({
   patientRut: z.string().nullable(),
   blockedAt: z.coerce.date().nullable(),
   marketingOptIn: z.boolean().nullable(),
+  bsuid: z.string().nullable(),
 });
 
 export const waConversationSchema = z.object({

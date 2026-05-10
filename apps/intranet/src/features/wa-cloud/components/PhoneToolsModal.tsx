@@ -400,7 +400,7 @@ function CropModal({
 
   const onCropComplete = (
     _area: unknown,
-    croppedAreaPixels: { x: number; y: number; width: number; height: number },
+    croppedAreaPixels: { x: number; y: number; width: number; height: number }
   ) => {
     setPixels(croppedAreaPixels);
   };
@@ -422,23 +422,9 @@ function CropModal({
     if (!ctx) throw new Error("Canvas no disponible");
     ctx.fillStyle = "#ffffff";
     ctx.fillRect(0, 0, TARGET, TARGET);
-    ctx.drawImage(
-      img,
-      pixels.x,
-      pixels.y,
-      pixels.width,
-      pixels.height,
-      0,
-      0,
-      TARGET,
-      TARGET,
-    );
+    ctx.drawImage(img, pixels.x, pixels.y, pixels.width, pixels.height, 0, 0, TARGET, TARGET);
     const blob: Blob = await new Promise((resolve, reject) =>
-      canvas.toBlob(
-        (b) => (b ? resolve(b) : reject(new Error("toBlob fail"))),
-        "image/jpeg",
-        0.9,
-      ),
+      canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("toBlob fail"))), "image/jpeg", 0.9)
     );
     return new File([blob], "profile.jpg", { type: "image/jpeg" });
   };

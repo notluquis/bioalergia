@@ -10853,6 +10853,13 @@ export class SchemaType implements SchemaDef {
                     optional: true,
                     attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("blocked_by_user_id") }] }] as readonly AttributeApplication[]
                 },
+                bsuid: {
+                    name: "bsuid",
+                    type: "String",
+                    unique: true,
+                    optional: true,
+                    attributes: [{ name: "@unique" }] as readonly AttributeApplication[]
+                },
                 conversations: {
                     name: "conversations",
                     type: "WaConversation",
@@ -10881,7 +10888,8 @@ export class SchemaType implements SchemaDef {
             idFields: ["id"],
             uniqueFields: {
                 id: { type: "Int" },
-                phoneE164: { type: "String" }
+                phoneE164: { type: "String" },
+                bsuid: { type: "String" }
             }
         },
         WaConversation: {

@@ -12,7 +12,7 @@ type MetaWebhookPayload = {
       value: {
         messaging_product?: string;
         metadata?: { display_phone_number?: string; phone_number_id?: string };
-        contacts?: Array<{ profile?: { name?: string }; wa_id: string }>;
+        contacts?: Array<{ profile?: { name?: string }; wa_id: string; bsuid?: string; user_id?: string }>;
         messages?: MetaMessage[];
         statuses?: MetaStatus[];
         errors?: Array<{ code: number; title: string; message?: string }>;
@@ -209,20 +209,26 @@ export function verifyMetaSignature(rawBody: string, signatureHeader: string | u
   }
 }
 
-async function upsertContact(waId: string, profileName?: string) {
+async function upsertContact(waId: string, profileName?: string, bsuid?: string) {
   const phoneE164 = normalizeToE164(waId);
   const existing = await db.waContact.findUnique({ where: { phoneE164 } });
   if (existing) {
-    if (profileName && profileName !== existing.pushName) {
-      await db.waContact.update({
-        where: { id: existing.id },
-        data: { pushName: profileName },
-      });
+    const data: Record<string, unknown> = {};
+    if (profileName && profileName !== existing.pushName) data.pushName = profileName;
+    // Backfill BSUID once Meta starts sending it (gradual rollout 2026)
+    if (bsuid && !existing.bsuid) data.bsuid = bsuid;
+    if (Object.keys(data).length > 0) {
+      await db.waContact.update({ where: { id: existing.id }, data });
     }
     return existing.id;
   }
   const created = await db.waContact.create({
-    data: { phoneE164, pushName: profileName, name: profileName ?? null },
+    data: {
+      phoneE164,
+      pushName: profileName,
+      name: profileName ?? null,
+      bsuid: bsuid ?? null,
+    },
   });
   return created.id;
 }
@@ -640,8 +646,10 @@ export async function processWebhookPayload(payload: MetaWebhookPayload): Promis
         for (const m of v.messages) {
           out.events += 1;
           try {
-            const profileName = v.contacts?.find((c) => c.wa_id === m.from)?.profile?.name;
-            const contactId = await upsertContact(m.from, profileName);
+            const matchedContact = v.contacts?.find((c) => c.wa_id === m.from);
+            const profileName = matchedContact?.profile?.name;
+            const bsuid = matchedContact?.bsuid ?? matchedContact?.user_id;
+            const contactId = await upsertContact(m.from, profileName, bsuid);
             const convId = await ensureConversation(contactId, phoneRow.id);
 
             // Dedupe

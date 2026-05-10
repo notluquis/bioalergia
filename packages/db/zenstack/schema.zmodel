@@ -3261,6 +3261,9 @@ model WaContact {
   // Block status (set after successful POST /{phone-id}/block_users)
   blockedAt           DateTime? @map("blocked_at")
   blockedByUserId     Int?      @map("blocked_by_user_id")
+  // Meta 2026: Business-Scoped User ID (BSUID) — replaces wa_id when contact
+  // adopts a username. Stored alongside phoneE164 for forward compatibility.
+  bsuid               String?   @unique
 
   conversations       WaConversation[]
   messages            WaMessage[]

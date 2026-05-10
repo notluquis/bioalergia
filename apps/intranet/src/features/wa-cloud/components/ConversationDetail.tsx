@@ -619,7 +619,7 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
                   { conversationId, phoneNumberId: Number(phoneId), snippetId },
                   {
                     onError: (e) => toast.error(`Error: ${String(e)}`),
-                  },
+                  }
                 );
               }}
             />

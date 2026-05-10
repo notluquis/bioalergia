@@ -1,23 +1,38 @@
 import { Button, Card, Chip, Modal, Spinner, Table } from "@heroui/react";
-import { CheckCircle2, Layers, List, MapPin, Plus, RefreshCw, Trash2, X } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import {
+  CheckCircle2,
+  Layers,
+  List,
+  MapPin,
+  Plus,
+  RefreshCw,
+  Trash2,
+  Upload,
+  X,
+  Zap,
+} from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { SelectInput, TextAreaInput, TextInput } from "@/features/outreach/components/FormField";
 import { toast } from "@/lib/toast-interceptor";
 import {
+  uploadWaMedia,
   useAccounts,
   useArchiveSavedFlow,
   useArchiveSavedInteractiveList,
   useArchiveSavedLocation,
+  useArchiveSnippet,
   useSavedFlows,
   useSavedInteractiveLists,
   useSavedLocations,
+  useSnippets,
   useSyncFlows,
   useUpsertSavedFlow,
   useUpsertSavedInteractiveList,
   useUpsertSavedLocation,
+  useUpsertSnippet,
 } from "../hooks/useWaCloud";
 
-type Tab = "locations" | "lists" | "flows";
+type Tab = "locations" | "lists" | "flows" | "snippets";
 
 export function WaCloudCatalogPage() {
   const [tab, setTab] = useState<Tab>("locations");
@@ -38,11 +53,15 @@ export function WaCloudCatalogPage() {
         <TabBtn active={tab === "flows"} onClick={() => setTab("flows")}>
           <Layers size={14} /> Flows
         </TabBtn>
+        <TabBtn active={tab === "snippets"} onClick={() => setTab("snippets")}>
+          <Zap size={14} /> Snippets
+        </TabBtn>
       </div>
 
       {tab === "locations" && <LocationsTab />}
       {tab === "lists" && <ListsTab />}
       {tab === "flows" && <FlowsTab />}
+      {tab === "snippets" && <SnippetsTab />}
     </div>
   );
 }
@@ -819,6 +838,478 @@ function FlowEditModal({
                 rows={3}
               />
               <TextInput label="CTA botón" value={defaultCta} onValueChange={setDefaultCta} />
+            </Modal.Body>
+            <Modal.Footer className="mt-4 flex justify-end gap-2">
+              <Button variant="outline" onPress={onClose}>
+                <X size={14} /> Cancelar
+              </Button>
+              <Button onPress={submit} isPending={upsert.isPending}>
+                <CheckCircle2 size={14} /> Guardar
+              </Button>
+            </Modal.Footer>
+          </Modal.Dialog>
+        </Modal.Container>
+      </Modal.Backdrop>
+    </Modal>
+  );
+}
+
+const SNIPPET_KIND_OPTIONS = [
+  { value: "TEXT", label: "Texto" },
+  { value: "CTA_URL", label: "Botón URL (CTA)" },
+  { value: "REPLY_BUTTONS", label: "Botones reply (max 3)" },
+  { value: "MEDIA_DOCUMENT", label: "Documento (PDF/etc)" },
+  { value: "MEDIA_IMAGE", label: "Imagen" },
+  { value: "MEDIA_VIDEO", label: "Video" },
+  { value: "MEDIA_AUDIO", label: "Audio" },
+  { value: "MEDIA_STICKER", label: "Sticker" },
+];
+
+type SnippetKind =
+  | "TEXT"
+  | "CTA_URL"
+  | "REPLY_BUTTONS"
+  | "MEDIA_DOCUMENT"
+  | "MEDIA_IMAGE"
+  | "MEDIA_VIDEO"
+  | "MEDIA_AUDIO"
+  | "MEDIA_STICKER";
+
+type SnippetEditState = {
+  id?: number;
+  kind: SnippetKind;
+  category: string;
+  name: string;
+  description: string;
+  shortcut: string;
+  bodyText: string;
+  ctaUrl: string;
+  ctaButtonText: string;
+  ctaHeader: string;
+  ctaFooter: string;
+  replyButtonsRaw: string;
+  replyHeader: string;
+  replyFooter: string;
+  mediaHandle: string;
+  mediaUrl: string;
+  mediaMimeType: string;
+  mediaFilename: string;
+  mediaSize: number | null;
+};
+
+function emptySnippet(kind: SnippetKind): SnippetEditState {
+  return {
+    kind,
+    category: "",
+    name: "",
+    description: "",
+    shortcut: "",
+    bodyText: "",
+    ctaUrl: "",
+    ctaButtonText: "",
+    ctaHeader: "",
+    ctaFooter: "",
+    replyButtonsRaw: "",
+    replyHeader: "",
+    replyFooter: "",
+    mediaHandle: "",
+    mediaUrl: "",
+    mediaMimeType: "",
+    mediaFilename: "",
+    mediaSize: null,
+  };
+}
+
+function SnippetsTab() {
+  const list = useSnippets();
+  const archive = useArchiveSnippet();
+  const [editing, setEditing] = useState<SnippetEditState | null>(null);
+  const items = list.data?.snippets ?? [];
+
+  return (
+    <div className="space-y-3">
+      <div className="flex justify-end">
+        <Button onPress={() => setEditing(emptySnippet("TEXT"))}>
+          <Plus size={14} /> Nuevo snippet
+        </Button>
+      </div>
+      {list.isLoading ? (
+        <Spinner />
+      ) : items.length === 0 ? (
+        <Card>
+          <Card.Content className="p-6 text-center text-default-500 text-sm">
+            Sin snippets. Crea uno para que las chiquillas tengan respuestas rápidas.
+          </Card.Content>
+        </Card>
+      ) : (
+        <Card>
+          <Card.Content className="p-0">
+            <Table>
+              <Table.ScrollContainer>
+                <Table.Content aria-label="Snippets">
+                  <Table.Header>
+                    <Table.Column isRowHeader>Nombre</Table.Column>
+                    <Table.Column>Tipo</Table.Column>
+                    <Table.Column>Categoría</Table.Column>
+                    <Table.Column>Atajo</Table.Column>
+                    <Table.Column>Usado</Table.Column>
+                    <Table.Column>Acción</Table.Column>
+                  </Table.Header>
+                  <Table.Body items={items}>
+                    {(s) => (
+                      <Table.Row id={String(s.id)}>
+                        <Table.Cell>
+                          <button
+                            type="button"
+                            className="text-left font-medium text-accent hover:underline"
+                            onClick={() =>
+                              setEditing({
+                                id: s.id,
+                                kind: s.kind as SnippetKind,
+                                category: s.category ?? "",
+                                name: s.name,
+                                description: s.description ?? "",
+                                shortcut: s.shortcut ?? "",
+                                bodyText: s.bodyText ?? "",
+                                ctaUrl: s.ctaUrl ?? "",
+                                ctaButtonText: s.ctaButtonText ?? "",
+                                ctaHeader: s.ctaHeader ?? "",
+                                ctaFooter: s.ctaFooter ?? "",
+                                replyButtonsRaw: (s.replyButtons ?? [])
+                                  .map((b) => `${b.id}|${b.title}`)
+                                  .join("\n"),
+                                replyHeader: s.replyHeader ?? "",
+                                replyFooter: s.replyFooter ?? "",
+                                mediaHandle: s.mediaHandle ?? "",
+                                mediaUrl: s.mediaUrl ?? "",
+                                mediaMimeType: s.mediaMimeType ?? "",
+                                mediaFilename: s.mediaFilename ?? "",
+                                mediaSize: s.mediaSize,
+                              })
+                            }
+                          >
+                            {s.name}
+                          </button>
+                          {s.description && (
+                            <p className="text-default-500 text-xs">{s.description}</p>
+                          )}
+                        </Table.Cell>
+                        <Table.Cell>
+                          <Chip size="sm" variant="soft" color="default">
+                            <Chip.Label>{s.kind}</Chip.Label>
+                          </Chip>
+                        </Table.Cell>
+                        <Table.Cell>
+                          {s.category ? (
+                            <Chip size="sm" variant="soft" color="accent">
+                              <Chip.Label>{s.category}</Chip.Label>
+                            </Chip>
+                          ) : (
+                            <span className="text-default-400 text-xs">—</span>
+                          )}
+                        </Table.Cell>
+                        <Table.Cell>
+                          {s.shortcut ? (
+                            <code className="rounded bg-default-200 px-1 text-[10px]">
+                              {s.shortcut}
+                            </code>
+                          ) : (
+                            <span className="text-default-400 text-xs">—</span>
+                          )}
+                        </Table.Cell>
+                        <Table.Cell>{s.hitCount}×</Table.Cell>
+                        <Table.Cell>
+                          <Button
+                            size="sm"
+                            variant="danger-soft"
+                            isIconOnly
+                            aria-label="Archivar"
+                            onPress={() => {
+                              if (!confirm("¿Archivar?")) return;
+                              archive.mutate(s.id);
+                            }}
+                          >
+                            <Trash2 size={12} />
+                          </Button>
+                        </Table.Cell>
+                      </Table.Row>
+                    )}
+                  </Table.Body>
+                </Table.Content>
+              </Table.ScrollContainer>
+            </Table>
+          </Card.Content>
+        </Card>
+      )}
+      {editing && <SnippetEditModal target={editing} onClose={() => setEditing(null)} />}
+    </div>
+  );
+}
+
+function SnippetEditModal({
+  target,
+  onClose,
+}: {
+  target: SnippetEditState;
+  onClose: () => void;
+}) {
+  const upsert = useUpsertSnippet();
+  const accounts = useAccounts();
+  const allPhones = useMemo(
+    () => (accounts.data?.accounts ?? []).flatMap((a) => a.phoneNumbers),
+    [accounts.data],
+  );
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [s, setS] = useState<SnippetEditState>(target);
+  const [uploading, setUploading] = useState(false);
+  const isMedia = s.kind.startsWith("MEDIA_");
+
+  const upload = async (file: File) => {
+    if (allPhones.length === 0) {
+      toast.error("Sin números WABA. Configura uno primero.");
+      return;
+    }
+    const phoneId = allPhones[0]!.id;
+    setUploading(true);
+    try {
+      const r = await uploadWaMedia(file, phoneId);
+      setS((prev) => ({
+        ...prev,
+        mediaHandle: r.id,
+        mediaMimeType: r.mimeType,
+        mediaFilename: r.filename,
+        mediaSize: file.size,
+      }));
+      toast.success(`Subido: ${r.filename}`);
+    } catch (e) {
+      toast.error(`Upload falló: ${String(e)}`);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const submit = async () => {
+    if (!s.name.trim()) {
+      toast.error("Nombre obligatorio");
+      return;
+    }
+    const input: Parameters<typeof upsert.mutateAsync>[0] = {
+      id: s.id,
+      kind: s.kind,
+      category: s.category.trim() || undefined,
+      name: s.name.trim(),
+      description: s.description.trim() || undefined,
+      shortcut: s.shortcut.trim() || undefined,
+      bodyText: s.bodyText.trim() || undefined,
+    };
+    if (s.kind === "CTA_URL") {
+      if (!s.ctaUrl.trim() || !s.ctaButtonText.trim()) {
+        toast.error("CTA: url y texto obligatorios");
+        return;
+      }
+      input.ctaUrl = s.ctaUrl.trim();
+      input.ctaButtonText = s.ctaButtonText.trim();
+      if (s.ctaHeader.trim()) input.ctaHeader = s.ctaHeader.trim();
+      if (s.ctaFooter.trim()) input.ctaFooter = s.ctaFooter.trim();
+    }
+    if (s.kind === "REPLY_BUTTONS") {
+      const lines = s.replyButtonsRaw.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+      if (lines.length === 0 || lines.length > 3) {
+        toast.error("1-3 botones, formato id|título por línea");
+        return;
+      }
+      input.replyButtons = lines.map((line) => {
+        const [id, title] = line.split("|").map((p) => p.trim());
+        return { id: id ?? `b${Date.now()}`, title: title ?? id ?? "Opción" };
+      });
+      if (s.replyHeader.trim()) input.replyHeader = s.replyHeader.trim();
+      if (s.replyFooter.trim()) input.replyFooter = s.replyFooter.trim();
+    }
+    if (isMedia) {
+      if (!s.mediaHandle && !s.mediaUrl.trim()) {
+        toast.error("Sube archivo o pega URL pública");
+        return;
+      }
+      if (s.mediaHandle) input.mediaHandle = s.mediaHandle;
+      if (s.mediaUrl.trim()) input.mediaUrl = s.mediaUrl.trim();
+      if (s.mediaMimeType) input.mediaMimeType = s.mediaMimeType;
+      if (s.mediaFilename) input.mediaFilename = s.mediaFilename;
+      if (s.mediaSize) input.mediaSize = s.mediaSize;
+    }
+    try {
+      await upsert.mutateAsync(input);
+      toast.success("Guardado");
+      onClose();
+    } catch (e) {
+      toast.error(`Error: ${String(e)}`);
+    }
+  };
+
+  const set = <K extends keyof SnippetEditState>(k: K, v: SnippetEditState[K]) =>
+    setS((prev) => ({ ...prev, [k]: v }));
+
+  return (
+    <Modal>
+      <Modal.Backdrop
+        isOpen
+        onOpenChange={(o) => !o && onClose()}
+        isDismissable
+        className="bg-black/40 backdrop-blur-[2px]"
+      >
+        <Modal.Container placement="center">
+          <Modal.Dialog className="relative w-full max-w-lg rounded-[28px] bg-background p-6 shadow-2xl">
+            <Modal.Header className="mb-4">
+              <Modal.Heading className="font-bold text-primary text-xl">
+                {target.id ? "Editar snippet" : "Nuevo snippet"}
+              </Modal.Heading>
+              <p className="text-default-500 text-xs">
+                Variables: usa {"{{1}}"}, {"{{2}}"}, … para placeholders.
+              </p>
+            </Modal.Header>
+            <Modal.Body className="max-h-[70vh] space-y-3 overflow-y-auto">
+              <SelectInput
+                label="Tipo"
+                value={s.kind}
+                onValueChange={(v) => set("kind", v as SnippetKind)}
+                options={SNIPPET_KIND_OPTIONS}
+              />
+              <div className="grid grid-cols-2 gap-3">
+                <TextInput label="Nombre" value={s.name} onValueChange={(v) => set("name", v)} />
+                <TextInput
+                  label="Categoría (opcional)"
+                  value={s.category}
+                  onValueChange={(v) => set("category", v)}
+                  placeholder="recetas"
+                />
+              </div>
+              <TextInput
+                label="Atajo (opcional, ej /horario)"
+                value={s.shortcut}
+                onValueChange={(v) => set("shortcut", v)}
+              />
+              <TextInput
+                label="Descripción interna (opcional)"
+                value={s.description}
+                onValueChange={(v) => set("description", v)}
+              />
+
+              {(s.kind === "TEXT" || s.kind === "CTA_URL" || s.kind === "REPLY_BUTTONS") && (
+                <TextAreaInput
+                  label={s.kind === "TEXT" ? "Mensaje" : "Body (texto del mensaje)"}
+                  value={s.bodyText}
+                  onValueChange={(v) => set("bodyText", v)}
+                  rows={3}
+                />
+              )}
+
+              {s.kind === "CTA_URL" && (
+                <>
+                  <div className="grid grid-cols-2 gap-3">
+                    <TextInput
+                      label="URL"
+                      value={s.ctaUrl}
+                      onValueChange={(v) => set("ctaUrl", v)}
+                      placeholder="https://bioalergia.cl"
+                    />
+                    <TextInput
+                      label="Texto botón (≤20)"
+                      value={s.ctaButtonText}
+                      onValueChange={(v) => set("ctaButtonText", v)}
+                      placeholder="Reservar"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <TextInput
+                      label="Header (opcional)"
+                      value={s.ctaHeader}
+                      onValueChange={(v) => set("ctaHeader", v)}
+                    />
+                    <TextInput
+                      label="Footer (opcional)"
+                      value={s.ctaFooter}
+                      onValueChange={(v) => set("ctaFooter", v)}
+                    />
+                  </div>
+                </>
+              )}
+
+              {s.kind === "REPLY_BUTTONS" && (
+                <>
+                  <TextAreaInput
+                    label="Botones (id|título, una por línea, máx 3)"
+                    value={s.replyButtonsRaw}
+                    onValueChange={(v) => set("replyButtonsRaw", v)}
+                    rows={3}
+                    placeholder={"confirmar|Confirmar\nreagendar|Reagendar\ncancelar|Cancelar"}
+                  />
+                  <div className="grid grid-cols-2 gap-3">
+                    <TextInput
+                      label="Header (opcional)"
+                      value={s.replyHeader}
+                      onValueChange={(v) => set("replyHeader", v)}
+                    />
+                    <TextInput
+                      label="Footer (opcional)"
+                      value={s.replyFooter}
+                      onValueChange={(v) => set("replyFooter", v)}
+                    />
+                  </div>
+                </>
+              )}
+
+              {isMedia && (
+                <div className="space-y-2 rounded-lg border border-default-200 bg-content2 p-3">
+                  <p className="font-medium text-sm">Archivo</p>
+                  <p className="text-default-500 text-xs">
+                    Sube el archivo a Meta. El handle vence en 30 días — re-subes después.
+                  </p>
+                  <input
+                    ref={fileRef}
+                    type="file"
+                    className="hidden"
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (f) void upload(f);
+                      if (fileRef.current) fileRef.current.value = "";
+                    }}
+                  />
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      isPending={uploading}
+                      onPress={() => fileRef.current?.click()}
+                    >
+                      <Upload size={14} /> Subir archivo
+                    </Button>
+                  </div>
+                  {s.mediaHandle && (
+                    <div className="text-xs">
+                      <p>
+                        <strong>Handle:</strong>{" "}
+                        <code className="text-default-500">{s.mediaHandle}</code>
+                      </p>
+                      <p>
+                        <strong>Archivo:</strong> {s.mediaFilename} ({s.mediaMimeType}
+                        {s.mediaSize ? `, ${(s.mediaSize / 1024).toFixed(1)} KB` : ""})
+                      </p>
+                    </div>
+                  )}
+                  <p className="text-default-500 text-xs">— o pega URL pública —</p>
+                  <TextInput
+                    label="URL externa (opcional)"
+                    value={s.mediaUrl}
+                    onValueChange={(v) => set("mediaUrl", v)}
+                    placeholder="https://bioalergia.cl/folleto.pdf"
+                  />
+                  <TextAreaInput
+                    label="Caption / pie de foto (opcional)"
+                    value={s.bodyText}
+                    onValueChange={(v) => set("bodyText", v)}
+                    rows={2}
+                  />
+                </div>
+              )}
             </Modal.Body>
             <Modal.Footer className="mt-4 flex justify-end gap-2">
               <Button variant="outline" onPress={onClose}>
