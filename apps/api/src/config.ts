@@ -2,8 +2,12 @@ import { db } from "@finanzas/db";
 
 export { db };
 
-// Environment Variables
-export const JWT_SECRET = process.env.JWT_SECRET || "default_secret";
+// Environment Variables.
+// JWT_SECRET no longer exported here — the session signing key lives in
+// apps/api/src/lib/token-secret.ts which honours process.env.JWT_SECRET
+// and falls back to a DB-persisted 32-byte random secret. The previous
+// `JWT_SECRET || "default_secret"` fallback was dead code with no
+// callers and a footgun; removed to prevent accidental adoption.
 export const MP_ACCESS_TOKEN = process.env.MP_ACCESS_TOKEN;
 export const PORT = Number(process.env.PORT ?? 3000);
 

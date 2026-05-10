@@ -148,7 +148,7 @@ export function useSetCommerceCatalog() {
   });
 }
 export function useCommerceProducts(
-  input: Parameters<typeof waCloudORPCClient.listCommerceProducts>[0] | undefined,
+  input: Parameters<typeof waCloudORPCClient.listCommerceProducts>[0] | undefined
 ) {
   return useQuery({
     queryKey: [...KEY, "commerce-products", input],

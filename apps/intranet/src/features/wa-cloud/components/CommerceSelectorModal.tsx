@@ -65,7 +65,7 @@ export function CommerceSelectorModal({
     });
 
   const filtered = items.filter((p) =>
-    search ? p.name.toLowerCase().includes(search.toLowerCase()) : true,
+    search ? p.name.toLowerCase().includes(search.toLowerCase()) : true
   );
 
   const send = () => {
@@ -92,7 +92,7 @@ export function CommerceSelectorModal({
             onClose();
           },
           onError: (e) => toast.error(`Error: ${String(e)}`),
-        },
+        }
       );
     } else {
       sendMulti.mutate(
@@ -116,7 +116,7 @@ export function CommerceSelectorModal({
             onClose();
           },
           onError: (e) => toast.error(`Error: ${String(e)}`),
-        },
+        }
       );
     }
   };
@@ -162,11 +162,7 @@ export function CommerceSelectorModal({
                         value={headerText}
                         onValueChange={setHeaderText}
                       />
-                      <TextInput
-                        label="Body"
-                        value={bodyText}
-                        onValueChange={setBodyText}
-                      />
+                      <TextInput label="Body" value={bodyText} onValueChange={setBodyText} />
                     </div>
                   )}
                   {selected.size === 1 && (
@@ -181,9 +177,7 @@ export function CommerceSelectorModal({
                       <Spinner />
                     </div>
                   ) : filtered.length === 0 ? (
-                    <p className="py-12 text-center text-default-500 text-sm">
-                      Sin productos.
-                    </p>
+                    <p className="py-12 text-center text-default-500 text-sm">Sin productos.</p>
                   ) : (
                     <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
                       {filtered.map((p) => {

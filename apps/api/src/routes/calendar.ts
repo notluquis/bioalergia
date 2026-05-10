@@ -1457,6 +1457,26 @@ export const handleGoogleCalendarWebhook = async (c: Context) => {
     return reply(c, { error: "Missing required headers" }, 400);
   }
 
+  // Reject notifications for channels we did not register. Without this
+  // any caller could spam the endpoint with arbitrary channel-id values
+  // and trigger expensive Google Calendar syncs. Google's webhook does
+  // not provide an HMAC signature; channel-id existence + the ephemeral
+  // resource-id together act as the shared secret.
+  const known = await db.calendarWatchChannel.findFirst({
+    where: { channelId, resourceId },
+    select: { id: true },
+  });
+  if (!known) {
+    console.warn("[webhook] ⚠️ Unknown channel — ignoring", {
+      channelId: shortWebhookId(channelId),
+      resourceId: shortWebhookId(resourceId),
+      traceId,
+    });
+    // Return 200 so Google does not retry the bogus subscription, but
+    // do no work.
+    return c.body(null, 200);
+  }
+
   if (channelExpirationHeader) {
     const expirationMs = Date.parse(channelExpirationHeader);
     if (Number.isFinite(expirationMs)) {

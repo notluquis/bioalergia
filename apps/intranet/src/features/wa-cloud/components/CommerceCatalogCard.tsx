@@ -3,11 +3,7 @@ import { Save, Search, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { SelectInput, TextInput } from "@/features/outreach/components/FormField";
 import { toast } from "@/lib/toast-interceptor";
-import {
-  useAccounts,
-  useCommerceProducts,
-  useSetCommerceCatalog,
-} from "../hooks/useWaCloud";
+import { useAccounts, useCommerceProducts, useSetCommerceCatalog } from "../hooks/useWaCloud";
 
 // Per-account Meta Commerce catalog: link a catalog id (managed in
 // Meta Business Suite) so MPM and single-product messages can pull
@@ -30,7 +26,7 @@ export function CommerceCatalogCard() {
 
   const numericAccountId = accountId ? Number.parseInt(accountId, 10) : undefined;
   const products = useCommerceProducts(
-    numericAccountId ? { accountId: numericAccountId, limit: 50 } : undefined,
+    numericAccountId ? { accountId: numericAccountId, limit: 50 } : undefined
   );
 
   const [catalogId, setCatalogId] = useState("");
@@ -48,12 +44,12 @@ export function CommerceCatalogCard() {
       {
         onSuccess: () => toast.success("Catálogo actualizado"),
         onError: (e) => toast.error(`Error: ${String(e)}`),
-      },
+      }
     );
   };
 
   const filtered = (products.data?.products ?? []).filter((p) =>
-    search ? p.name.toLowerCase().includes(search.toLowerCase()) : true,
+    search ? p.name.toLowerCase().includes(search.toLowerCase()) : true
   );
 
   return (
@@ -96,7 +92,7 @@ export function CommerceCatalogCard() {
                   if (numericAccountId) {
                     setCat.mutate(
                       { accountId: numericAccountId, catalogId: null },
-                      { onSuccess: () => toast.success("Catálogo desvinculado") },
+                      { onSuccess: () => toast.success("Catálogo desvinculado") }
                     );
                   }
                 }}
@@ -132,10 +128,7 @@ export function CommerceCatalogCard() {
             ) : (
               <div className="grid max-h-80 grid-cols-2 gap-2 overflow-y-auto sm:grid-cols-3 lg:grid-cols-4">
                 {filtered.map((p) => (
-                  <div
-                    key={p.id}
-                    className="rounded-md border border-default-200 bg-content1 p-2"
-                  >
+                  <div key={p.id} className="rounded-md border border-default-200 bg-content1 p-2">
                     {p.image_url && (
                       <img
                         src={p.image_url}
