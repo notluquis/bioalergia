@@ -15,6 +15,7 @@ import {
 import { useState } from "react";
 import { TextInput } from "@/features/outreach/components/FormField";
 import { toast } from "@/lib/toast-interceptor";
+import { ConversationalAutomationCard } from "../components/ConversationalAutomationCard";
 import { PhoneToolsModal } from "../components/PhoneToolsModal";
 import {
   useAccounts,
@@ -71,6 +72,8 @@ export function WaCloudSettingsPage() {
       ) : (
         accounts.data.accounts.map((acc) => <AccountCard key={acc.id} acc={acc} />)
       )}
+
+      {accounts.data.accounts.length > 0 && <ConversationalAutomationCard />}
 
       <CreateAccountModal isOpen={createOpen} onClose={() => setCreateOpen(false)} />
     </div>

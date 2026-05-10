@@ -62,9 +62,11 @@ import {
   searchMessagesInputSchema,
   searchMessagesResponseSchema,
   markReadInputSchema,
+  conversationalAutomationSchema,
   phoneHealthResponseSchema,
   phoneQualitySummaryInputSchema,
   phoneQualitySummaryResponseSchema,
+  updateConversationalAutomationInputSchema,
   waPhoneIdInput,
   sendContactsInputSchema,
   sendFlowInputSchema,
@@ -101,7 +103,9 @@ import {
   editTextMessage,
   getBusinessProfile,
   getConversationAnalytics,
+  getConversationalAutomation,
   getPhoneHealth,
+  updateConversationalAutomation,
   listAccountFlows,
   listAccountPhoneNumbers,
   listAccountTemplates,
@@ -2299,6 +2303,37 @@ const waRouterBase = {
         logError("[wa-cloud.getPhoneHealth] persist failed", { err });
       }
       return h;
+    }),
+
+  // ── Conversational automation (ice breakers + commands) ───────────────────
+  getConversationalAutomation: readWa
+    .route({
+      method: "POST",
+      path: "/phones/conversational-automation",
+      tags: ["WA Cloud"],
+    })
+    .input(waPhoneIdInput)
+    .output(conversationalAutomationSchema)
+    .handler(async ({ input }) => {
+      const r = await getConversationalAutomation(input.phoneNumberId);
+      return {
+        enable_welcome_message: Boolean(r.enable_welcome_message),
+        prompts: r.prompts ?? [],
+        commands: r.commands ?? [],
+      };
+    }),
+
+  updateConversationalAutomation: writeWa
+    .route({
+      method: "POST",
+      path: "/phones/conversational-automation/update",
+      tags: ["WA Cloud"],
+    })
+    .input(updateConversationalAutomationInputSchema)
+    .output(waOkResponseSchema)
+    .handler(async ({ input }) => {
+      await updateConversationalAutomation(input.phoneNumberId, input.config);
+      return { status: "ok" as const };
     }),
 
   // Cheap local-DB summary for the conversation header badge. Reads the

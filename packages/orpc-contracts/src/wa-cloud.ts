@@ -1011,6 +1011,28 @@ export const phoneHealthResponseSchema = z.object({
     .nullish(),
 });
 
+// Conversational automation (Meta 2026): ice breakers + commands +
+// welcome-message toggle. Configured per phone, rendered natively in the
+// patient's WhatsApp client.
+export const conversationalCommandSchema = z.object({
+  command_name: z
+    .string()
+    .min(1)
+    .max(32)
+    .regex(/^[a-z0-9_]+$/, "Solo letras minúsculas, números y guión bajo"),
+  command_description: z.string().min(1).max(80),
+});
+
+export const conversationalAutomationSchema = z.object({
+  enable_welcome_message: z.boolean().default(false),
+  prompts: z.array(z.string().min(1).max(80)).max(4).default([]),
+  commands: z.array(conversationalCommandSchema).max(30).default([]),
+});
+
+export const updateConversationalAutomationInputSchema = waPhoneIdInput.extend({
+  config: conversationalAutomationSchema,
+});
+
 // Lightweight quality summary for the conversation header badge. Reads
 // from local snapshot (WaPhoneNumber.qualityRating) + counts unacknowledged
 // critical events. Cheap, no Meta call required.
@@ -1346,6 +1368,25 @@ export const waCloudContract = {
     .route({ method: "POST", path: "/phones/health", tags: ["WA Cloud"] })
     .input(waPhoneIdInput)
     .output(phoneHealthResponseSchema),
+
+  // Conversational automation (ice breakers + commands + welcome flag)
+  getConversationalAutomation: oc
+    .route({
+      method: "POST",
+      path: "/phones/conversational-automation",
+      tags: ["WA Cloud"],
+    })
+    .input(waPhoneIdInput)
+    .output(conversationalAutomationSchema),
+
+  updateConversationalAutomation: oc
+    .route({
+      method: "POST",
+      path: "/phones/conversational-automation/update",
+      tags: ["WA Cloud"],
+    })
+    .input(updateConversationalAutomationInputSchema)
+    .output(waOkResponseSchema),
 
   // Quality summary (local snapshot, used by header badge)
   getPhoneQualitySummary: oc

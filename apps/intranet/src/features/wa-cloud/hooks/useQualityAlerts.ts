@@ -24,19 +24,16 @@ export function useQualityAlerts(phoneNumberId: number | undefined) {
       return;
     }
     const newCritical = cur.critical - prev.current.critical;
-    const droppedToRed =
-      cur.rating === "RED" && prev.current.rating !== "RED";
+    const droppedToRed = cur.rating === "RED" && prev.current.rating !== "RED";
 
     if (droppedToRed) {
       toast.error(
-        "Calidad del número bajó a RED. Pausa campañas y revisa el contenido inmediatamente.",
+        "Calidad del número bajó a RED. Pausa campañas y revisa el contenido inmediatamente."
       );
       // Force-refresh broadcasts list so operator sees auto-paused entries.
       void qc.invalidateQueries({ queryKey: ["wa-cloud", "broadcasts"] });
     } else if (newCritical > 0) {
-      toast.error(
-        `Nueva alerta crítica WhatsApp (${newCritical} sin reconocer).`,
-      );
+      toast.error(`Nueva alerta crítica WhatsApp (${newCritical} sin reconocer).`);
     }
     prev.current = cur;
   }, [q.data, qc]);

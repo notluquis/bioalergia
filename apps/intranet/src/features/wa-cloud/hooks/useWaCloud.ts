@@ -115,6 +115,32 @@ export function useConversation(id: number | undefined) {
   });
 }
 
+// Conversational automation (ice breakers + commands + welcome flag).
+// Read-only fetch + write mutation. Cache key per phone.
+export function useConversationalAutomation(phoneNumberId: number | undefined) {
+  return useQuery({
+    queryKey: [...KEY, "conversational-automation", phoneNumberId],
+    enabled: Boolean(phoneNumberId),
+    queryFn: () =>
+      waCloudORPCClient.getConversationalAutomation({ phoneNumberId: phoneNumberId! }),
+    staleTime: 60_000,
+  });
+}
+
+export function useUpdateConversationalAutomation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (
+      input: Parameters<typeof waCloudORPCClient.updateConversationalAutomation>[0],
+    ) => waCloudORPCClient.updateConversationalAutomation(input),
+    onSuccess: (_, vars) => {
+      void qc.invalidateQueries({
+        queryKey: [...KEY, "conversational-automation", vars.phoneNumberId],
+      });
+    },
+  });
+}
+
 // Cheap per-phone quality summary (snapshot from DB + unack counts) for
 // the conversation header badge. Refreshed every 60s; UI overlays a toast
 // on top when criticalUnacknowledged grows.
@@ -122,8 +148,7 @@ export function usePhoneQualitySummary(phoneNumberId: number | undefined) {
   return useQuery({
     queryKey: [...KEY, "phone-quality-summary", phoneNumberId],
     enabled: Boolean(phoneNumberId),
-    queryFn: () =>
-      waCloudORPCClient.getPhoneQualitySummary({ phoneNumberId: phoneNumberId! }),
+    queryFn: () => waCloudORPCClient.getPhoneQualitySummary({ phoneNumberId: phoneNumberId! }),
     refetchInterval: 60_000,
   });
 }

@@ -58,3 +58,9 @@ export {
   type ConversationAnalyticsParams,
   getConversationAnalytics,
 } from "./graph/analytics.ts";
+export {
+  type ConversationalAutomationConfig,
+  type ConversationalCommand,
+  getConversationalAutomation,
+  updateConversationalAutomation,
+} from "./graph/conversational-automation.ts";
