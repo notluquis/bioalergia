@@ -247,9 +247,7 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
     if (carousel?.cards?.length) {
       setTplCards(
         carousel.cards.map((card, idx) => {
-          const cardBody = card.components?.find(
-            (c) => c.type === "BODY" || c.type === "body",
-          );
+          const cardBody = card.components?.find((c) => c.type === "BODY" || c.type === "body");
           const cardMatches = cardBody?.text?.match(/\{\{(\d+)\}\}/g) ?? [];
           return {
             cardIndex: idx,
@@ -257,7 +255,7 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
             imageFilename: null,
             bodyParams: new Array(cardMatches.length).fill(""),
           };
-        }),
+        })
       );
     } else {
       setTplCards([]);
@@ -375,7 +373,7 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
         const missingImg = tplCards.filter((c) => !c.imageMediaId);
         if (missingImg.length > 0) {
           toast.error(
-            `Sube imagen para tarjeta(s): ${missingImg.map((c) => c.cardIndex + 1).join(", ")}`,
+            `Sube imagen para tarjeta(s): ${missingImg.map((c) => c.cardIndex + 1).join(", ")}`
           );
           return;
         }
@@ -1244,9 +1242,7 @@ function TemplateComposer({
       )}
       {tplCards.length > 0 && (
         <div className="space-y-2 rounded-lg border border-default-200 bg-content2 p-3">
-          <p className="font-medium text-sm">
-            Tarjetas del carousel ({tplCards.length})
-          </p>
+          <p className="font-medium text-sm">Tarjetas del carousel ({tplCards.length})</p>
           <div className="space-y-3">
             {tplCards.map((card, i) => (
               <CarouselCardEditor
@@ -2582,7 +2578,7 @@ function ShortcutAutocomplete({
     .filter(
       (s) =>
         (s.shortcut ?? "").toLowerCase().includes(shortcut.toLowerCase()) ||
-        s.name.toLowerCase().includes(shortcut.toLowerCase()),
+        s.name.toLowerCase().includes(shortcut.toLowerCase())
     )
     .slice(0, 5);
 
@@ -2591,7 +2587,7 @@ function ShortcutAutocomplete({
   const replaceWith = (text: string) => {
     // Strip the trailing "/word" then append text
     const next = body.replace(/(?:^|\s)\/([\w-]+)$/, (_match, _w, offset: number) =>
-      offset === 0 ? text : ` ${text}`,
+      offset === 0 ? text : ` ${text}`
     );
     setBody(next);
   };
@@ -2625,9 +2621,7 @@ function ShortcutAutocomplete({
                 <Chip.Label>{s.kind}</Chip.Label>
               </Chip>
             </div>
-            {s.bodyText && (
-              <p className="line-clamp-1 text-default-500 text-xs">{s.bodyText}</p>
-            )}
+            {s.bodyText && <p className="line-clamp-1 text-default-500 text-xs">{s.bodyText}</p>}
           </div>
           <div className="flex shrink-0 gap-1">
             {s.kind === "TEXT" && s.bodyText && (
