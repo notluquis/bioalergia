@@ -35,7 +35,7 @@ function decodeKey(raw: string): Buffer {
   const buf = isHex ? Buffer.from(trimmed, "hex") : Buffer.from(trimmed, "base64");
   if (buf.length !== 32) {
     throw new Error(
-      "Each WA secret key must decode to 32 bytes (64 hex chars or 44 base64 chars). Generate with `openssl rand -hex 32`.",
+      `Each WA secret key must decode to 32 bytes (got ${buf.length} bytes from ${trimmed.length}-char input, hex=${isHex}). Generate with \`openssl rand -hex 32\`.`,
     );
   }
   return buf;
