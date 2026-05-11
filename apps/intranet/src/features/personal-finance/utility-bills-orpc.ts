@@ -1,12 +1,13 @@
 import { createORPCClient, ORPCError } from "@orpc/client";
 import type { ContractRouterClient } from "@orpc/contract";
+import { csrfFetch } from "@/lib/csrf-fetch";
 
 import type { UtilityBillsContract } from "@finanzas/orpc-contracts/utility-bills";
 import { SuperJSONLink } from "@/features/calendar/orpc";
 import { ApiError } from "@/lib/api-client";
 
 const link = new SuperJSONLink({
-  fetch: (request, init) => fetch(request, { ...init, credentials: "include" }),
+  fetch: csrfFetch,
   url: () => window.location.origin,
 });
 

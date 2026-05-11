@@ -3,11 +3,12 @@ import type { ContractRouterClient } from "@orpc/contract";
 import type { IntegrationsContract } from "@finanzas/orpc-contracts/integrations";
 import { SuperJSONLink } from "@/features/calendar/orpc";
 import { ApiError } from "@/lib/api-client";
+import { csrfFetch } from "@/lib/csrf-fetch";
 
 export type GoogleDriveORPCClient = ContractRouterClient<IntegrationsContract>;
 
 const googleDriveORPCLink = new SuperJSONLink({
-  fetch: (request, init) => fetch(request, { ...init, credentials: "include" }),
+  fetch: csrfFetch,
   url: () => window.location.origin,
 });
 

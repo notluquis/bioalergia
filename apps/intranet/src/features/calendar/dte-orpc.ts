@@ -2,11 +2,12 @@ import { createORPCClient } from "@orpc/client";
 import type { ContractRouterClient } from "@orpc/contract";
 import type { DteEventLinksContract } from "@finanzas/orpc-contracts/dte-event-links";
 import { SuperJSONLink } from "./orpc";
+import { csrfFetch } from "@/lib/csrf-fetch";
 
 export type DteEventLinksORPCClient = ContractRouterClient<DteEventLinksContract>;
 
 const dteEventLinksORPCLink = new SuperJSONLink({
-  fetch: (request, init) => fetch(request, { ...init, credentials: "include" }),
+  fetch: csrfFetch,
   url: () => window.location.origin,
 });
 

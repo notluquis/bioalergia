@@ -3,9 +3,10 @@ import type { ContractRouterClient } from "@orpc/contract";
 import type { PatientsContract } from "@finanzas/orpc-contracts/patients";
 import { SuperJSONLink } from "@/features/calendar/orpc";
 import { ApiError } from "@/lib/api-client";
+import { csrfFetch } from "@/lib/csrf-fetch";
 
 const patientsORPCLink = new SuperJSONLink({
-  fetch: (request, init) => fetch(request, { ...init, credentials: "include" }),
+  fetch: csrfFetch,
   url: () => window.location.origin,
 });
 

@@ -8,11 +8,12 @@ import type {
 import { SuperJSONLink } from "@/features/calendar/orpc";
 import { ApiError } from "@/lib/api-client";
 import type { z } from "zod";
+import { csrfFetch } from "@/lib/csrf-fetch";
 
 export type PersonalFinanceORPCClient = ContractRouterClient<PersonalFinanceContract>;
 
 const personalFinanceORPCLink = new SuperJSONLink({
-  fetch: (request, init) => fetch(request, { ...init, credentials: "include" }),
+  fetch: csrfFetch,
   url: () => window.location.origin,
 });
 

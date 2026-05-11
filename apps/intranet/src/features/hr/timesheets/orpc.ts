@@ -3,11 +3,12 @@ import type { ContractRouterClient } from "@orpc/contract";
 import type { TimesheetsContract } from "@finanzas/orpc-contracts/timesheets";
 import { SuperJSONLink } from "@/features/calendar/orpc";
 import { ApiError } from "@/lib/api-client";
+import { csrfFetch } from "@/lib/csrf-fetch";
 
 export type TimesheetsORPCClient = ContractRouterClient<TimesheetsContract>;
 
 const timesheetsORPCLink = new SuperJSONLink({
-  fetch: (request, init) => fetch(request, { ...init, credentials: "include" }),
+  fetch: csrfFetch,
   url: () => window.location.origin,
 });
 
