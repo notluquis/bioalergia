@@ -228,7 +228,18 @@ app.use("/api/auth/*", authRateLimiter);
 // Webhooks excluded (Meta / Google / OneDrive cross-site by design and
 // already authenticated via HMAC signatures).
 const csrfAllowedOrigin = (origin: string, c: import("hono").Context): boolean => {
-  // Same-origin (matches request URL) is always allowed by hono/csrf default.
+  // Always allow same-origin: when the Origin header host matches the
+  // request's own host (the SPA hitting its own API), there is no CSRF
+  // surface. hono/csrf normally provides this default but disables it
+  // when an `origin` callback is supplied — re-implement here so we
+  // never lock ourselves out of the API even if CORS_ORIGIN env is empty.
+  try {
+    const reqHost = new URL(c.req.url).host;
+    const originHost = new URL(origin).host;
+    if (reqHost === originHost) return true;
+  } catch {
+    // Malformed origin — fall through to allow-list checks.
+  }
   if (allowedProdOrigins.includes(origin)) return true;
   if (process.env.NODE_ENV !== "production") {
     return /^https?:\/\/localhost(:\d+)?$/.test(origin);
