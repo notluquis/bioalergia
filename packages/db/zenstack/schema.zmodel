@@ -119,6 +119,15 @@ model User {
   mfaSecret               String?                  @map("mfa_secret")
   mfaEnabled              Boolean                  @default(false) @map("mfa_enabled")
   sessionVersion          Int                      @default(1) @map("session_version")
+  // Brute-force defense: temporary lock after N consecutive failed
+  // password verifications. Reset on successful login.
+  failedLoginAttempts     Int                      @default(0) @map("failed_login_attempts")
+  lockedUntil             DateTime?                @map("locked_until")
+  // Sliding session inactivity (8h max). Updated on every authed
+  // request via session middleware. Older than threshold → forced relogin.
+  lastActivityAt          DateTime?                @map("last_activity_at")
+  lastLoginAt             DateTime?                @map("last_login_at")
+  lastLoginIp             String?                  @map("last_login_ip")
 
 
   // Relationships
@@ -819,6 +828,68 @@ model Setting {
   @@allow('update', auth().status == 'ACTIVE')
 
   @@map("settings")
+}
+
+// Append-only audit trail for security-relevant events: login attempts
+// (success/fail), MFA verification, password change, role grant/revoke,
+// data export, admin actions, blocked contacts, etc.
+//
+// Retention target: 2 years (Chile Law 20.584 + HIPAA-equivalent). The
+// table is queried for forensics + compliance reporting; never updated
+// after insert. PII (email, IP) is captured intentionally — this is the
+// authoritative incident-response record.
+enum AuditEventKind {
+  LOGIN_SUCCESS
+  LOGIN_FAILURE
+  LOGIN_LOCKED
+  MFA_SUCCESS
+  MFA_FAILURE
+  PASSWORD_CHANGE
+  PASSWORD_RESET
+  MFA_ENROLL
+  MFA_DISABLE
+  PASSKEY_REGISTER
+  PASSKEY_DELETE
+  ROLE_GRANT
+  ROLE_REVOKE
+  USER_CREATE
+  USER_DEACTIVATE
+  USER_REACTIVATE
+  DATA_EXPORT
+  ADMIN_ACTION
+  WA_CONTACT_BLOCK
+  WA_CONTACT_UNBLOCK
+  SETTINGS_UPDATE
+  OTHER
+}
+
+model AuditLog {
+  id          BigInt          @id @default(autoincrement())
+  occurredAt  DateTime        @default(now()) @map("occurred_at")
+  kind        AuditEventKind
+  // Null for unauthenticated events (failed logins where the email
+  // doesn't match a known user).
+  userId      Int?            @map("user_id")
+  // Free-form actor description when userId is unavailable
+  // (e.g. "anonymous" for failed logins from unknown emails).
+  actorLabel  String?         @map("actor_label")
+  ip          String?
+  userAgent   String?         @map("user_agent")
+  resource    String?
+  resourceId  String?         @map("resource_id")
+  outcome     String          @default("ok")
+  message     String?
+  metadata    Json?
+
+  @@index([occurredAt])
+  @@index([userId, occurredAt])
+  @@index([kind, occurredAt])
+  @@deny('all', auth() == null)
+  @@allow('read', auth().status == 'ACTIVE')
+  // create allowed for any authed user — emitter is server-side, this
+  // permits the server context to insert. update/delete denied (append-only).
+  @@allow('create', auth().status == 'ACTIVE')
+  @@map("audit_logs")
 }
 
 model OneDriveAccount {

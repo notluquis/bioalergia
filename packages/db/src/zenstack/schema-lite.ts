@@ -281,6 +281,31 @@ export class SchemaType implements SchemaDef {
                     type: "Int",
                     default: 1 as FieldDefault
                 },
+                failedLoginAttempts: {
+                    name: "failedLoginAttempts",
+                    type: "Int",
+                    default: 0 as FieldDefault
+                },
+                lockedUntil: {
+                    name: "lockedUntil",
+                    type: "DateTime",
+                    optional: true
+                },
+                lastActivityAt: {
+                    name: "lastActivityAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                lastLoginAt: {
+                    name: "lastLoginAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                lastLoginIp: {
+                    name: "lastLoginIp",
+                    type: "String",
+                    optional: true
+                },
                 passkeys: {
                     name: "passkeys",
                     type: "Passkey",
@@ -2534,6 +2559,75 @@ export class SchemaType implements SchemaDef {
             idFields: ["key"],
             uniqueFields: {
                 key: { type: "String" }
+            }
+        },
+        AuditLog: {
+            name: "AuditLog",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "BigInt",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                occurredAt: {
+                    name: "occurredAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                kind: {
+                    name: "kind",
+                    type: "AuditEventKind"
+                },
+                userId: {
+                    name: "userId",
+                    type: "Int",
+                    optional: true
+                },
+                actorLabel: {
+                    name: "actorLabel",
+                    type: "String",
+                    optional: true
+                },
+                ip: {
+                    name: "ip",
+                    type: "String",
+                    optional: true
+                },
+                userAgent: {
+                    name: "userAgent",
+                    type: "String",
+                    optional: true
+                },
+                resource: {
+                    name: "resource",
+                    type: "String",
+                    optional: true
+                },
+                resourceId: {
+                    name: "resourceId",
+                    type: "String",
+                    optional: true
+                },
+                outcome: {
+                    name: "outcome",
+                    type: "String",
+                    default: "ok" as FieldDefault
+                },
+                message: {
+                    name: "message",
+                    type: "String",
+                    optional: true
+                },
+                metadata: {
+                    name: "metadata",
+                    type: "Json",
+                    optional: true
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "BigInt" }
             }
         },
         OneDriveAccount: {
@@ -10542,6 +10636,33 @@ export class SchemaType implements SchemaDef {
         }
     } as const;
     enums = {
+        AuditEventKind: {
+            name: "AuditEventKind",
+            values: {
+                LOGIN_SUCCESS: "LOGIN_SUCCESS",
+                LOGIN_FAILURE: "LOGIN_FAILURE",
+                LOGIN_LOCKED: "LOGIN_LOCKED",
+                MFA_SUCCESS: "MFA_SUCCESS",
+                MFA_FAILURE: "MFA_FAILURE",
+                PASSWORD_CHANGE: "PASSWORD_CHANGE",
+                PASSWORD_RESET: "PASSWORD_RESET",
+                MFA_ENROLL: "MFA_ENROLL",
+                MFA_DISABLE: "MFA_DISABLE",
+                PASSKEY_REGISTER: "PASSKEY_REGISTER",
+                PASSKEY_DELETE: "PASSKEY_DELETE",
+                ROLE_GRANT: "ROLE_GRANT",
+                ROLE_REVOKE: "ROLE_REVOKE",
+                USER_CREATE: "USER_CREATE",
+                USER_DEACTIVATE: "USER_DEACTIVATE",
+                USER_REACTIVATE: "USER_REACTIVATE",
+                DATA_EXPORT: "DATA_EXPORT",
+                ADMIN_ACTION: "ADMIN_ACTION",
+                WA_CONTACT_BLOCK: "WA_CONTACT_BLOCK",
+                WA_CONTACT_UNBLOCK: "WA_CONTACT_UNBLOCK",
+                SETTINGS_UPDATE: "SETTINGS_UPDATE",
+                OTHER: "OTHER"
+            }
+        },
         DoctoraliaSyncType: {
             name: "DoctoraliaSyncType",
             values: {

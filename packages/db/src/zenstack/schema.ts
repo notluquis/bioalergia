@@ -330,6 +330,36 @@ export class SchemaType implements SchemaDef {
                     attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(1) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("session_version") }] }] as readonly AttributeApplication[],
                     default: 1 as FieldDefault
                 },
+                failedLoginAttempts: {
+                    name: "failedLoginAttempts",
+                    type: "Int",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("failed_login_attempts") }] }] as readonly AttributeApplication[],
+                    default: 0 as FieldDefault
+                },
+                lockedUntil: {
+                    name: "lockedUntil",
+                    type: "DateTime",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("locked_until") }] }] as readonly AttributeApplication[]
+                },
+                lastActivityAt: {
+                    name: "lastActivityAt",
+                    type: "DateTime",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("last_activity_at") }] }] as readonly AttributeApplication[]
+                },
+                lastLoginAt: {
+                    name: "lastLoginAt",
+                    type: "DateTime",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("last_login_at") }] }] as readonly AttributeApplication[]
+                },
+                lastLoginIp: {
+                    name: "lastLoginIp",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("last_login_ip") }] }] as readonly AttributeApplication[]
+                },
                 passkeys: {
                     name: "passkeys",
                     type: "Passkey",
@@ -3067,6 +3097,91 @@ export class SchemaType implements SchemaDef {
             idFields: ["key"],
             uniqueFields: {
                 key: { type: "String" }
+            }
+        },
+        AuditLog: {
+            name: "AuditLog",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "BigInt",
+                    id: true,
+                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                occurredAt: {
+                    name: "occurredAt",
+                    type: "DateTime",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("occurred_at") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                kind: {
+                    name: "kind",
+                    type: "AuditEventKind"
+                },
+                userId: {
+                    name: "userId",
+                    type: "Int",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("user_id") }] }] as readonly AttributeApplication[]
+                },
+                actorLabel: {
+                    name: "actorLabel",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("actor_label") }] }] as readonly AttributeApplication[]
+                },
+                ip: {
+                    name: "ip",
+                    type: "String",
+                    optional: true
+                },
+                userAgent: {
+                    name: "userAgent",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("user_agent") }] }] as readonly AttributeApplication[]
+                },
+                resource: {
+                    name: "resource",
+                    type: "String",
+                    optional: true
+                },
+                resourceId: {
+                    name: "resourceId",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("resource_id") }] }] as readonly AttributeApplication[]
+                },
+                outcome: {
+                    name: "outcome",
+                    type: "String",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("ok") }] }] as readonly AttributeApplication[],
+                    default: "ok" as FieldDefault
+                },
+                message: {
+                    name: "message",
+                    type: "String",
+                    optional: true
+                },
+                metadata: {
+                    name: "metadata",
+                    type: "Json",
+                    optional: true
+                }
+            },
+            attributes: [
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("DateTime", [ExpressionUtils.field("occurredAt")]) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("userId"), ExpressionUtils.field("occurredAt")]) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("AuditEventKind", [ExpressionUtils.field("kind"), ExpressionUtils.field("occurredAt")]) }] },
+                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
+                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("audit_logs") }] }
+            ] as readonly AttributeApplication[],
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "BigInt" }
             }
         },
         OneDriveAccount: {
@@ -12896,6 +13011,33 @@ export class SchemaType implements SchemaDef {
         }
     } as const;
     enums = {
+        AuditEventKind: {
+            name: "AuditEventKind",
+            values: {
+                LOGIN_SUCCESS: "LOGIN_SUCCESS",
+                LOGIN_FAILURE: "LOGIN_FAILURE",
+                LOGIN_LOCKED: "LOGIN_LOCKED",
+                MFA_SUCCESS: "MFA_SUCCESS",
+                MFA_FAILURE: "MFA_FAILURE",
+                PASSWORD_CHANGE: "PASSWORD_CHANGE",
+                PASSWORD_RESET: "PASSWORD_RESET",
+                MFA_ENROLL: "MFA_ENROLL",
+                MFA_DISABLE: "MFA_DISABLE",
+                PASSKEY_REGISTER: "PASSKEY_REGISTER",
+                PASSKEY_DELETE: "PASSKEY_DELETE",
+                ROLE_GRANT: "ROLE_GRANT",
+                ROLE_REVOKE: "ROLE_REVOKE",
+                USER_CREATE: "USER_CREATE",
+                USER_DEACTIVATE: "USER_DEACTIVATE",
+                USER_REACTIVATE: "USER_REACTIVATE",
+                DATA_EXPORT: "DATA_EXPORT",
+                ADMIN_ACTION: "ADMIN_ACTION",
+                WA_CONTACT_BLOCK: "WA_CONTACT_BLOCK",
+                WA_CONTACT_UNBLOCK: "WA_CONTACT_UNBLOCK",
+                SETTINGS_UPDATE: "SETTINGS_UPDATE",
+                OTHER: "OTHER"
+            }
+        },
         DoctoraliaSyncType: {
             name: "DoctoraliaSyncType",
             values: {

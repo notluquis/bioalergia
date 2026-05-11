@@ -33,6 +33,12 @@ import type { Context as HonoContext } from "hono";
 import { deleteCookie, getCookie, setCookie } from "hono/cookie";
 import { randomUUID } from "node:crypto";
 import { getSessionUser, hasPermission, resolveSessionUserFromToken } from "../auth.ts";
+import {
+  isLockedNow,
+  recordLoginFailure,
+  recordLoginSuccess,
+} from "../lib/account-lockout.ts";
+import { ipFromContext, logAuditFromContext } from "../lib/audit-log.ts";
 import { logError } from "../lib/logger.ts";
 import { signToken, verifyToken } from "../lib/paseto.ts";
 import { configureSuperjson } from "../lib/superjson-config.ts";
@@ -241,6 +247,12 @@ const authORPCRouterBase = {
       const normalizedEmail = normalizeEmailInput(input.email);
       const loginCandidate = await findUserByLoginIdentifier(normalizedEmail);
       if (!loginCandidate) {
+        await logAuditFromContext(context.hono, {
+          kind: "LOGIN_FAILURE",
+          actorLabel: normalizedEmail,
+          outcome: "denied",
+          message: "user_not_found",
+        });
         authError("UNAUTHORIZED", "Credenciales incorrectas");
       }
 
@@ -266,6 +278,18 @@ const authORPCRouterBase = {
         authError("UNAUTHORIZED", "Credenciales incorrectas");
       }
 
+      // Per-user lockout (see lib/account-lockout.ts thresholds).
+      if (isLockedNow(user)) {
+        await logAuditFromContext(context.hono, {
+          kind: "LOGIN_LOCKED",
+          userId: user.id,
+          actorLabel: normalizedEmail,
+          outcome: "denied",
+          message: `locked_until_${user.lockedUntil?.toISOString()}`,
+        });
+        authError("UNAUTHORIZED", "Cuenta bloqueada temporalmente. Intenta más tarde.");
+      }
+
       if (!user.passwordHash) {
         authError("UNAUTHORIZED", "Credenciales incorrectas");
       }
@@ -274,6 +298,15 @@ const authORPCRouterBase = {
       const { needsRehash, valid } = await verifyPassword(input.password, user.passwordHash);
 
       if (!valid) {
+        const failure = await recordLoginFailure(user.id);
+        await logAuditFromContext(context.hono, {
+          kind: "LOGIN_FAILURE",
+          userId: user.id,
+          actorLabel: normalizedEmail,
+          outcome: "denied",
+          message: "bad_password",
+          metadata: { attempts: failure.attempts, lockedUntil: failure.lockedUntil },
+        });
         authError("UNAUTHORIZED", "Credenciales incorrectas");
       }
 
@@ -286,8 +319,16 @@ const authORPCRouterBase = {
       }
 
       if (user.mfaEnabled) {
+        // Don't reset failure count yet — completion happens after MFA.
         return { status: "mfa_required" as const, userId: user.id };
       }
+
+      await recordLoginSuccess(user.id, ipFromContext(context.hono));
+      await logAuditFromContext(context.hono, {
+        kind: "LOGIN_SUCCESS",
+        userId: user.id,
+        actorLabel: normalizedEmail,
+      });
 
       const roles = user.roles.map((role) => role.role.name);
       const notificationEmail = user.person?.email ?? normalizedEmail;
@@ -345,8 +386,21 @@ const authORPCRouterBase = {
       const isValid = await verifyMfaToken(input.token, decryptSecret(user.mfaSecret) ?? "");
 
       if (!isValid) {
+        const failure = await recordLoginFailure(user.id);
+        await logAuditFromContext(context.hono, {
+          kind: "MFA_FAILURE",
+          userId: user.id,
+          outcome: "denied",
+          metadata: { attempts: failure.attempts, lockedUntil: failure.lockedUntil },
+        });
         authError("UNAUTHORIZED", "Código incorrecto");
       }
+
+      await recordLoginSuccess(user.id, ipFromContext(context.hono));
+      await logAuditFromContext(context.hono, {
+        kind: "MFA_SUCCESS",
+        userId: user.id,
+      });
 
       const roles = user.roles.map((role) => role.role.name);
       const notificationEmail = user.person?.email ?? "";

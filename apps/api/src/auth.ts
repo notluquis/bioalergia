@@ -66,6 +66,15 @@ function isDebugScopeAllowed(
   return scopes.some((scope) => scope.action === action && scope.subject === subject);
 }
 
+// Sliding session inactivity threshold. ASVS 5.0 / OWASP recommends
+// 8h max for medical-data apps; if the user has not made any
+// authenticated request in this window the session is invalidated
+// even if the cookie itself is still within its 2-day TTL.
+const INACTIVITY_THRESHOLD_MS = 8 * 60 * 60 * 1000;
+// Throttle DB writes for lastActivityAt — only persist if the previous
+// timestamp is older than this window. Avoids one UPDATE per request.
+const ACTIVITY_WRITE_THROTTLE_MS = 5 * 60 * 1000;
+
 export async function resolveSessionUserFromToken(token: string): Promise<AuthSession | null> {
   try {
     const decoded = await verifyToken(token);
@@ -90,6 +99,7 @@ export async function resolveSessionUserFromToken(token: string): Promise<AuthSe
         id: true,
         status: true,
         sessionVersion: true,
+        lastActivityAt: true,
         person: { select: { email: true } },
         roles: {
           include: {
@@ -108,6 +118,27 @@ export async function resolveSessionUserFromToken(token: string): Promise<AuthSe
       typeof decoded.sv === "number" && Number.isFinite(decoded.sv) ? decoded.sv : 1;
     if (tokenSessionVersion !== user.sessionVersion) {
       return null;
+    }
+
+    // Inactivity check (skip for debug sessions, which have explicit
+    // short TTL via PASETO `exp`).
+    if (tokenType === "session" && user.lastActivityAt) {
+      const idle = Date.now() - user.lastActivityAt.getTime();
+      if (idle > INACTIVITY_THRESHOLD_MS) {
+        return null;
+      }
+    }
+
+    // Touch lastActivityAt at most once per ACTIVITY_WRITE_THROTTLE_MS.
+    // Fire-and-forget; failure does not block the session resolution.
+    if (
+      tokenType === "session" &&
+      (!user.lastActivityAt ||
+        Date.now() - user.lastActivityAt.getTime() > ACTIVITY_WRITE_THROTTLE_MS)
+    ) {
+      void db.user
+        .update({ where: { id: user.id }, data: { lastActivityAt: new Date() } })
+        .catch(() => undefined);
     }
 
     return {

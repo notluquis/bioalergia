@@ -13,7 +13,7 @@ function readCsrfCookie(): string | null {
 
 async function doFetch(
   request: RequestInfo | URL,
-  init: RequestInit | undefined,
+  init: RequestInit | undefined
 ): Promise<Response> {
   const csrf = readCsrfCookie();
   const headers = new Headers(init?.headers);
@@ -21,10 +21,7 @@ async function doFetch(
   return fetch(request, { ...init, headers, credentials: "include" });
 }
 
-export async function csrfFetch(
-  request: RequestInfo | URL,
-  init?: RequestInit,
-): Promise<Response> {
+export async function csrfFetch(request: RequestInfo | URL, init?: RequestInit): Promise<Response> {
   const cookieBefore = readCsrfCookie();
   const first = await doFetch(request, init);
   if (first.status !== 403) return first;
