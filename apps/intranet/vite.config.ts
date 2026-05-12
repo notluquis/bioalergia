@@ -42,6 +42,60 @@ export default defineConfig(({ mode }) => {
           `<link nonce="${CSP_NONCE_PLACEHOLDER}"$1`
         );
     },
+    // `vite preview` serves the built index.html as-is, so the Caddy nonce
+    // placeholder is left intact and the browser blocks every <script>. This
+    // middleware substitutes the placeholder with a per-request UUID and
+    // emits a matching Content-Security-Policy header so React mounts and
+    // Lighthouse / Playwright can audit the production bundle locally.
+    configurePreviewServer(server: import("vite").PreviewServer) {
+      server.middlewares.use(async (req, res, next) => {
+        const url = req.url ?? "/";
+        const isHtml =
+          url === "/" ||
+          url === "" ||
+          url === "/index.html" ||
+          (!url.includes(".") && !url.startsWith("/api"));
+        if (!isHtml) return next();
+        try {
+          const fs = await import("node:fs/promises");
+          const path = await import("node:path");
+          const indexPath = path.resolve("dist/client/index.html");
+          let html = await fs.readFile(indexPath, "utf8");
+          const { randomUUID } = await import("node:crypto");
+          const nonce = randomUUID().replaceAll("-", "");
+          html = html.replaceAll(CSP_NONCE_PLACEHOLDER, nonce);
+          res.setHeader("Content-Type", "text/html; charset=utf-8");
+          res.setHeader(
+            "Content-Security-Policy",
+            [
+              "default-src 'self'",
+              // Mirrors apps/intranet/Caddyfile (production). 'unsafe-inline'
+              // is ignored by browsers when 'strict-dynamic' + nonce are
+              // present, except for inline event handlers like the deferred
+              // CSS-load <link onload="this.media='all'"> in index.html —
+              // those need 'unsafe-hashes' or 'unsafe-inline'.
+              // 'unsafe-hashes' + sha256 hash unblocks the deferred CSS-load
+              // <link onload="this.media='all'"> in index.html, the only
+              // inline event handler the bundle ships. https: lets dynamic
+              // imports load chunks (vite preview serves them with hashed
+              // urls under /assets).
+              `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' 'unsafe-hashes' 'sha256-MhtPZXr7+LpJUY5qtMutB+qWfQtMaPccfe7QXtCcEYc=' https:`,
+              `style-src 'self' 'nonce-${nonce}' 'unsafe-inline' https://fonts.googleapis.com`,
+              "img-src 'self' data: blob: https:",
+              "font-src 'self' data: https://fonts.gstatic.com",
+              "connect-src 'self' http://localhost:* ws://localhost:* https://*",
+              "object-src 'none'",
+              "base-uri 'self'",
+              "frame-ancestors 'none'",
+            ].join("; ")
+          );
+          res.statusCode = 200;
+          res.end(html);
+        } catch (err) {
+          next(err as Error);
+        }
+      });
+    },
   };
 
   return {

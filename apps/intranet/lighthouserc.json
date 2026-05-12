@@ -1,9 +1,9 @@
 {
   "ci": {
     "collect": {
-      "url": ["http://localhost:5173/login"],
-      "startServerCommand": "pnpm dev",
-      "startServerReadyPattern": "ready in",
+      "url": ["http://localhost:4173/login"],
+      "startServerCommand": "pnpm preview --port 4173 --strictPort",
+      "startServerReadyPattern": "Local:",
       "startServerReadyTimeout": 120000,
       "numberOfRuns": 3,
       "settings": {
@@ -19,7 +19,6 @@
       }
     },
     "assert": {
-      "preset": "lighthouse:recommended",
       "assertions": {
         "categories:performance": ["error", { "minScore": 0.85 }],
         "categories:accessibility": ["error", { "minScore": 0.95 }],
