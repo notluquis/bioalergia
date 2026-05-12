@@ -19,9 +19,21 @@ interface Fixtures {
  * suite grows.
  */
 export const test = base.extend<Fixtures>({
-  authedPage: async ({ page }, use, testInfo) => {
+  authedPage: async ({ page, baseURL }, use, testInfo) => {
     if (!E2E_USER || !E2E_PASS) {
       testInfo.skip(true, "E2E_USER / E2E_PASS not set");
+    }
+    // Fixture targets a real backend (login posts via oRPC). When the auth
+    // API is unreachable (e.g. CI runs vite preview without spinning up
+    // @finanzas/api), skip cleanly instead of timing out at waitForURL.
+    const csrf = await page.request
+      .get(`${baseURL ?? ""}/api/csrf`, { failOnStatusCode: false, timeout: 5_000 })
+      .catch(() => undefined);
+    if (!csrf || csrf.status() >= 500) {
+      testInfo.skip(
+        true,
+        `API unavailable at ${baseURL}/api/csrf (status ${csrf?.status() ?? "no-response"})`
+      );
     }
     await page.goto("/login");
     // The login surface starts on the passkey CTA. Wait until any login
