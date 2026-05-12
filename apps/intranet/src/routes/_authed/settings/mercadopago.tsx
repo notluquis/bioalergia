@@ -1,6 +1,12 @@
+import { Spinner } from "@heroui/react";
 import { createFileRoute, getRouteApi } from "@tanstack/react-router";
+import { lazy, Suspense } from "react";
 
-import { MercadoPagoSettingsPage } from "@/pages/settings/MercadoPagoSettingsPage";
+const MercadoPagoSettingsPage = lazy(() =>
+  import("@/pages/settings/MercadoPagoSettingsPage").then((m) => ({
+    default: m.MercadoPagoSettingsPage,
+  }))
+);
 
 export const Route = createFileRoute("/_authed/settings/mercadopago")({
   staticData: {
@@ -13,5 +19,15 @@ export const Route = createFileRoute("/_authed/settings/mercadopago")({
       throw routeApi.redirect({ to: "/" });
     }
   },
-  component: MercadoPagoSettingsPage,
+  component: () => (
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center py-24">
+          <Spinner aria-label="Cargando MercadoPago" />
+        </div>
+      }
+    >
+      <MercadoPagoSettingsPage />
+    </Suspense>
+  ),
 });

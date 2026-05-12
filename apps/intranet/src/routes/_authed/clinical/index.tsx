@@ -1,11 +1,27 @@
+import { Spinner } from "@heroui/react";
 import { createFileRoute, getRouteApi } from "@tanstack/react-router";
+import { lazy, Suspense } from "react";
 
-import { ClinicalSeriesPage } from "@/features/clinical-series/pages/ClinicalSeriesPage";
+const ClinicalSeriesPage = lazy(() =>
+  import("@/features/clinical-series/pages/ClinicalSeriesPage").then((m) => ({
+    default: m.ClinicalSeriesPage,
+  }))
+);
 
 const routeApi = getRouteApi("/_authed/clinical/");
 
 export const Route = createFileRoute("/_authed/clinical/")({
-  component: ClinicalSeriesPage,
+  component: () => (
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center py-24">
+          <Spinner aria-label="Cargando series clínicas" />
+        </div>
+      }
+    >
+      <ClinicalSeriesPage />
+    </Suspense>
+  ),
   staticData: {
     nav: { iconKey: "ListChecks", label: "Series", order: 10, section: "Clínica" },
     permission: { action: "read", subject: "ClinicalSeries" },
