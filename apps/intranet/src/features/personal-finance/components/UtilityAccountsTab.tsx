@@ -14,26 +14,45 @@ import {
 } from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import dayjs from "dayjs";
-import { PencilIcon, PlusIcon, RefreshCwIcon, Trash2Icon } from "lucide-react";
+import { HistoryIcon, PencilIcon, PlusIcon, RefreshCwIcon, Trash2Icon } from "lucide-react";
 import { useState } from "react";
 
 import type { UtilityProvider } from "@finanzas/orpc-contracts/utility-bills";
 import { toast } from "@/lib/toast-interceptor";
 
 import { toUtilityBillsError, utilityBillsClient } from "../utility-bills-orpc";
+import { UtilityBillHistoryModal } from "./UtilityBillHistoryModal";
 
 const UTILITY_ACCOUNTS_KEY = ["utility-accounts"] as const;
 
 const PROVIDER_LABELS: Record<UtilityProvider, string> = {
   CGE: "CGE",
+  DOCTORALIA: "Doctoralia",
   ESSBIO: "ESSBIO",
+  GASTOS_COMUNES: "Gastos Comunes",
+  MASVIDA: "Isapre MasVida",
+  MEDIPASS: "Medipass",
+  MOVISTAR: "Movistar",
   OTHER: "Otro",
+  PREVIRED: "Previred",
+  SII: "SII",
+  TELSUR: "Telsur",
+  TGR: "TGR",
 };
 
 const PROVIDER_COLORS: Record<UtilityProvider, "warning" | "success" | "default"> = {
   CGE: "warning",
+  DOCTORALIA: "default",
   ESSBIO: "success",
+  GASTOS_COMUNES: "default",
+  MASVIDA: "default",
+  MEDIPASS: "default",
+  MOVISTAR: "default",
   OTHER: "default",
+  PREVIRED: "default",
+  SII: "default",
+  TELSUR: "default",
+  TGR: "default",
 };
 
 type AccountFormState = {
@@ -61,6 +80,10 @@ export function UtilityAccountsTab() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<EditTarget>(null);
   const [form, setForm] = useState<AccountFormState>(DEFAULT_FORM);
+  const [historyTarget, setHistoryTarget] = useState<null | {
+    accountId: number;
+    accountLabel: string;
+  }>(null);
 
   const { data, isLoading } = useQuery({
     queryFn: () => utilityBillsClient.listAccounts({ scope: "PERSONAL" }),
@@ -228,6 +251,21 @@ export function UtilityAccountsTab() {
                     isIconOnly
                     size="sm"
                     variant="outline"
+                    aria-label="Historial"
+                    onPress={() =>
+                      setHistoryTarget({
+                        accountId: account.id,
+                        accountLabel:
+                          account.label ?? `${account.provider} ${account.serviceNumber}`,
+                      })
+                    }
+                  >
+                    <HistoryIcon className="size-4" />
+                  </Button>
+                  <Button
+                    isIconOnly
+                    size="sm"
+                    variant="outline"
                     onPress={() =>
                       setEditTarget({
                         id: account.id,
@@ -285,6 +323,14 @@ export function UtilityAccountsTab() {
         }}
         onClose={() => setEditTarget(null)}
       />
+
+      {historyTarget && (
+        <UtilityBillHistoryModal
+          accountId={historyTarget.accountId}
+          accountLabel={historyTarget.accountLabel}
+          onClose={() => setHistoryTarget(null)}
+        />
+      )}
     </div>
   );
 }

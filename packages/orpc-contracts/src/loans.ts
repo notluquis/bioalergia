@@ -3,7 +3,7 @@ import { z } from "zod";
 
 export const loanStatusSchema = z.enum(["ACTIVE", "COMPLETED", "DEFAULTED"]);
 export const loanBorrowerTypeSchema = z.enum(["COMPANY", "PERSON"]);
-export const loanFrequencySchema = z.enum(["BIWEEKLY", "MONTHLY", "WEEKLY"]);
+export const loanFrequencySchema = z.enum(["BIWEEKLY", "IRREGULAR", "MONTHLY", "WEEKLY"]);
 export const loanInterestTypeSchema = z.enum(["COMPOUND", "SIMPLE"]);
 export const loanScheduleStatusSchema = z.enum([
   "OVERDUE",

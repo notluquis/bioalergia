@@ -21,6 +21,7 @@ export * from "./haulmer.ts";
 export * from "./inventory.ts";
 export * from "./integrations.ts";
 export * from "./loans.ts";
+export * from "./provider-credentials.ts";
 export {
   calendarAppointmentsSchema as doctoraliaCalendarAppointmentsSchema,
   doctoraliaContract,

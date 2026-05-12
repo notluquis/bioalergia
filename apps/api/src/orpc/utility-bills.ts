@@ -3,6 +3,8 @@ import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
 import {
   cgeBillResultSchema,
   essbioBillResultSchema,
+  listSnapshotsInputSchema,
+  listSnapshotsResponseSchema,
   listUtilityAccountsInputSchema,
   utilityAccountDetailResponseSchema,
   utilityAccountListResponseSchema,
@@ -22,6 +24,7 @@ import {
   fetchCgeBill,
   fetchEssbioBill,
   listUtilityAccounts,
+  listUtilityBillSnapshots,
   refreshUtilityAccount,
   updateUtilityAccount,
 } from "../services/utility-bills.ts";
@@ -122,6 +125,18 @@ const utilityBillsRouterBase = {
     .handler(async ({ input }) => {
       const bill = await fetchCgeBill(input.accountNumber);
       return { bill, status: "ok" as const };
+    }),
+
+  // ─── Snapshot history ────────────────────────────────────────────────────
+  listSnapshots: authed
+    .route({ method: "GET", path: "/accounts/{utilityAccountId}/snapshots" })
+    .input(listSnapshotsInputSchema)
+    .output(listSnapshotsResponseSchema)
+    .handler(async ({ input }) => {
+      const snapshots = await listUtilityBillSnapshots(input.utilityAccountId, {
+        limit: input.limit,
+      });
+      return { snapshots, status: "ok" as const };
     }),
 };
 

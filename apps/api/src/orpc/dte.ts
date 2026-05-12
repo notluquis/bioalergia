@@ -9,9 +9,16 @@ import {
   dteSyncResponseSchema,
 } from "@finanzas/orpc-contracts/dte";
 import type { Context as HonoContext } from "hono";
+import { z } from "zod";
 import { getSessionUser, hasPermission } from "../auth.ts";
 import { logError } from "../lib/logger.ts";
 import { configureSuperjson } from "../lib/superjson-config.ts";
+import {
+  linkDTEToExpense,
+  reconcileUnmatchedDTEs,
+  tryMatchDTEPurchaseToExpense,
+  unlinkDTE,
+} from "../services/dte-expense-matcher.ts";
 import { getDTESyncHistory, syncDTEs } from "../services/dte-sync.ts";
 import { SuperJSONRPCHandler } from "./superjson.ts";
 
@@ -64,6 +71,110 @@ const dteORPCRouterBase = {
         triggerSource: "user",
         triggerUserId: String(context.user.id),
       });
+    }),
+
+  // ─── DTE → Expense matcher endpoints ───────────────────────────────────
+  reconcileUnmatched: createDTE
+    .route({
+      method: "POST",
+      path: "/reconcile-unmatched",
+      summary: "Match unmatched DTE purchases to expense services",
+      tags: ["DTE", "Matcher"],
+    })
+    .input(
+      z.object({
+        daysBack: z.number().int().min(1).max(730).optional().default(90),
+        limit: z.number().int().min(1).max(2000).optional().default(500),
+      })
+    )
+    .output(
+      z.object({
+        results: z.array(
+          z.object({
+            dteId: z.string(),
+            expenseId: z.number().int().nullable(),
+            reason: z.string(),
+            status: z.enum([
+              "ALREADY_LINKED",
+              "CREATED_EXPENSE",
+              "LINKED_EXISTING",
+              "NO_MATCH",
+              "ERROR",
+            ]),
+          })
+        ),
+        summary: z.object({
+          alreadyLinked: z.number().int(),
+          createdExpense: z.number().int(),
+          error: z.number().int(),
+          linkedExisting: z.number().int(),
+          noMatch: z.number().int(),
+          total: z.number().int(),
+        }),
+      })
+    )
+    .handler(async ({ input }) => {
+      return reconcileUnmatchedDTEs({ daysBack: input.daysBack, limit: input.limit });
+    }),
+
+  retryMatch: createDTE
+    .route({
+      method: "POST",
+      path: "/retry-match",
+      summary: "Retry matching a single DTE to an Expense",
+      tags: ["DTE", "Matcher"],
+    })
+    .input(z.object({ dteId: z.string() }))
+    .output(
+      z.object({
+        dteId: z.string(),
+        expenseId: z.number().int().nullable(),
+        reason: z.string(),
+        status: z.enum([
+          "ALREADY_LINKED",
+          "CREATED_EXPENSE",
+          "LINKED_EXISTING",
+          "NO_MATCH",
+          "ERROR",
+        ]),
+      })
+    )
+    .handler(async ({ input }) => {
+      return tryMatchDTEPurchaseToExpense(input.dteId);
+    }),
+
+  linkExpense: createDTE
+    .route({
+      method: "POST",
+      path: "/link-expense",
+      summary: "Manually link a DTE to an Expense",
+      tags: ["DTE", "Matcher"],
+    })
+    .input(z.object({ dteId: z.string(), expenseId: z.number().int() }))
+    .output(
+      z.object({
+        dteId: z.string(),
+        expenseId: z.number().int().nullable(),
+        reason: z.string(),
+        status: z.string(),
+      })
+    )
+    .handler(async ({ input }) => {
+      return linkDTEToExpense(input.dteId, input.expenseId);
+    }),
+
+  unlinkExpense: createDTE
+    .route({
+      method: "POST",
+      path: "/unlink-expense",
+      summary: "Remove DTE → Expense link",
+      tags: ["DTE", "Matcher"],
+    })
+    .input(z.object({ dteId: z.string() }))
+    .output(z.object({ success: z.boolean() }))
+    .handler(async ({ input }) => {
+      await unlinkDTE(input.dteId);
+      return { success: true };
     }),
 
   syncHistory: readDTE

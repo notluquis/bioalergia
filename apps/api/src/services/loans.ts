@@ -7,9 +7,10 @@ import "../lib/time.ts";
 
 type LoanStatus = "ACTIVE" | "COMPLETED" | "DEFAULTED";
 type LoanBorrowerType = "COMPANY" | "PERSON";
-type LoanFrequency = "BIWEEKLY" | "MONTHLY" | "WEEKLY";
+type LoanFrequency = "BIWEEKLY" | "IRREGULAR" | "MONTHLY" | "WEEKLY";
 type LoanInterestType = "COMPOUND" | "SIMPLE";
 type LoanScheduleStatus = "OVERDUE" | "PAID" | "PARTIAL" | "PENDING" | "SKIPPED";
+type ExpenseScope = "BIOALERGIA" | "PERSONAL";
 
 type LoanPayload = {
   borrowerName: string;
@@ -44,6 +45,7 @@ type RegenerateLoanSchedulesPayload = {
 const MONEY_ROUNDING = Decimal.ROUND_HALF_UP;
 const PERIODS_PER_YEAR: Record<LoanFrequency, number> = {
   BIWEEKLY: 26,
+  IRREGULAR: 12, // fallback: tratado como mensual para cálculo de tasa
   MONTHLY: 12,
   WEEKLY: 52,
 };
@@ -191,15 +193,16 @@ const computeSummary = (
   };
 };
 
-const mapLoanSummary = (loan: {
+type LoanWithSchedules = {
   borrowerName: string;
   borrowerType: LoanBorrowerType;
+  counterpartId: null | number;
   createdAt: Date;
   frequency: LoanFrequency;
   id: number;
   interestRate: Decimal;
   interestType: LoanInterestType;
-  notes: string | null;
+  notes: null | string;
   principalAmount: Decimal;
   publicId: string;
   schedules: Array<{
@@ -208,12 +211,15 @@ const mapLoanSummary = (loan: {
     paidAmount: Decimal | null;
     status: LoanScheduleStatus;
   }>;
+  scope: ExpenseScope;
   startDate: Date;
   status: LoanStatus;
   title: string;
   totalInstallments: number;
   updatedAt: Date;
-}) => {
+};
+
+const mapLoanSummary = (loan: LoanWithSchedules) => {
   const summary = computeSummary(loan.schedules);
 
   return {
@@ -240,7 +246,7 @@ const mapLoanSummary = (loan: {
   };
 };
 
-const generateSchedules = (loan: {
+type LoanForSchedule = {
   frequency: LoanFrequency;
   id: number;
   interestRate: Decimal;
@@ -248,7 +254,9 @@ const generateSchedules = (loan: {
   principalAmount: Decimal;
   startDate: Date;
   totalInstallments: number;
-}) => {
+};
+
+const generateSchedules = (loan: LoanForSchedule) => {
   const principal = toMoney(loan.principalAmount);
   const scheduleCount = loan.totalInstallments;
   const perPeriodRate = toDecimal(loan.interestRate).div(100).div(PERIODS_PER_YEAR[loan.frequency]);

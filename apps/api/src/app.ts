@@ -84,6 +84,10 @@ import {
 } from "./orpc/transactions-insights.ts";
 import { usersOpenAPIHandler, usersORPCHandler } from "./orpc/users.ts";
 import { utilityBillsOpenAPIHandler, utilityBillsORPCHandler } from "./orpc/utility-bills.ts";
+import {
+  providerCredentialsOpenAPIHandler,
+  providerCredentialsORPCHandler,
+} from "./orpc/provider-credentials.ts";
 import { waCloudOpenAPIHandler, waCloudORPCHandler } from "./orpc/wa-cloud.ts";
 import { shipmentsOpenAPIHandler, shipmentsORPCHandler } from "./orpc/shipments.ts";
 import { doctoraliaScraperRoutes } from "./routes/doctoralia-scraper.ts";
@@ -1214,6 +1218,22 @@ app.use("/api/orpc/utility-bills/rpc/*", async (c, next) => {
     prefix: "/api/orpc/utility-bills/rpc",
     context: { hono: c },
   });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  return next();
+});
+
+app.use("/api/orpc/provider-credentials/rpc/*", async (c, next) => {
+  const { matched, response } = await providerCredentialsORPCHandler.handle(
+    createHonoORPCRequest(c),
+    {
+      prefix: "/api/orpc/provider-credentials/rpc",
+      context: { hono: c },
+    }
+  );
 
   if (matched) {
     return c.newResponse(response.body, response);

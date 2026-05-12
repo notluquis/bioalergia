@@ -4,7 +4,19 @@
 import { db } from "@finanzas/db";
 import { Decimal } from "decimal.js";
 
-type UtilityProvider = "CGE" | "ESSBIO" | "OTHER";
+type UtilityProvider =
+  | "CGE"
+  | "DOCTORALIA"
+  | "ESSBIO"
+  | "GASTOS_COMUNES"
+  | "MASVIDA"
+  | "MEDIPASS"
+  | "MOVISTAR"
+  | "OTHER"
+  | "PREVIRED"
+  | "SII"
+  | "TELSUR"
+  | "TGR";
 
 const ESSBIO_BASE = "https://www.essbio.cl";
 const CGE_ORCHESTRATOR = "https://orchestrator-portalescge-prd.lfr.cloud";
@@ -162,7 +174,13 @@ export interface BillRefreshResult {
   address: string;
   clientName: string;
   currentAmount: number;
+  currentDebt: null | number;
+  emissionDate: null | string;
+  lastPayment: { amount: number; date: string } | null;
+  observation: null | string;
   previousAmount: number;
+  raw: unknown;
+  thirdAmount: null | number;
 }
 
 async function fetchBillForProvider(
@@ -175,7 +193,13 @@ async function fetchBillForProvider(
       address: r.address,
       clientName: r.clientName,
       currentAmount: r.currentDebt,
+      currentDebt: r.currentDebt,
+      emissionDate: null,
+      lastPayment: r.lastPayment,
+      observation: r.observation,
       previousAmount: r.previousBalance,
+      raw: r,
+      thirdAmount: null,
     };
   }
 
@@ -185,7 +209,13 @@ async function fetchBillForProvider(
       address: r.address,
       clientName: r.clientName,
       currentAmount: r.currentBill,
+      currentDebt: null,
+      emissionDate: r.emissionDate || null,
+      lastPayment: null,
+      observation: null,
       previousAmount: r.previousBill,
+      raw: r,
+      thirdAmount: r.thirdBill,
     };
   }
 
@@ -267,14 +297,46 @@ export async function deleteUtilityAccount(id: number) {
   await db.utilityAccount.delete({ where: { id } });
 }
 
-export async function refreshUtilityAccount(id: number) {
+export async function refreshUtilityAccount(id: number, source: string = "MANUAL") {
   const account = await db.utilityAccount.findFirst({ where: { id } });
 
   if (!account) {
     return null;
   }
 
-  const bill = await fetchBillForProvider(account.provider, account.serviceNumber);
+  let bill: BillRefreshResult;
+  let errorMessage: null | string = null;
+
+  try {
+    bill = await fetchBillForProvider(account.provider, account.serviceNumber);
+  } catch (err) {
+    errorMessage = err instanceof Error ? err.message : String(err);
+    await db.utilityBillSnapshot.create({
+      data: {
+        errorMessage,
+        rawResponse: { error: errorMessage } as never,
+        source,
+        utilityAccountId: id,
+      },
+    });
+    throw err;
+  }
+
+  // Persist snapshot (full history)
+  await db.utilityBillSnapshot.create({
+    data: {
+      currentAmount: new Decimal(bill.currentAmount),
+      currentDebt: bill.currentDebt !== null ? new Decimal(bill.currentDebt) : null,
+      emissionDate: bill.emissionDate,
+      lastPaymentJson: bill.lastPayment as never,
+      observation: bill.observation,
+      previousAmount: new Decimal(bill.previousAmount),
+      rawResponse: bill.raw as never,
+      source,
+      thirdAmount: bill.thirdAmount !== null ? new Decimal(bill.thirdAmount) : null,
+      utilityAccountId: id,
+    },
+  });
 
   const updated = await db.utilityAccount.update({
     where: { id },
@@ -288,4 +350,59 @@ export async function refreshUtilityAccount(id: number) {
   });
 
   return { account: mapAccount(updated), bill };
+}
+
+// Lista historial de snapshots de una cuenta
+export async function listUtilityBillSnapshots(
+  utilityAccountId: number,
+  options: { limit?: number } = {}
+) {
+  const limit = options.limit ?? 24; // 24 meses default
+  const snapshots = await db.utilityBillSnapshot.findMany({
+    orderBy: { fetchedAt: "desc" },
+    take: limit,
+    where: { utilityAccountId },
+  });
+
+  return snapshots.map((s) => ({
+    ...s,
+    currentAmount: s.currentAmount !== null ? Number(s.currentAmount) : null,
+    currentDebt: s.currentDebt !== null ? Number(s.currentDebt) : null,
+    fetchedAt: s.fetchedAt.toISOString(),
+    id: String(s.id),
+    previousAmount: s.previousAmount !== null ? Number(s.previousAmount) : null,
+    thirdAmount: s.thirdAmount !== null ? Number(s.thirdAmount) : null,
+  }));
+}
+
+// Refresca todas las UtilityAccount activas — para cron
+export async function refreshAllActiveUtilityAccounts() {
+  const accounts = await db.utilityAccount.findMany({ where: { isActive: true } });
+  const results: Array<{
+    accountId: number;
+    error: null | string;
+    serviceNumber: string;
+    success: boolean;
+  }> = [];
+
+  for (const account of accounts) {
+    try {
+      await refreshUtilityAccount(account.id, "CRON");
+      results.push({
+        accountId: account.id,
+        error: null,
+        serviceNumber: account.serviceNumber,
+        success: true,
+      });
+    } catch (err) {
+      results.push({
+        accountId: account.id,
+        error: err instanceof Error ? err.message : String(err),
+        serviceNumber: account.serviceNumber,
+        success: false,
+      });
+    }
+  }
+
+  return results;
 }

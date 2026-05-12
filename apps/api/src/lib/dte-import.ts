@@ -6,6 +6,24 @@
 import { db } from "@finanzas/db";
 import { Decimal } from "decimal.js";
 
+import { tryMatchDTEPurchaseToExpense } from "../services/dte-expense-matcher";
+
+// Hook fail-soft que dispara matcher después de import.
+// Si match falla, NO interrumpe el import (solo loguea).
+function tryMatchExpenseFailSoft(dteId: string): void {
+  tryMatchDTEPurchaseToExpense(dteId)
+    .then((result) => {
+      if (result.status === "ERROR" || result.status === "NO_MATCH") {
+        console.warn(
+          `[DTE-Match] dte=${dteId} status=${result.status} reason=${result.reason}`
+        );
+      }
+    })
+    .catch((err) => {
+      console.error(`[DTE-Match] dte=${dteId} unexpected error:`, err);
+    });
+}
+
 // Regex for date parsing - multiple formats supported
 export const DATE_REGEX = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/;
 const DATE_DASH_DOT_REGEX = /^(\d{1,2})[-.](\d{1,2})[-.](\d{4})$/;
@@ -423,6 +441,8 @@ export async function importDtePurchaseRow(
             where: { id: existing.id },
             data: purchaseData,
           });
+          // Hook: intentar match DTE → Expense si no estaba linkeado
+          void tryMatchExpenseFailSoft(existing.id);
           return { inserted: 0, updated: 1, skipped: 0 };
         }
       }
@@ -435,9 +455,11 @@ export async function importDtePurchaseRow(
       return { inserted: 0, updated: 0, skipped: 1 };
     }
 
-    await db.dTEPurchaseDetail.create({
+    const created = await db.dTEPurchaseDetail.create({
       data: purchaseData as never,
     });
+    // Hook: intentar match DTE → Expense (fail-soft, no rompe import si falla)
+    void tryMatchExpenseFailSoft(created.id);
     return { inserted: 1, updated: 0, skipped: 0 };
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);

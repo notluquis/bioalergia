@@ -31,7 +31,20 @@ export const cgeBillResultSchema = z.object({
 
 // ─── UtilityProvider enum ─────────────────────────────────────────────────────
 
-export const utilityProviderSchema = z.enum(["CGE", "ESSBIO", "OTHER"]);
+export const utilityProviderSchema = z.enum([
+  "CGE",
+  "ESSBIO",
+  "TELSUR",
+  "MOVISTAR",
+  "DOCTORALIA",
+  "MEDIPASS",
+  "MASVIDA",
+  "PREVIRED",
+  "SII",
+  "TGR",
+  "GASTOS_COMUNES",
+  "OTHER",
+]);
 export type UtilityProvider = z.infer<typeof utilityProviderSchema>;
 
 // ─── UtilityAccount schemas ───────────────────────────────────────────────────
@@ -40,6 +53,7 @@ export const utilityAccountItemSchema = z.object({
   address: z.string().nullable(),
   clientName: z.string().nullable(),
   createdAt: z.coerce.date(),
+  credentialId: z.number().int().nullable().optional(),
   expenseServiceId: z.number().int().nullable(),
   id: z.number().int(),
   isActive: z.boolean(),
@@ -94,6 +108,32 @@ export const utilityAccountRefreshResponseSchema = z.object({
   status: z.literal("ok"),
 });
 
+// ─── Snapshot history ─────────────────────────────────────────────────────────
+
+export const utilityBillSnapshotSchema = z.object({
+  currentAmount: z.number().nullable(),
+  currentDebt: z.number().nullable(),
+  dueDate: z.string().nullable(),
+  emissionDate: z.string().nullable(),
+  errorMessage: z.string().nullable(),
+  fetchedAt: z.string(),
+  id: z.string(),
+  observation: z.string().nullable(),
+  previousAmount: z.number().nullable(),
+  source: z.string(),
+  thirdAmount: z.number().nullable(),
+});
+
+export const listSnapshotsInputSchema = z.object({
+  limit: z.number().int().min(1).max(120).optional().default(24),
+  utilityAccountId: z.number().int(),
+});
+
+export const listSnapshotsResponseSchema = z.object({
+  snapshots: z.array(utilityBillSnapshotSchema),
+  status: z.literal("ok"),
+});
+
 // ─── Contract ─────────────────────────────────────────────────────────────────
 
 export const utilityBillsContract = {
@@ -134,6 +174,12 @@ export const utilityBillsContract = {
     .route({ method: "POST", path: "/fetch/cge" })
     .input(z.object({ accountNumber: z.string().min(1) }))
     .output(z.object({ bill: cgeBillResultSchema, status: z.literal("ok") })),
+
+  // Snapshot history (boletas históricas, diferencias, alertas)
+  listSnapshots: oc
+    .route({ method: "GET", path: "/accounts/{utilityAccountId}/snapshots" })
+    .input(listSnapshotsInputSchema)
+    .output(listSnapshotsResponseSchema),
 };
 
 export type UtilityBillsContract = typeof utilityBillsContract;

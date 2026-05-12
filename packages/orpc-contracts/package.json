@@ -128,6 +128,11 @@
       "import": "./dist/loans.js",
       "default": "./dist/loans.js"
     },
+    "./provider-credentials": {
+      "types": "./dist/provider-credentials.d.ts",
+      "import": "./dist/provider-credentials.js",
+      "default": "./dist/provider-credentials.js"
+    },
     "./mercadopago": {
       "types": "./dist/mercadopago.d.ts",
       "import": "./dist/mercadopago.js",
