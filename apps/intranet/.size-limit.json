@@ -1,0 +1,48 @@
+[
+  {
+    "name": "Initial JS bundle (main + entry chunks)",
+    "path": [
+      "dist/client/assets/index-*.js",
+      "dist/client/assets/_authed-*.js",
+      "dist/client/assets/__root-*.js"
+    ],
+    "limit": "180 KB",
+    "gzip": true
+  },
+  {
+    "name": "Initial CSS",
+    "path": "dist/client/assets/index-*.css",
+    "limit": "70 KB",
+    "gzip": true
+  },
+  {
+    "name": "Lazy: CashFlowPage",
+    "path": "dist/client/assets/CashFlowPage-*.js",
+    "limit": "60 KB",
+    "gzip": true
+  },
+  {
+    "name": "Lazy: ClinicalSeriesPage",
+    "path": "dist/client/assets/ClinicalSeriesPage-*.js",
+    "limit": "75 KB",
+    "gzip": true
+  },
+  {
+    "name": "Lazy: MercadoPagoSettingsPage",
+    "path": "dist/client/assets/MercadoPagoSettingsPage-*.js",
+    "limit": "20 KB",
+    "gzip": true
+  },
+  {
+    "name": "Lazy: wa-cloud route bundle",
+    "path": "dist/client/assets/wa-cloud-*.js",
+    "limit": "65 KB",
+    "gzip": true
+  },
+  {
+    "name": "Recharts (CategoricalChart)",
+    "path": "dist/client/assets/CategoricalChart-*.js",
+    "limit": "95 KB",
+    "gzip": true
+  }
+]
