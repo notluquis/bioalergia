@@ -35,9 +35,11 @@ export function DashboardTransactionsSection({ statsParams }: Props) {
         <div className="space-y-5">
           <DashboardChart data={stats.monthly ?? []} loading={false} />
         </div>
-        <aside className="space-y-5">
+        {/* <section> instead of <aside> — this widget lives inside <main>
+            and a complementary landmark must be top-level (WCAG 1.3.1). */}
+        <section aria-label="Movimientos recientes" className="space-y-5">
           <RecentMovementsWidget rows={recentMovements} />
-        </aside>
+        </section>
       </div>
     </div>
   );

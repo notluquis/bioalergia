@@ -566,6 +566,17 @@ body {
     min-height: 44px;
     min-width: 44px;
   }
+  /* Pressable Chip + Chip with internal close button. Mirrors the
+   * .button--icon-only floor so chip-as-button (typed-row actions, filter
+   * pills, attribute toggles) clears WCAG 2.5.8 (target-size minimum) on
+   * touch surfaces. CSS rule only, no JSX changes — same approach as the
+   * button rule above. */
+  .chip[data-pressable="true"],
+  .chip:has(> button[aria-label*="close" i]),
+  .chip [data-slot="close-button"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
 }
 
 /* === Typography utilities ===

@@ -58,7 +58,7 @@ export function ClinicalRecordsReviewPage() {
   useEffect(() => {
     if (!job) return;
     if (job.status === "completed" || job.status === "failed" || job.status === "cancelled") {
-      list.refetch();
+      void list.refetch();
     }
   }, [job?.status]); // eslint-disable-line react-hooks/exhaustive-deps
 

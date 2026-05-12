@@ -6,6 +6,7 @@ import { UpdateNotification } from "@/components/features/UpdateNotification";
 import { Header } from "@/components/layouts/Header";
 import { BottomNav } from "@/components/layouts/MobileNav";
 import { DeploymentStatusChip } from "@/components/layouts/DeploymentStatusChip";
+import { RouteHeading } from "@/components/layouts/RouteHeading";
 import { Sidebar } from "@/components/layouts/Sidebar";
 import { useAuth } from "@/context/AuthContext";
 import { useSettings } from "@/context/SettingsContext";
@@ -240,6 +241,7 @@ function AuthedLayout() {
           <Header />
 
           <main className="flex-1 overflow-hidden rounded-3xl " id="main-content" tabIndex={-1}>
+            <RouteHeading />
             <div className="surface-recessed h-full w-full overflow-hidden rounded-3xl border border-default-100/50 bg-background/50 shadow-inner">
               <div
                 className={`h-full w-full overflow-y-auto overflow-x-hidden ${contentPaddingClass}`}

@@ -52,13 +52,15 @@ export function Home() {
               <DashboardPersonalLiabilities />
               <QuickLinksSection can={can} />
             </div>
-            <aside className="space-y-5">
+            {/* <section> instead of <aside> — nested landmarks are flagged
+                by axe; this rail lives inside <main>. */}
+            <section aria-label="Participantes" className="space-y-5">
               {canReadPersons && (
                 <Suspense fallback={<Skeleton className="h-64 rounded-3xl" />}>
                   <DashboardParticipantsSection params={leaderboardParams} />
                 </Suspense>
               )}
-            </aside>
+            </section>
           </div>
         </>
       )}
