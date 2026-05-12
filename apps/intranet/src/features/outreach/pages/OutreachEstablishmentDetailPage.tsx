@@ -2,6 +2,7 @@ import { Button, Card, Checkbox, Chip, Spinner } from "@heroui/react";
 import { Link, useParams } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import { useState } from "react";
+import { AppDateTimePicker } from "@/components/forms/AppDatePicker";
 import type {
   OutreachInteractionType,
   OutreachPriority,
@@ -403,11 +404,10 @@ export function OutreachEstablishmentDetailPage() {
                 }
                 options={INTERACCION_OPTIONS}
               />
-              <TextInput
+              <AppDateTimePicker
                 label="Fecha y hora"
-                type="datetime-local"
                 value={interDraft.fecha}
-                onValueChange={(v) => setInterDraft((d) => ({ ...d, fecha: v }))}
+                onChange={(v) => setInterDraft((d) => ({ ...d, fecha: v }))}
               />
               <SelectInput
                 label="Contacto"

@@ -18,6 +18,7 @@ import dayjs from "dayjs";
 import timezone from "dayjs/plugin/timezone";
 import utc from "dayjs/plugin/utc";
 import { Suspense, useState } from "react";
+import { AppDatePicker, AppDateTimePicker } from "@/components/forms/AppDatePicker";
 import type {
   attendanceMarkSchema,
   attendanceMarkTypeSchema,
@@ -120,10 +121,11 @@ function AdminMarkModal({ onClose }: AdminMarkModalProps) {
                 </Select.Popover>
               </Select>
 
-              <TextField type="datetime-local" value={markedAt} onChange={setMarkedAt}>
-                <Label>Fecha y hora</Label>
-                <Input />
-              </TextField>
+              <AppDateTimePicker
+                label="Fecha y hora"
+                value={markedAt}
+                onChange={setMarkedAt}
+              />
 
               <TextField value={notes} onChange={setNotes}>
                 <Label>Notas (opcional)</Label>
@@ -583,15 +585,19 @@ function AdminAttendanceContent() {
           <Input placeholder="Todos" />
         </TextField>
 
-        <TextField className="w-44" type="date" value={fromFilter} onChange={setFromFilter}>
-          <Label>Desde</Label>
-          <Input />
-        </TextField>
+        <AppDatePicker
+          className="w-44"
+          label="Desde"
+          value={fromFilter}
+          onChange={setFromFilter}
+        />
 
-        <TextField className="w-44" type="date" value={toFilter} onChange={setToFilter}>
-          <Label>Hasta</Label>
-          <Input />
-        </TextField>
+        <AppDatePicker
+          className="w-44"
+          label="Hasta"
+          value={toFilter}
+          onChange={setToFilter}
+        />
 
         <Select
           className="w-44"

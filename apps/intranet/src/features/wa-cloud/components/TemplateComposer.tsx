@@ -1,6 +1,7 @@
 import { Button } from "@heroui/react";
 import { Images, Send } from "lucide-react";
 import { useRef, useState } from "react";
+import { AppDateTimePicker } from "@/components/forms/AppDatePicker";
 import { SelectInput, TextInput } from "@/features/outreach/components/FormField";
 import { toast } from "@/lib/toast-interceptor";
 import { uploadWaMedia } from "../hooks/useWaCloud";
@@ -118,11 +119,10 @@ export function TemplateComposer({
           <p className="text-default-600 text-xs">
             Fecha y hora de expiración. WhatsApp muestra el contador en vivo al paciente.
           </p>
-          <input
-            type="datetime-local"
+          <AppDateTimePicker
+            label="Expiración"
             value={tplLtoExpiration}
-            onChange={(e) => setTplLtoExpiration(e.currentTarget.value)}
-            className="w-full rounded-md border border-default-200 bg-content1 px-3 py-1.5 text-sm"
+            onChange={setTplLtoExpiration}
           />
         </div>
       )}

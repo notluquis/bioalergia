@@ -1,6 +1,7 @@
 import { Button, Card, Chip, Modal, ProgressBar, Spinner, Table } from "@heroui/react";
 import { CalendarClock, Megaphone, Play, Plus, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { AppDateTimePicker } from "@/components/forms/AppDatePicker";
 import { confirmAction } from "@/components/ui/ConfirmDialog";
 import { SelectInput, TextAreaInput, TextInput } from "@/features/outreach/components/FormField";
 import { toast } from "@/lib/toast-interceptor";
@@ -423,15 +424,11 @@ function CreateBroadcastModal({ isOpen, onClose }: { isOpen: boolean; onClose: (
                 options={tplOptions}
               />
               <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="mb-1 block font-medium text-sm">Programar (opcional)</label>
-                  <input
-                    type="datetime-local"
-                    value={scheduledAt}
-                    onChange={(e) => setScheduledAt(e.currentTarget.value)}
-                    className="w-full rounded-lg border border-default-200 bg-content2 px-3 py-2 text-sm outline-none focus:border-success"
-                  />
-                </div>
+                <AppDateTimePicker
+                  label="Programar (opcional)"
+                  value={scheduledAt}
+                  onChange={setScheduledAt}
+                />
                 <TextInput
                   label="Rate limit (msg/seg)"
                   value={rateLimit}
