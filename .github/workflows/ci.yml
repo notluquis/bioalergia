@@ -24,7 +24,7 @@ jobs:
       - name: Setup pnpm
         uses: pnpm/action-setup@v6
 
-      - name: Use Node.js 25
+      - name: Use Node.js 26
         uses: actions/setup-node@v6
         with:
           node-version: 26
@@ -46,6 +46,11 @@ jobs:
         env:
           TURBO_TELEMETRY_DISABLED: "1"
           TURBO_RUN_FLAGS: ${{ github.event_name == 'pull_request' && '--affected' || '' }}
+          # Pin the diff base for `turbo run --affected`. github.base_ref is
+          # the target branch on PRs (e.g. "main"); falls back to origin/main
+          # for push events. Avoids "Failed to resolve base ref" when the
+          # local checkout has no main branch tracking pointer.
+          TURBO_SCM_BASE: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || 'origin/main' }}
         run: pnpm turbo run lint type-check test $TURBO_RUN_FLAGS --continue=never --summarize --output-logs=errors-only
 
   build:
@@ -62,7 +67,7 @@ jobs:
       - name: Setup pnpm
         uses: pnpm/action-setup@v6
 
-      - name: Use Node.js 25
+      - name: Use Node.js 26
         uses: actions/setup-node@v6
         with:
           node-version: 26
@@ -84,4 +89,5 @@ jobs:
         env:
           TURBO_TELEMETRY_DISABLED: "1"
           TURBO_RUN_FLAGS: ${{ github.event_name == 'pull_request' && '--affected' || '' }}
+          TURBO_SCM_BASE: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || 'origin/main' }}
         run: pnpm turbo run build $TURBO_RUN_FLAGS --continue=never --summarize --output-logs=errors-only

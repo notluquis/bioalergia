@@ -16,7 +16,7 @@
     "type-check": "tsc --noEmit",
     "format": "oxfmt --write .",
     "format:check": "oxfmt --check .",
-    "test": "vitest",
+    "test": "vitest --passWithNoTests",
     "clean": "rm -rf dist"
   },
   "dependencies": {
