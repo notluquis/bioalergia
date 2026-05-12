@@ -473,17 +473,24 @@ function HomeAddressPicker({
         </Button>
         <Button
           isDisabled={!canContinue}
-          onPress={() =>
+          onPress={() => {
+            // canContinue guards against null selected, but the deployed
+            // bundle was crashing on `selected!.comuna` (likely a stale
+            // closure or an address row whose schema-required comuna
+            // arrived null from the backend). Defensive guard + ?? "" so
+            // the wizard never throws — downstream API call will surface
+            // the missing-comuna case as a validation error instead.
+            if (!selected) return;
             onNext({
               deliveryMode: "home",
-              addressId: selected!.id,
-              coverageRegionCode: selected!.coverageCode ?? "",
-              communeName: selected!.comuna,
-              regionId: selected!.regionCode ?? "",
+              addressId: selected.id,
+              coverageRegionCode: selected.coverageCode ?? "",
+              communeName: selected.comuna ?? "",
+              regionId: selected.regionCode ?? "",
               commercialOfficeId: "",
               commercialOfficeName: "",
-            })
-          }
+            });
+          }}
         >
           Continuar
         </Button>
