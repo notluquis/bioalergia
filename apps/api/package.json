@@ -38,6 +38,7 @@
     "@orpc/client": "^1.14.2",
     "@orpc/openapi": "^1.14.2",
     "@orpc/server": "^1.14.2",
+    "@orpc/shared": "^1.14.2",
     "@orpc/zod": "^1.14.2",
     "@otplib/plugin-base32-scure": "^13.4.0",
     "@otplib/plugin-crypto-node": "^13.4.0",

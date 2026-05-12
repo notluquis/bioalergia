@@ -2,22 +2,9 @@ packages:
   - "apps/*"
   - "packages/*"
 
-# Linker: explicit isolated (pnpm 11 default; declared for clarity).
-nodeLinker: isolated
-
-# Phantom-dep allowlist. pnpm 11 dropped wholesale `shamefullyHoist` in
-# favour of a narrower public-hoist pattern. Each entry below is a
-# transitive that some workspace imports as if it were a direct dep —
-# audit before extending. Adding the explicit dep is preferred over
-# hoisting; the patterns here exist for cases where multiple sub-packages
-# share a single peer (oRPC's internal `shared` helpers).
-publicHoistPattern:
-  - "@orpc/*"
-  - "workbox-*"
-
-# Build-script allowlist. pnpm 11 blocks every postinstall by default
-# (security tightening); only the binaries / native bindings below get to
-# run install scripts. Audit before extending.
+# pnpm 11 blocks every postinstall by default. Only binaries / native
+# bindings below get to run install scripts. ZenStack manages Prisma
+# engines so we opt those out.
 allowBuilds:
   argon2: true
   core-js: true
@@ -26,18 +13,9 @@ allowBuilds:
   msw: true
   protobufjs: true
   sharp: true
-  # ZenStack manages Prisma engines; we don't want a second download.
   prisma: false
   "@prisma/engines": false
 
-# pnpm 11 ships `minimumReleaseAge: 1440` (24h) and `blockExoticSubdeps`
-# enabled by default. We opt out of the age gate so CI doesn't refuse
-# fresh patch bumps from `pnpm up -r`. The lockfile path is unaffected
-# either way (issue pnpm/pnpm#10438).
+# Opt out of pnpm 11's default 24h release-age gate (lockfile path
+# unaffected — pnpm/pnpm#10438).
 minimumReleaseAge: 0
-
-# Optimizations (kept from prior workspace.yaml).
-verifyDepsBeforeRun: install
-optimisticRepeatInstall: true
-dedupePeerDependents: true
-injectWorkspacePackages: true
