@@ -106,34 +106,38 @@ export function EmbeddedSignupButton({
     try {
       await loadFbSdk();
       window.FB!.login(
-        async (resp) => {
-          const token = resp.authResponse?.accessToken;
-          const captured = sessionRef.current;
-          if (!token || !captured.phone_number_id || !captured.waba_id) {
-            toast.error("Embedded Signup no completó el flujo. Intenta de nuevo.");
-            setBusy(false);
-            return;
-          }
-          try {
-            await complete.mutateAsync({
-              wabaId: captured.waba_id,
-              metaBusinessId: captured.business_id,
-              appId: APP_ID,
-              systemUserToken: token,
-              phoneNumberId: captured.phone_number_id,
-              displayPhoneNumber: "—", // populated by next syncPhoneNumbers
-              onboardingFlow: variant,
-            });
-            toast.success(
-              isCoexistence
-                ? "Coexistence activado — el celular sigue funcionando con WA Business"
-                : "Cuenta WABA creada vía Embedded Signup"
-            );
-          } catch (e) {
-            toast.error(`Server: ${String(e)}`);
-          } finally {
-            setBusy(false);
-          }
+        (resp) => {
+          // FB SDK does not accept async callbacks; bridge to async work
+          // via an IIFE so the SDK call itself stays synchronous.
+          void (async () => {
+            const token = resp.authResponse?.accessToken;
+            const captured = sessionRef.current;
+            if (!token || !captured.phone_number_id || !captured.waba_id) {
+              toast.error("Embedded Signup no completó el flujo. Intenta de nuevo.");
+              setBusy(false);
+              return;
+            }
+            try {
+              await complete.mutateAsync({
+                wabaId: captured.waba_id,
+                metaBusinessId: captured.business_id,
+                appId: APP_ID,
+                systemUserToken: token,
+                phoneNumberId: captured.phone_number_id,
+                displayPhoneNumber: "—", // populated by next syncPhoneNumbers
+                onboardingFlow: variant,
+              });
+              toast.success(
+                isCoexistence
+                  ? "Coexistence activado — el celular sigue funcionando con WA Business"
+                  : "Cuenta WABA creada vía Embedded Signup"
+              );
+            } catch (e) {
+              toast.error(`Server: ${String(e)}`);
+            } finally {
+              setBusy(false);
+            }
+          })();
         },
         {
           config_id: CONFIG_ID,
