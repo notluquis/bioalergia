@@ -1,7 +1,18 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
+import { z } from "zod";
 import { WaCloudInboxPage } from "@/features/wa-cloud/pages/WaCloudInboxPage";
 
+// `?conversation=<id>` is the canonical deep-link param so any
+// surface (global search, push notification body, future digest
+// email) can drop a user straight into a thread. Validated with Zod
+// per TanStack Router 2025 golden pattern — invalid IDs get coerced
+// to undefined instead of throwing.
+const inboxSearchSchema = z.object({
+  conversation: z.coerce.number().int().positive().optional(),
+});
+
 export const Route = createFileRoute("/_authed/wa-cloud/")({
+  validateSearch: inboxSearchSchema,
   staticData: {
     nav: {
       iconKey: "MessageSquare",

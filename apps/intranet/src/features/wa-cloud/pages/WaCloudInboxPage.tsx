@@ -20,6 +20,7 @@ import {
   TagGroup,
 } from "@heroui/react";
 // Spinner removed in favour of ConversationListSkeleton for the inbox list.
+import { getRouteApi } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import { ArrowLeft, Filter, Inbox, MessageSquareText, Phone } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -27,6 +28,12 @@ import type { WaConversationStatus } from "@finanzas/orpc-contracts/wa-cloud";
 import { ConversationDetail } from "../components/ConversationDetail";
 import { useFaviconBadge } from "../hooks/useFaviconBadge";
 import { useAccounts, useConversations, useMarkRead, useSearchMessages } from "../hooks/useWaCloud";
+
+// `?conversation=N` is the canonical deep-link param (validated in
+// the route file). Reading via getRouteApi avoids the optional
+// `useSearch` typing dance and gives us strong inference of the Zod
+// schema's output type.
+const inboxRouteApi = getRouteApi("/_authed/wa-cloud/");
 
 // iOS-style stack navigation: on viewports <lg, list and detail are
 // mutually exclusive screens (selecting a conversation pushes the
@@ -93,12 +100,39 @@ export function WaCloudInboxPage() {
     [accounts.data]
   );
 
+  const navigate = inboxRouteApi.useNavigate();
+  const { conversation: deepLinkedId } = inboxRouteApi.useSearch();
+
   const [status, setStatus] = useState<WaConversationStatus | "">("");
   const [phoneFilter, setPhoneFilter] = useState("");
   const [search, setSearch] = useState("");
-  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [selectedId, setSelectedId] = useState<number | null>(deepLinkedId ?? null);
   const [showHelp, setShowHelp] = useState(false);
   const isMobile = useIsMobile();
+
+  // Sync URL → state whenever the deep-link param changes (back/forward
+  // navigation, paste from another tab, search result click). Skip the
+  // round-trip if local state already matches so we don't re-render on
+  // every router transition.
+  useEffect(() => {
+    if (deepLinkedId != null && deepLinkedId !== selectedId) {
+      setSelectedId(deepLinkedId);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [deepLinkedId]);
+
+  // Sync state → URL so refresh/share keeps the open conversation. We
+  // replace the entry (don't push) to avoid spamming history while the
+  // operator hops between threads with j/k.
+  useEffect(() => {
+    if ((deepLinkedId ?? null) !== selectedId) {
+      void navigate({
+        search: (prev) => ({ ...prev, conversation: selectedId ?? undefined }),
+        replace: true,
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedId]);
   // On mobile we render either the list or the detail view, not both.
   const showDetail = isMobile ? selectedId !== null : true;
   const showList = isMobile ? selectedId === null : true;

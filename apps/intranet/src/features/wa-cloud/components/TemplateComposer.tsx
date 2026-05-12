@@ -1,5 +1,5 @@
-import { Button, FieldError, Form } from "@heroui/react";
-import { Images, Send } from "lucide-react";
+import { Button, Form } from "@heroui/react";
+import { AlertTriangle, Images, Send } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 import { AppDateTimePicker } from "@/components/forms/AppDatePicker";
 import { SelectInput, TextInput } from "@/features/outreach/components/FormField";
@@ -108,6 +108,7 @@ export function TemplateComposer({
             options={tplOptions}
             isRequired
             isInvalid={!tplKey}
+            errorMessage="Selecciona una plantilla aprobada."
           />
         </div>
         {onSwitchText && (
@@ -125,6 +126,7 @@ export function TemplateComposer({
               value={v}
               isRequired
               isInvalid={!v.trim()}
+              errorMessage={`La variable {{${i + 1}}} es obligatoria.`}
               onValueChange={(val) =>
                 setTplVars((arr) => {
                   const n = [...arr];
@@ -169,9 +171,10 @@ export function TemplateComposer({
             onChange={setTplLtoExpiration}
           />
           {ltoInvalid ? (
-            <FieldError className="text-danger text-xs">
+            <p className="flex items-center gap-1 text-danger text-xs">
+              <AlertTriangle size={12} aria-hidden />
               Selecciona fecha y hora de expiración antes de enviar.
-            </FieldError>
+            </p>
           ) : null}
         </div>
       )}
@@ -186,6 +189,7 @@ export function TemplateComposer({
             value={tplCopyCode?.value ?? ""}
             isRequired
             isInvalid={copyCodeInvalid}
+            errorMessage="El código que se copia es obligatorio."
             onValueChange={(v) =>
               setTplCopyCode({ index: copyCodeButtonIndex, value: v.slice(0, 15) })
             }
@@ -194,9 +198,13 @@ export function TemplateComposer({
         </div>
       )}
       {missingCardImages.length > 0 ? (
-        <FieldError className="text-danger text-xs">
-          Faltan imágenes en las tarjetas: {missingCardImages.map((i) => i + 1).join(", ")}
-        </FieldError>
+        <div
+          role="alert"
+          className="flex items-start gap-2 rounded-lg border border-danger-200 bg-danger-50 px-3 py-2 text-danger-900 text-xs"
+        >
+          <AlertTriangle size={14} className="mt-0.5 shrink-0" aria-hidden />
+          <p>Faltan imágenes en las tarjetas: {missingCardImages.map((i) => i + 1).join(", ")}</p>
+        </div>
       ) : null}
       <div className="flex justify-end">
         <Button type="submit" isPending={isPending} isDisabled={!isValid}>

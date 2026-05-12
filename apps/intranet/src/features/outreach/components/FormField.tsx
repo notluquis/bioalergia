@@ -1,4 +1,4 @@
-import { Input, Label, ListBox, Select, TextArea, TextField } from "@heroui/react";
+import { FieldError, Input, Label, ListBox, Select, TextArea, TextField } from "@heroui/react";
 import type { ReactNode } from "react";
 
 export type SelectOption = { value: string; label: string };
@@ -13,6 +13,8 @@ export type TextInputProps = {
   required?: boolean;
   isRequired?: boolean;
   isInvalid?: boolean;
+  /** Inline FieldError rendered under the input when isInvalid is true. */
+  errorMessage?: string;
   isDisabled?: boolean;
   placeholder?: string;
   min?: number;
@@ -32,6 +34,7 @@ export function TextInput({
   required,
   isRequired,
   isInvalid,
+  errorMessage,
   isDisabled,
   placeholder,
   min,
@@ -62,6 +65,7 @@ export function TextInput({
         max={max}
         onKeyDown={onKeyDown}
       />
+      {errorMessage && isInvalid ? <FieldError>{errorMessage}</FieldError> : null}
     </TextField>
   );
 }
@@ -114,6 +118,7 @@ export type SelectInputProps = {
   isDisabled?: boolean;
   isRequired?: boolean;
   isInvalid?: boolean;
+  errorMessage?: string;
   className?: string;
 };
 
@@ -125,6 +130,7 @@ export function SelectInput({
   isDisabled,
   isRequired,
   isInvalid,
+  errorMessage,
   className,
 }: SelectInputProps) {
   return (
@@ -150,6 +156,7 @@ export function SelectInput({
           ))}
         </ListBox>
       </Select.Popover>
+      {errorMessage && isInvalid ? <FieldError>{errorMessage}</FieldError> : null}
     </Select>
   );
 }
