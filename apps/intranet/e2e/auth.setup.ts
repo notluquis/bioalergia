@@ -33,29 +33,33 @@ setup("authenticate once + persist storageState", async ({ page, baseURL }) => {
   await page.waitForLoadState("load");
 
   // Click "Usar correo y contraseña" if the passkey CTA is the default.
-  // Match both pre/post aria-label variants — Railway may lag a deploy.
-  const fallback = page.getByRole("button", {
-    name: /usar correo( electr[oó]nico)? y contrase[ñn]a/i,
-  });
+  // HeroUI v3 Button (React Aria) sometimes swallows the first synthetic
+  // click in CI Chromium. Poll the state-machine transition (header text
+  // changes from "Usa tu biometría" → "Ingresa tus credenciales") and
+  // retry the click if it didn't take.
+  const fallback = page
+    .getByRole("button", { name: /usar correo( electr[oó]nico)? y contrase[ñn]a/i })
+    .or(
+      page
+        .getByText(/usar correo( electr[oó]nico)? y contrase[ñn]a/i)
+        .locator("xpath=ancestor::button")
+    );
+  const credentialsHeader = page.getByText(/ingresa tus credenciales/i);
   const emailInput = page.locator('input[type="email"], input[autocomplete="username"]').first();
   const passInput = page.locator('input[type="password"]').first();
 
   if (await fallback.count()) {
-    // The passkey-step button is the React Aria PressResponder (HeroUI v3
-    // Button); the resulting state change is async. Use `await` on the
-    // click, then race the waitFor against another click attempt — if the
-    // first click was swallowed, the second one fires after the React
-    // state machine settles.
-    await fallback.click({ force: true });
-    await emailInput.waitFor({ state: "visible", timeout: 10_000 }).catch(async () => {
-      // Retry once before giving up — covers the click-during-transition
-      // race that React Aria triggers on the deployed Railway build.
-      await fallback.click({ force: true });
-      await emailInput.waitFor({ state: "visible", timeout: 10_000 });
-    });
-  } else {
-    await emailInput.waitFor({ state: "visible", timeout: 10_000 });
+    for (let attempt = 0; attempt < 3; attempt++) {
+      await fallback.first().click({ force: true });
+      try {
+        await credentialsHeader.waitFor({ state: "visible", timeout: 4_000 });
+        break;
+      } catch {
+        // Swallowed click — passkey button still mounted, retry.
+      }
+    }
   }
+  await emailInput.waitFor({ state: "visible", timeout: 10_000 });
   await emailInput.fill(E2E_USER!);
   await passInput.fill(E2E_PASS!);
   await page
