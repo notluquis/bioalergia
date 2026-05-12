@@ -470,7 +470,11 @@ const LOWERCASE_NAME_STOPWORDS = new Set([
   "asistira",
 ]);
 
-type ClinicalSeriesKind = "PATCH_TEST" | "SKIN_TEST" | "SUBCUTANEOUS_TREATMENT";
+type ClinicalSeriesKind =
+  | "PATCH_TEST"
+  | "SKIN_TEST"
+  | "SUBCUTANEOUS_TREATMENT"
+  | "MEDICAL_CONSULTATION";
 type ClinicalSeriesStageKind = "DOSE" | "INSTALLATION" | "MAINTENANCE" | "READING";
 type SubcutaneousAllergenType = "ACAROS" | "ACAROS_GRAMINEAS" | "GRAMINEAS";
 type SubcutaneousVaccineProduct = "ALXOID" | "CLUSTOID" | "CLUSTOID_B120" | "CLUSTOID_FORTE" | "ORAL_TEC";

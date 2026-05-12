@@ -130,7 +130,7 @@ export interface EventIdentityClaims {
   rutClaims: string[];
   sameDayOnly: boolean;
   seriesLinkedRuts: string[];
-  seriesKind: null | "PATCH_TEST" | "SKIN_TEST" | "SUBCUTANEOUS_TREATMENT";
+  seriesKind: null | "PATCH_TEST" | "SKIN_TEST" | "SUBCUTANEOUS_TREATMENT" | "MEDICAL_CONSULTATION";
 }
 
 export interface CandidateSetSummary {
@@ -314,7 +314,7 @@ interface EventDteOverviewRow {
   linkedFolio: null | string;
   linkedMatchedBy: null | string;
   linkedTotalAmount: null | number;
-  seriesKind: null | "PATCH_TEST" | "SKIN_TEST" | "SUBCUTANEOUS_TREATMENT";
+  seriesKind: null | "PATCH_TEST" | "SKIN_TEST" | "SUBCUTANEOUS_TREATMENT" | "MEDICAL_CONSULTATION";
   summary: null | string;
 }
 

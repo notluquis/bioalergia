@@ -434,7 +434,7 @@ const dteAnalyticsORPCRouterBase = {
           eventId: string;
           eventTime: null | string;
           matchedBy: null | string;
-          seriesKind: null | "PATCH_TEST" | "SKIN_TEST" | "SUBCUTANEOUS_TREATMENT";
+          seriesKind: null | "PATCH_TEST" | "SKIN_TEST" | "SUBCUTANEOUS_TREATMENT" | "MEDICAL_CONSULTATION";
           summary: null | string;
         }>
       >`

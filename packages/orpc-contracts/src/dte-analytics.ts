@@ -65,7 +65,7 @@ export const dteAnalyticsSalesLinkedEventSchema = z.object({
   eventId: z.string(),
   eventTime: z.string().nullable(),
   matchedBy: z.string().nullable(),
-  seriesKind: z.enum(["PATCH_TEST", "SKIN_TEST", "SUBCUTANEOUS_TREATMENT"]).nullable(),
+  seriesKind: z.enum(["PATCH_TEST", "SKIN_TEST", "SUBCUTANEOUS_TREATMENT", "MEDICAL_CONSULTATION"]).nullable(),
   summary: z.string().nullable(),
 });
 

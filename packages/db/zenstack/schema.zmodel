@@ -944,6 +944,7 @@ model OneDriveAccount {
   skinTestImports ClinicalSkinTestImport[]
   clinicalDocumentImports ClinicalDocumentImport[]
   clinicalXlsxFiles ClinicalXlsxFile[]
+  clinicalRecordImports ClinicalRecordImport[]
 
   @@deny('all', auth() == null)
   @@allow('create,update,delete', auth().status == 'ACTIVE')
@@ -1120,6 +1121,8 @@ model ClinicalSeries {
   abandonmentContacts AbandonmentContact[]
   skinTests  ClinicalSkinTest[]
   documentImports ClinicalDocumentImport[]
+  records    ClinicalRecord[]
+  recordImports ClinicalRecordImport[]
 
   @@deny('all', auth() == null)
   @@allow('read', true)
@@ -1225,6 +1228,109 @@ model ClinicalSkinTestImport {
   @@index([workbookSnapshotStatus])
   @@unique([oneDriveAccountId, oneDriveDriveId, oneDriveItemId])
   @@map("clinical_skin_test_imports")
+}
+
+// ----------------------------------------------------------------------
+// Clinical records (fichas clínicas) — see docs/clinical-records.md
+// (TBD) and migration 20260512030001_clinical_records.
+//
+// Pipeline mirrors ClinicalSkinTestImport: OneDrive scanner discovers
+// xlsx files matching the ficha-clínica filename pattern (no _PRICK /
+// _MULTITEST prefix), enqueues them in clinical_record_imports with
+// status PENDING_REVIEW, the parser populates parsed_payload, then a
+// matcher resolves to an existing patient (or queues candidates for
+// operator decision) and materializes a ClinicalRecord under a
+// ClinicalSeries with kind = MEDICAL_CONSULTATION.
+// ----------------------------------------------------------------------
+
+model ClinicalRecordImport {
+  id                          String                       @id @default(cuid())
+  oneDriveAccountId           String?                      @map("onedrive_account_id")
+  oneDriveItemId              String                       @map("onedrive_item_id")
+  oneDriveDriveId             String?                      @map("onedrive_drive_id")
+  oneDriveSourceKey           String?                      @map("onedrive_source_key")
+  oneDriveSourceDriveId       String?                      @map("onedrive_source_drive_id")
+  oneDriveSourceItemId        String?                      @map("onedrive_source_item_id")
+  oneDriveSharePointUniqueId  String?                      @map("onedrive_sharepoint_unique_id")
+  oneDriveQuickXorHash        String?                      @map("onedrive_quick_xor_hash")
+  oneDriveSha1Hash            String?                      @map("onedrive_sha1_hash")
+  oneDriveCrc32Hash           String?                      @map("onedrive_crc32_hash")
+  oneDriveETag                String?                      @map("onedrive_etag")
+  oneDriveCTag                String?                      @map("onedrive_ctag")
+  oneDriveWebUrl              String?                      @map("onedrive_web_url")
+  path                        String?
+  filename                    String
+  mimeType                    String?                      @map("mime_type")
+  size                        Int?
+  modifiedAt                  DateTime?                    @map("modified_at") @db.Timestamptz(3)
+  parserVersion               String                       @map("parser_version")
+  status                      ClinicalRecordImportStatus   @default(PENDING_REVIEW)
+  confidence                  Int                          @default(0)
+  error                       String?
+  issues                      Json?
+  parsedPayload               Json?                        @map("parsed_payload")
+  resultHash                  String?                      @map("result_hash")
+  duplicateOfImportId         String?                      @map("duplicate_of_import_id")
+  matchedPatientId            Int?                         @map("matched_patient_id")
+  matchedClinicalSeriesId     Int?                         @map("matched_clinical_series_id")
+  matchCandidates             Json?                        @map("match_candidates")
+  reviewedBy                  Int?                         @map("reviewed_by")
+  reviewedAt                  DateTime?                    @map("reviewed_at") @db.Timestamptz(3)
+  reviewNotes                 String?                      @map("review_notes")
+  importedAt                  DateTime?                    @map("imported_at") @db.Timestamptz(3)
+  createdAt                   DateTime                     @default(now()) @map("created_at")
+  updatedAt                   DateTime                     @default(now()) @updatedAt @map("updated_at")
+
+  record                      ClinicalRecord?
+  oneDriveAccount             OneDriveAccount?             @relation(fields: [oneDriveAccountId], references: [accountId], onDelete: SetNull)
+  matchedPatient              Patient?                     @relation(fields: [matchedPatientId], references: [id], onDelete: SetNull)
+  matchedClinicalSeries       ClinicalSeries?              @relation(fields: [matchedClinicalSeriesId], references: [id], onDelete: SetNull)
+
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@index([status])
+  @@index([modifiedAt])
+  @@index([oneDriveAccountId])
+  @@index([matchedPatientId])
+  @@unique([oneDriveAccountId, oneDriveDriveId, oneDriveItemId])
+  @@map("clinical_record_imports")
+}
+
+model ClinicalRecord {
+  id                  String              @id @default(cuid())
+  clinicalSeriesId    Int                 @map("clinical_series_id")
+  sourceImportId      String              @unique @map("source_import_id")
+  consultDate         DateTime?           @map("consult_date") @db.Date
+  patientName         String?             @map("patient_name")
+  ageLabel            String?             @map("age_label")
+  history             String?
+  physicalExam        String?             @map("physical_exam")
+  diagnosis           String?
+  // Numbered list 1..n preserved as JSON array of strings.
+  indications         Json?
+  weightKg            Decimal?            @map("weight_kg") @db.Decimal(6, 2)
+  heightCm            Decimal?            @map("height_cm") @db.Decimal(6, 2)
+  headCircumferenceCm Decimal?            @map("head_circumference_cm") @db.Decimal(6, 2)
+  // P/E, P/T, T/E and any extra anthropometric labels.
+  anthropometric      Json?
+  rawHeader           Json?               @map("raw_header")
+  rawSections         Json?               @map("raw_sections")
+  resultHash          String?             @map("result_hash")
+  createdAt           DateTime            @default(now()) @map("created_at")
+  updatedAt           DateTime            @default(now()) @updatedAt @map("updated_at")
+
+  clinicalSeries      ClinicalSeries      @relation(fields: [clinicalSeriesId], references: [id], onDelete: Cascade)
+  sourceImport        ClinicalRecordImport @relation(fields: [sourceImportId], references: [id], onDelete: Cascade)
+
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@index([clinicalSeriesId])
+  @@index([consultDate])
+  @@map("clinical_records")
 }
 
 model ClinicalSkinTestWorkbookFile {
@@ -2038,6 +2144,10 @@ enum ClinicalSeriesKind {
   PATCH_TEST
   SKIN_TEST
   SUBCUTANEOUS_TREATMENT
+  // Ficha clínica / consulta médica. Each row in clinical_records
+  // rolls up under a ClinicalSeries with this kind so the existing
+  // patient-timeline UI keeps a single entry point per series type.
+  MEDICAL_CONSULTATION
 }
 
 enum SubcutaneousAllergenType {
@@ -2075,6 +2185,21 @@ enum ClinicalSeriesStatus {
 }
 
 enum ClinicalSkinTestImportStatus {
+  DISCOVERED
+  PENDING_REVIEW
+  IMPORTED
+  REJECTED
+  ERROR
+  SKIPPED
+  TEMPLATE
+  // Set by the 20260512030001_clinical_records migration when a
+  // REJECTED skin-test row was reclassified into clinical_record_imports
+  // because its filename matched the ficha clínica pattern. Audit
+  // breadcrumb only — no skin-test pipeline action ever produces this.
+  MOVED_TO_RECORD
+}
+
+enum ClinicalRecordImportStatus {
   DISCOVERED
   PENDING_REVIEW
   IMPORTED
@@ -2254,6 +2379,7 @@ model Patient {
   dteSaleSources      PatientDteSaleSource[]
   shipments           Shipment[]
   clinicalSeries      ClinicalSeries[]
+  clinicalRecordImports ClinicalRecordImport[]
 
   @@deny('all', auth() == null)
   @@allow('read', auth().status == 'ACTIVE')

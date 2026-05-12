@@ -175,7 +175,7 @@ const calendarQueryInputSchema = z.object({
   patientName: z.string().optional(),
   patientRut: z.string().optional(),
   search: z.string().optional(),
-  seriesKind: z.enum(["PATCH_TEST", "SKIN_TEST", "SUBCUTANEOUS_TREATMENT"]).optional(),
+  seriesKind: z.enum(["PATCH_TEST", "SKIN_TEST", "SUBCUTANEOUS_TREATMENT", "MEDICAL_CONSULTATION"]).optional(),
   seriesStatus: z.enum(["PLANNED", "ACTIVE", "INACTIVE", "COMPLETED", "CANCELLED"]).optional(),
   maxDays: z.coerce.number().positive().int().optional(),
 });

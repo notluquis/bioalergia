@@ -40,7 +40,7 @@ export type CalendarEventRecord = {
   amountExpected?: number | null;
   amountPaid?: number | null;
   attended?: boolean | null;
-  clinicalSeriesKind?: "PATCH_TEST" | "SKIN_TEST" | "SUBCUTANEOUS_TREATMENT" | null;
+  clinicalSeriesKind?: "PATCH_TEST" | "SKIN_TEST" | "SUBCUTANEOUS_TREATMENT" | "MEDICAL_CONSULTATION" | null;
   seriesStageKind?: "DOSE" | "INSTALLATION" | "MAINTENANCE" | "READING" | null;
   seriesStageLabel?: string | null;
   seriesStageNumber?: number | null;

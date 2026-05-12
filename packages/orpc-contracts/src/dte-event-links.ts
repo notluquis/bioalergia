@@ -103,7 +103,7 @@ export const dteEventLinksIdentityClaimsSchema = z.object({
   patientRut: z.string().nullable(),
   rutClaims: z.array(z.string()),
   sameDayOnly: z.boolean(),
-  seriesKind: z.enum(["PATCH_TEST", "SKIN_TEST", "SUBCUTANEOUS_TREATMENT"]).nullable(),
+  seriesKind: z.enum(["PATCH_TEST", "SKIN_TEST", "SUBCUTANEOUS_TREATMENT", "MEDICAL_CONSULTATION"]).nullable(),
 });
 
 export const dteEventLinksCandidateSetSummarySchema = z.object({
@@ -202,7 +202,7 @@ export const dteEventLinksSuggestionsResponseSchema = z.object({
         }),
       ),
       id: z.number(),
-      kind: z.enum(["PATCH_TEST", "SKIN_TEST", "SUBCUTANEOUS_TREATMENT"]),
+      kind: z.enum(["PATCH_TEST", "SKIN_TEST", "SUBCUTANEOUS_TREATMENT", "MEDICAL_CONSULTATION"]),
       linkedDocuments: z.array(dteEventLinksLinkedDocumentSchema),
       patientName: z.string().nullable(),
       patientRut: z.string().nullable(),
@@ -243,7 +243,7 @@ export const dteEventLinksOverviewResponseSchema = z.object({
       linkedFolio: z.string().nullable(),
       linkedMatchedBy: z.string().nullable(),
       linkedTotalAmount: z.number().nullable(),
-      seriesKind: z.enum(["PATCH_TEST", "SKIN_TEST", "SUBCUTANEOUS_TREATMENT"]).nullable(),
+      seriesKind: z.enum(["PATCH_TEST", "SKIN_TEST", "SUBCUTANEOUS_TREATMENT", "MEDICAL_CONSULTATION"]).nullable(),
       summary: z.string().nullable(),
       topHypothesis: dteEventLinksHypothesisSchema.nullable(),
     }),

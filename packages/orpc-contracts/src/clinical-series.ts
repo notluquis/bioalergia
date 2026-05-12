@@ -1,7 +1,7 @@
 import { oc } from "@orpc/contract";
 import { z } from "zod";
 
-export const clinicalSeriesKindSchema = z.enum(["PATCH_TEST", "SKIN_TEST", "SUBCUTANEOUS_TREATMENT"]);
+export const clinicalSeriesKindSchema = z.enum(["PATCH_TEST", "SKIN_TEST", "SUBCUTANEOUS_TREATMENT", "MEDICAL_CONSULTATION"]);
 export const clinicalSeriesStatusSchema = z.enum(["PLANNED", "ACTIVE", "INACTIVE", "COMPLETED", "CANCELLED"]);
 export const clinicalSeriesViewModeSchema = z.enum(["series", "abandonment"]);
 export const clinicalSeriesAbandonmentBucketSchema = z.enum([
@@ -170,7 +170,7 @@ export const clinicalSeriesRebuildResponseSchema = z.object({
 
 export const clinicalSeriesDuplicateSchema = z.object({
   confidence: z.enum(["high", "medium"]),
-  kind: z.enum(["PATCH_TEST", "SKIN_TEST", "SUBCUTANEOUS_TREATMENT"]),
+  kind: z.enum(["PATCH_TEST", "SKIN_TEST", "SUBCUTANEOUS_TREATMENT", "MEDICAL_CONSULTATION"]),
   patientName: z.string().nullable(),
   reason: z.string(),
   sourceEventCount: z.number(),

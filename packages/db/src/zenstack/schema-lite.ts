@@ -2767,6 +2767,12 @@ export class SchemaType implements SchemaDef {
                     type: "ClinicalXlsxFile",
                     array: true,
                     relation: { opposite: "oneDriveAccount" }
+                },
+                clinicalRecordImports: {
+                    name: "clinicalRecordImports",
+                    type: "ClinicalRecordImport",
+                    array: true,
+                    relation: { opposite: "oneDriveAccount" }
                 }
             },
             idFields: ["id"],
@@ -3391,6 +3397,18 @@ export class SchemaType implements SchemaDef {
                     type: "ClinicalDocumentImport",
                     array: true,
                     relation: { opposite: "clinicalSeries" }
+                },
+                records: {
+                    name: "records",
+                    type: "ClinicalRecord",
+                    array: true,
+                    relation: { opposite: "clinicalSeries" }
+                },
+                recordImports: {
+                    name: "recordImports",
+                    type: "ClinicalRecordImport",
+                    array: true,
+                    relation: { opposite: "matchedClinicalSeries" }
                 }
             },
             idFields: ["id"],
@@ -3746,6 +3764,350 @@ export class SchemaType implements SchemaDef {
             uniqueFields: {
                 id: { type: "String" },
                 oneDriveAccountId_oneDriveDriveId_oneDriveItemId: { oneDriveAccountId: { type: "String" }, oneDriveDriveId: { type: "String" }, oneDriveItemId: { type: "String" } }
+            }
+        },
+        ClinicalRecordImport: {
+            name: "ClinicalRecordImport",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "String",
+                    id: true,
+                    default: ExpressionUtils.call("cuid") as FieldDefault
+                },
+                oneDriveAccountId: {
+                    name: "oneDriveAccountId",
+                    type: "String",
+                    optional: true,
+                    foreignKeyFor: [
+                        "oneDriveAccount"
+                    ] as readonly string[]
+                },
+                oneDriveItemId: {
+                    name: "oneDriveItemId",
+                    type: "String"
+                },
+                oneDriveDriveId: {
+                    name: "oneDriveDriveId",
+                    type: "String",
+                    optional: true
+                },
+                oneDriveSourceKey: {
+                    name: "oneDriveSourceKey",
+                    type: "String",
+                    optional: true
+                },
+                oneDriveSourceDriveId: {
+                    name: "oneDriveSourceDriveId",
+                    type: "String",
+                    optional: true
+                },
+                oneDriveSourceItemId: {
+                    name: "oneDriveSourceItemId",
+                    type: "String",
+                    optional: true
+                },
+                oneDriveSharePointUniqueId: {
+                    name: "oneDriveSharePointUniqueId",
+                    type: "String",
+                    optional: true
+                },
+                oneDriveQuickXorHash: {
+                    name: "oneDriveQuickXorHash",
+                    type: "String",
+                    optional: true
+                },
+                oneDriveSha1Hash: {
+                    name: "oneDriveSha1Hash",
+                    type: "String",
+                    optional: true
+                },
+                oneDriveCrc32Hash: {
+                    name: "oneDriveCrc32Hash",
+                    type: "String",
+                    optional: true
+                },
+                oneDriveETag: {
+                    name: "oneDriveETag",
+                    type: "String",
+                    optional: true
+                },
+                oneDriveCTag: {
+                    name: "oneDriveCTag",
+                    type: "String",
+                    optional: true
+                },
+                oneDriveWebUrl: {
+                    name: "oneDriveWebUrl",
+                    type: "String",
+                    optional: true
+                },
+                path: {
+                    name: "path",
+                    type: "String",
+                    optional: true
+                },
+                filename: {
+                    name: "filename",
+                    type: "String"
+                },
+                mimeType: {
+                    name: "mimeType",
+                    type: "String",
+                    optional: true
+                },
+                size: {
+                    name: "size",
+                    type: "Int",
+                    optional: true
+                },
+                modifiedAt: {
+                    name: "modifiedAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                parserVersion: {
+                    name: "parserVersion",
+                    type: "String"
+                },
+                status: {
+                    name: "status",
+                    type: "ClinicalRecordImportStatus",
+                    default: "PENDING_REVIEW" as FieldDefault
+                },
+                confidence: {
+                    name: "confidence",
+                    type: "Int",
+                    default: 0 as FieldDefault
+                },
+                error: {
+                    name: "error",
+                    type: "String",
+                    optional: true
+                },
+                issues: {
+                    name: "issues",
+                    type: "Json",
+                    optional: true
+                },
+                parsedPayload: {
+                    name: "parsedPayload",
+                    type: "Json",
+                    optional: true
+                },
+                resultHash: {
+                    name: "resultHash",
+                    type: "String",
+                    optional: true
+                },
+                duplicateOfImportId: {
+                    name: "duplicateOfImportId",
+                    type: "String",
+                    optional: true
+                },
+                matchedPatientId: {
+                    name: "matchedPatientId",
+                    type: "Int",
+                    optional: true,
+                    foreignKeyFor: [
+                        "matchedPatient"
+                    ] as readonly string[]
+                },
+                matchedClinicalSeriesId: {
+                    name: "matchedClinicalSeriesId",
+                    type: "Int",
+                    optional: true,
+                    foreignKeyFor: [
+                        "matchedClinicalSeries"
+                    ] as readonly string[]
+                },
+                matchCandidates: {
+                    name: "matchCandidates",
+                    type: "Json",
+                    optional: true
+                },
+                reviewedBy: {
+                    name: "reviewedBy",
+                    type: "Int",
+                    optional: true
+                },
+                reviewedAt: {
+                    name: "reviewedAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                reviewNotes: {
+                    name: "reviewNotes",
+                    type: "String",
+                    optional: true
+                },
+                importedAt: {
+                    name: "importedAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                record: {
+                    name: "record",
+                    type: "ClinicalRecord",
+                    optional: true,
+                    relation: { opposite: "sourceImport" }
+                },
+                oneDriveAccount: {
+                    name: "oneDriveAccount",
+                    type: "OneDriveAccount",
+                    optional: true,
+                    relation: { opposite: "clinicalRecordImports", fields: ["oneDriveAccountId"], references: ["accountId"], onDelete: "SetNull" }
+                },
+                matchedPatient: {
+                    name: "matchedPatient",
+                    type: "Patient",
+                    optional: true,
+                    relation: { opposite: "clinicalRecordImports", fields: ["matchedPatientId"], references: ["id"], onDelete: "SetNull" }
+                },
+                matchedClinicalSeries: {
+                    name: "matchedClinicalSeries",
+                    type: "ClinicalSeries",
+                    optional: true,
+                    relation: { opposite: "recordImports", fields: ["matchedClinicalSeriesId"], references: ["id"], onDelete: "SetNull" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "String" },
+                oneDriveAccountId_oneDriveDriveId_oneDriveItemId: { oneDriveAccountId: { type: "String" }, oneDriveDriveId: { type: "String" }, oneDriveItemId: { type: "String" } }
+            }
+        },
+        ClinicalRecord: {
+            name: "ClinicalRecord",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "String",
+                    id: true,
+                    default: ExpressionUtils.call("cuid") as FieldDefault
+                },
+                clinicalSeriesId: {
+                    name: "clinicalSeriesId",
+                    type: "Int",
+                    foreignKeyFor: [
+                        "clinicalSeries"
+                    ] as readonly string[]
+                },
+                sourceImportId: {
+                    name: "sourceImportId",
+                    type: "String",
+                    unique: true,
+                    foreignKeyFor: [
+                        "sourceImport"
+                    ] as readonly string[]
+                },
+                consultDate: {
+                    name: "consultDate",
+                    type: "DateTime",
+                    optional: true
+                },
+                patientName: {
+                    name: "patientName",
+                    type: "String",
+                    optional: true
+                },
+                ageLabel: {
+                    name: "ageLabel",
+                    type: "String",
+                    optional: true
+                },
+                history: {
+                    name: "history",
+                    type: "String",
+                    optional: true
+                },
+                physicalExam: {
+                    name: "physicalExam",
+                    type: "String",
+                    optional: true
+                },
+                diagnosis: {
+                    name: "diagnosis",
+                    type: "String",
+                    optional: true
+                },
+                indications: {
+                    name: "indications",
+                    type: "Json",
+                    optional: true
+                },
+                weightKg: {
+                    name: "weightKg",
+                    type: "Decimal",
+                    optional: true
+                },
+                heightCm: {
+                    name: "heightCm",
+                    type: "Decimal",
+                    optional: true
+                },
+                headCircumferenceCm: {
+                    name: "headCircumferenceCm",
+                    type: "Decimal",
+                    optional: true
+                },
+                anthropometric: {
+                    name: "anthropometric",
+                    type: "Json",
+                    optional: true
+                },
+                rawHeader: {
+                    name: "rawHeader",
+                    type: "Json",
+                    optional: true
+                },
+                rawSections: {
+                    name: "rawSections",
+                    type: "Json",
+                    optional: true
+                },
+                resultHash: {
+                    name: "resultHash",
+                    type: "String",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                clinicalSeries: {
+                    name: "clinicalSeries",
+                    type: "ClinicalSeries",
+                    relation: { opposite: "records", fields: ["clinicalSeriesId"], references: ["id"], onDelete: "Cascade" }
+                },
+                sourceImport: {
+                    name: "sourceImport",
+                    type: "ClinicalRecordImport",
+                    relation: { opposite: "record", fields: ["sourceImportId"], references: ["id"], onDelete: "Cascade" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "String" },
+                sourceImportId: { type: "String" }
             }
         },
         ClinicalSkinTestWorkbookFile: {
@@ -6086,6 +6448,12 @@ export class SchemaType implements SchemaDef {
                     type: "ClinicalSeries",
                     array: true,
                     relation: { opposite: "patient" }
+                },
+                clinicalRecordImports: {
+                    name: "clinicalRecordImports",
+                    type: "ClinicalRecordImport",
+                    array: true,
+                    relation: { opposite: "matchedPatient" }
                 }
             },
             idFields: ["id"],
@@ -10904,7 +11272,8 @@ export class SchemaType implements SchemaDef {
             values: {
                 PATCH_TEST: "PATCH_TEST",
                 SKIN_TEST: "SKIN_TEST",
-                SUBCUTANEOUS_TREATMENT: "SUBCUTANEOUS_TREATMENT"
+                SUBCUTANEOUS_TREATMENT: "SUBCUTANEOUS_TREATMENT",
+                MEDICAL_CONSULTATION: "MEDICAL_CONSULTATION"
             }
         },
         SubcutaneousAllergenType: {
@@ -10952,6 +11321,19 @@ export class SchemaType implements SchemaDef {
         },
         ClinicalSkinTestImportStatus: {
             name: "ClinicalSkinTestImportStatus",
+            values: {
+                DISCOVERED: "DISCOVERED",
+                PENDING_REVIEW: "PENDING_REVIEW",
+                IMPORTED: "IMPORTED",
+                REJECTED: "REJECTED",
+                ERROR: "ERROR",
+                SKIPPED: "SKIPPED",
+                TEMPLATE: "TEMPLATE",
+                MOVED_TO_RECORD: "MOVED_TO_RECORD"
+            }
+        },
+        ClinicalRecordImportStatus: {
+            name: "ClinicalRecordImportStatus",
             values: {
                 DISCOVERED: "DISCOVERED",
                 PENDING_REVIEW: "PENDING_REVIEW",
