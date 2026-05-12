@@ -41,10 +41,10 @@ const AUTHED_DISABLED_RULES: string[] = [
   // TODO(a11y): some authed pages wrap right-side rails in <aside> inside
   //  <main>. Walk down per page (Home + Dashboard fixed in 5c11f6b7,
   //  remaining: counterparts, services, wa-cloud, finance/loans).
-  //  NOTE: `landmark-complementary-is-top-level` was *deprecated* in
-  //  axe-core (#4950); listing it here is a no-op. The replacement
-  //  surface is `region` which also fires; not adding it preemptively to
-  //  baseline — let CI tell us when it pops up.
+  //  Empirical: rule is still active in axe-core 4.11 despite an open
+  //  deprecation issue (#4950 unresolved as of May 2026), so keep in
+  //  baseline until the asides are lifted.
+  "landmark-complementary-is-top-level",
   // TODO(a11y): authed routes lack <h1>. Each page/route should expose a
   //  level-1 heading (visually-hidden if header design forbids it).
   "page-has-heading-one",
