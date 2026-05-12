@@ -7,6 +7,7 @@ import {
   Activity,
   Calendar,
   ChevronLeft,
+  ClipboardList,
   Clock,
   DollarSign,
   Download,
@@ -23,6 +24,7 @@ import { useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
 import { AddressList } from "@/features/addresses/components/AddressList";
 import { fetchPatient } from "@/features/patients/api";
+import { PatientRecordsTimeline } from "@/features/clinical-records/components/PatientRecordsTimeline";
 import { ClinicalSeriesList } from "@/features/patients/components/ClinicalSeriesList";
 import { NewAttachmentModal } from "@/features/patients/components/NewAttachmentModal";
 import { SkinTestsList } from "@/features/patients/components/SkinTestsList";
@@ -60,6 +62,7 @@ function PatientDetailsPage() {
   const [activeTab, setActiveTab] = useState<
     | "budgets"
     | "certificates"
+    | "clinical-records"
     | "clinical-series"
     | "docs"
     | "history"
@@ -70,6 +73,7 @@ function PatientDetailsPage() {
   const { isTabMounted, markTabAsMounted } = useLazyTabs<
     | "budgets"
     | "certificates"
+    | "clinical-records"
     | "clinical-series"
     | "docs"
     | "history"
@@ -168,6 +172,7 @@ function PatientDetailsPage() {
               const nextTab:
                 | "budgets"
                 | "certificates"
+                | "clinical-records"
                 | "clinical-series"
                 | "docs"
                 | "history"
@@ -180,6 +185,7 @@ function PatientDetailsPage() {
                 keyValue === "docs" ||
                 keyValue === "info" ||
                 keyValue === "clinical-series" ||
+                keyValue === "clinical-records" ||
                 keyValue === "skin-tests"
                   ? keyValue
                   : "history";
@@ -230,6 +236,11 @@ function PatientDetailsPage() {
                 <Tabs.Tab id="skin-tests" className="min-w-max gap-2 font-semibold">
                   <FlaskConical size={18} />
                   <span>Tests Cutáneos</span>
+                  <Tabs.Indicator />
+                </Tabs.Tab>
+                <Tabs.Tab id="clinical-records" className="min-w-max gap-2 font-semibold">
+                  <ClipboardList size={18} />
+                  <span>Fichas clínicas</span>
                   <Tabs.Indicator />
                 </Tabs.Tab>
               </Tabs.List>
@@ -355,6 +366,12 @@ function PatientDetailsPage() {
 
             <Tabs.Panel id="skin-tests" className="py-4">
               {isTabMounted("skin-tests") ? <SkinTestsList patientId={patient.id} /> : null}
+            </Tabs.Panel>
+
+            <Tabs.Panel id="clinical-records" className="py-4">
+              {isTabMounted("clinical-records") ? (
+                <PatientRecordsTimeline patientId={patient.id} />
+              ) : null}
             </Tabs.Panel>
 
             <Tabs.Panel id="info" className="py-4">

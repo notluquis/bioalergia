@@ -58,11 +58,20 @@ export function validateRut(value: string | null | undefined): boolean {
  * Returns the canonical RUT or throws. Use at every persistence boundary
  * (Person/Employee/User/Patient writes, identity lookups) so that no two
  * records can ever exist for the same identity in different formats.
+ *
+ * Now validates mod-11 in addition to canonicalising, so a RUT with the
+ * wrong DV (`24597904-K` instead of `24597904-5`) is rejected at the
+ * application boundary. The matching CHECK constraint
+ * `people_rut_valid_mod11` (migration 20260512_rut_check_constraint)
+ * is the second line of defence at the DB layer.
  */
 export function requireCanonicalRut(value: string | null | undefined): string {
   const canonical = normalizeRut(value);
   if (!canonical) {
-    throw new Error(`RUT inválido: ${String(value)}`);
+    throw new Error(`RUT inválido (formato): ${String(value)}`);
+  }
+  if (!validateRut(canonical)) {
+    throw new Error(`RUT inválido (módulo 11): ${String(value)}`);
   }
   return canonical;
 }

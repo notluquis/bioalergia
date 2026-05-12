@@ -30,6 +30,13 @@ plugin ts {
 model Person {
   id         Int        @id @default(autoincrement())
   rut        String?    @unique @db.VarChar(20)
+  // Holding pen for the 338 historical RUTs that failed módulo 11
+  // when migration 20260512040000_rut_check_constraint enforced the
+  // CHECK constraint. The CHECK forbids invalid values in `rut`, so
+  // those rows had `rut` NULLed and the original string stashed here
+  // for operator review. Never written by application code — only by
+  // the migration. Read-only surface for the patient UI.
+  rutLegacyInvalid String? @map("rut_legacy_invalid") @db.VarChar(40)
   names      String
   fatherName String?    @map("father_name")
   motherName String?    @map("mother_name")
