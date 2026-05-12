@@ -3482,6 +3482,13 @@ model WaPhoneNumber {
   label               String?
   qualityRating       String?   @map("quality_rating")
   active              Boolean   @default(true)
+  // Onboarding flow used to provision this phone:
+  //   "coexistence"      — Meta 2025 Coexistence (WA Business app keeps using SIM,
+  //                         Cloud API mirrors via Messaging Echoes; 5 mps cap)
+  //   "embedded_signup"  — full Embedded Signup, phone exclusive to Cloud API
+  //   "migration"        — addMigratingPhoneNumber + request_code + register flow
+  //   null               — legacy / manual upsert
+  onboardingFlow      String?   @map("onboarding_flow")
   createdAt           DateTime  @default(now()) @map("created_at")
   updatedAt           DateTime  @default(now()) @updatedAt @map("updated_at")
 

@@ -1,8 +1,16 @@
 import { Button } from "@heroui/react";
-import { LogIn } from "lucide-react";
+import { LogIn, Smartphone } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "@/lib/toast-interceptor";
 import { useEmbeddedSignupComplete } from "../hooks/useWaCloud";
+
+// Two variants of Meta Embedded Signup:
+//   - "embedded_signup": standard flow — number moves exclusively to Cloud API.
+//   - "coexistence":     Meta 2025 — number stays on the WA Business app (SIM)
+//                        AND mirrors into Cloud API via Messaging Echoes.
+//                        Requires WA Business app v2.24.17+, 5 mps cap, history
+//                        sync up to 6 months. Unsupported in EU/EEA.
+export type EmbeddedSignupVariant = "embedded_signup" | "coexistence";
 
 // Loads the Meta JS SDK on demand and triggers FB.login with the
 // whatsapp_embedded_signup config. On success the SDK posts a
@@ -50,7 +58,14 @@ function loadFbSdk(): Promise<void> {
   });
 }
 
-export function EmbeddedSignupButton() {
+export interface EmbeddedSignupButtonProps {
+  variant?: EmbeddedSignupVariant;
+}
+
+export function EmbeddedSignupButton({
+  variant = "embedded_signup",
+}: EmbeddedSignupButtonProps = {}) {
+  const isCoexistence = variant === "coexistence";
   const [busy, setBusy] = useState(false);
   const complete = useEmbeddedSignupComplete();
   const sessionRef = useRef<{
@@ -107,8 +122,13 @@ export function EmbeddedSignupButton() {
               systemUserToken: token,
               phoneNumberId: captured.phone_number_id,
               displayPhoneNumber: "—", // populated by next syncPhoneNumbers
+              onboardingFlow: variant,
             });
-            toast.success("Cuenta WABA creada vía Embedded Signup");
+            toast.success(
+              isCoexistence
+                ? "Coexistence activado — el celular sigue funcionando con WA Business"
+                : "Cuenta WABA creada vía Embedded Signup"
+            );
           } catch (e) {
             toast.error(`Server: ${String(e)}`);
           } finally {
@@ -119,7 +139,14 @@ export function EmbeddedSignupButton() {
           config_id: CONFIG_ID,
           response_type: "code",
           override_default_response_type: true,
-          extras: { feature: "whatsapp_embedded_signup", version: 2 },
+          extras: isCoexistence
+            ? {
+                feature: "whatsapp_embedded_signup",
+                featureType: "whatsapp_business_app_onboarding",
+                sessionInfoVersion: 3,
+                version: 3,
+              }
+            : { feature: "whatsapp_embedded_signup", version: 2 },
         }
       );
     } catch (e) {
@@ -130,8 +157,8 @@ export function EmbeddedSignupButton() {
 
   return (
     <Button variant="outline" onPress={onClick} isPending={busy}>
-      <LogIn size={14} />
-      Onboard vía Embedded Signup
+      {isCoexistence ? <Smartphone size={14} /> : <LogIn size={14} />}
+      {isCoexistence ? "Activar Coexistence (app + Cloud API)" : "Onboard vía Embedded Signup"}
     </Button>
   );
 }

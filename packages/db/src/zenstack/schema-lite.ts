@@ -9259,6 +9259,11 @@ export class SchemaType implements SchemaDef {
                     type: "Boolean",
                     default: true as FieldDefault
                 },
+                onboardingFlow: {
+                    name: "onboardingFlow",
+                    type: "String",
+                    optional: true
+                },
                 createdAt: {
                     name: "createdAt",
                     type: "DateTime",

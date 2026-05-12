@@ -2464,6 +2464,7 @@ const waRouterBase = {
         displayPhoneNumber: input.displayPhoneNumber,
         label: input.displayName ?? null,
         active: true,
+        onboardingFlow: input.onboardingFlow ?? "embedded_signup",
       };
       if (phoneExisting) {
         await db.waPhoneNumber.update({ where: { id: phoneExisting.id }, data: phoneData });

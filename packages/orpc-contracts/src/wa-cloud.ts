@@ -1113,6 +1113,10 @@ export const embeddedSignupInputSchema = z.object({
   phoneNumberId: z.string().min(1),
   displayPhoneNumber: z.string().min(1),
   displayName: z.string().optional(),
+  // Distinguishes Coexistence (Meta 2025, app + Cloud API on same SIM) from
+  // standard Embedded Signup. Persisted on WaPhoneNumber.onboardingFlow so
+  // the UI can surface the 5 mps cap + Messaging Echoes behaviour.
+  onboardingFlow: z.enum(["coexistence", "embedded_signup"]).optional(),
 });
 
 // Template library (Meta 2026): pre-curated templates that can be cloned

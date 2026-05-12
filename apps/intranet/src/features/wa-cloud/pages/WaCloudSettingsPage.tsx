@@ -57,13 +57,16 @@ export function WaCloudSettingsPage() {
 
   return (
     <div className="mx-auto max-w-5xl space-y-6 p-6">
-      <div className="flex justify-end gap-2">
+      <div className="flex flex-wrap justify-end gap-2">
+        <EmbeddedSignupButton variant="coexistence" />
         <EmbeddedSignupButton />
         <Button onPress={() => setCreateOpen(true)}>
           <Plus size={16} />
           Nueva cuenta WABA
         </Button>
       </div>
+
+      <CoexistenceNotice />
 
       <WebhookCard url={webhookBase} />
 
@@ -83,6 +86,42 @@ export function WaCloudSettingsPage() {
 
       <CreateAccountModal isOpen={createOpen} onClose={() => setCreateOpen(false)} />
     </div>
+  );
+}
+
+function CoexistenceNotice() {
+  return (
+    <Card>
+      <Card.Header>
+        <div className="flex items-center gap-2 text-sm font-medium">
+          <ShieldCheck size={16} className="text-warning-600" />
+          Coexistence — requisitos previos
+        </div>
+      </Card.Header>
+      <Card.Content className="space-y-2 text-default-600 text-sm">
+        <ul className="list-disc space-y-1 pl-5">
+          <li>
+            App WhatsApp Business <strong>v2.24.17 o superior</strong> en el celular del usuario.
+          </li>
+          <li>El número debe permanecer en la app; no se desregistra del SIM.</li>
+          <li>
+            Throughput limitado a <strong>5 mensajes/seg</strong> (vs. tier estándar de Cloud API).
+          </li>
+          <li>
+            Historial: hasta <strong>6 meses</strong> sincronizan vía webhook <code>history</code>.
+          </li>
+          <li>
+            El operador debe abrir la app al menos <strong>cada 13 días</strong> para mantener la
+            sincronización.
+          </li>
+          <li>
+            Mensajes salientes desde el celular llegan a Cloud API vía <code>message_echoes</code>{" "}
+            (ya soportado).
+          </li>
+          <li>No disponible en EU/EEA.</li>
+        </ul>
+      </Card.Content>
+    </Card>
   );
 }
 
