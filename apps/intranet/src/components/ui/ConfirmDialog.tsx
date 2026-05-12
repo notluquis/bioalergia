@@ -1,5 +1,6 @@
-import { Button, Modal } from "@heroui/react";
+import { Button, Input, Label, Modal, TextField } from "@heroui/react";
 import { Store, useStore } from "@tanstack/react-store";
+import { useEffect, useState } from "react";
 
 type ConfirmVariant = "default" | "danger";
 
@@ -9,6 +10,12 @@ interface ConfirmOptions {
   confirmLabel?: string;
   cancelLabel?: string;
   variant?: ConfirmVariant;
+  /**
+   * If set, user must type this exact string to enable the confirm button.
+   * NHS-style typed confirmation for high-risk destructive actions.
+   */
+  requireText?: string;
+  requireTextLabel?: string;
 }
 
 interface ConfirmState extends ConfirmOptions {
@@ -48,6 +55,16 @@ export function ConfirmDialogHost() {
   const state = useStore(confirmStore);
   const variant: ConfirmVariant = state.variant ?? "default";
   const confirmVariant = variant === "danger" ? "danger" : "primary";
+  const [typed, setTyped] = useState("");
+
+  useEffect(() => {
+    if (state.open) {
+      setTyped("");
+    }
+  }, [state.open]);
+
+  const requiresText = Boolean(state.requireText);
+  const typedMatches = !requiresText || typed.trim() === state.requireText;
 
   return (
     <Modal>
@@ -69,11 +86,26 @@ export function ConfirmDialogHost() {
               {state.description ? (
                 <p className="text-default-600 text-sm leading-relaxed">{state.description}</p>
               ) : null}
+              {requiresText ? (
+                <div className="mt-4">
+                  <TextField value={typed} onChange={setTyped} autoFocus>
+                    <Label className="mb-1 block font-medium text-foreground text-sm">
+                      {state.requireTextLabel ?? `Escribe "${state.requireText}" para confirmar`}
+                    </Label>
+                    <Input className="w-full" />
+                  </TextField>
+                </div>
+              ) : null}
               <div className="mt-6 flex flex-wrap justify-end gap-2">
                 <Button onPress={() => close(false)} size="md" variant="outline">
                   {state.cancelLabel ?? "Cancelar"}
                 </Button>
-                <Button onPress={() => close(true)} size="md" variant={confirmVariant}>
+                <Button
+                  onPress={() => close(true)}
+                  size="md"
+                  variant={confirmVariant}
+                  isDisabled={!typedMatches}
+                >
                   {state.confirmLabel ?? "Confirmar"}
                 </Button>
               </div>

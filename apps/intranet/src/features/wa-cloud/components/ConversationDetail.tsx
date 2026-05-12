@@ -521,8 +521,7 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
               }
               const ok = await confirmAction({
                 title: "Bloquear contacto",
-                description:
-                  "El contacto no podrá enviarte mensajes hasta que lo desbloquees.",
+                description: "El contacto no podrá enviarte mensajes hasta que lo desbloquees.",
                 confirmLabel: "Bloquear",
                 variant: "danger",
               });
@@ -591,8 +590,7 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
                 }
                 const ok = await confirmAction({
                   title: "Desbloquear contacto",
-                  description:
-                    "Volverá a poder enviarte mensajes en WhatsApp.",
+                  description: "Volverá a poder enviarte mensajes en WhatsApp.",
                   confirmLabel: "Desbloquear",
                 });
                 if (!ok) return;

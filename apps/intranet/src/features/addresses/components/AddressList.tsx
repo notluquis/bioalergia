@@ -2,6 +2,7 @@ import { Button, Card, Chip, Spinner } from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Edit2, MapPin, Plus, Star, Trash2 } from "lucide-react";
 import { useState } from "react";
+import { confirmAction } from "@/components/ui/ConfirmDialog";
 import { useToast } from "@/context/ToastContext";
 import { deleteAddress, listAddresses, setPrimaryAddress } from "../api";
 import type { AddressDraft } from "./AddressFormModal";
@@ -145,10 +146,18 @@ export function AddressList({ personId }: Readonly<AddressListProps>) {
                       <Button
                         aria-label="Eliminar"
                         isDisabled={deleteMutation.isPending}
-                        onPress={() => {
-                          if (confirm("¿Eliminar esta dirección?")) {
-                            deleteMutation.mutate(addr.id);
-                          }
+                        onPress={async () => {
+                          const phrase = addr.street?.trim() || "ELIMINAR";
+                          const ok = await confirmAction({
+                            title: "Eliminar dirección",
+                            description: `Esta acción no se puede deshacer. Para confirmar, escribe el nombre de la calle: "${phrase}".`,
+                            confirmLabel: "Eliminar definitivamente",
+                            variant: "danger",
+                            requireText: phrase,
+                            requireTextLabel: `Escribe "${phrase}" para confirmar`,
+                          });
+                          if (!ok) return;
+                          deleteMutation.mutate(addr.id);
                         }}
                         size="sm"
                         variant="outline"

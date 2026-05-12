@@ -183,7 +183,8 @@ function LocationsTab() {
                             onPress={async () => {
                               const ok = await confirmAction({
                                 title: "Archivar elemento",
-                                description: "Quedará oculto del catálogo activo. Se puede restaurar luego.",
+                                description:
+                                  "Quedará oculto del catálogo activo. Se puede restaurar luego.",
                                 confirmLabel: "Archivar",
                                 variant: "danger",
                               });
@@ -425,7 +426,8 @@ function ListsTab() {
                             onPress={async () => {
                               const ok = await confirmAction({
                                 title: "Archivar elemento",
-                                description: "Quedará oculto del catálogo activo. Se puede restaurar luego.",
+                                description:
+                                  "Quedará oculto del catálogo activo. Se puede restaurar luego.",
                                 confirmLabel: "Archivar",
                                 variant: "danger",
                               });
@@ -732,7 +734,8 @@ function FlowsTab() {
                             onPress={async () => {
                               const ok = await confirmAction({
                                 title: "Archivar elemento",
-                                description: "Quedará oculto del catálogo activo. Se puede restaurar luego.",
+                                description:
+                                  "Quedará oculto del catálogo activo. Se puede restaurar luego.",
                                 confirmLabel: "Archivar",
                                 variant: "danger",
                               });
@@ -1046,7 +1049,8 @@ function SnippetsTab() {
                             onPress={async () => {
                               const ok = await confirmAction({
                                 title: "Archivar elemento",
-                                description: "Quedará oculto del catálogo activo. Se puede restaurar luego.",
+                                description:
+                                  "Quedará oculto del catálogo activo. Se puede restaurar luego.",
                                 confirmLabel: "Archivar",
                                 variant: "danger",
                               });
