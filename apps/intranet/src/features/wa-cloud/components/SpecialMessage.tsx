@@ -44,7 +44,7 @@ export function LocationBubble({ payload }: { payload: Payload }) {
       <div className="min-w-0 flex-1">
         <p className="truncate font-medium text-sm">{name ?? "Ubicación compartida"}</p>
         {address && <p className="mt-0.5 line-clamp-2 text-default-500 text-xs">{address}</p>}
-        <p className="mt-1 font-mono text-default-400 text-[10px]">
+        <p className="mt-1 font-mono text-default-400 text-xs">
           {latitude.toFixed(5)}, {longitude.toFixed(5)}
         </p>
         <p className="mt-1 inline-flex items-center gap-0.5 text-accent text-xs">

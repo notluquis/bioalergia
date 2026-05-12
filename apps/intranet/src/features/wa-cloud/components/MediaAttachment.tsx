@@ -445,7 +445,7 @@ function AudioPlayer({ src, out, onError }: { src: string; out: boolean; onError
           />
         </div>
         <p
-          className={`mt-0.5 text-[10px] ${out ? "text-success-foreground/80" : "text-default-500"}`}
+          className={`mt-0.5 text-xs ${out ? "text-success-foreground/80" : "text-default-500"}`}
         >
           {fmt(current)} / {fmt(duration)}
         </p>
@@ -454,7 +454,7 @@ function AudioPlayer({ src, out, onError }: { src: string; out: boolean; onError
         type="button"
         onClick={cycleSpeed}
         disabled={!loaded}
-        className={`shrink-0 rounded-full px-2 py-0.5 font-mono text-[11px] tabular-nums transition disabled:opacity-50 ${speedBg}`}
+        className={`shrink-0 rounded-full px-2 py-0.5 font-mono text-xs tabular-nums transition disabled:opacity-50 ${speedBg}`}
         aria-label={`Velocidad ${speed}×`}
         title="Cambiar velocidad"
       >

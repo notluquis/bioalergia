@@ -104,7 +104,7 @@ export function PatientCampaignsPage() {
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium truncate">{campaign.name}</p>
                           {campaign.description && (
-                            <p className="text-[11px] text-foreground-400 line-clamp-2 mt-0.5">
+                            <p className="text-xs text-foreground-400 line-clamp-2 mt-0.5">
                               {campaign.description}
                             </p>
                           )}
@@ -115,7 +115,7 @@ export function PatientCampaignsPage() {
                           </Chip>
                         )}
                       </div>
-                      <div className="mt-2 flex items-center gap-2 text-[11px] text-foreground-500">
+                      <div className="mt-2 flex items-center gap-2 text-xs text-foreground-500">
                         <Users size={12} />
                         <span>{campaign.totalRecipients} destinatarios</span>
                       </div>

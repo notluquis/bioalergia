@@ -82,7 +82,7 @@ export function MetricCard({
             </div>
           </div>
           <span
-            className={`inline-flex rounded-full px-3 py-1 font-semibold text-[11px] uppercase tracking-wide ${theme.badge}`}
+            className={`inline-flex rounded-full px-3 py-1 font-semibold text-[11px] ${theme.badge}`}
           >
             {theme.badgeLabel}
           </span>

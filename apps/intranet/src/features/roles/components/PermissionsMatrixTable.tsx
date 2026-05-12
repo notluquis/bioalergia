@@ -266,7 +266,7 @@ export function PermissionsMatrixTable({
                           </span>
                         </span>
                         <span
-                          className="truncate pl-6 font-mono text-[10px] text-default-500"
+                          className="truncate pl-6 font-mono text-xs text-default-500"
                           title={`${perm.action} • ${perm.subject}`}
                         >
                           {perm.action} • {perm.subject}
@@ -352,7 +352,7 @@ function PermissionRow({
           {actionLabel}
         </span>
         <span
-          className="truncate font-mono text-[10px] text-default-500"
+          className="truncate font-mono text-xs text-default-500"
           title={`${perm.action} • ${perm.subject}`}
         >
           {perm.action} • {perm.subject}

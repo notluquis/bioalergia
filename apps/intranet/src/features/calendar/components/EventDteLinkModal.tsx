@@ -526,7 +526,7 @@ export function EventDteLinkModal({ event, isOpen, onClose, onLinked }: EventDte
                                 </div>
                                 <div className="grid gap-2 sm:grid-cols-3">
                                   <Surface className="rounded-lg p-2.5" variant="secondary">
-                                    <p className="text-default-500 text-[11px] uppercase tracking-wide">
+                                    <p className="text-default-500 text-[11px]">
                                       Total
                                     </p>
                                     <p className="font-medium">
@@ -534,13 +534,13 @@ export function EventDteLinkModal({ event, isOpen, onClose, onLinked }: EventDte
                                     </p>
                                   </Surface>
                                   <Surface className="rounded-lg p-2.5" variant="secondary">
-                                    <p className="text-default-500 text-[11px] uppercase tracking-wide">
+                                    <p className="text-default-500 text-[11px]">
                                       Referencia
                                     </p>
                                     <p className="font-medium">{candidate.folioLabel}</p>
                                   </Surface>
                                   <Surface className="rounded-lg p-2.5" variant="secondary">
-                                    <p className="text-default-500 text-[11px] uppercase tracking-wide">
+                                    <p className="text-default-500 text-[11px]">
                                       Tipo
                                     </p>
                                     <p className="font-medium">

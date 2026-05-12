@@ -167,7 +167,7 @@ export function DailyEventCard({ event, eventDteLink, onLinkClick }: DailyEventC
 
           {/* Duration */}
           {durationMinutes != null && durationMinutes > 0 && (
-            <span className="whitespace-nowrap font-medium text-[10px] text-foreground-500">
+            <span className="whitespace-nowrap font-medium text-xs text-foreground-500">
               {formatDuration(durationMinutes)}
             </span>
           )}
@@ -189,7 +189,7 @@ export function DailyEventCard({ event, eventDteLink, onLinkClick }: DailyEventC
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-foreground-600 text-xs">
             {event.amountExpected != null && (
               <div className="flex items-center gap-1">
-                <span className="text-[10px] uppercase opacity-60">Esperado</span>
+                <span className="text-xs uppercase opacity-60">Esperado</span>
                 <span className="font-medium text-foreground">
                   {currencyFormatter.format(event.amountExpected)}
                 </span>
@@ -197,7 +197,7 @@ export function DailyEventCard({ event, eventDteLink, onLinkClick }: DailyEventC
             )}
             {event.amountPaid != null && (
               <div className="flex items-center gap-1">
-                <span className="text-[10px] uppercase opacity-60">Pagado</span>
+                <span className="text-xs uppercase opacity-60">Pagado</span>
                 <span className="font-medium text-success">
                   {currencyFormatter.format(event.amountPaid)}
                 </span>
@@ -210,7 +210,7 @@ export function DailyEventCard({ event, eventDteLink, onLinkClick }: DailyEventC
               const Icon = badge.icon;
               return (
                 <Chip
-                  className="h-6 gap-1 font-medium text-[10px] uppercase tracking-wide"
+                  className="h-6 gap-1 font-medium text-[10px]"
                   color={badge.color}
                   key={badge.key}
                   size="sm"
@@ -275,7 +275,7 @@ export function DailyEventCard({ event, eventDteLink, onLinkClick }: DailyEventC
             </Card>
           ) : isPendingEmission ? (
             <Chip
-              className="h-6 font-medium text-[10px] uppercase tracking-wide"
+              className="h-6 font-medium text-[10px]"
               color="warning"
               size="sm"
               variant="soft"
@@ -285,7 +285,7 @@ export function DailyEventCard({ event, eventDteLink, onLinkClick }: DailyEventC
           ) : null}
           {onLinkClick ? (
             <Button
-              className="h-6 px-2 text-[10px] uppercase tracking-wide"
+              className="h-6 px-2 text-[10px]"
               isDisabled={isPendingEmission}
               size="sm"
               variant={eventDteLink ? "secondary" : "ghost"}

@@ -407,13 +407,13 @@ function SuggestionCandidateCard({
       </Card.Header>
       <Card.Content className="grid grid-cols-2 gap-2 text-sm lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
         <Surface className="rounded-xl p-2.5" variant="secondary">
-          <p className="text-default-500 text-[11px] uppercase tracking-wide">Monto DTE</p>
+          <p className="text-default-500 text-[11px]">Monto DTE</p>
           <p className="font-medium leading-tight">
             {currencyFormatter.format(candidate.totalAmount)}
           </p>
         </Surface>
         <Surface className="rounded-xl p-2.5" variant="secondary">
-          <p className="text-default-500 text-[11px] uppercase tracking-wide">Diferencia</p>
+          <p className="text-default-500 text-[11px]">Diferencia</p>
           <p className="font-medium leading-tight">
             {diff != null ? currencyFormatter.format(diff) : "-"}
           </p>
@@ -505,7 +505,7 @@ function HypothesisCard({
       </Card.Header>
       <Card.Content className="grid grid-cols-2 gap-2 text-sm lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
         <Surface className="rounded-xl p-2.5" variant="secondary">
-          <p className="text-default-500 text-[11px] uppercase tracking-wide">
+          <p className="text-default-500 text-[11px]">
             {isBundle ? "Suma DTE" : "Monto DTE"}
           </p>
           <p className="font-medium leading-tight">
@@ -513,7 +513,7 @@ function HypothesisCard({
           </p>
         </Surface>
         <Surface className="rounded-xl p-2.5" variant="secondary">
-          <p className="text-default-500 text-[11px] uppercase tracking-wide">Diferencia</p>
+          <p className="text-default-500 text-[11px]">Diferencia</p>
           <p className="font-medium leading-tight">
             {diff != null ? currencyFormatter.format(diff) : "-"}
           </p>
@@ -1320,7 +1320,7 @@ export function CalendarDteLinksOverview({
 
                                     <Card.Content className="grid grid-cols-2 gap-2 text-sm lg:grid-cols-4">
                                       <Surface className="rounded-xl p-3" variant="secondary">
-                                        <p className="text-default-500 text-[11px] uppercase tracking-wide">
+                                        <p className="text-default-500 text-[11px]">
                                           Monto evento
                                         </p>
                                         <p className="font-medium leading-tight">
@@ -1328,7 +1328,7 @@ export function CalendarDteLinksOverview({
                                         </p>
                                       </Surface>
                                       <Surface className="rounded-xl p-3" variant="secondary">
-                                        <p className="text-default-500 text-[11px] uppercase tracking-wide">
+                                        <p className="text-default-500 text-[11px]">
                                           {item.linked
                                             ? "DTE vinculado"
                                             : item.linkStatus === "pending_issuance"
@@ -1344,7 +1344,7 @@ export function CalendarDteLinksOverview({
                                         </p>
                                       </Surface>
                                       <Surface className="rounded-xl p-3" variant="secondary">
-                                        <p className="text-default-500 text-[11px] uppercase tracking-wide">
+                                        <p className="text-default-500 text-[11px]">
                                           Diferencia
                                         </p>
                                         <p className="font-medium leading-tight">
@@ -1356,7 +1356,7 @@ export function CalendarDteLinksOverview({
                                         </p>
                                       </Surface>
                                       <Surface className="rounded-xl p-3" variant="secondary">
-                                        <p className="text-default-500 text-[11px] uppercase tracking-wide">
+                                        <p className="text-default-500 text-[11px]">
                                           Referencia
                                         </p>
                                         <p className="truncate font-medium leading-tight">
@@ -1381,7 +1381,7 @@ export function CalendarDteLinksOverview({
                                           <Alert.Content>
                                             <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                                               <div className="space-y-1">
-                                                <p className="text-[11px] font-semibold uppercase tracking-wide">
+                                                <p className="text-[11px] font-semibold">
                                                   Último intento automático omitido
                                                 </p>
                                                 <Alert.Description className="text-sm font-medium">

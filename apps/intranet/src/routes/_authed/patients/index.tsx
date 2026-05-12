@@ -104,7 +104,7 @@ function PatientsListPage() {
           return (
             <div className="flex flex-col">
               <span className="text-default-700 text-sm">{age} años</span>
-              <span className="text-[10px] text-default-400">
+              <span className="text-xs text-default-400">
                 {dayjs(birthDate, "YYYY-MM-DD").format("DD/MM/YYYY")}
               </span>
             </div>

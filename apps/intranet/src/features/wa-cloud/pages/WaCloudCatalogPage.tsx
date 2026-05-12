@@ -1032,7 +1032,7 @@ function SnippetsTab() {
                         </Table.Cell>
                         <Table.Cell>
                           {s.shortcut ? (
-                            <code className="rounded bg-default-200 px-1 text-[10px]">
+                            <code className="rounded bg-default-200 px-1 text-xs">
                               {s.shortcut}
                             </code>
                           ) : (

@@ -179,7 +179,7 @@ export function ChatBubble({
             </p>
           )}
           <div
-            className={`flex items-center justify-end gap-1 text-[10px] ${
+            className={`flex items-center justify-end gap-1 text-xs ${
               isSticker
                 ? "mt-0.5 text-default-500"
                 : out
@@ -191,7 +191,7 @@ export function ChatBubble({
             {out && <StatusTicks status={row.status} />}
           </div>
           {failed && row.errorTitle && (
-            <p className="mt-1 px-3 pb-1 text-[11px] text-danger">
+            <p className="mt-1 px-3 pb-1 text-xs text-danger">
               {row.errorTitle}
               {row.errorDetails ? `: ${row.errorDetails}` : ""}
             </p>
@@ -207,7 +207,7 @@ export function ChatBubble({
               </span>
             ))}
             {row.reactions.length > 1 && (
-              <span className="ml-0.5 text-[10px] text-default-500">{row.reactions.length}</span>
+              <span className="ml-0.5 text-xs text-default-500">{row.reactions.length}</span>
             )}
           </div>
         )}
@@ -283,11 +283,11 @@ function CarouselPreview({
                 <div className="aspect-square w-full rounded-t-lg bg-default-100" />
               )}
               <div className="p-2">
-                <p className="font-medium text-[10px] text-default-500 uppercase">
+                <p className="font-medium text-xs text-default-500 uppercase">
                   Tarjeta {(card.card_index ?? idx) + 1}
                 </p>
                 {bodyText && (
-                  <p className="mt-0.5 line-clamp-3 text-[11px] leading-snug">{bodyText}</p>
+                  <p className="mt-0.5 line-clamp-3 text-xs leading-snug">{bodyText}</p>
                 )}
               </div>
             </div>

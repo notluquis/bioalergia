@@ -99,7 +99,7 @@ export function DayNavigation({
               <ChevronLeft className="h-4 w-4" />
             </Button>
             <Button
-              className="font-semibold text-[11px] uppercase tracking-wide"
+              className="font-semibold text-[11px]"
               onPress={handleToday}
             >
               Hoy

@@ -1843,7 +1843,7 @@ function SkinTestDetailField({ label, value }: { label: string; value?: null | s
   if (!value) return null;
   return (
     <div className="min-w-0">
-      <Description className="text-[11px] uppercase text-foreground-400">{label}</Description>
+      <Description className="text-xs uppercase text-foreground-400">{label}</Description>
       <p className="truncate text-foreground-700">{value}</p>
     </div>
   );

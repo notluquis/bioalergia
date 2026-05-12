@@ -150,13 +150,13 @@ function ProviderCard({ provider }: { provider: AllergyInventoryOverview["provid
       <Description className="text-default-600 text-xs">
         Precio: {provider.current_price == null ? "Sin precio" : fmtCLP(provider.current_price)}
       </Description>
-      <Description className="text-[11px] text-default-500">
+      <Description className="text-xs text-default-500">
         Último stock: {provider.last_stock_check ? formatDate(provider.last_stock_check) : "Nunca"}
       </Description>
-      <Description className="text-[11px] text-default-500">
+      <Description className="text-xs text-default-500">
         Último precio: {provider.last_price_check ? formatDate(provider.last_price_check) : "Nunca"}
       </Description>
-      <Description className="text-[11px] text-default-500">
+      <Description className="text-xs text-default-500">
         Cuentas: {provider.accounts.join(", ") || "Sin cuentas"}
       </Description>
     </div>

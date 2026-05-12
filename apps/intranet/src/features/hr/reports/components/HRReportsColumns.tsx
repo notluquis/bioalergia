@@ -19,7 +19,7 @@ export const getHRReportsColumns = (): ColumnDef<EmployeeWorkData>[] => [
         <div className="h-6 w-1 rounded-full bg-primary/20" />
         <div>
           <div className="font-bold">{row.original.fullName}</div>
-          <div className="text-[10px] uppercase tracking-widest opacity-50">
+          <div className="text-[10px] opacity-50">
             {row.original.role}
           </div>
         </div>

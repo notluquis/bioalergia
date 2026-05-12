@@ -122,7 +122,7 @@ export const getColumns = (
             {currencyFormatter.format(schedule.paid_amount)}
           </span>
           {schedule.paid_date && (
-            <span className="text-[10px] text-default-400">
+            <span className="text-xs text-default-400">
               {dayjs(schedule.paid_date, "YYYY-MM-DD").format("DD MMM")}
             </span>
           )}

@@ -106,7 +106,7 @@ export function PatientCampaignDrawerSection({
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium truncate">{recipient.campaign.name}</p>
                       {recipient.sentAt && (
-                        <p className="text-[11px] text-foreground-400">
+                        <p className="text-xs text-foreground-400">
                           Enviado: {new Date(recipient.sentAt).toLocaleDateString("es-CL")}
                         </p>
                       )}
@@ -201,13 +201,13 @@ export function PatientCampaignDrawerSection({
           )}
 
           {availableCampaigns.length === 0 && campaigns.length > 0 && enrollments.length > 0 && (
-            <p className="text-[11px] text-foreground-300 italic">
+            <p className="text-xs text-foreground-300 italic">
               Paciente incluido en todas las campañas activas.
             </p>
           )}
 
           {campaigns.length === 0 && (
-            <p className="text-[11px] text-foreground-300 italic">
+            <p className="text-xs text-foreground-300 italic">
               No hay campañas activas. Crea una en la sección de campañas.
             </p>
           )}

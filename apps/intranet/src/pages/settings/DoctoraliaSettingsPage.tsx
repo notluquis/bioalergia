@@ -218,14 +218,14 @@ export function DoctoraliaSettingsPage() {
               </Card.Header>
               <Card.Content className="space-y-3">
                 <Surface className="rounded-2xl border border-default-200 px-4 py-3">
-                  <Description className="font-semibold text-[11px] text-default-400 uppercase tracking-wide">
+                  <Description className="font-semibold text-xs text-default-400">
                     Mailbox
                   </Description>
                   <p className="mt-1 font-medium text-sm">{overview?.imapMailbox ?? "INBOX"}</p>
                 </Surface>
 
                 <Surface className="rounded-2xl border border-default-200 px-4 py-3">
-                  <Description className="font-semibold text-[11px] text-default-400 uppercase tracking-wide">
+                  <Description className="font-semibold text-xs text-default-400">
                     Filtro de remitente
                   </Description>
                   <p className="mt-1 font-medium text-sm">
@@ -234,14 +234,14 @@ export function DoctoraliaSettingsPage() {
                 </Surface>
 
                 <Surface className="rounded-2xl border border-default-200 px-4 py-3">
-                  <Description className="font-semibold text-[11px] text-default-400 uppercase tracking-wide">
+                  <Description className="font-semibold text-xs text-default-400">
                     Usuario conectado
                   </Description>
                   <p className="mt-1 font-medium text-sm">{overview?.listener.user ?? "—"}</p>
                 </Surface>
 
                 <Surface className="rounded-2xl border border-default-200 px-4 py-3">
-                  <Description className="font-semibold text-[11px] text-default-400 uppercase tracking-wide">
+                  <Description className="font-semibold text-xs text-default-400">
                     Estado del listener
                   </Description>
                   <p className="mt-1 font-medium text-sm">{listenerSummary?.label ?? "—"}</p>
@@ -251,7 +251,7 @@ export function DoctoraliaSettingsPage() {
                 </Surface>
 
                 <Surface className="rounded-2xl border border-default-200 px-4 py-3">
-                  <Description className="font-semibold text-[11px] text-default-400 uppercase tracking-wide">
+                  <Description className="font-semibold text-xs text-default-400">
                     Última conexión
                   </Description>
                   <p className="mt-1 font-medium text-sm">
@@ -260,7 +260,7 @@ export function DoctoraliaSettingsPage() {
                 </Surface>
 
                 <Surface className="rounded-2xl border border-default-200 px-4 py-3">
-                  <Description className="font-semibold text-[11px] text-default-400 uppercase tracking-wide">
+                  <Description className="font-semibold text-xs text-default-400">
                     Último correo procesado
                   </Description>
                   <p className="mt-1 font-medium text-sm">
@@ -269,7 +269,7 @@ export function DoctoraliaSettingsPage() {
                 </Surface>
 
                 <Surface className="rounded-2xl border border-default-200 px-4 py-3">
-                  <Description className="font-semibold text-[11px] text-default-400 uppercase tracking-wide">
+                  <Description className="font-semibold text-xs text-default-400">
                     Siguiente etapa
                   </Description>
                   <p className="mt-1 font-medium text-sm">
@@ -371,7 +371,7 @@ export function DoctoraliaSettingsPage() {
                 ) : null}
 
                 <Surface className="rounded-2xl border border-default-200 px-4 py-3">
-                  <Description className="font-semibold text-[11px] text-default-400 uppercase tracking-wide">
+                  <Description className="font-semibold text-xs text-default-400">
                     Responsabilidad de Doctoralia
                   </Description>
                   <p className="mt-1 font-medium text-sm">
@@ -380,7 +380,7 @@ export function DoctoraliaSettingsPage() {
                 </Surface>
 
                 <Surface className="rounded-2xl border border-default-200 px-4 py-3">
-                  <Description className="font-semibold text-[11px] text-default-400 uppercase tracking-wide">
+                  <Description className="font-semibold text-xs text-default-400">
                     Responsabilidad de WhatsApp
                   </Description>
                   <p className="mt-1 font-medium text-sm">
@@ -389,7 +389,7 @@ export function DoctoraliaSettingsPage() {
                 </Surface>
 
                 <Surface className="rounded-2xl border border-default-200 px-4 py-3">
-                  <Description className="font-semibold text-[11px] text-default-400 uppercase tracking-wide">
+                  <Description className="font-semibold text-xs text-default-400">
                     Métrica operativa
                   </Description>
                   <p className="mt-1 font-medium text-sm">

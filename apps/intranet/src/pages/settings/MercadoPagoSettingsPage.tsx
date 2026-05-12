@@ -735,7 +735,7 @@ function buildSyncColumns(): ColumnDef<MpSyncLog>[] {
                   <div className="flex items-center gap-1" key={label}>
                     <span
                       className={cn(
-                        "rounded px-1.5 py-0.5 font-semibold text-[11px] uppercase",
+                        "rounded px-1.5 py-0.5 text-caption",
                         tone === "release" && "bg-primary/10 text-primary",
                         tone === "settlement" && "bg-warning/10 text-warning"
                       )}

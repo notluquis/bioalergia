@@ -375,7 +375,7 @@ function CreateTemplateModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
                     className="block w-full text-xs"
                   />
                   {headerHandle && (
-                    <p className="font-mono text-[10px] text-default-500">
+                    <p className="font-mono text-xs text-default-500">
                       handle subido: {headerFilename}
                     </p>
                   )}
@@ -547,7 +547,7 @@ function LibraryModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
                             {t.body}
                           </p>
                         )}
-                        {t.use_case && <p className="text-default-400 text-[10px]">{t.use_case}</p>}
+                        {t.use_case && <p className="text-default-400 text-xs">{t.use_case}</p>}
                       </div>
                       <Button
                         size="sm"

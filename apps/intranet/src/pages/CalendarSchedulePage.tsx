@@ -461,7 +461,7 @@ function CalendarSchedulePage() {
                 <ChevronLeft className="h-4 w-4" />
               </Button>
               <Button
-                className="font-medium text-[11px] uppercase tracking-wide"
+                className="font-medium text-xs"
                 isDisabled={isCurrentWeek}
                 onPress={goToThisWeek}
                 variant="tertiary"

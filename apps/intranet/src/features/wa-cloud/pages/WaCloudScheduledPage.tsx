@@ -86,7 +86,7 @@ export function WaCloudScheduledPage() {
                             <p className="truncate font-medium text-sm">
                               {s.contactName ?? s.phoneE164}
                             </p>
-                            <p className="font-mono text-default-400 text-[10px]">{s.phoneE164}</p>
+                            <p className="font-mono text-default-400 text-xs">{s.phoneE164}</p>
                           </div>
                         </Table.Cell>
                         <Table.Cell>
@@ -104,7 +104,7 @@ export function WaCloudScheduledPage() {
                             <Chip.Label>{s.status}</Chip.Label>
                           </Chip>
                           {s.errorMessage && (
-                            <p className="mt-0.5 line-clamp-1 text-danger text-[10px]">
+                            <p className="mt-0.5 line-clamp-1 text-danger text-xs">
                               {s.errorMessage}
                             </p>
                           )}

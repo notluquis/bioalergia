@@ -197,7 +197,7 @@ function HeatmapMonthComponent({
         {/* Weekday headers */}
         {WEEKDAYS.map((d) => (
           <div
-            className="select-none py-2 text-center font-bold text-[10px] text-foreground-400 uppercase tracking-widest"
+            className="select-none py-2 text-center font-bold text-[10px] text-foreground-400"
             key={d}
           >
             {d}
@@ -302,13 +302,13 @@ function HeatmapMonthComponent({
       </div>
 
       {/* Footer Summary */}
-      <div className="border-default-200/50 border-t bg-content1/30 px-4 py-2 text-[10px]">
+      <div className="border-default-200/50 border-t bg-content1/30 px-4 py-2 text-xs">
         <div className="flex flex-wrap items-center justify-between gap-2 text-foreground-500">
           <span className="font-semibold">Σ {monthTotals.events} eventos</span>
           <div className="flex flex-wrap gap-x-3 gap-y-1">
             <Tooltip delay={0} isDisabled={tooltipTrigger === "focus"} trigger={tooltipTrigger}>
               <Tooltip.Trigger>
-                <Button className="h-auto min-w-0 px-0 text-[10px]" size="sm" variant="outline">
+                <Button className="h-auto min-w-0 px-0 text-xs" size="sm" variant="outline">
                   Esperado:{" "}
                   <span className="font-medium text-foreground">
                     {fmtCLP(monthTotals.expected)}
@@ -324,7 +324,7 @@ function HeatmapMonthComponent({
             </Tooltip>
             <Tooltip delay={0} isDisabled={tooltipTrigger === "focus"} trigger={tooltipTrigger}>
               <Tooltip.Trigger>
-                <Button className="h-auto min-w-0 px-0 text-[10px]" size="sm" variant="outline">
+                <Button className="h-auto min-w-0 px-0 text-xs" size="sm" variant="outline">
                   Pagado:{" "}
                   <span className="font-medium text-foreground">{fmtCLP(monthTotals.paid)}</span>
                 </Button>
@@ -340,7 +340,7 @@ function HeatmapMonthComponent({
               <Tooltip delay={0} isDisabled={tooltipTrigger === "focus"} trigger={tooltipTrigger}>
                 <Tooltip.Trigger>
                   <Button
-                    className="h-auto min-w-0 px-0 text-[10px] text-warning"
+                    className="h-auto min-w-0 px-0 text-xs text-warning"
                     size="sm"
                     variant="outline"
                   >
@@ -358,7 +358,7 @@ function HeatmapMonthComponent({
             )}
             <Tooltip delay={0} isDisabled={tooltipTrigger === "focus"} trigger={tooltipTrigger}>
               <Tooltip.Trigger>
-                <Button className="h-auto min-w-0 px-0 text-[10px]" size="sm" variant="outline">
+                <Button className="h-auto min-w-0 px-0 text-xs" size="sm" variant="outline">
                   Restante:{" "}
                   <span className="font-medium text-foreground">
                     {fmtCLP(monthTotals.remaining)}

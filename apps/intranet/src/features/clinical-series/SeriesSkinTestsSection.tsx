@@ -69,7 +69,7 @@ export function SeriesSkinTestsSection({ seriesId }: { seriesId: number }) {
                     )}
                   </div>
                   {(test.clinicalNote || test.physicianName || test.website || test.address) && (
-                    <div className="mb-2 rounded-md bg-warning/10 px-2 py-1.5 text-[11px] text-foreground-600">
+                    <div className="mb-2 rounded-md bg-warning/10 px-2 py-1.5 text-xs text-foreground-600">
                       {test.clinicalNote && (
                         <p className="whitespace-pre-line font-medium text-warning-700">
                           {test.clinicalNote}
@@ -87,7 +87,7 @@ export function SeriesSkinTestsSection({ seriesId }: { seriesId: number }) {
                     {test.results.slice(0, 10).map((result) => (
                       <div
                         key={`${result.section}-${result.code ?? result.allergenName}-${result.sortOrder}`}
-                        className="grid grid-cols-[44px_1fr_48px_48px] gap-1 rounded bg-content2 px-2 py-1 text-[11px]"
+                        className="grid grid-cols-[44px_1fr_48px_48px] gap-1 rounded bg-content2 px-2 py-1 text-xs"
                       >
                         <span className="font-mono text-danger">{result.code ?? "-"}</span>
                         <span className="truncate">{result.allergenName}</span>
@@ -96,7 +96,7 @@ export function SeriesSkinTestsSection({ seriesId }: { seriesId: number }) {
                       </div>
                     ))}
                     {test.results.length > 10 && (
-                      <span className="text-[11px] text-foreground-400">
+                      <span className="text-xs text-foreground-400">
                         +{test.results.length - 10} resultados más
                       </span>
                     )}
@@ -146,7 +146,7 @@ export function SeriesSkinTestsSection({ seriesId }: { seriesId: number }) {
                       </Button>
                     )}
                   </div>
-                  <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-foreground-500">
+                  <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-foreground-500">
                     {document.extractedPatientName && <span>{document.extractedPatientName}</span>}
                     {document.accountEmail && <span>{document.accountEmail}</span>}
                     {document.modifiedAt && <span>{document.modifiedAt.slice(0, 10)}</span>}

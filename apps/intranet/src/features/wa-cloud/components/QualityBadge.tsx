@@ -74,7 +74,7 @@ export function QualityBadge({ phoneNumberId }: { phoneNumberId: number | undefi
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded bg-content2 p-1.5">
-      <p className="text-[10px] text-default-500 uppercase">{label}</p>
+      <p className="text-xs text-default-500 uppercase">{label}</p>
       <p className="font-mono">{value}</p>
     </div>
   );

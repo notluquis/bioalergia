@@ -183,7 +183,7 @@ export function DailyIncomePage() {
                     <li key={event.id} className="flex items-center justify-between text-sm">
                       <div className="flex items-center gap-2">
                         <span>{event.summary || "Evento sin título"}</span>
-                        <Chip size="sm" variant="soft" className="h-5 text-[10px]">
+                        <Chip size="sm" variant="soft" className="h-5 text-xs">
                           {event.eventType}
                         </Chip>
                       </div>

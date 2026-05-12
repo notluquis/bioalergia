@@ -327,7 +327,7 @@ function renderCalendarsList(calendars: CalendarData[]) {
               <p className="truncate text-default-400 text-xs">
                 {cal.eventCount.toLocaleString()} eventos
               </p>
-              <span className="shrink-0 truncate font-mono text-[10px] text-default-200">
+              <span className="shrink-0 truncate font-mono text-xs text-default-200">
                 {cal.googleId.slice(0, 8)}...
               </span>
             </div>

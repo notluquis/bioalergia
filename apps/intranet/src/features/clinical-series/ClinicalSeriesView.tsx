@@ -651,7 +651,7 @@ function IdentityDropdownCell({
                   <ClipboardCopy className="size-4 shrink-0 text-default-500" />
                 )}
                 <div className="flex min-w-0 flex-1 flex-col">
-                  <Label className="truncate text-[11px] font-medium uppercase tracking-[0.14em] text-default-500">
+                  <Label className="truncate text-[11px] font-medium tracking-[0.14em] text-default-500">
                     {entry.roleLabel}
                   </Label>
                   <Description className="truncate font-mono text-sm text-foreground">
@@ -820,7 +820,7 @@ function EventFinancialValue({ event }: { event: ClinicalSeriesEvent }) {
     return (
       <div className="space-y-1 rounded-lg border border-warning/30 bg-warning/10 p-2">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <span className="text-[11px] font-medium uppercase tracking-[0.12em] text-warning">
+          <span className="text-[11px] font-medium tracking-[0.12em] text-warning">
             Monto discordante
           </span>
         </div>
@@ -1043,13 +1043,13 @@ function AbandonmentContactSection({ seriesId }: { seriesId: number }) {
                 <Chip size="sm" color={OUTCOME_COLORS[c.outcome]} variant="soft">
                   {OUTCOME_LABELS[c.outcome]}
                 </Chip>
-                <span className="text-[10px] text-foreground-400">
+                <span className="text-xs text-foreground-400">
                   {formatEventDate(c.contactedAt.slice(0, 10), true)}
                 </span>
               </div>
               {c.notes && <p className="text-xs text-foreground-500 mt-1">{c.notes}</p>}
               {c.contactedByName && (
-                <p className="text-[10px] text-foreground-300 mt-0.5">por {c.contactedByName}</p>
+                <p className="text-xs text-foreground-300 mt-0.5">por {c.contactedByName}</p>
               )}
             </Surface>
           ))}
@@ -2441,7 +2441,7 @@ export function ClinicalSeriesView() {
                   </p>
                 )}
                 {detail && detail.beneficiaryRut && !isSamePatientAndBeneficiary(detail) && (
-                  <p className="font-mono text-[11px] text-foreground-300 mt-0.5">
+                  <p className="font-mono text-xs text-foreground-300 mt-0.5">
                     Beneficiario: {detail.beneficiaryRut}
                   </p>
                 )}
@@ -2483,7 +2483,7 @@ export function ClinicalSeriesView() {
                       return (
                         <div className="grid grid-cols-2 gap-1.5">
                           <Surface className="p-2 rounded-lg">
-                            <p className="text-[11px] text-foreground-400 mb-0.5">Esperado</p>
+                            <p className="text-xs text-foreground-400 mb-0.5">Esperado</p>
                             {fs === "unknown" ? (
                               unknownEl
                             ) : fs === "free" ? (
@@ -2495,7 +2495,7 @@ export function ClinicalSeriesView() {
                             )}
                           </Surface>
                           <Surface className="p-2 rounded-lg">
-                            <p className="text-[11px] text-foreground-400 mb-0.5">Pagado</p>
+                            <p className="text-xs text-foreground-400 mb-0.5">Pagado</p>
                             {fs === "unknown" ? (
                               unknownEl
                             ) : fs === "free" ? (
@@ -2507,7 +2507,7 @@ export function ClinicalSeriesView() {
                             )}
                           </Surface>
                           <Surface className="p-2 rounded-lg">
-                            <p className="text-[11px] text-foreground-400 mb-0.5">Pendiente</p>
+                            <p className="text-xs text-foreground-400 mb-0.5">Pendiente</p>
                             {fs === "unknown" ? (
                               unknownEl
                             ) : fs === "free" ? (
@@ -2521,7 +2521,7 @@ export function ClinicalSeriesView() {
                             )}
                           </Surface>
                           <Surface className="p-2 rounded-lg">
-                            <p className="text-[11px] text-foreground-400 mb-0.5">Eventos</p>
+                            <p className="text-xs text-foreground-400 mb-0.5">Eventos</p>
                             <p className="font-semibold text-base">{detail.events.length}</p>
                           </Surface>
                         </div>
@@ -2658,7 +2658,7 @@ export function ClinicalSeriesView() {
                                                 <div className="flex flex-wrap items-start justify-between gap-2">
                                                   <div className="flex flex-wrap items-center gap-2">
                                                     <span
-                                                      className={`text-[11px] font-semibold uppercase tracking-[0.14em] ${isFuture ? "text-accent" : "text-foreground-500"}`}
+                                                      className={`text-[11px] font-semibold tracking-[0.14em] ${isFuture ?"text-accent" : "text-foreground-500"}`}
                                                     >
                                                       {clinicalEventDateTimeLabel(event)}
                                                     </span>
@@ -2720,7 +2720,7 @@ export function ClinicalSeriesView() {
                                                 {!isFuture &&
                                                   event.linkedDocuments.length === 0 &&
                                                   event.linkedFolios.length === 0 && (
-                                                    <p className="text-[10px] italic text-foreground-300">
+                                                    <p className="text-xs italic text-foreground-300">
                                                       Sin boleta vinculada
                                                     </p>
                                                   )}
@@ -2812,7 +2812,7 @@ function SourceEventsList({ sourceId }: { sourceId: number }) {
   return (
     <div className="mt-1">
       <Button
-        className="h-auto min-h-0 p-0 text-[11px] text-foreground-400 hover:text-foreground-600"
+        className="h-auto min-h-0 p-0 text-xs text-foreground-400 hover:text-foreground-600"
         onPress={() => {
           setOpen((v) => !v);
         }}
@@ -2828,7 +2828,7 @@ function SourceEventsList({ sourceId }: { sourceId: number }) {
             (data?.events ?? []).map((ev) => (
               <div
                 key={ev.eventId}
-                className="flex items-baseline gap-1.5 text-[11px] text-foreground-400"
+                className="flex items-baseline gap-1.5 text-xs text-foreground-400"
               >
                 <span className="font-mono shrink-0">{ev.eventDate.slice(0, 10)}</span>
                 <span className="truncate">{ev.seriesStageLabel ?? ev.patientName ?? "—"}</span>
@@ -3003,7 +3003,7 @@ function DuplicatesModal({
                                       )}
                                     </span>
                                     {sourceHasMore && (
-                                      <span className="text-[10px] text-warning font-medium">
+                                      <span className="text-xs text-warning font-medium">
                                         ↑ más eventos
                                       </span>
                                     )}

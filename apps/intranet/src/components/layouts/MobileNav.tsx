@@ -60,7 +60,7 @@ export function BottomNav({ buildLabel, isHidden = false }: Readonly<BottomNavPr
 
   return (
     <nav className="fixed bottom-[calc(env(safe-area-inset-bottom)+1.5rem)] left-1/2 z-50 w-[min(100%-2rem,400px)] -translate-x-1/2 md:hidden">
-      <div className="mb-2 flex items-center justify-between rounded-2xl border border-default-100 bg-background/80 px-3 py-1.5 text-[10px] shadow-lg backdrop-blur-xl">
+      <div className="mb-2 flex items-center justify-between rounded-2xl border border-default-100 bg-background/80 px-3 py-1.5 text-xs shadow-lg backdrop-blur-xl">
         <span className="truncate text-default-500">
           {buildLabel ? `Build: ${buildLabel}` : ""}
         </span>
@@ -72,7 +72,7 @@ export function BottomNav({ buildLabel, isHidden = false }: Readonly<BottomNavPr
           const Icon = item.icon;
           return (
             <Button
-              className={`relative flex flex-1 flex-col items-center justify-center gap-1 rounded-3xl px-1 py-3 font-medium text-[10px] ${
+              className={`relative flex flex-1 flex-col items-center justify-center gap-1 rounded-3xl px-1 py-3 font-medium text-xs ${
                 active ? "text-primary" : "text-default-400 hover:text-default-700"
               }`}
               key={item.to}

@@ -214,7 +214,7 @@ export function WaCloudInboxPage() {
                           <span className="truncate font-medium text-xs">
                             {m.contactName ?? m.phoneE164}
                           </span>
-                          <span className="shrink-0 text-default-400 text-[10px]">
+                          <span className="shrink-0 text-default-400 text-xs">
                             {dayjs(m.timestamp).format("DD-MM HH:mm")}
                           </span>
                         </div>
@@ -295,7 +295,7 @@ function FilterDropdown({
           <Filter size={14} />
           Filtros
           {activeCount > 0 && (
-            <span className="ml-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-success px-1 font-semibold text-[10px] text-success-foreground">
+            <span className="ml-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-success px-1 font-semibold text-xs text-success-foreground">
               {activeCount}
             </span>
           )}

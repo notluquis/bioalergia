@@ -72,7 +72,7 @@ export function DashboardChart({
                   <span className="block font-medium text-foreground text-xs">
                     {dayjs(row.month).format("MMM YY")}
                   </span>
-                  <span className="block text-[11px] text-default-500">
+                  <span className="block text-xs text-default-500">
                     {new Intl.NumberFormat("es-CL", { notation: "compact" }).format(
                       Math.max(row.in, row.out)
                     )}

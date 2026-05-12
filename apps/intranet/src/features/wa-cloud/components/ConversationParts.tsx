@@ -1069,7 +1069,7 @@ export function MediaGalleryModal({
                         className="flex aspect-square flex-col items-center justify-center gap-1 rounded-lg border border-default-200 bg-content2 p-2 text-center"
                       >
                         <FileText size={20} className="text-accent" />
-                        <span className="line-clamp-2 text-default-700 text-[10px]">
+                        <span className="line-clamp-2 text-default-700 text-xs">
                           {m.body ?? m.type.toLowerCase()}
                         </span>
                       </a>
@@ -1171,7 +1171,7 @@ export function LocationSelectorModal({
                       {loc.address && (
                         <p className="line-clamp-2 text-default-500 text-xs">{loc.address}</p>
                       )}
-                      <p className="mt-0.5 font-mono text-default-400 text-[10px]">
+                      <p className="mt-0.5 font-mono text-default-400 text-xs">
                         {loc.latitude.toFixed(5)}, {loc.longitude.toFixed(5)}
                       </p>
                     </div>
@@ -1270,7 +1270,7 @@ export function InteractiveListSelectorModal({
                       {it.description && (
                         <p className="line-clamp-1 text-default-500 text-xs">{it.description}</p>
                       )}
-                      <p className="mt-0.5 text-default-400 text-[10px]">
+                      <p className="mt-0.5 text-default-400 text-xs">
                         {it.sections.reduce((n, s) => n + s.rows.length, 0)} opciones · usado{" "}
                         {it.hitCount}×
                       </p>
@@ -1359,7 +1359,7 @@ function SnippetsButton({
                     <div className="flex items-center gap-2">
                       <p className="truncate font-medium text-sm">{s.name}</p>
                       {s.shortcut && (
-                        <code className="shrink-0 rounded bg-default-200 px-1 text-[10px]">
+                        <code className="shrink-0 rounded bg-default-200 px-1 text-xs">
                           {s.shortcut}
                         </code>
                       )}
@@ -1483,7 +1483,7 @@ export function FlowSelectorModal({
                       {f.description && (
                         <p className="line-clamp-1 text-default-500 text-xs">{f.description}</p>
                       )}
-                      <p className="mt-0.5 font-mono text-default-400 text-[10px]">
+                      <p className="mt-0.5 font-mono text-default-400 text-xs">
                         flow_id: {f.flowId} · CTA: {f.defaultCta}
                       </p>
                     </div>
@@ -1542,7 +1542,7 @@ function ShortcutAutocomplete({
 
   return (
     <div className="-translate-y-1 absolute bottom-full left-0 right-0 mb-1 max-h-60 overflow-y-auto rounded-xl border border-default-200 bg-content1 shadow-lg">
-      <div className="border-default-200 border-b bg-content2 px-3 py-1 text-default-500 text-[10px] uppercase">
+      <div className="border-default-200 border-b bg-content2 px-3 py-1 text-default-500 text-xs uppercase">
         Snippets · /{shortcut}
       </div>
       {filtered.map((s) => (
@@ -1555,7 +1555,7 @@ function ShortcutAutocomplete({
             <div className="flex items-center gap-2">
               <p className="truncate font-medium text-sm">{s.name}</p>
               {s.shortcut && (
-                <code className="shrink-0 rounded bg-default-200 px-1 text-[10px]">
+                <code className="shrink-0 rounded bg-default-200 px-1 text-xs">
                   {s.shortcut}
                 </code>
               )}

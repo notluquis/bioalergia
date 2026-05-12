@@ -36,7 +36,7 @@ export function NotificationHistory() {
             <Bell className="h-5 w-5" />
             {unreadCount > 0 && (
               <Chip
-                className="absolute -top-1 -right-1 flex h-5 min-w-5 items-center justify-center border-2 border-background px-1 text-[10px]"
+                className="absolute -top-1 -right-1 flex h-5 min-w-5 items-center justify-center border-2 border-background px-1 text-xs"
                 color="danger"
                 size="sm"
                 variant="primary"
@@ -148,7 +148,7 @@ function NotificationItem({ notification, onRead, onRemove }: Readonly<Notificat
                 {notification.title}
               </span>
             )}
-            <span className="shrink-0 whitespace-nowrap text-[10px] text-default-400">
+            <span className="shrink-0 whitespace-nowrap text-xs text-default-400">
               {dayjs(notification.timestamp).tz().format("DD/MM HH:mm")}
             </span>
           </div>

@@ -156,7 +156,7 @@ function QuickLinksSection({ can }: { can: (action: string, subject: string) => 
           <h3 className="font-semibold text-foreground text-sm">Accesos rápidos</h3>
           <p className="text-default-500 text-xs">Atajos para las acciones que más se repiten.</p>
         </div>
-        <span className="rounded-full border border-default-200/80 bg-background px-3 py-1 text-[11px] text-default-500 uppercase tracking-wide">
+        <span className="rounded-full border border-default-200/80 bg-background px-3 py-1 text-xs text-default-500">
           {links.length} accesos
         </span>
       </div>

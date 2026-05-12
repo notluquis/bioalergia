@@ -72,7 +72,7 @@ export function TopBar({ date, isSaving, onSave, status }: TopBarProps) {
         >
           <Save className="size-4" />
           {isSaving ? "Guardando..." : "Guardar"}
-          <kbd className="ml-1 hidden rounded bg-black/10 px-1.5 py-0.5 text-[10px] sm:inline">
+          <kbd className="ml-1 hidden rounded bg-black/10 px-1.5 py-0.5 text-xs sm:inline">
             ⌘S
           </kbd>
         </Button>

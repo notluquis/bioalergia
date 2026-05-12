@@ -71,7 +71,7 @@ function ChangeGroup({ action, items }: Readonly<{ action: string; items: Change
                   {item.fields.map((field) => (
                     <span
                       key={field}
-                      className="rounded bg-default-100 px-1.5 py-0.5 font-medium text-[10px] text-foreground-500"
+                      className="rounded bg-default-100 px-1.5 py-0.5 font-medium text-xs text-foreground-500"
                     >
                       {field}
                     </span>

@@ -300,7 +300,7 @@ export function DoctoraliaCalendarBackfillPanel() {
 
               {status.currentWindow ? (
                 <Surface className="rounded-2xl border border-default-200 px-4 py-3">
-                  <Description className="font-semibold text-[11px] text-default-400 uppercase tracking-wide">
+                  <Description className="font-semibold text-[11px] text-default-400">
                     Ventana actual
                   </Description>
                   <p className="mt-1 font-medium text-sm">

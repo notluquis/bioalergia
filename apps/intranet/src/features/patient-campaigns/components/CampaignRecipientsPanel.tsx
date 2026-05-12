@@ -95,7 +95,7 @@ export function CampaignRecipientsPanel({ campaign }: Readonly<CampaignRecipient
 
       {campaign.messageTemplate && (
         <Surface className="p-3 rounded-xl">
-          <p className="text-[11px] text-foreground-400 mb-1">Mensaje</p>
+          <p className="text-xs text-foreground-400 mb-1">Mensaje</p>
           <p className="text-xs whitespace-pre-wrap">{campaign.messageTemplate}</p>
         </Surface>
       )}
@@ -158,17 +158,17 @@ export function CampaignRecipientsPanel({ campaign }: Readonly<CampaignRecipient
                       <span className="italic text-foreground-400">Sin nombre</span>
                     )}
                   </p>
-                  <p className="font-mono text-[11px] text-foreground-500">
+                  <p className="font-mono text-xs text-foreground-500">
                     {formatRut(recipient.patientRut)}
                   </p>
                   {recipient.patientPhone && (
-                    <p className="text-[11px] text-foreground-400 flex items-center gap-1 mt-0.5">
+                    <p className="text-xs text-foreground-400 flex items-center gap-1 mt-0.5">
                       <Phone size={10} />
                       {recipient.patientPhone}
                     </p>
                   )}
                   {recipient.sentAt && (
-                    <p className="text-[11px] text-foreground-300 mt-0.5">
+                    <p className="text-xs text-foreground-300 mt-0.5">
                       Enviado: {new Date(recipient.sentAt).toLocaleDateString("es-CL")}
                     </p>
                   )}
@@ -223,7 +223,7 @@ export function CampaignRecipientsPanel({ campaign }: Readonly<CampaignRecipient
                 </div>
               </div>
               {recipient.notes && (
-                <p className="mt-2 text-[11px] text-foreground-500 italic">{recipient.notes}</p>
+                <p className="mt-2 text-xs text-foreground-500 italic">{recipient.notes}</p>
               )}
             </Surface>
           ))}

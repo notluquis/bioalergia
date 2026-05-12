@@ -196,7 +196,7 @@ export function AttendanceStatusCard({
                       <div className="flex items-center justify-between gap-2">
                         <span className="text-xs font-medium text-foreground-500">{label}</span>
                         <div
-                          className={`flex h-8 min-w-8 items-center justify-center rounded-full px-2 text-[10px] font-bold ${WEEK_STATUS_COLOR[day.status]}`}
+                          className={`flex h-8 min-w-8 items-center justify-center rounded-full px-2 text-xs font-bold ${WEEK_STATUS_COLOR[day.status]}`}
                         >
                           {day.status === "worked" || day.status === "today"
                             ? day.workedMinutes !== null

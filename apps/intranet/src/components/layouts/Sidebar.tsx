@@ -73,7 +73,7 @@ export function Sidebar({ isMobile, isOpen, onClose, sidebarId }: SidebarProps) 
 
             {isMobile && (
               <div className="flex items-center px-4 pb-1">
-                <h3 className="font-bold text-[10px] text-default-400 uppercase tracking-[0.2em]">
+                <h3 className="font-bold text-xs text-default-400 tracking-[0.2em]">
                   {section.title}
                 </h3>
               </div>

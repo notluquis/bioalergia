@@ -525,6 +525,19 @@ body {
   display: none;
 }
 
+/* === Typography utilities ===
+ * .text-caption: small uppercase label (e.g., section headers, table column labels).
+ * 11px is acceptable here because letter-spacing + uppercase improves
+ * readability at small sizes; never use for body copy (floor body at 12px).
+ */
+.text-caption {
+  font-size: 0.6875rem;
+  line-height: 1rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
 /* === A11y focus visibility (WCAG 2.2 SC 2.4.11 Focus Not Obscured) ===
  * Sticky headers (Header.tsx, _authed.tsx update banner, WeekGrid time row,
  * production-balances TopBar, PermissionsMatrixTable) are up to ~5rem tall.

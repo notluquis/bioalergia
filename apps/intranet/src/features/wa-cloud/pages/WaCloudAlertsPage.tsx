@@ -93,7 +93,7 @@ export function WaCloudAlertsPage() {
                       </span>
                     </div>
                     {e.description && <p className="text-default-600 text-sm">{e.description}</p>}
-                    <p className="font-mono text-default-400 text-[10px]">{e.field}</p>
+                    <p className="font-mono text-default-400 text-xs">{e.field}</p>
                   </div>
                   {!e.acknowledged ? (
                     <Button

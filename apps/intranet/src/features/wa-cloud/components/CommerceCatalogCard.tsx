@@ -138,7 +138,7 @@ export function CommerceCatalogCard() {
                       />
                     )}
                     <p className="mt-1 line-clamp-1 font-medium text-xs">{p.name}</p>
-                    <p className="font-mono text-[10px] text-default-500">{p.retailer_id}</p>
+                    <p className="font-mono text-xs text-default-500">{p.retailer_id}</p>
                     {p.price && (
                       <Chip size="sm" variant="soft" color="success" className="mt-1">
                         <Chip.Label>

@@ -207,7 +207,7 @@ function CarouselCardEditor({
         </Button>
       </div>
       {card.imageMediaId && (
-        <p className="mb-2 truncate font-mono text-default-500 text-[10px]">
+        <p className="mb-2 truncate font-mono text-default-500 text-xs">
           {card.imageFilename ?? "imagen"} · id:{card.imageMediaId.slice(0, 12)}…
         </p>
       )}
