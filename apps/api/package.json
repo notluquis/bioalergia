@@ -35,11 +35,11 @@
     "@hapi/boom": "^10.0.1",
     "@hono/node-server": "^2.0.2",
     "@hono/zod-validator": "^0.8.0",
-    "@orpc/client": "^1.14.2",
-    "@orpc/openapi": "^1.14.2",
-    "@orpc/server": "^1.14.2",
-    "@orpc/shared": "^1.14.2",
-    "@orpc/zod": "^1.14.2",
+    "@orpc/client": "^1.14.3",
+    "@orpc/openapi": "^1.14.3",
+    "@orpc/server": "^1.14.3",
+    "@orpc/shared": "^1.14.3",
+    "@orpc/zod": "^1.14.3",
     "@otplib/plugin-base32-scure": "^13.4.0",
     "@otplib/plugin-crypto-node": "^13.4.0",
     "@paralleldrive/cuid2": "^3.3.0",
@@ -98,5 +98,13 @@
   "engines": {
     "node": ">=26",
     "npm": ">=10.0.0"
+  },
+  "dependenciesMeta": {
+    "@finanzas/db": {
+      "injected": true
+    },
+    "@finanzas/orpc-contracts": {
+      "injected": true
+    }
   }
 }

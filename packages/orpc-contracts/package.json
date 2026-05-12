@@ -249,7 +249,7 @@
     "type-check": "tsgo --noEmit"
   },
   "dependencies": {
-    "@orpc/contract": "^1.14.2",
+    "@orpc/contract": "^1.14.3",
     "zod": "^4.4.3"
   },
   "devDependencies": {

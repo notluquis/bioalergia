@@ -23,7 +23,7 @@
     "@heroui/react": "^3.0.4",
     "@heroui/styles": "^3.0.4",
     "@tanstack/react-query": "^5.100.10",
-    "posthog-js": "^1.373.2",
+    "posthog-js": "^1.373.3",
     "react": "^19.2.6",
     "react-dom": "^19.2.6"
   },
