@@ -23,6 +23,9 @@
     "audit:design": "node ./scripts/audit-design-tokens.mjs",
     "audit:size": "size-limit",
     "audit:size:why": "size-limit --why",
+    "audit:e2e": "playwright test",
+    "audit:e2e:ui": "playwright test --ui",
+    "audit:a11y": "playwright test a11y.spec.ts",
     "format": "oxfmt",
     "format:check": "oxfmt --check",
     "test": "vitest",
@@ -81,8 +84,10 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.11.3",
     "@dotenvx/dotenvx": "^1.65.0",
     "@iconify/tailwind": "^1.2.0",
+    "@playwright/test": "^1.60.0",
     "@rolldown/plugin-babel": "^0.2.3",
     "@size-limit/file": "^12.1.0",
     "@storybook/addon-a11y": "^10.3.6",

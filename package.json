@@ -59,6 +59,9 @@
       "esbuild",
       "impit",
       "msw"
-    ]
+    ],
+    "overrides": {
+      "playwright": "1.60.0"
+    }
   }
 }

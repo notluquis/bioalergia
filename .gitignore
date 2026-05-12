@@ -93,6 +93,13 @@ storybook-static/
 **/storybook-static/
 **/.storybook/.cache/
 
+# Playwright e2e artefacts
+**/e2e-results/
+**/e2e-report/
+**/playwright-report/
+**/test-results/
+**/.lighthouseci/
+
 # Deployments
 .vercel
 .railway
