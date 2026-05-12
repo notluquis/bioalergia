@@ -3099,6 +3099,40 @@ export class SchemaType implements SchemaDef {
                 key: { type: "String" }
             }
         },
+        SecurityAlertState: {
+            name: "SecurityAlertState",
+            fields: {
+                scope: {
+                    name: "scope",
+                    type: "String",
+                    id: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("scope") }] }] as readonly AttributeApplication[]
+                },
+                alertType: {
+                    name: "alertType",
+                    type: "String",
+                    id: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("alert_type") }] }] as readonly AttributeApplication[]
+                },
+                lastSentAt: {
+                    name: "lastSentAt",
+                    type: "DateTime",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("last_sent_at") }] }] as readonly AttributeApplication[]
+                }
+            },
+            attributes: [
+                { name: "@@id", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("scope"), ExpressionUtils.field("alertType")]) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("DateTime", [ExpressionUtils.field("lastSentAt")]) }] },
+                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
+                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("security_alert_state") }] }
+            ] as readonly AttributeApplication[],
+            idFields: ["scope", "alertType"],
+            uniqueFields: {
+                scope_alertType: { scope: { type: "String" }, alertType: { type: "String" } }
+            }
+        },
         AuditLog: {
             name: "AuditLog",
             fields: {
@@ -3172,14 +3206,14 @@ export class SchemaType implements SchemaDef {
                 prevHash: {
                     name: "prevHash",
                     type: "Bytes",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("dbgenerated", [ExpressionUtils.literal("'\\x00'::bytea")]) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("prev_hash") }] }] as readonly AttributeApplication[],
-                    default: ExpressionUtils.call("dbgenerated", [ExpressionUtils.literal("'\\x00'::bytea")]) as FieldDefault
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("dbgenerated", [ExpressionUtils.literal("decode('00', 'hex')")]) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("prev_hash") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("dbgenerated", [ExpressionUtils.literal("decode('00', 'hex')")]) as FieldDefault
                 },
                 entryHash: {
                     name: "entryHash",
                     type: "Bytes",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("dbgenerated", [ExpressionUtils.literal("'\\x00'::bytea")]) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("entry_hash") }] }] as readonly AttributeApplication[],
-                    default: ExpressionUtils.call("dbgenerated", [ExpressionUtils.literal("'\\x00'::bytea")]) as FieldDefault
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("dbgenerated", [ExpressionUtils.literal("decode('00', 'hex')")]) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("entry_hash") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("dbgenerated", [ExpressionUtils.literal("decode('00', 'hex')")]) as FieldDefault
                 }
             },
             attributes: [

@@ -863,6 +863,24 @@ enum AuditEventKind {
   OTHER
 }
 
+// Mutable dedupe state for security alert throttling. Keyed by
+// (scope, alertType) — typically scope = "user:<id>" or "global".
+// last_sent_at is updated by lib/security-alerts.ts each time an
+// alert is emitted; emissions inside the throttle window are dropped
+// (the underlying event still lands in audit_logs).
+model SecurityAlertState {
+  scope      String   @map("scope")
+  alertType  String   @map("alert_type")
+  lastSentAt DateTime @map("last_sent_at")
+
+  @@id([scope, alertType])
+  @@index([lastSentAt])
+  @@deny('all', auth() == null)
+  @@allow('read', auth().status == 'ACTIVE')
+  @@allow('create,update', auth().status == 'ACTIVE')
+  @@map("security_alert_state")
+}
+
 model AuditLog {
   id          BigInt          @id @default(autoincrement())
   occurredAt  DateTime        @default(now()) @map("occurred_at")
@@ -890,8 +908,8 @@ model AuditLog {
   // `@default(dbgenerated(...))` makes the ORM input type accept
   // omission while the DB keeps the column NOT NULL: the trigger
   // overrides the literal default before the constraint check.
-  prevHash    Bytes           @default(dbgenerated("'\\x00'::bytea")) @map("prev_hash")
-  entryHash   Bytes           @default(dbgenerated("'\\x00'::bytea")) @map("entry_hash")
+  prevHash    Bytes           @default(dbgenerated("decode('00', 'hex')")) @map("prev_hash")
+  entryHash   Bytes           @default(dbgenerated("decode('00', 'hex')")) @map("entry_hash")
 
   @@index([occurredAt])
   @@index([userId, occurredAt])

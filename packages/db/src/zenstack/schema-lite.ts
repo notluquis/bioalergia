@@ -2561,6 +2561,29 @@ export class SchemaType implements SchemaDef {
                 key: { type: "String" }
             }
         },
+        SecurityAlertState: {
+            name: "SecurityAlertState",
+            fields: {
+                scope: {
+                    name: "scope",
+                    type: "String",
+                    id: true
+                },
+                alertType: {
+                    name: "alertType",
+                    type: "String",
+                    id: true
+                },
+                lastSentAt: {
+                    name: "lastSentAt",
+                    type: "DateTime"
+                }
+            },
+            idFields: ["scope", "alertType"],
+            uniqueFields: {
+                scope_alertType: { scope: { type: "String" }, alertType: { type: "String" } }
+            }
+        },
         AuditLog: {
             name: "AuditLog",
             fields: {
@@ -2627,12 +2650,12 @@ export class SchemaType implements SchemaDef {
                 prevHash: {
                     name: "prevHash",
                     type: "Bytes",
-                    default: ExpressionUtils.call("dbgenerated", [ExpressionUtils.literal("'\\x00'::bytea")]) as FieldDefault
+                    default: ExpressionUtils.call("dbgenerated", [ExpressionUtils.literal("decode('00', 'hex')")]) as FieldDefault
                 },
                 entryHash: {
                     name: "entryHash",
                     type: "Bytes",
-                    default: ExpressionUtils.call("dbgenerated", [ExpressionUtils.literal("'\\x00'::bytea")]) as FieldDefault
+                    default: ExpressionUtils.call("dbgenerated", [ExpressionUtils.literal("decode('00', 'hex')")]) as FieldDefault
                 }
             },
             idFields: ["id"],
