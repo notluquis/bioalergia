@@ -315,7 +315,15 @@ app.use(
 // certainly a runaway query / external API hang. Webhooks excluded —
 // they fire-and-forget downstream work after the 200.
 app.use("/api/orpc/*", timeout(30_000));
+// wa-cloud/media handles multi-MB resumable uploads to Meta Graph
+// (profile pictures, template sample media). Meta's resumable upload
+// + their server-side processing routinely exceeds 30s for larger
+// JPEGs, so the wa-cloud timeout is split: 30s default for the rest
+// of the namespace, 120s carved out for the upload routes. Hono
+// applies the most-recently-mounted timeout per request, so the
+// generic mount must come first.
 app.use("/api/wa-cloud/*", timeout(30_000));
+app.use("/api/wa-cloud/media/*", timeout(120_000));
 
 // All endpoints except the compatibility surfaces below
 // are now exclusively served via oRPC at /api/orpc/{endpoint}/rpc/*
