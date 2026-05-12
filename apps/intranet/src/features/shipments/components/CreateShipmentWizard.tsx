@@ -29,7 +29,7 @@ import {
   Plus,
   Truck,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useToast } from "@/context/ToastContext";
 import { listAddresses } from "@/features/addresses/api";
 import { AddressFormModal } from "@/features/addresses/components/AddressFormModal";
@@ -884,7 +884,7 @@ function QuoteStep({
     staleTime: 1000 * 60,
   });
 
-  const services = quote?.services ?? [];
+  const services = useMemo(() => quote?.services ?? [], [quote]);
 
   // Pre-select cheapest service automatically once a quote arrives.
   useEffect(() => {

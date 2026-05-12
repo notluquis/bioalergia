@@ -545,7 +545,7 @@ function StreetAutocomplete({
     enabled: countyName.length > 0 && debounced.trim().length >= 2,
     staleTime: 1000 * 60 * 10,
   });
-  const streets = streetsResponse?.streets ?? [];
+  const streets = useMemo(() => streetsResponse?.streets ?? [], [streetsResponse]);
 
   type StreetRow =
     | { kind: "street"; id: string; label: string; streetId: number }

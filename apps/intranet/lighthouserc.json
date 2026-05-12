@@ -3,8 +3,8 @@
     "collect": {
       "url": ["http://localhost:4173/login"],
       "startServerCommand": "pnpm preview --port 4173 --strictPort",
-      "startServerReadyPattern": "Local:",
-      "startServerReadyTimeout": 120000,
+      "startServerReadyPattern": "Local:\\s+http",
+      "startServerReadyTimeout": 180000,
       "numberOfRuns": 3,
       "settings": {
         "preset": "desktop",

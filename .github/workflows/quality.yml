@@ -22,10 +22,8 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  # Node 25 matches local + Railway. The package.json engines field still
-  # advertises >=26 but the workspace builds + tests cleanly on 25 (only an
-  # informational pnpm WARN is emitted).
-  NODE_VERSION: 25
+  # Node 26 matches package.json engines + Railway prod runtime.
+  NODE_VERSION: 26
   TURBO_TELEMETRY_DISABLED: "1"
 
 jobs:
@@ -33,10 +31,10 @@ jobs:
     name: design-token lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v6
         # Reads packageManager pin from package.json (no version: key needed).
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with: { node-version: "${{ env.NODE_VERSION }}", cache: pnpm }
       - run: pnpm install --frozen-lockfile
       - run: pnpm -F @finanzas/intranet audit:design
@@ -49,9 +47,9 @@ jobs:
     name: knip (dead code, advisory)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v6
         with: { node-version: "${{ env.NODE_VERSION }}", cache: pnpm }
       - run: pnpm install --frozen-lockfile
       - run: pnpm audit:dead:advisory
@@ -60,9 +58,9 @@ jobs:
     name: size-limit (bundle budgets)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v6
         with: { node-version: "${{ env.NODE_VERSION }}", cache: pnpm }
       - run: pnpm install --frozen-lockfile
       # Build via turbo so workspace deps (@finanzas/db, @finanzas/orpc-contracts)
@@ -74,9 +72,9 @@ jobs:
     name: playwright + axe
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v6
         with: { node-version: "${{ env.NODE_VERSION }}", cache: pnpm }
       - run: pnpm install --frozen-lockfile
       - name: Build intranet (preview server target)
@@ -91,7 +89,7 @@ jobs:
         run: pnpm -F @finanzas/intranet audit:e2e
       - name: Upload Playwright report on failure
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: playwright-report
           path: apps/intranet/e2e-report
@@ -101,16 +99,16 @@ jobs:
     name: lighthouse-ci (perf budgets)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v6
         with: { node-version: "${{ env.NODE_VERSION }}", cache: pnpm }
       - name: Install Google Chrome
         # @lhci/cli's chrome-launcher needs a real Chrome binary, not just
         # Playwright's chromium-headless-shell. setup-chrome installs Chrome
         # for Testing under /opt/hostedtoolcache and exports its path.
         id: setup-chrome
-        uses: browser-actions/setup-chrome@v1
+        uses: browser-actions/setup-chrome@v2
         with: { chrome-version: stable }
       - run: pnpm install --frozen-lockfile
       - name: Build intranet (preview target)

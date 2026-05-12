@@ -1,6 +1,6 @@
 import { Button, Card, Chip, Switch } from "@heroui/react";
 import { Plus, Trash2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { SelectInput, TextInput } from "@/features/outreach/components/FormField";
 import { toast } from "@/lib/toast-interceptor";
 import {
@@ -17,10 +17,13 @@ type LocalCommand = { command_name: string; command_description: string };
 // can iterate without thrashing the Meta API.
 export function ConversationalAutomationCard() {
   const accounts = useAccounts();
-  const allPhones =
-    (accounts.data?.accounts ?? []).flatMap((a) =>
-      a.phoneNumbers.map((p) => ({ id: p.id, label: `${p.label ?? p.displayPhoneNumber}` }))
-    ) ?? [];
+  const allPhones = useMemo(
+    () =>
+      (accounts.data?.accounts ?? []).flatMap((a) =>
+        a.phoneNumbers.map((p) => ({ id: p.id, label: `${p.label ?? p.displayPhoneNumber}` }))
+      ) ?? [],
+    [accounts.data]
+  );
   const [phoneId, setPhoneId] = useState("");
   useEffect(() => {
     if (!phoneId && allPhones[0]) setPhoneId(String(allPhones[0].id));

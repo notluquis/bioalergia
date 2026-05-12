@@ -1,6 +1,6 @@
 import { Button, Card, Chip, Spinner } from "@heroui/react";
 import { Save, Search, Trash2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { SelectInput, TextInput } from "@/features/outreach/components/FormField";
 import { toast } from "@/lib/toast-interceptor";
 import { useAccounts, useCommerceProducts, useSetCommerceCatalog } from "../hooks/useWaCloud";
@@ -11,13 +11,16 @@ import { useAccounts, useCommerceProducts, useSetCommerceCatalog } from "../hook
 export function CommerceCatalogCard() {
   const accounts = useAccounts();
   const setCat = useSetCommerceCatalog();
-  const allAccounts =
-    accounts.data?.accounts.map((a) => ({
-      id: a.id,
-      label: a.displayName ?? a.wabaId,
-      // commerceCatalogId comes back via accountWithPhonesSchema once the
-      // contracts are extended; today we re-fetch via the products query.
-    })) ?? [];
+  const allAccounts = useMemo(
+    () =>
+      accounts.data?.accounts.map((a) => ({
+        id: a.id,
+        label: a.displayName ?? a.wabaId,
+        // commerceCatalogId comes back via accountWithPhonesSchema once the
+        // contracts are extended; today we re-fetch via the products query.
+      })) ?? [],
+    [accounts.data]
+  );
 
   const [accountId, setAccountId] = useState("");
   useEffect(() => {

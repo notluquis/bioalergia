@@ -271,7 +271,7 @@ export function ShipmentsPage() {
         ),
       },
     ],
-    [data?.shipments, reprintMutation]
+    [reprintMutation]
   );
 
   function handlePatientSelect(patient: Patient) {

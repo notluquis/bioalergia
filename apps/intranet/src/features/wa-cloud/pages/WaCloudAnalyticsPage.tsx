@@ -52,7 +52,7 @@ export function WaCloudAnalyticsPage() {
       : null
   );
 
-  const points = analytics.data?.conversation ?? [];
+  const points = useMemo(() => analytics.data?.conversation ?? [], [analytics.data]);
   const pricing = analytics.data?.pricing ?? [];
 
   const totals = useMemo(() => {

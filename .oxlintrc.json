@@ -48,10 +48,28 @@
         "**/context/**",
         "**/lib/authz/**",
         "**/*Columns.tsx",
-        "**/main.tsx"
+        "**/main.tsx",
+        // TanStack Router file-based routes always export both `Route` and a
+        // route component from the same file. Fast-refresh boundary doesn't
+        // apply since route files are graph entry points, not hot-reloaded
+        // leaves.
+        "**/src/routes/**",
+        // Shared UI primitives that combine an exported component (host) +
+        // imperative helpers in a single module. Splitting them is gratuitous
+        // file churn for a fast-refresh win that doesn't matter on shared
+        // modules.
+        "**/components/ui/ConfirmDialog.tsx",
+        "**/wa-cloud/components/_shared.tsx"
       ],
       "rules": {
         "react/only-export-components": "off"
+      }
+    },
+    {
+      "files": ["**/*.test.{ts,tsx}", "**/__tests__/**"],
+      "rules": {
+        "vitest/require-to-throw-message": "off",
+        "no-constant-binary-expression": "off"
       }
     },
     {

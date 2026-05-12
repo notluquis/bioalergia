@@ -850,7 +850,7 @@ function VoiceRecorderButton({
   useEffect(() => {
     return () => {
       if (preview?.url) URL.revokeObjectURL(preview.url);
-      tickRef.current && clearInterval(tickRef.current);
+      if (tickRef.current) clearInterval(tickRef.current);
     };
   }, [preview]);
 

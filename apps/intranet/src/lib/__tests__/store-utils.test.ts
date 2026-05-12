@@ -42,7 +42,7 @@ describe("createPersistentStore", () => {
   it("persists state to localStorage on update", () => {
     const store = createPersistentStore("test-persist", { value: 0 });
     store.setState(() => ({ value: 99 }));
-    const saved = JSON.parse(localStorage.getItem("test-persist") ?? "null");
+    const saved = JSON.parse(localStorage.getItem("test-persist") ?? "null") as { value?: number };
     expect(saved?.value).toBe(99);
   });
 
@@ -59,7 +59,10 @@ describe("createPersistentStore", () => {
       { exclude: ["token"] }
     );
     store.setState(() => ({ visible: false, token: "new-secret" }));
-    const saved = JSON.parse(localStorage.getItem("test-exclude") ?? "null");
+    const saved = JSON.parse(localStorage.getItem("test-exclude") ?? "null") as {
+      visible?: boolean;
+      token?: string;
+    };
     expect(saved?.visible).toBe(false);
     expect(saved?.token).toBeUndefined();
   });
