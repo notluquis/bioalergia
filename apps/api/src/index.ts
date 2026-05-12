@@ -2,6 +2,7 @@
 import { serve } from "@hono/node-server";
 import { app } from "./app.ts";
 import { runSequenceHealthCheck } from "./lib/db-sequence-health.ts";
+import { startOrphanCleanupScheduler } from "./lib/orphan-cleanup-scheduler.ts";
 import { startDoctoraliaCalendarScheduler } from "./lib/doctoralia/doctoralia-calendar-scheduler.ts";
 import { startDoctoraliaImapListener } from "./lib/doctoralia/imap-idle.ts";
 import { startDTESyncScheduler } from "./lib/dte/dte-sync-cron.ts";
@@ -18,6 +19,11 @@ console.log(`🚀 Finanzas API starting on port ${port}`);
 // sequence whose nextval() has fallen behind MAX(id). Runs in the
 // background so a slow check never blocks the HTTP listener coming up.
 void runSequenceHealthCheck();
+
+// Nightly orphan cleanup (clinical_series → patients → people, all
+// cascade-safe). Gated by DB_ORPHAN_CLEANUP=1 inside the sweep itself,
+// so an absent flag downgrades to a dry-run that just logs counts.
+startOrphanCleanupScheduler();
 
 // Initialize Calendar features (Scheduler + Watch Channels)
 // Run this after server starts to avoid blocking startup (though these are async anyway)
