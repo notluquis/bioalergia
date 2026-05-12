@@ -121,11 +121,7 @@ function AdminMarkModal({ onClose }: AdminMarkModalProps) {
                 </Select.Popover>
               </Select>
 
-              <AppDateTimePicker
-                label="Fecha y hora"
-                value={markedAt}
-                onChange={setMarkedAt}
-              />
+              <AppDateTimePicker label="Fecha y hora" value={markedAt} onChange={setMarkedAt} />
 
               <TextField value={notes} onChange={setNotes}>
                 <Label>Notas (opcional)</Label>
@@ -585,19 +581,9 @@ function AdminAttendanceContent() {
           <Input placeholder="Todos" />
         </TextField>
 
-        <AppDatePicker
-          className="w-44"
-          label="Desde"
-          value={fromFilter}
-          onChange={setFromFilter}
-        />
+        <AppDatePicker className="w-44" label="Desde" value={fromFilter} onChange={setFromFilter} />
 
-        <AppDatePicker
-          className="w-44"
-          label="Hasta"
-          value={toFilter}
-          onChange={setToFilter}
-        />
+        <AppDatePicker className="w-44" label="Hasta" value={toFilter} onChange={setToFilter} />
 
         <Select
           className="w-44"
