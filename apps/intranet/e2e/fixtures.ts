@@ -40,7 +40,13 @@ export const test = base.extend<Fixtures>({
     // control is interactable, then click the email/password fallback if
     // it's there (idempotent — a no-op when credentials are already shown).
     await page.waitForLoadState("networkidle");
-    const fallback = page.getByRole("button", { name: /usar correo y contrase[ñn]a/i });
+    // Match both pre- and post-fix aria-labels (deployed Railway may lag the
+    // accessibility commit that aligns aria-label to the visible text):
+    //   pre  -> "Usar correo electrónico y contraseña"
+    //   post -> "Usar correo y contraseña"
+    const fallback = page.getByRole("button", {
+      name: /usar correo( electr[oó]nico)? y contrase[ñn]a/i,
+    });
     if (await fallback.count()) {
       await fallback.click({ trial: false }).catch(() => undefined);
     }
