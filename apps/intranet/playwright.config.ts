@@ -15,12 +15,6 @@ const isCI = Boolean(process.env.CI);
 const PREVIEW_URL = "http://localhost:4173";
 const AUTHED_URL = process.env.E2E_BASE_URL ?? PREVIEW_URL;
 
-// Authed projects depend on the `setup` project which writes
-// playwright/.auth/user.json. When credentials are missing locally
-// (typical dev), don't declare the dependency — the authed project's
-// fixtures skip themselves at runtime, but Playwright still validates
-// `storageState` resolves to a file even before tests run. Touch the
-// file so the validator passes; setup will overwrite when it runs.
 const HAVE_E2E_CREDS = Boolean(process.env.E2E_USER && process.env.E2E_PASS);
 const STORAGE_STATE_PATH = "playwright/.auth/user.json";
 if (!HAVE_E2E_CREDS) {
@@ -30,8 +24,22 @@ if (!HAVE_E2E_CREDS) {
   }
 }
 
+// Viewport anchors aligned with Chromatic Story Modes (.storybook/modes.ts).
+// A regression in any of these widths narrows to the same bucket regardless
+// of which tool caught it.
+const MOBILE = { width: 375, height: 740 };
+const TABLET = { width: 768, height: 1024 };
+const DESKTOP = { width: 1280, height: 800 };
+
+const chromium = devices["Desktop Chrome"];
+
 /**
- * Playwright config for intranet e2e + axe-based a11y scans.
+ * Playwright config — viewport-keyed projects (golden 2026 pattern).
+ *
+ * One spec, N projects: assertions like "drawer opens at <lg, split layout
+ * at >=lg" become provable by gating tests with `test.skip(({ project }) =>
+ * project.name !== 'mobile')`. setViewportSize mid-test is avoided because
+ * mid-test resize is flaky on React Aria + HeroUI portals.
  *
  * Auth-protected suites pull credentials from E2E_USER / E2E_PASS. They are
  * skipped automatically when those env vars are missing so a fresh checkout
@@ -61,60 +69,69 @@ export default defineConfig({
 
   projects: [
     // ── Setup: log in once and persist storageState ─────────────────────
-    // Runs first; every authed project depends on it. One real auth POST
-    // per CI run instead of one per test (avoids 429 on the live API).
-    // baseURL = AUTHED_URL because the cookie has to be issued by the
-    // backend whose origin the authed projects will call.
     {
       name: "setup",
       testMatch: /.*\.setup\.ts/,
-      use: { baseURL: AUTHED_URL },
+      use: { baseURL: AUTHED_URL, ...chromium, viewport: DESKTOP },
     },
 
-    // ── Unauthenticated specs (no storageState) ─────────────────────────
-    // Run independently; do not require login.
+    // ── Unauthenticated specs (no storageState, vite preview) ───────────
     {
-      name: "chromium-desktop-unauthed",
-      testIgnore: /a11y\.spec\.ts|skip-link\.spec\.ts/,
-      use: { ...devices["Desktop Chrome"], viewport: { width: 1280, height: 800 } },
+      name: "mobile-unauthed",
+      testIgnore: /a11y\.spec\.ts|skip-link\.spec\.ts|wa-cloud-.*\.spec\.ts/,
+      use: { ...chromium, viewport: MOBILE, hasTouch: true, isMobile: true },
     },
     {
-      // Pixel 7 device descriptor is Chromium-based + ships realistic UA
-      // and screen metrics. Replaces the hand-rolled viewport block we had
-      // before — gives us proper Android UA without pulling in WebKit.
-      name: "chromium-mobile-unauthed",
-      testIgnore: /a11y\.spec\.ts|skip-link\.spec\.ts/,
-      use: { ...devices["Pixel 7"] },
+      name: "tablet-unauthed",
+      testIgnore: /a11y\.spec\.ts|skip-link\.spec\.ts|wa-cloud-.*\.spec\.ts/,
+      use: { ...chromium, viewport: TABLET, hasTouch: true, isMobile: true },
+    },
+    {
+      name: "desktop-unauthed",
+      testIgnore: /a11y\.spec\.ts|skip-link\.spec\.ts|wa-cloud-.*\.spec\.ts/,
+      use: { ...chromium, viewport: DESKTOP },
     },
 
     // ── Authed specs (storageState pre-loaded, hit AUTHED_URL) ──────────
     {
-      name: "chromium-desktop",
-      testMatch: /a11y\.spec\.ts|skip-link\.spec\.ts/,
+      name: "mobile",
+      testMatch: /a11y\.spec\.ts|skip-link\.spec\.ts|wa-cloud-.*\.spec\.ts/,
       dependencies: ["setup"],
       use: {
-        ...devices["Desktop Chrome"],
-        viewport: { width: 1280, height: 800 },
-        storageState: "playwright/.auth/user.json",
+        ...chromium,
+        viewport: MOBILE,
+        hasTouch: true,
+        isMobile: true,
+        storageState: STORAGE_STATE_PATH,
         baseURL: AUTHED_URL,
       },
     },
     {
-      name: "chromium-mobile",
-      testMatch: /a11y\.spec\.ts|skip-link\.spec\.ts/,
+      name: "tablet",
+      testMatch: /a11y\.spec\.ts|wa-cloud-.*\.spec\.ts/,
       dependencies: ["setup"],
       use: {
-        ...devices["Pixel 7"],
-        storageState: "playwright/.auth/user.json",
+        ...chromium,
+        viewport: TABLET,
+        hasTouch: true,
+        isMobile: true,
+        storageState: STORAGE_STATE_PATH,
+        baseURL: AUTHED_URL,
+      },
+    },
+    {
+      name: "desktop",
+      testMatch: /a11y\.spec\.ts|skip-link\.spec\.ts|wa-cloud-.*\.spec\.ts/,
+      dependencies: ["setup"],
+      use: {
+        ...chromium,
+        viewport: DESKTOP,
+        storageState: STORAGE_STATE_PATH,
         baseURL: AUTHED_URL,
       },
     },
   ],
 
-  // Always start `vite preview` so the unauthed UI/UX projects exercise
-  // the latest committed code (Railway deploys lag pushes by minutes; we
-  // shouldn't fail a CI run waiting on the deploy pipeline). Authed
-  // projects override baseURL to AUTHED_URL.
   webServer: {
     command: "pnpm preview --port 4173 --strictPort",
     url: PREVIEW_URL,

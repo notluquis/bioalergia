@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - forthcoming-ocelot
     paths:
       - "apps/intranet/**"
       - "apps/site/**"
@@ -17,6 +18,7 @@ on:
   pull_request:
     branches:
       - main
+      - forthcoming-ocelot
     paths:
       - "apps/intranet/**"
       - "apps/site/**"
