@@ -10,6 +10,7 @@ import type { ContentfulStatusCode } from "hono/utils/http-status";
 import { rateLimiter } from "hono-rate-limiter";
 import { getSessionUser, hasPermission } from "./auth.ts";
 import { AppError } from "./lib/app-error.ts";
+import { clientIp } from "./lib/client-ip.ts";
 import { csrfDoubleSubmit, ensureCsrfCookie } from "./lib/csrf-double-submit.ts";
 import { htmlSanitizerMiddleware } from "./lib/html-sanitizer.ts";
 import { logError } from "./lib/logger.ts";
@@ -222,17 +223,31 @@ app.get("/api/csrf", (c) => {
   return c.body(null, 204);
 });
 
-// Rate limiting for auth routes (prevent brute force attacks)
+// Per-IP rate limit on credential-bearing endpoints. Uses
+// Cloudflare's tamper-proof cf-connecting-ip when present, falls back
+// to the rightmost (closest hop) X-Forwarded-For entry — never the
+// leftmost, which an attacker can forge.
+//
+// Threshold: 20 requests / 15 min / IP. Tight enough to throttle
+// credential-stuffing from a single source while leaving headroom for
+// shared-NAT clinic networks where multiple staff log in at once.
+// Per-username throttle (lib/login-throttle.ts) and the per-user
+// account lockout (lib/account-lockout.ts) provide the inner layers.
+//
+// Refs:
+//   - NIST SP 800-63-4 § 5.2.2 (rate limiting on auth endpoints)
+//   - OWASP Authentication Cheat Sheet § Brute Force / Credential Stuffing
 const authRateLimiter = rateLimiter({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  limit: 50, // 50 requests per 15 minutes per IP
+  windowMs: 15 * 60 * 1000,
+  limit: 20,
   standardHeaders: "draft-6",
-  keyGenerator: (c) => c.req.header("x-forwarded-for") || c.req.header("x-real-ip") || "anonymous",
-  // Skip OPTIONS requests to not interfere with CORS preflight
+  keyGenerator: (c) => clientIp(c) ?? "anonymous",
   skip: (c) => c.req.method === "OPTIONS",
 });
 
-// Apply rate limiting to sensitive routes
+// Mount on the actual oRPC auth path. The legacy /api/auth/* route
+// space is unused but kept covered as defense in depth.
+app.use("/api/orpc/auth/rpc/*", authRateLimiter);
 app.use("/api/auth/*", authRateLimiter);
 
 // CSRF: validate Origin / Sec-Fetch-Site for all state-changing API calls.

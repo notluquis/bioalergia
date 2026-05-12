@@ -38,3 +38,24 @@ export async function verifyPassword(
     return { valid: false, needsRehash: false };
   }
 }
+
+// Lazily-cached dummy hash for constant-time login when the supplied
+// email matches no user. Equalizes verify latency so attackers cannot
+// distinguish "user not found" from "wrong password" by timing.
+// OWASP ASVS 5.0 V2.2.1 + Authentication Cheat Sheet § Account Enumeration.
+let dummyHashPromise: Promise<string> | null = null;
+function getDummyHash(): Promise<string> {
+  if (!dummyHashPromise) {
+    dummyHashPromise = hashPassword("dummy-not-a-real-password-constant-timing");
+  }
+  return dummyHashPromise;
+}
+
+export async function fakeVerifyPassword(password: string): Promise<void> {
+  try {
+    const hash = await getDummyHash();
+    await argon2.verify(hash, password);
+  } catch {
+    // Discard result; only goal is timing equalization.
+  }
+}

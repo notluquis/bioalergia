@@ -39,7 +39,14 @@ import {
   recordLoginSuccess,
 } from "../lib/account-lockout.ts";
 import { ipFromContext, logAuditFromContext } from "../lib/audit-log.ts";
+import { fakeVerifyPassword } from "../lib/crypto.ts";
+import { DomainError } from "../lib/errors.ts";
 import { logError } from "../lib/logger.ts";
+import {
+  clearEmailLoginFailure,
+  isEmailThrottled,
+  recordEmailLoginFailure,
+} from "../lib/login-throttle.ts";
 import { signToken, verifyToken } from "../lib/paseto.ts";
 import { configureSuperjson } from "../lib/superjson-config.ts";
 import {
@@ -245,8 +252,35 @@ const authORPCRouterBase = {
     .output(authLoginResponseSchema)
     .handler(async ({ context, input }) => {
       const normalizedEmail = normalizeEmailInput(input.email);
+
+      // Per-email throttle covers the "user not found" path so an
+      // attacker can't enumerate valid emails by observing which ones
+      // eventually return 429-style errors. OWASP ASVS 5.0 V2.2.1 +
+      // Authentication Cheat Sheet § Account Enumeration.
+      const emailThrottle = isEmailThrottled(normalizedEmail);
+      if (emailThrottle.blocked) {
+        await logAuditFromContext(context.hono, {
+          kind: "LOGIN_LOCKED",
+          actorLabel: normalizedEmail,
+          outcome: "denied",
+          message: "email_throttled",
+          metadata: { retryAfterMs: emailThrottle.retryAfterMs },
+        });
+        throw new DomainError(
+          "RATE_LIMITED",
+          "Demasiados intentos. Vuelve a intentarlo más tarde.",
+          { retryAfterMs: emailThrottle.retryAfterMs },
+        );
+      }
+
       const loginCandidate = await findUserByLoginIdentifier(normalizedEmail);
       if (!loginCandidate) {
+        // Constant-time path: still spend the argon2 verify budget so
+        // "user not found" is timing-indistinguishable from "wrong
+        // password". Increment the per-email counter so enumeration via
+        // throttle response is also blocked.
+        await fakeVerifyPassword(input.password);
+        recordEmailLoginFailure(normalizedEmail);
         await logAuditFromContext(context.hono, {
           kind: "LOGIN_FAILURE",
           actorLabel: normalizedEmail,
@@ -275,6 +309,8 @@ const authORPCRouterBase = {
       });
 
       if (!user) {
+        await fakeVerifyPassword(input.password);
+        recordEmailLoginFailure(normalizedEmail);
         authError("UNAUTHORIZED", "Credenciales incorrectas");
       }
 
@@ -291,6 +327,8 @@ const authORPCRouterBase = {
       }
 
       if (!user.passwordHash) {
+        await fakeVerifyPassword(input.password);
+        recordEmailLoginFailure(normalizedEmail);
         authError("UNAUTHORIZED", "Credenciales incorrectas");
       }
 
@@ -299,6 +337,7 @@ const authORPCRouterBase = {
 
       if (!valid) {
         const failure = await recordLoginFailure(user.id);
+        recordEmailLoginFailure(normalizedEmail);
         await logAuditFromContext(context.hono, {
           kind: "LOGIN_FAILURE",
           userId: user.id,
@@ -324,6 +363,7 @@ const authORPCRouterBase = {
       }
 
       await recordLoginSuccess(user.id, ipFromContext(context.hono));
+      clearEmailLoginFailure(normalizedEmail);
       await logAuditFromContext(context.hono, {
         kind: "LOGIN_SUCCESS",
         userId: user.id,
@@ -405,6 +445,9 @@ const authORPCRouterBase = {
       const roles = user.roles.map((role) => role.role.name);
       const notificationEmail = user.person?.email ?? "";
       const loginEmail = await getEffectiveLoginEmailByUserId(user.id, notificationEmail);
+      // Clear the per-email throttle that may have accumulated entries
+      // during the password phase before the user reached MFA.
+      clearEmailLoginFailure(loginEmail);
       const token = await issueToken({
         email: loginEmail,
         roles,
