@@ -29,7 +29,7 @@ import type { CreateLoanPayload } from "../types";
 const loanFormSchema = z.object({
   borrowerName: z.string().trim().min(1, "El beneficiario es requerido"),
   borrowerType: z.enum(["PERSON", "COMPANY"]),
-  frequency: z.enum(["WEEKLY", "BIWEEKLY", "MONTHLY"]),
+  frequency: z.enum(["WEEKLY", "BIWEEKLY", "MONTHLY", "IRREGULAR"]),
   generateSchedule: z.boolean(),
   interestRate: z.number(), // Range validation (0-100%) delegated to NumberField component
   interestType: z.enum(["SIMPLE", "COMPOUND"]),
@@ -271,7 +271,7 @@ export function LoanForm({ onCancel, onSubmit }: LoanFormProps) {
                 isInvalid={field.state.meta.errors.length > 0}
                 onBlur={field.handleBlur}
                 onChange={(key) => {
-                  field.handleChange(key as "BIWEEKLY" | "MONTHLY" | "WEEKLY");
+                  field.handleChange(key as "BIWEEKLY" | "IRREGULAR" | "MONTHLY" | "WEEKLY");
                 }}
                 value={field.state.value}
               >
@@ -290,6 +290,9 @@ export function LoanForm({ onCancel, onSubmit }: LoanFormProps) {
                     </ListBox.Item>
                     <ListBox.Item id="MONTHLY" key="MONTHLY">
                       Mensual
+                    </ListBox.Item>
+                    <ListBox.Item id="IRREGULAR" key="IRREGULAR">
+                      Irregular (cuotas variables)
                     </ListBox.Item>
                   </ListBox>
                 </Select.Popover>
