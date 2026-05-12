@@ -103,15 +103,35 @@ export const cxReprintLabelResultSchema = z.object({
 
 // ─── Quote ────────────────────────────────────────────────────────────────────
 
+// Optional add-on service (e.g. "Cobertura Extendida" at +$600) that
+// Chilexpress can attach to a base service. Operator opts-in at quote
+// time; we persist the chosen ones so the OT request mirrors them.
+export const cxAdditionalServiceSchema = z.object({
+  serviceTypeCode: z.coerce.number(),
+  serviceDescription: z.coerce.string(),
+  serviceValue: z.coerce.number(),
+  required: z.boolean().optional(),
+});
+
 export const cxServiceOptionSchema = z.object({
-  // Chilexpress returns these as either string or number depending on
-  // the service tier; coerce so a numeric-looking string never trips
-  // the oRPC output validator (root cause of the historical
-  // "Error al cotizar: Output validation failed" toast).
+  // Chilexpress returns mixed types depending on the service tier and
+  // sandbox/prod env. coerce keeps the oRPC output validator from
+  // tripping ("Error al cotizar: Output validation failed").
   serviceTypeCode: z.coerce.string(),
   serviceDescription: z.coerce.string(),
   serviceValue: z.coerce.number(),
   deliveryTime: z.coerce.string().optional(),
+  // Volumetric weight applied when (largo×ancho×alto/4000) > peso
+  // real. UI surfaces this so the operator understands why the price
+  // is higher than expected.
+  didUseVolumetricWeight: z.boolean().optional(),
+  finalWeight: z.coerce.number().optional(),
+  // Free-text Chilexpress can put about restrictions or surcharges.
+  conditions: z.coerce.string().optional(),
+  // 0 = home delivery, 1 = pickup at sucursal (matches our
+  // deliveryMode but echoed by Chilexpress).
+  deliveryType: z.coerce.number().optional(),
+  additionalServices: z.array(cxAdditionalServiceSchema).optional(),
 });
 
 export const quoteShipmentInputSchema = z.object({

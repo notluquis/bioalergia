@@ -1062,21 +1062,52 @@ function QuoteStep({
               <Radio.Control>
                 <Radio.Indicator />
               </Radio.Control>
-              <Radio.Content className="w-full">
+              <Radio.Content className="w-full space-y-1">
                 <div className="flex items-center justify-between gap-2">
                   <Label>{svc.serviceDescription}</Label>
                   <span className="font-bold text-primary text-sm">
                     {CLP.format(svc.serviceValue)}
                   </span>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-1.5">
                   {svc.deliveryTime && <Description>{svc.deliveryTime}</Description>}
                   {svc.serviceTypeCode === cheapestCode && (
                     <Chip color="success" size="sm" variant="soft">
-                      Más barato
+                      <Chip.Label>Más barato</Chip.Label>
+                    </Chip>
+                  )}
+                  {svc.didUseVolumetricWeight && (
+                    <Chip color="warning" size="sm" variant="soft">
+                      <Chip.Label>Peso volumétrico</Chip.Label>
+                    </Chip>
+                  )}
+                  {typeof svc.finalWeight === "number" && (
+                    <Chip color="default" size="sm" variant="soft">
+                      <Chip.Label>Cobrado por {svc.finalWeight.toFixed(2)} kg</Chip.Label>
                     </Chip>
                   )}
                 </div>
+                {svc.conditions ? (
+                  <p className="text-default-500 text-xs">{svc.conditions}</p>
+                ) : null}
+                {svc.additionalServices && svc.additionalServices.length > 0 ? (
+                  <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                    <span className="text-default-400 text-xs">Servicios opcionales:</span>
+                    {svc.additionalServices.map((extra) => (
+                      <Chip
+                        key={`${svc.serviceTypeCode}-${extra.serviceTypeCode}`}
+                        size="sm"
+                        variant="soft"
+                        color={extra.required ? "danger" : "accent"}
+                      >
+                        <Chip.Label>
+                          {extra.serviceDescription} (+{CLP.format(extra.serviceValue)})
+                          {extra.required ? " · obligatorio" : ""}
+                        </Chip.Label>
+                      </Chip>
+                    ))}
+                  </div>
+                ) : null}
               </Radio.Content>
             </Radio>
           ))}
