@@ -9,6 +9,7 @@ import {
   TanStackSelectField,
   TanStackTextAreaField,
 } from "@/components/forms/TanStackFieldControls";
+import { confirmAction } from "@/components/ui/ConfirmDialog";
 import { useToast } from "@/context/ToastContext";
 import { createPatient } from "@/features/patients/api";
 import { formatRut, validateRut } from "@/lib/rut";
@@ -73,6 +74,13 @@ function AddPatientPage() {
         toastError("El RUT ingresado no es válido");
         return;
       }
+      const ok = await confirmAction({
+        title: "Revisar datos antes de registrar",
+        description: <PatientCheckAnswers value={value} />,
+        confirmLabel: "Registrar paciente",
+        cancelLabel: "Volver a editar",
+      });
+      if (!ok) return;
       await createPatientMutation.mutateAsync({
         ...value,
         birthDate: value.birthDate || undefined,
@@ -303,5 +311,35 @@ function AddPatientPage() {
         </div>
       </form>
     </section>
+  );
+}
+
+function PatientCheckAnswers({ value }: { value: PatientFormState }) {
+  const rows: Array<[string, string]> = [
+    ["RUT", value.rut || "—"],
+    ["Nombres", value.names || "—"],
+    ["Apellido paterno", value.fatherName || "—"],
+    ["Apellido materno", value.motherName || "—"],
+    ["Email", value.email || "—"],
+    ["Teléfono", value.phone || "—"],
+    ["Dirección", value.address || "—"],
+    ["Fecha nacimiento", value.birthDate || "—"],
+    ["Grupo sanguíneo", value.bloodType || "—"],
+    ["Notas", value.notes || "—"],
+  ];
+  return (
+    <div className="space-y-3">
+      <p className="text-default-600 text-sm">
+        Revisa los datos antes de registrar. Esta acción crea la ficha del paciente.
+      </p>
+      <dl className="divide-y divide-divider rounded-2xl border border-divider bg-content2">
+        {rows.map(([k, v]) => (
+          <div className="grid grid-cols-[140px_1fr] gap-3 px-4 py-2" key={k}>
+            <dt className="text-caption text-default-500">{k}</dt>
+            <dd className="break-words text-foreground text-sm">{v}</dd>
+          </div>
+        ))}
+      </dl>
+    </div>
   );
 }

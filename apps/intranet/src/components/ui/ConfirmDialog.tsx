@@ -1,12 +1,13 @@
 import { Button, Input, Label, Modal, TextField } from "@heroui/react";
 import { Store, useStore } from "@tanstack/react-store";
-import { useEffect, useState } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 
 type ConfirmVariant = "default" | "danger";
 
 interface ConfirmOptions {
   title: string;
-  description?: string;
+  /** Plain string or arbitrary node (e.g. a check-answers summary table). */
+  description?: ReactNode;
   confirmLabel?: string;
   cancelLabel?: string;
   variant?: ConfirmVariant;
@@ -84,7 +85,11 @@ export function ConfirmDialogHost() {
             </Modal.Header>
             <Modal.Body className="mt-1 text-foreground">
               {state.description ? (
-                <p className="text-default-600 text-sm leading-relaxed">{state.description}</p>
+                typeof state.description === "string" ? (
+                  <p className="text-default-600 text-sm leading-relaxed">{state.description}</p>
+                ) : (
+                  <div className="text-foreground text-sm">{state.description}</div>
+                )
               ) : null}
               {requiresText ? (
                 <div className="mt-4">

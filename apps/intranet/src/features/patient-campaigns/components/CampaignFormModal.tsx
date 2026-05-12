@@ -6,6 +6,7 @@ import {
   TanStackInputField,
   TanStackTextAreaField,
 } from "@/components/forms/TanStackFieldControls";
+import { confirmAction } from "@/components/ui/ConfirmDialog";
 import { useToast } from "@/context/ToastContext";
 import { useCreatePatientCampaign, useUpdatePatientCampaign } from "../queries";
 import type { PatientCampaignWithCounts } from "../types";
@@ -39,6 +40,13 @@ export function CampaignFormModal({ isOpen, onClose, campaign }: Readonly<Campai
       isActive: campaign?.isActive ?? true,
     } as CampaignFormState,
     onSubmit: async ({ value }) => {
+      const ok = await confirmAction({
+        title: isEditing ? "Confirmar cambios" : "Confirmar nueva campaña",
+        description: <CampaignCheckAnswers value={value} isEditing={isEditing} />,
+        confirmLabel: isEditing ? "Guardar cambios" : "Crear campaña",
+        cancelLabel: "Volver a editar",
+      });
+      if (!ok) return;
       try {
         if (isEditing && campaign) {
           await updateMutation.mutateAsync({
@@ -190,5 +198,38 @@ export function CampaignFormModal({ isOpen, onClose, campaign }: Readonly<Campai
         </Modal.Container>
       </Modal.Backdrop>
     </Modal>
+  );
+}
+
+function CampaignCheckAnswers({
+  value,
+  isEditing,
+}: {
+  value: CampaignFormState;
+  isEditing: boolean;
+}) {
+  const rows: Array<[string, string]> = [
+    ["Nombre", value.name.trim() || "—"],
+    ["Descripción", value.description.trim() || "—"],
+    ["Mensaje", value.messageTemplate.trim() || "—"],
+    ["Imagen", value.imageUrl.trim() || "—"],
+    ["Activa", value.isActive ? "Sí" : "No"],
+  ];
+  return (
+    <div className="space-y-3">
+      <p className="text-default-600 text-sm">
+        {isEditing
+          ? "Revisa los cambios antes de guardar."
+          : "Revisa los datos antes de crear la campaña."}
+      </p>
+      <dl className="divide-y divide-divider rounded-2xl border border-divider bg-content2">
+        {rows.map(([k, v]) => (
+          <div className="grid grid-cols-[120px_1fr] gap-3 px-4 py-2" key={k}>
+            <dt className="text-caption text-default-500">{k}</dt>
+            <dd className="break-words text-foreground text-sm whitespace-pre-wrap">{v}</dd>
+          </div>
+        ))}
+      </dl>
+    </div>
   );
 }
