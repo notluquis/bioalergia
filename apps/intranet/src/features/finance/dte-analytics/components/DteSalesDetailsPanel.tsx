@@ -300,15 +300,11 @@ function SalesLinkedEventsDrawer({
                       </Card.Header>
                       <Card.Content className="grid grid-cols-2 gap-2 text-sm">
                         <Surface className="rounded-xl p-3" variant="default">
-                          <p className="text-default-500 text-xs">
-                            Serie
-                          </p>
+                          <p className="text-default-500 text-xs">Serie</p>
                           <p className="font-medium">{event.displayName ?? "Sin nombre visible"}</p>
                         </Surface>
                         <Surface className="rounded-xl p-3" variant="default">
-                          <p className="text-default-500 text-xs">
-                            Monto evento
-                          </p>
+                          <p className="text-default-500 text-xs">Monto evento</p>
                           <p className="font-medium">
                             {formatCurrency(event.amountPaid ?? event.amountExpected ?? 0)}
                           </p>

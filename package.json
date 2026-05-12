@@ -21,6 +21,8 @@
     "check:full": "pnpm check && pnpm test && pnpm build",
     "ci:check": "oxlint --format=github",
     "ci": "pnpm lint:ci && pnpm type-check && pnpm test && pnpm build",
+    "audit:dead": "knip --no-progress",
+    "audit:dead:strict": "knip --no-progress --no-exit-code=false",
     "clean": "pnpm -r --if-present clean",
     "devtools": "turbo devtools",
     "prepare": "husky || true"
@@ -38,6 +40,7 @@
     "@zenstackhq/cli": "^3.6.4",
     "@zenstackhq/sdk": "^3.6.4",
     "husky": "^9.1.7",
+    "knip": "^6.12.2",
     "lint-staged": "^17.0.3",
     "oxfmt": "^0.48.0",
     "oxlint": "^1.63.0",

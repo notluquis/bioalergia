@@ -274,12 +274,7 @@ export function DailyEventCard({ event, eventDteLink, onLinkClick }: DailyEventC
               </Card.Content>
             </Card>
           ) : isPendingEmission ? (
-            <Chip
-              className="h-6 font-medium text-xs"
-              color="warning"
-              size="sm"
-              variant="soft"
-            >
+            <Chip className="h-6 font-medium text-xs" color="warning" size="sm" variant="soft">
               Pendiente emisión DTE
             </Chip>
           ) : null}

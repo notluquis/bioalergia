@@ -526,23 +526,17 @@ export function EventDteLinkModal({ event, isOpen, onClose, onLinked }: EventDte
                                 </div>
                                 <div className="grid gap-2 sm:grid-cols-3">
                                   <Surface className="rounded-lg p-2.5" variant="secondary">
-                                    <p className="text-default-500 text-xs">
-                                      Total
-                                    </p>
+                                    <p className="text-default-500 text-xs">Total</p>
                                     <p className="font-medium">
                                       {currencyFormatter.format(candidate.totalAmount)}
                                     </p>
                                   </Surface>
                                   <Surface className="rounded-lg p-2.5" variant="secondary">
-                                    <p className="text-default-500 text-xs">
-                                      Referencia
-                                    </p>
+                                    <p className="text-default-500 text-xs">Referencia</p>
                                     <p className="font-medium">{candidate.folioLabel}</p>
                                   </Surface>
                                   <Surface className="rounded-lg p-2.5" variant="secondary">
-                                    <p className="text-default-500 text-xs">
-                                      Tipo
-                                    </p>
+                                    <p className="text-default-500 text-xs">Tipo</p>
                                     <p className="font-medium">
                                       {"hypothesisKind" in candidate &&
                                       candidate.hypothesisKind === "bundle"

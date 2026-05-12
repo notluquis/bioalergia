@@ -505,9 +505,7 @@ function HypothesisCard({
       </Card.Header>
       <Card.Content className="grid grid-cols-2 gap-2 text-sm lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
         <Surface className="rounded-xl p-2.5" variant="secondary">
-          <p className="text-default-500 text-xs">
-            {isBundle ? "Suma DTE" : "Monto DTE"}
-          </p>
+          <p className="text-default-500 text-xs">{isBundle ? "Suma DTE" : "Monto DTE"}</p>
           <p className="font-medium leading-tight">
             {currencyFormatter.format(hypothesis.totalAmount)}
           </p>
@@ -1320,9 +1318,7 @@ export function CalendarDteLinksOverview({
 
                                     <Card.Content className="grid grid-cols-2 gap-2 text-sm lg:grid-cols-4">
                                       <Surface className="rounded-xl p-3" variant="secondary">
-                                        <p className="text-default-500 text-xs">
-                                          Monto evento
-                                        </p>
+                                        <p className="text-default-500 text-xs">Monto evento</p>
                                         <p className="font-medium leading-tight">
                                           {currencyFormatter.format(currentHint ?? 0)}
                                         </p>
@@ -1344,9 +1340,7 @@ export function CalendarDteLinksOverview({
                                         </p>
                                       </Surface>
                                       <Surface className="rounded-xl p-3" variant="secondary">
-                                        <p className="text-default-500 text-xs">
-                                          Diferencia
-                                        </p>
+                                        <p className="text-default-500 text-xs">Diferencia</p>
                                         <p className="font-medium leading-tight">
                                           {item.linkStatus === "pending_issuance"
                                             ? "-"
@@ -1356,9 +1350,7 @@ export function CalendarDteLinksOverview({
                                         </p>
                                       </Surface>
                                       <Surface className="rounded-xl p-3" variant="secondary">
-                                        <p className="text-default-500 text-xs">
-                                          Referencia
-                                        </p>
+                                        <p className="text-default-500 text-xs">Referencia</p>
                                         <p className="truncate font-medium leading-tight">
                                           {item.linked
                                             ? item.linkedDocuments.length > 1

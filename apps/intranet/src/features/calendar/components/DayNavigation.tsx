@@ -98,10 +98,7 @@ export function DayNavigation({
             <Button aria-label="Día anterior" isIconOnly onPress={handlePrev}>
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <Button
-              className="font-semibold text-xs"
-              onPress={handleToday}
-            >
+            <Button className="font-semibold text-xs" onPress={handleToday}>
               Hoy
             </Button>
             <Button aria-label="Día siguiente" isIconOnly onPress={handleNext}>

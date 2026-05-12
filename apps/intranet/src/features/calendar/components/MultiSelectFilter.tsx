@@ -64,13 +64,7 @@ export function MultiSelectFilter({
 
   return (
     <div className={className}>
-      {label && (
-        <span
-          className="mb-1 block text-caption text-foreground-600"
-        >
-          {label}
-        </span>
-      )}
+      {label && <span className="mb-1 block text-caption text-foreground-600">{label}</span>}
       <Dropdown>
         <Dropdown.Trigger className="block w-full">
           <Button

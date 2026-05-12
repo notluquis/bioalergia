@@ -2658,7 +2658,7 @@ export function ClinicalSeriesView() {
                                                 <div className="flex flex-wrap items-start justify-between gap-2">
                                                   <div className="flex flex-wrap items-center gap-2">
                                                     <span
-                                                      className={`text-caption ${isFuture ?"text-accent" : "text-foreground-500"}`}
+                                                      className={`text-caption ${isFuture ? "text-accent" : "text-foreground-500"}`}
                                                     >
                                                       {clinicalEventDateTimeLabel(event)}
                                                     </span>

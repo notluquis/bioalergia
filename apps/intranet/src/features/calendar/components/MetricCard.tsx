@@ -45,7 +45,7 @@ export function MetricCard({
         <Description
           className={cn(
             "font-semibold text-default-500 uppercase tracking-wide",
-            sizeClasses.title,
+            sizeClasses.title
           )}
         >
           {title}
