@@ -168,7 +168,18 @@ export function useSendSingleProduct() {
   });
 }
 
-// Phone migration between WABAs (request OTP + verify).
+// Phone migration between WABAs (add slot → request OTP → verify →
+// register w/ PIN). Meta sequence: POST /WABA_ID/phone_numbers
+// (migrate_phone_number=true) → /PHONE_NUMBER_ID/request_code →
+// /PHONE_NUMBER_ID/verify_code → /PHONE_NUMBER_ID/register.
+export function useAddMigratingPhone() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: Parameters<typeof waCloudORPCClient.addMigratingPhone>[0]) =>
+      waCloudORPCClient.addMigratingPhone(input),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: [...KEY, "accounts"] }),
+  });
+}
 export function useRequestPhoneCode() {
   return useMutation({
     mutationFn: (input: Parameters<typeof waCloudORPCClient.requestPhoneCode>[0]) =>
@@ -180,6 +191,14 @@ export function useVerifyPhoneCode() {
   return useMutation({
     mutationFn: (input: Parameters<typeof waCloudORPCClient.verifyPhoneCode>[0]) =>
       waCloudORPCClient.verifyPhoneCode(input),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: [...KEY, "accounts"] }),
+  });
+}
+export function useDeregisterPhone() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: Parameters<typeof waCloudORPCClient.deregisterPhone>[0]) =>
+      waCloudORPCClient.deregisterPhone(input),
     onSuccess: () => void qc.invalidateQueries({ queryKey: [...KEY, "accounts"] }),
   });
 }

@@ -1508,6 +1508,31 @@ export const waCloudContract = {
     .input(setTwoStepPinInputSchema)
     .output(waOkResponseSchema),
 
+  // Deregister a phone number from this WABA so it can be migrated to
+  // a different WABA (Meta requires the source WABA to release the
+  // number before the destination can request_code). Mirror of
+  // registerPhone: same payload schema (no PIN — just phoneNumberId).
+  deregisterPhone: oc
+    .route({ method: "POST", path: "/phones/deregister", tags: ["WA Cloud"] })
+    .input(waPhoneIdInput)
+    .output(waOkResponseSchema),
+
+  // Add a phone slot to a destination WABA, optionally flagged as a
+  // migration (Meta requires `migrate_phone_number: true` to release
+  // the number from its source WABA). Returns the new phoneNumberId
+  // the operator then feeds to request_code → verify_code → register.
+  addMigratingPhone: oc
+    .route({ method: "POST", path: "/phones/add", tags: ["WA Cloud"] })
+    .input(
+      z.object({
+        accountId: z.number().int().positive(),
+        countryCode: z.string().regex(/^\d{1,4}$/),
+        phoneNumber: z.string().regex(/^\d{4,15}$/),
+        migrate: z.boolean().default(true),
+      }),
+    )
+    .output(z.object({ phoneNumberId: z.string() })),
+
   // Extended analytics with pricing
   getConversationAnalyticsExtended: oc
     .route({ method: "POST", path: "/analytics/conversations/extended", tags: ["WA Cloud"] })

@@ -43,6 +43,7 @@ export {
   updateBusinessProfile,
 } from "./graph/profile.ts";
 export {
+  addMigratingPhoneNumber,
   deregisterPhoneNumber,
   getPhoneHealth,
   listAccountPhoneNumbers,

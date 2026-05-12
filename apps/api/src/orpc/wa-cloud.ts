@@ -125,6 +125,8 @@ import {
   sendSingleProductMessage,
   updateConversationalAutomation,
   verifyPhoneCode,
+  addMigratingPhoneNumber,
+  deregisterPhoneNumber,
   listAccountFlows,
   listAccountPhoneNumbers,
   listAccountTemplates,
@@ -2396,6 +2398,36 @@ const waRouterBase = {
     .handler(async ({ input }) => {
       await verifyPhoneCode(input.phoneNumberId, input.code);
       return { status: "ok" as const };
+    }),
+
+  deregisterPhone: writeWa
+    .route({ method: "POST", path: "/phones/deregister", tags: ["WA Cloud"] })
+    .input(waPhoneIdInput)
+    .output(waOkResponseSchema)
+    .handler(async ({ input }) => {
+      await deregisterPhoneNumber(input.phoneNumberId);
+      return { status: "ok" as const };
+    }),
+
+  addMigratingPhone: writeWa
+    .route({ method: "POST", path: "/phones/add", tags: ["WA Cloud"] })
+    .input(
+      z.object({
+        accountId: z.number().int().positive(),
+        countryCode: z.string().regex(/^\d{1,4}$/),
+        phoneNumber: z.string().regex(/^\d{4,15}$/),
+        migrate: z.boolean().default(true),
+      }),
+    )
+    .output(z.object({ phoneNumberId: z.string() }))
+    .handler(async ({ input }) => {
+      const r = await addMigratingPhoneNumber(
+        input.accountId,
+        input.countryCode,
+        input.phoneNumber,
+        input.migrate,
+      );
+      return { phoneNumberId: r.id };
     }),
 
   // ── Embedded Signup callback (Solution Partner / OBO onboarding) ──────────
