@@ -1,5 +1,6 @@
 import { db } from "@finanzas/db";
 import type { Context } from "hono";
+import { clientIp } from "./client-ip.ts";
 import { logWarn } from "./logger.ts";
 
 // Append-only audit trail. Best-effort: a DB failure here must NEVER
@@ -43,16 +44,7 @@ export type AuditInput = {
   metadata?: Record<string, unknown> | null;
 };
 
-// Extracts client IP from common Hono headers (Railway / Cloudflare put
-// the originating IP in x-forwarded-for; CF also sets cf-connecting-ip).
-export function ipFromContext(c: Context): string | null {
-  return (
-    c.req.header("cf-connecting-ip") ||
-    c.req.header("x-forwarded-for")?.split(",")[0]?.trim() ||
-    c.req.header("x-real-ip") ||
-    null
-  );
-}
+export const ipFromContext = clientIp;
 
 export async function logAuditEvent(input: AuditInput): Promise<void> {
   try {

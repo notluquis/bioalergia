@@ -1,6 +1,7 @@
 // apps/api/src/index.ts - Server Entry Point
 import { serve } from "@hono/node-server";
 import { app } from "./app.ts";
+import { runSequenceHealthCheck } from "./lib/db-sequence-health.ts";
 import { startDoctoraliaCalendarScheduler } from "./lib/doctoralia/doctoralia-calendar-scheduler.ts";
 import { startDoctoraliaImapListener } from "./lib/doctoralia/imap-idle.ts";
 import { startDTESyncScheduler } from "./lib/dte/dte-sync-cron.ts";
@@ -12,6 +13,11 @@ import { startScheduledMessageRunner } from "./modules/wa-cloud/scheduled-sender
 
 const port = Number(process.env.PORT) || 3000;
 console.log(`🚀 Finanzas API starting on port ${port}`);
+
+// Boot-time integrity sweep: warn (and auto-repair in prod) any id
+// sequence whose nextval() has fallen behind MAX(id). Runs in the
+// background so a slow check never blocks the HTTP listener coming up.
+void runSequenceHealthCheck();
 
 // Initialize Calendar features (Scheduler + Watch Channels)
 // Run this after server starts to avoid blocking startup (though these are async anyway)
