@@ -295,16 +295,17 @@ export default defineConfig(({ mode }) => {
       },
     },
     test: {
+      name: "unit",
       environment: "jsdom",
       globals: true,
       setupFiles: "./test/setup.ts",
       exclude: [
         ...configDefaults.exclude,
         "test/employees.integration.test.ts",
-        // Playwright specs live in apps/intranet/e2e/ and run under playwright,
-        // not vitest. Without this exclusion vitest tries to import them and
-        // hits the dual-runner ("test() called here") error.
+        // Playwright specs run under playwright, not vitest.
         "e2e/**/*.spec.ts",
+        // Storybook stories run under the `storybook` project (vitest.config.ts).
+        "src/**/*.stories.@(ts|tsx)",
       ],
       coverage: {
         provider: "v8",
