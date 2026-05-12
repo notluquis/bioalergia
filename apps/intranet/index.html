@@ -90,18 +90,37 @@
         }
       })();
     </script>
+    <script>
+      // Defer the Inter webfont stylesheet via a media-print swap. Keeping
+      // the listener here (instead of inline `onload="this.media='all'"` on
+      // the <link>) means the strict CSP only needs nonce + strict-dynamic,
+      // no 'unsafe-hashes' for inline event handlers.
+      (() => {
+        const link = document.getElementById("bioalergia-fonts");
+        if (!link) return;
+        if (link.sheet) {
+          link.media = "all";
+          return;
+        }
+        link.addEventListener("load", () => {
+          link.media = "all";
+        });
+      })();
+    </script>
     <link rel="icon" type="image/svg+xml" href="/logo_bimi.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 
     <!-- Performance Hints (2026 Standard) -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <!-- Use direct stylesheet instead of preload to avoid unused preload warning -->
+    <!-- Async font load via media-print swap (no inline event handler so the
+         strict-CSP nonce policy stays free of 'unsafe-hashes'). The script
+         block above is nonced and serves as the swap orchestrator. -->
     <link
+      id="bioalergia-fonts"
       rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
       media="print"
-      onload="this.media='all'"
     />
     <noscript>
       <link

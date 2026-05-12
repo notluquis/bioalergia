@@ -70,16 +70,12 @@ export default defineConfig(({ mode }) => {
             [
               "default-src 'self'",
               // Mirrors apps/intranet/Caddyfile (production). 'unsafe-inline'
-              // is ignored by browsers when 'strict-dynamic' + nonce are
-              // present, except for inline event handlers like the deferred
-              // CSS-load <link onload="this.media='all'"> in index.html —
-              // those need 'unsafe-hashes' or 'unsafe-inline'.
-              // 'unsafe-hashes' + sha256 hash unblocks the deferred CSS-load
-              // <link onload="this.media='all'"> in index.html, the only
-              // inline event handler the bundle ships. https: lets dynamic
-              // imports load chunks (vite preview serves them with hashed
-              // urls under /assets).
-              `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' 'unsafe-hashes' 'sha256-MhtPZXr7+LpJUY5qtMutB+qWfQtMaPccfe7QXtCcEYc=' https:`,
+              // is ignored by browsers when nonce + strict-dynamic are
+              // present (kept as a safe fallback for older clients). All
+              // inline event handlers were lifted out of index.html to
+              // addEventListener inside a nonced inline script, so the
+              // policy no longer needs 'unsafe-hashes'.
+              `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' 'unsafe-inline' https:`,
               `style-src 'self' 'nonce-${nonce}' 'unsafe-inline' https://fonts.googleapis.com`,
               "img-src 'self' data: blob: https:",
               "font-src 'self' data: https://fonts.gstatic.com",
