@@ -73,7 +73,7 @@ export function ClinicalRecordsReviewPage() {
       <header className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="flex items-center gap-2 font-semibold text-xl">
           <ClipboardList size={20} className="text-primary" />
-          Fichas clínicas — revisión
+          Fichas clínicas
         </h1>
         <div className="flex items-center gap-2">
           <Chip variant="soft">

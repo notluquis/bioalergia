@@ -57,7 +57,7 @@ RUN --mount=type=cache,id=s/fbf6a604-cc46-46af-8d95-9e7503753301-/app/.turbo/cac
 
 # Create a self-contained production app with only runtime files and prod deps.
 RUN --mount=type=cache,id=s/fbf6a604-cc46-46af-8d95-9e7503753301-/pnpm/store,target=/pnpm/store \
-    pnpm --filter=@finanzas/api --prod deploy /app/deploy
+    pnpm --filter=@finanzas/api --prod --legacy deploy /app/deploy
 
 # ============================================================================
 # STAGE 4: Runner - Production image
