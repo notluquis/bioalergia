@@ -2,6 +2,16 @@ packages:
   - "apps/*"
   - "packages/*"
 
+# pnpm v10+ refuses `pnpm deploy` on workspaces that symlink internal
+# packages — bundling won't work because the symlinks can't be flattened
+# into the deploy folder. The supported fix is to inject workspace deps
+# (copy instead of symlink) so `pnpm deploy` can bundle them.
+# Workspace-level is the golden 2026 pattern per pnpm docs
+# (https://pnpm.io/settings#injectworkspacepackages); the deprecated
+# alternative is --legacy on every deploy invocation, which we explicitly
+# avoid.
+injectWorkspacePackages: true
+
 # pnpm 11 blocks every postinstall by default. Only binaries / native
 # bindings below get to run install scripts. ZenStack manages Prisma
 # engines so we opt those out.
