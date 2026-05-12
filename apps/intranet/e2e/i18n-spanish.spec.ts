@@ -1,4 +1,5 @@
-import { expect, test } from "@playwright/test";
+import { expect } from "@playwright/test";
+import { test } from "./fixtures";
 
 /**
  * Bioalergia ships in Spanish only. Stray English copy ends up in screen-

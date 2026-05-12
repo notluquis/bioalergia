@@ -1,6 +1,9 @@
 import { AxeBuilder } from "@axe-core/playwright";
-import { test as plain, expect } from "@playwright/test";
-import { AUTHED_ROUTES, test as authed } from "./fixtures";
+import { expect } from "@playwright/test";
+// Both `plain` and `authed` are the same `test` export — it carries the
+// auto-applied readOnlyGuard fixture, then `authed` adds the `authedPage`
+// on top. Aliased below for readability of the two describes.
+import { AUTHED_ROUTES, test as authed, test as plain } from "./fixtures";
 
 /**
  * Axe-core a11y scan on critical routes.
@@ -35,10 +38,11 @@ const AUTHED_DISABLED_RULES: string[] = [
   //  drop below 4.5:1 (Sidebar nav inactive items, table column headers).
   //  Walk down with the contrast ramp from index.css.
   "color-contrast",
-  // TODO(a11y): _authed.tsx wraps the right-side rail in <aside> inside
-  //  <main>. Pull aside outside the main landmark.
+  // TODO(a11y): some authed pages wrap right-side rails in <aside> inside
+  //  <main>. Walk down per page (Home + Dashboard fixed in 5c11f6b7,
+  //  remaining: counterparts, services, wa-cloud, finance/loans).
+  //  `landmark-is-top-level` is the axe sub-check, not addressable.
   "landmark-complementary-is-top-level",
-  "landmark-is-top-level",
   // TODO(a11y): authed routes lack <h1>. Each page/route should expose a
   //  level-1 heading (visually-hidden if header design forbids it).
   "page-has-heading-one",

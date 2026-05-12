@@ -1,4 +1,5 @@
-import { expect, test } from "@playwright/test";
+import { expect } from "@playwright/test";
+import { test } from "./fixtures";
 
 /**
  * Runtime touch-target audit at the iPhone 15 viewport (393×852, dpr 3,

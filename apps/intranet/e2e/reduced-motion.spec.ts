@@ -1,4 +1,5 @@
-import { expect, test } from "@playwright/test";
+import { expect } from "@playwright/test";
+import { test } from "./fixtures";
 
 /**
  * Honors prefers-reduced-motion (Apple HIG / WCAG 2.3.3). After emulating
