@@ -7,6 +7,7 @@ on:
       - forthcoming-ocelot
     paths:
       - "apps/intranet/**"
+      - "packages/**"
       - "package.json"
       - "pnpm-lock.yaml"
       - "knip.config.ts"
@@ -21,6 +22,9 @@ concurrency:
   cancel-in-progress: true
 
 env:
+  # Node 25 matches local + Railway. The package.json engines field still
+  # advertises >=26 but the workspace builds + tests cleanly on 25 (only an
+  # informational pnpm WARN is emitted).
   NODE_VERSION: 25
   TURBO_TELEMETRY_DISABLED: "1"
 
@@ -39,18 +43,18 @@ jobs:
 
   dead-code:
     # Informational: prints knip report but never fails the workflow.
-    # Flip to `audit:dead:strict` once the backlog of 88 unused files is cleared.
+    # `audit:dead:advisory` keeps the script exit code at 0 so the job stays
+    # green while the 71-file backlog is worked down. Flip to `audit:dead`
+    # (which exits non-zero on findings) once we hit zero.
     name: knip (dead code, advisory)
     runs-on: ubuntu-latest
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
-        # Reads packageManager pin from package.json (no version: key needed).
       - uses: actions/setup-node@v4
         with: { node-version: "${{ env.NODE_VERSION }}", cache: pnpm }
       - run: pnpm install --frozen-lockfile
-      - run: pnpm audit:dead
+      - run: pnpm audit:dead:advisory
 
   bundle-budget:
     name: size-limit (bundle budgets)
@@ -58,11 +62,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
-        # Reads packageManager pin from package.json (no version: key needed).
       - uses: actions/setup-node@v4
         with: { node-version: "${{ env.NODE_VERSION }}", cache: pnpm }
       - run: pnpm install --frozen-lockfile
-      - run: pnpm -F @finanzas/intranet build
+      # Build via turbo so workspace deps (@finanzas/db, @finanzas/orpc-contracts)
+      # are produced before vite resolves their entrypoints.
+      - run: pnpm turbo run build --filter=@finanzas/intranet
       - run: pnpm -F @finanzas/intranet audit:size
 
   e2e-and-a11y:
@@ -71,10 +76,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
-        # Reads packageManager pin from package.json (no version: key needed).
       - uses: actions/setup-node@v4
         with: { node-version: "${{ env.NODE_VERSION }}", cache: pnpm }
       - run: pnpm install --frozen-lockfile
+      - name: Build intranet (preview server target)
+        run: pnpm turbo run build --filter=@finanzas/intranet
       - name: Install Chromium
         run: pnpm exec playwright install --with-deps chromium
       - name: Run smoke + a11y suite
@@ -97,8 +103,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
-        # Reads packageManager pin from package.json (no version: key needed).
       - uses: actions/setup-node@v4
         with: { node-version: "${{ env.NODE_VERSION }}", cache: pnpm }
+      - name: Install Google Chrome
+        # @lhci/cli's chrome-launcher needs a real Chrome binary, not just
+        # Playwright's chromium-headless-shell. setup-chrome installs Chrome
+        # for Testing under /opt/hostedtoolcache and exports its path.
+        id: setup-chrome
+        uses: browser-actions/setup-chrome@v1
+        with: { chrome-version: stable }
       - run: pnpm install --frozen-lockfile
-      - run: pnpm -F @finanzas/intranet audit:perf
+      - name: Build intranet (preview target)
+        run: pnpm turbo run build --filter=@finanzas/intranet
+      - name: Run Lighthouse CI
+        env:
+          CHROME_PATH: ${{ steps.setup-chrome.outputs.chrome-path }}
+        run: pnpm -F @finanzas/intranet audit:perf

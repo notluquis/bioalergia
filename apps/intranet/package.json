@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "VITE_REACT_COMPILER=false vite",
     "dev:compiler": "VITE_REACT_COMPILER=true vite",
-    "build": "vite build",
+    "build": "NODE_ENV=production vite build",
     "build:fast": "VITE_REACT_COMPILER=true vite build",
     "build:fast:compiler": "VITE_REACT_COMPILER=true vite build",
     "build:fast:no-compiler": "VITE_REACT_COMPILER=false vite build",
