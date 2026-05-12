@@ -80,7 +80,7 @@ jobs:
       - name: Build intranet (preview server target)
         run: pnpm turbo run build --filter=@finanzas/intranet
       - name: Install Chromium
-        run: pnpm exec playwright install --with-deps chromium
+        run: pnpm -F @finanzas/intranet exec playwright install --with-deps chromium
       - name: Run smoke + a11y suite
         env:
           CI: "true"
