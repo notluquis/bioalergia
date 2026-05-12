@@ -74,6 +74,47 @@ OWASP CSP Cheat Sheet, `'unsafe-hashes'` should be a last resort; we
 moved the swap into a nonced inline `<script>` that calls
 `addEventListener("load", …)`, then dropped the directive.
 
+## Playwright golden-standard checklist (May 2026)
+
+Verified against `playwright.dev/docs` + `deque.com/axe`. Patterns we adopted
+and the rationale for each:
+
+- **`setup` project + `storageState`** for auth (since Playwright 1.39).
+  One login per CI run; saves the cookie to `playwright/.auth/user.json`;
+  authed projects declare `dependencies: ["setup"]` + `use.storageState`.
+  Replaces the prior pattern of logging in inside every test (which
+  bumped a 14×-parallel run into Railway's 429 wall).
+- **Two `baseURL`s** at project scope. Unauthed UI/UX projects run
+  against `http://localhost:4173` (always-fresh `vite preview` of the
+  current commit), authed projects use `E2E_BASE_URL` (deployed Railway,
+  real backend).
+- **Mobile via `devices["Pixel 7"]`** instead of hand-rolled
+  `isMobile`/`hasTouch`/viewport. Pixel 7 is Chromium-based so we don't
+  ship the WebKit binary, while keeping realistic UA + screen metrics.
+- **Avoid `waitForLoadState("networkidle")`** on routes with SSE/polling
+  (Railway prod) — Playwright issue #22897 deprecates it. Use
+  `domcontentloaded` + a `waitFor({ state: "attached" })` on the real
+  readiness signal (`#main-content > *`). No `waitForTimeout` sleeps.
+- **`page.emulateMedia({ reducedMotion: "reduce" })` at runtime** rather
+  than `test.use({ reducedMotion: "reduce" })`. Empirically the
+  context-level option does not flip `matchMedia` on Playwright 1.60.x
+  + Chromium 148 (open upstream).
+- **HeroUI v3 input targeting** via attribute selectors
+  (`input[type="email"]`, `input[autocomplete="username"]`,
+  `input[type="password"]`) because the v3 wrapper div catches
+  `getByLabel`. Aligns with the Playwright docs escape-hatch advice for
+  custom-component wrappers.
+- **`page.route` denylist** (DANGEROUS_RPC_PATTERNS) + raw HTTP DELETE
+  block in an auto-applied fixture. Belt-and-suspenders so no spec can
+  accidentally trigger a destructive mutation against prod data — login
+  flow allowed, every `/rpc/(delete|cancel|send|...)` 403'd inside the
+  browser.
+- **axe `disableRules`** uses public rule IDs only (`color-contrast`,
+  `nested-interactive`, `target-size`, `page-has-heading-one`). Internal
+  sub-checks (`no-focusable-content`, `landmark-is-top-level`,
+  `target-offset`) are NOT addressable. Deprecated rules
+  (`landmark-complementary-is-top-level`, axe-core #4950) also dropped.
+
 ## Known gaps vs the 2026 golden standard
 
 Documented for future cleanup; do not reintroduce silently:
