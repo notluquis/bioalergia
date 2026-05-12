@@ -2,17 +2,30 @@ packages:
   - "apps/*"
   - "packages/*"
 
-# pnpm v10 Advantages & Optimizations
+# Optimizations
 verifyDepsBeforeRun: install
 optimisticRepeatInstall: true
 dedupePeerDependents: true
 injectWorkspacePackages: true
 
-# Allow/deny dependency build scripts (pnpm v10+)
+# pnpm v11: build scripts must be explicitly approved here (security
+# tightening; replaces the v10 `allowBuilds` map). Audit each entry —
+# these run with full host-shell access during install. Only native-
+# binding builders below.
+onlyBuiltDependencies:
+  - argon2
+  - core-js
+  - esbuild
+  - impit
+  - msw
+  - protobufjs
+  - sharp
+
 allowBuilds:
-  argon2: true
-  esbuild: true
-  prisma: false
-  "@prisma/engines": false
-  better-sqlite3: false
-  msw: true
+  argon2: set this to true or false
+  core-js: set this to true or false
+  esbuild: set this to true or false
+  impit: set this to true or false
+  msw: set this to true or false
+  protobufjs: set this to true or false
+  sharp: set this to true or false

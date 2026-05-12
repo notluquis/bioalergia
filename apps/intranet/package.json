@@ -47,6 +47,7 @@
     "@internationalized/date": "^3.12.1",
     "@orpc/client": "^1.14.2",
     "@orpc/contract": "^1.14.2",
+    "@orpc/shared": "^1.14.2",
     "@orpc/tanstack-query": "^1.14.2",
     "@simplewebauthn/browser": "^13.3.0",
     "@tanstack/react-form": "^1.32.0",
