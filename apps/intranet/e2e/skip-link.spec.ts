@@ -12,8 +12,8 @@ import { test } from "./fixtures";
  * cleanly when the API is unreachable (same gating as authed a11y suite).
  */
 test("skip link reveals on focus + jumps to main", async ({ authedPage }) => {
-  await authedPage.goto("/");
-  await authedPage.waitForLoadState("networkidle");
+  await authedPage.goto("/", { waitUntil: "domcontentloaded" });
+  await authedPage.waitForLoadState("load");
 
   // Focus the skip link by Tab from body.
   await authedPage.locator("body").click();

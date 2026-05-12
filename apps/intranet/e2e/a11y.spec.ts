@@ -66,9 +66,12 @@ plain.describe("a11y / unauthenticated", () => {
 authed.describe("a11y / authenticated", () => {
   for (const route of AUTHED_ROUTES) {
     authed(`${route.name} (${route.path}) is WCAG 2.2 AA clean`, async ({ authedPage }) => {
-      await authedPage.goto(route.path);
-      // Wait for any Suspense fallback to finish before scanning.
-      await authedPage.waitForLoadState("networkidle");
+      await authedPage.goto(route.path, { waitUntil: "domcontentloaded" });
+      // Production pages keep open SSE / polling channels, so networkidle
+      // never resolves. Wait for `load` (window load event) plus a short
+      // settle so Suspense fallbacks finish painting.
+      await authedPage.waitForLoadState("load");
+      await authedPage.waitForTimeout(800);
       const results = await new AxeBuilder({ page: authedPage })
         .withTags(TAGS)
         .disableRules(AUTHED_DISABLED_RULES)

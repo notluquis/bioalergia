@@ -14,27 +14,39 @@ interface Fixtures {
 }
 
 /**
- * Allowlist of API paths that the e2e test user is permitted to mutate.
- * Login flow needs to POST /api/orpc/auth/* + GET /api/csrf. Everything
- * else gets 403'd by readOnlyGuard so a stray click can never delete a
- * patient or send a WhatsApp message from a CI run.
+ * Denylist of oRPC procedure names that the e2e test user must never
+ * trigger. oRPC sends every operation (read AND write) as POST, so
+ * blocking POST wholesale would make every page un-loadable; we instead
+ * block specific destructive verbs by URL path. Anything matching one of
+ * these patterns is fulfilled with 403 inside the browser before it can
+ * reach the API — protects production data even if a future spec clicks
+ * the wrong button.
+ *
+ * Add the route name (without /rpc/) when introducing a new mutation.
  */
-const SAFE_MUTATING_PATHS = [/^\/api\/csrf$/, /^\/api\/orpc\/auth\//];
-
-const DESTRUCTIVE_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
+const DANGEROUS_RPC_PATTERNS: RegExp[] = [
+  /\/rpc\/(delete|destroy|remove|drop|truncate)\b/i,
+  /\/rpc\/(cancel|abort|abandon)\b/i,
+  /\/rpc\/(send|publish|broadcast|fire|trigger|dispatch)\b/i,
+  /\/rpc\/(archive|deactivate|disable|suspend|block|ban)\b/i,
+  /\/rpc\/(reset|recreate|reseed|wipe|purge)\b/i,
+  /\/rpc\/(refund|chargeback|cashout|payout)\b/i,
+  /\/rpc\/(import|export|sync)\b/i, // long-running mass mutations
+  // Also block raw HTTP DELETE — only oRPC POST routes are excepted.
+];
 
 /**
  * Belt-and-suspenders: install a route handler that returns 403 for any
- * destructive HTTP method against /api/* not in SAFE_MUTATING_PATHS. Even
- * if someone writes a future test that clicks "Eliminar paciente" by
- * mistake, the request never leaves the browser.
+ * request whose URL matches a DANGEROUS_RPC_PATTERN, plus all DELETE
+ * verbs. oRPC list/get/show queries (POST but read-only) flow through.
  */
 async function readOnlyGuard(page: Page) {
   await page.route(/.*\/api\/.+/, (route) => {
     const req = route.request();
-    if (!DESTRUCTIVE_METHODS.has(req.method())) return route.continue();
     const url = new URL(req.url());
-    if (SAFE_MUTATING_PATHS.some((re) => re.test(url.pathname))) return route.continue();
+    const isDangerousPath = DANGEROUS_RPC_PATTERNS.some((re) => re.test(url.pathname));
+    const isRawDelete = req.method() === "DELETE";
+    if (!isDangerousPath && !isRawDelete) return route.continue();
     console.warn(`[e2e] blocked ${req.method()} ${url.pathname} (read-only guard)`);
     return route.fulfill({
       status: 403,

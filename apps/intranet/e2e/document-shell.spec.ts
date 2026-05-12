@@ -13,8 +13,7 @@ import { test } from "./fixtures";
  *  - At least one <nav> landmark on every authed-shell precursor
  */
 test("login document shell metadata is correct", async ({ page }) => {
-  await page.goto("/login");
-  await page.waitForLoadState("networkidle");
+  await page.goto("/login", { waitUntil: "domcontentloaded" });
 
   const html = page.locator("html");
   await expect(html).toHaveAttribute("lang", /^es/i);
