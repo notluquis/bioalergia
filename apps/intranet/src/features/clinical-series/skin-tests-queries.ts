@@ -1,3 +1,4 @@
+// oxlint-disable typescript/no-non-null-assertion -- TODO(strict-null): refactor each `!` to invariant() or explicit guard. Tracked in repo-wide non-null cleanup.
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { compactORPCInput } from "@/lib/orpc-input";
 import { clinicalSeriesKeys } from "./queries";

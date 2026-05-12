@@ -1,3 +1,4 @@
+// oxlint-disable typescript/no-non-null-assertion -- TODO(strict-null): refactor each `!` to invariant() or explicit guard. Tracked in repo-wide non-null cleanup.
 import type { Key } from "@heroui/react";
 import {
   Button,
@@ -30,6 +31,7 @@ import {
   Truck,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { FeatureErrorBoundary } from "@/components/ui/FeatureErrorBoundary";
 import { useToast } from "@/context/ToastContext";
 import { listAddresses } from "@/features/addresses/api";
 import { AddressFormModal } from "@/features/addresses/components/AddressFormModal";
@@ -147,62 +149,68 @@ export function CreateShipmentWizard({
             <StepIndicator step={step} />
 
             <Modal.Body className="mt-4 max-h-[70vh] overflow-y-auto overscroll-contain">
-              {step === "coverage" && patientData && (
-                <CoverageStep
-                  state={state}
-                  personId={patientData.person.id}
-                  onNext={(data) => {
-                    merge(data);
-                    setStep("quote");
-                  }}
-                />
-              )}
-              {step === "quote" && (
-                <QuoteStep
-                  state={state}
-                  onBack={() => setStep("coverage")}
-                  onNext={(data) => {
-                    merge(data);
-                    setStep("recipient");
-                  }}
-                />
-              )}
-              {step === "recipient" && (
-                <RecipientStep
-                  state={state}
-                  patientDefaults={{
-                    name: patientName,
-                    phone: patientData?.person.phone ?? "",
-                    email: patientData?.person.email ?? "",
-                  }}
-                  onBack={() => setStep("quote")}
-                  onNext={(data) => {
-                    merge(data);
-                    setStep("confirm");
-                  }}
-                />
-              )}
-              {step === "confirm" && (
-                <ConfirmStep
-                  state={state as WizardState}
-                  patientId={patientId}
-                  onBack={() => setStep("recipient")}
-                  onSuccess={(res) => {
-                    setResult(res);
-                    setStep("done");
-                    void queryClient.invalidateQueries({ queryKey: ["shipments", patientId] });
-                    success(`OT ${res.otNumber} creada correctamente`);
-                  }}
-                  onError={(msg) => toastError(msg)}
-                />
-              )}
-              {step === "done" && result && (
-                <DoneStep
-                  otNumber={result.otNumber}
-                  labelBase64={result.labelBase64}
-                  onClose={handleClose}
-                />
-              )}
+              <FeatureErrorBoundary
+                featureName="Nuevo Despacho"
+                onClose={handleClose}
+                resetKey={step}
+              >
+                {step === "coverage" && patientData && (
+                  <CoverageStep
+                    state={state}
+                    personId={patientData.person.id}
+                    onNext={(data) => {
+                      merge(data);
+                      setStep("quote");
+                    }}
+                  />
+                )}
+                {step === "quote" && (
+                  <QuoteStep
+                    state={state}
+                    onBack={() => setStep("coverage")}
+                    onNext={(data) => {
+                      merge(data);
+                      setStep("recipient");
+                    }}
+                  />
+                )}
+                {step === "recipient" && (
+                  <RecipientStep
+                    state={state}
+                    patientDefaults={{
+                      name: patientName,
+                      phone: patientData?.person.phone ?? "",
+                      email: patientData?.person.email ?? "",
+                    }}
+                    onBack={() => setStep("quote")}
+                    onNext={(data) => {
+                      merge(data);
+                      setStep("confirm");
+                    }}
+                  />
+                )}
+                {step === "confirm" && (
+                  <ConfirmStep
+                    state={state as WizardState}
+                    patientId={patientId}
+                    onBack={() => setStep("recipient")}
+                    onSuccess={(res) => {
+                      setResult(res);
+                      setStep("done");
+                      void queryClient.invalidateQueries({ queryKey: ["shipments", patientId] });
+                      success(`OT ${res.otNumber} creada correctamente`);
+                    }}
+                    onError={(msg) => toastError(msg)}
+                  />
+                )}
+                {step === "done" && result && (
+                  <DoneStep
+                    otNumber={result.otNumber}
+                    labelBase64={result.labelBase64}
+                    onClose={handleClose}
+                  />
+                )}
+              </FeatureErrorBoundary>
             </Modal.Body>
           </Modal.Dialog>
         </Modal.Container>

@@ -1,3 +1,4 @@
+// oxlint-disable typescript/no-non-null-assertion -- TODO(strict-null): refactor each `!` to invariant() or explicit guard. Tracked in repo-wide non-null cleanup.
 /**
  * Clinical Series Queries & Mutations
  * TanStack Query hooks for clinical series operations

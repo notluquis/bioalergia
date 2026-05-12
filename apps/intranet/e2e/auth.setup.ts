@@ -69,8 +69,10 @@ setup("authenticate once + persist storageState", async ({ page, baseURL }) => {
     }
   }
   await emailInput.waitFor({ state: "visible", timeout: 10_000 });
-  await emailInput.fill(E2E_USER!);
-  await passInput.fill(E2E_PASS!);
+  // setup.skip at the top of the test guarantees both env vars are set.
+  if (!E2E_USER || !E2E_PASS) throw new Error("unreachable: setup.skip gate");
+  await emailInput.fill(E2E_USER);
+  await passInput.fill(E2E_PASS);
   await page
     .getByRole("button", { name: /^(iniciar sesi[oó]n|ingresar|continuar|log in)/i })
     .first()

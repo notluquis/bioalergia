@@ -1,3 +1,4 @@
+// oxlint-disable typescript/no-non-null-assertion -- TODO(strict-null): refactor each `!` to invariant() or explicit guard. Tracked in repo-wide non-null cleanup.
 import { Button } from "@heroui/react";
 import { LogIn, Smartphone } from "lucide-react";
 import { useEffect, useRef, useState } from "react";

@@ -30,7 +30,15 @@
     "import/extensions": ["error", { "js": "always", "ts": "always", "ignorePackages": true }],
     "typescript/no-floating-promises": "error",
     "typescript/no-unsafe-assignment": "warn",
-    "typescript/no-explicit-any": "error"
+    "typescript/no-explicit-any": "error",
+    // Non-null assertions (`x!`) lie to TypeScript about nullability and
+    // turn what should be a compile error into a runtime crash. Prod
+    // bug `null is not an object (evaluating 'v.comuna')` traced to
+    // `selected!.comuna` where the upstream `?? null` made the var
+    // genuinely nullable. Use early returns, `??` defaults, or
+    // `invariant()` instead. Suppress with line-level disable + a
+    // comment explaining why narrowing TS can't see is correct here.
+    "typescript/no-non-null-assertion": "error"
   },
   "ignorePatterns": [
     "**/dist",

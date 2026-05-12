@@ -1,3 +1,4 @@
+// oxlint-disable typescript/no-non-null-assertion -- TODO(strict-null): refactor each `!` to invariant() or explicit guard. Tracked in repo-wide non-null cleanup.
 // Shared fetch wrapper for oRPC clients. Reads csrf_token from
 // document.cookie and mirrors it into the X-CSRF-Token header so the
 // server's csrf-double-submit middleware accepts the request.

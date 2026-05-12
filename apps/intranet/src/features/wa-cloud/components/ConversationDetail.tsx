@@ -1,3 +1,4 @@
+// oxlint-disable typescript/no-non-null-assertion -- TODO(strict-null): refactor each `!` to invariant() or explicit guard. Tracked in repo-wide non-null cleanup.
 import { Avatar, Button, Card, Chip, Spinner } from "@heroui/react";
 import { useQueryClient } from "@tanstack/react-query";
 import dayjs from "dayjs";

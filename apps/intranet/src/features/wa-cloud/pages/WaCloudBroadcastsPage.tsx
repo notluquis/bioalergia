@@ -1,3 +1,4 @@
+// oxlint-disable typescript/no-non-null-assertion -- TODO(strict-null): refactor each `!` to invariant() or explicit guard. Tracked in repo-wide non-null cleanup.
 import { Button, Card, Chip, Modal, ProgressBar, Spinner, Table } from "@heroui/react";
 import { WaTableSkeleton } from "../components/Skeletons";
 import { CalendarClock, Megaphone, Play, Plus, X } from "lucide-react";
