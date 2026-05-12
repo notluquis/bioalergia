@@ -4,10 +4,16 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 
 const isCI = Boolean(process.env.CI);
-// Default target is `vite preview` on :4173 (production build + the
-// configurePreviewServer middleware that fills the CSP nonce placeholder).
-// Override with E2E_BASE_URL to point at a deployed environment.
-const BASE_URL = process.env.E2E_BASE_URL ?? "http://localhost:4173";
+// Two base URLs:
+//   PREVIEW_URL — local vite preview, always-fresh code from this commit.
+//                  Used by unauthed UI/UX specs so they exercise the latest
+//                  index.html / theme tokens / a11y fixes immediately.
+//   AUTHED_URL  — deployed Railway when secret is set. Authed specs hit
+//                  the real API (login, oRPC reads).
+// When AUTHED_URL is unset, authed projects fall back to PREVIEW_URL and
+// the API-probe in auth.setup.ts gates them off cleanly.
+const PREVIEW_URL = "http://localhost:4173";
+const AUTHED_URL = process.env.E2E_BASE_URL ?? PREVIEW_URL;
 
 // Authed projects depend on the `setup` project which writes
 // playwright/.auth/user.json. When credentials are missing locally
@@ -45,7 +51,7 @@ export default defineConfig({
   expect: { timeout: 10_000 },
 
   use: {
-    baseURL: BASE_URL,
+    baseURL: PREVIEW_URL,
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
     video: "retain-on-failure",
@@ -55,11 +61,14 @@ export default defineConfig({
 
   projects: [
     // ── Setup: log in once and persist storageState ─────────────────────
-    // Runs first; every other project depends on it. One real auth POST
+    // Runs first; every authed project depends on it. One real auth POST
     // per CI run instead of one per test (avoids 429 on the live API).
+    // baseURL = AUTHED_URL because the cookie has to be issued by the
+    // backend whose origin the authed projects will call.
     {
       name: "setup",
       testMatch: /.*\.setup\.ts/,
+      use: { baseURL: AUTHED_URL },
     },
 
     // ── Unauthenticated specs (no storageState) ─────────────────────────
@@ -81,7 +90,7 @@ export default defineConfig({
       },
     },
 
-    // ── Authed specs (storageState pre-loaded) ──────────────────────────
+    // ── Authed specs (storageState pre-loaded, hit AUTHED_URL) ──────────
     {
       name: "chromium-desktop",
       testMatch: /a11y\.spec\.ts|skip-link\.spec\.ts/,
@@ -90,6 +99,7 @@ export default defineConfig({
         ...devices["Desktop Chrome"],
         viewport: { width: 1280, height: 800 },
         storageState: "playwright/.auth/user.json",
+        baseURL: AUTHED_URL,
       },
     },
     {
@@ -103,21 +113,19 @@ export default defineConfig({
         isMobile: true,
         hasTouch: true,
         storageState: "playwright/.auth/user.json",
+        baseURL: AUTHED_URL,
       },
     },
   ],
 
-  webServer: process.env.E2E_BASE_URL
-    ? undefined
-    : {
-        // `pnpm preview` serves the prod build via `vite preview`. The Vite
-        // config's configurePreviewServer middleware substitutes the
-        // {{ placeholder "http.request.uuid" }} sentinel + emits a matching
-        // CSP header so React mounts. Build first (CI does
-        // `turbo run build --filter=@finanzas/intranet`).
-        command: "pnpm preview --port 4173 --strictPort",
-        url: BASE_URL,
-        reuseExistingServer: !isCI,
-        timeout: 120_000,
-      },
+  // Always start `vite preview` so the unauthed UI/UX projects exercise
+  // the latest committed code (Railway deploys lag pushes by minutes; we
+  // shouldn't fail a CI run waiting on the deploy pipeline). Authed
+  // projects override baseURL to AUTHED_URL.
+  webServer: {
+    command: "pnpm preview --port 4173 --strictPort",
+    url: PREVIEW_URL,
+    reuseExistingServer: !isCI,
+    timeout: 120_000,
+  },
 });

@@ -37,13 +37,25 @@ setup("authenticate once + persist storageState", async ({ page, baseURL }) => {
   const fallback = page.getByRole("button", {
     name: /usar correo( electr[oó]nico)? y contrase[ñn]a/i,
   });
-  if (await fallback.count()) {
-    await fallback.click().catch(() => undefined);
-  }
-
   const emailInput = page.locator('input[type="email"], input[autocomplete="username"]').first();
   const passInput = page.locator('input[type="password"]').first();
-  await emailInput.waitFor({ state: "visible", timeout: 10_000 });
+
+  if (await fallback.count()) {
+    // The passkey-step button is the React Aria PressResponder (HeroUI v3
+    // Button); the resulting state change is async. Use `await` on the
+    // click, then race the waitFor against another click attempt — if the
+    // first click was swallowed, the second one fires after the React
+    // state machine settles.
+    await fallback.click({ force: true });
+    await emailInput.waitFor({ state: "visible", timeout: 10_000 }).catch(async () => {
+      // Retry once before giving up — covers the click-during-transition
+      // race that React Aria triggers on the deployed Railway build.
+      await fallback.click({ force: true });
+      await emailInput.waitFor({ state: "visible", timeout: 10_000 });
+    });
+  } else {
+    await emailInput.waitFor({ state: "visible", timeout: 10_000 });
+  }
   await emailInput.fill(E2E_USER!);
   await passInput.fill(E2E_PASS!);
   await page
