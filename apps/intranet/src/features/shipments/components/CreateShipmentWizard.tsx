@@ -93,12 +93,17 @@ export function CreateShipmentWizard({
   const [step, setStep] = useState<Step>("coverage");
   const [state, setState] = useState<Partial<WizardState>>({
     deliveryMode: "home",
-    weight: 1,
-    height: 10,
-    width: 10,
-    length: 10,
-    declaredValue: 10000,
+    // Defaults match the clinic's most common shipment: a 20×12×5 cm
+    // box with a 80 g refrigerant + insulin syringe + 0.5 ml
+    // immunotherapy fluid (~0.15 kg total). Operator tweaks per
+    // exception, not per shipment.
+    weight: 0.2,
+    height: 5,
+    width: 12,
+    length: 20,
+    declaredValue: 60000,
     cashOnDelivery: 0,
+    contentDescription: "Vacuna inmunoterapia con caja de 20×12×5 cm + unidad refrigerante 80 gr",
   });
 
   const { data: patientData } = useQuery({
@@ -858,12 +863,23 @@ function QuoteStep({
   onNext: (data: Partial<WizardState>) => void;
 }) {
   const [dims, setDims] = useState({
-    weight: state.weight ?? 1,
-    height: state.height ?? 10,
-    width: state.width ?? 10,
-    length: state.length ?? 10,
-    declaredValue: state.declaredValue ?? 10000,
+    weight: state.weight ?? 0.2,
+    height: state.height ?? 5,
+    width: state.width ?? 12,
+    length: state.length ?? 20,
+    declaredValue: state.declaredValue ?? 60000,
   });
+
+  // Clinic shipping presets. Each one swaps every dimension at once
+  // (no half-applied state) and resets the selected service so a fresh
+  // quote runs. Add more presets here when new packaging is approved.
+  const presets: { id: string; label: string; values: typeof dims }[] = [
+    {
+      id: "vacuna-inmuno",
+      label: "Vacuna inmunoterapia (20×12×5 cm · 200 g)",
+      values: { weight: 0.2, height: 5, width: 12, length: 20, declaredValue: 60000 },
+    },
+  ];
   const [selectedCode, setSelectedCode] = useState<string | null>(state.serviceTypeCode ?? null);
 
   // Debounce dims so re-typing a value doesn't blast Chilexpress.
@@ -921,6 +937,27 @@ function QuoteStep({
         <Package size={16} />
         Ajusta las dimensiones — la cotización se actualiza automáticamente.
       </div>
+
+      {presets.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2 rounded-xl bg-default-50 px-3 py-2">
+          <span className="text-default-500 text-xs">Presets:</span>
+          {presets.map((p) => (
+            <Chip
+              key={p.id}
+              size="sm"
+              color="accent"
+              variant="soft"
+              className="cursor-pointer"
+              onClick={() => {
+                setDims(p.values);
+                setSelectedCode(null);
+              }}
+            >
+              <Chip.Label>{p.label}</Chip.Label>
+            </Chip>
+          ))}
+        </div>
+      )}
 
       <div className="grid grid-cols-2 gap-4">
         <NumberField
