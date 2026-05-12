@@ -376,11 +376,13 @@ class SinglePassProgress {
   start = Date.now();
   bytesRead = 0;
   lastTick = 0;
+  totalBytes: number;
+  label: string;
 
-  constructor(
-    readonly totalBytes: number,
-    readonly label: string
-  ) {}
+  constructor(totalBytes: number, label: string) {
+    this.totalBytes = totalBytes;
+    this.label = label;
+  }
 
   addBytes(n: number) {
     this.bytesRead += n;
