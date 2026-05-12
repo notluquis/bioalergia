@@ -82,6 +82,16 @@ const rules = [
     message: "Card.Heading does not exist in HeroUI v3. Use Card.Title.",
     pattern: /<Card\.Heading\b/g,
   },
+  {
+    id: "static-viewport-height",
+    message:
+      "Use `100dvh` (or `100svh` for safe area) instead of `100vh`. iOS Safari URL-bar shrink clips static-vh layouts.",
+    // Tailwind utilities like `h-[calc(100vh-7rem)]` or `min-h-[100vh]`
+    // shipped to prod cause clipping. CSS files are caught by the
+    // stylelint-plugin-defensive-css rule require-dynamic-viewport-height;
+    // this scan covers the Tailwind class usage that lives in JSX.
+    pattern: /\b100vh\b/g,
+  },
 ];
 
 function isIgnored(source, lineIndex, ruleId) {

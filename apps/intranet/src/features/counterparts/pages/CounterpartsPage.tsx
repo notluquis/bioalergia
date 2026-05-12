@@ -584,7 +584,7 @@ export function CounterpartsPage() {
                 visibleCount={derived.visibleCounterparts.length}
               />
 
-              <div className="min-h-[calc(100vh-220px)]">
+              <div className="min-h-[calc(100dvh-220px)]">
                 <CounterpartDetailPane
                   canCreate={canCreate}
                   canUpdate={canUpdate}

@@ -802,7 +802,7 @@ export function HaulmerSyncPage() {
       )}
 
       {/* By Year - Scrollable Container */}
-      <div className="max-h-[calc(100vh-400px)] space-y-3 overflow-y-auto pr-1">
+      <div className="max-h-[calc(100dvh-400px)] space-y-3 overflow-y-auto pr-1">
         {sortedYears.map((year) => (
           <div key={year} className="space-y-3">
             <span className="block font-semibold text-default-700 text-lg">{year}</span>

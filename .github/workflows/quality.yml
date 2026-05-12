@@ -38,6 +38,7 @@ jobs:
         with: { node-version: "${{ env.NODE_VERSION }}", cache: pnpm }
       - run: pnpm install --frozen-lockfile
       - run: pnpm -F @finanzas/intranet audit:design
+      - run: pnpm -F @finanzas/intranet audit:css
 
   dead-code:
     # Informational: prints knip report but never fails the workflow.
