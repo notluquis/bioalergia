@@ -78,7 +78,7 @@ export function ConfirmDialogHost() {
         }}
       >
         <Modal.Container placement="center">
-          <Modal.Dialog className="relative w-full max-w-md rounded-[28px] bg-content1 p-6 shadow-2xl">
+          <Modal.Dialog className="relative w-full max-w-md bg-content1 p-6 shadow-2xl max-sm:rounded-t-[28px] sm:rounded-[28px]">
             <Modal.Header className="mb-2 font-bold text-foreground text-lg">
               <Modal.Heading>{state.title}</Modal.Heading>
             </Modal.Header>
