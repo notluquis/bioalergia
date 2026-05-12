@@ -1187,20 +1187,40 @@ const waRouterBase = {
       return r;
     }),
 
-  // Template library (Meta-curated catalog, no approval review)
+  // Template library (Meta-curated catalog, no approval review).
+  //
+  // The Graph endpoint /{waba}/message_template_library is NOT exposed
+  // on the public WhatsApp Business API tier — Meta returns
+  // `(#100) Tried accessing nonexisting field (message_template_library)`.
+  // Browsing the catalog is only available in Meta Business Suite UI;
+  // programmatic access is gated behind Solution Partner / Tech Provider
+  // status. Cloning by name (cloneTemplateFromLibrary below, POST to
+  // /{waba}/message_templates with `source: "library"`) does work on
+  // every tier, so we keep that path live and degrade `listTemplateLibrary`
+  // to return an empty catalog with a hint instead of bubbling the 400.
   listTemplateLibrary: readWa
     .route({ method: "POST", path: "/templates/library/list", tags: ["WA Cloud"] })
     .input(listTemplateLibraryInputSchema)
     .output(listTemplateLibraryResponseSchema)
     .handler(async ({ input }) => {
-      const templates = await listTemplateLibrary(input.accountId, {
-        category: input.category,
-        topic: input.topic,
-        industry: input.industry,
-        language: input.language,
-        search: input.search,
-      });
-      return { templates };
+      try {
+        const templates = await listTemplateLibrary(input.accountId, {
+          category: input.category,
+          topic: input.topic,
+          industry: input.industry,
+          language: input.language,
+          search: input.search,
+        });
+        return { templates };
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        const isTierError =
+          message.includes("nonexisting field") ||
+          message.includes("message_template_library");
+        if (!isTierError) throw err;
+        logError("[wa-cloud.listTemplateLibrary] catalog browse not available", { message });
+        return { templates: [] };
+      }
     }),
 
   cloneTemplateFromLibrary: createWa
