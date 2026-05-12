@@ -1,4 +1,6 @@
 import { kysely } from "@finanzas/db";
+import type { Transaction } from "kysely";
+import type { SchemaType } from "@finanzas/db/schema";
 import { createId } from "@paralleldrive/cuid2";
 import { createHash } from "node:crypto";
 import { sql } from "kysely";
@@ -2530,9 +2532,33 @@ async function writeSkinTest(
   const interpretation = parsed.interpretation ?? emptyInterpretation();
   const resultHash = computeResultHash(parsed.results);
   if (!header.testDate) throw new Error("No se puede importar un test sin fecha.");
-  await sql`DELETE FROM clinical_skin_tests WHERE source_import_id = ${importId}`.execute(kysely);
-  const skinTestId = createId();
-  await sql`
+  return kysely.transaction().execute(async (trx) => {
+    // Per-import advisory lock serializes concurrent workers reprocessing
+    // the same row, even across replicas, without holding any row locks.
+    // The lock is auto-released at transaction commit/rollback.
+    await sql`SELECT pg_advisory_xact_lock(hashtextextended(${`csti:${importId}`}, 0))`.execute(
+      trx,
+    );
+    return writeSkinTestInTransaction(trx, importId, seriesId, header, interpretation, resultHash, parsed);
+  });
+}
+
+async function writeSkinTestInTransaction(
+  trx: Transaction<SchemaType>,
+  importId: string,
+  seriesId: number,
+  header: ParsedSkinTestWorkbook["header"],
+  interpretation: NonNullable<ParsedSkinTestWorkbook["interpretation"]>,
+  resultHash: string,
+  parsed: Pick<ParsedSkinTestWorkbook, "header" | "interpretation" | "results">,
+): Promise<void> {
+  // Atomic upsert keyed on the unique source_import_id. The advisory
+  // lock above already serializes per-import; the upsert is belt-and-
+  // suspenders so a missed lock never collides on the unique constraint.
+  // RETURNING id keeps the existing row's primary key when present so
+  // child clinical_skin_test_results FKs stay valid.
+  const candidateSkinTestId = createId();
+  const upserted = await sql<{ id: string }>`
     INSERT INTO clinical_skin_tests (
       id,
       clinical_series_id,
@@ -2556,7 +2582,7 @@ async function writeSkinTest(
       updated_at
     )
     VALUES (
-      ${skinTestId},
+      ${candidateSkinTestId},
       ${seriesId},
       ${importId},
       ${header.testDate}::date,
@@ -2577,7 +2603,33 @@ async function writeSkinTest(
       now(),
       now()
     )
-  `.execute(kysely);
+    ON CONFLICT (source_import_id) DO UPDATE SET
+      clinical_series_id = EXCLUDED.clinical_series_id,
+      test_date = EXCLUDED.test_date,
+      patient_name = EXCLUDED.patient_name,
+      patient_rut = EXCLUDED.patient_rut,
+      patient_email = EXCLUDED.patient_email,
+      patient_phone = EXCLUDED.patient_phone,
+      age_label = EXCLUDED.age_label,
+      panel_title = EXCLUDED.panel_title,
+      clinical_note = EXCLUDED.clinical_note,
+      physician_name = EXCLUDED.physician_name,
+      physician_specialty = EXCLUDED.physician_specialty,
+      website = EXCLUDED.website,
+      address = EXCLUDED.address,
+      non_conclusive_due_to_hyperreactivity = EXCLUDED.non_conclusive_due_to_hyperreactivity,
+      result_hash = EXCLUDED.result_hash,
+      raw_header = EXCLUDED.raw_header,
+      updated_at = now()
+    RETURNING id
+  `.execute(trx);
+  const skinTestId = upserted.rows[0]?.id ?? candidateSkinTestId;
+  // Drop stale result rows whose (section, code, allergen_name) no
+  // longer appear in the freshly parsed payload. The per-result UPSERT
+  // below covers updates and inserts; explicit cleanup covers removals.
+  await sql`DELETE FROM clinical_skin_test_results WHERE source_import_id = ${importId}`.execute(
+    trx,
+  );
 
   // Deduplicate by conflict key before batch insert — parser can emit duplicate (section, code, allergenName)
   const seenResultKeys = new Map<string, (typeof parsed.results)[number]>();
@@ -2635,7 +2687,7 @@ async function writeSkinTest(
         control_type = EXCLUDED.control_type,
         sort_order = EXCLUDED.sort_order,
         raw_cells = EXCLUDED.raw_cells
-    `.execute(kysely);
+    `.execute(trx);
   }
 }
 
