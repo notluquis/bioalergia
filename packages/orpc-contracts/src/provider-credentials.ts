@@ -1,7 +1,7 @@
 import { oc } from "@orpc/contract";
 import { z } from "zod";
 
-import { expenseScopeSchema } from "./expenses";
+import { expenseScopeSchema } from "./expenses.ts";
 
 export const providerKindSchema = z.enum([
   "ESSBIO",
