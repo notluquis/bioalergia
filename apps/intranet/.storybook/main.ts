@@ -10,6 +10,7 @@ const config: StorybookConfig = {
     "@storybook/addon-a11y",
     "@storybook/addon-themes",
     "@storybook/addon-designs",
+    "@storybook/addon-vitest",
     "storybook-addon-tag-badges",
   ],
   framework: "@storybook/react-vite",

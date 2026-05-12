@@ -7,12 +7,18 @@ import {
   Dropdown,
   EmptyState,
   Input,
+  Kbd,
   Label,
   ListBox,
+  Modal,
+  ScrollShadow,
   SearchField,
   Select,
-  Spinner,
+  Skeleton,
+  Tag,
+  TagGroup,
 } from "@heroui/react";
+// Spinner removed in favour of ConversationListSkeleton for the inbox list.
 import dayjs from "dayjs";
 import { ArrowLeft, Filter, Inbox, MessageSquareText, Phone } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -86,6 +92,7 @@ export function WaCloudInboxPage() {
   const [phoneFilter, setPhoneFilter] = useState("");
   const [search, setSearch] = useState("");
   const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [showHelp, setShowHelp] = useState(false);
   const isMobile = useIsMobile();
   // On mobile we render either the list or the detail view, not both.
   const showDetail = isMobile ? selectedId !== null : true;
@@ -110,6 +117,20 @@ export function WaCloudInboxPage() {
 
   const items = conversations.data?.items ?? [];
   const activeFiltersCount = (status ? 1 : 0) + (phoneFilter ? 1 : 0);
+  const totalUnread = useMemo(
+    () => items.reduce((sum, c) => sum + (c.unreadCount || 0), 0),
+    [items]
+  );
+
+  // Tab title shows the unread total so the operator notices new
+  // WhatsApp activity even from another tab.
+  useEffect(() => {
+    const base = "Inbox WhatsApp · Bioalergia";
+    document.title = totalUnread > 0 ? `(${totalUnread}) ${base}` : base;
+    return () => {
+      document.title = "Bioalergia";
+    };
+  }, [totalUnread]);
 
   // Keyboard shortcuts: j/k navigate list, Enter open, Esc close,
   // / focus search, ? show help. Inputs/textareas are excluded so
@@ -124,8 +145,17 @@ export function WaCloudInboxPage() {
           t.tagName === "SELECT" ||
           t.isContentEditable);
       if (inEditable && e.key !== "Escape") return;
-      if (e.key === "Escape" && selectedId !== null) {
-        setSelectedId(null);
+      if (e.key === "Escape") {
+        if (showHelp) {
+          setShowHelp(false);
+        } else if (selectedId !== null) {
+          setSelectedId(null);
+        }
+        e.preventDefault();
+        return;
+      }
+      if (e.key === "?" || (e.shiftKey && e.key === "/")) {
+        setShowHelp((v) => !v);
         e.preventDefault();
         return;
       }
@@ -151,7 +181,7 @@ export function WaCloudInboxPage() {
         e.preventDefault();
       }
     },
-    [items, selectedId]
+    [items, selectedId, showHelp]
   );
   useEffect(() => {
     window.addEventListener("keydown", onKey);
@@ -193,11 +223,22 @@ export function WaCloudInboxPage() {
               </SearchField>
             </header>
 
-            <div className="flex-1 overflow-y-auto">
+            <ActiveFilterChips
+              status={status}
+              onStatusClear={() => setStatus("")}
+              phoneFilter={phoneFilter}
+              onPhoneClear={() => setPhoneFilter("")}
+              phones={allPhones}
+            />
+
+            <ScrollShadow
+              orientation="vertical"
+              size={32}
+              hideScrollBar
+              className="flex-1 overflow-y-auto"
+            >
               {conversations.isLoading || !conversations.data ? (
-                <div className="flex h-32 items-center justify-center">
-                  <Spinner aria-label="Cargando conversaciones" />
-                </div>
+                <ConversationListSkeleton />
               ) : items.length === 0 ? (
                 <EmptyState className="m-4 p-6 text-center">
                   <MessageSquareText size={28} className="mx-auto text-default-400" />
@@ -209,19 +250,28 @@ export function WaCloudInboxPage() {
                   </p>
                 </EmptyState>
               ) : (
-                <ul className="divide-y divide-default-200">
+                <ListBox
+                  aria-label="Conversaciones"
+                  selectionMode="single"
+                  selectedKeys={selectedId ? new Set([String(selectedId)]) : new Set()}
+                  onSelectionChange={(keys) => {
+                    const k = [...(keys as Set<string>)][0];
+                    if (k) setSelectedId(Number(k));
+                  }}
+                  className="border-0 bg-transparent p-0"
+                >
                   {items.map((c) => {
-                    const sel = selectedId === c.id;
                     const name = c.contact.name ?? c.contact.pushName ?? c.contact.phoneE164;
                     const initials = initialsOf(name);
                     const avatarColor = colorFor(c.contact.phoneE164);
                     return (
-                      <li key={c.id}>
-                        <button
-                          type="button"
-                          className={`flex w-full items-center gap-3 px-3 py-3 text-left transition-colors hover:bg-default-100 ${sel ? "bg-default-100" : ""}`}
-                          onClick={() => setSelectedId(c.id)}
-                        >
+                      <ListBox.Item
+                        key={c.id}
+                        id={String(c.id)}
+                        textValue={name}
+                        className="rounded-none border-default-200 border-b px-3 py-3 transition-[background-color] duration-150 ease-out"
+                      >
+                        <div className="flex w-full items-center gap-3">
                           {c.unreadCount > 0 ? (
                             <Badge color="success" placement="top-right" size="sm">
                               <Badge.Label>{c.unreadCount}</Badge.Label>
@@ -262,11 +312,11 @@ export function WaCloudInboxPage() {
                               <ConversationStatusChip status={c.status} />
                             </div>
                           </div>
-                        </button>
-                      </li>
+                        </div>
+                      </ListBox.Item>
                     );
                   })}
-                </ul>
+                </ListBox>
               )}
               {messageHits.data && messageHits.data.results.length > 0 && (
                 <div className="border-default-200 border-t bg-content2 p-2">
@@ -298,7 +348,7 @@ export function WaCloudInboxPage() {
                   </ul>
                 </div>
               )}
-            </div>
+            </ScrollShadow>
           </aside>
         )}
 
@@ -335,7 +385,109 @@ export function WaCloudInboxPage() {
           </section>
         )}
       </Card>
+      <KeyboardHelpModal open={showHelp} onClose={() => setShowHelp(false)} />
     </div>
+  );
+}
+
+function ConversationListSkeleton() {
+  return (
+    <div className="space-y-0 divide-default-200 divide-y">
+      {Array.from({ length: 8 }).map((_, i) => (
+        <div key={i} className="flex items-center gap-3 px-3 py-3">
+          <Skeleton className="size-11 shrink-0 rounded-full" />
+          <div className="min-w-0 flex-1 space-y-2">
+            <div className="flex items-baseline justify-between gap-2">
+              <Skeleton className="h-3 w-28 rounded" />
+              <Skeleton className="h-2.5 w-10 rounded" />
+            </div>
+            <Skeleton className="h-2.5 w-3/4 rounded" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function ActiveFilterChips({
+  status,
+  onStatusClear,
+  phoneFilter,
+  onPhoneClear,
+  phones,
+}: {
+  status: WaConversationStatus | "";
+  onStatusClear: () => void;
+  phoneFilter: string;
+  onPhoneClear: () => void;
+  phones: { id: number; label: string | null; displayPhoneNumber: string }[];
+}) {
+  if (!status && !phoneFilter) return null;
+  const statusLabel = STATUS_OPTIONS.find((o) => o.value === status)?.label ?? "";
+  const phoneRow = phones.find((p) => String(p.id) === phoneFilter);
+  const phoneLabel = phoneRow ? (phoneRow.label ?? phoneRow.displayPhoneNumber) : "";
+  return (
+    <div className="border-default-200 border-b bg-content2 px-3 py-2">
+      <TagGroup
+        aria-label="Filtros activos"
+        size="sm"
+        onRemove={(keys) => {
+          for (const k of keys as Set<string>) {
+            if (k === "status") onStatusClear();
+            if (k === "phone") onPhoneClear();
+          }
+        }}
+      >
+        <TagGroup.List>
+          {status ? (
+            <Tag id="status" textValue={`Estado: ${statusLabel}`}>
+              Estado: {statusLabel}
+            </Tag>
+          ) : null}
+          {phoneFilter ? (
+            <Tag id="phone" textValue={`Número: ${phoneLabel}`}>
+              Número: {phoneLabel}
+            </Tag>
+          ) : null}
+        </TagGroup.List>
+      </TagGroup>
+    </div>
+  );
+}
+
+function KeyboardHelpModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const rows: { keys: string[]; label: string }[] = [
+    { keys: ["j"], label: "Siguiente conversación" },
+    { keys: ["k"], label: "Conversación anterior" },
+    { keys: ["/"], label: "Buscar" },
+    { keys: ["Esc"], label: "Cerrar conversación o ayuda" },
+    { keys: ["?"], label: "Mostrar / ocultar atajos" },
+  ];
+  return (
+    <Modal isOpen={open} onOpenChange={(v) => !v && onClose()}>
+      <Modal.Backdrop />
+      <Modal.Container placement="center">
+        <Modal.Dialog className="w-full max-w-md rounded-2xl bg-background p-5 shadow-2xl">
+          <Modal.Header className="mb-3">
+            <Modal.Heading className="font-semibold text-base">Atajos de teclado</Modal.Heading>
+          </Modal.Header>
+          <Modal.Body className="space-y-2">
+            {rows.map((r) => (
+              <div key={r.label} className="flex items-center justify-between gap-3 text-sm">
+                <span className="text-default-700">{r.label}</span>
+                <span className="flex gap-1">
+                  {r.keys.map((k) => (
+                    <Kbd key={k}>
+                      <Kbd.Content>{k}</Kbd.Content>
+                    </Kbd>
+                  ))}
+                </span>
+              </div>
+            ))}
+          </Modal.Body>
+        </Modal.Dialog>
+      </Modal.Container>
+    </Modal>
   );
 }
 
@@ -375,19 +527,15 @@ function FilterDropdown({
   return (
     <Dropdown>
       <Dropdown.Trigger>
-        <button
-          type="button"
-          className="relative inline-flex items-center gap-1 rounded-md border border-default-200 bg-default-100 px-2.5 py-1 text-default-700 text-xs hover:bg-default-200"
-          aria-label="Filtros"
-        >
+        <Button variant="tertiary" size="sm" aria-label="Filtros">
           <Filter size={14} />
           Filtros
-          {activeCount > 0 && (
-            <span className="ml-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-success px-1 font-semibold text-xs text-success-foreground">
-              {activeCount}
-            </span>
-          )}
-        </button>
+          {activeCount > 0 ? (
+            <Chip size="sm" color="success" variant="soft" className="ml-1">
+              <Chip.Label>{activeCount}</Chip.Label>
+            </Chip>
+          ) : null}
+        </Button>
       </Dropdown.Trigger>
       <Dropdown.Popover className="w-72 space-y-3 p-3">
         <Select value={status} onChange={(k) => onStatusChange((k as WaConversationStatus) ?? "")}>
