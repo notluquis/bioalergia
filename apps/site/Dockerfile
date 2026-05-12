@@ -9,7 +9,7 @@ ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 ENV HUSKY=0
 COPY . .
-RUN npm install -g pnpm@10.33.4
+RUN npm install -g pnpm@11.1.1
 RUN TURBO_TELEMETRY_DISABLED=1 pnpm dlx turbo@2.9.1 prune @finanzas/site --docker
 
 # ==========================================================================
@@ -20,7 +20,7 @@ WORKDIR /app
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 ENV HUSKY=0
-RUN npm install -g pnpm@10.33.4
+RUN npm install -g pnpm@11.1.1
 
 COPY --from=pruner /app/out/json/ .
 COPY --from=pruner /app/out/pnpm-lock.yaml ./pnpm-lock.yaml

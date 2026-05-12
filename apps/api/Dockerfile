@@ -11,7 +11,7 @@ ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 ENV HUSKY=0
 COPY . .
-RUN npm install -g pnpm@10.33.4
+RUN npm install -g pnpm@11.1.1
 # Use pnpm dlx to avoid npm interpreting pnpm-only .npmrc keys during Docker builds.
 RUN TURBO_TELEMETRY_DISABLED=1 pnpm dlx turbo@2.9.1 prune @finanzas/api --docker
 
@@ -31,7 +31,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Install the workspace-pinned pnpm directly (corepack removed in Node.js 25+)
-RUN npm install -g pnpm@10.33.4
+RUN npm install -g pnpm@11.1.1
 
 # Copy dependencies from pruner
 COPY --from=pruner /app/out/json/ .
