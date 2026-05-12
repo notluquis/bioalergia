@@ -2,16 +2,18 @@ packages:
   - "apps/*"
   - "packages/*"
 
-# pnpm v11 pattern for `pnpm deploy`: each consumer that needs to be
-# deployed declares its workspace deps as injected via the per-package
-# `dependenciesMeta.<pkg>.injected: true` in its own package.json
-# (see apps/api/package.json). This is the v11+ golden pattern — more
-# surgical than the workspace-wide `injectWorkspacePackages` setting,
-# which would force-copy every workspace dep across the entire monorepo
-# (slower dev installs, larger node_modules). The deprecated alternative
+# pnpm v11 pattern for `pnpm deploy`: we also declare per-consumer
+# `dependenciesMeta.<pkg>.injected: true` in each consumer's
+# package.json (see apps/api/package.json). The workspace-wide setting
+# below is the belt-and-suspenders fallback because `turbo prune`
+# (verified up to 2.9.1) strips `dependenciesMeta.injected` from the
+# pruned package.json that lands in `out/json/` inside the Docker
+# build, so the per-consumer hint never reaches the install stage. The
+# workspace-wide flag does survive prune. The deprecated alternative
 # is `pnpm deploy --legacy`, which we explicitly avoid.
 # Refs: https://pnpm.io/settings#injectworkspacepackages
 #       https://pnpm.io/package_json#dependenciesmetainjected
+injectWorkspacePackages: true
 
 # pnpm 11 blocks every postinstall by default. Only binaries / native
 # bindings below get to run install scripts. ZenStack manages Prisma
