@@ -1,5 +1,6 @@
 import { ORPCError } from "@orpc/server";
 import { AppError } from "../lib/app-error.ts";
+import { DomainError } from "../lib/errors.ts";
 import { GoogleApiError } from "../lib/google/google-errors.ts";
 
 function mapHttpStatusToORPCCode(status: number): string {
@@ -40,6 +41,14 @@ function normalizeErrorStatus(status: number): number {
 export function toORPCError(error: unknown): ORPCError<string, unknown> {
   if (error instanceof ORPCError) {
     return error;
+  }
+
+  if (error instanceof DomainError) {
+    return new ORPCError(mapHttpStatusToORPCCode(error.status), {
+      data: error.details,
+      message: error.message,
+      status: error.status,
+    });
   }
 
   if (error instanceof AppError) {

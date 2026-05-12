@@ -1,4 +1,5 @@
 import { db } from "@finanzas/db";
+import { DomainError } from "../lib/errors.ts";
 
 import type { CalendarEventRecord } from "../lib/google/google-calendar.ts";
 import { calendarSyncService } from "../modules/calendar/service.ts";
@@ -90,7 +91,10 @@ export async function createCalendarSyncLogEntry(data: {
     const diff = Date.now() - running.startedAt.getTime();
     const STALE_TIMEOUT_MS = 15 * 60 * 1000; // 15 minutes (increased to support large syncs)
     if (diff < STALE_TIMEOUT_MS) {
-      throw new Error("Sincronización ya en curso");
+      throw new DomainError("CONFLICT", "Sincronización ya en curso", {
+        runningLogId: running.id,
+        startedAt: running.startedAt,
+      });
     }
     // If stale (>15min), clean it up specifically
     console.warn(

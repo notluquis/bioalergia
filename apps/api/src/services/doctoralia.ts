@@ -1,4 +1,5 @@
 import { db } from "@finanzas/db";
+import { DomainError } from "../lib/errors.ts";
 
 export async function createDoctoraliaSyncLogEntry(params: {
   syncType?: "CALENDAR" | "EMAIL";
@@ -12,7 +13,10 @@ export async function createDoctoraliaSyncLogEntry(params: {
   });
 
   if (pending) {
-    throw new Error(`Sincronización Doctoralia (${syncType}) ya en curso`);
+    throw new DomainError("CONFLICT", `Sincronización Doctoralia (${syncType}) ya en curso`, {
+      runningLogId: pending.id,
+      syncType,
+    });
   }
 
   const log = await db.doctoraliaSyncLog.create({
