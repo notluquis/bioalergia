@@ -98,3 +98,32 @@ export const PageScrollMode: Story = {
     </div>
   ),
 };
+
+export const Empty: Story = {
+  render: () => (
+    <div className="max-w-3xl">
+      <DataTable
+        columns={columns}
+        data={[]}
+        enableVirtualization={false}
+        noDataMessage="Sin resultados para los filtros aplicados."
+      />
+    </div>
+  ),
+};
+
+export const Loading: Story = {
+  render: () => (
+    <div className="max-w-3xl">
+      <DataTable columns={columns} data={[]} enableVirtualization={false} isLoading />
+    </div>
+  ),
+};
+
+export const WithToolbar: Story = {
+  render: () => (
+    <div className="max-w-3xl">
+      <DataTable columns={columns} data={data} enableVirtualization={false} enableToolbar />
+    </div>
+  ),
+};

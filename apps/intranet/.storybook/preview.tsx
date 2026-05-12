@@ -5,8 +5,9 @@ import { initialize, mswLoader } from "msw-storybook-addon";
 
 import "../src/index.css";
 import { allModes } from "./modes";
+import { handlers } from "./msw-handlers";
 
-initialize();
+initialize({ onUnhandledRequest: "bypass" });
 
 const preview = {
   decorators: [
@@ -45,6 +46,13 @@ const preview = {
       // per-story by re-exporting `parameters.chromatic.modes` when a
       // mode is irrelevant (e.g. a mobile-only sheet).
       modes: allModes,
+    },
+    msw: {
+      // Default MSW handlers — every oRPC endpoint returns a deterministic
+      // fixture or a generic success. Destructive mutations resolve fake
+      // success without hitting any DB. Stories opt out / override by
+      // re-exporting parameters.msw.handlers.
+      handlers,
     },
   },
 };

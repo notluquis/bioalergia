@@ -23,6 +23,14 @@ interface Fixtures {
  * the wrong button.
  *
  * Add the route name (without /rpc/) when introducing a new mutation.
+ *
+ * Defense layers (ranked):
+ *   1. This network-layer denylist (defense in test).
+ *   2. App-level: ZenStack `@@deny` policies tied to the E2E user role
+ *      (TODO — needs schema migration, see CLAUDE.local.md).
+ *   3. DB-level: separate Postgres role with GRANT SELECT only,
+ *      consumed via DATABASE_URL_READONLY when running E2E.
+ *      (TODO — needs Railway provisioning + dual connection pool.)
  */
 const DANGEROUS_RPC_PATTERNS: RegExp[] = [
   /\/rpc\/(delete|destroy|remove|drop|truncate)\b/i,
@@ -32,7 +40,12 @@ const DANGEROUS_RPC_PATTERNS: RegExp[] = [
   /\/rpc\/(reset|recreate|reseed|wipe|purge)\b/i,
   /\/rpc\/(refund|chargeback|cashout|payout)\b/i,
   /\/rpc\/(import|export|sync)\b/i, // long-running mass mutations
-  // Also block raw HTTP DELETE — only oRPC POST routes are excepted.
+  /\/rpc\/(create|insert|add|new)\b/i, // creation verbs — broad
+  /\/rpc\/(update|patch|edit|modify|set|save|store)\b/i, // mutation verbs
+  /\/rpc\/(approve|reject|confirm|finalize|complete|close|open|lock|unlock)\b/i, // state transitions
+  /\/rpc\/(assign|unassign|attach|detach|link|unlink|connect|disconnect)\b/i, // relations
+  /\/rpc\/(generate|render|compile|build|process|exec)\b/i, // side-effecting computations
+  // Raw HTTP DELETE / PATCH / PUT also blocked unconditionally.
 ];
 
 /**
@@ -40,13 +53,15 @@ const DANGEROUS_RPC_PATTERNS: RegExp[] = [
  * request whose URL matches a DANGEROUS_RPC_PATTERN, plus all DELETE
  * verbs. oRPC list/get/show queries (POST but read-only) flow through.
  */
+const DESTRUCTIVE_METHODS = new Set(["DELETE", "PATCH", "PUT"]);
+
 async function readOnlyGuard(page: Page) {
   await page.route(/.*\/api\/.+/, (route) => {
     const req = route.request();
     const url = new URL(req.url());
     const isDangerousPath = DANGEROUS_RPC_PATTERNS.some((re) => re.test(url.pathname));
-    const isRawDelete = req.method() === "DELETE";
-    if (!isDangerousPath && !isRawDelete) return route.continue();
+    const isDestructiveMethod = DESTRUCTIVE_METHODS.has(req.method());
+    if (!isDangerousPath && !isDestructiveMethod) return route.continue();
     console.warn(`[e2e] blocked ${req.method()} ${url.pathname} (read-only guard)`);
     return route.fulfill({
       status: 403,
