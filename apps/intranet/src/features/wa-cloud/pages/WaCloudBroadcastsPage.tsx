@@ -1,4 +1,5 @@
 import { Button, Card, Chip, Modal, ProgressBar, Spinner, Table } from "@heroui/react";
+import { WaTableSkeleton } from "../components/Skeletons";
 import { CalendarClock, Megaphone, Play, Plus, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { AppDateTimePicker } from "@/components/forms/AppDatePicker";
@@ -43,9 +44,9 @@ export function WaCloudBroadcastsPage() {
       </div>
 
       {list.isLoading ? (
-        <div className="flex justify-center py-12">
-          <Spinner aria-label="Cargando" />
-        </div>
+        <Card>
+          <WaTableSkeleton rows={5} cols={6} />
+        </Card>
       ) : (list.data?.broadcasts.length ?? 0) === 0 ? (
         <Card>
           <Card.Content className="p-8 text-center text-default-500 text-sm">

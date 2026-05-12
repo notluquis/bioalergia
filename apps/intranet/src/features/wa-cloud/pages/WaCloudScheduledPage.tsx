@@ -1,10 +1,11 @@
-import { Button, Card, Chip, Spinner, Table } from "@heroui/react";
+import { Button, Card, Chip, Table } from "@heroui/react";
 import dayjs from "dayjs";
 import { CalendarClock, X } from "lucide-react";
 import { useState } from "react";
 import { confirmAction } from "@/components/ui/ConfirmDialog";
 import { SelectInput } from "@/features/outreach/components/FormField";
 import { toast } from "@/lib/toast-interceptor";
+import { WaTableSkeleton } from "../components/Skeletons";
 import { useAllScheduled, useCancelScheduled } from "../hooks/useWaCloud";
 
 const STATUS_COLOR: Record<string, "success" | "warning" | "danger" | "default"> = {
@@ -50,9 +51,9 @@ export function WaCloudScheduledPage() {
       </div>
 
       {all.isLoading ? (
-        <div className="flex justify-center py-12">
-          <Spinner aria-label="Cargando" />
-        </div>
+        <Card>
+          <WaTableSkeleton rows={6} cols={5} />
+        </Card>
       ) : items.length === 0 ? (
         <Card>
           <Card.Content className="p-8 text-center text-default-500 text-sm">

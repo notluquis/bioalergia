@@ -1,4 +1,5 @@
-import { Button, Card, Chip, EmptyState, Spinner } from "@heroui/react";
+import { Button, Card, Chip, EmptyState } from "@heroui/react";
+import { WaTableSkeleton } from "../components/Skeletons";
 import { BarChart3, MessageSquareText, RefreshCw, TrendingUp } from "lucide-react";
 import { useMemo, useState } from "react";
 import { SelectInput } from "@/features/outreach/components/FormField";
@@ -137,9 +138,9 @@ export function WaCloudAnalyticsPage() {
           </Card.Content>
         </Card>
       ) : analytics.isLoading ? (
-        <div className="flex justify-center py-16">
-          <Spinner aria-label="Cargando" />
-        </div>
+        <Card>
+          <WaTableSkeleton rows={8} cols={6} />
+        </Card>
       ) : analytics.error ? (
         <Card>
           <Card.Content className="p-6 text-danger text-sm">

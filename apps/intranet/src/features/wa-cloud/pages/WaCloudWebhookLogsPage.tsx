@@ -1,6 +1,7 @@
-import { Card, Chip, Spinner, Table } from "@heroui/react";
+import { Card, Chip, Table } from "@heroui/react";
 import dayjs from "dayjs";
 import { useQuery } from "@tanstack/react-query";
+import { WaTableSkeleton } from "../components/Skeletons";
 import { waCloudORPCClient } from "../orpc";
 
 export function WaCloudWebhookLogsPage() {
@@ -12,8 +13,13 @@ export function WaCloudWebhookLogsPage() {
 
   if (isLoading || !data) {
     return (
-      <div className="flex h-64 items-center justify-center">
-        <Spinner aria-label="Cargando" />
+      <div className="space-y-4 p-6">
+        <Card>
+          <Card.Header>
+            <Card.Title>Webhook logs</Card.Title>
+          </Card.Header>
+          <WaTableSkeleton rows={8} cols={5} />
+        </Card>
       </div>
     );
   }

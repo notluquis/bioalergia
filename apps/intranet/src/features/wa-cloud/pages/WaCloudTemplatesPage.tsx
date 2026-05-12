@@ -1,4 +1,5 @@
 import { Button, Card, Chip, Modal, Spinner, Table } from "@heroui/react";
+import { WaCardGridSkeleton } from "../components/Skeletons";
 import { BookOpen, Plus, Trash2, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { SelectInput, TextAreaInput, TextInput } from "@/features/outreach/components/FormField";
@@ -40,8 +41,8 @@ export function WaCloudTemplatesPage() {
 
   if (tpl.isLoading || !tpl.data) {
     return (
-      <div className="flex h-64 items-center justify-center">
-        <Spinner aria-label="Cargando" />
+      <div className="space-y-4 p-6">
+        <WaCardGridSkeleton cards={6} columns={3} />
       </div>
     );
   }

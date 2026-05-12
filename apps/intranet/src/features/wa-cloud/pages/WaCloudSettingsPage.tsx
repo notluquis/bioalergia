@@ -1,4 +1,5 @@
-import { Button, Card, Chip, Modal, Spinner } from "@heroui/react";
+import { Button, Card, Chip, Modal } from "@heroui/react";
+import { WaSettingsSkeleton } from "../components/Skeletons";
 import {
   Check,
   Copy,
@@ -45,11 +46,7 @@ export function WaCloudSettingsPage() {
   const [createOpen, setCreateOpen] = useState(false);
 
   if (accounts.isLoading || !accounts.data) {
-    return (
-      <div className="flex h-64 items-center justify-center">
-        <Spinner aria-label="Cargando" />
-      </div>
-    );
+    return <WaSettingsSkeleton />;
   }
 
   const webhookBase =

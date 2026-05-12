@@ -1,4 +1,5 @@
-import { Button, Card, Chip, Modal, Spinner, Table } from "@heroui/react";
+import { Button, Card, Chip, Modal, Table } from "@heroui/react";
+import { WaTableSkeleton } from "../components/Skeletons";
 import {
   CheckCircle2,
   Layers,
@@ -116,7 +117,9 @@ function LocationsTab() {
         </Button>
       </div>
       {list.isLoading ? (
-        <Spinner aria-label="Cargando" />
+        <Card>
+          <WaTableSkeleton rows={4} cols={4} />
+        </Card>
       ) : items.length === 0 ? (
         <Card>
           <Card.Content className="p-6 text-center text-default-500 text-sm">
@@ -359,7 +362,9 @@ function ListsTab() {
         </Button>
       </div>
       {list.isLoading ? (
-        <Spinner aria-label="Cargando" />
+        <Card>
+          <WaTableSkeleton rows={4} cols={4} />
+        </Card>
       ) : items.length === 0 ? (
         <Card>
           <Card.Content className="p-6 text-center text-default-500 text-sm">
@@ -652,7 +657,9 @@ function FlowsTab() {
       </div>
 
       {list.isLoading ? (
-        <Spinner aria-label="Cargando" />
+        <Card>
+          <WaTableSkeleton rows={4} cols={4} />
+        </Card>
       ) : items.length === 0 ? (
         <Card>
           <Card.Content className="p-6 text-center text-default-500 text-sm">
@@ -956,7 +963,9 @@ function SnippetsTab() {
         </Button>
       </div>
       {list.isLoading ? (
-        <Spinner aria-label="Cargando" />
+        <Card>
+          <WaTableSkeleton rows={4} cols={4} />
+        </Card>
       ) : items.length === 0 ? (
         <Card>
           <Card.Content className="p-6 text-center text-default-500 text-sm">
