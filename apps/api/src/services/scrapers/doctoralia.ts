@@ -7,7 +7,7 @@
 //
 // TODO implementación real cuando Lucas pase curl observado.
 
-import type { ScraperBillResult, ScraperContext } from "./types";
+import type { ScraperBillResult, ScraperContext } from "./types.ts";
 
 export async function fetchDoctoraliaBill(_ctx: ScraperContext): Promise<ScraperBillResult> {
   throw new Error(

@@ -5,7 +5,7 @@
 // DTE matcher las detecta auto si counterpart_id Medipass está linkeado al
 // ExpenseService Medipass.
 
-import type { ScraperBillResult, ScraperContext } from "./types";
+import type { ScraperBillResult, ScraperContext } from "./types.ts";
 
 export async function fetchMedipassBill(_ctx: ScraperContext): Promise<ScraperBillResult> {
   throw new Error(

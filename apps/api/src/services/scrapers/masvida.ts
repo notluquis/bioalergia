@@ -3,7 +3,7 @@
 // quedó endDate=2025-08-31 isActive=false. Scraper queda preparado por si
 // alguien retoma plan en futuro.
 
-import type { ScraperBillResult, ScraperContext } from "./types";
+import type { ScraperBillResult, ScraperContext } from "./types.ts";
 
 export async function fetchMasvidaBill(_ctx: ScraperContext): Promise<ScraperBillResult> {
   throw new Error(

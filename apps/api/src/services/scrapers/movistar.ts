@@ -9,7 +9,7 @@
 //
 // Lucas: pásame curl exacto del portal (DevTools Network) cuando logueado.
 
-import type { ScraperBillResult, ScraperContext } from "./types";
+import type { ScraperBillResult, ScraperContext } from "./types.ts";
 
 export async function fetchMovistarBill(_ctx: ScraperContext): Promise<ScraperBillResult> {
   throw new Error(

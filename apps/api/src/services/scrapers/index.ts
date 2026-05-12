@@ -2,13 +2,13 @@
 // Llamado por refreshUtilityAccount cuando provider ≠ CGE/ESSBIO (que tienen
 // implementación directa en utility-bills.ts).
 
-import type { ScraperBillResult, ScraperContext } from "./types";
-import { fetchDoctoraliaBill } from "./doctoralia";
-import { fetchMasvidaBill } from "./masvida";
-import { fetchMedipassBill } from "./medipass";
-import { fetchMovistarBill } from "./movistar";
-import { fetchPreviredBill } from "./previred";
-import { fetchTelsurBill } from "./telsur";
+import type { ScraperBillResult, ScraperContext } from "./types.ts";
+import { fetchDoctoraliaBill } from "./doctoralia.ts";
+import { fetchMasvidaBill } from "./masvida.ts";
+import { fetchMedipassBill } from "./medipass.ts";
+import { fetchMovistarBill } from "./movistar.ts";
+import { fetchPreviredBill } from "./previred.ts";
+import { fetchTelsurBill } from "./telsur.ts";
 
 export type ScraperProvider =
   | "DOCTORALIA"
@@ -42,4 +42,4 @@ export async function fetchProviderBill(
   }
 }
 
-export type { ScraperBillResult, ScraperContext } from "./types";
+export type { ScraperBillResult, ScraperContext } from "./types.ts";

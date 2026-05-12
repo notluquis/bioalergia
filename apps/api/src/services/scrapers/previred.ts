@@ -9,7 +9,7 @@
 //
 // TODO: completar después de credencial Previred Bioalergia configurada.
 
-import type { ScraperBillResult, ScraperContext } from "./types";
+import type { ScraperBillResult, ScraperContext } from "./types.ts";
 
 export async function fetchPreviredBill(_ctx: ScraperContext): Promise<ScraperBillResult> {
   throw new Error(

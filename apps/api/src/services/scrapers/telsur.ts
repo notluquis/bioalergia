@@ -12,7 +12,7 @@
 // loguées, navegues a "consulta boletas", y me pases el curl exacto que
 // genera el browser. Con eso completo este scraper sin guess.
 
-import type { ScraperBillResult, ScraperContext } from "./types";
+import type { ScraperBillResult, ScraperContext } from "./types.ts";
 
 export async function fetchTelsurBill(_ctx: ScraperContext): Promise<ScraperBillResult> {
   throw new Error(
