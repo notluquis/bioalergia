@@ -2,30 +2,42 @@ packages:
   - "apps/*"
   - "packages/*"
 
-# Optimizations
+# Linker: explicit isolated (pnpm 11 default; declared for clarity).
+nodeLinker: isolated
+
+# Phantom-dep allowlist. pnpm 11 dropped wholesale `shamefullyHoist` in
+# favour of a narrower public-hoist pattern. Each entry below is a
+# transitive that some workspace imports as if it were a direct dep —
+# audit before extending. Adding the explicit dep is preferred over
+# hoisting; the patterns here exist for cases where multiple sub-packages
+# share a single peer (oRPC's internal `shared` helpers).
+publicHoistPattern:
+  - "@orpc/*"
+  - "workbox-*"
+
+# Build-script allowlist. pnpm 11 blocks every postinstall by default
+# (security tightening); only the binaries / native bindings below get to
+# run install scripts. Audit before extending.
+allowBuilds:
+  argon2: true
+  core-js: true
+  esbuild: true
+  impit: true
+  msw: true
+  protobufjs: true
+  sharp: true
+  # ZenStack manages Prisma engines; we don't want a second download.
+  prisma: false
+  "@prisma/engines": false
+
+# pnpm 11 ships `minimumReleaseAge: 1440` (24h) and `blockExoticSubdeps`
+# enabled by default. We opt out of the age gate so CI doesn't refuse
+# fresh patch bumps from `pnpm up -r`. The lockfile path is unaffected
+# either way (issue pnpm/pnpm#10438).
+minimumReleaseAge: 0
+
+# Optimizations (kept from prior workspace.yaml).
 verifyDepsBeforeRun: install
 optimisticRepeatInstall: true
 dedupePeerDependents: true
 injectWorkspacePackages: true
-
-# pnpm v11: build scripts must be explicitly approved here (security
-# tightening; replaces the v10 `allowBuilds` map). Audit each entry —
-# these run with full host-shell access during install. Only native-
-# binding builders below.
-onlyBuiltDependencies:
-  - argon2
-  - core-js
-  - esbuild
-  - impit
-  - msw
-  - protobufjs
-  - sharp
-
-allowBuilds:
-  argon2: set this to true or false
-  core-js: set this to true or false
-  esbuild: set this to true or false
-  impit: set this to true or false
-  msw: set this to true or false
-  protobufjs: set this to true or false
-  sharp: set this to true or false
