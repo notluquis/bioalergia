@@ -1007,7 +1007,7 @@ export function MediaGalleryModal({
             <Modal.Body className="max-h-[70vh] overflow-y-auto">
               {media.isLoading ? (
                 <div className="flex justify-center py-12">
-                  <Spinner />
+                  <Spinner aria-label="Cargando" />
                 </div>
               ) : items.length === 0 ? (
                 <p className="py-12 text-center text-default-500 text-sm">

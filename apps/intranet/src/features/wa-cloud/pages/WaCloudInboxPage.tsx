@@ -1,6 +1,7 @@
 import {
   Avatar,
   Badge,
+  Button,
   Card,
   Chip,
   Dropdown,
@@ -13,11 +14,29 @@ import {
   Spinner,
 } from "@heroui/react";
 import dayjs from "dayjs";
-import { Filter, Inbox, MessageSquareText, Phone } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { ArrowLeft, Filter, Inbox, MessageSquareText, Phone } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { WaConversationStatus } from "@finanzas/orpc-contracts/wa-cloud";
 import { ConversationDetail } from "../components/ConversationDetail";
 import { useAccounts, useConversations, useMarkRead, useSearchMessages } from "../hooks/useWaCloud";
+
+// iOS-style stack navigation: on viewports <lg, list and detail are
+// mutually exclusive screens (selecting a conversation pushes the
+// detail "view" on top). On >=lg the classic split view stays.
+const MOBILE_BREAKPOINT_QUERY = "(max-width: 1023px)";
+
+function useIsMobile(): boolean {
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const mq = window.matchMedia(MOBILE_BREAKPOINT_QUERY);
+    setIsMobile(mq.matches);
+    const onChange = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
+  return isMobile;
+}
 
 const STATUS_OPTIONS: { value: "" | WaConversationStatus; label: string }[] = [
   { value: "", label: "Todos" },
@@ -67,6 +86,10 @@ export function WaCloudInboxPage() {
   const [phoneFilter, setPhoneFilter] = useState("");
   const [search, setSearch] = useState("");
   const [selectedId, setSelectedId] = useState<number | null>(null);
+  const isMobile = useIsMobile();
+  // On mobile we render either the list or the detail view, not both.
+  const showDetail = isMobile ? selectedId !== null : true;
+  const showList = isMobile ? selectedId === null : true;
 
   const conversations = useConversations({
     status: status || undefined,
@@ -88,164 +111,229 @@ export function WaCloudInboxPage() {
   const items = conversations.data?.items ?? [];
   const activeFiltersCount = (status ? 1 : 0) + (phoneFilter ? 1 : 0);
 
+  // Keyboard shortcuts: j/k navigate list, Enter open, Esc close,
+  // / focus search, ? show help. Inputs/textareas are excluded so
+  // typing in the composer doesn't hijack keys.
+  const onKey = useCallback(
+    (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement | null;
+      const inEditable =
+        !!t &&
+        (t.tagName === "INPUT" ||
+          t.tagName === "TEXTAREA" ||
+          t.tagName === "SELECT" ||
+          t.isContentEditable);
+      if (inEditable && e.key !== "Escape") return;
+      if (e.key === "Escape" && selectedId !== null) {
+        setSelectedId(null);
+        e.preventDefault();
+        return;
+      }
+      if (e.key === "/") {
+        const input = document.querySelector<HTMLInputElement>(
+          "input[aria-label='Buscar conversación']"
+        );
+        if (input) {
+          input.focus();
+          e.preventDefault();
+        }
+        return;
+      }
+      if (items.length === 0) return;
+      const idx = selectedId ? items.findIndex((c) => c.id === selectedId) : -1;
+      if (e.key === "j" || e.key === "ArrowDown") {
+        const next = items[Math.min(items.length - 1, idx + 1)];
+        if (next) setSelectedId(next.id);
+        e.preventDefault();
+      } else if (e.key === "k" || e.key === "ArrowUp") {
+        const prev = items[Math.max(0, idx - 1)];
+        if (prev) setSelectedId(prev.id);
+        e.preventDefault();
+      }
+    },
+    [items, selectedId]
+  );
+  useEffect(() => {
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onKey]);
+
   return (
-    <div className="h-[calc(100vh-7rem)] p-4">
+    <div className="h-[calc(100dvh-7rem)] p-4">
       <Card className="grid h-full grid-cols-1 overflow-hidden p-0 lg:grid-cols-[360px_1fr]">
-        <aside className="flex h-full flex-col border-default-200 lg:border-r">
-          <header className="flex flex-col gap-2 border-default-200 border-b p-3">
-            <div className="flex items-center justify-between">
-              <h2 className="flex items-center gap-2 font-semibold text-base">
-                <Inbox size={18} className="text-success" />
-                Bandeja
-              </h2>
-              <FilterDropdown
-                status={status}
-                onStatusChange={setStatus}
-                phoneFilter={phoneFilter}
-                onPhoneChange={setPhoneFilter}
-                phones={allPhones}
-                activeCount={activeFiltersCount}
-              />
-            </div>
-
-            <SearchField
-              variant="secondary"
-              value={search}
-              onChange={setSearch}
-              aria-label="Buscar conversación"
-            >
-              <SearchField.Group>
-                <SearchField.SearchIcon />
-                <SearchField.Input placeholder="Buscar por nombre o teléfono" />
-                <SearchField.ClearButton />
-              </SearchField.Group>
-            </SearchField>
-          </header>
-
-          <div className="flex-1 overflow-y-auto">
-            {conversations.isLoading || !conversations.data ? (
-              <div className="flex h-32 items-center justify-center">
-                <Spinner />
+        {showList && (
+          <aside className="flex h-full flex-col border-default-200 lg:border-r">
+            <header className="flex flex-col gap-2 border-default-200 border-b p-3">
+              <div className="flex items-center justify-between">
+                <h2 className="flex items-center gap-2 font-semibold text-base">
+                  <Inbox size={18} className="text-success" />
+                  Bandeja
+                </h2>
+                <FilterDropdown
+                  status={status}
+                  onStatusChange={setStatus}
+                  phoneFilter={phoneFilter}
+                  onPhoneChange={setPhoneFilter}
+                  phones={allPhones}
+                  activeCount={activeFiltersCount}
+                />
               </div>
-            ) : items.length === 0 ? (
-              <EmptyState className="m-4 p-6 text-center">
-                <MessageSquareText size={28} className="mx-auto text-default-400" />
-                <p className="mt-2 font-medium text-sm">Sin conversaciones</p>
-                <p className="text-default-500 text-xs">
-                  {search || activeFiltersCount > 0
-                    ? "Cambia los filtros para ver más."
-                    : "Cuando lleguen mensajes, aparecerán aquí."}
-                </p>
-              </EmptyState>
-            ) : (
-              <ul className="divide-y divide-default-200">
-                {items.map((c) => {
-                  const sel = selectedId === c.id;
-                  const name = c.contact.name ?? c.contact.pushName ?? c.contact.phoneE164;
-                  const initials = initialsOf(name);
-                  const avatarColor = colorFor(c.contact.phoneE164);
-                  return (
-                    <li key={c.id}>
-                      <button
-                        type="button"
-                        className={`flex w-full items-center gap-3 px-3 py-3 text-left transition-colors hover:bg-default-100 ${sel ? "bg-default-100" : ""}`}
-                        onClick={() => setSelectedId(c.id)}
-                      >
-                        {c.unreadCount > 0 ? (
-                          <Badge color="success" placement="top-right" size="sm">
-                            <Badge.Label>{c.unreadCount}</Badge.Label>
-                            <Badge.Anchor>
-                              <Avatar className={`size-11 shrink-0 ${avatarColor}`}>
-                                <Avatar.Fallback delayMs={0} className="font-semibold text-sm">
-                                  {initials}
-                                </Avatar.Fallback>
-                              </Avatar>
-                            </Badge.Anchor>
-                          </Badge>
-                        ) : (
-                          <Avatar className={`size-11 shrink-0 ${avatarColor}`}>
-                            <Avatar.Fallback delayMs={0} className="font-semibold text-sm">
-                              {initials}
-                            </Avatar.Fallback>
-                          </Avatar>
-                        )}
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-baseline justify-between gap-2">
-                            <span
-                              className={`truncate text-sm ${c.unreadCount > 0 ? "font-semibold" : "font-medium"}`}
-                            >
-                              {name}
-                            </span>
-                            <span
-                              className={`shrink-0 text-xs ${c.unreadCount > 0 ? "font-semibold text-success" : "text-default-500"}`}
-                            >
-                              {formatRelative(c.lastMessageAt)}
-                            </span>
+
+              <SearchField
+                variant="secondary"
+                value={search}
+                onChange={setSearch}
+                aria-label="Buscar conversación"
+              >
+                <SearchField.Group>
+                  <SearchField.SearchIcon />
+                  <SearchField.Input placeholder="Buscar por nombre o teléfono" />
+                  <SearchField.ClearButton />
+                </SearchField.Group>
+              </SearchField>
+            </header>
+
+            <div className="flex-1 overflow-y-auto">
+              {conversations.isLoading || !conversations.data ? (
+                <div className="flex h-32 items-center justify-center">
+                  <Spinner aria-label="Cargando conversaciones" />
+                </div>
+              ) : items.length === 0 ? (
+                <EmptyState className="m-4 p-6 text-center">
+                  <MessageSquareText size={28} className="mx-auto text-default-400" />
+                  <p className="mt-2 font-medium text-sm">Sin conversaciones</p>
+                  <p className="text-default-500 text-xs">
+                    {search || activeFiltersCount > 0
+                      ? "Cambia los filtros para ver más."
+                      : "Cuando lleguen mensajes, aparecerán aquí."}
+                  </p>
+                </EmptyState>
+              ) : (
+                <ul className="divide-y divide-default-200">
+                  {items.map((c) => {
+                    const sel = selectedId === c.id;
+                    const name = c.contact.name ?? c.contact.pushName ?? c.contact.phoneE164;
+                    const initials = initialsOf(name);
+                    const avatarColor = colorFor(c.contact.phoneE164);
+                    return (
+                      <li key={c.id}>
+                        <button
+                          type="button"
+                          className={`flex w-full items-center gap-3 px-3 py-3 text-left transition-colors hover:bg-default-100 ${sel ? "bg-default-100" : ""}`}
+                          onClick={() => setSelectedId(c.id)}
+                        >
+                          {c.unreadCount > 0 ? (
+                            <Badge color="success" placement="top-right" size="sm">
+                              <Badge.Label>{c.unreadCount}</Badge.Label>
+                              <Badge.Anchor>
+                                <Avatar className={`size-11 shrink-0 ${avatarColor}`}>
+                                  <Avatar.Fallback delayMs={0} className="font-semibold text-sm">
+                                    {initials}
+                                  </Avatar.Fallback>
+                                </Avatar>
+                              </Badge.Anchor>
+                            </Badge>
+                          ) : (
+                            <Avatar className={`size-11 shrink-0 ${avatarColor}`}>
+                              <Avatar.Fallback delayMs={0} className="font-semibold text-sm">
+                                {initials}
+                              </Avatar.Fallback>
+                            </Avatar>
+                          )}
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-baseline justify-between gap-2">
+                              <span
+                                className={`truncate text-sm ${c.unreadCount > 0 ? "font-semibold" : "font-medium"}`}
+                              >
+                                {name}
+                              </span>
+                              <span
+                                className={`shrink-0 text-xs ${c.unreadCount > 0 ? "font-semibold text-success" : "text-default-500"}`}
+                              >
+                                {formatRelative(c.lastMessageAt)}
+                              </span>
+                            </div>
+                            <div className="mt-0.5 flex items-center justify-between gap-2">
+                              <p
+                                className={`line-clamp-1 text-xs ${c.unreadCount > 0 ? "font-medium text-default-700" : "text-default-500"}`}
+                              >
+                                {c.lastMessagePreview ?? "Sin actividad"}
+                              </p>
+                              <ConversationStatusChip status={c.status} />
+                            </div>
                           </div>
-                          <div className="mt-0.5 flex items-center justify-between gap-2">
-                            <p
-                              className={`line-clamp-1 text-xs ${c.unreadCount > 0 ? "font-medium text-default-700" : "text-default-500"}`}
-                            >
-                              {c.lastMessagePreview ?? "Sin actividad"}
-                            </p>
-                            <ConversationStatusChip status={c.status} />
-                          </div>
-                        </div>
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-            {messageHits.data && messageHits.data.results.length > 0 && (
-              <div className="border-default-200 border-t bg-content2 p-2">
-                <p className="px-2 pb-1 font-semibold text-default-500 text-xs uppercase">
-                  Mensajes ({messageHits.data.results.length})
-                </p>
-                <ul className="space-y-1">
-                  {messageHits.data.results.map((m) => (
-                    <li key={m.messageId}>
-                      <button
-                        type="button"
-                        onClick={() => setSelectedId(m.conversationId)}
-                        className="flex w-full flex-col gap-0.5 rounded-md px-2 py-1.5 text-left transition hover:bg-default-100"
-                      >
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="truncate font-medium text-xs">
-                            {m.contactName ?? m.phoneE164}
-                          </span>
-                          <span className="shrink-0 text-default-400 text-xs">
-                            {dayjs(m.timestamp).format("DD-MM HH:mm")}
-                          </span>
-                        </div>
-                        <p className="line-clamp-2 text-default-600 text-xs">
-                          {m.body ?? `[${m.type.toLowerCase()}]`}
-                        </p>
-                      </button>
-                    </li>
-                  ))}
+                        </button>
+                      </li>
+                    );
+                  })}
                 </ul>
+              )}
+              {messageHits.data && messageHits.data.results.length > 0 && (
+                <div className="border-default-200 border-t bg-content2 p-2">
+                  <p className="px-2 pb-1 font-semibold text-default-500 text-xs uppercase">
+                    Mensajes ({messageHits.data.results.length})
+                  </p>
+                  <ul className="space-y-1">
+                    {messageHits.data.results.map((m) => (
+                      <li key={m.messageId}>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedId(m.conversationId)}
+                          className="flex w-full flex-col gap-0.5 rounded-md px-2 py-1.5 text-left transition hover:bg-default-100"
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="truncate font-medium text-xs">
+                              {m.contactName ?? m.phoneE164}
+                            </span>
+                            <span className="shrink-0 text-default-400 text-xs">
+                              {dayjs(m.timestamp).format("DD-MM HH:mm")}
+                            </span>
+                          </div>
+                          <p className="line-clamp-2 text-default-600 text-xs">
+                            {m.body ?? `[${m.type.toLowerCase()}]`}
+                          </p>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          </aside>
+        )}
+
+        {showDetail && (
+          <section className="flex h-full flex-col overflow-hidden bg-content1">
+            {isMobile && selectedId && (
+              <div className="flex items-center gap-2 border-default-200 border-b bg-content2 px-2 py-1.5">
+                <Button
+                  variant="tertiary"
+                  size="sm"
+                  onPress={() => setSelectedId(null)}
+                  aria-label="Volver a la bandeja"
+                >
+                  <ArrowLeft size={16} />
+                  Bandeja
+                </Button>
               </div>
             )}
-          </div>
-        </aside>
-
-        <section className="flex h-full flex-col overflow-hidden bg-content1">
-          {selectedId ? (
-            <ConversationDetail conversationId={selectedId} />
-          ) : (
-            <div className="flex h-full flex-1 items-center justify-center bg-default-50 p-8">
-              <EmptyState className="max-w-sm text-center">
-                <MessageSquareText size={48} className="mx-auto text-default-300" />
-                <p className="mt-3 font-semibold text-base">Selecciona una conversación</p>
-                <p className="mt-1 text-default-500 text-sm">
-                  Tus mensajes WhatsApp aparecen en la bandeja de la izquierda. Click en cualquiera
-                  para responder.
-                </p>
-              </EmptyState>
-            </div>
-          )}
-        </section>
+            {selectedId ? (
+              <ConversationDetail conversationId={selectedId} />
+            ) : (
+              <div className="flex h-full flex-1 items-center justify-center bg-default-50 p-8">
+                <EmptyState className="max-w-sm text-center">
+                  <MessageSquareText size={48} className="mx-auto text-default-300" />
+                  <p className="mt-3 font-semibold text-base">Selecciona una conversación</p>
+                  <p className="mt-1 text-default-500 text-sm">
+                    Tus mensajes WhatsApp aparecen en la bandeja de la izquierda. Click en
+                    cualquiera para responder. Atajos: <kbd>j</kbd>/<kbd>k</kbd> navegar,{" "}
+                    <kbd>/</kbd> buscar, <kbd>Esc</kbd> cerrar.
+                  </p>
+                </EmptyState>
+              </div>
+            )}
+          </section>
+        )}
       </Card>
     </div>
   );

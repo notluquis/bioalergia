@@ -47,7 +47,7 @@ export function WaCloudSettingsPage() {
   if (accounts.isLoading || !accounts.data) {
     return (
       <div className="flex h-64 items-center justify-center">
-        <Spinner />
+        <Spinner aria-label="Cargando" />
       </div>
     );
   }

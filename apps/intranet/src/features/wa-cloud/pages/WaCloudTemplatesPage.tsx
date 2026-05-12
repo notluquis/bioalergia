@@ -41,7 +41,7 @@ export function WaCloudTemplatesPage() {
   if (tpl.isLoading || !tpl.data) {
     return (
       <div className="flex h-64 items-center justify-center">
-        <Spinner />
+        <Spinner aria-label="Cargando" />
       </div>
     );
   }
@@ -514,7 +514,7 @@ function LibraryModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
               </div>
               {lib.isLoading ? (
                 <div className="flex justify-center py-12">
-                  <Spinner />
+                  <Spinner aria-label="Cargando" />
                 </div>
               ) : (lib.data?.templates ?? []).length === 0 ? (
                 <p className="py-12 text-center text-default-500 text-sm">

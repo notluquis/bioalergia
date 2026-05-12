@@ -174,7 +174,7 @@ export function CommerceSelectorModal({
                   )}
                   {products.isLoading ? (
                     <div className="flex justify-center py-12">
-                      <Spinner />
+                      <Spinner aria-label="Cargando" />
                     </div>
                   ) : filtered.length === 0 ? (
                     <p className="py-12 text-center text-default-500 text-sm">Sin productos.</p>

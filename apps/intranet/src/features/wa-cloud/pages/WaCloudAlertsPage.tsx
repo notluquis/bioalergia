@@ -48,7 +48,7 @@ export function WaCloudAlertsPage() {
 
       {events.isLoading ? (
         <div className="flex justify-center py-12">
-          <Spinner />
+          <Spinner aria-label="Cargando" />
         </div>
       ) : items.length === 0 ? (
         <Card>

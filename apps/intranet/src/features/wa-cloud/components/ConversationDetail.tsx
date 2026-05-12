@@ -234,7 +234,7 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
   if (conv.isLoading || !conv.data) {
     return (
       <Card.Content className="flex h-full items-center justify-center">
-        <Spinner />
+        <Spinner aria-label="Cargando" />
       </Card.Content>
     );
   }

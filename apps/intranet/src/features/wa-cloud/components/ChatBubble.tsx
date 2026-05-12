@@ -133,7 +133,9 @@ export function ChatBubble({
     <div className={`group relative flex ${wrapper}`}>
       <div
         className={`relative ${
-          isSticker ? "max-w-[12rem]" : "w-fit max-w-[78%] min-w-[60px] lg:max-w-[480px]"
+          isSticker
+            ? "max-w-[12rem]"
+            : "w-fit min-w-[60px] max-w-[85%] sm:max-w-[75%] md:max-w-[65%] lg:max-w-[480px]"
         }`}
       >
         {actions}

@@ -44,7 +44,7 @@ export function WaCloudBroadcastsPage() {
 
       {list.isLoading ? (
         <div className="flex justify-center py-12">
-          <Spinner />
+          <Spinner aria-label="Cargando" />
         </div>
       ) : (list.data?.broadcasts.length ?? 0) === 0 ? (
         <Card>

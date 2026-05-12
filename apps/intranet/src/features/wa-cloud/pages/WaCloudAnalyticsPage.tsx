@@ -138,7 +138,7 @@ export function WaCloudAnalyticsPage() {
         </Card>
       ) : analytics.isLoading ? (
         <div className="flex justify-center py-16">
-          <Spinner />
+          <Spinner aria-label="Cargando" />
         </div>
       ) : analytics.error ? (
         <Card>

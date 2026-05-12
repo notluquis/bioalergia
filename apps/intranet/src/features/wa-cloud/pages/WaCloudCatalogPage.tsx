@@ -116,7 +116,7 @@ function LocationsTab() {
         </Button>
       </div>
       {list.isLoading ? (
-        <Spinner />
+        <Spinner aria-label="Cargando" />
       ) : items.length === 0 ? (
         <Card>
           <Card.Content className="p-6 text-center text-default-500 text-sm">
@@ -359,7 +359,7 @@ function ListsTab() {
         </Button>
       </div>
       {list.isLoading ? (
-        <Spinner />
+        <Spinner aria-label="Cargando" />
       ) : items.length === 0 ? (
         <Card>
           <Card.Content className="p-6 text-center text-default-500 text-sm">
@@ -652,7 +652,7 @@ function FlowsTab() {
       </div>
 
       {list.isLoading ? (
-        <Spinner />
+        <Spinner aria-label="Cargando" />
       ) : items.length === 0 ? (
         <Card>
           <Card.Content className="p-6 text-center text-default-500 text-sm">
@@ -956,7 +956,7 @@ function SnippetsTab() {
         </Button>
       </div>
       {list.isLoading ? (
-        <Spinner />
+        <Spinner aria-label="Cargando" />
       ) : items.length === 0 ? (
         <Card>
           <Card.Content className="p-6 text-center text-default-500 text-sm">
