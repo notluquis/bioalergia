@@ -4920,6 +4920,29 @@ export class SchemaType implements SchemaDef {
                     type: "Json",
                     optional: true
                 },
+                antecedents: {
+                    name: "antecedents",
+                    type: "Json",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("antecedents") }] }] as readonly AttributeApplication[]
+                },
+                medications: {
+                    name: "medications",
+                    type: "Json",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("medications") }] }] as readonly AttributeApplication[]
+                },
+                knownAllergies: {
+                    name: "knownAllergies",
+                    type: "Json",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("known_allergies") }] }] as readonly AttributeApplication[]
+                },
+                observations: {
+                    name: "observations",
+                    type: "String",
+                    optional: true
+                },
                 rawHeader: {
                     name: "rawHeader",
                     type: "Json",

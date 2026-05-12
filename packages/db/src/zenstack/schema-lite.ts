@@ -4072,6 +4072,26 @@ export class SchemaType implements SchemaDef {
                     type: "Json",
                     optional: true
                 },
+                antecedents: {
+                    name: "antecedents",
+                    type: "Json",
+                    optional: true
+                },
+                medications: {
+                    name: "medications",
+                    type: "Json",
+                    optional: true
+                },
+                knownAllergies: {
+                    name: "knownAllergies",
+                    type: "Json",
+                    optional: true
+                },
+                observations: {
+                    name: "observations",
+                    type: "String",
+                    optional: true
+                },
                 rawHeader: {
                     name: "rawHeader",
                     type: "Json",

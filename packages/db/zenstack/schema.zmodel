@@ -1322,6 +1322,23 @@ model ClinicalRecord {
   headCircumferenceCm Decimal?            @map("head_circumference_cm") @db.Decimal(6, 2)
   // P/E, P/T, T/E and any extra anthropometric labels.
   anthropometric      Json?
+  // FHIR-mappable extras (HL7 FHIR R5 + IPS-CL Chile R4). Stored as
+  // JSONB for the list-shaped fields so v1 can persist free-text
+  // string arrays from the xlsx and v2 can upgrade to structured
+  // objects ({condition,onset,…} / {name,dose,frequency,…} /
+  // {substance,severity,…}) without a column reshape.
+  //
+  //   antecedents:    { personal: string[], family: string[] }
+  //                   → FHIR Condition + FamilyMemberHistory
+  //   medications:    string[]
+  //                   → FHIR MedicationStatement
+  //   knownAllergies: string[]
+  //                   → FHIR AllergyIntolerance
+  //   observations:   free-text narrative (Composition.section.text)
+  antecedents         Json?               @map("antecedents")
+  medications         Json?               @map("medications")
+  knownAllergies      Json?               @map("known_allergies")
+  observations        String?
   rawHeader           Json?               @map("raw_header")
   rawSections         Json?               @map("raw_sections")
   resultHash          String?             @map("result_hash")

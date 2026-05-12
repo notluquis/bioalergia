@@ -33,6 +33,15 @@ export const clinicalRecordMatchCandidateSchema = z.object({
   reason: z.string(),
 });
 
+// FHIR-mappable extra payload sections. v1 stores free-text strings;
+// v2 can swap to {condition,onset,…} objects without changing the
+// shape of the parent record because the column is JSONB on the DB
+// side.
+export const clinicalRecordAntecedentsSchema = z.object({
+  personal: z.array(z.string()),
+  family: z.array(z.string()),
+});
+
 export const clinicalRecordParsedPayloadSchema = z.object({
   consultDate: z.string().nullable(),
   patientName: z.string().nullable(),
@@ -41,6 +50,10 @@ export const clinicalRecordParsedPayloadSchema = z.object({
   physicalExam: z.string().nullable(),
   diagnosis: z.string().nullable(),
   indications: z.array(z.string()),
+  antecedents: clinicalRecordAntecedentsSchema.optional(),
+  medications: z.array(z.string()).optional(),
+  knownAllergies: z.array(z.string()).optional(),
+  observations: z.string().nullable().optional(),
   weightKg: z.number().nullable(),
   heightCm: z.number().nullable(),
   headCircumferenceCm: z.number().nullable(),
@@ -83,6 +96,10 @@ export const clinicalRecordSchema = z.object({
   physicalExam: z.string().nullable(),
   diagnosis: z.string().nullable(),
   indications: z.array(z.string()),
+  antecedents: clinicalRecordAntecedentsSchema.nullable(),
+  medications: z.array(z.string()),
+  knownAllergies: z.array(z.string()),
+  observations: z.string().nullable(),
   weightKg: z.number().nullable(),
   heightCm: z.number().nullable(),
   headCircumferenceCm: z.number().nullable(),

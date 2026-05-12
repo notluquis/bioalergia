@@ -1,6 +1,14 @@
 import { Card, Chip } from "@heroui/react";
 import dayjs from "dayjs";
-import { ClipboardList, FileText, Pill, Stethoscope } from "lucide-react";
+import {
+  AlertTriangle,
+  ClipboardList,
+  FileText,
+  Pill,
+  ScrollText,
+  Stethoscope,
+  Users,
+} from "lucide-react";
 
 type Anthropometric = Record<string, string>;
 
@@ -12,6 +20,10 @@ export type RecordCardProps = {
   physicalExam: string | null;
   diagnosis: string | null;
   indications: string[];
+  antecedents: { personal: string[]; family: string[] } | null;
+  medications: string[];
+  knownAllergies: string[];
+  observations: string | null;
   weightKg: number | null;
   heightCm: number | null;
   headCircumferenceCm: number | null;
@@ -73,8 +85,75 @@ export function RecordCard(props: RecordCardProps) {
       </Card.Header>
       <Card.Content className="flex flex-col gap-4 p-0">
         <Section icon={FileText} label="Historia" body={props.history} />
+        {props.antecedents &&
+          (props.antecedents.personal.length > 0 || props.antecedents.family.length > 0) && (
+            <Section
+              icon={Users}
+              label="Antecedentes"
+              body={
+                <div className="space-y-2">
+                  {props.antecedents.personal.length > 0 && (
+                    <div>
+                      <p className="font-medium text-default-600 text-xs uppercase tracking-wide">
+                        Personales
+                      </p>
+                      <ul className="list-disc space-y-0.5 pl-5">
+                        {props.antecedents.personal.map((line, idx) => (
+                          // biome-ignore lint/suspicious/noArrayIndexKey: stable lines
+                          <li key={idx}>{line}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {props.antecedents.family.length > 0 && (
+                    <div>
+                      <p className="font-medium text-default-600 text-xs uppercase tracking-wide">
+                        Familiares
+                      </p>
+                      <ul className="list-disc space-y-0.5 pl-5">
+                        {props.antecedents.family.map((line, idx) => (
+                          // biome-ignore lint/suspicious/noArrayIndexKey: stable lines
+                          <li key={idx}>{line}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              }
+            />
+          )}
+        {props.knownAllergies.length > 0 && (
+          <Section
+            icon={AlertTriangle}
+            label="Alergias conocidas"
+            body={
+              <ul className="list-disc space-y-0.5 pl-5">
+                {props.knownAllergies.map((line, idx) => (
+                  // biome-ignore lint/suspicious/noArrayIndexKey: stable lines
+                  <li key={idx} className="text-warning-700">
+                    {line}
+                  </li>
+                ))}
+              </ul>
+            }
+          />
+        )}
         <Section icon={Stethoscope} label="Examen físico" body={props.physicalExam} />
         <Section icon={ClipboardList} label="Diagnóstico" body={props.diagnosis} />
+        {props.medications.length > 0 && (
+          <Section
+            icon={Pill}
+            label="Medicamentos actuales"
+            body={
+              <ul className="list-disc space-y-0.5 pl-5">
+                {props.medications.map((line, idx) => (
+                  // biome-ignore lint/suspicious/noArrayIndexKey: stable lines
+                  <li key={idx}>{line}</li>
+                ))}
+              </ul>
+            }
+          />
+        )}
         {props.indications.length > 0 && (
           <Section
             icon={Pill}
@@ -88,6 +167,9 @@ export function RecordCard(props: RecordCardProps) {
               </ol>
             }
           />
+        )}
+        {props.observations && (
+          <Section icon={ScrollText} label="Observaciones" body={props.observations} />
         )}
         {anthroPills.length > 0 && (
           <div className="flex flex-wrap gap-1.5 border-default-200 border-t pt-3">

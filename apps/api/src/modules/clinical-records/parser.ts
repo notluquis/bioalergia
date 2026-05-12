@@ -16,7 +16,7 @@ import xlsx from "xlsx";
 // can't parse weight, etc.) come back as a structured array so the
 // reprocess job can decide IMPORTED vs PENDING_REVIEW.
 
-export const CLINICAL_RECORD_PARSER_VERSION = "0.1.0";
+export const CLINICAL_RECORD_PARSER_VERSION = "0.2.0";
 
 export type ClinicalRecordIssue = {
   code: string;
@@ -32,6 +32,14 @@ export type ParsedClinicalRecord = {
   physicalExam: string | null;
   diagnosis: string | null;
   indications: string[];
+  // FHIR-mappable extras (HL7 FHIR R5 + IPS-CL Chile R4). String[] for
+  // v1 since the xlsx is free-form; structurable into
+  // {condition,onset,…} / {name,dose,…} / {substance,severity,…}
+  // later without breaking the schema.
+  antecedents: { personal: string[]; family: string[] };
+  medications: string[];
+  knownAllergies: string[];
+  observations: string | null;
   weightKg: number | null;
   heightCm: number | null;
   headCircumferenceCm: number | null;
@@ -45,14 +53,40 @@ export type ParsedClinicalRecord = {
 type Cell = string;
 type Row = Cell[];
 
+// Section anchors. The classifier below maps each normalized marker
+// to one of the ParsedClinicalRecord array buckets. Order matters:
+// "ANTECEDENTES FAMILIARES" must be checked before bare "ANTECEDENTES"
+// so the family sub-bucket wins.
 const SECTION_MARKERS = [
   "HISTORIA",
+  "ANTECEDENTES FAMILIARES",
+  "ANTECEDENTES PERSONALES",
+  "ANTECEDENTES",
   "EXAMEN FÍSICO",
   "EXAMEN FISICO",
   "DIAGNÓSTICO",
   "DIAGNOSTICO",
+  "MEDICAMENTOS",
+  "TRATAMIENTO ACTUAL",
+  "MEDICACION ACTUAL",
+  "MEDICACIÓN ACTUAL",
+  "ALERGIAS CONOCIDAS",
+  "ALERGIAS",
   "INDICACIONES",
+  "OBSERVACIONES",
+  "NOTAS",
 ] as const;
+
+type SectionKey =
+  | "history"
+  | "antecedentsPersonal"
+  | "antecedentsFamily"
+  | "physicalExam"
+  | "diagnosis"
+  | "medications"
+  | "knownAllergies"
+  | "indications"
+  | "observations";
 
 function normalize(s: string): string {
   return s
@@ -90,11 +124,28 @@ function isSectionMarker(cellNorm: string): boolean {
   );
 }
 
-function classifySectionMarker(cellNorm: string): keyof ParsedClinicalRecord["rawSections"] | null {
+function classifySectionMarker(cellNorm: string): SectionKey | null {
+  // ANTECEDENTES sub-types first so "FAMILIARES" / "PERSONALES" win
+  // over bare "ANTECEDENTES".
+  if (cellNorm.startsWith("ANTECEDENTES FAMILIARES")) return "antecedentsFamily";
+  if (cellNorm.startsWith("ANTECEDENTES PERSONALES")) return "antecedentsPersonal";
+  if (cellNorm.startsWith("ANTECEDENTES")) return "antecedentsPersonal";
   if (cellNorm.startsWith("HISTORIA")) return "history";
   if (cellNorm.startsWith("EXAMEN")) return "physicalExam";
-  if (cellNorm.startsWith("DIAGNOSTICO") || cellNorm.startsWith("DIAGNÓSTICO")) return "diagnosis";
+  // cellNorm is accent-stripped, so DIAGNÓSTICO == DIAGNOSTICO.
+  if (cellNorm.startsWith("DIAGNOSTICO")) return "diagnosis";
+  if (
+    cellNorm.startsWith("MEDICAMENTOS") ||
+    cellNorm.startsWith("TRATAMIENTO ACTUAL") ||
+    cellNorm.startsWith("MEDICACION ACTUAL")
+  ) {
+    return "medications";
+  }
+  if (cellNorm.startsWith("ALERGIAS")) return "knownAllergies";
   if (cellNorm.startsWith("INDICACIONES")) return "indications";
+  if (cellNorm.startsWith("OBSERVACIONES") || cellNorm.startsWith("NOTAS")) {
+    return "observations";
+  }
   return null;
 }
 
@@ -153,6 +204,20 @@ function parseDecimal(value: string): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
+function dedupeLines(lines: string[]): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const raw of lines) {
+    const trimmed = raw.trim();
+    if (!trimmed) continue;
+    const key = normalize(trimmed);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(trimmed);
+  }
+  return out;
+}
+
 function extractInlineAnthropometric(text: string, target: ParsedClinicalRecord): void {
   // Match patterns like "P: 8,100 T: 67,5 CC: 43,5" in any single cell.
   const matches = text.matchAll(/\b([A-ZÁÉÍÓÚÑ\/]+)\s*[:\-]\s*([\d.,]+)/g);
@@ -184,15 +249,26 @@ export function parseClinicalRecordWorkbook(buffer: Buffer): ParsedClinicalRecor
     physicalExam: null,
     diagnosis: null,
     indications: [],
+    antecedents: { personal: [], family: [] },
+    medications: [],
+    knownAllergies: [],
+    observations: null,
     weightKg: null,
     heightCm: null,
     headCircumferenceCm: null,
     anthropometric: {},
     rawHeader: {},
-    rawSections: { history: [], physicalExam: [], diagnosis: [], indications: [] } as Record<
-      string,
-      string[]
-    >,
+    rawSections: {
+      history: [],
+      antecedentsPersonal: [],
+      antecedentsFamily: [],
+      physicalExam: [],
+      diagnosis: [],
+      medications: [],
+      knownAllergies: [],
+      indications: [],
+      observations: [],
+    },
     issues,
     confidence: 0,
   };
@@ -204,8 +280,10 @@ export function parseClinicalRecordWorkbook(buffer: Buffer): ParsedClinicalRecor
 
   // Locate header markers (NOMBRE, EDAD, FECHA, etc.) and section markers.
   // Header markers expect the value in a sibling cell on the same row.
-  let currentSection: keyof typeof result.rawSections | null = null;
-  let inIndicationsBlock = false;
+  let currentSection: SectionKey | null = null;
+  // Sections whose content is a numbered list (col 1 = "1.", col 2 = text).
+  const isListSection = (s: SectionKey): boolean =>
+    s === "indications" || s === "medications" || s === "knownAllergies";
   let consultMarkerSeen = false;
 
   for (let r = 0; r < rows.length; r++) {
@@ -270,7 +348,6 @@ export function parseClinicalRecordWorkbook(buffer: Buffer): ParsedClinicalRecor
       const sect = classifySectionMarker(norm);
       if (sect) {
         currentSection = sect;
-        inIndicationsBlock = sect === "indications";
         // Sometimes the marker cell contains "HISTORIA: ..." with content inline.
         const inline = cell.replace(/^[^:]+:\s*/, "").trim();
         if (inline && inline.length > 1 && normalize(inline) !== norm) {
@@ -282,7 +359,7 @@ export function parseClinicalRecordWorkbook(buffer: Buffer): ParsedClinicalRecor
           if (sect === "physicalExam") {
             extractInlineAnthropometric(right, result);
             result.rawSections.physicalExam!.push(right);
-          } else if (sect !== "indications") {
+          } else if (!isListSection(sect)) {
             result.rawSections[sect]!.push(right);
           }
         }
@@ -312,12 +389,13 @@ export function parseClinicalRecordWorkbook(buffer: Buffer): ParsedClinicalRecor
         }
       }
 
-      // Indications: numbered list. Sometimes col 1 has the number, col 2+ has text.
-      if (inIndicationsBlock) {
+      // Numbered list (indications / medications / allergies). col 1 = "1.",
+      // col 2+ = text. Collect text under the active list section.
+      if (currentSection && isListSection(currentSection)) {
         const isNumberLabel = /^\d+\.?$/.test(cell);
         if (isNumberLabel) {
           const text = findCellRight(row, c);
-          if (text) result.indications.push(text);
+          if (text) result.rawSections[currentSection]!.push(text);
           continue;
         }
       }
@@ -327,17 +405,10 @@ export function parseClinicalRecordWorkbook(buffer: Buffer): ParsedClinicalRecor
         // Skip footer / signature rows.
         if (norm.startsWith("DR ") || norm.includes("ALERGOLOGO") || norm.includes("INMUNOLOGO")) {
           currentSection = null;
-          inIndicationsBlock = false;
           continue;
         }
-        if (currentSection === "indications") {
-          // Indication text without explicit number — append.
-          extractInlineAnthropometric(cell, result);
-          result.indications.push(cell);
-        } else {
-          extractInlineAnthropometric(cell, result);
-          result.rawSections[currentSection]!.push(cell);
-        }
+        extractInlineAnthropometric(cell, result);
+        result.rawSections[currentSection]!.push(cell);
       } else {
         // Pre-NOMBRE / pre-section header lines (consultorio address etc.)
         // are kept in rawHeader for debugging only.
@@ -346,10 +417,20 @@ export function parseClinicalRecordWorkbook(buffer: Buffer): ParsedClinicalRecor
     }
   }
 
-  // Collapse section arrays into joined strings for the SQL columns.
+  // Collapse section arrays into the final per-column shape:
+  //   - text columns: \n-joined trim
+  //   - list columns: array passed through, deduped + trimmed
   result.history = result.rawSections.history!.join("\n").trim() || null;
   result.physicalExam = result.rawSections.physicalExam!.join("\n").trim() || null;
   result.diagnosis = result.rawSections.diagnosis!.join("\n").trim() || null;
+  result.observations = result.rawSections.observations!.join("\n").trim() || null;
+  result.antecedents = {
+    personal: dedupeLines(result.rawSections.antecedentsPersonal!),
+    family: dedupeLines(result.rawSections.antecedentsFamily!),
+  };
+  result.medications = dedupeLines(result.rawSections.medications!);
+  result.knownAllergies = dedupeLines(result.rawSections.knownAllergies!);
+  result.indications = dedupeLines(result.rawSections.indications!);
 
   // Confidence + issues.
   if (!consultMarkerSeen) {
@@ -378,13 +459,17 @@ export function parseClinicalRecordWorkbook(buffer: Buffer): ParsedClinicalRecor
   }
 
   let score = 0;
-  if (consultMarkerSeen) score += 15;
-  if (result.patientName) score += 25;
-  if (result.consultDate) score += 20;
-  if (result.history) score += 15;
+  if (consultMarkerSeen) score += 10;
+  if (result.patientName) score += 20;
+  if (result.consultDate) score += 15;
+  if (result.history) score += 10;
   if (result.physicalExam) score += 10;
   if (result.diagnosis) score += 10;
   if (result.indications.length > 0) score += 5;
+  if (result.medications.length > 0) score += 5;
+  if (result.knownAllergies.length > 0) score += 3;
+  if (result.antecedents.personal.length + result.antecedents.family.length > 0) score += 5;
+  if (result.observations) score += 2;
   result.confidence = Math.min(score, 100);
 
   return result;

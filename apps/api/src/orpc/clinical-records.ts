@@ -244,6 +244,10 @@ const routerBase = {
           cr.physical_exam        AS "physicalExam",
           cr.diagnosis,
           cr.indications,
+          cr.antecedents,
+          cr.medications,
+          cr.known_allergies      AS "knownAllergies",
+          cr.observations,
           cr.weight_kg            AS "weightKg",
           cr.height_cm            AS "heightCm",
           cr.head_circumference_cm AS "headCircumferenceCm",
@@ -269,6 +273,11 @@ const routerBase = {
           physicalExam: (row.physicalExam as string | null) ?? null,
           diagnosis: (row.diagnosis as string | null) ?? null,
           indications: (row.indications as string[] | null) ?? [],
+          antecedents:
+            (row.antecedents as { personal: string[]; family: string[] } | null) ?? null,
+          medications: (row.medications as string[] | null) ?? [],
+          knownAllergies: (row.knownAllergies as string[] | null) ?? [],
+          observations: (row.observations as string | null) ?? null,
           weightKg: row.weightKg == null ? null : Number(row.weightKg),
           heightCm: row.heightCm == null ? null : Number(row.heightCm),
           headCircumferenceCm:
