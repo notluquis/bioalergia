@@ -1,4 +1,4 @@
-import { db, kysely } from "@finanzas/db";
+import { kysely } from "@finanzas/db";
 import {
   clinicalRecordImportSchema,
   clinicalRecordImportStatusSchema,
@@ -365,7 +365,6 @@ function jobToOutput(j: JobState | null) {
   };
 }
 
-void db;
 
 export const clinicalRecordsORPCRouter = base
   .prefix("/api/orpc/clinical-records")

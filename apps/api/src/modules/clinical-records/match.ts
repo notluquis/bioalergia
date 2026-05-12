@@ -60,11 +60,13 @@ export async function matchPatientForRecord(parsed: ParsedClinicalRecord): Promi
 
   const norm = normalize(parsed.patientName);
 
-  // First pass: exact normalised match. Use Postgres unaccent if
-  // available; otherwise compute in JS over a candidate pool.
-  // Fetch a candidate pool using ILIKE on the first surname token to
-  // narrow the set, then score in JS.
-  const surname = target[target.length - 1] ?? target[0];
+  // Candidate pool: search via unaccent + lower across names, father
+  // and mother surnames. Use BOTH the first-name token AND the last
+  // (probable surname) so single-name xlsx (raras pero existen) still
+  // hit. Multiple tokens combined with OR keep the pool bounded while
+  // catching variant orderings ("RUMINOT JOSE" vs "JOSE RUMINOT").
+  const searchTokens = Array.from(new Set([target[0]!, target[target.length - 1]!]));
+  const searchTerms = searchTokens.map((t) => `%${t}%`);
   const pool = await sql<{
     patientId: number;
     personId: number;
@@ -85,8 +87,9 @@ export async function matchPatientForRecord(parsed: ParsedClinicalRecord): Promi
     FROM patients pa
     JOIN people pe ON pe.id = pa.person_id
     WHERE
-      lower(coalesce(pe.father_name, '')) ILIKE ${"%" + surname + "%"}
-      OR lower(coalesce(pe.names, '')) ILIKE ${"%" + surname + "%"}
+      unaccent(lower(coalesce(pe.father_name, ''))) ILIKE ANY(${searchTerms})
+      OR unaccent(lower(coalesce(pe.mother_name, ''))) ILIKE ANY(${searchTerms})
+      OR unaccent(lower(coalesce(pe.names, ''))) ILIKE ANY(${searchTerms})
     LIMIT 200
   `.execute(kysely);
 
