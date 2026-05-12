@@ -1,4 +1,4 @@
-import { Button, Card, Chip, Modal, Table } from "@heroui/react";
+import { Button, Card, Chip, Modal, Table, Tabs } from "@heroui/react";
 import { WaTableSkeleton } from "../components/Skeletons";
 import {
   CheckCircle2,
@@ -45,50 +45,41 @@ export function WaCloudCatalogPage() {
         <h2 className="font-semibold text-lg">Catálogo WhatsApp</h2>
       </div>
 
-      <div className="flex gap-2 border-default-200 border-b">
-        <TabBtn active={tab === "locations"} onClick={() => setTab("locations")}>
-          <MapPin size={14} /> Ubicaciones
-        </TabBtn>
-        <TabBtn active={tab === "lists"} onClick={() => setTab("lists")}>
-          <List size={14} /> Listas interactivas
-        </TabBtn>
-        <TabBtn active={tab === "flows"} onClick={() => setTab("flows")}>
-          <Layers size={14} /> Flows
-        </TabBtn>
-        <TabBtn active={tab === "snippets"} onClick={() => setTab("snippets")}>
-          <Zap size={14} /> Snippets
-        </TabBtn>
-      </div>
-
-      {tab === "locations" && <LocationsTab />}
-      {tab === "lists" && <ListsTab />}
-      {tab === "flows" && <FlowsTab />}
-      {tab === "snippets" && <SnippetsTab />}
+      <Tabs variant="secondary" selectedKey={tab} onSelectionChange={(k) => setTab(k as Tab)}>
+        <Tabs.ListContainer>
+          <Tabs.List aria-label="Secciones del catálogo">
+            <Tabs.Tab id="locations">
+              <MapPin size={14} /> Ubicaciones
+              <Tabs.Indicator />
+            </Tabs.Tab>
+            <Tabs.Tab id="lists">
+              <List size={14} /> Listas interactivas
+              <Tabs.Indicator />
+            </Tabs.Tab>
+            <Tabs.Tab id="flows">
+              <Layers size={14} /> Flows
+              <Tabs.Indicator />
+            </Tabs.Tab>
+            <Tabs.Tab id="snippets">
+              <Zap size={14} /> Snippets
+              <Tabs.Indicator />
+            </Tabs.Tab>
+          </Tabs.List>
+        </Tabs.ListContainer>
+        <Tabs.Panel id="locations" className="pt-4">
+          <LocationsTab />
+        </Tabs.Panel>
+        <Tabs.Panel id="lists" className="pt-4">
+          <ListsTab />
+        </Tabs.Panel>
+        <Tabs.Panel id="flows" className="pt-4">
+          <FlowsTab />
+        </Tabs.Panel>
+        <Tabs.Panel id="snippets" className="pt-4">
+          <SnippetsTab />
+        </Tabs.Panel>
+      </Tabs>
     </div>
-  );
-}
-
-function TabBtn({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`flex items-center gap-1.5 border-b-2 px-3 py-2 font-medium text-sm transition ${
-        active
-          ? "border-success text-success"
-          : "border-transparent text-default-500 hover:text-default-700"
-      }`}
-    >
-      {children}
-    </button>
   );
 }
 

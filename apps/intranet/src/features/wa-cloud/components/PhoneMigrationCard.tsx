@@ -382,6 +382,9 @@ export function PhoneMigrationCard() {
 }
 
 function StepIndicator({ step }: { step: Step }) {
+  // Wizard progress (NOT Tabs — clicking shouldn't jump steps). Uses
+  // <ol> + aria-current="step" for assistive tech, and a check icon
+  // for completed steps so progress is unambiguous without color alone.
   const steps: { id: Step; label: string }[] = [
     { id: "request", label: "Solicitar" },
     { id: "verify", label: "Verificar" },
@@ -390,19 +393,25 @@ function StepIndicator({ step }: { step: Step }) {
   ];
   const activeIdx = steps.findIndex((s) => s.id === step);
   return (
-    <div className="flex flex-wrap items-center gap-1.5">
-      {steps.map((s, idx) => (
-        <Chip
-          key={s.id}
-          size="sm"
-          variant={idx === activeIdx ? "primary" : "soft"}
-          color={idx < activeIdx ? "success" : idx === activeIdx ? "accent" : "default"}
-        >
-          <Chip.Label>
-            {idx + 1}. {s.label}
-          </Chip.Label>
-        </Chip>
-      ))}
-    </div>
+    <ol aria-label="Progreso de la migración" className="flex flex-wrap items-center gap-1.5">
+      {steps.map((s, idx) => {
+        const isComplete = idx < activeIdx;
+        const isCurrent = idx === activeIdx;
+        return (
+          <li key={s.id} aria-current={isCurrent ? "step" : undefined}>
+            <Chip
+              size="sm"
+              variant={isCurrent ? "primary" : "soft"}
+              color={isComplete ? "success" : isCurrent ? "accent" : "default"}
+            >
+              {isComplete ? <Check size={12} aria-hidden /> : null}
+              <Chip.Label>
+                {idx + 1}. {s.label}
+              </Chip.Label>
+            </Chip>
+          </li>
+        );
+      })}
+    </ol>
   );
 }

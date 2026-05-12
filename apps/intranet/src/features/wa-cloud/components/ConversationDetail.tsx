@@ -475,7 +475,7 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
     <>
       <Card.Header className="!flex !flex-row !items-center !justify-between gap-3 border-default-200 border-b p-3">
         <div className="flex min-w-0 items-center gap-3">
-          <Avatar className="size-10 shrink-0 bg-success-200 text-success-900">
+          <Avatar className="size-10 shrink-0 bg-success/15 text-success">
             <Avatar.Fallback delayMs={0} className="font-semibold text-sm">
               {initials}
             </Avatar.Fallback>
@@ -488,7 +488,10 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
             </p>
           </div>
         </div>
-        <div className="flex shrink-0 items-center gap-2">
+        {/* On mobile the chip stack can overflow the header; scroll it
+            horizontally instead of wrapping so the chat title stays
+            on its own line. */}
+        <div className="-mx-1 flex shrink-0 items-center gap-2 overflow-x-auto px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {c.contact.blockedAt && (
             <Chip color="danger" variant="soft" size="sm">
               <Ban size={12} />

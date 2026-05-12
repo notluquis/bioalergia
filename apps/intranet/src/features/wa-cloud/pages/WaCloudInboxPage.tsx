@@ -24,6 +24,7 @@ import { ArrowLeft, Filter, Inbox, MessageSquareText, Phone } from "lucide-react
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { WaConversationStatus } from "@finanzas/orpc-contracts/wa-cloud";
 import { ConversationDetail } from "../components/ConversationDetail";
+import { useFaviconBadge } from "../hooks/useFaviconBadge";
 import { useAccounts, useConversations, useMarkRead, useSearchMessages } from "../hooks/useWaCloud";
 
 // iOS-style stack navigation: on viewports <lg, list and detail are
@@ -52,13 +53,16 @@ const STATUS_OPTIONS: { value: "" | WaConversationStatus; label: string }[] = [
   { value: "ARCHIVED", label: "Archivados" },
 ];
 
-// Stable color per phone number — hash to one of HeroUI semantic colors
+// Stable color per phone number, hashed into a small palette. Uses
+// alpha-tinted backgrounds + the matching semantic foreground so the
+// initials stay legible across light/dark themes (the previous
+// `bg-success-200 text-success-900` pair was illegible in dark mode).
 const AVATAR_COLORS = [
-  "bg-success-200 text-success-900",
-  "bg-warning-200 text-warning-900",
-  "bg-accent-200 text-accent-900",
-  "bg-danger-200 text-danger-900",
-  "bg-default-300 text-default-900",
+  "bg-success/15 text-success",
+  "bg-warning/15 text-warning",
+  "bg-accent/15 text-accent",
+  "bg-danger/15 text-danger",
+  "bg-default/40 text-default-foreground",
 ];
 function colorFor(seed: string): string {
   let h = 0;
@@ -123,7 +127,8 @@ export function WaCloudInboxPage() {
   );
 
   // Tab title shows the unread total so the operator notices new
-  // WhatsApp activity even from another tab.
+  // WhatsApp activity even from another tab. Favicon also gets a
+  // red badge so the visual signal works without reading the title.
   useEffect(() => {
     const base = "Inbox WhatsApp · Bioalergia";
     document.title = totalUnread > 0 ? `(${totalUnread}) ${base}` : base;
@@ -131,6 +136,7 @@ export function WaCloudInboxPage() {
       document.title = "Bioalergia";
     };
   }, [totalUnread]);
+  useFaviconBadge(totalUnread);
 
   // Keyboard shortcuts: j/k navigate list, Enter open, Esc close,
   // / focus search, ? show help. Inputs/textareas are excluded so
