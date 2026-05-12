@@ -28,6 +28,7 @@ import {
   PackageCheck,
   Phone,
   Plus,
+  Sparkles,
   Truck,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -237,31 +238,32 @@ const STEP_LABELS: Record<Step, string> = {
 };
 
 function StepIndicator({ step }: { step: Step }) {
+  // Wizard progress (NOT Tabs — clicking should not jump steps). <ol>
+  // + aria-current="step" per WAI-ARIA Authoring Practices; completed
+  // steps show a check so progress is not color-only. Same compound
+  // pattern as PhoneMigrationCard's StepIndicator.
   const current = STEPS.indexOf(step);
   return (
-    <div className="flex items-center gap-1">
-      {STEPS.map((s, i) => (
-        <div key={s} className="flex items-center gap-1">
-          <div
-            className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold ${
-              i < current
-                ? "bg-primary text-primary-foreground"
-                : i === current
-                  ? "bg-primary/20 text-primary"
-                  : "bg-default-100 text-default-400"
-            }`}
-          >
-            {i + 1}
-          </div>
-          <span
-            className={`text-xs ${i === current ? "font-semibold text-primary" : "text-default-400"}`}
-          >
-            {STEP_LABELS[s]}
-          </span>
-          {i < STEPS.length - 1 && <div className="mx-1 h-px w-4 bg-default-200" />}
-        </div>
-      ))}
-    </div>
+    <ol aria-label="Progreso del despacho" className="flex flex-wrap items-center gap-1.5">
+      {STEPS.map((s, i) => {
+        const isComplete = i < current;
+        const isCurrent = i === current;
+        return (
+          <li key={s} aria-current={isCurrent ? "step" : undefined}>
+            <Chip
+              size="sm"
+              variant={isCurrent ? "primary" : "soft"}
+              color={isComplete ? "success" : isCurrent ? "accent" : "default"}
+            >
+              {isComplete ? <CheckCircle size={12} aria-hidden /> : null}
+              <Chip.Label>
+                {i + 1}. {STEP_LABELS[s]}
+              </Chip.Label>
+            </Chip>
+          </li>
+        );
+      })}
+    </ol>
   );
 }
 
@@ -941,49 +943,62 @@ function QuoteStep({
 
       {presets.length > 0 && (
         <div className="flex flex-wrap items-center gap-2 rounded-xl bg-default-50 px-3 py-2">
-          <span className="text-default-500 text-xs">Presets:</span>
+          <span className="flex items-center gap-1 text-default-500 text-xs">
+            <Sparkles size={12} />
+            Presets:
+          </span>
           {presets.map((p) => (
-            <Chip
+            <Button
               key={p.id}
               size="sm"
-              color="accent"
-              variant="soft"
-              className="cursor-pointer"
-              onClick={() => {
+              variant="tertiary"
+              onPress={() => {
                 setDims(p.values);
                 setSelectedCode(null);
               }}
             >
-              <Chip.Label>{p.label}</Chip.Label>
-            </Chip>
+              <Package size={14} />
+              {p.label}
+            </Button>
           ))}
         </div>
       )}
 
       <div className="grid grid-cols-2 gap-4">
         <NumberField
+          fullWidth
           isRequired
           minValue={0.1}
+          step={0.1}
           value={dims.weight}
+          formatOptions={{ minimumFractionDigits: 1, maximumFractionDigits: 2 }}
           onChange={(v) => setDims((d) => ({ ...d, weight: v }))}
         >
           <Label>Peso (kg)</Label>
           <NumberField.Group>
-            <NumberField.Input />
+            <NumberField.DecrementButton />
+            <NumberField.Input className="flex-1" />
+            <NumberField.IncrementButton />
           </NumberField.Group>
         </NumberField>
         <NumberField
+          fullWidth
           isRequired
           minValue={1}
+          step={1000}
           value={dims.declaredValue}
+          formatOptions={{ style: "currency", currency: "CLP", maximumFractionDigits: 0 }}
           onChange={(v) => setDims((d) => ({ ...d, declaredValue: v }))}
         >
-          <Label>Valor declarado ($)</Label>
+          <Label>Valor declarado</Label>
           <NumberField.Group>
-            <NumberField.Input />
+            <NumberField.DecrementButton />
+            <NumberField.Input className="flex-1" />
+            <NumberField.IncrementButton />
           </NumberField.Group>
         </NumberField>
         <NumberField
+          fullWidth
           isRequired
           minValue={1}
           value={dims.height}
@@ -991,10 +1006,13 @@ function QuoteStep({
         >
           <Label>Alto (cm)</Label>
           <NumberField.Group>
-            <NumberField.Input />
+            <NumberField.DecrementButton />
+            <NumberField.Input className="flex-1" />
+            <NumberField.IncrementButton />
           </NumberField.Group>
         </NumberField>
         <NumberField
+          fullWidth
           isRequired
           minValue={1}
           value={dims.width}
@@ -1002,10 +1020,13 @@ function QuoteStep({
         >
           <Label>Ancho (cm)</Label>
           <NumberField.Group>
-            <NumberField.Input />
+            <NumberField.DecrementButton />
+            <NumberField.Input className="flex-1" />
+            <NumberField.IncrementButton />
           </NumberField.Group>
         </NumberField>
         <NumberField
+          fullWidth
           isRequired
           minValue={1}
           value={dims.length}
@@ -1014,7 +1035,9 @@ function QuoteStep({
         >
           <Label>Largo (cm)</Label>
           <NumberField.Group>
-            <NumberField.Input />
+            <NumberField.DecrementButton />
+            <NumberField.Input className="flex-1" />
+            <NumberField.IncrementButton />
           </NumberField.Group>
         </NumberField>
       </div>

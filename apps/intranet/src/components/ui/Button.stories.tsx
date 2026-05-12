@@ -5,7 +5,7 @@ const meta: Meta<typeof Button> = {
   title: "UI/Button",
   component: Button,
   args: {
-    children: "Acción",
+    children: "Continuar",
   },
 };
 

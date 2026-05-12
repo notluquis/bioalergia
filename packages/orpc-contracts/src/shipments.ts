@@ -104,10 +104,14 @@ export const cxReprintLabelResultSchema = z.object({
 // ─── Quote ────────────────────────────────────────────────────────────────────
 
 export const cxServiceOptionSchema = z.object({
-  serviceTypeCode: z.string(),
-  serviceDescription: z.string(),
-  serviceValue: z.number(),
-  deliveryTime: z.string().optional(),
+  // Chilexpress returns these as either string or number depending on
+  // the service tier; coerce so a numeric-looking string never trips
+  // the oRPC output validator (root cause of the historical
+  // "Error al cotizar: Output validation failed" toast).
+  serviceTypeCode: z.coerce.string(),
+  serviceDescription: z.coerce.string(),
+  serviceValue: z.coerce.number(),
+  deliveryTime: z.coerce.string().optional(),
 });
 
 export const quoteShipmentInputSchema = z.object({
