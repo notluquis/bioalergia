@@ -1,0 +1,105 @@
+name: quality-gates
+
+on:
+  push:
+    branches:
+      - main
+      - forthcoming-ocelot
+    paths:
+      - "apps/intranet/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "knip.config.ts"
+      - ".github/workflows/quality.yml"
+  pull_request:
+    branches:
+      - main
+      - forthcoming-ocelot
+
+concurrency:
+  group: quality-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PNPM_VERSION: 10.32.1
+  NODE_VERSION: 25
+  TURBO_TELEMETRY_DISABLED: "1"
+
+jobs:
+  design-tokens:
+    name: design-token lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: "${{ env.PNPM_VERSION }}" }
+      - uses: actions/setup-node@v4
+        with: { node-version: "${{ env.NODE_VERSION }}", cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm -F @finanzas/intranet audit:design
+
+  dead-code:
+    # Informational: prints knip report but never fails the workflow.
+    # Flip to `audit:dead:strict` once the backlog of 88 unused files is cleared.
+    name: knip (dead code, advisory)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: "${{ env.PNPM_VERSION }}" }
+      - uses: actions/setup-node@v4
+        with: { node-version: "${{ env.NODE_VERSION }}", cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm audit:dead
+
+  bundle-budget:
+    name: size-limit (bundle budgets)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: "${{ env.PNPM_VERSION }}" }
+      - uses: actions/setup-node@v4
+        with: { node-version: "${{ env.NODE_VERSION }}", cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm -F @finanzas/intranet build
+      - run: pnpm -F @finanzas/intranet audit:size
+
+  e2e-and-a11y:
+    name: playwright + axe
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: "${{ env.PNPM_VERSION }}" }
+      - uses: actions/setup-node@v4
+        with: { node-version: "${{ env.NODE_VERSION }}", cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - name: Install Chromium
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Run smoke + a11y suite
+        env:
+          CI: "true"
+          E2E_USER: ${{ secrets.E2E_USER }}
+          E2E_PASS: ${{ secrets.E2E_PASS }}
+        run: pnpm -F @finanzas/intranet audit:e2e
+      - name: Upload Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: apps/intranet/e2e-report
+          retention-days: 7
+
+  lighthouse:
+    name: lighthouse-ci (perf budgets)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: "${{ env.PNPM_VERSION }}" }
+      - uses: actions/setup-node@v4
+        with: { node-version: "${{ env.NODE_VERSION }}", cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm -F @finanzas/intranet audit:perf
