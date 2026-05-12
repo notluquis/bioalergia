@@ -24,9 +24,30 @@ const API_PROXY_SECURE = API_PROXY_TARGET.startsWith("https://");
 export default defineConfig(({ mode }) => {
   const enableChecker = mode === "development";
 
+  // CSP nonce placeholder injected into every <script> and stylesheet
+  // <link> tag in the built index.html. Caddy substitutes this Go-template
+  // expression with a per-request UUID via the `templates` directive
+  // (see apps/intranet/Caddyfile), and emits a matching
+  // Content-Security-Policy header so the browser only executes scripts
+  // carrying that exact nonce — the strict-CSP / strict-dynamic pattern
+  // recommended by the OWASP CSP cheat sheet and W3C CSP3 §6.1.
+  const CSP_NONCE_PLACEHOLDER = '{{ placeholder "http.request.uuid" }}';
+  const cspNoncePlugin = {
+    name: "csp-nonce-placeholder",
+    transformIndexHtml(html: string) {
+      return html
+        .replace(/<script\b(?![^>]*\bnonce=)/g, `<script nonce="${CSP_NONCE_PLACEHOLDER}"`)
+        .replace(
+          /<link\b([^>]*\brel=["']stylesheet["'])(?![^>]*\bnonce=)/g,
+          `<link nonce="${CSP_NONCE_PLACEHOLDER}"$1`,
+        );
+    },
+  };
+
   return {
     cacheDir: "../../node_modules/.vite/intranet",
     plugins: [
+      cspNoncePlugin,
       // TanStack Router - File-Based Routing (MUST be first)
       tanstackRouter({
         target: "react",

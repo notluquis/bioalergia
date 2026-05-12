@@ -5,7 +5,24 @@
 	# Automatic compression (gzip, zstd, brotli)
 	encode zstd gzip
 
-	# Security headers
+	# Security headers (applied to every response).
+	#
+	# Strict CSP per the OWASP CSP Cheat Sheet (2025+) and W3C CSP3 §6.1:
+	# - script-src uses 'nonce-{R}' + 'strict-dynamic'; the trailing
+	#   'unsafe-inline' https: are CSP1/CSP2 fallbacks that browsers
+	#   supporting CSP3 ignore (Google "strict CSP" backwards-compat
+	#   pattern from web.dev/strict-csp).
+	# - The nonce is the per-request UUID Caddy generates via
+	#   {http.request.uuid}. Vite injects a matching placeholder onto
+	#   every <script> tag in index.html (see vite.config.ts
+	#   cspNoncePlugin) and the `templates` directive below substitutes
+	#   it at serve time.
+	# - require-trusted-types-for 'script' closes DOM-XSS sinks (React
+	#   19 has built-in Trusted Types support).
+	# - style-src keeps 'unsafe-inline' because HeroUI v3 / React Aria
+	#   set inline `style="…"` for popovers; OWASP explicitly accepts
+	#   this trade-off because style-based XSS is dramatically lower
+	#   impact than script XSS.
 	header {
 		X-Content-Type-Options "nosniff"
 		X-Frame-Options "DENY"
@@ -13,6 +30,8 @@
 		Permissions-Policy "camera=(), microphone=(), geolocation=()"
 		Cross-Origin-Opener-Policy "same-origin"
 		Cross-Origin-Resource-Policy "same-origin"
+		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+		Content-Security-Policy "default-src 'self'; script-src 'nonce-{http.request.uuid}' 'strict-dynamic' 'unsafe-inline' https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self'; media-src 'self' blob:; worker-src 'self' blob:; manifest-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'; object-src 'none'; require-trusted-types-for 'script'"
 	}
 
 	# ========== LOGGING CONFIGURATION ==========
@@ -49,9 +68,16 @@
 		# If file doesn't exist, Caddy returns 404 automatically (no fallback to index.html)
 	}
 
-	# SPA routing: All other paths fallback to index.html (client-side navigation)
+	# SPA routing: All other paths fallback to index.html (client-side
+	# navigation). The `templates` directive parses the served index.html
+	# as a Go template so the CSP nonce placeholder Vite injected at
+	# build time ({{ placeholder "http.request.uuid" }}) resolves to the
+	# same per-request UUID Caddy emits in the Content-Security-Policy
+	# header above. Without `templates` the placeholder would be served
+	# verbatim and every script would be blocked by CSP.
 	handle {
 		try_files {path} /index.html
+		templates
 		file_server
 	}
 
