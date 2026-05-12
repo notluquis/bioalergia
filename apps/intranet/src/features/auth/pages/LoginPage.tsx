@@ -24,7 +24,7 @@ export function LoginPage() {
     clearError,
   } = useLoginLogic(from);
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4 py-10">
+    <main className="flex min-h-screen items-center justify-center bg-background px-4 py-10">
       <div className="fixed top-4 right-4 z-10">
         <Button
           aria-label={resolvedTheme === "dark" ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
@@ -82,7 +82,7 @@ export function LoginPage() {
           <LoginFooter supportEmail="lpulgar@bioalergia.cl" />
         )}
       </div>
-    </div>
+    </main>
   );
 }
 

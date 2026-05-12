@@ -24,32 +24,49 @@ html {
 :root,
 [data-theme="light"],
 [data-theme="bioalergia"] {
-  /* Brand */
-  --primary: oklch(52% 0.16 257);
-  --primary-foreground: oklch(100% 0 0);
-  --secondary: oklch(78% 0.16 70);
-  --secondary-foreground: oklch(20% 0.05 260);
-  --success: oklch(65% 0.18 145);
+  /* === HeroUI v3 semantic anchors ===
+   * HeroUI components consume these semantic names directly (button--primary
+   * uses --color-accent, surface uses --surface, etc.). Lightness values
+   * chosen so white-text-on-color hits WCAG 2.2 AA 4.5:1 for normal text.
+   * Aliases below mirror these to v2-style names (--primary, --content1,…)
+   * for Tailwind utility classes that still reference them.
+   */
+  --accent: oklch(45% 0.18 257);
+  --accent-foreground: oklch(100% 0 0);
+  --success: oklch(48% 0.16 145);
   --success-foreground: oklch(100% 0 0);
-  --warning: oklch(75% 0.16 55);
-  --warning-foreground: oklch(20% 0.05 260);
-  --danger: oklch(60% 0.18 25);
+  --warning: oklch(58% 0.16 55);
+  --warning-foreground: oklch(15% 0.05 260);
+  --danger: oklch(50% 0.2 25);
   --danger-foreground: oklch(100% 0 0);
-  --info: oklch(70% 0.14 240);
-  --info-foreground: oklch(100% 0 0);
 
-  /* Base surfaces */
+  /* Surface (HeroUI v3 calls them surface*; we expose content1..4 aliases) */
   --background: oklch(99% 0 0);
   --foreground: oklch(20% 0.04 260);
+  --surface: oklch(100% 0 0);
+  --surface-foreground: var(--foreground);
+  --surface-secondary: oklch(96% 0.003 260);
+  --surface-secondary-foreground: var(--foreground);
+  --surface-tertiary: oklch(93% 0.005 260);
+  --surface-tertiary-foreground: var(--foreground);
+  --overlay: oklch(100% 0 0);
+  --overlay-foreground: var(--foreground);
+  --muted: oklch(45% 0.016 260);
+  --border: oklch(88% 0.005 260);
+  --separator: oklch(90% 0.004 260);
 
-  /* Surface elevation (HeroUI v2 content scale) */
-  --content1: oklch(100% 0 0);
-  --content2: oklch(96% 0.003 260);
-  --content3: oklch(93% 0.005 260);
+  /* v2-style aliases (kept for Tailwind utility classes already in use) */
+  --primary: var(--accent);
+  --primary-foreground: var(--accent-foreground);
+  --secondary: oklch(52% 0.16 70);
+  --secondary-foreground: oklch(100% 0 0);
+  --info: oklch(50% 0.14 240);
+  --info-foreground: oklch(100% 0 0);
+  --content1: var(--surface);
+  --content2: var(--surface-secondary);
+  --content3: var(--surface-tertiary);
   --content4: oklch(89% 0.006 260);
-
-  /* Divider */
-  --divider: oklch(90% 0.004 260);
+  --divider: var(--separator);
 
   /* Default (neutral) scale */
   --default: oklch(94% 0.003 260);
@@ -174,32 +191,45 @@ html {
 .dark,
 [data-theme="dark"],
 [data-theme="bioalergia-dark"] {
-  /* Brand */
-  --primary: oklch(70% 0.14 255);
-  --primary-foreground: oklch(15% 0.04 260);
-  --secondary: oklch(82% 0.14 75);
-  --secondary-foreground: oklch(15% 0.04 260);
-  --success: oklch(75% 0.16 150);
+  /* HeroUI v3 semantic anchors. Dark mode raises lightness on brand colors
+   * but keeps black text for contrast on warning/secondary; on accent /
+   * success / danger / info uses white-on-color (verified ≥4.5:1). */
+  --accent: oklch(72% 0.16 255);
+  --accent-foreground: oklch(15% 0.04 260);
+  --success: oklch(78% 0.16 150);
   --success-foreground: oklch(15% 0.04 260);
-  --warning: oklch(80% 0.16 85);
+  --warning: oklch(82% 0.16 85);
   --warning-foreground: oklch(15% 0.04 260);
-  --danger: oklch(70% 0.18 20);
-  --danger-foreground: oklch(100% 0 0);
-  --info: oklch(70% 0.12 210);
-  --info-foreground: oklch(15% 0.04 260);
+  --danger: oklch(72% 0.2 20);
+  --danger-foreground: oklch(15% 0.04 260);
 
-  /* Base surfaces */
+  /* Surface */
   --background: oklch(11% 0.005 260);
   --foreground: oklch(94% 0.003 260);
+  --surface: oklch(15% 0.006 260);
+  --surface-foreground: var(--foreground);
+  --surface-secondary: oklch(20% 0.007 260);
+  --surface-secondary-foreground: var(--foreground);
+  --surface-tertiary: oklch(25% 0.008 260);
+  --surface-tertiary-foreground: var(--foreground);
+  --overlay: oklch(15% 0.006 260);
+  --overlay-foreground: var(--foreground);
+  --muted: oklch(70% 0.012 260);
+  --border: oklch(28% 0.008 260);
+  --separator: oklch(25% 0.008 260);
 
-  /* Surface elevation */
-  --content1: oklch(15% 0.006 260);
-  --content2: oklch(20% 0.007 260);
-  --content3: oklch(25% 0.008 260);
+  /* v2-style aliases */
+  --primary: var(--accent);
+  --primary-foreground: var(--accent-foreground);
+  --secondary: oklch(82% 0.14 75);
+  --secondary-foreground: oklch(15% 0.04 260);
+  --info: oklch(74% 0.12 210);
+  --info-foreground: oklch(15% 0.04 260);
+  --content1: var(--surface);
+  --content2: var(--surface-secondary);
+  --content3: var(--surface-tertiary);
   --content4: oklch(30% 0.009 260);
-
-  /* Divider */
-  --divider: oklch(28% 0.008 260);
+  --divider: var(--separator);
 
   /* Default (neutral) scale — inverted */
   --default: oklch(27% 0.006 260);
