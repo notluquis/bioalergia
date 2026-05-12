@@ -1,0 +1,18 @@
+import { createFileRoute, getRouteApi } from "@tanstack/react-router";
+import { UserManagementPage } from "@/features/users/pages/UserManagementPage";
+
+export const Route = createFileRoute("/_authed/settings/users/")({
+  staticData: {
+    nav: { iconKey: "UserCog", label: "Usuarios", order: 10, section: "Sistema" },
+    permission: { action: "read", subject: "User" },
+    title: "Gestión de usuarios",
+  },
+  beforeLoad: ({ context }) => {
+    if (!context.can("read", "User")) {
+      const routeApi = getRouteApi("/_authed/settings/users/");
+      // eslint-disable-next-line @typescript-eslint/only-throw-error
+      throw routeApi.redirect({ to: "/" });
+    }
+  },
+  component: UserManagementPage,
+});

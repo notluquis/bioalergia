@@ -1,0 +1,365 @@
+import {
+  createReportInputSchema as contractCreateReportInputSchema,
+  downloadReportInputSchema as contractDownloadReportInputSchema,
+  listReportsInputSchema as contractListReportsInputSchema,
+  listReportsResponseSchema as contractListReportsResponseSchema,
+  mpReportSchema as contractMpReportSchema,
+  processReportInputSchema as contractProcessReportInputSchema,
+  processReportResponseSchema as contractProcessReportResponseSchema,
+  syncLogsInputSchema as contractSyncLogsInputSchema,
+  syncLogsResponseSchema as contractSyncLogsResponseSchema,
+} from "@finanzas/orpc-contracts/mercadopago";
+import { OpenAPIHandler } from "@orpc/openapi/fetch";
+import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
+import { ORPCError, onError, os } from "@orpc/server";
+import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
+import type { Context as HonoContext } from "hono";
+import { z } from "zod";
+import { getSessionUser, hasPermission } from "../auth.ts";
+import { logError } from "../lib/logger.ts";
+import { configureSuperjson } from "../lib/superjson-config.ts";
+import { formatMpDate, MercadoPagoService } from "../services/mercadopago/index.ts";
+import {
+  createMpSyncLogEntry,
+  finalizeMpSyncLogEntry,
+  listMpSyncLogs,
+} from "../services/mercadopago-sync.ts";
+import { SuperJSONRPCHandler } from "./superjson.ts";
+
+configureSuperjson();
+
+type MercadoPagoORPCContext = {
+  hono: HonoContext;
+};
+
+const base = os.$context<MercadoPagoORPCContext>();
+
+const mpReportSchema = z
+  .object({
+    begin_date: z.coerce.date(),
+    created_from: z.string().nullable().optional(),
+    date_created: z.coerce.date().nullable().optional(),
+    end_date: z.coerce.date(),
+    file_name: z.string().nullable().optional(),
+    id: z.number(),
+    state: z.string().nullable().optional(),
+    status: z.string().nullable().optional(),
+    status_detail: z.string().nullable().optional(),
+  })
+  .passthrough();
+
+const mpReportsListSchema = z.array(mpReportSchema);
+
+function normalizeSyncLogChangeDetails(value: unknown): null | Record<string, unknown> | undefined {
+  if (value == null) {
+    return value === null ? null : undefined;
+  }
+  if (typeof value !== "object" || Array.isArray(value)) {
+    return null;
+  }
+  return value as Record<string, unknown>;
+}
+
+function isMpDownloadMissing(error: unknown) {
+  return error instanceof Error && error.message.includes("Download failed: 404");
+}
+
+function toMpDownloadErrorMessage(type: "release" | "settlement") {
+  return type === "settlement"
+    ? "El archivo de conciliación aún no está disponible para descarga en MercadoPago."
+    : "El archivo de liberación aún no está disponible para descarga en MercadoPago.";
+}
+
+const authed = base.use(async ({ context, next }) => {
+  const user = await getSessionUser(context.hono);
+  if (!user) {
+    throw new ORPCError("UNAUTHORIZED", { message: "No autorizado" });
+  }
+  return next({ context: { ...context, user } });
+});
+
+const integrationRead = authed.use(async ({ context, next }) => {
+  const canRead = await hasPermission(context.user, "read", "Integration");
+  if (!canRead) {
+    throw new ORPCError("FORBIDDEN", { message: "Forbidden" });
+  }
+  return next();
+});
+
+const integrationCreate = authed.use(async ({ context, next }) => {
+  const canCreate = await hasPermission(context.user, "read", "Integration");
+  if (!canCreate) {
+    throw new ORPCError("FORBIDDEN", { message: "Forbidden" });
+  }
+  return next();
+});
+
+const mercadopagoORPCRouterBase = {
+  createReport: integrationCreate
+    .route({
+      method: "POST",
+      path: "/reports",
+      summary: "Create a MercadoPago report",
+      tags: ["MercadoPago"],
+    })
+    .input(contractCreateReportInputSchema)
+    .output(contractMpReportSchema)
+    .handler(async ({ input }) => {
+      const type = input.type ?? "release";
+      return await MercadoPagoService.createReport(type, {
+        begin_date: formatMpDate(input.beginDate),
+        end_date: formatMpDate(input.endDate),
+      });
+    }),
+
+  listReports: integrationRead
+    .route({
+      method: "GET",
+      path: "/reports",
+      summary: "List MercadoPago reports",
+      tags: ["MercadoPago"],
+    })
+    .input(contractListReportsInputSchema)
+    .output(contractListReportsResponseSchema)
+    .handler(async ({ input }) => {
+      const type = input.type ?? "release";
+      const limit = input.limit ?? 50;
+      const offset = input.offset ?? 0;
+      const data = mpReportsListSchema.parse(await MercadoPagoService.listReports(type));
+      const sliced = data.slice(offset, offset + limit);
+      return {
+        reports: sliced,
+        total: data.length,
+      };
+    }),
+
+  downloadReport: integrationRead
+    .route({
+      method: "GET",
+      path: "/reports/download",
+      summary: "Download a MercadoPago report file",
+      tags: ["MercadoPago"],
+    })
+    .input(contractDownloadReportInputSchema)
+    .output(z.file())
+    .handler(async ({ input }) => {
+      const type = input.type ?? "release";
+
+      try {
+        const response = await MercadoPagoService.downloadReport(type, input.fileName);
+        const blob = await response.blob();
+        const contentType = response.headers.get("content-type") ?? blob.type ?? "text/csv";
+        return new File([blob], input.fileName, { type: contentType });
+      } catch (error) {
+        if (isMpDownloadMissing(error)) {
+          throw new ORPCError("NOT_FOUND", {
+            message: toMpDownloadErrorMessage(type),
+          });
+        }
+
+        throw error;
+      }
+    }),
+
+  listSyncLogs: integrationRead
+    .route({
+      method: "GET",
+      path: "/sync/logs",
+      summary: "List MercadoPago sync logs",
+      tags: ["MercadoPago"],
+    })
+    .input(contractSyncLogsInputSchema)
+    .output(contractSyncLogsResponseSchema)
+    .handler(async ({ input }) => {
+      const { logs, total } = await listMpSyncLogs({
+        limit: input.limit,
+        offset: input.offset,
+      });
+      return {
+        logs: logs.map((log) => ({
+          changeDetails: normalizeSyncLogChangeDetails(log.changeDetails),
+          errorMessage: log.errorMessage,
+          excluded: log.excluded,
+          finishedAt: log.finishedAt,
+          id: log.id,
+          inserted: log.inserted,
+          skipped: log.skipped,
+          startedAt: log.startedAt,
+          status: log.status as "ERROR" | "RUNNING" | "SUCCESS",
+          triggerLabel: log.triggerLabel,
+          triggerSource: log.triggerSource,
+          updated: log.updated,
+        })),
+        total,
+      };
+    }),
+
+  processReport: integrationCreate
+    .route({
+      method: "POST",
+      path: "/process-report",
+      summary: "Process a MercadoPago report",
+      tags: ["MercadoPago"],
+    })
+    .input(contractProcessReportInputSchema)
+    .output(contractProcessReportResponseSchema)
+    .handler(async ({ context, input }) => {
+      let logId: bigint | null = null;
+
+      try {
+        logId = await createMpSyncLogEntry({
+          triggerLabel: `${input.reportType}:${input.fileName}`,
+          triggerSource: "mp:manual",
+          triggerUserId: context.user.id,
+        });
+
+        const stats = await MercadoPagoService.processReport(input.reportType, {
+          fileName: input.fileName,
+        });
+
+        if (stats.sourceUnavailable) {
+          const message = toMpDownloadErrorMessage(input.reportType);
+          if (logId != null) {
+            await finalizeMpSyncLogEntry(logId, {
+              changeDetails: {
+                fileName: input.fileName,
+                reportType: input.reportType,
+                sourceUnavailable: true,
+              },
+              errorMessage: message,
+              status: "ERROR",
+            });
+          }
+          return {
+            message,
+            stats,
+            status: "error" as const,
+          };
+        }
+
+        const sourceIds = Array.from(
+          new Set(stats.processedSourceIds.map((id) => id.trim()).filter((id) => id.length > 0))
+        );
+        const cashFlowSync =
+          sourceIds.length > 0
+            ? await MercadoPagoService.syncCashFlow(context.user.id, { sourceIds })
+            : {
+                created: 0,
+                duplicates: 0,
+                errors: ["No sourceIds found in processed report; cashflow sync skipped"],
+                failed: 0,
+                total: 0,
+              };
+
+        if (logId != null) {
+          await finalizeMpSyncLogEntry(logId, {
+            changeDetails: {
+              cashFlowSync,
+              fileName: input.fileName,
+              importStats: {
+                duplicateRows: stats.duplicateRows,
+                errorCount: stats.errors?.length ?? 0,
+                insertedRows: stats.insertedRows,
+                skippedRows: stats.skippedRows,
+                totalRows: stats.totalRows,
+                validRows: stats.validRows,
+              },
+              importStatsByType: {
+                [input.reportType]: {
+                  duplicateRows: stats.duplicateRows,
+                  errorCount: stats.errors?.length ?? 0,
+                  insertedRows: stats.insertedRows,
+                  skippedRows: stats.skippedRows,
+                  totalRows: stats.totalRows,
+                  validRows: stats.validRows,
+                },
+              },
+              reportType: input.reportType,
+              reportTypes: [input.reportType],
+            },
+            excluded: stats.duplicateRows,
+            inserted: stats.insertedRows,
+            skipped: stats.skippedRows,
+            status: "SUCCESS",
+          });
+        }
+
+        return {
+          cashFlowSync,
+          message: "Reporte procesado exitosamente",
+          stats,
+          status: "success" as const,
+        };
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        if (logId != null) {
+          await finalizeMpSyncLogEntry(logId, {
+            changeDetails: {
+              fileName: input.fileName,
+              reportType: input.reportType,
+            },
+            errorMessage: message,
+            status: "ERROR",
+          });
+        }
+
+        if (isMpDownloadMissing(error)) {
+          return {
+            message: toMpDownloadErrorMessage(input.reportType),
+            stats: {
+              duplicateRows: 0,
+              errors: [message],
+              insertedRows: 0,
+              skippedRows: 0,
+              totalRows: 0,
+              validRows: 0,
+            },
+            status: "error" as const,
+          };
+        }
+
+        throw error;
+      }
+    }),
+};
+
+export const mercadopagoORPCRouter = base
+  .prefix("/api/orpc/mercadopago")
+  .tag("MercadoPago")
+  .router(mercadopagoORPCRouterBase);
+
+export const mercadopagoORPCHandler = new SuperJSONRPCHandler(mercadopagoORPCRouter, {
+  interceptors: [
+    onError((error) => {
+      logError("mercadopago.orpc", error, {
+        module: "api",
+        operation: "orpc.mercadopago",
+      });
+    }),
+  ],
+});
+
+export const mercadopagoOpenAPIHandler = new OpenAPIHandler(mercadopagoORPCRouter, {
+  plugins: [
+    new OpenAPIReferencePlugin({
+      docsTitle: "Bioalergia MercadoPago API Reference",
+      schemaConverters: [new ZodToJsonSchemaConverter()],
+      specGenerateOptions: {
+        info: {
+          title: "Bioalergia MercadoPago API",
+          version: "1.0.0",
+        },
+      },
+    }),
+  ],
+  interceptors: [
+    onError((error) => {
+      logError("mercadopago.openapi", error, {
+        module: "api",
+        operation: "openapi.mercadopago",
+      });
+    }),
+  ],
+});
+
+export type MercadopagoORPCRouter = typeof mercadopagoORPCRouter;

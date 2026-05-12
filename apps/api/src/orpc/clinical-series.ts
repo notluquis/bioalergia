@@ -1,0 +1,208 @@
+import { OpenAPIHandler } from "@orpc/openapi/fetch";
+import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
+import {
+  clinicalSeriesDetailInputSchema,
+  clinicalSeriesDetectDuplicatesOutputSchema,
+  clinicalSeriesInsuranceStatsSchema,
+  clinicalSeriesListInputSchema,
+  clinicalSeriesListOutputSchema,
+  clinicalSeriesMergeInputSchema,
+  clinicalSeriesMergeOutputSchema,
+  clinicalSeriesRebuildInputSchema,
+  clinicalSeriesRebuildResponseSchema,
+  clinicalSeriesSnapshotSchema,
+  createAbandonmentContactInputSchema,
+  createAbandonmentContactOutputSchema,
+  listAbandonmentContactsInputSchema,
+  listAbandonmentContactsOutputSchema,
+} from "@finanzas/orpc-contracts/clinical-series";
+import { ORPCError, onError, os } from "@orpc/server";
+import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
+import type { Context as HonoContext } from "hono";
+import { z } from "zod";
+import { getSessionUser, hasPermission } from "../auth.ts";
+import { logError } from "../lib/logger.ts";
+import { configureSuperjson } from "../lib/superjson-config.ts";
+import {
+  createAbandonmentContact,
+  detectDuplicateSeries,
+  getClinicalSeriesInsuranceStats,
+  getClinicalSeriesSnapshotById,
+  listAbandonmentContacts,
+  listClinicalSeriesSnapshots,
+  mergeClinicalSeries,
+  startRebuildClinicalSeries,
+} from "../services/clinical-series.ts";
+import { SuperJSONRPCHandler } from "./superjson.ts";
+
+configureSuperjson();
+
+type ClinicalSeriesORPCContext = {
+  hono: HonoContext;
+};
+
+const base = os.$context<ClinicalSeriesORPCContext>();
+
+const authed = base.use(async ({ context, next }) => {
+  const user = await getSessionUser(context.hono);
+  if (!user) {
+    throw new ORPCError("UNAUTHORIZED", { message: "No autorizado" });
+  }
+  return next({ context: { ...context, user } });
+});
+
+const readClinicalSeries = authed.use(async ({ context, next }) => {
+  const canRead = await hasPermission(context.user, "read", "ClinicalSeries");
+  if (!canRead) {
+    throw new ORPCError("FORBIDDEN", { message: "Forbidden" });
+  }
+  return next();
+});
+
+const updateClinicalSeries = authed.use(async ({ context, next }) => {
+  const canUpdate = await hasPermission(context.user, "update", "ClinicalSeries");
+  if (!canUpdate) {
+    throw new ORPCError("FORBIDDEN", { message: "Forbidden" });
+  }
+  return next();
+});
+
+const clinicalSeriesORPCRouterBase = {
+  detail: readClinicalSeries
+    .route({ method: "GET", path: "/{id}" })
+    .input(clinicalSeriesDetailInputSchema)
+    .output(clinicalSeriesSnapshotSchema)
+    .handler(async ({ input }: { input: z.input<typeof clinicalSeriesDetailInputSchema> }) => {
+      const snapshot = await getClinicalSeriesSnapshotById(input.id);
+      if (!snapshot) {
+        throw new ORPCError("NOT_FOUND", { message: "Serie clínica no encontrada" });
+      }
+      return snapshot;
+    }),
+
+  list: readClinicalSeries
+    .route({ method: "GET", path: "/" })
+    .input(clinicalSeriesListInputSchema)
+    .output(clinicalSeriesListOutputSchema)
+    .handler(async ({ input }: { input: z.input<typeof clinicalSeriesListInputSchema> }) => {
+      return await listClinicalSeriesSnapshots(input);
+    }),
+
+  insuranceStats: readClinicalSeries
+    .route({ method: "GET", path: "/stats/insurance" })
+    .input(clinicalSeriesListInputSchema)
+    .output(clinicalSeriesInsuranceStatsSchema)
+    .handler(async ({ input }: { input: z.input<typeof clinicalSeriesListInputSchema> }) => {
+      return await getClinicalSeriesInsuranceStats(input);
+    }),
+
+  rebuild: updateClinicalSeries
+    .route({ method: "POST", path: "/rebuild" })
+    .input(clinicalSeriesRebuildInputSchema)
+    .output(clinicalSeriesRebuildResponseSchema)
+    .handler(({ input }: { input: z.input<typeof clinicalSeriesRebuildInputSchema> }) => {
+      const jobId = startRebuildClinicalSeries(input);
+      return { jobId, message: "Reorganización iniciada" };
+    }),
+
+  detectDuplicates: readClinicalSeries
+    .route({ method: "GET", path: "/detect-duplicates" })
+    .input(z.object({}))
+    .output(clinicalSeriesDetectDuplicatesOutputSchema)
+    .handler(async () => {
+      const duplicates = await detectDuplicateSeries();
+      return { duplicates };
+    }),
+
+  merge: updateClinicalSeries
+    .route({ method: "POST", path: "/merge" })
+    .input(clinicalSeriesMergeInputSchema)
+    .output(clinicalSeriesMergeOutputSchema)
+    .handler(
+      async ({
+        input,
+        context,
+      }: {
+        input: z.input<typeof clinicalSeriesMergeInputSchema>;
+        context: { user: { id: number } };
+      }) => {
+        const result = await mergeClinicalSeries({
+          isAuto: false,
+          mergeReason: input.mergeReason,
+          mergedBy: context.user.id,
+          sourceId: input.sourceId,
+          targetId: input.targetId,
+        });
+        return { eventsMovedCount: result.eventsMovedCount, targetId: input.targetId };
+      }
+    ),
+
+  createAbandonmentContact: updateClinicalSeries
+    .route({ method: "POST", path: "/abandonment-contacts" })
+    .input(createAbandonmentContactInputSchema)
+    .output(createAbandonmentContactOutputSchema)
+    .handler(
+      async ({
+        input,
+        context,
+      }: {
+        input: z.input<typeof createAbandonmentContactInputSchema>;
+        context: { user: { id: number } };
+      }) => {
+        return await createAbandonmentContact({
+          seriesId: input.seriesId,
+          outcome: input.outcome,
+          notes: input.notes,
+          contactedById: context.user.id,
+        });
+      }
+    ),
+
+  listAbandonmentContacts: readClinicalSeries
+    .route({ method: "GET", path: "/abandonment-contacts" })
+    .input(listAbandonmentContactsInputSchema)
+    .output(listAbandonmentContactsOutputSchema)
+    .handler(async ({ input }: { input: z.input<typeof listAbandonmentContactsInputSchema> }) => {
+      return await listAbandonmentContacts(input.seriesId);
+    }),
+};
+
+export const clinicalSeriesORPCRouter = base
+  .prefix("/api/orpc/clinical-series")
+  .router(clinicalSeriesORPCRouterBase);
+
+export const clinicalSeriesORPCHandler = new SuperJSONRPCHandler(clinicalSeriesORPCRouter, {
+  interceptors: [
+    onError((error) => {
+      logError(error, {
+        module: "api",
+        operation: "orpc.clinical-series",
+      });
+    }),
+  ],
+});
+
+export const clinicalSeriesOpenAPIHandler = new OpenAPIHandler(clinicalSeriesORPCRouter, {
+  plugins: [
+    new OpenAPIReferencePlugin({
+      schemaConverters: [new ZodToJsonSchemaConverter()],
+      specGenerateOptions: {
+        info: {
+          title: "Bioalergia Clinical Series oRPC",
+          description: "Contratos oRPC/OpenAPI para series clínicas.",
+          version: "1.0.0",
+        },
+      },
+    }),
+  ],
+  interceptors: [
+    onError((error) => {
+      logError(error, {
+        module: "api",
+        operation: "openapi.clinical-series",
+      });
+    }),
+  ],
+});
+
+export type ClinicalSeriesORPCRouter = typeof clinicalSeriesORPCRouter;

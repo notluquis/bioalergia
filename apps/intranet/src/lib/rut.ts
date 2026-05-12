@@ -1,0 +1,63 @@
+const RUT_CLEAN_REGEX = /[^0-9K]/g;
+const RUT_BODY_REGEX = /^\d+$/;
+
+export function formatRut(value?: null | string): string {
+  if (!value || typeof value !== "string") {
+    return "";
+  }
+  const cleaned = value.toUpperCase().replaceAll(RUT_CLEAN_REGEX, "");
+  if (cleaned.length < 2) return cleaned;
+  const body = cleaned.slice(0, -1);
+  const dv = cleaned.slice(-1);
+  if (!RUT_BODY_REGEX.test(body)) return cleaned;
+  const formattedBody = new Intl.NumberFormat("es-CL").format(Number(body));
+  return `${formattedBody}-${dv}`;
+}
+
+export function normalizeRut(value?: null | string): null | string {
+  if (!value) {
+    return null;
+  }
+  const cleaned = value.toUpperCase().replaceAll(RUT_CLEAN_REGEX, "");
+  if (!cleaned) {
+    return null;
+  }
+  const body = cleaned.slice(0, -1);
+  const dv = cleaned.slice(-1);
+  if (!body || !RUT_BODY_REGEX.test(body)) {
+    return null;
+  }
+  return `${Number.parseInt(body, 10)}-${dv}`;
+}
+
+export function validateRut(value?: null | string): boolean {
+  const normalized = normalizeRut(value);
+  if (!normalized) {
+    return false;
+  }
+  const [body, dv] = normalized.split("-");
+  if (!body || !dv) {
+    return false;
+  }
+
+  let sum = 0;
+  let multiplier = 2;
+
+  // Iterate backwards over the body digits
+  for (let i = body.length - 1; i >= 0; i--) {
+    sum += Number.parseInt(body.charAt(i), 10) * multiplier;
+    multiplier = multiplier === 7 ? 2 : multiplier + 1;
+  }
+
+  const remainder = 11 - (sum % 11);
+  let computedDv = "";
+  if (remainder === 11) {
+    computedDv = "0";
+  } else if (remainder === 10) {
+    computedDv = "K";
+  } else {
+    computedDv = remainder.toString();
+  }
+
+  return computedDv === dv;
+}

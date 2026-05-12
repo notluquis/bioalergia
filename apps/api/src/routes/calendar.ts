@@ -1,0 +1,1717 @@
+import { db } from "@finanzas/db";
+import dayjs from "dayjs";
+import { type Context, Hono, type Next } from "hono";
+import { z } from "zod";
+import { getSessionUser, hasPermission } from "../auth.ts";
+import { googleCalendarConfig } from "../config.ts";
+import {
+  type CalendarEventFilters,
+  getCalendarAggregates,
+  getCalendarEventsByDate,
+  getTreatmentAnalytics,
+  type TreatmentAnalyticsFilters,
+  type TreatmentAnalyticsGranularity,
+} from "../lib/google/google-calendar-queries.ts";
+import {
+  CATEGORY_CHOICES,
+  isIgnoredEvent,
+  PATCH_READING_CHOICES,
+  parseCalendarMetadata,
+  TEST_SUBTYPE_CHOICES,
+  TREATMENT_STAGE_CHOICES,
+} from "../lib/parsers.ts";
+import { updateClassificationSchema } from "../lib/schemas.ts";
+import { zValidator } from "../lib/zod-validator.ts";
+import {
+  type CalendarSyncLogEntryPayload,
+  calendarSyncService,
+  createCalendarSyncLogEntry,
+  finalizeCalendarSyncLogEntry,
+  listCalendarSyncLogs,
+  listUnclassifiedCalendarEvents,
+  loadSettings,
+  type UnclassifiedEvent,
+  updateCalendarEventClassification,
+} from "../services/calendar.ts"; // Ensure calendarSyncService is exported from services/calendar OR import directly from modules/calendar/service
+import { reply } from "../utils/reply.ts";
+
+function buildStructuredSyncLogEntries(params: {
+  errorMessage?: string;
+  excluded?: number;
+  inserted?: number;
+  source: string;
+  status: "ERROR" | "SUCCESS";
+  updated?: number;
+}): CalendarSyncLogEntryPayload[] {
+  const entries: CalendarSyncLogEntryPayload[] = [
+    {
+      attributes: {
+        excluded: params.excluded ?? 0,
+        inserted: params.inserted ?? 0,
+        updated: params.updated ?? 0,
+      },
+      message:
+        params.status === "SUCCESS"
+          ? "Calendar sync completed"
+          : "Calendar sync finished with error",
+      severity: params.status === "SUCCESS" ? "info" : "error",
+      tags: {
+        service: "calendar-sync",
+        source: params.source,
+      },
+      timestamp: new Date(),
+    },
+  ];
+
+  if (params.errorMessage) {
+    entries.push({
+      attributes: {
+        errorMessage: params.errorMessage,
+      },
+      message: params.errorMessage,
+      severity: "error",
+      tags: {
+        service: "calendar-sync",
+        source: params.source,
+      },
+      timestamp: new Date(),
+    });
+  }
+
+  return entries;
+}
+
+export const calendarRoutes = new Hono();
+
+const MISSING_CLASSIFICATION_FILTERS = [
+  { key: "missingCategory", label: "Sin categoría" },
+  { key: "missingAmountExpected", label: "Sin monto esperado" },
+  { key: "missingAmountPaid", label: "Sin monto pagado" },
+  { key: "missingAttended", label: "Sin asistencia" },
+  { key: "missingDosage", label: "Sin dosis" },
+  { key: "missingTreatmentStage", label: "Sin etapa" },
+] as const;
+
+type MissingClassificationFilterKey = (typeof MISSING_CLASSIFICATION_FILTERS)[number]["key"];
+
+const MISSING_QUERY_TO_SERVICE_FILTER = {
+  missingAmountExpected: "amountExpected",
+  missingAmountPaid: "amountPaid",
+  missingAttended: "attended",
+  missingCategory: "category",
+  missingDosage: "dosageValue",
+  missingTreatmentStage: "treatmentStage",
+} as const;
+
+function isMissingClassificationFilterKey(value: string): value is MissingClassificationFilterKey {
+  return MISSING_CLASSIFICATION_FILTERS.some((filter) => filter.key === value);
+}
+
+// Helper schemas
+const dateSchema = z
+  .string()
+  .optional()
+  .refine((val) => !val || dayjs(val).isValid(), { message: "Invalid date format" })
+  .transform((val) => (val ? dayjs(val).format("YYYY-MM-DD") : undefined));
+
+const arrayPreprocess = (val: unknown) => {
+  if (!val) {
+    return undefined;
+  }
+  if (Array.isArray(val)) {
+    return val;
+  }
+  return [val];
+};
+
+const calendarQuerySchema = z.object({
+  from: dateSchema,
+  to: dateSchema,
+  calendarId: z.preprocess(arrayPreprocess, z.array(z.string()).optional()),
+  eventType: z.preprocess(arrayPreprocess, z.array(z.string()).optional()),
+  category: z.preprocess(arrayPreprocess, z.array(z.string()).optional()),
+  search: z.string().optional(),
+  maxDays: z.coerce.number().positive().int().optional(),
+});
+
+type CalendarQuery = z.infer<typeof calendarQuerySchema>;
+type JobQueueModule = Awaited<typeof import("../lib/jobQueue.ts")>;
+type JobQueueFns = Pick<JobQueueModule, "completeJob" | "failJob" | "updateJobProgress">;
+type TestMetadata = {
+  firstReading: boolean;
+  patchTest: boolean;
+  secondReading: boolean;
+  skinTest: boolean;
+  thirdReading: boolean;
+};
+
+function toTestMetadata(value: unknown): null | TestMetadata {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+  const candidate = value as Partial<TestMetadata>;
+  if (
+    typeof candidate.firstReading !== "boolean" ||
+    typeof candidate.patchTest !== "boolean" ||
+    typeof candidate.secondReading !== "boolean" ||
+    typeof candidate.skinTest !== "boolean" ||
+    typeof candidate.thirdReading !== "boolean"
+  ) {
+    return null;
+  }
+  return {
+    firstReading: candidate.firstReading,
+    patchTest: candidate.patchTest,
+    secondReading: candidate.secondReading,
+    skinTest: candidate.skinTest,
+    thirdReading: candidate.thirdReading,
+  };
+}
+
+type PartialReclassifyEvent = {
+  id: number;
+  summary: null | string;
+  description: null | string;
+  clinicalSeriesId: null | number;
+  category: null | string;
+  seriesStageKind: "DOSE" | "INSTALLATION" | "MAINTENANCE" | "READING" | null;
+  seriesStageLabel: null | string;
+  seriesStageNumber: null | number;
+  dosageValue: null | number;
+  dosageUnit: null | string;
+  treatmentStage: null | string;
+  attended: boolean | null;
+  amountExpected: null | number;
+  amountPaid: null | number;
+  controlIncluded: boolean;
+  isDomicilio: boolean;
+  testMetadata: null | TestMetadata;
+};
+
+type FullReclassifyEvent = {
+  id: number;
+  summary: null | string;
+  description: null | string;
+  clinicalSeriesId: null | number;
+  controlIncluded: boolean;
+};
+
+type PartialReclassifyUpdateData = {
+  clinicalSeriesId?: number | null;
+  category?: string;
+  seriesStageKind?: "DOSE" | "INSTALLATION" | "MAINTENANCE" | "READING" | null;
+  seriesStageLabel?: string | null;
+  seriesStageNumber?: number | null;
+  dosageValue?: number;
+  dosageUnit?: string;
+  treatmentStage?: string;
+  attended?: boolean;
+  amountExpected?: number;
+  amountPaid?: number;
+  controlIncluded?: boolean;
+  isDomicilio?: boolean;
+  testMetadata?: TestMetadata;
+};
+
+type FullReclassifyUpdateData = {
+  clinicalSeriesId: null | number;
+  category: null | string;
+  seriesStageKind: "DOSE" | "INSTALLATION" | "MAINTENANCE" | "READING" | null;
+  seriesStageLabel: null | string;
+  seriesStageNumber: null | number;
+  dosageValue: null | number;
+  dosageUnit: null | string;
+  treatmentStage: null | string;
+  attended: boolean | null;
+  amountExpected: null | number;
+  amountPaid: null | number;
+  controlIncluded: boolean;
+  isDomicilio: boolean;
+  testMetadata?: TestMetadata;
+};
+
+type PartialFieldCounts = {
+  amountExpected: number;
+  amountPaid: number;
+  attended: number;
+  category: number;
+  controlIncluded: number;
+  dosage: number;
+  isDomicilio: number;
+  treatmentStage: number;
+};
+
+type FullFieldCounts = {
+  amountExpected: number;
+  amountPaid: number;
+  attended: number;
+  category: number;
+  controlIncluded: number;
+  dosageUnit: number;
+  dosageValue: number;
+  isDomicilio: number;
+  treatmentStage: number;
+};
+
+const createPartialFieldCounts = (): PartialFieldCounts => ({
+  amountExpected: 0,
+  amountPaid: 0,
+  attended: 0,
+  category: 0,
+  controlIncluded: 0,
+  dosage: 0,
+  isDomicilio: 0,
+  treatmentStage: 0,
+});
+
+const createFullFieldCounts = (): FullFieldCounts => ({
+  amountExpected: 0,
+  amountPaid: 0,
+  attended: 0,
+  category: 0,
+  controlIncluded: 0,
+  dosageUnit: 0,
+  dosageValue: 0,
+  isDomicilio: 0,
+  treatmentStage: 0,
+});
+
+const parseMetadata = (event: { description: null | string; summary: null | string }) => {
+  return parseCalendarMetadata({
+    summary: event.summary,
+    description: event.description,
+  });
+};
+
+type ParsedCalendarMetadata = ReturnType<typeof parseCalendarMetadata>;
+
+const CATEGORY_REPAIRABLE_CLINICAL_SET = new Set(["Test y exámenes", "Tratamiento subcutáneo"]);
+
+const applyPartialCategoryUpdate = (
+  event: PartialReclassifyEvent,
+  metadata: ParsedCalendarMetadata,
+  updateData: PartialReclassifyUpdateData,
+  fieldCounts: PartialFieldCounts
+) => {
+  const shouldRepairClinicalCategory =
+    metadata.category != null &&
+    event.category != null &&
+    event.category !== "" &&
+    event.category !== metadata.category &&
+    CATEGORY_REPAIRABLE_CLINICAL_SET.has(event.category) &&
+    CATEGORY_REPAIRABLE_CLINICAL_SET.has(metadata.category);
+
+  if (
+    (((event.category === null || event.category === "") && metadata.category != null) ||
+      shouldRepairClinicalCategory) &&
+    metadata.category != null
+  ) {
+    updateData.category = metadata.category;
+    fieldCounts.category++;
+  }
+};
+
+const applyPartialSeriesStageUpdate = (
+  event: PartialReclassifyEvent,
+  metadata: ParsedCalendarMetadata,
+  updateData: PartialReclassifyUpdateData
+) => {
+  if (event.seriesStageKind == null && metadata.seriesStageKind) {
+    updateData.seriesStageKind = metadata.seriesStageKind;
+  }
+  if (event.seriesStageLabel == null && metadata.seriesStageLabel) {
+    updateData.seriesStageLabel = metadata.seriesStageLabel;
+  }
+  if (event.seriesStageNumber == null && metadata.seriesStageNumber != null) {
+    updateData.seriesStageNumber = metadata.seriesStageNumber;
+  }
+};
+
+const applyPartialDosageUpdate = (
+  event: PartialReclassifyEvent,
+  metadata: ParsedCalendarMetadata,
+  updateData: PartialReclassifyUpdateData,
+  fieldCounts: PartialFieldCounts
+) => {
+  if ((event.dosageValue === null || event.dosageUnit === null) && metadata.dosageValue !== null) {
+    updateData.dosageValue = metadata.dosageValue;
+    updateData.dosageUnit = metadata.dosageUnit ?? "ml";
+    fieldCounts.dosage++;
+  }
+};
+
+const applyPartialTreatmentStageUpdate = (
+  event: PartialReclassifyEvent,
+  metadata: ParsedCalendarMetadata,
+  updateData: PartialReclassifyUpdateData,
+  fieldCounts: PartialFieldCounts
+) => {
+  if (event.treatmentStage === null && metadata.treatmentStage) {
+    updateData.treatmentStage = metadata.treatmentStage;
+    fieldCounts.treatmentStage++;
+  }
+};
+
+const applyPartialAttendedUpdate = (
+  event: PartialReclassifyEvent,
+  metadata: ParsedCalendarMetadata,
+  updateData: PartialReclassifyUpdateData,
+  fieldCounts: PartialFieldCounts
+) => {
+  if (event.attended === null && metadata.attended !== null) {
+    updateData.attended = metadata.attended;
+    fieldCounts.attended++;
+  }
+};
+
+const applyPartialAmountExpectedUpdate = (
+  event: PartialReclassifyEvent,
+  metadata: ParsedCalendarMetadata,
+  updateData: PartialReclassifyUpdateData,
+  fieldCounts: PartialFieldCounts
+) => {
+  if (event.amountExpected === null && metadata.amountExpected !== null) {
+    updateData.amountExpected = metadata.amountExpected;
+    fieldCounts.amountExpected++;
+  }
+};
+
+const applyPartialAmountPaidUpdate = (
+  event: PartialReclassifyEvent,
+  metadata: ParsedCalendarMetadata,
+  updateData: PartialReclassifyUpdateData,
+  fieldCounts: PartialFieldCounts
+) => {
+  const shouldRepairLegacyZero =
+    event.amountPaid === 0 &&
+    event.attended === true &&
+    metadata.amountPaid !== null &&
+    metadata.amountPaid > 0;
+
+  if ((event.amountPaid === null || shouldRepairLegacyZero) && metadata.amountPaid !== null) {
+    updateData.amountPaid = metadata.amountPaid;
+    fieldCounts.amountPaid++;
+  }
+};
+
+const applyPartialControlIncludedUpdate = (
+  event: PartialReclassifyEvent,
+  metadata: ParsedCalendarMetadata,
+  updateData: PartialReclassifyUpdateData,
+  fieldCounts: PartialFieldCounts
+) => {
+  if (metadata.controlIncluded && event.controlIncluded === false) {
+    updateData.controlIncluded = true;
+    fieldCounts.controlIncluded++;
+  }
+};
+
+const applyPartialDomicilioUpdate = (
+  event: PartialReclassifyEvent,
+  metadata: ParsedCalendarMetadata,
+  updateData: PartialReclassifyUpdateData,
+  fieldCounts: PartialFieldCounts
+) => {
+  if (metadata.isDomicilio && event.isDomicilio === false) {
+    updateData.isDomicilio = true;
+    fieldCounts.isDomicilio++;
+  }
+};
+
+const applyPartialTestMetadataUpdate = (
+  event: PartialReclassifyEvent,
+  metadata: ParsedCalendarMetadata,
+  updateData: PartialReclassifyUpdateData
+) => {
+  if (metadata.testMetadata && event.testMetadata == null) {
+    updateData.testMetadata = metadata.testMetadata;
+  }
+};
+
+const buildPartialUpdateData = (
+  event: PartialReclassifyEvent,
+  fieldCounts: PartialFieldCounts
+): PartialReclassifyUpdateData => {
+  const updateData: PartialReclassifyUpdateData = {};
+  const metadata = parseMetadata(event);
+
+  applyPartialCategoryUpdate(event, metadata, updateData, fieldCounts);
+  applyPartialSeriesStageUpdate(event, metadata, updateData);
+  applyPartialDosageUpdate(event, metadata, updateData, fieldCounts);
+  applyPartialTreatmentStageUpdate(event, metadata, updateData, fieldCounts);
+  applyPartialAttendedUpdate(event, metadata, updateData, fieldCounts);
+  applyPartialAmountExpectedUpdate(event, metadata, updateData, fieldCounts);
+  applyPartialAmountPaidUpdate(event, metadata, updateData, fieldCounts);
+  applyPartialControlIncludedUpdate(event, metadata, updateData, fieldCounts);
+  applyPartialDomicilioUpdate(event, metadata, updateData, fieldCounts);
+  applyPartialTestMetadataUpdate(event, metadata, updateData);
+
+  return updateData;
+};
+
+const buildFullUpdateData = (
+  event: FullReclassifyEvent,
+  fieldCounts: FullFieldCounts
+): FullReclassifyUpdateData => {
+  const metadata = parseMetadata(event);
+
+  if (metadata.category) {
+    fieldCounts.category++;
+  }
+  if (metadata.dosageValue !== null) {
+    fieldCounts.dosageValue++;
+  }
+  if (metadata.dosageUnit) {
+    fieldCounts.dosageUnit++;
+  }
+  if (metadata.treatmentStage) {
+    fieldCounts.treatmentStage++;
+  }
+  if (metadata.attended !== null) {
+    fieldCounts.attended++;
+  }
+  if (metadata.amountExpected !== null) {
+    fieldCounts.amountExpected++;
+  }
+  if (metadata.amountPaid !== null) {
+    fieldCounts.amountPaid++;
+  }
+  if (metadata.controlIncluded) {
+    fieldCounts.controlIncluded++;
+  }
+  if (metadata.isDomicilio) {
+    fieldCounts.isDomicilio++;
+  }
+
+  return {
+    clinicalSeriesId: event.clinicalSeriesId ?? null,
+    category: metadata.category,
+    seriesStageKind: metadata.seriesStageKind,
+    seriesStageLabel: metadata.seriesStageLabel,
+    seriesStageNumber: metadata.seriesStageNumber,
+    dosageValue: metadata.dosageValue,
+    dosageUnit: metadata.dosageUnit,
+    treatmentStage: metadata.treatmentStage,
+    attended: metadata.attended,
+    amountExpected: metadata.amountExpected,
+    amountPaid: metadata.amountPaid,
+    controlIncluded: metadata.controlIncluded,
+    isDomicilio: metadata.isDomicilio,
+    ...(metadata.testMetadata ? { testMetadata: metadata.testMetadata } : {}),
+  };
+};
+
+async function persistEventUpdates<TData extends Record<string, unknown>>(params: {
+  eventsLength: number;
+  jobId: string;
+  progressEveryBatches?: number;
+  updates: Array<{ data: TData; id: number }>;
+  updateJobProgress: JobQueueFns["updateJobProgress"];
+}) {
+  const batchSize = 20;
+  let processed = 0;
+
+  for (let i = 0; i < params.updates.length; i += batchSize) {
+    const batch = params.updates.slice(i, i + batchSize);
+    await db.$transaction(batch.map((u) => db.event.update({ where: { id: u.id }, data: u.data })));
+    processed += batch.length;
+
+    const shouldNotify =
+      params.progressEveryBatches == null ||
+      params.progressEveryBatches <= 1 ||
+      (i / batchSize) % params.progressEveryBatches === 0 ||
+      i + batchSize >= params.updates.length;
+
+    if (shouldNotify) {
+      params.updateJobProgress(
+        params.jobId,
+        params.eventsLength,
+        `Guardando ${processed}/${params.updates.length} actualizaciones...`
+      );
+    }
+  }
+}
+
+async function runReclassifyMissingFieldsJob(
+  events: PartialReclassifyEvent[],
+  jobId: string,
+  jobQueue: JobQueueFns
+) {
+  try {
+    const updates: Array<{ data: PartialReclassifyUpdateData; id: number }> = [];
+    const fieldCounts = createPartialFieldCounts();
+
+    for (let i = 0; i < events.length; i++) {
+      const event = events[i];
+      const updateData = buildPartialUpdateData(event, fieldCounts);
+
+      if (Object.keys(updateData).length > 0) {
+        updates.push({ id: event.id, data: updateData });
+      }
+
+      if (i % 50 === 0 || i === events.length - 1) {
+        jobQueue.updateJobProgress(jobId, i + 1, `Analizando ${i + 1}/${events.length} eventos...`);
+      }
+    }
+
+    await persistEventUpdates({
+      eventsLength: events.length,
+      jobId,
+      updates,
+      updateJobProgress: jobQueue.updateJobProgress,
+    });
+
+    jobQueue.completeJob(jobId, {
+      message: `Reclassified ${updates.length} events`,
+      totalChecked: events.length,
+      reclassified: updates.length,
+      fieldCounts,
+    });
+  } catch (err) {
+    jobQueue.failJob(jobId, err instanceof Error ? err.message : "Unknown error");
+  }
+}
+
+async function runReclassifyAllJob(
+  events: FullReclassifyEvent[],
+  jobId: string,
+  jobQueue: JobQueueFns
+) {
+  try {
+    const updates: Array<{ data: FullReclassifyUpdateData; id: number }> = [];
+    const fieldCounts = createFullFieldCounts();
+
+    for (let i = 0; i < events.length; i++) {
+      const event = events[i];
+      const updateData = buildFullUpdateData(event, fieldCounts);
+      updates.push({ id: event.id, data: updateData });
+
+      if (i % 100 === 0 || i === events.length - 1) {
+        jobQueue.updateJobProgress(jobId, i + 1, `Analizando ${i + 1}/${events.length} eventos...`);
+      }
+    }
+
+    await persistEventUpdates({
+      eventsLength: events.length,
+      jobId,
+      progressEveryBatches: 5,
+      updates,
+      updateJobProgress: jobQueue.updateJobProgress,
+    });
+
+    jobQueue.completeJob(jobId, {
+      message: `Reclassified all ${updates.length} events`,
+      totalChecked: events.length,
+      reclassified: updates.length,
+      fieldCounts,
+    });
+  } catch (err) {
+    jobQueue.failJob(jobId, err instanceof Error ? err.message : "Unknown error");
+  }
+}
+
+function sanitizeOptionalSelectionValue(value: null | string | undefined): null | string {
+  if (!value) {
+    return null;
+  }
+
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  return trimmed;
+}
+
+function parsePositiveCappedInt(value: number, fallback: number, cap: number) {
+  if (!Number.isFinite(value) || value <= 0) {
+    return fallback;
+  }
+
+  return Math.min(Math.floor(value), cap);
+}
+
+function toOptionalFilter<T>(values: T[]) {
+  return values.length > 0 ? values : undefined;
+}
+
+function normalizeDateRange(from: string, to: string) {
+  if (!dayjs(from).isAfter(dayjs(to))) {
+    return { from, to };
+  }
+
+  return { from, to: from };
+}
+
+async function buildFiltersFromValidQuery(query: CalendarQuery) {
+  const settings = await loadSettings();
+  const configStart =
+    settings["calendar.syncStart"]?.trim() || googleCalendarConfig?.syncStartDate || "2000-01-01";
+
+  const lookaheadRaw = Number(settings["calendar.syncLookaheadDays"] ?? "365");
+  const lookaheadDays = parsePositiveCappedInt(lookaheadRaw, 365, 1095);
+  const defaultEnd = dayjs().add(lookaheadDays, "day").format("YYYY-MM-DD");
+
+  const normalizedRange = normalizeDateRange(query.from ?? configStart, query.to ?? defaultEnd);
+
+  const calendarIds = query.calendarId ?? [];
+  const eventTypes = query.eventType ?? [];
+  const categories = query.category ?? [];
+  const search = query.search?.trim() || undefined;
+
+  const defaultMaxDays = Number(settings["calendar.dailyMaxDays"] ?? "31");
+  const maxDays = query.maxDays ?? parsePositiveCappedInt(defaultMaxDays, 31, 120);
+
+  const filters: CalendarEventFilters = {
+    from: normalizedRange.from,
+    to: normalizedRange.to,
+    calendarIds: toOptionalFilter(calendarIds),
+    eventTypes: toOptionalFilter(eventTypes),
+    categories: toOptionalFilter(categories),
+    search,
+  };
+
+  return {
+    filters,
+    applied: {
+      from: normalizedRange.from,
+      to: normalizedRange.to,
+      calendarIds,
+      eventTypes,
+      categories,
+      search,
+    },
+    maxDays,
+  };
+}
+
+// Middleware to require auth
+const requireAuth = async (c: Context, next: Next) => {
+  const user = await getSessionUser(c);
+  if (!user) {
+    return reply(c, { status: "error", message: "No autorizado" }, 401);
+  }
+  c.set("user", user);
+  return next();
+};
+
+// ============================================================
+// AGGREGATES
+// ============================================================
+calendarRoutes.get(
+  "/events/summary",
+  requireAuth,
+  zValidator("query", calendarQuerySchema),
+  async (c) => {
+    const user = await getSessionUser(c);
+    if (!user) {
+      return reply(c, { status: "error", message: "No autorizado" }, 401);
+    }
+
+    const canReadSchedule = await hasPermission(user, "read", "CalendarSchedule");
+    const canReadHeatmap = await hasPermission(user, "read", "CalendarHeatmap");
+    // Broad fallback: if neither specific permission is available, allow if user can read events
+    const canReadEvents = await hasPermission(user, "read", "CalendarEvent");
+
+    if (!canReadSchedule && !canReadHeatmap && !canReadEvents) {
+      return reply(c, { status: "error", message: "Forbidden" }, 403);
+    }
+
+    const { filters, applied } = await buildFiltersFromValidQuery(c.req.valid("query"));
+    const aggregates = await getCalendarAggregates(filters);
+    return reply(c, {
+      status: "ok",
+      filters: applied,
+      totals: aggregates.totals,
+      aggregates: aggregates.aggregates,
+      available: aggregates.available,
+    });
+  }
+);
+
+// ============================================================
+// TREATMENT ANALYTICS
+// ============================================================
+const analyticsQuerySchema = z.object({
+  from: dateSchema,
+  to: dateSchema,
+  calendarId: z.preprocess(arrayPreprocess, z.array(z.string()).optional()),
+  granularity: z.enum(["day", "week", "month", "all"]).optional(),
+});
+
+calendarRoutes.get(
+  "/events/treatment-analytics",
+  requireAuth,
+  zValidator("query", analyticsQuerySchema),
+  async (c) => {
+    const user = await getSessionUser(c);
+    if (!user) {
+      return reply(c, { status: "error", message: "No autorizado" }, 401);
+    }
+
+    const canReadEvents = await hasPermission(user, "read", "CalendarEvent");
+    if (!canReadEvents) {
+      return reply(c, { status: "error", message: "Forbidden" }, 403);
+    }
+
+    const query = c.req.valid("query");
+    const filters: TreatmentAnalyticsFilters = {
+      from: query.from,
+      to: query.to,
+      calendarIds: query.calendarId,
+    };
+
+    const granularity = (query.granularity ?? "all") as TreatmentAnalyticsGranularity;
+
+    // Set default date range if not provided (last 30 days)
+    if (!filters.from || !filters.to) {
+      const today = dayjs();
+      filters.from = filters.from || today.subtract(30, "day").format("YYYY-MM-DD");
+      filters.to = filters.to || today.format("YYYY-MM-DD");
+    }
+
+    try {
+      const analytics = await getTreatmentAnalytics(filters, { granularity });
+      return reply(c, {
+        status: "ok",
+        filters,
+        data: analytics,
+      });
+    } catch (error) {
+      console.error("[calendar/treatment-analytics] failed", {
+        filters,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      return reply(
+        c,
+        {
+          status: "error",
+          message: "Error al obtener analytics",
+        },
+        500
+      );
+    }
+  }
+);
+
+// ============================================================
+// DAILY EVENTS
+// ============================================================
+calendarRoutes.get(
+  "/events/daily",
+  requireAuth,
+  zValidator("query", calendarQuerySchema),
+  async (c) => {
+    const user = await getSessionUser(c);
+    if (!user) {
+      return reply(c, { status: "error", message: "No autorizado" }, 401);
+    }
+
+    const canReadDaily = await hasPermission(user, "read", "CalendarDaily");
+    // Broad fallback: if daily permission not available, allow if user can read events
+    const canReadEvents = await hasPermission(user, "read", "CalendarEvent");
+
+    if (!canReadDaily && !canReadEvents) {
+      return reply(c, { status: "error", message: "Forbidden" }, 403);
+    }
+
+    const { filters, applied, maxDays } = await buildFiltersFromValidQuery(c.req.valid("query"));
+    const events = await getCalendarEventsByDate(filters, { maxDays });
+    return reply(c, {
+      status: "ok",
+      filters: {
+        ...applied,
+        maxDays,
+      },
+      totals: events.totals,
+      days: events.days,
+    });
+  }
+);
+
+// ============================================================
+// SYNC
+// ============================================================
+calendarRoutes.post("/events/sync", requireAuth, async (c: Context) => {
+  const user = await getSessionUser(c);
+  if (!user) {
+    return reply(c, { status: "error", message: "No autorizado" }, 401);
+  }
+
+  const canSync = await hasPermission(user, "update", "CalendarSetting");
+  // Also allow if they can manage events broadly, though strictly it's a setting op
+  const canManageEvents = await hasPermission(user, "update", "CalendarEvent");
+
+  if (!canSync && !canManageEvents) {
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
+  }
+
+  // Check perms
+  const logId = await createCalendarSyncLogEntry({
+    triggerSource: "manual",
+    triggerUserId: user.id,
+    triggerLabel: user.email,
+  });
+
+  // Start sync in background (fire and forget)
+  // Start sync in background (fire and forget)
+  calendarSyncService
+    .syncAll()
+    .then(async (result) => {
+      await finalizeCalendarSyncLogEntry(logId, {
+        status: "SUCCESS",
+        fetchedAt: new Date(), // We don't track exact fetch start time per calendar, using now is close enough or I could return it
+        inserted: result.inserted,
+        updated: result.updated,
+        skipped: 0, // Not tracked in new service aggregates yet
+        excluded: result.deleted,
+        changeDetails: {
+          inserted: result.details.inserted,
+          updated: result.details.updated,
+          excluded: result.details.deleted,
+        },
+        logEntries: buildStructuredSyncLogEntries({
+          excluded: result.deleted,
+          inserted: result.inserted,
+          source: "manual",
+          status: "SUCCESS",
+          updated: result.updated,
+        }),
+      });
+      console.log(`✅ Sync completed successfully (logId: ${logId})`);
+    })
+    .catch(async (error) => {
+      const message = error instanceof Error ? error.message : String(error);
+      await finalizeCalendarSyncLogEntry(logId, {
+        status: "ERROR",
+        errorMessage: message,
+        logEntries: buildStructuredSyncLogEntries({
+          errorMessage: message,
+          source: "manual",
+          status: "ERROR",
+        }),
+      });
+      console.error(`❌ Sync failed (logId: ${logId}):`, error);
+    });
+
+  return reply(
+    c,
+    {
+      status: "accepted",
+      message: "Sincronización iniciada en segundo plano",
+      logId,
+    },
+    202
+  );
+});
+
+// ============================================================
+// SYNC LOGS
+// ============================================================
+calendarRoutes.get("/events/sync/logs", requireAuth, async (c: Context) => {
+  const user = await getSessionUser(c);
+  if (!user) {
+    return reply(c, { status: "error", message: "No autorizado" }, 401);
+  }
+
+  const canReadLogs = await hasPermission(user, "read", "CalendarSyncLog");
+  const canReadSettings = await hasPermission(user, "update", "CalendarSetting"); // Settings page shows logs
+
+  if (!canReadLogs && !canReadSettings) {
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
+  }
+
+  const logs = await listCalendarSyncLogs(50);
+  return reply(c, {
+    status: "ok",
+    logs: logs.map((log) => ({
+      id: Number(log.id),
+      triggerSource: log.triggerSource,
+      triggerUserId: log.triggerUserId != null ? Number(log.triggerUserId) : null,
+      triggerLabel: log.triggerLabel ?? null,
+      status: log.status,
+      startedAt: log.startedAt ?? null,
+      finishedAt: log.endedAt ?? null,
+      fetchedAt: log.fetchedAt ?? null,
+      inserted: Number(log.inserted ?? 0),
+      updated: Number(log.updated ?? 0),
+      skipped: Number(log.skipped ?? 0),
+      excluded: Number(log.excluded ?? 0),
+      errorMessage: log.errorMessage ?? null,
+      changeDetails: log.changeDetails ?? null,
+      logEntries: log.logEntries.map((entry) => ({
+        message: entry.message,
+        severity: entry.severity,
+        attributes: entry.attributes,
+        tags: entry.tags,
+        timestamp: entry.timestamp,
+      })),
+    })),
+  });
+});
+
+// ============================================================
+// CLASSIFICATION OPTIONS
+// ============================================================
+calendarRoutes.get("/classification-options", async (c: Context) => {
+  const user = await getSessionUser(c);
+  if (!user) {
+    return reply(c, { status: "error", message: "No autorizado" }, 401);
+  }
+
+  // Allow if user has ANY calendar read capability
+  const canReadSchedule = await hasPermission(user, "read", "CalendarSchedule");
+  const canReadDaily = await hasPermission(user, "read", "CalendarDaily");
+  const canReadEvents = await hasPermission(user, "read", "CalendarEvent");
+
+  if (!canReadSchedule && !canReadDaily && !canReadEvents) {
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
+  }
+
+  return reply(c, {
+    status: "ok",
+    categories: CATEGORY_CHOICES,
+    missingFilters: MISSING_CLASSIFICATION_FILTERS,
+    patchReadings: PATCH_READING_CHOICES,
+    testSubtypes: TEST_SUBTYPE_CHOICES,
+    treatmentStages: TREATMENT_STAGE_CHOICES,
+  });
+});
+
+// ============================================================
+// UNCLASSIFIED EVENTS
+// ============================================================
+const unclassifiedQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(500).default(50),
+  offset: z.coerce.number().int().min(0).default(0),
+  filterMode: z.enum(["AND", "OR"]).default("OR"),
+  missing: z
+    .preprocess(arrayPreprocess, z.array(z.string()).optional())
+    .refine((values) => !values || values.every(isMissingClassificationFilterKey), {
+      message: "Invalid missing filter key",
+    })
+    .transform((values) => (values ? [...new Set(values)] : undefined)) as z.ZodType<
+    MissingClassificationFilterKey[] | undefined
+  >,
+});
+
+const reclassifyMissingBodySchema = z.object({
+  filterMode: z.enum(["AND", "OR"]).optional(),
+  missing: z
+    .preprocess(arrayPreprocess, z.array(z.string()).optional())
+    .refine((values) => !values || values.every(isMissingClassificationFilterKey), {
+      message: "Invalid missing filter key",
+    })
+    .transform((values) => (values ? [...new Set(values)] : undefined)) as z.ZodType<
+    MissingClassificationFilterKey[] | undefined
+  >,
+});
+
+calendarRoutes.get(
+  "/events/unclassified",
+  requireAuth,
+  zValidator("query", unclassifiedQuerySchema),
+  async (c) => {
+    const user = await getSessionUser(c);
+    if (!user) {
+      return reply(c, { status: "error", message: "No autorizado" }, 401);
+    }
+
+    const canUpdateEvents = await hasPermission(user, "update", "CalendarEvent");
+    if (!canUpdateEvents) {
+      return reply(c, { status: "error", message: "Forbidden" }, 403);
+    }
+
+    const query = c.req.valid("query");
+    const { limit, offset, filterMode } = query;
+
+    const selectedMissingFilters = new Set<MissingClassificationFilterKey>(query.missing ?? []);
+
+    const mappedFilters = Object.fromEntries(
+      Object.entries(MISSING_QUERY_TO_SERVICE_FILTER).map(([queryKey, serviceKey]) => [
+        serviceKey,
+        selectedMissingFilters.has(queryKey as MissingClassificationFilterKey),
+      ])
+    ) as {
+      amountExpected: boolean;
+      amountPaid: boolean;
+      attended: boolean;
+      category: boolean;
+      dosageValue: boolean;
+      treatmentStage: boolean;
+    };
+
+    const filters = {
+      ...mappedFilters,
+      filterMode,
+    };
+
+    const hasFilters = selectedMissingFilters.size > 0;
+
+    const { events: rows, totalCount } = await listUnclassifiedCalendarEvents(
+      limit,
+      offset,
+      hasFilters ? filters : undefined
+    );
+
+    const filteredRows = rows.filter((row: UnclassifiedEvent) => !isIgnoredEvent(row.summary));
+
+    return reply(c, {
+      status: "ok",
+      totalCount,
+      events: filteredRows.map((row: UnclassifiedEvent) => ({
+        calendarId: row.calendar.googleId,
+        eventId: row.externalEventId,
+        status: row.eventStatus ?? null,
+        eventType: row.eventType ?? null,
+        summary: row.summary ?? null,
+        description: row.description ?? null,
+        startDate: row.startDate ?? null,
+        startDateTime: row.startDateTime ?? null,
+        endDate: row.endDate ?? null,
+        endDateTime: row.endDateTime ?? null,
+        category: row.category ?? null,
+        clinicalSeriesId: row.clinicalSeriesId ?? null,
+        amountExpected: row.amountExpected ?? null,
+        amountPaid: row.amountPaid ?? null,
+        attended: row.attended ?? null,
+        dosageValue: row.dosageValue ?? null,
+        dosageUnit: row.dosageUnit ?? null,
+        seriesStageKind: row.seriesStageKind ?? null,
+        seriesStageLabel: row.seriesStageLabel ?? null,
+        seriesStageNumber: row.seriesStageNumber ?? null,
+        testMetadata: toTestMetadata(row.testMetadata),
+        treatmentStage: row.treatmentStage ?? null,
+      })),
+    });
+  }
+);
+
+// ============================================================
+// CLASSIFY EVENT
+// ============================================================
+// ============================================================
+// CLASSIFY EVENT
+// ============================================================
+// ============================================================
+// CLASSIFY EVENT
+// ============================================================
+calendarRoutes.post(
+  "/events/classify",
+  requireAuth,
+  zValidator("json", updateClassificationSchema),
+  async (c) => {
+    const user = await getSessionUser(c);
+    if (!user) {
+      return reply(c, { status: "error", message: "No autorizado" }, 401);
+    }
+
+    const canClassify = await hasPermission(user, "update", "CalendarEvent");
+
+    if (!canClassify) {
+      return reply(c, { status: "error", message: "Forbidden" }, 403);
+    }
+
+    const payload = c.req.valid("json");
+
+    await updateCalendarEventClassification(payload.calendarId, payload.eventId, {
+      clinicalSeriesId: payload.clinicalSeriesId ?? undefined,
+      category: sanitizeOptionalSelectionValue(payload.category),
+      amountExpected: payload.amountExpected ?? null,
+      amountPaid: payload.amountPaid ?? null,
+      attended: payload.attended ?? null,
+      seriesStageKind: payload.seriesStageKind ?? null,
+      seriesStageLabel: sanitizeOptionalSelectionValue(payload.seriesStageLabel),
+      seriesStageNumber: payload.seriesStageNumber ?? null,
+      dosageValue: payload.dosageValue ?? null,
+      dosageUnit: sanitizeOptionalSelectionValue(payload.dosageUnit),
+      treatmentStage: sanitizeOptionalSelectionValue(payload.treatmentStage),
+      controlIncluded: payload.controlIncluded ?? null,
+      isDomicilio: payload.isDomicilio ?? null,
+      testMetadata: payload.testMetadata ?? null,
+    });
+
+    return reply(c, { status: "ok" });
+  }
+);
+
+// ============================================================
+// LIST CALENDARS
+// ============================================================
+// GET /api/calendar/calendars
+calendarRoutes.get("/calendars", async (c) => {
+  const user = await getSessionUser(c);
+  if (!user) {
+    return reply(c, { status: "error", message: "No autorizado" }, 401);
+  }
+
+  // Allow if they have any broad listing/settings access
+  const canReadSchedule = await hasPermission(user, "read", "CalendarSchedule");
+  const canReadSettings = await hasPermission(user, "update", "CalendarSetting");
+  const canReadEvents = await hasPermission(user, "read", "CalendarEvent");
+
+  if (!canReadSchedule && !canReadSettings && !canReadEvents) {
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
+  }
+
+  /* eslint-disable-next-line @typescript-eslint/consistent-type-definitions */
+  type CalendarWithCount = Awaited<ReturnType<typeof db.calendar.findMany>>[number] & {
+    _count: { events: number };
+  };
+
+  const calendars = (await db.calendar.findMany({
+    orderBy: { name: "asc" },
+    include: {
+      _count: {
+        select: {
+          events: true,
+        },
+      },
+    },
+  })) as unknown as CalendarWithCount[];
+
+  return reply(c, {
+    status: "ok",
+    calendars: calendars.map((cal: CalendarWithCount) => ({
+      id: cal.id,
+      googleId: cal.googleId,
+      name: cal.name ?? "Sin nombre",
+      eventCount: cal._count.events,
+      createdAt: cal.createdAt,
+      updatedAt: cal.updatedAt,
+    })),
+  });
+});
+
+const listEventsSchema = z.object({
+  start: z
+    .string()
+    .refine((val) => !Number.isNaN(Date.parse(val)), { message: "Invalid start date" }),
+  end: z.string().refine((val) => !Number.isNaN(Date.parse(val)), { message: "Invalid end date" }),
+  category: z.string().optional(),
+  treatmentStage: z.string().optional(),
+  attended: z.enum(["true", "false"]).optional(),
+});
+
+calendarRoutes.get(
+  "/calendars/:calendarId/events",
+  requireAuth,
+  zValidator("query", listEventsSchema),
+  async (c) => {
+    const user = await getSessionUser(c);
+    if (!user) {
+      return reply(c, { status: "error", message: "No autorizado" }, 401);
+    }
+
+    const canReadSchedule = await hasPermission(user, "read", "CalendarSchedule");
+    const canReadDaily = await hasPermission(user, "read", "CalendarDaily");
+    const canReadEvents = await hasPermission(user, "read", "CalendarEvent");
+
+    if (!canReadSchedule && !canReadDaily && !canReadEvents) {
+      return reply(c, { status: "error", message: "Forbidden" }, 403);
+    }
+
+    const calendarId = c.req.param("calendarId");
+    const query = c.req.valid("query");
+
+    // Find calendar ID by googleId (which is what we use in URL usually)
+    const calendar = await db.calendar.findUnique({
+      where: { googleId: calendarId },
+    });
+
+    if (!calendar) {
+      return reply(c, { status: "error", message: "Calendar not found" }, 404);
+    }
+
+    const start = new Date(query.start);
+    const end = new Date(query.end);
+    const attended = query.attended ? query.attended === "true" : undefined;
+
+    const filterConditions: {
+      category?: string;
+      treatmentStage?: string;
+      attended?: boolean;
+    } = {};
+
+    if (query.category) {
+      filterConditions.category = query.category;
+    }
+    if (query.treatmentStage) {
+      filterConditions.treatmentStage = query.treatmentStage;
+    }
+    if (attended !== undefined) {
+      filterConditions.attended = attended;
+    }
+
+    // Fetch events from DB (internal copy)
+    // Support both all-day events (startDate) and timed events (startDateTime)
+    const events = await db.event.findMany({
+      where: {
+        calendarId: calendar.id,
+        OR: [
+          {
+            startDateTime: {
+              gte: start,
+              lte: end,
+            },
+          },
+          {
+            startDate: {
+              gte: start,
+              lte: end,
+            },
+          },
+        ],
+        ...filterConditions,
+      },
+      orderBy: [{ startDateTime: "asc" }, { startDate: "asc" }],
+    });
+
+    return reply(c, {
+      status: "ok",
+      events: events.map((e) => ({
+        ...e,
+        amountExpected: e.amountExpected ?? null,
+        amountPaid: e.amountPaid ?? null,
+      })),
+    });
+  }
+);
+
+// ============================================================
+// WEBHOOK (No Auth)
+// ============================================================
+const WEBHOOK_DEBOUNCE_MS = 5000;
+let webhookSyncTimer: ReturnType<typeof setTimeout> | null = null;
+let lastWebhookChannelId: string | null = null;
+let lastWebhookSignal: null | {
+  channelId: string;
+  messageNumber: null | string;
+  receivedAt: string;
+  resourceId: string;
+  resourceState: null | string;
+  traceId: string;
+} = null;
+
+function shortWebhookId(id: null | string | undefined) {
+  if (!id) {
+    return "?";
+  }
+  return `${id.slice(0, 8)}...`;
+}
+
+function createWebhookTraceId() {
+  return `wh_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
+async function executeWebhookSync(
+  channelId: string,
+  signal?: {
+    messageNumber: null | string;
+    receivedAt: string;
+    resourceId: string;
+    resourceState: null | string;
+    traceId: string;
+  }
+) {
+  webhookSyncTimer = null;
+  const traceId = signal?.traceId ?? createWebhookTraceId();
+  console.log("[webhook] 🚀 Debounced sync start", {
+    channelId: shortWebhookId(channelId),
+    messageNumber: signal?.messageNumber ?? null,
+    traceId,
+  });
+
+  const initialLogId = await createCalendarSyncLogEntry({
+    triggerSource: "webhook",
+    triggerUserId: null,
+    triggerLabel: `channel:${channelId.slice(0, 8)}`,
+  });
+
+  try {
+    // Look up channel to find specific calendar
+    const channel = await db.calendarWatchChannel.findUnique({
+      where: { channelId },
+      include: { calendar: true },
+    });
+
+    if (!channel) {
+      console.warn("[webhook] ⚠️ Unknown channelId, falling back to syncAll", {
+        channelId,
+        traceId,
+      });
+      // Fallback to syncAll if channel is unknown (safety net)
+      // Or we could abort, but syncAll is safer to avoid missing events if DB is out of sync
+      const result = await calendarSyncService.syncAll();
+      await finalizeSyncLog(initialLogId, result);
+      return;
+    }
+
+    const result = await calendarSyncService.syncCalendar(channel.calendar.googleId);
+
+    // Map single calendar result to sync log format
+    await finalizeSyncLog(initialLogId, {
+      inserted: result.inserted,
+      updated: result.updated,
+      deleted: result.deleted,
+      eventsFetched: result.eventsFetched,
+      details: {
+        inserted: result.details.inserted,
+        updated: result.details.updated,
+        deleted: result.details.deleted,
+      },
+    });
+  } catch (err) {
+    if (err instanceof Error && err.message === "Sincronización ya en curso") {
+      console.log("[webhook] ℹ️ Sync skipped (already in progress)", {
+        channelId: shortWebhookId(channelId),
+        traceId,
+      });
+      // If createCalendarSyncLogEntry threw, we don't have a logId to finalize (or it failed before creation)
+      return;
+    }
+
+    console.error("[webhook] ❌ Sync failed", {
+      channelId: shortWebhookId(channelId),
+      error: err instanceof Error ? err.message : String(err),
+      traceId,
+    });
+    // If we have a logId, mark it as error
+    await finalizeCalendarSyncLogEntry(initialLogId, {
+      status: "ERROR",
+      errorMessage: err instanceof Error ? err.message : String(err),
+      logEntries: buildStructuredSyncLogEntries({
+        errorMessage: err instanceof Error ? err.message : String(err),
+        source: "webhook",
+        status: "ERROR",
+      }),
+    });
+  }
+}
+
+// Helper to deduce finalize logic reduces code duplication
+async function finalizeSyncLog(
+  logId: number,
+  result: {
+    inserted: number;
+    updated: number;
+    deleted: number;
+    eventsFetched: number;
+    details: {
+      inserted: string[];
+      updated: (string | { summary: string; changes: string[] })[];
+      deleted: string[];
+    };
+  }
+) {
+  console.log(`[webhook] Sync result:`, {
+    fetched: result.eventsFetched,
+    excluded: result.deleted,
+    inserted: result.inserted,
+    updated: result.updated,
+  });
+
+  await finalizeCalendarSyncLogEntry(logId, {
+    status: "SUCCESS",
+    fetchedAt: new Date(),
+    inserted: result.inserted,
+    updated: result.updated,
+    skipped: 0,
+    excluded: result.deleted,
+    changeDetails: {
+      inserted: result.details.inserted,
+      updated: result.details.updated,
+      excluded: result.details.deleted,
+    },
+    logEntries: buildStructuredSyncLogEntries({
+      excluded: result.deleted,
+      inserted: result.inserted,
+      source: "webhook",
+      status: "SUCCESS",
+      updated: result.updated,
+    }),
+  });
+  console.log(`[webhook] ✅ Sync completed (logId: ${logId})`);
+}
+
+export const handleGoogleCalendarWebhook = async (c: Context) => {
+  const channelId = c.req.header("x-goog-channel-id");
+  const resourceState = c.req.header("x-goog-resource-state");
+  const resourceId = c.req.header("x-goog-resource-id");
+  const messageNumber = c.req.header("x-goog-message-number");
+  const channelExpirationHeader = c.req.header("x-goog-channel-expiration");
+  const traceId = createWebhookTraceId();
+  const receivedAt = new Date().toISOString();
+
+  if (!channelId || !resourceId) {
+    console.warn("[webhook] ⚠️ Missing required headers", {
+      hasChannelId: Boolean(channelId),
+      hasResourceId: Boolean(resourceId),
+      traceId,
+    });
+    return reply(c, { error: "Missing required headers" }, 400);
+  }
+
+  // Reject notifications for channels we did not register. Without this
+  // any caller could spam the endpoint with arbitrary channel-id values
+  // and trigger expensive Google Calendar syncs. Google's webhook does
+  // not provide an HMAC signature; channel-id existence + the ephemeral
+  // resource-id together act as the shared secret.
+  const known = await db.calendarWatchChannel.findFirst({
+    where: { channelId, resourceId },
+    select: { id: true },
+  });
+  if (!known) {
+    console.warn("[webhook] ⚠️ Unknown channel — ignoring", {
+      channelId: shortWebhookId(channelId),
+      resourceId: shortWebhookId(resourceId),
+      traceId,
+    });
+    // Return 200 so Google does not retry the bogus subscription, but
+    // do no work.
+    return c.body(null, 200);
+  }
+
+  if (channelExpirationHeader) {
+    const expirationMs = Date.parse(channelExpirationHeader);
+    if (Number.isFinite(expirationMs)) {
+      const updateResult = await db.calendarWatchChannel.updateMany({
+        where: { channelId, resourceId },
+        data: { expiration: new Date(expirationMs) },
+      });
+
+      console.log("[webhook] 🕒 Channel expiration updated", {
+        channelId: shortWebhookId(channelId),
+        expiration: new Date(expirationMs).toISOString(),
+        resourceId: shortWebhookId(resourceId),
+        rowsAffected: updateResult.count,
+        traceId,
+      });
+    }
+  }
+
+  if (resourceState === "sync") {
+    // Initial verification
+    return c.body(null, 200);
+  }
+
+  if (resourceState === "exists") {
+    console.log("[webhook] 📥 Debounced notification", {
+      channelId: shortWebhookId(channelId),
+      debounceMs: WEBHOOK_DEBOUNCE_MS,
+      messageNumber: messageNumber ?? null,
+      traceId,
+    });
+
+    if (webhookSyncTimer) {
+      console.log("[webhook] ⏱️ Debounce reset", {
+        previousChannelId: shortWebhookId(lastWebhookChannelId),
+        traceId,
+      });
+      clearTimeout(webhookSyncTimer);
+    }
+
+    lastWebhookChannelId = channelId;
+    lastWebhookSignal = {
+      channelId,
+      messageNumber: messageNumber ?? null,
+      receivedAt,
+      resourceId,
+      resourceState,
+      traceId,
+    };
+
+    webhookSyncTimer = setTimeout(() => {
+      if (lastWebhookChannelId) {
+        executeWebhookSync(lastWebhookChannelId, lastWebhookSignal ?? undefined).catch((err) => {
+          console.error("[webhook] ❌ Error in debounced sync", {
+            channelId: shortWebhookId(lastWebhookChannelId),
+            error: err instanceof Error ? err.message : String(err),
+            traceId: lastWebhookSignal?.traceId ?? null,
+          });
+        });
+      }
+    }, WEBHOOK_DEBOUNCE_MS);
+
+    return c.body(null, 200);
+  }
+
+  return c.body(null, 200);
+};
+
+calendarRoutes.post("/webhook", handleGoogleCalendarWebhook);
+
+// ============================================================
+// JOB QUEUE TASKS
+// ============================================================
+
+calendarRoutes.post(
+  "/events/reclassify",
+  requireAuth,
+  zValidator("json", reclassifyMissingBodySchema),
+  async (c) => {
+    const user = await getSessionUser(c);
+    if (!user) {
+      return reply(c, { status: "error", message: "No autorizado" }, 401);
+    }
+
+    const canReclassify = await hasPermission(user, "update", "CalendarEvent");
+    if (!canReclassify) {
+      return reply(c, { status: "error", message: "Forbidden" }, 403);
+    }
+
+    // Dynamic import to avoid cycles if any, though imports up top are fine
+    const { startJob, updateJobProgress, completeJob, failJob } =
+      await import("../lib/jobQueue.ts");
+    const body = c.req.valid("json");
+    const selectedMissingFilters = new Set<MissingClassificationFilterKey>(body.missing ?? []);
+    const filterMode = body.filterMode ?? "OR";
+    const now = new Date();
+
+    const selectedConditions: Record<string, unknown>[] = [];
+    if (selectedMissingFilters.has("missingCategory")) {
+      selectedConditions.push({ OR: [{ category: null }, { category: "" }] });
+    }
+    if (selectedMissingFilters.has("missingAmountExpected")) {
+      selectedConditions.push({ amountExpected: null });
+    }
+    if (selectedMissingFilters.has("missingAmountPaid")) {
+      selectedConditions.push({ amountPaid: null });
+    }
+    if (selectedMissingFilters.has("missingAttended")) {
+      selectedConditions.push({ attended: null, startDateTime: { lte: now } });
+    }
+    if (selectedMissingFilters.has("missingDosage")) {
+      selectedConditions.push({
+        category: "Tratamiento subcutáneo",
+        dosageValue: null,
+      });
+    }
+    if (selectedMissingFilters.has("missingTreatmentStage")) {
+      selectedConditions.push({
+        category: "Tratamiento subcutáneo",
+        OR: [{ treatmentStage: null }, { treatmentStage: "" }],
+      });
+    }
+
+    const where =
+      selectedConditions.length > 0
+        ? filterMode === "AND"
+          ? { AND: selectedConditions }
+          : { OR: selectedConditions }
+        : {
+            OR: [
+              { category: null },
+              { category: "" },
+              { dosageValue: null },
+              { treatmentStage: null },
+              { attended: null },
+              { amountExpected: null },
+              { amountPaid: null },
+            ],
+          };
+
+    const events = await db.event.findMany({
+      where,
+      select: {
+        id: true,
+        summary: true,
+        description: true,
+        clinicalSeriesId: true,
+        category: true,
+        dosageValue: true,
+        dosageUnit: true,
+        seriesStageKind: true,
+        seriesStageLabel: true,
+        seriesStageNumber: true,
+        treatmentStage: true,
+        attended: true,
+        amountExpected: true,
+        amountPaid: true,
+        controlIncluded: true,
+        isDomicilio: true,
+        testMetadata: true,
+      },
+    });
+
+    const normalizedEvents: PartialReclassifyEvent[] = events.map((event) => ({
+      ...event,
+      testMetadata: toTestMetadata(event.testMetadata),
+    }));
+
+    const jobId = startJob("reclassify", normalizedEvents.length);
+
+    void Promise.all([
+      runReclassifyMissingFieldsJob(normalizedEvents, jobId, {
+        completeJob,
+        failJob,
+        updateJobProgress,
+      }),
+    ]);
+
+    return reply(c, { status: "accepted", jobId, totalEvents: normalizedEvents.length });
+  }
+);
+
+calendarRoutes.post("/events/reclassify-all", requireAuth, async (c) => {
+  const user = await getSessionUser(c);
+  if (!user) {
+    return reply(c, { status: "error", message: "No autorizado" }, 401);
+  }
+
+  const canReclassify = await hasPermission(user, "update", "CalendarEvent");
+  if (!canReclassify) {
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
+  }
+
+  const { startJob, updateJobProgress, completeJob, failJob } = await import("../lib/jobQueue.ts");
+
+  const events = await db.event.findMany({
+    select: {
+      id: true,
+      summary: true,
+      description: true,
+      clinicalSeriesId: true,
+      controlIncluded: true,
+    },
+  });
+
+  const jobId = startJob("reclassify-all", events.length);
+
+  void Promise.all([
+    runReclassifyAllJob(events, jobId, {
+      completeJob,
+      failJob,
+      updateJobProgress,
+    }),
+  ]);
+
+  return reply(c, { status: "accepted", jobId, totalEvents: events.length });
+});
+
+calendarRoutes.get("/events/job/:jobId", requireAuth, async (c) => {
+  const { getJobStatus } = await import("../lib/jobQueue.ts");
+  const jobId = c.req.param("jobId");
+  if (!jobId) {
+    return reply(c, { status: "error", message: "Missing job ID" }, 400);
+  }
+  const job = getJobStatus(jobId);
+
+  if (!job) {
+    return reply(c, { status: "error", message: "Job not found or expired" }, 404);
+  }
+
+  return reply(c, {
+    status: "ok",
+    job: {
+      id: job.id,
+      type: job.type,
+      status: job.status,
+      progress: job.progress,
+      total: job.total,
+      message: job.message,
+      result: job.result,
+      error: job.error,
+    },
+  });
+});

@@ -1,0 +1,442 @@
+import { db, type JsonValue } from "@finanzas/db";
+
+import { parseDoctoraliaDateTime } from "./doctoralia-date-parser.ts";
+import type {
+  DoctoraliaAppointment,
+  DoctoraliaCalendarAlert,
+  DoctoraliaCalendarSchedule,
+  DoctoraliaWorkPeriod,
+} from "./doctoralia-calendar-types.ts";
+
+function toJsonValue(value: unknown): JsonValue {
+  return JSON.parse(JSON.stringify(value)) as JsonValue;
+}
+
+function hasShallowDataChanges<TRecord extends Record<string, unknown>>(
+  existing: Record<string, unknown>,
+  data: TRecord
+) {
+  return Object.entries(data).some(([key, value]) => {
+    const existingValue = existing[key];
+    return JSON.stringify(existingValue) !== JSON.stringify(value);
+  });
+}
+
+function mapScheduleData(schedule: DoctoraliaCalendarSchedule) {
+  return {
+    externalId: schedule.id,
+    name: schedule.name,
+    displayName: schedule.displayName,
+    facilityId: schedule.facilityId || null,
+    specialityId: schedule.specialityId || null,
+    doctorId: schedule.doctorId || null,
+    provinceId: schedule.provinceId || null,
+    cityId: schedule.cityId || null,
+    hasWaitingRoom: schedule.hasWaitingRoom ?? null,
+    scheduleType: schedule.scheduleType,
+    colorSchemaId: schedule.colorSchemaId || null,
+    isVirtual: schedule.isVirtual,
+    patientsNotificationType: schedule.patientsNotificationType,
+  };
+}
+
+function mapAppointmentData(scheduleId: number, appointment: DoctoraliaAppointment) {
+  return {
+    scheduleId,
+    externalId: appointment.id,
+    title: appointment.title,
+    startAt: parseDoctoraliaDateTime(appointment.start),
+    endAt: parseDoctoraliaDateTime(appointment.end),
+    isBlock: appointment.isBlock,
+    eventType: appointment.eventType,
+    scheduledBy: appointment.scheduledBy,
+    status: appointment.status,
+    hasPatient: appointment.hasPatient,
+    hasWaitingRoom: appointment.hasWaitingRoom ?? null,
+    insuranceId: appointment.insuranceId || null,
+    insuranceName: appointment.insuranceName || null,
+    comments: appointment.comments || null,
+    serviceId: appointment.serviceId,
+    serviceName: appointment.serviceName,
+    ...(appointment.eventServices
+      ? { eventServices: { items: toJsonValue(appointment.eventServices) } }
+      : {}),
+    serviceColorSchemaId: appointment.serviceColorSchemaId,
+    colorSchemaId: appointment.colorSchemaId ?? null,
+    serviceIsDeleted: appointment.serviceIsDeleted,
+    attendance: appointment.attendance,
+    patientExternalId: appointment.patientId,
+    patientReferenceId: appointment.patientReferenceId,
+    patientPhone: appointment.patientPhone || null,
+    patientEmail: appointment.patientEmail || null,
+    patientBirthDate: parseDoctoraliaDateTime(appointment.patientBirthDate),
+    patientArrivalTime: parseDoctoraliaDateTime(appointment.patientArrivalTime),
+    isPatientFirstTime: appointment.isPatientFirstTime,
+    isPatientFirstAdminBooking: appointment.isPatientFirstAdminBooking,
+    isBookedViaSecretaryAi: appointment.isBookedViaSecretaryAi,
+    onlinePaymentType: appointment.onlinePaymentType || null,
+    onlinePaymentStatus: appointment.onlinePaymentStatus || null,
+    isPaidOnline: appointment.isPaidOnline,
+    communicationChannel: appointment.communicationChannel || null,
+    fake: appointment.fake,
+    isEventWithVoucher: appointment.isEventWithVoucher,
+    duration: appointment.duration,
+    canNotifyPatient: appointment.canNotifyPatient,
+    noShowProtection: appointment.noShowProtection,
+  };
+}
+
+async function upsertAppointment(
+  scheduleId: number,
+  appointment: DoctoraliaAppointment
+): Promise<"inserted" | "skipped" | "updated"> {
+  const data = mapAppointmentData(scheduleId, appointment);
+
+  if (!data.startAt || !data.endAt) {
+    console.warn(
+      `[DoctoraliaSync] appointment ${appointment.id} skipped: unparseable start/end (${appointment.start} / ${appointment.end})`
+    );
+    return "skipped";
+  }
+
+  const existing = await db.doctoraliaCalendarAppointment.findUnique({
+    where: {
+      scheduleId_externalId: {
+        scheduleId,
+        externalId: appointment.id,
+      },
+    },
+  });
+
+  if (existing) {
+    const hasChanges = JSON.stringify(existing) !== JSON.stringify({ ...existing, ...data });
+    if (!hasChanges) {
+      return "skipped";
+    }
+
+    await db.doctoraliaCalendarAppointment.update({
+      where: {
+        scheduleId_externalId: {
+          scheduleId,
+          externalId: appointment.id,
+        },
+      },
+      data,
+    });
+    console.log(
+      `[DoctoraliaSync] appointment ${appointment.id} updated (${appointment.title} @ ${appointment.start})`
+    );
+    return "updated";
+  }
+
+  await db.doctoraliaCalendarAppointment.create({ data });
+  console.log(
+    `[DoctoraliaSync] appointment ${appointment.id} inserted (${appointment.title} @ ${appointment.start})`
+  );
+  return "inserted";
+}
+
+function buildAlertPatch(alert: DoctoraliaCalendarAlert): {
+  data: {
+    patientExternalId?: number;
+    startAt?: Date;
+    status?: number;
+  };
+  eventId: number;
+} | null {
+  const eventId = alert.params.eventId;
+  if (!eventId) {
+    return null;
+  }
+
+  const data: {
+    patientExternalId?: number;
+    startAt?: Date;
+    status?: number;
+  } = {};
+
+  if (typeof alert.params.eventStatus === "number") {
+    data.status = alert.params.eventStatus;
+  }
+
+  if (typeof alert.params.patientId === "number") {
+    data.patientExternalId = alert.params.patientId;
+  }
+
+  if (alert.params.eventStartDateTime) {
+    const startAt = parseDoctoraliaDateTime(alert.params.eventStartDateTime);
+    if (startAt) {
+      data.startAt = startAt;
+    }
+  }
+
+  if (Object.keys(data).length === 0) {
+    return null;
+  }
+
+  return { eventId, data };
+}
+
+/**
+ * Upsert Doctoralia schedules into the database
+ */
+export async function upsertDoctoraliaSchedules(schedules: DoctoraliaCalendarSchedule[]) {
+  if (schedules.length === 0) {
+    return { inserted: 0, updated: 0, skipped: 0 };
+  }
+
+  let inserted = 0;
+  let updated = 0;
+  let skipped = 0;
+
+  for (const schedule of schedules) {
+    try {
+      const existing = await db.doctoraliaSchedule.findUnique({
+        where: { externalId: schedule.id },
+      });
+
+      const data = mapScheduleData(schedule);
+
+      if (existing) {
+        const hasChanges = hasShallowDataChanges(existing as Record<string, unknown>, data);
+
+        if (hasChanges) {
+          await db.doctoraliaSchedule.update({
+            where: { externalId: schedule.id },
+            data,
+          });
+          updated++;
+        } else {
+          skipped++;
+        }
+      } else {
+        await db.doctoraliaSchedule.create({ data });
+        inserted++;
+      }
+    } catch (error) {
+      console.error(`Error upserting schedule ${schedule.id}:`, error);
+      skipped++;
+    }
+  }
+
+  return { inserted, updated, skipped };
+}
+
+/**
+ * Upsert Doctoralia appointments into the database
+ */
+export async function upsertDoctoraliaAppointments(
+  scheduleExternalId: number,
+  appointments: DoctoraliaAppointment[]
+) {
+  if (appointments.length === 0) {
+    return { inserted: 0, updated: 0, skipped: 0 };
+  }
+
+  // Get schedule internal ID
+  const schedule = await db.doctoraliaSchedule.findUnique({
+    where: { externalId: scheduleExternalId },
+    select: { id: true },
+  });
+
+  if (!schedule) {
+    console.warn(`Schedule ${scheduleExternalId} not found. Skipping appointments.`);
+    return { inserted: 0, updated: 0, skipped: appointments.length };
+  }
+
+  let inserted = 0;
+  let updated = 0;
+  let skipped = 0;
+
+  const BATCH_SIZE = 50;
+  for (let i = 0; i < appointments.length; i += BATCH_SIZE) {
+    const batch = appointments.slice(i, i + BATCH_SIZE);
+
+    await Promise.all(
+      batch.map(async (appointment) => {
+        try {
+          const result = await upsertAppointment(schedule.id, appointment);
+          if (result === "inserted") {
+            inserted++;
+          } else if (result === "updated") {
+            updated++;
+          } else {
+            skipped++;
+          }
+        } catch (error) {
+          console.error(`Error upserting appointment ${appointment.id}:`, error);
+          skipped++;
+        }
+      })
+    );
+  }
+
+  return { inserted, updated, skipped };
+}
+
+/**
+ * Upsert Doctoralia work periods into the database
+ */
+export async function upsertDoctoraliaWorkPeriods(
+  scheduleExternalId: number,
+  workPeriods: DoctoraliaWorkPeriod[]
+) {
+  if (workPeriods.length === 0) {
+    return { inserted: 0, updated: 0, skipped: 0 };
+  }
+
+  // Get schedule internal ID
+  const schedule = await db.doctoraliaSchedule.findUnique({
+    where: { externalId: scheduleExternalId },
+    select: { id: true },
+  });
+
+  if (!schedule) {
+    console.warn(`Schedule ${scheduleExternalId} not found. Skipping work periods.`);
+    return { inserted: 0, updated: 0, skipped: workPeriods.length };
+  }
+
+  let inserted = 0;
+  let updated = 0;
+  let skipped = 0;
+
+  for (const period of workPeriods) {
+    try {
+      // Work periods don't have unique external IDs, so we use start/end time uniqueness
+      const startAt = parseDoctoraliaDateTime(period.start);
+      const endAt = parseDoctoraliaDateTime(period.end);
+
+      if (!startAt || !endAt) {
+        skipped++;
+        continue;
+      }
+
+      const existing = await db.doctoraliaWorkPeriod.findFirst({
+        where: {
+          scheduleId: schedule.id,
+          startAt,
+          endAt,
+        },
+      });
+
+      const data = {
+        scheduleId: schedule.id,
+        startAt,
+        endAt,
+        isPrivate: period.isPrivate,
+      };
+
+      if (existing) {
+        // Check if is_private changed
+        if (existing.isPrivate !== data.isPrivate) {
+          await db.doctoraliaWorkPeriod.update({
+            where: { id: existing.id },
+            data: { isPrivate: data.isPrivate },
+          });
+          updated++;
+        } else {
+          skipped++;
+        }
+      } else {
+        await db.doctoraliaWorkPeriod.create({ data });
+        inserted++;
+      }
+    } catch (error) {
+      console.error(`Error upserting work period:`, error);
+      skipped++;
+    }
+  }
+
+  return { inserted, updated, skipped };
+}
+
+/**
+ * Apply appointment updates from alerts feed.
+ * We only patch fields present in the alert payload and skip unknown events.
+ */
+export async function applyDoctoraliaAlertUpdates(alerts: DoctoraliaCalendarAlert[]) {
+  if (alerts.length === 0) {
+    return { updated: 0, skipped: 0 };
+  }
+
+  let updated = 0;
+  let skipped = 0;
+
+  for (const alert of alerts) {
+    const patch = buildAlertPatch(alert);
+    if (!patch) {
+      skipped++;
+      continue;
+    }
+
+    try {
+      const result = await db.doctoraliaCalendarAppointment.updateMany({
+        where: { externalId: patch.eventId },
+        data: patch.data,
+      });
+
+      if (result.count > 0) {
+        updated += result.count;
+      } else {
+        skipped++;
+      }
+    } catch (error) {
+      console.error(`Error applying alert update for event ${patch.eventId}:`, error);
+      skipped++;
+    }
+  }
+
+  return { updated, skipped };
+}
+
+export async function createDoctoraliaSyncLog(data: {
+  triggerSource?: string;
+  triggerUserId?: number;
+  status: string;
+  schedulesSynced?: number;
+  appointmentsSynced?: number;
+  workPeriodsSynced?: number;
+  errorMessage?: string;
+}) {
+  return db.doctoraliaSyncLog.create({
+    data: {
+      syncType: "CALENDAR",
+      triggerSource: data.triggerSource || null,
+      triggerUserId: data.triggerUserId || null,
+      status: data.status,
+      startedAt: new Date(),
+      endedAt: data.status !== "PENDING" ? new Date() : null,
+      counts: {
+        schedulesSynced: data.schedulesSynced || 0,
+        appointmentsSynced: data.appointmentsSynced || 0,
+        workPeriodsSynced: data.workPeriodsSynced || 0,
+      },
+      errorMessage: data.errorMessage || null,
+    },
+  });
+}
+
+export async function updateDoctoraliaSyncLog(
+  id: number,
+  data: {
+    status: string;
+    schedulesSynced?: number;
+    appointmentsSynced?: number;
+    workPeriodsSynced?: number;
+    errorMessage?: string;
+  }
+) {
+  return db.doctoraliaSyncLog.update({
+    where: { id },
+    data: {
+      status: data.status,
+      endedAt: new Date(),
+      counts: {
+        schedulesSynced: data.schedulesSynced || 0,
+        appointmentsSynced: data.appointmentsSynced || 0,
+        workPeriodsSynced: data.workPeriodsSynced || 0,
+      },
+      errorMessage: data.errorMessage || null,
+    },
+  });
+}

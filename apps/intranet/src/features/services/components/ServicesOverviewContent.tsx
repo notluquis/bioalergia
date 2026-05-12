@@ -1,0 +1,439 @@
+import {
+  Alert,
+  Button,
+  Calendar,
+  Card,
+  Chip,
+  DateField,
+  DatePicker,
+  Description,
+  FieldError,
+  Form,
+  Input,
+  Label,
+  Modal,
+  TextArea,
+  TextField,
+} from "@heroui/react";
+import { parseDate } from "@internationalized/date";
+import { useStore } from "@tanstack/react-store";
+import dayjs from "dayjs";
+import { useState } from "react";
+import { EditScheduleModal } from "@/features/services/components/EditScheduleModal";
+import { ServiceDetail } from "@/features/services/components/ServiceDetail";
+import { ServiceForm } from "@/features/services/components/ServiceForm";
+import { ServiceList } from "@/features/services/components/ServiceList";
+import { ServicesFilterPanel } from "@/features/services/components/ServicesFilterPanel";
+import { SkipScheduleModal } from "@/features/services/components/SkipScheduleModal";
+import { useServicesOverview } from "@/features/services/hooks/use-services-overview";
+import { servicesActions, servicesStore } from "@/features/services/store";
+import { currencyFormatter, numberFormatter } from "@/lib/format";
+import { TITLE_MD } from "@/lib/styles";
+export function ServicesOverviewContent() {
+  const [syncError, setSyncError] = useState<null | string>(null);
+  const [syncMessage, setSyncMessage] = useState<null | string>(null);
+  const overview = useServicesOverview();
+  const { editScheduleOpen, editScheduleTarget, skipScheduleOpen, skipScheduleTarget } = useStore(
+    servicesStore,
+    (state) => state
+  );
+
+  const {
+    canManage,
+    closeCreateModal,
+    closePaymentModal,
+    collectionRate,
+    createError,
+    createOpen,
+    filteredServices,
+    filters,
+    globalError,
+    handleCreateService,
+    handleEditSchedule,
+    handleFilterChange,
+    handlePaymentFieldChange,
+    handlePaymentSubmit,
+    handleRegenerate,
+    handleSyncAllTransactions,
+    handleSyncSelectedServiceTransactions,
+    handleSkipSchedule,
+    handleUnlink,
+    loadingDetail,
+    loadingList,
+    openCreateModal,
+    openPaymentModal,
+    paymentError,
+    paymentForm,
+    paymentSchedule,
+    processingPayment,
+    schedules,
+    selectedId,
+    selectedService,
+    selectedTemplate,
+    services,
+    setSelectedId,
+    syncAllTransactionsPending,
+    syncServiceTransactionsPending,
+    summaryTotals,
+  } = overview;
+
+  const stats = [
+    {
+      helper: `Vista filtrada: ${filteredServices.length} de ${services.length}`,
+      title: "Servicios activos",
+      value: `${numberFormatter.format(summaryTotals.activeCount)} / ${numberFormatter.format(filteredServices.length)}`,
+    },
+    {
+      helper: "Periodo actual",
+      title: "Monto esperado",
+      value: currencyFormatter.format(summaryTotals.totalExpected),
+    },
+    {
+      helper: (() => {
+        const percentage = collectionRate ? Math.round(collectionRate * 100) : 0;
+        return `Cobertura ${percentage}%`;
+      })(),
+      title: "Pagos conciliados",
+      value: currencyFormatter.format(summaryTotals.totalPaid),
+    },
+    {
+      helper: "Cuotas con seguimiento",
+      title: "Pendientes / vencidos",
+      value: `${numberFormatter.format(summaryTotals.pendingCount)} / ${numberFormatter.format(summaryTotals.overdueCount)}`,
+    },
+  ];
+
+  const activeFiltersCount =
+    (filters.search.trim() ? 1 : 0) + filters.statuses.size + filters.types.size;
+
+  return (
+    <section className="space-y-4">
+      {globalError && (
+        <Alert status="danger">
+          <Alert.Content>
+            <Alert.Description>{globalError}</Alert.Description>
+          </Alert.Content>
+        </Alert>
+      )}
+      {syncError && (
+        <Alert status="danger">
+          <Alert.Content>
+            <Alert.Description>{syncError}</Alert.Description>
+          </Alert.Content>
+        </Alert>
+      )}
+      {syncMessage && (
+        <Alert status="success">
+          <Alert.Content>
+            <Alert.Description>{syncMessage}</Alert.Description>
+          </Alert.Content>
+        </Alert>
+      )}
+
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <span className={TITLE_MD}>Resumen de servicios</span>
+        <div className="flex flex-wrap gap-2">
+          {canManage && (
+            <Button
+              isDisabled={syncAllTransactionsPending}
+              onPress={async () => {
+                setSyncError(null);
+                setSyncMessage(null);
+                try {
+                  const result = await handleSyncAllTransactions();
+                  setSyncMessage(
+                    `Sync servicios: ${result.matchedSchedules} vinculadas de ${result.processedSchedules} cuotas.`
+                  );
+                } catch (error_) {
+                  const message =
+                    error_ instanceof Error ? error_.message : "No se pudo sincronizar servicios";
+                  setSyncError(message);
+                }
+              }}
+              size="sm"
+              variant="secondary"
+            >
+              Sincronizar transacciones
+            </Button>
+          )}
+          {canManage && (
+            <Button onPress={() => openCreateModal()} size="sm" variant="primary">
+              Nuevo servicio
+            </Button>
+          )}
+        </div>
+      </div>
+
+      <Card className="shadow-sm">
+        <Card.Content className="p-4">
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            {stats.map((stat) => (
+              <div className="space-y-1" key={stat.title}>
+                <span className="block font-medium text-default-500 text-xs uppercase">
+                  {stat.title}
+                </span>
+                <span className="block font-bold text-lg text-primary">{stat.value}</span>
+                {stat.helper && (
+                  <Description className="text-default-400 text-xs">{stat.helper}</Description>
+                )}
+              </div>
+            ))}
+          </div>
+        </Card.Content>
+      </Card>
+
+      <Card className="shadow-sm">
+        <Card.Content className="p-4">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <span className="font-semibold text-foreground text-sm">Filtros</span>
+            {activeFiltersCount > 0 && (
+              <Chip color="accent" size="sm" variant="primary">
+                {activeFiltersCount} activos
+              </Chip>
+            )}
+          </div>
+          <ServicesFilterPanel
+            filters={filters}
+            onChange={handleFilterChange}
+            services={services}
+          />
+        </Card.Content>
+      </Card>
+
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <span className="font-semibold text-base text-foreground">
+            Servicios{" "}
+            {filteredServices.length !== services.length && `(${filteredServices.length})`}
+          </span>
+        </div>
+
+        <ServiceList
+          loading={loadingList}
+          onSelect={setSelectedId}
+          selectedId={selectedId}
+          services={filteredServices}
+        />
+      </div>
+
+      {selectedService && (
+        <div className="space-y-3">
+          {canManage && (
+            <div className="flex justify-end">
+              <Button
+                isDisabled={syncServiceTransactionsPending}
+                onPress={async () => {
+                  setSyncError(null);
+                  setSyncMessage(null);
+                  try {
+                    const result = await handleSyncSelectedServiceTransactions();
+                    if (!result) {
+                      return;
+                    }
+                    setSyncMessage(
+                      `Sync ${selectedService.name}: ${result.matchedSchedules} vinculadas de ${result.processedSchedules} cuotas.`
+                    );
+                  } catch (error_) {
+                    const message =
+                      error_ instanceof Error
+                        ? error_.message
+                        : "No se pudo sincronizar el servicio";
+                    setSyncError(message);
+                  }
+                }}
+                size="sm"
+                variant="secondary"
+              >
+                Sync servicio seleccionado
+              </Button>
+            </div>
+          )}
+          <ServiceDetail
+            canManage={canManage}
+            loading={loadingDetail}
+            onEditSchedule={(schedule) => handleEditSchedule(selectedService.publicId, schedule)}
+            onRegenerate={handleRegenerate}
+            onRegisterPayment={openPaymentModal}
+            onSkipSchedule={(schedule) => handleSkipSchedule(selectedService.publicId, schedule)}
+            onUnlinkPayment={handleUnlink}
+            schedules={schedules}
+            service={selectedService}
+          />
+        </div>
+      )}
+
+      <Modal.Backdrop isOpen={createOpen} onOpenChange={(open) => !open && closeCreateModal()}>
+        <Modal.Container placement="center">
+          <Modal.Dialog className="sm:max-w-2xl">
+            <Modal.CloseTrigger />
+            <Modal.Header>
+              <Modal.Heading>Nuevo servicio</Modal.Heading>
+            </Modal.Header>
+            <Modal.Body>
+              <ServiceForm
+                initialValues={selectedTemplate?.payload}
+                onCancel={closeCreateModal}
+                onSubmit={async (payload) => {
+                  await handleCreateService(payload);
+                }}
+                submitLabel="Crear servicio"
+              />
+
+              {createError && (
+                <Description className="mt-4 rounded-lg bg-rose-100 px-4 py-2 text-rose-700 text-sm">
+                  {createError}
+                </Description>
+              )}
+            </Modal.Body>
+          </Modal.Dialog>
+        </Modal.Container>
+      </Modal.Backdrop>
+
+      <Modal.Backdrop
+        isOpen={Boolean(paymentSchedule)}
+        onOpenChange={(open) => !open && closePaymentModal()}
+      >
+        <Modal.Container placement="center">
+          <Modal.Dialog className="sm:max-w-125">
+            <Modal.CloseTrigger />
+            <Modal.Header>
+              <Modal.Heading>
+                {paymentSchedule
+                  ? `Registrar pago ${dayjs(paymentSchedule.periodStart).format("MMM YYYY")}`
+                  : "Registrar pago"}
+              </Modal.Heading>
+            </Modal.Header>
+            <Modal.Body>
+              {paymentSchedule && (
+                <Form
+                  className="space-y-4"
+                  onSubmit={handlePaymentSubmit}
+                  validationBehavior="aria"
+                >
+                  <TextField isRequired name="transactionId">
+                    <Label>ID transacción</Label>
+                    <Input
+                      onChange={(event) => {
+                        handlePaymentFieldChange("transactionId", event.target.value);
+                      }}
+                      type="number"
+                      value={paymentForm.transactionId}
+                    />
+                    <FieldError />
+                  </TextField>
+
+                  <TextField isRequired name="paidAmount">
+                    <Label>Monto pagado</Label>
+                    <Input
+                      min={0}
+                      onChange={(event) => {
+                        handlePaymentFieldChange("paidAmount", event.target.value);
+                      }}
+                      step="0.01"
+                      type="number"
+                      value={paymentForm.paidAmount}
+                    />
+                    <FieldError />
+                  </TextField>
+
+                  <DatePicker
+                    isRequired
+                    name="paidDate"
+                    onChange={(value) => {
+                      handlePaymentFieldChange("paidDate", value?.toString() ?? "");
+                    }}
+                    value={parseDate(dayjs(paymentForm.paidDate).format("YYYY-MM-DD"))}
+                  >
+                    <Label>Fecha de pago</Label>
+                    <DateField.Group>
+                      <DateField.InputContainer>
+                        <DateField.Input>
+                          {(segment) => <DateField.Segment segment={segment} />}
+                        </DateField.Input>
+                      </DateField.InputContainer>
+                      <DateField.Suffix>
+                        <DatePicker.Trigger>
+                          <DatePicker.TriggerIndicator />
+                        </DatePicker.Trigger>
+                      </DateField.Suffix>
+                    </DateField.Group>
+                    <FieldError />
+                    <DatePicker.Popover>
+                      <Calendar aria-label="Fecha de pago">
+                        <Calendar.Header>
+                          <Calendar.YearPickerTrigger>
+                            <Calendar.YearPickerTriggerHeading />
+                            <Calendar.YearPickerTriggerIndicator />
+                          </Calendar.YearPickerTrigger>
+                          <Calendar.NavButton slot="previous" />
+                          <Calendar.NavButton slot="next" />
+                        </Calendar.Header>
+                        <Calendar.Grid>
+                          <Calendar.GridHeader>
+                            {(day) => <Calendar.HeaderCell>{day}</Calendar.HeaderCell>}
+                          </Calendar.GridHeader>
+                          <Calendar.GridBody>
+                            {(date) => <Calendar.Cell date={date} />}
+                          </Calendar.GridBody>
+                        </Calendar.Grid>
+                        <Calendar.YearPickerGrid>
+                          <Calendar.YearPickerGridBody>
+                            {({ year }) => <Calendar.YearPickerCell year={year} />}
+                          </Calendar.YearPickerGridBody>
+                        </Calendar.YearPickerGrid>
+                      </Calendar>
+                    </DatePicker.Popover>
+                  </DatePicker>
+
+                  <TextField name="note">
+                    <Label>Nota</Label>
+                    <TextArea
+                      name="note"
+                      onChange={(event) => {
+                        handlePaymentFieldChange("note", event.target.value);
+                      }}
+                      rows={2}
+                      value={paymentForm.note}
+                      variant="secondary"
+                    />
+                  </TextField>
+
+                  {paymentError && (
+                    <Description className="rounded-lg bg-rose-100 px-4 py-2 text-rose-700 text-sm">
+                      {paymentError}
+                    </Description>
+                  )}
+                  <div className="flex justify-end gap-3">
+                    <Button
+                      isDisabled={processingPayment}
+                      slot="close"
+                      type="button"
+                      variant="secondary"
+                    >
+                      Cancelar
+                    </Button>
+                    <Button isDisabled={processingPayment} type="submit">
+                      {processingPayment ? "Registrando..." : "Registrar pago"}
+                    </Button>
+                  </div>
+                </Form>
+              )}
+            </Modal.Body>
+          </Modal.Dialog>
+        </Modal.Container>
+      </Modal.Backdrop>
+
+      <EditScheduleModal
+        isOpen={editScheduleOpen}
+        onClose={servicesActions.closeEditScheduleModal}
+        schedule={editScheduleTarget}
+      />
+
+      <SkipScheduleModal
+        isOpen={skipScheduleOpen}
+        onClose={servicesActions.closeSkipScheduleModal}
+        schedule={skipScheduleTarget}
+      />
+    </section>
+  );
+}

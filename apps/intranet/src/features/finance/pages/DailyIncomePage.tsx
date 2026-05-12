@@ -1,0 +1,207 @@
+import {
+  Alert,
+  Card,
+  Chip,
+  DateField,
+  DateRangePicker,
+  Label,
+  RangeCalendar,
+  Skeleton,
+} from "@heroui/react";
+import { parseDate } from "@internationalized/date";
+import { useQuery } from "@tanstack/react-query";
+import dayjs from "dayjs";
+import { useState } from "react";
+import { fetchCalendarDaily } from "@/features/calendar/api";
+
+type EventForDaily = {
+  amountExpected: null | number;
+  amountPaid: null | number;
+  eventType: null | string;
+  id: string;
+  startDate: string;
+  summary: null | string;
+};
+
+export function DailyIncomePage() {
+  const [from, setFrom] = useState(dayjs().startOf("month").format("YYYY-MM-DD"));
+  const [to, setTo] = useState(dayjs().endOf("month").format("YYYY-MM-DD"));
+
+  const { data, isLoading } = useQuery({
+    queryFn: () =>
+      fetchCalendarDaily({
+        categories: [],
+        from,
+        maxDays: Math.max(dayjs(to).diff(dayjs(from), "day") + 1, 1),
+        to,
+      }),
+    queryKey: ["daily-income", from, to],
+  });
+  const events: EventForDaily[] =
+    data?.days.flatMap((day) =>
+      day.events.map((event) => ({
+        amountExpected: event.amountExpected ?? null,
+        amountPaid: event.amountPaid ?? null,
+        eventType: event.eventType,
+        id: event.eventId,
+        startDate: event.startDate ?? event.eventDate,
+        summary: event.summary,
+      }))
+    ) ?? [];
+
+  // Group by date
+  const grouped = (events || []).reduce(
+    (acc, event) => {
+      const date = event.startDate ? dayjs(event.startDate).format("YYYY-MM-DD") : "Sin fecha";
+      if (!acc[date]) {
+        acc[date] = [];
+      }
+      acc[date].push(event);
+      return acc;
+    },
+    {} as Record<string, EventForDaily[]>
+  );
+
+  const sortedDates = Object.keys(grouped).sort((a, b) => b.localeCompare(a));
+
+  return (
+    <div className="space-y-6 p-6 md:p-8">
+      <div className="flex justify-end">
+        <DateRangePicker
+          className="w-full max-w-sm"
+          onChange={(value) => {
+            if (!value) {
+              return;
+            }
+            setFrom(value.start.toString());
+            setTo(value.end.toString());
+          }}
+          value={from && to ? { end: parseDate(to), start: parseDate(from) } : undefined}
+        >
+          <Label className="sr-only">Rango de fechas</Label>
+          <DateField.Group>
+            <DateField.InputContainer>
+              <DateField.Input slot="start">
+                {(segment) => <DateField.Segment segment={segment} />}
+              </DateField.Input>
+              <DateRangePicker.RangeSeparator />
+              <DateField.Input slot="end">
+                {(segment) => <DateField.Segment segment={segment} />}
+              </DateField.Input>
+            </DateField.InputContainer>
+            <DateField.Suffix>
+              <DateRangePicker.Trigger>
+                <DateRangePicker.TriggerIndicator />
+              </DateRangePicker.Trigger>
+            </DateField.Suffix>
+          </DateField.Group>
+          <DateRangePicker.Popover>
+            <RangeCalendar visibleDuration={{ months: 2 }}>
+              <RangeCalendar.Header>
+                <RangeCalendar.Heading />
+                <RangeCalendar.NavButton slot="previous" />
+                <RangeCalendar.NavButton slot="next" />
+              </RangeCalendar.Header>
+              <RangeCalendar.Grid>
+                <RangeCalendar.GridHeader>
+                  {(day) => <RangeCalendar.HeaderCell>{day}</RangeCalendar.HeaderCell>}
+                </RangeCalendar.GridHeader>
+                <RangeCalendar.GridBody>
+                  {(date) => <RangeCalendar.Cell date={date} />}
+                </RangeCalendar.GridBody>
+              </RangeCalendar.Grid>
+            </RangeCalendar>
+          </DateRangePicker.Popover>
+        </DateRangePicker>
+      </div>
+
+      <div className="space-y-4">
+        {isLoading && (
+          <div className="space-y-3 py-2">
+            {["1", "2", "3"].map((skeletonKey) => (
+              <Card key={`daily-income-skeleton-${skeletonKey}`} className="w-full">
+                <Card.Content className="gap-3 p-4">
+                  <div className="flex items-center justify-between">
+                    <Skeleton className="h-5 w-52 rounded-md" />
+                    <div className="space-y-2">
+                      <Skeleton className="h-4 w-28 rounded-md" />
+                      <Skeleton className="h-4 w-24 rounded-md" />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    {["line-1", "line-2", "line-3"].map((lineKey) => (
+                      <div className="flex items-center justify-between" key={lineKey}>
+                        <Skeleton className="h-4 w-56 rounded-md" />
+                        <Skeleton className="h-4 w-20 rounded-md" />
+                      </div>
+                    ))}
+                  </div>
+                </Card.Content>
+              </Card>
+            ))}
+          </div>
+        )}
+
+        {!isLoading && sortedDates.length === 0 && (
+          <Alert status="warning">
+            <Alert.Content>
+              <Alert.Description>No se encontraron eventos para este periodo.</Alert.Description>
+            </Alert.Content>
+          </Alert>
+        )}
+
+        {sortedDates.map((date) => {
+          const dayEvents = grouped[date] ?? [];
+          const totalExpected = dayEvents.reduce(
+            (sum: number, e: EventForDaily) => sum + (e.amountExpected || 0),
+            0
+          );
+          const totalPaid = dayEvents.reduce(
+            (sum: number, e: EventForDaily) => sum + (e.amountPaid || 0),
+            0
+          );
+
+          return (
+            <Card key={date} className="w-full">
+              <Card.Content className="gap-4 p-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-semibold text-lg capitalize">
+                    {dayjs(date, "YYYY-MM-DD").format("dddd D [de] MMMM")}
+                  </h3>
+                  <div className="text-right text-sm">
+                    <div className="text-default-600">
+                      Esperado: ${totalExpected.toLocaleString()}
+                    </div>
+                    <div className="font-bold text-success">
+                      Pagado: ${totalPaid.toLocaleString()}
+                    </div>
+                  </div>
+                </div>
+                <div className="divider my-0" />
+                <ul className="space-y-2">
+                  {dayEvents.map((event: EventForDaily) => (
+                    <li key={event.id} className="flex items-center justify-between text-sm">
+                      <div className="flex items-center gap-2">
+                        <span>{event.summary || "Evento sin título"}</span>
+                        <Chip size="sm" variant="soft" className="h-5 text-xs">
+                          {event.eventType}
+                        </Chip>
+                      </div>
+                      <span
+                        className={
+                          event.amountPaid ? "font-medium text-success" : "text-default-400"
+                        }
+                      >
+                        ${(event.amountPaid || 0).toLocaleString()}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </Card.Content>
+            </Card>
+          );
+        })}
+      </div>
+    </div>
+  );
+}

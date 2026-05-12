@@ -1,0 +1,114 @@
+import { z } from "zod";
+import { backupsORPCClient, toBackupsApiError } from "./orpc";
+
+import type { BackupFile, BackupJob, RestoreJob } from "./types";
+
+const BackupFileSchema = z.looseObject({
+  createdTime: z.coerce.date(),
+  id: z.string(),
+  name: z.string(),
+  size: z.string(),
+  webViewLink: z.string().optional(),
+});
+
+const BackupsResponseSchema = z.object({
+  backups: z.array(BackupFileSchema),
+});
+
+const TablesResponseSchema = z.object({
+  tables: z.array(z.string()),
+});
+
+const BackupJobSchema = z.looseObject({
+  completedAt: z.coerce.date().optional(),
+  currentStep: z.string(),
+  error: z.string().optional(),
+  id: z.string(),
+  progress: z.number(),
+  result: z
+    .object({
+      driveFileId: z.string(),
+      durationMs: z.number(),
+      filename: z.string(),
+      message: z.string().optional(),
+      sizeBytes: z.number(),
+      skipped: z.boolean().optional(),
+      stats: z
+        .record(
+          z.string(),
+          z.object({
+            count: z.number(),
+            hash: z.string(),
+          })
+        )
+        .optional(),
+      tables: z.array(z.string()),
+      webViewLink: z.string().optional(),
+    })
+    .optional(),
+  startedAt: z.coerce.date(),
+  status: z.enum(["completed", "failed", "pending", "running", "uploading"]),
+  type: z.enum(["full", "scheduled"]),
+});
+
+const RestoreJobSchema = z.looseObject({
+  backupFileId: z.string(),
+  completedAt: z.coerce.date().optional(),
+  currentStep: z.string(),
+  error: z.string().optional(),
+  id: z.string(),
+  progress: z.number(),
+  startedAt: z.coerce.date(),
+  status: z.enum(["completed", "failed", "pending", "running"]),
+  tables: z.array(z.string()).optional(),
+});
+
+// Response schemas - validate complete API response structure
+const TriggerBackupResponseSchema = z.strictObject({
+  status: z.literal("ok"),
+  message: z.string(),
+  job: BackupJobSchema,
+});
+
+const TriggerRestoreResponseSchema = z.strictObject({
+  status: z.literal("ok"),
+  job: RestoreJobSchema,
+});
+
+export const fetchBackups = async (): Promise<BackupFile[]> => {
+  try {
+    const data = BackupsResponseSchema.parse(await backupsORPCClient.list());
+    return data.backups;
+  } catch (error) {
+    throw toBackupsApiError(error);
+  }
+};
+
+export const fetchTables = async (fileId: string): Promise<string[]> => {
+  try {
+    const data = TablesResponseSchema.parse(await backupsORPCClient.tables({ fileId }));
+    return data.tables;
+  } catch (error) {
+    throw toBackupsApiError(error);
+  }
+};
+
+export const triggerBackup = async (): Promise<BackupJob> => {
+  try {
+    const response = TriggerBackupResponseSchema.parse(await backupsORPCClient.trigger());
+    return response.job;
+  } catch (error) {
+    throw toBackupsApiError(error);
+  }
+};
+
+export const triggerRestore = async (fileId: string, tables?: string[]): Promise<RestoreJob> => {
+  try {
+    const response = TriggerRestoreResponseSchema.parse(
+      await backupsORPCClient.restore({ fileId, tables })
+    );
+    return response.job;
+  } catch (error) {
+    throw toBackupsApiError(error);
+  }
+};

@@ -1,0 +1,30 @@
+{
+  "name": "@finanzas/doctoralia-scraper",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "scrape": "node src/index.ts",
+    "discover": "node src/index.ts --discover",
+    "start": "node src/index.ts",
+    "build": "node -e \"console.log('@finanzas/doctoralia-scraper runs TypeScript natively via Node.js (>=25.2); no JS bundle is emitted during build.')\"",
+    "lint": "oxlint",
+    "type-check": "NODE_OPTIONS=--max-old-space-size=8192 tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "dayjs": "^1.11.20",
+    "dotenv": "^17.4.2",
+    "impit": "^0.14.0",
+    "playwright": "^1.59.1",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "^25.7.0",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.6"
+  },
+  "engines": {
+    "node": ">=26"
+  }
+}

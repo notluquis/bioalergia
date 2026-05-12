@@ -1,0 +1,54 @@
+import type { CounterpartAccount } from "../types";
+
+export interface AccountForm {
+  accountNumber: string;
+  accountType: string;
+  bankName: string;
+}
+
+export const ACCOUNT_FORM_DEFAULT: AccountForm = {
+  accountNumber: "",
+  accountType: "",
+  bankName: "",
+};
+
+export interface AccountGroup {
+  accounts: CounterpartAccount[];
+  bankName: null | string;
+  key: string;
+  label: string;
+}
+
+export interface AccountTransactionFilter {
+  accountNumber?: string;
+}
+
+export interface DateRange {
+  from: string;
+  to: string;
+}
+
+const ACCOUNT_SPACES_REGEX = /\s+/g;
+const LEADING_ZEROS_REGEX = /^0+/;
+
+export function normalizeAccountNumber(value: string): string {
+  const compact = value.replace(ACCOUNT_SPACES_REGEX, "").toUpperCase();
+  if (!compact) {
+    return "";
+  }
+  const normalized = compact.replace(LEADING_ZEROS_REGEX, "");
+  return normalized.length > 0 ? normalized : "0";
+}
+
+export function accountFilterKey(filter: AccountTransactionFilter) {
+  return `${filter.accountNumber ?? ""}`;
+}
+
+export function buildAccountTransactionFilter(
+  account: CounterpartAccount
+): AccountTransactionFilter {
+  const normalizedAccountNumber = normalizeAccountNumber(account.accountNumber.trim());
+  return {
+    accountNumber: normalizedAccountNumber || account.accountNumber.trim(),
+  };
+}

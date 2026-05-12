@@ -1,0 +1,46 @@
+# Build outputs
+dist/
+build/
+*.tsbuildinfo
+
+# Zenstack generated files
+zenstack/.env
+zenstack/.turbo/
+
+# Test outputs
+coverage/
+.nyc_output/
+*.lcov
+junit.xml
+
+# Environment & local files
+.env.local
+.env.*.local
+
+# Editor & IDE local configs
+.vscode/settings.json
+.vscode/launch.json
+.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+*~
+
+# OS specific
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Turbo cache
+.turbo/
+
+# Temporary files
+*.tmp
+tmp/
+
+# Prisma/Zenstack artifacts
+.prisma/

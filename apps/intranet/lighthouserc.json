@@ -1,0 +1,46 @@
+{
+  "ci": {
+    "collect": {
+      "url": ["http://localhost:4173/login"],
+      "startServerCommand": "pnpm preview --port 4173 --strictPort",
+      "startServerReadyPattern": "Local:\\s+http",
+      "startServerReadyTimeout": 180000,
+      "numberOfRuns": 3,
+      "settings": {
+        "preset": "desktop",
+        "chromeFlags": "--no-sandbox --headless=new",
+        "skipAudits": [
+          "uses-http2",
+          "is-on-https",
+          "redirects-http",
+          "uses-long-cache-ttl",
+          "service-worker"
+        ]
+      }
+    },
+    "assert": {
+      "assertions": {
+        "categories:performance": ["error", { "minScore": 0.85 }],
+        "categories:accessibility": ["error", { "minScore": 0.95 }],
+        "categories:best-practices": ["warn", { "minScore": 0.9 }],
+        "categories:seo": "off",
+        "categories:pwa": "off",
+        "largest-contentful-paint": ["error", { "maxNumericValue": 2500 }],
+        "interactive": ["warn", { "maxNumericValue": 3500 }],
+        "total-blocking-time": ["error", { "maxNumericValue": 200 }],
+        "cumulative-layout-shift": ["error", { "maxNumericValue": 0.1 }],
+        "first-contentful-paint": ["warn", { "maxNumericValue": 1800 }],
+        "speed-index": "off",
+        "uses-text-compression": "warn",
+        "unused-javascript": ["warn", { "maxNumericValue": 100000 }],
+        "unminified-javascript": "off",
+        "unminified-css": "off",
+        "modern-image-formats": "warn",
+        "uses-responsive-images": "warn"
+      }
+    },
+    "upload": {
+      "target": "temporary-public-storage"
+    }
+  }
+}

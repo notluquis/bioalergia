@@ -1,0 +1,815 @@
+import { db } from "@finanzas/db";
+
+import dayjs from "dayjs";
+import timezone from "dayjs/plugin/timezone.js";
+import utc from "dayjs/plugin/utc.js";
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
+
+const TIMEZONE = "America/Santiago";
+const DATE_ONLY_FORMAT = "YYYY-MM-DD";
+
+// Regex patterns for performance (top-level definition)
+const TIME_FORMAT_PATTERN = /^[0-9]{1,2}:[0-9]{2}(:[0-9]{2})?$/;
+const TIME_EXTRACT_PATTERN = /^(\d{1,2}):(\d{2})(?::(\d{2}))?$/;
+const TIME_ONLY_PATTERN = /^(\d{1,2}):(\d{2})/;
+
+import { roundCurrency } from "../lib/currency.ts";
+import type { EmployeeTimesheet, EmployeeTimesheetUpdateInput } from "../lib/db-types.ts";
+import { logEvent, logWarn } from "../lib/logger.ts";
+import { getEffectiveRetentionRate } from "../lib/retention.ts";
+import { formatDateOnly, getNthBusinessDay } from "../lib/time.ts";
+import { getEmployeeById, listEmployees } from "./employees.ts";
+
+// Types
+export interface TimesheetEntry {
+  [x: string]: unknown;
+  id: number;
+  employee_id: number;
+  work_date: string;
+  start_time: string | null;
+  end_time: string | null;
+  worked_minutes: number;
+  overtime_minutes: number;
+  comment: string | null;
+}
+
+export interface UpsertTimesheetPayload {
+  employee_id: number;
+  work_date: string;
+  start_time?: string | null;
+  end_time?: string | null;
+  worked_minutes?: number;
+  overtime_minutes: number;
+  comment?: string | null;
+}
+
+export interface UpdateTimesheetPayload {
+  start_time?: string | null;
+  end_time?: string | null;
+  worked_minutes?: number;
+  overtime_minutes?: number;
+  comment?: string | null;
+}
+
+export interface ListTimesheetOptions {
+  employee_id?: number;
+  from: string;
+  to: string;
+}
+
+function parseDateOnlyUtc(value: string) {
+  return dayjs.utc(value, DATE_ONLY_FORMAT, true);
+}
+
+function dateOnlyStartUtc(value: string): Date {
+  const parsed = parseDateOnlyUtc(value);
+  if (!parsed.isValid()) {
+    throw new Error(`Invalid date format: ${value}. Expected ${DATE_ONLY_FORMAT}`);
+  }
+  return parsed.startOf("day").toDate();
+}
+
+function dateOnlyEndUtc(value: string): Date {
+  const parsed = parseDateOnlyUtc(value);
+  if (!parsed.isValid()) {
+    throw new Error(`Invalid date format: ${value}. Expected ${DATE_ONLY_FORMAT}`);
+  }
+  return parsed.endOf("day").toDate();
+}
+
+function monthStartUtc(month: string) {
+  const parsed = dayjs.utc(month, "YYYY-MM", true);
+  if (!parsed.isValid()) {
+    throw new Error(`Invalid month format: ${month}. Expected YYYY-MM`);
+  }
+  return parsed.startOf("month");
+}
+
+function formatDbDateOnly(value: Date | string) {
+  return dayjs.utc(value).format(DATE_ONLY_FORMAT);
+}
+
+// Helper Functions
+
+/**
+ * Convert time string (HH:MM or HH:MM:SS) to minutes since midnight.
+ */
+/**
+ * Convert time string (HH:MM or HH:MM:SS) to minutes since midnight.
+ */
+function timeToMinutes(time: string): number {
+  if (!time) {
+    throw new Error("Time string is required");
+  }
+  const d = dayjs(time);
+  if (d.isValid() && (time.includes("T") || time.includes("-"))) {
+    return d.hour() * 60 + d.minute();
+  }
+  if (!TIME_FORMAT_PATTERN.test(time)) {
+    throw new Error(`Invalid time format: ${time}. Expected HH:MM or HH:MM:SS`);
+  }
+  const parts = time.split(":").map(Number);
+  const [hours, minutes] = parts;
+  if (hours === undefined || minutes === undefined) {
+    throw new Error(`Invalid time components: ${time}`);
+  }
+  if (hours < 0 || hours > 23 || minutes < 0 || minutes >= 60) {
+    throw new Error(`Time out of range: ${time}`);
+  }
+  return hours * 60 + minutes;
+}
+
+/**
+ * Normalize time string to HH:MM:SS format for PostgreSQL TIME columns
+ * Input can be:
+ * - HH:MM or HH:MM:SS (e.g., "09:00", "09:00:00")
+ * - ISO 8601 timestamp (e.g., "2025-12-02T12:40:00.000Z")
+ * For ISO timestamps, converts to America/Santiago timezone and extracts time
+ */
+function normalizeTimeString(time: string): string | null {
+  if (!time) {
+    return null;
+  }
+
+  // Check if it's an ISO timestamp (contains 'T' or '-')
+  const d = dayjs(time);
+  if (d.isValid() && (time.includes("T") || time.includes("-"))) {
+    // Parse as ISO timestamp and convert to Santiago timezone
+    const santiago = d.tz(TIMEZONE);
+    const h = santiago.hour();
+    const m = santiago.minute();
+    const s = santiago.second();
+    return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+  }
+
+  // Match HH:MM or HH:MM:SS format
+  const match = time.match(TIME_EXTRACT_PATTERN);
+  if (!match) {
+    return null;
+  }
+
+  const [, hours, minutes, seconds = "00"] = match;
+  if (!hours || !minutes) {
+    return null;
+  }
+  const h = Number.parseInt(hours, 10);
+  const m = Number.parseInt(minutes, 10);
+  const s = Number.parseInt(seconds, 10);
+
+  // Validate ranges
+  if (h < 0 || h > 23 || m < 0 || m >= 60 || s < 0 || s >= 60) {
+    return null;
+  }
+
+  // Return as HH:MM:SS
+  return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+}
+
+/**
+ * Convert "HH:MM" or ISO string to Date object for ZenStack @db.Time
+ * Uses reference date (work_date) and America/Santiago timezone
+ * ZenStack/Prisma extracts only TIME component for PostgreSQL TIME columns
+ */
+function timeStringToDate(time: string | null | undefined, referenceDate: Date = new Date()): Date {
+  if (!time) {
+    throw new Error("Time string is required for date conversion");
+  }
+
+  // Format reference date as YYYY-MM-DD in Santiago timezone
+  const refDateStr = dayjs(referenceDate).tz(TIMEZONE).format("YYYY-MM-DD");
+
+  // Try parsing as ISO datetime first
+  const d = dayjs(time);
+  if (d.isValid() && (time.includes("T") || time.includes("-"))) {
+    // Build datetime string in Santiago timezone: "YYYY-MM-DD HH:mm:ss"
+    const timeStr = `${d.hour().toString().padStart(2, "0")}:${d.minute().toString().padStart(2, "0")}:${d.second().toString().padStart(2, "0")}`;
+    return dayjs.tz(`${refDateStr} ${timeStr}`, TIMEZONE).toDate();
+  }
+
+  // Parse HH:MM or HH:MM:SS format
+  if (TIME_FORMAT_PATTERN.test(time)) {
+    const parts = time.split(":").map(Number);
+    const [hours, minutes, seconds = 0] = parts;
+    if (
+      hours === undefined ||
+      minutes === undefined ||
+      hours < 0 ||
+      hours > 23 ||
+      minutes < 0 ||
+      minutes >= 60 ||
+      seconds < 0 ||
+      seconds >= 60
+    ) {
+      throw new Error(`Invalid time components in: ${time}`);
+    }
+    // Build datetime string in Santiago timezone: "YYYY-MM-DD HH:mm:ss"
+    const timeStr = `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
+    return dayjs.tz(`${refDateStr} ${timeStr}`, TIMEZONE).toDate();
+  }
+
+  throw new Error(`Unable to parse time string: ${time}`);
+}
+
+/**
+ * Format Date object from ZenStack to "HH:MM" string for API responses
+ */
+function dateToTimeString(date: Date | string | null): string | null {
+  if (!date) {
+    return null;
+  }
+
+  // If it's already a string in HH:MM or HH:MM:SS format, extract just HH:MM
+  if (typeof date === "string") {
+    const match = date.match(TIME_ONLY_PATTERN);
+    if (match) {
+      const [, hours, minutes] = match;
+      if (hours && minutes) {
+        return `${hours.padStart(2, "0")}:${minutes}`;
+      }
+      return null;
+    }
+    // Try parsing as date/time
+    const d = dayjs(date);
+    if (d.isValid()) {
+      return d.format("HH:mm");
+    }
+    return null;
+  }
+
+  const d = dayjs(date);
+  if (!d.isValid()) {
+    return null;
+  }
+  return d.format("HH:mm");
+}
+
+/**
+ * Map timesheet to TimesheetEntry type.
+ */
+function mapTimesheetEntry(entry: EmployeeTimesheet): TimesheetEntry {
+  if (!entry) {
+    throw new Error("Entry is null");
+  }
+  return {
+    id: Number(entry.id),
+    employee_id: entry.employeeId,
+    work_date: formatDbDateOnly(entry.workDate),
+    start_time: entry.startTime ? dateToTimeString(entry.startTime) : "",
+    end_time: entry.endTime ? dateToTimeString(entry.endTime) : "",
+    worked_minutes: entry.workedMinutes,
+    overtime_minutes: entry.overtimeMinutes,
+    comment: entry.comment || "",
+  };
+}
+
+// Repository Functions
+
+export async function getTimesheetEntryById(id: number): Promise<TimesheetEntry> {
+  const entry = await db.employeeTimesheet.findUnique({
+    where: { id: BigInt(id) },
+  });
+  if (!entry) {
+    throw new Error("Registro no encontrado");
+  }
+  return mapTimesheetEntry(entry);
+}
+
+/**
+ * Ensure FIXED salary employee has a monthly timesheet record
+ * Creates one if it doesn't exist (lazy creation)
+ */
+export async function ensureFixedSalaryRecord(
+  employeeId: number,
+  month: string // Format: YYYY-MM
+): Promise<void> {
+  const employee = await getEmployeeById(employeeId);
+  if (!employee || employee.salaryType !== "FIXED") {
+    return; // Only for FIXED employees
+  }
+
+  const monthStart = monthStartUtc(month);
+  const monthEnd = monthStart.add(1, "month");
+
+  // Check if record already exists for this month
+  const existing = await db.employeeTimesheet.findFirst({
+    where: {
+      employeeId,
+      workDate: {
+        gte: monthStart.toDate(),
+        lt: monthEnd.toDate(),
+      },
+    },
+  });
+
+  if (existing) {
+    return; // Already has a record this month
+  }
+
+  // Create synthetic record for FIXED salary
+  await db.employeeTimesheet.create({
+    data: {
+      employeeId,
+      workDate: monthStart.toDate(),
+      startTime: null,
+      endTime: null,
+      workedMinutes: 0,
+      overtimeMinutes: 0,
+      comment: "Sueldo fijo mensual",
+    },
+  });
+
+  logEvent("timesheet:fixed-salary-created", {
+    employeeId,
+    month,
+  });
+}
+
+export async function listTimesheetEntries(
+  options: ListTimesheetOptions
+): Promise<TimesheetEntry[]> {
+  // For FIXED employees, ensure they have a monthly record
+  if (options.employee_id) {
+    try {
+      const monthStr = options.from.substring(0, 7); // Extract YYYY-MM
+      await ensureFixedSalaryRecord(options.employee_id, monthStr);
+    } catch (error) {
+      logWarn("Failed to ensure FIXED salary record", { error });
+    }
+  }
+
+  const entries = await db.employeeTimesheet.findMany({
+    where: {
+      ...(options.employee_id && { employeeId: options.employee_id }),
+      workDate: {
+        gte: dateOnlyStartUtc(options.from),
+        lte: dateOnlyEndUtc(options.to),
+      },
+    },
+    orderBy: { workDate: "asc" },
+  });
+
+  return entries.map(mapTimesheetEntry);
+}
+
+export async function upsertTimesheetEntry(
+  payload: UpsertTimesheetPayload
+): Promise<TimesheetEntry> {
+  const normalized = normalizeUpsertPayload(payload);
+  const result = await runTimesheetUpsertQuery(payload, normalized);
+  return mapUpsertResult(result);
+}
+
+type NormalizedUpsertPayload = {
+  endTimeStr: null | string;
+  startTimeStr: null | string;
+  workDateDb: string;
+  workDateObj: Date;
+  workedMinutes: number;
+};
+
+function normalizeUpsertPayload(payload: UpsertTimesheetPayload): NormalizedUpsertPayload {
+  const workDateObj = dateOnlyStartUtc(payload.work_date);
+  const startTimeStr = payload.start_time ? normalizeTimeString(payload.start_time) : null;
+  const endTimeStr = payload.end_time ? normalizeTimeString(payload.end_time) : null;
+  const workedMinutes = calculateWorkedMinutes(payload);
+  const workDateDb = dayjs(workDateObj).format("YYYY-MM-DD");
+
+  return { endTimeStr, startTimeStr, workDateDb, workDateObj, workedMinutes };
+}
+
+function calculateWorkedMinutes(payload: UpsertTimesheetPayload): number {
+  const providedWorkedMinutes = payload.worked_minutes ?? 0;
+  if (providedWorkedMinutes > 0 || !payload.start_time || !payload.end_time) {
+    return providedWorkedMinutes;
+  }
+
+  const start = timeToMinutes(payload.start_time);
+  const end = timeToMinutes(payload.end_time);
+  return end >= start ? end - start : 24 * 60 + (end - start);
+}
+
+async function runTimesheetUpsertQuery(
+  payload: UpsertTimesheetPayload,
+  normalized: NormalizedUpsertPayload
+) {
+  return db.$qb
+    .insertInto("EmployeeTimesheet")
+    .values({
+      employeeId: payload.employee_id,
+      workDate: normalized.workDateDb,
+      startTime: normalized.startTimeStr,
+      endTime: normalized.endTimeStr,
+      workedMinutes: normalized.workedMinutes,
+      overtimeMinutes: payload.overtime_minutes,
+      comment: payload.comment ?? null,
+    })
+    .onConflict((oc) =>
+      oc.columns(["employeeId", "workDate"]).doUpdateSet({
+        startTime: normalized.startTimeStr,
+        endTime: normalized.endTimeStr,
+        workedMinutes: normalized.workedMinutes,
+        overtimeMinutes: payload.overtime_minutes,
+        comment: payload.comment ?? null,
+      })
+    )
+    .returningAll()
+    .executeTakeFirstOrThrow();
+}
+
+function mapUpsertResult(
+  result: Awaited<ReturnType<typeof runTimesheetUpsertQuery>>
+): TimesheetEntry {
+  return {
+    id: Number(result.id),
+    employee_id: result.employeeId,
+    work_date: formatDbDateOnly(result.workDate),
+    start_time: result.startTime ? dateToTimeString(result.startTime) : "",
+    end_time: result.endTime ? dateToTimeString(result.endTime) : "",
+    worked_minutes: result.workedMinutes,
+    overtime_minutes: result.overtimeMinutes,
+    comment: result.comment || "",
+  };
+}
+
+export async function updateTimesheetEntry(
+  id: number,
+  data: UpdateTimesheetPayload
+): Promise<TimesheetEntry> {
+  const { updateData, isEmpty } = await buildTimesheetUpdateData(id, data);
+
+  if (isEmpty) {
+    return getTimesheetEntryById(id);
+  }
+
+  const entry = await db.employeeTimesheet.update({
+    where: { id: BigInt(id) },
+    data: updateData,
+  });
+
+  return mapTimesheetEntry(entry);
+}
+
+async function buildTimesheetUpdateData(
+  id: number,
+  data: UpdateTimesheetPayload
+): Promise<{ isEmpty: boolean; updateData: EmployeeTimesheetUpdateInput }> {
+  const updateData: EmployeeTimesheetUpdateInput = {};
+
+  const existing = await db.employeeTimesheet.findUnique({
+    where: { id: BigInt(id) },
+  });
+  if (!existing) {
+    throw new Error("Registro no encontrado");
+  }
+
+  const referenceDate = existing.workDate;
+
+  if (data.start_time !== undefined) {
+    updateData.startTime = timeStringToDate(data.start_time, referenceDate);
+  }
+  if (data.end_time !== undefined) {
+    updateData.endTime = timeStringToDate(data.end_time, referenceDate);
+  }
+  if (data.worked_minutes != null) {
+    updateData.workedMinutes = data.worked_minutes;
+  }
+  if (data.overtime_minutes != null) {
+    updateData.overtimeMinutes = data.overtime_minutes;
+  }
+  if (data.comment !== undefined) {
+    updateData.comment = data.comment;
+  }
+
+  const isEmpty = Object.keys(updateData).length === 0;
+
+  return { isEmpty, updateData };
+}
+
+export async function deleteTimesheetEntry(id: number): Promise<void> {
+  await db.employeeTimesheet.delete({
+    where: { id: BigInt(id) },
+  });
+}
+
+// =========================================
+// Summary & Reporting Utilities
+// =========================================
+
+/**
+ * Convert minutes to HH:MM duration string
+ */
+export function minutesToDuration(minutes: number): string {
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+}
+
+/**
+ * Convert HH:MM string to minutes
+ */
+export function durationToMinutes(duration: string): number {
+  const [h, m] = duration.split(":").map(Number);
+  return (h || 0) * 60 + (m || 0);
+}
+
+/**
+ * Normalize timesheet payload, calculating worked_minutes from start/end if needed
+ */
+export function normalizeTimesheetPayload(data: {
+  employee_id: number;
+  work_date: string;
+  start_time?: string | null;
+  end_time?: string | null;
+  worked_minutes?: number;
+  overtime_minutes?: number;
+  comment?: string | null;
+}) {
+  let workedMinutes = data.worked_minutes ?? 0;
+  const overtimeMinutes = data.overtime_minutes ?? 0;
+
+  if (!workedMinutes && data.start_time && data.end_time) {
+    const start = timeToMinutes(data.start_time);
+    const end = timeToMinutes(data.end_time);
+    if (start !== null && end !== null) {
+      workedMinutes = Math.max(end - start, 0);
+    }
+  }
+
+  return {
+    employee_id: data.employee_id,
+    work_date: data.work_date,
+    start_time: data.start_time ?? null,
+    end_time: data.end_time ?? null,
+    worked_minutes: workedMinutes,
+    overtime_minutes: overtimeMinutes,
+    comment: data.comment ?? null,
+  };
+}
+
+/**
+ * Compute pay date based on employee role and period start
+ */
+export function computePayDate(role: string, periodStart: string): string {
+  const nextMonthFirstDay = dayjs
+    .tz(periodStart, TIMEZONE)
+    .add(1, "month")
+    .startOf("month")
+    .toDate();
+
+  const roleUpper = role
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toUpperCase()
+    .replace(/\s+/g, " ")
+    .trim();
+
+  const isTens = roleUpper.includes("TENS") || roleUpper.includes("TECNICO EN ENFERMERIA");
+  const isEnfermeroUniversitario =
+    roleUpper.includes("ENFERMERO UNIVERSITARIO") || roleUpper.includes("ENFERMERA UNIVERSITARIA");
+
+  // TENS: día 5 calendario del mes siguiente
+  if (isTens) {
+    return dayjs(nextMonthFirstDay).tz(TIMEZONE).date(5).format(DATE_ONLY_FORMAT);
+  }
+
+  // Enfermero Universitario: 5to día hábil del mes siguiente
+  if (isEnfermeroUniversitario) {
+    return formatDateOnly(getNthBusinessDay(nextMonthFirstDay, 5));
+  }
+
+  // Fallback para otros roles con "ENFER": 5to día hábil
+  if (roleUpper.includes("ENFER")) {
+    return formatDateOnly(getNthBusinessDay(nextMonthFirstDay, 5));
+  }
+
+  // Otros: día 5 calendario del mes siguiente
+  return dayjs(nextMonthFirstDay).tz(TIMEZONE).date(5).format(DATE_ONLY_FORMAT);
+}
+
+/**
+ * Build employee summary for a period
+ */
+export function buildEmployeeSummary(
+  employee: Awaited<ReturnType<typeof getEmployeeById>>,
+  data: {
+    workedMinutes: number;
+    overtimeMinutes: number;
+    periodStart: string;
+  }
+) {
+  if (!employee) {
+    return {
+      employeeId: 0,
+      fullName: "Unknown",
+      role: "",
+      email: null,
+      workedMinutes: 0,
+      overtimeMinutes: 0,
+      extraAmount: 0,
+      hourlyRate: 0,
+      overtimeRate: 0,
+      retentionRate: 0,
+      subtotal: 0,
+      retention: 0,
+      net: 0,
+      payDate: "",
+      hoursFormatted: "00:00",
+      overtimeFormatted: "00:00",
+    };
+  }
+
+  // Get year from period start (format: YYYY-MM-DD)
+  const periodYear = Number.parseInt(data.periodStart.split("-")[0], 10);
+  const retentionRate = getEffectiveRetentionRate(Number(employee.retentionRate ?? 0), periodYear);
+  const payDate = computePayDate(employee.position, data.periodStart);
+
+  // Handle FIXED salary employees differently
+  if (employee.salaryType === "FIXED") {
+    const fixedSalary = Number(employee.baseSalary ?? 0);
+    const subtotal = roundCurrency(fixedSalary);
+    const retention = roundCurrency(subtotal * retentionRate);
+    const net = roundCurrency(subtotal - retention);
+
+    return {
+      employeeId: employee.id,
+      fullName: employee.person.names,
+      role: employee.position,
+      email: employee.person.email ?? null,
+      workedMinutes: 0,
+      overtimeMinutes: 0,
+      extraAmount: 0,
+      hourlyRate: 0,
+      overtimeRate: 0,
+      retentionRate,
+      subtotal,
+      retention,
+      net,
+      payDate,
+      hoursFormatted: "Sueldo fijo",
+      overtimeFormatted: "-",
+    };
+  }
+
+  // Handle HOURLY employees (existing logic)
+  const hourlyRate = Number(employee.hourlyRate ?? 0);
+  const overtimeRate = Number(employee.overtimeRate ?? 0) || hourlyRate * 1.5;
+
+  const basePay = roundCurrency((data.workedMinutes / 60) * hourlyRate);
+  const overtimePay = roundCurrency((data.overtimeMinutes / 60) * overtimeRate);
+  const subtotal = roundCurrency(basePay + overtimePay);
+  const retention = roundCurrency(subtotal * retentionRate);
+  const net = roundCurrency(subtotal - retention);
+
+  return {
+    employeeId: employee.id,
+    fullName: employee.person.names,
+    role: employee.position,
+    email: employee.person.email ?? null,
+    workedMinutes: data.workedMinutes,
+    overtimeMinutes: data.overtimeMinutes,
+    extraAmount: 0,
+    hourlyRate,
+    overtimeRate,
+    retentionRate,
+    subtotal,
+    retention,
+    net,
+    payDate,
+    hoursFormatted: minutesToDuration(data.workedMinutes),
+    overtimeFormatted: minutesToDuration(data.overtimeMinutes),
+  };
+}
+
+type MonthlySummaryTotals = {
+  workedMinutes: number;
+  overtimeMinutes: number;
+  extraAmount: number;
+  subtotal: number;
+  retention: number;
+  net: number;
+};
+
+const createMonthlySummaryTotals = (): MonthlySummaryTotals => ({
+  workedMinutes: 0,
+  overtimeMinutes: 0,
+  extraAmount: 0,
+  subtotal: 0,
+  retention: 0,
+  net: 0,
+});
+
+const addSummaryTotals = (
+  totals: MonthlySummaryTotals,
+  summary: ReturnType<typeof buildEmployeeSummary>
+) => {
+  totals.workedMinutes += summary.workedMinutes;
+  totals.overtimeMinutes += summary.overtimeMinutes;
+  totals.extraAmount += summary.extraAmount;
+  totals.subtotal += summary.subtotal;
+  totals.retention += summary.retention;
+  totals.net += summary.net;
+};
+
+const shouldIncludeActiveEmployee = (
+  employee: Awaited<ReturnType<typeof getEmployeeById>>,
+  employeesWithTimesheets: Set<number>,
+  employeeId?: number
+) => {
+  if (employeesWithTimesheets.has(employee.id) || employee.status !== "ACTIVE") {
+    return false;
+  }
+  if (employeeId && employee.id !== employeeId) {
+    return false;
+  }
+  return true;
+};
+
+/**
+ * Build monthly summary for all employees (or a specific one)
+ */
+export async function buildMonthlySummary(from: string, to: string, employeeId?: number) {
+  const employees = await listEmployees();
+  const employeeMap = new Map(employees.map((employee) => [employee.id, employee]));
+
+  const summaryData = await db.employeeTimesheet.groupBy({
+    by: ["employeeId"],
+    where: {
+      workDate: {
+        gte: dateOnlyStartUtc(from),
+        lte: dateOnlyEndUtc(to),
+      },
+      ...(employeeId && { employeeId }),
+    },
+    _sum: {
+      workedMinutes: true,
+      overtimeMinutes: true,
+    },
+  });
+
+  const results: ReturnType<typeof buildEmployeeSummary>[] = [];
+  const totals = createMonthlySummaryTotals();
+
+  // Track which employees have timesheets
+  const employeesWithTimesheets = new Set<number>();
+
+  for (const row of summaryData) {
+    const employee = employeeMap.get(row.employeeId);
+    if (!employee) {
+      continue;
+    }
+    employeesWithTimesheets.add(row.employeeId);
+    const summary = buildEmployeeSummary(employee, {
+      workedMinutes: Number(row._sum.workedMinutes ?? 0),
+      overtimeMinutes: Number(row._sum.overtimeMinutes ?? 0),
+      periodStart: from,
+    });
+    results.push(summary);
+    addSummaryTotals(totals, summary);
+  }
+
+  // Include active employees without timesheets
+  for (const employee of employees) {
+    if (!shouldIncludeActiveEmployee(employee, employeesWithTimesheets, employeeId)) {
+      continue;
+    }
+
+    const summary = buildEmployeeSummary(employee, {
+      workedMinutes: 0,
+      overtimeMinutes: 0,
+      periodStart: from,
+    });
+    results.push(summary);
+    totals.subtotal += summary.subtotal;
+    totals.retention += summary.retention;
+    totals.net += summary.net;
+  }
+
+  // If filtered by specific employee but no data, include with 0s
+  if (employeeId && results.length === 0) {
+    const employee = employeeMap.get(employeeId);
+    if (employee) {
+      const summary = buildEmployeeSummary(employee, {
+        workedMinutes: 0,
+        overtimeMinutes: 0,
+        periodStart: from,
+      });
+      results.push(summary);
+    }
+  }
+
+  results.sort((a, b) => a.fullName.localeCompare(b.fullName));
+
+  return {
+    employees: results,
+    totals: {
+      extraAmount: roundCurrency(totals.extraAmount),
+      hours: minutesToDuration(totals.workedMinutes),
+      overtime: minutesToDuration(totals.overtimeMinutes),
+      subtotal: roundCurrency(totals.subtotal),
+      retention: roundCurrency(totals.retention),
+      net: roundCurrency(totals.net),
+    },
+  };
+}

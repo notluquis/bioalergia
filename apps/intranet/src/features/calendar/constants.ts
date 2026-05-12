@@ -1,0 +1,18 @@
+/**
+ * Calendar module shared constants
+ * These values are used for handling null/undefined filter values
+ */
+
+/** Value used for null categories in filter dropdowns */
+export const NULL_CATEGORY_VALUE = "__NULL_CATEGORY__";
+
+/** Category labels for display */
+export const CATEGORY_LABELS = {
+  injection: "Inyección",
+  maintenance: "Mantención",
+  subcutaneous: "Tratamiento subcutáneo",
+  test: "Test y exámenes",
+} as const;
+
+/** Default filter date range in days */
+export const DEFAULT_FILTER_RANGE_DAYS = 14;

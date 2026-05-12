@@ -1,0 +1,330 @@
+/**
+ * MercadoPago Frontend Service
+ * Reports list, create, and download functionality only
+ */
+
+import { z } from "zod";
+import type { MpReportType } from "../../shared/mercadopago";
+import { mercadopagoORPCClient, toMercadoPagoApiError } from "../features/finance/mercadopago/orpc";
+import { apiClient, ApiError } from "../lib/api-client";
+
+/**
+ * Statistics returned after processing a report
+ */
+export interface ImportStats {
+  duplicateRows: number;
+  errors: string[];
+  insertedRows: number;
+  processedSourceIds?: string[];
+  skippedRows: number;
+  sourceUnavailable?: boolean;
+  totalRows: number;
+  validRows: number;
+}
+
+export interface MPReport {
+  begin_date: Date;
+  created_from?: null | string;
+  date_created?: Date | null;
+  end_date: Date;
+  file_name?: null | string;
+  id: number;
+  status?: null | string;
+  status_detail?: null | string;
+  state?: null | string;
+}
+
+export interface MPReportListResponse {
+  reports: MPReport[];
+  total: number;
+}
+
+export interface MpSyncLog {
+  changeDetails?: MpSyncChangeDetails | null;
+  errorMessage?: string | null;
+  excluded?: number | null;
+  finishedAt?: Date | null;
+  id: bigint;
+  inserted?: number | null;
+  skipped?: number | null;
+  startedAt: Date;
+  status: "RUNNING" | "SUCCESS" | "ERROR";
+  triggerLabel?: string | null;
+  triggerSource: string;
+  updated?: number | null;
+}
+
+export interface MpSyncImportStats {
+  duplicateRows: number;
+  errorCount?: number;
+  insertedRows: number;
+  skippedRows: number;
+  totalRows: number;
+  validRows: number;
+}
+
+export type MpSyncChangeDetails = Record<string, unknown> & {
+  importStats?: MpSyncImportStats;
+  importStatsByType?: Partial<Record<"release" | "settlement", MpSyncImportStats>>;
+  reportTypes?: Array<"release" | "settlement">;
+};
+
+interface ProcessReportResponse {
+  message: string;
+  stats: ImportStats;
+  status: string;
+}
+
+const MPReportSchema = z.looseObject({
+  begin_date: z.coerce.date(),
+  created_from: z.string().nullable().optional(),
+  date_created: z.coerce.date().nullable().optional(),
+  end_date: z.coerce.date(),
+  file_name: z.string().nullable().optional(),
+  id: z.number(),
+  status: z.string().nullable().optional(),
+  status_detail: z.string().nullable().optional(),
+  state: z.string().nullable().optional(),
+});
+
+const MPReportListResponseSchema = z.object({
+  reports: z.array(MPReportSchema),
+  status: z.string().optional(),
+  total: z.number(),
+});
+
+const MpSyncLogSchema = z.object({
+  changeDetails: z.record(z.string(), z.unknown()).nullable().optional(),
+  errorMessage: z.string().nullable().optional(),
+  excluded: z.number().nullable().optional(),
+  finishedAt: z.coerce.date().nullable().optional(),
+  id: z.bigint(),
+  inserted: z.number().nullable().optional(),
+  skipped: z.number().nullable().optional(),
+  startedAt: z.coerce.date(),
+  status: z.enum(["RUNNING", "SUCCESS", "ERROR"]),
+  triggerLabel: z.string().nullable().optional(),
+  triggerSource: z.string(),
+  updated: z.number().nullable().optional(),
+});
+
+const MpSyncLogsResponseSchema = z.object({
+  logs: z.array(MpSyncLogSchema),
+  status: z.string().optional(),
+  total: z.number(),
+});
+
+const ProcessReportResponseSchema = z.object({
+  message: z.string(),
+  stats: z.object({
+    duplicateRows: z.number(),
+    errors: z.array(z.string()),
+    insertedRows: z.number(),
+    processedSourceIds: z.array(z.string()).optional(),
+    skippedRows: z.number(),
+    sourceUnavailable: z.boolean().optional(),
+    totalRows: z.number(),
+    validRows: z.number(),
+  }),
+  status: z.string(),
+});
+
+export const MPService = {
+  createReport: async (
+    beginDate: Date,
+    endDate: Date,
+    type: MpReportType = "release"
+  ): Promise<MPReport> => {
+    try {
+      return MPReportSchema.parse(
+        await mercadopagoORPCClient.createReport({
+          beginDate,
+          endDate,
+          type,
+        })
+      );
+    } catch (error) {
+      throw toMercadoPagoApiError(error);
+    }
+  },
+
+  /**
+   * Create multiple reports if date range exceeds 60 days (MP limit is 62)
+   * Returns array of created reports and calls onProgress for each
+   */
+  createReportBulk: async (
+    beginDate: Date,
+    endDate: Date,
+    type: MpReportType,
+    options?: { endAtNow?: boolean },
+    onProgress?: (current: number, total: number) => void
+  ): Promise<MPReport[]> => {
+    const MAX_DAYS = 60; // Safe margin below 62-day limit
+    const start = new Date(beginDate);
+    let end = new Date(endDate);
+    const useEndAtNow = options?.endAtNow === true;
+
+    // Cap end date to today (MP API doesn't accept future dates)
+    const maxEnd = new Date();
+    if (!useEndAtNow) {
+      maxEnd.setHours(23, 59, 59, 999);
+    }
+    if (end > maxEnd) {
+      end = maxEnd;
+    }
+
+    // Calculate chunks needed
+    const chunks: { begin: Date; end: Date }[] = [];
+    let chunkStart = new Date(start);
+
+    while (chunkStart < end) {
+      const chunkEnd = new Date(chunkStart);
+      chunkEnd.setDate(chunkEnd.getDate() + MAX_DAYS);
+
+      // Don't exceed the end date
+      const actualEnd = new Date(Math.min(chunkEnd.getTime(), end.getTime()));
+
+      chunks.push({ begin: new Date(chunkStart), end: actualEnd });
+
+      // Next chunk starts the day after this chunk ends
+      chunkStart = new Date(actualEnd);
+      chunkStart.setDate(chunkStart.getDate() + 1);
+    }
+
+    const reports: MPReport[] = [];
+
+    console.log(`[MP Service] createReportBulk: Generating ${chunks.length} chunks`);
+
+    let index = 0;
+    for (const chunk of chunks) {
+      index++;
+      onProgress?.(index, chunks.length);
+
+      // Build range using local day boundaries.
+      // Using UTC setters here can push the date into the next day for CL timezone.
+      const beginDate = new Date(chunk.begin);
+      beginDate.setHours(0, 0, 0, 0);
+
+      const endDate = new Date(chunk.end);
+      const isLastChunk = index === chunks.length;
+      if (useEndAtNow && isLastChunk) {
+        endDate.setTime(end.getTime());
+      } else {
+        endDate.setHours(23, 59, 59, 999);
+      }
+
+      console.log(
+        `[MP Service] Creating chunk ${index}/${chunks.length}: ${beginDate.toISOString()} to ${endDate.toISOString()}`
+      );
+
+      const report = await MPService.createReport(beginDate, endDate, type);
+      reports.push(report);
+    }
+
+    console.log(`[MP Service] createReportBulk: Successfully created ${reports.length} reports`);
+    return reports;
+  },
+
+  downloadReport: async (fileName: string, type: MpReportType = "release"): Promise<Blob> => {
+    try {
+      return await apiClient.getRaw<Blob>("/api/orpc/mercadopago/rpc/reports/download", {
+        query: {
+          fileName,
+          type,
+        },
+        responseType: "blob",
+      });
+    } catch (error) {
+      const apiError = error instanceof ApiError ? error : toMercadoPagoApiError(error);
+      if (apiError.status === 404) {
+        throw new ApiError(
+          type === "settlement"
+            ? "El archivo de conciliacion aun no esta disponible para descargar en Mercado Pago."
+            : "El archivo de liberacion aun no esta disponible para descargar en Mercado Pago.",
+          404,
+          apiError.details
+        );
+      }
+      throw apiError;
+    }
+  },
+
+  listReports: async (
+    type: MpReportType = "release",
+    params?: { limit?: number; offset?: number }
+  ): Promise<MPReportListResponse> => {
+    let response: { reports: MPReport[]; total: number };
+    const input = {
+      type,
+      ...(params?.limit != null ? { limit: params.limit } : {}),
+      ...(params?.offset != null ? { offset: params.offset } : {}),
+    };
+    try {
+      response = MPReportListResponseSchema.parse(await mercadopagoORPCClient.listReports(input));
+    } catch (error) {
+      throw toMercadoPagoApiError(error);
+    }
+    const normalizeReportStatus = (report: MPReport): MPReport => {
+      const status = report.status ?? report.status_detail ?? report.state;
+      if (status) {
+        return { ...report, status };
+      }
+      if (!report.file_name) {
+        return { ...report, status: "processing" };
+      }
+      return report;
+    };
+    return {
+      reports: (response.reports ?? []).map(normalizeReportStatus),
+      total: response.total ?? 0,
+    };
+  },
+  listSyncLogs: async (params?: {
+    limit?: number;
+    offset?: number;
+  }): Promise<{
+    logs: MpSyncLog[];
+    total: number;
+  }> => {
+    let response: { logs: MpSyncLog[]; total: number };
+    const input = {
+      ...(params?.limit != null ? { limit: params.limit } : {}),
+      ...(params?.offset != null ? { offset: params.offset } : {}),
+    };
+    try {
+      response = MpSyncLogsResponseSchema.parse(await mercadopagoORPCClient.listSyncLogs(input));
+    } catch (error) {
+      throw toMercadoPagoApiError(error);
+    }
+    return { logs: response.logs ?? [], total: response.total ?? 0 };
+  },
+
+  processReport: async (fileName: string, type: MpReportType): Promise<ImportStats> => {
+    let data: ProcessReportResponse;
+    try {
+      data = ProcessReportResponseSchema.parse(
+        await mercadopagoORPCClient.processReport({
+          fileName,
+          reportType: type,
+        })
+      );
+    } catch (error) {
+      throw toMercadoPagoApiError(error);
+    }
+
+    if (data.status !== "success" || data.stats.sourceUnavailable) {
+      throw new ApiError(
+        data.message ||
+          (type === "settlement"
+            ? "El archivo de conciliacion aun no esta disponible para sincronizar."
+            : "El archivo de liberacion aun no esta disponible para sincronizar."),
+        404,
+        data.stats
+      );
+    }
+
+    return data.stats;
+  },
+};
+
+export type { MpReportType } from "../../shared/mercadopago";

@@ -1,0 +1,194 @@
+import type { z } from "zod";
+import type { classificationSchema } from "@/features/calendar/schemas";
+import type { CalendarUnclassifiedEvent } from "@/features/calendar/types";
+
+export interface ParsedPayload {
+  amountExpected: null | number;
+  amountPaid: null | number;
+  attended: boolean | null;
+  category: null | string;
+  clinicalSeriesId: null | number;
+  dosageValue: null | number;
+  dosageUnit: null | string;
+  seriesStageKind: null | "DOSE" | "INSTALLATION" | "MAINTENANCE" | "READING";
+  seriesStageLabel: null | string;
+  seriesStageNumber: null | number;
+  testMetadata: null | {
+    firstReading: boolean;
+    patchTest: boolean;
+    secondReading: boolean;
+    skinTest: boolean;
+    thirdReading: boolean;
+  };
+  treatmentStage: null | string;
+}
+
+const SUBCUTANEOUS_CATEGORY = "Tratamiento subcutáneo";
+const TEST_CATEGORY = "Test y exámenes";
+const ROXAIR_CATEGORY = "Roxair";
+const ROXAIR_DEFAULT_AMOUNT = 150000;
+const READY_KEYWORD_PATTERN = /\blisto\b/i;
+const NOT_ATTENDED_PATTERNS = [
+  /\bno\s+viene\b/i,
+  /\bno\s+vino\b/i,
+  /\bno\s+asiste\b/i,
+  /\bno\s+asisti[oó]\b/i,
+  /\bno\s+podr[áa]\s+asistir\b/i,
+  /\bno\s+podr[áa]\s+venir\b/i,
+];
+
+function normalizeChoiceValue(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, " ");
+}
+
+function isSubcutaneousCategory(value: null | string | undefined): boolean {
+  if (!value) {
+    return false;
+  }
+  return normalizeChoiceValue(value) === normalizeChoiceValue(SUBCUTANEOUS_CATEGORY);
+}
+
+function isRoxairCategory(value: null | string | undefined): boolean {
+  if (!value) {
+    return false;
+  }
+  return normalizeChoiceValue(value) === normalizeChoiceValue(ROXAIR_CATEGORY);
+}
+
+function isTestCategory(value: null | string | undefined): boolean {
+  if (!value) {
+    return false;
+  }
+  return normalizeChoiceValue(value) === normalizeChoiceValue(TEST_CATEGORY);
+}
+
+export function buildDefaultEntry(event: CalendarUnclassifiedEvent) {
+  const resolvedCategory = event.category?.trim() ?? "";
+  const roxairDefaultAmount =
+    isRoxairCategory(resolvedCategory) && event.amountExpected == null
+      ? ROXAIR_DEFAULT_AMOUNT
+      : null;
+  const text = `${event.summary ?? ""} ${event.description ?? ""}`;
+  const inferredAttended = isExplicitNoShowEvent(event)
+    ? false
+    : (event.attended ?? READY_KEYWORD_PATTERN.test(text));
+
+  return {
+    amountExpected:
+      event.amountExpected == null
+        ? roxairDefaultAmount == null
+          ? ""
+          : String(roxairDefaultAmount)
+        : String(event.amountExpected),
+    amountPaid: event.amountPaid == null ? "" : String(event.amountPaid),
+    attended: inferredAttended,
+    category: resolvedCategory,
+    clinicalSeriesId: event.clinicalSeriesId ?? null,
+    dosageValue: event.dosageValue != null ? String(event.dosageValue) : "",
+    dosageUnit: event.dosageUnit ?? "",
+    seriesStageKind: event.seriesStageKind ?? null,
+    seriesStageLabel: event.seriesStageLabel ?? null,
+    seriesStageNumber: event.seriesStageNumber ?? null,
+    testSubtypeSkin: event.testMetadata?.skinTest ?? false,
+    testSubtypePatch: event.testMetadata?.patchTest ?? false,
+    testPatchFirstReading: event.testMetadata?.firstReading ?? false,
+    testPatchSecondReading: event.testMetadata?.secondReading ?? false,
+    testPatchThirdReading: event.testMetadata?.thirdReading ?? false,
+    treatmentStage: event.treatmentStage ?? "",
+  };
+}
+
+export function buildPayload(
+  entry: z.infer<typeof classificationSchema>,
+  event: CalendarUnclassifiedEvent
+): ParsedPayload {
+  const category = sanitizeSelectValue(entry.category);
+  const resolvedCategoryRaw = category ?? event.category;
+  const resolvedCategory = isSubcutaneousCategory(resolvedCategoryRaw)
+    ? SUBCUTANEOUS_CATEGORY
+    : resolvedCategoryRaw;
+  const isTest = isTestCategory(resolvedCategory);
+  const isRoxair = isRoxairCategory(resolvedCategory);
+  const isLockedNoShow = isExplicitNoShowEvent(event);
+  const attended = isLockedNoShow ? false : entry.attended;
+  const amountExpectedRaw = parseAmountInput(entry.amountExpected) ?? event.amountExpected ?? null;
+  const baseAmountExpected =
+    amountExpectedRaw == null && isRoxair ? ROXAIR_DEFAULT_AMOUNT : amountExpectedRaw;
+  const amountPaidRaw = parseAmountInput(entry.amountPaid) ?? event.amountPaid ?? null;
+
+  // Parse dosageValue from string input
+  const dosageValue = entry.dosageValue?.trim()
+    ? Number.parseFloat(entry.dosageValue.trim())
+    : event.dosageValue;
+  const dosageUnit = sanitizeSelectValue(entry.dosageUnit) || event.dosageUnit || null;
+  const treatmentStageValue = sanitizeSelectValue(entry.treatmentStage);
+
+  const treatmentStage =
+    isSubcutaneousCategory(resolvedCategory) && treatmentStageValue ? treatmentStageValue : null;
+
+  const testMetadata = isTest
+    ? {
+        firstReading: Boolean(entry.testPatchFirstReading),
+        patchTest: Boolean(entry.testSubtypePatch),
+        secondReading: Boolean(entry.testPatchSecondReading),
+        skinTest: Boolean(entry.testSubtypeSkin),
+        thirdReading: Boolean(entry.testPatchThirdReading),
+      }
+    : null;
+  const hasPatchReading = Boolean(
+    testMetadata?.firstReading || testMetadata?.secondReading || testMetadata?.thirdReading
+  );
+  const amountExpected = hasPatchReading ? 0 : baseAmountExpected;
+  const amountPaid = attended === false || hasPatchReading ? 0 : amountPaidRaw;
+
+  return {
+    amountExpected,
+    amountPaid,
+    attended,
+    category: resolvedCategory,
+    clinicalSeriesId: entry.clinicalSeriesId ?? event.clinicalSeriesId ?? null,
+    dosageValue: dosageValue ?? null,
+    dosageUnit,
+    seriesStageKind: entry.seriesStageKind ?? event.seriesStageKind ?? null,
+    seriesStageLabel: entry.seriesStageLabel ?? event.seriesStageLabel ?? null,
+    seriesStageNumber: entry.seriesStageNumber ?? event.seriesStageNumber ?? null,
+    testMetadata,
+    treatmentStage,
+  };
+}
+
+function sanitizeSelectValue(value: null | string | undefined): null | string {
+  const trimmed = value?.trim();
+  if (!trimmed) {
+    return null;
+  }
+  return trimmed;
+}
+
+export function eventKey(event: Pick<CalendarUnclassifiedEvent, "calendarId" | "eventId">) {
+  return `${event.calendarId}:::${event.eventId}`;
+}
+
+export function isExplicitNoShowEvent(
+  event: Pick<CalendarUnclassifiedEvent, "description" | "summary">
+) {
+  const text = `${event.summary ?? ""} ${event.description ?? ""}`;
+  return NOT_ATTENDED_PATTERNS.some((pattern) => pattern.test(text));
+}
+
+export function parseAmountInput(value: null | string | undefined): null | number {
+  if (!value) {
+    return null;
+  }
+  const normalized = value.replaceAll(/\D/g, "");
+  if (normalized.length === 0) {
+    return null;
+  }
+  const parsed = Number.parseInt(normalized, 10);
+  return Number.isNaN(parsed) ? null : parsed;
+}

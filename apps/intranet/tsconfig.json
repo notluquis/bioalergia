@@ -1,0 +1,39 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "useDefineForClassFields": true,
+    "lib": ["DOM", "ESNext"],
+    "allowJs": false,
+    "incremental": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "tsBuildInfoFile": "./tsconfig.tsbuildinfo",
+    "jsx": "react-jsx",
+
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedIndexedAccess": true,
+    "noUncheckedSideEffectImports": true,
+    "noImplicitOverride": true,
+
+    "types": ["vite/client"],
+    "paths": {
+      "@/*": ["./src/*"],
+      "@shared/*": ["./shared/*"],
+      "~/*": ["./*"],
+      "@finanzas/db": ["../../packages/db/dist/client"],
+      "@finanzas/db/*": ["../../packages/db/dist/zenstack/*"],
+      "@finanzas/orpc-contracts": ["../../packages/orpc-contracts/dist/index.d.ts"],
+      "@finanzas/orpc-contracts/*": ["../../packages/orpc-contracts/dist/*"]
+    }
+  },
+  "include": ["src", "shared"],
+  "references": [{ "path": "../../packages/db" }, { "path": "../../packages/orpc-contracts" }]
+}

@@ -1,0 +1,22 @@
+import { createFileRoute, redirect } from "@tanstack/react-router";
+import { FinancialDashboardPage } from "@/features/finance/pages/FinancialDashboardPage";
+
+export const Route = createFileRoute("/_authed/finanzas/dashboard")({
+  component: FinancialDashboardPage,
+  staticData: {
+    nav: {
+      iconKey: "LayoutDashboard",
+      label: "Tablero",
+      order: 10,
+      section: "Finanzas",
+    },
+    permission: { action: "read", subject: "Event" },
+    relatedSubjects: ["Dashboard"],
+    title: "Tablero Financiero",
+  },
+  beforeLoad: ({ context }) => {
+    if (!context.can("read", "Event")) {
+      throw redirect({ to: "/" });
+    }
+  },
+});

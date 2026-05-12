@@ -1,0 +1,339 @@
+import { Accordion, Button, Card, Chip, Skeleton, Surface } from "@heroui/react";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import dayjs from "dayjs";
+import { Calendar as CalendarIcon, ChevronDown, RefreshCw, Settings2 } from "lucide-react";
+import { useState } from "react";
+
+import { ChangeDetailsViewer } from "@/features/calendar/components/ChangeDetailsViewer";
+import { StatusBadge } from "@/features/calendar/components/StatusBadge";
+import { SyncProgressPanel } from "@/features/calendar/components/SyncProgressPanel";
+import { useCalendarEvents } from "@/features/calendar/hooks/use-calendar-events";
+import { calendarQueries } from "@/features/calendar/queries";
+import type { CalendarData, CalendarSyncLog } from "@/features/calendar/types";
+import { cn } from "@/lib/utils";
+export function CalendarSyncHistoryPage() {
+  const [showConfig, setShowConfig] = useState(false);
+
+  const {
+    hasRunningSyncFromOtherSource,
+    isErrorSyncLogs, // New
+    isLoadingSyncLogs,
+    lastSyncInfo,
+    refetchSyncLogs: refetch,
+    syncDurationMs,
+    syncError,
+    syncing,
+    syncLogs,
+    syncNow,
+    syncProgress,
+  } = useCalendarEvents();
+
+  // Fetch calendars
+  const { data: calendars } = useSuspenseQuery(calendarQueries.list());
+
+  const isLoading = isLoadingSyncLogs;
+
+  const hasRunningSyncInHistory = syncLogs.some((log) => {
+    if (log.status !== "RUNNING") {
+      return false;
+    }
+    if (!log.startedAt) {
+      return false;
+    }
+    const started = dayjs(log.startedAt);
+    // Match backend stale timeout: 15 minutes
+    return started.isValid() && Date.now() - started.valueOf() < 15 * 60 * 1000;
+  });
+  const isSyncing = syncing || hasRunningSyncFromOtherSource || hasRunningSyncInHistory;
+
+  return (
+    <section className="space-y-6">
+      <Card variant="secondary">
+        <Card.Content className="p-3 sm:p-4">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-wrap gap-2">
+              <Button
+                className="gap-2"
+                onPress={() => setShowConfig(!showConfig)}
+                size="sm"
+                variant="outline"
+              >
+                <Settings2 size={16} />
+                {showConfig ? "Ocultar Configuración" : "Ver Calendarios"}
+              </Button>
+              <Button
+                isDisabled={isLoading || isSyncing}
+                isIconOnly
+                onPress={() => refetch()}
+                size="sm"
+                type="button"
+                variant="outline"
+              >
+                <RefreshCw className={cn("h-4 w-4", isLoading && "")} />
+              </Button>
+              <Button isDisabled={isSyncing || isLoading} onPress={syncNow} size="sm" type="button">
+                {isSyncing ? "Sincronizando..." : "Sincronizar ahora"}
+              </Button>
+            </div>
+          </div>
+        </Card.Content>
+      </Card>
+
+      {showConfig && (
+        <Surface
+          className="slide-in-from-top-2 fade-in rounded-2xl border border-default-100 p-4 "
+          variant="secondary"
+        >
+          <div className="mb-4 flex items-center gap-2 font-medium text-default-600 text-sm">
+            <CalendarIcon size={16} />
+            Calendarios Conectados
+          </div>
+          {renderCalendarsList(calendars)}
+        </Surface>
+      )}
+
+      {/* Sync Status Panel */}
+      <SyncProgressPanel
+        lastSyncInfo={lastSyncInfo ?? undefined}
+        showLastSyncInfo
+        syncDurationMs={syncDurationMs}
+        syncError={syncError}
+        syncing={syncing}
+        syncProgress={syncProgress}
+      />
+
+      {/* Sync History Card */}
+      <Card className="min-h-100 overflow-hidden" variant="secondary">
+        <Card.Content className="p-0">
+          {renderSyncHistoryContent({
+            isErrorSyncLogs,
+            isLoading,
+            refetch,
+            syncError,
+            syncLogs,
+          })}
+        </Card.Content>
+      </Card>
+    </section>
+  );
+}
+
+function renderSyncHistoryContent(params: {
+  isErrorSyncLogs: boolean;
+  isLoading: boolean;
+  refetch: () => void;
+  syncError: null | string;
+  syncLogs: CalendarSyncLog[];
+}) {
+  if (params.isLoading) {
+    return (
+      <div className="space-y-3 p-4">
+        {["1", "2", "3", "4"].map((skeletonKey) => (
+          <div
+            className="rounded-2xl border border-default-200 bg-default-50/60 px-4 py-3"
+            key={`calendar-sync-skeleton-${skeletonKey}`}
+          >
+            <div className="flex items-center justify-between gap-3">
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-36 rounded-md" />
+                <Skeleton className="h-3 w-24 rounded-md" />
+              </div>
+              <Skeleton className="h-5 w-24 rounded-full" />
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (params.isErrorSyncLogs || params.syncError) {
+    return (
+      <div className="p-4">
+        <Card variant="secondary">
+          <Card.Content className="flex flex-col gap-3 p-4">
+            <p className="font-semibold text-danger text-sm">No se pudo cargar el historial</p>
+            <p className="text-default-500 text-sm">
+              {params.syncError ?? "El servidor tardó demasiado o hubo un problema de conexión."}
+            </p>
+            <div>
+              <Button onPress={params.refetch} size="sm" variant="outline">
+                Reintentar
+              </Button>
+            </div>
+          </Card.Content>
+        </Card>
+      </div>
+    );
+  }
+
+  if (params.syncLogs.length === 0) {
+    return (
+      <div className="flex h-64 items-center justify-center text-default-400 text-sm">
+        No hay registros de sincronización de calendario.
+      </div>
+    );
+  }
+
+  return (
+    <Accordion className="w-full">
+      {params.syncLogs.map((log, index) => (
+        <SyncHistoryItem defaultExpanded={index === 0} key={log.id.toString()} log={log} />
+      ))}
+    </Accordion>
+  );
+}
+
+function SyncHistoryItem({
+  defaultExpanded,
+  log,
+}: {
+  defaultExpanded: boolean;
+  log: CalendarSyncLog;
+}) {
+  const startedAt = log.startedAt ? dayjs(log.startedAt) : null;
+  const duration = log.finishedAt && startedAt ? dayjs(log.finishedAt).diff(startedAt, "s") : null;
+  const isEmptyChange =
+    log.inserted === 0 && log.updated === 0 && log.excluded === 0 && log.skipped === 0;
+
+  return (
+    <Accordion.Item defaultExpanded={defaultExpanded} id={log.id.toString()}>
+      <Accordion.Heading>
+        <Accordion.Trigger className="flex w-full flex-wrap items-center gap-3 px-4 py-3 text-left hover:bg-default-50/50 sm:flex-nowrap">
+          <StatusBadge status={log.status} />
+          <div className="min-w-24">
+            <div className="font-medium text-sm">
+              {startedAt?.isValid() ? startedAt.tz().format("DD/MM/YYYY") : "-"}
+            </div>
+            <div className="text-default-400 text-xs">
+              {startedAt?.isValid() ? startedAt.tz().format("HH:mm:ss") : "-"}
+            </div>
+          </div>
+          <div className="flex min-w-40 flex-1 flex-wrap items-center gap-2">
+            <Chip size="sm" variant="secondary">
+              <Chip.Label className="font-mono text-xs">{log.triggerSource}</Chip.Label>
+            </Chip>
+            {log.triggerLabel && (
+              <span className="ml-2 text-default-500 text-xs" title={log.triggerLabel}>
+                {log.triggerLabel.slice(0, 30)}
+                {log.triggerLabel.length > 30 ? "..." : ""}
+              </span>
+            )}
+          </div>
+          <div className="flex flex-wrap gap-2 text-xs">
+            {log.inserted > 0 && (
+              <span className="rounded bg-success/10 px-1.5 py-0.5 text-success">
+                +{log.inserted}
+              </span>
+            )}
+            {log.updated > 0 && (
+              <span className="rounded bg-primary/10 px-1.5 py-0.5 text-primary">
+                ~{log.updated}
+              </span>
+            )}
+            {log.excluded > 0 && (
+              <span className="rounded bg-danger/10 px-1.5 py-0.5 text-danger">
+                -{log.excluded}
+              </span>
+            )}
+            {log.skipped > 0 && (
+              <span className="rounded bg-warning/10 px-1.5 py-0.5 text-warning">
+                !{log.skipped}
+              </span>
+            )}
+            {isEmptyChange && <span className="text-default-200">-</span>}
+          </div>
+          <div className="min-w-12 text-right text-default-600 text-sm">
+            {duration === null ? "-" : `${duration}s`}
+          </div>
+          <Accordion.Indicator className="ml-auto text-default-300 sm:ml-0">
+            <ChevronDown className="h-4 w-4" />
+          </Accordion.Indicator>
+        </Accordion.Trigger>
+      </Accordion.Heading>
+      <Accordion.Panel>
+        <Accordion.Body className="border-default-100 border-t bg-default-50/30 px-6 py-4">
+          <div className="grid gap-6 md:grid-cols-2">
+            <div>
+              <h4 className="mb-3 font-semibold text-sm">Resumen de la Sincronización</h4>
+              <div className="grid grid-cols-2 gap-3 rounded-lg bg-background p-3">
+                <div>
+                  <span className="block text-default-500 text-xs">ID</span>
+                  <span className="font-mono text-sm">{log.id.toString()}</span>
+                </div>
+                <div>
+                  <span className="block text-default-500 text-xs">Duración</span>
+                  <span className="text-sm">
+                    {duration !== null
+                      ? `${duration} segundos`
+                      : log.status === "RUNNING"
+                        ? "En progreso..."
+                        : "No disponible"}
+                  </span>
+                </div>
+                <div>
+                  <span className="block text-default-500 text-xs">Insertados</span>
+                  <span className="font-bold text-lg text-success">{log.inserted}</span>
+                </div>
+                <div>
+                  <span className="block text-default-500 text-xs">Actualizados</span>
+                  <span className="font-bold text-lg text-primary">{log.updated}</span>
+                </div>
+                <div>
+                  <span className="block text-default-500 text-xs">Excluidos</span>
+                  <span className="font-bold text-danger text-lg">{log.excluded}</span>
+                </div>
+                <div>
+                  <span className="block text-default-500 text-xs">Omitidos</span>
+                  <span className="font-bold text-lg text-warning">{log.skipped}</span>
+                </div>
+              </div>
+              {log.errorMessage && (
+                <div className="mt-4">
+                  <span className="mb-1 block font-bold text-danger text-xs">Mensaje de Error</span>
+                  <div className="max-h-32 overflow-auto rounded-lg bg-danger/10 p-2 font-mono text-danger text-xs">
+                    {log.errorMessage}
+                  </div>
+                </div>
+              )}
+            </div>
+            <div>
+              <ChangeDetailsViewer data={log.changeDetails} />
+            </div>
+          </div>
+        </Accordion.Body>
+      </Accordion.Panel>
+    </Accordion.Item>
+  );
+}
+
+function renderCalendarsList(calendars: CalendarData[]) {
+  if (calendars.length === 0) {
+    return (
+      <div className="p-4 text-center text-default-400 text-sm">No hay calendarios conectados</div>
+    );
+  }
+
+  return (
+    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      {calendars.map((cal: CalendarData) => (
+        <Surface
+          className="flex items-center gap-3 rounded-lg border border-default-100 p-3"
+          key={cal.id}
+        >
+          <div className="h-2 w-2 shrink-0 rounded-full bg-blue-500" />
+          <div className="min-w-0 flex-1">
+            <span className="block truncate font-medium text-sm">{cal.name}</span>
+            <div className="flex items-center justify-between gap-2">
+              <p className="truncate text-default-400 text-xs">
+                {cal.eventCount.toLocaleString()} eventos
+              </p>
+              <span className="shrink-0 truncate font-mono text-xs text-default-200">
+                {cal.googleId.slice(0, 8)}...
+              </span>
+            </div>
+          </div>
+        </Surface>
+      ))}
+    </div>
+  );
+}

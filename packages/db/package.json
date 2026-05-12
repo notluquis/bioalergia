@@ -1,0 +1,91 @@
+{
+  "name": "@finanzas/db",
+  "version": "0.0.1",
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "main": "./dist/zenstack/schema.js",
+  "types": "./dist/zenstack/schema.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/client.d.ts",
+      "import": "./dist/client.js",
+      "default": "./dist/client.js"
+    },
+    "./input": {
+      "types": "./dist/zenstack/input.d.ts",
+      "import": "./dist/zenstack/input.js",
+      "default": "./dist/zenstack/input.js"
+    },
+    "./schema": {
+      "types": "./dist/zenstack/schema.d.ts",
+      "import": "./dist/zenstack/schema.js",
+      "default": "./dist/zenstack/schema.js"
+    },
+    "./schema-lite": {
+      "types": "./dist/zenstack/schema-lite.d.ts",
+      "import": "./dist/zenstack/schema-lite.js",
+      "default": "./dist/zenstack/schema-lite.js"
+    },
+    "./models": {
+      "types": "./dist/zenstack/models.d.ts",
+      "import": "./dist/zenstack/models.js",
+      "default": "./dist/zenstack/models.js"
+    },
+    "./hooks": {
+      "types": "./dist/zenstack/hooks/index.d.ts",
+      "import": "./dist/zenstack/hooks/index.js",
+      "default": "./dist/zenstack/hooks/index.js"
+    },
+    "./zod": {
+      "types": "./dist/zod.d.ts",
+      "import": "./dist/zod.js",
+      "default": "./dist/zod.js"
+    }
+  },
+  "scripts": {
+    "build": "zen generate --lite && pnpm fix-imports && NODE_OPTIONS=--max-old-space-size=8192 tsc",
+    "type-check": "tsgo --noEmit",
+    "fix-imports": "node scripts/fix-imports.mjs",
+    "generate": "zen generate --lite",
+    "zen:watch": "zen generate --watch",
+    "db:pull": "zen db pull",
+    "db:push": "zen db push",
+    "migrate:dev": "zen migrate dev",
+    "migrate:deploy": "zen migrate deploy",
+    "clean": "rm -rf dist",
+    "lint": "oxlint",
+    "lint:fix": "oxlint --fix && oxfmt --write ."
+  },
+  "dependencies": {
+    "@zenstackhq/language": "^3.6.4",
+    "@zenstackhq/orm": "^3.6.4",
+    "@zenstackhq/plugin-policy": "^3.6.4",
+    "@zenstackhq/schema": "^3.6.4",
+    "@zenstackhq/server": "^3.6.4",
+    "@zenstackhq/tanstack-query": "^3.6.4",
+    "@zenstackhq/zod": "^3.6.4",
+    "hono": "^4.12.18",
+    "kysely": "^0.28.17",
+    "pg": "8.20.0",
+    "pg-types": "^4.1.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@tanstack/react-query": "^5.100.10",
+    "@types/node": "^25.7.0",
+    "@types/pg": "^8.20.0",
+    "@types/react": "^19.2.14",
+    "@zenstackhq/cli": "^3.6.4",
+    "@zenstackhq/sdk": "^3.6.4",
+    "react": "^19.2.6",
+    "ts-morph": "^28.0.0",
+    "ts-pattern": "^5.9.0",
+    "typescript": "^6.0.3"
+  },
+  "engines": {
+    "node": ">=26",
+    "npm": ">=10.0.0"
+  }
+}

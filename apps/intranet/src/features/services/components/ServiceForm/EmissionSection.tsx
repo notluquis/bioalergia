@@ -1,0 +1,169 @@
+import {
+  Calendar,
+  DateField,
+  DatePicker,
+  FieldError,
+  Input,
+  Label,
+  ListBox,
+  Select,
+  TextField,
+} from "@heroui/react";
+import { parseDate } from "@internationalized/date";
+import dayjs from "dayjs";
+import type { ChangeEvent } from "react";
+
+import type { ServiceEmissionMode } from "../../types";
+import type { ServiceFormState } from "../ServiceForm";
+
+interface EmissionSectionProps {
+  emissionDay?: null | number;
+  emissionEndDay?: null | number;
+  emissionExactDate?: null | Date;
+  emissionMode?: ServiceEmissionMode;
+  emissionStartDay?: null | number;
+  onChange: <K extends keyof ServiceFormState>(key: K, value: ServiceFormState[K]) => void;
+  // Assuming errors and value are passed as props based on the example
+  errors: {
+    emissionMode?: { message?: string };
+    emissionDay?: { message?: string };
+    emissionStartDay?: { message?: string };
+    emissionEndDay?: { message?: string };
+    emissionExactDate?: { message?: string };
+  };
+}
+
+// EMISSION_MODE_OPTIONS is no longer used for rendering the Select options directly
+// const EMISSION_MODE_OPTIONS: { label: string; value: ServiceEmissionMode }[] = [
+// { label: "Día específico", value: "FIXED_DAY" },
+// { label: "Rango de días", value: "DATE_RANGE" },
+// { label: "Fecha exacta", value: "SPECIFIC_DATE" },
+// ];
+
+export function EmissionSection({
+  emissionDay,
+  emissionEndDay,
+  emissionExactDate,
+  emissionMode,
+  emissionStartDay,
+  onChange,
+  errors, // Added based on example
+}: EmissionSectionProps) {
+  return (
+    <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <Select
+        isInvalid={Boolean(errors.emissionMode)}
+        onChange={(val) => onChange("emissionMode", val as ServiceEmissionMode)}
+        value={emissionMode}
+      >
+        <Label>Modalidad de emisión</Label>
+        <Select.Trigger>
+          <Select.Value />
+          <Select.Indicator />
+        </Select.Trigger>
+        <Select.Popover>
+          <ListBox>
+            <ListBox.Item id="SPECIFIC_DATE">Fecha Específica</ListBox.Item>
+            <ListBox.Item id="DATE_RANGE">Rango de Fechas</ListBox.Item>
+            <ListBox.Item id="FIXED_DAY">Día Fijo del Mes</ListBox.Item>
+            <ListBox.Item id="NONE">No Aplica / Desconocido</ListBox.Item>
+          </ListBox>
+        </Select.Popover>
+        {errors.emissionMode?.message && <FieldError>{errors.emissionMode.message}</FieldError>}
+      </Select>
+      {(emissionMode ?? "FIXED_DAY") === "FIXED_DAY" && (
+        <TextField type="number">
+          <Label>Día emisión</Label>
+          <Input
+            max={31}
+            min={1}
+            onChange={(event: ChangeEvent<HTMLInputElement>) => {
+              onChange("emissionDay", event.target.value ? Number(event.target.value) : null);
+            }}
+            value={emissionDay == null ? "" : String(emissionDay)}
+          />
+        </TextField>
+      )}
+      {(emissionMode ?? "FIXED_DAY") === "DATE_RANGE" && (
+        <>
+          <TextField type="number">
+            <Label>Día inicio emisión</Label>
+            <Input
+              max={31}
+              min={1}
+              onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                onChange(
+                  "emissionStartDay",
+                  event.target.value ? Number(event.target.value) : null
+                );
+              }}
+              value={emissionStartDay == null ? "" : String(emissionStartDay)}
+            />
+          </TextField>
+
+          <TextField type="number">
+            <Label>Día término emisión</Label>
+            <Input
+              max={31}
+              min={1}
+              onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                onChange("emissionEndDay", event.target.value ? Number(event.target.value) : null);
+              }}
+              value={emissionEndDay == null ? "" : String(emissionEndDay)}
+            />
+          </TextField>
+        </>
+      )}
+      {(emissionMode ?? "FIXED_DAY") === "SPECIFIC_DATE" && (
+        <DatePicker
+          onChange={(value) => {
+            onChange(
+              "emissionExactDate",
+              value ? dayjs(value.toString(), "YYYY-MM-DD").toDate() : null
+            );
+          }}
+          value={
+            emissionExactDate ? parseDate(dayjs(emissionExactDate).format("YYYY-MM-DD")) : undefined
+          }
+        >
+          <Label>Fecha emisión</Label>
+          <DateField.Group>
+            <DateField.InputContainer>
+              <DateField.Input>
+                {(segment) => <DateField.Segment segment={segment} />}
+              </DateField.Input>
+            </DateField.InputContainer>
+            <DateField.Suffix>
+              <DatePicker.Trigger>
+                <DatePicker.TriggerIndicator />
+              </DatePicker.Trigger>
+            </DateField.Suffix>
+          </DateField.Group>
+          <DatePicker.Popover>
+            <Calendar aria-label="Fecha emisión">
+              <Calendar.Header>
+                <Calendar.YearPickerTrigger>
+                  <Calendar.YearPickerTriggerHeading />
+                  <Calendar.YearPickerTriggerIndicator />
+                </Calendar.YearPickerTrigger>
+                <Calendar.NavButton slot="previous" />
+                <Calendar.NavButton slot="next" />
+              </Calendar.Header>
+              <Calendar.Grid>
+                <Calendar.GridHeader>
+                  {(day) => <Calendar.HeaderCell>{day}</Calendar.HeaderCell>}
+                </Calendar.GridHeader>
+                <Calendar.GridBody>{(date) => <Calendar.Cell date={date} />}</Calendar.GridBody>
+              </Calendar.Grid>
+              <Calendar.YearPickerGrid>
+                <Calendar.YearPickerGridBody>
+                  {({ year }) => <Calendar.YearPickerCell year={year} />}
+                </Calendar.YearPickerGridBody>
+              </Calendar.YearPickerGrid>
+            </Calendar>
+          </DatePicker.Popover>
+        </DatePicker>
+      )}
+    </section>
+  );
+}

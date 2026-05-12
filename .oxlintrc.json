@@ -1,0 +1,109 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["typescript", "react", "vitest"],
+  "env": {
+    "browser": true,
+    "node": true,
+    "es2021": true
+  },
+  "settings": {
+    "import/resolver": {
+      "typescript": true
+    }
+  },
+  "rules": {
+    // ESM Import Extensions (Golden Standard 2026, post Node 26 + native TS)
+    // Rule: { "js": "always", "ts": "always", "ignorePackages": true }
+    //
+    // Node 26 runs TypeScript natively via type stripping; like all Node
+    // ESM it has no loader-style fallback for extensionless relative
+    // specifiers. So both `.ts` and `.js` must be written explicitly.
+    //
+    // Examples:
+    // ✅ import { foo } from "./foo.ts";                   // server source
+    // ✅ import timezone from "dayjs/plugin/timezone.js";  // package subpath
+    // ✅ import { z } from "zod";                          // bare specifier
+    // ❌ import { foo } from "./foo";                      // ERR_MODULE_NOT_FOUND
+    //
+    // Reference: https://nodejs.org/api/typescript.html
+    "react/only-export-components": ["warn", { "allowConstantExport": true }],
+    "import/extensions": ["error", { "js": "always", "ts": "always", "ignorePackages": true }],
+    "typescript/no-floating-promises": "error",
+    "typescript/no-unsafe-assignment": "warn",
+    "typescript/no-explicit-any": "error"
+  },
+  "ignorePatterns": [
+    "**/dist",
+    "**/.turbo",
+    "**/node_modules",
+    "**/public/mockServiceWorker.js",
+    "**/routeTree.gen.ts"
+  ],
+  "overrides": [
+    {
+      "files": [
+        "**/context/**",
+        "**/lib/authz/**",
+        "**/*Columns.tsx",
+        "**/main.tsx",
+        // TanStack Router file-based routes always export both `Route` and a
+        // route component from the same file. Fast-refresh boundary doesn't
+        // apply since route files are graph entry points, not hot-reloaded
+        // leaves.
+        "**/src/routes/**",
+        // Shared UI primitives that combine an exported component (host) +
+        // imperative helpers in a single module. Splitting them is gratuitous
+        // file churn for a fast-refresh win that doesn't matter on shared
+        // modules.
+        "**/components/ui/ConfirmDialog.tsx",
+        "**/wa-cloud/components/_shared.tsx"
+      ],
+      "rules": {
+        "react/only-export-components": "off"
+      }
+    },
+    {
+      "files": ["**/*.test.{ts,tsx}", "**/__tests__/**"],
+      "rules": {
+        "vitest/require-to-throw-message": "off",
+        "no-constant-binary-expression": "off"
+      }
+    },
+    {
+      "files": ["**/*.stories.*"],
+      "rules": {
+        "import/no-default-export": "off"
+      }
+    },
+    {
+      "files": [
+        "**/*.d.ts",
+        "**/vite.config.*",
+        "**/vitest.config.*",
+        "**/lint-staged.config.*",
+        "**/.storybook/**/*"
+      ],
+      "rules": {
+        "import/no-default-export": "off"
+      }
+    },
+    {
+      "files": ["packages/db/src/zenstack/schema.ts", "packages/db/src/zenstack/schema-lite.ts"],
+      "rules": {}
+    },
+    {
+      "files": ["apps/api/src/config.ts", "apps/api/src/lib/mercadopago/mercadopago-scheduler.ts"],
+      "rules": {}
+    },
+    {
+      "files": [
+        "apps/intranet/src/features/finance/mercadopago/components/SettlementReleaseColumns.tsx"
+      ],
+      "rules": {}
+    },
+    {
+      "files": ["packages/db/src/client.ts", "packages/db/src/input.ts"],
+      "rules": {}
+    }
+  ]
+}

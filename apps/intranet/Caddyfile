@@ -1,0 +1,159 @@
+:{$PORT:3000} {
+	# Root directory for static files
+	root * /srv
+
+	# Automatic compression (gzip, zstd, brotli)
+	encode zstd gzip
+
+	# Security headers (applied to every response).
+	#
+	# Strict CSP per the OWASP CSP Cheat Sheet (2025+) and W3C CSP3 §6.1:
+	# - script-src uses 'nonce-{R}' + 'strict-dynamic'; the trailing
+	#   'unsafe-inline' https: are CSP1/CSP2 fallbacks that browsers
+	#   supporting CSP3 ignore (Google "strict CSP" backwards-compat
+	#   pattern from web.dev/strict-csp).
+	# - The nonce is the per-request UUID Caddy generates via
+	#   {http.request.uuid}. Vite injects a matching placeholder onto
+	#   every <script> tag in index.html (see vite.config.ts
+	#   cspNoncePlugin) and the `templates` directive below substitutes
+	#   it at serve time.
+	# - require-trusted-types-for 'script' closes DOM-XSS sinks (React
+	#   19 has built-in Trusted Types support).
+	# - style-src keeps 'unsafe-inline' because HeroUI v3 / React Aria
+	#   set inline `style="…"` for popovers; OWASP explicitly accepts
+	#   this trade-off because style-based XSS is dramatically lower
+	#   impact than script XSS.
+	header {
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "camera=(), microphone=(), geolocation=()"
+		Cross-Origin-Opener-Policy "same-origin"
+		Cross-Origin-Resource-Policy "same-origin"
+		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+		# Enforced CSP: strict-dynamic + nonce. require-trusted-types-for moved
+		# to a Report-Only header below — Cloudflare Bot Fight Mode and
+		# similar edge-injected scripts use innerHTML / .src assignment that
+		# violates Trusted Types regardless of nonce. Tracking violations in
+		# report-only lets us migrate first-party code to TrustedHTML/Script
+		# without breaking the live app.
+		Content-Security-Policy "default-src 'self'; script-src 'nonce-{http.request.uuid}' 'strict-dynamic' 'unsafe-inline' https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self'; media-src 'self' blob:; worker-src 'self' blob:; manifest-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'; object-src 'none'"
+		Content-Security-Policy-Report-Only "require-trusted-types-for 'script'; trusted-types default dompurify 'allow-duplicates'"
+	}
+
+	# ========== LOGGING CONFIGURATION ==========
+	# Skip health checks and favicon (high-frequency, low-value logs)
+	# These go to HTTP Logs in Railway but generate noise
+	log_skip /health
+	log_skip /favicon.ico
+
+	# Skip static assets (js, css, images, fonts)
+	# These are already cached and don't need to be logged
+	@assets path_regexp \.(js|css|png|jpe?g|gif|svg|ico|woff|woff2|ttf|eot|webp)$
+	log_skip @assets
+
+	# Health check endpoint
+	handle /health {
+		respond "OK" 200
+	}
+
+	# API proxy to backend - MUST use internal/direct origin to avoid CDN loop
+	# Set in Railway: API_INTERNAL_ORIGIN=https://<api-internal-origin>
+	handle /api/* {
+		reverse_proxy {$API_INTERNAL_ORIGIN} {
+			header_up Host {upstream_hostport}
+			header_up X-Real-IP {remote_host}
+		}
+	}
+
+	# RFC 9116 well-known — security.txt + companion policy. Served as
+	# plaintext, never falls through to the SPA index.html.
+	handle /.well-known/* {
+		header Content-Type "text/plain; charset=utf-8"
+		file_server
+	}
+
+	# Static assets: Return 404 if not found (prevents MIME type errors for missing JS chunks)
+	# This handles cases where old HTML references deleted Vite chunks
+	@static_assets path_regexp \.(js|mjs|css|map|json|woff2?|ttf|eot|svg|png|jpg|jpeg|gif|webp|ico|webmanifest)$
+
+	handle @static_assets {
+		file_server
+		# If file doesn't exist, Caddy returns 404 automatically (no fallback to index.html)
+	}
+
+	# SPA routing: All other paths fallback to index.html (client-side
+	# navigation). The `templates` directive parses the served index.html
+	# as a Go template so the CSP nonce placeholder Vite injected at
+	# build time ({{ placeholder "http.request.uuid" }}) resolves to the
+	# same per-request UUID Caddy emits in the Content-Security-Policy
+	# header above. Without `templates` the placeholder would be served
+	# verbatim and every script would be blocked by CSP.
+	handle {
+		try_files {path} /index.html
+		templates
+		file_server
+	}
+
+	# Cache headers for static assets
+	@static {
+		path *.js *.css *.png *.jpg *.jpeg *.gif *.svg *.webp *.ico *.woff *.woff2 *.ttf *.eot
+	}
+	header @static {
+		Cache-Control "public, max-age=2592000, immutable"
+	}
+
+	# No cache for index.html
+	@html {
+		path /index.html
+	}
+	header @html {
+		Cache-Control "no-store"
+	}
+
+	# Structured JSON logging for Railway HTTP Logs
+	# Filters unnecessary headers to reduce log size by ~70-80%
+	log {
+		output stdout
+		format filter {
+			# Request headers: filter non-critical information
+			request>headers>Accept delete
+			request>headers>Accept-Language delete
+			request>headers>Accept-Encoding delete
+			request>headers>Priority delete
+			request>headers>Sec-Fetch-Dest delete
+			request>headers>Sec-Fetch-Mode delete
+			request>headers>Sec-Fetch-Site delete
+
+			# Cloudflare geolocation headers (not essential for debugging)
+			request>headers>Cf-Iplatitude delete
+			request>headers>Cf-Iplongitude delete
+			request>headers>Cf-Postal-Code delete
+			request>headers>Cf-Ipcity delete
+			request>headers>Cf-Ipcontinent delete
+			request>headers>Cf-Ipcountry delete
+			request>headers>Cf-Region delete
+			request>headers>Cf-Region-Code delete
+			request>headers>Cf-Timezone delete
+			request>headers>Cf-Visitor delete
+
+			# Cloudflare certificate validation headers
+			request>headers>Cf-Cert-Presented delete
+			request>headers>Cf-Cert-Revoked delete
+			request>headers>Cf-Cert-Verified delete
+
+			# Railway edge headers (X-Railway-Request-Id is kept in response)
+			request>headers>X-Railway-Edge delete
+
+			# Response headers: remove CDN/proxy noise
+			resp_headers>Cf-Ray delete
+			resp_headers>Cf-Cache-Status delete
+			resp_headers>Nel delete
+			resp_headers>Report-To delete
+			resp_headers>Speculation-Rules delete
+			resp_headers>Server delete
+
+			wrap json
+		}
+	}
+}

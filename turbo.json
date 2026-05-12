@@ -1,0 +1,67 @@
+{
+  "$schema": "https://turborepo.dev/schema.json",
+  "envMode": "strict",
+  "futureFlags": {
+    "affectedUsingTaskInputs": true,
+    "watchUsingTaskInputs": true
+  },
+  "globalDependencies": ["tsconfig.solution.json"],
+  "globalEnv": ["NODE_ENV", "CI"],
+  "ui": "tui",
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "inputs": ["$TURBO_DEFAULT$", ".env", ".env.*", "!.turbo/**", "!dist/**", "!.next/**"],
+      "outputs": ["dist/**", ".next/**", "!.next/cache/**"]
+    },
+    "build:fast": {
+      "dependsOn": ["^build"],
+      "inputs": ["$TURBO_DEFAULT$", ".env", ".env.*", "!.turbo/**", "!dist/**"],
+      "outputs": ["dist/**"]
+    },
+    "build-storybook": {
+      "dependsOn": ["^build"],
+      "env": ["STORYBOOK_*"],
+      "inputs": ["$TURBO_DEFAULT$", ".env", ".env.*", "!.turbo/**", "!storybook-static/**"],
+      "outputs": ["storybook-static/**"]
+    },
+    "dev": {
+      "cache": false,
+      "interruptible": true,
+      "persistent": true
+    },
+    "lint": {
+      "inputs": ["$TURBO_DEFAULT$", "!.turbo/**", "!dist/**", "!.next/**", "!coverage/**"],
+      "outputs": []
+    },
+    "test": {
+      "dependsOn": ["^build"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        ".env",
+        ".env.*",
+        "!.turbo/**",
+        "!dist/**",
+        "!.next/**",
+        "!coverage/**"
+      ],
+      "outputs": ["coverage/**"]
+    },
+    "type-check": {
+      "dependsOn": ["^build"],
+      "inputs": ["$TURBO_DEFAULT$", ".env", ".env.*", "!.turbo/**", "!dist/**", "!.next/**"],
+      "outputs": []
+    },
+    "format": {
+      "inputs": ["$TURBO_DEFAULT$"],
+      "outputs": []
+    },
+    "check": {
+      "dependsOn": ["lint", "type-check"],
+      "outputs": []
+    },
+    "transit": {
+      "dependsOn": ["^transit"]
+    }
+  }
+}

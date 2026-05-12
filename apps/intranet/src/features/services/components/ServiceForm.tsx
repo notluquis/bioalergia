@@ -1,0 +1,473 @@
+import { Button, Description, Form, Switch } from "@heroui/react";
+import { useQuery } from "@tanstack/react-query";
+import dayjs from "dayjs";
+import { useEffect, useState } from "react";
+import { z } from "zod";
+import { financeORPCClient } from "@/features/finance/orpc";
+import { isNonAccountableCategory } from "@/features/finance/utils/non-accountable-category";
+import { fetchCounterpart, fetchCounterparts } from "../../counterparts/api";
+import type { CounterpartAccount } from "../../counterparts/types";
+import type {
+  CreateServicePayload,
+  ServiceObligationType,
+  ServiceOwnership,
+  ServiceType,
+} from "../types";
+import { BasicInfoSection } from "./ServiceForm/BasicInfoSection";
+import { CounterpartSection } from "./ServiceForm/CounterpartSection";
+import { EmissionSection } from "./ServiceForm/EmissionSection";
+import { FinancialSection } from "./ServiceForm/FinancialSection";
+import { SchedulingSection } from "./ServiceForm/SchedulingSection";
+import { ServiceClassificationSection } from "./ServiceForm/ServiceClassificationSection";
+
+export type ServiceFormState = CreateServicePayload & {
+  emissionExactDate?: null | Date;
+};
+
+interface ServiceFormProps {
+  initialValues?: Partial<CreateServicePayload>;
+  onCancel: () => void;
+  onSubmit: (payload: CreateServicePayload) => Promise<void>;
+  submitLabel?: string;
+}
+
+const INITIAL_STATE: ServiceFormState = {
+  accountReference: "",
+  amountIndexation: "NONE",
+  autoLinkTransactions: true,
+  category: "",
+  counterpartAccountId: null,
+  counterpartId: null,
+  defaultAmount: 0,
+  detail: "",
+  dueDay: null,
+  emissionDay: 1,
+  emissionEndDay: null,
+  emissionExactDate: null,
+  emissionMode: "FIXED_DAY",
+  emissionStartDay: null,
+  frequency: "MONTHLY",
+  lateFeeGraceDays: null,
+  lateFeeMode: "NONE",
+  lateFeeValue: null,
+  monthsToGenerate: 12,
+  name: "",
+  notes: "",
+  obligationType: "SERVICE",
+  ownership: "COMPANY",
+  recurrenceType: "RECURRING",
+  reminderDaysBefore: 3,
+  serviceType: "BUSINESS",
+  startDate: dayjs().toDate(),
+  transactionCategoryId: null,
+};
+
+const resetFormState = (initialValues?: Partial<CreateServicePayload>) => ({
+  ...INITIAL_STATE,
+  ...initialValues,
+  monthsToGenerate: initialValues?.monthsToGenerate ?? INITIAL_STATE.monthsToGenerate,
+  startDate: initialValues?.startDate ?? INITIAL_STATE.startDate,
+});
+
+const applyFixedDayMode = (prev: ServiceFormState) => {
+  if (prev.emissionStartDay !== null || prev.emissionEndDay !== null || prev.emissionExactDate) {
+    return {
+      ...prev,
+      emissionDay: prev.emissionDay ?? 1,
+      emissionEndDay: null,
+      emissionExactDate: null,
+      emissionStartDay: null,
+    };
+  }
+  return prev.emissionDay == null ? { ...prev, emissionDay: 1 } : prev;
+};
+
+const applyDateRangeMode = (prev: ServiceFormState) => {
+  const nextStart = prev.emissionStartDay ?? 1;
+  const nextEnd = prev.emissionEndDay ?? Math.max(5, nextStart);
+  if (
+    prev.emissionDay !== null ||
+    prev.emissionExactDate ||
+    prev.emissionStartDay !== nextStart ||
+    prev.emissionEndDay !== nextEnd
+  ) {
+    return {
+      ...prev,
+      emissionDay: null,
+      emissionEndDay: nextEnd,
+      emissionExactDate: null,
+      emissionStartDay: nextStart,
+    };
+  }
+  return prev;
+};
+
+const applySpecificDateMode = (prev: ServiceFormState) => {
+  if (prev.emissionDay !== null || prev.emissionStartDay !== null || prev.emissionEndDay !== null) {
+    return {
+      ...prev,
+      emissionDay: null,
+      emissionEndDay: null,
+      emissionStartDay: null,
+    };
+  }
+  return prev;
+};
+
+const applyEmissionMode = (
+  prev: ServiceFormState,
+  emissionMode: ServiceFormState["emissionMode"]
+) => {
+  if (emissionMode === "FIXED_DAY") {
+    return applyFixedDayMode(prev);
+  }
+  if (emissionMode === "DATE_RANGE") {
+    return applyDateRangeMode(prev);
+  }
+  if (emissionMode === "SPECIFIC_DATE") {
+    return applySpecificDateMode(prev);
+  }
+  return prev;
+};
+
+const normalizeOptional = (value?: string | null) => (value?.trim() ? value.trim() : undefined);
+
+const getEmissionFields = (
+  form: ServiceFormState,
+  emissionMode: ServiceFormState["emissionMode"]
+) => ({
+  emissionDay: emissionMode === "FIXED_DAY" ? (form.emissionDay ?? null) : null,
+  emissionEndDay: emissionMode === "DATE_RANGE" ? (form.emissionEndDay ?? null) : null,
+  emissionExactDate:
+    emissionMode === "SPECIFIC_DATE" ? (form.emissionExactDate ?? undefined) : null,
+  emissionMode,
+  emissionStartDay: emissionMode === "DATE_RANGE" ? (form.emissionStartDay ?? null) : null,
+});
+
+const getLateFeeValue = (form: ServiceFormState, lateFeeMode: ServiceFormState["lateFeeMode"]) => {
+  if (lateFeeMode === "NONE") {
+    return null;
+  }
+  if (form.lateFeeValue === null || form.lateFeeValue === undefined) {
+    return null;
+  }
+  return Number(form.lateFeeValue);
+};
+
+const getMonthsToGenerate = (form: ServiceFormState) =>
+  form.recurrenceType === "ONE_OFF" || form.frequency === "ONCE" ? 1 : form.monthsToGenerate;
+
+const buildServicePayload = (
+  form: ServiceFormState,
+  emissionMode: ServiceFormState["emissionMode"],
+  lateFeeMode: ServiceFormState["lateFeeMode"]
+): CreateServicePayload => ({
+  accountReference: normalizeOptional(form.accountReference),
+  amountIndexation: form.amountIndexation,
+  category: normalizeOptional(form.category),
+  counterpartAccountId: form.counterpartAccountId ?? null,
+  counterpartId: form.counterpartId ?? null,
+  defaultAmount: Number(form.defaultAmount) || 0,
+  detail: normalizeOptional(form.detail),
+  dueDay: form.dueDay ?? null,
+  ...getEmissionFields(form, emissionMode),
+  frequency: form.frequency,
+  lateFeeGraceDays: lateFeeMode === "NONE" ? null : (form.lateFeeGraceDays ?? null),
+  lateFeeMode,
+  lateFeeValue: getLateFeeValue(form, lateFeeMode),
+  monthsToGenerate: getMonthsToGenerate(form),
+  name: form.name.trim(),
+  notes: normalizeOptional(form.notes),
+  obligationType: form.obligationType,
+  ownership: form.ownership,
+  recurrenceType: form.recurrenceType,
+  reminderDaysBefore: form.reminderDaysBefore ?? 3,
+  serviceType: form.serviceType,
+  startDate: form.startDate,
+  transactionCategoryId: form.transactionCategoryId ?? null,
+  autoLinkTransactions: form.autoLinkTransactions ?? true,
+});
+
+const FinanceCategorySchema = z.object({
+  color: z.string().nullable().optional(),
+  id: z.number(),
+  icon: z.string().nullable().optional(),
+  name: z.string(),
+});
+
+export function ServiceForm({ initialValues, onCancel, onSubmit, submitLabel }: ServiceFormProps) {
+  const [form, setForm] = useState<ServiceFormState>({
+    ...INITIAL_STATE,
+    ...initialValues,
+  });
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<null | string>(null);
+
+  // Dynamic options for creatable select fields
+  const [categoryOptions, setCategoryOptions] = useState<Array<{ id: string; label: string }>>([
+    { id: "Servicios básicos", label: "Servicios básicos" },
+    { id: "Marketing", label: "Marketing" },
+    { id: "Arriendo", label: "Arriendo" },
+    { id: "Nómina", label: "Nómina" },
+  ]);
+  const [serviceTypeOptions, setServiceTypeOptions] = useState<
+    Array<{ id: string; label: string }>
+  >([
+    { id: "BUSINESS", label: "Operación general" },
+    { id: "SUPPLIER", label: "Proveedor" },
+    { id: "UTILITY", label: "Servicios básicos" },
+    { id: "LEASE", label: "Arriendo / leasing" },
+    { id: "SOFTWARE", label: "Software / suscripciones" },
+    { id: "TAX", label: "Impuestos / contribuciones" },
+    { id: "PERSONAL", label: "Personal" },
+    { id: "OTHER", label: "Otro" },
+  ]);
+  const [ownershipOptions, setOwnershipOptions] = useState<Array<{ id: string; label: string }>>([
+    { id: "COMPANY", label: "Empresa" },
+    { id: "OWNER", label: "Personal del dueño" },
+    { id: "MIXED", label: "Compartido" },
+    { id: "THIRD_PARTY", label: "Terceros" },
+  ]);
+  const [obligationTypeOptions, setObligationTypeOptions] = useState<
+    Array<{ id: string; label: string }>
+  >([
+    { id: "SERVICE", label: "Servicio / gasto" },
+    { id: "DEBT", label: "Deuda" },
+    { id: "LOAN", label: "Préstamo" },
+    { id: "OTHER", label: "Otro" },
+  ]);
+
+  const effectiveSubmitLabel = submitLabel ?? "Crear servicio";
+  const submittingLabel = submitLabel ? "Guardando..." : "Creando...";
+
+  useEffect(() => {
+    setForm(initialValues ? resetFormState(initialValues) : INITIAL_STATE);
+  }, [initialValues]);
+
+  // Extract mode values to prevent unnecessary effect runs
+  const lateFeeMode = form.lateFeeMode ?? "NONE";
+  const emissionMode = form.emissionMode ?? "FIXED_DAY";
+
+  // Clear late fee fields when mode is NONE
+  useEffect(() => {
+    if (lateFeeMode === "NONE") {
+      setForm((prev) => {
+        if (prev.lateFeeValue != null || prev.lateFeeGraceDays != null) {
+          return { ...prev, lateFeeGraceDays: null, lateFeeValue: null };
+        }
+        return prev;
+      });
+    }
+  }, [lateFeeMode]);
+
+  const { data: counterparts = [] } = useQuery({
+    queryFn: fetchCounterparts,
+    queryKey: ["counterparts"],
+  });
+
+  const { data: financeCategories = [] } = useQuery({
+    queryFn: async () => {
+      const payload = z
+        .object({
+          data: z.array(FinanceCategorySchema),
+          status: z.literal("ok"),
+        })
+        .parse(await financeORPCClient.categoriesList());
+      return payload.data.filter((category) => !isNonAccountableCategory(category));
+    },
+    queryKey: ["TransactionCategory", "service-form"],
+  });
+
+  const { data: accounts = [] } = useQuery<CounterpartAccount[]>({
+    enabled: Boolean(form.counterpartId),
+    queryFn: async () => {
+      if (!form.counterpartId) {
+        return [];
+      }
+      const detail = await fetchCounterpart(form.counterpartId);
+      return detail.accounts;
+    },
+    queryKey: ["counterpart-accounts", form.counterpartId],
+  });
+
+  const counterpartsError = null; // Suspense handles errors
+
+  // Sync error handling roughly to previous (though React Query handles this better naturally)
+
+  // Adjust emission fields based on emission mode
+  useEffect(() => {
+    setForm((prev) => applyEmissionMode(prev, emissionMode));
+  }, [emissionMode]);
+
+  const handleChange = <K extends keyof ServiceFormState>(key: K, value: ServiceFormState[K]) => {
+    setForm((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const handleCounterpartSelect = (value: string) => {
+    const id = value ? Number(value) : null;
+    handleChange("counterpartId", id);
+    handleChange("counterpartAccountId", null);
+    // Accounts will reload automatically via useQuery dependency on form.counterpartId
+  };
+
+  const handleCreateCategory = (newCategory: string) => {
+    const newOption = { id: newCategory, label: newCategory };
+    setCategoryOptions((prev) =>
+      prev.some((opt) => opt.id === newCategory) ? prev : [...prev, newOption]
+    );
+    handleChange("category", newCategory);
+  };
+
+  const handleCreateServiceType = (newType: string) => {
+    const newOption = { id: newType, label: newType };
+    setServiceTypeOptions((prev) =>
+      prev.some((opt) => opt.id === newType) ? prev : [...prev, newOption]
+    );
+    handleChange("serviceType", newType as ServiceType);
+  };
+
+  const handleCreateOwnership = (newOwnership: string) => {
+    const newOption = { id: newOwnership, label: newOwnership };
+    setOwnershipOptions((prev) =>
+      prev.some((opt) => opt.id === newOwnership) ? prev : [...prev, newOption]
+    );
+    handleChange("ownership", newOwnership as ServiceOwnership);
+  };
+
+  const handleCreateObligationType = (newObligation: string) => {
+    const newOption = { id: newObligation, label: newObligation };
+    setObligationTypeOptions((prev) =>
+      prev.some((opt) => opt.id === newObligation) ? prev : [...prev, newOption]
+    );
+    handleChange("obligationType", newObligation as ServiceObligationType);
+  };
+
+  const effectiveMonths =
+    form.recurrenceType === "ONE_OFF" || form.frequency === "ONCE"
+      ? 1
+      : (form.monthsToGenerate ?? 12);
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setSubmitting(true);
+    setError(null);
+    try {
+      const payload = buildServicePayload(form, emissionMode, lateFeeMode);
+
+      await onSubmit(payload);
+      if (!initialValues) {
+        setForm(INITIAL_STATE);
+        // setAccounts([]); // Handled by useQuery dependency
+      }
+    } catch (error_) {
+      const message = error_ instanceof Error ? error_.message : "No se pudo crear el servicio";
+      setError(message);
+      throw error_;
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <Form className="space-y-6" onSubmit={handleSubmit} validationBehavior="aria">
+      <BasicInfoSection
+        category={form.category}
+        categoryOptions={categoryOptions}
+        detail={form.detail}
+        name={form.name}
+        notes={form.notes}
+        reminderDaysBefore={form.reminderDaysBefore ?? 3}
+        transactionCategories={financeCategories}
+        transactionCategoryId={form.transactionCategoryId}
+        onChange={handleChange}
+        onCreateCategory={handleCreateCategory}
+      />
+
+      <section className="rounded-2xl border border-default-200/70 p-4">
+        <Switch
+          isSelected={form.autoLinkTransactions ?? true}
+          onChange={(value) => {
+            handleChange("autoLinkTransactions", value);
+          }}
+        >
+          <Switch.Content>
+            Auto-vincular transacciones por categoría financiera
+            <Description className="text-default-500 text-xs">
+              Asigna movimientos automáticamente usando la categoría financiera del servicio.
+            </Description>
+          </Switch.Content>
+        </Switch>
+      </section>
+
+      <ServiceClassificationSection
+        obligationType={form.obligationType}
+        obligationTypeOptions={obligationTypeOptions}
+        onChange={handleChange}
+        ownership={form.ownership}
+        ownershipOptions={ownershipOptions}
+        recurrenceType={form.recurrenceType}
+        serviceType={form.serviceType}
+        serviceTypeOptions={serviceTypeOptions}
+        onCreateServiceType={handleCreateServiceType}
+        onCreateOwnership={handleCreateOwnership}
+        onCreateObligationType={handleCreateObligationType}
+      />
+
+      <CounterpartSection
+        accountReference={form.accountReference}
+        accounts={accounts}
+        accountsLoading={false}
+        counterpartAccountId={form.counterpartAccountId}
+        counterpartId={form.counterpartId}
+        counterparts={counterparts}
+        counterpartsError={counterpartsError}
+        counterpartsLoading={false}
+        onChange={handleChange}
+        onCounterpartSelect={handleCounterpartSelect}
+      />
+
+      <SchedulingSection
+        dueDay={form.dueDay}
+        effectiveMonths={effectiveMonths}
+        frequency={form.frequency}
+        monthsToGenerate={form.monthsToGenerate}
+        onChange={handleChange}
+        recurrenceType={form.recurrenceType}
+        startDate={form.startDate}
+      />
+
+      <EmissionSection
+        emissionDay={form.emissionDay}
+        emissionEndDay={form.emissionEndDay}
+        emissionExactDate={form.emissionExactDate}
+        emissionMode={form.emissionMode}
+        emissionStartDay={form.emissionStartDay}
+        errors={{}}
+        onChange={handleChange}
+      />
+
+      <FinancialSection
+        amountIndexation={form.amountIndexation}
+        defaultAmount={form.defaultAmount}
+        lateFeeGraceDays={form.lateFeeGraceDays}
+        lateFeeMode={form.lateFeeMode}
+        lateFeeValue={form.lateFeeValue}
+        onChange={handleChange}
+      />
+
+      {error && (
+        <Description className="rounded-lg bg-rose-100 px-4 py-2 text-rose-700 text-sm">
+          {error}
+        </Description>
+      )}
+      <div className="flex justify-end gap-3">
+        <Button isDisabled={submitting} onPress={onCancel} type="button" variant="secondary">
+          Cancelar
+        </Button>
+        <Button isDisabled={submitting} type="submit">
+          {submitting ? submittingLabel : effectiveSubmitLabel}
+        </Button>
+      </div>
+    </Form>
+  );
+}

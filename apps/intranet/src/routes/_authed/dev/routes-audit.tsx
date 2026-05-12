@@ -1,0 +1,230 @@
+import { Card, Chip, SearchField, ToggleButton, ToggleButtonGroup, Toolbar } from "@heroui/react";
+import { useQuery } from "@tanstack/react-query";
+import { createFileRoute, useRouter } from "@tanstack/react-router";
+import { AlertCircle, CheckCircle, Settings, ShieldAlert } from "lucide-react";
+import { useMemo, useState } from "react";
+// Import dynamically to avoid bundling in prod if not tree-shaken correctly by router
+// But for this dev page we can import directly for simplicity as the route itself should be dev-only
+import { auditRouteNavigation } from "@/lib/route-utils";
+
+export const Route = createFileRoute("/_authed/dev/routes-audit")({
+  component: RoutesAuditPage,
+});
+
+function RoutesAuditPage() {
+  const router = useRouter();
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filter, setFilter] = useState<"all" | "valid" | "technical" | "error">("all");
+  const selectedFilterKeys = useMemo(() => new Set([filter]), [filter]);
+
+  const { data: audit } = useQuery({
+    queryKey: ["routes-audit"],
+    queryFn: () => auditRouteNavigation(router.routeTree),
+  });
+
+  const stats = useMemo(() => {
+    if (!audit) {
+      return { valid: 0, technical: 0, error: 0, total: 0 };
+    }
+    const errorCount = audit.missingNav.length + audit.missingPermission.length;
+    return {
+      valid: audit.validRoutes.length,
+      technical: audit.technicalRoutes.length,
+      error: errorCount,
+      total: audit.validRoutes.length + audit.technicalRoutes.length + errorCount,
+    };
+  }, [audit]);
+
+  const filteredRoutes = useMemo(() => {
+    if (!audit) {
+      return [];
+    }
+
+    let routes: Array<{ path: string; status: "valid" | "technical" | "error"; message?: string }> =
+      [];
+
+    // Add valid routes
+    routes.push(...audit.validRoutes.map((path) => ({ path, status: "valid" as const })));
+
+    // Add technical routes
+    routes.push(
+      ...audit.technicalRoutes.map((path) => ({
+        path,
+        status: "technical" as const,
+        message: "Auto-excluded",
+      }))
+    );
+
+    // Add missing nav errors
+    routes.push(
+      ...audit.missingNav.map((path) => ({
+        path,
+        status: "error" as const,
+        message: "Missing staticData.nav",
+      }))
+    );
+
+    // Add missing permission errors
+    routes.push(
+      ...audit.missingPermission.map((path) => ({
+        path,
+        status: "error" as const,
+        message: "Missing staticData.permission",
+      }))
+    );
+
+    // Filter by text
+    if (searchTerm) {
+      routes = routes.filter((r) => r.path.toLowerCase().includes(searchTerm.toLowerCase()));
+    }
+
+    // Filter by type
+    if (filter !== "all") {
+      routes = routes.filter((r) => r.status === filter);
+    }
+
+    return routes.sort((a, b) => a.path.localeCompare(b.path));
+  }, [audit, searchTerm, filter]);
+
+  if (!audit) {
+    return <div>Loading...</div>;
+  }
+
+  return (
+    <div className="w-full space-y-6 px-4 py-8 md:px-6">
+      {/* Stats Cards */}
+      <div className="grid gap-4 md:grid-cols-4">
+        <Card>
+          <Card.Header className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <Card.Title className="font-medium text-sm">Total Routes</Card.Title>
+            <Settings className="size-4 text-muted-foreground" />
+          </Card.Header>
+          <Card.Content>
+            <div className="font-bold text-2xl">{stats.total}</div>
+          </Card.Content>
+        </Card>
+        <Card>
+          <Card.Header className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <Card.Title className="font-medium text-sm">Valid Pages</Card.Title>
+            <CheckCircle className="size-4 text-success" />
+          </Card.Header>
+          <Card.Content>
+            <div className="font-bold text-2xl">{stats.valid}</div>
+            <p className="text-muted-foreground text-xs">With proper metadata</p>
+          </Card.Content>
+        </Card>
+        <Card>
+          <Card.Header className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <Card.Title className="font-medium text-sm">Technical</Card.Title>
+            <Settings className="size-4 text-muted-foreground" />
+          </Card.Header>
+          <Card.Content>
+            <div className="font-bold text-2xl">{stats.technical}</div>
+            <p className="text-muted-foreground text-xs">Auto-excluded from nav</p>
+          </Card.Content>
+        </Card>
+        <Card>
+          <Card.Header className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <Card.Title className="font-medium text-sm">Errors</Card.Title>
+            <AlertCircle className="size-4 text-danger" />
+          </Card.Header>
+          <Card.Content>
+            <div className="font-bold text-2xl text-danger">{stats.error}</div>
+            <p className="text-muted-foreground text-xs">Missing required data</p>
+          </Card.Content>
+        </Card>
+      </div>
+
+      <div className="space-y-4">
+        <Toolbar
+          aria-label="Filtros de auditoría de rutas"
+          className="w-full grid-flow-row items-stretch gap-3 sm:grid-flow-col sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"
+        >
+          <SearchField
+            className="w-full"
+            value={searchTerm}
+            onChange={(v) => setSearchTerm(v)}
+            variant="secondary"
+          >
+            <SearchField.Group>
+              <SearchField.SearchIcon />
+              <SearchField.Input placeholder="Search routes..." />
+              <SearchField.ClearButton />
+            </SearchField.Group>
+          </SearchField>
+          <ToggleButtonGroup
+            disallowEmptySelection
+            selectedKeys={selectedFilterKeys}
+            selectionMode="single"
+            onSelectionChange={(keys) => {
+              const [next] = Array.from(keys);
+              if (next) {
+                setFilter(next as "all" | "valid" | "technical" | "error");
+              }
+            }}
+          >
+            <ToggleButton id="all">All</ToggleButton>
+            <ToggleButton id="valid">
+              <ToggleButtonGroup.Separator />
+              Valid
+            </ToggleButton>
+            <ToggleButton id="technical">
+              <ToggleButtonGroup.Separator />
+              Technical
+            </ToggleButton>
+            <ToggleButton id="error">
+              <ToggleButtonGroup.Separator />
+              Errors
+            </ToggleButton>
+          </ToggleButtonGroup>
+        </Toolbar>
+
+        <div className="rounded-md border">
+          <div className="grid grid-cols-12 gap-4 bg-default-50 px-4 py-3 font-medium text-sm">
+            <div className="col-span-8">Route Path</div>
+            <div className="col-span-2">Status</div>
+            <div className="col-span-2">Notes</div>
+          </div>
+          <div className="divide-y">
+            {filteredRoutes.map((route) => (
+              <div
+                key={route.path}
+                className="grid grid-cols-12 items-center gap-4 px-4 py-3 text-sm hover:bg-background"
+              >
+                <div className="col-span-8 font-mono">{route.path}</div>
+                <div className="col-span-2">
+                  {route.status === "valid" && (
+                    <Chip
+                      color="success"
+                      variant="tertiary"
+                      className="border-success-soft-hover bg-success/10 text-success"
+                    >
+                      <CheckCircle className="size-3" />
+                      <Chip.Label>Valid</Chip.Label>
+                    </Chip>
+                  )}
+                  {route.status === "technical" && (
+                    <Chip color="default" variant="secondary">
+                      <Settings className="size-3" />
+                      <Chip.Label>Technical</Chip.Label>
+                    </Chip>
+                  )}
+                  {route.status === "error" && (
+                    <Chip color="danger" variant="primary">
+                      <ShieldAlert className="size-3" />
+                      <Chip.Label>Error</Chip.Label>
+                    </Chip>
+                  )}
+                </div>
+                <div className="col-span-2 text-muted-foreground text-xs">{route.message}</div>
+              </div>
+            ))}
+            {filteredRoutes.length === 0 && (
+              <div className="py-8 text-center text-muted-foreground">No routes found</div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

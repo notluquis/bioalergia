@@ -1,0 +1,169 @@
+/**
+ * Styles for TimesheetAuditCalendar
+ * Integrated with DaisyUI tokens
+ */
+
+.timesheet-audit-calendar-wrapper {
+  position: relative;
+}
+
+/* FullCalendar base styling */
+.timesheet-audit-calendar-wrapper :is(.fc) {
+  --fc-page-bg-color: var(--color-background);
+  --fc-border-color: color-mix(in oklch, var(--color-foreground) 12%, transparent);
+  --fc-button-bg-color: var(--color-primary);
+  --fc-button-border-color: var(--color-primary);
+  --fc-button-text-color: var(--color-primary-foreground);
+  --fc-button-hover-bg-color: color-mix(
+    in oklch,
+    var(--color-primary) 85%,
+    var(--color-foreground) 15%
+  );
+  --fc-button-hover-border-color: color-mix(
+    in oklch,
+    var(--color-primary) 85%,
+    var(--color-foreground) 15%
+  );
+  --fc-button-active-bg-color: color-mix(
+    in oklch,
+    var(--color-primary) 75%,
+    var(--color-foreground) 25%
+  );
+  --fc-button-active-border-color: color-mix(
+    in oklch,
+    var(--color-primary) 75%,
+    var(--color-foreground) 25%
+  );
+  --fc-today-bg-color: color-mix(in oklch, var(--color-primary) 12%, transparent);
+  --fc-now-indicator-color: var(--color-warning);
+}
+
+.timesheet-audit-calendar-wrapper .fc-button-primary {
+  border-radius: 0.75rem;
+  color: var(--fc-button-text-color);
+  text-transform: capitalize;
+  font-weight: 500;
+}
+
+.timesheet-audit-calendar-wrapper .fc-toolbar-title {
+  font-size: 1.05rem;
+  font-weight: 600;
+  text-wrap: balance;
+}
+
+.timesheet-audit-calendar-wrapper .fc-header-toolbar {
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.timesheet-audit-calendar-wrapper .fc-toolbar-chunk {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.timesheet-audit-calendar-wrapper .fc-col-header-cell {
+  background-color: var(--default-100);
+  padding: 12px 4px;
+  border-color: var(--default-200);
+  font-weight: 600;
+}
+
+.timesheet-audit-calendar-wrapper .fc-daygrid-day {
+  background-color: var(--default-50);
+  border-color: var(--default-200);
+}
+
+.timesheet-audit-calendar-wrapper .fc-daygrid-day-frame {
+  min-height: 80px;
+}
+
+/* Timesheet event styling */
+.timesheet-audit-event {
+  padding: 4px 6px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  border-radius: 4px;
+  white-space: normal;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.timesheet-audit-event-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.timesheet-audit-event-time {
+  font-size: 0.65rem;
+  font-weight: 600;
+  opacity: 0.85;
+}
+
+.timesheet-audit-event-title {
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.timesheet-audit-event:hover {
+  opacity: 0.9;
+  box-shadow: var(--shadow-md, 0 2px 8px rgba(0, 0, 0, 0.15));
+  z-index: 10;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .timesheet-audit-calendar-wrapper .fc-header-toolbar {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .timesheet-audit-calendar-wrapper .fc-button-group {
+    flex-wrap: wrap;
+    width: 100%;
+  }
+
+  .timesheet-audit-calendar-wrapper .fc-button {
+    font-size: 0.75rem;
+    padding: 6px 12px;
+  }
+
+  .timesheet-audit-event {
+    padding: 2px 4px;
+    font-size: 0.625rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .timesheet-audit-calendar-wrapper .fc-toolbar-title {
+    font-size: 0.95rem;
+    text-align: center;
+  }
+
+  .timesheet-audit-calendar-wrapper .fc-toolbar-chunk {
+    justify-content: center;
+  }
+
+  .timesheet-audit-calendar-wrapper .fc-button {
+    font-size: 0.7rem;
+    padding: 5px 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .timesheet-audit-calendar-wrapper .fc-button {
+    font-size: 0.65rem;
+    padding: 4px 8px;
+  }
+}
+
+/* Dark mode support */
+.timesheet-audit-calendar-wrapper .timesheet-audit-event {
+  text-shadow: 0 0 0 transparent;
+}
+
+.timesheet-audit-calendar-wrapper .timesheet-audit-event.has-overlap {
+  box-shadow: var(--shadow-md, 0 2px 8px rgba(0, 0, 0, 0.25));
+}

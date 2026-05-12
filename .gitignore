@@ -1,77 +1,147 @@
-node_modules
-dist
-server/uploads
-dist/server/uploads
-storage/
-.vite
-.DS_Store
-.vscode/
-# Variables de entorno sensibles
-.env
-.env.local
-.env.production
-.env.staging
-.env.development
-.env.test
-
-# Archivos permitidos de dotenv
-# .env.example (para documentación)
-# .env.vault (para secrets encriptados)
-
-.idea
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-*.log
-coverage
-*.tsbuildinfo
-*.tgz
-tmp/
-temp/
-pnpm-lock.yaml
-pnpm-debug.log*
-.env.keys
-mysql/josema22_bioalergia.create
-mysql/josema22_bioalergia.sql
-mysql/josema22_wp560.create
-mysql/josema22_wp560.sql
-mysql/openfileslimit
-docs/lint-summary.md
-lint-report.json
-typecheck-report.txt
-docs/typecheck-summary.md
-mercadopago_movimientos_diarios.ipynb
-reports/movimientos_20251011.csv
-mysql/service_seed_2024_2026.sql
-scripts/generate-service-seed.ts
-/generated/prisma
-
-# Additional ignores (catch common build/artifact folders)
+# Dependencies
 node_modules/
+package-lock.json
+
+
+# Build outputs
 dist/
 build/
-coverage/
-.parcel-cache/
-.next/
-.nuxt/
-.turbo/
-.cache/
 .vite/
-/.turbo
-.DS_Store
-*.log
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-/.env
-/.env.*
+*.tsbuildinfo
 
-# VSCode
-.vscode/
+# Environment variables
+.env
+.env.*
+!.env.example
 
-# OS
-.DS_Store
-
-# Generated prisma client (ensure untracked)
+# Generated files
 generated/
+coverage/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor
+.idea/
+.vscode/*
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Storage and uploads
+storage/
+server/uploads/
+uploads/
+
+# Test outputs
+test_output*.txt
+
+# Database dumps
+mysql/
+postgres/
+
+# Temp files
+tmp/
+temp/
+*.tgz
+
+# IDE specific
+.DS_Store
+.env.local
+.env.*.local
+
+# Optional npm cache directory
+.npm
+
+# Output of 'npm pack'
+*.tgz
+
+# yarn
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.*
+
+# macOS specific
+*.swp
+*.swo
+
+
+# Turbo
+.turbo
+
+# Local TLS certs
+*.pem
+
+# Local mail-agent runtime artifacts
+artifacts/local-mail-agent.pid
+artifacts/local-mail-agent.sock
+artifacts/local-mail-agent.state.json
+artifacts/type-check-debug/
+
+# Storybook
+storybook-static/
+**/storybook-static/
+**/.storybook/.cache/
+
+# Playwright e2e artefacts
+**/e2e-results/
+**/e2e-report/
+**/playwright-report/
+**/test-results/
+**/.lighthouseci/
+
+# Deployments
+.vercel
+.railway
+
+# Logs & Reports
+lint_output.txt
+junit.xml
+
+# Lockfiles (pnpm is king)
+yarn.lock
+apps/api/assets/signatures/
+.vscode/*
+packages/db/zenstack/~schema.prisma
+
+# Local parser test files (ignored so local debugging tests don't get committed)
+apps/api/src/lib/parsers.test.ts
+apps/api/src/lib/parsers.case_test.ts
+# Generic pattern to ignore parser test variants
+**/src/lib/parsers*.test.ts
+
+# Jupyter notebooks with sensitive data
+docs/*BACKUP*.ipynb
+docs/*BIOALERGIA*.ipynb
+docs/*backup*.ipynb
+*.ipynb.bak
+
+# Email backup directories
+*_backup/
+titan_backup/
+email_backup/
+
+# Baileys WhatsApp auth state
+data/
+
+# Sensitive data files
+**/credentials.json
+**/secrets.json
+**/config.local.json
+
+# Local Claude context (not for repo)
+CLAUDE.local.md
+
+# Loose debug/query scripts in apps/api root (keep config files only)
+apps/api/*.ts
+!apps/api/vitest.config.ts

@@ -1,0 +1,4072 @@
+// ZenStack v3 Schema
+// No Prisma dependency - pure Kysely ORM
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  schemas  = ["public", "personal"]
+}
+
+// Enable access control attributes (@@allow, @@deny)
+plugin policy {
+  provider = '@zenstackhq/plugin-policy'
+}
+
+plugin hooks {
+  provider = '@zenstackhq/tanstack-query/react'
+  output = "../src/zenstack/hooks"
+}
+
+plugin ts {
+  provider = '@core/typescript'
+  output = "../src/zenstack"
+  preserveImportExtensions = true
+}
+
+// ============================================================
+// MODELS
+// ============================================================
+
+model Person {
+  id         Int        @id @default(autoincrement())
+  rut        String?    @unique @db.VarChar(20)
+  names      String
+  fatherName String?    @map("father_name")
+  motherName String?    @map("mother_name")
+  email      String?    @unique
+  phone      String?
+  personType PersonType @default(NATURAL) @map("person_type")
+  createdAt  DateTime   @default(now()) @map("created_at")
+  updatedAt  DateTime   @default(now()) @updatedAt @map("updated_at")
+  employee   Employee?
+  user       User?
+  patient    Patient?
+  addresses  Address[]
+
+  // Access policies
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@map("people")
+}
+
+/// Structured postal/shipping address for a Person.
+/// Multiple per person allowed (home, work, etc). One marked isPrimary.
+/// Fields beyond user input (coverageCode, regionCode) are derived from
+/// the carrier's coverage API at the time the user picks region/comuna.
+model Address {
+  id           Int      @id @default(autoincrement())
+  personId     Int      @map("person_id")
+
+  // User input
+  label        String   @default("Principal")
+  street       String
+  number       String
+  supplement   String?  // depto/casa
+  reference    String?  // observación/referencia
+  postalCode   String?  @map("postal_code")
+
+  // Display strings selected from dropdowns
+  comuna       String                                // "Las Condes"
+  region       String                                // "METROPOLITANA DE SANTIAGO"
+
+  // Carrier-derived codes (Chilexpress geocoverage)
+  coverageCode String?  @map("coverage_code")        // "LCON" — countyCode
+  regionCode   String?  @map("region_code")          // "RM" — regionId
+
+  // INE codes — bridges with SII / national stats
+  ineRegionCode  Int?   @map("ine_region_code")
+  ineCountyCode  Int?   @map("ine_county_code")
+
+  // Carrier capability flags cached at coverage selection
+  supportsCashOnDelivery Boolean? @map("supports_cash_on_delivery")
+  supportsReturn         Boolean? @map("supports_return")
+
+  // Geocoding (filled async via Chilexpress addresses/georeference)
+  latitude     Decimal? @db.Decimal(10, 7)
+  longitude    Decimal? @db.Decimal(10, 7)
+  chilexpressAddressId Int? @map("chilexpress_address_id")
+
+  // Country (ISO-3166-1 alpha-2). Hardcoded "CL" for now.
+  countryCode  String   @default("CL") @map("country_code")
+
+  // Metadata
+  isPrimary    Boolean  @default(false) @map("is_primary")
+  isActive     Boolean  @default(true)  @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at")
+
+  person       Person   @relation(fields: [personId], references: [id], onDelete: Cascade)
+
+  @@index([personId])
+  @@index([personId, isPrimary])
+
+  // Access policies — same as Person (only authenticated active users mutate)
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@map("addresses")
+}
+
+model User {
+  id                      Int                      @id @default(autoincrement())
+  personId                Int                      @unique @map("person_id")
+  loginEmail              String?                  @unique @map("login_email")
+  passwordHash            String?                  @map("password_hash")
+  status                  UserStatus               @default(PENDING_SETUP)
+  mfaSecret               String?                  @map("mfa_secret")
+  mfaEnabled              Boolean                  @default(false) @map("mfa_enabled")
+  sessionVersion          Int                      @default(1) @map("session_version")
+  // Brute-force defense: temporary lock after N consecutive failed
+  // password verifications. Reset on successful login.
+  failedLoginAttempts     Int                      @default(0) @map("failed_login_attempts")
+  lockedUntil             DateTime?                @map("locked_until")
+  // Sliding session inactivity (8h max). Updated on every authed
+  // request via session middleware. Older than threshold → forced relogin.
+  lastActivityAt          DateTime?                @map("last_activity_at")
+  lastLoginAt             DateTime?                @map("last_login_at")
+  lastLoginIp             String?                  @map("last_login_ip")
+
+
+  // Relationships
+  passkeys                Passkey[]
+
+  createdAt               DateTime                 @default(now()) @map("created_at")
+  updatedAt               DateTime                 @default(now()) @updatedAt @map("updated_at")
+  mfaEnforced             Boolean                  @default(true) @map("mfa_enforced")
+
+  dailyProductionBalances DailyProductionBalance[]
+  pushSubscriptions       PushSubscription[]
+  supplyRequests          SupplyRequest[]
+  roles                   UserRoleAssignment[]
+  medicalCertificates     MedicalCertificate[]
+  issuedDebugTokens       DebugToken[]               @relation("DebugTokenIssuedBy")
+  targetDebugTokens       DebugToken[]               @relation("DebugTokenTarget")
+  patientAttachments      PatientAttachment[]
+  eventDteAutoLinkAttempts EventDteAutoLinkAttempt[]
+  eventDteMatchReviews    EventDteMatchReview[]
+  eventDteSaleLinks       EventDteSaleLink[]
+  attendanceMarkCorrections AttendanceMark[]
+  abandonmentContacts     AbandonmentContact[]
+  doctoraliaCookieStoreUpdates DoctoraliaCookieStore[]
+  person                  Person                   @relation(fields: [personId], references: [id], onDelete: Cascade)
+
+  // This model represents the authenticated user
+  @@auth
+
+  // Access policies
+  // Allow read for authentication flows (login/passkey), but deny mutations when not authenticated
+  @@deny('create,update,delete', auth() == null)
+  @@allow('read', true)
+  @@allow('update', auth().id == id)
+  @@allow('all', auth().status == 'ACTIVE')
+
+  @@map("users")
+}
+
+model DebugToken {
+  id             Int       @id @default(autoincrement())
+  jti            String    @unique
+  issuedByUserId Int       @map("issued_by_user_id")
+  targetUserId   Int       @map("target_user_id")
+  audience       String
+  reason         String
+  scopes         Json
+  expiresAt      DateTime  @map("expires_at")
+  usedAt         DateTime? @map("used_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  issuedByUser   User      @relation("DebugTokenIssuedBy", fields: [issuedByUserId], references: [id], onDelete: Restrict)
+  targetUser     User      @relation("DebugTokenTarget", fields: [targetUserId], references: [id], onDelete: Restrict)
+
+  @@deny('all', auth() == null)
+  @@allow('read', auth() != null)
+  @@allow('create,update', auth().status == 'ACTIVE')
+
+  @@index([targetUserId])
+  @@index([expiresAt])
+  @@map("debug_tokens")
+}
+
+model Passkey {
+  id             String    @id @default(cuid())
+  userId         Int
+  credentialId   String    @unique @map("credential_id")
+  publicKey      Bytes     @map("public_key")
+  counter        BigInt    @default(0)
+  transports     Json?
+  webAuthnUserID String    @map("webauthn_user_id")
+  deviceType     String    @map("device_type") // "singleDevice" | "multiDevice"
+  backedUp       Boolean   @default(false) @map("backed_up")
+  friendlyName   String?   @map("friendly_name")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  lastUsedAt     DateTime? @map("last_used_at")
+
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Access policies
+  @@allow('create,read,delete', auth().id == userId)
+  @@allow('read', auth() != null)
+
+  @@index([userId])
+  @@map("passkeys")
+}
+
+model Role {
+  id          Int                  @id @default(autoincrement())
+  name        String               @unique
+  description String?
+  createdAt   DateTime             @default(now()) @map("created_at")
+  updatedAt   DateTime             @default(now()) @updatedAt @map("updated_at")
+  isSystem    Boolean              @default(false) @map("is_system")
+  permissions RolePermission[]
+  users       UserRoleAssignment[]
+
+  // Access policies
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@map("roles")
+}
+
+model Permission {
+  id          Int              @id @default(autoincrement())
+  action      String
+  subject     String
+  description String?
+  createdAt   DateTime         @default(now()) @map("created_at")
+  updatedAt   DateTime         @default(now()) @updatedAt @map("updated_at")
+  roles       RolePermission[]
+
+  // Access policies
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@unique([action, subject])
+  @@map("permissions")
+}
+
+model RolePermission {
+  roleId       Int        @map("role_id")
+  permissionId Int        @map("permission_id")
+  conditions   Json?
+  createdAt    DateTime   @default(now()) @map("created_at")
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  
+  // Access policies
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,delete', auth().status == 'ACTIVE')
+
+  @@map("role_permissions")
+}
+
+model UserRoleAssignment {
+  userId     Int      @map("user_id")
+  roleId     Int      @map("role_id")
+  assignedAt DateTime @default(now()) @map("assigned_at")
+  role       Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roleId])
+  
+  // Access policies
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,delete', auth().status == 'ACTIVE')
+
+  @@map("user_role_assignments")
+}
+
+model Employee {
+  id                Int                 @id @default(autoincrement())
+  personId          Int                 @unique @map("person_id")
+  position          String
+  department        String?
+  startDate         DateTime            @map("start_date") @db.Date
+  endDate           DateTime?           @map("end_date") @db.Date
+  status            EmployeeStatus      @default(ACTIVE)
+  salaryType        EmployeeSalaryType  @default(FIXED) @map("salary_type")
+  baseSalary        Decimal             @default(0) @map("base_salary") @db.Decimal(12, 2)
+  hourlyRate        Decimal?            @map("hourly_rate") @db.Decimal(10, 2)
+  bankName          String?             @map("bank_name")
+  bankAccountType   String?             @map("bank_account_type")
+  bankAccountNumber String?             @map("bank_account_number")
+  createdAt         DateTime            @default(now()) @map("created_at")
+  updatedAt         DateTime            @default(now()) @updatedAt @map("updated_at")
+  metadata          Json?
+  overtimeRate      Decimal?            @map("overtime_rate") @db.Decimal(10, 2)
+  retentionRate     Decimal             @default(0.145) @map("retention_rate") @db.Decimal(5, 4)
+  timesheets        EmployeeTimesheet[]
+  attendanceMarks   AttendanceMark[]
+  person            Person              @relation(fields: [personId], references: [id], onDelete: Cascade)
+
+  // Access policies
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@map("employees")
+}
+
+model AttendanceMark {
+  id              BigInt             @id @default(autoincrement())
+  employeeId      Int                @map("employee_id")
+  markedAt        DateTime           @map("marked_at")
+  type            AttendanceMarkType
+  latitude        Float?
+  longitude       Float?
+  accuracyMeters  Float?             @map("accuracy_meters")
+  ipAddress       String?            @map("ip_address") @db.VarChar(45)
+  isOfficeNetwork Boolean            @default(false) @map("is_office_network")
+  userAgent       String?            @map("user_agent") @db.VarChar(512)
+  connectionType  String?            @map("connection_type") @db.VarChar(50)
+  downlinkMbps    Float?             @map("downlink_mbps")
+  isMobile        Boolean?           @map("is_mobile")
+  clientTimezone  String?            @map("client_timezone") @db.VarChar(100)
+  deviceRam       Int?               @map("device_ram")
+  cpuCores        Int?               @map("cpu_cores")
+  screenResolution String?           @map("screen_resolution") @db.VarChar(30)
+  devicePixelRatio Float?            @map("device_pixel_ratio")
+  notes           String?
+  createdByUserId Int?               @map("created_by_user_id")
+  employee        Employee           @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  createdByUser   User?              @relation(fields: [createdByUserId], references: [id])
+
+  // Access policies
+  @@deny('all', auth() == null)
+  @@allow('read', auth().status == 'ACTIVE')
+  @@allow('create', auth().status == 'ACTIVE')
+  // update/delete restricted to admin via CASL checks in the handler
+
+  @@index([employeeId, markedAt])
+  @@map("attendance_marks")
+}
+
+model OfficeNetwork {
+  id       Int     @id @default(autoincrement())
+  name     String
+  cidr     String  @db.VarChar(50)
+  isActive Boolean @default(true) @map("is_active")
+
+  // Access policies
+  @@deny('all', auth() == null)
+  @@allow('read', auth().status == 'ACTIVE')
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@map("office_networks")
+}
+
+model Counterpart {
+  id                     Int                         @id @default(autoincrement())
+  identificationNumber   String                      @unique @map("identification_number") @db.VarChar(50)
+  bankAccountHolder      String                      @map("bank_account_holder") @db.VarChar(255)
+  category               CounterpartCategory         @default(SUPPLIER)
+  notes                  String?
+  createdAt              DateTime                    @default(now()) @map("created_at")
+  updatedAt              DateTime                    @default(now()) @updatedAt @map("updated_at")
+  
+  // Relations
+  accounts               CounterpartAccount[]
+  autoCategoryRules      FinancialAutoCategoryRule[]
+  compensationProfiles   CompensationProfile[]
+  financialTransactions  FinancialTransaction[]
+  withdrawTransactions   WithdrawTransaction[]
+  releaseTransactions    ReleaseTransaction[]
+  settlementTransactions SettlementTransaction[]
+  services               Service[]
+
+  // Access policies
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@map("counterparts")
+}
+
+model CounterpartAccount {
+  id            Int         @id @default(autoincrement())
+  counterpartId Int         @map("counterpart_id")
+  bankName      String?     @map("bank_name")
+  accountType   String?     @map("account_type")
+  accountNumber String      @map("account_number")
+  counterpart   Counterpart @relation(fields: [counterpartId], references: [id], onDelete: Cascade)
+
+  // Access policies
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@map("counterpart_accounts")
+  @@index([counterpartId])
+  @@unique([accountNumber])
+}
+
+model EmployeeTimesheet {
+  id              BigInt    @id @default(autoincrement())
+  employeeId      Int       @map("employee_id")
+  workDate        DateTime  @map("work_date") @db.Date
+  startTime       DateTime? @map("start_time") @db.Time(6)
+  endTime         DateTime? @map("end_time") @db.Time(6)
+  workedMinutes   Int       @map("worked_minutes")
+  overtimeMinutes Int       @default(0) @map("overtime_minutes")
+  comment         String?
+  employee        Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([employeeId, workDate])
+  @@index([employeeId])
+  // Access policies
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@map("employee_timesheets")
+}
+
+// MercadoPago Settlement Report data (Conciliación)
+model SettlementTransaction {
+  id                   Int               @id @default(autoincrement())
+  
+  // Key identifier - must be unique
+  sourceId             String            @unique @map("source_id") @db.VarChar(100)
+
+  // Counterpart reference
+  identificationNumber String?           @map("identification_number") @db.VarChar(50)
+  
+  // Dates
+  transactionDate      DateTime          @map("transaction_date")
+  settlementDate       DateTime?         @map("settlement_date")
+  moneyReleaseDate     DateTime?         @map("money_release_date")
+  
+  // Operation data
+  externalReference    String?           @map("external_reference") @db.VarChar(255)
+  userId               String?           @map("user_id") @db.VarChar(19)
+  paymentMethodType    String?           @map("payment_method_type") @db.VarChar(200)
+  paymentMethod        String?           @map("payment_method") @db.VarChar(50)
+  site                 String?           @db.VarChar(200)
+  transactionType      String            @map("transaction_type") @db.VarChar(200)
+  transactionAmount    Decimal           @map("transaction_amount") @db.Decimal(17, 2)
+  transactionCurrency  String            @map("transaction_currency") @db.VarChar(10)
+  sellerAmount         Decimal?          @map("seller_amount") @db.Decimal(17, 2)
+  feeAmount            Decimal?          @map("fee_amount") @db.Decimal(17, 2)
+  settlementNetAmount  Decimal?          @map("settlement_net_amount") @db.Decimal(17, 2)
+  settlementCurrency   String?           @map("settlement_currency") @db.VarChar(10)
+  realAmount           Decimal?          @map("real_amount") @db.Decimal(17, 2)
+  couponAmount         Decimal?          @map("coupon_amount") @db.Decimal(17, 2)
+  metadata             Json?
+  mkpFeeAmount         Decimal?          @map("mkp_fee_amount") @db.Decimal(17, 2)
+  financingFeeAmount   Decimal?          @map("financing_fee_amount") @db.Decimal(17, 2)
+  shippingFeeAmount    Decimal?          @map("shipping_fee_amount") @db.Decimal(17, 2)
+  taxesAmount          Decimal?          @map("taxes_amount") @db.Decimal(17, 2)
+  installments         Int?
+  taxDetail            String?           @map("tax_detail") @db.VarChar(50)
+  taxesDisaggregated   Json?             @map("taxes_disaggregated")
+  description          String?           @db.VarChar(50)
+  cardInitialNumber    String?           @map("card_initial_number") @db.VarChar(8)
+  operationTags        Json?             @map("operation_tags")
+  businessUnit         String?           @map("business_unit") @db.VarChar(255)
+  subUnit              String?           @map("sub_unit") @db.VarChar(255)
+  productSku           String?           @map("product_sku") @db.VarChar(200)
+  saleDetail           String?           @map("sale_detail") @db.VarChar(500)
+  transactionIntentId  String?           @map("transaction_intent_id")
+  franchise            String?
+  issuerName           String?           @map("issuer_name")
+  lastFourDigits       String?           @map("last_four_digits") @db.VarChar(4)
+  orderMp              String?           @map("order_mp")
+  invoicingPeriod      String?           @map("invoicing_period")
+  payBankTransferId    String?           @map("pay_bank_transfer_id")
+  isReleased           Boolean?          @map("is_released")
+  tipAmount            Decimal?          @map("tip_amount") @db.Decimal(17, 2)
+  purchaseId           String?           @map("purchase_id")
+  totalCouponAmount    Decimal?          @map("total_coupon_amount") @db.Decimal(17, 2)
+  
+  // POS/Store data
+  posId                String?           @map("pos_id") @db.VarChar(50)
+  posName              String?           @map("pos_name") @db.VarChar(200)
+  externalPosId        String?           @map("external_pos_id") @db.VarChar(100)
+  storeId              String?           @map("store_id") @db.VarChar(50)
+  storeName            String?           @map("store_name") @db.VarChar(200)
+  externalStoreId      String?           @map("external_store_id") @db.VarChar(100)
+  poiId                String?           @map("poi_id") @db.VarChar(50)
+  
+  // Shipping data
+  orderId              BigInt?           @map("order_id")
+  shippingId           BigInt?           @map("shipping_id")
+  shipmentMode         String?           @map("shipment_mode") @db.VarChar(10)
+  packId               BigInt?           @map("pack_id")
+  shippingOrderId      String?           @map("shipping_order_id")
+  
+  // Other wallets/banks
+  poiWalletName        String?           @map("poi_wallet_name") @db.VarChar(200)
+  poiBankName          String?           @map("poi_bank_name") @db.VarChar(200)
+  
+  // Metadata
+  createdAt            DateTime          @default(now()) @map("created_at")
+  updatedAt            DateTime          @default(now()) @updatedAt @map("updated_at")
+
+  // Relations
+  counterpart          Counterpart?      @relation(fields: [identificationNumber], references: [identificationNumber])
+  serviceSchedules     ServiceSchedule[]
+
+  // Access policies
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@index([transactionDate])
+  @@index([transactionType])
+  @@index([externalReference])
+  @@map("settlement_transactions")
+}
+
+// MercadoPago Release Report data (Liberaciones)
+model ReleaseTransaction {
+  id                      Int               @id @default(autoincrement())
+  
+  // Key identifier
+  sourceId                String            @unique @map("source_id") @db.VarChar(100)
+
+  // Counterpart reference
+  identificationNumber    String?           @map("identification_number") @db.VarChar(50)
+
+  date                    DateTime          @map("date")
+  externalReference       String?           @map("external_reference") @db.VarChar(255)
+  recordType              String?           @map("record_type")
+  description             String?           @db.VarChar(500)
+  
+  // Amounts
+  netCreditAmount         Decimal?          @map("net_credit_amount") @db.Decimal(17, 2)
+  netDebitAmount          Decimal?          @map("net_debit_amount") @db.Decimal(17, 2)
+  grossAmount             Decimal           @map("gross_amount") @db.Decimal(17, 2)
+  sellerAmount            Decimal?          @map("seller_amount") @db.Decimal(17, 2)
+  mpFeeAmount             Decimal?          @map("mp_fee_amount") @db.Decimal(17, 2)
+  financingFeeAmount      Decimal?          @map("financing_fee_amount") @db.Decimal(17, 2)
+  shippingFeeAmount       Decimal?          @map("shipping_fee_amount") @db.Decimal(17, 2)
+  taxesAmount             Decimal?          @map("taxes_amount") @db.Decimal(17, 2)
+  couponAmount            Decimal?          @map("coupon_amount") @db.Decimal(17, 2)
+  effectiveCouponAmount   Decimal?          @map("effective_coupon_amount") @db.Decimal(17, 2)
+  balanceAmount           Decimal?          @map("balance_amount") @db.Decimal(17, 2)
+  taxAmountTelco          Decimal?          @map("tax_amount_telco") @db.Decimal(17, 2)
+  
+  // Details
+  installments            Int?
+  paymentMethod           String?           @map("payment_method") @db.VarChar(50)
+  paymentMethodType       String?           @map("payment_method_type") @db.VarChar(200)
+  taxDetail               String?           @map("tax_detail")
+  taxesDisaggregated      Json?             @map("taxes_disaggregated")
+  transactionApprovalDate DateTime?         @map("transaction_approval_date")
+  transactionIntentId     String?           @map("transaction_intent_id")
+  
+  // POS/Store
+  posId                   String?           @map("pos_id")
+  posName                 String?           @map("pos_name")
+  externalPosId           String?           @map("external_pos_id")
+  storeId                 String?           @map("store_id")
+  storeName               String?           @map("store_name")
+  externalStoreId         String?           @map("external_store_id")
+
+  currency                String?           @db.VarChar(10)
+  
+  // Shipping
+  shippingId              BigInt?           @map("shipping_id")
+  shipmentMode            String?           @map("shipment_mode")
+  shippingOrderId         String?           @map("shipping_order_id")
+  
+  // Identifiers
+  orderId                 BigInt?           @map("order_id")
+  packId                  BigInt?           @map("pack_id")
+  poiId                   String?           @map("poi_id")
+  itemId                  String?           @map("item_id")
+  
+  // Card/Payment
+  metadata                Json?
+  cardInitialNumber       String?           @map("card_initial_number") @db.VarChar(8)
+  operationTags           Json?             @map("operation_tags")
+  lastFourDigits          String?           @map("last_four_digits") @db.VarChar(4)
+  franchise               String?
+  issuerName              String?           @map("issuer_name")
+  
+  // Context
+  poiBankName             String?           @map("poi_bank_name")
+  poiWalletName           String?           @map("poi_wallet_name")
+  businessUnit            String?           @map("business_unit")
+  subUnit                 String?           @map("sub_unit")
+  payoutBankAccountNumber String?           @map("payout_bank_account_number")
+  productSku              String?           @map("product_sku")
+  saleDetail              String?           @map("sale_detail")
+
+  orderMp                 String?           @map("order_mp")
+  purchaseId              String?           @map("purchase_id")
+  isReleased              Boolean?          @map("is_released")
+
+  createdAt               DateTime          @default(now()) @map("created_at")
+  updatedAt               DateTime          @default(now()) @updatedAt @map("updated_at")
+
+  // Relations
+  counterpart             Counterpart?      @relation(fields: [identificationNumber], references: [identificationNumber])
+  serviceSchedules        ServiceSchedule[]
+
+  // Access policies
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().roles?[role.name == 'ADMIN'])
+
+  @@index([date])
+  @@index([sourceId])
+  @@map("release_transactions")
+}
+
+// MercadoPago Withdraw Report data (Retiros)
+model WithdrawTransaction {
+  id                   Int               @id @default(autoincrement())
+  withdrawId           String            @unique @map("withdraw_id") @db.VarChar(64)
+  dateCreated          DateTime          @map("date_created")
+  status               String?           @db.VarChar(50)
+  statusDetail         String?           @map("status_detail") @db.VarChar(100)
+  amount               Decimal?          @db.Decimal(17, 2)
+  fee                  Decimal?          @db.Decimal(17, 2)
+  activityUrl          String?           @map("activity_url") @db.VarChar(500)
+  payoutDescription    String?           @map("payout_desc") @db.VarChar(500)
+  bankAccountHolder    String?           @map("bank_account_holder") @db.VarChar(255)
+  identificationType   String?           @map("identification_type") @db.VarChar(50)
+  identificationNumber String?           @map("identification_number") @db.VarChar(50)
+  bankId               String?           @map("bank_id") @db.VarChar(50)
+  bankName             String?           @map("bank_name") @db.VarChar(200)
+  bankBranch           String?           @map("bank_branch") @db.VarChar(200)
+  bankAccountType      String?           @map("bank_account_type") @db.VarChar(50)
+  bankAccountNumber    String?           @map("bank_account_number") @db.VarChar(100)
+
+  createdAt            DateTime          @default(now()) @map("created_at")
+  updatedAt            DateTime          @default(now()) @updatedAt @map("updated_at")
+
+  // Relations
+  counterpart          Counterpart?      @relation(fields: [identificationNumber], references: [identificationNumber])
+  serviceSchedules     ServiceSchedule[]
+
+  // Access policies
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().roles?[role.name == 'ADMIN'])
+
+  @@index([dateCreated])
+  @@index([withdrawId])
+  @@map("withdraw_transactions")
+}
+
+
+model DailyBalance {
+  id        Int      @id @default(autoincrement())
+  date      DateTime @unique @db.Date
+  amount    Decimal  @db.Decimal(15, 2)
+  note      String?
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  // Access policies
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('all', auth().status == 'ACTIVE')
+
+  @@map("daily_balances")
+}
+
+model Service {
+  id                    Int                     @id @default(autoincrement())
+  publicId              String                  @unique @map("public_id")
+  name                  String
+  detail                String?
+  category              String?
+  transactionCategoryId Int?                    @map("transaction_category_id")
+  reminderDaysBefore    Int                     @default(3) @map("reminder_days_before")
+  autoLinkTransactions  Boolean                 @default(true) @map("auto_link_transactions")
+  counterpartId         Int?                    @map("counterpart_id")
+  type                  ServiceType             @default(BUSINESS)
+  recurrenceType        ServiceRecurrenceType   @default(RECURRING) @map("recurrence_type")
+  frequency             ServiceFrequency        @default(MONTHLY)
+  startDate             DateTime                @map("start_date") @db.Date
+  endDate               DateTime?               @map("end_date") @db.Date
+  dueDay                Int?                    @map("due_day")
+  emissionMode          ServiceEmissionMode     @default(FIXED_DAY) @map("emission_mode")
+  emissionDay           Int?                    @map("emission_day")
+  emissionStartDay      Int?                    @map("emission_start_day")
+  emissionEndDay        Int?                    @map("emission_end_day")
+  emissionExactDate     DateTime?               @map("emission_exact_date") @db.Date
+  ownership             ServiceOwnership        @default(COMPANY)
+  obligationType        ServiceObligationType   @default(SERVICE) @map("obligation_type")
+  defaultAmount         Decimal                 @default(0) @map("default_amount") @db.Decimal(15, 2)
+  amountIndexation      ServiceAmountIndexation @default(NONE) @map("amount_indexation")
+  lateFeeMode           ServiceLateFeeMode      @default(NONE) @map("late_fee_mode")
+  lateFeeValue          Decimal?                @map("late_fee_value") @db.Decimal(15, 2)
+  lateFeeGraceDays      Int?                    @map("late_fee_grace_days")
+  nextGenerationMonths  Int                     @default(12) @map("next_generation_months")
+  notes                 String?
+  status                ServiceStatus           @default(ACTIVE)
+  createdAt             DateTime                @default(now()) @map("created_at")
+  updatedAt             DateTime                @default(now()) @updatedAt @map("updated_at")
+  counterpart           Counterpart?            @relation(fields: [counterpartId], references: [id])
+  transactionCategory   TransactionCategory?    @relation(fields: [transactionCategoryId], references: [id], onDelete: SetNull)
+  schedules             ServiceSchedule[]
+
+  //Access policies
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@index([counterpartId])
+  @@index([transactionCategoryId])
+  @@map("services")
+}
+
+model ServiceSchedule {
+  id                      Int                    @id @default(autoincrement())
+  serviceId               Int                    @map("service_id")
+  periodStart             DateTime               @map("period_start") @db.Date
+  periodEnd               DateTime               @map("period_end") @db.Date
+  dueDate                 DateTime               @map("due_date") @db.Date
+  expectedAmount          Decimal                @map("expected_amount") @db.Decimal(15, 2)
+  lateFeeAmount           Decimal                @default(0) @map("late_fee_amount") @db.Decimal(15, 2)
+  effectiveAmount         Decimal                @map("effective_amount") @db.Decimal(15, 2)
+  status                  ServiceScheduleStatus  @default(PENDING)
+  paidAmount              Decimal?               @map("paid_amount") @db.Decimal(15, 2)
+  paidDate                DateTime?              @map("paid_date")
+  financialTransactionId  Int?                   @map("financial_transaction_id")
+  settlementTransactionId Int?                   @map("settlement_transaction_id")
+  releaseTransactionId    Int?                   @map("release_transaction_id")
+  withdrawTransactionId   Int?                   @map("withdraw_transaction_id")
+  note                    String?
+  createdAt               DateTime               @default(now()) @map("created_at")
+  updatedAt               DateTime               @default(now()) @updatedAt @map("updated_at")
+  service                 Service                @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  financialTransaction    FinancialTransaction?  @relation(fields: [financialTransactionId], references: [id], onDelete: SetNull)
+  settlementTransaction   SettlementTransaction? @relation(fields: [settlementTransactionId], references: [id])
+  releaseTransaction      ReleaseTransaction?    @relation(fields: [releaseTransactionId], references: [id])
+  withdrawTransaction     WithdrawTransaction?   @relation(fields: [withdrawTransactionId], references: [id])
+
+  // Access policies
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@unique([serviceId, periodStart])
+  @@index([serviceId, dueDate])
+  @@index([status, dueDate])
+  @@index([financialTransactionId])
+  @@index([settlementTransactionId])
+  @@index([releaseTransactionId])
+  @@index([withdrawTransactionId])
+  @@map("service_schedules")
+}
+
+model Loan {
+  id              Int            @id @default(autoincrement())
+  publicId        String         @unique @map("public_id")
+  title           String
+  borrowerName    String         @map("borrower_name")
+  borrowerType    LoanBorrowerType @map("borrower_type")
+  principalAmount Decimal        @map("principal_amount") @db.Decimal(15, 2)
+  interestRate    Decimal        @map("interest_rate") @db.Decimal(9, 6)
+  interestType    LoanInterestType @default(SIMPLE) @map("interest_type")
+  frequency       LoanFrequency
+  totalInstallments Int          @map("total_installments")
+  notes           String?
+  startDate       DateTime       @map("start_date") @db.Date
+  status          LoanStatus     @default(ACTIVE)
+  createdAt       DateTime       @default(now()) @map("created_at")
+  updatedAt       DateTime       @default(now()) @updatedAt @map("updated_at")
+  schedules       LoanSchedule[]
+
+  // Access policies
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@map("loans")
+}
+
+model LoanSchedule {
+  id                Int                @id @default(autoincrement())
+  loanId            Int                @map("loan_id")
+  installmentNumber Int                @map("installment_number")
+  dueDate           DateTime           @map("due_date") @db.Date
+  expectedAmount    Decimal            @map("expected_amount") @db.Decimal(15, 2)
+  expectedPrincipal Decimal            @map("expected_principal") @db.Decimal(15, 2)
+  expectedInterest  Decimal            @map("expected_interest") @db.Decimal(15, 2)
+  paidAmount        Decimal?           @map("paid_amount") @db.Decimal(15, 2)
+  paidDate          DateTime?          @map("paid_date") @db.Date
+  transactionId     Int?               @map("transaction_id")
+  note              String?
+  status            LoanScheduleStatus @default(PENDING)
+  loan              Loan               @relation(fields: [loanId], references: [id], onDelete: Cascade)
+  transaction       FinancialTransaction? @relation(fields: [transactionId], references: [id], onDelete: SetNull)
+  createdAt         DateTime           @default(now()) @map("created_at")
+  updatedAt         DateTime           @default(now()) @updatedAt @map("updated_at")
+
+  // Access policies
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('update', auth().status == 'ACTIVE')
+
+  @@index([loanId])
+  @@index([transactionId])
+  @@map("loan_schedules")
+}
+
+
+model Setting {
+  key       String   @id
+  value     String?
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  // Access policies - only admins can manage settings
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('update', auth().status == 'ACTIVE')
+
+  @@map("settings")
+}
+
+// Append-only audit trail for security-relevant events: login attempts
+// (success/fail), MFA verification, password change, role grant/revoke,
+// data export, admin actions, blocked contacts, etc.
+//
+// Retention target: 2 years (Chile Law 20.584 + HIPAA-equivalent). The
+// table is queried for forensics + compliance reporting; never updated
+// after insert. PII (email, IP) is captured intentionally — this is the
+// authoritative incident-response record.
+enum AuditEventKind {
+  LOGIN_SUCCESS
+  LOGIN_FAILURE
+  LOGIN_LOCKED
+  MFA_SUCCESS
+  MFA_FAILURE
+  PASSWORD_CHANGE
+  PASSWORD_RESET
+  MFA_ENROLL
+  MFA_DISABLE
+  PASSKEY_REGISTER
+  PASSKEY_DELETE
+  ROLE_GRANT
+  ROLE_REVOKE
+  USER_CREATE
+  USER_DEACTIVATE
+  USER_REACTIVATE
+  DATA_EXPORT
+  ADMIN_ACTION
+  WA_CONTACT_BLOCK
+  WA_CONTACT_UNBLOCK
+  SETTINGS_UPDATE
+  OTHER
+}
+
+// Mutable dedupe state for security alert throttling. Keyed by
+// (scope, alertType) — typically scope = "user:<id>" or "global".
+// last_sent_at is updated by lib/security-alerts.ts each time an
+// alert is emitted; emissions inside the throttle window are dropped
+// (the underlying event still lands in audit_logs).
+model SecurityAlertState {
+  scope      String   @map("scope")
+  alertType  String   @map("alert_type")
+  lastSentAt DateTime @map("last_sent_at")
+
+  @@id([scope, alertType])
+  @@index([lastSentAt])
+  @@deny('all', auth() == null)
+  @@allow('read', auth().status == 'ACTIVE')
+  @@allow('create,update', auth().status == 'ACTIVE')
+  @@map("security_alert_state")
+}
+
+model AuditLog {
+  id          BigInt          @id @default(autoincrement())
+  occurredAt  DateTime        @default(now()) @map("occurred_at")
+  kind        AuditEventKind
+  // Null for unauthenticated events (failed logins where the email
+  // doesn't match a known user).
+  userId      Int?            @map("user_id")
+  // Free-form actor description when userId is unavailable
+  // (e.g. "anonymous" for failed logins from unknown emails).
+  actorLabel  String?         @map("actor_label")
+  ip          String?
+  userAgent   String?         @map("user_agent")
+  resource    String?
+  resourceId  String?         @map("resource_id")
+  outcome     String          @default("ok")
+  message     String?
+  metadata    Json?
+  // HMAC chain (RFC 6962-style append-only). prevHash links to the
+  // previous row's entryHash; entryHash = HMAC-SHA256(key, prev || row).
+  // Computed by the BEFORE INSERT trigger `audit_log_chain()` so the
+  // app role cannot forge entries even with INSERT privileges. The
+  // trigger reads the HMAC key from the session GUC `app.audit_hmac_key`
+  // (set per pool connection from AUDIT_HMAC_KEY env). NEVER write
+  // these from application code — leave them undefined on insert.
+  // `@default(dbgenerated(...))` makes the ORM input type accept
+  // omission while the DB keeps the column NOT NULL: the trigger
+  // overrides the literal default before the constraint check.
+  prevHash    Bytes           @default(dbgenerated("decode('00', 'hex')")) @map("prev_hash")
+  entryHash   Bytes           @default(dbgenerated("decode('00', 'hex')")) @map("entry_hash")
+
+  @@index([occurredAt])
+  @@index([userId, occurredAt])
+  @@index([kind, occurredAt])
+  @@deny('all', auth() == null)
+  @@allow('read', auth().status == 'ACTIVE')
+  // create allowed for any authed user — emitter is server-side, this
+  // permits the server context to insert. update/delete denied (append-only).
+  @@allow('create', auth().status == 'ACTIVE')
+  @@map("audit_logs")
+}
+
+model OneDriveAccount {
+  id              String    @id @default(cuid())
+  accountId       String    @unique @map("account_id") // Microsoft Account ID
+  email           String
+  name            String?
+  accessToken     String    @map("access_token")
+  refreshToken    String    @map("refresh_token")
+  expiresAt       String    @map("expires_at")
+  folderPath      String?   @map("folder_path")
+  folderDriveId   String?   @map("folder_drive_id")
+  folderItemId    String?   @map("folder_item_id")
+  folderName      String?   @map("folder_name")
+  deltaLink       String?   @map("delta_link")
+  lastDeltaSyncAt DateTime? @map("last_delta_sync_at")
+  lastSyncAt      DateTime? @map("last_sync_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  watchChannels   OneDriveWatchChannel[]
+  skinTestImports ClinicalSkinTestImport[]
+  clinicalDocumentImports ClinicalDocumentImport[]
+  clinicalXlsxFiles ClinicalXlsxFile[]
+  clinicalRecordImports ClinicalRecordImport[]
+
+  @@deny('all', auth() == null)
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+  @@map("onedrive_accounts")
+}
+
+model OneDriveWatchChannel {
+  id              String   @id @default(cuid())
+  accountId       String   @map("account_id")
+  subscriptionId  String   @unique @map("subscription_id")
+  resource        String
+  expiration      DateTime
+  webhookUrl      String   @map("webhook_url")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @default(now()) @updatedAt @map("updated_at")
+
+  account         OneDriveAccount @relation(fields: [accountId], references: [accountId], onDelete: Cascade)
+
+  // Access policies
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@index([accountId])
+  @@map("onedrive_watch_channels")
+}
+
+model PushSubscription {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  endpoint  String   @unique
+  keys      Json
+  createdAt DateTime @default(now()) @map("created_at")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Access policies
+  @@deny('all', auth() == null)
+  @@allow('create,delete', auth().id == userId)
+  @@allow('read', true)
+
+  @@index([userId])
+  @@map("push_subscriptions")
+}
+
+model Calendar {
+  id            Int                    @id @default(autoincrement())
+  googleId      String                 @unique @map("google_id")
+  name          String?
+  syncToken     String?                @map("sync_token")
+  createdAt     DateTime               @default(now()) @map("created_at")
+  updatedAt     DateTime               @default(now()) @updatedAt @map("updated_at")
+  watchChannels CalendarWatchChannel[]
+  events        Event[]
+
+  // Access policies
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@map("calendars")
+}
+
+model CalendarWatchChannel {
+  id         Int      @id @default(autoincrement())
+  calendarId Int      @map("calendar_id")
+  channelId  String   @unique @map("channel_id")
+  resourceId String   @map("resource_id")
+  expiration DateTime
+  webhookUrl String   @map("webhook_url")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
+  calendar   Calendar @relation(fields: [calendarId], references: [id], onDelete: Cascade)
+
+  // Access policies
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@index([calendarId])
+  @@map("calendar_watch_channels")
+}
+
+model Event {
+  id                Int                      @id @default(autoincrement())
+  calendarId        Int                      @map("calendar_id")
+  clinicalSeriesId  Int?                     @map("clinical_series_id")
+  patientName       String?                  @map("patient_name")
+  patientRut        String?                  @map("patient_rut")
+  beneficiaryName   String?                  @map("beneficiary_name")
+  beneficiaryRut    String?                  @map("beneficiary_rut")
+  externalEventId   String                   @map("external_event_id")
+  eventStatus       String?                  @map("event_status")
+  eventType         String?                  @map("event_type")
+  summary           String?
+  description       String?
+  startDate         DateTime?                @map("start_date") @db.Date
+  startDateTime     DateTime?                @map("start_date_time") @db.Timestamptz(3)
+  startTimeZone     String?                  @map("start_time_zone")
+  endDate           DateTime?                @map("end_date") @db.Date
+  endDateTime       DateTime?                @map("end_date_time") @db.Timestamptz(3)
+  endTimeZone       String?                  @map("end_time_zone")
+  eventCreatedAt    DateTime?                @map("event_created_at") @db.Timestamptz(3)
+  eventUpdatedAt    DateTime?                @map("event_updated_at") @db.Timestamptz(3)
+  colorId           String?                  @map("color_id")
+  location          String?
+  transparency      String?
+  visibility        String?
+  hangoutLink       String?                  @map("hangout_link")
+  category          String?
+  amountExpected    Int?                     @map("amount_expected")
+  amountPaid        Int?                     @map("amount_paid")
+  attended          Boolean?
+  
+  // Custom tracking fields
+  treatmentStage    String?                  @map("treatment_stage")
+  controlIncluded   Boolean                  @default(false) @map("control_included")
+  isDomicilio       Boolean                  @default(false) @map("is_domicilio")
+  rawEvent          Json?                    @map("raw_event")
+  lastSyncedAt      DateTime?                @map("last_synced_at")
+
+  dosageValue       Float?                   @map("dosage_value")
+  dosageUnit        String?                  @map("dosage_unit")
+  seriesStageKind   ClinicalSeriesStageKind? @map("series_stage_kind")
+  seriesStageNumber Int?                     @map("series_stage_number")
+  seriesStageLabel  String?                  @map("series_stage_label")
+  testMetadata      Json?                    @map("test_metadata")
+  createdAt         DateTime                 @default(now()) @map("created_at")
+  updatedAt         DateTime                 @default(now()) @updatedAt @map("updated_at")
+  calendar          Calendar                 @relation(fields: [calendarId], references: [id], onDelete: Cascade)
+  clinicalSeries    ClinicalSeries?          @relation(fields: [clinicalSeriesId], references: [id], onDelete: SetNull)
+  consultations     Consultation[]
+  dteAutoLinkAttempts EventDteAutoLinkAttempt[]
+  dteMatchReviews   EventDteMatchReview[]
+  dteSaleLinks      EventDteSaleLink[]
+
+  // Access policies
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@unique([calendarId, externalEventId])
+  @@index([calendarId])
+  @@index([clinicalSeriesId])
+  @@index([patientRut])
+  @@index([beneficiaryRut])
+  @@map("events")
+}
+
+model ClinicalSeries {
+  id               Int                       @id @default(autoincrement())
+  kind             ClinicalSeriesKind
+  status           ClinicalSeriesStatus      @default(ACTIVE)
+  displayName      String?                   @map("display_name")
+  patientId        Int?                      @map("patient_id")
+  patientName      String?                   @map("patient_name")
+  patientRut       String?                   @map("patient_rut")
+  patientPhones    Json?                     @map("patient_phones")
+  beneficiaryName  String?                   @map("beneficiary_name")
+  beneficiaryRut   String?                   @map("beneficiary_rut")
+  beneficiaryPhones Json?                    @map("beneficiary_phones")
+  allergenType     SubcutaneousAllergenType?  @map("allergen_type")
+  vaccineProduct   SubcutaneousVaccineProduct? @map("vaccine_product")
+  healthInsurance  HealthInsuranceType?        @map("health_insurance")
+  isapreName       String?                     @map("isapre_name")
+  deliveryModality DeliveryModality?           @map("delivery_modality")
+  expectedSessions Int?                        @map("expected_sessions")
+  notes            String?
+  completedAt      DateTime?                 @map("completed_at")
+  createdAt        DateTime                  @default(now()) @map("created_at")
+  updatedAt        DateTime                  @default(now()) @updatedAt @map("updated_at")
+  patient          Patient?                  @relation(fields: [patientId], references: [id], onDelete: SetNull)
+  events     Event[]
+  mergeLogs  ClinicalSeriesMergeLog[]
+  abandonmentContacts AbandonmentContact[]
+  skinTests  ClinicalSkinTest[]
+  documentImports ClinicalDocumentImport[]
+  records    ClinicalRecord[]
+  recordImports ClinicalRecordImport[]
+
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@index([kind, status])
+  @@index([patientId])
+  @@index([patientRut])
+  @@index([beneficiaryRut])
+  @@map("clinical_series")
+}
+
+model ClinicalXlsxFile {
+  id                    String                       @id @default(cuid())
+  oneDriveAccountId     String?                      @map("onedrive_account_id")
+  oneDriveItemId        String                       @map("onedrive_item_id")
+  oneDriveDriveId       String?                      @map("onedrive_drive_id")
+  oneDriveSourceKey     String?                      @map("onedrive_source_key")
+  oneDriveSourceDriveId String?                      @map("onedrive_source_drive_id")
+  oneDriveSourceItemId  String?                      @map("onedrive_source_item_id")
+  oneDriveSharePointUniqueId String?                 @map("onedrive_sharepoint_unique_id")
+  oneDriveQuickXorHash  String?                      @map("onedrive_quick_xor_hash")
+  oneDriveSha1Hash      String?                      @map("onedrive_sha1_hash")
+  oneDriveCrc32Hash     String?                      @map("onedrive_crc32_hash")
+  oneDriveETag          String?                      @map("onedrive_etag")
+  oneDriveCTag          String?                      @map("onedrive_ctag")
+  oneDriveWebUrl        String?                      @map("onedrive_web_url")
+  path                  String?
+  filename              String
+  mimeType              String?                      @map("mime_type")
+  size                  Int?
+  modifiedAt            DateTime?                    @map("modified_at") @db.Timestamptz(3)
+  classification        ClinicalXlsxFileClassification @default(OTHER)
+  classificationReason  String?                      @map("classification_reason")
+  createdAt             DateTime                     @default(now()) @map("created_at")
+  updatedAt             DateTime                     @default(now()) @updatedAt @map("updated_at")
+
+  oneDriveAccount       OneDriveAccount?             @relation(fields: [oneDriveAccountId], references: [accountId], onDelete: SetNull)
+
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@index([classification])
+  @@index([modifiedAt])
+  @@index([oneDriveAccountId])
+  @@index([oneDriveSourceKey])
+  @@unique([oneDriveAccountId, oneDriveDriveId, oneDriveItemId])
+  @@map("clinical_xlsx_files")
+}
+
+model ClinicalSkinTestImport {
+  id                    String                    @id @default(cuid())
+  oneDriveAccountId     String?                   @map("onedrive_account_id")
+  oneDriveItemId        String                    @map("onedrive_item_id")
+  oneDriveDriveId       String?                   @map("onedrive_drive_id")
+  oneDriveSourceKey     String?                   @map("onedrive_source_key")
+  oneDriveSourceDriveId String?                   @map("onedrive_source_drive_id")
+  oneDriveSourceItemId  String?                   @map("onedrive_source_item_id")
+  oneDriveSharePointUniqueId String?              @map("onedrive_sharepoint_unique_id")
+  oneDriveQuickXorHash  String?                   @map("onedrive_quick_xor_hash")
+  oneDriveSha1Hash      String?                   @map("onedrive_sha1_hash")
+  oneDriveCrc32Hash     String?                   @map("onedrive_crc32_hash")
+  oneDriveETag          String?                   @map("onedrive_etag")
+  oneDriveCTag          String?                   @map("onedrive_ctag")
+  oneDriveWebUrl        String?                   @map("onedrive_web_url")
+  path                  String?
+  filename              String
+  mimeType              String?                   @map("mime_type")
+  size                  Int?
+  modifiedAt            DateTime?                 @map("modified_at") @db.Timestamptz(3)
+  parserVersion         String                    @map("parser_version")
+  status                ClinicalSkinTestImportStatus @default(PENDING_REVIEW)
+  confidence            Int                       @default(0)
+  error                 String?
+  issues                Json?
+  parsedPayload         Json?                     @map("parsed_payload")
+  resultHash            String?                   @map("result_hash")
+  duplicateOfImportId   String?                   @map("duplicate_of_import_id")
+  workbookSnapshotStatus ClinicalSkinTestWorkbookSnapshotStatus @default(MISSING) @map("workbook_snapshot_status")
+  workbookSnapshotError  String?                   @map("workbook_snapshot_error")
+  workbookSnapshotArchivedAt DateTime?             @map("workbook_snapshot_archived_at") @db.Timestamptz(3)
+  reviewedBy            Int?                      @map("reviewed_by")
+  reviewedAt            DateTime?                 @map("reviewed_at") @db.Timestamptz(3)
+  reviewNotes           String?                   @map("review_notes")
+  importedAt            DateTime?                 @map("imported_at") @db.Timestamptz(3)
+  createdAt             DateTime                  @default(now()) @map("created_at")
+  updatedAt             DateTime                  @default(now()) @updatedAt @map("updated_at")
+
+  skinTest              ClinicalSkinTest?
+  results               ClinicalSkinTestResult[]
+  workbookSnapshot      ClinicalSkinTestWorkbookSnapshot?
+  oneDriveAccount       OneDriveAccount?          @relation(fields: [oneDriveAccountId], references: [accountId], onDelete: SetNull)
+
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@index([status])
+  @@index([modifiedAt])
+  @@index([oneDriveAccountId])
+  @@index([oneDriveSourceKey])
+  @@index([workbookSnapshotStatus])
+  @@unique([oneDriveAccountId, oneDriveDriveId, oneDriveItemId])
+  @@map("clinical_skin_test_imports")
+}
+
+// ----------------------------------------------------------------------
+// Clinical records (fichas clínicas) — see docs/clinical-records.md
+// (TBD) and migration 20260512030001_clinical_records.
+//
+// Pipeline mirrors ClinicalSkinTestImport: OneDrive scanner discovers
+// xlsx files matching the ficha-clínica filename pattern (no _PRICK /
+// _MULTITEST prefix), enqueues them in clinical_record_imports with
+// status PENDING_REVIEW, the parser populates parsed_payload, then a
+// matcher resolves to an existing patient (or queues candidates for
+// operator decision) and materializes a ClinicalRecord under a
+// ClinicalSeries with kind = MEDICAL_CONSULTATION.
+// ----------------------------------------------------------------------
+
+model ClinicalRecordImport {
+  id                          String                       @id @default(cuid())
+  oneDriveAccountId           String?                      @map("onedrive_account_id")
+  oneDriveItemId              String                       @map("onedrive_item_id")
+  oneDriveDriveId             String?                      @map("onedrive_drive_id")
+  oneDriveSourceKey           String?                      @map("onedrive_source_key")
+  oneDriveSourceDriveId       String?                      @map("onedrive_source_drive_id")
+  oneDriveSourceItemId        String?                      @map("onedrive_source_item_id")
+  oneDriveSharePointUniqueId  String?                      @map("onedrive_sharepoint_unique_id")
+  oneDriveQuickXorHash        String?                      @map("onedrive_quick_xor_hash")
+  oneDriveSha1Hash            String?                      @map("onedrive_sha1_hash")
+  oneDriveCrc32Hash           String?                      @map("onedrive_crc32_hash")
+  oneDriveETag                String?                      @map("onedrive_etag")
+  oneDriveCTag                String?                      @map("onedrive_ctag")
+  oneDriveWebUrl              String?                      @map("onedrive_web_url")
+  path                        String?
+  filename                    String
+  mimeType                    String?                      @map("mime_type")
+  size                        Int?
+  modifiedAt                  DateTime?                    @map("modified_at") @db.Timestamptz(3)
+  parserVersion               String                       @map("parser_version")
+  status                      ClinicalRecordImportStatus   @default(PENDING_REVIEW)
+  confidence                  Int                          @default(0)
+  error                       String?
+  issues                      Json?
+  parsedPayload               Json?                        @map("parsed_payload")
+  resultHash                  String?                      @map("result_hash")
+  duplicateOfImportId         String?                      @map("duplicate_of_import_id")
+  matchedPatientId            Int?                         @map("matched_patient_id")
+  matchedClinicalSeriesId     Int?                         @map("matched_clinical_series_id")
+  matchCandidates             Json?                        @map("match_candidates")
+  reviewedBy                  Int?                         @map("reviewed_by")
+  reviewedAt                  DateTime?                    @map("reviewed_at") @db.Timestamptz(3)
+  reviewNotes                 String?                      @map("review_notes")
+  importedAt                  DateTime?                    @map("imported_at") @db.Timestamptz(3)
+  createdAt                   DateTime                     @default(now()) @map("created_at")
+  updatedAt                   DateTime                     @default(now()) @updatedAt @map("updated_at")
+
+  record                      ClinicalRecord?
+  oneDriveAccount             OneDriveAccount?             @relation(fields: [oneDriveAccountId], references: [accountId], onDelete: SetNull)
+  matchedPatient              Patient?                     @relation(fields: [matchedPatientId], references: [id], onDelete: SetNull)
+  matchedClinicalSeries       ClinicalSeries?              @relation(fields: [matchedClinicalSeriesId], references: [id], onDelete: SetNull)
+
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@index([status])
+  @@index([modifiedAt])
+  @@index([oneDriveAccountId])
+  @@index([matchedPatientId])
+  @@unique([oneDriveAccountId, oneDriveDriveId, oneDriveItemId])
+  @@map("clinical_record_imports")
+}
+
+model ClinicalRecord {
+  id                  String              @id @default(cuid())
+  clinicalSeriesId    Int                 @map("clinical_series_id")
+  sourceImportId      String              @unique @map("source_import_id")
+  consultDate         DateTime?           @map("consult_date") @db.Date
+  patientName         String?             @map("patient_name")
+  ageLabel            String?             @map("age_label")
+  history             String?
+  physicalExam        String?             @map("physical_exam")
+  diagnosis           String?
+  // Numbered list 1..n preserved as JSON array of strings.
+  indications         Json?
+  weightKg            Decimal?            @map("weight_kg") @db.Decimal(6, 2)
+  heightCm            Decimal?            @map("height_cm") @db.Decimal(6, 2)
+  headCircumferenceCm Decimal?            @map("head_circumference_cm") @db.Decimal(6, 2)
+  // P/E, P/T, T/E and any extra anthropometric labels.
+  anthropometric      Json?
+  rawHeader           Json?               @map("raw_header")
+  rawSections         Json?               @map("raw_sections")
+  resultHash          String?             @map("result_hash")
+  createdAt           DateTime            @default(now()) @map("created_at")
+  updatedAt           DateTime            @default(now()) @updatedAt @map("updated_at")
+
+  clinicalSeries      ClinicalSeries      @relation(fields: [clinicalSeriesId], references: [id], onDelete: Cascade)
+  sourceImport        ClinicalRecordImport @relation(fields: [sourceImportId], references: [id], onDelete: Cascade)
+
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@index([clinicalSeriesId])
+  @@index([consultDate])
+  @@map("clinical_records")
+}
+
+model ClinicalSkinTestWorkbookFile {
+  id               String                 @id @default(cuid())
+  extractorVersion String                 @map("extractor_version")
+  sha256           String
+  sizeBytes        Int?                   @map("size_bytes")
+  sheetName        String                 @map("sheet_name")
+  cellCount        Int                    @default(0) @map("cell_count")
+  mergeCount       Int                    @default(0) @map("merge_count")
+  textHash         String                 @map("text_hash")
+  snapshotJson     Json                   @map("snapshot_json")
+  createdAt        DateTime               @default(now()) @map("created_at")
+  updatedAt        DateTime               @default(now()) @updatedAt @map("updated_at")
+
+  snapshots        ClinicalSkinTestWorkbookSnapshot[]
+
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@unique([sha256, extractorVersion])
+  @@index([sha256])
+  @@index([textHash])
+  @@index([createdAt])
+  @@map("clinical_skin_test_workbook_files")
+}
+
+model ClinicalSkinTestWorkbookSnapshot {
+  id               String                 @id @default(cuid())
+  sourceImportId   String                 @unique @map("source_import_id")
+  workbookFileId   String                 @map("workbook_file_id")
+  sourceETag       String?                @map("source_etag")
+  sourceCTag       String?                @map("source_ctag")
+  status           ClinicalSkinTestWorkbookSnapshotStatus @default(ARCHIVED)
+  error            String?
+  createdAt        DateTime               @default(now()) @map("created_at")
+  updatedAt        DateTime               @default(now()) @updatedAt @map("updated_at")
+
+  sourceImport     ClinicalSkinTestImport @relation(fields: [sourceImportId], references: [id], onDelete: Cascade)
+  workbookFile     ClinicalSkinTestWorkbookFile @relation(fields: [workbookFileId], references: [id], onDelete: Restrict)
+
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@index([workbookFileId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("clinical_skin_test_workbook_snapshots")
+}
+
+model ClinicalDocumentImport {
+  id                    String                       @id @default(cuid())
+  oneDriveAccountId     String?                      @map("onedrive_account_id")
+  oneDriveItemId        String                       @map("onedrive_item_id")
+  oneDriveDriveId       String?                      @map("onedrive_drive_id")
+  oneDriveQuickXorHash  String?                      @map("onedrive_quick_xor_hash")
+  oneDriveSha1Hash      String?                      @map("onedrive_sha1_hash")
+  oneDriveCrc32Hash     String?                      @map("onedrive_crc32_hash")
+  oneDriveETag          String?                      @map("onedrive_etag")
+  oneDriveCTag          String?                      @map("onedrive_ctag")
+  oneDriveWebUrl        String?                      @map("onedrive_web_url")
+  path                  String?
+  filename              String
+  mimeType              String?                      @map("mime_type")
+  size                  Int?
+  modifiedAt            DateTime?                    @map("modified_at") @db.Timestamptz(3)
+  documentKind          ClinicalDocumentImportKind   @default(OTHER) @map("document_kind")
+  status                ClinicalDocumentImportStatus @default(DISCOVERED)
+  extractedPatientName  String?                      @map("extracted_patient_name")
+  clinicalSeriesId      Int?                         @map("clinical_series_id")
+  error                 String?
+  issues                Json?
+  reviewedBy            Int?                         @map("reviewed_by")
+  reviewedAt            DateTime?                    @map("reviewed_at") @db.Timestamptz(3)
+  reviewNotes           String?                      @map("review_notes")
+  importedAt            DateTime?                    @map("imported_at") @db.Timestamptz(3)
+  createdAt             DateTime                     @default(now()) @map("created_at")
+  updatedAt             DateTime                     @default(now()) @updatedAt @map("updated_at")
+
+  oneDriveAccount       OneDriveAccount?             @relation(fields: [oneDriveAccountId], references: [accountId], onDelete: SetNull)
+  clinicalSeries        ClinicalSeries?              @relation(fields: [clinicalSeriesId], references: [id], onDelete: SetNull)
+
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@index([status])
+  @@index([documentKind])
+  @@index([modifiedAt])
+  @@index([oneDriveAccountId])
+  @@index([clinicalSeriesId])
+  @@unique([oneDriveAccountId, oneDriveDriveId, oneDriveItemId])
+  @@map("clinical_document_imports")
+}
+
+model ClinicalAllergen {
+  id                       String                  @id
+  scientificName           String?                 @map("scientific_name")
+  commonName               String                  @map("common_name")
+  englishName              String?                 @map("english_name")
+  category                 String
+  categoryEn               String?                 @map("category_en")
+  pollenType               String?                 @map("pollen_type")
+  pollenTypeEn             String?                 @map("pollen_type_en")
+  normalizedScientificName String?                 @map("normalized_scientific_name")
+  normalizedCommonName     String                  @map("normalized_common_name")
+  source                   String                  @default("lista_alergenos.xlsx")
+  sourceRow                Int?                    @map("source_row")
+  isActive                 Boolean                 @default(true) @map("is_active")
+  createdAt                DateTime                @default(now()) @map("created_at")
+  updatedAt                DateTime                @default(now()) @updatedAt @map("updated_at")
+
+  aliases                  ClinicalAllergenAlias[]
+
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@index([category])
+  @@index([pollenType])
+  @@index([normalizedCommonName])
+  @@map("clinical_allergens")
+}
+
+model ClinicalAllergenAlias {
+  id              String           @id
+  allergenId      String           @map("allergen_id")
+  alias           String
+  normalizedAlias String           @map("normalized_alias")
+  aliasType       String           @default("SOURCE") @map("alias_type")
+  createdAt       DateTime         @default(now()) @map("created_at")
+
+  allergen        ClinicalAllergen @relation(fields: [allergenId], references: [id], onDelete: Cascade)
+
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@unique([normalizedAlias])
+  @@index([allergenId])
+  @@index([aliasType])
+  @@map("clinical_allergen_aliases")
+}
+
+model ClinicalSkinTest {
+  id               String                 @id @default(cuid())
+  clinicalSeriesId Int                    @map("clinical_series_id")
+  sourceImportId   String                 @unique @map("source_import_id")
+  testDate         DateTime               @map("test_date") @db.Date
+  patientName      String?                @map("patient_name")
+  patientRut       String?                @map("patient_rut")
+  patientEmail     String?                @map("patient_email")
+  patientPhone     String?                @map("patient_phone")
+  ageLabel         String?                @map("age_label")
+  panelTitle       String?                @map("panel_title")
+  clinicalNote     String?                @map("clinical_note")
+  physicianName    String?                @map("physician_name")
+  physicianSpecialty String?              @map("physician_specialty")
+  website          String?
+  address          String?
+  nonConclusiveDueToHyperreactivity Boolean @default(false) @map("non_conclusive_due_to_hyperreactivity")
+  resultHash       String?                @map("result_hash")
+  rawHeader        Json?                  @map("raw_header")
+  createdAt        DateTime               @default(now()) @map("created_at")
+  updatedAt        DateTime               @default(now()) @updatedAt @map("updated_at")
+
+  clinicalSeries   ClinicalSeries         @relation(fields: [clinicalSeriesId], references: [id], onDelete: Cascade)
+  sourceImport     ClinicalSkinTestImport @relation(fields: [sourceImportId], references: [id], onDelete: Cascade)
+  results          ClinicalSkinTestResult[]
+
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@index([clinicalSeriesId])
+  @@index([patientRut])
+  @@index([testDate])
+  @@index([resultHash])
+  @@map("clinical_skin_tests")
+}
+
+model ClinicalSkinTestResult {
+  id             String                       @id @default(cuid())
+  skinTestId     String                       @map("skin_test_id")
+  sourceImportId String                       @map("source_import_id")
+  section        String
+  code           String?
+  allergenName   String                       @map("allergen_name")
+  papuleMm       Float?                       @map("papule_mm")
+  erythemaMm     Float?                       @map("erythema_mm")
+  rawPapule      String?                      @map("raw_papule")
+  rawErythema    String?                      @map("raw_erythema")
+  controlType    ClinicalSkinTestControlType? @map("control_type")
+  sortOrder      Int                          @map("sort_order")
+  rawCells       Json?                        @map("raw_cells")
+
+  skinTest       ClinicalSkinTest             @relation(fields: [skinTestId], references: [id], onDelete: Cascade)
+  sourceImport   ClinicalSkinTestImport       @relation(fields: [sourceImportId], references: [id], onDelete: Cascade)
+
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@unique([sourceImportId, section, code, allergenName])
+  @@index([skinTestId])
+  @@map("clinical_skin_test_results")
+}
+
+model ClinicalSeriesMergeLog {
+  id          BigInt         @id @default(autoincrement())
+  sourceId    Int            @map("source_id")
+  targetId    Int            @map("target_id")
+  eventsMoved Int            @default(0) @map("events_moved")
+  mergedBy    Int?           @map("merged_by")
+  mergeReason String?        @map("merge_reason")
+  isAuto      Boolean        @default(false) @map("is_auto")
+  createdAt   DateTime       @default(now()) @map("created_at")
+  target      ClinicalSeries @relation(fields: [targetId], references: [id], onDelete: Cascade)
+
+  @@deny('all', auth() == null)
+  @@allow('read', auth() != null)
+  @@allow('create', auth().status == 'ACTIVE')
+
+  @@index([targetId])
+  @@index([sourceId])
+  @@map("clinical_series_merge_log")
+}
+
+model AbandonmentContact {
+  id               BigInt                    @id @default(autoincrement())
+  seriesId         Int                       @map("series_id")
+  outcome          AbandonmentContactOutcome
+  notes            String?
+  contactedById    Int                       @map("contacted_by_id")
+  contactedAt      DateTime                  @default(now()) @map("contacted_at")
+
+  series           ClinicalSeries            @relation(fields: [seriesId], references: [id], onDelete: Cascade)
+  contactedBy      User                      @relation(fields: [contactedById], references: [id])
+
+  @@deny('all', auth() == null)
+  @@allow('read', auth() != null)
+  @@allow('create', auth().status == 'ACTIVE')
+
+  @@index([seriesId])
+  @@map("abandonment_contacts")
+}
+
+model SyncLog {
+  id            BigInt    @id @default(autoincrement())
+  triggerSource String    @map("trigger_source")
+  triggerUserId Int?      @map("trigger_user_id")
+  triggerLabel  String?   @map("trigger_label")
+  status        String    @default("SUCCESS")
+  startedAt     DateTime  @map("started_at")
+  finishedAt    DateTime? @map("finished_at")
+  fetchedAt     DateTime? @map("fetched_at")
+  inserted      Int?      @default(0)
+  updated       Int?      @default(0)
+  skipped       Int?      @default(0)
+  excluded      Int?      @default(0)
+  errorMessage  String?   @map("error_message")
+  changeDetails Json?     @map("change_details")
+
+  // Access policies
+  @@deny('all', auth() == null)
+  @@allow('read', auth() != null)
+
+  @@index([triggerSource])
+  @@index([startedAt])
+  @@map("sync_logs")
+}
+
+model InventoryCategory {
+  id        Int             @id @default(autoincrement())
+  name      String          @unique
+  createdAt DateTime        @default(now()) @map("created_at")
+  updatedAt DateTime        @default(now()) @updatedAt @map("updated_at")
+  items     InventoryItem[]
+
+  // Access policies
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@map("inventory_categories")
+}
+
+model InventoryItem {
+  id           Int                 @id @default(autoincrement())
+  categoryId   Int?                @map("category_id")
+  name         String
+  description  String?
+  currentStock Int                 @default(0) @map("current_stock")
+  createdAt    DateTime            @default(now()) @map("created_at")
+  updatedAt    DateTime            @default(now()) @updatedAt @map("updated_at")
+  category     InventoryCategory?  @relation(fields: [categoryId], references: [id])
+  movements    InventoryMovement[]
+
+  @@index([categoryId])
+  // Access policies
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@map("inventory_items")
+}
+
+model InventoryMovement {
+  id             Int           @id @default(autoincrement())
+  itemId         Int           @map("item_id")
+  quantityChange Int           @map("quantity_change")
+  reason         String?
+  createdAt      DateTime      @default(now()) @map("created_at")
+  item           InventoryItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@index([itemId])
+  // Access policies
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create', auth().status == 'ACTIVE')
+
+  @@map("inventory_movements")
+}
+
+model DailyProductionBalance {
+  id                    Int      @id @default(autoincrement())
+  balanceDate           DateTime @unique @map("balance_date") @db.Date
+  ingresoTarjetas       Int      @default(0) @map("ingreso_tarjetas")
+  ingresoTransferencias Int      @default(0) @map("ingreso_transferencias")
+  ingresoEfectivo       Int      @default(0) @map("ingreso_efectivo")
+  gastosDiarios         Int      @default(0) @map("gastos_diarios")
+  otrosAbonos           Int      @default(0) @map("otros_abonos")
+  comentarios           String?
+  status                String   @default("DRAFT")
+  changeReason          String?  @map("change_reason")
+  createdBy             Int      @map("created_by")
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @default(now()) @updatedAt @map("updated_at")
+  consultasMonto        Int      @default(0) @map("consultas_monto")
+  controlesMonto        Int      @default(0) @map("controles_monto")
+  licenciasMonto        Int      @default(0) @map("licencias_monto")
+  roxairMonto           Int      @default(0) @map("roxair_monto")
+  testsMonto            Int      @default(0) @map("tests_monto")
+  vacunasMonto          Int      @default(0) @map("vacunas_monto")
+  user                  User     @relation(fields: [createdBy], references: [id])
+
+  @@index([createdBy])
+  // Access policies
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@map("daily_production_balances")
+}
+
+model SupplyRequest {
+  id         Int      @id @default(autoincrement())
+  userId     Int      @map("user_id")
+  supplyName String   @map("supply_name")
+  quantity   Int
+  brand      String?
+  model      String?
+  notes      String?
+  status     String   @default("PENDING")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
+  user       User     @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  // Access policies
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,update', auth().status == 'ACTIVE')
+
+  @@map("supply_requests")
+}
+
+model CommonSupply {
+  id        Int      @id @default(autoincrement())
+  name      String
+  brand     String?
+  model     String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([name, brand, model])
+  // Access policies
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@map("common_supplies")
+}
+
+model CalendarSyncLog {
+  id            Int                    @id @default(autoincrement())
+  triggerSource String?                @map("trigger_source")
+  triggerUserId Int?                   @map("trigger_user_id")
+  triggerLabel  String?                @map("trigger_label")
+  status        String                 @default("PENDING")
+  startedAt     DateTime               @default(now()) @map("started_at")
+  endedAt       DateTime?              @map("ended_at")
+  fetchedAt     DateTime?              @map("fetched_at")
+  eventsSynced  Int                    @default(0) @map("events_synced")
+  inserted      Int?                   @default(0)
+  updated       Int?                   @default(0)
+  skipped       Int?                   @default(0)
+  excluded      Int?                   @default(0)
+  errorMessage  String?                @map("error_message")
+  changeDetails Json?                  @map("change_details")
+  logEntries    CalendarSyncLogEntry[]
+
+  @@index([startedAt(sort: Desc)])
+  // Access policies
+  @@deny('all', auth() == null)
+  @@allow('read', auth() != null)
+
+  @@map("calendar_sync_logs")
+}
+
+model CalendarSyncLogEntry {
+  id         Int             @id @default(autoincrement())
+  syncLogId  Int             @map("sync_log_id")
+  message    String?
+  severity   String          @default("info") // info, warning, error
+  attributes Json?              // {level, custom_fields}
+  tags       Json?              // {project, environment, service, deployment, replica, tag}
+  timestamp  DateTime        @default(now())
+  createdAt  DateTime        @default(now()) @map("created_at")
+
+  syncLog    CalendarSyncLog @relation(fields: [syncLogId], references: [id], onDelete: Cascade)
+
+  @@index([syncLogId])
+  @@index([timestamp(sort: Desc)])
+  @@index([severity])
+  
+  // Access policies
+  @@deny('all', auth() == null)
+  @@allow('read', auth() != null)
+
+  @@map("calendar_sync_log_entries")
+}
+
+// ============================================================
+// DOCTORALIA INTEGRATION
+// ============================================================
+
+model DoctoraliaSyncLog {
+  id             Int                   @id @default(autoincrement())
+  syncType       DoctoraliaSyncType    @default(CALENDAR) @map("sync_type")
+  triggerSource  String?               @map("trigger_source")
+  triggerUserId  Int?                  @map("trigger_user_id")
+  status         String                @default("PENDING")
+  startedAt      DateTime              @default(now()) @map("started_at") @db.Timestamptz(3)
+  endedAt        DateTime?             @map("ended_at") @db.Timestamptz(3)
+  counts         Json                  @default("{}")
+  errorMessage   String?               @map("error_message")
+
+  @@index([startedAt(sort: Desc)])
+  @@index([syncType])
+  @@deny('all', auth() == null)
+  @@allow('read', auth() != null)
+
+  @@map("doctoralia_sync_logs")
+}
+
+enum DoctoraliaSyncType {
+  CALENDAR
+  EMAIL
+}
+
+// ============================================================
+// DOCTORALIA CALENDAR (Docplanner Calendar API)
+// ============================================================
+
+model DoctoraliaSchedule {
+  id                       Int                             @id @default(autoincrement())
+  externalId               Int                             @unique @map("external_id")
+  name                     String
+  displayName              String                          @map("display_name")
+  facilityId               Int?                            @map("facility_id")
+  specialityId             Int?                            @map("speciality_id")
+  doctorId                 Int?                            @map("doctor_id")
+  provinceId               Int?                            @map("province_id")
+  cityId                   Int?                            @map("city_id")
+  hasWaitingRoom           Boolean?                        @map("has_waiting_room")
+  scheduleType             Int                             @default(0) @map("schedule_type")
+  colorSchemaId            Int?                            @map("color_schema_id")
+  isVirtual                Boolean                         @default(false) @map("is_virtual")
+  patientsNotificationType Int                             @default(1) @map("patients_notification_type")
+  createdAt                DateTime                        @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt                DateTime                        @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+  appointments             DoctoraliaCalendarAppointment[]
+  workPeriods              DoctoraliaWorkPeriod[]
+
+  @@index([externalId])
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@map("doctoralia_schedules")
+}
+
+model DoctoraliaCalendarAppointment {
+  id                         Int                @id @default(autoincrement())
+  scheduleId                 Int                @map("schedule_id")
+  externalId                 Int                @unique @map("external_id")
+  title                      String
+  startAt                    DateTime           @map("start_at") @db.Timestamptz(3)
+  endAt                      DateTime           @map("end_at") @db.Timestamptz(3)
+  isBlock                    Boolean            @default(false) @map("is_block")
+  eventType                  Int                @map("event_type")
+  scheduledBy                Int                @map("scheduled_by")
+  status                     Int
+  hasPatient                 Boolean            @map("has_patient")
+  hasWaitingRoom             Boolean?           @map("has_waiting_room")
+  insuranceId                Int?               @map("insurance_id")
+  insuranceName              String?            @map("insurance_name")
+  comments                   String?
+  serviceId                  Int                @map("service_id")
+  serviceName                String             @map("service_name")
+  eventServices              Json?              @map("event_services")
+  serviceColorSchemaId       Int                @map("service_color_schema_id")
+  colorSchemaId              Int?               @map("color_schema_id")
+  serviceIsDeleted           Boolean            @default(false) @map("service_is_deleted")
+  attendance                 Int                @default(0)
+  patientExternalId          Int                @map("patient_external_id")
+  patientReferenceId         String             @map("patient_reference_id")
+  patientPhone               String?            @map("patient_phone")
+  patientEmail               String?            @map("patient_email")
+  patientBirthDate           DateTime?          @map("patient_birth_date")
+  patientArrivalTime         DateTime?          @map("patient_arrival_time") @db.Timestamptz(3)
+  isPatientFirstTime         Boolean            @default(false) @map("is_patient_first_time")
+  isPatientFirstAdminBooking Boolean            @default(false) @map("is_patient_first_admin_booking")
+  isBookedViaSecretaryAi     Boolean            @default(false) @map("is_booked_via_secretary_ai")
+  onlinePaymentType          String?            @map("online_payment_type")
+  onlinePaymentStatus        String?            @map("online_payment_status")
+  isPaidOnline               Boolean            @default(false) @map("is_paid_online")
+  communicationChannel       String?            @map("communication_channel")
+  fake                       Boolean            @default(false)
+  isEventWithVoucher         Boolean            @default(false) @map("is_event_with_voucher")
+  duration                   Int
+  canNotifyPatient           Boolean            @map("can_notify_patient")
+  noShowProtection           Boolean            @default(false) @map("no_show_protection")
+  createdAt                  DateTime                     @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt                  DateTime                     @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+  schedule                   DoctoraliaSchedule           @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  emailNotifications         DoctoraliaEmailNotification[]
+
+  @@unique([scheduleId, externalId])
+  @@index([scheduleId])
+  @@index([startAt])
+  @@index([patientExternalId])
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@map("doctoralia_calendar_appointments")
+}
+
+model DoctoraliaWorkPeriod {
+  id         Int                @id @default(autoincrement())
+  scheduleId Int                @map("schedule_id")
+  startAt    DateTime           @map("start_at") @db.Timestamptz(3)
+  endAt      DateTime           @map("end_at") @db.Timestamptz(3)
+  isPrivate  Boolean            @default(false) @map("is_private")
+  createdAt  DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
+  schedule   DoctoraliaSchedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+
+  @@index([scheduleId])
+  @@index([startAt])
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@map("doctoralia_work_periods")
+}
+
+// ============================================================
+// HAULMER INTEGRATION
+// ============================================================
+
+model HaulmerSyncLog {
+  id           String   @id @default(uuid())
+  period       String   @db.VarChar(6)                        // YYYYMM format (e.g., "202602")
+  rut          String   @db.VarChar(20)                       // Haulmer RUT
+  docType      String   @map("doc_type") @db.VarChar(20)      // "sales" | "purchases"
+  status       String   @default("PENDING") @db.VarChar(20)   // PENDING | SUCCESS | FAILED
+  rowsCreated  Int      @default(0) @map("rows_created")
+  rowsUpdated  Int      @default(0) @map("rows_updated")
+  rowsSkipped  Int      @default(0) @map("rows_skipped")
+  csvSize      Int?     @map("csv_size")                      // Size of CSV file in bytes
+  errorMessage String?  @map("error_message")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@index([period])
+  @@index([rut])
+  @@index([status])
+  @@index([createdAt(sort: Desc)])
+  @@unique([period, rut, docType])
+  @@deny('all', auth() == null)
+  @@allow('read', auth() != null)
+
+  @@map("haulmer_sync_logs")
+}
+
+// ============================================================
+// DOCTORALIA EMAIL NOTIFICATIONS
+// ============================================================
+
+model DoctoraliaEmailNotification {
+  id                      String                         @id @default(cuid())
+  emailMessageId          String                         @unique @map("email_message_id")
+  eventType               DoctoraliaEmailEventType       @default(BOOKING) @map("event_type")
+  patientName             String                         @map("patient_name")
+  patientPhone            String?                        @map("patient_phone")
+  patientEmail            String?                        @map("patient_email")
+  appointmentDate         DateTime?                      @map("appointment_date") @db.Timestamptz(3)
+  previousAppointmentDate DateTime?                      @map("previous_appointment_date") @db.Timestamptz(3)
+  appointmentService      String?                        @map("appointment_service")
+  appointmentDoctor       String?                        @map("appointment_doctor")
+  clinicAddress           String?                        @map("clinic_address")
+  calendarAppointmentId   Int?                           @map("calendar_appointment_id")
+  createdAt               DateTime                       @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt               DateTime                       @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+  calendarAppointment     DoctoraliaCalendarAppointment? @relation(fields: [calendarAppointmentId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt(sort: Desc)])
+  @@index([eventType])
+  @@index([calendarAppointmentId])
+  @@deny('all', auth() == null)
+  @@allow('read', auth() != null)
+  @@allow('create,update', auth().status == 'ACTIVE')
+
+  @@map("doctoralia_email_notifications")
+}
+
+enum DoctoraliaEmailEventType {
+  BOOKING
+  MODIFICATION
+  CANCELLATION
+}
+
+// Singleton (one row, label="default") storing the raw Doctoralia panel session
+// cookies pasted from the user's browser. The scraper reads from here via a
+// bearer-token API so we never check credentials into disk/git. Schema-level
+// policies only permit authenticated reads — raw cookies never leave the API
+// to the browser (the oRPC layer exposes metadata only).
+model DoctoraliaCookieStore {
+  id              Int       @id @default(autoincrement())
+  label           String    @unique @default("default")
+  cookiesJson     Json      @map("cookies_json")
+  lastUsedAt      DateTime? @map("last_used_at")
+  updatedAt       DateTime  @default(now()) @updatedAt @map("updated_at")
+  updatedByUserId Int?      @map("updated_by_user_id")
+  updatedBy       User?     @relation(fields: [updatedByUserId], references: [id], onDelete: SetNull)
+
+  @@deny('all', auth() == null)
+  @@allow('read,create,update', auth().status == 'ACTIVE')
+
+  @@map("doctoralia_cookie_store")
+}
+
+enum PersonType {
+  NATURAL
+  JURIDICAL
+}
+
+enum CounterpartCategory {
+  SUPPLIER
+  CLIENT
+  EMPLOYEE
+  PARTNER
+  LENDER
+  PERSONAL_EXPENSE
+  OTHER
+}
+
+enum EmployeeStatus {
+  ACTIVE
+  INACTIVE
+  TERMINATED
+}
+
+enum EmployeeSalaryType {
+  HOURLY
+  FIXED
+}
+
+enum AttendanceMarkType {
+  CLOCK_IN
+  CLOCK_OUT
+}
+
+enum TransactionDirection {
+  IN
+  OUT
+  NEUTRO
+}
+
+enum ServiceType {
+  BUSINESS
+  PERSONAL
+  SUPPLIER
+  TAX
+  UTILITY
+  LEASE
+  SOFTWARE
+  OTHER
+}
+
+enum ServiceFrequency {
+  WEEKLY
+  BIWEEKLY
+  MONTHLY
+  BIMONTHLY
+  QUARTERLY
+  SEMIANNUAL
+  ANNUAL
+  ONCE
+}
+
+enum ServiceStatus {
+  ACTIVE
+  INACTIVE
+  ARCHIVED
+}
+
+enum ServiceRecurrenceType {
+  RECURRING
+  ONE_OFF
+}
+
+enum ServiceOwnership {
+  COMPANY
+  OWNER
+  MIXED
+  THIRD_PARTY
+}
+
+enum ServiceObligationType {
+  SERVICE
+  DEBT
+  LOAN
+  OTHER
+}
+
+enum ServiceAmountIndexation {
+  NONE
+  UF
+}
+
+enum ServiceLateFeeMode {
+  NONE
+  FIXED
+  PERCENTAGE
+}
+
+enum ServiceEmissionMode {
+  FIXED_DAY
+  DATE_RANGE
+  SPECIFIC_DATE
+}
+
+enum ServiceScheduleStatus {
+  PENDING
+  PARTIAL
+  PAID
+  SKIPPED
+}
+
+enum LoanStatus {
+  ACTIVE
+  COMPLETED
+  DEFAULTED
+}
+
+enum LoanBorrowerType {
+  PERSON
+  COMPANY
+}
+
+enum LoanFrequency {
+  WEEKLY
+  BIWEEKLY
+  MONTHLY
+}
+
+enum LoanInterestType {
+  SIMPLE
+  COMPOUND
+}
+
+enum LoanScheduleStatus {
+  PENDING
+  PARTIAL
+  PAID
+  OVERDUE
+  SKIPPED
+}
+
+enum UserStatus {
+  PENDING_SETUP
+  ACTIVE
+  SUSPENDED
+}
+
+enum ClinicalSeriesKind {
+  PATCH_TEST
+  SKIN_TEST
+  SUBCUTANEOUS_TREATMENT
+  // Ficha clínica / consulta médica. Each row in clinical_records
+  // rolls up under a ClinicalSeries with this kind so the existing
+  // patient-timeline UI keeps a single entry point per series type.
+  MEDICAL_CONSULTATION
+}
+
+enum SubcutaneousAllergenType {
+  ACAROS
+  GRAMINEAS
+  ACAROS_GRAMINEAS
+}
+
+// Clustoid/Cluxin/Clustek are the same product; Forte and B120 are concentration variants.
+enum SubcutaneousVaccineProduct {
+  CLUSTOID
+  CLUSTOID_FORTE
+  CLUSTOID_B120
+  ALXOID
+  ORAL_TEC
+}
+
+enum HealthInsuranceType {
+  FONASA
+  ISAPRE
+  PARTICULAR
+}
+
+enum DeliveryModality {
+  PRESENCIAL
+  DOMICILIO
+}
+
+enum ClinicalSeriesStatus {
+  PLANNED
+  ACTIVE
+  INACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum ClinicalSkinTestImportStatus {
+  DISCOVERED
+  PENDING_REVIEW
+  IMPORTED
+  REJECTED
+  ERROR
+  SKIPPED
+  TEMPLATE
+  // Set by the 20260512030001_clinical_records migration when a
+  // REJECTED skin-test row was reclassified into clinical_record_imports
+  // because its filename matched the ficha clínica pattern. Audit
+  // breadcrumb only — no skin-test pipeline action ever produces this.
+  MOVED_TO_RECORD
+}
+
+enum ClinicalRecordImportStatus {
+  DISCOVERED
+  PENDING_REVIEW
+  IMPORTED
+  REJECTED
+  ERROR
+  SKIPPED
+  TEMPLATE
+}
+
+enum ClinicalSkinTestWorkbookSnapshotStatus {
+  MISSING
+  ARCHIVED
+  ERROR
+  STALE
+}
+
+enum ClinicalXlsxFileClassification {
+  SKIN_TEST
+  CLINICAL_DOCUMENT
+  OTHER
+}
+
+enum ClinicalDocumentImportKind {
+  CLINICAL_RECORD
+  VISIT_SHEET
+  OTHER
+}
+
+enum ClinicalDocumentImportStatus {
+  DISCOVERED
+  MATCHED
+  UNMATCHED
+  REJECTED
+  SKIPPED
+}
+
+enum ClinicalSkinTestControlType {
+  POSITIVE
+  NEGATIVE
+}
+
+enum ClinicalSeriesStageKind {
+  INSTALLATION
+  READING
+  DOSE
+  MAINTENANCE
+}
+
+enum AbandonmentContactOutcome {
+  WILL_RETURN
+  DECLINED
+  UNREACHABLE
+  RESCHEDULED
+  OTHER
+}
+
+// ============================================================
+// PERSONAL FINANCE SCHEMA
+// ============================================================
+
+model PersonalCredit {
+  id                Int                         @id @default(autoincrement())
+  bankName          String                      @map("bank_name") // BCI, Falabella, Itaú
+  creditNumber      String                      @unique @map("credit_number") // Identifier
+  description       String?  // "Crédito de Consumo", "Hipotecario"
+  
+  // Financial Details
+  totalAmount       Decimal                     @map("total_amount") @db.Decimal(15, 2)
+  currency          String                      @default("CLP") // CLP, UF
+  interestRate      Decimal?                    @map("interest_rate") @db.Decimal(5, 2) // Monthly/Yearly rate
+  startDate         DateTime                    @map("start_date") @db.Date
+  
+  // Status
+  totalInstallments Int                         @map("total_installments")
+  status            String                      @default("ACTIVE") // ACTIVE, PAID, REFINANCED
+
+  createdAt         DateTime                    @default(now()) @map("created_at")
+  updatedAt         DateTime                    @default(now()) @updatedAt @map("updated_at")
+
+  installments      PersonalCreditInstallment[]
+
+  // Access policies
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@schema("personal")
+  @@map("credits")
+}
+
+model PersonalCreditInstallment {
+  id                Int            @id @default(autoincrement())
+  creditId          Int            @map("credit_id")
+
+  installmentNumber Int            @map("installment_number") // 1/48
+  dueDate           DateTime       @map("due_date") @db.Date
+  
+  // Amounts
+  amount            Decimal        @db.Decimal(15, 2) // Total Quota Amount
+  capitalAmount     Decimal?       @map("capital_amount") @db.Decimal(15, 2) // Amortization
+  interestAmount    Decimal?       @map("interest_amount") @db.Decimal(15, 2)
+  otherCharges      Decimal?       @map("other_charges") @db.Decimal(15, 2) // Insurance, etc.
+  
+  // Status
+  status            String         @default("PENDING") // PENDING, PAID
+  paidAt            DateTime?      @map("paid_at")
+  paidAmount        Decimal?       @map("paid_amount") @db.Decimal(15, 2)
+  paidAmountCLP     Decimal?       @map("paid_amount_clp") @db.Decimal(15, 2) // CLP equivalent for UF credits
+
+  credit            PersonalCredit @relation(fields: [creditId], references: [id], onDelete: Cascade)
+
+  // Access policies
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('update', auth().status == 'ACTIVE')
+
+  @@schema("personal")
+  @@index([creditId])
+  @@unique([creditId, installmentNumber])
+  @@map("credit_installments")
+}
+
+
+model MedicalCertificate {
+  id            String    @id @default(cuid())
+  patientName   String    @map("patient_name")
+  patientRut    String    @map("patient_rut")
+  birthDate     DateTime  @map("birth_date") @db.Date
+  address       String
+
+  diagnosis     String
+  symptoms      String?
+  restDays      Int?      @map("rest_days")
+  restStartDate DateTime? @map("rest_start_date") @db.Date
+  restEndDate   DateTime? @map("rest_end_date") @db.Date
+  purpose       String
+  purposeDetail String?   @map("purpose_detail")
+
+  issuedBy      Int       @map("issued_by")
+  issuedAt      DateTime  @default(now()) @map("issued_at")
+
+  patientId     Int?      @map("patient_id") // Optional link to Patient
+
+  driveFileId   String    @map("drive_file_id") // Google Drive file ID
+  pdfHash       String    @map("pdf_hash") // SHA-256
+
+  metadata      Json?    // Full certificate data as backup
+
+  issuer        User      @relation(fields: [issuedBy], references: [id])
+  patient       Patient?  @relation(fields: [patientId], references: [id])
+
+  @@deny('all', auth() == null)
+  @@allow('read', auth().id == issuedBy)
+  @@allow('create', auth().status == 'ACTIVE')
+  @@allow('read', auth() != null)
+
+  @@index([patientRut])
+  @@index([issuedAt])
+  @@map("medical_certificates")
+}
+model Patient {
+  id                  Int                    @id @default(autoincrement())
+  personId            Int                    @unique @map("person_id")
+  birthDate           DateTime?              @map("birth_date") @db.Date
+  bloodType           String?                @map("blood_type")
+  notes               String?  // Notas generales del paciente
+
+  createdAt           DateTime               @default(now()) @map("created_at")
+  updatedAt           DateTime               @default(now()) @updatedAt @map("updated_at")
+
+  person              Person                 @relation(fields: [personId], references: [id], onDelete: Cascade)
+  consultations       Consultation[]
+  medicalCertificates MedicalCertificate[]
+  budgets             Budget[]
+  payments            PatientPayment[]
+  attachments         PatientAttachment[]
+  dteSaleSources      PatientDteSaleSource[]
+  shipments           Shipment[]
+  clinicalSeries      ClinicalSeries[]
+  clinicalRecordImports ClinicalRecordImport[]
+
+  @@deny('all', auth() == null)
+  @@allow('read', auth().status == 'ACTIVE')
+  @@allow('create,update', auth().status == 'ACTIVE')
+
+  @@map("patients")
+}
+
+model Shipment {
+  id                   Int      @id @default(autoincrement())
+  patientId            Int      @map("patient_id")
+  otNumber             String   @unique @map("ot_number")
+  serviceTypeCode      String   @map("service_type_code")
+  serviceDescription   String   @map("service_description")
+  serviceFullDesc      String?  @map("service_full_desc")
+  cashOnDelivery       Decimal  @map("cash_on_delivery") @db.Decimal(12, 2)
+  declaredValue        Decimal  @map("declared_value") @db.Decimal(12, 2)
+  weight               Decimal  @db.Decimal(8, 2)
+  height               Decimal  @db.Decimal(8, 2)
+  width                Decimal  @db.Decimal(8, 2)
+  length               Decimal  @db.Decimal(8, 2)
+  recipientName        String   @map("recipient_name")
+  recipientPhone       String   @map("recipient_phone")
+  recipientEmail       String?  @map("recipient_email")
+  commercialOfficeId   String   @map("commercial_office_id")
+  commercialOfficeName String   @map("commercial_office_name")
+  coverageCode         String   @map("coverage_code")
+  contentDescription   String   @map("content_description")
+  // Etiqueta y números devueltos por Chilexpress al crear la OT.
+  certificateNumber    Int?     @map("certificate_number")
+  reference            String?
+  barcode              String?
+  labelBase64          String?  @map("label_base64") @db.Text
+  labelType            Int?     @map("label_type")
+  // Tracking
+  trackingStatus       String?  @map("tracking_status")
+  trackingUpdatedAt    DateTime? @map("tracking_updated_at")
+  status               String   @default("CREATED")
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @default(now()) @updatedAt @map("updated_at")
+
+  patient              Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@deny('all', auth() == null)
+  @@allow('read', auth().status == 'ACTIVE')
+  @@allow('create,update', auth().status == 'ACTIVE')
+
+  @@map("shipments")
+}
+
+model PatientDteSaleSource {
+  id              Int       @id @default(autoincrement())
+  patientId       Int?      @map("patient_id")
+  clientRUT       String    @unique @map("client_rut") @db.VarChar(20)
+  clientName      String    @map("client_name")
+  documentType    Int       @map("document_type")
+  documentDate    DateTime? @map("document_date") @db.Date
+  folio           String?   @map("folio") @db.VarChar(20)
+  period          String?   @map("period") @db.VarChar(6)
+  sourceUpdatedAt DateTime? @map("source_updated_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  patient         Patient?  @relation(fields: [patientId], references: [id], onDelete: SetNull)
+
+  @@deny('all', auth() == null)
+  @@allow('read', auth().status == 'ACTIVE')
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@index([patientId])
+  @@index([documentDate])
+  @@index([period])
+  @@map("patient_dte_sale_sources")
+}
+
+model Consultation {
+  id        Int      @id @default(autoincrement())
+  patientId Int      @map("patient_id")
+  eventId   Int?     @map("event_id") // Link to Calendar Event
+  date      DateTime @db.Date
+  reason    String   // Motivo de consulta
+  diagnosis String?  // Diagnóstico
+  treatment String?  // Tratamiento indicado
+  notes     String?  // Notas adicionales
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  patient   Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  event     Event?   @relation(fields: [eventId], references: [id])
+
+  @@deny('all', auth() == null)
+  @@allow('read', auth().status == 'ACTIVE')
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@index([patientId])
+  @@index([eventId])
+  @@index([date])
+  @@map("consultations")
+}
+
+model Budget {
+  id          Int              @id @default(autoincrement())
+  patientId   Int              @map("patient_id")
+  title       String
+  totalAmount Decimal          @map("total_amount") @db.Decimal(15, 2)
+  discount    Decimal          @default(0) @db.Decimal(15, 2)
+  finalAmount Decimal          @map("final_amount") @db.Decimal(15, 2)
+  status      BudgetStatus     @default(DRAFT)
+  notes       String?
+  createdAt   DateTime         @default(now()) @map("created_at")
+  updatedAt   DateTime         @default(now()) @updatedAt @map("updated_at")
+
+  patient     Patient          @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  payments    PatientPayment[]
+
+  @@deny('all', auth() == null)
+  @@allow('read', auth().status == 'ACTIVE')
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@index([patientId])
+  @@map("budgets")
+}
+
+model PatientPayment {
+  id            Int      @id @default(autoincrement())
+  patientId     Int      @map("patient_id")
+  budgetId      Int?     @map("budget_id")
+  amount        Decimal  @db.Decimal(15, 2)
+  paymentDate   DateTime @default(now()) @map("payment_date")
+  paymentMethod String   @map("payment_method") // Transfer, Cash, Card
+  reference     String?       // Transaction ID or Receipt number
+  notes         String?
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  patient       Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  budget        Budget?  @relation(fields: [budgetId], references: [id])
+
+  @@deny('all', auth() == null)
+  @@allow('read', auth().status == 'ACTIVE')
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@index([patientId])
+  @@index([budgetId])
+  @@map("patient_payments")
+}
+
+model PatientAttachment {
+  id          String         @id @default(cuid())
+  patientId   Int            @map("patient_id")
+  name        String
+  type        AttachmentType @default(OTHER)
+  driveFileId String         @map("drive_file_id")
+  mimeType    String?        @map("mime_type")
+  uploadedBy  Int            @map("uploaded_by")
+  uploadedAt  DateTime       @default(now()) @map("uploaded_at")
+
+  patient     Patient        @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  uploader    User           @relation(fields: [uploadedBy], references: [id])
+
+  @@deny('all', auth() == null)
+  @@allow('read', auth().status == 'ACTIVE')
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@index([patientId])
+  @@map("patient_attachments")
+}
+
+enum BudgetStatus {
+  DRAFT
+  SENT
+  ACCEPTED
+  REJECTED
+  EXPIRED
+}
+
+enum AttachmentType {
+  CONSENT
+  EXAM
+  RECIPE
+  OTHER
+}
+
+// ============================================================
+// DTE (Documentos Tributarios Electrónicos) - Accounting
+// ============================================================
+// DTE PURCHASE & SALES DETAILS
+// ============================================================
+
+model DTEPurchaseDetail {
+  id                    String    @id @default(uuid())
+  registerNumber        Int       @map("register_number") // Nº field from CSV
+  documentType          Int       @default(33) @map("document_type") // 33 = Factura de Compra
+  purchaseType          String    @map("purchase_type") // "Compras del Giro", etc.
+  providerRUT           String    @map("provider_rut") @db.VarChar(20)
+  providerName          String    @map("provider_name")
+  folio                 String    @map("folio") @db.VarChar(20)
+  documentDate          DateTime  @db.Date @map("document_date")
+  receiptDate           DateTime  @db.Date @map("receipt_date")
+  acknowledgeDate       DateTime? @db.Date @map("acknowledge_date")
+  period                String?   @map("period") @db.VarChar(6) // Format: YYYYMM
+  
+  // Financial amounts
+  exemptAmount          Decimal   @default(0) @map("exempt_amount") @db.Decimal(15, 2)
+  netAmount             Decimal   @default(0) @map("net_amount") @db.Decimal(15, 2)
+  recoverableIVA        Decimal   @default(0) @map("recoverable_iva") @db.Decimal(15, 2)
+  nonRecoverableIVA     Decimal   @default(0) @map("non_recoverable_iva") @db.Decimal(15, 2)
+  nonRecoverableIVACode String?   @map("non_recoverable_iva_code") @db.VarChar(10)
+  totalAmount           Decimal   @default(0) @map("total_amount") @db.Decimal(15, 2)
+  fixedAssetNetAmount   Decimal   @default(0) @map("fixed_asset_net_amount") @db.Decimal(15, 2)
+  commonUseIVA          Decimal   @default(0) @map("common_use_iva") @db.Decimal(15, 2)
+  nonCreditableTax      Decimal   @default(0) @map("non_creditable_tax") @db.Decimal(15, 2)
+  nonRetainedIVA        Decimal   @default(0) @map("non_retained_iva") @db.Decimal(15, 2)
+  
+  // Tobacco fields (usually zero)
+  pureTobacco           Decimal   @default(0) @map("pure_tobacco") @db.Decimal(15, 2)
+  cigaretteTobacco      Decimal   @default(0) @map("cigarette_tobacco") @db.Decimal(15, 2)
+  elaboratedTobacco     Decimal   @default(0) @map("elaborated_tobacco") @db.Decimal(15, 2)
+  
+  // Other tax
+  otherTaxCode          String?   @map("other_tax_code") @db.VarChar(10)
+  otherTaxAmount        Decimal   @default(0) @map("other_tax_amount") @db.Decimal(15, 2)
+  otherTaxRate          Decimal?  @map("other_tax_rate") @db.Decimal(5, 2)
+  
+  // Additional notes
+  referenceDocNote      String?   @map("reference_doc_note") // NCE o NDE Sobre Fact. de Compra
+  notes                 String?
+
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @default(now()) @updatedAt @map("updated_at")
+  lineItems             DTELineItem[]
+
+  @@deny('all', auth() == null)
+  @@allow('read', auth().status == 'ACTIVE')
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@unique([providerRUT, folio])
+  @@index([providerRUT])
+  @@index([documentDate])
+  @@map("dte_purchase_details")
+}
+
+model DTESaleDetail {
+  id                             String    @id @default(uuid())
+  registerNumber                 Int       @map("register_number") // Nº field from CSV
+  documentType                   Int       @map("document_type") // 41 = Boleta, 61 = Nota Crédito, etc.
+  saleType                       String    @map("sale_type") // "Del Giro", etc.
+  clientRUT                      String    @map("client_rut") @db.VarChar(20)
+  clientName                     String    @map("client_name")
+  folio                          String    @map("folio") @db.VarChar(20)
+  documentDate                   DateTime  @db.Date @map("document_date")
+  receiptDate                    DateTime  @db.Date @map("receipt_date")
+  receiptAcknowledgeDate         DateTime? @db.Date @map("receipt_acknowledge_date")
+  claimDate                      DateTime? @db.Date @map("claim_date")
+  period                         String?   @map("period") @db.VarChar(6) // Format: YYYYMM
+  
+  // Financial amounts
+  exemptAmount                   Decimal   @default(0) @map("exempt_amount") @db.Decimal(15, 2)
+  netAmount                      Decimal   @default(0) @map("net_amount") @db.Decimal(15, 2)
+  ivaAmount                      Decimal   @default(0) @map("iva_amount") @db.Decimal(15, 2)
+  totalAmount                    Decimal   @default(0) @map("total_amount") @db.Decimal(15, 2)
+  
+  // IVA details
+  totalRetainedIVA               Decimal   @default(0) @map("total_retained_iva") @db.Decimal(15, 2)
+  partialRetainedIVA             Decimal   @default(0) @map("partial_retained_iva") @db.Decimal(15, 2)
+  nonRetainedIVA                 Decimal   @default(0) @map("non_retained_iva") @db.Decimal(15, 2)
+  ownIVA                         Decimal   @default(0) @map("own_iva") @db.Decimal(15, 2)
+  thirdPartyIVA                  Decimal   @default(0) @map("third_party_iva") @db.Decimal(15, 2)
+  lateIVA                        Decimal   @default(0) @map("late_iva") @db.Decimal(15, 2)
+  
+  // Commission details
+  emitterRUT                     String?   @map("emitter_rut") @db.VarChar(20)
+  commissionNetAmount            Decimal   @default(0) @map("commission_net_amount") @db.Decimal(15, 2)
+  commissionExemptAmount         Decimal   @default(0) @map("commission_exempt_amount") @db.Decimal(15, 2)
+  commissionIVA                  Decimal   @default(0) @map("commission_iva") @db.Decimal(15, 2)
+  
+  // Reference document
+  referenceDocType               String?   @map("reference_doc_type") @db.VarChar(10)
+  referenceDocFolio              String?   @map("reference_doc_folio") @db.VarChar(20)
+  
+  // Foreign buyer details
+  foreignBuyerIdentifier         String?   @map("foreign_buyer_identifier") @db.VarChar(20)
+  foreignBuyerNationality        String?   @map("foreign_buyer_nationality") @db.VarChar(50)
+  
+  // Special conditions
+  constructorCreditAmount        Decimal   @default(0) @map("constructor_credit_amount") @db.Decimal(15, 2)
+  freeTradeZoneAmount            Decimal   @default(0) @map("free_trade_zone_amount") @db.Decimal(15, 2)
+  containerGuaranteeAmount       Decimal   @default(0) @map("container_guarantee_amount") @db.Decimal(15, 2)
+  nonBillableAmount              Decimal   @default(0) @map("non_billable_amount") @db.Decimal(15, 2)
+  internationalTransportAmount   Decimal   @default(0) @map("international_transport_amount") @db.Decimal(15, 2) // Venta Pasajes Transporte Internacional
+  
+  // Special indicators
+  nonCostSaleIndicator           Int       @default(0) @map("non_cost_sale_indicator") // Indicador Venta sin Costo
+  periodicServiceIndicator       Int       @default(0) @map("periodic_service_indicator") // Indicador Servicio Periódico
+  totalPeriodAmount              Decimal   @default(0) @map("total_period_amount") @db.Decimal(15, 2) // Total Monto Periodo
+  nationalTransportPassageAmount Decimal   @default(0) @map("national_transport_passage_amount") @db.Decimal(15, 2) // Venta Pasajes Transporte Nacional
+  
+  // Identifiers
+  internalNumber                 Int?      @map("internal_number")
+  branchCode                     String?   @map("branch_code") @db.VarChar(20)
+  
+  // Metadata
+  origin                         String?   @map("origin") @db.VarChar(20) // "WEB", "MANUAL", etc.
+  informativeNote                String?   @map("informative_note")
+  paymentNote                    String?   @map("payment_note")
+  notes                          String?
+
+  createdAt                      DateTime  @default(now()) @map("created_at")
+  updatedAt                      DateTime  @default(now()) @updatedAt @map("updated_at")
+  autoLinkAttempts               EventDteAutoLinkAttempt[]
+  eventLinks                     EventDteSaleLink[]
+  lineItems                      DTELineItem[]
+
+  @@deny('all', auth() == null)
+  @@allow('read', auth().status == 'ACTIVE')
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@unique([folio, documentType])
+  @@index([clientRUT])
+  @@index([documentDate])
+  @@index([documentType])
+  @@index([documentDate, totalAmount])
+  @@map("dte_sale_details")
+}
+
+model DTELineItem {
+  id                String             @id @default(uuid())
+  lineNumber        Int                @map("line_number")        // NroLinDet
+  itemName          String             @map("item_name")          // NmbItem
+  itemDescription   String?            @map("item_description")   // DscItem
+  quantity          Decimal            @default(1) @map("quantity") @db.Decimal(15, 6) // QtyItem
+  unit              String?            @map("unit") @db.VarChar(10) // UnmdItem
+  unitPrice         Decimal            @default(0) @map("unit_price") @db.Decimal(15, 6) // PrcItem
+  amount            Decimal            @default(0) @map("amount") @db.Decimal(15, 2) // MontoItem
+  isExempt          Boolean            @default(false) @map("is_exempt") // IndExe = 1
+  itemCode          String?            @map("item_code") @db.VarChar(50)  // CdgItem/VlrCodigo
+  itemCodeType      String?            @map("item_code_type") @db.VarChar(20) // CdgItem/TpoCodigo
+  discountPercent   Decimal?           @map("discount_percent") @db.Decimal(5, 2) // DescuentoPct
+  discountAmount    Decimal?           @map("discount_amount") @db.Decimal(15, 2) // DescuentoMonto
+
+  // Polymorphic FK: one of these is set
+  dteSaleDetailId   String?            @map("dte_sale_detail_id")
+  dtePurchaseDetailId String?          @map("dte_purchase_detail_id")
+
+  createdAt         DateTime           @default(now()) @map("created_at")
+
+  dteSaleDetail     DTESaleDetail?     @relation(fields: [dteSaleDetailId], references: [id], onDelete: Cascade)
+  dtePurchaseDetail DTEPurchaseDetail? @relation(fields: [dtePurchaseDetailId], references: [id], onDelete: Cascade)
+
+  @@deny('all', auth() == null)
+  @@allow('read', auth().status == 'ACTIVE')
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@unique([dteSaleDetailId, lineNumber])
+  @@unique([dtePurchaseDetailId, lineNumber])
+  @@index([dteSaleDetailId])
+  @@index([dtePurchaseDetailId])
+  @@map("dte_line_items")
+}
+
+model EventDteSaleLink {
+  id              BigInt        @id @default(autoincrement())
+  eventId         Int           @map("event_id")
+  dteSaleDetailId String        @unique @map("dte_sale_detail_id")
+  status          String        @default("CONFIRMED") @db.VarChar(20)
+  matchedBy       String        @map("matched_by") @db.VarChar(30)
+  confidenceScore Decimal       @map("confidence_score") @db.Decimal(5, 2)
+  matchedRUT      String?       @map("matched_rut") @db.VarChar(20)
+  matchedName     String?       @map("matched_name")
+  evidence        Json?
+  createdBy       Int?          @map("created_by")
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @default(now()) @updatedAt @map("updated_at")
+
+  event           Event         @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  dteSaleDetail   DTESaleDetail @relation(fields: [dteSaleDetailId], references: [id], onDelete: Cascade)
+  creator         User?         @relation(fields: [createdBy], references: [id], onDelete: SetNull)
+
+  @@deny('all', auth() == null)
+  @@allow('read', auth().status == 'ACTIVE')
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@index([eventId])
+  @@index([createdAt(sort: Desc)])
+  @@map("event_dte_sale_links")
+}
+
+model EventDteAutoLinkAttempt {
+  id                     BigInt         @id @default(autoincrement())
+  eventId                Int            @map("event_id")
+  candidateDteSaleDetailId String?      @map("candidate_dte_sale_detail_id")
+  status                 String         @db.VarChar(20)
+  reason                 String
+  confidenceScore        Decimal?       @map("confidence_score") @db.Decimal(5, 2)
+  createdBy              Int?           @map("created_by")
+  createdAt              DateTime       @default(now()) @map("created_at")
+
+  event                  Event          @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  candidateDteSaleDetail DTESaleDetail? @relation(fields: [candidateDteSaleDetailId], references: [id], onDelete: SetNull)
+  creator                User?          @relation(fields: [createdBy], references: [id], onDelete: SetNull)
+
+  @@deny('all', auth() == null)
+  @@allow('read', auth().status == 'ACTIVE')
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@index([eventId, createdAt(sort: Desc)])
+  @@index([candidateDteSaleDetailId])
+  @@index([createdAt(sort: Desc)])
+  @@map("event_dte_auto_link_attempts")
+}
+
+model EventDteMatchReview {
+  id              BigInt   @id @default(autoincrement())
+  eventId         Int      @map("event_id")
+  action          String   @db.VarChar(20)
+  hypothesisKind  String?  @map("hypothesis_kind") @db.VarChar(20)
+  dteSaleDetailIds Json    @map("dte_sale_detail_ids")
+  hypothesis      Json?
+  createdBy       Int?     @map("created_by")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  event           Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  creator         User?    @relation(fields: [createdBy], references: [id], onDelete: SetNull)
+
+  @@deny('all', auth() == null)
+  @@allow('read', auth().status == 'ACTIVE')
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@index([eventId])
+  @@index([action])
+  @@index([createdAt(sort: Desc)])
+  @@map("event_dte_match_reviews")
+}
+
+// ============================================================
+// DTE SYNC LOGS
+// ============================================================
+
+model DTESyncLog {
+  id                String    @id @default(uuid())
+  period            String    @db.VarChar(6)                        // YYYYMM format (e.g., "202602")
+  docTypes          String    @db.VarChar(50)                       // "sales" | "purchases" | "both"
+  status            String    @default("PENDING") @db.VarChar(20)   // PENDING | SUCCESS | PARTIAL | FAILED
+  totalProcessed    Int       @default(0) @map("total_processed")   // Total rows processed across all types
+  totalInserted     Int       @default(0) @map("total_inserted")
+  totalUpdated      Int       @default(0) @map("total_updated")
+  totalSkipped      Int       @default(0) @map("total_skipped")
+  salesInserted     Int       @default(0) @map("sales_inserted")
+  purchasesInserted Int       @default(0) @map("purchases_inserted")
+  errorMessage      String?   @map("error_message")
+  triggerSource     String?   @db.VarChar(20)                       // "cron" | "manual" | "user"
+  triggerUserId     String?   @map("trigger_user_id")               // User ID if manual trigger
+  startedAt         DateTime  @default(now()) @map("started_at")
+  completedAt       DateTime? @map("completed_at")
+  
+  // Access policies
+  @@deny('all', auth() == null)
+  @@allow('read', auth().status == 'ACTIVE')
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@index([period])
+  @@index([status])
+  @@index([startedAt(sort: Desc)])
+  @@map("dte_sync_logs")
+}
+
+enum DTEType {
+  PURCHASE
+  SALE
+}
+
+enum TransactionType {
+  INCOME
+  EXPENSE
+}
+
+enum CompensationAllocationType {
+  MANUAL_ADJUST
+  ORIGINAL
+  ROLLOVER_IN
+  ROLLOVER_OUT
+}
+
+model TransactionCategory {
+  id                   Int                         @id @default(autoincrement())
+  name                 String
+  color                String?
+  icon                 String?
+  createdAt            DateTime                    @default(now()) @map("created_at")
+  updatedAt            DateTime                    @updatedAt @map("updated_at")
+
+  transactions         FinancialTransaction[]
+  autoRules            FinancialAutoCategoryRule[]
+  compensationProfiles CompensationProfile[]
+  services             Service[]
+
+  // Access policies
+  @@allow('all', auth().status == 'ACTIVE')
+
+  @@map("transaction_categories")
+}
+
+model FinancialAutoCategoryRule {
+  id                  Int                 @id @default(autoincrement())
+  name                String
+  type                TransactionType     @default(EXPENSE)
+  counterpartId       Int?                @map("counterpart_id")
+  categoryId          Int                 @map("category_id")
+  minAmount           Decimal?            @map("min_amount") @db.Decimal(19, 4)
+  maxAmount           Decimal?            @map("max_amount") @db.Decimal(19, 4)
+  amountsExact        Decimal[]           @default([]) @map("amounts_exact") @db.Decimal(19, 4)
+  paymentMethods      String[]            @default([]) @map("payment_methods")
+  matchAmountOn       String              @default("net") @map("match_amount_on")
+  commentContains     String?             @map("comment_contains")
+  descriptionContains String?             @map("description_contains")
+  isActive            Boolean             @default(true) @map("is_active")
+  priority            Int                 @default(0)
+  createdAt           DateTime            @default(now()) @map("created_at")
+  updatedAt           DateTime            @updatedAt @map("updated_at")
+
+  counterpart         Counterpart?        @relation(fields: [counterpartId], references: [id], onDelete: Cascade)
+  category            TransactionCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  // Access policies
+  @@allow('all', auth().status == 'ACTIVE')
+
+  @@index([counterpartId])
+  @@index([categoryId])
+  @@index([isActive])
+  @@map("financial_auto_category_rules")
+}
+
+model FinancialTransaction {
+  id               Int                              @id @default(autoincrement())
+  date             DateTime
+  description      String
+  amount           Decimal                          @db.Decimal(19, 4)
+  type             TransactionType
+  sourceId         String?                          @map("source_id")
+  categoryId       Int?                             @map("category_id")
+  counterpartId    Int?                             @map("counterpart_id")
+  category         TransactionCategory?             @relation(fields: [categoryId], references: [id])
+  counterpart      Counterpart?                     @relation(fields: [counterpartId], references: [id])
+  allocations      FinancialTransactionAllocation[]
+  loanSchedules    LoanSchedule[]
+  serviceSchedules ServiceSchedule[]
+  comment          String?
+
+  createdAt        DateTime                         @default(now()) @map("created_at")
+  updatedAt        DateTime                         @updatedAt @map("updated_at")
+
+  // Access policies
+  @@allow('all', auth().status == 'ACTIVE')
+
+  @@index([date])
+  @@index([type])
+  @@index([categoryId])
+  @@index([counterpartId])
+  @@map("financial_transactions")
+}
+
+model CompensationProfile {
+  id            Int                              @id @default(autoincrement())
+  name          String
+  categoryId    Int                              @map("category_id")
+  counterpartId Int?                             @map("counterpart_id")
+  isActive      Boolean                          @default(true) @map("is_active")
+  timezone      String                           @default("America/Santiago")
+  createdAt     DateTime                         @default(now()) @map("created_at")
+  updatedAt     DateTime                         @updatedAt @map("updated_at")
+
+  category      TransactionCategory              @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  counterpart   Counterpart?                     @relation(fields: [counterpartId], references: [id], onDelete: SetNull)
+  budgets       CompensationPeriodBudget[]
+  allocations   FinancialTransactionAllocation[]
+
+  // Access policies
+  @@allow('all', auth().status == 'ACTIVE')
+
+  @@index([categoryId])
+  @@index([counterpartId])
+  @@index([isActive])
+  @@map("compensation_profiles")
+}
+
+model CompensationPeriodBudget {
+  id         Int                 @id @default(autoincrement())
+  profileId  Int                 @map("profile_id")
+  period     String              @db.VarChar(7) // YYYY-MM
+  baseAmount Decimal             @map("base_amount") @db.Decimal(19, 4)
+  isLocked   Boolean             @default(false) @map("is_locked")
+  createdAt  DateTime            @default(now()) @map("created_at")
+  updatedAt  DateTime            @updatedAt @map("updated_at")
+
+  profile    CompensationProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  // Access policies
+  @@allow('all', auth().status == 'ACTIVE')
+
+  @@unique([profileId, period])
+  @@index([profileId])
+  @@index([period])
+  @@map("compensation_period_budgets")
+}
+
+model FinancialTransactionAllocation {
+  id                 Int                              @id @default(autoincrement())
+  transactionId      Int                              @map("transaction_id")
+  profileId          Int                              @map("profile_id")
+  period             String                           @db.VarChar(7) // YYYY-MM
+  amount             Decimal                          @db.Decimal(19, 4)
+  allocationType     CompensationAllocationType       @default(MANUAL_ADJUST) @map("allocation_type")
+  sourceAllocationId Int?                             @map("source_allocation_id")
+  createdAt          DateTime                         @default(now()) @map("created_at")
+  updatedAt          DateTime                         @updatedAt @map("updated_at")
+
+  transaction        FinancialTransaction             @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  profile            CompensationProfile              @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  sourceAllocation   FinancialTransactionAllocation?  @relation("AllocationSource", fields: [sourceAllocationId], references: [id], onDelete: SetNull)
+  derivedAllocations FinancialTransactionAllocation[] @relation("AllocationSource")
+
+  // Access policies
+  @@allow('all', auth().status == 'ACTIVE')
+
+  @@index([transactionId])
+  @@index([profileId])
+  @@index([period])
+  @@index([sourceAllocationId])
+  @@map("financial_transaction_allocations")
+}
+
+enum PatientCampaignRecipientStatus {
+  PENDING
+  SENT
+  INFO_REQUESTED
+  IN_NEGOTIATION
+  ACCEPTED
+  DISMISSED
+  NO_RESPONSE
+}
+
+model PatientCampaign {
+  id              Int                         @id @default(autoincrement())
+  name            String
+  description     String?
+  messageTemplate String?                     @map("message_template")
+  imageUrl        String?                     @map("image_url")
+  isActive        Boolean                     @default(true) @map("is_active")
+  createdBy       Int?                        @map("created_by")
+  createdAt       DateTime                    @default(now()) @map("created_at")
+  updatedAt       DateTime                    @default(now()) @updatedAt @map("updated_at")
+
+  recipients      PatientCampaignRecipient[]
+
+  @@deny('all', auth() == null)
+  @@allow('read', auth().status == 'ACTIVE')
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@index([isActive])
+  @@map("patient_campaigns")
+}
+
+model PatientCampaignRecipient {
+  id            Int                            @id @default(autoincrement())
+  campaignId    Int                            @map("campaign_id")
+  patientRut    String                         @map("patient_rut") @db.VarChar(20)
+  patientName   String?                        @map("patient_name")
+  patientPhone  String?                        @map("patient_phone")
+  status        PatientCampaignRecipientStatus @default(PENDING)
+  notes         String?
+  sentAt        DateTime?                      @map("sent_at")
+  respondedAt   DateTime?                      @map("responded_at")
+  updatedBy     Int?                           @map("updated_by")
+  createdAt     DateTime                       @default(now()) @map("created_at")
+  updatedAt     DateTime                       @default(now()) @updatedAt @map("updated_at")
+
+  campaign      PatientCampaign                @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@deny('all', auth() == null)
+  @@allow('read', auth().status == 'ACTIVE')
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@unique([campaignId, patientRut])
+  @@index([patientRut])
+  @@index([status])
+  @@index([campaignId])
+  @@map("patient_campaign_recipients")
+}
+
+// ============================================================
+// OUTREACH (Schools/Educational establishments outreach module)
+// ============================================================
+
+enum OutreachDependencia {
+  MUNICIPAL
+  PARTICULAR_SUBVENCIONADO
+  PARTICULAR_PAGADO
+  SLEP
+  CORPORACION_MUNICIPAL
+  OTRO
+}
+
+enum OutreachStatus {
+  SIN_CONTACTAR
+  CONTACTADO
+  SIN_RESPUESTA
+  RESPONDIO_INTERES
+  RESPONDIO_MAS_INFO
+  RESPONDIO_DESISTIO
+  REUNION_AGENDADA
+  CONVENIO_FIRMADO
+  DESCARTADO
+}
+
+enum OutreachPriority {
+  ALTA
+  MEDIA
+  BAJA
+}
+
+enum OutreachProspectType {
+  COLEGIO
+  EMPRESA
+  MUNICIPIO
+  INSTITUCION
+  UNIVERSIDAD
+  OTRO
+}
+
+enum OutreachProspectSource {
+  MINEDUC
+  GOOGLE_PLACES
+  CRAWLER
+  APOLLO
+  HUNTER
+  MANUAL
+}
+
+enum OutreachInteractionType {
+  EMAIL_ENVIADO
+  EMAIL_RECIBIDO
+  LLAMADA_REALIZADA
+  LLAMADA_RECIBIDA
+  WHATSAPP
+  REUNION_PRESENCIAL
+  REUNION_ONLINE
+  CHARLA_REALIZADA
+  NOTA_INTERNA
+}
+
+enum OutreachCampaignStatus {
+  BORRADOR
+  REVISION
+  ENVIANDO
+  COMPLETADA
+  PAUSADA
+  CANCELADA
+}
+
+enum OutreachDeliveryStatus {
+  PENDIENTE
+  ENVIADO
+  ERROR
+  REBOTADO
+  ABIERTO
+  RESPONDIDO
+}
+
+model OutreachEstablishment {
+  // ID semantically: external prospect id.
+  // Colegios -> RBD MINEDUC (numeric string).
+  // Empresas Google Places -> "gp:<placeId>".
+  // Manual -> uuid or "manual:<slug>".
+  rbd                  String                   @id @db.VarChar(64)
+  nombre               String
+  tipo                 OutreachProspectType     @default(COLEGIO)
+  fuente               OutreachProspectSource   @default(MINEDUC)
+  dependencia          OutreachDependencia      @default(OTRO)
+  comuna               String
+  ciudad               String?
+  region               String
+  direccion            String?
+  telefonoMineduc      String?                  @map("telefono_mineduc")
+  emailMineduc         String?                  @map("email_mineduc")
+  directorMineduc      String?                  @map("director_mineduc")
+  matriculaTotal       Int?                     @map("matricula_total")
+  rural                Boolean                  @default(false)
+
+  // Empresa-specific
+  googlePlaceId        String?                  @unique @map("google_place_id")
+  categoria            String?
+  dominio              String?
+  rating               Float?
+  totalReviews         Int?                     @map("total_reviews")
+  estadoNegocio        String?                  @map("estado_negocio")
+  linkedinUrl          String?                  @map("linkedin_url")
+
+  // Enrichment metadata
+  apolloOrgId          String?                  @map("apollo_org_id")
+  apolloLastFetchedAt  DateTime?                @map("apollo_last_fetched_at")
+  hunterLastFetchedAt  DateTime?                @map("hunter_last_fetched_at")
+  hunterEmailPattern   String?                  @map("hunter_email_pattern")
+  crawledAt            DateTime?                @map("crawled_at")
+  crawlSuccess         Boolean                  @default(false) @map("crawl_success")
+  score                Int                      @default(0)
+
+  // Manual enrichment
+  websiteUrl           String?                  @map("website_url")
+  emailsAdicionales    String[]                 @default([]) @map("emails_adicionales")
+  telefonosAdicionales String[]                 @default([]) @map("telefonos_adicionales")
+  notas                String?
+  prioridad            OutreachPriority         @default(MEDIA)
+  etiquetas            String[]                 @default([])
+
+  estado               OutreachStatus           @default(SIN_CONTACTAR)
+  ultimoContactoAt     DateTime?                @map("ultimo_contacto_at")
+
+  activo               Boolean                  @default(true)
+  importadoEn          DateTime                 @default(now()) @map("importado_en")
+  actualizadoEn        DateTime                 @default(now()) @updatedAt @map("actualizado_en")
+
+  contactos            OutreachContact[]
+  interacciones        OutreachInteraction[]
+  envios               OutreachEmailDelivery[]
+
+  @@index([estado])
+  @@index([dependencia])
+  @@index([comuna])
+  @@index([prioridad])
+  @@index([activo])
+  @@index([tipo])
+  @@index([fuente])
+  @@index([dominio])
+  @@index([score])
+
+  @@deny('all', auth() == null)
+  @@allow('read', auth().status == 'ACTIVE')
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@map("outreach_establishments")
+}
+
+model OutreachContact {
+  id                  Int                       @id @default(autoincrement())
+  establecimientoRbd  String                    @map("establecimiento_rbd") @db.VarChar(64)
+  nombre              String
+  cargo               String
+  email               String?
+  telefono            String?
+  esPrincipal         Boolean                   @default(false) @map("es_principal")
+  notas               String?
+  createdAt           DateTime                  @default(now()) @map("created_at")
+  updatedAt           DateTime                  @default(now()) @updatedAt @map("updated_at")
+
+  establishment       OutreachEstablishment     @relation(fields: [establecimientoRbd], references: [rbd], onDelete: Cascade)
+  interacciones       OutreachInteraction[]
+  envios              OutreachEmailDelivery[]
+
+  @@index([establecimientoRbd])
+  @@index([email])
+
+  @@deny('all', auth() == null)
+  @@allow('read', auth().status == 'ACTIVE')
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@map("outreach_contacts")
+}
+
+model OutreachInteraction {
+  id                  Int                       @id @default(autoincrement())
+  establecimientoRbd  String                    @map("establecimiento_rbd") @db.VarChar(64)
+  contactoId          Int?                      @map("contacto_id")
+  tipo                OutreachInteractionType
+  fecha               DateTime
+  asunto              String?
+  contenido           String
+  emailDesde          String?                   @map("email_desde")
+  emailHacia          String?                   @map("email_hacia")
+  resultado           String?
+  creadoPorUserId     Int?                      @map("creado_por_user_id")
+  creadoPorNombre     String?                   @map("creado_por_nombre")
+  createdAt           DateTime                  @default(now()) @map("created_at")
+
+  establishment       OutreachEstablishment     @relation(fields: [establecimientoRbd], references: [rbd], onDelete: Cascade)
+  contacto            OutreachContact?          @relation(fields: [contactoId], references: [id], onDelete: SetNull)
+
+  @@index([establecimientoRbd])
+  @@index([contactoId])
+  @@index([tipo])
+  @@index([fecha])
+
+  @@deny('all', auth() == null)
+  @@allow('read', auth().status == 'ACTIVE')
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@map("outreach_interactions")
+}
+
+model OutreachEmailCampaign {
+  id                  Int                       @id @default(autoincrement())
+  nombre              String
+  asunto              String
+  cuerpoHtml          String                    @map("cuerpo_html")
+  cuerpoTexto         String                    @map("cuerpo_texto")
+  fromEmail           String                    @map("from_email")
+  fromNombre          String                    @map("from_nombre")
+  replyTo             String?                   @map("reply_to")
+  filtros             Json                      @default("{}")
+  ratePerHour         Int                       @default(50) @map("rate_per_hour")
+  estado              OutreachCampaignStatus    @default(BORRADOR)
+
+  totalDestinatarios  Int                       @default(0) @map("total_destinatarios")
+  enviados            Int                       @default(0)
+  errores             Int                       @default(0)
+  respondidos         Int                       @default(0)
+
+  createdByUserId     Int?                      @map("created_by_user_id")
+  createdAt           DateTime                  @default(now()) @map("created_at")
+  updatedAt           DateTime                  @default(now()) @updatedAt @map("updated_at")
+  enviadoEn           DateTime?                 @map("enviado_en")
+
+  envios              OutreachEmailDelivery[]
+
+  @@index([estado])
+  @@index([createdByUserId])
+
+  @@deny('all', auth() == null)
+  @@allow('read', auth().status == 'ACTIVE')
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@map("outreach_email_campaigns")
+}
+
+model OutreachEmailDelivery {
+  id                  Int                       @id @default(autoincrement())
+  campaignId          Int                       @map("campaign_id")
+  establecimientoRbd  String                    @map("establecimiento_rbd") @db.VarChar(64)
+  contactoId          Int?                      @map("contacto_id")
+  emailDestinatario   String                    @map("email_destinatario")
+  asuntoRender        String?                   @map("asunto_render")
+  cuerpoHtmlRender    String?                   @map("cuerpo_html_render")
+  cuerpoTextoRender   String?                   @map("cuerpo_texto_render")
+  estado              OutreachDeliveryStatus    @default(PENDIENTE)
+  errorMensaje        String?                   @map("error_mensaje")
+  intentos            Int                       @default(0)
+  enviadoEn           DateTime?                 @map("enviado_en")
+  createdAt           DateTime                  @default(now()) @map("created_at")
+  updatedAt           DateTime                  @default(now()) @updatedAt @map("updated_at")
+
+  campaign            OutreachEmailCampaign     @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  establishment       OutreachEstablishment     @relation(fields: [establecimientoRbd], references: [rbd], onDelete: Cascade)
+  contacto            OutreachContact?          @relation(fields: [contactoId], references: [id], onDelete: SetNull)
+
+  @@index([campaignId])
+  @@index([establecimientoRbd])
+  @@index([estado])
+
+  @@deny('all', auth() == null)
+  @@allow('read', auth().status == 'ACTIVE')
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@map("outreach_email_deliveries")
+}
+
+model OutreachImportLog {
+  id                Int       @id @default(autoincrement())
+  source            String
+  fileUrl           String?   @map("file_url")
+  totalRows         Int       @default(0) @map("total_rows")
+  nuevos            Int       @default(0)
+  actualizados      Int       @default(0)
+  inactivos         Int       @default(0)
+  errores           Int       @default(0)
+  errorDetalle      String?   @map("error_detalle")
+  startedAt         DateTime  @default(now()) @map("started_at")
+  finishedAt        DateTime? @map("finished_at")
+  createdByUserId   Int?      @map("created_by_user_id")
+
+  @@deny('all', auth() == null)
+  @@allow('read', auth().status == 'ACTIVE')
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@map("outreach_import_logs")
+}
+
+// ============================================================
+// WHATSAPP CLOUD API (Meta official)
+// ============================================================
+
+enum WaMessageDirection {
+  INBOUND
+  OUTBOUND
+}
+
+enum WaMessageStatus {
+  PENDING
+  SENT
+  DELIVERED
+  READ
+  FAILED
+  DELETED
+}
+
+enum WaMessageType {
+  TEXT
+  IMAGE
+  VIDEO
+  AUDIO
+  DOCUMENT
+  STICKER
+  LOCATION
+  CONTACTS
+  INTERACTIVE
+  BUTTON
+  TEMPLATE
+  REACTION
+  SYSTEM
+  UNSUPPORTED
+}
+
+enum WaConversationStatus {
+  OPEN
+  PENDING
+  CLOSED
+  ARCHIVED
+}
+
+enum WaTemplateStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  DISABLED
+  PAUSED
+}
+
+enum WaTemplateCategory {
+  MARKETING
+  UTILITY
+  AUTHENTICATION
+}
+
+model WaBusinessAccount {
+  id                  Int       @id @default(autoincrement())
+  wabaId              String    @unique @map("waba_id")
+  metaBusinessId      String?   @map("meta_business_id")
+  appId               String?   @map("app_id")
+  appSecret           String?   @map("app_secret")
+  systemUserToken     String?   @map("system_user_token")
+  webhookVerifyToken  String?   @map("webhook_verify_token")
+  graphApiVersion     String    @default("v21.0") @map("graph_api_version")
+  displayName         String?   @map("display_name")
+  active              Boolean   @default(true)
+  // Meta Commerce catalog id linked to this WABA. Set to enable
+  // single-product / multi-product (MPM) interactive messages. Configured
+  // once in Meta Business Suite and stored here; we do not manage the
+  // catalog itself, only reference it.
+  commerceCatalogId   String?   @map("commerce_catalog_id")
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  phoneNumbers        WaPhoneNumber[]
+  templates           WaTemplate[]
+  broadcasts          WaBroadcast[]
+  accountEvents       WaAccountEvent[]
+
+  @@deny('all', auth() == null)
+  @@allow('read,create,update,delete', auth().status == 'ACTIVE')
+  @@map("wa_business_accounts")
+}
+
+model WaPhoneNumber {
+  id                  Int       @id @default(autoincrement())
+  accountId           Int       @map("account_id")
+  phoneNumberId       String    @unique @map("phone_number_id")
+  displayPhoneNumber  String    @map("display_phone_number")
+  label               String?
+  qualityRating       String?   @map("quality_rating")
+  active              Boolean   @default(true)
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  account             WaBusinessAccount     @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  messages            WaMessage[]
+  conversations       WaConversationChannel[]
+  scheduledMessages   WaScheduledMessage[]
+  broadcasts          WaBroadcast[]
+  accountEvents       WaAccountEvent[]
+
+  @@index([accountId])
+  @@deny('all', auth() == null)
+  @@allow('read,create,update,delete', auth().status == 'ACTIVE')
+  @@map("wa_phone_numbers")
+}
+
+model WaContact {
+  id                  Int       @id @default(autoincrement())
+  phoneE164           String    @unique @map("phone_e164")
+  name                String?
+  pushName            String?   @map("push_name")
+  optInStatus         String    @default("UNKNOWN") @map("opt_in_status")
+  notas               String?
+  etiquetas           String[]  @default([])
+  patientRut          String?   @map("patient_rut") @db.VarChar(20)
+  metadata            Json      @default("{}")
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  // user_preferences webhook (per-category opt-in/out, e.g. marketing)
+  marketingOptIn      Boolean?  @map("marketing_opt_in")
+  marketingOptInAt    DateTime? @map("marketing_opt_in_at")
+  // Block status (set after successful POST /{phone-id}/block_users)
+  blockedAt           DateTime? @map("blocked_at")
+  blockedByUserId     Int?      @map("blocked_by_user_id")
+  // Meta 2026: Business-Scoped User ID (BSUID) — replaces wa_id when contact
+  // adopts a username. Stored alongside phoneE164 for forward compatibility.
+  bsuid               String?   @unique
+
+  conversations       WaConversation[]
+  messages            WaMessage[]
+  scheduledMessages   WaScheduledMessage[]
+
+  @@index([patientRut])
+  @@deny('all', auth() == null)
+  @@allow('read,create,update,delete', auth().status == 'ACTIVE')
+  @@map("wa_contacts")
+}
+
+model WaConversation {
+  id                  Int                   @id @default(autoincrement())
+  contactId           Int                   @map("contact_id")
+  status              WaConversationStatus  @default(OPEN)
+  assignedToUserId    Int?                  @map("assigned_to_user_id")
+  unreadCount         Int                   @default(0) @map("unread_count")
+  lastInboundAt       DateTime?             @map("last_inbound_at")
+  lastMessageAt       DateTime?             @map("last_message_at")
+  lastMessagePreview  String?               @map("last_message_preview")
+  notas               String?
+  etiquetas           String[]              @default([])
+  createdAt           DateTime              @default(now()) @map("created_at")
+  updatedAt           DateTime              @default(now()) @updatedAt @map("updated_at")
+
+  contact             WaContact             @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  channels            WaConversationChannel[]
+  messages            WaMessage[]
+  scheduledMessages   WaScheduledMessage[]
+
+  @@unique([contactId])
+  @@index([status])
+  @@index([assignedToUserId])
+  @@index([lastMessageAt])
+  @@deny('all', auth() == null)
+  @@allow('read,create,update,delete', auth().status == 'ACTIVE')
+  @@map("wa_conversations")
+}
+
+model WaConversationChannel {
+  id                  Int            @id @default(autoincrement())
+  conversationId      Int            @map("conversation_id")
+  phoneNumberId       Int            @map("phone_number_id")
+  lastMessageAt       DateTime?      @map("last_message_at")
+  createdAt           DateTime       @default(now()) @map("created_at")
+
+  conversation        WaConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  phoneNumber         WaPhoneNumber  @relation(fields: [phoneNumberId], references: [id], onDelete: Cascade)
+
+  @@unique([conversationId, phoneNumberId])
+  @@index([phoneNumberId])
+  @@deny('all', auth() == null)
+  @@allow('read,create,update,delete', auth().status == 'ACTIVE')
+  @@map("wa_conversation_channels")
+}
+
+model WaMessage {
+  id                  Int                  @id @default(autoincrement())
+  conversationId      Int                  @map("conversation_id")
+  contactId           Int                  @map("contact_id")
+  phoneNumberId       Int                  @map("phone_number_id")
+  metaMessageId       String?              @map("meta_message_id")
+  direction           WaMessageDirection
+  type                WaMessageType
+  status              WaMessageStatus      @default(PENDING)
+  body                String?
+  mediaUrl            String?              @map("media_url")
+  mediaMimeType       String?              @map("media_mime_type")
+  mediaCaption        String?              @map("media_caption")
+  templateName        String?              @map("template_name")
+  templateLanguage    String?              @map("template_language")
+  payload             Json                 @default("{}")
+  errorCode           String?              @map("error_code")
+  errorTitle          String?              @map("error_title")
+  errorDetails        String?              @map("error_details")
+  sentByUserId        Int?                 @map("sent_by_user_id")
+  contextMetaMessageId String?             @map("context_meta_message_id")
+  // Status enrichment (Meta status webhook)
+  conversationWindowId String?             @map("conversation_window_id")
+  conversationOrigin  String?              @map("conversation_origin")
+  pricingBillable     Boolean?             @map("pricing_billable")
+  pricingModel        String?              @map("pricing_model")
+  pricingCategory     String?              @map("pricing_category")
+  bizCallbackData     String?              @map("biz_callback_data")
+  // Click-to-WhatsApp ad referral attribution (inbound only)
+  referralSourceUrl   String?              @map("referral_source_url")
+  referralSourceType  String?              @map("referral_source_type")
+  referralSourceId    String?              @map("referral_source_id")
+  referralCtwaClid    String?              @map("referral_ctwa_clid")
+  referralHeadline    String?              @map("referral_headline")
+  referralBodyText    String?              @map("referral_body_text")
+  referralMediaType   String?              @map("referral_media_type")
+  referralMediaUrl    String?              @map("referral_media_url")
+  timestamp           DateTime
+  deliveredAt         DateTime?            @map("delivered_at")
+  readAt              DateTime?            @map("read_at")
+  createdAt           DateTime             @default(now()) @map("created_at")
+  updatedAt           DateTime             @default(now()) @updatedAt @map("updated_at")
+
+  conversation        WaConversation       @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  contact             WaContact            @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  phoneNumber         WaPhoneNumber        @relation(fields: [phoneNumberId], references: [id], onDelete: Cascade)
+
+  @@unique([metaMessageId])
+  @@index([conversationId])
+  @@index([contactId])
+  @@index([phoneNumberId])
+  @@index([timestamp])
+  @@index([direction, status])
+  @@deny('all', auth() == null)
+  @@allow('read,create,update,delete', auth().status == 'ACTIVE')
+  @@map("wa_messages")
+}
+
+model WaTemplate {
+  id                  Int                 @id @default(autoincrement())
+  accountId           Int                 @map("account_id")
+  name                String
+  language            String
+  category            WaTemplateCategory  @default(UTILITY)
+  status              WaTemplateStatus    @default(PENDING)
+  components          Json                @default("[]")
+  qualityScore        String?             @map("quality_score")
+  metaTemplateId      String?             @map("meta_template_id")
+  syncedAt            DateTime?           @map("synced_at")
+  createdAt           DateTime            @default(now()) @map("created_at")
+  updatedAt           DateTime            @default(now()) @updatedAt @map("updated_at")
+
+  account             WaBusinessAccount   @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@unique([accountId, name, language])
+  @@index([status])
+  @@deny('all', auth() == null)
+  @@allow('read,create,update,delete', auth().status == 'ACTIVE')
+  @@map("wa_templates")
+}
+
+model WaWebhookLog {
+  id                  Int       @id @default(autoincrement())
+  receivedAt          DateTime  @default(now()) @map("received_at")
+  signatureValid      Boolean   @map("signature_valid")
+  payload             Json
+  processed           Boolean   @default(false)
+  errorMessage        String?   @map("error_message")
+  eventCount          Int       @default(0) @map("event_count")
+
+  @@index([receivedAt])
+  @@deny('all', auth() == null)
+  @@allow('read,create,update,delete', auth().status == 'ACTIVE')
+  @@map("wa_webhook_logs")
+}
+
+// ── Saved interactive entities (curated catalog) ────────────────────────────
+
+model WaSavedLocation {
+  id          Int      @id @default(autoincrement())
+  name        String
+  latitude    Float
+  longitude   Float
+  address     String?
+  isDefault   Boolean  @default(false) @map("is_default")
+  archived    Boolean  @default(false)
+  createdByUserId Int  @map("created_by_user_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@index([archived])
+  @@deny('all', auth() == null)
+  @@allow('read,create,update,delete', auth().status == 'ACTIVE')
+  @@map("wa_saved_locations")
+}
+
+model WaSavedInteractiveList {
+  id           Int      @id @default(autoincrement())
+  name         String
+  description  String?
+  headerText   String?  @map("header_text")
+  bodyText     String   @map("body_text")
+  footerText   String?  @map("footer_text")
+  buttonText   String   @map("button_text")
+  sections     Json
+  archived     Boolean  @default(false)
+  hitCount     Int      @default(0) @map("hit_count")
+  lastUsedAt   DateTime? @map("last_used_at")
+  createdByUserId Int   @map("created_by_user_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@index([archived])
+  @@deny('all', auth() == null)
+  @@allow('read,create,update,delete', auth().status == 'ACTIVE')
+  @@map("wa_saved_interactive_lists")
+}
+
+model WaSavedFlow {
+  id              Int      @id @default(autoincrement())
+  accountId       Int?     @map("account_id")
+  name            String
+  description     String?
+  flowId          String   @map("flow_id")
+  flowToken       String?  @map("flow_token")
+  initialScreen   String?  @map("initial_screen")
+  defaultBody     String   @map("default_body")
+  defaultHeader   String?  @map("default_header")
+  defaultFooter   String?  @map("default_footer")
+  defaultCta      String   @default("Iniciar") @map("default_cta")
+  // Meta-synced metadata (refreshed via syncFlows)
+  metaStatus      String?  @map("meta_status")
+  metaCategories  String[] @default([]) @map("meta_categories")
+  metaHealth      String?  @map("meta_health")
+  metaSyncedAt    DateTime? @map("meta_synced_at")
+  archived        Boolean  @default(false)
+  hitCount        Int      @default(0) @map("hit_count")
+  lastUsedAt      DateTime? @map("last_used_at")
+  createdByUserId Int      @map("created_by_user_id")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@unique([flowId])
+  @@index([archived])
+  @@deny('all', auth() == null)
+  @@allow('read,create,update,delete', auth().status == 'ACTIVE')
+  @@map("wa_saved_flows")
+}
+
+enum WaSnippetKind {
+  TEXT
+  MEDIA_DOCUMENT
+  MEDIA_IMAGE
+  MEDIA_VIDEO
+  MEDIA_AUDIO
+  MEDIA_STICKER
+  CTA_URL
+  REPLY_BUTTONS
+}
+
+model WaSnippet {
+  id                  Int            @id @default(autoincrement())
+  accountId           Int?           @map("account_id")
+  kind                WaSnippetKind
+  category            String?
+  name                String
+  description         String?
+  shortcut            String?        // e.g. "/horario" for inline insert
+  // TEXT / CTA_URL / REPLY_BUTTONS / media caption
+  bodyText            String?        @map("body_text")
+  // CTA_URL
+  ctaUrl              String?        @map("cta_url")
+  ctaButtonText       String?        @map("cta_button_text")
+  ctaHeader           String?        @map("cta_header")
+  ctaFooter           String?        @map("cta_footer")
+  // REPLY_BUTTONS — JSON array of {id, title}
+  replyButtons        Json?          @map("reply_buttons")
+  replyHeader         String?        @map("reply_header")
+  replyFooter         String?        @map("reply_footer")
+  // Media (Meta media id is account-scoped, valid 30 days)
+  mediaHandle         String?        @map("media_handle")
+  mediaHandleExpiresAt DateTime?     @map("media_handle_expires_at")
+  mediaUrl            String?        @map("media_url")
+  mediaMimeType       String?        @map("media_mime_type")
+  mediaFilename       String?        @map("media_filename")
+  mediaSize           Int?           @map("media_size")
+  mediaUploadedByPhoneNumberId Int?  @map("media_uploaded_by_phone_number_id")
+  // Variables {{1}}, {{2}}, …
+  variables           String[]       @default([])
+  archived            Boolean        @default(false)
+  hitCount            Int            @default(0) @map("hit_count")
+  lastUsedAt          DateTime?      @map("last_used_at")
+  createdByUserId     Int            @map("created_by_user_id")
+  createdAt           DateTime       @default(now()) @map("created_at")
+  updatedAt           DateTime       @default(now()) @updatedAt @map("updated_at")
+
+  @@index([archived, kind])
+  @@index([category])
+  @@index([shortcut])
+  @@deny('all', auth() == null)
+  @@allow('read,create,update,delete', auth().status == 'ACTIVE')
+  @@map("wa_snippets")
+}
+
+enum WaScheduledStatus {
+  PENDING
+  SENT
+  FAILED
+  CANCELLED
+}
+
+enum WaAccountEventKind {
+  ACCOUNT_ALERT
+  ACCOUNT_REVIEW
+  ACCOUNT_SETTINGS
+  ACCOUNT_UPDATE
+  BUSINESS_CAPABILITY
+  BUSINESS_STATUS
+  SECURITY
+  PARTNER_SOLUTIONS
+  PAYMENT_CONFIG
+  USER_PREFERENCES
+  PHONE_QUALITY
+  PHONE_NAME
+  TEMPLATE_STATUS
+  TEMPLATE_QUALITY
+  TEMPLATE_CATEGORY
+  AUTOMATIC
+  TRACKING
+  OTHER
+}
+
+model WaAccountEvent {
+  id                   Int                  @id @default(autoincrement())
+  accountId            Int?                 @map("account_id")
+  phoneNumberId        Int?                 @map("phone_number_id")
+  kind                 WaAccountEventKind
+  field                String
+  severity             String               @default("info")
+  title                String
+  description          String?
+  payload              Json
+  acknowledged         Boolean              @default(false)
+  acknowledgedAt       DateTime?            @map("acknowledged_at")
+  acknowledgedByUserId Int?                 @map("acknowledged_by_user_id")
+  receivedAt           DateTime             @default(now()) @map("received_at")
+
+  account              WaBusinessAccount?   @relation(fields: [accountId], references: [id], onDelete: SetNull)
+  phoneNumber          WaPhoneNumber?       @relation(fields: [phoneNumberId], references: [id], onDelete: SetNull)
+
+  @@index([acknowledged, receivedAt])
+  @@index([accountId])
+  @@index([severity])
+  @@deny('all', auth() == null)
+  @@allow('read,create,update,delete', auth().status == 'ACTIVE')
+  @@map("wa_account_events")
+}
+
+enum WaBroadcastStatus {
+  DRAFT
+  QUEUED
+  SENDING
+  DONE
+  CANCELLED
+  FAILED
+}
+
+enum WaBroadcastRecipientStatus {
+  PENDING
+  SENT
+  FAILED
+  SKIPPED
+}
+
+model WaBroadcast {
+  id                   Int                  @id @default(autoincrement())
+  accountId            Int                  @map("account_id")
+  phoneNumberId        Int                  @map("phone_number_id")
+  name                 String
+  templateName         String               @map("template_name")
+  templateLanguage     String               @map("template_language")
+  status               WaBroadcastStatus    @default(DRAFT)
+  scheduledAt          DateTime?            @map("scheduled_at")
+  startedAt            DateTime?            @map("started_at")
+  finishedAt           DateTime?            @map("finished_at")
+  totalRecipients      Int                  @default(0) @map("total_recipients")
+  sentCount            Int                  @default(0) @map("sent_count")
+  failedCount          Int                  @default(0) @map("failed_count")
+  rateLimitPerSecond   Int                  @default(5) @map("rate_limit_per_second")
+  createdByUserId      Int                  @map("created_by_user_id")
+  errorMessage         String?              @map("error_message")
+  createdAt            DateTime             @default(now()) @map("created_at")
+  updatedAt            DateTime             @default(now()) @updatedAt @map("updated_at")
+
+  account              WaBusinessAccount    @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  phoneNumber          WaPhoneNumber        @relation(fields: [phoneNumberId], references: [id], onDelete: Cascade)
+  recipients           WaBroadcastRecipient[]
+
+  @@index([status])
+  @@index([scheduledAt])
+  @@deny('all', auth() == null)
+  @@allow('read,create,update,delete', auth().status == 'ACTIVE')
+  @@map("wa_broadcasts")
+}
+
+model WaBroadcastRecipient {
+  id              Int                          @id @default(autoincrement())
+  broadcastId     Int                          @map("broadcast_id")
+  phoneE164       String                       @map("phone_e164")
+  variables       Json                         @default("[]")
+  status          WaBroadcastRecipientStatus   @default(PENDING)
+  sentMessageId   Int?                         @map("sent_message_id")
+  metaMessageId   String?                      @map("meta_message_id")
+  errorMessage    String?                      @map("error_message")
+  attempts        Int                          @default(0)
+  sentAt          DateTime?                    @map("sent_at")
+  createdAt       DateTime                     @default(now()) @map("created_at")
+  updatedAt       DateTime                     @default(now()) @updatedAt @map("updated_at")
+
+  broadcast       WaBroadcast                  @relation(fields: [broadcastId], references: [id], onDelete: Cascade)
+
+  @@unique([broadcastId, phoneE164])
+  @@index([broadcastId, status])
+  @@deny('all', auth() == null)
+  @@allow('read,create,update,delete', auth().status == 'ACTIVE')
+  @@map("wa_broadcast_recipients")
+}
+
+model WaScheduledMessage {
+  id                   Int                @id @default(autoincrement())
+  conversationId       Int                @map("conversation_id")
+  contactId            Int                @map("contact_id")
+  phoneNumberId        Int                @map("phone_number_id")
+  scheduledAt          DateTime           @map("scheduled_at")
+  status               WaScheduledStatus  @default(PENDING)
+  type                 WaMessageType
+  body                 String?
+  templateName         String?            @map("template_name")
+  templateLanguage     String?            @map("template_language")
+  templateVars         Json               @default("[]") @map("template_vars")
+  contextMetaMessageId String?            @map("context_meta_message_id")
+  createdByUserId      Int                @map("created_by_user_id")
+  sentMessageId        Int?               @map("sent_message_id")
+  errorMessage         String?            @map("error_message")
+  createdAt            DateTime           @default(now()) @map("created_at")
+  updatedAt            DateTime           @default(now()) @updatedAt @map("updated_at")
+
+  conversation         WaConversation     @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  contact              WaContact          @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  phoneNumber          WaPhoneNumber      @relation(fields: [phoneNumberId], references: [id], onDelete: Cascade)
+
+  @@index([status, scheduledAt])
+  @@index([conversationId])
+  @@deny('all', auth() == null)
+  @@allow('read,create,update,delete', auth().status == 'ACTIVE')
+  @@map("wa_scheduled_messages")
+}
+
+// ─── Expenses ────────────────────────────────────────────────────────────────
+
+enum ExpenseScope {
+  BIOALERGIA
+  PERSONAL
+}
+
+enum ExpenseStatus {
+  PENDING
+  PAID
+  OVERDUE
+  SKIPPED
+}
+
+enum ExpenseSource {
+  MANUAL
+  TEMPLATE
+  TRANSACTION
+}
+
+enum ExpenseRecurrence {
+  MONTHLY
+  ONE_TIME
+}
+
+model ExpenseService {
+  id             Int               @id @default(autoincrement())
+  publicId       String            @unique @default(cuid()) @map("public_id")
+  name           String
+  detail         String?
+  scope          ExpenseScope
+  category       String?
+  billingDay     Int?              @map("billing_day")
+  dueDateRule    String?           @map("due_date_rule")
+  defaultAmount  Decimal?          @map("default_amount") @db.Decimal(14, 2)
+  isFixed        Boolean           @default(false) @map("is_fixed")
+  recurrence     ExpenseRecurrence @default(MONTHLY)
+  startDate      DateTime?         @map("start_date") @db.Date
+  endDate        DateTime?         @map("end_date") @db.Date
+  isActive       Boolean           @default(true) @map("is_active")
+  notes          String?
+  tags           String[]
+  createdAt      DateTime          @default(now()) @map("created_at")
+  updatedAt      DateTime          @default(now()) @updatedAt @map("updated_at")
+
+  expenses       Expense[]
+
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+  @@map("expense_services")
+}
+
+model Expense {
+  id             Int             @id @default(autoincrement())
+  publicId       String          @unique @default(cuid()) @map("public_id")
+  serviceId      Int?            @map("service_id")
+  name           String
+  detail         String?
+  scope          ExpenseScope
+  expenseMonth   String          @map("expense_month")
+  dueDate        DateTime?       @map("due_date") @db.Date
+  amountExpected Decimal         @map("amount_expected") @db.Decimal(14, 2)
+  amountApplied  Decimal         @default(0) @map("amount_applied") @db.Decimal(14, 2)
+  status         ExpenseStatus   @default(PENDING)
+  source         ExpenseSource   @default(MANUAL)
+  category       String?
+  notes          String?
+  tags           String[]
+  createdAt      DateTime        @default(now()) @map("created_at")
+  updatedAt      DateTime        @default(now()) @updatedAt @map("updated_at")
+
+  service        ExpenseService? @relation(fields: [serviceId], references: [id], onDelete: SetNull)
+  transactions   ExpenseTransaction[]
+
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+  @@index([expenseMonth])
+  @@index([scope])
+  @@index([serviceId])
+  @@map("expenses")
+}
+
+// ─── Utility Accounts ────────────────────────────────────────────────────────
+
+enum UtilityProvider {
+  ESSBIO
+  CGE
+  OTHER
+
+  @@schema("personal")
+}
+
+model UtilityAccount {
+  id               Int             @id @default(autoincrement())
+  provider         UtilityProvider
+  scope            ExpenseScope    @default(PERSONAL)
+  serviceNumber    String          @unique @map("service_number") // Essbio: numero_servicio, CGE: CTA_CTO
+  label            String?         // e.g. "Casa San Pedro", "Clínica"
+
+  // Cached from last API fetch
+  clientName       String?         @map("client_name")
+  address          String?
+  lastFetchedAt    DateTime?       @map("last_fetched_at")
+  lastAmount       Decimal?        @map("last_amount") @db.Decimal(15, 2)
+  lastPreviousAmount Decimal?      @map("last_previous_amount") @db.Decimal(15, 2)
+
+  // Optional link to ExpenseService for auto-generating monthly expenses
+  expenseServiceId Int?            @map("expense_service_id")
+
+  isActive         Boolean         @default(true) @map("is_active")
+  notes            String?
+  createdAt        DateTime        @default(now()) @map("created_at")
+  updatedAt        DateTime        @default(now()) @updatedAt @map("updated_at")
+
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@index([scope])
+  @@schema("personal")
+  @@map("utility_accounts")
+}
+
+model ExpenseTransaction {
+  id            Int      @id @default(autoincrement())
+  expenseId     Int      @map("expense_id")
+  transactionId Int      @map("transaction_id")
+  amount        Decimal  @db.Decimal(14, 2)
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  expense       Expense  @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+  @@unique([expenseId, transactionId])
+  @@map("expense_transactions")
+}

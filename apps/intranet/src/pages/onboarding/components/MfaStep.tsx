@@ -1,0 +1,142 @@
+import { Button, Input, Label, Separator, TextField } from "@heroui/react";
+import { Fingerprint, Loader2, Smartphone } from "lucide-react";
+
+interface MfaSecretData {
+  qrCodeUrl: string;
+  secret: string;
+}
+
+interface MfaStepProps {
+  mfaSecret: MfaSecretData | null;
+  mfaCode: string;
+  onMfaCodeChange: (value: string) => void;
+  onSetupMfa: () => void;
+  onVerifyMfa: () => void;
+  onPasskeyRegister: () => void;
+  onSkip: () => void;
+  isLoading?: boolean;
+}
+
+export function MfaStep({
+  mfaSecret,
+  mfaCode,
+  onMfaCodeChange,
+  onSetupMfa,
+  onVerifyMfa,
+  onPasskeyRegister,
+  onSkip,
+  isLoading,
+}: MfaStepProps) {
+  if (isLoading && !mfaSecret) {
+    return (
+      <div className="flex justify-center py-8">
+        <Loader2 className=" text-primary" size={40} />
+      </div>
+    );
+  }
+
+  if (!mfaSecret) {
+    return (
+      <div className="space-y-6">
+        <div className="mb-6 text-center">
+          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-warning/10 text-warning">
+            <Smartphone size={24} />
+          </div>
+          <h2 className="font-bold text-2xl">Configurar MFA</h2>
+          <p className="text-default-500 text-sm">
+            Escanea el código con tu app de autenticación (Google Authenticator, Microsoft
+            Authenticator, Apple Passwords, etc).
+          </p>
+        </div>
+        <Button isDisabled={isLoading} onPress={onSetupMfa} variant="primary">
+          Generar código QR
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="mb-6 text-center">
+        <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-warning/10 text-warning">
+          <Smartphone size={24} />
+        </div>
+        <h2 className="font-bold text-2xl">Configurar MFA</h2>
+        <p className="text-default-500 text-sm">
+          Escanea el código con tu app de autenticación (Google Authenticator, Microsoft
+          Authenticator, Apple Passwords, etc).
+        </p>
+      </div>
+
+      <div className="flex flex-col items-center gap-6">
+        <div className="rounded-xl bg-white p-4">
+          <img
+            alt="QR Code"
+            className="h-48 w-48"
+            decoding="async"
+            loading="lazy"
+            src={mfaSecret.qrCodeUrl}
+          />
+        </div>
+
+        <div className="w-full max-w-xs">
+          <TextField
+            name="mfaCode"
+            type="text"
+            value={mfaCode}
+            onChange={(v) => onMfaCodeChange(v)}
+          >
+            <Label>Ingresa el código de 6 dígitos</Label>
+            <Input
+              className="text-center text-2xl tracking-widest"
+              inputMode="numeric"
+              maxLength={6}
+              pattern="[0-9]*"
+              placeholder="000000"
+            />
+          </TextField>
+        </div>
+
+        <div className="flex justify-center">
+          <Button
+            isDisabled={mfaCode.length !== 6 || isLoading}
+            onPress={onVerifyMfa}
+            variant="primary"
+          >
+            {isLoading ? <Loader2 className="" /> : "Verificar y activar"}
+          </Button>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Separator className="flex-1" />
+          <span className="text-default-300 text-xs">O usa biometría</span>
+          <Separator className="flex-1" />
+        </div>
+
+        <div className="flex justify-center">
+          <Button
+            className="gap-2"
+            isDisabled={isLoading}
+            onPress={onPasskeyRegister}
+            variant="outline"
+          >
+            <Fingerprint size={20} />
+            Registrar passkey (huella/FaceID)
+          </Button>
+        </div>
+
+        <div className="flex justify-center">
+          <Button
+            className="text-default-400 hover:text-foreground"
+            isDisabled={isLoading}
+            onPress={onSkip}
+            size="sm"
+            variant="outline"
+          >
+            Omitir por ahora
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}

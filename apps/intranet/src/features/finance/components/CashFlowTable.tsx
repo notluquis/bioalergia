@@ -1,0 +1,87 @@
+import type { RowSelectionState, VisibilityState } from "@tanstack/react-table";
+import { useState } from "react";
+import { DataTable } from "@/components/data-table/DataTable";
+import { type CashFlowTransaction, columns } from "./CashFlowColumns";
+
+interface Props {
+  data: CashFlowTransaction[];
+  categories: Array<{
+    color?: null | string;
+    icon?: null | string;
+    id: number;
+    name: string;
+  }>;
+  isLoading: boolean;
+  total: number;
+  page: number; // 1-indexed
+  pageSize: number;
+  onPageChange: (page: number) => void;
+  onEdit: (tx: CashFlowTransaction) => void;
+  onReallocate: (tx: CashFlowTransaction) => void;
+  onCategoryChange: (tx: CashFlowTransaction, categoryId: null | number) => void;
+  onRowSelectionChange: (
+    updater: RowSelectionState | ((old: RowSelectionState) => RowSelectionState)
+  ) => void;
+  rowSelection: RowSelectionState;
+  updatingCategoryIds: Set<number>;
+}
+
+export function CashFlowTable({
+  data,
+  categories,
+  isLoading,
+  total,
+  page,
+  pageSize,
+  onPageChange,
+  onEdit,
+  onReallocate,
+  onCategoryChange,
+  onRowSelectionChange,
+  rowSelection,
+  updatingCategoryIds,
+}: Props) {
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({
+    release_balance_amount: false,
+    sourceId: false,
+  });
+
+  // Convert 1-indexed page to 0-indexed for DataTable
+  const pagination = {
+    pageIndex: page - 1,
+    pageSize,
+  };
+
+  return (
+    <DataTable
+      autoFitColumns
+      columns={columns}
+      columnVisibility={columnVisibility}
+      containerVariant="plain"
+      data={data}
+      onColumnVisibilityChange={setColumnVisibility}
+      pageCount={Math.ceil(total / pageSize)}
+      pagination={pagination}
+      onPaginationChange={(updater) => {
+        if (typeof updater === "function") {
+          const newState = updater(pagination);
+          onPageChange(newState.pageIndex + 1);
+        } else {
+          onPageChange(updater.pageIndex + 1);
+        }
+      }}
+      isLoading={isLoading}
+      meta={{
+        onCategoryChange,
+        onEdit,
+        onReallocate,
+        transactionCategories: categories,
+        updatingCategoryIds,
+      }}
+      onRowSelectionChange={onRowSelectionChange}
+      rowSelection={rowSelection}
+      enableGlobalFilter={false} // Handled by parent
+      scrollMaxHeight="min(68dvh, 760px)"
+    />
+  );
+}

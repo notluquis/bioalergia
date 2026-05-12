@@ -1,1 +1,17 @@
-npx lint-staged
+#!/bin/sh
+
+if [ -x /usr/libexec/path_helper ]; then
+  # Load macOS system PATH for GUI git clients without invoking shells
+  eval "$(/usr/libexec/path_helper -s)"
+fi
+export PATH="/opt/homebrew/bin:$PATH"
+export CI="${CI:-true}"
+
+ROOT_DIR="$(git rev-parse --show-toplevel)"
+LINT_STAGED_BIN="$ROOT_DIR/node_modules/.bin/lint-staged"
+
+"$LINT_STAGED_BIN"
+
+if grep -q '"audit:routes"' "$ROOT_DIR/apps/site/package.json"; then
+  (cd "$ROOT_DIR/apps/site" && pnpm run audit:routes)
+fi

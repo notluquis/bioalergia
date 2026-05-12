@@ -1,0 +1,64 @@
+import React, { useState } from "react";
+
+export type SortDirection = "asc" | "desc";
+
+export interface SortState<T = string> {
+  column: null | T;
+  direction: SortDirection;
+}
+
+export interface UseSortingOptions<T> {
+  initialColumn?: null | T;
+  initialDirection?: SortDirection;
+}
+
+export function useSorting<T extends string>({
+  initialColumn = null,
+  initialDirection = "asc",
+}: UseSortingOptions<T> = {}) {
+  const [sortState, setSortState] = useState<SortState<T>>({
+    column: initialColumn,
+    direction: initialDirection,
+  });
+
+  const sort = (column: T) => {
+    setSortState((prev) => {
+      if (prev.column === column) {
+        // Cycle: asc -> desc -> none
+        if (prev.direction === "asc") {
+          return { column, direction: "desc" };
+        } else if (prev.direction === "desc") {
+          return { column: null, direction: "asc" };
+        }
+      }
+      return { column, direction: "asc" };
+    });
+  };
+
+  const getSortIcon = (column: T): null | React.ReactElement => {
+    if (sortState.column !== column) {
+      return null;
+    }
+    const symbol = sortState.direction === "asc" ? "▲" : "▼";
+    return React.createElement(
+      "span",
+      { className: "ml-1 text-xs opacity-60 align-middle select-none" },
+      symbol
+    );
+  };
+
+  const getSortProps = (column: T) => ({
+    onClick: () => {
+      sort(column);
+    },
+    style: { cursor: "pointer" },
+    title: `Ordenar por ${column}`,
+  });
+
+  return {
+    getSortIcon,
+    getSortProps,
+    sort,
+    sortState,
+  };
+}

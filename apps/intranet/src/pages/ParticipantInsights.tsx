@@ -1,0 +1,306 @@
+import {
+  Alert,
+  Button,
+  Card,
+  DateField,
+  DateRangePicker,
+  Form,
+  Input,
+  Label,
+  ListBox,
+  RangeCalendar,
+  Select,
+  TextField,
+} from "@heroui/react";
+import { parseDate } from "@internationalized/date";
+import { DataTable } from "@/components/data-table/DataTable";
+import {
+  getCounterpartsColumns,
+  getLeaderboardColumns,
+  getMonthlyColumns,
+} from "@/features/participants/components/ParticipantColumns";
+import { useParticipantInsightsData } from "@/features/participants/hooks/use-participant-insights-data";
+import { PAGE_CONTAINER } from "@/lib/styles";
+export function ParticipantInsightsPage() {
+  const {
+    counterparts,
+    detailError,
+    detailLoading,
+    displayedLeaderboard,
+    from,
+    handleSelectParticipant,
+    handleSubmit,
+    leaderboardError,
+    leaderboardGrouping,
+    leaderboardLimit,
+    leaderboardLoading,
+    monthly,
+    participantId,
+    quickMonth,
+    quickMonthOptions,
+    setFrom,
+    setLeaderboardGrouping,
+    setLeaderboardLimit,
+    setParticipantId,
+    setQuickMonth,
+    setTo,
+    to,
+    visible,
+  } = useParticipantInsightsData();
+
+  const leaderboardColumns = getLeaderboardColumns();
+  const monthlyColumns = getMonthlyColumns();
+  const counterpartsColumns = getCounterpartsColumns();
+
+  return (
+    <section className={PAGE_CONTAINER}>
+      <Card>
+        <Card.Content className="p-6">
+          <Form
+            className="grid items-end gap-6 sm:grid-cols-2 lg:grid-cols-4"
+            onSubmit={handleSubmit}
+            validationBehavior="aria"
+          >
+            <TextField
+              name="participantId"
+              type="text"
+              value={participantId}
+              onChange={(v) => setParticipantId(v)}
+            >
+              <Label>ID participante</Label>
+              <Input
+                variant="secondary"
+                enterKeyHint="search"
+                inputMode="numeric"
+                placeholder="123861706983"
+              />
+            </TextField>
+
+            <Select
+              onChange={(value) => {
+                setQuickMonth(value as string);
+              }}
+              value={quickMonth}
+            >
+              <Label>Rango rápido</Label>
+              <Select.Trigger>
+                <Select.Value />
+                <Select.Indicator />
+              </Select.Trigger>
+              <Select.Popover>
+                <ListBox>
+                  {quickMonthOptions.map((option) => (
+                    <ListBox.Item id={option.value} key={option.value}>
+                      {option.label}
+                    </ListBox.Item>
+                  ))}
+                </ListBox>
+              </Select.Popover>
+            </Select>
+            <DateRangePicker
+              isDisabled={quickMonth !== "custom"}
+              onChange={(value) => {
+                if (!value) {
+                  return;
+                }
+                setFrom(value.start.toString());
+                setTo(value.end.toString());
+              }}
+              value={from && to ? { end: parseDate(to), start: parseDate(from) } : undefined}
+            >
+              <Label>Rango personalizado</Label>
+              <DateField.Group>
+                <DateField.InputContainer>
+                  <DateField.Input slot="start">
+                    {(segment) => <DateField.Segment segment={segment} />}
+                  </DateField.Input>
+                  <DateRangePicker.RangeSeparator />
+                  <DateField.Input slot="end">
+                    {(segment) => <DateField.Segment segment={segment} />}
+                  </DateField.Input>
+                </DateField.InputContainer>
+                <DateField.Suffix>
+                  <DateRangePicker.Trigger>
+                    <DateRangePicker.TriggerIndicator />
+                  </DateRangePicker.Trigger>
+                </DateField.Suffix>
+              </DateField.Group>
+              <DateRangePicker.Popover>
+                <RangeCalendar aria-label="Rango personalizado" visibleDuration={{ months: 2 }}>
+                  <RangeCalendar.Header>
+                    <RangeCalendar.YearPickerTrigger>
+                      <RangeCalendar.YearPickerTriggerHeading />
+                      <RangeCalendar.YearPickerTriggerIndicator />
+                    </RangeCalendar.YearPickerTrigger>
+                    <RangeCalendar.NavButton slot="previous" />
+                    <RangeCalendar.NavButton slot="next" />
+                  </RangeCalendar.Header>
+                  <RangeCalendar.Grid>
+                    <RangeCalendar.GridHeader>
+                      {(day) => <RangeCalendar.HeaderCell>{day}</RangeCalendar.HeaderCell>}
+                    </RangeCalendar.GridHeader>
+                    <RangeCalendar.GridBody>
+                      {(date) => <RangeCalendar.Cell date={date} />}
+                    </RangeCalendar.GridBody>
+                  </RangeCalendar.Grid>
+                  <RangeCalendar.YearPickerGrid>
+                    <RangeCalendar.YearPickerGridBody>
+                      {({ year }) => <RangeCalendar.YearPickerCell year={year} />}
+                    </RangeCalendar.YearPickerGridBody>
+                  </RangeCalendar.YearPickerGrid>
+                </RangeCalendar>
+              </DateRangePicker.Popover>
+            </DateRangePicker>
+
+            <div className="flex justify-end lg:col-span-4">
+              <Button isDisabled={detailLoading} isPending={detailLoading} type="submit">
+                Consultar
+              </Button>
+            </div>
+          </Form>
+        </Card.Content>
+      </Card>
+
+      <div className="space-y-6">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="space-y-1">
+            <h2 className="font-semibold text-lg">Ranking de retiros</h2>
+            <p className="text-default-600 text-sm">
+              Contrapartes con mayores egresos en el rango seleccionado.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-4">
+            <div className="w-32">
+              <Select
+                onChange={(val) => {
+                  const value = Number(val);
+                  setLeaderboardLimit(Number.isFinite(value) ? value : 10);
+                }}
+                value={String(leaderboardLimit)}
+              >
+                <Label>Mostrar top</Label>
+                <Select.Trigger>
+                  <Select.Value />
+                  <Select.Indicator />
+                </Select.Trigger>
+                <Select.Popover>
+                  <ListBox>
+                    {[10, 20, 30].map((value) => (
+                      <ListBox.Item id={String(value)} key={value}>
+                        {value}
+                      </ListBox.Item>
+                    ))}
+                  </ListBox>
+                </Select.Popover>
+              </Select>
+            </div>
+            <div className="w-44">
+              <Select
+                onChange={(val) => {
+                  setLeaderboardGrouping(val as "account" | "rut");
+                }}
+                value={leaderboardGrouping}
+              >
+                <Label>Agrupar por</Label>
+                <Select.Trigger>
+                  <Select.Value />
+                  <Select.Indicator />
+                </Select.Trigger>
+                <Select.Popover>
+                  <ListBox>
+                    <ListBox.Item id="account">Cuenta bancaria</ListBox.Item>
+                    <ListBox.Item id="rut">RUT</ListBox.Item>
+                  </ListBox>
+                </Select.Popover>
+              </Select>
+            </div>
+          </div>
+        </div>
+
+        {leaderboardError && (
+          <Alert status="danger">
+            <Alert.Content>
+              <Alert.Description>{leaderboardError}</Alert.Description>
+            </Alert.Content>
+          </Alert>
+        )}
+
+        <Card>
+          <Card.Content className="p-0">
+            <DataTable
+              columns={leaderboardColumns}
+              data={displayedLeaderboard}
+              containerVariant="plain"
+              isLoading={leaderboardLoading}
+              meta={
+                {
+                  detailLoading,
+                  onSelect: handleSelectParticipant,
+                  participantId,
+                } as unknown as Record<string, unknown>
+              }
+              noDataMessage={
+                leaderboardLoading
+                  ? "Cargando ranking..."
+                  : "Sin participantes en el rango seleccionado."
+              }
+              scrollMaxHeight="min(68dvh, 760px)"
+            />
+          </Card.Content>
+        </Card>
+      </div>
+
+      {detailError && (
+        <Alert status="danger">
+          <Alert.Content>
+            <Alert.Description>{detailError}</Alert.Description>
+          </Alert.Content>
+        </Alert>
+      )}
+
+      {visible ? (
+        <div className="grid gap-6 lg:grid-cols-2">
+          <section className="space-y-4">
+            <h2 className="font-semibold text-lg">Resumen mensual</h2>
+            <Card>
+              <Card.Content className="p-0">
+                <DataTable
+                  columns={monthlyColumns}
+                  data={monthly}
+                  enableToolbar={false}
+                  containerVariant="plain"
+                  isLoading={detailLoading}
+                  noDataMessage="Sin movimientos."
+                  scrollMaxHeight="min(48dvh, 560px)"
+                />
+              </Card.Content>
+            </Card>
+          </section>
+
+          <section className="space-y-4">
+            <h2 className="font-semibold text-lg">Contrapartes</h2>
+            <Card>
+              <Card.Content className="p-0">
+                <DataTable
+                  columns={counterpartsColumns}
+                  data={counterparts}
+                  enableToolbar={false}
+                  containerVariant="plain"
+                  isLoading={detailLoading}
+                  noDataMessage="No hay contrapartes."
+                  scrollMaxHeight="min(48dvh, 560px)"
+                />
+              </Card.Content>
+            </Card>
+          </section>
+        </div>
+      ) : (
+        <div className="py-12 text-center text-default-400">
+          {detailLoading
+            ? "Buscando información del participante..."
+            : "Ingresa un identificador y selecciona el rango para ver su actividad."}
+        </div>
+      )}
+    </section>
+  );
+}

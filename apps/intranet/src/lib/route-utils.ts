@@ -1,0 +1,164 @@
+import type { AnyRoute } from "@tanstack/react-router";
+import type { RoutePermission } from "@/types/navigation";
+
+/**
+ * Determines if a route is a "technical" route that should NOT appear in navigation.
+ *
+ * Technical routes include:
+ * - Layout routes (prefixed with `_`)
+ * - Dynamic detail pages (`$id`, `$postId`, etc.)
+ * - Edit pages (`$id.edit`, `edit`)
+ * - Create pages (`create`)
+ * - Catch-all routes (`$`)
+ * - Index routes (usually redirects or parent containers)
+ *
+ * Based on TanStack Router file-based routing conventions.
+ */
+export function isTechnicalRoute(fullPath: string): boolean {
+  const segments = fullPath.split("/").filter(Boolean);
+  const isSpecialSegment = (segment: string) =>
+    segment.startsWith("_") ||
+    segment.startsWith("$") ||
+    segment.includes(".edit") ||
+    segment === "edit" ||
+    segment === "create" ||
+    segment.includes(".add") ||
+    segment === "add" ||
+    segment === "index";
+
+  return segments.some(isSpecialSegment) || fullPath.endsWith("/$");
+}
+
+/**
+ * Validates that a route has proper navigation metadata if it's a page route.
+ *
+ * Page routes (non-technical) MUST have:
+ * - `staticData.nav` OR
+ * - `staticData.hideFromNav: true` (explicit opt-out)
+ *
+ * Technical routes are exempt from this requirement.
+ */
+export function validateRouteNavigation(route: {
+  fullPath: string;
+  hasNav: boolean;
+  hasPermission: boolean;
+  hideFromNav?: boolean;
+}): { isValid: boolean; message?: string } {
+  const { fullPath, hasNav, hasPermission, hideFromNav } = route;
+
+  // Technical routes don't need nav
+  if (isTechnicalRoute(fullPath)) {
+    return { isValid: true };
+  }
+
+  // Page routes with permission MUST have nav or explicit hide
+  if (hasPermission && !hasNav && !hideFromNav) {
+    return {
+      isValid: false,
+      message: `Route "${fullPath}" has permission but no nav metadata. Add staticData.nav or staticData.hideFromNav: true`,
+    };
+  }
+
+  // Page routes with nav MUST have permission
+  if (hasNav && !hasPermission) {
+    return {
+      isValid: false,
+      message: `Route "${fullPath}" has nav but no permission. Add staticData.permission`,
+    };
+  }
+
+  return { isValid: true };
+}
+
+/**
+ * Extracts all routes from the route tree and validates navigation metadata.
+ * Returns a report of missing/invalid routes.
+ */
+/**
+ * Extracts all routes from the route tree and validates navigation metadata.
+ * Returns a report of missing/invalid routes.
+ */
+type RouteTreeNode = AnyRoute;
+
+export function auditRouteNavigation(routeTree: RouteTreeNode): {
+  missingNav: string[];
+  missingPermission: string[];
+  technicalRoutes: string[];
+  validRoutes: string[];
+} {
+  const missingNav: string[] = [];
+  const missingPermission: string[] = [];
+  const technicalRoutes: string[] = [];
+  const validRoutes: string[] = [];
+
+  function traverse(route: RouteTreeNode) {
+    const fullPath = (route.fullPath || route.path || "/") as string;
+    const hasNav = Boolean(route.options?.staticData?.nav);
+    const hasPermission = Boolean(route.options?.staticData?.permission);
+    const hideFromNav = route.options?.staticData?.hideFromNav === true;
+
+    const validation = validateRouteNavigation({
+      fullPath: fullPath as string,
+      hasNav,
+      hasPermission,
+      hideFromNav,
+    });
+
+    if (isTechnicalRoute(fullPath)) {
+      technicalRoutes.push(fullPath);
+    } else if (!validation.isValid) {
+      if (validation.message?.includes("no nav")) {
+        missingNav.push(fullPath);
+      } else if (validation.message?.includes("no permission")) {
+        missingPermission.push(fullPath);
+      }
+    } else {
+      validRoutes.push(fullPath);
+    }
+
+    getRouteChildren(route.children).forEach(traverse);
+  }
+
+  traverse(routeTree);
+
+  return {
+    missingNav,
+    missingPermission,
+    technicalRoutes,
+    validRoutes,
+  };
+}
+
+/**
+ * Generates a list of all permissions from the route tree.
+ * Useful for automatically populating /settings/roles.
+ */
+export function extractPermissionsFromRoutes(routeTree: RouteTreeNode): RoutePermission[] {
+  const permissions = new Map<string, RoutePermission>();
+
+  function traverse(route: RouteTreeNode) {
+    if (route.options?.staticData?.permission) {
+      const perm = route.options.staticData.permission as RoutePermission;
+      const key = `${perm.subject}:${perm.action}`;
+      permissions.set(key, perm);
+    }
+    getRouteChildren(route.children).forEach(traverse);
+  }
+
+  traverse(routeTree);
+
+  return Array.from(permissions.values());
+}
+
+function getRouteChildren(children: RouteTreeNode["children"]): RouteTreeNode[] {
+  if (!children) {
+    return [];
+  }
+  if (Array.isArray(children)) {
+    return children;
+  }
+  if (typeof children === "object") {
+    return Object.values(children as Record<string, RouteTreeNode>);
+  }
+  return [];
+}

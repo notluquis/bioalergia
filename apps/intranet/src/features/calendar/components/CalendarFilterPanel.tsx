@@ -1,0 +1,259 @@
+/**
+ * CalendarFilterPanel - Shared filter UI for calendar pages
+ * Redesigned to match "Filtrar Vistas" spec using HeroUI v3
+ */
+
+import {
+  Button,
+  DateField,
+  DateRangePicker,
+  Form,
+  Input,
+  Label,
+  RangeCalendar,
+  TextField,
+} from "@heroui/react";
+import { parseDate } from "@internationalized/date";
+import { RotateCcw } from "lucide-react";
+import { type FormEvent, useMemo } from "react";
+
+import { cn } from "@/lib/utils";
+import { NULL_CATEGORY_VALUE } from "../constants";
+import type { CalendarFilters } from "../types";
+import { MultiSelectFilter } from "./MultiSelectFilter";
+
+export interface CalendarFilterPanelProps {
+  className?: string;
+  formClassName?: string;
+  layout?: "row" | "dropdown";
+  /** Available categories for dropdown */
+  availableCategories?: { category: null | string; total: number }[];
+
+  /** Current filter state */
+  filters: FilterPanelState;
+  /** Whether filters have been modified */
+  isDirty?: boolean;
+  /** Loading state */
+  loading?: boolean;
+  /** Callback when filters should be applied */
+  onApply: () => void;
+  /** Count of items that would be shown after applying filters */
+  applyCount?: number;
+  /** Show sync button */
+  showSync?: boolean;
+  /** Callback when a filter value changes - compatible with useCalendarEvents updateFilters */
+  onFilterChange: <K extends keyof FilterPanelState>(key: K, value: CalendarFilters[K]) => void;
+  /** Callback when filters should be reset */
+  onReset: () => void;
+  /** Show date range inputs */
+  showDateRange?: boolean;
+  /** Show search input */
+  showSearch?: boolean;
+  variant?: "card" | "plain";
+}
+
+/** Filter state used by the filter panel - subset of CalendarFilters */
+export type FilterPanelState = Pick<CalendarFilters, "categories" | "from" | "search" | "to">;
+
+export function CalendarFilterPanel({
+  className,
+  formClassName,
+  layout = "row",
+  availableCategories = [],
+  filters,
+  isDirty: _isDirty = true,
+  loading: _loading = false,
+  onApply,
+  applyCount,
+  onFilterChange,
+  onReset,
+  showDateRange = false,
+  showSearch = false,
+  variant: _variant = "card",
+}: Readonly<CalendarFilterPanelProps>) {
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    onApply();
+  };
+
+  // Calculate preview count based on current selection
+  const liveApplyCount = useMemo(() => {
+    if (!filters.categories.length) {
+      return applyCount;
+    }
+    const selectedSet = new Set(filters.categories);
+    return availableCategories
+      .filter((c) => selectedSet.has(c.category ?? NULL_CATEGORY_VALUE))
+      .reduce((sum, c) => sum + c.total, 0);
+  }, [filters.categories, availableCategories, applyCount]);
+
+  const applyLabel =
+    liveApplyCount == null ? "Aplicar filtros" : `Aplicar filtros ${liveApplyCount}`;
+
+  const isDropdownLayout = layout === "dropdown";
+
+  // If layout is dropdown, use the new specific vertical design
+  if (isDropdownLayout) {
+    return (
+      <Form
+        onSubmit={handleSubmit}
+        validationBehavior="aria"
+        className={cn("space-y-3.5 p-3", formClassName, className)}
+      >
+        {/* Categories Select */}
+        <div className="space-y-1.5">
+          <MultiSelectFilter
+            className="w-full"
+            label="Clasificación"
+            placeholder="Todas"
+            density="compact"
+            options={availableCategories.map((entry) => ({
+              value: entry.category ?? NULL_CATEGORY_VALUE,
+              label: entry.category ?? "Sin clasificación",
+            }))}
+            selected={filters.categories}
+            onChange={(values) => onFilterChange("categories", values)}
+          />
+        </div>
+
+        {/* Search Input */}
+        {showSearch && (
+          <div className="space-y-1.5">
+            <TextField
+              className="w-full"
+              onChange={(v) => onFilterChange("search", v)}
+              value={filters.search ?? ""}
+            >
+              <Label>Búsqueda</Label>
+              <Input
+                className="h-9 w-full min-w-0 rounded-lg text-sm"
+                placeholder="Paciente, tratamiento..."
+                variant="secondary"
+              />
+            </TextField>
+          </div>
+        )}
+
+        {/* Date Range (if enabled) - matching style */}
+        {showDateRange && (
+          <div className="space-y-1.5">
+            <span className="mb-1.5 block font-semibold text-xs text-default-600">
+              Rango de Fechas
+            </span>
+            <DateRangePicker
+              className="w-full"
+              onChange={(value) => {
+                if (!value) {
+                  onFilterChange("from", "");
+                  onFilterChange("to", "");
+                  return;
+                }
+                onFilterChange("from", value.start.toString());
+                onFilterChange("to", value.end.toString());
+              }}
+              value={
+                filters.from && filters.to
+                  ? { end: parseDate(filters.to), start: parseDate(filters.from) }
+                  : undefined
+              }
+            >
+              <Label className="sr-only">Rango de fechas</Label>
+              <DateField.Group className="h-9 text-sm" fullWidth variant="secondary">
+                <DateField.InputContainer>
+                  <DateField.Input slot="start">
+                    {(segment) => <DateField.Segment segment={segment} />}
+                  </DateField.Input>
+                  <DateRangePicker.RangeSeparator />
+                  <DateField.Input slot="end">
+                    {(segment) => <DateField.Segment segment={segment} />}
+                  </DateField.Input>
+                </DateField.InputContainer>
+                <DateField.Suffix>
+                  <DateRangePicker.Trigger>
+                    <DateRangePicker.TriggerIndicator />
+                  </DateRangePicker.Trigger>
+                </DateField.Suffix>
+              </DateField.Group>
+              <DateRangePicker.Popover>
+                <RangeCalendar
+                  aria-label="Seleccionar rango de fechas"
+                  visibleDuration={{ months: 2 }}
+                >
+                  <RangeCalendar.Header>
+                    <RangeCalendar.YearPickerTrigger>
+                      <RangeCalendar.YearPickerTriggerHeading />
+                      <RangeCalendar.YearPickerTriggerIndicator />
+                    </RangeCalendar.YearPickerTrigger>
+                    <RangeCalendar.NavButton slot="previous" />
+                    <RangeCalendar.NavButton slot="next" />
+                  </RangeCalendar.Header>
+                  <RangeCalendar.Grid>
+                    <RangeCalendar.GridHeader>
+                      {(day) => <RangeCalendar.HeaderCell>{day}</RangeCalendar.HeaderCell>}
+                    </RangeCalendar.GridHeader>
+                    <RangeCalendar.GridBody>
+                      {(date) => <RangeCalendar.Cell date={date} />}
+                    </RangeCalendar.GridBody>
+                  </RangeCalendar.Grid>
+                  <RangeCalendar.YearPickerGrid>
+                    <RangeCalendar.YearPickerGridBody>
+                      {({ year }) => <RangeCalendar.YearPickerCell year={year} />}
+                    </RangeCalendar.YearPickerGridBody>
+                  </RangeCalendar.YearPickerGrid>
+                </RangeCalendar>
+              </DateRangePicker.Popover>
+            </DateRangePicker>
+          </div>
+        )}
+
+        {/* Footer Actions */}
+        <div className="flex items-center justify-between pt-1">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onPress={onReset}
+            className="h-9 rounded-lg px-2.5 font-medium text-default-400 hover:text-foreground"
+          >
+            <RotateCcw size={14} />
+            Limpiar
+          </Button>
+
+          <Button
+            type="submit"
+            variant="primary"
+            size="sm"
+            className="h-9 rounded-lg px-4 font-semibold shadow-md shadow-primary/20"
+          >
+            {applyLabel}
+          </Button>
+        </div>
+      </Form>
+    );
+  }
+
+  // Fallback for non-dropdown layout
+  return (
+    <Form
+      className={cn("flex flex-wrap items-end gap-3 p-3", formClassName, className)}
+      onSubmit={handleSubmit}
+      validationBehavior="aria"
+    >
+      <MultiSelectFilter
+        className="min-w-64"
+        label="Clasificación"
+        density="compact"
+        options={availableCategories.map((c) => ({
+          value: c.category ?? NULL_CATEGORY_VALUE,
+          label: c.category ?? "Sin clasificación",
+        }))}
+        selected={filters.categories}
+        onChange={(values) => onFilterChange("categories", values)}
+      />
+
+      <Button size="sm" type="submit" variant="primary">
+        Actualizar
+      </Button>
+    </Form>
+  );
+}

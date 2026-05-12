@@ -1,0 +1,1 @@
+ALTER TYPE "ClinicalSkinTestImportStatus" ADD VALUE IF NOT EXISTS 'DISCOVERED';

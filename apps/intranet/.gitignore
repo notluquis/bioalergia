@@ -1,0 +1,54 @@
+# Build outputs
+dist/
+*.tsbuildinfo
+.vite/
+
+# Build analysis artifacts
+stats.html
+bundle-analysis.html
+vite-manifest.json
+
+# Test outputs
+coverage/
+.nyc_output/
+*.lcov
+junit.xml
+
+# Environment & local files
+.env.local
+.env.*.local
+
+# Editor & IDE local configs
+.vscode/settings.json
+.vscode/launch.json
+.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+*~
+
+# OS specific
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+typecheck_error.log
+lint_output.txt
+lint_remaining.txt
+lint_report.txt
+
+# Turbo cache
+.turbo/
+
+# TanStack Router and Query caches
+.tanstack/
+
+# Temporary files
+*.tmp
+tmp/
+
+# Generated files
+routeTree.gen.ts

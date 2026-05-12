@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en" data-theme="bioalergia-dark" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <script>
+      // Community 2025 Standard: Global Chunk Load Error Handler
+      // Catches errors before React even mounts or during module evaluation
+      const CHUNK_ERROR_REGEX =
+        /Failed to fetch dynamically imported module|Importing a module script failed|is not a valid JavaScript MIME type/i;
+      function ensureFallback() {
+        const container = document.getElementById("app-fallback");
+        if (!container) {
+          return;
+        }
+        container.addEventListener("click", (e) => {
+          const target = e.target;
+          if (!(target instanceof HTMLElement)) {
+            return;
+          }
+          const action = target.getAttribute("data-action");
+          if (action === "reload" || action === "retry") {
+            location.reload();
+          }
+        });
+      }
+
+      function showFallback(reason) {
+        const container = document.getElementById("app-fallback");
+        if (!container) {
+          return;
+        }
+        container.removeAttribute("hidden");
+        window.__APP_FALLBACK_REASON__ = reason || "unknown";
+        window.dispatchEvent(new CustomEvent("app:fallback", { detail: { reason: reason } }));
+      }
+
+      document.addEventListener("DOMContentLoaded", ensureFallback);
+
+      // CAPTURE PHASE handler for script/link load failures (404s)
+      window.addEventListener(
+        "error",
+        (e) => {
+          if (e.target && (e.target.tagName === "SCRIPT" || e.target.tagName === "LINK")) {
+            console.warn("Resource load failure detected:", e.target.src || e.target.href);
+            showFallback("chunk");
+          }
+        },
+        true
+      ); // CAPTURE PHASE is critical for resource errors
+
+      // BUBBLE PHASE handler for runtime errors (chunk imports)
+      window.addEventListener("error", (e) => {
+        const msg = e.message || "";
+        if (CHUNK_ERROR_REGEX.test(msg)) {
+          console.warn("Dynamic import error detected:", msg);
+          showFallback("chunk");
+        }
+      });
+
+      window.addEventListener("offline", () => {
+        showFallback("offline");
+      });
+    </script>
+    <script>
+      (() => {
+        const THEME_KEY = "bioalergia:theme";
+        let theme = "dark";
+        let stored = null;
+        try {
+          stored = localStorage.getItem(THEME_KEY);
+          if (stored === "light" || stored === "dark") {
+            theme = stored;
+          } else if (stored === "system" || !stored) {
+            if (window.matchMedia?.("(prefers-color-scheme: light)").matches) {
+              theme = "light";
+            } else {
+              theme = "dark";
+            }
+          }
+        } catch (_e) {
+          // Ignore storage access errors (privacy mode, blocked storage, etc.)
+        }
+        const html = document.documentElement;
+        if (theme === "dark") {
+          html.setAttribute("data-theme", "bioalergia-dark");
+          html.classList.add("dark");
+        } else {
+          html.setAttribute("data-theme", "bioalergia");
+          html.classList.remove("dark");
+        }
+      })();
+    </script>
+    <script>
+      // Defer the Inter webfont stylesheet via a media-print swap. Keeping
+      // the listener here (instead of inline `onload="this.media='all'"` on
+      // the <link>) means the strict CSP only needs nonce + strict-dynamic,
+      // no 'unsafe-hashes' for inline event handlers.
+      (() => {
+        const link = document.getElementById("bioalergia-fonts");
+        if (!link) return;
+        if (link.sheet) {
+          link.media = "all";
+          return;
+        }
+        link.addEventListener("load", () => {
+          link.media = "all";
+        });
+      })();
+    </script>
+    <link rel="icon" type="image/svg+xml" href="/logo_bimi.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+
+    <!-- Performance Hints (2026 Standard) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!-- Async font load via media-print swap (no inline event handler so the
+         strict-CSP nonce policy stays free of 'unsafe-hashes'). The script
+         block above is nonced and serves as the swap orchestrator. -->
+    <link
+      id="bioalergia-fonts"
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      media="print"
+    />
+    <noscript>
+      <link
+        rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      />
+    </noscript>
+    <title>Bioalergia Suite</title>
+
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json" />
+
+    <!-- Theme color -->
+    <!-- Theme color (Dynamic for iOS/macOS) -->
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)" />
+
+    <!-- iOS Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <!-- Status bar: black-translucent allows content under notch/dynamic island -->
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Bioalergia" />
+    <!-- Multiple icon sizes for iOS (180px is optimal for modern iPhones) -->
+    <!-- Apple Passwords/Keychain usa estos iconos -->
+    <link rel="apple-touch-icon" href="/icons/icon-180.png" />
+    <link rel="mask-icon" href="/logo_bimi.svg" color="#0e64b7" />
+    <meta name="mobile-web-app-capable" content="yes" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <div id="app-fallback" hidden role="alert" aria-live="polite">
+      <p>Tenemos problemas para cargar Bioalergia Suite.</p>
+      <p>Si tu conexión volvió, puedes reintentar o recargar.</p>
+      <button type="button" data-action="retry">Reintentar</button>
+      <button type="button" data-action="reload">Recargar</button>
+    </div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

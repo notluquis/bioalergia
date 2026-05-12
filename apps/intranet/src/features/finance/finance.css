@@ -1,0 +1,224 @@
+/* 
+ * Finance Module Design System (2025)
+ * Centralized styles for balances, loans, and transactions
+ * ADAPTED for HeroUI v3
+ */
+
+/* === ROOT DESIGN TOKENS === */
+.finance-module {
+  /* Typography Scale */
+  --fin-text-xs: 0.7rem;
+  --fin-text-sm: 0.8rem;
+  --fin-text-base: 0.875rem;
+  --fin-text-lg: 1rem;
+  --fin-text-xl: 1.125rem;
+
+  /* Font Weights */
+  --fin-font-normal: 400;
+  --fin-font-medium: 500;
+  --fin-font-semibold: 600;
+  --fin-font-bold: 700;
+
+  /* Spacing */
+  --fin-gap-xs: 0.25rem;
+  --fin-gap-sm: 0.5rem;
+  --fin-gap: 1rem;
+  --fin-gap-lg: 1.5rem;
+
+  /* Border Radius */
+  --fin-radius-sm: 0.375rem;
+  --fin-radius: 0.75rem;
+  --fin-radius-lg: 1rem;
+
+  /* Semantic Colors */
+  --fin-positive: var(--success);
+  --fin-positive-bg: color-mix(in srgb, var(--success), transparent 90%);
+  --fin-negative: var(--danger);
+  --fin-negative-bg: color-mix(in srgb, var(--danger), transparent 90%);
+  --fin-neutral: var(--default-500);
+  --fin-warning: var(--warning);
+  --fin-warning-bg: color-mix(in srgb, var(--warning), transparent 90%);
+
+  /* Shadows */
+  --fin-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --fin-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 4px 12px rgba(0, 0, 0, 0.05);
+
+  /* Borders */
+  --fin-border: var(--default-200);
+}
+
+/* === CARD PATTERN === */
+.finance-card {
+  background: var(--background);
+  border: 1px solid var(--fin-border);
+  border-radius: var(--fin-radius-lg);
+  box-shadow: var(--fin-shadow-sm);
+  overflow: hidden;
+}
+
+.finance-card__header {
+  padding: var(--fin-gap);
+  border-bottom: 1px solid var(--fin-border);
+  background: var(--default-50);
+}
+
+.finance-card__title {
+  font-size: var(--fin-text-lg);
+  font-weight: var(--fin-font-semibold);
+  color: var(--primary);
+  margin: 0;
+}
+
+.finance-card__body {
+  padding: var(--fin-gap);
+}
+
+/* === TABLE PATTERN === */
+.finance-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--fin-text-sm);
+  color: var(--foreground);
+}
+
+.finance-table__header {
+  background: var(--default-100);
+  backdrop-filter: blur(8px);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.finance-table__header th {
+  padding: var(--fin-gap-sm) var(--fin-gap);
+  text-align: left;
+  font-weight: var(--fin-font-semibold);
+  color: var(--primary);
+  font-size: var(--fin-text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+  white-space: nowrap;
+}
+
+.finance-table__row {
+  border-bottom: 1px solid var(--fin-border);
+  transition: background 0.15s ease;
+}
+
+.finance-table__row:hover {
+  background: var(--default-50);
+}
+
+.finance-table__cell {
+  padding: var(--fin-gap-sm) var(--fin-gap);
+  vertical-align: middle;
+}
+
+/* === AMOUNT DISPLAY === */
+.finance-amount {
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--fin-font-semibold);
+}
+
+.finance-amount--positive {
+  color: var(--fin-positive);
+}
+
+.finance-amount--negative {
+  color: var(--fin-negative);
+}
+
+.finance-amount--neutral {
+  color: var(--fin-neutral);
+}
+
+/* === STATUS BADGES === */
+.finance-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--fin-gap-xs);
+  padding: 0.125rem 0.5rem;
+  border-radius: 9999px;
+  font-size: var(--fin-text-xs);
+  font-weight: var(--fin-font-medium);
+}
+
+.finance-badge--success {
+  background: var(--fin-positive-bg);
+  color: var(--fin-positive);
+}
+
+.finance-badge--danger {
+  background: var(--fin-negative-bg);
+  color: var(--fin-negative);
+}
+
+.finance-badge--warning {
+  background: var(--fin-warning-bg);
+  color: var(--fin-warning);
+}
+
+.finance-badge--neutral {
+  background: var(--default-100);
+  color: var(--default-500);
+}
+
+/* === STAT CARDS === */
+.finance-stat {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fin-gap-xs);
+  padding: var(--fin-gap);
+  background: var(--default-50);
+  border-radius: var(--fin-radius);
+}
+
+.finance-stat__label {
+  font-size: var(--fin-text-xs);
+  color: var(--default-500);
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+.finance-stat__value {
+  font-size: var(--fin-text-xl);
+  font-weight: var(--fin-font-bold);
+  font-variant-numeric: tabular-nums;
+}
+
+/* === PAGINATION === */
+.finance-pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--fin-gap);
+  padding: var(--fin-gap-sm) var(--fin-gap);
+  border-top: 1px solid var(--fin-border);
+  background: var(--default-50);
+  font-size: var(--fin-text-xs);
+}
+
+/* === DARK MODE ADJUSTMENTS === */
+/* HeroUI handles variable changes in dark mode, but we can override if needed */
+
+/* === ACCESSIBILITY: Reduced Motion === */
+@media (prefers-reduced-motion: reduce) {
+  .finance-table__row {
+    transition: none;
+  }
+}
+
+/* === PRINT STYLES === */
+@media print {
+  .finance-card {
+    box-shadow: none;
+    border: 1px solid var(--default-300);
+  }
+
+  .finance-table__header {
+    background: var(--default-50);
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}

@@ -1,0 +1,254 @@
+import { Button, FieldError, Input, Label, ListBox, Select, TextField } from "@heroui/react";
+import { useForm, useStore } from "@tanstack/react-form";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { z } from "zod";
+import { TanStackTextAreaField } from "@/components/forms/TanStackFieldControls";
+import { useToast } from "@/context/ToastContext";
+import { formatErrors } from "@/lib/form-errors";
+import { queryKeys } from "@/lib/query-keys";
+import { createSupplyRequest, type SupplyRequestPayload } from "../api";
+import type { CommonSupply, StructuredSupplies } from "../types";
+
+const supplyRequestSchema = z.object({
+  notes: z.string().optional(),
+  quantity: z.number().int().min(1, "La cantidad debe ser mayor a 0"),
+  selectedBrand: z.string().optional(),
+  selectedModel: z.string().optional(),
+  selectedSupply: z.string().min(1, "Seleccione un insumo"),
+});
+
+interface SupplyRequestFormProps {
+  commonSupplies: CommonSupply[];
+  onSuccess: () => void;
+}
+
+type SupplyRequestFormValues = z.infer<typeof supplyRequestSchema>;
+export function SupplyRequestForm({ commonSupplies, onSuccess }: SupplyRequestFormProps) {
+  const queryClient = useQueryClient();
+  const { error: toastError, success: toastSuccess } = useToast();
+
+  const createRequestMutation = useMutation<void, Error, SupplyRequestPayload>({
+    mutationFn: createSupplyRequest,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.supplies.requests() });
+    },
+  });
+
+  const form = useForm({
+    defaultValues: {
+      notes: "",
+      quantity: 1,
+      selectedBrand: "",
+      selectedModel: "",
+      selectedSupply: "",
+    } as SupplyRequestFormValues,
+    onSubmit: async ({ value }) => {
+      try {
+        await createRequestMutation.mutateAsync({
+          brand:
+            value.selectedBrand === "N/A" || !value.selectedBrand ? undefined : value.selectedBrand,
+          model:
+            value.selectedModel === "N/A" || !value.selectedModel ? undefined : value.selectedModel,
+          notes: value.notes || undefined,
+          quantity: value.quantity,
+          supplyName: value.selectedSupply,
+        });
+        toastSuccess("Solicitud de insumo enviada");
+        form.reset();
+        onSuccess();
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Error al enviar la solicitud";
+        toastError(message);
+      }
+    },
+    validators: {
+      onChange: supplyRequestSchema,
+    },
+  });
+
+  const selectedSupply = useStore(form.store, (state) => state.values.selectedSupply);
+  const selectedBrand = useStore(form.store, (state) => state.values.selectedBrand);
+
+  const structuredSupplies = commonSupplies.reduce<StructuredSupplies>((acc, supply) => {
+    if (!supply.name) {
+      return acc;
+    }
+    const supplyGroup = acc[supply.name];
+    if (!supplyGroup) {
+      acc[supply.name] = {};
+    }
+    const brand = supply.brand || "N/A";
+    const brandGroup = acc[supply.name];
+    if (!brandGroup) {
+      return acc;
+    }
+    if (!brandGroup[brand]) {
+      brandGroup[brand] = [];
+    }
+    if (supply.model) {
+      brandGroup[brand].push(supply.model);
+    }
+    return acc;
+  }, {});
+
+  const supplyNames = Object.keys(structuredSupplies);
+  const availableBrands = selectedSupply
+    ? Object.keys(structuredSupplies[selectedSupply] ?? {})
+    : [];
+  const availableModels =
+    selectedSupply && selectedBrand
+      ? (structuredSupplies[selectedSupply]?.[selectedBrand] ?? [])
+      : [];
+
+  return (
+    <form
+      className="grid grid-cols-1 gap-4 md:grid-cols-2"
+      onSubmit={(e) => {
+        e.preventDefault();
+        void form.handleSubmit();
+      }}
+    >
+      <form.Field name="selectedSupply">
+        {(field) => (
+          <div>
+            <Select
+              placeholder="Seleccione un insumo"
+              value={field.state.value || null}
+              onChange={(key) => {
+                field.handleChange(key ? String(key) : "");
+                form.setFieldValue("selectedBrand", "");
+                form.setFieldValue("selectedModel", "");
+              }}
+              onBlur={field.handleBlur}
+              isRequired
+              isInvalid={field.state.meta.errors.length > 0}
+            >
+              <Label>Nombre del insumo</Label>
+              <Select.Trigger>
+                <Select.Value />
+                <Select.Indicator />
+              </Select.Trigger>
+              <Select.Popover>
+                <ListBox>
+                  {supplyNames.map((name) => (
+                    <ListBox.Item id={name} key={name}>
+                      {name}
+                    </ListBox.Item>
+                  ))}
+                </ListBox>
+              </Select.Popover>
+              {field.state.meta.errors.length > 0 && (
+                <FieldError>{formatErrors(field.state.meta.errors)}</FieldError>
+              )}
+            </Select>
+          </div>
+        )}
+      </form.Field>
+
+      <form.Field name="quantity">
+        {(field) => (
+          <div>
+            <TextField
+              isInvalid={field.state.meta.errors.length > 0}
+              isRequired
+              onChange={(v) => field.handleChange(Number.parseInt(v, 10) || 1)}
+              type="number"
+              value={String(field.state.value)}
+            >
+              <Label>Cantidad</Label>
+              <Input inputMode="numeric" min="1" onBlur={field.handleBlur} />
+              {field.state.meta.errors.length > 0 && (
+                <FieldError>{formatErrors(field.state.meta.errors)}</FieldError>
+              )}
+            </TextField>
+          </div>
+        )}
+      </form.Field>
+
+      <form.Field name="selectedBrand">
+        {(field) => (
+          <div>
+            <Select
+              placeholder="Seleccione una marca"
+              value={field.state.value || null}
+              onChange={(key) => {
+                field.handleChange(key ? String(key) : "");
+                form.setFieldValue("selectedModel", "");
+              }}
+              onBlur={field.handleBlur}
+              isDisabled={!selectedSupply}
+              isInvalid={field.state.meta.errors.length > 0}
+            >
+              <Label>Marca</Label>
+              <Select.Trigger>
+                <Select.Value />
+                <Select.Indicator />
+              </Select.Trigger>
+              <Select.Popover>
+                <ListBox>
+                  {availableBrands.map((brand) => (
+                    <ListBox.Item id={brand} key={brand}>
+                      {brand === "N/A" ? "Sin marca" : brand}
+                    </ListBox.Item>
+                  ))}
+                </ListBox>
+              </Select.Popover>
+              {field.state.meta.errors.length > 0 && (
+                <FieldError>{formatErrors(field.state.meta.errors)}</FieldError>
+              )}
+            </Select>
+          </div>
+        )}
+      </form.Field>
+
+      <form.Field name="selectedModel">
+        {(field) => (
+          <div>
+            <Select
+              placeholder="Seleccione un modelo"
+              value={field.state.value || null}
+              onChange={(key) => {
+                field.handleChange(key ? String(key) : "");
+              }}
+              onBlur={field.handleBlur}
+              isDisabled={!selectedBrand || availableModels.length === 0}
+              isInvalid={field.state.meta.errors.length > 0}
+            >
+              <Label>Modelo</Label>
+              <Select.Trigger>
+                <Select.Value />
+                <Select.Indicator />
+              </Select.Trigger>
+              <Select.Popover>
+                <ListBox>
+                  {availableModels.map((model) => (
+                    <ListBox.Item id={model} key={model}>
+                      {model}
+                    </ListBox.Item>
+                  ))}
+                </ListBox>
+              </Select.Popover>
+              {field.state.meta.errors.length > 0 && (
+                <FieldError>{formatErrors(field.state.meta.errors)}</FieldError>
+              )}
+            </Select>
+          </div>
+        )}
+      </form.Field>
+
+      <form.Field name="notes">
+        {(field) => (
+          <div className="md:col-span-2">
+            <TanStackTextAreaField field={field} label="Notas (opcional)" rows={3} />
+          </div>
+        )}
+      </form.Field>
+
+      <div className="flex justify-end md:col-span-2">
+        <Button isDisabled={form.state.isSubmitting} type="submit">
+          {form.state.isSubmitting ? "Enviando..." : "Enviar solicitud"}
+        </Button>
+      </div>
+    </form>
+  );
+}

@@ -1,0 +1,263 @@
+{
+  "name": "@finanzas/orpc-contracts",
+  "version": "0.0.1",
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./addresses": {
+      "types": "./dist/addresses.d.ts",
+      "import": "./dist/addresses.js",
+      "default": "./dist/addresses.js"
+    },
+    "./attendance": {
+      "types": "./dist/attendance.d.ts",
+      "import": "./dist/attendance.js",
+      "default": "./dist/attendance.js"
+    },
+    "./auth": {
+      "types": "./dist/auth.d.ts",
+      "import": "./dist/auth.js",
+      "default": "./dist/auth.js"
+    },
+    "./balances": {
+      "types": "./dist/balances.d.ts",
+      "import": "./dist/balances.js",
+      "default": "./dist/balances.js"
+    },
+    "./backups": {
+      "types": "./dist/backups.d.ts",
+      "import": "./dist/backups.js",
+      "default": "./dist/backups.js"
+    },
+    "./calendar": {
+      "types": "./dist/calendar.d.ts",
+      "import": "./dist/calendar.js",
+      "default": "./dist/calendar.js"
+    },
+    "./certificates": {
+      "types": "./dist/certificates.d.ts",
+      "import": "./dist/certificates.js",
+      "default": "./dist/certificates.js"
+    },
+    "./clinical-series": {
+      "types": "./dist/clinical-series.d.ts",
+      "import": "./dist/clinical-series.js",
+      "default": "./dist/clinical-series.js"
+    },
+    "./clinical-records": {
+      "types": "./dist/clinical-records.d.ts",
+      "import": "./dist/clinical-records.js",
+      "default": "./dist/clinical-records.js"
+    },
+    "./clinical-skin-tests": {
+      "types": "./dist/clinical-skin-tests.d.ts",
+      "import": "./dist/clinical-skin-tests.js",
+      "default": "./dist/clinical-skin-tests.js"
+    },
+    "./counterparts": {
+      "types": "./dist/counterparts.d.ts",
+      "import": "./dist/counterparts.js",
+      "default": "./dist/counterparts.js"
+    },
+    "./csv-upload": {
+      "types": "./dist/csv-upload.d.ts",
+      "import": "./dist/csv-upload.js",
+      "default": "./dist/csv-upload.js"
+    },
+    "./doctoralia": {
+      "types": "./dist/doctoralia.d.ts",
+      "import": "./dist/doctoralia.js",
+      "default": "./dist/doctoralia.js"
+    },
+    "./dte": {
+      "types": "./dist/dte.d.ts",
+      "import": "./dist/dte.js",
+      "default": "./dist/dte.js"
+    },
+    "./dte-event-links": {
+      "types": "./dist/dte-event-links.d.ts",
+      "import": "./dist/dte-event-links.js",
+      "default": "./dist/dte-event-links.js"
+    },
+    "./dte-analytics": {
+      "types": "./dist/dte-analytics.d.ts",
+      "import": "./dist/dte-analytics.js",
+      "default": "./dist/dte-analytics.js"
+    },
+    "./employees": {
+      "types": "./dist/employees.d.ts",
+      "import": "./dist/employees.js",
+      "default": "./dist/employees.js"
+    },
+    "./expenses": {
+      "types": "./dist/expenses.d.ts",
+      "import": "./dist/expenses.js",
+      "default": "./dist/expenses.js"
+    },
+    "./finance": {
+      "types": "./dist/finance.d.ts",
+      "import": "./dist/finance.js",
+      "default": "./dist/finance.js"
+    },
+    "./haulmer": {
+      "types": "./dist/haulmer.d.ts",
+      "import": "./dist/haulmer.js",
+      "default": "./dist/haulmer.js"
+    },
+    "./inventory": {
+      "types": "./dist/inventory.d.ts",
+      "import": "./dist/inventory.js",
+      "default": "./dist/inventory.js"
+    },
+    "./integrations": {
+      "types": "./dist/integrations.d.ts",
+      "import": "./dist/integrations.js",
+      "default": "./dist/integrations.js"
+    },
+    "./loans": {
+      "types": "./dist/loans.d.ts",
+      "import": "./dist/loans.js",
+      "default": "./dist/loans.js"
+    },
+    "./mercadopago": {
+      "types": "./dist/mercadopago.d.ts",
+      "import": "./dist/mercadopago.js",
+      "default": "./dist/mercadopago.js"
+    },
+    "./notifications": {
+      "types": "./dist/notifications.d.ts",
+      "import": "./dist/notifications.js",
+      "default": "./dist/notifications.js"
+    },
+    "./outreach": {
+      "types": "./dist/outreach.d.ts",
+      "import": "./dist/outreach.js",
+      "default": "./dist/outreach.js"
+    },
+    "./patients": {
+      "types": "./dist/patients.d.ts",
+      "import": "./dist/patients.js",
+      "default": "./dist/patients.js"
+    },
+    "./patient-campaigns": {
+      "types": "./dist/patient-campaigns.d.ts",
+      "import": "./dist/patient-campaigns.js",
+      "default": "./dist/patient-campaigns.js"
+    },
+    "./people": {
+      "types": "./dist/people.d.ts",
+      "import": "./dist/people.js",
+      "default": "./dist/people.js"
+    },
+    "./personal-finance": {
+      "types": "./dist/personal-finance.d.ts",
+      "import": "./dist/personal-finance.js",
+      "default": "./dist/personal-finance.js"
+    },
+    "./production-balances": {
+      "types": "./dist/production-balances.d.ts",
+      "import": "./dist/production-balances.js",
+      "default": "./dist/production-balances.js"
+    },
+    "./release-transactions": {
+      "types": "./dist/release-transactions.d.ts",
+      "import": "./dist/release-transactions.js",
+      "default": "./dist/release-transactions.js"
+    },
+    "./services": {
+      "types": "./dist/services.d.ts",
+      "import": "./dist/services.js",
+      "default": "./dist/services.js"
+    },
+    "./settings": {
+      "types": "./dist/settings.d.ts",
+      "import": "./dist/settings.js",
+      "default": "./dist/settings.js"
+    },
+    "./roles": {
+      "types": "./dist/roles.d.ts",
+      "import": "./dist/roles.js",
+      "default": "./dist/roles.js"
+    },
+    "./system": {
+      "types": "./dist/system.d.ts",
+      "import": "./dist/system.js",
+      "default": "./dist/system.js"
+    },
+    "./timesheets": {
+      "types": "./dist/timesheets.d.ts",
+      "import": "./dist/timesheets.js",
+      "default": "./dist/timesheets.js"
+    },
+    "./supplies": {
+      "types": "./dist/supplies.d.ts",
+      "import": "./dist/supplies.js",
+      "default": "./dist/supplies.js"
+    },
+    "./settlement-transactions": {
+      "types": "./dist/settlement-transactions.d.ts",
+      "import": "./dist/settlement-transactions.js",
+      "default": "./dist/settlement-transactions.js"
+    },
+    "./transactions-insights": {
+      "types": "./dist/transactions-insights.d.ts",
+      "import": "./dist/transactions-insights.js",
+      "default": "./dist/transactions-insights.js"
+    },
+    "./users": {
+      "types": "./dist/users.d.ts",
+      "import": "./dist/users.js",
+      "default": "./dist/users.js"
+    },
+    "./utility-bills": {
+      "types": "./dist/utility-bills.d.ts",
+      "import": "./dist/utility-bills.js",
+      "default": "./dist/utility-bills.js"
+    },
+    "./wa-cloud": {
+      "types": "./dist/wa-cloud.d.ts",
+      "import": "./dist/wa-cloud.js",
+      "default": "./dist/wa-cloud.js"
+    },
+    "./whatsapp": {
+      "types": "./dist/whatsapp.d.ts",
+      "import": "./dist/whatsapp.js",
+      "default": "./dist/whatsapp.js"
+    },
+    "./shipments": {
+      "types": "./dist/shipments.d.ts",
+      "import": "./dist/shipments.js",
+      "default": "./dist/shipments.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "lint": "oxlint",
+    "lint:fix": "oxlint --fix && oxfmt --write .",
+    "format": "oxfmt",
+    "format:check": "oxfmt --check",
+    "type-check": "tsgo --noEmit"
+  },
+  "dependencies": {
+    "@orpc/contract": "^1.14.2",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "^25.7.0",
+    "typescript": "^6.0.3"
+  },
+  "engines": {
+    "node": ">=26",
+    "npm": ">=10.0.0"
+  }
+}
