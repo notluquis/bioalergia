@@ -32,18 +32,27 @@ setup("authenticate once + persist storageState", async ({ page, baseURL }) => {
   await page.goto("/login", { waitUntil: "domcontentloaded" });
   await page.waitForLoadState("load");
 
+  // Wait for React hydration: the H1 always renders, but the HeroUI Button
+  // children mount slightly after first paint. count() before hydration
+  // returns 0 even though the button is about to appear.
+  await page.getByRole("heading", { name: /inicia sesi[oó]n/i }).waitFor({
+    state: "visible",
+    timeout: 15_000,
+  });
+  await page
+    .getByRole("button", { name: /ingresar con biometr/i })
+    .or(page.locator('input[type="email"], input[autocomplete="username"]').first())
+    .first()
+    .waitFor({ state: "visible", timeout: 10_000 });
+
   // Click "Usar correo y contraseña" if the passkey CTA is the default.
   // HeroUI v3 Button (React Aria) sometimes swallows the first synthetic
   // click in CI Chromium. Poll the state-machine transition (header text
   // changes from "Usa tu biometría" → "Ingresa tus credenciales") and
   // retry the click if it didn't take.
-  const fallback = page
-    .getByRole("button", { name: /usar correo( electr[oó]nico)? y contrase[ñn]a/i })
-    .or(
-      page
-        .getByText(/usar correo( electr[oó]nico)? y contrase[ñn]a/i)
-        .locator("xpath=ancestor::button")
-    );
+  const fallback = page.getByRole("button", {
+    name: /usar correo( electr[oó]nico)? y contrase[ñn]a/i,
+  });
   const credentialsHeader = page.getByText(/ingresa tus credenciales/i);
   const emailInput = page.locator('input[type="email"], input[autocomplete="username"]').first();
   const passInput = page.locator('input[type="password"]').first();
