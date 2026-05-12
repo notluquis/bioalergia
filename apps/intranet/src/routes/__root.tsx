@@ -15,6 +15,7 @@ const TanStackRouterDevtools =
         }))
       );
 
+import { ConfirmDialogHost } from "@/components/ui/ConfirmDialog";
 import type { NavConfig, RoutePermission } from "@/types/navigation";
 
 // Extend the router's static data interface
@@ -48,6 +49,7 @@ function RootComponent() {
   return (
     <RouterProvider navigate={handleNavigate}>
       <Outlet />
+      <ConfirmDialogHost />
       <Suspense>
         <TanStackRouterDevtools position="bottom-right" />
       </Suspense>

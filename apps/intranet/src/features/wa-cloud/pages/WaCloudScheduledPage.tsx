@@ -2,6 +2,7 @@ import { Button, Card, Chip, Spinner, Table } from "@heroui/react";
 import dayjs from "dayjs";
 import { CalendarClock, X } from "lucide-react";
 import { useState } from "react";
+import { confirmAction } from "@/components/ui/ConfirmDialog";
 import { SelectInput } from "@/features/outreach/components/FormField";
 import { toast } from "@/lib/toast-interceptor";
 import { useAllScheduled, useCancelScheduled } from "../hooks/useWaCloud";
@@ -116,8 +117,16 @@ export function WaCloudScheduledPage() {
                               isIconOnly
                               aria-label="Cancelar"
                               isPending={cancel.isPending}
-                              onPress={() => {
-                                if (!confirm("¿Cancelar este envío programado?")) return;
+                              onPress={async () => {
+                                const ok = await confirmAction({
+                                  title: "Cancelar envío programado",
+                                  description:
+                                    "El mensaje no se enviará. Esta acción no se puede deshacer.",
+                                  confirmLabel: "Cancelar envío",
+                                  cancelLabel: "Volver",
+                                  variant: "danger",
+                                });
+                                if (!ok) return;
                                 cancel.mutate(s.id, {
                                   onSuccess: () => toast.success("Cancelado"),
                                   onError: (e) => toast.error(`Error: ${String(e)}`),

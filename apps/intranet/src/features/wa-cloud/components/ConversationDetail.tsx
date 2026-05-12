@@ -3,6 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import { Ban } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { confirmAction } from "@/components/ui/ConfirmDialog";
 import { toast } from "@/lib/toast-interceptor";
 import { ChatBubble } from "./ChatBubble";
 import { CommerceSelectorModal } from "./CommerceSelectorModal";
@@ -513,13 +514,19 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
             onPhoneChange={setPhoneId}
             onOpenGallery={() => setGalleryOpen(true)}
             onRelease={() => updateConv.mutate({ id: conversationId, assignedToUserId: null })}
-            onBlock={() => {
+            onBlock={async () => {
               if (!phoneId) {
                 toast.error("Selecciona un número primero");
                 return;
               }
-              if (!confirm("¿Bloquear este contacto en WhatsApp? No podrá enviarte mensajes."))
-                return;
+              const ok = await confirmAction({
+                title: "Bloquear contacto",
+                description:
+                  "El contacto no podrá enviarte mensajes hasta que lo desbloquees.",
+                confirmLabel: "Bloquear",
+                variant: "danger",
+              });
+              if (!ok) return;
               blockContact.mutate({
                 conversationId,
                 phoneNumberId: Number(phoneId),
@@ -577,12 +584,18 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
             <Button
               size="sm"
               variant="outline"
-              onPress={() => {
+              onPress={async () => {
                 if (!phoneId) {
                   toast.error("Selecciona un número primero");
                   return;
                 }
-                if (!confirm("¿Desbloquear este contacto en WhatsApp?")) return;
+                const ok = await confirmAction({
+                  title: "Desbloquear contacto",
+                  description:
+                    "Volverá a poder enviarte mensajes en WhatsApp.",
+                  confirmLabel: "Desbloquear",
+                });
+                if (!ok) return;
                 blockContact.reset();
                 void unblockContactMut
                   .mutateAsync({

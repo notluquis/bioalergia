@@ -12,6 +12,7 @@ import {
   Zap,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { confirmAction } from "@/components/ui/ConfirmDialog";
 import { SelectInput, TextAreaInput, TextInput } from "@/features/outreach/components/FormField";
 import { toast } from "@/lib/toast-interceptor";
 import {
@@ -179,8 +180,14 @@ function LocationsTab() {
                             variant="danger-soft"
                             isIconOnly
                             aria-label="Archivar"
-                            onPress={() => {
-                              if (!confirm("¿Archivar?")) return;
+                            onPress={async () => {
+                              const ok = await confirmAction({
+                                title: "Archivar elemento",
+                                description: "Quedará oculto del catálogo activo. Se puede restaurar luego.",
+                                confirmLabel: "Archivar",
+                                variant: "danger",
+                              });
+                              if (!ok) return;
                               archive.mutate(l.id);
                             }}
                           >
@@ -415,8 +422,14 @@ function ListsTab() {
                             variant="danger-soft"
                             isIconOnly
                             aria-label="Archivar"
-                            onPress={() => {
-                              if (!confirm("¿Archivar?")) return;
+                            onPress={async () => {
+                              const ok = await confirmAction({
+                                title: "Archivar elemento",
+                                description: "Quedará oculto del catálogo activo. Se puede restaurar luego.",
+                                confirmLabel: "Archivar",
+                                variant: "danger",
+                              });
+                              if (!ok) return;
                               archive.mutate(l.id);
                             }}
                           >
@@ -716,8 +729,14 @@ function FlowsTab() {
                             variant="danger-soft"
                             isIconOnly
                             aria-label="Archivar"
-                            onPress={() => {
-                              if (!confirm("¿Archivar?")) return;
+                            onPress={async () => {
+                              const ok = await confirmAction({
+                                title: "Archivar elemento",
+                                description: "Quedará oculto del catálogo activo. Se puede restaurar luego.",
+                                confirmLabel: "Archivar",
+                                variant: "danger",
+                              });
+                              if (!ok) return;
                               archive.mutate(f.id);
                             }}
                           >
@@ -1024,8 +1043,14 @@ function SnippetsTab() {
                             variant="danger-soft"
                             isIconOnly
                             aria-label="Archivar"
-                            onPress={() => {
-                              if (!confirm("¿Archivar?")) return;
+                            onPress={async () => {
+                              const ok = await confirmAction({
+                                title: "Archivar elemento",
+                                description: "Quedará oculto del catálogo activo. Se puede restaurar luego.",
+                                confirmLabel: "Archivar",
+                                variant: "danger",
+                              });
+                              if (!ok) return;
                               archive.mutate(s.id);
                             }}
                           >

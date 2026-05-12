@@ -1,6 +1,7 @@
 import { Button, Card, Chip, Modal, ProgressBar, Spinner, Table } from "@heroui/react";
 import { CalendarClock, Megaphone, Play, Plus, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { confirmAction } from "@/components/ui/ConfirmDialog";
 import { SelectInput, TextAreaInput, TextInput } from "@/features/outreach/components/FormField";
 import { toast } from "@/lib/toast-interceptor";
 import {
@@ -167,9 +168,16 @@ function BroadcastActions({ broadcastId, status }: { broadcastId: number; status
           isIconOnly
           aria-label="Cancelar"
           isPending={cancel.isPending}
-          onPress={() => {
-            if (!confirm("¿Cancelar esta campaña? Los destinatarios pendientes no se enviarán."))
-              return;
+          onPress={async () => {
+            const ok = await confirmAction({
+              title: "Cancelar campaña",
+              description:
+                "Los destinatarios pendientes no recibirán el mensaje. Esta acción no se puede deshacer.",
+              confirmLabel: "Cancelar campaña",
+              cancelLabel: "Volver",
+              variant: "danger",
+            });
+            if (!ok) return;
             cancel.mutate(broadcastId);
           }}
         >
