@@ -53,12 +53,11 @@ const AUTHED_DISABLED_RULES: string[] = [
   //  `target-offset` is an axe internal check on top of target-size, not
   //  a separately-disableable rule.
   "target-size",
-  // TODO(a11y): HeroUI v3 Spinner renders <span aria-label="..."> without
-  //  role="status" / role="progressbar". axe 4.11 added a stricter check
-  //  (`aria-prohibited-attr`) that flags aria-label on a generic span.
-  //  Pending HeroUI upstream fix; suppress so we don't gate on Suspense
-  //  fallbacks rendering a spinner.
-  "aria-prohibited-attr",
+  // (aria-prohibited-attr previously listed because HeroUI v3 Spinner
+  //  rendered <span aria-label> with no role; resolved by routing every
+  //  loading indicator through @/components/ui/LoadingSpinner which wraps
+  //  HeroUI's Spinner in a role="status" aria-live region. If a regression
+  //  re-adds <Spinner aria-label> directly, this rule will fire again.)
 ];
 
 plain.describe("a11y / unauthenticated", () => {

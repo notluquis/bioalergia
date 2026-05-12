@@ -1,4 +1,4 @@
-import { Chip, Spinner } from "@heroui/react";
+import { Chip } from "@heroui/react";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { useQuery } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";

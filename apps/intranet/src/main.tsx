@@ -5,7 +5,7 @@
  * The old React Router v7 routes have been migrated to file-based routing in src/routes/.
  */
 
-import { Button, Spinner } from "@heroui/react";
+import { Button } from "@heroui/react";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createRouter, RouterProvider } from "@tanstack/react-router";
