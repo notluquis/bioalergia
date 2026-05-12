@@ -493,6 +493,16 @@ body {
   display: none;
 }
 
+/* === A11y focus visibility (WCAG 2.2 SC 2.4.11 Focus Not Obscured) ===
+ * Sticky headers (Header.tsx, _authed.tsx update banner, WeekGrid time row,
+ * production-balances TopBar, PermissionsMatrixTable) are up to ~5rem tall.
+ * Reserve scroll margin so :focus-visible never lands behind them.
+ */
+:focus-visible {
+  scroll-margin-top: 5rem;
+  scroll-margin-bottom: 2rem;
+}
+
 /* View Transitions */
 @view-transition {
   navigation: auto;
