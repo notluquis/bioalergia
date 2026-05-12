@@ -25,6 +25,7 @@
 All endpoints are exposed via **oRPC (Object Remote Procedure)** in the calendar module.
 
 #### 1. **Rebuild Clinical Series** (Reorganize series from events)
+
 ```
 POST /api/orpc/calendar/rpc/series/rebuild
 ```
@@ -32,6 +33,7 @@ POST /api/orpc/calendar/rpc/series/rebuild
 **Description:** Reorganizes calendar events into clinical series groups based on event categories and metadata.
 
 **Input Schema:**
+
 ```typescript
 {
   from?: string;    // Date string: YYYY-MM-DD (optional)
@@ -40,17 +42,19 @@ POST /api/orpc/calendar/rpc/series/rebuild
 ```
 
 **Response Schema:**
+
 ```typescript
 {
-  processed: number;         // Total events processed
-  from: string | null;       // Start date used (YYYY-MM-DD)
-  to: string | null;         // End date used (YYYY-MM-DD)
+  processed: number; // Total events processed
+  from: string | null; // Start date used (YYYY-MM-DD)
+  to: string | null; // End date used (YYYY-MM-DD)
 }
 ```
 
 **Permission Required:** `update` on `CalendarEvent`
 
 **Example Response:**
+
 ```json
 {
   "processed": 247,
@@ -62,6 +66,7 @@ POST /api/orpc/calendar/rpc/series/rebuild
 ---
 
 #### 2. **Get Suggestions with Clinical Series** (Via DTE Event Links)
+
 ```
 GET /api/orpc/dte-event-links/rpc/suggestions?calendarId={id}&eventId={id}&limit={n}
 ```
@@ -69,6 +74,7 @@ GET /api/orpc/dte-event-links/rpc/suggestions?calendarId={id}&eventId={id}&limit
 **Description:** Retrieves suggestions for matching calendar events to DTE documents. Includes clinical series snapshot if the event belongs to a series.
 
 **Input Schema:**
+
 ```typescript
 {
   calendarId: string;     // Google Calendar ID
@@ -78,6 +84,7 @@ GET /api/orpc/dte-event-links/rpc/suggestions?calendarId={id}&eventId={id}&limit
 ```
 
 **Response Schema:**
+
 ```typescript
 {
   event: {
@@ -93,16 +100,17 @@ GET /api/orpc/dte-event-links/rpc/suggestions?calendarId={id}&eventId={id}&limit
     };
     summary: string | null;
   } | null;
-  
+
   linked: unknown | null;  // Existing DTE link if any
-  
+
   series: ClinicalSeriesSnapshot | null;  // ← FULL SERIES DATA
-  
+
   suggestions: EventDteSuggestion[];  // Array of matching DTE documents
 }
 ```
 
-**Permission Required:** 
+**Permission Required:**
+
 - `read` on `CalendarDaily`
 - `read` on `DTEPurchaseDetail`
 
@@ -113,11 +121,13 @@ GET /api/orpc/dte-event-links/rpc/suggestions?calendarId={id}&eventId={id}&limit
 These endpoints also update `clinicalSeriesId` on events:
 
 #### 3. **Classify Event** (Manual classification)
+
 ```
 POST /api/orpc/calendar/rpc/events/classify
 ```
 
 **Input includes optional:**
+
 ```typescript
 {
   clinicalSeriesId?: null | number;  // Assign/unassign series
@@ -187,14 +197,14 @@ enum ClinicalSeriesStageKind {
 ```zmodel
 model Event {
   // ... other fields ...
-  
+
   clinicalSeriesId    Int?              @map("clinical_series_id")
   seriesStageKind     ClinicalSeriesStageKind? @map("series_stage_kind")
   seriesStageLabel    String?           @map("series_stage_label")
   seriesStageNumber   Int?              @map("series_stage_number")
-  
+
   clinicalSeries      ClinicalSeries?   @relation(fields: [clinicalSeriesId], references: [id], onDelete: SetNull)
-  
+
   @@index([clinicalSeriesId])
 }
 ```
@@ -208,10 +218,10 @@ export interface ClinicalSeriesLinkedDocument {
   clientName: string;
   clientRUT: string;
   confidenceScore: number;
-  documentDate: string;              // YYYY-MM-DD
+  documentDate: string; // YYYY-MM-DD
   dteSaleDetailId: string;
   folio: string;
-  matchedBy: string;                 // How was it matched?
+  matchedBy: string; // How was it matched?
   totalAmount: number;
 }
 
@@ -219,31 +229,31 @@ export interface ClinicalSeriesEvent {
   amountExpected: number | null;
   amountPaid: number | null;
   calendarGoogleId: string;
-  eventDate: string;                 // YYYY-MM-DD
-  eventId: number;                   // Internal ID
-  externalEventId: string;           // Google event ID
+  eventDate: string; // YYYY-MM-DD
+  eventId: number; // Internal ID
+  externalEventId: string; // Google event ID
   seriesStageKind: "DOSE" | "INSTALLATION" | "MAINTENANCE" | "READING" | null;
   seriesStageLabel: string | null;
-  seriesStageNumber: number | null;  // Stage sequence number
+  seriesStageNumber: number | null; // Stage sequence number
   summary: string | null;
 }
 
 export interface ClinicalSeriesSnapshot {
   displayName: string | null;
-  eligibleDocumentDateFrom: string;  // YYYY-MM-DD (startDate - 7 days)
-  eligibleDocumentDateTo: string;    // YYYY-MM-DD (endDate + 30 days, capped at today)
+  eligibleDocumentDateFrom: string; // YYYY-MM-DD (startDate - 7 days)
+  eligibleDocumentDateTo: string; // YYYY-MM-DD (endDate + 30 days, capped at today)
   events: ClinicalSeriesEvent[];
   id: number;
   kind: "PATCH_TEST" | "SKIN_TEST" | "SUBCUTANEOUS_TREATMENT";
   linkedDocuments: ClinicalSeriesLinkedDocument[];
   patientName: string | null;
   patientRut: string | null;
-  remainingExpected: number;         // totalExpected - totalLinkedAmount
-  remainingPaid: number;             // totalPaid - totalLinkedAmount
+  remainingExpected: number; // totalExpected - totalLinkedAmount
+  remainingPaid: number; // totalPaid - totalLinkedAmount
   status: "ACTIVE" | "CANCELLED" | "COMPLETED";
-  totalExpected: number;             // Sum of all event.amountExpected
-  totalLinkedAmount: number;         // Sum of all linkedDocument.totalAmount
-  totalPaid: number;                 // Sum of all event.amountPaid
+  totalExpected: number; // Sum of all event.amountExpected
+  totalLinkedAmount: number; // Sum of all linkedDocument.totalAmount
+  totalPaid: number; // Sum of all event.amountPaid
 }
 ```
 
@@ -258,6 +268,7 @@ export interface ClinicalSeriesSnapshot {
 #### Key Exported Functions
 
 ##### 1. **syncClinicalSeriesForInternalEventId(eventId: number)**
+
 ```typescript
 // Purpose: Main sync function - links event to clinical series or creates new one
 // Returns: Series ID or null
@@ -272,6 +283,7 @@ export interface ClinicalSeriesSnapshot {
 ```
 
 **Details:**
+
 - **Infers Series Kind** from event category:
   - `"Tratamiento subcutáneo"` → `SUBCUTANEOUS_TREATMENT`
   - `"Test y exámenes"` + patchTest metadata → `PATCH_TEST`
@@ -286,6 +298,7 @@ export interface ClinicalSeriesSnapshot {
 ---
 
 ##### 2. **syncClinicalSeriesForEventIds(eventIds: number[])**
+
 ```typescript
 // Batch sync for multiple internal event IDs
 ```
@@ -293,6 +306,7 @@ export interface ClinicalSeriesSnapshot {
 ---
 
 ##### 3. **syncClinicalSeriesForExternalEvents(events: Array<{ calendarId: string; eventId: string }>)**
+
 ```typescript
 // Sync from Google Calendar external IDs
 ```
@@ -300,6 +314,7 @@ export interface ClinicalSeriesSnapshot {
 ---
 
 ##### 4. **rebuildClinicalSeries(params?: { from?: string; to?: string })**
+
 ```typescript
 // Purpose: Full rebuild/reorganization of all clinical series
 // Queries all events in categories: 'Test y exámenes', 'Tratamiento subcutáneo'
@@ -309,6 +324,7 @@ export interface ClinicalSeriesSnapshot {
 ```
 
 **Database Query Used:**
+
 ```sql
 SELECT e.id AS "eventId"
 FROM events e
@@ -321,6 +337,7 @@ ORDER BY start_date ASC, e.id ASC
 ---
 
 ##### 5. **getClinicalSeriesSnapshotByExternalEvent(params: { calendarId: string; eventId: string })**
+
 ```typescript
 // Purpose: Get complete series data for frontend display
 // Returns: ClinicalSeriesSnapshot | null
@@ -333,15 +350,17 @@ ORDER BY start_date ASC, e.id ASC
 ```
 
 **Date Range Calculations:**
+
 ```typescript
 eligibleDocumentDateFrom = eventStartDate - 7 days
 eligibleDocumentDateTo = Math.min(eventEndDate + 30 days, today)
 ```
 
 **Remaining Amounts Logic:**
+
 ```typescript
-remainingExpected = Math.max(0, totalExpected - totalLinkedAmount)
-remainingPaid = Math.max(0, totalPaid - totalLinkedAmount)
+remainingExpected = Math.max(0, totalExpected - totalLinkedAmount);
+remainingPaid = Math.max(0, totalPaid - totalLinkedAmount);
 ```
 
 ---
@@ -404,14 +423,22 @@ const rebuildClinicalSeriesRoute = requirePermission("CalendarEvent", "update")
 ```
 
 **Input Validation:**
+
 ```typescript
 const rebuildClinicalSeriesInputSchema = z.object({
-  from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
-  to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  from: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
+  to: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
 });
 ```
 
 **Output Validation:**
+
 ```typescript
 const rebuildClinicalSeriesResponseSchema = z.object({
   from: z.string().nullable(),
@@ -443,6 +470,7 @@ const eventLinkSuggestions = readEventLinks
 ```
 
 **Middleware Chain:**
+
 ```
 readEventLinks middleware
 ├─ Check: hasPermission(userId, "read", "CalendarDaily")
@@ -458,28 +486,29 @@ readEventLinks middleware
 
 ### Access Control Matrix
 
-| Operation | Subject | Permission | User Status | Notes |
-|-----------|---------|-----------|------------|-------|
-| Read ClinicalSeries | ANY | N/A | ANY | Allowed for all (Zenstack @allow('read', true)) |
-| Create ClinicalSeries | ANY | N/A | ACTIVE | Only ACTIVE users (Zenstack @allow('create', ...)) |
-| Update ClinicalSeries | ANY | N/A | ACTIVE | Only ACTIVE users |
-| Delete ClinicalSeries | ANY | N/A | ACTIVE | Only ACTIVE users |
-| Rebuild Series | POST /series/rebuild | `update` on `CalendarEvent` | ANY | Requires explicit permission |
-| Get Suggestions | GET /suggestions | `read` on both `CalendarDaily` + `DTEPurchaseDetail` | ANY | Dual permission check |
+| Operation             | Subject              | Permission                                           | User Status | Notes                                              |
+| --------------------- | -------------------- | ---------------------------------------------------- | ----------- | -------------------------------------------------- |
+| Read ClinicalSeries   | ANY                  | N/A                                                  | ANY         | Allowed for all (Zenstack @allow('read', true))    |
+| Create ClinicalSeries | ANY                  | N/A                                                  | ACTIVE      | Only ACTIVE users (Zenstack @allow('create', ...)) |
+| Update ClinicalSeries | ANY                  | N/A                                                  | ACTIVE      | Only ACTIVE users                                  |
+| Delete ClinicalSeries | ANY                  | N/A                                                  | ACTIVE      | Only ACTIVE users                                  |
+| Rebuild Series        | POST /series/rebuild | `update` on `CalendarEvent`                          | ANY         | Requires explicit permission                       |
+| Get Suggestions       | GET /suggestions     | `read` on both `CalendarDaily` + `DTEPurchaseDetail` | ANY         | Dual permission check                              |
 
 ### Code Examples
 
 **Rebuild Route:**
+
 ```typescript
-const rebuildClinicalSeriesRoute = requirePermission("CalendarEvent", "update")
-  .route({
-    method: "POST",
-    path: "/series/rebuild",
-    // ...
-  });
+const rebuildClinicalSeriesRoute = requirePermission("CalendarEvent", "update").route({
+  method: "POST",
+  path: "/series/rebuild",
+  // ...
+});
 ```
 
 **Suggestions Route (Dual Check):**
+
 ```typescript
 const readEventLinks = authed.use(async ({ context, next }) => {
   const canReadCalendar = await hasPermission(context.user.id, "read", "CalendarDaily");
@@ -504,37 +533,40 @@ const readEventLinks = authed.use(async ({ context, next }) => {
 **Process:**
 
 1. **Detection Phase**
+
    ```
    Event has category?
    ├─ "Tratamiento subcutáneo" → SUBCUTANEOUS_TREATMENT
    └─ "Test y exámenes" → Check test metadata
       ├─ patchTest: true → PATCH_TEST
       └─ skinTest: true → SKIN_TEST
-   
+
    If no matching kind → No series assigned
    ```
 
 2. **Patient Extraction Phase**
+
    ```
    Extract from event.summary + event.description:
    ├─ RUT: First match of format: /\b\d{1,2}\.?\d{3}\.?\d{3}-?[\dkK]\b/
    └─ Name: Longest capitalized phrase (5+ chars after normalization)
-   
+
    If no patient hints → Keep existing series or return null
    ```
 
 3. **Matching Phase (Find or Create)**
+
    ```
    Query: ClinicalSeries with same kind AND (patientRut OR patientName)
-   
+
    For each candidate:
      Calculate event date distance to candidate's date range
        ├─ SUBCUTANEOUS_TREATMENT: ±180 days window
        └─ Others: ±45 days window
-     
+
      If distance ≤ threshold:
        Pick: Candidate with smallest distance
-   
+
    If no candidate found:
      Create: New ClinicalSeries with extracted hints
    ```
@@ -546,7 +578,7 @@ const readEventLinks = authed.use(async ({ context, next }) => {
    │  where identity = patientName || patientRut || "Paciente sin identificar"
    ├─ patientName: First extracted name from all events
    ├─ patientRut: First extracted RUT from all events
-   └─ expectedSessions: 
+   └─ expectedSessions:
       ├─ Max of seriesStageNumber if any numbered stages exist
       ├─ null if MAINTENANCE stage found
       └─ count of events otherwise
@@ -572,6 +604,7 @@ function buildSeriesDisplayName(params: {
 ```
 
 **Examples:**
+
 - `"Juan Pérez · Test de parche"`
 - `"19.000.000-1 · Tratamiento subcutáneo"`
 - `"Paciente sin identificar · Test cutáneo"`
@@ -584,13 +617,14 @@ Calculates window for DTE document matching:
 
 ```typescript
 function calculateEligibleDocumentDates(events: ClinicalSeriesEvent[]) {
-  const eventDates = events.map(e => parseDate(e.eventDate)).sort();
+  const eventDates = events.map((e) => parseDate(e.eventDate)).sort();
   const firstDate = dayjs(eventDates[0]);
   const lastDate = dayjs(eventDates[eventDates.length - 1]);
-  
+
   return {
     from: firstDate.subtract(7, "days").format("YYYY-MM-DD"),
-    to: (lastDate.add(30, "days") > today) 
+    to:
+      lastDate.add(30, "days") > today
         ? today.format("YYYY-MM-DD")
         : lastDate.add(30, "days").format("YYYY-MM-DD"),
   };
@@ -598,6 +632,7 @@ function calculateEligibleDocumentDates(events: ClinicalSeriesEvent[]) {
 ```
 
 **Rationale:**
+
 - Documents dated 7 days _before_ first event accepted (patient history)
 - Documents up to 30 days _after_ last event accepted (billing lag)
 - Capped at today (don't allow future billing)
@@ -607,6 +642,7 @@ function calculateEligibleDocumentDates(events: ClinicalSeriesEvent[]) {
 ## 📝 Type Definitions
 
 All types are exported from:
+
 - **Backend (TypeScript):** `/apps/api/src/services/clinical-series.ts` (lines 14-65)
 - **Frontend (TypeScript):** `/apps/intranet/src/features/calendar/types.ts`
 
@@ -643,7 +679,7 @@ export interface ClinicalSeriesEvent {
   amountExpected: number | null;
   amountPaid: number | null;
   calendarGoogleId: string;
-  eventDate: string;                              // YYYY-MM-DD
+  eventDate: string; // YYYY-MM-DD
   eventId: number;
   externalEventId: string;
   seriesStageKind: ClinicalSeriesStageKind | null;
@@ -656,10 +692,10 @@ export interface ClinicalSeriesLinkedDocument {
   clientName: string;
   clientRUT: string;
   confidenceScore: number;
-  documentDate: string;                           // YYYY-MM-DD
+  documentDate: string; // YYYY-MM-DD
   dteSaleDetailId: string;
   folio: string;
-  matchedBy: string;                             // e.g., "rut", "name_fuzzy"
+  matchedBy: string; // e.g., "rut", "name_fuzzy"
   totalAmount: number;
 }
 
@@ -667,21 +703,11 @@ export interface ClinicalSeriesLinkedDocument {
 // ENUM TYPES
 // =====================================================
 
-export type ClinicalSeriesKind = 
-  | "PATCH_TEST"
-  | "SKIN_TEST"
-  | "SUBCUTANEOUS_TREATMENT";
+export type ClinicalSeriesKind = "PATCH_TEST" | "SKIN_TEST" | "SUBCUTANEOUS_TREATMENT";
 
-export type ClinicalSeriesStatus =
-  | "ACTIVE"
-  | "COMPLETED"
-  | "CANCELLED";
+export type ClinicalSeriesStatus = "ACTIVE" | "COMPLETED" | "CANCELLED";
 
-export type ClinicalSeriesStageKind =
-  | "INSTALLATION"
-  | "READING"
-  | "DOSE"
-  | "MAINTENANCE";
+export type ClinicalSeriesStageKind = "INSTALLATION" | "READING" | "DOSE" | "MAINTENANCE";
 
 export type RebuildClinicalSeriesResponse = {
   from: string | null;
@@ -722,8 +748,10 @@ export type RebuildClinicalSeriesResponse = {
 
 ```typescript
 // Check eligibility before allowing link
-if (documentDate >= snapshot.eligibleDocumentDateFrom &&
-    documentDate <= snapshot.eligibleDocumentDateTo) {
+if (
+  documentDate >= snapshot.eligibleDocumentDateFrom &&
+  documentDate <= snapshot.eligibleDocumentDateTo
+) {
   // Allow linking to this series
 }
 ```
@@ -733,7 +761,7 @@ if (documentDate >= snapshot.eligibleDocumentDateFrom &&
 ```typescript
 // Frontend receives pre-calculated values
 remaining = {
-  expected: snapshot.remainingExpected,  // May be 0 if over-linked
+  expected: snapshot.remainingExpected, // May be 0 if over-linked
   paid: snapshot.remainingPaid,
 };
 ```

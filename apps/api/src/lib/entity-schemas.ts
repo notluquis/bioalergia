@@ -141,7 +141,7 @@ export const counterpartAccountPayloadSchema = counterpartAccountBaseSchema.refi
   {
     message: "Ingresa un identificador de cuenta",
     path: ["accountIdentifier"],
-  },
+  }
 );
 
 export const counterpartAccountUpdateSchema = counterpartAccountBaseSchema.partial().extend({

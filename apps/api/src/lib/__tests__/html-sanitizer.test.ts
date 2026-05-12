@@ -108,7 +108,7 @@ describe("html-sanitizer", () => {
 
     it("preserves table structure", () => {
       const result = sanitizeHtml(
-        "<table><thead><tr><th>Col</th></tr></thead><tbody><tr><td>Data</td></tr></tbody></table>",
+        "<table><thead><tr><th>Col</th></tr></thead><tbody><tr><td>Data</td></tr></tbody></table>"
       );
       expect(result).toContain("<table>");
       expect(result).toContain("<td>");
@@ -200,7 +200,10 @@ describe("html-sanitizer", () => {
     });
 
     it("strips non-allowed attributes from anchor tags", () => {
-      const result = sanitizeHtml('<a href="https://example.com" onclick="evil()">Link</a>', "moderate");
+      const result = sanitizeHtml(
+        '<a href="https://example.com" onclick="evil()">Link</a>',
+        "moderate"
+      );
       expect(result).not.toContain("onclick");
       expect(result).toContain("href");
     });
@@ -209,17 +212,14 @@ describe("html-sanitizer", () => {
   // ──────────────────────────────────────────────────────────────────────────
   describe("sanitizeHtml – XSS attack vectors", () => {
     it("handles SVG-based XSS", () => {
-      const result = sanitizeHtml(
-        '<svg><script>alert(1)</script></svg>',
-        "rich",
-      );
+      const result = sanitizeHtml("<svg><script>alert(1)</script></svg>", "rich");
       expect(result).not.toContain("<script");
     });
 
     it("handles data URI injection attempt", () => {
       const result = sanitizeHtml(
         '<a href="data:text/html,<script>alert(1)</script>">Click</a>',
-        "moderate",
+        "moderate"
       );
       expect(result).not.toContain("data:text/html");
     });
@@ -232,9 +232,7 @@ describe("html-sanitizer", () => {
     });
 
     it("handles nested dangerous tag stripping", () => {
-      const result = sanitizeHtml(
-        '<div><p><span onmouseover="steal()">Hover</span></p></div>',
-      );
+      const result = sanitizeHtml('<div><p><span onmouseover="steal()">Hover</span></p></div>');
       expect(result).not.toContain("onmouseover");
       expect(result).toContain("Hover");
     });
@@ -247,7 +245,7 @@ describe("html-sanitizer", () => {
     it("handles meta refresh injection", () => {
       const result = sanitizeHtml(
         '<meta http-equiv="refresh" content="0;url=https://evil.com">',
-        "rich",
+        "rich"
       );
       expect(result).not.toContain("<meta");
     });

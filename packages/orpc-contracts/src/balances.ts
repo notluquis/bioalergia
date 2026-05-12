@@ -43,8 +43,14 @@ export const balancesStatusResponseSchema = z.object({
 });
 
 export const balancesContract = {
-  list: oc.route({ method: "GET", path: "/" }).input(balancesQuerySchema).output(balancesResponseSchema),
-  save: oc.route({ method: "POST", path: "/" }).input(balanceUpsertSchema).output(balancesStatusResponseSchema),
+  list: oc
+    .route({ method: "GET", path: "/" })
+    .input(balancesQuerySchema)
+    .output(balancesResponseSchema),
+  save: oc
+    .route({ method: "POST", path: "/" })
+    .input(balanceUpsertSchema)
+    .output(balancesStatusResponseSchema),
 };
 
 export type BalancesContract = typeof balancesContract;

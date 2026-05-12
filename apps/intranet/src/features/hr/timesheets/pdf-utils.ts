@@ -13,7 +13,7 @@ export async function generateTimesheetPdfBase64(
   employee: Employee,
   summaryRow: TimesheetSummaryRow,
   bulkRows: BulkRow[],
-  monthLabel: string,
+  monthLabel: string
 ): Promise<null | string> {
   try {
     const [{ default: jsPDF }, autoTableModule] = await Promise.all([
@@ -130,7 +130,7 @@ export async function generateTimesheetPdfBase64(
         () => {
           resolve(null);
         },
-        { once: true },
+        { once: true }
       );
       reader.readAsDataURL(pdfBlob);
     });

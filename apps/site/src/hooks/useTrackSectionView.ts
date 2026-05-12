@@ -26,7 +26,7 @@ export function useTrackSectionView(sectionId: string, sectionName: string) {
           hasTrackedRef.current = true;
         }
       },
-      { threshold: 0.25 },
+      { threshold: 0.25 }
     );
 
     const element = elementRef.current;

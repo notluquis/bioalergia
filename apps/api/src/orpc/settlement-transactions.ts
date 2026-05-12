@@ -52,7 +52,7 @@ const readSettlementTransactions = authed.use(async ({ context, next }) => {
 });
 
 function buildSettlementWhere(
-  input: z.infer<typeof settlementTransactionsQuerySchema>,
+  input: z.infer<typeof settlementTransactionsQuerySchema>
 ): SettlementTransactionWhereInput {
   const { from, paymentMethod, search, to, transactionType } = input;
   const whereConditions: SettlementTransactionWhereInput[] = [];
@@ -169,7 +169,7 @@ export const settlementTransactionsORPCHandler = new SuperJSONRPCHandler(
         });
       }),
     ],
-  },
+  }
 );
 
 export const settlementTransactionsOpenAPIHandler = new OpenAPIHandler(
@@ -182,7 +182,7 @@ export const settlementTransactionsOpenAPIHandler = new OpenAPIHandler(
           info: {
             title: "Bioalergia Settlement Transactions oRPC",
             description: "Contratos oRPC/OpenAPI para settlement transactions de Mercado Pago.",
-          version: "1.0.0",
+            version: "1.0.0",
           },
         },
       }),
@@ -195,7 +195,7 @@ export const settlementTransactionsOpenAPIHandler = new OpenAPIHandler(
         });
       }),
     ],
-  },
+  }
 );
 
 export type SettlementTransactionsORPCRouter = typeof settlementTransactionsORPCRouter;

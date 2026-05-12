@@ -150,7 +150,7 @@ export async function updateRolePermissions({
 }: UpdateRolePermissionsParams) {
   try {
     return StatusResponseSchema.parse(
-      await rolesORPCClient.updatePermissions({ id: roleId, permissionIds }),
+      await rolesORPCClient.updatePermissions({ id: roleId, permissionIds })
     );
   } catch (error) {
     throw toRolesApiError(error);
@@ -164,7 +164,7 @@ export async function sendUnmappedSubjectsTelemetry(payload: {
 }) {
   try {
     return RolesTelemetryResponseSchema.parse(
-      await rolesORPCClient.telemetryUnmappedSubjects(payload),
+      await rolesORPCClient.telemetryUnmappedSubjects(payload)
     );
   } catch (error) {
     throw toRolesApiError(error);

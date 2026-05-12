@@ -175,7 +175,7 @@ export const timesheetMonthsResponseSchema = z.object({
 export const timesheetMultiMonthResponseSchema = z.object({
   data: z.record(
     z.string(),
-    z.object({ entries: z.array(timesheetEntrySchema), month: z.string() }),
+    z.object({ entries: z.array(timesheetEntrySchema), month: z.string() })
   ),
   status: z.literal("ok"),
 });
@@ -217,7 +217,7 @@ export const timesheetPrepareEmailPayloadResponseSchema = z.object({
         contentBase64: z.string(),
         contentType: z.string(),
         filename: z.string(),
-      }),
+      })
     ),
     from: z.string(),
     html: z.string(),

@@ -27,10 +27,7 @@
     //
     // Reference: https://nodejs.org/api/typescript.html
     "react/only-export-components": ["warn", { "allowConstantExport": true }],
-    "import/extensions": [
-      "error",
-      { "js": "always", "ts": "always", "ignorePackages": true }
-    ],
+    "import/extensions": ["error", { "js": "always", "ts": "always", "ignorePackages": true }],
     "typescript/no-floating-promises": "error",
     "typescript/no-unsafe-assignment": "warn",
     "typescript/no-explicit-any": "error"
@@ -107,6 +104,6 @@
     {
       "files": ["packages/db/src/client.ts", "packages/db/src/input.ts"],
       "rules": {}
-    },
+    }
   ]
 }

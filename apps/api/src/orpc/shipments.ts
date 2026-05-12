@@ -55,7 +55,12 @@ const emptySchema = z.object({});
 
 const shipmentsRouterBase = {
   getRegions: base
-    .route({ method: "GET", path: "/regions", summary: "List ChileExpress regions", tags: ["Shipments"] })
+    .route({
+      method: "GET",
+      path: "/regions",
+      summary: "List ChileExpress regions",
+      tags: ["Shipments"],
+    })
     .input(emptySchema)
     .output(z.object({ regions: z.array(regionSchema) }))
     .handler(async () => {
@@ -64,25 +69,35 @@ const shipmentsRouterBase = {
     }),
 
   getCommunes: base
-    .route({ method: "GET", path: "/communes", summary: "List communes by region", tags: ["Shipments"] })
+    .route({
+      method: "GET",
+      path: "/communes",
+      summary: "List communes by region",
+      tags: ["Shipments"],
+    })
     .input(z.object({ regionId: z.string(), type: z.enum(["1", "2"]).optional() }))
     .output(z.object({ communes: z.array(communeSchema) }))
     .handler(async ({ input }) => {
       const communes = await fetchCommunes(
         input.regionId,
-        input.type ? (Number(input.type) as 1 | 2) : 1,
+        input.type ? (Number(input.type) as 1 | 2) : 1
       );
       return { communes };
     }),
 
   getCommercialOffices: base
-    .route({ method: "GET", path: "/commercial-offices", summary: "List ChileExpress offices", tags: ["Shipments"] })
+    .route({
+      method: "GET",
+      path: "/commercial-offices",
+      summary: "List ChileExpress offices",
+      tags: ["Shipments"],
+    })
     .input(
       z.object({
         regionCode: z.string(),
         countyName: z.string(),
         type: z.enum(["0", "4"]).optional(),
-      }),
+      })
     )
     .output(z.object({ offices: z.array(officeSchema) }))
     .handler(async ({ input }) => {
@@ -128,7 +143,7 @@ const shipmentsRouterBase = {
         streetName: z.string().min(1),
         countyName: z.string().min(1),
         number: z.string().min(1),
-      }),
+      })
     )
     .output(z.object({ result: cxGeocodeSchema.nullable() }))
     .handler(async ({ input }) => {
@@ -164,7 +179,12 @@ const shipmentsRouterBase = {
     }),
 
   create: base
-    .route({ method: "POST", path: "/", summary: "Create ChileExpress transport order", tags: ["Shipments"] })
+    .route({
+      method: "POST",
+      path: "/",
+      summary: "Create ChileExpress transport order",
+      tags: ["Shipments"],
+    })
     .input(createShipmentInputSchema)
     .output(createShipmentOutputSchema)
     .handler(async ({ input }) => {
@@ -188,9 +208,9 @@ const shipmentsRouterBase = {
           serializedShipmentSchema.extend({
             patientName: z.string(),
             patientRut: z.string().nullable(),
-          }),
+          })
         ),
-      }),
+      })
     )
     .handler(async () => {
       const shipments = await listAllShipments();
@@ -198,9 +218,7 @@ const shipmentsRouterBase = {
     }),
 };
 
-export const shipmentsORPCRouter = base
-  .prefix("/api/orpc/shipments")
-  .router(shipmentsRouterBase);
+export const shipmentsORPCRouter = base.prefix("/api/orpc/shipments").router(shipmentsRouterBase);
 
 export const shipmentsORPCHandler = new SuperJSONRPCHandler(shipmentsORPCRouter, {
   interceptors: [

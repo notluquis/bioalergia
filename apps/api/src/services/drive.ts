@@ -67,7 +67,7 @@ export async function uploadToDrive(
   filename: string,
   tables: string[] = [], // Optional for backward compatibility
   checksum?: string, // Optional custom checksum (SHA256)
-  stats?: Record<string, { count: number; hash: string }>, // Optional granular stats
+  stats?: Record<string, { count: number; hash: string }> // Optional granular stats
 ): Promise<{
   fileId: string;
   webViewLink: string | null;
@@ -99,7 +99,7 @@ export async function uploadToDrive(
       {
         idempotent: false,
         context: "drive.files.create",
-      },
+      }
     );
 
     const fileId = response.data.id;
@@ -127,7 +127,7 @@ export async function downloadFromDrive(fileId: string, destPath: string): Promi
 
     const response = await retryGoogleCall(
       () => drive.files.get({ fileId, alt: "media" }, { responseType: "stream" }),
-      { context: "drive.files.get" },
+      { context: "drive.files.get" }
     );
 
     await new Promise<void>((resolve, reject) => {
@@ -155,7 +155,7 @@ export async function listBackups(): Promise<BackupFile[]> {
           pageSize: 100,
           supportsAllDrives: true,
         }),
-      { context: "drive.files.list" },
+      { context: "drive.files.list" }
     );
 
     return (response.data.files || [])
@@ -177,7 +177,7 @@ export async function listBackups(): Promise<BackupFile[]> {
  * Deletes old backups beyond retention period.
  */
 export async function cleanupOldBackups(
-  retentionDays: number,
+  retentionDays: number
 ): Promise<{ deleted: number; deletedFiles: string[]; errors: string[] }> {
   const errors: string[] = [];
 
@@ -195,7 +195,7 @@ export async function cleanupOldBackups(
           pageSize: 100,
           supportsAllDrives: true,
         }),
-      { context: "drive.files.list" },
+      { context: "drive.files.list" }
     );
 
     const files = response.data.files || [];
@@ -241,7 +241,7 @@ export async function getBackupInfo(fileId: string): Promise<BackupFile> {
           fields: "id,name,createdTime,size,webViewLink",
           supportsAllDrives: true,
         }),
-      { context: "drive.files.get" },
+      { context: "drive.files.get" }
     );
 
     const { id, name, createdTime, size, webViewLink } = response.data;
@@ -282,7 +282,7 @@ export async function getBackupTables(fileId: string): Promise<string[]> {
             fields: "description",
             supportsAllDrives: true,
           }),
-        { context: "drive.files.get" },
+        { context: "drive.files.get" }
       );
 
       if (metadata.data.description) {
@@ -298,7 +298,7 @@ export async function getBackupTables(fileId: string): Promise<string[]> {
     } catch (e) {
       console.warn(
         `[Drive] Metadata check failed for ${fileId}, falling back to stream parsing`,
-        e,
+        e
       );
     }
 
@@ -308,7 +308,7 @@ export async function getBackupTables(fileId: string): Promise<string[]> {
     // Get file as stream and read just enough to get the tables list
     const response = await retryGoogleCall(
       () => drive.files.get({ fileId, alt: "media" }, { responseType: "stream" }),
-      { context: "drive.files.get" },
+      { context: "drive.files.get" }
     );
 
     return new Promise((resolve) => {
@@ -381,7 +381,7 @@ export async function getBackupTables(fileId: string): Promise<string[]> {
  * Throws error if metadata is missing or invalid.
  */
 export async function getBackupStats(
-  fileId: string,
+  fileId: string
 ): Promise<Record<string, { count: number; hash: string }>> {
   try {
     const drive = await getDriveClient();
@@ -392,7 +392,7 @@ export async function getBackupStats(
           fields: "description",
           supportsAllDrives: true,
         }),
-      { context: "drive.files.get" },
+      { context: "drive.files.get" }
     );
 
     if (metadata.data.description) {

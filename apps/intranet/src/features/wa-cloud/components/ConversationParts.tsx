@@ -1555,9 +1555,7 @@ function ShortcutAutocomplete({
             <div className="flex items-center gap-2">
               <p className="truncate font-medium text-sm">{s.name}</p>
               {s.shortcut && (
-                <code className="shrink-0 rounded bg-default-200 px-1 text-xs">
-                  {s.shortcut}
-                </code>
+                <code className="shrink-0 rounded bg-default-200 px-1 text-xs">{s.shortcut}</code>
               )}
               <Chip size="sm" variant="soft" color="default">
                 <Chip.Label>{s.kind}</Chip.Label>

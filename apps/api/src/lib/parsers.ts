@@ -49,7 +49,12 @@ export type ParsedCalendarMetadata = {
   treatmentStage: string | null;
   controlIncluded: boolean;
   isDomicilio: boolean;
-  clinicalSeriesKind: "PATCH_TEST" | "SKIN_TEST" | "SUBCUTANEOUS_TREATMENT" | "MEDICAL_CONSULTATION" | null;
+  clinicalSeriesKind:
+    | "PATCH_TEST"
+    | "SKIN_TEST"
+    | "SUBCUTANEOUS_TREATMENT"
+    | "MEDICAL_CONSULTATION"
+    | null;
   seriesStageKind: "DOSE" | "INSTALLATION" | "MAINTENANCE" | "READING" | null;
   seriesStageLabel: string | null;
   seriesStageNumber: number | null;
@@ -653,7 +658,7 @@ function extractAmounts(summary: string, description: string) {
 function refineAmounts(
   amounts: { amountExpected: number | null; amountPaid: number | null },
   summary: string,
-  description: string,
+  description: string
 ) {
   const text = joinClinicalText(summary, description);
   const isNotAttended = matchesAny(text, NOT_ATTENDED_PATTERNS);
@@ -694,16 +699,17 @@ function classifyCategory(summary: string, description: string): string | null {
   const canonicalText = canonicalizeClassificationText(joinClinicalText(summary, description));
   const summaryOnly = normalizeClinicalText(summary).toLowerCase();
   const canonicalSummaryOnly = canonicalizeClassificationText(summary);
-  const summaryHasExplicitTestSignals = matchesAnyVariant(TEST_PATTERNS, summaryOnly, canonicalSummaryOnly);
+  const summaryHasExplicitTestSignals = matchesAnyVariant(
+    TEST_PATTERNS,
+    summaryOnly,
+    canonicalSummaryOnly
+  );
 
   // Skip ignored events
   if (
     IGNORE_PATTERNS.some(
       (p) =>
-        p.test(summaryOnly) ||
-        p.test(text) ||
-        p.test(canonicalSummaryOnly) ||
-        p.test(canonicalText),
+        p.test(summaryOnly) || p.test(text) || p.test(canonicalSummaryOnly) || p.test(canonicalText)
     )
   ) {
     return null;
@@ -798,7 +804,7 @@ function parseExplicitDosage(text: string): { value: number; unit: string } | nu
 
 function extractDosage(
   summary: string,
-  description: string,
+  description: string
 ): { value: number; unit: string } | null {
   const text = joinClinicalText(summary, description);
 
@@ -832,7 +838,7 @@ function extractDosage(
 }
 
 function normalizeSubcutaneousDosage(
-  dosage: null | { value: number; unit: string },
+  dosage: null | { value: number; unit: string }
 ): null | { value: number; unit: "ml" } {
   if (!dosage) return null;
 
@@ -885,7 +891,7 @@ function detectTreatmentStage(summary: string, description: string): string | nu
 function detectTestMetadata(
   summary: string,
   description: string,
-  category: string | null,
+  category: string | null
 ): ParsedCalendarMetadata["testMetadata"] {
   if (category !== "Test y exámenes") {
     return null;
@@ -893,17 +899,26 @@ function detectTestMetadata(
 
   const normalizedText = joinClinicalText(summary, description);
   const canonicalText = canonicalizeClassificationText(normalizedText);
-  const firstReading = matchesAnyVariant(TEST_PARCHE_1_READING_PATTERNS, normalizedText, canonicalText);
+  const firstReading = matchesAnyVariant(
+    TEST_PARCHE_1_READING_PATTERNS,
+    normalizedText,
+    canonicalText
+  );
   const secondReading = matchesAnyVariant(
     TEST_PARCHE_2_READING_PATTERNS,
     normalizedText,
-    canonicalText,
+    canonicalText
   );
-  const thirdReading = matchesAnyVariant(TEST_PARCHE_3_READING_PATTERNS, normalizedText, canonicalText);
+  const thirdReading = matchesAnyVariant(
+    TEST_PARCHE_3_READING_PATTERNS,
+    normalizedText,
+    canonicalText
+  );
   const hasAnyReading = firstReading || secondReading || thirdReading;
 
   const skinTest = matchesAnyVariant(TEST_CUTANEO_PATTERNS, normalizedText, canonicalText);
-  const patchTest = matchesAnyVariant(TEST_PARCHE_PATTERNS, normalizedText, canonicalText) || hasAnyReading;
+  const patchTest =
+    matchesAnyVariant(TEST_PARCHE_PATTERNS, normalizedText, canonicalText) || hasAnyReading;
 
   return {
     firstReading,
@@ -922,16 +937,16 @@ function detectOrdinalNumber(text: string, nounPattern: RegExp): number | null {
   const normalizedOrdinalText = text.replace(
     new RegExp(
       String.raw`([\p{L}])(\d{1,2}[º°]?(?:era|ra|da|ta|va|ma|na|a)?\s*${nounPattern.source}\b)`,
-      "giu",
+      "giu"
     ),
-    "$1 $2",
+    "$1 $2"
   );
 
   const directMatch = normalizedOrdinalText.match(
     new RegExp(
       String.raw`\b(\d{1,2})[º°]?(?:era|ra|da|ta|va|ma|na|a)?\s*${nounPattern.source}\b`,
-      "i",
-    ),
+      "i"
+    )
   );
   if (directMatch?.[1]) {
     const parsed = Number.parseInt(directMatch[1], 10);
@@ -986,7 +1001,7 @@ function buildSeriesMetadata(params: {
         ? 2
         : params.testMetadata?.thirdReading
           ? 3
-      : detectOrdinalNumber(normalizedText, /lectura/);
+          : detectOrdinalNumber(normalizedText, /lectura/);
 
     const clinicalSeriesKind: ClinicalSeriesKind = params.testMetadata?.patchTest
       ? "PATCH_TEST"
@@ -1074,7 +1089,7 @@ export function parseCalendarMetadata(input: {
   const isDomicilio = matchesAny(text, DOMICILIO_PATTERNS);
   const testMetadata = detectTestMetadata(summary, description, category);
   const hasPatchReading = Boolean(
-    testMetadata?.firstReading || testMetadata?.secondReading || testMetadata?.thirdReading,
+    testMetadata?.firstReading || testMetadata?.secondReading || testMetadata?.thirdReading
   );
   const hasReadyKeyword = READY_KEYWORD_PATTERN.test(text);
   const isRoxair = category === "Roxair";

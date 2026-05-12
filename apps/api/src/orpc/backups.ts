@@ -67,7 +67,9 @@ function toBackupJobOutput(job: {
           sizeBytes: rawResult.sizeBytes as number,
           skipped: typeof rawResult.skipped === "boolean" ? rawResult.skipped : undefined,
           stats:
-            rawResult.stats && typeof rawResult.stats === "object" && !Array.isArray(rawResult.stats)
+            rawResult.stats &&
+            typeof rawResult.stats === "object" &&
+            !Array.isArray(rawResult.stats)
               ? (rawResult.stats as Record<string, { count: number; hash: string }>)
               : undefined,
           tables: rawResult.tables as string[],

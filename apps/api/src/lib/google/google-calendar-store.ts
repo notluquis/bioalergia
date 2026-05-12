@@ -150,7 +150,7 @@ async function findExistingEvent(calendarInternalId: number, eventId: string) {
 async function processEventUpsert(
   event: CalendarEventRecord,
   calendarInternalId: number,
-  stats: UpsertStats,
+  stats: UpsertStats
 ) {
   const data = buildEventUpsertData(event, calendarInternalId);
 
@@ -189,7 +189,7 @@ async function processEventUpsert(
   } catch (error) {
     console.error(
       `Error upserting event ${event.eventId}:`,
-      error instanceof Error ? error.message : String(error),
+      error instanceof Error ? error.message : String(error)
     );
     stats.skipped += 1;
   }
@@ -235,18 +235,18 @@ export async function upsertGoogleCalendarEvents(events: CalendarEventRecord[]) 
 
         if (!calendarInternalId) {
           console.warn(
-            `Skipping event ${event.eventId}: Could not resolve calendar ${event.calendarId}`,
+            `Skipping event ${event.eventId}: Could not resolve calendar ${event.calendarId}`
           );
           stats.skipped += 1;
           return;
         }
         await processEventUpsert(event, calendarInternalId, stats);
-      }),
+      })
     );
   }
 
   const relevantEvents = events.filter(
-    (event) => event.category === "Test y exámenes" || event.category === "Tratamiento subcutáneo",
+    (event) => event.category === "Test y exámenes" || event.category === "Tratamiento subcutáneo"
   );
 
   if (relevantEvents.length > 0) {
@@ -254,7 +254,7 @@ export async function upsertGoogleCalendarEvents(events: CalendarEventRecord[]) 
       relevantEvents.map((event) => ({
         calendarId: event.calendarId,
         eventId: event.eventId,
-      })),
+      }))
     );
   }
 
@@ -270,7 +270,7 @@ export async function upsertGoogleCalendarEvents(events: CalendarEventRecord[]) 
 }
 
 export async function removeGoogleCalendarEvents(
-  events: { calendarId: string; eventId: string; summary?: string | null }[],
+  events: { calendarId: string; eventId: string; summary?: string | null }[]
 ): Promise<string[]> {
   const deletedSummaries: string[] = [];
   if (events.length === 0) {
@@ -281,7 +281,7 @@ export async function removeGoogleCalendarEvents(
     const calendarInternalId = await getCalendarInternalId(event.calendarId);
     if (!calendarInternalId) {
       console.warn(
-        `Cannot delete event ${event.eventId}: Could not resolve calendar ${event.calendarId}`,
+        `Cannot delete event ${event.eventId}: Could not resolve calendar ${event.calendarId}`
       );
       continue;
     }
@@ -413,7 +413,7 @@ function computeEventDiff(existing: DiffableEvent, incoming: DiffableEvent): str
   diff(
     "Metadata test",
     JSON.stringify(toTestMetadata(existing.testMetadata)),
-    JSON.stringify(toTestMetadata(incoming.testMetadata)),
+    JSON.stringify(toTestMetadata(incoming.testMetadata))
   );
 
   return changes;

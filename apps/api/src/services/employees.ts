@@ -46,7 +46,7 @@ function toJsonValue(value: Record<string, unknown> | null | undefined): JsonVal
 function setIfDefined<T extends object, K extends keyof T>(
   target: T,
   key: K,
-  value: T[K] | undefined,
+  value: T[K] | undefined
 ) {
   if (value !== undefined) {
     target[key] = value;
@@ -64,27 +64,27 @@ function mapToEmployeeData(payload: EmployeePayload): EmployeeUpdateInput {
   setIfDefined(
     data,
     "hourlyRate",
-    payload.hourly_rate !== undefined ? new Decimal(payload.hourly_rate ?? 0) : undefined,
+    payload.hourly_rate !== undefined ? new Decimal(payload.hourly_rate ?? 0) : undefined
   );
   setIfDefined(
     data,
     "baseSalary",
-    payload.fixed_salary !== undefined ? new Decimal(payload.fixed_salary ?? 0) : undefined,
+    payload.fixed_salary !== undefined ? new Decimal(payload.fixed_salary ?? 0) : undefined
   );
   setIfDefined(
     data,
     "overtimeRate",
-    payload.overtime_rate !== undefined ? new Decimal(payload.overtime_rate ?? 0) : undefined,
+    payload.overtime_rate !== undefined ? new Decimal(payload.overtime_rate ?? 0) : undefined
   );
   setIfDefined(
     data,
     "retentionRate",
-    payload.retention_rate !== undefined ? new Decimal(payload.retention_rate ?? 0) : undefined,
+    payload.retention_rate !== undefined ? new Decimal(payload.retention_rate ?? 0) : undefined
   );
   setIfDefined(
     data,
     "metadata",
-    payload.metadata !== undefined ? (toJsonValue(payload.metadata) ?? undefined) : undefined,
+    payload.metadata !== undefined ? (toJsonValue(payload.metadata) ?? undefined) : undefined
   );
   setIfDefined(data, "status", payload.status as EmployeeStatus | undefined);
 

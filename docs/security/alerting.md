@@ -8,10 +8,10 @@ deliberate per `CLAUDE.local.md`.
 
 ## Triggers
 
-| Event                                   | Severity | Throttle | Source                          |
-| --------------------------------------- | -------- | -------- | ------------------------------- |
-| 5 consecutive failed logins (lockout 15 min) | warning  | 1 / hour / user | `lib/account-lockout.ts`     |
-| 10 cumulative failed logins (lockout 1 h)    | critical | 1 / hour / user | `lib/account-lockout.ts`     |
+| Event                                        | Severity | Throttle        | Source                   |
+| -------------------------------------------- | -------- | --------------- | ------------------------ |
+| 5 consecutive failed logins (lockout 15 min) | warning  | 1 / hour / user | `lib/account-lockout.ts` |
+| 10 cumulative failed logins (lockout 1 h)    | critical | 1 / hour / user | `lib/account-lockout.ts` |
 
 Add new triggers by importing `emitSecurityAlert` from
 `apps/api/src/lib/security-alerts.ts` and calling it with a stable
@@ -49,7 +49,7 @@ route reserved; build-out is a separate task).
 1. Login from the device/browser they want notifications on.
 2. Allow notifications when prompted (the SPA already wires VAPID).
 3. Verify with `SELECT user_id, endpoint FROM push_subscriptions
-   WHERE user_id = <id>;`.
+WHERE user_id = <id>;`.
 
 ### Disabling alerts temporarily
 

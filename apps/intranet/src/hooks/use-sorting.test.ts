@@ -12,7 +12,7 @@ describe("use-sorting", () => {
 
   it("should initialize with custom values", () => {
     const { result } = renderHook(() =>
-      useSorting({ initialColumn: "name", initialDirection: "desc" }),
+      useSorting({ initialColumn: "name", initialDirection: "desc" })
     );
     expect(result.current.sortState.column).toBe("name");
     expect(result.current.sortState.direction).toBe("desc");
@@ -29,7 +29,7 @@ describe("use-sorting", () => {
 
   it("should toggle direction if sorting by same column", () => {
     const { result } = renderHook(() =>
-      useSorting({ initialColumn: "name", initialDirection: "asc" }),
+      useSorting({ initialColumn: "name", initialDirection: "asc" })
     );
     act(() => {
       result.current.sort("name");
@@ -40,7 +40,7 @@ describe("use-sorting", () => {
 
   it("should clear sort if toggling from desc", () => {
     const { result } = renderHook(() =>
-      useSorting({ initialColumn: "name", initialDirection: "desc" }),
+      useSorting({ initialColumn: "name", initialDirection: "desc" })
     );
     act(() => {
       result.current.sort("name");
@@ -51,7 +51,7 @@ describe("use-sorting", () => {
 
   it("should switch column and reset to asc", () => {
     const { result } = renderHook(() =>
-      useSorting<string>({ initialColumn: "name", initialDirection: "desc" }),
+      useSorting<string>({ initialColumn: "name", initialDirection: "desc" })
     );
     act(() => {
       result.current.sort("age");

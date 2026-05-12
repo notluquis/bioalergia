@@ -353,12 +353,7 @@ export const waBroadcastStatusSchema = z.enum([
   "FAILED",
 ]);
 
-export const waBroadcastRecipientStatusSchema = z.enum([
-  "PENDING",
-  "SENT",
-  "FAILED",
-  "SKIPPED",
-]);
+export const waBroadcastRecipientStatusSchema = z.enum(["PENDING", "SENT", "FAILED", "SKIPPED"]);
 
 export const broadcastRecipientInputSchema = z.object({
   phoneE164: z.string().min(8).max(20),
@@ -434,9 +429,12 @@ export const scheduleMessageInputSchema = z
     templateVars: z.array(z.string()).optional(),
     contextMetaMessageId: z.string().optional(),
   })
-  .refine((v) => v.type === "TEXT" ? Boolean(v.body) : Boolean(v.templateName && v.templateLanguage), {
-    message: "TEXT requires body; TEMPLATE requires templateName+templateLanguage",
-  });
+  .refine(
+    (v) => (v.type === "TEXT" ? Boolean(v.body) : Boolean(v.templateName && v.templateLanguage)),
+    {
+      message: "TEXT requires body; TEMPLATE requires templateName+templateLanguage",
+    }
+  );
 
 export const scheduledMessageSchema = z.object({
   id: z.number().int(),
@@ -511,7 +509,7 @@ export const searchMessagesResponseSchema = z.object({
       type: waMessageTypeSchema,
       body: z.string().nullable(),
       timestamp: z.coerce.date(),
-    }),
+    })
   ),
 });
 
@@ -528,7 +526,7 @@ export const listConversationMediaResponseSchema = z.object({
       body: z.string().nullable(),
       timestamp: z.coerce.date(),
       out: z.boolean(),
-    }),
+    })
   ),
 });
 
@@ -642,13 +640,16 @@ export const upsertSavedLocationInputSchema = z.object({
 
 export const interactiveListSectionSchema = z.object({
   title: z.string().max(24).optional(),
-  rows: z.array(
-    z.object({
-      id: z.string().min(1).max(200),
-      title: z.string().min(1).max(24),
-      description: z.string().max(72).optional(),
-    }),
-  ).min(1).max(10),
+  rows: z
+    .array(
+      z.object({
+        id: z.string().min(1).max(200),
+        title: z.string().min(1).max(24),
+        description: z.string().max(72).optional(),
+      })
+    )
+    .min(1)
+    .max(10),
 });
 
 export const savedInteractiveListSchema = z.object({
@@ -825,11 +826,11 @@ export const sendInteractiveListInputSchema = z.object({
               id: z.string().min(1).max(200),
               title: z.string().min(1).max(24),
               description: z.string().max(72).optional(),
-            }),
+            })
           )
           .min(1)
           .max(10),
-      }),
+      })
     )
     .min(1)
     .max(10),
@@ -880,7 +881,7 @@ export const conversationAnalyticsExtendedResponseSchema = z.object({
       conversation_type: z.string().nullish(),
       conversation_direction: z.string().nullish(),
       conversation_category: z.string().nullish(),
-    }),
+    })
   ),
   pricing: z.array(
     z.object({
@@ -893,7 +894,7 @@ export const conversationAnalyticsExtendedResponseSchema = z.object({
       phone_number: z.string().nullish(),
       pricing_type: z.string().nullish(),
       tier: z.string().nullish(),
-    }),
+    })
   ),
 });
 
@@ -921,7 +922,7 @@ export const contactCardSchema = z.object({
         phone: z.string().min(1).max(40),
         type: z.string().max(40).optional(),
         wa_id: z.string().max(40).optional(),
-      }),
+      })
     )
     .max(10)
     .optional(),
@@ -930,7 +931,7 @@ export const contactCardSchema = z.object({
       z.object({
         email: z.string().email().max(128),
         type: z.string().max(40).optional(),
-      }),
+      })
     )
     .max(10)
     .optional(),
@@ -1092,7 +1093,7 @@ export const sendMultiProductInputSchema = z.object({
           .array(z.object({ product_retailer_id: z.string().min(1) }))
           .min(1)
           .max(30),
-      }),
+      })
     )
     .min(1)
     .max(10),
@@ -1226,7 +1227,7 @@ export const conversationAnalyticsResponseSchema = z.object({
       conversation_type: z.string().nullish(),
       conversation_direction: z.string().nullish(),
       conversation_category: z.string().nullish(),
-    }),
+    })
   ),
 });
 
@@ -1655,7 +1656,6 @@ export const waCloudContract = {
     .route({ method: "POST", path: "/analytics/conversations", tags: ["WA Cloud"] })
     .input(conversationAnalyticsInputSchema)
     .output(conversationAnalyticsResponseSchema),
-
 };
 
 export type WaCloudContract = typeof waCloudContract;

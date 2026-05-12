@@ -30,7 +30,7 @@ export function MovementTypeList({ data }: MovementTypeListProps) {
     items: MovementTypeData[],
     icon: React.ReactNode,
     title: string,
-    colorClass: string,
+    colorClass: string
   ) => {
     if (items.length === 0) {
       return null;
@@ -65,19 +65,19 @@ export function MovementTypeList({ data }: MovementTypeListProps) {
         incomingData,
         <ArrowUp className="h-4 w-4 text-success" />,
         "Ingresos",
-        "text-success",
+        "text-success"
       )}
       {renderList(
         outgoingData,
         <ArrowDown className="h-4 w-4 text-danger" />,
         "Egresos",
-        "text-danger",
+        "text-danger"
       )}
       {renderList(
         neutralData,
         <Minus className="h-4 w-4 text-default-400" />,
         "Neutros",
-        "text-default-600",
+        "text-default-600"
       )}
     </div>
   );

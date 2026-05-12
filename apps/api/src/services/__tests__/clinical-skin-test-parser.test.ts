@@ -8,12 +8,21 @@ import {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function s(v: string): XLSX.CellObject { return { t: "s", v }; }
-function n(v: number): XLSX.CellObject { return { t: "n", v }; }
-function d(v: Date): XLSX.CellObject { return { t: "d", v }; }
+function s(v: string): XLSX.CellObject {
+  return { t: "s", v };
+}
+function n(v: number): XLSX.CellObject {
+  return { t: "n", v };
+}
+function d(v: Date): XLSX.CellObject {
+  return { t: "d", v };
+}
 
 function makeSheet(cells: Record<string, XLSX.CellObject>): XLSX.WorkSheet {
-  let minR = Infinity, maxR = -Infinity, minC = Infinity, maxC = -Infinity;
+  let minR = Infinity,
+    maxR = -Infinity,
+    minC = Infinity,
+    maxC = -Infinity;
   for (const addr of Object.keys(cells)) {
     const { r, c } = XLSX.utils.decode_cell(addr);
     if (r < minR) minR = r;
@@ -598,14 +607,36 @@ describe("clinical skin test parser", () => {
       // "ESTANDAR EUROPEO 17 HAPTENOS" is the title anchor
       B11: s("ESTANDAR EUROPEO 17 HAPTENOS"),
       // Double header row
-      B12: s("Cod"),    C12: s("SUBSTANCIA"),  D12: s("LECTURAS"), E12: s("LECTURAS"), F12: s("LECTURAS"),
-      B13: s("Cod"),    C13: s("SUBSTANCIA"),  D13: s("%"),        E13: s("48 HRS"),   F13: s("96 HRS"),
+      B12: s("Cod"),
+      C12: s("SUBSTANCIA"),
+      D12: s("LECTURAS"),
+      E12: s("LECTURAS"),
+      F12: s("LECTURAS"),
+      B13: s("Cod"),
+      C13: s("SUBSTANCIA"),
+      D13: s("%"),
+      E13: s("48 HRS"),
+      F13: s("96 HRS"),
       // Data rows: concentration in D (should NOT become papule), grades in E/F
-      B14: s("1"),  C14: s("Dicromato de potasio"),    D14: s("0.005"), E14: s("+"),  F14: s("+"),
-      B15: s("2"),  C15: s("Sulfato de Neomicina"),    D15: s("0.2"),   E15: s("+"),  F15: s("-"),
-      B16: s("8"),  C16: s("Colofonia"),               D16: s("0.2"),   E16: s("-"),  F16: s("-"),
+      B14: s("1"),
+      C14: s("Dicromato de potasio"),
+      D14: s("0.005"),
+      E14: s("+"),
+      F14: s("+"),
+      B15: s("2"),
+      C15: s("Sulfato de Neomicina"),
+      D15: s("0.2"),
+      E15: s("+"),
+      F15: s("-"),
+      B16: s("8"),
+      C16: s("Colofonia"),
+      D16: s("0.2"),
+      E16: s("-"),
+      F16: s("-"),
       // Control
-      C31: s("Control negativo"),                                       E31: s("-"),  F31: s("-"),
+      C31: s("Control negativo"),
+      E31: s("-"),
+      F31: s("-"),
     });
 
     const parsed = await parseSkinTestWorkbookBuffer(buf);
@@ -729,9 +760,17 @@ describe("clinical skin test parser", () => {
       E7: s("NOMBRE: "),
       G7: s("JUAN PEREZ"),
       I7: s("FECHA:"),
-      E10: s("P"), F10: s("E"), G10: s("mm"),
-      B11: s("1"), D11: s("LECHE FRESCA"), H11: s("17"), I11: s("CERDO"),
-      B12: s("2"), D12: s("CASEINA"),     H12: s("18"), I12: s("VACA"),
+      E10: s("P"),
+      F10: s("E"),
+      G10: s("mm"),
+      B11: s("1"),
+      D11: s("LECHE FRESCA"),
+      H11: s("17"),
+      I11: s("CERDO"),
+      B12: s("2"),
+      D12: s("CASEINA"),
+      H12: s("18"),
+      I12: s("VACA"),
       // Left panel has no measurements filled in; right panel numbers should NOT appear as metrics
     });
     const parsed = await parseSkinTestWorkbookBuffer(buf);

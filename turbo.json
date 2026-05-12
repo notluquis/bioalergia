@@ -36,7 +36,15 @@
     },
     "test": {
       "dependsOn": ["^build"],
-      "inputs": ["$TURBO_DEFAULT$", ".env", ".env.*", "!.turbo/**", "!dist/**", "!.next/**", "!coverage/**"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        ".env",
+        ".env.*",
+        "!.turbo/**",
+        "!dist/**",
+        "!.next/**",
+        "!coverage/**"
+      ],
       "outputs": ["coverage/**"]
     },
     "type-check": {

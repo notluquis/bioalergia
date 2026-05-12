@@ -33,7 +33,7 @@ const getOAuthRedirectUri = () =>
 export function getGoogleCredentials(): { email: string; privateKey: string } {
   if (!googleCalendarConfig) {
     throw new Error(
-      "Google credentials not configured. Set GOOGLE_SERVICE_ACCOUNT_EMAIL and GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY.",
+      "Google credentials not configured. Set GOOGLE_SERVICE_ACCOUNT_EMAIL and GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY."
     );
   }
   return {
@@ -125,7 +125,7 @@ export async function validateOAuthToken(): Promise<OAuthValidationResult> {
     const oauth2Client = new OAuth2Client(
       config.clientId,
       config.clientSecret,
-      "urn:ietf:wg:oauth:2.0:oob",
+      "urn:ietf:wg:oauth:2.0:oob"
     );
 
     oauth2Client.setCredentials({
@@ -218,7 +218,7 @@ async function getOAuthClient(): Promise<OAuth2Client> {
   const oauth2Client = new OAuth2Client(
     config.clientId,
     config.clientSecret,
-    getOAuthRedirectUri(),
+    getOAuthRedirectUri()
   );
 
   oauth2Client.setCredentials({
@@ -287,7 +287,7 @@ export async function getBackupFolderId(): Promise<string> {
   }
 
   throw new Error(
-    "GOOGLE_BACKUP_FOLDER_ID no configurado. Crea una carpeta en tu Drive y agrega el ID como variable de entorno.",
+    "GOOGLE_BACKUP_FOLDER_ID no configurado. Crea una carpeta en tu Drive y agrega el ID como variable de entorno."
   );
 }
 

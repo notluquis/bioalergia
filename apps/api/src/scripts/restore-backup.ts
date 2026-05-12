@@ -65,7 +65,7 @@ async function readHeaderTables(path: string): Promise<string[]> {
 async function* streamModelRows(
   path: string,
   modelName: string,
-  chunkSize: number,
+  chunkSize: number
 ): AsyncGenerator<unknown[]> {
   const pipeline = inputStream(path)
     .pipe(parser.asStream())
@@ -87,7 +87,7 @@ async function* streamModelRowsWithProgress(
   path: string,
   modelName: string,
   chunkSize: number,
-  onBytes: (delta: number) => void,
+  onBytes: (delta: number) => void
 ): AsyncGenerator<unknown[]> {
   const isGz = path.toLowerCase().endsWith(".gz");
   const base = createReadStream(path);
@@ -111,12 +111,18 @@ async function* streamModelRowsWithProgress(
 function parseArgs() {
   const args = process.argv.slice(2);
   const path = args.find((a) => !a.startsWith("--"));
-  const tables = args.find((a) => a.startsWith("--tables="))?.slice(9).split(",").filter(Boolean);
+  const tables = args
+    .find((a) => a.startsWith("--tables="))
+    ?.slice(9)
+    .split(",")
+    .filter(Boolean);
   const truncate = args.includes("--truncate");
   const dry = args.includes("--dry");
   const preflight = args.includes("--preflight");
   if (!path) {
-    console.error("Uso: restore-backup.ts <ruta.json[.gz]> [--tables=A,B] [--truncate] [--dry] [--preflight]");
+    console.error(
+      "Uso: restore-backup.ts <ruta.json[.gz]> [--tables=A,B] [--truncate] [--dry] [--preflight]"
+    );
     process.exit(1);
   }
   return { path, tablesFilter: tables, truncate, dry, preflight };
@@ -192,7 +198,10 @@ function pickDelegate(db: Record<string, unknown>, modelName: string) {
     if (d && typeof d === "object" && typeof (d as { count?: unknown }).count === "function") {
       return d as {
         count: (args?: unknown) => Promise<number>;
-        createMany: (args: { data: unknown[]; skipDuplicates?: boolean }) => Promise<{ count: number }>;
+        createMany: (args: {
+          data: unknown[];
+          skipDuplicates?: boolean;
+        }) => Promise<{ count: number }>;
         deleteMany: (args?: { where?: unknown }) => Promise<{ count: number }>;
       };
     }
@@ -206,9 +215,7 @@ function objectToUint8Array(value: unknown) {
   if (entries.length === 0) return value;
   if (!entries.every(([key, byte]) => /^\d+$/.test(key) && typeof byte === "number")) return value;
   return Uint8Array.from(
-    entries
-      .sort(([a], [b]) => Number(a) - Number(b))
-      .map(([, byte]) => byte as number),
+    entries.sort(([a], [b]) => Number(a) - Number(b)).map(([, byte]) => byte as number)
   );
 }
 
@@ -235,7 +242,6 @@ function normalizeRow(modelName: string, row: unknown) {
   if (modelName === "Employee" && copy.metadata === null) {
     delete copy.metadata;
   }
-
 
   if (modelName === "CalendarSyncLog" && copy.changeDetails === null) {
     delete copy.changeDetails;
@@ -289,15 +295,17 @@ function normalizeEmployeeTimesheetForInsert(row: unknown) {
 async function createManyOverride(
   modelName: string,
   rows: unknown[],
-  dbModule: Record<string, unknown> | null,
+  dbModule: Record<string, unknown> | null
 ) {
   if (modelName !== "EmployeeTimesheet" || !dbModule) return null;
   const kysely = dbModule.kysely as {
     insertInto: (table: string) => {
       values: (values: unknown[]) => {
-        onConflict: (callback: (oc: {
-          columns: (columns: string[]) => { doNothing: () => unknown };
-        }) => unknown) => {
+        onConflict: (
+          callback: (oc: {
+            columns: (columns: string[]) => { doNothing: () => unknown };
+          }) => unknown
+        ) => {
           returning: (column: string) => { execute: () => Promise<unknown[]> };
         };
       };
@@ -356,9 +364,10 @@ class Progress {
         ? fmtTime(((this.totalBytes - this.bytesRead) / speed) * 1000)
         : "?";
     const model = this.currentModel;
-    const pad = (s: string, n: number) => (s.length >= n ? s.slice(0, n) : s + " ".repeat(n - s.length));
+    const pad = (s: string, n: number) =>
+      s.length >= n ? s.slice(0, n) : s + " ".repeat(n - s.length);
     process.stdout.write(
-      `\r[${this.modelsDone + 1}/${this.modelsTotal}] ${pad(model, 36)} rows=${this.rowsForModel.toString().padStart(7)} | total=${this.rowsTotal.toString().padStart(8)} | ${pct.toString().padStart(2)}% ${fmtBytes(this.bytesRead)}/${fmtBytes(this.totalBytes)} ${(speed / 1024 / 1024).toFixed(1)}MB/s ETA ${eta}     `,
+      `\r[${this.modelsDone + 1}/${this.modelsTotal}] ${pad(model, 36)} rows=${this.rowsForModel.toString().padStart(7)} | total=${this.rowsTotal.toString().padStart(8)} | ${pct.toString().padStart(2)}% ${fmtBytes(this.bytesRead)}/${fmtBytes(this.totalBytes)} ${(speed / 1024 / 1024).toFixed(1)}MB/s ETA ${eta}     `
     );
   }
 }
@@ -370,7 +379,7 @@ class SinglePassProgress {
 
   constructor(
     readonly totalBytes: number,
-    readonly label: string,
+    readonly label: string
   ) {}
 
   addBytes(n: number) {
@@ -390,7 +399,7 @@ class SinglePassProgress {
         ? fmtTime(((this.totalBytes - this.bytesRead) / speed) * 1000)
         : "?";
     process.stdout.write(
-      `\r${this.label} rows=${rowsTotal.toString().padStart(8)} | ${pct.toString().padStart(2)}% ${fmtBytes(this.bytesRead)}/${fmtBytes(this.totalBytes)} ${(speed / 1024 / 1024).toFixed(1)}MB/s ETA ${eta}     `,
+      `\r${this.label} rows=${rowsTotal.toString().padStart(8)} | ${pct.toString().padStart(2)}% ${fmtBytes(this.bytesRead)}/${fmtBytes(this.totalBytes)} ${(speed / 1024 / 1024).toFixed(1)}MB/s ETA ${eta}     `
     );
   }
 }
@@ -450,7 +459,8 @@ async function countRowsSinglePass(path: string, models: string[], fileBytes: nu
 
     if (token.name === "startArray") {
       const parent = stack.at(-1);
-      const modelName = parent?.isData && pendingKey && wanted.has(pendingKey) ? pendingKey : undefined;
+      const modelName =
+        parent?.isData && pendingKey && wanted.has(pendingKey) ? pendingKey : undefined;
       stack.push({ type: "array", key: pendingKey, modelName });
       pendingKey = undefined;
       continue;
@@ -501,7 +511,9 @@ async function truncateExistingModels(db: Record<string, unknown>, models: strin
     }
   }
   if (errors.length > 0) {
-    throw new Error(`No se pudo truncar ${errors.length} modelos; primer error ${errors[0]?.model}: ${errors[0]?.error}`);
+    throw new Error(
+      `No se pudo truncar ${errors.length} modelos; primer error ${errors[0]?.model}: ${errors[0]?.error}`
+    );
   }
   console.log(`   Modelos truncados: ${truncated.length}`);
   console.log("");
@@ -509,16 +521,18 @@ async function truncateExistingModels(db: Record<string, unknown>, models: strin
 
 async function schemaScalarFields() {
   const { schema } = await import("@finanzas/db");
-  const models = (schema as { models: Record<string, { fields: Record<string, { relation?: unknown }> }> }).models;
+  const models = (
+    schema as { models: Record<string, { fields: Record<string, { relation?: unknown }> }> }
+  ).models;
   return new Map(
     Object.entries(models).map(([modelName, model]) => [
       modelName,
       new Set(
         Object.entries(model.fields)
           .filter(([, field]) => !field.relation)
-          .map(([fieldName]) => fieldName),
+          .map(([fieldName]) => fieldName)
       ),
-    ]),
+    ])
   );
 }
 
@@ -531,7 +545,9 @@ async function compareBackupKeysToSchema(backupKeys: Map<string, Set<string>>, m
       mismatches.push({ model: modelName, extra: ["NO-SCHEMA-MODEL"] });
       continue;
     }
-    const extra = [...(backupKeys.get(modelName) ?? [])].filter((key) => !schemaFields.has(key)).sort();
+    const extra = [...(backupKeys.get(modelName) ?? [])]
+      .filter((key) => !schemaFields.has(key))
+      .sort();
     if (extra.length > 0) mismatches.push({ model: modelName, extra });
   }
   return mismatches;
@@ -568,14 +584,15 @@ async function main() {
     const db = (await import("@finanzas/db")).db as Record<string, unknown>;
     const result = await runPreflight(db, models);
     console.log(`   Delegates faltantes: ${result.missingDelegates.length}`);
-    if (result.missingDelegates.length) console.log(`     ${result.missingDelegates.slice(0, 30).join(", ")}`);
+    if (result.missingDelegates.length)
+      console.log(`     ${result.missingDelegates.slice(0, 30).join(", ")}`);
     console.log(`   Modelos con filas existentes: ${result.existingRows.length}`);
     if (result.existingRows.length) {
       console.log(
         `     ${result.existingRows
           .slice(0, 30)
           .map((r) => `${r.model}=${r.count}`)
-          .join(", ")}`,
+          .join(", ")}`
       );
     }
     console.log("");
@@ -589,7 +606,9 @@ async function main() {
     console.log(`   Modelos procesados: ${models.length}`);
     console.log(`   Total rows leídas: ${totalRows.toLocaleString("es-CL")}`);
     for (const modelName of models) {
-      console.log(`   🔢 ${modelName}: ${(counts.get(modelName) ?? 0).toLocaleString("es-CL")} rows`);
+      console.log(
+        `   🔢 ${modelName}: ${(counts.get(modelName) ?? 0).toLocaleString("es-CL")} rows`
+      );
     }
     if (preflight) {
       console.log(`   Schema mismatches: ${schemaMismatches.length}`);
@@ -659,7 +678,7 @@ async function main() {
       totalInserted += inserted;
       const sym = dry ? "🔢" : inserted > 0 ? "✅" : "⚪";
       process.stdout.write(
-        `\n   ${sym} ${modelName}: ${dry ? `${progress.rowsForModel} rows` : `+${inserted}/${progress.rowsForModel}`}${chunkErrors ? ` (${chunkErrors} chunk errors)` : ""}\n`,
+        `\n   ${sym} ${modelName}: ${dry ? `${progress.rowsForModel} rows` : `+${inserted}/${progress.rowsForModel}`}${chunkErrors ? ` (${chunkErrors} chunk errors)` : ""}\n`
       );
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);

@@ -30,7 +30,7 @@ export const backupJobSchema = z.looseObject({
           z.object({
             count: z.number(),
             hash: z.string(),
-          }),
+          })
         )
         .optional(),
       tables: z.array(z.string()),

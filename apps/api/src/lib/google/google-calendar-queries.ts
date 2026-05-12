@@ -260,7 +260,7 @@ function buildMaxEventCount(rows: DateRow[]) {
 
 function applyDateRangeFilters(
   query: EventBaseQuery,
-  filters: CalendarEventFilters,
+  filters: CalendarEventFilters
 ): EventBaseQuery {
   let q = query;
 
@@ -357,7 +357,7 @@ function getByWeekday(query: EventBaseQuery) {
 }
 
 async function getAvailableFilters(
-  filters: CalendarEventFilters,
+  filters: CalendarEventFilters
 ): Promise<CalendarAvailableFilters> {
   const dateRangeQuery = buildEventBaseQuery();
 
@@ -470,12 +470,12 @@ function applyCategoryFilter(query: EventBaseQuery, categories: string[]) {
     categories.includes("Uncategorized") ||
     categories.includes("__NULL_CATEGORY__");
   const validCategories = categories.filter(
-    (c) => c !== "null" && c !== "Uncategorized" && c !== "__NULL_CATEGORY__",
+    (c) => c !== "null" && c !== "Uncategorized" && c !== "__NULL_CATEGORY__"
   );
 
   if (hasNull && validCategories.length > 0) {
     return query.where((eb) =>
-      eb.or([eb("e.category", "in", validCategories), eb("e.category", "is", null)]),
+      eb.or([eb("e.category", "in", validCategories), eb("e.category", "is", null)])
     );
   }
   if (hasNull) {
@@ -493,7 +493,7 @@ function applySearchFilter(query: EventBaseQuery, search: string) {
       eb("e.beneficiaryName", "ilike", term),
       eb("cs.beneficiaryName", "ilike", term),
       eb(EFFECTIVE_PATIENT_NAME_SQL, "ilike", term),
-    ]),
+    ])
   );
 }
 
@@ -527,16 +527,12 @@ function applyFilters(query: EventBaseQuery, filters: CalendarEventFilters): Eve
     q = q.where(
       sql<string>`coalesce(e.beneficiary_rut, cs.beneficiary_rut)`,
       "=",
-      filters.beneficiaryRut,
+      filters.beneficiaryRut
     );
   }
 
   if (filters.patientName) {
-    q = q.where(
-      EFFECTIVE_PATIENT_NAME_SQL,
-      "ilike",
-      `%${filters.patientName}%`,
-    );
+    q = q.where(EFFECTIVE_PATIENT_NAME_SQL, "ilike", `%${filters.patientName}%`);
   }
 
   if (filters.seriesKind) {
@@ -562,7 +558,7 @@ function applyFilters(query: EventBaseQuery, filters: CalendarEventFilters): Eve
 }
 
 export async function getCalendarAggregates(
-  filters: CalendarEventFilters,
+  filters: CalendarEventFilters
 ): Promise<CalendarAggregateResult> {
   const filteredQuery = applyFilters(buildEventBaseQuery(), filters);
 
@@ -629,7 +625,7 @@ export async function getCalendarAggregates(
 
 export async function getCalendarEventsByDate(
   filters: CalendarEventFilters,
-  options: { maxDays?: number } = {},
+  options: { maxDays?: number } = {}
 ): Promise<CalendarEventsByDateResult> {
   const filteredQuery = applyFilters(buildEventBaseQuery(), filters);
 
@@ -645,7 +641,7 @@ export async function getCalendarEventsByDate(
 
   type DateOnlyRow = { date: string | Date };
   const targetDates = (dates as unknown as DateOnlyRow[]).map((d: DateOnlyRow) =>
-    formatDateOnly(d.date),
+    formatDateOnly(d.date)
   );
 
   if (targetDates.length === 0) {
@@ -784,7 +780,7 @@ export async function getCalendarEventsByDate(
     if (!grouped[dateKey]) {
       console.warn(
         `[getCalendarEventsByDate] Event date ${dateKey} not in targetDates:`,
-        targetDates,
+        targetDates
       );
       return;
     }
@@ -862,7 +858,7 @@ export async function getCalendarEventsByDate(
 
   return {
     days: Object.values(grouped).sort(
-      (a, b) => dayjs.tz(b.date, TIMEZONE).valueOf() - dayjs.tz(a.date, TIMEZONE).valueOf(),
+      (a, b) => dayjs.tz(b.date, TIMEZONE).valueOf() - dayjs.tz(a.date, TIMEZONE).valueOf()
     ),
     totals: {
       days: targetDates.length,
@@ -995,14 +991,14 @@ function buildTreatmentBaseQuery(filters: TreatmentAnalyticsFilters) {
     baseQuery = baseQuery.where(
       treatDateExpression,
       ">=",
-      dayjs(filters.from).startOf("day").toISOString(),
+      dayjs(filters.from).startOf("day").toISOString()
     );
   }
   if (filters.to && dayjs(filters.to).isValid()) {
     baseQuery = baseQuery.where(
       treatDateExpression,
       "<=",
-      dayjs(filters.to).endOf("day").toISOString(),
+      dayjs(filters.to).endOf("day").toISOString()
     );
   }
   if (filters.calendarIds && filters.calendarIds.length > 0) {
@@ -1015,14 +1011,14 @@ function buildTreatmentBaseQuery(filters: TreatmentAnalyticsFilters) {
     baseQuery = baseQuery.where(
       sql<string>`coalesce(e.patient_rut, cs.patient_rut)`,
       "=",
-      filters.patientRut,
+      filters.patientRut
     );
   }
   if (filters.beneficiaryRut) {
     baseQuery = baseQuery.where(
       sql<string>`coalesce(e.beneficiary_rut, cs.beneficiary_rut)`,
       "=",
-      filters.beneficiaryRut,
+      filters.beneficiaryRut
     );
   }
   if (filters.seriesKind) {
@@ -1043,10 +1039,10 @@ async function getTreatmentTotals(baseQuery: ReturnType<typeof buildTreatmentBas
       dosageAggregateSql.as("dosageMl"),
       sql<number>`sum(case when e.is_domicilio = true then 1 else 0 end)`.as("domicilioCount"),
       sql<number>`sum(case when e.treatment_stage = 'Inducción' then 1 else 0 end)`.as(
-        "induccionCount",
+        "induccionCount"
       ),
       sql<number>`sum(case when e.treatment_stage = 'Mantención' then 1 else 0 end)`.as(
-        "mantencionCount",
+        "mantencionCount"
       ),
     ])
     .executeTakeFirst();
@@ -1077,10 +1073,10 @@ async function getTreatmentByDate(baseQuery: ReturnType<typeof buildTreatmentBas
       `.as("dosageMl"),
       sql<number>`sum(case when b."isDomicilioRaw" = true then 1 else 0 end)`.as("domicilioCount"),
       sql<number>`sum(case when b."treatmentStageRaw" = 'Inducción' then 1 else 0 end)`.as(
-        "induccionCount",
+        "induccionCount"
       ),
       sql<number>`sum(case when b."treatmentStageRaw" = 'Mantención' then 1 else 0 end)`.as(
-        "mantencionCount",
+        "mantencionCount"
       ),
     ])
     .groupBy("b.date")
@@ -1099,10 +1095,10 @@ async function getTreatmentByWeek(baseQuery: ReturnType<typeof buildTreatmentBas
       dosageAggregateSql.as("dosageMl"),
       sql<number>`sum(case when e.is_domicilio = true then 1 else 0 end)`.as("domicilioCount"),
       sql<number>`sum(case when e.treatment_stage = 'Inducción' then 1 else 0 end)`.as(
-        "induccionCount",
+        "induccionCount"
       ),
       sql<number>`sum(case when e.treatment_stage = 'Mantención' then 1 else 0 end)`.as(
-        "mantencionCount",
+        "mantencionCount"
       ),
     ])
     .groupBy([
@@ -1125,10 +1121,10 @@ async function getTreatmentByMonth(baseQuery: ReturnType<typeof buildTreatmentBa
       dosageAggregateSql.as("dosageMl"),
       sql<number>`sum(case when e.is_domicilio = true then 1 else 0 end)`.as("domicilioCount"),
       sql<number>`sum(case when e.treatment_stage = 'Inducción' then 1 else 0 end)`.as(
-        "induccionCount",
+        "induccionCount"
       ),
       sql<number>`sum(case when e.treatment_stage = 'Mantención' then 1 else 0 end)`.as(
-        "mantencionCount",
+        "mantencionCount"
       ),
     ])
     .groupBy([
@@ -1199,7 +1195,7 @@ function mapByMonth(rows: TreatmentMonthRow[] | null | undefined) {
  */
 export async function getTreatmentAnalytics(
   filters: TreatmentAnalyticsFilters,
-  options?: { granularity?: TreatmentAnalyticsGranularity },
+  options?: { granularity?: TreatmentAnalyticsGranularity }
 ): Promise<TreatmentAnalyticsResult> {
   const granularity = options?.granularity ?? "all";
   const includeByDate = granularity === "all" || granularity === "day";

@@ -11,14 +11,14 @@ describe("permission-validator", () => {
   describe("DANGEROUS_PERMISSION_PATTERNS", () => {
     it("includes the manage action with no subject", () => {
       const noSubject = DANGEROUS_PERMISSION_PATTERNS.find(
-        (p) => p.action === "manage" && p.subject === undefined,
+        (p) => p.action === "manage" && p.subject === undefined
       );
       expect(noSubject).toBeDefined();
     });
 
     it("includes the manage action with subject 'all'", () => {
       const manageAll = DANGEROUS_PERMISSION_PATTERNS.find(
-        (p) => p.action === "manage" && p.subject === "all",
+        (p) => p.action === "manage" && p.subject === "all"
       );
       expect(manageAll).toBeDefined();
     });
@@ -137,8 +137,7 @@ describe("permission-validator", () => {
       const clause = buildDangerousPermissionsWhereClause();
       // Pattern without subject → { action: "manage" } (no AND wrapper)
       const simpleManage = clause.OR.find(
-        (c) =>
-          "action" in c && (c as { action: string }).action === "manage" && !("AND" in c),
+        (c) => "action" in c && (c as { action: string }).action === "manage" && !("AND" in c)
       );
       expect(simpleManage).toBeDefined();
     });
@@ -150,11 +149,11 @@ describe("permission-validator", () => {
           "AND" in c &&
           Array.isArray((c as { AND: unknown[] }).AND) &&
           (c as { AND: Array<{ action?: string; subject?: string }> }).AND.some(
-            (a) => a.action === "manage",
+            (a) => a.action === "manage"
           ) &&
           (c as { AND: Array<{ action?: string; subject?: string }> }).AND.some(
-            (a) => a.subject === "all",
-          ),
+            (a) => a.subject === "all"
+          )
       );
       expect(manageAll).toBeDefined();
     });

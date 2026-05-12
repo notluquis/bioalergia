@@ -47,9 +47,15 @@ describe("planDoctoraliaBackfill", () => {
 
   it("rejects end dates inside or after the current ISO week", () => {
     // Current Monday in Chile is 2026-04-20.
-    expect(() => planDoctoraliaBackfill("2026-04-20", undefined, NOW)).toThrow(/anterior a la fecha de inicio/);
-    expect(() => planDoctoraliaBackfill("2026-04-25", undefined, NOW)).toThrow(/anterior a la fecha de inicio/);
-    expect(() => planDoctoraliaBackfill("2026-05-10", undefined, NOW)).toThrow(/anterior a la fecha de inicio/);
+    expect(() => planDoctoraliaBackfill("2026-04-20", undefined, NOW)).toThrow(
+      /anterior a la fecha de inicio/
+    );
+    expect(() => planDoctoraliaBackfill("2026-04-25", undefined, NOW)).toThrow(
+      /anterior a la fecha de inicio/
+    );
+    expect(() => planDoctoraliaBackfill("2026-05-10", undefined, NOW)).toThrow(
+      /anterior a la fecha de inicio/
+    );
   });
 
   it("accepts a valid date strictly before current ISO week", () => {
@@ -77,44 +83,38 @@ describe("startDoctoraliaBackfill (single-flight)", () => {
     // slow the sync slightly so the first start is still in flight when we
     // try the second one.
     const { doctoraliaCalendarSyncService } = await import("../doctoralia-calendar.ts");
-    const slow = vi
-      .mocked(doctoraliaCalendarSyncService.syncCalendar)
-      .mockImplementation(
-        () =>
-          new Promise((resolve) =>
-            setTimeout(
-              () =>
-                resolve({
-                  success: true,
-                  schedules: { inserted: 0, updated: 0, skipped: 0 },
-                  appointments: { inserted: 0, updated: 0, skipped: 0 },
-                  workPeriods: { inserted: 0, updated: 0, skipped: 0 },
-                }),
-              30,
-            ),
-          ),
-      );
+    const slow = vi.mocked(doctoraliaCalendarSyncService.syncCalendar).mockImplementation(
+      () =>
+        new Promise((resolve) =>
+          setTimeout(
+            () =>
+              resolve({
+                success: true,
+                schedules: { inserted: 0, updated: 0, skipped: 0 },
+                appointments: { inserted: 0, updated: 0, skipped: 0 },
+                workPeriods: { inserted: 0, updated: 0, skipped: 0 },
+              }),
+            30
+          )
+        )
+    );
 
     // Must be strictly before the current ISO week; we can only control the
     // target, so reach back just one week from today in system time.
-    const oneWeekAgo = new Date(Date.now() - 8 * 24 * 60 * 60 * 1000)
-      .toISOString()
-      .slice(0, 10);
+    const oneWeekAgo = new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
     startDoctoraliaBackfill({ endDate: oneWeekAgo, triggeredByUserId: 1 });
     expect(isDoctoraliaBackfillRunning()).toBe(true);
 
-    expect(() =>
-      startDoctoraliaBackfill({ endDate: oneWeekAgo, triggeredByUserId: 2 }),
-    ).toThrow(/en curso/i);
+    expect(() => startDoctoraliaBackfill({ endDate: oneWeekAgo, triggeredByUserId: 2 })).toThrow(
+      /en curso/i
+    );
 
     await vi.waitFor(() => expect(isDoctoraliaBackfillRunning()).toBe(false), { timeout: 2_000 });
     slow.mockReset();
   });
 
   it("populates initial status fields synchronously", async () => {
-    const oneWeekAgo = new Date(Date.now() - 8 * 24 * 60 * 60 * 1000)
-      .toISOString()
-      .slice(0, 10);
+    const oneWeekAgo = new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
     const result = startDoctoraliaBackfill({
       endDate: oneWeekAgo,
       triggeredByUserId: 42,

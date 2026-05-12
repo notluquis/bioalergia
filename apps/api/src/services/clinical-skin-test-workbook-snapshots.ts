@@ -7,7 +7,15 @@ import { kysely } from "@finanzas/db";
 // Bumped from 2026-04-27.1: migrated from ExcelJS to SheetJS 0.20.3 (fixes merged-cell richText bugs)
 export const SKIN_TEST_WORKBOOK_SNAPSHOT_VERSION = "2026-05-02.1";
 
-type SnapshotCellType = "blank" | "boolean" | "date" | "error" | "formula" | "number" | "richText" | "string";
+type SnapshotCellType =
+  | "blank"
+  | "boolean"
+  | "date"
+  | "error"
+  | "formula"
+  | "number"
+  | "richText"
+  | "string";
 type SnapshotRawValue =
   | { kind: "blank"; value: null }
   | { kind: "boolean"; value: boolean }
@@ -84,7 +92,9 @@ export interface PersistSkinTestWorkbookSnapshotInput {
   sourceSizeBytes?: null | number;
 }
 
-export async function extractSkinTestWorkbookSnapshot(buffer: Buffer): Promise<SkinTestWorkbookSnapshot> {
+export async function extractSkinTestWorkbookSnapshot(
+  buffer: Buffer
+): Promise<SkinTestWorkbookSnapshot> {
   const wb = XLSX.read(buffer, {
     type: "buffer",
     cellDates: true,
@@ -254,12 +264,18 @@ export async function persistSkinTestWorkbookSnapshot({
 function getCellType(cell: XLSX.CellObject): SnapshotCellType {
   if (cell.f) return "formula";
   switch (cell.t) {
-    case "n": return "number";
-    case "s": return "string";
-    case "b": return "boolean";
-    case "e": return "error";
-    case "d": return "date";
-    default: return "blank";
+    case "n":
+      return "number";
+    case "s":
+      return "string";
+    case "b":
+      return "boolean";
+    case "e":
+      return "error";
+    case "d":
+      return "date";
+    default:
+      return "blank";
   }
 }
 
@@ -283,15 +299,20 @@ function serializeCellValue(cell: XLSX.CellObject): SnapshotRawValue {
 
 function serializeScalar(cell: XLSX.CellObject): SnapshotRawValue {
   switch (cell.t) {
-    case "n": return { kind: "number", value: cell.v as number };
-    case "s": return { kind: "string", value: cell.w ?? String(cell.v ?? "") };
-    case "b": return { kind: "boolean", value: cell.v as boolean };
-    case "e": return { kind: "error", value: cell.w ?? String(cell.v ?? "") };
+    case "n":
+      return { kind: "number", value: cell.v as number };
+    case "s":
+      return { kind: "string", value: cell.w ?? String(cell.v ?? "") };
+    case "b":
+      return { kind: "boolean", value: cell.v as boolean };
+    case "e":
+      return { kind: "error", value: cell.w ?? String(cell.v ?? "") };
     case "d": {
       const d = cell.v as Date;
       return { kind: "date", value: isNaN(d.getTime()) ? "Invalid Date" : d.toISOString() };
     }
-    default: return { kind: "blank", value: null };
+    default:
+      return { kind: "blank", value: null };
   }
 }
 

@@ -27,7 +27,7 @@ export const TopParticipantsResponseSchema = z.strictObject({
       personId: z.string(),
       personName: z.string(),
       total: z.number(),
-    }),
+    })
   ),
   status: z.literal("ok"),
 });

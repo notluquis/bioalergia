@@ -5,7 +5,13 @@ export const loanStatusSchema = z.enum(["ACTIVE", "COMPLETED", "DEFAULTED"]);
 export const loanBorrowerTypeSchema = z.enum(["COMPANY", "PERSON"]);
 export const loanFrequencySchema = z.enum(["BIWEEKLY", "MONTHLY", "WEEKLY"]);
 export const loanInterestTypeSchema = z.enum(["COMPOUND", "SIMPLE"]);
-export const loanScheduleStatusSchema = z.enum(["OVERDUE", "PAID", "PARTIAL", "PENDING", "SKIPPED"]);
+export const loanScheduleStatusSchema = z.enum([
+  "OVERDUE",
+  "PAID",
+  "PARTIAL",
+  "PENDING",
+  "SKIPPED",
+]);
 
 export const loanPublicIdSchema = z.object({
   publicId: z.string().trim().min(1),
@@ -35,7 +41,10 @@ export const loanUpdateInputSchema = loanCreateInputSchema.partial();
 export const loanRegenerateSchedulesInputSchema = z.object({
   frequency: loanFrequencySchema.optional(),
   interestRate: z.number().optional(),
-  startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  startDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
   totalInstallments: z.number().int().positive().optional(),
 });
 
@@ -62,7 +71,10 @@ export const loanScheduleSchema = z.object({
   installment_number: z.number().int(),
   loan_id: z.number().int(),
   paid_amount: z.number().nullable(),
-  paid_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable(),
+  paid_date: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .nullable(),
   status: loanScheduleStatusSchema,
   transaction: loanScheduleTransactionSchema.nullable().optional(),
   transaction_id: z.number().int().nullable(),

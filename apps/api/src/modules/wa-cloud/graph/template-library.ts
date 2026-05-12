@@ -31,14 +31,14 @@ export async function listTemplateLibrary(
     industry?: string;
     language?: string;
     search?: string;
-  },
+  }
 ) {
   const account = await loadAccount(accountId);
   if (!account?.systemUserToken) throw new Error("Account sin token");
   const qs = new URLSearchParams();
   qs.set(
     "fields",
-    "id,name,language,category,topic,industry,use_case,body,header,footer,buttons,parameter_format",
+    "id,name,language,category,topic,industry,use_case,body,header,footer,buttons,parameter_format"
   );
   qs.set("limit", "200");
   if (filters?.category) qs.set("category", filters.category);
@@ -49,7 +49,7 @@ export async function listTemplateLibrary(
   const data = await graphGet<{ data: LibraryTemplate[] }>(
     `/${account.wabaId}/message_template_library?${qs.toString()}`,
     account.systemUserToken,
-    account.graphApiVersion,
+    account.graphApiVersion
   );
   return data.data ?? [];
 }
@@ -76,6 +76,6 @@ export async function cloneTemplateFromLibrary(input: CloneFromLibraryInput) {
       category: input.category,
     },
     account.systemUserToken,
-    account.graphApiVersion,
+    account.graphApiVersion
   );
 }

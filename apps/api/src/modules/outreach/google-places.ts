@@ -104,7 +104,7 @@ export type DiscoverResult = {
 async function searchNearby(
   apiKey: string,
   params: DiscoverParams,
-  pageToken?: string,
+  pageToken?: string
 ): Promise<SearchNearbyResponse> {
   const body: Record<string, unknown> = {
     locationRestriction: {
@@ -139,7 +139,7 @@ async function searchNearby(
 async function searchText(
   apiKey: string,
   params: DiscoverParams,
-  pageToken?: string,
+  pageToken?: string
 ): Promise<SearchNearbyResponse> {
   if (!params.textQuery) throw new Error("textQuery requerido");
   const body: Record<string, unknown> = {
@@ -214,9 +214,7 @@ export async function discoverGooglePlaces(params: DiscoverParams): Promise<Disc
         const dominio = extractDomain(p.websiteUri);
         const tipoFromType =
           (p.types ?? []).find((t) => TYPE_TO_PROSPECT_KIND[t]) ??
-          (p.primaryType && TYPE_TO_PROSPECT_KIND[p.primaryType]
-            ? p.primaryType
-            : undefined);
+          (p.primaryType && TYPE_TO_PROSPECT_KIND[p.primaryType] ? p.primaryType : undefined);
         const tipo = tipoFromType ? TYPE_TO_PROSPECT_KIND[tipoFromType] : "EMPRESA";
         const comuna = extractComuna(p, params.ciudad);
 

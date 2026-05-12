@@ -30,10 +30,7 @@ export interface TempUpload extends AsyncDisposable {
 // is impossible even if the whitelist regex were ever weakened. Use
 // `await using temp = await writeTempUpload(...)` for automatic cleanup, or
 // pair with `cleanup()` in a `finally` block.
-export async function writeTempUpload(
-  data: Buffer,
-  preferredName?: string,
-): Promise<TempUpload> {
+export async function writeTempUpload(data: Buffer, preferredName?: string): Promise<TempUpload> {
   const dir = await mkdtemp(path.join(tmpdir(), TEMP_PREFIX));
   const safeName = sanitizeUploadFilename(preferredName) || `${randomUUID()}.bin`;
   const filepath = path.join(dir, safeName);

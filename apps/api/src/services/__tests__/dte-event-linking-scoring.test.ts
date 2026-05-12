@@ -9,8 +9,7 @@ const {
   resolveMatchAmountHint,
   scoreCandidate,
   selectGlobalAutoLinkHypotheses,
-} =
-  await import("../dte-event-linking.ts");
+} = await import("../dte-event-linking.ts");
 
 describe("isReembolsoBundleEvent", () => {
   it("returns true for retiro/retira events when Roxair is present", () => {
@@ -19,7 +18,7 @@ describe("isReembolsoBundleEvent", () => {
         category: null,
         description: "Retira Roxair pagado",
         summary: "retiro roxair Marion Aguilar",
-      }),
+      })
     ).toBe(true);
   });
 
@@ -29,7 +28,7 @@ describe("isReembolsoBundleEvent", () => {
         category: "Reembolso",
         description: "Bactek-R abril",
         summary: "reembolso bactek",
-      }),
+      })
     ).toBe(true);
   });
 
@@ -39,7 +38,7 @@ describe("isReembolsoBundleEvent", () => {
         category: null,
         description: "retira vacuna mensual",
         summary: "retiro vacuna paciente",
-      }),
+      })
     ).toBe(false);
   });
 
@@ -49,7 +48,7 @@ describe("isReembolsoBundleEvent", () => {
         category: "Reembolso",
         description: "pendiente",
         summary: "retiro de documentos",
-      }),
+      })
     ).toBe(false);
   });
 });
@@ -138,9 +137,9 @@ describe("scoreCandidate", () => {
     expect(result.confidenceScore).toBeGreaterThanOrEqual(35);
     expect(result.reasons).toContain("Monto coincide casi exacto");
     expect(
-      result.reasons.some((reason) =>
-        reason.includes("posible responsable/paciente") && reason.includes("jaque"),
-      ),
+      result.reasons.some(
+        (reason) => reason.includes("posible responsable/paciente") && reason.includes("jaque")
+      )
     ).toBe(true);
   });
 
@@ -165,9 +164,9 @@ describe("scoreCandidate", () => {
     });
 
     expect(result.confidenceScore).toBeLessThan(35);
-    expect(
-      result.reasons.some((reason) => reason.includes("posible responsable/paciente")),
-    ).toBe(false);
+    expect(result.reasons.some((reason) => reason.includes("posible responsable/paciente"))).toBe(
+      false
+    );
   });
 
   it("boosts a candidate when the same RUT was already linked in another event of the series", () => {

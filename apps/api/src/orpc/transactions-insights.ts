@@ -62,35 +62,47 @@ const transactionsInsightsORPCRouterBase = {
     .route({ method: "GET", path: "/participants/{id}" })
     .input(transactionsInsightsParticipantInsightInputSchema)
     .output(transactionsInsightsParticipantInsightResponseSchema)
-    .handler(async ({ input }: { input: z.input<typeof transactionsInsightsParticipantInsightInputSchema> }) => {
-      const result = await getParticipantInsight(input.id, {
-        from: input.from ? new Date(input.from) : undefined,
-        to: input.to ? new Date(input.to) : undefined,
-      });
+    .handler(
+      async ({
+        input,
+      }: {
+        input: z.input<typeof transactionsInsightsParticipantInsightInputSchema>;
+      }) => {
+        const result = await getParticipantInsight(input.id, {
+          from: input.from ? new Date(input.from) : undefined,
+          to: input.to ? new Date(input.to) : undefined,
+        });
 
-      return {
-        ...result,
-        status: "ok" as const,
-      };
-    }),
+        return {
+          ...result,
+          status: "ok" as const,
+        };
+      }
+    ),
 
   participants: readTransactionsInsights
     .route({ method: "GET", path: "/participants" })
     .input(transactionsInsightsParticipantLeaderboardInputSchema)
     .output(transactionsInsightsParticipantsResponseSchema)
-    .handler(async ({ input }: { input: z.input<typeof transactionsInsightsParticipantLeaderboardInputSchema> }) => {
-      const result = await getParticipantLeaderboard({
-        from: input.from ? new Date(input.from) : undefined,
-        limit: input.limit,
-        mode: input.mode,
-        to: input.to ? new Date(input.to) : undefined,
-      });
+    .handler(
+      async ({
+        input,
+      }: {
+        input: z.input<typeof transactionsInsightsParticipantLeaderboardInputSchema>;
+      }) => {
+        const result = await getParticipantLeaderboard({
+          from: input.from ? new Date(input.from) : undefined,
+          limit: input.limit,
+          mode: input.mode,
+          to: input.to ? new Date(input.to) : undefined,
+        });
 
-      return {
-        ...result,
-        status: "ok" as const,
-      };
-    }),
+        return {
+          ...result,
+          status: "ok" as const,
+        };
+      }
+    ),
 
   stats: readTransactionsInsights
     .route({ method: "GET", path: "/stats" })
@@ -129,7 +141,7 @@ export const transactionsInsightsORPCHandler = new SuperJSONRPCHandler(
         });
       }),
     ],
-  },
+  }
 );
 
 export const transactionsInsightsOpenAPIHandler = new OpenAPIHandler(
@@ -156,7 +168,7 @@ export const transactionsInsightsOpenAPIHandler = new OpenAPIHandler(
         });
       }),
     ],
-  },
+  }
 );
 
 export type TransactionsInsightsORPCRouter = typeof transactionsInsightsORPCRouter;

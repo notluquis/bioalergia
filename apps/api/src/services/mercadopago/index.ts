@@ -89,7 +89,7 @@ export const MercadoPagoService = {
    */
   async createReport(
     type: "release" | "settlement",
-    range: { begin_date: string; end_date: string },
+    range: { begin_date: string; end_date: string }
   ) {
     console.log(`[MP Service] Creating ${type} report with range:`, range);
     const baseUrl = type === "release" ? MP_API.RELEASE : MP_API.SETTLEMENT;
@@ -99,7 +99,7 @@ export const MercadoPagoService = {
     });
     if (res.status === 203) {
       throw new Error(
-        `MP API 203 Non-Authoritative: report could not be created for range ${range.begin_date}..${range.end_date}; retry needed`,
+        `MP API 203 Non-Authoritative: report could not be created for range ${range.begin_date}..${range.end_date}; retry needed`
       );
     }
     const data = await safeMpJson(res);
@@ -132,7 +132,7 @@ export const MercadoPagoService = {
    */
   async processReport(
     type: "release" | "settlement",
-    source: { url?: string; fileName?: string },
+    source: { url?: string; fileName?: string }
   ): Promise<ImportStats> {
     let downloadUrl = source.url;
 
@@ -167,7 +167,7 @@ export const MercadoPagoService = {
       range_begin_date?: string;
       range_end_date?: string;
     } = {},
-    options?: { silent?: boolean },
+    options?: { silent?: boolean }
   ): Promise<MPSearchResponse> {
     const baseUrl = type === "release" ? MP_API.RELEASE : MP_API.SETTLEMENT;
     const params = new URLSearchParams();
@@ -188,7 +188,7 @@ export const MercadoPagoService = {
   async getReportTask(
     type: "release" | "settlement",
     taskId: number | string,
-    options?: { silent?: boolean },
+    options?: { silent?: boolean }
   ): Promise<MPReportTask> {
     const baseUrl = type === "release" ? MP_API.RELEASE : MP_API.SETTLEMENT;
     const res = await mpFetch(`/task/${taskId}`, baseUrl, { log: !options?.silent });
@@ -227,4 +227,3 @@ const MP_DATE_TRIM_REGEX = /\.\d{3}Z$/;
 export function formatMpDate(date: Date) {
   return date.toISOString().replace(MP_DATE_TRIM_REGEX, "Z");
 }
-

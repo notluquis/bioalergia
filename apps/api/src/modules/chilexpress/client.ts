@@ -36,7 +36,7 @@ async function cxFetch<T>(
   config: ChilexpressConfig,
   api: CxApi,
   path: string,
-  options: RequestInit = {},
+  options: RequestInit = {}
 ): Promise<T> {
   const base = `${getBaseUrl(config.sandbox)}/${api}/api/v1.0`;
   const url = `${base}${path}`;
@@ -75,7 +75,7 @@ export async function getRegions(config: ChilexpressConfig): Promise<CxRegion[]>
 export async function getCommunes(
   config: ChilexpressConfig,
   regionCode: string,
-  type: 1 | 2 = 1,
+  type: 1 | 2 = 1
 ): Promise<CxCommune[]> {
   // type=1 = one entry per comuna (no sub-zone duplicates, default).
   // type=2 = sub-sectores within comunas (e.g. "BUIN - LINDEROS").
@@ -92,7 +92,7 @@ export async function getCommunes(
   }>(
     config,
     "georeference",
-    `/coverage-areas?RegionCode=${encodeURIComponent(regionCode)}&type=${type}`,
+    `/coverage-areas?RegionCode=${encodeURIComponent(regionCode)}&type=${type}`
   );
   return (data.coverageAreas ?? []).map((c) => ({
     countyCode: c.countyCode,
@@ -170,7 +170,7 @@ function mapOffice(o: CxRawOffice): CxCommercialOffice {
         (b) =>
           `${b.day}: ${b.initialStartHour}-${b.initialEndHour}${
             b.finalStartHour ? ` / ${b.finalStartHour}-${b.finalEndHour}` : ""
-          }`,
+          }`
       )
       .join(" · "),
   };
@@ -178,13 +178,13 @@ function mapOffice(o: CxRawOffice): CxCommercialOffice {
 
 export async function getCommercialOffices(
   config: ChilexpressConfig,
-  options: { regionCode: string; countyName: string; type?: 0 | 4 },
+  options: { regionCode: string; countyName: string; type?: 0 | 4 }
 ): Promise<CxCommercialOffice[]> {
   const type = options.type ?? 0;
   const data = await cxFetch<{ offices?: CxRawOffice[] }>(
     config,
     "georeference",
-    `/offices?Type=${type}&RegionCode=${encodeURIComponent(options.regionCode)}&CountyName=${encodeURIComponent(options.countyName)}`,
+    `/offices?Type=${type}&RegionCode=${encodeURIComponent(options.regionCode)}&CountyName=${encodeURIComponent(options.countyName)}`
   );
   return (data.offices ?? []).map(mapOffice);
 }
@@ -193,7 +193,7 @@ export async function getCommercialOffices(
 
 export async function getNearbyOffices(
   config: ChilexpressConfig,
-  addressId: number,
+  addressId: number
 ): Promise<Array<{ distance: string; office: CxCommercialOffice }>> {
   // Per spec the response key is "nearbyOffice" (singular). Also
   // tolerate "nearbyOffices" in case the API ever harmonises.
@@ -225,8 +225,10 @@ export async function searchStreets(
     streetNameEnabled?: boolean;
     roadType?: number;
     limit?: number;
-  },
-): Promise<Array<{ streetId: number; streetName: string; countyName?: string; roadType?: string }>> {
+  }
+): Promise<
+  Array<{ streetId: number; streetName: string; countyName?: string; roadType?: string }>
+> {
   const limit = options.limit ?? 25;
   const data = await cxFetch<{
     streets?: Array<{
@@ -254,7 +256,7 @@ export async function searchStreets(
  */
 export async function getStreetNumbers(
   config: ChilexpressConfig,
-  streetNameId: number,
+  streetNameId: number
 ): Promise<Array<{ number: number; latitude?: number; longitude?: number; addressId: number }>> {
   const data = await cxFetch<{
     streetNumbers?: Array<{
@@ -271,7 +273,7 @@ export async function getStreetNumbers(
 
 export async function georeferenceAddress(
   config: ChilexpressConfig,
-  input: { streetName: string; countyName: string; number: string },
+  input: { streetName: string; countyName: string; number: string }
 ): Promise<{ latitude?: string; longitude?: string; addressId?: number } | null> {
   const data = await cxFetch<{
     data?: { latitude?: string; longitude?: string; addressId?: number };
@@ -288,7 +290,7 @@ export async function georeferenceAddress(
 
 export async function quoteCourier(
   config: ChilexpressConfig,
-  input: CxRateInput,
+  input: CxRateInput
 ): Promise<CxRateResponse> {
   return cxFetch<CxRateResponse>(config, "rating", "/rates/courier", {
     method: "POST",
@@ -300,7 +302,7 @@ export async function quoteCourier(
 
 export async function createTransportOrder(
   config: ChilexpressConfig,
-  input: CxTransportOrderInput,
+  input: CxTransportOrderInput
 ): Promise<CxTransportOrderResponse> {
   return cxFetch<CxTransportOrderResponse>(config, "transport-orders", "/transport-orders", {
     method: "POST",
@@ -310,7 +312,7 @@ export async function createTransportOrder(
 
 export async function reprintLabel(
   config: ChilexpressConfig,
-  input: { transportOrderNumber: string; labelType?: number; reportType?: number },
+  input: { transportOrderNumber: string; labelType?: number; reportType?: number }
 ): Promise<{ label?: string; barcode?: string; reference?: string }> {
   const body = {
     transportOrderNumber: input.transportOrderNumber,
@@ -344,7 +346,7 @@ export async function reprintLabel(
 
 export async function trackTransportOrder(
   config: ChilexpressConfig,
-  transportOrderNumber: string,
+  transportOrderNumber: string
 ): Promise<{
   statusCodeReference?: string;
   statusDescription?: string;

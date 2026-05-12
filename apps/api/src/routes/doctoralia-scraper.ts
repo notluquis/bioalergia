@@ -138,7 +138,7 @@ doctoraliaScraperRoutes.post("/calendar/import", async (c) => {
   try {
     const result = await doctoraliaCalendarSyncService.importFromJsonEntries(
       entries,
-      "scraper-cron",
+      "scraper-cron"
     );
 
     logEvent("doctoralia.scraper.calendar.import", {
@@ -161,7 +161,7 @@ doctoraliaScraperRoutes.post("/calendar/import", async (c) => {
 });
 
 function parseImportEntries(
-  body: unknown,
+  body: unknown
 ): Array<{ ts?: string; src?: string; data: DoctoraliaCalendarResponse }> | null {
   if (!body || typeof body !== "object") return null;
   const raw = (body as { entries?: unknown }).entries;
@@ -184,7 +184,8 @@ function parseImportEntries(
 function parseCookiesBody(body: unknown): { label: string; cookies: StoredCookie[] } | null {
   if (!body || typeof body !== "object") return null;
   const raw = body as Record<string, unknown>;
-  const label = typeof raw.label === "string" && raw.label.trim() ? raw.label.trim() : DEFAULT_LABEL;
+  const label =
+    typeof raw.label === "string" && raw.label.trim() ? raw.label.trim() : DEFAULT_LABEL;
   const cookies = raw.cookies;
   if (!Array.isArray(cookies)) return null;
   const normalized: StoredCookie[] = [];

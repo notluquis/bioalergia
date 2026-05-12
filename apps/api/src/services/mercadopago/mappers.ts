@@ -60,7 +60,7 @@ export function parseDateOptional(value: RawValue): Date | null {
 export function parseDecimal(value: RawValue, fallback: string | number | Decimal): Decimal;
 export function parseDecimal(
   value: RawValue,
-  fallback?: string | number | Decimal,
+  fallback?: string | number | Decimal
 ): Decimal | undefined;
 export function parseDecimal(value: RawValue, fallback?: string | number | Decimal) {
   const toDecimal = (input: string | number | Decimal) =>
@@ -81,7 +81,7 @@ export function parseDecimal(value: RawValue, fallback?: string | number | Decim
     } catch (err) {
       console.error(
         `[parseDecimal] Error parsing value "${value}" (normalized: "${normalized}"):`,
-        err,
+        err
       );
       throw err;
     }

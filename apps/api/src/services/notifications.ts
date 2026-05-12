@@ -17,7 +17,7 @@ type PushSubscriptionKeys = {
 
 export async function subscribeToPush(
   userId: number,
-  subscription: { endpoint: string; keys: PushSubscriptionKeys },
+  subscription: { endpoint: string; keys: PushSubscriptionKeys }
 ) {
   return await db.pushSubscription.upsert({
     where: { endpoint: subscription.endpoint },
@@ -44,7 +44,7 @@ export async function unsubscribeFromPush(userId: number, endpoint: string) {
 
 export async function sendPushNotification(
   userId: number,
-  payload: { title: string; body: string; icon?: string; url?: string },
+  payload: { title: string; body: string; icon?: string; url?: string }
 ) {
   const subscriptions = await db.pushSubscription.findMany({
     where: { userId },
@@ -70,9 +70,9 @@ export async function sendPushNotification(
           endpoint: sub.endpoint,
           keys: sub.keys as unknown as { p256dh: string; auth: string },
         },
-        notificationPayload,
-      ),
-    ),
+        notificationPayload
+      )
+    )
   );
 
   let sent = 0;

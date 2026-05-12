@@ -31,7 +31,7 @@ export const brandAssetUrlSchema = z
       (value.startsWith("/") && value.length > 1),
     {
       message: "Debe comenzar con https:// o una ruta interna que inicie con /",
-    },
+    }
   );
 
 export const optionalBrandAssetUrlSchema = z.union([z.literal(""), brandAssetUrlSchema]);
@@ -66,7 +66,7 @@ export const amountSchema = z
     (value) => value == null || (Number.isInteger(value) && value >= 0 && value <= 100_000_000),
     {
       message: "Monto inválido",
-    },
+    }
   )
   .optional();
 

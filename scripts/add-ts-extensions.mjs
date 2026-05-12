@@ -46,7 +46,8 @@ const SKIP_DIRS = new Set([
 // rewrite is `path`. `quote` and `prefix` round-trip so we can rebuild.
 const IMPORT_RE =
   /(?<prefix>(?:^|\s|;|\(|\}|\{|=)(?:import|export)\s+(?:[^"'`]*?\s+from\s+|))(?<quote>["'])(?<path>\.{1,2}\/[^"'`]+?)\k<quote>/g;
-const DYNAMIC_IMPORT_RE = /(?<prefix>import\s*\(\s*)(?<quote>["'])(?<path>\.{1,2}\/[^"'`]+?)\k<quote>/g;
+const DYNAMIC_IMPORT_RE =
+  /(?<prefix>import\s*\(\s*)(?<quote>["'])(?<path>\.{1,2}\/[^"'`]+?)\k<quote>/g;
 
 async function exists(filePath) {
   try {
@@ -148,13 +149,10 @@ async function walk(dir, stats) {
       const full = path.join(dir, entry.name);
       if (entry.isDirectory()) {
         await walk(full, stats);
-      } else if (
-        entry.isFile() &&
-        SOURCE_EXTS.some((ext) => entry.name.endsWith(ext))
-      ) {
+      } else if (entry.isFile() && SOURCE_EXTS.some((ext) => entry.name.endsWith(ext))) {
         await rewriteFile(full, stats);
       }
-    }),
+    })
   );
 }
 
@@ -171,6 +169,4 @@ for (const target of args) {
   await walk(abs, stats);
 }
 
-console.log(
-  `add-ts-extensions: rewrote ${stats.imports} import(s) across ${stats.files} file(s).`,
-);
+console.log(`add-ts-extensions: rewrote ${stats.imports} import(s) across ${stats.files} file(s).`);

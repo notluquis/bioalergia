@@ -10,7 +10,7 @@ const normalizeCategoryName = (value: null | string | undefined) =>
     .trim();
 
 export function isNonAccountableCategory(
-  category: null | undefined | { icon?: null | string; name: string },
+  category: null | undefined | { icon?: null | string; name: string }
 ) {
   if (!category) return false;
   if (category.icon === NON_ACCOUNTABLE_CATEGORY_ICON) return true;

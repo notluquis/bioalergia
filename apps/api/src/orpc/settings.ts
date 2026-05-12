@@ -93,7 +93,7 @@ const settingsORPCRouterBase = {
       });
 
       const upsertChunkSize = settings.find(
-        (setting) => setting.key === "internal.upsertChunkSize",
+        (setting) => setting.key === "internal.upsertChunkSize"
       )?.value;
 
       return {

@@ -22,7 +22,7 @@ export function getRetentionRateForYear(year: number): number {
  */
 export function getEffectiveRetentionRate(
   employeeRate: number | undefined | null,
-  year: number,
+  year: number
 ): number {
   const yearRate = getRetentionRateForYear(year);
 

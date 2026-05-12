@@ -43,13 +43,13 @@ describe("chilexpress client", () => {
 
   it("getRegions reads top-level regions[]", async () => {
     fetchSpy.mockReturnValueOnce(
-      mockJson({ regions: [{ regionId: "R8", regionName: "BIOBIO", ineRegionCode: 8 }] }),
+      mockJson({ regions: [{ regionId: "R8", regionName: "BIOBIO", ineRegionCode: 8 }] })
     );
     const r = await getRegions(cfg);
     expect(r).toHaveLength(1);
     expect(r[0]).toMatchObject({ regionId: "R8", regionName: "BIOBIO" });
     expect(fetchSpy.mock.calls[0]?.[0]).toContain(
-      "testservices.wschilexpress.com/georeference/api/v1.0/regions",
+      "testservices.wschilexpress.com/georeference/api/v1.0/regions"
     );
   });
 
@@ -66,7 +66,7 @@ describe("chilexpress client", () => {
             ind_rd: 1,
           },
         ],
-      }),
+      })
     );
     const r = await getCommunes(cfg, "RM", 2);
     expect(r[0]).toMatchObject({
@@ -91,7 +91,7 @@ describe("chilexpress client", () => {
             ind_rd: 0,
           },
         ],
-      }),
+      })
     );
     const c = await getCommunes(cfg, "RM");
     expect(c[0]).toMatchObject({
@@ -135,7 +135,7 @@ describe("chilexpress client", () => {
             ],
           },
         ],
-      }),
+      })
     );
     const offices = await getCommercialOffices(cfg, {
       regionCode: "R8",
@@ -153,7 +153,7 @@ describe("chilexpress client", () => {
     expect(offices[0]?.businessHour[0]?.day).toBe("Lunes");
     expect(offices[0]?.schedules).toContain("Lunes: 09:00-18:00");
     expect(fetchSpy.mock.calls[0]?.[0]).toContain(
-      "/offices?Type=0&RegionCode=R8&CountyName=CONCEPCION",
+      "/offices?Type=0&RegionCode=R8&CountyName=CONCEPCION"
     );
   });
 
@@ -192,7 +192,7 @@ describe("chilexpress client", () => {
             },
           },
         ],
-      }),
+      })
     );
     const r = await getNearbyOffices(cfg, 1);
     expect(r).toHaveLength(1);
@@ -202,8 +202,10 @@ describe("chilexpress client", () => {
   it("searchStreets POSTs with countyName + streetName body", async () => {
     fetchSpy.mockReturnValueOnce(
       mockJson({
-        streets: [{ streetId: 1, streetName: "MAIPU", countyName: "CONCEPCION", roadType: "CALLE" }],
-      }),
+        streets: [
+          { streetId: 1, streetName: "MAIPU", countyName: "CONCEPCION", roadType: "CALLE" },
+        ],
+      })
     );
     const r = await searchStreets(cfg, { countyName: "CONCEPCION", query: "MAI" });
     expect(r[0]).toMatchObject({ streetId: 1, streetName: "MAIPU" });
@@ -221,10 +223,8 @@ describe("chilexpress client", () => {
   it("getStreetNumbers reads streetNumbers[] with number + lat/lng", async () => {
     fetchSpy.mockReturnValueOnce(
       mockJson({
-        streetNumbers: [
-          { number: 583, latitude: -33.44, longitude: -70.65, addressId: 7159420 },
-        ],
-      }),
+        streetNumbers: [{ number: 583, latitude: -33.44, longitude: -70.65, addressId: 7159420 }],
+      })
     );
     const r = await getStreetNumbers(cfg, 1);
     expect(r[0]).toMatchObject({
@@ -250,7 +250,7 @@ describe("chilexpress client", () => {
       mockJson({
         data: { latitude: "-36.82", longitude: "-73.05", addressId: 999 },
         statusCode: 0,
-      }),
+      })
     );
     const r = await georeferenceAddress(cfg, {
       streetName: "MAIPU",
@@ -268,7 +268,7 @@ describe("chilexpress client", () => {
           detail: { transportOrderNumber: "OT123", reference: "ref", barcode: "BC1" },
           label: "BASE64==",
         },
-      }),
+      })
     );
     const r = await reprintLabel(cfg, { transportOrderNumber: "OT123" });
     expect(r).toMatchObject({ label: "BASE64==", barcode: "BC1", reference: "ref" });
@@ -288,7 +288,7 @@ describe("chilexpress client", () => {
           statusDescription: "Entregado",
           events: [{ eventDate: "2026-05-08", eventName: "Entregado", eventLocation: "Conce" }],
         },
-      }),
+      })
     );
     const r = await trackTransportOrder(cfg, "OT123");
     expect(r.statusDescription).toBe("Entregado");

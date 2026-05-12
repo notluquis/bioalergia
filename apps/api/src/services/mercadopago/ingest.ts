@@ -145,7 +145,7 @@ export async function processReportUrl(url: string, reportType: string): Promise
         batchState,
         flushBatch,
         isFirstRow,
-        processedSourceIdSet,
+        processedSourceIdSet
       );
     } else {
       const body = res.body;
@@ -163,7 +163,7 @@ export async function processReportUrl(url: string, reportType: string): Promise
         batchState,
         flushBatch,
         isFirstRow,
-        processedSourceIdSet,
+        processedSourceIdSet
       );
     }
   } catch (e) {
@@ -183,7 +183,7 @@ async function processCsvStream(
   batchState: BatchState,
   flushBatch: () => Promise<void>,
   isFirstRow: { value: boolean },
-  processedSourceIdSet: Set<string>,
+  processedSourceIdSet: Set<string>
 ) {
   await new Promise<void>((resolve, reject) => {
     // Use readline to process CSV line by line with proper quote handling
@@ -210,7 +210,7 @@ async function processCsvStream(
           nodeStream,
           reject,
           isFirstRow,
-          processedSourceIdSet,
+          processedSourceIdSet
         );
       } catch (err) {
         reject(err);
@@ -247,7 +247,7 @@ type BatchState = {
 
 const convertRowArrayToObject = (
   row: string[] | Record<string, string | undefined>,
-  headerMap: Record<number, string>,
+  headerMap: Record<number, string>
 ): Record<string, string | undefined> => {
   // Use our custom CSV parser for better quote handling if we detect issues
   const arrayRow = Array.isArray(row) ? row : Object.values(row);
@@ -257,7 +257,7 @@ const convertRowArrayToObject = (
   const headerCount = Object.keys(headerMap).length;
   if (arrayRow.length !== headerCount) {
     console.warn(
-      `[MP Ingest] Column count mismatch: headerMap has ${headerCount} cols, row has ${arrayRow.length} cols`,
+      `[MP Ingest] Column count mismatch: headerMap has ${headerCount} cols, row has ${arrayRow.length} cols`
     );
     // If row has more columns than headers, it's likely due to quotes being split
     // Log the extra columns for debugging
@@ -281,11 +281,11 @@ const convertRowArrayToObject = (
 };
 
 const createHeaderMap = (
-  row: string[] | Record<string, string | undefined>,
+  row: string[] | Record<string, string | undefined>
 ): Record<number, string> => {
   const headerRow = Array.isArray(row) ? row : Object.keys(row);
   const map = Object.fromEntries(
-    headerRow.map((h, i) => [i, typeof h === "string" ? h.trim() : String(h)]),
+    headerRow.map((h, i) => [i, typeof h === "string" ? h.trim() : String(h)])
   );
   console.log(`[MP Ingest] Created header map with ${Object.keys(map).length} columns`);
   return map;
@@ -302,7 +302,7 @@ const handleCsvData = (
   nodeStream: Readable,
   reject: (reason?: unknown) => void,
   isFirstRow: { value: boolean },
-  processedSourceIdSet: Set<string>,
+  processedSourceIdSet: Set<string>
 ): boolean => {
   // First row is the header - create a mapping
   if (!headerMap) {
@@ -321,7 +321,7 @@ const handleCsvData = (
     nodeStream,
     reject,
     isFirstRow,
-    processedSourceIdSet,
+    processedSourceIdSet
   );
   return false;
 };
@@ -345,11 +345,11 @@ const mapReportRow = (reportType: string, row: Record<string, string | undefined
     // Log the row data that caused the error (first 10 keys for readability)
     const sampleKeys = Object.keys(row).slice(0, 10);
     const sampleData = Object.fromEntries(
-      sampleKeys.map((k) => [k, row[k]?.substring?.(0, 50) || row[k]]),
+      sampleKeys.map((k) => [k, row[k]?.substring?.(0, 50) || row[k]])
     );
     console.error(
       `[mapReportRow] Error mapping row with keys ${Object.keys(row).length}, sample data:`,
-      sampleData,
+      sampleData
     );
     throw err;
   }
@@ -357,7 +357,7 @@ const mapReportRow = (reportType: string, row: Record<string, string | undefined
 
 const logFirstRow = (
   cleanRow: Record<string, string | undefined>,
-  isFirstRow: { value: boolean },
+  isFirstRow: { value: boolean }
 ) => {
   if (!isFirstRow.value) {
     return;
@@ -373,7 +373,7 @@ const enqueueBatchRecord = async (
   stats: ImportStats,
   flushBatch: () => Promise<void>,
   nodeStream: Readable,
-  reject: (reason?: unknown) => void,
+  reject: (reason?: unknown) => void
 ) => {
   batchState.batch.push(record);
   batchState.batchValid += 1;
@@ -405,7 +405,7 @@ const handleCsvRow = (
   nodeStream: Readable,
   reject: (reason?: unknown) => void,
   isFirstRow: { value: boolean },
-  processedSourceIdSet: Set<string>,
+  processedSourceIdSet: Set<string>
 ) => {
   stats.totalRows += 1;
   const cleanRow = cleanCsvRow(row);
@@ -423,7 +423,7 @@ const handleCsvRow = (
     void enqueueBatchRecord(record, batchState, stats, flushBatch, nodeStream, reject);
   } catch (err) {
     stats.errors.push(
-      `Row ${stats.totalRows}: ${err instanceof Error ? err.message : String(err)}`,
+      `Row ${stats.totalRows}: ${err instanceof Error ? err.message : String(err)}`
     );
     stats.skippedRows += 1;
   }
@@ -442,7 +442,7 @@ function normalizeJsonCellValue(raw: unknown): string | undefined {
 }
 
 function extractRowsFromJsonPayload(
-  payload: MpJsonReportPayload,
+  payload: MpJsonReportPayload
 ): Record<string, string | undefined>[] {
   const views = payload.document?.views;
   if (!Array.isArray(views)) {
@@ -492,7 +492,7 @@ async function processMpJsonPayload(
   batchState: BatchState,
   flushBatch: () => Promise<void>,
   isFirstRow: { value: boolean },
-  processedSourceIdSet: Set<string>,
+  processedSourceIdSet: Set<string>
 ) {
   const rows = extractRowsFromJsonPayload(payload);
   console.log(`[MP Ingest] JSON payload detected for ${reportType}. Rows: ${rows.length}`);
@@ -521,7 +521,7 @@ async function processMpJsonPayload(
       }
     } catch (err) {
       stats.errors.push(
-        `Row ${stats.totalRows}: ${err instanceof Error ? err.message : String(err)}`,
+        `Row ${stats.totalRows}: ${err instanceof Error ? err.message : String(err)}`
       );
       stats.skippedRows += 1;
     }

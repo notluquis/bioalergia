@@ -9,7 +9,8 @@ describe("toORPCError", () => {
     const error = new GoogleApiError({
       code: 503,
       domain: "global",
-      message: "drive.files.get: Google Drive temporalmente no disponible. Intenta en unos minutos.",
+      message:
+        "drive.files.get: Google Drive temporalmente no disponible. Intenta en unos minutos.",
       originalError: new Error("upstream unavailable"),
       reason: "backendError",
       retryAfterSeconds: 30,

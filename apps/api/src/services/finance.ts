@@ -179,7 +179,7 @@ async function buildWithdrawLookup(): Promise<WithdrawLookup> {
 function resolveCounterpartIdForTransaction(
   tour: UnifiedTransaction,
   counterpartLookup: CounterpartLookup,
-  withdrawLookup: WithdrawLookup,
+  withdrawLookup: WithdrawLookup
 ) {
   // Release flow:
   // 1) source_id (release) -> withdraw_id (withdraw) to recover RUT/account.
@@ -199,14 +199,14 @@ function resolveCounterpartIdForTransaction(
     const accountFromRelease = normalizeAccount(tour.bankAccountNumber);
     const accountFromWithdraw = normalizeAccount(linkedWithdraw?.bankAccountNumber);
     const counterpartIdByAccount = counterpartLookup.byAccount.get(
-      accountFromRelease || accountFromWithdraw,
+      accountFromRelease || accountFromWithdraw
     );
     return counterpartIdByAccount ?? null;
   }
 
   const counterpartIdByRut = counterpartLookup.byRut.get(normalizeRut(tour.identificationNumber));
   const counterpartIdByAccount = counterpartLookup.byAccount.get(
-    normalizeAccount(tour.bankAccountNumber),
+    normalizeAccount(tour.bankAccountNumber)
   );
   return counterpartIdByRut ?? counterpartIdByAccount ?? null;
 }
@@ -324,7 +324,7 @@ function resolveAutoCategoryId(ctx: AutoCategoryMatchContext, rules: AutoCategor
     if (rule.paymentMethods.length > 0) {
       if (!normalizedPaymentMethodType) continue;
       const matches = rule.paymentMethods.some(
-        (method) => normalizeRuleText(method) === normalizedPaymentMethodType,
+        (method) => normalizeRuleText(method) === normalizedPaymentMethodType
       );
       if (!matches) continue;
     }
@@ -334,7 +334,7 @@ function resolveAutoCategoryId(ctx: AutoCategoryMatchContext, rules: AutoCategor
 
     if (rule.amountsExact.length > 0) {
       const matchesExact = rule.amountsExact.some(
-        (value) => Math.abs(Math.abs(value) - absoluteAmount) <= AMOUNT_MATCH_EPSILON,
+        (value) => Math.abs(Math.abs(value) - absoluteAmount) <= AMOUNT_MATCH_EPSILON
       );
       if (!matchesExact) continue;
     } else {
@@ -374,7 +374,7 @@ const normalizeSearchText = (value: null | string | undefined) =>
 
 const mergeDescriptionWithSaleDetails = (
   description: null | string | undefined,
-  saleDetails: string[],
+  saleDetails: string[]
 ) => {
   const base = (description ?? "").trim();
   const details = saleDetails
@@ -393,7 +393,7 @@ function matchesPatientsPattern(values: Array<null | string | undefined>, keywor
 
 async function applyPersonalDrPatternCategoryToExistingTransactions(
   categoryId: number,
-  options?: { onlyUncategorized?: boolean },
+  options?: { onlyUncategorized?: boolean }
 ) {
   if (options?.onlyUncategorized) {
     const updatedRows = await db.$executeRaw`
@@ -423,7 +423,7 @@ async function applyPersonalDrPatternCategoryToExistingTransactions(
 async function applyPatientsPatternCategoryToExistingTransactions(
   categoryId: number,
   keyword: string,
-  options?: { onlyUncategorized?: boolean },
+  options?: { onlyUncategorized?: boolean }
 ) {
   const normalizedKeyword = normalizeSearchText(keyword) || PATIENTS_KEYWORD;
   const likePattern = `%${normalizedKeyword}%`;
@@ -487,7 +487,7 @@ async function applyPatientsPatternCategoryToExistingTransactions(
 
 async function applyAutoCategoryRulesToExistingTransactions(
   rules: AutoCategoryRuleLookup,
-  options?: { onlyUncategorized?: boolean },
+  options?: { onlyUncategorized?: boolean }
 ) {
   if (rules.rules.length === 0) {
     return 0;
@@ -502,7 +502,7 @@ async function applyAutoCategoryRulesToExistingTransactions(
 
 async function applyAutoCategoryRuleRow(
   rule: AutoCategoryRule,
-  options?: { onlyUncategorized?: boolean },
+  options?: { onlyUncategorized?: boolean }
 ) {
   const needsReleaseJoin =
     rule.matchAmountOn === "gross" ||
@@ -558,12 +558,12 @@ async function applyAutoCategoryRuleRow(
   }
   if (rule.commentContains != null) {
     whereClauses.push(
-      `ft.comment ILIKE ${sqlLiteral(`%${rule.commentContains.replace(/[%_]/g, "\\$&")}%`)}`,
+      `ft.comment ILIKE ${sqlLiteral(`%${rule.commentContains.replace(/[%_]/g, "\\$&")}%`)}`
     );
   }
   if (rule.descriptionContains != null) {
     whereClauses.push(
-      `ft.description ILIKE ${sqlLiteral(`%${rule.descriptionContains.replace(/[%_]/g, "\\$&")}%`)}`,
+      `ft.description ILIKE ${sqlLiteral(`%${rule.descriptionContains.replace(/[%_]/g, "\\$&")}%`)}`
     );
   }
   if (rule.paymentMethods.length > 0) {
@@ -571,11 +571,9 @@ async function applyAutoCategoryRuleRow(
     whereClauses.push(`${paymentMethodExpr} IN (${values})`);
   }
   if (rule.amountsExact.length > 0) {
-    const values = rule.amountsExact
-      .map((value) => Number(value).toFixed(4))
-      .join(", ");
+    const values = rule.amountsExact.map((value) => Number(value).toFixed(4)).join(", ");
     whereClauses.push(
-      `EXISTS (SELECT 1 FROM (VALUES (${values})) AS amounts_exact(v) WHERE ABS(${amountSourceExpr} - amounts_exact.v) <= ${AMOUNT_MATCH_EPSILON})`,
+      `EXISTS (SELECT 1 FROM (VALUES (${values})) AS amounts_exact(v) WHERE ABS(${amountSourceExpr} - amounts_exact.v) <= ${AMOUNT_MATCH_EPSILON})`
     );
   } else {
     if (rule.minAmount != null) {
@@ -684,7 +682,7 @@ async function ensurePatientsAutoCategoryRule() {
 
 async function syncUnifiedTransactions(
   unifiedTransactions: UnifiedTransaction[],
-  options?: { applyGlobalRules?: boolean },
+  options?: { applyGlobalRules?: boolean }
 ) {
   await ensureMercadoPagoCardAutoCategoryRule();
   const personalDrCategoryId = await ensurePersonalDrAutoCategoryRules();
@@ -695,13 +693,13 @@ async function syncUnifiedTransactions(
       !(
         tour.source === "settlement" &&
         tour.transactionType?.toUpperCase() === SETTLEMENT_CASHBACK_TYPE
-      ),
+      )
   );
   const counterpartLookup = await buildCounterpartLookup();
   const withdrawLookup = await buildWithdrawLookup();
   const autoCategoryRules = await buildAutoCategoryRuleLookup();
   const sourceIds = Array.from(
-    new Set(nonCashbackTransactions.map((tx) => tx.sourceId?.trim() ?? "").filter(Boolean)),
+    new Set(nonCashbackTransactions.map((tx) => tx.sourceId?.trim() ?? "").filter(Boolean))
   );
   const [releaseRefs, settlementRefs] =
     sourceIds.length > 0
@@ -776,7 +774,7 @@ async function syncUnifiedTransactions(
                 type: true,
               },
             })
-          ).map((row) => [row.sourceId ?? "", row]),
+          ).map((row) => [row.sourceId ?? "", row])
         )
       : new Map<
           string,
@@ -801,7 +799,7 @@ async function syncUnifiedTransactions(
     const counterpartId = resolveCounterpartIdForTransaction(
       tour,
       counterpartLookup,
-      withdrawLookup,
+      withdrawLookup
     );
 
     try {
@@ -830,13 +828,13 @@ async function syncUnifiedTransactions(
                 : (tour.paymentMethodType ?? null),
               type: existing.type,
             },
-            autoCategoryRules,
+            autoCategoryRules
           );
           const matchesPatients =
             existing.type === "INCOME" &&
             matchesPatientsPattern(
               [existing.description, existing.comment, ...sourceSaleDetails],
-              patientsRule.keyword,
+              patientsRule.keyword
             );
           const nextSystemCategoryId =
             existing.type === "EXPENSE" && matchesPersonalDrPattern(existing.comment)
@@ -896,7 +894,7 @@ async function syncUnifiedTransactions(
               paymentMethodType: tour.paymentMethodType ?? null,
               type: existing.type,
             },
-            autoCategoryRules,
+            autoCategoryRules
           );
           const matchesPatients =
             existing.type === "INCOME" &&
@@ -946,13 +944,13 @@ async function syncUnifiedTransactions(
           paymentMethodType: tour.paymentMethodType ?? null,
           type,
         },
-        autoCategoryRules,
+        autoCategoryRules
       );
       const isPatientsIncome =
         type === "INCOME" &&
         matchesPatientsPattern(
           [tour.description, comment, ...sourceSaleDetails],
-          patientsRule.keyword,
+          patientsRule.keyword
         );
       const resolvedCategoryId =
         type === "EXPENSE" && matchesPersonalDrPattern(comment)
@@ -1000,7 +998,7 @@ async function syncUnifiedTransactions(
     await applyPersonalDrPatternCategoryToExistingTransactions(personalDrCategoryId);
     await applyPatientsPatternCategoryToExistingTransactions(
       patientsRule.categoryId,
-      patientsRule.keyword,
+      patientsRule.keyword
     );
   }
 
@@ -1039,14 +1037,14 @@ export async function syncUncategorizedTransactionsByPatterns() {
     personalDrCategoryId,
     {
       onlyUncategorized: true,
-    },
+    }
   );
   const updatedByPatientsPattern = await applyPatientsPatternCategoryToExistingTransactions(
     patientsRule.categoryId,
     patientsRule.keyword,
     {
       onlyUncategorized: true,
-    },
+    }
   );
   return {
     updated: updatedByRules + updatedByPersonalPattern + updatedByPatientsPattern,
@@ -1143,7 +1141,7 @@ export async function listFinancialTransactions(params: {
       new Set([
         ...periodAllocations.map((row) => row.transactionId),
         ...periodTransactionsWithoutAllocations.map((row) => row.id),
-      ]),
+      ])
     );
     for (const row of periodAllocations) {
       effectivePeriodNetAmountByTransaction.set(row.transactionId, Number(row.netAmount));
@@ -1183,8 +1181,8 @@ export async function listFinancialTransactions(params: {
     new Set(
       transactions
         .map((transaction) => transaction.sourceId)
-        .filter((sourceId): sourceId is string => Boolean(sourceId?.trim())),
-    ),
+        .filter((sourceId): sourceId is string => Boolean(sourceId?.trim()))
+    )
   );
 
   const [releaseRows, settlementRows] =
@@ -1395,7 +1393,7 @@ export async function getFinancialSummaryByCategory(params: { from?: Date; to?: 
   });
 
   const categoryIds = Array.from(
-    new Set(grouped.map((row) => row.categoryId).filter((id): id is number => id != null)),
+    new Set(grouped.map((row) => row.categoryId).filter((id): id is number => id != null))
   );
 
   const categories =
@@ -1466,7 +1464,7 @@ export async function createFinancialTransaction(data: CreateFinancialTransactio
 
 export async function updateFinancialTransaction(
   id: number,
-  data: UpdateFinancialTransactionInput,
+  data: UpdateFinancialTransactionInput
 ) {
   const updateArgs = parseOrmArgs(db, "financialTransaction", "update", {
     where: { id },
@@ -1603,7 +1601,7 @@ export async function updateTransactionCategory(
     color?: null | string;
     isNonAccountable?: boolean;
     name?: string;
-  },
+  }
 ) {
   await mergeDuplicateTransactionCategoriesByName();
 
@@ -1874,7 +1872,7 @@ export async function createFinancialAutoCategoryRule(data: FinancialAutoCategor
 
 export async function updateFinancialAutoCategoryRule(
   id: number,
-  data: Partial<FinancialAutoCategoryRuleInput>,
+  data: Partial<FinancialAutoCategoryRuleInput>
 ) {
   const existing = await db.financialAutoCategoryRule.findUnique({
     where: { id },
@@ -2165,7 +2163,7 @@ export async function createCompensationProfile(data: CompensationProfileInput) 
 
 export async function updateCompensationProfile(
   id: number,
-  data: Partial<CompensationProfileInput>,
+  data: Partial<CompensationProfileInput>
 ) {
   if (data.categoryId != null) {
     const category = await db.transactionCategory.findUnique({
@@ -2219,7 +2217,7 @@ export async function updateCompensationProfile(
 
 export async function upsertCompensationPeriodBudget(
   profileId: number,
-  data: CompensationBudgetInput,
+  data: CompensationBudgetInput
 ) {
   assertPeriodOrThrow(data.period);
   const profile = await db.$queryRaw<Array<{ id: number }>>`
@@ -2265,7 +2263,7 @@ export async function upsertCompensationPeriodBudget(
 export async function listCompensationPeriodLedger(
   profileId: number,
   fromPeriod: string,
-  toPeriod: string,
+  toPeriod: string
 ) {
   assertPeriodOrThrow(fromPeriod);
   assertPeriodOrThrow(toPeriod);
@@ -2311,14 +2309,14 @@ export async function listCompensationPeriodLedger(
     budgets.map((item) => [
       item.period,
       { amount: Number(item.baseAmount), isLocked: item.isLocked },
-    ]),
+    ])
   );
   const allocatedByPeriod = new Map<string, number>();
   for (const allocation of allocations) {
     const current = allocatedByPeriod.get(allocation.period) ?? 0;
     allocatedByPeriod.set(
       allocation.period,
-      current + signedAllocationAmount(allocation.allocationType, Number(allocation.amount)),
+      current + signedAllocationAmount(allocation.allocationType, Number(allocation.amount))
     );
   }
 
@@ -2338,7 +2336,7 @@ export async function listCompensationPeriodLedger(
 
 export async function reallocateFinancialTransaction(
   transactionId: number,
-  data: ReallocateTransactionInput,
+  data: ReallocateTransactionInput
 ) {
   const fromPeriod = normalizePeriodOrThrow(data.fromPeriod);
   const targetPeriod = normalizePeriodOrThrow(data.targetPeriod);
@@ -2447,7 +2445,7 @@ export async function reallocateFinancialTransaction(
           select: {
             id: true,
           },
-        },
+        }
       );
       const originalAllocation =
         await tx.financialTransactionAllocation.findFirst(originalAllocationArgs);
@@ -2486,7 +2484,7 @@ export async function reallocateFinancialTransaction(
       const availableInFromPeriod = periodAllocations.reduce(
         (acc, allocation) =>
           acc + signedAllocationAmount(allocation.allocationType, Number(allocation.amount)),
-        0,
+        0
       );
 
       if (data.amount > availableInFromPeriod) {

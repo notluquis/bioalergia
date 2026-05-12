@@ -112,7 +112,7 @@ either:
 
 `current_app_user()` is `STABLE LEAKPROOF PARALLEL SAFE` so the
 planner can fold it and use indexes. Without `LEAKPROOF`, the policy
-predicate runs *before* index quals and forces a sequential scan on
+predicate runs _before_ index quals and forces a sequential scan on
 every query — Bytebase's "Postgres RLS Footguns" essay (2024) is the
 canonical warning.
 

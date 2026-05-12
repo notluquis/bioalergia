@@ -97,7 +97,7 @@ export function useParticipantInsightsData() {
   const [leaderboardLimit, setLeaderboardLimit] = useState(10);
   const [leaderboardGrouping, setLeaderboardGrouping] = useState<"account" | "rut">("account");
   const [selectedRange, setSelectedRange] = useState<RangeParams>(() =>
-    resolveRange("current", "", ""),
+    resolveRange("current", "", "")
   );
 
   // Derived
@@ -112,7 +112,7 @@ export function useParticipantInsightsData() {
 
   // 1. Leaderboard (Suspense-enabled)
   const { data: leaderboardData } = useSuspenseQuery(
-    participantQueries.leaderboard(leaderboardParams),
+    participantQueries.leaderboard(leaderboardParams)
   );
   const leaderboard = leaderboardData.participants || [];
 
@@ -125,7 +125,7 @@ export function useParticipantInsightsData() {
     participantQueries.detail({
       participantId: activeParticipantId,
       ...selectedRange,
-    }),
+    })
   );
 
   const monthly = detailData?.monthly || [];

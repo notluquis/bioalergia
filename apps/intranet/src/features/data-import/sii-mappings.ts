@@ -138,7 +138,7 @@ export function normalizeColumnHeader(header: string): string {
  */
 export function matchSIIHeader(
   csvHeader: string,
-  siiMappings: Record<string, string>,
+  siiMappings: Record<string, string>
 ): string | undefined {
   const normalizedCsvHeader = normalizeColumnHeader(csvHeader);
 

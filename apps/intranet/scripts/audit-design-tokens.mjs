@@ -55,22 +55,25 @@ const rules = [
   },
   {
     id: "native-confirm",
-    message: "Use confirmAction() from @/components/ui/ConfirmDialog instead of window.confirm/alert/prompt.",
+    message:
+      "Use confirmAction() from @/components/ui/ConfirmDialog instead of window.confirm/alert/prompt.",
     pattern: /(?:^|[^.\w])(?:confirm|alert|prompt)\s*\(\s*["'`]/g,
   },
   {
     id: "native-date-input",
-    message: 'Use <AppDatePicker /> or <AppDateTimePicker /> from @/components/forms/AppDatePicker — no native <input type="date|time|datetime-local">.',
+    message:
+      'Use <AppDatePicker /> or <AppDateTimePicker /> from @/components/forms/AppDatePicker — no native <input type="date|time|datetime-local">.',
     pattern: /type=["'](?:date|time|datetime-local)["']/g,
   },
   {
     id: "small-text",
-    message: 'Body text must be ≥12px. Use text-xs or .text-caption (uppercase tracked labels).',
+    message: "Body text must be ≥12px. Use text-xs or .text-caption (uppercase tracked labels).",
     pattern: /text-\[(?:10|11)px\]/g,
   },
   {
     id: "bg-white",
-    message: "bg-white leaks light theme into dark mode. Use bg-content1 instead (or add file to BG_WHITE_ALLOWLIST_PATHS if rendering external content).",
+    message:
+      "bg-white leaks light theme into dark mode. Use bg-content1 instead (or add file to BG_WHITE_ALLOWLIST_PATHS if rendering external content).",
     pattern: /\bbg-white\b/g,
     skipFile: (rel) => BG_WHITE_ALLOWLIST_PATHS.has(rel),
   },
@@ -94,7 +97,10 @@ function fileLevelIgnores(source) {
   // Accept "// design-lint-ignore-file: rule[,rule2...]" anywhere in first 30 lines.
   const head = source.split("\n").slice(0, 30).join("\n");
   for (const m of head.matchAll(/design-lint-ignore-file:\s*([\w,\s-]+)/g)) {
-    for (const id of m[1].split(",").map((s) => s.trim()).filter(Boolean)) {
+    for (const id of m[1]
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean)) {
       ignored.add(id);
     }
   }
@@ -154,7 +160,9 @@ if (findings.length > 0) {
     }
     console.error("");
   }
-  console.error('Suppress one-off intentional cases with `// design-lint-ignore: <ruleId>` above the line.');
+  console.error(
+    "Suppress one-off intentional cases with `// design-lint-ignore: <ruleId>` above the line."
+  );
   process.exit(1);
 }
 

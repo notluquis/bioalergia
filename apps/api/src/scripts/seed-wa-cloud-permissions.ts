@@ -7,8 +7,9 @@ config({ path: resolve(__dirname, "../../../../packages/db/.env") });
 
 const SUBJECTS = ["WaBusinessAccount"] as const;
 const ACTIONS = ["read", "create", "update", "delete"] as const;
-const TARGET_ROLES = process.env.WA_SEED_ROLES?.split(",").map((s) => s.trim()).filter(Boolean) ??
-  ["SystemAdministrator", "Admin", "Administrador", "Socio"];
+const TARGET_ROLES = process.env.WA_SEED_ROLES?.split(",")
+  .map((s) => s.trim())
+  .filter(Boolean) ?? ["SystemAdministrator", "Admin", "Administrador", "Socio"];
 
 async function main() {
   const { db } = await import("@finanzas/db");

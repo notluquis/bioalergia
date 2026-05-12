@@ -77,7 +77,7 @@ export const transactionsInsightsStatsResponseSchema = z.object({
       month: z.string(),
       net: z.number(),
       out: z.number(),
-    }),
+    })
   ),
   status: z.literal("ok"),
   totals: z.record(z.string(), z.number()),

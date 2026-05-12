@@ -80,10 +80,7 @@ describe("clinical series patient-name cleaning", () => {
         "llego, multitest alimentos 4,5,6,8, y pescado marisco (35), Zurait Higuera Morales",
         "zurait higuera morales",
       ],
-      [
-        "LLEGO aurora gatica cid (30) multitest panel 5 ovolacteos Y G8",
-        "aurora gatica cid",
-      ],
+      ["LLEGO aurora gatica cid (30) multitest panel 5 ovolacteos Y G8", "aurora gatica cid"],
       [
         "llego Paloma Olate quintana, multitest 1 2 3 acaros y alimentario debe incluir pescados (panel 9) (60)",
         "paloma olate quintana",
@@ -151,7 +148,10 @@ describe("clinical series patient-name cleaning", () => {
       ["LLEOG Romulo Velasquez, vacuna clustoid (50)", "romulo velasquez"],
       ["lleog Xavier VIDAUX,vacuna clustoid 50 ", "xavier vidaux"],
       ["llego Alba Soto Sepúlveda (30) aeroalergenos multites panel acaros", "alba soto sepulveda"],
-      ["llego+Juan Pablo Basualto Urra, multitest 1 2 3 (menores de 4 años) (30)", "juan pablo basualto urra"],
+      [
+        "llego+Juan Pablo Basualto Urra, multitest 1 2 3 (menores de 4 años) (30)",
+        "juan pablo basualto urra",
+      ],
       [
         "se lleva vacuna confirma control Vacuna Clustoid 0,5ml, correspondiente a mes de Febrero, sin costo, Sara Muñoz Muñoz, 43 años, San Carlos, Fonasa, 984137627",
         "sara munoz munoz",

@@ -31,7 +31,7 @@ export const personalFinanceCreateCreditInputSchema = z.object({
         installmentNumber: z.number().int(),
         interestAmount: z.number().optional(),
         otherCharges: z.number().optional(),
-      }),
+      })
     )
     .optional(),
   interestRate: z.number().optional(),
@@ -92,7 +92,7 @@ export const personalFinanceBackfillResponseSchema = z.object({
       paidAmountCLP: z.number(),
       paymentDate: z.string(),
       ufValue: z.number(),
-    }),
+    })
   ),
 });
 

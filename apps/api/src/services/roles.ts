@@ -163,7 +163,7 @@ export async function getRoleMappings(): Promise<RoleMapping[]> {
           typeof item === "object" &&
           item !== null &&
           typeof item.app_role === "string" &&
-          typeof item.employee_role === "string",
+          typeof item.employee_role === "string"
       )
       .map((item) => ({
         app_role: item.app_role.trim(),

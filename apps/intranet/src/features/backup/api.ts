@@ -39,7 +39,7 @@ const BackupJobSchema = z.looseObject({
           z.object({
             count: z.number(),
             hash: z.string(),
-          }),
+          })
         )
         .optional(),
       tables: z.array(z.string()),
@@ -105,7 +105,7 @@ export const triggerBackup = async (): Promise<BackupJob> => {
 export const triggerRestore = async (fileId: string, tables?: string[]): Promise<RestoreJob> => {
   try {
     const response = TriggerRestoreResponseSchema.parse(
-      await backupsORPCClient.restore({ fileId, tables }),
+      await backupsORPCClient.restore({ fileId, tables })
     );
     return response.job;
   } catch (error) {

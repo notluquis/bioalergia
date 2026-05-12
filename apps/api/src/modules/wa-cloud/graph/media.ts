@@ -11,7 +11,7 @@ export async function uploadMedia(
   phoneNumberId: number,
   file: Blob,
   mimeType: string,
-  filename: string,
+  filename: string
 ): Promise<{ id: string }> {
   const phone = await getAccountForPhoneNumber(phoneNumberId);
   const v = phone.account.graphApiVersion;
@@ -39,7 +39,7 @@ export async function uploadMedia(
 export async function markMessageRead(
   phoneNumberId: number,
   metaMessageId: string,
-  showTyping = false,
+  showTyping = false
 ) {
   const phone = await getAccountForPhoneNumber(phoneNumberId);
   const v = phone.account.graphApiVersion;
@@ -60,10 +60,7 @@ export async function markMessageRead(
 // inbound message even before the operator opens the conversation,
 // improving end-to-end tracking + giving the patient earlier "two
 // gray ticks" feedback.
-export async function markMessageDelivered(
-  phoneNumberId: number,
-  metaMessageId: string,
-) {
+export async function markMessageDelivered(phoneNumberId: number, metaMessageId: string) {
   const phone = await getAccountForPhoneNumber(phoneNumberId);
   const v = phone.account.graphApiVersion;
   const token = phone.account.systemUserToken!;
@@ -75,25 +72,26 @@ export async function markMessageDelivered(
       message_id: metaMessageId,
     },
     token,
-    v,
+    v
   );
 }
 
 export async function downloadMediaUrl(mediaId: string, accountId: number) {
   const account = await loadAccount(accountId);
   if (!account?.systemUserToken) throw new Error("Account sin token");
-  const meta = await graphGet<{ url: string; mime_type: string; sha256: string; file_size: number }>(
-    `/${mediaId}`,
-    account.systemUserToken,
-    account.graphApiVersion,
-  );
+  const meta = await graphGet<{
+    url: string;
+    mime_type: string;
+    sha256: string;
+    file_size: number;
+  }>(`/${mediaId}`, account.systemUserToken, account.graphApiVersion);
   return meta;
 }
 
 export async function uploadProfilePictureHandle(
   phoneNumberId: number,
   file: Blob,
-  filename: string,
+  filename: string
 ): Promise<string> {
   const phone = await getAccountForPhoneNumber(phoneNumberId);
   const v = phone.account.graphApiVersion;

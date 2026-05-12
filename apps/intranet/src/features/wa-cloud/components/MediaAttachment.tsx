@@ -444,9 +444,7 @@ function AudioPlayer({ src, out, onError }: { src: string; out: boolean; onError
             aria-label="Posición"
           />
         </div>
-        <p
-          className={`mt-0.5 text-xs ${out ? "text-success-foreground/80" : "text-default-500"}`}
-        >
+        <p className={`mt-0.5 text-xs ${out ? "text-success-foreground/80" : "text-default-500"}`}>
           {fmt(current)} / {fmt(duration)}
         </p>
       </div>

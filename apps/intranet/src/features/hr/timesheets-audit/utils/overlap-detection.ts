@@ -46,7 +46,7 @@ export function detectAllOverlaps(entries: TimesheetEntryWithEmployee[]): Map<st
  */
 export function detectOverlapsForDate(
   entries: TimesheetEntryWithEmployee[],
-  workDateKey: string,
+  workDateKey: string
 ): {
   names: [string, string];
   pair: [number, number];
@@ -101,7 +101,7 @@ export function formatDuration(hours: number): string {
  */
 export function getOverlappingEmployeesForDate(
   entries: TimesheetEntryWithEmployee[],
-  workDateKey: string,
+  workDateKey: string
 ): number[] {
   const dateEntries = entries.filter((e) => e.work_date === workDateKey);
   const overlappingIds = new Set<number>();
@@ -142,7 +142,7 @@ export function isTimeRangeOverlapping(
   start1: string,
   end1: string,
   start2: string,
-  end2: string,
+  end2: string
 ): boolean {
   const s1 = timeToMinutes(start1);
   const e1 = timeToMinutes(end1);
@@ -191,7 +191,7 @@ function normalizeRole(role: null | string | undefined): string {
 
 function rolesAreCompatibleForOverlap(
   roleA: null | string | undefined,
-  roleB: null | string | undefined,
+  roleB: null | string | undefined
 ): boolean {
   const nurseA = isNurseRole(roleA);
   const nurseB = isNurseRole(roleB);

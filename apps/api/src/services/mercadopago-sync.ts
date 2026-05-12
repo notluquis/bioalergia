@@ -29,7 +29,7 @@ export async function finalizeMpSyncLogEntry(
     excluded?: number;
     errorMessage?: string;
     changeDetails?: NonNullJsonValue;
-  },
+  }
 ) {
   await db.syncLog.update({
     where: { id },

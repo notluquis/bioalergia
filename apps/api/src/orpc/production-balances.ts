@@ -149,7 +149,7 @@ const productionBalancesORPCRouterBase = {
           licenciasMonto: input.licencias,
           roxairMonto: input.roxair,
         },
-        context.user.id,
+        context.user.id
       );
 
       return {

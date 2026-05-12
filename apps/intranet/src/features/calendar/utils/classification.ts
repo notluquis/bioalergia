@@ -105,7 +105,7 @@ export function buildDefaultEntry(event: CalendarUnclassifiedEvent) {
 
 export function buildPayload(
   entry: z.infer<typeof classificationSchema>,
-  event: CalendarUnclassifiedEvent,
+  event: CalendarUnclassifiedEvent
 ): ParsedPayload {
   const category = sanitizeSelectValue(entry.category);
   const resolvedCategoryRaw = category ?? event.category;
@@ -141,7 +141,7 @@ export function buildPayload(
       }
     : null;
   const hasPatchReading = Boolean(
-    testMetadata?.firstReading || testMetadata?.secondReading || testMetadata?.thirdReading,
+    testMetadata?.firstReading || testMetadata?.secondReading || testMetadata?.thirdReading
   );
   const amountExpected = hasPatchReading ? 0 : baseAmountExpected;
   const amountPaid = attended === false || hasPatchReading ? 0 : amountPaidRaw;
@@ -175,7 +175,7 @@ export function eventKey(event: Pick<CalendarUnclassifiedEvent, "calendarId" | "
 }
 
 export function isExplicitNoShowEvent(
-  event: Pick<CalendarUnclassifiedEvent, "description" | "summary">,
+  event: Pick<CalendarUnclassifiedEvent, "description" | "summary">
 ) {
   const text = `${event.summary ?? ""} ${event.description ?? ""}`;
   return NOT_ATTENDED_PATTERNS.some((pattern) => pattern.test(text));

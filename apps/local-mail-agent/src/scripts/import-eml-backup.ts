@@ -30,11 +30,24 @@ const IMPORT_SERVICE = "bioalergia-mail-import";
 const CONCURRENCY = 8;
 
 const FOLDER_MAP: Record<string, string> = {
-  INBOX: "INBOX", Inbox: "INBOX", inbox: "INBOX",
-  Sent: "Sent", sent: "Sent", "Sent Items": "Sent", "Sent Messages": "Sent",
-  Spam: "Spam", spam: "Spam", Junk: "Spam", "Junk Email": "Spam",
-  Trash: "Trash", trash: "Trash", Deleted: "Trash", "Deleted Items": "Trash",
-  Drafts: "Drafts", drafts: "Drafts", Scheduled: "Drafts",
+  INBOX: "INBOX",
+  Inbox: "INBOX",
+  inbox: "INBOX",
+  Sent: "Sent",
+  sent: "Sent",
+  "Sent Items": "Sent",
+  "Sent Messages": "Sent",
+  Spam: "Spam",
+  spam: "Spam",
+  Junk: "Spam",
+  "Junk Email": "Spam",
+  Trash: "Trash",
+  trash: "Trash",
+  Deleted: "Trash",
+  "Deleted Items": "Trash",
+  Drafts: "Drafts",
+  drafts: "Drafts",
+  Scheduled: "Drafts",
 };
 
 const ACCOUNT_MAP: Record<string, string> = {
@@ -61,7 +74,11 @@ const resolvedBackupDir: string = backupDir;
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 async function isDir(p: string) {
-  try { return (await stat(p)).isDirectory(); } catch { return false; }
+  try {
+    return (await stat(p)).isDirectory();
+  } catch {
+    return false;
+  }
 }
 
 async function listSubdirs(dir: string) {
@@ -138,7 +155,7 @@ interface AccountResult {
 async function importAccount(
   accountName: string,
   accountDir: string,
-  multibar: MultiBar,
+  multibar: MultiBar
 ): Promise<AccountResult> {
   const imapUser = ACCOUNT_MAP[accountName] ?? `${accountName}@bioalergia.cl`;
 
@@ -259,7 +276,8 @@ async function main() {
     let n = 0;
     for (const acc of filtered) {
       const folders = await listSubdirs(join(resolvedBackupDir, acc));
-      for (const folder of folders) n += (await listEmlFiles(join(resolvedBackupDir, acc, folder))).length;
+      for (const folder of folders)
+        n += (await listEmlFiles(join(resolvedBackupDir, acc, folder))).length;
     }
     return n;
   })();
@@ -277,16 +295,15 @@ async function main() {
       hideCursor: true,
       stopOnComplete: false,
       noTTYOutput: false,
-      format:
-        "  {label} [{bar}] {value}/{total} {percentage}%  ✓{ok} ✗{errors}  {rate}  ETA {eta}",
+      format: "  {label} [{bar}] {value}/{total} {percentage}%  ✓{ok} ✗{errors}  {rate}  ETA {eta}",
       barsize: 28,
     },
-    Presets.shades_grey,
+    Presets.shades_grey
   );
 
   // Todas las cuentas en paralelo
   const results = await Promise.all(
-    filtered.map((acc) => importAccount(acc, join(resolvedBackupDir, acc), multibar)),
+    filtered.map((acc) => importAccount(acc, join(resolvedBackupDir, acc), multibar))
   );
 
   multibar.stop();

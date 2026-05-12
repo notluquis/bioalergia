@@ -11,7 +11,7 @@ import type { MonthlyFlowData } from "../types";
 
 // Lazy load Recharts (heavy dependency)
 const MonthlyFlowChartInner = lazy(() =>
-  import("./MonthlyFlowChartInner.js").then((m) => ({ default: m.MonthlyFlowChartInner })),
+  import("./MonthlyFlowChartInner.js").then((m) => ({ default: m.MonthlyFlowChartInner }))
 );
 
 interface MonthlyFlowChartProps {

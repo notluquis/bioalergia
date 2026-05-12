@@ -20,7 +20,9 @@ export function isSkinTestCandidateFilename(filename: string): boolean {
     /\bteste\s+de\s+parches?\b/.test(spaced) ||
     /\bpruebas?\s+de\s+parches?\b/.test(spaced) ||
     /\btests?\s+cutane[oa]s?\b/.test(spaced) ||
-    /\bprick\s+(?:aeroalergenos?|aeroalergeno|alimentari[oa]s?|medicamentos?|aines?)\b/.test(spaced) ||
+    /\bprick\s+(?:aeroalergenos?|aeroalergeno|alimentari[oa]s?|medicamentos?|aines?)\b/.test(
+      spaced
+    ) ||
     /\bprick\s+[a-zñ]+(?:\s+[a-zñ]+){1,5}\b/.test(spaced) ||
     /^[a-zñ]+(?:\s+[a-zñ]+){0,4}\s+prick\b/.test(spaced) ||
     /\btests?\s+(?:de\s+)?aeroalergenos?\b/.test(spaced) ||
@@ -127,7 +129,9 @@ function normalizeSkinTestFilename(filename: string): string {
 }
 
 function isAdministrativeSkinTestWorkbookName(spaced: string): boolean {
-  if (/\b(?:costos?|cotizacion|inventario|invententario|recepcion|solicitud|lista)\b/.test(spaced)) {
+  if (
+    /\b(?:costos?|cotizacion|inventario|invententario|recepcion|solicitud|lista)\b/.test(spaced)
+  ) {
     return true;
   }
 

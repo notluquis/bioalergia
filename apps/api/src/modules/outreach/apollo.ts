@@ -53,7 +53,7 @@ export async function organizationEnrich(domain: string): Promise<ApolloOrganiza
   try {
     const data = await apolloRequest<{ organization?: ApolloOrganization }>(
       "/organizations/enrich",
-      { domain },
+      { domain }
     );
     return data.organization ?? null;
   } catch (err) {
@@ -77,20 +77,14 @@ const RRHH_TITLES = [
   "director general",
 ];
 
-export async function peopleSearchByDomain(
-  domain: string,
-  perPage = 5,
-): Promise<ApolloPerson[]> {
+export async function peopleSearchByDomain(domain: string, perPage = 5): Promise<ApolloPerson[]> {
   try {
-    const data = await apolloRequest<{ people?: ApolloPerson[] }>(
-      "/mixed_people/search",
-      {
-        q_organization_domains: domain,
-        person_titles: RRHH_TITLES,
-        page: 1,
-        per_page: perPage,
-      },
-    );
+    const data = await apolloRequest<{ people?: ApolloPerson[] }>("/mixed_people/search", {
+      q_organization_domains: domain,
+      person_titles: RRHH_TITLES,
+      page: 1,
+      per_page: perPage,
+    });
     return data.people ?? [];
   } catch (err) {
     logWarn("[outreach.apollo] peopleSearch failed", {

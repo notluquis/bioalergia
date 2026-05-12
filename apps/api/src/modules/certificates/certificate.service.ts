@@ -29,7 +29,7 @@ const drawLogoIfExists = async (
   page: Awaited<ReturnType<PDFDocument["addPage"]>>,
   logoPath: string,
   options: { alignRight?: boolean; scale: number; x: number; y: number },
-  label: string,
+  label: string
 ) => {
   try {
     if (!fs.existsSync(logoPath)) {
@@ -54,7 +54,7 @@ const drawHeaderLogos = async (
   page: Awaited<ReturnType<PDFDocument["addPage"]>>,
   margin: number,
   width: number,
-  y: number,
+  y: number
 ) => {
   await drawLogoIfExists(
     pdfDoc,
@@ -65,7 +65,7 @@ const drawHeaderLogos = async (
       x: margin,
       y,
     },
-    "bioalergia",
+    "bioalergia"
   );
 
   await drawLogoIfExists(
@@ -78,7 +78,7 @@ const drawHeaderLogos = async (
       x: width - margin,
       y,
     },
-    "aaaeic",
+    "aaaeic"
   );
 };
 
@@ -87,7 +87,7 @@ const drawPatientInfo = (
   font: PDFFont,
   margin: number,
   startY: number,
-  input: MedicalCertificateInput,
+  input: MedicalCertificateInput
 ) => {
   const patientInfo = [
     `Nombre Completo: ${input.patientName}`,
@@ -112,7 +112,7 @@ const drawBodyParagraphs = (
   margin: number,
   width: number,
   startY: number,
-  paragraphs: string[],
+  paragraphs: string[]
 ) => {
   let y = startY;
   for (const paragraph of paragraphs) {
@@ -132,7 +132,7 @@ const drawWatermark = (
   font: PDFFont,
   width: number,
   height: number,
-  date: string,
+  date: string
 ) => {
   const watermarkText = `Válido ${dayjs(date).format("DD/MM/YYYY")}`;
   page.drawText(watermarkText, {
@@ -151,7 +151,7 @@ const drawDoctorFooter = (
   font: PDFFont,
   boldFont: PDFFont,
   margin: number,
-  startY: number,
+  startY: number
 ) => {
   let y = startY;
   page.drawText(doctor.name, {
@@ -182,7 +182,7 @@ const drawDoctorFooter = (
 const drawFooterNote = (
   page: Awaited<ReturnType<PDFDocument["addPage"]>>,
   font: PDFFont,
-  width: number,
+  width: number
 ) => {
   page.drawText("Válida solo con firma y timbre", {
     x: width / 2 - font.widthOfTextAtSize("Válida solo con firma y timbre", 9) / 2,
@@ -197,7 +197,7 @@ const drawQrCode = async (
   pdfDoc: PDFDocument,
   page: Awaited<ReturnType<PDFDocument["addPage"]>>,
   qrCodeBuffer: Buffer,
-  width: number,
+  width: number
 ) => {
   try {
     const qrImage = await pdfDoc.embedPng(qrCodeBuffer);
@@ -231,7 +231,7 @@ export async function generateQRCode(certificateId: string): Promise<Buffer> {
  */
 export async function generateMedicalCertificatePdf(
   input: MedicalCertificateInput,
-  qrCodeBuffer?: Buffer,
+  qrCodeBuffer?: Buffer
 ): Promise<Uint8Array> {
   const pdfDoc = await PDFDocument.create();
   const page = pdfDoc.addPage([595.28, 841.89]); // A4
@@ -307,7 +307,7 @@ export async function generateMedicalCertificatePdf(
 export async function signPdf(
   pdfBytes: Uint8Array,
   pfxPath?: string,
-  pfxPassword?: string,
+  pfxPassword?: string
 ): Promise<Uint8Array> {
   const actualPassword = pfxPassword || process.env.PFX_PASSWORD || "";
 
@@ -376,24 +376,24 @@ function generateBodyText(input: MedicalCertificateInput): string[] {
 
   // Main certification
   paragraphs.push(
-    `Se certifica que ${input.patientName}, fue evaluada en atención médica el día ${formatDate(input.date)} por ${input.diagnosis}${input.symptoms ? `, presentando ${input.symptoms}` : ""}.`,
+    `Se certifica que ${input.patientName}, fue evaluada en atención médica el día ${formatDate(input.date)} por ${input.diagnosis}${input.symptoms ? `, presentando ${input.symptoms}` : ""}.`
   );
 
   // Status
   paragraphs.push(
-    "El cuadro se encuentra en estudio por el equipo clínico, con indicación de seguimiento y medidas de control según evolución.",
+    "El cuadro se encuentra en estudio por el equipo clínico, con indicación de seguimiento y medidas de control según evolución."
   );
 
   // Rest period
   if (input.restDays && input.restStartDate && input.restEndDate) {
     paragraphs.push(
-      `Por lo anterior, se indica reposo médico por ${input.restDays} (${input.restDays === 1 ? "un" : input.restDays}) día${input.restDays === 1 ? "" : "s"}, correspondiente al ${formatDate(input.restStartDate)}${input.restDays > 1 ? ` hasta el ${formatDate(input.restEndDate)}` : ""}, con la finalidad de favorecer recuperación y observación clínica.`,
+      `Por lo anterior, se indica reposo médico por ${input.restDays} (${input.restDays === 1 ? "un" : input.restDays}) día${input.restDays === 1 ? "" : "s"}, correspondiente al ${formatDate(input.restStartDate)}${input.restDays > 1 ? ` hasta el ${formatDate(input.restEndDate)}` : ""}, con la finalidad de favorecer recuperación y observación clínica.`
     );
   }
 
   // Recommendations
   paragraphs.push(
-    "Se le indica reposo y vigilancia de síntomas, evitar exposición a posibles desencadenantes hasta completar estudio, y control según indicación del equipo tratante o antes si presenta empeoramiento (dificultad respiratoria, edema progresivo, compromiso general u otros signos de alarma).",
+    "Se le indica reposo y vigilancia de síntomas, evitar exposición a posibles desencadenantes hasta completar estudio, y control según indicación del equipo tratante o antes si presenta empeoramiento (dificultad respiratoria, edema progresivo, compromiso general u otros signos de alarma)."
   );
 
   // Purpose

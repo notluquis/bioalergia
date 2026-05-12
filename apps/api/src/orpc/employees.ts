@@ -156,10 +156,16 @@ const employeesORPCRouterBase = {
     .route({ method: "PUT", path: "/{id}" })
     .input(employeeIdInputSchema.extend({ payload: employeeUpdatePayloadSchema }))
     .output(employeeResponseSchema)
-    .handler(async ({ input }: { input: { id: number; payload: z.input<typeof employeeUpdatePayloadSchema> } }) => {
-      const employee = await updateEmployee(input.id, input.payload);
-      return { employee: toPlainEmployee(employee) };
-    }),
+    .handler(
+      async ({
+        input,
+      }: {
+        input: { id: number; payload: z.input<typeof employeeUpdatePayloadSchema> };
+      }) => {
+        const employee = await updateEmployee(input.id, input.payload);
+        return { employee: toPlainEmployee(employee) };
+      }
+    ),
 };
 
 export const employeesORPCRouter = base

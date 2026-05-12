@@ -17,7 +17,7 @@ export async function saveBalance(date: string, balance: number, note?: string):
         balance,
         date,
         note: note?.trim() ? note.trim() : undefined,
-      }),
+      })
     );
   } catch (error) {
     throw toBalancesApiError(error);

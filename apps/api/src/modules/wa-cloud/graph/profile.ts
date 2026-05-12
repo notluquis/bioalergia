@@ -49,7 +49,7 @@ export async function getBusinessProfile(phoneNumberId: number) {
   const data = await graphGet<Resp>(
     `/${phone.phoneNumberId}/whatsapp_business_profile?fields=${fields}`,
     token,
-    v,
+    v
   );
   return data.data[0] ?? null;
 }
@@ -62,6 +62,6 @@ export async function updateBusinessProfile(phoneNumberId: number, fields: Busin
     `/${phone.phoneNumberId}/whatsapp_business_profile`,
     { messaging_product: "whatsapp", ...fields },
     token,
-    v,
+    v
   );
 }

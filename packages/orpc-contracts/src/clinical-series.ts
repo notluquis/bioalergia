@@ -1,8 +1,19 @@
 import { oc } from "@orpc/contract";
 import { z } from "zod";
 
-export const clinicalSeriesKindSchema = z.enum(["PATCH_TEST", "SKIN_TEST", "SUBCUTANEOUS_TREATMENT", "MEDICAL_CONSULTATION"]);
-export const clinicalSeriesStatusSchema = z.enum(["PLANNED", "ACTIVE", "INACTIVE", "COMPLETED", "CANCELLED"]);
+export const clinicalSeriesKindSchema = z.enum([
+  "PATCH_TEST",
+  "SKIN_TEST",
+  "SUBCUTANEOUS_TREATMENT",
+  "MEDICAL_CONSULTATION",
+]);
+export const clinicalSeriesStatusSchema = z.enum([
+  "PLANNED",
+  "ACTIVE",
+  "INACTIVE",
+  "COMPLETED",
+  "CANCELLED",
+]);
 export const clinicalSeriesViewModeSchema = z.enum(["series", "abandonment"]);
 export const clinicalSeriesAbandonmentBucketSchema = z.enum([
   "month_1",
@@ -42,7 +53,7 @@ export const clinicalSeriesEventSchema = z.object({
         dteSaleDetailId: z.string(),
         folio: z.string(),
         totalAmount: z.number(),
-      }),
+      })
     )
     .catch([]),
   linkedFolios: z.array(z.string()).catch([]),
@@ -145,7 +156,7 @@ export const clinicalSeriesInsuranceStatsSchema = z.object({
     z.object({
       providerName: z.string(),
       total: z.number().int(),
-    }),
+    })
   ),
   isapreUnidentified: z.number().int(),
   particular: z.number().int(),

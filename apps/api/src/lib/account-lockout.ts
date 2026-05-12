@@ -46,8 +46,7 @@ export async function recordLoginFailure(userId: number): Promise<{
     // from a single fat-finger session.
     void emitSecurityAlert({
       scope: `user:${userId}`,
-      alertType:
-        attempts >= LOCKOUT_THRESHOLD_LONG ? "login_lockout_long" : "login_lockout_short",
+      alertType: attempts >= LOCKOUT_THRESHOLD_LONG ? "login_lockout_long" : "login_lockout_short",
       severity: attempts >= LOCKOUT_THRESHOLD_LONG ? "critical" : "warning",
       title: `Cuenta bloqueada (usuario ${userId})`,
       message:
@@ -61,10 +60,7 @@ export async function recordLoginFailure(userId: number): Promise<{
   return { attempts, lockedUntil: lockUntil };
 }
 
-export async function recordLoginSuccess(
-  userId: number,
-  ip: string | null,
-): Promise<void> {
+export async function recordLoginSuccess(userId: number, ip: string | null): Promise<void> {
   const now = new Date();
   await db.user.update({
     where: { id: userId },

@@ -125,7 +125,7 @@ function buildDteLatestClientQuery(options: Omit<DteSalesSyncOptions, "dryRun">)
 }
 
 function normalizeDteClientRows(
-  rows: Awaited<ReturnType<ReturnType<typeof buildDteLatestClientQuery>["execute"]>>,
+  rows: Awaited<ReturnType<ReturnType<typeof buildDteLatestClientQuery>["execute"]>>
 ): NormalizedDteClientRow[] {
   return rows
     .map((row) => ({
@@ -149,7 +149,7 @@ function hasSourceChanges(
     period: string | null;
     sourceUpdatedAt: Date | null;
   },
-  nextData: Omit<NormalizedDteClientRow, "clientRUT">,
+  nextData: Omit<NormalizedDteClientRow, "clientRUT">
 ) {
   return (
     existing.clientName !== nextData.clientName ||
@@ -318,7 +318,7 @@ patientsRoutes.get(
         message: "Error al listar fuentes DTE de pacientes",
       });
     }
-  },
+  }
 );
 
 // POST /sources/dte/sync - Materialize patients source from DTE sales
@@ -340,7 +340,7 @@ patientsRoutes.post(
         message: "Error al sincronizar base de pacientes desde DTE sales",
       });
     }
-  },
+  }
 );
 
 // GET /:id - Get patient details
@@ -406,101 +406,102 @@ patientsRoutes.post(
   requirePermission("create", "Patient"),
   zValidator("json", createPatientSchema),
   async (c) => {
-  const input = c.req.valid("json");
-  try {
-    let canonicalRut: string;
+    const input = c.req.valid("json");
     try {
-      canonicalRut = requireCanonicalRut(input.rut);
-    } catch {
-      throw new AppError(400, { code: "BAD_REQUEST", message: "RUT inválido" });
-    }
+      let canonicalRut: string;
+      try {
+        canonicalRut = requireCanonicalRut(input.rut);
+      } catch {
+        throw new AppError(400, { code: "BAD_REQUEST", message: "RUT inválido" });
+      }
 
-    // 1. Check if person exists by canonical RUT
-    let person = await db.person.findFirst({
-      where: { rut: canonicalRut },
-    });
-
-    if (person) {
-      // Check if already a patient
-      const existingPatient = await db.patient.findUnique({
-        where: { personId: person.id },
+      // 1. Check if person exists by canonical RUT
+      let person = await db.person.findFirst({
+        where: { rut: canonicalRut },
       });
 
-      if (existingPatient) {
-        throw new AppError(409, {
-          code: "CONFLICT",
-          message: "El paciente ya está registrado",
+      if (person) {
+        // Check if already a patient
+        const existingPatient = await db.patient.findUnique({
+          where: { personId: person.id },
+        });
+
+        if (existingPatient) {
+          throw new AppError(409, {
+            code: "CONFLICT",
+            message: "El paciente ya está registrado",
+          });
+        }
+
+        // Refuse to rewrite a Person already linked to a User. A patient form
+        // with a typo'd RUT must not silently overwrite an employee's name.
+        const linkedUser = await db.user.findFirst({
+          where: { personId: person.id },
+          select: { id: true },
+        });
+        const namesDiffer =
+          (person.names ?? "") !== input.names ||
+          (person.fatherName ?? "") !== (input.fatherName ?? "") ||
+          (person.motherName ?? "") !== (input.motherName ?? "");
+        if (linkedUser && namesDiffer) {
+          throw new AppError(409, {
+            code: "CONFLICT",
+            message: `El RUT ${canonicalRut} ya pertenece a otro usuario del sistema (${person.names ?? ""} ${person.fatherName ?? ""} ${person.motherName ?? ""}). Verifica el RUT del paciente.`,
+          });
+        }
+
+        person = await db.person.update({
+          where: { id: person.id },
+          data: {
+            rut: canonicalRut,
+            names: linkedUser ? person.names : input.names,
+            fatherName: linkedUser ? person.fatherName : input.fatherName,
+            motherName: linkedUser ? person.motherName : input.motherName,
+            email: input.email || person.email,
+            phone: input.phone || person.phone,
+          },
+        });
+      } else {
+        // Create new person
+        person = await db.person.create({
+          data: {
+            rut: canonicalRut,
+            names: input.names,
+            fatherName: input.fatherName,
+            motherName: input.motherName,
+            email: input.email,
+            phone: input.phone,
+          },
         });
       }
 
-      // Refuse to rewrite a Person already linked to a User. A patient form
-      // with a typo'd RUT must not silently overwrite an employee's name.
-      const linkedUser = await db.user.findFirst({
-        where: { personId: person.id },
-        select: { id: true },
+      // 2. Create patient profile
+      const patient = await db.patient.create({
+        data: {
+          personId: person.id,
+          birthDate: input.birthDate ? parseDateOnly(input.birthDate) : null,
+          bloodType: input.bloodType,
+          notes: input.notes,
+        },
+        include: {
+          person: true,
+        },
       });
-      const namesDiffer =
-        (person.names ?? "") !== input.names ||
-        (person.fatherName ?? "") !== (input.fatherName ?? "") ||
-        (person.motherName ?? "") !== (input.motherName ?? "");
-      if (linkedUser && namesDiffer) {
-        throw new AppError(409, {
-          code: "CONFLICT",
-          message: `El RUT ${canonicalRut} ya pertenece a otro usuario del sistema (${person.names ?? ""} ${person.fatherName ?? ""} ${person.motherName ?? ""}). Verifica el RUT del paciente.`,
-        });
+
+      return replyRaw(c, patient, 201);
+    } catch (error) {
+      if (error instanceof AppError) {
+        throw error;
       }
-
-      person = await db.person.update({
-        where: { id: person.id },
-        data: {
-          rut: canonicalRut,
-          names: linkedUser ? person.names : input.names,
-          fatherName: linkedUser ? person.fatherName : input.fatherName,
-          motherName: linkedUser ? person.motherName : input.motherName,
-          email: input.email || person.email,
-          phone: input.phone || person.phone,
-        },
-      });
-    } else {
-      // Create new person
-      person = await db.person.create({
-        data: {
-          rut: canonicalRut,
-          names: input.names,
-          fatherName: input.fatherName,
-          motherName: input.motherName,
-          email: input.email,
-          phone: input.phone,
-        },
+      console.error("Error creating patient:", error);
+      throw new AppError(500, {
+        code: "PATIENT_CREATE_FAILED",
+        expose: false,
+        message: "Error al crear paciente",
       });
     }
-
-    // 2. Create patient profile
-    const patient = await db.patient.create({
-      data: {
-        personId: person.id,
-        birthDate: input.birthDate ? parseDateOnly(input.birthDate) : null,
-        bloodType: input.bloodType,
-        notes: input.notes,
-      },
-      include: {
-        person: true,
-      },
-    });
-
-    return replyRaw(c, patient, 201);
-  } catch (error) {
-    if (error instanceof AppError) {
-      throw error;
-    }
-    console.error("Error creating patient:", error);
-    throw new AppError(500, {
-      code: "PATIENT_CREATE_FAILED",
-      expose: false,
-      message: "Error al crear paciente",
-    });
   }
-});
+);
 
 // PUT /:id - Update patient
 patientsRoutes.put(
@@ -508,86 +509,87 @@ patientsRoutes.put(
   requirePermission("update", "Patient"),
   zValidator("json", updatePatientSchema),
   async (c) => {
-  const id = Number(c.req.param("id"));
-  const input = c.req.valid("json");
+    const id = Number(c.req.param("id"));
+    const input = c.req.valid("json");
 
-  if (Number.isNaN(id)) {
-    throw new AppError(400, {
-      code: "BAD_REQUEST",
-      message: "ID inválido",
-    });
-  }
-
-  try {
-    const patient = await db.patient.findUnique({
-      where: { id },
-      include: { person: true },
-    });
-
-    if (!patient) {
-      throw new AppError(404, {
-        code: "NOT_FOUND",
-        message: "Paciente no encontrado",
+    if (Number.isNaN(id)) {
+      throw new AppError(400, {
+        code: "BAD_REQUEST",
+        message: "ID inválido",
       });
     }
 
-    // Update person if person fields are provided
-    if (
-      input.names ||
-      input.fatherName ||
-      input.motherName ||
-      input.email !== undefined ||
-      input.phone ||
-      input.rut
-    ) {
-      const canonicalRut = input.rut ? canonicalRutFilter(input.rut) : undefined;
-      if (input.rut && !canonicalRut) {
-        throw new AppError(400, { code: "BAD_REQUEST", message: "RUT inválido" });
+    try {
+      const patient = await db.patient.findUnique({
+        where: { id },
+        include: { person: true },
+      });
+
+      if (!patient) {
+        throw new AppError(404, {
+          code: "NOT_FOUND",
+          message: "Paciente no encontrado",
+        });
       }
-      await db.person.update({
-        where: { id: patient.personId },
+
+      // Update person if person fields are provided
+      if (
+        input.names ||
+        input.fatherName ||
+        input.motherName ||
+        input.email !== undefined ||
+        input.phone ||
+        input.rut
+      ) {
+        const canonicalRut = input.rut ? canonicalRutFilter(input.rut) : undefined;
+        if (input.rut && !canonicalRut) {
+          throw new AppError(400, { code: "BAD_REQUEST", message: "RUT inválido" });
+        }
+        await db.person.update({
+          where: { id: patient.personId },
+          data: {
+            rut: canonicalRut,
+            names: input.names,
+            fatherName: input.fatherName,
+            motherName: input.motherName,
+            email: input.email,
+            phone: input.phone,
+          },
+        });
+      }
+
+      // Update patient fields
+      const updatedPatient = await db.patient.update({
+        where: { id },
         data: {
-          rut: canonicalRut,
-          names: input.names,
-          fatherName: input.fatherName,
-          motherName: input.motherName,
-          email: input.email,
-          phone: input.phone,
+          birthDate:
+            input.birthDate === null
+              ? null
+              : input.birthDate
+                ? parseDateOnly(input.birthDate)
+                : undefined,
+          bloodType: input.bloodType,
+          notes: input.notes,
+        },
+        include: {
+          person: true,
         },
       });
-    }
 
-    // Update patient fields
-    const updatedPatient = await db.patient.update({
-      where: { id },
-      data: {
-        birthDate:
-          input.birthDate === null
-            ? null
-            : input.birthDate
-              ? parseDateOnly(input.birthDate)
-              : undefined,
-        bloodType: input.bloodType,
-        notes: input.notes,
-      },
-      include: {
-        person: true,
-      },
-    });
-
-    return replyRaw(c, updatedPatient);
-  } catch (error) {
-    if (error instanceof AppError) {
-      throw error;
+      return replyRaw(c, updatedPatient);
+    } catch (error) {
+      if (error instanceof AppError) {
+        throw error;
+      }
+      console.error("Error updating patient:", error);
+      throw new AppError(500, {
+        code: "PATIENT_UPDATE_FAILED",
+        expose: false,
+        message: "Error al actualizar paciente",
+      });
     }
-    console.error("Error updating patient:", error);
-    throw new AppError(500, {
-      code: "PATIENT_UPDATE_FAILED",
-      expose: false,
-      message: "Error al actualizar paciente",
-    });
   }
-});
+);
 
 // POST /:id/consultations - Create consultation for patient
 patientsRoutes.post(
@@ -641,7 +643,7 @@ patientsRoutes.post(
         message: "Error al registrar la consulta",
       });
     }
-  },
+  }
 );
 
 // POST /:id/budgets - Create budget for patient
@@ -650,41 +652,45 @@ patientsRoutes.post(
   requirePermission("create", "Budget"),
   zValidator("json", createBudgetSchema),
   async (c) => {
-  const patientId = Number(c.req.param("id"));
-  const input = c.req.valid("json");
+    const patientId = Number(c.req.param("id"));
+    const input = c.req.valid("json");
 
-  if (Number.isNaN(patientId)) {
-    throw new AppError(400, {
-      code: "BAD_REQUEST",
-      message: "ID de paciente inválido",
-    });
+    if (Number.isNaN(patientId)) {
+      throw new AppError(400, {
+        code: "BAD_REQUEST",
+        message: "ID de paciente inválido",
+      });
+    }
+
+    try {
+      const totalAmount = input.items.reduce(
+        (sum, item) => sum + item.unitPrice * item.quantity,
+        0
+      );
+      const finalAmount = totalAmount - input.discount;
+
+      const budget = await db.budget.create({
+        data: {
+          patientId,
+          title: input.title,
+          totalAmount: new Decimal(totalAmount),
+          discount: new Decimal(input.discount),
+          finalAmount: new Decimal(finalAmount),
+          notes: input.notes,
+        },
+      });
+
+      return replyRaw(c, { ...budget, items: [] }, 201);
+    } catch (error) {
+      console.error("Error creating budget:", error);
+      throw new AppError(500, {
+        code: "PATIENT_BUDGET_CREATE_FAILED",
+        expose: false,
+        message: "Error al crear el presupuesto",
+      });
+    }
   }
-
-  try {
-    const totalAmount = input.items.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0);
-    const finalAmount = totalAmount - input.discount;
-
-    const budget = await db.budget.create({
-      data: {
-        patientId,
-        title: input.title,
-        totalAmount: new Decimal(totalAmount),
-        discount: new Decimal(input.discount),
-        finalAmount: new Decimal(finalAmount),
-        notes: input.notes,
-      },
-    });
-
-    return replyRaw(c, { ...budget, items: [] }, 201);
-  } catch (error) {
-    console.error("Error creating budget:", error);
-    throw new AppError(500, {
-      code: "PATIENT_BUDGET_CREATE_FAILED",
-      expose: false,
-      message: "Error al crear el presupuesto",
-    });
-  }
-});
+);
 
 // GET /:id/budgets - List patient budgets
 patientsRoutes.get("/:id/budgets", requirePermission("read", "Budget"), async (c) => {
@@ -705,7 +711,7 @@ patientsRoutes.get("/:id/budgets", requirePermission("read", "Budget"), async (c
     });
     return replyRaw(
       c,
-      budgets.map((budget) => ({ ...budget, items: [] })),
+      budgets.map((budget) => ({ ...budget, items: [] }))
     );
   } catch (error) {
     console.error("Error fetching budgets:", error);
@@ -723,39 +729,40 @@ patientsRoutes.post(
   requirePermission("create", "PatientPayment"),
   zValidator("json", createPaymentSchema),
   async (c) => {
-  const patientId = Number(c.req.param("id"));
-  const input = c.req.valid("json");
+    const patientId = Number(c.req.param("id"));
+    const input = c.req.valid("json");
 
-  if (Number.isNaN(patientId)) {
-    throw new AppError(400, {
-      code: "BAD_REQUEST",
-      message: "ID de paciente inválido",
-    });
+    if (Number.isNaN(patientId)) {
+      throw new AppError(400, {
+        code: "BAD_REQUEST",
+        message: "ID de paciente inválido",
+      });
+    }
+
+    try {
+      const payment = await db.patientPayment.create({
+        data: {
+          patientId,
+          budgetId: input.budgetId,
+          amount: new Decimal(input.amount),
+          paymentDate: parseDateOnly(input.paymentDate),
+          paymentMethod: input.paymentMethod,
+          reference: input.reference,
+          notes: input.notes,
+        },
+      });
+
+      return replyRaw(c, payment, 201);
+    } catch (error) {
+      console.error("Error registering payment:", error);
+      throw new AppError(500, {
+        code: "PATIENT_PAYMENT_CREATE_FAILED",
+        expose: false,
+        message: "Error al registrar pago",
+      });
+    }
   }
-
-  try {
-    const payment = await db.patientPayment.create({
-      data: {
-        patientId,
-        budgetId: input.budgetId,
-        amount: new Decimal(input.amount),
-        paymentDate: parseDateOnly(input.paymentDate),
-        paymentMethod: input.paymentMethod,
-        reference: input.reference,
-        notes: input.notes,
-      },
-    });
-
-    return replyRaw(c, payment, 201);
-  } catch (error) {
-    console.error("Error registering payment:", error);
-    throw new AppError(500, {
-      code: "PATIENT_PAYMENT_CREATE_FAILED",
-      expose: false,
-      message: "Error al registrar pago",
-    });
-  }
-});
+);
 
 // GET /:id/payments - List patient payments
 patientsRoutes.get("/:id/payments", requirePermission("read", "PatientPayment"), async (c) => {
@@ -788,10 +795,7 @@ patientsRoutes.get("/:id/payments", requirePermission("read", "PatientPayment"),
  * POST /:id/attachments
  * Upload a document for a patient
  */
-patientsRoutes.post(
-  "/:id/attachments",
-  requirePermission("update", "Patient"),
-  async (c) => {
+patientsRoutes.post("/:id/attachments", requirePermission("update", "Patient"), async (c) => {
   const { id } = c.req.param();
   const user = c.get("user");
 
@@ -815,7 +819,7 @@ patientsRoutes.post(
       temp.filepath,
       name,
       file.type,
-      id,
+      id
     );
 
     const attachmentType: AttachmentType =

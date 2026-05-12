@@ -22,8 +22,7 @@ export type ProductionBalancePayload = {
 
 export type ProductionBalanceUpdatePayload = Partial<ProductionBalancePayload>;
 
-const toDateOnly = (value: string) =>
-  dayjs.utc(value, "YYYY-MM-DD").startOf("day").toDate();
+const toDateOnly = (value: string) => dayjs.utc(value, "YYYY-MM-DD").startOf("day").toDate();
 
 export async function listProductionBalances(from: string, to: string) {
   const fromDate = dayjs.utc(from, "YYYY-MM-DD").startOf("day").toDate();

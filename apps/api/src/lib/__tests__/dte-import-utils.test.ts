@@ -63,13 +63,13 @@ describe("parseDate", () => {
 describe("areDataDifferent", () => {
   it("returns false when data is identical", () => {
     expect(areDataDifferent({ name: "Juan", amount: 100 }, { name: "Juan", amount: 100 })).toBe(
-      false,
+      false
     );
   });
 
   it("returns true when a field differs", () => {
     expect(areDataDifferent({ name: "Juan", amount: 100 }, { name: "Pedro", amount: 100 })).toBe(
-      true,
+      true
     );
   });
 
@@ -77,8 +77,8 @@ describe("areDataDifferent", () => {
     expect(
       areDataDifferent(
         { id: 1, createdAt: new Date(), name: "Juan" },
-        { id: 99, createdAt: new Date(0), name: "Juan" },
-      ),
+        { id: 99, createdAt: new Date(0), name: "Juan" }
+      )
     ).toBe(false);
   });
 

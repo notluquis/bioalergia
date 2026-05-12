@@ -6,37 +6,31 @@ import { HeroSection } from "@/sections/HeroSection";
 import { SiteFooter } from "@/components/SiteFooter";
 
 const MissionSection = lazy(() =>
-  import("@/sections/MissionSection").then((m) => ({ default: m.MissionSection })),
+  import("@/sections/MissionSection").then((m) => ({ default: m.MissionSection }))
 );
 const FounderSection = lazy(() =>
-  import("@/sections/FounderSection").then((m) => ({ default: m.FounderSection })),
+  import("@/sections/FounderSection").then((m) => ({ default: m.FounderSection }))
 );
 const ServicesSection = lazy(() =>
-  import("@/sections/ServicesSection").then((m) => ({ default: m.ServicesSection })),
+  import("@/sections/ServicesSection").then((m) => ({ default: m.ServicesSection }))
 );
 const ImmunotherapySection = lazy(() =>
-  import("@/sections/ImmunotherapySection").then((m) => ({ default: m.ImmunotherapySection })),
+  import("@/sections/ImmunotherapySection").then((m) => ({ default: m.ImmunotherapySection }))
 );
 const LocationSection = lazy(() =>
-  import("@/sections/LocationSection").then((m) => ({ default: m.LocationSection })),
+  import("@/sections/LocationSection").then((m) => ({ default: m.LocationSection }))
 );
 const FAQSection = lazy(() =>
-  import("@/sections/FAQSection").then((m) => ({ default: m.FAQSection })),
+  import("@/sections/FAQSection").then((m) => ({ default: m.FAQSection }))
 );
 const GlossarySection = lazy(() =>
-  import("@/sections/GlossarySection").then((m) => ({ default: m.GlossarySection })),
+  import("@/sections/GlossarySection").then((m) => ({ default: m.GlossarySection }))
 );
 const DoctoraliaCertificate = lazy(() =>
-  import("@/sections/DoctoraliaWidgets").then((m) => ({ default: m.DoctoraliaCertificate })),
+  import("@/sections/DoctoraliaWidgets").then((m) => ({ default: m.DoctoraliaCertificate }))
 );
 
-export function HomePage({
-  onBook,
-  onWhatsApp,
-}: {
-  onBook: () => void;
-  onWhatsApp: () => void;
-}) {
+export function HomePage({ onBook, onWhatsApp }: { onBook: () => void; onWhatsApp: () => void }) {
   return (
     <>
       <main className="grid gap-20">
@@ -87,4 +81,3 @@ export function HomePage({
     </>
   );
 }
-

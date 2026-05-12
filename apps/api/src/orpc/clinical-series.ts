@@ -118,29 +118,45 @@ const clinicalSeriesORPCRouterBase = {
     .route({ method: "POST", path: "/merge" })
     .input(clinicalSeriesMergeInputSchema)
     .output(clinicalSeriesMergeOutputSchema)
-    .handler(async ({ input, context }: { input: z.input<typeof clinicalSeriesMergeInputSchema>; context: { user: { id: number } } }) => {
-      const result = await mergeClinicalSeries({
-        isAuto: false,
-        mergeReason: input.mergeReason,
-        mergedBy: context.user.id,
-        sourceId: input.sourceId,
-        targetId: input.targetId,
-      });
-      return { eventsMovedCount: result.eventsMovedCount, targetId: input.targetId };
-    }),
+    .handler(
+      async ({
+        input,
+        context,
+      }: {
+        input: z.input<typeof clinicalSeriesMergeInputSchema>;
+        context: { user: { id: number } };
+      }) => {
+        const result = await mergeClinicalSeries({
+          isAuto: false,
+          mergeReason: input.mergeReason,
+          mergedBy: context.user.id,
+          sourceId: input.sourceId,
+          targetId: input.targetId,
+        });
+        return { eventsMovedCount: result.eventsMovedCount, targetId: input.targetId };
+      }
+    ),
 
   createAbandonmentContact: updateClinicalSeries
     .route({ method: "POST", path: "/abandonment-contacts" })
     .input(createAbandonmentContactInputSchema)
     .output(createAbandonmentContactOutputSchema)
-    .handler(async ({ input, context }: { input: z.input<typeof createAbandonmentContactInputSchema>; context: { user: { id: number } } }) => {
-      return await createAbandonmentContact({
-        seriesId: input.seriesId,
-        outcome: input.outcome,
-        notes: input.notes,
-        contactedById: context.user.id,
-      });
-    }),
+    .handler(
+      async ({
+        input,
+        context,
+      }: {
+        input: z.input<typeof createAbandonmentContactInputSchema>;
+        context: { user: { id: number } };
+      }) => {
+        return await createAbandonmentContact({
+          seriesId: input.seriesId,
+          outcome: input.outcome,
+          notes: input.notes,
+          contactedById: context.user.id,
+        });
+      }
+    ),
 
   listAbandonmentContacts: readClinicalSeries
     .route({ method: "GET", path: "/abandonment-contacts" })

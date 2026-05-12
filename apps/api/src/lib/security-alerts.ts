@@ -52,7 +52,7 @@ const ADMIN_ROLE_NAMES = ["super_admin", "admin"];
 async function withinThrottle(
   scope: string,
   alertType: string,
-  windowMs: number,
+  windowMs: number
 ): Promise<boolean> {
   const existing = await db.securityAlertState.findUnique({
     where: { scope_alertType: { scope, alertType } },
@@ -82,15 +82,16 @@ async function adminUserIdsWithPush(): Promise<number[]> {
 }
 
 async function fanoutPush(input: SecurityAlertInput, userIds: number[]): Promise<void> {
-  const severityMark = input.severity === "critical" ? "🚨" : input.severity === "warning" ? "⚠️" : "ℹ️";
+  const severityMark =
+    input.severity === "critical" ? "🚨" : input.severity === "warning" ? "⚠️" : "ℹ️";
   await Promise.allSettled(
     userIds.map((userId) =>
       sendPushNotification(userId, {
         title: `${severityMark} ${input.title}`,
         body: input.message,
         url: input.url,
-      }),
-    ),
+      })
+    )
   );
 }
 

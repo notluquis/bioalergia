@@ -157,19 +157,34 @@ export const usersStatusResponseSchema = z.object({
 });
 
 export const usersContract = {
-  delete: oc.route({ method: "DELETE", path: "/{id}" }).input(userIdSchema).output(usersStatusResponseSchema),
+  delete: oc
+    .route({ method: "DELETE", path: "/{id}" })
+    .input(userIdSchema)
+    .output(usersStatusResponseSchema),
   deletePasskey: oc
     .route({ method: "DELETE", path: "/{id}/passkey" })
     .input(userIdSchema)
     .output(usersStatusResponseSchema),
-  invite: oc.route({ method: "POST", path: "/invite" }).input(inviteUserSchema).output(inviteResponseSchema),
-  list: oc.route({ method: "GET", path: "/" }).input(usersListInputSchema).output(usersResponseSchema),
-  profile: oc.route({ method: "GET", path: "/profile" }).input(z.object({})).output(userProfileResponseSchema),
+  invite: oc
+    .route({ method: "POST", path: "/invite" })
+    .input(inviteUserSchema)
+    .output(inviteResponseSchema),
+  list: oc
+    .route({ method: "GET", path: "/" })
+    .input(usersListInputSchema)
+    .output(usersResponseSchema),
+  profile: oc
+    .route({ method: "GET", path: "/profile" })
+    .input(z.object({}))
+    .output(userProfileResponseSchema),
   resetPassword: oc
     .route({ method: "POST", path: "/{id}/reset-password" })
     .input(userIdSchema)
     .output(resetPasswordResponseSchema),
-  setup: oc.route({ method: "POST", path: "/setup" }).input(setupUserSchema).output(usersStatusResponseSchema),
+  setup: oc
+    .route({ method: "POST", path: "/setup" })
+    .input(setupUserSchema)
+    .output(usersStatusResponseSchema),
   toggleMfa: oc
     .route({ method: "POST", path: "/{id}/mfa" })
     .input(toggleMfaSchema)

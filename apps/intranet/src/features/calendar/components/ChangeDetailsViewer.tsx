@@ -42,7 +42,7 @@ function ChangeGroup({ action, items }: Readonly<{ action: string; items: Change
             cfg.color === "primary" && "text-info",
             cfg.color === "danger" && "text-danger",
             cfg.color === "warning" && "text-warning",
-            cfg.color === "default" && "text-foreground-500",
+            cfg.color === "default" && "text-foreground-500"
           )}
         >
           {cfg.label}
@@ -59,7 +59,7 @@ function ChangeGroup({ action, items }: Readonly<{ action: string; items: Change
                 cfg.color === "primary" && "border-primary-200 text-info",
                 cfg.color === "danger" && "border-danger-200 text-danger",
                 cfg.color === "warning" && "border-warning-200 text-warning",
-                cfg.color === "default" && "border-default-200 text-foreground-500",
+                cfg.color === "default" && "border-default-200 text-foreground-500"
               )}
             >
               <Icon className="h-4 w-4" />

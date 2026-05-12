@@ -54,7 +54,10 @@ import {
   patientCampaignsORPCHandler,
 } from "./orpc/patient-campaigns.ts";
 import { peopleOpenAPIHandler, peopleORPCHandler } from "./orpc/people.ts";
-import { personalFinanceOpenAPIHandler, personalFinanceORPCHandler } from "./orpc/personal-finance.ts";
+import {
+  personalFinanceOpenAPIHandler,
+  personalFinanceORPCHandler,
+} from "./orpc/personal-finance.ts";
 import {
   productionBalancesOpenAPIHandler,
   productionBalancesORPCHandler,
@@ -80,10 +83,7 @@ import {
   transactionsInsightsORPCHandler,
 } from "./orpc/transactions-insights.ts";
 import { usersOpenAPIHandler, usersORPCHandler } from "./orpc/users.ts";
-import {
-  utilityBillsOpenAPIHandler,
-  utilityBillsORPCHandler,
-} from "./orpc/utility-bills.ts";
+import { utilityBillsOpenAPIHandler, utilityBillsORPCHandler } from "./orpc/utility-bills.ts";
 import { waCloudOpenAPIHandler, waCloudORPCHandler } from "./orpc/wa-cloud.ts";
 import { shipmentsOpenAPIHandler, shipmentsORPCHandler } from "./orpc/shipments.ts";
 import { doctoraliaScraperRoutes } from "./routes/doctoralia-scraper.ts";
@@ -118,7 +118,7 @@ app.use(
     originAgentCluster: "?1",
     xDownloadOptions: "noopen",
     xDnsPrefetchControl: "off",
-  }),
+  })
 );
 
 // Security headers and CSP for Cloudflare + Vite
@@ -181,7 +181,7 @@ if (process.env.NODE_ENV === "production" && allowedProdOrigins.length === 0) {
   // (comma-separated list of full origins, e.g. "https://intranet.bioalergia.cl").
   // eslint-disable-next-line no-console
   console.warn(
-    "[security] CORS_ORIGIN is empty in production — all cross-origin browser requests will be rejected. Set CORS_ORIGIN env to your intranet origin.",
+    "[security] CORS_ORIGIN is empty in production — all cross-origin browser requests will be rejected. Set CORS_ORIGIN env to your intranet origin."
   );
 }
 app.use(
@@ -293,8 +293,7 @@ const webhookRateLimiter = rateLimiter({
   windowMs: 60 * 1000,
   limit: 120,
   standardHeaders: "draft-6",
-  keyGenerator: (c) =>
-    c.req.header("x-forwarded-for") || c.req.header("x-real-ip") || "anonymous",
+  keyGenerator: (c) => c.req.header("x-forwarded-for") || c.req.header("x-real-ip") || "anonymous",
   skip: (c) => c.req.method === "OPTIONS",
 });
 app.use("/api/webhooks/*", webhookRateLimiter);
@@ -308,7 +307,7 @@ app.use(
   bodyLimit({
     maxSize: 1 * 1024 * 1024,
     onError: (c) => c.text("Payload too large", 413),
-  }),
+  })
 );
 
 // Hard request timeout: anything that takes longer than 30s is almost
@@ -843,10 +842,13 @@ app.use("/api/orpc/clinical-series/rpc/*", async (c, next) => {
 });
 
 app.use("/api/orpc/clinical-skin-tests/rpc/*", async (c, next) => {
-  const { matched, response } = await clinicalSkinTestsORPCHandler.handle(createHonoORPCRequest(c), {
-    prefix: "/api/orpc/clinical-skin-tests/rpc",
-    context: { hono: c },
-  });
+  const { matched, response } = await clinicalSkinTestsORPCHandler.handle(
+    createHonoORPCRequest(c),
+    {
+      prefix: "/api/orpc/clinical-skin-tests/rpc",
+      context: { hono: c },
+    }
+  );
   if (matched) {
     return c.newResponse(response.body, response);
   }
@@ -890,7 +892,8 @@ app.get("/api/backups/progress", async (c) => {
   const stream = new ReadableStream({
     start(controller) {
       const currentJobs = getCurrentBackupJobs();
-      const backupJob = currentJobs.find((j) => j.type === "full" || j.type === "scheduled") ?? null;
+      const backupJob =
+        currentJobs.find((j) => j.type === "full" || j.type === "scheduled") ?? null;
 
       // Send initial snapshot
       controller.enqueue(
@@ -898,7 +901,7 @@ app.get("/api/backups/progress", async (c) => {
           type: "init",
           job: backupJob,
           jobs: { backup: backupJob, restore: null },
-        }),
+        })
       );
 
       const interval = setInterval(() => {
@@ -910,7 +913,7 @@ app.get("/api/backups/progress", async (c) => {
               type: backup ? "backup" : "init",
               job: backup,
               jobs: { backup, restore: null },
-            }),
+            })
           );
         } catch {
           clearInterval(interval);
@@ -1207,13 +1210,10 @@ app.use("/api/orpc/users/rpc/*", async (c, next) => {
 });
 
 app.use("/api/orpc/utility-bills/rpc/*", async (c, next) => {
-  const { matched, response } = await utilityBillsORPCHandler.handle(
-    createHonoORPCRequest(c),
-    {
-      prefix: "/api/orpc/utility-bills/rpc",
-      context: { hono: c },
-    },
-  );
+  const { matched, response } = await utilityBillsORPCHandler.handle(createHonoORPCRequest(c), {
+    prefix: "/api/orpc/utility-bills/rpc",
+    context: { hono: c },
+  });
 
   if (matched) {
     return c.newResponse(response.body, response);
@@ -1394,13 +1394,10 @@ app.use("/api/orpc/addresses/*", async (c, next) => {
 });
 
 app.use("/api/orpc/patient-campaigns/rpc/*", async (c, next) => {
-  const { matched, response } = await patientCampaignsORPCHandler.handle(
-    createHonoORPCRequest(c),
-    {
-      prefix: "/api/orpc/patient-campaigns/rpc",
-      context: { hono: c },
-    }
-  );
+  const { matched, response } = await patientCampaignsORPCHandler.handle(createHonoORPCRequest(c), {
+    prefix: "/api/orpc/patient-campaigns/rpc",
+    context: { hono: c },
+  });
 
   if (matched) {
     return c.newResponse(response.body, response);
@@ -1629,10 +1626,9 @@ app.use("/api/orpc/users/*", async (c, next) => {
 });
 
 app.use("/api/orpc/utility-bills/*", async (c, next) => {
-  const { matched, response } = await utilityBillsOpenAPIHandler.handle(
-    createHonoORPCRequest(c),
-    { context: { hono: c } },
-  );
+  const { matched, response } = await utilityBillsOpenAPIHandler.handle(createHonoORPCRequest(c), {
+    context: { hono: c },
+  });
 
   if (matched) {
     return c.newResponse(response.body, response);
@@ -1870,9 +1866,12 @@ app.use("/api/orpc/clinical-series/*", async (c, next) => {
 });
 
 app.use("/api/orpc/clinical-skin-tests/*", async (c, next) => {
-  const { matched, response } = await clinicalSkinTestsOpenAPIHandler.handle(createHonoORPCRequest(c), {
-    context: { hono: c },
-  });
+  const { matched, response } = await clinicalSkinTestsOpenAPIHandler.handle(
+    createHonoORPCRequest(c),
+    {
+      context: { hono: c },
+    }
+  );
   if (matched) {
     return c.newResponse(response.body, response);
   }
@@ -1880,9 +1879,12 @@ app.use("/api/orpc/clinical-skin-tests/*", async (c, next) => {
 });
 
 app.use("/api/orpc/clinical-records/*", async (c, next) => {
-  const { matched, response } = await clinicalRecordsOpenAPIHandler.handle(createHonoORPCRequest(c), {
-    context: { hono: c },
-  });
+  const { matched, response } = await clinicalRecordsOpenAPIHandler.handle(
+    createHonoORPCRequest(c),
+    {
+      context: { hono: c },
+    }
+  );
   if (matched) {
     return c.newResponse(response.body, response);
   }

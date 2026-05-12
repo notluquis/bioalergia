@@ -208,7 +208,7 @@ async function ensureCounterpartsExist(rows: WithdrawImportRow[]) {
     if (!counterparts.has(row.identificationNumber)) {
       counterparts.set(
         row.identificationNumber,
-        row.bankAccountHolder?.trim() || row.identificationNumber,
+        row.bankAccountHolder?.trim() || row.identificationNumber
       );
     }
   }
@@ -258,7 +258,8 @@ function buildWithdrawalPreview(params: {
   mode: CsvUploadMode;
   updateRows: WithdrawImportRow[];
 }): PreviewLikeResponse {
-  const { errors, includeInsertRowIndexes, includeUpdateRows, insertRows, mode, updateRows } = params;
+  const { errors, includeInsertRowIndexes, includeUpdateRows, insertRows, mode, updateRows } =
+    params;
 
   return {
     errors: errors.length > 0 ? errors : undefined,
@@ -358,10 +359,7 @@ function chunkRows<T>(rows: T[], size: number): T[][] {
   return chunks;
 }
 
-async function importWithdrawals(input: {
-  data: CsvUploadRow[];
-  mode?: CsvUploadMode;
-}) {
+async function importWithdrawals(input: { data: CsvUploadRow[]; mode?: CsvUploadMode }) {
   const mode = input.mode ?? "insert-only";
   const { errors, validRows } = parseWithdrawalRows(input.data);
   const { insertRows, updateRows } = await classifyWithdrawalRows(validRows);

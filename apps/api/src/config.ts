@@ -47,7 +47,7 @@ export const haulmerConfig: HaulmerEnvConfig | null =
 
 if (haulmerEnvMissing.length > 0) {
   console.warn(
-    `[config] Haulmer sync deshabilitado. Variables faltantes: ${haulmerEnvMissing.join(", ")}`,
+    `[config] Haulmer sync deshabilitado. Variables faltantes: ${haulmerEnvMissing.join(", ")}`
   );
 }
 
@@ -106,7 +106,7 @@ if (!googleServiceAccountEmail) {
 }
 
 const googleServiceAccountPrivateKey = normalizePrivateKey(
-  process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY,
+  process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY
 );
 if (!googleServiceAccountPrivateKey) {
   googleCalendarEnvMissing.push("GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY");
@@ -139,7 +139,7 @@ export const googleCalendarConfig: GoogleCalendarConfig | null =
 
 if (googleCalendarEnvMissing.length > 0) {
   console.warn(
-    `[config] Google Calendar sync deshabilitado. Variables faltantes: ${googleCalendarEnvMissing.join(", ")}`,
+    `[config] Google Calendar sync deshabilitado. Variables faltantes: ${googleCalendarEnvMissing.join(", ")}`
   );
 }
 
@@ -149,7 +149,7 @@ export const doctoraliaScraperApiToken: string | null =
 
 if (!doctoraliaScraperApiToken) {
   console.warn(
-    "[config] Doctoralia scraper API deshabilitado. Variable faltante: DOCTORALIA_SCRAPER_API_TOKEN",
+    "[config] Doctoralia scraper API deshabilitado. Variable faltante: DOCTORALIA_SCRAPER_API_TOKEN"
   );
 }
 
@@ -188,7 +188,5 @@ export const chilexpressConfig: ChilexpressConfig | null =
     : null;
 
 if (cxMissing.length > 0) {
-  console.warn(
-    `[config] ChileExpress deshabilitado. Variables faltantes: ${cxMissing.join(", ")}`,
-  );
+  console.warn(`[config] ChileExpress deshabilitado. Variables faltantes: ${cxMissing.join(", ")}`);
 }

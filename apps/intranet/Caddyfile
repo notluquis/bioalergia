@@ -66,6 +66,13 @@
 		}
 	}
 
+	# RFC 9116 well-known — security.txt + companion policy. Served as
+	# plaintext, never falls through to the SPA index.html.
+	handle /.well-known/* {
+		header Content-Type "text/plain; charset=utf-8"
+		file_server
+	}
+
 	# Static assets: Return 404 if not found (prevents MIME type errors for missing JS chunks)
 	# This handles cases where old HTML references deleted Vite chunks
 	@static_assets path_regexp \.(js|mjs|css|map|json|woff2?|ttf|eot|svg|png|jpg|jpeg|gif|webp|ico|webmanifest)$

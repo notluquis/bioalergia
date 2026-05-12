@@ -7,7 +7,7 @@ describe("clinical series beneficiary to patient promotion", () => {
       shouldPromoteBeneficiaryToPatientIdentity({
         beneficiaryName: "Mingtsu Leonardo Chang Liu",
         patientName: "mingtsu leonardo chang liu",
-      }),
+      })
     ).toBe(true);
   });
 
@@ -16,7 +16,7 @@ describe("clinical series beneficiary to patient promotion", () => {
       shouldPromoteBeneficiaryToPatientIdentity({
         beneficiaryName: "Luis Hormazabal Saez",
         patientName: "emilio sabath saez",
-      }),
+      })
     ).toBe(false);
   });
 
@@ -26,7 +26,7 @@ describe("clinical series beneficiary to patient promotion", () => {
         beneficiaryName: null,
         dteClientNames: ["MINGTSU LEONARDO CHANG LIU"],
         patientName: "mingtsu leonardo chang liu",
-      }),
+      })
     ).toBe(true);
   });
 });

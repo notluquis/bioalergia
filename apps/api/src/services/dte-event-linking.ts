@@ -38,11 +38,11 @@ function parsePositiveIntegerEnv(value: undefined | string, fallback: number): n
 }
 
 const REEMBOLSO_MULTI_DATE_BUNDLE_ENABLED = parseBooleanEnv(
-  process.env.DTE_REEMBOLSO_MULTI_DATE_BUNDLE_ENABLED,
+  process.env.DTE_REEMBOLSO_MULTI_DATE_BUNDLE_ENABLED
 );
 const REEMBOLSO_MULTI_DATE_WINDOW_DAYS = parsePositiveIntegerEnv(
   process.env.DTE_REEMBOLSO_MULTI_DATE_WINDOW_DAYS,
-  DEFAULT_REEMBOLSO_MULTI_DATE_WINDOW_DAYS,
+  DEFAULT_REEMBOLSO_MULTI_DATE_WINDOW_DAYS
 );
 
 const EVENT_NOISE_TOKENS = new Set([
@@ -532,7 +532,10 @@ function containsName(hint: string, candidateName: string): boolean {
   const normalizedCandidate = normalizeName(candidateName);
   if (!normalizedHint || !normalizedCandidate) return false;
   // Direct substring check (original)
-  if (normalizedHint.includes(normalizedCandidate) || normalizedCandidate.includes(normalizedHint)) {
+  if (
+    normalizedHint.includes(normalizedCandidate) ||
+    normalizedCandidate.includes(normalizedHint)
+  ) {
     return true;
   }
   // Token-sorted comparison: catches SII reversed format
@@ -587,7 +590,8 @@ function extractNameHints(text: string): string[] {
 }
 
 function computeAmountHint(event: EventRow): null | number {
-  if (event.amountPaid != null && Number.isFinite(event.amountPaid)) return Number(event.amountPaid);
+  if (event.amountPaid != null && Number.isFinite(event.amountPaid))
+    return Number(event.amountPaid);
   if (event.amountExpected != null && Number.isFinite(event.amountExpected)) {
     return Number(event.amountExpected);
   }
@@ -644,7 +648,7 @@ function extractIdentityClaims(params: {
         identityHints.beneficiaryRut,
         params.series?.patientRut ?? null,
         params.series?.beneficiaryRut ?? null,
-      ].filter((value): value is string => Boolean(value)),
+      ].filter((value): value is string => Boolean(value))
     ),
   ];
   const nameClaims = [
@@ -658,7 +662,7 @@ function extractIdentityClaims(params: {
       ]
         .filter((value): value is string => Boolean(value))
         .map((value) => normalizeName(value))
-        .filter((value) => tokenize(value).length >= 2),
+        .filter((value) => tokenize(value).length >= 2)
     ),
   ];
 
@@ -666,7 +670,7 @@ function extractIdentityClaims(params: {
     ...new Set(
       (params.series?.linkedDocuments ?? [])
         .map((document) => normalizeRut(document.clientRUT) || document.clientRUT)
-        .filter(Boolean),
+        .filter(Boolean)
     ),
   ];
 
@@ -689,7 +693,9 @@ function extractIdentityClaims(params: {
   };
 }
 
-export function isReembolsoBundleEvent(event: Pick<EventRow, "category" | "description" | "summary">) {
+export function isReembolsoBundleEvent(
+  event: Pick<EventRow, "category" | "description" | "summary">
+) {
   const category = normalizeText(event.category ?? "");
   const text = normalizeText(joinClinicalText(event.summary, event.description));
 
@@ -716,13 +722,11 @@ export function resolveSuggestionDateWindow(params: {
     params.reembolsoMultiDateWindowDays ?? REEMBOLSO_MULTI_DATE_WINDOW_DAYS;
   const reembolsoMultiDateWindowDays = Math.max(
     1,
-    Math.min(requestedWindowDays, MAX_REEMBOLSO_MULTI_DATE_WINDOW_DAYS),
+    Math.min(requestedWindowDays, MAX_REEMBOLSO_MULTI_DATE_WINDOW_DAYS)
   );
 
   const enableReembolsoMultiDate =
-    params.sameDayOnly &&
-    reembolsoMultiDateBundleEnabled &&
-    isReembolsoBundleEvent(params.event);
+    params.sameDayOnly && reembolsoMultiDateBundleEnabled && isReembolsoBundleEvent(params.event);
 
   if (enableReembolsoMultiDate) {
     const parsedDate = dayjs(params.event.eventDate, "YYYY-MM-DD", true);
@@ -758,7 +762,7 @@ function currencyFormatterForReason(value: number): string {
 }
 
 function clinicalSeriesKindLabel(
-  kind: EventIdentityClaims["seriesKind"] | ClinicalSeriesSnapshot["kind"] | null,
+  kind: EventIdentityClaims["seriesKind"] | ClinicalSeriesSnapshot["kind"] | null
 ): string {
   if (kind === "PATCH_TEST") return "test de parche";
   if (kind === "SKIN_TEST") return "test cutáneo";
@@ -854,7 +858,9 @@ async function getSameKindRutConflictWarnings(params: {
     if (conflicts.length === 0) continue;
     const examples = conflicts
       .slice(0, 2)
-      .map((conflict) => conflict.patientName ?? conflict.patientRut ?? `Serie #${conflict.seriesId}`);
+      .map(
+        (conflict) => conflict.patientName ?? conflict.patientRut ?? `Serie #${conflict.seriesId}`
+      );
     const countLabel = conflicts.length === 1 ? "otra serie" : `${conflicts.length} otras series`;
     const examplesLabel = examples.length > 0 ? ` Ejemplos: ${examples.join(" · ")}.` : "";
     warnings.set(rut, {
@@ -928,7 +934,7 @@ function analyzeCandidate(params: {
     // inflate the score for unrelated people (e.g. guardian/patient sharing a
     // surname). Most genuine partial matches where 2+ tokens align score ≥0.70.
     const meScore = mongeElkanScore(nameClaim, params.candidate.clientName);
-    const combined = Math.max(tokenScore, diceScore, meScore >= 0.70 ? meScore : 0);
+    const combined = Math.max(tokenScore, diceScore, meScore >= 0.7 ? meScore : 0);
     if (containsName(nameClaim, params.candidate.clientName)) {
       exactNameMatch = true;
       bestNameScore = Math.max(bestNameScore, 1);
@@ -972,8 +978,8 @@ function analyzeCandidate(params: {
         "fuzzy_name",
         "Coincidencia difusa de nombre",
         fuzzyContribution,
-        `${Math.round(bestNameScore * 100)}%`,
-      ),
+        `${Math.round(bestNameScore * 100)}%`
+      )
     );
     reasons.push(`Coincidencia difusa de nombre: ${Math.round(bestNameScore * 100)}%`);
     if (!rutMatch) method = "name_fuzzy";
@@ -1010,8 +1016,8 @@ function analyzeCandidate(params: {
           "trigram_similarity",
           "Similaridad trigramática (DB)",
           trigramWeight,
-          `${Math.round(trigramSim * 100)}%`,
-        ),
+          `${Math.round(trigramSim * 100)}%`
+        )
       );
       reasons.push(`Similaridad trigramática en DB: ${Math.round(trigramSim * 100)}%`);
     }
@@ -1028,11 +1034,11 @@ function analyzeCandidate(params: {
         "shared_surname_guardian",
         "Apellido compartido con posible responsable/paciente",
         30,
-        sharedSurnameToken,
-      ),
+        sharedSurnameToken
+      )
     );
     reasons.push(
-      `Apellido compartido (${sharedSurnameToken}) con posible responsable/paciente y DTE aún libre`,
+      `Apellido compartido (${sharedSurnameToken}) con posible responsable/paciente y DTE aún libre`
     );
   }
 
@@ -1043,7 +1049,7 @@ function analyzeCandidate(params: {
   const crossSeriesInfo = params.crossSeriesWarningByRut?.get(candidateRut);
   if (crossSeriesInfo) {
     signals.push(
-      toSignal("cross_series_same_rut_warning", "RUT presente en otra serie del mismo tipo", 0),
+      toSignal("cross_series_same_rut_warning", "RUT presente en otra serie del mismo tipo", 0)
     );
     reasons.push(crossSeriesInfo.message);
   }
@@ -1081,7 +1087,10 @@ function analyzeCandidate(params: {
   };
 }
 
-function buildSingleHypothesis(analysis: CandidateAnalysis, claims: EventIdentityClaims): MatchHypothesis {
+function buildSingleHypothesis(
+  analysis: CandidateAnalysis,
+  claims: EventIdentityClaims
+): MatchHypothesis {
   const autoLinkEligible =
     analysis.score >= MIN_AUTO_LINK_SCORE &&
     analysis.amountDiff != null &&
@@ -1121,7 +1130,9 @@ function combineMethod(methods: MatchMethod[]): MatchMethod {
 
 export function findSkinTestBundleSuggestions(params: {
   amountHint: null | number;
-  candidates: Array<Omit<DteSaleRow, "retrievalMeta"> & { retrievalMeta?: DteSaleRow["retrievalMeta"] }>;
+  candidates: Array<
+    Omit<DteSaleRow, "retrievalMeta"> & { retrievalMeta?: DteSaleRow["retrievalMeta"] }
+  >;
   limit?: number;
   nameHints: string[];
   rutHints: string[];
@@ -1142,7 +1153,7 @@ export function findSkinTestBundleSuggestions(params: {
       nameClaims: params.nameHints,
       rutClaims: params.rutHints,
       seriesLinkedRuts: [],
-    }),
+    })
   );
 
   return buildBundleHypotheses({
@@ -1188,12 +1199,13 @@ function buildBundleHypotheses(params: {
       const amountDiff = Math.abs(amountHint - totalAmount);
       if (amountDiff <= MAX_AUTO_LINK_AMOUNT_DIFF) {
         const sorted = [...current].sort((a, b) =>
-          a.document.dteSaleDetailId.localeCompare(b.document.dteSaleDetailId),
+          a.document.dteSaleDetailId.localeCompare(b.document.dteSaleDetailId)
         );
         const dteSaleDetailIds = sorted.map((analysis) => analysis.document.dteSaleDetailId);
-        const bundleHeader = params.policyKey === "reembolso_bundle"
-          ? `Bundle de ${sorted.length} DTE de reembolso (Roxair/Bactek) y mismo RUT`
-          : `Bundle de ${sorted.length} DTE del mismo día y mismo RUT`;
+        const bundleHeader =
+          params.policyKey === "reembolso_bundle"
+            ? `Bundle de ${sorted.length} DTE de reembolso (Roxair/Bactek) y mismo RUT`
+            : `Bundle de ${sorted.length} DTE del mismo día y mismo RUT`;
         const reasons = [
           bundleHeader,
           `Suma total ${currencyFormatterForReason(totalAmount)} frente a evento ${currencyFormatterForReason(amountHint)}`,
@@ -1215,7 +1227,11 @@ function buildBundleHypotheses(params: {
           autoLinkEligible: score >= MIN_AUTO_LINK_SCORE,
           clientName: sorted[0]!.document.clientName,
           clientRUT: sorted[0]!.document.clientRUT,
-          crossSeriesConflicts: [...new Map(sorted.flatMap((a) => a.crossSeriesConflicts).map((c) => [c.seriesId, c])).values()],
+          crossSeriesConflicts: [
+            ...new Map(
+              sorted.flatMap((a) => a.crossSeriesConflicts).map((c) => [c.seriesId, c])
+            ).values(),
+          ],
           documentDate: sorted[0]!.document.documentDate,
           documents: sorted.map((analysis) => analysis.document),
           dteSaleDetailIds,
@@ -1237,7 +1253,7 @@ function buildBundleHypotheses(params: {
                   ? "Suma bundle cercana"
                   : "Suma bundle compatible",
               amountDiff <= 500 ? 8 : amountDiff <= 2000 ? 5 : 3,
-              currencyFormatterForReason(totalAmount),
+              currencyFormatterForReason(totalAmount)
             ),
           ],
           totalAmount,
@@ -1267,7 +1283,7 @@ function buildBundleHypotheses(params: {
 
 async function getEventByExternalIds(
   calendarGoogleId: string,
-  externalEventId: string,
+  externalEventId: string
 ): Promise<EventRow | null> {
   const rows = await db.$queryRaw<EventRow[]>`
     SELECT
@@ -1340,8 +1356,12 @@ async function retrieveDteCandidates(params: {
 }): Promise<DteSaleRow[]> {
   const excludedIds = params.excludeDteSaleDetailIds ?? [];
   const loweredNameClaims = params.nameClaims.map((value) => normalizeName(value)).filter(Boolean);
-  const loweredSurnameClaims = params.surnameClaims.map((value) => normalizeName(value)).filter(Boolean);
-  const normalizedSeriesLinkedRuts = params.seriesLinkedRuts.map((value) => normalizeRut(value) || value);
+  const loweredSurnameClaims = params.surnameClaims
+    .map((value) => normalizeName(value))
+    .filter(Boolean);
+  const normalizedSeriesLinkedRuts = params.seriesLinkedRuts.map(
+    (value) => normalizeRut(value) || value
+  );
 
   return db.$queryRaw<DteSaleRow[]>`
     SELECT
@@ -1470,7 +1490,7 @@ function buildHypotheses(params: {
       nameClaims: params.claims.nameClaims,
       rutClaims: params.claims.rutClaims,
       seriesLinkedRuts: params.claims.seriesLinkedRuts,
-    }),
+    })
   );
 
   const singleHypotheses = analyses
@@ -1484,15 +1504,16 @@ function buildHypotheses(params: {
         ? "reembolso_bundle"
         : null;
 
-  const bundleHypotheses = bundlePolicyKey == null
-    ? []
-    : buildBundleHypotheses({
-        amountHint: params.claims.amountHint,
-        analyses,
-        enabled: true,
-        limit: params.limit,
-        policyKey: bundlePolicyKey,
-      });
+  const bundleHypotheses =
+    bundlePolicyKey == null
+      ? []
+      : buildBundleHypotheses({
+          amountHint: params.claims.amountHint,
+          analyses,
+          enabled: true,
+          limit: params.limit,
+          policyKey: bundlePolicyKey,
+        });
 
   const hypotheses = [...bundleHypotheses, ...singleHypotheses]
     .sort((a, b) => {
@@ -1526,8 +1547,9 @@ function buildHypotheses(params: {
       consideredCount: analyses.length,
       fallbackCount: fallbackCandidates.length,
       retrievedCount: params.candidates.length,
-      sameDayCount: params.candidates.filter((candidate) => candidate.documentDate === params.claims.eventDate)
-        .length,
+      sameDayCount: params.candidates.filter(
+        (candidate) => candidate.documentDate === params.claims.eventDate
+      ).length,
     },
     fallbackCandidates,
     hypotheses,
@@ -1543,7 +1565,12 @@ export async function getEventDteSuggestions(params: {
   let event = await getEventByExternalIds(params.calendarId, params.eventId);
   if (!event) {
     return {
-      candidateSetSummary: { consideredCount: 0, fallbackCount: 0, retrievedCount: 0, sameDayCount: 0 },
+      candidateSetSummary: {
+        consideredCount: 0,
+        fallbackCount: 0,
+        retrievedCount: 0,
+        sameDayCount: 0,
+      },
       event: null,
       fallbackCandidates: [] as EventDteSuggestion[],
       hypotheses: [] as MatchHypothesis[],
@@ -1559,7 +1586,12 @@ export async function getEventDteSuggestions(params: {
     event = await getEventByExternalIds(params.calendarId, params.eventId);
     if (!event) {
       return {
-        candidateSetSummary: { consideredCount: 0, fallbackCount: 0, retrievedCount: 0, sameDayCount: 0 },
+        candidateSetSummary: {
+          consideredCount: 0,
+          fallbackCount: 0,
+          retrievedCount: 0,
+          sameDayCount: 0,
+        },
         event: null,
         fallbackCandidates: [] as EventDteSuggestion[],
         hypotheses: [] as MatchHypothesis[],
@@ -1898,11 +1930,8 @@ export async function listEventDteLinkOverview(params: {
     rows.map(async (row) => {
       const linkedDocuments = parseLinkedDocumentsJson(row.linkedDocumentsJson);
       const isDueForEmission = row.eventDate <= today;
-      const linkStatus: "linked" | "pending_issuance" | "unlinked" = row.linkedCount > 0
-        ? "linked"
-        : isDueForEmission
-          ? "unlinked"
-          : "pending_issuance";
+      const linkStatus: "linked" | "pending_issuance" | "unlinked" =
+        row.linkedCount > 0 ? "linked" : isDueForEmission ? "unlinked" : "pending_issuance";
 
       let topHypothesis: MatchHypothesis | null = null;
       if (row.linkedCount === 0 && isDueForEmission) {
@@ -1927,7 +1956,10 @@ export async function listEventDteLinkOverview(params: {
         eventId: row.eventId,
         lastAutoLinkSkip:
           row.lastAutoLinkSkipReason && row.lastAutoLinkSkipAt
-            ? { attemptedAt: row.lastAutoLinkSkipAt.toISOString(), reason: row.lastAutoLinkSkipReason }
+            ? {
+                attemptedAt: row.lastAutoLinkSkipAt.toISOString(),
+                reason: row.lastAutoLinkSkipReason,
+              }
             : null,
         linkStatus,
         linked: row.linkedCount > 0,
@@ -1950,7 +1982,7 @@ export async function listEventDteLinkOverview(params: {
         summary: row.summary,
         topHypothesis,
       };
-    }),
+    })
   );
 
   const stats = statsRows[0] ?? {
@@ -1988,7 +2020,7 @@ export async function listEventDteLinkOverview(params: {
 }
 
 export async function getEventDteLinksByInternalEventId(
-  eventId: number,
+  eventId: number
 ): Promise<EventDteLinkRecord[]> {
   const rows = await db.$queryRaw<
     Array<{
@@ -2105,7 +2137,7 @@ export async function confirmEventDteLink(params: {
       bundleSize: normalizedDteSaleDetailIds.length,
       policyKey: params.policyKey ?? "default_same_day",
       source: "manual_confirm",
-    },
+    }
   );
 
   for (const dteSaleDetailId of normalizedDteSaleDetailIds) {
@@ -2155,7 +2187,8 @@ export async function confirmEventDteLink(params: {
     dteSaleDetailIds: normalizedDteSaleDetailIds,
     eventId: event.eventId,
     hypothesis: params.hypothesis ?? null,
-    hypothesisKind: params.hypothesisKind ?? (normalizedDteSaleDetailIds.length > 1 ? "bundle" : "single"),
+    hypothesisKind:
+      params.hypothesisKind ?? (normalizedDteSaleDetailIds.length > 1 ? "bundle" : "single"),
   });
 
   return getEventDteLinksByInternalEventId(event.eventId);
@@ -2189,7 +2222,10 @@ export async function unlinkEventDteLink(params: {
   return { deleted: Number(deleted) > 0 };
 }
 
-function hypothesisSkipReason(hypothesis: MatchHypothesis | undefined, second: MatchHypothesis | undefined): string {
+function hypothesisSkipReason(
+  hypothesis: MatchHypothesis | undefined,
+  second: MatchHypothesis | undefined
+): string {
   if (!hypothesis) return "Sin candidatos";
   if (hypothesis.score < MIN_AUTO_LINK_SCORE) {
     return hypothesis.kind === "bundle"
@@ -2207,13 +2243,11 @@ function hypothesisSkipReason(hypothesis: MatchHypothesis | undefined, second: M
 }
 
 export function selectGlobalAutoLinkHypotheses(
-  entries: Array<{ event: EventRow; hypotheses: MatchHypothesis[] }>,
+  entries: Array<{ event: EventRow; hypotheses: MatchHypothesis[] }>
 ) {
   const candidateEntries = entries.map((entry) => ({
     event: entry.event,
-    hypotheses: entry.hypotheses
-      .filter((hypothesis) => hypothesis.autoLinkEligible)
-      .slice(0, 3),
+    hypotheses: entry.hypotheses.filter((hypothesis) => hypothesis.autoLinkEligible).slice(0, 3),
   }));
 
   const totalHypotheses = candidateEntries.reduce((sum, entry) => sum + entry.hypotheses.length, 0);
@@ -2226,7 +2260,7 @@ export function selectGlobalAutoLinkHypotheses(
         entry.hypotheses.map((hypothesis) => ({
           eventId: entry.event.externalEventId,
           hypothesis,
-        })),
+        }))
       )
       .sort((a, b) => b.hypothesis.score - a.hypothesis.score);
     for (const item of pool) {
@@ -2253,7 +2287,7 @@ export function selectGlobalAutoLinkHypotheses(
     index: number,
     currentScore: number,
     current: Map<string, MatchHypothesis>,
-    usedDtes: Set<string>,
+    usedDtes: Set<string>
   ) => {
     if (currentScore + maxRemaining[index]! < bestScore) return;
     if (index >= ordered.length) {
@@ -2290,14 +2324,15 @@ export async function autoLinkEventDate(params: {
   const today = dayjs().tz(TIMEZONE).format("YYYY-MM-DD");
   if (params.date > today) {
     throw new Error(
-      `No se puede auto-vincular una fecha futura (${params.date}). Hoy es ${today} en ${TIMEZONE}.`,
+      `No se puede auto-vincular una fecha futura (${params.date}). Hoy es ${today} en ${TIMEZONE}.`
     );
   }
 
   const minScore = params.minScore ?? MIN_AUTO_LINK_SCORE;
   const strategy = params.strategy ?? "missing_only";
   const events = await getEventsByDate(params.date);
-  const eventsToProcess = strategy === "relink_all" ? events : events.filter((event) => event.linkedCount === 0);
+  const eventsToProcess =
+    strategy === "relink_all" ? events : events.filter((event) => event.linkedCount === 0);
 
   const suggestionEntries = await Promise.all(
     eventsToProcess.map(async (event) => {
@@ -2309,14 +2344,17 @@ export async function autoLinkEventDate(params: {
       });
       const eligible = suggestions.hypotheses
         .filter((hypothesis) => hypothesis.score >= minScore)
-        .filter((hypothesis) => hypothesis.amountDiff == null || hypothesis.amountDiff <= MAX_AUTO_LINK_AMOUNT_DIFF)
+        .filter(
+          (hypothesis) =>
+            hypothesis.amountDiff == null || hypothesis.amountDiff <= MAX_AUTO_LINK_AMOUNT_DIFF
+        )
         .filter((hypothesis, index, array) => !isHypothesisAmbiguous(hypothesis, array[index + 1]));
       return { event, eligible, suggestions };
-    }),
+    })
   );
 
   const selected = selectGlobalAutoLinkHypotheses(
-    suggestionEntries.map((entry) => ({ event: entry.event, hypotheses: entry.eligible })),
+    suggestionEntries.map((entry) => ({ event: entry.event, hypotheses: entry.eligible }))
   );
 
   let linked = 0;
@@ -2327,7 +2365,10 @@ export async function autoLinkEventDate(params: {
   for (const entry of suggestionEntries) {
     const chosen = selected.get(entry.event.externalEventId);
     if (!chosen) {
-      const reason = hypothesisSkipReason(entry.suggestions.hypotheses[0], entry.suggestions.hypotheses[1]);
+      const reason = hypothesisSkipReason(
+        entry.suggestions.hypotheses[0],
+        entry.suggestions.hypotheses[1]
+      );
       skipped += 1;
       await recordAutoLinkAttempt({
         confidenceScore: entry.suggestions.hypotheses[0]?.score,
@@ -2360,7 +2401,9 @@ export async function autoLinkEventDate(params: {
       dteSaleDetailId: chosen.dteSaleDetailIds[0] ?? null,
       eventId: entry.event.eventId,
       reason:
-        chosen.kind === "bundle" ? `Auto-linked bundle (${chosen.score})` : `Auto-linked (${chosen.score})`,
+        chosen.kind === "bundle"
+          ? `Auto-linked bundle (${chosen.score})`
+          : `Auto-linked (${chosen.score})`,
       status: "LINKED",
       userId: params.userId,
     });
@@ -2368,7 +2411,9 @@ export async function autoLinkEventDate(params: {
     details.push({
       eventId: entry.event.externalEventId,
       reason:
-        chosen.kind === "bundle" ? `Auto-linked bundle (${chosen.score})` : `Auto-linked (${chosen.score})`,
+        chosen.kind === "bundle"
+          ? `Auto-linked bundle (${chosen.score})`
+          : `Auto-linked (${chosen.score})`,
     });
   }
 
@@ -2500,7 +2545,7 @@ export async function autoLinkAllEventPeriods(params: {
           totalEvents: result.totalEvents,
         });
       }
-    })(),
+    })()
   );
 
   await Promise.all(workers);
@@ -2581,7 +2626,7 @@ export async function autoLinkAllEventPeriodsWithProgress(params: {
           totalPeriods: params.periods.length,
         });
       }
-    })(),
+    })()
   );
 
   await Promise.all(workers);

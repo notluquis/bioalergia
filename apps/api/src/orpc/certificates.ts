@@ -89,7 +89,7 @@ const certificatesORPCRouterBase = {
           tempPath,
           `certificado_${parsed.rut.replace(/\./g, "")}_${Date.now()}.pdf`,
           parsed,
-          pdfHash,
+          pdfHash
         );
 
         await db.medicalCertificate.create({
@@ -174,8 +174,9 @@ const certificatesORPCRouterBase = {
     }),
 };
 
-export const certificatesORPCRouter =
-  base.prefix("/api/orpc/certificates").router(certificatesORPCRouterBase);
+export const certificatesORPCRouter = base
+  .prefix("/api/orpc/certificates")
+  .router(certificatesORPCRouterBase);
 
 export const certificatesORPCHandler = new SuperJSONRPCHandler(certificatesORPCRouter, {
   interceptors: [

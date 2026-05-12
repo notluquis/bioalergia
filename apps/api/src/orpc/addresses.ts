@@ -220,9 +220,7 @@ const addressesORPCRouterBase = {
         input.payload.street !== undefined ||
         input.payload.number !== undefined ||
         input.payload.comuna !== undefined;
-      const geo = shouldGeocode
-        ? await tryGeocodeAddress({ street, number, comuna })
-        : null;
+      const geo = shouldGeocode ? await tryGeocodeAddress({ street, number, comuna }) : null;
 
       const address = await db.address.update({
         where: { id: input.id },

@@ -26,11 +26,13 @@ vi.mock("../settings", () => ({
 
 const { DoctoraliaCalendarSyncService } = await import("../doctoralia-calendar.ts");
 
-function makeResponse(overrides: {
-  scheduleId?: number;
-  appointmentIds?: number[];
-  workPeriodStarts?: string[];
-} = {}): DoctoraliaCalendarResponse {
+function makeResponse(
+  overrides: {
+    scheduleId?: number;
+    appointmentIds?: number[];
+    workPeriodStarts?: string[];
+  } = {}
+): DoctoraliaCalendarResponse {
   const scheduleId = overrides.scheduleId ?? 1001;
   const appointmentIds = overrides.appointmentIds ?? [];
   const workPeriodStarts = overrides.workPeriodStarts ?? [];

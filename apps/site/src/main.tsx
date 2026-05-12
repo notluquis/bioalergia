@@ -39,5 +39,5 @@ createRoot(root).render(
         <App />
       </QueryClientProvider>
     </PostHogProvider>
-  </StrictMode>,
+  </StrictMode>
 );

@@ -147,7 +147,8 @@ export const utilityBillsOpenAPIHandler = new OpenAPIHandler(utilityBillsORPCRou
       specGenerateOptions: {
         info: {
           title: "Bioalergia Utility Bills oRPC",
-          description: "Cuentas de servicios básicos (Essbio, CGE, etc.) — CRUD y consulta de deuda.",
+          description:
+            "Cuentas de servicios básicos (Essbio, CGE, etc.) — CRUD y consulta de deuda.",
           version: "1.0.0",
         },
       },

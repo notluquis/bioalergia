@@ -2,7 +2,7 @@ import type { Context } from "hono";
 
 function toSerializable(value: unknown): string {
   return JSON.stringify(value, (_key, nestedValue) =>
-    typeof nestedValue === "bigint" ? nestedValue.toString() : nestedValue,
+    typeof nestedValue === "bigint" ? nestedValue.toString() : nestedValue
   );
 }
 
@@ -19,7 +19,7 @@ export function logError(error: unknown, details?: Record<string, unknown>): voi
 export function logError(
   tagOrError: string | unknown,
   errorOrDetails?: Record<string, unknown> | unknown,
-  maybeDetails: Record<string, unknown> = {},
+  maybeDetails: Record<string, unknown> = {}
 ) {
   const tag = typeof tagOrError === "string" && arguments.length >= 3 ? tagOrError : "error";
   const error = tag === "error" ? tagOrError : errorOrDetails;
@@ -49,7 +49,7 @@ type RequestLikeContext = {
 
 export function requestContext(
   c: Context | RequestLikeContext,
-  extra: Record<string, unknown> = {},
+  extra: Record<string, unknown> = {}
 ) {
   // Try to extract user from context if available (depends on middleware)
   const maybeUser = c.get?.("user");

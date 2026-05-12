@@ -127,7 +127,7 @@ const counterpartsORPCRouterBase = {
     .input(counterpartBulkAssignRutSchema)
     .output(assignRutToPayoutsResponseSchema)
     .handler(async ({ input }: { input: z.input<typeof counterpartBulkAssignRutSchema> }) =>
-      assignRutToPayoutAccounts(input),
+      assignRutToPayoutAccounts(input)
     ),
 
   attachRut: updateCounterparts
@@ -241,12 +241,17 @@ const counterpartsORPCRouterBase = {
     })
     .input(counterpartUnassignedPayoutAccountsInputSchema)
     .output(unassignedPayoutAccountsResponseSchema)
-    .handler(async ({ input }: { input: z.input<typeof counterpartUnassignedPayoutAccountsInputSchema> }) =>
-      listUnassignedPayoutAccounts({
-        page: input.page ?? 1,
-        pageSize: input.pageSize ?? 20,
-        query: input.query,
-      }),
+    .handler(
+      async ({
+        input,
+      }: {
+        input: z.input<typeof counterpartUnassignedPayoutAccountsInputSchema>;
+      }) =>
+        listUnassignedPayoutAccounts({
+          page: input.page ?? 1,
+          pageSize: input.pageSize ?? 20,
+          query: input.query,
+        })
     ),
 
   update: updateCounterparts
@@ -259,7 +264,7 @@ const counterpartsORPCRouterBase = {
     .input(counterpartUpdateInputSchema)
     .output(counterpartDetailResponseSchema)
     .handler(async ({ input }: { input: z.input<typeof counterpartUpdateInputSchema> }) =>
-      updateCounterpart(input.id, input.payload),
+      updateCounterpart(input.id, input.payload)
     ),
 
   updateAccount: updateCounterparts

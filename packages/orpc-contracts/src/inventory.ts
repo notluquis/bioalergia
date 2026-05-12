@@ -102,15 +102,39 @@ export const inventoryIdInputSchema = z.object({
 });
 
 export const inventoryContract = {
-  allergyOverview: oc.route({ method: "GET", path: "/allergy-overview" }).output(inventoryAllergyOverviewResponseSchema),
-  createCategory: oc.route({ method: "POST", path: "/categories" }).input(inventoryCategoryInputSchema).output(inventoryCategoryResponseSchema),
-  createItem: oc.route({ method: "POST", path: "/items" }).input(inventoryItemCreateInputSchema).output(inventoryItemResponseSchema),
-  createMovement: oc.route({ method: "POST", path: "/movements" }).input(inventoryMovementInputSchema).output(inventoryStatusResponseSchema),
-  deleteCategory: oc.route({ method: "DELETE", path: "/categories/{id}" }).input(inventoryIdInputSchema).output(inventoryStatusResponseSchema),
-  deleteItem: oc.route({ method: "DELETE", path: "/items/{id}" }).input(inventoryIdInputSchema).output(inventoryStatusResponseSchema),
-  listCategories: oc.route({ method: "GET", path: "/categories" }).output(inventoryCategoriesResponseSchema),
+  allergyOverview: oc
+    .route({ method: "GET", path: "/allergy-overview" })
+    .output(inventoryAllergyOverviewResponseSchema),
+  createCategory: oc
+    .route({ method: "POST", path: "/categories" })
+    .input(inventoryCategoryInputSchema)
+    .output(inventoryCategoryResponseSchema),
+  createItem: oc
+    .route({ method: "POST", path: "/items" })
+    .input(inventoryItemCreateInputSchema)
+    .output(inventoryItemResponseSchema),
+  createMovement: oc
+    .route({ method: "POST", path: "/movements" })
+    .input(inventoryMovementInputSchema)
+    .output(inventoryStatusResponseSchema),
+  deleteCategory: oc
+    .route({ method: "DELETE", path: "/categories/{id}" })
+    .input(inventoryIdInputSchema)
+    .output(inventoryStatusResponseSchema),
+  deleteItem: oc
+    .route({ method: "DELETE", path: "/items/{id}" })
+    .input(inventoryIdInputSchema)
+    .output(inventoryStatusResponseSchema),
+  listCategories: oc
+    .route({ method: "GET", path: "/categories" })
+    .output(inventoryCategoriesResponseSchema),
   listItems: oc.route({ method: "GET", path: "/items" }).output(inventoryItemsResponseSchema),
-  updateItem: oc.route({ method: "PUT", path: "/items/{id}" }).input(z.object({ id: z.coerce.number().int().positive(), item: inventoryItemUpdateInputSchema })).output(inventoryItemResponseSchema),
+  updateItem: oc
+    .route({ method: "PUT", path: "/items/{id}" })
+    .input(
+      z.object({ id: z.coerce.number().int().positive(), item: inventoryItemUpdateInputSchema })
+    )
+    .output(inventoryItemResponseSchema),
 };
 
 export type InventoryContract = typeof inventoryContract;

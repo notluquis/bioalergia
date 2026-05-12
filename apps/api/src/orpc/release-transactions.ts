@@ -52,7 +52,7 @@ const readReleaseTransactions = authed.use(async ({ context, next }) => {
 });
 
 function buildReleaseWhere(
-  input: z.infer<typeof releaseTransactionsQuerySchema>,
+  input: z.infer<typeof releaseTransactionsQuerySchema>
 ): ReleaseTransactionWhereInput {
   const { descriptions, from, paymentMethod, search, to } = input;
   const whereConditions: ReleaseTransactionWhereInput[] = [];
@@ -171,7 +171,7 @@ export const releaseTransactionsORPCHandler = new SuperJSONRPCHandler(
         });
       }),
     ],
-  },
+  }
 );
 
 export const releaseTransactionsOpenAPIHandler = new OpenAPIHandler(releaseTransactionsORPCRouter, {

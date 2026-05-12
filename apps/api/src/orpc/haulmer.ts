@@ -124,7 +124,7 @@ function uniqueSortedPeriodsDesc(periods: string[]) {
 }
 
 async function syncIncremental(
-  input: z.infer<typeof haulmerIncrementalSyncInputSchema>,
+  input: z.infer<typeof haulmerIncrementalSyncInputSchema>
 ): Promise<z.infer<typeof haulmerSyncResponseSchema>> {
   const config = requireHaulmerConfig();
   const docTypes =
@@ -205,7 +205,7 @@ async function syncIncremental(
     rut: config.rut,
   });
   const filteredResults = results.filter((result) =>
-    grouped.get(result.period)?.has(result.docType),
+    grouped.get(result.period)?.has(result.docType)
   );
 
   return {

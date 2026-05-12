@@ -79,7 +79,12 @@ const MONTHS: Record<string, number> = {
 const SECTION_STOPWORDS = new Set(["mm", "p", "e", "+", "-", "++", "+++", "+?", "ir", "nt"]);
 
 export async function parseSkinTestWorkbookBuffer(buffer: Buffer): Promise<ParsedSkinTestWorkbook> {
-  const wb = XLSX.read(buffer, { type: "buffer", cellDates: true, cellFormula: true, cellHTML: false });
+  const wb = XLSX.read(buffer, {
+    type: "buffer",
+    cellDates: true,
+    cellFormula: true,
+    cellHTML: false,
+  });
   const sheetName = wb.SheetNames[0];
   if (!sheetName) {
     return emptyParsedWorkbook([
@@ -558,7 +563,9 @@ function extractResultRowsFromRow(
     // When no metric header found, use positional fallback but only for cells within
     // 3 columns of the code cell — prevents adjacent-panel allergen numbers (which are
     // also valid isResultValue integers) from being mistaken for measurements.
-    const nearCells = byMetric.sawHeader ? numericCells : numericCells.filter((c) => c.col <= cell.col + 3);
+    const nearCells = byMetric.sawHeader
+      ? numericCells
+      : numericCells.filter((c) => c.col <= cell.col + 3);
     const papule = byMetric.sawHeader ? byMetric.papule : (nearCells[0]?.text ?? null);
     const erythema = byMetric.sawHeader ? byMetric.erythema : (nearCells[1]?.text ?? null);
     if (!byMetric.sawHeader && nearCells.length === 0) continue;

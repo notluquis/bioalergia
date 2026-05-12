@@ -4,7 +4,7 @@ import { clinicalRecordsORPCClient } from "../orpc";
 const KEY = ["clinical-records"] as const;
 
 export function useClinicalRecordImports(
-  input: Parameters<typeof clinicalRecordsORPCClient.listImports>[0],
+  input: Parameters<typeof clinicalRecordsORPCClient.listImports>[0]
 ) {
   return useQuery({
     queryKey: [...KEY, "imports", input],

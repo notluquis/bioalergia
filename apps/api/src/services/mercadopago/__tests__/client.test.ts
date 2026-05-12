@@ -82,9 +82,9 @@ describe("MercadoPago client", () => {
         .spyOn(globalThis, "fetch")
         .mockImplementation(async () => new Response("bad", { status: 400 }));
 
-      await expect(mpFetch("", "https://api.test.com/r", { log: false, retries: 3 })).rejects.toThrow(
-        /MP API error: 400/,
-      );
+      await expect(
+        mpFetch("", "https://api.test.com/r", { log: false, retries: 3 })
+      ).rejects.toThrow(/MP API error: 400/);
       expect(fetchSpy).toHaveBeenCalledTimes(1);
     });
 
@@ -118,7 +118,7 @@ describe("MercadoPago client", () => {
         .mockImplementation(async () => new Response("err", { status: 503 }));
 
       await expect(
-        mpFetch("", "https://api.test.com/r", { log: false, retries: 1 }),
+        mpFetch("", "https://api.test.com/r", { log: false, retries: 1 })
       ).rejects.toThrow(/MP API error: 503/);
       expect(fetchSpy).toHaveBeenCalledTimes(2);
     });
@@ -146,7 +146,7 @@ describe("MercadoPago client", () => {
     it("throws on invalid JSON", async () => {
       const { safeMpJson } = await import("../client.ts");
       await expect(
-        safeMpJson(new Response("<html>no json</html>", { status: 200 })),
+        safeMpJson(new Response("<html>no json</html>", { status: 200 }))
       ).rejects.toThrow(/Failed to parse MP response/);
     });
   });

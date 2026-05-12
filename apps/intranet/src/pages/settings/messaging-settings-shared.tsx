@@ -109,9 +109,7 @@ export function FlowStep({
           <Icon className="h-4 w-4" />
         </div>
         <div className="min-w-0">
-          <Description className="font-semibold text-xs text-default-400">
-            {step}
-          </Description>
+          <Description className="font-semibold text-xs text-default-400">{step}</Description>
           <p className="font-medium text-sm">{title}</p>
           <Description className="mt-1 text-default-500 text-xs">{body}</Description>
         </div>

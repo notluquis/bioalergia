@@ -91,8 +91,7 @@ function findSocial(html: string): CrawlResult["social"] {
   const out: CrawlResult["social"] = {};
   for (const [k, rx] of Object.entries(SOCIAL_PATTERNS)) {
     const m = html.match(rx);
-    if (m && m.length > 0)
-      out[k as keyof CrawlResult["social"]] = `https://${m[0].toLowerCase()}`;
+    if (m && m.length > 0) out[k as keyof CrawlResult["social"]] = `https://${m[0].toLowerCase()}`;
   }
   return out;
 }
@@ -209,7 +208,7 @@ export async function crawlProspect(rbd: string): Promise<CrawlResult> {
       crawlSuccess: result.success,
       emailsAdicionales: Array.from(new Set([...prospect.emailsAdicionales, ...result.emails])),
       telefonosAdicionales: Array.from(
-        new Set([...prospect.telefonosAdicionales, ...result.phones]),
+        new Set([...prospect.telefonosAdicionales, ...result.phones])
       ),
       linkedinUrl: prospect.linkedinUrl ?? result.social.linkedin ?? null,
       notas: result.rrhhSnippets.length

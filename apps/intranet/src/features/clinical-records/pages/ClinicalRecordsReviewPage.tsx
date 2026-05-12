@@ -119,9 +119,7 @@ export function ClinicalRecordsReviewPage() {
                       {top && (
                         <p className="text-default-500 text-xs">
                           Mejor candidato: {top.fullName}{" "}
-                          <span className="text-default-400">
-                            ({Math.round(top.score * 100)}%)
-                          </span>
+                          <span className="text-default-400">({Math.round(top.score * 100)}%)</span>
                         </p>
                       )}
                     </div>

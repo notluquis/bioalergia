@@ -9,7 +9,7 @@ export async function downloadHaulmerCSV(
   period: string,
   docType: "sales" | "purchases",
   jwtToken: string,
-  workspaceId?: string,
+  workspaceId?: string
 ): Promise<string> {
   const docTypeSegment = docType === "sales" ? "ventas" : "compras";
   const url = `https://api-frontend.haulmer.com/v3/dte/core/registro/${docTypeSegment}/detalle/${rut}/periodo/${period}/csv`;
@@ -67,7 +67,7 @@ export async function downloadHaulmerCSV(
 export async function fetchAvailableSalesPeriods(
   rut: string,
   jwtToken: string,
-  workspaceId?: string,
+  workspaceId?: string
 ): Promise<string[]> {
   const url = `https://api-frontend.haulmer.com/v3/dte/core/registro/ventas/periodos/${rut}`;
 
@@ -134,7 +134,7 @@ export async function fetchAvailableSalesPeriods(
 export async function fetchAvailablePurchasePeriods(
   rut: string,
   jwtToken: string,
-  workspaceId?: string,
+  workspaceId?: string
 ): Promise<string[]> {
   const url = `https://api-frontend.haulmer.com/v3/dte/core/registro/compras/periodos/${rut}`;
 
@@ -201,7 +201,7 @@ export async function fetchAvailablePurchasePeriods(
 export async function fetchInvoiceFolios(
   rut: string,
   jwtToken: string,
-  workspaceId?: string,
+  workspaceId?: string
 ): Promise<Record<string, unknown> | null> {
   const url = `https://api-frontend.haulmer.com/v3/dte/core/de/invoice/dte/folios/${rut}`;
 

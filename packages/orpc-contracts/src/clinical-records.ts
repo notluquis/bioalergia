@@ -103,7 +103,7 @@ export const clinicalRecordsContract = {
         page: z.number().int().min(1).default(1),
         pageSize: z.number().int().min(1).max(200).default(50),
         search: z.string().optional(),
-      }),
+      })
     )
     .output(
       z.object({
@@ -111,7 +111,7 @@ export const clinicalRecordsContract = {
         page: z.number().int(),
         pageSize: z.number().int(),
         total: z.number().int(),
-      }),
+      })
     ),
 
   getImport: oc
@@ -127,7 +127,7 @@ export const clinicalRecordsContract = {
         status: clinicalRecordImportStatusSchema,
         candidates: z.number().int().optional(),
         reason: z.string().optional(),
-      }),
+      })
     ),
 
   approveImport: oc
@@ -137,7 +137,7 @@ export const clinicalRecordsContract = {
         id: z.string().min(1),
         patientId: z.number().int().positive(),
         notes: z.string().optional(),
-      }),
+      })
     )
     .output(z.object({ status: z.literal("ok") })),
 
@@ -147,7 +147,7 @@ export const clinicalRecordsContract = {
       z.object({
         id: z.string().min(1),
         notes: z.string().optional(),
-      }),
+      })
     )
     .output(z.object({ status: z.literal("ok") })),
 
@@ -157,7 +157,7 @@ export const clinicalRecordsContract = {
     .output(
       z.object({
         records: z.array(clinicalRecordSchema),
-      }),
+      })
     ),
 };
 

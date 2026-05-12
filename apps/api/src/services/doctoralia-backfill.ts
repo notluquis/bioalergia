@@ -123,7 +123,7 @@ export type PlannedBackfill = {
 export function planDoctoraliaBackfill(
   endDate: string,
   startDate?: string,
-  now: Date = new Date(),
+  now: Date = new Date()
 ): PlannedBackfill {
   const endDateNormalized = dayjs.tz(endDate, TIMEZONE).startOf("day");
   if (!endDateNormalized.isValid()) {
@@ -154,9 +154,7 @@ export function planDoctoraliaBackfill(
   }
 
   if (!effectiveEnd.isBefore(startMonday.add(1, "week"), "day")) {
-    throw new Error(
-      "La fecha final debe ser anterior a la fecha de inicio.",
-    );
+    throw new Error("La fecha final debe ser anterior a la fecha de inicio.");
   }
 
   const targetMonday = effectiveEnd.startOf("isoWeek");
@@ -233,7 +231,7 @@ async function runBackfillLoop(params: {
           to,
           undefined,
           "manual-backfill",
-          params.triggerUserId,
+          params.triggerUserId
         );
         if ("schedules" in result) addCounts(state.schedules, result.schedules);
         if ("appointments" in result) addCounts(state.appointments, result.appointments);

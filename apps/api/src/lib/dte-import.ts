@@ -97,7 +97,7 @@ export function parseDate(value: unknown): Date | null {
   }
 
   console.warn(
-    `[Date Parse] Could not parse date: "${str}" (tried ISO timestamp, YYYY-MM-DD, DD/MM/YYYY, DD-MM-YYYY, DD.MM.YYYY)`,
+    `[Date Parse] Could not parse date: "${str}" (tried ISO timestamp, YYYY-MM-DD, DD/MM/YYYY, DD-MM-YYYY, DD.MM.YYYY)`
   );
   return null;
 }
@@ -139,7 +139,7 @@ function calculateExemptAmount(
   providedExempt: Decimal,
   netAmount: Decimal,
   ivaAmount: Decimal,
-  totalAmount: Decimal,
+  totalAmount: Decimal
 ): Decimal {
   // If exempt amount is already provided (not zero), use it
   if (providedExempt.greaterThan(0)) {
@@ -158,7 +158,7 @@ function calculateExemptAmount(
   // Ensure we never return negative values
   if (calculated.isNegative()) {
     console.warn(
-      `[DTE] Calculated exempt amount is negative (${calculated}). Capping to 0. Net: ${netAmount}, IVA: ${ivaAmount}, Total: ${totalAmount}`,
+      `[DTE] Calculated exempt amount is negative (${calculated}). Capping to 0. Net: ${netAmount}, IVA: ${ivaAmount}, Total: ${totalAmount}`
     );
     return new Decimal(0);
   }
@@ -286,7 +286,7 @@ export function buildDtePurchaseDetail(row: Record<string, unknown>): Record<str
  */
 export function areDataDifferent(
   existing: Record<string, unknown>,
-  newData: Record<string, unknown>,
+  newData: Record<string, unknown>
 ): boolean {
   const systemFields = new Set(["id", "createdAt", "updatedAt"]);
 
@@ -324,13 +324,13 @@ export function areDataDifferent(
  */
 export async function importDteSaleRow(
   row: Record<string, unknown>,
-  mode: "insert-only" | "insert-or-update" | "update-only" = "insert-or-update",
+  mode: "insert-only" | "insert-or-update" | "update-only" = "insert-or-update"
 ): Promise<{ inserted: number; updated: number; skipped: number }> {
   try {
     // Validate required field
     if (!row.folio || String(row.folio).trim() === "") {
       console.warn(
-        `[DTE] Sale row skipped - missing required folio. Row keys: ${Object.keys(row).join(", ")}`,
+        `[DTE] Sale row skipped - missing required folio. Row keys: ${Object.keys(row).join(", ")}`
       );
       return { inserted: 0, updated: 0, skipped: 1 };
     }
@@ -372,7 +372,7 @@ export async function importDteSaleRow(
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
     console.error(
-      `[DTE] Failed to import sale row [folio=${row.folio}, documentType=${row.documentType ?? row.dte}, period=${row.period}]: ${msg}`,
+      `[DTE] Failed to import sale row [folio=${row.folio}, documentType=${row.documentType ?? row.dte}, period=${row.period}]: ${msg}`
     );
     return { inserted: 0, updated: 0, skipped: 1 };
   }
@@ -387,19 +387,19 @@ export async function importDteSaleRow(
  */
 export async function importDtePurchaseRow(
   row: Record<string, unknown>,
-  mode: "insert-only" | "insert-or-update" | "update-only" = "insert-or-update",
+  mode: "insert-only" | "insert-or-update" | "update-only" = "insert-or-update"
 ): Promise<{ inserted: number; updated: number; skipped: number }> {
   try {
     // Validate required fields
     if (!row.providerRUT || String(row.providerRUT).trim() === "") {
       console.warn(
-        `[DTE] Purchase row skipped - missing required providerRUT. Row keys: ${Object.keys(row).join(", ")}`,
+        `[DTE] Purchase row skipped - missing required providerRUT. Row keys: ${Object.keys(row).join(", ")}`
       );
       return { inserted: 0, updated: 0, skipped: 1 };
     }
     if (!row.folio || String(row.folio).trim() === "") {
       console.warn(
-        `[DTE] Purchase row skipped - missing required folio. Row keys: ${Object.keys(row).join(", ")}`,
+        `[DTE] Purchase row skipped - missing required folio. Row keys: ${Object.keys(row).join(", ")}`
       );
       return { inserted: 0, updated: 0, skipped: 1 };
     }
@@ -442,7 +442,7 @@ export async function importDtePurchaseRow(
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
     console.error(
-      `[DTE] Failed to import purchase row [RUT=${row.providerRUT}, folio=${row.folio}, period=${row.period}]: ${msg}`,
+      `[DTE] Failed to import purchase row [RUT=${row.providerRUT}, folio=${row.folio}, period=${row.period}]: ${msg}`
     );
     return { inserted: 0, updated: 0, skipped: 1 };
   }

@@ -7,7 +7,7 @@ export type CapturedEntry = {
 export async function postToImportEndpoint(
   endpoint: string,
   token: string | undefined,
-  entries: CapturedEntry[],
+  entries: CapturedEntry[]
 ): Promise<{ ok: boolean; status: number; body: string }> {
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   if (token) headers.Authorization = `Bearer ${token}`;

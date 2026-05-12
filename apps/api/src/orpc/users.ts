@@ -84,7 +84,7 @@ async function getUserLoginEmailMap(userIds: number[]) {
 async function resolveInvitePersonId(
   personId: number | undefined,
   email: string,
-  payload: (typeof inviteUserSchema)["_output"],
+  payload: (typeof inviteUserSchema)["_output"]
 ) {
   if (!personId) {
     const names = payload.names?.trim();
@@ -202,14 +202,22 @@ const usersORPCRouterBase = {
     .route({ method: "DELETE", path: "/{id}" })
     .input(userIdSchema)
     .output(usersStatusResponseSchema)
-    .handler(async ({ context, input }: { context: { user: { id: number } }; input: z.input<typeof userIdSchema> }) => {
-      if (input.id === context.user.id) {
-        throw new ORPCError("BAD_REQUEST", { message: "No puedes eliminar tu propia cuenta" });
-      }
+    .handler(
+      async ({
+        context,
+        input,
+      }: {
+        context: { user: { id: number } };
+        input: z.input<typeof userIdSchema>;
+      }) => {
+        if (input.id === context.user.id) {
+          throw new ORPCError("BAD_REQUEST", { message: "No puedes eliminar tu propia cuenta" });
+        }
 
-      await db.user.delete({ where: { id: input.id } });
-      return { status: "ok" as const };
-    }),
+        await db.user.delete({ where: { id: input.id } });
+        return { status: "ok" as const };
+      }
+    ),
 
   deletePasskey: updateUsers
     .route({ method: "DELETE", path: "/{id}/passkey" })
@@ -426,98 +434,106 @@ const usersORPCRouterBase = {
     .route({ method: "POST", path: "/setup" })
     .input(setupUserSchema)
     .output(usersStatusResponseSchema)
-    .handler(async ({ context, input }: { context: { user: { id: number } }; input: z.input<typeof setupUserSchema> }) => {
-      const user = await db.user.findUnique({
-        where: { id: context.user.id },
-        include: { person: true },
-      });
-
-      if (!user) {
-        throw new ORPCError("NOT_FOUND", { message: "Usuario no encontrado" });
-      }
-
-      if (user.status === "ACTIVE") {
-        return { status: "ok" as const, message: "Cuenta ya configurada" };
-      }
-
-      if (user.status !== "PENDING_SETUP") {
-        throw new ORPCError("CONFLICT", {
-          message: "Estado de usuario no válido para setup",
+    .handler(
+      async ({
+        context,
+        input,
+      }: {
+        context: { user: { id: number } };
+        input: z.input<typeof setupUserSchema>;
+      }) => {
+        const user = await db.user.findUnique({
+          where: { id: context.user.id },
+          include: { person: true },
         });
-      }
 
-      const hash = await hashPassword(input.password);
-      const normalizedNotificationEmail = normalizeEmail(user.person?.email ?? "");
-      const normalizedLoginEmail = input.loginEmail ? normalizeEmail(input.loginEmail) : null;
-      const effectiveLoginEmail = normalizedLoginEmail || normalizedNotificationEmail;
+        if (!user) {
+          throw new ORPCError("NOT_FOUND", { message: "Usuario no encontrado" });
+        }
 
-      if (!effectiveLoginEmail) {
-        throw new ORPCError("CONFLICT", {
-          message: "No existe correo válido para login. Contacta a un administrador.",
+        if (user.status === "ACTIVE") {
+          return { status: "ok" as const, message: "Cuenta ya configurada" };
+        }
+
+        if (user.status !== "PENDING_SETUP") {
+          throw new ORPCError("CONFLICT", {
+            message: "Estado de usuario no válido para setup",
+          });
+        }
+
+        const hash = await hashPassword(input.password);
+        const normalizedNotificationEmail = normalizeEmail(user.person?.email ?? "");
+        const normalizedLoginEmail = input.loginEmail ? normalizeEmail(input.loginEmail) : null;
+        const effectiveLoginEmail = normalizedLoginEmail || normalizedNotificationEmail;
+
+        if (!effectiveLoginEmail) {
+          throw new ORPCError("CONFLICT", {
+            message: "No existe correo válido para login. Contacta a un administrador.",
+          });
+        }
+
+        const conflictingLogin = await findUserByEffectiveLoginEmail(
+          effectiveLoginEmail,
+          context.user.id
+        );
+        if (conflictingLogin) {
+          throw new ORPCError("CONFLICT", { message: "El correo de login ya está en uso" });
+        }
+
+        let setupRut: string;
+        try {
+          setupRut = requireCanonicalRut(input.rut);
+        } catch {
+          throw new ORPCError("BAD_REQUEST", { message: "RUT inválido" });
+        }
+
+        await db.person.update({
+          where: { id: user.personId },
+          data: {
+            names: input.names,
+            fatherName: input.fatherName,
+            motherName: input.motherName,
+            rut: setupRut,
+            phone: input.phone,
+          },
         });
-      }
 
-      const conflictingLogin = await findUserByEffectiveLoginEmail(
-        effectiveLoginEmail,
-        context.user.id,
-      );
-      if (conflictingLogin) {
-        throw new ORPCError("CONFLICT", { message: "El correo de login ya está en uso" });
-      }
+        await db.employee.upsert({
+          where: { personId: user.personId },
+          create: {
+            personId: user.personId,
+            position: "Por definir",
+            startDate: new Date(),
+            bankName: input.bankName,
+            bankAccountType: input.bankAccountType,
+            bankAccountNumber: input.bankAccountNumber,
+          },
+          update: {
+            bankName: input.bankName,
+            bankAccountType: input.bankAccountType,
+            bankAccountNumber: input.bankAccountNumber,
+          },
+        });
 
-      let setupRut: string;
-      try {
-        setupRut = requireCanonicalRut(input.rut);
-      } catch {
-        throw new ORPCError("BAD_REQUEST", { message: "RUT inválido" });
-      }
+        await db.user.update({
+          where: { id: context.user.id },
+          data: { passwordHash: hash, status: "ACTIVE" },
+        });
 
-      await db.person.update({
-        where: { id: user.personId },
-        data: {
-          names: input.names,
-          fatherName: input.fatherName,
-          motherName: input.motherName,
-          rut: setupRut,
-          phone: input.phone,
-        },
-      });
+        const explicitLoginEmail =
+          normalizedLoginEmail && normalizedLoginEmail !== normalizedNotificationEmail
+            ? normalizedLoginEmail
+            : null;
 
-      await db.employee.upsert({
-        where: { personId: user.personId },
-        create: {
-          personId: user.personId,
-          position: "Por definir",
-          startDate: new Date(),
-          bankName: input.bankName,
-          bankAccountType: input.bankAccountType,
-          bankAccountNumber: input.bankAccountNumber,
-        },
-        update: {
-          bankName: input.bankName,
-          bankAccountType: input.bankAccountType,
-          bankAccountNumber: input.bankAccountNumber,
-        },
-      });
-
-      await db.user.update({
-        where: { id: context.user.id },
-        data: { passwordHash: hash, status: "ACTIVE" },
-      });
-
-      const explicitLoginEmail =
-        normalizedLoginEmail && normalizedLoginEmail !== normalizedNotificationEmail
-          ? normalizedLoginEmail
-          : null;
-
-      await db.$executeRaw`
+        await db.$executeRaw`
         UPDATE users
         SET login_email = ${explicitLoginEmail}
         WHERE id = ${context.user.id}
       `;
 
-      return { status: "ok" as const, message: "Configuración completada" };
-    }),
+        return { status: "ok" as const, message: "Configuración completada" };
+      }
+    ),
 
   toggleMfa: updateUsers
     .route({ method: "POST", path: "/{id}/mfa" })
@@ -536,122 +552,128 @@ const usersORPCRouterBase = {
     .route({ method: "PUT", path: "/{id}/profile" })
     .input(z.object({ id: z.number().int(), payload: updateUserProfileSchema }))
     .output(usersStatusResponseSchema)
-    .handler(async ({ input }: { input: { id: number; payload: z.input<typeof updateUserProfileSchema> } }) => {
-      const targetUser = await db.user.findUnique({
-        where: { id: input.id },
-        include: {
-          person: {
-            include: { employee: true },
+    .handler(
+      async ({
+        input,
+      }: {
+        input: { id: number; payload: z.input<typeof updateUserProfileSchema> };
+      }) => {
+        const targetUser = await db.user.findUnique({
+          where: { id: input.id },
+          include: {
+            person: {
+              include: { employee: true },
+            },
           },
-        },
-      });
+        });
 
-      if (!targetUser) {
-        throw new ORPCError("NOT_FOUND", { message: "Usuario no encontrado" });
-      }
+        if (!targetUser) {
+          throw new ORPCError("NOT_FOUND", { message: "Usuario no encontrado" });
+        }
 
-      const notificationEmailInput = input.payload.notificationEmail ?? input.payload.email;
-      if (!notificationEmailInput) {
-        throw new ORPCError("BAD_REQUEST", { message: "Email de notificación requerido" });
-      }
+        const notificationEmailInput = input.payload.notificationEmail ?? input.payload.email;
+        if (!notificationEmailInput) {
+          throw new ORPCError("BAD_REQUEST", { message: "Email de notificación requerido" });
+        }
 
-      const normalizedNotificationEmail = normalizeEmail(notificationEmailInput);
-      const normalizedLoginEmail = input.payload.loginEmail
-        ? normalizeEmail(input.payload.loginEmail)
-        : null;
-      const explicitLoginEmail =
-        normalizedLoginEmail && normalizedLoginEmail !== normalizedNotificationEmail
-          ? normalizedLoginEmail
+        const normalizedNotificationEmail = normalizeEmail(notificationEmailInput);
+        const normalizedLoginEmail = input.payload.loginEmail
+          ? normalizeEmail(input.payload.loginEmail)
           : null;
-      const effectiveLoginEmail = explicitLoginEmail ?? normalizedNotificationEmail;
-      const normalizedRut = normalizeRut(input.payload.rut);
+        const explicitLoginEmail =
+          normalizedLoginEmail && normalizedLoginEmail !== normalizedNotificationEmail
+            ? normalizedLoginEmail
+            : null;
+        const effectiveLoginEmail = explicitLoginEmail ?? normalizedNotificationEmail;
+        const normalizedRut = normalizeRut(input.payload.rut);
 
-      if (!normalizedRut) {
-        throw new ORPCError("BAD_REQUEST", { message: "RUT inválido" });
-      }
+        if (!normalizedRut) {
+          throw new ORPCError("BAD_REQUEST", { message: "RUT inválido" });
+        }
 
-      const [conflictingEmail, conflictingRut, conflictingLogin] = await Promise.all([
-        db.person.findFirst({
-          where: {
-            email: normalizedNotificationEmail,
-            NOT: { id: targetUser.personId },
-          },
-          select: { id: true },
-        }),
-        db.person.findFirst({
-          where: {
-            rut: normalizedRut,
-            NOT: { id: targetUser.personId },
-          },
-          select: { id: true },
-        }),
-        findUserByEffectiveLoginEmail(effectiveLoginEmail, input.id),
-      ]);
+        const [conflictingEmail, conflictingRut, conflictingLogin] = await Promise.all([
+          db.person.findFirst({
+            where: {
+              email: normalizedNotificationEmail,
+              NOT: { id: targetUser.personId },
+            },
+            select: { id: true },
+          }),
+          db.person.findFirst({
+            where: {
+              rut: normalizedRut,
+              NOT: { id: targetUser.personId },
+            },
+            select: { id: true },
+          }),
+          findUserByEffectiveLoginEmail(effectiveLoginEmail, input.id),
+        ]);
 
-      if (conflictingEmail) {
-        throw new ORPCError("CONFLICT", {
-          message: "El correo de notificación ya está en uso por otro usuario",
-        });
-      }
-
-      if (conflictingRut) {
-        throw new ORPCError("CONFLICT", { message: "El RUT ya está en uso por otro usuario" });
-      }
-
-      if (conflictingLogin) {
-        throw new ORPCError("CONFLICT", { message: "El correo de login ya está en uso" });
-      }
-
-      await db.$transaction(async (tx) => {
-        await tx.person.update({
-          where: { id: targetUser.personId },
-          data: {
-            email: normalizedNotificationEmail,
-            fatherName: toNullableText(input.payload.fatherName),
-            motherName: toNullableText(input.payload.motherName),
-            names: input.payload.names.trim(),
-            phone: toNullableText(input.payload.phone),
-            rut: normalizedRut,
-          },
-        });
-
-        await tx.employee.upsert({
-          where: { personId: targetUser.personId },
-          create: {
-            personId: targetUser.personId,
-            position: input.payload.position.trim(),
-            department: toNullableText(input.payload.department),
-            startDate: targetUser.person.employee?.startDate ?? new Date(),
-            status: targetUser.person.employee?.status ?? "ACTIVE",
-            bankName: toNullableText(input.payload.bankName),
-            bankAccountType: toNullableText(input.payload.bankAccountType),
-            bankAccountNumber: toNullableText(input.payload.bankAccountNumber),
-          },
-          update: {
-            position: input.payload.position.trim(),
-            department: toNullableText(input.payload.department),
-            bankName: toNullableText(input.payload.bankName),
-            bankAccountType: toNullableText(input.payload.bankAccountType),
-            bankAccountNumber: toNullableText(input.payload.bankAccountNumber),
-          },
-        });
-
-        if (typeof input.payload.mfaEnforced === "boolean") {
-          await tx.user.update({
-            where: { id: input.id },
-            data: { mfaEnforced: input.payload.mfaEnforced },
+        if (conflictingEmail) {
+          throw new ORPCError("CONFLICT", {
+            message: "El correo de notificación ya está en uso por otro usuario",
           });
         }
 
-        await tx.$executeRaw`
+        if (conflictingRut) {
+          throw new ORPCError("CONFLICT", { message: "El RUT ya está en uso por otro usuario" });
+        }
+
+        if (conflictingLogin) {
+          throw new ORPCError("CONFLICT", { message: "El correo de login ya está en uso" });
+        }
+
+        await db.$transaction(async (tx) => {
+          await tx.person.update({
+            where: { id: targetUser.personId },
+            data: {
+              email: normalizedNotificationEmail,
+              fatherName: toNullableText(input.payload.fatherName),
+              motherName: toNullableText(input.payload.motherName),
+              names: input.payload.names.trim(),
+              phone: toNullableText(input.payload.phone),
+              rut: normalizedRut,
+            },
+          });
+
+          await tx.employee.upsert({
+            where: { personId: targetUser.personId },
+            create: {
+              personId: targetUser.personId,
+              position: input.payload.position.trim(),
+              department: toNullableText(input.payload.department),
+              startDate: targetUser.person.employee?.startDate ?? new Date(),
+              status: targetUser.person.employee?.status ?? "ACTIVE",
+              bankName: toNullableText(input.payload.bankName),
+              bankAccountType: toNullableText(input.payload.bankAccountType),
+              bankAccountNumber: toNullableText(input.payload.bankAccountNumber),
+            },
+            update: {
+              position: input.payload.position.trim(),
+              department: toNullableText(input.payload.department),
+              bankName: toNullableText(input.payload.bankName),
+              bankAccountType: toNullableText(input.payload.bankAccountType),
+              bankAccountNumber: toNullableText(input.payload.bankAccountNumber),
+            },
+          });
+
+          if (typeof input.payload.mfaEnforced === "boolean") {
+            await tx.user.update({
+              where: { id: input.id },
+              data: { mfaEnforced: input.payload.mfaEnforced },
+            });
+          }
+
+          await tx.$executeRaw`
           UPDATE users
           SET login_email = ${explicitLoginEmail}
           WHERE id = ${input.id}
         `;
-      });
+        });
 
-      return { status: "ok" as const };
-    }),
+        return { status: "ok" as const };
+      }
+    ),
 
   updateRole: updateUsers
     .route({ method: "PUT", path: "/{id}/role" })
@@ -674,40 +696,48 @@ const usersORPCRouterBase = {
     .route({ method: "PUT", path: "/{id}/status" })
     .input(updateStatusSchema)
     .output(usersStatusResponseSchema)
-    .handler(async ({ context, input }: { context: { user: { id: number } }; input: z.input<typeof updateStatusSchema> }) => {
-      if (
-        input.id === context.user.id &&
-        (input.status === "SUSPENDED" || input.status === "PENDING_SETUP")
-      ) {
-        throw new ORPCError("BAD_REQUEST", {
-          message: "No puedes cambiar tu propia cuenta a este estado",
-        });
-      }
-
-      await db.$transaction(async (tx) => {
-        await tx.user.update({
-          where: { id: input.id },
-          data: {
-            status: input.status,
-            sessionVersion: { increment: 1 },
-            ...(input.status === "PENDING_SETUP"
-              ? {
-                  mfaEnabled: false,
-                  mfaSecret: null,
-                }
-              : {}),
-          },
-        });
-
-        if (input.status === "PENDING_SETUP") {
-          await tx.passkey.deleteMany({
-            where: { userId: input.id },
+    .handler(
+      async ({
+        context,
+        input,
+      }: {
+        context: { user: { id: number } };
+        input: z.input<typeof updateStatusSchema>;
+      }) => {
+        if (
+          input.id === context.user.id &&
+          (input.status === "SUSPENDED" || input.status === "PENDING_SETUP")
+        ) {
+          throw new ORPCError("BAD_REQUEST", {
+            message: "No puedes cambiar tu propia cuenta a este estado",
           });
         }
-      });
 
-      return { status: "ok" as const };
-    }),
+        await db.$transaction(async (tx) => {
+          await tx.user.update({
+            where: { id: input.id },
+            data: {
+              status: input.status,
+              sessionVersion: { increment: 1 },
+              ...(input.status === "PENDING_SETUP"
+                ? {
+                    mfaEnabled: false,
+                    mfaSecret: null,
+                  }
+                : {}),
+            },
+          });
+
+          if (input.status === "PENDING_SETUP") {
+            await tx.passkey.deleteMany({
+              where: { userId: input.id },
+            });
+          }
+        });
+
+        return { status: "ok" as const };
+      }
+    ),
 };
 
 export const usersORPCRouter = base.prefix("/api/orpc/users").router(usersORPCRouterBase);

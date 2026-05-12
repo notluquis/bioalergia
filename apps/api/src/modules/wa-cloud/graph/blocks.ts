@@ -11,7 +11,7 @@ export async function blockUsers(phoneNumberId: number, e164List: string[]) {
       block_users: e164List.map((u) => ({ user: u.replace(/^\+/, "") })),
     },
     token,
-    v,
+    v
   );
 }
 
@@ -26,7 +26,7 @@ export async function unblockUsers(phoneNumberId: number, e164List: string[]) {
       block_users: e164List.map((u) => ({ user: u.replace(/^\+/, "") })),
     },
     token,
-    v,
+    v
   );
 }
 

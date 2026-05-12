@@ -17,9 +17,9 @@ export function SiteFooter() {
         <div className="space-y-2">
           <p className="font-semibold text-sm text-(--ink)">{legalOwner.companyName}</p>
           <p className="max-w-xl text-(--ink-muted) text-sm">
-            Centro médico especializado en alergología e inmunología en Concepción, Chile.
-            Esta web entrega información general, vías de contacto y acceso a canales de
-            coordinación asistencial.
+            Centro médico especializado en alergología e inmunología en Concepción, Chile. Esta web
+            entrega información general, vías de contacto y acceso a canales de coordinación
+            asistencial.
           </p>
           <p className="text-(--ink-muted) text-sm">{contactInfo.address}</p>
         </div>
@@ -27,10 +27,16 @@ export function SiteFooter() {
         <div className="space-y-2">
           <p className="font-semibold text-sm text-(--ink)">Legal</p>
           <div className="flex flex-col gap-1 text-sm">
-            <Link className="w-fit no-underline hover:underline" href={legalDocuments.privacy.canonicalPath}>
+            <Link
+              className="w-fit no-underline hover:underline"
+              href={legalDocuments.privacy.canonicalPath}
+            >
               Política de Privacidad
             </Link>
-            <Link className="w-fit no-underline hover:underline" href={legalDocuments.terms.canonicalPath}>
+            <Link
+              className="w-fit no-underline hover:underline"
+              href={legalDocuments.terms.canonicalPath}
+            >
               Términos de Servicio
             </Link>
             <Link
@@ -45,11 +51,18 @@ export function SiteFooter() {
         <div className="space-y-2">
           <p className="font-semibold text-sm text-(--ink)">Contacto</p>
           <div className="flex flex-col gap-1 text-sm">
-            <Link className="w-fit no-underline hover:underline" href={`mailto:${contactInfo.email}`}>
+            <Link
+              className="w-fit no-underline hover:underline"
+              href={`mailto:${contactInfo.email}`}
+            >
               {contactInfo.email}
             </Link>
             {contactInfo.phones.map((phone) => (
-              <Link key={phone} className="w-fit no-underline hover:underline" href={whatsappLink(phone)}>
+              <Link
+                key={phone}
+                className="w-fit no-underline hover:underline"
+                href={whatsappLink(phone)}
+              >
                 {phone}
               </Link>
             ))}
@@ -61,10 +74,11 @@ export function SiteFooter() {
       </div>
 
       <div className="mt-6 flex flex-col gap-2 border-border border-t pt-4 text-(--ink-muted) text-xs sm:flex-row sm:items-center sm:justify-between">
-        <span>© {year} {legalOwner.companyName}. Todos los derechos reservados.</span>
+        <span>
+          © {year} {legalOwner.companyName}. Todos los derechos reservados.
+        </span>
         <span>Última actualización legal: {legalDocuments.privacy.lastUpdated}</span>
       </div>
     </footer>
   );
 }
-

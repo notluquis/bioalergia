@@ -314,7 +314,7 @@ const timesheetsORPCRouterBase = {
     .output(timesheetEntryResponseSchema)
     .handler(async ({ input }) => {
       const entry = await upsertTimesheetEntry(
-        normalizeTimesheetPayload(input) as UpsertTimesheetPayload,
+        normalizeTimesheetPayload(input) as UpsertTimesheetPayload
       );
       return { entry, status: "ok" as const };
     }),
@@ -406,7 +406,7 @@ const timesheetsORPCRouterBase = {
             employee_name: employee?.person?.names || "Desconocido",
             employee_role: employee?.position || null,
             full_name: employee?.person?.names,
-          })),
+          }))
         );
       }
       return { entries: allEntries };

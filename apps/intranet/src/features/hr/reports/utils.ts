@@ -32,11 +32,11 @@ export function calculateStats(data: EmployeeWorkData[], periodCount = 1) {
 
   const maxEmployee = data.reduce(
     (max, emp) => (emp.totalMinutes > max.totalMinutes ? emp : max),
-    firstEmployee,
+    firstEmployee
   );
   const minEmployee = data.reduce(
     (min, emp) => (emp.totalMinutes < min.totalMinutes ? emp : min),
-    firstEmployee,
+    firstEmployee
   );
 
   return {
@@ -128,7 +128,7 @@ export function prepareChartData(data: EmployeeWorkData, granularity: ReportGran
  */
 export function prepareComparisonData(
   employees: EmployeeWorkData[],
-  granularity: ReportGranularity,
+  granularity: ReportGranularity
 ) {
   if (employees.length === 0) {
     return [];
@@ -185,14 +185,14 @@ export function processEmployeeData(
   fullName: string,
   role: string,
   entries: TimesheetEntry[],
-  salarySummary?: Array<{ month: string; net: number; retention: number; subtotal: number }>,
+  salarySummary?: Array<{ month: string; net: number; retention: number; subtotal: number }>
 ): EmployeeWorkData {
   const totalMinutes = entries.reduce((sum, e) => sum + e.worked_minutes, 0);
   const totalOvertimeMinutes = entries.reduce((sum, e) => sum + e.overtime_minutes, 0);
 
   // Calculate distinct days worked (entries might be multiple per day, though typically 1 per day/emp in this system, but let's be safe)
   const uniqueDays = new Set(
-    entries.map((e) => dayjs(e.work_date, "YYYY-MM-DD").format("YYYY-MM-DD")),
+    entries.map((e) => dayjs(e.work_date, "YYYY-MM-DD").format("YYYY-MM-DD"))
   );
   const totalDays = uniqueDays.size;
 

@@ -14,7 +14,12 @@ type MetaWebhookPayload = {
       value: {
         messaging_product?: string;
         metadata?: { display_phone_number?: string; phone_number_id?: string };
-        contacts?: Array<{ profile?: { name?: string }; wa_id: string; bsuid?: string; user_id?: string }>;
+        contacts?: Array<{
+          profile?: { name?: string };
+          wa_id: string;
+          bsuid?: string;
+          user_id?: string;
+        }>;
         messages?: MetaMessage[];
         statuses?: MetaStatus[];
         errors?: Array<{ code: number; title: string; message?: string }>;
@@ -65,7 +70,12 @@ type MetaStatus = {
   recipient_id: string;
   conversation?: { id: string; origin?: { type?: string } };
   pricing?: { billable?: boolean; pricing_model?: string; category?: string };
-  errors?: Array<{ code: number; title: string; message?: string; error_data?: { details?: string } }>;
+  errors?: Array<{
+    code: number;
+    title: string;
+    message?: string;
+    error_data?: { details?: string };
+  }>;
   biz_opaque_callback_data?: string;
 };
 
@@ -88,33 +98,68 @@ const TYPE_MAP: Record<string, string> = {
 
 // Map raw Meta webhook field names to our normalized WaAccountEventKind enum +
 // pick a sensible severity. Defaults to OTHER + info.
-function mapEventKind(field: string): { kind:
-  | "ACCOUNT_ALERT" | "ACCOUNT_REVIEW" | "ACCOUNT_SETTINGS" | "ACCOUNT_UPDATE"
-  | "BUSINESS_CAPABILITY" | "BUSINESS_STATUS" | "SECURITY" | "PARTNER_SOLUTIONS"
-  | "PAYMENT_CONFIG" | "USER_PREFERENCES" | "PHONE_QUALITY" | "PHONE_NAME"
-  | "TEMPLATE_STATUS" | "TEMPLATE_QUALITY" | "TEMPLATE_CATEGORY"
-  | "AUTOMATIC" | "TRACKING" | "OTHER"; severity: "info" | "warning" | "critical" } {
+function mapEventKind(field: string): {
+  kind:
+    | "ACCOUNT_ALERT"
+    | "ACCOUNT_REVIEW"
+    | "ACCOUNT_SETTINGS"
+    | "ACCOUNT_UPDATE"
+    | "BUSINESS_CAPABILITY"
+    | "BUSINESS_STATUS"
+    | "SECURITY"
+    | "PARTNER_SOLUTIONS"
+    | "PAYMENT_CONFIG"
+    | "USER_PREFERENCES"
+    | "PHONE_QUALITY"
+    | "PHONE_NAME"
+    | "TEMPLATE_STATUS"
+    | "TEMPLATE_QUALITY"
+    | "TEMPLATE_CATEGORY"
+    | "AUTOMATIC"
+    | "TRACKING"
+    | "OTHER";
+  severity: "info" | "warning" | "critical";
+} {
   switch (field) {
-    case "account_alerts": return { kind: "ACCOUNT_ALERT", severity: "warning" };
-    case "account_review_update": return { kind: "ACCOUNT_REVIEW", severity: "warning" };
-    case "account_settings_update": return { kind: "ACCOUNT_SETTINGS", severity: "info" };
-    case "account_update": return { kind: "ACCOUNT_UPDATE", severity: "info" };
-    case "business_capability_update": return { kind: "BUSINESS_CAPABILITY", severity: "info" };
-    case "business_status_update": return { kind: "BUSINESS_STATUS", severity: "warning" };
-    case "security": return { kind: "SECURITY", severity: "critical" };
-    case "partner_solutions": return { kind: "PARTNER_SOLUTIONS", severity: "info" };
-    case "payment_configuration_update": return { kind: "PAYMENT_CONFIG", severity: "warning" };
-    case "user_preferences": return { kind: "USER_PREFERENCES", severity: "info" };
-    case "phone_number_quality_update": return { kind: "PHONE_QUALITY", severity: "info" /* upgraded by inspector */ };
-    case "messaging_limit_tier_update": return { kind: "BUSINESS_CAPABILITY", severity: "info" /* upgraded by inspector */ };
-    case "phone_number_name_update": return { kind: "PHONE_NAME", severity: "info" };
-    case "automatic_events": return { kind: "AUTOMATIC", severity: "info" };
-    case "tracking_events": return { kind: "TRACKING", severity: "info" };
-    default: return { kind: "OTHER", severity: "info" };
+    case "account_alerts":
+      return { kind: "ACCOUNT_ALERT", severity: "warning" };
+    case "account_review_update":
+      return { kind: "ACCOUNT_REVIEW", severity: "warning" };
+    case "account_settings_update":
+      return { kind: "ACCOUNT_SETTINGS", severity: "info" };
+    case "account_update":
+      return { kind: "ACCOUNT_UPDATE", severity: "info" };
+    case "business_capability_update":
+      return { kind: "BUSINESS_CAPABILITY", severity: "info" };
+    case "business_status_update":
+      return { kind: "BUSINESS_STATUS", severity: "warning" };
+    case "security":
+      return { kind: "SECURITY", severity: "critical" };
+    case "partner_solutions":
+      return { kind: "PARTNER_SOLUTIONS", severity: "info" };
+    case "payment_configuration_update":
+      return { kind: "PAYMENT_CONFIG", severity: "warning" };
+    case "user_preferences":
+      return { kind: "USER_PREFERENCES", severity: "info" };
+    case "phone_number_quality_update":
+      return { kind: "PHONE_QUALITY", severity: "info" /* upgraded by inspector */ };
+    case "messaging_limit_tier_update":
+      return { kind: "BUSINESS_CAPABILITY", severity: "info" /* upgraded by inspector */ };
+    case "phone_number_name_update":
+      return { kind: "PHONE_NAME", severity: "info" };
+    case "automatic_events":
+      return { kind: "AUTOMATIC", severity: "info" };
+    case "tracking_events":
+      return { kind: "TRACKING", severity: "info" };
+    default:
+      return { kind: "OTHER", severity: "info" };
   }
 }
 
-function summarizeEvent(field: string, v: Record<string, unknown>): { title: string; description: string | null } {
+function summarizeEvent(
+  field: string,
+  v: Record<string, unknown>
+): { title: string; description: string | null } {
   const get = (k: string) => v[k];
   switch (field) {
     case "account_alerts": {
@@ -123,21 +168,33 @@ function summarizeEvent(field: string, v: Record<string, unknown>): { title: str
       return { title: `Alerta de cuenta: ${t}`, description: reason };
     }
     case "account_review_update":
-      return { title: "Meta revisó la cuenta", description: (get("decision") as string | undefined) ?? null };
+      return {
+        title: "Meta revisó la cuenta",
+        description: (get("decision") as string | undefined) ?? null,
+      };
     case "business_capability_update": {
       const tier = get("max_daily_conversation_per_phone");
       return { title: `Cambio de tier`, description: tier ? `Nuevo límite diario: ${tier}` : null };
     }
     case "business_status_update":
-      return { title: "Estado del negocio cambió", description: (get("business_verification_status") as string | undefined) ?? null };
+      return {
+        title: "Estado del negocio cambió",
+        description: (get("business_verification_status") as string | undefined) ?? null,
+      };
     case "security":
-      return { title: "Evento de seguridad", description: (get("text") as string | undefined) ?? null };
+      return {
+        title: "Evento de seguridad",
+        description: (get("text") as string | undefined) ?? null,
+      };
     case "phone_number_quality_update": {
       const cur = get("current_limit") ?? get("event");
       return { title: `Calidad de número: ${cur}`, description: null };
     }
     case "phone_number_name_update":
-      return { title: "Cambio de nombre de número", description: (get("decision") as string | undefined) ?? null };
+      return {
+        title: "Cambio de nombre de número",
+        description: (get("decision") as string | undefined) ?? null,
+      };
     case "user_preferences":
       return { title: "Preferencias de usuario", description: null };
     case "tracking_events":
@@ -157,7 +214,7 @@ function summarizeEvent(field: string, v: Record<string, unknown>): { title: str
 function inspectSeverity(
   baseField: string,
   baseSeverity: "info" | "warning" | "critical",
-  v: Record<string, unknown>,
+  v: Record<string, unknown>
 ): "info" | "warning" | "critical" {
   const lower = (x: unknown) => (typeof x === "string" ? x.toUpperCase() : "");
   if (baseField === "phone_number_quality_update") {
@@ -168,7 +225,11 @@ function inspectSeverity(
   }
   if (baseField === "messaging_limit_tier_update" || baseField === "business_capability_update") {
     const decision = lower(v.decision ?? v.event ?? "");
-    if (decision.includes("DOWNGRADE") || decision.includes("REVOKED") || decision.includes("DECREASED"))
+    if (
+      decision.includes("DOWNGRADE") ||
+      decision.includes("REVOKED") ||
+      decision.includes("DECREASED")
+    )
       return "critical";
     if (decision.includes("UPGRADE") || decision.includes("INCREASED")) return "info";
   }
@@ -177,10 +238,7 @@ function inspectSeverity(
 
 // Persists quality info to WaPhoneNumber so the UI badge can read it
 // without re-querying Meta. Best-effort — failure does not block the event.
-async function snapshotQualityToPhone(
-  phoneNumberId: number | null,
-  v: Record<string, unknown>,
-) {
+async function snapshotQualityToPhone(phoneNumberId: number | null, v: Record<string, unknown>) {
   if (!phoneNumberId) return;
   const raw = (v.event ?? v.current_limit ?? v.new_quality) as string | undefined;
   if (!raw) return;
@@ -224,7 +282,8 @@ async function persistAccountEvent(args: {
 async function applyUserPreferences(v: Record<string, unknown>) {
   // Meta payload: { contacts:[{wa_id}], user_preferences:[{category, value}] }
   const contacts = (v.contacts as Array<{ wa_id?: string }> | undefined) ?? [];
-  const prefs = (v.user_preferences as Array<{ category?: string; value?: string }> | undefined) ?? [];
+  const prefs =
+    (v.user_preferences as Array<{ category?: string; value?: string }> | undefined) ?? [];
   if (contacts.length === 0 || prefs.length === 0) return;
   for (const c of contacts) {
     if (!c.wa_id) continue;
@@ -250,7 +309,11 @@ async function applyUserPreferences(v: Record<string, unknown>) {
   }
 }
 
-export function verifyMetaSignature(rawBody: string, signatureHeader: string | undefined, appSecret: string | undefined): boolean {
+export function verifyMetaSignature(
+  rawBody: string,
+  signatureHeader: string | undefined,
+  appSecret: string | undefined
+): boolean {
   if (!appSecret || !signatureHeader) return false;
   const expected = `sha256=${createHmac("sha256", appSecret).update(rawBody).digest("hex")}`;
   try {
@@ -526,7 +589,7 @@ export async function processWebhookPayload(payload: MetaWebhookPayload): Promis
                 DELETED: "DELETED",
                 THROTTLED: "THROTTLED",
               };
-              const newStatus = fp.method ? statusMap[fp.method] ?? fp.method : null;
+              const newStatus = fp.method ? (statusMap[fp.method] ?? fp.method) : null;
               if (newStatus) {
                 await db.waSavedFlow.updateMany({
                   where: { flowId: fp.flow_id },
@@ -558,8 +621,7 @@ export async function processWebhookPayload(payload: MetaWebhookPayload): Promis
             const exists = await db.waMessage.findUnique({ where: { metaMessageId: m.id } });
             if (exists) continue;
             const msgType = (TYPE_MAP[m.type] ?? "UNSUPPORTED") as keyof typeof TYPE_MAP;
-            const body =
-              m.text?.body ?? m.button?.text ?? m.reaction?.emoji ?? null;
+            const body = m.text?.body ?? m.button?.text ?? m.reaction?.emoji ?? null;
             const tsMs = Number.parseInt(m.timestamp, 10) * 1000;
             const ts = Number.isFinite(tsMs) ? new Date(tsMs) : new Date();
             const preview = previewFromMessage(m);
@@ -592,7 +654,8 @@ export async function processWebhookPayload(payload: MetaWebhookPayload): Promis
       }
 
       // ── smb_app_state_sync (contact add/update/delete sync de WA Business app) ──
-      const stateSync = (v as unknown as { state_sync?: Array<Record<string, unknown>> }).state_sync;
+      const stateSync = (v as unknown as { state_sync?: Array<Record<string, unknown>> })
+        .state_sync;
       if (FIELD === "smb_app_state_sync" && stateSync?.length) {
         for (const s of stateSync) {
           out.events += 1;
@@ -600,7 +663,11 @@ export async function processWebhookPayload(payload: MetaWebhookPayload): Promis
             const type = s.type as string;
             const action = s.action as string;
             if (type === "contact" && s.contact && typeof s.contact === "object") {
-              const c = s.contact as { full_name?: string; first_name?: string; phone_number?: string };
+              const c = s.contact as {
+                full_name?: string;
+                first_name?: string;
+                phone_number?: string;
+              };
               if (c.phone_number) {
                 const phoneE164 = normalizeToE164(c.phone_number);
                 const existing = await db.waContact.findUnique({ where: { phoneE164 } });
@@ -631,16 +698,20 @@ export async function processWebhookPayload(payload: MetaWebhookPayload): Promis
       }
 
       // ── history (one-shot bulk import of past chats during Coexistence onboarding) ──
-      const history = (v as unknown as {
-        history?: Array<{
-          metadata?: { phase?: number; chunk_order?: number; progress?: number };
-          threads?: Array<{
-            id?: string;
-            context?: { wa_id?: string };
-            messages?: Array<MetaMessage & { history_context?: { status?: string; from_me?: boolean } }>;
+      const history = (
+        v as unknown as {
+          history?: Array<{
+            metadata?: { phase?: number; chunk_order?: number; progress?: number };
+            threads?: Array<{
+              id?: string;
+              context?: { wa_id?: string };
+              messages?: Array<
+                MetaMessage & { history_context?: { status?: string; from_me?: boolean } }
+              >;
+            }>;
           }>;
-        }>;
-      }).history;
+        }
+      ).history;
       if (FIELD === "history" && history?.length) {
         for (const h of history) {
           for (const thread of h.threads ?? []) {
@@ -656,8 +727,7 @@ export async function processWebhookPayload(payload: MetaWebhookPayload): Promis
                 if (exists) continue;
                 const msgType = (TYPE_MAP[m.type] ?? "UNSUPPORTED") as keyof typeof TYPE_MAP;
                 const fromMe = m.history_context?.from_me === true;
-                const body =
-                  m.text?.body ?? m.button?.text ?? m.reaction?.emoji ?? null;
+                const body = m.text?.body ?? m.button?.text ?? m.reaction?.emoji ?? null;
                 const tsMs = Number.parseInt(m.timestamp, 10) * 1000;
                 const ts = Number.isFinite(tsMs) ? new Date(tsMs) : new Date();
                 const status = m.history_context?.status?.toUpperCase() ?? "DELIVERED";
@@ -710,11 +780,7 @@ export async function processWebhookPayload(payload: MetaWebhookPayload): Promis
             if (exists) continue;
 
             const msgType = (TYPE_MAP[m.type] ?? "UNSUPPORTED") as keyof typeof TYPE_MAP;
-            const body =
-              m.text?.body ??
-              m.button?.text ??
-              m.reaction?.emoji ??
-              null;
+            const body = m.text?.body ?? m.button?.text ?? m.reaction?.emoji ?? null;
             const mediaCaption =
               m.image?.caption ?? m.video?.caption ?? m.document?.caption ?? null;
             const mediaMime =
@@ -784,10 +850,12 @@ export async function processWebhookPayload(payload: MetaWebhookPayload): Promis
 
             // Identity changed (m.identity.acknowledged): update local pushName timestamp
             if (m.identity?.acknowledged) {
-              await db.waContact.update({
-                where: { id: contactId },
-                data: { updatedAt: new Date() },
-              }).catch(() => undefined);
+              await db.waContact
+                .update({
+                  where: { id: contactId },
+                  data: { updatedAt: new Date() },
+                })
+                .catch(() => undefined);
             }
 
             // Auto-tag conversation when patient clicks a Quick Reply button
@@ -859,11 +927,7 @@ export async function processWebhookPayload(payload: MetaWebhookPayload): Promis
         for (const s of v.statuses) {
           out.events += 1;
           try {
-            const status = s.status.toUpperCase() as
-              | "SENT"
-              | "DELIVERED"
-              | "READ"
-              | "FAILED";
+            const status = s.status.toUpperCase() as "SENT" | "DELIVERED" | "READ" | "FAILED";
             const tsMs = Number.parseInt(s.timestamp, 10) * 1000;
             const ts = Number.isFinite(tsMs) ? new Date(tsMs) : new Date();
             const data: Record<string, unknown> = { status };
@@ -878,7 +942,8 @@ export async function processWebhookPayload(payload: MetaWebhookPayload): Promis
             if (s.conversation?.id) data.conversationWindowId = s.conversation.id;
             if (s.conversation?.origin?.type) data.conversationOrigin = s.conversation.origin.type;
             if (s.pricing) {
-              if (typeof s.pricing.billable === "boolean") data.pricingBillable = s.pricing.billable;
+              if (typeof s.pricing.billable === "boolean")
+                data.pricingBillable = s.pricing.billable;
               if (s.pricing.pricing_model) data.pricingModel = s.pricing.pricing_model;
               if (s.pricing.category) data.pricingCategory = s.pricing.category;
             }

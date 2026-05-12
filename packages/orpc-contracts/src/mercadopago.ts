@@ -90,13 +90,22 @@ export const processReportResponseSchema = z.object({
 });
 
 export const mercadopagoContract = {
-  createReport: oc.route({ method: "POST", path: "/reports" }).input(createReportInputSchema).output(mpReportSchema),
+  createReport: oc
+    .route({ method: "POST", path: "/reports" })
+    .input(createReportInputSchema)
+    .output(mpReportSchema),
   downloadReport: oc
     .route({ method: "GET", path: "/reports/download" })
     .input(downloadReportInputSchema)
     .output(z.file()),
-  listReports: oc.route({ method: "GET", path: "/reports" }).input(listReportsInputSchema).output(listReportsResponseSchema),
-  listSyncLogs: oc.route({ method: "GET", path: "/sync/logs" }).input(syncLogsInputSchema).output(syncLogsResponseSchema),
+  listReports: oc
+    .route({ method: "GET", path: "/reports" })
+    .input(listReportsInputSchema)
+    .output(listReportsResponseSchema),
+  listSyncLogs: oc
+    .route({ method: "GET", path: "/sync/logs" })
+    .input(syncLogsInputSchema)
+    .output(syncLogsResponseSchema),
   processReport: oc
     .route({ method: "POST", path: "/process-report" })
     .input(processReportInputSchema)

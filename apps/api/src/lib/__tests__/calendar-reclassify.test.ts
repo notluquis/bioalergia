@@ -20,7 +20,7 @@ describe("calendar-reclassify (pure helpers)", () => {
 
     it("contains missingAmountExpected", () => {
       expect(MISSING_CLASSIFICATION_FILTERS.some((f) => f.key === "missingAmountExpected")).toBe(
-        true,
+        true
       );
     });
 
@@ -38,7 +38,7 @@ describe("calendar-reclassify (pure helpers)", () => {
 
     it("contains missingTreatmentStage", () => {
       expect(MISSING_CLASSIFICATION_FILTERS.some((f) => f.key === "missingTreatmentStage")).toBe(
-        true,
+        true
       );
     });
 
@@ -124,7 +124,7 @@ describe("calendar-reclassify (pure helpers)", () => {
           secondReading: false,
           skinTest: true,
           // thirdReading is missing
-        }),
+        })
       ).toBeNull();
     });
 
@@ -136,7 +136,7 @@ describe("calendar-reclassify (pure helpers)", () => {
           secondReading: false,
           skinTest: false,
           thirdReading: false,
-        }),
+        })
       ).toBeNull();
     });
 
@@ -148,7 +148,7 @@ describe("calendar-reclassify (pure helpers)", () => {
           secondReading: false,
           skinTest: false,
           thirdReading: false,
-        }),
+        })
       ).toBeNull();
     });
 

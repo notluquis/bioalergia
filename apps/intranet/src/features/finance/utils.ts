@@ -4,7 +4,7 @@
  */
 export function formatAmount(
   amount: null | number | string | undefined,
-  currency: null | string = "CLP",
+  currency: null | string = "CLP"
 ): string {
   if (amount === null || amount === undefined) {
     return "-";

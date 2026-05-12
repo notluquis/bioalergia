@@ -21,7 +21,9 @@ export const calendarQueryInputSchema = z.object({
   patientName: z.string().optional(),
   patientRut: z.string().optional(),
   search: z.string().optional(),
-  seriesKind: z.enum(["PATCH_TEST", "SKIN_TEST", "SUBCUTANEOUS_TREATMENT", "MEDICAL_CONSULTATION"]).optional(),
+  seriesKind: z
+    .enum(["PATCH_TEST", "SKIN_TEST", "SUBCUTANEOUS_TREATMENT", "MEDICAL_CONSULTATION"])
+    .optional(),
   seriesStatus: z.enum(["PLANNED", "ACTIVE", "INACTIVE", "COMPLETED", "CANCELLED"]).optional(),
   maxDays: z.coerce.number().positive().int().optional(),
 });
@@ -91,7 +93,7 @@ export const calendarClassificationOptionsSchema = z.object({
     z.object({
       key: z.string(),
       label: z.string(),
-    }),
+    })
   ),
   patchReadings: z.array(z.string()),
   testSubtypes: z.array(z.string()),
@@ -169,7 +171,9 @@ export const calendarFiltersOutputSchema = z.object({
   patientName: z.string().optional(),
   patientRut: z.string().optional(),
   search: z.string().optional(),
-  seriesKind: z.enum(["PATCH_TEST", "SKIN_TEST", "SUBCUTANEOUS_TREATMENT", "MEDICAL_CONSULTATION"]).optional(),
+  seriesKind: z
+    .enum(["PATCH_TEST", "SKIN_TEST", "SUBCUTANEOUS_TREATMENT", "MEDICAL_CONSULTATION"])
+    .optional(),
   seriesStatus: z.enum(["PLANNED", "ACTIVE", "INACTIVE", "COMPLETED", "CANCELLED"]).optional(),
   to: z.string(),
 });
@@ -195,14 +199,14 @@ export const calendarSummaryWithAggregatesSchema = z.object({
         amountPaid: z.number(),
         date: z.string(),
         total: z.number(),
-      }),
+      })
     ),
     byDateType: z.array(
       z.object({
         date: z.string(),
         eventType: z.string().nullable(),
         total: z.number(),
-      }),
+      })
     ),
     byMonth: z.array(
       z.object({
@@ -211,7 +215,7 @@ export const calendarSummaryWithAggregatesSchema = z.object({
         month: z.number(),
         total: z.number(),
         year: z.number(),
-      }),
+      })
     ),
     byWeek: z.array(
       z.object({
@@ -220,7 +224,7 @@ export const calendarSummaryWithAggregatesSchema = z.object({
         isoWeek: z.number(),
         isoYear: z.number(),
         total: z.number(),
-      }),
+      })
     ),
     byWeekday: z.array(
       z.object({
@@ -228,7 +232,7 @@ export const calendarSummaryWithAggregatesSchema = z.object({
         amountPaid: z.number(),
         total: z.number(),
         weekday: z.number(),
-      }),
+      })
     ),
     byYear: z.array(
       z.object({
@@ -236,7 +240,7 @@ export const calendarSummaryWithAggregatesSchema = z.object({
         amountPaid: z.number(),
         total: z.number(),
         year: z.number(),
-      }),
+      })
     ),
   }),
   available: z.object({
@@ -244,19 +248,19 @@ export const calendarSummaryWithAggregatesSchema = z.object({
       z.object({
         calendarId: z.string(),
         total: z.number(),
-      }),
+      })
     ),
     eventTypes: z.array(
       z.object({
         eventType: z.string().nullable(),
         total: z.number(),
-      }),
+      })
     ),
     categories: z.array(
       z.object({
         category: z.string().nullable(),
         total: z.number(),
-      }),
+      })
     ),
   }),
   filters: calendarFiltersOutputSchema.omit({ maxDays: true }),
@@ -272,7 +276,9 @@ export const calendarTreatmentAnalyticsInputSchema = z.object({
   from: z.string().optional(),
   granularity: z.enum(["day", "week", "month", "all"]).optional(),
   patientRut: z.string().optional(),
-  seriesKind: z.enum(["PATCH_TEST", "SKIN_TEST", "SUBCUTANEOUS_TREATMENT", "MEDICAL_CONSULTATION"]).optional(),
+  seriesKind: z
+    .enum(["PATCH_TEST", "SKIN_TEST", "SUBCUTANEOUS_TREATMENT", "MEDICAL_CONSULTATION"])
+    .optional(),
   seriesStatus: z.enum(["PLANNED", "ACTIVE", "INACTIVE", "COMPLETED", "CANCELLED"]).optional(),
   to: z.string().optional(),
 });
@@ -292,7 +298,7 @@ export const calendarTreatmentAnalyticsSchema = z.object({
     .array(
       calendarTreatmentAnalyticsPeriodSchema.extend({
         date: z.string(),
-      }),
+      })
     )
     .optional(),
   byMonth: z
@@ -300,7 +306,7 @@ export const calendarTreatmentAnalyticsSchema = z.object({
       calendarTreatmentAnalyticsPeriodSchema.extend({
         month: z.number(),
         year: z.number(),
-      }),
+      })
     )
     .optional(),
   byWeek: z
@@ -308,7 +314,7 @@ export const calendarTreatmentAnalyticsSchema = z.object({
       calendarTreatmentAnalyticsPeriodSchema.extend({
         isoWeek: z.number(),
         isoYear: z.number(),
-      }),
+      })
     )
     .optional(),
   totals: calendarTreatmentAnalyticsPeriodSchema,
@@ -365,7 +371,7 @@ export const calendarSyncLogSchema = z.object({
         attributes: z.unknown().nullable(),
         tags: z.unknown().nullable(),
         timestamp: z.date(),
-      }),
+      })
     )
     .optional(),
 });
@@ -415,7 +421,9 @@ export const calendarContract = {
   classificationOptions: oc
     .route({ method: "GET", path: "/classification-options" })
     .output(calendarClassificationOptionsSchema),
-  calendars: oc.route({ method: "GET", path: "/calendars" }).output(z.array(calendarSummaryItemSchema)),
+  calendars: oc
+    .route({ method: "GET", path: "/calendars" })
+    .output(z.array(calendarSummaryItemSchema)),
   summaryEvents: oc
     .route({ method: "GET", path: "/events/summary" })
     .input(calendarQueryInputSchema)
@@ -432,9 +440,7 @@ export const calendarContract = {
     .route({ method: "POST", path: "/events/classify" })
     .input(calendarUpdateClassificationSchema)
     .output(z.object({ ok: z.literal(true) })),
-  syncEvents: oc
-    .route({ method: "POST", path: "/events/sync" })
-    .output(calendarSyncResponseSchema),
+  syncEvents: oc.route({ method: "POST", path: "/events/sync" }).output(calendarSyncResponseSchema),
   syncLogs: oc
     .route({ method: "GET", path: "/events/sync/logs" })
     .input(calendarSyncLogsInputSchema)

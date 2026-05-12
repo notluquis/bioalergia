@@ -1,11 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 // Mirror the proxy MIME-override logic so we can unit-test it.
-function pickContentType(
-  upstreamCT: string,
-  filename: string,
-  storedMime: string | null,
-): string {
+function pickContentType(upstreamCT: string, filename: string, storedMime: string | null): string {
   let contentType = upstreamCT || storedMime || "application/octet-stream";
   const lowerName = filename.toLowerCase();
   if (contentType === "application/octet-stream" || contentType === "binary/octet-stream") {
@@ -27,9 +23,7 @@ describe("media proxy Content-Type override", () => {
   });
 
   it("upgrades octet-stream + .pdf → application/pdf", () => {
-    expect(pickContentType("application/octet-stream", "report.pdf", null)).toBe(
-      "application/pdf",
-    );
+    expect(pickContentType("application/octet-stream", "report.pdf", null)).toBe("application/pdf");
   });
 
   it("upgrades binary/octet-stream + .jpeg → image/jpeg", () => {

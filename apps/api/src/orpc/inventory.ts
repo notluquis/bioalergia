@@ -127,7 +127,12 @@ const listAllergyOverviewRoute = requireReadInventory
   });
 
 const listCategoriesRoute = requireReadInventory
-  .route({ method: "GET", path: "/categories", summary: "List inventory categories", tags: ["Inventory"] })
+  .route({
+    method: "GET",
+    path: "/categories",
+    summary: "List inventory categories",
+    tags: ["Inventory"],
+  })
   .output(inventoryCategoriesResponseSchema)
   .handler(async () => {
     const categories = await listInventoryCategories();
@@ -142,7 +147,12 @@ const listCategoriesRoute = requireReadInventory
   });
 
 const createCategoryRoute = requireManageInventorySettings
-  .route({ method: "POST", path: "/categories", summary: "Create an inventory category", tags: ["Inventory"] })
+  .route({
+    method: "POST",
+    path: "/categories",
+    summary: "Create an inventory category",
+    tags: ["Inventory"],
+  })
   .input(inventoryCategoryInputSchema)
   .output(inventoryCategoryResponseSchema)
   .handler(async ({ input }: { input: z.input<typeof inventoryCategoryInputSchema> }) => {
@@ -192,7 +202,12 @@ const listItemsRoute = requireReadInventory
   });
 
 const createItemRoute = requireWriteInventory
-  .route({ method: "POST", path: "/items", summary: "Create an inventory item", tags: ["Inventory"] })
+  .route({
+    method: "POST",
+    path: "/items",
+    summary: "Create an inventory item",
+    tags: ["Inventory"],
+  })
   .input(inventoryItemCreateInputSchema)
   .output(inventoryItemResponseSchema)
   .handler(async ({ input }: { input: z.input<typeof inventoryItemCreateInputSchema> }) => {
@@ -219,7 +234,12 @@ const createItemRoute = requireWriteInventory
   });
 
 const updateItemRoute = requireWriteInventory
-  .route({ method: "PUT", path: "/items/{id}", summary: "Update an inventory item", tags: ["Inventory"] })
+  .route({
+    method: "PUT",
+    path: "/items/{id}",
+    summary: "Update an inventory item",
+    tags: ["Inventory"],
+  })
   .input(z.object({ id: z.coerce.number().int().positive(), item: inventoryItemUpdateInputSchema }))
   .output(inventoryItemResponseSchema)
   .handler(
@@ -228,31 +248,36 @@ const updateItemRoute = requireWriteInventory
     }: {
       input: { id: number; item: z.input<typeof inventoryItemUpdateInputSchema> };
     }) => {
-    const item = await updateInventoryItem(input.id, {
-      name: input.item.name,
-      description: input.item.description,
-      currentStock: input.item.current_stock,
-      categoryId: input.item.category_id,
-    });
+      const item = await updateInventoryItem(input.id, {
+        name: input.item.name,
+        description: input.item.description,
+        currentStock: input.item.current_stock,
+        categoryId: input.item.category_id,
+      });
 
-    return {
-      data: {
-        id: item.id,
-        category_id: item.categoryId,
-        name: item.name,
-        description: item.description,
-        current_stock: item.currentStock,
-        created_at: item.createdAt,
-        updated_at: item.updatedAt,
-        category_name: item.category?.name ?? null,
-      },
-      status: "ok" as const,
-    };
-    },
+      return {
+        data: {
+          id: item.id,
+          category_id: item.categoryId,
+          name: item.name,
+          description: item.description,
+          current_stock: item.currentStock,
+          created_at: item.createdAt,
+          updated_at: item.updatedAt,
+          category_name: item.category?.name ?? null,
+        },
+        status: "ok" as const,
+      };
+    }
   );
 
 const deleteItemRoute = requireWriteInventory
-  .route({ method: "DELETE", path: "/items/{id}", summary: "Delete an inventory item", tags: ["Inventory"] })
+  .route({
+    method: "DELETE",
+    path: "/items/{id}",
+    summary: "Delete an inventory item",
+    tags: ["Inventory"],
+  })
   .input(inventoryIdInputSchema)
   .output(inventoryStatusResponseSchema)
   .handler(async ({ input }: { input: z.output<typeof inventoryIdInputSchema> }) => {

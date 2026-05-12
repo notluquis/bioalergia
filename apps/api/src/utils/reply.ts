@@ -5,7 +5,7 @@ import superjson from "superjson";
 export const reply = <T = unknown>(
   c: Context,
   data: T,
-  status: ContentfulStatusCode = 200,
+  status: ContentfulStatusCode = 200
 ): Response => {
   const serialized = superjson.serialize(data);
   return c.json(serialized, status);
@@ -14,7 +14,7 @@ export const reply = <T = unknown>(
 export const replyRaw = <T = unknown>(
   c: Context,
   data: T,
-  status: ContentfulStatusCode = 200,
+  status: ContentfulStatusCode = 200
 ): Response => {
   return c.json(data, status);
 };

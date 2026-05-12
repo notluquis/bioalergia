@@ -19,7 +19,7 @@ declare module "talisman/metrics/monge-elkan.js" {
   function mongeElkan(
     similarity: (a: string, b: string) => number,
     source: string[],
-    target: string[],
+    target: string[]
   ): number;
 
   /**
@@ -28,7 +28,7 @@ declare module "talisman/metrics/monge-elkan.js" {
   function symmetric(
     similarity: (a: string, b: string) => number,
     source: string[],
-    target: string[],
+    target: string[]
   ): number;
 
   export default mongeElkan;

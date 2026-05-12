@@ -4,9 +4,7 @@ import { classifyClinicalXlsxFilename } from "../clinical-xlsx-file-classifier.t
 
 describe("clinical xlsx file classifier", () => {
   it("routes skin-test filenames to the skin-test module", () => {
-    expect(classifyClinicalXlsxFilename("PRICK TEST AINES.xlsx").classification).toBe(
-      "SKIN_TEST"
-    );
+    expect(classifyClinicalXlsxFilename("PRICK TEST AINES.xlsx").classification).toBe("SKIN_TEST");
     expect(classifyClinicalXlsxFilename("MULTITEST 1, 2 , 3 y acaros.xlsx").classification).toBe(
       "SKIN_TEST"
     );

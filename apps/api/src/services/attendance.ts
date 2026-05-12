@@ -114,8 +114,12 @@ function mapMark(raw: {
 
 /** Compute worked minutes between earliest CLOCK_IN and latest CLOCK_OUT in a set of marks */
 function computeWorkedMinutes(dayMarks: AttendanceMarkData[]): number | null {
-  const clockIns = dayMarks.filter((m) => m.type === "CLOCK_IN").sort((a, b) => a.markedAt.getTime() - b.markedAt.getTime());
-  const clockOuts = dayMarks.filter((m) => m.type === "CLOCK_OUT").sort((a, b) => b.markedAt.getTime() - a.markedAt.getTime());
+  const clockIns = dayMarks
+    .filter((m) => m.type === "CLOCK_IN")
+    .sort((a, b) => a.markedAt.getTime() - b.markedAt.getTime());
+  const clockOuts = dayMarks
+    .filter((m) => m.type === "CLOCK_OUT")
+    .sort((a, b) => b.markedAt.getTime() - a.markedAt.getTime());
   if (clockIns.length === 0 || clockOuts.length === 0) return null;
   const firstIn = clockIns[0]!;
   const lastOut = clockOuts[0]!;
@@ -180,7 +184,7 @@ function ipToNumber(ip: string): number | null {
  */
 export async function createMark(
   payload: CreateMarkPayload,
-  meta: RequestMeta,
+  meta: RequestMeta
 ): Promise<{ mark: AttendanceMarkData; timesheetSynced: boolean }> {
   const isOfficeNetwork = await checkIsOfficeNetwork(meta.ip ?? "");
   const now = new Date();
@@ -223,7 +227,7 @@ export async function createAdminMark(
   type: AttendanceMarkType,
   markedAt: Date,
   adminUserId: number,
-  notes?: string,
+  notes?: string
 ): Promise<{ mark: AttendanceMarkData; timesheetSynced: boolean }> {
   const raw = await db.attendanceMark.create({
     data: {
@@ -260,7 +264,7 @@ export async function createAdminMark(
  */
 export async function syncMarkToTimesheet(
   employeeId: number,
-  referenceTime: Date,
+  referenceTime: Date
 ): Promise<boolean> {
   const dayInSantiago = dayjs(referenceTime).tz(TIMEZONE);
   const dayStart = dayInSantiago.startOf("day").toDate();
@@ -428,7 +432,9 @@ export async function listMarks(options: {
   to?: string;
   completionStatus?: "all" | "complete" | "incomplete";
 }): Promise<{
-  marks: Array<AttendanceMarkData & { employeeName?: string; employeeRut?: string; isDayIncomplete: boolean }>;
+  marks: Array<
+    AttendanceMarkData & { employeeName?: string; employeeRut?: string; isDayIncomplete: boolean }
+  >;
   summary: { totalMarks: number; incompleteDays: number; totalWorkedMinutes: number };
 }> {
   const fromDate = options.from
@@ -537,7 +543,7 @@ export async function createOfficeNetwork(name: string, cidr: string) {
 
 export async function updateOfficeNetwork(
   id: number,
-  data: { name?: string; cidr?: string; isActive?: boolean },
+  data: { name?: string; cidr?: string; isActive?: boolean }
 ) {
   return db.officeNetwork.update({ where: { id }, data });
 }

@@ -343,27 +343,25 @@ export async function reclassifyClinicalXlsxLibrary(options?: {
   shouldCancel?: () => boolean;
 }) {
   const rows = (
-    await sql<
-      {
-        classification: ClinicalXlsxFileClassification;
-        filename: string;
-        id: string;
-        modifiedAt: null | string;
-        oneDriveAccountId: string;
-        oneDriveCTag: null | string;
-        oneDriveDriveId: null | string;
-        oneDriveETag: null | string;
-        oneDriveItemId: string;
-        oneDriveSharePointUniqueId: null | string;
-        oneDriveSourceDriveId: null | string;
-        oneDriveSourceItemId: null | string;
-        oneDriveSourceKey: null | string;
-        oneDriveWebUrl: null | string;
-        path: null | string;
-        mimeType: null | string;
-        size: null | number;
-      }
-    >`
+    await sql<{
+      classification: ClinicalXlsxFileClassification;
+      filename: string;
+      id: string;
+      modifiedAt: null | string;
+      oneDriveAccountId: string;
+      oneDriveCTag: null | string;
+      oneDriveDriveId: null | string;
+      oneDriveETag: null | string;
+      oneDriveItemId: string;
+      oneDriveSharePointUniqueId: null | string;
+      oneDriveSourceDriveId: null | string;
+      oneDriveSourceItemId: null | string;
+      oneDriveSourceKey: null | string;
+      oneDriveWebUrl: null | string;
+      path: null | string;
+      mimeType: null | string;
+      size: null | number;
+    }>`
       SELECT
         id,
         onedrive_account_id AS "oneDriveAccountId",
@@ -625,27 +623,26 @@ export async function syncClinicalSkinTestImports(options?: {
       );
     }
 
-    workItems.push(...xlsxItems.map((item) => ({ account, item, key: `${account.accountId}:${item.id}` })));
-
-    emit(
-      `[${account.email}] ${items.length} cambio(s), ${xlsxItems.length} xlsx`,
-      {
-        accountEmail: account.email,
-        accountId: account.accountId,
-        accountIndex: accountIndex + 1,
-        accountsTotal: accounts.length,
-        documents,
-        documentsMatched,
-        documentsUnmatched,
-        phase: "scanned",
-        processed: accountIndex + 1,
-        scanned,
-        total: accounts.length,
-        xlsx,
-        filesProcessed,
-        filesTotal: 0,
-      }
+    workItems.push(
+      ...xlsxItems.map((item) => ({ account, item, key: `${account.accountId}:${item.id}` }))
     );
+
+    emit(`[${account.email}] ${items.length} cambio(s), ${xlsxItems.length} xlsx`, {
+      accountEmail: account.email,
+      accountId: account.accountId,
+      accountIndex: accountIndex + 1,
+      accountsTotal: accounts.length,
+      documents,
+      documentsMatched,
+      documentsUnmatched,
+      phase: "scanned",
+      processed: accountIndex + 1,
+      scanned,
+      total: accounts.length,
+      xlsx,
+      filesProcessed,
+      filesTotal: 0,
+    });
   }
 
   const totalWorkItems = workItems.length;
@@ -922,7 +919,10 @@ export async function processOneDriveSkinTestItem(
       sourceSizeBytes: metadata.size,
     });
 
-    const sha256Duplicate = await findWorkbookSha256DuplicateImport(snapshotResult.sha256, importId);
+    const sha256Duplicate = await findWorkbookSha256DuplicateImport(
+      snapshotResult.sha256,
+      importId
+    );
     if (sha256Duplicate) {
       await upsertImport({
         accountId,
@@ -939,9 +939,7 @@ export async function processOneDriveSkinTestItem(
       return await getSkinTestImport(importId);
     }
 
-    const parsed = await parseSkinTestWorkbookBuffer(
-      buffer
-    );
+    const parsed = await parseSkinTestWorkbookBuffer(buffer);
     const resultHash = computeResultHash(parsed.results);
     const templateIssue = getTemplateSkinTestIssue(parsed);
     if (templateIssue) {
@@ -1462,9 +1460,11 @@ export async function listSkinTestImports(input: SkinTestImportListInput = {}) {
       LEFT JOIN clinical_skin_test_workbook_snapshots ws ON ws.source_import_id = i.id
       LEFT JOIN clinical_skin_test_workbook_files wf ON wf.id = ws.workbook_file_id
       WHERE ${whereSql}
-      ORDER BY ${input.sortBy === "testDate"
-        ? sql`(i.parsed_payload->'header'->>'testDate')::date DESC NULLS LAST, i.updated_at DESC`
-        : sql`i.updated_at DESC`}
+      ORDER BY ${
+        input.sortBy === "testDate"
+          ? sql`(i.parsed_payload->'header'->>'testDate')::date DESC NULLS LAST, i.updated_at DESC`
+          : sql`i.updated_at DESC`
+      }
       LIMIT ${pageSize}
       OFFSET ${offset}
     `.execute(kysely),
@@ -1498,18 +1498,18 @@ export async function getSkinTestAnalytics(
     allergenCatalogResult,
     recentTestsResult,
   ] = await Promise.all([
-      sql<{
-        dateFrom: Date | string | null;
-        dateTo: Date | string | null;
-        patientsWithPositiveAllergen: number;
-        positiveAllergenResults: number;
-        positiveTests: number;
-        totalPatients: number;
-        totalResults: number;
-        totalTests: number;
-        withRut: number;
-        withoutRut: number;
-      }>`
+    sql<{
+      dateFrom: Date | string | null;
+      dateTo: Date | string | null;
+      patientsWithPositiveAllergen: number;
+      positiveAllergenResults: number;
+      positiveTests: number;
+      totalPatients: number;
+      totalResults: number;
+      totalTests: number;
+      withRut: number;
+      withoutRut: number;
+    }>`
         WITH filtered AS (
           SELECT t.*
           FROM clinical_skin_tests t
@@ -1547,7 +1547,7 @@ export async function getSkinTestAnalytics(
           ), 0) AS "patientsWithPositiveAllergen"
         FROM filtered
       `.execute(kysely),
-      sql<{ examType: string; total: number }>`
+    sql<{ examType: string; total: number }>`
         SELECT ${examTypeSql} AS "examType", count(*)::int AS total
         FROM clinical_skin_tests t
         LEFT JOIN clinical_skin_test_imports i ON i.id = t.source_import_id
@@ -1555,7 +1555,7 @@ export async function getSkinTestAnalytics(
         GROUP BY "examType"
         ORDER BY total DESC, "examType" ASC
       `.execute(kysely),
-      sql<{ month: string; total: number }>`
+    sql<{ month: string; total: number }>`
         SELECT to_char(date_trunc('month', t.test_date), 'YYYY-MM') AS month, count(*)::int AS total
         FROM clinical_skin_tests t
         LEFT JOIN clinical_skin_test_imports i ON i.id = t.source_import_id
@@ -1564,12 +1564,12 @@ export async function getSkinTestAnalytics(
         ORDER BY month DESC
         LIMIT 24
       `.execute(kysely),
-      sql<{
-        lastTestDate: Date | string | null;
-        patientName: string | null;
-        patientRut: string | null;
-        totalTests: number;
-      }>`
+    sql<{
+      lastTestDate: Date | string | null;
+      patientName: string | null;
+      patientRut: string | null;
+      totalTests: number;
+    }>`
         SELECT
           nullif(t.patient_name, '') AS "patientName",
           nullif(t.patient_rut, '') AS "patientRut",
@@ -1582,14 +1582,14 @@ export async function getSkinTestAnalytics(
         ORDER BY "totalTests" DESC, "lastTestDate" DESC NULLS LAST
         LIMIT 12
       `.execute(kysely),
-      sql<{
-        allergenName: string;
-        code: string | null;
-        papuleMm: number | null;
-        patientKey: string;
-        section: string;
-        skinTestId: string;
-      }>`
+    sql<{
+      allergenName: string;
+      code: string | null;
+      papuleMm: number | null;
+      patientKey: string;
+      section: string;
+      skinTestId: string;
+    }>`
         SELECT
           r.section,
           r.code,
@@ -1604,7 +1604,7 @@ export async function getSkinTestAnalytics(
           AND r.control_type IS NULL
           AND coalesce(r.papule_mm, 0) >= 3
       `.execute(kysely),
-      sql<ClinicalAllergenCatalogRow>`
+    sql<ClinicalAllergenCatalogRow>`
         SELECT
           a.id AS "allergenId",
           a.scientific_name AS "scientificName",
@@ -1618,17 +1618,17 @@ export async function getSkinTestAnalytics(
         JOIN clinical_allergens a ON a.id = aa.allergen_id
         WHERE a.is_active = true
       `.execute(kysely),
-      sql<{
-        clinicalSeriesId: number;
-        examType: string;
-        id: string;
-        oneDriveWebUrl: string | null;
-        panelTitle: string | null;
-        patientName: string | null;
-        patientRut: string | null;
-        resultCount: number;
-        testDate: Date | string;
-      }>`
+    sql<{
+      clinicalSeriesId: number;
+      examType: string;
+      id: string;
+      oneDriveWebUrl: string | null;
+      panelTitle: string | null;
+      patientName: string | null;
+      patientRut: string | null;
+      resultCount: number;
+      testDate: Date | string;
+    }>`
         SELECT
           t.id,
           t.clinical_series_id AS "clinicalSeriesId",
@@ -1647,7 +1647,7 @@ export async function getSkinTestAnalytics(
         ORDER BY t.test_date DESC, t.created_at DESC
         LIMIT ${pageSize}
       `.execute(kysely),
-    ]);
+  ]);
 
   const summary = summaryResult.rows[0];
   return {
@@ -1821,9 +1821,7 @@ export async function reprocessSkinTestImport(id: string) {
     return await getSkinTestImport(id);
   }
 
-  const parsed = await parseSkinTestWorkbookBuffer(
-    buffer
-  );
+  const parsed = await parseSkinTestWorkbookBuffer(buffer);
   const resultHash = computeResultHash(parsed.results);
   const templateIssue = getTemplateSkinTestIssue(parsed);
   if (templateIssue) {
@@ -2010,7 +2008,15 @@ export async function archiveMissingSkinTestWorkbookSnapshots(options?: {
   );
 
   if (options?.dryRun) {
-    return { archived: 0, downloadedBytes: 0, dryRun: true, errors: 0, processed: 0, skipped: total, total };
+    return {
+      archived: 0,
+      downloadedBytes: 0,
+      dryRun: true,
+      errors: 0,
+      processed: 0,
+      skipped: total,
+      total,
+    };
   }
 
   const processRows = async (rows: ArchiveRow[]) => {
@@ -2086,7 +2092,14 @@ export async function archiveMissingSkinTestWorkbookSnapshots(options?: {
     await processRows(initialRows);
   }
 
-  return { archived, downloadedBytes, errors, processed: archived + errors + skipped, skipped, total };
+  return {
+    archived,
+    downloadedBytes,
+    errors,
+    processed: archived + errors + skipped,
+    skipped,
+    total,
+  };
 }
 
 export async function processDiscoveredSkinTestImports(options?: {
@@ -2537,9 +2550,17 @@ async function writeSkinTest(
     // the same row, even across replicas, without holding any row locks.
     // The lock is auto-released at transaction commit/rollback.
     await sql`SELECT pg_advisory_xact_lock(hashtextextended(${`csti:${importId}`}, 0))`.execute(
-      trx,
+      trx
     );
-    return writeSkinTestInTransaction(trx, importId, seriesId, header, interpretation, resultHash, parsed);
+    return writeSkinTestInTransaction(
+      trx,
+      importId,
+      seriesId,
+      header,
+      interpretation,
+      resultHash,
+      parsed
+    );
   });
 }
 
@@ -2550,7 +2571,7 @@ async function writeSkinTestInTransaction(
   header: ParsedSkinTestWorkbook["header"],
   interpretation: NonNullable<ParsedSkinTestWorkbook["interpretation"]>,
   resultHash: string,
-  parsed: Pick<ParsedSkinTestWorkbook, "header" | "interpretation" | "results">,
+  parsed: Pick<ParsedSkinTestWorkbook, "header" | "interpretation" | "results">
 ): Promise<void> {
   // Atomic upsert keyed on the unique source_import_id. The advisory
   // lock above already serializes per-import; the upsert is belt-and-
@@ -2628,7 +2649,7 @@ async function writeSkinTestInTransaction(
   // longer appear in the freshly parsed payload. The per-result UPSERT
   // below covers updates and inserts; explicit cleanup covers removals.
   await sql`DELETE FROM clinical_skin_test_results WHERE source_import_id = ${importId}`.execute(
-    trx,
+    trx
   );
 
   // Deduplicate by conflict key before batch insert — parser can emit duplicate (section, code, allergenName)
@@ -2737,7 +2758,11 @@ async function getStoredParsedPayload(id: string): Promise<ParsedPayload> {
 
 async function getImportByOneDriveItemId(accountId: string, driveId: string, itemId: string) {
   const result = await sql<
-    ImportRow & { oneDriveCTag: null | string; oneDriveETag: null | string; oneDriveQuickXorHash: null | string }
+    ImportRow & {
+      oneDriveCTag: null | string;
+      oneDriveETag: null | string;
+      oneDriveQuickXorHash: null | string;
+    }
   >`
     SELECT
       i.*,
@@ -3171,20 +3196,18 @@ function aggregateTopAllergens(
     if (!canonical) continue;
 
     const existing = buckets.get(canonical.key);
-    const bucket =
-      existing ??
-      {
-        canonicalCode: canonical.code,
-        category: canonical.category,
-        canonicalName: canonical.name,
-        patientKeys: new Set<string>(),
-        papuleSum: 0,
-        papuleValues: [],
-        positiveResults: 0,
-        scientificName: canonical.scientificName,
-        section: canonical.section,
-        skinTestIds: new Set<string>(),
-      };
+    const bucket = existing ?? {
+      canonicalCode: canonical.code,
+      category: canonical.category,
+      canonicalName: canonical.name,
+      patientKeys: new Set<string>(),
+      papuleSum: 0,
+      papuleValues: [],
+      positiveResults: 0,
+      scientificName: canonical.scientificName,
+      section: canonical.section,
+      skinTestIds: new Set<string>(),
+    };
 
     bucket.positiveResults += 1;
     bucket.patientKeys.add(row.patientKey);
@@ -3666,7 +3689,12 @@ function canAutoImport(parsed: ParsedSkinTestWorkbook, issues: SkinTestIssue[]):
   );
 }
 
-const PLACEHOLDER_PATIENT_NAMES = new Set(["nombre", "nombre apellido", "paciente", "apellido nombre"]);
+const PLACEHOLDER_PATIENT_NAMES = new Set([
+  "nombre",
+  "nombre apellido",
+  "paciente",
+  "apellido nombre",
+]);
 
 function isPlaceholderPatientName(name: null | string): boolean {
   if (!name) return true;
@@ -3738,11 +3766,7 @@ function toImportOutput(row: ImportRow): SkinTestImportOutput {
   };
 }
 
-async function markOneDriveItemDeleted(
-  accountId: string,
-  driveId: string,
-  itemId: string
-) {
+async function markOneDriveItemDeleted(accountId: string, driveId: string, itemId: string) {
   const deletedIssue: SkinTestIssue = {
     code: "onedrive_deleted",
     message: "El archivo fue eliminado de OneDrive según el delta de Graph.",

@@ -7,7 +7,7 @@ import { doctoraliaLink } from "@/lib/doctoralia";
 const DoctoraliaBookingWidget = lazy(() =>
   import("@/sections/DoctoraliaWidgets").then((m) => ({
     default: m.DoctoraliaBookingWidget,
-  })),
+  }))
 );
 
 const badges = ["Alergología", "Inmunología", "Adultos y niños", "Concepción, Chile"];

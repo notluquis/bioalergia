@@ -45,7 +45,7 @@ export function accountFilterKey(filter: AccountTransactionFilter) {
 }
 
 export function buildAccountTransactionFilter(
-  account: CounterpartAccount,
+  account: CounterpartAccount
 ): AccountTransactionFilter {
   const normalizedAccountNumber = normalizeAccountNumber(account.accountNumber.trim());
   return {

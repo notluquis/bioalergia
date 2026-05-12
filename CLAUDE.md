@@ -42,6 +42,7 @@ pnpm migrate:deploy         # Apply pending migrations
 ## Architecture
 
 ### Monorepo Structure
+
 - `apps/api` — Hono v4 backend (Node.js, tsx runtime, port 3000)
 - `apps/intranet` — React 19 + Vite 8 SPA (TanStack Router, port 5173)
 - `apps/site` — Public marketing site
@@ -51,6 +52,7 @@ pnpm migrate:deploy         # Apply pending migrations
 - `packages/orpc-contracts` — Shared oRPC contract definitions (Zod v4 schemas)
 
 ### Backend (apps/api)
+
 - **Framework:** Hono (NOT Express)
 - **ORM:** ZenStack v3 — schema in `packages/db/zenstack/schema.zmodel` (NOT Prisma directly)
 - **Query builder:** Kysely for complex SQL
@@ -59,6 +61,7 @@ pnpm migrate:deploy         # Apply pending migrations
 - **Modules:** Domain logic in `apps/api/src/modules/` (calendar, certificates, haulmer, patients)
 
 ### Frontend (apps/intranet)
+
 - **UI Library:** HeroUI v3 (compound components pattern, React Aria-based)
 - **Routing:** TanStack Router with file-based routes in `src/routes/`
 - **State:** TanStack Query for server state, oRPC client for API calls
@@ -68,6 +71,7 @@ pnpm migrate:deploy         # Apply pending migrations
 - **Features:** Organized by domain in `src/features/`
 
 ### Shared Contracts
+
 - `packages/orpc-contracts` defines typed API contracts shared between API and intranet
 - Import paths: `@finanzas/orpc-contracts/auth`, `@finanzas/orpc-contracts/patients`, etc.
 - DB types: `@finanzas/db`, `@finanzas/db/schema`, `@finanzas/db/hooks`
@@ -75,7 +79,9 @@ pnpm migrate:deploy         # Apply pending migrations
 ## Key Conventions
 
 ### oRPC Router Ordering
+
 Method order matters at runtime: always `.prefix()` before `.router()`:
+
 ```typescript
 // CORRECT
 export const fooORPCRouter = base.prefix("/api/orpc/foo").router(fooRouterBase);
@@ -84,22 +90,26 @@ export const fooORPCRouter = base.router(fooRouterBase).prefix("/api/orpc/foo");
 ```
 
 ### Database Schema
+
 - Edit ONLY `packages/db/zenstack/schema.zmodel` — never edit generated Prisma files
 - Never use `npx prisma` commands — use `zen` CLI via package scripts
 - Access policies defined in `.zmodel` with `@@allow`/`@@deny`
 
 ### Type Safety
+
 - `any` is banned globally (oxlint `typescript/no-explicit-any: "error"`)
 - Use `unknown` + type guards instead
 - No `@prisma/client` imports — use `@finanzas/db` exports
 
 ### Frontend Patterns
+
 - All UI components: HeroUI v3 compound components (Card.Header, Card.Content, etc.)
 - Date handling: `@internationalized/date` + dayjs (es locale)
 - Never use native HTML date inputs — use HeroUI DateField/DateRangePicker
 - Forms use `<Form validationBehavior="aria">` from HeroUI
 
 ### Tooling
+
 - Package manager: pnpm (NOT npm/yarn)
 - Node.js >= 25 required
 - Pre-commit: husky + lint-staged (oxlint --fix + oxfmt)

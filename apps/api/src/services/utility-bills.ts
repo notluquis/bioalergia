@@ -167,7 +167,7 @@ export interface BillRefreshResult {
 
 async function fetchBillForProvider(
   provider: UtilityProvider,
-  serviceNumber: string,
+  serviceNumber: string
 ): Promise<BillRefreshResult> {
   if (provider === "ESSBIO") {
     const r = await fetchEssbioBill(serviceNumber);

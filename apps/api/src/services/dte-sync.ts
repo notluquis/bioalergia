@@ -119,7 +119,7 @@ export async function syncDTEs(options: DTESyncOptions = {}): Promise<{
     });
 
     console.log(
-      `[DTE Sync] Completed: ${finalStatus} (${totalInserted} inserted, ${totalUpdated} updated)`,
+      `[DTE Sync] Completed: ${finalStatus} (${totalInserted} inserted, ${totalUpdated} updated)`
     );
 
     return {
@@ -157,7 +157,7 @@ export async function syncDTEs(options: DTESyncOptions = {}): Promise<{
  */
 export async function getDTESyncHistory(
   limit: number = 20,
-  offset: number = 0,
+  offset: number = 0
 ): Promise<{
   logs: Awaited<ReturnType<typeof db.dTESyncLog.findMany>>;
   total: number;

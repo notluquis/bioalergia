@@ -1,7 +1,13 @@
 import { oc } from "@orpc/contract";
 import { z } from "zod";
 
-export const supplyStatusSchema = z.enum(["pending", "ordered", "in_transit", "delivered", "rejected"]);
+export const supplyStatusSchema = z.enum([
+  "pending",
+  "ordered",
+  "in_transit",
+  "delivered",
+  "rejected",
+]);
 
 export const commonSupplySchema = z.object({
   brand: z.string().optional(),

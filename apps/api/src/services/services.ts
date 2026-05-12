@@ -338,7 +338,7 @@ function getAmountTolerance(expectedAmount: number): number {
 }
 
 export async function syncServiceSchedulesWithFinancialTransactions(
-  servicePublicId?: string,
+  servicePublicId?: string
 ): Promise<SyncServiceSchedulesResult> {
   const serviceFilter = servicePublicId
     ? { publicId: servicePublicId }
@@ -359,7 +359,7 @@ export async function syncServiceSchedulesWithFinancialTransactions(
   });
 
   const eligibleServices = services.filter(
-    (service) => service.autoLinkTransactions && service.transactionCategoryId != null,
+    (service) => service.autoLinkTransactions && service.transactionCategoryId != null
   );
   if (eligibleServices.length === 0) {
     return {
@@ -375,8 +375,8 @@ export async function syncServiceSchedulesWithFinancialTransactions(
     new Set(
       eligibleServices
         .map((service) => service.transactionCategoryId)
-        .filter((value): value is number => value != null),
-    ),
+        .filter((value): value is number => value != null)
+    )
   );
   const serviceById = new Map(eligibleServices.map((service) => [service.id, service]));
 
@@ -402,10 +402,10 @@ export async function syncServiceSchedulesWithFinancialTransactions(
   }
 
   const minDate = new Date(
-    Math.min(...schedules.map((schedule) => schedule.periodStart.getTime())) - 7 * DAY_IN_MS,
+    Math.min(...schedules.map((schedule) => schedule.periodStart.getTime())) - 7 * DAY_IN_MS
   );
   const maxDate = new Date(
-    Math.max(...schedules.map((schedule) => schedule.dueDate.getTime())) + 7 * DAY_IN_MS,
+    Math.max(...schedules.map((schedule) => schedule.dueDate.getTime())) + 7 * DAY_IN_MS
   );
 
   const alreadyLinkedRows = await db.serviceSchedule.findMany({

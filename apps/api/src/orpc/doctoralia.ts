@@ -134,7 +134,7 @@ const emailNotificationsMonthlySummaryResponseSchema = z.object({
       cancellations: z.number().int(),
       total: z.number().int(),
       cancellationRate: z.number(),
-    }),
+    })
   ),
   status: z.literal("ok"),
 });
@@ -152,7 +152,7 @@ const calendarAppointmentsMonthlySummaryResponseSchema = z.object({
       attended: z.number().int(),
       total: z.number().int(),
       cancellationRate: z.number(),
-    }),
+    })
   ),
   status: z.literal("ok"),
 });
@@ -205,7 +205,7 @@ const syncLogsResponseSchema = z.object({
       endedAt: z.coerce.date().nullable(),
       counts: z.record(z.string(), z.number()),
       errorMessage: z.string().nullable(),
-    }),
+    })
   ),
   status: z.literal("ok"),
 });
@@ -240,7 +240,7 @@ const calendarImportInputSchema = z.object({
           appointments: z.array(z.any()),
           workperiods: z.array(z.any()),
         }),
-      }),
+      })
     )
     .min(1)
     .max(50),
@@ -295,7 +295,10 @@ const calendarBackfillStatusResponseSchema = z.object({
 
 const calendarBackfillStartInputSchema = z.object({
   endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  startDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
 });
 
 const scraperCookiesStatusSchema = z.object({
@@ -389,11 +392,10 @@ const doctoraliaORPCRouterBase = {
       const autoSyncEnabled = process.env.ENABLE_DOCTORALIA_CALENDAR_SYNC === "true";
       if (autoSyncEnabled) {
         const staleThresholdMs = Number(
-          process.env.DOCTORALIA_CALENDAR_APPOINTMENTS_REFRESH_MS || "120000",
+          process.env.DOCTORALIA_CALENDAR_APPOINTMENTS_REFRESH_MS || "120000"
         );
-        const { runDoctoraliaCalendarAutoSync } = await import(
-          "../lib/doctoralia/doctoralia-calendar-scheduler.ts"
-        );
+        const { runDoctoraliaCalendarAutoSync } =
+          await import("../lib/doctoralia/doctoralia-calendar-scheduler.ts");
         const { getSetting } = await import("../services/settings.ts");
         const lastSuccessAtRaw = await getSetting("doctoralia:calendar:lastSuccessAt");
         const lastSuccessAt = lastSuccessAtRaw ? new Date(lastSuccessAtRaw).getTime() : 0;
@@ -403,9 +405,11 @@ const doctoraliaORPCRouterBase = {
           Date.now() - lastSuccessAt > staleThresholdMs;
 
         if (shouldRefresh) {
-          void Promise.all([runDoctoraliaCalendarAutoSync({
-            trigger: "read-stale",
-          })]);
+          void Promise.all([
+            runDoctoraliaCalendarAutoSync({
+              trigger: "read-stale",
+            }),
+          ]);
         }
       }
 
@@ -479,9 +483,7 @@ const doctoraliaORPCRouterBase = {
     .input(calendarImportInputSchema)
     .output(calendarImportResponseSchema)
     .handler(async ({ context, input }) => {
-      const { doctoraliaCalendarSyncService } = await import(
-        "../services/doctoralia-calendar.ts"
-      );
+      const { doctoraliaCalendarSyncService } = await import("../services/doctoralia-calendar.ts");
 
       const entries = input.entries as Array<{
         ts?: string;
@@ -590,9 +592,10 @@ const doctoraliaORPCRouterBase = {
         status: log.status,
         startedAt: log.startedAt,
         endedAt: log.endedAt,
-        counts: (log.counts && typeof log.counts === "object"
-          ? (log.counts as Record<string, number>)
-          : {}),
+        counts:
+          log.counts && typeof log.counts === "object"
+            ? (log.counts as Record<string, number>)
+            : {},
         errorMessage: log.errorMessage,
       })),
       status: "ok",
@@ -602,24 +605,26 @@ const doctoraliaORPCRouterBase = {
     .route({ method: "GET", path: "/email-notifications/calendar" })
     .input(emailNotificationsCalendarQuerySchema)
     .output(emailNotificationsCalendarResponseSchema)
-    .handler(async ({ input }: { input: z.input<typeof emailNotificationsCalendarQuerySchema> }) => {
-      const fromDate = new Date(`${input.from}T00:00:00.000Z`);
-      const toDate = new Date(`${input.to}T23:59:59.999Z`);
+    .handler(
+      async ({ input }: { input: z.input<typeof emailNotificationsCalendarQuerySchema> }) => {
+        const fromDate = new Date(`${input.from}T00:00:00.000Z`);
+        const toDate = new Date(`${input.to}T23:59:59.999Z`);
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const notifications = await (db.$qb as any)
-        .selectFrom("DoctoraliaEmailNotification")
-        .selectAll()
-        .where("appointmentDate", ">=", fromDate)
-        .where("appointmentDate", "<=", toDate)
-        .orderBy("appointmentDate", "asc")
-        .execute();
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const notifications = await (db.$qb as any)
+          .selectFrom("DoctoraliaEmailNotification")
+          .selectAll()
+          .where("appointmentDate", ">=", fromDate)
+          .where("appointmentDate", "<=", toDate)
+          .orderBy("appointmentDate", "asc")
+          .execute();
 
-      return {
-        data: { count: notifications.length, notifications },
-        status: "ok",
-      };
-    }),
+        return {
+          data: { count: notifications.length, notifications },
+          status: "ok",
+        };
+      }
+    ),
 
   calendarMerged: canReadDoctoraliaCalendar
     .route({ method: "GET", path: "/calendar/merged" })
@@ -796,10 +801,10 @@ const doctoraliaORPCRouterBase = {
     .output(emailNotificationsStatsResponseSchema)
     .handler(async () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const rows = await (db.$qb as any)
+      const rows = (await (db.$qb as any)
         .selectFrom("DoctoraliaEmailNotification")
         .select(["eventType", "patientPhone"])
-        .execute() as Array<{
+        .execute()) as Array<{
         eventType: "BOOKING" | "CANCELLATION" | "MODIFICATION";
         patientPhone: string | null;
       }>;
@@ -820,200 +825,227 @@ const doctoraliaORPCRouterBase = {
     .route({ method: "GET", path: "/email-notifications/patients" })
     .input(emailNotificationsPatientsQuerySchema)
     .output(emailNotificationsPatientsResponseSchema)
-    .handler(async ({ input }: { input: z.input<typeof emailNotificationsPatientsQuerySchema> }) => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let query = (db.$qb as any)
-        .selectFrom("DoctoraliaEmailNotification")
-        .select(["id", "patientName", "patientPhone", "patientEmail", "appointmentDate"]);
+    .handler(
+      async ({ input }: { input: z.input<typeof emailNotificationsPatientsQuerySchema> }) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        let query = (db.$qb as any)
+          .selectFrom("DoctoraliaEmailNotification")
+          .select(["id", "patientName", "patientPhone", "patientEmail", "appointmentDate"]);
 
-      if (input.search) {
-        query = query.where("patientName", "ilike", `%${input.search}%`);
-      }
+        if (input.search) {
+          query = query.where("patientName", "ilike", `%${input.search}%`);
+        }
 
-      const rows = await query.orderBy("appointmentDate", "desc").execute() as Array<{
-        id: string;
-        patientName: string;
-        patientPhone: string | null;
-        patientEmail: string | null;
-        appointmentDate: string | null;
-      }>;
+        const rows = (await query.orderBy("appointmentDate", "desc").execute()) as Array<{
+          id: string;
+          patientName: string;
+          patientPhone: string | null;
+          patientEmail: string | null;
+          appointmentDate: string | null;
+        }>;
 
-      // Group by patient identity (name + phone) in JS
-      const patientMap = new Map<string, {
-        patientName: string;
-        patientPhone: string | null;
-        patientEmail: string | null;
-        totalBookings: number;
-        lastAppointmentDate: Date | null;
-      }>();
+        // Group by patient identity (name + phone) in JS
+        const patientMap = new Map<
+          string,
+          {
+            patientName: string;
+            patientPhone: string | null;
+            patientEmail: string | null;
+            totalBookings: number;
+            lastAppointmentDate: Date | null;
+          }
+        >();
 
-      for (const row of rows) {
-        const key = `${row.patientName}|||${row.patientPhone ?? ""}`;
-        const apptDate = row.appointmentDate ? new Date(row.appointmentDate) : null;
-        const existing = patientMap.get(key);
+        for (const row of rows) {
+          const key = `${row.patientName}|||${row.patientPhone ?? ""}`;
+          const apptDate = row.appointmentDate ? new Date(row.appointmentDate) : null;
+          const existing = patientMap.get(key);
 
-        if (!existing) {
-          patientMap.set(key, {
-            patientName: row.patientName,
-            patientPhone: row.patientPhone,
-            patientEmail: row.patientEmail,
-            totalBookings: 1,
-            lastAppointmentDate: apptDate,
-          });
-        } else {
-          existing.totalBookings++;
-          if (apptDate && (!existing.lastAppointmentDate || apptDate > existing.lastAppointmentDate)) {
-            existing.lastAppointmentDate = apptDate;
+          if (!existing) {
+            patientMap.set(key, {
+              patientName: row.patientName,
+              patientPhone: row.patientPhone,
+              patientEmail: row.patientEmail,
+              totalBookings: 1,
+              lastAppointmentDate: apptDate,
+            });
+          } else {
+            existing.totalBookings++;
+            if (
+              apptDate &&
+              (!existing.lastAppointmentDate || apptDate > existing.lastAppointmentDate)
+            ) {
+              existing.lastAppointmentDate = apptDate;
+            }
           }
         }
+
+        const patients = Array.from(patientMap.values()).sort((a, b) => {
+          if (!a.lastAppointmentDate) return 1;
+          if (!b.lastAppointmentDate) return -1;
+          return b.lastAppointmentDate.getTime() - a.lastAppointmentDate.getTime();
+        });
+
+        return {
+          data: { patients, total: patients.length },
+          status: "ok",
+        };
       }
-
-      const patients = Array.from(patientMap.values()).sort((a, b) => {
-        if (!a.lastAppointmentDate) return 1;
-        if (!b.lastAppointmentDate) return -1;
-        return b.lastAppointmentDate.getTime() - a.lastAppointmentDate.getTime();
-      });
-
-      return {
-        data: { patients, total: patients.length },
-        status: "ok",
-      };
-    }),
+    ),
 
   emailNotificationsPatientHistory: authed
     .route({ method: "GET", path: "/email-notifications/patients/history" })
     .input(emailNotificationsPatientHistoryQuerySchema)
     .output(emailNotificationsPatientHistoryResponseSchema)
-    .handler(async ({ input }: { input: z.input<typeof emailNotificationsPatientHistoryQuerySchema> }) => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let query = (db.$qb as any)
-        .selectFrom("DoctoraliaEmailNotification")
-        .selectAll()
-        .where("patientName", "=", input.patientName);
+    .handler(
+      async ({ input }: { input: z.input<typeof emailNotificationsPatientHistoryQuerySchema> }) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        let query = (db.$qb as any)
+          .selectFrom("DoctoraliaEmailNotification")
+          .selectAll()
+          .where("patientName", "=", input.patientName);
 
-      if (input.patientPhone) {
-        query = query.where("patientPhone", "=", input.patientPhone);
+        if (input.patientPhone) {
+          query = query.where("patientPhone", "=", input.patientPhone);
+        }
+
+        const notifications = await query.orderBy("appointmentDate", "desc").execute();
+
+        return {
+          data: { notifications },
+          status: "ok",
+        };
       }
-
-      const notifications = await query.orderBy("appointmentDate", "desc").execute();
-
-      return {
-        data: { notifications },
-        status: "ok",
-      };
-    }),
+    ),
 
   emailNotificationsMonthlySummary: authed
     .route({ method: "GET", path: "/email-notifications/monthly-summary" })
     .input(emailNotificationsMonthlySummaryQuerySchema)
     .output(emailNotificationsMonthlySummaryResponseSchema)
-    .handler(async ({ input }: { input: z.input<typeof emailNotificationsMonthlySummaryQuerySchema> }) => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let query = (db.$qb as any)
-        .selectFrom("DoctoraliaEmailNotification")
-        .select(["eventType", "appointmentDate"])
-        .where("appointmentDate", "is not", null);
+    .handler(
+      async ({ input }: { input: z.input<typeof emailNotificationsMonthlySummaryQuerySchema> }) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        let query = (db.$qb as any)
+          .selectFrom("DoctoraliaEmailNotification")
+          .select(["eventType", "appointmentDate"])
+          .where("appointmentDate", "is not", null);
 
-      if (input.year !== undefined) {
-        const yearStart = new Date(Date.UTC(input.year, 0, 1));
-        const nextYearStart = new Date(Date.UTC(input.year + 1, 0, 1));
-        query = query.where("appointmentDate", ">=", yearStart).where("appointmentDate", "<", nextYearStart);
-      }
-
-      const rows = (await query.execute()) as Array<{
-        eventType: "BOOKING" | "CANCELLATION" | "MODIFICATION";
-        appointmentDate: Date | string;
-      }>;
-
-      const buckets = new Map<string, { bookings: number; modifications: number; cancellations: number }>();
-      for (const row of rows) {
-        const date = row.appointmentDate instanceof Date ? row.appointmentDate : new Date(row.appointmentDate);
-        if (Number.isNaN(date.getTime())) continue;
-        const period = `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}`;
-        let bucket = buckets.get(period);
-        if (!bucket) {
-          bucket = { bookings: 0, modifications: 0, cancellations: 0 };
-          buckets.set(period, bucket);
+        if (input.year !== undefined) {
+          const yearStart = new Date(Date.UTC(input.year, 0, 1));
+          const nextYearStart = new Date(Date.UTC(input.year + 1, 0, 1));
+          query = query
+            .where("appointmentDate", ">=", yearStart)
+            .where("appointmentDate", "<", nextYearStart);
         }
-        if (row.eventType === "BOOKING") bucket.bookings++;
-        else if (row.eventType === "MODIFICATION") bucket.modifications++;
-        else if (row.eventType === "CANCELLATION") bucket.cancellations++;
+
+        const rows = (await query.execute()) as Array<{
+          eventType: "BOOKING" | "CANCELLATION" | "MODIFICATION";
+          appointmentDate: Date | string;
+        }>;
+
+        const buckets = new Map<
+          string,
+          { bookings: number; modifications: number; cancellations: number }
+        >();
+        for (const row of rows) {
+          const date =
+            row.appointmentDate instanceof Date
+              ? row.appointmentDate
+              : new Date(row.appointmentDate);
+          if (Number.isNaN(date.getTime())) continue;
+          const period = `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}`;
+          let bucket = buckets.get(period);
+          if (!bucket) {
+            bucket = { bookings: 0, modifications: 0, cancellations: 0 };
+            buckets.set(period, bucket);
+          }
+          if (row.eventType === "BOOKING") bucket.bookings++;
+          else if (row.eventType === "MODIFICATION") bucket.modifications++;
+          else if (row.eventType === "CANCELLATION") bucket.cancellations++;
+        }
+
+        const data = Array.from(buckets.entries())
+          .sort(([a], [b]) => a.localeCompare(b))
+          .map(([period, counts]) => {
+            const total = counts.bookings + counts.modifications + counts.cancellations;
+            const cancellationRate =
+              counts.bookings > 0 ? counts.cancellations / counts.bookings : 0;
+            return {
+              period,
+              bookings: counts.bookings,
+              modifications: counts.modifications,
+              cancellations: counts.cancellations,
+              total,
+              cancellationRate,
+            };
+          });
+
+        return { data, status: "ok" as const };
       }
-
-      const data = Array.from(buckets.entries())
-        .sort(([a], [b]) => a.localeCompare(b))
-        .map(([period, counts]) => {
-          const total = counts.bookings + counts.modifications + counts.cancellations;
-          const cancellationRate = counts.bookings > 0 ? counts.cancellations / counts.bookings : 0;
-          return {
-            period,
-            bookings: counts.bookings,
-            modifications: counts.modifications,
-            cancellations: counts.cancellations,
-            total,
-            cancellationRate,
-          };
-        });
-
-      return { data, status: "ok" as const };
-    }),
+    ),
 
   calendarAppointmentsMonthlySummary: authed
     .route({ method: "GET", path: "/calendar-appointments/monthly-summary" })
     .input(calendarAppointmentsMonthlySummaryQuerySchema)
     .output(calendarAppointmentsMonthlySummaryResponseSchema)
-    .handler(async ({ input }: { input: z.input<typeof calendarAppointmentsMonthlySummaryQuerySchema> }) => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let query = (db.$qb as any)
-        .selectFrom("DoctoraliaCalendarAppointment")
-        .select(["status", "startAt"]);
+    .handler(
+      async ({
+        input,
+      }: {
+        input: z.input<typeof calendarAppointmentsMonthlySummaryQuerySchema>;
+      }) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        let query = (db.$qb as any)
+          .selectFrom("DoctoraliaCalendarAppointment")
+          .select(["status", "startAt"]);
 
-      if (input.year !== undefined) {
-        const yearStart = new Date(Date.UTC(input.year, 0, 1));
-        const nextYearStart = new Date(Date.UTC(input.year + 1, 0, 1));
-        query = query.where("startAt", ">=", yearStart).where("startAt", "<", nextYearStart);
-      }
-
-      const rows = (await query.execute()) as Array<{
-        status: number;
-        startAt: Date | string;
-      }>;
-
-      const buckets = new Map<
-        string,
-        { programmed: number; cancelled: number; attended: number }
-      >();
-      for (const row of rows) {
-        const date = row.startAt instanceof Date ? row.startAt : new Date(row.startAt);
-        if (Number.isNaN(date.getTime())) continue;
-        const period = `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}`;
-        let bucket = buckets.get(period);
-        if (!bucket) {
-          bucket = { programmed: 0, cancelled: 0, attended: 0 };
-          buckets.set(period, bucket);
+        if (input.year !== undefined) {
+          const yearStart = new Date(Date.UTC(input.year, 0, 1));
+          const nextYearStart = new Date(Date.UTC(input.year + 1, 0, 1));
+          query = query.where("startAt", ">=", yearStart).where("startAt", "<", nextYearStart);
         }
-        if (row.status === 0) bucket.programmed++;
-        else if (row.status === 2 || row.status === 3) bucket.cancelled++;
-        else if (row.status === 4 || row.status === 6) bucket.attended++;
+
+        const rows = (await query.execute()) as Array<{
+          status: number;
+          startAt: Date | string;
+        }>;
+
+        const buckets = new Map<
+          string,
+          { programmed: number; cancelled: number; attended: number }
+        >();
+        for (const row of rows) {
+          const date = row.startAt instanceof Date ? row.startAt : new Date(row.startAt);
+          if (Number.isNaN(date.getTime())) continue;
+          const period = `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}`;
+          let bucket = buckets.get(period);
+          if (!bucket) {
+            bucket = { programmed: 0, cancelled: 0, attended: 0 };
+            buckets.set(period, bucket);
+          }
+          if (row.status === 0) bucket.programmed++;
+          else if (row.status === 2 || row.status === 3) bucket.cancelled++;
+          else if (row.status === 4 || row.status === 6) bucket.attended++;
+        }
+
+        const data = Array.from(buckets.entries())
+          .sort(([a], [b]) => a.localeCompare(b))
+          .map(([period, counts]) => {
+            const total = counts.programmed + counts.cancelled + counts.attended;
+            const cancellationRate = total > 0 ? counts.cancelled / total : 0;
+            return {
+              period,
+              programmed: counts.programmed,
+              cancelled: counts.cancelled,
+              attended: counts.attended,
+              total,
+              cancellationRate,
+            };
+          });
+
+        return { data, status: "ok" as const };
       }
-
-      const data = Array.from(buckets.entries())
-        .sort(([a], [b]) => a.localeCompare(b))
-        .map(([period, counts]) => {
-          const total = counts.programmed + counts.cancelled + counts.attended;
-          const cancellationRate = total > 0 ? counts.cancelled / total : 0;
-          return {
-            period,
-            programmed: counts.programmed,
-            cancelled: counts.cancelled,
-            attended: counts.attended,
-            total,
-            cancellationRate,
-          };
-        });
-
-      return { data, status: "ok" as const };
-    }),
+    ),
 
   emailNotificationsIngest: canManageDoctoraliaCalendar
     .route({ method: "POST", path: "/email-notifications/ingest" })
@@ -1074,9 +1106,7 @@ const doctoraliaORPCRouterBase = {
         };
       }
 
-      const cookies = Array.isArray(store.cookiesJson)
-        ? (store.cookiesJson as unknown[])
-        : [];
+      const cookies = Array.isArray(store.cookiesJson) ? (store.cookiesJson as unknown[]) : [];
 
       return {
         data: {
@@ -1086,8 +1116,7 @@ const doctoraliaORPCRouterBase = {
           updatedAt: store.updatedAt,
           lastUsedAt: store.lastUsedAt,
           updatedByUserId: store.updatedByUserId,
-          updatedByEmail:
-            store.updatedBy?.loginEmail ?? store.updatedBy?.person?.email ?? null,
+          updatedByEmail: store.updatedBy?.loginEmail ?? store.updatedBy?.person?.email ?? null,
         },
         status: "ok" as const,
       };
@@ -1198,9 +1227,8 @@ const doctoraliaORPCRouterBase = {
         };
       }
 
-      const { hasCalendarApiToken } = await import(
-        "../lib/doctoralia/doctoralia-calendar-client.ts"
-      );
+      const { hasCalendarApiToken } =
+        await import("../lib/doctoralia/doctoralia-calendar-client.ts");
       const hasToken = await hasCalendarApiToken();
       if (!hasToken) {
         return {
@@ -1211,13 +1239,12 @@ const doctoraliaORPCRouterBase = {
       }
 
       try {
-        const { doctoraliaCalendarSyncService } = await import(
-          "../services/doctoralia-calendar.ts"
-        );
+        const { doctoraliaCalendarSyncService } =
+          await import("../services/doctoralia-calendar.ts");
         const result = await doctoraliaCalendarSyncService.syncFromAlerts(
           3,
           "manual-ui",
-          context.user.id,
+          context.user.id
         );
 
         logEvent("doctoralia.calendar.sync.manual", {

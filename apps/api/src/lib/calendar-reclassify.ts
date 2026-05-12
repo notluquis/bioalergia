@@ -30,7 +30,7 @@ export type TestMetadata = {
 };
 
 export function isMissingClassificationFilterKey(
-  value: string,
+  value: string
 ): value is MissingClassificationFilterKey {
   return MISSING_CLASSIFICATION_FILTERS.some((filter) => filter.key === value);
 }
@@ -180,16 +180,13 @@ const parseMetadata = (event: { description: null | string; summary: null | stri
 
 type ParsedCalendarMetadata = ReturnType<typeof parseCalendarMetadata>;
 
-const CATEGORY_REPAIRABLE_CLINICAL_SET = new Set([
-  "Test y exámenes",
-  "Tratamiento subcutáneo",
-]);
+const CATEGORY_REPAIRABLE_CLINICAL_SET = new Set(["Test y exámenes", "Tratamiento subcutáneo"]);
 
 const applyPartialCategoryUpdate = (
   event: PartialReclassifyEvent,
   metadata: ParsedCalendarMetadata,
   updateData: PartialReclassifyUpdateData,
-  fieldCounts: PartialFieldCounts,
+  fieldCounts: PartialFieldCounts
 ) => {
   const shouldRepairClinicalCategory =
     metadata.category != null &&
@@ -212,7 +209,7 @@ const applyPartialCategoryUpdate = (
 const applyPartialSeriesStageUpdate = (
   event: PartialReclassifyEvent,
   metadata: ParsedCalendarMetadata,
-  updateData: PartialReclassifyUpdateData,
+  updateData: PartialReclassifyUpdateData
 ) => {
   if (event.seriesStageKind == null && metadata.seriesStageKind) {
     updateData.seriesStageKind = metadata.seriesStageKind;
@@ -229,7 +226,7 @@ const applyPartialDosageUpdate = (
   event: PartialReclassifyEvent,
   metadata: ParsedCalendarMetadata,
   updateData: PartialReclassifyUpdateData,
-  fieldCounts: PartialFieldCounts,
+  fieldCounts: PartialFieldCounts
 ) => {
   if ((event.dosageValue === null || event.dosageUnit === null) && metadata.dosageValue !== null) {
     updateData.dosageValue = metadata.dosageValue;
@@ -242,7 +239,7 @@ const applyPartialTreatmentStageUpdate = (
   event: PartialReclassifyEvent,
   metadata: ParsedCalendarMetadata,
   updateData: PartialReclassifyUpdateData,
-  fieldCounts: PartialFieldCounts,
+  fieldCounts: PartialFieldCounts
 ) => {
   if (event.treatmentStage === null && metadata.treatmentStage) {
     updateData.treatmentStage = metadata.treatmentStage;
@@ -254,7 +251,7 @@ const applyPartialAttendedUpdate = (
   event: PartialReclassifyEvent,
   metadata: ParsedCalendarMetadata,
   updateData: PartialReclassifyUpdateData,
-  fieldCounts: PartialFieldCounts,
+  fieldCounts: PartialFieldCounts
 ) => {
   if (event.attended === null && metadata.attended !== null) {
     updateData.attended = metadata.attended;
@@ -266,7 +263,7 @@ const applyPartialAmountExpectedUpdate = (
   event: PartialReclassifyEvent,
   metadata: ParsedCalendarMetadata,
   updateData: PartialReclassifyUpdateData,
-  fieldCounts: PartialFieldCounts,
+  fieldCounts: PartialFieldCounts
 ) => {
   if (event.amountExpected === null && metadata.amountExpected !== null) {
     updateData.amountExpected = metadata.amountExpected;
@@ -278,7 +275,7 @@ const applyPartialAmountPaidUpdate = (
   event: PartialReclassifyEvent,
   metadata: ParsedCalendarMetadata,
   updateData: PartialReclassifyUpdateData,
-  fieldCounts: PartialFieldCounts,
+  fieldCounts: PartialFieldCounts
 ) => {
   const shouldRepairLegacyZero =
     event.amountPaid === 0 &&
@@ -296,7 +293,7 @@ const applyPartialControlIncludedUpdate = (
   event: PartialReclassifyEvent,
   metadata: ParsedCalendarMetadata,
   updateData: PartialReclassifyUpdateData,
-  fieldCounts: PartialFieldCounts,
+  fieldCounts: PartialFieldCounts
 ) => {
   if (metadata.controlIncluded && event.controlIncluded === false) {
     updateData.controlIncluded = true;
@@ -308,7 +305,7 @@ const applyPartialDomicilioUpdate = (
   event: PartialReclassifyEvent,
   metadata: ParsedCalendarMetadata,
   updateData: PartialReclassifyUpdateData,
-  fieldCounts: PartialFieldCounts,
+  fieldCounts: PartialFieldCounts
 ) => {
   if (metadata.isDomicilio && event.isDomicilio === false) {
     updateData.isDomicilio = true;
@@ -319,7 +316,7 @@ const applyPartialDomicilioUpdate = (
 const applyPartialTestMetadataUpdate = (
   event: PartialReclassifyEvent,
   metadata: ParsedCalendarMetadata,
-  updateData: PartialReclassifyUpdateData,
+  updateData: PartialReclassifyUpdateData
 ) => {
   if (metadata.testMetadata && event.testMetadata == null) {
     updateData.testMetadata = metadata.testMetadata;
@@ -328,7 +325,7 @@ const applyPartialTestMetadataUpdate = (
 
 const buildPartialUpdateData = (
   event: PartialReclassifyEvent,
-  fieldCounts: PartialFieldCounts,
+  fieldCounts: PartialFieldCounts
 ): PartialReclassifyUpdateData => {
   const updateData: PartialReclassifyUpdateData = {};
   const metadata = parseMetadata(event);
@@ -349,7 +346,7 @@ const buildPartialUpdateData = (
 
 const buildFullUpdateData = (
   event: FullReclassifyEvent,
-  fieldCounts: FullFieldCounts,
+  fieldCounts: FullFieldCounts
 ): FullReclassifyUpdateData => {
   const metadata = parseMetadata(event);
 
@@ -424,7 +421,7 @@ async function persistEventUpdates<TData extends Record<string, unknown>>(params
       params.updateJobProgress(
         params.jobId,
         params.eventsLength,
-        `Guardando ${processed}/${params.updates.length} actualizaciones...`,
+        `Guardando ${processed}/${params.updates.length} actualizaciones...`
       );
     }
   }
@@ -433,7 +430,7 @@ async function persistEventUpdates<TData extends Record<string, unknown>>(params
 async function runReclassifyMissingFieldsJob(
   events: PartialReclassifyEvent[],
   jobId: string,
-  jobQueue: JobQueueFns,
+  jobQueue: JobQueueFns
 ) {
   try {
     const updates: Array<{ data: PartialReclassifyUpdateData; id: number }> = [];
@@ -473,7 +470,7 @@ async function runReclassifyMissingFieldsJob(
 async function runReclassifyAllJob(
   events: FullReclassifyEvent[],
   jobId: string,
-  jobQueue: JobQueueFns,
+  jobQueue: JobQueueFns
 ) {
   try {
     const updates: Array<{ data: FullReclassifyUpdateData; id: number }> = [];

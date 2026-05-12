@@ -53,7 +53,10 @@ export const dteSyncResponseSchema = z.object({
 });
 
 export const dteContract = {
-  sync: oc.route({ method: "POST", path: "/sync" }).input(dteSyncInputSchema).output(dteSyncResponseSchema),
+  sync: oc
+    .route({ method: "POST", path: "/sync" })
+    .input(dteSyncInputSchema)
+    .output(dteSyncResponseSchema),
   syncHistory: oc
     .route({ method: "GET", path: "/sync-history" })
     .input(dteSyncHistoryInputSchema)

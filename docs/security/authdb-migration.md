@@ -29,16 +29,16 @@ per-router migration lets us:
 
 ## Migration order (low → high blast radius)
 
-| Order | Model                | Why early/late                                          |
-| ----- | -------------------- | ------------------------------------------------------- |
-| 1     | `Notification`       | Per-user by definition; tiny blast radius.              |
-| 2     | `PushSubscription`   | Per-user. Already covered by application code.          |
-| 3     | `PersonalFinance*`   | Already migrated (see `orpc/personal-finance.ts`).      |
-| 4     | `ReleaseTransaction` | Already migrated (see `orpc/release-transactions.ts`).  |
-| 5     | `SettlementTransaction` | Already migrated.                                    |
-| 6     | `Appointment`        | Cross-clinician visibility — needs role-based policies. |
-| 7     | `Patient`            | Needs the doctor↔patient assignment table populated.    |
-| 8     | `MedicalRecord`      | Most sensitive — migrate last after RLS active too.     |
+| Order | Model                   | Why early/late                                          |
+| ----- | ----------------------- | ------------------------------------------------------- |
+| 1     | `Notification`          | Per-user by definition; tiny blast radius.              |
+| 2     | `PushSubscription`      | Per-user. Already covered by application code.          |
+| 3     | `PersonalFinance*`      | Already migrated (see `orpc/personal-finance.ts`).      |
+| 4     | `ReleaseTransaction`    | Already migrated (see `orpc/release-transactions.ts`).  |
+| 5     | `SettlementTransaction` | Already migrated.                                       |
+| 6     | `Appointment`           | Cross-clinician visibility — needs role-based policies. |
+| 7     | `Patient`               | Needs the doctor↔patient assignment table populated.    |
+| 8     | `MedicalRecord`         | Most sensitive — migrate last after RLS active too.     |
 
 Tables under PG RLS (see `docs/security/rls.md`) are second-line —
 even with `db` (raw), Postgres refuses to return rows the GUC says the
@@ -97,12 +97,12 @@ auth subjects would be a security bug. Per-request memoization (one
 
 ## When to keep using `db` (raw)
 
-| Use case                              | Why raw `db` is correct                                   |
-| ------------------------------------- | ---------------------------------------------------------- |
-| Background jobs (cron, schedulers)    | No user identity — needs to see everything (or use a service-account subject pattern, not yet in place). |
-| Webhook handlers (Meta, Google, MP)   | Same — no authenticated user, signatures cover authz.      |
-| Migrations / seed scripts             | Bypass policies on purpose.                                |
-| Audit log writer                      | Server-side emission; the policies on `audit_logs` accept any authenticated user, but the writer must work for unauthenticated events too (failed login from unknown email). |
+| Use case                            | Why raw `db` is correct                                                                                                                                                      |
+| ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Background jobs (cron, schedulers)  | No user identity — needs to see everything (or use a service-account subject pattern, not yet in place).                                                                     |
+| Webhook handlers (Meta, Google, MP) | Same — no authenticated user, signatures cover authz.                                                                                                                        |
+| Migrations / seed scripts           | Bypass policies on purpose.                                                                                                                                                  |
+| Audit log writer                    | Server-side emission; the policies on `audit_logs` accept any authenticated user, but the writer must work for unauthenticated events too (failed login from unknown email). |
 
 When in doubt: if the code path can run without `c.get('sessionUser')`,
 keep using raw `db`.

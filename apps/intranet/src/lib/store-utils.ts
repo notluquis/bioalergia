@@ -14,7 +14,7 @@ export function createPersistentStore<T>(
   options?: {
     version?: number;
     exclude?: (keyof T)[];
-  },
+  }
 ) {
   let startState = initialState;
 

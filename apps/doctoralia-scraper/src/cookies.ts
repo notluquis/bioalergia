@@ -32,7 +32,9 @@ export class CookieJar {
     }
 
     if (res.status === 404) {
-      console.warn(`[cookies] no stored cookies for label="${this.options.label}" — paste them from the intranet panel first`);
+      console.warn(
+        `[cookies] no stored cookies for label="${this.options.label}" — paste them from the intranet panel first`
+      );
       return;
     }
 
@@ -71,7 +73,9 @@ export class CookieJar {
 
     if (!res.ok) {
       const text = await res.text().catch(() => "");
-      throw new Error(`[cookies] POST ${this.options.endpoint} → ${res.status}: ${text.slice(0, 200)}`);
+      throw new Error(
+        `[cookies] POST ${this.options.endpoint} → ${res.status}: ${text.slice(0, 200)}`
+      );
     }
 
     this.lastFetchedSnapshot = current;

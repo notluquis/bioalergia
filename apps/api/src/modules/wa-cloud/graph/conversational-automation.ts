@@ -30,18 +30,20 @@ export async function getConversationalAutomation(phoneNumberId: number) {
   const data = await graphGet<Resp>(
     `/${phone.phoneNumberId}?fields=conversational_automation`,
     token,
-    v,
+    v
   );
-  return data.conversational_automation ?? {
-    enable_welcome_message: false,
-    prompts: [],
-    commands: [],
-  };
+  return (
+    data.conversational_automation ?? {
+      enable_welcome_message: false,
+      prompts: [],
+      commands: [],
+    }
+  );
 }
 
 export async function updateConversationalAutomation(
   phoneNumberId: number,
-  config: ConversationalAutomationConfig,
+  config: ConversationalAutomationConfig
 ) {
   const phone = await getAccountForPhoneNumber(phoneNumberId);
   const v = phone.account.graphApiVersion;
@@ -57,6 +59,6 @@ export async function updateConversationalAutomation(
       commands: config.commands ?? [],
     },
     token,
-    v,
+    v
   );
 }

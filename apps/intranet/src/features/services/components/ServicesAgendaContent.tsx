@@ -21,7 +21,7 @@ export function ServicesAgendaContent() {
 
   const { editScheduleOpen, editScheduleTarget, skipScheduleOpen, skipScheduleTarget } = useStore(
     servicesStore,
-    (state) => state,
+    (state) => state
   );
 
   const handleEditSchedule = (_serviceId: string, schedule: ServiceSchedule) => {
@@ -46,7 +46,7 @@ export function ServicesAgendaContent() {
       }
       return acc;
     },
-    { day: 0, month: 0, week: 0 },
+    { day: 0, month: 0, week: 0 }
   );
 
   if (aggregatedLoading && unifiedAgendaItems.length === 0) {

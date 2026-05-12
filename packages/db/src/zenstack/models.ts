@@ -51,7 +51,10 @@ export type ClinicalSkinTestImport = $ModelResult<$Schema, "ClinicalSkinTestImpo
 export type ClinicalRecordImport = $ModelResult<$Schema, "ClinicalRecordImport">;
 export type ClinicalRecord = $ModelResult<$Schema, "ClinicalRecord">;
 export type ClinicalSkinTestWorkbookFile = $ModelResult<$Schema, "ClinicalSkinTestWorkbookFile">;
-export type ClinicalSkinTestWorkbookSnapshot = $ModelResult<$Schema, "ClinicalSkinTestWorkbookSnapshot">;
+export type ClinicalSkinTestWorkbookSnapshot = $ModelResult<
+  $Schema,
+  "ClinicalSkinTestWorkbookSnapshot"
+>;
 export type ClinicalDocumentImport = $ModelResult<$Schema, "ClinicalDocumentImport">;
 export type ClinicalAllergen = $ModelResult<$Schema, "ClinicalAllergen">;
 export type ClinicalAllergenAlias = $ModelResult<$Schema, "ClinicalAllergenAlias">;
@@ -97,7 +100,10 @@ export type FinancialAutoCategoryRule = $ModelResult<$Schema, "FinancialAutoCate
 export type FinancialTransaction = $ModelResult<$Schema, "FinancialTransaction">;
 export type CompensationProfile = $ModelResult<$Schema, "CompensationProfile">;
 export type CompensationPeriodBudget = $ModelResult<$Schema, "CompensationPeriodBudget">;
-export type FinancialTransactionAllocation = $ModelResult<$Schema, "FinancialTransactionAllocation">;
+export type FinancialTransactionAllocation = $ModelResult<
+  $Schema,
+  "FinancialTransactionAllocation"
+>;
 export type PatientCampaign = $ModelResult<$Schema, "PatientCampaign">;
 export type PatientCampaignRecipient = $ModelResult<$Schema, "PatientCampaignRecipient">;
 export type OutreachEstablishment = $ModelResult<$Schema, "OutreachEstablishment">;
@@ -131,7 +137,8 @@ export type AuditEventKind = (typeof AuditEventKind)[keyof typeof AuditEventKind
 export const DoctoraliaSyncType = $schema.enums.DoctoraliaSyncType.values;
 export type DoctoraliaSyncType = (typeof DoctoraliaSyncType)[keyof typeof DoctoraliaSyncType];
 export const DoctoraliaEmailEventType = $schema.enums.DoctoraliaEmailEventType.values;
-export type DoctoraliaEmailEventType = (typeof DoctoraliaEmailEventType)[keyof typeof DoctoraliaEmailEventType];
+export type DoctoraliaEmailEventType =
+  (typeof DoctoraliaEmailEventType)[keyof typeof DoctoraliaEmailEventType];
 export const PersonType = $schema.enums.PersonType.values;
 export type PersonType = (typeof PersonType)[keyof typeof PersonType];
 export const CounterpartCategory = $schema.enums.CounterpartCategory.values;
@@ -151,19 +158,23 @@ export type ServiceFrequency = (typeof ServiceFrequency)[keyof typeof ServiceFre
 export const ServiceStatus = $schema.enums.ServiceStatus.values;
 export type ServiceStatus = (typeof ServiceStatus)[keyof typeof ServiceStatus];
 export const ServiceRecurrenceType = $schema.enums.ServiceRecurrenceType.values;
-export type ServiceRecurrenceType = (typeof ServiceRecurrenceType)[keyof typeof ServiceRecurrenceType];
+export type ServiceRecurrenceType =
+  (typeof ServiceRecurrenceType)[keyof typeof ServiceRecurrenceType];
 export const ServiceOwnership = $schema.enums.ServiceOwnership.values;
 export type ServiceOwnership = (typeof ServiceOwnership)[keyof typeof ServiceOwnership];
 export const ServiceObligationType = $schema.enums.ServiceObligationType.values;
-export type ServiceObligationType = (typeof ServiceObligationType)[keyof typeof ServiceObligationType];
+export type ServiceObligationType =
+  (typeof ServiceObligationType)[keyof typeof ServiceObligationType];
 export const ServiceAmountIndexation = $schema.enums.ServiceAmountIndexation.values;
-export type ServiceAmountIndexation = (typeof ServiceAmountIndexation)[keyof typeof ServiceAmountIndexation];
+export type ServiceAmountIndexation =
+  (typeof ServiceAmountIndexation)[keyof typeof ServiceAmountIndexation];
 export const ServiceLateFeeMode = $schema.enums.ServiceLateFeeMode.values;
 export type ServiceLateFeeMode = (typeof ServiceLateFeeMode)[keyof typeof ServiceLateFeeMode];
 export const ServiceEmissionMode = $schema.enums.ServiceEmissionMode.values;
 export type ServiceEmissionMode = (typeof ServiceEmissionMode)[keyof typeof ServiceEmissionMode];
 export const ServiceScheduleStatus = $schema.enums.ServiceScheduleStatus.values;
-export type ServiceScheduleStatus = (typeof ServiceScheduleStatus)[keyof typeof ServiceScheduleStatus];
+export type ServiceScheduleStatus =
+  (typeof ServiceScheduleStatus)[keyof typeof ServiceScheduleStatus];
 export const LoanStatus = $schema.enums.LoanStatus.values;
 export type LoanStatus = (typeof LoanStatus)[keyof typeof LoanStatus];
 export const LoanBorrowerType = $schema.enums.LoanBorrowerType.values;
@@ -179,9 +190,11 @@ export type UserStatus = (typeof UserStatus)[keyof typeof UserStatus];
 export const ClinicalSeriesKind = $schema.enums.ClinicalSeriesKind.values;
 export type ClinicalSeriesKind = (typeof ClinicalSeriesKind)[keyof typeof ClinicalSeriesKind];
 export const SubcutaneousAllergenType = $schema.enums.SubcutaneousAllergenType.values;
-export type SubcutaneousAllergenType = (typeof SubcutaneousAllergenType)[keyof typeof SubcutaneousAllergenType];
+export type SubcutaneousAllergenType =
+  (typeof SubcutaneousAllergenType)[keyof typeof SubcutaneousAllergenType];
 export const SubcutaneousVaccineProduct = $schema.enums.SubcutaneousVaccineProduct.values;
-export type SubcutaneousVaccineProduct = (typeof SubcutaneousVaccineProduct)[keyof typeof SubcutaneousVaccineProduct];
+export type SubcutaneousVaccineProduct =
+  (typeof SubcutaneousVaccineProduct)[keyof typeof SubcutaneousVaccineProduct];
 export const HealthInsuranceType = $schema.enums.HealthInsuranceType.values;
 export type HealthInsuranceType = (typeof HealthInsuranceType)[keyof typeof HealthInsuranceType];
 export const DeliveryModality = $schema.enums.DeliveryModality.values;
@@ -189,23 +202,33 @@ export type DeliveryModality = (typeof DeliveryModality)[keyof typeof DeliveryMo
 export const ClinicalSeriesStatus = $schema.enums.ClinicalSeriesStatus.values;
 export type ClinicalSeriesStatus = (typeof ClinicalSeriesStatus)[keyof typeof ClinicalSeriesStatus];
 export const ClinicalSkinTestImportStatus = $schema.enums.ClinicalSkinTestImportStatus.values;
-export type ClinicalSkinTestImportStatus = (typeof ClinicalSkinTestImportStatus)[keyof typeof ClinicalSkinTestImportStatus];
+export type ClinicalSkinTestImportStatus =
+  (typeof ClinicalSkinTestImportStatus)[keyof typeof ClinicalSkinTestImportStatus];
 export const ClinicalRecordImportStatus = $schema.enums.ClinicalRecordImportStatus.values;
-export type ClinicalRecordImportStatus = (typeof ClinicalRecordImportStatus)[keyof typeof ClinicalRecordImportStatus];
-export const ClinicalSkinTestWorkbookSnapshotStatus = $schema.enums.ClinicalSkinTestWorkbookSnapshotStatus.values;
-export type ClinicalSkinTestWorkbookSnapshotStatus = (typeof ClinicalSkinTestWorkbookSnapshotStatus)[keyof typeof ClinicalSkinTestWorkbookSnapshotStatus];
+export type ClinicalRecordImportStatus =
+  (typeof ClinicalRecordImportStatus)[keyof typeof ClinicalRecordImportStatus];
+export const ClinicalSkinTestWorkbookSnapshotStatus =
+  $schema.enums.ClinicalSkinTestWorkbookSnapshotStatus.values;
+export type ClinicalSkinTestWorkbookSnapshotStatus =
+  (typeof ClinicalSkinTestWorkbookSnapshotStatus)[keyof typeof ClinicalSkinTestWorkbookSnapshotStatus];
 export const ClinicalXlsxFileClassification = $schema.enums.ClinicalXlsxFileClassification.values;
-export type ClinicalXlsxFileClassification = (typeof ClinicalXlsxFileClassification)[keyof typeof ClinicalXlsxFileClassification];
+export type ClinicalXlsxFileClassification =
+  (typeof ClinicalXlsxFileClassification)[keyof typeof ClinicalXlsxFileClassification];
 export const ClinicalDocumentImportKind = $schema.enums.ClinicalDocumentImportKind.values;
-export type ClinicalDocumentImportKind = (typeof ClinicalDocumentImportKind)[keyof typeof ClinicalDocumentImportKind];
+export type ClinicalDocumentImportKind =
+  (typeof ClinicalDocumentImportKind)[keyof typeof ClinicalDocumentImportKind];
 export const ClinicalDocumentImportStatus = $schema.enums.ClinicalDocumentImportStatus.values;
-export type ClinicalDocumentImportStatus = (typeof ClinicalDocumentImportStatus)[keyof typeof ClinicalDocumentImportStatus];
+export type ClinicalDocumentImportStatus =
+  (typeof ClinicalDocumentImportStatus)[keyof typeof ClinicalDocumentImportStatus];
 export const ClinicalSkinTestControlType = $schema.enums.ClinicalSkinTestControlType.values;
-export type ClinicalSkinTestControlType = (typeof ClinicalSkinTestControlType)[keyof typeof ClinicalSkinTestControlType];
+export type ClinicalSkinTestControlType =
+  (typeof ClinicalSkinTestControlType)[keyof typeof ClinicalSkinTestControlType];
 export const ClinicalSeriesStageKind = $schema.enums.ClinicalSeriesStageKind.values;
-export type ClinicalSeriesStageKind = (typeof ClinicalSeriesStageKind)[keyof typeof ClinicalSeriesStageKind];
+export type ClinicalSeriesStageKind =
+  (typeof ClinicalSeriesStageKind)[keyof typeof ClinicalSeriesStageKind];
 export const AbandonmentContactOutcome = $schema.enums.AbandonmentContactOutcome.values;
-export type AbandonmentContactOutcome = (typeof AbandonmentContactOutcome)[keyof typeof AbandonmentContactOutcome];
+export type AbandonmentContactOutcome =
+  (typeof AbandonmentContactOutcome)[keyof typeof AbandonmentContactOutcome];
 export const BudgetStatus = $schema.enums.BudgetStatus.values;
 export type BudgetStatus = (typeof BudgetStatus)[keyof typeof BudgetStatus];
 export const AttachmentType = $schema.enums.AttachmentType.values;
@@ -215,9 +238,11 @@ export type DTEType = (typeof DTEType)[keyof typeof DTEType];
 export const TransactionType = $schema.enums.TransactionType.values;
 export type TransactionType = (typeof TransactionType)[keyof typeof TransactionType];
 export const CompensationAllocationType = $schema.enums.CompensationAllocationType.values;
-export type CompensationAllocationType = (typeof CompensationAllocationType)[keyof typeof CompensationAllocationType];
+export type CompensationAllocationType =
+  (typeof CompensationAllocationType)[keyof typeof CompensationAllocationType];
 export const PatientCampaignRecipientStatus = $schema.enums.PatientCampaignRecipientStatus.values;
-export type PatientCampaignRecipientStatus = (typeof PatientCampaignRecipientStatus)[keyof typeof PatientCampaignRecipientStatus];
+export type PatientCampaignRecipientStatus =
+  (typeof PatientCampaignRecipientStatus)[keyof typeof PatientCampaignRecipientStatus];
 export const OutreachDependencia = $schema.enums.OutreachDependencia.values;
 export type OutreachDependencia = (typeof OutreachDependencia)[keyof typeof OutreachDependencia];
 export const OutreachStatus = $schema.enums.OutreachStatus.values;
@@ -227,13 +252,17 @@ export type OutreachPriority = (typeof OutreachPriority)[keyof typeof OutreachPr
 export const OutreachProspectType = $schema.enums.OutreachProspectType.values;
 export type OutreachProspectType = (typeof OutreachProspectType)[keyof typeof OutreachProspectType];
 export const OutreachProspectSource = $schema.enums.OutreachProspectSource.values;
-export type OutreachProspectSource = (typeof OutreachProspectSource)[keyof typeof OutreachProspectSource];
+export type OutreachProspectSource =
+  (typeof OutreachProspectSource)[keyof typeof OutreachProspectSource];
 export const OutreachInteractionType = $schema.enums.OutreachInteractionType.values;
-export type OutreachInteractionType = (typeof OutreachInteractionType)[keyof typeof OutreachInteractionType];
+export type OutreachInteractionType =
+  (typeof OutreachInteractionType)[keyof typeof OutreachInteractionType];
 export const OutreachCampaignStatus = $schema.enums.OutreachCampaignStatus.values;
-export type OutreachCampaignStatus = (typeof OutreachCampaignStatus)[keyof typeof OutreachCampaignStatus];
+export type OutreachCampaignStatus =
+  (typeof OutreachCampaignStatus)[keyof typeof OutreachCampaignStatus];
 export const OutreachDeliveryStatus = $schema.enums.OutreachDeliveryStatus.values;
-export type OutreachDeliveryStatus = (typeof OutreachDeliveryStatus)[keyof typeof OutreachDeliveryStatus];
+export type OutreachDeliveryStatus =
+  (typeof OutreachDeliveryStatus)[keyof typeof OutreachDeliveryStatus];
 export const WaMessageDirection = $schema.enums.WaMessageDirection.values;
 export type WaMessageDirection = (typeof WaMessageDirection)[keyof typeof WaMessageDirection];
 export const WaMessageStatus = $schema.enums.WaMessageStatus.values;
@@ -255,7 +284,8 @@ export type WaAccountEventKind = (typeof WaAccountEventKind)[keyof typeof WaAcco
 export const WaBroadcastStatus = $schema.enums.WaBroadcastStatus.values;
 export type WaBroadcastStatus = (typeof WaBroadcastStatus)[keyof typeof WaBroadcastStatus];
 export const WaBroadcastRecipientStatus = $schema.enums.WaBroadcastRecipientStatus.values;
-export type WaBroadcastRecipientStatus = (typeof WaBroadcastRecipientStatus)[keyof typeof WaBroadcastRecipientStatus];
+export type WaBroadcastRecipientStatus =
+  (typeof WaBroadcastRecipientStatus)[keyof typeof WaBroadcastRecipientStatus];
 export const ExpenseScope = $schema.enums.ExpenseScope.values;
 export type ExpenseScope = (typeof ExpenseScope)[keyof typeof ExpenseScope];
 export const ExpenseStatus = $schema.enums.ExpenseStatus.values;

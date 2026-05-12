@@ -31,7 +31,7 @@ export function redactMpUrl(url: string): string {
 export async function mpFetch(
   endpoint: string,
   baseUrl: string,
-  options: RequestInit & { log?: boolean; timeoutMs?: number; retries?: number } = {},
+  options: RequestInit & { log?: boolean; timeoutMs?: number; retries?: number } = {}
 ) {
   checkMpConfig();
   const url = endpoint ? `${baseUrl}${endpoint}` : baseUrl;
@@ -93,7 +93,10 @@ export async function mpFetch(
 
       if ((isAbort || isNetwork) && attempt < maxRetries) {
         if (shouldLog) {
-          console.error(`[MP API] Transient error (attempt ${attempt + 1}/${maxRetries + 1}):`, err);
+          console.error(
+            `[MP API] Transient error (attempt ${attempt + 1}/${maxRetries + 1}):`,
+            err
+          );
         }
         await sleep(backoffDelay(attempt));
         continue;

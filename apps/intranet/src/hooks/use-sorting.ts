@@ -43,7 +43,7 @@ export function useSorting<T extends string>({
     return React.createElement(
       "span",
       { className: "ml-1 text-xs opacity-60 align-middle select-none" },
-      symbol,
+      symbol
     );
   };
 

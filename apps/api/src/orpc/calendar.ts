@@ -175,11 +175,12 @@ const calendarQueryInputSchema = z.object({
   patientName: z.string().optional(),
   patientRut: z.string().optional(),
   search: z.string().optional(),
-  seriesKind: z.enum(["PATCH_TEST", "SKIN_TEST", "SUBCUTANEOUS_TREATMENT", "MEDICAL_CONSULTATION"]).optional(),
+  seriesKind: z
+    .enum(["PATCH_TEST", "SKIN_TEST", "SUBCUTANEOUS_TREATMENT", "MEDICAL_CONSULTATION"])
+    .optional(),
   seriesStatus: z.enum(["PLANNED", "ACTIVE", "INACTIVE", "COMPLETED", "CANCELLED"]).optional(),
   maxDays: z.coerce.number().positive().int().optional(),
 });
-
 
 function sanitizeOptionalSelectionValue(value: null | string | undefined): null | string {
   if (!value) {
@@ -316,7 +317,7 @@ const authed = base.use(async ({ context, next }) => {
 function requirePermission(
   subject: string,
   action: string,
-  fallback?: { action: string; subject: string },
+  fallback?: { action: string; subject: string }
 ) {
   return authed.use(async ({ context, next }) => {
     const direct = await hasPermission(context.user, action, subject);
@@ -665,7 +666,7 @@ const unclassifiedEvents = requirePermission("CalendarEvent", "update")
   .output(calendarUnclassifiedEventsResponseSchema)
   .handler(async ({ input }) => {
     const selectedMissingFilters = new Set<MissingClassificationFilterKey>(
-      toUniqueMissingFilters(input.missing),
+      toUniqueMissingFilters(input.missing)
     );
 
     const mappedFilters = Object.fromEntries(
@@ -679,7 +680,7 @@ const unclassifiedEvents = requirePermission("CalendarEvent", "update")
       ].map(([queryKey, serviceKey]) => [
         serviceKey,
         selectedMissingFilters.has(queryKey as MissingClassificationFilterKey),
-      ]),
+      ])
     ) as {
       amountExpected: boolean;
       amountPaid: boolean;
@@ -697,7 +698,7 @@ const unclassifiedEvents = requirePermission("CalendarEvent", "update")
     const { events: rows, totalCount } = await listUnclassifiedCalendarEvents(
       input.limit ?? 50,
       input.offset ?? 0,
-      selectedMissingFilters.size > 0 ? filters : undefined,
+      selectedMissingFilters.size > 0 ? filters : undefined
     );
 
     const filteredRows = rows.filter((row) => !isIgnoredEvent(row.summary));

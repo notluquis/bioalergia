@@ -50,9 +50,7 @@ const mpReportSchema = z
 
 const mpReportsListSchema = z.array(mpReportSchema);
 
-function normalizeSyncLogChangeDetails(
-  value: unknown,
-): null | Record<string, unknown> | undefined {
+function normalizeSyncLogChangeDetails(value: unknown): null | Record<string, unknown> | undefined {
   if (value == null) {
     return value === null ? null : undefined;
   }
@@ -240,7 +238,7 @@ const mercadopagoORPCRouterBase = {
         }
 
         const sourceIds = Array.from(
-          new Set(stats.processedSourceIds.map((id) => id.trim()).filter((id) => id.length > 0)),
+          new Set(stats.processedSourceIds.map((id) => id.trim()).filter((id) => id.length > 0))
         );
         const cashFlowSync =
           sourceIds.length > 0

@@ -53,9 +53,7 @@ export const settingsContract = {
     .route({ method: "PUT", path: "/app" })
     .input(settingsSchema)
     .output(settingsStatusResponseSchema),
-  internal: oc
-    .route({ method: "GET", path: "/internal" })
-    .output(settingsInternalResponseSchema),
+  internal: oc.route({ method: "GET", path: "/internal" }).output(settingsInternalResponseSchema),
   updateInternal: oc
     .route({ method: "PUT", path: "/internal" })
     .input(settingsUpdateInternalSchema)

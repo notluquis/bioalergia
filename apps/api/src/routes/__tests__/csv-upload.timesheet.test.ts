@@ -44,7 +44,7 @@ function parseDateWithDayjs(value: unknown): string | null {
   // Using dayjs.utc for validation only
   const date = dayjs.utc(
     `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`,
-    "YYYY-MM-DD",
+    "YYYY-MM-DD"
   );
   if (!date.isValid()) {
     return null;
@@ -264,5 +264,4 @@ describe("Timesheet CSV Parsing with dayjs", () => {
       });
     });
   });
-
 });

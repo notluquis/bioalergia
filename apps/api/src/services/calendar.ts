@@ -20,7 +20,7 @@ export async function loadSettings() {
       acc[curr.key] = curr.value || "";
       return acc;
     },
-    {} as Record<string, string>,
+    {} as Record<string, string>
   );
 }
 
@@ -47,7 +47,7 @@ export async function cleanupStaleSyncLogs(forceAll = false) {
   }
 
   console.warn(
-    `⚠ Cleaning up ${staleLogs.length} stale/interrupted sync logs (forceAll=${forceAll})`,
+    `⚠ Cleaning up ${staleLogs.length} stale/interrupted sync logs (forceAll=${forceAll})`
   );
 
   // Update each log individually to calculate correct endedAt (timeout time)
@@ -70,7 +70,7 @@ export async function cleanupStaleSyncLogs(forceAll = false) {
           endedAt: endedAt,
         },
       });
-    }),
+    })
   );
 
   return staleLogs.length;
@@ -98,7 +98,7 @@ export async function createCalendarSyncLogEntry(data: {
     }
     // If stale (>15min), clean it up specifically
     console.warn(
-      `⚠ Cleaning up stale sync log ${running.id} (${Math.round(diff / 1000 / 60)}min old)`,
+      `⚠ Cleaning up stale sync log ${running.id} (${Math.round(diff / 1000 / 60)}min old)`
     );
     await db.calendarSyncLog.update({
       where: { id: running.id },
@@ -138,7 +138,7 @@ export async function finalizeCalendarSyncLogEntry(
       excluded?: string[];
     };
     logEntries?: CalendarSyncLogEntryPayload[];
-  },
+  }
 ) {
   await db.$transaction(async (tx) => {
     await tx.calendarSyncLog.update({
@@ -179,7 +179,7 @@ export async function listCalendarSyncLogs(
         start?: Date;
         end?: Date;
         limit?: number;
-      },
+      }
 ) {
   const options = typeof limitOrOptions === "number" ? { limit: limitOrOptions } : limitOrOptions;
   const { start, end, limit = 50 } = options || {};
@@ -302,7 +302,7 @@ function buildUnclassifiedWhereClause(params: {
 export async function listUnclassifiedCalendarEvents(
   limit: number,
   offset: number = 0,
-  filters?: MissingFieldFilter,
+  filters?: MissingFieldFilter
 ) {
   const appliedFilters = filters ?? {};
   const filterMode = appliedFilters.filterMode || "OR";
@@ -367,7 +367,7 @@ export async function updateCalendarEventClassification(
       skinTest: boolean;
       thirdReading: boolean;
     } | null;
-  },
+  }
 ) {
   // ... (function body of createCalendarEvent moved out)
   // We need to find the internal Calendar ID first
@@ -396,7 +396,10 @@ export async function updateCalendarEventClassification(
     },
   });
 
-  const inferredIdentity = extractIdentityHints(existingEvent?.summary ?? null, existingEvent?.description ?? null);
+  const inferredIdentity = extractIdentityHints(
+    existingEvent?.summary ?? null,
+    existingEvent?.description ?? null
+  );
 
   await db.event.update({
     where: {

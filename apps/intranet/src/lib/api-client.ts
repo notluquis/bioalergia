@@ -25,7 +25,7 @@ function convertDecimalsToNumbers(obj: unknown): unknown {
   // Recursively process plain objects
   if (typeof obj === "object" && obj.constructor === Object) {
     return Object.fromEntries(
-      Object.entries(obj).map(([key, value]) => [key, convertDecimalsToNumbers(value)]),
+      Object.entries(obj).map(([key, value]) => [key, convertDecimalsToNumbers(value)])
     );
   }
 
@@ -157,7 +157,7 @@ const superJsonParser = (text: string) => {
     const jsonData = JSON.parse(text) as unknown;
     if (jsonData && typeof jsonData === "object" && "json" in jsonData) {
       const deserialized = superjson.deserialize(
-        jsonData as Parameters<typeof superjson.deserialize>[0],
+        jsonData as Parameters<typeof superjson.deserialize>[0]
       );
       return convertDecimalsToNumbers(deserialized);
     }
@@ -223,7 +223,7 @@ const buildKyOptions = (
   >,
   retry?: number,
   timeout?: false | number,
-  body?: FormData | object,
+  body?: FormData | object
 ): Options => {
   const kyOptions: Options = {
     method,
@@ -263,7 +263,7 @@ const buildSchemaErrorMessage = (error: z.ZodError, rawData?: unknown) => {
 async function parseResponse<T>(
   res: Response,
   responseType: ResponseType,
-  responseSchema?: z.ZodTypeAny,
+  responseSchema?: z.ZodTypeAny
 ): Promise<T> {
   if (responseType === "blob") {
     return (await res.blob()) as unknown as T;
@@ -342,7 +342,7 @@ export type UploadSummary = z.infer<typeof UploadSummarySchema>;
 export async function uploadFiles(
   files: File[],
   endpoint: string,
-  logContext: string,
+  logContext: string
 ): Promise<UploadResult[]> {
   const aggregated: UploadResult[] = [];
 

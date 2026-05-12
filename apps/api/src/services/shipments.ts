@@ -43,7 +43,9 @@ import type { CreateShipmentInput } from "../orpc/shipments.ts";
 
 function requireCxConfig() {
   if (!chilexpressConfig) {
-    throw new Error("ChileExpress no configurado. Falta CHILEXPRESS_API_KEY, CHILEXPRESS_TCC o CHILEXPRESS_ORIGIN_COVERAGE_CODE");
+    throw new Error(
+      "ChileExpress no configurado. Falta CHILEXPRESS_API_KEY, CHILEXPRESS_TCC o CHILEXPRESS_ORIGIN_COVERAGE_CODE"
+    );
   }
   return chilexpressConfig;
 }
@@ -173,7 +175,7 @@ export async function createShipment(input: CreateShipmentInput) {
     }
     if (!address.coverageCode) {
       throw new Error(
-        "La dirección guardada no tiene coverageCode de Chilexpress; vuelve a editarla y selecciona la comuna",
+        "La dirección guardada no tiene coverageCode de Chilexpress; vuelve a editarla y selecciona la comuna"
       );
     }
     streetName = address.street;
@@ -247,7 +249,7 @@ export async function createShipment(input: CreateShipmentInput) {
   const result = response.data?.detail?.[0];
   if (!result?.transportOrderNumber) {
     throw new Error(
-      `ChileExpress no devolvió OT. Mensaje: ${response.statusDescription ?? response.message ?? "sin detalles"}`,
+      `ChileExpress no devolvió OT. Mensaje: ${response.statusDescription ?? response.message ?? "sin detalles"}`
     );
   }
 

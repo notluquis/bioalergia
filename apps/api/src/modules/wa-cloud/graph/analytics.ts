@@ -31,7 +31,7 @@ export async function getConversationAnalytics(params: ConversationAnalyticsPara
   if (params.includePricing) {
     const pricingDims = '["PHONE","COUNTRY","PRICING_TYPE","PRICING_CATEGORY","TIER"]';
     fields.push(
-      `pricing_analytics.start(${params.startUnix}).end(${params.endUnix}).granularity(DAILY).dimensions(${pricingDims})`,
+      `pricing_analytics.start(${params.startUnix}).end(${params.endUnix}).granularity(DAILY).dimensions(${pricingDims})`
     );
   }
 

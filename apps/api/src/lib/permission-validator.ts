@@ -41,7 +41,7 @@ export function isDangerousPermission(action: string, subject: string): boolean 
  * Generic to work with any object that has action/subject properties
  */
 export function filterSafePermissions<T extends { action: string; subject: string }>(
-  permissions: T[],
+  permissions: T[]
 ): T[] {
   return permissions.filter((p) => !isDangerousPermission(p.action, p.subject));
 }

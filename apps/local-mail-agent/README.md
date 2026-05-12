@@ -3,6 +3,7 @@
 Agente local para enviar emails desde tu Mac usando SMTP (Spacemail) y payload estructurado.
 
 ## Requisitos
+
 - macOS
 - Node.js (usa el mismo del repo)
 - Keychain configurado
@@ -25,6 +26,7 @@ Por defecto escucha en `http://127.0.0.1:3333`. Puedes cambiar el puerto con `PO
 Si el puerto ya está ocupado, el script de inicio ahora libera automáticamente el proceso que está escuchando en ese puerto.
 Si existen los certificados `127.0.0.1+1-key.pem` y `127.0.0.1+1.pem` en la raíz del repo, se habilita TLS automáticamente y el agente queda en `https://127.0.0.1:3333`.
 En la intranet:
+
 - Si la página está en `http://...`, usa `http://127.0.0.1:3333`.
 - Si la página está en `https://...` (por ejemplo `intranet.bioalergia.cl`), usa `https://127.0.0.1:3333` con certificado local confiable.
 
@@ -32,14 +34,14 @@ En la intranet:
 
 Los navegadores bloquean requests HTTP desde páginas HTTPS. Para evitarlo, usa HTTPS local.
 
-1) Genera certificado local (ejemplo con `mkcert`):
+1. Genera certificado local (ejemplo con `mkcert`):
 
 ```bash
 mkcert -install
 mkcert 127.0.0.1 localhost
 ```
 
-2) Arranca el agente con TLS:
+2. Arranca el agente con TLS:
 
 ```bash
 LOCAL_AGENT_TLS_KEY_PATH="./127.0.0.1+1-key.pem" \
@@ -80,7 +82,7 @@ curl -k -H "X-Local-Agent-Token: <TOKEN_LOCAL>" https://127.0.0.1:3333/health/sm
 Respuesta esperada:
 
 ```json
-{"status":"ok","smtp":"ready"}
+{ "status": "ok", "smtp": "ready" }
 ```
 
 También expone configuración activa (sin secretos):

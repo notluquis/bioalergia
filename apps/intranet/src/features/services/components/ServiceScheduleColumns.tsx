@@ -25,7 +25,7 @@ export const getColumns = (
     onSkipSchedule?: (schedule: ServiceSchedule) => void;
     onUnlinkPayment: (schedule: ServiceSchedule) => void;
   },
-  canManage: boolean,
+  canManage: boolean
 ): ColumnDef<ServiceSchedule>[] => [
   {
     accessorKey: "periodStart",

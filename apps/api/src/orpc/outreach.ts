@@ -1,8 +1,5 @@
 import { db } from "@finanzas/db";
-import type {
-  OutreachCampaign,
-  OutreachCampaignFilters,
-} from "@finanzas/orpc-contracts/outreach";
+import type { OutreachCampaign, OutreachCampaignFilters } from "@finanzas/orpc-contracts/outreach";
 import {
   apolloEnrichInputSchema,
   apolloEnrichResponseSchema,
@@ -196,7 +193,7 @@ const outreachRouterBase = {
         interactionAgg.map((r) => [
           r.establecimientoRbd,
           { count: r._count._all, last: r._max.fecha },
-        ]),
+        ])
       );
       return {
         items: items.map((e) => ({
@@ -465,11 +462,9 @@ const outreachRouterBase = {
       const candidates = await selectCandidates({ ...input.filtros, soloConEmail: false });
       const conEmail = candidates.filter((c) => c.email).length;
       const sample = input.sampleRbd
-        ? candidates.find((c) => c.establishment.rbd === input.sampleRbd) ?? candidates[0]
+        ? (candidates.find((c) => c.establishment.rbd === input.sampleRbd) ?? candidates[0])
         : candidates[0];
-      const ctx = sample
-        ? { establishment: sample.establishment, contact: sample.contact }
-        : null;
+      const ctx = sample ? { establishment: sample.establishment, contact: sample.contact } : null;
       return {
         totalCandidatos: candidates.length,
         conEmail,
@@ -747,7 +742,10 @@ const outreachRouterBase = {
       });
       const total = targets.length;
       const jobId = startJob("outreach-bulk-crawl", total);
-      void runBulkCrawl(jobId, targets.map((t) => t.rbd)).catch((err) => {
+      void runBulkCrawl(
+        jobId,
+        targets.map((t) => t.rbd)
+      ).catch((err) => {
         failJob(jobId, err instanceof Error ? err.message : String(err));
       });
       return { jobId, total };

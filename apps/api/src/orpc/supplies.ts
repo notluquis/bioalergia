@@ -144,18 +144,26 @@ const suppliesORPCRouterBase = {
     .route({ method: "POST", path: "/requests" })
     .input(createSupplyRequestSchema)
     .output(suppliesStatusResponseSchema)
-    .handler(async ({ context, input }: { context: { user: { id: number } }; input: z.input<typeof createSupplyRequestSchema> }) => {
-      await createSupplyRequest({
-        brand: input.brand,
-        model: input.model,
-        notes: input.notes,
-        quantity: input.quantity,
-        supplyName: input.supplyName,
-        userId: context.user.id,
-      });
+    .handler(
+      async ({
+        context,
+        input,
+      }: {
+        context: { user: { id: number } };
+        input: z.input<typeof createSupplyRequestSchema>;
+      }) => {
+        await createSupplyRequest({
+          brand: input.brand,
+          model: input.model,
+          notes: input.notes,
+          quantity: input.quantity,
+          supplyName: input.supplyName,
+          userId: context.user.id,
+        });
 
-      return { status: "ok" as const };
-    }),
+        return { status: "ok" as const };
+      }
+    ),
 
   requests: readSupplyRequests
     .route({ method: "GET", path: "/requests" })

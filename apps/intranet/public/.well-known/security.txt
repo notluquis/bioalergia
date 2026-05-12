@@ -1,0 +1,9 @@
+# RFC 9116 — security contact for bioalergia.cl
+# Refresh this file at least once per year (rotate Expires +
+# regenerate signature) so researchers can trust it is still curated.
+
+Contact: mailto:lucas.pulgar@outlook.cl
+Expires: 2027-05-12T00:00:00.000Z
+Preferred-Languages: es, en
+Canonical: https://intranet.bioalergia.cl/.well-known/security.txt
+Policy: https://intranet.bioalergia.cl/.well-known/security-policy.txt

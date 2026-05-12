@@ -158,7 +158,7 @@ export async function updateExpenseService(
     scope?: string;
     startDate?: null | string;
     tags?: string[];
-  },
+  }
 ) {
   const service = await db.expenseService.update({
     where: { id },
@@ -216,7 +216,7 @@ function buildExpenseItem(
     updatedAt: Date;
   },
   transactionCount: number,
-  amountApplied: number,
+  amountApplied: number
 ) {
   return {
     amountApplied,
@@ -318,7 +318,7 @@ export async function getExpense(publicId: string) {
         timestamp: settlement?.transactionDate ?? et.createdAt,
         transactionId: et.transactionId,
       };
-    }),
+    })
   );
 
   return {
@@ -385,7 +385,7 @@ export async function updateExpense(
     source?: string;
     status?: string;
     tags?: string[];
-  },
+  }
 ) {
   await db.expense.update({
     where: { publicId },
@@ -426,11 +426,7 @@ async function recalcAmountApplied(expenseId: number): Promise<number> {
   return txs.reduce((sum, tx) => sum + Number(tx.amount), 0);
 }
 
-export async function linkTransaction(
-  publicId: string,
-  transactionId: number,
-  amount?: number,
-) {
+export async function linkTransaction(publicId: string, transactionId: number, amount?: number) {
   // Resolve expense id
   const expense = await db.expense.findFirst({
     where: { publicId },
@@ -512,7 +508,7 @@ export async function unlinkTransaction(publicId: string, transactionId: number)
 
 export async function generateExpensesFromTemplates(
   month: string,
-  overwrite = false,
+  overwrite = false
 ): Promise<{ created: number; skipped: number }> {
   const monthStart = new Date(`${month}-01`);
 

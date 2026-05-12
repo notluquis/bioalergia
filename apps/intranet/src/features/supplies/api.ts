@@ -52,11 +52,11 @@ export async function getSupplyRequests(): Promise<SupplyRequest[]> {
 
 export async function updateSupplyRequestStatus(
   requestId: number,
-  status: SupplyRequest["status"],
+  status: SupplyRequest["status"]
 ): Promise<void> {
   try {
     StatusResponseSchema.parse(
-      await suppliesORPCClient.updateRequestStatus({ id: requestId, status }),
+      await suppliesORPCClient.updateRequestStatus({ id: requestId, status })
     );
   } catch (error) {
     throw toSuppliesApiError(error);

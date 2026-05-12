@@ -1,10 +1,10 @@
 {
   "name": "@finanzas/orpc-contracts",
   "version": "0.0.1",
-  "type": "module",
   "files": [
     "dist"
   ],
+  "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
@@ -253,7 +253,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@types/node": "^25.6.2",
+    "@types/node": "^25.7.0",
     "typescript": "^6.0.3"
   },
   "engines": {

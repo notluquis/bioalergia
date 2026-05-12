@@ -5,8 +5,5 @@
     "tsBuildInfoFile": null
   },
   "include": ["src/services/finance.ts"],
-  "references": [
-    { "path": "../../packages/db" },
-    { "path": "../../packages/orpc-contracts" }
-  ]
+  "references": [{ "path": "../../packages/db" }, { "path": "../../packages/orpc-contracts" }]
 }

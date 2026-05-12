@@ -135,7 +135,7 @@ export async function syncPeriod(
   rut: string,
   period: string,
   docType: "sales" | "purchases",
-  config: HaulmerConfig,
+  config: HaulmerConfig
 ): Promise<SyncSummary> {
   let rowsInserted = 0;
   let rowsUpdated = 0;
@@ -155,20 +155,20 @@ export async function syncPeriod(
     const columnsNormalized = normalizeParsedRows(rows, period);
 
     console.log(
-      `[Haulmer Sync] Downloaded and parsed ${rows.length} rows for ${docType}/${period} (normalized ${columnsNormalized} fields)`,
+      `[Haulmer Sync] Downloaded and parsed ${rows.length} rows for ${docType}/${period} (normalized ${columnsNormalized} fields)`
     );
 
     // Log sample row columns after normalization to verify mapping worked
     if (rows.length > 0) {
       console.log(
-        `[Haulmer Sync] Sample normalized row columns: ${Object.keys(rows[0]).join(", ")}`,
+        `[Haulmer Sync] Sample normalized row columns: ${Object.keys(rows[0]).join(", ")}`
       );
     }
 
     ({ rowsInserted, rowsSkipped, rowsUpdated } = await importParsedRows(rows, docType));
 
     console.log(
-      `[Haulmer Sync] Completed ${docType}/${period}: ${rowsInserted} inserted, ${rowsUpdated} updated, ${rowsSkipped} skipped`,
+      `[Haulmer Sync] Completed ${docType}/${period}: ${rowsInserted} inserted, ${rowsUpdated} updated, ${rowsSkipped} skipped`
     );
 
     const result: SyncSummary = {

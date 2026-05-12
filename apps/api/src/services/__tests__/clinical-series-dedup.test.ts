@@ -19,7 +19,8 @@ vi.mock("@finanzas/db", () => ({
   kysely: {},
 }));
 
-const { detectDuplicateSeries, findMatchingSeries, selectRepresentativeClinicalIdentity } = await import("../clinical-series.ts");
+const { detectDuplicateSeries, findMatchingSeries, selectRepresentativeClinicalIdentity } =
+  await import("../clinical-series.ts");
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -35,7 +36,7 @@ function makeSeries(
     beneficiaryRut?: string | null;
     events?: Array<{ description: null | string; summary: null | string }>;
     patientPhones?: unknown;
-  },
+  }
 ) {
   return {
     beneficiaryName: extras?.beneficiaryName ?? null,
@@ -271,8 +272,18 @@ describe("detectDuplicateSeries — same RUT, different name (subset)", () => {
         beneficiaryName: "araneda ulloa",
         beneficiaryRut: null,
         events: [
-          { endDate: null, endDateTime: null, startDate: new Date("2024-01-01T00:00:00.000Z"), startDateTime: null },
-          { endDate: null, endDateTime: null, startDate: new Date("2024-02-01T00:00:00.000Z"), startDateTime: null },
+          {
+            endDate: null,
+            endDateTime: null,
+            startDate: new Date("2024-01-01T00:00:00.000Z"),
+            startDateTime: null,
+          },
+          {
+            endDate: null,
+            endDateTime: null,
+            startDate: new Date("2024-02-01T00:00:00.000Z"),
+            startDateTime: null,
+          },
         ],
         id: 36,
         patientName: "cristian araneda ulloa",
@@ -283,10 +294,30 @@ describe("detectDuplicateSeries — same RUT, different name (subset)", () => {
         beneficiaryName: "araneda ulloa",
         beneficiaryRut: null,
         events: [
-          { endDate: null, endDateTime: null, startDate: new Date("2025-01-01T00:00:00.000Z"), startDateTime: null },
-          { endDate: null, endDateTime: null, startDate: new Date("2025-06-01T00:00:00.000Z"), startDateTime: null },
-          { endDate: null, endDateTime: null, startDate: new Date("2025-12-01T00:00:00.000Z"), startDateTime: null },
-          { endDate: null, endDateTime: null, startDate: new Date("2026-02-01T00:00:00.000Z"), startDateTime: null },
+          {
+            endDate: null,
+            endDateTime: null,
+            startDate: new Date("2025-01-01T00:00:00.000Z"),
+            startDateTime: null,
+          },
+          {
+            endDate: null,
+            endDateTime: null,
+            startDate: new Date("2025-06-01T00:00:00.000Z"),
+            startDateTime: null,
+          },
+          {
+            endDate: null,
+            endDateTime: null,
+            startDate: new Date("2025-12-01T00:00:00.000Z"),
+            startDateTime: null,
+          },
+          {
+            endDate: null,
+            endDateTime: null,
+            startDate: new Date("2026-02-01T00:00:00.000Z"),
+            startDateTime: null,
+          },
         ],
         id: 5988,
         patientName: "cristian araneda ulloa",
@@ -368,8 +399,18 @@ describe("detectDuplicateSeries — same RUT, different name (subset)", () => {
         beneficiaryName: null,
         beneficiaryRut: null,
         events: [
-          { endDate: null, endDateTime: null, startDate: new Date("2025-01-01T00:00:00.000Z"), startDateTime: null },
-          { endDate: null, endDateTime: null, startDate: new Date("2025-02-01T00:00:00.000Z"), startDateTime: null },
+          {
+            endDate: null,
+            endDateTime: null,
+            startDate: new Date("2025-01-01T00:00:00.000Z"),
+            startDateTime: null,
+          },
+          {
+            endDate: null,
+            endDateTime: null,
+            startDate: new Date("2025-02-01T00:00:00.000Z"),
+            startDateTime: null,
+          },
         ],
         id: 1682,
         patientName: "yolerana chavez",
@@ -379,11 +420,36 @@ describe("detectDuplicateSeries — same RUT, different name (subset)", () => {
         beneficiaryName: null,
         beneficiaryRut: null,
         events: [
-          { endDate: null, endDateTime: null, startDate: new Date("2025-10-01T00:00:00.000Z"), startDateTime: null },
-          { endDate: null, endDateTime: null, startDate: new Date("2025-11-01T00:00:00.000Z"), startDateTime: null },
-          { endDate: null, endDateTime: null, startDate: new Date("2025-12-01T00:00:00.000Z"), startDateTime: null },
-          { endDate: null, endDateTime: null, startDate: new Date("2026-01-01T00:00:00.000Z"), startDateTime: null },
-          { endDate: null, endDateTime: null, startDate: new Date("2026-02-01T00:00:00.000Z"), startDateTime: null },
+          {
+            endDate: null,
+            endDateTime: null,
+            startDate: new Date("2025-10-01T00:00:00.000Z"),
+            startDateTime: null,
+          },
+          {
+            endDate: null,
+            endDateTime: null,
+            startDate: new Date("2025-11-01T00:00:00.000Z"),
+            startDateTime: null,
+          },
+          {
+            endDate: null,
+            endDateTime: null,
+            startDate: new Date("2025-12-01T00:00:00.000Z"),
+            startDateTime: null,
+          },
+          {
+            endDate: null,
+            endDateTime: null,
+            startDate: new Date("2026-01-01T00:00:00.000Z"),
+            startDateTime: null,
+          },
+          {
+            endDate: null,
+            endDateTime: null,
+            startDate: new Date("2026-02-01T00:00:00.000Z"),
+            startDateTime: null,
+          },
         ],
         id: 5969,
         patientName: "yolerana chavez seguel",
@@ -410,8 +476,18 @@ describe("detectDuplicateSeries — same RUT, different name (subset)", () => {
         beneficiaryName: null,
         beneficiaryRut: null,
         events: [
-          { endDate: null, endDateTime: null, startDate: new Date("2022-11-28T00:00:00.000Z"), startDateTime: null },
-          { endDate: null, endDateTime: null, startDate: new Date("2025-03-03T00:00:00.000Z"), startDateTime: null },
+          {
+            endDate: null,
+            endDateTime: null,
+            startDate: new Date("2022-11-28T00:00:00.000Z"),
+            startDateTime: null,
+          },
+          {
+            endDate: null,
+            endDateTime: null,
+            startDate: new Date("2025-03-03T00:00:00.000Z"),
+            startDateTime: null,
+          },
         ],
         id: 585,
         patientName: "alyson gajardo arriagada",
@@ -421,8 +497,18 @@ describe("detectDuplicateSeries — same RUT, different name (subset)", () => {
         beneficiaryName: null,
         beneficiaryRut: null,
         events: [
-          { endDate: null, endDateTime: null, startDate: new Date("2025-12-17T00:00:00.000Z"), startDateTime: null },
-          { endDate: null, endDateTime: null, startDate: new Date("2026-02-17T00:00:00.000Z"), startDateTime: null },
+          {
+            endDate: null,
+            endDateTime: null,
+            startDate: new Date("2025-12-17T00:00:00.000Z"),
+            startDateTime: null,
+          },
+          {
+            endDate: null,
+            endDateTime: null,
+            startDate: new Date("2026-02-17T00:00:00.000Z"),
+            startDateTime: null,
+          },
         ],
         id: 114,
         patientName: "alyson tamara gajardo arriagada",
@@ -449,7 +535,12 @@ describe("detectDuplicateSeries — same RUT, different name (subset)", () => {
         beneficiaryName: null,
         beneficiaryRut: null,
         events: [
-          { endDate: null, endDateTime: null, startDate: new Date("2022-09-12T00:00:00.000Z"), startDateTime: null },
+          {
+            endDate: null,
+            endDateTime: null,
+            startDate: new Date("2022-09-12T00:00:00.000Z"),
+            startDateTime: null,
+          },
         ],
         id: 6741,
         patientName: "valeria palma onetto",
@@ -460,7 +551,12 @@ describe("detectDuplicateSeries — same RUT, different name (subset)", () => {
         beneficiaryName: null,
         beneficiaryRut: null,
         events: [
-          { endDate: null, endDateTime: null, startDate: new Date("2025-09-13T00:00:00.000Z"), startDateTime: null },
+          {
+            endDate: null,
+            endDateTime: null,
+            startDate: new Date("2025-09-13T00:00:00.000Z"),
+            startDateTime: null,
+          },
         ],
         id: 345,
         patientName: "valeria danae palma onetto",
@@ -487,7 +583,12 @@ describe("detectDuplicateSeries — same RUT, different name (subset)", () => {
         beneficiaryName: null,
         beneficiaryRut: null,
         events: [
-          { endDate: null, endDateTime: null, startDate: new Date("2022-09-12T00:00:00.000Z"), startDateTime: null },
+          {
+            endDate: null,
+            endDateTime: null,
+            startDate: new Date("2022-09-12T00:00:00.000Z"),
+            startDateTime: null,
+          },
         ],
         id: 6741,
         patientName: "valeria palma onetto",
@@ -500,7 +601,12 @@ describe("detectDuplicateSeries — same RUT, different name (subset)", () => {
         beneficiaryName: null,
         beneficiaryRut: null,
         events: [
-          { endDate: null, endDateTime: null, startDate: new Date("2022-09-12T00:00:00.000Z"), startDateTime: null },
+          {
+            endDate: null,
+            endDateTime: null,
+            startDate: new Date("2022-09-12T00:00:00.000Z"),
+            startDateTime: null,
+          },
         ],
         id: 6741,
         patientName: "valeria palma onetto",
@@ -513,7 +619,12 @@ describe("detectDuplicateSeries — same RUT, different name (subset)", () => {
         beneficiaryName: null,
         beneficiaryRut: null,
         events: [
-          { endDate: null, endDateTime: null, startDate: new Date("2022-09-12T00:00:00.000Z"), startDateTime: null },
+          {
+            endDate: null,
+            endDateTime: null,
+            startDate: new Date("2022-09-12T00:00:00.000Z"),
+            startDateTime: null,
+          },
         ],
         id: 6741,
         patientName: "valeria palma onetto",
@@ -524,7 +635,12 @@ describe("detectDuplicateSeries — same RUT, different name (subset)", () => {
         beneficiaryName: null,
         beneficiaryRut: null,
         events: [
-          { endDate: null, endDateTime: null, startDate: new Date("2025-09-13T00:00:00.000Z"), startDateTime: null },
+          {
+            endDate: null,
+            endDateTime: null,
+            startDate: new Date("2025-09-13T00:00:00.000Z"),
+            startDateTime: null,
+          },
         ],
         id: 345,
         patientName: "valeria danae palma onetto",
@@ -610,8 +726,7 @@ describe("detectDuplicateSeries — same RUT, different name (subset)", () => {
         beneficiaryRut: null,
         events: [
           {
-            description:
-              "Valeria Danae Palma Onetto\n17678131-9\n937039005",
+            description: "Valeria Danae Palma Onetto\n17678131-9\n937039005",
             endDate: null,
             endDateTime: null,
             startDate: new Date("2025-09-13T00:00:00.000Z"),
@@ -642,7 +757,12 @@ describe("detectDuplicateSeries — same RUT, different name (subset)", () => {
       beneficiaryName: null,
       beneficiaryRut: null,
       events: [
-        { endDate: null, endDateTime: null, startDate: new Date("2026-03-20T00:00:00.000Z"), startDateTime: null },
+        {
+          endDate: null,
+          endDateTime: null,
+          startDate: new Date("2026-03-20T00:00:00.000Z"),
+          startDateTime: null,
+        },
       ],
       id: 7001,
       patientName: "sofia osses flores",
@@ -663,7 +783,12 @@ describe("detectDuplicateSeries — same RUT, different name (subset)", () => {
         beneficiaryName: null,
         beneficiaryRut: null,
         events: [
-          { endDate: null, endDateTime: null, startDate: new Date("2026-03-20T00:00:00.000Z"), startDateTime: null },
+          {
+            endDate: null,
+            endDateTime: null,
+            startDate: new Date("2026-03-20T00:00:00.000Z"),
+            startDateTime: null,
+          },
         ],
         id: 7001,
         patientName: "sofia osses flores",
@@ -675,8 +800,18 @@ describe("detectDuplicateSeries — same RUT, different name (subset)", () => {
         beneficiaryName: "daniel antonio flores silva",
         beneficiaryRut: "14057372-8",
         events: [
-          { endDate: null, endDateTime: null, startDate: new Date("2023-01-12T00:00:00.000Z"), startDateTime: null },
-          { endDate: null, endDateTime: null, startDate: new Date("2026-02-23T00:00:00.000Z"), startDateTime: null },
+          {
+            endDate: null,
+            endDateTime: null,
+            startDate: new Date("2023-01-12T00:00:00.000Z"),
+            startDateTime: null,
+          },
+          {
+            endDate: null,
+            endDateTime: null,
+            startDate: new Date("2026-02-23T00:00:00.000Z"),
+            startDateTime: null,
+          },
         ],
         id: 789,
         patientName: "sofia alejandra osses flores",
@@ -687,7 +822,12 @@ describe("detectDuplicateSeries — same RUT, different name (subset)", () => {
         beneficiaryName: null,
         beneficiaryRut: null,
         events: [
-          { endDate: null, endDateTime: null, startDate: new Date("2026-03-20T00:00:00.000Z"), startDateTime: null },
+          {
+            endDate: null,
+            endDateTime: null,
+            startDate: new Date("2026-03-20T00:00:00.000Z"),
+            startDateTime: null,
+          },
         ],
         id: 7001,
         patientName: "sofia osses flores",
@@ -717,7 +857,12 @@ describe("detectDuplicateSeries — same RUT, different name (subset)", () => {
         beneficiaryName: "MACARENA PATRICIA MUNOZ PARRA",
         beneficiaryRut: "15589687-6",
         events: [
-          { endDate: null, endDateTime: null, startDate: new Date("2024-01-01T00:00:00.000Z"), startDateTime: null },
+          {
+            endDate: null,
+            endDateTime: null,
+            startDate: new Date("2024-01-01T00:00:00.000Z"),
+            startDateTime: null,
+          },
         ],
         id: 257,
         patientName: "matias allende munoz",

@@ -74,9 +74,7 @@ function rowsFromBuffer(buffer: Buffer): Row[] {
     defval: null,
     blankrows: false,
   });
-  return json.map((row) =>
-    (row as unknown[]).map((c) => (c == null ? "" : String(c).trim())),
-  );
+  return json.map((row) => (row as unknown[]).map((c) => (c == null ? "" : String(c).trim())));
 }
 
 function findCellRight(row: Row, fromIdx: number): string {
@@ -87,7 +85,9 @@ function findCellRight(row: Row, fromIdx: number): string {
 }
 
 function isSectionMarker(cellNorm: string): boolean {
-  return SECTION_MARKERS.some((m) => cellNorm === normalize(m) || cellNorm.startsWith(normalize(m)));
+  return SECTION_MARKERS.some(
+    (m) => cellNorm === normalize(m) || cellNorm.startsWith(normalize(m))
+  );
 }
 
 function classifySectionMarker(cellNorm: string): keyof ParsedClinicalRecord["rawSections"] | null {

@@ -120,7 +120,16 @@ const serviceSummarySchema = z
     publicId: z.string(),
     recurrenceType: z.enum(["ONE_OFF", "RECURRING"]),
     reminderDaysBefore: z.number().int(),
-    serviceType: z.enum(["BUSINESS", "LEASE", "OTHER", "PERSONAL", "SOFTWARE", "SUPPLIER", "TAX", "UTILITY"]),
+    serviceType: z.enum([
+      "BUSINESS",
+      "LEASE",
+      "OTHER",
+      "PERSONAL",
+      "SOFTWARE",
+      "SUPPLIER",
+      "TAX",
+      "UTILITY",
+    ]),
     startDate: z.date(),
     status: z.enum(["ACTIVE", "ARCHIVED", "INACTIVE"]),
     totalExpected: decimalOutputSchema,
@@ -272,13 +281,16 @@ function getServiceScheduleStats(schedules: ServiceScheduleDto[]) {
         acc.pendingCount += 1;
       }
 
-      if (schedule.overdueDays > 0 && (schedule.status === "PENDING" || schedule.status === "PARTIAL")) {
+      if (
+        schedule.overdueDays > 0 &&
+        (schedule.status === "PENDING" || schedule.status === "PARTIAL")
+      ) {
         acc.overdueCount += 1;
       }
 
       return acc;
     },
-    { overdueCount: 0, pendingCount: 0, totalExpected: 0, totalPaid: 0 },
+    { overdueCount: 0, pendingCount: 0, totalExpected: 0, totalPaid: 0 }
   );
 }
 
@@ -321,7 +333,7 @@ function mapServiceSummary(
     type: ServiceSummaryDto["serviceType"];
     updatedAt: Date;
   },
-  stats: { overdueCount: number; pendingCount: number; totalExpected: number; totalPaid: number },
+  stats: { overdueCount: number; pendingCount: number; totalExpected: number; totalPaid: number }
 ): ServiceSummaryDto {
   return {
     accountReference: null,
@@ -441,7 +453,7 @@ const WITHDRAW_ID_OFFSET = -2_000_000_000;
 type TransactionSource = "release" | "settlement" | "withdraw";
 
 function decodeUnifiedId(
-  transactionId: number,
+  transactionId: number
 ): null | { rawId: number; source: TransactionSource } {
   if (transactionId > 0) {
     return { rawId: transactionId, source: "settlement" };
@@ -462,7 +474,7 @@ function decodeUnifiedId(
 
 function normalizeTransactionReference(
   transactionId: number,
-  transactionSource?: TransactionSource,
+  transactionSource?: TransactionSource
 ): null | { rawId: number; source: TransactionSource } {
   if (transactionSource) {
     if (transactionId > 0) {
@@ -561,7 +573,10 @@ const servicesORPCRouterBase = {
 
       return {
         services: services.map((service) =>
-          mapServiceSummary(service, getServiceScheduleStats(schedulesByServiceId.get(service.id) ?? [])),
+          mapServiceSummary(
+            service,
+            getServiceScheduleStats(schedulesByServiceId.get(service.id) ?? [])
+          )
         ),
         status: "ok" as const,
       };
@@ -594,10 +609,7 @@ const servicesORPCRouterBase = {
       return {
         ...result,
         schedules: mappedSchedules,
-        service: mapServiceSummary(
-          service ?? existing,
-          getServiceScheduleStats(mappedSchedules),
-        ),
+        service: mapServiceSummary(service ?? existing, getServiceScheduleStats(mappedSchedules)),
         status: "ok" as const,
       };
     }),
@@ -783,26 +795,32 @@ const servicesORPCRouterBase = {
     .route({ method: "PUT", path: "/{id}" })
     .input(z.object({ id: z.string().min(1), payload: contractServiceCreateSchema }))
     .output(detailResponseSchema)
-    .handler(async ({ input }: { input: { id: string; payload: z.output<typeof contractServiceCreateSchema> } }) => {
-      const existing = await getServiceByIdOrPublicId(input.id);
+    .handler(
+      async ({
+        input,
+      }: {
+        input: { id: string; payload: z.output<typeof contractServiceCreateSchema> };
+      }) => {
+        const existing = await getServiceByIdOrPublicId(input.id);
 
-      if (!existing) {
-        throw new ORPCError("NOT_FOUND", { message: "Not found" });
+        if (!existing) {
+          throw new ORPCError("NOT_FOUND", { message: "Not found" });
+        }
+
+        const service = await updateService(existing.id, mapServicePayload(input.payload));
+        const schedules = await db.serviceSchedule.findMany({
+          where: { serviceId: service.id },
+          orderBy: { periodStart: "asc" },
+        });
+        const mappedSchedules = schedules.map(mapServiceSchedule);
+
+        return {
+          schedules: mappedSchedules,
+          service: mapServiceSummary(service, getServiceScheduleStats(mappedSchedules)),
+          status: "ok" as const,
+        };
       }
-
-      const service = await updateService(existing.id, mapServicePayload(input.payload));
-      const schedules = await db.serviceSchedule.findMany({
-        where: { serviceId: service.id },
-        orderBy: { periodStart: "asc" },
-      });
-      const mappedSchedules = schedules.map(mapServiceSchedule);
-
-      return {
-        schedules: mappedSchedules,
-        service: mapServiceSummary(service, getServiceScheduleStats(mappedSchedules)),
-        status: "ok" as const,
-      };
-    }),
+    ),
 };
 
 export const servicesORPCRouter = base.prefix("/api/orpc/services").router(servicesORPCRouterBase);

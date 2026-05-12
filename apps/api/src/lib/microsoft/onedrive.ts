@@ -615,27 +615,15 @@ function isXlsxItem(item: OneDriveItem): boolean {
 }
 
 export function getOneDriveQuickXorHash(item: OneDriveItem): string | null {
-  return (
-    item.remoteItem?.file?.hashes?.quickXorHash ??
-    item.file?.hashes?.quickXorHash ??
-    null
-  );
+  return item.remoteItem?.file?.hashes?.quickXorHash ?? item.file?.hashes?.quickXorHash ?? null;
 }
 
 export function getOneDriveSha1Hash(item: OneDriveItem): string | null {
-  return (
-    item.remoteItem?.file?.hashes?.sha1Hash ??
-    item.file?.hashes?.sha1Hash ??
-    null
-  );
+  return item.remoteItem?.file?.hashes?.sha1Hash ?? item.file?.hashes?.sha1Hash ?? null;
 }
 
 export function getOneDriveCrc32Hash(item: OneDriveItem): string | null {
-  return (
-    item.remoteItem?.file?.hashes?.crc32Hash ??
-    item.file?.hashes?.crc32Hash ??
-    null
-  );
+  return item.remoteItem?.file?.hashes?.crc32Hash ?? item.file?.hashes?.crc32Hash ?? null;
 }
 
 function normalizeGraphPath(path: null | string | undefined): null | string {

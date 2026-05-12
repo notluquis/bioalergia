@@ -9,7 +9,7 @@ function decodeBasicHtmlEntities(value: string): string {
     .replace(/&amp;/gi, "&")
     .replace(/&lt;/gi, "<")
     .replace(/&gt;/gi, ">")
-    .replace(/&quot;/gi, "\"")
+    .replace(/&quot;/gi, '"')
     .replace(/&#39;/gi, "'");
 }
 
@@ -69,7 +69,7 @@ export function normalizeClinicalText(value: null | string | undefined): string 
 export function joinClinicalText(
   summary: null | string | undefined,
   description: null | string | undefined,
-  separator = " ",
+  separator = " "
 ): string {
   const summaryText = normalizeClinicalText(summary);
   const descriptionText = normalizeClinicalText(description);

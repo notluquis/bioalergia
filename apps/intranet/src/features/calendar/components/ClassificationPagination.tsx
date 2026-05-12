@@ -57,7 +57,7 @@ export function ClassificationPagination({
                 {item.value}
               </Pagination.Link>
             </Pagination.Item>
-          ),
+          )
         )}
         <Pagination.Item>
           <Pagination.Next isDisabled={!canNext || loading} onPress={() => onPageChange(page + 1)}>

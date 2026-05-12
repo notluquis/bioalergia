@@ -22,7 +22,7 @@ export async function getSettings() {
       acc[curr.key] = curr.value ?? "";
       return acc;
     },
-    {} as Record<string, string>,
+    {} as Record<string, string>
   );
 }
 
@@ -53,7 +53,7 @@ export async function updateSettings(settings: Record<string, string>) {
       where: { key },
       update: { value },
       create: { key, value },
-    }),
+    })
   );
   return await db.$transaction(updates);
 }

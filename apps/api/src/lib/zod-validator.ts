@@ -7,7 +7,7 @@ import { errorReply } from "../utils/error-reply.ts";
 
 export const zValidator = <T extends ZodType, Target extends keyof ValidationTargets>(
   target: Target,
-  schema: T,
+  schema: T
 ) =>
   baseValidator(target, schema, (result, c) => {
     if (result.success) return;

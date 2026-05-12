@@ -15,7 +15,7 @@ export async function getCertificatesFolderId(): Promise<string> {
           fields: "files(id)",
           spaces: "drive",
         }),
-      { context: "drive.files.list" },
+      { context: "drive.files.list" }
     );
 
     const existingId = response.data.files?.[0]?.id;
@@ -32,7 +32,7 @@ export async function getCertificatesFolderId(): Promise<string> {
           },
           fields: "id",
         }),
-      { idempotent: false, context: "drive.files.create" },
+      { idempotent: false, context: "drive.files.create" }
     );
 
     const folderId = folder.data.id;
@@ -49,7 +49,7 @@ export async function uploadCertificateToDrive(
   filepath: string,
   filename: string,
   metadata: Record<string, unknown>,
-  pdfHash: string,
+  pdfHash: string
 ): Promise<{ fileId: string; webViewLink: string | null }> {
   try {
     const drive = await getDriveClient();
@@ -73,7 +73,7 @@ export async function uploadCertificateToDrive(
           },
           fields: "id,webViewLink",
         }),
-      { idempotent: false, context: "drive.files.create" },
+      { idempotent: false, context: "drive.files.create" }
     );
 
     const fileId = response.data.id;

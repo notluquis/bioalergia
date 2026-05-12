@@ -37,7 +37,10 @@ import {
 } from "../graph-client.ts";
 
 const ok = (body: unknown) =>
-  new Response(JSON.stringify(body), { status: 200, headers: { "content-type": "application/json" } });
+  new Response(JSON.stringify(body), {
+    status: 200,
+    headers: { "content-type": "application/json" },
+  });
 
 let fetchMock: ReturnType<typeof vi.fn>;
 
@@ -209,8 +212,8 @@ describe("sendAddressMessage", () => {
       saveAddressLabel: "Casa",
     });
     const { body } = lastCall();
-    const params = (body.interactive as { action: { parameters: Record<string, unknown> } })
-      .action.parameters;
+    const params = (body.interactive as { action: { parameters: Record<string, unknown> } }).action
+      .parameters;
     expect(params.save_address).toEqual({ label: "Casa" });
   });
 });

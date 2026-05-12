@@ -1,12 +1,8 @@
 {
   "name": "@finanzas/site",
-  "private": true,
   "version": "0.1.0",
+  "private": true,
   "type": "module",
-  "engines": {
-    "node": ">=26",
-    "npm": ">=10.0.0"
-  },
   "scripts": {
     "dev": "vite",
     "build": "vite build",
@@ -26,8 +22,8 @@
   "dependencies": {
     "@heroui/react": "^3.0.4",
     "@heroui/styles": "^3.0.4",
-    "@tanstack/react-query": "^5.100.9",
-    "posthog-js": "^1.372.10",
+    "@tanstack/react-query": "^5.100.10",
+    "posthog-js": "^1.373.2",
     "react": "^19.2.6",
     "react-dom": "^19.2.6"
   },
@@ -41,15 +37,19 @@
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.1",
-    "chromatic": "^16.9.1",
-    "msw": "^2.14.5",
+    "chromatic": "^16.10.0",
+    "msw": "^2.14.6",
     "msw-storybook-addon": "^2.0.7",
     "rollup-plugin-visualizer": "^7.0.1",
     "storybook": "^10.3.6",
     "storybook-addon-tag-badges": "^3.1.0",
     "tailwindcss": "^4.3.0",
     "typescript": "^6.0.3",
-    "vite": "^8.0.11",
-    "vitest": "^4.1.5"
+    "vite": "^8.0.12",
+    "vitest": "^4.1.6"
+  },
+  "engines": {
+    "node": ">=26",
+    "npm": ">=10.0.0"
   }
 }

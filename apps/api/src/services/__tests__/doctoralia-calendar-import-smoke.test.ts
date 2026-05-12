@@ -42,13 +42,11 @@ describe.skipIf(!fileExists)(
       mockUpsertAppointments.mockReset();
       mockUpsertWorkPeriods.mockReset();
       mockUpsertSchedules.mockResolvedValue({ inserted: 0, updated: 0, skipped: 0 });
-      mockUpsertAppointments.mockImplementation(
-        async (_scheduleId: number, appts: unknown[]) => ({
-          inserted: Array.isArray(appts) ? appts.length : 0,
-          updated: 0,
-          skipped: 0,
-        }),
-      );
+      mockUpsertAppointments.mockImplementation(async (_scheduleId: number, appts: unknown[]) => ({
+        inserted: Array.isArray(appts) ? appts.length : 0,
+        updated: 0,
+        skipped: 0,
+      }));
       mockUpsertWorkPeriods.mockImplementation(async (_scheduleId: number, wps: unknown[]) => ({
         inserted: Array.isArray(wps) ? wps.length : 0,
         updated: 0,
@@ -79,9 +77,9 @@ describe.skipIf(!fileExists)(
 
       const totalAppointments = sample.reduce(
         (sum, e) => sum + ((e.data as { appointments: unknown[] }).appointments?.length ?? 0),
-        0,
+        0
       );
       expect(result.summary.appointments.inserted).toBe(totalAppointments);
     });
-  },
+  }
 );

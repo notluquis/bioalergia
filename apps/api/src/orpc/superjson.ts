@@ -43,9 +43,10 @@ const superjson = configureSuperjson();
  * Custom serializer that wraps SuperJSON library.
  * Handles Date, BigInt, Decimal, and other special types.
  */
-export class SuperJSONSerializer
-  implements Pick<StandardRPCSerializer, keyof StandardRPCSerializer>
-{
+export class SuperJSONSerializer implements Pick<
+  StandardRPCSerializer,
+  keyof StandardRPCSerializer
+> {
   serialize(data: unknown): object {
     if (isAsyncIteratorObject(data)) {
       return mapEventIterator(data, {
@@ -71,7 +72,7 @@ export class SuperJSONSerializer
           }
 
           const deserialized = superjson.deserialize(
-            error.data as Parameters<typeof superjson.deserialize>[0],
+            error.data as Parameters<typeof superjson.deserialize>[0]
           );
 
           if (isORPCErrorJson(deserialized)) {
@@ -91,8 +92,7 @@ export class SuperJSONSerializer
 }
 
 export interface SuperJSONRPCHandlerOptions<T extends Context>
-  extends FetchHandlerOptions<T>,
-    Omit<StandardHandlerOptions<T>, "plugins"> {
+  extends FetchHandlerOptions<T>, Omit<StandardHandlerOptions<T>, "plugins"> {
   strictGetMethodPluginEnabled?: boolean;
 }
 
@@ -129,13 +129,13 @@ export interface SuperJSONRPCHandlerOptions<T extends Context>
 export class SuperJSONRPCHandler<T extends Context> extends FetchHandler<T> {
   constructor(
     router: Router<Record<never, never>, T>,
-    options: NoInfer<SuperJSONRPCHandlerOptions<T>> = {},
+    options: NoInfer<SuperJSONRPCHandlerOptions<T>> = {}
   ) {
     options.interceptors ??= [];
     options.interceptors.push(
       onError((error) => {
         throw normalizeServerError(error);
-      }),
+      })
     );
 
     options.plugins ??= [];

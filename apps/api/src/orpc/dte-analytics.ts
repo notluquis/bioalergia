@@ -45,7 +45,7 @@ const base = os.$context<DteAnalyticsORPCContext>();
 
 function excludeAnnulledByNCE(
   tableAlias: string,
-  table: "DTESaleDetail" | "DTEPurchaseDetail",
+  table: "DTESaleDetail" | "DTEPurchaseDetail"
 ): ReturnType<typeof sql<boolean>> {
   if (table === "DTEPurchaseDetail") {
     return sql<boolean>`true`;
@@ -213,21 +213,21 @@ const dteAnalyticsORPCRouterBase = {
 
       if (input.startPeriod) {
         query = query.where(
-          sql<boolean>`p.document_date >= ${parsePeriodStart(input.startPeriod).toISOString()}`,
+          sql<boolean>`p.document_date >= ${parsePeriodStart(input.startPeriod).toISOString()}`
         );
       }
       if (input.endPeriod) {
         query = query.where(
-          sql<boolean>`p.document_date <= ${parsePeriodEnd(input.endPeriod).toISOString()}`,
+          sql<boolean>`p.document_date <= ${parsePeriodEnd(input.endPeriod).toISOString()}`
         );
       }
       if (input.year) {
         query = query
           .where(
-            sql<boolean>`p.document_date >= ${dayjs.tz(`${input.year}-01-01`, "YYYY-MM-DD", TIMEZONE).startOf("year").toISOString()}`,
+            sql<boolean>`p.document_date >= ${dayjs.tz(`${input.year}-01-01`, "YYYY-MM-DD", TIMEZONE).startOf("year").toISOString()}`
           )
           .where(
-            sql<boolean>`p.document_date <= ${dayjs.tz(`${input.year}-01-01`, "YYYY-MM-DD", TIMEZONE).endOf("year").toISOString()}`,
+            sql<boolean>`p.document_date <= ${dayjs.tz(`${input.year}-01-01`, "YYYY-MM-DD", TIMEZONE).endOf("year").toISOString()}`
           );
       }
 
@@ -366,27 +366,28 @@ const dteAnalyticsORPCRouterBase = {
     .route({ method: "GET", path: "/sales/linked-events" })
     .input(dteAnalyticsSalesLinkedEventsQuerySchema)
     .output(dteAnalyticsSalesLinkedEventsResponseSchema)
-    .handler(async ({ input }: { input: z.output<typeof dteAnalyticsSalesLinkedEventsQuerySchema> }) => {
-      const dte = await db.$queryRaw<
-        Array<{
-          clientName: string;
-          clientRUT: string;
-          documentDate: Date;
-          documentType: number;
-          emitterRUT: null | string;
-          exemptAmount: number;
-          folio: string;
-          id: string;
-          ivaAmount: number;
-          lineItemsCount: number;
-          linkedEventsCount: number;
-          netAmount: number;
-          referenceDocFolio: null | string;
-          referenceDocType: null | string;
-          saleType: string;
-          totalAmount: number;
-        }>
-      >`
+    .handler(
+      async ({ input }: { input: z.output<typeof dteAnalyticsSalesLinkedEventsQuerySchema> }) => {
+        const dte = await db.$queryRaw<
+          Array<{
+            clientName: string;
+            clientRUT: string;
+            documentDate: Date;
+            documentType: number;
+            emitterRUT: null | string;
+            exemptAmount: number;
+            folio: string;
+            id: string;
+            ivaAmount: number;
+            lineItemsCount: number;
+            linkedEventsCount: number;
+            netAmount: number;
+            referenceDocFolio: null | string;
+            referenceDocType: null | string;
+            saleType: string;
+            totalAmount: number;
+          }>
+        >`
         SELECT
           s.id AS "id",
           s.document_type AS "documentType",
@@ -417,27 +418,32 @@ const dteAnalyticsORPCRouterBase = {
         LIMIT 1
       `;
 
-      const dteRow = dte[0];
+        const dteRow = dte[0];
 
-      if (!dteRow) {
-        throw new ORPCError("NOT_FOUND", { message: "DTE de venta no encontrado" });
-      }
+        if (!dteRow) {
+          throw new ORPCError("NOT_FOUND", { message: "DTE de venta no encontrado" });
+        }
 
-      const linkedEvents = await db.$queryRaw<
-        Array<{
-          amountExpected: null | number;
-          amountPaid: null | number;
-          calendarId: string;
-          confidenceScore: null | number;
-          displayName: null | string;
-          eventDate: string;
-          eventId: string;
-          eventTime: null | string;
-          matchedBy: null | string;
-          seriesKind: null | "PATCH_TEST" | "SKIN_TEST" | "SUBCUTANEOUS_TREATMENT" | "MEDICAL_CONSULTATION";
-          summary: null | string;
-        }>
-      >`
+        const linkedEvents = await db.$queryRaw<
+          Array<{
+            amountExpected: null | number;
+            amountPaid: null | number;
+            calendarId: string;
+            confidenceScore: null | number;
+            displayName: null | string;
+            eventDate: string;
+            eventId: string;
+            eventTime: null | string;
+            matchedBy: null | string;
+            seriesKind:
+              | null
+              | "PATCH_TEST"
+              | "SKIN_TEST"
+              | "SUBCUTANEOUS_TREATMENT"
+              | "MEDICAL_CONSULTATION";
+            summary: null | string;
+          }>
+        >`
         SELECT
           c.google_id AS "calendarId",
           e.external_event_id AS "eventId",
@@ -458,31 +464,32 @@ const dteAnalyticsORPCRouterBase = {
         ORDER BY COALESCE(e.start_date, (e.start_date_time AT TIME ZONE 'America/Santiago')::date) DESC, e.start_date_time DESC NULLS LAST, e.id DESC
       `;
 
-      return {
-        data: {
-          dte: {
-            clientName: dteRow.clientName,
-            clientRUT: dteRow.clientRUT,
-            documentDate: dayjs(dteRow.documentDate).format("YYYY-MM-DD"),
-            documentType: Number(dteRow.documentType),
-            emitterRUT: dteRow.emitterRUT,
-            exemptAmount: Number(dteRow.exemptAmount),
-            folio: dteRow.folio,
-            id: dteRow.id,
-            ivaAmount: Number(dteRow.ivaAmount),
-            lineItemsCount: Number(dteRow.lineItemsCount),
-            netAmount: Number(dteRow.netAmount),
-            referenceDocFolio: dteRow.referenceDocFolio,
-            referenceDocType: dteRow.referenceDocType,
-            saleType: dteRow.saleType,
-            linkedEventsCount: Number(dteRow.linkedEventsCount),
-            totalAmount: Number(dteRow.totalAmount),
+        return {
+          data: {
+            dte: {
+              clientName: dteRow.clientName,
+              clientRUT: dteRow.clientRUT,
+              documentDate: dayjs(dteRow.documentDate).format("YYYY-MM-DD"),
+              documentType: Number(dteRow.documentType),
+              emitterRUT: dteRow.emitterRUT,
+              exemptAmount: Number(dteRow.exemptAmount),
+              folio: dteRow.folio,
+              id: dteRow.id,
+              ivaAmount: Number(dteRow.ivaAmount),
+              lineItemsCount: Number(dteRow.lineItemsCount),
+              netAmount: Number(dteRow.netAmount),
+              referenceDocFolio: dteRow.referenceDocFolio,
+              referenceDocType: dteRow.referenceDocType,
+              saleType: dteRow.saleType,
+              linkedEventsCount: Number(dteRow.linkedEventsCount),
+              totalAmount: Number(dteRow.totalAmount),
+            },
+            linkedEvents,
           },
-          linkedEvents,
-        },
-        status: "success" as const,
-      };
-    }),
+          status: "success" as const,
+        };
+      }
+    ),
 
   salesSummary: readDteAnalytics
     .route({ method: "GET", path: "/sales/summary" })
@@ -507,21 +514,21 @@ const dteAnalyticsORPCRouterBase = {
 
       if (input.startPeriod) {
         query = query.where(
-          sql<boolean>`s.document_date >= ${parsePeriodStart(input.startPeriod).toISOString()}`,
+          sql<boolean>`s.document_date >= ${parsePeriodStart(input.startPeriod).toISOString()}`
         );
       }
       if (input.endPeriod) {
         query = query.where(
-          sql<boolean>`s.document_date <= ${parsePeriodEnd(input.endPeriod).toISOString()}`,
+          sql<boolean>`s.document_date <= ${parsePeriodEnd(input.endPeriod).toISOString()}`
         );
       }
       if (input.year) {
         query = query
           .where(
-            sql<boolean>`s.document_date >= ${dayjs.tz(`${input.year}-01-01`, "YYYY-MM-DD", TIMEZONE).startOf("year").toISOString()}`,
+            sql<boolean>`s.document_date >= ${dayjs.tz(`${input.year}-01-01`, "YYYY-MM-DD", TIMEZONE).startOf("year").toISOString()}`
           )
           .where(
-            sql<boolean>`s.document_date <= ${dayjs.tz(`${input.year}-01-01`, "YYYY-MM-DD", TIMEZONE).endOf("year").toISOString()}`,
+            sql<boolean>`s.document_date <= ${dayjs.tz(`${input.year}-01-01`, "YYYY-MM-DD", TIMEZONE).endOf("year").toISOString()}`
           );
       }
 
@@ -546,8 +553,7 @@ const dteAnalyticsORPCRouterBase = {
     .input(dteLineItemsQuerySchema)
     .output(dteLineItemsResponseSchema)
     .handler(async ({ input }: { input: z.output<typeof dteLineItemsQuerySchema> }) => {
-      const fkColumn =
-        input.direction === "sale" ? "dte_sale_detail_id" : "dte_purchase_detail_id";
+      const fkColumn = input.direction === "sale" ? "dte_sale_detail_id" : "dte_purchase_detail_id";
 
       const rows = await db.$queryRaw<
         Array<{
@@ -617,9 +623,8 @@ const dteAnalyticsORPCRouterBase = {
         });
       }
 
-      const { fetchSaleXmlLineItems, fetchPurchaseXmlLineItems } = await import(
-        "../modules/haulmer/xml-service.ts"
-      );
+      const { fetchSaleXmlLineItems, fetchPurchaseXmlLineItems } =
+        await import("../modules/haulmer/xml-service.ts");
 
       const result =
         input.direction === "sales"
@@ -633,21 +638,20 @@ const dteAnalyticsORPCRouterBase = {
     .route({ method: "POST", path: "/fetch-xml-by-period" })
     .input(dteFetchXmlByPeriodInputSchema)
     .output(dteFetchXmlByPeriodResponseSchema)
-    .handler(
-      async ({ input }: { input: z.output<typeof dteFetchXmlByPeriodInputSchema> }) => {
-        const { haulmerConfig: cfg } = await import("../config.ts");
-        if (!cfg) {
-          throw new ORPCError("INTERNAL_SERVER_ERROR", {
-            message: "Haulmer not configured (missing env vars)",
-          });
-        }
+    .handler(async ({ input }: { input: z.output<typeof dteFetchXmlByPeriodInputSchema> }) => {
+      const { haulmerConfig: cfg } = await import("../config.ts");
+      if (!cfg) {
+        throw new ORPCError("INTERNAL_SERVER_ERROR", {
+          message: "Haulmer not configured (missing env vars)",
+        });
+      }
 
-        const startDate = parsePeriodStart(input.period).toISOString();
-        const endDate = parsePeriodEnd(input.period).toISOString();
+      const startDate = parsePeriodStart(input.period).toISOString();
+      const endDate = parsePeriodEnd(input.period).toISOString();
 
-        let dteIds: string[];
-        if (input.direction === "sales") {
-          const rows = await db.$queryRaw<Array<{ id: string }>>`
+      let dteIds: string[];
+      if (input.direction === "sales") {
+        const rows = await db.$queryRaw<Array<{ id: string }>>`
             SELECT s.id FROM dte_sale_details s
             WHERE s.document_date >= ${startDate}
               AND s.document_date <= ${endDate}
@@ -655,28 +659,27 @@ const dteAnalyticsORPCRouterBase = {
               ${input.onlyMissing ? sql`AND NOT EXISTS (SELECT 1 FROM dte_line_items li WHERE li.dte_sale_detail_id = s.id)` : sql``}
             ORDER BY s.document_date DESC
           `;
-          dteIds = rows.map((r) => r.id);
-        } else {
-          const rows = await db.$queryRaw<Array<{ id: string }>>`
+        dteIds = rows.map((r) => r.id);
+      } else {
+        const rows = await db.$queryRaw<Array<{ id: string }>>`
             SELECT p.id FROM dte_purchase_details p
             WHERE p.document_date >= ${startDate}
               AND p.document_date <= ${endDate}
               ${input.onlyMissing ? sql`AND NOT EXISTS (SELECT 1 FROM dte_line_items li WHERE li.dte_purchase_detail_id = p.id)` : sql``}
             ORDER BY p.document_date DESC
           `;
-          dteIds = rows.map((r) => r.id);
-        }
-
-        if (dteIds.length === 0) {
-          return { jobId: "none", total: 0, status: "success" as const };
-        }
-
-        const { startXmlFetchJob } = await import("../modules/haulmer/xml-service.ts");
-        const jobId = startXmlFetchJob(dteIds, input.direction, cfg);
-
-        return { jobId, total: dteIds.length, status: "success" as const };
+        dteIds = rows.map((r) => r.id);
       }
-    ),
+
+      if (dteIds.length === 0) {
+        return { jobId: "none", total: 0, status: "success" as const };
+      }
+
+      const { startXmlFetchJob } = await import("../modules/haulmer/xml-service.ts");
+      const jobId = startXmlFetchJob(dteIds, input.direction, cfg);
+
+      return { jobId, total: dteIds.length, status: "success" as const };
+    }),
 
   xmlJobStatus: readDteAnalytics
     .route({ method: "GET", path: "/xml-job-status" })

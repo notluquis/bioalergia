@@ -11,7 +11,7 @@ const CREDENTIALS_PATH = path.resolve(
   process.cwd(),
   "storage",
   "google-calendar",
-  "credentials.json",
+  "credentials.json"
 );
 
 function resolveWebhookEndpoint() {
@@ -97,7 +97,7 @@ async function getCalendarClient(): Promise<CalendarClient | null> {
  */
 export async function registerWatchChannel(
   calendarGoogleId: string,
-  calendarDbId: number,
+  calendarDbId: number
 ): Promise<{ channelId: string; resourceId: string; expiration: Date } | null> {
   try {
     const client = await getCalendarClient();

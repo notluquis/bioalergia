@@ -79,7 +79,7 @@ export function getCalendarEventStates(event: CalendarEventDetail): CalendarEven
       continue;
     }
     const duplicated = states.some(
-      (existing) => existing.label.toLowerCase() === state.label.toLowerCase(),
+      (existing) => existing.label.toLowerCase() === state.label.toLowerCase()
     );
     if (!duplicated) {
       states.push(state);

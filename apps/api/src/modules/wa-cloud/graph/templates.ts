@@ -22,7 +22,7 @@ export async function createTemplate(input: CreateTemplateInput) {
       components: input.components,
     },
     token,
-    v,
+    v
   );
 }
 
@@ -36,7 +36,7 @@ export async function deleteTemplate(accountId: number, name: string, hsmId?: st
     `/${account.wabaId}/message_templates?${qs.toString()}`,
     {},
     account.systemUserToken,
-    v,
+    v
   );
 }
 
@@ -55,7 +55,7 @@ export async function listAccountTemplates(accountId: number) {
   const data = await graphGet<{ data: TemplateApi[] }>(
     `/${account.wabaId}/message_templates?fields=id,name,language,status,category,components,quality_score&limit=200`,
     account.systemUserToken,
-    account.graphApiVersion,
+    account.graphApiVersion
   );
   return data.data;
 }

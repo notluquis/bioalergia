@@ -39,7 +39,7 @@ export async function graphPost<T>(
   path: string,
   body: unknown,
   token: string,
-  version: string,
+  version: string
 ): Promise<T> {
   const res = await fetch(`${GRAPH_BASE}/${version}${path}`, {
     method: "POST",
@@ -73,7 +73,7 @@ export async function graphDelete<T>(
   path: string,
   body: unknown,
   token: string,
-  version: string,
+  version: string
 ): Promise<T> {
   const res = await fetch(`${GRAPH_BASE}/${version}${path}`, {
     method: "DELETE",

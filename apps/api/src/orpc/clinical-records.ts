@@ -55,11 +55,18 @@ function rowToImport(row: Record<string, unknown>): z.infer<typeof clinicalRecor
     parserVersion: String(row.parserVersion ?? ""),
     confidence: Number(row.confidence ?? 0),
     error: (row.error as string | null) ?? null,
-    issues: (row.issues as Array<{ code: string; message: string; severity: "info" | "warning" | "error" }> | null) ?? [],
-    parsedPayload: (row.parsedPayload as z.infer<typeof clinicalRecordImportSchema>["parsedPayload"]) ?? null,
+    issues:
+      (row.issues as Array<{
+        code: string;
+        message: string;
+        severity: "info" | "warning" | "error";
+      }> | null) ?? [],
+    parsedPayload:
+      (row.parsedPayload as z.infer<typeof clinicalRecordImportSchema>["parsedPayload"]) ?? null,
     matchedPatientId: (row.matchedPatientId as number | null) ?? null,
     matchedClinicalSeriesId: (row.matchedClinicalSeriesId as number | null) ?? null,
-    matchCandidates: (row.matchCandidates as z.infer<typeof clinicalRecordImportSchema>["matchCandidates"]) ?? [],
+    matchCandidates:
+      (row.matchCandidates as z.infer<typeof clinicalRecordImportSchema>["matchCandidates"]) ?? [],
     reviewedBy: (row.reviewedBy as number | null) ?? null,
     reviewedAt: (row.reviewedAt as Date | null) ?? null,
     reviewNotes: (row.reviewNotes as string | null) ?? null,
@@ -82,7 +89,7 @@ const routerBase = {
         page: z.number().int().min(1).default(1),
         pageSize: z.number().int().min(1).max(200).default(50),
         search: z.string().optional(),
-      }),
+      })
     )
     .output(
       z.object({
@@ -90,7 +97,7 @@ const routerBase = {
         page: z.number().int(),
         pageSize: z.number().int(),
         total: z.number().int(),
-      }),
+      })
     )
     .handler(async ({ input }) => {
       const offset = (input.page - 1) * input.pageSize;
@@ -101,10 +108,9 @@ const routerBase = {
           status ? sql`status = ${status}::"ClinicalRecordImportStatus"` : null,
           search ? sql`filename ILIKE ${`%${search}%`}` : null,
         ].filter(Boolean) as ReturnType<typeof sql>[],
-        sql` AND `,
+        sql` AND `
       );
-      const whereClause =
-        status || search ? sql`WHERE ${where}` : sql``;
+      const whereClause = status || search ? sql`WHERE ${where}` : sql``;
       const rows = await sql<Record<string, unknown>>`
         SELECT
           id, filename, status::text AS status,
@@ -179,7 +185,7 @@ const routerBase = {
         status: clinicalRecordImportStatusSchema,
         candidates: z.number().int().optional(),
         reason: z.string().optional(),
-      }),
+      })
     )
     .handler(async ({ input }) => {
       const result = await reprocessClinicalRecordImport(input.id);
@@ -193,7 +199,7 @@ const routerBase = {
         id: z.string().min(1),
         patientId: z.number().int().positive(),
         notes: z.string().optional(),
-      }),
+      })
     )
     .output(z.object({ status: z.literal("ok") }))
     .handler(async ({ input, context }) => {

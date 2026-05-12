@@ -27,7 +27,7 @@ export function useServiceDetails(services: ServiceListResponse["services"]) {
         return {};
       }
       const results = await Promise.allSettled(
-        services.map((service) => fetchServiceDetail(service.publicId)),
+        services.map((service) => fetchServiceDetail(service.publicId))
       );
 
       const detailsMap: Record<string, ServiceDetailResponse> = {};
@@ -61,7 +61,7 @@ export function useServiceDetails(services: ServiceListResponse["services"]) {
   }, []);
 
   const unifiedAgendaItems = Object.values(allDetails).flatMap((item) =>
-    item.schedules.map((schedule) => ({ schedule, service: item.service })),
+    item.schedules.map((schedule) => ({ schedule, service: item.service }))
   );
 
   return {

@@ -65,7 +65,7 @@ function saveState(scope: string, state: NotificationState) {
 }
 
 function setStateAndPersist(
-  updater: (state: NotificationState) => NotificationState,
+  updater: (state: NotificationState) => NotificationState
 ): NotificationState {
   let nextState: NotificationState = INITIAL_STATE;
   notificationStore.setState((state) => {
@@ -90,7 +90,7 @@ export const setNotificationScope = (userId: null | number | string) => {
 
 // Actions
 export const addNotification = (
-  notification: Omit<NotificationItem, "id" | "timestamp" | "read">,
+  notification: Omit<NotificationItem, "id" | "timestamp" | "read">
 ) => {
   setStateAndPersist((state) => {
     const newItem: NotificationItem = {

@@ -25,7 +25,7 @@ export function TableRegion({
     <div
       className={cn(
         "overflow-hidden rounded-2xl border border-default-200/70 bg-background/70",
-        className,
+        className
       )}
     >
       <div

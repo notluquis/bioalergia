@@ -66,7 +66,7 @@ function computeResultHash(p: ParsedClinicalRecord): string {
 
 async function ensureClinicalSeries(
   patientId: number,
-  patientName: string | null,
+  patientName: string | null
 ): Promise<number> {
   // One MEDICAL_CONSULTATION series per patient holds every ficha
   // clínica row — the timeline orders by consult_date.
@@ -88,7 +88,7 @@ async function materializeRecord(
   importId: string,
   parsed: ParsedClinicalRecord,
   clinicalSeriesId: number,
-  resultHash: string,
+  resultHash: string
 ): Promise<void> {
   // UPSERT on source_import_id keeps the row stable across reprocess.
   await sql`
@@ -162,7 +162,7 @@ async function reprocessInLock(id: string): Promise<{
     buffer = await downloadOneDriveItem(
       row.oneDriveAccountId ?? "",
       row.oneDriveItemId,
-      row.oneDriveDriveId ?? undefined,
+      row.oneDriveDriveId ?? undefined
     );
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
@@ -270,7 +270,7 @@ export async function approveClinicalRecordImport(
   id: string,
   patientId: number,
   reviewedBy: number,
-  notes?: string,
+  notes?: string
 ): Promise<void> {
   const row = await loadImport(id);
   if (!row) throw new DomainError("NOT_FOUND", `Import ${id} not found`);
@@ -296,7 +296,7 @@ export async function approveClinicalRecordImport(
       confidence: parsed.confidence ?? 0,
     } as ParsedClinicalRecord,
     seriesId,
-    r.rows[0]?.resultHash ?? "",
+    r.rows[0]?.resultHash ?? ""
   );
   await sql`
     UPDATE clinical_record_imports SET
@@ -324,7 +324,7 @@ export async function approveClinicalRecordImport(
 export async function rejectClinicalRecordImport(
   id: string,
   reviewedBy: number,
-  notes?: string,
+  notes?: string
 ): Promise<void> {
   await sql`
     UPDATE clinical_record_imports SET

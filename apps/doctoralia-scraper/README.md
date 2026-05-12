@@ -6,13 +6,13 @@ impersonation built-in). ~5MB de overhead, corre en segundos.
 
 ## Por qué IMPIT vs Playwright/Patchright
 
-| | IMPIT | Patchright |
-|---|---|---|
-| Tamaño | ~5MB | 1.5GB (Chromium) |
-| RAM | ~50MB | ~500MB |
-| Tiempo por corrida | segundos | minutos |
-| Dependencias runtime | 0 | Chromium + ~30 libs |
-| TLS fingerprint | Chrome real (Rust + rustls) | Chromium real (pesado) |
+|                      | IMPIT                       | Patchright             |
+| -------------------- | --------------------------- | ---------------------- |
+| Tamaño               | ~5MB                        | 1.5GB (Chromium)       |
+| RAM                  | ~50MB                       | ~500MB                 |
+| Tiempo por corrida   | segundos                    | minutos                |
+| Dependencias runtime | 0                           | Chromium + ~30 libs    |
+| TLS fingerprint      | Chrome real (Rust + rustls) | Chromium real (pesado) |
 
 Solo downside: login por form se hace via POST manual (no JS). Si Doctoralia
 mete reCAPTCHA en login, caemos y reintroducimos Patchright como fallback.
@@ -53,6 +53,7 @@ pnpm --filter @finanzas/doctoralia-scraper scrape
 ```
 
 Flujo:
+
 1. Carga cookies desde el API interno.
 2. GET al panel. Si hay sesión → directo al calendario.
 3. Si pide login: parsea el form, POSTea credenciales. Si pide OTP, lee el código por stdin.

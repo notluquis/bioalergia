@@ -33,11 +33,7 @@ import type { Context as HonoContext } from "hono";
 import { deleteCookie, getCookie, setCookie } from "hono/cookie";
 import { randomUUID } from "node:crypto";
 import { getSessionUser, hasPermission, resolveSessionUserFromToken } from "../auth.ts";
-import {
-  isLockedNow,
-  recordLoginFailure,
-  recordLoginSuccess,
-} from "../lib/account-lockout.ts";
+import { isLockedNow, recordLoginFailure, recordLoginSuccess } from "../lib/account-lockout.ts";
 import { ipFromContext, logAuditFromContext } from "../lib/audit-log.ts";
 import { fakeVerifyPassword } from "../lib/crypto.ts";
 import { DomainError } from "../lib/errors.ts";
@@ -89,7 +85,7 @@ const challengeStore = new Map<string, { challenge: string; expires: number; use
 
 function authError(
   status: "BAD_REQUEST" | "FORBIDDEN" | "INTERNAL_SERVER_ERROR" | "UNAUTHORIZED",
-  message: string,
+  message: string
 ): never {
   throw new ORPCError(status, { message });
 }
@@ -106,7 +102,7 @@ async function issueTokenWithOptions(
     debugScopes?: Array<{ action: string; subject: string }>;
     expiresIn?: string;
     tokenType?: "debug-session" | "session";
-  },
+  }
 ): Promise<string> {
   return signToken(
     {
@@ -119,7 +115,7 @@ async function issueTokenWithOptions(
       sv: session.sessionVersion,
       typ: options?.tokenType ?? "session",
     },
-    options?.expiresIn ?? "2d",
+    options?.expiresIn ?? "2d"
   );
 }
 
@@ -209,7 +205,7 @@ function buildCookieOptions(maxAge: number) {
 
 function filterAbilityRulesByDebugScopes(
   abilityRules: RawRuleOf<AnyAbility>[],
-  scopes?: Array<{ action: string; subject: string }>,
+  scopes?: Array<{ action: string; subject: string }>
 ) {
   if (!scopes || scopes.length === 0) {
     return abilityRules;
@@ -269,7 +265,7 @@ const authORPCRouterBase = {
         throw new DomainError(
           "RATE_LIMITED",
           "Demasiados intentos. Vuelve a intentarlo más tarde.",
-          { retryAfterMs: emailThrottle.retryAfterMs },
+          { retryAfterMs: emailThrottle.retryAfterMs }
         );
       }
 
@@ -517,7 +513,7 @@ const authORPCRouterBase = {
 
         const abilityRules = filterAbilityRulesByDebugScopes(
           (await getAbilityRulesForUser(user.id)) as RawRuleOf<AnyAbility>[],
-          session.debugScopes,
+          session.debugScopes
         );
         const notificationEmail = user.person?.email ?? "";
         const loginEmail = await getEffectiveLoginEmailByUserId(user.id, notificationEmail);
@@ -593,7 +589,7 @@ const authORPCRouterBase = {
           sv: targetUser.sessionVersion,
           typ: "debug",
         },
-        `${expiresInMinutes}m`,
+        `${expiresInMinutes}m`
       );
 
       return {
@@ -655,7 +651,7 @@ const authORPCRouterBase = {
           debugScopes: record.scopes,
           expiresIn: "10m",
           tokenType: "debug-session",
-        },
+        }
       );
 
       const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
@@ -851,7 +847,7 @@ const authORPCRouterBase = {
               expectedRPID: RP_ID,
               requireUserVerification: false,
               response: responseBody,
-            }),
+            })
         );
       } catch (err) {
         authError("UNAUTHORIZED", err instanceof Error ? err.message : "Verificación fallida");

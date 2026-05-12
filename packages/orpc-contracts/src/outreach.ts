@@ -548,7 +548,7 @@ export const campaignPreviewResponseSchema = z.object({
       nombre: z.string(),
       comuna: z.string(),
       email: z.string().nullable(),
-    }),
+    })
   ),
 });
 
@@ -571,7 +571,7 @@ export const dashboardResponseSchema = z.object({
   porTipo: z.array(z.object({ tipo: outreachProspectTypeSchema, count: z.number().int() })),
   porFuente: z.array(z.object({ fuente: outreachProspectSourceSchema, count: z.number().int() })),
   porDependencia: z.array(
-    z.object({ dependencia: outreachDependenciaSchema, count: z.number().int() }),
+    z.object({ dependencia: outreachDependenciaSchema, count: z.number().int() })
   ),
   porComuna: z.array(z.object({ comuna: z.string(), count: z.number().int() })),
   porTipoEstado: z.array(
@@ -579,11 +579,11 @@ export const dashboardResponseSchema = z.object({
       tipo: outreachProspectTypeSchema,
       estado: outreachStatusSchema,
       count: z.number().int(),
-    }),
+    })
   ),
   pendientesSeguimiento: z.number().int(),
   ultimasInteracciones: z.array(
-    outreachInteractionSchema.extend({ establishmentNombre: z.string() }),
+    outreachInteractionSchema.extend({ establishmentNombre: z.string() })
   ),
 });
 

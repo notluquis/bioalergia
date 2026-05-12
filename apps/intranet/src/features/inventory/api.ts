@@ -85,7 +85,7 @@ export async function getInventoryItems(): Promise<InventoryItem[]> {
 
 export async function updateInventoryItem(
   id: number,
-  item: Partial<Omit<InventoryItem, "id">>,
+  item: Partial<Omit<InventoryItem, "id">>
 ): Promise<InventoryItem> {
   try {
     const res = await inventoryORPCClient.updateItem({ id, item });

@@ -53,7 +53,7 @@ function main() {
 
   console.log("📖 Reference:\n");
   console.log(
-    "   HeroUI v3 Components: https://v3.heroui.com/docs/react/components/text-field.mdx",
+    "   HeroUI v3 Components: https://v3.heroui.com/docs/react/components/text-field.mdx"
   );
   console.log("   React Aria Validation: https://react-aria.adobe.com/docs/react-aria/useForm/\n");
 }

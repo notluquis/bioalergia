@@ -29,7 +29,7 @@ export async function registerPhoneNumber(phoneNumberId: number, pin: string) {
     `/${phone.phoneNumberId}/register`,
     { messaging_product: "whatsapp", pin },
     token,
-    v,
+    v
   );
 }
 
@@ -55,7 +55,7 @@ export async function setTwoStepPin(phoneNumberId: number, pin: string) {
 export async function requestPhoneVerificationCode(
   phoneNumberId: number,
   codeMethod: "SMS" | "VOICE",
-  language: string,
+  language: string
 ) {
   const phone = await getAccountForPhoneNumber(phoneNumberId);
   const v = phone.account.graphApiVersion;
@@ -64,7 +64,7 @@ export async function requestPhoneVerificationCode(
     `/${phone.phoneNumberId}/request_code`,
     { code_method: codeMethod, language },
     token,
-    v,
+    v
   );
 }
 
@@ -87,7 +87,7 @@ export async function listAccountPhoneNumbers(accountId: number) {
   const data = await graphGet<{ data: PhoneApi[] }>(
     `/${account.wabaId}/phone_numbers`,
     account.systemUserToken,
-    account.graphApiVersion,
+    account.graphApiVersion
   );
   return data.data;
 }

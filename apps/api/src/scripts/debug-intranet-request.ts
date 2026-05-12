@@ -120,7 +120,13 @@ function parseArgs(argv: string[]): ParsedArgs {
         break;
       case "--request-method": {
         const upper = (next || "").toUpperCase();
-        if (upper === "DELETE" || upper === "GET" || upper === "PATCH" || upper === "POST" || upper === "PUT") {
+        if (
+          upper === "DELETE" ||
+          upper === "GET" ||
+          upper === "PATCH" ||
+          upper === "POST" ||
+          upper === "PUT"
+        ) {
           args.requestMethod = upper;
         }
         index += 1;
@@ -265,7 +271,7 @@ async function loginWithCredentials(baseUrl: string): Promise<string> {
   const token = await resolveMfaToken();
   if (!token) {
     throw new Error(
-      "MFA required. Set DEBUG_LOGIN_TOTP_TOKEN or DEBUG_LOGIN_TOTP_SECRET/DEBUG_LOGIN_TOTP_SECRET_FILE",
+      "MFA required. Set DEBUG_LOGIN_TOTP_TOKEN or DEBUG_LOGIN_TOTP_SECRET/DEBUG_LOGIN_TOTP_SECRET_FILE"
     );
   }
 
@@ -307,7 +313,7 @@ async function loadSessionCookieSource(baseUrl: string): Promise<string> {
   }
 
   throw new Error(
-    "Provide DEBUG_LOGIN_EMAIL + DEBUG_LOGIN_PASSWORD, DEBUG_SESSION_COOKIE, or DEBUG_SESSION_COOKIE_FILE",
+    "Provide DEBUG_LOGIN_EMAIL + DEBUG_LOGIN_PASSWORD, DEBUG_SESSION_COOKIE, or DEBUG_SESSION_COOKIE_FILE"
   );
 }
 
@@ -349,7 +355,7 @@ function parseJsonArg(label: string, rawValue: string | undefined): unknown {
     return JSON.parse(rawValue) as unknown;
   } catch (error) {
     throw new Error(
-      `${label} must be valid JSON: ${error instanceof Error ? error.message : String(error)}`,
+      `${label} must be valid JSON: ${error instanceof Error ? error.message : String(error)}`
     );
   }
 }
@@ -395,7 +401,9 @@ async function issueDebugToken(params: {
 
   const token =
     body && typeof body === "object" && "json" in body && body.json && typeof body.json === "object"
-      ? ("token" in body.json ? body.json.token : undefined)
+      ? "token" in body.json
+        ? body.json.token
+        : undefined
       : undefined;
 
   if (typeof token !== "string" || token.length === 0) {
@@ -426,7 +434,9 @@ async function exchangeDebugToken(baseUrl: string, token: string) {
 
   const accessToken =
     body && typeof body === "object" && "json" in body && body.json && typeof body.json === "object"
-      ? ("accessToken" in body.json ? body.json.accessToken : undefined)
+      ? "accessToken" in body.json
+        ? body.json.accessToken
+        : undefined
       : undefined;
 
   if (typeof accessToken !== "string" || accessToken.length === 0) {
@@ -520,8 +530,8 @@ async function main() {
         },
       },
       null,
-      2,
-    ),
+      2
+    )
   );
 }
 

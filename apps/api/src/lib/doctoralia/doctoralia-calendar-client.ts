@@ -82,7 +82,7 @@ async function getCalendarToken(): Promise<string> {
 
   if (!token) {
     throw new Error(
-      `Doctoralia scraper token not available (label=${DEFAULT_COOKIES_LABEL}). Update cookies in Doctoralia settings first.`,
+      `Doctoralia scraper token not available (label=${DEFAULT_COOKIES_LABEL}). Update cookies in Doctoralia settings first.`
     );
   }
 
@@ -105,7 +105,7 @@ export async function hasCalendarApiToken(): Promise<boolean> {
 async function calendarApiRequest<T>(
   method: "GET" | "POST" | "PUT" | "DELETE",
   path: string,
-  data?: unknown,
+  data?: unknown
 ): Promise<T> {
   const token = await getCalendarToken();
 
@@ -144,7 +144,7 @@ async function calendarApiRequest<T>(
 export async function getCalendarEvents(
   from: string,
   to: string,
-  schedules: number[] = [],
+  schedules: number[] = []
 ): Promise<DoctoraliaCalendarResponse> {
   const payload: DoctoraliaCalendarRequest = {
     from,
@@ -152,11 +152,7 @@ export async function getCalendarEvents(
     schedules,
   };
 
-  return calendarApiRequest<DoctoraliaCalendarResponse>(
-    "POST",
-    "/calendarevents",
-    payload,
-  );
+  return calendarApiRequest<DoctoraliaCalendarResponse>("POST", "/calendarevents", payload);
 }
 
 /**
@@ -164,14 +160,12 @@ export async function getCalendarEvents(
  *
  * alertType=3 corresponds to schedule/event alerts.
  */
-export async function getCalendarAlerts(
-  alertType = 3,
-): Promise<DoctoraliaCalendarAlert[]> {
+export async function getCalendarAlerts(alertType = 3): Promise<DoctoraliaCalendarAlert[]> {
   const query = new URLSearchParams({ alertType: String(alertType) });
   return calendarApiRequest<DoctoraliaCalendarAlert[]>(
     "GET",
     `/alerts?${query.toString()}`,
-    undefined,
+    undefined
   );
 }
 
@@ -179,7 +173,7 @@ export async function getCalendarAlerts(
  * Get calendar events for current week
  */
 export async function getThisWeekEvents(
-  schedules: number[] = [],
+  schedules: number[] = []
 ): Promise<DoctoraliaCalendarResponse> {
   // Get current week start (Monday) and end (Sunday)
   const now = new Date();
@@ -206,7 +200,7 @@ export async function getThisWeekEvents(
 export async function getEventsForDays(
   startDate: Date,
   days: number,
-  schedules: number[] = [],
+  schedules: number[] = []
 ): Promise<DoctoraliaCalendarResponse> {
   const from = startDate.toISOString().split("T")[0];
 

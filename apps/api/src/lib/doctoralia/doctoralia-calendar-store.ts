@@ -14,7 +14,7 @@ function toJsonValue(value: unknown): JsonValue {
 
 function hasShallowDataChanges<TRecord extends Record<string, unknown>>(
   existing: Record<string, unknown>,
-  data: TRecord,
+  data: TRecord
 ) {
   return Object.entries(data).some(([key, value]) => {
     const existingValue = existing[key];
@@ -88,13 +88,13 @@ function mapAppointmentData(scheduleId: number, appointment: DoctoraliaAppointme
 
 async function upsertAppointment(
   scheduleId: number,
-  appointment: DoctoraliaAppointment,
+  appointment: DoctoraliaAppointment
 ): Promise<"inserted" | "skipped" | "updated"> {
   const data = mapAppointmentData(scheduleId, appointment);
 
   if (!data.startAt || !data.endAt) {
     console.warn(
-      `[DoctoraliaSync] appointment ${appointment.id} skipped: unparseable start/end (${appointment.start} / ${appointment.end})`,
+      `[DoctoraliaSync] appointment ${appointment.id} skipped: unparseable start/end (${appointment.start} / ${appointment.end})`
     );
     return "skipped";
   }
@@ -124,14 +124,14 @@ async function upsertAppointment(
       data,
     });
     console.log(
-      `[DoctoraliaSync] appointment ${appointment.id} updated (${appointment.title} @ ${appointment.start})`,
+      `[DoctoraliaSync] appointment ${appointment.id} updated (${appointment.title} @ ${appointment.start})`
     );
     return "updated";
   }
 
   await db.doctoraliaCalendarAppointment.create({ data });
   console.log(
-    `[DoctoraliaSync] appointment ${appointment.id} inserted (${appointment.title} @ ${appointment.start})`,
+    `[DoctoraliaSync] appointment ${appointment.id} inserted (${appointment.title} @ ${appointment.start})`
   );
   return "inserted";
 }
@@ -227,7 +227,7 @@ export async function upsertDoctoraliaSchedules(schedules: DoctoraliaCalendarSch
  */
 export async function upsertDoctoraliaAppointments(
   scheduleExternalId: number,
-  appointments: DoctoraliaAppointment[],
+  appointments: DoctoraliaAppointment[]
 ) {
   if (appointments.length === 0) {
     return { inserted: 0, updated: 0, skipped: 0 };
@@ -267,7 +267,7 @@ export async function upsertDoctoraliaAppointments(
           console.error(`Error upserting appointment ${appointment.id}:`, error);
           skipped++;
         }
-      }),
+      })
     );
   }
 
@@ -279,7 +279,7 @@ export async function upsertDoctoraliaAppointments(
  */
 export async function upsertDoctoraliaWorkPeriods(
   scheduleExternalId: number,
-  workPeriods: DoctoraliaWorkPeriod[],
+  workPeriods: DoctoraliaWorkPeriod[]
 ) {
   if (workPeriods.length === 0) {
     return { inserted: 0, updated: 0, skipped: 0 };
@@ -424,7 +424,7 @@ export async function updateDoctoraliaSyncLog(
     appointmentsSynced?: number;
     workPeriodsSynced?: number;
     errorMessage?: string;
-  },
+  }
 ) {
   return db.doctoraliaSyncLog.update({
     where: { id },

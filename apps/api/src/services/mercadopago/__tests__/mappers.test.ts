@@ -1,9 +1,6 @@
 import { Decimal } from "decimal.js";
 import { describe, expect, it } from "vitest";
-import {
-  mapRowToReleaseTransaction,
-  mapRowToSettlementTransaction,
-} from "../mappers.ts";
+import { mapRowToReleaseTransaction, mapRowToSettlementTransaction } from "../mappers.ts";
 
 describe("mapRowToSettlementTransaction", () => {
   it("maps a complete settlement row", () => {

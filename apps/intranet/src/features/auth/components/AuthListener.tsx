@@ -37,7 +37,7 @@ export function AuthListener() {
     const rulesKey = rules
       .map(
         (rule) =>
-          `${Array.isArray(rule.action) ? (rule.action as string[]).join(",") : String(rule.action)}:${Array.isArray(rule.subject) ? (rule.subject as string[]).join(",") : String(rule.subject)}:${JSON.stringify(rule.conditions)}`,
+          `${Array.isArray(rule.action) ? (rule.action as string[]).join(",") : String(rule.action)}:${Array.isArray(rule.subject) ? (rule.subject as string[]).join(",") : String(rule.subject)}:${JSON.stringify(rule.conditions)}`
       )
       .join("|");
 

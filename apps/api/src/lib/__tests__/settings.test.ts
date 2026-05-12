@@ -1,9 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  DEFAULT_SETTINGS,
-  dbKeyToSettingsKey,
-  settingsKeyToDbKey,
-} from "../settings.ts";
+import { DEFAULT_SETTINGS, dbKeyToSettingsKey, settingsKeyToDbKey } from "../settings.ts";
 
 describe("settingsKeyToDbKey", () => {
   it("maps known app keys to db keys", () => {

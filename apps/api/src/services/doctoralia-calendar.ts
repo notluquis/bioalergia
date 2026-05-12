@@ -1,5 +1,8 @@
 import dayjs from "dayjs";
-import { getCalendarAlerts, getCalendarEvents } from "../lib/doctoralia/doctoralia-calendar-client.ts";
+import {
+  getCalendarAlerts,
+  getCalendarEvents,
+} from "../lib/doctoralia/doctoralia-calendar-client.ts";
 import { TIMEZONE } from "../lib/time.ts";
 import {
   applyDoctoraliaAlertUpdates,
@@ -31,7 +34,7 @@ type UpsertSummary = {
  */
 export class DoctoraliaCalendarSyncService {
   private async upsertCalendarResponse(
-    response: DoctoraliaCalendarResponse,
+    response: DoctoraliaCalendarResponse
   ): Promise<UpsertSummary> {
     let schedulesInserted = 0;
     let schedulesUpdated = 0;
@@ -58,13 +61,15 @@ export class DoctoraliaCalendarSyncService {
     // 2. Group appointments by schedule ID
     const appointmentsBySchedule = new Map<number, typeof response.appointments>();
     for (const appointment of response.appointments) {
-      appointmentsBySchedule.getOrInsertComputed(appointment.scheduleId, () => []).push(appointment);
+      appointmentsBySchedule
+        .getOrInsertComputed(appointment.scheduleId, () => [])
+        .push(appointment);
     }
 
     // 3. Sync appointments for each schedule
     for (const [scheduleId, appointments] of appointmentsBySchedule.entries()) {
       console.log(
-        `[DoctoraliaSync] Upserting ${appointments.length} appointments for schedule ${scheduleId}`,
+        `[DoctoraliaSync] Upserting ${appointments.length} appointments for schedule ${scheduleId}`
       );
       const appointmentResult = await upsertDoctoraliaAppointments(scheduleId, appointments);
       appointmentsInserted += appointmentResult.inserted;
@@ -81,7 +86,7 @@ export class DoctoraliaCalendarSyncService {
     // 5. Sync work periods for each schedule
     for (const [scheduleId, workPeriods] of workPeriodsBySchedule.entries()) {
       console.log(
-        `[DoctoraliaSync] Upserting ${workPeriods.length} work periods for schedule ${scheduleId}`,
+        `[DoctoraliaSync] Upserting ${workPeriods.length} work periods for schedule ${scheduleId}`
       );
       const periodResult = await upsertDoctoraliaWorkPeriods(scheduleId, workPeriods);
       workPeriodsInserted += periodResult.inserted;
@@ -135,7 +140,7 @@ export class DoctoraliaCalendarSyncService {
     to: string,
     scheduleIds?: number[],
     triggerSource?: string,
-    triggerUserId?: number,
+    triggerUserId?: number
   ) {
     const syncLog = await createDoctoraliaSyncLog({
       triggerSource,
@@ -158,13 +163,13 @@ export class DoctoraliaCalendarSyncService {
       });
 
       console.log(
-        `[DoctoraliaSync] Sync completed: ${summary.schedules.inserted} schedules inserted, ${summary.schedules.updated} updated, ${summary.schedules.skipped} skipped`,
+        `[DoctoraliaSync] Sync completed: ${summary.schedules.inserted} schedules inserted, ${summary.schedules.updated} updated, ${summary.schedules.skipped} skipped`
       );
       console.log(
-        `[DoctoraliaSync] ${summary.appointments.inserted} appointments inserted, ${summary.appointments.updated} updated, ${summary.appointments.skipped} skipped`,
+        `[DoctoraliaSync] ${summary.appointments.inserted} appointments inserted, ${summary.appointments.updated} updated, ${summary.appointments.skipped} skipped`
       );
       console.log(
-        `[DoctoraliaSync] ${summary.workPeriods.inserted} work periods inserted, ${summary.workPeriods.updated} updated, ${summary.workPeriods.skipped} skipped`,
+        `[DoctoraliaSync] ${summary.workPeriods.inserted} work periods inserted, ${summary.workPeriods.updated} updated, ${summary.workPeriods.skipped} skipped`
       );
 
       return {
@@ -214,7 +219,7 @@ export class DoctoraliaCalendarSyncService {
         : alerts;
 
       console.log(
-        `[DoctoraliaSync] Retrieved ${alerts.length} alerts (pending=${pendingAlerts.length}, alertType=${alertType}, lastAlertId=${lastAlertId || 0})`,
+        `[DoctoraliaSync] Retrieved ${alerts.length} alerts (pending=${pendingAlerts.length}, alertType=${alertType}, lastAlertId=${lastAlertId || 0})`
       );
 
       if (pendingAlerts.length === 0) {
@@ -246,7 +251,7 @@ export class DoctoraliaCalendarSyncService {
         ...new Set(
           pendingAlerts
             .map((alert) => alert.params.scheduleId)
-            .filter((scheduleId): scheduleId is number => Number.isFinite(scheduleId)),
+            .filter((scheduleId): scheduleId is number => Number.isFinite(scheduleId))
         ),
       ];
       const syncWindow = this.buildDateWindowFromAlerts(pendingAlerts);
@@ -259,7 +264,7 @@ export class DoctoraliaCalendarSyncService {
 
       if (syncWindow) {
         console.log(
-          `[DoctoraliaSync] Syncing alerts window ${syncWindow.from}..${syncWindow.to} for ${scheduleIds.length} schedules`,
+          `[DoctoraliaSync] Syncing alerts window ${syncWindow.from}..${syncWindow.to} for ${scheduleIds.length} schedules`
         );
 
         const response = await getCalendarEvents(syncWindow.from, syncWindow.to, scheduleIds);
@@ -271,8 +276,8 @@ export class DoctoraliaCalendarSyncService {
 
       const actionableAlerts = pendingAlerts.filter((alert) =>
         ["cancel-event-alert", "reschedule-event-alert", "event-confirmation-alert"].includes(
-          alert.type,
-        ),
+          alert.type
+        )
       );
       const alertUpdates = await applyDoctoraliaAlertUpdates(actionableAlerts);
 
@@ -315,7 +320,7 @@ export class DoctoraliaCalendarSyncService {
   async importFromJsonEntries(
     entries: Array<{ data: DoctoraliaCalendarResponse; ts?: string }>,
     triggerSource = "scraper-import-json",
-    triggerUserId?: number,
+    triggerUserId?: number
   ): Promise<{
     entriesProcessed: number;
     summary: UpsertSummary;

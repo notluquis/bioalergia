@@ -42,7 +42,7 @@ export function startDoctoraliaCalendarScheduler() {
       timezone,
       noOverlap: true,
       name: "doctoralia-calendar-alert-sync",
-    },
+    }
   );
 
   logEvent("doctoralia.calendar.scheduler.started", {
@@ -70,7 +70,7 @@ export async function runDoctoraliaCalendarAutoSync({ trigger }: { trigger: stri
   }
 
   const minSyncIntervalMs = Number(
-    process.env.DOCTORALIA_CALENDAR_MIN_SYNC_INTERVAL_MS || DEFAULT_MIN_SYNC_INTERVAL_MS,
+    process.env.DOCTORALIA_CALENDAR_MIN_SYNC_INTERVAL_MS || DEFAULT_MIN_SYNC_INTERVAL_MS
   );
   const now = Date.now();
   const lastAttemptAtRaw = await getSetting(SETTINGS_KEYS.lastAttemptAt);

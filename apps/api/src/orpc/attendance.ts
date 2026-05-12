@@ -65,9 +65,7 @@ const adminOnly = authed.use(async ({ context, next }) => {
 /** Extract the real client IP from the Hono request */
 function extractIp(c: HonoContext): string | null {
   return (
-    c.req.header("x-forwarded-for")?.split(",")[0]?.trim() ??
-    c.req.header("x-real-ip") ??
-    null
+    c.req.header("x-forwarded-for")?.split(",")[0]?.trim() ?? c.req.header("x-real-ip") ?? null
   );
 }
 
@@ -116,7 +114,7 @@ const attendanceORPCRouterBase = {
           screenResolution: input.screenResolution,
           devicePixelRatio: input.devicePixelRatio,
         },
-        { ip, userAgent },
+        { ip, userAgent }
       );
 
       return { mark, timesheetSynced, status: "ok" as const };
@@ -173,7 +171,7 @@ const attendanceORPCRouterBase = {
         input.type,
         new Date(input.markedAt),
         context.user.id,
-        input.notes,
+        input.notes
       );
       return { mark, timesheetSynced, status: "ok" as const };
     }),

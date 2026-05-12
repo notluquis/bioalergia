@@ -47,7 +47,7 @@ export async function downloadIssuedDteXml(
   rut: string,
   documentType: number,
   folio: string,
-  auth: HaulmerXmlHeaders,
+  auth: HaulmerXmlHeaders
 ): Promise<string> {
   const url = `https://api-frontend.haulmer.com/v3/dte/core/de/docs/issued/xml/${cleanRutForApi(rut)}/${documentType}/${folio}/1`;
 
@@ -74,7 +74,7 @@ export async function downloadReceivedDteXml(
   providerRut: string,
   documentType: number,
   folio: string,
-  auth: HaulmerXmlHeaders,
+  auth: HaulmerXmlHeaders
 ): Promise<string> {
   const url = `https://api-frontend.haulmer.com/v3/dte/core/dte_recibidos/xml/${cleanRutForApi(ownerRut)}/${cleanRutForApi(providerRut)}/${documentType}/${folio}`;
 
@@ -104,16 +104,11 @@ export async function tryDownloadDteXml(
     documentType: number;
     folio: string;
   },
-  auth: HaulmerXmlHeaders,
+  auth: HaulmerXmlHeaders
 ): Promise<string | null> {
   try {
     if (params.direction === "issued") {
-      return await downloadIssuedDteXml(
-        params.ownerRut,
-        params.documentType,
-        params.folio,
-        auth,
-      );
+      return await downloadIssuedDteXml(params.ownerRut, params.documentType, params.folio, auth);
     }
     if (!params.providerRut) {
       throw new Error("providerRut required for received DTEs");
@@ -123,7 +118,7 @@ export async function tryDownloadDteXml(
       params.providerRut,
       params.documentType,
       params.folio,
-      auth,
+      auth
     );
   } catch (error) {
     if (error instanceof GaxiosError && error.response?.status === 404) {

@@ -21,11 +21,24 @@ const IMAP_SECURE = process.env.LOCAL_AGENT_IMAP_SECURE !== "0";
 const IMPORT_SERVICE = "bioalergia-mail-import";
 
 const FOLDER_MAP: Record<string, string> = {
-  INBOX: "INBOX", Inbox: "INBOX", inbox: "INBOX",
-  Sent: "Sent", sent: "Sent", "Sent Items": "Sent", "Sent Messages": "Sent",
-  Spam: "Spam", spam: "Spam", Junk: "Spam", "Junk Email": "Spam",
-  Trash: "Trash", trash: "Trash", Deleted: "Trash", "Deleted Items": "Trash",
-  Drafts: "Drafts", drafts: "Drafts", Scheduled: "Drafts",
+  INBOX: "INBOX",
+  Inbox: "INBOX",
+  inbox: "INBOX",
+  Sent: "Sent",
+  sent: "Sent",
+  "Sent Items": "Sent",
+  "Sent Messages": "Sent",
+  Spam: "Spam",
+  spam: "Spam",
+  Junk: "Spam",
+  "Junk Email": "Spam",
+  Trash: "Trash",
+  trash: "Trash",
+  Deleted: "Trash",
+  "Deleted Items": "Trash",
+  Drafts: "Drafts",
+  drafts: "Drafts",
+  Scheduled: "Drafts",
 };
 
 const ACCOUNT_MAP: Record<string, string> = {
@@ -52,7 +65,11 @@ const resolvedBackupDir: string = backupDir;
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 async function isDir(p: string) {
-  try { return (await stat(p)).isDirectory(); } catch { return false; }
+  try {
+    return (await stat(p)).isDirectory();
+  } catch {
+    return false;
+  }
 }
 
 async function listSubdirs(dir: string) {
@@ -70,7 +87,9 @@ async function listEmlFiles(dir: string) {
 /** Extrae el Message-ID del header de un .eml (solo lee hasta el primer \r\n\r\n) */
 function extractMessageId(raw: Buffer): string | null {
   const headerEnd = raw.indexOf("\r\n\r\n");
-  const text = raw.subarray(0, headerEnd > 0 ? headerEnd : Math.min(8192, raw.length)).toString("latin1");
+  const text = raw
+    .subarray(0, headerEnd > 0 ? headerEnd : Math.min(8192, raw.length))
+    .toString("latin1");
   const match = text.match(/^Message-ID:\s*(.+?)(\r?\n(?![ \t])|$)/im);
   if (!match) return null;
   // Normalizar: quitar <> y espacios
@@ -167,15 +186,21 @@ async function purgeAccount(accountName: string, backupFolders: FolderBackup[], 
       const notFound = messageIds.size - toDelete.length;
 
       if (toDelete.length === 0) {
-        console.log(`  ${accountName}/${imapFolder}: ninguno encontrado en servidor (${total} en backup)`);
+        console.log(
+          `  ${accountName}/${imapFolder}: ninguno encontrado en servidor (${total} en backup)`
+        );
         continue;
       }
 
       if (doDelete) {
         await client.messageDelete(toDelete, { uid: true });
-        console.log(`  ✓ ${accountName}/${imapFolder}: ${toDelete.length} borrados${notFound > 0 ? ` (${notFound} no estaban en servidor)` : ""}`);
+        console.log(
+          `  ✓ ${accountName}/${imapFolder}: ${toDelete.length} borrados${notFound > 0 ? ` (${notFound} no estaban en servidor)` : ""}`
+        );
       } else {
-        console.log(`  [dry-run] ${accountName}/${imapFolder}: ${toDelete.length} a borrar${notFound > 0 ? ` (${notFound} no estaban en servidor)` : ""}`);
+        console.log(
+          `  [dry-run] ${accountName}/${imapFolder}: ${toDelete.length} a borrar${notFound > 0 ? ` (${notFound} no estaban en servidor)` : ""}`
+        );
       }
     } finally {
       lock.release();

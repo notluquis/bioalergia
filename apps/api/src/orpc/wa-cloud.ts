@@ -326,7 +326,7 @@ const waRouterBase = {
           return existing
             ? db.waPhoneNumber.update({ where: { id: existing.id }, data })
             : db.waPhoneNumber.create({ data });
-        }),
+        })
       );
       return { account: await buildAccountWithPhones(input.id) };
     }),
@@ -344,9 +344,7 @@ const waRouterBase = {
         where: { accountId: input.id },
         select: { id: true, name: true, language: true },
       });
-      const existingByKey = new Map(
-        existingRows.map((r) => [`${r.name} ${r.language}`, r.id]),
-      );
+      const existingByKey = new Map(existingRows.map((r) => [`${r.name} ${r.language}`, r.id]));
       await Promise.all(
         apiTpls.map((t) => {
           const data = {
@@ -364,7 +362,7 @@ const waRouterBase = {
           return existingId
             ? db.waTemplate.update({ where: { id: existingId }, data })
             : db.waTemplate.create({ data });
-        }),
+        })
       );
       const all = await db.waTemplate.findMany({
         where: { accountId: input.id },
@@ -728,7 +726,7 @@ const waRouterBase = {
         input.phoneNumberId,
         conv.contact.phoneE164,
         input.metaMessageId,
-        input.emoji,
+        input.emoji
       );
       const metaId = apiResp.messages?.[0]?.id ?? null;
       const now = new Date();
@@ -790,8 +788,7 @@ const waRouterBase = {
         video: "VIDEO",
         sticker: "STICKER",
       };
-      const preview =
-        input.caption ?? (input.filename ? input.filename : `[${input.type}]`);
+      const preview = input.caption ?? (input.filename ? input.filename : `[${input.type}]`);
       const message = await db.waMessage.create({
         data: {
           conversationId: conv.id,
@@ -1014,7 +1011,8 @@ const waRouterBase = {
         : false;
       if (!windowOpen) {
         throw new ORPCError("BAD_REQUEST", {
-          message: "Ventana 24h cerrada. Usa una plantilla aprobada para reactivar la conversación.",
+          message:
+            "Ventana 24h cerrada. Usa una plantilla aprobada para reactivar la conversación.",
         });
       }
       const apiResp = await sendLocationMessage({
@@ -1075,7 +1073,8 @@ const waRouterBase = {
         : false;
       if (!windowOpen) {
         throw new ORPCError("BAD_REQUEST", {
-          message: "Ventana 24h cerrada. Usa una plantilla aprobada para reactivar la conversación.",
+          message:
+            "Ventana 24h cerrada. Usa una plantilla aprobada para reactivar la conversación.",
         });
       }
       const apiResp = await sendContactsMessage({
@@ -1122,7 +1121,9 @@ const waRouterBase = {
       });
       if (!orig) throw new ORPCError("NOT_FOUND", { message: "Mensaje no encontrado" });
       if (orig.direction !== "OUTBOUND" || orig.type !== "TEXT") {
-        throw new ORPCError("BAD_REQUEST", { message: "Solo mensajes de texto enviados son editables" });
+        throw new ORPCError("BAD_REQUEST", {
+          message: "Solo mensajes de texto enviados son editables",
+        });
       }
       if (!orig.metaMessageId) {
         throw new ORPCError("BAD_REQUEST", { message: "Mensaje sin metaMessageId — no editable" });
@@ -1215,8 +1216,7 @@ const waRouterBase = {
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
         const isTierError =
-          message.includes("nonexisting field") ||
-          message.includes("message_template_library");
+          message.includes("nonexisting field") || message.includes("message_template_library");
         if (!isTierError) throw err;
         logError("[wa-cloud.listTemplateLibrary] catalog browse not available", { message });
         return { templates: [] };
@@ -1461,8 +1461,7 @@ const waRouterBase = {
         results: rows.map((r) => ({
           messageId: r.id,
           conversationId: r.conversationId,
-          contactName:
-            r.conversation.contact.name ?? r.conversation.contact.pushName ?? null,
+          contactName: r.conversation.contact.name ?? r.conversation.contact.pushName ?? null,
           phoneE164: r.conversation.contact.phoneE164,
           direction: r.direction,
           type: r.type,
@@ -1522,12 +1521,10 @@ const waRouterBase = {
       });
       return {
         logs: logs.map((l) => {
-          const payload = l.payload as
-            | {
-                entry?: Array<{ changes?: Array<{ field?: string }> }>;
-                object?: string;
-              }
-            | null;
+          const payload = l.payload as {
+            entry?: Array<{ changes?: Array<{ field?: string }> }>;
+            object?: string;
+          } | null;
           const fields: string[] = [];
           for (const e of payload?.entry ?? []) {
             for (const c of e.changes ?? []) {
@@ -1601,7 +1598,8 @@ const waRouterBase = {
       return {
         snippets: rows.map((r) => ({
           ...r,
-          replyButtons: (r.replyButtons as unknown as Array<{ id: string; title: string }> | null) ?? null,
+          replyButtons:
+            (r.replyButtons as unknown as Array<{ id: string; title: string }> | null) ?? null,
           variables: (r.variables as unknown as string[]) ?? [],
         })),
       };
@@ -1645,7 +1643,8 @@ const waRouterBase = {
           });
       return {
         ...row,
-        replyButtons: (row.replyButtons as unknown as Array<{ id: string; title: string }> | null) ?? null,
+        replyButtons:
+          (row.replyButtons as unknown as Array<{ id: string; title: string }> | null) ?? null,
         variables: (row.variables as unknown as string[]) ?? [],
       };
     }),
@@ -1734,8 +1733,7 @@ const waRouterBase = {
             parameters: { display_text: snip.ctaButtonText, url: snip.ctaUrl },
           },
         };
-        if (snip.ctaHeader)
-          interactive.header = { type: "text", text: resolve(snip.ctaHeader) };
+        if (snip.ctaHeader) interactive.header = { type: "text", text: resolve(snip.ctaHeader) };
         if (snip.ctaFooter) interactive.footer = { text: resolve(snip.ctaFooter) };
         const url = `https://graph.facebook.com/${phone.account.graphApiVersion}/${phone.phoneNumberId}/messages`;
         const res = await fetch(url, {
@@ -1754,15 +1752,24 @@ const waRouterBase = {
         });
         const text = await res.text();
         if (!res.ok) {
-          throw new ORPCError("BAD_GATEWAY", { message: `Meta CTA ${res.status}: ${text.slice(0, 200)}` });
+          throw new ORPCError("BAD_GATEWAY", {
+            message: `Meta CTA ${res.status}: ${text.slice(0, 200)}`,
+          });
         }
         const json = JSON.parse(text) as { messages: Array<{ id: string }> };
         metaId = json.messages?.[0]?.id ?? null;
         preview = `[CTA] ${snip.ctaButtonText}`;
         messageType = "INTERACTIVE";
-        payload = { ...payload, interactive_type: "cta_url", body, button: snip.ctaButtonText, url: snip.ctaUrl };
+        payload = {
+          ...payload,
+          interactive_type: "cta_url",
+          body,
+          button: snip.ctaButtonText,
+          url: snip.ctaUrl,
+        };
       } else if (snip.kind === "REPLY_BUTTONS") {
-        const buttons = (snip.replyButtons as unknown as Array<{ id: string; title: string }>) ?? [];
+        const buttons =
+          (snip.replyButtons as unknown as Array<{ id: string; title: string }>) ?? [];
         if (buttons.length === 0)
           throw new ORPCError("BAD_REQUEST", { message: "Snippet sin botones" });
         const body = resolve(snip.bodyText) ?? "";
@@ -1803,7 +1810,9 @@ const waRouterBase = {
         });
         const text = await res.text();
         if (!res.ok) {
-          throw new ORPCError("BAD_GATEWAY", { message: `Meta buttons ${res.status}: ${text.slice(0, 200)}` });
+          throw new ORPCError("BAD_GATEWAY", {
+            message: `Meta buttons ${res.status}: ${text.slice(0, 200)}`,
+          });
         }
         const json = JSON.parse(text) as { messages: Array<{ id: string }> };
         metaId = json.messages?.[0]?.id ?? null;
@@ -1847,7 +1856,11 @@ const waRouterBase = {
         metaId = r.messages?.[0]?.id ?? null;
         preview = `[${snip.kind.toLowerCase()}] ${snip.name}`;
         messageType = typeMap[snip.kind].toUpperCase() as
-          | "DOCUMENT" | "IMAGE" | "VIDEO" | "AUDIO" | "STICKER";
+          | "DOCUMENT"
+          | "IMAGE"
+          | "VIDEO"
+          | "AUDIO"
+          | "STICKER";
         payload = { ...payload, kind: snip.kind, mediaId: snip.mediaHandle };
       } else {
         throw new ORPCError("BAD_REQUEST", { message: `Tipo ${snip.kind} no implementado` });
@@ -1949,10 +1962,11 @@ const waRouterBase = {
       return {
         lists: rows.map((r) => ({
           ...r,
-          sections: (r.sections as unknown as Array<{
-            title?: string;
-            rows: Array<{ id: string; title: string; description?: string }>;
-          }>) ?? [],
+          sections:
+            (r.sections as unknown as Array<{
+              title?: string;
+              rows: Array<{ id: string; title: string; description?: string }>;
+            }>) ?? [],
         })),
       };
     }),
@@ -1977,10 +1991,11 @@ const waRouterBase = {
           });
       return {
         ...row,
-        sections: (row.sections as unknown as Array<{
-          title?: string;
-          rows: Array<{ id: string; title: string; description?: string }>;
-        }>) ?? [],
+        sections:
+          (row.sections as unknown as Array<{
+            title?: string;
+            rows: Array<{ id: string; title: string; description?: string }>;
+          }>) ?? [],
       };
     }),
   archiveSavedInteractiveList: deleteWa
@@ -2072,7 +2087,7 @@ const waRouterBase = {
                   createdByUserId: context.user.id,
                 },
               });
-        }),
+        })
       );
       const upserted = remote.length;
       const flows = await db.waSavedFlow.findMany({
@@ -2102,7 +2117,8 @@ const waRouterBase = {
       const saved = await db.waSavedLocation.findUnique({
         where: { id: input.savedLocationId },
       });
-      if (!saved || saved.archived) throw new ORPCError("NOT_FOUND", { message: "Ubicación no existe" });
+      if (!saved || saved.archived)
+        throw new ORPCError("NOT_FOUND", { message: "Ubicación no existe" });
       const conv = await db.waConversation.findUnique({
         where: { id: input.conversationId },
         include: { contact: true },
@@ -2158,7 +2174,8 @@ const waRouterBase = {
       const saved = await db.waSavedInteractiveList.findUnique({
         where: { id: input.savedListId },
       });
-      if (!saved || saved.archived) throw new ORPCError("NOT_FOUND", { message: "Lista no existe" });
+      if (!saved || saved.archived)
+        throw new ORPCError("NOT_FOUND", { message: "Lista no existe" });
       const conv = await db.waConversation.findUnique({
         where: { id: input.conversationId },
         include: { contact: true },
@@ -2171,10 +2188,11 @@ const waRouterBase = {
       if (!windowOpen) {
         throw new ORPCError("BAD_REQUEST", { message: "Ventana 24h cerrada" });
       }
-      const sections = (saved.sections as unknown as Array<{
-        title?: string;
-        rows: Array<{ id: string; title: string; description?: string }>;
-      }>) ?? [];
+      const sections =
+        (saved.sections as unknown as Array<{
+          title?: string;
+          rows: Array<{ id: string; title: string; description?: string }>;
+        }>) ?? [];
       const apiResp = await sendInteractiveListMessage({
         phoneNumberId: input.phoneNumberId,
         toE164: conv.contact.phoneE164,
@@ -2300,8 +2318,7 @@ const waRouterBase = {
         scheduled: rows.map((r) => ({
           ...r,
           templateVars: (r.templateVars as unknown as string[]) ?? [],
-          contactName:
-            r.conversation.contact.name ?? r.conversation.contact.pushName ?? null,
+          contactName: r.conversation.contact.name ?? r.conversation.contact.pushName ?? null,
           phoneE164: r.conversation.contact.phoneE164,
         })),
       };
@@ -2368,11 +2385,7 @@ const waRouterBase = {
     .input(requestPhoneCodeInputSchema)
     .output(waOkResponseSchema)
     .handler(async ({ input }) => {
-      await requestPhoneVerificationCode(
-        input.phoneNumberId,
-        input.codeMethod,
-        input.language,
-      );
+      await requestPhoneVerificationCode(input.phoneNumberId, input.codeMethod, input.language);
       return { status: "ok" as const };
     }),
 
@@ -2457,7 +2470,7 @@ const waRouterBase = {
         account.commerceCatalogId,
         input.accountId,
         input.search,
-        input.limit,
+        input.limit
       );
       return { catalogId: account.commerceCatalogId, products };
     }),

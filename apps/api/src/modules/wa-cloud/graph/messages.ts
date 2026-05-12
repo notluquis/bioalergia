@@ -29,7 +29,7 @@ export async function sendTextMessage(input: SendTextInput) {
     `/${phone.phoneNumberId}/messages`,
     payload,
     token,
-    v,
+    v
   );
 }
 
@@ -113,7 +113,7 @@ export async function sendTemplateMessage(input: SendTemplateInput) {
     `/${phone.phoneNumberId}/messages`,
     payload,
     token,
-    v,
+    v
   );
 }
 
@@ -149,7 +149,7 @@ export async function sendMediaMessage(input: SendMediaInput) {
     `/${phone.phoneNumberId}/messages`,
     payload,
     token,
-    v,
+    v
   );
 }
 
@@ -180,9 +180,7 @@ export async function sendFlowMessage(input: SendFlowInput) {
         flow_token: input.flowToken ?? `tok_${Date.now()}`,
         flow_id: input.flowId,
         flow_cta: input.flowCta,
-        ...(input.initialScreen
-          ? { flow_action_payload: { screen: input.initialScreen } }
-          : {}),
+        ...(input.initialScreen ? { flow_action_payload: { screen: input.initialScreen } } : {}),
       },
     },
   };
@@ -202,7 +200,7 @@ export async function sendFlowMessage(input: SendFlowInput) {
       interactive,
     },
     token,
-    v,
+    v
   );
 }
 
@@ -211,7 +209,7 @@ export async function sendReaction(
   toE164: string,
   metaMessageId: string,
   // empty string removes the reaction
-  emoji: string,
+  emoji: string
 ) {
   const phone = await getAccountForPhoneNumber(phoneNumberId);
   const v = phone.account.graphApiVersion;
@@ -226,7 +224,7 @@ export async function sendReaction(
       reaction: { message_id: metaMessageId, emoji },
     },
     token,
-    v,
+    v
   );
 }
 
@@ -267,13 +265,12 @@ export async function sendInteractiveListMessage(input: SendInteractiveListInput
     interactive,
   };
   if (input.contextMessageId) payload.context = { message_id: input.contextMessageId };
-  if (input.bizOpaqueCallbackData)
-    payload.biz_opaque_callback_data = input.bizOpaqueCallbackData;
+  if (input.bizOpaqueCallbackData) payload.biz_opaque_callback_data = input.bizOpaqueCallbackData;
   return graphPost<{ messages: Array<{ id: string }> }>(
     `/${phone.phoneNumberId}/messages`,
     payload,
     token,
-    v,
+    v
   );
 }
 
@@ -310,13 +307,12 @@ export async function sendAddressMessage(input: SendAddressMessageInput) {
     interactive,
   };
   if (input.contextMessageId) payload.context = { message_id: input.contextMessageId };
-  if (input.bizOpaqueCallbackData)
-    payload.biz_opaque_callback_data = input.bizOpaqueCallbackData;
+  if (input.bizOpaqueCallbackData) payload.biz_opaque_callback_data = input.bizOpaqueCallbackData;
   return graphPost<{ messages: Array<{ id: string }> }>(
     `/${phone.phoneNumberId}/messages`,
     payload,
     token,
-    v,
+    v
   );
 }
 
@@ -352,7 +348,7 @@ export async function sendLocationMessage(input: SendLocationInput) {
     `/${phone.phoneNumberId}/messages`,
     payload,
     token,
-    v,
+    v
   );
 }
 
@@ -387,7 +383,7 @@ export async function sendContactsMessage(input: SendContactsInput) {
     `/${phone.phoneNumberId}/messages`,
     payload,
     token,
-    v,
+    v
   );
 }
 
@@ -431,13 +427,12 @@ export async function sendMultiProductMessage(input: SendMultiProductInput) {
     interactive,
   };
   if (input.contextMessageId) payload.context = { message_id: input.contextMessageId };
-  if (input.bizOpaqueCallbackData)
-    payload.biz_opaque_callback_data = input.bizOpaqueCallbackData;
+  if (input.bizOpaqueCallbackData) payload.biz_opaque_callback_data = input.bizOpaqueCallbackData;
   return graphPost<{ messages: Array<{ id: string }> }>(
     `/${phone.phoneNumberId}/messages`,
     payload,
     token,
-    v,
+    v
   );
 }
 
@@ -464,6 +459,6 @@ export async function editTextMessage(input: EditTextMessageInput) {
     `/${phone.phoneNumberId}/messages`,
     payload,
     token,
-    v,
+    v
   );
 }

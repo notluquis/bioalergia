@@ -57,7 +57,7 @@ function parseDebugScopes(value: unknown): DebugScope[] | undefined {
 function isDebugScopeAllowed(
   scopes: DebugScope[] | undefined,
   action: string,
-  subject: string,
+  subject: string
 ): boolean {
   if (!scopes || scopes.length === 0) {
     return true;
@@ -216,7 +216,7 @@ export async function hasPermission(
   userOrId: AuthSession | number,
   action: string,
   subject: string,
-  resource?: Record<string, unknown>,
+  resource?: Record<string, unknown>
 ): Promise<boolean> {
   const userId = typeof userOrId === "number" ? userOrId : userOrId.id;
   const debugScopes = typeof userOrId === "number" ? undefined : userOrId.debugScopes;
@@ -241,7 +241,7 @@ export async function hasPermission(
 
   const normalizedSubject = subject.toLowerCase();
   const matchingRules = rules.filter(
-    (rule) => rule.action === action && rule.subject.toLowerCase() === normalizedSubject,
+    (rule) => rule.action === action && rule.subject.toLowerCase() === normalizedSubject
   );
 
   if (matchingRules.length === 0) {
@@ -249,7 +249,7 @@ export async function hasPermission(
   }
 
   const hasUnconditionalRule = matchingRules.some(
-    (rule) => !rule.conditions || Object.keys(rule.conditions).length === 0,
+    (rule) => !rule.conditions || Object.keys(rule.conditions).length === 0
   );
 
   if (!resource) {

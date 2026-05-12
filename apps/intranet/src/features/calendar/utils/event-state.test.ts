@@ -58,7 +58,7 @@ describe("getCalendarEventStates", () => {
 
   it("returns scheduled state for future events with unknown attendance", () => {
     const states = getCalendarEventStates(
-      makeEvent({ attended: null, startDateTime: "2099-02-21T10:00:00.000Z" }),
+      makeEvent({ attended: null, startDateTime: "2099-02-21T10:00:00.000Z" })
     );
     expect(states[0]).toMatchObject({
       key: "attendance",
@@ -72,7 +72,7 @@ describe("getCalendarEventStates", () => {
       makeEvent({
         attended: null,
         summary: "le surgio un inconveniente, llamara para reagendar",
-      }),
+      })
     );
     expect(states[0]).toMatchObject({
       key: "attendance",
@@ -86,7 +86,7 @@ describe("getCalendarEventStates", () => {
       makeEvent({
         attended: false,
         summary: "no viene hoy, llamara para reagendar",
-      }),
+      })
     );
     expect(states[0]).toMatchObject({
       key: "attendance",
@@ -98,28 +98,28 @@ describe("getCalendarEventStates", () => {
   it("maps confirmed status", () => {
     const states = getCalendarEventStates(makeEvent({ status: "confirmed" }));
     expect(states).toContainEqual(
-      expect.objectContaining({ key: "event-status", label: "Confirmado", tone: "success" }),
+      expect.objectContaining({ key: "event-status", label: "Confirmado", tone: "success" })
     );
   });
 
   it("maps tentative status", () => {
     const states = getCalendarEventStates(makeEvent({ status: "tentative" }));
     expect(states).toContainEqual(
-      expect.objectContaining({ key: "event-status", label: "Tentativo", tone: "warning" }),
+      expect.objectContaining({ key: "event-status", label: "Tentativo", tone: "warning" })
     );
   });
 
   it("maps cancelled status", () => {
     const states = getCalendarEventStates(makeEvent({ status: "cancelled" }));
     expect(states).toContainEqual(
-      expect.objectContaining({ key: "event-status", label: "Cancelado", tone: "danger" }),
+      expect.objectContaining({ key: "event-status", label: "Cancelado", tone: "danger" })
     );
   });
 
   it("maps needsAction status", () => {
     const states = getCalendarEventStates(makeEvent({ status: "needsAction" }));
     expect(states).toContainEqual(
-      expect.objectContaining({ key: "event-status", label: "Por confirmar", tone: "warning" }),
+      expect.objectContaining({ key: "event-status", label: "Por confirmar", tone: "warning" })
     );
   });
 

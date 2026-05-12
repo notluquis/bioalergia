@@ -91,7 +91,7 @@ function emptyCounts() {
       acc[key] = 0;
       return acc;
     },
-    {} as Record<RecipientStatus, number>,
+    {} as Record<RecipientStatus, number>
   );
 }
 
@@ -282,10 +282,11 @@ const patientCampaignsRouterBase = {
         const person = await db.person.findUnique({ where: { rut: patientRut } });
         if (person) {
           if (!patientName) {
-            patientName = [person.names, person.fatherName, person.motherName]
-              .filter(Boolean)
-              .join(" ")
-              .trim() || null;
+            patientName =
+              [person.names, person.fatherName, person.motherName]
+                .filter(Boolean)
+                .join(" ")
+                .trim() || null;
           }
           if (!patientPhone) {
             patientPhone = person.phone ?? null;
@@ -341,9 +342,7 @@ const patientCampaignsRouterBase = {
           status: input.status,
           ...(input.notes !== undefined ? { notes: input.notes?.trim() || null } : {}),
           ...(existing.sentAt == null && input.status !== "PENDING" ? { sentAt: now } : {}),
-          ...(input.status !== "PENDING" &&
-          input.status !== "SENT" &&
-          existing.respondedAt == null
+          ...(input.status !== "PENDING" && input.status !== "SENT" && existing.respondedAt == null
             ? { respondedAt: now }
             : {}),
           updatedBy: context.user.id,

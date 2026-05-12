@@ -98,7 +98,7 @@ export const ServiceFormSchema = z
     {
       message: "Valor de recargo requerido cuando el modo no es NONE",
       path: ["lateFeeValue"],
-    },
+    }
   )
   .refine(
     (data) => {
@@ -111,7 +111,7 @@ export const ServiceFormSchema = z
     {
       message: "Día de emisión requerido para modo día fijo",
       path: ["emissionDay"],
-    },
+    }
   )
   .refine(
     (data) => {
@@ -127,7 +127,7 @@ export const ServiceFormSchema = z
     {
       message: "Rango de emisión requerido para modo rango de fechas",
       path: ["emissionStartDay"],
-    },
+    }
   )
   .refine(
     (data) => {
@@ -140,7 +140,7 @@ export const ServiceFormSchema = z
     {
       message: "Fecha exacta requerida para modo fecha específica",
       path: ["emissionExactDate"],
-    },
+    }
   )
   .refine(
     (data) => {
@@ -157,7 +157,7 @@ export const ServiceFormSchema = z
     {
       message: "Día de inicio debe ser menor o igual al día final",
       path: ["emissionEndDay"],
-    },
+    }
   );
 
 // Payment Form Schema

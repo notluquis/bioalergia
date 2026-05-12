@@ -11,11 +11,9 @@ if (!Number.isFinite(port) || port <= 0) {
 
 function findListeningPids(targetPort) {
   try {
-    const output = execFileSync(
-      "lsof",
-      ["-nP", `-iTCP:${targetPort}`, "-sTCP:LISTEN", "-t"],
-      { encoding: "utf8" },
-    ).trim();
+    const output = execFileSync("lsof", ["-nP", `-iTCP:${targetPort}`, "-sTCP:LISTEN", "-t"], {
+      encoding: "utf8",
+    }).trim();
 
     if (!output) {
       return [];
@@ -26,8 +24,8 @@ function findListeningPids(targetPort) {
         output
           .split("\n")
           .map((value) => Number.parseInt(value.trim(), 10))
-          .filter((value) => Number.isFinite(value) && value > 0 && value !== process.pid),
-      ),
+          .filter((value) => Number.isFinite(value) && value > 0 && value !== process.pid)
+      )
     );
   } catch {
     return [];
@@ -56,7 +54,7 @@ async function main() {
   }
 
   console.log(
-    `[local-mail-agent] Freeing port ${port}. Found listener PID(s): ${listeningPids.join(", ")}`,
+    `[local-mail-agent] Freeing port ${port}. Found listener PID(s): ${listeningPids.join(", ")}`
   );
 
   killPids(listeningPids, "SIGTERM");
@@ -71,7 +69,7 @@ async function main() {
   const finalCheck = findListeningPids(port);
   if (finalCheck.length > 0) {
     console.error(
-      `[local-mail-agent] Port ${port} is still in use by PID(s): ${finalCheck.join(", ")}`,
+      `[local-mail-agent] Port ${port} is still in use by PID(s): ${finalCheck.join(", ")}`
     );
     process.exit(1);
   }

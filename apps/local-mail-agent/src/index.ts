@@ -33,7 +33,7 @@ const SMTP_POOL = process.env.LOCAL_AGENT_SMTP_POOL === "1";
 const SMTP_DEBUG = process.env.LOCAL_AGENT_SMTP_DEBUG === "1";
 const SMTP_MAX_CONNECTIONS = Number.parseInt(
   process.env.LOCAL_AGENT_SMTP_MAX_CONNECTIONS ?? "2",
-  10,
+  10
 );
 const SMTP_MAX_MESSAGES = Number.parseInt(process.env.LOCAL_AGENT_SMTP_MAX_MESSAGES ?? "50", 10);
 const DSN_ENABLED = process.env.LOCAL_AGENT_DSN_ENABLED === "1";
@@ -214,7 +214,7 @@ async function resolveSentMailboxPath(client: ImapFlow) {
 
   const boxes = await client.list();
   const sentByFlag = boxes.find(
-    (box) => box.specialUse === "\\Sent" || box.specialUse?.toUpperCase() === "SENT",
+    (box) => box.specialUse === "\\Sent" || box.specialUse?.toUpperCase() === "SENT"
   );
   if (sentByFlag?.path) {
     return sentByFlag.path;
@@ -358,7 +358,7 @@ app.use(
     origin: getAllowedOrigins(),
     allowHeaders: ["Content-Type", "X-Local-Agent-Token", "Access-Control-Request-Private-Network"],
     allowMethods: ["POST", "GET", "OPTIONS"],
-  }),
+  })
 );
 
 app.use("*", async (c, next) => {
@@ -459,7 +459,7 @@ app.post("/send", async (c) => {
     });
 
     console.log(
-      `[mail-agent] Sent email to ${payload.to} (subject: ${payload.subject}) id=${info.messageId}`,
+      `[mail-agent] Sent email to ${payload.to} (subject: ${payload.subject}) id=${info.messageId}`
     );
     if (sentFolderSaved && sentFolderPath) {
       console.log(`[mail-agent] Saved sent copy in mailbox: ${sentFolderPath}`);
@@ -509,7 +509,7 @@ if (TLS_KEY_PATH && TLS_CERT_PATH) {
     },
     (info) => {
       console.log(`Local mail agent listening on https://${info.address}:${info.port}`);
-    },
+    }
   );
 } else {
   serve({ fetch: app.fetch, port, hostname }, (info) => {

@@ -90,7 +90,7 @@ interface FetchXmlOptions {
 async function fetchAndSaveSaleXml(
   dteId: string,
   config: HaulmerConfig & { workspaceId?: string },
-  auth: { token: string; workspaceId?: string },
+  auth: { token: string; workspaceId?: string }
 ): Promise<{ folio: string; documentType: number; lineItemsCount: number; status: string }> {
   const dte = await db.dTESaleDetail.findUnique({
     where: { id: dteId },
@@ -100,67 +100,113 @@ async function fetchAndSaveSaleXml(
   if (!dte) return { folio: "?", documentType: 0, lineItemsCount: 0, status: "error" };
 
   if (dte.lineItems.length > 0) {
-    return { folio: dte.folio, documentType: dte.documentType, lineItemsCount: dte.lineItems.length, status: "already_has" };
+    return {
+      folio: dte.folio,
+      documentType: dte.documentType,
+      lineItemsCount: dte.lineItems.length,
+      status: "already_has",
+    };
   }
 
   const xml = await tryDownloadDteXml(
     { direction: "issued", ownerRut: config.rut, documentType: dte.documentType, folio: dte.folio },
-    { jwtToken: auth.token, workspaceId: auth.workspaceId },
+    { jwtToken: auth.token, workspaceId: auth.workspaceId }
   );
 
   if (!xml) {
-    return { folio: dte.folio, documentType: dte.documentType, lineItemsCount: 0, status: "not_found" };
+    return {
+      folio: dte.folio,
+      documentType: dte.documentType,
+      lineItemsCount: 0,
+      status: "not_found",
+    };
   }
 
   const parsed = parseDteXml(xml);
   for (const item of parsed.lineItems) {
     const data = lineItemData(item);
     await db.dTELineItem.upsert({
-      where: { dteSaleDetailId_lineNumber: { dteSaleDetailId: dteId, lineNumber: item.lineNumber } },
+      where: {
+        dteSaleDetailId_lineNumber: { dteSaleDetailId: dteId, lineNumber: item.lineNumber },
+      },
       create: { ...data, dteSaleDetailId: dteId },
       update: data,
     });
   }
 
-  return { folio: dte.folio, documentType: dte.documentType, lineItemsCount: parsed.lineItems.length, status: "fetched" };
+  return {
+    folio: dte.folio,
+    documentType: dte.documentType,
+    lineItemsCount: parsed.lineItems.length,
+    status: "fetched",
+  };
 }
 
 async function fetchAndSavePurchaseXml(
   dteId: string,
   config: HaulmerConfig & { workspaceId?: string },
-  auth: { token: string; workspaceId?: string },
+  auth: { token: string; workspaceId?: string }
 ): Promise<{ folio: string; documentType: number; lineItemsCount: number; status: string }> {
   const dte = await db.dTEPurchaseDetail.findUnique({
     where: { id: dteId },
-    select: { id: true, folio: true, documentType: true, providerRUT: true, lineItems: { select: { id: true } } },
+    select: {
+      id: true,
+      folio: true,
+      documentType: true,
+      providerRUT: true,
+      lineItems: { select: { id: true } },
+    },
   });
 
   if (!dte) return { folio: "?", documentType: 0, lineItemsCount: 0, status: "error" };
 
   if (dte.lineItems.length > 0) {
-    return { folio: dte.folio, documentType: dte.documentType, lineItemsCount: dte.lineItems.length, status: "already_has" };
+    return {
+      folio: dte.folio,
+      documentType: dte.documentType,
+      lineItemsCount: dte.lineItems.length,
+      status: "already_has",
+    };
   }
 
   const xml = await tryDownloadDteXml(
-    { direction: "received", ownerRut: config.rut, providerRut: dte.providerRUT, documentType: dte.documentType, folio: dte.folio },
-    { jwtToken: auth.token, workspaceId: auth.workspaceId },
+    {
+      direction: "received",
+      ownerRut: config.rut,
+      providerRut: dte.providerRUT,
+      documentType: dte.documentType,
+      folio: dte.folio,
+    },
+    { jwtToken: auth.token, workspaceId: auth.workspaceId }
   );
 
   if (!xml) {
-    return { folio: dte.folio, documentType: dte.documentType, lineItemsCount: 0, status: "not_found" };
+    return {
+      folio: dte.folio,
+      documentType: dte.documentType,
+      lineItemsCount: 0,
+      status: "not_found",
+    };
   }
 
   const parsed = parseDteXml(xml);
   for (const item of parsed.lineItems) {
     const data = lineItemData(item);
     await db.dTELineItem.upsert({
-      where: { dtePurchaseDetailId_lineNumber: { dtePurchaseDetailId: dteId, lineNumber: item.lineNumber } },
+      where: {
+        dtePurchaseDetailId_lineNumber: { dtePurchaseDetailId: dteId, lineNumber: item.lineNumber },
+      },
       create: { ...data, dtePurchaseDetailId: dteId },
       update: data,
     });
   }
 
-  return { folio: dte.folio, documentType: dte.documentType, lineItemsCount: parsed.lineItems.length, status: "fetched" };
+  return {
+    folio: dte.folio,
+    documentType: dte.documentType,
+    lineItemsCount: parsed.lineItems.length,
+    status: "fetched",
+  };
 }
 
 /**
@@ -170,7 +216,7 @@ async function fetchXmlLineItemsBatch(
   dteIds: string[],
   direction: "sales" | "purchases",
   config: HaulmerConfig & { workspaceId?: string },
-  options: FetchXmlOptions = {},
+  options: FetchXmlOptions = {}
 ): Promise<FetchXmlLineItemsResult> {
   const auth = await getAuth(config);
   const result: FetchXmlLineItemsResult = { fetched: 0, skipped: 0, errors: [], details: [] };
@@ -189,7 +235,9 @@ async function fetchXmlLineItemsBatch(
           ? await fetchAndSaveSaleXml(dteId, config, auth)
           : await fetchAndSavePurchaseXml(dteId, config, auth);
 
-      console.log(`[XML Fetch] ${i + 1}/${total} — Folio ${detail.folio}: ${detail.status} (${detail.lineItemsCount} items)`);
+      console.log(
+        `[XML Fetch] ${i + 1}/${total} — Folio ${detail.folio}: ${detail.status} (${detail.lineItemsCount} items)`
+      );
       if (detail.status === "fetched") result.fetched++;
       else if (detail.status === "already_has" || detail.status === "not_found") result.skipped++;
 
@@ -223,14 +271,14 @@ async function fetchXmlLineItemsBatch(
 
 export async function fetchSaleXmlLineItems(
   dteIds: string[],
-  config: HaulmerConfig & { workspaceId?: string },
+  config: HaulmerConfig & { workspaceId?: string }
 ): Promise<FetchXmlLineItemsResult> {
   return fetchXmlLineItemsBatch(dteIds, "sales", config);
 }
 
 export async function fetchPurchaseXmlLineItems(
   dteIds: string[],
-  config: HaulmerConfig & { workspaceId?: string },
+  config: HaulmerConfig & { workspaceId?: string }
 ): Promise<FetchXmlLineItemsResult> {
   return fetchXmlLineItemsBatch(dteIds, "purchases", config);
 }
@@ -249,7 +297,7 @@ export function getActiveXmlFetchJob() {
 export function startXmlFetchJob(
   dteIds: string[],
   direction: "sales" | "purchases",
-  config: HaulmerConfig & { workspaceId?: string },
+  config: HaulmerConfig & { workspaceId?: string }
 ): string {
   // Return existing job if one is running
   const active = getActiveXmlFetchJob();
@@ -278,18 +326,26 @@ export function startXmlFetchJob(
               ? Math.round((elapsedSeconds / info.processed) * remaining)
               : null;
 
-          updateJobProgress(jobId, info.processed, info.message, {
-            direction,
-            fetched: info.fetched,
-            skipped: info.skipped,
-            errors: info.errors,
-            elapsedSeconds: Math.round(elapsedSeconds),
-            etaSeconds,
-          }, info.total);
+          updateJobProgress(
+            jobId,
+            info.processed,
+            info.message,
+            {
+              direction,
+              fetched: info.fetched,
+              skipped: info.skipped,
+              errors: info.errors,
+              elapsedSeconds: Math.round(elapsedSeconds),
+              etaSeconds,
+            },
+            info.total
+          );
         },
       });
 
-      console.log(`[XML Fetch Job] Completed: ${result.fetched} fetched, ${result.skipped} skipped, ${result.errors.length} errors`);
+      console.log(
+        `[XML Fetch Job] Completed: ${result.fetched} fetched, ${result.skipped} skipped, ${result.errors.length} errors`
+      );
       if (result.errors.length > 0) {
         console.warn(`[XML Fetch Job] Errors:`, result.errors.slice(0, 5));
       }
@@ -302,7 +358,7 @@ export function startXmlFetchJob(
           fetched: result.fetched,
           skipped: result.skipped,
           errors: result.errors.length,
-        },
+        }
       );
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);

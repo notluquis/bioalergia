@@ -375,9 +375,9 @@ export const financeContract = {
     .route({ method: "DELETE", path: "/categories/{id}" })
     .input(financeIdSchema)
     .output(financeDeleteResponseSchema),
-  categoriesList: oc.route({ method: "GET", path: "/categories" }).output(
-    financeCategoryListResponseSchema
-  ),
+  categoriesList: oc
+    .route({ method: "GET", path: "/categories" })
+    .output(financeCategoryListResponseSchema),
   categoriesUpdate: oc
     .route({ method: "PUT", path: "/categories/{id}" })
     .input(financeUpdateWithIdCategorySchema)

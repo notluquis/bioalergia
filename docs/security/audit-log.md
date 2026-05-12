@@ -86,12 +86,12 @@ In production any of these warrants immediate investigation.
 
 ## Threat model
 
-| Adversary capability                    | Chain detects? |
-| --------------------------------------- | -------------- |
-| Runtime app role (INSERT only)          | ✅ — key not exposed |
-| DBA with full DB access (no key)        | ✅ — cannot reforge HMAC |
-| DBA with full DB access AND env access  | ❌ — can reforge offline; mitigated by daily anchor |
-| Backup restore to earlier point         | ✅ — chain head diverges from external anchor |
+| Adversary capability                   | Chain detects?                                      |
+| -------------------------------------- | --------------------------------------------------- |
+| Runtime app role (INSERT only)         | ✅ — key not exposed                                |
+| DBA with full DB access (no key)       | ✅ — cannot reforge HMAC                            |
+| DBA with full DB access AND env access | ❌ — can reforge offline; mitigated by daily anchor |
+| Backup restore to earlier point        | ✅ — chain head diverges from external anchor       |
 
 ## References
 

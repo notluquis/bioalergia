@@ -13,7 +13,7 @@ const CmfUfResponseSchema = z.object({
     z.object({
       Fecha: z.string(),
       Valor: z.string(),
-    }),
+    })
   ),
 });
 

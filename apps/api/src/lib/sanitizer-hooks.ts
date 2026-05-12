@@ -82,7 +82,7 @@ export function registerLinkValidationHook(config: LinkValidationConfig): void {
  * Register hook to audit attribute changes
  */
 export function registerAuditHook(
-  callback: (tag: string, attributes: Record<string, string | null>) => void,
+  callback: (tag: string, attributes: Record<string, string | null>) => void
 ): void {
   const hook = (node: Element) => {
     const tag = node.tagName.toLowerCase();

@@ -56,14 +56,16 @@ waCloudSseRoutes.get("/:conversationId", async (c) => {
       };
 
       const unsubscribe = subscribeWaConversation(conversationId, (event) => {
-        enqueue(() =>
-          stream.writeSSE({ event: event.kind, data: JSON.stringify(event) }),
-        );
+        enqueue(() => stream.writeSSE({ event: event.kind, data: JSON.stringify(event) }));
       });
 
       // Hello + retry hint so the browser knows to reconnect at 3s if the
       // socket drops mid-stream.
-      await stream.writeSSE({ event: "open", data: JSON.stringify({ ts: Date.now() }), retry: 3000 });
+      await stream.writeSSE({
+        event: "open",
+        data: JSON.stringify({ ts: Date.now() }),
+        retry: 3000,
+      });
 
       // Heartbeat: keep proxies (Cloudflare/Railway) from killing the
       // connection. SSE comment lines (`: text`) are ignored by clients.
@@ -102,6 +104,6 @@ waCloudSseRoutes.get("/:conversationId", async (c) => {
       } catch {
         // already closed
       }
-    },
+    }
   );
 });

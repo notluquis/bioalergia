@@ -8,12 +8,7 @@ import type { KnipConfig } from "knip";
  * scratch CLI scripts are ignored. Run with: pnpm knip
  */
 const config: KnipConfig = {
-  ignore: [
-    ".conda/**",
-    "**/storybook-static/**",
-    "**/dist/**",
-    "**/.turbo/**",
-  ],
+  ignore: [".conda/**", "**/storybook-static/**", "**/dist/**", "**/.turbo/**"],
   workspaces: {
     ".": {
       ignoreDependencies: [

@@ -103,7 +103,9 @@ export const dteEventLinksIdentityClaimsSchema = z.object({
   patientRut: z.string().nullable(),
   rutClaims: z.array(z.string()),
   sameDayOnly: z.boolean(),
-  seriesKind: z.enum(["PATCH_TEST", "SKIN_TEST", "SUBCUTANEOUS_TREATMENT", "MEDICAL_CONSULTATION"]).nullable(),
+  seriesKind: z
+    .enum(["PATCH_TEST", "SKIN_TEST", "SUBCUTANEOUS_TREATMENT", "MEDICAL_CONSULTATION"])
+    .nullable(),
 });
 
 export const dteEventLinksCandidateSetSummarySchema = z.object({
@@ -199,7 +201,7 @@ export const dteEventLinksSuggestionsResponseSchema = z.object({
           seriesStageLabel: z.string().nullable(),
           seriesStageNumber: z.number().nullable(),
           summary: z.string().nullable(),
-        }),
+        })
       ),
       id: z.number(),
       kind: z.enum(["PATCH_TEST", "SKIN_TEST", "SUBCUTANEOUS_TREATMENT", "MEDICAL_CONSULTATION"]),
@@ -243,10 +245,12 @@ export const dteEventLinksOverviewResponseSchema = z.object({
       linkedFolio: z.string().nullable(),
       linkedMatchedBy: z.string().nullable(),
       linkedTotalAmount: z.number().nullable(),
-      seriesKind: z.enum(["PATCH_TEST", "SKIN_TEST", "SUBCUTANEOUS_TREATMENT", "MEDICAL_CONSULTATION"]).nullable(),
+      seriesKind: z
+        .enum(["PATCH_TEST", "SKIN_TEST", "SUBCUTANEOUS_TREATMENT", "MEDICAL_CONSULTATION"])
+        .nullable(),
       summary: z.string().nullable(),
       topHypothesis: dteEventLinksHypothesisSchema.nullable(),
-    }),
+    })
   ),
   page: z.number(),
   pageSize: z.number(),
@@ -288,7 +292,7 @@ export const dteEventLinksAutoLinkDayResponseSchema = z.object({
     z.object({
       eventId: z.string(),
       reason: z.string(),
-    }),
+    })
   ),
   linked: z.number(),
   skipped: z.number(),
@@ -296,7 +300,7 @@ export const dteEventLinksAutoLinkDayResponseSchema = z.object({
     z.object({
       count: z.number(),
       reason: z.string(),
-    }),
+    })
   ),
   totalEvents: z.number(),
 });
@@ -309,7 +313,7 @@ export const dteEventLinksAutoLinkPeriodResponseSchema = z.object({
       linked: z.number(),
       skipped: z.number(),
       totalEvents: z.number(),
-    }),
+    })
   ),
   linked: z.number(),
   period: z.string(),
@@ -318,7 +322,7 @@ export const dteEventLinksAutoLinkPeriodResponseSchema = z.object({
     z.object({
       count: z.number(),
       reason: z.string(),
-    }),
+    })
   ),
   totalEvents: z.number(),
 });
@@ -331,7 +335,7 @@ export const dteEventLinksAutoLinkAllPeriodsResponseSchema = z.object({
       period: z.string(),
       skipped: z.number(),
       totalEvents: z.number(),
-    }),
+    })
   ),
   linked: z.number(),
   periodsProcessed: z.number(),
@@ -340,7 +344,7 @@ export const dteEventLinksAutoLinkAllPeriodsResponseSchema = z.object({
     z.object({
       count: z.number(),
       reason: z.string(),
-    }),
+    })
   ),
   totalEvents: z.number(),
 });

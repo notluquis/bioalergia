@@ -1,7 +1,11 @@
 import bcrypt from "bcryptjs";
 import { Hono } from "hono";
 import { logError, logEvent, logWarn } from "../lib/logger.ts";
-import { isSettlementReport, MercadoPagoService, MP_WEBHOOK_PASSWORD } from "../services/mercadopago/index.ts";
+import {
+  isSettlementReport,
+  MercadoPagoService,
+  MP_WEBHOOK_PASSWORD,
+} from "../services/mercadopago/index.ts";
 
 export const mercadopagoReportWebhookRoutes = new Hono();
 
@@ -76,7 +80,7 @@ mercadopagoReportWebhookRoutes.post("/", async (c) => {
   void processReport(payload).catch((err) =>
     logError("mercadopago.report_webhook.processing_error", err, {
       transactionId: payload?.transaction_id ?? null,
-    }),
+    })
   );
 
   return c.text("Accepted", 202);
@@ -98,7 +102,7 @@ async function verifySignature(payload: ReportWebhookPayload, secret: string): P
 
 async function processReport(payload: ReportWebhookPayload) {
   const validFiles = (payload.files ?? []).filter(
-    (f): f is { name: string; url: string; type?: string } => Boolean(f.name && f.url),
+    (f): f is { name: string; url: string; type?: string } => Boolean(f.name && f.url)
   );
 
   if (validFiles.length === 0) {

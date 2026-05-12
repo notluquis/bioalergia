@@ -49,7 +49,7 @@ export function useServicesList() {
         }
         return acc;
       },
-      { activeCount: 0, overdueCount: 0, pendingCount: 0, totalExpected: 0, totalPaid: 0 },
+      { activeCount: 0, overdueCount: 0, pendingCount: 0, totalExpected: 0, totalPaid: 0 }
     );
   })();
 

@@ -141,7 +141,7 @@ export const authPasskeyRegistrationOptionsSchema = z.object({
     z.object({
       alg: z.number(),
       type: z.string(),
-    }),
+    })
   ),
   rp: z.object({
     id: z.string().optional(),
@@ -156,12 +156,18 @@ export const authPasskeyRegistrationOptionsSchema = z.object({
 });
 
 export const authContract = {
-  login: oc.route({ method: "POST", path: "/login" }).input(authLoginSchema).output(authLoginResponseSchema),
+  login: oc
+    .route({ method: "POST", path: "/login" })
+    .input(authLoginSchema)
+    .output(authLoginResponseSchema),
   loginMfa: oc
     .route({ method: "POST", path: "/login/mfa" })
     .input(authMfaLoginSchema)
     .output(authLoginOkResponseSchema),
-  logout: oc.route({ method: "POST", path: "/logout" }).input(authEmptySchema).output(authStatusResponseSchema),
+  logout: oc
+    .route({ method: "POST", path: "/logout" })
+    .input(authEmptySchema)
+    .output(authStatusResponseSchema),
   session: oc.route({ method: "GET", path: "/me/session" }).output(authSessionResponseSchema),
   issueDebugToken: oc
     .route({ method: "POST", path: "/debug/token" })

@@ -47,7 +47,7 @@ export const csvUploadPreviewResponseSchema = z.object({
         key: z.string(),
         rowIndex: z.number(),
         summary: z.string(),
-      }),
+      })
     )
     .optional(),
 });

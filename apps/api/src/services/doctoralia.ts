@@ -38,7 +38,7 @@ export async function finalizeDoctoraliaSyncLogEntry(
     status: "SUCCESS" | "ERROR";
     counts?: Record<string, number>;
     errorMessage?: string;
-  },
+  }
 ) {
   await db.doctoraliaSyncLog.update({
     where: { id: logId },

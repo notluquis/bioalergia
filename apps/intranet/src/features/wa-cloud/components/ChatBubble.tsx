@@ -286,9 +286,7 @@ function CarouselPreview({
                 <p className="font-medium text-xs text-default-500 uppercase">
                   Tarjeta {(card.card_index ?? idx) + 1}
                 </p>
-                {bodyText && (
-                  <p className="mt-0.5 line-clamp-3 text-xs leading-snug">{bodyText}</p>
-                )}
+                {bodyText && <p className="mt-0.5 line-clamp-3 text-xs leading-snug">{bodyText}</p>}
               </div>
             </div>
           );

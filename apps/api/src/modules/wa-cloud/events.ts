@@ -27,7 +27,7 @@ export function emitWaEvent(conversationId: number, event: WaConversationEvent):
 
 export function subscribeWaConversation(
   conversationId: number,
-  listener: (e: WaConversationEvent) => void,
+  listener: (e: WaConversationEvent) => void
 ): () => void {
   const t = topic(conversationId);
   bus.on(t, listener);
@@ -38,7 +38,7 @@ export function subscribeWaConversation(
 // conversationId yet (rare). Skip if no map can be done by the caller.
 export function emitToConversationByMessage(
   conversationId: number | null | undefined,
-  event: WaConversationEvent,
+  event: WaConversationEvent
 ): void {
   if (typeof conversationId === "number") emitWaEvent(conversationId, event);
 }

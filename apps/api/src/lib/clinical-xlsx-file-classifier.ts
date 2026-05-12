@@ -29,7 +29,9 @@ export function classifyClinicalXlsxFilename(
   return { classification: "OTHER", reason: "no module classifier matched" };
 }
 
-function classifyClinicalDocumentFilename(filename: string): "CLINICAL_RECORD" | "OTHER" | "VISIT_SHEET" {
+function classifyClinicalDocumentFilename(
+  filename: string
+): "CLINICAL_RECORD" | "OTHER" | "VISIT_SHEET" {
   const text = normalizeDocumentName(filename);
   if (
     /\b(?:consulta|consultas|control|controles|visita|visitas|evolucion|evoluciones)\b/.test(text)

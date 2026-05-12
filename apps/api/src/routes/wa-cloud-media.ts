@@ -17,7 +17,7 @@ export const waCloudMediaRoutes = new Hono();
 async function requireWaPhone(
   c: Context,
   phoneNumberId: number,
-  action: "read" | "create" | "update" | "delete",
+  action: "read" | "create" | "update" | "delete"
 ) {
   const session = await getSessionUser(c);
   if (!session) return { ok: false as const, status: 401 as const, msg: "Unauthorized" };
@@ -69,7 +69,7 @@ waCloudMediaRoutes.get("/conversations/:id/export", async (c) => {
       200,
       {
         "Content-Disposition": `attachment; filename="wa-${conv.contact.phoneE164}-${id}.json"`,
-      },
+      }
     );
   }
   const lines: string[] = [
@@ -83,9 +83,7 @@ waCloudMediaRoutes.get("/conversations/:id/export", async (c) => {
     const ts = m.timestamp.toISOString().replace("T", " ").slice(0, 19);
     const who = m.direction === "OUTBOUND" ? "Yo" : contactName;
     const body =
-      m.type === "TEXT"
-        ? (m.body ?? "")
-        : `[${m.type.toLowerCase()}]${m.body ? " " + m.body : ""}`;
+      m.type === "TEXT" ? (m.body ?? "") : `[${m.type.toLowerCase()}]${m.body ? " " + m.body : ""}`;
     lines.push(`[${ts}] ${who}: ${body}`);
   }
   return c.text(lines.join("\n"), 200, {
@@ -247,10 +245,14 @@ waCloudMediaRoutes.get("/:messageId", async (c) => {
       return c.text("Upstream error", 502);
     }
 
-    const filename = (message as unknown as { mediaCaption?: string | null }).mediaCaption ?? `wa-${messageId}`;
+    const filename =
+      (message as unknown as { mediaCaption?: string | null }).mediaCaption ?? `wa-${messageId}`;
     // Pick the best MIME: prefer upstream → meta → stored → infer from filename.
     let contentType =
-      upstream.headers.get("content-type") ?? meta.mime_type ?? message.mediaMimeType ?? "application/octet-stream";
+      upstream.headers.get("content-type") ??
+      meta.mime_type ??
+      message.mediaMimeType ??
+      "application/octet-stream";
     // Meta sometimes serves PDFs as application/octet-stream — browsers refuse
     // to render those in <iframe>. Override based on extension when needed.
     const lowerName = filename.toLowerCase();

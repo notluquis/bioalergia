@@ -31,7 +31,7 @@ interface UseStatsDataResult {
 export function useStatsData(): UseStatsDataResult {
   const { can } = useAuth();
   const [from, setFrom] = useState(
-    dayjs().subtract(3, "month").startOf("month").format("YYYY-MM-DD"),
+    dayjs().subtract(3, "month").startOf("month").format("YYYY-MM-DD")
   );
   const [to, setTo] = useState(dayjs().format("YYYY-MM-DD"));
 

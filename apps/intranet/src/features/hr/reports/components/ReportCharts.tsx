@@ -165,7 +165,7 @@ export function DistributionChart({ reportData }: DistributionChartProps) {
 export function TemporalChart({ chartData, granularity, reportData }: TemporalChartProps) {
   const chartColors = getChartColors();
   const hasSalaryData = reportData.some((emp) =>
-    Object.values(emp.monthlyGrossSalary).some((value) => value > 0),
+    Object.values(emp.monthlyGrossSalary).some((value) => value > 0)
   );
 
   const formatHoursTick = (value: number | string) => `${value}h`;
@@ -287,7 +287,7 @@ export function TemporalChart({ chartData, granularity, reportData }: TemporalCh
                       type="monotone"
                       opacity={0.78}
                     />
-                  ),
+                  )
               )}
 
               {/* Net salary (right Y-axis) */}
@@ -307,7 +307,7 @@ export function TemporalChart({ chartData, granularity, reportData }: TemporalCh
                       type="monotone"
                       opacity={0.62}
                     />
-                  ),
+                  )
               )}
             </ComposedChart>
           ) : granularity === "month" ? (

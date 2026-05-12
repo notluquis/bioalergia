@@ -107,7 +107,10 @@ export function LegalPage({ document }: { document: LegalDocument }) {
                     <div className="space-y-3">
                       <h2 className="font-semibold text-(--ink) text-xl">{section.title}</h2>
                       {section.paragraphs?.map((paragraph) => (
-                        <p key={paragraph} className="max-w-3xl text-(--ink-muted) text-sm sm:text-[15px]">
+                        <p
+                          key={paragraph}
+                          className="max-w-3xl text-(--ink-muted) text-sm sm:text-[15px]"
+                        >
                           {paragraph}
                         </p>
                       ))}

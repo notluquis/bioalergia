@@ -13,7 +13,7 @@ import { parseCalendarMetadata } from "../../lib/parsers.ts";
 function isEventExcluded(
   summary: string | null | undefined,
   description: string | null | undefined,
-  patterns: RegExp[],
+  patterns: RegExp[]
 ): boolean {
   const text = joinClinicalText(summary, description, "\n").toLowerCase();
   return patterns.some((regex) => regex.test(text));
@@ -80,7 +80,7 @@ function buildEventsListParams(args: {
 
 function mapEventToUpsertRecord(
   calendarId: string,
-  item: calendar_v3.Schema$Event,
+  item: calendar_v3.Schema$Event
 ): CalendarEventRecord {
   const metadata = parseCalendarMetadata({
     summary: item.summary ?? "",
@@ -282,7 +282,7 @@ export class CalendarSyncService {
       const errorMessage = error instanceof Error ? error.message : String(error);
       if (errorCode === 410 || errorMessage?.includes("410")) {
         console.warn(
-          `[CalendarSync] 410 Gone for ${calendarId}. Clearing syncToken and retrying full sync.`,
+          `[CalendarSync] 410 Gone for ${calendarId}. Clearing syncToken and retrying full sync.`
         );
         await db.calendar.update({
           where: { googleId: calendarId },
@@ -300,7 +300,7 @@ export class CalendarSyncService {
    */
   private async performSync(
     calendarId: string,
-    syncToken: string | null | undefined,
+    syncToken: string | null | undefined
   ): Promise<{
     inserted: number;
     updated: number;
@@ -318,7 +318,7 @@ export class CalendarSyncService {
     let nextSyncToken: string | undefined;
     const accumulator = createSyncAccumulator(!syncToken);
     const excludePatterns = compileExcludePatterns(
-      googleCalendarConfig?.excludeSummarySources ?? [],
+      googleCalendarConfig?.excludeSummarySources ?? []
     );
 
     do {

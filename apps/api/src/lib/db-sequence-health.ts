@@ -155,7 +155,7 @@ async function repairSequence(row: DriftRow): Promise<void> {
   const qualifiedSeq = `${row.schemaName}.${row.sequenceName}`;
   await kysely.transaction().execute(async (trx) => {
     await sql`SELECT pg_advisory_xact_lock(hashtextextended(${`seq:${qualifiedSeq}`}, 0))`.execute(
-      trx,
+      trx
     );
     // Re-read MAX inside the locked transaction so a concurrent INSERT
     // that just happened still gets covered by the bump.

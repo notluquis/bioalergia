@@ -47,9 +47,18 @@ export const findByRutResponseSchema = z.object({
 });
 
 export const peopleContract = {
-  detail: oc.route({ method: "GET", path: "/{id}" }).input(personIdSchema).output(personDetailResponseSchema),
-  findByRut: oc.route({ method: "GET", path: "/by-rut" }).input(findByRutInputSchema).output(findByRutResponseSchema),
-  list: oc.route({ method: "GET", path: "/" }).input(peopleListInputSchema).output(peopleListResponseSchema),
+  detail: oc
+    .route({ method: "GET", path: "/{id}" })
+    .input(personIdSchema)
+    .output(personDetailResponseSchema),
+  findByRut: oc
+    .route({ method: "GET", path: "/by-rut" })
+    .input(findByRutInputSchema)
+    .output(findByRutResponseSchema),
+  list: oc
+    .route({ method: "GET", path: "/" })
+    .input(peopleListInputSchema)
+    .output(peopleListResponseSchema),
 };
 
 export type PeopleContract = typeof peopleContract;

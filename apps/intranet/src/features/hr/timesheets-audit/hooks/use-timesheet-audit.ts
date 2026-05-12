@@ -20,7 +20,7 @@ interface UseTimesheetAuditOptions {
 export function useTimesheetAudit({ employeeIds, ranges }: UseTimesheetAuditOptions) {
   const sortedRanges = useMemo(
     () => ranges.toSorted((a, b) => a.start.getTime() - b.start.getTime()),
-    [ranges],
+    [ranges]
   );
   const firstDay = sortedRanges[0]?.start;
   const lastDay = sortedRanges.at(-1)?.end;
@@ -41,7 +41,7 @@ export function useTimesheetAudit({ employeeIds, ranges }: UseTimesheetAuditOpti
       const data = await fetchMultiEmployeeTimesheets(
         employeeIds,
         dayjs(firstDay).format("YYYY-MM-DD"),
-        dayjs(lastDay).format("YYYY-MM-DD"),
+        dayjs(lastDay).format("YYYY-MM-DD")
       );
       return filterAuditEntries(data, sortedRanges);
     },

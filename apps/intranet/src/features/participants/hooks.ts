@@ -16,7 +16,7 @@ export function useParticipantLeaderboardQuery(
   options?: Pick<
     UseQueryOptions<ParticipantLeaderboardResponse, Error, ParticipantSummaryRow[]>,
     "enabled"
-  >,
+  >
 ) {
   return useQuery<ParticipantLeaderboardResponse, Error, ParticipantSummaryRow[]>({
     placeholderData: keepPreviousData,

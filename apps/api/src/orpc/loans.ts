@@ -172,7 +172,10 @@ const loansORPCRouterBase = {
     }),
 };
 
-export const loansORPCRouter = base.prefix("/api/orpc/loans").tag("Loans").router(loansORPCRouterBase);
+export const loansORPCRouter = base
+  .prefix("/api/orpc/loans")
+  .tag("Loans")
+  .router(loansORPCRouterBase);
 
 export const loansORPCHandler = new SuperJSONRPCHandler(loansORPCRouter, {
   interceptors: [

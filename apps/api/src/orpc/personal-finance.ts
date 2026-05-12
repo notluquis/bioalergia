@@ -76,7 +76,9 @@ function toPlainInstallment<T extends Record<string, unknown>>(installment: T) {
 
 function toPlainCredit<T extends Record<string, unknown>>(credit: T) {
   const installments = Array.isArray(credit.installments)
-    ? credit.installments.map((installment) => toPlainInstallment(installment as Record<string, unknown>))
+    ? credit.installments.map((installment) =>
+        toPlainInstallment(installment as Record<string, unknown>)
+      )
     : undefined;
 
   return {
@@ -203,21 +205,23 @@ const personalFinanceORPCRouterBase = {
           totalInstallments: input.totalInstallments,
           status: "ACTIVE",
           installments: {
-            create: input.installments?.map((installment: NonNullable<typeof input.installments>[number]) => ({
-              installmentNumber: installment.installmentNumber,
-              dueDate: parseDateOnlyUtc(installment.dueDate),
-              amount: new Decimal(installment.amount),
-              capitalAmount: installment.capitalAmount
-                ? new Decimal(installment.capitalAmount)
-                : undefined,
-              interestAmount: installment.interestAmount
-                ? new Decimal(installment.interestAmount)
-                : undefined,
-              otherCharges: installment.otherCharges
-                ? new Decimal(installment.otherCharges)
-                : undefined,
-              status: "PENDING",
-            })),
+            create: input.installments?.map(
+              (installment: NonNullable<typeof input.installments>[number]) => ({
+                installmentNumber: installment.installmentNumber,
+                dueDate: parseDateOnlyUtc(installment.dueDate),
+                amount: new Decimal(installment.amount),
+                capitalAmount: installment.capitalAmount
+                  ? new Decimal(installment.capitalAmount)
+                  : undefined,
+                interestAmount: installment.interestAmount
+                  ? new Decimal(installment.interestAmount)
+                  : undefined,
+                otherCharges: installment.otherCharges
+                  ? new Decimal(installment.otherCharges)
+                  : undefined,
+                status: "PENDING",
+              })
+            ),
           },
         },
         include: {

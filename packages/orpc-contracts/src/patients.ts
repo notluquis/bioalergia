@@ -271,19 +271,34 @@ export const patientDteSyncResponseSchema = z.object({
 });
 
 export const patientsContract = {
-  create: oc.route({ method: "POST", path: "/" }).input(createPatientInputSchema).output(patientResponseSchema),
+  create: oc
+    .route({ method: "POST", path: "/" })
+    .input(createPatientInputSchema)
+    .output(patientResponseSchema),
   createAttachment: oc
     .route({ method: "POST", path: "/attachments" })
     .input(uploadPatientAttachmentInputSchema)
     .output(attachmentResponseSchema),
-  createBudget: oc.route({ method: "POST", path: "/budgets" }).input(createBudgetInputSchema).output(budgetResponseSchema),
+  createBudget: oc
+    .route({ method: "POST", path: "/budgets" })
+    .input(createBudgetInputSchema)
+    .output(budgetResponseSchema),
   createConsultation: oc
     .route({ method: "POST", path: "/consultations" })
     .input(createConsultationInputSchema)
     .output(consultationResponseSchema),
-  createPayment: oc.route({ method: "POST", path: "/payments" }).input(createPaymentInputSchema).output(paymentResponseSchema),
-  detail: oc.route({ method: "GET", path: "/{patientId}" }).input(patientIdInputSchema).output(patientDetailResponseSchema),
-  list: oc.route({ method: "GET", path: "/" }).input(listPatientsInputSchema).output(patientListResponseSchema),
+  createPayment: oc
+    .route({ method: "POST", path: "/payments" })
+    .input(createPaymentInputSchema)
+    .output(paymentResponseSchema),
+  detail: oc
+    .route({ method: "GET", path: "/{patientId}" })
+    .input(patientIdInputSchema)
+    .output(patientDetailResponseSchema),
+  list: oc
+    .route({ method: "GET", path: "/" })
+    .input(listPatientsInputSchema)
+    .output(patientListResponseSchema),
   listBudgets: oc
     .route({ method: "GET", path: "/{patientId}/budgets" })
     .input(patientIdInputSchema)
@@ -316,9 +331,9 @@ export const patientsContract = {
             skinTestsCount: z.number(),
             eventsCount: z.number(),
             createdAt: z.string(),
-          }),
+          })
         ),
-      }),
+      })
     ),
   getSkinTests: oc
     .route({ method: "GET", path: "/{patientId}/skin-tests" })
@@ -336,9 +351,9 @@ export const patientsContract = {
             resultsCount: z.number(),
             seriesId: z.number(),
             seriesKind: z.string(),
-          }),
+          })
         ),
-      }),
+      })
     ),
 };
 

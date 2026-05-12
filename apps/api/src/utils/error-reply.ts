@@ -21,7 +21,7 @@ export function errorReply(
   c: Context,
   status: ContentfulStatusCode,
   message: string,
-  options?: ErrorReplyOptions,
+  options?: ErrorReplyOptions
 ): Response {
   return reply(
     c,
@@ -31,6 +31,6 @@ export function errorReply(
       message,
       ...(options?.details === undefined ? {} : { details: options.details }),
     },
-    status,
+    status
   );
 }

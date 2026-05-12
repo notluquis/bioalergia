@@ -251,7 +251,7 @@ function sameAmount(a: UnifiedTransaction, b: UnifiedTransaction) {
 
 function mergeReleaseWithdraw(
   release: UnifiedTransaction,
-  withdraw: UnifiedTransaction,
+  withdraw: UnifiedTransaction
 ): UnifiedTransaction {
   const transactionDate =
     release.transactionDate > withdraw.transactionDate
@@ -315,9 +315,7 @@ function reconcileTransactions(rows: UnifiedTransaction[]): UnifiedTransaction[]
 
     const matched = candidates.find(
       (candidate) =>
-        !usedWithdraw.has(candidate.id) &&
-        sameAmount(row, candidate) &&
-        sameAccount(row, candidate),
+        !usedWithdraw.has(candidate.id) && sameAmount(row, candidate) && sameAccount(row, candidate)
     );
     if (!matched) {
       continue;
@@ -392,7 +390,7 @@ function matchesFilter(tx: UnifiedTransaction, filters: TransactionFilters) {
 }
 
 export async function fetchMergedTransactions(
-  filters: TransactionFilters,
+  filters: TransactionFilters
 ): Promise<UnifiedTransaction[]> {
   const settlementDateWhere =
     filters.from || filters.to
@@ -488,10 +486,10 @@ export async function fetchMergedTransactions(
 }
 
 export async function fetchMergedTransactionsBySourceIds(
-  sourceIds: string[],
+  sourceIds: string[]
 ): Promise<UnifiedTransaction[]> {
   const normalizedSourceIds = Array.from(
-    new Set(sourceIds.map((id) => id.trim()).filter((id) => id.length > 0)),
+    new Set(sourceIds.map((id) => id.trim()).filter((id) => id.length > 0))
   );
 
   if (normalizedSourceIds.length === 0) {
@@ -567,7 +565,7 @@ export async function listTransactions(
   filters: TransactionFilters,
   limit = 100,
   offset = 0,
-  includeTotal = true,
+  includeTotal = true
 ) {
   const all = await fetchMergedTransactions(filters);
   const transactions = all.slice(offset, offset + limit);
@@ -631,7 +629,7 @@ export async function getParticipantLeaderboard(params: {
 
 export async function getParticipantInsight(
   participantId: string,
-  params: { from?: Date; to?: Date },
+  params: { from?: Date; to?: Date }
 ) {
   const rows = await fetchMergedTransactions({
     from: params.from,
@@ -646,7 +644,7 @@ export async function getParticipantInsight(
       row.withdrawId,
       row.bankAccountHolder,
       row.sourceId,
-    ].some((candidate) => candidate != null && candidate === participantId),
+    ].some((candidate) => candidate != null && candidate === participantId)
   );
 
   const monthlyMap = new Map<

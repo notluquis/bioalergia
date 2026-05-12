@@ -19,7 +19,7 @@ export const syncLogsResponseSchema = z.object({
       syncType: z.enum(["CALENDAR", "EMAIL"]),
       triggerSource: z.string().nullable(),
       triggerUserId: z.number().nullable(),
-    }),
+    })
   ),
   status: z.literal("ok"),
 });
@@ -215,7 +215,7 @@ export const calendarImportInputSchema = z.object({
           appointments: z.array(z.any()),
           workperiods: z.array(z.any()),
         }),
-      }),
+      })
     )
     .min(1)
     .max(50),
@@ -302,7 +302,7 @@ export const calendarAppointmentsSchema = z.object({
         startAt: z.coerce.date(),
         status: z.number(),
         title: z.string(),
-      }),
+      })
     ),
     count: z.number(),
     filters: z.object({
@@ -400,7 +400,10 @@ export const calendarBackfillStatusResponseSchema = z.object({
 
 export const calendarBackfillStartInputSchema = z.object({
   endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  startDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
 });
 
 export const doctoraliaContract = {

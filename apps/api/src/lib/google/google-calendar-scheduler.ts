@@ -1,6 +1,9 @@
 import cron from "node-cron";
 import { googleCalendarConfig } from "../../config.ts";
-import { createCalendarSyncLogEntry, finalizeCalendarSyncLogEntry } from "../../services/calendar.ts";
+import {
+  createCalendarSyncLogEntry,
+  finalizeCalendarSyncLogEntry,
+} from "../../services/calendar.ts";
 
 import { logEvent, logWarn } from "../logger.ts";
 import { syncGoogleCalendarOnce } from "./google-calendar.ts";
@@ -73,7 +76,7 @@ export function startGoogleCalendarScheduler() {
       },
       {
         timezone,
-      },
+      }
     );
   }
 

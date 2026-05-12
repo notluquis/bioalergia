@@ -16,11 +16,7 @@
 // PENDING_REVIEW and are reclassifiable. Refs in
 // docs/clinical-records.md (TBD).
 
-export type XlsxClassification =
-  | "SKIN_TEST"
-  | "MEDICAL_RECORD"
-  | "TREATMENT"
-  | "UNKNOWN";
+export type XlsxClassification = "SKIN_TEST" | "MEDICAL_RECORD" | "TREATMENT" | "UNKNOWN";
 
 const SKIN_KEYWORDS = /(prick|multitest|patch test|test cutan|test\s+cutaneo)/i;
 const TREATMENT_KEYWORDS = /(vacuna|inyect|alxoid|clustoid|inmunoter)/i;

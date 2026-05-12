@@ -35,7 +35,7 @@ export function useLoginLogic(from: string) {
   const { email, password, mfaCode, tempUserId } = state;
   const updateState = useCallback(
     (updates: Partial<LoginState>) => setState((p) => ({ ...p, ...updates })),
-    [],
+    []
   );
   const clearError = () => updateState({ formError: null });
   const redirectAfterSuccess = useCallback(() => {

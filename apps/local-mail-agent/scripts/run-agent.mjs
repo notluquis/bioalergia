@@ -27,7 +27,7 @@ const hasKeyPath = Boolean(env.LOCAL_AGENT_TLS_KEY_PATH);
 const hasCertPath = Boolean(env.LOCAL_AGENT_TLS_CERT_PATH);
 if (hasKeyPath !== hasCertPath) {
   console.error(
-    "[local-mail-agent] Invalid TLS config: LOCAL_AGENT_TLS_KEY_PATH and LOCAL_AGENT_TLS_CERT_PATH must be set together.",
+    "[local-mail-agent] Invalid TLS config: LOCAL_AGENT_TLS_KEY_PATH and LOCAL_AGENT_TLS_CERT_PATH must be set together."
   );
   process.exit(1);
 }
@@ -40,7 +40,9 @@ if (!env.LOCAL_AGENT_TLS_KEY_PATH && !env.LOCAL_AGENT_TLS_CERT_PATH) {
 }
 
 const tlsEnabled = Boolean(env.LOCAL_AGENT_TLS_KEY_PATH && env.LOCAL_AGENT_TLS_CERT_PATH);
-console.log(`[local-mail-agent] mode=${isStartMode ? "start" : "watch"} port=${env.PORT} tls=${tlsEnabled ? "on" : "off"}`);
+console.log(
+  `[local-mail-agent] mode=${isStartMode ? "start" : "watch"} port=${env.PORT} tls=${tlsEnabled ? "on" : "off"}`
+);
 if (tlsEnabled) {
   console.log(`[local-mail-agent] tls key=${env.LOCAL_AGENT_TLS_KEY_PATH}`);
   console.log(`[local-mail-agent] tls cert=${env.LOCAL_AGENT_TLS_CERT_PATH}`);

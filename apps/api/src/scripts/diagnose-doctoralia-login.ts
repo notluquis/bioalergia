@@ -109,7 +109,7 @@ async function main() {
 
   if (!username || !password) {
     throw new Error(
-      "Missing credentials. Set DOCTORALIA_CALENDAR_USERNAME and DOCTORALIA_CALENDAR_PASSWORD.",
+      "Missing credentials. Set DOCTORALIA_CALENDAR_USERNAME and DOCTORALIA_CALENDAR_PASSWORD."
     );
   }
 
@@ -187,7 +187,7 @@ async function main() {
   authUrl.searchParams.set("state", providerJson.state || "ssoLogin");
   authUrl.searchParams.set(
     "redirect_uri",
-    providerJson.redirect_uri || `${DOCPLANNER_BASE_URL}/#/`,
+    providerJson.redirect_uri || `${DOCPLANNER_BASE_URL}/#/`
   );
 
   const oauthResponse = await requestManualRedirect(authUrl.toString(), {
@@ -233,8 +233,8 @@ main().catch((error) => {
         message: error instanceof Error ? error.message : String(error),
       },
       null,
-      2,
-    ),
+      2
+    )
   );
   process.exit(1);
 });

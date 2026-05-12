@@ -33,7 +33,7 @@ async function walkDir(dir) {
       } else if (entry.name.endsWith(".ts")) {
         await processFile(fullPath);
       }
-    }),
+    })
   );
 }
 

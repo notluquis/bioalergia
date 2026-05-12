@@ -35,7 +35,7 @@ function decodeKey(raw: string): Buffer {
   const buf = isHex ? Buffer.from(trimmed, "hex") : Buffer.from(trimmed, "base64");
   if (buf.length !== 32) {
     throw new Error(
-      `Each WA secret key must decode to 32 bytes (got ${buf.length} bytes from ${trimmed.length}-char input, hex=${isHex}). Generate with \`openssl rand -hex 32\`.`,
+      `Each WA secret key must decode to 32 bytes (got ${buf.length} bytes from ${trimmed.length}-char input, hex=${isHex}). Generate with \`openssl rand -hex 32\`.`
     );
   }
   return buf;
@@ -131,7 +131,7 @@ export function decryptSecret(stored: string | null | undefined): string | null 
     const candidate = allKeys().find((k) => k.id === keyId);
     if (!candidate) {
       throw new Error(
-        `WA secret was encrypted with key id ${keyId} but no matching key is configured. Set WA_SECRET_KEYS_OLD or restore the original key.`,
+        `WA secret was encrypted with key id ${keyId} but no matching key is configured. Set WA_SECRET_KEYS_OLD or restore the original key.`
       );
     }
     return decryptWith(candidate.key, body);
@@ -141,9 +141,7 @@ export function decryptSecret(stored: string | null | undefined): string | null 
   const body = Buffer.from(stored.slice(V1_PREFIX.length), "base64");
   const keys = allKeys();
   if (keys.length === 0) {
-    throw new Error(
-      "WA_SECRET_KEY is required to decrypt stored secrets but is not set.",
-    );
+    throw new Error("WA_SECRET_KEY is required to decrypt stored secrets but is not set.");
   }
   let lastErr: unknown;
   for (const k of keys) {
@@ -154,7 +152,7 @@ export function decryptSecret(stored: string | null | undefined): string | null 
     }
   }
   throw new Error(
-    `No configured WA secret key could decrypt v1 ciphertext (${(lastErr as Error)?.message ?? "?"}). Add the original key to WA_SECRET_KEYS_OLD.`,
+    `No configured WA secret key could decrypt v1 ciphertext (${(lastErr as Error)?.message ?? "?"}). Add the original key to WA_SECRET_KEYS_OLD.`
   );
 }
 

@@ -16,7 +16,7 @@ export async function listAccountFlows(accountId: number) {
   const data = await graphGet<{ data: FlowApi[] }>(
     `/${account.wabaId}/flows?fields=${fields}&limit=200`,
     account.systemUserToken,
-    account.graphApiVersion,
+    account.graphApiVersion
   );
   return data.data;
 }

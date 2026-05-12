@@ -477,7 +477,12 @@ type ClinicalSeriesKind =
   | "MEDICAL_CONSULTATION";
 type ClinicalSeriesStageKind = "DOSE" | "INSTALLATION" | "MAINTENANCE" | "READING";
 type SubcutaneousAllergenType = "ACAROS" | "ACAROS_GRAMINEAS" | "GRAMINEAS";
-type SubcutaneousVaccineProduct = "ALXOID" | "CLUSTOID" | "CLUSTOID_B120" | "CLUSTOID_FORTE" | "ORAL_TEC";
+type SubcutaneousVaccineProduct =
+  | "ALXOID"
+  | "CLUSTOID"
+  | "CLUSTOID_B120"
+  | "CLUSTOID_FORTE"
+  | "ORAL_TEC";
 type HealthInsuranceType = "FONASA" | "ISAPRE" | "PARTICULAR";
 type DeliveryModality = "DOMICILIO" | "PRESENCIAL";
 
@@ -593,10 +598,16 @@ function computeSnapshotTiming(snapshot: Pick<ClinicalSeriesSnapshot, "events">,
   const future = snapshot.events.filter((event) => event.eventDate > today);
 
   const lastEventDate = past.length
-    ? past.reduce((acc, event) => (event.eventDate > acc ? event.eventDate : acc), past[0]!.eventDate)
+    ? past.reduce(
+        (acc, event) => (event.eventDate > acc ? event.eventDate : acc),
+        past[0]!.eventDate
+      )
     : null;
   const nextEventDate = future.length
-    ? future.reduce((acc, event) => (event.eventDate < acc ? event.eventDate : acc), future[0]!.eventDate)
+    ? future.reduce(
+        (acc, event) => (event.eventDate < acc ? event.eventDate : acc),
+        future[0]!.eventDate
+      )
     : null;
   const upcomingCount = future.length;
   const daysSinceLastEvent = lastEventDate
@@ -687,15 +698,23 @@ type PreparedClinicalSeriesFilters = {
   view: "abandonment" | "series";
 };
 
-function prepareClinicalSeriesFilters(filters?: ClinicalSeriesFilters): PreparedClinicalSeriesFilters {
+function prepareClinicalSeriesFilters(
+  filters?: ClinicalSeriesFilters
+): PreparedClinicalSeriesFilters {
   const page = Math.max(1, filters?.page ?? 1);
   const pageSize = Math.min(100, Math.max(1, filters?.pageSize ?? 20));
   const today = dayjs().tz(TIMEZONE).format("YYYY-MM-DD");
   const view = filters?.view ?? "series";
-  const normalizedBeneficiaryRut = filters?.beneficiaryRut ? normalizeRut(filters.beneficiaryRut) : null;
+  const normalizedBeneficiaryRut = filters?.beneficiaryRut
+    ? normalizeRut(filters.beneficiaryRut)
+    : null;
   const normalizedPatientRut = filters?.patientRut ? normalizeRut(filters.patientRut) : null;
-  const normalizedPatientName = filters?.patientName ? `%${normalizeName(filters.patientName)}%` : null;
-  const normalizedPatientPhone = filters?.patientPhone ? `%${normalizePhoneSearch(filters.patientPhone)}%` : null;
+  const normalizedPatientName = filters?.patientName
+    ? `%${normalizeName(filters.patientName)}%`
+    : null;
+  const normalizedPatientPhone = filters?.patientPhone
+    ? `%${normalizePhoneSearch(filters.patientPhone)}%`
+    : null;
   const lastVisitFrom = filters?.lastVisitFrom ?? null;
   const lastVisitTo = filters?.lastVisitTo ?? null;
   const nextVisitFrom = filters?.nextVisitFrom ?? null;
@@ -735,7 +754,7 @@ function prepareClinicalSeriesFilters(filters?: ClinicalSeriesFilters): Prepared
             queryTokens.length > 0
               ? sql.join(
                   queryTokens.map((token) => sql`${textHaystack} LIKE ${`%${token}%`}`),
-                  sql` AND `,
+                  sql` AND `
                 )
               : sql`FALSE`
           }
@@ -744,16 +763,14 @@ function prepareClinicalSeriesFilters(filters?: ClinicalSeriesFilters): Prepared
   const isapreProvider = filters?.isapreProvider?.trim() || null;
   const isapreOnlyUnidentified = filters?.isapreOnlyUnidentified === true;
   const effectiveKind = view === "abandonment" ? "SUBCUTANEOUS_TREATMENT" : (filters?.kind ?? null);
-  const effectiveHealthInsurance = (isapreProvider || isapreOnlyUnidentified)
-    ? "ISAPRE"
-    : (filters?.healthInsurance ?? null);
+  const effectiveHealthInsurance =
+    isapreProvider || isapreOnlyUnidentified ? "ISAPRE" : (filters?.healthInsurance ?? null);
   const effectiveStatus = view === "abandonment" ? null : (filters?.status ?? null);
-  const isapreFilterSql =
-    isapreOnlyUnidentified
-      ? sql`coalesce(nullif(trim(coalesce(cs.isapre_name, '')), ''), null) IS NULL`
-      : isapreProvider
-        ? sql`cs.isapre_name = ${isapreProvider}`
-        : sql`TRUE`;
+  const isapreFilterSql = isapreOnlyUnidentified
+    ? sql`coalesce(nullif(trim(coalesce(cs.isapre_name, '')), ''), null) IS NULL`
+    : isapreProvider
+      ? sql`cs.isapre_name = ${isapreProvider}`
+      : sql`TRUE`;
   const daysSinceLastEventSql = sql<number | null>`CASE
     WHEN es.last_event_date IS NULL THEN NULL
     ELSE (${today}::date - es.last_event_date)
@@ -782,7 +799,7 @@ function prepareClinicalSeriesFilters(filters?: ClinicalSeriesFilters): Prepared
     view === "abandonment" && filters?.sortColumn == null
       ? { ...filters, sortColumn: "daysSinceLastEvent", sortDirection: "descending" }
       : filters,
-    today,
+    today
   );
 
   // skinTest filter: EXISTS / NOT EXISTS correlated subquery on clinical_skin_tests.
@@ -848,7 +865,11 @@ function extractPhoneCandidates(text: null | string | undefined): string[] {
   // "963080233" must survive this cleanup step.
   const withoutRuts = text.replace(new RegExp(FORMATTED_RUT_REGEX.source, "g"), " ");
   const matches = withoutRuts.match(PHONE_CANDIDATE_REGEX) ?? [];
-  return [...new Set(matches.map((match) => normalizeExtractedPhone(match)).filter((v): v is string => Boolean(v)))];
+  return [
+    ...new Set(
+      matches.map((match) => normalizeExtractedPhone(match)).filter((v): v is string => Boolean(v))
+    ),
+  ];
 }
 
 function extractSeriesPhones(summary: null | string, description: null | string) {
@@ -868,8 +889,9 @@ function extractSeriesPhones(summary: null | string, description: null | string)
     if (normalized) patientPhones.add(normalized);
   }
 
-  const descriptionWithoutBoleta =
-    structured.boletaBlock ? descriptionText.replace(structured.boletaBlock, " ") : descriptionText;
+  const descriptionWithoutBoleta = structured.boletaBlock
+    ? descriptionText.replace(structured.boletaBlock, " ")
+    : descriptionText;
 
   pushPhones(patientPhones, extractPhoneCandidates(summaryText));
   pushPhones(patientPhones, extractPhoneCandidates(descriptionWithoutBoleta));
@@ -927,7 +949,7 @@ function stripNonNamePhrases(text: string): string {
     .replace(/\b[\p{L}]+-rut\b/giu, " ")
     .replace(
       /(^|[\n,;]\s*)(?:(?:envio\s+de|toca|ultima|licencia|aca|incluir\s+huevos|ovo\s+y\s+nativos|quiere\s+de\s+standard|(?:lec|lectura)\s+de(?:\s+de)?|contesto|quiso\s+realizar(?:\s+confirmado)?|confirm(?:ado|ada|o|a|s|ara|aq)?|(?:no\s+)?vino(?:\s+confirma(?:do|da|o|a|s|ra)?)?|llego(?:p)?(?:\s+confirma(?:do|da|o|a|s|ra)?)?|se\s+llev(?:a|o)\s+vacuna\s+de\s+(?:enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)|feb|mayo)(?:\s+(?:de|y))?\s+)/gi,
-      "$1",
+      "$1"
     )
     .replace(/\bno\s+asistir[aá]\s+por\s+temas\s+econ[oó]micos\b/gi, " ")
     .replace(/\best[aá]\s+de\s+viaje\s+llamar[aá]\s+para\s+reagendar\b/gi, " ")
@@ -936,24 +958,21 @@ function stripNonNamePhrases(text: string): string {
     .replace(/\bsacar\s+el\s+refri\s+\d+\s*min\s+antes\b/gi, " ")
     .replace(
       /(^|[\n,;]\s*)(?:(?:prox|covid|(?:se\s+)?envi(?:a|ada|ado|ar))(?:\s+(?:de|y|vacuna|vacunas|dia|d[ií]a|lunes|martes|miercoles|miércoles|jueves|viernes|sabado|sábado|domingo|enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre))*\s+)/gi,
-      "$1",
+      "$1"
     )
     .replace(
       /(^|[\n,;]\s*)(?:(?:manda\s+)?(?:la?s\s+)?fotos?(?:\s+(?:de\s+boleta|de\s+repetido|recordar\s+de|y\s+de|de))?\s+)/gi,
-      "$1",
+      "$1"
     )
     .replace(/\blas\s+y\s+de\s+/gi, " ")
     .replace(/\bprox(?:imo)?\s+mes\b/gi, " ")
     .replace(/\ba\s*-\s*(?:g|p)\b/gi, " ")
     .replace(
       /,\s*[^,;()]{3,80}\(\s*(?:pap[aá]|mam[aá]|tutor(?:a)?)\s*\)(?=(?:\s*,|\s*\(|$))/gi,
-      " ",
+      " "
     )
     .replace(/\(\s*(?:pap[aá]|mam[aá]|tutor(?:a)?)\s+[^)]*\)/gi, " ")
-    .replace(
-      /,\s*(?:pap[aá]|mam[aá]|tutor(?:a)?)\s+[^,;()]{3,80}(?=(?:\s*,|\s*\(|$))/gi,
-      " ",
-    )
+    .replace(/,\s*(?:pap[aá]|mam[aá]|tutor(?:a)?)\s+[^,;()]{3,80}(?=(?:\s*,|\s*\(|$))/gi, " ")
     .replace(/\bs\s*\/\s*c[a-záéíóúñ]*/gi, " ")
     .replace(/\b\/?\s*esposa\s*:\s*\d{5,}\b/gi, " ")
     .replace(/\([^)]*\b(?:emite\s+boleta|gestiona\s+pago)\b[^)]*\)/gi, " ")
@@ -1046,7 +1065,7 @@ function normalizeNameToken(token: string): string {
 
 function resolveClinicalSeriesOrderBy(
   filters?: ClinicalSeriesFilters,
-  today = dayjs().tz(TIMEZONE).format("YYYY-MM-DD"),
+  today = dayjs().tz(TIMEZONE).format("YYYY-MM-DD")
 ): ReturnType<typeof sql> {
   const sortColumn = filters?.sortColumn ?? "lastEvent";
   const sortDirection = filters?.sortDirection === "ascending" ? "ASC" : "DESC";
@@ -1084,12 +1103,12 @@ function resolveClinicalSeriesOrderBy(
  */
 function stripNoiseFromText(text: string): string {
   return stripNonNamePhrases(text)
-    .replace(TIME_REGEX, " ")            // 15:00, 9:30
+    .replace(TIME_REGEX, " ") // 15:00, 9:30
     .replace(new RegExp(RUT_REGEX.source, "g"), " ") // 12.345.678-9
-    .replace(AGE_REGEX, " ")             // "36 años"
-    .replace(LONG_NUMBER_REGEX, " ")     // phones, codes ≥5 digits
+    .replace(AGE_REGEX, " ") // "36 años"
+    .replace(LONG_NUMBER_REGEX, " ") // phones, codes ≥5 digits
     .replace(STANDALONE_NUMBER_REGEX, " ") // remaining bare numbers
-    .replace(SEPARATOR_REGEX, " ")       // ;:,()[]{}
+    .replace(SEPARATOR_REGEX, " ") // ;:,()[]{}
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -1098,7 +1117,10 @@ function collapseRepeatedNameEdges(tokens: string[]): string[] {
   for (let size = Math.min(3, Math.floor(tokens.length / 2)); size >= 1; size -= 1) {
     const prefix = tokens.slice(0, size);
     const repeatedPrefix = tokens.slice(size, size * 2);
-    if (prefix.length === repeatedPrefix.length && prefix.every((token, index) => token === repeatedPrefix[index])) {
+    if (
+      prefix.length === repeatedPrefix.length &&
+      prefix.every((token, index) => token === repeatedPrefix[index])
+    ) {
       return [...prefix, ...tokens.slice(size * 2)];
     }
   }
@@ -1135,7 +1157,10 @@ function extractNamesFromCleanedText(text: string): string[] {
   let i = 0;
 
   while (i < tokens.length) {
-    if (!isNameToken(tokens[i]!)) { i++; continue; }
+    if (!isNameToken(tokens[i]!)) {
+      i++;
+      continue;
+    }
 
     const seq: string[] = [tokens[i]!];
     let j = i + 1;
@@ -1143,7 +1168,8 @@ function extractNamesFromCleanedText(text: string): string[] {
     while (j < tokens.length && seq.length < 6) {
       const t = tokens[j]!;
       if (isNameToken(t)) {
-        seq.push(t); j++;
+        seq.push(t);
+        j++;
       } else if (isParticle(t)) {
         // Allow particles only when a name token eventually follows.
         let k = j + 1;
@@ -1212,7 +1238,10 @@ const GLUED_RUT_FOLLOWED_BY_LABEL_REGEX =
 const GLUED_TIME_FOLLOWED_BY_NAME_REGEX = /(\b\d{1,2}:\d{2})(?=[A-Za-zÁÉÍÓÚÑáéíóúñ])/g;
 
 function cleanStructuredFieldValue(value: string): string {
-  return value.replace(/\s+/g, " ").replace(/[;,]+$/g, "").trim();
+  return value
+    .replace(/\s+/g, " ")
+    .replace(/[;,]+$/g, "")
+    .trim();
 }
 
 function normalizeIdentitySourceText(value: string): string {
@@ -1236,7 +1265,7 @@ function trimBoletaBlock(value: string): string {
   if (!normalized) return normalized;
 
   const patientSectionIndex = normalized.search(
-    /\n{2,}(?=(?:\+?\d[\d \t-]{6,}\b|\d{1,3}\s*a[ñn]os?\b|\d{1,2}\.?\d{3}\.?\d{3}-?[\dkK]\b))/i,
+    /\n{2,}(?=(?:\+?\d[\d \t-]{6,}\b|\d{1,3}\s*a[ñn]os?\b|\d{1,2}\.?\d{3}\.?\d{3}-?[\dkK]\b))/i
   );
   if (patientSectionIndex >= 0) {
     return normalized.slice(0, patientSectionIndex).trim();
@@ -1302,8 +1331,7 @@ function extractStructuredClinicalDescription(text: string): StructuredClinicalD
     const section = sections[index]!;
     const end = sections[index + 1]?.matchIndex ?? text.length;
     const rawValue = text.slice(section.valueStart, end).trim();
-    const value =
-      section.key === "boleta" ? rawValue : cleanStructuredFieldValue(rawValue);
+    const value = section.key === "boleta" ? rawValue : cleanStructuredFieldValue(rawValue);
     if (value) values.set(section.key, value);
   }
 
@@ -1317,13 +1345,18 @@ function extractStructuredClinicalDescription(text: string): StructuredClinicalD
       if (!rut) continue;
       const lineStart = boletaBlock.lastIndexOf("\n", boletaMatch.index) + 1;
       let lineBeforeRut = cleanStructuredFieldValue(
-        boletaBlock
-          .slice(lineStart, boletaMatch.index)
-          .replace(/^boleta\s*:\s*/i, ""),
+        boletaBlock.slice(lineStart, boletaMatch.index).replace(/^boleta\s*:\s*/i, "")
       );
       if (!lineBeforeRut) {
-        const beforeRutText = boletaBlock.slice(0, lineStart).replace(/^boleta\s*:\s*/i, "").trimEnd();
-        const previousLine = beforeRutText.split("\n").map((line) => cleanStructuredFieldValue(line)).filter(Boolean).at(-1);
+        const beforeRutText = boletaBlock
+          .slice(0, lineStart)
+          .replace(/^boleta\s*:\s*/i, "")
+          .trimEnd();
+        const previousLine = beforeRutText
+          .split("\n")
+          .map((line) => cleanStructuredFieldValue(line))
+          .filter(Boolean)
+          .at(-1);
         lineBeforeRut = previousLine ?? "";
       }
       const extractedName =
@@ -1402,7 +1435,8 @@ function extractRutAdjacentNames(text: string): string[] {
     }
     // Drop leading/trailing particles — a name must start and end with a real token.
     while (nameTokens.length > 0 && PARTICLES.has(nameTokens[0]!)) nameTokens.shift();
-    while (nameTokens.length > 0 && PARTICLES.has(nameTokens[nameTokens.length - 1]!)) nameTokens.pop();
+    while (nameTokens.length > 0 && PARTICLES.has(nameTokens[nameTokens.length - 1]!))
+      nameTokens.pop();
     const collapsedTokens = collapseRepeatedNameEdges(nameTokens);
     if (collapsedTokens.length >= 2) results.push(collapsedTokens.join(" "));
   }
@@ -1459,7 +1493,7 @@ export function extractIdentityHints(summary: null | string, description: null |
           if (!rawValue || !isAcceptedRutCandidate(rawValue, index, combinedText)) return null;
           return normalizeRut(rawValue);
         })
-        .filter((rut): rut is string => rut !== null),
+        .filter((rut): rut is string => rut !== null)
     ),
   ];
 
@@ -1468,15 +1502,19 @@ export function extractIdentityHints(summary: null | string, description: null |
   // field labels like "-Rut del paciente:", previous visit history) from
   // overriding a clearly-identified name in the event title/summary.
   const summaryNames = extractNamesFromText(stripStructuredNoiseForNames(summaryText.trim()));
-  const descriptionWithoutBoleta =
-    structured.boletaBlock ? descriptionText.replace(structured.boletaBlock, " ") : descriptionText;
-  const descriptionNames = extractNamesFromText(stripStructuredNoiseForNames(descriptionWithoutBoleta));
+  const descriptionWithoutBoleta = structured.boletaBlock
+    ? descriptionText.replace(structured.boletaBlock, " ")
+    : descriptionText;
+  const descriptionNames = extractNamesFromText(
+    stripStructuredNoiseForNames(descriptionWithoutBoleta)
+  );
   const beneficiaryNames = structured.beneficiaryCandidates
     .map((candidate) => candidate.name)
     .filter((value): value is string => value !== null && isLikelyPersonName(value));
 
-  const uniquePatientNames = [...new Set([...summaryNames, ...descriptionNames])]
-    .filter((value) => isLikelyPersonName(value));
+  const uniquePatientNames = [...new Set([...summaryNames, ...descriptionNames])].filter((value) =>
+    isLikelyPersonName(value)
+  );
   const patientRut =
     structured.patientRut ??
     ruts.find((value) => !structured.beneficiaryRuts.includes(value)) ??
@@ -1489,10 +1527,9 @@ export function extractIdentityHints(summary: null | string, description: null |
   const hasExplicitBeneficiary =
     structured.beneficiaryCandidates.length > 0 || beneficiaryRut != null;
   const patientName = uniquePatientNames[0] ?? null;
-  const beneficiaryName =
-    hasExplicitBeneficiary
-      ? beneficiaryNames.find((value) => value !== patientName) ?? null
-      : null;
+  const beneficiaryName = hasExplicitBeneficiary
+    ? (beneficiaryNames.find((value) => value !== patientName) ?? null)
+    : null;
 
   return { beneficiaryName, beneficiaryRut, patientName, patientRut };
 }
@@ -1518,7 +1555,7 @@ function hasIdentitySourceText(summary: null | string, description: null | strin
 export function resolveClinicalIdentity(
   summary: null | string,
   description: null | string,
-  stored?: StoredClinicalIdentity,
+  stored?: StoredClinicalIdentity
 ): ClinicalIdentity {
   const inferred = extractIdentityHints(summary, description);
   if (hasIdentitySourceText(summary, description)) {
@@ -1550,7 +1587,7 @@ const GRAMINEAS_PATTERN = /\bgram[íi]neas?\b/i;
 // ACAROS_GRAMINEAS because the clinic refers to the combined product as
 // plain "clustoid" (without qualification).
 function inferAllergenType(
-  events: Array<{ description: null | string; summary: null | string }>,
+  events: Array<{ description: null | string; summary: null | string }>
 ): SubcutaneousAllergenType {
   let hasAcaros = false;
   let hasGramineas = false;
@@ -1578,7 +1615,7 @@ const CLUSTOID_FORTE_PATTERN = /\bforte\b/i;
 const CLUSTOID_B120_PATTERN = /\bb[\s-]?120\b/i;
 
 function inferVaccineProduct(
-  events: Array<{ description: null | string; summary: null | string }>,
+  events: Array<{ description: null | string; summary: null | string }>
 ): null | SubcutaneousVaccineProduct {
   let hasOralTec = false;
   let hasAlxoid = false;
@@ -1656,7 +1693,7 @@ function findIsapreProvider(text: string): null | string {
       if (
         aliasTokens.length > 1 &&
         aliasTokens.every((aliasToken) =>
-          tokens.some((token) => jaroWinkler(token, aliasToken) >= 0.92),
+          tokens.some((token) => jaroWinkler(token, aliasToken) >= 0.92)
         )
       ) {
         return provider.providerName;
@@ -1677,7 +1714,7 @@ function findIsapreProvider(text: string): null | string {
 
 function inferInsuranceFromEventText(
   summary: null | string,
-  description: null | string,
+  description: null | string
 ): InsuranceResolution {
   const text = joinClinicalText(summary, description);
   const normalizedText = normalizeName(text);
@@ -1700,12 +1737,12 @@ function resolveInsuranceEventSortKey(event: InsuranceEventLike) {
   return "0000-00-00T00:00:00.000Z";
 }
 
-export function inferHealthInsurance(
-  events: InsuranceEventLike[],
-): InsuranceResolution {
+export function inferHealthInsurance(events: InsuranceEventLike[]): InsuranceResolution {
   const recentEvents = [...events]
     .sort((a, b) => {
-      const keyCompare = resolveInsuranceEventSortKey(b).localeCompare(resolveInsuranceEventSortKey(a));
+      const keyCompare = resolveInsuranceEventSortKey(b).localeCompare(
+        resolveInsuranceEventSortKey(a)
+      );
       if (keyCompare !== 0) return keyCompare;
       return (b.eventId ?? b.id ?? 0) - (a.eventId ?? a.id ?? 0);
     })
@@ -1761,7 +1798,7 @@ const DOMICILIO_DELIVERY_PATTERN =
   /\bdomicilio\b|\bse\s+envi[oó]\b|\bse\s+la?\s+llev[oó]\b|\bse\s+lo\s+llev[oó]\b|\bretira\b|\benviar\b|\bdespacho\b/i;
 
 function inferDeliveryModality(
-  events: Array<{ description: null | string; summary: null | string }>,
+  events: Array<{ description: null | string; summary: null | string }>
 ): DeliveryModality {
   for (const event of events) {
     const text = joinClinicalText(event.summary, event.description);
@@ -1814,7 +1851,7 @@ function computeExpectedSessions(
   events: Array<{
     seriesStageKind: ClinicalSeriesStageKind | null;
     seriesStageNumber: null | number;
-  }>,
+  }>
 ): null | number {
   const numbered = events
     .map((event) => event.seriesStageNumber)
@@ -1832,7 +1869,7 @@ function computeExpectedSessions(
 }
 
 async function loadEventSeriesCandidateByInternalId(
-  eventId: number,
+  eventId: number
 ): Promise<EventSeriesCandidate | null> {
   const rows = await db.$queryRaw<EventSeriesCandidate[]>`
     SELECT
@@ -1867,7 +1904,7 @@ async function loadEventSeriesCandidateByInternalId(
 
 async function loadEventSeriesCandidateByExternalIds(
   calendarGoogleId: string,
-  externalEventId: string,
+  externalEventId: string
 ): Promise<EventSeriesCandidate | null> {
   const rows = await db.$queryRaw<EventSeriesCandidate[]>`
     SELECT
@@ -1907,7 +1944,7 @@ function getSignificantNameTokens(name: string): string[] {
     ...new Set(
       normalizeName(name)
         .split(" ")
-        .filter((t) => t.length >= 3 && !LOWERCASE_NAME_STOPWORDS.has(t)),
+        .filter((t) => t.length >= 3 && !LOWERCASE_NAME_STOPWORDS.has(t))
     ),
   ];
 }
@@ -1965,7 +2002,7 @@ function scoreRepresentativeIdentity(identity: ClinicalIdentity & { eventCount?:
 
 function compareRepresentativeIdentity(
   a: ClinicalIdentity & { eventCount?: number },
-  b: ClinicalIdentity & { eventCount?: number },
+  b: ClinicalIdentity & { eventCount?: number }
 ): number {
   const scoreDelta = scoreRepresentativeIdentity(b) - scoreRepresentativeIdentity(a);
   if (scoreDelta !== 0) return scoreDelta;
@@ -2001,9 +2038,11 @@ function chooseBetterSeriesCandidate<
     patientRut?: null | string;
   },
 >(...candidates: Array<null | T | undefined>): null | T {
-  return candidates
-    .filter((candidate): candidate is T => candidate != null)
-    .sort(compareSeriesCanonicalPriority)[0] ?? null;
+  return (
+    candidates
+      .filter((candidate): candidate is T => candidate != null)
+      .sort(compareSeriesCanonicalPriority)[0] ?? null
+  );
 }
 
 function chooseCanonicalPhoneDuplicateCandidate<
@@ -2028,8 +2067,8 @@ function chooseCanonicalPhoneDuplicateCandidate<
         candidate.kind === base.kind &&
         !!candidate.patientName &&
         !!candidate.patientPhones?.some((phone) => base.patientPhones?.includes(phone)) &&
-        haveCompatiblePatientNames(candidate.patientName, base.patientName!),
-    ),
+        haveCompatiblePatientNames(candidate.patientName, base.patientName!)
+    )
   );
 }
 
@@ -2098,10 +2137,8 @@ function hasHardPatientRutConflictForDuplicateDetection<
   const swappedPair =
     !!a.beneficiaryRut &&
     !!b.beneficiaryRut &&
-    (a.patientRut === b.beneficiaryRut ||
-      isCloseNormalizedRut(a.patientRut, b.beneficiaryRut)) &&
-    (b.patientRut === a.beneficiaryRut ||
-      isCloseNormalizedRut(b.patientRut, a.beneficiaryRut));
+    (a.patientRut === b.beneficiaryRut || isCloseNormalizedRut(a.patientRut, b.beneficiaryRut)) &&
+    (b.patientRut === a.beneficiaryRut || isCloseNormalizedRut(b.patientRut, a.beneficiaryRut));
 
   return !swappedPair;
 }
@@ -2125,7 +2162,7 @@ function isCloseNormalizedRut(a: null | string, b: null | string): boolean {
 class SeriesAssignmentContext {
   // RUT index stays single-valued; exact-name collisions keep all candidates so
   // rebuild can prefer the best canonical series rather than the oldest id.
-  private readonly rutKindIndex = new Map<string, number>();  // `${rut}:${kind}` → id
+  private readonly rutKindIndex = new Map<string, number>(); // `${rut}:${kind}` → id
   private readonly nameKindIndex = new Map<string, number[]>(); // `${name}:${kind}` → [id, …]
   private readonly phoneKindIndex = new Map<string, number[]>(); // `${phone}:${kind}` → [id, …]
   // Token inverted index — insertion order matches id ASC load order.
@@ -2219,11 +2256,18 @@ class SeriesAssignmentContext {
   }
 
   /** Exact normalized name match, closest within the date window. */
-  findByName(name: string, kind: ClinicalSeriesKind, eventDate: dayjs.Dayjs, thresholdDays: number): number | undefined {
+  findByName(
+    name: string,
+    kind: ClinicalSeriesKind,
+    eventDate: dayjs.Dayjs,
+    thresholdDays: number
+  ): number | undefined {
     const ids = this.nameKindIndex.get(`${normalizeName(name)}:${kind}`) ?? [];
     const candidates = ids
       .map((id) => this.seriesById.get(id))
-      .filter((entry): entry is SeriesEntry => !!entry && this.dist(entry, eventDate) <= thresholdDays)
+      .filter(
+        (entry): entry is SeriesEntry => !!entry && this.dist(entry, eventDate) <= thresholdDays
+      )
       .sort((a, b) => {
         const distanceDelta = this.dist(a, eventDate) - this.dist(b, eventDate);
         if (distanceDelta !== 0) return distanceDelta;
@@ -2255,7 +2299,7 @@ class SeriesAssignmentContext {
     name: string,
     kind: ClinicalSeriesKind,
     eventDate: dayjs.Dayjs,
-    thresholdDays: number,
+    thresholdDays: number
   ): number | undefined {
     void eventDate;
     void thresholdDays;
@@ -2270,9 +2314,7 @@ class SeriesAssignmentContext {
       .map((id) => this.seriesById.get(id))
       .filter(
         (entry): entry is SeriesEntry =>
-          !!entry &&
-          !!entry.patientName &&
-          haveCompatiblePatientNames(entry.patientName, name),
+          !!entry && !!entry.patientName && haveCompatiblePatientNames(entry.patientName, name)
       )
       .sort(compareSeriesCanonicalPriority);
 
@@ -2296,7 +2338,7 @@ class SeriesAssignmentContext {
         (entry): entry is SeriesEntry =>
           !!entry &&
           !!entry.patientName &&
-          haveCompatiblePatientNames(entry.patientName, base.patientName),
+          haveCompatiblePatientNames(entry.patientName, base.patientName)
       )
       .sort(compareSeriesCanonicalPriority);
 
@@ -2308,14 +2350,19 @@ class SeriesAssignmentContext {
    * significant tokens covering ≥2/3 of the shorter name. Used when exact
    * name matching fails (e.g. "jose luis ojeda" ↔ "jose ojeda carrasco").
    */
-  findByTokenOverlap(name: string, kind: ClinicalSeriesKind, eventDate: dayjs.Dayjs, thresholdDays: number): number | undefined {
+  findByTokenOverlap(
+    name: string,
+    kind: ClinicalSeriesKind,
+    eventDate: dayjs.Dayjs,
+    thresholdDays: number
+  ): number | undefined {
     const eventTokens = getSignificantNameTokens(name);
     if (eventTokens.length < 2) return undefined;
 
     // Count how many event tokens appear in each candidate series.
     const overlapCount = new Map<number, number>();
     for (const token of eventTokens) {
-      for (const id of (this.tokenIndex.get(token) ?? [])) {
+      for (const id of this.tokenIndex.get(token) ?? []) {
         overlapCount.set(id, (overlapCount.get(id) ?? 0) + 1);
       }
     }
@@ -2325,7 +2372,10 @@ class SeriesAssignmentContext {
       if (overlap < 2) continue;
       const entry = this.seriesById.get(id);
       if (!entry || entry.kind !== kind || !entry.patientName) continue;
-      const shorterLen = Math.min(eventTokens.length, getSignificantNameTokens(entry.patientName).length);
+      const shorterLen = Math.min(
+        eventTokens.length,
+        getSignificantNameTokens(entry.patientName).length
+      );
       if (overlap / shorterLen < 2 / 3) continue;
       if (this.dist(entry, eventDate) > thresholdDays) continue;
       if (!best) {
@@ -2334,7 +2384,7 @@ class SeriesAssignmentContext {
       }
       const currentBest = best;
       const bestOverlap = eventTokens.filter((t) =>
-        getSignificantNameTokens(currentBest.patientName ?? "").includes(t),
+        getSignificantNameTokens(currentBest.patientName ?? "").includes(t)
       ).length;
       if (
         overlap > bestOverlap ||
@@ -2369,7 +2419,7 @@ export async function findMatchingSeries(
     patientPhones?: string[];
     patientRut: null | string;
   },
-  ctx?: SeriesAssignmentContext,
+  ctx?: SeriesAssignmentContext
 ): Promise<null | number> {
   const eventDateDjs = dayjs.tz(params.eventDate, TIMEZONE);
   const thresholdDays = getSeriesWindowDays(params.kind);
@@ -2380,18 +2430,20 @@ export async function findMatchingSeries(
       params.patientRut != null
         ? (() => {
             const id = ctx.findByRut(params.patientRut, params.kind);
-            return id != null ? ctx.seriesById.get(id) ?? null : null;
+            return id != null ? (ctx.seriesById.get(id) ?? null) : null;
           })()
         : null;
 
     if (params.patientName) {
-      const duplicateCanonical = ctx.findDuplicateCanonicalByExactName(params.patientName, params.kind);
+      const duplicateCanonical = ctx.findDuplicateCanonicalByExactName(
+        params.patientName,
+        params.kind
+      );
       if (duplicateCanonical != null) {
         const canonical = ctx.seriesById.get(duplicateCanonical);
         if (
           canonical &&
-          (
-            !params.patientRut ||
+          (!params.patientRut ||
             canonical.patientRut === params.patientRut ||
             canonical.beneficiaryRut === params.patientRut ||
             canonical.patientRut === params.beneficiaryRut ||
@@ -2399,8 +2451,7 @@ export async function findMatchingSeries(
             isCloseNormalizedRut(canonical.patientRut, params.patientRut) ||
             isCloseNormalizedRut(canonical.beneficiaryRut, params.patientRut) ||
             isCloseNormalizedRut(canonical.patientRut, params.beneficiaryRut ?? null) ||
-            isCloseNormalizedRut(canonical.beneficiaryRut, params.beneficiaryRut ?? null)
-          )
+            isCloseNormalizedRut(canonical.beneficiaryRut, params.beneficiaryRut ?? null))
         ) {
           return duplicateCanonical;
         }
@@ -2416,14 +2467,26 @@ export async function findMatchingSeries(
             params.patientName,
             params.kind,
             eventDateDjs,
-            thresholdDays,
+            thresholdDays
           )
         : undefined;
       const chosen = chooseBetterSeriesCandidate(
         rutMatchEntry,
-        exact != null ? { ...ctx.seriesById.get(exact)!, eventCount: ctx.seriesById.get(exact)!.eventCount } : null,
-        uniqueExact != null ? { ...ctx.seriesById.get(uniqueExact)!, eventCount: ctx.seriesById.get(uniqueExact)!.eventCount } : null,
-        phoneMatch != null ? { ...ctx.seriesById.get(phoneMatch)!, eventCount: ctx.seriesById.get(phoneMatch)!.eventCount } : null,
+        exact != null
+          ? { ...ctx.seriesById.get(exact)!, eventCount: ctx.seriesById.get(exact)!.eventCount }
+          : null,
+        uniqueExact != null
+          ? {
+              ...ctx.seriesById.get(uniqueExact)!,
+              eventCount: ctx.seriesById.get(uniqueExact)!.eventCount,
+            }
+          : null,
+        phoneMatch != null
+          ? {
+              ...ctx.seriesById.get(phoneMatch)!,
+              eventCount: ctx.seriesById.get(phoneMatch)!.eventCount,
+            }
+          : null
       );
       if (chosen) {
         const canonicalPhoneDuplicate = ctx.findCanonicalPhoneDuplicate(chosen.id);
@@ -2435,7 +2498,12 @@ export async function findMatchingSeries(
         }
         return chosen.id;
       }
-      const fuzzy = ctx.findByTokenOverlap(params.patientName, params.kind, eventDateDjs, thresholdDays);
+      const fuzzy = ctx.findByTokenOverlap(
+        params.patientName,
+        params.kind,
+        eventDateDjs,
+        thresholdDays
+      );
       if (fuzzy != null) return fuzzy;
     }
     if (rutMatchEntry) {
@@ -2489,8 +2557,8 @@ export async function findMatchingSeries(
             id: b.id,
             patientName: b.patientName,
             patientRut: b.patientRut,
-          },
-        ),
+          }
+        )
       )[0]!;
       if (
         !params.patientRut ||
@@ -2557,7 +2625,11 @@ export async function findMatchingSeries(
           : (() => {
               const s = dates[0]!;
               const e = dates[dates.length - 1]!;
-              return eventDateDjs.isBefore(s) ? s.diff(eventDateDjs, "day") : eventDateDjs.isAfter(e) ? eventDateDjs.diff(e, "day") : 0;
+              return eventDateDjs.isBefore(s)
+                ? s.diff(eventDateDjs, "day")
+                : eventDateDjs.isAfter(e)
+                  ? eventDateDjs.diff(e, "day")
+                  : 0;
             })();
       if (distance > thresholdDays) continue;
       const score = scoreClinicalSeriesIdentityQuality({
@@ -2570,7 +2642,8 @@ export async function findMatchingSeries(
       if (
         !best ||
         distance < best.distance ||
-        (distance === best.distance && (score > best.score || (score === best.score && c.id < best.id)))
+        (distance === best.distance &&
+          (score > best.score || (score === best.score && c.id < best.id)))
       ) {
         best = { distance, id: c.id, score };
       }
@@ -2613,8 +2686,8 @@ export async function findMatchingSeries(
                   id: b.id,
                   patientName: b.patientName,
                   patientRut: b.patientRut,
-                },
-              ),
+                }
+              )
             )
             .map((candidate) => ({
               beneficiaryName: candidate.beneficiaryName,
@@ -2707,7 +2780,7 @@ export async function findMatchingSeries(
       rutMatchCandidate,
       exactCandidate,
       uniqueExactCandidate,
-      phoneCandidate,
+      phoneCandidate
     );
     if (chosenCandidate) {
       const canonicalPhoneDuplicate =
@@ -2729,17 +2802,19 @@ export async function findMatchingSeries(
                   patientPhones: getSeriesPatientPhones(candidate),
                   patientRut: candidate.patientRut,
                 })),
-                ...((params.patientPhones?.length ? phoneCandidates : []) ?? []).map((candidate) => ({
-                  beneficiaryName: candidate.beneficiaryName,
-                  beneficiaryRut: candidate.beneficiaryRut,
-                  eventCount: candidate.events.length,
-                  id: candidate.id,
-                  kind: params.kind,
-                  patientName: candidate.patientName,
-                  patientPhones: getSeriesPatientPhones(candidate),
-                  patientRut: candidate.patientRut,
-                })),
-              ],
+                ...((params.patientPhones?.length ? phoneCandidates : []) ?? []).map(
+                  (candidate) => ({
+                    beneficiaryName: candidate.beneficiaryName,
+                    beneficiaryRut: candidate.beneficiaryRut,
+                    eventCount: candidate.events.length,
+                    id: candidate.id,
+                    kind: params.kind,
+                    patientName: candidate.patientName,
+                    patientPhones: getSeriesPatientPhones(candidate),
+                    patientRut: candidate.patientRut,
+                  })
+                ),
+              ]
             )
           : null;
       if (canonicalPhoneDuplicate) return canonicalPhoneDuplicate.id;
@@ -2774,7 +2849,11 @@ export async function findMatchingSeries(
             : (() => {
                 const s = dates[0]!;
                 const e = dates[dates.length - 1]!;
-                return eventDateDjs.isBefore(s) ? s.diff(eventDateDjs, "day") : eventDateDjs.isAfter(e) ? eventDateDjs.diff(e, "day") : 0;
+                return eventDateDjs.isBefore(s)
+                  ? s.diff(eventDateDjs, "day")
+                  : eventDateDjs.isAfter(e)
+                    ? eventDateDjs.diff(e, "day")
+                    : 0;
               })();
         if (distance > thresholdDays) continue;
         const score = scoreClinicalSeriesIdentityQuality({
@@ -2787,16 +2866,10 @@ export async function findMatchingSeries(
         if (
           !bestFuzzy ||
           overlap > bestFuzzy.overlap ||
-          (
-            overlap === bestFuzzy.overlap &&
-            (
-              distance < bestFuzzy.distance ||
-              (
-                distance === bestFuzzy.distance &&
-                (score > bestFuzzy.score || (score === bestFuzzy.score && c.id < bestFuzzy.id))
-              )
-            )
-          )
+          (overlap === bestFuzzy.overlap &&
+            (distance < bestFuzzy.distance ||
+              (distance === bestFuzzy.distance &&
+                (score > bestFuzzy.score || (score === bestFuzzy.score && c.id < bestFuzzy.id)))))
         ) {
           bestFuzzy = { distance, id: c.id, overlap, score };
         }
@@ -2817,7 +2890,10 @@ function buildIdentityGroupKey(name: null | string, rut: null | string): null | 
   return normalizedName ? `name:${normalizedName}` : null;
 }
 
-function choosePreferredIdentityName(current: null | string, incoming: null | string): null | string {
+function choosePreferredIdentityName(
+  current: null | string,
+  incoming: null | string
+): null | string {
   if (!incoming) return current;
   if (!current) return incoming;
   const currentTokens = getSignificantNameTokens(current);
@@ -2869,11 +2945,15 @@ function isSingleLetterPrefixedVariant(contaminated: string, canonical: string):
   return changedTokens === 1;
 }
 
-function chooseDominantIdentityName(fallback: null | string, counts: IdentityNameCounts): null | string {
+function chooseDominantIdentityName(
+  fallback: null | string,
+  counts: IdentityNameCounts
+): null | string {
   const candidates = [...counts.values()].sort((a, b) => {
     const countDelta = b.count - a.count;
     if (countDelta !== 0) return countDelta;
-    const tokenDelta = getSignificantNameTokens(b.name).length - getSignificantNameTokens(a.name).length;
+    const tokenDelta =
+      getSignificantNameTokens(b.name).length - getSignificantNameTokens(a.name).length;
     if (tokenDelta !== 0) return tokenDelta;
     if (isSingleLetterPrefixedVariant(a.name, b.name)) return 1;
     if (isSingleLetterPrefixedVariant(b.name, a.name)) return -1;
@@ -2891,10 +2971,16 @@ export function selectRepresentativeClinicalIdentity(
     description: null | string;
     summary: null | string;
   }>,
-  stored?: StoredClinicalIdentity,
+  stored?: StoredClinicalIdentity
 ): ClinicalIdentity {
-  const patientGroups = new Map<string, ClinicalIdentity & { eventCount: number; patientNameCounts: IdentityNameCounts }>();
-  const beneficiaryGroups = new Map<string, ClinicalIdentity & { beneficiaryNameCounts: IdentityNameCounts; eventCount: number }>();
+  const patientGroups = new Map<
+    string,
+    ClinicalIdentity & { eventCount: number; patientNameCounts: IdentityNameCounts }
+  >();
+  const beneficiaryGroups = new Map<
+    string,
+    ClinicalIdentity & { beneficiaryNameCounts: IdentityNameCounts; eventCount: number }
+  >();
   let hasText = false;
 
   for (const event of events) {
@@ -2913,7 +2999,7 @@ export function selectRepresentativeClinicalIdentity(
         eventCount: (current?.eventCount ?? 0) + 1,
         patientName: chooseDominantIdentityName(
           choosePreferredIdentityName(current?.patientName ?? null, hints.patientName),
-          patientNameCounts,
+          patientNameCounts
         ),
         patientNameCounts,
         patientRut: hints.patientRut ?? current?.patientRut ?? null,
@@ -2922,9 +3008,7 @@ export function selectRepresentativeClinicalIdentity(
 
     const beneficiaryKey = buildIdentityGroupKey(hints.beneficiaryName, hints.beneficiaryRut);
     const sameAsPatient =
-      beneficiaryKey != null &&
-      patientKey != null &&
-      beneficiaryKey === patientKey;
+      beneficiaryKey != null && patientKey != null && beneficiaryKey === patientKey;
     if (beneficiaryKey && !sameAsPatient) {
       const current = beneficiaryGroups.get(beneficiaryKey);
       const beneficiaryNameCounts = current?.beneficiaryNameCounts ?? new Map();
@@ -2932,7 +3016,7 @@ export function selectRepresentativeClinicalIdentity(
       beneficiaryGroups.set(beneficiaryKey, {
         beneficiaryName: chooseDominantIdentityName(
           choosePreferredIdentityName(current?.beneficiaryName ?? null, hints.beneficiaryName),
-          beneficiaryNameCounts,
+          beneficiaryNameCounts
         ),
         beneficiaryNameCounts,
         beneficiaryRut: hints.beneficiaryRut ?? current?.beneficiaryRut ?? null,
@@ -2956,13 +3040,16 @@ export function selectRepresentativeClinicalIdentity(
   }
 
   const patient = [...patientGroups.values()].sort(compareRepresentativeIdentity)[0] ?? null;
-  const patientKey = buildIdentityGroupKey(patient?.patientName ?? null, patient?.patientRut ?? null);
+  const patientKey = buildIdentityGroupKey(
+    patient?.patientName ?? null,
+    patient?.patientRut ?? null
+  );
   const beneficiary =
     [...beneficiaryGroups.values()]
       .filter((candidate) => {
         const candidateKey = buildIdentityGroupKey(
           candidate.beneficiaryName ?? null,
-          candidate.beneficiaryRut ?? null,
+          candidate.beneficiaryRut ?? null
         );
         return candidateKey != null && candidateKey !== patientKey;
       })
@@ -2992,7 +3079,7 @@ function isAllLowercase(name: string): boolean {
 
 function upgradePatientNameFromDte(
   currentName: null | string,
-  dteRecords: Array<{ clientName: string }>,
+  dteRecords: Array<{ clientName: string }>
 ): null | string {
   if (!currentName) return dteRecords[0]?.clientName ?? null;
 
@@ -3012,7 +3099,7 @@ function upgradePatientNameFromDte(
 
     // Every current token must fuzzy-match at least one DTE token (JW >= 0.90)
     const allMatch = currentTokens.every((ct) =>
-      dteTokens.some((dt) => jaroWinkler(ct, dt) >= 0.9),
+      dteTokens.some((dt) => jaroWinkler(ct, dt) >= 0.9)
     );
     if (!allMatch) continue;
 
@@ -3092,7 +3179,9 @@ async function refreshClinicalSeriesMetadata(seriesId: number) {
   // the beneficiary name and promote beneficiary → patient (since the beneficiary
   // is effectively the patient in this case).
   if (!patientRut && beneficiaryRut) {
-    const dteByBeneficiaryRut = await db.$queryRaw<Array<{ clientName: string; clientRUT: string }>>`
+    const dteByBeneficiaryRut = await db.$queryRaw<
+      Array<{ clientName: string; clientRUT: string }>
+    >`
       SELECT DISTINCT s.client_name AS "clientName", s.client_rut AS "clientRUT"
       FROM dte_sale_details s
       WHERE s.client_rut = ${beneficiaryRut}
@@ -3114,8 +3203,10 @@ async function refreshClinicalSeriesMetadata(seriesId: number) {
         patientName =
           choosePreferredIdentityName(
             patientName,
-            beneficiaryName ?? dteByBeneficiaryRut[0]?.clientName ?? null,
-          ) ?? dteByBeneficiaryRut[0]?.clientName ?? null;
+            beneficiaryName ?? dteByBeneficiaryRut[0]?.clientName ?? null
+          ) ??
+          dteByBeneficiaryRut[0]?.clientName ??
+          null;
       }
     }
   }
@@ -3150,7 +3241,7 @@ async function refreshClinicalSeriesMetadata(seriesId: number) {
       extracted.beneficiaryPhones.forEach((phone) => acc.beneficiaryPhones.add(phone));
       return acc;
     },
-    { beneficiaryPhones: new Set<string>(), patientPhones: new Set<string>() },
+    { beneficiaryPhones: new Set<string>(), patientPhones: new Set<string>() }
   );
 
   await db.clinicalSeries.update({
@@ -3182,7 +3273,7 @@ async function refreshClinicalSeriesMetadata(seriesId: number) {
 async function runConcurrent<T>(
   items: T[],
   concurrency: number,
-  fn: (item: T) => Promise<void>,
+  fn: (item: T) => Promise<void>
 ): Promise<void> {
   if (items.length === 0) return;
   const queue = [...items];
@@ -3196,9 +3287,7 @@ async function runConcurrent<T>(
 }
 
 // Batch loader — one query for all events instead of N individual round trips.
-async function loadEventSeriesCandidatesByIds(
-  eventIds: number[],
-): Promise<EventSeriesCandidate[]> {
+async function loadEventSeriesCandidatesByIds(eventIds: number[]): Promise<EventSeriesCandidate[]> {
   if (eventIds.length === 0) return [];
   return db.$queryRaw<EventSeriesCandidate[]>`
     SELECT
@@ -3232,7 +3321,10 @@ async function loadEventSeriesCandidatesByIds(
 // Core per-event sync logic — load-agnostic. Returns the series ID that was
 // touched (for the caller to schedule a deduplicated metadata refresh), or
 // null if the event does not qualify for a clinical series.
-async function assignEventToSeries(event: EventSeriesCandidate, ctx?: SeriesAssignmentContext): Promise<null | number> {
+async function assignEventToSeries(
+  event: EventSeriesCandidate,
+  ctx?: SeriesAssignmentContext
+): Promise<null | number> {
   const inferredMetadata = parseCalendarMetadata({
     description: event.description,
     summary: event.summary,
@@ -3290,21 +3382,25 @@ async function assignEventToSeries(event: EventSeriesCandidate, ctx?: SeriesAssi
       patientPhones: extractedPhones.patientPhones,
       patientRut: identity.patientRut,
     },
-    ctx,
+    ctx
   );
 
   // Fallback: if nothing found but the event already has a compatible series
   // (e.g. brand-new patient, no prior series of this kind), keep it there.
   if (!targetSeriesId && event.clinicalSeriesId != null) {
     // Use context entry when available — avoids a DB round trip.
-    const current = ctx?.seriesById.get(event.clinicalSeriesId) ?? await db.clinicalSeries.findUnique({
-      where: { id: event.clinicalSeriesId },
-      select: { beneficiaryRut: true, id: true, kind: true, patientRut: true },
-    });
+    const current =
+      ctx?.seriesById.get(event.clinicalSeriesId) ??
+      (await db.clinicalSeries.findUnique({
+        where: { id: event.clinicalSeriesId },
+        select: { beneficiaryRut: true, id: true, kind: true, patientRut: true },
+      }));
     if (
       current?.kind === kind &&
       (!identity.patientRut || !current.patientRut || current.patientRut === identity.patientRut) &&
-      (!identity.beneficiaryRut || !current.beneficiaryRut || current.beneficiaryRut === identity.beneficiaryRut)
+      (!identity.beneficiaryRut ||
+        !current.beneficiaryRut ||
+        current.beneficiaryRut === identity.beneficiaryRut)
     ) {
       targetSeriesId = current.id;
     }
@@ -3317,7 +3413,11 @@ async function assignEventToSeries(event: EventSeriesCandidate, ctx?: SeriesAssi
       data: {
         beneficiaryName: identity.beneficiaryName,
         beneficiaryRut: identity.beneficiaryRut,
-        displayName: buildSeriesDisplayName({ kind, patientName: identity.patientName, patientRut: identity.patientRut }),
+        displayName: buildSeriesDisplayName({
+          kind,
+          patientName: identity.patientName,
+          patientRut: identity.patientRut,
+        }),
         expectedSessions:
           event.seriesStageNumber != null && Number.isFinite(event.seriesStageNumber)
             ? event.seriesStageNumber
@@ -3358,7 +3458,7 @@ async function assignEventToSeries(event: EventSeriesCandidate, ctx?: SeriesAssi
 }
 
 export async function syncClinicalSeriesForInternalEventId(
-  eventId: number,
+  eventId: number
 ): Promise<null | number> {
   const event = await loadEventSeriesCandidateByInternalId(eventId);
   if (!event) return null;
@@ -3369,7 +3469,7 @@ export async function syncClinicalSeriesForInternalEventId(
 
 export async function syncClinicalSeriesForEventIds(
   eventIds: number[],
-  onProgress?: (processed: number, total: number) => void,
+  onProgress?: (processed: number, total: number) => void
 ) {
   const unique = [...new Set(eventIds.filter((value) => Number.isFinite(value) && value > 0))];
   if (unique.length === 0) return;
@@ -3400,12 +3500,12 @@ export async function syncClinicalSeriesForEventIds(
   await runConcurrent([...touchedSeriesIds], 8, (id) =>
     refreshClinicalSeriesMetadata(id).catch((err: unknown) => {
       console.error(`[clinical-series] refreshClinicalSeriesMetadata(${id}) failed:`, err);
-    }),
+    })
   );
 }
 
 export async function syncClinicalSeriesForExternalEvents(
-  events: Array<{ calendarId: string; eventId: string }>,
+  events: Array<{ calendarId: string; eventId: string }>
 ) {
   for (const event of events) {
     const row = await loadEventSeriesCandidateByExternalIds(event.calendarId, event.eventId);
@@ -3489,7 +3589,7 @@ export async function updateAllSeriesStatuses(): Promise<{ updated: number }> {
 
 export async function rebuildClinicalSeries(
   params?: { autoMerge?: boolean; from?: string; to?: string },
-  onProgress?: (processed: number, total: number) => void,
+  onProgress?: (processed: number, total: number) => void
 ) {
   const rows = await db.$queryRaw<Array<{ eventId: number }>>`
     SELECT e.id AS "eventId"
@@ -3512,7 +3612,10 @@ export async function rebuildClinicalSeries(
   const total = rows.length;
   // Signal total is now known before processing starts
   onProgress?.(0, total);
-  await syncClinicalSeriesForEventIds(rows.map((row) => row.eventId), onProgress);
+  await syncClinicalSeriesForEventIds(
+    rows.map((row) => row.eventId),
+    onProgress
+  );
 
   // Cleanup: delete series that ended up with no events after reassignment.
   const { count: deleted } = await db.clinicalSeries.deleteMany({
@@ -3524,7 +3627,12 @@ export async function rebuildClinicalSeries(
   if (params?.autoMerge) {
     const duplicates = await detectDuplicateSeries();
     for (const dup of duplicates) {
-      await mergeClinicalSeries({ isAuto: true, mergeReason: dup.reason, sourceId: dup.sourceId, targetId: dup.targetId });
+      await mergeClinicalSeries({
+        isAuto: true,
+        mergeReason: dup.reason,
+        sourceId: dup.sourceId,
+        targetId: dup.targetId,
+      });
     }
     deduped = duplicates.length;
   }
@@ -3561,7 +3669,11 @@ export function getCurrentRebuildJob(): null | RebuildJob {
   return currentRebuildJob;
 }
 
-export function startRebuildClinicalSeries(params?: { autoMerge?: boolean; from?: string; to?: string }): string {
+export function startRebuildClinicalSeries(params?: {
+  autoMerge?: boolean;
+  from?: string;
+  to?: string;
+}): string {
   const jobId = `rebuild-${Date.now()}`;
   currentRebuildJob = {
     jobId,
@@ -3711,7 +3823,7 @@ export async function getClinicalSeriesSnapshotByExternalEvent(params: {
             extracted.beneficiaryPhones.forEach((phone) => acc.beneficiaryPhones.add(phone));
             return acc;
           },
-          { beneficiaryPhones: new Set<string>(), patientPhones: new Set<string>() },
+          { beneficiaryPhones: new Set<string>(), patientPhones: new Set<string>() }
         );
 
   const events = series.events.map((item) => ({
@@ -3771,10 +3883,12 @@ export async function getClinicalSeriesSnapshotByExternalEvent(params: {
         .format("YYYY-MM-DD"),
       eventId: item.id,
       summary: item.summary ?? null,
-    })),
+    }))
   );
   const resolvedHealthInsurance =
-    (series.healthInsurance as HealthInsuranceType | null) ?? inferredInsurance.healthInsurance ?? null;
+    (series.healthInsurance as HealthInsuranceType | null) ??
+    inferredInsurance.healthInsurance ??
+    null;
   const resolvedIsapreName = series.isapreName ?? inferredInsurance.isapreName ?? null;
 
   const baseSnapshot: ClinicalSeriesSnapshot = {
@@ -3816,7 +3930,9 @@ export async function getClinicalSeriesSnapshotByExternalEvent(params: {
   };
 }
 
-export async function getClinicalSeriesSnapshotById(id: number): Promise<ClinicalSeriesSnapshot | null> {
+export async function getClinicalSeriesSnapshotById(
+  id: number
+): Promise<ClinicalSeriesSnapshot | null> {
   const series = await db.clinicalSeries.findUnique({
     where: { id },
     include: {
@@ -3853,10 +3969,12 @@ export async function getClinicalSeriesSnapshotById(id: number): Promise<Clinica
         .format("YYYY-MM-DD"),
       eventId: item.id,
       summary: item.summary ?? null,
-    })),
+    }))
   );
   const resolvedHealthInsurance =
-    (series.healthInsurance as HealthInsuranceType | null) ?? inferredInsurance.healthInsurance ?? null;
+    (series.healthInsurance as HealthInsuranceType | null) ??
+    inferredInsurance.healthInsurance ??
+    null;
   const resolvedIsapreName = series.isapreName ?? inferredInsurance.isapreName ?? null;
   const lastContact = series.abandonmentContacts[0] ?? null;
   const lastAbandonmentContact = lastContact
@@ -3979,7 +4097,7 @@ export async function listClinicalSeriesSnapshots(filters?: ClinicalSeriesFilter
           AND ${abandonmentFilterSql}
           AND ${skinTestFilterSql}
       `.execute(kysely)
-    ).rows[0]?.count ?? 0,
+    ).rows[0]?.count ?? 0
   );
 
   const seriesResult = await sql<{ id: number }>`
@@ -4073,7 +4191,7 @@ export async function listClinicalSeriesSnapshots(filters?: ClinicalSeriesFilter
 }
 
 export async function getClinicalSeriesInsuranceStats(
-  filters?: ClinicalSeriesFilters,
+  filters?: ClinicalSeriesFilters
 ): Promise<ClinicalSeriesInsuranceStats> {
   const {
     abandonmentFilterSql,
@@ -4163,10 +4281,7 @@ export async function getClinicalSeriesInsuranceStats(
     } else if (storedHealthInsurance === "ISAPRE") {
       isapre += 1;
       if (row.isapreName) {
-        isapreProviders.set(
-          row.isapreName,
-          (isapreProviders.get(row.isapreName) ?? 0) + 1,
-        );
+        isapreProviders.set(row.isapreName, (isapreProviders.get(row.isapreName) ?? 0) + 1);
       } else {
         isapreUnidentified += 1;
       }
@@ -4404,15 +4519,21 @@ export async function mergeClinicalSeries(params: {
   targetId: number;
 }): Promise<{ eventsMovedCount: number }> {
   const [source, target] = await Promise.all([
-    db.clinicalSeries.findUnique({ select: { id: true, kind: true }, where: { id: params.sourceId } }),
-    db.clinicalSeries.findUnique({ select: { id: true, kind: true }, where: { id: params.targetId } }),
+    db.clinicalSeries.findUnique({
+      select: { id: true, kind: true },
+      where: { id: params.sourceId },
+    }),
+    db.clinicalSeries.findUnique({
+      select: { id: true, kind: true },
+      where: { id: params.targetId },
+    }),
   ]);
 
   if (!source) throw new Error(`Serie fuente #${params.sourceId} no encontrada`);
   if (!target) throw new Error(`Serie destino #${params.targetId} no encontrada`);
   if (source.kind !== target.kind) {
     throw new Error(
-      `No se pueden fusionar series de distinto tipo (${source.kind} vs ${target.kind})`,
+      `No se pueden fusionar series de distinto tipo (${source.kind} vs ${target.kind})`
     );
   }
 

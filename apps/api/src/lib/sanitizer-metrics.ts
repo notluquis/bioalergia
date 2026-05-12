@@ -230,7 +230,7 @@ export class SanitizationMonitor {
     inputLength: number,
     outputLength: number,
     durationMs: number,
-    userId?: string,
+    userId?: string
   ): { allowed: boolean; reason?: string } {
     if (!this.rateLimiter.isAllowed()) {
       return {

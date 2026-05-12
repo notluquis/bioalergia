@@ -22,23 +22,20 @@ export async function listCommerceProducts(
   catalogId: string,
   accountId: number,
   search?: string,
-  limit = 100,
+  limit = 100
 ) {
   const account = await db.waBusinessAccount.findUnique({ where: { id: accountId } });
   const token = decryptSecret(account?.systemUserToken);
   if (!token) throw new Error("Account sin token");
   const v = account!.graphApiVersion;
   const qs = new URLSearchParams();
-  qs.set(
-    "fields",
-    "id,retailer_id,name,description,price,currency,image_url,availability",
-  );
+  qs.set("fields", "id,retailer_id,name,description,price,currency,image_url,availability");
   qs.set("limit", String(limit));
   if (search) qs.set("filter", JSON.stringify({ name: { i_contains: search } }));
   const data = await graphGet<{ data: CommerceProduct[] }>(
     `/${catalogId}/products?${qs.toString()}`,
     token,
-    v,
+    v
   );
   return data.data ?? [];
 }
@@ -75,12 +72,11 @@ export async function sendSingleProductMessage(input: SendSingleProductInput) {
     interactive,
   };
   if (input.contextMessageId) payload.context = { message_id: input.contextMessageId };
-  if (input.bizOpaqueCallbackData)
-    payload.biz_opaque_callback_data = input.bizOpaqueCallbackData;
+  if (input.bizOpaqueCallbackData) payload.biz_opaque_callback_data = input.bizOpaqueCallbackData;
   return graphPost<{ messages: Array<{ id: string }> }>(
     `/${phone.phoneNumberId}/messages`,
     payload,
     token,
-    v,
+    v
   );
 }

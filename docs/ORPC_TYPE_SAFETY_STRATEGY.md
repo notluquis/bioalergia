@@ -1,4 +1,5 @@
 # oRPC Type Safety Strategy
+
 **Date:** March 10, 2026 | **Status:** ESTABLISHED | **Context:** Bioalergia Monorepo
 
 ## Purpose
@@ -48,29 +49,33 @@ Zod Validation + Database ↓ [Type-safe queries]
 ## Pattern 1: Discriminated Unions (IDEAL)
 
 ### Use Case
+
 When there's a clear "success" vs "error" path
 
 ### Example: Auth Flows
+
 ```typescript
 // Feature: PasskeyRegistrationResult (useOnboardingForm.ts)
-type PasskeyRegistrationResult = 
+type PasskeyRegistrationResult =
   | { type: "success"; options: PublicKeyCredentialCreationOptionsJSON }
-  | { type: "error"; status: "error"; message?: string }
+  | { type: "error"; status: "error"; message?: string };
 
 // Usage: Type-safe narrowing
 if (result.type === "error") {
-  throw new Error(result.message)  // ✅ Only .message available
+  throw new Error(result.message); // ✅ Only .message available
 } else {
-  startRegistration({ optionsJSON: result.options })  // ✅ Only .options available
+  startRegistration({ optionsJSON: result.options }); // ✅ Only .options available
 }
 ```
 
 ### Benefits
+
 - ✅ Perfect TypeScript narrowing
 - ✅ No casting needed
 - ✅ Compiler enforces exhaustiveness
 
 ### Files Using This
+
 - `apps/intranet/src/features/auth/orpc.ts` (11 methods)
 - `apps/intranet/src/features/calendar/orpc.ts` (partial)
 - `apps/intranet/src/pages/onboarding/hooks/useOnboardingForm.ts`
@@ -80,53 +85,61 @@ if (result.type === "error") {
 ## Pattern 2: Boundary Validation (PRAGMATIC)
 
 ### Use Case
+
 When response structure varies based on query parameters or business rules
 
 ### Example: Finance Transactions
+
 ```typescript
 // Frontend oRPC client definition (loose type)
-transactionsList: () => Promise<{
-  data: unknown[]  // ← Generic because different queries return different data
-  meta?: { page: number; total: number }
-  status: "ok"
-}>
+transactionsList: () =>
+  Promise<{
+    data: unknown[]; // ← Generic because different queries return different data
+    meta?: { page: number; total: number };
+    status: "ok";
+  }>;
 
 // Frontend consumer (type-safe after validation)
-const response = await financeORPCClient.transactionsList()
-const transactions = TransactionListSchema.parse(response.data)  // ✅ Strict after parse
+const response = await financeORPCClient.transactionsList();
+const transactions = TransactionListSchema.parse(response.data); // ✅ Strict after parse
 ```
 
 ### Why This Pattern Exists
+
 1. **Backend Flexibility**: API returns generic objects based on context
 2. **Serialization**: Decimal/Date types require SuperJSON round-trip
 3. **Consumer Choice**: Each consumer validates according to their needs
 4. **Decoupling**: oRPC layer doesn't enforce specific types
 
 ### Validation Strategy
+
 ```typescript
 // Consumer-side validation (apps/intranet/src/features/finance/api.ts)
 export async function fetchTransactions() {
-  const response = await financeORPCClient.transactionsList()
-  
+  const response = await financeORPCClient.transactionsList();
+
   // Moment of type narrowing
-  const validated = TransactionSchema.array().parse(response.data)
-  
-  return validated  // ✅ Now strictly typed as Transaction[]
+  const validated = TransactionSchema.array().parse(response.data);
+
+  return validated; // ✅ Now strictly typed as Transaction[]
 }
 ```
 
 ### When This Is Safe
+
 ✅ SuperJSONLink guarantees serialization integrity  
 ✅ Zod schema validates at consumer boundary  
 ✅ Backend enforces constraints at insert/update  
-✅ Type system narrows after validation  
+✅ Type system narrows after validation
 
 ### When This Would Be Problematic
+
 ❌ If consumers forgot to validate (should catch in code review)  
 ❌ If schema and backend diverge (should fail in tests)  
-❌ If bypassing validation with `as any` (linting prevents this)  
+❌ If bypassing validation with `as any` (linting prevents this)
 
 ### Files Using This
+
 - `apps/intranet/src/features/finance/api.ts` (6 endpoints with loose data)
 - `apps/intranet/src/features/finance/orpc.ts` (23 methods, `data: unknown[]`)
 - Mercado Pago sync reports
@@ -136,9 +149,11 @@ export async function fetchTransactions() {
 ## Pattern 3: Schema Pass through (ACCEPTABLE)
 
 ### Use Case
+
 When database returns extra columns or optional relations
 
 ### Example: Person with Optional Relations
+
 ```typescript
 /**
  * .passthrough() allows database to return:
@@ -148,35 +163,42 @@ When database returns extra columns or optional relations
  *
  * Safe because: only defined fields are accessed in code
  */
-const PersonWithExtrasSchema = z.object({
-  id: z.number(),
-  names: z.string(),
-  employee: z.unknown().nullable().optional(),
-  user: z.unknown().nullable().optional(),
-  // ... other fields
-}).passthrough()  // ✅ Extra fields silently ignored
+const PersonWithExtrasSchema = z
+  .object({
+    id: z.number(),
+    names: z.string(),
+    employee: z.unknown().nullable().optional(),
+    user: z.unknown().nullable().optional(),
+    // ... other fields
+  })
+  .passthrough(); // ✅ Extra fields silently ignored
 
 // Usage: Only defined fields accessible
-const person = PersonWithExtrasSchema.parse(dbResult)
-console.log(person.names)      // ✅ OK
-console.log(person.unknownCol) // ❌ TS error - not defined
+const person = PersonWithExtrasSchema.parse(dbResult);
+console.log(person.names); // ✅ OK
+console.log(person.unknownCol); // ❌ TS error - not defined
 ```
 
 ### Why Pass through Is Needed
+
 1. **Prisma Behavior**: `include: {employee: true}` adds extra fields
 2. **Future-Proofing**: New DB columns don't break parsing
 3. **DRY**: Don't repeat schema definitions for every combination
 
 ### Risk Mitigation
+
 - Extra fields cannot be accidentally accessed
 - Only explicit fields in schema are available
 - TypeScript enforces field access
 
 ### Files Using This
+
 Frontend:
+
 - `apps/intranet/src/features/people/api.ts` (2 schemas) ✅ Documented
 
 Backend (out of scope for this audit):
+
 - `apps/api/src/orpc/personal-finance.ts`
 - `apps/api/src/orpc/services.ts`
 - Other backend routes
@@ -185,14 +207,14 @@ Backend (out of scope for this audit):
 
 ## Type Safety Audit Results
 
-| Component | Pattern | Status | Justification |
-|-----------|---------|--------|---------------|
-| Auth flows (11 methods) | Discriminated Union | ✅ Perfect | Clear success/error paths |
-| Calendar ops (15 methods) | Discriminated Union + Strict | ✅ Perfect | Well-typed responses |
-| Doctoralia (11 methods) | Strict Response Types | ✅ Perfect | Tightly coupled API |
-| Data import (2 methods) | Strict Response Types | ✅ Perfect | Simple CRUD operations |
-| Finance (23 methods) | Boundary Validation | ✅ Acceptable | Flexible API design |
-| People schema | Pass through | ✅ Documented | Optional relations handling |
+| Component                 | Pattern                      | Status        | Justification               |
+| ------------------------- | ---------------------------- | ------------- | --------------------------- |
+| Auth flows (11 methods)   | Discriminated Union          | ✅ Perfect    | Clear success/error paths   |
+| Calendar ops (15 methods) | Discriminated Union + Strict | ✅ Perfect    | Well-typed responses        |
+| Doctoralia (11 methods)   | Strict Response Types        | ✅ Perfect    | Tightly coupled API         |
+| Data import (2 methods)   | Strict Response Types        | ✅ Perfect    | Simple CRUD operations      |
+| Finance (23 methods)      | Boundary Validation          | ✅ Acceptable | Flexible API design         |
+| People schema             | Pass through                 | ✅ Documented | Optional relations handling |
 
 ---
 
@@ -201,38 +223,39 @@ Backend (out of scope for this audit):
 ### When Adding New Frontend Endpoints
 
 **Step 1: Define Clear Return Type**
+
 ```typescript
 // Choose ONE pattern based on your use case
 
 // Pattern A: Discriminated Union (for divergent paths)
-type MyResponse = 
-  | { status: "ok"; data: MyData }
-  | { status: "error"; message: string }
+type MyResponse = { status: "ok"; data: MyData } | { status: "error"; message: string };
 
 // Pattern B: Strict Response (for simple cases)
 type MyResponse = {
-  data: MyData
-  status: "ok"
-}
+  data: MyData;
+  status: "ok";
+};
 
 // Pattern C: Boundary Validation (for flexible API)
 type MyResponse = {
-  data: unknown
-  status: "ok"
-}
+  data: unknown;
+  status: "ok";
+};
 ```
 
 **Step 2: Update Frontend oRPC Client**
+
 ```typescript
 type MyORPCClient = {
-  myMethod: () => Promise<MyResponse>
-}
+  myMethod: () => Promise<MyResponse>;
+};
 ```
 
 **Step 3: Consumer Validates if Using Pattern C**
+
 ```typescript
-const response = await myClient.myMethod()
-const validated = MyDataSchema.parse(response.data)  // ✅ Narrow to strict type
+const response = await myClient.myMethod();
+const validated = MyDataSchema.parse(response.data); // ✅ Narrow to strict type
 ```
 
 ---
@@ -240,29 +263,32 @@ const validated = MyDataSchema.parse(response.data)  // ✅ Narrow to strict typ
 ## ErrorHandling Strategy
 
 ### Current Practice
+
 All error handlers use `instanceof Error` checks:
 
 ```typescript
 export function toApiError(error: unknown): ApiError {
   if (error instanceof ApiError) {
-    return error
+    return error;
   }
   if (error instanceof ORPCError) {
-    return new ApiError(error.message, error.status, error.data)
+    return new ApiError(error.message, error.status, error.data);
   }
   if (error instanceof Error) {
-    return new ApiError(error.message, 500)
+    return new ApiError(error.message, 500);
   }
-  return new ApiError("Error inesperado", 500, error)
+  return new ApiError("Error inesperado", 500, error);
 }
 ```
 
 ### Why NOT `catch (error: any)`
+
 - `any` bypasses TypeScript checking
 - `unknown` enforces narrowing via type guards
 - Better handles non-Error objects thrown (rare but real)
 
 ### Rule
+
 ✅ Always use `unknown` in error handlers  
 ✅ Type-narrow with `instanceof` or `typeof` checks  
 ❌ Never use `catch (error: any)`
@@ -317,29 +343,32 @@ At each step, TypeScript knows the precise type or requires validation.
 ## Testing Strategy
 
 ### Type-Level Tests
+
 - TypeScript compiler (`pnpm type-check`) ✅ Runs in CI
 - Discriminated union exhaustiveness checking
 - Schema inference validation
 
 ### Runtime Tests
+
 - Zod schema parsing with invalid data
 - SuperJSON round-trip serialization
 - Error handler type narrowing
 
 ### Example Test
+
 ```typescript
 // Verify discriminated union exhaustiveness
 const assertNever = (x: never): never => {
-  throw new Error(`Unexpected value: ${x}`)
-}
+  throw new Error(`Unexpected value: ${x}`);
+};
 
 function handleResult(result: PasskeyRegistrationResult) {
   if (result.type === "success") {
-    startRegistration({ optionsJSON: result.options })
+    startRegistration({ optionsJSON: result.options });
   } else if (result.type === "error") {
-    showError(result.message)
+    showError(result.message);
   } else {
-    assertNever(result)  // ✅ TS error if new union member added
+    assertNever(result); // ✅ TS error if new union member added
   }
 }
 ```
@@ -348,7 +377,7 @@ function handleResult(result: PasskeyRegistrationResult) {
 
 ## References
 
-- [Zod Discriminated Unions](https://v3.zod.dev/) 
+- [Zod Discriminated Unions](https://v3.zod.dev/)
 - [PRAGMATIC_TYPING_GUIDE.md](./PRAGMATIC_TYPING_GUIDE.md) - Approved `any` patterns
 - [oRPC Documentation](https://github.com/unizhao/orpc)
 - [SuperJSON Guide](https://github.com/blitz-js/superjson)
@@ -357,8 +386,8 @@ function handleResult(result: PasskeyRegistrationResult) {
 
 ## Document Version History
 
-| Date | Changes |
-|------|---------|
+| Date           | Changes                                  |
+| -------------- | ---------------------------------------- |
 | March 10, 2026 | Initial audit and strategy documentation |
 
 ## Next Review
@@ -366,4 +395,3 @@ function handleResult(result: PasskeyRegistrationResult) {
 - Q2 2026: Evaluate if any new loose types can be tightened
 - Monitor: New oRPC endpoints follow guidelines
 - Consider: Stricter Zod schemas for high-risk domains (auth, finance)
-

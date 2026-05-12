@@ -82,10 +82,22 @@ export const employeeStatusResponseSchema = z.object({
 });
 
 export const employeesContract = {
-  create: oc.route({ method: "POST", path: "/" }).input(employeePayloadSchema).output(employeeResponseSchema),
-  deactivate: oc.route({ method: "DELETE", path: "/{id}" }).input(employeeIdInputSchema).output(employeeStatusResponseSchema),
-  detail: oc.route({ method: "GET", path: "/{id}" }).input(employeeIdInputSchema).output(employeeResponseSchema),
-  list: oc.route({ method: "GET", path: "/" }).input(employeesListInputSchema).output(employeesResponseSchema),
+  create: oc
+    .route({ method: "POST", path: "/" })
+    .input(employeePayloadSchema)
+    .output(employeeResponseSchema),
+  deactivate: oc
+    .route({ method: "DELETE", path: "/{id}" })
+    .input(employeeIdInputSchema)
+    .output(employeeStatusResponseSchema),
+  detail: oc
+    .route({ method: "GET", path: "/{id}" })
+    .input(employeeIdInputSchema)
+    .output(employeeResponseSchema),
+  list: oc
+    .route({ method: "GET", path: "/" })
+    .input(employeesListInputSchema)
+    .output(employeesResponseSchema),
   update: oc
     .route({ method: "PUT", path: "/{id}" })
     .input(z.object({ id: z.number().int(), payload: employeeUpdatePayloadSchema }))

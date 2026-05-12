@@ -55,7 +55,7 @@ const emitProgress = (
   onProgress: ProgressCallback | undefined,
   step: BackupProgress["step"],
   progress: number,
-  message: string,
+  message: string
 ) => {
   onProgress?.({ step, progress, message });
 };
@@ -68,12 +68,12 @@ async function writeModelData(
   modelDelegate: ModelDelegate | undefined,
   writeStream: ReturnType<typeof createWriteStream>,
   tables: string[],
-  tableStats: BackupTableStats,
+  tableStats: BackupTableStats
 ) {
   if (!modelDelegate || typeof modelDelegate.findMany !== "function") {
     writeStream.write("[]");
     console.warn(
-      `⚠️ Model delegate not found for ${modelName} (tried ${getDelegateName(modelName)})`,
+      `⚠️ Model delegate not found for ${modelName} (tried ${getDelegateName(modelName)})`
     );
     return;
   }
@@ -184,7 +184,7 @@ async function compressBackupJson(jsonPath: string, filepath: string) {
       bytesProcessed += chunk.length;
       if (Math.random() > 0.95) {
         console.log(
-          `[Backup] Compressing... processed ${(bytesProcessed / 1024 / 1024).toFixed(1)} MB`,
+          `[Backup] Compressing... processed ${(bytesProcessed / 1024 / 1024).toFixed(1)} MB`
         );
       }
     });
@@ -238,7 +238,7 @@ export async function createBackup(onProgress?: ProgressCallback): Promise<Backu
       onProgress,
       "compressing",
       75,
-      `Compressing (${(jsonStats.size / 1024 / 1024).toFixed(2)} MB)...`,
+      `Compressing (${(jsonStats.size / 1024 / 1024).toFixed(2)} MB)...`
     );
 
     try {
@@ -391,7 +391,7 @@ export function startBackup() {
           res.filename,
           res.tables,
           res.checksum,
-          res.stats,
+          res.stats
         );
 
         // Add Drive info to result
@@ -495,7 +495,7 @@ export async function getBackupDiff(fileId: string) {
     // For now, let's do it regardless but warn.
     const data = await modelDelegate.findMany({});
     const jsonString = JSON.stringify(data, (_, value) =>
-      typeof value === "bigint" ? value.toString() : value,
+      typeof value === "bigint" ? value.toString() : value
     );
     const localHash = createHash("sha256").update(jsonString).digest("hex");
 

@@ -1,0 +1,46 @@
+# Bioalergia — Política de divulgación responsable
+
+Bioalergia opera infraestructura clínica que custodia datos de
+pacientes (PHI) bajo Ley 20.584 (Chile) y, cuando aplica, HIPAA
+Security Rule. Toda comunicación sobre vulnerabilidades debe seguir
+los siguientes principios.
+
+## Alcance (in-scope)
+
+- Aplicación intranet:                 https://intranet.bioalergia.cl
+- API (a través de la intranet):       https://intranet.bioalergia.cl/api/*
+- Webhooks (Meta, Google, MercadoPago, OneDrive)
+
+## Fuera de alcance (out-of-scope)
+
+- Sitios marketing estáticos no asociados con el subdominio intranet.
+- Servicios de terceros (Cloudflare, Railway, OneDrive, Meta, Google,
+  MercadoPago) — repórtalos directamente al proveedor.
+- Hallazgos de "best practice" sin un escenario de explotación
+  concreto (por ejemplo "no usa HSTS" cuando sí lo hace).
+
+## Cómo reportar
+
+1. Email cifrado preferido a la dirección publicada en
+   `/.well-known/security.txt` (Contact). Incluye:
+   - Pasos reproducibles
+   - Impacto observado
+   - Datos sensibles que pudiste haber visto (NO los compartas en el
+     reporte; descríbelos)
+2. Espera acuse de recibo en ≤ 72 h.
+3. No accedas a información de pacientes más allá de lo necesario
+   para demostrar el bug, no exfiltres datos, no degrades el servicio.
+4. No publiques el hallazgo hasta acordar fecha de divulgación
+   coordinada con el equipo (típicamente ≤ 90 días).
+
+## Compromisos de Bioalergia
+
+- Acuse de recibo ≤ 72 h.
+- Triaje + plan de mitigación ≤ 14 días.
+- Crédito público en este documento si el reportante lo desea.
+- No persecución legal cuando se sigue esta política de buena fe
+  (safe harbor).
+
+## Reconocimientos
+
+(Lista vacía — sé el primero.)

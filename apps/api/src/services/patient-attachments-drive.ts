@@ -15,7 +15,7 @@ export async function getAttachmentsFolderId(): Promise<string> {
           fields: "files(id)",
           spaces: "drive",
         }),
-      { context: "drive.files.list" },
+      { context: "drive.files.list" }
     );
 
     const existingFolderId = response.data.files?.[0]?.id;
@@ -32,7 +32,7 @@ export async function getAttachmentsFolderId(): Promise<string> {
           },
           fields: "id",
         }),
-      { idempotent: false, context: "drive.files.create" },
+      { idempotent: false, context: "drive.files.create" }
     );
 
     const folderId = folder.data.id;
@@ -50,7 +50,7 @@ export async function uploadPatientAttachmentToDrive(
   filepath: string,
   filename: string,
   mimeType: string,
-  patientId: string,
+  patientId: string
 ): Promise<{ fileId: string; webViewLink: string | null }> {
   try {
     const drive = await getDriveClient();
@@ -73,7 +73,7 @@ export async function uploadPatientAttachmentToDrive(
           },
           fields: "id,webViewLink",
         }),
-      { idempotent: false, context: "drive.files.create" },
+      { idempotent: false, context: "drive.files.create" }
     );
 
     const fileId = response.data.id;

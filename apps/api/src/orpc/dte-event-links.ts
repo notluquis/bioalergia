@@ -273,7 +273,8 @@ const startAutoLinkAllPeriods = writeEventLinks
   .output(dteEventLinksAutoLinkAllPeriodsStartResponseSchema)
   .handler(async ({ context, input }) => {
     const parsedInput = dteEventLinksAutoLinkAllPeriodsInputSchema.parse(input);
-    const { completeJob, failJob, startJob, updateJobProgress } = await import("../lib/jobQueue.ts");
+    const { completeJob, failJob, startJob, updateJobProgress } =
+      await import("../lib/jobQueue.ts");
     const periods = await listAutoLinkEligiblePeriods();
     const jobId = startJob("dte-auto-link-all-periods", Math.max(periods.length, 1));
 
@@ -297,12 +298,12 @@ const startAutoLinkAllPeriods = writeEventLinks
           onProgress: (snapshot) => {
             const boundedProgress = Math.max(
               0,
-              Math.min(snapshot.completedPeriods, periods.length),
+              Math.min(snapshot.completedPeriods, periods.length)
             );
             updateJobProgress(
               jobId,
               boundedProgress,
-              `Período ${snapshot.currentPeriod} listo (${snapshot.completedPeriods}/${snapshot.totalPeriods}) · Vinculados ${snapshot.linked} · Omitidos ${snapshot.skipped}`,
+              `Período ${snapshot.currentPeriod} listo (${snapshot.completedPeriods}/${snapshot.totalPeriods}) · Vinculados ${snapshot.linked} · Omitidos ${snapshot.skipped}`
             );
           },
           periodConcurrency: parsedInput.periodConcurrency,

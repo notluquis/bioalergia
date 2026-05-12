@@ -30,9 +30,7 @@ describe("sanitizeUploadFilename", () => {
   });
 
   it("keeps alphanumerics, dots, hyphens and underscores", () => {
-    expect(sanitizeUploadFilename("Exam-Result_2026.04.18.pdf")).toBe(
-      "Exam-Result_2026.04.18.pdf",
-    );
+    expect(sanitizeUploadFilename("Exam-Result_2026.04.18.pdf")).toBe("Exam-Result_2026.04.18.pdf");
   });
 
   it("caps length", () => {
@@ -64,10 +62,7 @@ describe("writeTempUpload", () => {
 
   it("neutralizes path traversal in the preferred name", async () => {
     const payload = Buffer.from("payload");
-    const { filepath, cleanup } = await writeTempUpload(
-      payload,
-      "x/../../../etc/passwd",
-    );
+    const { filepath, cleanup } = await writeTempUpload(payload, "x/../../../etc/passwd");
 
     try {
       expect(path.basename(filepath)).toBe("passwd");

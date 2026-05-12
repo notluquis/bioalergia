@@ -8,12 +8,7 @@
  * Skips gracefully when DATABASE_URL is absent.
  */
 import { afterAll, describe, expect, it } from "vitest";
-import {
-  deleteSetting,
-  getSetting,
-  loadSettings,
-  updateSetting,
-} from "../settings.ts";
+import { deleteSetting, getSetting, loadSettings, updateSetting } from "../settings.ts";
 
 const hasDb = Boolean(process.env.DATABASE_URL);
 

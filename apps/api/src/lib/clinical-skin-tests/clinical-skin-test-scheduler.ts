@@ -274,7 +274,12 @@ export async function startClinicalSkinTestReprocessPendingJob(options?: {
             jobId,
             processed,
             message,
-            { ...meta, elapsedSeconds: Math.round(elapsedSeconds), etaSeconds, mode: "reprocess-pending" },
+            {
+              ...meta,
+              elapsedSeconds: Math.round(elapsedSeconds),
+              etaSeconds,
+              mode: "reprocess-pending",
+            },
             total
           );
         },

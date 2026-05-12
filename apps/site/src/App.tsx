@@ -37,7 +37,7 @@ function useThemePreference() {
       theme,
       toggle: () => setTheme((current) => (current === "dark" ? "light" : "dark")),
     }),
-    [theme],
+    [theme]
   );
 }
 
@@ -133,7 +133,7 @@ export function App() {
   const whatsappLink = (phone: string) => `https://wa.me/${phone.replace(/\D/g, "")}`;
   const pathname = useMemo(
     () => (typeof window === "undefined" ? "/" : normalizePath(window.location.pathname)),
-    [],
+    []
   );
   const legalDocumentKey = resolveLegalDocument(pathname);
   const legalDocument = legalDocumentKey ? legalDocuments[legalDocumentKey] : null;
@@ -248,7 +248,10 @@ export function App() {
                   </>
                 ) : (
                   <>
-                    <Link className="no-underline transition-colors hover:text-(--ink)" href="#inicio">
+                    <Link
+                      className="no-underline transition-colors hover:text-(--ink)"
+                      href="#inicio"
+                    >
                       Inicio
                     </Link>
                     <Link

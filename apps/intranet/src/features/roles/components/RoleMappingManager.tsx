@@ -23,8 +23,8 @@ export function RoleMappingManager() {
           saveRoleMapping({
             app_role: m.app_role,
             employee_role: m.employee_role,
-          }),
-        ),
+          })
+        )
       );
       // Invalidate the mapping query
       return queryClient.invalidateQueries({ queryKey: roleQueries.mappings().queryKey });
@@ -44,7 +44,7 @@ export function RoleMappingManager() {
 
     const dbMappingsMap = new Map(dbMappings.map((m: RoleMapping) => [m.employee_role, m]));
     const uniqueRoles = [...new Set(employees.map((e: Employee) => e.position))].toSorted((a, b) =>
-      a.localeCompare(b),
+      a.localeCompare(b)
     );
 
     const allRoles = uniqueRoles.map((resultRole: string) => {
@@ -74,14 +74,14 @@ export function RoleMappingManager() {
   const handleRoleChange = useCallback((employeeRole: string, newAppRole: string) => {
     setMappings((prev) =>
       prev.map((m) =>
-        m.employee_role === employeeRole ? { ...m, app_role: newAppRole, isModified: !m.isNew } : m,
-      ),
+        m.employee_role === employeeRole ? { ...m, app_role: newAppRole, isModified: !m.isNew } : m
+      )
     );
   }, []);
 
   const columns = useMemo(
     () => getColumns(availableRoles, handleRoleChange),
-    [availableRoles, handleRoleChange],
+    [availableRoles, handleRoleChange]
   );
 
   const handleSave = async () => {

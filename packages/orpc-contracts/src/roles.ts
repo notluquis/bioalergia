@@ -102,18 +102,48 @@ export const rolesReassignResponseSchema = z.object({
 });
 
 export const rolesContract = {
-  create: oc.route({ method: "POST", path: "/" }).input(rolesRoleFormSchema).output(rolesStatusResponseSchema),
-  delete: oc.route({ method: "DELETE", path: "/{id}" }).input(rolesRoleIdSchema).output(rolesStatusResponseSchema),
+  create: oc
+    .route({ method: "POST", path: "/" })
+    .input(rolesRoleFormSchema)
+    .output(rolesStatusResponseSchema),
+  delete: oc
+    .route({ method: "DELETE", path: "/{id}" })
+    .input(rolesRoleIdSchema)
+    .output(rolesStatusResponseSchema),
   list: oc.route({ method: "GET", path: "/" }).output(rolesResponseSchema),
-  listMappings: oc.route({ method: "GET", path: "/mappings" }).output(rolesRoleMappingsResponseSchema),
-  permissions: oc.route({ method: "GET", path: "/permissions" }).output(rolesPermissionsResponseSchema),
-  reassignUsers: oc.route({ method: "POST", path: "/{id}/reassign" }).input(rolesRoleReassignSchema).output(rolesReassignResponseSchema),
-  roleUsers: oc.route({ method: "GET", path: "/{id}/users" }).input(rolesRoleIdSchema).output(rolesRoleUsersResponseSchema),
-  saveMapping: oc.route({ method: "POST", path: "/mappings" }).input(rolesRoleMappingSchema).output(rolesStatusResponseSchema),
-  syncPermissions: oc.route({ method: "POST", path: "/permissions/sync" }).output(rolesSyncPermissionsResponseSchema),
-  telemetryUnmappedSubjects: oc.route({ method: "POST", path: "/telemetry/unmapped-subjects" }).input(rolesUnmappedSubjectsTelemetrySchema).output(rolesTelemetryResponseSchema),
-  update: oc.route({ method: "PUT", path: "/{id}" }).input(z.object({ id: z.number().int(), payload: rolesRoleFormSchema })).output(rolesStatusResponseSchema),
-  updatePermissions: oc.route({ method: "POST", path: "/{id}/permissions" }).input(rolesRoleUpdatePermissionsSchema).output(rolesStatusResponseSchema),
+  listMappings: oc
+    .route({ method: "GET", path: "/mappings" })
+    .output(rolesRoleMappingsResponseSchema),
+  permissions: oc
+    .route({ method: "GET", path: "/permissions" })
+    .output(rolesPermissionsResponseSchema),
+  reassignUsers: oc
+    .route({ method: "POST", path: "/{id}/reassign" })
+    .input(rolesRoleReassignSchema)
+    .output(rolesReassignResponseSchema),
+  roleUsers: oc
+    .route({ method: "GET", path: "/{id}/users" })
+    .input(rolesRoleIdSchema)
+    .output(rolesRoleUsersResponseSchema),
+  saveMapping: oc
+    .route({ method: "POST", path: "/mappings" })
+    .input(rolesRoleMappingSchema)
+    .output(rolesStatusResponseSchema),
+  syncPermissions: oc
+    .route({ method: "POST", path: "/permissions/sync" })
+    .output(rolesSyncPermissionsResponseSchema),
+  telemetryUnmappedSubjects: oc
+    .route({ method: "POST", path: "/telemetry/unmapped-subjects" })
+    .input(rolesUnmappedSubjectsTelemetrySchema)
+    .output(rolesTelemetryResponseSchema),
+  update: oc
+    .route({ method: "PUT", path: "/{id}" })
+    .input(z.object({ id: z.number().int(), payload: rolesRoleFormSchema }))
+    .output(rolesStatusResponseSchema),
+  updatePermissions: oc
+    .route({ method: "POST", path: "/{id}/permissions" })
+    .input(rolesRoleUpdatePermissionsSchema)
+    .output(rolesStatusResponseSchema),
 };
 
 export type RolesContract = typeof rolesContract;

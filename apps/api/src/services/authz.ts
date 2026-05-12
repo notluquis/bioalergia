@@ -18,7 +18,7 @@ const USER_ID_PLACEHOLDER = String.raw`\${userId}`;
  */
 function substituteConditionVariables(
   conditions: Record<string, unknown>,
-  context: { userId: number; personId?: number },
+  context: { userId: number; personId?: number }
 ): Record<string, unknown> {
   const result: Record<string, unknown> = {};
 
@@ -91,7 +91,7 @@ export async function getAbilityRulesForUser(userId: number): Promise<CASLRule[]
       if (rolePermission.conditions && typeof rolePermission.conditions === "object") {
         rule.conditions = substituteConditionVariables(
           rolePermission.conditions as Record<string, unknown>,
-          context,
+          context
         );
       }
 

@@ -45,7 +45,7 @@ function weekWindow(monday: Dayjs, tier: TierKey): WindowRequest {
 
 export function forcedCurrentWeekWindow(
   now: Date,
-  timezone: string = SCRAPER_TIMEZONE,
+  timezone: string = SCRAPER_TIMEZONE
 ): WindowRequest {
   const local = dayjs.utc(now).tz(timezone);
   return weekWindow(local.startOf("isoWeek"), "W0");
@@ -81,7 +81,7 @@ function monthAsWeekWindows(local: Dayjs, monthOffset: number, tier: TierKey): W
  */
 export function selectWindowsForTick(
   now: Date,
-  timezone: string = SCRAPER_TIMEZONE,
+  timezone: string = SCRAPER_TIMEZONE
 ): WindowRequest[] {
   const local = dayjs.utc(now).tz(timezone);
   const hour = local.hour();
@@ -127,10 +127,7 @@ export function selectWindowsForTick(
   });
 }
 
-export function getTickDebugInfo(
-  now: Date,
-  timezone: string = SCRAPER_TIMEZONE,
-): TickDebugInfo {
+export function getTickDebugInfo(now: Date, timezone: string = SCRAPER_TIMEZONE): TickDebugInfo {
   const local = dayjs.utc(now).tz(timezone);
   const hour = local.hour();
   const minute = local.minute();

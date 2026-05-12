@@ -26,11 +26,7 @@ function fmtDate(d: Date): string {
   return `${y}-${m}-${day}`;
 }
 
-function buildLegacyWindows(
-  anchor: Date,
-  windowDays: number,
-  count: number,
-): WindowRequest[] {
+function buildLegacyWindows(anchor: Date, windowDays: number, count: number): WindowRequest[] {
   const base = new Date(anchor);
   base.setHours(0, 0, 0, 0);
   const day = base.getDay();
@@ -83,7 +79,12 @@ class ImpitSession {
 
   async request(
     url: string,
-    init: { method?: HttpMethod; headers?: Record<string, string>; body?: string; redirect?: "follow" | "manual" } = {},
+    init: {
+      method?: HttpMethod;
+      headers?: Record<string, string>;
+      body?: string;
+      redirect?: "follow" | "manual";
+    } = {}
   ): Promise<{ status: number; url: string; headers: Headers; text: string }> {
     const headers: Record<string, string> = {
       Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
@@ -125,7 +126,10 @@ async function askStdin(prompt: string): Promise<string> {
 const LOGIN_URL = "https://l.doctoralia.cl/";
 const SPA_SHELL_MARKER = /<div id="vuesaas">/i;
 
-async function performLoginWithBrowser(session: ImpitSession, config: ScraperConfig): Promise<void> {
+async function performLoginWithBrowser(
+  session: ImpitSession,
+  config: ScraperConfig
+): Promise<void> {
   log("switching to Playwright browser-based login (captcha detected)...");
   const { chromium } = await import("playwright");
   const browser = await chromium.launch({
@@ -155,8 +159,14 @@ async function performLoginWithBrowser(session: ImpitSession, config: ScraperCon
     log("  browser: navigating to", LOGIN_URL);
     await page.goto(LOGIN_URL, { waitUntil: "networkidle" });
 
-    await page.fill('input[type="email"], input[name="email"], input[name="_username"]', config.email);
-    await page.fill('input[type="password"], input[name="password"], input[name="_password"]', config.password);
+    await page.fill(
+      'input[type="email"], input[name="email"], input[name="_username"]',
+      config.email
+    );
+    await page.fill(
+      'input[type="password"], input[name="password"], input[name="_password"]',
+      config.password
+    );
 
     // Friendly Captcha default startMode is "focus" — the widget won't create the hidden
     // input or start solving until focusin fires on the form. Dispatch it explicitly.
@@ -172,8 +182,13 @@ async function performLoginWithBrowser(session: ImpitSession, config: ScraperCon
     ];
     let frcSelector: string | null = null;
     for (const sel of FRC_SELECTORS) {
-      const el = await page.waitForSelector(sel, { timeout: 15_000, state: "attached" }).catch(() => null);
-      if (el) { frcSelector = sel; break; }
+      const el = await page
+        .waitForSelector(sel, { timeout: 15_000, state: "attached" })
+        .catch(() => null);
+      if (el) {
+        frcSelector = sel;
+        break;
+      }
     }
 
     if (frcSelector) {
@@ -227,7 +242,9 @@ async function performLogin(session: ImpitSession, config: ScraperConfig): Promi
     const snapshot = path.join(config.capturesDir, "login-page.html");
     fs.mkdirSync(config.capturesDir, { recursive: true });
     fs.writeFileSync(snapshot, loginPage.text, "utf8");
-    log(`--discover: wrote login HTML (${loginPage.text.length} bytes) from ${loginPage.url} to ${snapshot}`);
+    log(
+      `--discover: wrote login HTML (${loginPage.text.length} bytes) from ${loginPage.url} to ${snapshot}`
+    );
     process.exit(0);
   }
 
@@ -272,9 +289,15 @@ async function performLogin(session: ImpitSession, config: ScraperConfig): Promi
       return;
     }
 
-    const errorMatch = loginRes.text.match(/<div[^>]*(?:alert|error|flash)[^>]*>([\s\S]*?)<\/div>/i);
+    const errorMatch = loginRes.text.match(
+      /<div[^>]*(?:alert|error|flash)[^>]*>([\s\S]*?)<\/div>/i
+    );
     if (errorMatch) {
-      const msg = errorMatch[1].replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().slice(0, 300);
+      const msg = errorMatch[1]
+        .replace(/<[^>]+>/g, " ")
+        .replace(/\s+/g, " ")
+        .trim()
+        .slice(0, 300);
       log(`  server message: ${msg}`);
     }
 
@@ -314,7 +337,7 @@ async function performLogin(session: ImpitSession, config: ScraperConfig): Promi
 async function ensureLoggedIn(
   session: ImpitSession,
   config: ScraperConfig,
-  options?: { force?: boolean },
+  options?: { force?: boolean }
 ): Promise<void> {
   if (options?.force) {
     log("forcing Doctoralia relogin after auth failure");
@@ -346,7 +369,10 @@ async function ensureLoggedIn(
   await performLogin(session, config);
 }
 
-function extractLoginForm(html: string, pageUrl: string): {
+function extractLoginForm(
+  html: string,
+  pageUrl: string
+): {
   action: string;
   hidden: Record<string, string>;
   emailField: string;
@@ -367,19 +393,21 @@ function extractLoginForm(html: string, pageUrl: string): {
     if (type === "hidden") hidden[name] = value;
   }
 
-  const emailField = /<input[^>]*\bname=["']([^"']+)["'][^>]*\btype=["']email["']/i.exec(formHtml)?.[1]
-    ?? /<input[^>]*\btype=["']email["'][^>]*\bname=["']([^"']+)["']/i.exec(formHtml)?.[1]
-    ?? "email";
-  const passwordField = /<input[^>]*\bname=["']([^"']+)["'][^>]*\btype=["']password["']/i.exec(formHtml)?.[1]
-    ?? /<input[^>]*\btype=["']password["'][^>]*\bname=["']([^"']+)["']/i.exec(formHtml)?.[1]
-    ?? "password";
+  const emailField =
+    /<input[^>]*\bname=["']([^"']+)["'][^>]*\btype=["']email["']/i.exec(formHtml)?.[1] ??
+    /<input[^>]*\btype=["']email["'][^>]*\bname=["']([^"']+)["']/i.exec(formHtml)?.[1] ??
+    "email";
+  const passwordField =
+    /<input[^>]*\bname=["']([^"']+)["'][^>]*\btype=["']password["']/i.exec(formHtml)?.[1] ??
+    /<input[^>]*\btype=["']password["'][^>]*\bname=["']([^"']+)["']/i.exec(formHtml)?.[1] ??
+    "password";
 
   return { action, hidden, emailField, passwordField };
 }
 
 async function resolveFrontVersion(
   session: ImpitSession,
-  config: ScraperConfig,
+  config: ScraperConfig
 ): Promise<string | null> {
   try {
     const shell = await session.request(config.baseUrl);
@@ -409,7 +437,7 @@ async function consumeRunOverride(config: ScraperConfig): Promise<RunOverrideRes
   if (!res.ok) {
     const body = await res.text().catch(() => "");
     throw new Error(
-      `[run-control] POST ${config.runControlEndpoint} → ${res.status}: ${body.slice(0, 200)}`,
+      `[run-control] POST ${config.runControlEndpoint} → ${res.status}: ${body.slice(0, 200)}`
     );
   }
 
@@ -423,18 +451,18 @@ async function consumeRunOverride(config: ScraperConfig): Promise<RunOverrideRes
 async function fetchCalendarEvents(
   session: ImpitSession,
   config: ScraperConfig,
-  options?: { allowReloginRetry?: boolean },
+  options?: { allowReloginRetry?: boolean }
 ): Promise<CapturedEntry[]> {
   const bearer = extractBearerFromJar(session.jar);
   if (!bearer) {
     throw new Error(
-      "no mkplAuth cookie found — paste the Cookie header from Doctoralia DevTools in the intranet panel first",
+      "no mkplAuth cookie found — paste the Cookie header from Doctoralia DevTools in the intranet panel first"
     );
   }
   const frontVersion = await resolveFrontVersion(session, config);
   if (!frontVersion) {
     throw new Error(
-      "could not detect x-one-front-version from SPA shell and no DOCTORALIA_SCRAPER_FRONT_VERSION fallback set",
+      "could not detect x-one-front-version from SPA shell and no DOCTORALIA_SCRAPER_FRONT_VERSION fallback set"
     );
   }
 
@@ -473,7 +501,7 @@ async function fetchCalendarEvents(
 
   log(
     `scheduled ${windows.length} window(s):`,
-    windows.map((w) => `${w.tier}:${w.from}→${w.to.slice(0, 10)}`).join(" "),
+    windows.map((w) => `${w.tier}:${w.from}→${w.to.slice(0, 10)}`).join(" ")
   );
 
   const results: CapturedEntry[] = [];
@@ -491,7 +519,7 @@ async function fetchCalendarEvents(
           return fetchCalendarEvents(session, config, { allowReloginRetry: false });
         }
         throw new Error(
-          `calendarevents ${res.status} after relogin — cookies expired, login blocked, or bearer invalid. Re-paste the Cookie header.`,
+          `calendarevents ${res.status} after relogin — cookies expired, login blocked, or bearer invalid. Re-paste the Cookie header.`
         );
       }
       log(`  unexpected status, body preview: ${res.text.slice(0, 200)}`);
@@ -532,7 +560,9 @@ async function run(): Promise<void> {
   await jar.save();
 
   if (captured.length === 0) {
-    log("no calendarevents captured. Try `pnpm --filter @finanzas/doctoralia-scraper discover` first to inspect the login page and find the real endpoint.");
+    log(
+      "no calendarevents captured. Try `pnpm --filter @finanzas/doctoralia-scraper discover` first to inspect the login page and find the real endpoint."
+    );
     return;
   }
 

@@ -69,7 +69,7 @@ export function buildChileDate(
   day: number,
   hour: number,
   minute: number,
-  second = 0,
+  second = 0
 ): Date {
   const pad = (n: number) => n.toString().padStart(2, "0");
   const iso = `${year}-${pad(month + 1)}-${pad(day)}T${pad(hour)}:${pad(minute)}:${pad(second)}`;
@@ -167,7 +167,7 @@ export function normalizeTimestamp(primary: string | Date | null, fallback: stri
 
 export function normalizeTimestampForDb(
   primary: string | null | undefined,
-  fallback: Date | null | undefined,
+  fallback: Date | null | undefined
 ) {
   const normalized = normalizeTimestampString(primary ?? null);
   if (normalized) {
@@ -249,10 +249,7 @@ export function formatDateOnly(date: Date) {
   return dayjs(date).tz(TIMEZONE).format("YYYY-MM-DD");
 }
 
-export function formatChileDateTime(
-  date: Date | string,
-  pattern = "DD/MM/YYYY HH:mm",
-) {
+export function formatChileDateTime(date: Date | string, pattern = "DD/MM/YYYY HH:mm") {
   return dayjs(date).tz(TIMEZONE).format(pattern);
 }
 

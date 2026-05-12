@@ -18,7 +18,7 @@ const deploymentsResponseSchema = z.object({
         edges: z.array(
           z.object({
             node: deploymentNodeSchema,
-          }),
+          })
         ),
       }),
     })
@@ -27,7 +27,7 @@ const deploymentsResponseSchema = z.object({
     .array(
       z.object({
         message: z.string(),
-      }),
+      })
     )
     .optional(),
 });
@@ -118,10 +118,14 @@ function getDeploymentTargets(): RailwayDeploymentTargetConfig[] {
   const defaultEnvironmentId = process.env.RAILWAY_DEPLOY_ENVIRONMENT_ID?.trim() || "";
   const currentEnvironmentId = process.env.RAILWAY_ENVIRONMENT_ID?.trim() || "";
   const apiServiceId =
-    process.env.RAILWAY_DEPLOY_API_SERVICE_ID?.trim() || process.env.RAILWAY_SERVICE_ID?.trim() || "";
+    process.env.RAILWAY_DEPLOY_API_SERVICE_ID?.trim() ||
+    process.env.RAILWAY_SERVICE_ID?.trim() ||
+    "";
   const intranetServiceId = process.env.RAILWAY_DEPLOY_INTRANET_SERVICE_ID?.trim() || "";
   const apiEnvironmentId =
-    process.env.RAILWAY_DEPLOY_API_ENVIRONMENT_ID?.trim() || defaultEnvironmentId || currentEnvironmentId;
+    process.env.RAILWAY_DEPLOY_API_ENVIRONMENT_ID?.trim() ||
+    defaultEnvironmentId ||
+    currentEnvironmentId;
   const intranetEnvironmentId =
     process.env.RAILWAY_DEPLOY_INTRANET_ENVIRONMENT_ID?.trim() ||
     defaultEnvironmentId ||
@@ -207,7 +211,9 @@ export async function getRailwayDeploymentsSnapshot(): Promise<RailwayDeployment
     return {
       checkedAt: new Date(),
       configured: false,
-      errorMessage: headers ? "Faltan IDs de Railway en el API" : "Falta token de Railway en el API",
+      errorMessage: headers
+        ? "Faltan IDs de Railway en el API"
+        : "Falta token de Railway en el API",
       targets: [],
     };
   }
@@ -218,7 +224,7 @@ export async function getRailwayDeploymentsSnapshot(): Promise<RailwayDeployment
 
   try {
     const results = await Promise.all(
-      targets.map((target) => fetchLatestDeploymentForTarget(target)),
+      targets.map((target) => fetchLatestDeploymentForTarget(target))
     );
 
     const snapshot = {

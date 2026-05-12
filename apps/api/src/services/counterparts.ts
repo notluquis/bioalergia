@@ -63,7 +63,7 @@ export class CounterpartAccountConflictError extends Error {
     withdrawRut: string;
   }) {
     super(
-      `Conflicto en cuenta ${params.accountNumber}: linked ${params.counterpartRut}, withdraw ${params.withdrawRut}`,
+      `Conflicto en cuenta ${params.accountNumber}: linked ${params.counterpartRut}, withdraw ${params.withdrawRut}`
     );
     this.accountNumber = params.accountNumber;
     this.counterpartId = params.counterpartId;
@@ -137,7 +137,7 @@ const mapCounterpartAccounts = (
     bankName: null | string;
     counterpartId: number;
     id: number;
-  }>,
+  }>
 ) => accounts.map(mapCounterpartAccount);
 
 const mapUnassignedPayoutAccount = (row: UnassignedPayoutAccount): UnassignedPayoutAccountDto => ({
@@ -154,7 +154,7 @@ const mapUnassignedPayoutAccount = (row: UnassignedPayoutAccount): UnassignedPay
 const ensureAccumulator = (
   map: Map<string, CounterpartAccumulator>,
   rut: string,
-  holder: null | string | undefined,
+  holder: null | string | undefined
 ) => {
   const existing = map.get(rut);
   if (existing) {
@@ -176,7 +176,7 @@ const addAccountToAccumulator = (
   accumulator: CounterpartAccumulator,
   accountNumber: null | string | undefined,
   accountType: null | string | undefined,
-  bankName: null | string | undefined,
+  bankName: null | string | undefined
 ) => {
   const normalizedAccount = accountNumber ? normalizeAccountNumber(accountNumber) : "";
   if (!normalizedAccount || accumulator.accountMap.has(normalizedAccount)) {
@@ -201,7 +201,7 @@ const buildCounterpartAccumulatorMap = (
     bankAccountType: null | string;
     bankName: null | string;
     identificationNumber: null | string;
-  }>,
+  }>
 ) => {
   const byRut = new Map<string, CounterpartAccumulator>();
 
@@ -219,7 +219,7 @@ const buildCounterpartAccumulatorMap = (
       accumulator,
       row.bankAccountNumber,
       row.bankAccountType ?? null,
-      row.bankName ?? null,
+      row.bankName ?? null
     );
   }
 
@@ -240,7 +240,7 @@ const upsertCounterpartFromAccumulator = async (rut: string, data: CounterpartAc
 
 const syncAccountsForCounterpart = async (
   counterpartId: number,
-  accounts: CounterpartAccumulator["accountMap"],
+  accounts: CounterpartAccumulator["accountMap"]
 ) => {
   const counters = { conflictCount: 0, syncedAccounts: 0 };
   for (const account of accounts.values()) {
@@ -286,7 +286,7 @@ export async function syncCounterpartsFromTransactions(): Promise<CounterpartsSy
     counters.syncedCounterparts += 1;
     const accountCounters = await syncAccountsForCounterpart(
       counterpart.id,
-      counterpartData.accountMap,
+      counterpartData.accountMap
     );
     counters.conflictCount += accountCounters.conflictCount;
     counters.syncedAccounts += accountCounters.syncedAccounts;
@@ -307,7 +307,7 @@ const buildPayoutBankAccountWhere = (query: string) => {
 };
 
 const buildWithdrawRutByAccount = (
-  withdrawRows: Array<{ bankAccountNumber: null | string; identificationNumber: null | string }>,
+  withdrawRows: Array<{ bankAccountNumber: null | string; identificationNumber: null | string }>
 ) => {
   const map = new Map<string, string>();
   for (const row of withdrawRows) {
@@ -328,7 +328,7 @@ const shouldSkipPayoutAccount = (
   account: string,
   conflict: boolean,
   accountsWithRut: Set<string>,
-  linkedAccounts: Set<string>,
+  linkedAccounts: Set<string>
 ) => {
   if (conflict) {
     return false;
@@ -354,7 +354,7 @@ const updateOrCreateUnassignedPayoutEntry = (
       | undefined;
     linkedRut: null | string;
     withdrawRut: null | string;
-  },
+  }
 ) => {
   const existing = grouped.get(params.account);
   const amount = toNumericAmount(params.grossAmount);
@@ -431,16 +431,16 @@ export async function listUnassignedPayoutAccounts(params: {
   const accountsWithRut = new Set(
     withdrawRows
       .map((row) => normalizeAccountNumber(row.bankAccountNumber ?? ""))
-      .filter((value) => value.length > 0),
+      .filter((value) => value.length > 0)
   );
   const linkedAccounts = new Set(
     linkedRows
       .map((row) => normalizeAccountNumber(row.accountNumber))
-      .filter((value) => value.length > 0),
+      .filter((value) => value.length > 0)
   );
 
   const linkedByAccount = new Map(
-    linkedRows.map((row) => [normalizeAccountNumber(row.accountNumber), row]),
+    linkedRows.map((row) => [normalizeAccountNumber(row.accountNumber), row])
   );
   const withdrawRutByAccount = buildWithdrawRutByAccount(withdrawRows);
 
@@ -526,7 +526,7 @@ const buildCounterpartSuggestions = (
     bankName: null | string;
     identificationNumber: null | string;
     withdrawId: null | string;
-  }>,
+  }>
 ) => {
   const grouped = new Map<string, CounterpartAccountSuggestion>();
   for (const row of rows) {
@@ -684,7 +684,7 @@ export async function upsertCounterpartAccount(
     accountNumber: string;
     bankName?: string | null;
     accountType?: string | null;
-  },
+  }
 ) {
   const normalizedAccount = normalizeAccountNumber(payload.accountNumber);
   const existingAny = await db.counterpartAccount.findFirst({
@@ -723,30 +723,30 @@ export async function upsertCounterpartAccount(
   if (existing) {
     return mapCounterpartAccount(
       await db.counterpartAccount.update({
-      where: { id: existing.id },
-      data: {
-        bankName: payload.bankName === undefined ? undefined : payload.bankName,
-        accountType: payload.accountType === undefined ? undefined : payload.accountType,
-      },
-    }),
+        where: { id: existing.id },
+        data: {
+          bankName: payload.bankName === undefined ? undefined : payload.bankName,
+          accountType: payload.accountType === undefined ? undefined : payload.accountType,
+        },
+      })
     );
   } else {
     return mapCounterpartAccount(
       await db.counterpartAccount.create({
-      data: {
-        counterpartId,
-        accountNumber: normalizedAccount,
-        bankName: payload.bankName,
-        accountType: payload.accountType,
-      },
-    }),
+        data: {
+          counterpartId,
+          accountNumber: normalizedAccount,
+          bankName: payload.bankName,
+          accountType: payload.accountType,
+        },
+      })
     );
   }
 }
 
 export async function updateCounterpartAccount(
   accountId: number,
-  payload: CounterpartAccountUpdateInput,
+  payload: CounterpartAccountUpdateInput
 ) {
   const existingAccount = await db.counterpartAccount.findUnique({
     where: { id: accountId },
@@ -793,10 +793,12 @@ export async function updateCounterpartAccount(
     updateData.accountNumber = normalizedAccount;
   }
 
-  return mapCounterpartAccount(await db.counterpartAccount.update({
-    where: { id: accountId },
-    data: updateData,
-  }));
+  return mapCounterpartAccount(
+    await db.counterpartAccount.update({
+      where: { id: accountId },
+      data: updateData,
+    })
+  );
 }
 
 export async function attachRutToCounterpart(counterpartId: number, rutInput: string) {
@@ -880,7 +882,7 @@ export async function assignRutToPayoutAccounts(params: {
             bankAccountHolder: params.bankAccountHolder?.trim() || undefined,
           },
           where: { identificationNumber: rut },
-        }),
+        })
       ),
     };
   }

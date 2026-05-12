@@ -16,8 +16,5 @@
     "noImplicitOverride": true
   },
   "include": ["src/**/*"],
-  "references": [
-    { "path": "../../packages/db" },
-    { "path": "../../packages/orpc-contracts" }
-  ]
+  "references": [{ "path": "../../packages/db" }, { "path": "../../packages/orpc-contracts" }]
 }

@@ -282,7 +282,7 @@ export async function getTimesheetEntryById(id: number): Promise<TimesheetEntry>
  */
 export async function ensureFixedSalaryRecord(
   employeeId: number,
-  month: string, // Format: YYYY-MM
+  month: string // Format: YYYY-MM
 ): Promise<void> {
   const employee = await getEmployeeById(employeeId);
   if (!employee || employee.salaryType !== "FIXED") {
@@ -327,7 +327,7 @@ export async function ensureFixedSalaryRecord(
 }
 
 export async function listTimesheetEntries(
-  options: ListTimesheetOptions,
+  options: ListTimesheetOptions
 ): Promise<TimesheetEntry[]> {
   // For FIXED employees, ensure they have a monthly record
   if (options.employee_id) {
@@ -354,7 +354,7 @@ export async function listTimesheetEntries(
 }
 
 export async function upsertTimesheetEntry(
-  payload: UpsertTimesheetPayload,
+  payload: UpsertTimesheetPayload
 ): Promise<TimesheetEntry> {
   const normalized = normalizeUpsertPayload(payload);
   const result = await runTimesheetUpsertQuery(payload, normalized);
@@ -392,7 +392,7 @@ function calculateWorkedMinutes(payload: UpsertTimesheetPayload): number {
 
 async function runTimesheetUpsertQuery(
   payload: UpsertTimesheetPayload,
-  normalized: NormalizedUpsertPayload,
+  normalized: NormalizedUpsertPayload
 ) {
   return db.$qb
     .insertInto("EmployeeTimesheet")
@@ -412,14 +412,14 @@ async function runTimesheetUpsertQuery(
         workedMinutes: normalized.workedMinutes,
         overtimeMinutes: payload.overtime_minutes,
         comment: payload.comment ?? null,
-      }),
+      })
     )
     .returningAll()
     .executeTakeFirstOrThrow();
 }
 
 function mapUpsertResult(
-  result: Awaited<ReturnType<typeof runTimesheetUpsertQuery>>,
+  result: Awaited<ReturnType<typeof runTimesheetUpsertQuery>>
 ): TimesheetEntry {
   return {
     id: Number(result.id),
@@ -435,7 +435,7 @@ function mapUpsertResult(
 
 export async function updateTimesheetEntry(
   id: number,
-  data: UpdateTimesheetPayload,
+  data: UpdateTimesheetPayload
 ): Promise<TimesheetEntry> {
   const { updateData, isEmpty } = await buildTimesheetUpdateData(id, data);
 
@@ -453,7 +453,7 @@ export async function updateTimesheetEntry(
 
 async function buildTimesheetUpdateData(
   id: number,
-  data: UpdateTimesheetPayload,
+  data: UpdateTimesheetPayload
 ): Promise<{ isEmpty: boolean; updateData: EmployeeTimesheetUpdateInput }> {
   const updateData: EmployeeTimesheetUpdateInput = {};
 
@@ -597,7 +597,7 @@ export function buildEmployeeSummary(
     workedMinutes: number;
     overtimeMinutes: number;
     periodStart: string;
-  },
+  }
 ) {
   if (!employee) {
     return {
@@ -702,7 +702,7 @@ const createMonthlySummaryTotals = (): MonthlySummaryTotals => ({
 
 const addSummaryTotals = (
   totals: MonthlySummaryTotals,
-  summary: ReturnType<typeof buildEmployeeSummary>,
+  summary: ReturnType<typeof buildEmployeeSummary>
 ) => {
   totals.workedMinutes += summary.workedMinutes;
   totals.overtimeMinutes += summary.overtimeMinutes;
@@ -715,7 +715,7 @@ const addSummaryTotals = (
 const shouldIncludeActiveEmployee = (
   employee: Awaited<ReturnType<typeof getEmployeeById>>,
   employeesWithTimesheets: Set<number>,
-  employeeId?: number,
+  employeeId?: number
 ) => {
   if (employeesWithTimesheets.has(employee.id) || employee.status !== "ACTIVE") {
     return false;

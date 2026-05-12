@@ -19,7 +19,7 @@ function tryParseJson(text: string): null | unknown {
 
 function normalizeErrorShape(
   payload: ErrorShape,
-  ctx: Pick<Context, "req" | "res">,
+  ctx: Pick<Context, "req" | "res">
 ): { changed: boolean; payload: ErrorShape } {
   const hasLegacyErrorField = typeof payload.error === "string" && payload.error.length > 0;
   const isErrorStatus = payload.status === "error";

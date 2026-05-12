@@ -94,7 +94,7 @@ export function EmissionSection({
               onChange={(event: ChangeEvent<HTMLInputElement>) => {
                 onChange(
                   "emissionStartDay",
-                  event.target.value ? Number(event.target.value) : null,
+                  event.target.value ? Number(event.target.value) : null
                 );
               }}
               value={emissionStartDay == null ? "" : String(emissionStartDay)}
@@ -119,7 +119,7 @@ export function EmissionSection({
           onChange={(value) => {
             onChange(
               "emissionExactDate",
-              value ? dayjs(value.toString(), "YYYY-MM-DD").toDate() : null,
+              value ? dayjs(value.toString(), "YYYY-MM-DD").toDate() : null
             );
           }}
           value={

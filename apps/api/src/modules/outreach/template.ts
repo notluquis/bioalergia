@@ -1,7 +1,4 @@
-import type {
-  OutreachContact,
-  OutreachEstablishment,
-} from "@finanzas/orpc-contracts/outreach";
+import type { OutreachContact, OutreachEstablishment } from "@finanzas/orpc-contracts/outreach";
 
 export type TemplateContext = {
   establishment: OutreachEstablishment;

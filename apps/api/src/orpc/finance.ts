@@ -191,7 +191,9 @@ const financeORPCRouterBase = {
 
   autoCategoryRulesUpdate: writeFinance
     .route({ method: "PUT", path: "/auto-category-rules/{id}", tags: ["Finance"] })
-    .input(z.object({ id: z.number().int().positive(), payload: financeUpdateAutoCategoryRuleSchema }))
+    .input(
+      z.object({ id: z.number().int().positive(), payload: financeUpdateAutoCategoryRuleSchema })
+    )
     .output(financeAutoCategoryRuleResponseSchema)
     .handler(async ({ input }) => ({
       data: await updateFinancialAutoCategoryRule(input.id, input.payload),
@@ -261,7 +263,9 @@ const financeORPCRouterBase = {
 
   compensationProfilesUpdate: writeFinance
     .route({ method: "PUT", path: "/compensation-profiles/{id}", tags: ["Finance"] })
-    .input(z.object({ id: z.number().int().positive(), payload: financeUpdateCompensationProfileSchema }))
+    .input(
+      z.object({ id: z.number().int().positive(), payload: financeUpdateCompensationProfileSchema })
+    )
     .output(financeCompensationProfileResponseSchema)
     .handler(async ({ input }) => ({
       data: await updateCompensationProfile(input.id, input.payload),
@@ -270,7 +274,9 @@ const financeORPCRouterBase = {
 
   compensationProfilesUpsertBudget: writeFinance
     .route({ method: "PUT", path: "/compensation-profiles/{id}/budget", tags: ["Finance"] })
-    .input(z.object({ id: z.number().int().positive(), payload: financeUpsertCompensationBudgetSchema }))
+    .input(
+      z.object({ id: z.number().int().positive(), payload: financeUpsertCompensationBudgetSchema })
+    )
     .output(financeCompensationBudgetResponseSchema)
     .handler(async ({ input }) => ({
       data: await upsertCompensationPeriodBudget(input.id, input.payload),
@@ -330,9 +336,7 @@ const financeORPCRouterBase = {
         to: input.to ? new Date(input.to) : undefined,
       });
       return {
-        data: result.data.map((transaction) =>
-          toPlainListedFinancialTransaction(transaction),
-        ),
+        data: result.data.map((transaction) => toPlainListedFinancialTransaction(transaction)),
         meta: result.meta,
         status: "ok" as const,
       };

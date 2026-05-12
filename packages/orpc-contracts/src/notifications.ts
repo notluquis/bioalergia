@@ -30,9 +30,18 @@ export const sendTestInputSchema = z.object({
 });
 
 export const notificationsContract = {
-  sendTest: oc.route({ method: "POST", path: "/send-test" }).input(sendTestInputSchema).output(notificationsStatusResponseSchema),
-  subscribe: oc.route({ method: "POST", path: "/subscribe" }).input(subscribeInputSchema).output(notificationsStatusResponseSchema),
-  unsubscribe: oc.route({ method: "POST", path: "/unsubscribe" }).input(unsubscribeInputSchema).output(notificationsStatusResponseSchema),
+  sendTest: oc
+    .route({ method: "POST", path: "/send-test" })
+    .input(sendTestInputSchema)
+    .output(notificationsStatusResponseSchema),
+  subscribe: oc
+    .route({ method: "POST", path: "/subscribe" })
+    .input(subscribeInputSchema)
+    .output(notificationsStatusResponseSchema),
+  unsubscribe: oc
+    .route({ method: "POST", path: "/unsubscribe" })
+    .input(unsubscribeInputSchema)
+    .output(notificationsStatusResponseSchema),
 };
 
 export type NotificationsContract = typeof notificationsContract;

@@ -82,7 +82,7 @@ const FK_TABLES_PATIENT = [
 async function reassignPatientChildren(fromPatientId: number, toPatientId: number): Promise<void> {
   for (const t of FK_TABLES_PATIENT) {
     await sql`UPDATE ${sql.id(t)} SET patient_id = ${toPatientId} WHERE patient_id = ${fromPatientId}`.execute(
-      kysely,
+      kysely
     );
   }
 }
@@ -90,7 +90,7 @@ async function reassignPatientChildren(fromPatientId: number, toPatientId: numbe
 async function reassignPersonChildren(fromPersonId: number, toPersonId: number): Promise<void> {
   for (const t of FK_TABLES_PERSON) {
     await sql`UPDATE ${sql.id(t)} SET person_id = ${toPersonId} WHERE person_id = ${fromPersonId}`.execute(
-      kysely,
+      kysely
     );
   }
 }
@@ -165,7 +165,7 @@ async function main() {
     console.log(
       `\nbody=${g.body} validDV=${validDv}`,
       `WINNER ${winner.id}=${winner.rut} (${winner.names} ${winner.fatherName ?? ""})`,
-      `LOSERS ${losers.map((l) => `${l.id}=${l.rut}`).join(", ")}`,
+      `LOSERS ${losers.map((l) => `${l.id}=${l.rut}`).join(", ")}`
     );
 
     if (DRY) {

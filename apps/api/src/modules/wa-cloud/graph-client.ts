@@ -59,10 +59,7 @@ export {
   listAccountTemplates,
 } from "./graph/templates.ts";
 export { listAccountFlows } from "./graph/flows.ts";
-export {
-  type ConversationAnalyticsParams,
-  getConversationAnalytics,
-} from "./graph/analytics.ts";
+export { type ConversationAnalyticsParams, getConversationAnalytics } from "./graph/analytics.ts";
 export {
   type ConversationalAutomationConfig,
   type ConversationalCommand,

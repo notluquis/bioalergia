@@ -40,7 +40,12 @@ export type CalendarEventRecord = {
   amountExpected?: number | null;
   amountPaid?: number | null;
   attended?: boolean | null;
-  clinicalSeriesKind?: "PATCH_TEST" | "SKIN_TEST" | "SUBCUTANEOUS_TREATMENT" | "MEDICAL_CONSULTATION" | null;
+  clinicalSeriesKind?:
+    | "PATCH_TEST"
+    | "SKIN_TEST"
+    | "SUBCUTANEOUS_TREATMENT"
+    | "MEDICAL_CONSULTATION"
+    | null;
   seriesStageKind?: "DOSE" | "INSTALLATION" | "MAINTENANCE" | "READING" | null;
   seriesStageLabel?: string | null;
   seriesStageNumber?: number | null;
@@ -149,7 +154,7 @@ async function getRuntimeCalendarConfig(): Promise<CalendarRuntimeConfig> {
     const timeZone = settings.calendarTimeZone?.trim() || googleCalendarConfig.timeZone;
     const syncStart = settings.calendarSyncStart?.trim() || googleCalendarConfig.syncStartDate;
     const lookAheadRaw = Number(
-      settings.calendarSyncLookaheadDays ?? googleCalendarConfig.syncLookAheadDays,
+      settings.calendarSyncLookaheadDays ?? googleCalendarConfig.syncLookAheadDays
     );
     const syncLookAheadDays =
       Number.isFinite(lookAheadRaw) && lookAheadRaw > 0
@@ -160,7 +165,7 @@ async function getRuntimeCalendarConfig(): Promise<CalendarRuntimeConfig> {
       .map((value) => value.trim())
       .filter(Boolean);
     const sources = Array.from(
-      new Set([...googleCalendarConfig.excludeSummarySources, ...excludeSetting]),
+      new Set([...googleCalendarConfig.excludeSummarySources, ...excludeSetting])
     );
     const excludeSummaryPatterns = compileExcludePatterns(sources);
     return {
@@ -171,7 +176,7 @@ async function getRuntimeCalendarConfig(): Promise<CalendarRuntimeConfig> {
     };
   } catch {
     const excludeSummaryPatterns = compileExcludePatterns(
-      googleCalendarConfig.excludeSummarySources,
+      googleCalendarConfig.excludeSummarySources
     );
     return {
       timeZone: googleCalendarConfig.timeZone,
@@ -224,7 +229,7 @@ async function fetchCalendarEventsForId(
   calendarId: string,
   range: FetchRange,
   patterns: RegExp[],
-  syncToken?: string | null,
+  syncToken?: string | null
 ): Promise<{
   events: CalendarEventRecord[];
   excluded: Array<{
@@ -357,7 +362,7 @@ async function fetchCalendarWithFallback(
   client: CalendarClient,
   calendarId: string,
   range: FetchRange,
-  patterns: RegExp[],
+  patterns: RegExp[]
 ): Promise<{
   events: CalendarEventRecord[];
   excluded: Array<{ calendarId: string; eventId: string; summary?: string | null }>;
@@ -442,7 +447,7 @@ export async function fetchGoogleCalendarData(): Promise<GoogleCalendarSyncPaylo
         client,
         calendarId,
         range,
-        runtime.excludeSummaryPatterns,
+        runtime.excludeSummaryPatterns
       );
 
       events.push(...result.events);

@@ -75,7 +75,7 @@ export async function importMineducDataset(opts: ImportOptions): Promise<ImportR
   const log = await db.outreachImportLog.create({
     data: {
       source: opts.source,
-      fileUrl: opts.source === "url" ? opts.url ?? MINEDUC_DEFAULT_URL : null,
+      fileUrl: opts.source === "url" ? (opts.url ?? MINEDUC_DEFAULT_URL) : null,
       createdByUserId: opts.createdByUserId ?? null,
     },
   });
@@ -96,7 +96,7 @@ export async function importMineducDataset(opts: ImportOptions): Promise<ImportR
     });
 
     const targetComunas = (opts.comunas?.length ? opts.comunas : GRAN_CONCEPCION_COMUNAS).map(
-      normalizeComuna,
+      normalizeComuna
     );
 
     const rows = parsed.data;

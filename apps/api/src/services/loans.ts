@@ -48,8 +48,7 @@ const PERIODS_PER_YEAR: Record<LoanFrequency, number> = {
   WEEKLY: 52,
 };
 
-const toDateOnly = (value: string) =>
-  dayjs.utc(value, "YYYY-MM-DD").startOf("day").toDate();
+const toDateOnly = (value: string) => dayjs.utc(value, "YYYY-MM-DD").startOf("day").toDate();
 const formatDateOnly = (value: Date) => dayjs.utc(value).format("YYYY-MM-DD");
 const toDecimal = (value: Decimal.Value) => new Decimal(value);
 const toMoney = (value: Decimal.Value) => toDecimal(value).toDecimalPlaces(2, MONEY_ROUNDING);

@@ -34,7 +34,9 @@ function parsePayload(raw: null | string): ForceRunPayload | null {
     if (
       typeof parsed.requestedAt !== "string" ||
       typeof parsed.expiresAt !== "string" ||
-      (parsed.requestedByUserId !== null && parsed.requestedByUserId !== undefined && typeof parsed.requestedByUserId !== "number")
+      (parsed.requestedByUserId !== null &&
+        parsed.requestedByUserId !== undefined &&
+        typeof parsed.requestedByUserId !== "number")
     ) {
       return null;
     }

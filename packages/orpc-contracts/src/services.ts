@@ -223,9 +223,18 @@ export const generateSchedulesResponseSchema = z.object({
 });
 
 export const servicesContract = {
-  create: oc.route({ method: "POST", path: "/" }).input(serviceCreateSchema).output(detailResponseSchema),
-  delete: oc.route({ method: "DELETE", path: "/{id}" }).input(serviceIdSchema).output(statusOkSchema),
-  detail: oc.route({ method: "GET", path: "/{id}" }).input(serviceIdSchema).output(detailResponseSchema),
+  create: oc
+    .route({ method: "POST", path: "/" })
+    .input(serviceCreateSchema)
+    .output(detailResponseSchema),
+  delete: oc
+    .route({ method: "DELETE", path: "/{id}" })
+    .input(serviceIdSchema)
+    .output(statusOkSchema),
+  detail: oc
+    .route({ method: "GET", path: "/{id}" })
+    .input(serviceIdSchema)
+    .output(detailResponseSchema),
   list: oc.route({ method: "GET", path: "/" }).output(listResponseSchema),
   regenerateSchedules: oc
     .route({ method: "POST", path: "/{id}/schedules" })
@@ -247,7 +256,9 @@ export const servicesContract = {
     .route({ method: "POST", path: "/schedules/{id}/unlink" })
     .input(scheduleIdSchema)
     .output(scheduleResponseSchema),
-  syncAllTransactions: oc.route({ method: "POST", path: "/sync/transactions" }).output(syncResponseSchema),
+  syncAllTransactions: oc
+    .route({ method: "POST", path: "/sync/transactions" })
+    .output(syncResponseSchema),
   syncTransactions: oc
     .route({ method: "POST", path: "/{id}/sync-transactions" })
     .input(serviceIdSchema)

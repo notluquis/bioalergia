@@ -109,7 +109,8 @@ describe("clinical-text", () => {
     });
 
     it("returns only text from complex mixed HTML", () => {
-      const html = '<div class="notes"><p>Patient has <strong>allergies</strong> to penicillin.</p></div>';
+      const html =
+        '<div class="notes"><p>Patient has <strong>allergies</strong> to penicillin.</p></div>';
       const result = normalizeClinicalText(html);
       expect(result).toBe("Patient has allergies to penicillin.");
     });
@@ -154,7 +155,7 @@ describe("clinical-text", () => {
 
     it("normalizes HTML entities in both parts", () => {
       expect(joinClinicalText("cats &amp; dogs", "birds &amp; fish")).toBe(
-        "cats & dogs birds & fish",
+        "cats & dogs birds & fish"
       );
     });
 

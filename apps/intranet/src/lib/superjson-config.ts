@@ -14,7 +14,7 @@ export function configureSuperjson() {
       serialize: (value) => value.toJSON(),
       deserialize: (value) => new Decimal(value),
     },
-    "decimal.js",
+    "decimal.js"
   );
 
   configured = true;

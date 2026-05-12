@@ -112,7 +112,7 @@ export function FinancialSection({
               onChange={(event: ChangeEvent<HTMLInputElement>) => {
                 onChange(
                   "lateFeeGraceDays",
-                  event.target.value ? Number(event.target.value) : null,
+                  event.target.value ? Number(event.target.value) : null
                 );
               }}
               value={lateFeeGraceDays == null ? "" : String(lateFeeGraceDays)}

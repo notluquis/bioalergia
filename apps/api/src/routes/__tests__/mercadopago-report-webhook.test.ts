@@ -64,7 +64,13 @@ const flush = () => new Promise((r) => setTimeout(r, 10));
 describe("MercadoPago report webhook", () => {
   beforeEach(() => {
     processReport.mockReset();
-    processReport.mockResolvedValue({ inserted: 0, updated: 0, skipped: 0, excluded: 0, errors: [] });
+    processReport.mockResolvedValue({
+      inserted: 0,
+      updated: 0,
+      skipped: 0,
+      excluded: 0,
+      errors: [],
+    });
   });
 
   afterEach(() => {
@@ -91,14 +97,19 @@ describe("MercadoPago report webhook", () => {
   });
 
   it("rejects invalid signature with 401", async () => {
-    const payload = buildPayload({ signature: "$2b$04$invalidhashvalue.................................." });
+    const payload = buildPayload({
+      signature: "$2b$04$invalidhashvalue..................................",
+    });
     const res = await post(payload);
     expect(res.status).toBe(401);
   });
 
   it("rejects wrong-secret signature with 401", async () => {
     const payload = buildPayload();
-    payload.signature = bcrypt.hashSync(`${payload.transaction_id}-other-secret-${payload.generation_date}`, 4);
+    payload.signature = bcrypt.hashSync(
+      `${payload.transaction_id}-other-secret-${payload.generation_date}`,
+      4
+    );
     const res = await post(payload);
     expect(res.status).toBe(401);
   });
@@ -133,7 +144,7 @@ describe("MercadoPago report webhook", () => {
           { name: "no-url.csv", type: ".csv" },
           { url: "https://example.com/no-name.csv", type: ".csv" },
         ],
-      }),
+      })
     );
     expect(res.status).toBe(202);
     await flush();
@@ -144,10 +155,8 @@ describe("MercadoPago report webhook", () => {
   it("skips non-csv files (xlsx) but still 202", async () => {
     const res = await post(
       buildPayload({
-        files: [
-          { name: "report.xlsx", url: "https://example.com/r.xlsx", type: ".xlsx" },
-        ],
-      }),
+        files: [{ name: "report.xlsx", url: "https://example.com/r.xlsx", type: ".xlsx" }],
+      })
     );
     expect(res.status).toBe(202);
     await flush();

@@ -16,13 +16,13 @@ export const haulmerAvailablePeriodsResponseSchema = z.object({
     z.object({
       count: z.number(),
       periodo: z.string(),
-    }),
+    })
   ),
   sales: z.array(
     z.object({
       count: z.number(),
       periodo: z.string(),
-    }),
+    })
   ),
   status: z.literal("ok"),
 });

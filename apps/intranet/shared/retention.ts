@@ -31,7 +31,7 @@ export function formatRetentionPercent(rate: number): string {
  */
 export function getEffectiveRetentionRate(
   employeeRate: null | number | undefined,
-  year: number,
+  year: number
 ): number {
   const yearRate = getRetentionRateForYear(year);
 

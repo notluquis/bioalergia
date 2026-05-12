@@ -189,7 +189,7 @@ function isRetryableError(error: GoogleApiError, options: Required<GoogleRetryOp
 function computeRetryDelayMs(
   attempt: number,
   error: GoogleApiError,
-  options: Required<GoogleRetryOptions>,
+  options: Required<GoogleRetryOptions>
 ): number {
   const baseDelay = options.baseDelayMs * 2 ** attempt;
   const cappedDelay = Math.min(baseDelay, options.maxDelayMs);
@@ -238,7 +238,7 @@ function applyContext(error: GoogleApiError, context: string): GoogleApiError {
 
 export async function retryGoogleCall<T>(
   operation: () => Promise<T>,
-  options: GoogleRetryOptions = {},
+  options: GoogleRetryOptions = {}
 ): Promise<T> {
   const resolved = resolveRetryOptions(options);
 
@@ -274,7 +274,7 @@ function extractAip193Info(
           metadata?: Record<string, string>;
         }>;
       }
-    | undefined,
+    | undefined
 ): {
   status?: string;
   message?: string;
@@ -287,7 +287,7 @@ function extractAip193Info(
   }
 
   const errorInfo = error.details.find(
-    (detail) => detail?.["@type"] === "type.googleapis.com/google.rpc.ErrorInfo",
+    (detail) => detail?.["@type"] === "type.googleapis.com/google.rpc.ErrorInfo"
   );
   if (!errorInfo) {
     return null;
@@ -391,7 +391,7 @@ export function parseGoogleError(error: unknown): GoogleApiError {
  */
 export async function safeGoogleCall<T>(
   operation: () => Promise<T>,
-  context?: string,
+  context?: string
 ): Promise<{ ok: true; data: T } | { ok: false; error: GoogleApiError }> {
   try {
     const data = await operation();

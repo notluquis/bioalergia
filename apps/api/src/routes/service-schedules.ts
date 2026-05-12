@@ -31,7 +31,7 @@ const skipSchema = z.object({
 type TransactionSource = "release" | "settlement" | "withdraw";
 
 function decodeUnifiedId(
-  transactionId: number,
+  transactionId: number
 ): null | { rawId: number; source: TransactionSource } {
   if (transactionId > 0) {
     return { rawId: transactionId, source: "settlement" };
@@ -52,7 +52,7 @@ function decodeUnifiedId(
 
 function normalizeTransactionReference(
   transactionId: number,
-  transactionSource?: TransactionSource,
+  transactionSource?: TransactionSource
 ): null | { rawId: number; source: TransactionSource } {
   if (transactionSource) {
     if (transactionId > 0) {
@@ -94,7 +94,7 @@ app.patch("/:id", async (c) => {
         message: "Datos inválidos",
         issues: parsed.error.issues,
       },
-      400,
+      400
     );
   }
 
@@ -156,7 +156,7 @@ app.post("/:id/pay", async (c) => {
         message: "Datos inválidos",
         issues: parsed.error.issues,
       },
-      400,
+      400
     );
   }
 
@@ -167,7 +167,7 @@ app.post("/:id/pay", async (c) => {
 
   const txRef = normalizeTransactionReference(
     parsed.data.transactionId,
-    parsed.data.transactionSource,
+    parsed.data.transactionSource
   );
   if (!txRef) {
     return reply(c, { status: "error", message: "Referencia de transacción inválida" }, 400);
@@ -276,7 +276,7 @@ app.post("/:id/skip", async (c) => {
         message: "Datos inválidos",
         issues: parsed.error.issues,
       },
-      400,
+      400
     );
   }
 

@@ -17,11 +17,7 @@ async function parseBody(res: Response) {
   return superjson.deserialize(json) as Record<string, unknown>;
 }
 
-function makeApp(
-  status: number,
-  message: string,
-  options?: Parameters<typeof errorReply>[3],
-) {
+function makeApp(status: number, message: string, options?: Parameters<typeof errorReply>[3]) {
   const app = new Hono();
   app.get("/test", (c) => {
     return errorReply(c, status as Parameters<typeof errorReply>[1], message, options);

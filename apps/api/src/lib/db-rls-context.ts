@@ -38,7 +38,7 @@ export async function setRequestUserContext(userId: number | null): Promise<void
   // connection MUST also call this — never fall through with a stale
   // GUC value.
   await sql`SELECT set_config('app.current_user_id', ${userId == null ? "" : String(userId)}, false)`.execute(
-    kysely,
+    kysely
   );
 }
 

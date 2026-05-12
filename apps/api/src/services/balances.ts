@@ -91,7 +91,7 @@ export async function getBalancesReport(from: string, to: string): Promise<Balan
   });
 
   const balanceMap = new Map(
-    existingBalances.map((b) => [dayjs(b.date).tz(TIMEZONE).format("YYYY-MM-DD"), b]),
+    existingBalances.map((b) => [dayjs(b.date).tz(TIMEZONE).format("YYYY-MM-DD"), b])
   );
 
   const days: DailyBalanceRecord[] = [];

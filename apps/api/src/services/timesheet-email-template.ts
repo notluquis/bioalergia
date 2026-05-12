@@ -22,10 +22,10 @@ export function buildTimesheetEmailComposition({
   summary,
 }: TimesheetEmailCompositionInput) {
   const totalHoursFormatted = formatWorkedTime(
-    (summary.workedMinutes ?? 0) + (summary.overtimeMinutes ?? 0),
+    (summary.workedMinutes ?? 0) + (summary.overtimeMinutes ?? 0)
   );
   const retentionPercent = formatRetentionPercent(
-    summary.retentionRate ?? summary.retention_rate ?? 0.1275,
+    summary.retentionRate ?? summary.retention_rate ?? 0.1275
   );
   const boletaDescription = `SERVICIOS PROFESIONALES DE ${summary.role.toUpperCase()} - PERIODO ${monthLabel.toUpperCase()} - TIEMPO FACTURABLE ${totalHoursFormatted}`;
   const subject = `Boleta de Honorarios - ${monthLabel} - ${employeeName}`;
@@ -256,10 +256,12 @@ function formatDisplayDate(value: string) {
 }
 
 function formatRetentionPercent(rate: number) {
-  return new Intl.NumberFormat("es-CL", {
-    maximumFractionDigits: 2,
-    minimumFractionDigits: 0,
-  }).format(rate * 100) + "%";
+  return (
+    new Intl.NumberFormat("es-CL", {
+      maximumFractionDigits: 2,
+      minimumFractionDigits: 0,
+    }).format(rate * 100) + "%"
+  );
 }
 
 function formatWorkedTime(totalMinutes: number) {

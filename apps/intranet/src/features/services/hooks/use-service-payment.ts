@@ -55,7 +55,7 @@ export function useServicePayment() {
         .filter(
           (tx) =>
             typeof tx.transactionAmount === "number" &&
-            Math.abs(tx.transactionAmount - expectedAmount) <= tolerance,
+            Math.abs(tx.transactionAmount - expectedAmount) <= tolerance
         )
         .slice(0, 8);
     },

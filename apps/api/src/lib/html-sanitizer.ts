@@ -264,7 +264,7 @@ export function sanitizeHtmlWithOptions(html: string, options: SanitizeOptions =
  */
 export function sanitizeHtml(
   html: string,
-  configType: "minimal" | "moderate" | "rich" = "rich",
+  configType: "minimal" | "moderate" | "rich" = "rich"
 ): string {
   const config = {
     minimal: MINIMAL_CONFIG,

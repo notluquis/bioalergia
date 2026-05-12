@@ -60,7 +60,7 @@ export function startDTESyncScheduler() {
       },
       {
         timezone,
-      },
+      }
     );
 
     logEvent("dte.sync.scheduled", {

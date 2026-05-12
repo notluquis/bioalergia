@@ -231,7 +231,7 @@ export const shipmentsContract = {
         regionCode: z.string(),
         countyName: z.string(),
         type: z.enum(["0", "4"]).optional(),
-      }),
+      })
     )
     .output(z.object({ offices: z.array(cxCommercialOfficeSchema) })),
 
@@ -257,7 +257,7 @@ export const shipmentsContract = {
         streetName: z.string().min(1),
         countyName: z.string().min(1),
         number: z.string().min(1),
-      }),
+      })
     )
     .output(z.object({ result: cxGeocodeSchema.nullable() })),
 
@@ -286,9 +286,7 @@ export const shipmentsContract = {
     .input(listShipmentsInputSchema)
     .output(listShipmentsOutputSchema),
 
-  listAll: oc
-    .route({ method: "GET", path: "/all" })
-    .output(listAllShipmentsOutputSchema),
+  listAll: oc.route({ method: "GET", path: "/all" }).output(listAllShipmentsOutputSchema),
 };
 
 export type ShipmentsContract = typeof shipmentsContract;

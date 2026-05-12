@@ -167,7 +167,12 @@ const rolesORPCRouterBase = {
     }),
 
   roleUsers: readRoles
-    .route({ method: "GET", path: "/{id}/users", summary: "List users assigned to a role", tags: ["Roles"] })
+    .route({
+      method: "GET",
+      path: "/{id}/users",
+      summary: "List users assigned to a role",
+      tags: ["Roles"],
+    })
     .input(rolesRoleIdSchema)
     .output(rolesRoleUsersResponseSchema)
     .handler(async ({ input }: { input: z.input<typeof rolesRoleIdSchema> }) => ({
@@ -225,10 +230,16 @@ const rolesORPCRouterBase = {
     .route({ method: "PUT", path: "/{id}", summary: "Update a role", tags: ["Roles"] })
     .input(z.object({ id: z.number().int(), payload: rolesRoleFormSchema }))
     .output(rolesStatusResponseSchema)
-    .handler(async ({ input }: { input: { id: number; payload: z.input<typeof rolesRoleFormSchema> } }) => {
-      await updateRole(input.id, input.payload);
-      return { status: "ok" as const };
-    }),
+    .handler(
+      async ({
+        input,
+      }: {
+        input: { id: number; payload: z.input<typeof rolesRoleFormSchema> };
+      }) => {
+        await updateRole(input.id, input.payload);
+        return { status: "ok" as const };
+      }
+    ),
 
   updatePermissions: updateRoles
     .route({

@@ -13,28 +13,33 @@ Type safety is important, but development velocity matters too. This guide docum
 ### 1. TanStack Form - FormApi Generic Constraints
 
 **Problem:**
+
 ```typescript
 // This requires 11-12 type parameters, none publicly exported
-const form: FormApi<FormValues> // ❌ Incomplete
+const form: FormApi<FormValues>; // ❌ Incomplete
 ```
 
 **Why It's Impossible:**
+
 - `FormApi<T>` is internal generic of TanStack Form
 - Full signature: `FormApi<TData, TValidator?, TJSON?, TJSON2?, ...>` (11+ params)
 - No public type exports for all parameters
 
 **Approved Solution:**
+
 ```typescript
-form: any
+form: any;
 ```
 
 **Justification:**
+
 - ✅ Runtime type is correct (checked by Form.Field callback)
 - ✅ Form methods are IDE-autocompleted despite `any`
 - ✅ Use of form is validated by Zod schema
 - ✅ No security or logic risk
 
 **Files Affected:**
+
 - ClassificationRow.tsx
 - ClassificationTotals.tsx
 - ClassificationStats.tsx
@@ -44,29 +49,34 @@ form: any
 ### 2. TanStack Router - Search Param Mutations
 
 **Problem:**
+
 ```typescript
 // Router.useNavigate().search((prev) => ???) has complex types
 const onNavigate = (search: any) => void // ❌ Cannot be typed
 ```
 
 **Why It's Difficult:**
+
 - Router search params are dynamically inferred from route
 - Search updater pattern uses complex conditional types
 - Type inference breaks when spread/mutate
 - `useNavigate()` doesn't expose SearchParams type clearly
 
 **Approved Solution:**
+
 ```typescript
 onNavigate: (search: any) => void
 ```
 
 **Justification:**
+
 - ✅ Runtime behavior is correct (Router validates)
 - ✅ Type safety at call site (structure is validated)
 - ✅ No security implications
 - ✅ Documented limitation of Router library
 
 **Files Affected:**
+
 - ClassificationFilters.tsx (4 instances)
 - ClassificationPagination.tsx (5 instances)
 
@@ -75,29 +85,34 @@ onNavigate: (search: any) => void
 ### 3. Kysely Expression Builders
 
 **Problem:**
+
 ```typescript
 // ExpressionBuilder is not exported from Kysely
-const where = (eb: any) => eb.fn.count('id') // ❌ Cannot type eb
+const where = (eb: any) => eb.fn.count("id"); // ❌ Cannot type eb
 ```
 
 **Why It's Impossible:**
+
 - Kysely doesn't export ExpressionBuilder type
 - Builder pattern is inherently dynamic
 - Alternative: Write raw SQL (less maintainable)
 - TypeORM has same limitation
 
 **Approved Solution:**
+
 ```typescript
 .where((eb: any) => // ... builder expression ...)
 ```
 
 **Justification:**
+
 - ✅ Query is type-checked at `.select()` call
 - ✅ Runtime behavior verified by tests
 - ✅ Alternative (raw SQL) is worse
 - ✅ Accepted pattern in similar ORMs
 
 **Files Affected:**
+
 - services/transactions.ts (3 instances)
 - lib/google/google-calendar-queries.ts (3 instances)
 
@@ -106,29 +121,34 @@ const where = (eb: any) => eb.fn.count('id') // ❌ Cannot type eb
 ### 4. Dynamic Database Model Access
 
 **Problem:**
+
 ```typescript
 // Need to access different models dynamically
-const delegate = (db as any).modelName // ❌ No way to type this generically
+const delegate = (db as any).modelName; // ❌ No way to type this generically
 ```
 
 **Why It's Hard:**
+
 - Prisma/Zenstack models are accessed as properties
 - No generic accessor type available
 - Reflection pattern is necessary
 - Type narrowing would require massive overload unions
 
 **Approved Solution:**
+
 ```typescript
-const delegate = (db as any)[modelName]
+const delegate = (db as any)[modelName];
 ```
 
 **Justification:**
+
 - ✅ Used only in database utility functions
 - ✅ Type checked at caller (schema validation)
 - ✅ Necessary for generic database operations
 - ✅ Isolated in utilities, not in business logic
 
 **Files Affected:**
+
 - services/backups.ts (3 instances)
 - modules/patients/index.ts (1 instance)
 
@@ -139,6 +159,7 @@ const delegate = (db as any)[modelName]
 ### 1. Error Handling - `catch (error: any)`
 
 **Current:**
+
 ```typescript
 catch (error: any) {
   logger.error(error.message) // ⚠️ Unsafe
@@ -146,6 +167,7 @@ catch (error: any) {
 ```
 
 **Should Be:**
+
 ```typescript
 catch (error: unknown) {
   const message = error instanceof Error ? error.message : String(error)
@@ -160,17 +182,19 @@ catch (error: unknown) {
 ### 2. Auth Middleware Context
 
 **Current:**
+
 ```typescript
 async function getAuthDb(c: any) {
-  const user = await getSessionUser(c)
+  const user = await getSessionUser(c);
 }
 ```
 
 **Should Be:**
+
 ```typescript
-import type { Context } from 'hono'
+import type { Context } from "hono";
 async function getAuthDb(c: Context) {
-  const user = await getSessionUser(c)
+  const user = await getSessionUser(c);
 }
 ```
 
@@ -181,15 +205,17 @@ async function getAuthDb(c: Context) {
 ### 3. API Response Generics
 
 **Current:**
+
 ```typescript
-const data = await apiClient.get<any>(`url`, { responseSchema })
+const data = await apiClient.get<any>(`url`, { responseSchema });
 ```
 
 **Should Be:**
+
 ```typescript
 const data = await apiClient.get<VerifyCertificateResponse>(`url`, {
-  responseSchema: VerifyCertificateSchema
-})
+  responseSchema: VerifyCertificateSchema,
+});
 ```
 
 **Priority:** MEDIUM (6 instances, simple fix)
@@ -199,6 +225,7 @@ const data = await apiClient.get<VerifyCertificateResponse>(`url`, {
 ### 4. Prisma Date/Decimal Casting
 
 **Current:**
+
 ```typescript
 data: {
   transactionDate: transactionDate as any, // Type mismatch
@@ -206,6 +233,7 @@ data: {
 ```
 
 **Analysis:**
+
 - Schema expects `DateTime`, input is `string | Date`
 - Needs normalization function or schema adjustment
 - Could use `z.coerce.date()` in Zod schema
@@ -217,12 +245,14 @@ data: {
 ## When to Use `any` (Approved Patterns)
 
 ✅ **ACCEPTABLE:**
+
 1. Third-party library generic constraints (FormApi, ExpressionBuilder, etc.)
 2. Dynamic reflection patterns (model access, configuration objects)
 3. Legacy migrations (import scripts, data transformations)
 4. Proven safe by runtime validation (Zod schemas, library validation)
 
 ❌ **NOT ACCEPTABLE:**
+
 1. Lazy typing to avoid thinking about structure
 2. Responses from external APIs without parsing/validation
 3. User input without validation
@@ -234,27 +264,33 @@ data: {
 ## Linter Ignore Comments - Best Practices
 
 ### ✅ GOOD
+
 ```typescript
-form: any
+form: any;
 ```
 
 ### ❌ BAD
+
 ```typescript
-form: any
+form: any;
 ```
 
 ### ✅ GOOD
+
 ```typescript
 function calculateBill(): void {
 ```
 
 ### ❌ BAD
+
 ```typescript
 function calculateBill(): void {
 ```
 
 **Format:**
+
 ```
+
 ```
 
 ---
@@ -279,8 +315,9 @@ When you encounter a situation where `any` seems necessary:
    - Integration/utility → May be acceptable
 
 5. **Document:** If you decide `any` is necessary:
+
    ```typescript
-   something: any
+   something: any;
    ```
 
 6. **Review:** Add to next code review for team discussion
@@ -290,19 +327,23 @@ When you encounter a situation where `any` seems necessary:
 ## Monitoring & Enforcement
 
 ### CI/CD Rules
+
 ```json
 {
-  "overrides": [{
-    "include": ["src/**"],
-    "exclude": ["**/*.test.ts", "**/*.types.ts"],
-    "rules": {
-      "suspicious/noExplicitAny": "error"
+  "overrides": [
+    {
+      "include": ["src/**"],
+      "exclude": ["**/*.test.ts", "**/*.types.ts"],
+      "rules": {
+        "suspicious/noExplicitAny": "error"
+      }
     }
-  }]
+  ]
 }
 ```
 
 ### Metrics to Track
+
 1. **New `any` types per month** - Should trend to zero
 2. **Approved vs. unapproved ratio** - Should stay >80% approved
 3. **Refactored types per quarter** - Document progress
@@ -312,15 +353,18 @@ When you encounter a situation where `any` seems necessary:
 ## Future Improvements
 
 ### When TanStack Updates
+
 - Monitor FormApi exports in new versions
 - Test if type parameters become public
 - Update strategy when versions support better typing
 
 ### Database Layer
+
 - Consider using typed-db or similar safer ORM
 - Evaluate if Prisma's new `$extends` helps with typing
 
 ### Legacy Components
+
 - Schedule refactoring of complexity-suppressed functions
 - Extract business logic from legacy components
 - Create typed replacement components

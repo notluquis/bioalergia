@@ -38,7 +38,7 @@ onedriveWebhookRoutes.post("/", async (c) => {
 });
 
 async function processWebhookPayload(
-  payload: { value?: Array<{ clientState?: string; subscriptionId?: string }> } | null,
+  payload: { value?: Array<{ clientState?: string; subscriptionId?: string }> } | null
 ) {
   if (!payload || !Array.isArray(payload.value)) return;
 

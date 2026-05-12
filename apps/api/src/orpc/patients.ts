@@ -21,9 +21,7 @@ import { requireCanonicalRut } from "../lib/rut.ts";
 import { configureSuperjson } from "../lib/superjson-config.ts";
 import { writeTempUpload } from "../lib/temp-file.ts";
 import { uploadPatientAttachmentToDrive } from "../services/patient-attachments-drive.ts";
-import {
-  syncPatientDteSaleSources,
-} from "../modules/patients/index.ts";
+import { syncPatientDteSaleSources } from "../modules/patients/index.ts";
 import { SuperJSONRPCHandler } from "./superjson.ts";
 
 configureSuperjson();
@@ -148,7 +146,7 @@ const budgetSchema = z.object({
 const personSchema = dbSchemas.makeModelSchema("Person") as unknown as z.ZodType<Person>;
 
 const consultationSchema = dbSchemas.makeModelSchema(
-  "Consultation",
+  "Consultation"
 ) as unknown as z.ZodType<Consultation>;
 
 const attachmentSchema = dbSchemas.makeModelSchema("PatientAttachment").extend({
@@ -156,7 +154,7 @@ const attachmentSchema = dbSchemas.makeModelSchema("PatientAttachment").extend({
 }) as unknown as z.ZodType<PatientAttachment & { webViewLink?: string }>;
 
 const medicalCertificateSchema = dbSchemas.makeModelSchema(
-  "MedicalCertificate",
+  "MedicalCertificate"
 ) as unknown as z.ZodType<MedicalCertificate>;
 
 const patientListItemSchema = z.object({
@@ -307,9 +305,9 @@ const authed = base.use(async ({ context, next }) => {
   }
 
   return next({
-      context: {
-        ...context,
-        user,
+    context: {
+      ...context,
+      user,
     },
   });
 });
@@ -495,7 +493,7 @@ const patientsORPCRouterBase = {
         temp.filepath,
         attachmentName,
         input.file.type || "application/octet-stream",
-        String(input.patientId),
+        String(input.patientId)
       );
 
       const attachment = await db.patientAttachment.create({
@@ -525,7 +523,7 @@ const patientsORPCRouterBase = {
     .handler(async ({ input }) => {
       const totalAmount = input.items.reduce(
         (sum, item) => sum + item.unitPrice * item.quantity,
-        0,
+        0
       );
       const finalAmount = totalAmount - input.discount;
 
@@ -775,9 +773,9 @@ const patientsORPCRouterBase = {
             skinTestsCount: z.number(),
             eventsCount: z.number(),
             createdAt: z.string(),
-          }),
+          })
         ),
-      }),
+      })
     )
     .handler(async ({ input }) => {
       const series = await db.clinicalSeries.findMany({
@@ -825,9 +823,9 @@ const patientsORPCRouterBase = {
             resultsCount: z.number(),
             seriesId: z.number(),
             seriesKind: z.string(),
-          }),
+          })
         ),
-      }),
+      })
     )
     .handler(async ({ input }) => {
       const tests = await db.clinicalSkinTest.findMany({
