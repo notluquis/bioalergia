@@ -24,9 +24,25 @@ export const test = base.extend<Fixtures>({
       testInfo.skip(true, "E2E_USER / E2E_PASS not set");
     }
     await page.goto("/login");
-    await page.getByLabel(/correo|email/i).fill(E2E_USER!);
-    await page.getByLabel(/contrase[ñn]a|password/i).fill(E2E_PASS!);
-    await page.getByRole("button", { name: /iniciar sesi[oó]n|ingresar|log in/i }).click();
+    // The login surface starts on the passkey CTA. Wait until any login
+    // control is interactable, then click the email/password fallback if
+    // it's there (idempotent — a no-op when credentials are already shown).
+    await page.waitForLoadState("networkidle");
+    const fallback = page.getByRole("button", { name: /usar correo y contrase[ñn]a/i });
+    if (await fallback.count()) {
+      await fallback.click({ trial: false }).catch(() => undefined);
+    }
+    // HeroUI v3 wraps the <input> inside a div, so getByLabel resolves to
+    // the wrapper. Target the real form controls by role / type.
+    const emailInput = page.locator('input[type="email"], input[autocomplete="username"]').first();
+    const passInput = page.locator('input[type="password"]').first();
+    await emailInput.waitFor({ state: "visible", timeout: 10_000 });
+    await emailInput.fill(E2E_USER!);
+    await passInput.fill(E2E_PASS!);
+    await page
+      .getByRole("button", { name: /^(iniciar sesi[oó]n|ingresar|continuar|log in)/i })
+      .first()
+      .click();
     await page.waitForURL((url) => !url.pathname.startsWith("/login"), { timeout: 15_000 });
     await use(page);
   },
