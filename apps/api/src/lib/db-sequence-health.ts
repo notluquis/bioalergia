@@ -45,12 +45,15 @@ async function findDriftedSequences(): Promise<DriftRow[]> {
   const seqs = await sql<{
     tableName: string;
     sequenceName: string;
-    lastValue: string;
+    lastValue: string | null;
   }>`
     SELECT
       c.table_name AS "tableName",
       c.table_name || '_id_seq' AS "sequenceName",
-      ps.last_value::text AS "lastValue"
+      -- pg_sequences.last_value is NULL when the sequence has never been
+      -- nextval'd (is_called = false). COALESCE here so the consumer
+      -- always gets a numeric string.
+      COALESCE(ps.last_value::text, '0') AS "lastValue"
     FROM information_schema.columns c
     JOIN information_schema.sequences s
       ON s.sequence_name = c.table_name || '_id_seq'
@@ -71,8 +74,9 @@ async function findDriftedSequences(): Promise<DriftRow[]> {
       SELECT COALESCE(MAX(id), 0)::text AS "maxId" FROM ${sql.id(seq.tableName)}
     `.execute(kysely);
     const maxId = max.rows[0]?.maxId ?? "0";
-    if (BigInt(maxId) > BigInt(seq.lastValue)) {
-      rows.push({ ...seq, maxId });
+    const lastValue = seq.lastValue ?? "0";
+    if (BigInt(maxId) > BigInt(lastValue)) {
+      rows.push({ ...seq, lastValue, maxId });
     }
   }
   return rows;
