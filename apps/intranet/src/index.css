@@ -525,6 +525,19 @@ body {
   display: none;
 }
 
+/* === Touch target rule (Apple HIG 44pt + IEC 62366-1 medical glove use) ===
+ * On coarse pointers (touch screens) lift HeroUI icon-only buttons to a
+ * 44×44 hit zone regardless of size variant. The visual chrome is unchanged
+ * for mouse users so dense tables stay scannable on desktop.
+ */
+@media (pointer: coarse) {
+  .button--icon-only,
+  .button--icon-only.button--sm {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
 /* === Typography utilities ===
  * .text-caption: small uppercase label (e.g., section headers, table column labels).
  * 11px is acceptable here because letter-spacing + uppercase improves
