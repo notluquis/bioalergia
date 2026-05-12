@@ -27,9 +27,10 @@ const UNAUTHED_DISABLED_RULES: string[] = [];
 const AUTHED_DISABLED_RULES: string[] = [
   // TODO(a11y): HeroUI v3 Dropdown/Popover/Tooltip Trigger renders a
   //  button > React Aria internal button (nested-interactive). Pending
-  //  upstream HeroUI fix or wrapper migration.
+  //  upstream HeroUI fix or render-prop migration.
+  //  `no-focusable-content` is the axe sub-check that fires alongside
+  //  this rule but is not addressable via disableRules (internal name).
   "nested-interactive",
-  "no-focusable-content",
   // TODO(a11y): ~12 components use small text on near-bg colors that
   //  drop below 4.5:1 (Sidebar nav inactive items, table column headers).
   //  Walk down with the contrast ramp from index.css.
