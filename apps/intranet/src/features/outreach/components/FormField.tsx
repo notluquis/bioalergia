@@ -11,6 +11,8 @@ export type TextInputProps = {
   onValueChange: (value: string) => void;
   type?: "text" | "email" | "url" | "number" | "datetime-local";
   required?: boolean;
+  isRequired?: boolean;
+  isInvalid?: boolean;
   isDisabled?: boolean;
   placeholder?: string;
   min?: number;
@@ -28,6 +30,8 @@ export function TextInput({
   onValueChange,
   type = "text",
   required,
+  isRequired,
+  isInvalid,
   isDisabled,
   placeholder,
   min,
@@ -44,7 +48,8 @@ export function TextInput({
       defaultValue={defaultValue}
       onChange={onValueChange}
       type={type}
-      isRequired={required}
+      isRequired={isRequired ?? required}
+      isInvalid={isInvalid}
       isDisabled={isDisabled}
       onBlur={onBlur}
       className={className}
@@ -107,6 +112,8 @@ export type SelectInputProps = {
   onValueChange: (value: string) => void;
   options: SelectOption[];
   isDisabled?: boolean;
+  isRequired?: boolean;
+  isInvalid?: boolean;
   className?: string;
 };
 
@@ -116,6 +123,8 @@ export function SelectInput({
   onValueChange,
   options,
   isDisabled,
+  isRequired,
+  isInvalid,
   className,
 }: SelectInputProps) {
   return (
@@ -123,6 +132,8 @@ export function SelectInput({
       value={value}
       onChange={(key) => onValueChange(typeof key === "string" ? key : "")}
       isDisabled={isDisabled}
+      isRequired={isRequired}
+      isInvalid={isInvalid}
       className={className}
     >
       {label && <Label>{label}</Label>}

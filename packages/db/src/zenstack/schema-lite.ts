@@ -1119,6 +1119,18 @@ export class SchemaType implements SchemaDef {
                     type: "Service",
                     array: true,
                     relation: { opposite: "counterpart" }
+                },
+                expenseServices: {
+                    name: "expenseServices",
+                    type: "ExpenseService",
+                    array: true,
+                    relation: { opposite: "counterpart" }
+                },
+                loans: {
+                    name: "loans",
+                    type: "Loan",
+                    array: true,
+                    relation: { opposite: "counterpart" }
                 }
             },
             idFields: ["id"],
@@ -2390,6 +2402,14 @@ export class SchemaType implements SchemaDef {
                     name: "borrowerType",
                     type: "LoanBorrowerType"
                 },
+                counterpartId: {
+                    name: "counterpartId",
+                    type: "Int",
+                    optional: true,
+                    foreignKeyFor: [
+                        "counterpart"
+                    ] as readonly string[]
+                },
                 principalAmount: {
                     name: "principalAmount",
                     type: "Decimal"
@@ -2425,6 +2445,11 @@ export class SchemaType implements SchemaDef {
                     type: "LoanStatus",
                     default: "ACTIVE" as FieldDefault
                 },
+                scope: {
+                    name: "scope",
+                    type: "ExpenseScope",
+                    default: "BIOALERGIA" as FieldDefault
+                },
                 createdAt: {
                     name: "createdAt",
                     type: "DateTime",
@@ -2441,6 +2466,12 @@ export class SchemaType implements SchemaDef {
                     type: "LoanSchedule",
                     array: true,
                     relation: { opposite: "loan" }
+                },
+                counterpart: {
+                    name: "counterpart",
+                    type: "Counterpart",
+                    optional: true,
+                    relation: { opposite: "loans", fields: ["counterpartId"], references: ["id"], onDelete: "SetNull" }
                 }
             },
             idFields: ["id"],
@@ -6599,6 +6630,17 @@ export class SchemaType implements SchemaDef {
                     type: "Int",
                     optional: true
                 },
+                additionalServiceCodes: {
+                    name: "additionalServiceCodes",
+                    type: "Int",
+                    array: true,
+                    default: [] as FieldDefault
+                },
+                additionalServicesCost: {
+                    name: "additionalServicesCost",
+                    type: "Decimal",
+                    default: 0 as FieldDefault
+                },
                 trackingStatus: {
                     name: "trackingStatus",
                     type: "String",
@@ -7130,6 +7172,24 @@ export class SchemaType implements SchemaDef {
                     type: "String",
                     optional: true
                 },
+                expenseId: {
+                    name: "expenseId",
+                    type: "Int",
+                    optional: true,
+                    foreignKeyFor: [
+                        "expense"
+                    ] as readonly string[]
+                },
+                matchedAt: {
+                    name: "matchedAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                matchSource: {
+                    name: "matchSource",
+                    type: "String",
+                    optional: true
+                },
                 createdAt: {
                     name: "createdAt",
                     type: "DateTime",
@@ -7146,6 +7206,12 @@ export class SchemaType implements SchemaDef {
                     type: "DTELineItem",
                     array: true,
                     relation: { opposite: "dtePurchaseDetail" }
+                },
+                expense: {
+                    name: "expense",
+                    type: "Expense",
+                    optional: true,
+                    relation: { opposite: "dtePurchaseDetails", fields: ["expenseId"], references: ["id"], onDelete: "SetNull" }
                 }
             },
             idFields: ["id"],
@@ -7887,6 +7953,12 @@ export class SchemaType implements SchemaDef {
                 services: {
                     name: "services",
                     type: "Service",
+                    array: true,
+                    relation: { opposite: "transactionCategory" }
+                },
+                expenseServices: {
+                    name: "expenseServices",
+                    type: "ExpenseService",
                     array: true,
                     relation: { opposite: "transactionCategory" }
                 }
@@ -10760,6 +10832,11 @@ export class SchemaType implements SchemaDef {
                     type: "Int",
                     optional: true
                 },
+                emissionDay: {
+                    name: "emissionDay",
+                    type: "Int",
+                    optional: true
+                },
                 dueDateRule: {
                     name: "dueDateRule",
                     type: "String",
@@ -10805,6 +10882,22 @@ export class SchemaType implements SchemaDef {
                     type: "String",
                     array: true
                 },
+                transactionCategoryId: {
+                    name: "transactionCategoryId",
+                    type: "Int",
+                    optional: true,
+                    foreignKeyFor: [
+                        "transactionCategory"
+                    ] as readonly string[]
+                },
+                counterpartId: {
+                    name: "counterpartId",
+                    type: "Int",
+                    optional: true,
+                    foreignKeyFor: [
+                        "counterpart"
+                    ] as readonly string[]
+                },
                 createdAt: {
                     name: "createdAt",
                     type: "DateTime",
@@ -10821,6 +10914,18 @@ export class SchemaType implements SchemaDef {
                     type: "Expense",
                     array: true,
                     relation: { opposite: "service" }
+                },
+                transactionCategory: {
+                    name: "transactionCategory",
+                    type: "TransactionCategory",
+                    optional: true,
+                    relation: { opposite: "expenseServices", fields: ["transactionCategoryId"], references: ["id"], onDelete: "SetNull" }
+                },
+                counterpart: {
+                    name: "counterpart",
+                    type: "Counterpart",
+                    optional: true,
+                    relation: { opposite: "expenseServices", fields: ["counterpartId"], references: ["id"], onDelete: "SetNull" }
                 }
             },
             idFields: ["id"],
@@ -10930,6 +11035,12 @@ export class SchemaType implements SchemaDef {
                     type: "ExpenseTransaction",
                     array: true,
                     relation: { opposite: "expense" }
+                },
+                dtePurchaseDetails: {
+                    name: "dtePurchaseDetails",
+                    type: "DTEPurchaseDetail",
+                    array: true,
+                    relation: { opposite: "expense" }
                 }
             },
             idFields: ["id"],
@@ -10996,6 +11107,14 @@ export class SchemaType implements SchemaDef {
                     type: "Int",
                     optional: true
                 },
+                credentialId: {
+                    name: "credentialId",
+                    type: "Int",
+                    optional: true,
+                    foreignKeyFor: [
+                        "credential"
+                    ] as readonly string[]
+                },
                 isActive: {
                     name: "isActive",
                     type: "Boolean",
@@ -11016,12 +11135,200 @@ export class SchemaType implements SchemaDef {
                     type: "DateTime",
                     updatedAt: true,
                     default: ExpressionUtils.call("now") as FieldDefault
+                },
+                snapshots: {
+                    name: "snapshots",
+                    type: "UtilityBillSnapshot",
+                    array: true,
+                    relation: { opposite: "account" }
+                },
+                credential: {
+                    name: "credential",
+                    type: "ProviderCredential",
+                    optional: true,
+                    relation: { opposite: "accounts", fields: ["credentialId"], references: ["id"], onDelete: "SetNull" }
                 }
             },
             idFields: ["id"],
             uniqueFields: {
                 id: { type: "Int" },
                 serviceNumber: { type: "String" }
+            }
+        },
+        UtilityBillSnapshot: {
+            name: "UtilityBillSnapshot",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "BigInt",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                utilityAccountId: {
+                    name: "utilityAccountId",
+                    type: "Int",
+                    foreignKeyFor: [
+                        "account"
+                    ] as readonly string[]
+                },
+                fetchedAt: {
+                    name: "fetchedAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                source: {
+                    name: "source",
+                    type: "String",
+                    default: "MANUAL" as FieldDefault
+                },
+                currentAmount: {
+                    name: "currentAmount",
+                    type: "Decimal",
+                    optional: true
+                },
+                previousAmount: {
+                    name: "previousAmount",
+                    type: "Decimal",
+                    optional: true
+                },
+                thirdAmount: {
+                    name: "thirdAmount",
+                    type: "Decimal",
+                    optional: true
+                },
+                currentDebt: {
+                    name: "currentDebt",
+                    type: "Decimal",
+                    optional: true
+                },
+                emissionDate: {
+                    name: "emissionDate",
+                    type: "String",
+                    optional: true
+                },
+                dueDate: {
+                    name: "dueDate",
+                    type: "String",
+                    optional: true
+                },
+                lastPaymentJson: {
+                    name: "lastPaymentJson",
+                    type: "Json",
+                    optional: true
+                },
+                observation: {
+                    name: "observation",
+                    type: "String",
+                    optional: true
+                },
+                rawResponse: {
+                    name: "rawResponse",
+                    type: "Json"
+                },
+                errorMessage: {
+                    name: "errorMessage",
+                    type: "String",
+                    optional: true
+                },
+                account: {
+                    name: "account",
+                    type: "UtilityAccount",
+                    relation: { opposite: "snapshots", fields: ["utilityAccountId"], references: ["id"], onDelete: "Cascade" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "BigInt" }
+            }
+        },
+        ProviderCredential: {
+            name: "ProviderCredential",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                provider: {
+                    name: "provider",
+                    type: "UtilityProvider"
+                },
+                scope: {
+                    name: "scope",
+                    type: "ExpenseScope",
+                    default: "PERSONAL" as FieldDefault
+                },
+                authMethod: {
+                    name: "authMethod",
+                    type: "ProviderAuthMethod",
+                    default: "RUT_PASSWORD" as FieldDefault
+                },
+                label: {
+                    name: "label",
+                    type: "String",
+                    optional: true
+                },
+                identifier: {
+                    name: "identifier",
+                    type: "String"
+                },
+                secretEncrypted: {
+                    name: "secretEncrypted",
+                    type: "String"
+                },
+                metadata: {
+                    name: "metadata",
+                    type: "Json",
+                    optional: true
+                },
+                isActive: {
+                    name: "isActive",
+                    type: "Boolean",
+                    default: true as FieldDefault
+                },
+                lastLoginAt: {
+                    name: "lastLoginAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                lastErrorAt: {
+                    name: "lastErrorAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                lastError: {
+                    name: "lastError",
+                    type: "String",
+                    optional: true
+                },
+                notes: {
+                    name: "notes",
+                    type: "String",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                accounts: {
+                    name: "accounts",
+                    type: "UtilityAccount",
+                    array: true,
+                    relation: { opposite: "credential" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" },
+                provider_identifier: { provider: { type: "UtilityProvider" }, identifier: { type: "String" } }
             }
         },
         ExpenseTransaction: {
@@ -11269,7 +11576,8 @@ export class SchemaType implements SchemaDef {
             values: {
                 WEEKLY: "WEEKLY",
                 BIWEEKLY: "BIWEEKLY",
-                MONTHLY: "MONTHLY"
+                MONTHLY: "MONTHLY",
+                IRREGULAR: "IRREGULAR"
             }
         },
         LoanInterestType: {
@@ -11745,7 +12053,31 @@ export class SchemaType implements SchemaDef {
             values: {
                 ESSBIO: "ESSBIO",
                 CGE: "CGE",
+                TELSUR: "TELSUR",
+                MOVISTAR: "MOVISTAR",
+                DOCTORALIA: "DOCTORALIA",
+                MEDIPASS: "MEDIPASS",
+                MASVIDA: "MASVIDA",
+                PREVIRED: "PREVIRED",
+                SII: "SII",
+                TGR: "TGR",
+                GASTOS_COMUNES: "GASTOS_COMUNES",
                 OTHER: "OTHER"
+            },
+            attributes: [
+                { name: "@@schema", args: [{ name: "map", value: ExpressionUtils.literal("personal") }] }
+            ] as readonly AttributeApplication[]
+        },
+        ProviderAuthMethod: {
+            name: "ProviderAuthMethod",
+            values: {
+                NONE_PUBLIC: "NONE_PUBLIC",
+                RUT_PASSWORD: "RUT_PASSWORD",
+                CLAVE_UNICA: "CLAVE_UNICA",
+                CLAVE_TRIBUTARIA: "CLAVE_TRIBUTARIA",
+                OAUTH: "OAUTH",
+                API_KEY: "API_KEY",
+                EMAIL_FORWARDING: "EMAIL_FORWARDING"
             },
             attributes: [
                 { name: "@@schema", args: [{ name: "map", value: ExpressionUtils.literal("personal") }] }

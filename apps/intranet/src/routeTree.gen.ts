@@ -38,6 +38,7 @@ import { Route as AuthedWaCloudProgramadosRouteImport } from "./routes/_authed/w
 import { Route as AuthedWaCloudPlantillasRouteImport } from "./routes/_authed/wa-cloud/plantillas"
 import { Route as AuthedWaCloudConfiguracionRouteImport } from "./routes/_authed/wa-cloud/configuracion"
 import { Route as AuthedWaCloudCatalogoRouteImport } from "./routes/_authed/wa-cloud/catalogo"
+import { Route as AuthedWaCloudBuscarRouteImport } from "./routes/_authed/wa-cloud/buscar"
 import { Route as AuthedWaCloudBroadcastsRouteImport } from "./routes/_authed/wa-cloud/broadcasts"
 import { Route as AuthedWaCloudAnalyticsRouteImport } from "./routes/_authed/wa-cloud/analytics"
 import { Route as AuthedWaCloudAlertasRouteImport } from "./routes/_authed/wa-cloud/alertas"
@@ -239,6 +240,11 @@ const AuthedWaCloudConfiguracionRoute =
 const AuthedWaCloudCatalogoRoute = AuthedWaCloudCatalogoRouteImport.update({
   id: "/catalogo",
   path: "/catalogo",
+  getParentRoute: () => AuthedWaCloudRoute,
+} as any)
+const AuthedWaCloudBuscarRoute = AuthedWaCloudBuscarRouteImport.update({
+  id: "/buscar",
+  path: "/buscar",
   getParentRoute: () => AuthedWaCloudRoute,
 } as any)
 const AuthedWaCloudBroadcastsRoute = AuthedWaCloudBroadcastsRouteImport.update({
@@ -607,6 +613,7 @@ export interface FileRoutesByFullPath {
   "/wa-cloud/alertas": typeof AuthedWaCloudAlertasRoute
   "/wa-cloud/analytics": typeof AuthedWaCloudAnalyticsRoute
   "/wa-cloud/broadcasts": typeof AuthedWaCloudBroadcastsRoute
+  "/wa-cloud/buscar": typeof AuthedWaCloudBuscarRoute
   "/wa-cloud/catalogo": typeof AuthedWaCloudCatalogoRoute
   "/wa-cloud/configuracion": typeof AuthedWaCloudConfiguracionRoute
   "/wa-cloud/plantillas": typeof AuthedWaCloudPlantillasRoute
@@ -687,6 +694,7 @@ export interface FileRoutesByTo {
   "/wa-cloud/alertas": typeof AuthedWaCloudAlertasRoute
   "/wa-cloud/analytics": typeof AuthedWaCloudAnalyticsRoute
   "/wa-cloud/broadcasts": typeof AuthedWaCloudBroadcastsRoute
+  "/wa-cloud/buscar": typeof AuthedWaCloudBuscarRoute
   "/wa-cloud/catalogo": typeof AuthedWaCloudCatalogoRoute
   "/wa-cloud/configuracion": typeof AuthedWaCloudConfiguracionRoute
   "/wa-cloud/plantillas": typeof AuthedWaCloudPlantillasRoute
@@ -775,6 +783,7 @@ export interface FileRoutesById {
   "/_authed/wa-cloud/alertas": typeof AuthedWaCloudAlertasRoute
   "/_authed/wa-cloud/analytics": typeof AuthedWaCloudAnalyticsRoute
   "/_authed/wa-cloud/broadcasts": typeof AuthedWaCloudBroadcastsRoute
+  "/_authed/wa-cloud/buscar": typeof AuthedWaCloudBuscarRoute
   "/_authed/wa-cloud/catalogo": typeof AuthedWaCloudCatalogoRoute
   "/_authed/wa-cloud/configuracion": typeof AuthedWaCloudConfiguracionRoute
   "/_authed/wa-cloud/plantillas": typeof AuthedWaCloudPlantillasRoute
@@ -863,6 +872,7 @@ export interface FileRouteTypes {
     | "/wa-cloud/alertas"
     | "/wa-cloud/analytics"
     | "/wa-cloud/broadcasts"
+    | "/wa-cloud/buscar"
     | "/wa-cloud/catalogo"
     | "/wa-cloud/configuracion"
     | "/wa-cloud/plantillas"
@@ -943,6 +953,7 @@ export interface FileRouteTypes {
     | "/wa-cloud/alertas"
     | "/wa-cloud/analytics"
     | "/wa-cloud/broadcasts"
+    | "/wa-cloud/buscar"
     | "/wa-cloud/catalogo"
     | "/wa-cloud/configuracion"
     | "/wa-cloud/plantillas"
@@ -1030,6 +1041,7 @@ export interface FileRouteTypes {
     | "/_authed/wa-cloud/alertas"
     | "/_authed/wa-cloud/analytics"
     | "/_authed/wa-cloud/broadcasts"
+    | "/_authed/wa-cloud/buscar"
     | "/_authed/wa-cloud/catalogo"
     | "/_authed/wa-cloud/configuracion"
     | "/_authed/wa-cloud/plantillas"
@@ -1265,6 +1277,13 @@ declare module "@tanstack/react-router" {
       path: "/catalogo"
       fullPath: "/wa-cloud/catalogo"
       preLoaderRoute: typeof AuthedWaCloudCatalogoRouteImport
+      parentRoute: typeof AuthedWaCloudRoute
+    }
+    "/_authed/wa-cloud/buscar": {
+      id: "/_authed/wa-cloud/buscar"
+      path: "/buscar"
+      fullPath: "/wa-cloud/buscar"
+      preLoaderRoute: typeof AuthedWaCloudBuscarRouteImport
       parentRoute: typeof AuthedWaCloudRoute
     }
     "/_authed/wa-cloud/broadcasts": {
@@ -1894,6 +1913,7 @@ interface AuthedWaCloudRouteChildren {
   AuthedWaCloudAlertasRoute: typeof AuthedWaCloudAlertasRoute
   AuthedWaCloudAnalyticsRoute: typeof AuthedWaCloudAnalyticsRoute
   AuthedWaCloudBroadcastsRoute: typeof AuthedWaCloudBroadcastsRoute
+  AuthedWaCloudBuscarRoute: typeof AuthedWaCloudBuscarRoute
   AuthedWaCloudCatalogoRoute: typeof AuthedWaCloudCatalogoRoute
   AuthedWaCloudConfiguracionRoute: typeof AuthedWaCloudConfiguracionRoute
   AuthedWaCloudPlantillasRoute: typeof AuthedWaCloudPlantillasRoute
@@ -1906,6 +1926,7 @@ const AuthedWaCloudRouteChildren: AuthedWaCloudRouteChildren = {
   AuthedWaCloudAlertasRoute: AuthedWaCloudAlertasRoute,
   AuthedWaCloudAnalyticsRoute: AuthedWaCloudAnalyticsRoute,
   AuthedWaCloudBroadcastsRoute: AuthedWaCloudBroadcastsRoute,
+  AuthedWaCloudBuscarRoute: AuthedWaCloudBuscarRoute,
   AuthedWaCloudCatalogoRoute: AuthedWaCloudCatalogoRoute,
   AuthedWaCloudConfiguracionRoute: AuthedWaCloudConfiguracionRoute,
   AuthedWaCloudPlantillasRoute: AuthedWaCloudPlantillasRoute,

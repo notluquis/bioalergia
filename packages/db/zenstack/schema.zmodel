@@ -388,6 +388,8 @@ model Counterpart {
   releaseTransactions    ReleaseTransaction[]
   settlementTransactions SettlementTransaction[]
   services               Service[]
+  expenseServices        ExpenseService[]
+  loans                  Loan[]
 
   // Access policies
   @@deny('all', auth() == null)
@@ -775,6 +777,8 @@ model Loan {
   title           String
   borrowerName    String         @map("borrower_name")
   borrowerType    LoanBorrowerType @map("borrower_type")
+  // Counterpart (lender / prestamista) — un mismo Counterpart puede tener varios Loans
+  counterpartId   Int?           @map("counterpart_id")
   principalAmount Decimal        @map("principal_amount") @db.Decimal(15, 2)
   interestRate    Decimal        @map("interest_rate") @db.Decimal(9, 6)
   interestType    LoanInterestType @default(SIMPLE) @map("interest_type")
@@ -783,15 +787,20 @@ model Loan {
   notes           String?
   startDate       DateTime       @map("start_date") @db.Date
   status          LoanStatus     @default(ACTIVE)
+  // scope para distinguir BIOALERGIA vs PERSONAL en consolidados
+  scope           ExpenseScope   @default(BIOALERGIA)
   createdAt       DateTime       @default(now()) @map("created_at")
   updatedAt       DateTime       @default(now()) @updatedAt @map("updated_at")
   schedules       LoanSchedule[]
+  counterpart     Counterpart?   @relation(fields: [counterpartId], references: [id], onDelete: SetNull)
 
   // Access policies
   @@deny('all', auth() == null)
   @@allow('read', true)
   @@allow('create,update,delete', auth().status == 'ACTIVE')
 
+  @@index([counterpartId])
+  @@index([scope])
   @@map("loans")
 }
 
@@ -2143,6 +2152,7 @@ enum LoanFrequency {
   WEEKLY
   BIWEEKLY
   MONTHLY
+  IRREGULAR
 }
 
 enum LoanInterestType {
@@ -2438,6 +2448,12 @@ model Shipment {
   barcode              String?
   labelBase64          String?  @map("label_base64") @db.Text
   labelType            Int?     @map("label_type")
+  // Chilexpress add-on services attached to the package at OT time
+  // (e.g. 417 = "Cobertura Extendida"). Persisted so revenue reports
+  // can attribute the extra cost back to the shipment, and so a
+  // future reprint/reissue can mirror the original config.
+  additionalServiceCodes Int[]    @default([]) @map("additional_service_codes")
+  additionalServicesCost Decimal  @default(0) @map("additional_services_cost") @db.Decimal(12, 2)
   // Tracking
   trackingStatus       String?  @map("tracking_status")
   trackingUpdatedAt    DateTime? @map("tracking_updated_at")
@@ -2632,9 +2648,15 @@ model DTEPurchaseDetail {
   referenceDocNote      String?   @map("reference_doc_note") // NCE o NDE Sobre Fact. de Compra
   notes                 String?
 
+  // Link to generated Expense (after DTE matcher runs)
+  expenseId             Int?      @map("expense_id")
+  matchedAt             DateTime? @map("matched_at")
+  matchSource           String?   @map("match_source") // 'AUTO', 'MANUAL', 'RULE'
+
   createdAt             DateTime  @default(now()) @map("created_at")
   updatedAt             DateTime  @default(now()) @updatedAt @map("updated_at")
   lineItems             DTELineItem[]
+  expense               Expense?  @relation(fields: [expenseId], references: [id], onDelete: SetNull)
 
   @@deny('all', auth() == null)
   @@allow('read', auth().status == 'ACTIVE')
@@ -2643,6 +2665,7 @@ model DTEPurchaseDetail {
   @@unique([providerRUT, folio])
   @@index([providerRUT])
   @@index([documentDate])
+  @@index([expenseId])
   @@map("dte_purchase_details")
 }
 
@@ -2899,6 +2922,7 @@ model TransactionCategory {
   autoRules            FinancialAutoCategoryRule[]
   compensationProfiles CompensationProfile[]
   services             Service[]
+  expenseServices      ExpenseService[]
 
   // Access policies
   @@allow('all', auth().status == 'ACTIVE')
@@ -3987,30 +4011,37 @@ enum ExpenseRecurrence {
 }
 
 model ExpenseService {
-  id             Int               @id @default(autoincrement())
-  publicId       String            @unique @default(cuid()) @map("public_id")
-  name           String
-  detail         String?
-  scope          ExpenseScope
-  category       String?
-  billingDay     Int?              @map("billing_day")
-  dueDateRule    String?           @map("due_date_rule")
-  defaultAmount  Decimal?          @map("default_amount") @db.Decimal(14, 2)
-  isFixed        Boolean           @default(false) @map("is_fixed")
-  recurrence     ExpenseRecurrence @default(MONTHLY)
-  startDate      DateTime?         @map("start_date") @db.Date
-  endDate        DateTime?         @map("end_date") @db.Date
-  isActive       Boolean           @default(true) @map("is_active")
-  notes          String?
-  tags           String[]
-  createdAt      DateTime          @default(now()) @map("created_at")
-  updatedAt      DateTime          @default(now()) @updatedAt @map("updated_at")
+  id                    Int                  @id @default(autoincrement())
+  publicId              String               @unique @default(cuid()) @map("public_id")
+  name                  String
+  detail                String?
+  scope                 ExpenseScope
+  category              String?
+  billingDay            Int?                 @map("billing_day")
+  emissionDay           Int?                 @map("emission_day")
+  dueDateRule           String?              @map("due_date_rule")
+  defaultAmount         Decimal?             @map("default_amount") @db.Decimal(14, 2)
+  isFixed               Boolean              @default(false) @map("is_fixed")
+  recurrence            ExpenseRecurrence    @default(MONTHLY)
+  startDate             DateTime?            @map("start_date") @db.Date
+  endDate               DateTime?            @map("end_date") @db.Date
+  isActive              Boolean              @default(true) @map("is_active")
+  notes                 String?
+  tags                  String[]
+  transactionCategoryId Int?                 @map("transaction_category_id")
+  counterpartId         Int?                 @map("counterpart_id")
+  createdAt             DateTime             @default(now()) @map("created_at")
+  updatedAt             DateTime             @default(now()) @updatedAt @map("updated_at")
 
-  expenses       Expense[]
+  expenses              Expense[]
+  transactionCategory   TransactionCategory? @relation(fields: [transactionCategoryId], references: [id], onDelete: SetNull)
+  counterpart           Counterpart?         @relation(fields: [counterpartId], references: [id], onDelete: SetNull)
 
   @@deny('all', auth() == null)
   @@allow('read', true)
   @@allow('create,update,delete', auth().status == 'ACTIVE')
+  @@index([transactionCategoryId])
+  @@index([counterpartId])
   @@map("expense_services")
 }
 
@@ -4035,6 +4066,10 @@ model Expense {
 
   service        ExpenseService? @relation(fields: [serviceId], references: [id], onDelete: SetNull)
   transactions   ExpenseTransaction[]
+  // Reverse relation back to DTEPurchaseDetail.expense (added in the
+  // utility-bills/expense session). Required by zenstack/Prisma; the
+  // DB side already carries the FK via dte_purchase_details.expense_id.
+  dtePurchaseDetails DTEPurchaseDetail[]
 
   @@deny('all', auth() == null)
   @@allow('read', true)
@@ -4050,7 +4085,28 @@ model Expense {
 enum UtilityProvider {
   ESSBIO
   CGE
+  TELSUR
+  MOVISTAR
+  DOCTORALIA
+  MEDIPASS
+  MASVIDA
+  PREVIRED
+  SII
+  TGR
+  GASTOS_COMUNES
   OTHER
+
+  @@schema("personal")
+}
+
+enum ProviderAuthMethod {
+  NONE_PUBLIC
+  RUT_PASSWORD
+  CLAVE_UNICA
+  CLAVE_TRIBUTARIA
+  OAUTH
+  API_KEY
+  EMAIL_FORWARDING
 
   @@schema("personal")
 }
@@ -4072,18 +4128,86 @@ model UtilityAccount {
   // Optional link to ExpenseService for auto-generating monthly expenses
   expenseServiceId Int?            @map("expense_service_id")
 
+  // Optional link to ProviderCredential for scrapers requiring auth
+  credentialId     Int?            @map("credential_id")
+
   isActive         Boolean         @default(true) @map("is_active")
   notes            String?
   createdAt        DateTime        @default(now()) @map("created_at")
   updatedAt        DateTime        @default(now()) @updatedAt @map("updated_at")
+
+  snapshots        UtilityBillSnapshot[]
+  credential       ProviderCredential? @relation(fields: [credentialId], references: [id], onDelete: SetNull)
 
   @@deny('all', auth() == null)
   @@allow('read', true)
   @@allow('create,update,delete', auth().status == 'ACTIVE')
 
   @@index([scope])
+  @@index([credentialId])
   @@schema("personal")
   @@map("utility_accounts")
+}
+
+// Historial completo de cada fetch de boleta — para diferencias, tendencias, alertas.
+model UtilityBillSnapshot {
+  id               BigInt          @id @default(autoincrement())
+  utilityAccountId Int             @map("utility_account_id")
+  fetchedAt        DateTime        @default(now()) @map("fetched_at")
+  source           String          @default("MANUAL") // 'CRON', 'MANUAL', 'EMAIL_PARSE', 'SCRAPE'
+
+  // Standardized fields across providers
+  currentAmount    Decimal?        @map("current_amount") @db.Decimal(15, 2)
+  previousAmount   Decimal?        @map("previous_amount") @db.Decimal(15, 2)
+  thirdAmount      Decimal?        @map("third_amount") @db.Decimal(15, 2)   // CGE devuelve 3 últimas
+  currentDebt      Decimal?        @map("current_debt") @db.Decimal(15, 2)   // Essbio: deuda actual
+  emissionDate     String?         @map("emission_date")                      // YYYY-MM-DD si lo da
+  dueDate          String?         @map("due_date")
+  lastPaymentJson  Json?           @map("last_payment_json")                  // {amount, date}
+  observation      String?
+  rawResponse      Json            @map("raw_response")                       // todo el response crudo
+  errorMessage     String?         @map("error_message")                      // si falló parcial
+
+  account          UtilityAccount  @relation(fields: [utilityAccountId], references: [id], onDelete: Cascade)
+
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@index([utilityAccountId, fetchedAt])
+  @@schema("personal")
+  @@map("utility_bill_snapshots")
+}
+
+// Credenciales encriptadas para scrapers que requieren login.
+// secret se guarda cifrado con KMS / pgcrypto / app-level encryption.
+model ProviderCredential {
+  id               Int                 @id @default(autoincrement())
+  provider         UtilityProvider
+  scope            ExpenseScope        @default(PERSONAL)
+  authMethod       ProviderAuthMethod  @default(RUT_PASSWORD) @map("auth_method")
+  label            String?
+  identifier       String              // RUT, usuario, email, client_id
+  secretEncrypted  String              @map("secret_encrypted")
+  metadata         Json?               // cookies cache, last token, refresh_token, otp_seed
+  isActive         Boolean             @default(true) @map("is_active")
+  lastLoginAt      DateTime?           @map("last_login_at")
+  lastErrorAt      DateTime?           @map("last_error_at")
+  lastError        String?             @map("last_error")
+  notes            String?
+  createdAt        DateTime            @default(now()) @map("created_at")
+  updatedAt        DateTime            @default(now()) @updatedAt @map("updated_at")
+
+  accounts         UtilityAccount[]
+
+  @@deny('all', auth() == null)
+  @@allow('read', auth().status == 'ACTIVE')
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@unique([provider, identifier])
+  @@index([provider])
+  @@schema("personal")
+  @@map("provider_credentials")
 }
 
 model ExpenseTransaction {

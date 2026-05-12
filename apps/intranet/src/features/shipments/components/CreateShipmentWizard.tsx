@@ -69,6 +69,9 @@ interface WizardState {
   // opted into during the quote step. Persisted so they're attached
   // to the OT request when the shipment is created.
   additionalServiceCodes: number[];
+  // Sum of add-on costs (CLP) computed at quote time. Stored on the
+  // shipment row so revenue reports don't need to re-quote.
+  additionalServicesCost: number;
   weight: number;
   height: number;
   width: number;
@@ -713,6 +716,30 @@ function OfficePicker({
         </Select>
       </div>
 
+      {coverageCode
+        ? (() => {
+            const picked = (communesData?.communes ?? []).find(
+              (c) => c.coverageRegionCode === coverageCode
+            );
+            if (!picked) return null;
+            const warnings: string[] = [];
+            if (!picked.supportsCashOnDelivery)
+              warnings.push("La comuna NO acepta envío por pagar destino (cash on delivery).");
+            if (!picked.supportsReturn) warnings.push("La comuna NO acepta logística inversa.");
+            if (warnings.length === 0) return null;
+            return (
+              <div className="flex items-start gap-2 rounded-xl border border-warning-200 bg-warning-50 px-3 py-2 text-warning-900 text-xs">
+                <AlertTriangle size={16} className="mt-0.5 shrink-0" />
+                <ul className="list-disc space-y-0.5 pl-4">
+                  {warnings.map((w) => (
+                    <li key={w}>{w}</li>
+                  ))}
+                </ul>
+              </div>
+            );
+          })()
+        : null}
+
       {coverageCode && (
         <div className="space-y-3">
           <RadioGroup
@@ -1157,12 +1184,16 @@ function QuoteStep({
               .filter((a) => a.required)
               .map((a) => a.serviceTypeCode);
             const merged = Array.from(new Set([...required, ...extraCodes]));
+            const cost = (selectedService.additionalServices ?? [])
+              .filter((a) => merged.includes(a.serviceTypeCode))
+              .reduce((sum, a) => sum + (a.serviceValue ?? 0), 0);
             onNext({
               ...debouncedDims,
               serviceTypeCode: selectedService.serviceTypeCode,
               serviceDescription: selectedService.serviceDescription,
               serviceValue: selectedService.serviceValue,
               additionalServiceCodes: merged,
+              additionalServicesCost: cost,
             });
           }}
         >
@@ -1355,6 +1386,7 @@ function ConfirmStep({
           state.additionalServiceCodes && state.additionalServiceCodes.length > 0
             ? state.additionalServiceCodes
             : undefined,
+        additionalServicesCost: state.additionalServicesCost,
       }),
     onSuccess: (data) => onSuccess({ otNumber: data.otNumber, labelBase64: data.labelBase64 }),
     onError: (err) => onError((err as Error).message),

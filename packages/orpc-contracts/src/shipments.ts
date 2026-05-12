@@ -180,6 +180,10 @@ export const createShipmentInputSchema = z.object({
   // a serviceTypeCode from cxAdditionalServiceSchema; the server
   // attaches them to the package on /transport-orders.
   additionalServiceCodes: z.array(z.number().int()).optional(),
+  // Sum of each opted-in serviceValue from the same quote response.
+  // Persisted on the shipment row so revenue reports can attribute
+  // the surcharge without re-quoting after the fact.
+  additionalServicesCost: z.number().min(0).optional(),
 });
 
 export const shipmentSchema = z.object({
@@ -207,6 +211,8 @@ export const shipmentSchema = z.object({
   barcode: z.string().nullable().optional(),
   labelBase64: z.string().nullable(),
   labelType: z.number().int().nullable().optional(),
+  additionalServiceCodes: z.array(z.number().int()).default([]),
+  additionalServicesCost: z.number().default(0),
   trackingStatus: z.string().nullable().optional(),
   trackingUpdatedAt: z.coerce.date().nullable().optional(),
   status: z.string(),

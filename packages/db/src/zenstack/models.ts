@@ -5,7 +5,7 @@
 
 /* eslint-disable */
 
-import { schema as $schema, type SchemaType as $Schema } from "./schema-lite";
+import { schema as $schema, type SchemaType as $Schema } from "./schema-lite.js";
 import type { ModelResult as $ModelResult } from "@zenstackhq/orm";
 export type Person = $ModelResult<$Schema, "Person">;
 /**
@@ -125,6 +125,8 @@ export type WaScheduledMessage = $ModelResult<$Schema, "WaScheduledMessage">;
 export type ExpenseService = $ModelResult<$Schema, "ExpenseService">;
 export type Expense = $ModelResult<$Schema, "Expense">;
 export type UtilityAccount = $ModelResult<$Schema, "UtilityAccount">;
+export type UtilityBillSnapshot = $ModelResult<$Schema, "UtilityBillSnapshot">;
+export type ProviderCredential = $ModelResult<$Schema, "ProviderCredential">;
 export type ExpenseTransaction = $ModelResult<$Schema, "ExpenseTransaction">;
 export const AuditEventKind = $schema.enums.AuditEventKind.values;
 export type AuditEventKind = (typeof AuditEventKind)[keyof typeof AuditEventKind];
@@ -266,3 +268,5 @@ export const ExpenseRecurrence = $schema.enums.ExpenseRecurrence.values;
 export type ExpenseRecurrence = (typeof ExpenseRecurrence)[keyof typeof ExpenseRecurrence];
 export const UtilityProvider = $schema.enums.UtilityProvider.values;
 export type UtilityProvider = (typeof UtilityProvider)[keyof typeof UtilityProvider];
+export const ProviderAuthMethod = $schema.enums.ProviderAuthMethod.values;
+export type ProviderAuthMethod = (typeof ProviderAuthMethod)[keyof typeof ProviderAuthMethod];

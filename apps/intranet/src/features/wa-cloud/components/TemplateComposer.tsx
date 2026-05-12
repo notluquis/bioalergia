@@ -1,6 +1,6 @@
-import { Button } from "@heroui/react";
+import { Button, FieldError, Form } from "@heroui/react";
 import { Images, Send } from "lucide-react";
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { AppDateTimePicker } from "@/components/forms/AppDatePicker";
 import { SelectInput, TextInput } from "@/features/outreach/components/FormField";
 import { toast } from "@/lib/toast-interceptor";
@@ -57,8 +57,48 @@ export function TemplateComposer({
   onSend: () => void;
   onSwitchText?: () => void;
 }) {
+  // Aria-driven validation. The send button is gated by `isValid`
+  // (computed below); each empty required slot also flags itself via
+  // FieldError so the operator sees exactly what's missing instead of
+  // a generic toast after Meta rejects the payload.
+  const missingVars = useMemo(
+    () => tplVars.reduce<number[]>((acc, v, i) => (v.trim() ? acc : [...acc, i]), []),
+    [tplVars]
+  );
+  const missingCardImages = useMemo(
+    () => tplCards.reduce<number[]>((acc, c, i) => (c.imageMediaId ? acc : [...acc, i]), []),
+    [tplCards]
+  );
+  const missingCardVars = useMemo(
+    () =>
+      tplCards.flatMap((c, ci) =>
+        c.bodyParams.flatMap((v, vi) => (v.trim() ? [] : [`${ci}.${vi}`]))
+      ),
+    [tplCards]
+  );
+  const ltoInvalid = hasLto && !tplLtoExpiration;
+  const copyCodeInvalid = copyCodeButtonIndex !== null && !(tplCopyCode?.value ?? "").trim();
+  const isValid =
+    !!tplKey &&
+    missingVars.length === 0 &&
+    missingCardImages.length === 0 &&
+    missingCardVars.length === 0 &&
+    !ltoInvalid &&
+    !copyCodeInvalid;
+
   return (
-    <div className="space-y-2">
+    <Form
+      validationBehavior="aria"
+      className="space-y-2"
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (!isValid) {
+          toast.error("Completa todos los campos requeridos antes de enviar.");
+          return;
+        }
+        onSend();
+      }}
+    >
       <div className="flex items-end gap-2">
         <div className="flex-1">
           <SelectInput
@@ -66,10 +106,12 @@ export function TemplateComposer({
             value={tplKey}
             onValueChange={setTplKey}
             options={tplOptions}
+            isRequired
+            isInvalid={!tplKey}
           />
         </div>
         {onSwitchText && (
-          <Button size="sm" variant="outline" onPress={onSwitchText}>
+          <Button size="sm" variant="outline" type="button" onPress={onSwitchText}>
             Texto libre
           </Button>
         )}
@@ -81,6 +123,8 @@ export function TemplateComposer({
               key={i}
               label={`Variable {{${i + 1}}}`}
               value={v}
+              isRequired
+              isInvalid={!v.trim()}
               onValueChange={(val) =>
                 setTplVars((arr) => {
                   const n = [...arr];
@@ -124,6 +168,11 @@ export function TemplateComposer({
             value={tplLtoExpiration}
             onChange={setTplLtoExpiration}
           />
+          {ltoInvalid ? (
+            <FieldError className="text-danger text-xs">
+              Selecciona fecha y hora de expiración antes de enviar.
+            </FieldError>
+          ) : null}
         </div>
       )}
       {copyCodeButtonIndex !== null && (
@@ -135,6 +184,8 @@ export function TemplateComposer({
           <TextInput
             label="Código"
             value={tplCopyCode?.value ?? ""}
+            isRequired
+            isInvalid={copyCodeInvalid}
             onValueChange={(v) =>
               setTplCopyCode({ index: copyCodeButtonIndex, value: v.slice(0, 15) })
             }
@@ -142,13 +193,18 @@ export function TemplateComposer({
           />
         </div>
       )}
+      {missingCardImages.length > 0 ? (
+        <FieldError className="text-danger text-xs">
+          Faltan imágenes en las tarjetas: {missingCardImages.map((i) => i + 1).join(", ")}
+        </FieldError>
+      ) : null}
       <div className="flex justify-end">
-        <Button onPress={onSend} isPending={isPending} isDisabled={!tplKey}>
+        <Button type="submit" isPending={isPending} isDisabled={!isValid}>
           <Send size={14} />
           Enviar plantilla
         </Button>
       </div>
-    </div>
+    </Form>
   );
 }
 

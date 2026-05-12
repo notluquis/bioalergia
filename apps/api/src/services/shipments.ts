@@ -23,6 +23,7 @@ function serializeShipment(s: Shipment): SerializedShipment {
     height: Number(s.height),
     width: Number(s.width),
     length: Number(s.length),
+    additionalServicesCost: Number(s.additionalServicesCost ?? 0),
   };
 }
 import { chilexpressConfig } from "../config.ts";
@@ -288,6 +289,8 @@ export async function createShipment(input: CreateShipmentInput) {
       barcode: result.barcode ?? null,
       labelBase64,
       labelType: result.label?.labelType ?? null,
+      additionalServiceCodes: input.additionalServiceCodes ?? [],
+      additionalServicesCost: new Decimal(input.additionalServicesCost ?? 0),
       status: "CREATED",
     },
   });
