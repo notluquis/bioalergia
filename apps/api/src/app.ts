@@ -10,7 +10,7 @@ import type { ContentfulStatusCode } from "hono/utils/http-status";
 import { rateLimiter } from "hono-rate-limiter";
 import { getSessionUser, hasPermission } from "./auth.ts";
 import { AppError } from "./lib/app-error.ts";
-import { csrfDoubleSubmit } from "./lib/csrf-double-submit.ts";
+import { csrfDoubleSubmit, ensureCsrfCookie } from "./lib/csrf-double-submit.ts";
 import { htmlSanitizerMiddleware } from "./lib/html-sanitizer.ts";
 import { logError } from "./lib/logger.ts";
 import { configureSuperjson } from "./lib/superjson-config.ts";
@@ -209,6 +209,18 @@ app.use(
 // Health check (at root for Railway healthcheck)
 app.get("/health", (c) => replyRaw(c, { status: "ok" }));
 app.get("/api/health", (c) => replyRaw(c, { status: "ok" }));
+
+// CSRF bootstrap: mints (or refreshes) the csrf_token cookie so the SPA
+// always has it before its first state-changing POST. The double-submit
+// middleware on /api/orpc/* and /api/wa-cloud/* would otherwise reject
+// the very first POST after a cold load (no cookie yet → server has to
+// issue it in a 403 response, then SPA retries). Bootstrapping with a
+// safe GET avoids that round-trip and keeps the failure mode of a
+// genuine 403 (auth denied) unambiguous.
+app.get("/api/csrf", (c) => {
+  ensureCsrfCookie(c);
+  return c.body(null, 204);
+});
 
 // Rate limiting for auth routes (prevent brute force attacks)
 const authRateLimiter = rateLimiter({

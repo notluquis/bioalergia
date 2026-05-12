@@ -185,6 +185,12 @@ const ReactQueryDevtools =
 // Initialize performance monitoring
 initPerformanceMonitoring();
 
+// Mint csrf_token cookie before any oRPC POST. The server's
+// csrf-double-submit middleware would otherwise reject the very first
+// state-changing request after a cold load. Fire-and-forget — failures
+// are tolerated and the in-flight retry inside csrfFetch covers them.
+fetch("/api/csrf", { credentials: "include" }).catch(() => undefined);
+
 // Render the app
 const rootElement = document.querySelector("#root");
 if (!rootElement) {
