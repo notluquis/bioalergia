@@ -262,7 +262,14 @@ export default defineConfig(({ mode }) => {
       },
       outDir: "dist/client",
       chunkSizeWarningLimit: 1000,
-      sourcemap: false,
+      // `hidden` emits .map files alongside the bundle but omits the
+      // `//# sourceMappingURL=` comment from the JS, so browsers don't fetch
+      // them. Maps live in dist/client/assets/ but Caddy's site config strips
+      // them before serving (`@maps` matcher → 404). Decode prod stack traces
+      // locally with `pnpm exec source-map-explorer dist/client/assets/<file>.js.map`
+      // or upload to an error tracker. Golden 2026 default for SPAs that need
+      // diagnosable prod errors without leaking source to the public.
+      sourcemap: "hidden",
       cssCodeSplit: true, // Split CSS for faster parallel loading
       reportCompressedSize: false, // Skip gzip size calculation during build (faster)
       // 2026: Trust the graph! Manual chunks often hurt HTTP/3 multiplexing.

@@ -3,6 +3,7 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import { markMessageDelivered } from "./graph/media.ts";
 import { emitWaEvent } from "./events.ts";
 import { logEvent, logWarn } from "../../lib/logger.ts";
+import { broadcastPushNotification } from "../../services/notifications.ts";
 import { normalizeToE164 } from "./phone.ts";
 
 type MetaWebhookPayload = {
@@ -914,6 +915,30 @@ export async function processWebhookPayload(payload: MetaWebhookPayload): Promis
                 : { messageId: insertedInbound.id, direction: "INBOUND" as const }),
               ts: ts.getTime(),
             } as never);
+
+            // Fire-and-forget Web Push so operators get a system-level
+            // notification (laptop OS / phone) even when the tab is
+            // not focused. Skip reactions / system messages — those
+            // would create noise without conversational value.
+            if (m.type !== "reaction" && m.type !== "system") {
+              const contact = await db.waContact.findUnique({
+                where: { id: contactId },
+                select: { name: true, pushName: true, phoneE164: true },
+              });
+              const senderName =
+                contact?.name ?? contact?.pushName ?? contact?.phoneE164 ?? "WhatsApp";
+              const bodyPreview = preview && preview.length > 120 ? `${preview.slice(0, 117)}…` : preview;
+              broadcastPushNotification({
+                title: senderName,
+                body: bodyPreview || "Nuevo mensaje",
+                url: `/wa-cloud/inbox?conversation=${convId}`,
+                tag: `wa-conv-${convId}`,
+              }).catch((err) => {
+                logWarn("[wa-cloud.webhook] push notification failed", {
+                  error: err instanceof Error ? err.message : String(err),
+                });
+              });
+            }
           } catch (err) {
             const msg = err instanceof Error ? err.message : String(err);
             out.errors.push(`msg ${m.id}: ${msg}`);

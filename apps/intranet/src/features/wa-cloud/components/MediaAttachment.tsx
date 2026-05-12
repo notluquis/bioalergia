@@ -179,7 +179,17 @@ function DocumentPreview({ url, caption }: { url: string; caption: string | null
                   </Button>
                 </div>
               </div>
-              <iframe src={`${url}#toolbar=1&view=FitH`} title={filename} className="size-full" />
+              {/* Iframe rendered only while the modal is open so the
+                  PDF (often multi-MB) is not fetched eagerly when the
+                  document tile first paints in the conversation. */}
+              {open ? (
+                <iframe
+                  src={`${url}#toolbar=1&view=FitH`}
+                  title={filename}
+                  className="size-full"
+                  loading="lazy"
+                />
+              ) : null}
             </Modal.Dialog>
           </Modal.Container>
         </Modal.Backdrop>

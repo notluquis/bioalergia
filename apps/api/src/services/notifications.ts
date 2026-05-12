@@ -92,3 +92,60 @@ export async function sendPushNotification(
 
   return { success: true, sent };
 }
+
+// Broadcast a push notification to every subscribed device. Used for
+// events that any operator should see (e.g. inbound WhatsApp message
+// landing in the shared inbox). Bad endpoints are GC'd in place.
+export async function broadcastPushNotification(payload: {
+  title: string;
+  body: string;
+  icon?: string;
+  url?: string;
+  // Tag lets the OS collapse repeated notifications from the same
+  // conversation into one (per Web Notification API spec).
+  tag?: string;
+}) {
+  if (!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) {
+    return { success: false, sent: 0, reason: "VAPID keys not configured" };
+  }
+  const subscriptions = await db.pushSubscription.findMany();
+  if (subscriptions.length === 0) {
+    return { success: true, sent: 0 };
+  }
+
+  const notificationPayload = JSON.stringify({
+    title: payload.title,
+    body: payload.body,
+    icon: payload.icon || "/icons/icon-192x192.png",
+    tag: payload.tag,
+    data: { url: payload.url || "/" },
+  });
+
+  const results = await Promise.allSettled(
+    subscriptions.map((sub) =>
+      webpush.sendNotification(
+        {
+          endpoint: sub.endpoint,
+          keys: sub.keys as unknown as { p256dh: string; auth: string },
+        },
+        notificationPayload
+      )
+    )
+  );
+
+  let sent = 0;
+  for (const [index, result] of results.entries()) {
+    if (result.status === "fulfilled") {
+      sent++;
+    } else {
+      const error = result.reason as { statusCode?: number } | undefined;
+      if (error?.statusCode === 410 || error?.statusCode === 404) {
+        await db.pushSubscription.delete({
+          where: { id: subscriptions[index].id },
+        }).catch(() => undefined);
+      }
+    }
+  }
+
+  return { success: true, sent };
+}

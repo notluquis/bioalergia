@@ -73,9 +73,19 @@
 		file_server
 	}
 
+	# Hidden sourcemaps: Vite emits `.js.map` next to every bundle with
+	# `sourcemap: 'hidden'` so we can decode prod stack traces locally
+	# without leaking source to the public. Caddy must refuse to serve
+	# them — match BEFORE @static_assets and return 404.
+	@sourcemaps path_regexp \.(js|mjs|css)\.map$
+	handle @sourcemaps {
+		respond 404
+	}
+
 	# Static assets: Return 404 if not found (prevents MIME type errors for missing JS chunks)
-	# This handles cases where old HTML references deleted Vite chunks
-	@static_assets path_regexp \.(js|mjs|css|map|json|woff2?|ttf|eot|svg|png|jpg|jpeg|gif|webp|ico|webmanifest)$
+	# This handles cases where old HTML references deleted Vite chunks.
+	# `map` intentionally omitted from this list — see @sourcemaps above.
+	@static_assets path_regexp \.(js|mjs|css|json|woff2?|ttf|eot|svg|png|jpg|jpeg|gif|webp|ico|webmanifest)$
 
 	handle @static_assets {
 		file_server
