@@ -48,8 +48,9 @@ const AUTHED_DISABLED_RULES: string[] = [
   "page-has-heading-one",
   // TODO(a11y): mobile touch-target audit — several icon-only chips on
   //  the table rows render <44px on the iPhone viewport.
+  //  `target-offset` is an axe internal check on top of target-size, not
+  //  a separately-disableable rule.
   "target-size",
-  "target-offset",
 ];
 
 plain.describe("a11y / unauthenticated", () => {

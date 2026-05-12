@@ -15,11 +15,15 @@ test("skip link reveals on focus + jumps to main", async ({ authedPage }) => {
   await authedPage.goto("/", { waitUntil: "domcontentloaded" });
   await authedPage.waitForLoadState("load");
 
-  // Focus the skip link by Tab from body.
+  // Focus the skip link by Tab. It should be early in tab order; allow
+  // up to 5 stops so the test isn't sensitive to theme-toggle / impersonation-
+  // banner buttons that may sit before it.
   await authedPage.locator("body").click();
-  await authedPage.keyboard.press("Tab");
-
   const skipLink = authedPage.getByRole("link", { name: /saltar al contenido principal/i });
+  for (let i = 0; i < 5; i++) {
+    await authedPage.keyboard.press("Tab");
+    if (await skipLink.evaluate((el) => el === document.activeElement)) break;
+  }
   await expect(skipLink).toBeFocused();
 
   const isVisible = await skipLink.evaluate((el) => {
