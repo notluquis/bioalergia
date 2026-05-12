@@ -119,12 +119,13 @@ export function CreateShipmentWizard({
     setStep("coverage");
     setState({
       deliveryMode: "home",
-      weight: 1,
-      height: 10,
-      width: 10,
-      length: 10,
-      declaredValue: 10000,
+      weight: 0.2,
+      height: 5,
+      width: 12,
+      length: 20,
+      declaredValue: 60000,
       cashOnDelivery: 0,
+      contentDescription: "Vacuna inmunoterapia con caja de 20×12×5 cm + unidad refrigerante 80 gr",
     });
     setResult(null);
     onClose();
