@@ -79,51 +79,15 @@ export const test = base.extend<Fixtures>({
     },
     { auto: true },
   ],
-  authedPage: async ({ page, baseURL }, use, testInfo) => {
+  authedPage: async ({ page }, use, testInfo) => {
+    // The storageState (set by the `setup` project in playwright.config.ts)
+    // already contains an authenticated cookie for E2E_USER. We just hand
+    // the page over. If the cookie is missing (E2E_USER unset / setup
+    // skipped), the project's testMatch never runs us so this is reachable
+    // only with a valid session.
     if (!E2E_USER || !E2E_PASS) {
       testInfo.skip(true, "E2E_USER / E2E_PASS not set");
     }
-    // (readOnlyGuard already installed via auto fixture above; the fixture
-    // itself does not need to call it again.)
-    // Fixture targets a real backend (login posts via oRPC). When the auth
-    // API is unreachable (e.g. CI runs vite preview without spinning up
-    // @finanzas/api), skip cleanly instead of timing out at waitForURL.
-    const csrf = await page.request
-      .get(`${baseURL ?? ""}/api/csrf`, { failOnStatusCode: false, timeout: 5_000 })
-      .catch(() => undefined);
-    if (!csrf || csrf.status() >= 500) {
-      testInfo.skip(
-        true,
-        `API unavailable at ${baseURL}/api/csrf (status ${csrf?.status() ?? "no-response"})`
-      );
-    }
-    await page.goto("/login");
-    // The login surface starts on the passkey CTA. Wait until any login
-    // control is interactable, then click the email/password fallback if
-    // it's there (idempotent — a no-op when credentials are already shown).
-    await page.waitForLoadState("networkidle");
-    // Match both pre- and post-fix aria-labels (deployed Railway may lag the
-    // accessibility commit that aligns aria-label to the visible text):
-    //   pre  -> "Usar correo electrónico y contraseña"
-    //   post -> "Usar correo y contraseña"
-    const fallback = page.getByRole("button", {
-      name: /usar correo( electr[oó]nico)? y contrase[ñn]a/i,
-    });
-    if (await fallback.count()) {
-      await fallback.click({ trial: false }).catch(() => undefined);
-    }
-    // HeroUI v3 wraps the <input> inside a div, so getByLabel resolves to
-    // the wrapper. Target the real form controls by role / type.
-    const emailInput = page.locator('input[type="email"], input[autocomplete="username"]').first();
-    const passInput = page.locator('input[type="password"]').first();
-    await emailInput.waitFor({ state: "visible", timeout: 10_000 });
-    await emailInput.fill(E2E_USER!);
-    await passInput.fill(E2E_PASS!);
-    await page
-      .getByRole("button", { name: /^(iniciar sesi[oó]n|ingresar|continuar|log in)/i })
-      .first()
-      .click();
-    await page.waitForURL((url) => !url.pathname.startsWith("/login"), { timeout: 15_000 });
     await use(page);
   },
 });
