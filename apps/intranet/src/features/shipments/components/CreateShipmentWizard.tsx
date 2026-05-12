@@ -1026,14 +1026,15 @@ function QuoteStep({
         </Button>
         <Button
           isDisabled={!selectedService}
-          onPress={() =>
+          onPress={() => {
+            if (!selectedService) return;
             onNext({
               ...debouncedDims,
-              serviceTypeCode: selectedService!.serviceTypeCode,
-              serviceDescription: selectedService!.serviceDescription,
-              serviceValue: selectedService!.serviceValue,
-            })
-          }
+              serviceTypeCode: selectedService.serviceTypeCode,
+              serviceDescription: selectedService.serviceDescription,
+              serviceValue: selectedService.serviceValue,
+            });
+          }}
         >
           Continuar
         </Button>
