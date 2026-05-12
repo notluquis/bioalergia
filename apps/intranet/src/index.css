@@ -152,6 +152,22 @@ html {
   --warning-soft-hover: oklch(75% 0.16 55 / 0.14);
   --danger-soft-hover: oklch(60% 0.18 25 / 0.12);
   --default-soft-hover: oklch(20% 0.04 260 / 0.06);
+
+  /* Chart palette — qualitative, OKLCH-balanced, theme-aware. */
+  --chart-1: oklch(60% 0.17 257);
+  --chart-2: oklch(60% 0.16 295);
+  --chart-3: oklch(65% 0.18 145);
+  --chart-4: oklch(70% 0.16 60);
+  --chart-5: oklch(60% 0.18 25);
+  --chart-6: oklch(60% 0.14 200);
+  --chart-7: oklch(60% 0.16 320);
+  --chart-8: oklch(65% 0.14 175);
+  --chart-9: oklch(60% 0.16 40);
+  --chart-10: oklch(55% 0.16 240);
+  --chart-11: oklch(65% 0.14 100);
+  --chart-12: oklch(55% 0.14 350);
+  --chart-grid: oklch(90% 0.004 260);
+  --chart-text: oklch(45% 0.016 260);
 }
 
 /* Dark Theme */
@@ -286,6 +302,22 @@ html {
   --warning-soft-hover: oklch(80% 0.16 85 / 0.18);
   --danger-soft-hover: oklch(70% 0.18 20 / 0.2);
   --default-soft-hover: oklch(94% 0.003 260 / 0.08);
+
+  /* Chart palette — slightly lighter for dark surfaces. */
+  --chart-1: oklch(72% 0.14 255);
+  --chart-2: oklch(72% 0.13 295);
+  --chart-3: oklch(75% 0.16 150);
+  --chart-4: oklch(80% 0.14 60);
+  --chart-5: oklch(72% 0.16 20);
+  --chart-6: oklch(72% 0.12 200);
+  --chart-7: oklch(72% 0.13 320);
+  --chart-8: oklch(76% 0.12 175);
+  --chart-9: oklch(72% 0.14 40);
+  --chart-10: oklch(68% 0.14 240);
+  --chart-11: oklch(78% 0.13 100);
+  --chart-12: oklch(68% 0.13 350);
+  --chart-grid: oklch(28% 0.008 260);
+  --chart-text: oklch(70% 0.012 260);
 }
 
 @theme {

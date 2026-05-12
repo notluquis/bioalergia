@@ -33,6 +33,7 @@ import { useConfirmDialog } from "@/context/ConfirmDialogContext";
 import { fetchCounterparts } from "@/features/counterparts/api";
 import { useLazyTabs } from "@/hooks/use-lazy-tabs";
 import { ApiError } from "@/lib/api-client";
+import { useChartPalette } from "@/lib/chart-palette";
 import { toast } from "@/lib/toast-interceptor";
 import type {
   CashFlowTransaction,
@@ -465,17 +466,7 @@ const CATEGORY_COLOR_PRESETS = [
 
 const TABLE_PAGE_SIZE = 50;
 
-const PIE_COLORS = [
-  "#2563EB",
-  "#0891B2",
-  "#0D9488",
-  "#16A34A",
-  "#CA8A04",
-  "#EA580C",
-  "#DC2626",
-  "#9333EA",
-  "#64748B",
-] as const;
+// Pie chart palette resolved at render via useChartPalette() (theme-aware).
 const PIE_MAX_SEGMENTS = 8;
 const BULK_CATEGORY_PLACEHOLDER = "__select__";
 
@@ -601,12 +592,13 @@ function buildSummary(transactions: CashFlowTransaction[]) {
 
 function buildPieCategoryData(
   items: SummaryByCategoryEntry[],
-  type: "EXPENSE" | "INCOME"
+  type: "EXPENSE" | "INCOME",
+  palette: { colors: string[]; default: string }
 ): PieCategoryDatum[] {
   const rows = items
     .filter((item) => item.type === type)
     .map((item, index) => ({
-      color: item.categoryColor ?? PIE_COLORS[index % PIE_COLORS.length] ?? "#64748B",
+      color: item.categoryColor ?? palette.colors[index % palette.colors.length] ?? palette.default,
       name: item.categoryName,
       value: Math.abs(item.total),
     }))
@@ -624,7 +616,7 @@ function buildPieCategoryData(
   return [
     ...mainRows,
     {
-      color: "#94A3B8",
+      color: palette.default,
       name: "Otros",
       value: othersTotal,
     },
@@ -1023,13 +1015,14 @@ export function CashFlowPage() {
         .sort((a, b) => Math.abs(b.total) - Math.abs(a.total)),
     [monthlySummary.byCategory]
   );
+  const chartPalette = useChartPalette();
   const incomePieData = useMemo(
-    () => buildPieCategoryData(monthlySummary.byCategory, "INCOME"),
-    [monthlySummary.byCategory]
+    () => buildPieCategoryData(monthlySummary.byCategory, "INCOME", chartPalette),
+    [monthlySummary.byCategory, chartPalette]
   );
   const expensePieData = useMemo(
-    () => buildPieCategoryData(monthlySummary.byCategory, "EXPENSE"),
-    [monthlySummary.byCategory]
+    () => buildPieCategoryData(monthlySummary.byCategory, "EXPENSE", chartPalette),
+    [monthlySummary.byCategory, chartPalette]
   );
   const incomePieTotal = useMemo(
     () => incomePieData.reduce((acc, item) => acc + item.value, 0),

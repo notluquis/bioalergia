@@ -45,24 +45,14 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { DataTable } from "@/components/data-table/DataTable";
 import { calendarQueries } from "@/features/calendar/queries";
 import type { TreatmentAnalytics, TreatmentAnalyticsFilters } from "@/features/calendar/types";
+import { useChartPalette } from "@/lib/chart-palette";
 import { formatCurrency } from "@/lib/utils";
 const routeApi = getRouteApi("/_authed/clinical/analytics");
 
 // --- Constants & Config ---
+// Chart colors come from useChartPalette() (theme-aware OKLCH tokens). The
+// previous hardcoded hex palette did not flip on dark theme.
 
-const COLORS = {
-  primary: "#006FEE",
-  secondary: "#9353d3",
-  success: "#17c964",
-  warning: "#f5a524",
-  danger: "#f31260",
-  default: "#71717a",
-  grid: "#e4e4e7",
-  text: "#52525b",
-};
-
-const PIE_COLORS_STAGE = [COLORS.primary, COLORS.secondary, COLORS.default];
-const PIE_COLORS_LOCATION = [COLORS.secondary, COLORS.primary];
 const KPI_ICON_STYLES: Record<
   "primary" | "secondary" | "success" | "warning",
   { bgClass: string; textClass: string }
@@ -380,6 +370,9 @@ function AnalyticsCharts({
   period: "day" | "week" | "month";
   trendData: AnalyticsTrendPoint[];
 }) {
+  const palette = useChartPalette();
+  const pieColorsStage = [palette.primary, palette.secondary, palette.default];
+  const pieColorsLocation = [palette.secondary, palette.primary];
   const monthlyData = (byMonth || []).map((month) => {
     const totalEvents = month.events || 0;
     const unclassifiedCount =
@@ -417,22 +410,22 @@ function AnalyticsCharts({
               >
                 <defs>
                   <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor={COLORS.success} stopOpacity={0.1} />
-                    <stop offset="95%" stopColor={COLORS.success} stopOpacity={0} />
+                    <stop offset="5%" stopColor={palette.success} stopOpacity={0.1} />
+                    <stop offset="95%" stopColor={palette.success} stopOpacity={0} />
                   </linearGradient>
                   <linearGradient id="colorPaid" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor={COLORS.warning} stopOpacity={0.1} />
-                    <stop offset="95%" stopColor={COLORS.warning} stopOpacity={0} />
+                    <stop offset="5%" stopColor={palette.warning} stopOpacity={0.1} />
+                    <stop offset="95%" stopColor={palette.warning} stopOpacity={0} />
                   </linearGradient>
                   <linearGradient id="colorVolume" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor={COLORS.primary} stopOpacity={0.1} />
-                    <stop offset="95%" stopColor={COLORS.primary} stopOpacity={0} />
+                    <stop offset="5%" stopColor={palette.primary} stopOpacity={0.1} />
+                    <stop offset="95%" stopColor={palette.primary} stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={COLORS.grid} />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={palette.grid} />
                 <XAxis
                   dataKey={period === "day" ? "date" : "label"}
-                  stroke={COLORS.default}
+                  stroke={palette.default}
                   tick={{ fontSize: 12 }}
                   tickLine={false}
                   axisLine={false}
@@ -441,7 +434,7 @@ function AnalyticsCharts({
 
                 <YAxis
                   yAxisId="left"
-                  stroke={COLORS.default}
+                  stroke={palette.default}
                   tick={{ fontSize: 12 }}
                   tickLine={false}
                   axisLine={false}
@@ -451,7 +444,7 @@ function AnalyticsCharts({
                 <YAxis
                   yAxisId="right"
                   orientation="right"
-                  stroke={COLORS.default}
+                  stroke={palette.default}
                   tick={{ fontSize: 12 }}
                   tickLine={false}
                   axisLine={false}
@@ -464,7 +457,7 @@ function AnalyticsCharts({
                   type="monotone"
                   dataKey="amountExpected"
                   name="Ingresos Esperado ($)"
-                  stroke={COLORS.success}
+                  stroke={palette.success}
                   fillOpacity={1}
                   fill="url(#colorRevenue)"
                   strokeWidth={2}
@@ -475,7 +468,7 @@ function AnalyticsCharts({
                   type="monotone"
                   dataKey="amountPaid"
                   name="Ingresos Pagado ($)"
-                  stroke={COLORS.warning}
+                  stroke={palette.warning}
                   fillOpacity={0.5}
                   fill="url(#colorPaid)"
                   strokeWidth={2}
@@ -486,7 +479,7 @@ function AnalyticsCharts({
                   type="monotone"
                   dataKey="events"
                   name="Tratamientos"
-                  stroke={COLORS.primary}
+                  stroke={palette.primary}
                   fillOpacity={1}
                   fill="url(#colorVolume)"
                   strokeWidth={2}
@@ -509,7 +502,7 @@ function AnalyticsCharts({
                   key={`etapa-${month.label}`}
                   title={month.label}
                   data={month.pieDataStage}
-                  colors={PIE_COLORS_STAGE}
+                  colors={pieColorsStage}
                 />
               ))}
             </div>
@@ -524,7 +517,7 @@ function AnalyticsCharts({
                   key={`ubicacion-${month.label}`}
                   title={month.label}
                   data={month.pieDataLocation}
-                  colors={PIE_COLORS_LOCATION}
+                  colors={pieColorsLocation}
                 />
               ))}
             </div>

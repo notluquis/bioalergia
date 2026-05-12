@@ -124,7 +124,7 @@ export function ConversationalAutomationCard() {
               Meta envía un mensaje de bienvenida la primera vez que un paciente abre tu chat.
             </p>
           </div>
-          <Switch isSelected={welcomeEnabled} onValueChange={setWelcomeEnabled} />
+          <Switch isSelected={welcomeEnabled} onChange={setWelcomeEnabled} />
         </div>
 
         <div className="space-y-2">
