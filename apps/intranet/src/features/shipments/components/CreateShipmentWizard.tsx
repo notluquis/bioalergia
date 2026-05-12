@@ -2,6 +2,7 @@
 import type { Key } from "@heroui/react";
 import {
   Button,
+  Checkbox,
   Chip,
   Description,
   FieldError,
@@ -64,6 +65,10 @@ interface WizardState {
   serviceTypeCode: string;
   serviceDescription: string;
   serviceValue: number;
+  // Add-on services (e.g. 417 = Cobertura Extendida) the operator
+  // opted into during the quote step. Persisted so they're attached
+  // to the OT request when the shipment is created.
+  additionalServiceCodes: number[];
   weight: number;
   height: number;
   width: number;
@@ -884,6 +889,10 @@ function QuoteStep({
     },
   ];
   const [selectedCode, setSelectedCode] = useState<string | null>(state.serviceTypeCode ?? null);
+  // Opt-in add-on services per service tier. Required ones are
+  // always included regardless of operator action; required toggle is
+  // disabled in the UI.
+  const [extraCodes, setExtraCodes] = useState<number[]>(state.additionalServiceCodes ?? []);
 
   // Debounce dims so re-typing a value doesn't blast Chilexpress.
   const [debouncedDims, setDebouncedDims] = useState(dims);
@@ -1091,21 +1100,33 @@ function QuoteStep({
                   <p className="text-default-500 text-xs">{svc.conditions}</p>
                 ) : null}
                 {svc.additionalServices && svc.additionalServices.length > 0 ? (
-                  <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                  <div className="flex flex-col gap-1.5 pt-1">
                     <span className="text-default-400 text-xs">Servicios opcionales:</span>
-                    {svc.additionalServices.map((extra) => (
-                      <Chip
-                        key={`${svc.serviceTypeCode}-${extra.serviceTypeCode}`}
-                        size="sm"
-                        variant="soft"
-                        color={extra.required ? "danger" : "accent"}
-                      >
-                        <Chip.Label>
-                          {extra.serviceDescription} (+{CLP.format(extra.serviceValue)})
-                          {extra.required ? " · obligatorio" : ""}
-                        </Chip.Label>
-                      </Chip>
-                    ))}
+                    {svc.additionalServices.map((extra) => {
+                      const isSelected =
+                        extra.required || extraCodes.includes(extra.serviceTypeCode);
+                      const isPicked = svc.serviceTypeCode === selectedCode;
+                      return (
+                        <Checkbox
+                          key={`${svc.serviceTypeCode}-${extra.serviceTypeCode}`}
+                          isSelected={isSelected}
+                          isDisabled={!isPicked || extra.required}
+                          onChange={(next) => {
+                            setExtraCodes((arr) =>
+                              next
+                                ? Array.from(new Set([...arr, extra.serviceTypeCode]))
+                                : arr.filter((c) => c !== extra.serviceTypeCode)
+                            );
+                          }}
+                        >
+                          <Checkbox.Indicator />
+                          <span className="text-xs">
+                            {extra.serviceDescription} (+{CLP.format(extra.serviceValue)})
+                            {extra.required ? " · obligatorio" : ""}
+                          </span>
+                        </Checkbox>
+                      );
+                    })}
                   </div>
                 ) : null}
               </Radio.Content>
@@ -1128,11 +1149,20 @@ function QuoteStep({
           isDisabled={!selectedService}
           onPress={() => {
             if (!selectedService) return;
+            // Merge required add-ons with operator-chosen ones so the
+            // server-side request always reflects what the carrier
+            // actually charges (required=true means Chilexpress
+            // mandates the add-on regardless of opt-in).
+            const required = (selectedService.additionalServices ?? [])
+              .filter((a) => a.required)
+              .map((a) => a.serviceTypeCode);
+            const merged = Array.from(new Set([...required, ...extraCodes]));
             onNext({
               ...debouncedDims,
               serviceTypeCode: selectedService.serviceTypeCode,
               serviceDescription: selectedService.serviceDescription,
               serviceValue: selectedService.serviceValue,
+              additionalServiceCodes: merged,
             });
           }}
         >
@@ -1321,6 +1351,10 @@ function ConfirmStep({
         declaredValue: state.declaredValue,
         cashOnDelivery: state.cashOnDelivery,
         contentDescription: state.contentDescription,
+        additionalServiceCodes:
+          state.additionalServiceCodes && state.additionalServiceCodes.length > 0
+            ? state.additionalServiceCodes
+            : undefined,
       }),
     onSuccess: (data) => onSuccess({ otNumber: data.otNumber, labelBase64: data.labelBase64 }),
     onError: (err) => onError((err as Error).message),

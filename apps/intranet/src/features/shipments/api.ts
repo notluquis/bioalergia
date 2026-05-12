@@ -115,6 +115,7 @@ export async function createShipment(input: {
   declaredValue: number;
   cashOnDelivery: number;
   contentDescription: string;
+  additionalServiceCodes?: number[];
 }) {
   try {
     return await shipmentsORPCClient.create(input);

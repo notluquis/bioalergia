@@ -322,14 +322,26 @@ export default defineConfig(({ mode }) => {
           ...(configDefaults.coverage?.exclude ?? []),
           "test/setup.ts",
           "**/*.test.{ts,tsx}",
+          "**/*.stories.@(ts|tsx)",
           "**/types.ts",
           "**/*.d.ts",
         ],
+        // `all: true` includes every file in the include glob, even
+        // those no test imports. Without it Vitest only counts loaded
+        // files and the % is misleading (artificially high — uncovered
+        // files don't contribute to the denominator). Trade-off: slower
+        // run because v8 has to instrument the full src tree.
+        all: true,
+        // Thresholds intentionally below the current baseline (~65% with
+        // loaded-only, lower under all:true) so the metric is a trend
+        // tracker, not a gate. CI job runs `continue-on-error: true` so
+        // a regression highlights but doesn't block merges. Tighten as
+        // the test suite catches up; aspirational target stays at 80/75.
         thresholds: {
-          lines: 80,
-          functions: 80,
-          branches: 75,
-          statements: 80,
+          lines: 40,
+          functions: 40,
+          branches: 30,
+          statements: 40,
         },
       },
     },

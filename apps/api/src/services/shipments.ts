@@ -240,6 +240,13 @@ export async function createShipment(input: CreateShipmentInput) {
             productCode: "2",
             multivariateCode: input.serviceTypeCode,
             numberOfPackages: 1,
+            ...(input.additionalServiceCodes && input.additionalServiceCodes.length > 0
+              ? {
+                  additionalServices: input.additionalServiceCodes.map((c) => ({
+                    serviceTypeCode: c,
+                  })),
+                }
+              : {}),
           },
         ],
       },

@@ -175,6 +175,11 @@ export const createShipmentInputSchema = z.object({
   declaredValue: z.number().min(0),
   cashOnDelivery: z.number().min(0),
   contentDescription: z.string().min(1),
+  // Optional Chilexpress add-on services the operator opted into at
+  // the quote step (e.g. 417 = "Cobertura Extendida"). Each entry is
+  // a serviceTypeCode from cxAdditionalServiceSchema; the server
+  // attaches them to the package on /transport-orders.
+  additionalServiceCodes: z.array(z.number().int()).optional(),
 });
 
 export const shipmentSchema = z.object({

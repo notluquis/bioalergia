@@ -142,6 +142,8 @@ export interface CxTransportOrderInput {
       productCode: string;
       multivariateCode: string;
       numberOfPackages: number;
+      /** Add-on services per package (e.g. 417 = Cobertura Extendida). */
+      additionalServices?: Array<{ serviceTypeCode: number }>;
     }>;
   }>;
 }

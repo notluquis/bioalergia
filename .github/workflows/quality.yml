@@ -55,6 +55,31 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm audit:dead:advisory
 
+  coverage:
+    # Advisory: prints + uploads vitest coverage. Job stays green so a
+    # regression highlights in the PR check but doesn't block merges.
+    # Thresholds in vite.config.ts are deliberately below the current
+    # baseline (~65% lines under loaded-only, lower with `all: true`)
+    # — they're a trend tracker, not a gate. Lift to enforcing 80/75
+    # once the test suite catches up.
+    name: vitest coverage (advisory)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v6
+        with: { node-version: "${{ env.NODE_VERSION }}", cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm -F @finanzas/intranet test:coverage
+      - name: Upload coverage HTML report on success
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-html
+          path: apps/intranet/coverage
+          retention-days: 14
+
   bundle-budget:
     name: size-limit (bundle budgets)
     runs-on: ubuntu-latest

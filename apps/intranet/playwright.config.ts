@@ -81,24 +81,28 @@ export default defineConfig({
     // ── Unauthenticated specs (no storageState, vite preview) ───────────
     {
       name: "mobile-unauthed",
-      testIgnore: /a11y\.spec\.ts|skip-link\.spec\.ts|wa-cloud-.*\.spec\.ts/,
+      testIgnore:
+        /a11y\.spec\.ts|skip-link\.spec\.ts|wa-cloud-.*\.spec\.ts|route-snapshots\.spec\.ts/,
       use: { ...chromium, viewport: MOBILE, hasTouch: true, isMobile: true },
     },
     {
       name: "tablet-unauthed",
-      testIgnore: /a11y\.spec\.ts|skip-link\.spec\.ts|wa-cloud-.*\.spec\.ts/,
+      testIgnore:
+        /a11y\.spec\.ts|skip-link\.spec\.ts|wa-cloud-.*\.spec\.ts|route-snapshots\.spec\.ts/,
       use: { ...chromium, viewport: TABLET, hasTouch: true, isMobile: true },
     },
     {
       name: "desktop-unauthed",
-      testIgnore: /a11y\.spec\.ts|skip-link\.spec\.ts|wa-cloud-.*\.spec\.ts/,
+      testIgnore:
+        /a11y\.spec\.ts|skip-link\.spec\.ts|wa-cloud-.*\.spec\.ts|route-snapshots\.spec\.ts/,
       use: { ...chromium, viewport: DESKTOP },
     },
 
     // ── Authed specs (storageState pre-loaded, hit AUTHED_URL) ──────────
     {
       name: "mobile",
-      testMatch: /a11y\.spec\.ts|skip-link\.spec\.ts|wa-cloud-.*\.spec\.ts/,
+      testMatch:
+        /a11y\.spec\.ts|skip-link\.spec\.ts|wa-cloud-.*\.spec\.ts|route-snapshots\.spec\.ts/,
       dependencies: ["setup"],
       use: {
         ...chromium,
@@ -111,7 +115,7 @@ export default defineConfig({
     },
     {
       name: "tablet",
-      testMatch: /a11y\.spec\.ts|wa-cloud-.*\.spec\.ts/,
+      testMatch: /a11y\.spec\.ts|wa-cloud-.*\.spec\.ts|route-snapshots\.spec\.ts/,
       dependencies: ["setup"],
       use: {
         ...chromium,
@@ -124,7 +128,8 @@ export default defineConfig({
     },
     {
       name: "desktop",
-      testMatch: /a11y\.spec\.ts|skip-link\.spec\.ts|wa-cloud-.*\.spec\.ts/,
+      testMatch:
+        /a11y\.spec\.ts|skip-link\.spec\.ts|wa-cloud-.*\.spec\.ts|route-snapshots\.spec\.ts/,
       dependencies: ["setup"],
       use: {
         ...chromium,
