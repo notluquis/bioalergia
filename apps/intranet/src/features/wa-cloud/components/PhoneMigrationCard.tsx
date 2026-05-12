@@ -1,6 +1,7 @@
 import { Button, Card, Chip, Label, ListBox, Select } from "@heroui/react";
 import { ArrowRight, Check, MailQuestion, PhoneIncoming, ShieldAlert } from "lucide-react";
 import { useState } from "react";
+import { confirmAction } from "@/components/ui/ConfirmDialog";
 import { SelectInput, TextInput } from "@/features/outreach/components/FormField";
 import { toast } from "@/lib/toast-interceptor";
 import {
@@ -158,13 +159,15 @@ export function PhoneMigrationCard() {
       toast.error("Selecciona el número");
       return;
     }
-    if (
-      !confirm(
-        "¿Quitar este número del Cloud API? Para volver a usarlo hay que migrarlo nuevamente."
-      )
-    ) {
-      return;
-    }
+    const ok = await confirmAction({
+      title: "Quitar número del Cloud API",
+      description:
+        "Para volver a usarlo hay que migrarlo nuevamente. Esta acción no se puede deshacer.",
+      confirmLabel: "Quitar",
+      cancelLabel: "Volver",
+      variant: "danger",
+    });
+    if (!ok) return;
     try {
       await deregister.mutateAsync({ phoneNumberId: numericPhoneId });
       toast.success("Número desregistrado");
