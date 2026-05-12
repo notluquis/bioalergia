@@ -1,4 +1,5 @@
 import { db } from "@finanzas/db";
+import { findOrCreatePerson } from "../services/people-factory.ts";
 import {
   inviteResponseSchema,
   inviteUserSchema,
@@ -105,17 +106,20 @@ async function resolveInvitePersonId(
       throw new ORPCError("BAD_REQUEST", { message: "RUT inválido" });
     }
 
-    const person = await db.person.create({
-      data: {
-        names,
-        fatherName: toNullableText(payload.fatherName),
-        motherName: toNullableText(payload.motherName),
-        email,
-        rut,
-      },
+    // User invite is operator-driven so the typed name should win on
+    // re-invite of an existing identity. mergeStrategy "overwrite"
+    // matches the previous behaviour while gaining the canonical-RUT
+    // dedupe + módulo-11 validation that the factory enforces.
+    const { personId } = await findOrCreatePerson({
+      rut,
+      names,
+      fatherName: toNullableText(payload.fatherName),
+      motherName: toNullableText(payload.motherName),
+      email,
+      mergeStrategy: "overwrite",
     });
 
-    return person.id;
+    return personId;
   }
 
   const linkedPerson = await db.person.findUnique({ where: { id: personId } });

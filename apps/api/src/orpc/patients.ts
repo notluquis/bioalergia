@@ -18,6 +18,7 @@ import { z } from "zod";
 import { getSessionUser, hasPermission } from "../auth.ts";
 import { logError } from "../lib/logger.ts";
 import { requireCanonicalRut } from "../lib/rut.ts";
+import { findOrCreatePerson } from "../services/people-factory.ts";
 import { configureSuperjson } from "../lib/superjson-config.ts";
 import { writeTempUpload } from "../lib/temp-file.ts";
 import { uploadPatientAttachmentToDrive } from "../services/patient-attachments-drive.ts";
@@ -405,66 +406,48 @@ const patientsORPCRouterBase = {
         throw new ORPCError("BAD_REQUEST", { message: "RUT inválido" });
       }
 
-      // Use findFirst (not findUnique) until all existing person.rut values
-      // are canonicalized — there may be legacy duplicates with the same RUT
-      // stored in different formats.
-      let person = await db.person.findFirst({
-        where: { rut: canonicalRut },
-      });
-
-      if (person) {
+      // Refuse-then-create: handle the two CONFLICT cases (already a
+      // patient; RUT belongs to another user) before delegating to
+      // findOrCreatePerson. The factory itself never throws CONFLICT —
+      // it dedupes silently — so the operator-facing error messages
+      // stay here.
+      const existing = await db.person.findFirst({ where: { rut: canonicalRut } });
+      if (existing) {
         const existingPatient = await db.patient.findUnique({
-          where: { personId: person.id },
+          where: { personId: existing.id },
         });
-
         if (existingPatient) {
           throw new ORPCError("CONFLICT", { message: "El paciente ya está registrado" });
         }
-
-        // Refuse to rewrite the identity of a Person already linked to a User.
-        // Otherwise a patient form with a typo'd RUT silently overwrites an
-        // existing employee/admin's name, father, and mother fields.
         const linkedUser = await db.user.findFirst({
-          where: { personId: person.id },
+          where: { personId: existing.id },
           select: { id: true },
         });
         const namesDiffer =
-          (person.names ?? "") !== input.names ||
-          (person.fatherName ?? "") !== (input.fatherName ?? "") ||
-          (person.motherName ?? "") !== (input.motherName ?? "");
+          (existing.names ?? "") !== input.names ||
+          (existing.fatherName ?? "") !== (input.fatherName ?? "") ||
+          (existing.motherName ?? "") !== (input.motherName ?? "");
         if (linkedUser && namesDiffer) {
           throw new ORPCError("CONFLICT", {
-            message: `El RUT ${canonicalRut} ya pertenece a otro usuario del sistema (${person.names ?? ""} ${person.fatherName ?? ""} ${person.motherName ?? ""}). Verifica el RUT del paciente.`,
+            message: `El RUT ${canonicalRut} ya pertenece a otro usuario del sistema (${existing.names ?? ""} ${existing.fatherName ?? ""} ${existing.motherName ?? ""}). Verifica el RUT del paciente.`,
           });
         }
-
-        person = await db.person.update({
-          where: { id: person.id },
-          data: {
-            rut: canonicalRut, // re-write canonical form to bring legacy rows in line
-            names: linkedUser ? person.names : input.names,
-            fatherName: linkedUser ? person.fatherName : input.fatherName,
-            motherName: linkedUser ? person.motherName : input.motherName,
-            email: input.email || person.email,
-            phone: input.phone || person.phone,
-          },
-        });
-      } else {
-        person = await db.person.create({
-          data: {
-            rut: canonicalRut,
-            names: input.names,
-            fatherName: input.fatherName,
-            motherName: input.motherName,
-            email: input.email,
-            phone: input.phone,
-          },
-        });
       }
+
+      const { personId } = await findOrCreatePerson({
+        rut: canonicalRut,
+        names: input.names,
+        fatherName: input.fatherName,
+        motherName: input.motherName,
+        email: input.email,
+        phone: input.phone,
+        // Operator-typed values win on patient registration.
+        mergeStrategy: "overwrite",
+      });
 
       const patient = await db.patient.create({
         data: {
-          personId: person.id,
+          personId,
           birthDate: input.birthDate ? parseDateOnly(input.birthDate) : null,
           bloodType: input.bloodType,
           notes: input.notes,

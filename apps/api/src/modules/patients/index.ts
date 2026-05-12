@@ -11,6 +11,7 @@ import type { AuthSession } from "../../auth.ts";
 import { AppError } from "../../lib/app-error.ts";
 import { requirePermission, requireSession } from "../../lib/legacy-route.ts";
 import { canonicalRutFilter, normalizeRut, requireCanonicalRut } from "../../lib/rut.ts";
+import { findOrCreatePerson } from "../../services/people-factory.ts";
 import { writeTempUpload } from "../../lib/temp-file.ts";
 import { zValidator } from "../../lib/zod-validator.ts";
 import { uploadPatientAttachmentToDrive } from "../../services/patient-attachments-drive.ts";
@@ -415,70 +416,50 @@ patientsRoutes.post(
         throw new AppError(400, { code: "BAD_REQUEST", message: "RUT inválido" });
       }
 
-      // 1. Check if person exists by canonical RUT
-      let person = await db.person.findFirst({
-        where: { rut: canonicalRut },
-      });
-
-      if (person) {
-        // Check if already a patient
+      // CONFLICT pre-check: already a patient OR linked to a different
+      // user. Both must abort the request before findOrCreatePerson
+      // dedupes silently.
+      const existing = await db.person.findFirst({ where: { rut: canonicalRut } });
+      if (existing) {
         const existingPatient = await db.patient.findUnique({
-          where: { personId: person.id },
+          where: { personId: existing.id },
         });
-
         if (existingPatient) {
           throw new AppError(409, {
             code: "CONFLICT",
             message: "El paciente ya está registrado",
           });
         }
-
-        // Refuse to rewrite a Person already linked to a User. A patient form
-        // with a typo'd RUT must not silently overwrite an employee's name.
         const linkedUser = await db.user.findFirst({
-          where: { personId: person.id },
+          where: { personId: existing.id },
           select: { id: true },
         });
         const namesDiffer =
-          (person.names ?? "") !== input.names ||
-          (person.fatherName ?? "") !== (input.fatherName ?? "") ||
-          (person.motherName ?? "") !== (input.motherName ?? "");
+          (existing.names ?? "") !== input.names ||
+          (existing.fatherName ?? "") !== (input.fatherName ?? "") ||
+          (existing.motherName ?? "") !== (input.motherName ?? "");
         if (linkedUser && namesDiffer) {
           throw new AppError(409, {
             code: "CONFLICT",
-            message: `El RUT ${canonicalRut} ya pertenece a otro usuario del sistema (${person.names ?? ""} ${person.fatherName ?? ""} ${person.motherName ?? ""}). Verifica el RUT del paciente.`,
+            message: `El RUT ${canonicalRut} ya pertenece a otro usuario del sistema (${existing.names ?? ""} ${existing.fatherName ?? ""} ${existing.motherName ?? ""}). Verifica el RUT del paciente.`,
           });
         }
-
-        person = await db.person.update({
-          where: { id: person.id },
-          data: {
-            rut: canonicalRut,
-            names: linkedUser ? person.names : input.names,
-            fatherName: linkedUser ? person.fatherName : input.fatherName,
-            motherName: linkedUser ? person.motherName : input.motherName,
-            email: input.email || person.email,
-            phone: input.phone || person.phone,
-          },
-        });
-      } else {
-        // Create new person
-        person = await db.person.create({
-          data: {
-            rut: canonicalRut,
-            names: input.names,
-            fatherName: input.fatherName,
-            motherName: input.motherName,
-            email: input.email,
-            phone: input.phone,
-          },
-        });
       }
+
+      const { personId } = await findOrCreatePerson({
+        rut: canonicalRut,
+        names: input.names,
+        fatherName: input.fatherName,
+        motherName: input.motherName,
+        email: input.email,
+        phone: input.phone,
+        mergeStrategy: "overwrite",
+      });
 
       // 2. Create patient profile
       const patient = await db.patient.create({
         data: {
-          personId: person.id,
+          personId,
           birthDate: input.birthDate ? parseDateOnly(input.birthDate) : null,
           bloodType: input.bloodType,
           notes: input.notes,

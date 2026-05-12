@@ -30,7 +30,7 @@ if (!process.env.DATABASE_URL) {
   process.exit(2);
 }
 
-const db = new Kysely<any>({
+const db = new Kysely<Record<string, never>>({
   dialect: new PostgresDialect({
     pool: new Pool({ connectionString: process.env.DATABASE_URL }),
   }),

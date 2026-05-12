@@ -32,6 +32,21 @@ export type PersonInput = {
   email?: string | null;
   phone?: string | null;
   personType?: PersonTypeEnum;
+  /**
+   * `enrich` (default): only fill columns that are NULL/empty on the
+   * existing row. Safe for background imports / scrapers that should
+   * never clobber operator-typed data.
+   *
+   * `overwrite`: take the input verbatim for names / fatherName /
+   * motherName / email / phone, replacing whatever is on the existing
+   * row. Use ONLY in operator-driven flows (patient registration form,
+   * user invite) where the typist's value is canonical and intentional.
+   *
+   * `preserve`: never touch existing fields. Used when the caller has
+   * already done its own conflict logic (e.g. linked-User check) and
+   * just wants the row id back.
+   */
+  mergeStrategy?: "enrich" | "overwrite" | "preserve";
 };
 
 export type FindOrCreatePersonResult = {
@@ -86,15 +101,30 @@ export async function findOrCreatePerson(
   if (canonicalRut) {
     const existing = await db.person.findUnique({ where: { rut: canonicalRut } });
     if (existing) {
-      // Backfill missing fields without overwriting populated ones.
-      const mergedNames = preferLonger(existing.names, names) ?? existing.names;
-      const merged = {
-        names: mergedNames,
-        fatherName: preferLonger(existing.fatherName, trimOrNull(input.fatherName ?? null)),
-        motherName: preferLonger(existing.motherName, trimOrNull(input.motherName ?? null)),
-        email: existing.email ?? trimOrNull(input.email ?? null),
-        phone: existing.phone ?? trimOrNull(input.phone ?? null),
-      };
+      const strategy = input.mergeStrategy ?? "enrich";
+      if (strategy === "preserve") {
+        return { personId: existing.id, created: false, rut: canonicalRut };
+      }
+      const inputFather = trimOrNull(input.fatherName ?? null);
+      const inputMother = trimOrNull(input.motherName ?? null);
+      const inputEmail = trimOrNull(input.email ?? null);
+      const inputPhone = trimOrNull(input.phone ?? null);
+      const merged =
+        strategy === "overwrite"
+          ? {
+              names,
+              fatherName: inputFather ?? existing.fatherName,
+              motherName: inputMother ?? existing.motherName,
+              email: inputEmail ?? existing.email,
+              phone: inputPhone ?? existing.phone,
+            }
+          : {
+              names: preferLonger(existing.names, names) ?? existing.names,
+              fatherName: preferLonger(existing.fatherName, inputFather),
+              motherName: preferLonger(existing.motherName, inputMother),
+              email: existing.email ?? inputEmail,
+              phone: existing.phone ?? inputPhone,
+            };
       const changed =
         merged.names !== existing.names ||
         merged.fatherName !== existing.fatherName ||
@@ -103,7 +133,11 @@ export async function findOrCreatePerson(
         merged.phone !== existing.phone;
       if (changed) {
         await db.person.update({ where: { id: existing.id }, data: merged });
-        logEvent("[people-factory] person enriched", { id: existing.id, rut: canonicalRut });
+        logEvent("[people-factory] person updated", {
+          id: existing.id,
+          rut: canonicalRut,
+          strategy,
+        });
       }
       return { personId: existing.id, created: false, rut: canonicalRut };
     }
