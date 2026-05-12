@@ -6,6 +6,7 @@ export * from "./balances.ts";
 export * from "./backups.ts";
 export * from "./calendar.ts";
 export * from "./certificates.ts";
+export * from "./clinical-records.ts";
 export * from "./clinical-series.ts";
 export * from "./clinical-skin-tests.ts";
 export * from "./counterparts.ts";

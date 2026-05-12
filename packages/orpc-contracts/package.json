@@ -53,6 +53,11 @@
       "import": "./dist/clinical-series.js",
       "default": "./dist/clinical-series.js"
     },
+    "./clinical-records": {
+      "types": "./dist/clinical-records.d.ts",
+      "import": "./dist/clinical-records.js",
+      "default": "./dist/clinical-records.js"
+    },
     "./clinical-skin-tests": {
       "types": "./dist/clinical-skin-tests.d.ts",
       "import": "./dist/clinical-skin-tests.js",

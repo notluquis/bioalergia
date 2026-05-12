@@ -23,6 +23,10 @@ import { calendarOpenAPIHandler, calendarORPCHandler } from "./orpc/calendar.ts"
 import { certificatesOpenAPIHandler, certificatesORPCHandler } from "./orpc/certificates.ts";
 import { clinicalSeriesOpenAPIHandler, clinicalSeriesORPCHandler } from "./orpc/clinical-series.ts";
 import {
+  clinicalRecordsOpenAPIHandler,
+  clinicalRecordsORPCHandler,
+} from "./orpc/clinical-records.ts";
+import {
   clinicalSkinTestsOpenAPIHandler,
   clinicalSkinTestsORPCHandler,
 } from "./orpc/clinical-skin-tests.ts";
@@ -833,6 +837,17 @@ app.use("/api/orpc/clinical-series/rpc/*", async (c, next) => {
 app.use("/api/orpc/clinical-skin-tests/rpc/*", async (c, next) => {
   const { matched, response } = await clinicalSkinTestsORPCHandler.handle(createHonoORPCRequest(c), {
     prefix: "/api/orpc/clinical-skin-tests/rpc",
+    context: { hono: c },
+  });
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+  return next();
+});
+
+app.use("/api/orpc/clinical-records/rpc/*", async (c, next) => {
+  const { matched, response } = await clinicalRecordsORPCHandler.handle(createHonoORPCRequest(c), {
+    prefix: "/api/orpc/clinical-records/rpc",
     context: { hono: c },
   });
   if (matched) {
@@ -1848,6 +1863,16 @@ app.use("/api/orpc/clinical-series/*", async (c, next) => {
 
 app.use("/api/orpc/clinical-skin-tests/*", async (c, next) => {
   const { matched, response } = await clinicalSkinTestsOpenAPIHandler.handle(createHonoORPCRequest(c), {
+    context: { hono: c },
+  });
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+  return next();
+});
+
+app.use("/api/orpc/clinical-records/*", async (c, next) => {
+  const { matched, response } = await clinicalRecordsOpenAPIHandler.handle(createHonoORPCRequest(c), {
     context: { hono: c },
   });
   if (matched) {
