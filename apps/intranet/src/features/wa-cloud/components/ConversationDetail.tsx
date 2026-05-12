@@ -475,7 +475,9 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
       <Card.Header className="!flex !flex-row !items-center !justify-between gap-3 border-default-200 border-b p-3">
         <div className="flex min-w-0 items-center gap-3">
           <Avatar className="size-10 shrink-0 bg-success-200 text-success-900">
-            <Avatar.Fallback className="font-semibold text-sm">{initials}</Avatar.Fallback>
+            <Avatar.Fallback delayMs={0} className="font-semibold text-sm">
+              {initials}
+            </Avatar.Fallback>
           </Avatar>
           <div className="min-w-0">
             <p className="truncate font-medium text-base">{contactName}</p>

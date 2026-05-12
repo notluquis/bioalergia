@@ -156,7 +156,7 @@ export function WaCloudInboxPage() {
                             <Badge.Label>{c.unreadCount}</Badge.Label>
                             <Badge.Anchor>
                               <Avatar className={`size-11 shrink-0 ${avatarColor}`}>
-                                <Avatar.Fallback className="font-semibold text-sm">
+                                <Avatar.Fallback delayMs={0} className="font-semibold text-sm">
                                   {initials}
                                 </Avatar.Fallback>
                               </Avatar>
@@ -164,7 +164,7 @@ export function WaCloudInboxPage() {
                           </Badge>
                         ) : (
                           <Avatar className={`size-11 shrink-0 ${avatarColor}`}>
-                            <Avatar.Fallback className="font-semibold text-sm">
+                            <Avatar.Fallback delayMs={0} className="font-semibold text-sm">
                               {initials}
                             </Avatar.Fallback>
                           </Avatar>
