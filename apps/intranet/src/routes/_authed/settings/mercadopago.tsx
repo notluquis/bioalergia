@@ -1,4 +1,4 @@
-import { Spinner } from "@heroui/react";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { createFileRoute, getRouteApi } from "@tanstack/react-router";
 import { lazy, Suspense } from "react";
 
@@ -23,7 +23,7 @@ export const Route = createFileRoute("/_authed/settings/mercadopago")({
     <Suspense
       fallback={
         <div className="flex items-center justify-center py-24">
-          <Spinner aria-label="Cargando MercadoPago" />
+          <LoadingSpinner label="Cargando MercadoPago" />
         </div>
       }
     >

@@ -6,6 +6,7 @@
  */
 
 import { Button, Spinner } from "@heroui/react";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createRouter, RouterProvider } from "@tanstack/react-router";
 import { lazy, StrictMode, Suspense, useEffect } from "react";
@@ -122,7 +123,7 @@ const router = createRouter({
   },
   defaultPendingComponent: () => (
     <div className="flex min-h-[50vh] items-center justify-center">
-      <Spinner aria-label="Cargando" color="accent" size="lg" />
+      <LoadingSpinner label="Cargando" color="accent" size="lg" />
     </div>
   ),
   defaultPreload: "intent",

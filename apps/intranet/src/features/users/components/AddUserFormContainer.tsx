@@ -1,13 +1,5 @@
-import {
-  Button,
-  Checkbox,
-  Description,
-  FieldError,
-  Label,
-  ListBox,
-  Select,
-  Spinner,
-} from "@heroui/react";
+import { Button, Checkbox, Description, FieldError, Label, ListBox, Select } from "@heroui/react";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { type ReactFormExtendedApi, useForm } from "@tanstack/react-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Shield, UserPlus, Users } from "lucide-react";
@@ -149,7 +141,7 @@ export function AddUserFormContainer({
   if (isPeopleLoading) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center">
-        <Spinner aria-label="Cargando" color="accent" size="lg" />
+        <LoadingSpinner label="Cargando" color="accent" size="lg" />
       </div>
     );
   }

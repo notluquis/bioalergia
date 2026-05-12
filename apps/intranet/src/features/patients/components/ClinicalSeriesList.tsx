@@ -1,4 +1,5 @@
 import { Chip, Spinner } from "@heroui/react";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { useQuery } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 import dayjs from "dayjs";
@@ -89,7 +90,7 @@ export function ClinicalSeriesList({ patientId }: { patientId: number }) {
   if (isLoading) {
     return (
       <div className="flex justify-center py-8">
-        <Spinner aria-label="Cargando series clínicas" />
+        <LoadingSpinner label="Cargando series clínicas" />
       </div>
     );
   }
