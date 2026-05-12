@@ -1,7 +1,7 @@
 // Restore from backup_*.json[.gz] produced by services/backups.ts
 //
 // Usage:
-//   pnpm tsx src/scripts/restore-backup.ts /path/to/backup.json[.gz] [--dry] [--truncate] [--tables=A,B]
+//   node src/scripts/restore-backup.ts /path/to/backup.json[.gz] [--dry] [--truncate] [--tables=A,B]
 
 import { createReadStream, existsSync, statSync } from "node:fs";
 import { dirname, resolve as resolvePath } from "node:path";

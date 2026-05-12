@@ -6,13 +6,13 @@
 // Usage:
 //   # First-time encryption rollout
 //   WA_SECRET_KEY=$(openssl rand -hex 32) DATABASE_URL=... \
-//     pnpm tsx apps/api/scripts/migrate-encrypt-wa-secrets.ts
+//     node apps/api/scripts/migrate-encrypt-wa-secrets.ts
 //
 //   # Key rotation: keep old key available for decrypt, set new for write
 //   WA_SECRET_KEY=$NEW_KEY \
 //   WA_SECRET_KEYS_OLD=$OLD_KEY \
 //   DATABASE_URL=... \
-//     pnpm tsx apps/api/scripts/migrate-encrypt-wa-secrets.ts
+//     node apps/api/scripts/migrate-encrypt-wa-secrets.ts
 //
 //   # After all rows show key id = fingerprint(NEW_KEY) you can drop
 //   # WA_SECRET_KEYS_OLD from the env. (Plaintext fallback is preserved

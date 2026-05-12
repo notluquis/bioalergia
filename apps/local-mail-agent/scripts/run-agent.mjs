@@ -48,8 +48,10 @@ if (tlsEnabled) {
   console.log(`[local-mail-agent] tls cert=${env.LOCAL_AGENT_TLS_CERT_PATH}`);
 }
 
-const tsxArgs = isStartMode ? ["src/index.ts"] : ["watch", "src/index.ts"];
-const child = spawn("pnpm", ["exec", "tsx", ...tsxArgs], {
+// Node 26 strips TypeScript natively; no tsx needed. Watch mode uses
+// node --watch.
+const nodeArgs = isStartMode ? ["src/index.ts"] : ["--watch", "src/index.ts"];
+const child = spawn("node", nodeArgs, {
   cwd: appDir,
   stdio: "inherit",
   env,
