@@ -14,11 +14,13 @@ import { test } from "./fixtures";
  */
 test.describe("prefers-reduced-motion", () => {
   test("login page has no live transitions/animations", async ({ page }) => {
-    // page.emulateMedia is the runtime knob; the context option of the same
-    // name is unreliable on Playwright 1.60.x with Chromium.
+    // Documented per-test option `reducedMotion: "reduce"` is unreliable
+    // on Playwright 1.60.x + Chromium 148 — the context-level emulation
+    // doesn't propagate to the @media query in time. `page.emulateMedia`
+    // before `goto` is the only path that actually flips matchMedia.
     await page.emulateMedia({ reducedMotion: "reduce" });
-    await page.goto("/login");
-    await page.waitForLoadState("networkidle");
+    await page.goto("/login", { waitUntil: "domcontentloaded" });
+    await page.waitForLoadState("load");
 
     const offenders = await page.evaluate(() => {
       const isLive = (v: string) => {

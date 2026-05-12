@@ -41,8 +41,10 @@ const AUTHED_DISABLED_RULES: string[] = [
   // TODO(a11y): some authed pages wrap right-side rails in <aside> inside
   //  <main>. Walk down per page (Home + Dashboard fixed in 5c11f6b7,
   //  remaining: counterparts, services, wa-cloud, finance/loans).
-  //  `landmark-is-top-level` is the axe sub-check, not addressable.
-  "landmark-complementary-is-top-level",
+  //  NOTE: `landmark-complementary-is-top-level` was *deprecated* in
+  //  axe-core (#4950); listing it here is a no-op. The replacement
+  //  surface is `region` which also fires; not adding it preemptively to
+  //  baseline — let CI tell us when it pops up.
   // TODO(a11y): authed routes lack <h1>. Each page/route should expose a
   //  level-1 heading (visually-hidden if header design forbids it).
   "page-has-heading-one",
@@ -69,10 +71,15 @@ authed.describe("a11y / authenticated", () => {
     authed(`${route.name} (${route.path}) is WCAG 2.2 AA clean`, async ({ authedPage }) => {
       await authedPage.goto(route.path, { waitUntil: "domcontentloaded" });
       // Production pages keep open SSE / polling channels, so networkidle
-      // never resolves. Wait for `load` (window load event) plus a short
-      // settle so Suspense fallbacks finish painting.
+      // never resolves (Playwright issue #22897 — networkidle is officially
+      // discouraged). Wait for `load` + a real readiness signal: the main
+      // landmark must contain at least one child rendered by React. No
+      // arbitrary sleeps.
       await authedPage.waitForLoadState("load");
-      await authedPage.waitForTimeout(800);
+      await authedPage
+        .locator("#main-content > *, main > *, [role='main'] > *")
+        .first()
+        .waitFor({ state: "attached", timeout: 10_000 });
       const results = await new AxeBuilder({ page: authedPage })
         .withTags(TAGS)
         .disableRules(AUTHED_DISABLED_RULES)

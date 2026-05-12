@@ -79,15 +79,12 @@ export default defineConfig({
       use: { ...devices["Desktop Chrome"], viewport: { width: 1280, height: 800 } },
     },
     {
+      // Pixel 7 device descriptor is Chromium-based + ships realistic UA
+      // and screen metrics. Replaces the hand-rolled viewport block we had
+      // before — gives us proper Android UA without pulling in WebKit.
       name: "chromium-mobile-unauthed",
       testIgnore: /a11y\.spec\.ts|skip-link\.spec\.ts/,
-      use: {
-        browserName: "chromium",
-        viewport: { width: 393, height: 852 },
-        deviceScaleFactor: 3,
-        isMobile: true,
-        hasTouch: true,
-      },
+      use: { ...devices["Pixel 7"] },
     },
 
     // ── Authed specs (storageState pre-loaded, hit AUTHED_URL) ──────────
@@ -107,11 +104,7 @@ export default defineConfig({
       testMatch: /a11y\.spec\.ts|skip-link\.spec\.ts/,
       dependencies: ["setup"],
       use: {
-        browserName: "chromium",
-        viewport: { width: 393, height: 852 },
-        deviceScaleFactor: 3,
-        isMobile: true,
-        hasTouch: true,
+        ...devices["Pixel 7"],
         storageState: "playwright/.auth/user.json",
         baseURL: AUTHED_URL,
       },
