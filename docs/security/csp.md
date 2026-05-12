@@ -32,7 +32,7 @@ Content-Security-Policy:
 | `frame-ancestors 'none'`                       | Anti-clickjacking; supersedes `X-Frame-Options: DENY` (kept for old browsers).                                     |
 | `base-uri 'none'`                              | Blocks `<base href>` tag injection that could redirect relative URLs.                                              |
 | `object-src 'none'`                            | Blocks Flash / `<embed>` / `<object>`.                                                                             |
-| `require-trusted-types-for 'script'`           | Forces all DOM sinks (innerHTML etc.) to receive Trusted Types objects. React 19 has built-in support. Closes the entire DOM-XSS surface for compliant SPAs. |
+| `require-trusted-types-for 'script'` (REPORT-ONLY) | Forces all DOM sinks (innerHTML etc.) to receive Trusted Types objects. React 19 has built-in support. Currently shipped in `Content-Security-Policy-Report-Only` — Cloudflare Bot Fight Mode and similar edge-injected scripts use `innerHTML` / `.src` assignment that violates Trusted Types regardless of nonce. Track violations and flip to enforce after auditing first-party code + disabling CF script-injection modules. |
 
 ## How the nonce gets there
 
