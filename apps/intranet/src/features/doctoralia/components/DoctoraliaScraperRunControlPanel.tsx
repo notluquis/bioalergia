@@ -79,7 +79,7 @@ export function DoctoraliaScraperRunControlPanel() {
 
             <div className="grid gap-3 sm:grid-cols-2">
               <Surface className="rounded-2xl border border-default-200 px-4 py-3">
-                <Description className="font-semibold text-[11px] text-default-400">
+                <Description className="font-semibold text-xs text-default-400">
                   Solicitado
                 </Description>
                 <p className="mt-1 font-medium text-sm">
@@ -89,7 +89,7 @@ export function DoctoraliaScraperRunControlPanel() {
                 </p>
               </Surface>
               <Surface className="rounded-2xl border border-default-200 px-4 py-3">
-                <Description className="font-semibold text-[11px] text-default-400">
+                <Description className="font-semibold text-xs text-default-400">
                   Solicitado por
                 </Description>
                 <p className="mt-1 font-medium text-sm">{status.requestedByEmail ?? "—"}</p>

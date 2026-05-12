@@ -244,11 +244,11 @@ function SalesLinkedEventsDrawer({
                   </Card.Header>
                   <Card.Content className="grid grid-cols-2 gap-2 text-sm">
                     <Surface className="rounded-xl p-3" variant="default">
-                      <p className="text-default-500 text-[11px]">Folio</p>
+                      <p className="text-default-500 text-xs">Folio</p>
                       <p className="font-medium">{resolvedDte.folio}</p>
                     </Surface>
                     <Surface className="rounded-xl p-3" variant="default">
-                      <p className="text-default-500 text-[11px]">Total</p>
+                      <p className="text-default-500 text-xs">Total</p>
                       <p className="font-medium">{formatCurrency(resolvedDte.totalAmount)}</p>
                     </Surface>
                   </Card.Content>
@@ -300,13 +300,13 @@ function SalesLinkedEventsDrawer({
                       </Card.Header>
                       <Card.Content className="grid grid-cols-2 gap-2 text-sm">
                         <Surface className="rounded-xl p-3" variant="default">
-                          <p className="text-default-500 text-[11px]">
+                          <p className="text-default-500 text-xs">
                             Serie
                           </p>
                           <p className="font-medium">{event.displayName ?? "Sin nombre visible"}</p>
                         </Surface>
                         <Surface className="rounded-xl p-3" variant="default">
-                          <p className="text-default-500 text-[11px]">
+                          <p className="text-default-500 text-xs">
                             Monto evento
                           </p>
                           <p className="font-medium">

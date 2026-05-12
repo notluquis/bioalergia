@@ -1,3 +1,6 @@
+// design-lint-ignore-file: hardcoded-hex
+// TODO(2026-Q3): migrate DOCTORALIA_CHART_* palettes to useChartPalette() so
+// they follow the active theme. Tracked alongside CashFlow/TreatmentAnalytics.
 export type DoctoraliaMetricKey = "total" | "programmed" | "cancelled" | "attended";
 
 export interface DoctoraliaMonthlyChartDatum {

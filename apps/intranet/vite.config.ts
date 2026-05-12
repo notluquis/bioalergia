@@ -39,7 +39,7 @@ export default defineConfig(({ mode }) => {
         .replace(/<script\b(?![^>]*\bnonce=)/g, `<script nonce="${CSP_NONCE_PLACEHOLDER}"`)
         .replace(
           /<link\b([^>]*\brel=["']stylesheet["'])(?![^>]*\bnonce=)/g,
-          `<link nonce="${CSP_NONCE_PLACEHOLDER}"$1`,
+          `<link nonce="${CSP_NONCE_PLACEHOLDER}"$1`
         );
     },
   };

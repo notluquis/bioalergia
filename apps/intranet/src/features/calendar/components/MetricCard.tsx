@@ -25,7 +25,7 @@ const toneClassByMetric: Record<MetricTone, string> = {
 const sizeClassByMetric: Record<MetricSize, { title: string; value: string }> = {
   lg: { title: "text-sm", value: "text-3xl font-bold" },
   md: { title: "text-xs", value: "text-2xl font-semibold" },
-  sm: { title: "text-[10px]", value: "text-lg font-semibold" },
+  sm: { title: "text-xs", value: "text-lg font-semibold" },
 };
 
 export function MetricCard({

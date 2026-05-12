@@ -1,3 +1,7 @@
+// design-lint-ignore-file: hardcoded-hex
+// TODO(2026-Q3): migrate CHART_COLORS / CHART_THEME to useChartPalette() so
+// the dte-analytics charts respond to dark/light theme. Tracked alongside
+// CashFlow/TreatmentAnalytics chart-palette refactor.
 /**
  * DTE Analytics - Strict Type Definitions
  * Following Zenstack v3, TanStack v3, and Zod validation patterns

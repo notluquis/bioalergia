@@ -110,19 +110,19 @@ export function DoctoraliaCookieStorePanel() {
         ) : status?.exists ? (
           <div className="grid grid-cols-2 gap-3">
             <Surface className="rounded-2xl border border-default-200 px-4 py-3">
-              <p className="font-semibold text-[11px] text-default-400">
+              <p className="font-semibold text-xs text-default-400">
                 Actualizado
               </p>
               <p className="mt-1 font-medium text-sm">{formatDate(status.updatedAt)}</p>
             </Surface>
             <Surface className="rounded-2xl border border-default-200 px-4 py-3">
-              <p className="font-semibold text-[11px] text-default-400">
+              <p className="font-semibold text-xs text-default-400">
                 Último uso del bot
               </p>
               <p className="mt-1 font-medium text-sm">{formatRelative(status.lastUsedAt)}</p>
             </Surface>
             <Surface className="col-span-2 rounded-2xl border border-default-200 px-4 py-3">
-              <p className="font-semibold text-[11px] text-default-400">
+              <p className="font-semibold text-xs text-default-400">
                 Actualizado por
               </p>
               <p className="mt-1 font-medium text-sm">{status.updatedByEmail ?? "—"}</p>

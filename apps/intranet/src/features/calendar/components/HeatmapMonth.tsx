@@ -197,7 +197,7 @@ function HeatmapMonthComponent({
         {/* Weekday headers */}
         {WEEKDAYS.map((d) => (
           <div
-            className="select-none py-2 text-center font-bold text-[10px] text-foreground-400"
+            className="select-none py-2 text-center font-bold text-xs text-foreground-400"
             key={d}
           >
             {d}
@@ -237,7 +237,7 @@ function HeatmapMonthComponent({
               {/* Day Number */}
               <span
                 className={clsx(
-                  "absolute top-0.5 left-1 text-[10px] leading-none opacity-60",
+                  "absolute top-0.5 left-1 text-xs leading-none opacity-60",
                   cell.total > 0 && "font-normal text-[9px] opacity-80"
                 )}
               >

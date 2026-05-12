@@ -199,7 +199,7 @@ function MetricPill({
 
   return (
     <div className={`rounded-2xl border px-4 py-3 ${toneClasses[tone]}`}>
-      <Description className="text-[11px] opacity-75">{title}</Description>
+      <Description className="text-xs opacity-75">{title}</Description>
       <div className="mt-1 truncate font-semibold text-base">{value}</div>
       <Description className="text-xs opacity-75">{subtitle}</Description>
     </div>

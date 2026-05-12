@@ -67,69 +67,69 @@ function buildRightSideBadges(event: CalendarEventDetail) {
 
   if (event.category) {
     badges.push({
-      className: "h-6 font-medium text-[10px] uppercase tracking-wide",
+      className: "h-6 font-medium text-xs",
       label: event.category,
     });
   }
   if (event.controlIncluded === true) {
     badges.push({
-      className: "h-6 font-medium text-[10px] uppercase tracking-wide",
+      className: "h-6 font-medium text-xs",
       color: "warning",
       label: "Control",
     });
   }
   if (isSubcutaneous && event.treatmentStage) {
     badges.push({
-      className: "h-6 font-medium text-[10px] uppercase tracking-wide",
+      className: "h-6 font-medium text-xs",
       color: "accent",
       label: event.treatmentStage,
     });
   }
   if (isSubcutaneous && event.dosageValue != null && event.dosageUnit) {
     badges.push({
-      className: "h-6 font-medium text-[10px] uppercase tracking-wide",
+      className: "h-6 font-medium text-xs",
       color: "accent",
       label: `${event.dosageValue} ${event.dosageUnit}`,
     });
   }
   if (isTestCategory && event.testMetadata?.skinTest) {
     badges.push({
-      className: "h-6 font-medium text-[10px] uppercase tracking-wide",
+      className: "h-6 font-medium text-xs",
       color: "accent",
       label: "Test cutáneo",
     });
   }
   if (isTestCategory && event.testMetadata?.patchTest) {
     badges.push({
-      className: "h-6 font-medium text-[10px] uppercase tracking-wide",
+      className: "h-6 font-medium text-xs",
       color: "accent",
       label: "Test de parche",
     });
   }
   if (isTestCategory && event.testMetadata?.firstReading) {
     badges.push({
-      className: "h-6 font-medium text-[10px] uppercase tracking-wide",
+      className: "h-6 font-medium text-xs",
       color: "warning",
       label: "1ra lectura",
     });
   }
   if (isTestCategory && event.testMetadata?.secondReading) {
     badges.push({
-      className: "h-6 font-medium text-[10px] uppercase tracking-wide",
+      className: "h-6 font-medium text-xs",
       color: "warning",
       label: "2da lectura",
     });
   }
   if (isTestCategory && event.testMetadata?.thirdReading) {
     badges.push({
-      className: "h-6 font-medium text-[10px] uppercase tracking-wide",
+      className: "h-6 font-medium text-xs",
       color: "warning",
       label: "3ra lectura",
     });
   }
   if (event.seriesStageLabel) {
     badges.push({
-      className: "h-6 font-medium text-[10px] uppercase tracking-wide",
+      className: "h-6 font-medium text-xs",
       color: "accent",
       label: event.seriesStageLabel,
     });
@@ -210,7 +210,7 @@ export function DailyEventCard({ event, eventDteLink, onLinkClick }: DailyEventC
               const Icon = badge.icon;
               return (
                 <Chip
-                  className="h-6 gap-1 font-medium text-[10px]"
+                  className="h-6 gap-1 font-medium text-xs"
                   color={badge.color}
                   key={badge.key}
                   size="sm"
@@ -275,7 +275,7 @@ export function DailyEventCard({ event, eventDteLink, onLinkClick }: DailyEventC
             </Card>
           ) : isPendingEmission ? (
             <Chip
-              className="h-6 font-medium text-[10px]"
+              className="h-6 font-medium text-xs"
               color="warning"
               size="sm"
               variant="soft"
@@ -285,7 +285,7 @@ export function DailyEventCard({ event, eventDteLink, onLinkClick }: DailyEventC
           ) : null}
           {onLinkClick ? (
             <Button
-              className="h-6 px-2 text-[10px]"
+              className="h-6 px-2 text-xs"
               isDisabled={isPendingEmission}
               size="sm"
               variant={eventDteLink ? "secondary" : "ghost"}

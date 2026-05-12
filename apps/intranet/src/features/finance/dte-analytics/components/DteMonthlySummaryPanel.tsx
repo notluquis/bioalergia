@@ -1,3 +1,5 @@
+// design-lint-ignore-file: hardcoded-hex
+// TODO(2026-Q3): migrate inline chart fill hex values to useChartPalette().
 import { Card, Description, Label, ListBox, Select, Surface } from "@heroui/react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { useCallback, useMemo } from "react";

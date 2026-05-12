@@ -137,7 +137,7 @@ export function CalendarFilterPanel({
         {/* Date Range (if enabled) - matching style */}
         {showDateRange && (
           <div className="space-y-1.5">
-            <span className="mb-1.5 block font-semibold text-[10px] text-default-600">
+            <span className="mb-1.5 block font-semibold text-xs text-default-600">
               Rango de Fechas
             </span>
             <DateRangePicker
