@@ -53,6 +53,21 @@ const pool = new Pool({
   user: "postgres",
 });
 
+// On every new physical connection, push the audit-log HMAC key into a
+// session GUC so the BEFORE INSERT trigger on audit_logs can compute
+// the chain HMAC. The trigger reads the key via current_setting() — it
+// is never echoed back to the runtime role. AUDIT_HMAC_KEY must be 64
+// hex chars; absence is tolerated (trigger uses a dev fallback) so the
+// app never fails to boot, but production should always set it.
+const auditHmacKey = getEnv("AUDIT_HMAC_KEY");
+pool.on("connect", (client) => {
+  if (auditHmacKey) {
+    client
+      .query("SELECT set_config('app.audit_hmac_key', $1, false)", [auditHmacKey])
+      .catch(() => undefined);
+  }
+});
+
 // Base ORM client (no access control)
 export const db = new ZenStackClient(schema, {
   dialect: new PostgresDialect({ pool }),

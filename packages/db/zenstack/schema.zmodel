@@ -880,6 +880,18 @@ model AuditLog {
   outcome     String          @default("ok")
   message     String?
   metadata    Json?
+  // HMAC chain (RFC 6962-style append-only). prevHash links to the
+  // previous row's entryHash; entryHash = HMAC-SHA256(key, prev || row).
+  // Computed by the BEFORE INSERT trigger `audit_log_chain()` so the
+  // app role cannot forge entries even with INSERT privileges. The
+  // trigger reads the HMAC key from the session GUC `app.audit_hmac_key`
+  // (set per pool connection from AUDIT_HMAC_KEY env). NEVER write
+  // these from application code — leave them undefined on insert.
+  // `@default(dbgenerated(...))` makes the ORM input type accept
+  // omission while the DB keeps the column NOT NULL: the trigger
+  // overrides the literal default before the constraint check.
+  prevHash    Bytes           @default(dbgenerated("'\\x00'::bytea")) @map("prev_hash")
+  entryHash   Bytes           @default(dbgenerated("'\\x00'::bytea")) @map("entry_hash")
 
   @@index([occurredAt])
   @@index([userId, occurredAt])

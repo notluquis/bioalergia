@@ -3168,6 +3168,18 @@ export class SchemaType implements SchemaDef {
                     name: "metadata",
                     type: "Json",
                     optional: true
+                },
+                prevHash: {
+                    name: "prevHash",
+                    type: "Bytes",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("dbgenerated", [ExpressionUtils.literal("'\\x00'::bytea")]) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("prev_hash") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("dbgenerated", [ExpressionUtils.literal("'\\x00'::bytea")]) as FieldDefault
+                },
+                entryHash: {
+                    name: "entryHash",
+                    type: "Bytes",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("dbgenerated", [ExpressionUtils.literal("'\\x00'::bytea")]) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("entry_hash") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("dbgenerated", [ExpressionUtils.literal("'\\x00'::bytea")]) as FieldDefault
                 }
             },
             attributes: [

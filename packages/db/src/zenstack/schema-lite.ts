@@ -2623,6 +2623,16 @@ export class SchemaType implements SchemaDef {
                     name: "metadata",
                     type: "Json",
                     optional: true
+                },
+                prevHash: {
+                    name: "prevHash",
+                    type: "Bytes",
+                    default: ExpressionUtils.call("dbgenerated", [ExpressionUtils.literal("'\\x00'::bytea")]) as FieldDefault
+                },
+                entryHash: {
+                    name: "entryHash",
+                    type: "Bytes",
+                    default: ExpressionUtils.call("dbgenerated", [ExpressionUtils.literal("'\\x00'::bytea")]) as FieldDefault
                 }
             },
             idFields: ["id"],
