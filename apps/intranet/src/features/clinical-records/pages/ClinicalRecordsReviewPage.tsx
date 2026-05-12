@@ -5,6 +5,7 @@ import {
   EmptyState,
   Label,
   ListBox,
+  ProgressBar,
   SearchField,
   Select,
   Spinner,
@@ -107,43 +108,32 @@ export function ClinicalRecordsReviewPage() {
 
       {job && (
         <Card className="p-3">
-          <div className="flex items-center justify-between gap-3">
-            <div className="min-w-0 flex-1">
-              <p className="truncate font-medium text-sm">{job.message}</p>
-              <p className="text-default-500 text-xs">
-                {job.status} · {job.progress} / {job.total || "?"}
-                {job.result &&
-                  ` · imported ${job.result.imported} · pending ${job.result.pending} · errors ${job.result.errors}`}
-              </p>
-            </div>
-            <Chip
-              size="sm"
-              variant="soft"
-              color={
-                job.status === "failed"
-                  ? "danger"
-                  : job.status === "completed"
-                    ? "success"
-                    : job.status === "cancelled"
-                      ? "default"
-                      : "warning"
-              }
-            >
-              <Chip.Label>{progressPct}%</Chip.Label>
-            </Chip>
-          </div>
-          <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-default-200">
-            <div
-              className={`h-full transition-all ${
-                job.status === "failed"
-                  ? "bg-danger"
-                  : job.status === "completed"
-                    ? "bg-success"
-                    : "bg-primary"
-              }`}
-              style={{ width: `${progressPct}%` }}
-            />
-          </div>
+          <ProgressBar
+            aria-label="Progreso del reprocesamiento"
+            className="w-full"
+            value={progressPct}
+            isIndeterminate={job.status === "running" && job.total === 0}
+            color={
+              job.status === "failed"
+                ? "danger"
+                : job.status === "completed"
+                  ? "success"
+                  : job.status === "cancelled"
+                    ? "default"
+                    : "warning"
+            }
+          >
+            <Label className="font-medium text-sm">{job.message}</Label>
+            <ProgressBar.Output />
+            <ProgressBar.Track>
+              <ProgressBar.Fill />
+            </ProgressBar.Track>
+          </ProgressBar>
+          <p className="mt-2 text-default-500 text-xs">
+            {job.status} · {job.progress} / {job.total || "?"}
+            {job.result &&
+              ` · imported ${job.result.imported} · pending ${job.result.pending} · errors ${job.result.errors}`}
+          </p>
         </Card>
       )}
 
