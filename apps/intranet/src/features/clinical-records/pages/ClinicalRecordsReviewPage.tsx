@@ -9,13 +9,17 @@ import {
   Select,
   Spinner,
 } from "@heroui/react";
-import { useState } from "react";
-import { ClipboardList, FileSearch, RefreshCw } from "lucide-react";
+import { useEffect, useState } from "react";
+import { ClipboardList, FileSearch, Pause, Play, RefreshCw } from "lucide-react";
 import {
+  useActiveBulkJob,
   useApproveClinicalRecordImport,
+  useBulkJobStatus,
+  useCancelBulkJob,
   useClinicalRecordImports,
   useRejectClinicalRecordImport,
   useReprocessClinicalRecordImport,
+  useStartBulkReprocess,
 } from "../hooks/useClinicalRecords";
 
 const STATUS_OPTIONS = [
@@ -39,21 +43,109 @@ export function ClinicalRecordsReviewPage() {
   const reprocess = useReprocessClinicalRecordImport();
   const approve = useApproveClinicalRecordImport();
   const reject = useRejectClinicalRecordImport();
+  const startBulk = useStartBulkReprocess();
+  const cancelBulk = useCancelBulkJob();
+  const activeBulk = useActiveBulkJob();
+  // Track the jobId we just started so the local poller follows it even
+  // before getActiveBulkJob refetches.
+  const [trackedJobId, setTrackedJobId] = useState<string | null>(null);
+  const trackedJob = useBulkJobStatus(trackedJobId);
+  const job = trackedJob.data?.job ?? activeBulk.data?.job ?? null;
+
+  // Once the tracked job reaches a terminal state, refresh the import
+  // list so the operator sees the result.
+  useEffect(() => {
+    if (!job) return;
+    if (job.status === "completed" || job.status === "failed" || job.status === "cancelled") {
+      list.refetch();
+    }
+  }, [job?.status]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const items = list.data?.items ?? [];
   const total = list.data?.total ?? 0;
+  const jobActive = job && (job.status === "pending" || job.status === "running");
+  const progressPct =
+    job && job.total > 0 ? Math.min(100, Math.round((job.progress / job.total) * 100)) : 0;
 
   return (
     <div className="flex flex-col gap-4 p-4">
-      <header className="flex items-center justify-between gap-3">
+      <header className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="flex items-center gap-2 font-semibold text-xl">
           <ClipboardList size={20} className="text-primary" />
           Fichas clínicas — revisión
         </h1>
-        <Chip variant="soft">
-          <Chip.Label>{total} en cola</Chip.Label>
-        </Chip>
+        <div className="flex items-center gap-2">
+          <Chip variant="soft">
+            <Chip.Label>{total} en cola</Chip.Label>
+          </Chip>
+          {jobActive ? (
+            <Button
+              size="sm"
+              variant="danger"
+              onPress={() => job && cancelBulk.mutate(job.id)}
+              isPending={cancelBulk.isPending}
+            >
+              <Pause size={14} />
+              <span>Detener</span>
+            </Button>
+          ) : (
+            <Button
+              size="sm"
+              variant="primary"
+              onPress={async () => {
+                const r = await startBulk.mutateAsync({});
+                setTrackedJobId(r.jobId);
+              }}
+              isPending={startBulk.isPending}
+            >
+              <Play size={14} />
+              <span>Procesar cola</span>
+            </Button>
+          )}
+        </div>
       </header>
+
+      {job && (
+        <Card className="p-3">
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <p className="truncate font-medium text-sm">{job.message}</p>
+              <p className="text-default-500 text-xs">
+                {job.status} · {job.progress} / {job.total || "?"}
+                {job.result &&
+                  ` · imported ${job.result.imported} · pending ${job.result.pending} · errors ${job.result.errors}`}
+              </p>
+            </div>
+            <Chip
+              size="sm"
+              variant="soft"
+              color={
+                job.status === "failed"
+                  ? "danger"
+                  : job.status === "completed"
+                    ? "success"
+                    : job.status === "cancelled"
+                      ? "default"
+                      : "warning"
+              }
+            >
+              <Chip.Label>{progressPct}%</Chip.Label>
+            </Chip>
+          </div>
+          <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-default-200">
+            <div
+              className={`h-full transition-all ${
+                job.status === "failed"
+                  ? "bg-danger"
+                  : job.status === "completed"
+                    ? "bg-success"
+                    : "bg-primary"
+              }`}
+              style={{ width: `${progressPct}%` }}
+            />
+          </div>
+        </Card>
+      )}
 
       <Card className="p-3">
         <div className="flex flex-wrap items-end gap-3">

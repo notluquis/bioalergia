@@ -2,6 +2,7 @@ import { db, kysely } from "@finanzas/db";
 import {
   clinicalRecordImportSchema,
   clinicalRecordImportStatusSchema,
+  clinicalRecordJobStatusSchema,
   clinicalRecordSchema,
 } from "@finanzas/orpc-contracts/clinical-records";
 import { onError, ORPCError, os } from "@orpc/server";
@@ -19,6 +20,16 @@ import {
   rejectClinicalRecordImport,
   reprocessClinicalRecordImport,
 } from "../services/clinical-record-imports.ts";
+import {
+  getClinicalRecordBulkJobType,
+  startBulkClinicalRecordReprocessJob,
+} from "../services/clinical-record-bulk.ts";
+import {
+  cancelJob,
+  getActiveJobsByType,
+  getJobStatus,
+  type JobState,
+} from "../lib/jobQueue.ts";
 import { SuperJSONRPCHandler } from "./superjson.ts";
 
 configureSuperjson();
@@ -269,7 +280,90 @@ const routerBase = {
         })),
       };
     }),
+
+  startBulkReprocess: updateClinicalRecords
+    .route({
+      method: "POST",
+      path: "/imports/bulk-reprocess/start",
+      tags: ["Clinical Records"],
+    })
+    .input(z.object({ maxImports: z.number().int().positive().optional() }))
+    .output(z.object({ jobId: z.string() }))
+    .handler(async ({ input }) => {
+      const jobId = startBulkClinicalRecordReprocessJob({
+        trigger: "intranet",
+        maxImports: input.maxImports,
+      });
+      return { jobId };
+    }),
+
+  getBulkJob: readClinicalRecords
+    .route({
+      method: "POST",
+      path: "/imports/bulk-reprocess/status",
+      tags: ["Clinical Records"],
+    })
+    .input(z.object({ jobId: z.string().min(1) }))
+    .output(z.object({ job: clinicalRecordJobStatusSchema.nullable() }))
+    .handler(async ({ input }) => {
+      const j = getJobStatus(input.jobId);
+      return { job: jobToOutput(j) };
+    }),
+
+  cancelBulkJob: updateClinicalRecords
+    .route({
+      method: "POST",
+      path: "/imports/bulk-reprocess/cancel",
+      tags: ["Clinical Records"],
+    })
+    .input(z.object({ jobId: z.string().min(1) }))
+    .output(z.object({ cancelled: z.boolean() }))
+    .handler(async ({ input }) => {
+      const ok = cancelJob(input.jobId);
+      return { cancelled: ok };
+    }),
+
+  getActiveBulkJob: readClinicalRecords
+    .route({
+      method: "POST",
+      path: "/imports/bulk-reprocess/active",
+      tags: ["Clinical Records"],
+    })
+    .input(z.object({}))
+    .output(z.object({ job: clinicalRecordJobStatusSchema.nullable() }))
+    .handler(async () => {
+      const active = getActiveJobsByType(getClinicalRecordBulkJobType());
+      return { job: jobToOutput(active[0] ?? null) };
+    }),
 };
+
+function jobToOutput(j: JobState | null) {
+  if (!j) return null;
+  const result =
+    j.result && typeof j.result === "object"
+      ? (j.result as { processed?: number; imported?: number; pending?: number; errors?: number })
+      : null;
+  return {
+    id: j.id,
+    type: j.type,
+    status: j.status,
+    progress: j.progress,
+    total: j.total,
+    message: j.message,
+    meta: j.meta,
+    result: result
+      ? {
+          processed: result.processed ?? 0,
+          imported: result.imported ?? 0,
+          pending: result.pending ?? 0,
+          errors: result.errors ?? 0,
+        }
+      : null,
+    error: j.error,
+    createdAt: j.createdAt,
+    updatedAt: j.updatedAt,
+  };
+}
 
 void db;
 

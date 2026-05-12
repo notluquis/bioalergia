@@ -94,6 +94,27 @@ export const clinicalRecordSchema = z.object({
 
 const idInput = z.object({ id: z.string().min(1) });
 
+export const clinicalRecordJobStatusSchema = z.object({
+  id: z.string(),
+  type: z.string(),
+  status: z.enum(["pending", "running", "completed", "failed", "cancelled"]),
+  progress: z.number().int(),
+  total: z.number().int(),
+  message: z.string(),
+  meta: z.record(z.string(), z.unknown()).nullable(),
+  result: z
+    .object({
+      processed: z.number().int(),
+      imported: z.number().int(),
+      pending: z.number().int(),
+      errors: z.number().int(),
+    })
+    .nullable(),
+  error: z.string().nullable(),
+  createdAt: z.date(),
+  updatedAt: z.date(),
+});
+
 export const clinicalRecordsContract = {
   listImports: oc
     .route({ method: "POST", path: "/imports/list", tags: ["Clinical Records"] })
@@ -159,6 +180,26 @@ export const clinicalRecordsContract = {
         records: z.array(clinicalRecordSchema),
       })
     ),
+
+  startBulkReprocess: oc
+    .route({ method: "POST", path: "/imports/bulk-reprocess/start", tags: ["Clinical Records"] })
+    .input(z.object({ maxImports: z.number().int().positive().optional() }))
+    .output(z.object({ jobId: z.string() })),
+
+  getBulkJob: oc
+    .route({ method: "POST", path: "/imports/bulk-reprocess/status", tags: ["Clinical Records"] })
+    .input(z.object({ jobId: z.string().min(1) }))
+    .output(z.object({ job: clinicalRecordJobStatusSchema.nullable() })),
+
+  cancelBulkJob: oc
+    .route({ method: "POST", path: "/imports/bulk-reprocess/cancel", tags: ["Clinical Records"] })
+    .input(z.object({ jobId: z.string().min(1) }))
+    .output(z.object({ cancelled: z.boolean() })),
+
+  getActiveBulkJob: oc
+    .route({ method: "POST", path: "/imports/bulk-reprocess/active", tags: ["Clinical Records"] })
+    .input(z.object({}))
+    .output(z.object({ job: clinicalRecordJobStatusSchema.nullable() })),
 };
 
 export type ClinicalRecordsContract = typeof clinicalRecordsContract;
