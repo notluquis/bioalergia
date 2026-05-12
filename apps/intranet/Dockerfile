@@ -39,10 +39,16 @@ RUN --mount=type=cache,id=s/31aed601-107c-408b-b13e-96b37282ee93-/pnpm/store,tar
 # ==========================================================================
 FROM base AS build
 ARG VITE_APP_BUILD_TIMESTAMP
+ARG VITE_META_APP_ID
+ARG VITE_META_EMBEDDED_SIGNUP_CONFIG_ID
+ARG VITE_VAPID_PUBLIC_KEY
 COPY --from=pruner /app/out/full/ .
 ENV CI=true
 ENV TURBO_TELEMETRY_DISABLED=1
 ENV VITE_APP_BUILD_TIMESTAMP=${VITE_APP_BUILD_TIMESTAMP}
+ENV VITE_META_APP_ID=${VITE_META_APP_ID}
+ENV VITE_META_EMBEDDED_SIGNUP_CONFIG_ID=${VITE_META_EMBEDDED_SIGNUP_CONFIG_ID}
+ENV VITE_VAPID_PUBLIC_KEY=${VITE_VAPID_PUBLIC_KEY}
 RUN --mount=type=cache,id=s/31aed601-107c-408b-b13e-96b37282ee93-/app/.turbo/cache,target=/app/.turbo/cache \
     pnpm turbo run type-check --filter=@finanzas/intranet
 RUN --mount=type=cache,id=s/31aed601-107c-408b-b13e-96b37282ee93-/app/.turbo/cache,target=/app/.turbo/cache \

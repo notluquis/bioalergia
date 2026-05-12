@@ -25,7 +25,7 @@ export type EmbeddedSignupVariant = "embedded_signup" | "coexistence";
 declare global {
   interface Window {
     FB?: {
-      init: (opts: { appId: string; version: string }) => void;
+      init: (opts: { appId: string; cookie?: boolean; xfbml?: boolean; version: string }) => void;
       login: (
         cb: (resp: {
           authResponse?: { code?: string; accessToken?: string };
@@ -46,7 +46,7 @@ function loadFbSdk(): Promise<void> {
     if (window.FB) return resolve();
     if (!APP_ID) return reject(new Error("VITE_META_APP_ID no configurado"));
     window.fbAsyncInit = () => {
-      window.FB!.init({ appId: APP_ID, version: "v21.0" });
+      window.FB!.init({ appId: APP_ID, cookie: true, xfbml: true, version: "v25.0" });
       resolve();
     };
     const script = document.createElement("script");
