@@ -32,6 +32,9 @@ const TABLET = { width: 768, height: 1024 };
 const DESKTOP = { width: 1280, height: 800 };
 
 const chromium = devices["Desktop Chrome"];
+// iPhone 14 — WebKit + iOS UA. Used by the dvh/svh-specific spec to
+// catch URL-bar-shrink clipping that Chromium devices won't reproduce.
+const iosWebkit = devices["iPhone 14"];
 
 /**
  * Playwright config — viewport-keyed projects (golden 2026 pattern).
@@ -126,6 +129,20 @@ export default defineConfig({
       use: {
         ...chromium,
         viewport: DESKTOP,
+        storageState: STORAGE_STATE_PATH,
+        baseURL: AUTHED_URL,
+      },
+    },
+    // ── iOS Safari (WebKit) — only the dvh/svh-sensitive spec ─────────
+    // Chromium-on-mobile-viewport doesn't simulate the URL-bar shrink
+    // that makes 100vh clip on real iPhones. WebKit + iPhone 14 device
+    // descriptor reproduces it. Scoped tightly to keep CI cheap.
+    {
+      name: "ios-webkit",
+      testMatch: /wa-cloud-.*\.spec\.ts/,
+      dependencies: ["setup"],
+      use: {
+        ...iosWebkit,
         storageState: STORAGE_STATE_PATH,
         baseURL: AUTHED_URL,
       },

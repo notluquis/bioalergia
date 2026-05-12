@@ -81,7 +81,9 @@ jobs:
       - name: Build intranet (preview server target)
         run: pnpm turbo run build --filter=@finanzas/intranet
       - name: Install Chromium
-        run: pnpm -F @finanzas/intranet exec playwright install --with-deps chromium
+        # WebKit needed by the ios-webkit project (one spec — wa-cloud-inbox)
+        # for true iOS Safari URL-bar shrink dvh testing.
+        run: pnpm -F @finanzas/intranet exec playwright install --with-deps chromium webkit
       - name: Run smoke + a11y suite
         env:
           CI: "true"
