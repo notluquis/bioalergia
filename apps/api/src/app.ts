@@ -291,6 +291,48 @@ app.use("/api/wa-cloud/*", csrf({ origin: csrfAllowedOrigin }));
 app.use("/api/orpc/*", csrfDoubleSubmit());
 app.use("/api/wa-cloud/*", csrfDoubleSubmit());
 
+// E2E read-only guard. Layer 2 of the defense-in-depth strategy
+// described in CLAUDE.local.md — the Playwright fixture installs a
+// network-level guard (layer 1) but this server-side check protects
+// production when a misconfigured run somehow bypasses it. Users
+// holding the E2EReadOnly role can ONLY issue safe HTTP methods
+// (GET/HEAD/OPTIONS). Any POST/PUT/PATCH/DELETE is rejected with
+// 403 before the handler runs. The role itself must be seeded in
+// the DB and assigned to the dedicated playwright user. DB-layer
+// (layer 3) — a Postgres read-only role consumed via
+// DATABASE_URL_READONLY — is documented in CLAUDE.local.md.
+const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
+app.use("/api/orpc/*", async (c, next) => {
+  if (SAFE_METHODS.has(c.req.method)) return next();
+  const user = await getSessionUser(c);
+  if (user?.roles.some((r) => r.role.name === "E2EReadOnly")) {
+    return c.json(
+      {
+        status: "error",
+        code: "READ_ONLY_ROLE",
+        message: "E2E read-only sessions cannot perform mutations.",
+      },
+      403
+    );
+  }
+  return next();
+});
+app.use("/api/wa-cloud/*", async (c, next) => {
+  if (SAFE_METHODS.has(c.req.method)) return next();
+  const user = await getSessionUser(c);
+  if (user?.roles.some((r) => r.role.name === "E2EReadOnly")) {
+    return c.json(
+      {
+        status: "error",
+        code: "READ_ONLY_ROLE",
+        message: "E2E read-only sessions cannot perform mutations.",
+      },
+      403
+    );
+  }
+  return next();
+});
+
 // Webhook ingress rate limit — Meta retries up to ~3x per minute per event
 // per WABA, so ~120/min is a generous ceiling. Caps abusive floods that
 // could DoS the DB by inserting WaWebhookLog rows for invalid signatures.

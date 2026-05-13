@@ -23,11 +23,21 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { getRouteApi } from "@tanstack/react-router";
 import dayjs from "dayjs";
-import { ArrowLeft, Bell, BellOff, Filter, Inbox, MessageSquareText, Phone } from "lucide-react";
+import {
+  ArrowLeft,
+  Bell,
+  BellOff,
+  Filter,
+  Inbox,
+  MessageSquareText,
+  Paperclip,
+  Phone,
+} from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { WaConversationStatus } from "@finanzas/orpc-contracts/wa-cloud";
 import { ConversationDetail } from "../components/ConversationDetail";
 import { useFaviconBadge } from "../hooks/useFaviconBadge";
+import { type SharedPayload, useSharedPayload } from "../hooks/useSharedPayload";
 import { useAccounts, useConversations, useMarkRead, useSearchMessages } from "../hooks/useWaCloud";
 import { usePushNotifications } from "@/hooks/use-push-notifications";
 
@@ -103,8 +113,9 @@ export function WaCloudInboxPage() {
   );
 
   const navigate = inboxRouteApi.useNavigate();
-  const { conversation: deepLinkedId } = inboxRouteApi.useSearch();
+  const { conversation: deepLinkedId, shared } = inboxRouteApi.useSearch();
   const qc = useQueryClient();
+  const sharedPayload = useSharedPayload(!!shared);
 
   // Cross-tab + SW → tab inbox sync via BroadcastChannel. The SW
   // posts on every push receipt and on action-button mark-read; we
@@ -293,6 +304,18 @@ export function WaCloudInboxPage() {
 
   return (
     <div className="h-[calc(100dvh-7rem)] p-4">
+      {sharedPayload.payload && (
+        <SharedPayloadModal
+          payload={sharedPayload.payload}
+          onClose={() => {
+            void sharedPayload.clear();
+            void navigate({
+              search: (prev) => ({ ...prev, shared: undefined }),
+              replace: true,
+            });
+          }}
+        />
+      )}
       <Card className="grid h-full grid-cols-1 overflow-hidden p-0 lg:grid-cols-[360px_1fr]">
         {showList && (
           <aside className="flex h-full flex-col border-default-200 lg:border-r">
@@ -377,7 +400,7 @@ export function WaCloudInboxPage() {
                         textValue={name}
                         className="rounded-none border-default-200 border-b px-3 py-3 transition-[background-color] duration-150 ease-out"
                       >
-                        <div className="flex w-full items-center gap-3">
+                        <div className="flex w-full items-center gap-3" data-phi-block>
                           {c.unreadCount > 0 ? (
                             <Badge color="success" placement="top-right" size="sm">
                               <Badge.Label>{c.unreadCount}</Badge.Label>
@@ -587,6 +610,86 @@ function ActiveFilterChips({
         </TagGroup.List>
       </TagGroup>
     </div>
+  );
+}
+
+function SharedPayloadModal({ payload, onClose }: { payload: SharedPayload; onClose: () => void }) {
+  // Friendly rendering of the cached Web Share Target payload. The
+  // operator drags files from here into a conversation composer
+  // manually for now — a "Send to current conversation" flow is the
+  // obvious follow-up. We list the files with a Blob URL preview so
+  // images render inline.
+  return (
+    <Modal isOpen onOpenChange={(v) => !v && onClose()}>
+      <Modal.Backdrop />
+      <Modal.Container placement="center">
+        <Modal.Dialog className="w-full max-w-lg rounded-2xl bg-background p-5 shadow-2xl">
+          <Modal.Header className="mb-3 flex items-center gap-2">
+            <Paperclip size={18} className="text-success" />
+            <Modal.Heading className="font-semibold text-base">
+              Contenido compartido recibido
+            </Modal.Heading>
+          </Modal.Header>
+          <Modal.Body className="space-y-3">
+            {payload.title && <p className="font-medium text-sm">{payload.title}</p>}
+            {payload.text && (
+              <p className="whitespace-pre-wrap text-default-700 text-sm">{payload.text}</p>
+            )}
+            {payload.url && (
+              <a
+                href={payload.url}
+                target="_blank"
+                rel="noreferrer noopener"
+                className="text-primary text-sm underline"
+              >
+                {payload.url}
+              </a>
+            )}
+            {payload.files.length > 0 && (
+              <ul className="space-y-2">
+                {payload.files.map((f, i) => {
+                  const previewUrl = f.type.startsWith("image/")
+                    ? URL.createObjectURL(f.blob)
+                    : null;
+                  return (
+                    <li
+                      key={`${f.name}-${i}`}
+                      className="flex items-center gap-3 rounded-lg border border-default-200 p-2"
+                    >
+                      {previewUrl ? (
+                        // oxlint-disable-next-line jsx-a11y/img-redundant-alt
+                        <img
+                          src={previewUrl}
+                          alt={f.name}
+                          className="size-12 rounded object-cover"
+                        />
+                      ) : (
+                        <Paperclip size={20} className="text-default-500" />
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate font-medium text-sm">{f.name}</p>
+                        <p className="text-default-500 text-xs">
+                          {f.type || "application/octet-stream"} · {(f.size / 1024).toFixed(1)} kB
+                        </p>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+            <p className="rounded-lg bg-warning/10 p-2 text-warning text-xs">
+              Próximamente: adjuntar a una conversación con un click. Por ahora guarda los archivos
+              manualmente.
+            </p>
+          </Modal.Body>
+          <Modal.Footer className="mt-4 flex justify-end gap-2">
+            <Button variant="ghost" onPress={onClose}>
+              Cerrar
+            </Button>
+          </Modal.Footer>
+        </Modal.Dialog>
+      </Modal.Container>
+    </Modal>
   );
 }
 

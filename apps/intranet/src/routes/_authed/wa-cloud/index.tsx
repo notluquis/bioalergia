@@ -9,6 +9,11 @@ import { WaCloudInboxPage } from "@/features/wa-cloud/pages/WaCloudInboxPage";
 // to undefined instead of throwing.
 const inboxSearchSchema = z.object({
   conversation: z.coerce.number().int().positive().optional(),
+  // Marker set by the SW `/share-target` POST → 303 redirect. When
+  // present, the inbox page reads the cached payload from
+  // CacheStorage and offers it to the operator (file preview +
+  // pick-conversation flow).
+  shared: z.coerce.number().int().optional(),
 });
 
 export const Route = createFileRoute("/_authed/wa-cloud/")({

@@ -54,6 +54,30 @@ if (!role) {
   process.exit(3);
 }
 
+// Defense-in-depth layer 2 (app-layer). The Hono middleware in
+// apps/api/src/app.ts rejects mutating HTTP methods when the
+// session user holds this role. We create it idempotently here so
+// the seed runs work even on a fresh DB.
+const READ_ONLY_ROLE_NAME = "E2EReadOnly";
+let readOnlyRole = await db
+  .selectFrom("roles")
+  .select(["id"])
+  .where("name", "=", READ_ONLY_ROLE_NAME)
+  .executeTakeFirst();
+if (!readOnlyRole) {
+  readOnlyRole = await db
+    .insertInto("roles")
+    .values({
+      name: READ_ONLY_ROLE_NAME,
+      description:
+        "Synthetic role used by Playwright E2E to mark a session as read-only. " +
+        "The /api middleware rejects mutating methods for users holding this role.",
+      is_system: true,
+    })
+    .returning("id")
+    .executeTakeFirstOrThrow();
+}
+
 const existing = await db
   .selectFrom("users")
   .innerJoin("people", "people.id", "users.person_id")
@@ -118,21 +142,22 @@ if (existing) {
 // Ensure least-privilege role assignment exists (idempotent).
 // user_role_assignments uses a composite PK (user_id, role_id), no surrogate
 // id column — select by both keys.
-const existingAssignment = await db
-  .selectFrom("user_role_assignments")
-  .select(["user_id", "role_id"])
-  .where("user_id", "=", userId)
-  .where("role_id", "=", role.id)
-  .executeTakeFirst();
-if (!existingAssignment) {
-  await db
-    .insertInto("user_role_assignments")
-    .values({
-      user_id: userId,
-      role_id: role.id,
-    })
-    .execute();
+async function ensureAssignment(roleId: number) {
+  const existingAssignment = await db
+    .selectFrom("user_role_assignments")
+    .select(["user_id", "role_id"])
+    .where("user_id", "=", userId)
+    .where("role_id", "=", roleId)
+    .executeTakeFirst();
+  if (!existingAssignment) {
+    await db
+      .insertInto("user_role_assignments")
+      .values({ user_id: userId, role_id: roleId })
+      .execute();
+  }
 }
+await ensureAssignment(role.id);
+await ensureAssignment(readOnlyRole.id);
 
 await db.destroy();
 
