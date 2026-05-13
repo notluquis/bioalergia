@@ -175,7 +175,14 @@ export async function broadcastPushNotification(payload: {
   if (!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) {
     return { success: false, sent: 0, reason: "VAPID keys not configured" };
   }
-  const subscriptions = await db.pushSubscription.findMany();
+  // Only push to subs whose owning user is currently ACTIVE.
+  // Suspended/deactivated/pending users keep their row but stop
+  // receiving notifications immediately — required for offboarding
+  // an ex-employee without waiting for them to logout on their phone.
+  // Logout itself also wipes the row server-side (orpc/auth.ts).
+  const subscriptions = await db.pushSubscription.findMany({
+    where: { user: { status: "ACTIVE" } },
+  });
   if (subscriptions.length === 0) {
     return { success: true, sent: 0 };
   }

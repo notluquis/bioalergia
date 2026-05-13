@@ -476,6 +476,18 @@ const authORPCRouterBase = {
     .input(authEmptySchema)
     .output(authStatusResponseSchema)
     .handler(async ({ context }) => {
+      // Wipe push subscriptions for this user — without this, the
+      // operator's device keeps receiving WhatsApp message previews
+      // (sender name + body snippet) on the lock screen after they
+      // logged out. Ex-employee devices would also keep getting PHI.
+      // We swallow the error so a transient DB hiccup doesn't block
+      // the cookie deletion below.
+      const session = await getSessionUser(context.hono);
+      if (session) {
+        await db.pushSubscription
+          .deleteMany({ where: { userId: session.id } })
+          .catch(() => undefined);
+      }
       deleteCookie(context.hono, COOKIE_NAME);
       return { status: "ok" as const };
     }),

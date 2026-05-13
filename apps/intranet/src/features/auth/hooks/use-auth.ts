@@ -113,6 +113,22 @@ export function useAuth() {
     logger.info("[auth] logout:start");
     try {
       setImpersonatedRole(null);
+      // Unsubscribe the browser-side PushSubscription FIRST so the
+      // device stops being a valid push target before we even hit
+      // the server. Backend logout wipes the corresponding row, but
+      // this also detaches the underlying APNs/FCM channel — Apple
+      // otherwise keeps the endpoint live for ~30 days.
+      try {
+        if ("serviceWorker" in navigator) {
+          const reg = await navigator.serviceWorker.getRegistration();
+          const sub = await (
+            reg as ServiceWorkerRegistration & { pushManager?: PushManager }
+          )?.pushManager?.getSubscription();
+          if (sub) await sub.unsubscribe();
+        }
+      } catch (err) {
+        logger.error("[auth] logout:push-unsubscribe-error", err);
+      }
       StatusResponseSchema.parse(await authORPCClient.logout({}));
     } catch (error) {
       logger.error("[auth] logout:error", toAuthApiError(error));
