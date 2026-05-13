@@ -1,6 +1,7 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
   "plugins": ["typescript", "react", "vitest"],
+  "jsPlugins": ["oxlint-tailwindcss"],
   "env": {
     "browser": true,
     "node": true,
@@ -9,6 +10,12 @@
   "settings": {
     "import/resolver": {
       "typescript": true
+    },
+    "tailwindcss": {
+      "entryPoint": [
+        "apps/intranet/src/index.css",
+        "apps/site/src/index.css"
+      ]
     }
   },
   "rules": {
@@ -38,7 +45,14 @@
     // genuinely nullable. Use early returns, `??` defaults, or
     // `invariant()` instead. Suppress with line-level disable + a
     // comment explaining why narrowing TS can't see is correct here.
-    "typescript/no-non-null-assertion": "error"
+    "typescript/no-non-null-assertion": "error",
+    // Tailwind CSS v4 (oxlint-tailwindcss) — conservative subset:
+    // catch real bugs without churn. Shorthand is `warn`, not `error`,
+    // so it doesn't block CI. Note: no rule exists for missing
+    // `min-w-0` on `flex-1` children (not in the 23-rule plugin set).
+    "tailwindcss/no-conflicting-classes": "error",
+    "tailwindcss/no-duplicate-classes": "error",
+    "tailwindcss/enforce-shorthand": "warn"
   },
   "ignorePatterns": [
     "**/dist",

@@ -26,6 +26,7 @@ import { signalAppFallback } from "./lib/app-recovery";
 import { AbilityProvider } from "./lib/authz/AbilityProvider";
 import { createLogger } from "./lib/logger";
 import { initPerformanceMonitoring } from "./lib/performance";
+import { initSentry, isSentryEnabled, Sentry } from "./lib/sentry";
 // Import the generated route tree
 import { routeTree } from "./routeTree.gen";
 // Initialize global dayjs configuration
@@ -33,6 +34,11 @@ import "@/lib/dayjs";
 
 import "./index.css";
 import "./i18n";
+
+// Initialize Sentry as early as possible — must run before any other
+// side-effects so it can capture chunk-load errors registered below.
+// No-op when VITE_SENTRY_DSN is not set.
+initSentry();
 
 // Create namespaced logger for chunk errors
 const log = createLogger("ChunkRecovery");
@@ -133,6 +139,9 @@ const router = createRouter({
     // Log the error immediately
     useEffect(() => {
       logGlobalError(error, "Router");
+      if (isSentryEnabled()) {
+        Sentry.captureException(error, { tags: { source: "tanstack-router" } });
+      }
     }, [error]);
 
     return (

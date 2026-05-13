@@ -1,7 +1,9 @@
 import { Button } from "@heroui/react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useState } from "react";
+import { expect, within } from "storybook/test";
 
+import { expectNoSilentClipping } from "../../test/layout-guards";
 import { AppModal } from "./AppModal";
 
 const meta: Meta<typeof AppModal> = {
@@ -25,9 +27,11 @@ type Story = StoryObj<typeof AppModal>;
 function ModalDemo({
   size = "md",
   footer = false,
+  title = "Confirmar acción",
 }: {
   size?: "sm" | "md" | "lg" | "xl";
   footer?: boolean;
+  title?: string;
 }) {
   const [open, setOpen] = useState(true);
   return (
@@ -36,7 +40,7 @@ function ModalDemo({
       <AppModal
         isOpen={open}
         onClose={() => setOpen(false)}
-        title="Confirmar acción"
+        title={title}
         size={size}
         footer={
           footer ? (
@@ -63,3 +67,24 @@ export const Small: Story = { render: () => <ModalDemo size="sm" /> };
 export const Medium: Story = { render: () => <ModalDemo size="md" /> };
 export const Large: Story = { render: () => <ModalDemo size="lg" footer /> };
 export const ExtraLarge: Story = { render: () => <ModalDemo size="xl" footer /> };
+
+/**
+ * Mobile viewport with a long title — guards against the breadcrumb/title
+ * silent-clipping regression. The modal heading must either fit, declare
+ * `text-overflow:ellipsis`, or render a visible "..." indicator.
+ */
+export const MobileLongTitle: Story = {
+  globals: { viewport: { value: "mobile1", isRotated: false } },
+  parameters: { viewport: { defaultViewport: "mobile1" } },
+  render: () => (
+    <ModalDemo size="sm" title="WhatsApp Cloud — Bandeja de entrada de pacientes" />
+  ),
+  play: async ({ canvasElement }) => {
+    const root = within(canvasElement.ownerDocument.body);
+    const heading = await root.findByRole("heading", {
+      name: /WhatsApp Cloud/,
+    });
+    await expect(heading).toBeInTheDocument();
+    expectNoSilentClipping(heading as HTMLElement);
+  },
+};

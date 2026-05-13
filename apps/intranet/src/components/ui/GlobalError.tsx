@@ -4,6 +4,7 @@ import { ErrorBoundary } from "react-error-boundary";
 
 import { signalAppFallback } from "@/lib/app-recovery";
 import { logger } from "@/lib/logger";
+import { isSentryEnabled, Sentry } from "@/lib/sentry";
 
 // Errores que indican un nuevo deploy (cache stale)
 const DEPLOY_ERROR_PATTERNS = [
@@ -109,6 +110,15 @@ function handleGlobalError(rawError: unknown, info: ErrorInfo) {
   if (isDeployError(error)) {
     logger.info("[GlobalError] 🔄 Deploy error detected, waiting for user action...");
     signalAppFallback("update");
+    // Don't ship deploy/chunk errors to Sentry — they're expected after
+    // a release and just generate noise.
+    return;
+  }
+  if (isSentryEnabled()) {
+    Sentry.captureException(error, {
+      tags: { source: "global-error-boundary" },
+      contexts: { react: { componentStack: info.componentStack } },
+    });
   }
 }
 

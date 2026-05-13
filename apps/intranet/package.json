@@ -52,6 +52,7 @@
     "@orpc/contract": "^1.14.3",
     "@orpc/shared": "^1.14.3",
     "@orpc/tanstack-query": "^1.14.3",
+    "@sentry/react": "^10.53.1",
     "@simplewebauthn/browser": "^13.3.0",
     "@tanstack/react-form": "^1.32.0",
     "@tanstack/react-pacer": "^0.22.0",
@@ -86,6 +87,7 @@
     "superjson": "^2.2.6",
     "tailwind-merge": "^3.6.0",
     "tailwind-variants": "^3.2.2",
+    "web-vitals": "^5.2.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {
@@ -137,6 +139,7 @@
     "storybook-addon-tag-badges": "^3.1.0",
     "stylelint": "^17.11.0",
     "stylelint-plugin-defensive-css": "^2.9.1",
+    "stylelint-plugin-rhythmguard": "^1.5.0",
     "tailwindcss": "^4.3.0",
     "typescript": "^6.0.3",
     "vite": "^8.0.12",

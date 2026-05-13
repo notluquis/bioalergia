@@ -167,8 +167,13 @@ function AuthedLayout() {
 
   return (
     <>
+      {/* Skip-link golden 2026: single position (absolute), hidden via
+          large negative top + clip-path, revealed on focus by overriding
+          top + clip-path. Avoids the position-class conflict that
+          tailwindcss/no-conflicting-classes flags when mixing sr-only
+          (position:absolute) with `fixed`. */}
       <Link
-        className="sr-only fixed top-3 left-3 z-110 rounded-md bg-background px-3 py-2 font-semibold text-foreground shadow-lg focus:not-sr-only focus:outline-none focus:ring-2 focus:ring-primary/70"
+        className="absolute -top-32 left-3 z-110 [clip-path:inset(50%)] rounded-md bg-background px-3 py-2 font-semibold text-foreground shadow-lg focus:top-3 focus:[clip-path:none] focus:outline-none focus:ring-2 focus:ring-primary/70"
         href="#main-content"
       >
         Saltar al contenido principal
@@ -267,7 +272,7 @@ function AuthedLayout() {
                     </Button>
                   </Tooltip.Trigger>
                   <Tooltip.Content
-                    className="select-none whitespace-nowrap break-normal wrap-normal"
+                    className="select-none whitespace-nowrap"
                     placement="top"
                     showArrow
                   >

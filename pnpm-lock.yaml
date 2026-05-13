@@ -52,6 +52,9 @@ importers:
       oxlint:
         specifier: ^1.64.0
         version: 1.64.0(oxlint-tsgolint@0.22.1)
+      oxlint-tailwindcss:
+        specifier: ^0.7.1
+        version: 0.7.1(@oxlint/plugins@1.64.0)
       oxlint-tsgolint:
         specifier: ^0.22.1
         version: 0.22.1
@@ -338,6 +341,9 @@ importers:
       '@orpc/tanstack-query':
         specifier: ^1.14.3
         version: 1.14.3(@opentelemetry/api@1.9.1)(@orpc/client@1.14.3(@opentelemetry/api@1.9.1))(@tanstack/query-core@5.100.10)
+      '@sentry/react':
+        specifier: ^10.53.1
+        version: 10.53.1(react@19.2.6)
       '@simplewebauthn/browser':
         specifier: ^13.3.0
         version: 13.3.0
@@ -440,6 +446,9 @@ importers:
       tailwind-variants:
         specifier: ^3.2.2
         version: 3.2.2(tailwind-merge@3.6.0)(tailwindcss@4.3.0)
+      web-vitals:
+        specifier: ^5.2.0
+        version: 5.2.0
       zod:
         specifier: ^4.4.3
         version: 4.4.3
@@ -588,6 +597,9 @@ importers:
       stylelint-plugin-defensive-css:
         specifier: ^2.9.1
         version: 2.9.1(stylelint@17.11.0(typescript@6.0.3))
+      stylelint-plugin-rhythmguard:
+        specifier: ^1.5.0
+        version: 1.5.0(stylelint@17.11.0(typescript@6.0.3))(tailwindcss@4.3.0)
       tailwindcss:
         specifier: ^4.3.0
         version: 4.3.0
@@ -3028,6 +3040,10 @@ packages:
     cpu: [x64]
     os: [win32]
 
+  '@oxlint/plugins@1.64.0':
+    resolution: {integrity: sha512-aUOYj3qpaR/Mbo0HQo8CuwrxbkwRTpsxMlvaQ00INGXS1KdvllRHU1eEn7WYgwhgK3cXtAbLP13VjSknwdxvzA==}
+    engines: {node: ^12.22.0 || ^14.17.0 || >=16.0.0}
+
   '@paralleldrive/cuid2@2.3.1':
     resolution: {integrity: sha512-XO7cAxhnTZl0Yggq6jOgjiOHhbgcO4NqFqwSmQpjK3b6TEE6Uj/jfSk6wzYyemh3+I0sHirKSetjQwn5cZktFw==}
 
@@ -3621,9 +3637,33 @@ packages:
   '@sec-ant/readable-stream@0.4.1':
     resolution: {integrity: sha512-831qok9r2t8AlxLko40y2ebgSDhenenCatLVeW/uBtnHPyhHOvG0C7TvfgecV+wHzIm5KUICgzmVpWS+IMEAeg==}
 
+  '@sentry-internal/browser-utils@10.53.1':
+    resolution: {integrity: sha512-X4d6y8sBMjmNhcDW4eMBU3ASsNIMz8dqaFkhyIMN/dkYr/yZKnbRZPaVuVUGvHKjnlficPpIH0/HK9KBjrYxPw==}
+    engines: {node: '>=18'}
+
+  '@sentry-internal/feedback@10.53.1':
+    resolution: {integrity: sha512-vVpTI/aEYN5d9IgZeYJWMqVaN0+iFgidSrYNAsZTh1US5sJUzF/wrl+68KdpmCtFROrN3jiAn1oPSwL5CKvEJA==}
+    engines: {node: '>=18'}
+
+  '@sentry-internal/replay-canvas@10.53.1':
+    resolution: {integrity: sha512-aueLaf/2prExwA76BGU5/bOXCKWqtt6jQXWA6WJQNrmKpPEtZJB4ypnpsou0McXQCF8tur2Y8U0TEkwQP13yJQ==}
+    engines: {node: '>=18'}
+
+  '@sentry-internal/replay@10.53.1':
+    resolution: {integrity: sha512-wZNzTBYkgGUPWMuUQv7L64+OJmoCnz7GQNiTrTFK6EVAjJXFBCSsPp/nhif0bLhbk8+0g4xz633uOhpXuQbFdw==}
+    engines: {node: '>=18'}
+
   '@sentry-internal/tracing@7.120.4':
     resolution: {integrity: sha512-Fz5+4XCg3akeoFK+K7g+d7HqGMjmnLoY2eJlpONJmaeT9pXY7yfUyXKZMmMajdE2LxxKJgQ2YKvSCaGVamTjHw==}
     engines: {node: '>=8'}
+
+  '@sentry/browser@10.53.1':
+    resolution: {integrity: sha512-zXF373hzUOGzUOrqd8xb1U3LQi5uYC3mwv+z5OMKUUinQlu30tTWBs7ypy6YTchtix9QlYaHWlayUF8vBZ5UjA==}
+    engines: {node: '>=18'}
+
+  '@sentry/core@10.53.1':
+    resolution: {integrity: sha512-XG4ezlkyuAPjBC5+9kXC94rXXuqYTw9NRhfaDHssbTFaGnqBR8vQX2UUgZfY7ucbeelRDGfBu1sywoU+mB04uA==}
+    engines: {node: '>=18'}
 
   '@sentry/core@7.120.4':
     resolution: {integrity: sha512-TXu3Q5kKiq8db9OXGkWyXUbIxMMuttB5vJ031yolOl5T/B69JRyAoKuojLBjRv1XX583gS1rSSoX8YXX7ATFGA==}
@@ -3636,6 +3676,12 @@ packages:
   '@sentry/node@7.120.4':
     resolution: {integrity: sha512-qq3wZAXXj2SRWhqErnGCSJKUhPSlZ+RGnCZjhfjHpP49KNpcd9YdPTIUsFMgeyjdh6Ew6aVCv23g1hTP0CHpYw==}
     engines: {node: '>=8'}
+
+  '@sentry/react@10.53.1':
+    resolution: {integrity: sha512-lrwNq5T/zW84l60894TpKHPcvFuc1I/Hnohecc0TfYVpIcYYuw2orCHoU4v4wgkFaJUpegVetbgdOphViyLVjA==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      react: ^16.14.0 || 17.x || 18.x || 19.x
 
   '@sentry/types@7.120.4':
     resolution: {integrity: sha512-cUq2hSSe6/qrU6oZsEP4InMI5VVdD86aypE+ENrQ6eZEVLTCYm1w6XhW1NvIu3UuWh7gZec4a9J7AFpYxki88Q==}
@@ -6694,6 +6740,9 @@ packages:
     engines: {node: ^20.19.0 || >=22.12.0}
     hasBin: true
 
+  known-css-properties@0.37.0:
+    resolution: {integrity: sha512-JCDrsP4Z1Sb9JwG0aJ8Eo2r7k4Ou5MwmThS/6lcIe1ICyb7UBJKGRIUUdqc2ASdE/42lgz6zFUnzAIhtXnBVrQ==}
+
   ky@2.0.2:
     resolution: {integrity: sha512-/GmXpo9F9W+f8n4Ivr2iH+7h7wL7jLbLKWkMlpflcCRb6kGjBfTlASEXaZ9qUgNTn4VgS0P2pwxxzQ4EM6Ulgg==}
     engines: {node: '>=22'}
@@ -7300,6 +7349,12 @@ packages:
     peerDependenciesMeta:
       svelte:
         optional: true
+
+  oxlint-tailwindcss@0.7.1:
+    resolution: {integrity: sha512-l4WuZt/iKvMwggwnfsIPCNvY/GDMK9FffXiYTWfXrh+PR0WeItRwqzU5UD1iFfV5CC0bfsiYZbLFt1CJLT6t3g==}
+    engines: {node: '>=20'}
+    peerDependencies:
+      '@oxlint/plugins': '>=1.43.0'
 
   oxlint-tsgolint@0.22.1:
     resolution: {integrity: sha512-YUSGSLUnoolsu8gxISEDio3q1rtsCozwfOzASUn3DT2mR2EeQ93uEEnen7s+6LpF+lyTQFln1pQfqwBh/fsVEg==}
@@ -8554,10 +8609,28 @@ packages:
   strnum@2.3.0:
     resolution: {integrity: sha512-ums3KNd42PGyx5xaoVTO1mjU1bH3NpY4vsrVlnv9PNGqQj8wd7rJ6nEypLrJ7z5vxK5RP0yMLo6J/Gsm62DI5Q==}
 
+  stylelint-config-tailwindcss@1.0.1:
+    resolution: {integrity: sha512-IeIMivgaB1kxPBgllMzBqyv0g61IwFxxZKo/fDDelfZ/JtPPlSBT04VuOCslk6PIaq5GQvdRnHOP1K3HpxSkeg==}
+    peerDependencies:
+      stylelint: '>=13.13.1'
+      tailwindcss: '>=2.2.16'
+
   stylelint-plugin-defensive-css@2.9.1:
     resolution: {integrity: sha512-y/+9Nz5Wf1Of8eFzN5qwLQSL8rTlokX6VnveD/Gy3+zJMDdIzOZ63crVoSqtJYIffG1SN2j68NoVnfd5rPPKbg==}
     peerDependencies:
       stylelint: ^14.0.0 || ^15.0.0 || ^16.0.0 || ^17.0.0
+
+  stylelint-plugin-logical-css@2.1.0:
+    resolution: {integrity: sha512-625OT+p5y2kkGBaRV7uTYscuH0m1UueMXh0WcidrXgwF2DOnKov+un9tvuyNG+SUC07W0ibcn+fZvQs/keskww==}
+    peerDependencies:
+      stylelint: ^14.0.0 || ^15.0.0 || ^16.0.0 || ^17.0.0
+
+  stylelint-plugin-rhythmguard@1.5.0:
+    resolution: {integrity: sha512-Rg7+OBgpLnOxWHXJzV7xon4Sx+YUHLDmZif2tp9ihDEVCd4jUhNtCMXdh7dbyP7jm2aPnKECwTacmCD743Qdog==}
+    engines: {node: '>=18.18.0'}
+    hasBin: true
+    peerDependencies:
+      stylelint: ^16.0.0 || ^17.0.0
 
   stylelint@17.11.0:
     resolution: {integrity: sha512-/3czzmbF9XdGWvReDF3Ex4R23Ajolo7j8RB2bFNEqk6Ht356nlpVV+G5bG2Qt8AW1ofJzXztBRDnAtd7cgowWA==}
@@ -9361,7 +9434,7 @@ packages:
     engines: {node: '>=8'}
 
   xlsx@https://cdn.sheetjs.com/xlsx-latest/xlsx-latest.tgz:
-    resolution: {integrity: sha512-oLDq3jw7AcLqKWH2AhCpVTZl8mf6X2YReP+Neh0SJUzV/BdZYjth94tG5toiMB1PPrYtxOCfaoUCkvtuH+3AJA==, tarball: https://cdn.sheetjs.com/xlsx-latest/xlsx-latest.tgz}
+    resolution: {tarball: https://cdn.sheetjs.com/xlsx-latest/xlsx-latest.tgz}
     version: 0.20.3
     engines: {node: '>=0.8'}
     hasBin: true
@@ -11633,6 +11706,8 @@ snapshots:
   '@oxlint/binding-win32-x64-msvc@1.64.0':
     optional: true
 
+  '@oxlint/plugins@1.64.0': {}
+
   '@paralleldrive/cuid2@2.3.1':
     dependencies:
       '@noble/hashes': 1.8.0
@@ -12171,11 +12246,39 @@ snapshots:
 
   '@sec-ant/readable-stream@0.4.1': {}
 
+  '@sentry-internal/browser-utils@10.53.1':
+    dependencies:
+      '@sentry/core': 10.53.1
+
+  '@sentry-internal/feedback@10.53.1':
+    dependencies:
+      '@sentry/core': 10.53.1
+
+  '@sentry-internal/replay-canvas@10.53.1':
+    dependencies:
+      '@sentry-internal/replay': 10.53.1
+      '@sentry/core': 10.53.1
+
+  '@sentry-internal/replay@10.53.1':
+    dependencies:
+      '@sentry-internal/browser-utils': 10.53.1
+      '@sentry/core': 10.53.1
+
   '@sentry-internal/tracing@7.120.4':
     dependencies:
       '@sentry/core': 7.120.4
       '@sentry/types': 7.120.4
       '@sentry/utils': 7.120.4
+
+  '@sentry/browser@10.53.1':
+    dependencies:
+      '@sentry-internal/browser-utils': 10.53.1
+      '@sentry-internal/feedback': 10.53.1
+      '@sentry-internal/replay': 10.53.1
+      '@sentry-internal/replay-canvas': 10.53.1
+      '@sentry/core': 10.53.1
+
+  '@sentry/core@10.53.1': {}
 
   '@sentry/core@7.120.4':
     dependencies:
@@ -12196,6 +12299,12 @@ snapshots:
       '@sentry/integrations': 7.120.4
       '@sentry/types': 7.120.4
       '@sentry/utils': 7.120.4
+
+  '@sentry/react@10.53.1(react@19.2.6)':
+    dependencies:
+      '@sentry/browser': 10.53.1
+      '@sentry/core': 10.53.1
+      react: 19.2.6
 
   '@sentry/types@7.120.4': {}
 
@@ -15521,6 +15630,8 @@ snapshots:
       - '@emnapi/core'
       - '@emnapi/runtime'
 
+  known-css-properties@0.37.0: {}
+
   ky@2.0.2: {}
 
   kysely@0.28.17: {}
@@ -16157,6 +16268,12 @@ snapshots:
       '@oxfmt/binding-win32-arm64-msvc': 0.49.0
       '@oxfmt/binding-win32-ia32-msvc': 0.49.0
       '@oxfmt/binding-win32-x64-msvc': 0.49.0
+
+  oxlint-tailwindcss@0.7.1(@oxlint/plugins@1.64.0):
+    dependencies:
+      '@oxlint/plugins': 1.64.0
+      '@tailwindcss/node': 4.3.0
+      tailwindcss: 4.3.0
 
   oxlint-tsgolint@0.22.1:
     optionalDependencies:
@@ -17695,9 +17812,27 @@ snapshots:
 
   strnum@2.3.0: {}
 
+  stylelint-config-tailwindcss@1.0.1(stylelint@17.11.0(typescript@6.0.3))(tailwindcss@4.3.0):
+    dependencies:
+      stylelint: 17.11.0(typescript@6.0.3)
+      tailwindcss: 4.3.0
+
   stylelint-plugin-defensive-css@2.9.1(stylelint@17.11.0(typescript@6.0.3)):
     dependencies:
       stylelint: 17.11.0(typescript@6.0.3)
+
+  stylelint-plugin-logical-css@2.1.0(stylelint@17.11.0(typescript@6.0.3)):
+    dependencies:
+      stylelint: 17.11.0(typescript@6.0.3)
+
+  stylelint-plugin-rhythmguard@1.5.0(stylelint@17.11.0(typescript@6.0.3))(tailwindcss@4.3.0):
+    dependencies:
+      known-css-properties: 0.37.0
+      stylelint: 17.11.0(typescript@6.0.3)
+      stylelint-config-tailwindcss: 1.0.1(stylelint@17.11.0(typescript@6.0.3))(tailwindcss@4.3.0)
+      stylelint-plugin-logical-css: 2.1.0(stylelint@17.11.0(typescript@6.0.3))
+    transitivePeerDependencies:
+      - tailwindcss
 
   stylelint@17.11.0(typescript@6.0.3):
     dependencies:
