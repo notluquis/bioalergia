@@ -1,5 +1,6 @@
 import { db } from "@finanzas/db";
 import webpush from "web-push";
+import { logEvent } from "../lib/logger.ts";
 
 const VAPID_PUBLIC_KEY = process.env.VITE_VAPID_PUBLIC_KEY || "";
 const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY || "";
@@ -252,18 +253,45 @@ export async function broadcastPushNotification(payload: {
   );
 
   let sent = 0;
+  let dropped = 0;
+  const failedStatusCodes: Record<number, number> = {};
   for (const [index, result] of results.entries()) {
     if (result.status === "fulfilled") {
       sent++;
     } else {
       const error = result.reason as { statusCode?: number } | undefined;
-      if (error?.statusCode === 410 || error?.statusCode === 404) {
-        await db.pushSubscription.delete({
-          where: { id: subscriptions[index].id },
-        }).catch(() => undefined);
+      const code = error?.statusCode ?? 0;
+      failedStatusCodes[code] = (failedStatusCodes[code] ?? 0) + 1;
+      if (code === 410 || code === 404) {
+        dropped++;
+        await db.pushSubscription
+          .delete({ where: { id: subscriptions[index].id } })
+          .catch(() => undefined);
       }
     }
   }
+
+  // HIPAA 2026 audit logging — every push attempt is logged with
+  // tag + recipient counts per preview mode. NO PHI (no sender,
+  // body, conversation contents). The tag links back to the source
+  // event (e.g. "wa-conv-42") for ops-side correlation; the
+  // operator who saw the push can be recovered from the
+  // pushSubscription row at the time of the event.
+  const modeBreakdown = subscriptions.reduce<Record<string, number>>((acc, s) => {
+    const m = s.user?.pushPreviewMode ?? "GENERIC";
+    acc[m] = (acc[m] ?? 0) + 1;
+    return acc;
+  }, {});
+  logEvent("[notifications.broadcast]", {
+    tag: payload.tag,
+    kind: payload.kind ?? "notification",
+    recipients: subscriptions.length,
+    sent,
+    failed: subscriptions.length - sent,
+    dropped,
+    modeBreakdown,
+    failedStatusCodes,
+  });
 
   return { success: true, sent };
 }

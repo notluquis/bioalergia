@@ -626,6 +626,10 @@ function PushToggle() {
                   ? "Verás el nombre del remitente. Asegúrate de tener pantalla protegida con biometría."
                   : "Verás nombre + preview. Recomendado solo con device biometric-locked."}
             </p>
+            <p className="text-default-500 text-[11px]">
+              Al tocar la notificación, la app exige sesión PASETO activa antes de mostrar el
+              contenido completo. La sesión expira tras 8 h de inactividad.
+            </p>
           </>
         )}
       </Dropdown.Popover>
