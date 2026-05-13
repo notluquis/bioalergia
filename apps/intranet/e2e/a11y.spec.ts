@@ -34,13 +34,11 @@ const AUTHED_DISABLED_RULES: string[] = [
   //  `no-focusable-content` is the axe sub-check that fires alongside
   //  this rule but is not addressable via disableRules (internal name).
   "nested-interactive",
-  // TODO(a11y): Sidebar nav inactive items, MobileNav, DataTable column
-  //  headers + faceted-filter "no results" copy were bumped one step down
-  //  the contrast ramp (default-400 -> default-600, header text now
-  //  default-700 / dark:default-200). Cannot verify locally without
-  //  authed Playwright credentials; next authed CI run will surface any
-  //  residual surface still violating 1.4.3 so this can be removed.
-  "color-contrast",
+  // (color-contrast was previously disabled while Sidebar / MobileNav /
+  //  DataTable headers / FacetedFilter were bumped one step down the
+  //  contrast ramp — fix landed in 0110025b. Lifted from baseline
+  //  2026-05-13; if a regression re-introduces a low-contrast pair this
+  //  rule will fail authed CI again.)
   // TODO(a11y): some authed pages wrap right-side rails in <aside> inside
   //  <main>. Walk down per page (Home + Dashboard fixed in 5c11f6b7,
   //  remaining: counterparts, services, wa-cloud, finance/loans).
