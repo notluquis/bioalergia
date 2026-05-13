@@ -37,7 +37,12 @@
 		# violates Trusted Types regardless of nonce. Tracking violations in
 		# report-only lets us migrate first-party code to TrustedHTML/Script
 		# without breaking the live app.
-		Content-Security-Policy "default-src 'self'; script-src 'nonce-{http.request.uuid}' 'strict-dynamic' 'unsafe-inline' https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self'; media-src 'self' blob:; worker-src 'self' blob:; manifest-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'; object-src 'none'"
+		# connect-src includes Sentry ingest endpoints so the browser SDK
+		# can transmit errors / replays / metrics. *.ingest.sentry.io covers
+		# both region-specific (us.ingest, eu.ingest) and the legacy global
+		# host. Without these the SDK initialises silently but every POST
+		# to /api/0/envelope/ is blocked by CSP and events disappear.
+		Content-Security-Policy "default-src 'self'; script-src 'nonce-{http.request.uuid}' 'strict-dynamic' 'unsafe-inline' https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://*.ingest.sentry.io https://*.ingest.us.sentry.io; media-src 'self' blob:; worker-src 'self' blob:; manifest-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'; object-src 'none'"
 		Content-Security-Policy-Report-Only "require-trusted-types-for 'script'; trusted-types default dompurify 'allow-duplicates'"
 	}
 
