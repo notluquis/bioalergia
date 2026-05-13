@@ -1,4 +1,5 @@
 // apps/api/src/app.ts
+import * as Sentry from "@sentry/node";
 import { Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import { cors } from "hono/cors";
@@ -2080,6 +2081,7 @@ app.onError((error, c) => {
         path: c.req.path,
         code: error.code,
       });
+      Sentry.captureException(error);
     }
 
     return errorReply(
@@ -2120,6 +2122,7 @@ app.onError((error, c) => {
     method: c.req.method,
     path: c.req.path,
   });
+  Sentry.captureException(error);
   return reply(
     c,
     { status: "error", code: "INTERNAL_ERROR", message: "Internal Server Error" },

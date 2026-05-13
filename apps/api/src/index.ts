@@ -1,4 +1,5 @@
 // apps/api/src/index.ts - Server Entry Point
+import "./instrument.ts"; // MUST be first — Sentry instruments http/fetch on import
 import { serve } from "@hono/node-server";
 import { app } from "./app.ts";
 import { runSequenceHealthCheck } from "./lib/db-sequence-health.ts";
