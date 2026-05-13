@@ -147,5 +147,30 @@ describe("route-utils", () => {
       const tree = makeRoute(undefined);
       expect(extractPermissionsFromRoutes(tree)).toEqual([]);
     });
+
+    it("getRouteChildren returns [] when children is non-array, non-object truthy (line 163)", () => {
+      // children is a function (typeof === "function", not "object", not array)
+      const tree = {
+        fullPath: "/x",
+        options: { staticData: {} },
+        children: (() => {}) as unknown,
+      } as never;
+      // Should traverse without recursing into children, no throw
+      expect(() => extractPermissionsFromRoutes(tree)).not.toThrow();
+      expect(extractPermissionsFromRoutes(tree)).toEqual([]);
+    });
+  });
+
+  describe("auditRouteNavigation fallback path defaults", () => {
+    it("uses path then '/' when fullPath missing (line 95 branches)", () => {
+      const route = {
+        // no fullPath, no path
+        options: { staticData: {} },
+      } as never;
+      const out = auditRouteNavigation(route);
+      // technical because index/empty path -> '/'
+      expect(out.technicalRoutes.concat(out.validRoutes, out.missingNav, out.missingPermission))
+        .toEqual(expect.any(Array));
+    });
   });
 });

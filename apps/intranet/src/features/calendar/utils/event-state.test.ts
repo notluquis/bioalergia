@@ -128,4 +128,15 @@ describe("getCalendarEventStates", () => {
     const noShowLabels = states.filter((state) => state.label === "No asistió");
     expect(noShowLabels).toHaveLength(1);
   });
+
+  it("falls back to default tone for unknown status (line 70)", () => {
+    const states = getCalendarEventStates(makeEvent({ status: "  some-custom-status  " }));
+    expect(states).toContainEqual(
+      expect.objectContaining({
+        key: "event-status",
+        label: "some-custom-status",
+        tone: "default",
+      })
+    );
+  });
 });

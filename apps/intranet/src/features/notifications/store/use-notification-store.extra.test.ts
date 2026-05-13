@@ -100,3 +100,35 @@ describe("use-notification-store — additional branches", () => {
     expect(storeModule.notificationStore.state.unreadCount).toBe(1);
   });
 });
+
+describe("use-notification-store — SSR (window undefined) branches", () => {
+  it("loadState returns INITIAL_STATE when window is undefined (line 39)", async () => {
+    vi.stubGlobal("window", undefined);
+    vi.resetModules();
+    try {
+      const mod = await import("./use-notification-store");
+      expect(mod.notificationStore.state.notifications).toHaveLength(0);
+      expect(mod.notificationStore.state.unreadCount).toBe(0);
+    } finally {
+      vi.unstubAllGlobals();
+      vi.resetModules();
+    }
+  });
+
+  it("saveState bails out silently when window is undefined (line 58)", async () => {
+    // Load module normally (window present) so the store is usable
+    vi.resetModules();
+    const mod = await import("./use-notification-store");
+    // Now flip window off; addNotification → setStateAndPersist → saveState
+    // saveState's `typeof window === "undefined"` short-circuits without throwing.
+    vi.stubGlobal("window", undefined);
+    try {
+      expect(() => mod.addNotification({ message: "ssr", type: "info" })).not.toThrow();
+      // Store still updates in memory
+      expect(mod.notificationStore.state.notifications.length).toBeGreaterThan(0);
+    } finally {
+      vi.unstubAllGlobals();
+      vi.resetModules();
+    }
+  });
+});

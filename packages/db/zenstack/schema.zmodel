@@ -143,6 +143,11 @@ model User {
   createdAt               DateTime                 @default(now()) @map("created_at")
   updatedAt               DateTime                 @default(now()) @updatedAt @map("updated_at")
   mfaEnforced             Boolean                  @default(true) @map("mfa_enforced")
+  // Privacy gate for Web Push payloads carrying PHI. Default GENERIC
+  // = no sender/preview on the lock screen (Ley 21.719 + HIPAA 2026
+  // golden standard). Operators can opt-in to richer payloads from
+  // the notifications settings if their threat model allows it.
+  pushPreviewMode         WaPushPreviewMode        @default(GENERIC) @map("push_preview_mode")
 
   dailyProductionBalances DailyProductionBalance[]
   pushSubscriptions       PushSubscription[]
@@ -854,6 +859,19 @@ model Setting {
 // table is queried for forensics + compliance reporting; never updated
 // after insert. PII (email, IP) is captured intentionally — this is the
 // authoritative incident-response record.
+// Web Push preview-content gate. Drives the visible payload an
+// operator sees on a lock screen / notification tray:
+//   GENERIC      = "Bioalergia · Mensajes nuevos" (no PHI)
+//   SENDER_NAME  = sender name visible, no body
+//   FULL         = sender + body preview (legacy behaviour)
+// Default GENERIC matches the indigitall/HIPAA 2026 recommendation
+// that PHI never appears in the visible push payload.
+enum WaPushPreviewMode {
+  GENERIC
+  SENDER_NAME
+  FULL
+}
+
 enum AuditEventKind {
   LOGIN_SUCCESS
   LOGIN_FAILURE

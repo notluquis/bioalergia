@@ -59,4 +59,44 @@ describe("use-sorting", () => {
     expect(result.current.sortState.column).toBe("age");
     expect(result.current.sortState.direction).toBe("asc");
   });
+
+  describe("getSortIcon (lines 39-42)", () => {
+    it("returns null when column is not the sorted column", () => {
+      const { result } = renderHook(() =>
+        useSorting<string>({ initialColumn: "name", initialDirection: "asc" })
+      );
+      expect(result.current.getSortIcon("age")).toBeNull();
+    });
+
+    it("returns asc symbol element when sorted asc", () => {
+      const { result } = renderHook(() =>
+        useSorting<string>({ initialColumn: "name", initialDirection: "asc" })
+      );
+      const el = result.current.getSortIcon("name");
+      expect(el).not.toBeNull();
+      expect(el?.props.children).toBe("▲");
+    });
+
+    it("returns desc symbol element when sorted desc", () => {
+      const { result } = renderHook(() =>
+        useSorting<string>({ initialColumn: "name", initialDirection: "desc" })
+      );
+      const el = result.current.getSortIcon("name");
+      expect(el?.props.children).toBe("▼");
+    });
+  });
+
+  describe("getSortProps (line 52)", () => {
+    it("returns props with onClick that triggers sort", () => {
+      const { result } = renderHook(() => useSorting<string>());
+      const props = result.current.getSortProps("name");
+      expect(props.style).toStrictEqual({ cursor: "pointer" });
+      expect(props.title).toContain("name");
+      act(() => {
+        props.onClick();
+      });
+      expect(result.current.sortState.column).toBe("name");
+      expect(result.current.sortState.direction).toBe("asc");
+    });
+  });
 });

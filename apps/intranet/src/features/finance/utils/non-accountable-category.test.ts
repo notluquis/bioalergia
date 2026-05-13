@@ -61,4 +61,14 @@ describe("isNonAccountableCategory", () => {
   it("returns false when icon is some other value", () => {
     expect(isNonAccountableCategory({ icon: "OTHER_ICON", name: "Consulta" })).toBe(false);
   });
+
+  it("returns false when name is null/undefined (covers ?? '' branch line 4)", () => {
+    // Category provided (not null) but name is null → triggers `?? ""` fallback in normalizer
+    expect(
+      isNonAccountableCategory({ icon: null, name: null as unknown as string })
+    ).toBe(false);
+    expect(
+      isNonAccountableCategory({ name: undefined as unknown as string })
+    ).toBe(false);
+  });
 });

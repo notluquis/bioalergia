@@ -407,10 +407,10 @@ export default defineConfig(({ mode }) => {
         // the slowest metric to lift because TanStack/HeroUI components
         // hide many one-off conditionals only reachable via render tests.
         thresholds: {
-          lines: 80,
-          functions: 80,
-          branches: 65,
-          statements: 78,
+          lines: 85,
+          functions: 85,
+          branches: 73,
+          statements: 83,
         },
       },
     },

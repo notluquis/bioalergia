@@ -1,5 +1,5 @@
 import dayjs from "dayjs";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { CalendarFilters } from "../types";
 import {
   arraysEqual,
@@ -149,6 +149,11 @@ describe("normalizeFilters", () => {
     const result = normalizeFilters(makeFilters({ calendarIds: undefined }));
     expect(result.calendarIds).toStrictEqual([]);
   });
+
+  it("uses '' fallback when search is undefined (line 48 ?? branch)", () => {
+    const result = normalizeFilters(makeFilters({ search: undefined as unknown as string }));
+    expect(result.search).toBe("");
+  });
 });
 
 // ─── computeDefaultFilters ────────────────────────────────────────────────────
@@ -200,6 +205,16 @@ describe("computeDefaultFilters", () => {
     // default from is ±2 weeks from today, so 1990 won't override it
     expect(result.from).not.toBe(longAgo);
   });
+
+  it("clamps `to` to maxForward when lookahead is shorter than default 2 weeks (line 72/325 branch)", () => {
+    // lookahead=7 days → maxForward = today+7 days; defaultTo = today+14 days
+    // defaultTo.isAfter(maxForward) → toCandidate = maxForward
+    const result = computeDefaultFilters({ calendarSyncLookaheadDays: "7" });
+    const to = dayjs(result.to);
+    const expected = dayjs().add(7, "day");
+    // Within 1 day tolerance to absorb timezone/midnight rollover
+    expect(Math.abs(to.diff(expected, "day"))).toBeLessThanOrEqual(1);
+  });
 });
 
 // ─── getScheduleDefaultRange ──────────────────────────────────────────────────
@@ -215,5 +230,20 @@ describe("getScheduleDefaultRange", () => {
     const { from, to } = getScheduleDefaultRange();
     const diff = dayjs(to).diff(dayjs(from), "day");
     expect(diff).toBe(5);
+  });
+
+  describe("Sunday handling (line 88 branch)", () => {
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+    it("jumps to next Monday when today is Sunday", () => {
+      // 2026-05-17 is a Sunday
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date("2026-05-17T12:00:00Z"));
+      const { from, to } = getScheduleDefaultRange();
+      // Monday after Sunday 2026-05-17 is 2026-05-18
+      expect(from).toBe("2026-05-18");
+      expect(to).toBe("2026-05-23");
+    });
   });
 });

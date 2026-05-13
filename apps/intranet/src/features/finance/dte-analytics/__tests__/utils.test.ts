@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { DTESummaryRaw } from "../types";
 import {
   MONTH_NAMES,
@@ -6,9 +6,12 @@ import {
   buildMonthlyChartData,
   calculateYearlyTotals,
   extractYearsFromSummary,
+  formatCurrency,
   formatCurrencyCompact,
+  formatNumber,
   getMonthName,
   isValidYearOption,
+  parsePeriodSafely,
   safeYearSelection,
 } from "../utils";
 
@@ -185,6 +188,60 @@ describe("isValidYearOption", () => {
 
   it("returns false for invalid option", () => {
     expect(isValidYearOption("2020", ["2025", "2024"])).toBe(false);
+  });
+});
+
+describe("formatCurrency (line 47)", () => {
+  it("formats CLP currency with es-CL locale", () => {
+    const out = formatCurrency(1000);
+    expect(out).toContain("1.000");
+    expect(out).toContain("$");
+  });
+});
+
+describe("formatNumber (line 81)", () => {
+  it("formats numbers with es-CL locale", () => {
+    expect(formatNumber(1000)).toBe("1.000");
+  });
+});
+
+describe("parsePeriodSafely (re-export)", () => {
+  it("parses valid period and returns year/month/period", () => {
+    expect(parsePeriodSafely("2025-03")).toMatchObject({
+      year: "2025",
+      month: "03",
+      period: "2025-03",
+    });
+  });
+});
+
+describe("extractYearsFromSummary catch branch (line 190)", () => {
+  it("warns and skips entries with malformed period", () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const summary: DTESummaryRaw[] = [
+      {
+        period: "not-a-period", // safeParsePeriod will throw → catch branch
+        count: 1,
+        totalAmount: 0,
+        exemptAmount: 0,
+        netAmount: 0,
+        taxAmount: 0,
+        averageAmount: 0,
+      },
+      {
+        period: "2025-01",
+        count: 1,
+        totalAmount: 0,
+        exemptAmount: 0,
+        netAmount: 0,
+        taxAmount: 0,
+        averageAmount: 0,
+      },
+    ];
+    const out = extractYearsFromSummary(summary);
+    expect(out).toEqual(["2025"]);
+    expect(warnSpy).toHaveBeenCalled();
+    warnSpy.mockRestore();
   });
 });
 

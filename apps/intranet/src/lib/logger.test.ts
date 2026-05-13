@@ -49,4 +49,28 @@ describe("logger", () => {
     log.warn("a", "b", 3);
     expect(console.warn).toHaveBeenCalledWith("[multi]", "a", "b", 3);
   });
+
+  describe("production mode (isDev=false)", () => {
+    it("suppresses debug/info/log when not dev, still allows warn/error (line 40 branch)", async () => {
+      vi.stubEnv("DEV", "");
+      vi.resetModules();
+      try {
+        const mod = await import("./logger");
+        const log = mod.createLogger("p");
+        log.debug("d");
+        log.info("i");
+        log.log("l");
+        log.warn("w");
+        log.error("e");
+        expect(console.debug).not.toHaveBeenCalled();
+        expect(console.info).not.toHaveBeenCalled();
+        expect(console.log).not.toHaveBeenCalled();
+        expect(console.warn).toHaveBeenCalledWith("[p]", "w");
+        expect(console.error).toHaveBeenCalledWith("[p]", "e");
+      } finally {
+        vi.unstubAllEnvs();
+        vi.resetModules();
+      }
+    });
+  });
 });

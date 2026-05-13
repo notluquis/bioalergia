@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import {
   coerceAmount,
@@ -107,6 +107,33 @@ describe("format.ts uncovered branches", () => {
     });
     it("formatPercentage handles negative values", () => {
       expect(formatPercentage(-12.345, 2)).toBe("-12.35%");
+    });
+  });
+
+  describe("currency formatter catch fallback (lines 36-38, 186-187)", () => {
+    it("fmtCLP returns $0 when currencyFormatter.format throws", async () => {
+      const mod = await import("./format");
+      const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+      const original = mod.currencyFormatter.format.bind(mod.currencyFormatter);
+      // Override own .format on the instance — bypasses prototype receiver check
+      Object.defineProperty(mod.currencyFormatter, "format", {
+        configurable: true,
+        value: () => {
+          throw new Error("boom");
+        },
+      });
+      try {
+        expect(mod.fmtCLP(123)).toBe("$0");
+        expect(mod.formatCurrency(456)).toBe("$0");
+        expect(errSpy).toHaveBeenCalled();
+      } finally {
+        // Restore the bound original so subsequent tests are unaffected
+        Object.defineProperty(mod.currencyFormatter, "format", {
+          configurable: true,
+          value: original,
+        });
+        errSpy.mockRestore();
+      }
     });
   });
 });
