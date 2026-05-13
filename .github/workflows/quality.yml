@@ -148,4 +148,10 @@ jobs:
       - name: Run Lighthouse CI
         env:
           CHROME_PATH: ${{ steps.setup-chrome.outputs.chrome-path }}
+          # Posts the report as a GitHub commit status check + PR
+          # comment when the LHCI GitHub App is installed on the repo
+          # (https://github.com/apps/lighthouse-ci). Token comes from
+          # the app at install time. Without the secret the LHCI run
+          # still completes; only the status check is skipped.
+          LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
         run: pnpm -F @finanzas/intranet audit:perf
