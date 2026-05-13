@@ -43,6 +43,7 @@ import { Route as AuthedWaCloudBroadcastsRouteImport } from "./routes/_authed/wa
 import { Route as AuthedWaCloudAnalyticsRouteImport } from "./routes/_authed/wa-cloud/analytics"
 import { Route as AuthedWaCloudAlertasRouteImport } from "./routes/_authed/wa-cloud/alertas"
 import { Route as AuthedSettingsRolesRouteImport } from "./routes/_authed/settings/roles"
+import { Route as AuthedSettingsNotificationsRouteImport } from "./routes/_authed/settings/notifications"
 import { Route as AuthedSettingsMercadopagoRouteImport } from "./routes/_authed/settings/mercadopago"
 import { Route as AuthedSettingsInventarioRouteImport } from "./routes/_authed/settings/inventario"
 import { Route as AuthedSettingsHaulmerRouteImport } from "./routes/_authed/settings/haulmer"
@@ -267,6 +268,12 @@ const AuthedSettingsRolesRoute = AuthedSettingsRolesRouteImport.update({
   path: "/roles",
   getParentRoute: () => AuthedSettingsRoute,
 } as any)
+const AuthedSettingsNotificationsRoute =
+  AuthedSettingsNotificationsRouteImport.update({
+    id: "/notifications",
+    path: "/notifications",
+    getParentRoute: () => AuthedSettingsRoute,
+  } as any)
 const AuthedSettingsMercadopagoRoute =
   AuthedSettingsMercadopagoRouteImport.update({
     id: "/mercadopago",
@@ -609,6 +616,7 @@ export interface FileRoutesByFullPath {
   "/settings/haulmer": typeof AuthedSettingsHaulmerRoute
   "/settings/inventario": typeof AuthedSettingsInventarioRoute
   "/settings/mercadopago": typeof AuthedSettingsMercadopagoRoute
+  "/settings/notifications": typeof AuthedSettingsNotificationsRoute
   "/settings/roles": typeof AuthedSettingsRolesRoute
   "/wa-cloud/alertas": typeof AuthedWaCloudAlertasRoute
   "/wa-cloud/analytics": typeof AuthedWaCloudAnalyticsRoute
@@ -690,6 +698,7 @@ export interface FileRoutesByTo {
   "/settings/haulmer": typeof AuthedSettingsHaulmerRoute
   "/settings/inventario": typeof AuthedSettingsInventarioRoute
   "/settings/mercadopago": typeof AuthedSettingsMercadopagoRoute
+  "/settings/notifications": typeof AuthedSettingsNotificationsRoute
   "/settings/roles": typeof AuthedSettingsRolesRoute
   "/wa-cloud/alertas": typeof AuthedWaCloudAlertasRoute
   "/wa-cloud/analytics": typeof AuthedWaCloudAnalyticsRoute
@@ -779,6 +788,7 @@ export interface FileRoutesById {
   "/_authed/settings/haulmer": typeof AuthedSettingsHaulmerRoute
   "/_authed/settings/inventario": typeof AuthedSettingsInventarioRoute
   "/_authed/settings/mercadopago": typeof AuthedSettingsMercadopagoRoute
+  "/_authed/settings/notifications": typeof AuthedSettingsNotificationsRoute
   "/_authed/settings/roles": typeof AuthedSettingsRolesRoute
   "/_authed/wa-cloud/alertas": typeof AuthedWaCloudAlertasRoute
   "/_authed/wa-cloud/analytics": typeof AuthedWaCloudAnalyticsRoute
@@ -868,6 +878,7 @@ export interface FileRouteTypes {
     | "/settings/haulmer"
     | "/settings/inventario"
     | "/settings/mercadopago"
+    | "/settings/notifications"
     | "/settings/roles"
     | "/wa-cloud/alertas"
     | "/wa-cloud/analytics"
@@ -949,6 +960,7 @@ export interface FileRouteTypes {
     | "/settings/haulmer"
     | "/settings/inventario"
     | "/settings/mercadopago"
+    | "/settings/notifications"
     | "/settings/roles"
     | "/wa-cloud/alertas"
     | "/wa-cloud/analytics"
@@ -1037,6 +1049,7 @@ export interface FileRouteTypes {
     | "/_authed/settings/haulmer"
     | "/_authed/settings/inventario"
     | "/_authed/settings/mercadopago"
+    | "/_authed/settings/notifications"
     | "/_authed/settings/roles"
     | "/_authed/wa-cloud/alertas"
     | "/_authed/wa-cloud/analytics"
@@ -1312,6 +1325,13 @@ declare module "@tanstack/react-router" {
       path: "/roles"
       fullPath: "/settings/roles"
       preLoaderRoute: typeof AuthedSettingsRolesRouteImport
+      parentRoute: typeof AuthedSettingsRoute
+    }
+    "/_authed/settings/notifications": {
+      id: "/_authed/settings/notifications"
+      path: "/notifications"
+      fullPath: "/settings/notifications"
+      preLoaderRoute: typeof AuthedSettingsNotificationsRouteImport
       parentRoute: typeof AuthedSettingsRoute
     }
     "/_authed/settings/mercadopago": {
@@ -1886,6 +1906,7 @@ interface AuthedSettingsRouteChildren {
   AuthedSettingsHaulmerRoute: typeof AuthedSettingsHaulmerRoute
   AuthedSettingsInventarioRoute: typeof AuthedSettingsInventarioRoute
   AuthedSettingsMercadopagoRoute: typeof AuthedSettingsMercadopagoRoute
+  AuthedSettingsNotificationsRoute: typeof AuthedSettingsNotificationsRoute
   AuthedSettingsRolesRoute: typeof AuthedSettingsRolesRoute
   AuthedSettingsIndexRoute: typeof AuthedSettingsIndexRoute
   AuthedSettingsUsersAddRoute: typeof AuthedSettingsUsersAddRoute
@@ -1899,6 +1920,7 @@ const AuthedSettingsRouteChildren: AuthedSettingsRouteChildren = {
   AuthedSettingsHaulmerRoute: AuthedSettingsHaulmerRoute,
   AuthedSettingsInventarioRoute: AuthedSettingsInventarioRoute,
   AuthedSettingsMercadopagoRoute: AuthedSettingsMercadopagoRoute,
+  AuthedSettingsNotificationsRoute: AuthedSettingsNotificationsRoute,
   AuthedSettingsRolesRoute: AuthedSettingsRolesRoute,
   AuthedSettingsIndexRoute: AuthedSettingsIndexRoute,
   AuthedSettingsUsersAddRoute: AuthedSettingsUsersAddRoute,
