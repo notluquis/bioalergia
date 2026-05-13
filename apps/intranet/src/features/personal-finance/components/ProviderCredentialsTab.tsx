@@ -13,6 +13,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import { PencilIcon, PlugIcon, PlusIcon, Trash2Icon } from "lucide-react";
 import { useState } from "react";
+import { confirmAction } from "@/components/ui/ConfirmDialog";
 
 import type {
   ProviderAuthMethod,
@@ -249,10 +250,14 @@ export function ProviderCredentialsTab() {
                         size="sm"
                         variant="danger-soft"
                         aria-label="Eliminar"
-                        onPress={() => {
-                          if (confirm(`¿Eliminar credencial ${c.provider}?`)) {
-                            deleteMutation.mutate(c.id);
-                          }
+                        onPress={async () => {
+                          const ok = await confirmAction({
+                            title: "Eliminar credencial",
+                            description: `¿Eliminar credencial ${c.provider}? Esta acción no se puede deshacer.`,
+                            confirmLabel: "Eliminar",
+                            variant: "danger",
+                          });
+                          if (ok) deleteMutation.mutate(c.id);
                         }}
                       >
                         <Trash2Icon className="size-3" />

@@ -11,6 +11,7 @@ import {
 } from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { PencilIcon, PlusIcon, Trash2Icon } from "lucide-react";
+import { confirmAction } from "@/components/ui/ConfirmDialog";
 import { useState } from "react";
 
 import type { ExpenseRecurrence, ExpenseScope } from "@finanzas/orpc-contracts/expenses";
@@ -340,14 +341,14 @@ export function ExpenseServicesModal({ onClose }: Props) {
                                   size="sm"
                                   variant="danger-soft"
                                   aria-label="Eliminar"
-                                  onPress={() => {
-                                    if (
-                                      confirm(
-                                        `¿Eliminar "${s.name}"? Los Expenses históricos se desvinculan.`
-                                      )
-                                    ) {
-                                      deleteMutation.mutate(s.id);
-                                    }
+                                  onPress={async () => {
+                                    const ok = await confirmAction({
+                                      title: "Eliminar servicio",
+                                      description: `¿Eliminar "${s.name}"? Los Expenses históricos se desvinculan.`,
+                                      confirmLabel: "Eliminar",
+                                      variant: "danger",
+                                    });
+                                    if (ok) deleteMutation.mutate(s.id);
                                   }}
                                 >
                                   <Trash2Icon className="size-3" />

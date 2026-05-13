@@ -155,7 +155,7 @@ function QuickLinksSection({ can }: { can: (action: string, subject: string) => 
     <section className="rounded-[28px] border border-default-200/70 bg-linear-to-br from-default-100/60 via-default-50/30 to-background p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
       <div className="flex items-center justify-between gap-3">
         <div className="space-y-1">
-          <h3 className="font-semibold text-foreground text-sm">Accesos rápidos</h3>
+          <h2 className="font-semibold text-foreground text-sm">Accesos rápidos</h2>
           <p className="text-default-500 text-xs">Atajos para las acciones que más se repiten.</p>
         </div>
         <span className="rounded-full border border-default-200/80 bg-background px-3 py-1 text-xs text-default-500">

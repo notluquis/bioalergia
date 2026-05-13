@@ -55,7 +55,7 @@ function FeatureErrorFallback({
         <summary className="cursor-pointer text-default-500 text-xs hover:text-default-700">
           Detalles técnicos
         </summary>
-        <pre className="mt-2 max-h-32 overflow-auto whitespace-pre-wrap break-all rounded-lg bg-default-100 p-2 font-mono text-[10px] text-default-700">
+        <pre className="mt-2 max-h-32 overflow-auto whitespace-pre-wrap break-all rounded-lg bg-default-100 p-2 font-mono text-default-700 text-xs">
           {message}
         </pre>
       </details>

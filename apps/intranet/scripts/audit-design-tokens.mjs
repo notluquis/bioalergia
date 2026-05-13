@@ -38,6 +38,8 @@ const HEX_ALLOWLIST_PATHS = new Set([
   "src/features/finance/pages/CashFlowPage.tsx",
   // Calendar event color palette comes from Google Calendar API ids; semantic.
   "src/features/calendar/components/WeekGrid.tsx",
+  // Favicon canvas paint — hex required for Canvas 2D fillStyle.
+  "src/features/wa-cloud/hooks/useFaviconBadge.ts",
 ]);
 
 const BG_WHITE_ALLOWLIST_PATHS = new Set([

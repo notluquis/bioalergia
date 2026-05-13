@@ -95,6 +95,14 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # build-storybook compiles `*.stories.tsx` which import from
+      # @finanzas/orpc-contracts/* + @finanzas/db. These workspace
+      # packages publish from `dist/` (see their package.json `exports`)
+      # so we must build them first or rolldown can't resolve the
+      # subpath imports. Mirrors the pattern in quality.yml.
+      - name: Build workspace dependencies
+        run: pnpm turbo run build --filter=@finanzas/orpc-contracts --filter=@finanzas/db
+
       - name: Run Chromatic (intranet)
         run: pnpm -C apps/intranet chromatic
         env:
