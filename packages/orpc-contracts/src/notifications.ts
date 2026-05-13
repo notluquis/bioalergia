@@ -37,6 +37,21 @@ export const rotateInputSchema = z.object({
   subscription: pushSubscriptionSchema,
 });
 
+// SW `notificationclose` analytics. Tag is the OS-level grouping key
+// the SW set when showing the notification (e.g. "wa-conv-42").
+// conversationId is optional because not every push carries one.
+export const dismissedInputSchema = z.object({
+  tag: z.string().max(200).optional(),
+  conversationId: z.number().int().positive().optional(),
+});
+
+// Output for the unread-count endpoint consumed by the SW
+// periodicsync handler. Single integer — no extra metadata needed
+// to paint the OS badge.
+export const unreadCountResponseSchema = z.object({
+  count: z.number().int().nonnegative(),
+});
+
 export const sendTestInputSchema = z.object({
   userId: z.number().int().optional(),
 });
@@ -58,6 +73,13 @@ export const notificationsContract = {
     .route({ method: "POST", path: "/rotate" })
     .input(rotateInputSchema)
     .output(notificationsStatusResponseSchema),
+  dismissed: oc
+    .route({ method: "POST", path: "/dismissed" })
+    .input(dismissedInputSchema)
+    .output(notificationsStatusResponseSchema),
+  unreadCount: oc
+    .route({ method: "GET", path: "/unread-count" })
+    .output(unreadCountResponseSchema),
 };
 
 export type NotificationsContract = typeof notificationsContract;

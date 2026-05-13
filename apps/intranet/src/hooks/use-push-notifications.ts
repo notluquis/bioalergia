@@ -111,6 +111,32 @@ export function usePushNotifications() {
       });
 
       subscribeMutation.mutate(subscription);
+
+      // Periodic Background Sync (T3.8). Chrome installed-PWA only;
+      // permission grant is implicit if the app's site engagement
+      // score is high enough. Fails silently elsewhere.
+      try {
+        type PeriodicSyncReg = ServiceWorkerRegistration & {
+          periodicSync?: {
+            register: (tag: string, opts: { minInterval: number }) => Promise<void>;
+          };
+        };
+        const pReg = registration as PeriodicSyncReg;
+        if (pReg.periodicSync) {
+          const status = await navigator.permissions.query({
+            // Chrome ships this permission name; TS lib.dom doesn't
+            // include it yet, hence the cast.
+            name: "periodic-background-sync" as PermissionName,
+          });
+          if (status.state === "granted") {
+            await pReg.periodicSync.register("inbox-badge-refresh", {
+              minInterval: 12 * 60 * 60 * 1000,
+            });
+          }
+        }
+      } catch {
+        // not supported / not installed PWA — ignore
+      }
     } catch (error) {
       console.error("Error subscribing to push:", error);
       toastError("Error al activar notificaciones. Verifica los permisos del navegador.");

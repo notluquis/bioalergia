@@ -1,12 +1,16 @@
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
 import {
+  dismissedInputSchema,
   notificationsStatusResponseSchema,
   rotateInputSchema,
   sendTestInputSchema,
   subscribeInputSchema,
+  unreadCountResponseSchema,
   unsubscribeInputSchema,
 } from "@finanzas/orpc-contracts/notifications";
+import { db } from "@finanzas/db";
+import { logEvent } from "../lib/logger.ts";
 import { ORPCError, onError, os } from "@orpc/server";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import type { Context as HonoContext } from "hono";
@@ -97,6 +101,48 @@ const notificationsORPCRouterBase = {
     .handler(async ({ context, input }) => {
       await unsubscribeFromPush(context.user.id, input.endpoint);
       return { message: "Unsubscribed successfully", status: "ok" };
+    }),
+
+  // SW notificationclose analytics — fire-and-forget log. No DB
+  // row to keep cardinality low on a single-tenant clinic; the log
+  // line is enough for ops to compute dismissal rate via grep.
+  // Unauthed for the same reason as rotate (Safari iOS may strip
+  // cookies on background fetches).
+  dismissed: base
+    .route({
+      method: "POST",
+      path: "/dismissed",
+      summary: "Log a notification dismissal (SW notificationclose)",
+      tags: ["Notifications"],
+    })
+    .input(dismissedInputSchema)
+    .output(notificationsStatusResponseSchema)
+    .handler(async ({ input }) => {
+      logEvent("[notifications.dismissed]", {
+        tag: input.tag,
+        conversationId: input.conversationId,
+      });
+      return { status: "ok", success: true };
+    }),
+
+  // SW periodicsync handler reads this to repaint the OS badge when
+  // the PWA hasn't received a push (e.g. operator's laptop has been
+  // closed for a few hours). Returns the same org-wide unread count
+  // we compute in the WhatsApp webhook so badge math is consistent.
+  unreadCount: authed
+    .route({
+      method: "GET",
+      path: "/unread-count",
+      summary: "Org-wide WhatsApp unread count for the PWA badge",
+      tags: ["Notifications"],
+    })
+    .output(unreadCountResponseSchema)
+    .handler(async () => {
+      const agg = await db.waConversation.aggregate({
+        _sum: { unreadCount: true },
+        where: { unreadCount: { gt: 0 } },
+      });
+      return { count: Number(agg._sum.unreadCount ?? 0) };
     }),
 
   // Unauthenticated: SW background fetches don't always carry cookies

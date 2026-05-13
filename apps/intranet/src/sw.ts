@@ -274,6 +274,61 @@ self.addEventListener("notificationclick", (event) => {
   );
 });
 
+// ─── Notification dismissal analytics (T3.7) ────────────────────────────────
+// `notificationclose` fires when the operator swipes/dismisses a
+// notification without clicking. Posting a beacon-style fetch lets
+// us compute "click vs dismiss" rates without blocking the OS. The
+// backend endpoint logs only — no DB row — to keep cardinality low
+// on a single-tenant clinic.
+self.addEventListener("notificationclose", (event) => {
+  const tag = event.notification.tag;
+  // Skip the synthetic "__data_…" tags we use for silent data pushes
+  // (those close themselves immediately; logging them is noise).
+  if (tag?.startsWith("__data_")) return;
+  const data = (event.notification.data as { conversationId?: number }) ?? {};
+  // `keepalive: true` lets the request outlive the SW idle timeout
+  // (analogous to navigator.sendBeacon but available in workers).
+  void fetch("/api/orpc/notifications/dismissed", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    credentials: "include",
+    keepalive: true,
+    body: JSON.stringify({ tag, conversationId: data.conversationId }),
+  }).catch(() => undefined);
+});
+
+// ─── Periodic Background Sync (T3.8) ────────────────────────────────────────
+// Chrome installed-PWA only. Wakes the SW every `minInterval` (12h)
+// to refresh the badge so an operator who hasn't opened the app
+// still sees an updated unread count on the home-screen icon. iOS
+// and Firefox ignore the event entirely; we register defensively
+// from the main thread and the listener is a no-op when the UA
+// doesn't dispatch.
+self.addEventListener("periodicsync", (event) => {
+  const e = event as ExtendableEvent & { tag: string };
+  if (e.tag !== "inbox-badge-refresh") return;
+  event.waitUntil(
+    (async () => {
+      try {
+        const res = await fetch("/api/orpc/notifications/unread-count", {
+          credentials: "include",
+        });
+        if (!res.ok) return;
+        const { count } = (await res.json()) as { count?: number };
+        type BadgeNav = Navigator & {
+          setAppBadge?: (n?: number) => Promise<void>;
+          clearAppBadge?: () => Promise<void>;
+        };
+        const nav = (self as unknown as { navigator: BadgeNav }).navigator;
+        if (typeof count === "number" && count > 0) await nav.setAppBadge?.(count);
+        else await nav.clearAppBadge?.();
+      } catch {
+        // best-effort — the next push receipt will repaint anyway
+      }
+    })()
+  );
+});
+
 // Allow the app to skipWaiting from main thread when a new SW
 // version is served (vite-plugin-pwa's prompt flow uses this).
 self.addEventListener("message", (event) => {

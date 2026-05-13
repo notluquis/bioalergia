@@ -133,6 +133,47 @@ export function classifyFile(file: { name: string; type: string; size: number })
   };
 }
 
+export function isHeic(file: { name: string; type: string }): boolean {
+  const ext = extOf(file.name);
+  return REJECTED_MIMES.has(file.type) || REJECTED_EXTENSIONS.has(ext);
+}
+
+// Safari (macOS + iOS) renders HEIC natively in <img>, so we can
+// transcode to JPEG via a canvas without bundling a multi-MB WASM
+// decoder. Chromium/Firefox throw on image load and we surface the
+// classifyFile rejection as before.
+//
+// Quality 0.92 is the sweet spot for clinical photos: visual parity
+// with the original HEIC while staying under WhatsApp's 5MB image
+// cap for a typical 12MP iPhone shot (~1.4MB JPEG).
+export async function tryConvertHeicToJpeg(blob: Blob, name: string): Promise<File | null> {
+  const url = URL.createObjectURL(blob);
+  try {
+    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const el = new Image();
+      el.onload = () => resolve(el);
+      el.onerror = () => reject(new Error("HEIC decode failed"));
+      el.src = url;
+    });
+    const canvas = document.createElement("canvas");
+    canvas.width = img.naturalWidth;
+    canvas.height = img.naturalHeight;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return null;
+    ctx.drawImage(img, 0, 0);
+    const jpegBlob = await new Promise<Blob | null>((resolve) =>
+      canvas.toBlob((b) => resolve(b), "image/jpeg", 0.92)
+    );
+    if (!jpegBlob) return null;
+    const jpegName = name.replace(/\.(heic|heif)$/i, ".jpg");
+    return new File([jpegBlob], jpegName, { type: "image/jpeg" });
+  } catch {
+    return null;
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
 // 1024-char hard cap per Meta. Combine title + text + url and trim.
 export function buildSharedCaption(parts: { title: string; text: string; url: string }): string {
   const joined = [parts.title, parts.text, parts.url].filter(Boolean).join("\n").trim();

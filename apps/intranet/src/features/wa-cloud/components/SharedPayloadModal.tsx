@@ -9,7 +9,12 @@ import {
   releaseSendLock,
   tryAcquireSendLock,
 } from "../lib/share-send-lock";
-import { buildSharedCaption, classifyFile } from "../lib/wa-media-limits";
+import {
+  buildSharedCaption,
+  classifyFile,
+  isHeic,
+  tryConvertHeicToJpeg,
+} from "../lib/wa-media-limits";
 
 // Per-file state machine for the granular progress UI. Each file
 // rendered in the list shows its own spinner / check / X based on
@@ -130,10 +135,25 @@ export function SharedPayloadModal({
 
         updateEntry(i, { status: "validating", error: undefined });
         setLiveMsg(`Validando ${i + 1} de ${payload.files.length}…`);
+
+        // HEIC from iOS Photos: attempt Safari-native canvas
+        // transcode to JPEG before validation. Non-Safari UAs return
+        // null and we fall through to the classifyFile rejection.
+        let workingBlob = entry.file.blob;
+        let workingName = entry.file.name;
+        let workingMime = entry.file.type;
+        if (isHeic({ name: entry.file.name, type: entry.file.type })) {
+          const converted = await tryConvertHeicToJpeg(entry.file.blob, entry.file.name);
+          if (converted) {
+            workingBlob = converted;
+            workingName = converted.name;
+            workingMime = converted.type;
+          }
+        }
         const meta = classifyFile({
-          name: entry.file.name,
-          type: entry.file.type,
-          size: entry.file.size,
+          name: workingName,
+          type: workingMime,
+          size: workingBlob.size,
         });
         if (!meta.ok) {
           updateEntry(i, { status: "failed", error: meta.reason });
@@ -144,8 +164,9 @@ export function SharedPayloadModal({
           updateEntry(i, { status: "uploading" });
           setLiveMsg(`Subiendo ${i + 1} de ${payload.files.length}…`);
           // Reconstruct a File so the upload endpoint sees a proper
-          // filename + corrected mime when the browser sent empty.
-          const fileObj = new File([entry.file.blob], entry.file.name, {
+          // filename + corrected mime. Uses the (possibly HEIC-→-JPEG
+          // converted) working blob, not the original.
+          const fileObj = new File([workingBlob], workingName, {
             type: meta.mime,
           });
           const uploaded = await uploadWaMedia(fileObj, phoneNumberId);

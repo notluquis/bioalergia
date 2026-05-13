@@ -6,28 +6,31 @@
 -- password is read from psql variable `:'pw'`; pass it explicitly:
 --
 --   psql "$DATABASE_URL" \
---     -v pw="$(openssl rand -base64 32)" \
+--     -v pw="$(openssl rand -base64 32 | tr -d '=+/' | head -c 32)" \
 --     -f apps/api/scripts/setup-postgres-readonly-role.sql
 --
 -- Capture the password, save it as DATABASE_URL_READONLY in Railway
 -- with the SAME host/port/database but the e2e_readonly user + this
--- password. The backend must then wire a request-scoped middleware
--- that swaps the Kysely pool when the request carries the E2E role
--- (NOT done in this commit — invasive).
+-- password. Backend pool-rotation is documented as PUNTED in
+-- CLAUDE.local.md — the env var has no consumer yet but the DB
+-- grants are in place for when (if) it lands.
 --
 -- Idempotent: re-running rotates the password and refreshes grants.
 
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'e2e_readonly') THEN
-    EXECUTE format('CREATE ROLE e2e_readonly LOGIN PASSWORD %L', :'pw');
-  ELSE
-    EXECUTE format('ALTER ROLE e2e_readonly WITH PASSWORD %L', :'pw');
-  END IF;
-END
-$$;
+-- psql preprocesses `:'pw'` and `:"dbname"`; DO blocks see the
+-- already-substituted text because we wrap each statement with
+-- \gexec instead of nesting inside PL/pgSQL.
+SELECT current_database() AS dbname \gset
 
-GRANT CONNECT ON DATABASE current_database TO e2e_readonly;
+-- Create the role only if missing, then unconditionally set/rotate
+-- the password. format(%L) quotes the literal so passwords with
+-- punctuation don't break the statement.
+SELECT format('CREATE ROLE e2e_readonly LOGIN PASSWORD %L', :'pw')
+WHERE NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'e2e_readonly') \gexec
+
+SELECT format('ALTER ROLE e2e_readonly WITH PASSWORD %L', :'pw') \gexec
+
+GRANT CONNECT ON DATABASE :"dbname" TO e2e_readonly;
 GRANT USAGE ON SCHEMA public TO e2e_readonly;
 
 GRANT SELECT ON ALL TABLES IN SCHEMA public TO e2e_readonly;
