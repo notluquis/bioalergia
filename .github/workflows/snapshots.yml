@@ -55,6 +55,10 @@ jobs:
       - name: Update snapshots
         env:
           CI: "true"
+          # Opt route-snapshots.spec into the run. Quality-gates'
+          # audit:e2e leaves this unset so missing baselines don't
+          # fail the regular CI; only this workflow regenerates them.
+          RUN_SNAPSHOTS: "true"
           E2E_USER: ${{ secrets.E2E_USER }}
           E2E_PASS: ${{ secrets.E2E_PASS }}
           E2E_BASE_URL: ${{ secrets.E2E_BASE_URL }}

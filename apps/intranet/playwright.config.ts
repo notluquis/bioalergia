@@ -36,6 +36,21 @@ const chromium = devices["Desktop Chrome"];
 // catch URL-bar-shrink clipping that Chromium devices won't reproduce.
 const iosWebkit = devices["iPhone 14"];
 
+// route-snapshots.spec is opt-in (env-gated) so the regular CI
+// `playwright test` run doesn't fail on missing baselines. The
+// snapshots workflow_dispatch in `.github/workflows/snapshots.yml`
+// sets RUN_SNAPSHOTS=true before invoking with --update-snapshots.
+const SNAPSHOTS_ENABLED = Boolean(process.env.RUN_SNAPSHOTS);
+const UNAUTHED_TESTIGNORE = SNAPSHOTS_ENABLED
+  ? /a11y\.spec\.ts|skip-link\.spec\.ts|wa-cloud-.*\.spec\.ts/
+  : /a11y\.spec\.ts|skip-link\.spec\.ts|wa-cloud-.*\.spec\.ts|route-snapshots\.spec\.ts/;
+const AUTHED_DESKTOP_PATTERN = SNAPSHOTS_ENABLED
+  ? /a11y\.spec\.ts|skip-link\.spec\.ts|wa-cloud-.*\.spec\.ts|route-snapshots\.spec\.ts/
+  : /a11y\.spec\.ts|skip-link\.spec\.ts|wa-cloud-.*\.spec\.ts/;
+const AUTHED_TABLET_PATTERN = SNAPSHOTS_ENABLED
+  ? /a11y\.spec\.ts|wa-cloud-.*\.spec\.ts|route-snapshots\.spec\.ts/
+  : /a11y\.spec\.ts|wa-cloud-.*\.spec\.ts/;
+
 /**
  * Playwright config — viewport-keyed projects (golden 2026 pattern).
  *
@@ -89,28 +104,24 @@ export default defineConfig({
     // ── Unauthenticated specs (no storageState, vite preview) ───────────
     {
       name: "mobile-unauthed",
-      testIgnore:
-        /a11y\.spec\.ts|skip-link\.spec\.ts|wa-cloud-.*\.spec\.ts|route-snapshots\.spec\.ts/,
+      testIgnore: UNAUTHED_TESTIGNORE,
       use: { ...chromium, viewport: MOBILE, hasTouch: true, isMobile: true },
     },
     {
       name: "tablet-unauthed",
-      testIgnore:
-        /a11y\.spec\.ts|skip-link\.spec\.ts|wa-cloud-.*\.spec\.ts|route-snapshots\.spec\.ts/,
+      testIgnore: UNAUTHED_TESTIGNORE,
       use: { ...chromium, viewport: TABLET, hasTouch: true, isMobile: true },
     },
     {
       name: "desktop-unauthed",
-      testIgnore:
-        /a11y\.spec\.ts|skip-link\.spec\.ts|wa-cloud-.*\.spec\.ts|route-snapshots\.spec\.ts/,
+      testIgnore: UNAUTHED_TESTIGNORE,
       use: { ...chromium, viewport: DESKTOP },
     },
 
     // ── Authed specs (storageState pre-loaded, hit AUTHED_URL) ──────────
     {
       name: "mobile",
-      testMatch:
-        /a11y\.spec\.ts|skip-link\.spec\.ts|wa-cloud-.*\.spec\.ts|route-snapshots\.spec\.ts/,
+      testMatch: AUTHED_DESKTOP_PATTERN,
       dependencies: ["setup"],
       use: {
         ...chromium,
@@ -123,7 +134,7 @@ export default defineConfig({
     },
     {
       name: "tablet",
-      testMatch: /a11y\.spec\.ts|wa-cloud-.*\.spec\.ts|route-snapshots\.spec\.ts/,
+      testMatch: AUTHED_TABLET_PATTERN,
       dependencies: ["setup"],
       use: {
         ...chromium,
@@ -136,8 +147,7 @@ export default defineConfig({
     },
     {
       name: "desktop",
-      testMatch:
-        /a11y\.spec\.ts|skip-link\.spec\.ts|wa-cloud-.*\.spec\.ts|route-snapshots\.spec\.ts/,
+      testMatch: AUTHED_DESKTOP_PATTERN,
       dependencies: ["setup"],
       use: {
         ...chromium,
