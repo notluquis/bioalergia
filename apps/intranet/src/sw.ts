@@ -23,7 +23,7 @@ declare const self: ServiceWorkerGlobalScope & {
 };
 
 // ─── Precache + runtime cache ────────────────────────────────────────────────
-// `globPatterns: []` (set in vite.config.ts) means __WB_MANIFEST is
+// `globPatterns: []` (set in vite.config.ts) means the manifest is
 // usually empty. Calling precacheAndRoute([]) still tries to register
 // a navigation handler that maps to a non-existent `index.html` and
 // throws "non-precached-url" at SW startup. The unhandled rejection
@@ -31,8 +31,15 @@ declare const self: ServiceWorkerGlobalScope & {
 // the symptom Safari Web Inspector showed (workbox-XXXX.js stack
 // trace + push events handled without showNotification). Skip the
 // precache call entirely when the manifest is empty.
-if (Array.isArray(self.__WB_MANIFEST) && self.__WB_MANIFEST.length > 0) {
-  precacheAndRoute(self.__WB_MANIFEST);
+//
+// vite-plugin-pwa's injectManifest stage asserts the workbox-injected
+// global appears EXACTLY ONCE in this file, otherwise the build
+// crashes with `AssertionError: ensure that your 'swSrc' file
+// contains only one match`. We reference it in exactly one spot below
+// and reuse the local const afterwards.
+const wbManifest = self.__WB_MANIFEST;
+if (Array.isArray(wbManifest) && wbManifest.length > 0) {
+  precacheAndRoute(wbManifest);
 }
 cleanupOutdatedCaches();
 
