@@ -75,6 +75,11 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
+        with:
+          # Chromatic needs full git history to compute baselines vs the
+          # ancestor commit. Default fetch-depth=1 fails with
+          # "Found only one commit / Failed to retrieve git information".
+          fetch-depth: 0
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v6
@@ -102,6 +107,11 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
+        with:
+          # Chromatic needs full git history to compute baselines vs the
+          # ancestor commit. Default fetch-depth=1 fails with
+          # "Found only one commit / Failed to retrieve git information".
+          fetch-depth: 0
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v6
