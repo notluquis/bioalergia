@@ -3,6 +3,7 @@ import type { Table } from "@tanstack/react-table";
 import { Download, X } from "lucide-react";
 import Papa from "papaparse";
 
+import { buildExportFilename, getColumnLabel, isUtilityColumnId } from "./data-table-utils";
 import { DataTableFacetedFilter } from "./DataTableFacetedFilter";
 import { DataTableViewOptions } from "./DataTableViewOptions";
 
@@ -45,10 +46,10 @@ export function DataTableToolbar<TData>({
     // Get visible columns only (excluding actions/select)
     const columns = table
       .getAllColumns()
-      .filter((col) => col.getIsVisible() && col.id !== "actions" && col.id !== "select")
+      .filter((col) => col.getIsVisible() && !isUtilityColumnId(col.id))
       .map((col) => ({
         accessor: col.accessorFn,
-        header: typeof col.columnDef.header === "string" ? col.columnDef.header : col.id,
+        header: getColumnLabel(col.columnDef.header, col.id),
         id: col.id,
       }));
 
@@ -70,7 +71,7 @@ export function DataTableToolbar<TData>({
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.setAttribute("download", `export-${new Date().toISOString().slice(0, 10)}.csv`);
+    link.setAttribute("download", buildExportFilename());
     document.body.append(link);
     link.click();
     link.remove();

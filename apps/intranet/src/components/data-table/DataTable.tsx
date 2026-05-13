@@ -32,6 +32,15 @@ import { type ReactNode, useMemo, useRef, useState } from "react";
 
 import { cn } from "@/lib/utils";
 
+import {
+  applyVisibleSelection,
+  getStableRowId as getStableRowIdUtil,
+  resolveScrollMode,
+  rowSelectionToKeys,
+  shouldEnableInternalScroll,
+  shouldVirtualizeRows,
+  sortingStateToDescriptor,
+} from "./data-table-utils";
 import { DataTablePagination } from "./DataTablePagination";
 import { type DataTableFilterOption, DataTableToolbar } from "./DataTableToolbar";
 
@@ -205,10 +214,12 @@ function DataTableContent<TData>({
 }: DataTableContentProps<TData>) {
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const rows = table.getRowModel().rows;
-  const shouldEnableInternalVerticalScroll =
-    scrollMode === "container" ||
-    (scrollMode === "auto" &&
-      (Boolean(scrollMaxHeight) || enableVirtualization || !table.getState().pagination));
+  const shouldEnableInternalVerticalScroll = shouldEnableInternalScroll({
+    enableVirtualization,
+    hasPagination: Boolean(table.getState().pagination),
+    scrollMaxHeight,
+    scrollMode,
+  });
   const resolvedMaxHeight = scrollMaxHeight ?? virtualizationMaxHeight;
   const headerGroups = table.getHeaderGroups();
   const activeHeaderGroup = headerGroups.at(-1);
@@ -238,12 +249,7 @@ function DataTableContent<TData>({
     return items;
   }, [renderSubComponent, rows]);
   const collectionIdentity = useMemo(() => bodyItems.map((item) => item.id).join("|"), [bodyItems]);
-  const sortDescriptor: SortDescriptor | undefined = sorting[0]
-    ? {
-        column: sorting[0].id,
-        direction: sorting[0].desc ? "descending" : "ascending",
-      }
-    : undefined;
+  const sortDescriptor: SortDescriptor | undefined = sortingStateToDescriptor(sorting);
 
   if (!activeHeaderGroup) {
     return null;
@@ -463,18 +469,15 @@ export function DataTable<TData, TValue, TMeta extends TableMeta<TData> = TableM
 
   const manualPagination = pageCount !== undefined;
   const shouldPaginate = enablePagination && !manualPagination;
-  const shouldVirtualize =
-    enableVirtualization && data.length >= virtualizationThreshold && !renderSubComponent;
-  const effectiveScrollMode = scrollMode === "auto" && !enablePagination ? "container" : scrollMode;
-  const getStableRowId = (originalRow: TData, index: number) => {
-    const row = originalRow as Record<string, unknown>;
-    type RowIdValue = number | string | undefined;
-    const id =
-      (row.id as RowIdValue)?.toString() ??
-      (row.employeeId as RowIdValue)?.toString() ??
-      (row._id as RowIdValue)?.toString();
-    return id && id.length > 0 ? id : `row_${index}`;
-  };
+  const shouldVirtualize = shouldVirtualizeRows({
+    enableVirtualization,
+    hasRenderSubComponent: Boolean(renderSubComponent),
+    rowCount: data.length,
+    threshold: virtualizationThreshold,
+  });
+  const effectiveScrollMode = resolveScrollMode(scrollMode, enablePagination);
+  const getStableRowId = (originalRow: TData, index: number) =>
+    getStableRowIdUtil(originalRow, index);
   const dataIdentity = data.map((row, index) => getStableRowId(row, index)).join("|");
 
   const table = useReactTable({
@@ -514,37 +517,10 @@ export function DataTable<TData, TValue, TMeta extends TableMeta<TData> = TableM
       sorting,
     },
   });
-  const selectedKeys = useMemo(
-    () =>
-      new Set(
-        Object.entries(rowSelection)
-          .filter(([, isSelected]) => Boolean(isSelected))
-          .map(([rowId]) => rowId)
-      ),
-    [rowSelection]
-  );
+  const selectedKeys = useMemo(() => rowSelectionToKeys(rowSelection), [rowSelection]);
   const handleSelectionChange = (keys: Selection) => {
     const visibleRowIds = table.getRowModel().rows.map((row) => row.id);
-
-    onRowSelectionChange((prev) => {
-      const next = { ...prev };
-      for (const rowId of visibleRowIds) {
-        delete next[rowId];
-      }
-
-      if (keys === "all") {
-        for (const rowId of visibleRowIds) {
-          next[rowId] = true;
-        }
-        return next;
-      }
-
-      for (const key of keys) {
-        next[String(key)] = true;
-      }
-
-      return next;
-    });
+    onRowSelectionChange((prev) => applyVisibleSelection(prev, visibleRowIds, keys));
   };
 
   return (

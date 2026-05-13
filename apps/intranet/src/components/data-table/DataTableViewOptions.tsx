@@ -4,6 +4,9 @@ import type { Table } from "@tanstack/react-table";
 import { Check, Settings2 } from "lucide-react";
 import { useMemo, useState } from "react";
 
+import { getColumnLabel, isUtilityColumnId } from "./data-table-utils";
+import { matchesColumnSearch } from "./faceted-filter-utils";
+
 interface DataTableViewOptionsProps<TData> {
   readonly table: Table<TData>;
 }
@@ -13,16 +16,11 @@ export function DataTableViewOptions<TData>({ table }: DataTableViewOptionsProps
 
   const columns = table
     .getAllLeafColumns()
-    .filter((column) => column.getCanHide() && !["actions", "select"].includes(column.id));
+    .filter((column) => column.getCanHide() && !isUtilityColumnId(column.id));
 
-  const filteredColumns = columns.filter((c) => {
-    // Try to find a human readable label usually stored in columnDef.header if it's a string
-    const header = typeof c.columnDef.header === "string" ? c.columnDef.header : c.id;
-    return (
-      header.toLowerCase().includes(search.toLowerCase()) ||
-      c.id.toLowerCase().includes(search.toLowerCase())
-    );
-  });
+  const filteredColumns = columns.filter((c) =>
+    matchesColumnSearch(getColumnLabel(c.columnDef.header, c.id), c.id, search)
+  );
 
   const selectedKeys = useMemo(() => {
     const keys = columns.filter((column) => column.getIsVisible()).map((column) => column.id);
@@ -66,8 +64,7 @@ export function DataTableViewOptions<TData>({ table }: DataTableViewOptionsProps
           onSelectionChange={handleSelectionChange}
         >
           {filteredColumns.map((column) => {
-            const label =
-              typeof column.columnDef.header === "string" ? column.columnDef.header : column.id;
+            const label = getColumnLabel(column.columnDef.header, column.id);
             return (
               <Dropdown.Item id={column.id} key={column.id} textValue={label}>
                 <Dropdown.ItemIndicator>

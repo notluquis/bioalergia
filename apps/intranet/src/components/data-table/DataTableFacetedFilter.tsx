@@ -3,6 +3,8 @@ import type { Column } from "@tanstack/react-table";
 import { Check, PlusCircle } from "lucide-react";
 import { type ComponentType, useMemo, useState } from "react";
 
+import { filterOptionsBySearch, resolveFacetedFilterValue } from "./faceted-filter-utils";
+
 interface DataTableFacetedFilterProps<TData, TValue> {
   readonly column?: Column<TData, TValue>;
   readonly options: {
@@ -25,18 +27,10 @@ export function DataTableFacetedFilter<TData, TValue>({
   );
   const [search, setSearch] = useState("");
 
-  const filteredOptions = options.filter((option) =>
-    option.label.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredOptions = filterOptionsBySearch(options, search);
 
   const handleSelectionChange = (keys: Selection) => {
-    const nextKeys =
-      keys === "all" ? new Set(options.map((option) => option.value)) : new Set(keys);
-    if (nextKeys.has("clear")) {
-      column?.setFilterValue(undefined);
-      return;
-    }
-    column?.setFilterValue(nextKeys.size > 0 ? [...nextKeys] : undefined);
+    column?.setFilterValue(resolveFacetedFilterValue(options, keys));
   };
 
   return (

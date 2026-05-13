@@ -1,6 +1,7 @@
 import { Label, ListBox, Pagination, Select } from "@heroui/react";
 import type { PaginationState, Table } from "@tanstack/react-table";
 import { buildPaginationItems } from "@/components/pagination/pagination-items";
+import { computePaginationView, normalizePageSizeOptions } from "./pagination-utils";
 
 interface DataTablePaginationProps<TData> {
   readonly enablePageSizeSelector?: boolean;
@@ -19,16 +20,13 @@ export function DataTablePagination<TData>({
 }: DataTablePaginationProps<TData>) {
   const currentPagination = pagination ?? table.getState().pagination;
   const currentPageSize = currentPagination.pageSize;
-  const currentPageIndex = currentPagination.pageIndex;
   const computedTotalPages = pageCount ?? table.getPageCount();
-  const hasKnownTotalPages = computedTotalPages !== -1;
-  const totalPages = hasKnownTotalPages ? Math.max(1, computedTotalPages) : currentPageIndex + 1;
-  const canPrevious = currentPageIndex > 0;
-  const canNext = !hasKnownTotalPages || currentPageIndex < totalPages - 1;
-  const normalizedOptions = Array.from(new Set([...pageSizeOptions, currentPageSize])).sort(
-    (a, b) => a - b
-  );
-  const currentPageNumber = currentPageIndex + 1;
+  const { canNext, canPrevious, currentPageIndex, currentPageNumber, hasKnownTotalPages, totalPages } =
+    computePaginationView({
+      computedTotalPages,
+      pageIndex: currentPagination.pageIndex,
+    });
+  const normalizedOptions = normalizePageSizeOptions(pageSizeOptions, currentPageSize);
 
   const pageItems = hasKnownTotalPages
     ? buildPaginationItems({

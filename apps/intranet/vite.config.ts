@@ -399,16 +399,18 @@ export default defineConfig(({ mode }) => {
         // after pure-utility test sprint took the baseline to
         // ~74.89% lines / 66.23% branches. Next milestone targets
         // listed below; raise after each test batch lands.
-        // Milestones: 75/65 -> 78/70 -> 80/75 (target).
-        // After lib/ pure-utils sprint (format/rut/store-utils/superjson)
-        // baseline is 78.15% lines / 67.28% branches / 78.68% funcs /
-        // 76.34% stmts. Lifting to 75/65 milestone (one step), keeping
-        // headroom to absorb noise.
+        // Milestones: 75/65 -> 78/70 -> 80/75 (TARGET REACHED 2026-05-13).
+        // Coverage push 5-step roadmap (commits 19340d83, bb312d80,
+        // af1a*, *4cab8f4a) lifted intranet from 65.7% to 81.05% lines.
+        // Threshold at 80/65 = current actual minus a 1pp safety margin
+        // for noise. Branches remain at 65 (current 69.71%); branches are
+        // the slowest metric to lift because TanStack/HeroUI components
+        // hide many one-off conditionals only reachable via render tests.
         thresholds: {
-          lines: 75,
-          functions: 75,
+          lines: 80,
+          functions: 80,
           branches: 65,
-          statements: 75,
+          statements: 78,
         },
       },
     },
