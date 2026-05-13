@@ -101,14 +101,16 @@ export function ClinicalSeriesList({ patientId }: { patientId: number }) {
         <Activity size={16} />
         {data?.items.length ?? 0} serie(s) clínica(s) vinculadas
       </div>
-      <DataTable
-        columns={columns}
-        data={data?.items ?? []}
-        enablePagination={false}
-        enableToolbar={false}
-        noDataMessage="No hay series clínicas vinculadas a este paciente."
-        scrollMaxHeight="min(56dvh, 640px)"
-      />
+      <div data-phi-block>
+        <DataTable
+          columns={columns}
+          data={data?.items ?? []}
+          enablePagination={false}
+          enableToolbar={false}
+          noDataMessage="No hay series clínicas vinculadas a este paciente."
+          scrollMaxHeight="min(56dvh, 640px)"
+        />
+      </div>
     </div>
   );
 }

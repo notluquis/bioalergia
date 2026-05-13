@@ -42,6 +42,7 @@ function buildColumns(
     {
       header: "Destinatario",
       accessorKey: "recipientName",
+      cell: ({ row }) => <span data-phi>{row.original.recipientName}</span>,
     },
     {
       header: "Sucursal",
@@ -197,14 +198,16 @@ export function ShipmentsList({
           </Button>
         </div>
 
-        <DataTable
-          columns={columns}
-          data={data?.shipments ?? []}
-          enablePagination={false}
-          enableToolbar={false}
-          noDataMessage="No hay despachos registrados para este paciente."
-          scrollMaxHeight="min(56dvh, 640px)"
-        />
+        <div data-phi-block>
+          <DataTable
+            columns={columns}
+            data={data?.shipments ?? []}
+            enablePagination={false}
+            enableToolbar={false}
+            noDataMessage="No hay despachos registrados para este paciente."
+            scrollMaxHeight="min(56dvh, 640px)"
+          />
+        </div>
       </div>
 
       {wizardOpen && (

@@ -130,7 +130,7 @@ export function ChatBubble({
   ) : null;
 
   return (
-    <div className={`group relative flex ${wrapper}`}>
+    <div className={`group relative flex ${wrapper}`} data-phi-block>
       <div
         className={`relative ${
           isSticker

@@ -74,7 +74,7 @@ function PatientsListPage() {
               <div className="flex items-center justify-center rounded-full bg-primary/10 text-primary size-8">
                 <User size={16} />
               </div>
-              <div className="flex flex-col">
+              <div className="flex flex-col" data-phi>
                 <span className="font-medium text-foreground">
                   {patient.person.names} {patient.person.fatherName} {patient.person.motherName}
                 </span>
@@ -90,7 +90,7 @@ function PatientsListPage() {
         accessorKey: "person.rut",
         header: "RUT",
         cell: ({ row }) => (
-          <span className="font-mono text-default-700">{row.original.person.rut}</span>
+          <span className="font-mono text-default-700" data-phi>{row.original.person.rut}</span>
         ),
       },
       {
@@ -103,7 +103,7 @@ function PatientsListPage() {
           }
           const age = dayjs().diff(dayjs(birthDate, "YYYY-MM-DD"), "year");
           return (
-            <div className="flex flex-col">
+            <div className="flex flex-col" data-phi>
               <span className="text-default-700 text-sm">{age} años</span>
               <span className="text-xs text-default-400">
                 {dayjs(birthDate, "YYYY-MM-DD").format("DD/MM/YYYY")}
@@ -141,7 +141,7 @@ function PatientsListPage() {
         accessorKey: "clientName",
         header: "CLIENTE (DTE)",
         cell: ({ row }) => (
-          <div className="flex flex-col">
+          <div className="flex flex-col" data-phi>
             <span className="font-medium text-foreground">{row.original.clientName}</span>
             <span className="font-mono text-default-500 text-xs">{row.original.clientRUT}</span>
           </div>

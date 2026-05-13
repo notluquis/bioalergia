@@ -88,7 +88,7 @@ export function AddressList({ personId }: Readonly<AddressListProps>) {
               <Card key={addr.id} className="border border-default-100">
                 <Card.Content className="p-4">
                   <div className="flex items-start justify-between gap-3">
-                    <div className="flex-1 space-y-1">
+                    <div className="flex-1 space-y-1" data-phi>
                       <div className="flex items-center gap-2">
                         <span className="font-semibold text-foreground">{addr.label}</span>
                         {addr.isPrimary && (

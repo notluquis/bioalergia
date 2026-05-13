@@ -41,7 +41,7 @@ export function SeriesSkinTestsSection({ seriesId }: { seriesId: number }) {
           <Disclosure.Content>
             <Disclosure.Body className="space-y-3 p-0 pt-2">
               {tests.data?.map((test) => (
-                <Surface key={test.id} className="rounded-lg border border-border p-2">
+                <Surface key={test.id} className="rounded-lg border border-border p-2" data-phi-block>
                   <div className="mb-2 flex flex-wrap items-center gap-2">
                     <Chip size="sm" variant="soft" color="accent">
                       {test.testDate}

@@ -483,7 +483,7 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
               {initials}
             </Avatar.Fallback>
           </Avatar>
-          <div className="min-w-0">
+          <div className="min-w-0" data-phi>
             <p className="truncate font-medium text-base">{contactName}</p>
             <p className="truncate text-default-500 text-xs">
               {c.contact.phoneE164}

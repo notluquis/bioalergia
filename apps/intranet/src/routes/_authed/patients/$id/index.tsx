@@ -114,7 +114,7 @@ function PatientDetailsPage() {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Sidebar: Info rápida */}
         <div className="space-y-6 lg:col-span-1">
-          <Card className="overflow-hidden border-none bg-background shadow-sm">
+          <Card className="overflow-hidden border-none bg-background shadow-sm" data-phi-block>
             <Card.Content className="p-0">
               <div className="flex flex-col items-center bg-primary/5 p-6">
                 <div className="mb-3 flex items-center justify-center rounded-full bg-primary/10 text-primary size-20">
@@ -249,27 +249,31 @@ function PatientDetailsPage() {
 
             <Tabs.Panel id="history" className="py-4">
               {isTabMounted("history") ? (
-                <DataTable
-                  columns={consultationColumns}
-                  data={patient.consultations || []}
-                  enablePagination={false}
-                  enableToolbar={false}
-                  noDataMessage="No hay consultas registradas para este paciente."
-                  scrollMaxHeight="min(56dvh, 640px)"
-                />
+                <div data-phi-block>
+                  <DataTable
+                    columns={consultationColumns}
+                    data={patient.consultations || []}
+                    enablePagination={false}
+                    enableToolbar={false}
+                    noDataMessage="No hay consultas registradas para este paciente."
+                    scrollMaxHeight="min(56dvh, 640px)"
+                  />
+                </div>
               ) : null}
             </Tabs.Panel>
 
             <Tabs.Panel id="certificates" className="py-4">
               {isTabMounted("certificates") ? (
-                <DataTable
-                  columns={certificateColumns}
-                  data={patient.medicalCertificates || []}
-                  enablePagination={false}
-                  enableToolbar={false}
-                  noDataMessage="No se han emitido certificados a este paciente."
-                  scrollMaxHeight="min(56dvh, 640px)"
-                />
+                <div data-phi-block>
+                  <DataTable
+                    columns={certificateColumns}
+                    data={patient.medicalCertificates || []}
+                    enablePagination={false}
+                    enableToolbar={false}
+                    noDataMessage="No se han emitido certificados a este paciente."
+                    scrollMaxHeight="min(56dvh, 640px)"
+                  />
+                </div>
               ) : null}
             </Tabs.Panel>
 
@@ -377,7 +381,7 @@ function PatientDetailsPage() {
 
             <Tabs.Panel id="info" className="py-4">
               {isTabMounted("info") ? (
-                <Card className="border-none bg-background shadow-sm">
+                <Card className="border-none bg-background shadow-sm" data-phi-block>
                   <Card.Content className="p-6">
                     <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                       <DetailRow label="Nombres" value={person.names} />
@@ -510,7 +514,7 @@ function PatientDetailsHeader({
         >
           <ChevronLeft size={24} />
         </Button>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2" data-phi>
           <span className="font-mono text-default-500 text-sm">{person.rut}</span>
           {age !== null ? (
             <div className="rounded-full bg-primary/10 px-2 py-0.5 font-medium text-primary text-xs">

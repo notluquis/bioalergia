@@ -76,14 +76,16 @@ export function SkinTestsList({ patientId }: { patientId: number }) {
         <FlaskConical size={16} />
         {data?.items.length ?? 0} test(s) cutáneo(s) vinculados
       </div>
-      <DataTable
-        columns={columns}
-        data={data?.items ?? []}
-        enablePagination={false}
-        enableToolbar={false}
-        noDataMessage="No hay tests cutáneos vinculados a este paciente."
-        scrollMaxHeight="min(56dvh, 640px)"
-      />
+      <div data-phi-block>
+        <DataTable
+          columns={columns}
+          data={data?.items ?? []}
+          enablePagination={false}
+          enableToolbar={false}
+          noDataMessage="No hay tests cutáneos vinculados a este paciente."
+          scrollMaxHeight="min(56dvh, 640px)"
+        />
+      </div>
     </div>
   );
 }

@@ -59,7 +59,7 @@ function Section({
 export function RecordCard(props: RecordCardProps) {
   const anthroPills = Object.entries(props.anthropometric).slice(0, 6);
   return (
-    <Card className="p-4">
+    <Card className="p-4" data-phi-block>
       <Card.Header className="!flex !items-start !justify-between gap-3 p-0 pb-3">
         <div>
           <p className="font-semibold text-base">{fmtDate(props.consultDate)}</p>
