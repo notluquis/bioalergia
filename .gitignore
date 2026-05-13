@@ -146,3 +146,7 @@ CLAUDE.local.md
 apps/api/*.ts
 !apps/api/vitest.config.ts
 playwright/.auth/
+**/playwright/.auth/
+
+# pnpm local store (set via env on some setups)
+.pnpm-store/
