@@ -158,7 +158,10 @@ export function WaCloudInboxPage() {
       // opened the chat from another surface.
       void (async () => {
         try {
-          const reg = await navigator.serviceWorker?.getRegistration();
+          // `serviceWorker.ready` resolves to the active registration —
+          // avoids the race with `getRegistration()` returning the
+          // installing/waiting worker on a cold load.
+          const reg = await navigator.serviceWorker?.ready;
           const stale = await reg?.getNotifications({ tag: `wa-conv-${selectedId}` });
           stale?.forEach((n) => n.close());
         } catch {

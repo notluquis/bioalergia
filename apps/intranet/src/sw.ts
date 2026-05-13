@@ -73,8 +73,9 @@ registerRoute(
 // ─── Push notification receipt ────────────────────────────────────────────────
 // Payload shape mirrors what apps/api/src/services/notifications.ts
 // dispatches: { title, body, icon, image, tag, badgeCount, timestamp,
-// data: { url, badgeCount } }. We tolerate missing fields so a
-// malformed payload still renders something.
+// kind, requireInteraction, silent, data: { url, badgeCount } }. We
+// tolerate missing fields so a malformed payload still renders
+// something.
 self.addEventListener("push", (event) => {
   let payload: {
     title?: string;
@@ -84,6 +85,9 @@ self.addEventListener("push", (event) => {
     tag?: string;
     badgeCount?: number;
     timestamp?: number;
+    requireInteraction?: boolean;
+    silent?: boolean;
+    kind?: "notification" | "data";
     data?: { url?: string; badgeCount?: number };
   } = {};
   if (event.data) {
@@ -94,28 +98,46 @@ self.addEventListener("push", (event) => {
     }
   }
   const title = payload.title ?? "Bioalergia";
+  const isData = payload.kind === "data";
   // Run notification + badge update in parallel; event.waitUntil
   // keeps the SW alive until both promises settle so the OS doesn't
   // consider the push event "completed without showing notification".
+  //
+  // For `kind: "data"` pushes (state syncs from another device — e.g.
+  // "another tab marked the conversation read, just update the
+  // badge"), the spec still requires us to call showNotification or
+  // the UA may unsubscribe us. We render a silent placeholder and
+  // close it within the same waitUntil so nothing reaches the user.
   event.waitUntil(
     Promise.all([
-      self.registration.showNotification(title, {
-        body: payload.body ?? "",
-        icon: payload.icon ?? "/icons/icon-192.png",
-        badge: "/icons/icon-72.png",
-        tag: payload.tag,
-        data: payload.data ?? {},
-        // `image`, `timestamp`, `renotify`, `vibrate` are in the spec
-        // but not all in lib.dom. Cast keeps TS happy while the OS
-        // (Chromium / iOS 16.4+) honours each one when available.
-        ...({
-          image: payload.image,
-          timestamp: payload.timestamp ?? Date.now(),
-          renotify: !!payload.tag,
-          // Two short pulses → standard messaging app feel on Android.
-          vibrate: [200, 100, 200],
-        } as Record<string, unknown>),
-      }),
+      (async () => {
+        await self.registration.showNotification(title, {
+          body: isData ? "" : (payload.body ?? ""),
+          icon: payload.icon ?? "/icons/icon-192.png",
+          badge: "/icons/icon-72.png",
+          tag: isData ? `__data_${payload.tag ?? Date.now()}` : payload.tag,
+          data: payload.data ?? {},
+          silent: payload.silent ?? isData,
+          requireInteraction: !isData && (payload.requireInteraction ?? false),
+          // `image`, `timestamp`, `renotify`, `vibrate` are in the spec
+          // but not all in lib.dom. Cast keeps TS happy while the OS
+          // (Chromium / iOS 16.4+) honours each one when available.
+          ...({
+            image: isData ? undefined : payload.image,
+            timestamp: payload.timestamp ?? Date.now(),
+            renotify: !isData && !!payload.tag,
+            // Two short pulses → standard messaging app feel on Android.
+            vibrate: isData ? [] : [200, 100, 200],
+          } as Record<string, unknown>),
+        });
+        if (isData) {
+          // Close immediately — the spec requirement is satisfied,
+          // the operator never sees a banner.
+          const tag = `__data_${payload.tag ?? Date.now()}`;
+          const stale = await self.registration.getNotifications({ tag });
+          stale.forEach((n) => n.close());
+        }
+      })(),
       // Badging API (Chromium + Safari iOS 16.4+ + macOS PWAs). Falls
       // back silently when the runtime doesn't expose it.
       (async () => {
@@ -181,4 +203,111 @@ self.addEventListener("notificationclick", (event) => {
 // version is served (vite-plugin-pwa's prompt flow uses this).
 self.addEventListener("message", (event) => {
   if (event.data?.type === "SKIP_WAITING") void self.skipWaiting();
+});
+
+// ─── Subscription rotation ────────────────────────────────────────────────────
+// Apple/FCM rotate push channel endpoints periodically. Without this
+// handler the old endpoint silently dies and the operator stops
+// receiving messages until they re-toggle in the UI. The SW spec
+// fires `pushsubscriptionchange` with `oldSubscription` (always)
+// and `newSubscription` (sometimes — UAs that auto-resubscribe). If
+// the UA didn't pre-resubscribe, we do it here using the VAPID key
+// the original sub was registered with.
+//
+// We POST to the unauthenticated /rotate endpoint because background
+// SW fetches don't always carry session cookies (Safari iOS strips
+// them on subscription renewal). The oldEndpoint is the secret —
+// only a client that held the previous subscription knows it.
+self.addEventListener("pushsubscriptionchange", (event) => {
+  const e = event as PushSubscriptionChangeEvent;
+  event.waitUntil(
+    (async () => {
+      try {
+        const old = e.oldSubscription;
+        let next = e.newSubscription;
+        if (!next && old) {
+          // applicationServerKey may come back as ArrayBuffer; the
+          // PushManager.subscribe API accepts ArrayBuffer or BufferSource.
+          const opts = old.options;
+          next = await self.registration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: opts.applicationServerKey ?? undefined,
+          });
+        }
+        if (!next || !old) return;
+        const j = next.toJSON() as {
+          endpoint: string;
+          keys?: { auth?: string; p256dh?: string };
+        };
+        if (!j.endpoint || !j.keys?.auth || !j.keys?.p256dh) return;
+        await fetch("/api/orpc/notifications/rotate", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            oldEndpoint: old.endpoint,
+            subscription: {
+              endpoint: j.endpoint,
+              keys: { auth: j.keys.auth, p256dh: j.keys.p256dh },
+            },
+          }),
+        });
+      } catch {
+        // Swallow — the next push attempt against the dead endpoint
+        // will 410 and the backend GCs it via the existing cleanup.
+      }
+    })()
+  );
+});
+
+// ─── Web Share Target API ─────────────────────────────────────────────────────
+// Manifest registers /share-target as POST; intercepting here lets us
+// pass the shared payload to the WhatsApp inbox without bouncing
+// through a server route. Stash the payload in a one-shot Cache
+// entry so the SPA can pick it up after the redirect.
+const SHARE_CACHE = "share-target-inbox-v1";
+self.addEventListener("fetch", (event) => {
+  const url = new URL(event.request.url);
+  if (url.pathname !== "/share-target" || event.request.method !== "POST") return;
+  event.respondWith(
+    (async () => {
+      try {
+        const formData = await event.request.formData();
+        const title = String(formData.get("title") ?? "");
+        const text = String(formData.get("text") ?? "");
+        const sharedUrl = String(formData.get("url") ?? "");
+        const files = formData.getAll("files").filter((f): f is File => f instanceof File);
+        const cache = await caches.open(SHARE_CACHE);
+        // Files survive the redirect via Cache; the SPA reads them
+        // back via /share-target/payload below.
+        await cache.put(
+          "/__share_payload",
+          new Response(
+            JSON.stringify({
+              title,
+              text,
+              url: sharedUrl,
+              fileCount: files.length,
+              ts: Date.now(),
+            }),
+            { headers: { "content-type": "application/json" } }
+          )
+        );
+        for (const [i, file] of files.entries()) {
+          await cache.put(
+            `/__share_file_${i}`,
+            new Response(file, {
+              headers: {
+                "content-type": file.type || "application/octet-stream",
+                "x-filename": encodeURIComponent(file.name),
+              },
+            })
+          );
+        }
+      } catch {
+        // best-effort
+      }
+      return Response.redirect("/wa-cloud?shared=1", 303);
+    })()
+  );
 });

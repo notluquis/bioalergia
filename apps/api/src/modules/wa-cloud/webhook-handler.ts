@@ -942,6 +942,9 @@ export async function processWebhookPayload(payload: MetaWebhookPayload): Promis
                 url: `/wa-cloud?conversation=${convId}`,
                 tag: `wa-conv-${convId}`,
                 badgeCount,
+                // Clinic inbound messages are time-sensitive; keep
+                // the banner up until the operator acts on it.
+                requireInteraction: true,
               }).catch((err) => {
                 logWarn("[wa-cloud.webhook] push notification failed", {
                   error: err instanceof Error ? err.message : String(err),

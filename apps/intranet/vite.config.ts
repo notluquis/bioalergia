@@ -226,6 +226,27 @@ export default defineConfig(({ mode }) => {
               icons: [{ src: "/icons/icon-96.png", sizes: "96x96" }],
             },
           ],
+          // Web Share Target API — receive shared images/PDFs from
+          // other PWAs/native apps directly into the WhatsApp inbox.
+          // The SW intercepts POST /share-target, stashes payload in
+          // Cache, and 303-redirects to /wa-cloud?shared=1 where the
+          // SPA pulls it back. Spec: w3.org/TR/web-share-target/.
+          share_target: {
+            action: "/share-target",
+            method: "POST",
+            enctype: "multipart/form-data",
+            params: {
+              title: "title",
+              text: "text",
+              url: "url",
+              files: [
+                {
+                  name: "files",
+                  accept: ["image/*", "application/pdf", "audio/*", "video/*"],
+                },
+              ],
+            },
+          },
           // iOS/macOS specific
           screenshots: [
             {

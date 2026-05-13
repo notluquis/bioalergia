@@ -42,6 +42,36 @@ export async function unsubscribeFromPush(userId: number, endpoint: string) {
   });
 }
 
+// Swap an existing subscription's endpoint+keys atomically. Triggered
+// by the SW `pushsubscriptionchange` event when the UA rotates the
+// underlying push channel (Apple/FCM do this periodically). We DO
+// NOT require a session here because the SW renewal happens in the
+// background and Safari occasionally strips cookies on those fetches.
+// The oldEndpoint acts as proof-of-possession — only the client that
+// held the previous subscription knows it.
+export async function rotatePushSubscription(
+  oldEndpoint: string,
+  next: { endpoint: string; keys: PushSubscriptionKeys }
+) {
+  const existing = await db.pushSubscription.findUnique({
+    where: { endpoint: oldEndpoint },
+  });
+  if (!existing) {
+    return { success: false, reason: "old endpoint not found" as const };
+  }
+  // Upsert by the new endpoint to avoid a unique-constraint race if
+  // the UA already pre-registered the new endpoint.
+  await db.$transaction([
+    db.pushSubscription.deleteMany({ where: { endpoint: oldEndpoint } }),
+    db.pushSubscription.upsert({
+      where: { endpoint: next.endpoint },
+      update: { keys: next.keys, userId: existing.userId },
+      create: { userId: existing.userId, endpoint: next.endpoint, keys: next.keys },
+    }),
+  ]);
+  return { success: true };
+}
+
 export async function sendPushNotification(
   userId: number,
   payload: { title: string; body: string; icon?: string; url?: string }
@@ -115,6 +145,22 @@ export async function broadcastPushNotification(payload: {
   // count, which is what the operator wants on a single-tenant clinic
   // PWA.
   badgeCount?: number;
+  // Keep the OS banner up until the operator dismisses or acts on it.
+  // For clinical messages (WhatsApp inbound) we set this true so a
+  // banner doesn't auto-fade after 3s. Chromium-only; iOS/Safari
+  // ignore the field but still render the banner.
+  requireInteraction?: boolean;
+  // True → no sound/vibration on the device (Chromium honors). For
+  // background state syncs paired with `kind: "data"`.
+  silent?: boolean;
+  // Discriminator for the SW handler. "data" pushes carry only state
+  // (badge count, conversation-read events from another device) and
+  // the SW closes the notification immediately after the platform-
+  // mandated showNotification call. Browsers may unsubscribe a SW
+  // that receives push without surfacing a notification, so we still
+  // call showNotification — just with `silent: true` and an instant
+  // close. Default "notification" renders normally.
+  kind?: "notification" | "data";
 }) {
   if (!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) {
     return { success: false, sent: 0, reason: "VAPID keys not configured" };
@@ -131,6 +177,9 @@ export async function broadcastPushNotification(payload: {
     image: payload.image,
     tag: payload.tag,
     badgeCount: payload.badgeCount,
+    requireInteraction: payload.requireInteraction,
+    silent: payload.silent,
+    kind: payload.kind ?? "notification",
     timestamp: Date.now(),
     data: { url: payload.url || "/", badgeCount: payload.badgeCount },
   });

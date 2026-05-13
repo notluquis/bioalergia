@@ -2,6 +2,7 @@ import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
 import {
   notificationsStatusResponseSchema,
+  rotateInputSchema,
   sendTestInputSchema,
   subscribeInputSchema,
   unsubscribeInputSchema,
@@ -13,6 +14,7 @@ import { getSessionUser, hasPermission } from "../auth.ts";
 import { logError } from "../lib/logger.ts";
 import { configureSuperjson } from "../lib/superjson-config.ts";
 import {
+  rotatePushSubscription,
   sendPushNotification,
   subscribeToPush,
   unsubscribeFromPush,
@@ -95,6 +97,27 @@ const notificationsORPCRouterBase = {
     .handler(async ({ context, input }) => {
       await unsubscribeFromPush(context.user.id, input.endpoint);
       return { message: "Unsubscribed successfully", status: "ok" };
+    }),
+
+  // Unauthenticated: SW background fetches don't always carry cookies
+  // (Safari iOS strips them when renewing a subscription). The
+  // oldEndpoint acts as proof-of-possession instead — see
+  // services/notifications.ts::rotatePushSubscription for rationale.
+  rotate: base
+    .route({
+      method: "POST",
+      path: "/rotate",
+      summary: "Swap a rotated push subscription endpoint",
+      tags: ["Notifications"],
+    })
+    .input(rotateInputSchema)
+    .output(notificationsStatusResponseSchema)
+    .handler(async ({ input }) => {
+      const result = await rotatePushSubscription(input.oldEndpoint, input.subscription);
+      if (!result.success) {
+        return { status: "not-found", message: result.reason, success: false };
+      }
+      return { status: "ok", message: "Rotated successfully", success: true };
     }),
 };
 

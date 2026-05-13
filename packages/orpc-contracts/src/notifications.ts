@@ -25,6 +25,18 @@ export const unsubscribeInputSchema = z.object({
   endpoint: z.string().url(),
 });
 
+// Used by the service worker `pushsubscriptionchange` handler when the
+// user agent rotates a subscription endpoint. The old endpoint acts as
+// proof-of-possession: only a client that already held the previous
+// subscription can know it, and the server matches it against an
+// existing row before swapping. No session cookie is required because
+// SW background fetches don't always carry one (Safari iOS sometimes
+// strips them when the subscription is renewed in the background).
+export const rotateInputSchema = z.object({
+  oldEndpoint: z.string().url(),
+  subscription: pushSubscriptionSchema,
+});
+
 export const sendTestInputSchema = z.object({
   userId: z.number().int().optional(),
 });
@@ -41,6 +53,10 @@ export const notificationsContract = {
   unsubscribe: oc
     .route({ method: "POST", path: "/unsubscribe" })
     .input(unsubscribeInputSchema)
+    .output(notificationsStatusResponseSchema),
+  rotate: oc
+    .route({ method: "POST", path: "/rotate" })
+    .input(rotateInputSchema)
     .output(notificationsStatusResponseSchema),
 };
 
