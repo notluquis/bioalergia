@@ -133,15 +133,13 @@ self.addEventListener("push", (event) => {
           // hardcoding es-CL is safe.
           lang: "es-CL",
           dir: "ltr",
-          // Trim to UA-supported maximum so Android/iOS render
-          // consistently. Chromium exposes maxActions; Safari
-          // ignores extras silently but defining a hard cap of 2
-          // keeps the layout predictable across platforms.
-          actions: isData ? [] : (payload.actions ?? []).slice(0, 2),
-          // `image`, `timestamp`, `renotify`, `vibrate` are in the spec
-          // but not all in lib.dom. Cast keeps TS happy while the OS
-          // (Chromium / iOS 16.4+) honours each one when available.
+          // `image`, `timestamp`, `renotify`, `vibrate`, `actions` are
+          // in the spec but not all in lib.dom. Cast keeps TS happy
+          // while the OS (Chromium / iOS 16.4+) honours each one
+          // when available. Actions trimmed to UA-supported max (2)
+          // so Android/iOS render consistently.
           ...({
+            actions: isData ? [] : (payload.actions ?? []).slice(0, 2),
             image: isData ? undefined : payload.image,
             timestamp: payload.timestamp ?? Date.now(),
             renotify: !isData && !!payload.tag,
@@ -304,30 +302,35 @@ self.addEventListener("notificationclose", (event) => {
 // and Firefox ignore the event entirely; we register defensively
 // from the main thread and the listener is a no-op when the UA
 // doesn't dispatch.
-self.addEventListener("periodicsync", (event) => {
-  const e = event as ExtendableEvent & { tag: string };
-  if (e.tag !== "inbox-badge-refresh") return;
-  event.waitUntil(
-    (async () => {
-      try {
-        const res = await fetch("/api/orpc/notifications/unread-count", {
-          credentials: "include",
-        });
-        if (!res.ok) return;
-        const { count } = (await res.json()) as { count?: number };
-        type BadgeNav = Navigator & {
-          setAppBadge?: (n?: number) => Promise<void>;
-          clearAppBadge?: () => Promise<void>;
-        };
-        const nav = (self as unknown as { navigator: BadgeNav }).navigator;
-        if (typeof count === "number" && count > 0) await nav.setAppBadge?.(count);
-        else await nav.clearAppBadge?.();
-      } catch {
-        // best-effort — the next push receipt will repaint anyway
-      }
-    })()
-  );
-});
+// `periodicsync` not yet in lib.dom (Chrome-only origin trial era).
+// Cast the event handler signature so `tag` + `waitUntil` are visible.
+self.addEventListener(
+  "periodicsync" as keyof ServiceWorkerGlobalScopeEventMap,
+  ((event: Event) => {
+    const e = event as ExtendableEvent & { tag: string };
+    if (e.tag !== "inbox-badge-refresh") return;
+    e.waitUntil(
+      (async () => {
+        try {
+          const res = await fetch("/api/orpc/notifications/unread-count", {
+            credentials: "include",
+          });
+          if (!res.ok) return;
+          const { count } = (await res.json()) as { count?: number };
+          type BadgeNav = Navigator & {
+            setAppBadge?: (n?: number) => Promise<void>;
+            clearAppBadge?: () => Promise<void>;
+          };
+          const nav = (self as unknown as { navigator: BadgeNav }).navigator;
+          if (typeof count === "number" && count > 0) await nav.setAppBadge?.(count);
+          else await nav.clearAppBadge?.();
+        } catch {
+          // best-effort — the next push receipt will repaint anyway
+        }
+      })()
+    );
+  }) as EventListener
+);
 
 // Allow the app to skipWaiting from main thread when a new SW
 // version is served (vite-plugin-pwa's prompt flow uses this).

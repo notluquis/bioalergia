@@ -519,8 +519,7 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
             return (
               <Button
                 size="sm"
-                variant={isMuted ? "soft" : "ghost"}
-                color={isMuted ? "warning" : "neutral"}
+                variant={isMuted ? "secondary" : "ghost"}
                 isLoading={setMute.isPending}
                 onPress={() =>
                   setMute.mutate({

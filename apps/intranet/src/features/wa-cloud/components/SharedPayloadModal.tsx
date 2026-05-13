@@ -118,14 +118,28 @@ export function SharedPayloadModal({
     setLiveMsg("Iniciando envío…");
     const failures: string[] = [];
     try {
-      // Caption goes on the first successful media; subsequent files
-      // are sent without caption to avoid duplicating context.
+      // Send the shared text FIRST as a standalone message, then
+      // every media without caption. Matches the native WhatsApp
+      // share-sheet UX (one text bubble + N media bubbles) and avoids
+      // the "which file gets the caption?" ambiguity when the
+      // operator shares 5 photos with one URL.
       const sharedCaption = buildSharedCaption({
         title: payload.title,
         text: payload.text,
         url: payload.url,
       });
-      let captionConsumed = false;
+      if (sharedCaption) {
+        try {
+          setLiveMsg("Enviando texto compartido…");
+          await sendText.mutateAsync({
+            conversationId,
+            phoneNumberId,
+            body: sharedCaption,
+          });
+        } catch (err) {
+          failures.push(`texto compartido: ${err instanceof Error ? err.message : String(err)}`);
+        }
+      }
 
       for (let i = 0; i < payload.files.length; i++) {
         const entry = entriesRef.current[i];
@@ -178,39 +192,17 @@ export function SharedPayloadModal({
             type: meta.type,
             mediaId: uploaded.id,
             filename: meta.type === "document" ? entry.file.name : undefined,
-            caption:
-              !captionConsumed && sharedCaption && meta.type !== "sticker" && meta.type !== "audio"
-                ? sharedCaption
-                : undefined,
+            // No caption: the shared text was sent as a separate
+            // message above so every operator sees a single text
+            // bubble followed by media bubbles (same as native WA
+            // share). Avoids the "caption appears on random file"
+            // ambiguity when sharing multiple images at once.
           });
-          if (
-            !captionConsumed &&
-            sharedCaption &&
-            meta.type !== "sticker" &&
-            meta.type !== "audio"
-          ) {
-            captionConsumed = true;
-          }
           updateEntry(i, { status: "done" });
         } catch (err) {
           const msg = err instanceof Error ? err.message : String(err);
           updateEntry(i, { status: "failed", error: msg });
           failures.push(`${entry.file.name}: ${msg}`);
-        }
-      }
-
-      // Text-only shares OR leftover caption (sticker/audio-only
-      // payloads where caption couldn't be attached) → send as a
-      // standalone text message.
-      if (!captionConsumed && sharedCaption) {
-        try {
-          await sendText.mutateAsync({
-            conversationId,
-            phoneNumberId,
-            body: sharedCaption,
-          });
-        } catch (err) {
-          failures.push(`texto compartido: ${err instanceof Error ? err.message : String(err)}`);
         }
       }
 
@@ -326,13 +318,13 @@ export function SharedPayloadModal({
               {allDone ? "Cerrar" : "Cancelar"}
             </Button>
             {totalFailed > 0 && !sending && (
-              <Button variant="soft" color="warning" onPress={handleSend}>
+              <Button variant="outline" onPress={handleSend}>
                 Reintentar fallidos
               </Button>
             )}
             {!allDone && (
               <Button
-                color="primary"
+                variant="primary"
                 isDisabled={!canSend}
                 isLoading={sending}
                 onPress={handleSend}
