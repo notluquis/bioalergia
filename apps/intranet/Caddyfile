@@ -110,25 +110,29 @@
 		file_server
 	}
 
-	# Service worker MUST be served fresh (or near-fresh) so a deploy
-	# rolls out without needing manual unregister. Browsers ignore long
-	# max-age on SWs anyway (capped at 24h per spec) but immutable +
-	# 30d here was making Safari/iOS PWAs hang on stale builds.
-	# `no-cache` = revalidate every load via ETag; `must-revalidate`
-	# blocks stale-while-revalidate optimizations on the SW path.
-	@service_worker {
-		path /sw.js /sw.mjs /workbox-*.js /registerSW.js
-	}
-	header @service_worker {
-		Cache-Control "no-cache, must-revalidate"
-	}
-
 	# Cache headers for static assets (everything except the SW).
 	@static {
 		path *.js *.css *.png *.jpg *.jpeg *.gif *.svg *.webp *.ico *.woff *.woff2 *.ttf *.eot
 	}
 	header @static {
 		Cache-Control "public, max-age=2592000, immutable"
+	}
+
+	# Service worker MUST be served fresh (or near-fresh) so a deploy
+	# rolls out without needing manual unregister. Browsers ignore long
+	# max-age on SWs anyway (capped at 24h per spec) but immutable +
+	# 30d was making Safari/iOS PWAs hang on stale builds.
+	# `no-cache` = revalidate every load via ETag; `must-revalidate`
+	# blocks stale-while-revalidate optimizations on the SW path.
+	# MUST be declared AFTER @static — Caddy's `header` directive
+	# evaluates in order and the LAST matching block wins. With
+	# @service_worker before @static, the `*.js` rule was overriding
+	# back to immutable; CF then cached the SW for 30 days.
+	@service_worker {
+		path /sw.js /sw.mjs /workbox-*.js /registerSW.js
+	}
+	header @service_worker {
+		Cache-Control "no-cache, must-revalidate"
 	}
 
 	# No cache for index.html
