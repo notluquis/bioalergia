@@ -28,6 +28,7 @@ allowBuilds:
   sharp: true
   prisma: false
   "@prisma/engines": false
+  '@sentry/cli': true
 
 # Opt out of pnpm 11's default 24h release-age gate (lockfile path
 # unaffected — pnpm/pnpm#10438).
