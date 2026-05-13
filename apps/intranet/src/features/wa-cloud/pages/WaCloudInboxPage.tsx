@@ -22,12 +22,13 @@ import {
 // Spinner removed in favour of ConversationListSkeleton for the inbox list.
 import { getRouteApi } from "@tanstack/react-router";
 import dayjs from "dayjs";
-import { ArrowLeft, Filter, Inbox, MessageSquareText, Phone } from "lucide-react";
+import { ArrowLeft, Bell, BellOff, Filter, Inbox, MessageSquareText, Phone } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { WaConversationStatus } from "@finanzas/orpc-contracts/wa-cloud";
 import { ConversationDetail } from "../components/ConversationDetail";
 import { useFaviconBadge } from "../hooks/useFaviconBadge";
 import { useAccounts, useConversations, useMarkRead, useSearchMessages } from "../hooks/useWaCloud";
+import { usePushNotifications } from "@/hooks/use-push-notifications";
 
 // `?conversation=N` is the canonical deep-link param (validated in
 // the route file). Reading via getRouteApi avoids the optional
@@ -235,19 +236,22 @@ export function WaCloudInboxPage() {
         {showList && (
           <aside className="flex h-full flex-col border-default-200 lg:border-r">
             <header className="flex flex-col gap-2 border-default-200 border-b p-3">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-2">
                 <h2 className="flex items-center gap-2 font-semibold text-base">
                   <Inbox size={18} className="text-success" />
                   Bandeja
                 </h2>
-                <FilterDropdown
-                  status={status}
-                  onStatusChange={setStatus}
-                  phoneFilter={phoneFilter}
-                  onPhoneChange={setPhoneFilter}
-                  phones={allPhones}
-                  activeCount={activeFiltersCount}
-                />
+                <div className="flex items-center gap-1">
+                  <PushToggle />
+                  <FilterDropdown
+                    status={status}
+                    onStatusChange={setStatus}
+                    phoneFilter={phoneFilter}
+                    onPhoneChange={setPhoneFilter}
+                    phones={allPhones}
+                    activeCount={activeFiltersCount}
+                  />
+                </div>
               </div>
 
               <SearchField
@@ -447,6 +451,35 @@ function ConversationListSkeleton() {
         </div>
       ))}
     </div>
+  );
+}
+
+function PushToggle() {
+  // Surfaces the Web Push opt-in/out as a single icon button. Uses the
+  // existing usePushNotifications hook (subscribe / unsubscribe) so
+  // the wa-cloud webhook can dispatch broadcastPushNotification to
+  // every subscribed device. Hidden when the browser doesn't support
+  // the Notification API at all (very old Safari builds).
+  const { isSubscribed, permission, toggleSubscription } = usePushNotifications();
+  if (typeof window === "undefined" || !("Notification" in window)) return null;
+  const isBlocked = permission === "denied";
+  return (
+    <Button
+      variant="tertiary"
+      size="sm"
+      isIconOnly
+      isDisabled={isBlocked}
+      onPress={() => void toggleSubscription()}
+      aria-label={
+        isBlocked
+          ? "Notificaciones bloqueadas en el navegador"
+          : isSubscribed
+            ? "Desactivar notificaciones push"
+            : "Activar notificaciones push"
+      }
+    >
+      {isSubscribed ? <Bell size={14} className="text-success" /> : <BellOff size={14} />}
+    </Button>
   );
 }
 
