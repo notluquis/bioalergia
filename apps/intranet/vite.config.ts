@@ -400,11 +400,15 @@ export default defineConfig(({ mode }) => {
         // ~74.89% lines / 66.23% branches. Next milestone targets
         // listed below; raise after each test batch lands.
         // Milestones: 75/65 -> 78/70 -> 80/75 (target).
+        // After lib/ pure-utils sprint (format/rut/store-utils/superjson)
+        // baseline is 78.15% lines / 67.28% branches / 78.68% funcs /
+        // 76.34% stmts. Lifting to 75/65 milestone (one step), keeping
+        // headroom to absorb noise.
         thresholds: {
-          lines: 70,
-          functions: 70,
-          branches: 60,
-          statements: 70,
+          lines: 75,
+          functions: 75,
+          branches: 65,
+          statements: 75,
         },
       },
     },
