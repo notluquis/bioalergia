@@ -26,6 +26,19 @@ declare const self: ServiceWorkerGlobalScope & {
 precacheAndRoute(self.__WB_MANIFEST);
 cleanupOutdatedCaches();
 
+// Take over the page on first install so we don't have to wait for
+// every tab to close before the new SW runs. Without this, the
+// previous generateSW worker keeps handling `push` events and
+// silently drops them (the OS-level error in the SW console reads
+// "Push event handling completed without showing any notification…"
+// because the OLD worker has no push handler).
+self.addEventListener("install", () => {
+  void self.skipWaiting();
+});
+self.addEventListener("activate", (event) => {
+  event.waitUntil(self.clients.claim());
+});
+
 registerRoute(
   ({ request }) => request.mode === "navigate",
   new NetworkFirst({
