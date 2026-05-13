@@ -99,7 +99,16 @@ const config: KnipConfig = {
         "src/scripts/**/*.ts",
       ],
       project: ["src/**/*.ts"],
-      ignore: ["dist/**"],
+      ignore: [
+        "dist/**",
+        // WIP utility-bill scrapers (doctoralia, masvida, medipass,
+        // movistar, previred, telsur). Stubs that throw "not implemented"
+        // until the operator captures the per-provider curl + credentials.
+        // Once each is wired into utility-bills.ts the entry will become
+        // reachable. Until then knip would flag them as orphaned even
+        // though the dispatcher contract is intentional scaffolding.
+        "src/services/scrapers/**",
+      ],
       ignoreDependencies: [
         // Runtime ZenStack peers re-exported from @finanzas/db; kept as
         // explicit version pins so pnpm hoisting stays deterministic.
