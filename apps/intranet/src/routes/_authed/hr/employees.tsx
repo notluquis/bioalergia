@@ -7,6 +7,7 @@ export const Route = createFileRoute("/_authed/hr/employees")({
   staticData: {
     nav: { iconKey: "UserCheck", label: "Empleados", order: 10, section: "Personal" },
     permission: { action: "read", subject: "Employee" },
+    title: "RRHH — Empleados",
   },
   beforeLoad: ({ context }) => {
     if (!context.can("read", "Employee")) {

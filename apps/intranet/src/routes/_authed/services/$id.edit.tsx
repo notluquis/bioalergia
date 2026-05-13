@@ -19,6 +19,7 @@ export const Route = createFileRoute("/_authed/services/$id/edit")({
       const service = data as { name?: string } | undefined;
       return `Editar ${service?.name || "Servicio"}`;
     },
+    title: "Editar servicio",
   },
   component: ServiceEditPage,
 });

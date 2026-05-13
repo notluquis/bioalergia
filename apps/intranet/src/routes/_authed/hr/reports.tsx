@@ -8,6 +8,7 @@ export const Route = createFileRoute("/_authed/hr/reports")({
   staticData: {
     nav: { iconKey: "FileBarChart", label: "Reportes RRHH", order: 50, section: "Personal" },
     permission: { action: "read", subject: "Report" },
+    title: "RRHH — Reportes",
   },
   beforeLoad: ({ context }) => {
     if (!context.can("read", "Report")) {

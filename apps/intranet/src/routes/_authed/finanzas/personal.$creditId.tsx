@@ -14,6 +14,7 @@ export const Route = createFileRoute("/_authed/finanzas/personal/$creditId")({
         "Detalle"
       );
     },
+    title: "Finanzas — Detalle de crédito",
   },
   beforeLoad: ({ context }) => {
     if (!context.can("read", "PersonalCredit")) {

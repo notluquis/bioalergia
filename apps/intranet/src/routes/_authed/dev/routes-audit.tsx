@@ -8,6 +8,9 @@ import { useMemo, useState } from "react";
 import { auditRouteNavigation } from "@/lib/route-utils";
 
 export const Route = createFileRoute("/_authed/dev/routes-audit")({
+  staticData: {
+    title: "Auditoría de rutas",
+  },
   component: RoutesAuditPage,
 });
 

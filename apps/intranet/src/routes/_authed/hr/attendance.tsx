@@ -6,6 +6,7 @@ export const Route = createFileRoute("/_authed/hr/attendance")({
     nav: { iconKey: "ClipboardList", label: "Asistencia", order: 30, section: "Personal" },
     permission: { action: "read", subject: "AttendanceAdmin" },
     relatedSubjects: ["AttendanceAdmin"],
+    title: "RRHH — Asistencia",
   },
   beforeLoad: ({ context }) => {
     if (!context.can("read", "AttendanceAdmin")) {

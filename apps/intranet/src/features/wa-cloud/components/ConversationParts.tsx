@@ -404,7 +404,7 @@ export function LabelStrip({
           <button
             type="button"
             onClick={() => remove(l)}
-            className="ml-1 rounded-full hover:bg-accent-200/50"
+            className="ml-1 inline-flex min-h-6 min-w-6 items-center justify-center rounded-full hover:bg-accent-200/50"
             aria-label={`Quitar ${l}`}
           >
             <X size={10} />

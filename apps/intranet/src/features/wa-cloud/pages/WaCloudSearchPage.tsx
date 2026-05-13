@@ -44,10 +44,10 @@ export function WaCloudSearchPage() {
   return (
     <div className="mx-auto max-w-3xl space-y-4 p-6">
       <header className="flex flex-col gap-2">
-        <h1 className="flex items-center gap-2 font-semibold text-xl">
+        <h2 className="flex items-center gap-2 font-semibold text-xl">
           <Search size={20} className="text-success" />
           Buscar en WhatsApp
-        </h1>
+        </h2>
         <p className="text-default-500 text-sm">
           Busca mensajes en TODAS las conversaciones por contenido, nombre o teléfono. Click en un
           resultado para abrir el chat. Mínimo{" "}

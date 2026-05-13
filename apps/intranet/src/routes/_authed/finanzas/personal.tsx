@@ -14,6 +14,7 @@ export const Route = createFileRoute("/_authed/finanzas/personal")({
     nav: { iconKey: "Coins", label: "Personal", order: 90, section: "Finanzas" },
     permission: { action: "read", subject: "PersonalCredit" },
     breadcrumb: "Personal",
+    title: "Finanzas — Personal",
   },
   beforeLoad: ({ context }) => {
     if (!context.can("read", "PersonalCredit")) {

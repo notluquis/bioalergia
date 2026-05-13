@@ -79,7 +79,7 @@ export function DataTableFacetedFilter<TData, TValue>({
         >
           {filteredOptions.length === 0 && (
             <Dropdown.Item id="empty" isDisabled textValue="No results found">
-              <span className="py-6 text-center text-default-400 text-sm">No results found.</span>
+              <span className="py-6 text-center text-default-600 text-sm">No results found.</span>
             </Dropdown.Item>
           )}
           {filteredOptions.map((option) => (

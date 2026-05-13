@@ -78,7 +78,7 @@ export function ClinicalSeriesDetail({ id, onBack }: ClinicalSeriesDetailProps) 
 
       <div className="space-y-2">
         <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-bold">{series.displayName || "Serie clínica"}</h1>
+          <h2 className="text-2xl font-bold">{series.displayName || "Serie clínica"}</h2>
           <Chip color={STATUS_COLORS[series.status]} size="sm" variant="soft">
             {STATUS_LABELS[series.status]}
           </Chip>

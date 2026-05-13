@@ -45,6 +45,7 @@ export const Route = createFileRoute("/_authed/patients/$id/")({
       const patient = data as Patient | undefined;
       return `${patient?.person?.names} ${patient?.person?.fatherName}`.trim() || "Paciente";
     },
+    title: "Detalle de paciente",
   },
   loader: async ({ context: { queryClient }, params: { id } }) => {
     return await queryClient.ensureQueryData({

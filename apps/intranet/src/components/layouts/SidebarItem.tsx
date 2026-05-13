@@ -30,7 +30,7 @@ export function SidebarItem({ isMobile, item, onNavigate }: SidebarItemProps) {
                   : "mx-auto h-12 w-12 justify-center p-0",
                 isActive
                   ? "bg-primary/10 font-semibold text-primary"
-                  : "text-default-500 hover:bg-default-50 hover:text-foreground"
+                  : "text-default-600 hover:bg-default-50 hover:text-foreground"
               )}
             >
               {/* Active Indicator */}

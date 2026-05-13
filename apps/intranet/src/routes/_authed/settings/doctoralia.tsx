@@ -6,6 +6,7 @@ export const Route = createFileRoute("/_authed/settings/doctoralia")({
   staticData: {
     nav: { iconKey: "Mail", label: "Doctoralia", order: 80, section: "Sistema" },
     permission: { action: "read", subject: "Integration" },
+    title: "Configuración — Doctoralia",
   },
   beforeLoad: ({ context }) => {
     if (!context.can("read", "Integration")) {

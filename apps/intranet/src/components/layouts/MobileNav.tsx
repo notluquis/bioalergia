@@ -73,7 +73,7 @@ export function BottomNav({ buildLabel, isHidden = false }: Readonly<BottomNavPr
           return (
             <Button
               className={`relative flex flex-1 flex-col items-center justify-center gap-1 rounded-3xl px-1 py-3 font-medium text-xs ${
-                active ? "text-primary" : "text-default-400 hover:text-default-700"
+                active ? "text-primary" : "text-default-600 hover:text-default-800"
               }`}
               key={item.to}
               onPress={() => {

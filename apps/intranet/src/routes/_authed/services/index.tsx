@@ -10,6 +10,7 @@ export const Route = createFileRoute("/_authed/services/")({
     permission: { action: "read", subject: "ServiceList" },
     relatedSubjects: ["ServiceAgenda", "ServiceSchedule", "ServiceTemplate"],
     breadcrumb: "Servicios",
+    title: "Servicios",
   },
   beforeLoad: ({ context }) => {
     if (!context.can("read", "ServiceList")) {

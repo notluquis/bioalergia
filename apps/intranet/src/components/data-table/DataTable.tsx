@@ -357,6 +357,7 @@ function DataTableContent<TData>({
             return (
               <Table.Column
                 allowsSorting={header.column.getCanSort()}
+                className="font-semibold text-default-700 dark:text-default-200"
                 defaultWidth={autoFitColumns ? undefined : header.getSize()}
                 id={header.column.id}
                 isRowHeader={

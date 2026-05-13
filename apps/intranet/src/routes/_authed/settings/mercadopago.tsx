@@ -12,6 +12,7 @@ export const Route = createFileRoute("/_authed/settings/mercadopago")({
   staticData: {
     nav: { iconKey: "CreditCard", label: "MercadoPago", order: 60, section: "Sistema" },
     permission: { action: "read", subject: "Integration" },
+    title: "Configuración — MercadoPago",
   },
   beforeLoad: ({ context }) => {
     if (!context.can("read", "Integration")) {

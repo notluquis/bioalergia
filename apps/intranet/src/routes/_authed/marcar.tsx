@@ -7,6 +7,7 @@ export const Route = createFileRoute("/_authed/marcar")({
     nav: { iconKey: "Fingerprint", label: "Marcaje", order: 20, section: "Personal" },
     permission: { action: "create", subject: "Attendance" },
     relatedSubjects: ["Attendance"],
+    title: "Marcar asistencia",
   },
   beforeLoad: ({ context }) => {
     if (!context.can("create", "Attendance")) {

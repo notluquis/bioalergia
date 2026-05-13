@@ -9,6 +9,7 @@ export const Route = createFileRoute("/_authed/hr/timesheets")({
     nav: { iconKey: "Timer", label: "Control Horario", order: 40, section: "Personal" },
     permission: { action: "read", subject: "TimesheetList" },
     relatedSubjects: ["Timesheet"],
+    title: "RRHH — Control horario",
   },
   beforeLoad: ({ context }) => {
     if (!context.can("read", "TimesheetList")) {

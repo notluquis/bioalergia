@@ -71,10 +71,10 @@ export function ClinicalRecordsReviewPage() {
   return (
     <div className="flex flex-col gap-4 p-4">
       <header className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="flex items-center gap-2 font-semibold text-xl">
+        <h2 className="flex items-center gap-2 font-semibold text-xl">
           <ClipboardList size={20} className="text-primary" />
           Fichas clínicas
-        </h1>
+        </h2>
         <div className="flex items-center gap-2">
           <Chip variant="soft">
             <Chip.Label>{total} en cola</Chip.Label>

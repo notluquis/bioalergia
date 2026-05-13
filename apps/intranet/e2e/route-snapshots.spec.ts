@@ -36,6 +36,12 @@ interface RouteSpec {
   name: string;
   /** Override the default 30s timeout for data-heavy routes. */
   timeout?: number;
+  /**
+   * Route-specific readiness signal. When set, the test waits for this
+   * locator instead of `networkidle` — required for pages that keep a
+   * long-lived WebSocket / subscription open (e.g. /clinical).
+   */
+  readyLocator?: string;
 }
 
 const ROUTES: RouteSpec[] = [
@@ -45,12 +51,14 @@ const ROUTES: RouteSpec[] = [
   // /wa-cloud — covered by wa-cloud-inbox.spec.ts, skipped here.
   { path: "/finanzas/cash-flow", name: "finanzas-cash-flow" },
   { path: "/operations/shipments", name: "operations-shipments" },
-  // /clinical excluded for now — page keeps a long-polling subscription
-  // open so `networkidle` never resolves and the snapshot times out
-  // even with extended limits. Needs a dedicated readiness signal
-  // (e.g. wait for a specific landmark to render) instead of the
-  // generic networkidle wait. TODO: dedicated spec.
-  // { path: "/clinical", name: "clinical-index" },
+  // /clinical keeps a long-lived WebSocket subscription open, so
+  // `networkidle` never resolves. Use a route-specific readiness
+  // signal (the Tabs landmark rendered by ClinicalSeriesView) instead.
+  {
+    path: "/clinical",
+    name: "clinical-index",
+    readyLocator: "[aria-label='Vistas de series clínicas']",
+  },
   { path: "/settings/mercadopago", name: "settings-mercadopago" },
   { path: "/operations/inventory", name: "operations-inventory" },
   // No top-level /users route — admin surface lives at /settings/users.
@@ -70,11 +78,20 @@ for (const route of ROUTES) {
       .first()
       .waitFor({ state: "visible" });
 
-    // Brief settle so async data + skeleton transitions resolve before
-    // we snapshot. Animations are disabled by toHaveScreenshot below.
-    await page.waitForLoadState("networkidle").catch(() => {
-      /* some routes keep WS open; ignore */
-    });
+    if (route.readyLocator) {
+      // Route-specific readiness: page holds a WS open, so skip
+      // networkidle and wait for a known landmark instead.
+      await page.locator(route.readyLocator).first().waitFor({
+        state: "visible",
+        timeout: 15_000,
+      });
+    } else {
+      // Brief settle so async data + skeleton transitions resolve before
+      // we snapshot. Animations are disabled by toHaveScreenshot below.
+      await page.waitForLoadState("networkidle").catch(() => {
+        /* some routes keep WS open; ignore */
+      });
+    }
 
     await expect(page).toHaveScreenshot(`${route.name}.png`, {
       fullPage: true,

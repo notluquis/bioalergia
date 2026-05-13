@@ -12,6 +12,7 @@ export const Route = createFileRoute("/_authed/settings/inventario")({
       "CommonSupply",
       "FinancialAutoCategoryRule",
     ],
+    title: "Configuración — Inventario",
   },
   beforeLoad: ({ context }) => {
     if (!context.can("update", "InventorySetting")) {
