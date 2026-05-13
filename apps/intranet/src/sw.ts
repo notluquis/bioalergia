@@ -23,7 +23,17 @@ declare const self: ServiceWorkerGlobalScope & {
 };
 
 // ─── Precache + runtime cache ────────────────────────────────────────────────
-precacheAndRoute(self.__WB_MANIFEST);
+// `globPatterns: []` (set in vite.config.ts) means __WB_MANIFEST is
+// usually empty. Calling precacheAndRoute([]) still tries to register
+// a navigation handler that maps to a non-existent `index.html` and
+// throws "non-precached-url" at SW startup. The unhandled rejection
+// aborts SW activation before our `push` listener registers — exactly
+// the symptom Safari Web Inspector showed (workbox-XXXX.js stack
+// trace + push events handled without showNotification). Skip the
+// precache call entirely when the manifest is empty.
+if (Array.isArray(self.__WB_MANIFEST) && self.__WB_MANIFEST.length > 0) {
+  precacheAndRoute(self.__WB_MANIFEST);
+}
 cleanupOutdatedCaches();
 
 // Take over the page on first install so we don't have to wait for
