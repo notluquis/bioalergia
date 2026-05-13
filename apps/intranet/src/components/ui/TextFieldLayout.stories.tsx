@@ -1,11 +1,12 @@
 import { Input, Label, TextArea, TextField } from "@heroui/react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { within } from "storybook/test";
 
-import {
-  expectHorizontalTextFlow,
-  expectNoSilentClipping,
-} from "../../test/layout-guards";
+// `storybook/test` and the layout-guards helpers are dynamically imported
+// inside each `play` only — top-level import would crash Chromatic's
+// headless story extractor with
+// "Cannot read properties of undefined (reading 'customEqualityTesters')"
+// because the extractor evaluates story files without Vitest's expect
+// runtime in scope.
 
 /**
  * Layout regression coverage for HeroUI v3 TextField / TextArea.
@@ -37,6 +38,8 @@ export const NarrowFlexContainerInput: Story = {
     </div>
   ),
   play: async ({ canvasElement }) => {
+    const { within } = await import("storybook/test");
+    const { expectHorizontalTextFlow } = await import("../../test/layout-guards");
     const root = within(canvasElement);
     const input = root.getByPlaceholderText("Type here") as HTMLInputElement;
     expectHorizontalTextFlow(input);
@@ -53,6 +56,8 @@ export const NarrowFlexContainerTextarea: Story = {
     </div>
   ),
   play: async ({ canvasElement }) => {
+    const { within } = await import("storybook/test");
+    const { expectHorizontalTextFlow } = await import("../../test/layout-guards");
     const root = within(canvasElement);
     const textarea = root.getByPlaceholderText(
       "Long notes go here"
@@ -77,6 +82,8 @@ export const LongLabelNoSilentClip: Story = {
     </div>
   ),
   play: async ({ canvasElement }) => {
+    const { within } = await import("storybook/test");
+    const { expectNoSilentClipping } = await import("../../test/layout-guards");
     const root = within(canvasElement);
     const label = root.getByText(/Comentarios adicionales/);
     expectNoSilentClipping(label as HTMLElement);

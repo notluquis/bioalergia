@@ -1,10 +1,14 @@
 import { Button } from "@heroui/react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useState } from "react";
-import { expect, within } from "storybook/test";
 
-import { expectNoSilentClipping } from "../../test/layout-guards";
 import { AppModal } from "./AppModal";
+
+// `storybook/test` is dynamically imported inside `play` only.
+// Top-level import would crash Chromatic story extraction with
+// "Cannot read properties of undefined (reading 'customEqualityTesters')"
+// because Chromatic's headless extractor evaluates story files without
+// Vitest's expect runtime in scope.
 
 const meta: Meta<typeof AppModal> = {
   title: "UI/AppModal",
@@ -80,6 +84,8 @@ export const MobileLongTitle: Story = {
     <ModalDemo size="sm" title="WhatsApp Cloud — Bandeja de entrada de pacientes" />
   ),
   play: async ({ canvasElement }) => {
+    const { expect, within } = await import("storybook/test");
+    const { expectNoSilentClipping } = await import("../../test/layout-guards");
     const root = within(canvasElement.ownerDocument.body);
     const heading = await root.findByRole("heading", {
       name: /WhatsApp Cloud/,
