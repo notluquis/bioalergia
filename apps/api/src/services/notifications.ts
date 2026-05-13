@@ -161,6 +161,16 @@ export async function broadcastPushNotification(payload: {
   // call showNotification — just with `silent: true` and an instant
   // close. Default "notification" renders normally.
   kind?: "notification" | "data";
+  // Action buttons rendered alongside the OS banner. Chromium honors
+  // up to `Notification.maxActions` (typically 2). iOS 16.4+ PWAs
+  // support "open" actions but not arbitrary backend calls — the SW
+  // handler must short-circuit those gracefully. Labels MUST be
+  // pre-localized here; SW has no i18n bundle.
+  actions?: Array<{ action: string; title: string; icon?: string }>;
+  // Free-form metadata propagated to event.notification.data. The SW
+  // notificationclick handler reads it (e.g. conversationId so the
+  // "mark-read" action can call the right endpoint).
+  meta?: Record<string, unknown>;
 }) {
   if (!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) {
     return { success: false, sent: 0, reason: "VAPID keys not configured" };
@@ -180,8 +190,13 @@ export async function broadcastPushNotification(payload: {
     requireInteraction: payload.requireInteraction,
     silent: payload.silent,
     kind: payload.kind ?? "notification",
+    actions: payload.actions,
     timestamp: Date.now(),
-    data: { url: payload.url || "/", badgeCount: payload.badgeCount },
+    data: {
+      url: payload.url || "/",
+      badgeCount: payload.badgeCount,
+      ...payload.meta,
+    },
   });
 
   const results = await Promise.allSettled(

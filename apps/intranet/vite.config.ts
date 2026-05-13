@@ -3,6 +3,7 @@ import { fileURLToPath, URL } from "node:url";
 import babel from "@rolldown/plugin-babel";
 import tailwindcss from "@tailwindcss/vite";
 import { tanstackRouter } from "@tanstack/router-plugin/vite";
+import { sentryVitePlugin } from "@sentry/vite-plugin";
 import react, { reactCompilerPreset } from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 
@@ -130,8 +131,16 @@ export default defineConfig(({ mode }) => {
         srcDir: "src",
         filename: "sw.ts",
         injectManifest: {
-          globPatterns: [],
-          // No precache; we use runtime caching declared inside sw.ts.
+          // Precache the SPA shell so the app boots offline. The SW
+          // (sw.ts) calls precacheAndRoute(self.__WB_MANIFEST) and
+          // setCatchHandler falls back to /index.html for any
+          // navigation that escapes the runtime cache. globPatterns
+          // intentionally excludes /icons (already cached as runtime
+          // images) and source maps to keep the precache lean.
+          globPatterns: ["**/*.{js,css,html,svg,woff,woff2,webmanifest,json}"],
+          globIgnores: ["**/*.map", "icons/**", "**/sw.js", "**/workbox-*.js"],
+          // Hard cap to avoid quietly precaching multi-MB chunks.
+          maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
         },
         workbox: {
           cleanupOutdatedCaches: true,
@@ -264,6 +273,24 @@ export default defineConfig(({ mode }) => {
           ],
         },
         devOptions: { enabled: false },
+      }),
+      // Sentry source-map upload — MUST be the last plugin so it runs after
+      // Rolldown emits the .map files into dist/client/assets. With
+      // `sourcemap: 'hidden'` above, .map files exist on disk without a
+      // //# sourceMappingURL comment; this plugin uploads them to Sentry
+      // and then deletes them locally so Caddy's @sourcemaps 404 matcher
+      // is purely defense-in-depth. No-ops without SENTRY_AUTH_TOKEN so
+      // dev/preview builds stay frictionless.
+      sentryVitePlugin({
+        org: "bioalergia",
+        project: "javascript",
+        authToken: process.env.SENTRY_AUTH_TOKEN,
+        sourcemaps: {
+          filesToDeleteAfterUpload: ["./dist/**/*.map"],
+        },
+        disable: !process.env.SENTRY_AUTH_TOKEN,
+        release: { name: process.env.VITE_APP_BUILD_TIMESTAMP ?? undefined },
+        telemetry: false,
       }),
     ].filter(Boolean),
     define: {

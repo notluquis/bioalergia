@@ -921,6 +921,18 @@ export async function processWebhookPayload(payload: MetaWebhookPayload): Promis
             // not focused. Skip reactions / system messages — those
             // would create noise without conversational value.
             if (m.type !== "reaction" && m.type !== "system") {
+              // Honor per-conversation mute. mutedUntil = null means
+              // unmuted; any future timestamp suppresses the push.
+              const conv = await db.waConversation.findUnique({
+                where: { id: convId },
+                select: { mutedUntil: true },
+              });
+              const isMuted = conv?.mutedUntil && conv.mutedUntil.getTime() > Date.now();
+              if (isMuted) {
+                // Skip push but still broadcast the SSE event above so
+                // the inbox UI updates in real time.
+                continue;
+              }
               const contact = await db.waContact.findUnique({
                 where: { id: contactId },
                 select: { name: true, pushName: true, phoneE164: true },
@@ -945,6 +957,11 @@ export async function processWebhookPayload(payload: MetaWebhookPayload): Promis
                 // Clinic inbound messages are time-sensitive; keep
                 // the banner up until the operator acts on it.
                 requireInteraction: true,
+                actions: [
+                  { action: "open", title: "Abrir" },
+                  { action: "mark-read", title: "Marcar leído" },
+                ],
+                meta: { conversationId: convId },
               }).catch((err) => {
                 logWarn("[wa-cloud.webhook] push notification failed", {
                   error: err instanceof Error ? err.message : String(err),

@@ -14,8 +14,8 @@
 // Mac/iPhone smoke tests previously reported `success: true, sent: 2`
 // but no banner appeared anywhere.
 
-import { cleanupOutdatedCaches } from "workbox-precaching";
-import { registerRoute } from "workbox-routing";
+import { cleanupOutdatedCaches, matchPrecache, precache } from "workbox-precaching";
+import { registerRoute, setCatchHandler } from "workbox-routing";
 import { NetworkFirst, StaleWhileRevalidate } from "workbox-strategies";
 
 declare const self: ServiceWorkerGlobalScope & {
@@ -23,22 +23,14 @@ declare const self: ServiceWorkerGlobalScope & {
 };
 
 // ─── Precache + runtime cache ────────────────────────────────────────────────
-// We DO NOT call precacheAndRoute. With `globPatterns: []` the
-// manifest is empty anyway, and calling it side-effect-registers a
-// navigation handler that maps every nav request to the non-existent
-// `index.html`, throwing "non-precached-url" at SW startup. The
-// unhandled rejection aborts SW activation before the push listener
-// gets registered (the symptom Safari Web Inspector showed:
-// workbox-XXXX.js stack trace + "Push event handling completed
-// without showing any notification"). Even importing
-// precacheAndRoute pulls createHandlerBoundToURL into the bundle, so
-// we drop the import entirely.
-//
-// injectManifest still asserts that `self.__WB_MANIFEST` appears
-// EXACTLY ONCE in the source — we touch it via void in a single
-// reference so the build pipeline is satisfied without using the
-// value at runtime.
-void self.__WB_MANIFEST;
+// `precache()` (NOT `precacheAndRoute`) installs the shell into Cache
+// Storage WITHOUT registering Workbox's auto navigation route. We
+// keep manual control over routing — the NetworkFirst below handles
+// fresh navigations and `setCatchHandler` falls back to the cached
+// shell when offline. Calling precacheAndRoute here would prepend a
+// navigation handler that beats our NetworkFirst (Workbox matches
+// first registered) and serve stale shell on every nav.
+precache(self.__WB_MANIFEST);
 cleanupOutdatedCaches();
 
 // Take over the page on first install so we don't have to wait for
@@ -70,6 +62,21 @@ registerRoute(
   new StaleWhileRevalidate({ cacheName: "static-cache" })
 );
 
+// Last-resort offline fallback for any navigation that bypasses the
+// NetworkFirst route or fails to hit the cache (cold load, no
+// network). Serves the precached SPA shell so the operator at least
+// sees the app chrome instead of the browser's offline page.
+setCatchHandler(async ({ request }) => {
+  if (request.mode === "navigate") {
+    // Workbox stores precached entries with a revision query param
+    // (e.g. /index.html?__WB_REVISION__=abc). matchPrecache resolves
+    // the right cache key automatically.
+    const shell = await matchPrecache("/index.html");
+    if (shell) return shell;
+  }
+  return Response.error();
+});
+
 // ─── Push notification receipt ────────────────────────────────────────────────
 // Payload shape mirrors what apps/api/src/services/notifications.ts
 // dispatches: { title, body, icon, image, tag, badgeCount, timestamp,
@@ -88,7 +95,8 @@ self.addEventListener("push", (event) => {
     requireInteraction?: boolean;
     silent?: boolean;
     kind?: "notification" | "data";
-    data?: { url?: string; badgeCount?: number };
+    actions?: Array<{ action: string; title: string; icon?: string }>;
+    data?: { url?: string; badgeCount?: number; conversationId?: number };
   } = {};
   if (event.data) {
     try {
@@ -119,6 +127,17 @@ self.addEventListener("push", (event) => {
           data: payload.data ?? {},
           silent: payload.silent ?? isData,
           requireInteraction: !isData && (payload.requireInteraction ?? false),
+          // i18n hints: tells the OS / screen-readers which language
+          // to use for TTS + bidi resolution. Bioalergia is single-
+          // tenant Chilean; backend already sends Spanish strings so
+          // hardcoding es-CL is safe.
+          lang: "es-CL",
+          dir: "ltr",
+          // Trim to UA-supported maximum so Android/iOS render
+          // consistently. Chromium exposes maxActions; Safari
+          // ignores extras silently but defining a hard cap of 2
+          // keeps the layout predictable across platforms.
+          actions: isData ? [] : (payload.actions ?? []).slice(0, 2),
           // `image`, `timestamp`, `renotify`, `vibrate` are in the spec
           // but not all in lib.dom. Cast keeps TS happy while the OS
           // (Chromium / iOS 16.4+) honours each one when available.
@@ -130,6 +149,22 @@ self.addEventListener("push", (event) => {
             vibrate: isData ? [] : [200, 100, 200],
           } as Record<string, unknown>),
         });
+        // Cross-tab sync: every open intranet tab gets a chance to
+        // refetch the inbox before the operator clicks. Falls back
+        // silently in browsers without BroadcastChannel.
+        try {
+          const ch = new BroadcastChannel("inbox-state");
+          ch.postMessage({
+            type: "push-received",
+            kind: payload.kind ?? "notification",
+            badgeCount: payload.badgeCount,
+            conversationId: payload.data?.conversationId,
+            ts: Date.now(),
+          });
+          ch.close();
+        } catch {
+          // ignore
+        }
         if (isData) {
           // Close immediately — the spec requirement is satisfied,
           // the operator never sees a banner.
@@ -165,13 +200,53 @@ self.addEventListener("push", (event) => {
 // ─── Click → focus / open ─────────────────────────────────────────────────────
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  const data = (event.notification.data as { url?: string }) ?? {};
+  const data =
+    (event.notification.data as {
+      url?: string;
+      conversationId?: number;
+    }) ?? {};
   const target = data.url ?? "/";
   // Close every other notification with the same tag so opening a
   // conversation clears its stack from the OS notification center.
   // Without this the operator still sees three "Juan Pérez" banners
   // after tapping one and replying.
   const tag = event.notification.tag;
+  // Action button "Marcar leído": call the backend without ever
+  // surfacing a tab. credentials:"include" carries the PASETO
+  // session cookie. Best-effort — if the request fails the operator
+  // still sees the banner and can tap to open normally.
+  if (event.action === "mark-read" && data.conversationId) {
+    event.waitUntil(
+      (async () => {
+        try {
+          await fetch("/api/orpc/wa-cloud/conversations/mark-read", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({ conversationId: data.conversationId }),
+          });
+          try {
+            const ch = new BroadcastChannel("inbox-state");
+            ch.postMessage({
+              type: "marked-read",
+              conversationId: data.conversationId,
+              ts: Date.now(),
+            });
+            ch.close();
+          } catch {
+            // ignore
+          }
+        } catch {
+          // ignore — best-effort
+        }
+        if (tag) {
+          const same = await self.registration.getNotifications({ tag });
+          for (const n of same) n.close();
+        }
+      })()
+    );
+    return;
+  }
   event.waitUntil(
     (async () => {
       if (tag) {

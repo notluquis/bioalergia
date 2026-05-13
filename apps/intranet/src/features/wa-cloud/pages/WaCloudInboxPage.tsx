@@ -20,6 +20,7 @@ import {
   TagGroup,
 } from "@heroui/react";
 // Spinner removed in favour of ConversationListSkeleton for the inbox list.
+import { useQueryClient } from "@tanstack/react-query";
 import { getRouteApi } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import { ArrowLeft, Bell, BellOff, Filter, Inbox, MessageSquareText, Phone } from "lucide-react";
@@ -103,6 +104,29 @@ export function WaCloudInboxPage() {
 
   const navigate = inboxRouteApi.useNavigate();
   const { conversation: deepLinkedId } = inboxRouteApi.useSearch();
+  const qc = useQueryClient();
+
+  // Cross-tab + SW → tab inbox sync via BroadcastChannel. The SW
+  // posts on every push receipt and on action-button mark-read; we
+  // invalidate conversations + the affected detail so every open
+  // intranet tab refreshes without polling. Falls back silently in
+  // browsers without BroadcastChannel (Safari < 15.4 etc.).
+  useEffect(() => {
+    if (typeof BroadcastChannel === "undefined") return;
+    const ch = new BroadcastChannel("inbox-state");
+    ch.addEventListener("message", (e) => {
+      const m = e.data as { type?: string; conversationId?: number };
+      if (m?.type === "push-received" || m?.type === "marked-read") {
+        void qc.invalidateQueries({ queryKey: ["wa-cloud", "conversations"] });
+        if (m.conversationId) {
+          void qc.invalidateQueries({
+            queryKey: ["wa-cloud", "conversation", m.conversationId],
+          });
+        }
+      }
+    });
+    return () => ch.close();
+  }, [qc]);
 
   const [status, setStatus] = useState<WaConversationStatus | "">("");
   const [phoneFilter, setPhoneFilter] = useState("");

@@ -3573,6 +3573,11 @@ model WaConversation {
   lastMessagePreview  String?               @map("last_message_preview")
   notas               String?
   etiquetas           String[]              @default([])
+  // Per-conversation push-notification mute. Webhook handler skips
+  // broadcastPushNotification when set in the past (or null=unmuted).
+  // Storing a timestamp instead of a boolean lets the UI offer
+  // "mute until tomorrow 9am" later without a schema change.
+  mutedUntil          DateTime?             @map("muted_until")
   createdAt           DateTime              @default(now()) @map("created_at")
   updatedAt           DateTime              @default(now()) @updatedAt @map("updated_at")
 

@@ -11682,6 +11682,12 @@ export class SchemaType implements SchemaDef {
                     attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.array("Any", []) }] }] as readonly AttributeApplication[],
                     default: [] as FieldDefault
                 },
+                mutedUntil: {
+                    name: "mutedUntil",
+                    type: "DateTime",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("muted_until") }] }] as readonly AttributeApplication[]
+                },
                 createdAt: {
                     name: "createdAt",
                     type: "DateTime",

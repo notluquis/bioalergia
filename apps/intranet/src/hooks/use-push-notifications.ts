@@ -32,6 +32,23 @@ export function usePushNotifications() {
       setPermission(Notification.permission);
       void checkSubscription();
     }
+
+    // Observe live permission changes (operator revokes from OS
+    // settings, granted from another tab, etc.). Without this the
+    // toggle stays out of sync with Notification.permission until a
+    // full reload — golden 2026 expects realtime UI reaction.
+    let cancel: (() => void) | undefined;
+    if ("permissions" in navigator) {
+      void navigator.permissions
+        .query({ name: "notifications" as PermissionName })
+        .then((status) => {
+          const handler = () => setPermission(status.state as NotificationPermission);
+          status.addEventListener("change", handler);
+          cancel = () => status.removeEventListener("change", handler);
+        })
+        .catch(() => undefined);
+    }
+    return () => cancel?.();
   }, []);
 
   const subscribeMutation = useMutation({

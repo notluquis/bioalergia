@@ -62,6 +62,7 @@ import {
   searchMessagesInputSchema,
   searchMessagesResponseSchema,
   markReadInputSchema,
+  setMuteInputSchema,
   cloneTemplateFromLibraryInputSchema,
   cloneTemplateFromLibraryResponseSchema,
   listCommerceProductsInputSchema,
@@ -515,6 +516,18 @@ const waRouterBase = {
       await db.waConversation.update({
         where: { id: input.conversationId },
         data: { unreadCount: 0 },
+      });
+      return { status: "ok" as const };
+    }),
+
+  setMute: writeWa
+    .route({ method: "POST", path: "/conversations/set-mute", tags: ["WA Cloud"] })
+    .input(setMuteInputSchema)
+    .output(waOkResponseSchema)
+    .handler(async ({ input }) => {
+      await db.waConversation.update({
+        where: { id: input.conversationId },
+        data: { mutedUntil: input.mutedUntil ? new Date(input.mutedUntil) : null },
       });
       return { status: "ok" as const };
     }),

@@ -92,6 +92,7 @@ export const waConversationSchema = z.object({
   lastMessagePreview: z.string().nullable(),
   notas: z.string().nullable(),
   etiquetas: z.array(z.string()),
+  mutedUntil: z.coerce.date().nullable(),
 });
 
 export const waMessageSchema = z.object({
@@ -222,6 +223,14 @@ export const updateConversationInputSchema = z.object({
 
 export const markReadInputSchema = z.object({
   conversationId: z.number().int().positive(),
+});
+
+// Per-conversation push mute. mutedUntil = null → unmute. ISO-string
+// in the future → silence push for that conversation until the
+// timestamp passes.
+export const setMuteInputSchema = z.object({
+  conversationId: z.number().int().positive(),
+  mutedUntil: z.string().datetime().nullable(),
 });
 
 export const sendReactionInputSchema = z.object({
@@ -1286,6 +1295,10 @@ export const waCloudContract = {
   markRead: oc
     .route({ method: "POST", path: "/conversations/mark-read", tags: ["WA Cloud"] })
     .input(markReadInputSchema)
+    .output(waOkResponseSchema),
+  setMute: oc
+    .route({ method: "POST", path: "/conversations/set-mute", tags: ["WA Cloud"] })
+    .input(setMuteInputSchema)
     .output(waOkResponseSchema),
 
   // Contacts

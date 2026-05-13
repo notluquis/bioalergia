@@ -2,7 +2,7 @@
 import { Avatar, Button, Card, Chip, Spinner } from "@heroui/react";
 import { useQueryClient } from "@tanstack/react-query";
 import dayjs from "dayjs";
-import { Ban } from "lucide-react";
+import { Ban, Bell, BellOff } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { confirmAction } from "@/components/ui/ConfirmDialog";
 import { toast } from "@/lib/toast-interceptor";
@@ -42,6 +42,7 @@ import {
   useSetTyping,
   useTemplates,
   useUnblockContact,
+  useSetMute,
   useUpdateConversation,
 } from "../hooks/useWaCloud";
 
@@ -74,6 +75,7 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
   const cancelScheduled = useCancelScheduled();
   const scheduledList = useListScheduled(conversationId);
   const updateConv = useUpdateConversation();
+  const setMute = useSetMute();
   const typingDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [replyTo, setReplyTo] = useState<{
     metaMessageId: string;
@@ -511,6 +513,29 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
             </Chip>
           )}
           <QualityBadge phoneNumberId={phoneId ? Number.parseInt(phoneId, 10) : undefined} />
+          {(() => {
+            const mu = c.conversation.mutedUntil;
+            const isMuted = mu ? new Date(mu).getTime() > Date.now() : false;
+            return (
+              <Button
+                size="sm"
+                variant={isMuted ? "soft" : "ghost"}
+                color={isMuted ? "warning" : "neutral"}
+                isLoading={setMute.isPending}
+                onPress={() =>
+                  setMute.mutate({
+                    conversationId,
+                    // Toggle: muted → unmute; unmuted → far-future mute
+                    // (year 9999 = effectively permanent until toggled).
+                    mutedUntil: isMuted ? null : "9999-12-31T23:59:59.000Z",
+                  })
+                }
+                aria-label={isMuted ? "Activar push" : "Silenciar push"}
+              >
+                {isMuted ? <BellOff size={14} /> : <Bell size={14} />}
+              </Button>
+            );
+          })()}
           <ConvSettingsMenu
             conversationId={conversationId}
             phoneId={phoneId}

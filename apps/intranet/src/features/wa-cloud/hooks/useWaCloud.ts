@@ -309,6 +309,18 @@ export function useMarkRead() {
   });
 }
 
+export function useSetMute() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { conversationId: number; mutedUntil: string | null }) =>
+      waCloudORPCClient.setMute(input),
+    onSuccess: (_, vars) => {
+      void qc.invalidateQueries({ queryKey: [...KEY, "conversation", vars.conversationId] });
+      void qc.invalidateQueries({ queryKey: [...KEY, "conversations"] });
+    },
+  });
+}
+
 export function useUpdateContact() {
   const qc = useQueryClient();
   return useMutation({

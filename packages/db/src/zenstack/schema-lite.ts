@@ -9559,6 +9559,11 @@ export class SchemaType implements SchemaDef {
                     array: true,
                     default: [] as FieldDefault
                 },
+                mutedUntil: {
+                    name: "mutedUntil",
+                    type: "DateTime",
+                    optional: true
+                },
                 createdAt: {
                     name: "createdAt",
                     type: "DateTime",
