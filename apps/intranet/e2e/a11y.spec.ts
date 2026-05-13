@@ -62,6 +62,12 @@ const AUTHED_DISABLED_RULES: string[] = [
   //  h3+h4 with no h2; clinical-records: h2 inside h3 wrapper). Drop
   //  this entry once all routes start at h2 directly under the sr-only h1.
   "heading-order",
+  // HeroUI v3 Tabs (React Aria) generates aria-controls IDs containing
+  //  `_r_<base36>_` — axe-core 4.11 regex rejects the leading underscore.
+  //  This is a React-Aria upstream id-generator quirk (issue #5112,
+  //  patched on @react-aria/utils 4.x main but not yet released in the
+  //  HeroUI v3 dependency range). Drop once HeroUI bumps the dep.
+  "aria-valid-attr-value",
   // (aria-prohibited-attr previously listed because HeroUI v3 Spinner
   //  rendered <span aria-label> with no role; resolved by routing every
   //  loading indicator through @/components/ui/LoadingSpinner which wraps

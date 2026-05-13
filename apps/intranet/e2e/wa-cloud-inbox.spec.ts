@@ -19,16 +19,26 @@ test.describe("WaCloud Inbox responsive contract", () => {
     await page.waitForLoadState("load");
     // E2E user role (Socio = least privilege) doesn't currently have
     // `read WaBusinessAccount` permission, so the route guard redirects
-    // to "/". Detect that and skip cleanly instead of failing.
-    if (!page.url().includes("/wa-cloud")) {
+    // to "/". TanStack Router's redirect resolves asynchronously after
+    // the initial DOM commit, so we race the heading appearance against
+    // the URL leaving /wa-cloud. Whichever resolves first decides
+    // skip vs continue.
+    const HEADING = page.getByRole("heading", { name: /^bandeja$/i });
+    const result = await Promise.race([
+      HEADING.waitFor({ state: "visible", timeout: 15_000 })
+        .then(() => "ready" as const)
+        .catch(() => "missing" as const),
+      page
+        .waitForURL((url) => !url.pathname.startsWith("/wa-cloud"), {
+          timeout: 15_000,
+        })
+        .then(() => "redirected" as const)
+        .catch(() => "stayed" as const),
+    ]);
+    if (result === "redirected" || result === "missing") {
       testInfo.skip(true, "E2E user lacks read WaBusinessAccount permission");
       return;
     }
-    // List header is the cheapest readiness signal — it renders before the
-    // conversations query resolves, so we don't need data fixtures.
-    await expect(page.getByRole("heading", { name: /^bandeja$/i })).toBeVisible({
-      timeout: 15_000,
-    });
   });
 
   test("desktop: split layout shows both list and detail empty-state", async ({
