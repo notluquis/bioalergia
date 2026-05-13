@@ -73,7 +73,7 @@ export function DoctoraliaCookieStorePanel() {
       <Card.Header className="flex items-start justify-between gap-3">
         <div className="flex items-start gap-3">
           <Surface className="rounded-xl bg-primary/10 p-2 text-primary">
-            <Cookie className="h-5 w-5" />
+            <Cookie className="size-5" />
           </Surface>
           <div className="space-y-1">
             <Card.Title className="text-sm">Cookies del bot scraper</Card.Title>
@@ -160,7 +160,7 @@ export function DoctoraliaCookieStorePanel() {
           isPending={saveMutation.isPending}
           onPress={() => saveMutation.mutate(trimmed)}
         >
-          <Save className="h-3.5 w-3.5" />
+          <Save className="size-3.5" />
           {saveMutation.isPending ? "Guardando…" : "Guardar cookies"}
         </Button>
       </Card.Footer>

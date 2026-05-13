@@ -22,7 +22,7 @@ export function MonthlyFlowChart({ data }: MonthlyFlowChartProps) {
     return (
       <Card className="p-6">
         <h2 className="mb-4 flex items-center gap-2 font-bold text-lg">
-          <TrendingUp className="h-5 w-5 text-primary" />
+          <TrendingUp className="text-primary size-5" />
           Flujo mensual
         </h2>
         <div className="py-8 text-center text-default-500 text-sm">
@@ -35,7 +35,7 @@ export function MonthlyFlowChart({ data }: MonthlyFlowChartProps) {
   return (
     <Card className="p-6">
       <h2 className="mb-4 flex items-center gap-2 font-bold text-lg">
-        <TrendingUp className="h-5 w-5 text-primary" />
+        <TrendingUp className="text-primary size-5" />
         Flujo mensual
       </h2>
       <Suspense

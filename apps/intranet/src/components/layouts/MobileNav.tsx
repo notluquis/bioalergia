@@ -90,7 +90,7 @@ export function BottomNav({ buildLabel, isHidden = false }: Readonly<BottomNavPr
 
               <span className="relative z-10 flex flex-col items-center gap-1">
                 <Icon
-                  className={`h-6 w-6 ${active ? "scale-110" : ""}`}
+                  className={`size-6 ${active ? "scale-110" : ""}`}
                   strokeWidth={active ? 2.5 : 2}
                 />
                 <span className={` ${active ? "font-semibold opacity-100" : "opacity-70"}`}>
@@ -100,7 +100,7 @@ export function BottomNav({ buildLabel, isHidden = false }: Readonly<BottomNavPr
 
               {/* Notification Dot (Pending) */}
               {pendingPath === item.to && !active && (
-                <span className="absolute top-2 right-1/4 h-2 w-2 rounded-full bg-primary shadow-lg shadow-primary/50" />
+                <span className="absolute top-2 right-1/4 rounded-full bg-primary shadow-lg shadow-primary/50 size-2" />
               )}
             </Button>
           );

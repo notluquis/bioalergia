@@ -216,7 +216,7 @@ export function DailyEventCard({ event, eventDteLink, onLinkClick }: DailyEventC
                   size="sm"
                   variant="soft"
                 >
-                  <Icon className="h-3 w-3" />
+                  <Icon className="size-3" />
                   <Chip.Label>{badge.label}</Chip.Label>
                 </Chip>
               );

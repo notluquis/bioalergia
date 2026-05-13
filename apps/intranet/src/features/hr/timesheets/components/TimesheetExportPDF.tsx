@@ -198,7 +198,7 @@ export function TimesheetExportPDF({
             <Tooltip>
               <Tooltip.Trigger>
                 <Button
-                  className="inline-flex h-9 w-9 items-center justify-center"
+                  className="inline-flex items-center justify-center size-9"
                   size="sm"
                   type="button"
                   variant="secondary"

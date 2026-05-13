@@ -28,10 +28,10 @@ export function ChunkLoadErrorPage() {
       <div className="w-full max-w-md space-y-6 text-center">
         {/* Icon */}
         <div className="flex justify-center">
-          <div className="flex h-20 w-20 items-center justify-center rounded-full bg-warning/10">
+          <div className="flex items-center justify-center rounded-full bg-warning/10 size-20">
             <svg
               aria-hidden="true"
-              className="h-10 w-10 text-warning"
+              className="text-warning size-10"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"

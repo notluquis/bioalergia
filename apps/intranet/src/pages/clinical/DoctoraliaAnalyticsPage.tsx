@@ -367,7 +367,7 @@ function SyncTabPanel() {
               onPress={() => ingestMutation.mutate()}
               variant="primary"
             >
-              <RefreshCw className="h-4 w-4" />
+              <RefreshCw className="size-4" />
               Ingesta de emails
             </Button>
           </Card.Content>
@@ -446,7 +446,7 @@ export function DoctoraliaAnalyticsPage() {
   );
 
   return (
-    <div className="flex h-full min-h-full w-full flex-col gap-4 p-3 md:p-5">
+    <div className="flex min-h-full flex-col gap-4 p-3 md:p-5 size-full">
       <Tabs
         aria-label="Secciones de Doctoralia"
         className="flex min-h-0 flex-1 flex-col"

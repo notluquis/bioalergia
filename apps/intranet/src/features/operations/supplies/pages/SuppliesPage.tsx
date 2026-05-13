@@ -39,7 +39,7 @@ export function Supplies() {
             variant="secondary"
             aria-label="Actualizar solicitudes de insumos"
           >
-            <RefreshCcw className="h-4 w-4" />
+            <RefreshCcw className="size-4" />
             Actualizar
           </Button>
         </div>

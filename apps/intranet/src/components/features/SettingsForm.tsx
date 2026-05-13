@@ -516,7 +516,7 @@ function LogoSection({
             onChange={onFileChange}
           />
           <div className="flex flex-wrap items-center gap-4">
-            <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-xl border border-default-200 bg-background p-2">
+            <div className="flex items-center justify-center overflow-hidden rounded-xl border border-default-200 bg-background p-2 size-20">
               <img alt="Vista previa del logo" className="brand-logo--settings" src={previewUrl} />
             </div>
             <div className="text-default-600 text-xs">
@@ -599,10 +599,10 @@ function FaviconSection({
             onChange={onFileChange}
           />
           <div className="flex flex-wrap items-center gap-4">
-            <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-xl border border-default-200 bg-background p-2">
+            <div className="flex items-center justify-center overflow-hidden rounded-xl border border-default-200 bg-background p-2 size-12">
               <img
                 alt="Vista previa del favicon"
-                className="h-full w-full object-contain"
+                className="object-contain size-full"
                 src={previewUrl}
               />
             </div>

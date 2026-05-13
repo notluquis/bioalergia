@@ -268,7 +268,7 @@ function DataTableContent<TData>({
     <Table.Body
       items={bodyItems}
       renderEmptyState={() => (
-        <EmptyState className="flex h-full w-full items-center justify-center text-center text-sm text-muted-foreground">
+        <EmptyState className="flex items-center justify-center text-center text-sm text-muted-foreground size-full">
           {noDataMessage}
         </EmptyState>
       )}
@@ -349,7 +349,7 @@ function DataTableContent<TData>({
         }}
         onSelectionChange={onSelectionChange}
       >
-        <Table.Header className={enableVirtualization ? "h-full w-full" : undefined}>
+        <Table.Header className={enableVirtualization ? "size-full" : undefined}>
           {activeHeaderGroup.headers.map((header) => {
             const headerContent = header.isPlaceholder
               ? null

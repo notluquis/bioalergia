@@ -27,7 +27,7 @@ export function SidebarItem({ isMobile, item, onNavigate }: SidebarItemProps) {
                 "relative flex items-center rounded-xl ",
                 isMobile
                   ? "w-full justify-start px-4 py-3"
-                  : "mx-auto h-12 w-12 justify-center p-0",
+                  : "mx-auto justify-center p-0 size-12",
                 isActive
                   ? "bg-primary/10 font-semibold text-primary"
                   : "text-default-600 hover:bg-default-50 hover:text-foreground"
@@ -44,7 +44,7 @@ export function SidebarItem({ isMobile, item, onNavigate }: SidebarItemProps) {
               )}
 
               {/* Icon */}
-              <item.icon className="h-6 w-6 " strokeWidth={isActive ? 2.5 : 2} />
+              <item.icon className="size-6 " strokeWidth={isActive ? 2.5 : 2} />
 
               {/* Label (Mobile only, hidden on Slim Desktop) */}
               {isMobile && <span className="ml-4 font-medium text-sm">{item.label}</span>}

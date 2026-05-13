@@ -116,14 +116,14 @@ export function DataTableToolbar<TData>({
             variant="outline"
           >
             Reset
-            <X className="ml-2 h-4 w-4" />
+            <X className="ml-2 size-4" />
           </Button>
         )}
       </div>
       <div className="flex w-full items-center justify-between gap-2 sm:w-auto sm:justify-end">
         {enableExport && (
           <Button className="h-8" onPress={handleExport} size="sm" variant="outline">
-            <Download className="mr-2 h-4 w-4" />
+            <Download className="mr-2 size-4" />
             Exportar CSV
           </Button>
         )}

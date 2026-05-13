@@ -59,7 +59,7 @@ export function DashboardPersonalLiabilities() {
         <div className="rounded-2xl bg-danger/10 p-4">
           <div className="mb-1 flex items-center gap-2">
             <div className="rounded-xl bg-danger-soft-hover p-1.5 text-danger">
-              <CreditCard className="h-4 w-4" />
+              <CreditCard className="size-4" />
             </div>
             <span className="font-medium text-default-600 text-xs">Deuda Total</span>
           </div>
@@ -71,7 +71,7 @@ export function DashboardPersonalLiabilities() {
           <div className="rounded-2xl bg-background/70 p-4">
             <div className="mb-1 flex items-center gap-2">
               <div className="rounded-xl bg-default-100 p-1.5 text-default-600">
-                <TrendingDown className="h-4 w-4" />
+                <TrendingDown className="size-4" />
               </div>
               <span className="font-medium text-default-600 text-xs">Próximo Pago</span>
             </div>

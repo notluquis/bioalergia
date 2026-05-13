@@ -553,7 +553,7 @@ function ActiveCounterpartCard({
             size="sm"
             variant="outline"
           >
-            {!canUpdate && <Lock className="mr-2 h-3 w-3" />}
+            {!canUpdate && <Lock className="mr-2 size-3" />}
             Editar contraparte
           </Button>
         </div>

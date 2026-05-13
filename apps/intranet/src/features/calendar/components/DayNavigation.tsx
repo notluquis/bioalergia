@@ -96,13 +96,13 @@ export function DayNavigation({
           {rightSlot}
           <ButtonGroup className="shadow-sm" size="sm" variant="tertiary">
             <Button aria-label="Día anterior" isIconOnly onPress={handlePrev}>
-              <ChevronLeft className="h-4 w-4" />
+              <ChevronLeft className="size-4" />
             </Button>
             <Button className="font-semibold text-xs" onPress={handleToday}>
               Hoy
             </Button>
             <Button aria-label="Día siguiente" isIconOnly onPress={handleNext}>
-              <ChevronRight className="h-4 w-4" />
+              <ChevronRight className="size-4" />
             </Button>
           </ButtonGroup>
         </div>
@@ -132,7 +132,7 @@ export function DayNavigation({
                 variant="outline"
               >
                 {isToday && !isSelected && (
-                  <span className="absolute top-1 right-1 h-1.5 w-1.5 rounded-full bg-primary" />
+                  <span className="absolute top-1 right-1 rounded-full bg-primary size-1.5" />
                 )}
                 <span
                   className={cn(

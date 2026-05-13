@@ -201,7 +201,7 @@ const OvertimeCell = ({
           <Tooltip.Trigger>
             <Button
               aria-label="Agregar horas extra"
-              className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-default-200 bg-default-50 text-primary shadow hover:bg-default-50"
+              className="inline-flex items-center justify-center rounded-full border border-default-200 bg-default-50 text-primary shadow hover:bg-default-50 size-8"
               onPress={() => {
                 if (row.date) {
                   meta.onOpenOvertime(row.date);
@@ -354,7 +354,7 @@ const ActionsCell = ({
       <Dropdown.Trigger>
         <Button
           aria-label="Acciones"
-          className="h-8 w-8 p-0"
+          className="p-0 size-8"
           isIconOnly
           size="sm"
           variant="secondary"

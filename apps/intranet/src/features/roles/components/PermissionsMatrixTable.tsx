@@ -99,7 +99,7 @@ export function PermissionsMatrixTable({
                       className="h-7 w-full gap-1 font-normal text-default-500 hover:text-foreground"
                     >
                       Opciones
-                      <ChevronDown className="h-3 w-3" />
+                      <ChevronDown className="size-3" />
                     </Button>
                   </Dropdown.Trigger>
                   <Dropdown.Popover placement="bottom end">
@@ -110,7 +110,7 @@ export function PermissionsMatrixTable({
                           onImpersonate(role);
                         }}
                       >
-                        <Eye className="h-4 w-4" />
+                        <Eye className="size-4" />
                         Previsualizar
                       </Dropdown.Item>
                       <Dropdown.Item
@@ -119,7 +119,7 @@ export function PermissionsMatrixTable({
                           onEditRole(role);
                         }}
                       >
-                        <Pencil className="h-4 w-4" />
+                        <Pencil className="size-4" />
                         Editar
                       </Dropdown.Item>
                       <Separator />
@@ -130,7 +130,7 @@ export function PermissionsMatrixTable({
                           onDeleteRole(role);
                         }}
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <Trash2 className="size-4" />
                         Eliminar
                       </Dropdown.Item>
                     </Dropdown.Menu>
@@ -156,9 +156,9 @@ export function PermissionsMatrixTable({
                 variant="outline"
               >
                 {openSections[section.title] ? (
-                  <ChevronDown className="h-4 w-4" />
+                  <ChevronDown className="size-4" />
                 ) : (
-                  <ChevronRight className="h-4 w-4" />
+                  <ChevronRight className="size-4" />
                 )}
                 <span className="min-w-0 truncate" title={section.title}>
                   {section.title}
@@ -201,10 +201,10 @@ export function PermissionsMatrixTable({
                             type="button"
                             variant="outline"
                           >
-                            <div className="flex h-4 w-4 items-center justify-center text-default-300">
+                            <div className="flex items-center justify-center text-default-300 size-4">
                               {isOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
                             </div>
-                            <item.icon className="h-4 w-4 shrink-0 opacity-70" />
+                            <item.icon className="shrink-0 opacity-70 size-4" />
                             <span className="min-w-0 truncate" title={item.label}>
                               {item.label}
                             </span>
@@ -260,7 +260,7 @@ export function PermissionsMatrixTable({
                     <Fragment key={perm.id}>
                       <div className="sticky left-0 z-10 flex flex-col justify-center overflow-hidden border-default-200 border-r border-b bg-background py-3 pl-8">
                         <span className="flex min-w-0 items-center gap-2 font-medium text-sm">
-                          <item.icon className="h-4 w-4 shrink-0 opacity-70" />
+                          <item.icon className="shrink-0 opacity-70 size-4" />
                           <span className="min-w-0 truncate" title={displayLabel}>
                             {displayLabel}
                           </span>

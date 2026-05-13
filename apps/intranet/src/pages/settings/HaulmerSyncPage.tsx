@@ -173,10 +173,10 @@ function SyncStatusIcon({ result }: { result: SyncResult | null | undefined }) {
     return null;
   }
   if (result.status === "success") {
-    return <Check className="h-4 w-4 text-green-500" />;
+    return <Check className="text-green-500 size-4" />;
   }
   if (result.status === "failed") {
-    return <X className="h-4 w-4 text-red-500" />;
+    return <X className="text-red-500 size-4" />;
   }
   return <span className="text-gray-500 text-xs">Pendiente</span>;
 }
@@ -226,7 +226,7 @@ function SyncAllCard({
               onPress={onOpenSyncModal}
               variant="primary"
             >
-              {!isSyncingAll ? <Download className="h-4 w-4" /> : null}
+              {!isSyncingAll ? <Download className="size-4" /> : null}
               {isSyncingAll ? "Sincronizando..." : "Sincronizar"}
             </Button>
             <Button
@@ -235,7 +235,7 @@ function SyncAllCard({
               onPress={onSyncIncremental}
               variant="secondary"
             >
-              {!isSyncingIncremental ? <RefreshCw className="h-4 w-4" /> : null}
+              {!isSyncingIncremental ? <RefreshCw className="size-4" /> : null}
               {isSyncingIncremental ? "Sincronizando..." : "Incremental"}
             </Button>
           </div>
@@ -316,7 +316,7 @@ function PeriodCard({
               onSync(period.period, "sales");
             }}
           >
-            <Download className="h-4 w-4" />
+            <Download className="size-4" />
             Importar
           </Button>
           <DteXmlJobProgress direction="sales" selectedPeriod={yearMonth} />
@@ -365,7 +365,7 @@ function PeriodCard({
               onSync(period.period, "purchases");
             }}
           >
-            <Download className="h-4 w-4" />
+            <Download className="size-4" />
             Importar
           </Button>
           <DteXmlJobProgress direction="purchases" selectedPeriod={yearMonth} />

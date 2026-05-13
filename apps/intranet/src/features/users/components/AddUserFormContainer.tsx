@@ -283,7 +283,7 @@ function PersonLinkSection({
   return (
     <div className="rounded-xl border border-info/20 bg-info/5 p-4">
       <div className="flex items-start gap-3">
-        <Users className="mt-0.5 h-5 w-5 text-info" />
+        <Users className="mt-0.5 text-info size-5" />
         <div className="flex-1 space-y-3">
           <div>
             <span className="block font-medium text-info">Vincular a persona existente</span>
@@ -476,7 +476,7 @@ function SecuritySection({ form }: Pick<AddUserFormCardProps, "form">) {
   return (
     <div className="rounded-xl border border-primary/20 bg-primary/5 p-4">
       <div className="flex items-start gap-3">
-        <Shield className="mt-0.5 h-5 w-5 text-primary" />
+        <Shield className="mt-0.5 text-primary size-5" />
         <div className="space-y-1">
           <span className="block font-medium text-primary">Seguridad reforzada</span>
           <Description className="text-default-600 text-xs">

@@ -92,7 +92,7 @@ export function DoctoraliaCalendarBackfillPanel() {
       <Card>
         <Card.Header className="flex flex-col items-start gap-1">
           <h2 className="flex items-center gap-2 font-semibold text-base">
-            <History className="h-4 w-4" /> Recorrer historial
+            <History className="size-4" /> Recorrer historial
           </h2>
           <Description className="text-default-500 text-xs">
             Descarga semana a semana entre las fechas seleccionadas. No corre en paralelo al
@@ -210,7 +210,7 @@ export function DoctoraliaCalendarBackfillPanel() {
                 isPending={cancelMutation.isPending}
                 onPress={() => cancelMutation.mutate()}
               >
-                <StopCircle className="mr-2 h-4 w-4" />
+                <StopCircle className="mr-2 size-4" />
                 {cancelRequested ? "Cancelando…" : "Cancelar backfill"}
               </Button>
             ) : null}
@@ -219,7 +219,7 @@ export function DoctoraliaCalendarBackfillPanel() {
               isPending={startMutation.isPending}
               onPress={() => startMutation.mutate()}
             >
-              <Play className="mr-2 h-4 w-4" />
+              <Play className="mr-2 size-4" />
               {running ? "Backfill en curso" : "Iniciar backfill"}
             </Button>
           </div>

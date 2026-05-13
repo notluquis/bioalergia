@@ -182,12 +182,12 @@ function RoleBaseForm({ onClose, roleEntity, userData }: RoleBaseFormProps) {
       {roleEntity && (
         <div className="rounded-lg bg-default-100 p-3 text-sm">
           <div className="mb-2 flex items-center gap-2 font-medium opacity-70">
-            <UserIcon className="h-4 w-4" />
+            <UserIcon className="size-4" />
             Usuarios afectados ({userData.length})
           </div>
           {renderUsersList()}
           <div className="mt-2 flex gap-1 text-warning text-xs">
-            <AlertCircle className="h-3 w-3" />
+            <AlertCircle className="size-3" />
             <span>Cualquier cambio en los permisos afectará inmediatamente a estos usuarios.</span>
           </div>
         </div>

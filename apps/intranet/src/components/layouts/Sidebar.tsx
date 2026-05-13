@@ -46,7 +46,7 @@ export function Sidebar({ isMobile, isOpen, onClose, sidebarId }: SidebarProps) 
       id={sidebarId}
       aria-label="Navegación principal"
       aria-hidden={isMobile && !isOpen}
-      className="flex h-full w-full flex-col overflow-hidden pt-[env(safe-area-inset-top)]"
+      className="flex flex-col overflow-hidden pt-[env(safe-area-inset-top)] size-full"
     >
       <div
         className={cn(
@@ -54,10 +54,10 @@ export function Sidebar({ isMobile, isOpen, onClose, sidebarId }: SidebarProps) 
           isMobile ? "px-5" : "px-0"
         )}
       >
-        <div className={cn("relative flex items-center justify-center ", "h-12 w-12")}>
+        <div className={cn("relative flex items-center justify-center ", "size-12")}>
           <img
             alt="Bioalergia"
-            className={cn("h-10 w-10 object-contain ")}
+            className={cn("object-contain size-10 ")}
             fetchPriority="high"
             src="/logo_bimi.svg"
           />
@@ -111,10 +111,10 @@ export function Sidebar({ isMobile, isOpen, onClose, sidebarId }: SidebarProps) 
                 "group flex cursor-pointer items-center outline-none hover:bg-default-50/50",
                 isMobile
                   ? "w-full gap-3 rounded-2xl px-3 py-2"
-                  : "h-12 w-12 justify-center rounded-xl p-0"
+                  : "justify-center rounded-xl p-0 size-12"
               )}
             >
-              <Avatar className="h-10 w-10 shrink-0">
+              <Avatar className="shrink-0 size-10">
                 <Avatar.Fallback className="bg-background font-bold text-primary">
                   {displayName.slice(0, 2).toUpperCase()}
                 </Avatar.Fallback>

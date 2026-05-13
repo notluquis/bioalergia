@@ -395,7 +395,7 @@ export function BackupSettingsPage() {
             <span className="font-semibold text-lg">Backups</span>
             <div className="flex items-center gap-2">
               <Button
-                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full p-0"
+                className="flex shrink-0 items-center justify-center rounded-full p-0 size-8"
                 onPress={() => queryClient.invalidateQueries({ queryKey: ["backups"] })}
                 size="sm"
                 variant="outline"
@@ -476,7 +476,7 @@ function BackupRow({ backup, onSuccess }: { backup: BackupFile; onSuccess: () =>
           <div className="flex items-center gap-2">
             {backup.webViewLink && (
               <Link
-                className="inline-flex h-8 w-8 items-center justify-center rounded-medium hover:bg-default-100"
+                className="inline-flex items-center justify-center rounded-medium hover:bg-default-100 size-8"
                 href={backup.webViewLink}
                 rel="noreferrer"
                 target="_blank"

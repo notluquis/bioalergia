@@ -116,7 +116,7 @@ export function Header() {
           ) : null}
           {isNavigating && (
             <span className="mt-1 flex items-center gap-1 font-semibold text-primary text-xs">
-              <Loader2 className="h-3 w-3 " />
+              <Loader2 className="size-3 " />
             </span>
           )}
         </div>
@@ -136,7 +136,7 @@ export function Header() {
               onPress={toggleTheme}
               variant="secondary"
             >
-              {isDark ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
+              {isDark ? <Moon className="size-4" /> : <Sun className="size-4" />}
             </Button>
             <Button
               isIconOnly
@@ -147,7 +147,7 @@ export function Header() {
               }}
               variant="danger"
             >
-              <LogOut className="h-4 w-4" />
+              <LogOut className="size-4" />
             </Button>
           </div>
         </div>

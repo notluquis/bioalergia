@@ -147,7 +147,7 @@ function CalendarDailyPage() {
             return (
               <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-default-100 border-dashed bg-background/50 py-12 text-center">
                 <div className="mb-3 rounded-full bg-default-50 p-3">
-                  <Filter className="h-6 w-6 text-default-200" />
+                  <Filter className="text-default-200 size-6" />
                 </div>
                 <h3 className="font-semibold text-default-600">Sin eventos</h3>
                 <p className="mt-1 max-w-xs text-default-400 text-sm">

@@ -449,12 +449,12 @@ function EmployeeSelectionPanel({
                   size="sm"
                   variant="outline"
                   aria-label={`Quitar ${emp.full_name}`}
-                  className="h-5 w-5 min-w-5 p-0"
+                  className="min-w-5 p-0 size-5"
                   onPress={() => {
                     handleRemoveEmployee(id);
                   }}
                 >
-                  <X className="h-3 w-3" />
+                  <X className="size-3" />
                 </Button>
               </Chip>
             );
@@ -563,7 +563,7 @@ function AuditEmptyState({
     return (
       <Card className="shadow-sm">
         <Card.Content className="flex flex-col items-center py-16 text-center">
-          <Users className="mb-4 h-12 w-12 text-default-200" />
+          <Users className="mb-4 text-default-200 size-12" />
           <span className="font-semibold text-default-600 text-lg">Selecciona empleados</span>
           <Description className="max-w-md text-default-400 text-sm">
             Elige hasta {MAX_EMPLOYEES} empleados para analizar sus horarios y detectar
@@ -658,7 +658,7 @@ function LegendPanel({
         <Disclosure.Body className="px-4 pt-0 pb-4">
           <div className="grid gap-6 pt-4 sm:grid-cols-2">
             <div className="flex items-start gap-3">
-              <div className="mt-1 h-4 w-4 shrink-0 rounded bg-success" />
+              <div className="mt-1 shrink-0 rounded bg-success size-4" />
               <div>
                 <span className="font-semibold text-foreground">Sin conflicto</span>
                 <Description className="text-default-600 text-sm">
@@ -667,7 +667,7 @@ function LegendPanel({
               </div>
             </div>
             <div className="flex items-start gap-3">
-              <div className="mt-1 h-4 w-4 shrink-0 rounded bg-danger" />
+              <div className="mt-1 shrink-0 rounded bg-danger size-4" />
               <div>
                 <span className="font-semibold text-foreground">Conflicto detectado</span>
                 <Description className="text-default-600 text-sm">

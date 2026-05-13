@@ -63,19 +63,19 @@ export function MovementTypeList({ data }: MovementTypeListProps) {
     <div className="space-y-6">
       {renderList(
         incomingData,
-        <ArrowUp className="h-4 w-4 text-success" />,
+        <ArrowUp className="text-success size-4" />,
         "Ingresos",
         "text-success"
       )}
       {renderList(
         outgoingData,
-        <ArrowDown className="h-4 w-4 text-danger" />,
+        <ArrowDown className="text-danger size-4" />,
         "Egresos",
         "text-danger"
       )}
       {renderList(
         neutralData,
-        <Minus className="h-4 w-4 text-default-400" />,
+        <Minus className="text-default-400 size-4" />,
         "Neutros",
         "text-default-600"
       )}

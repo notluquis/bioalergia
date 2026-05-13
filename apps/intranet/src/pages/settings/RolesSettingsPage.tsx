@@ -217,11 +217,11 @@ export function RolesSettingsPage() {
                   syncMutation.mutate();
                 }}
               >
-                <RotateCw className={cn("h-4 w-4", isSyncing && "")} />
+                <RotateCw className={cn("size-4", isSyncing && "")} />
               </Button>
 
               <Button size="sm" variant="primary" className="gap-2" onPress={handleCreateRole}>
-                <Plus className="h-4 w-4" />
+                <Plus className="size-4" />
                 <span>Nuevo rol</span>
               </Button>
             </div>

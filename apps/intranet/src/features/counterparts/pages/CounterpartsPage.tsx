@@ -979,12 +979,12 @@ function CounterpartsToolbar({
                   size="sm"
                   variant="secondary"
                 >
-                  <RefreshCcw className={`h-4 w-4 ${syncLoading ? "" : ""}`} />
+                  <RefreshCcw className={`size-4 ${syncLoading ? "" : ""}`} />
                 </Button>
               ) : null}
               {canCreate ? (
                 <Button aria-label="Nueva contraparte" isIconOnly onPress={onCreate} size="sm">
-                  <Plus className="h-4 w-4" />
+                  <Plus className="size-4" />
                 </Button>
               ) : null}
             </div>
@@ -1044,7 +1044,7 @@ function CounterpartsToolbar({
                         ) : null}
                         <ListBox.ItemIndicator>
                           {({ isSelected }) =>
-                            isSelected ? <Check className="h-4 w-4 text-primary" /> : null
+                            isSelected ? <Check className="text-primary size-4" /> : null
                           }
                         </ListBox.ItemIndicator>
                       </ListBox.Item>
@@ -1073,7 +1073,7 @@ function CounterpartsToolbar({
                   Limpiar selección
                 </Button>
                 <Button onPress={onResetFilters} size="sm" variant="outline">
-                  <Filter className="mr-1.5 h-3.5 w-3.5" />
+                  <Filter className="mr-1.5 size-3.5" />
                   Limpiar filtros
                 </Button>
               </div>

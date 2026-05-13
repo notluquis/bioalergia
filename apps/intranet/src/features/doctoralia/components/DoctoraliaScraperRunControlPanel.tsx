@@ -50,7 +50,7 @@ export function DoctoraliaScraperRunControlPanel() {
     <Card>
       <Card.Header className="flex flex-col items-start gap-1">
         <h2 className="flex items-center gap-2 font-semibold text-base">
-          <Bug className="h-4 w-4" /> Override de horario
+          <Bug className="size-4" /> Override de horario
         </h2>
         <Card.Description className="text-default-500 text-xs">
           Úsalo para un Run manual en Railway o para la próxima corrida automática cuando quieras
@@ -116,7 +116,7 @@ export function DoctoraliaScraperRunControlPanel() {
           isPending={clearMutation.isPending}
           onPress={() => clearMutation.mutate()}
         >
-          <RotateCcw className="h-4 w-4" />
+          <RotateCcw className="size-4" />
           Limpiar override
         </Button>
         <Button
@@ -124,7 +124,7 @@ export function DoctoraliaScraperRunControlPanel() {
           isPending={activateMutation.isPending}
           onPress={() => activateMutation.mutate()}
         >
-          <Play className="h-4 w-4" />
+          <Play className="size-4" />
           Forzar próxima corrida
         </Button>
       </Card.Footer>

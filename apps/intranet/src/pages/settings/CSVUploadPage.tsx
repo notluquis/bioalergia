@@ -561,7 +561,7 @@ function AccessDeniedAlert() {
   return (
     <Alert status="warning">
       <Alert.Indicator>
-        <Lock className="h-4 w-4" />
+        <Lock className="size-4" />
       </Alert.Indicator>
       <Alert.Content>
         <Alert.Description>
@@ -592,7 +592,7 @@ function TableSelectionCard({
     <Card>
       <Card.Header>
         <Card.Title className="flex items-center gap-2">
-          <FileUp className="h-5 w-5 text-primary" />
+          <FileUp className="text-primary size-5" />
           1. Seleccionar destino
         </Card.Title>
         <Card.Description>Elige la tabla donde deseas importar los datos.</Card.Description>
@@ -858,7 +858,7 @@ function ImportSummaryCard({
         {(previewData.errors?.length ?? 0) > 0 && (
           <Alert className="mb-0" status="warning">
             <Alert.Indicator>
-              <AlertCircle className="h-4 w-4" />
+              <AlertCircle className="size-4" />
             </Alert.Indicator>
             <Alert.Content>
               <Alert.Description>
@@ -986,7 +986,7 @@ function UpdateSelectionCard({
                 size="sm"
                 variant="outline"
               >
-                {isLoadingDetails ? <Loader2 className="mr-2 h-4 w-4 " /> : null}
+                {isLoadingDetails ? <Loader2 className="mr-2 size-4 " /> : null}
                 Recargar detalle
               </Button>
             )}
@@ -1057,7 +1057,7 @@ function UpdateDetailLoaderCard({
           <Chip.Label>{pendingUpdates} filas detectadas para actualizar</Chip.Label>
         </Chip>
         <Button isDisabled={isLoading} onPress={onLoad} variant="secondary">
-          {isLoading ? <Loader2 className="mr-2 h-4 w-4 " /> : null}
+          {isLoading ? <Loader2 className="mr-2 size-4 " /> : null}
           Cargar detalle de actualizaciones
         </Button>
       </Card.Content>
@@ -1076,7 +1076,7 @@ function ImportModeCard({
     <Card>
       <Card.Header>
         <Card.Title className="flex items-center gap-2">
-          <CheckCircle className="h-5 w-5 text-primary" />
+          <CheckCircle className="text-primary size-5" />
           Modo de importación
         </Card.Title>
         <Card.Description>
@@ -1825,9 +1825,9 @@ function ImportActionsBar(props: {
           variant="secondary"
         >
           {props.isProcessing ? (
-            <Loader2 className="mr-2 h-4 w-4 " />
+            <Loader2 className="mr-2 size-4 " />
           ) : (
-            <FileUp className="mr-2 h-4 w-4" />
+            <FileUp className="mr-2 size-4" />
           )}
           {props.hasPreviewData ? "Recalcular vista previa" : "Generar vista previa"}
         </Button>
@@ -1844,9 +1844,9 @@ function ImportActionsBar(props: {
           onPress={props.onImport}
         >
           {props.isProcessing ? (
-            <Loader2 className="mr-2 h-4 w-4 " />
+            <Loader2 className="mr-2 size-4 " />
           ) : (
-            <CheckCircle className="mr-2 h-4 w-4" />
+            <CheckCircle className="mr-2 size-4" />
           )}
           Confirmar Importación ({props.pendingImportCount})
         </Button>

@@ -458,7 +458,7 @@ function CalendarSchedulePage() {
                 onPress={goToPreviousWeek}
                 variant="outline"
               >
-                <ChevronLeft className="h-4 w-4" />
+                <ChevronLeft className="size-4" />
               </Button>
               <Button
                 className="font-medium text-xs"
@@ -475,7 +475,7 @@ function CalendarSchedulePage() {
                 onPress={goToNextWeek}
                 variant="outline"
               >
-                <ChevronRight className="h-4 w-4" />
+                <ChevronRight className="size-4" />
               </Button>
             </ButtonGroup>
             <div className="hidden items-center gap-2 text-sm sm:flex">

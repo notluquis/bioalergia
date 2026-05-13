@@ -593,7 +593,7 @@ const CustomTooltip = ({
         <div className="space-y-1">
           {payload.map((p) => (
             <div key={p.name} className="flex items-center gap-1.5">
-              <div className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: p.color }} />
+              <div className="rounded-full size-1.5" style={{ backgroundColor: p.color }} />
               <span className="text-default-500 text-xs capitalize">{p.name}:</span>
               <span className="font-medium text-foreground text-xs">
                 {p.name.includes("Ingresos") ? formatCurrency(p.value) : p.value}
@@ -658,7 +658,7 @@ function AnalyticsDetailTable({
         const val = row.original.domicilioCount || 0;
         return val > 0 ? (
           <div className="flex items-center gap-1.5 text-secondary">
-            <Home className="h-3.5 w-3.5" />
+            <Home className="size-3.5" />
             <span>{val}</span>
           </div>
         ) : (
@@ -713,7 +713,7 @@ function PeriodIndicator({
 
   return (
     <div className="flex w-fit items-center gap-2 rounded-lg bg-primary/10 px-3 py-2">
-      <CalendarIcon className="h-3.5 w-3.5 text-primary" />
+      <CalendarIcon className="text-primary size-3.5" />
       <Description className="font-semibold text-foreground text-xs sm:text-sm">
         {displayText}
       </Description>
@@ -757,7 +757,7 @@ function AnalyticsHeader({
       <div className="flex w-full items-center justify-between">
         {isLoading && (
           <div className="flex items-center gap-2">
-            <Skeleton className="h-3 w-3 rounded-full" />
+            <Skeleton className="rounded-full size-3" />
             <span className="text-default-500 text-sm">Cargando datos...</span>
           </div>
         )}
@@ -772,7 +772,7 @@ function AnalyticsHeader({
             {isRefetching ? (
               <Spinner size="sm" color="current" />
             ) : (
-              <RefreshCcw className="h-4 w-4" />
+              <RefreshCcw className="size-4" />
             )}
           </Button>
           <Popover isOpen={isFilterOpen} onOpenChange={onToggleFilter}>
@@ -783,7 +783,7 @@ function AnalyticsHeader({
                 size="sm"
                 className={isFilterOpen ? "bg-primary/10 text-primary" : ""}
               >
-                <CalendarIcon className="h-4 w-4" />
+                <CalendarIcon className="size-4" />
               </Button>
             </Popover.Trigger>
             <Popover.Content className="w-[min(92vw,38rem)] p-0" offset={8} placement="bottom end">
@@ -1091,7 +1091,7 @@ function KpiCard({
     <Card className="border-default-200 shadow-sm">
       <Card.Content className="flex flex-row items-center gap-2.5 p-2.5 sm:p-3">
         <div className={`shrink-0 rounded-lg p-2 ${iconStyle.bgClass} ${iconStyle.textClass}`}>
-          <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
+          <Icon className="sm:h-5 sm:w-5 size-4" />
         </div>
         <div className="flex flex-col justify-center gap-0.5">
           <Description className="font-medium text-default-500 text-xs uppercase">

@@ -190,7 +190,7 @@ export const columns: ColumnDef<CashFlowTransaction>[] = [
           className="-ml-3 h-8 data-[state=open]:bg-accent"
         >
           Fecha
-          <ArrowUpDown className="ml-2 h-4 w-4" />
+          <ArrowUpDown className="ml-2 size-4" />
         </Button>
       );
     },
@@ -374,7 +374,7 @@ export const columns: ColumnDef<CashFlowTransaction>[] = [
         return cat ? (
           <Chip size="sm" variant="secondary">
             <span
-              className="inline-block w-2 h-2 rounded-full shrink-0"
+              className="inline-block rounded-full shrink-0 size-2"
               style={{ backgroundColor: cat.color ?? "#ccc" }}
             />
             <Chip.Label>
@@ -418,7 +418,7 @@ export const columns: ColumnDef<CashFlowTransaction>[] = [
                 <ListBox.Item id={String(category.id)} key={category.id} textValue={category.name}>
                   <div className="flex items-center gap-2">
                     <span
-                      className="inline-block h-2 w-2 rounded-full shrink-0"
+                      className="inline-block rounded-full shrink-0 size-2"
                       style={{ backgroundColor: category.color ?? "#ccc" }}
                     />
                     <span>{category.name}</span>
@@ -461,23 +461,23 @@ export const columns: ColumnDef<CashFlowTransaction>[] = [
         <div className="flex justify-center gap-1">
           <Button
             aria-label="Reasignar periodo"
-            className="h-7 w-7 min-w-7 p-0"
+            className="min-w-7 p-0 size-7"
             isIconOnly
             size="sm"
             variant="outline"
             onPress={() => table.options.meta?.onReallocate?.(row.original)}
           >
-            <ArrowRightLeft className="h-3.5 w-3.5" />
+            <ArrowRightLeft className="size-3.5" />
           </Button>
           <Button
             aria-label="Editar movimiento"
-            className="h-7 w-7 min-w-7 p-0"
+            className="min-w-7 p-0 size-7"
             isIconOnly
             size="sm"
             variant="outline"
             onPress={() => table.options.meta?.onEdit?.(row.original)}
           >
-            <Pencil className="h-3.5 w-3.5" />
+            <Pencil className="size-3.5" />
           </Button>
         </div>
       );

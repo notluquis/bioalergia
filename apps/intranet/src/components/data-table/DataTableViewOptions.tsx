@@ -40,7 +40,7 @@ export function DataTableViewOptions<TData>({ table }: DataTableViewOptionsProps
     <Dropdown>
       <Dropdown.Trigger>
         <Button className="ml-auto h-8" size="sm" variant="outline">
-          <Settings2 className="mr-2 h-4 w-4" />
+          <Settings2 className="mr-2 size-4" />
           Columnas
         </Button>
       </Dropdown.Trigger>
@@ -72,7 +72,7 @@ export function DataTableViewOptions<TData>({ table }: DataTableViewOptionsProps
               <Dropdown.Item id={column.id} key={column.id} textValue={label}>
                 <Dropdown.ItemIndicator>
                   {({ isSelected }) =>
-                    isSelected ? <Check className="h-4 w-4 text-primary" /> : null
+                    isSelected ? <Check className="text-primary size-4" /> : null
                   }
                 </Dropdown.ItemIndicator>
                 <Label>{label}</Label>

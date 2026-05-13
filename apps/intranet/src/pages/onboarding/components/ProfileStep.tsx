@@ -28,7 +28,7 @@ export function ProfileStep(props: ProfileStepProps) {
   return (
     <Form className="space-y-6" onSubmit={handleSubmit} validationBehavior="aria">
       <div className="mb-6 text-center">
-        <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+        <div className="mx-auto mb-3 flex items-center justify-center rounded-full bg-primary/10 text-primary size-12">
           <User size={24} />
         </div>
         <h2 className="font-bold text-2xl">Datos personales</h2>

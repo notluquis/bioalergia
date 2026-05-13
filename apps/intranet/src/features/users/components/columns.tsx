@@ -48,7 +48,7 @@ export const getColumns = (actions: {
       const user = row.original;
       return (
         <div className="flex items-center gap-3">
-          <Avatar className="h-10 w-10">
+          <Avatar className="size-10">
             <Avatar.Fallback className="font-bold text-xs">
               {getPersonInitials(user.person)}
             </Avatar.Fallback>
@@ -185,7 +185,7 @@ export const getColumns = (actions: {
                   actions.onEditDetails(user);
                 }}
               >
-                <Pencil className="mr-2 h-4 w-4" />
+                <Pencil className="mr-2 size-4" />
                 Editar datos
               </Dropdown.Item>
               <Dropdown.Item
@@ -194,7 +194,7 @@ export const getColumns = (actions: {
                   actions.onEditRole(user);
                 }}
               >
-                <UserCog className="mr-2 h-4 w-4" />
+                <UserCog className="mr-2 size-4" />
                 Editar rol
               </Dropdown.Item>
               <Dropdown.Item
@@ -203,7 +203,7 @@ export const getColumns = (actions: {
                   actions.onToggleMfa(user.id, user.mfaEnabled);
                 }}
               >
-                <ShieldCheck className="mr-2 h-4 w-4" />
+                <ShieldCheck className="mr-2 size-4" />
                 {user.mfaEnabled ? "Desactivar" : "Activar"} MFA
               </Dropdown.Item>
               <Dropdown.Item
@@ -212,7 +212,7 @@ export const getColumns = (actions: {
                   actions.onResetPassword(user.id);
                 }}
               >
-                <Key className="mr-2 h-4 w-4" />
+                <Key className="mr-2 size-4" />
                 Restablecer contraseña
               </Dropdown.Item>
               {user.hasPasskey && (
@@ -223,7 +223,7 @@ export const getColumns = (actions: {
                     actions.onDeletePasskey(user.id);
                   }}
                 >
-                  <Trash2 className="mr-2 h-4 w-4" />
+                  <Trash2 className="mr-2 size-4" />
                   Eliminar passkey
                 </Dropdown.Item>
               )}
@@ -235,7 +235,7 @@ export const getColumns = (actions: {
                     actions.onSetStatus(user.id, "PENDING_SETUP");
                   }}
                 >
-                  <Lock className="mr-2 h-4 w-4" />
+                  <Lock className="mr-2 size-4" />
                   Enviar a onboarding
                 </Dropdown.Item>
               )}
@@ -247,7 +247,7 @@ export const getColumns = (actions: {
                     actions.onSetStatus(user.id, "ACTIVE");
                   }}
                 >
-                  <Shield className="mr-2 h-4 w-4" />
+                  <Shield className="mr-2 size-4" />
                   Activar cuenta
                 </Dropdown.Item>
               )}
@@ -259,7 +259,7 @@ export const getColumns = (actions: {
                     actions.onSetStatus(user.id, "ACTIVE");
                   }}
                 >
-                  <Shield className="mr-2 h-4 w-4" />
+                  <Shield className="mr-2 size-4" />
                   Reactivar acceso
                 </Dropdown.Item>
               ) : (
@@ -270,7 +270,7 @@ export const getColumns = (actions: {
                     actions.onSetStatus(user.id, "SUSPENDED");
                   }}
                 >
-                  <Lock className="mr-2 h-4 w-4" />
+                  <Lock className="mr-2 size-4" />
                   Suspender acceso
                 </Dropdown.Item>
               )}
@@ -282,7 +282,7 @@ export const getColumns = (actions: {
                   actions.onDeleteUser(user.id);
                 }}
               >
-                <Trash2 className="mr-2 h-4 w-4" />
+                <Trash2 className="mr-2 size-4" />
                 Eliminar usuario
               </Dropdown.Item>
             </Dropdown.Menu>

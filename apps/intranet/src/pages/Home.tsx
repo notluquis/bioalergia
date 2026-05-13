@@ -170,15 +170,15 @@ function QuickLinksSection({ can }: { can: (action: string, subject: string) => 
             to={link.to}
           >
             <div
-              className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${link.bg} ${link.color}`}
+              className={`flex shrink-0 items-center justify-center rounded-2xl size-11 ${link.bg} ${link.color}`}
             >
-              <link.icon className="h-5 w-5" />
+              <link.icon className="size-5" />
             </div>
             <div className="min-w-0 flex-1">
               <p className="truncate font-medium text-foreground text-sm">{link.title}</p>
               <p className="line-clamp-2 text-default-500 text-xs">{link.description}</p>
             </div>
-            <ArrowUpRight className="h-4 w-4 shrink-0 text-default-400 transition group-hover:text-primary" />
+            <ArrowUpRight className="shrink-0 text-default-400 transition group-hover:text-primary size-4" />
           </Link>
         ))}
       </div>

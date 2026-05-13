@@ -43,7 +43,7 @@ export function DataTableFacetedFilter<TData, TValue>({
     <Dropdown>
       <Dropdown.Trigger>
         <Button className="h-8 border-dashed" size="sm" variant="outline">
-          <PlusCircle className="mr-2 h-4 w-4" />
+          <PlusCircle className="mr-2 size-4" />
           {title}
           {selectedKeys.size > 0 && (
             <>
@@ -86,13 +86,13 @@ export function DataTableFacetedFilter<TData, TValue>({
             <Dropdown.Item id={option.value} key={option.value} textValue={option.label}>
               <Dropdown.ItemIndicator>
                 {({ isSelected }) =>
-                  isSelected ? <Check className="h-4 w-4 text-primary" /> : null
+                  isSelected ? <Check className="text-primary size-4" /> : null
                 }
               </Dropdown.ItemIndicator>
-              {option.icon && <option.icon className="mr-2 h-4 w-4 opacity-50" />}
+              {option.icon && <option.icon className="mr-2 opacity-50 size-4" />}
               <Label>{option.label}</Label>
               {facets?.get(option.value) && (
-                <span className="ml-auto flex h-4 w-4 items-center justify-center font-mono text-xs">
+                <span className="ml-auto flex items-center justify-center font-mono text-xs size-4">
                   {facets.get(option.value)}
                 </span>
               )}

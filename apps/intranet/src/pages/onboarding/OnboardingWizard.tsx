@@ -41,7 +41,7 @@ function ProgressBar({ currentStep }: { currentStep: number }) {
             <li className="flex min-w-0 flex-col items-center gap-2 text-center" key={step.id}>
               <div
                 className={cn(
-                  "flex h-8 w-8 items-center justify-center rounded-full border-2 font-semibold text-xs sm:h-9 sm:w-9",
+                  "flex items-center justify-center rounded-full border-2 font-semibold text-xs sm:h-9 sm:w-9 size-8",
                   idx <= currentStep
                     ? "border-primary bg-primary text-primary-foreground"
                     : "border-default-200 bg-background text-default-500"

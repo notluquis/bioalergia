@@ -171,7 +171,7 @@ export function ServicesUnifiedAgenda({
           </div>
           {loading && (
             <div className="flex items-center gap-2 text-default-300 text-xs">
-              <Skeleton className="h-3 w-3 rounded-full" />
+              <Skeleton className="rounded-full size-3" />
               <span>Actualizando agenda...</span>
             </div>
           )}
@@ -230,7 +230,7 @@ export function ServicesUnifiedAgenda({
                       {currencyFormatter.format(group.total)}
                     </span>
                     <span
-                      className={`inline-flex h-7 w-7 items-center justify-center rounded-full border border-default-200 bg-background/70 font-semibold text-default-400 text-xs ${
+                      className={`inline-flex items-center justify-center rounded-full border border-default-200 bg-background/70 font-semibold text-default-400 text-xs size-7 ${
                         isExpanded ? "rotate-180" : ""
                       }`}
                     >

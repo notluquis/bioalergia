@@ -71,7 +71,7 @@ function PatientsListPage() {
           const patient = row.original;
           return (
             <div className="flex items-center gap-3">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary">
+              <div className="flex items-center justify-center rounded-full bg-primary/10 text-primary size-8">
                 <User size={16} />
               </div>
               <div className="flex flex-col">
@@ -117,7 +117,7 @@ function PatientsListPage() {
         header: "ACCIONES",
         cell: ({ row }) => (
           <Button
-            className="h-8 w-8 min-w-0 p-0"
+            className="min-w-0 p-0 size-8"
             onPress={() =>
               void navigate({
                 params: { id: String(row.original.id) },

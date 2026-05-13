@@ -69,7 +69,7 @@ export function CalendarSyncHistoryPage() {
                 type="button"
                 variant="outline"
               >
-                <RefreshCw className={cn("h-4 w-4", isLoading && "")} />
+                <RefreshCw className={cn("size-4", isLoading && "")} />
               </Button>
               <Button isDisabled={isSyncing || isLoading} onPress={syncNow} size="sm" type="button">
                 {isSyncing ? "Sincronizando..." : "Sincronizar ahora"}
@@ -246,7 +246,7 @@ function SyncHistoryItem({
             {duration === null ? "-" : `${duration}s`}
           </div>
           <Accordion.Indicator className="ml-auto text-default-300 sm:ml-0">
-            <ChevronDown className="h-4 w-4" />
+            <ChevronDown className="size-4" />
           </Accordion.Indicator>
         </Accordion.Trigger>
       </Accordion.Heading>
@@ -320,7 +320,7 @@ function renderCalendarsList(calendars: CalendarData[]) {
           className="flex items-center gap-3 rounded-lg border border-default-100 p-3"
           key={cal.id}
         >
-          <div className="h-2 w-2 shrink-0 rounded-full bg-blue-500" />
+          <div className="shrink-0 rounded-full bg-blue-500 size-2" />
           <div className="min-w-0 flex-1">
             <span className="block truncate font-medium text-sm">{cal.name}</span>
             <div className="flex items-center justify-between gap-2">

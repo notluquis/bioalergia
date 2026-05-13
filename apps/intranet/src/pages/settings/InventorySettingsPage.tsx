@@ -242,10 +242,10 @@ function InventoryList({
                 aria-label={isExpanded ? "Colapsar" : "Expandir"}
                 variant="outline"
               >
-                <span className="flex h-6 w-6 items-center justify-center text-default-400 ">
+                <span className="flex items-center justify-center text-default-400 size-6 ">
                   {isExpanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
                 </span>
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                <div className="flex items-center justify-center rounded-lg bg-primary/10 text-primary size-8">
                   <Package size={16} />
                 </div>
                 <div className="min-w-0 flex-1">
@@ -281,7 +281,7 @@ function InventoryList({
                     className="flex items-center gap-3 border-default-100/50 border-b py-3 pr-4 pl-14 last:border-b-0 hover:bg-default-50/50"
                     key={item.id}
                   >
-                    <div className="flex h-6 w-6 items-center justify-center rounded bg-default-100/50 text-default-300">
+                    <div className="flex items-center justify-center rounded bg-default-100/50 text-default-300 size-6">
                       <Box size={12} />
                     </div>
                     <div className="min-w-0 flex-1">
@@ -324,10 +324,10 @@ function InventoryList({
               aria-label={expandedCategories.has(0) ? "Colapsar" : "Expandir"}
               variant="outline"
             >
-              <span className="flex h-6 w-6 items-center justify-center text-default-400">
+              <span className="flex items-center justify-center text-default-400 size-6">
                 {expandedCategories.has(0) ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
               </span>
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-default-100 text-default-400">
+              <div className="flex items-center justify-center rounded-lg bg-default-100 text-default-400 size-8">
                 <Package size={16} />
               </div>
               <div className="min-w-0 flex-1">
@@ -346,7 +346,7 @@ function InventoryList({
                   className="flex items-center gap-3 border-default-100/50 border-b py-3 pr-4 pl-14 last:border-b-0 hover:bg-default-50/50"
                   key={item.id}
                 >
-                  <div className="flex h-6 w-6 items-center justify-center rounded bg-default-100/50 text-default-300">
+                  <div className="flex items-center justify-center rounded bg-default-100/50 text-default-300 size-6">
                     <Box size={12} />
                   </div>
                   <div className="min-w-0 flex-1">

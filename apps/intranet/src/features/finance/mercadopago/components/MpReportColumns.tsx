@@ -91,7 +91,7 @@ export const getMpReportColumns = (
         </Chip>
       ) : (
         <Chip className="gap-1.5" color="success" size="sm" variant="soft">
-          <span className="h-1.5 w-1.5 rounded-full bg-success" />
+          <span className="rounded-full bg-success size-1.5" />
           <Chip.Label>Disponible</Chip.Label>
         </Chip>
       ),
@@ -106,7 +106,7 @@ export const getMpReportColumns = (
       return (
         <div className="flex justify-end gap-1 text-right">
           <Button
-            className="h-9 w-9 p-0 sm:opacity-70 sm:group-hover:opacity-100"
+            className="p-0 sm:opacity-70 sm:group-hover:opacity-100 size-9"
             isDisabled={downloadPending || pending || !report.file_name}
             isIconOnly
             isPending={downloadPending}
@@ -118,11 +118,11 @@ export const getMpReportColumns = (
             variant="outline"
           >
             {({ isPending }) =>
-              isPending ? <Spinner color="current" size="sm" /> : <Download className="h-5 w-5" />
+              isPending ? <Spinner color="current" size="sm" /> : <Download className="size-5" />
             }
           </Button>
           <Button
-            className="h-9 w-9 p-0 sm:opacity-70 sm:group-hover:opacity-100"
+            className="p-0 sm:opacity-70 sm:group-hover:opacity-100 size-9"
             isDisabled={processPending || pending || !report.file_name}
             isIconOnly
             isPending={isProcessingThis}
@@ -134,7 +134,7 @@ export const getMpReportColumns = (
             variant="outline"
           >
             {({ isPending }) =>
-              isPending ? <Spinner color="current" size="sm" /> : <RefreshCw className="h-5 w-5" />
+              isPending ? <Spinner color="current" size="sm" /> : <RefreshCw className="size-5" />
             }
           </Button>
         </div>

@@ -126,12 +126,12 @@ export function EmployeesPage() {
             >
               {showForm ? (
                 <>
-                  <ChevronUp className="h-4 w-4" />
+                  <ChevronUp className="size-4" />
                   Ocultar formulario
                 </>
               ) : (
                 <>
-                  <Plus className="h-4 w-4" />
+                  <Plus className="size-4" />
                   {editingEmployee ? "Editar empleado" : "Agregar empleado"}
                 </>
               )}
@@ -155,7 +155,7 @@ export function EmployeesPage() {
               {editingEmployee ? "Editar empleado" : "Agregar nuevo empleado"}
             </h2>
             <Button onPress={handleCancel} size="sm" variant="outline">
-              <ChevronUp className="h-4 w-4" />
+              <ChevronUp className="size-4" />
               Cerrar
             </Button>
           </div>

@@ -33,7 +33,7 @@ export function LoginPage() {
           onPress={toggleTheme}
           variant="outline"
         >
-          {isDark ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
+          {isDark ? <Moon className="size-4" /> : <Sun className="size-4" />}
         </Button>
       </div>
       <div className="w-full max-w-sm">

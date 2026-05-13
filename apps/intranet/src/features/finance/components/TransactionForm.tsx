@@ -282,7 +282,7 @@ export function TransactionForm({ categories, isOpen, onClose, initialData }: Pr
                           <ListBox.Item key={cat.id} id={cat.id.toString()} textValue={cat.name}>
                             <div className="flex items-center gap-2">
                               <div
-                                className="w-3 h-3 rounded-full shrink-0"
+                                className="rounded-full shrink-0 size-3"
                                 style={{ backgroundColor: cat.color ?? "#ccc" }}
                               />
                               <span>{cat.name}</span>

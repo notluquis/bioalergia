@@ -75,7 +75,7 @@ export function MultiSelectFilter({
             variant="outline"
           >
             <span className="truncate font-medium">{displayText}</span>
-            <ChevronDown className="h-4 w-4 shrink-0 text-foreground-500" />
+            <ChevronDown className="shrink-0 text-foreground-500 size-4" />
           </Button>
         </Dropdown.Trigger>
         <Dropdown.Popover>
@@ -93,7 +93,7 @@ export function MultiSelectFilter({
                   <span>{item.label}</span>
                   <ListBox.ItemIndicator>
                     {({ isSelected }) =>
-                      isSelected ? <Check className="h-4 w-4 text-primary" /> : null
+                      isSelected ? <Check className="text-primary size-4" /> : null
                     }
                   </ListBox.ItemIndicator>
                 </div>

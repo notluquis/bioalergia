@@ -319,7 +319,7 @@ function ReportsFiltersPanel({
     <div className="space-y-6 lg:col-span-4">
       <div className="space-y-6 rounded-2xl border border-default-100 bg-background p-5 shadow-sm">
         <div className="flex items-center gap-2 border-default-100 border-b pb-2">
-          <Filter className="h-5 w-5 text-primary" />
+          <Filter className="text-primary size-5" />
           <h2 className="font-semibold text-lg">Configuración</h2>
         </div>
 
@@ -437,7 +437,7 @@ function ReportsFiltersPanel({
           {viewMode === "all" && (
             <Alert className="text-sm" status="accent">
               <Alert.Indicator>
-                <Calendar className="h-4 w-4" />
+                <Calendar className="size-4" />
               </Alert.Indicator>
               <Alert.Content>
                 <Alert.Description>
@@ -519,9 +519,9 @@ function ReportsFiltersPanel({
                       onPress={() => {
                         handleEmployeeToggle(id);
                       }}
-                      className="h-5 w-5 min-w-5 text-white/80"
+                      className="min-w-5 text-white/80 size-5"
                     >
-                      <X className="h-3 w-3" />
+                      <X className="size-3" />
                     </Button>
                   </Chip>
                 );
@@ -594,8 +594,8 @@ function ReportsResultsPanel({
     <div className="space-y-6 lg:col-span-8">
       {reportData.length === 0 && !loading ? (
         <div className="flex min-h-65 flex-col items-center justify-center rounded-3xl border-2 border-default-200 border-dashed bg-default-50/50 p-6 text-center sm:min-h-100 sm:p-8">
-          <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-default-50 sm:mb-6 sm:h-20 sm:w-20">
-            <BarChart2 className="h-9 w-9 text-default-200 sm:h-10 sm:w-10" />
+          <div className="mb-5 flex items-center justify-center rounded-full bg-default-50 sm:mb-6 sm:h-20 sm:w-20 size-16">
+            <BarChart2 className="text-default-200 sm:h-10 sm:w-10 size-9" />
           </div>
           <h3 className="font-bold text-foreground text-lg sm:text-xl">Sin datos para mostrar</h3>
           <p className="mt-2 max-w-sm text-default-500 text-sm sm:text-base">
@@ -612,7 +612,7 @@ function ReportsResultsPanel({
             >
               <Card.Content className="p-0">
                 <Card.Title className="flex items-center gap-1.5 font-semibold text-default-500 text-xs uppercase tracking-wide">
-                  <Clock className="h-4 w-4" />
+                  <Clock className="size-4" />
                   TOTAL HORAS
                 </Card.Title>
                 <Card.Description className="mt-2 block font-semibold text-2xl text-primary">
@@ -627,7 +627,7 @@ function ReportsResultsPanel({
             >
               <Card.Content className="p-0">
                 <Card.Title className="flex items-center gap-1.5 font-semibold text-default-500 text-xs uppercase tracking-wide">
-                  <BarChart3 className="h-4 w-4" />
+                  <BarChart3 className="size-4" />
                   PROMEDIO
                 </Card.Title>
                 <Card.Description className="mt-2 block font-semibold text-2xl text-secondary">
@@ -645,7 +645,7 @@ function ReportsResultsPanel({
             >
               <Card.Content className="p-0">
                 <Card.Title className="flex items-center gap-1.5 font-semibold text-default-500 text-xs uppercase tracking-wide">
-                  <Calendar className="h-4 w-4" />
+                  <Calendar className="size-4" />
                   DÍAS TRAB.
                 </Card.Title>
                 <Card.Description className="mt-2 block font-semibold text-2xl text-accent">
@@ -663,7 +663,7 @@ function ReportsResultsPanel({
             >
               <Card.Content className="p-0">
                 <Card.Title className="flex items-center gap-1.5 font-semibold text-default-500 text-xs uppercase tracking-wide">
-                  <TrendingUp className="h-4 w-4" />
+                  <TrendingUp className="size-4" />
                   PROM. DIARIO
                 </Card.Title>
                 <Card.Description className="mt-2 block font-semibold text-2xl text-success">
@@ -720,7 +720,7 @@ function ReportsResultsPanel({
               )}
             >
               <h3 className="mb-4 flex items-center gap-2 font-bold text-lg">
-                <List className="h-5 w-5 text-accent" />
+                <List className="text-accent size-5" />
                 Detalle Numérico
               </h3>
               <DataTable

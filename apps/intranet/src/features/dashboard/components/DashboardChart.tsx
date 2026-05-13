@@ -38,11 +38,11 @@ export function DashboardChart({
         <h2 className="typ-subtitle text-foreground">Actividad de los últimos {RANGE_DAYS} días</h2>
         <div className="flex items-center gap-3 text-xs">
           <span className="inline-flex items-center gap-2 text-default-500">
-            <span className="h-2.5 w-2.5 rounded-full bg-success/80" />
+            <span className="rounded-full bg-success/80 size-2.5" />
             Ingresos
           </span>
           <span className="inline-flex items-center gap-2 text-default-500">
-            <span className="h-2.5 w-2.5 rounded-full bg-danger/80" />
+            <span className="rounded-full bg-danger/80 size-2.5" />
             Egresos
           </span>
         </div>

@@ -67,7 +67,7 @@ export function LoanList({
                 </div>
                 <span
                   aria-hidden="true"
-                  className={`h-2.5 w-2.5 rounded-full ${indicatorColor} shadow-inner`}
+                  className={`rounded-full size-2.5 ${indicatorColor} shadow-inner`}
                 />
               </div>
               <div className="mt-2 flex flex-wrap items-center gap-4 text-xs">

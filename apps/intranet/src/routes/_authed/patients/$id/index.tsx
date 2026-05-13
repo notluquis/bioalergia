@@ -117,7 +117,7 @@ function PatientDetailsPage() {
           <Card className="overflow-hidden border-none bg-background shadow-sm">
             <Card.Content className="p-0">
               <div className="flex flex-col items-center bg-primary/5 p-6">
-                <div className="mb-3 flex h-20 w-20 items-center justify-center rounded-full bg-primary/10 text-primary">
+                <div className="mb-3 flex items-center justify-center rounded-full bg-primary/10 text-primary size-20">
                   <User size={40} />
                 </div>
                 <h3 className="text-center font-bold">Ficha Clínica #{patient.id}</h3>
@@ -504,7 +504,7 @@ function PatientDetailsHeader({
     <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
       <div className="flex items-center gap-4">
         <Button
-          className="h-10 w-10 min-w-0 rounded-full p-0"
+          className="min-w-0 rounded-full p-0 size-10"
           onPress={goBackToPatients}
           variant="outline"
         >

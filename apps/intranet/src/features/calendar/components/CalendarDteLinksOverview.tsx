@@ -954,7 +954,7 @@ export function CalendarDteLinksOverview({
                 variant="primary"
               >
                 Auto-vincular
-                <ChevronDown className="h-4 w-4" />
+                <ChevronDown className="size-4" />
               </Button>
             </Dropdown.Trigger>
             <Dropdown.Popover className="min-w-75" placement="bottom end">

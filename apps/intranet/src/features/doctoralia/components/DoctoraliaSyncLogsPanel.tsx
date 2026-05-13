@@ -90,7 +90,7 @@ export function DoctoraliaSyncLogsPanel() {
         <Card.Header className="flex items-center justify-between gap-3">
           <div>
             <h2 className="flex items-center gap-2 font-semibold text-base">
-              <History className="h-4 w-4" /> Registro de sincronizaciones
+              <History className="size-4" /> Registro de sincronizaciones
             </h2>
             <Description className="text-default-500 text-xs">
               Últimos 50 eventos de sincronización (scraper, listener IMAP y backfills manuales). Se
@@ -104,7 +104,7 @@ export function DoctoraliaSyncLogsPanel() {
             size="sm"
             variant="secondary"
           >
-            <RefreshCw className="h-4 w-4" />
+            <RefreshCw className="size-4" />
             Sincronizar ahora
           </Button>
         </Card.Header>

@@ -209,7 +209,7 @@ export function SyncProgressPanel({
               >
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3">
-                    <span className={`h-2.5 w-2.5 rounded-full ${dotClass[step.status]}`} />
+                    <span className={`rounded-full size-2.5 ${dotClass[step.status]}`} />
                     <p className="font-semibold text-foreground text-sm">{step.label}</p>
                   </div>
                   <Chip

@@ -30,7 +30,7 @@ export function FinancialStep({
   return (
     <Form className="space-y-6" onSubmit={handleSubmit} validationBehavior="aria">
       <div className="mb-6 text-center">
-        <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-secondary/10 text-secondary">
+        <div className="mx-auto mb-3 flex items-center justify-center rounded-full bg-secondary/10 text-secondary size-12">
           <CreditCard size={24} />
         </div>
         <h2 className="font-bold text-2xl">Datos bancarios</h2>

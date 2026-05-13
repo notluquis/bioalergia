@@ -223,7 +223,7 @@ export function FinanzasStatsPage() {
               </>
             ) : (
               <>
-                <TrendingUp className="h-4 w-4" />
+                <TrendingUp className="size-4" />
                 Actualizar
               </>
             )}
@@ -248,7 +248,7 @@ export function FinanzasStatsPage() {
             <Card className="p-3" variant="secondary">
               <Card.Header className="items-center justify-between p-0">
                 <Card.Title className="text-sm">INGRESOS</Card.Title>
-                <ArrowUp className="h-4 w-4 text-success" />
+                <ArrowUp className="text-success size-4" />
               </Card.Header>
               <Card.Content className="p-0 pt-2">
                 <p className="font-semibold text-2xl text-success">
@@ -261,7 +261,7 @@ export function FinanzasStatsPage() {
             <Card className="p-3" variant="secondary">
               <Card.Header className="items-center justify-between p-0">
                 <Card.Title className="text-sm">EGRESOS</Card.Title>
-                <ArrowDown className="h-4 w-4 text-danger" />
+                <ArrowDown className="text-danger size-4" />
               </Card.Header>
               <Card.Content className="p-0 pt-2">
                 <p className="font-semibold text-2xl text-danger">
@@ -274,7 +274,7 @@ export function FinanzasStatsPage() {
             <Card className="p-3" variant="secondary">
               <Card.Header className="items-center justify-between p-0">
                 <Card.Title className="text-sm">RESULTADO</Card.Title>
-                <BarChart3 className="h-4 w-4 text-primary" />
+                <BarChart3 className="text-primary size-4" />
               </Card.Header>
               <Card.Content className="p-0 pt-2">
                 <p
@@ -304,7 +304,7 @@ export function FinanzasStatsPage() {
             {/* Movement Types */}
             <Card className="p-6">
               <h2 className="mb-4 flex items-center gap-2 font-bold text-lg">
-                <Calendar className="h-5 w-5 text-secondary" />
+                <Calendar className="text-secondary size-5" />
                 Por tipo de movimiento
               </h2>
               <MovementTypeList data={data.byType} />
@@ -313,7 +313,7 @@ export function FinanzasStatsPage() {
             {/* Top Participants Preview */}
             <Card className="p-6">
               <h2 className="mb-4 flex items-center gap-2 font-bold text-lg">
-                <TrendingUp className="h-5 w-5 text-accent" />
+                <TrendingUp className="text-accent size-5" />
                 Resumen rápido
               </h2>
               <div className="space-y-3 text-sm">

@@ -296,7 +296,7 @@ export function MercadoPagoSettingsPage() {
               onPress={openGenerateModal}
               variant="primary"
             >
-              <Plus className="mr-2 h-4 w-4" />
+              <Plus className="mr-2 size-4" />
               Generar Reporte
             </Button>
           )}
@@ -321,7 +321,7 @@ export function MercadoPagoSettingsPage() {
                         )}
                       </Card.Title>
                     </div>
-                    <Clock className="h-5 w-5 text-primary" />
+                    <Clock className="text-primary size-5" />
                   </Card.Header>
                   <Card.Content className="p-0 pt-4">
                     <Description className="truncate text-default-400 text-xs">
@@ -339,7 +339,7 @@ export function MercadoPagoSettingsPage() {
                       <Card.Title className="text-sm">Total Reportes</Card.Title>
                       <Card.Description>{`Tipo: ${resolveReportTypeLabel(reportType)}`}</Card.Description>
                     </div>
-                    <FileText className="h-5 w-5 text-primary" />
+                    <FileText className="text-primary size-5" />
                   </Card.Header>
                   <Card.Content className="p-0 pt-3">
                     <p className="font-semibold text-3xl">
@@ -360,7 +360,7 @@ export function MercadoPagoSettingsPage() {
               <div className="space-y-3">
                 <div className="flex flex-wrap items-center justify-between gap-3 px-1">
                   <div className="flex items-center gap-2">
-                    <FileText className="h-4 w-4 text-primary" />
+                    <FileText className="text-primary size-4" />
                     <div>
                       <span className="block font-semibold text-lg">Historial de Reportes</span>
                       <span className="block text-default-500 text-xs">Total: {reportTotal}</span>
@@ -413,7 +413,7 @@ export function MercadoPagoSettingsPage() {
                         )}
                       </Card.Title>
                     </div>
-                    <Clock className="h-5 w-5 text-primary" />
+                    <Clock className="text-primary size-5" />
                   </Card.Header>
                   <Card.Content className="p-0 pt-4">
                     <Description className="truncate text-default-400 text-xs">
@@ -431,7 +431,7 @@ export function MercadoPagoSettingsPage() {
                       <Card.Title className="text-sm">Total Reportes</Card.Title>
                       <Card.Description>{`Tipo: ${resolveReportTypeLabel(reportType)}`}</Card.Description>
                     </div>
-                    <FileText className="h-5 w-5 text-primary" />
+                    <FileText className="text-primary size-5" />
                   </Card.Header>
                   <Card.Content className="p-0 pt-3">
                     <p className="font-semibold text-3xl">
@@ -452,7 +452,7 @@ export function MercadoPagoSettingsPage() {
               <div className="space-y-3">
                 <div className="flex flex-wrap items-center justify-between gap-3 px-1">
                   <div className="flex items-center gap-2">
-                    <FileText className="h-4 w-4 text-primary" />
+                    <FileText className="text-primary size-4" />
                     <div>
                       <span className="block font-semibold text-lg">Historial de Reportes</span>
                       <span className="block text-default-500 text-xs">Total: {reportTotal}</span>
@@ -500,7 +500,7 @@ export function MercadoPagoSettingsPage() {
               <div className="space-y-3">
                 <div className="flex flex-wrap items-center justify-between gap-3 px-1">
                   <div className="flex items-center gap-2">
-                    <Clock className="h-4 w-4 text-primary" />
+                    <Clock className="text-primary size-4" />
                     <div>
                       <span className="block font-semibold text-lg">Historial de Sync</span>
                       <span className="block text-default-500 text-xs">Total: {syncTotal}</span>
@@ -584,7 +584,7 @@ export function MercadoPagoSettingsPage() {
                 {lastImportStats && (
                   <div className="space-y-4">
                     <div className="flex items-center gap-2 text-success">
-                      <CheckCircle2 className="h-5 w-5" />
+                      <CheckCircle2 className="size-5" />
                       <span className="font-medium">Procesamiento completado</span>
                     </div>
 

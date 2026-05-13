@@ -391,7 +391,7 @@ export function DteSalesDetailsPanel() {
                   {period}
                   <ListBox.ItemIndicator>
                     {({ isSelected }) =>
-                      isSelected ? <Check className="h-4 w-4 text-primary" /> : null
+                      isSelected ? <Check className="text-primary size-4" /> : null
                     }
                   </ListBox.ItemIndicator>
                 </ListBox.Item>

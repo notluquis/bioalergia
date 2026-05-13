@@ -42,7 +42,7 @@ function FeatureErrorFallback({
       role="alert"
       aria-live="assertive"
     >
-      <div className="flex h-14 w-14 items-center justify-center rounded-full bg-danger/10 text-danger">
+      <div className="flex items-center justify-center rounded-full bg-danger/10 text-danger size-14">
         <AlertTriangle size={28} aria-hidden="true" />
       </div>
       <div className="space-y-1">

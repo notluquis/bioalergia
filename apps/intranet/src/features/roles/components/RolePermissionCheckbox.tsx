@@ -30,14 +30,14 @@ export function RolePermissionCheckbox({
     >
       <Checkbox.Control className="border border-default-300/70 bg-default-200/50 shadow-none transition-colors data-[disabled=true]:border-default-300/60 data-[disabled=true]:bg-default-200/35 data-[selected=true]:border-transparent data-[selected=true]:bg-accent data-[indeterminate=true]:border-transparent data-[indeterminate=true]:bg-accent">
         {isUpdating ? (
-          <Loader2 className="h-3.5 w-3.5 animate-spin text-default-500" />
+          <Loader2 className="animate-spin text-default-500 size-3.5" />
         ) : (
           <Checkbox.Indicator>
             {({ isIndeterminate: indeterminate, isSelected: selected }) => {
               if (indeterminate) {
-                return <Minus className="h-3.5 w-3.5" strokeWidth={3} />;
+                return <Minus className="size-3.5" strokeWidth={3} />;
               }
-              return selected ? <Check className="h-3.5 w-3.5" /> : null;
+              return selected ? <Check className="size-3.5" /> : null;
             }}
           </Checkbox.Indicator>
         )}

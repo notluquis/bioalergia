@@ -303,7 +303,7 @@ export function DoctoraliaSettingsPage() {
                   size="sm"
                   variant="secondary"
                 >
-                  <RefreshCw className="h-4 w-4" />
+                  <RefreshCw className="size-4" />
                   Ejecutar ingesta
                 </Button>
               </Card.Header>
@@ -356,7 +356,7 @@ export function DoctoraliaSettingsPage() {
                 {!overviewPending && overview?.listener.lastErrorMessage ? (
                   <Alert status="warning">
                     <Alert.Indicator>
-                      <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                      <AlertCircle className="mt-0.5 shrink-0 size-4" />
                     </Alert.Indicator>
                     <Alert.Content>
                       <Alert.Title>Último error IMAP</Alert.Title>
@@ -411,7 +411,7 @@ export function DoctoraliaSettingsPage() {
             <Card className="xl:col-span-2">
               <Card.Header className="flex flex-col items-start gap-1">
                 <h2 className="flex items-center gap-2 font-semibold text-base">
-                  <Cookie className="h-4 w-4" /> Bot de calendario
+                  <Cookie className="size-4" /> Bot de calendario
                 </h2>
                 <Card.Description className="text-default-500 text-xs">
                   Cómo funcionan las cookies pegadas aquí.

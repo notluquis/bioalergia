@@ -72,9 +72,9 @@ export function MetricCard({
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-2">
             <div
-              className={`flex h-10 w-10 items-center justify-center rounded-2xl bg-background/80 ring-1 ring-inset backdrop-blur-sm ${theme.ring}`}
+              className={`flex items-center justify-center rounded-2xl bg-background/80 ring-1 ring-inset backdrop-blur-sm size-10 ${theme.ring}`}
             >
-              <Icon className={`h-4 w-4 ${theme.iconColor}`} />
+              <Icon className={`size-4 ${theme.iconColor}`} />
             </div>
             <div className="space-y-1">
               <h2 className="font-medium text-default-700 text-xl/none">{title}</h2>

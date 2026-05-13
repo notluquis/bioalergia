@@ -2119,7 +2119,7 @@ export function CashFlowPage() {
                                 <div className="flex items-start justify-between gap-2">
                                   <div className="flex min-w-0 items-center gap-2">
                                     <span
-                                      className="h-2.5 w-2.5 shrink-0 rounded-full"
+                                      className="shrink-0 rounded-full size-2.5"
                                       style={{
                                         backgroundColor: item.categoryColor ?? "#64748B",
                                       }}
@@ -2185,7 +2185,7 @@ export function CashFlowPage() {
                                 <div className="flex items-start justify-between gap-2">
                                   <div className="flex min-w-0 items-center gap-2">
                                     <span
-                                      className="h-2.5 w-2.5 shrink-0 rounded-full"
+                                      className="shrink-0 rounded-full size-2.5"
                                       style={{
                                         backgroundColor: item.categoryColor ?? "#64748B",
                                       }}
@@ -2272,7 +2272,7 @@ export function CashFlowPage() {
                                 >
                                   <div className="flex min-w-0 items-center gap-2">
                                     <span
-                                      className="h-2.5 w-2.5 shrink-0 rounded-full"
+                                      className="shrink-0 rounded-full size-2.5"
                                       style={{ backgroundColor: entry.color }}
                                     />
                                     <span className="truncate text-default-700">{entry.name}</span>
@@ -2333,7 +2333,7 @@ export function CashFlowPage() {
                                 >
                                   <div className="flex min-w-0 items-center gap-2">
                                     <span
-                                      className="h-2.5 w-2.5 shrink-0 rounded-full"
+                                      className="shrink-0 rounded-full size-2.5"
                                       style={{ backgroundColor: entry.color }}
                                     />
                                     <span className="truncate text-default-700">{entry.name}</span>
@@ -2440,7 +2440,7 @@ export function CashFlowPage() {
                               >
                                 <div className="flex items-center gap-2">
                                   <span
-                                    className="h-2.5 w-2.5 shrink-0 rounded-full"
+                                    className="shrink-0 rounded-full size-2.5"
                                     style={{ backgroundColor: option.color }}
                                   />
                                   <span>{option.label}</span>
@@ -2623,7 +2623,7 @@ export function CashFlowPage() {
                         }}
                       >
                         {selectedCategoryMap.get(categoryKey) ?? categoryKey}
-                        <X className="h-3.5 w-3.5" />
+                        <X className="size-3.5" />
                       </Button>
                     ))}
 
@@ -2635,7 +2635,7 @@ export function CashFlowPage() {
                         onPress={() => updateColumnFilter("type", "ALL")}
                       >
                         {columnFilters.type === "INCOME" ? "Ingreso" : "Egreso"}
-                        <X className="h-3.5 w-3.5" />
+                        <X className="size-3.5" />
                       </Button>
                     )}
 
@@ -2647,7 +2647,7 @@ export function CashFlowPage() {
                         onPress={() => updateColumnFilter("fromCounterpart", "")}
                       >
                         Desde: {columnFilters.fromCounterpart}
-                        <X className="h-3.5 w-3.5" />
+                        <X className="size-3.5" />
                       </Button>
                     )}
 
@@ -2659,7 +2659,7 @@ export function CashFlowPage() {
                         onPress={() => updateColumnFilter("toCounterpart", "")}
                       >
                         Hacia: {columnFilters.toCounterpart}
-                        <X className="h-3.5 w-3.5" />
+                        <X className="size-3.5" />
                       </Button>
                     )}
 
@@ -2671,7 +2671,7 @@ export function CashFlowPage() {
                         onPress={() => updateColumnFilter("amount", "")}
                       >
                         Monto: {columnFilters.amount}
-                        <X className="h-3.5 w-3.5" />
+                        <X className="size-3.5" />
                       </Button>
                     )}
 
@@ -2683,7 +2683,7 @@ export function CashFlowPage() {
                         onPress={() => updateColumnFilter("comment", "")}
                       >
                         Comentario: {columnFilters.comment}
-                        <X className="h-3.5 w-3.5" />
+                        <X className="size-3.5" />
                       </Button>
                     )}
 
@@ -2698,7 +2698,7 @@ export function CashFlowPage() {
                         }}
                       >
                         No contabilizables
-                        <X className="h-3.5 w-3.5" />
+                        <X className="size-3.5" />
                       </Button>
                     )}
 
@@ -2713,7 +2713,7 @@ export function CashFlowPage() {
                         }}
                       >
                         Solo sin categoría
-                        <X className="h-3.5 w-3.5" />
+                        <X className="size-3.5" />
                       </Button>
                     )}
                   </div>
@@ -2771,7 +2771,7 @@ export function CashFlowPage() {
                               >
                                 <div className="flex items-center gap-2">
                                   <span
-                                    className="h-2.5 w-2.5 shrink-0 rounded-full"
+                                    className="shrink-0 rounded-full size-2.5"
                                     style={{ backgroundColor: category.color ?? "#ccc" }}
                                   />
                                   <span>{category.name}</span>
@@ -2968,7 +2968,7 @@ export function CashFlowPage() {
                                 <>
                                   <div className="flex items-center gap-2">
                                     <span
-                                      className="h-2.5 w-2.5 rounded-full"
+                                      className="rounded-full size-2.5"
                                       style={{ backgroundColor: category.color ?? "#ccc" }}
                                     />
                                     <span>{category.name}</span>

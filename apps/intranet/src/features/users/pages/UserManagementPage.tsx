@@ -583,7 +583,7 @@ function UserSecurityOverview({ users }: { users: User[] }) {
       <Card className="shadow-sm">
         <Card.Content className="p-5">
           <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+            <div className="flex items-center justify-center rounded-full bg-primary/10 text-primary size-12">
               <UserCog size={24} />
             </div>
             <div>
@@ -597,7 +597,7 @@ function UserSecurityOverview({ users }: { users: User[] }) {
       <Card className="shadow-sm">
         <Card.Content className="p-5">
           <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-success/10 text-success">
+            <div className="flex items-center justify-center rounded-full bg-success/10 text-success size-12">
               <Shield size={24} />
             </div>
             <div>
@@ -613,7 +613,7 @@ function UserSecurityOverview({ users }: { users: User[] }) {
       <Card className="shadow-sm">
         <Card.Content className="p-5">
           <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-info/10 text-info">
+            <div className="flex items-center justify-center rounded-full bg-info/10 text-info size-12">
               <Key size={24} />
             </div>
             <div>

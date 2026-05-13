@@ -33,7 +33,7 @@ export function NotificationHistory() {
             aria-label="Notificaciones"
             className="relative rounded-full text-default-500 hover:bg-default-100"
           >
-            <Bell className="h-5 w-5" />
+            <Bell className="size-5" />
             {unreadCount > 0 && (
               <Chip
                 className="absolute -top-1 -right-1 flex h-5 min-w-5 items-center justify-center border-2 border-background px-1 text-xs"
@@ -65,7 +65,7 @@ export function NotificationHistory() {
                 isIconOnly
                 onPress={() => markAllAsRead()}
               >
-                <CheckCheck className="h-4 w-4 text-primary" />
+                <CheckCheck className="text-primary size-4" />
               </Button>
             )}
             {hasNotifications && (
@@ -77,7 +77,7 @@ export function NotificationHistory() {
                 className="text-danger"
                 onPress={() => clearAll()}
               >
-                <Trash2 className="h-4 w-4" />
+                <Trash2 className="size-4" />
               </Button>
             )}
           </div>
@@ -86,7 +86,7 @@ export function NotificationHistory() {
         <ScrollShadow className="max-h-100">
           {!hasNotifications ? (
             <div className="flex flex-col items-center justify-center gap-2 py-12 text-default-400">
-              <Bell className="h-8 w-8 opacity-20" />
+              <Bell className="opacity-20 size-8" />
               <Description className="text-sm">No tienes notificaciones</Description>
             </div>
           ) : (
@@ -125,7 +125,7 @@ function NotificationItem({ notification, onRead, onRemove }: Readonly<Notificat
       >
         <div
           className={cn(
-            "mt-1 h-2 w-2 shrink-0 rounded-full",
+            "mt-1 shrink-0 rounded-full size-2",
             notification.type === "error"
               ? "bg-danger"
               : notification.type === "success"
@@ -173,7 +173,7 @@ function NotificationItem({ notification, onRead, onRemove }: Readonly<Notificat
           isIconOnly
           size="sm"
         >
-          <X className="h-3 w-3" />
+          <X className="size-3" />
         </Button>
       </article>
     </li>

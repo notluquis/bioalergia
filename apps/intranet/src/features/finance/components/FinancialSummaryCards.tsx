@@ -30,7 +30,7 @@ export function FinancialSummaryCards({
       <Card className="p-2.5" variant="secondary">
         <Card.Header className="items-center justify-between p-0">
           <Card.Title className="text-sm">Ingresos Totales</Card.Title>
-          <DollarSign className="h-4 w-4 text-success" />
+          <DollarSign className="text-success size-4" />
         </Card.Header>
         <Card.Content className="p-0 pt-2">
           <p className="font-semibold text-2xl text-success">
@@ -42,7 +42,7 @@ export function FinancialSummaryCards({
       <Card className="p-2.5" variant="secondary">
         <Card.Header className="items-center justify-between p-0">
           <Card.Title className="text-sm">Gastos Totales</Card.Title>
-          <TrendingDown className="h-4 w-4 text-danger" />
+          <TrendingDown className="text-danger size-4" />
         </Card.Header>
         <Card.Content className="p-0 pt-2">
           <p className="font-semibold text-2xl text-danger">
@@ -54,7 +54,7 @@ export function FinancialSummaryCards({
       <Card className="p-2.5" variant="secondary">
         <Card.Header className="items-center justify-between p-0">
           <Card.Title className="text-sm">Utilidad Neta</Card.Title>
-          <TrendingUp className="h-4 w-4 text-primary" />
+          <TrendingUp className="text-primary size-4" />
         </Card.Header>
         <Card.Content className="p-0 pt-2">
           <p className="font-semibold text-2xl text-primary">

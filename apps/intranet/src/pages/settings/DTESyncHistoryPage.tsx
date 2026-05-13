@@ -88,12 +88,12 @@ export function DTESyncHistoryPage() {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case "SUCCESS":
-        return <CheckCircle2 className="h-4 w-4 text-success" />;
+        return <CheckCircle2 className="text-success size-4" />;
       case "FAILED":
-        return <AlertCircle className="h-4 w-4 text-danger" />;
+        return <AlertCircle className="text-danger size-4" />;
       case "IN_PROGRESS":
       case "PENDING":
-        return <Clock className="h-4 w-4 text-warning" />;
+        return <Clock className="text-warning size-4" />;
       default:
         return null;
     }
@@ -119,7 +119,7 @@ export function DTESyncHistoryPage() {
             }}
             isDisabled={isLoading}
           >
-            <RefreshCw className="h-4 w-4" />
+            <RefreshCw className="size-4" />
           </Button>
         </Card.Header>
       </Card>
@@ -146,7 +146,7 @@ export function DTESyncHistoryPage() {
             </div>
           ) : error ? (
             <div className="flex flex-col items-center justify-center gap-2 py-12 text-center">
-              <AlertCircle className="h-8 w-8 text-danger" />
+              <AlertCircle className="text-danger size-8" />
               <span className="font-medium text-danger">Error al cargar el historial</span>
               <Description className="text-default-500 text-sm">
                 {error instanceof Error ? error.message : "Error desconocido"}
@@ -280,7 +280,7 @@ export function DTESyncHistoryPage() {
             </Accordion>
           ) : (
             <div className="flex flex-col items-center justify-center gap-2 py-12 text-center">
-              <Clock className="h-8 w-8 text-default-300" />
+              <Clock className="text-default-300 size-8" />
               <span className="font-medium text-default-500">No hay registros aún</span>
               <Description className="text-default-400 text-sm">
                 Los registros aparecerán aquí cuando se ejecute una sincronización

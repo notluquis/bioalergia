@@ -176,7 +176,7 @@ function ServiceScheduleAccordion({
                   </Description>
                 </div>
                 <span
-                  className={`inline-flex h-7 w-7 items-center justify-center rounded-full border border-default-200 bg-default-50 font-semibold text-default-500 text-xs ${
+                  className={`inline-flex items-center justify-center rounded-full border border-default-200 bg-default-50 font-semibold text-default-500 text-xs size-7 ${
                     isExpanded ? "rotate-180" : ""
                   }`}
                 >

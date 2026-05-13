@@ -212,7 +212,7 @@ function AuthedLayout() {
         >
           <span
             aria-hidden="true"
-            className={`relative flex h-5 w-5 flex-col items-center justify-center gap-1.25 rounded-full ${
+            className={`relative flex flex-col items-center justify-center gap-1.25 rounded-full size-5 ${
               sidebarOpen ? "text-primary" : "text-foreground"
             }`}
           >
@@ -247,9 +247,9 @@ function AuthedLayout() {
 
           <main className="flex-1 overflow-hidden rounded-3xl " id="main-content" tabIndex={-1}>
             <RouteHeading />
-            <div className="surface-recessed h-full w-full overflow-hidden rounded-3xl border border-default-100/50 bg-background/50 shadow-inner">
+            <div className="surface-recessed overflow-hidden rounded-3xl border border-default-100/50 bg-background/50 shadow-inner size-full">
               <div
-                className={`h-full w-full overflow-y-auto overflow-x-hidden ${contentPaddingClass}`}
+                className={`overflow-y-auto overflow-x-hidden size-full ${contentPaddingClass}`}
               >
                 <Outlet />
               </div>

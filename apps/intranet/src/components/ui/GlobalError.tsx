@@ -52,9 +52,9 @@ function GlobalErrorFallback({
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4 text-center">
       <Card className="max-w-md space-y-6 border-none bg-transparent shadow-none">
-        <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-danger/10 text-danger">
+        <div className="mx-auto flex items-center justify-center rounded-full bg-danger/10 text-danger size-20">
           <svg
-            className="h-10 w-10"
+            className="size-10"
             fill="none"
             stroke="currentColor"
             strokeWidth={1.5}

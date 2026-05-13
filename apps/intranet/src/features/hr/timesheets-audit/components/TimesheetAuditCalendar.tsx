@@ -371,11 +371,11 @@ export function TimesheetAuditCalendar({
       {/* Legend */}
       <div className="mt-6 grid grid-cols-1 gap-3 text-default-600 text-sm sm:grid-cols-2">
         <div className="flex items-center gap-3">
-          <div className="h-4 w-4 rounded bg-success" />
+          <div className="rounded bg-success size-4" />
           <span>Sin solapamiento</span>
         </div>
         <div className="flex items-center gap-3">
-          <div className="h-4 w-4 rounded bg-danger" />
+          <div className="rounded bg-danger size-4" />
           <span>Con solapamiento detectado</span>
         </div>
       </div>

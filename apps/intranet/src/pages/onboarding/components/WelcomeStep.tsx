@@ -9,7 +9,7 @@ interface WelcomeStepProps {
 export function WelcomeStep({ userEmail, onNext }: WelcomeStepProps) {
   return (
     <div className="space-y-6 py-8 text-center">
-      <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-primary/10 text-primary">
+      <div className="mx-auto flex items-center justify-center rounded-full bg-primary/10 text-primary size-20">
         <Shield size={40} />
       </div>
       <div>
