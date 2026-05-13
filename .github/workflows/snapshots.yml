@@ -1,0 +1,87 @@
+name: snapshots
+
+# Generate Playwright visual regression baselines on Linux + commit them
+# back to the branch. Manual trigger only — golden 2026 pattern for
+# cross-platform snapshot stability:
+#
+#   1. Local dev (any OS) runs `playwright test` against the same baselines
+#      and reports drift only — never updates.
+#   2. When markup intentionally changes, owner triggers this workflow
+#      with `workflow_dispatch`. CI generates fresh PNGs on Linux,
+#      commits them to the branch under
+#      `apps/intranet/e2e/<spec>.spec.ts-snapshots/`.
+#   3. Reviewer approves the PNG diff in the PR.
+#
+# Single source of truth: every baseline is Linux-rendered.
+# Reference: https://playwright.dev/docs/test-snapshots
+
+on:
+  workflow_dispatch:
+    inputs:
+      grep:
+        description: "Optional --grep filter (e.g. `route snapshot`); empty = all snapshot specs"
+        required: false
+        default: ""
+
+concurrency:
+  group: snapshots-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: 26
+  TURBO_TELEMETRY_DISABLED: "1"
+
+jobs:
+  update-snapshots:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          # Default fetch-depth: 1 prevents push back; need full ref.
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v6
+        with: { node-version: "${{ env.NODE_VERSION }}", cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+
+      - name: Build intranet (preview server target)
+        run: pnpm turbo run build --filter=@finanzas/intranet
+
+      - name: Install browsers
+        run: pnpm -F @finanzas/intranet exec playwright install --with-deps chromium webkit
+
+      - name: Update snapshots
+        env:
+          CI: "true"
+          E2E_USER: ${{ secrets.E2E_USER }}
+          E2E_PASS: ${{ secrets.E2E_PASS }}
+          E2E_BASE_URL: ${{ secrets.E2E_BASE_URL }}
+        run: |
+          if [ -n "${{ inputs.grep }}" ]; then
+            pnpm -F @finanzas/intranet exec playwright test --update-snapshots --grep "${{ inputs.grep }}"
+          else
+            # Default: only the snapshot-bearing specs (don't redo a11y/etc.)
+            pnpm -F @finanzas/intranet exec playwright test route-snapshots --update-snapshots
+          fi
+
+      - name: Commit baselines
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "apps/intranet/e2e/**/*-snapshots/**" || true
+          if git diff --cached --quiet; then
+            echo "No baseline changes."
+            exit 0
+          fi
+          git commit -m "chore(snapshots): update Playwright baselines (workflow_dispatch)"
+          git push origin HEAD:${{ github.ref_name }}
+
+      - name: Upload Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: snapshots-report
+          path: apps/intranet/e2e-report
+          retention-days: 7

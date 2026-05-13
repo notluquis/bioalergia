@@ -51,6 +51,14 @@ const iosWebkit = devices["iPhone 14"];
 export default defineConfig({
   testDir: "./e2e",
   outputDir: "./e2e-results",
+  // Drop the default `-{platform}` suffix from snapshot filenames. A
+  // single set of baselines per (route × project) is generated on Linux
+  // CI (see `.github/workflows/snapshots.yml` workflow_dispatch job).
+  // macOS dev runs the diff for read-only feedback and never updates
+  // baselines. Without this template the default
+  // `{arg}-{projectName}-{platform}.png` would force separate baselines
+  // per OS that never match each other.
+  snapshotPathTemplate: "{snapshotDir}/{testFilePath}-snapshots/{arg}-{projectName}{ext}",
   fullyParallel: true,
   forbidOnly: isCI,
   retries: isCI ? 1 : 0,
