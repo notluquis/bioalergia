@@ -72,15 +72,19 @@ registerRoute(
 
 // ─── Push notification receipt ────────────────────────────────────────────────
 // Payload shape mirrors what apps/api/src/services/notifications.ts
-// dispatches: { title, body, icon, tag, data: { url } }. We tolerate
-// missing fields so a malformed payload still renders something.
+// dispatches: { title, body, icon, image, tag, badgeCount, timestamp,
+// data: { url, badgeCount } }. We tolerate missing fields so a
+// malformed payload still renders something.
 self.addEventListener("push", (event) => {
   let payload: {
     title?: string;
     body?: string;
     icon?: string;
+    image?: string;
     tag?: string;
-    data?: { url?: string };
+    badgeCount?: number;
+    timestamp?: number;
+    data?: { url?: string; badgeCount?: number };
   } = {};
   if (event.data) {
     try {
@@ -90,28 +94,68 @@ self.addEventListener("push", (event) => {
     }
   }
   const title = payload.title ?? "Bioalergia";
+  // Run notification + badge update in parallel; event.waitUntil
+  // keeps the SW alive until both promises settle so the OS doesn't
+  // consider the push event "completed without showing notification".
   event.waitUntil(
-    self.registration.showNotification(title, {
-      body: payload.body ?? "",
-      icon: payload.icon ?? "/icons/icon-192.png",
-      badge: "/icons/icon-72.png",
-      tag: payload.tag,
-      data: payload.data ?? {},
-      // `renotify` is in the spec but not in lib.dom NotificationOptions
-      // yet; cast to bypass the missing field while keeping runtime
-      // behaviour. Keeps the OS pinging on every new message in an
-      // already-open conversation.
-      ...({ renotify: !!payload.tag } as Record<string, unknown>),
-    })
+    Promise.all([
+      self.registration.showNotification(title, {
+        body: payload.body ?? "",
+        icon: payload.icon ?? "/icons/icon-192.png",
+        badge: "/icons/icon-72.png",
+        tag: payload.tag,
+        data: payload.data ?? {},
+        // `image`, `timestamp`, `renotify`, `vibrate` are in the spec
+        // but not all in lib.dom. Cast keeps TS happy while the OS
+        // (Chromium / iOS 16.4+) honours each one when available.
+        ...({
+          image: payload.image,
+          timestamp: payload.timestamp ?? Date.now(),
+          renotify: !!payload.tag,
+          // Two short pulses → standard messaging app feel on Android.
+          vibrate: [200, 100, 200],
+        } as Record<string, unknown>),
+      }),
+      // Badging API (Chromium + Safari iOS 16.4+ + macOS PWAs). Falls
+      // back silently when the runtime doesn't expose it.
+      (async () => {
+        type BadgeNav = Navigator & {
+          setAppBadge?: (n?: number) => Promise<void>;
+          clearAppBadge?: () => Promise<void>;
+        };
+        const nav = (self as unknown as { navigator: BadgeNav }).navigator;
+        const count = payload.badgeCount ?? payload.data?.badgeCount;
+        try {
+          if (typeof count === "number" && count > 0) {
+            await nav.setAppBadge?.(count);
+          } else {
+            await nav.clearAppBadge?.();
+          }
+        } catch {
+          // Older PWAs / Firefox throw; we already showed the
+          // notification so the operator still sees the activity.
+        }
+      })(),
+    ])
   );
 });
 
 // ─── Click → focus / open ─────────────────────────────────────────────────────
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  const target = (event.notification.data as { url?: string })?.url ?? "/";
+  const data = (event.notification.data as { url?: string }) ?? {};
+  const target = data.url ?? "/";
+  // Close every other notification with the same tag so opening a
+  // conversation clears its stack from the OS notification center.
+  // Without this the operator still sees three "Juan Pérez" banners
+  // after tapping one and replying.
+  const tag = event.notification.tag;
   event.waitUntil(
     (async () => {
+      if (tag) {
+        const same = await self.registration.getNotifications({ tag });
+        for (const n of same) n.close();
+      }
       const all = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
       // Reuse an existing tab if one already has the app open.
       for (const c of all) {

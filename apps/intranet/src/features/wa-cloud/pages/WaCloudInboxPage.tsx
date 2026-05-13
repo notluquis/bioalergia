@@ -151,7 +151,21 @@ export function WaCloudInboxPage() {
   );
 
   useEffect(() => {
-    if (selectedId) markRead.mutate(selectedId);
+    if (selectedId) {
+      markRead.mutate(selectedId);
+      // Close any OS notifications stacked under this conversation
+      // tag — prevents leftover banners after the operator already
+      // opened the chat from another surface.
+      void (async () => {
+        try {
+          const reg = await navigator.serviceWorker?.getRegistration();
+          const stale = await reg?.getNotifications({ tag: `wa-conv-${selectedId}` });
+          stale?.forEach((n) => n.close());
+        } catch {
+          // ignore — notification API not available
+        }
+      })();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedId]);
 
@@ -161,6 +175,26 @@ export function WaCloudInboxPage() {
     () => items.reduce((sum, c) => sum + (c.unreadCount || 0), 0),
     [items]
   );
+
+  // Keep the OS app badge in sync with the visible inbox unread total.
+  // The SW also paints the badge on push receipt; this covers the
+  // case where the operator reads everything without a new push (e.g.
+  // marks-as-read in the UI), so the icon dot disappears immediately.
+  useEffect(() => {
+    type BadgeNav = Navigator & {
+      setAppBadge?: (n?: number) => Promise<void>;
+      clearAppBadge?: () => Promise<void>;
+    };
+    const nav = navigator as BadgeNav;
+    void (async () => {
+      try {
+        if (totalUnread > 0) await nav.setAppBadge?.(totalUnread);
+        else await nav.clearAppBadge?.();
+      } catch {
+        // ignore — Badging API not available
+      }
+    })();
+  }, [totalUnread]);
 
   // Tab title shows the unread total so the operator notices new
   // WhatsApp activity even from another tab. Favicon also gets a

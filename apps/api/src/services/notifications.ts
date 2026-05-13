@@ -100,10 +100,21 @@ export async function broadcastPushNotification(payload: {
   title: string;
   body: string;
   icon?: string;
+  // Optional rich preview. WhatsApp media messages can map media
+  // thumbnails here so the OS lockscreen shows the image alongside
+  // the body. Spec: NotificationOptions.image (Chromium) /
+  // attachment (Safari iOS 16.4+).
+  image?: string;
   url?: string;
   // Tag lets the OS collapse repeated notifications from the same
   // conversation into one (per Web Notification API spec).
   tag?: string;
+  // Unread count to paint on the PWA icon via the Badging API in the
+  // SW push handler. Total per-device since the spec doesn't expose
+  // per-user badges; for a shared inbox this is the org-wide unread
+  // count, which is what the operator wants on a single-tenant clinic
+  // PWA.
+  badgeCount?: number;
 }) {
   if (!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) {
     return { success: false, sent: 0, reason: "VAPID keys not configured" };
@@ -117,8 +128,11 @@ export async function broadcastPushNotification(payload: {
     title: payload.title,
     body: payload.body,
     icon: payload.icon || "/icons/icon-192x192.png",
+    image: payload.image,
     tag: payload.tag,
-    data: { url: payload.url || "/" },
+    badgeCount: payload.badgeCount,
+    timestamp: Date.now(),
+    data: { url: payload.url || "/", badgeCount: payload.badgeCount },
   });
 
   const results = await Promise.allSettled(

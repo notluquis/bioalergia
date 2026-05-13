@@ -928,11 +928,20 @@ export async function processWebhookPayload(payload: MetaWebhookPayload): Promis
               const senderName =
                 contact?.name ?? contact?.pushName ?? contact?.phoneE164 ?? "WhatsApp";
               const bodyPreview = preview && preview.length > 120 ? `${preview.slice(0, 117)}…` : preview;
+              // Org-wide unread count for the badge. Aggregating
+              // unreadCount across every conversation matches what the
+              // operator sees in the inbox header (totalUnread).
+              const unreadAgg = await db.waConversation.aggregate({
+                _sum: { unreadCount: true },
+                where: { unreadCount: { gt: 0 } },
+              });
+              const badgeCount = Number(unreadAgg._sum.unreadCount ?? 0);
               broadcastPushNotification({
                 title: senderName,
                 body: bodyPreview || "Nuevo mensaje",
-                url: `/wa-cloud/inbox?conversation=${convId}`,
+                url: `/wa-cloud?conversation=${convId}`,
                 tag: `wa-conv-${convId}`,
+                badgeCount,
               }).catch((err) => {
                 logWarn("[wa-cloud.webhook] push notification failed", {
                   error: err instanceof Error ? err.message : String(err),
