@@ -14,9 +14,10 @@ const config: StorybookConfig = {
     // story preview load. Chromatic's headless story extractor doesn't
     // have Vitest in scope and crashes with
     // "Cannot read properties of undefined (reading 'customEqualityTesters')".
-    // Skip the addon when CHROMATIC env is set (the chromatic CLI exports
-    // it for every run). Local + addon-vitest test:storybook unaffected.
-    ...(process.env.CHROMATIC ? [] : ["@storybook/addon-vitest"]),
+    // Skip when IS_CHROMATIC is set (`pnpm chromatic` script prefixes the
+    // CLI with `IS_CHROMATIC=true` per chromatic.com/docs/ischromatic).
+    // Local dev + Vitest test:storybook still load it.
+    ...(process.env.IS_CHROMATIC ? [] : ["@storybook/addon-vitest"]),
     // Auto-instruments story files for coverage. NOTE: the actual coverage
     // report is produced by the `unit` Vitest project (`pnpm test:coverage`,
     // see vite.config.ts → test.coverage). Stories are excluded from that

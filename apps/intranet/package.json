@@ -14,7 +14,7 @@
     "preview": "vite preview",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
-    "chromatic": "chromatic --project-token=$CHROMATIC_PROJECT_TOKEN --exit-once-uploaded",
+    "chromatic": "IS_CHROMATIC=true chromatic --project-token=$CHROMATIC_PROJECT_TOKEN --exit-once-uploaded",
     "lint": "oxlint",
     "lint:fix": "oxlint --fix",
     "type-check": "tsgo --noEmit && oxlint --type-check-only src shared",
