@@ -14,7 +14,7 @@
 // Mac/iPhone smoke tests previously reported `success: true, sent: 2`
 // but no banner appeared anywhere.
 
-import { cleanupOutdatedCaches, precacheAndRoute } from "workbox-precaching";
+import { cleanupOutdatedCaches } from "workbox-precaching";
 import { registerRoute } from "workbox-routing";
 import { NetworkFirst, StaleWhileRevalidate } from "workbox-strategies";
 
@@ -23,24 +23,22 @@ declare const self: ServiceWorkerGlobalScope & {
 };
 
 // ─── Precache + runtime cache ────────────────────────────────────────────────
-// `globPatterns: []` (set in vite.config.ts) means the manifest is
-// usually empty. Calling precacheAndRoute([]) still tries to register
-// a navigation handler that maps to a non-existent `index.html` and
-// throws "non-precached-url" at SW startup. The unhandled rejection
-// aborts SW activation before our `push` listener registers — exactly
-// the symptom Safari Web Inspector showed (workbox-XXXX.js stack
-// trace + push events handled without showNotification). Skip the
-// precache call entirely when the manifest is empty.
+// We DO NOT call precacheAndRoute. With `globPatterns: []` the
+// manifest is empty anyway, and calling it side-effect-registers a
+// navigation handler that maps every nav request to the non-existent
+// `index.html`, throwing "non-precached-url" at SW startup. The
+// unhandled rejection aborts SW activation before the push listener
+// gets registered (the symptom Safari Web Inspector showed:
+// workbox-XXXX.js stack trace + "Push event handling completed
+// without showing any notification"). Even importing
+// precacheAndRoute pulls createHandlerBoundToURL into the bundle, so
+// we drop the import entirely.
 //
-// vite-plugin-pwa's injectManifest stage asserts the workbox-injected
-// global appears EXACTLY ONCE in this file, otherwise the build
-// crashes with `AssertionError: ensure that your 'swSrc' file
-// contains only one match`. We reference it in exactly one spot below
-// and reuse the local const afterwards.
-const wbManifest = self.__WB_MANIFEST;
-if (Array.isArray(wbManifest) && wbManifest.length > 0) {
-  precacheAndRoute(wbManifest);
-}
+// injectManifest still asserts that `self.__WB_MANIFEST` appears
+// EXACTLY ONCE in the source — we touch it via void in a single
+// reference so the build pipeline is satisfied without using the
+// value at runtime.
+void self.__WB_MANIFEST;
 cleanupOutdatedCaches();
 
 // Take over the page on first install so we don't have to wait for
