@@ -949,8 +949,17 @@ export async function processWebhookPayload(payload: MetaWebhookPayload): Promis
               });
               const badgeCount = Number(unreadAgg._sum.unreadCount ?? 0);
               broadcastPushNotification({
-                title: senderName,
-                body: bodyPreview || "Nuevo mensaje",
+                generic: {
+                  title: "Bioalergia",
+                  body:
+                    badgeCount > 1
+                      ? `${badgeCount} mensajes nuevos`
+                      : "Mensaje nuevo en bandeja",
+                },
+                phi: {
+                  sender: senderName,
+                  preview: bodyPreview || "Nuevo mensaje",
+                },
                 url: `/wa-cloud?conversation=${convId}`,
                 tag: `wa-conv-${convId}`,
                 badgeCount,

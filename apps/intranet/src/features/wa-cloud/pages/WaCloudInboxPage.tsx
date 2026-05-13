@@ -20,7 +20,7 @@ import {
   TagGroup,
 } from "@heroui/react";
 // Spinner removed in favour of ConversationListSkeleton for the inbox list.
-import { useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { getRouteApi } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import { ArrowLeft, Bell, BellOff, Filter, Inbox, MessageSquareText, Phone } from "lucide-react";
@@ -32,6 +32,11 @@ import { useFaviconBadge } from "../hooks/useFaviconBadge";
 import { useSharedPayload } from "../hooks/useSharedPayload";
 import { useAccounts, useConversations, useMarkRead, useSearchMessages } from "../hooks/useWaCloud";
 import { usePushNotifications } from "@/hooks/use-push-notifications";
+import {
+  getPushPreviewMode,
+  type PushPreviewMode,
+  setPushPreviewMode,
+} from "@/features/notifications/api";
 
 // `?conversation=N` is the canonical deep-link param (validated in
 // the route file). Reading via getRouteApi avoids the optional
@@ -547,25 +552,84 @@ function PushToggle() {
   // every subscribed device. Hidden when the browser doesn't support
   // the Notification API at all (very old Safari builds).
   const { isSubscribed, permission, toggleSubscription } = usePushNotifications();
+  const qc = useQueryClient();
+  const previewModeQ = useQuery({
+    queryKey: ["notifications", "previewMode"],
+    queryFn: () => getPushPreviewMode(),
+    enabled: isSubscribed,
+  });
+  const setMode = useMutation({
+    mutationFn: (mode: PushPreviewMode) => setPushPreviewMode(mode),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["notifications", "previewMode"] }),
+  });
   if (typeof window === "undefined" || !("Notification" in window)) return null;
   const isBlocked = permission === "denied";
+  const mode = previewModeQ.data?.mode ?? "GENERIC";
   return (
-    <Button
-      variant="tertiary"
-      size="sm"
-      isIconOnly
-      isDisabled={isBlocked}
-      onPress={() => void toggleSubscription()}
-      aria-label={
-        isBlocked
-          ? "Notificaciones bloqueadas en el navegador"
-          : isSubscribed
-            ? "Desactivar notificaciones push"
-            : "Activar notificaciones push"
-      }
-    >
-      {isSubscribed ? <Bell size={14} className="text-success" /> : <BellOff size={14} />}
-    </Button>
+    <Dropdown>
+      <Dropdown.Trigger>
+        <Button
+          variant="tertiary"
+          size="sm"
+          isIconOnly
+          isDisabled={isBlocked}
+          aria-label={
+            isBlocked
+              ? "Notificaciones bloqueadas en el navegador"
+              : isSubscribed
+                ? "Ajustes de notificaciones push"
+                : "Activar notificaciones push"
+          }
+        >
+          {isSubscribed ? <Bell size={14} className="text-success" /> : <BellOff size={14} />}
+        </Button>
+      </Dropdown.Trigger>
+      <Dropdown.Popover className="w-72 space-y-3 p-3">
+        <div className="flex items-center justify-between gap-2">
+          <Label className="text-sm">Notificaciones push</Label>
+          <Button size="sm" variant="ghost" onPress={() => void toggleSubscription()}>
+            {isSubscribed ? "Desactivar" : "Activar"}
+          </Button>
+        </div>
+        {isSubscribed && (
+          <>
+            <Label className="text-default-600 text-xs">
+              Contenido visible en la pantalla bloqueada
+            </Label>
+            <Select
+              value={mode}
+              onChange={(k) => setMode.mutate(k as PushPreviewMode)}
+              isDisabled={setMode.isPending || previewModeQ.isLoading}
+            >
+              <Select.Trigger>
+                <Select.Value />
+                <Select.Indicator />
+              </Select.Trigger>
+              <Select.Popover>
+                <ListBox>
+                  <ListBox.Item id="GENERIC" textValue="Genérico (recomendado)">
+                    Genérico (recomendado)
+                  </ListBox.Item>
+                  <ListBox.Item id="SENDER_NAME" textValue="Solo nombre del remitente">
+                    Solo nombre del remitente
+                  </ListBox.Item>
+                  <ListBox.Item id="FULL" textValue="Nombre + preview del mensaje">
+                    Nombre + preview del mensaje
+                  </ListBox.Item>
+                </ListBox>
+              </Select.Popover>
+            </Select>
+            <p className="rounded-md bg-default/40 p-2 text-default-700 text-xs">
+              {mode === "GENERIC"
+                ? "Sin información del paciente en la pantalla bloqueada. Default per Ley 21.719 + HIPAA 2026."
+                : mode === "SENDER_NAME"
+                  ? "Verás el nombre del remitente. Asegúrate de tener pantalla protegida con biometría."
+                  : "Verás nombre + preview. Recomendado solo con device biometric-locked."}
+            </p>
+          </>
+        )}
+      </Dropdown.Popover>
+    </Dropdown>
   );
 }
 

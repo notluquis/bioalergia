@@ -126,24 +126,33 @@ export async function sendPushNotification(
 // Broadcast a push notification to every subscribed device. Used for
 // events that any operator should see (e.g. inbound WhatsApp message
 // landing in the shared inbox). Bad endpoints are GC'd in place.
+//
+// Payload split into `phi` (sender/preview that may carry protected
+// health info) vs `generic` (safe fallback). The visible payload is
+// chosen PER SUBSCRIPTION based on the owning user's
+// `pushPreviewMode` setting — operators with mode=GENERIC never see
+// PHI on their lock screen (HIPAA 2026 default per indigitall/
+// healthcare 2026 best practices; Ley 21.719 sensitive-data
+// minimization in Chile).
 export async function broadcastPushNotification(payload: {
-  title: string;
-  body: string;
+  // Safe baseline rendered to every device regardless of mode.
+  // GENERIC users see this verbatim; SENDER_NAME/FULL users may see
+  // sender/preview superimposed.
+  generic: { title: string; body: string };
+  // PHI-carrying enrichment shown to SENDER_NAME (title only) or
+  // FULL (title + body). Omit to keep every device on the generic
+  // payload (e.g. infra/test broadcasts).
+  phi?: { sender: string; preview: string };
   icon?: string;
-  // Optional rich preview. WhatsApp media messages can map media
-  // thumbnails here so the OS lockscreen shows the image alongside
-  // the body. Spec: NotificationOptions.image (Chromium) /
-  // attachment (Safari iOS 16.4+).
+  // Optional rich preview thumbnail. Suppressed for GENERIC/
+  // SENDER_NAME modes since an image can itself be PHI.
   image?: string;
   url?: string;
   // Tag lets the OS collapse repeated notifications from the same
   // conversation into one (per Web Notification API spec).
   tag?: string;
-  // Unread count to paint on the PWA icon via the Badging API in the
-  // SW push handler. Total per-device since the spec doesn't expose
-  // per-user badges; for a shared inbox this is the org-wide unread
-  // count, which is what the operator wants on a single-tenant clinic
-  // PWA.
+  // Org-wide unread count for the PWA badge. NOT PHI on its own;
+  // sent to every mode.
   badgeCount?: number;
   // Keep the OS banner up until the operator dismisses or acts on it.
   // For clinical messages (WhatsApp inbound) we set this true so a
@@ -180,18 +189,17 @@ export async function broadcastPushNotification(payload: {
   // receiving notifications immediately — required for offboarding
   // an ex-employee without waiting for them to logout on their phone.
   // Logout itself also wipes the row server-side (orpc/auth.ts).
+  // Include `pushPreviewMode` so we can render a per-user payload.
   const subscriptions = await db.pushSubscription.findMany({
     where: { user: { status: "ACTIVE" } },
+    include: { user: { select: { pushPreviewMode: true } } },
   });
   if (subscriptions.length === 0) {
     return { success: true, sent: 0 };
   }
 
-  const notificationPayload = JSON.stringify({
-    title: payload.title,
-    body: payload.body,
+  const baseData = {
     icon: payload.icon || "/icons/icon-192x192.png",
-    image: payload.image,
     tag: payload.tag,
     badgeCount: payload.badgeCount,
     requireInteraction: payload.requireInteraction,
@@ -204,18 +212,43 @@ export async function broadcastPushNotification(payload: {
       badgeCount: payload.badgeCount,
       ...payload.meta,
     },
-  });
+  };
+  // Pre-build a JSON payload per preview mode so we don't re-serialize
+  // the common fields N times. Three modes total → at most 3 strings.
+  const payloadByMode: Record<string, string> = {
+    GENERIC: JSON.stringify({
+      ...baseData,
+      title: payload.generic.title,
+      body: payload.generic.body,
+      // GENERIC explicitly drops image because thumbnails can leak PHI
+      // (a media message preview shows a patient's photo on the lock
+      // screen even when title+body are scrubbed).
+    }),
+    SENDER_NAME: JSON.stringify({
+      ...baseData,
+      title: payload.phi?.sender ?? payload.generic.title,
+      body: payload.phi ? "Mensaje nuevo" : payload.generic.body,
+    }),
+    FULL: JSON.stringify({
+      ...baseData,
+      title: payload.phi?.sender ?? payload.generic.title,
+      body: payload.phi?.preview ?? payload.generic.body,
+      image: payload.image,
+    }),
+  };
 
   const results = await Promise.allSettled(
-    subscriptions.map((sub) =>
-      webpush.sendNotification(
+    subscriptions.map((sub) => {
+      const mode = sub.user?.pushPreviewMode ?? "GENERIC";
+      const notificationPayload = payloadByMode[mode] ?? payloadByMode.GENERIC!;
+      return webpush.sendNotification(
         {
           endpoint: sub.endpoint,
           keys: sub.keys as unknown as { p256dh: string; auth: string },
         },
         notificationPayload
-      )
-    )
+      );
+    })
   );
 
   let sent = 0;

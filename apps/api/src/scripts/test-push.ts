@@ -23,8 +23,10 @@ async function main() {
     console.log(`  · user=${s.userId} endpoint=${s.endpoint.slice(0, 60)}…`);
   }
   const res = await broadcastPushNotification({
-    title: "Bioalergia · Test push",
-    body: `Push funciona ✓ — ${new Date().toLocaleTimeString("es-CL")}`,
+    generic: {
+      title: "Bioalergia · Test push",
+      body: `Push funciona ✓ — ${new Date().toLocaleTimeString("es-CL")}`,
+    },
     url: "/wa-cloud",
     tag: "test-push",
   });

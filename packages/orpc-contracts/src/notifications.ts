@@ -52,6 +52,20 @@ export const unreadCountResponseSchema = z.object({
   count: z.number().int().nonnegative(),
 });
 
+// Privacy gate for Web Push payloads. Mirrors the `WaPushPreviewMode`
+// enum in the DB schema. Default GENERIC matches the HIPAA 2026 +
+// Ley 21.719 recommendation that PHI never appears on a lock screen.
+export const pushPreviewModeSchema = z.enum(["GENERIC", "SENDER_NAME", "FULL"]);
+export type PushPreviewMode = z.infer<typeof pushPreviewModeSchema>;
+
+export const previewModeResponseSchema = z.object({
+  mode: pushPreviewModeSchema,
+});
+
+export const setPreviewModeInputSchema = z.object({
+  mode: pushPreviewModeSchema,
+});
+
 export const sendTestInputSchema = z.object({
   userId: z.number().int().optional(),
 });
@@ -80,6 +94,13 @@ export const notificationsContract = {
   unreadCount: oc
     .route({ method: "GET", path: "/unread-count" })
     .output(unreadCountResponseSchema),
+  getPreviewMode: oc
+    .route({ method: "GET", path: "/preview-mode" })
+    .output(previewModeResponseSchema),
+  setPreviewMode: oc
+    .route({ method: "POST", path: "/preview-mode" })
+    .input(setPreviewModeInputSchema)
+    .output(notificationsStatusResponseSchema),
 };
 
 export type NotificationsContract = typeof notificationsContract;

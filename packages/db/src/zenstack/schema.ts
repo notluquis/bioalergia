@@ -391,6 +391,12 @@ export class SchemaType implements SchemaDef {
                     attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(true) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("mfa_enforced") }] }] as readonly AttributeApplication[],
                     default: true as FieldDefault
                 },
+                pushPreviewMode: {
+                    name: "pushPreviewMode",
+                    type: "WaPushPreviewMode",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("GENERIC") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("push_preview_mode") }] }] as readonly AttributeApplication[],
+                    default: "GENERIC" as FieldDefault
+                },
                 dailyProductionBalances: {
                     name: "dailyProductionBalances",
                     type: "DailyProductionBalance",
@@ -13906,6 +13912,14 @@ export class SchemaType implements SchemaDef {
         }
     } as const;
     enums = {
+        WaPushPreviewMode: {
+            name: "WaPushPreviewMode",
+            values: {
+                GENERIC: "GENERIC",
+                SENDER_NAME: "SENDER_NAME",
+                FULL: "FULL"
+            }
+        },
         AuditEventKind: {
             name: "AuditEventKind",
             values: {

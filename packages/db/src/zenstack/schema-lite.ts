@@ -333,6 +333,11 @@ export class SchemaType implements SchemaDef {
                     type: "Boolean",
                     default: true as FieldDefault
                 },
+                pushPreviewMode: {
+                    name: "pushPreviewMode",
+                    type: "WaPushPreviewMode",
+                    default: "GENERIC" as FieldDefault
+                },
                 dailyProductionBalances: {
                     name: "dailyProductionBalances",
                     type: "DailyProductionBalance",
@@ -11379,6 +11384,14 @@ export class SchemaType implements SchemaDef {
         }
     } as const;
     enums = {
+        WaPushPreviewMode: {
+            name: "WaPushPreviewMode",
+            values: {
+                GENERIC: "GENERIC",
+                SENDER_NAME: "SENDER_NAME",
+                FULL: "FULL"
+            }
+        },
         AuditEventKind: {
             name: "AuditEventKind",
             values: {

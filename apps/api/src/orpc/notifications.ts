@@ -3,8 +3,10 @@ import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
 import {
   dismissedInputSchema,
   notificationsStatusResponseSchema,
+  previewModeResponseSchema,
   rotateInputSchema,
   sendTestInputSchema,
+  setPreviewModeInputSchema,
   subscribeInputSchema,
   unreadCountResponseSchema,
   unsubscribeInputSchema,
@@ -121,6 +123,42 @@ const notificationsORPCRouterBase = {
       logEvent("[notifications.dismissed]", {
         tag: input.tag,
         conversationId: input.conversationId,
+      });
+      return { status: "ok", success: true };
+    }),
+
+  // Privacy gate for Web Push payloads. Operator selects how much
+  // PHI may appear on the lock screen — GENERIC is the default per
+  // HIPAA 2026 / Ley 21.719 recommendations.
+  getPreviewMode: authed
+    .route({
+      method: "GET",
+      path: "/preview-mode",
+      summary: "Get the current user's push preview mode",
+      tags: ["Notifications"],
+    })
+    .output(previewModeResponseSchema)
+    .handler(async ({ context }) => {
+      const u = await db.user.findUnique({
+        where: { id: context.user.id },
+        select: { pushPreviewMode: true },
+      });
+      return { mode: (u?.pushPreviewMode ?? "GENERIC") as "GENERIC" | "SENDER_NAME" | "FULL" };
+    }),
+
+  setPreviewMode: authed
+    .route({
+      method: "POST",
+      path: "/preview-mode",
+      summary: "Set the current user's push preview mode",
+      tags: ["Notifications"],
+    })
+    .input(setPreviewModeInputSchema)
+    .output(notificationsStatusResponseSchema)
+    .handler(async ({ context, input }) => {
+      await db.user.update({
+        where: { id: context.user.id },
+        data: { pushPreviewMode: input.mode },
       });
       return { status: "ok", success: true };
     }),
