@@ -32,7 +32,8 @@
     "format:check": "oxfmt --check",
     "test": "vitest",
     "test:storybook": "vitest --project=storybook",
-    "test:coverage": "vitest --project=unit --coverage --run",
+    "test:coverage": "vitest --coverage --run",
+    "test:coverage:unit": "vitest --project=unit --coverage --run",
     "clean": "rm -rf dist",
     "prepare": "husky || true"
   },
