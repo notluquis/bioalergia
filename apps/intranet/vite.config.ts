@@ -121,6 +121,18 @@ export default defineConfig(({ mode }) => {
         registerType: "prompt", // Let the app control when to update (UX best practice)
         injectRegister: "auto",
         manifestFilename: "manifest.json",
+        // injectManifest swaps the auto-generated SW for our own custom
+        // file so we can wire `push` + `notificationclick` listeners
+        // alongside Workbox precaching. generateSW (the default) does
+        // NOT handle push events — without our SW the W3C Web Push
+        // packets arrive but never reach the OS notification center.
+        strategies: "injectManifest",
+        srcDir: "src",
+        filename: "sw.ts",
+        injectManifest: {
+          globPatterns: [],
+          // No precache; we use runtime caching declared inside sw.ts.
+        },
         workbox: {
           cleanupOutdatedCaches: true,
           // No precaching - we use runtime caching only
