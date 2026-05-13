@@ -392,16 +392,19 @@ export default defineConfig(({ mode }) => {
         // files don't contribute to the denominator). Trade-off: slower
         // run because v8 has to instrument the full src tree.
         all: true,
-        // Thresholds intentionally below the current baseline (~65% with
-        // loaded-only, lower under all:true) so the metric is a trend
-        // tracker, not a gate. CI job runs `continue-on-error: true` so
-        // a regression highlights but doesn't block merges. Tighten as
-        // the test suite catches up; aspirational target stays at 80/75.
+        // Thresholds tracked as the test suite grows toward the
+        // aspirational 80% lines / 75% branches goal. CI job runs
+        // `continue-on-error: true` so a regression highlights but
+        // doesn't block merges. Step ladder: lifted from 40/40/30/40
+        // after pure-utility test sprint took the baseline to
+        // ~74.89% lines / 66.23% branches. Next milestone targets
+        // listed below; raise after each test batch lands.
+        // Milestones: 75/65 -> 78/70 -> 80/75 (target).
         thresholds: {
-          lines: 40,
-          functions: 40,
-          branches: 30,
-          statements: 40,
+          lines: 70,
+          functions: 70,
+          branches: 60,
+          statements: 70,
         },
       },
     },
