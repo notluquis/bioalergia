@@ -1436,7 +1436,15 @@ export function ClinicalSeriesView() {
         onSelectionChange={(key) => setActiveTab(key as ClinicalSeriesTab)}
       >
         <Tabs.ListContainer>
-          <Tabs.List aria-label="Vistas de series clínicas" className="w-full justify-start">
+          {/* HeroUI's primary Tabs variant gives the list no overflow
+              handling — 4 full-width pills don't fit a 375px viewport
+              (the spec caught a 4px bleed). Mobile: intrinsic-width tabs
+              in a horizontally-scrollable list (scrollbar hidden). ≥md:
+              unchanged — the wider content column fits all four. */}
+          <Tabs.List
+            aria-label="Vistas de series clínicas"
+            className="w-full justify-start max-md:overflow-x-auto max-md:[scrollbar-width:none] max-md:[&::-webkit-scrollbar]:hidden max-md:[&>*]:shrink-0 max-md:[&>*]:!w-auto"
+          >
             <Tabs.Tab id="series">
               Series
               <Tabs.Indicator />
