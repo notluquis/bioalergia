@@ -241,6 +241,15 @@ app.get("/api/csrf", (c) => {
 // Per-username throttle (lib/login-throttle.ts) and the per-user
 // account lockout (lib/account-lockout.ts) provide the inner layers.
 //
+// Scope: only credential-bearing *writes* (login / mfa / passkey-verify
+// / logout — contract-declared POST/PUT/DELETE). Credential-free reads
+// in the auth namespace — notably `session`, which the SPA calls on
+// every single page load — are exempt: rate-limiting them throttles
+// ordinary browsing, not brute force, and was the cause of spurious
+// 429s during multi-page sessions (incl. the e2e suite). The brute-
+// force surface (login, mfa, passkey verify) is all POST and stays
+// limited.
+//
 // Refs:
 //   - NIST SP 800-63-4 § 5.2.2 (rate limiting on auth endpoints)
 //   - OWASP Authentication Cheat Sheet § Brute Force / Credential Stuffing
@@ -249,7 +258,7 @@ const authRateLimiter = rateLimiter({
   limit: 20,
   standardHeaders: "draft-6",
   keyGenerator: (c) => clientIp(c) ?? "anonymous",
-  skip: (c) => c.req.method === "OPTIONS",
+  skip: (c) => c.req.method === "OPTIONS" || isRpcTunnelRead(c.req.path),
 });
 
 // Mount on the actual oRPC auth path. The legacy /api/auth/* route
