@@ -81,9 +81,14 @@ export function initSentry(): void {
     },
   });
 
-  // Lazy-load Replay so it doesn't bloat the main entry. Replay adds ~70KB
-  // gzipped — only fetch it after the page is interactive.
-  void loadReplay();
+  // Replay lazy-load is intentionally DISABLED for now. lazyLoadIntegration
+  // injects a <script> from browser.sentry-cdn.com; under our strict CSP
+  // (`script-src 'nonce-…' 'strict-dynamic'`) that injection path needs
+  // verification, and Replay's rrweb recorder hooks every DOM mutation +
+  // input — measurable input latency on auth (passkey prompt felt slow
+  // once Sentry shipped to prod). Re-enable behind an explicit opt-in
+  // after confirming the CDN script loads cleanly + measuring overhead.
+  // void loadReplay();
 
   // Pipe Web Vitals to Sentry. v10 exposes `metrics` from @sentry/core; we
   // call optional-chained so older runtimes (or future removals) don't blow
@@ -99,26 +104,18 @@ export function initSentry(): void {
   onLCP(send("lcp"));
 }
 
-async function loadReplay(): Promise<void> {
-  try {
-    const replayIntegration = await Sentry.lazyLoadIntegration("replayIntegration");
-    Sentry.addIntegration(
-      replayIntegration({
-        // PHI defaults: mask everything textual, block media, do not capture
-        // request/response bodies.
-        maskAllText: true,
-        maskAllInputs: true,
-        blockAllMedia: true,
-        networkDetailAllowUrls: [],
-        // Extra explicit selectors for clinical surfaces.
-        mask: ["[data-phi]", "input", "textarea", "[contenteditable]"],
-        block: ["[data-phi-block]", "canvas", ".patient-photo"],
-      })
-    );
-  } catch {
-    // Replay is optional — failing to load it must not break the app.
-  }
-}
+// NOTE: Session Replay deliberately NOT wired.
+//   1. lazyLoadIntegration injects a <script> from browser.sentry-cdn.com;
+//      under our strict CSP (`script-src 'nonce-…' 'strict-dynamic'`) that
+//      CDN injection path is not verified and a hanging load correlated
+//      with prod auth-flow latency.
+//   2. Replay's rrweb recorder hooks every DOM mutation + input event.
+//   3. Replaying a clinical SaaS = PHI on Sentry's servers, which needs a
+//      signed BAA (Sentry Business) before it can be turned on at all.
+//   When all three are resolved, re-add via `lazyLoadIntegration` per the
+//   current Sentry docs — the PHI-safe option block lived here in git
+//   history (maskAllText / maskAllInputs / blockAllMedia /
+//   networkDetailAllowUrls: [] / [data-phi] selectors).
 
 // Type stub purely so the optional-chained metrics call above type-checks
 // across SDK versions where `metrics` may or may not exist.

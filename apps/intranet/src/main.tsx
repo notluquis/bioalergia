@@ -35,9 +35,13 @@ import "@/lib/dayjs";
 import "./index.css";
 import "./i18n";
 
-// Initialize Sentry as early as possible — must run before any other
-// side-effects so it can capture chunk-load errors registered below.
-// No-op when VITE_SENTRY_DSN is not set.
+// Initialize Sentry as early as possible — Sentry's browser-tracing docs
+// require this so the pageload span starts at boot (it's retroactively
+// backdated to the browser request-start) and so early chunk-load errors
+// are captured. browserTracingIntegration's fetch/XHR wrapping is
+// microsecond-level overhead; the actual prod-latency risk was the
+// lazy-loaded Replay integration, which has been removed from
+// initSentry() (see src/lib/sentry.ts). No-op when VITE_SENTRY_DSN unset.
 initSentry();
 
 // Create namespaced logger for chunk errors

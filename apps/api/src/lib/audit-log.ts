@@ -59,7 +59,13 @@ export async function logAuditEvent(input: AuditInput): Promise<void> {
         resourceId: input.resourceId == null ? null : String(input.resourceId),
         outcome: input.outcome ?? "ok",
         message: input.message ?? null,
-        metadata: (input.metadata ?? null) as never,
+        // ZenStack v3 / Prisma reject a raw `null` literal on a JSON
+        // column — it expects the typed `JsonNull` sentinel. Simplest
+        // safe path: omit the key entirely when there is no metadata, so
+        // the column falls back to its DB default. Passing `null` here
+        // was throwing `Invalid input ... at "data.metadata"` on EVERY
+        // login (caught + warned, but the audit row was silently lost).
+        ...(input.metadata == null ? {} : { metadata: input.metadata as never }),
       },
     });
   } catch (err) {
