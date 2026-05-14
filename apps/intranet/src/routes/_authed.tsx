@@ -196,8 +196,14 @@ function AuthedLayout() {
           <div className="nav-progress__indicator" />
         </div>
       )}
-      {/* Layout Shell: Main Flex Container - Height constrained to dynamic viewport */}
-      <div className="layout-shell relative mx-auto flex h-dvh w-full gap-0 overflow-hidden p-0 text-foreground md:gap-4 md:p-4">
+      {/* Layout Shell.
+          Mobile: `min-h-dvh`, no overflow clamp — the document/body is the
+          scroll container (golden-2026: native momentum, pull-to-refresh,
+          scroll restoration, iOS URL-bar collapse all work; a sticky
+          Header + fixed BottomNav supply the chrome).
+          ≥md: `h-dvh` + `overflow-hidden` — fixed app shell with the inset
+          card scrolling internally (persistent sidebar rail + footer). */}
+      <div className="layout-shell relative mx-auto flex min-h-dvh w-full gap-0 p-0 text-foreground md:h-dvh md:gap-4 md:overflow-hidden md:p-4">
         {/* Mobile nav toggle lives in-flow inside <Header> (see Header.tsx) —
             no fixed positioning, so it can't overlap the breadcrumb. */}
 
@@ -213,11 +219,19 @@ function AuthedLayout() {
         <div className="layout-container flex min-w-0 flex-1 flex-col gap-3 pt-[calc(env(safe-area-inset-top)+0.25rem)] pb-[calc(110px+env(safe-area-inset-bottom))] md:pt-0 md:pb-0">
           <Header onMenuToggle={toggleSidebar} sidebarId={sidebarId} sidebarOpen={sidebarOpen} />
 
-          <main className="flex-1 overflow-hidden rounded-3xl " id="main-content" tabIndex={-1}>
+          {/* Mobile: content flows in the document — no nested scroll, no
+              `overflow-x` clamp (a clamp would silently clip real overflow
+              bugs that layout-integrity.spec is meant to catch).
+              ≥md: the inset recessed card scrolls internally. */}
+          <main className="flex-1 md:overflow-hidden md:rounded-3xl" id="main-content" tabIndex={-1}>
             <RouteHeading />
-            <div className="surface-recessed overflow-hidden rounded-3xl border border-default-100/50 bg-background/50 shadow-inner size-full">
+            {/* Mobile: content sits directly on the page — no decorative
+                recessed card (rounded border + inner shadow is desktop
+                chrome that just eats width on a 375px screen).
+                ≥md: the inset recessed card with its own scroll. */}
+            <div className="w-full md:size-full md:overflow-hidden md:rounded-3xl md:border md:border-default-100/50 md:bg-background/50 md:shadow-inner">
               <div
-                className={`overflow-y-auto overflow-x-hidden size-full ${contentPaddingClass}`}
+                className={`${contentPaddingClass} md:size-full md:overflow-x-hidden md:overflow-y-auto`}
               >
                 <Outlet />
               </div>
