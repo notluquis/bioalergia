@@ -106,6 +106,17 @@ authed.describe("a11y / authenticated", () => {
         .locator("#main-content > *, main > *, [role='main'] > *")
         .first()
         .waitFor({ state: "attached", timeout: 10_000 });
+      // Let loading skeletons settle before scanning. HeroUI's <Skeleton>
+      // renders placeholder cells with no text — axe flags them
+      // (`empty-table-header`) if it scans mid-load. Wait for the first
+      // skeleton to detach; tolerate routes that render none.
+      await authedPage
+        .locator(".skeleton")
+        .first()
+        .waitFor({ state: "detached", timeout: 10_000 })
+        .catch(() => {
+          /* no skeleton on this route, or it never cleared — scan anyway */
+        });
       const results = await new AxeBuilder({ page: authedPage })
         .withTags(TAGS)
         .disableRules(AUTHED_DISABLED_RULES)

@@ -1,8 +1,5 @@
 import { defineConfig, devices } from "@playwright/test";
 
-import * as fs from "node:fs";
-import * as path from "node:path";
-
 const isCI = Boolean(process.env.CI);
 // Two base URLs:
 //   PREVIEW_URL — local vite preview, always-fresh code from this commit.
@@ -11,18 +8,9 @@ const isCI = Boolean(process.env.CI);
 //   AUTHED_URL  — deployed Railway when secret is set. Authed specs hit
 //                  the real API (login, oRPC reads).
 // When AUTHED_URL is unset, authed projects fall back to PREVIEW_URL and
-// the API-probe in auth.setup.ts gates them off cleanly.
+// the API-probe in e2e/login.ts gates them off cleanly.
 const PREVIEW_URL = "http://localhost:4173";
 const AUTHED_URL = process.env.E2E_BASE_URL ?? PREVIEW_URL;
-
-const HAVE_E2E_CREDS = Boolean(process.env.E2E_USER && process.env.E2E_PASS);
-const STORAGE_STATE_PATH = "playwright/.auth/user.json";
-if (!HAVE_E2E_CREDS) {
-  fs.mkdirSync(path.dirname(STORAGE_STATE_PATH), { recursive: true });
-  if (!fs.existsSync(STORAGE_STATE_PATH)) {
-    fs.writeFileSync(STORAGE_STATE_PATH, JSON.stringify({ cookies: [], origins: [] }));
-  }
-}
 
 // Viewport anchors aligned with Chromatic Story Modes (.storybook/modes.ts).
 // A regression in any of these widths narrows to the same bucket regardless
@@ -94,14 +82,7 @@ export default defineConfig({
   },
 
   projects: [
-    // ── Setup: log in once and persist storageState ─────────────────────
-    {
-      name: "setup",
-      testMatch: /.*\.setup\.ts/,
-      use: { baseURL: AUTHED_URL, ...chromium, viewport: DESKTOP },
-    },
-
-    // ── Unauthenticated specs (no storageState, vite preview) ───────────
+    // ── Unauthenticated specs (no auth, vite preview) ───────────────────
     {
       name: "mobile-unauthed",
       testIgnore: UNAUTHED_TESTIGNORE,
@@ -118,41 +99,39 @@ export default defineConfig({
       use: { ...chromium, viewport: DESKTOP },
     },
 
-    // ── Authed specs (storageState pre-loaded, hit AUTHED_URL) ──────────
+    // ── Authed specs (hit AUTHED_URL) ──────────────────────────────────
+    // No `setup` dependency or static `storageState`: the worker-scoped
+    // `workerStorageState` fixture in e2e/fixtures.ts logs in once per
+    // parallel worker and overrides `storageState`. One session per
+    // worker → no shared-token rotation race against production.
     {
       name: "mobile",
       testMatch: AUTHED_DESKTOP_PATTERN,
-      dependencies: ["setup"],
       use: {
         ...chromium,
         viewport: MOBILE,
         hasTouch: true,
         isMobile: true,
-        storageState: STORAGE_STATE_PATH,
         baseURL: AUTHED_URL,
       },
     },
     {
       name: "tablet",
       testMatch: AUTHED_TABLET_PATTERN,
-      dependencies: ["setup"],
       use: {
         ...chromium,
         viewport: TABLET,
         hasTouch: true,
         isMobile: true,
-        storageState: STORAGE_STATE_PATH,
         baseURL: AUTHED_URL,
       },
     },
     {
       name: "desktop",
       testMatch: AUTHED_DESKTOP_PATTERN,
-      dependencies: ["setup"],
       use: {
         ...chromium,
         viewport: DESKTOP,
-        storageState: STORAGE_STATE_PATH,
         baseURL: AUTHED_URL,
       },
     },
@@ -163,10 +142,8 @@ export default defineConfig({
     {
       name: "ios-webkit",
       testMatch: /wa-cloud-.*\.spec\.ts/,
-      dependencies: ["setup"],
       use: {
         ...iosWebkit,
-        storageState: STORAGE_STATE_PATH,
         baseURL: AUTHED_URL,
       },
     },

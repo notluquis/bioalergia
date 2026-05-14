@@ -1,4 +1,8 @@
 import { test as base, expect, type Page } from "@playwright/test";
+import * as fs from "node:fs";
+import * as path from "node:path";
+
+import { performLogin } from "./login";
 
 const E2E_USER = process.env.E2E_USER;
 const E2E_PASS = process.env.E2E_PASS;
@@ -11,6 +15,26 @@ interface Fixtures {
    * default. No spec opts out.
    */
   autoReadOnlyGuard: void;
+}
+
+interface WorkerFixtures {
+  /**
+   * Path to a per-worker `storageState` JSON, or `undefined` when the
+   * worker should run unauthenticated.
+   *
+   * Golden-2026 Playwright pattern ("one account per parallel worker"):
+   * instead of a single `setup` project persisting ONE shared session
+   * for every authed project, each worker logs in once and keeps its own
+   * session. The previous shared-session design raced production's
+   * session rotation under parallel load — workers silently lost their
+   * cookie, got bounced to /login, and scan-only authed specs (axe,
+   * layout-integrity) passed vacuously against the login page.
+   *
+   * `undefined` is returned for `*-unauthed` projects, when E2E creds are
+   * absent, or when the API probe fails (preview-only / fork PR). In
+   * those cases `authedPage` skips the authed specs cleanly.
+   */
+  workerStorageState: string | undefined;
 }
 
 /**
@@ -78,15 +102,59 @@ async function readOnlyGuard(page: Page) {
 /**
  * Shared Playwright fixtures.
  *
- * - `authedPage` performs a real login through the public /login form using
- *   E2E_USER / E2E_PASS env vars (set both locally and in CI as repo secrets).
- *   When the credentials are missing the suite is skipped so unauthenticated
- *   coverage can still run.
+ * - `workerStorageState` (worker-scoped) logs in once per parallel worker
+ *   and caches the session to `{outputDir}/.auth/{parallelIndex}.json`.
+ *   `storageState` is overridden to consume it, so authed projects no
+ *   longer need a `setup` dependency or a static `storageState` path.
+ * - `authedPage` hands over the already-authenticated `page`. When the
+ *   worker has no session (no creds / API down / unauthed project) the
+ *   authed spec is skipped so unauthenticated coverage still runs.
  *
  * Add more fixtures here (e.g. seeded clinical record, mocked oRPC) as the
  * suite grows.
  */
-export const test = base.extend<Fixtures>({
+export const test = base.extend<Fixtures, WorkerFixtures>({
+  workerStorageState: [
+    async ({ browser }, use) => {
+      const projectName = test.info().project.name;
+      // Unauthed projects must never authenticate — they exercise the
+      // public surface. Missing creds → same: run unauthenticated.
+      if (projectName.endsWith("-unauthed") || !E2E_USER || !E2E_PASS) {
+        await use(undefined);
+        return;
+      }
+
+      // One cached session file per parallel worker. parallelIndex is the
+      // stable per-worker id; reusing the file across a worker's tests
+      // means exactly one login per worker per run.
+      const id = test.info().parallelIndex;
+      const file = path.resolve(test.info().project.outputDir, `.auth/${id}.json`);
+      if (fs.existsSync(file)) {
+        await use(file);
+        return;
+      }
+
+      const page = await browser.newPage({ storageState: undefined });
+      try {
+        const ok = await performLogin(page);
+        if (!ok) {
+          // API unreachable — fall back to unauthenticated; authedPage skips.
+          await use(undefined);
+          return;
+        }
+        fs.mkdirSync(path.dirname(file), { recursive: true });
+        await page.context().storageState({ path: file });
+        await use(file);
+      } finally {
+        await page.close();
+      }
+    },
+    { scope: "worker" },
+  ],
+
+  // Override the built-in `storageState` option with the per-worker value.
+  storageState: ({ workerStorageState }, use) => use(workerStorageState),
+
   autoReadOnlyGuard: [
     async ({ page }, use) => {
       await readOnlyGuard(page);
@@ -94,14 +162,15 @@ export const test = base.extend<Fixtures>({
     },
     { auto: true },
   ],
-  authedPage: async ({ page }, use, testInfo) => {
-    // The storageState (set by the `setup` project in playwright.config.ts)
-    // already contains an authenticated cookie for E2E_USER. We just hand
-    // the page over. If the cookie is missing (E2E_USER unset / setup
-    // skipped), the project's testMatch never runs us so this is reachable
-    // only with a valid session.
-    if (!E2E_USER || !E2E_PASS) {
-      testInfo.skip(true, "E2E_USER / E2E_PASS not set");
+
+  authedPage: async ({ page, workerStorageState }, use, testInfo) => {
+    // `page` already carries the worker's authenticated cookie (via the
+    // overridden `storageState`). If the worker has no session — missing
+    // creds, API down, or an unauthed project — skip: the authed assertion
+    // would otherwise run against the public /login page and pass
+    // vacuously.
+    if (!workerStorageState) {
+      testInfo.skip(true, "no authenticated worker session (creds missing / API unreachable)");
     }
     await use(page);
   },
