@@ -358,6 +358,15 @@ export default defineConfig(({ mode }) => {
           target: API_PROXY_TARGET,
           changeOrigin: true,
           secure: API_PROXY_SECURE,
+          // When proxying to a *remote* authed API (e.g.
+          // VITE_API_PROXY_TARGET=https://intranet.bioalergia.cl to run
+          // the local SPA against production data), the upstream
+          // Set-Cookie carries `Domain=intranet.bioalergia.cl` — the
+          // browser rejects it on localhost and the session never
+          // sticks. Rewriting the cookie domain to the dev host makes it
+          // host-only so auth works. Harmless for the default local-API
+          // target, which sends no Domain attribute.
+          cookieDomainRewrite: "localhost",
         },
       },
     },
