@@ -184,7 +184,13 @@ export function Sidebar({ isMobile, isOpen, onClose, sidebarId }: SidebarProps) 
           className="w-[min(85vw,320px)] rounded-r-3xl border-r bg-background pl-[env(safe-area-inset-left)] shadow-2xl"
           placement="left"
         >
-          <Drawer.Dialog className="h-full max-h-dvh p-0">{sidebarContent}</Drawer.Dialog>
+          <Drawer.Dialog className="relative h-full max-h-dvh p-0">
+            <Drawer.CloseTrigger
+              aria-label="Cerrar menú"
+              className="absolute top-3 right-3 z-10"
+            />
+            {sidebarContent}
+          </Drawer.Dialog>
         </Drawer.Content>
       </Drawer.Backdrop>
     </Drawer>

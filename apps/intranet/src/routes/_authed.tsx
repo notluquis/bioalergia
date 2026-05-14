@@ -198,40 +198,8 @@ function AuthedLayout() {
       )}
       {/* Layout Shell: Main Flex Container - Height constrained to dynamic viewport */}
       <div className="layout-shell relative mx-auto flex h-dvh w-full gap-0 overflow-hidden p-0 text-foreground md:gap-4 md:p-4">
-        {/* Hamburger button: accessible, compact, always visible on mobile */}
-        <Button
-          id={menuToggleButtonId}
-          aria-controls={sidebarId}
-          aria-expanded={sidebarOpen}
-          aria-label={sidebarOpen ? "Cerrar menú principal" : "Abrir menú principal"}
-          aria-pressed={sidebarOpen}
-          className="fixed top-[calc(env(safe-area-inset-top)+0.5rem)] left-4 z-40 inline-flex items-center gap-2 rounded-full border border-default-200/70 bg-background/85 px-3 py-2 font-semibold text-foreground text-sm shadow-lg backdrop-blur-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-1 md:hidden"
-          onPress={toggleSidebar}
-          type="button"
-          variant="outline"
-        >
-          <span
-            aria-hidden="true"
-            className={`relative flex flex-col items-center justify-center gap-1.25 rounded-full size-5 ${
-              sidebarOpen ? "text-primary" : "text-foreground"
-            }`}
-          >
-            <span
-              className={`block h-0.5 w-4 rounded-full bg-current ${
-                sidebarOpen ? "absolute translate-y-0 rotate-45" : ""
-              }`}
-            />
-
-            <span
-              className={`block h-0.5 w-4 rounded-full bg-current ${
-                sidebarOpen ? "absolute translate-y-0 -rotate-45" : ""
-              }`}
-            />
-          </span>
-          <span className="font-medium text-xs uppercase tracking-wide">
-            {sidebarOpen ? "Cerrar" : "Menú"}
-          </span>
-        </Button>
+        {/* Mobile nav toggle lives in-flow inside <Header> (see Header.tsx) —
+            no fixed positioning, so it can't overlap the breadcrumb. */}
 
         {/* Sidebar */}
         <Sidebar
@@ -243,7 +211,7 @@ function AuthedLayout() {
 
         {/* Main content */}
         <div className="layout-container flex min-w-0 flex-1 flex-col gap-3 pt-[calc(env(safe-area-inset-top)+0.25rem)] pb-[calc(110px+env(safe-area-inset-bottom))] md:pt-0 md:pb-0">
-          <Header />
+          <Header onMenuToggle={toggleSidebar} sidebarId={sidebarId} sidebarOpen={sidebarOpen} />
 
           <main className="flex-1 overflow-hidden rounded-3xl " id="main-content" tabIndex={-1}>
             <RouteHeading />

@@ -1,6 +1,6 @@
 import { Breadcrumbs, Button } from "@heroui/react";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { Loader2, LogOut, Moon, Sun } from "lucide-react";
+import { Loader2, LogOut, Menu, Moon, Sun, X } from "lucide-react";
 
 import { useAuth } from "@/context/AuthContext";
 import { NotificationHistory } from "@/features/notifications/components/NotificationHistory";
@@ -57,7 +57,16 @@ const getFallbackLabelFromPathname = (pathname: string) => {
   return decoded.charAt(0).toUpperCase() + decoded.slice(1);
 };
 
-export function Header() {
+interface HeaderProps {
+  /** Mobile drawer-nav toggle. The button lives in-flow as the first
+   *  header child (no fixed positioning → no overlap with the breadcrumb,
+   *  the May-2026 mobile bug). Hidden ≥md where the sidebar is a rail. */
+  readonly onMenuToggle?: () => void;
+  readonly sidebarOpen?: boolean;
+  readonly sidebarId?: string;
+}
+
+export function Header({ onMenuToggle, sidebarId, sidebarOpen = false }: HeaderProps) {
   const { isDark, resolvedTheme, toggleTheme } = useTheme();
   const routerStatus = useRouterState({ select: (s) => s.status });
   const navigate = useNavigate();
@@ -93,10 +102,27 @@ export function Header() {
   };
 
   return (
-    <header className="surface-elevated sticky top-0 z-30 py-3 pr-4 pl-28 md:px-6">
+    <header className="surface-elevated sticky top-0 z-30 px-4 py-3 md:px-6">
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        <div className="min-w-0 flex-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          {showBreadcrumbs ? (
+        <div className="flex min-w-0 flex-1 items-center gap-2">
+          {onMenuToggle && (
+            <Button
+              id="mobile-menu-toggle"
+              aria-controls={sidebarId}
+              aria-expanded={sidebarOpen}
+              aria-label={sidebarOpen ? "Cerrar menú principal" : "Abrir menú principal"}
+              className="shrink-0 md:hidden"
+              isIconOnly
+              onPress={onMenuToggle}
+              size="sm"
+              type="button"
+              variant="secondary"
+            >
+              {sidebarOpen ? <X className="size-4" /> : <Menu className="size-4" />}
+            </Button>
+          )}
+          <div className="min-w-0 flex-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {showBreadcrumbs ? (
             <Breadcrumbs className="whitespace-nowrap font-medium text-default-500 text-xs">
               {breadcrumbItems.map((crumb) => {
                 const isOnlyBreadcrumb = breadcrumbItems.length === 1;
@@ -114,11 +140,12 @@ export function Header() {
               })}
             </Breadcrumbs>
           ) : null}
-          {isNavigating && (
-            <span className="mt-1 flex items-center gap-1 font-semibold text-primary text-xs">
-              <Loader2 className="size-3 " />
-            </span>
-          )}
+            {isNavigating && (
+              <span className="mt-1 flex items-center gap-1 font-semibold text-primary text-xs">
+                <Loader2 className="size-3 " />
+              </span>
+            )}
+          </div>
         </div>
 
         <div className="ml-0 flex shrink-0 flex-col items-start gap-2 md:ml-4 md:items-end">
