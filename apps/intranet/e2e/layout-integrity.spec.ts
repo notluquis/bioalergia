@@ -108,7 +108,9 @@ authed.describe("layout integrity", () => {
           bleed.sort((a, b) => b.right - a.right);
 
           // (2) visible text-entry controls collapsed below a legible width.
-          // Checkboxes / radios are legitimately tiny — skip them.
+          // Excludes controls that are legitimately tiny: checkboxes / radios
+          // and React-Aria date/number segments (`role="spinbutton"`, each
+          // segment holds ~2ch like "DD" or "MM").
           const collapsed: string[] = [];
           const controls = document.querySelectorAll<HTMLElement>(
             "input, textarea, [contenteditable='true']"
@@ -117,6 +119,7 @@ authed.describe("layout integrity", () => {
             if (el instanceof HTMLInputElement) {
               if (["hidden", "checkbox", "radio", "range", "color"].includes(el.type)) continue;
             }
+            if (el.getAttribute("role") === "spinbutton") continue;
             const rect = el.getBoundingClientRect();
             const visible = rect.width > 0 && rect.height > 0;
             if (visible && el.clientWidth < 24) {

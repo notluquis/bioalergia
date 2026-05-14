@@ -75,7 +75,15 @@ const AUTHED_DISABLED_RULES: string[] = [
 
 plain.describe("a11y / unauthenticated", () => {
   plain("login page is WCAG 2.2 AA clean", async ({ page }) => {
-    await page.goto("/login");
+    await page.goto("/login", { waitUntil: "domcontentloaded" });
+    // Wait for the SPA shell to mount before axe runs — otherwise the scan
+    // races React and intermittently fails `landmark-one-main` /
+    // `page-has-heading-one` against a bare <html>.
+    await page.waitForLoadState("load");
+    await page.locator("form, #main-content, main").first().waitFor({
+      state: "attached",
+      timeout: 10_000,
+    });
     const results = await new AxeBuilder({ page })
       .withTags(TAGS)
       .disableRules(UNAUTHED_DISABLED_RULES)
