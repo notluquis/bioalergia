@@ -99,6 +99,11 @@ storybook-static/
 **/playwright-report/
 **/test-results/
 **/.lighthouseci/
+# Per-worker auth state — holds LIVE production session cookies for the
+# E2E user (see apps/intranet/e2e/fixtures.ts workerStorageState).
+# Already covered by `**/e2e-results/` above; kept explicit so this
+# secrets-bearing path stays ignored even if that rule is ever narrowed.
+**/e2e-results/.auth/
 
 # Deployments
 .vercel

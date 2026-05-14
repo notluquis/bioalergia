@@ -86,10 +86,7 @@ import {
 } from "./orpc/transactions-insights.ts";
 import { usersOpenAPIHandler, usersORPCHandler } from "./orpc/users.ts";
 import { utilityBillsOpenAPIHandler, utilityBillsORPCHandler } from "./orpc/utility-bills.ts";
-import {
-  providerCredentialsOpenAPIHandler,
-  providerCredentialsORPCHandler,
-} from "./orpc/provider-credentials.ts";
+import { providerCredentialsORPCHandler } from "./orpc/provider-credentials.ts";
 import { waCloudOpenAPIHandler, waCloudORPCHandler } from "./orpc/wa-cloud.ts";
 import { shipmentsOpenAPIHandler, shipmentsORPCHandler } from "./orpc/shipments.ts";
 import { doctoraliaScraperRoutes } from "./routes/doctoralia-scraper.ts";
