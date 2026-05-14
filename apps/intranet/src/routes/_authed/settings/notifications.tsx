@@ -4,7 +4,7 @@ import { NotificationsSettingsPage } from "@/pages/settings/NotificationsSetting
 
 export const Route = createFileRoute("/_authed/settings/notifications")({
   staticData: {
-    nav: { iconKey: "Bell", label: "Notificaciones", order: 25, section: "Mi cuenta" },
+    nav: { iconKey: "Bell", label: "Notificaciones", order: 5, section: "Sistema" },
     title: "Notificaciones",
   },
   component: NotificationsSettingsPage,

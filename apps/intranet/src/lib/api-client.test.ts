@@ -8,13 +8,6 @@ function makeResponse(body: BodyInit | null, init: ResponseInit = {}): Response 
   return new Response(body, init);
 }
 
-// Returns a fetch implementation that yields a FRESH Response each call.
-// Necessary because ky may clone+read a response, and in jsdom the body
-// stream is not always re-readable across invocations.
-function freshResponses(builder: () => Response) {
-  return vi.fn(async () => builder());
-}
-
 // Ky always invokes fetch(Request) (single Request arg). Helper to grab it.
 function fetchedRequest(spy: ReturnType<typeof vi.spyOn>, idx = 0): Request {
   const arg = spy.mock.calls[idx]![0];
@@ -260,7 +253,7 @@ describe("apiClient.post / put / patch / delete (body handling)", () => {
   it("sends a JSON body for plain objects", async () => {
     let capturedBody = "";
     let capturedMethod = "";
-    fetchSpy.mockImplementation(async (input) => {
+    fetchSpy.mockImplementation(async (input: RequestInfo | URL) => {
       const req = input as Request;
       capturedMethod = req.method;
       capturedBody = await req.text();
@@ -281,7 +274,7 @@ describe("apiClient.post / put / patch / delete (body handling)", () => {
   it("sends FormData unchanged (no JSON serialization)", async () => {
     let capturedCT = "";
     let capturedBody = "";
-    fetchSpy.mockImplementation(async (input) => {
+    fetchSpy.mockImplementation(async (input: RequestInfo | URL) => {
       const req = input as Request;
       capturedCT = req.headers.get("content-type") ?? "";
       capturedBody = await req.text();

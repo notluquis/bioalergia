@@ -520,7 +520,8 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
               <Button
                 size="sm"
                 variant={isMuted ? "secondary" : "ghost"}
-                isLoading={setMute.isPending}
+                isPending={setMute.isPending}
+                isDisabled={setMute.isPending}
                 onPress={() =>
                   setMute.mutate({
                     conversationId,

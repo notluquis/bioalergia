@@ -52,7 +52,7 @@ describe("logger", () => {
 
   describe("production mode (isDev=false)", () => {
     it("suppresses debug/info/log when not dev, still allows warn/error (line 40 branch)", async () => {
-      vi.stubEnv("DEV", "");
+      vi.stubEnv("DEV", false);
       vi.resetModules();
       try {
         const mod = await import("./logger");

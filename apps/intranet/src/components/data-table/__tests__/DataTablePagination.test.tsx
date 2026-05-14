@@ -12,9 +12,11 @@ const cols: ColumnDef<Row>[] = [{ accessorKey: "name", header: "Nombre" }];
 const makeRows = (n: number): Row[] =>
   Array.from({ length: n }, (_, i) => ({ id: String(i + 1), name: `Fila ${i + 1}` }));
 
-function renderTable(rowCount: number, extra: Partial<React.ComponentProps<typeof DataTable>> = {}) {
+type DataTableProps = React.ComponentProps<typeof DataTable<Row, unknown>>;
+
+function renderTable(rowCount: number, extra: Partial<DataTableProps> = {}) {
   return render(
-    <DataTable
+    <DataTable<Row, unknown>
       columns={cols}
       data={makeRows(rowCount)}
       enableToolbar={false}

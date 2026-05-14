@@ -325,8 +325,8 @@ export function SharedPayloadModal({
             {!allDone && (
               <Button
                 variant="primary"
-                isDisabled={!canSend}
-                isLoading={sending}
+                isDisabled={!canSend || sending}
+                isPending={sending}
                 onPress={handleSend}
               >
                 Enviar a {contactName}

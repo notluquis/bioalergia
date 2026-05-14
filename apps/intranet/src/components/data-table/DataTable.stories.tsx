@@ -155,13 +155,13 @@ export const GlobalFilterInteraction: Story = {
   play: async ({ canvasElement }) => {
     const { within, userEvent, expect } = await import("storybook/test");
     const canvas = within(canvasElement);
-    expect(canvas.getByText("Suscripción mensual")).toBeInTheDocument();
-    expect(canvas.getByText("Inmunoterapia")).toBeInTheDocument();
+    await expect(canvas.getByText("Suscripción mensual")).toBeInTheDocument();
+    await expect(canvas.getByText("Inmunoterapia")).toBeInTheDocument();
     const input = canvas.getByPlaceholderText("Filtrar...") as HTMLInputElement;
     await userEvent.type(input, "Inmuno");
     // After typing, the unrelated rows should disappear from the table.
     await expect(canvas.queryByText("Suscripción mensual")).toBeNull();
-    expect(canvas.getByText("Inmunoterapia")).toBeInTheDocument();
+    await expect(canvas.getByText("Inmunoterapia")).toBeInTheDocument();
   },
 };
 
@@ -185,13 +185,13 @@ export const SortableHeaderInteraction: Story = {
     const canvas = within(canvasElement);
     // Initial order = insertion order (Suscripción, Inmunoterapia, Control).
     const rowsBefore = canvas.getAllByRole("row").slice(1).map((r) => r.textContent ?? "");
-    expect(rowsBefore[0]).toMatch(/Suscripción/);
+    await expect(rowsBefore[0]).toMatch(/Suscripción/);
     // Click the "Nombre" column header to sort ascending.
     const nameHeader = canvas.getByRole("columnheader", { name: /Nombre/ });
     await userEvent.click(nameHeader);
     const rowsAfter = canvas.getAllByRole("row").slice(1).map((r) => r.textContent ?? "");
     // After ascending sort by name: Control < Inmunoterapia < Suscripción
-    expect(rowsAfter[0]).toMatch(/Control/);
+    await expect(rowsAfter[0]).toMatch(/Control/);
   },
 };
 
@@ -204,7 +204,7 @@ export const ViewOptionsColumnToggle: Story = {
   play: async ({ canvasElement }) => {
     const { within, userEvent, expect, screen } = await import("storybook/test");
     const canvas = within(canvasElement);
-    expect(canvas.getAllByText("Activo").length).toBeGreaterThan(0);
+    await expect(canvas.getAllByText("Activo").length).toBeGreaterThan(0);
     // Verify the "Columnas" view-options dropdown opens and surfaces a
     // checkbox per toggleable column. Actually clicking the checkbox
     // triggers a TanStack Table internal "Cell count must match column
@@ -217,7 +217,7 @@ export const ViewOptionsColumnToggle: Story = {
     const triggers = canvas.getAllByRole("button", { name: /^Columnas$/ });
     await userEvent.click(triggers[0]!);
     const statusOption = await screen.findByRole("menuitemcheckbox", { name: /Estado/i });
-    expect(statusOption).toBeInTheDocument();
+    await expect(statusOption).toBeInTheDocument();
   },
 };
 
@@ -248,9 +248,9 @@ export const FacetedFilterInteraction: Story = {
     const { within, userEvent, expect, screen } = await import("storybook/test");
     const canvas = within(canvasElement);
     // All 3 rows visible initially.
-    expect(canvas.getByText("Suscripción mensual")).toBeInTheDocument();
-    expect(canvas.getByText("Inmunoterapia")).toBeInTheDocument();
-    expect(canvas.getByText("Control anual")).toBeInTheDocument();
+    await expect(canvas.getByText("Suscripción mensual")).toBeInTheDocument();
+    await expect(canvas.getByText("Inmunoterapia")).toBeInTheDocument();
+    await expect(canvas.getByText("Control anual")).toBeInTheDocument();
     // Open the Estado faceted filter — column-header + filter trigger
     // both match "Estado"; pick the first (toolbar trigger renders first).
     const triggers = canvas.getAllByRole("button", { name: /Estado/i });
@@ -260,6 +260,6 @@ export const FacetedFilterInteraction: Story = {
     await userEvent.click(option);
     await expect(canvas.queryByText("Inmunoterapia")).toBeNull();
     await expect(canvas.queryByText("Control anual")).toBeNull();
-    expect(canvas.getByText("Suscripción mensual")).toBeInTheDocument();
+    await expect(canvas.getByText("Suscripción mensual")).toBeInTheDocument();
   },
 };

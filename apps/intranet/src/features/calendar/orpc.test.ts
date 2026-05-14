@@ -115,7 +115,9 @@ describe("orpcFetch + error pipeline (driven via calendarORPCClient)", () => {
   });
 
   it("invokes global fetch with credentials + X-CSRF-Token header on a successful RPC call", async () => {
-    const fetchMock = vi.fn(async () => makeRpcSuccessResponse([]));
+    const fetchMock = vi.fn(
+      async (_input: RequestInfo | URL, _init?: RequestInit) => makeRpcSuccessResponse([])
+    );
     globalThis.fetch = fetchMock as unknown as typeof fetch;
 
     // The exact RPC method doesn't matter for coverage; pick any.
@@ -124,9 +126,9 @@ describe("orpcFetch + error pipeline (driven via calendarORPCClient)", () => {
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const [, init] = fetchMock.mock.calls[0]!;
-    const headers = new Headers((init as RequestInit).headers);
+    const headers = new Headers(init?.headers);
     expect(headers.get("X-CSRF-Token")).toBe("abc123");
-    expect((init as RequestInit).credentials).toBe("include");
+    expect(init?.credentials).toBe("include");
   });
 
   it("does not set X-CSRF-Token when cookie is absent", async () => {
@@ -134,13 +136,15 @@ describe("orpcFetch + error pipeline (driven via calendarORPCClient)", () => {
       configurable: true,
       get: () => "",
     });
-    const fetchMock = vi.fn(async () => makeRpcSuccessResponse([]));
+    const fetchMock = vi.fn(
+      async (_input: RequestInfo | URL, _init?: RequestInit) => makeRpcSuccessResponse([])
+    );
     globalThis.fetch = fetchMock as unknown as typeof fetch;
 
     await (calendarORPCClient as unknown as { calendars: () => Promise<unknown> }).calendars();
 
     const [, init] = fetchMock.mock.calls[0]!;
-    const headers = new Headers((init as RequestInit).headers);
+    const headers = new Headers(init?.headers);
     expect(headers.has("X-CSRF-Token")).toBe(false);
   });
 

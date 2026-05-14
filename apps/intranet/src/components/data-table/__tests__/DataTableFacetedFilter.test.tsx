@@ -90,6 +90,7 @@ describe("DataTableFacetedFilter", () => {
     await user.click(getFilterTrigger(/Estado/i));
 
     const search = (await screen.findAllByPlaceholderText("Estado"))[0];
+    if (!search) throw new Error("search input not found");
     await user.type(search, "zzz-no-match");
 
     await waitFor(() => {

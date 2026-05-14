@@ -64,8 +64,8 @@ describe("DataTable component (render & interactions)", () => {
 
     // Initially: Beta then Alpha (insertion order).
     const rowHeaders = screen.getAllByRole("rowheader");
-    expect(rowHeaders[0].textContent).toBe("Beta");
-    expect(rowHeaders[1].textContent).toBe("Alpha");
+    expect(rowHeaders[0]?.textContent).toBe("Beta");
+    expect(rowHeaders[1]?.textContent).toBe("Alpha");
 
     // Sortable column header is exposed via aria-sort.
     const nameHeader = screen.getByRole("columnheader", { name: /Nombre/i });
@@ -90,7 +90,7 @@ describe("DataTable component (render & interactions)", () => {
     await user.click(nameHeader);
     await waitFor(() => {
       const rowHeaders = screen.getAllByRole("rowheader");
-      expect(rowHeaders[0].textContent).toBe("Alpha");
+      expect(rowHeaders[0]?.textContent).toBe("Alpha");
     });
   });
 

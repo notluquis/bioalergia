@@ -14,6 +14,7 @@ export type NavSection =
   | "Comunicaciones"
   | "Finanzas"
   | "Logística"
+  | "Mi cuenta"
   | "Outreach"
   | "Pacientes"
   | "Personal"

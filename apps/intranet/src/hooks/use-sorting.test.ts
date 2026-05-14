@@ -1,4 +1,5 @@
 import { act, renderHook } from "@testing-library/react";
+import type React from "react";
 import { describe, expect, it } from "vitest";
 
 import { useSorting } from "./use-sorting";
@@ -72,7 +73,12 @@ describe("use-sorting", () => {
       const { result } = renderHook(() =>
         useSorting<string>({ initialColumn: "name", initialDirection: "asc" })
       );
-      const el = result.current.getSortIcon("name");
+      // React 19 typed `ReactElement.props` as `unknown` (was `any`).
+      // Parameterize the generic with the known children shape so the
+      // assertion stays type-safe.
+      const el = result.current.getSortIcon("name") as React.ReactElement<{
+        children: string;
+      }> | null;
       expect(el).not.toBeNull();
       expect(el?.props.children).toBe("▲");
     });
@@ -81,7 +87,9 @@ describe("use-sorting", () => {
       const { result } = renderHook(() =>
         useSorting<string>({ initialColumn: "name", initialDirection: "desc" })
       );
-      const el = result.current.getSortIcon("name");
+      const el = result.current.getSortIcon("name") as React.ReactElement<{
+        children: string;
+      }> | null;
       expect(el?.props.children).toBe("▼");
     });
   });
