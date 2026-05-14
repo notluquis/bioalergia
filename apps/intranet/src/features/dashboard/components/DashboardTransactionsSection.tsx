@@ -25,6 +25,7 @@ export function DashboardTransactionsSection({ statsParams }: Props) {
         <MetricCard accent="rose" loading={false} title="Egresos" value={totals.out} />
         <MetricCard
           accent={totals.net >= 0 ? "emerald" : "rose"}
+          badgeLabel={totals.net >= 0 ? "Superávit" : "Déficit"}
           loading={false}
           title="Neto"
           value={totals.net}

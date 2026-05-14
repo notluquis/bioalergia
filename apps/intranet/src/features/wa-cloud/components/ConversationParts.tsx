@@ -165,7 +165,7 @@ export function TextComposer({
           if (fileRef.current) fileRef.current.value = "";
         }}
       />
-      <div className="flex items-end gap-2">
+      <div className="flex flex-wrap items-end gap-2">
         <Button
           size="sm"
           variant="outline"
@@ -255,7 +255,7 @@ export function TextComposer({
         />
         <EmojiPickerButton onSelect={insertEmoji} />
         <VoiceRecorderButton onSend={onAttachFile} isDisabled={isDisabled || attachPending} />
-        <div className="relative flex-1">
+        <div className="relative order-first w-full min-w-0 md:order-none md:w-auto md:flex-1">
           <TextArea
             ref={ref}
             variant="secondary"
