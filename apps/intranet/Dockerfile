@@ -42,6 +42,12 @@ ARG VITE_APP_BUILD_TIMESTAMP
 ARG VITE_META_APP_ID
 ARG VITE_META_EMBEDDED_SIGNUP_CONFIG_ID
 ARG VITE_VAPID_PUBLIC_KEY
+# Sentry: VITE_SENTRY_DSN is inlined into the bundle (without it initSentry()
+# no-ops and prod runs with zero error reporting); SENTRY_AUTH_TOKEN gates
+# @sentry/vite-plugin's source-map upload. Railway only forwards service
+# vars into the build stage when a matching ARG is declared here.
+ARG VITE_SENTRY_DSN
+ARG SENTRY_AUTH_TOKEN
 COPY --from=pruner /app/out/full/ .
 ENV CI=true
 ENV TURBO_TELEMETRY_DISABLED=1
@@ -49,6 +55,8 @@ ENV VITE_APP_BUILD_TIMESTAMP=${VITE_APP_BUILD_TIMESTAMP}
 ENV VITE_META_APP_ID=${VITE_META_APP_ID}
 ENV VITE_META_EMBEDDED_SIGNUP_CONFIG_ID=${VITE_META_EMBEDDED_SIGNUP_CONFIG_ID}
 ENV VITE_VAPID_PUBLIC_KEY=${VITE_VAPID_PUBLIC_KEY}
+ENV VITE_SENTRY_DSN=${VITE_SENTRY_DSN}
+ENV SENTRY_AUTH_TOKEN=${SENTRY_AUTH_TOKEN}
 RUN --mount=type=cache,id=s/31aed601-107c-408b-b13e-96b37282ee93-/app/.turbo/cache,target=/app/.turbo/cache \
     pnpm turbo run type-check --filter=@finanzas/intranet
 RUN --mount=type=cache,id=s/31aed601-107c-408b-b13e-96b37282ee93-/app/.turbo/cache,target=/app/.turbo/cache \

@@ -134,20 +134,34 @@ export const test = base.extend<Fixtures, WorkerFixtures>({
         return;
       }
 
-      const page = await browser.newPage({ storageState: undefined });
-      try {
-        const ok = await performLogin(page);
-        if (!ok) {
-          // API unreachable — fall back to unauthenticated; authedPage skips.
-          await use(undefined);
+      // Retry the login: a single worker login that hits a transient
+      // Cloudflare challenge would otherwise fail every test on this
+      // worker. `performLogin` returns false for an unreachable API
+      // (deterministic — no retry) and throws for a flaky/slow login
+      // (retry up to 3×, then fail loudly so a genuinely broken login
+      // surfaces instead of silently skipping the authed suite).
+      let lastErr: unknown;
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        const page = await browser.newPage({ storageState: undefined });
+        try {
+          const ok = await performLogin(page);
+          if (!ok) {
+            // API unreachable — fall back to unauthenticated; authedPage skips.
+            await use(undefined);
+            return;
+          }
+          fs.mkdirSync(path.dirname(file), { recursive: true });
+          await page.context().storageState({ path: file });
+          await use(file);
           return;
+        } catch (err) {
+          lastErr = err;
+          console.warn(`[e2e] worker login attempt ${attempt}/3 failed: ${String(err)}`);
+        } finally {
+          await page.close();
         }
-        fs.mkdirSync(path.dirname(file), { recursive: true });
-        await page.context().storageState({ path: file });
-        await use(file);
-      } finally {
-        await page.close();
       }
+      throw lastErr instanceof Error ? lastErr : new Error(String(lastErr));
     },
     { scope: "worker" },
   ],

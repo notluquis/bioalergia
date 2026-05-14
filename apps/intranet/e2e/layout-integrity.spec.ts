@@ -92,6 +92,20 @@ authed.describe("layout integrity", () => {
           // its content is *meant* to overflow. Never flag it.
           const isVisuallyHidden = (el: HTMLElement) => el.clientWidth <= 1 || el.clientHeight <= 1;
 
+          // An element wide enough to exceed the viewport is fine if some
+          // ancestor scrolls horizontally — that's an intentional scroll
+          // region (e.g. a data table inside `overflow-x: auto`), not a
+          // layout break. Only *uncontained* bleed is a bug.
+          const isInsideHorizontalScroller = (el: HTMLElement) => {
+            let node = el.parentElement;
+            while (node && node !== document.body) {
+              const ox = getComputedStyle(node).overflowX;
+              if (ox === "auto" || ox === "scroll") return true;
+              node = node.parentElement;
+            }
+            return false;
+          };
+
           const all = Array.from(document.body.querySelectorAll<HTMLElement>("*"));
 
           // (1)/(3) elements bleeding past the viewport. Doubles as the
@@ -102,6 +116,7 @@ authed.describe("layout integrity", () => {
             const rect = el.getBoundingClientRect();
             if (rect.width === 0 || rect.height === 0) continue;
             if (isVisuallyHidden(el)) continue;
+            if (isInsideHorizontalScroller(el)) continue;
             if (rect.right > vw + 2)
               bleed.push({ sel: describe(el), right: Math.round(rect.right) });
           }
