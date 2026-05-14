@@ -15,6 +15,7 @@ import { clientIp } from "./lib/client-ip.ts";
 import { csrfDoubleSubmit, ensureCsrfCookie } from "./lib/csrf-double-submit.ts";
 import { htmlSanitizerMiddleware } from "./lib/html-sanitizer.ts";
 import { logError } from "./lib/logger.ts";
+import { isRpcTunnelRead } from "./lib/orpc-procedure-methods.ts";
 import { configureSuperjson } from "./lib/superjson-config.ts";
 import { authOpenAPIHandler, authORPCHandler } from "./orpc/auth.ts";
 import { backupsOpenAPIHandler, backupsORPCHandler } from "./orpc/backups.ts";
@@ -295,23 +296,22 @@ app.use("/api/wa-cloud/*", csrfDoubleSubmit());
 // described in CLAUDE.local.md — the Playwright fixture installs a
 // network-level guard (layer 1) but this server-side check protects
 // production when a misconfigured run somehow bypasses it. Users
-// holding the E2EReadOnly role can ONLY issue safe HTTP methods
-// (GET/HEAD/OPTIONS); any POST/PUT/PATCH/DELETE to a data namespace is
-// rejected before the handler runs.
+// holding the E2EReadOnly role may issue reads but never mutations.
 //
 // oRPC's RPC tunnel POSTs *every* operation (reads + writes) to
-// `/api/orpc/<ns>/rpc/<procedure>`, so a blanket POST block also
-// rejects POST-tunnelled reads. That is acceptable for data namespaces
-// (a read-only test user pulling real patient rows into CI logs is a
-// PHI-hygiene problem we'd rather not have) — but it is NOT acceptable
-// for `/api/orpc/auth/*`: the SPA calls `auth/session` on every boot to
-// resolve the current user, and blocking it makes an E2EReadOnly
-// session unable to load ANY authed route (SPA sees 403 → bounces to
-// /login). The `auth/*` namespace is session-lifecycle (login, logout,
-// session, mfa, passkey) — none of it mutates clinical / financial /
-// business data, which is what this guard exists to protect. So
-// `auth/*` is exempt; the test user can manage its own session but
-// still cannot touch any data namespace.
+// `/api/orpc/<ns>/rpc/<procedure>`, so the wire method is useless for
+// telling them apart — a blanket POST block also rejects POST-tunnelled
+// reads, which makes an E2EReadOnly session unable to load ANY
+// data-backed page (every read 403s → the page renders an error card,
+// and scan-only authed e2e specs then pass vacuously against it).
+// Instead we classify by the *contract's* declared method via
+// `isRpcTunnelRead`: declared-GET procedures are reads (allowed for
+// everyone), declared-POST/PUT/PATCH/DELETE are mutations (blocked for
+// the read-only role). Unknown procedures fail closed.
+//
+// `/api/orpc/auth/*` stays fully exempt regardless of method — it is
+// session lifecycle (login, logout, session, mfa, passkey), not a data
+// mutation, and the SPA calls `auth/session` on every boot.
 const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
 
 function readOnlyRejection(c: import("hono").Context) {
@@ -332,9 +332,13 @@ async function isE2EReadOnly(c: import("hono").Context): Promise<boolean> {
 
 app.use("/api/orpc/*", async (c, next) => {
   if (SAFE_METHODS.has(c.req.method)) return next();
+  const pathname = new URL(c.req.url).pathname;
   // Session lifecycle is not a data mutation — exempt so the SPA can
   // resolve the current user on boot under an E2EReadOnly session.
-  if (new URL(c.req.url).pathname.startsWith("/api/orpc/auth/")) return next();
+  if (pathname.startsWith("/api/orpc/auth/")) return next();
+  // POST-tunnelled reads (contract-declared GET) are allowed for
+  // everyone — checked before the role lookup so reads skip the DB hit.
+  if (isRpcTunnelRead(pathname)) return next();
   if (await isE2EReadOnly(c)) return readOnlyRejection(c);
   return next();
 });
