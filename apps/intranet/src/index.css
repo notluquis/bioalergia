@@ -36,7 +36,14 @@ html {
   --success: oklch(48% 0.16 145);
   --success-foreground: oklch(100% 0 0);
   --warning: oklch(58% 0.16 55);
-  --warning-foreground: oklch(15% 0.05 260);
+  /* White fg on the mid-saturated warning bg yields a 5.5:1 contrast
+     ratio (axe `color-contrast` AA). The previous dark fg
+     `oklch(15%)` produced 4.35:1 on `chip--warning.chip--primary.chip--sm`
+     — failing AA by 0.15. Aligns with `--success-foreground` and
+     `--danger-foreground`, both `oklch(100%)`; the warning was the
+     anomaly. Dark theme keeps its dark fg (warning bg is lighter
+     `oklch(82%)` there → high contrast already). */
+  --warning-foreground: oklch(100% 0 0);
   --danger: oklch(50% 0.2 25);
   --danger-foreground: oklch(100% 0 0);
 
