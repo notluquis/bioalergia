@@ -12,20 +12,6 @@ import { generateWeekData, useDailyBalanceStore } from "./use-daily-balance-stor
 const AUTOSAVE_DELAY_MS = 2000;
 
 const DATE_FORMAT = "YYYY-MM-DD";
-const EMPTY_FORM_DATA: DailyBalanceFormData = {
-  consultas: 0,
-  controles: 0,
-  efectivo: 0,
-  gastos: 0,
-  licencias: 0,
-  nota: "",
-  otros: 0,
-  roxair: 0,
-  tarjeta: 0,
-  tests: 0,
-  transferencia: 0,
-  vacunas: 0,
-};
 
 type SaveOptions = {
   errorMessage?: string;
@@ -131,22 +117,28 @@ function useSyncSelectedDayForm(params: {
   useEffect(() => {
     if (selectedDayItem) {
       const nextFormData = mapApiToForm(selectedDayItem);
-      const sameEntry = currentEntryId === selectedDayItem.id;
-      const sameForm =
-        areFormDataEqual(formData, nextFormData) && areFormDataEqual(originalData, nextFormData);
-      if (!sameEntry || !sameForm) {
+      const entryChanged = currentEntryId !== selectedDayItem.id;
+      // Only sync API → form when:
+      //   (a) the entry itself changed (operator picked a different day), or
+      //   (b) the form is *clean* (formData == originalData) AND the
+      //       server pushed a fresher snapshot for the same entry.
+      // The previous `!sameForm` check fired on every keystroke because
+      // `formData` is in the deps + the user's typed value always
+      // differs from the API copy — that resets the input to 0 mid-edit.
+      // Golden rule: never clobber a dirty form.
+      const isDirty = !areFormDataEqual(formData, originalData);
+      const serverHasNewer = !areFormDataEqual(originalData, nextFormData);
+      if (entryChanged || (!isDirty && serverHasNewer)) {
         setOriginalData(nextFormData, selectedDayItem.id);
       }
       return;
     }
-    if (weekSuccess) {
-      const isAlreadyReset =
-        currentEntryId == null &&
-        areFormDataEqual(formData, EMPTY_FORM_DATA) &&
-        areFormDataEqual(originalData, EMPTY_FORM_DATA);
-      if (!isAlreadyReset) {
-        resetForm();
-      }
+    if (weekSuccess && currentEntryId !== null) {
+      // The previously-selected day held an entry; the new day has
+      // none → wipe the form so it starts blank. Skipped when
+      // `currentEntryId === null` so a user typing on a fresh day
+      // doesn't have every keystroke reset to empty.
+      resetForm();
     }
   }, [
     currentEntryId,
