@@ -89,6 +89,10 @@ import { utilityBillsOpenAPIHandler, utilityBillsORPCHandler } from "./orpc/util
 import { providerCredentialsORPCHandler } from "./orpc/provider-credentials.ts";
 import { waCloudOpenAPIHandler, waCloudORPCHandler } from "./orpc/wa-cloud.ts";
 import { shipmentsOpenAPIHandler, shipmentsORPCHandler } from "./orpc/shipments.ts";
+import {
+  examReportsOpenAPIHandler,
+  examReportsORPCHandler,
+} from "./orpc/exam-reports.ts";
 import { doctoraliaScraperRoutes } from "./routes/doctoralia-scraper.ts";
 import { googleCalendarWebhookRoutes } from "./routes/google-calendar-webhook.ts";
 import { mercadopagoReportWebhookRoutes } from "./routes/mercadopago-report-webhook.ts";
@@ -2078,6 +2082,24 @@ app.use("/api/orpc/shipments/*", async (c, next) => {
     return c.newResponse(response.body, response);
   }
 
+  return next();
+});
+
+app.use("/api/orpc/exam-reports/rpc/*", async (c, next) => {
+  const { matched, response } = await examReportsORPCHandler.handle(createHonoORPCRequest(c), {
+    prefix: "/api/orpc/exam-reports/rpc",
+    context: {},
+  });
+  if (matched) return c.newResponse(response.body, response);
+  return next();
+});
+
+app.use("/api/orpc/exam-reports/*", async (c, next) => {
+  const { matched, response } = await examReportsOpenAPIHandler.handle(
+    createHonoORPCRequest(c),
+    { context: {} }
+  );
+  if (matched) return c.newResponse(response.body, response);
   return next();
 });
 

@@ -14,6 +14,7 @@ export * from "./csv-upload.ts";
 export * from "./dte.ts";
 export * from "./dte-event-links.ts";
 export * from "./dte-analytics.ts";
+export * from "./exam-reports.ts";
 export * from "./employees.ts";
 export * from "./expenses.ts";
 export * from "./finance.ts";

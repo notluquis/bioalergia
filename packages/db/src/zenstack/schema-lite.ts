@@ -422,6 +422,12 @@ export class SchemaType implements SchemaDef {
                     array: true,
                     relation: { opposite: "updatedBy" }
                 },
+                createdExamReports: {
+                    name: "createdExamReports",
+                    type: "ExamReport",
+                    array: true,
+                    relation: { opposite: "createdBy", name: "ExamReportCreator" }
+                },
                 person: {
                     name: "person",
                     type: "Person",
@@ -4555,6 +4561,12 @@ export class SchemaType implements SchemaDef {
                     type: "ClinicalAllergenAlias",
                     array: true,
                     relation: { opposite: "allergen" }
+                },
+                examReportReactions: {
+                    name: "examReportReactions",
+                    type: "ExamReportReaction",
+                    array: true,
+                    relation: { opposite: "allergen" }
                 }
             },
             idFields: ["id"],
@@ -6515,6 +6527,12 @@ export class SchemaType implements SchemaDef {
                     type: "ClinicalRecordImport",
                     array: true,
                     relation: { opposite: "matchedPatient" }
+                },
+                examReports: {
+                    name: "examReports",
+                    type: "ExamReport",
+                    array: true,
+                    relation: { opposite: "patient" }
                 }
             },
             idFields: ["id"],
@@ -11381,6 +11399,370 @@ export class SchemaType implements SchemaDef {
                 id: { type: "Int" },
                 expenseId_transactionId: { expenseId: { type: "Int" }, transactionId: { type: "Int" } }
             }
+        },
+        ExamReport: {
+            name: "ExamReport",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                patientId: {
+                    name: "patientId",
+                    type: "Int",
+                    foreignKeyFor: [
+                        "patient"
+                    ] as readonly string[]
+                },
+                examType: {
+                    name: "examType",
+                    type: "ExamType"
+                },
+                conclusionText: {
+                    name: "conclusionText",
+                    type: "String"
+                },
+                conclusionTemplateId: {
+                    name: "conclusionTemplateId",
+                    type: "Int",
+                    optional: true,
+                    foreignKeyFor: [
+                        "conclusionTemplate"
+                    ] as readonly string[]
+                },
+                reagents: {
+                    name: "reagents",
+                    type: "String",
+                    optional: true
+                },
+                technique: {
+                    name: "technique",
+                    type: "String",
+                    optional: true
+                },
+                notes: {
+                    name: "notes",
+                    type: "String",
+                    optional: true
+                },
+                doctorName: {
+                    name: "doctorName",
+                    type: "String"
+                },
+                doctorSpecialty: {
+                    name: "doctorSpecialty",
+                    type: "String"
+                },
+                doctorRut: {
+                    name: "doctorRut",
+                    type: "String",
+                    optional: true
+                },
+                generatedAt: {
+                    name: "generatedAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                createdById: {
+                    name: "createdById",
+                    type: "Int",
+                    optional: true,
+                    foreignKeyFor: [
+                        "createdBy"
+                    ] as readonly string[]
+                },
+                patient: {
+                    name: "patient",
+                    type: "Patient",
+                    relation: { opposite: "examReports", fields: ["patientId"], references: ["id"], onDelete: "Cascade" }
+                },
+                conclusionTemplate: {
+                    name: "conclusionTemplate",
+                    type: "ConclusionTemplate",
+                    optional: true,
+                    relation: { opposite: "reports", fields: ["conclusionTemplateId"], references: ["id"], onDelete: "SetNull" }
+                },
+                createdBy: {
+                    name: "createdBy",
+                    type: "User",
+                    optional: true,
+                    relation: { opposite: "createdExamReports", name: "ExamReportCreator", fields: ["createdById"], references: ["id"], onDelete: "SetNull" }
+                },
+                sections: {
+                    name: "sections",
+                    type: "ExamReportSection",
+                    array: true,
+                    relation: { opposite: "examReport" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" }
+            }
+        },
+        ExamReportSection: {
+            name: "ExamReportSection",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                examReportId: {
+                    name: "examReportId",
+                    type: "Int",
+                    foreignKeyFor: [
+                        "examReport"
+                    ] as readonly string[]
+                },
+                sectionKey: {
+                    name: "sectionKey",
+                    type: "String"
+                },
+                label: {
+                    name: "label",
+                    type: "String"
+                },
+                position: {
+                    name: "position",
+                    type: "Int",
+                    default: 0 as FieldDefault
+                },
+                examReport: {
+                    name: "examReport",
+                    type: "ExamReport",
+                    relation: { opposite: "sections", fields: ["examReportId"], references: ["id"], onDelete: "Cascade" }
+                },
+                reactions: {
+                    name: "reactions",
+                    type: "ExamReportReaction",
+                    array: true,
+                    relation: { opposite: "section" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" }
+            }
+        },
+        ExamReportReaction: {
+            name: "ExamReportReaction",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                sectionId: {
+                    name: "sectionId",
+                    type: "Int",
+                    foreignKeyFor: [
+                        "section"
+                    ] as readonly string[]
+                },
+                allergenId: {
+                    name: "allergenId",
+                    type: "String",
+                    foreignKeyFor: [
+                        "allergen"
+                    ] as readonly string[]
+                },
+                reaction: {
+                    name: "reaction",
+                    type: "SkinReaction"
+                },
+                papuleMm: {
+                    name: "papuleMm",
+                    type: "Decimal",
+                    optional: true
+                },
+                notes: {
+                    name: "notes",
+                    type: "String",
+                    optional: true
+                },
+                position: {
+                    name: "position",
+                    type: "Int",
+                    default: 0 as FieldDefault
+                },
+                section: {
+                    name: "section",
+                    type: "ExamReportSection",
+                    relation: { opposite: "reactions", fields: ["sectionId"], references: ["id"], onDelete: "Cascade" }
+                },
+                allergen: {
+                    name: "allergen",
+                    type: "ClinicalAllergen",
+                    relation: { opposite: "examReportReactions", fields: ["allergenId"], references: ["id"], onDelete: "Restrict" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" }
+            }
+        },
+        ConclusionTemplate: {
+            name: "ConclusionTemplate",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                text: {
+                    name: "text",
+                    type: "String"
+                },
+                examType: {
+                    name: "examType",
+                    type: "ExamType",
+                    optional: true
+                },
+                isDefault: {
+                    name: "isDefault",
+                    type: "Boolean",
+                    default: false as FieldDefault
+                },
+                isActive: {
+                    name: "isActive",
+                    type: "Boolean",
+                    default: true as FieldDefault
+                },
+                position: {
+                    name: "position",
+                    type: "Int",
+                    default: 0 as FieldDefault
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                reports: {
+                    name: "reports",
+                    type: "ExamReport",
+                    array: true,
+                    relation: { opposite: "conclusionTemplate" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" }
+            }
+        },
+        ClinicSettings: {
+            name: "ClinicSettings",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: 1 as FieldDefault
+                },
+                name: {
+                    name: "name",
+                    type: "String",
+                    default: "Bioalergia" as FieldDefault
+                },
+                address: {
+                    name: "address",
+                    type: "String",
+                    default: "San Mart\u00EDn 870, Edificio Caram, Torre B, Of. 208 A \u2013 208 B, Concepci\u00F3n" as FieldDefault
+                },
+                phoneWhatsapp: {
+                    name: "phoneWhatsapp",
+                    type: "String",
+                    default: "+569 30963316" as FieldDefault
+                },
+                phoneLandline: {
+                    name: "phoneLandline",
+                    type: "String",
+                    default: "(41) 33355293" as FieldDefault
+                },
+                email: {
+                    name: "email",
+                    type: "String",
+                    default: "contacto@bioalergia.cl" as FieldDefault
+                },
+                website: {
+                    name: "website",
+                    type: "String",
+                    default: "www.bioalergia.cl" as FieldDefault
+                },
+                websiteSecondary: {
+                    name: "websiteSecondary",
+                    type: "String",
+                    default: "www.jmmmartinez-alergia-inmunologia.com/" as FieldDefault
+                },
+                defaultReagents: {
+                    name: "defaultReagents",
+                    type: "String",
+                    default: "Inmunotek - Diater Espa\u00F1a" as FieldDefault
+                },
+                defaultTechnique: {
+                    name: "defaultTechnique",
+                    type: "String",
+                    default: "M\u00E9todo Doan T Zeiss Modificado" as FieldDefault
+                },
+                doctorName: {
+                    name: "doctorName",
+                    type: "String",
+                    default: "DR JOSE MANUEL MARTINEZ M." as FieldDefault
+                },
+                doctorSpecialty: {
+                    name: "doctorSpecialty",
+                    type: "String",
+                    default: "ALERGOLOGO-INMUNOLOGO" as FieldDefault
+                },
+                doctorRut: {
+                    name: "doctorRut",
+                    type: "String",
+                    optional: true
+                },
+                signatureUrl: {
+                    name: "signatureUrl",
+                    type: "String",
+                    optional: true
+                },
+                papuleThresholdMm: {
+                    name: "papuleThresholdMm",
+                    type: "Decimal",
+                    default: 3 as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now") as FieldDefault
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" }
+            }
         }
     } as const;
     enums = {
@@ -12100,6 +12482,25 @@ export class SchemaType implements SchemaDef {
             attributes: [
                 { name: "@@schema", args: [{ name: "map", value: ExpressionUtils.literal("personal") }] }
             ] as readonly AttributeApplication[]
+        },
+        ExamType: {
+            name: "ExamType",
+            values: {
+                PATCH: "PATCH",
+                MULTITEST_PANELS: "MULTITEST_PANELS",
+                FOOD_PANEL: "FOOD_PANEL",
+                AEROALLERGENS_I: "AEROALLERGENS_I",
+                AEROALLERGENS_II: "AEROALLERGENS_II"
+            }
+        },
+        SkinReaction: {
+            name: "SkinReaction",
+            values: {
+                NEGATIVA: "NEGATIVA",
+                DEBIL: "DEBIL",
+                MODERADA: "MODERADA",
+                FUERTE: "FUERTE"
+            }
         }
     } as const;
     authType = "User" as const;

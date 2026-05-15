@@ -93,6 +93,11 @@
       "import": "./dist/dte-analytics.js",
       "default": "./dist/dte-analytics.js"
     },
+    "./exam-reports": {
+      "types": "./dist/exam-reports.d.ts",
+      "import": "./dist/exam-reports.js",
+      "default": "./dist/exam-reports.js"
+    },
     "./employees": {
       "types": "./dist/employees.d.ts",
       "import": "./dist/employees.js",

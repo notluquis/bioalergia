@@ -163,6 +163,7 @@ model User {
   attendanceMarkCorrections AttendanceMark[]
   abandonmentContacts     AbandonmentContact[]
   doctoraliaCookieStoreUpdates DoctoraliaCookieStore[]
+  createdExamReports      ExamReport[]               @relation("ExamReportCreator")
   person                  Person                   @relation(fields: [personId], references: [id], onDelete: Cascade)
 
   // This model represents the authenticated user
@@ -1497,6 +1498,7 @@ model ClinicalAllergen {
   updatedAt                DateTime                @default(now()) @updatedAt @map("updated_at")
 
   aliases                  ClinicalAllergenAlias[]
+  examReportReactions      ExamReportReaction[]
 
   @@deny('all', auth() == null)
   @@allow('read', true)
@@ -2432,6 +2434,7 @@ model Patient {
   shipments           Shipment[]
   clinicalSeries      ClinicalSeries[]
   clinicalRecordImports ClinicalRecordImport[]
+  examReports         ExamReport[]
 
   @@deny('all', auth() == null)
   @@allow('read', auth().status == 'ACTIVE')
@@ -4247,4 +4250,156 @@ model ExpenseTransaction {
   @@allow('create,update,delete', auth().status == 'ACTIVE')
   @@unique([expenseId, transactionId])
   @@map("expense_transactions")
+}
+
+// =====================================================================
+// Skin-test exam reports — generic structured reports printable as PDF.
+// One polymorphic ExamReport handles all 5 exam types via typed
+// sections that hold reactions to specific allergens. Footer info
+// (clinic name, address, phones, doctor signature) lives in
+// ClinicSettings — never hardcoded — and conclusion phrases
+// ("Piel reactiva valida el examen") live in ConclusionTemplate so
+// staff can manage them from the UI.
+// =====================================================================
+
+enum ExamType {
+  PATCH                  // Test de Parche (lecturas 48h y 96h)
+  MULTITEST_PANELS       // Multitest Panel 1, 2, 3 y Acaros
+  FOOD_PANEL             // Panel Alimentario I
+  AEROALLERGENS_I        // Aeroalergenos I (Acaros, Epitelios, Polenes)
+  AEROALLERGENS_II       // Aeroalergenos II
+}
+
+enum SkinReaction {
+  NEGATIVA          // sin reacción (papule < threshold)
+  DEBIL             // positiva débil
+  MODERADA          // positiva moderada
+  FUERTE            // positiva fuerte
+}
+
+model ExamReport {
+  id                    Int                    @id @default(autoincrement())
+  patientId             Int                    @map("patient_id")
+  examType              ExamType               @map("exam_type")
+  // Conclusion is denormalized so renaming/deleting a template never
+  // mutates historical reports; the FK is bookkeeping only.
+  conclusionText        String                 @map("conclusion_text")
+  conclusionTemplateId  Int?                   @map("conclusion_template_id")
+  // Methodology footer — defaults pulled from ClinicSettings at create
+  // time but stored per-report so future settings changes don't
+  // rewrite history.
+  reagents              String?
+  technique             String?
+  notes                 String?                // e.g. "*solo se considera reacción positiva con pápula mayor a 3 mm"
+  doctorName            String                 @map("doctor_name")
+  doctorSpecialty       String                 @map("doctor_specialty")
+  doctorRut             String?                @map("doctor_rut")
+  generatedAt           DateTime?              @map("generated_at")
+  createdAt             DateTime               @default(now()) @map("created_at")
+  updatedAt             DateTime               @default(now()) @updatedAt @map("updated_at")
+  createdById           Int?                   @map("created_by_id")
+
+  patient               Patient                @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  conclusionTemplate    ConclusionTemplate?    @relation(fields: [conclusionTemplateId], references: [id], onDelete: SetNull)
+  createdBy             User?                  @relation("ExamReportCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  sections              ExamReportSection[]
+
+  @@deny('all', auth() == null)
+  @@allow('read', auth().status == 'ACTIVE')
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@index([patientId])
+  @@index([examType])
+  @@index([createdAt])
+  @@map("exam_reports")
+}
+
+model ExamReportSection {
+  id              Int                       @id @default(autoincrement())
+  examReportId    Int                       @map("exam_report_id")
+  // Logical key used by the renderer ("lectura_48h", "panel_1",
+  // "polenes_arboles", "acaros", etc.) — keeps the PDF layout stable
+  // even if the visible label is edited.
+  sectionKey      String                    @map("section_key")
+  label           String                    // visible "PANEL 1"
+  position        Int                       @default(0)
+
+  examReport      ExamReport                @relation(fields: [examReportId], references: [id], onDelete: Cascade)
+  reactions       ExamReportReaction[]
+
+  @@deny('all', auth() == null)
+  @@allow('read', auth().status == 'ACTIVE')
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@index([examReportId])
+  @@map("exam_report_sections")
+}
+
+model ExamReportReaction {
+  id           Int                @id @default(autoincrement())
+  sectionId    Int                @map("section_id")
+  allergenId   String             @map("allergen_id")
+  reaction     SkinReaction
+  // Pápula in mm — preserves the raw reading; reaction enum is the
+  // clinical interpretation (clinic threshold lives in ClinicSettings).
+  papuleMm     Decimal?           @map("papule_mm") @db.Decimal(5, 2)
+  notes        String?
+  position     Int                @default(0)
+
+  section      ExamReportSection  @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  allergen     ClinicalAllergen   @relation(fields: [allergenId], references: [id], onDelete: Restrict)
+
+  @@deny('all', auth() == null)
+  @@allow('read', auth().status == 'ACTIVE')
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@index([sectionId])
+  @@index([allergenId])
+  @@map("exam_report_reactions")
+}
+
+model ConclusionTemplate {
+  id          Int          @id @default(autoincrement())
+  text        String       // "Piel reactiva valida el examen"
+  examType    ExamType?    @map("exam_type")  // null = available for any exam type
+  isDefault   Boolean      @default(false) @map("is_default")
+  isActive    Boolean      @default(true) @map("is_active")
+  position    Int          @default(0)
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @default(now()) @updatedAt @map("updated_at")
+
+  reports     ExamReport[]
+
+  @@deny('all', auth() == null)
+  @@allow('read', auth().status == 'ACTIVE')
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@index([examType])
+  @@map("conclusion_templates")
+}
+
+model ClinicSettings {
+  // Singleton — id pinned to 1 by application code; never insert another row.
+  id                Int      @id @default(1)
+  name              String   @default("Bioalergia")
+  address           String   @default("San Martín 870, Edificio Caram, Torre B, Of. 208 A – 208 B, Concepción")
+  phoneWhatsapp     String   @default("+569 30963316") @map("phone_whatsapp")
+  phoneLandline     String   @default("(41) 33355293") @map("phone_landline")
+  email             String   @default("contacto@bioalergia.cl")
+  website           String   @default("www.bioalergia.cl")
+  websiteSecondary  String   @default("www.jmmmartinez-alergia-inmunologia.com/") @map("website_secondary")
+  defaultReagents   String   @default("Inmunotek - Diater España") @map("default_reagents")
+  defaultTechnique  String   @default("Método Doan T Zeiss Modificado") @map("default_technique")
+  doctorName        String   @default("DR JOSE MANUEL MARTINEZ M.") @map("doctor_name")
+  doctorSpecialty   String   @default("ALERGOLOGO-INMUNOLOGO") @map("doctor_specialty")
+  doctorRut         String?  @map("doctor_rut")
+  signatureUrl      String?  @map("signature_url") @db.Text
+  papuleThresholdMm Decimal  @default(3.0) @map("papule_threshold_mm") @db.Decimal(5, 2)
+  updatedAt         DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@deny('all', auth() == null)
+  @@allow('read', auth().status == 'ACTIVE')
+  @@allow('update', auth().status == 'ACTIVE')
+
+  @@map("clinic_settings")
 }
