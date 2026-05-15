@@ -310,7 +310,7 @@ export function MercadoPagoSettingsPage() {
                 <Card className="h-full p-6" variant="secondary">
                   <Card.Header className="items-start justify-between p-0">
                     <div>
-                      <Card.Description className="font-semibold text-default-500 text-xs uppercase tracking-wide">
+                      <Card.Description className="font-semibold text-default-600 text-xs uppercase tracking-wide">
                         Último Reporte
                       </Card.Description>
                       <Card.Title className="mt-2 line-clamp-1 text-lg">
@@ -402,7 +402,7 @@ export function MercadoPagoSettingsPage() {
                 <Card className="h-full p-6" variant="secondary">
                   <Card.Header className="items-start justify-between p-0">
                     <div>
-                      <Card.Description className="font-semibold text-default-500 text-xs uppercase tracking-wide">
+                      <Card.Description className="font-semibold text-default-600 text-xs uppercase tracking-wide">
                         Último Reporte
                       </Card.Description>
                       <Card.Title className="mt-2 line-clamp-1 text-lg">

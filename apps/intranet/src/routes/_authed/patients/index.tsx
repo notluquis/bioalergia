@@ -99,13 +99,13 @@ function PatientsListPage() {
         cell: ({ row }) => {
           const { birthDate } = row.original;
           if (!birthDate) {
-            return <span className="text-default-400 text-sm">Sin fecha</span>;
+            return <span className="text-default-600 text-sm">Sin fecha</span>;
           }
           const age = dayjs().diff(dayjs(birthDate, "YYYY-MM-DD"), "year");
           return (
             <div className="flex flex-col" data-phi>
               <span className="text-default-700 text-sm">{age} años</span>
-              <span className="text-xs text-default-400">
+              <span className="text-xs text-default-600">
                 {dayjs(birthDate, "YYYY-MM-DD").format("DD/MM/YYYY")}
               </span>
             </div>
