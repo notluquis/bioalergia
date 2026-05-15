@@ -107,6 +107,54 @@ function inferImageFormat(dataUrl: string): "PNG" | "JPEG" | "SVG" {
   return "PNG";
 }
 
+/**
+ * Rasterize an SVG data URL to a PNG data URL so jspdf (which only
+ * embeds raster formats without svg2pdf) can place it. Width/height
+ * are the on-canvas pixel dims — keep them ~3x the placement size for
+ * crisp output at print resolution.
+ */
+async function rasterizeSvg(
+  svgDataUrl: string,
+  widthPx: number,
+  heightPx: number
+): Promise<string | null> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = widthPx;
+      canvas.height = heightPx;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return resolve(null);
+      ctx.drawImage(img, 0, 0, widthPx, heightPx);
+      try {
+        resolve(canvas.toDataURL("image/png"));
+      } catch {
+        resolve(null);
+      }
+    };
+    img.onerror = () => resolve(null);
+    img.src = svgDataUrl;
+  });
+}
+
+/** Resolve a logo (URL or raw data URL) to an embeddable PNG/JPEG. */
+async function loadLogoAsRaster(
+  url: string,
+  pxW: number,
+  pxH: number
+): Promise<{ data: string; fmt: "PNG" | "JPEG" } | null> {
+  const data = await loadAsDataUrl(url);
+  if (!data) return null;
+  const fmt = inferImageFormat(data);
+  if (fmt === "SVG") {
+    const raster = await rasterizeSvg(data, pxW, pxH);
+    return raster ? { data: raster, fmt: "PNG" } : null;
+  }
+  return { data, fmt };
+}
+
 export async function generateExamReportPdf(
   report: PdfReportInput,
   settings: ClinicSettingsLite,
@@ -128,20 +176,32 @@ export async function generateExamReportPdf(
     align: "left",
   });
 
-  // ── Logo top-center ─────────────────────────────────────────────────
-  // Falls back to text if the logo asset isn't reachable — never hard-fail.
-  const logoUrl = options?.logoUrl ?? "/logo_bimi.svg";
-  const logoData = await loadAsDataUrl(logoUrl);
-  if (logoData) {
-    const fmt = inferImageFormat(logoData);
-    if (fmt !== "SVG") {
-      // jspdf supports PNG/JPEG natively. SVG support requires svg2pdf
-      // (extra dep) — skip silently if we got SVG, the title fills in.
-      try {
-        doc.addImage(logoData, fmt, MARGIN_X, 30, 160, 50);
-      } catch {
-        /* ignore — title below is enough */
-      }
+  // ── Logos: Bioalergia (left) + AAAEIC (right) ──────────────────────
+  // Bioalergia is an SVG → rasterize via canvas (jspdf has no native
+  // SVG without svg2pdf). AAAEIC is a PNG, embeds directly. Both
+  // failures are silent: title below always renders.
+  const bioalergiaUrl = options?.logoUrl ?? "/logo_bioalergia_eslogan.svg";
+  const aaaeicUrl = "/aaaeic.png";
+
+  const [bioalergiaLogo, aaaeicLogo] = await Promise.all([
+    loadLogoAsRaster(bioalergiaUrl, 540, 165),
+    loadLogoAsRaster(aaaeicUrl, 420, 165),
+  ]);
+
+  const logoH = 55;
+  if (bioalergiaLogo) {
+    try {
+      doc.addImage(bioalergiaLogo.data, bioalergiaLogo.fmt, MARGIN_X, 30, 180, logoH);
+    } catch {
+      /* ignore */
+    }
+  }
+  if (aaaeicLogo) {
+    try {
+      const w = 140;
+      doc.addImage(aaaeicLogo.data, aaaeicLogo.fmt, CONTENT_RIGHT - w, 30, w, logoH);
+    } catch {
+      /* ignore */
     }
   }
 
@@ -187,7 +247,7 @@ export async function generateExamReportPdf(
 
   doc.setFont("helvetica", "bold");
   doc.setTextColor(...SECTION_BLUE);
-  doc.text("ALERGENOS TESTEADOS:", MARGIN_X, y);
+  doc.text("ALÉRGENOS TESTEADOS:", MARGIN_X, y);
   y += 22;
 
   // ── Sections (with optional grouping) ───────────────────────────────
@@ -239,7 +299,11 @@ export async function generateExamReportPdf(
     doc.setFont("helvetica", "bold");
     doc.setFontSize(11);
     doc.setTextColor(...SECTION_BLUE);
-    doc.text(isGroupHeader ? item.label : `${item.group ? "• " : ""}${item.label}:`, MARGIN_X + indent, y);
+    doc.text(
+      isGroupHeader ? item.label : `${item.group ? "• " : ""}${item.label}:`,
+      MARGIN_X + indent,
+      y
+    );
     y += 14;
 
     if (isGroupHeader) continue;

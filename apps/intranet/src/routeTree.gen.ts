@@ -22,6 +22,7 @@ import { Route as AuthedOperationsRouteImport } from "./routes/_authed/operation
 import { Route as AuthedMarcarRouteImport } from "./routes/_authed/marcar"
 import { Route as AuthedHrRouteImport } from "./routes/_authed/hr"
 import { Route as AuthedFinanzasRouteImport } from "./routes/_authed/finanzas"
+import { Route as AuthedExamReportsRouteImport } from "./routes/_authed/exam-reports"
 import { Route as AuthedClinicalRouteImport } from "./routes/_authed/clinical"
 import { Route as AuthedCertificatesRouteImport } from "./routes/_authed/certificates"
 import { Route as AuthedCalendarRouteImport } from "./routes/_authed/calendar"
@@ -49,6 +50,8 @@ import { Route as AuthedSettingsInventarioRouteImport } from "./routes/_authed/s
 import { Route as AuthedSettingsHaulmerRouteImport } from "./routes/_authed/settings/haulmer"
 import { Route as AuthedSettingsDoctoraliaRouteImport } from "./routes/_authed/settings/doctoralia"
 import { Route as AuthedSettingsCsvUploadRouteImport } from "./routes/_authed/settings/csv-upload"
+import { Route as AuthedSettingsConclusionTemplatesRouteImport } from "./routes/_authed/settings/conclusion-templates"
+import { Route as AuthedSettingsClinicRouteImport } from "./routes/_authed/settings/clinic"
 import { Route as AuthedSettingsBackupsRouteImport } from "./routes/_authed/settings/backups"
 import { Route as AuthedServicesAgendaRouteImport } from "./routes/_authed/services/agenda"
 import { Route as AuthedPatientsNewRouteImport } from "./routes/_authed/patients/new"
@@ -159,6 +162,11 @@ const AuthedHrRoute = AuthedHrRouteImport.update({
 const AuthedFinanzasRoute = AuthedFinanzasRouteImport.update({
   id: "/finanzas",
   path: "/finanzas",
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedExamReportsRoute = AuthedExamReportsRouteImport.update({
+  id: "/exam-reports",
+  path: "/exam-reports",
   getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedClinicalRoute = AuthedClinicalRouteImport.update({
@@ -300,6 +308,17 @@ const AuthedSettingsDoctoraliaRoute =
 const AuthedSettingsCsvUploadRoute = AuthedSettingsCsvUploadRouteImport.update({
   id: "/csv-upload",
   path: "/csv-upload",
+  getParentRoute: () => AuthedSettingsRoute,
+} as any)
+const AuthedSettingsConclusionTemplatesRoute =
+  AuthedSettingsConclusionTemplatesRouteImport.update({
+    id: "/conclusion-templates",
+    path: "/conclusion-templates",
+    getParentRoute: () => AuthedSettingsRoute,
+  } as any)
+const AuthedSettingsClinicRoute = AuthedSettingsClinicRouteImport.update({
+  id: "/clinic",
+  path: "/clinic",
   getParentRoute: () => AuthedSettingsRoute,
 } as any)
 const AuthedSettingsBackupsRoute = AuthedSettingsBackupsRouteImport.update({
@@ -566,6 +585,7 @@ export interface FileRoutesByFullPath {
   "/calendar": typeof AuthedCalendarRouteWithChildren
   "/certificates": typeof AuthedCertificatesRouteWithChildren
   "/clinical": typeof AuthedClinicalRouteWithChildren
+  "/exam-reports": typeof AuthedExamReportsRoute
   "/finanzas": typeof AuthedFinanzasRouteWithChildren
   "/hr": typeof AuthedHrRouteWithChildren
   "/marcar": typeof AuthedMarcarRoute
@@ -611,6 +631,8 @@ export interface FileRoutesByFullPath {
   "/patients/new": typeof AuthedPatientsNewRoute
   "/services/agenda": typeof AuthedServicesAgendaRoute
   "/settings/backups": typeof AuthedSettingsBackupsRoute
+  "/settings/clinic": typeof AuthedSettingsClinicRoute
+  "/settings/conclusion-templates": typeof AuthedSettingsConclusionTemplatesRoute
   "/settings/csv-upload": typeof AuthedSettingsCsvUploadRoute
   "/settings/doctoralia": typeof AuthedSettingsDoctoraliaRoute
   "/settings/haulmer": typeof AuthedSettingsHaulmerRoute
@@ -652,6 +674,7 @@ export interface FileRoutesByTo {
   "/account": typeof AuthedAccountRoute
   "/calendar": typeof AuthedCalendarRouteWithChildren
   "/certificates": typeof AuthedCertificatesRouteWithChildren
+  "/exam-reports": typeof AuthedExamReportsRoute
   "/finanzas": typeof AuthedFinanzasRouteWithChildren
   "/marcar": typeof AuthedMarcarRoute
   "/operations": typeof AuthedOperationsRouteWithChildren
@@ -693,6 +716,8 @@ export interface FileRoutesByTo {
   "/patients/new": typeof AuthedPatientsNewRoute
   "/services/agenda": typeof AuthedServicesAgendaRoute
   "/settings/backups": typeof AuthedSettingsBackupsRoute
+  "/settings/clinic": typeof AuthedSettingsClinicRoute
+  "/settings/conclusion-templates": typeof AuthedSettingsConclusionTemplatesRoute
   "/settings/csv-upload": typeof AuthedSettingsCsvUploadRoute
   "/settings/doctoralia": typeof AuthedSettingsDoctoraliaRoute
   "/settings/haulmer": typeof AuthedSettingsHaulmerRoute
@@ -737,6 +762,7 @@ export interface FileRoutesById {
   "/_authed/calendar": typeof AuthedCalendarRouteWithChildren
   "/_authed/certificates": typeof AuthedCertificatesRouteWithChildren
   "/_authed/clinical": typeof AuthedClinicalRouteWithChildren
+  "/_authed/exam-reports": typeof AuthedExamReportsRoute
   "/_authed/finanzas": typeof AuthedFinanzasRouteWithChildren
   "/_authed/hr": typeof AuthedHrRouteWithChildren
   "/_authed/marcar": typeof AuthedMarcarRoute
@@ -783,6 +809,8 @@ export interface FileRoutesById {
   "/_authed/patients/new": typeof AuthedPatientsNewRoute
   "/_authed/services/agenda": typeof AuthedServicesAgendaRoute
   "/_authed/settings/backups": typeof AuthedSettingsBackupsRoute
+  "/_authed/settings/clinic": typeof AuthedSettingsClinicRoute
+  "/_authed/settings/conclusion-templates": typeof AuthedSettingsConclusionTemplatesRoute
   "/_authed/settings/csv-upload": typeof AuthedSettingsCsvUploadRoute
   "/_authed/settings/doctoralia": typeof AuthedSettingsDoctoraliaRoute
   "/_authed/settings/haulmer": typeof AuthedSettingsHaulmerRoute
@@ -828,6 +856,7 @@ export interface FileRouteTypes {
     | "/calendar"
     | "/certificates"
     | "/clinical"
+    | "/exam-reports"
     | "/finanzas"
     | "/hr"
     | "/marcar"
@@ -873,6 +902,8 @@ export interface FileRouteTypes {
     | "/patients/new"
     | "/services/agenda"
     | "/settings/backups"
+    | "/settings/clinic"
+    | "/settings/conclusion-templates"
     | "/settings/csv-upload"
     | "/settings/doctoralia"
     | "/settings/haulmer"
@@ -914,6 +945,7 @@ export interface FileRouteTypes {
     | "/account"
     | "/calendar"
     | "/certificates"
+    | "/exam-reports"
     | "/finanzas"
     | "/marcar"
     | "/operations"
@@ -955,6 +987,8 @@ export interface FileRouteTypes {
     | "/patients/new"
     | "/services/agenda"
     | "/settings/backups"
+    | "/settings/clinic"
+    | "/settings/conclusion-templates"
     | "/settings/csv-upload"
     | "/settings/doctoralia"
     | "/settings/haulmer"
@@ -998,6 +1032,7 @@ export interface FileRouteTypes {
     | "/_authed/calendar"
     | "/_authed/certificates"
     | "/_authed/clinical"
+    | "/_authed/exam-reports"
     | "/_authed/finanzas"
     | "/_authed/hr"
     | "/_authed/marcar"
@@ -1044,6 +1079,8 @@ export interface FileRouteTypes {
     | "/_authed/patients/new"
     | "/_authed/services/agenda"
     | "/_authed/settings/backups"
+    | "/_authed/settings/clinic"
+    | "/_authed/settings/conclusion-templates"
     | "/_authed/settings/csv-upload"
     | "/_authed/settings/doctoralia"
     | "/_authed/settings/haulmer"
@@ -1178,6 +1215,13 @@ declare module "@tanstack/react-router" {
       path: "/finanzas"
       fullPath: "/finanzas"
       preLoaderRoute: typeof AuthedFinanzasRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    "/_authed/exam-reports": {
+      id: "/_authed/exam-reports"
+      path: "/exam-reports"
+      fullPath: "/exam-reports"
+      preLoaderRoute: typeof AuthedExamReportsRouteImport
       parentRoute: typeof AuthedRoute
     }
     "/_authed/clinical": {
@@ -1367,6 +1411,20 @@ declare module "@tanstack/react-router" {
       path: "/csv-upload"
       fullPath: "/settings/csv-upload"
       preLoaderRoute: typeof AuthedSettingsCsvUploadRouteImport
+      parentRoute: typeof AuthedSettingsRoute
+    }
+    "/_authed/settings/conclusion-templates": {
+      id: "/_authed/settings/conclusion-templates"
+      path: "/conclusion-templates"
+      fullPath: "/settings/conclusion-templates"
+      preLoaderRoute: typeof AuthedSettingsConclusionTemplatesRouteImport
+      parentRoute: typeof AuthedSettingsRoute
+    }
+    "/_authed/settings/clinic": {
+      id: "/_authed/settings/clinic"
+      path: "/clinic"
+      fullPath: "/settings/clinic"
+      preLoaderRoute: typeof AuthedSettingsClinicRouteImport
       parentRoute: typeof AuthedSettingsRoute
     }
     "/_authed/settings/backups": {
@@ -1901,6 +1959,8 @@ const AuthedServicesRouteWithChildren = AuthedServicesRoute._addFileChildren(
 
 interface AuthedSettingsRouteChildren {
   AuthedSettingsBackupsRoute: typeof AuthedSettingsBackupsRoute
+  AuthedSettingsClinicRoute: typeof AuthedSettingsClinicRoute
+  AuthedSettingsConclusionTemplatesRoute: typeof AuthedSettingsConclusionTemplatesRoute
   AuthedSettingsCsvUploadRoute: typeof AuthedSettingsCsvUploadRoute
   AuthedSettingsDoctoraliaRoute: typeof AuthedSettingsDoctoraliaRoute
   AuthedSettingsHaulmerRoute: typeof AuthedSettingsHaulmerRoute
@@ -1915,6 +1975,9 @@ interface AuthedSettingsRouteChildren {
 
 const AuthedSettingsRouteChildren: AuthedSettingsRouteChildren = {
   AuthedSettingsBackupsRoute: AuthedSettingsBackupsRoute,
+  AuthedSettingsClinicRoute: AuthedSettingsClinicRoute,
+  AuthedSettingsConclusionTemplatesRoute:
+    AuthedSettingsConclusionTemplatesRoute,
   AuthedSettingsCsvUploadRoute: AuthedSettingsCsvUploadRoute,
   AuthedSettingsDoctoraliaRoute: AuthedSettingsDoctoraliaRoute,
   AuthedSettingsHaulmerRoute: AuthedSettingsHaulmerRoute,
@@ -1966,6 +2029,7 @@ interface AuthedRouteChildren {
   AuthedCalendarRoute: typeof AuthedCalendarRouteWithChildren
   AuthedCertificatesRoute: typeof AuthedCertificatesRouteWithChildren
   AuthedClinicalRoute: typeof AuthedClinicalRouteWithChildren
+  AuthedExamReportsRoute: typeof AuthedExamReportsRoute
   AuthedFinanzasRoute: typeof AuthedFinanzasRouteWithChildren
   AuthedHrRoute: typeof AuthedHrRouteWithChildren
   AuthedMarcarRoute: typeof AuthedMarcarRoute
@@ -1990,6 +2054,7 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedCalendarRoute: AuthedCalendarRouteWithChildren,
   AuthedCertificatesRoute: AuthedCertificatesRouteWithChildren,
   AuthedClinicalRoute: AuthedClinicalRouteWithChildren,
+  AuthedExamReportsRoute: AuthedExamReportsRoute,
   AuthedFinanzasRoute: AuthedFinanzasRouteWithChildren,
   AuthedHrRoute: AuthedHrRouteWithChildren,
   AuthedMarcarRoute: AuthedMarcarRoute,

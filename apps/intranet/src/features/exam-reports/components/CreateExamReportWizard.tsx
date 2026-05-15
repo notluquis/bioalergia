@@ -1,6 +1,8 @@
 import {
+  Autocomplete,
   Button,
   Description,
+  EmptyState,
   Form,
   Header,
   Input,
@@ -11,16 +13,19 @@ import {
   Radio,
   RadioGroup,
   ScrollShadow,
+  SearchField,
   Select,
   Separator,
   Spinner,
   Tabs,
   TextArea,
   TextField,
+  useFilter,
+  type Key,
 } from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import dayjs from "dayjs";
-import { CheckCircle, Plus, Trash2 } from "lucide-react";
+import { CheckCircle, Pencil, Plus, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 import { useToast } from "@/context/ToastContext";
@@ -32,14 +37,12 @@ import { examReportsORPCClient, toExamReportsApiError } from "../orpc";
 import { examReportsKeys } from "../queries";
 import {
   EXAM_TYPE_CONFIG,
+  EXAM_TYPE_DESCRIPTION,
   EXAM_TYPE_LABEL,
   EXAM_TYPE_ORDER,
 } from "../lib/exam-types";
 import { downloadExamReportPdf } from "../lib/pdf";
-import type {
-  ExamType,
-  SkinReaction,
-} from "@finanzas/orpc-contracts/exam-reports";
+import type { ExamType, SkinReaction } from "@finanzas/orpc-contracts/exam-reports";
 
 /**
  * Wizard to create an exam report. Patient is selected upstream
@@ -62,9 +65,22 @@ interface DraftReaction {
 }
 
 interface DraftSection {
+  /** Stable client-side id (React key + section delete target). */
+  id: string;
+  /** API-side section key. Preseed sections keep their canonical key
+   *  ("panel_1", "lectura_48h", …); user-added sections get a
+   *  `custom_<short-id>` so the server can disambiguate. */
   sectionKey: string;
+  /** Editable label shown in the UI and printed in the PDF. */
   label: string;
   reactions: DraftReaction[];
+}
+
+function randomId(): string {
+  // 8 hex chars — collision-proof for the ~10 sections a single report
+  // could ever realistically hold. Avoids `crypto.randomUUID()` to keep
+  // older Safari happy on the iPad use case.
+  return Math.random().toString(36).slice(2, 10);
 }
 
 const REACTION_OPTIONS: { value: SkinReaction; label: string }[] = [
@@ -108,10 +124,15 @@ export function CreateExamReportWizard({
 
   // Reset draft sections every time examType changes — the seed
   // sections are different per type and we don't want stale entries.
+  // Each section gets a stable client-side id for React keys + delete
+  // targeting; preseeded sections keep their canonical sectionKey so
+  // the PDF renderer can apply per-type formatting (POLENES grouping
+  // etc.) — user-added sections fall through to the flat layout.
   useEffect(() => {
     const cfg = EXAM_TYPE_CONFIG[examType];
     setSections(
       cfg.sections.map((s) => ({
+        id: randomId(),
         sectionKey: s.sectionKey,
         label: s.label,
         reactions: [],
@@ -230,7 +251,7 @@ export function CreateExamReportWizard({
                       className="max-md:overflow-x-auto max-md:[scrollbar-width:none] max-md:[&>*]:shrink-0 max-md:[&>*]:!w-auto"
                     >
                       <Tabs.Tab id="1">1. Tipo</Tabs.Tab>
-                      <Tabs.Tab id="2">2. Alergenos</Tabs.Tab>
+                      <Tabs.Tab id="2">2. Alérgenos</Tabs.Tab>
                       <Tabs.Tab id="3">3. Conclusión</Tabs.Tab>
                       <Tabs.Tab id="4">4. Revisar</Tabs.Tab>
                     </Tabs.List>
@@ -279,13 +300,13 @@ export function CreateExamReportWizard({
               <div className="flex w-full items-center justify-between gap-3">
                 <Button
                   isDisabled={step === 1}
-                  onPress={() => setStep((s) => (Math.max(1, s - 1) as 1 | 2 | 3 | 4))}
+                  onPress={() => setStep((s) => Math.max(1, s - 1) as 1 | 2 | 3 | 4)}
                   variant="outline"
                 >
                   Atrás
                 </Button>
                 {step < 4 ? (
-                  <Button onPress={() => setStep((s) => (Math.min(4, s + 1) as 1 | 2 | 3 | 4))}>
+                  <Button onPress={() => setStep((s) => Math.min(4, s + 1) as 1 | 2 | 3 | 4)}>
                     Siguiente
                   </Button>
                 ) : (
@@ -323,20 +344,26 @@ function Step1Type({
       value={examType}
     >
       <div className="grid gap-2 md:grid-cols-2">
-        {EXAM_TYPE_ORDER.map((t) => (
-          <Radio
-            className="rounded-2xl border border-default-200 p-4 data-[selected=true]:border-primary data-[selected=true]:bg-primary/5"
-            key={t}
-            value={t}
-          >
-            <div className="flex flex-col gap-1">
-              <span className="font-semibold text-foreground">{EXAM_TYPE_LABEL[t]}</span>
-              <span className="text-default-600 text-xs">
-                {EXAM_TYPE_CONFIG[t].sections.length} sección(es) prediseñada(s)
-              </span>
-            </div>
-          </Radio>
-        ))}
+        {EXAM_TYPE_ORDER.map((t) => {
+          const sectionCount = EXAM_TYPE_CONFIG[t].sections.length;
+          const sectionsLabel =
+            sectionCount === 1 ? "1 sección prediseñada" : `${sectionCount} secciones prediseñadas`;
+          return (
+            <Radio
+              className="rounded-2xl border border-default-200 p-4 data-[selected=true]:border-primary data-[selected=true]:bg-primary/5"
+              key={t}
+              value={t}
+            >
+              <div className="flex flex-col gap-1.5">
+                <span className="font-semibold text-foreground">{EXAM_TYPE_LABEL[t]}</span>
+                <span className="text-default-600 text-xs leading-snug">
+                  {EXAM_TYPE_DESCRIPTION[t]}
+                </span>
+                <span className="text-default-500 text-xs">{sectionsLabel}</span>
+              </div>
+            </Radio>
+          );
+        })}
       </div>
     </RadioGroup>
   );
@@ -359,7 +386,7 @@ function Step2Allergens({
     return (
       <div className="flex items-center gap-2 text-default-600">
         <Spinner size="sm" />
-        Cargando alergenos…
+        Cargando alérgenos…
       </div>
     );
   }
@@ -370,20 +397,52 @@ function Step2Allergens({
     onChange(next);
   };
 
+  const removeSection = (idx: number) => {
+    onChange(sections.filter((_, i) => i !== idx));
+  };
+
+  const addSection = () => {
+    onChange([
+      ...sections,
+      {
+        id: randomId(),
+        sectionKey: `custom_${randomId()}`,
+        label: `Sección ${sections.length + 1}`,
+        reactions: [],
+      },
+    ]);
+  };
+
   return (
     <div className="space-y-6">
+      {sections.length === 0 && (
+        <EmptyState className="rounded-2xl border border-default-200 border-dashed p-6 text-center">
+          Sin secciones. Comienza desde cero agregando paneles personalizados, o vuelve al paso 1
+          para elegir un tipo preestablecido.
+        </EmptyState>
+      )}
       {sections.map((section, sIdx) => (
-        <section className="rounded-2xl border border-default-200 p-4" key={section.sectionKey}>
-          <div className="mb-3 flex items-center justify-between">
-            <h3 className="font-bold text-primary">{section.label}</h3>
-            <span className="text-default-600 text-xs">
-              {section.reactions.length} alergeno(s)
-            </span>
+        <section className="rounded-2xl border border-default-200 p-4" key={section.id}>
+          <div className="mb-3 flex items-start justify-between gap-3">
+            <EditableSectionLabel
+              count={section.reactions.length}
+              label={section.label}
+              onChange={(label) => updateSection(sIdx, { label })}
+            />
+            <Button
+              aria-label="Eliminar sección"
+              isIconOnly
+              onPress={() => removeSection(sIdx)}
+              size="sm"
+              variant="ghost"
+            >
+              <Trash2 className="size-4" />
+            </Button>
           </div>
           <AllergenPicker
             allergens={allergens}
+            excludeIds={section.reactions.map((r) => r.allergenId)}
             onAdd={(allergen) => {
-              if (section.reactions.some((r) => r.allergenId === allergen.id)) return;
               updateSection(sIdx, {
                 reactions: [
                   ...section.reactions,
@@ -439,9 +498,7 @@ function Step2Allergens({
                     onChange={(v) =>
                       updateSection(sIdx, {
                         reactions: section.reactions.map((rr, i) =>
-                          i === rIdx
-                            ? { ...rr, papuleMm: Number.isFinite(v) ? v : null }
-                            : rr
+                          i === rIdx ? { ...rr, papuleMm: Number.isFinite(v) ? v : null } : rr
                         ),
                       })
                     }
@@ -470,28 +527,100 @@ function Step2Allergens({
           )}
         </section>
       ))}
+      <div className="flex justify-center">
+        <Button className="gap-2" onPress={addSection} size="sm" variant="outline">
+          <Plus className="size-4" />
+          Agregar sección personalizada
+        </Button>
+      </div>
     </div>
   );
 }
 
+// ── Editable section label (click pencil to rename) ────────────────────
+
+function EditableSectionLabel({
+  label,
+  count,
+  onChange,
+}: {
+  label: string;
+  count: number;
+  onChange: (next: string) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(label);
+  // Keep local draft in sync if the label changes externally (e.g. type
+  // switch repopulates sections) and we're not actively editing.
+  useEffect(() => {
+    if (!editing) setDraft(label);
+  }, [label, editing]);
+
+  if (editing) {
+    return (
+      <TextField aria-label="Nombre del panel" className="flex-1" onChange={setDraft} value={draft}>
+        <Input
+          autoFocus
+          onBlur={() => {
+            const next = draft.trim() || label;
+            onChange(next);
+            setEditing(false);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              const next = draft.trim() || label;
+              onChange(next);
+              setEditing(false);
+            }
+            if (e.key === "Escape") {
+              setDraft(label);
+              setEditing(false);
+            }
+          }}
+        />
+      </TextField>
+    );
+  }
+
+  return (
+    <button
+      className="group flex flex-1 items-center gap-2 text-left"
+      onClick={() => setEditing(true)}
+      type="button"
+    >
+      <h3 className="font-bold text-primary">{label}</h3>
+      <Pencil className="size-3.5 text-default-500 opacity-0 transition group-hover:opacity-100" />
+      <span className="ml-auto text-default-600 text-xs">
+        {count === 1 ? "1 alérgeno" : `${count} alérgenos`}
+      </span>
+    </button>
+  );
+}
+
+// ── Allergen picker — inline Autocomplete (type-to-search) ─────────────
+
 function AllergenPicker({
   allergens,
+  excludeIds,
   onAdd,
 }: {
   allergens: { id: string; commonName: string; category: string }[];
+  /** Allergens already in this section — kept out of the dropdown so
+   *  the operator can't double-add the same one. */
+  excludeIds: string[];
   onAdd: (a: { id: string; commonName: string; category: string }) => void;
 }) {
-  const [query, setQuery] = useState("");
+  const { contains } = useFilter({ sensitivity: "base" });
+  // Reset trick: bumping `pickerKey` after a selection clears the
+  // Autocomplete's internal state (search field + selected key), so the
+  // picker feels like "add one at a time" instead of staying selected.
+  const [pickerKey, setPickerKey] = useState(0);
+  const [value, setValue] = useState<Key | null>(null);
 
-  // Filter then group by category — the source PDFs (and the protocol
-  // §2 definitions) organise allergens by category (POLENES > ARBOLES,
-  // ACAROS, EPITELIOS, ALIMENTOS, …). The dropdown mirrors that for
-  // discoverability without forcing the operator to know names.
-  const grouped = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    const filtered = q
-      ? allergens.filter((a) => a.commonName.toLowerCase().includes(q))
-      : allergens;
+  const available = useMemo(() => {
+    const exclude = new Set(excludeIds);
+    const filtered = allergens.filter((a) => !exclude.has(a.id));
     const buckets = new Map<string, typeof filtered>();
     for (const a of filtered) {
       const key = a.category || "Otros";
@@ -499,54 +628,65 @@ function AllergenPicker({
       bucket.push(a);
       buckets.set(key, bucket);
     }
-    // Cap each category to keep the dropdown bounded under heavy data.
     return Array.from(buckets.entries())
-      .map(([category, items]) => ({ category, items: items.slice(0, 12) }))
+      .map(([category, items]) => ({
+        category,
+        items: items.sort((a, b) => a.commonName.localeCompare(b.commonName)),
+      }))
       .sort((a, b) => a.category.localeCompare(b.category));
-  }, [allergens, query]);
+  }, [allergens, excludeIds]);
 
   return (
-    <div className="flex items-center gap-2">
-      <TextField
-        aria-label="Buscar alergeno"
-        className="flex-1"
-        onChange={setQuery}
-        value={query}
-      >
-        <Input placeholder="Buscar alergeno…" />
-      </TextField>
-      <Select
-        aria-label="Agregar alergeno"
-        className="w-72"
-        onSelectionChange={(k) => {
-          const a = allergens.find((x) => x.id === String(k));
-          if (a) {
-            onAdd(a);
-            setQuery("");
-          }
-        }}
-        selectedKey={null}
-      >
-        <Select.Trigger>
-          <Plus className="size-4" />
-          <span>Agregar…</span>
-        </Select.Trigger>
-        <Select.Popover>
-          <ListBox>
-            {grouped.map((group) => (
+    <Autocomplete
+      aria-label="Agregar alérgeno"
+      className="w-full"
+      key={pickerKey}
+      onChange={(k) => {
+        const key = Array.isArray(k) ? k[0] : k;
+        const picked = allergens.find((x) => x.id === String(key));
+        if (picked) {
+          onAdd(picked);
+          setValue(null);
+          // Force re-mount to clear the input + selected highlight.
+          setPickerKey((n) => n + 1);
+        } else {
+          setValue(k as Key | null);
+        }
+      }}
+      placeholder="Buscar y agregar alérgeno…"
+      selectionMode="single"
+      value={value}
+    >
+      <Autocomplete.Trigger>
+        <Autocomplete.Value />
+        <Autocomplete.ClearButton />
+        <Autocomplete.Indicator />
+      </Autocomplete.Trigger>
+      <Autocomplete.Popover>
+        <Autocomplete.Filter filter={contains}>
+          <SearchField autoFocus name="search" variant="secondary">
+            <SearchField.Group>
+              <SearchField.SearchIcon />
+              <SearchField.Input placeholder="Escribe para buscar…" />
+              <SearchField.ClearButton />
+            </SearchField.Group>
+          </SearchField>
+          <ListBox renderEmptyState={() => <EmptyState>Sin resultados</EmptyState>}>
+            {available.map((group) => (
               <ListBox.Section key={group.category}>
                 <Header>{group.category}</Header>
                 {group.items.map((a) => (
                   <ListBox.Item id={a.id} key={a.id} textValue={a.commonName}>
                     {a.commonName}
+                    <ListBox.ItemIndicator />
                   </ListBox.Item>
                 ))}
               </ListBox.Section>
             ))}
           </ListBox>
-        </Select.Popover>
-      </Select>
-    </div>
+        </Autocomplete.Filter>
+      </Autocomplete.Popover>
+    </Autocomplete>
   );
 }
 
@@ -626,7 +766,12 @@ function Step4Review({
   conclusionText: string;
   notes: string;
   settings:
-    | { doctorName: string; doctorSpecialty: string; defaultReagents: string; defaultTechnique: string }
+    | {
+        doctorName: string;
+        doctorSpecialty: string;
+        defaultReagents: string;
+        defaultTechnique: string;
+      }
     | undefined;
 }) {
   const cfg = EXAM_TYPE_CONFIG[examType];
@@ -649,7 +794,8 @@ function Step4Review({
       </div>
       <Separator />
       <p className="text-default-600 text-xs">
-        Firma como: <strong>{settings?.doctorName ?? "—"}</strong> ({settings?.doctorSpecialty ?? "—"})
+        Firma como: <strong>{settings?.doctorName ?? "—"}</strong> (
+        {settings?.doctorSpecialty ?? "—"})
       </p>
       <p className="text-default-600 text-xs">
         Reactivos: {settings?.defaultReagents ?? "—"} · Técnica: {settings?.defaultTechnique ?? "—"}

@@ -49,44 +49,44 @@ export const EXAM_TYPE_CONFIG: Record<ExamType, ExamTypeConfig> = {
       "*Lecturas a 48 h y 96 h post-aplicación. La sensibilización detectada no equivale necesariamente a alergia clínica de contacto: requiere correlación con la historia de exposición. Estándar ICDRG / ESCD.",
   },
   MULTITEST_PANELS: {
-    title: "INFORME TEST CUTANEO\nMULTITEST PANEL 1, 2, 3 y ACAROS",
+    title: "INFORME TEST CUTÁNEO\nMULTITEST PANEL 1, 2, 3 Y ÁCAROS",
     sections: [
       { sectionKey: "panel_1", label: "PANEL 1" },
       { sectionKey: "panel_2", label: "PANEL 2" },
       { sectionKey: "panel_3", label: "PANEL 3" },
-      { sectionKey: "acaros_insectario", label: "ACAROS / INSECTARIO" },
+      { sectionKey: "acaros_insectario", label: "ÁCAROS / INSECTARIO" },
     ],
     defaultNotes:
       "*solo se considera reacción positiva moderada con pápula mayor o igual a 3 mm y positiva fuerte mayor o igual a 6 mm.",
   },
   FOOD_PANEL: {
-    title: "INFORME TEST CUTANEO\nPANEL ALIMENTARIO I",
+    title: "INFORME TEST CUTÁNEO\nPANEL ALIMENTARIO I",
     sections: [{ sectionKey: "panel_alimentario", label: "PANEL ALIMENTARIO" }],
     defaultNotes:
       "*solo se considera reacción positiva moderada con pápula mayor o igual a 3 mm y positiva fuerte mayor o igual a 6 mm.",
   },
   AEROALLERGENS_I: {
-    title: "INFORME MULTITEST\nAEROALERGENOS I",
+    title: "INFORME MULTITEST\nAEROALÉRGENOS I",
     sections: [
-      { sectionKey: "acaros", label: "ACAROS" },
+      { sectionKey: "acaros", label: "ÁCAROS" },
       { sectionKey: "epitelios", label: "EPITELIOS" },
-      { sectionKey: "polenes_arboles", label: "ARBOLES", group: "POLENES" },
-      { sectionKey: "polenes_gramineas", label: "GRAMINEAS (pastos)", group: "POLENES" },
-      { sectionKey: "polenes_malezas", label: "MALEZAS", group: "POLENES" },
-      { sectionKey: "polenes_hongos", label: "HONGOS", group: "POLENES" },
+      { sectionKey: "polenes_arboles", label: "ÁRBOLES", group: "PÓLENES" },
+      { sectionKey: "polenes_gramineas", label: "GRAMÍNEAS (pastos)", group: "PÓLENES" },
+      { sectionKey: "polenes_malezas", label: "MALEZAS", group: "PÓLENES" },
+      { sectionKey: "polenes_hongos", label: "HONGOS", group: "PÓLENES" },
     ],
     defaultNotes:
       "*solo se considera reacción positiva moderada con pápula mayor o igual a 3 mm y positiva fuerte mayor o igual a 6 mm.",
   },
   AEROALLERGENS_II: {
-    title: "INFORME MULTITEST\nAEROALERGENOS II",
+    title: "INFORME MULTITEST\nAEROALÉRGENOS II",
     sections: [
-      { sectionKey: "acaros", label: "ACAROS" },
+      { sectionKey: "acaros", label: "ÁCAROS" },
       { sectionKey: "epitelios", label: "EPITELIOS" },
-      { sectionKey: "polenes_arboles", label: "ARBOLES", group: "POLENES" },
-      { sectionKey: "polenes_gramineas", label: "GRAMINEAS (pastos)", group: "POLENES" },
-      { sectionKey: "polenes_malezas", label: "MALEZAS", group: "POLENES" },
-      { sectionKey: "polenes_hongos", label: "HONGOS", group: "POLENES" },
+      { sectionKey: "polenes_arboles", label: "ÁRBOLES", group: "PÓLENES" },
+      { sectionKey: "polenes_gramineas", label: "GRAMÍNEAS (pastos)", group: "PÓLENES" },
+      { sectionKey: "polenes_malezas", label: "MALEZAS", group: "PÓLENES" },
+      { sectionKey: "polenes_hongos", label: "HONGOS", group: "PÓLENES" },
     ],
     defaultNotes:
       "*solo se considera reacción positiva moderada con pápula mayor o igual a 3 mm y positiva fuerte mayor o igual a 6 mm.",
@@ -95,10 +95,26 @@ export const EXAM_TYPE_CONFIG: Record<ExamType, ExamTypeConfig> = {
 
 export const EXAM_TYPE_LABEL: Record<ExamType, string> = {
   PATCH: "Test de Parche",
-  MULTITEST_PANELS: "Multitest Panel 1, 2, 3 y Acaros",
+  MULTITEST_PANELS: "Multitest Panel 1, 2, 3 y Ácaros",
   FOOD_PANEL: "Panel Alimentario I",
-  AEROALLERGENS_I: "Aeroalergenos I",
-  AEROALLERGENS_II: "Aeroalergenos II",
+  AEROALLERGENS_I: "Aeroalérgenos I",
+  AEROALLERGENS_II: "Aeroalérgenos II",
+};
+
+/**
+ * Short description per exam type — printed under the title on the
+ * type-picker card so the operator picks the right one without having
+ * to recognise the long internal name.
+ */
+export const EXAM_TYPE_DESCRIPTION: Record<ExamType, string> = {
+  PATCH: "Patch test de contacto · lecturas a 48 h y 96 h · criterios ICDRG/ESCD.",
+  MULTITEST_PANELS:
+    "Prick test estandarizado · 3 paneles + ácaros · controles histamina y SSF · lectura 15–20 min.",
+  FOOD_PANEL: "Prick test de panel alimentario · controles histamina y SSF · lectura 15–20 min.",
+  AEROALLERGENS_I:
+    "Prick test de aeroalérgenos · ácaros, epitelios y pólenes · controles histamina y SSF · lectura 15–20 min.",
+  AEROALLERGENS_II:
+    "Prick test de aeroalérgenos (panel ampliado) · ácaros, epitelios y pólenes · controles histamina y SSF · lectura 15–20 min.",
 };
 
 export const EXAM_TYPE_ORDER: ExamType[] = [
@@ -129,10 +145,10 @@ export const REACTION_LABEL = {
 export function composeReactionLines(
   reactions: { reaction: string; allergenName: string }[]
 ): string[] {
-  if (reactions.length === 0) return ["Sin reacción a alergenos testeados."];
+  if (reactions.length === 0) return ["Sin reacción a alérgenos testeados."];
 
   const positives = reactions.filter((r) => r.reaction !== "NEGATIVA");
-  if (positives.length === 0) return ["Sin reacción positiva a alergenos testeados."];
+  if (positives.length === 0) return ["Sin reacción positiva a alérgenos testeados."];
 
   const groups = new Map<string, string[]>();
   for (const r of positives) {
