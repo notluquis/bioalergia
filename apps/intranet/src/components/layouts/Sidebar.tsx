@@ -178,7 +178,7 @@ export function Sidebar({ isMobile, isOpen, onClose, sidebarId }: SidebarProps) 
             onClose?.();
           }
         }}
-        variant="opaque"
+        variant="blur"
       >
         <Drawer.Content
           className="w-[min(85vw,320px)] rounded-r-3xl border-r bg-background pl-[env(safe-area-inset-left)] shadow-2xl"
