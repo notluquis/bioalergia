@@ -120,6 +120,13 @@ type Story = StoryObj<typeof ShipmentTrackingModal>;
 // Default: paquete entregado, 4 eventos en timeline.
 export const Delivered: Story = {
   render: () => <ModalHarness />,
+  // addon-vitest interaction — modal renders, dialog reachable to AT.
+  play: async ({ canvasElement }) => {
+    const { expect, within } = await import("storybook/test");
+    const root = within(canvasElement.ownerDocument.body);
+    const dialog = await root.findByRole("dialog");
+    await expect(dialog).toBeVisible();
+  },
   parameters: {
     msw: {
       handlers: [

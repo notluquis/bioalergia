@@ -30,14 +30,14 @@ const iosWebkit = devices["iPhone 14"];
 // sets RUN_SNAPSHOTS=true before invoking with --update-snapshots.
 const SNAPSHOTS_ENABLED = Boolean(process.env.RUN_SNAPSHOTS);
 const UNAUTHED_TESTIGNORE = SNAPSHOTS_ENABLED
-  ? /a11y\.spec\.ts|skip-link\.spec\.ts|wa-cloud-.*\.spec\.ts|layout-integrity\.spec\.ts|drawer\.spec\.ts/
-  : /a11y\.spec\.ts|skip-link\.spec\.ts|wa-cloud-.*\.spec\.ts|route-snapshots\.spec\.ts|layout-integrity\.spec\.ts|drawer\.spec\.ts/;
+  ? /a11y\.spec\.ts|skip-link\.spec\.ts|wa-cloud-.*\.spec\.ts|layout-integrity\.spec\.ts|drawer\.spec\.ts|dialog-discovery\.spec\.ts/
+  : /a11y\.spec\.ts|skip-link\.spec\.ts|wa-cloud-.*\.spec\.ts|route-snapshots\.spec\.ts|layout-integrity\.spec\.ts|drawer\.spec\.ts|dialog-discovery\.spec\.ts/;
 const AUTHED_DESKTOP_PATTERN = SNAPSHOTS_ENABLED
-  ? /a11y\.spec\.ts|skip-link\.spec\.ts|wa-cloud-.*\.spec\.ts|route-snapshots\.spec\.ts|layout-integrity\.spec\.ts|drawer\.spec\.ts/
-  : /a11y\.spec\.ts|skip-link\.spec\.ts|wa-cloud-.*\.spec\.ts|layout-integrity\.spec\.ts|drawer\.spec\.ts/;
+  ? /a11y\.spec\.ts|skip-link\.spec\.ts|wa-cloud-.*\.spec\.ts|route-snapshots\.spec\.ts|layout-integrity\.spec\.ts|drawer\.spec\.ts|dialog-discovery\.spec\.ts/
+  : /a11y\.spec\.ts|skip-link\.spec\.ts|wa-cloud-.*\.spec\.ts|layout-integrity\.spec\.ts|drawer\.spec\.ts|dialog-discovery\.spec\.ts/;
 const AUTHED_TABLET_PATTERN = SNAPSHOTS_ENABLED
-  ? /a11y\.spec\.ts|wa-cloud-.*\.spec\.ts|route-snapshots\.spec\.ts|layout-integrity\.spec\.ts|drawer\.spec\.ts/
-  : /a11y\.spec\.ts|wa-cloud-.*\.spec\.ts|layout-integrity\.spec\.ts|drawer\.spec\.ts/;
+  ? /a11y\.spec\.ts|wa-cloud-.*\.spec\.ts|route-snapshots\.spec\.ts|layout-integrity\.spec\.ts|drawer\.spec\.ts|dialog-discovery\.spec\.ts/
+  : /a11y\.spec\.ts|wa-cloud-.*\.spec\.ts|layout-integrity\.spec\.ts|drawer\.spec\.ts|dialog-discovery\.spec\.ts/;
 
 /**
  * Playwright config — viewport-keyed projects (golden 2026 pattern).

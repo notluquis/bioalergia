@@ -74,6 +74,13 @@ type Story = StoryObj<typeof NewAttachmentModal>;
 // deshabilitado.
 export const Empty: Story = {
   render: () => <ModalHarness />,
+  // addon-vitest interaction — modal renders, dialog reachable to AT.
+  play: async ({ canvasElement }) => {
+    const { expect, within } = await import("storybook/test");
+    const root = within(canvasElement.ownerDocument.body);
+    const dialog = await root.findByRole("dialog");
+    await expect(dialog).toBeVisible();
+  },
 };
 
 // Backend rejects the upload (413 — archivo demasiado grande). UI mostrará

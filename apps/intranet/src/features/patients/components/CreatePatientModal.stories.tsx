@@ -93,6 +93,17 @@ type Story = StoryObj<typeof CreatePatientModal>;
 export const Default: Story = {
   name: "Default — formulario vacío",
   render: () => <ModalHarness />,
+  // addon-vitest interaction: opens the modal and asserts the dialog
+  // is reachable to AT. Closes the open-state coverage gap noted in
+  // dialog-discovery.spec.ts. `storybook/test` is lazy-imported per
+  // the AppModal.stories.tsx convention (Chromatic story-extractor
+  // crashes on top-level imports of `storybook/test`).
+  play: async ({ canvasElement }) => {
+    const { expect, within } = await import("storybook/test");
+    const root = within(canvasElement.ownerDocument.body);
+    const dialog = await root.findByRole("dialog");
+    await expect(dialog).toBeVisible();
+  },
 };
 
 // Person already exists in the system as a non-patient (employee /

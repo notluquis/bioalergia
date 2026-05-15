@@ -198,6 +198,13 @@ type Story = StoryObj<typeof AddressFormModal>;
 export const CreateDefault: Story = {
   name: "Crear — formulario vacío",
   render: () => <CreateHarness />,
+  // addon-vitest interaction — modal renders, dialog reachable to AT.
+  play: async ({ canvasElement }) => {
+    const { expect, within } = await import("storybook/test");
+    const root = within(canvasElement.ownerDocument.body);
+    const dialog = await root.findByRole("dialog");
+    await expect(dialog).toBeVisible();
+  },
 };
 
 // Edit existing address: all fields prefilled from `draft`. Submit hits

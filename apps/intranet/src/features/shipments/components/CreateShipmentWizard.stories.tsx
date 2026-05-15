@@ -354,6 +354,13 @@ type Story = StoryObj<typeof CreateShipmentWizard>;
 export const StepCoverageHome: Story = {
   name: "1. Cobertura — domicilio (default)",
   render: () => <WizardHarness />,
+  // addon-vitest interaction — wizard modal renders, dialog reachable to AT.
+  play: async ({ canvasElement }) => {
+    const { expect, within } = await import("storybook/test");
+    const root = within(canvasElement.ownerDocument.body);
+    const dialog = await root.findByRole("dialog");
+    await expect(dialog).toBeVisible();
+  },
 };
 
 // Step 1 alternate: no addresses on file → empty-state CTA to add one.
