@@ -28,7 +28,7 @@ test.describe("mobile drawer", () => {
       .waitFor({ state: "attached", timeout: 10_000 });
 
     // (1) open via the in-Header toggle (the canonical hamburger entry).
-    const toggle = authedPage.getByRole("button", { name: /abrir menú principal|menú/i });
+    const toggle = authedPage.locator("#mobile-menu-toggle");
     await expect(toggle).toBeVisible();
     await expect(toggle).toHaveAttribute("aria-expanded", "false");
     await toggle.click();
@@ -62,7 +62,7 @@ test.describe("mobile drawer", () => {
     ).toEqual([]);
 
     // (4) close button exists + works (Drawer.CloseTrigger).
-    const closeBtn = authedPage.getByRole("button", { name: /cerrar menú/i });
+    const closeBtn = authedPage.getByRole("button", { name: "Cerrar menú", exact: true });
     await expect(closeBtn).toBeVisible();
 
     // (5) ESC closes (React Aria dialog primitive default).
@@ -79,7 +79,7 @@ test.describe("mobile drawer", () => {
       .first()
       .waitFor({ state: "attached", timeout: 10_000 });
 
-    await authedPage.getByRole("button", { name: /abrir menú principal|menú/i }).click();
+    await authedPage.locator("#mobile-menu-toggle").click();
     const dialog = authedPage.getByRole("dialog", { name: /navegación principal/i });
     await expect(dialog).toBeVisible({ timeout: 5_000 });
 
@@ -106,7 +106,7 @@ test.describe("mobile drawer", () => {
       .first()
       .waitFor({ state: "attached", timeout: 10_000 });
 
-    await authedPage.getByRole("button", { name: /abrir menú principal|menú/i }).click();
+    await authedPage.locator("#mobile-menu-toggle").click();
     const dialog = authedPage.getByRole("dialog", { name: /navegación principal/i });
     await expect(dialog).toBeVisible({ timeout: 5_000 });
 
