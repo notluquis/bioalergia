@@ -119,7 +119,7 @@ export function DeploymentStatusChip({ compact = false }: Readonly<DeploymentSta
   const color = summaryColor(targets, configured, errorMessage);
 
   const content = (
-    <Chip color={color} size={compact ? "sm" : "md"} variant="soft">
+    <Chip color={color} size={compact ? "sm" : "md"} variant="primary">
       {label}
     </Chip>
   );

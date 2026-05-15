@@ -106,6 +106,7 @@ export const getMpReportColumns = (
       return (
         <div className="flex justify-end gap-1 text-right">
           <Button
+            aria-label="Descargar reporte"
             className="p-0 sm:opacity-70 sm:group-hover:opacity-100 size-9"
             isDisabled={downloadPending || pending || !report.file_name}
             isIconOnly
@@ -122,6 +123,7 @@ export const getMpReportColumns = (
             }
           </Button>
           <Button
+            aria-label="Procesar reporte"
             className="p-0 sm:opacity-70 sm:group-hover:opacity-100 size-9"
             isDisabled={processPending || pending || !report.file_name}
             isIconOnly

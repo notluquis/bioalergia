@@ -117,7 +117,9 @@ function PatientsListPage() {
         header: "ACCIONES",
         cell: ({ row }) => (
           <Button
+            aria-label="Ver paciente"
             className="min-w-0 p-0 size-8"
+            isIconOnly
             onPress={() =>
               void navigate({
                 params: { id: String(row.original.id) },
