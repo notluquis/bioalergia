@@ -303,6 +303,39 @@ export async function generateExamReportPdf(
   doc.setFontSize(9);
   doc.text(report.doctorSpecialty.toUpperCase(), sigBoxX, sigBoxY + 90);
 
+  // ── Protocol-compliance disclaimer (POE-ALG-TC-001 / EAACI) ────────
+  // Required by the clinic's POE: every SPT-derived report must remind
+  // the reader that "sensibilización ≠ alergia clínica" and reference
+  // the technique standard. Skipped for PATCH (different methodology
+  // and lectura window — disclaimer is added via the per-type
+  // `defaultNotes` instead).
+  if (report.examType !== "PATCH") {
+    if (y > PAGE_H - 250) {
+      doc.addPage();
+      doc.setFillColor(...PEACH);
+      doc.rect(0, 0, SIDEBAR_W, PAGE_H, "F");
+      y = 80;
+    }
+    doc.setDrawColor(200, 200, 200);
+    doc.setLineWidth(0.5);
+    doc.line(MARGIN_X, y, CONTENT_RIGHT, y);
+    y += 12;
+    doc.setFont("helvetica", "italic");
+    doc.setFontSize(8);
+    doc.setTextColor(...FOOTER);
+    const disclaimer =
+      "La sensibilización detectada en este examen no equivale necesariamente a alergia clínica: " +
+      "su relevancia debe ser correlacionada con la historia del paciente por el médico tratante. " +
+      "Controles del examen: histamina (positivo) y suero salino (negativo) validan la reactividad cutánea. " +
+      "Tiempo de lectura: 15–20 minutos post-aplicación. " +
+      "Estándar técnico: EAACI / Heinzerling 2013 — pápula ≥ 3 mm sobre el control negativo.";
+    const wrappedDisc = doc.splitTextToSize(disclaimer, CONTENT_RIGHT - MARGIN_X);
+    for (const line of wrappedDisc) {
+      doc.text(line, MARGIN_X, y);
+      y += 10;
+    }
+  }
+
   // ── Footer (address / web / email / phones / reactivos / técnica) ──
   let footerY = PAGE_H - 95;
   doc.setDrawColor(180, 180, 180);
@@ -344,6 +377,12 @@ export async function generateExamReportPdf(
   const phoneRightX = CONTENT_RIGHT - 5;
   doc.text(settings.phoneWhatsapp, phoneRightX, PAGE_H - 65, { align: "right" });
   doc.text(settings.phoneLandline, phoneRightX, PAGE_H - 53, { align: "right" });
+
+  // POE reference — small print bottom-left for compliance trace.
+  doc.setFont("helvetica", "italic");
+  doc.setFontSize(7);
+  doc.setTextColor(...FOOTER);
+  doc.text("POE-ALG-TC-001 v1.0 (Mayo 2026) — Bioalergia", MARGIN_X, PAGE_H - 18);
 
   return doc.output("blob");
 }

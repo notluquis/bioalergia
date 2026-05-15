@@ -43,6 +43,10 @@ export const EXAM_TYPE_CONFIG: Record<ExamType, ExamTypeConfig> = {
       { sectionKey: "lectura_48h", label: "Primera lectura 48 horas" },
       { sectionKey: "lectura_96h", label: "Segunda lectura 96 horas" },
     ],
+    // Patch testing follows ICDRG/ESCD criteria, not SPT (no histamine
+    // control, different lectura window). Disclaimer reflects that.
+    defaultNotes:
+      "*Lecturas a 48 h y 96 h post-aplicación. La sensibilización detectada no equivale necesariamente a alergia clínica de contacto: requiere correlación con la historia de exposición. Estándar ICDRG / ESCD.",
   },
   MULTITEST_PANELS: {
     title: "INFORME TEST CUTANEO\nMULTITEST PANEL 1, 2, 3 y ACAROS",
