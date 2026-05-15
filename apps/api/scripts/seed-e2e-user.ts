@@ -18,7 +18,7 @@
  */
 import { randomBytes } from "node:crypto";
 import argon2 from "argon2";
-import { Kysely, PostgresDialect } from "kysely";
+import { Kysely, PostgresDialect, sql } from "kysely";
 import pkg from "pg";
 
 const { Pool } = pkg;
@@ -77,6 +77,21 @@ if (!readOnlyRole) {
     .returning("id")
     .executeTakeFirstOrThrow();
 }
+
+// Grant E2EReadOnly every `read` permission. `Socio` (the user's other
+// role) is least-privilege and can't load several authed routes, so the
+// E2E user would otherwise bounce to `/` and scan-only specs would pass
+// vacuously. The middleware still blocks all mutations for this role —
+// this only widens read visibility. Idempotent. Mirrored standalone in
+// scripts/grant-e2e-readonly-read-perms.ts for re-running without a
+// password rotation.
+await sql`
+  INSERT INTO role_permissions (role_id, permission_id, created_at)
+  SELECT ${readOnlyRole.id}, p.id, now()
+  FROM permissions p
+  WHERE p.action = 'read'
+  ON CONFLICT (role_id, permission_id) DO NOTHING
+`.execute(db);
 
 const existing = await db
   .selectFrom("users")
