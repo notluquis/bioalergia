@@ -15,6 +15,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 
+import { useConfirmDialog } from "@/context/ConfirmDialogContext";
 import { useToast } from "@/context/ToastContext";
 import { EXAM_TYPE_LABEL, EXAM_TYPE_ORDER } from "@/features/exam-reports/lib/exam-types";
 import { examReportsORPCClient } from "@/features/exam-reports/orpc";
@@ -29,7 +30,7 @@ export const Route = createFileRoute("/_authed/settings/conclusion-templates")({
       order: 70,
       section: "Sistema",
     },
-    permission: { action: "read", subject: "Patient" },
+    permission: { action: "update", subject: "ConclusionTemplate" },
     title: "Plantillas de conclusión",
   },
   component: ConclusionTemplatesPage,
@@ -38,6 +39,7 @@ export const Route = createFileRoute("/_authed/settings/conclusion-templates")({
 function ConclusionTemplatesPage() {
   const toast = useToast();
   const qc = useQueryClient();
+  const confirmDialog = useConfirmDialog();
 
   const listQ = useQuery(examReportsKeys.templates(undefined));
   const [draftText, setDraftText] = useState("");
@@ -179,8 +181,16 @@ function ConclusionTemplatesPage() {
                 <Button
                   aria-label="Eliminar"
                   isIconOnly
-                  onPress={() => {
-                    if (confirm("¿Eliminar plantilla?")) remove.mutate(t.id);
+                  onPress={async () => {
+                    const ok = await confirmDialog({
+                      title: "Eliminar plantilla",
+                      description:
+                        "¿Eliminar esta plantilla de conclusión? Los informes ya creados conservan su texto.",
+                      confirmLabel: "Eliminar",
+                      confirmVariant: "danger",
+                      status: "danger",
+                    });
+                    if (ok) remove.mutate(t.id);
                   }}
                   size="sm"
                   variant="danger"

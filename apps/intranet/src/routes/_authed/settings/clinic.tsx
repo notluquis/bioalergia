@@ -25,7 +25,7 @@ export const Route = createFileRoute("/_authed/settings/clinic")({
       order: 65,
       section: "Sistema",
     },
-    permission: { action: "read", subject: "Patient" },
+    permission: { action: "update", subject: "ClinicSettings" },
     title: "Datos de la clínica",
   },
   component: ClinicSettingsPage,

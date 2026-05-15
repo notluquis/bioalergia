@@ -2,6 +2,7 @@ import {
   Button,
   Description,
   Form,
+  Header,
   Input,
   Label,
   ListBox,
@@ -479,12 +480,27 @@ function AllergenPicker({
   onAdd: (a: { id: string; commonName: string; category: string }) => void;
 }) {
   const [query, setQuery] = useState("");
-  const filtered = useMemo(() => {
+
+  // Filter then group by category — the source PDFs (and the protocol
+  // §2 definitions) organise allergens by category (POLENES > ARBOLES,
+  // ACAROS, EPITELIOS, ALIMENTOS, …). The dropdown mirrors that for
+  // discoverability without forcing the operator to know names.
+  const grouped = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return allergens.slice(0, 10);
-    return allergens
-      .filter((a) => a.commonName.toLowerCase().includes(q))
-      .slice(0, 10);
+    const filtered = q
+      ? allergens.filter((a) => a.commonName.toLowerCase().includes(q))
+      : allergens;
+    const buckets = new Map<string, typeof filtered>();
+    for (const a of filtered) {
+      const key = a.category || "Otros";
+      const bucket = buckets.get(key) ?? [];
+      bucket.push(a);
+      buckets.set(key, bucket);
+    }
+    // Cap each category to keep the dropdown bounded under heavy data.
+    return Array.from(buckets.entries())
+      .map(([category, items]) => ({ category, items: items.slice(0, 12) }))
+      .sort((a, b) => a.category.localeCompare(b.category));
   }, [allergens, query]);
 
   return (
@@ -515,13 +531,15 @@ function AllergenPicker({
         </Select.Trigger>
         <Select.Popover>
           <ListBox>
-            {filtered.map((a) => (
-              <ListBox.Item id={a.id} key={a.id}>
-                <div className="flex flex-col">
-                  <span>{a.commonName}</span>
-                  <span className="text-default-600 text-xs">{a.category}</span>
-                </div>
-              </ListBox.Item>
+            {grouped.map((group) => (
+              <ListBox.Section key={group.category}>
+                <Header>{group.category}</Header>
+                {group.items.map((a) => (
+                  <ListBox.Item id={a.id} key={a.id} textValue={a.commonName}>
+                    {a.commonName}
+                  </ListBox.Item>
+                ))}
+              </ListBox.Section>
             ))}
           </ListBox>
         </Select.Popover>

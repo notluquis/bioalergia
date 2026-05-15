@@ -4,6 +4,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Download, PlusCircle, Trash2 } from "lucide-react";
 import { useState } from "react";
 
+import { useConfirmDialog } from "@/context/ConfirmDialogContext";
+import { useCan } from "@/hooks/use-can";
 import { fetchPatients } from "@/features/patients/api";
 import { CreatePatientModal } from "@/features/patients/components/CreatePatientModal";
 import { CreateExamReportWizard } from "@/features/exam-reports/components/CreateExamReportWizard";
@@ -32,7 +34,7 @@ export const Route = createFileRoute("/_authed/exam-reports")({
       order: 30,
       section: "Clínica",
     },
-    permission: { action: "read", subject: "Patient" },
+    permission: { action: "read", subject: "ExamReport" },
     title: "Informes — Lista",
   },
   component: ExamReportsListPage,
@@ -41,6 +43,15 @@ export const Route = createFileRoute("/_authed/exam-reports")({
 function ExamReportsListPage() {
   const toast = useToast();
   const qc = useQueryClient();
+  const confirmDialog = useConfirmDialog();
+  const { can } = useCan();
+  // POE-ALG-TC-001 §3 Responsabilidades: TENS only ejecuta + registra,
+  // no firma ni emite conclusiones — UI exposes view + download but
+  // hides create/delete unless the user holds the corresponding perm
+  // (Enfermero / Médico). Server still enforces via @@deny + handler
+  // checks; this is the visibility layer.
+  const canCreate = can("create", "ExamReport");
+  const canDelete = can("delete", "ExamReport");
 
   const [selectPatientOpen, setSelectPatientOpen] = useState(false);
   const [createPatientOpen, setCreatePatientOpen] = useState(false);
@@ -115,14 +126,16 @@ function ExamReportsListPage() {
             {listQ.data?.total ?? 0} informe(s) generados
           </p>
         </div>
-        <Button
-          className="gap-2"
-          onPress={() => setSelectPatientOpen(true)}
-          size="sm"
-        >
-          <PlusCircle size={16} />
-          Nuevo Informe
-        </Button>
+        {canCreate && (
+          <Button
+            className="gap-2"
+            onPress={() => setSelectPatientOpen(true)}
+            size="sm"
+          >
+            <PlusCircle size={16} />
+            Nuevo Informe
+          </Button>
+        )}
       </header>
 
       <Surface variant="default" className="rounded-3xl border border-default-100 p-2">
@@ -182,19 +195,27 @@ function ExamReportsListPage() {
                     >
                       <Download className="size-4" />
                     </Button>
-                    <Button
-                      isIconOnly
-                      aria-label="Eliminar"
-                      onPress={() => {
-                        if (confirm("¿Eliminar este informe?")) {
-                          deleteMutation.mutate(r.id);
-                        }
-                      }}
-                      size="sm"
-                      variant="danger"
-                    >
-                      <Trash2 className="size-4" />
-                    </Button>
+                    {canDelete && (
+                      <Button
+                        isIconOnly
+                        aria-label="Eliminar"
+                        onPress={async () => {
+                          const ok = await confirmDialog({
+                            title: "Eliminar informe",
+                            description:
+                              "¿Eliminar este informe? La acción es irreversible.",
+                            confirmLabel: "Eliminar",
+                            confirmVariant: "danger",
+                            status: "danger",
+                          });
+                          if (ok) deleteMutation.mutate(r.id);
+                        }}
+                        size="sm"
+                        variant="danger"
+                      >
+                        <Trash2 className="size-4" />
+                      </Button>
+                    )}
                   </div>
                 </li>
               );
