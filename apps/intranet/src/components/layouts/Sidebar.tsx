@@ -180,11 +180,15 @@ export function Sidebar({ isMobile, isOpen, onClose, sidebarId }: SidebarProps) 
         }}
         variant="blur"
       >
-        <Drawer.Content
-          className="w-[min(85vw,320px)] rounded-r-3xl border-r border-default-200 bg-content1 pl-[env(safe-area-inset-left)] shadow-2xl"
-          placement="left"
-        >
-          <Drawer.Dialog className="relative h-full max-h-dvh p-0">
+        <Drawer.Content placement="left">
+          {/* All visual styling lives on Drawer.Dialog (the actual panel).
+              Drawer.Content is HeroUI's full-screen positioning wrapper —
+              giving it `bg`/`rounded` made it look like a SECOND panel
+              behind the Dialog (one rounded, one not). HeroUI's left-
+              placement dialog defaults to `w-80 max-w-[85vw] rounded-none
+              bg-overlay p-6`; we override width, drop the default
+              padding, set our own bg + rounded right edge. */}
+          <Drawer.Dialog className="relative h-full max-h-dvh w-[min(85vw,320px)] rounded-r-3xl border-r border-default-200 bg-content1 p-0 pl-[env(safe-area-inset-left)] shadow-2xl">
             <Drawer.CloseTrigger
               aria-label="Cerrar menú"
               className="absolute top-3 right-3 z-10"
