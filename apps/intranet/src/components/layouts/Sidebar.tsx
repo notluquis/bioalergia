@@ -181,7 +181,7 @@ export function Sidebar({ isMobile, isOpen, onClose, sidebarId }: SidebarProps) 
         variant="blur"
       >
         <Drawer.Content
-          className="w-[min(85vw,320px)] rounded-r-3xl border-r bg-background pl-[env(safe-area-inset-left)] shadow-2xl"
+          className="w-[min(85vw,320px)] rounded-r-3xl border-r border-default-200 bg-content1 pl-[env(safe-area-inset-left)] shadow-2xl"
           placement="left"
         >
           <Drawer.Dialog className="relative h-full max-h-dvh p-0">
