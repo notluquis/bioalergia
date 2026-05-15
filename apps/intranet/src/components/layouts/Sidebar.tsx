@@ -41,135 +41,137 @@ export function Sidebar({ isMobile, isOpen, onClose, sidebarId }: SidebarProps) 
   const displayName =
     user?.name ?? (user?.email ? (user.email.split("@")[0] ?? "Usuario") : "Usuario");
 
-  const sidebarContent = (
-    <aside
-      id={sidebarId}
-      aria-label="Navegación principal"
-      aria-hidden={isMobile && !isOpen}
-      className="flex flex-col overflow-hidden pt-[env(safe-area-inset-top)] size-full"
+  // Three reusable building blocks shared by the mobile Drawer (canonical
+  // HeroUI Header/Body/Footer composition) and the desktop rail (plain
+  // <aside>): logo, scrollable nav, user-menu pill.
+
+  const logoBlock = (
+    <div
+      className={cn(
+        "flex h-20 shrink-0 items-center justify-center",
+        isMobile ? "px-5" : "px-0"
+      )}
     >
-      <div
-        className={cn(
-          "flex h-20 shrink-0 items-center justify-center ",
-          isMobile ? "px-5" : "px-0"
-        )}
-      >
-        <div className={cn("relative flex items-center justify-center ", "size-12")}>
-          <img
-            alt="Bioalergia"
-            className={cn("object-contain size-10 ")}
-            fetchPriority="high"
-            src="/logo_bimi.svg"
-          />
-        </div>
+      <div className="relative flex items-center justify-center size-12">
+        <img
+          alt="Bioalergia"
+          className="object-contain size-10"
+          fetchPriority="high"
+          src="/logo_bimi.svg"
+        />
       </div>
+    </div>
+  );
 
-      <div className="flex-1 space-y-6 overflow-y-auto overflow-x-hidden px-2 py-6">
-        {visibleSections.map((section, index) => (
-          <div className="space-y-4" key={section.title}>
-            {index > 0 && !isMobile && (
-              <div aria-hidden="true" className="mx-auto w-10 border-default-200 border-t pb-2" />
-            )}
-
-            {isMobile && (
-              <div className="flex items-center px-4 pb-1">
-                <h3 className="font-bold text-xs text-default-600 tracking-[0.2em]">
-                  {section.title}
-                </h3>
-              </div>
-            )}
-
-            <div className="space-y-2">
-              {section.items.map((item) => (
-                <SidebarItem
-                  isMobile={isMobile}
-                  item={item}
-                  key={item.to}
-                  onNavigate={() => {
-                    handleNavigate();
-                  }}
-                />
-              ))}
+  const navList = (
+    <nav aria-label="Secciones" className="space-y-6">
+      {visibleSections.map((section, index) => (
+        <div className="space-y-4" key={section.title}>
+          {index > 0 && !isMobile && (
+            <div aria-hidden="true" className="mx-auto w-10 border-default-200 border-t pb-2" />
+          )}
+          {isMobile && (
+            <div className="flex items-center px-4 pb-1">
+              <h3 className="font-bold text-xs text-default-600 tracking-[0.2em]">
+                {section.title}
+              </h3>
             </div>
+          )}
+          <div className="space-y-2">
+            {section.items.map((item) => (
+              <SidebarItem
+                isMobile={isMobile}
+                item={item}
+                key={item.to}
+                onNavigate={() => {
+                  handleNavigate();
+                }}
+              />
+            ))}
           </div>
-        ))}
-      </div>
+        </div>
+      ))}
+    </nav>
+  );
 
-      <div
-        className={cn(
-          "mt-auto shrink-0 border-default-100/50 border-t bg-background/30 pt-4 pb-8 ",
-          isMobile ? "px-3" : "flex flex-col items-center justify-center px-0"
-        )}
-      >
-        <Dropdown>
-          <Dropdown.Trigger>
-            <Button
-              aria-label="Abrir menu de usuario"
-              type="button"
-              variant="outline"
-              className={cn(
-                "group flex cursor-pointer items-center outline-none hover:bg-default-50/50",
-                isMobile
-                  ? "w-full gap-3 rounded-2xl px-3 py-2"
-                  : "justify-center rounded-xl p-0 size-12"
-              )}
-            >
-              <Avatar className="shrink-0 size-10">
-                <Avatar.Fallback className="bg-background font-bold text-primary">
-                  {displayName.slice(0, 2).toUpperCase()}
-                </Avatar.Fallback>
-              </Avatar>
-
-              {isMobile && (
-                <div className="flex min-w-0 flex-1 flex-col gap-0.5 text-left ">
-                  <span className="truncate font-semibold text-foreground group-hover:text-primary">
-                    {displayName}
-                  </span>
-                  <span className="truncate text-default-600 text-xs">{user?.email}</span>
-                </div>
-              )}
-            </Button>
-          </Dropdown.Trigger>
-          <Dropdown.Popover placement="top start">
-            <Dropdown.Menu
-              aria-label="Menu de usuario"
-              className="w-56"
-              onAction={(key) => {
-                if (key === "account") {
-                  void router.navigate({ to: "/account" });
-                }
-                if (key === "logout") {
-                  void logout();
-                }
-              }}
-            >
-              <Dropdown.Item id="user" isDisabled textValue={displayName}>
-                <div className="flex flex-col py-1">
-                  <Label>{displayName}</Label>
-                  <span className="text-default-500 text-xs">{user?.email}</span>
-                </div>
-              </Dropdown.Item>
-              <Separator />
-              <Dropdown.Item id="account" textValue="Mi cuenta">
-                <div className="flex items-center">
-                  <User className="mr-2 size-4" />
-                  Mi Cuenta
-                </div>
-              </Dropdown.Item>
-              <Dropdown.Item id="logout" textValue="Cerrar sesion" variant="danger">
-                <div className="flex items-center">
-                  <LogOut className="mr-2 size-4" />
-                  Cerrar sesion
-                </div>
-              </Dropdown.Item>
-            </Dropdown.Menu>
-          </Dropdown.Popover>
-        </Dropdown>
-      </div>
-    </aside>
+  const userPill = (
+    <Dropdown>
+      <Dropdown.Trigger>
+        <Button
+          aria-label="Abrir menu de usuario"
+          className={cn(
+            "group flex cursor-pointer items-center outline-none hover:bg-default-50/50",
+            isMobile
+              ? "w-full gap-3 rounded-2xl px-3 py-2"
+              : "justify-center rounded-xl p-0 size-12"
+          )}
+          type="button"
+          variant="outline"
+        >
+          <Avatar className="shrink-0 size-10">
+            <Avatar.Fallback className="bg-background font-bold text-primary">
+              {displayName.slice(0, 2).toUpperCase()}
+            </Avatar.Fallback>
+          </Avatar>
+          {isMobile && (
+            <div className="flex min-w-0 flex-1 flex-col gap-0.5 text-left">
+              <span className="truncate font-semibold text-foreground group-hover:text-primary">
+                {displayName}
+              </span>
+              <span className="truncate text-default-600 text-xs">{user?.email}</span>
+            </div>
+          )}
+        </Button>
+      </Dropdown.Trigger>
+      <Dropdown.Popover placement="top start">
+        <Dropdown.Menu
+          aria-label="Menu de usuario"
+          className="w-56"
+          onAction={(key) => {
+            if (key === "account") {
+              void router.navigate({ to: "/account" });
+            }
+            if (key === "logout") {
+              void logout();
+            }
+          }}
+        >
+          <Dropdown.Item id="user" isDisabled textValue={displayName}>
+            <div className="flex flex-col py-1">
+              <Label>{displayName}</Label>
+              <span className="text-default-500 text-xs">{user?.email}</span>
+            </div>
+          </Dropdown.Item>
+          <Separator />
+          <Dropdown.Item id="account" textValue="Mi cuenta">
+            <div className="flex items-center">
+              <User className="mr-2 size-4" />
+              Mi Cuenta
+            </div>
+          </Dropdown.Item>
+          <Dropdown.Item id="logout" textValue="Cerrar sesion" variant="danger">
+            <div className="flex items-center">
+              <LogOut className="mr-2 size-4" />
+              Cerrar sesion
+            </div>
+          </Dropdown.Item>
+        </Dropdown.Menu>
+      </Dropdown.Popover>
+    </Dropdown>
   );
 
   return isMobile ? (
+    /* Canonical HeroUI v3 Drawer composition (per the docs' Anatomy):
+       Backdrop > Content > Dialog > [CloseTrigger, Header > Heading,
+       Body, Footer]. Visual styling (bg, rounded, border, width)
+       belongs on `Drawer.Dialog` — `Drawer.Content` is the full-screen
+       positioning wrapper (`fixed inset-0 z-50 flex w-full`) and
+       styling it produced a phantom second panel.
+       Why the canonical parts matter: `.drawer__body` ships
+       `-webkit-overflow-scrolling: touch`, `overscroll-contain` and
+       `touch-action: pan-y` — native iOS momentum + no scroll-chaining
+       to the page + drag-to-dismiss still works while the body
+       scrolls. Rolling our own `overflow-y-auto` div lost all of that. */
     <Drawer>
       <Drawer.Backdrop
         isOpen={isOpen}
@@ -181,26 +183,39 @@ export function Sidebar({ isMobile, isOpen, onClose, sidebarId }: SidebarProps) 
         variant="blur"
       >
         <Drawer.Content placement="left">
-          {/* All visual styling lives on Drawer.Dialog (the actual panel).
-              Drawer.Content is HeroUI's full-screen positioning wrapper —
-              giving it `bg`/`rounded` made it look like a SECOND panel
-              behind the Dialog (one rounded, one not). HeroUI's left-
-              placement dialog defaults to `w-80 max-w-[85vw] rounded-none
-              bg-overlay p-6`; we override width, drop the default
-              padding, set our own bg + rounded right edge. */}
-          <Drawer.Dialog className="relative h-full max-h-dvh w-[min(85vw,320px)] rounded-r-3xl border-r border-default-200 bg-content1 p-0 pl-[env(safe-area-inset-left)] shadow-2xl">
-            <Drawer.CloseTrigger
-              aria-label="Cerrar menú"
-              className="absolute top-3 right-3 z-10"
-            />
-            {sidebarContent}
+          <Drawer.Dialog
+            aria-label="Navegación principal"
+            className="relative flex h-full max-h-dvh w-[min(85vw,320px)] flex-col rounded-r-3xl border-r border-default-200 bg-content1 p-0 pl-[env(safe-area-inset-left)] shadow-2xl"
+            id={sidebarId}
+          >
+            <Drawer.CloseTrigger aria-label="Cerrar menú" className="z-10" />
+            <Drawer.Header className="px-0 pt-[env(safe-area-inset-top)]">
+              <Drawer.Heading className="sr-only">Navegación principal</Drawer.Heading>
+              {logoBlock}
+            </Drawer.Header>
+            <Drawer.Body className="px-2 py-6 text-foreground">{navList}</Drawer.Body>
+            <Drawer.Footer className="mt-0 flex-col items-stretch justify-start gap-0 border-default-100/50 border-t bg-background/30 px-3 pt-4 pb-[calc(env(safe-area-inset-bottom)+1rem)]">
+              {userPill}
+            </Drawer.Footer>
           </Drawer.Dialog>
         </Drawer.Content>
       </Drawer.Backdrop>
     </Drawer>
   ) : (
     <div className="relative z-50 h-full w-20 rounded-2xl border border-default-100 bg-background shadow-xl">
-      {sidebarContent}
+      <aside
+        aria-label="Navegación principal"
+        className="flex flex-col overflow-hidden pt-[env(safe-area-inset-top)] size-full"
+        id={sidebarId}
+      >
+        {logoBlock}
+        <div className="flex-1 space-y-6 overflow-y-auto overflow-x-hidden px-2 py-6">
+          {navList}
+        </div>
+        <div className="mt-auto flex shrink-0 flex-col items-center justify-center border-default-100/50 border-t bg-background/30 px-0 pt-4 pb-8">
+          {userPill}
+        </div>
+      </aside>
     </div>
   );
 }
