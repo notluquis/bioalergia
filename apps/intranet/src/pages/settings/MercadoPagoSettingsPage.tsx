@@ -324,7 +324,7 @@ export function MercadoPagoSettingsPage() {
                     <Clock className="text-primary size-5" />
                   </Card.Header>
                   <Card.Content className="p-0 pt-4">
-                    <Description className="truncate text-default-400 text-xs">
+                    <Description className="truncate text-default-600 text-xs">
                       {isReportLoading
                         ? "Obteniendo últimos reportes..."
                         : (reports[0]?.file_name ?? "Sin reportes recientes")}
@@ -416,7 +416,7 @@ export function MercadoPagoSettingsPage() {
                     <Clock className="text-primary size-5" />
                   </Card.Header>
                   <Card.Content className="p-0 pt-4">
-                    <Description className="truncate text-default-400 text-xs">
+                    <Description className="truncate text-default-600 text-xs">
                       {isReportLoading
                         ? "Obteniendo últimos reportes..."
                         : (reports[0]?.file_name ?? "Sin reportes recientes")}
