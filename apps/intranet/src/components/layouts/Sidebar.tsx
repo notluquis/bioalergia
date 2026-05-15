@@ -1,4 +1,4 @@
-import { Avatar, Button, Drawer, Dropdown, Label, Separator } from "@heroui/react";
+import { Avatar, Button, Drawer, Dropdown, Label, Separator, Surface } from "@heroui/react";
 import { useRouter } from "@tanstack/react-router";
 import { LogOut, User } from "lucide-react";
 
@@ -63,12 +63,18 @@ export function Sidebar({ isMobile, isOpen, onClose, sidebarId }: SidebarProps) 
     </div>
   );
 
-  const navList = (
-    <nav aria-label="Secciones" className="space-y-6">
+  // Bare section list — the parent (`<nav aria-label="Navegación principal">`)
+  // is the navigation landmark. Mobile uses HeroUI Separator between
+  // sections (semantic + theme-aware) instead of bare `border-t` divs.
+  const navSections = (
+    <div className="space-y-6">
       {visibleSections.map((section, index) => (
         <div className="space-y-4" key={section.title}>
-          {index > 0 && !isMobile && (
-            <div aria-hidden="true" className="mx-auto w-10 border-default-200 border-t pb-2" />
+          {index > 0 && (
+            <Separator
+              aria-hidden="true"
+              className={cn(isMobile ? "w-full" : "mx-auto w-10")}
+            />
           )}
           {isMobile && (
             <div className="flex items-center px-4 pb-1">
@@ -91,7 +97,7 @@ export function Sidebar({ isMobile, isOpen, onClose, sidebarId }: SidebarProps) 
           </div>
         </div>
       ))}
-    </nav>
+    </div>
   );
 
   const userPill = (
@@ -161,17 +167,14 @@ export function Sidebar({ isMobile, isOpen, onClose, sidebarId }: SidebarProps) 
   );
 
   return isMobile ? (
-    /* Canonical HeroUI v3 Drawer composition (per the docs' Anatomy):
+    /* Canonical HeroUI v3 Drawer composition (per the doc's Anatomy):
        Backdrop > Content > Dialog > [CloseTrigger, Header > Heading,
-       Body, Footer]. Visual styling (bg, rounded, border, width)
-       belongs on `Drawer.Dialog` — `Drawer.Content` is the full-screen
-       positioning wrapper (`fixed inset-0 z-50 flex w-full`) and
-       styling it produced a phantom second panel.
-       Why the canonical parts matter: `.drawer__body` ships
+       Body, Footer]. Visual styling lives on `Drawer.Dialog` — `Drawer.
+       Content` is the full-screen positioning wrapper, styling it once
+       produced a phantom second panel. `.drawer__body` ships
        `-webkit-overflow-scrolling: touch`, `overscroll-contain` and
        `touch-action: pan-y` — native iOS momentum + no scroll-chaining
-       to the page + drag-to-dismiss still works while the body
-       scrolls. Rolling our own `overflow-y-auto` div lost all of that. */
+       + drag-to-dismiss still works while the body scrolls. */
     <Drawer>
       <Drawer.Backdrop
         isOpen={isOpen}
@@ -184,16 +187,20 @@ export function Sidebar({ isMobile, isOpen, onClose, sidebarId }: SidebarProps) 
       >
         <Drawer.Content placement="left">
           <Drawer.Dialog
-            aria-label="Navegación principal"
             className="relative flex h-full max-h-dvh w-[min(85vw,320px)] flex-col rounded-r-3xl border-r border-default-200 bg-content1 p-0 pl-[env(safe-area-inset-left)] shadow-2xl"
             id={sidebarId}
           >
             <Drawer.CloseTrigger aria-label="Cerrar menú" className="z-10" />
             <Drawer.Header className="px-0 pt-[env(safe-area-inset-top)]">
+              {/* `Drawer.Heading` becomes the dialog's accessible name via
+                  React Aria's labelledby plumbing — no manual aria-label
+                  on the Dialog needed. */}
               <Drawer.Heading className="sr-only">Navegación principal</Drawer.Heading>
               {logoBlock}
             </Drawer.Header>
-            <Drawer.Body className="px-2 py-6 text-foreground">{navList}</Drawer.Body>
+            <Drawer.Body className="px-2 py-6 text-foreground">
+              <nav aria-label="Navegación principal">{navSections}</nav>
+            </Drawer.Body>
             <Drawer.Footer className="mt-0 flex-col items-stretch justify-start gap-0 border-default-100/50 border-t bg-background/30 px-3 pt-4 pb-[calc(env(safe-area-inset-bottom)+1rem)]">
               {userPill}
             </Drawer.Footer>
@@ -202,20 +209,27 @@ export function Sidebar({ isMobile, isOpen, onClose, sidebarId }: SidebarProps) 
       </Drawer.Backdrop>
     </Drawer>
   ) : (
-    <div className="relative z-50 h-full w-20 rounded-2xl border border-default-100 bg-background shadow-xl">
-      <aside
+    /* Desktop rail: `Surface` (HeroUI v3) for theme-aware elevation
+       tokens instead of a bare `<div>` with `bg-background`. The
+       primary navigation landmark is the inner `<nav>` — no `<aside>`
+       wrapper (that's "complementary content", not navigation, and
+       nesting both produces two landmarks for the same region). */
+    <Surface
+      className="relative z-50 h-full w-20 rounded-2xl border border-default-100 shadow-xl"
+      id={sidebarId}
+      variant="default"
+    >
+      <nav
         aria-label="Navegación principal"
         className="flex flex-col overflow-hidden pt-[env(safe-area-inset-top)] size-full"
-        id={sidebarId}
       >
         {logoBlock}
-        <div className="flex-1 space-y-6 overflow-y-auto overflow-x-hidden px-2 py-6">
-          {navList}
-        </div>
-        <div className="mt-auto flex shrink-0 flex-col items-center justify-center border-default-100/50 border-t bg-background/30 px-0 pt-4 pb-8">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden px-2 py-6">{navSections}</div>
+        <Separator />
+        <div className="flex shrink-0 flex-col items-center justify-center bg-background/30 px-0 pt-4 pb-8">
           {userPill}
         </div>
-      </aside>
-    </div>
+      </nav>
+    </Surface>
   );
 }
