@@ -80,7 +80,9 @@ function computeAge(birthDate: string | null | undefined): string | null {
   return Number.isFinite(years) && years >= 0 ? `${years} años` : null;
 }
 
-function patientFullName(p: Patient | { person: Patient["person"] }): string {
+function patientFullName(p: {
+  person: { names: string; fatherName?: string | null; motherName?: string | null };
+}): string {
   const { names, fatherName, motherName } = p.person;
   return [names, fatherName, motherName].filter(Boolean).join(" ");
 }

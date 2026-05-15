@@ -150,13 +150,19 @@ export const conclusionTemplateSchema = z.object({
   updatedAt: z.iso.datetime(),
 });
 
-const conclusionTemplateUpsertInputSchema = z.object({
+const conclusionTemplateCreateInputSchema = z.object({
   text: z.string().min(1),
   examType: examTypeSchema.nullable().optional(),
   isDefault: z.boolean().optional(),
   isActive: z.boolean().optional(),
   position: z.number().int().nonnegative().optional(),
 });
+
+// Update accepts any subset — the toggle UI patches only `isDefault`
+// or `isActive` without re-sending `text`.
+const conclusionTemplateUpdateInputSchema = conclusionTemplateCreateInputSchema
+  .partial()
+  .extend({ id: z.number().int().positive() });
 
 // ── ClinicSettings (singleton) ───────────────────────────────────────
 
@@ -251,12 +257,12 @@ export const examReportsContract = {
 
   createTemplate: oc
     .route({ method: "POST", path: "/templates" })
-    .input(conclusionTemplateUpsertInputSchema)
+    .input(conclusionTemplateCreateInputSchema)
     .output(conclusionTemplateSchema),
 
   updateTemplate: oc
     .route({ method: "POST", path: "/templates/{id}/update" })
-    .input(conclusionTemplateUpsertInputSchema.extend({ id: z.number().int().positive() }))
+    .input(conclusionTemplateUpdateInputSchema)
     .output(conclusionTemplateSchema),
 
   deleteTemplate: oc
