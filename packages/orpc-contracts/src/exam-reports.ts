@@ -217,7 +217,12 @@ export const examReportsContract = {
           patientId: z.number().int().positive().optional(),
           examType: examTypeSchema.optional(),
           search: z.string().optional(),
-          limit: z.number().int().positive().max(200).optional(),
+          // ISO date (YYYY-MM-DD) inclusive bounds on createdAt. UI binds
+          // these to a DateRangePicker; server interprets `to` as the
+          // end-of-day to keep the range inclusive.
+          from: z.iso.date().optional(),
+          to: z.iso.date().optional(),
+          limit: z.number().int().positive().max(500).optional(),
           offset: z.number().int().nonnegative().optional(),
         })
         .partial()

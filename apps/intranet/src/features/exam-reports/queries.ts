@@ -10,6 +10,8 @@ export const examReportsKeys = {
     patientId?: number;
     examType?: ExamType;
     search?: string;
+    from?: string;
+    to?: string;
     limit?: number;
     offset?: number;
   }) =>

@@ -151,6 +151,12 @@ const examReportsRouterBase = {
           ];
         }
       }
+      if (input?.from || input?.to) {
+        const range: { gte?: Date; lte?: Date } = {};
+        if (input.from) range.gte = new Date(`${input.from}T00:00:00.000Z`);
+        if (input.to) range.lte = new Date(`${input.to}T23:59:59.999Z`);
+        where.createdAt = range;
+      }
       const [items, total] = await Promise.all([
         db.examReport.findMany({
           where,
