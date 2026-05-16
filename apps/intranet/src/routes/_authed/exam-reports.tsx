@@ -145,14 +145,16 @@ function ExamReportsListPage() {
       );
       await examReportsORPCClient.markGenerated({ id: detail.id });
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: examReportsKeys.lists() }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: examReportsKeys.lists() });
+    },
     onError: (e) => toast.error((e as Error).message),
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: number) => examReportsORPCClient.delete({ id }),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: examReportsKeys.lists() });
+      void qc.invalidateQueries({ queryKey: examReportsKeys.lists() });
       toast.success("Informe eliminado");
     },
     onError: (e) => toast.error((e as Error).message),

@@ -54,7 +54,7 @@ function ConclusionTemplatesPage() {
         isDefault: draftIsDefault,
       }),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: [...examReportsKeys.all, "templates"] });
+      void qc.invalidateQueries({ queryKey: [...examReportsKeys.all, "templates"] });
       setDraftText("");
       setDraftExamType("");
       setDraftIsDefault(false);
@@ -64,21 +64,16 @@ function ConclusionTemplatesPage() {
   });
 
   const update = useMutation({
-    mutationFn: (vars: {
-      id: number;
-      text?: string;
-      isDefault?: boolean;
-      isActive?: boolean;
-    }) => examReportsORPCClient.updateTemplate(vars),
-    onSuccess: () =>
-      qc.invalidateQueries({ queryKey: [...examReportsKeys.all, "templates"] }),
+    mutationFn: (vars: { id: number; text?: string; isDefault?: boolean; isActive?: boolean }) =>
+      examReportsORPCClient.updateTemplate(vars),
+    onSuccess: () => qc.invalidateQueries({ queryKey: [...examReportsKeys.all, "templates"] }),
     onError: (e) => toast.error((e as Error).message),
   });
 
   const remove = useMutation({
     mutationFn: (id: number) => examReportsORPCClient.deleteTemplate({ id }),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: [...examReportsKeys.all, "templates"] });
+      void qc.invalidateQueries({ queryKey: [...examReportsKeys.all, "templates"] });
       toast.success("Plantilla eliminada");
     },
     onError: (e) => toast.error((e as Error).message),
@@ -133,10 +128,7 @@ function ConclusionTemplatesPage() {
             </div>
             <div className="flex flex-col gap-1">
               <Label>Predeterminada</Label>
-              <Switch
-                isSelected={draftIsDefault}
-                onChange={setDraftIsDefault}
-              >
+              <Switch isSelected={draftIsDefault} onChange={setDraftIsDefault}>
                 Sí
               </Switch>
             </div>

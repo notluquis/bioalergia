@@ -101,7 +101,7 @@ function ClinicSettingsPage() {
       });
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: [...examReportsKeys.all, "clinic-settings"] });
+      void qc.invalidateQueries({ queryKey: [...examReportsKeys.all, "clinic-settings"] });
       toast.success("Datos guardados");
     },
     onError: (e) => toast.error((e as Error).message),

@@ -177,7 +177,7 @@ export function CreateExamReportWizard({
         })),
       }),
     onSuccess: async (created) => {
-      qc.invalidateQueries({ queryKey: examReportsKeys.lists() });
+      void qc.invalidateQueries({ queryKey: examReportsKeys.lists() });
       const settings = settingsQ.data;
       if (settings) {
         await downloadExamReportPdf(
