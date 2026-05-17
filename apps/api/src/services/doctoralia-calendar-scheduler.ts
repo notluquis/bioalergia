@@ -1,8 +1,8 @@
 import cron from "node-cron";
-import { doctoraliaCalendarSyncService } from "../../services/doctoralia-calendar.ts";
-import { getSetting, updateSetting } from "../../services/settings.ts";
-import { logEvent, logWarn } from "../logger.ts";
-import { hasCalendarApiToken } from "./doctoralia-calendar-client.ts";
+import { doctoraliaCalendarSyncService } from "./doctoralia-calendar.ts";
+import { getSetting, updateSetting } from "./settings.ts";
+import { logEvent, logWarn } from "../lib/logger.ts";
+import { hasCalendarApiToken } from "../lib/doctoralia/doctoralia-calendar-client.ts";
 
 const DEFAULT_CRON = "*/10 * * * *";
 const DEFAULT_TIMEZONE = "America/Santiago";

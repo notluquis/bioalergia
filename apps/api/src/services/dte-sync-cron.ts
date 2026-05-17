@@ -1,6 +1,6 @@
 import cron from "node-cron";
-import { syncDTEs } from "../../services/dte-sync.ts";
-import { logEvent, logWarn } from "../logger.ts";
+import { syncDTEs } from "./dte-sync.ts";
+import { logEvent, logWarn } from "../lib/logger.ts";
 
 // DTE Sync Cron Job Configuration
 const CRON_JOBS: { expression: string; label: string }[] = [

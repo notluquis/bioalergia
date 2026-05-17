@@ -6,7 +6,7 @@
 import { db } from "@finanzas/db";
 import { Decimal } from "decimal.js";
 
-import { tryMatchDTEPurchaseToExpense } from "../services/dte-expense-matcher.ts";
+import { tryMatchDTEPurchaseToExpense } from "./dte-expense-matcher.ts";
 
 // Hook fail-soft que dispara matcher después de import.
 // Si match falla, NO interrumpe el import (solo loguea).

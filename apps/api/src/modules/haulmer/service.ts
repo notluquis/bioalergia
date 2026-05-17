@@ -4,7 +4,7 @@
  */
 
 import { db } from "@finanzas/db";
-import { importDtePurchaseRow, importDteSaleRow } from "../../lib/dte-import.ts";
+import { importDtePurchaseRow, importDteSaleRow } from "../../services/dte-import.ts";
 import { captureHaulmerJWT, type HaulmerConfig, isJWTExpired } from "./auth.ts";
 import { downloadHaulmerCSV } from "./downloader.ts";
 import { normalizeColumnName, parseCSVText } from "./parser.ts";

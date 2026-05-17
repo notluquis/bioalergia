@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { db } from "@finanzas/db";
-import { startClinicalSkinTestImportJob } from "../lib/clinical-skin-tests/clinical-skin-test-scheduler.ts";
+import { startClinicalSkinTestImportJob } from "../services/clinical-skin-test-scheduler.ts";
 import { logError, logEvent, logWarn } from "../lib/logger.ts";
 
 export const onedriveWebhookRoutes = new Hono();

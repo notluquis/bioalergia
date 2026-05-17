@@ -7,7 +7,7 @@ import type { CalendarEventRecord } from "../../lib/google/google-calendar.ts";
 import {
   removeGoogleCalendarEvents,
   upsertGoogleCalendarEvents,
-} from "../../lib/google/google-calendar-store.ts";
+} from "../../services/google-calendar-store.ts";
 import { parseCalendarMetadata } from "../../lib/parsers.ts";
 
 function isEventExcluded(

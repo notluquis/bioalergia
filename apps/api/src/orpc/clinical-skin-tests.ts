@@ -45,7 +45,7 @@ import {
   startClinicalSkinTestProcessDiscoveredJob,
   startClinicalSkinTestReprocessPendingJob,
   startClinicalXlsxLibraryReclassifyJob,
-} from "../lib/clinical-skin-tests/clinical-skin-test-scheduler.ts";
+} from "../services/clinical-skin-test-scheduler.ts";
 import { cancelJob, getActiveJobsByType, getJobStatus } from "../lib/jobQueue.ts";
 import {
   connectOneDriveWithCode,
