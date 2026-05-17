@@ -25,14 +25,14 @@ import { logError } from "../lib/logger.ts";
 import { configureSuperjson } from "../lib/superjson-config.ts";
 import {
   createAbandonmentContact,
-  detectDuplicateSeries,
-  getClinicalSeriesInsuranceStats,
-  getClinicalSeriesSnapshotById,
   listAbandonmentContacts,
-  listClinicalSeriesSnapshots,
-  mergeClinicalSeries,
-  startRebuildClinicalSeries,
-} from "../services/clinical-series.ts";
+} from "../services/clinical-series/abandonment.ts";
+import { detectDuplicateSeries } from "../services/clinical-series/duplicates/detect.ts";
+import { mergeClinicalSeries } from "../services/clinical-series/duplicates/merge.ts";
+import { startRebuildClinicalSeries } from "../services/clinical-series/rebuild.ts";
+import { getClinicalSeriesSnapshotById } from "../services/clinical-series/snapshot/by-id.ts";
+import { listClinicalSeriesSnapshots } from "../services/clinical-series/snapshot/list.ts";
+import { getClinicalSeriesInsuranceStats } from "../services/clinical-series/stats/insurance.ts";
 import { SuperJSONRPCHandler } from "./superjson.ts";
 
 configureSuperjson();

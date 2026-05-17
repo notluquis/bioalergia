@@ -1,4 +1,6 @@
 import { db } from "@finanzas/db";
+import type { SchemaType } from "@finanzas/db/schema";
+import type { ModelResult } from "@zenstackhq/orm";
 import dayjs from "dayjs";
 
 import { inferHealthInsurance } from "../classification/insurance.ts";
@@ -29,7 +31,25 @@ export async function getClinicalSeriesSnapshotByExternalEvent(params: {
     return null;
   }
 
-  const series = await db.clinicalSeries.findUnique({
+  // Explicit ModelResult escape-hatch (ZenStack v3 docs canonical
+  // pattern) — pins the nested-include shape so tsgo doesn't have to
+  // resolve the relation graph through inference. Without this, the
+  // 3-level include (clinicalSeries → events → calendar) cascades
+  // implicit-any across every downstream `series.events.map(...)`
+  // and `series.events.reduce(...)` callback.
+  type SeriesWithEvents = ModelResult<
+    SchemaType,
+    "ClinicalSeries",
+    {
+      include: {
+        events: {
+          include: { calendar: { select: { googleId: true } } };
+        };
+      };
+    }
+  >;
+
+  const series = (await db.clinicalSeries.findUnique({
     where: { id: event.clinicalSeriesId },
     include: {
       events: {
@@ -43,7 +63,7 @@ export async function getClinicalSeriesSnapshotByExternalEvent(params: {
         orderBy: [{ startDate: "asc" }, { startDateTime: "asc" }, { id: "asc" }],
       },
     },
-  });
+  })) as SeriesWithEvents | null;
 
   if (!series) {
     return null;

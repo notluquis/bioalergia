@@ -1,5 +1,5 @@
 import { db } from "@finanzas/db";
-import { syncClinicalSeriesForExternalEvents } from "../../services/clinical-series.ts";
+import { syncClinicalSeriesForExternalEvents } from "../../services/clinical-series/assignment/sync.ts";
 
 import type { CalendarEventRecord } from "./google-calendar.ts";
 

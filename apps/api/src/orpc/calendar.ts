@@ -96,7 +96,7 @@ import {
   loadSettings,
   updateCalendarEventClassification,
 } from "../services/calendar.ts";
-import { rebuildClinicalSeries } from "../services/clinical-series.ts";
+import { rebuildClinicalSeries } from "../services/clinical-series/rebuild.ts";
 import { SuperJSONRPCHandler } from "./superjson.ts";
 
 configureSuperjson();

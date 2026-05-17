@@ -1,4 +1,6 @@
 import { db } from "@finanzas/db";
+import type { SchemaType } from "@finanzas/db/schema";
+import type { ModelResult } from "@zenstackhq/orm";
 import dayjs from "dayjs";
 
 import { inferHealthInsurance } from "../classification/insurance.ts";
@@ -19,7 +21,23 @@ import { computeSnapshotTiming } from "./timing.ts";
 export async function getClinicalSeriesSnapshotById(
   id: number
 ): Promise<ClinicalSeriesSnapshot | null> {
-  const series = await db.clinicalSeries.findUnique({
+  // Same ModelResult escape-hatch as by-external-event.ts. Adds the
+  // abandonmentContacts select so the destructured `lastContact`
+  // below has the right shape.
+  type SeriesWithEventsAndContacts = ModelResult<
+    SchemaType,
+    "ClinicalSeries",
+    {
+      include: {
+        abandonmentContacts: { select: { contactedAt: true; outcome: true } };
+        events: {
+          include: { calendar: { select: { googleId: true } } };
+        };
+      };
+    }
+  >;
+
+  const series = (await db.clinicalSeries.findUnique({
     where: { id },
     include: {
       abandonmentContacts: {
@@ -38,7 +56,7 @@ export async function getClinicalSeriesSnapshotById(
         orderBy: [{ startDate: "asc" }, { startDateTime: "asc" }, { id: "asc" }],
       },
     },
-  });
+  })) as SeriesWithEventsAndContacts | null;
 
   if (!series) {
     return null;
