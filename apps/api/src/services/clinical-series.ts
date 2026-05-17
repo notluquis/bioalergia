@@ -3430,11 +3430,13 @@ async function assignEventToSeries(
     });
     targetSeriesId = created.id;
     // Register new series in the context so subsequent events find it.
+    // Use `created.id` directly (number) instead of the `let`-typed
+    // `targetSeriesId` (number | null) so TS doesn't widen the union.
     ctx?.register({
       beneficiaryName: identity.beneficiaryName,
       beneficiaryRut: identity.beneficiaryRut,
       eventCount: 1,
-      id: targetSeriesId,
+      id: created.id,
       kind,
       maxDate: eventDateDjs,
       minDate: eventDateDjs,
@@ -3444,17 +3446,27 @@ async function assignEventToSeries(
     });
   }
 
-  if (event.clinicalSeriesId !== targetSeriesId) {
+  // Past this point `targetSeriesId` is guaranteed non-null: either
+  // findMatchingSeries returned an id, or the fallback assigned
+  // current.id, or the create-branch above assigned created.id. The
+  // null-check below is unreachable but keeps TS happy without an
+  // assertion operator.
+  if (targetSeriesId == null) {
+    throw new Error("targetSeriesId unexpectedly null after series resolution");
+  }
+  const seriesId: number = targetSeriesId;
+
+  if (event.clinicalSeriesId !== seriesId) {
     await db.event.update({
       where: { id: event.eventId },
-      data: { clinicalSeries: { connect: { id: targetSeriesId } } },
+      data: { clinicalSeries: { connect: { id: seriesId } } },
     });
   }
 
   // Extend the series' date span so subsequent events get accurate distances.
-  ctx?.touch(targetSeriesId, eventDateDjs);
+  ctx?.touch(seriesId, eventDateDjs);
 
-  return targetSeriesId;
+  return seriesId;
 }
 
 export async function syncClinicalSeriesForInternalEventId(

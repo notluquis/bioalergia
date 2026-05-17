@@ -1,12 +1,14 @@
 // @finanzas/db - ZenStack v3 Client
 // Pure TypeScript ORM built on Kysely
 
+import type { ClientContract } from "@zenstackhq/orm";
 import { ZenStackClient } from "@zenstackhq/orm";
 import { PostgresDialect } from "@zenstackhq/orm/dialects/postgres";
 import { PolicyPlugin } from "@zenstackhq/plugin-policy";
 import { Pool, types } from "pg";
 
 import { schema } from "./zenstack/schema.ts";
+import type { SchemaType } from "./zenstack/schema.ts";
 
 // Configure pg driver to parse numeric/decimal as JavaScript number natively
 // This is the ZenStack/Kysely recommended approach for Decimal handling
@@ -68,8 +70,19 @@ pool.on("connect", (client) => {
   }
 });
 
-// Base ORM client (no access control)
-export const db = new ZenStackClient(schema, {
+// Base ORM client (no access control).
+//
+// Pinned to `ClientContract<SchemaType>` per the ZenStack v3 canonical
+// pattern (zenstack.dev/docs/orm/client). This collapses the client's
+// generic params at the package boundary so consumers see a concrete
+// contract instead of inferring `ZenStackClient<typeof schema, …>`
+// every time. In files large enough that the type checker would
+// otherwise blow its budget comparing
+// `TransactionClientContract<Schema, ?, …>` to itself (TS2321
+// "Excessive stack depth"), this collapse is what keeps
+// `db.$transaction(async (tx) => …)` from cascading every upstream
+// map/reduce callback to implicit-any.
+export const db: ClientContract<SchemaType> = new ZenStackClient(schema, {
   dialect: new PostgresDialect({ pool }),
   diagnostics: {
     // Queries slower than 1s are recorded in db.$diagnostics.slowQueries
@@ -78,14 +91,15 @@ export const db = new ZenStackClient(schema, {
   },
 });
 
-// ORM client with access control policies
-// Type assertion needed due to nested @zenstackhq/schema versions
-export const authDb = db.$use(new PolicyPlugin());
+// ORM client with access control policies — pinned for the same
+// reason as `db`.
+export const authDb: ClientContract<SchemaType> = db.$use(new PolicyPlugin());
+
+// Canonical client type re-export per ZenStack v3 docs.
+export type DbClient = ClientContract<SchemaType>;
 
 // Direct Kysely access for complex queries
 import { Kysely } from "kysely";
-
-import type { SchemaType } from "./zenstack/schema.ts";
 
 export const kysely = new Kysely<SchemaType>({
   dialect: new PostgresDialect({ pool }),

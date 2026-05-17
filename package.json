@@ -34,8 +34,8 @@
     "@emnapi/runtime": "^1.10.0",
     "@types/node": "^25.7.0",
     "@typescript/native-preview": "7.0.0-dev.20260511.1",
-    "@zenstackhq/cli": "^3.6.4",
-    "@zenstackhq/sdk": "^3.6.4",
+    "@zenstackhq/cli": "^3.7.0",
+    "@zenstackhq/sdk": "^3.7.0",
     "husky": "^9.1.7",
     "knip": "^6.13.1",
     "lint-staged": "^17.0.4",
@@ -54,7 +54,7 @@
   "pnpm": {
     "overrides": {
       "playwright": "1.60.0",
-      "kysely": "0.28.17"
+      "kysely": "0.29.2"
     }
   }
 }
