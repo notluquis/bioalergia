@@ -256,7 +256,7 @@
     "lint:fix": "oxlint --fix && oxfmt --write .",
     "format": "oxfmt",
     "format:check": "oxfmt --check",
-    "type-check": "tsgo --noEmit"
+    "type-check": "tsgo --build"
   },
   "dependencies": {
     "@orpc/contract": "^1.14.3",

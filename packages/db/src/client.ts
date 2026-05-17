@@ -82,18 +82,21 @@ pool.on("connect", (client) => {
 // "Excessive stack depth"), this collapse is what keeps
 // `db.$transaction(async (tx) => …)` from cascading every upstream
 // map/reduce callback to implicit-any.
-export const db: ClientContract<SchemaType> = new ZenStackClient(schema, {
+// Double-cast through `unknown` so TS never compares the deep inferred
+// RHS to the declared LHS — that comparison itself triggers TS2321
+// (Excessive stack depth). The `unknown` hop drops the inferred
+// generic chain; consumers see the concrete `ClientContract<SchemaType>`.
+export const db = new ZenStackClient(schema, {
   dialect: new PostgresDialect({ pool }),
   diagnostics: {
     // Queries slower than 1s are recorded in db.$diagnostics.slowQueries
     slowQueryThresholdMs: 1000,
     slowQueryMaxRecords: 100,
   },
-});
+}) as unknown as ClientContract<SchemaType>;
 
-// ORM client with access control policies — pinned for the same
-// reason as `db`.
-export const authDb: ClientContract<SchemaType> = db.$use(new PolicyPlugin());
+// ORM client with access control policies — pinned for the same reason.
+export const authDb = db.$use(new PolicyPlugin()) as unknown as ClientContract<SchemaType>;
 
 // Canonical client type re-export per ZenStack v3 docs.
 export type DbClient = ClientContract<SchemaType>;

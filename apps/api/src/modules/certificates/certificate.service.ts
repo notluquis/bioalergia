@@ -348,7 +348,12 @@ export async function signPdf(
     const signpdfModule = await import("@signpdf/signpdf");
     const { P12Signer } = await import("@signpdf/signer-p12");
 
-    const signpdf = signpdfModule.default;
+    // Dynamic-import default points to the SignPdf singleton, not the
+    // namespace. TS resolves the .default as `typeof signpdf` (namespace)
+    // under `module: NodeNext`, so cast to the instance type.
+    const signpdf = signpdfModule.default as unknown as {
+      sign(pdfBuffer: Buffer | Uint8Array | string, signer: unknown, signingTime?: Date): Promise<Buffer>;
+    };
 
     // Create P12 signer with certificate
     const signer = new P12Signer(p12Buffer, { passphrase: actualPassword });

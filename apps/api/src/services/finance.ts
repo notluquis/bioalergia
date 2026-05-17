@@ -1385,15 +1385,27 @@ export async function getFinancialSummaryByCategory(params: { from?: Date; to?: 
     ];
   }
 
-  const grouped = await db.financialTransaction.groupBy({
+  // Explicit row type — ZenStack v3 inference for groupBy collapses to
+  // `unknown` in large files, so we annotate the row shape locally
+  // instead of relying on inference. Matches the by + _count + _sum
+  // contract above.
+  type FinanceGroupRow = {
+    categoryId: number | null;
+    type: "INCOME" | "EXPENSE";
+    _count: { _all: number };
+    _sum: { amount: number | null };
+  };
+  const grouped = (await db.financialTransaction.groupBy({
     by: ["categoryId", "type"],
     where,
     _count: { _all: true },
     _sum: { amount: true },
-  });
+  })) as FinanceGroupRow[];
 
-  const categoryIds = Array.from(
-    new Set(grouped.map((row) => row.categoryId).filter((id): id is number => id != null))
+  const categoryIds: number[] = Array.from(
+    new Set(
+      grouped.map((row) => row.categoryId).filter((id): id is number => id != null)
+    )
   );
 
   const categories =

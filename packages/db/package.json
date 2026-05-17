@@ -46,7 +46,7 @@
   },
   "scripts": {
     "build": "zen generate --lite && pnpm fix-imports && NODE_OPTIONS=--max-old-space-size=8192 tsc",
-    "type-check": "tsgo --noEmit",
+    "type-check": "tsgo --build",
     "fix-imports": "node scripts/fix-imports.mjs",
     "generate": "zen generate --lite",
     "zen:watch": "zen generate --watch",

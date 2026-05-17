@@ -148,7 +148,9 @@ export async function resolveSessionUserFromToken(token: string): Promise<AuthSe
       email: String(decoded.email ?? user.person?.email ?? ""),
       id: user.id,
       isDebugSession: tokenType === "debug-session",
-      roles: user.roles.map((roleAssignment) => ({ role: { name: roleAssignment.role.name } })),
+      roles: user.roles.map((roleAssignment: { role: { name: string } }) => ({
+        role: { name: roleAssignment.role.name },
+      })),
       status: user.status,
     };
   } catch {

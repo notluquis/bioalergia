@@ -96,11 +96,12 @@ export async function runOnce() {
 
   if (recipients.length === 0) {
     // Done — finalize counts.
-    const final = await db.waBroadcastRecipient.groupBy({
+    type GroupRow = { status: string; _count: { _all: number } };
+    const final = (await db.waBroadcastRecipient.groupBy({
       by: ["status"],
       where: { broadcastId: bc.id },
       _count: { _all: true },
-    });
+    })) as GroupRow[];
     const sent = final.find((g) => g.status === "SENT")?._count._all ?? 0;
     const failed = final.find((g) => g.status === "FAILED")?._count._all ?? 0;
     await db.waBroadcast.update({
