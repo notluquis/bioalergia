@@ -93,6 +93,26 @@ import {
   scoreRepresentativeIdentity,
   shouldPreferCandidateOverRutMatch,
 } from "./clinical-series/matching/compare.ts";
+import {
+  chooseDominantIdentityName,
+  incrementIdentityNameCount,
+  isAllLowercase,
+  isSingleLetterPrefixedVariant,
+} from "./clinical-series/identity-naming/dominant.ts";
+import {
+  buildIdentityGroupKey,
+  choosePreferredIdentityName,
+} from "./clinical-series/identity-naming/group-key.ts";
+import {
+  selectRepresentativeClinicalIdentity,
+  shouldPromoteBeneficiaryToPatientIdentity,
+} from "./clinical-series/identity-naming/representative.ts";
+import { upgradePatientNameFromDte } from "./clinical-series/identity-naming/upgrade.ts";
+// Public re-exports for back-compat.
+export {
+  selectRepresentativeClinicalIdentity,
+  shouldPromoteBeneficiaryToPatientIdentity,
+};
 export type { RebuildJob } from "./clinical-series-rebuild-status.ts";
 export { getCurrentRebuildJob } from "./clinical-series-rebuild-status.ts";
 // Public re-exports for back-compat with external consumers.
@@ -1248,246 +1268,6 @@ export async function findMatchingSeries(
   return null;
 }
 
-function buildIdentityGroupKey(name: null | string, rut: null | string): null | string {
-  const normalizedRut = sanitizeRut(rut);
-  if (normalizedRut) return `rut:${normalizedRut}`;
-  const normalizedName = name ? normalizeName(name) : "";
-  return normalizedName ? `name:${normalizedName}` : null;
-}
-
-function choosePreferredIdentityName(
-  current: null | string,
-  incoming: null | string
-): null | string {
-  if (!incoming) return current;
-  if (!current) return incoming;
-  const currentTokens = getSignificantNameTokens(current);
-  const incomingTokens = getSignificantNameTokens(incoming);
-  if (incomingTokens.length !== currentTokens.length) {
-    return incomingTokens.length > currentTokens.length ? incoming : current;
-  }
-  return incoming.length > current.length ? incoming : current;
-}
-
-export function shouldPromoteBeneficiaryToPatientIdentity(params: {
-  beneficiaryName: null | string;
-  dteClientNames?: string[];
-  patientName: null | string;
-}): boolean {
-  const { beneficiaryName, dteClientNames = [], patientName } = params;
-  if (!patientName) return true;
-  if (beneficiaryName && haveCompatiblePatientNames(patientName, beneficiaryName)) return true;
-  return dteClientNames.some((clientName) => haveCompatiblePatientNames(patientName, clientName));
-}
-
-type IdentityNameCounts = Map<string, { count: number; name: string }>;
-
-function incrementIdentityNameCount(counts: IdentityNameCounts, name: null | string) {
-  if (!name || !isLikelyPersonName(name)) return;
-  const key = normalizeName(name);
-  const current = counts.get(key);
-  counts.set(key, {
-    count: (current?.count ?? 0) + 1,
-    name: choosePreferredIdentityName(current?.name ?? null, name) ?? name,
-  });
-}
-
-function isSingleLetterPrefixedVariant(contaminated: string, canonical: string): boolean {
-  const contaminatedTokens = normalizeName(contaminated).split(" ").filter(Boolean);
-  const canonicalTokens = normalizeName(canonical).split(" ").filter(Boolean);
-  if (contaminatedTokens.length !== canonicalTokens.length) return false;
-
-  let changedTokens = 0;
-  for (let i = 0; i < contaminatedTokens.length; i += 1) {
-    const contaminatedToken = contaminatedTokens[i]!;
-    const canonicalToken = canonicalTokens[i]!;
-    if (contaminatedToken === canonicalToken) continue;
-    if (contaminatedToken.length !== canonicalToken.length + 1) return false;
-    if (!contaminatedToken.endsWith(canonicalToken)) return false;
-    changedTokens += 1;
-  }
-
-  return changedTokens === 1;
-}
-
-function chooseDominantIdentityName(
-  fallback: null | string,
-  counts: IdentityNameCounts
-): null | string {
-  const candidates = [...counts.values()].sort((a, b) => {
-    const countDelta = b.count - a.count;
-    if (countDelta !== 0) return countDelta;
-    const tokenDelta =
-      getSignificantNameTokens(b.name).length - getSignificantNameTokens(a.name).length;
-    if (tokenDelta !== 0) return tokenDelta;
-    if (isSingleLetterPrefixedVariant(a.name, b.name)) return 1;
-    if (isSingleLetterPrefixedVariant(b.name, a.name)) return -1;
-    return b.name.length - a.name.length;
-  });
-
-  const dominant = candidates[0];
-  if (!dominant) return fallback;
-
-  return choosePreferredIdentityName(null, dominant.name);
-}
-
-export function selectRepresentativeClinicalIdentity(
-  events: Array<{
-    description: null | string;
-    summary: null | string;
-  }>,
-  stored?: StoredClinicalIdentity
-): ClinicalIdentity {
-  const patientGroups = new Map<
-    string,
-    ClinicalIdentity & { eventCount: number; patientNameCounts: IdentityNameCounts }
-  >();
-  const beneficiaryGroups = new Map<
-    string,
-    ClinicalIdentity & { beneficiaryNameCounts: IdentityNameCounts; eventCount: number }
-  >();
-  let hasText = false;
-
-  for (const event of events) {
-    const eventHasText = hasIdentitySourceText(event.summary, event.description);
-    hasText ||= eventHasText;
-    const hints = resolveClinicalIdentity(event.summary, event.description);
-
-    const patientKey = buildIdentityGroupKey(hints.patientName, hints.patientRut);
-    if (patientKey) {
-      const current = patientGroups.get(patientKey);
-      const patientNameCounts = current?.patientNameCounts ?? new Map();
-      incrementIdentityNameCount(patientNameCounts, hints.patientName);
-      patientGroups.set(patientKey, {
-        beneficiaryName: null,
-        beneficiaryRut: null,
-        eventCount: (current?.eventCount ?? 0) + 1,
-        patientName: chooseDominantIdentityName(
-          choosePreferredIdentityName(current?.patientName ?? null, hints.patientName),
-          patientNameCounts
-        ),
-        patientNameCounts,
-        patientRut: hints.patientRut ?? current?.patientRut ?? null,
-      });
-    }
-
-    const beneficiaryKey = buildIdentityGroupKey(hints.beneficiaryName, hints.beneficiaryRut);
-    const sameAsPatient =
-      beneficiaryKey != null && patientKey != null && beneficiaryKey === patientKey;
-    if (beneficiaryKey && !sameAsPatient) {
-      const current = beneficiaryGroups.get(beneficiaryKey);
-      const beneficiaryNameCounts = current?.beneficiaryNameCounts ?? new Map();
-      incrementIdentityNameCount(beneficiaryNameCounts, hints.beneficiaryName);
-      beneficiaryGroups.set(beneficiaryKey, {
-        beneficiaryName: chooseDominantIdentityName(
-          choosePreferredIdentityName(current?.beneficiaryName ?? null, hints.beneficiaryName),
-          beneficiaryNameCounts
-        ),
-        beneficiaryNameCounts,
-        beneficiaryRut: hints.beneficiaryRut ?? current?.beneficiaryRut ?? null,
-        eventCount: (current?.eventCount ?? 0) + 1,
-        patientName: null,
-        patientRut: null,
-      });
-    }
-  }
-
-  if (!hasText) {
-    return {
-      beneficiaryName:
-        stored?.beneficiaryName && isLikelyPersonName(stored.beneficiaryName)
-          ? stored.beneficiaryName
-          : null,
-      beneficiaryRut: sanitizeRut(stored?.beneficiaryRut ?? null),
-      patientName: stored?.patientName ?? null,
-      patientRut: sanitizeRut(stored?.patientRut ?? null),
-    };
-  }
-
-  const patient = [...patientGroups.values()].sort(compareRepresentativeIdentity)[0] ?? null;
-  const patientKey = buildIdentityGroupKey(
-    patient?.patientName ?? null,
-    patient?.patientRut ?? null
-  );
-  const beneficiary =
-    [...beneficiaryGroups.values()]
-      .filter((candidate) => {
-        const candidateKey = buildIdentityGroupKey(
-          candidate.beneficiaryName ?? null,
-          candidate.beneficiaryRut ?? null
-        );
-        return candidateKey != null && candidateKey !== patientKey;
-      })
-      .sort(compareRepresentativeIdentity)[0] ?? null;
-
-  return {
-    beneficiaryName: beneficiary?.beneficiaryName ?? null,
-    beneficiaryRut: beneficiary?.beneficiaryRut ?? null,
-    patientName: patient?.patientName ?? null,
-    patientRut: patient?.patientRut ?? null,
-  };
-}
-
-/**
- * If the DTE clientName (from SII, typically full legal name) is a more complete
- * version of the current patientName, return the DTE name as the upgrade.
- *
- * Matches when:
- * - All significant tokens of the current name fuzzy-match a token in the DTE name
- *   (Jaro-Winkler >= 0.90 to tolerate minor spelling differences like "krausse"/"krause")
- * - The DTE name has at least 2 significant tokens
- * - The DTE name has strictly more tokens than the current name
- */
-function isAllLowercase(name: string): boolean {
-  return name === name.toLowerCase() && name !== name.toUpperCase();
-}
-
-function upgradePatientNameFromDte(
-  currentName: null | string,
-  dteRecords: Array<{ clientName: string }>
-): null | string {
-  if (!currentName) return dteRecords[0]?.clientName ?? null;
-
-  const currentTokens = getSignificantNameTokens(currentName);
-  if (currentTokens.length === 0) return null;
-
-  let best: null | string = null;
-  let bestTokenCount = currentTokens.length;
-  let bestIsCaseUpgrade = false;
-
-  for (const dte of dteRecords) {
-    if (!dte.clientName) continue;
-    const dteTokens = getSignificantNameTokens(dte.clientName);
-
-    // Must be a plausible person name: at least 2 significant tokens
-    if (dteTokens.length < 2) continue;
-
-    // Every current token must fuzzy-match at least one DTE token (JW >= 0.90)
-    const allMatch = currentTokens.every((ct) =>
-      dteTokens.some((dt) => jaroWinkler(ct, dt) >= 0.9)
-    );
-    if (!allMatch) continue;
-
-    // Prefer the DTE name with the most tokens (most complete)
-    if (dteTokens.length > bestTokenCount) {
-      best = dte.clientName;
-      bestTokenCount = dteTokens.length;
-      bestIsCaseUpgrade = false;
-    } else if (
-      dteTokens.length >= currentTokens.length &&
-      !bestIsCaseUpgrade &&
-      best === null &&
-      isAllLowercase(currentName) &&
-      !isAllLowercase(dte.clientName)
-    ) {
-      // Current name is all lowercase but DTE has proper casing — adopt it
-      best = dte.clientName;
-      bestIsCaseUpgrade = true;
-    }
-  }
-
-  return best;
-}
 
 async function refreshClinicalSeriesMetadata(seriesId: number) {
   const series = await db.clinicalSeries.findUnique({
