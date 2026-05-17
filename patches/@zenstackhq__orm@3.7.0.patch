@@ -1,0 +1,18 @@
+diff --git a/dist/index.d.cts b/dist/index.d.cts
+--- a/dist/index.d.cts
++++ b/dist/index.d.cts
+@@ -1789 +1789 @@
+-type CreateInput<Schema extends SchemaDef, Model extends GetModels<Schema>, Options extends QueryOptions<Schema>, Without extends string = never> = XOR<Omit<UncheckedCreateInput<Schema, Model, Options>, Without>, Omit<CheckedCreateInput<Schema, Model, Options>, Without>>;
++type CreateInput<Schema extends SchemaDef, Model extends GetModels<Schema>, Options extends QueryOptions<Schema>, Without extends string = never> = Omit<UncheckedCreateInput<Schema, Model, Options>, Without> | Omit<CheckedCreateInput<Schema, Model, Options>, Without>;
+@@ -1877 +1877 @@
+-type UpdateInput<Schema extends SchemaDef, Model extends GetModels<Schema>, Options extends QueryOptions<Schema>, Without extends string = never> = XOR<Omit<UncheckedUpdateInput<Schema, Model, Options>, Without>, Omit<CheckedUpdateInput<Schema, Model, Options>, Without>>;
++type UpdateInput<Schema extends SchemaDef, Model extends GetModels<Schema>, Options extends QueryOptions<Schema>, Without extends string = never> = Omit<UncheckedUpdateInput<Schema, Model, Options>, Without> | Omit<CheckedUpdateInput<Schema, Model, Options>, Without>;
+diff --git a/dist/index.d.mts b/dist/index.d.mts
+--- a/dist/index.d.mts
++++ b/dist/index.d.mts
+@@ -1787 +1787 @@
+-type CreateInput<Schema extends SchemaDef, Model extends GetModels<Schema>, Options extends QueryOptions<Schema>, Without extends string = never> = XOR<Omit<UncheckedCreateInput<Schema, Model, Options>, Without>, Omit<CheckedCreateInput<Schema, Model, Options>, Without>>;
++type CreateInput<Schema extends SchemaDef, Model extends GetModels<Schema>, Options extends QueryOptions<Schema>, Without extends string = never> = Omit<UncheckedCreateInput<Schema, Model, Options>, Without> | Omit<CheckedCreateInput<Schema, Model, Options>, Without>;
+@@ -1875 +1875 @@
+-type UpdateInput<Schema extends SchemaDef, Model extends GetModels<Schema>, Options extends QueryOptions<Schema>, Without extends string = never> = XOR<Omit<UncheckedUpdateInput<Schema, Model, Options>, Without>, Omit<CheckedUpdateInput<Schema, Model, Options>, Without>>;
++type UpdateInput<Schema extends SchemaDef, Model extends GetModels<Schema>, Options extends QueryOptions<Schema>, Without extends string = never> = Omit<UncheckedUpdateInput<Schema, Model, Options>, Without> | Omit<CheckedUpdateInput<Schema, Model, Options>, Without>;
