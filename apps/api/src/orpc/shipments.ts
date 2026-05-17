@@ -41,7 +41,7 @@ import { SuperJSONRPCHandler } from "./superjson.ts";
 
 configureSuperjson();
 
-export type CreateShipmentInput = z.infer<typeof createShipmentInputSchema>;
+export type { CreateShipmentInput } from "../services/shipments.ts";
 
 // Re-use the canonical contract schemas so the server output matches the
 // shape the intranet client expects byte-for-byte.

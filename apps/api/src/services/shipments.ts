@@ -40,7 +40,10 @@ import {
   searchStreets,
   trackTransportOrder,
 } from "../modules/chilexpress/client.ts";
-import type { CreateShipmentInput } from "../orpc/shipments.ts";
+import type { z } from "zod";
+import type { createShipmentInputSchema } from "@finanzas/orpc-contracts/shipments";
+
+export type CreateShipmentInput = z.infer<typeof createShipmentInputSchema>;
 
 function requireCxConfig() {
   if (!chilexpressConfig) {

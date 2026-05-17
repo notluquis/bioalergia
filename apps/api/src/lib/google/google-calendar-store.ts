@@ -1,7 +1,7 @@
 import { db } from "@finanzas/db";
 import { syncClinicalSeriesForExternalEvents } from "../../services/clinical-series/assignment/sync.ts";
 
-import type { CalendarEventRecord } from "./google-calendar.ts";
+import type { CalendarEventRecord } from "./google-calendar-types.ts";
 
 type TestMetadata = {
   firstReading: boolean;
