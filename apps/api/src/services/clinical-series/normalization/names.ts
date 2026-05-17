@@ -186,3 +186,14 @@ export function getSignificantNameTokens(name: string): string[] {
     ),
   ];
 }
+
+/** Heuristic: a "likely person name" has ≥2 significant (≥3 chars,
+ *  non-stopword) tokens after normalization. Used everywhere
+ *  identity claims need to be filtered against clinical jargon. */
+export function isLikelyPersonName(name: string): boolean {
+  const normalized = normalizeName(name);
+  const significantTokens = normalized
+    .split(" ")
+    .filter((t) => t.length >= 3 && !LOWERCASE_NAME_STOPWORDS.has(t));
+  return significantTokens.length >= 2;
+}
