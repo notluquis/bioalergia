@@ -1,4 +1,4 @@
-import { db } from "@finanzas/db";
+import { dbClinicalSeries as db } from "@finanzas/db/slices";
 import dayjs from "dayjs";
 
 import { normalizeRut } from "../../lib/rut.ts";

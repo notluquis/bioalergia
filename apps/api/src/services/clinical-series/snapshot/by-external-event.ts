@@ -1,4 +1,4 @@
-import { db } from "@finanzas/db";
+import { dbClinicalSeries as db } from "@finanzas/db/slices";
 import type { SchemaType } from "@finanzas/db/schema";
 import type { ModelResult } from "@zenstackhq/orm";
 import dayjs from "dayjs";

@@ -28,6 +28,11 @@
       "import": "./dist/zenstack/schema-lite.js",
       "default": "./dist/zenstack/schema-lite.js"
     },
+    "./slices": {
+      "types": "./dist/slices.d.ts",
+      "import": "./dist/slices.js",
+      "default": "./dist/slices.js"
+    },
     "./models": {
       "types": "./dist/zenstack/models.d.ts",
       "import": "./dist/zenstack/models.js",

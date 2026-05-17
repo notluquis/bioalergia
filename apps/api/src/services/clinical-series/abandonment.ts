@@ -1,4 +1,4 @@
-import { db } from "@finanzas/db";
+import { dbClinicalSeries as db } from "@finanzas/db/slices";
 
 export async function createAbandonmentContact(params: {
   seriesId: number;

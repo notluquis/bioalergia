@@ -1,4 +1,4 @@
-import { db } from "@finanzas/db";
+import { dbClinicalSeries as db } from "@finanzas/db/slices";
 
 import { TIMEZONE } from "../constants.ts";
 import type { EventSeriesCandidate } from "../types.ts";
