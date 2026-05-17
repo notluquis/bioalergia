@@ -32,7 +32,7 @@ import {
   clinicalSkinTestsOpenAPIHandler,
   clinicalSkinTestsORPCHandler,
 } from "./orpc/clinical-skin-tests.ts";
-import { getCurrentRebuildJob } from "./services/clinical-series.ts";
+import { getCurrentRebuildJob } from "./services/clinical-series-rebuild-status.ts";
 import { counterpartsOpenAPIHandler, counterpartsORPCHandler } from "./orpc/counterparts.ts";
 import { csvUploadOpenAPIHandler, csvUploadORPCHandler } from "./orpc/csv-upload.ts";
 import { doctoraliaOpenAPIHandler, doctoraliaORPCHandler } from "./orpc/doctoralia.ts";

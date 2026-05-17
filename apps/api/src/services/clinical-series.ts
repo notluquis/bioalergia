@@ -7,6 +7,13 @@ import jaroWinkler from "talisman/metrics/jaro-winkler.js";
 import { joinClinicalText, normalizeClinicalText } from "../lib/clinical-text.ts";
 import { parseCalendarMetadata } from "../lib/parsers.ts";
 import { normalizeRut, validateRut } from "../lib/rut.ts";
+import {
+  clearRebuildJobAfter,
+  patchRebuildJob,
+  setRebuildJob,
+} from "./clinical-series-rebuild-status.ts";
+export type { RebuildJob } from "./clinical-series-rebuild-status.ts";
+export { getCurrentRebuildJob } from "./clinical-series-rebuild-status.ts";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -3662,24 +3669,14 @@ export async function rebuildClinicalSeries(
 }
 
 // ─── Rebuild Job State (SSE progress) ────────────────────────────────────────
-
-export interface RebuildJob {
-  error?: string;
-  from: null | string;
-  jobId: string;
-  processed: number;
-  progress: number;
-  status: "completed" | "failed" | "running";
-  currentStep: string;
-  to: null | string;
-  total: number;
-}
-
-let currentRebuildJob: null | RebuildJob = null;
-
-export function getCurrentRebuildJob(): null | RebuildJob {
-  return currentRebuildJob;
-}
+//
+// `RebuildJob` interface, the live job singleton, and the read-only
+// `getCurrentRebuildJob()` accessor live in
+// `./clinical-series-rebuild-status.ts` so consumers that only need to
+// observe progress (e.g. `app.ts`'s SSE endpoint) don't drag this
+// 4.6k-LOC module into their type-check closure. This module mutates
+// state via the imported `setRebuildJob` / `patchRebuildJob` /
+// `clearRebuildJobAfter` helpers.
 
 export function startRebuildClinicalSeries(params?: {
   autoMerge?: boolean;
@@ -3687,7 +3684,7 @@ export function startRebuildClinicalSeries(params?: {
   to?: string;
 }): string {
   const jobId = `rebuild-${Date.now()}`;
-  currentRebuildJob = {
+  setRebuildJob({
     jobId,
     status: "running",
     progress: 0,
@@ -3696,38 +3693,37 @@ export function startRebuildClinicalSeries(params?: {
     currentStep: "Consultando eventos...",
     from: params?.from ?? null,
     to: params?.to ?? null,
-  };
+  });
 
   rebuildClinicalSeries(params, (processed, total) => {
-    if (!currentRebuildJob || currentRebuildJob.jobId !== jobId) return;
-    currentRebuildJob.processed = processed;
-    currentRebuildJob.total = total;
-    currentRebuildJob.progress = total > 0 ? Math.round((processed / total) * 100) : 0;
-    currentRebuildJob.currentStep =
-      processed === 0
-        ? `${total} eventos encontrados, reorganizando...`
-        : `Reorganizando ${processed} de ${total}...`;
+    patchRebuildJob(jobId, {
+      processed,
+      total,
+      progress: total > 0 ? Math.round((processed / total) * 100) : 0,
+      currentStep:
+        processed === 0
+          ? `${total} eventos encontrados, reorganizando...`
+          : `Reorganizando ${processed} de ${total}...`,
+    });
   })
     .then((result) => {
-      if (!currentRebuildJob || currentRebuildJob.jobId !== jobId) return;
-      currentRebuildJob.status = "completed";
-      currentRebuildJob.progress = 100;
-      currentRebuildJob.processed = result.processed;
-      currentRebuildJob.currentStep =
-        result.deduped > 0
-          ? `${result.processed} eventos procesados · ${result.deduped} serie${result.deduped !== 1 ? "s" : ""} fusionada${result.deduped !== 1 ? "s" : ""}`
-          : `${result.processed} eventos procesados`;
-      setTimeout(() => {
-        if (currentRebuildJob?.jobId === jobId) currentRebuildJob = null;
-      }, 8000);
+      patchRebuildJob(jobId, {
+        status: "completed",
+        progress: 100,
+        processed: result.processed,
+        currentStep:
+          result.deduped > 0
+            ? `${result.processed} eventos procesados · ${result.deduped} serie${result.deduped !== 1 ? "s" : ""} fusionada${result.deduped !== 1 ? "s" : ""}`
+            : `${result.processed} eventos procesados`,
+      });
+      clearRebuildJobAfter(jobId, 8000);
     })
     .catch((err: unknown) => {
-      if (!currentRebuildJob || currentRebuildJob.jobId !== jobId) return;
-      currentRebuildJob.status = "failed";
-      currentRebuildJob.error = err instanceof Error ? err.message : "Error desconocido";
-      setTimeout(() => {
-        if (currentRebuildJob?.jobId === jobId) currentRebuildJob = null;
-      }, 8000);
+      patchRebuildJob(jobId, {
+        status: "failed",
+        error: err instanceof Error ? err.message : "Error desconocido",
+      });
+      clearRebuildJobAfter(jobId, 8000);
     });
 
   return jobId;
