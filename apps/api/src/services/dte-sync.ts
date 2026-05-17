@@ -5,7 +5,7 @@
 
 import { db } from "@finanzas/db";
 import dayjs from "dayjs";
-import { haulmerConfig } from "../config.ts";
+import { haulmerConfig } from "../lib/config.ts";
 import { syncPeriods } from "../modules/haulmer/service.ts";
 
 export interface DTESyncOptions {

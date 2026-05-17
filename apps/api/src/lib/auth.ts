@@ -9,8 +9,8 @@ import { subject as caslSubject, createMongoAbility } from "@casl/ability";
 import { db } from "@finanzas/db";
 import type { Context } from "hono";
 import { getCookie } from "hono/cookie";
-import { verifyToken } from "./lib/paseto.ts";
-import { getAbilityRulesForUser } from "./services/authz.ts";
+import { verifyToken } from "./paseto.ts";
+import { getAbilityRulesForUser } from "./authz.ts";
 
 export type DebugScope = {
   action: string;

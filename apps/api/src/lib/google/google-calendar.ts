@@ -7,7 +7,7 @@ import { db } from "@finanzas/db";
 import { calendar, type calendar_v3 } from "@googleapis/calendar";
 import dayjs from "dayjs";
 import { JWT } from "google-auth-library";
-import { compileExcludePatterns, googleCalendarConfig } from "../../config.ts";
+import { compileExcludePatterns, googleCalendarConfig } from "../config.ts";
 import { joinClinicalText } from "../../lib/clinical-text.ts";
 import { parseCalendarMetadata } from "../../lib/parsers.ts";
 import { loadSettings } from "../../services/settings.ts";

@@ -26,7 +26,7 @@ function serializeShipment(s: Shipment): SerializedShipment {
     additionalServicesCost: Number(s.additionalServicesCost ?? 0),
   };
 }
-import { chilexpressConfig } from "../config.ts";
+import { chilexpressConfig } from "../lib/config.ts";
 import {
   createTransportOrder,
   georeferenceAddress,

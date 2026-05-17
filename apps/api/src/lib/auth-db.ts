@@ -1,7 +1,7 @@
 import { authDb } from "@finanzas/db";
 import type { Context } from "hono";
 import { ORPCError } from "@orpc/server";
-import { createAuthContext, getSessionUser, type AuthSession } from "../auth.ts";
+import { createAuthContext, getSessionUser, type AuthSession } from "./auth.ts";
 
 // Per-request bound ZenStack client. `authDb.$setAuth(subject)` returns
 // a wrapped query API that rewrites every read/write to honor the

@@ -18,7 +18,7 @@ import utc from "dayjs/plugin/utc.js";
 import { Decimal } from "decimal.js";
 import type { Context as HonoContext } from "hono";
 import { z } from "zod";
-import { createAuthContext, getSessionUser } from "../auth.ts";
+import { createAuthContext, getSessionUser } from "../lib/auth.ts";
 import { logError } from "../lib/logger.ts";
 import { configureSuperjson } from "../lib/superjson-config.ts";
 import { getUFValue } from "../services/cmf-uf.ts";

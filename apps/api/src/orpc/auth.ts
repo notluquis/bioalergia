@@ -32,7 +32,7 @@ import type {
 import type { Context as HonoContext } from "hono";
 import { deleteCookie, getCookie, setCookie } from "hono/cookie";
 import { randomUUID } from "node:crypto";
-import { getSessionUser, hasPermission, resolveSessionUserFromToken } from "../auth.ts";
+import { getSessionUser, hasPermission, resolveSessionUserFromToken } from "../lib/auth.ts";
 import { isLockedNow, recordLoginFailure, recordLoginSuccess } from "../lib/account-lockout.ts";
 import { ipFromContext, logAuditFromContext } from "../lib/audit-log.ts";
 import { fakeVerifyPassword } from "../lib/crypto.ts";
@@ -50,7 +50,7 @@ import {
   createDebugTokenRecord,
   ensureDebugTokenSupportEnabled,
 } from "../services/debug-tokens.ts";
-import { getAbilityRulesForUser } from "../services/authz.ts";
+import { getAbilityRulesForUser } from "../lib/authz.ts";
 import { SuperJSONRPCHandler } from "./superjson.ts";
 
 configureSuperjson();
@@ -381,7 +381,7 @@ const authORPCRouterBase = {
       });
       setCookie(context.hono, COOKIE_NAME, token, COOKIE_OPTIONS);
 
-      const { getAbilityRulesForUser } = await import("../services/authz.ts");
+      const { getAbilityRulesForUser } = await import("../lib/authz.ts");
       const abilityRules = (await getAbilityRulesForUser(user.id)) as RawRuleOf<AnyAbility>[];
 
       return {
@@ -452,7 +452,7 @@ const authORPCRouterBase = {
       });
       setCookie(context.hono, COOKIE_NAME, token, COOKIE_OPTIONS);
 
-      const { getAbilityRulesForUser } = await import("../services/authz.ts");
+      const { getAbilityRulesForUser } = await import("../lib/authz.ts");
       const abilityRules = (await getAbilityRulesForUser(user.id)) as RawRuleOf<AnyAbility>[];
 
       return {
@@ -889,7 +889,7 @@ const authORPCRouterBase = {
       });
       setCookie(context.hono, COOKIE_NAME, token, COOKIE_OPTIONS);
 
-      const { getAbilityRulesForUser } = await import("../services/authz.ts");
+      const { getAbilityRulesForUser } = await import("../lib/authz.ts");
       const abilityRules = (await getAbilityRulesForUser(user.id)) as RawRuleOf<AnyAbility>[];
 
       return {

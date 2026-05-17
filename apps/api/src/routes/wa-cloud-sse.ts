@@ -1,7 +1,7 @@
 import { db } from "@finanzas/db";
 import { Hono } from "hono";
 import { streamSSE } from "hono/streaming";
-import { getSessionUser, hasPermission } from "../auth.ts";
+import { getSessionUser, hasPermission } from "../lib/auth.ts";
 import { logWarn } from "../lib/logger.ts";
 import { subscribeWaConversation } from "../modules/wa-cloud/events.ts";
 

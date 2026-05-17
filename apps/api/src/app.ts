@@ -9,7 +9,7 @@ import { secureHeaders } from "hono/secure-headers";
 import { timeout } from "hono/timeout";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 import { rateLimiter } from "hono-rate-limiter";
-import { getSessionUser, hasPermission } from "./auth.ts";
+import { getSessionUser, hasPermission } from "./lib/auth.ts";
 import { AppError } from "./lib/app-error.ts";
 import { clientIp } from "./lib/client-ip.ts";
 import { csrfDoubleSubmit, ensureCsrfCookie } from "./lib/csrf-double-submit.ts";

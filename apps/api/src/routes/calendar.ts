@@ -2,8 +2,8 @@ import { db } from "@finanzas/db";
 import dayjs from "dayjs";
 import { type Context, Hono, type Next } from "hono";
 import { z } from "zod";
-import { getSessionUser, hasPermission } from "../auth.ts";
-import { googleCalendarConfig } from "../config.ts";
+import { getSessionUser, hasPermission } from "../lib/auth.ts";
+import { googleCalendarConfig } from "../lib/config.ts";
 import {
   type CalendarEventFilters,
   getCalendarAggregates,

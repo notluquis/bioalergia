@@ -59,8 +59,8 @@ import { ORPCError, onError, os } from "@orpc/server";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import type { Context as HonoContext } from "hono";
 import { z } from "zod";
-import { getSessionUser, hasPermission } from "../auth.ts";
-import { googleCalendarConfig } from "../config.ts";
+import { getSessionUser, hasPermission } from "../lib/auth.ts";
+import { googleCalendarConfig } from "../lib/config.ts";
 import {
   getCalendarJobStatus,
   isMissingClassificationFilterKey,

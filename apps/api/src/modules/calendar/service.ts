@@ -1,7 +1,7 @@
 import { db } from "@finanzas/db";
 import { calendar, type calendar_v3 } from "@googleapis/calendar";
 import { JWT } from "google-auth-library";
-import { compileExcludePatterns, googleCalendarConfig } from "../../config.ts";
+import { compileExcludePatterns, googleCalendarConfig } from "../../lib/config.ts";
 import { joinClinicalText } from "../../lib/clinical-text.ts";
 import type { CalendarEventRecord } from "../../lib/google/google-calendar.ts";
 import {

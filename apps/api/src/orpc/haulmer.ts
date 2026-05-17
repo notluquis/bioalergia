@@ -11,8 +11,8 @@ import {
 } from "@finanzas/orpc-contracts/haulmer";
 import type { Context as HonoContext } from "hono";
 import type { z } from "zod";
-import { getSessionUser, hasPermission } from "../auth.ts";
-import { haulmerConfig } from "../config.ts";
+import { getSessionUser, hasPermission } from "../lib/auth.ts";
+import { haulmerConfig } from "../lib/config.ts";
 import { logError } from "../lib/logger.ts";
 import { configureSuperjson } from "../lib/superjson-config.ts";
 import { captureHaulmerJWT } from "../modules/haulmer/auth.ts";

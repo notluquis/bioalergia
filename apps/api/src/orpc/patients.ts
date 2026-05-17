@@ -15,7 +15,7 @@ import type {
 } from "@finanzas/db/models";
 import { createSchemaFactory, schema } from "@finanzas/db/zod";
 import { z } from "zod";
-import { getSessionUser, hasPermission } from "../auth.ts";
+import { getSessionUser, hasPermission } from "../lib/auth.ts";
 import { logError } from "../lib/logger.ts";
 import { requireCanonicalRut } from "../lib/rut.ts";
 import { findOrCreatePerson } from "../services/people-factory.ts";

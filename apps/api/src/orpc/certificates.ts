@@ -16,7 +16,7 @@ import dayjs from "dayjs";
 import timezone from "dayjs/plugin/timezone.js";
 import type { Context as HonoContext } from "hono";
 import { z } from "zod";
-import { getSessionUser, hasPermission } from "../auth.ts";
+import { getSessionUser, hasPermission } from "../lib/auth.ts";
 import { medicalCertificateSchema } from "../modules/certificates/certificate.schema.ts";
 import {
   generateMedicalCertificatePdf,

@@ -12,7 +12,7 @@ import {
 } from "@finanzas/orpc-contracts/release-transactions";
 import type { Context as HonoContext } from "hono";
 import type { z } from "zod";
-import { getSessionUser, hasPermission } from "../auth.ts";
+import { getSessionUser, hasPermission } from "../lib/auth.ts";
 import { logError } from "../lib/logger.ts";
 import { configureSuperjson } from "../lib/superjson-config.ts";
 import { SuperJSONRPCHandler } from "./superjson.ts";

@@ -1,6 +1,6 @@
 import { db } from "@finanzas/db";
 import { type Context, Hono } from "hono";
-import { getSessionUser, hasPermission } from "../auth.ts";
+import { getSessionUser, hasPermission } from "../lib/auth.ts";
 import { logWarn } from "../lib/logger.ts";
 import { decryptSecret } from "../lib/secret-cipher.ts";
 import {

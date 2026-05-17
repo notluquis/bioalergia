@@ -7,7 +7,7 @@ import utc from "dayjs/plugin/utc.js";
 import { Decimal } from "decimal.js";
 import { Hono } from "hono";
 import { sql } from "kysely";
-import type { AuthSession } from "../../auth.ts";
+import type { AuthSession } from "../../lib/auth.ts";
 import { AppError } from "../../lib/app-error.ts";
 import { requirePermission, requireSession } from "../../lib/legacy-route.ts";
 import { canonicalRutFilter, normalizeRut, requireCanonicalRut } from "../../lib/rut.ts";

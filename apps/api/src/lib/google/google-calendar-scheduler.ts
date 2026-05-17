@@ -1,5 +1,5 @@
 import cron from "node-cron";
-import { googleCalendarConfig } from "../../config.ts";
+import { googleCalendarConfig } from "../config.ts";
 import {
   createCalendarSyncLogEntry,
   finalizeCalendarSyncLogEntry,

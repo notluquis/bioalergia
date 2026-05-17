@@ -14,7 +14,7 @@ import {
 } from "@finanzas/orpc-contracts/backups";
 import type { Context as HonoContext } from "hono";
 import { z } from "zod";
-import { getSessionUser, hasPermission } from "../auth.ts";
+import { getSessionUser, hasPermission } from "../lib/auth.ts";
 import { isOAuthConfigured } from "../lib/google/google-core.ts";
 import { logError } from "../lib/logger.ts";
 import { configureSuperjson } from "../lib/superjson-config.ts";

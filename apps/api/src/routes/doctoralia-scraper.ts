@@ -1,6 +1,6 @@
 import { db } from "@finanzas/db";
 import { Hono } from "hono";
-import { doctoraliaScraperApiToken } from "../config.ts";
+import { doctoraliaScraperApiToken } from "../lib/config.ts";
 import type { DoctoraliaCalendarResponse } from "../lib/doctoralia/doctoralia-calendar-types.ts";
 import { logError, logEvent } from "../lib/logger.ts";
 import { doctoraliaCalendarSyncService } from "../services/doctoralia-calendar.ts";

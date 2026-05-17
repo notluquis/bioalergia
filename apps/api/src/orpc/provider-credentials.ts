@@ -11,7 +11,7 @@ import {
 } from "@finanzas/orpc-contracts/provider-credentials";
 import type { Context as HonoContext } from "hono";
 import { z } from "zod";
-import { getSessionUser } from "../auth.ts";
+import { getSessionUser } from "../lib/auth.ts";
 import { logError } from "../lib/logger.ts";
 import { configureSuperjson } from "../lib/superjson-config.ts";
 import {
