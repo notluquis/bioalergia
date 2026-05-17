@@ -76,6 +76,23 @@ import {
   stripStructuredNoiseForNames,
   trimBoletaBlock,
 } from "./clinical-series/extraction/structured.ts";
+import {
+  loadEventSeriesCandidateByExternalIds,
+  loadEventSeriesCandidateByInternalId,
+  loadEventSeriesCandidatesByIds,
+} from "./clinical-series/matching/candidates.ts";
+import {
+  chooseBetterSeriesCandidate,
+  chooseCanonicalPhoneDuplicateCandidate,
+  compareRepresentativeIdentity,
+  compareSeriesCanonicalPriority,
+  hasConflictingPrimaryIdentity,
+  hasHardPatientRutConflictForDuplicateDetection,
+  haveCompatiblePatientNames,
+  scoreClinicalSeriesIdentityQuality,
+  scoreRepresentativeIdentity,
+  shouldPreferCandidateOverRutMatch,
+} from "./clinical-series/matching/compare.ts";
 export type { RebuildJob } from "./clinical-series-rebuild-status.ts";
 export { getCurrentRebuildJob } from "./clinical-series-rebuild-status.ts";
 // Public re-exports for back-compat with external consumers.
@@ -488,78 +505,6 @@ function resolveClinicalSeriesOrderBy(
 
 
 
-async function loadEventSeriesCandidateByInternalId(
-  eventId: number
-): Promise<EventSeriesCandidate | null> {
-  const rows = await db.$queryRaw<EventSeriesCandidate[]>`
-    SELECT
-      e.id AS "eventId",
-      c.google_id AS "calendarGoogleId",
-      e.external_event_id AS "externalEventId",
-      e.patient_name AS "patientName",
-      e.patient_rut AS "patientRut",
-      e.beneficiary_name AS "beneficiaryName",
-      e.beneficiary_rut AS "beneficiaryRut",
-      COALESCE(to_char(e.start_date, 'YYYY-MM-DD'), to_char((e.start_date_time AT TIME ZONE ${TIMEZONE})::date, 'YYYY-MM-DD')) AS "eventDate",
-      to_char(e.start_date_time AT TIME ZONE ${TIMEZONE}, 'HH24:MI') AS "eventTime",
-      e.summary AS "summary",
-      e.description AS "description",
-      e.category AS "category",
-      e.clinical_series_id AS "clinicalSeriesId",
-      e.series_stage_kind AS "seriesStageKind",
-      e.series_stage_label AS "seriesStageLabel",
-      e.series_stage_number AS "seriesStageNumber",
-      e.treatment_stage AS "treatmentStage",
-      e.test_metadata AS "testMetadata",
-      e.amount_expected AS "amountExpected",
-      e.amount_paid AS "amountPaid"
-    FROM events e
-    JOIN calendars c ON c.id = e.calendar_id
-    WHERE e.id = ${eventId}
-    LIMIT 1
-  `;
-
-  return rows[0] ?? null;
-}
-
-async function loadEventSeriesCandidateByExternalIds(
-  calendarGoogleId: string,
-  externalEventId: string
-): Promise<EventSeriesCandidate | null> {
-  const rows = await db.$queryRaw<EventSeriesCandidate[]>`
-    SELECT
-      e.id AS "eventId",
-      c.google_id AS "calendarGoogleId",
-      e.external_event_id AS "externalEventId",
-      e.patient_name AS "patientName",
-      e.patient_rut AS "patientRut",
-      e.beneficiary_name AS "beneficiaryName",
-      e.beneficiary_rut AS "beneficiaryRut",
-      COALESCE(to_char(e.start_date, 'YYYY-MM-DD'), to_char((e.start_date_time AT TIME ZONE ${TIMEZONE})::date, 'YYYY-MM-DD')) AS "eventDate",
-      to_char(e.start_date_time AT TIME ZONE ${TIMEZONE}, 'HH24:MI') AS "eventTime",
-      e.summary AS "summary",
-      e.description AS "description",
-      e.category AS "category",
-      e.clinical_series_id AS "clinicalSeriesId",
-      e.series_stage_kind AS "seriesStageKind",
-      e.series_stage_label AS "seriesStageLabel",
-      e.series_stage_number AS "seriesStageNumber",
-      e.treatment_stage AS "treatmentStage",
-      e.test_metadata AS "testMetadata",
-      e.amount_expected AS "amountExpected",
-      e.amount_paid AS "amountPaid"
-    FROM events e
-    JOIN calendars c ON c.id = e.calendar_id
-    WHERE c.google_id = ${calendarGoogleId}
-      AND e.external_event_id = ${externalEventId}
-    LIMIT 1
-  `;
-
-  return rows[0] ?? null;
-}
-
-// Returns significant tokens from a normalized name: length ≥ 3, not a stopword.
-
 // ── SeriesAssignmentContext ───────────────────────────────────────────────────
 // Pre-loaded in-memory index of all clinical series. Eliminates per-event DB
 // queries during bulk rebuilds — a single load replaces O(N) round trips with
@@ -578,181 +523,6 @@ interface SeriesEntry {
   patientRut: null | string;
 }
 
-function haveCompatiblePatientNames(a: null | string, b: null | string): boolean {
-  if (!a || !b) return false;
-  const leftTokens = getSignificantNameTokens(a);
-  const rightTokens = getSignificantNameTokens(b);
-  if (leftTokens.length < 2 || rightTokens.length < 2) return false;
-
-  const overlap = leftTokens.filter((token) => rightTokens.includes(token)).length;
-  if (overlap < 2) return false;
-
-  return overlap / Math.min(leftTokens.length, rightTokens.length) >= 2 / 3;
-}
-
-function scoreClinicalSeriesIdentityQuality(series: {
-  beneficiaryName?: null | string;
-  beneficiaryRut?: null | string;
-  eventCount?: number;
-  patientName?: null | string;
-  patientRut?: null | string;
-}): number {
-  let score = 0;
-  if (series.patientRut) score += 1_000;
-  if (series.beneficiaryRut) score += 200;
-  if (series.patientName && isLikelyPersonName(series.patientName)) score += 150;
-  if (series.beneficiaryName && isLikelyPersonName(series.beneficiaryName)) score += 75;
-  if (series.beneficiaryName && !isLikelyPersonName(series.beneficiaryName)) score -= 50;
-  score += Math.min(series.eventCount ?? 0, 500);
-  return score;
-}
-
-function scoreRepresentativeIdentity(identity: ClinicalIdentity & { eventCount?: number }): number {
-  return scoreClinicalSeriesIdentityQuality(identity);
-}
-
-function compareRepresentativeIdentity(
-  a: ClinicalIdentity & { eventCount?: number },
-  b: ClinicalIdentity & { eventCount?: number }
-): number {
-  const scoreDelta = scoreRepresentativeIdentity(b) - scoreRepresentativeIdentity(a);
-  if (scoreDelta !== 0) return scoreDelta;
-  const eventDelta = (b.eventCount ?? 0) - (a.eventCount ?? 0);
-  if (eventDelta !== 0) return eventDelta;
-  return (b.patientName ?? "").length - (a.patientName ?? "").length;
-}
-
-function compareSeriesCanonicalPriority<
-  T extends {
-    beneficiaryName?: null | string;
-    beneficiaryRut?: null | string;
-    eventCount?: number;
-    id: number;
-    patientName?: null | string;
-    patientRut?: null | string;
-  },
->(a: T, b: T): number {
-  const scoreDelta = scoreClinicalSeriesIdentityQuality(b) - scoreClinicalSeriesIdentityQuality(a);
-  if (scoreDelta !== 0) return scoreDelta;
-  const eventDelta = (b.eventCount ?? 0) - (a.eventCount ?? 0);
-  if (eventDelta !== 0) return eventDelta;
-  return a.id - b.id;
-}
-
-function chooseBetterSeriesCandidate<
-  T extends {
-    beneficiaryName?: null | string;
-    beneficiaryRut?: null | string;
-    eventCount?: number;
-    id: number;
-    patientName?: null | string;
-    patientRut?: null | string;
-  },
->(...candidates: Array<null | T | undefined>): null | T {
-  return (
-    candidates
-      .filter((candidate): candidate is T => candidate != null)
-      .sort(compareSeriesCanonicalPriority)[0] ?? null
-  );
-}
-
-function chooseCanonicalPhoneDuplicateCandidate<
-  T extends {
-    beneficiaryName?: null | string;
-    beneficiaryRut?: null | string;
-    eventCount?: number;
-    id: number;
-    kind: ClinicalSeriesKind;
-    patientName?: null | string;
-    patientPhones?: string[];
-    patientRut?: null | string;
-  },
->(base: null | T | undefined, peers: Array<T>): null | T {
-  if (!base?.patientName || !base.patientPhones?.length) return base ?? null;
-
-  return chooseBetterSeriesCandidate(
-    base,
-    ...peers.filter(
-      (candidate) =>
-        candidate.id !== base.id &&
-        candidate.kind === base.kind &&
-        !!candidate.patientName &&
-        !!candidate.patientPhones?.some((phone) => base.patientPhones?.includes(phone)) &&
-        haveCompatiblePatientNames(candidate.patientName, base.patientName!)
-    )
-  );
-}
-
-function shouldPreferCandidateOverRutMatch<
-  T extends {
-    beneficiaryName?: null | string;
-    beneficiaryRut?: null | string;
-    eventCount?: number;
-    id: number;
-    patientName?: null | string;
-    patientRut?: null | string;
-  },
->(rutMatch: null | T | undefined, preferred: null | T | undefined): boolean {
-  if (!rutMatch || !preferred) return false;
-  if (rutMatch === preferred) return false;
-  if (compareSeriesCanonicalPriority(preferred, rutMatch) >= 0) return false;
-
-  const preferredCrossMatchesRut =
-    !!preferred.beneficiaryRut &&
-    !!rutMatch.patientRut &&
-    (preferred.beneficiaryRut === rutMatch.patientRut ||
-      isCloseNormalizedRut(preferred.beneficiaryRut, rutMatch.patientRut));
-
-  const rutMatchLooksWeaker =
-    !!rutMatch.patientName &&
-    !!preferred.patientName &&
-    haveCompatiblePatientNames(rutMatch.patientName, preferred.patientName);
-
-  return preferredCrossMatchesRut && rutMatchLooksWeaker;
-}
-
-function hasConflictingPrimaryIdentity<
-  T extends {
-    beneficiaryRut?: null | string;
-    patientRut?: null | string;
-  },
->(a: T, b: T): boolean {
-  if (!a.patientRut || !b.patientRut) return false;
-  if (a.patientRut === b.patientRut) return false;
-  if (isCloseNormalizedRut(a.patientRut, b.patientRut)) return false;
-  if (
-    a.beneficiaryRut &&
-    (a.beneficiaryRut === b.patientRut || isCloseNormalizedRut(a.beneficiaryRut, b.patientRut))
-  ) {
-    return false;
-  }
-  if (
-    b.beneficiaryRut &&
-    (b.beneficiaryRut === a.patientRut || isCloseNormalizedRut(b.beneficiaryRut, a.patientRut))
-  ) {
-    return false;
-  }
-  return true;
-}
-
-function hasHardPatientRutConflictForDuplicateDetection<
-  T extends {
-    beneficiaryRut?: null | string;
-    patientRut?: null | string;
-  },
->(a: T, b: T): boolean {
-  if (!a.patientRut || !b.patientRut) return false;
-  if (a.patientRut === b.patientRut) return false;
-  if (isCloseNormalizedRut(a.patientRut, b.patientRut)) return false;
-
-  const swappedPair =
-    !!a.beneficiaryRut &&
-    !!b.beneficiaryRut &&
-    (a.patientRut === b.beneficiaryRut || isCloseNormalizedRut(a.patientRut, b.beneficiaryRut)) &&
-    (b.patientRut === a.beneficiaryRut || isCloseNormalizedRut(b.patientRut, a.beneficiaryRut));
-
-  return !swappedPair;
-}
 
 class SeriesAssignmentContext {
   // RUT index stays single-valued; exact-name collisions keep all candidates so
@@ -1879,38 +1649,6 @@ async function runConcurrent<T>(
     }
   }
   await Promise.all(Array.from({ length: Math.min(concurrency, items.length) }, () => worker()));
-}
-
-// Batch loader — one query for all events instead of N individual round trips.
-async function loadEventSeriesCandidatesByIds(eventIds: number[]): Promise<EventSeriesCandidate[]> {
-  if (eventIds.length === 0) return [];
-  return db.$queryRaw<EventSeriesCandidate[]>`
-    SELECT
-      e.id AS "eventId",
-      c.google_id AS "calendarGoogleId",
-      e.external_event_id AS "externalEventId",
-      e.patient_name AS "patientName",
-      e.patient_rut AS "patientRut",
-      e.beneficiary_name AS "beneficiaryName",
-      e.beneficiary_rut AS "beneficiaryRut",
-      COALESCE(to_char(e.start_date, 'YYYY-MM-DD'), to_char((e.start_date_time AT TIME ZONE ${TIMEZONE})::date, 'YYYY-MM-DD')) AS "eventDate",
-      to_char(e.start_date_time AT TIME ZONE ${TIMEZONE}, 'HH24:MI') AS "eventTime",
-      e.summary AS "summary",
-      e.description AS "description",
-      e.category AS "category",
-      e.clinical_series_id AS "clinicalSeriesId",
-      e.series_stage_kind AS "seriesStageKind",
-      e.series_stage_label AS "seriesStageLabel",
-      e.series_stage_number AS "seriesStageNumber",
-      e.treatment_stage AS "treatmentStage",
-      e.test_metadata AS "testMetadata",
-      e.amount_expected AS "amountExpected",
-      e.amount_paid AS "amountPaid"
-    FROM events e
-    JOIN calendars c ON c.id = e.calendar_id
-    WHERE e.id = ANY(${eventIds}::int[])
-    ORDER BY e.id ASC
-  `;
 }
 
 // Core per-event sync logic — load-agnostic. Returns the series ID that was
