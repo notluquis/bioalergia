@@ -37,6 +37,23 @@ import {
   getSeriesWindowDays,
   inferSeriesKind,
 } from "./clinical-series/classification/kind.ts";
+import {
+  collapseRepeatedNameEdges,
+  getSignificantNameTokens,
+  normalizeName,
+  normalizeNameToken,
+  stripNoiseFromText,
+  stripNonNamePhrases,
+  stripStopwordPrefix,
+} from "./clinical-series/normalization/names.ts";
+import {
+  extractPhoneCandidates,
+  normalizeExtractedPhone,
+  normalizeExtractedPhoneDigits,
+  normalizePhoneSearch,
+  normalizeStoredPhoneArray,
+} from "./clinical-series/normalization/phones.ts";
+import { isCloseNormalizedRut, sanitizeRut } from "./clinical-series/normalization/rut.ts";
 export type { RebuildJob } from "./clinical-series-rebuild-status.ts";
 export { getCurrentRebuildJob } from "./clinical-series-rebuild-status.ts";
 
@@ -409,41 +426,6 @@ function prepareClinicalSeriesFilters(
   };
 }
 
-function normalizePhoneSearch(value: null | string | undefined): null | string {
-  if (!value) return null;
-  const digits = value.replace(/\D+/g, "");
-  return digits.length > 0 ? digits : null;
-}
-
-const PHONE_CANDIDATE_REGEX = /(?:\+?56[ \t-]*)?(?:9[ \t-]*)?(?:\d[ \t-]*){8,9}/g;
-
-function normalizeExtractedPhoneDigits(digits: string): null | string {
-  if (!digits) return null;
-  if (digits.startsWith("00")) return normalizeExtractedPhoneDigits(digits.slice(2));
-  if (digits.startsWith("0")) return normalizeExtractedPhoneDigits(digits.slice(1));
-  if (digits.startsWith("56") && digits.length === 11 && digits[2] === "9") return `+${digits}`;
-  if (digits.length === 9 && digits.startsWith("9")) return `+56${digits}`;
-  if (digits.length === 8) return `+569${digits}`;
-  return null;
-}
-
-function normalizeExtractedPhone(value: null | string | undefined): null | string {
-  const digits = normalizePhoneSearch(value);
-  return digits ? normalizeExtractedPhoneDigits(digits) : null;
-}
-
-function extractPhoneCandidates(text: null | string | undefined): string[] {
-  if (!text) return [];
-  // Strip only clearly formatted RUTs here. Bare 9-digit phones like
-  // "963080233" must survive this cleanup step.
-  const withoutRuts = text.replace(new RegExp(FORMATTED_RUT_REGEX.source, "g"), " ");
-  const matches = withoutRuts.match(PHONE_CANDIDATE_REGEX) ?? [];
-  return [
-    ...new Set(
-      matches.map((match) => normalizeExtractedPhone(match)).filter((v): v is string => Boolean(v))
-    ),
-  ];
-}
 
 function extractSeriesPhones(summary: null | string, description: null | string) {
   const summaryText = normalizeIdentitySourceText(normalizeClinicalText(summary));
@@ -480,16 +462,6 @@ function extractSeriesPhones(summary: null | string, description: null | string)
   };
 }
 
-function normalizeStoredPhoneArray(value: unknown): string[] {
-  if (!Array.isArray(value)) return [];
-  const seen = new Set<string>();
-  for (const item of value) {
-    const normalized = normalizeExtractedPhone(typeof item === "string" ? item : null);
-    if (!normalized) continue;
-    seen.add(normalized);
-  }
-  return [...seen];
-}
 
 function getSeriesPatientPhones(row: {
   events?: Array<{ description: null | string; summary: null | string }>;
@@ -507,134 +479,7 @@ function getSeriesPatientPhones(row: {
   return [...derived];
 }
 
-function normalizeName(value: string): string {
-  return value
-    .normalize("NFKD")
-    .replace(/\p{M}+/gu, "")
-    .toLowerCase()
-    .replace(/[^\p{L}\p{N}\s-]+/gu, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
 
-function stripNonNamePhrases(text: string): string {
-  return text
-    .replace(/\b[\p{L}]+-rut\b/giu, " ")
-    .replace(
-      /(^|[\n,;]\s*)(?:(?:envio\s+de|toca|ultima|licencia|aca|incluir\s+huevos|ovo\s+y\s+nativos|quiere\s+de\s+standard|(?:lec|lectura)\s+de(?:\s+de)?|contesto|quiso\s+realizar(?:\s+confirmado)?|confirm(?:ado|ada|o|a|s|ara|aq)?|(?:no\s+)?vino(?:\s+confirma(?:do|da|o|a|s|ra)?)?|llego(?:p)?(?:\s+confirma(?:do|da|o|a|s|ra)?)?|se\s+llev(?:a|o)\s+vacuna\s+de\s+(?:enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)|feb|mayo)(?:\s+(?:de|y))?\s+)/gi,
-      "$1"
-    )
-    .replace(/\bno\s+asistir[aá]\s+por\s+temas\s+econ[oó]micos\b/gi, " ")
-    .replace(/\best[aá]\s+de\s+viaje\s+llamar[aá]\s+para\s+reagendar\b/gi, " ")
-    .replace(/\bdr\.?\s+suspendi[oó]\s+vacuna\s+[a-záéíóúñ]+\b/gi, " ")
-    .replace(/\bpagamos\s+el\s+env[ií]o\s+nosotros\b/gi, " ")
-    .replace(/\bsacar\s+el\s+refri\s+\d+\s*min\s+antes\b/gi, " ")
-    .replace(
-      /(^|[\n,;]\s*)(?:(?:prox|covid|(?:se\s+)?envi(?:a|ada|ado|ar))(?:\s+(?:de|y|vacuna|vacunas|dia|d[ií]a|lunes|martes|miercoles|miércoles|jueves|viernes|sabado|sábado|domingo|enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre))*\s+)/gi,
-      "$1"
-    )
-    .replace(
-      /(^|[\n,;]\s*)(?:(?:manda\s+)?(?:la?s\s+)?fotos?(?:\s+(?:de\s+boleta|de\s+repetido|recordar\s+de|y\s+de|de))?\s+)/gi,
-      "$1"
-    )
-    .replace(/\blas\s+y\s+de\s+/gi, " ")
-    .replace(/\bprox(?:imo)?\s+mes\b/gi, " ")
-    .replace(/\ba\s*-\s*(?:g|p)\b/gi, " ")
-    .replace(
-      /,\s*[^,;()]{3,80}\(\s*(?:pap[aá]|mam[aá]|tutor(?:a)?)\s*\)(?=(?:\s*,|\s*\(|$))/gi,
-      " "
-    )
-    .replace(/\(\s*(?:pap[aá]|mam[aá]|tutor(?:a)?)\s+[^)]*\)/gi, " ")
-    .replace(/,\s*(?:pap[aá]|mam[aá]|tutor(?:a)?)\s+[^,;()]{3,80}(?=(?:\s*,|\s*\(|$))/gi, " ")
-    .replace(/\bs\s*\/\s*c[a-záéíóúñ]*/gi, " ")
-    .replace(/\b\/?\s*esposa\s*:\s*\d{5,}\b/gi, " ")
-    .replace(/\([^)]*\b(?:emite\s+boleta|gestiona\s+pago)\b[^)]*\)/gi, " ")
-    .replace(/\balergia\s+(?:muy\s+)?(?:fuerte|severa|intensa)\s+a\s+[^.;\n]+/gi, " ")
-    .replace(/\bdesea\s+iniciar\s+tratamiento(?:\s+de\s+inmunoterapia)?[^.;\n]*/gi, " ")
-    .replace(/\bsan\s+carlos\b/gi, " ")
-    .replace(/\bsan\s+pedro\s+de\s+la\s+paz\b/gi, " ")
-    .replace(/\bde\s+la\s+paz\b/gi, " ")
-    .replace(/\bsan\s+pedro\b/gi, " ")
-    .replace(/\bcuranilahue\b/gi, " ")
-    .replace(/\bhu[eé]pil\b/gi, " ")
-    .replace(/\bmulchen\b/gi, " ")
-    .replace(/\bcurico\b/gi, " ")
-    .replace(/\barauco\b/gi, " ")
-    .replace(/\branquil\b/gi, " ")
-    .replace(/\bspp\b/gi, " ")
-    .replace(/\bpuerto\s+varas\b/gi, " ")
-    .replace(/\bcruz\s+blanca\b/gi, " ")
-    .replace(/\byerbas\s+buenas\b/gi, " ")
-    .replace(/\blinares\b/gi, " ")
-    .replace(/\brespiratori[ao]s?\b/gi, " ");
-}
-
-/**
- * If a stopword of ≥4 chars is glued directly to the start of `token`
- * (e.g. "llegodiego" = "llego" + "diego"), returns the remainder after the
- * stopword so downstream checks can evaluate it on its own.
- * Uses the longest matching prefix to avoid partial matches.
- */
-function escapeRegex(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
-function buildFlexibleStopwordPrefixRegex(stopword: string) {
-  return new RegExp(`^${[...stopword].map((char) => `${escapeRegex(char)}+`).join("")}`);
-}
-
-const NON_DEGLUE_STOPWORDS = new Set(["cons"]);
-
-function stripStopwordPrefix(token: string): string {
-  let current = token;
-
-  while (current.length > 0) {
-    let bestMatchedPrefixLength = 0;
-    let bestStopwordLength = 0;
-
-    for (const sw of LOWERCASE_NAME_STOPWORDS) {
-      if (NON_DEGLUE_STOPWORDS.has(sw)) continue;
-      if (sw.length < 4) continue;
-
-      const match = current.match(buildFlexibleStopwordPrefixRegex(sw));
-      if (!match) continue;
-
-      const matchedPrefixLength = match[0].length;
-      const remainderLength = current.length - matchedPrefixLength;
-      if (remainderLength !== 0 && remainderLength < 4) continue;
-
-      if (
-        sw.length > bestStopwordLength ||
-        (sw.length === bestStopwordLength && matchedPrefixLength > bestMatchedPrefixLength)
-      ) {
-        bestMatchedPrefixLength = matchedPrefixLength;
-        bestStopwordLength = sw.length;
-      }
-    }
-
-    if (bestMatchedPrefixLength === 0) break;
-    current = current.slice(bestMatchedPrefixLength);
-  }
-
-  return current;
-}
-
-function normalizeNameToken(token: string): string {
-  const stripped = stripStopwordPrefix(token)
-    .replace(/^s\s+c\b\s*/i, "")
-    .replace(/^-+|-+$/g, "");
-
-  if (!stripped.includes("-")) {
-    return stripped;
-  }
-
-  const parts = stripped
-    .split("-")
-    .map((part) => part.trim())
-    .filter((part) => part.length > 0 && !LOWERCASE_NAME_STOPWORDS.has(part));
-
-  return parts.join(" ");
-}
 
 function resolveClinicalSeriesOrderBy(
   filters?: ClinicalSeriesFilters,
@@ -669,51 +514,7 @@ function resolveClinicalSeriesOrderBy(
   return sql.raw(`${columnExpression} ${sortDirection} NULLS LAST, cs.id DESC`);
 }
 
-/**
- * Strip all non-name noise from raw event text so that name extraction
- * sees only name tokens. Order matters: RUTs must be stripped before
- * separators (dots in "12.345.678-9"), age before lone digits.
- */
-function stripNoiseFromText(text: string): string {
-  return stripNonNamePhrases(text)
-    .replace(TIME_REGEX, " ") // 15:00, 9:30
-    .replace(new RegExp(RUT_REGEX.source, "g"), " ") // 12.345.678-9
-    .replace(AGE_REGEX, " ") // "36 años"
-    .replace(LONG_NUMBER_REGEX, " ") // phones, codes ≥5 digits
-    .replace(STANDALONE_NUMBER_REGEX, " ") // remaining bare numbers
-    .replace(SEPARATOR_REGEX, " ") // ;:,()[]{}
-    .replace(/\s+/g, " ")
-    .trim();
-}
 
-function collapseRepeatedNameEdges(tokens: string[]): string[] {
-  for (let size = Math.min(3, Math.floor(tokens.length / 2)); size >= 1; size -= 1) {
-    const prefix = tokens.slice(0, size);
-    const repeatedPrefix = tokens.slice(size, size * 2);
-    if (
-      prefix.length === repeatedPrefix.length &&
-      prefix.every((token, index) => token === repeatedPrefix[index])
-    ) {
-      return [...prefix, ...tokens.slice(size * 2)];
-    }
-  }
-
-  for (let size = Math.min(3, Math.floor(tokens.length / 2)); size >= 1; size -= 1) {
-    const prefix = tokens.slice(0, size);
-    const suffix = tokens.slice(tokens.length - size);
-    if (prefix.every((token, index) => token === suffix[index])) {
-      return tokens.slice(0, tokens.length - size);
-    }
-  }
-
-  return tokens;
-}
-
-/**
- * Extract name sequences from already-stripped text. Allows particles
- * ("de", "la", "del", …) between name tokens so compound surnames like
- * "León de la Sotta" or "Claudio de la Cuadra" are captured intact.
- */
 function extractNamesFromCleanedText(text: string): string[] {
   const PARTICLES = new Set(["de", "del", "la", "las", "los", "van", "von", "y", "e"]);
   const tokens = normalizeName(text)
@@ -779,12 +580,6 @@ export function extractPatientHints(summary: null | string, description: null | 
 }
 
 // Extract name tokens from the raw text immediately before each RUT occurrence.
-/** Returns null if the RUT body is outside the valid personal range (1M–50M). */
-function sanitizeRut(rut: null | string): null | string {
-  if (!rut) return null;
-  const body = Number(normalizeRut(rut)?.split("-")[0]);
-  return body >= 1_000_000 && body < 50_000_000 ? rut : null;
-}
 
 type StructuredClinicalDescription = {
   beneficiaryCandidates: Array<{ name: null | string; rut: string }>;
@@ -1224,15 +1019,6 @@ async function loadEventSeriesCandidateByExternalIds(
 }
 
 // Returns significant tokens from a normalized name: length ≥ 3, not a stopword.
-function getSignificantNameTokens(name: string): string[] {
-  return [
-    ...new Set(
-      normalizeName(name)
-        .split(" ")
-        .filter((t) => t.length >= 3 && !LOWERCASE_NAME_STOPWORDS.has(t))
-    ),
-  ];
-}
 
 // ── SeriesAssignmentContext ───────────────────────────────────────────────────
 // Pre-loaded in-memory index of all clinical series. Eliminates per-event DB
@@ -1426,22 +1212,6 @@ function hasHardPatientRutConflictForDuplicateDetection<
     (b.patientRut === a.beneficiaryRut || isCloseNormalizedRut(b.patientRut, a.beneficiaryRut));
 
   return !swappedPair;
-}
-
-function isCloseNormalizedRut(a: null | string, b: null | string): boolean {
-  if (!a || !b) return false;
-  const left = normalizeRut(a);
-  const right = normalizeRut(b);
-  if (!left || !right) return false;
-  if (left === right) return true;
-  if (left.length !== right.length) return false;
-
-  let differences = 0;
-  for (let i = 0; i < left.length; i++) {
-    if (left[i] !== right[i]) differences++;
-    if (differences > 1) return false;
-  }
-  return differences === 1;
 }
 
 class SeriesAssignmentContext {
