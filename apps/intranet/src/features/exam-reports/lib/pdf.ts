@@ -60,19 +60,18 @@ interface PdfSection {
 /**
  * Procedure metadata required by EAACI 2023 + Chilean Norma técnica.
  * All fields optional — render `—` when missing.
+ *
+ * NOTE: `sitio anatómico` + lote/fabricante de extractos + lote
+ * histamina + lote control negativo were intentionally dropped in
+ * Phase 2 — operator feedback was that these never matched the
+ * physical run and added noise. The wizard now relies on the XLSX
+ * skin-test snapshot for control mm values; lots stay out of the PDF.
  */
 interface PdfProcedureMeta {
   /** ISO date string YYYY-MM-DD or display string. */
   testDate?: string | null;
   /** HH:mm. */
   testTime?: string | null;
-  /** Anatomical site (default "Cara volar de antebrazo"). */
-  site?: string | null;
-  /** Extract lot/manufacturer. */
-  extractLot?: string | null;
-  extractManufacturer?: string | null;
-  histamineLot?: string | null;
-  salineControlLot?: string | null;
   /** Reading time in minutes (e.g. 15). */
   readingTimeMin?: number | null;
   /** Measurement method (default "Diámetro mayor (EAACI 2023)"). */
@@ -478,16 +477,11 @@ export async function generateExamReportPdf(
   if (!isPatch) {
     y = drawSectionTitle({ doc, y, title: "DATOS DEL PROCEDIMIENTO", iconDataUrl: iconFile });
     const meta = report.procedure ?? {};
+    // Phase 2: sitio + lote fields dropped — operator feedback was that
+    // these never matched the physical run and added clutter.
     const metaRows: [string, string][] = [
       ["Fecha", meta.testDate ?? "—"],
-      ["Hora", meta.testTime ?? "—"],
-      ["Sitio anatomico", meta.site ?? "Cara volar de antebrazo"],
-      [
-        "Lote / fabricante extractos",
-        [meta.extractLot, meta.extractManufacturer].filter(Boolean).join(" / ") || "—",
-      ],
-      ["Lote histamina", meta.histamineLot ?? "—"],
-      ["Lote control negativo (SSF)", meta.salineControlLot ?? "—"],
+      ["Hora del test", meta.testTime ?? "—"],
       [
         "Tiempo de lectura",
         meta.readingTimeMin != null ? `${meta.readingTimeMin} minutos` : "15-20 minutos",
@@ -521,12 +515,12 @@ export async function generateExamReportPdf(
 
     const histTxt =
       controls.histamineMm != null
-        ? `Control positivo histamina = ${controls.histamineMm} mm (valido si >= 3 mm).`
-        : "Control positivo histamina = - mm.";
+        ? `Control positivo (histamina) = ${controls.histamineMm} mm (valido si >= 3 mm).`
+        : "Control positivo (histamina) = - mm.";
     const salTxt =
       controls.salineMm != null
-        ? `Control negativo suero salino = ${controls.salineMm} mm (valido si < 3 mm).`
-        : "Control negativo suero salino = - mm.";
+        ? `Control negativo (suero salino) = ${controls.salineMm} mm (valido si < 3 mm).`
+        : "Control negativo (suero salino) = - mm.";
 
     for (const line of [histTxt, salTxt]) {
       const wrapped = safeSplit(doc, line, CONTENT_W);
@@ -571,10 +565,13 @@ export async function generateExamReportPdf(
 
     const rows: Row[] = [];
 
-    // Always include histamine + saline as the first two rows so the
-    // reader can validate the run at a glance.
+    // Always include the controls as the first two rows so the reader
+    // can validate the run at a glance. Phase 2: user-facing labels
+    // changed from "Histamina" / "Suero salino" to "Control positivo
+    // (mm)" / "Control negativo (mm)" — internal field names
+    // (histamineMm / salineMm) stay for code clarity.
     rows.push({
-      allergen: "Histamina (control positivo)",
+      allergen: "Control positivo (histamina)",
       papule: controls?.histamineMm != null ? `${controls.histamineMm}` : "—",
       erythema: "—",
       interp:
@@ -586,7 +583,7 @@ export async function generateExamReportPdf(
       positive: false,
     });
     rows.push({
-      allergen: "Suero salino (control negativo)",
+      allergen: "Control negativo (suero salino)",
       papule: controls?.salineMm != null ? `${controls.salineMm}` : "—",
       erythema: "—",
       interp:

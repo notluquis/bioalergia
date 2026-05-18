@@ -39,4 +39,9 @@ export const examReportsKeys = {
       queryKey: [...examReportsKeys.all, "allergens", params ?? {}] as const,
       queryFn: () => examReportsORPCClient.listAllergens(params ?? {}),
     }),
+  latestPatientControls: (patientId: number) =>
+    queryOptions({
+      queryKey: [...examReportsKeys.all, "latest-controls", patientId] as const,
+      queryFn: () => examReportsORPCClient.latestPatientControls({ patientId }),
+    }),
 };

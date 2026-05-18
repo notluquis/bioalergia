@@ -45,6 +45,11 @@ const FIELDS: { key: keyof FormState; label: string; placeholder?: string }[] = 
   { key: "doctorSpecialty", label: "Doctor (especialidad)" },
   { key: "doctorRut", label: "Doctor (RUT)" },
   { key: "signatureUrl", label: "Firma (URL imagen)" },
+  {
+    key: "superintendenciaNumber",
+    label: "Prestador Superintendencia de Salud N°",
+    placeholder: "Ej. 123456",
+  },
 ];
 
 type FormState = {
@@ -61,6 +66,7 @@ type FormState = {
   doctorSpecialty: string;
   doctorRut: string;
   signatureUrl: string;
+  superintendenciaNumber: string;
   papuleThresholdMm: number;
 };
 
@@ -87,6 +93,7 @@ function ClinicSettingsPage() {
       doctorSpecialty: settingsQ.data.doctorSpecialty,
       doctorRut: settingsQ.data.doctorRut ?? "",
       signatureUrl: settingsQ.data.signatureUrl ?? "",
+      superintendenciaNumber: settingsQ.data.superintendenciaNumber ?? "",
       papuleThresholdMm: settingsQ.data.papuleThresholdMm,
     });
   }, [settingsQ.data, form]);
@@ -98,6 +105,7 @@ function ClinicSettingsPage() {
         ...form,
         doctorRut: form.doctorRut || null,
         signatureUrl: form.signatureUrl || null,
+        superintendenciaNumber: form.superintendenciaNumber || null,
       });
     },
     onSuccess: () => {

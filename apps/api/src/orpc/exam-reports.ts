@@ -35,6 +35,10 @@ const allergenSelect = {
   scientificName: true,
   category: true,
   pollenType: true,
+  // Surfaced so the wizard + PDF generator can auto-fire the
+  // cross-reactivity disclaimer when any tag matches PR-10 / profilin /
+  // tropomyosin / LTP. Schema defaults to `[]` so older rows are safe.
+  tags: true,
 } as const;
 
 const reportListSelect = {
@@ -379,6 +383,64 @@ const examReportsRouterBase = {
         create: { id: 1, ...data },
       });
       return serialiseSettings(updated);
+    }),
+
+  // ── Latest skin-test controls for a patient (XLSX SoT) ────────────
+  // The wizard uses this to prefill the histamine + saline NumberFields
+  // when a recent XLSX snapshot exists. Walks Patient → ClinicalSeries[]
+  // → ClinicalSkinTest[] (ordered by testDate desc) → first one with at
+  // least one POSITIVE or NEGATIVE control result. User can still
+  // override manually in the wizard.
+  latestPatientControls: base
+    .route({ method: "GET", path: "/patients/{patientId}/latest-controls", tags: ["ExamReports"] })
+    .input(examReportsContract.latestPatientControls["~orpc"].inputSchema!)
+    .output(examReportsContract.latestPatientControls["~orpc"].outputSchema!)
+    .handler(async ({ input }) => {
+      const series = await db.clinicalSeries.findMany({
+        where: { patientId: input.patientId },
+        select: { id: true },
+      });
+      if (series.length === 0) {
+        return { histamineMm: null, salineMm: null, testDate: null, skinTestId: null };
+      }
+      const seriesIds = series.map((s) => s.id);
+      // Pick the most recent skin test that actually has at least one
+      // control row — otherwise we'd return nulls even though older
+      // snapshots have valid controls.
+      const skinTest = await db.clinicalSkinTest.findFirst({
+        where: {
+          clinicalSeriesId: { in: seriesIds },
+          results: { some: { controlType: { not: null } } },
+        },
+        orderBy: { testDate: "desc" as const },
+        select: {
+          id: true,
+          testDate: true,
+          results: {
+            where: { controlType: { not: null } },
+            select: { controlType: true, papuleMm: true },
+          },
+        },
+      });
+      if (!skinTest) {
+        return { histamineMm: null, salineMm: null, testDate: null, skinTestId: null };
+      }
+      // Prefer the largest mm value if duplicates exist (parser may emit
+      // both "Control positivo" and "Histamina" rows for the same run).
+      let hist: number | null = null;
+      let sal: number | null = null;
+      for (const r of skinTest.results) {
+        const mm = r.papuleMm ?? null;
+        if (mm == null) continue;
+        if (r.controlType === "POSITIVE" && (hist == null || mm > hist)) hist = mm;
+        if (r.controlType === "NEGATIVE" && (sal == null || mm > sal)) sal = mm;
+      }
+      return {
+        histamineMm: hist,
+        salineMm: sal,
+        testDate: skinTest.testDate.toISOString().slice(0, 10),
+        skinTestId: skinTest.id,
+      };
     }),
 
   // ── Allergen catalog (read-only proxy) ────────────────────────────

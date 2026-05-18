@@ -165,6 +165,48 @@ describe("hasCrossReactiveAllergens", () => {
   });
 });
 
+describe("control row labels (Phase 2 rename)", () => {
+  // We can't easily introspect the rendered PDF text without parsing
+  // the Blob, so we lock the wording in the source by snapshot. The two
+  // strings must use "Control positivo (histamina)" / "Control negativo
+  // (suero salino)" — NOT the old "Histamina (control positivo)" form.
+  it("uses user-facing 'Control positivo/negativo' wording in the source", async () => {
+    const fs = await import("node:fs/promises");
+    const path = await import("node:path");
+    // vitest hands us a non-file URL for import.meta.url, so resolve the
+    // sibling pdf.ts from cwd instead.
+    const src = await fs.readFile(
+      path.resolve(process.cwd(), "src/features/exam-reports/lib/pdf.ts"),
+      "utf8"
+    );
+    expect(src).toContain('"Control positivo (histamina)"');
+    expect(src).toContain('"Control negativo (suero salino)"');
+    expect(src).not.toContain('"Histamina (control positivo)"');
+    expect(src).not.toContain('"Suero salino (control negativo)"');
+  });
+
+  it("drops sitio/lote rows from the procedure metadata block", async () => {
+    const fs = await import("node:fs/promises");
+    const path = await import("node:path");
+    // vitest hands us a non-file URL for import.meta.url, so resolve the
+    // sibling pdf.ts from cwd instead.
+    const src = await fs.readFile(
+      path.resolve(process.cwd(), "src/features/exam-reports/lib/pdf.ts"),
+      "utf8"
+    );
+    // Field labels removed (Phase 2 operator feedback).
+    expect(src).not.toMatch(/"Sitio anatomico"/);
+    expect(src).not.toMatch(/"Lote \/ fabricante extractos"/);
+    expect(src).not.toMatch(/"Lote histamina"/);
+    expect(src).not.toMatch(/"Lote control negativo/);
+    // Kept fields.
+    expect(src).toMatch(/"Fecha"/);
+    expect(src).toMatch(/"Hora del test"/);
+    expect(src).toMatch(/"Tiempo de lectura"/);
+    expect(src).toMatch(/"Metodo de medicion"/);
+  });
+});
+
 describe("generateExamReportPdf", () => {
   const baseSettings = {
     name: "Bioalergia",

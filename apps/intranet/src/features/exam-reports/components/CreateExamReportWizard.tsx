@@ -1,6 +1,7 @@
 import {
   Autocomplete,
   Button,
+  Chip,
   Description,
   EmptyState,
   Form,
@@ -121,6 +122,19 @@ export function CreateExamReportWizard({
   const [conclusionTemplateId, setConclusionTemplateId] = useState<number | null>(null);
   const [conclusionText, setConclusionText] = useState("");
   const [notes, setNotes] = useState<string>("");
+  // ── Controls (validity gates printed on the PDF) ──────────────────────
+  // Operator can either (a) let the wizard pre-fill from the most recent
+  // XLSX skin-test snapshot or (b) type the mm values manually. Default
+  // state is "not yet set" (null) so the PDF renders "—" when neither
+  // path produces a value.
+  const [histamineMm, setHistamineMm] = useState<number | null>(null);
+  const [salineMm, setSalineMm] = useState<number | null>(null);
+  // Source of currently-shown values — drives the visible "Origen: XLSX
+  // <date>" chip. Flips back to "manual" the moment the operator edits a
+  // field; nulls suppress the chip entirely.
+  const [controlsSource, setControlsSource] = useState<
+    { kind: "xlsx"; date: string } | { kind: "manual" } | null
+  >(null);
 
   // Reset draft sections every time examType changes — the seed
   // sections are different per type and we don't want stale entries.
@@ -155,6 +169,19 @@ export function CreateExamReportWizard({
 
   const settingsQ = useQuery(examReportsKeys.clinicSettings());
   const allergensQ = useQuery(examReportsKeys.allergens({ limit: 500 }));
+  const latestControlsQ = useQuery(examReportsKeys.latestPatientControls(patient.id));
+
+  // Prefill from XLSX skin-test snapshot exactly once. Operator edits
+  // (which set controlsSource="manual") take precedence forever.
+  useEffect(() => {
+    if (controlsSource !== null) return;
+    const lc = latestControlsQ.data;
+    if (!lc) return;
+    if (lc.histamineMm == null && lc.salineMm == null) return;
+    setHistamineMm(lc.histamineMm);
+    setSalineMm(lc.salineMm);
+    setControlsSource({ kind: "xlsx", date: lc.testDate ?? "—" });
+  }, [latestControlsQ.data, controlsSource]);
 
   const createMutation = useMutation({
     mutationFn: () =>
@@ -201,8 +228,10 @@ export function CreateExamReportWizard({
               reactions: s.reactions.map((r) => ({
                 reaction: r.reaction,
                 allergen: r.allergen,
+                papuleMm: r.papuleMm,
               })),
             })),
+            controls: { histamineMm, salineMm },
           },
           settings,
           `informe-${EXAM_TYPE_LABEL[created.examType].replace(/\s+/g, "-")}-${created.id}.pdf`
@@ -268,6 +297,17 @@ export function CreateExamReportWizard({
                     onChange={setSections}
                     allergens={allergensQ.data?.allergens ?? []}
                     isLoading={allergensQ.isLoading}
+                    histamineMm={histamineMm}
+                    salineMm={salineMm}
+                    controlsSource={controlsSource}
+                    onHistamineChange={(v) => {
+                      setHistamineMm(v);
+                      setControlsSource({ kind: "manual" });
+                    }}
+                    onSalineChange={(v) => {
+                      setSalineMm(v);
+                      setControlsSource({ kind: "manual" });
+                    }}
                   />
                 )}
                 {step === 3 && (
@@ -376,11 +416,21 @@ function Step2Allergens({
   onChange,
   allergens,
   isLoading,
+  histamineMm,
+  salineMm,
+  controlsSource,
+  onHistamineChange,
+  onSalineChange,
 }: {
   sections: DraftSection[];
   onChange: (s: DraftSection[]) => void;
   allergens: { id: string; commonName: string; category: string }[];
   isLoading: boolean;
+  histamineMm: number | null;
+  salineMm: number | null;
+  controlsSource: { kind: "xlsx"; date: string } | { kind: "manual" } | null;
+  onHistamineChange: (v: number | null) => void;
+  onSalineChange: (v: number | null) => void;
 }) {
   if (isLoading) {
     return (
@@ -415,6 +465,13 @@ function Step2Allergens({
 
   return (
     <div className="space-y-6">
+      <ControlsBlock
+        histamineMm={histamineMm}
+        salineMm={salineMm}
+        source={controlsSource}
+        onHistamineChange={onHistamineChange}
+        onSalineChange={onSalineChange}
+      />
       {sections.length === 0 && (
         <EmptyState className="rounded-2xl border border-default-200 border-dashed p-6 text-center">
           Sin secciones. Comienza desde cero agregando paneles personalizados, o vuelve al paso 1
@@ -537,6 +594,103 @@ function Step2Allergens({
   );
 }
 
+// ── Controls block (histamine + saline mm) ─────────────────────────────
+//
+// Two HeroUI v3 NumberFields wired to the wizard's local state. When a
+// recent XLSX skin-test snapshot exists, the values are prefilled by the
+// parent useEffect; a Chip next to each field shows "Origen: XLSX
+// <fecha> (editable)" so the operator knows where the numbers came
+// from. The moment they edit either field, source flips to "manual" and
+// the chip disappears (parent state).
+function ControlsBlock({
+  histamineMm,
+  salineMm,
+  source,
+  onHistamineChange,
+  onSalineChange,
+}: {
+  histamineMm: number | null;
+  salineMm: number | null;
+  source: { kind: "xlsx"; date: string } | { kind: "manual" } | null;
+  onHistamineChange: (v: number | null) => void;
+  onSalineChange: (v: number | null) => void;
+}) {
+  const showXlsxChip = source?.kind === "xlsx";
+  const xlsxDate = source?.kind === "xlsx" ? source.date : null;
+  return (
+    <section
+      aria-labelledby="exam-controls-heading"
+      className="rounded-2xl border border-default-200 p-4"
+      data-testid="exam-report-controls-block"
+    >
+      <header className="mb-2">
+        <h3 className="font-bold text-primary text-sm" id="exam-controls-heading">
+          Controles del examen
+        </h3>
+        <p className="text-default-600 text-xs">
+          EAACI exige histamina ≥ 3 mm para validar el test; suero salino debe ser &lt; 3 mm.
+        </p>
+      </header>
+      <div className="grid gap-4 md:grid-cols-2">
+        <div className="space-y-1.5">
+          <Label>Control positivo histamina (mm)</Label>
+          <NumberField
+            aria-label="Control positivo histamina en mm"
+            data-testid="control-histamine-input"
+            formatOptions={{ maximumFractionDigits: 1 }}
+            maxValue={15}
+            minValue={0}
+            onChange={(v) => onHistamineChange(Number.isFinite(v) ? v : null)}
+            value={histamineMm ?? undefined}
+          >
+            <NumberField.Group>
+              <NumberField.Input placeholder="mm" />
+            </NumberField.Group>
+          </NumberField>
+          {showXlsxChip && (
+            <Chip
+              className="text-[10px]"
+              color="accent"
+              data-testid="control-histamine-source-chip"
+              size="sm"
+              variant="soft"
+            >
+              {`Origen: XLSX ${xlsxDate ?? "—"} (editable)`}
+            </Chip>
+          )}
+        </div>
+        <div className="space-y-1.5">
+          <Label>Control negativo suero salino (mm)</Label>
+          <NumberField
+            aria-label="Control negativo suero salino en mm"
+            data-testid="control-saline-input"
+            formatOptions={{ maximumFractionDigits: 1 }}
+            maxValue={15}
+            minValue={0}
+            onChange={(v) => onSalineChange(Number.isFinite(v) ? v : null)}
+            value={salineMm ?? undefined}
+          >
+            <NumberField.Group>
+              <NumberField.Input placeholder="mm" />
+            </NumberField.Group>
+          </NumberField>
+          {showXlsxChip && (
+            <Chip
+              className="text-[10px]"
+              color="accent"
+              data-testid="control-saline-source-chip"
+              size="sm"
+              variant="soft"
+            >
+              {`Origen: XLSX ${xlsxDate ?? "—"} (editable)`}
+            </Chip>
+          )}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 // ── Editable section label (click pencil to rename) ────────────────────
 
 function EditableSectionLabel({
@@ -584,17 +738,18 @@ function EditableSectionLabel({
   }
 
   return (
-    <button
+    <Button
+      aria-label={`Renombrar panel ${label}`}
       className="group flex flex-1 items-center gap-2 text-left"
-      onClick={() => setEditing(true)}
-      type="button"
+      onPress={() => setEditing(true)}
+      variant="ghost"
     >
       <h3 className="font-bold text-primary">{label}</h3>
       <Pencil className="size-3.5 text-default-500 opacity-0 transition group-hover:opacity-100" />
       <span className="ml-auto text-default-600 text-xs">
         {count === 1 ? "1 alérgeno" : `${count} alérgenos`}
       </span>
-    </button>
+    </Button>
   );
 }
 

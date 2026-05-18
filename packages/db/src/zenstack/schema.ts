@@ -5511,6 +5511,13 @@ export class SchemaType implements SchemaDef {
                     optional: true,
                     attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("source_row") }] }] as readonly AttributeApplication[]
                 },
+                tags: {
+                    name: "tags",
+                    type: "String",
+                    array: true,
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.array("Any", []) }] }] as readonly AttributeApplication[],
+                    default: [] as FieldDefault
+                },
                 isActive: {
                     name: "isActive",
                     type: "Boolean",
@@ -14372,6 +14379,12 @@ export class SchemaType implements SchemaDef {
                     type: "Decimal",
                     attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(3.0) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("papule_threshold_mm") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(5) }, { name: "s", value: ExpressionUtils.literal(2) }] }] as readonly AttributeApplication[],
                     default: 3 as FieldDefault
+                },
+                superintendenciaNumber: {
+                    name: "superintendenciaNumber",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("superintendencia_number") }] }] as readonly AttributeApplication[]
                 },
                 updatedAt: {
                     name: "updatedAt",

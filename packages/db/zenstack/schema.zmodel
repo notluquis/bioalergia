@@ -1495,6 +1495,10 @@ model ClinicalAllergen {
   normalizedCommonName     String                  @map("normalized_common_name")
   source                   String                  @default("lista_alergenos.xlsx")
   sourceRow                Int?                    @map("source_row")
+  // Free-form tag list. Used by the exam-report PDF generator to detect
+  // cross-reactive components (PR-10, profilin, tropomyosin, LTP) and
+  // append the EAACI cross-reactivity disclaimer. Lower-cased on write.
+  tags                     String[]                @default([])
   isActive                 Boolean                 @default(true) @map("is_active")
   createdAt                DateTime                @default(now()) @map("created_at")
   updatedAt                DateTime                @default(now()) @updatedAt @map("updated_at")
@@ -4397,6 +4401,10 @@ model ClinicSettings {
   doctorRut         String?  @map("doctor_rut")
   signatureUrl      String?  @map("signature_url") @db.Text
   papuleThresholdMm Decimal  @default(3.0) @map("papule_threshold_mm") @db.Decimal(5, 2)
+  // Prestador Superintendencia de Salud N — printed under doctor's signature
+  // block on every exam-report PDF. Free-text (Superintendencia issues alpha-
+  // numeric codes); nullable so a fresh deploy renders "—" instead of "0".
+  superintendenciaNumber String? @map("superintendencia_number")
   updatedAt         DateTime @default(now()) @updatedAt @map("updated_at")
 
   @@deny('all', auth() == null)

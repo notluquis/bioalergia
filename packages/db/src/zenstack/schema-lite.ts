@@ -4552,6 +4552,12 @@ export class SchemaType implements SchemaDef {
                     type: "Int",
                     optional: true
                 },
+                tags: {
+                    name: "tags",
+                    type: "String",
+                    array: true,
+                    default: [] as FieldDefault
+                },
                 isActive: {
                     name: "isActive",
                     type: "Boolean",
@@ -11763,6 +11769,11 @@ export class SchemaType implements SchemaDef {
                     name: "papuleThresholdMm",
                     type: "Decimal",
                     default: 3 as FieldDefault
+                },
+                superintendenciaNumber: {
+                    name: "superintendenciaNumber",
+                    type: "String",
+                    optional: true
                 },
                 updatedAt: {
                     name: "updatedAt",

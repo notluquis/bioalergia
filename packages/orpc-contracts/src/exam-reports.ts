@@ -55,6 +55,11 @@ const allergenLiteSchema = z.object({
   scientificName: z.string().nullable(),
   category: z.string(),
   pollenType: z.string().nullable(),
+  // Free-form tags from ClinicalAllergen.tags — surfaced so the PDF
+  // generator can auto-fire the cross-reactivity disclaimer when any
+  // tag matches PR-10 / profilin / tropomyosin / LTP. Default `[]`
+  // keeps older API builds backwards-compatible.
+  tags: z.array(z.string()).default([]),
 });
 
 const reactionOutputSchema = z.object({
@@ -182,6 +187,9 @@ export const clinicSettingsSchema = z.object({
   doctorRut: z.string().nullable(),
   signatureUrl: z.string().nullable(),
   papuleThresholdMm: z.number(),
+  // Prestador Superintendencia de Salud N — printed under doctor's
+  // signature block on every exam-report PDF.
+  superintendenciaNumber: z.string().nullable(),
   updatedAt: z.iso.datetime(),
 });
 
@@ -204,6 +212,26 @@ const allergenListOutputSchema = z.object({
   // Distinct categories present in the dataset — useful for the picker
   // groupings ("Polenes > Arboles", "Acaros", "Epitelios", etc).
   categories: z.array(z.string()),
+});
+
+// ── Latest skin-test controls (XLSX source-of-truth for wizard) ──────
+//
+// Lets the wizard prefill the histamine + saline control mm fields
+// from the most recent imported XLSX skin-test for the patient (joined
+// via Patient → ClinicalSeries[] → ClinicalSkinTest[] →
+// ClinicalSkinTestResult[controlType]). Returns nulls when no snapshot
+// exists yet; the wizard falls back to manual entry.
+const latestPatientControlsInputSchema = z.object({
+  patientId: z.number().int().positive(),
+});
+
+const latestPatientControlsOutputSchema = z.object({
+  histamineMm: z.number().nullable(),
+  salineMm: z.number().nullable(),
+  /** ISO date of the source skin-test (YYYY-MM-DD), null if no snapshot. */
+  testDate: z.iso.date().nullable(),
+  /** Source skin-test id so the UI can link/debug. */
+  skinTestId: z.string().nullable(),
 });
 
 // ── Contract ─────────────────────────────────────────────────────────
@@ -293,6 +321,11 @@ export const examReportsContract = {
     .route({ method: "GET", path: "/allergens" })
     .input(allergenListInputSchema)
     .output(allergenListOutputSchema),
+
+  latestPatientControls: oc
+    .route({ method: "GET", path: "/patients/{patientId}/latest-controls" })
+    .input(latestPatientControlsInputSchema)
+    .output(latestPatientControlsOutputSchema),
 };
 
 export type ExamReportsContract = typeof examReportsContract;

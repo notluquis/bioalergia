@@ -17,6 +17,7 @@ const orpcMocks = vi.hoisted(() => ({
   listTemplates: vi.fn(),
   getClinicSettings: vi.fn(),
   listAllergens: vi.fn(),
+  latestPatientControls: vi.fn(),
 }));
 
 vi.mock("./orpc", () => ({
@@ -83,6 +84,14 @@ describe("examReportsKeys", () => {
     it("allergens defaults to {}", () => {
       expect(examReportsKeys.allergens().queryKey).toEqual(["exam-reports", "allergens", {}]);
     });
+
+    it("latestPatientControls keyed by patientId", () => {
+      expect(examReportsKeys.latestPatientControls(42).queryKey).toEqual([
+        "exam-reports",
+        "latest-controls",
+        42,
+      ]);
+    });
   });
 
   describe("queryFn forwarding (happy path)", () => {
@@ -111,6 +120,45 @@ describe("examReportsKeys", () => {
       const { result } = renderHook(() => useQuery(examReportsKeys.templates(null)), { wrapper });
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(orpcMocks.listTemplates).toHaveBeenCalledWith({ examType: undefined });
+    });
+
+    it("listAllergens surfaces tags[] through to React Query data", async () => {
+      // AllergenLite contract added `tags: z.array(z.string()).default([])`
+      // in Phase 2 so the PDF generator can fire the cross-reactivity
+      // disclaimer. This locks the field shape end-to-end.
+      orpcMocks.listAllergens.mockResolvedValue({
+        allergens: [
+          {
+            id: "a1",
+            commonName: "Bet v 1",
+            scientificName: null,
+            category: "polen",
+            pollenType: null,
+            tags: ["PR-10", "profilin"],
+          },
+        ],
+        categories: ["polen"],
+      });
+      const wrapper = buildWrapper();
+      const { result } = renderHook(() => useQuery(examReportsKeys.allergens()), { wrapper });
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+      expect(result.current.data?.allergens[0]?.tags).toEqual(["PR-10", "profilin"]);
+    });
+
+    it("latestPatientControls forwards patientId to orpc", async () => {
+      orpcMocks.latestPatientControls.mockResolvedValue({
+        histamineMm: 5,
+        salineMm: 0,
+        testDate: "2026-05-18",
+        skinTestId: "st_1",
+      });
+      const wrapper = buildWrapper();
+      const { result } = renderHook(() => useQuery(examReportsKeys.latestPatientControls(123)), {
+        wrapper,
+      });
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+      expect(orpcMocks.latestPatientControls).toHaveBeenCalledWith({ patientId: 123 });
+      expect(result.current.data?.histamineMm).toBe(5);
     });
 
     it("clinicSettings calls getClinicSettings with empty object", async () => {
