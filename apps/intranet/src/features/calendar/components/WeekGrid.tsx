@@ -3,7 +3,7 @@ import dayjs from "dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
 import type { CSSProperties } from "react";
 import { useEffect, useState } from "react";
-import { useTheme } from "@/hooks/use-theme";
+import { useTheme } from "next-themes";
 import { toTitleCase } from "@/lib/person";
 import { cn } from "@/lib/utils";
 
@@ -607,7 +607,8 @@ function EventButtonContent({
 }
 
 function EventItem({ endHour, event, onEventClick, startHour, tooltipTrigger }: EventItemProps) {
-  const { isDark } = useTheme();
+  const { resolvedTheme } = useTheme();
+  const isDark = resolvedTheme === "dark";
   const position = getEventPosition(event, startHour, endHour);
   if (!position) {
     return null;

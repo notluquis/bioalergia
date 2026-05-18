@@ -1,11 +1,11 @@
 import { Button, Link } from "@heroui/react";
+import { useTheme } from "next-themes";
 import { usePostHog } from "posthog-js/react";
 import { useEffect, useMemo, useState } from "react";
 
 import { contactInfo } from "@/data/clinic";
 import { legalDocuments, type LegalDocumentKey } from "@/data/legal";
 import { doctoraliaLink } from "@/lib/doctoralia";
-import { useThemePreference } from "@/lib/theme";
 import { HomePage } from "@/pages/HomePage";
 import { LegalPage } from "@/pages/LegalPage";
 
@@ -97,7 +97,9 @@ function setMetaTag(selector: string, attribute: "content" | "href", value: stri
 
 export function App() {
   const posthog = usePostHog();
-  const { theme, toggle } = useThemePreference();
+  const { resolvedTheme, setTheme } = useTheme();
+  const theme = (resolvedTheme === "dark" ? "dark" : "light") as "dark" | "light";
+  const toggle = () => setTheme(theme === "dark" ? "light" : "dark");
   const whatsappLink = (phone: string) => `https://wa.me/${phone.replace(/\D/g, "")}`;
   const pathname = useMemo(
     () => (typeof window === "undefined" ? "/" : normalizePath(window.location.pathname)),

@@ -9,6 +9,7 @@ import { Button } from "@heroui/react";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createRouter, RouterProvider } from "@tanstack/react-router";
+import { ThemeProvider } from "next-themes";
 import { lazy, StrictMode, Suspense, useEffect } from "react";
 import ReactDOM from "react-dom/client";
 import { ZodError } from "zod";
@@ -213,25 +214,35 @@ if (!rootElement) {
 
 ReactDOM.createRoot(rootElement).render(
   <StrictMode>
-    <AppFallback />
-    <GlobalError>
-      <ChunkErrorBoundary>
-        <QueryClientProvider client={queryClient}>
-          <AuthListener />
-          <SettingsProvider>
-            <ConfirmDialogProvider>
-              <ToastProvider>
-                <AbilityProvider>
-                  <InnerApp />
-                  <Suspense fallback={null}>
-                    <ReactQueryDevtools initialIsOpen={false} />
-                  </Suspense>
-                </AbilityProvider>
-              </ToastProvider>
-            </ConfirmDialogProvider>
-          </SettingsProvider>
-        </QueryClientProvider>
-      </ChunkErrorBoundary>
-    </GlobalError>
+    <ThemeProvider
+      attribute={["class", "data-theme"]}
+      defaultTheme="system"
+      disableTransitionOnChange
+      enableColorScheme
+      enableSystem
+      storageKey="bioalergia:theme"
+      value={{ dark: "bioalergia-dark", light: "bioalergia" }}
+    >
+      <AppFallback />
+      <GlobalError>
+        <ChunkErrorBoundary>
+          <QueryClientProvider client={queryClient}>
+            <AuthListener />
+            <SettingsProvider>
+              <ConfirmDialogProvider>
+                <ToastProvider>
+                  <AbilityProvider>
+                    <InnerApp />
+                    <Suspense fallback={null}>
+                      <ReactQueryDevtools initialIsOpen={false} />
+                    </Suspense>
+                  </AbilityProvider>
+                </ToastProvider>
+              </ConfirmDialogProvider>
+            </SettingsProvider>
+          </QueryClientProvider>
+        </ChunkErrorBoundary>
+      </GlobalError>
+    </ThemeProvider>
   </StrictMode>
 );

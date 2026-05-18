@@ -1,14 +1,16 @@
 import { Button, Form, Input, Label, Link, TextField } from "@heroui/react";
 import { useLocation } from "@tanstack/react-router";
 import { Fingerprint, Mail, Moon, Sun } from "lucide-react";
+import { useTheme } from "next-themes";
 import type { FormEvent } from "react";
 import { useSettings } from "@/context/SettingsContext";
 import { useLoginLogic } from "@/features/auth/hooks/useLoginLogic";
-import { useTheme } from "@/hooks/use-theme";
 
 type LoginStep = "credentials" | "mfa" | "passkey";
 export function LoginPage() {
-  const { isDark, resolvedTheme, toggleTheme } = useTheme();
+  const { resolvedTheme, setTheme } = useTheme();
+  const isDark = resolvedTheme === "dark";
+  const toggleTheme = () => setTheme(isDark ? "light" : "dark");
   const { settings } = useSettings();
   const location = useLocation();
   const from = (location.state as null | { from?: string })?.from ?? "/";

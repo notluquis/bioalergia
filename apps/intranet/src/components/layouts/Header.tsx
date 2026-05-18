@@ -2,9 +2,10 @@ import { Breadcrumbs, Button } from "@heroui/react";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { Loader2, LogOut, Menu, Moon, Sun, X } from "lucide-react";
 
+import { useTheme } from "next-themes";
+
 import { useAuth } from "@/context/AuthContext";
 import { NotificationHistory } from "@/features/notifications/components/NotificationHistory";
-import { useTheme } from "@/hooks/use-theme";
 
 import { Clock } from "../features/Clock";
 
@@ -67,7 +68,9 @@ interface HeaderProps {
 }
 
 export function Header({ onMenuToggle, sidebarId, sidebarOpen = false }: HeaderProps) {
-  const { isDark, resolvedTheme, toggleTheme } = useTheme();
+  const { resolvedTheme, setTheme } = useTheme();
+  const isDark = resolvedTheme === "dark";
+  const toggleTheme = () => setTheme(isDark ? "light" : "dark");
   const routerStatus = useRouterState({ select: (s) => s.status });
   const navigate = useNavigate();
   const { logout } = useAuth();
@@ -123,23 +126,23 @@ export function Header({ onMenuToggle, sidebarId, sidebarOpen = false }: HeaderP
           )}
           <div className="min-w-0 flex-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {showBreadcrumbs ? (
-            <Breadcrumbs className="whitespace-nowrap font-medium text-default-500 text-xs">
-              {breadcrumbItems.map((crumb) => {
-                const isOnlyBreadcrumb = breadcrumbItems.length === 1;
-                return (
-                  <Breadcrumbs.Item key={`${crumb.to}-${crumb.label}`}>
-                    {!isOnlyBreadcrumb ? (
-                      <Link className=" hover:text-foreground" to={crumb.to}>
-                        {crumb.label}
-                      </Link>
-                    ) : (
-                      crumb.label
-                    )}
-                  </Breadcrumbs.Item>
-                );
-              })}
-            </Breadcrumbs>
-          ) : null}
+              <Breadcrumbs className="whitespace-nowrap font-medium text-default-500 text-xs">
+                {breadcrumbItems.map((crumb) => {
+                  const isOnlyBreadcrumb = breadcrumbItems.length === 1;
+                  return (
+                    <Breadcrumbs.Item key={`${crumb.to}-${crumb.label}`}>
+                      {!isOnlyBreadcrumb ? (
+                        <Link className=" hover:text-foreground" to={crumb.to}>
+                          {crumb.label}
+                        </Link>
+                      ) : (
+                        crumb.label
+                      )}
+                    </Breadcrumbs.Item>
+                  );
+                })}
+              </Breadcrumbs>
+            ) : null}
             {isNavigating && (
               <span className="mt-1 flex items-center gap-1 font-semibold text-primary text-xs">
                 <Loader2 className="size-3 " />

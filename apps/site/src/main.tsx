@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createRouter, RouterProvider } from "@tanstack/react-router";
+import { ThemeProvider } from "next-themes";
 import { PostHogProvider } from "posthog-js/react";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
@@ -47,10 +48,19 @@ declare module "@tanstack/react-router" {
 
 createRoot(root).render(
   <StrictMode>
-    <PostHogProvider apiKey={import.meta.env.VITE_PUBLIC_POSTHOG_KEY} options={posthogOptions}>
-      <QueryClientProvider client={queryClient}>
-        <RouterProvider router={router} />
-      </QueryClientProvider>
-    </PostHogProvider>
+    <ThemeProvider
+      attribute={["class", "data-theme"]}
+      defaultTheme="system"
+      disableTransitionOnChange
+      enableColorScheme
+      enableSystem
+      storageKey="bioalergia.theme"
+    >
+      <PostHogProvider apiKey={import.meta.env.VITE_PUBLIC_POSTHOG_KEY} options={posthogOptions}>
+        <QueryClientProvider client={queryClient}>
+          <RouterProvider router={router} />
+        </QueryClientProvider>
+      </PostHogProvider>
+    </ThemeProvider>
   </StrictMode>
 );

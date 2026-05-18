@@ -1,29 +1,33 @@
 import { Button } from "@heroui/react";
 import { useMatchRoute } from "@tanstack/react-router";
 import { Moon, Sun } from "lucide-react";
-
-import { useThemePreference } from "@/lib/theme";
+import { useTheme } from "next-themes";
+import { useEffect, useState } from "react";
 
 export function ThemeToggleFab() {
   const matchRoute = useMatchRoute();
-  const { theme, toggle } = useThemePreference();
+  const { resolvedTheme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
   const onShop = Boolean(
     matchRoute({ to: "/tienda", fuzzy: true }) ||
       matchRoute({ to: "/producto/$slug" }) ||
       matchRoute({ to: "/carrito" }) ||
       matchRoute({ to: "/checkout" })
   );
-  if (!onShop) return null;
+  if (!onShop || !mounted) return null;
+  const isDark = resolvedTheme === "dark";
 
   return (
     <Button
-      aria-label={theme === "dark" ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
+      aria-label={isDark ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
       className="fixed top-4 left-4 z-50 h-10 w-10 rounded-full shadow-md sm:top-6 sm:left-6 sm:h-12 sm:w-12"
       isIconOnly
-      onPress={toggle}
+      onPress={() => setTheme(isDark ? "light" : "dark")}
       variant="secondary"
     >
-      {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
+      {isDark ? <Sun size={18} /> : <Moon size={18} />}
     </Button>
   );
 }

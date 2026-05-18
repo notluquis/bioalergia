@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="es" data-theme="bioalergia-dark" class="dark">
+<html lang="es" suppressHydrationWarning>
   <head>
     <meta charset="UTF-8" />
     <script>
@@ -60,35 +60,6 @@
       window.addEventListener("offline", () => {
         showFallback("offline");
       });
-    </script>
-    <script>
-      (() => {
-        const THEME_KEY = "bioalergia:theme";
-        let theme = "dark";
-        let stored = null;
-        try {
-          stored = localStorage.getItem(THEME_KEY);
-          if (stored === "light" || stored === "dark") {
-            theme = stored;
-          } else if (stored === "system" || !stored) {
-            if (window.matchMedia?.("(prefers-color-scheme: light)").matches) {
-              theme = "light";
-            } else {
-              theme = "dark";
-            }
-          }
-        } catch (_e) {
-          // Ignore storage access errors (privacy mode, blocked storage, etc.)
-        }
-        const html = document.documentElement;
-        if (theme === "dark") {
-          html.setAttribute("data-theme", "bioalergia-dark");
-          html.classList.add("dark");
-        } else {
-          html.setAttribute("data-theme", "bioalergia");
-          html.classList.remove("dark");
-        }
-      })();
     </script>
     <script>
       // Defer the Inter webfont stylesheet via a media-print swap. Keeping
