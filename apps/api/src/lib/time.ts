@@ -111,14 +111,28 @@ export function parseChileDateTime(value: string | null | undefined): Date | nul
       "DD/MM/YYYY",
     ];
     for (const fmt of formats) {
-      const parsed = dayjs.tz(trimmed, fmt, TIMEZONE);
-      if (parsed.isValid() && parsed.format(fmt) === trimmed) {
-        return parsed.toDate();
+      try {
+        const parsed = dayjs.tz(trimmed, fmt, TIMEZONE);
+        if (parsed.isValid() && parsed.format(fmt) === trimmed) {
+          return parsed.toDate();
+        }
+      } catch {
+        // dayjs.tz(value, fmt, tz) can throw RangeError when the
+        // `fmt` doesn't match `trimmed` shape (e.g. fmt expects
+        // "HH:mm:ss" but trimmed is "2026-05-18"). The outer catch
+        // would swallow this and skip ALL remaining formats —
+        // causing every date to return null. Per-format catch lets
+        // the loop continue to the next pattern.
+        continue;
       }
     }
 
-    const loose = dayjs.tz(trimmed, TIMEZONE);
-    return loose.isValid() ? loose.toDate() : null;
+    try {
+      const loose = dayjs.tz(trimmed, TIMEZONE);
+      return loose.isValid() ? loose.toDate() : null;
+    } catch {
+      return null;
+    }
   } catch {
     return null;
   }
