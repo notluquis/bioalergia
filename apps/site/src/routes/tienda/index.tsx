@@ -7,6 +7,7 @@ import { useMemo } from "react";
 import { z } from "zod";
 
 import { ProductCard } from "@/features/shop/components/ProductCard";
+import { SearchBar } from "@/features/shop/components/SearchBar";
 import { shopKeys } from "@/features/shop/queries";
 
 type CatalogProduct = InferContractRouterOutputs<CatalogContract>["list"]["data"][number];
@@ -47,6 +48,8 @@ function TiendaPage() {
           Productos seleccionados para el cuidado de la piel, hidratación y bienestar.
         </p>
       </header>
+
+      <SearchBar />
 
       <div className="flex items-center justify-between gap-3">
         <p className="text-foreground/60 text-sm">
