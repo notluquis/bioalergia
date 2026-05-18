@@ -15,14 +15,13 @@ test("login page mounts without runtime JS errors", async ({ page }) => {
   const response = await page.goto("/login");
   expect(response?.status(), `HTTP ${response?.status()}`).toBeLessThan(500);
 
-  // Wait for an app-specific element the login page is known to render.
-  // Playwright golden 2026: prefer semantic role queries over "anything
-  // visible" — they fail loudly when the page redirects unexpectedly
-  // and pass only when the actual UI mounted (not just a tracking
-  // <script>). The login form's email TextField carries a
-  // <Label>Correo electrónico</Label> rendered by HeroUI v3 with
-  // proper aria-labelledby plumbing.
-  await expect(page.getByRole("textbox", { name: /correo electr[oó]nico/i })).toBeVisible({
+  // Wait for an app-specific element the login page renders unconditionally.
+  // The login page opens on the Passkey step (biometric button + a
+  // fallback "Usar correo y contraseña" button); the credentials form
+  // only mounts after switching steps, so we can't rely on the email
+  // input being present immediately. The passkey button carries
+  // `aria-label="Ingresar con biometría"` and is always rendered.
+  await expect(page.getByRole("button", { name: /ingresar con biometr[ií]a/i })).toBeVisible({
     timeout: 10_000,
   });
 
