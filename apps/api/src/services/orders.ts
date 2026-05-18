@@ -20,6 +20,8 @@ export type CreateOrderInput = {
   notes?: string | null;
 };
 
+export type OrderWithItems = Awaited<ReturnType<typeof createOrderFromCart>>;
+
 export async function createOrderFromCart(input: CreateOrderInput) {
   const cart = await db.cart.findUnique({
     where: { id: input.cartId },

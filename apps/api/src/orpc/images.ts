@@ -22,6 +22,7 @@ import {
   setPrimaryImage,
 } from "../services/product-images.ts";
 import { configureSuperjson } from "../lib/superjson-config.ts";
+import { stripUndefined } from "../utils/strip-undefined.ts";
 import { SuperJSONRPCHandler } from "./superjson.ts";
 
 configureSuperjson();
@@ -64,15 +65,17 @@ const confirmRoute = requireStaff
   .input(confirmUploadInputSchema)
   .output(productImageResponseSchema)
   .handler(async ({ input }) => {
-    const img = await createProductImage({
-      productId: input.product_id,
-      r2Key: input.r2_key,
-      cdnUrl: input.cdn_url,
-      alt: input.alt ?? null,
-      width: input.width ?? null,
-      height: input.height ?? null,
-      isPrimary: input.is_primary,
-    });
+    const img = await createProductImage(
+      stripUndefined({
+        productId: input.product_id,
+        r2Key: input.r2_key,
+        cdnUrl: input.cdn_url,
+        alt: input.alt ?? null,
+        width: input.width ?? null,
+        height: input.height ?? null,
+        isPrimary: input.is_primary,
+      })
+    );
     return {
       data: {
         id: img.id,

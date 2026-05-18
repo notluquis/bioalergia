@@ -16,10 +16,9 @@ import { logError } from "../lib/logger.ts";
 import { configureSuperjson } from "../lib/superjson-config.ts";
 import { createCheckoutPreference } from "../modules/mercadopago-checkout/payment.ts";
 import { reserveStockForOrder } from "../modules/reservations/index.ts";
-import {
-  createOrderFromCart,
-  getOrderByNumber,
-} from "../services/orders.ts";
+import { createOrderFromCart, getOrderByNumber } from "../services/orders.ts";
+
+type OrderWithItems = Awaited<ReturnType<typeof createOrderFromCart>>;
 import { CART_COOKIE_NAME, findCartByToken } from "../services/cart.ts";
 import { SuperJSONRPCHandler } from "./superjson.ts";
 
@@ -57,16 +56,20 @@ const startRoute = base
     });
 
     // Reservar stock — falla aquí cancela el flujo antes de tocar MP.
+    type OrderItem = OrderWithItems["items"][number];
     await reserveStockForOrder({
       orderId: order.id,
-      items: order.items.map((i) => ({ productId: i.productId, qty: i.qty })),
+      items: order.items.map((i: OrderItem) => ({
+        productId: i.productId,
+        qty: i.qty,
+      })),
     });
 
     const preference = await createCheckoutPreference({
       orderNumber: order.number,
       orderId: order.id,
       customerEmail: input.customer.email,
-      items: order.items.map((i) => ({
+      items: order.items.map((i: OrderItem) => ({
         sku: i.product.sku,
         title: i.product.name,
         qty: i.qty,

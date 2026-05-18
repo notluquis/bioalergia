@@ -33,6 +33,7 @@ import {
   updateProduct,
   updateProductCategory,
 } from "../services/catalog.ts";
+import { stripUndefined } from "../utils/strip-undefined.ts";
 import { SuperJSONRPCHandler } from "./superjson.ts";
 
 configureSuperjson();
@@ -142,13 +143,15 @@ const listRoute = optionalAuthed
   .output(productListResponseSchema)
   .handler(async ({ input, context }) => {
     const includeInactive = Boolean(input.include_inactive) && Boolean(context.user);
-    const { data, nextCursor } = await listProducts({
-      categorySlug: input.category_slug,
-      q: input.q,
-      limit: input.limit,
-      cursor: input.cursor,
-      includeInactive,
-    });
+    const { data, nextCursor } = await listProducts(
+      stripUndefined({
+        categorySlug: input.category_slug,
+        q: input.q,
+        limit: input.limit,
+        cursor: input.cursor,
+        includeInactive,
+      })
+    );
     return {
       data: data.map(serializeProduct),
       next_cursor: nextCursor,
@@ -203,26 +206,28 @@ const adminCreateRoute = requireStaff
   .input(productCreateInputSchema)
   .output(productResponseSchema)
   .handler(async ({ input }: { input: z.input<typeof productCreateInputSchema> }) => {
-    const product = await createProduct({
-      slug: input.slug,
-      sku: input.sku,
-      name: input.name,
-      shortDescription: input.short_description ?? null,
-      description: input.description ?? null,
-      categoryId: input.category_id ?? null,
-      brand: input.brand ?? null,
-      priceClp: input.price_clp,
-      compareAtPriceClp: input.compare_at_price_clp ?? null,
-      costClp: input.cost_clp ?? null,
-      weightGrams: input.weight_grams ?? null,
-      barcode: input.barcode ?? null,
-      requiresPrescription: input.requires_prescription,
-      status: input.status,
-      seoTitle: input.seo_title ?? null,
-      seoDescription: input.seo_description ?? null,
-      availableQty: input.available_qty,
-      safetyStock: input.safety_stock,
-    });
+    const product = await createProduct(
+      stripUndefined({
+        slug: input.slug,
+        sku: input.sku,
+        name: input.name,
+        shortDescription: input.short_description ?? null,
+        description: input.description ?? null,
+        categoryId: input.category_id ?? null,
+        brand: input.brand ?? null,
+        priceClp: input.price_clp,
+        compareAtPriceClp: input.compare_at_price_clp ?? null,
+        costClp: input.cost_clp ?? null,
+        weightGrams: input.weight_grams ?? null,
+        barcode: input.barcode ?? null,
+        requiresPrescription: input.requires_prescription,
+        status: input.status,
+        seoTitle: input.seo_title ?? null,
+        seoDescription: input.seo_description ?? null,
+        availableQty: input.available_qty,
+        safetyStock: input.safety_stock,
+      })
+    );
     const full = await getProductById(product.id);
     return { data: serializeProduct(full!), status: "ok" as const };
   });
@@ -243,26 +248,29 @@ const adminUpdateRoute = requireStaff
       input: { id: number; product: z.input<typeof productUpdateInputSchema> };
     }) => {
       const p = input.product;
-      await updateProduct(input.id, {
-        slug: p.slug,
-        sku: p.sku,
-        name: p.name,
-        shortDescription: p.short_description ?? undefined,
-        description: p.description ?? undefined,
-        categoryId: p.category_id ?? undefined,
-        brand: p.brand ?? undefined,
-        priceClp: p.price_clp,
-        compareAtPriceClp: p.compare_at_price_clp ?? undefined,
-        costClp: p.cost_clp ?? undefined,
-        weightGrams: p.weight_grams ?? undefined,
-        barcode: p.barcode ?? undefined,
-        requiresPrescription: p.requires_prescription,
-        status: p.status,
-        seoTitle: p.seo_title ?? undefined,
-        seoDescription: p.seo_description ?? undefined,
-        availableQty: p.available_qty,
-        safetyStock: p.safety_stock,
-      });
+      await updateProduct(
+        input.id,
+        stripUndefined({
+          slug: p.slug,
+          sku: p.sku,
+          name: p.name,
+          shortDescription: p.short_description ?? undefined,
+          description: p.description ?? undefined,
+          categoryId: p.category_id ?? undefined,
+          brand: p.brand ?? undefined,
+          priceClp: p.price_clp,
+          compareAtPriceClp: p.compare_at_price_clp ?? undefined,
+          costClp: p.cost_clp ?? undefined,
+          weightGrams: p.weight_grams ?? undefined,
+          barcode: p.barcode ?? undefined,
+          requiresPrescription: p.requires_prescription,
+          status: p.status,
+          seoTitle: p.seo_title ?? undefined,
+          seoDescription: p.seo_description ?? undefined,
+          availableQty: p.available_qty,
+          safetyStock: p.safety_stock,
+        })
+      );
       const full = await getProductById(input.id);
       if (!full) {
         throw new ORPCError("NOT_FOUND", { message: "Producto no encontrado" });
@@ -308,15 +316,17 @@ const createCategoryRoute = requireStaff
   .input(productCategoryCreateInputSchema)
   .output(productCategoryResponseSchema)
   .handler(async ({ input }: { input: z.input<typeof productCategoryCreateInputSchema> }) => {
-    const cat = await createProductCategory({
-      slug: input.slug,
-      name: input.name,
-      description: input.description ?? null,
-      parentId: input.parent_id ?? null,
-      displayOrder: input.display_order,
-      mlCategoryId: input.ml_category_id ?? null,
-      imageUrl: input.image_url ?? null,
-    });
+    const cat = await createProductCategory(
+      stripUndefined({
+        slug: input.slug,
+        name: input.name,
+        description: input.description ?? null,
+        parentId: input.parent_id ?? null,
+        displayOrder: input.display_order,
+        mlCategoryId: input.ml_category_id ?? null,
+        imageUrl: input.image_url ?? null,
+      })
+    );
     return { data: serializeCategory(cat), status: "ok" as const };
   });
 
@@ -340,15 +350,18 @@ const updateCategoryRoute = requireStaff
     }: {
       input: { id: number; category: z.input<typeof productCategoryUpdateInputSchema> };
     }) => {
-      const cat = await updateProductCategory(input.id, {
-        slug: input.category.slug,
-        name: input.category.name,
-        description: input.category.description ?? undefined,
-        parentId: input.category.parent_id ?? undefined,
-        displayOrder: input.category.display_order,
-        mlCategoryId: input.category.ml_category_id ?? undefined,
-        imageUrl: input.category.image_url ?? undefined,
-      });
+      const cat = await updateProductCategory(
+        input.id,
+        stripUndefined({
+          slug: input.category.slug,
+          name: input.category.name,
+          description: input.category.description ?? undefined,
+          parentId: input.category.parent_id ?? undefined,
+          displayOrder: input.category.display_order,
+          mlCategoryId: input.category.ml_category_id ?? undefined,
+          imageUrl: input.category.image_url ?? undefined,
+        })
+      );
       return { data: serializeCategory(cat), status: "ok" as const };
     }
   );
