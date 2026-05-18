@@ -71,7 +71,7 @@ export function Sidebar({ isMobile, isOpen, onClose, sidebarId }: SidebarProps) 
           <div className="flex items-center px-4 pb-1 md:hidden">
             <h3 className="font-bold text-xs text-default-600 tracking-[0.2em]">{section.title}</h3>
           </div>
-          <div className="space-y-2 md:flex md:flex-col md:items-center md:space-y-2">
+          <div className="space-y-2 md:flex md:flex-col md:items-center">
             {section.items.map((item) => (
               <SidebarItem
                 item={item}
