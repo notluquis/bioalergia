@@ -114,4 +114,23 @@ function TiendaPage() {
 export const Route = createFileRoute("/tienda/")({
   component: TiendaPage,
   validateSearch: sortSchema,
+  head: () => {
+    const origin =
+      typeof window === "undefined" ? "https://bioalergia.cl" : window.location.origin;
+    const url = `${origin}/tienda`;
+    return {
+      meta: [
+        { title: "Tienda · Bioalergia" },
+        {
+          name: "description",
+          content:
+            "Productos seleccionados para el cuidado de la piel, hidratación y bienestar. Envío Chilexpress + boleta o factura.",
+        },
+        { property: "og:title", content: "Tienda · Bioalergia" },
+        { property: "og:type", content: "website" },
+        { property: "og:url", content: url },
+      ],
+      links: [{ rel: "canonical", href: url }],
+    };
+  },
 });

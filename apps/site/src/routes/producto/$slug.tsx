@@ -310,4 +310,26 @@ function ProductDetailPage() {
 
 export const Route = createFileRoute("/producto/$slug")({
   component: ProductDetailPage,
+  head: ({ params }) => {
+    const origin =
+      typeof window === "undefined" ? "https://bioalergia.cl" : window.location.origin;
+    const url = `${origin}/producto/${params.slug}`;
+    const titleHuman = params.slug
+      .split("-")
+      .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
+      .join(" ");
+    const title = `${titleHuman} · Tienda Bioalergia`;
+    return {
+      meta: [
+        { title },
+        { name: "description", content: `${titleHuman} en Tienda Bioalergia.` },
+        { property: "og:title", content: title },
+        { property: "og:type", content: "product" },
+        { property: "og:url", content: url },
+        { name: "twitter:title", content: title },
+        { name: "twitter:card", content: "summary_large_image" },
+      ],
+      links: [{ rel: "canonical", href: url }],
+    };
+  },
 });

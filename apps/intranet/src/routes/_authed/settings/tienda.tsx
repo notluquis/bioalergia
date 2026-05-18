@@ -4,7 +4,7 @@ import { TiendaSettingsPage } from "@/pages/settings/TiendaSettingsPage";
 
 export const Route = createFileRoute("/_authed/settings/tienda")({
   staticData: {
-    nav: { iconKey: "Store", label: "Tienda", order: 60, section: "Sistema" },
+    nav: { iconKey: "Store", label: "Tienda", order: 65, section: "Sistema" },
     permission: { action: "update", subject: "Setting" },
     title: "Configuración — Tienda",
   },

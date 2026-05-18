@@ -1,0 +1,13 @@
+# Bioalergia · Clínica de Alergología e Inmunología
+# robots.txt - Google + Bing standards 2026
+
+User-agent: *
+Allow: /
+Disallow: /carrito
+Disallow: /checkout
+Disallow: /api/
+
+# Crawl-delay applies to Bing/Yandex, ignored by Google.
+Crawl-delay: 1
+
+Sitemap: https://bioalergia.cl/sitemap.xml
