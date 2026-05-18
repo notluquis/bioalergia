@@ -7,6 +7,7 @@ import {
   setupUserSchema,
   toggleMfaResponseSchema,
   toggleMfaSchema,
+  updateOwnProfileSchema,
   updateRoleSchema,
   updateStatusSchema,
   updateUserProfileSchema,
@@ -536,6 +537,87 @@ const usersORPCRouterBase = {
       `;
 
         return { status: "ok" as const, message: "Configuración completada" };
+      }
+    ),
+
+  updateOwnProfile: authed
+    .route({ method: "PUT", path: "/profile" })
+    .input(updateOwnProfileSchema)
+    .output(usersStatusResponseSchema)
+    .handler(
+      async ({
+        context,
+        input,
+      }: {
+        context: { user: { id: number } };
+        input: z.input<typeof updateOwnProfileSchema>;
+      }) => {
+        const user = await db.user.findUnique({
+          where: { id: context.user.id },
+          include: { person: { include: { employee: true } } },
+        });
+
+        if (!user || !user.person) {
+          throw new ORPCError("NOT_FOUND", { message: "Usuario no encontrado" });
+        }
+
+        const normalizedNotificationEmail = normalizeEmail(user.person.email ?? "");
+        const normalizedLoginEmail = input.loginEmail
+          ? normalizeEmail(input.loginEmail)
+          : null;
+        const explicitLoginEmail =
+          normalizedLoginEmail && normalizedLoginEmail !== normalizedNotificationEmail
+            ? normalizedLoginEmail
+            : null;
+        const effectiveLoginEmail = explicitLoginEmail ?? normalizedNotificationEmail;
+
+        if (effectiveLoginEmail) {
+          const conflictingLogin = await findUserByEffectiveLoginEmail(
+            effectiveLoginEmail,
+            context.user.id
+          );
+          if (conflictingLogin) {
+            throw new ORPCError("CONFLICT", { message: "El correo de login ya está en uso" });
+          }
+        }
+
+        await db.$transaction(async (tx) => {
+          await tx.person.update({
+            where: { id: user.personId },
+            data: {
+              names: input.names.trim(),
+              fatherName: toNullableText(input.fatherName),
+              motherName: toNullableText(input.motherName),
+              phone: toNullableText(input.phone),
+            },
+          });
+
+          await tx.employee.upsert({
+            where: { personId: user.personId },
+            create: {
+              personId: user.personId,
+              position: user.person.employee?.position ?? "Por definir",
+              startDate: user.person.employee?.startDate ?? new Date(),
+              status: user.person.employee?.status ?? "ACTIVE",
+              bankName: toNullableText(input.bankName),
+              bankAccountType: toNullableText(input.bankAccountType),
+              bankAccountNumber: toNullableText(input.bankAccountNumber),
+            },
+            update: {
+              bankName: toNullableText(input.bankName),
+              bankAccountType: toNullableText(input.bankAccountType),
+              bankAccountNumber: toNullableText(input.bankAccountNumber),
+            },
+          });
+
+          await tx.$executeRaw`
+            UPDATE users
+            SET login_email = ${explicitLoginEmail}
+            WHERE id = ${context.user.id}
+          `;
+        });
+
+        return { status: "ok" as const };
       }
     ),
 

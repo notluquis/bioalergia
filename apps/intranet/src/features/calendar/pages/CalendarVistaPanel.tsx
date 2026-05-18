@@ -1,8 +1,72 @@
-import { Button, Card } from "@heroui/react";
+import { Button, Card, Skeleton } from "@heroui/react";
 import { useNavigate } from "@tanstack/react-router";
 import { CalendarDays, CalendarRange, Flame } from "lucide-react";
+import { lazy, Suspense, useMemo } from "react";
 
-import type { CalendarSearchParams } from "@/features/calendar/types";
+import { useCalendarEvents } from "@/features/calendar/hooks/use-calendar-events";
+import type {
+  CalendarDayEvents,
+  CalendarEventDetail,
+  CalendarSearchParams,
+} from "@/features/calendar/types";
+
+import "./CalendarVistaPanel.css";
+
+// Lazy-load FullCalendar + its plugins so the chunk only enters the
+// network when this tab is actually mounted (the parent already
+// gates mount via `useLazyTabs`; this keeps the host bundle small
+// even when the tab is the default landing key).
+const CalendarGrid = lazy(async () => {
+  const [{ default: FullCalendar }, { default: dayGridPlugin }, { default: timeGridPlugin }] =
+    await Promise.all([
+      import("@fullcalendar/react"),
+      import("@fullcalendar/daygrid"),
+      import("@fullcalendar/timegrid"),
+    ]);
+
+  return {
+    default: function CalendarGridImpl({ events }: { events: FullCalendarEvent[] }) {
+      return (
+        <FullCalendar
+          contentHeight="auto"
+          dayMaxEvents={3}
+          editable={false}
+          eventDisplay="block"
+          events={events}
+          eventTimeFormat={{
+            hour: "2-digit",
+            hour12: false,
+            meridiem: false,
+            minute: "2-digit",
+          }}
+          headerToolbar={{
+            center: "title",
+            left: "prev,next today",
+            right: "dayGridMonth,timeGridWeek,timeGridDay",
+          }}
+          height="auto"
+          initialView="timeGridWeek"
+          locale="es"
+          nowIndicator
+          plugins={[dayGridPlugin, timeGridPlugin]}
+          selectable={false}
+          slotDuration="00:30:00"
+          slotMaxTime="22:00:00"
+          slotMinTime="07:00:00"
+        />
+      );
+    },
+  };
+});
+
+interface FullCalendarEvent {
+  allDay: boolean;
+  classNames: string[];
+  end?: string;
+  id: string;
+  start: string;
+  title: string;
+}
 
 // Empty search object — the destination routes' `validateSearch`
 // applies all defaults (from/to range, filters). Typed as
@@ -10,29 +74,92 @@ import type { CalendarSearchParams } from "@/features/calendar/types";
 // contract is satisfied without each field being enumerated here.
 const emptyCalendarSearch: CalendarSearchParams = {} as CalendarSearchParams;
 
+function toFullCalendarEvents(days: CalendarDayEvents[] | undefined): FullCalendarEvent[] {
+  if (!days?.length) {
+    return [];
+  }
+  const out: FullCalendarEvent[] = [];
+  for (const day of days) {
+    for (const event of day.events) {
+      const start = pickStart(event);
+      if (!start) {
+        continue;
+      }
+      const end = event.endDateTime ?? null;
+      out.push({
+        allDay: !event.startDateTime,
+        classNames: ["calendar-vista-event"],
+        end: end ?? undefined,
+        id: `${event.calendarId}:${event.eventId}`,
+        start,
+        title: event.summary ?? event.patientName ?? "Evento",
+      });
+    }
+  }
+  return out;
+}
+
+function pickStart(event: CalendarEventDetail): null | string {
+  if (event.startDateTime) {
+    return event.startDateTime;
+  }
+  if (event.startDate) {
+    return event.startDate;
+  }
+  if (event.eventDateTime) {
+    return event.eventDateTime;
+  }
+  if (event.eventDate) {
+    return event.eventDate;
+  }
+  return null;
+}
+
 /**
  * `/calendar?tab=vista` panel — default tab.
  *
- * Landing surface for the calendar section. The actual calendar
- * grids live under `/clinical/*` (agenda / day / heatmap) — this
- * panel surfaces them as navigation cards so the `/calendar` host
- * stays the entry point for calendar-related work while preserving
- * the existing per-view URLs (and their search-param contracts).
+ * Renders a real FullCalendar timegrid (week default, with month +
+ * day view switchers). Events come from the shared `useCalendarEvents`
+ * hook, which pulls the daily payload through `calendarQueries.daily`
+ * using the user's `calendarSyncStart` / `calendarSyncLookaheadDays`
+ * settings as the default window (the `/calendar` route does not
+ * supply `from/to` search params, so the defaults apply).
  *
- * Imperative navigation via `useNavigate` avoids `<Link>`'s
- * compile-time requirement for the (large, defaulted) clinical
- * search-param schema; the destination routes apply their own
- * defaults in `validateSearch`.
+ * The deeper clinical views (agenda / day / heatmap) remain available
+ * as nav cards below the grid — they expose filter UX (per-calendar,
+ * per-series, RUT search) that this lightweight surface intentionally
+ * omits.
  */
 export function CalendarVistaPanel() {
   const navigate = useNavigate();
+  const { daily, loading, error } = useCalendarEvents();
+
+  const fcEvents = useMemo(() => toFullCalendarEvents(daily?.days), [daily?.days]);
 
   return (
-    <section className="space-y-4">
-      <p className="text-default-500 text-sm">
-        Vistas del calendario clínico. Selecciona una para abrir su panel completo.
-      </p>
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+    <section className="space-y-4" data-testid="calendar-vista-panel">
+      <div className="calendar-vista-wrapper" data-testid="calendar-vista-grid">
+        {error ? (
+          <Card variant="secondary">
+            <Card.Content className="p-4 text-danger text-sm">
+              No se pudieron cargar los eventos del calendario.
+            </Card.Content>
+          </Card>
+        ) : null}
+        {loading && !daily ? (
+          <Skeleton aria-label="Cargando calendario" className="h-96 w-full rounded-xl" />
+        ) : (
+          <Suspense
+            fallback={
+              <Skeleton aria-label="Cargando calendario" className="h-96 w-full rounded-xl" />
+            }
+          >
+            <CalendarGrid events={fcEvents} />
+          </Suspense>
+        )}
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-3">
         <Card variant="secondary">
           <Card.Content className="flex flex-col gap-3 p-4">
             <div className="flex items-start gap-3">

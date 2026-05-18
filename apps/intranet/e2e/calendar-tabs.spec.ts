@@ -34,6 +34,21 @@ test.describe("Calendar unified tabs host", () => {
     await expect(historialTab).toHaveAttribute("aria-selected", "true");
   });
 
+  test("?tab=vista renders the actual FullCalendar grid", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "desktop", "desktop project only — tablist visible");
+    await page.goto("/calendar?tab=vista", { waitUntil: "domcontentloaded" });
+    await page.waitForLoadState("load");
+
+    const vistaTab = page.getByRole("tab", { name: /vista/i });
+    await expect(vistaTab).toHaveAttribute("aria-selected", "true");
+
+    // FullCalendar injects `.fc` as the root element once the lazy
+    // chunk loads. The previous landing-card placeholder did not.
+    const wrapper = page.getByTestId("calendar-vista-grid");
+    await expect(wrapper).toBeVisible();
+    await expect(wrapper.locator(".fc").first()).toBeVisible({ timeout: 15_000 });
+  });
+
   test("legacy /calendar/sync-history redirects to ?tab=historial", async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== "desktop", "desktop project only");
     await page.goto("/calendar/sync-history", { waitUntil: "domcontentloaded" });

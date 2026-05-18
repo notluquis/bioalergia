@@ -1,82 +1,112 @@
-import { Alert } from "@heroui/react";
-import { AtSign, IdCard, Mail, ShieldCheck, UserRound } from "lucide-react";
+import { Alert, Skeleton } from "@heroui/react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMemo } from "react";
 
-import { useAuth } from "@/context/AuthContext";
+import { ProfileForm, type ProfileFormValues } from "@/features/account/components/ProfileForm";
+import { fetchUserProfile, updateOwnProfile } from "@/features/users/api";
+import { toast } from "@/lib/toast-interceptor";
 
 /**
- * `/account?tab=perfil` panel — read-only identity view of the logged-in
- * user. Edit flow lives in the onboarding wizard
- * (`apps/intranet/src/pages/onboarding/components/ProfileStep.tsx`) and
- * isn't yet exposed as a standalone editor — when that ships it replaces
- * this panel without breaking the URL contract.
+ * `/account?tab=perfil` — self-service profile editor.
  *
- * HeroUI v3 only — no native form elements; tab gating is handled by the
- * parent route via `<ProtectedTab>`.
+ * Wraps the reusable `<ProfileForm>` (also used by the onboarding wizard)
+ * with the page-level concerns: fetch existing profile, submit via
+ * `updateOwnProfile`, surface toast + invalidate the user-profile cache
+ * on success.
+ *
+ * No tab gating here — `_authed/account.tsx` only renders this when the
+ * user is authenticated, and every authenticated user can edit their
+ * own data.
  */
 export function ProfilePanel() {
-  const { user } = useAuth();
+  const queryClient = useQueryClient();
 
-  if (!user) {
+  const profileQuery = useQuery({
+    queryKey: ["user", "profile"],
+    queryFn: fetchUserProfile,
+  });
+
+  const mutation = useMutation({
+    mutationFn: (values: ProfileFormValues) =>
+      updateOwnProfile({
+        names: values.names.trim(),
+        fatherName: values.fatherName.trim() || null,
+        motherName: values.motherName.trim() || null,
+        loginEmail: values.loginEmail.trim() || null,
+        phone: values.phone.trim() || null,
+        bankName: values.bankName.trim() || null,
+        bankAccountType: values.bankAccountType.trim() || null,
+        bankAccountNumber: values.bankAccountNumber.trim() || null,
+      }),
+    onSuccess: () => {
+      toast.success("Perfil actualizado");
+      void queryClient.invalidateQueries({ queryKey: ["user", "profile"] });
+      void queryClient.invalidateQueries({ queryKey: ["auth", "session"] });
+    },
+    onError: (mutationError: unknown) => {
+      const message =
+        mutationError instanceof Error ? mutationError.message : "Error al guardar el perfil";
+      toast.error(message);
+    },
+  });
+
+  const initialValues = useMemo<null | ProfileFormValues>(() => {
+    if (!profileQuery.data) return null;
+    const p = profileQuery.data;
+    return {
+      names: p.names ?? "",
+      fatherName: p.fatherName ?? "",
+      motherName: p.motherName ?? "",
+      loginEmail: p.loginEmail ?? p.email ?? "",
+      phone: p.phone ?? "",
+      rut: p.rut ?? "",
+      bankName: p.bankName ?? "",
+      bankAccountType: p.bankAccountType ?? "",
+      bankAccountNumber: p.bankAccountNumber ?? "",
+    };
+  }, [profileQuery.data]);
+
+  if (profileQuery.isPending) {
     return (
-      <Alert status="warning">
+      <div className="space-y-3 p-6">
+        <Skeleton className="h-6 w-1/3 rounded-lg" />
+        <Skeleton className="h-32 w-full rounded-xl" />
+        <Skeleton className="h-32 w-full rounded-xl" />
+      </div>
+    );
+  }
+
+  if (profileQuery.isError || !initialValues) {
+    const message =
+      profileQuery.error instanceof Error
+        ? profileQuery.error.message
+        : "No se pudo cargar el perfil";
+    return (
+      <Alert status="danger">
         <Alert.Indicator />
         <Alert.Content>
-          <Alert.Title>Sin sesión</Alert.Title>
-          <Alert.Description>No hay un usuario autenticado en este momento.</Alert.Description>
+          <Alert.Title>Error</Alert.Title>
+          <Alert.Description>{message}</Alert.Description>
         </Alert.Content>
       </Alert>
     );
   }
 
-  const rows: { icon: typeof UserRound; label: string; value: string }[] = [
-    { icon: UserRound, label: "Nombre", value: user.name ?? "Sin nombre" },
-    { icon: Mail, label: "Correo de contacto", value: user.email },
-    {
-      icon: AtSign,
-      label: "Correo de inicio de sesión",
-      value: user.loginEmail ?? user.email,
-    },
-    {
-      icon: IdCard,
-      label: "ID de usuario",
-      value: String(user.id),
-    },
-    {
-      icon: ShieldCheck,
-      label: "Roles",
-      value: user.roles.length > 0 ? user.roles.join(", ") : "Sin roles asignados",
-    },
-  ];
-
   return (
-    <div className="space-y-6">
-      <div className="space-y-1 px-6 pt-6">
+    <div className="space-y-6 p-6">
+      <div className="space-y-1">
         <h2 className="font-semibold text-lg text-primary drop-shadow-sm">Mi perfil</h2>
         <p className="text-default-600 text-sm">
-          Información asociada a tu cuenta. Para modificar tus datos personales, contacta a un
+          Actualiza tus datos personales y bancarios. Para cambiar tu RUT, contacta a un
           administrador.
         </p>
       </div>
 
-      <div className="space-y-3 px-6 pb-6">
-        {rows.map((row) => {
-          const Icon = row.icon;
-          return (
-            <div
-              key={row.label}
-              className="flex items-start gap-4 rounded-xl border border-default-200/60 bg-background/70 p-4"
-            >
-              <div className="rounded-full bg-primary/10 p-2 text-primary">
-                <Icon className="size-5" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-default-500 text-xs">{row.label}</p>
-                <p className="truncate font-medium text-foreground">{row.value}</p>
-              </div>
-            </div>
-          );
-        })}
-      </div>
+      <ProfileForm
+        initialValues={initialValues}
+        isSubmitting={mutation.isPending}
+        onSubmit={(values) => mutation.mutateAsync(values).then(() => undefined)}
+      />
     </div>
   );
 }

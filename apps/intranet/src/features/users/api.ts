@@ -166,3 +166,28 @@ export async function updateUserProfile(
     throw toUsersApiError(error);
   }
 }
+
+export interface OwnProfileUpdatePayload {
+  names: string;
+  fatherName?: null | string;
+  motherName?: null | string;
+  loginEmail?: null | string;
+  phone?: null | string;
+  bankName?: null | string;
+  bankAccountType?: null | string;
+  bankAccountNumber?: null | string;
+}
+
+/**
+ * Self-service profile update for the authenticated user.
+ * Wired to `PUT /api/orpc/users/profile`. RUT and admin-owned fields
+ * (position, department, mfaEnforced, notificationEmail) are NOT in
+ * this payload — those require `updateUserProfile` (admin) instead.
+ */
+export async function updateOwnProfile(payload: OwnProfileUpdatePayload): Promise<void> {
+  try {
+    await usersORPCClient.updateOwnProfile(payload);
+  } catch (error) {
+    throw toUsersApiError(error);
+  }
+}

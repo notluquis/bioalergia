@@ -1,0 +1,117 @@
+/**
+ * Styles for CalendarVistaPanel — mirrors the timesheet calendar token map
+ * so FullCalendar adopts the app's OKLCH theme tokens (light + dark).
+ */
+
+.calendar-vista-wrapper {
+  position: relative;
+}
+
+.calendar-vista-wrapper :is(.fc) {
+  --fc-page-bg-color: var(--color-background);
+  --fc-border-color: color-mix(in oklch, var(--color-foreground) 12%, transparent);
+  --fc-button-bg-color: var(--color-primary);
+  --fc-button-border-color: var(--color-primary);
+  --fc-button-text-color: var(--color-primary-foreground);
+  --fc-button-hover-bg-color: color-mix(
+    in oklch,
+    var(--color-primary) 85%,
+    var(--color-foreground) 15%
+  );
+  --fc-button-hover-border-color: color-mix(
+    in oklch,
+    var(--color-primary) 85%,
+    var(--color-foreground) 15%
+  );
+  --fc-button-active-bg-color: color-mix(
+    in oklch,
+    var(--color-primary) 75%,
+    var(--color-foreground) 25%
+  );
+  --fc-button-active-border-color: color-mix(
+    in oklch,
+    var(--color-primary) 75%,
+    var(--color-foreground) 25%
+  );
+  --fc-today-bg-color: color-mix(in oklch, var(--color-primary) 12%, transparent);
+  --fc-now-indicator-color: var(--color-warning);
+}
+
+.calendar-vista-wrapper .fc-button-primary {
+  border-radius: 0.75rem;
+  color: var(--fc-button-text-color);
+  text-transform: capitalize;
+  font-weight: 500;
+}
+
+.calendar-vista-wrapper .fc-toolbar-title {
+  font-size: 1.05rem;
+  font-weight: 600;
+  text-wrap: balance;
+}
+
+.calendar-vista-wrapper .fc-header-toolbar {
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.calendar-vista-wrapper .fc-toolbar-chunk {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.calendar-vista-wrapper .fc-col-header-cell {
+  background-color: var(--default-100);
+  padding: 10px 4px;
+  border-color: var(--default-200);
+  font-weight: 600;
+}
+
+.calendar-vista-wrapper .fc-daygrid-day {
+  background-color: var(--default-50);
+  border-color: var(--default-200);
+}
+
+.calendar-vista-wrapper .fc-daygrid-day-frame {
+  min-height: 64px;
+}
+
+.calendar-vista-event {
+  padding: 2px 6px;
+  font-size: 0.7rem;
+  font-weight: 500;
+  border-radius: 4px;
+  white-space: normal;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 768px) {
+  .calendar-vista-wrapper .fc-header-toolbar {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .calendar-vista-wrapper .fc-button-group {
+    flex-wrap: wrap;
+    width: 100%;
+  }
+
+  .calendar-vista-wrapper .fc-button {
+    font-size: 0.75rem;
+    padding: 6px 12px;
+  }
+}
+
+@media (max-width: 640px) {
+  .calendar-vista-wrapper .fc-toolbar-title {
+    font-size: 0.95rem;
+    text-align: center;
+  }
+
+  .calendar-vista-wrapper .fc-toolbar-chunk {
+    justify-content: center;
+  }
+}
