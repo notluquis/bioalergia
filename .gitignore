@@ -155,3 +155,6 @@ playwright/.auth/
 
 # pnpm local store (set via env on some setups)
 .pnpm-store/
+
+# turbo prune output (local debugging, regenerated each Docker build)
+out/
