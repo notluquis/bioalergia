@@ -250,10 +250,10 @@ patientsRoutes.get("/", requirePermission("read", "Patient"), async (c) => {
     ? {
         person: {
           OR: [
-            { names: { contains: q, mode: "insensitive" } },
-            { fatherName: { contains: q, mode: "insensitive" } },
-            { motherName: { contains: q, mode: "insensitive" } },
-            { rut: { contains: q, mode: "insensitive" } },
+            { names: { contains: q, mode: "insensitive" as const } },
+            { fatherName: { contains: q, mode: "insensitive" as const } },
+            { motherName: { contains: q, mode: "insensitive" as const } },
+            { rut: { contains: q, mode: "insensitive" as const } },
           ],
         },
       }
@@ -299,8 +299,8 @@ patientsRoutes.get(
             q
               ? {
                   OR: [
-                    { clientRUT: { contains: q, mode: "insensitive" } },
-                    { clientName: { contains: q, mode: "insensitive" } },
+                    { clientRUT: { contains: q, mode: "insensitive" as const } },
+                    { clientName: { contains: q, mode: "insensitive" as const } },
                   ],
                 }
               : {},

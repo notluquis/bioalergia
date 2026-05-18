@@ -85,8 +85,8 @@ function buildSettlementWhere(
     const isNumeric = NUMERIC_PATTERN.test(search);
     whereConditions.push({
       OR: [
-        { externalReference: { contains: search, mode: "insensitive" } },
-        { sourceId: { contains: search, mode: "insensitive" } },
+        { externalReference: { contains: search, mode: "insensitive" as const } },
+        { sourceId: { contains: search, mode: "insensitive" as const } },
         ...(isNumeric ? [{ orderId: Number(search) }] : []),
       ],
     });

@@ -125,11 +125,11 @@ const peopleORPCRouterBase = {
           : {
               NOT: {
                 OR: [
-                  { names: { contains: "Test", mode: "insensitive" } },
+                  { names: { contains: "Test", mode: "insensitive" as const } },
                   { names: { contains: "test" } },
                   { rut: { startsWith: "11111111" } },
                   { rut: { startsWith: "TEMP-" } },
-                  { email: { contains: "test", mode: "insensitive" } },
+                  { email: { contains: "test", mode: "insensitive" as const } },
                 ],
               },
             },

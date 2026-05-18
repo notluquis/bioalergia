@@ -526,10 +526,10 @@ async function applyAutoCategoryRuleRow(
           },
         }),
         ...(rule.commentContains != null && {
-          comment: { contains: rule.commentContains, mode: "insensitive" },
+          comment: { contains: rule.commentContains, mode: "insensitive" as const },
         }),
         ...(rule.descriptionContains != null && {
-          description: { contains: rule.descriptionContains, mode: "insensitive" },
+          description: { contains: rule.descriptionContains, mode: "insensitive" as const },
         }),
         type: rule.type,
       },
@@ -1080,8 +1080,8 @@ export async function listFinancialTransactions(params: {
   if (params.type) where.type = params.type as TransactionType;
   if (params.search) {
     where.OR = [
-      { description: { contains: params.search, mode: "insensitive" } },
-      { comment: { contains: params.search, mode: "insensitive" } },
+      { description: { contains: params.search, mode: "insensitive" as const } },
+      { comment: { contains: params.search, mode: "insensitive" as const } },
     ];
   }
 

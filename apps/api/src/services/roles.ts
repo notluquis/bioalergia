@@ -28,7 +28,7 @@ export async function listRoles() {
 
 export async function createRole(data: RoleCreateInput) {
   const existing = await db.role.findFirst({
-    where: { name: { equals: data.name, mode: "insensitive" } },
+    where: { name: { equals: data.name, mode: "insensitive" as const } },
   });
   if (existing) {
     throw new Error("El rol ya existe (nombre duplicado o muy similar)");
@@ -42,7 +42,7 @@ export async function updateRole(id: number, data: RoleUpdateInput) {
   if (data.name) {
     const existing = await db.role.findFirst({
       where: {
-        name: { equals: data.name, mode: "insensitive" },
+        name: { equals: data.name, mode: "insensitive" as const },
         id: { not: id },
       },
     });

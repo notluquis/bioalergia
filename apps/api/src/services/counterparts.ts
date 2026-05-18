@@ -503,9 +503,9 @@ export async function getCounterpartSuggestions(query: string, limit: number) {
     take: Math.max(limit * 10, 100),
     where: {
       OR: [
-        { bankAccountHolder: { contains: trimmedQuery, mode: "insensitive" } },
-        { bankAccountNumber: { contains: trimmedQuery, mode: "insensitive" } },
-        { identificationNumber: { contains: trimmedQuery, mode: "insensitive" } },
+        { bankAccountHolder: { contains: trimmedQuery, mode: "insensitive" as const } },
+        { bankAccountNumber: { contains: trimmedQuery, mode: "insensitive" as const } },
+        { identificationNumber: { contains: trimmedQuery, mode: "insensitive" as const } },
       ],
     },
   });

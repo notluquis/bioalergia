@@ -249,9 +249,9 @@ const patientCampaignsRouterBase = {
           ...(query
             ? {
                 OR: [
-                  { patientRut: { contains: query, mode: "insensitive" } },
-                  { patientName: { contains: query, mode: "insensitive" } },
-                  { patientPhone: { contains: query, mode: "insensitive" } },
+                  { patientRut: { contains: query, mode: "insensitive" as const } },
+                  { patientName: { contains: query, mode: "insensitive" as const } },
+                  { patientPhone: { contains: query, mode: "insensitive" as const } },
                 ],
               }
             : {}),

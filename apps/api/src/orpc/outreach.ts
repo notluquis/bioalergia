@@ -143,9 +143,9 @@ function buildEstablishmentWhere(input: z.infer<typeof listEstablishmentsInputSc
   if (input.search) {
     const q = input.search.trim();
     where.OR = [
-      { nombre: { contains: q, mode: "insensitive" } },
-      { directorMineduc: { contains: q, mode: "insensitive" } },
-      { emailMineduc: { contains: q, mode: "insensitive" } },
+      { nombre: { contains: q, mode: "insensitive" as const } },
+      { directorMineduc: { contains: q, mode: "insensitive" as const } },
+      { emailMineduc: { contains: q, mode: "insensitive" as const } },
       { rbd: { contains: q } },
     ];
   }
