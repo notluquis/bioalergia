@@ -275,6 +275,12 @@ export function App() {
                     >
                       Contacto
                     </Link>
+                    <Link
+                      className="no-underline font-semibold text-(--accent) transition-colors hover:text-(--ink)"
+                      href="/tienda"
+                    >
+                      Tienda
+                    </Link>
                   </>
                 )}
               </nav>
