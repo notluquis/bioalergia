@@ -14,6 +14,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const orpcMocks = vi.hoisted(() => ({
   list: vi.fn(),
   get: vi.fn(),
+  create: vi.fn(),
   listTemplates: vi.fn(),
   getClinicSettings: vi.fn(),
   listAllergens: vi.fn(),
@@ -169,6 +170,37 @@ describe("examReportsKeys", () => {
       });
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(orpcMocks.getClinicSettings).toHaveBeenCalledWith({});
+    });
+  });
+
+  describe("ExamReport controls persistence (Phase 3)", () => {
+    it("create forwards histamineMm + salineMm to the orpc client", async () => {
+      orpcMocks.create.mockResolvedValue({ id: 1, histamineMm: 6, salineMm: 1 });
+      const { examReportsORPCClient } = await import("./orpc");
+      await examReportsORPCClient.create({
+        patientId: 1,
+        examType: "PATCH",
+        conclusionText: "ok",
+        histamineMm: 6,
+        salineMm: 1,
+        sections: [{ sectionKey: "s1", label: "S1", reactions: [] }],
+      });
+      expect(orpcMocks.create).toHaveBeenCalledWith(
+        expect.objectContaining({ histamineMm: 6, salineMm: 1 })
+      );
+    });
+
+    it("detail returns persisted histamineMm + salineMm round-trip", async () => {
+      orpcMocks.get.mockResolvedValue({
+        id: 42,
+        histamineMm: 5.5,
+        salineMm: 0,
+      });
+      const wrapper = buildWrapper();
+      const { result } = renderHook(() => useQuery(examReportsKeys.detail(42)), { wrapper });
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+      expect(result.current.data?.histamineMm).toBe(5.5);
+      expect(result.current.data?.salineMm).toBe(0);
     });
   });
 

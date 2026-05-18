@@ -191,6 +191,11 @@ export function CreateExamReportWizard({
         conclusionText,
         conclusionTemplateId,
         notes: notes || null,
+        // Persist controls so reopening the report round-trips them.
+        // Either field may be null (operator skipped it); the server
+        // stores null verbatim and the PDF renders "—" as before.
+        histamineMm,
+        salineMm,
         sections: sections.map((s, sIdx) => ({
           sectionKey: s.sectionKey,
           label: s.label,
@@ -649,7 +654,7 @@ function ControlsBlock({
           </NumberField>
           {showXlsxChip && (
             <Chip
-              className="text-[10px]"
+              className="text-caption"
               color="accent"
               data-testid="control-histamine-source-chip"
               size="sm"
@@ -676,7 +681,7 @@ function ControlsBlock({
           </NumberField>
           {showXlsxChip && (
             <Chip
-              className="text-[10px]"
+              className="text-caption"
               color="accent"
               data-testid="control-saline-source-chip"
               size="sm"

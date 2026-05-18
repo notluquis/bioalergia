@@ -11478,6 +11478,16 @@ export class SchemaType implements SchemaDef {
                     type: "String",
                     optional: true
                 },
+                histamineMm: {
+                    name: "histamineMm",
+                    type: "Decimal",
+                    optional: true
+                },
+                salineMm: {
+                    name: "salineMm",
+                    type: "Decimal",
+                    optional: true
+                },
                 generatedAt: {
                     name: "generatedAt",
                     type: "DateTime",

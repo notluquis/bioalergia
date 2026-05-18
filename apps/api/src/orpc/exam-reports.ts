@@ -92,6 +92,8 @@ const reportDetailInclude = {
 function serialiseDetail(r: any) {
   return {
     ...r,
+    histamineMm: decimal(r.histamineMm),
+    salineMm: decimal(r.salineMm),
     generatedAt: r.generatedAt ? r.generatedAt.toISOString() : null,
     createdAt: r.createdAt.toISOString(),
     updatedAt: r.updatedAt.toISOString(),
@@ -210,6 +212,8 @@ const examReportsRouterBase = {
           doctorName: input.doctorName ?? settings.doctorName,
           doctorSpecialty: input.doctorSpecialty ?? settings.doctorSpecialty,
           doctorRut: input.doctorRut ?? settings.doctorRut,
+          histamineMm: input.histamineMm ?? null,
+          salineMm: input.salineMm ?? null,
           sections: {
             create: input.sections.map((s, sIdx) => ({
               sectionKey: s.sectionKey,

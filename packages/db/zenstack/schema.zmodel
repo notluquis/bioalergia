@@ -4300,6 +4300,14 @@ model ExamReport {
   doctorName            String                 @map("doctor_name")
   doctorSpecialty       String                 @map("doctor_specialty")
   doctorRut             String?                @map("doctor_rut")
+  // Validity-gate controls (mm pápula). Nullable to keep all historical
+  // rows valid; new wizard writes them so reopening a report can
+  // round-trip without re-deriving from the XLSX skin-test snapshot.
+  // Feature is "live-but-quiet": old reports render `—` for these
+  // fields, new ones persist whatever the operator submitted (XLSX
+  // prefill or manual entry).
+  histamineMm           Decimal?               @map("histamine_mm") @db.Decimal(5, 2)
+  salineMm              Decimal?               @map("saline_mm")    @db.Decimal(5, 2)
   generatedAt           DateTime?              @map("generated_at")
   createdAt             DateTime               @default(now()) @map("created_at")
   updatedAt             DateTime               @default(now()) @updatedAt @map("updated_at")

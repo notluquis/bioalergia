@@ -107,6 +107,10 @@ export const examReportDetailSchema = examReportListItemSchema.extend({
   technique: z.string().nullable(),
   notes: z.string().nullable(),
   doctorRut: z.string().nullable(),
+  // Persisted controls (mm pápula). Nullable because columns were added
+  // additively — old reports return `null` for both.
+  histamineMm: z.number().nullable(),
+  salineMm: z.number().nullable(),
   createdById: z.number().int().nullable(),
   patient: z.object({
     id: z.number().int(),
@@ -135,6 +139,11 @@ const examReportCreateInputSchema = z.object({
   doctorName: z.string().optional(),
   doctorSpecialty: z.string().optional(),
   doctorRut: z.string().nullable().optional(),
+  // Operator-confirmed control mm values; either prefilled from the
+  // most recent XLSX skin-test snapshot or typed manually. Both
+  // optional — wizard may submit either, both, or neither.
+  histamineMm: z.number().nonnegative().nullable().optional(),
+  salineMm: z.number().nonnegative().nullable().optional(),
   sections: z.array(sectionInputSchema).min(1),
 });
 
