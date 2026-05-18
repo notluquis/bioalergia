@@ -140,6 +140,16 @@ export function App() {
 
   return (
     <div className="relative">
+      {/* Promo banner — driver al storefront. Aparece solo en landing
+          (App.tsx); rutas /tienda /producto /carrito /checkout no lo
+          repiten porque la cinta sería redundante. */}
+      <a
+        className="flex items-center justify-center gap-2 bg-(--accent) px-4 py-2 text-center font-semibold text-sm text-white no-underline transition hover:brightness-110"
+        href="/tienda"
+      >
+        <span>🛍 Visita nuestra tienda</span>
+        <span aria-hidden className="opacity-80">— productos seleccionados, envío a todo Chile vía Chilexpress →</span>
+      </a>
       <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-10 px-4 pt-6 pb-14 sm:px-6 md:gap-12 lg:gap-16 lg:px-8">
         <header className="sticky top-2 z-50 sm:top-3">
           <div className="rounded-2xl border border-border bg-(--surface)/90 shadow-[0_20px_60px_rgba(0,0,0,0.16)] backdrop-blur sm:rounded-3xl">
