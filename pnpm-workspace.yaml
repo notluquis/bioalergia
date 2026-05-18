@@ -33,6 +33,3 @@ allowBuilds:
 # Opt out of pnpm 11's default 24h release-age gate (lockfile path
 # unaffected — pnpm/pnpm#10438).
 minimumReleaseAge: 0
-
-patchedDependencies:
-  '@zenstackhq/orm@3.7.0': patches/@zenstackhq__orm@3.7.0.patch

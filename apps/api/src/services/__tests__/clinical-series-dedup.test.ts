@@ -1,23 +1,28 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // ── DB mock ──────────────────────────────────────────────────────────────────
-// findMatchingSeries and detectDuplicateSeries both call db.clinicalSeries.*
-// We set up the mock before importing the module so it picks up the stub.
+// findMatchingSeries and detectDuplicateSeries both call db.clinicalSeries.*.
+// Hoist the mocks via vi.hoisted so both vi.mock factories below can route
+// to the same fns. Some services pull from @finanzas/db, others from
+// @finanzas/db/slices (sliced ZenStack client) — both should see the same
+// mockFindMany / mockFindFirst / mockFindUnique.
 
-const mockFindMany = vi.fn();
-const mockFindFirst = vi.fn();
-const mockFindUnique = vi.fn();
-
-vi.mock("@finanzas/db", () => ({
-  db: {
+const { mockFindMany, mockFindFirst, mockFindUnique, mockDb } = vi.hoisted(() => {
+  const mockFindMany = vi.fn();
+  const mockFindFirst = vi.fn();
+  const mockFindUnique = vi.fn();
+  const mockDb = {
     clinicalSeries: {
       findFirst: (...args: unknown[]) => mockFindFirst(...args),
       findMany: (...args: unknown[]) => mockFindMany(...args),
       findUnique: (...args: unknown[]) => mockFindUnique(...args),
     },
-  },
-  kysely: {},
-}));
+  };
+  return { mockFindMany, mockFindFirst, mockFindUnique, mockDb };
+});
+
+vi.mock("@finanzas/db", () => ({ db: mockDb, kysely: {} }));
+vi.mock("@finanzas/db/slices", () => ({ dbClinicalSeries: mockDb }));
 
 const { detectDuplicateSeries, findMatchingSeries, selectRepresentativeClinicalIdentity } =
   await import("../clinical-series.ts");

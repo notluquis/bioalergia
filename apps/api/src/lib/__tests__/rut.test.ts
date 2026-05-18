@@ -132,7 +132,9 @@ describe("rut", () => {
     });
 
     it("uppercases K check digit", () => {
-      expect(requireCanonicalRut("11222333-k")).toBe("11222333-K");
+      // 12345670 mod 11 = 10 → DV "K". Test canonicalises lowercase
+      // "k" to uppercase "K" on a RUT whose mod-11 DV is genuinely K.
+      expect(requireCanonicalRut("12345670-k")).toBe("12345670-K");
     });
 
     it("strips whitespace and dots", () => {

@@ -50,7 +50,7 @@ COPY --from=pruner /app/out/full/ .
 ENV CI=true
 ENV TURBO_TELEMETRY_DISABLED=1
 
-# No turbo build needed (scraper runs via tsx), but keep the hook for
+# No turbo build needed (scraper runs via Node 26 native ts type-stripping), but keep the hook for
 # future: any workspace dep that needs compilation will pick this up.
 RUN --mount=type=cache,id=s/4990f681-049b-467f-9034-ef5c74a55f0a-/app/.turbo/cache,target=/app/.turbo/cache \
     pnpm turbo run build --filter=@finanzas/doctoralia-scraper...

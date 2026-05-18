@@ -1,5 +1,13 @@
 import { describe, expect, it, vi } from "vitest";
 
+// @finanzas/db/slices transitively imports db.$setOptions which the
+// main db mock above does not provide. Self-contained factory required
+// because vi.mock hoists above any outer references.
+vi.mock("@finanzas/db/slices", () => {
+  const noopDb = { $setOptions: () => noopDb };
+  return { dbClinicalSeries: noopDb };
+});
+
 // Mock DB so the module can be imported without a real database connection
 vi.mock("@finanzas/db", () => ({ db: {} }));
 

@@ -1,6 +1,6 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["typescript", "react", "vitest"],
+  "plugins": ["typescript", "react", "vitest", "promise", "node", "unicorn"],
   "jsPlugins": ["oxlint-tailwindcss"],
   "env": {
     "browser": true,
@@ -46,6 +46,20 @@
     // `invariant()` instead. Suppress with line-level disable + a
     // comment explaining why narrowing TS can't see is correct here.
     "typescript/no-non-null-assertion": "error",
+    // ── Type-aware rules (require `oxlint --type-aware`, gated on CI) ──
+    // Each catches a class of bug we have hit in production.
+    "typescript/no-misused-promises": "error",
+    "typescript/await-thenable": "error",
+    "typescript/no-unsafe-argument": "warn",
+    "typescript/no-unsafe-return": "warn",
+    "typescript/no-unsafe-member-access": "warn",
+    "typescript/restrict-template-expressions": "error",
+    "typescript/no-base-to-string": "error",
+    "typescript/require-array-sort-compare": "error",
+    "typescript/prefer-promise-reject-errors": "error",
+    "typescript/switch-exhaustiveness-check": "error",
+    "promise/no-return-wrap": "error",
+    "unicorn/no-array-callback-reference": "warn",
     // Tailwind CSS v4 (oxlint-tailwindcss) — conservative subset:
     // catch real bugs without churn. Shorthand is `warn`, not `error`,
     // so it doesn't block CI. Note: no rule exists for missing

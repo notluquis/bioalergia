@@ -8,7 +8,7 @@
   ],
   "type": "module",
   "scripts": {
-    "dev": "node --watch src/index.ts",
+    "dev": "node --watch --enable-source-maps src/index.ts",
     "build": "node -e \"console.log('@finanzas/api runs TypeScript natively via Node.js 26 type stripping; no JS bundle is emitted during build.')\"",
     "start": "node --enable-source-maps src/index.ts",
     "type-check": "NODE_OPTIONS=--max-old-space-size=8192 tsgo --noEmit --pretty false",
@@ -20,6 +20,7 @@
     "debug:mp-download": "node src/scripts/debug-intranet-request.ts",
     "lint": "oxlint",
     "lint:fix": "oxlint --fix",
+    "lint:type-aware": "oxlint --type-aware",
     "format": "oxfmt",
     "format:check": "oxfmt --check",
     "check": "pnpm lint",
@@ -27,6 +28,8 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1048.0",
+    "@aws-sdk/s3-request-presigner": "^3.1048.0",
     "@casl/ability": "^6.8.1",
     "@finanzas/db": "workspace:*",
     "@finanzas/orpc-contracts": "workspace:*",
@@ -64,6 +67,7 @@
     "hono-rate-limiter": "^0.5.3",
     "isomorphic-dompurify": "^3.12.0",
     "kysely": "^0.29.2",
+    "mercadopago": "^2.12.1",
     "node-cron": "^4.2.1",
     "node-forge": "^1.4.0",
     "otplib": "^13.4.0",

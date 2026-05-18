@@ -11,7 +11,7 @@ Medical clinic management system (Bioalergia) — monorepo with pnpm workspaces,
 ```bash
 # Development
 pnpm dev                    # Start all apps in dev mode
-pnpm -F @finanzas/api dev   # API only (port 3000, tsx watch)
+pnpm -F @finanzas/api dev   # API only (port 3000, Node 26 native --watch)
 pnpm -F @finanzas/intranet dev  # Frontend only (port 5173, Vite)
 
 # Build
@@ -43,7 +43,7 @@ pnpm migrate:deploy         # Apply pending migrations
 
 ### Monorepo Structure
 
-- `apps/api` — Hono v4 backend (Node.js, tsx runtime, port 3000)
+- `apps/api` — Hono v4 backend (Node.js, Node 26 native TS runtime (type-stripping), port 3000)
 - `apps/intranet` — React 19 + Vite 8 SPA (TanStack Router, port 5173)
 - `apps/site` — Public marketing site
 - `apps/doctoralia-scraper` — External data scraper
