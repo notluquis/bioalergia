@@ -15,7 +15,7 @@ import {
   updateJobProgress,
 } from "../../lib/jobQueue.ts";
 import type { HaulmerConfig } from "./auth.ts";
-import { captureHaulmerJWT, isJWTExpired } from "./auth.ts";
+import { getHaulmerJwt } from "./session.ts";
 import { tryDownloadDteXml } from "./xml-downloader.ts";
 import { parseDteXml, type DteXmlLineItem } from "./xml-parser.ts";
 
@@ -30,35 +30,32 @@ function toDecimalOrUndef(val: number | undefined): Decimal | undefined {
 }
 
 function lineItemData(item: DteXmlLineItem) {
+  const discountPercent = toDecimalOrUndef(item.discountPercent);
+  const discountAmount = toDecimalOrUndef(item.discountAmount);
   return {
     lineNumber: item.lineNumber,
     itemName: item.itemName,
-    itemDescription: item.itemDescription,
+    ...(item.itemDescription !== undefined && { itemDescription: item.itemDescription }),
     quantity: toDecimal(item.quantity),
-    unit: item.unit,
+    ...(item.unit !== undefined && { unit: item.unit }),
     unitPrice: toDecimal(item.unitPrice),
     amount: toDecimal(item.amount),
     isExempt: item.isExempt,
-    itemCode: item.itemCode,
-    itemCodeType: item.itemCodeType,
-    discountPercent: toDecimalOrUndef(item.discountPercent),
-    discountAmount: toDecimalOrUndef(item.discountAmount),
+    ...(item.itemCode !== undefined && { itemCode: item.itemCode }),
+    ...(item.itemCodeType !== undefined && { itemCodeType: item.itemCodeType }),
+    ...(discountPercent !== undefined && { discountPercent }),
+    ...(discountAmount !== undefined && { discountAmount }),
   };
 }
 
-let cachedJWT: { token: string; expiresAt: Date; workspaceId?: string } | null = null;
-
-async function getAuth(config: HaulmerConfig & { workspaceId?: string }) {
-  if (cachedJWT && !isJWTExpired(cachedJWT.expiresAt)) {
-    return cachedJWT;
-  }
-  const response = await captureHaulmerJWT(config);
-  cachedJWT = {
-    token: response.jwtToken,
-    expiresAt: response.expiresAt,
-    workspaceId: config.workspaceId,
+async function getAuth(
+  config: HaulmerConfig & { workspaceId?: string }
+): Promise<{ token: string; workspaceId?: string }> {
+  const token = await getHaulmerJwt(config);
+  return {
+    token,
+    ...(config.workspaceId !== undefined && { workspaceId: config.workspaceId }),
   };
-  return cachedJWT;
 }
 
 export interface FetchXmlLineItemsResult {
@@ -228,6 +225,7 @@ async function fetchXmlLineItemsBatch(
     }
 
     const dteId = dteIds[i];
+    if (dteId === undefined) continue;
     try {
       console.log(`[XML Fetch] ${i + 1}/${total} — DTE ${dteId} (${direction})`);
       const detail =

@@ -5,7 +5,10 @@ export * from "./auth.ts";
 export * from "./balances.ts";
 export * from "./backups.ts";
 export * from "./calendar.ts";
+export * from "./cart.ts";
+export * from "./catalog.ts";
 export * from "./certificates.ts";
+export * from "./checkout.ts";
 export * from "./clinical-records.ts";
 export * from "./clinical-series.ts";
 export * from "./clinical-skin-tests.ts";
@@ -19,9 +22,11 @@ export * from "./employees.ts";
 export * from "./expenses.ts";
 export * from "./finance.ts";
 export * from "./haulmer.ts";
+export * from "./images.ts";
 export * from "./inventory.ts";
 export * from "./integrations.ts";
 export * from "./loans.ts";
+export { mlContract, type MlContract } from "./ml.ts";
 export * from "./provider-credentials.ts";
 export {
   calendarAppointmentsSchema as doctoraliaCalendarAppointmentsSchema,

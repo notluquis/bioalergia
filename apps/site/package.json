@@ -22,10 +22,16 @@
   "dependencies": {
     "@heroui/react": "^3.0.4",
     "@heroui/styles": "^3.0.4",
+    "@orpc/client": "^1.14.3",
+    "@orpc/contract": "^1.14.3",
     "@tanstack/react-query": "^5.100.10",
+    "@tanstack/react-router": "^1.169.2",
+    "@tanstack/router-devtools": "^1.166.13",
+    "@tanstack/router-vite-plugin": "^1.167.6",
     "posthog-js": "^1.373.3",
     "react": "^19.2.6",
-    "react-dom": "^19.2.6"
+    "react-dom": "^19.2.6",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@storybook/addon-a11y": "^10.3.6",

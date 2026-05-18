@@ -5,9 +5,10 @@
 
 import { db } from "@finanzas/db";
 import { importDtePurchaseRow, importDteSaleRow } from "./dte-import.ts";
-import { captureHaulmerJWT, type HaulmerConfig, isJWTExpired } from "../modules/haulmer/auth.ts";
+import type { HaulmerConfig } from "../modules/haulmer/auth.ts";
 import { downloadHaulmerCSV } from "../modules/haulmer/downloader.ts";
 import { normalizeColumnName, parseCSVText } from "../modules/haulmer/parser.ts";
+import { getHaulmerJwt } from "../modules/haulmer/session.ts";
 
 export interface HaulmerSyncOptions {
   rut: string;
@@ -27,26 +28,8 @@ export interface SyncSummary {
   error?: string;
 }
 
-let cachedJWT: { token: string; expiresAt: Date } | null = null;
-
-/**
- * Get or refresh JWT token
- */
-async function getJWT(config: HaulmerConfig) {
-  if (cachedJWT && !isJWTExpired(cachedJWT.expiresAt)) {
-    return cachedJWT;
-  }
-
-  console.log("[Haulmer Sync] Requesting fresh JWT");
-  const response = await captureHaulmerJWT(config);
-
-  cachedJWT = {
-    token: response.jwtToken,
-    expiresAt: response.expiresAt,
-  };
-
-  return cachedJWT;
-}
+// JWT cache shared con emit-dte + xml-service via modules/haulmer/session.ts.
+// NO crear caches locales — [[feedback-haulmer-session-unified]].
 
 function normalizeParsedRows(rows: Record<string, unknown>[], period: string) {
   let columnsNormalized = 0;
@@ -142,11 +125,11 @@ export async function syncPeriod(
   let rowsSkipped = 0;
 
   try {
-    // Get JWT
-    const jwt = await getJWT(config);
+    // Get JWT via shared singleton session.
+    const jwt = await getHaulmerJwt(config);
 
     // Download CSV
-    const csvText = await downloadHaulmerCSV(rut, period, docType, jwt.token);
+    const csvText = await downloadHaulmerCSV(rut, period, docType, jwt);
 
     // Parse CSV
     const rows = parseCSVText(csvText);
@@ -159,9 +142,10 @@ export async function syncPeriod(
     );
 
     // Log sample row columns after normalization to verify mapping worked
-    if (rows.length > 0) {
+    const firstRow = rows[0];
+    if (firstRow) {
       console.log(
-        `[Haulmer Sync] Sample normalized row columns: ${Object.keys(rows[0]).join(", ")}`
+        `[Haulmer Sync] Sample normalized row columns: ${Object.keys(firstRow).join(", ")}`
       );
     }
 

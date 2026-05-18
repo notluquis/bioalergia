@@ -428,6 +428,18 @@ export class SchemaType implements SchemaDef {
                     array: true,
                     relation: { opposite: "createdBy", name: "ExamReportCreator" }
                 },
+                shopCarts: {
+                    name: "shopCarts",
+                    type: "Cart",
+                    array: true,
+                    relation: { opposite: "user" }
+                },
+                shopOrders: {
+                    name: "shopOrders",
+                    type: "Order",
+                    array: true,
+                    relation: { opposite: "user" }
+                },
                 person: {
                     name: "person",
                     type: "Person",
@@ -11763,6 +11775,1040 @@ export class SchemaType implements SchemaDef {
             uniqueFields: {
                 id: { type: "Int" }
             }
+        },
+        ProductCategory: {
+            name: "ProductCategory",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                slug: {
+                    name: "slug",
+                    type: "String",
+                    unique: true
+                },
+                name: {
+                    name: "name",
+                    type: "String"
+                },
+                description: {
+                    name: "description",
+                    type: "String",
+                    optional: true
+                },
+                parentId: {
+                    name: "parentId",
+                    type: "Int",
+                    optional: true,
+                    foreignKeyFor: [
+                        "parent"
+                    ] as readonly string[]
+                },
+                displayOrder: {
+                    name: "displayOrder",
+                    type: "Int",
+                    default: 0 as FieldDefault
+                },
+                mlCategoryId: {
+                    name: "mlCategoryId",
+                    type: "String",
+                    optional: true
+                },
+                imageUrl: {
+                    name: "imageUrl",
+                    type: "String",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                parent: {
+                    name: "parent",
+                    type: "ProductCategory",
+                    optional: true,
+                    relation: { opposite: "children", name: "ProductCategoryHierarchy", fields: ["parentId"], references: ["id"], onDelete: "SetNull" }
+                },
+                children: {
+                    name: "children",
+                    type: "ProductCategory",
+                    array: true,
+                    relation: { opposite: "parent", name: "ProductCategoryHierarchy" }
+                },
+                products: {
+                    name: "products",
+                    type: "Product",
+                    array: true,
+                    relation: { opposite: "category" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" },
+                slug: { type: "String" }
+            }
+        },
+        Product: {
+            name: "Product",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                slug: {
+                    name: "slug",
+                    type: "String",
+                    unique: true
+                },
+                sku: {
+                    name: "sku",
+                    type: "String",
+                    unique: true
+                },
+                name: {
+                    name: "name",
+                    type: "String"
+                },
+                shortDescription: {
+                    name: "shortDescription",
+                    type: "String",
+                    optional: true
+                },
+                description: {
+                    name: "description",
+                    type: "String",
+                    optional: true
+                },
+                categoryId: {
+                    name: "categoryId",
+                    type: "Int",
+                    optional: true,
+                    foreignKeyFor: [
+                        "category"
+                    ] as readonly string[]
+                },
+                brand: {
+                    name: "brand",
+                    type: "String",
+                    optional: true
+                },
+                priceClp: {
+                    name: "priceClp",
+                    type: "Int"
+                },
+                compareAtPriceClp: {
+                    name: "compareAtPriceClp",
+                    type: "Int",
+                    optional: true
+                },
+                costClp: {
+                    name: "costClp",
+                    type: "Int",
+                    optional: true
+                },
+                weightGrams: {
+                    name: "weightGrams",
+                    type: "Int",
+                    optional: true
+                },
+                barcode: {
+                    name: "barcode",
+                    type: "String",
+                    optional: true
+                },
+                requiresPrescription: {
+                    name: "requiresPrescription",
+                    type: "Boolean",
+                    default: false as FieldDefault
+                },
+                status: {
+                    name: "status",
+                    type: "ProductStatus",
+                    default: "DRAFT" as FieldDefault
+                },
+                seoTitle: {
+                    name: "seoTitle",
+                    type: "String",
+                    optional: true
+                },
+                seoDescription: {
+                    name: "seoDescription",
+                    type: "String",
+                    optional: true
+                },
+                availableQty: {
+                    name: "availableQty",
+                    type: "Int",
+                    default: 0 as FieldDefault
+                },
+                safetyStock: {
+                    name: "safetyStock",
+                    type: "Int",
+                    default: 2 as FieldDefault
+                },
+                version: {
+                    name: "version",
+                    type: "Int",
+                    default: 0 as FieldDefault
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                category: {
+                    name: "category",
+                    type: "ProductCategory",
+                    optional: true,
+                    relation: { opposite: "products", fields: ["categoryId"], references: ["id"], onDelete: "SetNull" }
+                },
+                images: {
+                    name: "images",
+                    type: "ProductImage",
+                    array: true,
+                    relation: { opposite: "product" }
+                },
+                cartItems: {
+                    name: "cartItems",
+                    type: "CartItem",
+                    array: true,
+                    relation: { opposite: "product" }
+                },
+                orderItems: {
+                    name: "orderItems",
+                    type: "OrderItem",
+                    array: true,
+                    relation: { opposite: "product" }
+                },
+                reservations: {
+                    name: "reservations",
+                    type: "StockReservation",
+                    array: true,
+                    relation: { opposite: "product" }
+                },
+                mlListing: {
+                    name: "mlListing",
+                    type: "MlListing",
+                    optional: true,
+                    relation: { opposite: "product" }
+                },
+                channelPrices: {
+                    name: "channelPrices",
+                    type: "ProductChannelPrice",
+                    array: true,
+                    relation: { opposite: "product" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" },
+                slug: { type: "String" },
+                sku: { type: "String" }
+            }
+        },
+        ProductImage: {
+            name: "ProductImage",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                productId: {
+                    name: "productId",
+                    type: "Int",
+                    foreignKeyFor: [
+                        "product"
+                    ] as readonly string[]
+                },
+                r2Key: {
+                    name: "r2Key",
+                    type: "String"
+                },
+                cdnUrl: {
+                    name: "cdnUrl",
+                    type: "String"
+                },
+                alt: {
+                    name: "alt",
+                    type: "String",
+                    optional: true
+                },
+                position: {
+                    name: "position",
+                    type: "Int",
+                    default: 0 as FieldDefault
+                },
+                width: {
+                    name: "width",
+                    type: "Int",
+                    optional: true
+                },
+                height: {
+                    name: "height",
+                    type: "Int",
+                    optional: true
+                },
+                isPrimary: {
+                    name: "isPrimary",
+                    type: "Boolean",
+                    default: false as FieldDefault
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                product: {
+                    name: "product",
+                    type: "Product",
+                    relation: { opposite: "images", fields: ["productId"], references: ["id"], onDelete: "Cascade" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" }
+            }
+        },
+        StockReservation: {
+            name: "StockReservation",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                productId: {
+                    name: "productId",
+                    type: "Int",
+                    foreignKeyFor: [
+                        "product"
+                    ] as readonly string[]
+                },
+                qty: {
+                    name: "qty",
+                    type: "Int"
+                },
+                cartId: {
+                    name: "cartId",
+                    type: "Int",
+                    optional: true,
+                    foreignKeyFor: [
+                        "cart"
+                    ] as readonly string[]
+                },
+                orderId: {
+                    name: "orderId",
+                    type: "Int",
+                    optional: true,
+                    foreignKeyFor: [
+                        "order"
+                    ] as readonly string[]
+                },
+                expiresAt: {
+                    name: "expiresAt",
+                    type: "DateTime"
+                },
+                status: {
+                    name: "status",
+                    type: "ReservationStatus",
+                    default: "ACTIVE" as FieldDefault
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                product: {
+                    name: "product",
+                    type: "Product",
+                    relation: { opposite: "reservations", fields: ["productId"], references: ["id"], onDelete: "Cascade" }
+                },
+                cart: {
+                    name: "cart",
+                    type: "Cart",
+                    optional: true,
+                    relation: { opposite: "reservations", fields: ["cartId"], references: ["id"], onDelete: "SetNull" }
+                },
+                order: {
+                    name: "order",
+                    type: "Order",
+                    optional: true,
+                    relation: { opposite: "reservations", fields: ["orderId"], references: ["id"], onDelete: "SetNull" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" }
+            }
+        },
+        Cart: {
+            name: "Cart",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                tokenHash: {
+                    name: "tokenHash",
+                    type: "String",
+                    unique: true
+                },
+                userId: {
+                    name: "userId",
+                    type: "Int",
+                    optional: true,
+                    foreignKeyFor: [
+                        "user"
+                    ] as readonly string[]
+                },
+                currency: {
+                    name: "currency",
+                    type: "String",
+                    default: "CLP" as FieldDefault
+                },
+                expiresAt: {
+                    name: "expiresAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                user: {
+                    name: "user",
+                    type: "User",
+                    optional: true,
+                    relation: { opposite: "shopCarts", fields: ["userId"], references: ["id"], onDelete: "SetNull" }
+                },
+                items: {
+                    name: "items",
+                    type: "CartItem",
+                    array: true,
+                    relation: { opposite: "cart" }
+                },
+                reservations: {
+                    name: "reservations",
+                    type: "StockReservation",
+                    array: true,
+                    relation: { opposite: "cart" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" },
+                tokenHash: { type: "String" }
+            }
+        },
+        CartItem: {
+            name: "CartItem",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                cartId: {
+                    name: "cartId",
+                    type: "Int",
+                    foreignKeyFor: [
+                        "cart"
+                    ] as readonly string[]
+                },
+                productId: {
+                    name: "productId",
+                    type: "Int",
+                    foreignKeyFor: [
+                        "product"
+                    ] as readonly string[]
+                },
+                qty: {
+                    name: "qty",
+                    type: "Int"
+                },
+                unitPriceClp: {
+                    name: "unitPriceClp",
+                    type: "Int"
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                cart: {
+                    name: "cart",
+                    type: "Cart",
+                    relation: { opposite: "items", fields: ["cartId"], references: ["id"], onDelete: "Cascade" }
+                },
+                product: {
+                    name: "product",
+                    type: "Product",
+                    relation: { opposite: "cartItems", fields: ["productId"], references: ["id"], onDelete: "Restrict" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" },
+                cartId_productId: { cartId: { type: "Int" }, productId: { type: "Int" } }
+            }
+        },
+        Order: {
+            name: "Order",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                number: {
+                    name: "number",
+                    type: "String",
+                    unique: true
+                },
+                cartId: {
+                    name: "cartId",
+                    type: "Int",
+                    optional: true
+                },
+                userId: {
+                    name: "userId",
+                    type: "Int",
+                    optional: true,
+                    foreignKeyFor: [
+                        "user"
+                    ] as readonly string[]
+                },
+                customerEmail: {
+                    name: "customerEmail",
+                    type: "String"
+                },
+                customerRut: {
+                    name: "customerRut",
+                    type: "String",
+                    optional: true
+                },
+                customerName: {
+                    name: "customerName",
+                    type: "String"
+                },
+                customerPhone: {
+                    name: "customerPhone",
+                    type: "String",
+                    optional: true
+                },
+                billingType: {
+                    name: "billingType",
+                    type: "DocumentType",
+                    default: "BOLETA" as FieldDefault
+                },
+                shippingAddress: {
+                    name: "shippingAddress",
+                    type: "Json",
+                    optional: true
+                },
+                subtotalClp: {
+                    name: "subtotalClp",
+                    type: "Int"
+                },
+                shippingClp: {
+                    name: "shippingClp",
+                    type: "Int",
+                    default: 0 as FieldDefault
+                },
+                discountClp: {
+                    name: "discountClp",
+                    type: "Int",
+                    default: 0 as FieldDefault
+                },
+                totalClp: {
+                    name: "totalClp",
+                    type: "Int"
+                },
+                status: {
+                    name: "status",
+                    type: "OrderStatus",
+                    default: "PENDING" as FieldDefault
+                },
+                channel: {
+                    name: "channel",
+                    type: "OrderChannel",
+                    default: "WEB" as FieldDefault
+                },
+                mlOrderId: {
+                    name: "mlOrderId",
+                    type: "String",
+                    unique: true,
+                    optional: true
+                },
+                dteFolio: {
+                    name: "dteFolio",
+                    type: "String",
+                    optional: true
+                },
+                dteType: {
+                    name: "dteType",
+                    type: "String",
+                    optional: true
+                },
+                notes: {
+                    name: "notes",
+                    type: "String",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                user: {
+                    name: "user",
+                    type: "User",
+                    optional: true,
+                    relation: { opposite: "shopOrders", fields: ["userId"], references: ["id"], onDelete: "SetNull" }
+                },
+                items: {
+                    name: "items",
+                    type: "OrderItem",
+                    array: true,
+                    relation: { opposite: "order" }
+                },
+                payments: {
+                    name: "payments",
+                    type: "Payment",
+                    array: true,
+                    relation: { opposite: "order" }
+                },
+                reservations: {
+                    name: "reservations",
+                    type: "StockReservation",
+                    array: true,
+                    relation: { opposite: "order" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" },
+                number: { type: "String" },
+                mlOrderId: { type: "String" }
+            }
+        },
+        OrderItem: {
+            name: "OrderItem",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                orderId: {
+                    name: "orderId",
+                    type: "Int",
+                    foreignKeyFor: [
+                        "order"
+                    ] as readonly string[]
+                },
+                productId: {
+                    name: "productId",
+                    type: "Int",
+                    foreignKeyFor: [
+                        "product"
+                    ] as readonly string[]
+                },
+                productSnapshot: {
+                    name: "productSnapshot",
+                    type: "Json"
+                },
+                qty: {
+                    name: "qty",
+                    type: "Int"
+                },
+                unitPriceClp: {
+                    name: "unitPriceClp",
+                    type: "Int"
+                },
+                lineTotalClp: {
+                    name: "lineTotalClp",
+                    type: "Int"
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                order: {
+                    name: "order",
+                    type: "Order",
+                    relation: { opposite: "items", fields: ["orderId"], references: ["id"], onDelete: "Cascade" }
+                },
+                product: {
+                    name: "product",
+                    type: "Product",
+                    relation: { opposite: "orderItems", fields: ["productId"], references: ["id"], onDelete: "Restrict" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" }
+            }
+        },
+        Payment: {
+            name: "Payment",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                orderId: {
+                    name: "orderId",
+                    type: "Int",
+                    foreignKeyFor: [
+                        "order"
+                    ] as readonly string[]
+                },
+                provider: {
+                    name: "provider",
+                    type: "PaymentProvider"
+                },
+                providerPaymentId: {
+                    name: "providerPaymentId",
+                    type: "String",
+                    unique: true,
+                    optional: true
+                },
+                idempotencyKey: {
+                    name: "idempotencyKey",
+                    type: "String",
+                    unique: true
+                },
+                amountClp: {
+                    name: "amountClp",
+                    type: "Int"
+                },
+                status: {
+                    name: "status",
+                    type: "PaymentStatus",
+                    default: "PENDING" as FieldDefault
+                },
+                rawPayload: {
+                    name: "rawPayload",
+                    type: "Json",
+                    optional: true
+                },
+                approvedAt: {
+                    name: "approvedAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                order: {
+                    name: "order",
+                    type: "Order",
+                    relation: { opposite: "payments", fields: ["orderId"], references: ["id"], onDelete: "Cascade" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" },
+                providerPaymentId: { type: "String" },
+                idempotencyKey: { type: "String" }
+            }
+        },
+        MlOauthToken: {
+            name: "MlOauthToken",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                mlUserId: {
+                    name: "mlUserId",
+                    type: "String",
+                    unique: true
+                },
+                accessTokenEnc: {
+                    name: "accessTokenEnc",
+                    type: "String"
+                },
+                refreshTokenEnc: {
+                    name: "refreshTokenEnc",
+                    type: "String"
+                },
+                expiresAt: {
+                    name: "expiresAt",
+                    type: "DateTime"
+                },
+                scope: {
+                    name: "scope",
+                    type: "String",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now") as FieldDefault
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" },
+                mlUserId: { type: "String" }
+            }
+        },
+        MlListing: {
+            name: "MlListing",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                productId: {
+                    name: "productId",
+                    type: "Int",
+                    unique: true,
+                    foreignKeyFor: [
+                        "product"
+                    ] as readonly string[]
+                },
+                mlItemId: {
+                    name: "mlItemId",
+                    type: "String",
+                    unique: true
+                },
+                status: {
+                    name: "status",
+                    type: "MlListingStatus",
+                    default: "DRAFT" as FieldDefault
+                },
+                permalink: {
+                    name: "permalink",
+                    type: "String",
+                    optional: true
+                },
+                listingTypeId: {
+                    name: "listingTypeId",
+                    type: "String",
+                    optional: true
+                },
+                categoryId: {
+                    name: "categoryId",
+                    type: "String",
+                    optional: true
+                },
+                lastSyncAt: {
+                    name: "lastSyncAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                lastError: {
+                    name: "lastError",
+                    type: "String",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                product: {
+                    name: "product",
+                    type: "Product",
+                    relation: { opposite: "mlListing", fields: ["productId"], references: ["id"], onDelete: "Cascade" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" },
+                productId: { type: "Int" },
+                mlItemId: { type: "String" }
+            }
+        },
+        ProductChannelPrice: {
+            name: "ProductChannelPrice",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                productId: {
+                    name: "productId",
+                    type: "Int",
+                    foreignKeyFor: [
+                        "product"
+                    ] as readonly string[]
+                },
+                channel: {
+                    name: "channel",
+                    type: "SalesChannel"
+                },
+                priceClp: {
+                    name: "priceClp",
+                    type: "Int"
+                },
+                url: {
+                    name: "url",
+                    type: "String",
+                    optional: true
+                },
+                notes: {
+                    name: "notes",
+                    type: "String",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                product: {
+                    name: "product",
+                    type: "Product",
+                    relation: { opposite: "channelPrices", fields: ["productId"], references: ["id"], onDelete: "Cascade" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" },
+                productId_channel: { productId: { type: "Int" }, channel: { type: "SalesChannel" } }
+            }
+        },
+        WebhookEvent: {
+            name: "WebhookEvent",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                provider: {
+                    name: "provider",
+                    type: "String"
+                },
+                topic: {
+                    name: "topic",
+                    type: "String"
+                },
+                externalId: {
+                    name: "externalId",
+                    type: "String"
+                },
+                signatureValid: {
+                    name: "signatureValid",
+                    type: "Boolean",
+                    default: false as FieldDefault
+                },
+                processedAt: {
+                    name: "processedAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                payload: {
+                    name: "payload",
+                    type: "Json"
+                },
+                error: {
+                    name: "error",
+                    type: "String",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" },
+                provider_topic_externalId: { provider: { type: "String" }, topic: { type: "String" }, externalId: { type: "String" } }
+            }
         }
     } as const;
     enums = {
@@ -12500,6 +13546,84 @@ export class SchemaType implements SchemaDef {
                 DEBIL: "DEBIL",
                 MODERADA: "MODERADA",
                 FUERTE: "FUERTE"
+            }
+        },
+        ProductStatus: {
+            name: "ProductStatus",
+            values: {
+                DRAFT: "DRAFT",
+                ACTIVE: "ACTIVE",
+                ARCHIVED: "ARCHIVED"
+            }
+        },
+        ReservationStatus: {
+            name: "ReservationStatus",
+            values: {
+                ACTIVE: "ACTIVE",
+                CONSUMED: "CONSUMED",
+                RELEASED: "RELEASED",
+                EXPIRED: "EXPIRED"
+            }
+        },
+        DocumentType: {
+            name: "DocumentType",
+            values: {
+                BOLETA: "BOLETA",
+                FACTURA: "FACTURA"
+            }
+        },
+        OrderStatus: {
+            name: "OrderStatus",
+            values: {
+                PENDING: "PENDING",
+                PAID: "PAID",
+                FULFILLED: "FULFILLED",
+                CANCELLED: "CANCELLED",
+                REFUNDED: "REFUNDED"
+            }
+        },
+        OrderChannel: {
+            name: "OrderChannel",
+            values: {
+                WEB: "WEB",
+                MERCADO_LIBRE: "MERCADO_LIBRE"
+            }
+        },
+        PaymentProvider: {
+            name: "PaymentProvider",
+            values: {
+                MERCADO_PAGO: "MERCADO_PAGO",
+                MERCADO_LIBRE: "MERCADO_LIBRE"
+            }
+        },
+        PaymentStatus: {
+            name: "PaymentStatus",
+            values: {
+                PENDING: "PENDING",
+                APPROVED: "APPROVED",
+                REJECTED: "REJECTED",
+                REFUNDED: "REFUNDED",
+                CHARGED_BACK: "CHARGED_BACK"
+            }
+        },
+        MlListingStatus: {
+            name: "MlListingStatus",
+            values: {
+                DRAFT: "DRAFT",
+                ACTIVE: "ACTIVE",
+                PAUSED: "PAUSED",
+                CLOSED: "CLOSED",
+                ERROR: "ERROR"
+            }
+        },
+        SalesChannel: {
+            name: "SalesChannel",
+            values: {
+                WEB: "WEB",
+                MERCADO_LIBRE: "MERCADO_LIBRE",
+                UBER_EATS: "UBER_EATS",
+                PEDIDOS_YA: "PEDIDOS_YA",
+                RAPPI: "RAPPI"
             }
         }
     } as const;

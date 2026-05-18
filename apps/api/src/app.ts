@@ -42,11 +42,18 @@ import { dteEventLinksOpenAPIHandler, dteEventLinksORPCHandler } from "./orpc/dt
 import { employeesOpenAPIHandler, employeesORPCHandler } from "./orpc/employees.ts";
 import { expensesOpenAPIHandler, expensesORPCHandler } from "./orpc/expenses.ts";
 import { financeOpenAPIHandler, financeORPCHandler } from "./orpc/finance.ts";
+import { cartOpenAPIHandler, cartORPCHandler } from "./orpc/cart.ts";
+import { catalogOpenAPIHandler, catalogORPCHandler } from "./orpc/catalog.ts";
+import { checkoutOpenAPIHandler, checkoutORPCHandler } from "./orpc/checkout.ts";
 import { haulmerOpenAPIHandler, haulmerORPCHandler } from "./orpc/haulmer.ts";
+import { imagesOpenAPIHandler, imagesORPCHandler } from "./orpc/images.ts";
 import { integrationsOpenAPIHandler, integrationsORPCHandler } from "./orpc/integrations.ts";
 import { inventoryOpenAPIHandler, inventoryORPCHandler } from "./orpc/inventory.ts";
 import { loansOpenAPIHandler, loansORPCHandler } from "./orpc/loans.ts";
 import { mercadopagoOpenAPIHandler, mercadopagoORPCHandler } from "./orpc/mercadopago.ts";
+import { mlOpenAPIHandler, mlORPCHandler } from "./orpc/ml-sync.ts";
+import { registerMercadolibreOauthCallback } from "./routes/mercadolibre-oauth-callback.ts";
+import { registerMercadopagoCheckoutWebhook } from "./routes/mercadopago-checkout-webhook.ts";
 import { notificationsOpenAPIHandler, notificationsORPCHandler } from "./orpc/notifications.ts";
 import { outreachOpenAPIHandler, outreachORPCHandler } from "./orpc/outreach.ts";
 import { addressesOpenAPIHandler, addressesORPCHandler } from "./orpc/addresses.ts";
@@ -1203,6 +1210,54 @@ app.use("/api/orpc/mercadopago/rpc/*", async (c, next) => {
   return next();
 });
 
+app.use("/api/orpc/catalog/rpc/*", async (c, next) => {
+  const { matched, response } = await catalogORPCHandler.handle(createHonoORPCRequest(c), {
+    prefix: "/api/orpc/catalog/rpc",
+    context: { hono: c },
+  });
+  if (matched) return c.newResponse(response.body, response);
+  return next();
+});
+
+app.use("/api/orpc/cart/rpc/*", async (c, next) => {
+  const { matched, response } = await cartORPCHandler.handle(createHonoORPCRequest(c), {
+    prefix: "/api/orpc/cart/rpc",
+    context: { hono: c },
+  });
+  if (matched) return c.newResponse(response.body, response);
+  return next();
+});
+
+app.use("/api/orpc/checkout/rpc/*", async (c, next) => {
+  const { matched, response } = await checkoutORPCHandler.handle(createHonoORPCRequest(c), {
+    prefix: "/api/orpc/checkout/rpc",
+    context: { hono: c },
+  });
+  if (matched) return c.newResponse(response.body, response);
+  return next();
+});
+
+app.use("/api/orpc/images/rpc/*", async (c, next) => {
+  const { matched, response } = await imagesORPCHandler.handle(createHonoORPCRequest(c), {
+    prefix: "/api/orpc/images/rpc",
+    context: { hono: c },
+  });
+  if (matched) return c.newResponse(response.body, response);
+  return next();
+});
+
+app.use("/api/orpc/ml/rpc/*", async (c, next) => {
+  const { matched, response } = await mlORPCHandler.handle(createHonoORPCRequest(c), {
+    prefix: "/api/orpc/ml/rpc",
+    context: { hono: c },
+  });
+  if (matched) return c.newResponse(response.body, response);
+  return next();
+});
+
+registerMercadolibreOauthCallback(app);
+registerMercadopagoCheckoutWebhook(app);
+
 app.use("/api/orpc/inventory/rpc/*", async (c, next) => {
   const { matched, response } = await inventoryORPCHandler.handle(createHonoORPCRequest(c), {
     prefix: "/api/orpc/inventory/rpc",
@@ -1566,6 +1621,46 @@ app.use("/api/orpc/dte/*", async (c, next) => {
     return c.newResponse(response.body, response);
   }
 
+  return next();
+});
+
+app.use("/api/orpc/catalog/*", async (c, next) => {
+  const { matched, response } = await catalogOpenAPIHandler.handle(createHonoORPCRequest(c), {
+    context: { hono: c },
+  });
+  if (matched) return c.newResponse(response.body, response);
+  return next();
+});
+
+app.use("/api/orpc/cart/*", async (c, next) => {
+  const { matched, response } = await cartOpenAPIHandler.handle(createHonoORPCRequest(c), {
+    context: { hono: c },
+  });
+  if (matched) return c.newResponse(response.body, response);
+  return next();
+});
+
+app.use("/api/orpc/checkout/*", async (c, next) => {
+  const { matched, response } = await checkoutOpenAPIHandler.handle(createHonoORPCRequest(c), {
+    context: { hono: c },
+  });
+  if (matched) return c.newResponse(response.body, response);
+  return next();
+});
+
+app.use("/api/orpc/images/*", async (c, next) => {
+  const { matched, response } = await imagesOpenAPIHandler.handle(createHonoORPCRequest(c), {
+    context: { hono: c },
+  });
+  if (matched) return c.newResponse(response.body, response);
+  return next();
+});
+
+app.use("/api/orpc/ml/*", async (c, next) => {
+  const { matched, response } = await mlOpenAPIHandler.handle(createHonoORPCRequest(c), {
+    context: { hono: c },
+  });
+  if (matched) return c.newResponse(response.body, response);
   return next();
 });
 

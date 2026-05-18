@@ -43,10 +43,25 @@
       "import": "./dist/calendar.js",
       "default": "./dist/calendar.js"
     },
+    "./cart": {
+      "types": "./dist/cart.d.ts",
+      "import": "./dist/cart.js",
+      "default": "./dist/cart.js"
+    },
+    "./catalog": {
+      "types": "./dist/catalog.d.ts",
+      "import": "./dist/catalog.js",
+      "default": "./dist/catalog.js"
+    },
     "./certificates": {
       "types": "./dist/certificates.d.ts",
       "import": "./dist/certificates.js",
       "default": "./dist/certificates.js"
+    },
+    "./checkout": {
+      "types": "./dist/checkout.d.ts",
+      "import": "./dist/checkout.js",
+      "default": "./dist/checkout.js"
     },
     "./clinical-series": {
       "types": "./dist/clinical-series.d.ts",
@@ -118,6 +133,11 @@
       "import": "./dist/haulmer.js",
       "default": "./dist/haulmer.js"
     },
+    "./images": {
+      "types": "./dist/images.d.ts",
+      "import": "./dist/images.js",
+      "default": "./dist/images.js"
+    },
     "./inventory": {
       "types": "./dist/inventory.d.ts",
       "import": "./dist/inventory.js",
@@ -137,6 +157,11 @@
       "types": "./dist/provider-credentials.d.ts",
       "import": "./dist/provider-credentials.js",
       "default": "./dist/provider-credentials.js"
+    },
+    "./ml": {
+      "types": "./dist/ml.d.ts",
+      "import": "./dist/ml.js",
+      "default": "./dist/ml.js"
     },
     "./mercadopago": {
       "types": "./dist/mercadopago.d.ts",

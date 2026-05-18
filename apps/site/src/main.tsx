@@ -1,10 +1,11 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { createRouter, RouterProvider } from "@tanstack/react-router";
 import { PostHogProvider } from "posthog-js/react";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 
-import { App } from "./App";
 import "./index.css";
+import { routeTree } from "./routeTree.gen";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -32,11 +33,23 @@ if (!root) {
   throw new Error("Root element not found");
 }
 
+const router = createRouter({
+  routeTree,
+  defaultPreload: "intent",
+  context: { queryClient },
+});
+
+declare module "@tanstack/react-router" {
+  interface Register {
+    router: typeof router;
+  }
+}
+
 createRoot(root).render(
   <StrictMode>
     <PostHogProvider apiKey={import.meta.env.VITE_PUBLIC_POSTHOG_KEY} options={posthogOptions}>
       <QueryClientProvider client={queryClient}>
-        <App />
+        <RouterProvider router={router} />
       </QueryClientProvider>
     </PostHogProvider>
   </StrictMode>
