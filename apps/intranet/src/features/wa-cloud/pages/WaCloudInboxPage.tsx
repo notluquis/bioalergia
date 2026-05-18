@@ -23,7 +23,16 @@ import {
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { getRouteApi } from "@tanstack/react-router";
 import dayjs from "dayjs";
-import { ArrowLeft, Bell, BellOff, Filter, Inbox, MessageSquareText, Phone } from "lucide-react";
+import {
+  ArrowLeft,
+  Bell,
+  BellOff,
+  Filter,
+  Inbox,
+  MessageSquareText,
+  Phone,
+  Search,
+} from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { WaConversationStatus } from "@finanzas/orpc-contracts/wa-cloud";
 import { ConversationDetail } from "../components/ConversationDetail";
@@ -102,7 +111,18 @@ function formatRelative(d: Date | null | undefined): string {
   return m.format("DD-MM-YY");
 }
 
-export function WaCloudInboxPage() {
+export interface WaCloudInboxPageProps {
+  /**
+   * Optional handler that opens the global-search drawer (rendered by
+   * the unified `/wa-cloud` host). When provided, the inbox header
+   * shows a search-icon button next to the filters. The `cmd/ctrl+k`
+   * shortcut is handled by the host so it works regardless of the
+   * inbox tab being active.
+   */
+  onOpenSearchDrawer?: () => void;
+}
+
+export function WaCloudInboxPage({ onOpenSearchDrawer }: WaCloudInboxPageProps = {}) {
   const accounts = useAccounts();
   const allPhones = useMemo(
     () => (accounts.data?.accounts ?? []).flatMap((a) => a.phoneNumbers),
@@ -333,6 +353,17 @@ export function WaCloudInboxPage() {
                   Bandeja
                 </h2>
                 <div className="flex items-center gap-1">
+                  {onOpenSearchDrawer ? (
+                    <Button
+                      variant="tertiary"
+                      size="sm"
+                      isIconOnly
+                      aria-label="Buscar mensajes (Cmd/Ctrl + K)"
+                      onPress={onOpenSearchDrawer}
+                    >
+                      <Search size={14} />
+                    </Button>
+                  ) : null}
                   <PushToggle />
                   <FilterDropdown
                     status={status}

@@ -1,16 +1,16 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
-import { WaCloudSearchPage } from "@/features/wa-cloud/pages/WaCloudSearchPage";
 
+// Legacy global-search page. Now opens the right-side search drawer on
+// the inbox tab via the host's `?search=1` marker. The host strips the
+// marker after mount so refresh doesn't re-open the drawer.
 export const Route = createFileRoute("/_authed/wa-cloud/buscar")({
-  staticData: {
-    nav: { iconKey: "Search", label: "WA Buscar", order: 105, section: "Sistema" },
-    permission: { action: "read", subject: "WaBusinessAccount" },
-    title: "WhatsApp Cloud — Buscar",
+  staticData: { hideFromNav: true },
+  beforeLoad: () => {
+    throw redirect({
+      to: "/wa-cloud",
+      search: { tab: "inbox", search: 1 },
+      replace: true,
+    });
   },
-  beforeLoad: ({ context }) => {
-    if (!context.can("read", "WaBusinessAccount")) {
-      throw redirect({ to: "/" });
-    }
-  },
-  component: WaCloudSearchPage,
+  component: () => null,
 });
