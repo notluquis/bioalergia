@@ -111,7 +111,12 @@
         "typescript/no-unsafe-member-access": "off",
         "typescript/no-unsafe-argument": "off",
         "typescript/no-unsafe-return": "off",
-        "typescript/no-unsafe-assignment": "off"
+        "typescript/no-unsafe-assignment": "off",
+        // Test fixtures legitimately drill into known-shape mock data
+        // (e.g. `mock.calls[0]![0]`); the explicit narrowing is noise
+        // when the very next line asserts the value. Source files keep
+        // enforcement.
+        "typescript/no-non-null-assertion": "off"
       }
     },
     {
