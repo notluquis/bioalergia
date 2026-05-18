@@ -30,7 +30,7 @@ export function SidebarItem({ item, onNavigate }: SidebarItemProps) {
   return (
     <Link
       activeOptions={{ exact: true, includeSearch: false }}
-      className="group block min-w-0 select-none outline-none md:inline-block md:min-w-0"
+      className="group block min-w-0 select-none outline-none md:w-12"
       onClick={() => {
         onNavigate();
       }}
@@ -42,7 +42,7 @@ export function SidebarItem({ item, onNavigate }: SidebarItemProps) {
             <div
               className={cn(
                 "relative flex w-full min-w-0 items-center justify-start rounded-xl px-4 py-3",
-                "md:mx-auto md:justify-center md:p-0 md:size-12",
+                "md:justify-center md:p-0 md:size-12",
                 isActive
                   ? "bg-primary/10 font-semibold text-primary"
                   : "text-default-600 hover:bg-default-50 hover:text-foreground"
