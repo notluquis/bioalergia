@@ -102,7 +102,16 @@
       "files": ["**/*.test.{ts,tsx}", "**/__tests__/**"],
       "rules": {
         "vitest/require-to-throw-message": "off",
-        "no-constant-binary-expression": "off"
+        "no-constant-binary-expression": "off",
+        // vitest mocks (`.mockResolvedValue`, `.mockReturnValue`) live on
+        // `any` by design (vi.fn() returns Mock<any>). Type-aware unsafe-*
+        // rules fire on every call site without surfacing a real bug —
+        // the alternative (typed mock factories per test) is huge churn
+        // for zero runtime safety win. Keep enforcement on src.
+        "typescript/no-unsafe-member-access": "off",
+        "typescript/no-unsafe-argument": "off",
+        "typescript/no-unsafe-return": "off",
+        "typescript/no-unsafe-assignment": "off"
       }
     },
     {
