@@ -30,6 +30,7 @@ export interface AuthSession {
 }
 
 const COOKIE_NAME = "finanzas_session";
+export const SITE_COOKIE_NAME = "bio_site_session";
 const BEARER_PREFIX = /^Bearer\s+/i;
 
 function parseDebugScopes(value: unknown): DebugScope[] | undefined {
@@ -186,6 +187,24 @@ export async function getSessionUser(ctx: Context): Promise<AuthSession | null> 
     return session;
   } catch {
     ctx.set("sessionUser", null);
+    return null;
+  }
+}
+
+/**
+ * Resolve a shop-site (`bioalergia.cl`) session from the `bio_site_session`
+ * cookie. Uses the same PASETO verification path as the intranet, but is
+ * keyed on a distinct cookie name so the two surfaces never collide on the
+ * shared `*.bioalergia.cl` parent domain.
+ */
+export async function getSiteSessionUser(ctx: Context): Promise<AuthSession | null> {
+  const token = getCookie(ctx, SITE_COOKIE_NAME);
+  if (!token) {
+    return null;
+  }
+  try {
+    return await resolveSessionUserFromToken(token);
+  } catch {
     return null;
   }
 }

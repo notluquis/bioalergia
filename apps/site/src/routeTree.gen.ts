@@ -9,14 +9,38 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as RegistroRouteImport } from './routes/registro'
+import { Route as MiCuentaRouteImport } from './routes/mi-cuenta'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as CheckoutRouteImport } from './routes/checkout'
 import { Route as CarritoRouteImport } from './routes/carrito'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as TiendaIndexRouteImport } from './routes/tienda/index'
+import { Route as MiCuentaIndexRouteImport } from './routes/mi-cuenta/index'
 import { Route as ProductoSlugRouteImport } from './routes/producto/$slug'
 import { Route as PedidoNumberRouteImport } from './routes/pedido/$number'
+import { Route as MiCuentaSeguridadRouteImport } from './routes/mi-cuenta/seguridad'
+import { Route as MiCuentaPedidosRouteImport } from './routes/mi-cuenta/pedidos'
+import { Route as MiCuentaDireccionesRouteImport } from './routes/mi-cuenta/direcciones'
 import { Route as LegalSlugRouteImport } from './routes/legal/$slug'
+import { Route as MiCuentaPedidosNumberRouteImport } from './routes/mi-cuenta/pedidos.$number'
+import { Route as MiCuentaAuthCallbackRouteImport } from './routes/mi-cuenta/auth/callback'
 
+const RegistroRoute = RegistroRouteImport.update({
+  id: '/registro',
+  path: '/registro',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MiCuentaRoute = MiCuentaRouteImport.update({
+  id: '/mi-cuenta',
+  path: '/mi-cuenta',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CheckoutRoute = CheckoutRouteImport.update({
   id: '/checkout',
   path: '/checkout',
@@ -37,6 +61,11 @@ const TiendaIndexRoute = TiendaIndexRouteImport.update({
   path: '/tienda/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MiCuentaIndexRoute = MiCuentaIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => MiCuentaRoute,
+} as any)
 const ProductoSlugRoute = ProductoSlugRouteImport.update({
   id: '/producto/$slug',
   path: '/producto/$slug',
@@ -47,39 +76,90 @@ const PedidoNumberRoute = PedidoNumberRouteImport.update({
   path: '/pedido/$number',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MiCuentaSeguridadRoute = MiCuentaSeguridadRouteImport.update({
+  id: '/seguridad',
+  path: '/seguridad',
+  getParentRoute: () => MiCuentaRoute,
+} as any)
+const MiCuentaPedidosRoute = MiCuentaPedidosRouteImport.update({
+  id: '/pedidos',
+  path: '/pedidos',
+  getParentRoute: () => MiCuentaRoute,
+} as any)
+const MiCuentaDireccionesRoute = MiCuentaDireccionesRouteImport.update({
+  id: '/direcciones',
+  path: '/direcciones',
+  getParentRoute: () => MiCuentaRoute,
+} as any)
 const LegalSlugRoute = LegalSlugRouteImport.update({
   id: '/legal/$slug',
   path: '/legal/$slug',
   getParentRoute: () => rootRouteImport,
+} as any)
+const MiCuentaPedidosNumberRoute = MiCuentaPedidosNumberRouteImport.update({
+  id: '/$number',
+  path: '/$number',
+  getParentRoute: () => MiCuentaPedidosRoute,
+} as any)
+const MiCuentaAuthCallbackRoute = MiCuentaAuthCallbackRouteImport.update({
+  id: '/auth/callback',
+  path: '/auth/callback',
+  getParentRoute: () => MiCuentaRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/carrito': typeof CarritoRoute
   '/checkout': typeof CheckoutRoute
+  '/login': typeof LoginRoute
+  '/mi-cuenta': typeof MiCuentaRouteWithChildren
+  '/registro': typeof RegistroRoute
   '/legal/$slug': typeof LegalSlugRoute
+  '/mi-cuenta/direcciones': typeof MiCuentaDireccionesRoute
+  '/mi-cuenta/pedidos': typeof MiCuentaPedidosRouteWithChildren
+  '/mi-cuenta/seguridad': typeof MiCuentaSeguridadRoute
   '/pedido/$number': typeof PedidoNumberRoute
   '/producto/$slug': typeof ProductoSlugRoute
+  '/mi-cuenta/': typeof MiCuentaIndexRoute
   '/tienda/': typeof TiendaIndexRoute
+  '/mi-cuenta/auth/callback': typeof MiCuentaAuthCallbackRoute
+  '/mi-cuenta/pedidos/$number': typeof MiCuentaPedidosNumberRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/carrito': typeof CarritoRoute
   '/checkout': typeof CheckoutRoute
+  '/login': typeof LoginRoute
+  '/registro': typeof RegistroRoute
   '/legal/$slug': typeof LegalSlugRoute
+  '/mi-cuenta/direcciones': typeof MiCuentaDireccionesRoute
+  '/mi-cuenta/pedidos': typeof MiCuentaPedidosRouteWithChildren
+  '/mi-cuenta/seguridad': typeof MiCuentaSeguridadRoute
   '/pedido/$number': typeof PedidoNumberRoute
   '/producto/$slug': typeof ProductoSlugRoute
+  '/mi-cuenta': typeof MiCuentaIndexRoute
   '/tienda': typeof TiendaIndexRoute
+  '/mi-cuenta/auth/callback': typeof MiCuentaAuthCallbackRoute
+  '/mi-cuenta/pedidos/$number': typeof MiCuentaPedidosNumberRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/carrito': typeof CarritoRoute
   '/checkout': typeof CheckoutRoute
+  '/login': typeof LoginRoute
+  '/mi-cuenta': typeof MiCuentaRouteWithChildren
+  '/registro': typeof RegistroRoute
   '/legal/$slug': typeof LegalSlugRoute
+  '/mi-cuenta/direcciones': typeof MiCuentaDireccionesRoute
+  '/mi-cuenta/pedidos': typeof MiCuentaPedidosRouteWithChildren
+  '/mi-cuenta/seguridad': typeof MiCuentaSeguridadRoute
   '/pedido/$number': typeof PedidoNumberRoute
   '/producto/$slug': typeof ProductoSlugRoute
+  '/mi-cuenta/': typeof MiCuentaIndexRoute
   '/tienda/': typeof TiendaIndexRoute
+  '/mi-cuenta/auth/callback': typeof MiCuentaAuthCallbackRoute
+  '/mi-cuenta/pedidos/$number': typeof MiCuentaPedidosNumberRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -87,34 +167,63 @@ export interface FileRouteTypes {
     | '/'
     | '/carrito'
     | '/checkout'
+    | '/login'
+    | '/mi-cuenta'
+    | '/registro'
     | '/legal/$slug'
+    | '/mi-cuenta/direcciones'
+    | '/mi-cuenta/pedidos'
+    | '/mi-cuenta/seguridad'
     | '/pedido/$number'
     | '/producto/$slug'
+    | '/mi-cuenta/'
     | '/tienda/'
+    | '/mi-cuenta/auth/callback'
+    | '/mi-cuenta/pedidos/$number'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/carrito'
     | '/checkout'
+    | '/login'
+    | '/registro'
     | '/legal/$slug'
+    | '/mi-cuenta/direcciones'
+    | '/mi-cuenta/pedidos'
+    | '/mi-cuenta/seguridad'
     | '/pedido/$number'
     | '/producto/$slug'
+    | '/mi-cuenta'
     | '/tienda'
+    | '/mi-cuenta/auth/callback'
+    | '/mi-cuenta/pedidos/$number'
   id:
     | '__root__'
     | '/'
     | '/carrito'
     | '/checkout'
+    | '/login'
+    | '/mi-cuenta'
+    | '/registro'
     | '/legal/$slug'
+    | '/mi-cuenta/direcciones'
+    | '/mi-cuenta/pedidos'
+    | '/mi-cuenta/seguridad'
     | '/pedido/$number'
     | '/producto/$slug'
+    | '/mi-cuenta/'
     | '/tienda/'
+    | '/mi-cuenta/auth/callback'
+    | '/mi-cuenta/pedidos/$number'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CarritoRoute: typeof CarritoRoute
   CheckoutRoute: typeof CheckoutRoute
+  LoginRoute: typeof LoginRoute
+  MiCuentaRoute: typeof MiCuentaRouteWithChildren
+  RegistroRoute: typeof RegistroRoute
   LegalSlugRoute: typeof LegalSlugRoute
   PedidoNumberRoute: typeof PedidoNumberRoute
   ProductoSlugRoute: typeof ProductoSlugRoute
@@ -123,6 +232,27 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/registro': {
+      id: '/registro'
+      path: '/registro'
+      fullPath: '/registro'
+      preLoaderRoute: typeof RegistroRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mi-cuenta': {
+      id: '/mi-cuenta'
+      path: '/mi-cuenta'
+      fullPath: '/mi-cuenta'
+      preLoaderRoute: typeof MiCuentaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/checkout': {
       id: '/checkout'
       path: '/checkout'
@@ -151,6 +281,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TiendaIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/mi-cuenta/': {
+      id: '/mi-cuenta/'
+      path: '/'
+      fullPath: '/mi-cuenta/'
+      preLoaderRoute: typeof MiCuentaIndexRouteImport
+      parentRoute: typeof MiCuentaRoute
+    }
     '/producto/$slug': {
       id: '/producto/$slug'
       path: '/producto/$slug'
@@ -165,6 +302,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PedidoNumberRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/mi-cuenta/seguridad': {
+      id: '/mi-cuenta/seguridad'
+      path: '/seguridad'
+      fullPath: '/mi-cuenta/seguridad'
+      preLoaderRoute: typeof MiCuentaSeguridadRouteImport
+      parentRoute: typeof MiCuentaRoute
+    }
+    '/mi-cuenta/pedidos': {
+      id: '/mi-cuenta/pedidos'
+      path: '/pedidos'
+      fullPath: '/mi-cuenta/pedidos'
+      preLoaderRoute: typeof MiCuentaPedidosRouteImport
+      parentRoute: typeof MiCuentaRoute
+    }
+    '/mi-cuenta/direcciones': {
+      id: '/mi-cuenta/direcciones'
+      path: '/direcciones'
+      fullPath: '/mi-cuenta/direcciones'
+      preLoaderRoute: typeof MiCuentaDireccionesRouteImport
+      parentRoute: typeof MiCuentaRoute
+    }
     '/legal/$slug': {
       id: '/legal/$slug'
       path: '/legal/$slug'
@@ -172,13 +330,62 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LegalSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/mi-cuenta/pedidos/$number': {
+      id: '/mi-cuenta/pedidos/$number'
+      path: '/$number'
+      fullPath: '/mi-cuenta/pedidos/$number'
+      preLoaderRoute: typeof MiCuentaPedidosNumberRouteImport
+      parentRoute: typeof MiCuentaPedidosRoute
+    }
+    '/mi-cuenta/auth/callback': {
+      id: '/mi-cuenta/auth/callback'
+      path: '/auth/callback'
+      fullPath: '/mi-cuenta/auth/callback'
+      preLoaderRoute: typeof MiCuentaAuthCallbackRouteImport
+      parentRoute: typeof MiCuentaRoute
+    }
   }
 }
+
+interface MiCuentaPedidosRouteChildren {
+  MiCuentaPedidosNumberRoute: typeof MiCuentaPedidosNumberRoute
+}
+
+const MiCuentaPedidosRouteChildren: MiCuentaPedidosRouteChildren = {
+  MiCuentaPedidosNumberRoute: MiCuentaPedidosNumberRoute,
+}
+
+const MiCuentaPedidosRouteWithChildren = MiCuentaPedidosRoute._addFileChildren(
+  MiCuentaPedidosRouteChildren,
+)
+
+interface MiCuentaRouteChildren {
+  MiCuentaDireccionesRoute: typeof MiCuentaDireccionesRoute
+  MiCuentaPedidosRoute: typeof MiCuentaPedidosRouteWithChildren
+  MiCuentaSeguridadRoute: typeof MiCuentaSeguridadRoute
+  MiCuentaIndexRoute: typeof MiCuentaIndexRoute
+  MiCuentaAuthCallbackRoute: typeof MiCuentaAuthCallbackRoute
+}
+
+const MiCuentaRouteChildren: MiCuentaRouteChildren = {
+  MiCuentaDireccionesRoute: MiCuentaDireccionesRoute,
+  MiCuentaPedidosRoute: MiCuentaPedidosRouteWithChildren,
+  MiCuentaSeguridadRoute: MiCuentaSeguridadRoute,
+  MiCuentaIndexRoute: MiCuentaIndexRoute,
+  MiCuentaAuthCallbackRoute: MiCuentaAuthCallbackRoute,
+}
+
+const MiCuentaRouteWithChildren = MiCuentaRoute._addFileChildren(
+  MiCuentaRouteChildren,
+)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CarritoRoute: CarritoRoute,
   CheckoutRoute: CheckoutRoute,
+  LoginRoute: LoginRoute,
+  MiCuentaRoute: MiCuentaRouteWithChildren,
+  RegistroRoute: RegistroRoute,
   LegalSlugRoute: LegalSlugRoute,
   PedidoNumberRoute: PedidoNumberRoute,
   ProductoSlugRoute: ProductoSlugRoute,

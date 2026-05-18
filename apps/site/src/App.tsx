@@ -261,6 +261,12 @@ export function App() {
                     >
                       Tienda
                     </Link>
+                    <Link
+                      className="no-underline font-semibold text-(--accent) transition-colors hover:text-(--ink)"
+                      href="/mi-cuenta"
+                    >
+                      Mi cuenta
+                    </Link>
                   </>
                 )}
               </nav>

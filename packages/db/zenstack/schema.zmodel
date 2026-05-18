@@ -65,6 +65,9 @@ model Person {
 model Address {
   id           Int      @id @default(autoincrement())
   personId     Int      @map("person_id")
+  /// Optional direct owner (shop customer). When null, the address belongs to the
+  /// Person record (operator / patient surface). Site /mi-cuenta filters by userId.
+  userId       Int?     @map("user_id")
 
   // User input
   label        String   @default("Principal")
@@ -105,9 +108,11 @@ model Address {
   updatedAt    DateTime @default(now()) @updatedAt @map("updated_at")
 
   person       Person   @relation(fields: [personId], references: [id], onDelete: Cascade)
+  user         User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@index([personId])
   @@index([personId, isPrimary])
+  @@index([userId])
 
   // Access policies — same as Person (only authenticated active users mutate)
   @@deny('all', auth() == null)
@@ -115,6 +120,28 @@ model Address {
   @@allow('create,update,delete', auth().status == 'ACTIVE')
 
   @@map("addresses")
+}
+
+/// Single-use, time-bound email link token used by the public shop /mi-cuenta
+/// passwordless flow. The plaintext token travels only in the email URL;
+/// only the SHA-256 hash is persisted. Once consumed, marked `consumedAt`.
+model MagicLinkToken {
+  id          Int       @id @default(autoincrement())
+  userId      Int       @map("user_id")
+  tokenHash   String    @unique @map("token_hash")
+  expiresAt   DateTime  @map("expires_at")
+  consumedAt  DateTime? @map("consumed_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([expiresAt])
+  @@index([userId, consumedAt])
+
+  @@deny('all', auth() == null)
+  @@allow('read,create,update,delete', auth().status == 'ACTIVE')
+
+  @@map("magic_link_tokens")
 }
 
 model User {
@@ -166,6 +193,8 @@ model User {
   createdExamReports      ExamReport[]               @relation("ExamReportCreator")
   shopCarts               Cart[]
   shopOrders              Order[]
+  shopAddresses           Address[]
+  magicLinkTokens         MagicLinkToken[]
   person                  Person                   @relation(fields: [personId], references: [id], onDelete: Cascade)
 
   // This model represents the authenticated user

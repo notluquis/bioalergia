@@ -15,11 +15,23 @@
       "import": "./dist/index.js",
       "default": "./dist/index.js"
     },
+    "./account": {
+      "development": "./src/account.ts",
+      "types": "./dist/account.d.ts",
+      "import": "./dist/account.js",
+      "default": "./dist/account.js"
+    },
     "./addresses": {
       "development": "./src/addresses.ts",
       "types": "./dist/addresses.d.ts",
       "import": "./dist/addresses.js",
       "default": "./dist/addresses.js"
+    },
+    "./site-auth": {
+      "development": "./src/site-auth.ts",
+      "types": "./dist/site-auth.d.ts",
+      "import": "./dist/site-auth.js",
+      "default": "./dist/site-auth.js"
     },
     "./attendance": {
       "development": "./src/attendance.ts",
