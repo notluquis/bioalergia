@@ -191,7 +191,21 @@ function parseWithdrawalRows(rows: CsvUploadRow[]): {
       }
 
       if (!dateCreated) {
-        errors.push(`Fila ${rowNumber}: dateCreated es obligatorio y debe ser una fecha válida.`);
+        // Log the raw value so we can extend parseChileDateTime if
+        // upstream sends a format we don't yet recognize.
+        logError(
+          "csv-upload.preview.dateCreated-null",
+          new Error("normalizeDate returned null"),
+          {
+            rowIndex: index,
+            rawValue: row.dateCreated,
+            rawType: typeof row.dateCreated,
+            rawJson: JSON.stringify(row.dateCreated),
+          }
+        );
+        errors.push(
+          `Fila ${rowNumber}: dateCreated inválido o vacío (raw="${String(row.dateCreated)}").`
+        );
         return;
       }
 
