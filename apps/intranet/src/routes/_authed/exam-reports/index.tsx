@@ -84,6 +84,7 @@ function ExamReportsListPage() {
   const confirmDialog = useConfirmDialog();
   const { can } = useCan();
   const canCreate = can("create", "ExamReport");
+  const canUpdate = can("update", "ExamReport");
   const canDelete = can("delete", "ExamReport");
   const search = Route.useSearch();
   const navigate = Route.useNavigate();
@@ -209,7 +210,7 @@ function ExamReportsListPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          {canCreate && (
+          {canUpdate && (
             <Button
               aria-label="Editar informe"
               data-testid={`exam-report-edit-${r.id}`}

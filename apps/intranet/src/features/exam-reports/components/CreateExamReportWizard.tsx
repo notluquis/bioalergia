@@ -18,6 +18,7 @@ import {
   Select,
   Separator,
   Spinner,
+  Switch,
   Tabs,
   TextArea,
   TextField,
@@ -26,8 +27,8 @@ import {
 } from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import dayjs from "dayjs";
-import { CheckCircle, Pencil, Plus, Trash2 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { CheckCircle, Eye, Pencil, Plus, Trash2 } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { useToast } from "@/context/ToastContext";
 import { fetchPatients } from "@/features/patients/api";
@@ -48,8 +49,46 @@ import {
   EXAM_TYPE_LABEL,
   EXAM_TYPE_ORDER,
 } from "../lib/exam-types";
-import { downloadExamReportPdf } from "../lib/pdf";
+import { ExamReportPreviewModal } from "./ExamReportPreviewModal";
 import type { ExamType, SkinReaction } from "@finanzas/orpc-contracts/exam-reports";
+
+/**
+ * localStorage key driving the edit-mode "Descargar PDF al guardar"
+ * preference. Persisted per browser, NOT per user (intentional — same
+ * machine, same workflow). Default OFF: download is destructive (writes
+ * a file to the operator's Downloads folder), and golden-2026 says any
+ * destructive side-effect of a save must be opt-in.
+ */
+const DOWNLOAD_ON_SAVE_LS_KEY = "exam-reports.editor.downloadOnSave";
+
+function readDownloadOnSavePref(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    return window.localStorage.getItem(DOWNLOAD_ON_SAVE_LS_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function writeDownloadOnSavePref(value: boolean): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(DOWNLOAD_ON_SAVE_LS_KEY, value ? "1" : "0");
+  } catch {
+    // localStorage unavailable (private mode, quota) — silent no-op;
+    // the toggle still works for the current session via React state.
+  }
+}
+
+/**
+ * Lazy-load the jspdf chunk only when the operator actually wants a PDF
+ * (preview or download). Keeps the wizard's initial bundle small — the
+ * heavy `jspdf` + `jspdf-autotable` payload only enters the page when
+ * the user clicks "Vista previa" / "Generar y descargar".
+ */
+async function loadPdfModule(): Promise<typeof import("../lib/pdf")> {
+  return import("../lib/pdf");
+}
 
 /**
  * Wizard to create OR edit an exam report. Patient is selected upstream
@@ -197,6 +236,121 @@ export function CreateExamReportWizard({
     if (!form.doctorRut && s.doctorRut) form.setDoctorRut(s.doctorRut);
   }, [settingsQ.data, form, isEdit]);
 
+  // Edit-mode opt-in download toggle. Hydrate from localStorage on first
+  // render so the operator's last choice survives the page reload.
+  const [downloadOnSave, setDownloadOnSave] = useState<boolean>(() =>
+    isEdit ? readDownloadOnSavePref() : false
+  );
+  useEffect(() => {
+    if (isEdit) writeDownloadOnSavePref(downloadOnSave);
+  }, [downloadOnSave, isEdit]);
+
+  const [previewOpen, setPreviewOpen] = useState(false);
+
+  // Build the in-memory PDF input shape from current form + persisted
+  // patient/exam metadata. Reused by both the preview iframe and the
+  // post-save download. Memoised by closure (settings / patient / form
+  // refs) but recreated per call — jspdf generation is pure-CPU
+  // expensive, not cheap to deduplicate.
+  const buildPdfInput = useCallback((): {
+    examType: ExamType;
+    conclusionText: string;
+    reagents: string | null;
+    technique: string | null;
+    notes: string | null;
+    doctorName: string;
+    doctorSpecialty: string;
+    doctorRut: string | null;
+    patient: {
+      fullName: string;
+      age: string | null;
+      rut: string | null;
+    };
+    sections: {
+      sectionKey: string;
+      label: string;
+      reactions: {
+        reaction: SkinReaction;
+        allergen: {
+          id: string;
+          commonName: string;
+          scientificName: string | null;
+          category: string;
+          pollenType: string | null;
+          tags: string[];
+        };
+        papuleMm: number | null;
+      }[];
+    }[];
+    controls: { histamineMm: number | null; salineMm: number | null };
+  } | null => {
+    if (!effectivePatient) return null;
+    const allergenLookup = new Map((allergensQ.data?.allergens ?? []).map((a) => [a.id, a]));
+    return {
+      examType: form.examType,
+      conclusionText: form.conclusionText,
+      reagents: settingsQ.data?.defaultReagents ?? null,
+      technique: settingsQ.data?.defaultTechnique ?? null,
+      notes: form.notes || null,
+      doctorName: form.doctorName || settingsQ.data?.doctorName || "—",
+      doctorSpecialty: form.doctorSpecialty || settingsQ.data?.doctorSpecialty || "—",
+      doctorRut: form.doctorRut || null,
+      patient: {
+        fullName: patientFullName(effectivePatient),
+        age: computeAge(effectivePatient.birthDate),
+        rut: effectivePatient.person.rut,
+      },
+      sections: form.sections.map((s) => ({
+        sectionKey: s.sectionKey,
+        label: s.label,
+        reactions: s.reactions.map((r) => {
+          const cat = allergenLookup.get(r.allergenId);
+          return {
+            reaction: r.reaction,
+            allergen: {
+              id: r.allergenId,
+              commonName: r.allergenName,
+              scientificName: cat?.scientificName ?? null,
+              category: cat?.category ?? "Otros",
+              pollenType: cat?.pollenType ?? null,
+              tags: cat?.tags ?? [],
+            },
+            papuleMm: r.papuleMm,
+          };
+        }),
+      })),
+      controls: { histamineMm: form.histamineMm, salineMm: form.salineMm },
+    };
+  }, [
+    effectivePatient,
+    allergensQ.data,
+    settingsQ.data,
+    form.examType,
+    form.conclusionText,
+    form.notes,
+    form.doctorName,
+    form.doctorSpecialty,
+    form.doctorRut,
+    form.sections,
+    form.histamineMm,
+    form.salineMm,
+  ]);
+
+  /**
+   * Preview-blob factory passed to <ExamReportPreviewModal>. Lazy-loads
+   * the jspdf chunk on first call so the wizard's initial bundle stays
+   * lean. Throws when settings haven't loaded — the modal renders the
+   * error string in-place.
+   */
+  const generatePreviewBlob = useCallback(async (): Promise<Blob> => {
+    const settings = settingsQ.data;
+    if (!settings) throw new Error("ClinicSettings no cargada");
+    const input = buildPdfInput();
+    if (!input) throw new Error("Falta paciente para generar la vista previa");
+    const { generateExamReportPdf } = await loadPdfModule();
+    return generateExamReportPdf(input, settings);
+  }, [buildPdfInput, settingsQ.data]);
+
   const createMutation = useMutation({
     mutationFn: async () => {
       if (!effectivePatient) throw new Error("Falta paciente");
@@ -228,6 +382,7 @@ export function CreateExamReportWizard({
       void qc.invalidateQueries({ queryKey: examReportsKeys.lists() });
       const settings = settingsQ.data;
       if (settings && effectivePatient) {
+        const { downloadExamReportPdf } = await loadPdfModule();
         await downloadExamReportPdf(
           {
             examType: created.examType,
@@ -291,10 +446,61 @@ export function CreateExamReportWizard({
         })),
       });
     },
-    onSuccess: (updated) => {
+    onSuccess: async (updated) => {
       void qc.invalidateQueries({ queryKey: examReportsKeys.lists() });
       void qc.invalidateQueries({ queryKey: examReportsKeys.detail(updated.id).queryKey });
-      toast.success("Informe actualizado");
+
+      // Opt-in re-download: only when the operator ticked the Switch in
+      // the footer. Uses the SERVER response shape so the PDF reflects
+      // exactly what got persisted (not the in-flight local form state).
+      if (downloadOnSave) {
+        const settings = settingsQ.data;
+        if (settings) {
+          try {
+            const { downloadExamReportPdf } = await loadPdfModule();
+            await downloadExamReportPdf(
+              {
+                examType: updated.examType,
+                conclusionText: updated.conclusionText,
+                reagents: updated.reagents,
+                technique: updated.technique,
+                notes: updated.notes,
+                doctorName: updated.doctorName,
+                doctorSpecialty: updated.doctorSpecialty,
+                doctorRut: updated.doctorRut,
+                patient: {
+                  fullName: patientFullName(updated.patient),
+                  age: computeAge(updated.patient.birthDate),
+                  rut: updated.patient.person.rut,
+                },
+                sections: updated.sections.map((s) => ({
+                  sectionKey: s.sectionKey,
+                  label: s.label,
+                  reactions: s.reactions.map((r) => ({
+                    reaction: r.reaction,
+                    allergen: r.allergen,
+                    papuleMm: r.papuleMm,
+                  })),
+                })),
+                controls: { histamineMm: form.histamineMm, salineMm: form.salineMm },
+              },
+              settings,
+              `informe-${EXAM_TYPE_LABEL[updated.examType].replace(/\s+/g, "-")}-${updated.id}.pdf`
+            );
+            await examReportsORPCClient.markGenerated({ id: updated.id });
+          } catch (err) {
+            // Don't fail the save just because the download bombed —
+            // toast and continue. The DB update already succeeded.
+            toast.error(
+              err instanceof Error
+                ? `Guardado, pero falló la descarga: ${err.message}`
+                : "Guardado, pero falló la descarga"
+            );
+          }
+        }
+      }
+
+      toast.success(downloadOnSave ? "Informe actualizado y descargado" : "Informe actualizado");
       onClose();
     },
     onError: (err) => toast.error(toExamReportsApiError(err).message),
@@ -307,9 +513,15 @@ export function CreateExamReportWizard({
     form.conclusionText.trim().length > 0 &&
     form.sections.some((s) => s.reactions.length > 0);
 
+  const canPreview = canSubmit && Boolean(settingsQ.data) && Boolean(effectivePatient);
+
   const headerTitle = isEdit
     ? `Editar informe — ${effectivePatient ? patientFullName(effectivePatient) : ""}`
     : `Nuevo Informe — ${effectivePatient ? patientFullName(effectivePatient) : ""}`;
+
+  const previewFilename = `informe-${EXAM_TYPE_LABEL[form.examType].replace(/\s+/g, "-")}-${
+    initialReport?.id ?? "borrador"
+  }.pdf`;
 
   return (
     <Modal>
@@ -441,21 +653,47 @@ export function CreateExamReportWizard({
                     Siguiente
                   </Button>
                 ) : (
-                  <Button
-                    data-testid="exam-report-wizard-submit"
-                    isDisabled={!canSubmit}
-                    isPending={activeMutation.isPending}
-                    onPress={() => activeMutation.mutate()}
-                  >
-                    <CheckCircle className="size-4" />
-                    {isEdit ? "Guardar cambios" : "Generar y descargar PDF"}
-                  </Button>
+                  <div className="flex flex-wrap items-center justify-end gap-3">
+                    {isEdit && (
+                      <Switch
+                        data-testid="exam-report-wizard-download-on-save"
+                        isSelected={downloadOnSave}
+                        onChange={setDownloadOnSave}
+                      >
+                        Descargar PDF al guardar
+                      </Switch>
+                    )}
+                    <Button
+                      data-testid="exam-report-wizard-preview"
+                      isDisabled={!canPreview}
+                      onPress={() => setPreviewOpen(true)}
+                      variant="outline"
+                    >
+                      <Eye className="size-4" />
+                      Vista previa
+                    </Button>
+                    <Button
+                      data-testid="exam-report-wizard-submit"
+                      isDisabled={!canSubmit}
+                      isPending={activeMutation.isPending}
+                      onPress={() => activeMutation.mutate()}
+                    >
+                      <CheckCircle className="size-4" />
+                      {isEdit ? "Guardar cambios" : "Generar y descargar PDF"}
+                    </Button>
+                  </div>
                 )}
               </div>
             </Modal.Footer>
           </Modal.Dialog>
         </Modal.Container>
       </Modal.Backdrop>
+      <ExamReportPreviewModal
+        filename={previewFilename}
+        getBlob={generatePreviewBlob}
+        isOpen={previewOpen}
+        onClose={() => setPreviewOpen(false)}
+      />
     </Modal>
   );
 }
