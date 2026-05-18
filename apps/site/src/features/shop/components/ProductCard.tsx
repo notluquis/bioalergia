@@ -1,11 +1,7 @@
 import { Button, Card, Chip } from "@heroui/react";
 import { Link } from "@tanstack/react-router";
 
-const CLP = new Intl.NumberFormat("es-CL", {
-  style: "currency",
-  currency: "CLP",
-  maximumFractionDigits: 0,
-});
+import { CLP_FORMATTER, stockState } from "@/features/shop/lib/shop-config";
 
 type Product = {
   id: number;
@@ -20,16 +16,6 @@ type Product = {
   requires_prescription: boolean;
   images?: Array<{ cdn_url: string; is_primary: boolean; alt: string | null }>;
 };
-
-const LOW_STOCK_THRESHOLD = 3;
-
-function stockState(qty: number, safety: number) {
-  const effective = qty - safety;
-  if (effective <= 0) return { label: "Agotado", color: "default" } as const;
-  if (effective <= LOW_STOCK_THRESHOLD)
-    return { label: "Últimas unidades", color: "warning" } as const;
-  return { label: "Stock disponible", color: "success" } as const;
-}
 
 export function ProductCard({ product }: { product: Product }) {
   const primary =
@@ -80,11 +66,11 @@ export function ProductCard({ product }: { product: Product }) {
       <Card.Footer className="flex flex-col items-stretch gap-2">
         <div className="flex flex-col">
           <div className="flex items-baseline gap-2">
-            <span className="font-bold text-xl">{CLP.format(product.price_clp)}</span>
+            <span className="font-bold text-xl">{CLP_FORMATTER.format(product.price_clp)}</span>
             {product.compare_at_price_clp &&
               product.compare_at_price_clp > product.price_clp && (
                 <span className="text-foreground/50 text-sm line-through">
-                  {CLP.format(product.compare_at_price_clp)}
+                  {CLP_FORMATTER.format(product.compare_at_price_clp)}
                 </span>
               )}
           </div>

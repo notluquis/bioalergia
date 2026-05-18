@@ -5,16 +5,11 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Trash2 } from "lucide-react";
 
+import { CLP_FORMATTER } from "@/features/shop/lib/shop-config";
 import { shopKeys } from "@/features/shop/queries";
 import { cartClient } from "@/lib/orpc-client";
 
 type CartItem = InferContractRouterOutputs<CartContract>["get"]["data"]["items"][number];
-
-const CLP = new Intl.NumberFormat("es-CL", {
-  style: "currency",
-  currency: "CLP",
-  maximumFractionDigits: 0,
-});
 
 function CarritoPage() {
   const queryClient = useQueryClient();
@@ -93,7 +88,7 @@ function CarritoPage() {
                       {item.product.name}
                     </Link>
                     <p className="text-foreground/60 text-xs">
-                      {CLP.format(item.unit_price_clp)} c/u
+                      {CLP_FORMATTER.format(item.unit_price_clp)} c/u
                     </p>
                   </div>
                   <NumberField
@@ -115,7 +110,7 @@ function CarritoPage() {
                   </NumberField>
                   <div className="hidden text-right sm:block">
                     <p className="font-semibold">
-                      {CLP.format(item.unit_price_clp * item.qty)}
+                      {CLP_FORMATTER.format(item.unit_price_clp * item.qty)}
                     </p>
                   </div>
                   <Button
@@ -139,7 +134,7 @@ function CarritoPage() {
             <Card.Content className="space-y-2 text-sm">
               <div className="flex justify-between">
                 <span>Subtotal</span>
-                <span>{CLP.format(cart.subtotal_clp)}</span>
+                <span>{CLP_FORMATTER.format(cart.subtotal_clp)}</span>
               </div>
               <div className="flex justify-between text-foreground/60 text-xs">
                 <span>Envío</span>
@@ -147,7 +142,7 @@ function CarritoPage() {
               </div>
               <div className="flex justify-between border-foreground/10 border-t pt-2 font-bold text-base">
                 <span>Total estimado</span>
-                <span>{CLP.format(cart.total_clp)}</span>
+                <span>{CLP_FORMATTER.format(cart.total_clp)}</span>
               </div>
             </Card.Content>
             <Card.Footer>

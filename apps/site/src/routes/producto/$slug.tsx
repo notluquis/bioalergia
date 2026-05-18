@@ -14,24 +14,11 @@ import { MessageCircle, ShoppingCart } from "lucide-react";
 import { useState } from "react";
 
 import { contactInfo } from "@/data/clinic";
+import { CLP_FORMATTER, SHOP_CONFIG, stockState } from "@/features/shop/lib/shop-config";
 import { shopKeys } from "@/features/shop/queries";
 import { cartClient } from "@/lib/orpc-client";
 
-const CLP = new Intl.NumberFormat("es-CL", {
-  style: "currency",
-  currency: "CLP",
-  maximumFractionDigits: 0,
-});
 const PHONE = contactInfo.phones[0].replace(/\D/g, "");
-const LOW_STOCK_THRESHOLD = 3;
-
-function stockState(qty: number, safety: number) {
-  const effective = qty - safety;
-  if (effective <= 0) return { label: "Agotado", color: "default" } as const;
-  if (effective <= LOW_STOCK_THRESHOLD)
-    return { label: "Últimas unidades", color: "warning" } as const;
-  return { label: "Stock disponible", color: "success" } as const;
-}
 
 function ProductDetailPage() {
   const { slug } = Route.useParams();
@@ -105,12 +92,12 @@ function ProductDetailPage() {
     image: primary?.cdn_url ? [primary.cdn_url] : undefined,
     offers: {
       "@type": "Offer",
-      priceCurrency: "CLP",
+      priceCurrency: SHOP_CONFIG.currency,
       price: product.price_clp,
       availability: outOfStock
         ? "https://schema.org/OutOfStock"
         : "https://schema.org/InStock",
-      url: `https://bioalergia.cl/producto/${product.slug}`,
+      url: `${SHOP_CONFIG.storefrontUrl}/producto/${product.slug}`,
     },
   };
 
@@ -118,13 +105,18 @@ function ProductDetailPage() {
     "@context": "https://schema.org/",
     "@type": "BreadcrumbList",
     itemListElement: [
-      { "@type": "ListItem", position: 1, name: "Inicio", item: "https://bioalergia.cl/" },
-      { "@type": "ListItem", position: 2, name: "Tienda", item: "https://bioalergia.cl/tienda" },
+      { "@type": "ListItem", position: 1, name: "Inicio", item: `${SHOP_CONFIG.storefrontUrl}/` },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: "Tienda",
+        item: `${SHOP_CONFIG.storefrontUrl}/tienda`,
+      },
       {
         "@type": "ListItem",
         position: 3,
         name: product.name,
-        item: `https://bioalergia.cl/producto/${product.slug}`,
+        item: `${SHOP_CONFIG.storefrontUrl}/producto/${product.slug}`,
       },
     ],
   };
@@ -186,11 +178,11 @@ function ProductDetailPage() {
 
           <div className="flex flex-col">
             <div className="flex items-baseline gap-3">
-              <span className="font-bold text-4xl">{CLP.format(product.price_clp)}</span>
+              <span className="font-bold text-4xl">{CLP_FORMATTER.format(product.price_clp)}</span>
               {product.compare_at_price_clp &&
                 product.compare_at_price_clp > product.price_clp && (
                   <span className="text-foreground/50 text-lg line-through">
-                    {CLP.format(product.compare_at_price_clp)}
+                    {CLP_FORMATTER.format(product.compare_at_price_clp)}
                   </span>
                 )}
             </div>
