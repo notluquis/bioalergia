@@ -5,41 +5,9 @@ import { useEffect, useMemo, useState } from "react";
 import { contactInfo } from "@/data/clinic";
 import { legalDocuments, type LegalDocumentKey } from "@/data/legal";
 import { doctoraliaLink } from "@/lib/doctoralia";
+import { useThemePreference } from "@/lib/theme";
 import { HomePage } from "@/pages/HomePage";
 import { LegalPage } from "@/pages/LegalPage";
-
-function useThemePreference() {
-  const [theme, setTheme] = useState<"light" | "dark">(() => {
-    if (typeof window === "undefined") {
-      return "light";
-    }
-    return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-  });
-
-  useEffect(() => {
-    if (typeof window === "undefined") {
-      return;
-    }
-    const media = window.matchMedia("(prefers-color-scheme: dark)");
-    const handler = (event: MediaQueryListEvent) => {
-      setTheme(event.matches ? "dark" : "light");
-    };
-    media.addEventListener("change", handler);
-    return () => media.removeEventListener("change", handler);
-  }, []);
-
-  useEffect(() => {
-    document.documentElement.dataset.theme = theme;
-  }, [theme]);
-
-  return useMemo(
-    () => ({
-      theme,
-      toggle: () => setTheme((current) => (current === "dark" ? "light" : "dark")),
-    }),
-    [theme]
-  );
-}
 
 function ThemeIcon({ theme }: { theme: "light" | "dark" }) {
   return theme === "dark" ? (
