@@ -18,7 +18,7 @@ import { chilexpressConfig } from "../lib/config.ts";
 import { logError } from "../lib/logger.ts";
 import { configureSuperjson } from "../lib/superjson-config.ts";
 import { quoteCourier } from "../modules/chilexpress/client.ts";
-import { createCheckoutPreference } from "../modules/mercadopago-checkout/payment.ts";
+import { createCheckoutOrder } from "../modules/mercadopago-checkout/payment.ts";
 import { reserveStockForOrder } from "../modules/reservations/index.ts";
 import { createOrderFromCart, getOrderByNumber } from "../services/orders.ts";
 
@@ -121,37 +121,49 @@ const startRoute = base
       })),
     });
 
-    const preference = await createCheckoutPreference({
-      orderNumber: order.number,
+    const [firstName, ...rest] = input.customer.name.split(" ");
+    const lastName = rest.join(" ") || undefined;
+
+    const mpOrder = await createCheckoutOrder({
       orderId: order.id,
-      customerEmail: input.customer.email,
+      orderNumber: order.number,
+      amountClp: order.totalClp,
+      brick: input.brick,
       items: order.items.map((i: OrderItem) => ({
         sku: i.product.sku,
         title: i.product.name,
+        ...(i.product.shortDescription
+          ? { description: i.product.shortDescription }
+          : {}),
         qty: i.qty,
         unitPriceClp: i.unitPriceClp,
       })),
+      payer: {
+        email: input.customer.email,
+        ...(firstName ? { firstName } : {}),
+        ...(lastName ? { lastName } : {}),
+        ...(input.customer.rut ? { rut: input.customer.rut } : {}),
+      },
     });
 
-    // Persist payment row con idempotencyKey usado en MP.
     await db.payment.create({
       data: {
         orderId: order.id,
         provider: "MERCADO_PAGO",
-        idempotencyKey: preference.idempotencyKey,
+        providerPaymentId: mpOrder.orderId,
+        idempotencyKey: mpOrder.idempotencyKey,
         amountClp: order.totalClp,
-        status: "PENDING",
+        status: mpOrder.status === "approved" ? "APPROVED" : "PENDING",
       },
     });
-
-    const publicKey = process.env.MERCADOPAGO_PUBLIC_KEY ?? "";
 
     return {
       data: {
         order_id: order.id,
         order_number: order.number,
-        mp_preference_id: preference.preferenceId,
-        mp_public_key: publicKey,
+        mp_order_id: mpOrder.orderId,
+        mp_status: mpOrder.status,
+        mp_status_detail: mpOrder.statusDetail,
         total_clp: order.totalClp,
       },
       status: "ok" as const,

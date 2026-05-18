@@ -26,6 +26,7 @@
     "@finanzas/theme": "workspace:*",
     "@heroui/react": "^3.0.5",
     "@heroui/styles": "^3.0.5",
+    "@mercadopago/sdk-react": "^1.0.7",
     "@orpc/client": "^1.14.3",
     "@orpc/contract": "^1.14.3",
     "@orpc/shared": "^1.14.3",

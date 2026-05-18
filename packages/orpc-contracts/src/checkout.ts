@@ -20,6 +20,22 @@ export const shippingAddressSchema = z.object({
   postal_code: z.string().optional(),
 });
 
+export const brickSubmissionSchema = z.object({
+  token: z.string(),
+  payment_method_id: z.string(),
+  issuer_id: z.string().optional(),
+  installments: z.number().int().positive(),
+  payer: z.object({
+    email: z.string().email(),
+    identification: z
+      .object({
+        type: z.string(),
+        number: z.string(),
+      })
+      .optional(),
+  }),
+});
+
 export const checkoutStartInputSchema = z.object({
   customer: customerInfoSchema,
   billing_type: billingTypeSchema.default("BOLETA"),
@@ -32,14 +48,16 @@ export const checkoutStartInputSchema = z.object({
     }),
   ]),
   notes: z.string().optional(),
+  brick: brickSubmissionSchema,
 });
 
 export const checkoutStartResponseSchema = z.object({
   data: z.object({
     order_id: z.number().int(),
     order_number: z.string(),
-    mp_preference_id: z.string(),
-    mp_public_key: z.string(),
+    mp_order_id: z.string(),
+    mp_status: z.string(),
+    mp_status_detail: z.string(),
     total_clp: z.number().int(),
   }),
   status: z.literal("ok"),
