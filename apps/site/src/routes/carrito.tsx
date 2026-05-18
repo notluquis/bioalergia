@@ -1,5 +1,5 @@
 import type { CartContract } from "@finanzas/orpc-contracts/cart";
-import { Button, Card, NumberField, Spinner } from "@heroui/react";
+import { Breadcrumbs, Button, Card, NumberField, Skeleton } from "@heroui/react";
 import type { InferContractRouterOutputs } from "@orpc/contract";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
@@ -34,8 +34,11 @@ function CarritoPage() {
 
   if (isLoading) {
     return (
-      <main className="flex min-h-[40vh] items-center justify-center">
-        <Spinner />
+      <main className="mx-auto max-w-4xl space-y-4 px-4 py-8 sm:px-6">
+        <Skeleton className="h-6 w-32" />
+        <Skeleton className="h-10 w-48" />
+        <Skeleton className="h-24 w-full" />
+        <Skeleton className="h-24 w-full" />
       </main>
     );
   }
@@ -45,11 +48,16 @@ function CarritoPage() {
 
   return (
     <main className="mx-auto max-w-4xl space-y-6 px-4 py-8 sm:px-6">
+      <Breadcrumbs>
+        <Breadcrumbs.Item href="/">Inicio</Breadcrumbs.Item>
+        <Breadcrumbs.Item href="/tienda">Tienda</Breadcrumbs.Item>
+        <Breadcrumbs.Item>Mi carrito</Breadcrumbs.Item>
+      </Breadcrumbs>
       <header>
+        <h1 className="font-bold text-3xl">Mi carrito</h1>
         <Link className="text-foreground/60 text-sm hover:underline" to="/tienda">
           ← Seguir comprando
         </Link>
-        <h1 className="mt-2 font-bold text-3xl">Mi carrito</h1>
       </header>
 
       {empty ? (
@@ -111,9 +119,11 @@ function CarritoPage() {
                     </p>
                   </div>
                   <Button
+                    aria-label="Quitar del carrito"
+                    isIconOnly
                     onPress={() => removeMutation.mutate(item.product_id)}
                     size="sm"
-                    variant="danger-soft"
+                    variant="danger"
                   >
                     <Trash2 size={14} />
                   </Button>

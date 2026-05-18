@@ -1,32 +1,96 @@
 import type { CatalogContract } from "@finanzas/orpc-contracts/catalog";
-import { Card, Spinner } from "@heroui/react";
+import { Breadcrumbs, Card, Label, ListBox, Select, Skeleton } from "@heroui/react";
 import type { InferContractRouterOutputs } from "@orpc/contract";
 import { useQuery } from "@tanstack/react-query";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
+import { useMemo } from "react";
+import { z } from "zod";
 
 import { ProductCard } from "@/features/shop/components/ProductCard";
 import { shopKeys } from "@/features/shop/queries";
 
 type CatalogProduct = InferContractRouterOutputs<CatalogContract>["list"]["data"][number];
 
+const sortSchema = z.object({
+  sort: z
+    .enum(["relevancia", "precio_asc", "precio_desc"])
+    .optional()
+    .default("relevancia"),
+});
+
+function sortProducts(rows: CatalogProduct[], key: string) {
+  if (key === "precio_asc") return [...rows].sort((a, b) => a.price_clp - b.price_clp);
+  if (key === "precio_desc") return [...rows].sort((a, b) => b.price_clp - a.price_clp);
+  return rows;
+}
+
 function TiendaPage() {
+  const navigate = Route.useNavigate();
+  const { sort } = Route.useSearch();
   const { data, isLoading, error } = useQuery(shopKeys.products());
 
+  const sorted = useMemo(
+    () => (data ? sortProducts(data.data, sort) : []),
+    [data, sort]
+  );
+
   return (
-    <main className="mx-auto max-w-7xl space-y-8 px-4 py-8 sm:px-6 lg:px-8">
+    <main className="mx-auto max-w-7xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
+      <Breadcrumbs>
+        <Breadcrumbs.Item href="/">Inicio</Breadcrumbs.Item>
+        <Breadcrumbs.Item>Tienda</Breadcrumbs.Item>
+      </Breadcrumbs>
+
       <header className="space-y-2">
-        <Link className="text-foreground/60 text-sm hover:underline" to="/">
-          ← Volver a la página principal
-        </Link>
         <h1 className="font-bold text-3xl sm:text-4xl">Tienda Bioalergia</h1>
         <p className="text-foreground/70">
           Productos seleccionados para el cuidado de la piel, hidratación y bienestar.
         </p>
       </header>
 
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-foreground/60 text-sm">
+          {data ? `${data.data.length} productos` : null}
+        </p>
+        <Select
+          className="w-56"
+          onChange={(value) => {
+            if (!value) return;
+            void navigate({
+              search: { sort: value as "relevancia" | "precio_asc" | "precio_desc" },
+            });
+          }}
+          value={sort}
+        >
+          <Label className="sr-only">Ordenar</Label>
+          <Select.Trigger>
+            <Select.Value />
+            <Select.Indicator />
+          </Select.Trigger>
+          <Select.Popover>
+            <ListBox>
+              <ListBox.Item id="relevancia" textValue="Más relevantes">
+                Más relevantes
+                <ListBox.ItemIndicator />
+              </ListBox.Item>
+              <ListBox.Item id="precio_asc" textValue="Precio: menor a mayor">
+                Precio: menor a mayor
+                <ListBox.ItemIndicator />
+              </ListBox.Item>
+              <ListBox.Item id="precio_desc" textValue="Precio: mayor a menor">
+                Precio: mayor a menor
+                <ListBox.ItemIndicator />
+              </ListBox.Item>
+            </ListBox>
+          </Select.Popover>
+        </Select>
+      </div>
+
       {isLoading && (
-        <div className="flex items-center justify-center py-16">
-          <Spinner /> <span className="ml-3 text-foreground/60">Cargando…</span>
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <Skeleton className="h-96 w-full rounded-2xl" key={i} />
+          ))}
         </div>
       )}
       {error && (
@@ -38,7 +102,7 @@ function TiendaPage() {
       )}
       {data && (
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {data.data.map((p: CatalogProduct) => (
+          {sorted.map((p: CatalogProduct) => (
             <ProductCard key={p.id} product={p} />
           ))}
         </div>
@@ -49,4 +113,5 @@ function TiendaPage() {
 
 export const Route = createFileRoute("/tienda/")({
   component: TiendaPage,
+  validateSearch: sortSchema,
 });

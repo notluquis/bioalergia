@@ -16,19 +16,32 @@ type Product = {
   price_clp: number;
   compare_at_price_clp: number | null;
   available_qty: number;
+  safety_stock: number;
+  requires_prescription: boolean;
   images?: Array<{ cdn_url: string; is_primary: boolean; alt: string | null }>;
 };
+
+const LOW_STOCK_THRESHOLD = 3;
+
+function stockState(qty: number, safety: number) {
+  const effective = qty - safety;
+  if (effective <= 0) return { label: "Agotado", color: "default" } as const;
+  if (effective <= LOW_STOCK_THRESHOLD)
+    return { label: "Últimas unidades", color: "warning" } as const;
+  return { label: "Stock disponible", color: "success" } as const;
+}
 
 export function ProductCard({ product }: { product: Product }) {
   const primary =
     product.images?.find((i) => i.is_primary) ?? product.images?.[0] ?? null;
-  const outOfStock = product.available_qty <= 0;
+  const stock = stockState(product.available_qty, product.safety_stock);
+  const outOfStock = stock.label === "Agotado";
 
   return (
     <Card className="h-full">
       <Card.Content className="p-0">
         <Link
-          className="block aspect-square overflow-hidden rounded-t-[18px] bg-foreground/5"
+          className="relative block aspect-square overflow-hidden rounded-t-[18px] bg-foreground/5"
           params={{ slug: product.slug }}
           to="/producto/$slug"
         >
@@ -44,33 +57,44 @@ export function ProductCard({ product }: { product: Product }) {
               Sin imagen
             </div>
           )}
+          <div className="absolute top-2 left-2">
+            <Chip color={stock.color} variant="primary">
+              {stock.label}
+            </Chip>
+          </div>
+          {product.requires_prescription && (
+            <div className="absolute top-2 right-2">
+              <Chip color="warning" variant="secondary">
+                Receta médica
+              </Chip>
+            </div>
+          )}
         </Link>
       </Card.Content>
       <Card.Header>
-        <Card.Description className="text-xs uppercase">
-          {product.brand ?? "—"}
+        <Card.Description className="text-xs uppercase tracking-wide">
+          {product.brand ?? "—"} · SKU {product.sku}
         </Card.Description>
-        <Card.Title className="text-base">{product.name}</Card.Title>
+        <Card.Title className="line-clamp-2 text-base">{product.name}</Card.Title>
       </Card.Header>
       <Card.Footer className="flex flex-col items-stretch gap-2">
-        <div className="flex items-baseline gap-2">
-          <span className="font-bold text-lg">{CLP.format(product.price_clp)}</span>
-          {product.compare_at_price_clp && product.compare_at_price_clp > product.price_clp && (
-            <span className="text-foreground/50 text-sm line-through">
-              {CLP.format(product.compare_at_price_clp)}
-            </span>
-          )}
+        <div className="flex flex-col">
+          <div className="flex items-baseline gap-2">
+            <span className="font-bold text-xl">{CLP.format(product.price_clp)}</span>
+            {product.compare_at_price_clp &&
+              product.compare_at_price_clp > product.price_clp && (
+                <span className="text-foreground/50 text-sm line-through">
+                  {CLP.format(product.compare_at_price_clp)}
+                </span>
+              )}
+          </div>
+          <span className="text-foreground/60 text-xs">IVA incluido</span>
         </div>
-        {outOfStock ? (
-          <Chip variant="soft">Agotado</Chip>
-        ) : (
-          <Link
-            params={{ slug: product.slug }}
-            to="/producto/$slug"
-          >
-            <Button variant="primary">Ver producto</Button>
-          </Link>
-        )}
+        <Link params={{ slug: product.slug }} to="/producto/$slug">
+          <Button className="w-full" isDisabled={outOfStock} variant="primary">
+            {outOfStock ? "No disponible" : "Ver producto"}
+          </Button>
+        </Link>
       </Card.Footer>
     </Card>
   );
