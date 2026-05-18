@@ -1,18 +1,10 @@
-import { createFileRoute, getRouteApi } from "@tanstack/react-router";
-
-import { CSVUploadPage } from "@/pages/settings/CSVUploadPage";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_authed/settings/csv-upload")({
-  staticData: {
-    nav: { iconKey: "Upload", label: "Carga Masiva", order: 40, section: "Sistema" },
-    permission: { action: "create", subject: "BulkData" },
-    title: "Configuración — Carga masiva",
+  staticData: { hideFromNav: true },
+  beforeLoad: () => {
+    // eslint-disable-next-line @typescript-eslint/only-throw-error
+    throw redirect({ to: "/admin/database", search: { tab: "importar" }, replace: true });
   },
-  beforeLoad: ({ context }) => {
-    if (!context.can("create", "BulkData")) {
-      const routeApi = getRouteApi("/_authed/settings/csv-upload");
-      throw routeApi.redirect({ to: "/" });
-    }
-  },
-  component: CSVUploadPage,
+  component: () => null,
 });

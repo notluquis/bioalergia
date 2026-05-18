@@ -1,24 +1,10 @@
-import { createFileRoute, getRouteApi } from "@tanstack/react-router";
-
-import { InventorySettingsPage } from "@/pages/settings/InventorySettingsPage";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_authed/settings/inventario")({
-  staticData: {
-    nav: { iconKey: "PackageSearch", label: "Inventario Config", order: 50, section: "Sistema" },
-    permission: { action: "update", subject: "InventorySetting" },
-    relatedSubjects: [
-      "InventoryCategory",
-      "InventoryMovement",
-      "CommonSupply",
-      "FinancialAutoCategoryRule",
-    ],
-    title: "Configuración — Inventario",
+  staticData: { hideFromNav: true },
+  beforeLoad: () => {
+    // eslint-disable-next-line @typescript-eslint/only-throw-error
+    throw redirect({ to: "/inventory", search: { tab: "configuracion" }, replace: true });
   },
-  beforeLoad: ({ context }) => {
-    if (!context.can("update", "InventorySetting")) {
-      const routeApi = getRouteApi("/_authed/settings/inventario");
-      throw routeApi.redirect({ to: "/" });
-    }
-  },
-  component: InventorySettingsPage,
+  component: () => null,
 });

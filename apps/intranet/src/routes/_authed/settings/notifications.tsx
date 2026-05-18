@@ -1,11 +1,10 @@
-import { createFileRoute } from "@tanstack/react-router";
-
-import { NotificationsSettingsPage } from "@/pages/settings/NotificationsSettingsPage";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_authed/settings/notifications")({
-  staticData: {
-    nav: { iconKey: "Bell", label: "Notificaciones", order: 5, section: "Sistema" },
-    title: "Notificaciones",
+  staticData: { hideFromNav: true },
+  beforeLoad: () => {
+    // eslint-disable-next-line @typescript-eslint/only-throw-error
+    throw redirect({ to: "/account", search: { tab: "notificaciones" }, replace: true });
   },
-  component: NotificationsSettingsPage,
+  component: () => null,
 });

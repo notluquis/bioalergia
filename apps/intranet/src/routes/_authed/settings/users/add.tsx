@@ -1,10 +1,10 @@
-import { createFileRoute, getRouteApi } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_authed/settings/users/add")({
+  staticData: { hideFromNav: true },
   beforeLoad: () => {
-    const routeApi = getRouteApi("/_authed/settings/users/add");
     // eslint-disable-next-line @typescript-eslint/only-throw-error
-    throw routeApi.redirect({ to: "/settings/users" });
+    throw redirect({ to: "/admin/users", search: { tab: "usuarios" }, replace: true });
   },
   component: () => null,
 });

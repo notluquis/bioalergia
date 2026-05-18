@@ -1,18 +1,10 @@
-import { createFileRoute, getRouteApi } from "@tanstack/react-router";
-
-import { TiendaSettingsPage } from "@/pages/settings/TiendaSettingsPage";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_authed/settings/tienda")({
-  staticData: {
-    nav: { iconKey: "Store", label: "Tienda", order: 65, section: "Sistema" },
-    permission: { action: "update", subject: "Setting" },
-    title: "Configuración — Tienda",
+  staticData: { hideFromNav: true },
+  beforeLoad: () => {
+    // eslint-disable-next-line @typescript-eslint/only-throw-error
+    throw redirect({ to: "/store", search: { tab: "canales" }, replace: true });
   },
-  beforeLoad: ({ context }) => {
-    if (!context.can("update", "Setting")) {
-      const routeApi = getRouteApi("/_authed/settings/tienda");
-      throw routeApi.redirect({ to: "/" });
-    }
-  },
-  component: TiendaSettingsPage,
+  component: () => null,
 });

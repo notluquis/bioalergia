@@ -1,11 +1,10 @@
-import { createFileRoute } from "@tanstack/react-router";
-
-import { MlConnectionPage } from "@/features/catalog/pages/MlConnectionPage";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_authed/settings/mercadolibre")({
-  staticData: {
-    nav: { iconKey: "ShoppingBag", label: "MercadoLibre", order: 50, section: "Sistema" },
-    title: "MercadoLibre",
+  staticData: { hideFromNav: true },
+  beforeLoad: () => {
+    // eslint-disable-next-line @typescript-eslint/only-throw-error
+    throw redirect({ to: "/store", search: { tab: "mercadolibre" }, replace: true });
   },
-  component: MlConnectionPage,
+  component: () => null,
 });

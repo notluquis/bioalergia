@@ -27,10 +27,12 @@ import { Route as AuthedCertificatesRouteImport } from "./routes/_authed/certifi
 import { Route as AuthedCalendarRouteImport } from "./routes/_authed/calendar"
 import { Route as AuthedAccountRouteImport } from "./routes/_authed/account"
 import { Route as AuthedWaCloudIndexRouteImport } from "./routes/_authed/wa-cloud/index"
+import { Route as AuthedStoreIndexRouteImport } from "./routes/_authed/store/index"
 import { Route as AuthedSettingsIndexRouteImport } from "./routes/_authed/settings/index"
 import { Route as AuthedServicesIndexRouteImport } from "./routes/_authed/services/index"
 import { Route as AuthedPatientsIndexRouteImport } from "./routes/_authed/patients/index"
 import { Route as AuthedOutreachIndexRouteImport } from "./routes/_authed/outreach/index"
+import { Route as AuthedInventoryIndexRouteImport } from "./routes/_authed/inventory/index"
 import { Route as AuthedHrIndexRouteImport } from "./routes/_authed/hr/index"
 import { Route as AuthedExamReportsIndexRouteImport } from "./routes/_authed/exam-reports/index"
 import { Route as AuthedClinicalIndexRouteImport } from "./routes/_authed/clinical/index"
@@ -95,6 +97,8 @@ import { Route as AuthedClinicalAgendaRouteImport } from "./routes/_authed/clini
 import { Route as AuthedCertificatesMedicalRouteImport } from "./routes/_authed/certificates/medical"
 import { Route as AuthedCalendarSyncHistoryRouteImport } from "./routes/_authed/calendar/sync-history"
 import { Route as AuthedCalendarDteLinksRouteImport } from "./routes/_authed/calendar/dte-links"
+import { Route as AuthedAdminUsersRouteImport } from "./routes/_authed/admin/users"
+import { Route as AuthedAdminDatabaseRouteImport } from "./routes/_authed/admin/database"
 import { Route as AuthedSettingsUsersIndexRouteImport } from "./routes/_authed/settings/users/index"
 import { Route as AuthedPatientsIdIndexRouteImport } from "./routes/_authed/patients/$id/index"
 import { Route as AuthedSettingsUsersAddRouteImport } from "./routes/_authed/settings/users/add"
@@ -196,6 +200,11 @@ const AuthedWaCloudIndexRoute = AuthedWaCloudIndexRouteImport.update({
   path: "/",
   getParentRoute: () => AuthedWaCloudRoute,
 } as any)
+const AuthedStoreIndexRoute = AuthedStoreIndexRouteImport.update({
+  id: "/store/",
+  path: "/store/",
+  getParentRoute: () => AuthedRoute,
+} as any)
 const AuthedSettingsIndexRoute = AuthedSettingsIndexRouteImport.update({
   id: "/",
   path: "/",
@@ -215,6 +224,11 @@ const AuthedOutreachIndexRoute = AuthedOutreachIndexRouteImport.update({
   id: "/",
   path: "/",
   getParentRoute: () => AuthedOutreachRoute,
+} as any)
+const AuthedInventoryIndexRoute = AuthedInventoryIndexRouteImport.update({
+  id: "/inventory/",
+  path: "/inventory/",
+  getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedHrIndexRoute = AuthedHrIndexRouteImport.update({
   id: "/",
@@ -558,6 +572,16 @@ const AuthedCalendarDteLinksRoute = AuthedCalendarDteLinksRouteImport.update({
   path: "/dte-links",
   getParentRoute: () => AuthedCalendarRoute,
 } as any)
+const AuthedAdminUsersRoute = AuthedAdminUsersRouteImport.update({
+  id: "/admin/users",
+  path: "/admin/users",
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedAdminDatabaseRoute = AuthedAdminDatabaseRouteImport.update({
+  id: "/admin/database",
+  path: "/admin/database",
+  getParentRoute: () => AuthedRoute,
+} as any)
 const AuthedSettingsUsersIndexRoute =
   AuthedSettingsUsersIndexRouteImport.update({
     id: "/users/",
@@ -639,6 +663,8 @@ export interface FileRoutesByFullPath {
   "/settings": typeof AuthedSettingsRouteWithChildren
   "/wa-cloud": typeof AuthedWaCloudRouteWithChildren
   "/verify/$id": typeof VerifyIdRoute
+  "/admin/database": typeof AuthedAdminDatabaseRoute
+  "/admin/users": typeof AuthedAdminUsersRoute
   "/calendar/dte-links": typeof AuthedCalendarDteLinksRoute
   "/calendar/sync-history": typeof AuthedCalendarSyncHistoryRoute
   "/certificates/medical": typeof AuthedCertificatesMedicalRoute
@@ -703,10 +729,12 @@ export interface FileRoutesByFullPath {
   "/clinical/": typeof AuthedClinicalIndexRoute
   "/exam-reports/": typeof AuthedExamReportsIndexRoute
   "/hr/": typeof AuthedHrIndexRoute
+  "/inventory/": typeof AuthedInventoryIndexRoute
   "/outreach/": typeof AuthedOutreachIndexRoute
   "/patients/": typeof AuthedPatientsIndexRoute
   "/services/": typeof AuthedServicesIndexRoute
   "/settings/": typeof AuthedSettingsIndexRoute
+  "/store/": typeof AuthedStoreIndexRoute
   "/wa-cloud/": typeof AuthedWaCloudIndexRoute
   "/finanzas/personal/$creditId": typeof AuthedFinanzasPersonalCreditIdRoute
   "/outreach/campanas/$id": typeof AuthedOutreachCampanasIdRoute
@@ -731,6 +759,8 @@ export interface FileRoutesByTo {
   "/operations": typeof AuthedOperationsRouteWithChildren
   "/verify/$id": typeof VerifyIdRoute
   "/": typeof AuthedIndexRoute
+  "/admin/database": typeof AuthedAdminDatabaseRoute
+  "/admin/users": typeof AuthedAdminUsersRoute
   "/calendar/dte-links": typeof AuthedCalendarDteLinksRoute
   "/calendar/sync-history": typeof AuthedCalendarSyncHistoryRoute
   "/certificates/medical": typeof AuthedCertificatesMedicalRoute
@@ -795,10 +825,12 @@ export interface FileRoutesByTo {
   "/clinical": typeof AuthedClinicalIndexRoute
   "/exam-reports": typeof AuthedExamReportsIndexRoute
   "/hr": typeof AuthedHrIndexRoute
+  "/inventory": typeof AuthedInventoryIndexRoute
   "/outreach": typeof AuthedOutreachIndexRoute
   "/patients": typeof AuthedPatientsIndexRoute
   "/services": typeof AuthedServicesIndexRoute
   "/settings": typeof AuthedSettingsIndexRoute
+  "/store": typeof AuthedStoreIndexRoute
   "/wa-cloud": typeof AuthedWaCloudIndexRoute
   "/finanzas/personal/$creditId": typeof AuthedFinanzasPersonalCreditIdRoute
   "/outreach/campanas/$id": typeof AuthedOutreachCampanasIdRoute
@@ -831,6 +863,8 @@ export interface FileRoutesById {
   "/_authed/wa-cloud": typeof AuthedWaCloudRouteWithChildren
   "/verify/$id": typeof VerifyIdRoute
   "/_authed/": typeof AuthedIndexRoute
+  "/_authed/admin/database": typeof AuthedAdminDatabaseRoute
+  "/_authed/admin/users": typeof AuthedAdminUsersRoute
   "/_authed/calendar/dte-links": typeof AuthedCalendarDteLinksRoute
   "/_authed/calendar/sync-history": typeof AuthedCalendarSyncHistoryRoute
   "/_authed/certificates/medical": typeof AuthedCertificatesMedicalRoute
@@ -895,10 +929,12 @@ export interface FileRoutesById {
   "/_authed/clinical/": typeof AuthedClinicalIndexRoute
   "/_authed/exam-reports/": typeof AuthedExamReportsIndexRoute
   "/_authed/hr/": typeof AuthedHrIndexRoute
+  "/_authed/inventory/": typeof AuthedInventoryIndexRoute
   "/_authed/outreach/": typeof AuthedOutreachIndexRoute
   "/_authed/patients/": typeof AuthedPatientsIndexRoute
   "/_authed/services/": typeof AuthedServicesIndexRoute
   "/_authed/settings/": typeof AuthedSettingsIndexRoute
+  "/_authed/store/": typeof AuthedStoreIndexRoute
   "/_authed/wa-cloud/": typeof AuthedWaCloudIndexRoute
   "/_authed/finanzas/personal/$creditId": typeof AuthedFinanzasPersonalCreditIdRoute
   "/_authed/outreach/campanas/$id": typeof AuthedOutreachCampanasIdRoute
@@ -931,6 +967,8 @@ export interface FileRouteTypes {
     | "/settings"
     | "/wa-cloud"
     | "/verify/$id"
+    | "/admin/database"
+    | "/admin/users"
     | "/calendar/dte-links"
     | "/calendar/sync-history"
     | "/certificates/medical"
@@ -995,10 +1033,12 @@ export interface FileRouteTypes {
     | "/clinical/"
     | "/exam-reports/"
     | "/hr/"
+    | "/inventory/"
     | "/outreach/"
     | "/patients/"
     | "/services/"
     | "/settings/"
+    | "/store/"
     | "/wa-cloud/"
     | "/finanzas/personal/$creditId"
     | "/outreach/campanas/$id"
@@ -1023,6 +1063,8 @@ export interface FileRouteTypes {
     | "/operations"
     | "/verify/$id"
     | "/"
+    | "/admin/database"
+    | "/admin/users"
     | "/calendar/dte-links"
     | "/calendar/sync-history"
     | "/certificates/medical"
@@ -1087,10 +1129,12 @@ export interface FileRouteTypes {
     | "/clinical"
     | "/exam-reports"
     | "/hr"
+    | "/inventory"
     | "/outreach"
     | "/patients"
     | "/services"
     | "/settings"
+    | "/store"
     | "/wa-cloud"
     | "/finanzas/personal/$creditId"
     | "/outreach/campanas/$id"
@@ -1122,6 +1166,8 @@ export interface FileRouteTypes {
     | "/_authed/wa-cloud"
     | "/verify/$id"
     | "/_authed/"
+    | "/_authed/admin/database"
+    | "/_authed/admin/users"
     | "/_authed/calendar/dte-links"
     | "/_authed/calendar/sync-history"
     | "/_authed/certificates/medical"
@@ -1186,10 +1232,12 @@ export interface FileRouteTypes {
     | "/_authed/clinical/"
     | "/_authed/exam-reports/"
     | "/_authed/hr/"
+    | "/_authed/inventory/"
     | "/_authed/outreach/"
     | "/_authed/patients/"
     | "/_authed/services/"
     | "/_authed/settings/"
+    | "/_authed/store/"
     | "/_authed/wa-cloud/"
     | "/_authed/finanzas/personal/$creditId"
     | "/_authed/outreach/campanas/$id"
@@ -1339,6 +1387,13 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof AuthedWaCloudIndexRouteImport
       parentRoute: typeof AuthedWaCloudRoute
     }
+    "/_authed/store/": {
+      id: "/_authed/store/"
+      path: "/store"
+      fullPath: "/store/"
+      preLoaderRoute: typeof AuthedStoreIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     "/_authed/settings/": {
       id: "/_authed/settings/"
       path: "/"
@@ -1366,6 +1421,13 @@ declare module "@tanstack/react-router" {
       fullPath: "/outreach/"
       preLoaderRoute: typeof AuthedOutreachIndexRouteImport
       parentRoute: typeof AuthedOutreachRoute
+    }
+    "/_authed/inventory/": {
+      id: "/_authed/inventory/"
+      path: "/inventory"
+      fullPath: "/inventory/"
+      preLoaderRoute: typeof AuthedInventoryIndexRouteImport
+      parentRoute: typeof AuthedRoute
     }
     "/_authed/hr/": {
       id: "/_authed/hr/"
@@ -1815,6 +1877,20 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof AuthedCalendarDteLinksRouteImport
       parentRoute: typeof AuthedCalendarRoute
     }
+    "/_authed/admin/users": {
+      id: "/_authed/admin/users"
+      path: "/admin/users"
+      fullPath: "/admin/users"
+      preLoaderRoute: typeof AuthedAdminUsersRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    "/_authed/admin/database": {
+      id: "/_authed/admin/database"
+      path: "/admin/database"
+      fullPath: "/admin/database"
+      preLoaderRoute: typeof AuthedAdminDatabaseRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     "/_authed/settings/users/": {
       id: "/_authed/settings/users/"
       path: "/users"
@@ -2186,12 +2262,16 @@ interface AuthedRouteChildren {
   AuthedSettingsRoute: typeof AuthedSettingsRouteWithChildren
   AuthedWaCloudRoute: typeof AuthedWaCloudRouteWithChildren
   AuthedIndexRoute: typeof AuthedIndexRoute
+  AuthedAdminDatabaseRoute: typeof AuthedAdminDatabaseRoute
+  AuthedAdminUsersRoute: typeof AuthedAdminUsersRoute
   AuthedDevRoutesAuditRoute: typeof AuthedDevRoutesAuditRoute
   AuthedExamReportsIdRoute: typeof AuthedExamReportsIdRoute
   AuthedPatientsCampaignsRoute: typeof AuthedPatientsCampaignsRoute
   AuthedPatientsNewRoute: typeof AuthedPatientsNewRoute
   AuthedExamReportsIndexRoute: typeof AuthedExamReportsIndexRoute
+  AuthedInventoryIndexRoute: typeof AuthedInventoryIndexRoute
   AuthedPatientsIndexRoute: typeof AuthedPatientsIndexRoute
+  AuthedStoreIndexRoute: typeof AuthedStoreIndexRoute
   AuthedPatientsIdNewBudgetRoute: typeof AuthedPatientsIdNewBudgetRoute
   AuthedPatientsIdNewConsultationRoute: typeof AuthedPatientsIdNewConsultationRoute
   AuthedPatientsIdNewPaymentRoute: typeof AuthedPatientsIdNewPaymentRoute
@@ -2212,12 +2292,16 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedSettingsRoute: AuthedSettingsRouteWithChildren,
   AuthedWaCloudRoute: AuthedWaCloudRouteWithChildren,
   AuthedIndexRoute: AuthedIndexRoute,
+  AuthedAdminDatabaseRoute: AuthedAdminDatabaseRoute,
+  AuthedAdminUsersRoute: AuthedAdminUsersRoute,
   AuthedDevRoutesAuditRoute: AuthedDevRoutesAuditRoute,
   AuthedExamReportsIdRoute: AuthedExamReportsIdRoute,
   AuthedPatientsCampaignsRoute: AuthedPatientsCampaignsRoute,
   AuthedPatientsNewRoute: AuthedPatientsNewRoute,
   AuthedExamReportsIndexRoute: AuthedExamReportsIndexRoute,
+  AuthedInventoryIndexRoute: AuthedInventoryIndexRoute,
   AuthedPatientsIndexRoute: AuthedPatientsIndexRoute,
+  AuthedStoreIndexRoute: AuthedStoreIndexRoute,
   AuthedPatientsIdNewBudgetRoute: AuthedPatientsIdNewBudgetRoute,
   AuthedPatientsIdNewConsultationRoute: AuthedPatientsIdNewConsultationRoute,
   AuthedPatientsIdNewPaymentRoute: AuthedPatientsIdNewPaymentRoute,

@@ -1,24 +1,10 @@
-import { createFileRoute, getRouteApi } from "@tanstack/react-router";
-
-import { inventoryKeys } from "@/features/inventory/queries";
-import { InventoryPage } from "@/features/operations/inventory/pages/InventoryPage";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_authed/operations/inventory")({
-  staticData: {
-    nav: { iconKey: "Package", label: "Inventario", order: 20, section: "Logística" },
-    permission: { action: "read", subject: "InventoryItem" },
-    title: "Inventario",
+  staticData: { hideFromNav: true },
+  beforeLoad: () => {
+    // eslint-disable-next-line @typescript-eslint/only-throw-error
+    throw redirect({ to: "/inventory", search: { tab: "items" }, replace: true });
   },
-  beforeLoad: ({ context }) => {
-    if (!context.can("read", "InventoryItem")) {
-      const routeApi = getRouteApi("/_authed/operations/inventory");
-      // eslint-disable-next-line @typescript-eslint/only-throw-error
-      throw routeApi.redirect({ to: "/" });
-    }
-  },
-  component: InventoryPage,
-
-  loader: ({ context: { queryClient } }) => {
-    return queryClient.ensureQueryData(inventoryKeys.items());
-  },
+  component: () => null,
 });
