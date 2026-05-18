@@ -48,6 +48,7 @@ ARG VITE_VAPID_PUBLIC_KEY
 # vars into the build stage when a matching ARG is declared here.
 ARG VITE_SENTRY_DSN
 ARG SENTRY_AUTH_TOKEN
+ARG VITE_MERCADOPAGO_PUBLIC_KEY
 COPY --from=pruner /app/out/full/ .
 ENV CI=true
 ENV TURBO_TELEMETRY_DISABLED=1
@@ -57,6 +58,7 @@ ENV VITE_META_EMBEDDED_SIGNUP_CONFIG_ID=${VITE_META_EMBEDDED_SIGNUP_CONFIG_ID}
 ENV VITE_VAPID_PUBLIC_KEY=${VITE_VAPID_PUBLIC_KEY}
 ENV VITE_SENTRY_DSN=${VITE_SENTRY_DSN}
 ENV SENTRY_AUTH_TOKEN=${SENTRY_AUTH_TOKEN}
+ENV VITE_MERCADOPAGO_PUBLIC_KEY=${VITE_MERCADOPAGO_PUBLIC_KEY}
 RUN --mount=type=cache,id=s/31aed601-107c-408b-b13e-96b37282ee93-/app/.turbo/cache,target=/app/.turbo/cache \
     pnpm turbo run type-check --filter=@finanzas/intranet
 RUN --mount=type=cache,id=s/31aed601-107c-408b-b13e-96b37282ee93-/app/.turbo/cache,target=/app/.turbo/cache \
