@@ -28,8 +28,8 @@ const orpcMocks = vi.hoisted(() => ({
   deleteRecipient: vi.fn(),
 }));
 
-vi.mock("./orpc", async () => {
-  const actual = await vi.importActual<typeof import("./orpc")>("./orpc");
+vi.mock("./orpc", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./orpc")>();
   return {
     patientCampaignsORPCClient: orpcMocks,
     toPatientCampaignsApiError: actual.toPatientCampaignsApiError,

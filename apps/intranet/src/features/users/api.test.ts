@@ -23,8 +23,8 @@ const orpcMocks = vi.hoisted(() => ({
   updateProfile: vi.fn(),
 }));
 
-vi.mock("./orpc", async () => {
-  const actual = await vi.importActual<typeof import("./orpc")>("./orpc");
+vi.mock("./orpc", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./orpc")>();
   return {
     usersORPCClient: orpcMocks,
     toUsersApiError: actual.toUsersApiError,

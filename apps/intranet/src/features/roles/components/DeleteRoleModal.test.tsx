@@ -29,9 +29,8 @@ const toastMocks = vi.hoisted(() => ({
   info: vi.fn(),
 }));
 
-vi.mock("@/features/roles/api", async () => {
-  const actual =
-    await vi.importActual<typeof import("@/features/roles/api")>("@/features/roles/api");
+vi.mock("@/features/roles/api", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/features/roles/api")>();
   return {
     ...actual,
     deleteRole: apiMocks.deleteRole,

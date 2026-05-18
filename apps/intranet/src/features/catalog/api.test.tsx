@@ -19,8 +19,8 @@ const orpcMocks = vi.hoisted(() => ({
   deleteCategory: vi.fn(),
 }));
 
-vi.mock("./orpc", async () => {
-  const actual = await vi.importActual<typeof import("./orpc")>("./orpc");
+vi.mock("./orpc", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./orpc")>();
   return {
     catalogORPCClient: orpcMocks,
     toCatalogApiError: actual.toCatalogApiError,
