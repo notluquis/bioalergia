@@ -26,6 +26,11 @@ export default defineConfig(({ mode }) => ({
       }),
   ].filter(Boolean),
   resolve: {
+    // Pick workspace packages' "development" export condition so site
+    // dev resolves to `./src/*.ts` (no build needed); production build
+    // emits bundled JS regardless. See apps/intranet/vite.config.ts for
+    // the longer rationale (Node 26 type-stripping in node_modules).
+    conditions: ["development", "module", "browser", "import", "default"],
     alias: {
       "@": fileURLToPath(new URL("./src", import.meta.url)),
     },

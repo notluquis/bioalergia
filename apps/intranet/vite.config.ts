@@ -340,6 +340,14 @@ export default defineConfig(({ mode }) => {
     },
     resolve: {
       extensions: [".tsx", ".ts", ".jsx", ".js", ".json"],
+      // Pick the workspace packages' "development" export condition so
+      // intranet (dev server + vitest) resolves to `./src/*.ts` instead
+      // of `./dist/*.js`. Node 26 in production picks `default` → dist,
+      // which is built before the Docker runtime stage. Workaround for
+      // ERR_UNSUPPORTED_NODE_MODULES_TYPE_STRIPPING when sibling
+      // workspace packages would otherwise ship TS source to node_modules
+      // (Node 26 refuses to strip types under node_modules).
+      conditions: ["development", "module", "browser", "import", "default"],
       alias: {
         "@": fileURLToPath(new URL("./src", import.meta.url)),
         "@shared": fileURLToPath(new URL("./shared", import.meta.url)),
