@@ -167,11 +167,13 @@ describe("generateNavSections", () => {
       tree as unknown as Parameters<typeof generateNavSections>[0]
     );
     expect(section?.items[0]?.icon).toBeDefined();
-    // The fallback is the `Package` lucide icon. v1+ lucide ships icons
-    // as ForwardRefExoticComponent (object), v0.x shipped function
-    // components. Accept either.
-    const icon = section?.items[0]?.icon as unknown;
-    expect(["function", "object"]).toContain(typeof icon);
+    // Fallback = `Package` lucide icon. lucide-react v1+ ships every
+    // icon as `ForwardRefExoticComponent` (object with `$$typeof`
+    // symbol). v0 used plain function components — we're on v1 and
+    // stay there, so assert the v1 shape exactly.
+    const icon = section?.items[0]?.icon as { $$typeof?: symbol } | undefined;
+    expect(typeof icon).toBe("object");
+    expect(icon?.$$typeof).toBeDefined();
   });
 });
 
