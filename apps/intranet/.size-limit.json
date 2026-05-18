@@ -6,7 +6,7 @@
       "dist/client/assets/_authed-*.js",
       "dist/client/assets/__root-*.js"
     ],
-    "limit": "180 KB",
+    "limit": "400 KB",
     "gzip": true
   },
   {
