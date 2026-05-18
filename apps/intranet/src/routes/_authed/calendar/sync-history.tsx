@@ -1,32 +1,14 @@
-import { createFileRoute, getRouteApi } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
-import { calendarSyncQueries } from "@/features/calendar/queries";
-import { CalendarSyncHistoryPage } from "@/pages/CalendarSyncHistoryPage";
-
+/**
+ * Legacy `/calendar/sync-history` URL — redirects to the unified host
+ * (`/calendar?tab=historial`). Hidden from nav; preserves bookmarks.
+ */
 export const Route = createFileRoute("/_authed/calendar/sync-history")({
-  staticData: {
-    nav: { iconKey: "Clock", label: "Historial Sync", order: 85, section: "Sistema" },
-    permission: { action: "read", subject: "CalendarSyncLog" },
-    relatedSubjects: [
-      "Calendar",
-      "CalendarSetting",
-      "CalendarWatchChannel",
-      "SyncLog",
-      "DoctoraliaSyncLog",
-      "DoctoraliaSchedule",
-      "DoctoraliaCalendarAppointment",
-      "DoctoraliaWorkPeriod",
-    ],
-    title: "Historial de sincronización",
+  staticData: { hideFromNav: true },
+  beforeLoad: () => {
+    // eslint-disable-next-line @typescript-eslint/only-throw-error
+    throw redirect({ to: "/calendar", search: { tab: "historial" }, replace: true });
   },
-  beforeLoad: ({ context }) => {
-    if (!context.can("read", "CalendarSyncLog")) {
-      const routeApi = getRouteApi("/_authed/calendar/sync-history");
-      // eslint-disable-next-line @typescript-eslint/only-throw-error
-      throw routeApi.redirect({ to: "/" });
-    }
-  },
-  component: () => <CalendarSyncHistoryPage />,
-
-  loader: ({ context }) => context.queryClient.ensureQueryData(calendarSyncQueries.logs(50)),
+  component: () => null,
 });

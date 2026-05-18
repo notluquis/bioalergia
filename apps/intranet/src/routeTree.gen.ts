@@ -36,6 +36,7 @@ import { Route as AuthedInventoryIndexRouteImport } from "./routes/_authed/inven
 import { Route as AuthedHrIndexRouteImport } from "./routes/_authed/hr/index"
 import { Route as AuthedExamReportsIndexRouteImport } from "./routes/_authed/exam-reports/index"
 import { Route as AuthedClinicalIndexRouteImport } from "./routes/_authed/clinical/index"
+import { Route as AuthedCalendarIndexRouteImport } from "./routes/_authed/calendar/index"
 import { Route as AuthedWaCloudWebhooksRouteImport } from "./routes/_authed/wa-cloud/webhooks"
 import { Route as AuthedWaCloudProgramadosRouteImport } from "./routes/_authed/wa-cloud/programados"
 import { Route as AuthedWaCloudPlantillasRouteImport } from "./routes/_authed/wa-cloud/plantillas"
@@ -61,6 +62,7 @@ import { Route as AuthedServicesAgendaRouteImport } from "./routes/_authed/servi
 import { Route as AuthedPatientsNewRouteImport } from "./routes/_authed/patients/new"
 import { Route as AuthedPatientsCampaignsRouteImport } from "./routes/_authed/patients/campaigns"
 import { Route as AuthedOutreachEstablecimientosRouteImport } from "./routes/_authed/outreach/establecimientos"
+import { Route as AuthedOutreachDirectorioRouteImport } from "./routes/_authed/outreach/directorio"
 import { Route as AuthedOutreachDescubrirRouteImport } from "./routes/_authed/outreach/descubrir"
 import { Route as AuthedOutreachCrawlerMasivoRouteImport } from "./routes/_authed/outreach/crawler-masivo"
 import { Route as AuthedOutreachCampanasRouteImport } from "./routes/_authed/outreach/campanas"
@@ -245,6 +247,11 @@ const AuthedClinicalIndexRoute = AuthedClinicalIndexRouteImport.update({
   path: "/",
   getParentRoute: () => AuthedClinicalRoute,
 } as any)
+const AuthedCalendarIndexRoute = AuthedCalendarIndexRouteImport.update({
+  id: "/",
+  path: "/",
+  getParentRoute: () => AuthedCalendarRoute,
+} as any)
 const AuthedWaCloudWebhooksRoute = AuthedWaCloudWebhooksRouteImport.update({
   id: "/webhooks",
   path: "/webhooks",
@@ -377,6 +384,12 @@ const AuthedOutreachEstablecimientosRoute =
   AuthedOutreachEstablecimientosRouteImport.update({
     id: "/establecimientos",
     path: "/establecimientos",
+    getParentRoute: () => AuthedOutreachRoute,
+  } as any)
+const AuthedOutreachDirectorioRoute =
+  AuthedOutreachDirectorioRouteImport.update({
+    id: "/directorio",
+    path: "/directorio",
     getParentRoute: () => AuthedOutreachRoute,
   } as any)
 const AuthedOutreachDescubrirRoute = AuthedOutreachDescubrirRouteImport.update({
@@ -701,6 +714,7 @@ export interface FileRoutesByFullPath {
   "/outreach/campanas": typeof AuthedOutreachCampanasRouteWithChildren
   "/outreach/crawler-masivo": typeof AuthedOutreachCrawlerMasivoRoute
   "/outreach/descubrir": typeof AuthedOutreachDescubrirRoute
+  "/outreach/directorio": typeof AuthedOutreachDirectorioRoute
   "/outreach/establecimientos": typeof AuthedOutreachEstablecimientosRouteWithChildren
   "/patients/campaigns": typeof AuthedPatientsCampaignsRoute
   "/patients/new": typeof AuthedPatientsNewRoute
@@ -726,6 +740,7 @@ export interface FileRoutesByFullPath {
   "/wa-cloud/plantillas": typeof AuthedWaCloudPlantillasRoute
   "/wa-cloud/programados": typeof AuthedWaCloudProgramadosRoute
   "/wa-cloud/webhooks": typeof AuthedWaCloudWebhooksRoute
+  "/calendar/": typeof AuthedCalendarIndexRoute
   "/clinical/": typeof AuthedClinicalIndexRoute
   "/exam-reports/": typeof AuthedExamReportsIndexRoute
   "/hr/": typeof AuthedHrIndexRoute
@@ -752,7 +767,6 @@ export interface FileRoutesByTo {
   "/login": typeof LoginRoute
   "/onboarding": typeof OnboardingRoute
   "/account": typeof AuthedAccountRoute
-  "/calendar": typeof AuthedCalendarRouteWithChildren
   "/certificates": typeof AuthedCertificatesRouteWithChildren
   "/finanzas": typeof AuthedFinanzasRouteWithChildren
   "/marcar": typeof AuthedMarcarRoute
@@ -797,6 +811,7 @@ export interface FileRoutesByTo {
   "/outreach/campanas": typeof AuthedOutreachCampanasRouteWithChildren
   "/outreach/crawler-masivo": typeof AuthedOutreachCrawlerMasivoRoute
   "/outreach/descubrir": typeof AuthedOutreachDescubrirRoute
+  "/outreach/directorio": typeof AuthedOutreachDirectorioRoute
   "/outreach/establecimientos": typeof AuthedOutreachEstablecimientosRouteWithChildren
   "/patients/campaigns": typeof AuthedPatientsCampaignsRoute
   "/patients/new": typeof AuthedPatientsNewRoute
@@ -822,6 +837,7 @@ export interface FileRoutesByTo {
   "/wa-cloud/plantillas": typeof AuthedWaCloudPlantillasRoute
   "/wa-cloud/programados": typeof AuthedWaCloudProgramadosRoute
   "/wa-cloud/webhooks": typeof AuthedWaCloudWebhooksRoute
+  "/calendar": typeof AuthedCalendarIndexRoute
   "/clinical": typeof AuthedClinicalIndexRoute
   "/exam-reports": typeof AuthedExamReportsIndexRoute
   "/hr": typeof AuthedHrIndexRoute
@@ -901,6 +917,7 @@ export interface FileRoutesById {
   "/_authed/outreach/campanas": typeof AuthedOutreachCampanasRouteWithChildren
   "/_authed/outreach/crawler-masivo": typeof AuthedOutreachCrawlerMasivoRoute
   "/_authed/outreach/descubrir": typeof AuthedOutreachDescubrirRoute
+  "/_authed/outreach/directorio": typeof AuthedOutreachDirectorioRoute
   "/_authed/outreach/establecimientos": typeof AuthedOutreachEstablecimientosRouteWithChildren
   "/_authed/patients/campaigns": typeof AuthedPatientsCampaignsRoute
   "/_authed/patients/new": typeof AuthedPatientsNewRoute
@@ -926,6 +943,7 @@ export interface FileRoutesById {
   "/_authed/wa-cloud/plantillas": typeof AuthedWaCloudPlantillasRoute
   "/_authed/wa-cloud/programados": typeof AuthedWaCloudProgramadosRoute
   "/_authed/wa-cloud/webhooks": typeof AuthedWaCloudWebhooksRoute
+  "/_authed/calendar/": typeof AuthedCalendarIndexRoute
   "/_authed/clinical/": typeof AuthedClinicalIndexRoute
   "/_authed/exam-reports/": typeof AuthedExamReportsIndexRoute
   "/_authed/hr/": typeof AuthedHrIndexRoute
@@ -1005,6 +1023,7 @@ export interface FileRouteTypes {
     | "/outreach/campanas"
     | "/outreach/crawler-masivo"
     | "/outreach/descubrir"
+    | "/outreach/directorio"
     | "/outreach/establecimientos"
     | "/patients/campaigns"
     | "/patients/new"
@@ -1030,6 +1049,7 @@ export interface FileRouteTypes {
     | "/wa-cloud/plantillas"
     | "/wa-cloud/programados"
     | "/wa-cloud/webhooks"
+    | "/calendar/"
     | "/clinical/"
     | "/exam-reports/"
     | "/hr/"
@@ -1056,7 +1076,6 @@ export interface FileRouteTypes {
     | "/login"
     | "/onboarding"
     | "/account"
-    | "/calendar"
     | "/certificates"
     | "/finanzas"
     | "/marcar"
@@ -1101,6 +1120,7 @@ export interface FileRouteTypes {
     | "/outreach/campanas"
     | "/outreach/crawler-masivo"
     | "/outreach/descubrir"
+    | "/outreach/directorio"
     | "/outreach/establecimientos"
     | "/patients/campaigns"
     | "/patients/new"
@@ -1126,6 +1146,7 @@ export interface FileRouteTypes {
     | "/wa-cloud/plantillas"
     | "/wa-cloud/programados"
     | "/wa-cloud/webhooks"
+    | "/calendar"
     | "/clinical"
     | "/exam-reports"
     | "/hr"
@@ -1204,6 +1225,7 @@ export interface FileRouteTypes {
     | "/_authed/outreach/campanas"
     | "/_authed/outreach/crawler-masivo"
     | "/_authed/outreach/descubrir"
+    | "/_authed/outreach/directorio"
     | "/_authed/outreach/establecimientos"
     | "/_authed/patients/campaigns"
     | "/_authed/patients/new"
@@ -1229,6 +1251,7 @@ export interface FileRouteTypes {
     | "/_authed/wa-cloud/plantillas"
     | "/_authed/wa-cloud/programados"
     | "/_authed/wa-cloud/webhooks"
+    | "/_authed/calendar/"
     | "/_authed/clinical/"
     | "/_authed/exam-reports/"
     | "/_authed/hr/"
@@ -1450,6 +1473,13 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof AuthedClinicalIndexRouteImport
       parentRoute: typeof AuthedClinicalRoute
     }
+    "/_authed/calendar/": {
+      id: "/_authed/calendar/"
+      path: "/"
+      fullPath: "/calendar/"
+      preLoaderRoute: typeof AuthedCalendarIndexRouteImport
+      parentRoute: typeof AuthedCalendarRoute
+    }
     "/_authed/wa-cloud/webhooks": {
       id: "/_authed/wa-cloud/webhooks"
       path: "/webhooks"
@@ -1623,6 +1653,13 @@ declare module "@tanstack/react-router" {
       path: "/establecimientos"
       fullPath: "/outreach/establecimientos"
       preLoaderRoute: typeof AuthedOutreachEstablecimientosRouteImport
+      parentRoute: typeof AuthedOutreachRoute
+    }
+    "/_authed/outreach/directorio": {
+      id: "/_authed/outreach/directorio"
+      path: "/directorio"
+      fullPath: "/outreach/directorio"
+      preLoaderRoute: typeof AuthedOutreachDirectorioRouteImport
       parentRoute: typeof AuthedOutreachRoute
     }
     "/_authed/outreach/descubrir": {
@@ -1974,11 +2011,13 @@ declare module "@tanstack/react-router" {
 interface AuthedCalendarRouteChildren {
   AuthedCalendarDteLinksRoute: typeof AuthedCalendarDteLinksRoute
   AuthedCalendarSyncHistoryRoute: typeof AuthedCalendarSyncHistoryRoute
+  AuthedCalendarIndexRoute: typeof AuthedCalendarIndexRoute
 }
 
 const AuthedCalendarRouteChildren: AuthedCalendarRouteChildren = {
   AuthedCalendarDteLinksRoute: AuthedCalendarDteLinksRoute,
   AuthedCalendarSyncHistoryRoute: AuthedCalendarSyncHistoryRoute,
+  AuthedCalendarIndexRoute: AuthedCalendarIndexRoute,
 }
 
 const AuthedCalendarRouteWithChildren = AuthedCalendarRoute._addFileChildren(
@@ -2144,6 +2183,7 @@ interface AuthedOutreachRouteChildren {
   AuthedOutreachCampanasRoute: typeof AuthedOutreachCampanasRouteWithChildren
   AuthedOutreachCrawlerMasivoRoute: typeof AuthedOutreachCrawlerMasivoRoute
   AuthedOutreachDescubrirRoute: typeof AuthedOutreachDescubrirRoute
+  AuthedOutreachDirectorioRoute: typeof AuthedOutreachDirectorioRoute
   AuthedOutreachEstablecimientosRoute: typeof AuthedOutreachEstablecimientosRouteWithChildren
   AuthedOutreachIndexRoute: typeof AuthedOutreachIndexRoute
 }
@@ -2152,6 +2192,7 @@ const AuthedOutreachRouteChildren: AuthedOutreachRouteChildren = {
   AuthedOutreachCampanasRoute: AuthedOutreachCampanasRouteWithChildren,
   AuthedOutreachCrawlerMasivoRoute: AuthedOutreachCrawlerMasivoRoute,
   AuthedOutreachDescubrirRoute: AuthedOutreachDescubrirRoute,
+  AuthedOutreachDirectorioRoute: AuthedOutreachDirectorioRoute,
   AuthedOutreachEstablecimientosRoute:
     AuthedOutreachEstablecimientosRouteWithChildren,
   AuthedOutreachIndexRoute: AuthedOutreachIndexRoute,

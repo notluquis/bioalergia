@@ -1,16 +1,20 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
-import { OutreachBulkCrawlPage } from "@/features/outreach/pages/OutreachBulkCrawlPage";
 
+/**
+ * Legacy `/outreach/crawler-masivo` URL — redirects to the unified
+ * directorio host (`/outreach/directorio?tab=crawler`).
+ *
+ * Hidden from nav; preserves bookmarks.
+ */
 export const Route = createFileRoute("/_authed/outreach/crawler-masivo")({
-  staticData: {
-    nav: { iconKey: "Bot", label: "Crawler", order: 50, section: "Outreach" },
-    permission: { action: "update", subject: "OutreachEstablishment" },
-    title: "Crawler masivo",
+  staticData: { hideFromNav: true },
+  beforeLoad: () => {
+    // eslint-disable-next-line @typescript-eslint/only-throw-error
+    throw redirect({
+      to: "/outreach/directorio",
+      search: { tab: "crawler" },
+      replace: true,
+    });
   },
-  beforeLoad: ({ context }) => {
-    if (!context.can("update", "OutreachEstablishment")) {
-      throw redirect({ to: "/" });
-    }
-  },
-  component: OutreachBulkCrawlPage,
+  component: () => null,
 });

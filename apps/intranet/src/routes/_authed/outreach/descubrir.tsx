@@ -1,16 +1,20 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
-import { OutreachDiscoverPage } from "@/features/outreach/pages/OutreachDiscoverPage";
 
+/**
+ * Legacy `/outreach/descubrir` URL — redirects to the unified
+ * directorio host (`/outreach/directorio?tab=descubrir`).
+ *
+ * Hidden from nav; preserves bookmarks.
+ */
 export const Route = createFileRoute("/_authed/outreach/descubrir")({
-  staticData: {
-    nav: { iconKey: "SearchCode", label: "Descubrir", order: 40, section: "Outreach" },
-    permission: { action: "create", subject: "OutreachEstablishment" },
-    title: "Descubrir empresas",
+  staticData: { hideFromNav: true },
+  beforeLoad: () => {
+    // eslint-disable-next-line @typescript-eslint/only-throw-error
+    throw redirect({
+      to: "/outreach/directorio",
+      search: { tab: "descubrir" },
+      replace: true,
+    });
   },
-  beforeLoad: ({ context }) => {
-    if (!context.can("create", "OutreachEstablishment")) {
-      throw redirect({ to: "/" });
-    }
-  },
-  component: OutreachDiscoverPage,
+  component: () => null,
 });
