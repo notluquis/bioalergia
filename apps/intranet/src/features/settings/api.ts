@@ -57,6 +57,7 @@ const AppSettingsSchema = z.object({
   supportEmail: z.string(),
   whatsappFreeformMessage: z.string(),
   tagline: z.string(),
+  shopLowStockThreshold: z.string(),
 });
 
 export async function fetchInternalSettings() {

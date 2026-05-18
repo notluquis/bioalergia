@@ -1,7 +1,7 @@
 import { Button, Card, Chip } from "@heroui/react";
 import { Link } from "@tanstack/react-router";
 
-import { CLP_FORMATTER, stockState } from "@/features/shop/lib/shop-config";
+import { CLP_FORMATTER, useStockState } from "@/features/shop/lib/shop-config";
 
 type Product = {
   id: number;
@@ -20,7 +20,7 @@ type Product = {
 export function ProductCard({ product }: { product: Product }) {
   const primary =
     product.images?.find((i) => i.is_primary) ?? product.images?.[0] ?? null;
-  const stock = stockState(product.available_qty, product.safety_stock);
+  const stock = useStockState(product.available_qty, product.safety_stock);
   const outOfStock = stock.label === "Agotado";
 
   return (

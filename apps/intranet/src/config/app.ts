@@ -23,6 +23,7 @@ export const APP_CONFIG = {
     // Build Defaults
     primaryCurrency: "CLP",
     secondaryColor: "oklch(var(--s))",
+    shopLowStockThreshold: "3",
     supportEmail: "contacto@bioalergia.cl",
     tagline: "Intranet",
   },

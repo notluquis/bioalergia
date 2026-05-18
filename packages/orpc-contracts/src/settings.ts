@@ -23,6 +23,7 @@ export const settingsSchema = z.object({
   supportEmail: z.string(),
   whatsappFreeformMessage: z.string(),
   tagline: z.string(),
+  shopLowStockThreshold: z.string(),
 });
 
 export const settingsInternalSchema = z.object({

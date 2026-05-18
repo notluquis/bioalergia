@@ -27,6 +27,7 @@ export interface AppSettings {
   supportEmail: string;
   whatsappFreeformMessage: string;
   tagline: string;
+  shopLowStockThreshold: string;
 }
 
 // eslint-disable-next-line react-refresh/only-export-components

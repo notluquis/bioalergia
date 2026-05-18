@@ -13,6 +13,7 @@ import {
   productResponseSchema,
   productSlugInputSchema,
   productUpdateInputSchema,
+  publicShopConfigResponseSchema,
 } from "@finanzas/orpc-contracts/catalog";
 import { ORPCError, onError, os } from "@orpc/server";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
@@ -20,6 +21,8 @@ import type { Context as HonoContext } from "hono";
 import { z } from "zod";
 import { getSessionUser } from "../lib/auth.ts";
 import { logError } from "../lib/logger.ts";
+import { DEFAULT_SETTINGS, settingsKeyToDbKey } from "../lib/settings.ts";
+import { getSetting } from "../lib/settings.ts";
 import { configureSuperjson } from "../lib/superjson-config.ts";
 import {
   archiveProduct,
@@ -136,6 +139,23 @@ function serializeProduct(p: NonNullable<ProductRow>) {
     updated_at: p.updatedAt,
   };
 }
+
+const publicConfigRoute = base
+  .route({
+    method: "GET",
+    path: "/public-config",
+    summary: "Public shop config (low_stock_threshold)",
+    tags: ["Catalog"],
+  })
+  .output(publicShopConfigResponseSchema)
+  .handler(async () => {
+    const raw =
+      (await getSetting(settingsKeyToDbKey("shopLowStockThreshold"))) ??
+      DEFAULT_SETTINGS.shopLowStockThreshold;
+    const parsed = Number.parseInt(raw, 10);
+    const low_stock_threshold = Number.isFinite(parsed) && parsed >= 0 ? parsed : 3;
+    return { data: { low_stock_threshold }, status: "ok" as const };
+  });
 
 const listRoute = optionalAuthed
   .route({ method: "GET", path: "/products", summary: "List products", tags: ["Catalog"] })
@@ -381,6 +401,7 @@ const deleteCategoryRoute = requireStaff
   });
 
 const catalogORPCRouterBase = {
+  publicConfig: publicConfigRoute,
   list: listRoute,
   getBySlug: getBySlugRoute,
   getById: getByIdRoute,

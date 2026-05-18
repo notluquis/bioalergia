@@ -14,7 +14,12 @@ import { MessageCircle, ShoppingCart } from "lucide-react";
 import { useState } from "react";
 
 import { contactInfo } from "@/data/clinic";
-import { CLP_FORMATTER, SHOP_CONFIG, stockState } from "@/features/shop/lib/shop-config";
+import {
+  CLP_FORMATTER,
+  makeStockState,
+  storefrontUrl,
+  useShopConfig,
+} from "@/features/shop/lib/shop-config";
 import { shopKeys } from "@/features/shop/queries";
 import { cartClient } from "@/lib/orpc-client";
 
@@ -27,6 +32,7 @@ function ProductDetailPage() {
   const [feedback, setFeedback] = useState<string | null>(null);
   const [added, setAdded] = useState(false);
 
+  const { lowStockThreshold } = useShopConfig();
   const { data, isLoading, error } = useQuery(shopKeys.product(slug));
 
   const addMutation = useMutation({
@@ -75,7 +81,12 @@ function ProductDetailPage() {
     product.images?.find((i: ProductImage) => i.is_primary) ??
     product.images?.[0] ??
     null;
-  const stock = stockState(product.available_qty, product.safety_stock);
+  const stock = makeStockState(
+    product.available_qty,
+    product.safety_stock,
+    lowStockThreshold
+  );
+  const origin = storefrontUrl();
   const outOfStock = stock.label === "Agotado";
   const maxQty = Math.min(99, Math.max(1, product.available_qty - product.safety_stock));
   const whatsappHref = `https://wa.me/${PHONE}?text=${encodeURIComponent(
@@ -92,12 +103,12 @@ function ProductDetailPage() {
     image: primary?.cdn_url ? [primary.cdn_url] : undefined,
     offers: {
       "@type": "Offer",
-      priceCurrency: SHOP_CONFIG.currency,
+      priceCurrency: "CLP",
       price: product.price_clp,
       availability: outOfStock
         ? "https://schema.org/OutOfStock"
         : "https://schema.org/InStock",
-      url: `${SHOP_CONFIG.storefrontUrl}/producto/${product.slug}`,
+      url: `${origin}/producto/${product.slug}`,
     },
   };
 
@@ -105,18 +116,18 @@ function ProductDetailPage() {
     "@context": "https://schema.org/",
     "@type": "BreadcrumbList",
     itemListElement: [
-      { "@type": "ListItem", position: 1, name: "Inicio", item: `${SHOP_CONFIG.storefrontUrl}/` },
+      { "@type": "ListItem", position: 1, name: "Inicio", item: `${origin}/` },
       {
         "@type": "ListItem",
         position: 2,
         name: "Tienda",
-        item: `${SHOP_CONFIG.storefrontUrl}/tienda`,
+        item: `${origin}/tienda`,
       },
       {
         "@type": "ListItem",
         position: 3,
         name: product.name,
-        item: `${SHOP_CONFIG.storefrontUrl}/producto/${product.slug}`,
+        item: `${origin}/producto/${product.slug}`,
       },
     ],
   };

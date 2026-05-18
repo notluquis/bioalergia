@@ -136,7 +136,17 @@ export const catalogStatusResponseSchema = z.object({
   status: z.literal("ok"),
 });
 
+export const publicShopConfigResponseSchema = z.object({
+  data: z.object({
+    low_stock_threshold: z.number().int().nonnegative(),
+  }),
+  status: z.literal("ok"),
+});
+
 export const catalogContract = {
+  publicConfig: oc
+    .route({ method: "GET", path: "/public-config" })
+    .output(publicShopConfigResponseSchema),
   list: oc
     .route({ method: "GET", path: "/products" })
     .input(productListInputSchema)

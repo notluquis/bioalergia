@@ -20,6 +20,7 @@ export type AppSettings = {
   calendarSyncLookaheadDays: string;
   calendarExcludeSummaries: string;
   calendarDailyMaxDays: string;
+  shopLowStockThreshold: string;
 };
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -44,6 +45,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   calendarSyncLookaheadDays: "365",
   calendarExcludeSummaries: "No Disponible",
   calendarDailyMaxDays: "31",
+  shopLowStockThreshold: "3",
 };
 
 const SETTINGS_KEY_MAP: Record<keyof AppSettings, string> = {
@@ -68,6 +70,7 @@ const SETTINGS_KEY_MAP: Record<keyof AppSettings, string> = {
   calendarSyncLookaheadDays: "calendar.syncLookaheadDays",
   calendarExcludeSummaries: "calendar.excludeSummaries",
   calendarDailyMaxDays: "calendar.dailyMaxDays",
+  shopLowStockThreshold: "shop.lowStockThreshold",
 };
 
 export function settingsKeyToDbKey(key: keyof AppSettings): string {
