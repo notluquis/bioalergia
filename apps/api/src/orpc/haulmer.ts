@@ -16,7 +16,7 @@ import { haulmerConfig } from "../lib/config.ts";
 import { logError } from "../lib/logger.ts";
 import { configureSuperjson } from "../lib/superjson-config.ts";
 import { captureHaulmerJWT } from "../modules/haulmer/auth.ts";
-import { syncPeriods } from "../modules/haulmer/service.ts";
+import { syncPeriods } from "../services/haulmer-service.ts";
 import { SuperJSONRPCHandler } from "./superjson.ts";
 
 configureSuperjson();

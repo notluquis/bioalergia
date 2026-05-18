@@ -1,14 +1,14 @@
 import { db } from "@finanzas/db";
 import { calendar, type calendar_v3 } from "@googleapis/calendar";
 import { JWT } from "google-auth-library";
-import { compileExcludePatterns, googleCalendarConfig } from "../../lib/config.ts";
-import { joinClinicalText } from "../../lib/clinical-text.ts";
-import type { CalendarEventRecord } from "../../services/google-calendar.ts";
+import { compileExcludePatterns, googleCalendarConfig } from "../lib/config.ts";
+import { joinClinicalText } from "../lib/clinical-text.ts";
+import type { CalendarEventRecord } from "./google-calendar.ts";
 import {
   removeGoogleCalendarEvents,
   upsertGoogleCalendarEvents,
-} from "../../services/google-calendar-store.ts";
-import { parseCalendarMetadata } from "../../lib/parsers.ts";
+} from "./google-calendar-store.ts";
+import { parseCalendarMetadata } from "../lib/parsers.ts";
 
 function isEventExcluded(
   summary: string | null | undefined,

@@ -22,7 +22,7 @@ import { findOrCreatePerson } from "../services/people-factory.ts";
 import { configureSuperjson } from "../lib/superjson-config.ts";
 import { writeTempUpload } from "../lib/temp-file.ts";
 import { uploadPatientAttachmentToDrive } from "../services/patient-attachments-drive.ts";
-import { syncPatientDteSaleSources } from "../modules/patients/index.ts";
+import { syncPatientDteSaleSources } from "../services/patients-router.ts";
 import { SuperJSONRPCHandler } from "./superjson.ts";
 
 configureSuperjson();

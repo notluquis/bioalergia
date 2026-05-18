@@ -3,7 +3,7 @@ import { googleCalendarConfig } from "../lib/config.ts";
 import {
   createCalendarSyncLogEntry,
   finalizeCalendarSyncLogEntry,
-} from "../../services/calendar.ts";
+} from "./calendar.ts";
 
 import { logEvent, logWarn } from "../lib/logger.ts";
 import { syncGoogleCalendarOnce } from "./google-calendar.ts";

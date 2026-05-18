@@ -19,11 +19,13 @@
     "verbatimModuleSyntax": true
   },
   "include": ["src/**/*"],
-  "exclude": ["src/utils/**", "src/lib/**"],
+  "exclude": ["src/utils/**", "src/lib/**", "src/modules/**", "src/services/**"],
   "references": [
     { "path": "../../packages/db" },
     { "path": "../../packages/orpc-contracts" },
     { "path": "./src/utils" },
-    { "path": "./src/lib" }
+    { "path": "./src/lib" },
+    { "path": "./src/modules" },
+    { "path": "./src/services" }
   ]
 }

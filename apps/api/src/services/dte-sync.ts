@@ -6,7 +6,7 @@
 import { db } from "@finanzas/db";
 import dayjs from "dayjs";
 import { haulmerConfig } from "../lib/config.ts";
-import { syncPeriods } from "../modules/haulmer/service.ts";
+import { syncPeriods } from "./haulmer-service.ts";
 
 export interface DTESyncOptions {
   period?: string; // YYYYMM, defaults to last month

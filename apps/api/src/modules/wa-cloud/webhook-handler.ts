@@ -3,7 +3,7 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import { markMessageDelivered } from "./graph/media.ts";
 import { emitWaEvent } from "./events.ts";
 import { logEvent, logWarn } from "../../lib/logger.ts";
-import { broadcastPushNotification } from "../../services/notifications.ts";
+import { broadcastPushNotification } from "../../lib/notifications.ts";
 import { normalizeToE164 } from "./phone.ts";
 
 type MetaWebhookPayload = {

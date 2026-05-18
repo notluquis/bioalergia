@@ -7,15 +7,15 @@ import utc from "dayjs/plugin/utc.js";
 import { Decimal } from "decimal.js";
 import { Hono } from "hono";
 import { sql } from "kysely";
-import type { AuthSession } from "../../lib/auth.ts";
-import { AppError } from "../../lib/app-error.ts";
-import { requirePermission, requireSession } from "../../lib/legacy-route.ts";
-import { canonicalRutFilter, normalizeRut, requireCanonicalRut } from "../../lib/rut.ts";
-import { findOrCreatePerson } from "../../services/people-factory.ts";
-import { writeTempUpload } from "../../lib/temp-file.ts";
-import { zValidator } from "../../lib/zod-validator.ts";
-import { uploadPatientAttachmentToDrive } from "../../services/patient-attachments-drive.ts";
-import { replyRaw } from "../../utils/reply.ts";
+import type { AuthSession } from "../lib/auth.ts";
+import { AppError } from "../lib/app-error.ts";
+import { requirePermission, requireSession } from "../lib/legacy-route.ts";
+import { canonicalRutFilter, normalizeRut, requireCanonicalRut } from "../lib/rut.ts";
+import { findOrCreatePerson } from "./people-factory.ts";
+import { writeTempUpload } from "../lib/temp-file.ts";
+import { zValidator } from "../lib/zod-validator.ts";
+import { uploadPatientAttachmentToDrive } from "./patient-attachments-drive.ts";
+import { replyRaw } from "../utils/reply.ts";
 import {
   createBudgetSchema,
   createConsultationSchema,
