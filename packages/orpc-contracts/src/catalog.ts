@@ -185,6 +185,73 @@ export const channelPriceDeleteInputSchema = z.object({
   channel: salesChannelSchema,
 });
 
+export const productReviewSchema = z.object({
+  id: z.number().int(),
+  product_id: z.number().int(),
+  author_name: z.string(),
+  rating: z.number().int().min(1).max(5),
+  title: z.string().nullable(),
+  body: z.string(),
+  verified: z.boolean(),
+  created_at: z.date(),
+});
+
+export const productReviewAggregateSchema = z.object({
+  count: z.number().int().nonnegative(),
+  average: z.number(),
+});
+
+export const productReviewListResponseSchema = z.object({
+  data: z.array(productReviewSchema),
+  aggregate: productReviewAggregateSchema,
+  status: z.literal("ok"),
+});
+
+export const productReviewSubmitInputSchema = z.object({
+  product_id: z.coerce.number().int().positive(),
+  author_name: z.string().min(2).max(80),
+  author_email: z.string().email(),
+  rating: z.coerce.number().int().min(1).max(5),
+  title: z.string().max(80).optional(),
+  body: z.string().min(10).max(2000),
+});
+
+export const productReviewSubmitResponseSchema = z.object({
+  data: z.object({
+    id: z.number().int(),
+    status: z.literal("PENDING"),
+  }),
+  status: z.literal("ok"),
+});
+
+export const productReviewModerateInputSchema = z.object({
+  id: z.coerce.number().int().positive(),
+  status: z.enum(["APPROVED", "REJECTED"]),
+});
+
+export const productReviewModerateResponseSchema = z.object({
+  data: z.object({
+    id: z.number().int(),
+    status: z.enum(["APPROVED", "REJECTED"]),
+  }),
+  status: z.literal("ok"),
+});
+
+export const productReviewPendingSchema = productReviewSchema.extend({
+  author_email: z.string().nullable(),
+  status: z.literal("PENDING"),
+  product: z.object({
+    id: z.number().int(),
+    name: z.string(),
+    slug: z.string(),
+  }),
+});
+
+export const productReviewPendingListResponseSchema = z.object({
+  data: z.array(productReviewPendingSchema),
+  status: z.literal("ok"),
+});
+
 export const catalogContract = {
   publicConfig: oc
     .route({ method: "GET", path: "/public-config" })
@@ -207,9 +274,7 @@ export const catalogContract = {
     .output(productResponseSchema),
   adminUpdate: oc
     .route({ method: "PUT", path: "/products/{id}" })
-    .input(
-      z.object({ id: z.coerce.number().int().positive(), product: productUpdateInputSchema })
-    )
+    .input(z.object({ id: z.coerce.number().int().positive(), product: productUpdateInputSchema }))
     .output(productResponseSchema),
   adminArchive: oc
     .route({ method: "DELETE", path: "/products/{id}" })
@@ -247,6 +312,21 @@ export const catalogContract = {
     .route({ method: "DELETE", path: "/channel-prices" })
     .input(channelPriceDeleteInputSchema)
     .output(catalogStatusResponseSchema),
+  listReviews: oc
+    .route({ method: "GET", path: "/products/{id}/reviews" })
+    .input(productIdInputSchema)
+    .output(productReviewListResponseSchema),
+  submitReview: oc
+    .route({ method: "POST", path: "/reviews" })
+    .input(productReviewSubmitInputSchema)
+    .output(productReviewSubmitResponseSchema),
+  moderateReview: oc
+    .route({ method: "PUT", path: "/reviews/{id}" })
+    .input(productReviewModerateInputSchema)
+    .output(productReviewModerateResponseSchema),
+  pendingReviews: oc
+    .route({ method: "GET", path: "/reviews/pending" })
+    .output(productReviewPendingListResponseSchema),
 };
 
 export type CatalogContract = typeof catalogContract;

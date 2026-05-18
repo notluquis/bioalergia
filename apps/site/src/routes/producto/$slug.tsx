@@ -16,6 +16,7 @@ import { useState } from "react";
 import { contactInfo } from "@/data/clinic";
 import { ProductGallery } from "@/features/shop/components/ProductGallery";
 import { RelatedProducts } from "@/features/shop/components/RelatedProducts";
+import { Reviews } from "@/features/shop/components/Reviews";
 import { TrustBlock } from "@/features/shop/components/TrustBlock";
 import {
   CLP_FORMATTER,
@@ -24,7 +25,7 @@ import {
   useShopConfig,
 } from "@/features/shop/lib/shop-config";
 import { shopKeys } from "@/features/shop/queries";
-import { cartClient } from "@/lib/orpc-client";
+import { cartClient, catalogClient } from "@/lib/orpc-client";
 
 const PHONE = contactInfo.phones[0].replace(/\D/g, "");
 
@@ -37,10 +38,16 @@ function ProductDetailPage() {
 
   const { lowStockThreshold } = useShopConfig();
   const { data, isLoading, error } = useQuery(shopKeys.product(slug));
+  const productId = data?.data.id;
+  const reviewsAggregateQ = useQuery({
+    queryKey: ["shop", "reviews", productId],
+    queryFn: () => catalogClient.listReviews({ id: productId! }),
+    enabled: typeof productId === "number",
+    staleTime: 1000 * 60 * 5,
+  });
 
   const addMutation = useMutation({
-    mutationFn: (input: { product_id: number; qty: number }) =>
-      cartClient.addItem(input),
+    mutationFn: (input: { product_id: number; qty: number }) => cartClient.addItem(input),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: shopKeys.cart().queryKey });
       setAdded(true);
@@ -81,14 +88,8 @@ function ProductDetailPage() {
   const product = data.data;
   type ProductImage = NonNullable<typeof product.images>[number];
   const primary =
-    product.images?.find((i: ProductImage) => i.is_primary) ??
-    product.images?.[0] ??
-    null;
-  const stock = makeStockState(
-    product.available_qty,
-    product.safety_stock,
-    lowStockThreshold
-  );
+    product.images?.find((i: ProductImage) => i.is_primary) ?? product.images?.[0] ?? null;
+  const stock = makeStockState(product.available_qty, product.safety_stock, lowStockThreshold);
   const origin = storefrontUrl();
   const outOfStock = stock.label === "Agotado";
   const maxQty = Math.min(99, Math.max(1, product.available_qty - product.safety_stock));
@@ -96,7 +97,8 @@ function ProductDetailPage() {
     `Hola, tengo una consulta sobre "${product.name}" (SKU ${product.sku}).`
   )}`;
 
-  const jsonLd = {
+  const reviewsAggregate = reviewsAggregateQ.data?.aggregate;
+  const jsonLd: Record<string, unknown> = {
     "@context": "https://schema.org/",
     "@type": "Product",
     name: product.name,
@@ -108,12 +110,17 @@ function ProductDetailPage() {
       "@type": "Offer",
       priceCurrency: "CLP",
       price: product.price_clp,
-      availability: outOfStock
-        ? "https://schema.org/OutOfStock"
-        : "https://schema.org/InStock",
+      availability: outOfStock ? "https://schema.org/OutOfStock" : "https://schema.org/InStock",
       url: `${origin}/producto/${product.slug}`,
     },
   };
+  if (reviewsAggregate && reviewsAggregate.count > 0) {
+    jsonLd.aggregateRating = {
+      "@type": "AggregateRating",
+      ratingValue: reviewsAggregate.average,
+      reviewCount: reviewsAggregate.count,
+    };
+  }
 
   const breadcrumbJsonLd = {
     "@context": "https://schema.org/",
@@ -168,21 +175,18 @@ function ProductDetailPage() {
         </div>
         <div className="space-y-5">
           {product.brand && (
-            <p className="text-foreground/60 text-sm uppercase tracking-wide">
-              {product.brand}
-            </p>
+            <p className="text-foreground/60 text-sm uppercase tracking-wide">{product.brand}</p>
           )}
           <h1 className="font-bold text-2xl sm:text-3xl">{product.name}</h1>
 
           <div className="flex flex-col">
             <div className="flex items-baseline gap-3">
               <span className="font-bold text-4xl">{CLP_FORMATTER.format(product.price_clp)}</span>
-              {product.compare_at_price_clp &&
-                product.compare_at_price_clp > product.price_clp && (
-                  <span className="text-foreground/50 text-lg line-through">
-                    {CLP_FORMATTER.format(product.compare_at_price_clp)}
-                  </span>
-                )}
+              {product.compare_at_price_clp && product.compare_at_price_clp > product.price_clp && (
+                <span className="text-foreground/50 text-lg line-through">
+                  {CLP_FORMATTER.format(product.compare_at_price_clp)}
+                </span>
+              )}
             </div>
             <span className="text-foreground/60 text-sm">IVA incluido</span>
           </div>
@@ -244,9 +248,7 @@ function ProductDetailPage() {
               <Button
                 className="flex-1"
                 isDisabled={addMutation.isPending}
-                onPress={() =>
-                  addMutation.mutate({ product_id: product.id, qty })
-                }
+                onPress={() => addMutation.mutate({ product_id: product.id, qty })}
                 size="lg"
                 variant="primary"
               >
@@ -294,6 +296,8 @@ function ProductDetailPage() {
 
       <TrustBlock compact />
 
+      <Reviews productId={product.id} />
+
       {product.category?.slug && (
         <RelatedProducts categorySlug={product.category.slug} excludeId={product.id} />
       )}
@@ -325,8 +329,7 @@ function ProductDetailPage() {
 export const Route = createFileRoute("/producto/$slug")({
   component: ProductDetailPage,
   head: ({ params }) => {
-    const origin =
-      typeof window === "undefined" ? "https://bioalergia.cl" : window.location.origin;
+    const origin = typeof window === "undefined" ? "https://bioalergia.cl" : window.location.origin;
     const url = `${origin}/producto/${params.slug}`;
     const titleHuman = params.slug
       .split("-")

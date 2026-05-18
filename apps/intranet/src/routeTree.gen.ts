@@ -64,6 +64,7 @@ import { Route as AuthedOutreachCrawlerMasivoRouteImport } from "./routes/_authe
 import { Route as AuthedOutreachCampanasRouteImport } from "./routes/_authed/outreach/campanas"
 import { Route as AuthedOperationsSuppliesRouteImport } from "./routes/_authed/operations/supplies"
 import { Route as AuthedOperationsShipmentsRouteImport } from "./routes/_authed/operations/shipments"
+import { Route as AuthedOperationsReviewsRouteImport } from "./routes/_authed/operations/reviews"
 import { Route as AuthedOperationsInventoryRouteImport } from "./routes/_authed/operations/inventory"
 import { Route as AuthedOperationsHaulmerDteRouteImport } from "./routes/_authed/operations/haulmer-dte"
 import { Route as AuthedOperationsChannelPricesRouteImport } from "./routes/_authed/operations/channel-prices"
@@ -392,6 +393,11 @@ const AuthedOperationsShipmentsRoute =
     path: "/shipments",
     getParentRoute: () => AuthedOperationsRoute,
   } as any)
+const AuthedOperationsReviewsRoute = AuthedOperationsReviewsRouteImport.update({
+  id: "/reviews",
+  path: "/reviews",
+  getParentRoute: () => AuthedOperationsRoute,
+} as any)
 const AuthedOperationsInventoryRoute =
   AuthedOperationsInventoryRouteImport.update({
     id: "/inventory",
@@ -663,6 +669,7 @@ export interface FileRoutesByFullPath {
   "/operations/channel-prices": typeof AuthedOperationsChannelPricesRoute
   "/operations/haulmer-dte": typeof AuthedOperationsHaulmerDteRoute
   "/operations/inventory": typeof AuthedOperationsInventoryRoute
+  "/operations/reviews": typeof AuthedOperationsReviewsRoute
   "/operations/shipments": typeof AuthedOperationsShipmentsRoute
   "/operations/supplies": typeof AuthedOperationsSuppliesRoute
   "/outreach/campanas": typeof AuthedOutreachCampanasRouteWithChildren
@@ -754,6 +761,7 @@ export interface FileRoutesByTo {
   "/operations/channel-prices": typeof AuthedOperationsChannelPricesRoute
   "/operations/haulmer-dte": typeof AuthedOperationsHaulmerDteRoute
   "/operations/inventory": typeof AuthedOperationsInventoryRoute
+  "/operations/reviews": typeof AuthedOperationsReviewsRoute
   "/operations/shipments": typeof AuthedOperationsShipmentsRoute
   "/operations/supplies": typeof AuthedOperationsSuppliesRoute
   "/outreach/campanas": typeof AuthedOutreachCampanasRouteWithChildren
@@ -853,6 +861,7 @@ export interface FileRoutesById {
   "/_authed/operations/channel-prices": typeof AuthedOperationsChannelPricesRoute
   "/_authed/operations/haulmer-dte": typeof AuthedOperationsHaulmerDteRoute
   "/_authed/operations/inventory": typeof AuthedOperationsInventoryRoute
+  "/_authed/operations/reviews": typeof AuthedOperationsReviewsRoute
   "/_authed/operations/shipments": typeof AuthedOperationsShipmentsRoute
   "/_authed/operations/supplies": typeof AuthedOperationsSuppliesRoute
   "/_authed/outreach/campanas": typeof AuthedOutreachCampanasRouteWithChildren
@@ -952,6 +961,7 @@ export interface FileRouteTypes {
     | "/operations/channel-prices"
     | "/operations/haulmer-dte"
     | "/operations/inventory"
+    | "/operations/reviews"
     | "/operations/shipments"
     | "/operations/supplies"
     | "/outreach/campanas"
@@ -1043,6 +1053,7 @@ export interface FileRouteTypes {
     | "/operations/channel-prices"
     | "/operations/haulmer-dte"
     | "/operations/inventory"
+    | "/operations/reviews"
     | "/operations/shipments"
     | "/operations/supplies"
     | "/outreach/campanas"
@@ -1141,6 +1152,7 @@ export interface FileRouteTypes {
     | "/_authed/operations/channel-prices"
     | "/_authed/operations/haulmer-dte"
     | "/_authed/operations/inventory"
+    | "/_authed/operations/reviews"
     | "/_authed/operations/shipments"
     | "/_authed/operations/supplies"
     | "/_authed/outreach/campanas"
@@ -1586,6 +1598,13 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof AuthedOperationsShipmentsRouteImport
       parentRoute: typeof AuthedOperationsRoute
     }
+    "/_authed/operations/reviews": {
+      id: "/_authed/operations/reviews"
+      path: "/reviews"
+      fullPath: "/operations/reviews"
+      preLoaderRoute: typeof AuthedOperationsReviewsRouteImport
+      parentRoute: typeof AuthedOperationsRoute
+    }
     "/_authed/operations/inventory": {
       id: "/_authed/operations/inventory"
       path: "/inventory"
@@ -1996,6 +2015,7 @@ interface AuthedOperationsRouteChildren {
   AuthedOperationsChannelPricesRoute: typeof AuthedOperationsChannelPricesRoute
   AuthedOperationsHaulmerDteRoute: typeof AuthedOperationsHaulmerDteRoute
   AuthedOperationsInventoryRoute: typeof AuthedOperationsInventoryRoute
+  AuthedOperationsReviewsRoute: typeof AuthedOperationsReviewsRoute
   AuthedOperationsShipmentsRoute: typeof AuthedOperationsShipmentsRoute
   AuthedOperationsSuppliesRoute: typeof AuthedOperationsSuppliesRoute
 }
@@ -2005,6 +2025,7 @@ const AuthedOperationsRouteChildren: AuthedOperationsRouteChildren = {
   AuthedOperationsChannelPricesRoute: AuthedOperationsChannelPricesRoute,
   AuthedOperationsHaulmerDteRoute: AuthedOperationsHaulmerDteRoute,
   AuthedOperationsInventoryRoute: AuthedOperationsInventoryRoute,
+  AuthedOperationsReviewsRoute: AuthedOperationsReviewsRoute,
   AuthedOperationsShipmentsRoute: AuthedOperationsShipmentsRoute,
   AuthedOperationsSuppliesRoute: AuthedOperationsSuppliesRoute,
 }

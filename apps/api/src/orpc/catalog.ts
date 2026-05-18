@@ -15,6 +15,12 @@ import {
   productListInputSchema,
   productListResponseSchema,
   productResponseSchema,
+  productReviewListResponseSchema,
+  productReviewModerateInputSchema,
+  productReviewModerateResponseSchema,
+  productReviewPendingListResponseSchema,
+  productReviewSubmitInputSchema,
+  productReviewSubmitResponseSchema,
   productSlugInputSchema,
   productUpdateInputSchema,
   publicShopConfigResponseSchema,
@@ -36,9 +42,13 @@ import {
   deleteProductCategory,
   getProductById,
   getProductBySlug,
+  listApprovedReviews,
   listChannelPrices,
+  listPendingReviews,
   listProductCategories,
   listProducts,
+  moderateReview,
+  submitReview,
   updateProduct,
   updateProductCategory,
   upsertChannelPrice,
@@ -479,6 +489,124 @@ const deleteChannelPriceRoute = requireStaff
     return { status: "ok" as const };
   });
 
+function serializeReview(r: {
+  id: number;
+  productId: number;
+  authorName: string;
+  rating: number;
+  title: string | null;
+  body: string;
+  verified: boolean;
+  createdAt: Date;
+}) {
+  // NOTE: deliberately omits author_email + status from public response
+  return {
+    id: r.id,
+    product_id: r.productId,
+    author_name: r.authorName,
+    rating: r.rating,
+    title: r.title,
+    body: r.body,
+    verified: r.verified,
+    created_at: r.createdAt,
+  };
+}
+
+const listReviewsRoute = base
+  .route({
+    method: "GET",
+    path: "/products/{id}/reviews",
+    summary: "List approved reviews for a product (public)",
+    tags: ["Catalog"],
+  })
+  .input(productIdInputSchema)
+  .output(productReviewListResponseSchema)
+  .handler(async ({ input }) => {
+    const { data, aggregate } = await listApprovedReviews(input.id);
+    return {
+      data: data.map(serializeReview),
+      aggregate,
+      status: "ok" as const,
+    };
+  });
+
+const submitReviewRoute = base
+  .route({
+    method: "POST",
+    path: "/reviews",
+    summary: "Submit a product review (public, requires moderation)",
+    tags: ["Catalog"],
+  })
+  .input(productReviewSubmitInputSchema)
+  .output(productReviewSubmitResponseSchema)
+  .handler(async ({ input }: { input: z.input<typeof productReviewSubmitInputSchema> }) => {
+    const product = await getProductById(input.product_id);
+    if (!product) {
+      throw new ORPCError("NOT_FOUND", { message: "Producto no encontrado" });
+    }
+    const { id } = await submitReview({
+      productId: input.product_id,
+      authorName: input.author_name,
+      authorEmail: input.author_email,
+      rating: input.rating,
+      title: input.title ?? null,
+      body: input.body,
+    });
+    return {
+      data: { id, status: "PENDING" as const },
+      status: "ok" as const,
+    };
+  });
+
+const moderateReviewRoute = requireStaff
+  .route({
+    method: "PUT",
+    path: "/reviews/{id}",
+    summary: "Approve or reject a pending review (staff)",
+    tags: ["Catalog"],
+  })
+  .input(productReviewModerateInputSchema)
+  .output(productReviewModerateResponseSchema)
+  .handler(async ({ input }) => {
+    const result = await moderateReview(input.id, input.status);
+    return {
+      data: { id: result.id, status: result.status },
+      status: "ok" as const,
+    };
+  });
+
+const pendingReviewsRoute = requireStaff
+  .route({
+    method: "GET",
+    path: "/reviews/pending",
+    summary: "List all pending reviews (staff moderation queue)",
+    tags: ["Catalog"],
+  })
+  .output(productReviewPendingListResponseSchema)
+  .handler(async () => {
+    const rows = await listPendingReviews();
+    return {
+      data: rows.map((r: (typeof rows)[number]) => ({
+        id: r.id,
+        product_id: r.productId,
+        author_name: r.authorName,
+        author_email: r.authorEmail,
+        rating: r.rating,
+        title: r.title,
+        body: r.body,
+        verified: r.verified,
+        status: "PENDING" as const,
+        created_at: r.createdAt,
+        product: {
+          id: r.product.id,
+          name: r.product.name,
+          slug: r.product.slug,
+        },
+      })),
+      status: "ok" as const,
+    };
+  });
+
 const catalogORPCRouterBase = {
   publicConfig: publicConfigRoute,
   list: listRoute,
@@ -494,6 +622,10 @@ const catalogORPCRouterBase = {
   listChannelPrices: listChannelPricesRoute,
   upsertChannelPrice: upsertChannelPriceRoute,
   deleteChannelPrice: deleteChannelPriceRoute,
+  listReviews: listReviewsRoute,
+  submitReview: submitReviewRoute,
+  moderateReview: moderateReviewRoute,
+  pendingReviews: pendingReviewsRoute,
 };
 
 export const catalogORPCRouter = base

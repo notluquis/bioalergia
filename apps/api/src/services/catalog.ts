@@ -255,3 +255,61 @@ export async function deleteProductCategory(id: number) {
   }
   await db.productCategory.delete({ where: { id } });
 }
+
+// ─── Reviews ──────────────────────────────────────────────────────────────
+
+export async function listApprovedReviews(productId: number) {
+  const rows = await db.productReview.findMany({
+    where: { productId, status: "APPROVED" },
+    orderBy: { createdAt: "desc" },
+  });
+  const count = rows.length;
+  const average =
+    count === 0 ? 0 : Math.round((rows.reduce((acc, r) => acc + r.rating, 0) / count) * 10) / 10;
+  return { data: rows, aggregate: { count, average } };
+}
+
+type ReviewSubmitInput = {
+  productId: number;
+  authorName: string;
+  authorEmail: string;
+  rating: number;
+  title?: string | null;
+  body: string;
+};
+
+export async function submitReview(input: ReviewSubmitInput) {
+  const created = await db.productReview.create({
+    data: {
+      productId: input.productId,
+      authorName: input.authorName,
+      authorEmail: input.authorEmail,
+      rating: input.rating,
+      title: input.title ?? null,
+      body: input.body,
+      verified: false,
+      status: "PENDING",
+    },
+  });
+  return { id: created.id };
+}
+
+export async function moderateReview(id: number, status: "APPROVED" | "REJECTED") {
+  await db.productReview.update({
+    where: { id },
+    data: { status },
+  });
+  return { id, status };
+}
+
+export async function listPendingReviews() {
+  return await db.productReview.findMany({
+    where: { status: "PENDING" },
+    orderBy: { createdAt: "desc" },
+    include: {
+      product: {
+        select: { id: true, name: true, slug: true },
+      },
+    },
+  });
+}
