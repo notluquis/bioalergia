@@ -7,21 +7,21 @@ import { db } from "@finanzas/db";
 import { calendar, type calendar_v3 } from "@googleapis/calendar";
 import dayjs from "dayjs";
 import { JWT } from "google-auth-library";
-import { compileExcludePatterns, googleCalendarConfig } from "../config.ts";
-import { joinClinicalText } from "../../lib/clinical-text.ts";
-import { parseCalendarMetadata } from "../../lib/parsers.ts";
-import { loadSettings } from "../../services/settings.ts";
-import { logEvent, logWarn } from "../logger.ts";
+import { compileExcludePatterns, googleCalendarConfig } from "../lib/config.ts";
+import { joinClinicalText } from "../lib/clinical-text.ts";
+import { parseCalendarMetadata } from "../lib/parsers.ts";
+import { loadSettings } from "./settings.ts";
+import { logEvent, logWarn } from "../lib/logger.ts";
 import { removeGoogleCalendarEvents, upsertGoogleCalendarEvents } from "./google-calendar-store.ts";
-import { retryGoogleCall } from "./google-errors.ts";
+import { retryGoogleCall } from "../lib/google/google-errors.ts";
 
 const CALENDAR_SCOPES = ["https://www.googleapis.com/auth/calendar.readonly"];
 const STORAGE_ROOT = path.resolve(process.cwd(), "storage", "google-calendar");
 
 type CalendarClient = calendar_v3.Calendar;
 
-export type { CalendarEventRecord } from "./google-calendar-types.ts";
-import type { CalendarEventRecord } from "./google-calendar-types.ts";
+export type { CalendarEventRecord } from "../lib/google/google-calendar-types.ts";
+import type { CalendarEventRecord } from "../lib/google/google-calendar-types.ts";
 
 type CalendarRuntimeConfig = {
   timeZone: string;

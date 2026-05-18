@@ -1,7 +1,7 @@
 import { db } from "@finanzas/db";
 import { DomainError } from "../lib/errors.ts";
 
-import type { CalendarEventRecord } from "../lib/google/google-calendar.ts";
+import type { CalendarEventRecord } from "./google-calendar.ts";
 import { calendarSyncService } from "../modules/calendar/service.ts";
 import { extractIdentityHints, syncClinicalSeriesForExternalEvents } from "./clinical-series.ts";
 

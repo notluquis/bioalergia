@@ -6,7 +6,7 @@ import {
 } from "../../services/calendar.ts";
 
 import { logEvent, logWarn } from "../lib/logger.ts";
-import { syncGoogleCalendarOnce } from "../lib/google/google-calendar.ts";
+import { syncGoogleCalendarOnce } from "./google-calendar.ts";
 
 // Polling disabled by user request (relying on Webhooks)
 const CRON_JOBS: { expression: string; label: string }[] = [];
