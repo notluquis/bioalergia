@@ -34,7 +34,7 @@ import { cn } from "@/lib/utils";
 
 // Types
 interface TableOption {
-  fields: { name: string; required: boolean; type: string }[];
+  fields: FieldDefinition[];
   label: string;
   value: string;
 }

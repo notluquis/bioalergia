@@ -56,7 +56,7 @@ function makeServiceTransport(overrides: Record<string, unknown> = {}) {
     id: 1,
     publicId: "svc_123",
     name: "Arriendo",
-    serviceType: "INCOME",
+    serviceType: "OTHER",
     status: "ACTIVE",
     defaultAmount: { toNumber: () => 250_000 }, // Decimal-like
     totalExpected: "500000",
@@ -129,7 +129,7 @@ describe("services/api", () => {
         name: "Arriendo",
         defaultAmount: 250_000,
         frequency: "MONTHLY",
-        serviceType: "INCOME",
+        serviceType: "OTHER",
         startDate: new Date("2026-03-15T12:00:00Z"),
         emissionExactDate: new Date("2026-03-15T12:00:00Z"),
       } as Parameters<typeof createService>[0]);
@@ -148,7 +148,7 @@ describe("services/api", () => {
         name: "x",
         defaultAmount: 1,
         frequency: "MONTHLY",
-        serviceType: "INCOME",
+        serviceType: "OTHER",
         startDate: new Date("2026-03-15T12:00:00Z"),
         emissionExactDate: null,
       } as Parameters<typeof createService>[0]);
@@ -166,7 +166,7 @@ describe("services/api", () => {
         name: "Arriendo (revisado)",
         defaultAmount: 300_000,
         frequency: "MONTHLY",
-        serviceType: "INCOME",
+        serviceType: "OTHER",
         startDate: new Date("2026-03-15T12:00:00Z"),
       } as Parameters<typeof updateService>[1]);
       const call = orpc.update.mock.calls[0]?.[0] as { id: string; payload: { startDate: string } };

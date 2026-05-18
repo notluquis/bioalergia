@@ -135,9 +135,10 @@ describe("inventory/api", () => {
       const movement = {
         item_id: 1,
         quantity: -5,
+        quantity_change: -5,
         movement_type: "out" as const,
         reason: "Pinchazo paciente",
-      } as Parameters<typeof createInventoryMovement>[0];
+      } as unknown as Parameters<typeof createInventoryMovement>[0];
       await createInventoryMovement(movement);
       expect(orpc.createMovement).toHaveBeenCalledWith(movement);
     });
@@ -148,8 +149,10 @@ describe("inventory/api", () => {
         createInventoryMovement({
           item_id: 1,
           quantity: -999,
+          quantity_change: -999,
           movement_type: "out",
-        } as Parameters<typeof createInventoryMovement>[0])
+          reason: "out-of-stock",
+        } as unknown as Parameters<typeof createInventoryMovement>[0])
       ).rejects.toMatchObject({ name: "ApiError", message: "stock < 0 prohibido" });
     });
   });

@@ -43,6 +43,7 @@ import { Route as AuthedWaCloudBuscarRouteImport } from "./routes/_authed/wa-clo
 import { Route as AuthedWaCloudBroadcastsRouteImport } from "./routes/_authed/wa-cloud/broadcasts"
 import { Route as AuthedWaCloudAnalyticsRouteImport } from "./routes/_authed/wa-cloud/analytics"
 import { Route as AuthedWaCloudAlertasRouteImport } from "./routes/_authed/wa-cloud/alertas"
+import { Route as AuthedSettingsTiendaRouteImport } from "./routes/_authed/settings/tienda"
 import { Route as AuthedSettingsRolesRouteImport } from "./routes/_authed/settings/roles"
 import { Route as AuthedSettingsNotificationsRouteImport } from "./routes/_authed/settings/notifications"
 import { Route as AuthedSettingsMercadopagoRouteImport } from "./routes/_authed/settings/mercadopago"
@@ -64,6 +65,8 @@ import { Route as AuthedOutreachCampanasRouteImport } from "./routes/_authed/out
 import { Route as AuthedOperationsSuppliesRouteImport } from "./routes/_authed/operations/supplies"
 import { Route as AuthedOperationsShipmentsRouteImport } from "./routes/_authed/operations/shipments"
 import { Route as AuthedOperationsInventoryRouteImport } from "./routes/_authed/operations/inventory"
+import { Route as AuthedOperationsHaulmerDteRouteImport } from "./routes/_authed/operations/haulmer-dte"
+import { Route as AuthedOperationsChannelPricesRouteImport } from "./routes/_authed/operations/channel-prices"
 import { Route as AuthedOperationsCatalogRouteImport } from "./routes/_authed/operations/catalog"
 import { Route as AuthedHrTimesheetsRouteImport } from "./routes/_authed/hr/timesheets"
 import { Route as AuthedHrReportsRouteImport } from "./routes/_authed/hr/reports"
@@ -273,6 +276,11 @@ const AuthedWaCloudAlertasRoute = AuthedWaCloudAlertasRouteImport.update({
   path: "/alertas",
   getParentRoute: () => AuthedWaCloudRoute,
 } as any)
+const AuthedSettingsTiendaRoute = AuthedSettingsTiendaRouteImport.update({
+  id: "/tienda",
+  path: "/tienda",
+  getParentRoute: () => AuthedSettingsRoute,
+} as any)
 const AuthedSettingsRolesRoute = AuthedSettingsRolesRouteImport.update({
   id: "/roles",
   path: "/roles",
@@ -387,6 +395,18 @@ const AuthedOperationsInventoryRoute =
   AuthedOperationsInventoryRouteImport.update({
     id: "/inventory",
     path: "/inventory",
+    getParentRoute: () => AuthedOperationsRoute,
+  } as any)
+const AuthedOperationsHaulmerDteRoute =
+  AuthedOperationsHaulmerDteRouteImport.update({
+    id: "/haulmer-dte",
+    path: "/haulmer-dte",
+    getParentRoute: () => AuthedOperationsRoute,
+  } as any)
+const AuthedOperationsChannelPricesRoute =
+  AuthedOperationsChannelPricesRouteImport.update({
+    id: "/channel-prices",
+    path: "/channel-prices",
     getParentRoute: () => AuthedOperationsRoute,
   } as any)
 const AuthedOperationsCatalogRoute = AuthedOperationsCatalogRouteImport.update({
@@ -634,6 +654,8 @@ export interface FileRoutesByFullPath {
   "/hr/reports": typeof AuthedHrReportsRoute
   "/hr/timesheets": typeof AuthedHrTimesheetsRoute
   "/operations/catalog": typeof AuthedOperationsCatalogRoute
+  "/operations/channel-prices": typeof AuthedOperationsChannelPricesRoute
+  "/operations/haulmer-dte": typeof AuthedOperationsHaulmerDteRoute
   "/operations/inventory": typeof AuthedOperationsInventoryRoute
   "/operations/shipments": typeof AuthedOperationsShipmentsRoute
   "/operations/supplies": typeof AuthedOperationsSuppliesRoute
@@ -655,6 +677,7 @@ export interface FileRoutesByFullPath {
   "/settings/mercadopago": typeof AuthedSettingsMercadopagoRoute
   "/settings/notifications": typeof AuthedSettingsNotificationsRoute
   "/settings/roles": typeof AuthedSettingsRolesRoute
+  "/settings/tienda": typeof AuthedSettingsTiendaRoute
   "/wa-cloud/alertas": typeof AuthedWaCloudAlertasRoute
   "/wa-cloud/analytics": typeof AuthedWaCloudAnalyticsRoute
   "/wa-cloud/broadcasts": typeof AuthedWaCloudBroadcastsRoute
@@ -721,6 +744,8 @@ export interface FileRoutesByTo {
   "/hr/reports": typeof AuthedHrReportsRoute
   "/hr/timesheets": typeof AuthedHrTimesheetsRoute
   "/operations/catalog": typeof AuthedOperationsCatalogRoute
+  "/operations/channel-prices": typeof AuthedOperationsChannelPricesRoute
+  "/operations/haulmer-dte": typeof AuthedOperationsHaulmerDteRoute
   "/operations/inventory": typeof AuthedOperationsInventoryRoute
   "/operations/shipments": typeof AuthedOperationsShipmentsRoute
   "/operations/supplies": typeof AuthedOperationsSuppliesRoute
@@ -742,6 +767,7 @@ export interface FileRoutesByTo {
   "/settings/mercadopago": typeof AuthedSettingsMercadopagoRoute
   "/settings/notifications": typeof AuthedSettingsNotificationsRoute
   "/settings/roles": typeof AuthedSettingsRolesRoute
+  "/settings/tienda": typeof AuthedSettingsTiendaRoute
   "/wa-cloud/alertas": typeof AuthedWaCloudAlertasRoute
   "/wa-cloud/analytics": typeof AuthedWaCloudAnalyticsRoute
   "/wa-cloud/broadcasts": typeof AuthedWaCloudBroadcastsRoute
@@ -816,6 +842,8 @@ export interface FileRoutesById {
   "/_authed/hr/reports": typeof AuthedHrReportsRoute
   "/_authed/hr/timesheets": typeof AuthedHrTimesheetsRoute
   "/_authed/operations/catalog": typeof AuthedOperationsCatalogRoute
+  "/_authed/operations/channel-prices": typeof AuthedOperationsChannelPricesRoute
+  "/_authed/operations/haulmer-dte": typeof AuthedOperationsHaulmerDteRoute
   "/_authed/operations/inventory": typeof AuthedOperationsInventoryRoute
   "/_authed/operations/shipments": typeof AuthedOperationsShipmentsRoute
   "/_authed/operations/supplies": typeof AuthedOperationsSuppliesRoute
@@ -837,6 +865,7 @@ export interface FileRoutesById {
   "/_authed/settings/mercadopago": typeof AuthedSettingsMercadopagoRoute
   "/_authed/settings/notifications": typeof AuthedSettingsNotificationsRoute
   "/_authed/settings/roles": typeof AuthedSettingsRolesRoute
+  "/_authed/settings/tienda": typeof AuthedSettingsTiendaRoute
   "/_authed/wa-cloud/alertas": typeof AuthedWaCloudAlertasRoute
   "/_authed/wa-cloud/analytics": typeof AuthedWaCloudAnalyticsRoute
   "/_authed/wa-cloud/broadcasts": typeof AuthedWaCloudBroadcastsRoute
@@ -911,6 +940,8 @@ export interface FileRouteTypes {
     | "/hr/reports"
     | "/hr/timesheets"
     | "/operations/catalog"
+    | "/operations/channel-prices"
+    | "/operations/haulmer-dte"
     | "/operations/inventory"
     | "/operations/shipments"
     | "/operations/supplies"
@@ -932,6 +963,7 @@ export interface FileRouteTypes {
     | "/settings/mercadopago"
     | "/settings/notifications"
     | "/settings/roles"
+    | "/settings/tienda"
     | "/wa-cloud/alertas"
     | "/wa-cloud/analytics"
     | "/wa-cloud/broadcasts"
@@ -998,6 +1030,8 @@ export interface FileRouteTypes {
     | "/hr/reports"
     | "/hr/timesheets"
     | "/operations/catalog"
+    | "/operations/channel-prices"
+    | "/operations/haulmer-dte"
     | "/operations/inventory"
     | "/operations/shipments"
     | "/operations/supplies"
@@ -1019,6 +1053,7 @@ export interface FileRouteTypes {
     | "/settings/mercadopago"
     | "/settings/notifications"
     | "/settings/roles"
+    | "/settings/tienda"
     | "/wa-cloud/alertas"
     | "/wa-cloud/analytics"
     | "/wa-cloud/broadcasts"
@@ -1092,6 +1127,8 @@ export interface FileRouteTypes {
     | "/_authed/hr/reports"
     | "/_authed/hr/timesheets"
     | "/_authed/operations/catalog"
+    | "/_authed/operations/channel-prices"
+    | "/_authed/operations/haulmer-dte"
     | "/_authed/operations/inventory"
     | "/_authed/operations/shipments"
     | "/_authed/operations/supplies"
@@ -1113,6 +1150,7 @@ export interface FileRouteTypes {
     | "/_authed/settings/mercadopago"
     | "/_authed/settings/notifications"
     | "/_authed/settings/roles"
+    | "/_authed/settings/tienda"
     | "/_authed/wa-cloud/alertas"
     | "/_authed/wa-cloud/analytics"
     | "/_authed/wa-cloud/broadcasts"
@@ -1389,6 +1427,13 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof AuthedWaCloudAlertasRouteImport
       parentRoute: typeof AuthedWaCloudRoute
     }
+    "/_authed/settings/tienda": {
+      id: "/_authed/settings/tienda"
+      path: "/tienda"
+      fullPath: "/settings/tienda"
+      preLoaderRoute: typeof AuthedSettingsTiendaRouteImport
+      parentRoute: typeof AuthedSettingsRoute
+    }
     "/_authed/settings/roles": {
       id: "/_authed/settings/roles"
       path: "/roles"
@@ -1534,6 +1579,20 @@ declare module "@tanstack/react-router" {
       path: "/inventory"
       fullPath: "/operations/inventory"
       preLoaderRoute: typeof AuthedOperationsInventoryRouteImport
+      parentRoute: typeof AuthedOperationsRoute
+    }
+    "/_authed/operations/haulmer-dte": {
+      id: "/_authed/operations/haulmer-dte"
+      path: "/haulmer-dte"
+      fullPath: "/operations/haulmer-dte"
+      preLoaderRoute: typeof AuthedOperationsHaulmerDteRouteImport
+      parentRoute: typeof AuthedOperationsRoute
+    }
+    "/_authed/operations/channel-prices": {
+      id: "/_authed/operations/channel-prices"
+      path: "/channel-prices"
+      fullPath: "/operations/channel-prices"
+      preLoaderRoute: typeof AuthedOperationsChannelPricesRouteImport
       parentRoute: typeof AuthedOperationsRoute
     }
     "/_authed/operations/catalog": {
@@ -1915,6 +1974,8 @@ const AuthedHrRouteWithChildren = AuthedHrRoute._addFileChildren(
 
 interface AuthedOperationsRouteChildren {
   AuthedOperationsCatalogRoute: typeof AuthedOperationsCatalogRoute
+  AuthedOperationsChannelPricesRoute: typeof AuthedOperationsChannelPricesRoute
+  AuthedOperationsHaulmerDteRoute: typeof AuthedOperationsHaulmerDteRoute
   AuthedOperationsInventoryRoute: typeof AuthedOperationsInventoryRoute
   AuthedOperationsShipmentsRoute: typeof AuthedOperationsShipmentsRoute
   AuthedOperationsSuppliesRoute: typeof AuthedOperationsSuppliesRoute
@@ -1922,6 +1983,8 @@ interface AuthedOperationsRouteChildren {
 
 const AuthedOperationsRouteChildren: AuthedOperationsRouteChildren = {
   AuthedOperationsCatalogRoute: AuthedOperationsCatalogRoute,
+  AuthedOperationsChannelPricesRoute: AuthedOperationsChannelPricesRoute,
+  AuthedOperationsHaulmerDteRoute: AuthedOperationsHaulmerDteRoute,
   AuthedOperationsInventoryRoute: AuthedOperationsInventoryRoute,
   AuthedOperationsShipmentsRoute: AuthedOperationsShipmentsRoute,
   AuthedOperationsSuppliesRoute: AuthedOperationsSuppliesRoute,
@@ -2010,6 +2073,7 @@ interface AuthedSettingsRouteChildren {
   AuthedSettingsMercadopagoRoute: typeof AuthedSettingsMercadopagoRoute
   AuthedSettingsNotificationsRoute: typeof AuthedSettingsNotificationsRoute
   AuthedSettingsRolesRoute: typeof AuthedSettingsRolesRoute
+  AuthedSettingsTiendaRoute: typeof AuthedSettingsTiendaRoute
   AuthedSettingsIndexRoute: typeof AuthedSettingsIndexRoute
   AuthedSettingsUsersAddRoute: typeof AuthedSettingsUsersAddRoute
   AuthedSettingsUsersIndexRoute: typeof AuthedSettingsUsersIndexRoute
@@ -2028,6 +2092,7 @@ const AuthedSettingsRouteChildren: AuthedSettingsRouteChildren = {
   AuthedSettingsMercadopagoRoute: AuthedSettingsMercadopagoRoute,
   AuthedSettingsNotificationsRoute: AuthedSettingsNotificationsRoute,
   AuthedSettingsRolesRoute: AuthedSettingsRolesRoute,
+  AuthedSettingsTiendaRoute: AuthedSettingsTiendaRoute,
   AuthedSettingsIndexRoute: AuthedSettingsIndexRoute,
   AuthedSettingsUsersAddRoute: AuthedSettingsUsersAddRoute,
   AuthedSettingsUsersIndexRoute: AuthedSettingsUsersIndexRoute,

@@ -54,12 +54,12 @@ function buildWrapper() {
 
 describe("MlConnectionPage", () => {
   let originalLocation: Location;
-  let hrefSetter: ReturnType<typeof vi.fn>;
+  let hrefSetter: ReturnType<typeof vi.fn<(v: string) => void>>;
 
   beforeEach(() => {
     vi.clearAllMocks();
     originalLocation = window.location;
-    hrefSetter = vi.fn();
+    hrefSetter = vi.fn<(v: string) => void>();
     // Replace location with a writable shim.
     Object.defineProperty(window, "location", {
       configurable: true,
@@ -75,7 +75,7 @@ describe("MlConnectionPage", () => {
         origin: "http://localhost",
       },
     });
-    window.history.replaceState = vi.fn();
+    window.history.replaceState = vi.fn() as unknown as History["replaceState"];
   });
 
   afterEach(() => {

@@ -145,7 +145,10 @@ describe("reassignRoleUsers", () => {
 
 describe("saveRoleMapping", () => {
   it("delegates to saveMapping", async () => {
-    const mapping = { subject: "Patient", roleId: 1 } as Parameters<typeof api.saveRoleMapping>[0];
+    const mapping = {
+      subject: "Patient",
+      roleId: 1,
+    } as unknown as Parameters<typeof api.saveRoleMapping>[0];
     orpcMock.rolesORPCClient.saveMapping.mockResolvedValueOnce(undefined);
     await api.saveRoleMapping(mapping);
     expect(orpcMock.rolesORPCClient.saveMapping).toHaveBeenCalledWith(mapping);
