@@ -65,7 +65,7 @@ importers:
         version: 6.8.1
       '@finanzas/db':
         specifier: workspace:*
-        version: file:packages/db(@tanstack/react-query@5.100.10(react@19.2.6))(express@5.2.1)
+        version: link:../../packages/db
       '@finanzas/orpc-contracts':
         specifier: workspace:*
         version: link:../../packages/orpc-contracts
@@ -297,7 +297,7 @@ importers:
         version: 6.0.0(@casl/ability@6.8.1)(react@19.2.6)
       '@finanzas/db':
         specifier: workspace:*
-        version: file:packages/db(@tanstack/react-query@5.100.10(react@19.2.6))(express@5.2.1)
+        version: link:../../packages/db
       '@finanzas/orpc-contracts':
         specifier: workspace:*
         version: link:../../packages/orpc-contracts
@@ -1604,22 +1604,8 @@ packages:
     resolution: {integrity: sha512-LMGQLS9EuADloEFkcTBR3BwV/CGHV7zyDxVRtVDTwdI2Ca4it0CCVTT9wCkxSgokjE5Ho41hEPgb8OEUwoXr6Q==}
     engines: {node: '>=20.19.0'}
 
-  '@csstools/css-calc@3.2.0':
-    resolution: {integrity: sha512-bR9e6o2BDB12jzN/gIbjHa5wLJ4UjD1CB9pM7ehlc0ddk6EBz+yYS1EV2MF55/HUxrHcB/hehAyt5vhsA3hx7w==}
-    engines: {node: '>=20.19.0'}
-    peerDependencies:
-      '@csstools/css-parser-algorithms': ^4.0.0
-      '@csstools/css-tokenizer': ^4.0.0
-
   '@csstools/css-calc@3.2.1':
     resolution: {integrity: sha512-DtdHlgXh5ZkA43cwBcAm+huzgJiwx3ZTWVjBs94kwz2xKqSimDA3lBgCjphYgwgVUMWatSM0pDd8TILB1yrVVg==}
-    engines: {node: '>=20.19.0'}
-    peerDependencies:
-      '@csstools/css-parser-algorithms': ^4.0.0
-      '@csstools/css-tokenizer': ^4.0.0
-
-  '@csstools/css-color-parser@4.1.0':
-    resolution: {integrity: sha512-U0KhLYmy2GVj6q4T3WaAe6NPuFYCPQoE3b0dRGxejWDgcPp8TP7S5rVdM5ZrFaqu4N67X8YaPBw14dQSYx3IyQ==}
     engines: {node: '>=20.19.0'}
     peerDependencies:
       '@csstools/css-parser-algorithms': ^4.0.0
@@ -1637,14 +1623,6 @@ packages:
     engines: {node: '>=20.19.0'}
     peerDependencies:
       '@csstools/css-tokenizer': ^4.0.0
-
-  '@csstools/css-syntax-patches-for-csstree@1.1.3':
-    resolution: {integrity: sha512-SH60bMfrRCJF3morcdk57WklujF4Jr/EsQUzqkarfHXEFcAR1gg7fS/chAE922Sehgzc1/+Tz5H3Ypa1HiEKrg==}
-    peerDependencies:
-      css-tree: ^3.2.1
-    peerDependenciesMeta:
-      css-tree:
-        optional: true
 
   '@csstools/css-syntax-patches-for-csstree@1.1.4':
     resolution: {integrity: sha512-wgsqt92b7C7tQhIdPNxj0n9zuUbQlvAuI1exyzeNrOKOi62SD7ren8zqszmpVREjAOqg8cD2FqYhQfAuKjk4sw==}
@@ -2152,10 +2130,6 @@ packages:
     resolution: {integrity: sha512-xflqJ3XQZVzm8+7dsm8OFxVAmBNNA3Mg65sqwNHiq7VRSMSD7qwH4BPsBy07ZaX+9nHeaacBpFZd3Q0aIsISqw==}
     peerDependencies:
       react: ^16.14.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
-
-  '@finanzas/db@file:packages/db':
-    resolution: {directory: packages/db, type: directory}
-    engines: {node: '>=26', npm: '>=10.0.0'}
 
   '@formatjs/ecma402-abstract@2.3.6':
     resolution: {integrity: sha512-HJnTFeRM2kVFVr5gr5kH1XP6K0JcJtE7Lzvtr3FS/so5f1kpsqqqxy5JF+FRaO6H2qmcMfAUIox7AJteieRtVw==}
@@ -8057,9 +8031,6 @@ packages:
     peerDependencies:
       pg: '>=8.0'
 
-  pg-protocol@1.13.0:
-    resolution: {integrity: sha512-zzdvXfS6v89r6v7OcFCHfHlyG/wvry1ALxZo4LqgUoy7W9xhBDMaqOuMiF3qEV45VqsN6rdlcehHrfDtlCPc8w==}
-
   pg-protocol@1.14.0:
     resolution: {integrity: sha512-n5taZ1kO3s9ngDTVxsEznOqCyToTgz0FLuPq0B33COy5pPpuWJpY3/2oRBVETuOgzdqRXfWpM9HIhp2LBBT1BA==}
 
@@ -8070,15 +8041,6 @@ packages:
   pg-types@4.1.0:
     resolution: {integrity: sha512-o2XFanIMy/3+mThw69O8d4n1E5zsLhdO+OPqswezu7Z5ekP4hYDqlDjlmOpYMbzY2Br0ufCwJLdDIXeNVwcWFg==}
     engines: {node: '>=10'}
-
-  pg@8.20.0:
-    resolution: {integrity: sha512-ldhMxz2r8fl/6QkXnBD3CR9/xg694oT6DZQ2s6c/RI28OjtSOpxnPrUCGOBJ46RCUxcWdx3p6kw/xnDHjKvaRA==}
-    engines: {node: '>= 16.0.0'}
-    peerDependencies:
-      pg-native: '>=3.0.1'
-    peerDependenciesMeta:
-      pg-native:
-        optional: true
 
   pg@8.21.0:
     resolution: {integrity: sha512-AUP1EYJuHraQGsVoCQVIcM7TEJVGtDzxWtGFZd8rds9d+CCXlU5Js1rYgfLNvxy9iJrpHjGrRjoi/3BT9fRyiA==}
@@ -10094,8 +10056,8 @@ snapshots:
   '@asamuzakjp/css-color@5.1.11':
     dependencies:
       '@asamuzakjp/generational-cache': 1.0.1
-      '@csstools/css-calc': 3.2.0(@csstools/css-parser-algorithms@4.0.0(@csstools/css-tokenizer@4.0.0))(@csstools/css-tokenizer@4.0.0)
-      '@csstools/css-color-parser': 4.1.0(@csstools/css-parser-algorithms@4.0.0(@csstools/css-tokenizer@4.0.0))(@csstools/css-tokenizer@4.0.0)
+      '@csstools/css-calc': 3.2.1(@csstools/css-parser-algorithms@4.0.0(@csstools/css-tokenizer@4.0.0))(@csstools/css-tokenizer@4.0.0)
+      '@csstools/css-color-parser': 4.1.1(@csstools/css-parser-algorithms@4.0.0(@csstools/css-tokenizer@4.0.0))(@csstools/css-tokenizer@4.0.0)
       '@csstools/css-parser-algorithms': 4.0.0(@csstools/css-tokenizer@4.0.0)
       '@csstools/css-tokenizer': 4.0.0
 
@@ -11116,20 +11078,8 @@ snapshots:
 
   '@csstools/color-helpers@6.0.2': {}
 
-  '@csstools/css-calc@3.2.0(@csstools/css-parser-algorithms@4.0.0(@csstools/css-tokenizer@4.0.0))(@csstools/css-tokenizer@4.0.0)':
-    dependencies:
-      '@csstools/css-parser-algorithms': 4.0.0(@csstools/css-tokenizer@4.0.0)
-      '@csstools/css-tokenizer': 4.0.0
-
   '@csstools/css-calc@3.2.1(@csstools/css-parser-algorithms@4.0.0(@csstools/css-tokenizer@4.0.0))(@csstools/css-tokenizer@4.0.0)':
     dependencies:
-      '@csstools/css-parser-algorithms': 4.0.0(@csstools/css-tokenizer@4.0.0)
-      '@csstools/css-tokenizer': 4.0.0
-
-  '@csstools/css-color-parser@4.1.0(@csstools/css-parser-algorithms@4.0.0(@csstools/css-tokenizer@4.0.0))(@csstools/css-tokenizer@4.0.0)':
-    dependencies:
-      '@csstools/color-helpers': 6.0.2
-      '@csstools/css-calc': 3.2.0(@csstools/css-parser-algorithms@4.0.0(@csstools/css-tokenizer@4.0.0))(@csstools/css-tokenizer@4.0.0)
       '@csstools/css-parser-algorithms': 4.0.0(@csstools/css-tokenizer@4.0.0)
       '@csstools/css-tokenizer': 4.0.0
 
@@ -11143,10 +11093,6 @@ snapshots:
   '@csstools/css-parser-algorithms@4.0.0(@csstools/css-tokenizer@4.0.0)':
     dependencies:
       '@csstools/css-tokenizer': 4.0.0
-
-  '@csstools/css-syntax-patches-for-csstree@1.1.3(css-tree@3.2.1)':
-    optionalDependencies:
-      css-tree: 3.2.1
 
   '@csstools/css-syntax-patches-for-csstree@1.1.4(css-tree@3.2.1)':
     optionalDependencies:
@@ -11607,37 +11553,6 @@ snapshots:
       react: 19.2.6
     transitivePeerDependencies:
       - '@types/react'
-
-  '@finanzas/db@file:packages/db(@tanstack/react-query@5.100.10(react@19.2.6))(express@5.2.1)':
-    dependencies:
-      '@zenstackhq/language': 3.7.0
-      '@zenstackhq/orm': 3.7.0(pg@8.20.0)(zod@4.4.3)
-      '@zenstackhq/plugin-policy': 3.7.0(kysely@0.29.2)(pg@8.20.0)(zod@4.4.3)
-      '@zenstackhq/schema': 3.7.0
-      '@zenstackhq/server': 3.7.0(express@5.2.1)(hono@4.12.19)(pg@8.20.0)(zod@4.4.3)
-      '@zenstackhq/tanstack-query': 3.7.0(@tanstack/react-query@5.100.10(react@19.2.6))(pg@8.20.0)(zod@4.4.3)
-      '@zenstackhq/zod': 3.7.0(zod@4.4.3)
-      hono: 4.12.19
-      kysely: 0.29.2
-      pg: 8.20.0
-      pg-types: 4.1.0
-      zod: 4.4.3
-    transitivePeerDependencies:
-      - '@sveltejs/kit'
-      - '@tanstack/react-query'
-      - '@tanstack/svelte-query'
-      - '@tanstack/vue-query'
-      - better-sqlite3
-      - elysia
-      - express
-      - fastify
-      - fastify-plugin
-      - h3
-      - mysql2
-      - next
-      - nuxt
-      - pg-native
-      - sql.js
 
   '@formatjs/ecma402-abstract@2.3.6':
     dependencies:
@@ -14210,7 +14125,7 @@ snapshots:
   '@types/pg@8.20.0':
     dependencies:
       '@types/node': 25.9.0
-      pg-protocol: 1.13.0
+      pg-protocol: 1.14.0
       pg-types: 2.2.0
 
   '@types/qrcode@1.5.6':
@@ -14465,20 +14380,6 @@ snapshots:
       - supports-color
       - typescript
 
-  '@zenstackhq/client-helpers@3.7.0(pg@8.20.0)(zod@4.4.3)':
-    dependencies:
-      '@zenstackhq/common-helpers': 3.7.0
-      '@zenstackhq/orm': 3.7.0(pg@8.20.0)(zod@4.4.3)
-      '@zenstackhq/schema': 3.7.0
-      decimal.js: 10.6.0
-      superjson: 2.2.6
-    transitivePeerDependencies:
-      - better-sqlite3
-      - mysql2
-      - pg
-      - sql.js
-      - zod
-
   '@zenstackhq/client-helpers@3.7.0(pg@8.21.0)(zod@4.4.3)':
     dependencies:
       '@zenstackhq/common-helpers': 3.7.0
@@ -14503,27 +14404,6 @@ snapshots:
       ts-pattern: 5.9.0
       vscode-languageserver: 9.0.1
 
-  '@zenstackhq/orm@3.7.0(pg@8.20.0)(zod@4.4.3)':
-    dependencies:
-      '@paralleldrive/cuid2': 2.3.1
-      '@zenstackhq/common-helpers': 3.7.0
-      '@zenstackhq/schema': 3.7.0
-      '@zenstackhq/zod': 3.7.0(zod@4.4.3)
-      cuid: 3.0.0
-      decimal.js: 10.6.0
-      json-stable-stringify: 1.3.0
-      kysely: 0.29.2
-      nanoid: 5.1.11
-      postgres-array: 3.0.4
-      toposort: 2.0.2
-      ts-pattern: 5.9.0
-      ulid: 3.0.2
-      uuid: 11.1.1
-      zod: 4.4.3
-      zod-validation-error: 4.0.2(zod@4.4.3)
-    optionalDependencies:
-      pg: 8.20.0
-
   '@zenstackhq/orm@3.7.0(pg@8.21.0)(zod@4.4.3)':
     dependencies:
       '@paralleldrive/cuid2': 2.3.1
@@ -14544,19 +14424,6 @@ snapshots:
       zod-validation-error: 4.0.2(zod@4.4.3)
     optionalDependencies:
       pg: 8.21.0
-
-  '@zenstackhq/plugin-policy@3.7.0(kysely@0.29.2)(pg@8.20.0)(zod@4.4.3)':
-    dependencies:
-      '@zenstackhq/common-helpers': 3.7.0
-      '@zenstackhq/orm': 3.7.0(pg@8.20.0)(zod@4.4.3)
-      kysely: 0.29.2
-      ts-pattern: 5.9.0
-    transitivePeerDependencies:
-      - better-sqlite3
-      - mysql2
-      - pg
-      - sql.js
-      - zod
 
   '@zenstackhq/plugin-policy@3.7.0(kysely@0.29.2)(pg@8.21.0)(zod@4.4.3)':
     dependencies:
@@ -14583,27 +14450,6 @@ snapshots:
       ts-pattern: 5.9.0
       typescript: 6.0.3
 
-  '@zenstackhq/server@3.7.0(express@5.2.1)(hono@4.12.19)(pg@8.20.0)(zod@4.4.3)':
-    dependencies:
-      '@zenstackhq/common-helpers': 3.7.0
-      '@zenstackhq/orm': 3.7.0(pg@8.20.0)(zod@4.4.3)
-      decimal.js: 10.6.0
-      openapi-types: 12.1.3
-      superjson: 2.2.6
-      ts-japi: 1.12.3
-      ts-pattern: 5.9.0
-      url-pattern: 1.0.3
-      zod: 4.4.3
-      zod-validation-error: 4.0.2(zod@4.4.3)
-    optionalDependencies:
-      express: 5.2.1
-      hono: 4.12.19
-    transitivePeerDependencies:
-      - better-sqlite3
-      - mysql2
-      - pg
-      - sql.js
-
   '@zenstackhq/server@3.7.0(express@5.2.1)(hono@4.12.19)(pg@8.21.0)(zod@4.4.3)':
     dependencies:
       '@zenstackhq/common-helpers': 3.7.0
@@ -14624,22 +14470,6 @@ snapshots:
       - mysql2
       - pg
       - sql.js
-
-  '@zenstackhq/tanstack-query@3.7.0(@tanstack/react-query@5.100.10(react@19.2.6))(pg@8.20.0)(zod@4.4.3)':
-    dependencies:
-      '@zenstackhq/client-helpers': 3.7.0(pg@8.20.0)(zod@4.4.3)
-      '@zenstackhq/common-helpers': 3.7.0
-      '@zenstackhq/orm': 3.7.0(pg@8.20.0)(zod@4.4.3)
-      '@zenstackhq/schema': 3.7.0
-      decimal.js: 10.6.0
-    optionalDependencies:
-      '@tanstack/react-query': 5.100.10(react@19.2.6)
-    transitivePeerDependencies:
-      - better-sqlite3
-      - mysql2
-      - pg
-      - sql.js
-      - zod
 
   '@zenstackhq/tanstack-query@3.7.0(@tanstack/react-query@5.100.10(react@19.2.6))(pg@8.21.0)(zod@4.4.3)':
     dependencies:
@@ -16903,7 +16733,7 @@ snapshots:
       '@asamuzakjp/css-color': 5.1.11
       '@asamuzakjp/dom-selector': 7.1.1
       '@bramus/specificity': 2.4.2
-      '@csstools/css-syntax-patches-for-csstree': 1.1.3(css-tree@3.2.1)
+      '@csstools/css-syntax-patches-for-csstree': 1.1.4(css-tree@3.2.1)
       '@exodus/bytes': 1.15.0(@noble/hashes@2.2.0)
       css-tree: 3.2.1
       data-urls: 7.0.0(@noble/hashes@2.2.0)
@@ -17863,15 +17693,9 @@ snapshots:
 
   pg-numeric@1.0.2: {}
 
-  pg-pool@3.14.0(pg@8.20.0):
-    dependencies:
-      pg: 8.20.0
-
   pg-pool@3.14.0(pg@8.21.0):
     dependencies:
       pg: 8.21.0
-
-  pg-protocol@1.13.0: {}
 
   pg-protocol@1.14.0: {}
 
@@ -17892,16 +17716,6 @@ snapshots:
       postgres-date: 2.1.0
       postgres-interval: 3.0.0
       postgres-range: 1.1.4
-
-  pg@8.20.0:
-    dependencies:
-      pg-connection-string: 2.13.0
-      pg-pool: 3.14.0(pg@8.20.0)
-      pg-protocol: 1.14.0
-      pg-types: 2.2.0
-      pgpass: 1.0.5
-    optionalDependencies:
-      pg-cloudflare: 1.4.0
 
   pg@8.21.0:
     dependencies:
