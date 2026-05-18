@@ -5,12 +5,13 @@ import type { CartContract } from "@finanzas/orpc-contracts/cart";
 import type { CatalogContract } from "@finanzas/orpc-contracts/catalog";
 import type { CheckoutContract } from "@finanzas/orpc-contracts/checkout";
 
+import { csrfFetch } from "@/lib/csrf-fetch";
+
 const apiBase = import.meta.env.VITE_API_URL ?? window.location.origin;
 
 const link = new RPCLink({
   url: `${apiBase}`,
-  fetch: (input: RequestInfo | URL, init?: RequestInit) =>
-    fetch(input, { ...init, credentials: "include" }),
+  fetch: csrfFetch,
 });
 
 export const catalogClient = createORPCClient(link, {
