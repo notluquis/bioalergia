@@ -14,6 +14,9 @@ import { MessageCircle, ShoppingCart } from "lucide-react";
 import { useState } from "react";
 
 import { contactInfo } from "@/data/clinic";
+import { ProductGallery } from "@/features/shop/components/ProductGallery";
+import { RelatedProducts } from "@/features/shop/components/RelatedProducts";
+import { TrustBlock } from "@/features/shop/components/TrustBlock";
 import {
   CLP_FORMATTER,
   makeStockState,
@@ -150,35 +153,19 @@ function ProductDetailPage() {
       </Breadcrumbs>
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
-        <Card>
-          <Card.Content className="p-0">
-            <div className="relative aspect-square overflow-hidden rounded-t-[18px] bg-foreground/5">
-              {primary ? (
-                <img
-                  alt={primary.alt ?? product.name}
-                  className="h-full w-full object-cover"
-                  fetchPriority="high"
-                  src={primary.cdn_url}
-                />
-              ) : (
-                <div className="flex h-full items-center justify-center text-foreground/30">
-                  Sin imagen
-                </div>
-              )}
-              <div className="absolute top-3 left-3 flex gap-2">
-                <Chip color={stock.color} variant="primary">
-                  {stock.label}
-                </Chip>
-                {product.requires_prescription && (
-                  <Chip color="warning" variant="secondary">
-                    Bajo receta médica
-                  </Chip>
-                )}
-              </div>
-            </div>
-          </Card.Content>
-        </Card>
-
+        <div className="relative">
+          <ProductGallery images={product.images ?? []} productName={product.name} />
+          <div className="absolute top-3 left-3 z-10 flex gap-2">
+            <Chip color={stock.color} variant="primary">
+              {stock.label}
+            </Chip>
+            {product.requires_prescription && (
+              <Chip color="warning" variant="secondary">
+                Bajo receta médica
+              </Chip>
+            )}
+          </div>
+        </div>
         <div className="space-y-5">
           {product.brand && (
             <p className="text-foreground/60 text-sm uppercase tracking-wide">
@@ -304,6 +291,33 @@ function ProductDetailPage() {
           </Card>
         </div>
       </div>
+
+      <TrustBlock compact />
+
+      {product.category?.slug && (
+        <RelatedProducts categorySlug={product.category.slug} excludeId={product.id} />
+      )}
+
+      {/* Sticky add-to-cart bar mobile only (Baymard +12% conversión móvil) */}
+      {!outOfStock && (
+        <div className="-mx-4 fixed right-0 bottom-0 left-0 z-40 border-foreground/10 border-t bg-surface px-4 py-3 shadow-lg sm:hidden">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="font-bold text-lg">{CLP_FORMATTER.format(product.price_clp)}</p>
+              <p className="text-foreground/60 text-xs">IVA incluido</p>
+            </div>
+            <Button
+              isDisabled={addMutation.isPending}
+              onPress={() => addMutation.mutate({ product_id: product.id, qty: 1 })}
+              size="lg"
+              variant="primary"
+            >
+              <ShoppingCart size={16} />
+              {addMutation.isPending ? "Agregando…" : "Agregar"}
+            </Button>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

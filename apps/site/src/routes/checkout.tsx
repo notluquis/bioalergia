@@ -7,6 +7,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 
+import { TrustBlock } from "@/features/shop/components/TrustBlock";
 import { CLP_FORMATTER } from "@/features/shop/lib/shop-config";
 import { shopKeys } from "@/features/shop/queries";
 import { cartClient, checkoutClient } from "@/lib/orpc-client";
@@ -132,6 +133,8 @@ function CheckoutPage() {
       <header>
         <h1 className="font-bold text-3xl">Checkout</h1>
       </header>
+
+      <TrustBlock compact />
 
       <Card>
         <Card.Header>

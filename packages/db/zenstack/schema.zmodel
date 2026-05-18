@@ -4544,6 +4544,7 @@ model Product {
   reservations        StockReservation[]
   mlListing           MlListing?
   channelPrices       ProductChannelPrice[]
+  reviews             ProductReview[]
 
   @@index([categoryId])
   @@index([status])
@@ -4555,6 +4556,31 @@ model Product {
   @@allow('read,create,update,delete', auth().status == 'ACTIVE')
 
   @@map("products")
+}
+
+model ProductReview {
+  id            Int       @id @default(autoincrement())
+  productId     Int       @map("product_id")
+  authorName    String    @map("author_name")
+  authorEmail   String?   @map("author_email")
+  rating        Int       // 1-5
+  title         String?
+  body          String
+  verified      Boolean   @default(false)
+  status        String    @default("PENDING") // PENDING | APPROVED | REJECTED
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  product       Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId, status])
+  @@index([status])
+
+  @@allow('read', status == 'APPROVED')
+  @@allow('create', true)
+  @@allow('read,update,delete', auth().status == 'ACTIVE')
+
+  @@map("product_reviews")
 }
 
 model ProductImage {
