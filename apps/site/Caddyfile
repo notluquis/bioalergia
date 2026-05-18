@@ -38,6 +38,18 @@
 		respond "OK" 200
 	}
 
+	# API proxy to backend — same pattern as intranet/Caddyfile.
+	# MUST use internal/direct origin (Railway private domain) to avoid
+	# CDN loop. Set in Railway: API_INTERNAL_ORIGIN=https://<api-internal>
+	# Same-origin proxying lets the SPA share httpOnly cart cookies + CSRF
+	# tokens without CORS.
+	handle /api/* {
+		reverse_proxy {$API_INTERNAL_ORIGIN} {
+			header_up Host {upstream_hostport}
+			header_up X-Real-IP {remote_host}
+		}
+	}
+
 	# SPA routing: try files, fallback to index.html
 	handle {
 		try_files {path} /index.html
