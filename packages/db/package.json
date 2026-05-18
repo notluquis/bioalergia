@@ -71,7 +71,7 @@
     "@zenstackhq/server": "^3.7.0",
     "@zenstackhq/tanstack-query": "^3.7.0",
     "@zenstackhq/zod": "^3.7.0",
-    "hono": "^4.12.18",
+    "hono": "^4.12.19",
     "kysely": "^0.29.2",
     "pg": "8.20.0",
     "pg-types": "^4.1.0",
