@@ -1,6 +1,8 @@
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
 import {
+  checkoutQuoteInputSchema,
+  checkoutQuoteResponseSchema,
   checkoutStartInputSchema,
   checkoutStartResponseSchema,
   checkoutStatusInputSchema,
@@ -12,8 +14,10 @@ import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import type { Context as HonoContext } from "hono";
 import { getCookie } from "hono/cookie";
 
+import { chilexpressConfig } from "../lib/config.ts";
 import { logError } from "../lib/logger.ts";
 import { configureSuperjson } from "../lib/superjson-config.ts";
+import { quoteCourier } from "../modules/chilexpress/client.ts";
 import { createCheckoutPreference } from "../modules/mercadopago-checkout/payment.ts";
 import { reserveStockForOrder } from "../modules/reservations/index.ts";
 import { createOrderFromCart, getOrderByNumber } from "../services/orders.ts";
@@ -26,6 +30,58 @@ configureSuperjson();
 
 type CheckoutORPCContext = { hono: HonoContext };
 const base = os.$context<CheckoutORPCContext>();
+
+const quoteRoute = base
+  .route({
+    method: "POST",
+    path: "/quote",
+    summary: "Chilexpress shipping quote",
+    tags: ["Checkout"],
+  })
+  .input(checkoutQuoteInputSchema)
+  .output(checkoutQuoteResponseSchema)
+  .handler(async ({ input, context }) => {
+    if (!chilexpressConfig) {
+      throw new ORPCError("INTERNAL_SERVER_ERROR", { message: "Chilexpress no configurado" });
+    }
+    const token = getCookie(context.hono, CART_COOKIE_NAME);
+    if (!token) throw new ORPCError("BAD_REQUEST", { message: "Sin carrito" });
+    const cart = await findCartByToken(token);
+    if (!cart || cart.items.length === 0) {
+      throw new ORPCError("BAD_REQUEST", { message: "Carrito vacío" });
+    }
+
+    type CartLine = (typeof cart.items)[number];
+    const totalGrams = cart.items.reduce(
+      (acc: number, i: CartLine) => acc + (i.product.weightGrams ?? 250) * i.qty,
+      0
+    );
+    const totalKg = Math.max(0.1, totalGrams / 1000);
+    const declaredWorth = cart.items.reduce(
+      (acc: number, i: CartLine) => acc + i.unitPriceClp * i.qty,
+      0
+    );
+
+    const res = await quoteCourier(chilexpressConfig, {
+      originCountyCode: chilexpressConfig.originCoverageCode,
+      destinationCountyCode: input.destination_county_code,
+      package: { weight: totalKg, height: 10, width: 20, length: 30 },
+      productType: 3,
+      contentType: 1,
+      declaredWorth: String(declaredWorth),
+      deliveryTime: 2,
+    });
+
+    const options =
+      res.data?.courierServiceOptions?.map((o) => ({
+        service_code: o.serviceTypeCode,
+        service_description: o.serviceDescription,
+        shipping_clp: Math.round(o.serviceValue),
+        delivery_time_days: o.deliveryTime ?? null,
+      })) ?? [];
+
+    return { data: { options }, status: "ok" as const };
+  });
 
 const startRoute = base
   .route({ method: "POST", path: "/start", summary: "Start checkout", tags: ["Checkout"] })
@@ -124,6 +180,7 @@ const statusRoute = base
   });
 
 const checkoutORPCRouterBase = {
+  quote: quoteRoute,
   start: startRoute,
   status: statusRoute,
 };

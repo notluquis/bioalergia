@@ -143,6 +143,48 @@ export const publicShopConfigResponseSchema = z.object({
   status: z.literal("ok"),
 });
 
+export const salesChannelSchema = z.enum([
+  "WEB",
+  "MERCADO_LIBRE",
+  "UBER_EATS",
+  "PEDIDOS_YA",
+  "RAPPI",
+]);
+
+export const channelPriceSchema = z.object({
+  id: z.number().int(),
+  product_id: z.number().int(),
+  channel: salesChannelSchema,
+  price_clp: z.number().int().nonnegative(),
+  url: z.string().nullable(),
+  notes: z.string().nullable(),
+  created_at: z.date(),
+  updated_at: z.date(),
+});
+
+export const channelPriceUpsertInputSchema = z.object({
+  product_id: z.coerce.number().int().positive(),
+  channel: salesChannelSchema,
+  price_clp: z.number().int().nonnegative(),
+  url: z.string().url().nullable().optional(),
+  notes: z.string().max(500).nullable().optional(),
+});
+
+export const channelPriceListResponseSchema = z.object({
+  data: z.array(channelPriceSchema),
+  status: z.literal("ok"),
+});
+
+export const channelPriceResponseSchema = z.object({
+  data: channelPriceSchema,
+  status: z.literal("ok"),
+});
+
+export const channelPriceDeleteInputSchema = z.object({
+  product_id: z.coerce.number().int().positive(),
+  channel: salesChannelSchema,
+});
+
 export const catalogContract = {
   publicConfig: oc
     .route({ method: "GET", path: "/public-config" })
@@ -192,6 +234,18 @@ export const catalogContract = {
   deleteCategory: oc
     .route({ method: "DELETE", path: "/categories/{id}" })
     .input(productIdInputSchema)
+    .output(catalogStatusResponseSchema),
+  listChannelPrices: oc
+    .route({ method: "GET", path: "/products/{id}/channel-prices" })
+    .input(productIdInputSchema)
+    .output(channelPriceListResponseSchema),
+  upsertChannelPrice: oc
+    .route({ method: "PUT", path: "/channel-prices" })
+    .input(channelPriceUpsertInputSchema)
+    .output(channelPriceResponseSchema),
+  deleteChannelPrice: oc
+    .route({ method: "DELETE", path: "/channel-prices" })
+    .input(channelPriceDeleteInputSchema)
     .output(catalogStatusResponseSchema),
 };
 

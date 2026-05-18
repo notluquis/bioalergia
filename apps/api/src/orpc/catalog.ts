@@ -2,6 +2,10 @@ import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
 import {
   catalogStatusResponseSchema,
+  channelPriceDeleteInputSchema,
+  channelPriceListResponseSchema,
+  channelPriceResponseSchema,
+  channelPriceUpsertInputSchema,
   productCategoriesResponseSchema,
   productCategoryCreateInputSchema,
   productCategoryResponseSchema,
@@ -28,13 +32,16 @@ import {
   archiveProduct,
   createProduct,
   createProductCategory,
+  deleteChannelPrice,
   deleteProductCategory,
   getProductById,
   getProductBySlug,
+  listChannelPrices,
   listProductCategories,
   listProducts,
   updateProduct,
   updateProductCategory,
+  upsertChannelPrice,
 } from "../services/catalog.ts";
 import { stripUndefined } from "../utils/strip-undefined.ts";
 import { SuperJSONRPCHandler } from "./superjson.ts";
@@ -400,6 +407,78 @@ const deleteCategoryRoute = requireStaff
     return { status: "ok" as const };
   });
 
+function serializeChannelPrice(cp: {
+  id: number;
+  productId: number;
+  channel: "WEB" | "MERCADO_LIBRE" | "UBER_EATS" | "PEDIDOS_YA" | "RAPPI";
+  priceClp: number;
+  url: string | null;
+  notes: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}) {
+  return {
+    id: cp.id,
+    product_id: cp.productId,
+    channel: cp.channel,
+    price_clp: cp.priceClp,
+    url: cp.url,
+    notes: cp.notes,
+    created_at: cp.createdAt,
+    updated_at: cp.updatedAt,
+  };
+}
+
+const listChannelPricesRoute = requireStaff
+  .route({
+    method: "GET",
+    path: "/products/{id}/channel-prices",
+    summary: "List channel prices for a product",
+    tags: ["Catalog"],
+  })
+  .input(productIdInputSchema)
+  .output(channelPriceListResponseSchema)
+  .handler(async ({ input }) => {
+    const rows = await listChannelPrices(input.id);
+    return { data: rows.map(serializeChannelPrice), status: "ok" as const };
+  });
+
+const upsertChannelPriceRoute = requireStaff
+  .route({
+    method: "PUT",
+    path: "/channel-prices",
+    summary: "Upsert channel price",
+    tags: ["Catalog"],
+  })
+  .input(channelPriceUpsertInputSchema)
+  .output(channelPriceResponseSchema)
+  .handler(async ({ input }) => {
+    const cp = await upsertChannelPrice(
+      stripUndefined({
+        productId: input.product_id,
+        channel: input.channel,
+        priceClp: input.price_clp,
+        url: input.url ?? null,
+        notes: input.notes ?? null,
+      })
+    );
+    return { data: serializeChannelPrice(cp), status: "ok" as const };
+  });
+
+const deleteChannelPriceRoute = requireStaff
+  .route({
+    method: "DELETE",
+    path: "/channel-prices",
+    summary: "Delete channel price",
+    tags: ["Catalog"],
+  })
+  .input(channelPriceDeleteInputSchema)
+  .output(catalogStatusResponseSchema)
+  .handler(async ({ input }) => {
+    await deleteChannelPrice(input.product_id, input.channel);
+    return { status: "ok" as const };
+  });
+
 const catalogORPCRouterBase = {
   publicConfig: publicConfigRoute,
   list: listRoute,
@@ -412,6 +491,9 @@ const catalogORPCRouterBase = {
   createCategory: createCategoryRoute,
   updateCategory: updateCategoryRoute,
   deleteCategory: deleteCategoryRoute,
+  listChannelPrices: listChannelPricesRoute,
+  upsertChannelPrice: upsertChannelPriceRoute,
+  deleteChannelPrice: deleteChannelPriceRoute,
 };
 
 export const catalogORPCRouter = base

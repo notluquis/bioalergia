@@ -61,7 +61,29 @@ export const checkoutStatusResponseSchema = z.object({
   status: z.literal("ok"),
 });
 
+export const checkoutQuoteInputSchema = z.object({
+  destination_county_code: z.string().min(3),
+});
+
+export const checkoutQuoteResponseSchema = z.object({
+  data: z.object({
+    options: z.array(
+      z.object({
+        service_code: z.string(),
+        service_description: z.string(),
+        shipping_clp: z.number().int().nonnegative(),
+        delivery_time_days: z.string().nullable(),
+      })
+    ),
+  }),
+  status: z.literal("ok"),
+});
+
 export const checkoutContract = {
+  quote: oc
+    .route({ method: "POST", path: "/quote" })
+    .input(checkoutQuoteInputSchema)
+    .output(checkoutQuoteResponseSchema),
   start: oc
     .route({ method: "POST", path: "/start" })
     .input(checkoutStartInputSchema)

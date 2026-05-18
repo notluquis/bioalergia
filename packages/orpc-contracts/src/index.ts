@@ -22,6 +22,7 @@ export * from "./employees.ts";
 export * from "./expenses.ts";
 export * from "./finance.ts";
 export * from "./haulmer.ts";
+export * from "./haulmer-dte.ts";
 export * from "./images.ts";
 export * from "./inventory.ts";
 export * from "./integrations.ts";

@@ -46,6 +46,7 @@ import { cartOpenAPIHandler, cartORPCHandler } from "./orpc/cart.ts";
 import { catalogOpenAPIHandler, catalogORPCHandler } from "./orpc/catalog.ts";
 import { checkoutOpenAPIHandler, checkoutORPCHandler } from "./orpc/checkout.ts";
 import { haulmerOpenAPIHandler, haulmerORPCHandler } from "./orpc/haulmer.ts";
+import { haulmerDteOpenAPIHandler, haulmerDteORPCHandler } from "./orpc/haulmer-dte.ts";
 import { imagesOpenAPIHandler, imagesORPCHandler } from "./orpc/images.ts";
 import { integrationsOpenAPIHandler, integrationsORPCHandler } from "./orpc/integrations.ts";
 import { inventoryOpenAPIHandler, inventoryORPCHandler } from "./orpc/inventory.ts";
@@ -1174,6 +1175,32 @@ app.use("/api/orpc/csv-upload/rpc/*", async (c, next) => {
 app.use("/api/orpc/haulmer/rpc/*", async (c, next) => {
   const { matched, response } = await haulmerORPCHandler.handle(createHonoORPCRequest(c), {
     prefix: "/api/orpc/haulmer/rpc",
+    context: { hono: c },
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  return next();
+});
+
+app.use("/api/orpc/haulmer-dte/rpc/*", async (c, next) => {
+  const { matched, response } = await haulmerDteORPCHandler.handle(createHonoORPCRequest(c), {
+    prefix: "/api/orpc/haulmer-dte/rpc",
+    context: { hono: c },
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  return next();
+});
+
+app.use("/api/orpc/haulmer-dte/*", async (c, next) => {
+  const { matched, response } = await haulmerDteOpenAPIHandler.handle(createHonoORPCRequest(c), {
+    prefix: "/api/orpc/haulmer-dte",
     context: { hono: c },
   });
 

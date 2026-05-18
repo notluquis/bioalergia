@@ -206,6 +206,46 @@ export async function updateProductCategory(id: number, input: Partial<CategoryC
   });
 }
 
+export async function listChannelPrices(productId: number) {
+  return await db.productChannelPrice.findMany({
+    where: { productId },
+    orderBy: { channel: "asc" },
+  });
+}
+
+export async function upsertChannelPrice(input: {
+  productId: number;
+  channel: "WEB" | "MERCADO_LIBRE" | "UBER_EATS" | "PEDIDOS_YA" | "RAPPI";
+  priceClp: number;
+  url?: string | null;
+  notes?: string | null;
+}) {
+  return await db.productChannelPrice.upsert({
+    where: { productId_channel: { productId: input.productId, channel: input.channel } },
+    update: {
+      priceClp: input.priceClp,
+      url: input.url ?? null,
+      notes: input.notes ?? null,
+    },
+    create: {
+      productId: input.productId,
+      channel: input.channel,
+      priceClp: input.priceClp,
+      url: input.url ?? null,
+      notes: input.notes ?? null,
+    },
+  });
+}
+
+export async function deleteChannelPrice(
+  productId: number,
+  channel: "WEB" | "MERCADO_LIBRE" | "UBER_EATS" | "PEDIDOS_YA" | "RAPPI"
+) {
+  await db.productChannelPrice.deleteMany({
+    where: { productId, channel },
+  });
+}
+
 export async function deleteProductCategory(id: number) {
   const productCount = await db.product.count({ where: { categoryId: id } });
   if (productCount > 0) {

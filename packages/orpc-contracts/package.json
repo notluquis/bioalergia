@@ -133,6 +133,11 @@
       "import": "./dist/haulmer.js",
       "default": "./dist/haulmer.js"
     },
+    "./haulmer-dte": {
+      "types": "./dist/haulmer-dte.d.ts",
+      "import": "./dist/haulmer-dte.js",
+      "default": "./dist/haulmer-dte.js"
+    },
     "./images": {
       "types": "./dist/images.d.ts",
       "import": "./dist/images.js",

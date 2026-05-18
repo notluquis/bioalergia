@@ -12,8 +12,29 @@ export async function reserveStockForOrder(opts: {
 }): Promise<void> {
   const expiresAt = new Date(Date.now() + RESERVATION_TTL_MIN * 60 * 1000);
 
-  // CAS por línea — si alguna falla, rollback de todas.
+  // Lazy cleanup (golden 2026 — no cron): cada reserve libera previas
+  // expiradas en la misma txn. Evita stock fantasma sin background job.
   await db.$transaction(async (tx) => {
+    const stale = await tx.stockReservation.findMany({
+      where: { status: "ACTIVE", expiresAt: { lt: new Date() } },
+    });
+    if (stale.length > 0) {
+      for (const r of stale) {
+        await tx.product.update({
+          where: { id: r.productId },
+          data: {
+            availableQty: { increment: r.qty },
+            version: { increment: 1 },
+          },
+        });
+      }
+      await tx.stockReservation.updateMany({
+        where: { id: { in: stale.map((r) => r.id) } },
+        data: { status: "EXPIRED" },
+      });
+    }
+
+    // CAS por línea — si alguna falla, rollback de todas.
     for (const item of opts.items) {
       const product = await tx.product.findUnique({
         where: { id: item.productId },
