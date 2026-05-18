@@ -211,7 +211,13 @@ export function Sidebar({ isMobile, isOpen, onClose, sidebarId }: SidebarProps) 
         className="flex flex-col overflow-hidden pt-[env(safe-area-inset-top)] size-full"
       >
         {logoBlock}
-        <div className="flex-1 overflow-y-auto overflow-x-hidden px-2 py-6">{navSections}</div>
+        {/* Mobile drawer needs px-2 (full-width items in 320px panel);
+            desktop rail must drop the padding so items + logo share
+            the same horizontal centering reference (rail width). Mixed
+            paddings push icons 8px inward from where the logo sits. */}
+        <div className="flex-1 overflow-y-auto overflow-x-hidden px-2 py-6 md:px-0">
+          {navSections}
+        </div>
         <Separator />
         <div className="flex shrink-0 flex-col items-center justify-center bg-background/30 px-0 pt-4 pb-8">
           {userPill}
