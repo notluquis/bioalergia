@@ -14,6 +14,8 @@ const config: StorybookConfig = {
   ],
   framework: "@storybook/react-vite",
   staticDirs: ["../public"],
+  // Storybook 10.4: git-based sidebar filtering.
+  features: { changeDetection: true },
   viteFinal: async (baseConfig) =>
     mergeConfig(baseConfig, {
       plugins: [tailwindcss()],

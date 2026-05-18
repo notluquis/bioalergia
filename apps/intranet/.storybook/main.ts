@@ -28,6 +28,10 @@ const config: StorybookConfig = {
   ],
   framework: "@storybook/react-vite",
   staticDirs: ["../public"],
+  // Storybook 10.4: git-based sidebar filtering (new/modified/affected).
+  // Layered on top of Chromatic — useful local-only signal to scope work
+  // to stories touched on the current branch.
+  features: { changeDetection: true },
   viteFinal: async (baseConfig) =>
     mergeConfig(baseConfig, {
       plugins: [tailwindcss()],
