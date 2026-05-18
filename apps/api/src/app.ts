@@ -53,6 +53,8 @@ import { inventoryOpenAPIHandler, inventoryORPCHandler } from "./orpc/inventory.
 import { loansOpenAPIHandler, loansORPCHandler } from "./orpc/loans.ts";
 import { mercadopagoOpenAPIHandler, mercadopagoORPCHandler } from "./orpc/mercadopago.ts";
 import { mlOpenAPIHandler, mlORPCHandler } from "./orpc/ml-sync.ts";
+import { registerDiagRoutes } from "./routes/diag.ts";
+import { registerGoogleMerchantFeed } from "./routes/google-merchant-feed.ts";
 import { registerMercadolibreOauthCallback } from "./routes/mercadolibre-oauth-callback.ts";
 import { registerMercadopagoCheckoutWebhook } from "./routes/mercadopago-checkout-webhook.ts";
 import { notificationsOpenAPIHandler, notificationsORPCHandler } from "./orpc/notifications.ts";
@@ -1282,7 +1284,9 @@ app.use("/api/orpc/ml/rpc/*", async (c, next) => {
   return next();
 });
 
+registerDiagRoutes(app);
 registerMercadolibreOauthCallback(app);
+registerGoogleMerchantFeed(app);
 registerMercadopagoCheckoutWebhook(app);
 
 app.use("/api/orpc/inventory/rpc/*", async (c, next) => {

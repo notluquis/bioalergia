@@ -15,6 +15,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as TiendaIndexRouteImport } from './routes/tienda/index'
 import { Route as ProductoSlugRouteImport } from './routes/producto/$slug'
 import { Route as PedidoNumberRouteImport } from './routes/pedido/$number'
+import { Route as LegalSlugRouteImport } from './routes/legal/$slug'
 
 const CheckoutRoute = CheckoutRouteImport.update({
   id: '/checkout',
@@ -46,11 +47,17 @@ const PedidoNumberRoute = PedidoNumberRouteImport.update({
   path: '/pedido/$number',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LegalSlugRoute = LegalSlugRouteImport.update({
+  id: '/legal/$slug',
+  path: '/legal/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/carrito': typeof CarritoRoute
   '/checkout': typeof CheckoutRoute
+  '/legal/$slug': typeof LegalSlugRoute
   '/pedido/$number': typeof PedidoNumberRoute
   '/producto/$slug': typeof ProductoSlugRoute
   '/tienda/': typeof TiendaIndexRoute
@@ -59,6 +66,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/carrito': typeof CarritoRoute
   '/checkout': typeof CheckoutRoute
+  '/legal/$slug': typeof LegalSlugRoute
   '/pedido/$number': typeof PedidoNumberRoute
   '/producto/$slug': typeof ProductoSlugRoute
   '/tienda': typeof TiendaIndexRoute
@@ -68,6 +76,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/carrito': typeof CarritoRoute
   '/checkout': typeof CheckoutRoute
+  '/legal/$slug': typeof LegalSlugRoute
   '/pedido/$number': typeof PedidoNumberRoute
   '/producto/$slug': typeof ProductoSlugRoute
   '/tienda/': typeof TiendaIndexRoute
@@ -78,6 +87,7 @@ export interface FileRouteTypes {
     | '/'
     | '/carrito'
     | '/checkout'
+    | '/legal/$slug'
     | '/pedido/$number'
     | '/producto/$slug'
     | '/tienda/'
@@ -86,6 +96,7 @@ export interface FileRouteTypes {
     | '/'
     | '/carrito'
     | '/checkout'
+    | '/legal/$slug'
     | '/pedido/$number'
     | '/producto/$slug'
     | '/tienda'
@@ -94,6 +105,7 @@ export interface FileRouteTypes {
     | '/'
     | '/carrito'
     | '/checkout'
+    | '/legal/$slug'
     | '/pedido/$number'
     | '/producto/$slug'
     | '/tienda/'
@@ -103,6 +115,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CarritoRoute: typeof CarritoRoute
   CheckoutRoute: typeof CheckoutRoute
+  LegalSlugRoute: typeof LegalSlugRoute
   PedidoNumberRoute: typeof PedidoNumberRoute
   ProductoSlugRoute: typeof ProductoSlugRoute
   TiendaIndexRoute: typeof TiendaIndexRoute
@@ -152,6 +165,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PedidoNumberRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/legal/$slug': {
+      id: '/legal/$slug'
+      path: '/legal/$slug'
+      fullPath: '/legal/$slug'
+      preLoaderRoute: typeof LegalSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -159,6 +179,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CarritoRoute: CarritoRoute,
   CheckoutRoute: CheckoutRoute,
+  LegalSlugRoute: LegalSlugRoute,
   PedidoNumberRoute: PedidoNumberRoute,
   ProductoSlugRoute: ProductoSlugRoute,
   TiendaIndexRoute: TiendaIndexRoute,

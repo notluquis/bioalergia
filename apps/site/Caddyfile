@@ -1,3 +1,11 @@
+# Global options — see apps/intranet/Caddyfile for rationale.
+{
+	servers {
+		protocols h1 h2
+	}
+	admin off
+}
+
 :{$PORT:3000} {
 	# Root directory for static files
 	root * /srv
@@ -44,6 +52,15 @@
 	# Same-origin proxying lets the SPA share httpOnly cart cookies + CSRF
 	# tokens without CORS.
 	handle /api/* {
+		reverse_proxy {$API_INTERNAL_ORIGIN} {
+			header_up Host {upstream_hostport}
+			header_up X-Real-IP {remote_host}
+		}
+	}
+
+	# Google Merchant Center feed — served by api, but Google likes it
+	# on the primary domain alongside the products it indexes.
+	handle /feed/* {
 		reverse_proxy {$API_INTERNAL_ORIGIN} {
 			header_up Host {upstream_hostport}
 			header_up X-Real-IP {remote_host}
