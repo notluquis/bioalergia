@@ -384,7 +384,15 @@ export default defineConfig(({ mode }) => {
         "src/**/*.stories.@(ts|tsx)",
       ],
       coverage: {
-        provider: "v8",
+        // Istanbul instead of v8: v8 + `vi.mock(..., async () => {
+        // const actual = await vi.importActual(...); ... })` factory
+        // pattern triggers "There was an error when mocking a module"
+        // collection failures in CI (25 test files affected, including
+        // every feature `api.test.tsx` that mocks `./orpc` with the
+        // pre-imported actual error-mapper trick). Istanbul instruments
+        // post-parse so the import side-effects run normally. Same
+        // metric semantics, slightly slower.
+        provider: "istanbul",
         reporter: ["text", "lcov", "html"],
         include: ["src/**/*.{ts,tsx}", "server/**/*.ts", "shared/**/*.ts"],
         exclude: [
