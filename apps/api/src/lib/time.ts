@@ -85,34 +85,43 @@ export function parseChileDateTime(value: string | null | undefined): Date | nul
   const trimmed = typeof value === "string" ? value.trim() : "";
   if (!trimmed) return null;
 
-  if (TZ_DESIGNATOR_REGEX.test(trimmed)) {
-    const d = new Date(trimmed);
-    return Number.isNaN(d.getTime()) ? null : d;
-  }
-
-  const formats = [
-    "YYYY-MM-DDTHH:mm:ss.SSS",
-    "YYYY-MM-DDTHH:mm:ss",
-    "YYYY-MM-DD HH:mm:ss.SSS",
-    "YYYY-MM-DD HH:mm:ss",
-    "YYYY-MM-DD HH:mm",
-    "YYYY-MM-DD",
-    "DD-MM-YYYY HH:mm:ss",
-    "DD-MM-YYYY HH:mm",
-    "DD-MM-YYYY",
-    "DD/MM/YYYY HH:mm:ss",
-    "DD/MM/YYYY HH:mm",
-    "DD/MM/YYYY",
-  ];
-  for (const fmt of formats) {
-    const parsed = dayjs.tz(trimmed, fmt, TIMEZONE);
-    if (parsed.isValid() && parsed.format(fmt) === trimmed) {
-      return parsed.toDate();
+  // Belt-and-suspenders: dayjs.tz / new Date can throw RangeError
+  // ("Invalid time value") on certain pathological inputs instead of
+  // returning an Invalid Date. The caller already null-guards the
+  // result, so swallow throws and return null — the row will be
+  // demoted to a per-row error message upstream.
+  try {
+    if (TZ_DESIGNATOR_REGEX.test(trimmed)) {
+      const d = new Date(trimmed);
+      return Number.isNaN(d.getTime()) ? null : d;
     }
-  }
 
-  const loose = dayjs.tz(trimmed, TIMEZONE);
-  return loose.isValid() ? loose.toDate() : null;
+    const formats = [
+      "YYYY-MM-DDTHH:mm:ss.SSS",
+      "YYYY-MM-DDTHH:mm:ss",
+      "YYYY-MM-DD HH:mm:ss.SSS",
+      "YYYY-MM-DD HH:mm:ss",
+      "YYYY-MM-DD HH:mm",
+      "YYYY-MM-DD",
+      "DD-MM-YYYY HH:mm:ss",
+      "DD-MM-YYYY HH:mm",
+      "DD-MM-YYYY",
+      "DD/MM/YYYY HH:mm:ss",
+      "DD/MM/YYYY HH:mm",
+      "DD/MM/YYYY",
+    ];
+    for (const fmt of formats) {
+      const parsed = dayjs.tz(trimmed, fmt, TIMEZONE);
+      if (parsed.isValid() && parsed.format(fmt) === trimmed) {
+        return parsed.toDate();
+      }
+    }
+
+    const loose = dayjs.tz(trimmed, TIMEZONE);
+    return loose.isValid() ? loose.toDate() : null;
+  } catch {
+    return null;
+  }
 }
 
 export function formatDateForDB(date: Date) {

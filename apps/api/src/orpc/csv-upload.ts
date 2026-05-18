@@ -161,38 +161,74 @@ function parseWithdrawalRows(rows: CsvUploadRow[]): {
 
   rows.forEach((row, index) => {
     const rowNumber = index + 1;
-    const withdrawId = normalizeRequiredString(row.withdrawId);
-    const dateCreated = normalizeDate(row.dateCreated);
+    try {
+      const withdrawId = normalizeRequiredString(row.withdrawId);
+      let dateCreated: Date | null;
+      try {
+        dateCreated = normalizeDate(row.dateCreated);
+      } catch (err) {
+        // parseChileDateTime → dayjs.tz can throw on bad input
+        // (RangeError "Invalid time value" from native Date) instead
+        // of returning null. Catch + demote to a per-row error so
+        // ONE poison row doesn't 500 the whole 175-row batch.
+        logError("csv-upload.preview.normalizeDate", err, {
+          rowIndex: index,
+          rawValue: row.dateCreated,
+          rawType: typeof row.dateCreated,
+          rawJson: JSON.stringify(row.dateCreated),
+        });
+        errors.push(
+          `Fila ${rowNumber}: dateCreated lanzó excepción al parsear (raw=${String(
+            row.dateCreated
+          )}).`
+        );
+        return;
+      }
 
-    if (!withdrawId) {
-      errors.push(`Fila ${rowNumber}: withdrawId es obligatorio.`);
-      return;
+      if (!withdrawId) {
+        errors.push(`Fila ${rowNumber}: withdrawId es obligatorio.`);
+        return;
+      }
+
+      if (!dateCreated) {
+        errors.push(`Fila ${rowNumber}: dateCreated es obligatorio y debe ser una fecha válida.`);
+        return;
+      }
+
+      validRows.push({
+        activityUrl: normalizeNullableString(row.activityUrl),
+        amount: normalizeNumber(row.amount),
+        bankAccountHolder: normalizeNullableString(row.bankAccountHolder),
+        bankAccountNumber: normalizeNullableString(row.bankAccountNumber),
+        bankAccountType: normalizeNullableString(row.bankAccountType),
+        bankBranch: normalizeNullableString(row.bankBranch),
+        bankId: normalizeNullableString(row.bankId),
+        bankName: normalizeNullableString(row.bankName),
+        dateCreated,
+        fee: normalizeNumber(row.fee),
+        identificationNumber: normalizeRut(row.identificationNumber),
+        identificationType: normalizeNullableString(row.identificationType),
+        payoutDescription: normalizeNullableString(row.payoutDescription),
+        rowIndex: index,
+        status: normalizeNullableString(row.status),
+        statusDetail: normalizeNullableString(row.statusDetail),
+        withdrawId,
+      });
+    } catch (err) {
+      // Belt-and-suspenders: anything else in the row mapping throws,
+      // demote that row only. Surfaces the offender in logs without
+      // killing the whole batch.
+      logError("csv-upload.preview.row-map", err, {
+        rowIndex: index,
+        rowKeys: Object.keys(row),
+        // Don't dump full row to logs (PHI/PII): just the fields we
+        // suspect — dateCreated, withdrawId, amount.
+        dateCreated: row.dateCreated,
+        withdrawId: row.withdrawId,
+        amount: row.amount,
+      });
+      errors.push(`Fila ${rowNumber}: error inesperado mapeando fila.`);
     }
-
-    if (!dateCreated) {
-      errors.push(`Fila ${rowNumber}: dateCreated es obligatorio y debe ser una fecha válida.`);
-      return;
-    }
-
-    validRows.push({
-      activityUrl: normalizeNullableString(row.activityUrl),
-      amount: normalizeNumber(row.amount),
-      bankAccountHolder: normalizeNullableString(row.bankAccountHolder),
-      bankAccountNumber: normalizeNullableString(row.bankAccountNumber),
-      bankAccountType: normalizeNullableString(row.bankAccountType),
-      bankBranch: normalizeNullableString(row.bankBranch),
-      bankId: normalizeNullableString(row.bankId),
-      bankName: normalizeNullableString(row.bankName),
-      dateCreated,
-      fee: normalizeNumber(row.fee),
-      identificationNumber: normalizeRut(row.identificationNumber),
-      identificationType: normalizeNullableString(row.identificationType),
-      payoutDescription: normalizeNullableString(row.payoutDescription),
-      rowIndex: index,
-      status: normalizeNullableString(row.status),
-      statusDetail: normalizeNullableString(row.statusDetail),
-      withdrawId,
-    });
   });
 
   return { errors, validRows };
