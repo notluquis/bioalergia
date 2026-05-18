@@ -472,17 +472,75 @@ const csvUploadORPCRouterBase = {
       }
 
       const mode = input.mode ?? "insert-only";
-      const { errors, validRows } = parseWithdrawalRows(input.data);
-      const { insertRows, updateRows } = await classifyWithdrawalRows(validRows);
 
-      return buildWithdrawalPreview({
-        errors,
-        includeInsertRowIndexes: input.includeInsertRowIndexes,
-        includeUpdateRows: input.includeUpdateRows,
-        insertRows,
-        mode,
-        updateRows,
-      });
+      // DIAGNOSTIC LOGGING — investigating the recurring "Invalid time
+      // value" 500 reported via Sentry on this endpoint. Trace exactly
+      // which row + which Date instance is invalid so we can patch
+      // parseChileDateTime or the caller. Drop these logs once the
+      // root cause is found.
+      let validRows: WithdrawImportRow[];
+      let errors: string[];
+      try {
+        const parsed = parseWithdrawalRows(input.data);
+        validRows = parsed.validRows;
+        errors = parsed.errors;
+      } catch (err) {
+        logError("csv-upload.preview.parse", err, {
+          rowCount: input.data.length,
+          firstRowKeys: Object.keys(input.data[0] ?? {}),
+          firstRowDateCreated: input.data[0]?.dateCreated,
+        });
+        throw err;
+      }
+
+      // Sanity-check every validRow's Date before handing it downstream —
+      // a NaN Date will blow up `.toISOString()` somewhere in superjson
+      // or downstream serialization.
+      for (const row of validRows) {
+        if (Number.isNaN(row.dateCreated.getTime())) {
+          logError("csv-upload.preview.invalid-date", new Error("NaN dateCreated"), {
+            withdrawId: row.withdrawId,
+            rowIndex: row.rowIndex,
+            dateCreatedRaw: input.data[row.rowIndex]?.dateCreated,
+          });
+          // Demote the row from valid to errors so we never serialize the bad Date.
+          errors.push(
+            `Fila ${row.rowIndex + 1}: dateCreated quedó inválida tras parseo (raw=${String(
+              input.data[row.rowIndex]?.dateCreated
+            )}).`
+          );
+        }
+      }
+      const safeValidRows = validRows.filter(
+        (row) => !Number.isNaN(row.dateCreated.getTime())
+      );
+
+      let classified: Awaited<ReturnType<typeof classifyWithdrawalRows>>;
+      try {
+        classified = await classifyWithdrawalRows(safeValidRows);
+      } catch (err) {
+        logError("csv-upload.preview.classify", err, {
+          validRowCount: safeValidRows.length,
+        });
+        throw err;
+      }
+
+      try {
+        return buildWithdrawalPreview({
+          errors,
+          includeInsertRowIndexes: input.includeInsertRowIndexes,
+          includeUpdateRows: input.includeUpdateRows,
+          insertRows: classified.insertRows,
+          mode,
+          updateRows: classified.updateRows,
+        });
+      } catch (err) {
+        logError("csv-upload.preview.build", err, {
+          insertCount: classified.insertRows.length,
+          updateCount: classified.updateRows.length,
+        });
+        throw err;
+      }
     }),
 };
 
