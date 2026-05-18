@@ -1,0 +1,11 @@
+{
+  "name": "@finanzas/theme",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "sideEffects": ["*.css"],
+  "exports": {
+    "./bioalergia.css": "./bioalergia.css"
+  },
+  "files": ["bioalergia.css"]
+}

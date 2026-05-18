@@ -1,5 +1,10 @@
 @import "@heroui/styles";
 @import "tailwindcss";
+@import "@finanzas/theme/bioalergia.css" layer(theme);
+
+/* Legacy plain-CSS vars kept for non-HeroUI custom components (landing
+ * gradients, hero typography). HeroUI semantic anchors live in the
+ * shared theme — never duplicate them here. */
 :root {
   --bg: #f7f3ea;
   --bg-2: #e9f0f4;

@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "@finanzas/orpc-contracts": "workspace:*",
+    "@finanzas/theme": "workspace:*",
     "@heroui/react": "^3.0.4",
     "@heroui/styles": "^3.0.4",
     "@orpc/client": "^1.14.3",

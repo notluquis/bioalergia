@@ -1,0 +1,176 @@
+/* @finanzas/theme — Bioalergia brand palette (shared site + intranet).
+ *
+ * Defines the HeroUI v3 semantic anchors (the ~15 CSS vars HeroUI
+ * components consume directly: --accent, --background, --foreground,
+ * --surface*, --muted, --border, --separator, --focus, --link,
+ * --default*, --primary, --secondary, --info, status colors).
+ *
+ * Source colors come from the public site palette:
+ *   - bg cream            #f7f3ea  →  oklch(96.5% 0.013 85)
+ *   - bg mist             #e9f0f4  →  oklch(95% 0.012 220)
+ *   - ink deep            #0f1c26  →  oklch(22% 0.025 240)
+ *   - brand amber         hsl(38 90% 55%)  →  oklch(75% 0.16 75)
+ *   - brand blue          hsl(210 82% 40%) →  oklch(45% 0.18 245)
+ *
+ * Light is the default; dark is `data-theme="bioalergia-dark"`.
+ *
+ * Apps may extend (e.g. intranet defines numbered scales 50..900 in its
+ * own index.css for `bg-primary-200` Tailwind utilities). This file is
+ * the single source of truth for BRAND anchors — never duplicate them
+ * downstream. Override via cascade only when a route-specific tweak
+ * is unavoidable.
+ *
+ * Reference: https://heroui.com/docs/react/getting-started/theming
+ */
+
+[data-theme="bioalergia"] {
+  color-scheme: light;
+
+  /* === Brand primitives === */
+  --bioalergia-cream: oklch(96.5% 0.013 85);
+  --bioalergia-mist: oklch(95% 0.012 220);
+  --bioalergia-ink: oklch(22% 0.025 240);
+  --bioalergia-amber: oklch(75% 0.16 75);
+  --bioalergia-amber-strong: oklch(67% 0.18 70);
+  --bioalergia-blue: oklch(45% 0.18 245);
+  --bioalergia-blue-soft: oklch(65% 0.14 240);
+
+  /* === HeroUI v3 semantic anchors === */
+  --background: var(--bioalergia-cream);
+  --foreground: var(--bioalergia-ink);
+
+  --surface: oklch(99% 0.005 85);
+  --surface-foreground: var(--foreground);
+  --surface-secondary: oklch(96% 0.012 85);
+  --surface-secondary-foreground: var(--foreground);
+  --surface-tertiary: oklch(93% 0.015 85);
+  --surface-tertiary-foreground: var(--foreground);
+
+  --overlay: oklch(99% 0.003 85);
+  --overlay-foreground: var(--foreground);
+
+  --muted: oklch(45% 0.018 240);
+  --border: oklch(85% 0.012 85);
+  --separator: oklch(90% 0.01 85);
+  --focus: var(--bioalergia-amber-strong);
+  --link: var(--bioalergia-blue);
+
+  --default: oklch(94% 0.008 85);
+  --default-foreground: var(--foreground);
+
+  /* Primary brand action = amber (matches site CTA buttons). */
+  --accent: var(--bioalergia-amber);
+  --accent-foreground: var(--bioalergia-ink);
+
+  /* Status palette. Foregrounds = white for AA 4.5:1 over mid-saturated bg. */
+  --success: oklch(48% 0.16 145);
+  --success-foreground: oklch(100% 0 0);
+  --warning: oklch(58% 0.16 55);
+  --warning-foreground: oklch(100% 0 0);
+  --danger: oklch(50% 0.2 25);
+  --danger-foreground: oklch(100% 0 0);
+
+  /* Form fields */
+  --field-background: oklch(99% 0.003 85);
+  --field-foreground: var(--foreground);
+  --field-placeholder: var(--muted);
+  --field-border: var(--border);
+
+  /* v2-style aliases (Tailwind utilities still in intranet refer to these). */
+  --primary: var(--accent);
+  --primary-foreground: var(--accent-foreground);
+  --secondary: var(--bioalergia-blue);
+  --secondary-foreground: oklch(100% 0 0);
+  --info: var(--bioalergia-blue);
+  --info-foreground: oklch(100% 0 0);
+
+  --content1: var(--surface);
+  --content1-foreground: var(--surface-foreground);
+  --content2: var(--surface-secondary);
+  --content2-foreground: var(--surface-secondary-foreground);
+  --content3: var(--surface-tertiary);
+  --content3-foreground: var(--surface-tertiary-foreground);
+  --content4: oklch(90% 0.013 85);
+  --content4-foreground: var(--foreground);
+  --divider: var(--separator);
+
+  /* Shadows tuned to ink hue for warm cream surfaces. */
+  --surface-shadow:
+    0 2px 4px 0 rgba(15, 28, 38, 0.04),
+    0 1px 2px 0 rgba(15, 28, 38, 0.06);
+  --overlay-shadow:
+    0 4px 16px 0 rgba(15, 28, 38, 0.08),
+    0 8px 24px 0 rgba(15, 28, 38, 0.09);
+  --field-shadow: 0 1px 2px 0 rgba(15, 28, 38, 0.04);
+
+  --radius: 0.5rem;
+}
+
+[data-theme="bioalergia-dark"] {
+  color-scheme: dark;
+
+  --bioalergia-cream: oklch(96.5% 0.013 85);
+  --bioalergia-mist: oklch(95% 0.012 220);
+  --bioalergia-ink: oklch(22% 0.025 240);
+  --bioalergia-amber: oklch(78% 0.16 75);
+  --bioalergia-amber-strong: oklch(72% 0.17 72);
+  --bioalergia-blue: oklch(72% 0.12 240);
+  --bioalergia-blue-soft: oklch(80% 0.08 240);
+
+  --background: oklch(15% 0.025 240);
+  --foreground: var(--bioalergia-cream);
+
+  --surface: oklch(20% 0.025 240);
+  --surface-foreground: var(--foreground);
+  --surface-secondary: oklch(24% 0.022 240);
+  --surface-secondary-foreground: var(--foreground);
+  --surface-tertiary: oklch(28% 0.02 240);
+  --surface-tertiary-foreground: var(--foreground);
+  --overlay: oklch(22% 0.025 240);
+  --overlay-foreground: var(--foreground);
+
+  --muted: oklch(70% 0.015 85);
+  --border: oklch(35% 0.018 240);
+  --separator: oklch(32% 0.018 240);
+  --focus: var(--bioalergia-amber);
+  --link: var(--bioalergia-blue);
+
+  --default: oklch(30% 0.02 240);
+  --default-foreground: var(--foreground);
+
+  --accent: var(--bioalergia-amber);
+  --accent-foreground: oklch(18% 0.025 240);
+
+  --success: oklch(70% 0.16 145);
+  --success-foreground: oklch(15% 0.02 145);
+  --warning: oklch(82% 0.14 70);
+  --warning-foreground: oklch(20% 0.02 70);
+  --danger: oklch(65% 0.2 25);
+  --danger-foreground: oklch(98% 0 0);
+
+  --field-background: oklch(22% 0.025 240);
+  --field-foreground: var(--foreground);
+  --field-placeholder: var(--muted);
+  --field-border: var(--border);
+
+  --primary: var(--accent);
+  --primary-foreground: var(--accent-foreground);
+  --secondary: var(--bioalergia-blue);
+  --secondary-foreground: oklch(15% 0.025 240);
+  --info: var(--bioalergia-blue);
+  --info-foreground: oklch(15% 0.025 240);
+
+  --content1: var(--surface);
+  --content1-foreground: var(--surface-foreground);
+  --content2: var(--surface-secondary);
+  --content2-foreground: var(--surface-secondary-foreground);
+  --content3: var(--surface-tertiary);
+  --content3-foreground: var(--surface-tertiary-foreground);
+  --content4: oklch(32% 0.02 240);
+  --content4-foreground: var(--foreground);
+  --divider: var(--separator);
+
+  --surface-shadow: 0 0 0 0 transparent;
+  --overlay-shadow: 0 0 0 0 transparent;
+  --field-shadow: 0 0 0 0 transparent;
+}

@@ -1,6 +1,18 @@
 @import "tailwindcss";
 @import "@heroui/styles";
+@import "@finanzas/theme/bioalergia.css" layer(theme);
 @import "./features/finance/finance.css";
+
+/* NOTE: brand semantic anchors (--accent, --background, --foreground,
+ * --surface*, --muted, --border, --focus, --link, --primary, --secondary,
+ * status colors) come from `@finanzas/theme/bioalergia.css` — single
+ * source of truth across site + intranet. The numbered scales below
+ * (`primary-50..900`, `default-50..900`, `foreground-300..800`, etc.)
+ * stay here because intranet's Tailwind utilities reference them
+ * (`bg-primary-200`, `text-foreground-700`) and HeroUI v3 doesn't ship
+ * them. Their HUES should match the brand anchors above — when
+ * retuning the brand palette, sweep this file too.
+ */
 
 /* Reset to native browser sizing */
 html {
@@ -16,110 +28,67 @@ html {
  * primary/secondary/success/warning/danger/info-50..900) so existing Tailwind
  * utility classes resolve correctly under the bioalergia theme.
  *
- * Hue baseline: 260 (cool blue) for neutrals, 257 for primary.
+ * Hue baseline: 85 (warm, matches cream brand bg) for neutrals,
+ * 75 (amber) for primary, 240-245 (cool blue) for secondary.
  * Always use these tokens — never hardcode hex.
  */
 
-/* Light Theme */
+/* Light Theme — scales only.
+ * Brand semantic anchors (--accent, --background, --foreground, --surface*,
+ * --muted, --border, --separator, --focus, --link, --primary, --secondary,
+ * --info, --content1..4, status colors, --default base) live in
+ * `@finanzas/theme/bioalergia.css` (imported above). DO NOT redefine here.
+ * Below are the numbered scales Tailwind utilities depend on
+ * (`bg-primary-200`, `text-default-500`, etc.) — hues tuned to match the
+ * brand palette (warm hue ~85 for neutrals, amber hue 75 for primary,
+ * cool blue hue 240 for secondary).
+ */
 :root,
 [data-theme="light"],
 [data-theme="bioalergia"] {
-  /* === HeroUI v3 semantic anchors ===
-   * HeroUI components consume these semantic names directly (button--primary
-   * uses --color-accent, surface uses --surface, etc.). Lightness values
-   * chosen so white-text-on-color hits WCAG 2.2 AA 4.5:1 for normal text.
-   * Aliases below mirror these to v2-style names (--primary, --content1,…)
-   * for Tailwind utility classes that still reference them.
-   */
-  --accent: oklch(45% 0.18 257);
-  --accent-foreground: oklch(100% 0 0);
-  --success: oklch(48% 0.16 145);
-  --success-foreground: oklch(100% 0 0);
-  --warning: oklch(58% 0.16 55);
-  /* White fg on the mid-saturated warning bg yields a 5.5:1 contrast
-     ratio (axe `color-contrast` AA). The previous dark fg
-     `oklch(15%)` produced 4.35:1 on `chip--warning.chip--primary.chip--sm`
-     — failing AA by 0.15. Aligns with `--success-foreground` and
-     `--danger-foreground`, both `oklch(100%)`; the warning was the
-     anomaly. Dark theme keeps its dark fg (warning bg is lighter
-     `oklch(82%)` there → high contrast already). */
-  --warning-foreground: oklch(100% 0 0);
-  --danger: oklch(50% 0.2 25);
-  --danger-foreground: oklch(100% 0 0);
-
-  /* Surface (HeroUI v3 calls them surface*; we expose content1..4 aliases) */
-  --background: oklch(99% 0 0);
-  --foreground: oklch(20% 0.04 260);
-  --surface: oklch(100% 0 0);
-  --surface-foreground: var(--foreground);
-  --surface-secondary: oklch(96% 0.003 260);
-  --surface-secondary-foreground: var(--foreground);
-  --surface-tertiary: oklch(93% 0.005 260);
-  --surface-tertiary-foreground: var(--foreground);
-  --overlay: oklch(100% 0 0);
-  --overlay-foreground: var(--foreground);
-  --muted: oklch(45% 0.016 260);
-  --border: oklch(88% 0.005 260);
-  --separator: oklch(90% 0.004 260);
-
-  /* v2-style aliases (kept for Tailwind utility classes already in use) */
-  --primary: var(--accent);
-  --primary-foreground: var(--accent-foreground);
-  --secondary: oklch(52% 0.16 70);
-  --secondary-foreground: oklch(100% 0 0);
-  --info: oklch(50% 0.14 240);
-  --info-foreground: oklch(100% 0 0);
-  --content1: var(--surface);
-  --content2: var(--surface-secondary);
-  --content3: var(--surface-tertiary);
-  --content4: oklch(89% 0.006 260);
-  --divider: var(--separator);
-
-  /* Default (neutral) scale */
-  --default: oklch(94% 0.003 260);
-  --default-foreground: oklch(20% 0.04 260);
-  --default-50: oklch(98% 0.002 260);
-  --default-100: oklch(96% 0.003 260);
-  --default-200: oklch(92% 0.004 260);
-  --default-300: oklch(86% 0.006 260);
-  --default-400: oklch(70% 0.01 260);
-  --default-500: oklch(55% 0.012 260);
-  --default-600: oklch(42% 0.012 260);
-  --default-700: oklch(32% 0.012 260);
-  --default-800: oklch(22% 0.012 260);
-  --default-900: oklch(14% 0.012 260);
+  /* Default (neutral) scale — warm hue 85 to match cream brand bg */
+  --default-50: oklch(98% 0.002 85);
+  --default-100: oklch(96% 0.003 85);
+  --default-200: oklch(92% 0.004 85);
+  --default-300: oklch(86% 0.006 85);
+  --default-400: oklch(70% 0.01 85);
+  --default-500: oklch(55% 0.012 85);
+  --default-600: oklch(42% 0.012 85);
+  --default-700: oklch(32% 0.012 85);
+  --default-800: oklch(22% 0.012 85);
+  --default-900: oklch(14% 0.012 85);
 
   /* Foreground (text emphasis) scale — 800 darkest → 300 lightest muted */
-  --foreground-300: oklch(65% 0.012 260);
-  --foreground-400: oklch(55% 0.014 260);
-  --foreground-500: oklch(45% 0.016 260);
-  --foreground-600: oklch(35% 0.016 260);
-  --foreground-700: oklch(25% 0.018 260);
-  --foreground-800: oklch(18% 0.02 260);
+  --foreground-300: oklch(65% 0.012 85);
+  --foreground-400: oklch(55% 0.014 85);
+  --foreground-500: oklch(45% 0.016 85);
+  --foreground-600: oklch(35% 0.016 85);
+  --foreground-700: oklch(25% 0.018 85);
+  --foreground-800: oklch(18% 0.02 85);
 
-  /* Primary scale */
-  --primary-50: oklch(96% 0.02 257);
-  --primary-100: oklch(92% 0.04 257);
-  --primary-200: oklch(86% 0.08 257);
-  --primary-300: oklch(78% 0.12 257);
-  --primary-400: oklch(68% 0.15 257);
-  --primary-500: oklch(60% 0.17 257);
-  --primary-600: oklch(52% 0.16 257);
-  --primary-700: oklch(44% 0.14 257);
-  --primary-800: oklch(36% 0.12 257);
-  --primary-900: oklch(28% 0.09 257);
+  /* Primary scale — amber hue 75 (matches brand --accent in shared theme) */
+  --primary-50: oklch(97% 0.025 80);
+  --primary-100: oklch(94% 0.05 78);
+  --primary-200: oklch(90% 0.09 76);
+  --primary-300: oklch(85% 0.12 75);
+  --primary-400: oklch(80% 0.14 75);
+  --primary-500: oklch(75% 0.16 75);
+  --primary-600: oklch(67% 0.17 73);
+  --primary-700: oklch(55% 0.16 70);
+  --primary-800: oklch(42% 0.13 68);
+  --primary-900: oklch(28% 0.09 65);
 
-  /* Secondary scale */
-  --secondary-50: oklch(96% 0.03 70);
-  --secondary-100: oklch(92% 0.06 70);
-  --secondary-200: oklch(88% 0.1 70);
-  --secondary-300: oklch(83% 0.13 70);
-  --secondary-400: oklch(78% 0.16 70);
-  --secondary-500: oklch(70% 0.14 70);
-  --secondary-600: oklch(60% 0.12 70);
-  --secondary-700: oklch(48% 0.1 70);
-  --secondary-800: oklch(36% 0.08 70);
-  --secondary-900: oklch(26% 0.06 70);
+  /* Secondary scale — cool blue hue 240 (matches --secondary / --info) */
+  --secondary-50: oklch(96% 0.025 240);
+  --secondary-100: oklch(92% 0.05 240);
+  --secondary-200: oklch(85% 0.09 240);
+  --secondary-300: oklch(75% 0.13 240);
+  --secondary-400: oklch(62% 0.16 242);
+  --secondary-500: oklch(52% 0.18 243);
+  --secondary-600: oklch(45% 0.18 245);
+  --secondary-700: oklch(38% 0.16 247);
+  --secondary-800: oklch(30% 0.13 250);
+  --secondary-900: oklch(22% 0.09 252);
 
   /* Success scale */
   --success-50: oklch(96% 0.04 145);
@@ -170,15 +139,15 @@ html {
   --info-900: oklch(26% 0.07 240);
 
   /* Soft-hover variants (light tint of base) */
-  --primary-soft-hover: oklch(60% 0.17 257 / 0.12);
-  --secondary-soft-hover: oklch(70% 0.14 70 / 0.14);
+  --primary-soft-hover: oklch(75% 0.16 75 / 0.14);
+  --secondary-soft-hover: oklch(45% 0.18 245 / 0.12);
   --success-soft-hover: oklch(65% 0.18 145 / 0.12);
   --warning-soft-hover: oklch(75% 0.16 55 / 0.14);
   --danger-soft-hover: oklch(60% 0.18 25 / 0.12);
-  --default-soft-hover: oklch(20% 0.04 260 / 0.06);
+  --default-soft-hover: oklch(22% 0.025 240 / 0.06);
 
   /* Chart palette — qualitative, OKLCH-balanced, theme-aware. */
-  --chart-1: oklch(60% 0.17 257);
+  --chart-1: oklch(75% 0.16 75);
   --chart-2: oklch(60% 0.16 295);
   --chart-3: oklch(65% 0.18 145);
   --chart-4: oklch(70% 0.16 60);
@@ -190,99 +159,60 @@ html {
   --chart-10: oklch(55% 0.16 240);
   --chart-11: oklch(65% 0.14 100);
   --chart-12: oklch(55% 0.14 350);
-  --chart-grid: oklch(90% 0.004 260);
-  --chart-text: oklch(45% 0.016 260);
+  --chart-grid: oklch(90% 0.004 85);
+  --chart-text: oklch(45% 0.016 85);
 }
 
-/* Dark Theme */
+/* Dark Theme — scales only.
+ * Brand anchors live in `@finanzas/theme/bioalergia.css` under
+ * `[data-theme="bioalergia-dark"]`. See light block above for rationale.
+ */
 .dark,
 [data-theme="dark"],
 [data-theme="bioalergia-dark"] {
-  /* HeroUI v3 semantic anchors. Dark mode raises lightness on brand colors
-   * but keeps black text for contrast on warning/secondary; on accent /
-   * success / danger / info uses white-on-color (verified ≥4.5:1). */
-  --accent: oklch(72% 0.16 255);
-  --accent-foreground: oklch(15% 0.04 260);
-  --success: oklch(78% 0.16 150);
-  --success-foreground: oklch(15% 0.04 260);
-  --warning: oklch(82% 0.16 85);
-  --warning-foreground: oklch(15% 0.04 260);
-  --danger: oklch(72% 0.2 20);
-  --danger-foreground: oklch(15% 0.04 260);
-
-  /* Surface */
-  --background: oklch(11% 0.005 260);
-  --foreground: oklch(94% 0.003 260);
-  --surface: oklch(15% 0.006 260);
-  --surface-foreground: var(--foreground);
-  --surface-secondary: oklch(20% 0.007 260);
-  --surface-secondary-foreground: var(--foreground);
-  --surface-tertiary: oklch(25% 0.008 260);
-  --surface-tertiary-foreground: var(--foreground);
-  --overlay: oklch(15% 0.006 260);
-  --overlay-foreground: var(--foreground);
-  --muted: oklch(70% 0.012 260);
-  --border: oklch(28% 0.008 260);
-  --separator: oklch(25% 0.008 260);
-
-  /* v2-style aliases */
-  --primary: var(--accent);
-  --primary-foreground: var(--accent-foreground);
-  --secondary: oklch(82% 0.14 75);
-  --secondary-foreground: oklch(15% 0.04 260);
-  --info: oklch(74% 0.12 210);
-  --info-foreground: oklch(15% 0.04 260);
-  --content1: var(--surface);
-  --content2: var(--surface-secondary);
-  --content3: var(--surface-tertiary);
-  --content4: oklch(30% 0.009 260);
-  --divider: var(--separator);
-
-  /* Default (neutral) scale — inverted */
-  --default: oklch(27% 0.006 260);
-  --default-foreground: oklch(94% 0.003 260);
-  --default-50: oklch(14% 0.005 260);
-  --default-100: oklch(18% 0.006 260);
-  --default-200: oklch(24% 0.007 260);
-  --default-300: oklch(32% 0.008 260);
-  --default-400: oklch(45% 0.01 260);
-  --default-500: oklch(60% 0.012 260);
-  --default-600: oklch(72% 0.012 260);
-  --default-700: oklch(82% 0.01 260);
-  --default-800: oklch(90% 0.008 260);
-  --default-900: oklch(96% 0.005 260);
+  /* Default (neutral) scale — inverted, warm hue 85 */
+  --default-50: oklch(14% 0.005 85);
+  --default-100: oklch(18% 0.006 85);
+  --default-200: oklch(24% 0.007 85);
+  --default-300: oklch(32% 0.008 85);
+  --default-400: oklch(45% 0.01 85);
+  --default-500: oklch(60% 0.012 85);
+  --default-600: oklch(72% 0.012 85);
+  --default-700: oklch(82% 0.01 85);
+  --default-800: oklch(90% 0.008 85);
+  --default-900: oklch(96% 0.005 85);
 
   /* Foreground scale */
-  --foreground-300: oklch(50% 0.014 260);
-  --foreground-400: oklch(60% 0.014 260);
-  --foreground-500: oklch(70% 0.012 260);
-  --foreground-600: oklch(80% 0.01 260);
-  --foreground-700: oklch(88% 0.008 260);
-  --foreground-800: oklch(94% 0.006 260);
+  --foreground-300: oklch(50% 0.014 85);
+  --foreground-400: oklch(60% 0.014 85);
+  --foreground-500: oklch(70% 0.012 85);
+  --foreground-600: oklch(80% 0.01 85);
+  --foreground-700: oklch(88% 0.008 85);
+  --foreground-800: oklch(94% 0.006 85);
 
-  /* Primary scale */
-  --primary-50: oklch(18% 0.04 255);
-  --primary-100: oklch(22% 0.06 255);
-  --primary-200: oklch(30% 0.09 255);
-  --primary-300: oklch(40% 0.11 255);
-  --primary-400: oklch(55% 0.13 255);
-  --primary-500: oklch(65% 0.14 255);
-  --primary-600: oklch(70% 0.14 255);
-  --primary-700: oklch(78% 0.12 255);
-  --primary-800: oklch(86% 0.08 255);
-  --primary-900: oklch(94% 0.04 255);
+  /* Primary scale — amber inverted for dark mode */
+  --primary-50: oklch(20% 0.05 65);
+  --primary-100: oklch(28% 0.08 68);
+  --primary-200: oklch(36% 0.11 70);
+  --primary-300: oklch(48% 0.14 72);
+  --primary-400: oklch(62% 0.15 73);
+  --primary-500: oklch(72% 0.16 74);
+  --primary-600: oklch(78% 0.16 75);
+  --primary-700: oklch(85% 0.14 76);
+  --primary-800: oklch(92% 0.1 78);
+  --primary-900: oklch(96% 0.05 80);
 
-  /* Secondary scale */
-  --secondary-50: oklch(20% 0.05 75);
-  --secondary-100: oklch(26% 0.07 75);
-  --secondary-200: oklch(34% 0.09 75);
-  --secondary-300: oklch(46% 0.11 75);
-  --secondary-400: oklch(60% 0.13 75);
-  --secondary-500: oklch(72% 0.14 75);
-  --secondary-600: oklch(82% 0.14 75);
-  --secondary-700: oklch(88% 0.1 75);
-  --secondary-800: oklch(93% 0.06 75);
-  --secondary-900: oklch(96% 0.03 75);
+  /* Secondary scale — blue inverted */
+  --secondary-50: oklch(20% 0.06 250);
+  --secondary-100: oklch(26% 0.08 248);
+  --secondary-200: oklch(34% 0.11 247);
+  --secondary-300: oklch(46% 0.14 245);
+  --secondary-400: oklch(58% 0.16 243);
+  --secondary-500: oklch(68% 0.14 242);
+  --secondary-600: oklch(76% 0.12 240);
+  --secondary-700: oklch(84% 0.09 240);
+  --secondary-800: oklch(90% 0.06 240);
+  --secondary-900: oklch(96% 0.03 240);
 
   /* Success scale */
   --success-50: oklch(20% 0.06 150);
@@ -333,15 +263,15 @@ html {
   --info-900: oklch(96% 0.03 210);
 
   /* Soft-hover variants */
-  --primary-soft-hover: oklch(70% 0.14 255 / 0.18);
-  --secondary-soft-hover: oklch(82% 0.14 75 / 0.18);
+  --primary-soft-hover: oklch(78% 0.16 75 / 0.18);
+  --secondary-soft-hover: oklch(76% 0.12 240 / 0.18);
   --success-soft-hover: oklch(75% 0.16 150 / 0.18);
   --warning-soft-hover: oklch(80% 0.16 85 / 0.18);
   --danger-soft-hover: oklch(70% 0.18 20 / 0.2);
-  --default-soft-hover: oklch(94% 0.003 260 / 0.08);
+  --default-soft-hover: oklch(96% 0.013 85 / 0.08);
 
   /* Chart palette — slightly lighter for dark surfaces. */
-  --chart-1: oklch(72% 0.14 255);
+  --chart-1: oklch(78% 0.16 75);
   --chart-2: oklch(72% 0.13 295);
   --chart-3: oklch(75% 0.16 150);
   --chart-4: oklch(80% 0.14 60);
@@ -353,8 +283,8 @@ html {
   --chart-10: oklch(68% 0.14 240);
   --chart-11: oklch(78% 0.13 100);
   --chart-12: oklch(68% 0.13 350);
-  --chart-grid: oklch(28% 0.008 260);
-  --chart-text: oklch(70% 0.012 260);
+  --chart-grid: oklch(28% 0.008 85);
+  --chart-text: oklch(70% 0.012 85);
 }
 
 @theme {

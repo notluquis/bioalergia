@@ -301,6 +301,9 @@ importers:
       '@finanzas/orpc-contracts':
         specifier: workspace:*
         version: link:../../packages/orpc-contracts
+      '@finanzas/theme':
+        specifier: workspace:*
+        version: link:../../packages/theme
       '@fullcalendar/core':
         specifier: ^6.1.20
         version: 6.1.20
@@ -669,12 +672,15 @@ importers:
       '@finanzas/orpc-contracts':
         specifier: workspace:*
         version: link:../../packages/orpc-contracts
+      '@finanzas/theme':
+        specifier: workspace:*
+        version: link:../../packages/theme
       '@heroui/react':
         specifier: ^3.0.4
         version: 3.0.4(@react-spectrum/provider@3.11.0(react-dom@19.2.6(react@19.2.6))(react@19.2.6))(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)(tailwindcss@4.3.0)
       '@heroui/styles':
         specifier: ^3.0.4
-        version: 3.0.4(tailwind-merge@3.4.0)(tailwindcss@4.3.0)
+        version: 3.0.4(tailwind-merge@3.6.0)(tailwindcss@4.3.0)
       '@orpc/client':
         specifier: ^1.14.3
         version: 1.14.3(@opentelemetry/api@1.9.1)
@@ -852,6 +858,8 @@ importers:
       typescript:
         specifier: ^6.0.3
         version: 6.0.3
+
+  packages/theme: {}
 
 packages:
 
