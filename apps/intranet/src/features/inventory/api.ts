@@ -1,3 +1,9 @@
+import type {
+  inventoryListMovementsInputSchema,
+  inventoryListMovementsResponseSchema,
+} from "@finanzas/orpc-contracts/inventory";
+import type { z } from "zod";
+
 import { inventoryORPCClient, toInventoryApiError } from "./orpc";
 import { InventorySchemas } from "./schemas";
 import type {
@@ -6,6 +12,10 @@ import type {
   InventoryItem,
   InventoryMovement,
 } from "./types";
+
+export type ListMovementsInput = z.input<typeof inventoryListMovementsInputSchema>;
+export type ListMovementsResponse = z.output<typeof inventoryListMovementsResponseSchema>;
+export type InventoryMovementRow = ListMovementsResponse["data"]["movements"][number];
 
 export async function createInventoryCategory(name: string): Promise<InventoryCategory> {
   try {
@@ -78,6 +88,17 @@ export async function getInventoryItems(): Promise<InventoryItem[]> {
   try {
     const res = await inventoryORPCClient.listItems();
     return InventorySchemas.ItemsResponse.parse(res).data;
+  } catch (error) {
+    throw toInventoryApiError(error);
+  }
+}
+
+export async function listInventoryMovements(
+  input: ListMovementsInput = {}
+): Promise<ListMovementsResponse> {
+  try {
+    const res = await inventoryORPCClient.listMovements(input);
+    return res as ListMovementsResponse;
   } catch (error) {
     throw toInventoryApiError(error);
   }

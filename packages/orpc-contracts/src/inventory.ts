@@ -101,6 +101,35 @@ export const inventoryIdInputSchema = z.object({
   id: z.coerce.number().int().positive(),
 });
 
+export const inventoryMovementSchema = z.object({
+  created_at: z.date(),
+  id: z.number().int(),
+  item: z.object({
+    id: z.number().int(),
+    name: z.string(),
+  }),
+  item_id: z.number().int(),
+  quantity_change: z.number().int(),
+  reason: z.string().nullable(),
+});
+
+export const inventoryListMovementsInputSchema = z.object({
+  cursor: z.coerce.number().int().positive().optional(),
+  from: z.string().optional(),
+  item_id: z.coerce.number().int().positive().optional(),
+  limit: z.coerce.number().int().min(1).max(200).optional().default(50),
+  search: z.string().optional(),
+  to: z.string().optional(),
+});
+
+export const inventoryListMovementsResponseSchema = z.object({
+  data: z.object({
+    movements: z.array(inventoryMovementSchema),
+    next_cursor: z.number().int().nullable(),
+  }),
+  status: z.literal("ok"),
+});
+
 export const inventoryContract = {
   allergyOverview: oc
     .route({ method: "GET", path: "/allergy-overview" })
@@ -129,6 +158,10 @@ export const inventoryContract = {
     .route({ method: "GET", path: "/categories" })
     .output(inventoryCategoriesResponseSchema),
   listItems: oc.route({ method: "GET", path: "/items" }).output(inventoryItemsResponseSchema),
+  listMovements: oc
+    .route({ method: "GET", path: "/movements" })
+    .input(inventoryListMovementsInputSchema)
+    .output(inventoryListMovementsResponseSchema),
   updateItem: oc
     .route({ method: "PUT", path: "/items/{id}" })
     .input(

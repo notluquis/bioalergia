@@ -10,6 +10,8 @@ import {
   inventoryItemResponseSchema,
   inventoryItemsResponseSchema,
   inventoryItemUpdateInputSchema,
+  inventoryListMovementsInputSchema,
+  inventoryListMovementsResponseSchema,
   inventoryMovementInputSchema,
   inventoryStatusResponseSchema,
 } from "@finanzas/orpc-contracts/inventory";
@@ -28,6 +30,7 @@ import {
   deleteInventoryItem,
   listInventoryCategories,
   listInventoryItems,
+  listInventoryMovements,
   updateInventoryItem,
 } from "../services/inventory.ts";
 import { SuperJSONRPCHandler } from "./superjson.ts";
@@ -74,6 +77,22 @@ const requireWriteInventory = authed.use(async ({ context, next }) => {
     (await hasPermission(context.user, "update", "InventorySetting"));
 
   if (!canModify) {
+    throw new ORPCError("FORBIDDEN", { message: "Forbidden" });
+  }
+
+  return next();
+});
+
+const requireReadInventoryMovements = authed.use(async ({ context, next }) => {
+  // Prefer `read InventoryMovement` (most specific); fall back to
+  // `read InventoryItem` (loosest gate already used by item-level lists)
+  // and to `update InventorySetting` so settings managers can audit too.
+  const canRead =
+    (await hasPermission(context.user, "read", "InventoryMovement")) ||
+    (await hasPermission(context.user, "read", "InventoryItem")) ||
+    (await hasPermission(context.user, "update", "InventorySetting"));
+
+  if (!canRead) {
     throw new ORPCError("FORBIDDEN", { message: "Forbidden" });
   }
 
@@ -285,6 +304,46 @@ const deleteItemRoute = requireWriteInventory
     return { status: "ok" as const };
   });
 
+const listMovementsRoute = requireReadInventoryMovements
+  .route({
+    method: "GET",
+    path: "/movements",
+    summary: "List inventory movements (audit log)",
+    tags: ["Inventory"],
+  })
+  .input(inventoryListMovementsInputSchema)
+  .output(inventoryListMovementsResponseSchema)
+  .handler(
+    async ({ input }: { input: z.output<typeof inventoryListMovementsInputSchema> }) => {
+      const result = await listInventoryMovements({
+        cursor: input.cursor,
+        from: input.from,
+        itemId: input.item_id,
+        limit: input.limit,
+        search: input.search,
+        to: input.to,
+      });
+
+      return {
+        data: {
+          movements: result.movements.map((movement) => ({
+            created_at: movement.createdAt,
+            id: movement.id,
+            item: {
+              id: movement.item.id,
+              name: movement.item.name,
+            },
+            item_id: movement.itemId,
+            quantity_change: movement.quantityChange,
+            reason: movement.reason,
+          })),
+          next_cursor: result.nextCursor,
+        },
+        status: "ok" as const,
+      };
+    }
+  );
+
 const createMovementRoute = requireWriteInventory
   .route({
     method: "POST",
@@ -313,6 +372,7 @@ const inventoryORPCRouterBase = {
   deleteItem: deleteItemRoute,
   listCategories: listCategoriesRoute,
   listItems: listItemsRoute,
+  listMovements: listMovementsRoute,
   updateItem: updateItemRoute,
 };
 
