@@ -126,7 +126,7 @@ export function formatDateForDB(date: Date) {
   return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
 }
 
-export function normalizeDate(input: string, boundary: "start" | "end") {
+export function normalizeDate(input: string, boundary: "start" | "end"): string | null {
   const trimmed = input.trim();
   if (!trimmed) {
     return null;
@@ -147,7 +147,10 @@ export function normalizeDate(input: string, boundary: "start" | "end") {
   return adjusted.format("YYYY-MM-DD HH:mm:ss");
 }
 
-export function normalizeTimestamp(primary: string | Date | null, fallback: string | null) {
+export function normalizeTimestamp(
+  primary: string | Date | null,
+  fallback: string | null
+): string {
   const normalizedFallback = normalizeTimestampString(fallback);
   if (normalizedFallback) {
     return normalizedFallback;
@@ -168,7 +171,7 @@ export function normalizeTimestamp(primary: string | Date | null, fallback: stri
 export function normalizeTimestampForDb(
   primary: string | null | undefined,
   fallback: Date | null | undefined
-) {
+): string {
   const normalized = normalizeTimestampString(primary ?? null);
   if (normalized) {
     return normalized.replace("T", " ");
@@ -181,7 +184,7 @@ export function normalizeTimestampForDb(
   return "";
 }
 
-export function normalizeTimestampString(value: string | Date | null) {
+export function normalizeTimestampString(value: string | Date | null): string {
   if (value == null) {
     return "";
   }
@@ -209,7 +212,7 @@ export function normalizeTimestampString(value: string | Date | null) {
   return trimmed.replace(" ", "T");
 }
 
-export function iterateDateRange(start: Date, end: Date) {
+export function iterateDateRange(start: Date, end: Date): string[] {
   const dates: string[] = [];
   let cursor = dayjs(start).tz(TIMEZONE).startOf("day");
   const limit = dayjs(end).tz(TIMEZONE).startOf("day");
@@ -220,7 +223,7 @@ export function iterateDateRange(start: Date, end: Date) {
   return dates;
 }
 
-export function parseDateOnly(value: string) {
+export function parseDateOnly(value: string): Date | null {
   const trimmed = value.trim();
   if (!trimmed) {
     return null;
@@ -245,20 +248,20 @@ export function parseDateOnly(value: string) {
   return parsed.toDate();
 }
 
-export function formatDateOnly(date: Date) {
+export function formatDateOnly(date: Date): string {
   return dayjs(date).tz(TIMEZONE).format("YYYY-MM-DD");
 }
 
-export function formatChileDateTime(date: Date | string, pattern = "DD/MM/YYYY HH:mm") {
+export function formatChileDateTime(date: Date | string, pattern = "DD/MM/YYYY HH:mm"): string {
   return dayjs(date).tz(TIMEZONE).format(pattern);
 }
 
-export function coerceDateOnly(value: string) {
+export function coerceDateOnly(value: string): string | null {
   const parsed = parseDateOnly(value);
   return parsed ? formatDateOnly(parsed) : null;
 }
 
-export function getNthBusinessDay(base: Date, n: number) {
+export function getNthBusinessDay(base: Date, n: number): Date {
   let cursor = dayjs(base).tz(TIMEZONE);
   let count = 0;
   while (count < n) {
@@ -274,7 +277,7 @@ export function getNthBusinessDay(base: Date, n: number) {
   return cursor.toDate();
 }
 
-export function getMonthRange(month: string) {
+export function getMonthRange(month: string): { from: string; to: string } {
   const start = dayjs.tz(`${month}-01`, "YYYY-MM-DD", TIMEZONE);
   const end = start.add(1, "month").subtract(1, "day");
   return {

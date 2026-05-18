@@ -180,7 +180,9 @@ function buildAlertPatch(alert: DoctoraliaCalendarAlert): {
 /**
  * Upsert Doctoralia schedules into the database
  */
-export async function upsertDoctoraliaSchedules(schedules: DoctoraliaCalendarSchedule[]) {
+export async function upsertDoctoraliaSchedules(
+  schedules: DoctoraliaCalendarSchedule[]
+): Promise<{ inserted: number; updated: number; skipped: number }> {
   if (schedules.length === 0) {
     return { inserted: 0, updated: 0, skipped: 0 };
   }
@@ -228,7 +230,7 @@ export async function upsertDoctoraliaSchedules(schedules: DoctoraliaCalendarSch
 export async function upsertDoctoraliaAppointments(
   scheduleExternalId: number,
   appointments: DoctoraliaAppointment[]
-) {
+): Promise<{ inserted: number; updated: number; skipped: number }> {
   if (appointments.length === 0) {
     return { inserted: 0, updated: 0, skipped: 0 };
   }
@@ -280,7 +282,7 @@ export async function upsertDoctoraliaAppointments(
 export async function upsertDoctoraliaWorkPeriods(
   scheduleExternalId: number,
   workPeriods: DoctoraliaWorkPeriod[]
-) {
+): Promise<{ inserted: number; updated: number; skipped: number }> {
   if (workPeriods.length === 0) {
     return { inserted: 0, updated: 0, skipped: 0 };
   }
@@ -354,7 +356,9 @@ export async function upsertDoctoraliaWorkPeriods(
  * Apply appointment updates from alerts feed.
  * We only patch fields present in the alert payload and skip unknown events.
  */
-export async function applyDoctoraliaAlertUpdates(alerts: DoctoraliaCalendarAlert[]) {
+export async function applyDoctoraliaAlertUpdates(
+  alerts: DoctoraliaCalendarAlert[]
+): Promise<{ updated: number; skipped: number }> {
   if (alerts.length === 0) {
     return { updated: 0, skipped: 0 };
   }
@@ -397,7 +401,7 @@ export async function createDoctoraliaSyncLog(data: {
   appointmentsSynced?: number;
   workPeriodsSynced?: number;
   errorMessage?: string;
-}) {
+}): Promise<Awaited<ReturnType<typeof db.doctoraliaSyncLog.create>>> {
   return db.doctoraliaSyncLog.create({
     data: {
       syncType: "CALENDAR",
@@ -425,7 +429,7 @@ export async function updateDoctoraliaSyncLog(
     workPeriodsSynced?: number;
     errorMessage?: string;
   }
-) {
+): Promise<Awaited<ReturnType<typeof db.doctoraliaSyncLog.update>>> {
   return db.doctoraliaSyncLog.update({
     where: { id },
     data: {

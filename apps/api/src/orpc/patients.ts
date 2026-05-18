@@ -659,7 +659,7 @@ const patientsORPCRouterBase = {
       return {
         patient: {
           ...patient,
-          budgets: patient.budgets.map((budget) => ({
+          budgets: patient.budgets.map((budget: (typeof patient.budgets)[number]) => ({
             ...budget,
             items: [],
           })),

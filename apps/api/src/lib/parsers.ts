@@ -225,7 +225,7 @@ const INJECTION_PATTERNS = [
  * - reservado solo: sin más info
  * - name and name: "Jose Manuel Martinez and Carlota Arevalo"
  */
-export const IGNORE_PATTERNS = [
+export const IGNORE_PATTERNS: RegExp[] = [
   /^recordar\b/i,
   /^semana\s+de\s+vacaciones$/i,
   /\brecordar\b.*\bdoctor\b/i,

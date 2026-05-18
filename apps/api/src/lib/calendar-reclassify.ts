@@ -508,7 +508,7 @@ async function runReclassifyAllJob(
 export async function startReclassifyMissingFieldsJob(input?: {
   filterMode?: "AND" | "OR";
   missing?: MissingClassificationFilterKey[];
-}) {
+}): Promise<{ jobId: string; totalEvents: number }> {
   const { startJob, updateJobProgress, completeJob, failJob } = await import("../lib/jobQueue.ts");
   const selectedMissingFilters = new Set<MissingClassificationFilterKey>(input?.missing ?? []);
   const filterMode = input?.filterMode ?? "OR";
@@ -596,7 +596,10 @@ export async function startReclassifyMissingFieldsJob(input?: {
   return { jobId, totalEvents: normalizedEvents.length };
 }
 
-export async function startReclassifyAllEventsJob() {
+export async function startReclassifyAllEventsJob(): Promise<{
+  jobId: string;
+  totalEvents: number;
+}> {
   const { startJob, updateJobProgress, completeJob, failJob } = await import("../lib/jobQueue.ts");
 
   const events = await db.event.findMany({
@@ -620,7 +623,9 @@ export async function startReclassifyAllEventsJob() {
   return { jobId, totalEvents: events.length };
 }
 
-export async function getCalendarJobStatus(jobId: string) {
+export async function getCalendarJobStatus(
+  jobId: string
+): Promise<ReturnType<typeof import("../lib/jobQueue.ts").getJobStatus>> {
   const { getJobStatus } = await import("../lib/jobQueue.ts");
   return getJobStatus(jobId);
 }

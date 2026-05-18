@@ -121,7 +121,10 @@ export async function getSetting(key: string): Promise<string | null> {
   return setting?.value ?? null;
 }
 
-export async function updateSetting(key: string, value: string) {
+export async function updateSetting(
+  key: string,
+  value: string
+): Promise<Awaited<ReturnType<typeof db.setting.upsert>>> {
   return await db.setting.upsert({
     where: { key },
     update: { value },
@@ -129,13 +132,17 @@ export async function updateSetting(key: string, value: string) {
   });
 }
 
-export async function deleteSetting(key: string) {
+export async function deleteSetting(
+  key: string
+): Promise<Awaited<ReturnType<typeof db.setting.delete>>> {
   return await db.setting.delete({
     where: { key },
   });
 }
 
-export async function updateSettings(settings: Record<string, string>) {
+export async function updateSettings(
+  settings: Record<string, string>
+): Promise<Awaited<ReturnType<typeof db.setting.upsert>>[]> {
   const updates = Object.entries(settings).map(([key, value]) =>
     db.setting.upsert({
       where: { key },

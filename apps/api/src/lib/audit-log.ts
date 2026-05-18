@@ -44,7 +44,7 @@ export type AuditInput = {
   metadata?: Record<string, unknown> | null;
 };
 
-export const ipFromContext = clientIp;
+export const ipFromContext: typeof clientIp = clientIp;
 
 export async function logAuditEvent(input: AuditInput): Promise<void> {
   try {

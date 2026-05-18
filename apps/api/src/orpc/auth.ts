@@ -366,7 +366,7 @@ const authORPCRouterBase = {
         actorLabel: normalizedEmail,
       });
 
-      const roles = user.roles.map((role) => role.role.name);
+      const roles = user.roles.map((role: (typeof user.roles)[number]) => role.role.name);
       const notificationEmail = user.person?.email ?? normalizedEmail;
       const loginEmail =
         loginCandidate.loginEmail?.trim() ||
@@ -438,7 +438,7 @@ const authORPCRouterBase = {
         userId: user.id,
       });
 
-      const roles = user.roles.map((role) => role.role.name);
+      const roles = user.roles.map((role: (typeof user.roles)[number]) => role.role.name);
       const notificationEmail = user.person?.email ?? "";
       const loginEmail = await getEffectiveLoginEmailByUserId(user.id, notificationEmail);
       // Clear the per-email throttle that may have accumulated entries
@@ -543,7 +543,7 @@ const authORPCRouterBase = {
             mfaEnforced: user.mfaEnforced,
             name: user.person?.names || null,
             notificationEmail,
-            roles: user.roles.map((role) => role.role.name),
+            roles: user.roles.map((role: (typeof user.roles)[number]) => role.role.name),
             status: user.status,
           },
         };
@@ -653,7 +653,7 @@ const authORPCRouterBase = {
       const accessToken = await issueTokenWithOptions(
         {
           email: loginEmail,
-          roles: targetUser.roles.map((role) => role.role.name),
+          roles: targetUser.roles.map((role: (typeof targetUser.roles)[number]) => role.role.name),
           sessionVersion: targetUser.sessionVersion,
           userId: targetUser.id,
         },
@@ -685,7 +685,7 @@ const authORPCRouterBase = {
           mfaEnabled: targetUser.mfaEnabled,
           name: targetUser.person?.names || null,
           notificationEmail,
-          roles: targetUser.roles.map((role) => role.role.name),
+          roles: targetUser.roles.map((role: (typeof targetUser.roles)[number]) => role.role.name),
           status: targetUser.status,
         },
       };
@@ -878,7 +878,7 @@ const authORPCRouterBase = {
       });
 
       const user = passkey.user;
-      const roles = user.roles.map((role) => role.role.name);
+      const roles = user.roles.map((role: (typeof user.roles)[number]) => role.role.name);
       const notificationEmail = user.person?.email ?? "";
       const loginEmail = await getEffectiveLoginEmailByUserId(user.id, notificationEmail);
       const token = await issueToken({

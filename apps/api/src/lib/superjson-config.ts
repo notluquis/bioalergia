@@ -3,7 +3,7 @@ import superjson from "superjson";
 
 let configured = false;
 
-export function configureSuperjson() {
+export function configureSuperjson(): typeof superjson {
   if (configured) {
     return superjson;
   }

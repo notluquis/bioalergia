@@ -63,4 +63,4 @@ export function isRpcTunnelRead(pathname: string): boolean {
 }
 
 /** Total procedures registered — exported for a boot-time sanity check / tests. */
-export const REGISTERED_PROCEDURE_COUNT = PROCEDURE_METHODS.size;
+export const REGISTERED_PROCEDURE_COUNT: number = PROCEDURE_METHODS.size;

@@ -135,8 +135,8 @@ function serialiseSettings(s: any) {
 const examReportsRouterBase = {
   list: base
     .route({ method: "GET", path: "/", tags: ["ExamReports"] })
-    .input(examReportsContract.list["~orpc"].inputSchema)
-    .output(examReportsContract.list["~orpc"].outputSchema)
+    .input(examReportsContract.list["~orpc"].inputSchema!)
+    .output(examReportsContract.list["~orpc"].outputSchema!)
     .handler(async ({ input }) => {
       const where: Record<string, unknown> = {};
       if (input?.patientId) where.patientId = input.patientId;
@@ -172,8 +172,8 @@ const examReportsRouterBase = {
 
   get: base
     .route({ method: "GET", path: "/{id}", tags: ["ExamReports"] })
-    .input(examReportsContract.get["~orpc"].inputSchema)
-    .output(examReportsContract.get["~orpc"].outputSchema)
+    .input(examReportsContract.get["~orpc"].inputSchema!)
+    .output(examReportsContract.get["~orpc"].outputSchema!)
     .handler(async ({ input }) => {
       const report = await db.examReport.findUnique({
         where: { id: input.id },
@@ -185,8 +185,8 @@ const examReportsRouterBase = {
 
   create: base
     .route({ method: "POST", path: "/", tags: ["ExamReports"] })
-    .input(examReportsContract.create["~orpc"].inputSchema)
-    .output(examReportsContract.create["~orpc"].outputSchema)
+    .input(examReportsContract.create["~orpc"].inputSchema!)
+    .output(examReportsContract.create["~orpc"].outputSchema!)
     .handler(async ({ input }) => {
       const settings = await db.clinicSettings.findUnique({ where: { id: 1 } });
       if (!settings) {
@@ -230,8 +230,8 @@ const examReportsRouterBase = {
 
   update: base
     .route({ method: "POST", path: "/{id}/update", tags: ["ExamReports"] })
-    .input(examReportsContract.update["~orpc"].inputSchema)
-    .output(examReportsContract.update["~orpc"].outputSchema)
+    .input(examReportsContract.update["~orpc"].inputSchema!)
+    .output(examReportsContract.update["~orpc"].outputSchema!)
     .handler(async ({ input }) => {
       const { id, sections, ...rest } = input;
       // Replace sections wholesale on update — simpler than diffing.
@@ -273,8 +273,8 @@ const examReportsRouterBase = {
 
   delete: base
     .route({ method: "DELETE", path: "/{id}", tags: ["ExamReports"] })
-    .input(examReportsContract.delete["~orpc"].inputSchema)
-    .output(examReportsContract.delete["~orpc"].outputSchema)
+    .input(examReportsContract.delete["~orpc"].inputSchema!)
+    .output(examReportsContract.delete["~orpc"].outputSchema!)
     .handler(async ({ input }) => {
       await db.examReport.delete({ where: { id: input.id } });
       return { ok: true as const };
@@ -282,8 +282,8 @@ const examReportsRouterBase = {
 
   markGenerated: base
     .route({ method: "POST", path: "/{id}/mark-generated", tags: ["ExamReports"] })
-    .input(examReportsContract.markGenerated["~orpc"].inputSchema)
-    .output(examReportsContract.markGenerated["~orpc"].outputSchema)
+    .input(examReportsContract.markGenerated["~orpc"].inputSchema!)
+    .output(examReportsContract.markGenerated["~orpc"].outputSchema!)
     .handler(async ({ input }) => {
       const updated = await db.examReport.update({
         where: { id: input.id },
@@ -296,8 +296,8 @@ const examReportsRouterBase = {
   // ── Conclusion templates ──────────────────────────────────────────
   listTemplates: base
     .route({ method: "GET", path: "/templates", tags: ["ExamReports"] })
-    .input(examReportsContract.listTemplates["~orpc"].inputSchema)
-    .output(examReportsContract.listTemplates["~orpc"].outputSchema)
+    .input(examReportsContract.listTemplates["~orpc"].inputSchema!)
+    .output(examReportsContract.listTemplates["~orpc"].outputSchema!)
     .handler(async ({ input }) => {
       const where: Record<string, unknown> = { isActive: true };
       if (input?.examType !== undefined) {
@@ -312,8 +312,8 @@ const examReportsRouterBase = {
 
   createTemplate: base
     .route({ method: "POST", path: "/templates", tags: ["ExamReports"] })
-    .input(examReportsContract.createTemplate["~orpc"].inputSchema)
-    .output(examReportsContract.createTemplate["~orpc"].outputSchema)
+    .input(examReportsContract.createTemplate["~orpc"].inputSchema!)
+    .output(examReportsContract.createTemplate["~orpc"].outputSchema!)
     .handler(async ({ input }) => {
       const created = await db.conclusionTemplate.create({
         data: {
@@ -329,8 +329,8 @@ const examReportsRouterBase = {
 
   updateTemplate: base
     .route({ method: "POST", path: "/templates/{id}/update", tags: ["ExamReports"] })
-    .input(examReportsContract.updateTemplate["~orpc"].inputSchema)
-    .output(examReportsContract.updateTemplate["~orpc"].outputSchema)
+    .input(examReportsContract.updateTemplate["~orpc"].inputSchema!)
+    .output(examReportsContract.updateTemplate["~orpc"].outputSchema!)
     .handler(async ({ input }) => {
       const { id, ...rest } = input;
       const data: Record<string, unknown> = {};
@@ -343,8 +343,8 @@ const examReportsRouterBase = {
 
   deleteTemplate: base
     .route({ method: "DELETE", path: "/templates/{id}", tags: ["ExamReports"] })
-    .input(examReportsContract.deleteTemplate["~orpc"].inputSchema)
-    .output(examReportsContract.deleteTemplate["~orpc"].outputSchema)
+    .input(examReportsContract.deleteTemplate["~orpc"].inputSchema!)
+    .output(examReportsContract.deleteTemplate["~orpc"].outputSchema!)
     .handler(async ({ input }) => {
       await db.conclusionTemplate.delete({ where: { id: input.id } });
       return { ok: true as const };
@@ -353,8 +353,8 @@ const examReportsRouterBase = {
   // ── ClinicSettings (singleton) ────────────────────────────────────
   getClinicSettings: base
     .route({ method: "GET", path: "/clinic-settings", tags: ["ExamReports"] })
-    .input(examReportsContract.getClinicSettings["~orpc"].inputSchema)
-    .output(examReportsContract.getClinicSettings["~orpc"].outputSchema)
+    .input(examReportsContract.getClinicSettings["~orpc"].inputSchema!)
+    .output(examReportsContract.getClinicSettings["~orpc"].outputSchema!)
     .handler(async () => {
       const settings = await db.clinicSettings.upsert({
         where: { id: 1 },
@@ -366,8 +366,8 @@ const examReportsRouterBase = {
 
   updateClinicSettings: base
     .route({ method: "POST", path: "/clinic-settings/update", tags: ["ExamReports"] })
-    .input(examReportsContract.updateClinicSettings["~orpc"].inputSchema)
-    .output(examReportsContract.updateClinicSettings["~orpc"].outputSchema)
+    .input(examReportsContract.updateClinicSettings["~orpc"].inputSchema!)
+    .output(examReportsContract.updateClinicSettings["~orpc"].outputSchema!)
     .handler(async ({ input }) => {
       const data: Record<string, unknown> = {};
       for (const [k, v] of Object.entries(input)) {
@@ -384,8 +384,8 @@ const examReportsRouterBase = {
   // ── Allergen catalog (read-only proxy) ────────────────────────────
   listAllergens: base
     .route({ method: "GET", path: "/allergens", tags: ["ExamReports"] })
-    .input(examReportsContract.listAllergens["~orpc"].inputSchema)
-    .output(examReportsContract.listAllergens["~orpc"].outputSchema)
+    .input(examReportsContract.listAllergens["~orpc"].inputSchema!)
+    .output(examReportsContract.listAllergens["~orpc"].outputSchema!)
     .handler(async ({ input }) => {
       const where: Record<string, unknown> = { isActive: true };
       if (input?.search) {

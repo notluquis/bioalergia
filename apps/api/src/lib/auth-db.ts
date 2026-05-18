@@ -30,12 +30,14 @@ import { createAuthContext, getSessionUser, type AuthSession } from "./auth.ts";
 // user or extending the policies to allow `auth() == null` paths
 // explicitly (the current pattern in audit_logs).
 
-export async function getAuthDbForContext(c: Context) {
+export type AuthDbClient = ReturnType<typeof authDb.$setAuth>;
+
+export async function getAuthDbForContext(c: Context): Promise<AuthDbClient> {
   const session = await getSessionUser(c);
   return getAuthDbForSession(session);
 }
 
-export function getAuthDbForSession(session: AuthSession | null) {
+export function getAuthDbForSession(session: AuthSession | null): AuthDbClient {
   const subject = createAuthContext(session);
   if (!subject) {
     throw new ORPCError("UNAUTHORIZED", { message: "Unauthorized" });

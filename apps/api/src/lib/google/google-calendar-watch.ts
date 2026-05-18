@@ -447,7 +447,7 @@ type SetupRetryOptions = {
 
 let setupInFlight = false;
 
-export function scheduleWatchChannelSetup(options: SetupRetryOptions = {}) {
+export function scheduleWatchChannelSetup(options: SetupRetryOptions = {}): void {
   const {
     initialDelayMs = 5_000,
     maxDelayMs = 60 * 60 * 1_000,

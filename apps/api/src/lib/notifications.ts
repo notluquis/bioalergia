@@ -19,7 +19,7 @@ type PushSubscriptionKeys = {
 export async function subscribeToPush(
   userId: number,
   subscription: { endpoint: string; keys: PushSubscriptionKeys }
-) {
+): Promise<Awaited<ReturnType<typeof db.pushSubscription.upsert>>> {
   return await db.pushSubscription.upsert({
     where: { endpoint: subscription.endpoint },
     update: {
@@ -34,7 +34,10 @@ export async function subscribeToPush(
   });
 }
 
-export async function unsubscribeFromPush(userId: number, endpoint: string) {
+export async function unsubscribeFromPush(
+  userId: number,
+  endpoint: string
+): Promise<Awaited<ReturnType<typeof db.pushSubscription.deleteMany>>> {
   return await db.pushSubscription.deleteMany({
     where: {
       endpoint,
@@ -53,7 +56,7 @@ export async function unsubscribeFromPush(userId: number, endpoint: string) {
 export async function rotatePushSubscription(
   oldEndpoint: string,
   next: { endpoint: string; keys: PushSubscriptionKeys }
-) {
+): Promise<{ success: false; reason: "old endpoint not found" } | { success: true }> {
   const existing = await db.pushSubscription.findUnique({
     where: { endpoint: oldEndpoint },
   });
@@ -76,7 +79,7 @@ export async function rotatePushSubscription(
 export async function sendPushNotification(
   userId: number,
   payload: { title: string; body: string; icon?: string; url?: string }
-) {
+): Promise<{ success: boolean; sent: number }> {
   const subscriptions = await db.pushSubscription.findMany({
     where: { userId },
   });
@@ -181,7 +184,7 @@ export async function broadcastPushNotification(payload: {
   // notificationclick handler reads it (e.g. conversationId so the
   // "mark-read" action can call the right endpoint).
   meta?: Record<string, unknown>;
-}) {
+}): Promise<{ success: boolean; sent: number; reason?: string }> {
   if (!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) {
     return { success: false, sent: 0, reason: "VAPID keys not configured" };
   }

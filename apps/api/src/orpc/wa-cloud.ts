@@ -104,7 +104,7 @@ import { ORPCError, onError, os } from "@orpc/server";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import type { Context as HonoContext } from "hono";
 import { z } from "zod";
-import { getSessionUser, hasPermission } from "../auth.ts";
+import { getSessionUser, hasPermission } from "../lib/auth.ts";
 import { logError } from "../lib/logger.ts";
 import { decryptSecret, encryptSecret } from "../lib/secret-cipher.ts";
 import { configureSuperjson } from "../lib/superjson-config.ts";
@@ -429,9 +429,9 @@ const waRouterBase = {
         take: input.pageSize,
       });
       return {
-        items: items.map((c) => ({
+        items: items.map((c: (typeof items)[number]) => ({
           ...c,
-          channelPhoneNumberIds: c.channels.map((ch) => ch.phoneNumberId),
+          channelPhoneNumberIds: c.channels.map((ch: (typeof c.channels)[number]) => ch.phoneNumberId),
         })),
         total,
         page: input.page,
@@ -466,7 +466,7 @@ const waRouterBase = {
         conversation: conv,
         contact: conv.contact,
         messages,
-        channels: conv.channels.map((c) => ({
+        channels: conv.channels.map((c: (typeof conv.channels)[number]) => ({
           phoneNumberId: c.phoneNumberId,
           label: c.phoneNumber.label,
         })),
@@ -1862,7 +1862,7 @@ const waRouterBase = {
         const r = await sendMediaMessage({
           phoneNumberId: input.phoneNumberId,
           toE164,
-          type: typeMap[snip.kind],
+          type: typeMap[snip.kind as keyof typeof typeMap],
           mediaId: snip.mediaHandle ?? undefined,
           link: snip.mediaUrl ?? undefined,
           caption: resolve(snip.bodyText) ?? undefined,
@@ -1870,7 +1870,7 @@ const waRouterBase = {
         });
         metaId = r.messages?.[0]?.id ?? null;
         preview = `[${snip.kind.toLowerCase()}] ${snip.name}`;
-        messageType = typeMap[snip.kind].toUpperCase() as
+        messageType = typeMap[snip.kind as keyof typeof typeMap].toUpperCase() as
           | "DOCUMENT"
           | "IMAGE"
           | "VIDEO"

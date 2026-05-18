@@ -194,7 +194,14 @@ export async function getSessionUser(ctx: Context): Promise<AuthSession | null> 
  * Create a ZenStack-compatible auth object for policies
  * This matches the User model structure with @@auth decorator
  */
-export function createAuthContext(user: AuthSession | null) {
+export interface AuthContext {
+  id: AuthSession["id"];
+  email: AuthSession["email"];
+  status: AuthSession["status"];
+  roles: AuthSession["roles"];
+}
+
+export function createAuthContext(user: AuthSession | null): AuthContext | null {
   if (!user) {
     return null;
   }

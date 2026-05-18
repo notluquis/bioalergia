@@ -636,7 +636,7 @@ const listSyncLogs = authed
       excluded: Number(log.excluded ?? 0),
       errorMessage: log.errorMessage ?? null,
       changeDetails: log.changeDetails ?? null,
-      logEntries: log.logEntries.map((entry) => ({
+      logEntries: log.logEntries.map((entry: (typeof log.logEntries)[number]) => ({
         message: entry.message,
         severity: entry.severity,
         attributes: entry.attributes,

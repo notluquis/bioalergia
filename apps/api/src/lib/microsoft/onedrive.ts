@@ -667,7 +667,7 @@ async function graphRequest<T>(
   return (await response.json()) as T;
 }
 
-export async function setupOneDriveSubscription(accountId: string) {
+export async function setupOneDriveSubscription(accountId: string): Promise<void> {
   const accessToken = await getOneDriveAccessToken(accountId);
   const account = await db.oneDriveAccount.findFirst({
     where: { accountId },
@@ -773,7 +773,7 @@ function getOneDriveWebhookUrl() {
   return `${publicUrl.replace(/\/+$/g, "")}/api/webhooks/onedrive`;
 }
 
-export async function renewOneDriveSubscription(accountId: string) {
+export async function renewOneDriveSubscription(accountId: string): Promise<void> {
   const channel = await db.oneDriveWatchChannel.findFirst({
     where: { accountId },
     select: { id: true, subscriptionId: true, expiration: true },
@@ -811,7 +811,7 @@ export async function renewOneDriveSubscription(accountId: string) {
   }
 }
 
-export async function renewOneDriveSubscriptionNow(accountId: string) {
+export async function renewOneDriveSubscriptionNow(accountId: string): Promise<boolean> {
   try {
     await setupOneDriveSubscription(accountId);
     return true;
@@ -848,7 +848,7 @@ function safeUrlHost(url: string) {
   }
 }
 
-export async function renewAllOneDriveSubscriptions() {
+export async function renewAllOneDriveSubscriptions(): Promise<void> {
   const accounts = await db.oneDriveAccount.findMany({ select: { accountId: true } });
   for (const acc of accounts) {
     await renewOneDriveSubscription(acc.accountId);

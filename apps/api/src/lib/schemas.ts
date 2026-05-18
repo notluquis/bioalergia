@@ -4,13 +4,13 @@ import { z } from "zod";
 // SHARED SCHEMAS
 // ==========================================
 
-export const colorRegex = /^(?:#(?:[0-9a-fA-F]{3}){1,2}|(?:oklch|hsl|rgb|var)\(.+\))$/;
-export const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-export const timeRegex = /^\d{2}:\d{2}$/;
-export const monthRegex = /^\d{4}-\d{2}$/;
+export const colorRegex: RegExp = /^(?:#(?:[0-9a-fA-F]{3}){1,2}|(?:oklch|hsl|rgb|var)\(.+\))$/;
+export const dateRegex: RegExp = /^\d{4}-\d{2}-\d{2}$/;
+export const timeRegex: RegExp = /^\d{2}:\d{2}$/;
+export const monthRegex: RegExp = /^\d{4}-\d{2}$/;
 
 // URL schemas
-export const httpsUrlSchema = z
+export const httpsUrlSchema: z.ZodType<string, string> = z
   .string()
   .trim()
   .check(z.url({ message: "Debe ser una URL válida" }))
@@ -18,9 +18,9 @@ export const httpsUrlSchema = z
     message: "Debe comenzar con https://",
   });
 
-export const optionalHttpsUrl = z.union([z.literal(""), httpsUrlSchema]);
+export const optionalHttpsUrl: z.ZodType<string, string> = z.union([z.literal(""), httpsUrlSchema]);
 
-export const brandAssetUrlSchema = z
+export const brandAssetUrlSchema: z.ZodType<string, string> = z
   .string()
   .trim()
   .min(1)
@@ -34,13 +34,16 @@ export const brandAssetUrlSchema = z
     }
   );
 
-export const optionalBrandAssetUrlSchema = z.union([z.literal(""), brandAssetUrlSchema]);
+export const optionalBrandAssetUrlSchema: z.ZodType<string, string> = z.union([
+  z.literal(""),
+  brandAssetUrlSchema,
+]);
 
 // Numeric schemas
-export const moneySchema = z.coerce.number().min(0);
-export const clpInt = z.coerce.number().int().default(0);
+export const moneySchema: z.ZodType<number, unknown> = z.coerce.number().min(0);
+export const clpInt: z.ZodType<number, unknown> = z.coerce.number().int().default(0);
 
-export const amountSchema = z
+export const amountSchema: z.ZodType<number | null | undefined, unknown> = z
   .union([z.number(), z.string(), z.null()])
   .transform((value) => {
     if (value == null) {
@@ -74,7 +77,35 @@ export const amountSchema = z
 // AUTH SCHEMAS
 // ==========================================
 
-export const updateClassificationSchema = z.object({
+export interface UpdateClassificationInput {
+  calendarId: string;
+  eventId: string;
+  clinicalSeriesId?: number | null | undefined;
+  category?: string | null | undefined;
+  amountExpected?: number | null | undefined;
+  amountPaid?: number | null | undefined;
+  attended?: boolean | null | undefined;
+  seriesStageKind?: "DOSE" | "INSTALLATION" | "MAINTENANCE" | "READING" | null | undefined;
+  seriesStageLabel?: string | null | undefined;
+  seriesStageNumber?: number | null | undefined;
+  dosageValue?: number | null | undefined;
+  dosageUnit?: string | null | undefined;
+  treatmentStage?: string | null | undefined;
+  controlIncluded?: boolean | null | undefined;
+  isDomicilio?: boolean | null | undefined;
+  testMetadata?:
+    | {
+        firstReading: boolean;
+        patchTest: boolean;
+        secondReading: boolean;
+        skinTest: boolean;
+        thirdReading: boolean;
+      }
+    | null
+    | undefined;
+}
+
+export const updateClassificationSchema: z.ZodType<UpdateClassificationInput, unknown> = z.object({
   calendarId: z.string(),
   eventId: z.string(),
   clinicalSeriesId: z.coerce.number().int().positive().nullable().optional(),
@@ -106,7 +137,7 @@ export const updateClassificationSchema = z.object({
 // SETTINGS SCHEMAS
 // ==========================================
 
-export const settingsSchema = z.object({
+export const settingsSchema: z.ZodType<unknown, unknown> = z.object({
   orgName: z.string().min(1).max(120),
   tagline: z.string().max(200).optional().default(""),
   primaryColor: z.string().regex(colorRegex, "Debe ser un color HEX o CSS válido"),

@@ -8,8 +8,8 @@ export { db };
 // and falls back to a DB-persisted 32-byte random secret. The previous
 // `JWT_SECRET || "default_secret"` fallback was dead code with no
 // callers and a footgun; removed to prevent accidental adoption.
-export const MP_ACCESS_TOKEN = process.env.MP_ACCESS_TOKEN;
-export const PORT = Number(process.env.PORT ?? 3000);
+export const MP_ACCESS_TOKEN: string | undefined = process.env.MP_ACCESS_TOKEN;
+export const PORT: number = Number(process.env.PORT ?? 3000);
 
 // Haulmer Config
 export interface HaulmerEnvConfig {

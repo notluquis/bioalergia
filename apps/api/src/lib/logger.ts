@@ -6,11 +6,11 @@ function toSerializable(value: unknown): string {
   );
 }
 
-export function logEvent(tag: string, details: Record<string, unknown> = {}) {
+export function logEvent(tag: string, details: Record<string, unknown> = {}): void {
   console.log(toSerializable({ level: "info", tag, ...details }));
 }
 
-export function logWarn(tag: string, details: Record<string, unknown> = {}) {
+export function logWarn(tag: string, details: Record<string, unknown> = {}): void {
   console.warn(toSerializable({ level: "warn", tag, ...details }));
 }
 
@@ -31,12 +31,21 @@ export function logError(
   console.error(toSerializable({ level: "error", tag, error: errMessage, ...details }));
 }
 
-export const logger = {
-  info: (obj: object, msg?: string) => console.log(toSerializable({ level: "info", msg, ...obj })),
-  warn: (obj: object, msg?: string) => console.warn(toSerializable({ level: "warn", msg, ...obj })),
-  error: (obj: object, msg?: string) =>
+export interface SimpleLogger {
+  info: (obj: object, msg?: string) => void;
+  warn: (obj: object, msg?: string) => void;
+  error: (obj: object, msg?: string) => void;
+  child: () => SimpleLogger;
+}
+
+export const logger: SimpleLogger = {
+  info: (obj: object, msg?: string): void =>
+    console.log(toSerializable({ level: "info", msg, ...obj })),
+  warn: (obj: object, msg?: string): void =>
+    console.warn(toSerializable({ level: "warn", msg, ...obj })),
+  error: (obj: object, msg?: string): void =>
     console.error(toSerializable({ level: "error", msg, ...obj })),
-  child: () => logger, // Dummy child
+  child: (): SimpleLogger => logger, // Dummy child
 };
 
 type RequestLikeContext = {
@@ -50,7 +59,7 @@ type RequestLikeContext = {
 export function requestContext(
   c: Context | RequestLikeContext,
   extra: Record<string, unknown> = {}
-) {
+): Record<string, unknown> {
   // Try to extract user from context if available (depends on middleware)
   const maybeUser = c.get?.("user");
   const user =
