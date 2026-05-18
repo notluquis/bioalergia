@@ -3,6 +3,7 @@ import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-q
 import { Archive, Edit3, Lock, PlusCircle } from "lucide-react";
 import { useState } from "react";
 
+import { confirmAction } from "@/components/ui/ConfirmDialog";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
 import { archiveProduct, createProduct, updateProduct } from "../api";
@@ -119,7 +120,13 @@ export function CatalogPage() {
   }
 
   async function handleArchive(id: number) {
-    if (!confirm("¿Archivar este producto? Dejará de mostrarse en la tienda.")) return;
+    const ok = await confirmAction({
+      title: "¿Archivar este producto?",
+      description: "Dejará de mostrarse en la tienda.",
+      variant: "danger",
+      confirmLabel: "Archivar",
+    });
+    if (!ok) return;
     try {
       await archiveMutation.mutateAsync(id);
       toastSuccess("Producto archivado");

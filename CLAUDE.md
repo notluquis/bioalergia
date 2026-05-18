@@ -108,6 +108,8 @@ export const fooORPCRouter = base.router(fooRouterBase).prefix("/api/orpc/foo");
 - Date handling: `@internationalized/date` + dayjs (es locale)
 - Never use native HTML date inputs — use HeroUI DateField/DateRangePicker
 - Forms use `<Form validationBehavior="aria">` from HeroUI
+- Confirmation dialogs: NEVER use `window.confirm/alert/prompt`. Use `confirmAction()` from `@/components/ui/ConfirmDialog` (returns `Promise<boolean>`; supports `variant: "danger"`, `requireText` for NHS-style typed confirms, custom labels). Enforced by `scripts/audit-design-tokens.mjs` rule `native-confirm` — CI blocks on violations.
+- Loading skeletons inside semantic elements (`<h*>`, table `rowheader` cells) need explicit a11y or axe flags them: wrap parent with `aria-busy="true"` + `aria-label="Cargando…"`, mark skeleton `aria-hidden="true"`. See `DataTable.tsx` + `MercadoPagoSettingsPage.tsx` for canonical pattern.
 
 ### Tooling
 

@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link2, LogOut, RefreshCw } from "lucide-react";
 import { useEffect } from "react";
 
+import { confirmAction } from "@/components/ui/ConfirmDialog";
 import { useToast } from "@/context/ToastContext";
 import { mlORPCClient } from "../orpc-ml";
 
@@ -97,10 +98,13 @@ export function MlConnectionPage() {
           {connected && (
             <Button
               isDisabled={disconnectMutation.isPending}
-              onPress={() => {
-                if (confirm("¿Desconectar MercadoLibre?")) {
-                  disconnectMutation.mutate();
-                }
+              onPress={async () => {
+                const ok = await confirmAction({
+                  title: "¿Desconectar MercadoLibre?",
+                  variant: "danger",
+                  confirmLabel: "Desconectar",
+                });
+                if (ok) disconnectMutation.mutate();
               }}
               variant="danger-soft"
             >

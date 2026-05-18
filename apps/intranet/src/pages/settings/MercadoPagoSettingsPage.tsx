@@ -313,9 +313,13 @@ export function MercadoPagoSettingsPage() {
                       <Card.Description className="font-semibold text-default-600 text-xs uppercase tracking-wide">
                         Último Reporte
                       </Card.Description>
-                      <Card.Title className="mt-2 line-clamp-1 text-lg">
+                      <Card.Title
+                        aria-busy={isReportLoading || undefined}
+                        aria-label={isReportLoading ? "Cargando último reporte" : undefined}
+                        className="mt-2 line-clamp-1 text-lg"
+                      >
                         {isReportLoading ? (
-                          <Skeleton className="h-5 w-28 rounded-lg" />
+                          <Skeleton aria-hidden="true" className="h-5 w-28 rounded-lg" />
                         ) : (
                           resolveLastReportLabel(reports)
                         )}
@@ -405,9 +409,13 @@ export function MercadoPagoSettingsPage() {
                       <Card.Description className="font-semibold text-default-600 text-xs uppercase tracking-wide">
                         Último Reporte
                       </Card.Description>
-                      <Card.Title className="mt-2 line-clamp-1 text-lg">
+                      <Card.Title
+                        aria-busy={isReportLoading || undefined}
+                        aria-label={isReportLoading ? "Cargando último reporte" : undefined}
+                        className="mt-2 line-clamp-1 text-lg"
+                      >
                         {isReportLoading ? (
-                          <Skeleton className="h-5 w-28 rounded-lg" />
+                          <Skeleton aria-hidden="true" className="h-5 w-28 rounded-lg" />
                         ) : (
                           resolveLastReportLabel(reports)
                         )}

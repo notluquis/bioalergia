@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Star, Trash2, Upload } from "lucide-react";
 import { useRef, useState } from "react";
 
+import { confirmAction } from "@/components/ui/ConfirmDialog";
 import { useToast } from "@/context/ToastContext";
 import { imagesORPCClient } from "../orpc-images";
 import { catalogKeys } from "../queries";
@@ -93,7 +94,12 @@ export function ImageUploader({ productId, images }: ImageUploaderProps) {
   }
 
   async function handleDelete(id: number) {
-    if (!confirm("¿Borrar esta imagen?")) return;
+    const ok = await confirmAction({
+      title: "¿Borrar esta imagen?",
+      variant: "danger",
+      confirmLabel: "Borrar",
+    });
+    if (!ok) return;
     try {
       await deleteMutation.mutateAsync(id);
       invalidate();

@@ -39,6 +39,16 @@ test.describe("WaCloud Inbox responsive contract", () => {
       testInfo.skip(true, "E2E user lacks read WaBusinessAccount permission");
       return;
     }
+    // Race winner says heading appeared first, but the redirect can still
+    // resolve milliseconds later (TanStack Router commits guard rejection
+    // after the initial render). Settle a short window + re-check the URL.
+    // If we drifted off /wa-cloud, skip — otherwise the test body asserts
+    // on a heading that's about to unmount.
+    await page.waitForLoadState("networkidle", { timeout: 5_000 }).catch(() => undefined);
+    if (!page.url().includes("/wa-cloud")) {
+      testInfo.skip(true, "Redirected off /wa-cloud after initial render");
+      return;
+    }
   });
 
   test("desktop: split layout shows both list and detail empty-state", async ({

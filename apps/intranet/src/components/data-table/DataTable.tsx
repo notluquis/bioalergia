@@ -256,14 +256,22 @@ function DataTableContent<TData>({
   }
 
   const bodyContent = isLoading ? (
-    <Table.Body>
+    <Table.Body aria-busy="true">
       {["1", "2", "3", "4", "5", "6"].map((rowKey) => (
         <Table.Row id={`skeleton-row-${rowKey}`} key={`skeleton-row-${rowKey}`}>
-          {activeHeaderGroup.headers.map((header) => {
+          {activeHeaderGroup.headers.map((header, headerIndex) => {
             const loadingColumnKey = String(header.column.id ?? header.id ?? "column");
+            // First cell receives role=rowheader from React Aria's grid
+            // model. axe (`empty-table-header`) flags a rowheader without
+            // visible text — give the cell an aria-label so the skeleton
+            // placeholder still announces "loading row N" to screen readers
+            // (and ticks the WCAG 2.2 AA name-role-value check).
             return (
-              <Table.Cell key={`skeleton-cell-${rowKey}-${loadingColumnKey}`}>
-                <Skeleton className="h-4 w-full max-w-36 rounded-md" />
+              <Table.Cell
+                aria-label={headerIndex === 0 ? `Cargando fila ${rowKey}` : undefined}
+                key={`skeleton-cell-${rowKey}-${loadingColumnKey}`}
+              >
+                <Skeleton aria-hidden="true" className="h-4 w-full max-w-36 rounded-md" />
               </Table.Cell>
             );
           })}
