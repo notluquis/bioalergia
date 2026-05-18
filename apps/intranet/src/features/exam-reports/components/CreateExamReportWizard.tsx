@@ -37,6 +37,12 @@ type Patient = Awaited<ReturnType<typeof fetchPatients>>[number];
 import { examReportsORPCClient, toExamReportsApiError } from "../orpc";
 import { examReportsKeys } from "../queries";
 import {
+  type ControlsSource,
+  type DraftSection,
+  type InitialReportSeed,
+  useExamReportFormState,
+} from "../hooks/use-exam-report-form-state";
+import {
   EXAM_TYPE_CONFIG,
   EXAM_TYPE_DESCRIPTION,
   EXAM_TYPE_LABEL,
@@ -46,41 +52,21 @@ import { downloadExamReportPdf } from "../lib/pdf";
 import type { ExamType, SkinReaction } from "@finanzas/orpc-contracts/exam-reports";
 
 /**
- * Wizard to create an exam report. Patient is selected upstream
- * (PatientSelectModal) — same flow as CreateShipmentWizard. Steps:
+ * Wizard to create OR edit an exam report. Patient is selected upstream
+ * (PatientSelectModal) for create-mode; in edit-mode the patient is
+ * derived from the persisted report and locked. Steps:
  *
- *   1. Tipo de examen          (radio of the 5 ExamTypes)
+ *   1. Tipo de examen          (hidden in edit-mode — type is immutable)
  *   2. Alergenos por sección   (per pre-seeded section, pick allergens
  *                                from the catalog + reaction enum +
  *                                optional papule mm)
  *   3. Conclusión              (template dropdown + free-text override)
- *   4. Revisar + generar PDF   (server creates the report, client
- *                                downloads the rendered PDF immediately)
+ *   4. Revisar + generar PDF   (server creates / updates the report,
+ *                                client downloads the rendered PDF
+ *                                immediately on create; edit just saves)
  */
 
-interface DraftReaction {
-  allergenId: string;
-  allergenName: string;
-  reaction: SkinReaction;
-  papuleMm: number | null;
-}
-
-interface DraftSection {
-  /** Stable client-side id (React key + section delete target). */
-  id: string;
-  /** API-side section key. Preseed sections keep their canonical key
-   *  ("panel_1", "lectura_48h", …); user-added sections get a
-   *  `custom_<short-id>` so the server can disambiguate. */
-  sectionKey: string;
-  /** Editable label shown in the UI and printed in the PDF. */
-  label: string;
-  reactions: DraftReaction[];
-}
-
 function randomId(): string {
-  // 8 hex chars — collision-proof for the ~10 sections a single report
-  // could ever realistically hold. Avoids `crypto.randomUUID()` to keep
-  // older Safari happy on the iPad use case.
   return Math.random().toString(36).slice(2, 10);
 }
 
@@ -104,99 +90,128 @@ function patientFullName(p: {
   return [names, fatherName, motherName].filter(Boolean).join(" ");
 }
 
-export function CreateExamReportWizard({
-  patient,
-  isOpen,
-  onClose,
-}: {
-  patient: Patient;
+export interface CreateExamReportWizardProps {
+  /** Required in create-mode; optional in edit-mode (derived from `initialReport`). */
+  patient?: Patient;
+  /** When present → edit-mode. Seeds every field, locks patient + examType. */
+  initialReport?: InitialReportSeed & {
+    patient: {
+      id: number;
+      birthDate: string | null;
+      person: {
+        names: string;
+        fatherName: string | null;
+        motherName: string | null;
+        rut: string | null;
+      };
+    };
+  };
   isOpen: boolean;
   onClose: () => void;
-}) {
+}
+
+export function CreateExamReportWizard({
+  patient,
+  initialReport,
+  isOpen,
+  onClose,
+}: CreateExamReportWizardProps) {
   const toast = useToast();
   const qc = useQueryClient();
 
-  const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
-  const [examType, setExamType] = useState<ExamType>("PATCH");
-  const [sections, setSections] = useState<DraftSection[]>([]);
-  const [conclusionTemplateId, setConclusionTemplateId] = useState<number | null>(null);
-  const [conclusionText, setConclusionText] = useState("");
-  const [notes, setNotes] = useState<string>("");
-  // ── Controls (validity gates printed on the PDF) ──────────────────────
-  // Operator can either (a) let the wizard pre-fill from the most recent
-  // XLSX skin-test snapshot or (b) type the mm values manually. Default
-  // state is "not yet set" (null) so the PDF renders "—" when neither
-  // path produces a value.
-  const [histamineMm, setHistamineMm] = useState<number | null>(null);
-  const [salineMm, setSalineMm] = useState<number | null>(null);
-  // Source of currently-shown values — drives the visible "Origen: XLSX
-  // <date>" chip. Flips back to "manual" the moment the operator edits a
-  // field; nulls suppress the chip entirely.
-  const [controlsSource, setControlsSource] = useState<
-    { kind: "xlsx"; date: string } | { kind: "manual" } | null
-  >(null);
+  const form = useExamReportFormState(initialReport);
+  const isEdit = form.isEdit;
 
-  // Reset draft sections every time examType changes — the seed
-  // sections are different per type and we don't want stale entries.
-  // Each section gets a stable client-side id for React keys + delete
-  // targeting; preseeded sections keep their canonical sectionKey so
-  // the PDF renderer can apply per-type formatting (POLENES grouping
-  // etc.) — user-added sections fall through to the flat layout.
-  useEffect(() => {
-    const cfg = EXAM_TYPE_CONFIG[examType];
-    setSections(
-      cfg.sections.map((s) => ({
-        id: randomId(),
-        sectionKey: s.sectionKey,
-        label: s.label,
-        reactions: [],
-      }))
-    );
-    setNotes(cfg.defaultNotes ?? "");
-  }, [examType]);
+  // Resolve the effective patient: create-mode = prop; edit-mode = from
+  // initialReport (its shape is a superset of `Patient` minus the
+  // payment/consultation history the wizard never touches).
+  const effectivePatient = useMemo<{
+    id: number;
+    birthDate: string | null;
+    person: {
+      names: string;
+      fatherName: string | null;
+      motherName: string | null;
+      rut: string | null;
+    };
+  } | null>(() => {
+    if (initialReport) return initialReport.patient;
+    if (patient) {
+      return {
+        id: patient.id,
+        birthDate:
+          "birthDate" in patient && typeof patient.birthDate === "string"
+            ? patient.birthDate
+            : null,
+        person: {
+          names: patient.person.names,
+          fatherName: patient.person.fatherName ?? null,
+          motherName: patient.person.motherName ?? null,
+          rut: patient.person.rut ?? null,
+        },
+      };
+    }
+    return null;
+  }, [patient, initialReport]);
 
-  // Seed with the universal default conclusion on open / type change.
-  const templatesQ = useQuery(examReportsKeys.templates(examType));
+  const templatesQ = useQuery(examReportsKeys.templates(form.examType));
+  // Default-conclusion seed: ONLY in create-mode and only if the user
+  // hasn't picked a template yet. Edit-mode keeps the persisted text.
   useEffect(() => {
+    if (isEdit) return;
     const tpls = templatesQ.data?.templates;
-    if (!tpls || conclusionTemplateId !== null) return;
+    if (!tpls || form.conclusionTemplateId !== null) return;
     const def = tpls.find((t) => t.isDefault) ?? tpls[0];
     if (def) {
-      setConclusionTemplateId(def.id);
-      setConclusionText(def.text);
+      form.setConclusionTemplateId(def.id);
+      form.setConclusionText(def.text);
     }
-  }, [templatesQ.data, conclusionTemplateId]);
+  }, [templatesQ.data, form, isEdit]);
 
   const settingsQ = useQuery(examReportsKeys.clinicSettings());
   const allergensQ = useQuery(examReportsKeys.allergens({ limit: 500 }));
-  const latestControlsQ = useQuery(examReportsKeys.latestPatientControls(patient.id));
+  const latestControlsQ = useQuery(
+    examReportsKeys.latestPatientControls(effectivePatient?.id ?? 0)
+  );
 
-  // Prefill from XLSX skin-test snapshot exactly once. Operator edits
-  // (which set controlsSource="manual") take precedence forever.
+  // XLSX prefill — create-mode only AND only when no persisted source.
   useEffect(() => {
-    if (controlsSource !== null) return;
+    if (isEdit) return;
+    if (form.controlsSource !== null) return;
     const lc = latestControlsQ.data;
     if (!lc) return;
     if (lc.histamineMm == null && lc.salineMm == null) return;
-    setHistamineMm(lc.histamineMm);
-    setSalineMm(lc.salineMm);
-    setControlsSource({ kind: "xlsx", date: lc.testDate ?? "—" });
-  }, [latestControlsQ.data, controlsSource]);
+    form.setHistamineMm(lc.histamineMm);
+    form.setSalineMm(lc.salineMm);
+    form.setControlsSource({ kind: "xlsx", date: lc.testDate ?? "—" });
+  }, [latestControlsQ.data, form, isEdit]);
+
+  // Doctor info defaults: in CREATE mode, fall back to ClinicSettings if
+  // operator hasn't typed anything. Edit-mode preserves persisted values.
+  useEffect(() => {
+    if (isEdit) return;
+    const s = settingsQ.data;
+    if (!s) return;
+    if (!form.doctorName) form.setDoctorName(s.doctorName);
+    if (!form.doctorSpecialty) form.setDoctorSpecialty(s.doctorSpecialty);
+    if (!form.doctorRut && s.doctorRut) form.setDoctorRut(s.doctorRut);
+  }, [settingsQ.data, form, isEdit]);
 
   const createMutation = useMutation({
-    mutationFn: () =>
-      examReportsORPCClient.create({
-        patientId: patient.id,
-        examType,
-        conclusionText,
-        conclusionTemplateId,
-        notes: notes || null,
-        // Persist controls so reopening the report round-trips them.
-        // Either field may be null (operator skipped it); the server
-        // stores null verbatim and the PDF renders "—" as before.
-        histamineMm,
-        salineMm,
-        sections: sections.map((s, sIdx) => ({
+    mutationFn: async () => {
+      if (!effectivePatient) throw new Error("Falta paciente");
+      return examReportsORPCClient.create({
+        patientId: effectivePatient.id,
+        examType: form.examType,
+        conclusionText: form.conclusionText,
+        conclusionTemplateId: form.conclusionTemplateId,
+        notes: form.notes || null,
+        histamineMm: form.histamineMm,
+        salineMm: form.salineMm,
+        doctorName: form.doctorName || undefined,
+        doctorSpecialty: form.doctorSpecialty || undefined,
+        doctorRut: form.doctorRut || null,
+        sections: form.sections.map((s, sIdx) => ({
           sectionKey: s.sectionKey,
           label: s.label,
           position: sIdx,
@@ -207,11 +222,12 @@ export function CreateExamReportWizard({
             position: rIdx,
           })),
         })),
-      }),
+      });
+    },
     onSuccess: async (created) => {
       void qc.invalidateQueries({ queryKey: examReportsKeys.lists() });
       const settings = settingsQ.data;
-      if (settings) {
+      if (settings && effectivePatient) {
         await downloadExamReportPdf(
           {
             examType: created.examType,
@@ -236,7 +252,7 @@ export function CreateExamReportWizard({
                 papuleMm: r.papuleMm,
               })),
             })),
-            controls: { histamineMm, salineMm },
+            controls: { histamineMm: form.histamineMm, salineMm: form.salineMm },
           },
           settings,
           `informe-${EXAM_TYPE_LABEL[created.examType].replace(/\s+/g, "-")}-${created.id}.pdf`
@@ -249,10 +265,51 @@ export function CreateExamReportWizard({
     onError: (err) => toast.error(toExamReportsApiError(err).message),
   });
 
+  const updateMutation = useMutation({
+    mutationFn: async () => {
+      if (!initialReport) throw new Error("Falta initialReport para edit-mode");
+      return examReportsORPCClient.update({
+        id: initialReport.id,
+        conclusionText: form.conclusionText,
+        conclusionTemplateId: form.conclusionTemplateId,
+        notes: form.notes || null,
+        histamineMm: form.histamineMm,
+        salineMm: form.salineMm,
+        doctorName: form.doctorName || undefined,
+        doctorSpecialty: form.doctorSpecialty || undefined,
+        doctorRut: form.doctorRut || null,
+        sections: form.sections.map((s, sIdx) => ({
+          sectionKey: s.sectionKey,
+          label: s.label,
+          position: sIdx,
+          reactions: s.reactions.map((r, rIdx) => ({
+            allergenId: r.allergenId,
+            reaction: r.reaction,
+            papuleMm: r.papuleMm,
+            position: rIdx,
+          })),
+        })),
+      });
+    },
+    onSuccess: (updated) => {
+      void qc.invalidateQueries({ queryKey: examReportsKeys.lists() });
+      void qc.invalidateQueries({ queryKey: examReportsKeys.detail(updated.id).queryKey });
+      toast.success("Informe actualizado");
+      onClose();
+    },
+    onError: (err) => toast.error(toExamReportsApiError(err).message),
+  });
+
+  const activeMutation = isEdit ? updateMutation : createMutation;
+
   const canSubmit =
-    !createMutation.isPending &&
-    conclusionText.trim().length > 0 &&
-    sections.some((s) => s.reactions.length > 0);
+    !activeMutation.isPending &&
+    form.conclusionText.trim().length > 0 &&
+    form.sections.some((s) => s.reactions.length > 0);
+
+  const headerTitle = isEdit
+    ? `Editar informe — ${effectivePatient ? patientFullName(effectivePatient) : ""}`
+    : `Nuevo Informe — ${effectivePatient ? patientFullName(effectivePatient) : ""}`;
 
   return (
     <Modal>
@@ -268,23 +325,29 @@ export function CreateExamReportWizard({
             <Modal.Header className="border-default-100 border-b px-6 py-4">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <Modal.Heading className="font-bold text-primary text-lg">
-                    Nuevo Informe — {patientFullName(patient)}
+                  <Modal.Heading
+                    className="font-bold text-primary text-lg"
+                    data-testid="exam-report-wizard-heading"
+                  >
+                    {headerTitle}
                   </Modal.Heading>
                   <p className="text-default-600 text-xs">
-                    Paso {step} de 4 · {EXAM_TYPE_LABEL[examType]}
+                    Paso {form.step} de 4 · {EXAM_TYPE_LABEL[form.examType]}
+                    {isEdit ? " · edición" : ""}
                   </p>
                 </div>
                 <Tabs
-                  selectedKey={String(step)}
-                  onSelectionChange={(k) => setStep(Number(k) as 1 | 2 | 3 | 4)}
+                  selectedKey={String(form.step)}
+                  onSelectionChange={(k) => form.setStep(Number(k) as 1 | 2 | 3 | 4)}
                 >
                   <Tabs.ListContainer>
                     <Tabs.List
                       aria-label="Pasos"
                       className="max-md:overflow-x-auto max-md:[scrollbar-width:none] max-md:[&>*]:shrink-0 max-md:[&>*]:!w-auto"
                     >
-                      <Tabs.Tab id="1">1. Tipo</Tabs.Tab>
+                      <Tabs.Tab id="1" isDisabled={isEdit}>
+                        1. Tipo
+                      </Tabs.Tab>
                       <Tabs.Tab id="2">2. Alérgenos</Tabs.Tab>
                       <Tabs.Tab id="3">3. Conclusión</Tabs.Tab>
                       <Tabs.Tab id="4">4. Revisar</Tabs.Tab>
@@ -295,48 +358,71 @@ export function CreateExamReportWizard({
             </Modal.Header>
             <Modal.Body className="flex-1 overflow-hidden p-0">
               <ScrollShadow className="h-full overflow-y-auto p-6">
-                {step === 1 && <Step1Type examType={examType} onChange={setExamType} />}
-                {step === 2 && (
+                {form.step === 1 && !isEdit && (
+                  <Step1Type examType={form.examType} onChange={form.setExamType} />
+                )}
+                {form.step === 1 && isEdit && (
+                  <div className="rounded-2xl border border-default-200 bg-default-50/40 p-6 text-sm text-default-700">
+                    <p>
+                      Tipo de examen: <strong>{EXAM_TYPE_LABEL[form.examType]}</strong>
+                    </p>
+                    <p className="mt-1 text-default-600 text-xs">
+                      No se puede cambiar el tipo de un informe ya creado.
+                    </p>
+                  </div>
+                )}
+                {form.step === 2 && (
                   <Step2Allergens
-                    sections={sections}
-                    onChange={setSections}
+                    sections={form.sections}
+                    onChange={form.setSections}
                     allergens={allergensQ.data?.allergens ?? []}
                     isLoading={allergensQ.isLoading}
-                    histamineMm={histamineMm}
-                    salineMm={salineMm}
-                    controlsSource={controlsSource}
+                    histamineMm={form.histamineMm}
+                    salineMm={form.salineMm}
+                    controlsSource={form.controlsSource}
                     onHistamineChange={(v) => {
-                      setHistamineMm(v);
-                      setControlsSource({ kind: "manual" });
+                      form.setHistamineMm(v);
+                      form.setControlsSource({ kind: "manual" });
                     }}
                     onSalineChange={(v) => {
-                      setSalineMm(v);
-                      setControlsSource({ kind: "manual" });
+                      form.setSalineMm(v);
+                      form.setControlsSource({ kind: "manual" });
                     }}
                   />
                 )}
-                {step === 3 && (
+                {form.step === 3 && (
                   <Step3Conclusion
                     templates={templatesQ.data?.templates ?? []}
-                    templateId={conclusionTemplateId}
+                    templateId={form.conclusionTemplateId}
                     onTemplateChange={(id) => {
-                      setConclusionTemplateId(id);
+                      form.setConclusionTemplateId(id);
                       const t = templatesQ.data?.templates.find((x) => x.id === id);
-                      if (t) setConclusionText(t.text);
+                      if (t) form.setConclusionText(t.text);
                     }}
-                    text={conclusionText}
-                    onTextChange={setConclusionText}
-                    notes={notes}
-                    onNotesChange={setNotes}
+                    text={form.conclusionText}
+                    onTextChange={form.setConclusionText}
+                    notes={form.notes}
+                    onNotesChange={form.setNotes}
+                    doctorName={form.doctorName}
+                    onDoctorNameChange={form.setDoctorName}
+                    doctorSpecialty={form.doctorSpecialty}
+                    onDoctorSpecialtyChange={form.setDoctorSpecialty}
+                    doctorRut={form.doctorRut}
+                    onDoctorRutChange={form.setDoctorRut}
                   />
                 )}
-                {step === 4 && (
+                {form.step === 4 && (
                   <Step4Review
-                    examType={examType}
-                    sections={sections}
-                    conclusionText={conclusionText}
-                    notes={notes}
+                    examType={form.examType}
+                    sections={form.sections}
+                    conclusionText={form.conclusionText}
+                    notes={form.notes}
                     settings={settingsQ.data}
+                    doctorOverride={{
+                      name: form.doctorName,
+                      specialty: form.doctorSpecialty,
+                      rut: form.doctorRut,
+                    }}
                   />
                 )}
               </ScrollShadow>
@@ -344,24 +430,25 @@ export function CreateExamReportWizard({
             <Modal.Footer className="border-default-100 border-t px-6 py-3">
               <div className="flex w-full items-center justify-between gap-3">
                 <Button
-                  isDisabled={step === 1}
-                  onPress={() => setStep((s) => Math.max(1, s - 1) as 1 | 2 | 3 | 4)}
+                  isDisabled={form.step === 1}
+                  onPress={() => form.setStep(Math.max(1, form.step - 1) as 1 | 2 | 3 | 4)}
                   variant="outline"
                 >
                   Atrás
                 </Button>
-                {step < 4 ? (
-                  <Button onPress={() => setStep((s) => Math.min(4, s + 1) as 1 | 2 | 3 | 4)}>
+                {form.step < 4 ? (
+                  <Button onPress={() => form.setStep(Math.min(4, form.step + 1) as 1 | 2 | 3 | 4)}>
                     Siguiente
                   </Button>
                 ) : (
                   <Button
+                    data-testid="exam-report-wizard-submit"
                     isDisabled={!canSubmit}
-                    isPending={createMutation.isPending}
-                    onPress={() => createMutation.mutate()}
+                    isPending={activeMutation.isPending}
+                    onPress={() => activeMutation.mutate()}
                   >
                     <CheckCircle className="size-4" />
-                    Generar y descargar PDF
+                    {isEdit ? "Guardar cambios" : "Generar y descargar PDF"}
                   </Button>
                 )}
               </div>
@@ -433,7 +520,7 @@ function Step2Allergens({
   isLoading: boolean;
   histamineMm: number | null;
   salineMm: number | null;
-  controlsSource: { kind: "xlsx"; date: string } | { kind: "manual" } | null;
+  controlsSource: ControlsSource;
   onHistamineChange: (v: number | null) => void;
   onSalineChange: (v: number | null) => void;
 }) {
@@ -600,13 +687,6 @@ function Step2Allergens({
 }
 
 // ── Controls block (histamine + saline mm) ─────────────────────────────
-//
-// Two HeroUI v3 NumberFields wired to the wizard's local state. When a
-// recent XLSX skin-test snapshot exists, the values are prefilled by the
-// parent useEffect; a Chip next to each field shows "Origen: XLSX
-// <fecha> (editable)" so the operator knows where the numbers came
-// from. The moment they edit either field, source flips to "manual" and
-// the chip disappears (parent state).
 function ControlsBlock({
   histamineMm,
   salineMm,
@@ -616,12 +696,16 @@ function ControlsBlock({
 }: {
   histamineMm: number | null;
   salineMm: number | null;
-  source: { kind: "xlsx"; date: string } | { kind: "manual" } | null;
+  source: ControlsSource;
   onHistamineChange: (v: number | null) => void;
   onSalineChange: (v: number | null) => void;
 }) {
-  const showXlsxChip = source?.kind === "xlsx";
-  const xlsxDate = source?.kind === "xlsx" ? source.date : null;
+  const sourceLabel: string | null =
+    source?.kind === "xlsx"
+      ? `Origen: XLSX ${source.date} (editable)`
+      : source?.kind === "persisted"
+        ? "Origen: informe persistido (editable)"
+        : null;
   return (
     <section
       aria-labelledby="exam-controls-heading"
@@ -652,7 +736,7 @@ function ControlsBlock({
               <NumberField.Input placeholder="mm" />
             </NumberField.Group>
           </NumberField>
-          {showXlsxChip && (
+          {sourceLabel && (
             <Chip
               className="text-caption"
               color="accent"
@@ -660,7 +744,7 @@ function ControlsBlock({
               size="sm"
               variant="soft"
             >
-              {`Origen: XLSX ${xlsxDate ?? "—"} (editable)`}
+              {sourceLabel}
             </Chip>
           )}
         </div>
@@ -679,7 +763,7 @@ function ControlsBlock({
               <NumberField.Input placeholder="mm" />
             </NumberField.Group>
           </NumberField>
-          {showXlsxChip && (
+          {sourceLabel && (
             <Chip
               className="text-caption"
               color="accent"
@@ -687,7 +771,7 @@ function ControlsBlock({
               size="sm"
               variant="soft"
             >
-              {`Origen: XLSX ${xlsxDate ?? "—"} (editable)`}
+              {sourceLabel}
             </Chip>
           )}
         </div>
@@ -709,8 +793,6 @@ function EditableSectionLabel({
 }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(label);
-  // Keep local draft in sync if the label changes externally (e.g. type
-  // switch repopulates sections) and we're not actively editing.
   useEffect(() => {
     if (!editing) setDraft(label);
   }, [label, editing]);
@@ -766,15 +848,10 @@ function AllergenPicker({
   onAdd,
 }: {
   allergens: { id: string; commonName: string; category: string }[];
-  /** Allergens already in this section — kept out of the dropdown so
-   *  the operator can't double-add the same one. */
   excludeIds: string[];
   onAdd: (a: { id: string; commonName: string; category: string }) => void;
 }) {
   const { contains } = useFilter({ sensitivity: "base" });
-  // Reset trick: bumping `pickerKey` after a selection clears the
-  // Autocomplete's internal state (search field + selected key), so the
-  // picker feels like "add one at a time" instead of staying selected.
   const [pickerKey, setPickerKey] = useState(0);
   const [value, setValue] = useState<Key | null>(null);
 
@@ -807,7 +884,6 @@ function AllergenPicker({
         if (picked) {
           onAdd(picked);
           setValue(null);
-          // Force re-mount to clear the input + selected highlight.
           setPickerKey((n) => n + 1);
         } else {
           setValue(k as Key | null);
@@ -850,7 +926,7 @@ function AllergenPicker({
   );
 }
 
-// ── Step 3: Conclusion + notes ─────────────────────────────────────────
+// ── Step 3: Conclusion + notes + doctor info ───────────────────────────
 
 function Step3Conclusion({
   templates,
@@ -860,6 +936,12 @@ function Step3Conclusion({
   onTextChange,
   notes,
   onNotesChange,
+  doctorName,
+  onDoctorNameChange,
+  doctorSpecialty,
+  onDoctorSpecialtyChange,
+  doctorRut,
+  onDoctorRutChange,
 }: {
   templates: { id: number; text: string; isDefault: boolean }[];
   templateId: number | null;
@@ -868,6 +950,12 @@ function Step3Conclusion({
   onTextChange: (v: string) => void;
   notes: string;
   onNotesChange: (v: string) => void;
+  doctorName: string;
+  onDoctorNameChange: (v: string) => void;
+  doctorSpecialty: string;
+  onDoctorSpecialtyChange: (v: string) => void;
+  doctorRut: string;
+  onDoctorRutChange: (v: string) => void;
 }) {
   return (
     <Form className="space-y-4">
@@ -908,6 +996,38 @@ function Step3Conclusion({
           rows={2}
         />
       </TextField>
+
+      <Separator />
+
+      <div className="grid gap-3 md:grid-cols-3">
+        <TextField
+          className="w-full"
+          name="doctorName"
+          onChange={onDoctorNameChange}
+          value={doctorName}
+        >
+          <Label>Médico</Label>
+          <Input placeholder="Nombre del médico" />
+        </TextField>
+        <TextField
+          className="w-full"
+          name="doctorSpecialty"
+          onChange={onDoctorSpecialtyChange}
+          value={doctorSpecialty}
+        >
+          <Label>Especialidad</Label>
+          <Input placeholder="Inmunología clínica" />
+        </TextField>
+        <TextField
+          className="w-full"
+          name="doctorRut"
+          onChange={onDoctorRutChange}
+          value={doctorRut}
+        >
+          <Label>RUT del médico</Label>
+          <Input placeholder="12.345.678-9" />
+        </TextField>
+      </div>
     </Form>
   );
 }
@@ -920,6 +1040,7 @@ function Step4Review({
   conclusionText,
   notes,
   settings,
+  doctorOverride,
 }: {
   examType: ExamType;
   sections: DraftSection[];
@@ -933,9 +1054,12 @@ function Step4Review({
         defaultTechnique: string;
       }
     | undefined;
+  doctorOverride: { name: string; specialty: string; rut: string };
 }) {
   const cfg = EXAM_TYPE_CONFIG[examType];
   const totalReactions = sections.reduce((acc, s) => acc + s.reactions.length, 0);
+  const effectiveDoctorName = doctorOverride.name || settings?.doctorName || "—";
+  const effectiveDoctorSpecialty = doctorOverride.specialty || settings?.doctorSpecialty || "—";
   return (
     <div className="space-y-4">
       <div className="rounded-2xl border border-default-200 bg-default-50/30 p-4">
@@ -954,8 +1078,7 @@ function Step4Review({
       </div>
       <Separator />
       <p className="text-default-600 text-xs">
-        Firma como: <strong>{settings?.doctorName ?? "—"}</strong> (
-        {settings?.doctorSpecialty ?? "—"})
+        Firma como: <strong>{effectiveDoctorName}</strong> ({effectiveDoctorSpecialty})
       </p>
       <p className="text-default-600 text-xs">
         Reactivos: {settings?.defaultReagents ?? "—"} · Técnica: {settings?.defaultTechnique ?? "—"}

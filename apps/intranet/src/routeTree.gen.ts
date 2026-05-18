@@ -22,7 +22,6 @@ import { Route as AuthedOperationsRouteImport } from "./routes/_authed/operation
 import { Route as AuthedMarcarRouteImport } from "./routes/_authed/marcar"
 import { Route as AuthedHrRouteImport } from "./routes/_authed/hr"
 import { Route as AuthedFinanzasRouteImport } from "./routes/_authed/finanzas"
-import { Route as AuthedExamReportsRouteImport } from "./routes/_authed/exam-reports"
 import { Route as AuthedClinicalRouteImport } from "./routes/_authed/clinical"
 import { Route as AuthedCertificatesRouteImport } from "./routes/_authed/certificates"
 import { Route as AuthedCalendarRouteImport } from "./routes/_authed/calendar"
@@ -33,6 +32,7 @@ import { Route as AuthedServicesIndexRouteImport } from "./routes/_authed/servic
 import { Route as AuthedPatientsIndexRouteImport } from "./routes/_authed/patients/index"
 import { Route as AuthedOutreachIndexRouteImport } from "./routes/_authed/outreach/index"
 import { Route as AuthedHrIndexRouteImport } from "./routes/_authed/hr/index"
+import { Route as AuthedExamReportsIndexRouteImport } from "./routes/_authed/exam-reports/index"
 import { Route as AuthedClinicalIndexRouteImport } from "./routes/_authed/clinical/index"
 import { Route as AuthedWaCloudWebhooksRouteImport } from "./routes/_authed/wa-cloud/webhooks"
 import { Route as AuthedWaCloudProgramadosRouteImport } from "./routes/_authed/wa-cloud/programados"
@@ -82,6 +82,7 @@ import { Route as AuthedFinanzasDashboardRouteImport } from "./routes/_authed/fi
 import { Route as AuthedFinanzasDailyRouteImport } from "./routes/_authed/finanzas/daily"
 import { Route as AuthedFinanzasCounterpartsRouteImport } from "./routes/_authed/finanzas/counterparts"
 import { Route as AuthedFinanzasCashFlowRouteImport } from "./routes/_authed/finanzas/cash-flow"
+import { Route as AuthedExamReportsIdRouteImport } from "./routes/_authed/exam-reports/$id"
 import { Route as AuthedDevRoutesAuditRouteImport } from "./routes/_authed/dev/routes-audit"
 import { Route as AuthedClinicalRecordsRouteImport } from "./routes/_authed/clinical/records"
 import { Route as AuthedClinicalHeatmapRouteImport } from "./routes/_authed/clinical/heatmap"
@@ -169,11 +170,6 @@ const AuthedFinanzasRoute = AuthedFinanzasRouteImport.update({
   path: "/finanzas",
   getParentRoute: () => AuthedRoute,
 } as any)
-const AuthedExamReportsRoute = AuthedExamReportsRouteImport.update({
-  id: "/exam-reports",
-  path: "/exam-reports",
-  getParentRoute: () => AuthedRoute,
-} as any)
 const AuthedClinicalRoute = AuthedClinicalRouteImport.update({
   id: "/clinical",
   path: "/clinical",
@@ -223,6 +219,11 @@ const AuthedHrIndexRoute = AuthedHrIndexRouteImport.update({
   id: "/",
   path: "/",
   getParentRoute: () => AuthedHrRoute,
+} as any)
+const AuthedExamReportsIndexRoute = AuthedExamReportsIndexRouteImport.update({
+  id: "/exam-reports/",
+  path: "/exam-reports/",
+  getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedClinicalIndexRoute = AuthedClinicalIndexRouteImport.update({
   id: "/",
@@ -488,6 +489,11 @@ const AuthedFinanzasCashFlowRoute = AuthedFinanzasCashFlowRouteImport.update({
   path: "/cash-flow",
   getParentRoute: () => AuthedFinanzasRoute,
 } as any)
+const AuthedExamReportsIdRoute = AuthedExamReportsIdRouteImport.update({
+  id: "/exam-reports/$id",
+  path: "/exam-reports/$id",
+  getParentRoute: () => AuthedRoute,
+} as any)
 const AuthedDevRoutesAuditRoute = AuthedDevRoutesAuditRouteImport.update({
   id: "/dev/routes-audit",
   path: "/dev/routes-audit",
@@ -618,7 +624,6 @@ export interface FileRoutesByFullPath {
   "/calendar": typeof AuthedCalendarRouteWithChildren
   "/certificates": typeof AuthedCertificatesRouteWithChildren
   "/clinical": typeof AuthedClinicalRouteWithChildren
-  "/exam-reports": typeof AuthedExamReportsRoute
   "/finanzas": typeof AuthedFinanzasRouteWithChildren
   "/hr": typeof AuthedHrRouteWithChildren
   "/marcar": typeof AuthedMarcarRoute
@@ -639,6 +644,7 @@ export interface FileRoutesByFullPath {
   "/clinical/heatmap": typeof AuthedClinicalHeatmapRoute
   "/clinical/records": typeof AuthedClinicalRecordsRoute
   "/dev/routes-audit": typeof AuthedDevRoutesAuditRoute
+  "/exam-reports/$id": typeof AuthedExamReportsIdRoute
   "/finanzas/cash-flow": typeof AuthedFinanzasCashFlowRoute
   "/finanzas/counterparts": typeof AuthedFinanzasCounterpartsRoute
   "/finanzas/daily": typeof AuthedFinanzasDailyRoute
@@ -688,6 +694,7 @@ export interface FileRoutesByFullPath {
   "/wa-cloud/programados": typeof AuthedWaCloudProgramadosRoute
   "/wa-cloud/webhooks": typeof AuthedWaCloudWebhooksRoute
   "/clinical/": typeof AuthedClinicalIndexRoute
+  "/exam-reports/": typeof AuthedExamReportsIndexRoute
   "/hr/": typeof AuthedHrIndexRoute
   "/outreach/": typeof AuthedOutreachIndexRoute
   "/patients/": typeof AuthedPatientsIndexRoute
@@ -712,7 +719,6 @@ export interface FileRoutesByTo {
   "/account": typeof AuthedAccountRoute
   "/calendar": typeof AuthedCalendarRouteWithChildren
   "/certificates": typeof AuthedCertificatesRouteWithChildren
-  "/exam-reports": typeof AuthedExamReportsRoute
   "/finanzas": typeof AuthedFinanzasRouteWithChildren
   "/marcar": typeof AuthedMarcarRoute
   "/operations": typeof AuthedOperationsRouteWithChildren
@@ -729,6 +735,7 @@ export interface FileRoutesByTo {
   "/clinical/heatmap": typeof AuthedClinicalHeatmapRoute
   "/clinical/records": typeof AuthedClinicalRecordsRoute
   "/dev/routes-audit": typeof AuthedDevRoutesAuditRoute
+  "/exam-reports/$id": typeof AuthedExamReportsIdRoute
   "/finanzas/cash-flow": typeof AuthedFinanzasCashFlowRoute
   "/finanzas/counterparts": typeof AuthedFinanzasCounterpartsRoute
   "/finanzas/daily": typeof AuthedFinanzasDailyRoute
@@ -778,6 +785,7 @@ export interface FileRoutesByTo {
   "/wa-cloud/programados": typeof AuthedWaCloudProgramadosRoute
   "/wa-cloud/webhooks": typeof AuthedWaCloudWebhooksRoute
   "/clinical": typeof AuthedClinicalIndexRoute
+  "/exam-reports": typeof AuthedExamReportsIndexRoute
   "/hr": typeof AuthedHrIndexRoute
   "/outreach": typeof AuthedOutreachIndexRoute
   "/patients": typeof AuthedPatientsIndexRoute
@@ -805,7 +813,6 @@ export interface FileRoutesById {
   "/_authed/calendar": typeof AuthedCalendarRouteWithChildren
   "/_authed/certificates": typeof AuthedCertificatesRouteWithChildren
   "/_authed/clinical": typeof AuthedClinicalRouteWithChildren
-  "/_authed/exam-reports": typeof AuthedExamReportsRoute
   "/_authed/finanzas": typeof AuthedFinanzasRouteWithChildren
   "/_authed/hr": typeof AuthedHrRouteWithChildren
   "/_authed/marcar": typeof AuthedMarcarRoute
@@ -827,6 +834,7 @@ export interface FileRoutesById {
   "/_authed/clinical/heatmap": typeof AuthedClinicalHeatmapRoute
   "/_authed/clinical/records": typeof AuthedClinicalRecordsRoute
   "/_authed/dev/routes-audit": typeof AuthedDevRoutesAuditRoute
+  "/_authed/exam-reports/$id": typeof AuthedExamReportsIdRoute
   "/_authed/finanzas/cash-flow": typeof AuthedFinanzasCashFlowRoute
   "/_authed/finanzas/counterparts": typeof AuthedFinanzasCounterpartsRoute
   "/_authed/finanzas/daily": typeof AuthedFinanzasDailyRoute
@@ -876,6 +884,7 @@ export interface FileRoutesById {
   "/_authed/wa-cloud/programados": typeof AuthedWaCloudProgramadosRoute
   "/_authed/wa-cloud/webhooks": typeof AuthedWaCloudWebhooksRoute
   "/_authed/clinical/": typeof AuthedClinicalIndexRoute
+  "/_authed/exam-reports/": typeof AuthedExamReportsIndexRoute
   "/_authed/hr/": typeof AuthedHrIndexRoute
   "/_authed/outreach/": typeof AuthedOutreachIndexRoute
   "/_authed/patients/": typeof AuthedPatientsIndexRoute
@@ -904,7 +913,6 @@ export interface FileRouteTypes {
     | "/calendar"
     | "/certificates"
     | "/clinical"
-    | "/exam-reports"
     | "/finanzas"
     | "/hr"
     | "/marcar"
@@ -925,6 +933,7 @@ export interface FileRouteTypes {
     | "/clinical/heatmap"
     | "/clinical/records"
     | "/dev/routes-audit"
+    | "/exam-reports/$id"
     | "/finanzas/cash-flow"
     | "/finanzas/counterparts"
     | "/finanzas/daily"
@@ -974,6 +983,7 @@ export interface FileRouteTypes {
     | "/wa-cloud/programados"
     | "/wa-cloud/webhooks"
     | "/clinical/"
+    | "/exam-reports/"
     | "/hr/"
     | "/outreach/"
     | "/patients/"
@@ -998,7 +1008,6 @@ export interface FileRouteTypes {
     | "/account"
     | "/calendar"
     | "/certificates"
-    | "/exam-reports"
     | "/finanzas"
     | "/marcar"
     | "/operations"
@@ -1015,6 +1024,7 @@ export interface FileRouteTypes {
     | "/clinical/heatmap"
     | "/clinical/records"
     | "/dev/routes-audit"
+    | "/exam-reports/$id"
     | "/finanzas/cash-flow"
     | "/finanzas/counterparts"
     | "/finanzas/daily"
@@ -1064,6 +1074,7 @@ export interface FileRouteTypes {
     | "/wa-cloud/programados"
     | "/wa-cloud/webhooks"
     | "/clinical"
+    | "/exam-reports"
     | "/hr"
     | "/outreach"
     | "/patients"
@@ -1090,7 +1101,6 @@ export interface FileRouteTypes {
     | "/_authed/calendar"
     | "/_authed/certificates"
     | "/_authed/clinical"
-    | "/_authed/exam-reports"
     | "/_authed/finanzas"
     | "/_authed/hr"
     | "/_authed/marcar"
@@ -1112,6 +1122,7 @@ export interface FileRouteTypes {
     | "/_authed/clinical/heatmap"
     | "/_authed/clinical/records"
     | "/_authed/dev/routes-audit"
+    | "/_authed/exam-reports/$id"
     | "/_authed/finanzas/cash-flow"
     | "/_authed/finanzas/counterparts"
     | "/_authed/finanzas/daily"
@@ -1161,6 +1172,7 @@ export interface FileRouteTypes {
     | "/_authed/wa-cloud/programados"
     | "/_authed/wa-cloud/webhooks"
     | "/_authed/clinical/"
+    | "/_authed/exam-reports/"
     | "/_authed/hr/"
     | "/_authed/outreach/"
     | "/_authed/patients/"
@@ -1280,13 +1292,6 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof AuthedFinanzasRouteImport
       parentRoute: typeof AuthedRoute
     }
-    "/_authed/exam-reports": {
-      id: "/_authed/exam-reports"
-      path: "/exam-reports"
-      fullPath: "/exam-reports"
-      preLoaderRoute: typeof AuthedExamReportsRouteImport
-      parentRoute: typeof AuthedRoute
-    }
     "/_authed/clinical": {
       id: "/_authed/clinical"
       path: "/clinical"
@@ -1356,6 +1361,13 @@ declare module "@tanstack/react-router" {
       fullPath: "/hr/"
       preLoaderRoute: typeof AuthedHrIndexRouteImport
       parentRoute: typeof AuthedHrRoute
+    }
+    "/_authed/exam-reports/": {
+      id: "/_authed/exam-reports/"
+      path: "/exam-reports"
+      fullPath: "/exam-reports/"
+      preLoaderRoute: typeof AuthedExamReportsIndexRouteImport
+      parentRoute: typeof AuthedRoute
     }
     "/_authed/clinical/": {
       id: "/_authed/clinical/"
@@ -1699,6 +1711,13 @@ declare module "@tanstack/react-router" {
       fullPath: "/finanzas/cash-flow"
       preLoaderRoute: typeof AuthedFinanzasCashFlowRouteImport
       parentRoute: typeof AuthedFinanzasRoute
+    }
+    "/_authed/exam-reports/$id": {
+      id: "/_authed/exam-reports/$id"
+      path: "/exam-reports/$id"
+      fullPath: "/exam-reports/$id"
+      preLoaderRoute: typeof AuthedExamReportsIdRouteImport
+      parentRoute: typeof AuthedRoute
     }
     "/_authed/dev/routes-audit": {
       id: "/_authed/dev/routes-audit"
@@ -2137,7 +2156,6 @@ interface AuthedRouteChildren {
   AuthedCalendarRoute: typeof AuthedCalendarRouteWithChildren
   AuthedCertificatesRoute: typeof AuthedCertificatesRouteWithChildren
   AuthedClinicalRoute: typeof AuthedClinicalRouteWithChildren
-  AuthedExamReportsRoute: typeof AuthedExamReportsRoute
   AuthedFinanzasRoute: typeof AuthedFinanzasRouteWithChildren
   AuthedHrRoute: typeof AuthedHrRouteWithChildren
   AuthedMarcarRoute: typeof AuthedMarcarRoute
@@ -2148,8 +2166,10 @@ interface AuthedRouteChildren {
   AuthedWaCloudRoute: typeof AuthedWaCloudRouteWithChildren
   AuthedIndexRoute: typeof AuthedIndexRoute
   AuthedDevRoutesAuditRoute: typeof AuthedDevRoutesAuditRoute
+  AuthedExamReportsIdRoute: typeof AuthedExamReportsIdRoute
   AuthedPatientsCampaignsRoute: typeof AuthedPatientsCampaignsRoute
   AuthedPatientsNewRoute: typeof AuthedPatientsNewRoute
+  AuthedExamReportsIndexRoute: typeof AuthedExamReportsIndexRoute
   AuthedPatientsIndexRoute: typeof AuthedPatientsIndexRoute
   AuthedPatientsIdNewBudgetRoute: typeof AuthedPatientsIdNewBudgetRoute
   AuthedPatientsIdNewConsultationRoute: typeof AuthedPatientsIdNewConsultationRoute
@@ -2162,7 +2182,6 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedCalendarRoute: AuthedCalendarRouteWithChildren,
   AuthedCertificatesRoute: AuthedCertificatesRouteWithChildren,
   AuthedClinicalRoute: AuthedClinicalRouteWithChildren,
-  AuthedExamReportsRoute: AuthedExamReportsRoute,
   AuthedFinanzasRoute: AuthedFinanzasRouteWithChildren,
   AuthedHrRoute: AuthedHrRouteWithChildren,
   AuthedMarcarRoute: AuthedMarcarRoute,
@@ -2173,8 +2192,10 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedWaCloudRoute: AuthedWaCloudRouteWithChildren,
   AuthedIndexRoute: AuthedIndexRoute,
   AuthedDevRoutesAuditRoute: AuthedDevRoutesAuditRoute,
+  AuthedExamReportsIdRoute: AuthedExamReportsIdRoute,
   AuthedPatientsCampaignsRoute: AuthedPatientsCampaignsRoute,
   AuthedPatientsNewRoute: AuthedPatientsNewRoute,
+  AuthedExamReportsIndexRoute: AuthedExamReportsIndexRoute,
   AuthedPatientsIndexRoute: AuthedPatientsIndexRoute,
   AuthedPatientsIdNewBudgetRoute: AuthedPatientsIdNewBudgetRoute,
   AuthedPatientsIdNewConsultationRoute: AuthedPatientsIdNewConsultationRoute,

@@ -16,8 +16,9 @@ import {
 import { parseDate } from "@internationalized/date";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { ChevronDown, Download, FileText, PlusCircle, Trash2 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { ChevronDown, Download, Edit3, FileText, PlusCircle, Trash2 } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { z } from "zod";
 
 import { useConfirmDialog } from "@/context/ConfirmDialogContext";
 import { useToast } from "@/context/ToastContext";
@@ -49,7 +50,13 @@ type ExamReportListItem = Awaited<ReturnType<typeof examReportsORPCClient.list>>
  * caps at 500 items per request — more than that and the operator is
  * already filtering, so the cap is a non-issue in practice.
  */
-export const Route = createFileRoute("/_authed/exam-reports")({
+const examReportsListSearchSchema = z
+  .object({
+    notFound: z.coerce.number().optional(),
+  })
+  .partial();
+
+export const Route = createFileRoute("/_authed/exam-reports/")({
   staticData: {
     nav: {
       iconKey: "FileText",
@@ -60,6 +67,7 @@ export const Route = createFileRoute("/_authed/exam-reports")({
     permission: { action: "read", subject: "ExamReport" },
     title: "Informes — Lista",
   },
+  validateSearch: examReportsListSearchSchema,
   component: ExamReportsListPage,
 });
 
@@ -77,6 +85,17 @@ function ExamReportsListPage() {
   const { can } = useCan();
   const canCreate = can("create", "ExamReport");
   const canDelete = can("delete", "ExamReport");
+  const search = Route.useSearch();
+  const navigate = Route.useNavigate();
+
+  // Surface 404 from /$id loader once, then strip the search param so a
+  // page refresh doesn't re-toast.
+  useEffect(() => {
+    if (search.notFound) {
+      toast.error("Informe no encontrado");
+      void navigate({ search: { notFound: undefined }, replace: true });
+    }
+  }, [search.notFound, toast, navigate]);
 
   const [selectPatientOpen, setSelectPatientOpen] = useState(false);
   const [createPatientOpen, setCreatePatientOpen] = useState(false);
@@ -190,6 +209,20 @@ function ExamReportsListPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          {canCreate && (
+            <Button
+              aria-label="Editar informe"
+              data-testid={`exam-report-edit-${r.id}`}
+              isIconOnly
+              onPress={() =>
+                void navigate({ to: "/exam-reports/$id", params: { id: String(r.id) } })
+              }
+              size="sm"
+              variant="outline"
+            >
+              <Edit3 className="size-4" />
+            </Button>
+          )}
           <Button
             aria-label="Descargar PDF"
             isIconOnly
