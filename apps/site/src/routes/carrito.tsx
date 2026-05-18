@@ -1,10 +1,14 @@
-import { Alert, Button, Card, NumberField, Spinner } from "@heroui/react";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import type { CartContract } from "@finanzas/orpc-contracts/cart";
+import { Button, Card, NumberField, Spinner } from "@heroui/react";
+import type { InferContractRouterOutputs } from "@orpc/contract";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { Trash2 } from "lucide-react";
 
-import { cartClient } from "@/lib/orpc-client";
 import { shopKeys } from "@/features/shop/queries";
+import { cartClient } from "@/lib/orpc-client";
+
+type CartItem = InferContractRouterOutputs<CartContract>["get"]["data"]["items"][number];
 
 const CLP = new Intl.NumberFormat("es-CL", {
   style: "currency",
@@ -52,15 +56,15 @@ function CarritoPage() {
         <Card variant="secondary">
           <Card.Content className="py-12 text-center">
             <p className="text-foreground/60">Tu carrito está vacío.</p>
-            <Button as={Link} className="mt-4" to="/tienda" variant="primary">
-              Ir a la tienda
-            </Button>
+            <Link className="mt-4 inline-block" to="/tienda">
+              <Button variant="primary">Ir a la tienda</Button>
+            </Link>
           </Card.Content>
         </Card>
       ) : (
         <>
           <div className="space-y-3">
-            {cart.items.map((item) => (
+            {cart.items.map((item: CartItem) => (
               <Card key={item.id}>
                 <Card.Content className="flex items-center gap-4 p-4">
                   <div className="h-20 w-20 flex-shrink-0 overflow-hidden rounded-lg bg-foreground/5">
@@ -137,9 +141,11 @@ function CarritoPage() {
               </div>
             </Card.Content>
             <Card.Footer>
-              <Button as={Link} className="w-full" size="lg" to="/checkout" variant="primary">
-                Ir al checkout
-              </Button>
+              <Link className="block w-full" to="/checkout">
+                <Button className="w-full" size="lg" variant="primary">
+                  Ir al checkout
+                </Button>
+              </Link>
             </Card.Footer>
           </Card>
         </>

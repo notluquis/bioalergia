@@ -1,4 +1,12 @@
-import { Alert, Button, Card, Chip, NumberField, Spinner } from "@heroui/react";
+import {
+  Alert,
+  Button,
+  Card,
+  Chip,
+  Label,
+  NumberField,
+  Spinner,
+} from "@heroui/react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ShoppingCart } from "lucide-react";
@@ -53,8 +61,11 @@ function ProductDetailPage() {
   }
 
   const product = data.data;
+  type ProductImage = NonNullable<typeof product.images>[number];
   const primary =
-    product.images?.find((i) => i.is_primary) ?? product.images?.[0] ?? null;
+    product.images?.find((i: ProductImage) => i.is_primary) ??
+    product.images?.[0] ??
+    null;
   const outOfStock = product.available_qty <= 0;
   const maxQty = Math.min(99, Math.max(0, product.available_qty - product.safety_stock));
 
@@ -130,7 +141,7 @@ function ProductDetailPage() {
                 onChange={(v) => setQty(Number(v))}
                 value={qty}
               >
-                <NumberField.Label className="sr-only">Cantidad</NumberField.Label>
+                <Label className="sr-only">Cantidad</Label>
                 <NumberField.Group>
                   <NumberField.DecrementButton />
                   <NumberField.Input className="w-16 text-center" />

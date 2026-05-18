@@ -64,14 +64,12 @@ export function ProductCard({ product }: { product: Product }) {
         {outOfStock ? (
           <Chip variant="soft">Agotado</Chip>
         ) : (
-          <Button
-            as={Link}
+          <Link
             params={{ slug: product.slug }}
             to="/producto/$slug"
-            variant="primary"
           >
-            Ver producto
-          </Button>
+            <Button variant="primary">Ver producto</Button>
+          </Link>
         )}
       </Card.Footer>
     </Card>

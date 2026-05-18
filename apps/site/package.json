@@ -13,13 +13,14 @@
     "build-storybook": "storybook build",
     "chromatic": "chromatic --project-token=$CHROMATIC_PROJECT_TOKEN --exit-once-uploaded",
     "lint": "oxlint",
-    "type-check": "tsc --noEmit",
+    "type-check": "tsgo --noEmit",
     "format": "oxfmt --write .",
     "format:check": "oxfmt --check .",
     "test": "vitest --passWithNoTests",
     "clean": "rm -rf dist"
   },
   "dependencies": {
+    "@finanzas/orpc-contracts": "workspace:*",
     "@heroui/react": "^3.0.4",
     "@heroui/styles": "^3.0.4",
     "@orpc/client": "^1.14.3",
@@ -28,6 +29,7 @@
     "@tanstack/react-router": "^1.169.2",
     "@tanstack/router-devtools": "^1.166.13",
     "@tanstack/router-vite-plugin": "^1.167.6",
+    "lucide-react": "^1.14.0",
     "posthog-js": "^1.373.3",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",

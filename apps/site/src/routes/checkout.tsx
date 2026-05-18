@@ -19,7 +19,7 @@ function CheckoutPage() {
           </Card.Description>
         </Card.Header>
         <Card.Content>
-          <Alert status="info">
+          <Alert status="accent">
             <Alert.Content>
               <Alert.Description>
                 Estamos terminando la integración de pago. Vuelve pronto.

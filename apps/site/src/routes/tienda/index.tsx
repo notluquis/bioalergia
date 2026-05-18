@@ -1,9 +1,13 @@
+import type { CatalogContract } from "@finanzas/orpc-contracts/catalog";
 import { Card, Spinner } from "@heroui/react";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import type { InferContractRouterOutputs } from "@orpc/contract";
 import { useQuery } from "@tanstack/react-query";
+import { createFileRoute, Link } from "@tanstack/react-router";
 
 import { ProductCard } from "@/features/shop/components/ProductCard";
 import { shopKeys } from "@/features/shop/queries";
+
+type CatalogProduct = InferContractRouterOutputs<CatalogContract>["list"]["data"][number];
 
 function TiendaPage() {
   const { data, isLoading, error } = useQuery(shopKeys.products());
@@ -34,7 +38,7 @@ function TiendaPage() {
       )}
       {data && (
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {data.data.map((p) => (
+          {data.data.map((p: CatalogProduct) => (
             <ProductCard key={p.id} product={p} />
           ))}
         </div>

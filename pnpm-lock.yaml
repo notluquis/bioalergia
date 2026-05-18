@@ -666,6 +666,9 @@ importers:
 
   apps/site:
     dependencies:
+      '@finanzas/orpc-contracts':
+        specifier: workspace:*
+        version: link:../../packages/orpc-contracts
       '@heroui/react':
         specifier: ^3.0.4
         version: 3.0.4(@react-spectrum/provider@3.11.0(react-dom@19.2.6(react@19.2.6))(react@19.2.6))(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)(tailwindcss@4.3.0)
@@ -690,6 +693,9 @@ importers:
       '@tanstack/router-vite-plugin':
         specifier: ^1.167.6
         version: 1.167.6(@tanstack/react-router@1.169.2(react-dom@19.2.6(react@19.2.6))(react@19.2.6))(vite@8.0.12(@types/node@25.7.0)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.47.1)(yaml@2.9.0))
+      lucide-react:
+        specifier: ^1.14.0
+        version: 1.14.0(react@19.2.6)
       posthog-js:
         specifier: ^1.373.3
         version: 1.373.3

@@ -46,6 +46,7 @@ import { Route as AuthedWaCloudAlertasRouteImport } from "./routes/_authed/wa-cl
 import { Route as AuthedSettingsRolesRouteImport } from "./routes/_authed/settings/roles"
 import { Route as AuthedSettingsNotificationsRouteImport } from "./routes/_authed/settings/notifications"
 import { Route as AuthedSettingsMercadopagoRouteImport } from "./routes/_authed/settings/mercadopago"
+import { Route as AuthedSettingsMercadolibreRouteImport } from "./routes/_authed/settings/mercadolibre"
 import { Route as AuthedSettingsInventarioRouteImport } from "./routes/_authed/settings/inventario"
 import { Route as AuthedSettingsHaulmerRouteImport } from "./routes/_authed/settings/haulmer"
 import { Route as AuthedSettingsDoctoraliaRouteImport } from "./routes/_authed/settings/doctoralia"
@@ -63,6 +64,7 @@ import { Route as AuthedOutreachCampanasRouteImport } from "./routes/_authed/out
 import { Route as AuthedOperationsSuppliesRouteImport } from "./routes/_authed/operations/supplies"
 import { Route as AuthedOperationsShipmentsRouteImport } from "./routes/_authed/operations/shipments"
 import { Route as AuthedOperationsInventoryRouteImport } from "./routes/_authed/operations/inventory"
+import { Route as AuthedOperationsCatalogRouteImport } from "./routes/_authed/operations/catalog"
 import { Route as AuthedHrTimesheetsRouteImport } from "./routes/_authed/hr/timesheets"
 import { Route as AuthedHrReportsRouteImport } from "./routes/_authed/hr/reports"
 import { Route as AuthedHrEmployeesRouteImport } from "./routes/_authed/hr/employees"
@@ -288,6 +290,12 @@ const AuthedSettingsMercadopagoRoute =
     path: "/mercadopago",
     getParentRoute: () => AuthedSettingsRoute,
   } as any)
+const AuthedSettingsMercadolibreRoute =
+  AuthedSettingsMercadolibreRouteImport.update({
+    id: "/mercadolibre",
+    path: "/mercadolibre",
+    getParentRoute: () => AuthedSettingsRoute,
+  } as any)
 const AuthedSettingsInventarioRoute =
   AuthedSettingsInventarioRouteImport.update({
     id: "/inventario",
@@ -381,6 +389,11 @@ const AuthedOperationsInventoryRoute =
     path: "/inventory",
     getParentRoute: () => AuthedOperationsRoute,
   } as any)
+const AuthedOperationsCatalogRoute = AuthedOperationsCatalogRouteImport.update({
+  id: "/catalog",
+  path: "/catalog",
+  getParentRoute: () => AuthedOperationsRoute,
+} as any)
 const AuthedHrTimesheetsRoute = AuthedHrTimesheetsRouteImport.update({
   id: "/timesheets",
   path: "/timesheets",
@@ -620,6 +633,7 @@ export interface FileRoutesByFullPath {
   "/hr/employees": typeof AuthedHrEmployeesRoute
   "/hr/reports": typeof AuthedHrReportsRoute
   "/hr/timesheets": typeof AuthedHrTimesheetsRoute
+  "/operations/catalog": typeof AuthedOperationsCatalogRoute
   "/operations/inventory": typeof AuthedOperationsInventoryRoute
   "/operations/shipments": typeof AuthedOperationsShipmentsRoute
   "/operations/supplies": typeof AuthedOperationsSuppliesRoute
@@ -637,6 +651,7 @@ export interface FileRoutesByFullPath {
   "/settings/doctoralia": typeof AuthedSettingsDoctoraliaRoute
   "/settings/haulmer": typeof AuthedSettingsHaulmerRoute
   "/settings/inventario": typeof AuthedSettingsInventarioRoute
+  "/settings/mercadolibre": typeof AuthedSettingsMercadolibreRoute
   "/settings/mercadopago": typeof AuthedSettingsMercadopagoRoute
   "/settings/notifications": typeof AuthedSettingsNotificationsRoute
   "/settings/roles": typeof AuthedSettingsRolesRoute
@@ -705,6 +720,7 @@ export interface FileRoutesByTo {
   "/hr/employees": typeof AuthedHrEmployeesRoute
   "/hr/reports": typeof AuthedHrReportsRoute
   "/hr/timesheets": typeof AuthedHrTimesheetsRoute
+  "/operations/catalog": typeof AuthedOperationsCatalogRoute
   "/operations/inventory": typeof AuthedOperationsInventoryRoute
   "/operations/shipments": typeof AuthedOperationsShipmentsRoute
   "/operations/supplies": typeof AuthedOperationsSuppliesRoute
@@ -722,6 +738,7 @@ export interface FileRoutesByTo {
   "/settings/doctoralia": typeof AuthedSettingsDoctoraliaRoute
   "/settings/haulmer": typeof AuthedSettingsHaulmerRoute
   "/settings/inventario": typeof AuthedSettingsInventarioRoute
+  "/settings/mercadolibre": typeof AuthedSettingsMercadolibreRoute
   "/settings/mercadopago": typeof AuthedSettingsMercadopagoRoute
   "/settings/notifications": typeof AuthedSettingsNotificationsRoute
   "/settings/roles": typeof AuthedSettingsRolesRoute
@@ -798,6 +815,7 @@ export interface FileRoutesById {
   "/_authed/hr/employees": typeof AuthedHrEmployeesRoute
   "/_authed/hr/reports": typeof AuthedHrReportsRoute
   "/_authed/hr/timesheets": typeof AuthedHrTimesheetsRoute
+  "/_authed/operations/catalog": typeof AuthedOperationsCatalogRoute
   "/_authed/operations/inventory": typeof AuthedOperationsInventoryRoute
   "/_authed/operations/shipments": typeof AuthedOperationsShipmentsRoute
   "/_authed/operations/supplies": typeof AuthedOperationsSuppliesRoute
@@ -815,6 +833,7 @@ export interface FileRoutesById {
   "/_authed/settings/doctoralia": typeof AuthedSettingsDoctoraliaRoute
   "/_authed/settings/haulmer": typeof AuthedSettingsHaulmerRoute
   "/_authed/settings/inventario": typeof AuthedSettingsInventarioRoute
+  "/_authed/settings/mercadolibre": typeof AuthedSettingsMercadolibreRoute
   "/_authed/settings/mercadopago": typeof AuthedSettingsMercadopagoRoute
   "/_authed/settings/notifications": typeof AuthedSettingsNotificationsRoute
   "/_authed/settings/roles": typeof AuthedSettingsRolesRoute
@@ -891,6 +910,7 @@ export interface FileRouteTypes {
     | "/hr/employees"
     | "/hr/reports"
     | "/hr/timesheets"
+    | "/operations/catalog"
     | "/operations/inventory"
     | "/operations/shipments"
     | "/operations/supplies"
@@ -908,6 +928,7 @@ export interface FileRouteTypes {
     | "/settings/doctoralia"
     | "/settings/haulmer"
     | "/settings/inventario"
+    | "/settings/mercadolibre"
     | "/settings/mercadopago"
     | "/settings/notifications"
     | "/settings/roles"
@@ -976,6 +997,7 @@ export interface FileRouteTypes {
     | "/hr/employees"
     | "/hr/reports"
     | "/hr/timesheets"
+    | "/operations/catalog"
     | "/operations/inventory"
     | "/operations/shipments"
     | "/operations/supplies"
@@ -993,6 +1015,7 @@ export interface FileRouteTypes {
     | "/settings/doctoralia"
     | "/settings/haulmer"
     | "/settings/inventario"
+    | "/settings/mercadolibre"
     | "/settings/mercadopago"
     | "/settings/notifications"
     | "/settings/roles"
@@ -1068,6 +1091,7 @@ export interface FileRouteTypes {
     | "/_authed/hr/employees"
     | "/_authed/hr/reports"
     | "/_authed/hr/timesheets"
+    | "/_authed/operations/catalog"
     | "/_authed/operations/inventory"
     | "/_authed/operations/shipments"
     | "/_authed/operations/supplies"
@@ -1085,6 +1109,7 @@ export interface FileRouteTypes {
     | "/_authed/settings/doctoralia"
     | "/_authed/settings/haulmer"
     | "/_authed/settings/inventario"
+    | "/_authed/settings/mercadolibre"
     | "/_authed/settings/mercadopago"
     | "/_authed/settings/notifications"
     | "/_authed/settings/roles"
@@ -1385,6 +1410,13 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof AuthedSettingsMercadopagoRouteImport
       parentRoute: typeof AuthedSettingsRoute
     }
+    "/_authed/settings/mercadolibre": {
+      id: "/_authed/settings/mercadolibre"
+      path: "/mercadolibre"
+      fullPath: "/settings/mercadolibre"
+      preLoaderRoute: typeof AuthedSettingsMercadolibreRouteImport
+      parentRoute: typeof AuthedSettingsRoute
+    }
     "/_authed/settings/inventario": {
       id: "/_authed/settings/inventario"
       path: "/inventario"
@@ -1502,6 +1534,13 @@ declare module "@tanstack/react-router" {
       path: "/inventory"
       fullPath: "/operations/inventory"
       preLoaderRoute: typeof AuthedOperationsInventoryRouteImport
+      parentRoute: typeof AuthedOperationsRoute
+    }
+    "/_authed/operations/catalog": {
+      id: "/_authed/operations/catalog"
+      path: "/catalog"
+      fullPath: "/operations/catalog"
+      preLoaderRoute: typeof AuthedOperationsCatalogRouteImport
       parentRoute: typeof AuthedOperationsRoute
     }
     "/_authed/hr/timesheets": {
@@ -1875,12 +1914,14 @@ const AuthedHrRouteWithChildren = AuthedHrRoute._addFileChildren(
 )
 
 interface AuthedOperationsRouteChildren {
+  AuthedOperationsCatalogRoute: typeof AuthedOperationsCatalogRoute
   AuthedOperationsInventoryRoute: typeof AuthedOperationsInventoryRoute
   AuthedOperationsShipmentsRoute: typeof AuthedOperationsShipmentsRoute
   AuthedOperationsSuppliesRoute: typeof AuthedOperationsSuppliesRoute
 }
 
 const AuthedOperationsRouteChildren: AuthedOperationsRouteChildren = {
+  AuthedOperationsCatalogRoute: AuthedOperationsCatalogRoute,
   AuthedOperationsInventoryRoute: AuthedOperationsInventoryRoute,
   AuthedOperationsShipmentsRoute: AuthedOperationsShipmentsRoute,
   AuthedOperationsSuppliesRoute: AuthedOperationsSuppliesRoute,
@@ -1965,6 +2006,7 @@ interface AuthedSettingsRouteChildren {
   AuthedSettingsDoctoraliaRoute: typeof AuthedSettingsDoctoraliaRoute
   AuthedSettingsHaulmerRoute: typeof AuthedSettingsHaulmerRoute
   AuthedSettingsInventarioRoute: typeof AuthedSettingsInventarioRoute
+  AuthedSettingsMercadolibreRoute: typeof AuthedSettingsMercadolibreRoute
   AuthedSettingsMercadopagoRoute: typeof AuthedSettingsMercadopagoRoute
   AuthedSettingsNotificationsRoute: typeof AuthedSettingsNotificationsRoute
   AuthedSettingsRolesRoute: typeof AuthedSettingsRolesRoute
@@ -1982,6 +2024,7 @@ const AuthedSettingsRouteChildren: AuthedSettingsRouteChildren = {
   AuthedSettingsDoctoraliaRoute: AuthedSettingsDoctoraliaRoute,
   AuthedSettingsHaulmerRoute: AuthedSettingsHaulmerRoute,
   AuthedSettingsInventarioRoute: AuthedSettingsInventarioRoute,
+  AuthedSettingsMercadolibreRoute: AuthedSettingsMercadolibreRoute,
   AuthedSettingsMercadopagoRoute: AuthedSettingsMercadopagoRoute,
   AuthedSettingsNotificationsRoute: AuthedSettingsNotificationsRoute,
   AuthedSettingsRolesRoute: AuthedSettingsRolesRoute,
