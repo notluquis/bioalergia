@@ -90,7 +90,9 @@ function PatientDetailsPage() {
 
   const queryStateView = renderPatientQueryState({
     isLoading,
-    navigateBack: () => navigate({ to: "/patients" }),
+    navigateBack: () => {
+      void navigate({ to: "/patients" });
+    },
     patient: patientData,
   });
   if (queryStateView) {
@@ -284,12 +286,12 @@ function PatientDetailsPage() {
                     <Button
                       size="sm"
                       className="gap-2"
-                      onPress={() =>
-                        navigate({
+                      onPress={() => {
+                        void navigate({
                           to: "/patients/$id/new-budget",
                           params: { id: String(id) },
-                        })
-                      }
+                        });
+                      }}
                     >
                       <PlusCircle size={16} />
                       Nuevo Presupuesto
@@ -314,12 +316,12 @@ function PatientDetailsPage() {
                     <Button
                       size="sm"
                       className="gap-2"
-                      onPress={() =>
-                        navigate({
+                      onPress={() => {
+                        void navigate({
                           to: "/patients/$id/new-payment",
                           params: { id: String(id) },
-                        })
-                      }
+                        });
+                      }}
                     >
                       <PlusCircle size={16} />
                       Registrar Pago
@@ -487,14 +489,17 @@ function PatientDetailsHeader({
   navigate: ReturnType<typeof useNavigate>;
   person: Person;
 }) {
-  const goBackToPatients = () => navigate({ to: "/patients" });
-  const goToNewConsultation = () =>
-    navigate({
+  const goBackToPatients = () => {
+    void navigate({ to: "/patients" });
+  };
+  const goToNewConsultation = () => {
+    void navigate({
       to: "/patients/$id/new-consultation",
       params: { id: String(id) },
     });
-  const goToMedicalCertificate = () =>
-    navigate({
+  };
+  const goToMedicalCertificate = () => {
+    void navigate({
       to: "/certificates/medical",
       search: {
         patientName: person.names,
@@ -503,6 +508,7 @@ function PatientDetailsHeader({
         birthDate: birthDate || undefined,
       },
     });
+  };
 
   return (
     <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">

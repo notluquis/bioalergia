@@ -169,7 +169,9 @@ export function InventoryPage() {
                 <InventoryItemForm
                   item={editingItem}
                   onCancel={closeModal}
-                  onSave={handleSaveItem}
+                  onSave={(...args) => {
+                    void handleSaveItem(...args);
+                  }}
                   saving={saving}
                 />
               </Modal.Body>
@@ -198,7 +200,9 @@ export function InventoryPage() {
                   <AdjustStockForm
                     item={itemForStockAdjust}
                     onCancel={closeModal}
-                    onSave={handleAdjustStock}
+                    onSave={(...args) => {
+                      void handleAdjustStock(...args);
+                    }}
                     saving={saving}
                   />
                 </Modal.Body>

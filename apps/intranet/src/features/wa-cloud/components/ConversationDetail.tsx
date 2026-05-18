@@ -543,22 +543,24 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
             onPhoneChange={setPhoneId}
             onOpenGallery={() => setGalleryOpen(true)}
             onRelease={() => updateConv.mutate({ id: conversationId, assignedToUserId: null })}
-            onBlock={async () => {
-              if (!phoneId) {
-                toast.error("Selecciona un número primero");
-                return;
-              }
-              const ok = await confirmAction({
-                title: "Bloquear contacto",
-                description: "El contacto no podrá enviarte mensajes hasta que lo desbloquees.",
-                confirmLabel: "Bloquear",
-                variant: "danger",
-              });
-              if (!ok) return;
-              blockContact.mutate({
-                conversationId,
-                phoneNumberId: Number(phoneId),
-              });
+            onBlock={() => {
+              void (async () => {
+                if (!phoneId) {
+                  toast.error("Selecciona un número primero");
+                  return;
+                }
+                const ok = await confirmAction({
+                  title: "Bloquear contacto",
+                  description: "El contacto no podrá enviarte mensajes hasta que lo desbloquees.",
+                  confirmLabel: "Bloquear",
+                  variant: "danger",
+                });
+                if (!ok) return;
+                blockContact.mutate({
+                  conversationId,
+                  phoneNumberId: Number(phoneId),
+                });
+              })();
             }}
             blockPending={blockContact.isPending}
           />
@@ -612,27 +614,29 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
             <Button
               size="sm"
               variant="outline"
-              onPress={async () => {
-                if (!phoneId) {
-                  toast.error("Selecciona un número primero");
-                  return;
-                }
-                const ok = await confirmAction({
-                  title: "Desbloquear contacto",
-                  description: "Volverá a poder enviarte mensajes en WhatsApp.",
-                  confirmLabel: "Desbloquear",
-                });
-                if (!ok) return;
-                blockContact.reset();
-                void unblockContactMut
-                  .mutateAsync({
-                    conversationId,
-                    phoneNumberId: Number(phoneId),
-                  })
-                  .then(() => {
-                    toast.success("Contacto desbloqueado");
-                  })
-                  .catch((e) => toast.error(`Error: ${String(e)}`));
+              onPress={() => {
+                void (async () => {
+                  if (!phoneId) {
+                    toast.error("Selecciona un número primero");
+                    return;
+                  }
+                  const ok = await confirmAction({
+                    title: "Desbloquear contacto",
+                    description: "Volverá a poder enviarte mensajes en WhatsApp.",
+                    confirmLabel: "Desbloquear",
+                  });
+                  if (!ok) return;
+                  blockContact.reset();
+                  void unblockContactMut
+                    .mutateAsync({
+                      conversationId,
+                      phoneNumberId: Number(phoneId),
+                    })
+                    .then(() => {
+                      toast.success("Contacto desbloqueado");
+                    })
+                    .catch((e) => toast.error(`Error: ${String(e)}`));
+                })();
               }}
             >
               Desbloquear
@@ -666,7 +670,9 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
               onSwitchTemplate={() => setMode("template")}
               replyTo={replyTo}
               onCancelReply={() => setReplyTo(null)}
-              onAttachFile={handleAttachFile}
+              onAttachFile={(...args) => {
+                void handleAttachFile(...args);
+              }}
               attachPending={sendMedia.isPending}
               onOpenFlow={() => setFlowOpen(true)}
               onOpenLocation={() => setLocationOpen(true)}
@@ -704,7 +710,9 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
               copyCodeButtonIndex={copyCodeButtonIndex}
               phoneId={phoneId}
               isPending={sendTemplate.isPending}
-              onSend={handleSendTemplate}
+              onSend={(...args) => {
+                void handleSendTemplate(...args);
+              }}
               onSwitchText={c.windowOpen ? () => setMode("text") : undefined}
             />
           )}

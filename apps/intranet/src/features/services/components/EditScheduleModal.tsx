@@ -77,7 +77,13 @@ export function EditScheduleModal({ isOpen, onClose, schedule }: EditScheduleMod
             <Modal.Heading>Editar cuota</Modal.Heading>
           </Modal.Header>
           <Modal.Body>
-            <Form className="flex flex-col gap-4" onSubmit={handleSubmit} validationBehavior="aria">
+            <Form
+              className="flex flex-col gap-4"
+              onSubmit={(e) => {
+                void handleSubmit(e);
+              }}
+              validationBehavior="aria"
+            >
               <DatePicker
                 defaultValue={parseDate(dayjs(schedule.dueDate).format("YYYY-MM-DD"))}
                 isRequired

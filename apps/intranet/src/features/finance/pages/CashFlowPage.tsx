@@ -2990,7 +2990,9 @@ export function CashFlowPage() {
                                       size="sm"
                                       variant="outline"
                                       className="text-danger"
-                                      onPress={() => handleDeleteCategory(category)}
+                                      onPress={() => {
+                                        void handleDeleteCategory(category);
+                                      }}
                                       isPending={deleteCategoryMutation.isPending}
                                     >
                                       Eliminar
@@ -3704,7 +3706,9 @@ export function CashFlowPage() {
                                     variant="outline"
                                     className="text-danger"
                                     isPending={deleteAutoCategoryRuleMutation.isPending}
-                                    onPress={() => handleDeleteRule(rule)}
+                                    onPress={() => {
+                                      void handleDeleteRule(rule);
+                                    }}
                                   >
                                     Eliminar
                                   </Button>

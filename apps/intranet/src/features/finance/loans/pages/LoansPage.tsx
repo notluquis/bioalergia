@@ -219,7 +219,9 @@ export function LoansPage() {
                 loanId={selectedId}
                 onRegenerate={handleRegenerate}
                 onRegisterPayment={openPaymentModal}
-                onUnlinkPayment={handleUnlink}
+                onUnlinkPayment={(...args) => {
+                  void handleUnlink(...args);
+                }}
               />
             </Suspense>
           )}
@@ -285,7 +287,9 @@ export function LoansPage() {
                 {paymentSchedule && (
                   <Form
                     className="space-y-4"
-                    onSubmit={handlePaymentSubmit}
+                    onSubmit={(e) => {
+                      void handlePaymentSubmit(e);
+                    }}
                     validationBehavior="aria"
                   >
                     <TextField isRequired>

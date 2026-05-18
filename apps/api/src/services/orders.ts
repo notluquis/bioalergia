@@ -33,7 +33,11 @@ export async function createOrderFromCart(input: CreateOrderInput) {
     throw new Error("Carrito vacío");
   }
 
-  const subtotal = cart.items.reduce((acc, i) => acc + i.unitPriceClp * i.qty, 0);
+  type CartItem = (typeof cart.items)[number];
+  const subtotal = cart.items.reduce(
+    (acc: number, i: CartItem) => acc + i.unitPriceClp * i.qty,
+    0,
+  );
   const total = subtotal + input.shippingClp;
 
   return await db.order.create({
@@ -54,7 +58,7 @@ export async function createOrderFromCart(input: CreateOrderInput) {
       channel: "WEB",
       notes: input.notes ?? null,
       items: {
-        create: cart.items.map((it) => ({
+        create: cart.items.map((it: CartItem) => ({
           productId: it.productId,
           productSnapshot: {
             sku: it.product.sku,

@@ -91,7 +91,13 @@ function AddPatientPage() {
   return (
     <section className="mx-auto max-w-4xl space-y-8">
       <div className="flex justify-end">
-        <Button variant="outline" onPress={() => navigate({ to: "/patients" })} className="gap-2">
+        <Button
+          variant="outline"
+          onPress={() => {
+            void navigate({ to: "/patients" });
+          }}
+          className="gap-2"
+        >
           <X size={18} />
           Cancelar
         </Button>
@@ -292,7 +298,13 @@ function AddPatientPage() {
         </Card>
 
         <div className="flex justify-end gap-3">
-          <Button type="button" variant="outline" onPress={() => navigate({ to: "/patients" })}>
+          <Button
+            type="button"
+            variant="outline"
+            onPress={() => {
+              void navigate({ to: "/patients" });
+            }}
+          >
             Cancelar
           </Button>
           <form.Subscribe selector={(state) => [state.canSubmit, state.isSubmitting]}>

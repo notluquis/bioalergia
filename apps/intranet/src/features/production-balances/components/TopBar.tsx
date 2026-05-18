@@ -66,7 +66,9 @@ export function TopBar({ date, isSaving, onSave, status }: TopBarProps) {
         <Button
           className="h-11 w-full shrink-0 gap-2 rounded-2xl px-4 sm:w-auto"
           isPending={isSaving}
-          onPress={onSave}
+          onPress={() => {
+            void onSave();
+          }}
           size="sm"
           variant="primary"
         >

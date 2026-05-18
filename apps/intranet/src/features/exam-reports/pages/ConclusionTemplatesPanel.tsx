@@ -164,16 +164,18 @@ export function ConclusionTemplatesPanel() {
                 <Button
                   aria-label="Eliminar"
                   isIconOnly
-                  onPress={async () => {
-                    const ok = await confirmDialog({
-                      title: "Eliminar plantilla",
-                      description:
-                        "¿Eliminar esta plantilla de conclusión? Los informes ya creados conservan su texto.",
-                      confirmLabel: "Eliminar",
-                      confirmVariant: "danger",
-                      status: "danger",
-                    });
-                    if (ok) remove.mutate(t.id);
+                  onPress={() => {
+                    void (async () => {
+                      const ok = await confirmDialog({
+                        title: "Eliminar plantilla",
+                        description:
+                          "¿Eliminar esta plantilla de conclusión? Los informes ya creados conservan su texto.",
+                        confirmLabel: "Eliminar",
+                        confirmVariant: "danger",
+                        status: "danger",
+                      });
+                      if (ok) remove.mutate(t.id);
+                    })();
                   }}
                   size="sm"
                   variant="danger"

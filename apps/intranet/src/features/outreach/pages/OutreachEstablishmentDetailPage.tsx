@@ -269,25 +269,27 @@ export function OutreachEstablishmentDetailPage() {
         <Card.Content className="space-y-3 p-4">
           {showContactForm && (
             <form
-              onSubmit={async (ev) => {
+              onSubmit={(ev) => {
                 ev.preventDefault();
                 if (!contactDraft.nombre || !contactDraft.cargo) return;
-                await upsertContact.mutateAsync({
-                  establecimientoRbd: e.rbd,
-                  nombre: contactDraft.nombre,
-                  cargo: contactDraft.cargo,
-                  email: contactDraft.email || null,
-                  telefono: contactDraft.telefono || null,
-                  esPrincipal: contactDraft.esPrincipal,
-                });
-                setContactDraft({
-                  nombre: "",
-                  cargo: "",
-                  email: "",
-                  telefono: "",
-                  esPrincipal: false,
-                });
-                setShowContactForm(false);
+                void (async () => {
+                  await upsertContact.mutateAsync({
+                    establecimientoRbd: e.rbd,
+                    nombre: contactDraft.nombre,
+                    cargo: contactDraft.cargo,
+                    email: contactDraft.email || null,
+                    telefono: contactDraft.telefono || null,
+                    esPrincipal: contactDraft.esPrincipal,
+                  });
+                  setContactDraft({
+                    nombre: "",
+                    cargo: "",
+                    email: "",
+                    telefono: "",
+                    esPrincipal: false,
+                  });
+                  setShowContactForm(false);
+                })();
               }}
               className="grid grid-cols-1 gap-3 rounded-medium bg-default-100 p-3 md:grid-cols-2"
             >
@@ -372,27 +374,29 @@ export function OutreachEstablishmentDetailPage() {
         <Card.Content className="space-y-3 p-4">
           {showInterForm && (
             <form
-              onSubmit={async (ev) => {
+              onSubmit={(ev) => {
                 ev.preventDefault();
                 if (!interDraft.contenido) return;
-                await createInter.mutateAsync({
-                  establecimientoRbd: e.rbd,
-                  tipo: interDraft.tipo,
-                  fecha: new Date(interDraft.fecha),
-                  contenido: interDraft.contenido,
-                  contactoId: interDraft.contactoId
-                    ? Number.parseInt(interDraft.contactoId, 10)
-                    : null,
-                  resultado: interDraft.resultado || null,
-                });
-                setInterDraft({
-                  tipo: "LLAMADA_REALIZADA",
-                  fecha: dayjs().format("YYYY-MM-DDTHH:mm"),
-                  contenido: "",
-                  contactoId: "",
-                  resultado: "",
-                });
-                setShowInterForm(false);
+                void (async () => {
+                  await createInter.mutateAsync({
+                    establecimientoRbd: e.rbd,
+                    tipo: interDraft.tipo,
+                    fecha: new Date(interDraft.fecha),
+                    contenido: interDraft.contenido,
+                    contactoId: interDraft.contactoId
+                      ? Number.parseInt(interDraft.contactoId, 10)
+                      : null,
+                    resultado: interDraft.resultado || null,
+                  });
+                  setInterDraft({
+                    tipo: "LLAMADA_REALIZADA",
+                    fecha: dayjs().format("YYYY-MM-DDTHH:mm"),
+                    contenido: "",
+                    contactoId: "",
+                    resultado: "",
+                  });
+                  setShowInterForm(false);
+                })();
               }}
               className="grid grid-cols-1 gap-3 rounded-medium bg-default-100 p-3 md:grid-cols-2"
             >

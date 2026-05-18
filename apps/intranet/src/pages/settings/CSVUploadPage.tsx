@@ -1765,7 +1765,9 @@ export function CSVUploadPage() {
       {!isDoctoraliaCalendar && (
         <FileUploadSection
           disabled={isProcessing}
-          onFileChange={handleFileChange}
+          onFileChange={(...args) => {
+            void handleFileChange(...args);
+          }}
           selectedTable={selectedTable}
         />
       )}
@@ -1795,7 +1797,9 @@ export function CSVUploadPage() {
         !hasLoadedUpdateDetails && (
           <UpdateDetailLoaderCard
             isLoading={isLoadingUpdateDetails}
-            onLoad={handleLoadUpdateDetails}
+            onLoad={(...args) => {
+              void handleLoadUpdateDetails(...args);
+            }}
             pendingUpdates={batchPreviewData?.toUpdate ?? 0}
           />
         )}
@@ -1806,7 +1810,9 @@ export function CSVUploadPage() {
         updateCandidateRows.length > 0 && (
           <UpdateSelectionCard
             isLoadingDetails={isLoadingUpdateDetails}
-            onLoadDetails={handleLoadUpdateDetails}
+            onLoadDetails={(...args) => {
+              void handleLoadUpdateDetails(...args);
+            }}
             onSelectionChange={setUpdateRowSelection}
             rowSelection={updateRowSelection}
             rows={updateCandidateRows}
@@ -1825,8 +1831,12 @@ export function CSVUploadPage() {
           hasPreviewData={hasPreviewData}
           isProcessing={isProcessing}
           isValidMapping={isValidMapping}
-          onImport={handleImport}
-          onPreview={handlePreview}
+          onImport={(...args) => {
+            void handleImport(...args);
+          }}
+          onPreview={(...args) => {
+            void handlePreview(...args);
+          }}
           pendingImportCount={pendingImportCount}
           processingLabel={processingLabel}
           uploadedFilesCount={uploadedFiles.length}

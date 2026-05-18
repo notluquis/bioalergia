@@ -369,7 +369,13 @@ export function ServiceForm({ initialValues, onCancel, onSubmit, submitLabel }: 
   };
 
   return (
-    <Form className="space-y-6" onSubmit={handleSubmit} validationBehavior="aria">
+    <Form
+      className="space-y-6"
+      onSubmit={(e) => {
+        void handleSubmit(e);
+      }}
+      validationBehavior="aria"
+    >
       <BasicInfoSection
         category={form.category}
         categoryOptions={categoryOptions}

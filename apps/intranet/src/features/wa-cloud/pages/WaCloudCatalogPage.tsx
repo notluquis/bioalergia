@@ -175,16 +175,18 @@ function LocationsTab() {
                             variant="danger-soft"
                             isIconOnly
                             aria-label="Archivar"
-                            onPress={async () => {
-                              const ok = await confirmAction({
-                                title: "Archivar elemento",
-                                description:
-                                  "Quedará oculto del catálogo activo. Se puede restaurar luego.",
-                                confirmLabel: "Archivar",
-                                variant: "danger",
-                              });
-                              if (!ok) return;
-                              archive.mutate(l.id);
+                            onPress={() => {
+                              void (async () => {
+                                const ok = await confirmAction({
+                                  title: "Archivar elemento",
+                                  description:
+                                    "Quedará oculto del catálogo activo. Se puede restaurar luego.",
+                                  confirmLabel: "Archivar",
+                                  variant: "danger",
+                                });
+                                if (!ok) return;
+                                archive.mutate(l.id);
+                              })();
                             }}
                           >
                             <Trash2 size={12} />
@@ -305,7 +307,12 @@ function LocationEditModal({
                 <X size={14} />
                 Cancelar
               </Button>
-              <Button onPress={submit} isPending={upsert.isPending}>
+              <Button
+                onPress={() => {
+                  void submit();
+                }}
+                isPending={upsert.isPending}
+              >
                 <CheckCircle2 size={14} />
                 Guardar
               </Button>
@@ -420,16 +427,18 @@ function ListsTab() {
                             variant="danger-soft"
                             isIconOnly
                             aria-label="Archivar"
-                            onPress={async () => {
-                              const ok = await confirmAction({
-                                title: "Archivar elemento",
-                                description:
-                                  "Quedará oculto del catálogo activo. Se puede restaurar luego.",
-                                confirmLabel: "Archivar",
-                                variant: "danger",
-                              });
-                              if (!ok) return;
-                              archive.mutate(l.id);
+                            onPress={() => {
+                              void (async () => {
+                                const ok = await confirmAction({
+                                  title: "Archivar elemento",
+                                  description:
+                                    "Quedará oculto del catálogo activo. Se puede restaurar luego.",
+                                  confirmLabel: "Archivar",
+                                  variant: "danger",
+                                });
+                                if (!ok) return;
+                                archive.mutate(l.id);
+                              })();
                             }}
                           >
                             <Trash2 size={12} />
@@ -572,7 +581,12 @@ function ListEditModal({
               <Button variant="outline" onPress={onClose}>
                 <X size={14} /> Cancelar
               </Button>
-              <Button onPress={submit} isPending={upsert.isPending}>
+              <Button
+                onPress={() => {
+                  void submit();
+                }}
+                isPending={upsert.isPending}
+              >
                 <CheckCircle2 size={14} /> Guardar
               </Button>
             </Modal.Footer>
@@ -730,16 +744,18 @@ function FlowsTab() {
                             variant="danger-soft"
                             isIconOnly
                             aria-label="Archivar"
-                            onPress={async () => {
-                              const ok = await confirmAction({
-                                title: "Archivar elemento",
-                                description:
-                                  "Quedará oculto del catálogo activo. Se puede restaurar luego.",
-                                confirmLabel: "Archivar",
-                                variant: "danger",
-                              });
-                              if (!ok) return;
-                              archive.mutate(f.id);
+                            onPress={() => {
+                              void (async () => {
+                                const ok = await confirmAction({
+                                  title: "Archivar elemento",
+                                  description:
+                                    "Quedará oculto del catálogo activo. Se puede restaurar luego.",
+                                  confirmLabel: "Archivar",
+                                  variant: "danger",
+                                });
+                                if (!ok) return;
+                                archive.mutate(f.id);
+                              })();
                             }}
                           >
                             <Trash2 size={12} />
@@ -864,7 +880,12 @@ function FlowEditModal({
               <Button variant="outline" onPress={onClose}>
                 <X size={14} /> Cancelar
               </Button>
-              <Button onPress={submit} isPending={upsert.isPending}>
+              <Button
+                onPress={() => {
+                  void submit();
+                }}
+                isPending={upsert.isPending}
+              >
                 <CheckCircle2 size={14} /> Guardar
               </Button>
             </Modal.Footer>
@@ -1047,16 +1068,18 @@ function SnippetsTab() {
                             variant="danger-soft"
                             isIconOnly
                             aria-label="Archivar"
-                            onPress={async () => {
-                              const ok = await confirmAction({
-                                title: "Archivar elemento",
-                                description:
-                                  "Quedará oculto del catálogo activo. Se puede restaurar luego.",
-                                confirmLabel: "Archivar",
-                                variant: "danger",
-                              });
-                              if (!ok) return;
-                              archive.mutate(s.id);
+                            onPress={() => {
+                              void (async () => {
+                                const ok = await confirmAction({
+                                  title: "Archivar elemento",
+                                  description:
+                                    "Quedará oculto del catálogo activo. Se puede restaurar luego.",
+                                  confirmLabel: "Archivar",
+                                  variant: "danger",
+                                });
+                                if (!ok) return;
+                                archive.mutate(s.id);
+                              })();
                             }}
                           >
                             <Trash2 size={12} />
@@ -1342,7 +1365,12 @@ function SnippetEditModal({ target, onClose }: { target: SnippetEditState; onClo
               <Button variant="outline" onPress={onClose}>
                 <X size={14} /> Cancelar
               </Button>
-              <Button onPress={submit} isPending={upsert.isPending}>
+              <Button
+                onPress={() => {
+                  void submit();
+                }}
+                isPending={upsert.isPending}
+              >
                 <CheckCircle2 size={14} /> Guardar
               </Button>
             </Modal.Footer>

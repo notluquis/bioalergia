@@ -24,7 +24,12 @@ export function Supplies() {
                 Selecciona el insumo y añade observaciones para el equipo de compras.
               </p>
             </div>
-            <SupplyRequestForm commonSupplies={commonSupplies} onSuccess={refresh} />
+            <SupplyRequestForm
+              commonSupplies={commonSupplies}
+              onSuccess={() => {
+                void refresh();
+              }}
+            />
           </div>
         </Surface>
       )}
@@ -45,7 +50,13 @@ export function Supplies() {
         </div>
         <div className="mt-4">
           <SupplyRequestsTable
-            onStatusChange={canUpdate ? handleStatusChange : () => undefined}
+            onStatusChange={
+              canUpdate
+                ? (...args) => {
+                    void handleStatusChange(...args);
+                  }
+                : () => undefined
+            }
             requests={requests}
           />
         </div>

@@ -695,7 +695,9 @@ export function CounterpartsPage() {
                     </Button>
                     <Button
                       isDisabled={!derived.assignRutIsValid}
-                      onPress={actions.handleAssignRutToPayout}
+                      onPress={() => {
+                        void actions.handleAssignRutToPayout();
+                      }}
                     >
                       Confirmar asignación
                     </Button>

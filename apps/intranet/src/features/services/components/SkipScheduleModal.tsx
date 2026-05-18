@@ -61,7 +61,9 @@ export function SkipScheduleModal({ isOpen, onClose, schedule }: SkipScheduleMod
 
               <Form
                 className="flex flex-col gap-4"
-                onSubmit={handleSubmit}
+                onSubmit={(e) => {
+                  void handleSubmit(e);
+                }}
                 validationBehavior="aria"
               >
                 <TextField isRequired name="reason" maxLength={500}>

@@ -136,19 +136,21 @@ export function ServicesOverviewContent() {
           {canManage && (
             <Button
               isDisabled={syncAllTransactionsPending}
-              onPress={async () => {
-                setSyncError(null);
-                setSyncMessage(null);
-                try {
-                  const result = await handleSyncAllTransactions();
-                  setSyncMessage(
-                    `Sync servicios: ${result.matchedSchedules} vinculadas de ${result.processedSchedules} cuotas.`
-                  );
-                } catch (error_) {
-                  const message =
-                    error_ instanceof Error ? error_.message : "No se pudo sincronizar servicios";
-                  setSyncError(message);
-                }
+              onPress={() => {
+                void (async () => {
+                  setSyncError(null);
+                  setSyncMessage(null);
+                  try {
+                    const result = await handleSyncAllTransactions();
+                    setSyncMessage(
+                      `Sync servicios: ${result.matchedSchedules} vinculadas de ${result.processedSchedules} cuotas.`
+                    );
+                  } catch (error_) {
+                    const message =
+                      error_ instanceof Error ? error_.message : "No se pudo sincronizar servicios";
+                    setSyncError(message);
+                  }
+                })();
               }}
               size="sm"
               variant="secondary"
@@ -222,24 +224,26 @@ export function ServicesOverviewContent() {
             <div className="flex justify-end">
               <Button
                 isDisabled={syncServiceTransactionsPending}
-                onPress={async () => {
-                  setSyncError(null);
-                  setSyncMessage(null);
-                  try {
-                    const result = await handleSyncSelectedServiceTransactions();
-                    if (!result) {
-                      return;
+                onPress={() => {
+                  void (async () => {
+                    setSyncError(null);
+                    setSyncMessage(null);
+                    try {
+                      const result = await handleSyncSelectedServiceTransactions();
+                      if (!result) {
+                        return;
+                      }
+                      setSyncMessage(
+                        `Sync ${selectedService.name}: ${result.matchedSchedules} vinculadas de ${result.processedSchedules} cuotas.`
+                      );
+                    } catch (error_) {
+                      const message =
+                        error_ instanceof Error
+                          ? error_.message
+                          : "No se pudo sincronizar el servicio";
+                      setSyncError(message);
                     }
-                    setSyncMessage(
-                      `Sync ${selectedService.name}: ${result.matchedSchedules} vinculadas de ${result.processedSchedules} cuotas.`
-                    );
-                  } catch (error_) {
-                    const message =
-                      error_ instanceof Error
-                        ? error_.message
-                        : "No se pudo sincronizar el servicio";
-                    setSyncError(message);
-                  }
+                  })();
                 }}
                 size="sm"
                 variant="secondary"
@@ -255,7 +259,9 @@ export function ServicesOverviewContent() {
             onRegenerate={handleRegenerate}
             onRegisterPayment={openPaymentModal}
             onSkipSchedule={(schedule) => handleSkipSchedule(selectedService.publicId, schedule)}
-            onUnlinkPayment={handleUnlink}
+            onUnlinkPayment={(...args) => {
+              void handleUnlink(...args);
+            }}
             schedules={schedules}
             service={selectedService}
           />
@@ -307,7 +313,9 @@ export function ServicesOverviewContent() {
               {paymentSchedule && (
                 <Form
                   className="space-y-4"
-                  onSubmit={handlePaymentSubmit}
+                  onSubmit={(e) => {
+                    void handlePaymentSubmit(e);
+                  }}
                   validationBehavior="aria"
                 >
                   <TextField isRequired name="transactionId">

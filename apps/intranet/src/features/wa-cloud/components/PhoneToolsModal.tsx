@@ -274,7 +274,12 @@ function ProfileCard({ phoneNumberId }: { phoneNumberId: number }) {
               placeholder="https://bioalergia.cl"
             />
             <div className="flex justify-end pt-2">
-              <Button onPress={save} isPending={update.isPending}>
+              <Button
+                onPress={() => {
+                  void save();
+                }}
+                isPending={update.isPending}
+              >
                 {update.isSuccess ? <Check size={14} /> : <Save size={14} />}
                 Guardar perfil
               </Button>
@@ -372,7 +377,9 @@ function ProfilePictureCard({ phoneNumberId }: { phoneNumberId: number }) {
             URL.revokeObjectURL(cropTarget);
             setCropTarget(null);
           }}
-          onConfirm={onCropConfirmed}
+          onConfirm={(...args) => {
+            void onCropConfirmed(...args);
+          }}
         />
       )}
     </>
@@ -493,7 +500,12 @@ function CropModal({
                 <X size={14} />
                 Cancelar
               </Button>
-              <Button onPress={submit} isPending={pending}>
+              <Button
+                onPress={() => {
+                  void submit();
+                }}
+                isPending={pending}
+              >
                 <Check size={14} />
                 Recortar y subir
               </Button>
@@ -561,7 +573,13 @@ function PhoneRegistrationCard({ phoneNumberId }: { phoneNumberId: number }) {
                 placeholder="123456"
               />
             </div>
-            <Button onPress={doRegister} isPending={register.isPending} size="sm">
+            <Button
+              onPress={() => {
+                void doRegister();
+              }}
+              isPending={register.isPending}
+              size="sm"
+            >
               <Check size={14} />
               Registrar
             </Button>
@@ -582,7 +600,13 @@ function PhoneRegistrationCard({ phoneNumberId }: { phoneNumberId: number }) {
                 placeholder="987654"
               />
             </div>
-            <Button onPress={doSetPin} isPending={setPin.isPending} size="sm">
+            <Button
+              onPress={() => {
+                void doSetPin();
+              }}
+              isPending={setPin.isPending}
+              size="sm"
+            >
               <ShieldCheck size={14} />
               Actualizar
             </Button>

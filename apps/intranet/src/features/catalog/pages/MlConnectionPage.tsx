@@ -98,13 +98,15 @@ export function MlConnectionPage() {
           {connected && (
             <Button
               isDisabled={disconnectMutation.isPending}
-              onPress={async () => {
-                const ok = await confirmAction({
-                  title: "¿Desconectar MercadoLibre?",
-                  variant: "danger",
-                  confirmLabel: "Desconectar",
-                });
-                if (ok) disconnectMutation.mutate();
+              onPress={() => {
+                void (async () => {
+                  const ok = await confirmAction({
+                    title: "¿Desconectar MercadoLibre?",
+                    variant: "danger",
+                    confirmLabel: "Desconectar",
+                  });
+                  if (ok) disconnectMutation.mutate();
+                })();
               }}
               variant="danger-soft"
             >

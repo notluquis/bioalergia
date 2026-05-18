@@ -90,9 +90,9 @@ function ChannelPriceEditor({
             channel={channel}
             currentPrice={existing.get(channel)?.price_clp ?? null}
             key={channel}
-            onSaved={() =>
-              queryClient.invalidateQueries({ queryKey: ["channel-prices", productId] })
-            }
+            onSaved={() => {
+              void queryClient.invalidateQueries({ queryKey: ["channel-prices", productId] });
+            }}
             productId={productId}
           />
         ))}

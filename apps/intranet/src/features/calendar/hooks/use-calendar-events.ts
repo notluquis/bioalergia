@@ -203,23 +203,25 @@ function useCalendarSync(queryClient: ReturnType<typeof useQueryClient>) {
     let pollCount = 0;
     const maxPolls = 60; // 5 minutes max (5s interval)
 
-    const pollInterval = setInterval(async () => {
-      pollCount++;
-      const keepPolling = await processSyncPollTick({
-        logId,
-        maxPolls,
-        pollCount,
-        queryClient,
-        setLastSyncInfo,
-        setSyncDurationMs,
-        setSyncError,
-        setSyncProgress,
-        setSyncing,
-        showError,
-      });
-      if (!keepPolling) {
-        clearInterval(pollInterval);
-      }
+    const pollInterval = setInterval(() => {
+      void (async () => {
+        pollCount++;
+        const keepPolling = await processSyncPollTick({
+          logId,
+          maxPolls,
+          pollCount,
+          queryClient,
+          setLastSyncInfo,
+          setSyncDurationMs,
+          setSyncError,
+          setSyncProgress,
+          setSyncing,
+          showError,
+        });
+        if (!keepPolling) {
+          clearInterval(pollInterval);
+        }
+      })();
     }, 5000); // Poll every 5 seconds
   };
 

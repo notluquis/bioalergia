@@ -157,13 +157,21 @@ export function ImageUploader({ productId, images }: ImageUploaderProps) {
                 <Button
                   className="flex-1"
                   isDisabled={img.is_primary}
-                  onPress={() => handleSetPrimary(img.id)}
+                  onPress={() => {
+                    void handleSetPrimary(img.id);
+                  }}
                   size="sm"
                   variant="outline"
                 >
                   <Star size={12} />
                 </Button>
-                <Button onPress={() => handleDelete(img.id)} size="sm" variant="danger-soft">
+                <Button
+                  onPress={() => {
+                    void handleDelete(img.id);
+                  }}
+                  size="sm"
+                  variant="danger-soft"
+                >
                   <Trash2 size={12} />
                 </Button>
               </Card.Footer>

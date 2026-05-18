@@ -114,7 +114,9 @@ function NewPaymentPage() {
       <div className="mb-6">
         <Button
           variant="outline"
-          onPress={() => navigate({ to: "/patients/$id", params: { id: String(id) } })}
+          onPress={() => {
+            void navigate({ to: "/patients/$id", params: { id: String(id) } });
+          }}
           className="gap-2"
         >
           <ChevronLeft size={20} />
@@ -277,7 +279,9 @@ function NewPaymentPage() {
             <Button
               type="button"
               variant="outline"
-              onPress={() => navigate({ to: "/patients/$id", params: { id: String(id) } })}
+              onPress={() => {
+                void navigate({ to: "/patients/$id", params: { id: String(id) } });
+              }}
               isDisabled={mutation.isPending}
             >
               Cancelar

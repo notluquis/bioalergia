@@ -274,7 +274,9 @@ export function TreatmentAnalyticsPage() {
         onToggleFilter={setIsFilterOpen}
         onSetPeriod={handleSetPeriod}
         onSelectMonth={handleMonthSelect}
-        onRefresh={handleRefresh}
+        onRefresh={() => {
+          void handleRefresh();
+        }}
       />
 
       <PeriodIndicator

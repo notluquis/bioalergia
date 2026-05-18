@@ -142,7 +142,13 @@ function WebhookCard({ url }: { url: string }) {
       <Card.Content>
         <div className="flex items-center gap-2 rounded-lg bg-default-100 p-2">
           <code className="flex-1 truncate px-2 font-mono text-xs">{url}</code>
-          <Button size="sm" variant={copied ? "secondary" : "outline"} onPress={copy}>
+          <Button
+            size="sm"
+            variant={copied ? "secondary" : "outline"}
+            onPress={() => {
+              void copy();
+            }}
+          >
             {copied ? <Check size={14} /> : <Copy size={14} />}
             {copied ? "Copiado" : "Copiar"}
           </Button>
@@ -432,7 +438,9 @@ function CredentialsModal({
                       <Button
                         size="sm"
                         variant="secondary"
-                        onPress={() => saveLabel(p.id, p.phoneNumberId, p.displayPhoneNumber)}
+                        onPress={() => {
+                          void saveLabel(p.id, p.phoneNumberId, p.displayPhoneNumber);
+                        }}
                       >
                         Guardar
                       </Button>
@@ -446,7 +454,12 @@ function CredentialsModal({
                 <X size={14} />
                 Cancelar
               </Button>
-              <Button onPress={save} isPending={upsert.isPending}>
+              <Button
+                onPress={() => {
+                  void save();
+                }}
+                isPending={upsert.isPending}
+              >
                 <Check size={14} />
                 Guardar credenciales
               </Button>
@@ -532,7 +545,9 @@ function PhoneAddModal({
                 Cancelar
               </Button>
               <Button
-                onPress={save}
+                onPress={() => {
+                  void save();
+                }}
                 isPending={upPhone.isPending}
                 isDisabled={!phoneNumberId || !displayPhone}
               >
@@ -642,7 +657,13 @@ function CreateAccountModal({ isOpen, onClose }: { isOpen: boolean; onClose: () 
               >
                 Cancelar
               </Button>
-              <Button onPress={save} isPending={upsert.isPending} isDisabled={!draft.wabaId}>
+              <Button
+                onPress={() => {
+                  void save();
+                }}
+                isPending={upsert.isPending}
+                isDisabled={!draft.wabaId}
+              >
                 <Plus size={14} />
                 Crear cuenta
               </Button>

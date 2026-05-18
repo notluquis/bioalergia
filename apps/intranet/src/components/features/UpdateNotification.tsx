@@ -132,7 +132,14 @@ export function UpdateNotification() {
                 Actualiza cuando estés listo. No perderás tu progreso.
               </p>
               <div className="mt-3 flex gap-2">
-                <Button className="flex-1" isDisabled={isUpdating} onPress={handleUpdate} size="sm">
+                <Button
+                  className="flex-1"
+                  isDisabled={isUpdating}
+                  onPress={() => {
+                    void handleUpdate();
+                  }}
+                  size="sm"
+                >
                   {isUpdating ? "Actualizando..." : "Actualizar"}
                 </Button>
                 <Button onPress={() => setIsConfirmOpen(true)} size="sm" variant="secondary">
@@ -176,7 +183,9 @@ export function UpdateNotification() {
                 </p>
                 <div className="mt-6 flex flex-wrap gap-3">
                   <Button
-                    onPress={handleCleanUpdate}
+                    onPress={() => {
+                      void handleCleanUpdate();
+                    }}
                     size="sm"
                     variant="primary"
                     isDisabled={isUpdating}

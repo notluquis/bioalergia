@@ -165,19 +165,21 @@ function GoogleDriveConnect() {
               <Button
                 className="gap-2 hover:border-danger hover:bg-danger/10 hover:text-danger"
                 isDisabled={isEnv || disconnectMutation.isPending}
-                onPress={async () => {
-                  const confirmed = await confirm({
-                    confirmLabel: "Desconectar",
-                    confirmVariant: "danger",
-                    description:
-                      "¿Estás seguro de desconectar Google Drive? Los backups automáticos dejarán de funcionar.",
-                    isDismissable: true,
-                    isKeyboardDismissDisabled: false,
-                    status: "danger",
-                    title: "Desconectar Google Drive",
-                  });
-                  if (!confirmed) return;
-                  disconnectMutation.mutate();
+                onPress={() => {
+                  void (async () => {
+                    const confirmed = await confirm({
+                      confirmLabel: "Desconectar",
+                      confirmVariant: "danger",
+                      description:
+                        "¿Estás seguro de desconectar Google Drive? Los backups automáticos dejarán de funcionar.",
+                      isDismissable: true,
+                      isKeyboardDismissDisabled: false,
+                      status: "danger",
+                      title: "Desconectar Google Drive",
+                    });
+                    if (!confirmed) return;
+                    disconnectMutation.mutate();
+                  })();
                 }}
                 variant="outline"
               >

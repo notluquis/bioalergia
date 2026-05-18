@@ -219,7 +219,9 @@ export function ServiceDetail({
     <section className="relative flex h-full min-w-0 flex-col gap-6 rounded-3xl bg-background p-6">
       <ServiceHeader
         canManage={canManage}
-        onEdit={() => navigate({ to: "/services/$id/edit", params: { id: service.publicId } })}
+        onEdit={() => {
+          void navigate({ to: "/services/$id/edit", params: { id: service.publicId } });
+        }}
         onRegenerate={() => setRegenerateOpen(true)}
         service={service}
       />
@@ -251,7 +253,9 @@ export function ServiceDetail({
         error={regenerateError}
         isOpen={regenerateOpen}
         onClose={() => setRegenerateOpen(false)}
-        onSubmit={handleRegenerate}
+        onSubmit={(...args) => {
+          void handleRegenerate(...args);
+        }}
         regenerating={regenerating}
         service={service}
       />

@@ -539,7 +539,7 @@ const submitReviewRoute = base
   })
   .input(productReviewSubmitInputSchema)
   .output(productReviewSubmitResponseSchema)
-  .handler(async ({ input }: { input: z.input<typeof productReviewSubmitInputSchema> }) => {
+  .handler(async ({ input }: { input: z.output<typeof productReviewSubmitInputSchema> }) => {
     const product = await getProductById(input.product_id);
     if (!product) {
       throw new ORPCError("NOT_FOUND", { message: "Producto no encontrado" });

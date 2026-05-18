@@ -44,7 +44,9 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 function RootComponent() {
   const navigate = useNavigate();
   // Adapter for HeroUI/React Aria (expects (path: string) => void)
-  const handleNavigate = (path: string) => navigate({ to: path });
+  const handleNavigate = (path: string) => {
+    void navigate({ to: path });
+  };
 
   return (
     <RouterProvider navigate={handleNavigate}>

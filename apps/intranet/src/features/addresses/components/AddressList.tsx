@@ -146,18 +146,20 @@ export function AddressList({ personId }: Readonly<AddressListProps>) {
                       <Button
                         aria-label="Eliminar"
                         isDisabled={deleteMutation.isPending}
-                        onPress={async () => {
-                          const phrase = addr.street?.trim() || "ELIMINAR";
-                          const ok = await confirmAction({
-                            title: "Eliminar dirección",
-                            description: `Esta acción no se puede deshacer. Para confirmar, escribe el nombre de la calle: "${phrase}".`,
-                            confirmLabel: "Eliminar definitivamente",
-                            variant: "danger",
-                            requireText: phrase,
-                            requireTextLabel: `Escribe "${phrase}" para confirmar`,
-                          });
-                          if (!ok) return;
-                          deleteMutation.mutate(addr.id);
+                        onPress={() => {
+                          void (async () => {
+                            const phrase = addr.street?.trim() || "ELIMINAR";
+                            const ok = await confirmAction({
+                              title: "Eliminar dirección",
+                              description: `Esta acción no se puede deshacer. Para confirmar, escribe el nombre de la calle: "${phrase}".`,
+                              confirmLabel: "Eliminar definitivamente",
+                              variant: "danger",
+                              requireText: phrase,
+                              requireTextLabel: `Escribe "${phrase}" para confirmar`,
+                            });
+                            if (!ok) return;
+                            deleteMutation.mutate(addr.id);
+                          })();
                         }}
                         size="sm"
                         variant="outline"

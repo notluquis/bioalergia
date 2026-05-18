@@ -171,17 +171,19 @@ function BroadcastActions({ broadcastId, status }: { broadcastId: number; status
           isIconOnly
           aria-label="Cancelar"
           isPending={cancel.isPending}
-          onPress={async () => {
-            const ok = await confirmAction({
-              title: "Cancelar campaña",
-              description:
-                "Los destinatarios pendientes no recibirán el mensaje. Esta acción no se puede deshacer.",
-              confirmLabel: "Cancelar campaña",
-              cancelLabel: "Volver",
-              variant: "danger",
-            });
-            if (!ok) return;
-            cancel.mutate(broadcastId);
+          onPress={() => {
+            void (async () => {
+              const ok = await confirmAction({
+                title: "Cancelar campaña",
+                description:
+                  "Los destinatarios pendientes no recibirán el mensaje. Esta acción no se puede deshacer.",
+                confirmLabel: "Cancelar campaña",
+                cancelLabel: "Volver",
+                variant: "danger",
+              });
+              if (!ok) return;
+              cancel.mutate(broadcastId);
+            })();
           }}
         >
           <X size={12} />
@@ -456,7 +458,12 @@ function CreateBroadcastModal({ isOpen, onClose }: { isOpen: boolean; onClose: (
                 <X size={14} />
                 Cancelar
               </Button>
-              <Button onPress={submit} isPending={create.isPending}>
+              <Button
+                onPress={() => {
+                  void submit();
+                }}
+                isPending={create.isPending}
+              >
                 {scheduledAt ? <CalendarClock size={14} /> : <Plus size={14} />}
                 {scheduledAt ? "Crear y programar" : "Crear borrador"}
               </Button>

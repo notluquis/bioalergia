@@ -118,20 +118,22 @@ export function WaCloudScheduledPage() {
                               isIconOnly
                               aria-label="Cancelar"
                               isPending={cancel.isPending}
-                              onPress={async () => {
-                                const ok = await confirmAction({
-                                  title: "Cancelar envío programado",
-                                  description:
-                                    "El mensaje no se enviará. Esta acción no se puede deshacer.",
-                                  confirmLabel: "Cancelar envío",
-                                  cancelLabel: "Volver",
-                                  variant: "danger",
-                                });
-                                if (!ok) return;
-                                cancel.mutate(s.id, {
-                                  onSuccess: () => toast.success("Cancelado"),
-                                  onError: (e) => toast.error(`Error: ${String(e)}`),
-                                });
+                              onPress={() => {
+                                void (async () => {
+                                  const ok = await confirmAction({
+                                    title: "Cancelar envío programado",
+                                    description:
+                                      "El mensaje no se enviará. Esta acción no se puede deshacer.",
+                                    confirmLabel: "Cancelar envío",
+                                    cancelLabel: "Volver",
+                                    variant: "danger",
+                                  });
+                                  if (!ok) return;
+                                  cancel.mutate(s.id, {
+                                    onSuccess: () => toast.success("Cancelado"),
+                                    onError: (e) => toast.error(`Error: ${String(e)}`),
+                                  });
+                                })();
                               }}
                             >
                               <X size={12} />

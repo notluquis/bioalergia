@@ -64,7 +64,12 @@ export function OutreachNewCampaignPage() {
         <code>{"{{nombre_contacto}}"}</code> <code>{"{{comuna}}"}</code>
       </p>
 
-      <form onSubmit={handleCreate} className="space-y-4">
+      <form
+        onSubmit={(e) => {
+          void handleCreate(e);
+        }}
+        className="space-y-4"
+      >
         <Card>
           <Card.Header>
             <Card.Title>Configuración</Card.Title>

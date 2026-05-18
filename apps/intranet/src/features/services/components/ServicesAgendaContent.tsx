@@ -118,7 +118,9 @@ export function ServicesAgendaContent() {
           onEditSchedule={handleEditSchedule}
           onRegisterPayment={handleAgendaRegisterPayment}
           onSkipSchedule={handleSkipSchedule}
-          onUnlinkPayment={handleAgendaUnlinkPayment}
+          onUnlinkPayment={(...args) => {
+            void handleAgendaUnlinkPayment(...args);
+          }}
         />
       </Surface>
 

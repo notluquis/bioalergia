@@ -27,7 +27,9 @@ export function RecentMovementsWidget({ rows }: { rows: Transaction[] }) {
           <p className="text-default-500 text-xs">Últimos 5 registros sincronizados</p>
         </div>
         <Button
-          onPress={() => navigate({ to: "/finanzas/statistics" })}
+          onPress={() => {
+            void navigate({ to: "/finanzas/statistics" });
+          }}
           size="sm"
           type="button"
           variant="secondary"

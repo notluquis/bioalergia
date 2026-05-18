@@ -88,7 +88,9 @@ function NewBudgetPage() {
       <div className="mb-6">
         <Button
           variant="outline"
-          onPress={() => navigate({ to: "/patients/$id", params: { id: String(id) } })}
+          onPress={() => {
+            void navigate({ to: "/patients/$id", params: { id: String(id) } });
+          }}
           className="gap-2"
         >
           <ChevronLeft size={20} />
@@ -250,7 +252,9 @@ function NewBudgetPage() {
                           isIconOnly
                           className="text-danger"
                           isDisabled={field.state.value.length === 1}
-                          onPress={() => form.removeFieldValue("items", index)}
+                          onPress={() => {
+                            void form.removeFieldValue("items", index);
+                          }}
                         >
                           <Trash2 size={18} />
                         </Button>
@@ -267,7 +271,9 @@ function NewBudgetPage() {
           <Button
             type="button"
             variant="outline"
-            onPress={() => navigate({ to: "/patients/$id", params: { id: String(id) } })}
+            onPress={() => {
+              void navigate({ to: "/patients/$id", params: { id: String(id) } });
+            }}
           >
             Cancelar
           </Button>

@@ -499,7 +499,9 @@ export function UserManagementPage() {
         onCancel={() => {
           setEditingUser(null);
         }}
-        onSave={handleSaveRole}
+        onSave={(...args) => {
+          void handleSaveRole(...args);
+        }}
         roles={roles}
         selectedRole={selectedRole}
         setSelectedRole={setSelectedRole}

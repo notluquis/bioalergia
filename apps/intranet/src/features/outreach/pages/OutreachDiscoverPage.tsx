@@ -99,7 +99,9 @@ export function OutreachDiscoverPage() {
           <Button
             variant="primary"
             isDisabled={discover.isPending || (!tipo && !textQuery)}
-            onPress={run}
+            onPress={() => {
+              void run();
+            }}
           >
             {discover.isPending ? "Buscando..." : "Ejecutar búsqueda"}
           </Button>

@@ -318,7 +318,12 @@ export function SharedPayloadModal({
               {allDone ? "Cerrar" : "Cancelar"}
             </Button>
             {totalFailed > 0 && !sending && (
-              <Button variant="outline" onPress={handleSend}>
+              <Button
+                variant="outline"
+                onPress={() => {
+                  void handleSend();
+                }}
+              >
                 Reintentar fallidos
               </Button>
             )}
@@ -327,7 +332,9 @@ export function SharedPayloadModal({
                 variant="primary"
                 isDisabled={!canSend || sending}
                 isPending={sending}
-                onPress={handleSend}
+                onPress={() => {
+                  void handleSend();
+                }}
               >
                 Enviar a {contactName}
               </Button>

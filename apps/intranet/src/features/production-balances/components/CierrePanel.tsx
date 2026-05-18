@@ -109,7 +109,9 @@ export function CierrePanel({
             className="flex-1 rounded-xl"
             isPending={isSaving}
             isDisabled={isSaving}
-            onPress={onSaveDraft}
+            onPress={() => {
+              void onSaveDraft();
+            }}
           >
             Guardar
           </Button>
@@ -117,7 +119,9 @@ export function CierrePanel({
             variant="primary"
             className="flex-1 rounded-xl"
             isDisabled={!canFinalize || isSaving}
-            onPress={onFinalize}
+            onPress={() => {
+              void onFinalize();
+            }}
           >
             Finalizar
           </Button>

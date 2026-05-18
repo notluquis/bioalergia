@@ -250,14 +250,16 @@ export function ProviderCredentialsTab() {
                         size="sm"
                         variant="danger-soft"
                         aria-label="Eliminar"
-                        onPress={async () => {
-                          const ok = await confirmAction({
-                            title: "Eliminar credencial",
-                            description: `¿Eliminar credencial ${c.provider}? Esta acción no se puede deshacer.`,
-                            confirmLabel: "Eliminar",
-                            variant: "danger",
-                          });
-                          if (ok) deleteMutation.mutate(c.id);
+                        onPress={() => {
+                          void (async () => {
+                            const ok = await confirmAction({
+                              title: "Eliminar credencial",
+                              description: `¿Eliminar credencial ${c.provider}? Esta acción no se puede deshacer.`,
+                              confirmLabel: "Eliminar",
+                              variant: "danger",
+                            });
+                            if (ok) deleteMutation.mutate(c.id);
+                          })();
                         }}
                       >
                         <Trash2Icon className="size-3" />

@@ -109,7 +109,9 @@ export function DailyBalancePage() {
           <Button
             className="flex-1 rounded-xl"
             isDisabled={!summary.cuadra || summary.totalMetodos <= 0 || isSaving}
-            onPress={finalize}
+            onPress={() => {
+              void finalize();
+            }}
           >
             Finalizar
           </Button>

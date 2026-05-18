@@ -169,7 +169,9 @@ export function OutreachCampaignDetailPage() {
             <Button
               variant="primary"
               isDisabled={c.estado !== "ENVIANDO" || !agentReady || sending}
-              onPress={sendBatch}
+              onPress={() => {
+                void sendBatch();
+              }}
             >
               {sending ? "Enviando..." : "Enviar siguiente lote (5)"}
             </Button>

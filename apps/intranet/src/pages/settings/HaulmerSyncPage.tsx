@@ -797,7 +797,9 @@ export function HaulmerSyncPage() {
           isSyncingIncremental={isSyncingIncremental}
           availablePeriods={availablePeriods}
           onOpenSyncModal={handleOpenSyncScopeModal}
-          onSyncIncremental={handleSyncIncremental}
+          onSyncIncremental={(...args) => {
+            void handleSyncIncremental(...args);
+          }}
         />
       )}
 
@@ -813,7 +815,9 @@ export function HaulmerSyncPage() {
                   period={period}
                   lastSyncs={lastSyncs}
                   syncMutation={syncMutation}
-                  onSync={handleSync}
+                  onSync={(...args) => {
+                    void handleSync(...args);
+                  }}
                   hasSalesData={hasSalesData}
                   hasPurchasesData={hasPurchasesData}
                   getSalesCount={getSalesCount}

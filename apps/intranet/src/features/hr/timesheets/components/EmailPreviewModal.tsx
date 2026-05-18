@@ -382,19 +382,29 @@ function LocalAgentPanel({ isHttpsPage, state }: { isHttpsPage: boolean; state: 
         </TextField>
       </div>
       <div className="flex items-center gap-3">
-        <Button isDisabled={state.checkingAgent} onPress={state.verifyAgent} variant="secondary">
+        <Button
+          isDisabled={state.checkingAgent}
+          onPress={() => {
+            void state.verifyAgent();
+          }}
+          variant="secondary"
+        >
           {state.checkingAgent ? "Verificando..." : "Verificar agente"}
         </Button>
         <Button
           isDisabled={state.checkingSmtp || !state.agentToken}
-          onPress={state.verifySmtp}
+          onPress={() => {
+            void state.verifySmtp();
+          }}
           variant="secondary"
         >
           {state.checkingSmtp ? "Validando SMTP..." : "Verificar SMTP"}
         </Button>
         <Button
           isDisabled={state.stoppingAgent || !state.agentToken}
-          onPress={state.stopAgent}
+          onPress={() => {
+            void state.stopAgent();
+          }}
           variant="secondary"
         >
           {state.stoppingAgent ? "Apagando..." : "Apagar agente"}

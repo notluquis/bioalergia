@@ -169,7 +169,8 @@ export async function clearCart(cartId: number) {
 type CartWithItems = NonNullable<Awaited<ReturnType<typeof findCartByToken>>>;
 
 export function serializeCart(cart: CartWithItems) {
-  const items = cart.items.map((item) => ({
+  type CartItem = (typeof cart.items)[number];
+  const items = cart.items.map((item: CartItem) => ({
     id: item.id,
     product_id: item.productId,
     qty: item.qty,
@@ -184,13 +185,17 @@ export function serializeCart(cart: CartWithItems) {
       available_qty: item.product.availableQty,
     },
   }));
-  const subtotal = items.reduce((acc, i) => acc + i.unit_price_clp * i.qty, 0);
+  type SerializedItem = (typeof items)[number];
+  const subtotal = items.reduce(
+    (acc: number, i: SerializedItem) => acc + i.unit_price_clp * i.qty,
+    0,
+  );
   return {
     id: cart.id,
     currency: cart.currency,
     items,
     subtotal_clp: subtotal,
     total_clp: subtotal, // sin shipping ni discounts en MVP cart-view (se calcula en checkout)
-    item_count: items.reduce((acc, i) => acc + i.qty, 0),
+    item_count: items.reduce((acc: number, i: SerializedItem) => acc + i.qty, 0),
   };
 }

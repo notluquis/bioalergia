@@ -161,7 +161,13 @@ export function EmbeddedSignupButton({
   };
 
   return (
-    <Button variant="outline" onPress={onClick} isPending={busy}>
+    <Button
+      variant="outline"
+      onPress={() => {
+        void onClick();
+      }}
+      isPending={busy}
+    >
       {isCoexistence ? <Smartphone size={14} /> : <LogIn size={14} />}
       {isCoexistence ? "Activar Coexistence (app + Cloud API)" : "Onboard vía Embedded Signup"}
     </Button>

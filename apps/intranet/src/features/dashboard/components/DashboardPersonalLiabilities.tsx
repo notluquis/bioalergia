@@ -46,7 +46,9 @@ export function DashboardPersonalLiabilities() {
       <div className="flex items-center justify-between">
         <h3 className="font-semibold text-foreground text-sm">Pasivos Personales</h3>
         <Button
-          onPress={() => navigate({ to: "/finanzas/loans" })}
+          onPress={() => {
+            void navigate({ to: "/finanzas/loans" });
+          }}
           size="sm"
           type="button"
           variant="secondary"

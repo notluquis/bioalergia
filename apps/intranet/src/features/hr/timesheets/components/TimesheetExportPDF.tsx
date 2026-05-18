@@ -190,7 +190,13 @@ export function TimesheetExportPDF({
   return (
     <div className="flex items-center gap-2">
       <div className="relative inline-flex items-center gap-2">
-        <Button onPress={() => handleExport(true)} type="button" variant="secondary">
+        <Button
+          onPress={() => {
+            void handleExport(true);
+          }}
+          type="button"
+          variant="secondary"
+        >
           Exportar PDF
         </Button>
         <Popover isOpen={showOptions} onOpenChange={setShowOptions}>
@@ -251,7 +257,9 @@ export function TimesheetExportPDF({
                 </Button>
                 <Button
                   className="text-primary text-xs"
-                  onPress={() => handleExport(true)}
+                  onPress={() => {
+                    void handleExport(true);
+                  }}
                   size="sm"
                   variant="outline"
                 >
@@ -259,7 +267,9 @@ export function TimesheetExportPDF({
                 </Button>
                 <Button
                   className="text-primary text-xs"
-                  onPress={() => handleExport(false)}
+                  onPress={() => {
+                    void handleExport(false);
+                  }}
                   size="sm"
                   variant="outline"
                 >

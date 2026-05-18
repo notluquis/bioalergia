@@ -207,7 +207,12 @@ export function LoanDetail({
                 <Modal.Heading>Regenerar cronograma</Modal.Heading>
               </Modal.Header>
               <Modal.Body className="mt-2 max-h-[80vh] overflow-y-auto overscroll-contain text-foreground">
-                <form className="space-y-4" onSubmit={handleRegenerate}>
+                <form
+                  className="space-y-4"
+                  onSubmit={(e) => {
+                    void handleRegenerate(e);
+                  }}
+                >
                   <TextField>
                     <Label>Nuevo total de cuotas</Label>
                     <Input

@@ -52,7 +52,7 @@ export async function publishProductToMl(productId: number, opts?: { categoryId?
       sku: product.sku,
       availableQty: product.availableQty,
       brand: product.brand,
-      images: product.images.map((i) => ({ cdnUrl: i.cdnUrl })),
+      images: product.images.map((i: (typeof product.images)[number]) => ({ cdnUrl: i.cdnUrl })),
     },
     categoryId
   );

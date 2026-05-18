@@ -202,7 +202,9 @@ export function CatalogPage() {
                             </Button>
                             <Button
                               isDisabled={!canUpdate || p.status === "ARCHIVED"}
-                              onPress={() => handleArchive(p.id)}
+                              onPress={() => {
+                                void handleArchive(p.id);
+                              }}
                               size="sm"
                               variant="danger-soft"
                             >
@@ -257,7 +259,9 @@ export function CatalogPage() {
                   </Button>
                   <Button
                     isDisabled={!canUpdate || p.status === "ARCHIVED"}
-                    onPress={() => handleArchive(p.id)}
+                    onPress={() => {
+                      void handleArchive(p.id);
+                    }}
                     size="sm"
                     variant="danger-soft"
                   >
@@ -294,7 +298,9 @@ export function CatalogPage() {
                 <ProductForm
                   initial={editing ? rowToFormValues(editing) : null}
                   onCancel={closeForm}
-                  onSave={handleSave}
+                  onSave={(...args) => {
+                    void handleSave(...args);
+                  }}
                   saving={saving}
                 />
                 {editing && (

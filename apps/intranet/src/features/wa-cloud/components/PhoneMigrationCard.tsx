@@ -234,7 +234,13 @@ export function PhoneMigrationCard() {
               />
             </div>
             <div className="flex justify-end">
-              <Button onPress={doAdd} isPending={addPhone.isPending} size="sm">
+              <Button
+                onPress={() => {
+                  void doAdd();
+                }}
+                isPending={addPhone.isPending}
+                size="sm"
+              >
                 <ArrowRight size={14} />
                 <span>Agregar y migrar</span>
               </Button>
@@ -298,7 +304,13 @@ export function PhoneMigrationCard() {
               </Select>
             </div>
             <div className="flex justify-end">
-              <Button onPress={doRequest} isPending={requestCode.isPending} size="sm">
+              <Button
+                onPress={() => {
+                  void doRequest();
+                }}
+                isPending={requestCode.isPending}
+                size="sm"
+              >
                 <ArrowRight size={14} />
                 <span>Enviar código</span>
               </Button>
@@ -324,7 +336,13 @@ export function PhoneMigrationCard() {
               <Button variant="secondary" onPress={() => setStep("request")} size="sm">
                 <span>Reenviar</span>
               </Button>
-              <Button onPress={doVerify} isPending={verifyCode.isPending} size="sm">
+              <Button
+                onPress={() => {
+                  void doVerify();
+                }}
+                isPending={verifyCode.isPending}
+                size="sm"
+              >
                 <Check size={14} />
                 <span>Verificar</span>
               </Button>
@@ -348,7 +366,13 @@ export function PhoneMigrationCard() {
                   placeholder="987654"
                 />
               </div>
-              <Button onPress={doRegister} isPending={register.isPending} size="sm">
+              <Button
+                onPress={() => {
+                  void doRegister();
+                }}
+                isPending={register.isPending}
+                size="sm"
+              >
                 <MailQuestion size={14} />
                 <span>Registrar</span>
               </Button>
@@ -370,7 +394,9 @@ export function PhoneMigrationCard() {
           <Button
             variant="danger"
             size="sm"
-            onPress={doDeregister}
+            onPress={() => {
+              void doDeregister();
+            }}
             isPending={deregister.isPending}
           >
             <span>Desregistrar del Cloud API</span>

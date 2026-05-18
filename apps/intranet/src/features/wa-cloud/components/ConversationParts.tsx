@@ -961,7 +961,9 @@ function VoiceRecorderButton({
       variant="outline"
       isIconOnly
       aria-label="Grabar nota de voz"
-      onPress={start}
+      onPress={() => {
+        void start();
+      }}
       isDisabled={isDisabled}
     >
       <Mic size={16} />

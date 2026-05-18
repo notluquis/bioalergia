@@ -208,15 +208,17 @@ export function ExamReportsListPanel() {
             <Button
               aria-label="Eliminar"
               isIconOnly
-              onPress={async () => {
-                const ok = await confirmDialog({
-                  title: "Eliminar informe",
-                  description: "¿Eliminar este informe? La acción es irreversible.",
-                  confirmLabel: "Eliminar",
-                  confirmVariant: "danger",
-                  status: "danger",
-                });
-                if (ok) deleteMutation.mutate(r.id);
+              onPress={() => {
+                void (async () => {
+                  const ok = await confirmDialog({
+                    title: "Eliminar informe",
+                    description: "¿Eliminar este informe? La acción es irreversible.",
+                    confirmLabel: "Eliminar",
+                    confirmVariant: "danger",
+                    status: "danger",
+                  });
+                  if (ok) deleteMutation.mutate(r.id);
+                })();
               }}
               size="sm"
               variant="danger"

@@ -312,7 +312,9 @@ function CalendarClassificationPage() {
                 isSaving={savingKey === key}
                 key={key}
                 onReset={handleResetEntry}
-                onSave={handleSave}
+                onSave={(...args) => {
+                  void handleSave(...args);
+                }}
                 patchReadingChoices={patchReadingChoices}
                 testSubtypeChoices={testSubtypeChoices}
                 treatmentStageChoices={treatmentStageChoices}

@@ -281,7 +281,9 @@ export function DoctoraliaCalendarJsonPanel() {
               type="file"
               accept=".json,application/json"
               multiple
-              onChange={handleFileChange}
+              onChange={(e) => {
+                void handleFileChange(e);
+              }}
               className="text-sm file:mr-3 file:rounded-md file:border-0 file:bg-primary file:px-3 file:py-1.5 file:text-primary-foreground file:text-sm hover:file:bg-primary/90"
               disabled={isImporting}
             />
@@ -362,7 +364,12 @@ export function DoctoraliaCalendarJsonPanel() {
 
           {files.length > 0 && (
             <div className="flex justify-end">
-              <Button onPress={handleImport} isDisabled={isImporting}>
+              <Button
+                onPress={() => {
+                  void handleImport();
+                }}
+                isDisabled={isImporting}
+              >
                 {isImporting ? (
                   <Loader2 className="mr-2 size-4" />
                 ) : (

@@ -64,7 +64,9 @@ export function CalendarSyncHistoryPage() {
               <Button
                 isDisabled={isLoading || isSyncing}
                 isIconOnly
-                onPress={() => refetch()}
+                onPress={() => {
+                  void refetch();
+                }}
                 size="sm"
                 type="button"
                 variant="outline"
@@ -108,7 +110,9 @@ export function CalendarSyncHistoryPage() {
           {renderSyncHistoryContent({
             isErrorSyncLogs,
             isLoading,
-            refetch,
+            refetch: () => {
+              void refetch();
+            },
             syncError,
             syncLogs,
           })}

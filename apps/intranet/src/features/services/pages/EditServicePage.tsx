@@ -256,7 +256,9 @@ export function ServiceEditPage() {
               <div className="flex justify-end">
                 <Button
                   isDisabled={updateMutation.isPending}
-                  onPress={() => handleRegenerate(String(service.id))}
+                  onPress={() => {
+                    void handleRegenerate(String(service.id));
+                  }}
                   variant="secondary"
                 >
                   Regenerar cronograma

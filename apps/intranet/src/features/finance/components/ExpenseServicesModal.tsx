@@ -341,14 +341,16 @@ export function ExpenseServicesModal({ onClose }: Props) {
                                   size="sm"
                                   variant="danger-soft"
                                   aria-label="Eliminar"
-                                  onPress={async () => {
-                                    const ok = await confirmAction({
-                                      title: "Eliminar servicio",
-                                      description: `¿Eliminar "${s.name}"? Los Expenses históricos se desvinculan.`,
-                                      confirmLabel: "Eliminar",
-                                      variant: "danger",
-                                    });
-                                    if (ok) deleteMutation.mutate(s.id);
+                                  onPress={() => {
+                                    void (async () => {
+                                      const ok = await confirmAction({
+                                        title: "Eliminar servicio",
+                                        description: `¿Eliminar "${s.name}"? Los Expenses históricos se desvinculan.`,
+                                        confirmLabel: "Eliminar",
+                                        variant: "danger",
+                                      });
+                                      if (ok) deleteMutation.mutate(s.id);
+                                    })();
                                   }}
                                 >
                                   <Trash2Icon className="size-3" />

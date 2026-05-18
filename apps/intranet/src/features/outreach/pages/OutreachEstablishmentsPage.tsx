@@ -182,7 +182,9 @@ export function OutreachEstablishmentsPage() {
               <span className="text-sm">{selected.size} seleccionados</span>
               <SelectInput
                 value=""
-                onValueChange={(v) => v && handleBulkEstado(v as OutreachStatus)}
+                onValueChange={(v) => {
+                  if (v) void handleBulkEstado(v as OutreachStatus);
+                }}
                 options={bulkEstadoOptions}
                 className="max-w-xs"
               />

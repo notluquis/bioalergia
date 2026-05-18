@@ -93,9 +93,11 @@ export function ClinicalRecordsReviewPage() {
             <Button
               size="sm"
               variant="primary"
-              onPress={async () => {
-                const r = await startBulk.mutateAsync({});
-                setTrackedJobId(r.jobId);
+              onPress={() => {
+                void (async () => {
+                  const r = await startBulk.mutateAsync({});
+                  setTrackedJobId(r.jobId);
+                })();
               }}
               isPending={startBulk.isPending}
             >

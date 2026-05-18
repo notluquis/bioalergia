@@ -209,7 +209,9 @@ export function AccountSettingsPage() {
                   <Button
                     className="text-danger hover:bg-danger/10"
                     isDisabled={disableMfaMutation.isPending}
-                    onPress={handleDisableMfa}
+                    onPress={() => {
+                      void handleDisableMfa();
+                    }}
                     size="sm"
                     variant="outline"
                   >
@@ -314,7 +316,9 @@ export function AccountSettingsPage() {
                   <Button
                     className="text-danger hover:bg-danger/10"
                     isDisabled={deletePasskeyMutation.isPending}
-                    onPress={handleDeletePasskey}
+                    onPress={() => {
+                      void handleDeletePasskey();
+                    }}
                     size="sm"
                     variant="outline"
                   >

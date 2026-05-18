@@ -26,7 +26,9 @@ export function TopParticipantsWidget({
           <p className="text-default-500 text-xs">Contrapartes con mayor salida acumulada.</p>
         </div>
         <Button
-          onPress={() => navigate({ to: "/finanzas/counterparts" })}
+          onPress={() => {
+            void navigate({ to: "/finanzas/counterparts" });
+          }}
           size="sm"
           type="button"
           variant="secondary"

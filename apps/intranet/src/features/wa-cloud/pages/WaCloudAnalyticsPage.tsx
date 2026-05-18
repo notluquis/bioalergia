@@ -102,7 +102,9 @@ export function WaCloudAnalyticsPage() {
             isIconOnly
             aria-label="Refrescar"
             isPending={analytics.isFetching}
-            onPress={() => analytics.refetch()}
+            onPress={() => {
+              void analytics.refetch();
+            }}
           >
             <RefreshCw size={14} />
           </Button>

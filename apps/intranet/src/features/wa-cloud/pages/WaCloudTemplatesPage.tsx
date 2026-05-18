@@ -148,18 +148,20 @@ export function WaCloudTemplatesPage() {
                 <Button
                   variant="danger-soft"
                   isPending={del.isPending}
-                  onPress={async () => {
-                    if (!confirmDel) return;
-                    try {
-                      await del.mutateAsync({
-                        accountId: confirmDel.accountId,
-                        name: confirmDel.name,
-                      });
-                      toast.success("Plantilla eliminada");
-                      setConfirmDel(null);
-                    } catch (err) {
-                      toast.error(`Error: ${String(err)}`);
-                    }
+                  onPress={() => {
+                    void (async () => {
+                      if (!confirmDel) return;
+                      try {
+                        await del.mutateAsync({
+                          accountId: confirmDel.accountId,
+                          name: confirmDel.name,
+                        });
+                        toast.success("Plantilla eliminada");
+                        setConfirmDel(null);
+                      } catch (err) {
+                        toast.error(`Error: ${String(err)}`);
+                      }
+                    })();
                   }}
                 >
                   <Trash2 size={14} />
@@ -401,7 +403,12 @@ function CreateTemplateModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
                 <X size={14} />
                 Cancelar
               </Button>
-              <Button onPress={submit} isPending={create.isPending}>
+              <Button
+                onPress={() => {
+                  void submit();
+                }}
+                isPending={create.isPending}
+              >
                 <Plus size={14} />
                 Crear y enviar a revisión
               </Button>

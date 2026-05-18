@@ -265,8 +265,12 @@ function TimesheetEditorInner({
         initialRows={initialRows}
         modifiedCount={modifiedCount}
         monthLabel={monthLabel}
-        onBulkSave={handleBulkSave}
-        onRemoveEntry={handleRemoveEntry}
+        onBulkSave={(...args) => {
+          void handleBulkSave(...args);
+        }}
+        onRemoveEntry={(...args) => {
+          void handleRemoveEntry(...args);
+        }}
         onResetRow={handleResetRow}
         onRowChange={handleRowChange}
         onTimeBlur={handleTimeBlur}
@@ -284,7 +288,9 @@ function TimesheetEditorInner({
           setEmailModalOpen(false);
           setEmailPrepareStatus(null);
         }}
-        onPrepare={handlePrepareEmail}
+        onPrepare={(...args) => {
+          void handlePrepareEmail(...args);
+        }}
         selectedEmployee={selectedEmployee}
         summaryRow={summaryRow}
       />

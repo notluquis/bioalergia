@@ -161,88 +161,38 @@ function parseWithdrawalRows(rows: CsvUploadRow[]): {
 
   rows.forEach((row, index) => {
     const rowNumber = index + 1;
-    try {
-      const withdrawId = normalizeRequiredString(row.withdrawId);
-      let dateCreated: Date | null;
-      try {
-        dateCreated = normalizeDate(row.dateCreated);
-      } catch (err) {
-        // parseChileDateTime → dayjs.tz can throw on bad input
-        // (RangeError "Invalid time value" from native Date) instead
-        // of returning null. Catch + demote to a per-row error so
-        // ONE poison row doesn't 500 the whole 175-row batch.
-        logError("csv-upload.preview.normalizeDate", err, {
-          rowIndex: index,
-          rawValue: row.dateCreated,
-          rawType: typeof row.dateCreated,
-          rawJson: JSON.stringify(row.dateCreated),
-        });
-        errors.push(
-          `Fila ${rowNumber}: dateCreated lanzó excepción al parsear (raw=${String(
-            row.dateCreated
-          )}).`
-        );
-        return;
-      }
+    const withdrawId = normalizeRequiredString(row.withdrawId);
+    const dateCreated = normalizeDate(row.dateCreated);
 
-      if (!withdrawId) {
-        errors.push(`Fila ${rowNumber}: withdrawId es obligatorio.`);
-        return;
-      }
-
-      if (!dateCreated) {
-        // Log the raw value so we can extend parseChileDateTime if
-        // upstream sends a format we don't yet recognize.
-        logError(
-          "csv-upload.preview.dateCreated-null",
-          new Error("normalizeDate returned null"),
-          {
-            rowIndex: index,
-            rawValue: row.dateCreated,
-            rawType: typeof row.dateCreated,
-            rawJson: JSON.stringify(row.dateCreated),
-          }
-        );
-        errors.push(
-          `Fila ${rowNumber}: dateCreated inválido o vacío (raw="${String(row.dateCreated)}").`
-        );
-        return;
-      }
-
-      validRows.push({
-        activityUrl: normalizeNullableString(row.activityUrl),
-        amount: normalizeNumber(row.amount),
-        bankAccountHolder: normalizeNullableString(row.bankAccountHolder),
-        bankAccountNumber: normalizeNullableString(row.bankAccountNumber),
-        bankAccountType: normalizeNullableString(row.bankAccountType),
-        bankBranch: normalizeNullableString(row.bankBranch),
-        bankId: normalizeNullableString(row.bankId),
-        bankName: normalizeNullableString(row.bankName),
-        dateCreated,
-        fee: normalizeNumber(row.fee),
-        identificationNumber: normalizeRut(row.identificationNumber),
-        identificationType: normalizeNullableString(row.identificationType),
-        payoutDescription: normalizeNullableString(row.payoutDescription),
-        rowIndex: index,
-        status: normalizeNullableString(row.status),
-        statusDetail: normalizeNullableString(row.statusDetail),
-        withdrawId,
-      });
-    } catch (err) {
-      // Belt-and-suspenders: anything else in the row mapping throws,
-      // demote that row only. Surfaces the offender in logs without
-      // killing the whole batch.
-      logError("csv-upload.preview.row-map", err, {
-        rowIndex: index,
-        rowKeys: Object.keys(row),
-        // Don't dump full row to logs (PHI/PII): just the fields we
-        // suspect — dateCreated, withdrawId, amount.
-        dateCreated: row.dateCreated,
-        withdrawId: row.withdrawId,
-        amount: row.amount,
-      });
-      errors.push(`Fila ${rowNumber}: error inesperado mapeando fila.`);
+    if (!withdrawId) {
+      errors.push(`Fila ${rowNumber}: withdrawId es obligatorio.`);
+      return;
     }
+
+    if (!dateCreated) {
+      errors.push(`Fila ${rowNumber}: dateCreated es obligatorio y debe ser una fecha válida.`);
+      return;
+    }
+
+    validRows.push({
+      activityUrl: normalizeNullableString(row.activityUrl),
+      amount: normalizeNumber(row.amount),
+      bankAccountHolder: normalizeNullableString(row.bankAccountHolder),
+      bankAccountNumber: normalizeNullableString(row.bankAccountNumber),
+      bankAccountType: normalizeNullableString(row.bankAccountType),
+      bankBranch: normalizeNullableString(row.bankBranch),
+      bankId: normalizeNullableString(row.bankId),
+      bankName: normalizeNullableString(row.bankName),
+      dateCreated,
+      fee: normalizeNumber(row.fee),
+      identificationNumber: normalizeRut(row.identificationNumber),
+      identificationType: normalizeNullableString(row.identificationType),
+      payoutDescription: normalizeNullableString(row.payoutDescription),
+      rowIndex: index,
+      status: normalizeNullableString(row.status),
+      statusDetail: normalizeNullableString(row.statusDetail),
+      withdrawId,
+    });
   });
 
   return { errors, validRows };
@@ -522,75 +472,17 @@ const csvUploadORPCRouterBase = {
       }
 
       const mode = input.mode ?? "insert-only";
+      const { errors, validRows } = parseWithdrawalRows(input.data);
+      const classified = await classifyWithdrawalRows(validRows);
 
-      // DIAGNOSTIC LOGGING — investigating the recurring "Invalid time
-      // value" 500 reported via Sentry on this endpoint. Trace exactly
-      // which row + which Date instance is invalid so we can patch
-      // parseChileDateTime or the caller. Drop these logs once the
-      // root cause is found.
-      let validRows: WithdrawImportRow[];
-      let errors: string[];
-      try {
-        const parsed = parseWithdrawalRows(input.data);
-        validRows = parsed.validRows;
-        errors = parsed.errors;
-      } catch (err) {
-        logError("csv-upload.preview.parse", err, {
-          rowCount: input.data.length,
-          firstRowKeys: Object.keys(input.data[0] ?? {}),
-          firstRowDateCreated: input.data[0]?.dateCreated,
-        });
-        throw err;
-      }
-
-      // Sanity-check every validRow's Date before handing it downstream —
-      // a NaN Date will blow up `.toISOString()` somewhere in superjson
-      // or downstream serialization.
-      for (const row of validRows) {
-        if (Number.isNaN(row.dateCreated.getTime())) {
-          logError("csv-upload.preview.invalid-date", new Error("NaN dateCreated"), {
-            withdrawId: row.withdrawId,
-            rowIndex: row.rowIndex,
-            dateCreatedRaw: input.data[row.rowIndex]?.dateCreated,
-          });
-          // Demote the row from valid to errors so we never serialize the bad Date.
-          errors.push(
-            `Fila ${row.rowIndex + 1}: dateCreated quedó inválida tras parseo (raw=${String(
-              input.data[row.rowIndex]?.dateCreated
-            )}).`
-          );
-        }
-      }
-      const safeValidRows = validRows.filter(
-        (row) => !Number.isNaN(row.dateCreated.getTime())
-      );
-
-      let classified: Awaited<ReturnType<typeof classifyWithdrawalRows>>;
-      try {
-        classified = await classifyWithdrawalRows(safeValidRows);
-      } catch (err) {
-        logError("csv-upload.preview.classify", err, {
-          validRowCount: safeValidRows.length,
-        });
-        throw err;
-      }
-
-      try {
-        return buildWithdrawalPreview({
-          errors,
-          includeInsertRowIndexes: input.includeInsertRowIndexes,
-          includeUpdateRows: input.includeUpdateRows,
-          insertRows: classified.insertRows,
-          mode,
-          updateRows: classified.updateRows,
-        });
-      } catch (err) {
-        logError("csv-upload.preview.build", err, {
-          insertCount: classified.insertRows.length,
-          updateCount: classified.updateRows.length,
-        });
-        throw err;
-      }
+      return buildWithdrawalPreview({
+        errors,
+        includeInsertRowIndexes: input.includeInsertRowIndexes,
+        includeUpdateRows: input.includeUpdateRows,
+        insertRows: classified.insertRows,
+        mode,
+        updateRows: classified.updateRows,
+      });
     }),
 };
 
