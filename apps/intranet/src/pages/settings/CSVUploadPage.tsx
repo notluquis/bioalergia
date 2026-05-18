@@ -40,9 +40,22 @@ interface TableOption {
 }
 
 interface FieldDefinition {
+  /**
+   * camelCase DB field name (matches the contract input schema).
+   */
   name: string;
   required: boolean;
   type: string;
+  /**
+   * Extra CSV header aliases that should auto-map to this field when
+   * the field-name → header-alias fuzzy match fails. Example: MercadoPago
+   * exports the column `Motivo (payout_desc)` and our field is
+   * `payoutDescription` — they don't match after `normalizeKey` because
+   * `payout_desc` collapses to `payoutdesc` while `payoutDescription`
+   * collapses to `payoutdescription`. List the upstream short name here
+   * (`payout_desc`) so the auto-mapper finds it.
+   */
+  aliases?: readonly string[];
 }
 
 interface UploadedFile {
@@ -211,11 +224,21 @@ const isValidColumnMapping = (
   );
 };
 
-const matchHeaderForField = (fieldName: string, headers: string[]) => {
-  const normalizedField = normalizeKey(fieldName);
+const matchHeaderForField = (field: FieldDefinition, headers: string[]) => {
+  // Build the set of normalized keys we're willing to call a match: the
+  // field's own name + every alias declared on the FieldDefinition. This
+  // is how upstream column names with truncated words (e.g. MP's
+  // `payout_desc` vs our `payoutDescription`) hook up — the auto-mapper
+  // can't fuzzy-match across word boundaries.
+  const targets = new Set<string>([normalizeKey(field.name)]);
+  if (field.aliases) {
+    for (const alias of field.aliases) {
+      targets.add(normalizeKey(alias));
+    }
+  }
   for (const header of headers) {
-    const aliases = extractHeaderAliases(header);
-    if (aliases.some((alias) => normalizeKey(alias) === normalizedField)) {
+    const headerAliases = extractHeaderAliases(header);
+    if (headerAliases.some((alias) => targets.has(normalizeKey(alias)))) {
       return header;
     }
   }
@@ -228,7 +251,7 @@ const mapFieldsUsingExistingLogic = (
 ): Record<string, string> => {
   const mapping: Record<string, string> = {};
   for (const field of fields) {
-    const matched = matchHeaderForField(field.name, headers);
+    const matched = matchHeaderForField(field, headers);
     if (matched) {
       mapping[field.name] = matched;
     }
@@ -378,7 +401,14 @@ const TABLE_OPTIONS: TableOption[] = [
       { name: "amount", required: false, type: "number" },
       { name: "fee", required: false, type: "number" },
       { name: "activityUrl", required: false, type: "string" },
-      { name: "payoutDescription", required: false, type: "string" },
+      // MercadoPago exports as `Motivo (payout_desc)` — short alias
+      // doesn't fuzzy-match `payoutDescription`. Whitelist explicitly.
+      {
+        aliases: ["payout_desc", "motivo"],
+        name: "payoutDescription",
+        required: false,
+        type: "string",
+      },
       { name: "bankAccountHolder", required: false, type: "string" },
       { name: "identificationType", required: false, type: "string" },
       { name: "identificationNumber", required: false, type: "string" },
@@ -1225,24 +1255,29 @@ function buildMappingColumns({
       cell: ({ row }) => (
         <Select
           className="w-full min-w-35"
+          // HeroUI v3 Select is controlled via `value` + `onChange` (Key | Key[]).
+          // For single-select we get a string Key back; map back to "" (unmapped
+          // sentinel) when the user picks the explicit ignore item. Guard against
+          // `null` (HeroUI emits it on programmatic clear) so we don't poison the
+          // mapping with non-string values.
           onChange={(val) => {
             onMappingChanged();
+            const nextValue = val === null || val === UNMAPPED_COLUMN_KEY ? "" : String(val);
             setUploadedFiles((prev) =>
-              prev.map((file, idx) => {
-                if (idx === 0) {
-                  // Update first file's mapping
-                  return {
-                    ...file,
-                    columnMapping: {
-                      ...file.columnMapping,
-                      [row.original.name]: val === UNMAPPED_COLUMN_KEY ? "" : (val as string),
-                    },
-                  };
-                }
-                return file;
-              })
+              prev.map((file, idx) =>
+                idx === 0
+                  ? {
+                      ...file,
+                      columnMapping: {
+                        ...file.columnMapping,
+                        [row.original.name]: nextValue,
+                      },
+                    }
+                  : file
+              )
             );
           }}
+          placeholder="Sin mapear"
           value={firstFile.columnMapping[row.original.name] || UNMAPPED_COLUMN_KEY}
         >
           <Label>Columna CSV</Label>
