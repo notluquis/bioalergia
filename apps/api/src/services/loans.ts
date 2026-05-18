@@ -507,7 +507,8 @@ export async function regenerateLoanSchedules(
   const loan = await ensureLoanExists(publicId);
 
   const hasRegisteredPayments = loan.schedules.some(
-    (schedule) => schedule.paidAmount !== null || schedule.transactionId !== null
+    (schedule: (typeof loan.schedules)[number]) =>
+      schedule.paidAmount !== null || schedule.transactionId !== null
   );
   if (hasRegisteredPayments) {
     throw new AppError(409, {

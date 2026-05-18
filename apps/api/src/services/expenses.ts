@@ -275,8 +275,11 @@ export async function listExpenses(filters: ExpenseFilters = {}) {
     orderBy: [{ expenseMonth: "desc" }, { name: "asc" }],
   });
 
-  return expenses.map((e) => {
-    const amountApplied = e.transactions.reduce((sum, tx) => sum + Number(tx.amount), 0);
+  return expenses.map((e: (typeof expenses)[number]) => {
+    const amountApplied = e.transactions.reduce(
+      (sum: number, tx: (typeof e.transactions)[number]) => sum + Number(tx.amount),
+      0
+    );
     return buildExpenseItem(e, e._count.transactions, amountApplied);
   });
 }
@@ -296,12 +299,15 @@ export async function getExpense(publicId: string) {
     return null;
   }
 
-  const amountApplied = expense.transactions.reduce((sum, tx) => sum + Number(tx.amount), 0);
+  const amountApplied = expense.transactions.reduce(
+    (sum: number, tx: (typeof expense.transactions)[number]) => sum + Number(tx.amount),
+    0
+  );
 
   // For each expense transaction, fetch the settlement transaction to get
   // description, direction (transactionType), and timestamp (transactionDate)
   const txDetails = await Promise.all(
-    expense.transactions.map(async (et) => {
+    expense.transactions.map(async (et: (typeof expense.transactions)[number]) => {
       const settlement = await db.settlementTransaction.findFirst({
         where: { id: et.transactionId },
         select: {

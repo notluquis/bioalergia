@@ -226,10 +226,10 @@ export async function findMatchingSeries(
     let best: null | { distance: number; id: number; score: number } = null;
     for (const c of nameCandidates) {
       const dates = c.events
-        .map((e) => e.startDate ?? e.startDateTime ?? e.endDate ?? e.endDateTime)
-        .filter((v): v is Date => v instanceof Date)
-        .map((v) => dayjs(v).tz(TIMEZONE))
-        .sort((a, b) => a.valueOf() - b.valueOf());
+        .map((e: (typeof c.events)[number]) => e.startDate ?? e.startDateTime ?? e.endDate ?? e.endDateTime)
+        .filter((v: Date | null): v is Date => v instanceof Date)
+        .map((v: Date) => dayjs(v).tz(TIMEZONE))
+        .sort((a: dayjs.Dayjs, b: dayjs.Dayjs) => a.valueOf() - b.valueOf());
       const distance =
         dates.length === 0
           ? Infinity
@@ -450,10 +450,10 @@ export async function findMatchingSeries(
         const overlap = eventTokens.filter((t) => cTokens.includes(t)).length;
         if (overlap < 2 || overlap / Math.min(eventTokens.length, cTokens.length) < 2 / 3) continue;
         const dates = c.events
-          .map((e) => e.startDate ?? e.startDateTime ?? e.endDate ?? e.endDateTime)
-          .filter((v): v is Date => v instanceof Date)
-          .map((v) => dayjs(v).tz(TIMEZONE))
-          .sort((a, b) => a.valueOf() - b.valueOf());
+          .map((e: (typeof c.events)[number]) => e.startDate ?? e.startDateTime ?? e.endDate ?? e.endDateTime)
+          .filter((v: Date | null): v is Date => v instanceof Date)
+          .map((v: Date) => dayjs(v).tz(TIMEZONE))
+          .sort((a: dayjs.Dayjs, b: dayjs.Dayjs) => a.valueOf() - b.valueOf());
         const distance =
           dates.length === 0
             ? Infinity

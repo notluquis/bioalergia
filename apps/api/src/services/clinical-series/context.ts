@@ -95,10 +95,10 @@ export class SeriesAssignmentContext {
     });
     for (const s of rows) {
       const dates = s.events
-        .map((e) => e.startDate ?? e.startDateTime ?? e.endDate ?? e.endDateTime)
-        .filter((v): v is Date => v instanceof Date)
-        .map((v) => dayjs(v).tz(TIMEZONE))
-        .sort((a, b) => a.valueOf() - b.valueOf());
+        .map((e: (typeof s.events)[number]) => e.startDate ?? e.startDateTime ?? e.endDate ?? e.endDateTime)
+        .filter((v: Date | null): v is Date => v instanceof Date)
+        .map((v: Date) => dayjs(v).tz(TIMEZONE))
+        .sort((a: dayjs.Dayjs, b: dayjs.Dayjs) => a.valueOf() - b.valueOf());
       ctx.addEntry({
         beneficiaryName: s.beneficiaryName,
         beneficiaryRut: s.beneficiaryRut,

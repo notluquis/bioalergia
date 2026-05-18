@@ -616,7 +616,7 @@ const dteAnalyticsORPCRouterBase = {
     .input(dteFetchXmlInputSchema)
     .output(dteFetchXmlResponseSchema)
     .handler(async ({ input }: { input: z.output<typeof dteFetchXmlInputSchema> }) => {
-      const { haulmerConfig: cfg } = await import("../config.ts");
+      const { haulmerConfig: cfg } = await import("../lib/config.ts");
       if (!cfg) {
         throw new ORPCError("INTERNAL_SERVER_ERROR", {
           message: "Haulmer not configured (missing env vars)",
@@ -639,7 +639,7 @@ const dteAnalyticsORPCRouterBase = {
     .input(dteFetchXmlByPeriodInputSchema)
     .output(dteFetchXmlByPeriodResponseSchema)
     .handler(async ({ input }: { input: z.output<typeof dteFetchXmlByPeriodInputSchema> }) => {
-      const { haulmerConfig: cfg } = await import("../config.ts");
+      const { haulmerConfig: cfg } = await import("../lib/config.ts");
       if (!cfg) {
         throw new ORPCError("INTERNAL_SERVER_ERROR", {
           message: "Haulmer not configured (missing env vars)",

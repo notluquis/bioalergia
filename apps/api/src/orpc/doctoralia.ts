@@ -395,7 +395,7 @@ const doctoraliaORPCRouterBase = {
           process.env.DOCTORALIA_CALENDAR_APPOINTMENTS_REFRESH_MS || "120000"
         );
         const { runDoctoraliaCalendarAutoSync } =
-          await import("../lib/doctoralia/doctoralia-calendar-scheduler.ts");
+          await import("../services/doctoralia-calendar-scheduler.ts");
         const { getSetting } = await import("../services/settings.ts");
         const lastSuccessAtRaw = await getSetting("doctoralia:calendar:lastSuccessAt");
         const lastSuccessAt = lastSuccessAtRaw ? new Date(lastSuccessAtRaw).getTime() : 0;
