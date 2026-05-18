@@ -107,7 +107,7 @@ export function registerMercadopagoCheckoutWebhook(app: Hono) {
               customerRut: order.customerRut,
               customerName: order.customerName,
               totalClp: order.totalClp,
-              lines: order.items.map((i) => {
+              lines: order.items.map((i: (typeof order.items)[number]) => {
                 const snap = i.productSnapshot as { sku: string; name: string };
                 return {
                   sku: snap.sku,
