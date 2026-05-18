@@ -21,7 +21,7 @@ const meta: Meta<typeof SidebarItem> = {
     docs: {
       description: {
         component:
-          "Item del sidebar lateral. En desktop (slim) sólo muestra icono con tooltip; en móvil muestra icono + label dentro de un panel horizontal. El estado activo se calcula vía `Link` de TanStack Router (matching exacto). Estas stories montan un router en memoria para distintas rutas iniciales.",
+          "Item del sidebar lateral. Layout responsive via Tailwind (`md:` para slim icon-only desktop, defaults para mobile drawer). El estado activo se calcula vía `Link` de TanStack Router (matching exacto). Las stories simulan ambos breakpoints variando el ancho del wrapper — el componente reacciona vía CSS sin recibir prop de viewport.",
       },
     },
   },
@@ -35,19 +35,19 @@ const HOME_ITEM: NavItem = { icon: Home, label: "Inicio", to: "/" };
 const PATIENTS_ITEM: NavItem = { icon: Users, label: "Pacientes", to: "/pacientes" };
 const CALENDAR_ITEM: NavItem = { icon: Calendar, label: "Agenda", to: "/agenda" };
 
-function buildRouter(initialPath: string, isMobile: boolean) {
+function buildRouter(initialPath: string, slim: boolean) {
   const rootRoute = createRootRoute({
     component: () => (
       <div
         className={
-          isMobile
-            ? "flex w-64 flex-col gap-1 rounded-2xl border border-default-100 bg-background/80 p-3"
-            : "flex w-16 flex-col items-center gap-2 rounded-2xl border border-default-100 bg-background/80 p-2"
+          slim
+            ? "flex w-16 flex-col items-center gap-2 rounded-2xl border border-default-100 bg-background/80 p-2"
+            : "flex w-64 flex-col gap-1 rounded-2xl border border-default-100 bg-background/80 p-3"
         }
       >
-        <SidebarItem isMobile={isMobile} item={HOME_ITEM} onNavigate={() => {}} />
-        <SidebarItem isMobile={isMobile} item={PATIENTS_ITEM} onNavigate={() => {}} />
-        <SidebarItem isMobile={isMobile} item={CALENDAR_ITEM} onNavigate={() => {}} />
+        <SidebarItem item={HOME_ITEM} onNavigate={() => {}} />
+        <SidebarItem item={PATIENTS_ITEM} onNavigate={() => {}} />
+        <SidebarItem item={CALENDAR_ITEM} onNavigate={() => {}} />
         <Outlet />
       </div>
     ),
@@ -73,14 +73,20 @@ function buildRouter(initialPath: string, isMobile: boolean) {
   });
 }
 
+// Slim desktop rail: parent w-16, `md:` styles kick in at >= 768px which
+// Storybook viewport hits by default. The CSS-responsive component
+// auto-collapses to icon-only.
 export const DesktopSlim: Story = {
-  render: () => <RouterProvider router={buildRouter("/", false)} />,
+  render: () => <RouterProvider router={buildRouter("/", true)} />,
 };
 
 export const DesktopActivePatients: Story = {
-  render: () => <RouterProvider router={buildRouter("/pacientes", false)} />,
+  render: () => <RouterProvider router={buildRouter("/pacientes", true)} />,
 };
 
+// Mobile drawer-style: parent w-64 to simulate the drawer width. Storybook
+// `viewports` addon can switch to a mobile viewport for SSR fidelity.
 export const Mobile: Story = {
-  render: () => <RouterProvider router={buildRouter("/agenda", true)} />,
+  parameters: { viewport: { defaultViewport: "mobile1" } },
+  render: () => <RouterProvider router={buildRouter("/agenda", false)} />,
 };

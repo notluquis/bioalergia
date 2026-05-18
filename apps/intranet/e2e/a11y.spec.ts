@@ -102,10 +102,21 @@ authed.describe("a11y / authenticated", () => {
       // landmark must contain at least one child rendered by React. No
       // arbitrary sleeps.
       await authedPage.waitForLoadState("load");
+      // 1. Wait for the `<main>` landmark itself (cheap — layout commits in
+      //    <1s once auth resolves). Gives us a clear signal route mounted.
+      await authedPage
+        .locator("#main-content, main, [role='main']")
+        .first()
+        .waitFor({ state: "attached", timeout: 15_000 });
+      // 2. Wait for React to render at least one child inside it. Heavy
+      //    routes (calendar, mercadopago) Suspense-await on initial data;
+      //    Railway prod over CI network needs more headroom than the
+      //    10s we used before (failures observed 2026-05-18 on mobile
+      //    project).
       await authedPage
         .locator("#main-content > *, main > *, [role='main'] > *")
         .first()
-        .waitFor({ state: "attached", timeout: 10_000 });
+        .waitFor({ state: "attached", timeout: 20_000 });
       // Let loading skeletons settle before scanning. HeroUI's <Skeleton>
       // renders placeholder cells with no text — axe flags them
       // (`empty-table-header`) if it scans mid-load. Wait for the first

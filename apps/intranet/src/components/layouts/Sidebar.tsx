@@ -46,12 +46,7 @@ export function Sidebar({ isMobile, isOpen, onClose, sidebarId }: SidebarProps) 
   // <aside>): logo, scrollable nav, user-menu pill.
 
   const logoBlock = (
-    <div
-      className={cn(
-        "flex h-20 shrink-0 items-center justify-center",
-        isMobile ? "px-5" : "px-0"
-      )}
-    >
+    <div className="flex h-20 shrink-0 items-center justify-center px-5 md:px-0">
       <div className="relative flex items-center justify-center size-12">
         <img
           alt="Bioalergia"
@@ -70,23 +65,15 @@ export function Sidebar({ isMobile, isOpen, onClose, sidebarId }: SidebarProps) 
     <div className="space-y-6">
       {visibleSections.map((section, index) => (
         <div className="space-y-4" key={section.title}>
-          {index > 0 && (
-            <Separator
-              aria-hidden="true"
-              className={cn(isMobile ? "w-full" : "mx-auto w-10")}
-            />
-          )}
-          {isMobile && (
-            <div className="flex items-center px-4 pb-1">
-              <h3 className="font-bold text-xs text-default-600 tracking-[0.2em]">
-                {section.title}
-              </h3>
-            </div>
-          )}
+          {index > 0 && <Separator aria-hidden="true" className="w-full md:mx-auto md:w-10" />}
+          {/* Section heading — visible on mobile drawer, hidden on slim
+              desktop rail where icon-only items don't need group labels. */}
+          <div className="flex items-center px-4 pb-1 md:hidden">
+            <h3 className="font-bold text-xs text-default-600 tracking-[0.2em]">{section.title}</h3>
+          </div>
           <div className="space-y-2">
             {section.items.map((item) => (
               <SidebarItem
-                isMobile={isMobile}
                 item={item}
                 key={item.to}
                 onNavigate={() => {
@@ -107,9 +94,10 @@ export function Sidebar({ isMobile, isOpen, onClose, sidebarId }: SidebarProps) 
           aria-label="Abrir menu de usuario"
           className={cn(
             "group flex cursor-pointer items-center outline-none hover:bg-default-50/50",
-            isMobile
-              ? "w-full gap-3 rounded-2xl px-3 py-2"
-              : "justify-center rounded-xl p-0 size-12"
+            // Mobile drawer footer = full-width pill w/ name+email.
+            // Desktop slim rail = avatar-only round button.
+            "w-full gap-3 rounded-2xl px-3 py-2",
+            "md:justify-center md:gap-0 md:rounded-xl md:p-0 md:size-12"
           )}
           type="button"
           variant="outline"
@@ -119,14 +107,13 @@ export function Sidebar({ isMobile, isOpen, onClose, sidebarId }: SidebarProps) 
               {displayName.slice(0, 2).toUpperCase()}
             </Avatar.Fallback>
           </Avatar>
-          {isMobile && (
-            <div className="flex min-w-0 flex-1 flex-col gap-0.5 text-left">
-              <span className="truncate font-semibold text-foreground group-hover:text-primary">
-                {displayName}
-              </span>
-              <span className="truncate text-default-600 text-xs">{user?.email}</span>
-            </div>
-          )}
+          {/* Name + email — drawer footer only; collapses on slim rail. */}
+          <div className="flex min-w-0 flex-1 flex-col gap-0.5 text-left md:hidden">
+            <span className="truncate font-semibold text-foreground group-hover:text-primary">
+              {displayName}
+            </span>
+            <span className="truncate text-default-600 text-xs">{user?.email}</span>
+          </div>
         </Button>
       </Dropdown.Trigger>
       <Dropdown.Popover placement="top start">
@@ -187,7 +174,7 @@ export function Sidebar({ isMobile, isOpen, onClose, sidebarId }: SidebarProps) 
       >
         <Drawer.Content placement="left">
           <Drawer.Dialog
-            className="relative flex h-full max-h-dvh w-[min(85vw,320px)] flex-col rounded-r-3xl border-r border-default-200 bg-content1 p-0 pl-[env(safe-area-inset-left)] shadow-2xl"
+            className="relative flex h-full max-h-dvh w-[min(85vw,320px)] flex-col overflow-x-clip rounded-r-3xl border-r border-default-200 bg-content1 p-0 pl-[env(safe-area-inset-left)] shadow-2xl"
             id={sidebarId}
           >
             <Drawer.CloseTrigger aria-label="Cerrar menú" className="z-10" />

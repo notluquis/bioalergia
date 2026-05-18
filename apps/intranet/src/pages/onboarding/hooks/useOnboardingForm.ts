@@ -152,6 +152,14 @@ export function useOnboardingForm() {
       }
       return verifyResult;
     },
+    onSuccess: () => {
+      // Advance to the next step on successful passkey registration —
+      // mirrors mfaVerify above. Missing this was the bug that froze
+      // the wizard on step 4 after passkey enrolment (no test caught
+      // it because the onboarding flow has zero tests; see
+      // useOnboardingForm.test.ts companion file).
+      setCurrentStep((prev) => prev + 1);
+    },
     onError: (mutationError) => {
       const msg =
         mutationError instanceof Error ? mutationError.message : "No se pudo registrar el Passkey";
