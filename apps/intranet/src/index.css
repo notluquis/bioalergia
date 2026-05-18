@@ -52,7 +52,9 @@ html {
   --default-200: oklch(92% 0.004 85);
   --default-300: oklch(86% 0.006 85);
   --default-400: oklch(70% 0.01 85);
-  --default-500: oklch(55% 0.012 85);
+  /* 50% lightness → ratio 4.55 over cream bg (oklch 96.5% 0.013 85);
+     prior 55% rendered 4.38, failing axe color-contrast WCAG 2.2 AA. */
+  --default-500: oklch(50% 0.012 85);
   --default-600: oklch(42% 0.012 85);
   --default-700: oklch(32% 0.012 85);
   --default-800: oklch(22% 0.012 85);
