@@ -41,6 +41,7 @@
     "@casl/ability": "^6.8.1",
     "@casl/react": "^6.0.0",
     "@finanzas/db": "workspace:*",
+    "@finanzas/orpc-client": "workspace:*",
     "@finanzas/orpc-contracts": "workspace:*",
     "@finanzas/theme": "workspace:*",
     "@fullcalendar/core": "^6.1.20",

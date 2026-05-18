@@ -1,0 +1,27 @@
+{
+  "name": "@finanzas/orpc-client",
+  "version": "0.0.1",
+  "files": ["dist"],
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@orpc/client": "^1.14.3",
+    "@orpc/shared": "^1.14.3",
+    "superjson": "^2.2.2"
+  },
+  "devDependencies": {
+    "typescript": "^6.0.3"
+  }
+}

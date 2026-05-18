@@ -1,24 +1,8 @@
 // oxlint-disable typescript/no-non-null-assertion -- TODO(strict-null): refactor each `!` to invariant() or explicit guard. Tracked in repo-wide non-null cleanup.
-import type { ClientContext } from "@orpc/client";
-import {
-  createORPCClient,
-  createORPCErrorFromJson,
-  ErrorEvent,
-  isORPCErrorJson,
-  mapEventIterator,
-  ORPCError,
-  toORPCError,
-} from "@orpc/client";
+import { SuperJSONLink } from "@finanzas/orpc-client";
+export { SuperJSONLink };
+import { createORPCClient, isORPCErrorJson, ORPCError } from "@orpc/client";
 import type { ContractRouterClient } from "@orpc/contract";
-import type { LinkFetchClientOptions } from "@orpc/client/fetch";
-import { LinkFetchClient } from "@orpc/client/fetch";
-import type {
-  StandardLinkOptions,
-  StandardRPCLinkCodecOptions,
-  StandardRPCSerializer,
-} from "@orpc/client/standard";
-import { StandardLink, StandardRPCLinkCodec } from "@orpc/client/standard";
-import { isAsyncIteratorObject } from "@orpc/shared";
 import type { CalendarContract } from "@finanzas/orpc-contracts/calendar";
 import { ApiError } from "@/lib/api-client";
 import { configureSuperjson } from "@/lib/superjson-config";
@@ -153,70 +137,17 @@ async function orpcFetch(request: RequestInfo | URL, init?: RequestInit): Promis
   return toStructuredORPCErrorResponse(response, rawBody);
 }
 
-class SuperJSONSerializer implements Pick<StandardRPCSerializer, keyof StandardRPCSerializer> {
-  serialize(data: unknown): object {
-    if (isAsyncIteratorObject(data)) {
-      return mapEventIterator(data, {
-        value: async (value: unknown) => superjson.serialize(value),
-        error: async (error) =>
-          new ErrorEvent({
-            data: superjson.serialize(toORPCError(error).toJSON()),
-            cause: error,
-          }),
-      });
-    }
+// SuperJSONLink + serializer live in @finanzas/orpc-client (shared with
+// apps/site). We pass our locally-configured superjson instance (which
+// registers Decimal.js for finance models) instead of the default.
 
-    return superjson.serialize(data);
-  }
-
-  deserialize(data: unknown): unknown {
-    if (isAsyncIteratorObject(data)) {
-      return mapEventIterator(data, {
-        value: async (value) => superjson.deserialize(value),
-        error: async (error) => {
-          if (!(error instanceof ErrorEvent)) {
-            return error;
-          }
-
-          const deserialized = superjson.deserialize(
-            error.data as Parameters<typeof superjson.deserialize>[0]
-          );
-
-          if (isORPCErrorJson(deserialized)) {
-            return createORPCErrorFromJson(deserialized, { cause: error });
-          }
-
-          return new ErrorEvent({
-            data: deserialized,
-            cause: error,
-          });
-        },
-      });
-    }
-
-    return superjson.deserialize(data as Parameters<typeof superjson.deserialize>[0]);
-  }
-}
-
-interface SuperJSONLinkOptions<T extends ClientContext>
-  extends
-    LinkFetchClientOptions<T>,
-    Omit<StandardLinkOptions<T>, "plugins">,
-    StandardRPCLinkCodecOptions<T> {}
-
-export class SuperJSONLink<T extends ClientContext> extends StandardLink<T> {
-  constructor(options: SuperJSONLinkOptions<T>) {
-    const linkClient = new LinkFetchClient(options);
-    const serializer = new SuperJSONSerializer();
-    const linkCodec = new StandardRPCLinkCodec(serializer as StandardRPCSerializer, options);
-
-    super(linkCodec, linkClient, options);
-  }
-}
-
+// `configureSuperjson()` returns the singleton instance but its types
+// are the class — cast once for the link config.
 const calendarORPCLink = new SuperJSONLink({
   fetch: orpcFetch,
   url: () => window.location.origin,
+  // eslint-disable-next-line typescript/no-explicit-any
+  superjson: superjson as any,
 });
 
 export type CalendarORPCClient = ContractRouterClient<CalendarContract>;
