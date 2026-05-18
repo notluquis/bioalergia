@@ -1,7 +1,7 @@
 import { Breadcrumbs, Card } from "@heroui/react";
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 
-import { LEGAL } from "@/features/shop/data/legal-content";
+import { LEGAL } from "@/features/shop/legal-content";
 
 type LegalKey = keyof typeof LEGAL;
 
