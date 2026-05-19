@@ -447,6 +447,73 @@ const examReportsRouterBase = {
       };
     }),
 
+  // ── Allergen tag editor (admin) ───────────────────────────────────
+  // Backs the AllergensTagsPanel inside `/exam-reports?tab=allergens`.
+  // Paginated + searchable; returns `total` so the panel can render a
+  // "Mostrando N de M" footer. Includes inactive rows because the
+  // editor's purpose is also to retire tags from deprecated allergens.
+  listAllergensWithTags: base
+    .route({ method: "GET", path: "/allergens/admin", tags: ["ExamReports"] })
+    .input(examReportsContract.listAllergensWithTags["~orpc"].inputSchema!)
+    .output(examReportsContract.listAllergensWithTags["~orpc"].outputSchema!)
+    .handler(async ({ input }) => {
+      const where: Record<string, unknown> = {};
+      if (input?.search) {
+        const q = input.search.trim();
+        if (q) {
+          where.OR = [
+            { commonName: { contains: q, mode: "insensitive" as const } },
+            { scientificName: { contains: q, mode: "insensitive" as const } },
+            // Allow searching by category code too (e.g. "polen").
+            { category: { contains: q, mode: "insensitive" as const } },
+          ];
+        }
+      }
+      if (input?.onlyTagged) {
+        // Postgres array length predicate via raw Kysely is messier;
+        // the ZenStack `isEmpty: false` filter compiles to
+        // `tags != '{}'` which is correct for empty arrays.
+        where.tags = { isEmpty: false };
+      }
+      const [items, total] = await Promise.all([
+        db.clinicalAllergen.findMany({
+          where,
+          select: { ...allergenSelect, isActive: true },
+          orderBy: [{ category: "asc" }, { commonName: "asc" }],
+          take: input?.limit ?? 50,
+          skip: input?.offset ?? 0,
+        }),
+        db.clinicalAllergen.count({ where }),
+      ]);
+      return { items, total };
+    }),
+
+  updateAllergenTags: base
+    .route({ method: "POST", path: "/allergens/{id}/tags", tags: ["ExamReports"] })
+    .input(examReportsContract.updateAllergenTags["~orpc"].inputSchema!)
+    .output(examReportsContract.updateAllergenTags["~orpc"].outputSchema!)
+    .handler(async ({ input }) => {
+      // De-dupe tags (case where the combobox emits the same string
+      // twice via paste). Preserve insertion order for human-friendly
+      // diff in the audit log.
+      const dedup = Array.from(new Set(input.tags));
+      try {
+        const updated = await db.clinicalAllergen.update({
+          where: { id: input.id },
+          data: { tags: dedup },
+          select: { ...allergenSelect, isActive: true },
+        });
+        return updated;
+      } catch (e) {
+        // Prisma surfaces P2025 when the row doesn't exist; translate
+        // to a 404 so the panel can show the right toast.
+        if ((e as { code?: string }).code === "P2025") {
+          throw new ORPCError("NOT_FOUND", { message: "Alérgeno no encontrado" });
+        }
+        throw e;
+      }
+    }),
+
   // ── Allergen catalog (read-only proxy) ────────────────────────────
   listAllergens: base
     .route({ method: "GET", path: "/allergens", tags: ["ExamReports"] })

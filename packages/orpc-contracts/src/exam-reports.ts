@@ -223,6 +223,51 @@ const allergenListOutputSchema = z.object({
   categories: z.array(z.string()),
 });
 
+// ── Allergen tags admin (CRU on ClinicalAllergen.tags) ───────────────
+//
+// Surfaces the same ClinicalAllergen rows as `listAllergens` PLUS an
+// `isActive` flag (so the admin panel can show greyed-out inactive
+// rows). `updateAllergenTags` mutates the `tags` string[] only —
+// schema migrations already created the column. EAACI canonical
+// families are exposed via `ALLERGEN_TAG_SUGGESTIONS` on the client
+// so the combobox can hint without forcing — the server accepts any
+// kebab-case-or-lowercase string to keep the admin workflow flexible.
+
+const allergenAdminRowSchema = allergenLiteSchema.extend({
+  isActive: z.boolean(),
+});
+
+const listAllergensWithTagsInputSchema = z
+  .object({
+    search: z.string().optional(),
+    limit: z.number().int().positive().max(500).optional(),
+    offset: z.number().int().nonnegative().optional(),
+    // When true, hide rows whose `tags` array is empty — useful to
+    // focus on the ~120 already-classified families after the EAACI
+    // backfill migration.
+    onlyTagged: z.boolean().optional(),
+  })
+  .partial();
+
+const listAllergensWithTagsOutputSchema = z.object({
+  items: z.array(allergenAdminRowSchema),
+  total: z.number().int().nonnegative(),
+});
+
+// One tag = lowercase kebab-case, non-empty, ≤40 chars. Server-side
+// validation rejects accidental capitals or whitespace tokens; the UI
+// normalises before submit. Empty array allowed (clears all tags).
+const allergenTagSchema = z
+  .string()
+  .min(1)
+  .max(40)
+  .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/u, "tag must be lowercase kebab-case");
+
+const updateAllergenTagsInputSchema = z.object({
+  id: z.string().min(1),
+  tags: z.array(allergenTagSchema).max(20),
+});
+
 // ── Latest skin-test controls (XLSX source-of-truth for wizard) ──────
 //
 // Lets the wizard prefill the histamine + saline control mm fields
@@ -244,6 +289,23 @@ const latestPatientControlsOutputSchema = z.object({
 });
 
 // ── Contract ─────────────────────────────────────────────────────────
+
+/**
+ * Canonical EAACI cross-reactivity family tags. The 2026-05-18
+ * backfill migration applied these to ~120 ClinicalAllergen rows;
+ * the admin combobox surfaces them as suggestions while still
+ * allowing arbitrary kebab-case strings for future families.
+ */
+export const ALLERGEN_TAG_SUGGESTIONS = [
+  "pr-10",
+  "profilin",
+  "tropomyosin",
+  "ltp",
+  "serum-albumin",
+  "parvalbumin",
+  "lipocalin",
+] as const;
+export type AllergenTagSuggestion = (typeof ALLERGEN_TAG_SUGGESTIONS)[number];
 
 export const examReportsContract = {
   list: oc
@@ -330,6 +392,22 @@ export const examReportsContract = {
     .route({ method: "GET", path: "/allergens" })
     .input(allergenListInputSchema)
     .output(allergenListOutputSchema),
+
+  // Admin: list every allergen + current tags[] for the tag-editor UI.
+  // Paginated/searchable. Separate from `listAllergens` because that
+  // endpoint is shaped for the wizard picker (no `total`, no inactive).
+  listAllergensWithTags: oc
+    .route({ method: "GET", path: "/allergens/admin" })
+    .input(listAllergensWithTagsInputSchema)
+    .output(listAllergensWithTagsOutputSchema),
+
+  // Admin: replace the entire `tags` array on one ClinicalAllergen.
+  // Returns the updated row so the client can patch the cache without
+  // refetching the whole list.
+  updateAllergenTags: oc
+    .route({ method: "POST", path: "/allergens/{id}/tags" })
+    .input(updateAllergenTagsInputSchema)
+    .output(allergenAdminRowSchema),
 
   latestPatientControls: oc
     .route({ method: "GET", path: "/patients/{patientId}/latest-controls" })
