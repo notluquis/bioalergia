@@ -120,7 +120,7 @@ const QUICK_LINKS = [
     icon: ArrowRightLeft,
     subject: "Transaction",
     title: "Ver movimientos",
-    to: "/finanzas/statistics" as const,
+    to: "/finanzas/dashboard" as const,
   },
   {
     action: "read",

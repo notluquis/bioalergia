@@ -28,7 +28,7 @@ export function RecentMovementsWidget({ rows }: { rows: Transaction[] }) {
         </div>
         <Button
           onPress={() => {
-            void navigate({ to: "/finanzas/statistics" });
+            void navigate({ to: "/finanzas/dashboard", search: { tab: "estadisticas" } });
           }}
           size="sm"
           type="button"

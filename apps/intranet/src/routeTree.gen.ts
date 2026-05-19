@@ -48,7 +48,6 @@ import { Route as AuthedOperationsSuppliesRouteImport } from "./routes/_authed/o
 import { Route as AuthedOperationsShipmentsRouteImport } from "./routes/_authed/operations/shipments"
 import { Route as AuthedOperationsReviewsRouteImport } from "./routes/_authed/operations/reviews"
 import { Route as AuthedOperationsHaulmerDteRouteImport } from "./routes/_authed/operations/haulmer-dte"
-import { Route as AuthedFinanzasStatisticsRouteImport } from "./routes/_authed/finanzas/statistics"
 import { Route as AuthedFinanzasProductionBalancesRouteImport } from "./routes/_authed/finanzas/production-balances"
 import { Route as AuthedFinanzasPersonalRouteImport } from "./routes/_authed/finanzas/personal"
 import { Route as AuthedFinanzasLoansRouteImport } from "./routes/_authed/finanzas/loans"
@@ -279,12 +278,6 @@ const AuthedOperationsHaulmerDteRoute =
     path: "/haulmer-dte",
     getParentRoute: () => AuthedOperationsRoute,
   } as any)
-const AuthedFinanzasStatisticsRoute =
-  AuthedFinanzasStatisticsRouteImport.update({
-    id: "/statistics",
-    path: "/statistics",
-    getParentRoute: () => AuthedFinanzasRoute,
-  } as any)
 const AuthedFinanzasProductionBalancesRoute =
   AuthedFinanzasProductionBalancesRouteImport.update({
     id: "/production-balances",
@@ -486,7 +479,6 @@ export interface FileRoutesByFullPath {
   "/finanzas/loans": typeof AuthedFinanzasLoansRoute
   "/finanzas/personal": typeof AuthedFinanzasPersonalRouteWithChildren
   "/finanzas/production-balances": typeof AuthedFinanzasProductionBalancesRoute
-  "/finanzas/statistics": typeof AuthedFinanzasStatisticsRoute
   "/operations/haulmer-dte": typeof AuthedOperationsHaulmerDteRoute
   "/operations/reviews": typeof AuthedOperationsReviewsRoute
   "/operations/shipments": typeof AuthedOperationsShipmentsRoute
@@ -550,7 +542,6 @@ export interface FileRoutesByTo {
   "/finanzas/loans": typeof AuthedFinanzasLoansRoute
   "/finanzas/personal": typeof AuthedFinanzasPersonalRouteWithChildren
   "/finanzas/production-balances": typeof AuthedFinanzasProductionBalancesRoute
-  "/finanzas/statistics": typeof AuthedFinanzasStatisticsRoute
   "/operations/haulmer-dte": typeof AuthedOperationsHaulmerDteRoute
   "/operations/reviews": typeof AuthedOperationsReviewsRoute
   "/operations/shipments": typeof AuthedOperationsShipmentsRoute
@@ -623,7 +614,6 @@ export interface FileRoutesById {
   "/_authed/finanzas/loans": typeof AuthedFinanzasLoansRoute
   "/_authed/finanzas/personal": typeof AuthedFinanzasPersonalRouteWithChildren
   "/_authed/finanzas/production-balances": typeof AuthedFinanzasProductionBalancesRoute
-  "/_authed/finanzas/statistics": typeof AuthedFinanzasStatisticsRoute
   "/_authed/operations/haulmer-dte": typeof AuthedOperationsHaulmerDteRoute
   "/_authed/operations/reviews": typeof AuthedOperationsReviewsRoute
   "/_authed/operations/shipments": typeof AuthedOperationsShipmentsRoute
@@ -696,7 +686,6 @@ export interface FileRouteTypes {
     | "/finanzas/loans"
     | "/finanzas/personal"
     | "/finanzas/production-balances"
-    | "/finanzas/statistics"
     | "/operations/haulmer-dte"
     | "/operations/reviews"
     | "/operations/shipments"
@@ -760,7 +749,6 @@ export interface FileRouteTypes {
     | "/finanzas/loans"
     | "/finanzas/personal"
     | "/finanzas/production-balances"
-    | "/finanzas/statistics"
     | "/operations/haulmer-dte"
     | "/operations/reviews"
     | "/operations/shipments"
@@ -832,7 +820,6 @@ export interface FileRouteTypes {
     | "/_authed/finanzas/loans"
     | "/_authed/finanzas/personal"
     | "/_authed/finanzas/production-balances"
-    | "/_authed/finanzas/statistics"
     | "/_authed/operations/haulmer-dte"
     | "/_authed/operations/reviews"
     | "/_authed/operations/shipments"
@@ -1148,13 +1135,6 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof AuthedOperationsHaulmerDteRouteImport
       parentRoute: typeof AuthedOperationsRoute
     }
-    "/_authed/finanzas/statistics": {
-      id: "/_authed/finanzas/statistics"
-      path: "/statistics"
-      fullPath: "/finanzas/statistics"
-      preLoaderRoute: typeof AuthedFinanzasStatisticsRouteImport
-      parentRoute: typeof AuthedFinanzasRoute
-    }
     "/_authed/finanzas/production-balances": {
       id: "/_authed/finanzas/production-balances"
       path: "/production-balances"
@@ -1442,7 +1422,6 @@ interface AuthedFinanzasRouteChildren {
   AuthedFinanzasLoansRoute: typeof AuthedFinanzasLoansRoute
   AuthedFinanzasPersonalRoute: typeof AuthedFinanzasPersonalRouteWithChildren
   AuthedFinanzasProductionBalancesRoute: typeof AuthedFinanzasProductionBalancesRoute
-  AuthedFinanzasStatisticsRoute: typeof AuthedFinanzasStatisticsRoute
 }
 
 const AuthedFinanzasRouteChildren: AuthedFinanzasRouteChildren = {
@@ -1454,7 +1433,6 @@ const AuthedFinanzasRouteChildren: AuthedFinanzasRouteChildren = {
   AuthedFinanzasLoansRoute: AuthedFinanzasLoansRoute,
   AuthedFinanzasPersonalRoute: AuthedFinanzasPersonalRouteWithChildren,
   AuthedFinanzasProductionBalancesRoute: AuthedFinanzasProductionBalancesRoute,
-  AuthedFinanzasStatisticsRoute: AuthedFinanzasStatisticsRoute,
 }
 
 const AuthedFinanzasRouteWithChildren = AuthedFinanzasRoute._addFileChildren(

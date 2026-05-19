@@ -65,8 +65,8 @@ export const Route = createFileRoute("/_authed/clinical/classify")({
   staticData: {
     nav: {
       iconKey: "ClipboardCheck",
-      label: "Series — clasificación",
-      order: 60,
+      label: "Calendario — clasificación",
+      order: 19,
       section: "Clínica",
     },
     permission: { action: "update", subject: "CalendarEvent" },
