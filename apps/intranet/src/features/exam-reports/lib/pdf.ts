@@ -322,22 +322,83 @@ function safeSplit(doc: jsPDF, text: string, maxW: number): string[] {
   return lines.map((l: string) => l.replace(/\s+$/g, ""));
 }
 
-// ── Cross-reactivity detection ──────────────────────────────────────────
+// ── Cross-reactivity detection (4-tier, EAACI 2024) ───────────────────
+//
+// 15 tag families now backfilled in `clinical_allergens.tags` (see
+// migrations 20260518120000 + 20260518130000). Each maps to one of four
+// disclaimer tiers driven by clinical severity, not by family taxonomy:
+//
+//   severe       — anaphylaxis risk markers. Trigger a bold warning note.
+//                  Storage proteins (2S albumin / 7S vicilin / 11S
+//                  legumin) drive systemic IgE reactions; GRP (Pru p 7
+//                  homologs) marks cypress-fruit severe phenotype;
+//                  alpha-gal is delayed but can be anaphylactic.
+//
+//   standard     — classic OAS / cross-pollen-food panel. Reactions
+//                  usually local oral, occasionally systemic. PR-10 /
+//                  profilin / LTP / tropomyosin.
+//
+//   delayed      — alpha-gal-specific timing note (3-6 h post-ingestion).
+//
+//   informational — low-prevalence panallergens with VARIABLE cross-
+//                   reactivity (polcalcin, defensin) and the latex-fruit
+//                   chitinase syndrome. Surfaced as appendix-style note,
+//                   not as a clinical warning.
+//
+// One tag can belong to multiple tiers (e.g. alpha-gal is BOTH severe
+// and delayed) so the renderer emits a separate paragraph per active
+// tier rather than a single mutually-exclusive label.
 
-const CROSS_REACT_TAGS = [/pr[-_ ]?10/i, /profilin/i, /tropomyosin/i, /ltp/i];
+const TIER_TAG_MATCHERS = {
+  severe: [
+    /^grp$/i,
+    /^alpha[-_ ]?gal$/i,
+    /^2s[-_ ]?albumin$/i,
+    /^7s[-_ ]?vicilin$/i,
+    /^11s[-_ ]?legumin$/i,
+  ],
+  standard: [/^pr[-_ ]?10$/i, /^profilin$/i, /^tropomyosin$/i, /^ltp$/i],
+  delayed: [/^alpha[-_ ]?gal$/i],
+  informational: [/^polcalcin$/i, /^defensin$/i, /^chitinase$/i],
+} as const;
 
-function hasCrossReactiveAllergens(sections: PdfSection[]): boolean {
+export interface CrossReactivityTiers {
+  readonly severe: boolean;
+  readonly standard: boolean;
+  readonly delayed: boolean;
+  readonly informational: boolean;
+}
+
+export function detectCrossReactivityTiers(sections: PdfSection[]): CrossReactivityTiers {
+  const tiers = { severe: false, standard: false, delayed: false, informational: false };
   for (const s of sections) {
     for (const r of s.reactions) {
       const tags = r.allergen.tags ?? [];
       for (const t of tags) {
-        for (const pat of CROSS_REACT_TAGS) {
-          if (pat.test(t)) return true;
+        if (!tiers.severe && TIER_TAG_MATCHERS.severe.some((p) => p.test(t))) {
+          tiers.severe = true;
+        }
+        if (!tiers.standard && TIER_TAG_MATCHERS.standard.some((p) => p.test(t))) {
+          tiers.standard = true;
+        }
+        if (!tiers.delayed && TIER_TAG_MATCHERS.delayed.some((p) => p.test(t))) {
+          tiers.delayed = true;
+        }
+        if (!tiers.informational && TIER_TAG_MATCHERS.informational.some((p) => p.test(t))) {
+          tiers.informational = true;
+        }
+        if (tiers.severe && tiers.standard && tiers.delayed && tiers.informational) {
+          return tiers;
         }
       }
     }
   }
-  return false;
+  return tiers;
+}
+
+function hasCrossReactiveAllergens(sections: PdfSection[]): boolean {
+  const t = detectCrossReactivityTiers(sections);
+  return t.severe || t.standard || t.delayed || t.informational;
 }
 
 // ── Interpretation thresholds (EAACI 2023) ──────────────────────────────
@@ -733,29 +794,87 @@ export async function generateExamReportPdf(
     }
   }
 
-  // ── Cross-reactivity note (conditional) ──────────────────────────────
+  // ── Cross-reactivity notes (4-tier, conditional) ─────────────────────
   if (!isPatch) {
-    const detected = hasCrossReactiveAllergens(report.sections);
-    if (detected) {
+    const tiers = detectCrossReactivityTiers(report.sections);
+
+    interface TierNote {
+      readonly active: boolean;
+      readonly heading: string | null;
+      readonly body: string;
+      readonly headingColor: readonly [number, number, number];
+    }
+
+    const tierNotes: readonly TierNote[] = [
+      {
+        active: tiers.severe,
+        heading: "Advertencia: marcadores de reaccion sistemica",
+        headingColor: [180, 30, 30],
+        body:
+          "Este panel detecta componentes asociados a reacciones sistemicas / anafilaxia " +
+          "(proteinas de almacenamiento 2S/7S/11S, GRP tipo Pru p 7, alpha-gal). " +
+          "Considerar diagnostico molecular (CRD) confirmatorio antes de exposicion " +
+          "controlada o reintroduccion dietaria. Educar al paciente sobre signos de " +
+          "anafilaxia y manejo con autoinyector de adrenalina si hay historia compatible.",
+      },
+      {
+        active: tiers.standard,
+        heading: null,
+        headingColor: FOOTER,
+        body:
+          "Nota: este panel incluye alergenos con componentes de reactividad cruzada " +
+          "(PR-10 / profilinas / tropomiosinas / LTPs). Algunas sensibilizaciones pueden " +
+          "reflejar reactividad cruzada y no alergia clinica primaria; correlacionar con " +
+          "componentes moleculares si la clinica lo amerita.",
+      },
+      {
+        active: tiers.delayed,
+        heading: null,
+        headingColor: FOOTER,
+        body:
+          "Alpha-gal (galactosa-alfa-1,3-galactosa): las reacciones pueden ser tardias " +
+          "(3-6 horas post-ingesta) y manifestarse como urticaria nocturna o anafilaxia " +
+          "diferida. Investigar historia de mordedura de garrapata y considerar IgE " +
+          "especifica anti-alpha-gal.",
+      },
+      {
+        active: tiers.informational,
+        heading: null,
+        headingColor: FOOTER,
+        body:
+          "Componentes adicionales detectados (polcalcina / defensina / quitinasa): " +
+          "marcadores de cross-reactivity con prevalencia y relevancia clinica " +
+          "variables (sindrome latex-frutas para quitinasa; multi-sensibilizacion a " +
+          "polenes para polcalcina). Interpretar segun historia clinica.",
+      },
+    ];
+
+    for (const tn of tierNotes) {
+      if (!tn.active) continue;
       if (y > PAGE_H - 260) {
         doc.addPage();
         drawSidebar(doc, settings.name);
         y = 80;
       }
+      if (tn.heading) {
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(10);
+        doc.setTextColor(...tn.headingColor);
+        const headingLines = safeSplit(doc, tn.heading, CONTENT_W);
+        for (const line of headingLines) {
+          doc.text(line, MARGIN_X, y);
+          y += 12;
+        }
+      }
       doc.setFont("helvetica", "italic");
       doc.setFontSize(9);
       doc.setTextColor(...FOOTER);
-      const note =
-        "Nota: este panel incluye alergenos con componentes de reactividad cruzada " +
-        "(PR-10 / profilinas / tropomiosinas / LTPs). Algunas sensibilizaciones pueden " +
-        "reflejar reactividad cruzada y no alergia clinica primaria; correlacionar con " +
-        "componentes moleculares si la clinica lo amerita.";
-      const wrapped = safeSplit(doc, note, CONTENT_W);
+      const wrapped = safeSplit(doc, tn.body, CONTENT_W);
       for (const line of wrapped) {
         doc.text(line, MARGIN_X, y);
         y += 11;
       }
-      y += 4;
+      y += 6;
     }
   }
 

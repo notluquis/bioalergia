@@ -121,11 +121,15 @@ type Story = StoryObj<typeof ShipmentTrackingModal>;
 export const Delivered: Story = {
   render: () => <ModalHarness />,
   // addon-vitest interaction — modal renders, dialog reachable to AT.
+  // (Use `toBeInTheDocument` not `toBeVisible`: HeroUI Modal Backdrop
+  // animates in via framer-motion; jsdom doesn't tick the opacity
+  // transition, so `toBeVisible` flakes even though the dialog is
+  // mounted and accessible to assistive tech.)
   play: async ({ canvasElement }) => {
     const { expect, within } = await import("storybook/test");
     const root = within(canvasElement.ownerDocument.body);
     const dialog = await root.findByRole("dialog");
-    await expect(dialog).toBeVisible();
+    await expect(dialog).toBeInTheDocument();
   },
   parameters: {
     msw: {
