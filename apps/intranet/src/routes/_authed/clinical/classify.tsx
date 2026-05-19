@@ -63,7 +63,12 @@ type MissingFilterKey = NonNullable<MissingFieldFilters["missing"]>[number];
 
 export const Route = createFileRoute("/_authed/clinical/classify")({
   staticData: {
-    nav: { iconKey: "ClipboardCheck", label: "Clasificación", order: 60, section: "Clínica" },
+    nav: {
+      iconKey: "ClipboardCheck",
+      label: "Series — clasificación",
+      order: 60,
+      section: "Clínica",
+    },
     permission: { action: "update", subject: "CalendarEvent" },
     title: "Clasificación clínica",
   },

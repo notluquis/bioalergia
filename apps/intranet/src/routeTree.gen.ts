@@ -48,11 +48,6 @@ import { Route as AuthedOperationsSuppliesRouteImport } from "./routes/_authed/o
 import { Route as AuthedOperationsShipmentsRouteImport } from "./routes/_authed/operations/shipments"
 import { Route as AuthedOperationsReviewsRouteImport } from "./routes/_authed/operations/reviews"
 import { Route as AuthedOperationsHaulmerDteRouteImport } from "./routes/_authed/operations/haulmer-dte"
-import { Route as AuthedHrTimesheetsRouteImport } from "./routes/_authed/hr/timesheets"
-import { Route as AuthedHrReportsRouteImport } from "./routes/_authed/hr/reports"
-import { Route as AuthedHrEmployeesRouteImport } from "./routes/_authed/hr/employees"
-import { Route as AuthedHrAuditRouteImport } from "./routes/_authed/hr/audit"
-import { Route as AuthedHrAttendanceRouteImport } from "./routes/_authed/hr/attendance"
 import { Route as AuthedFinanzasStatisticsRouteImport } from "./routes/_authed/finanzas/statistics"
 import { Route as AuthedFinanzasProductionBalancesRouteImport } from "./routes/_authed/finanzas/production-balances"
 import { Route as AuthedFinanzasPersonalRouteImport } from "./routes/_authed/finanzas/personal"
@@ -284,31 +279,6 @@ const AuthedOperationsHaulmerDteRoute =
     path: "/haulmer-dte",
     getParentRoute: () => AuthedOperationsRoute,
   } as any)
-const AuthedHrTimesheetsRoute = AuthedHrTimesheetsRouteImport.update({
-  id: "/timesheets",
-  path: "/timesheets",
-  getParentRoute: () => AuthedHrRoute,
-} as any)
-const AuthedHrReportsRoute = AuthedHrReportsRouteImport.update({
-  id: "/reports",
-  path: "/reports",
-  getParentRoute: () => AuthedHrRoute,
-} as any)
-const AuthedHrEmployeesRoute = AuthedHrEmployeesRouteImport.update({
-  id: "/employees",
-  path: "/employees",
-  getParentRoute: () => AuthedHrRoute,
-} as any)
-const AuthedHrAuditRoute = AuthedHrAuditRouteImport.update({
-  id: "/audit",
-  path: "/audit",
-  getParentRoute: () => AuthedHrRoute,
-} as any)
-const AuthedHrAttendanceRoute = AuthedHrAttendanceRouteImport.update({
-  id: "/attendance",
-  path: "/attendance",
-  getParentRoute: () => AuthedHrRoute,
-} as any)
 const AuthedFinanzasStatisticsRoute =
   AuthedFinanzasStatisticsRouteImport.update({
     id: "/statistics",
@@ -517,11 +487,6 @@ export interface FileRoutesByFullPath {
   "/finanzas/personal": typeof AuthedFinanzasPersonalRouteWithChildren
   "/finanzas/production-balances": typeof AuthedFinanzasProductionBalancesRoute
   "/finanzas/statistics": typeof AuthedFinanzasStatisticsRoute
-  "/hr/attendance": typeof AuthedHrAttendanceRoute
-  "/hr/audit": typeof AuthedHrAuditRoute
-  "/hr/employees": typeof AuthedHrEmployeesRoute
-  "/hr/reports": typeof AuthedHrReportsRoute
-  "/hr/timesheets": typeof AuthedHrTimesheetsRoute
   "/operations/haulmer-dte": typeof AuthedOperationsHaulmerDteRoute
   "/operations/reviews": typeof AuthedOperationsReviewsRoute
   "/operations/shipments": typeof AuthedOperationsShipmentsRoute
@@ -586,11 +551,6 @@ export interface FileRoutesByTo {
   "/finanzas/personal": typeof AuthedFinanzasPersonalRouteWithChildren
   "/finanzas/production-balances": typeof AuthedFinanzasProductionBalancesRoute
   "/finanzas/statistics": typeof AuthedFinanzasStatisticsRoute
-  "/hr/attendance": typeof AuthedHrAttendanceRoute
-  "/hr/audit": typeof AuthedHrAuditRoute
-  "/hr/employees": typeof AuthedHrEmployeesRoute
-  "/hr/reports": typeof AuthedHrReportsRoute
-  "/hr/timesheets": typeof AuthedHrTimesheetsRoute
   "/operations/haulmer-dte": typeof AuthedOperationsHaulmerDteRoute
   "/operations/reviews": typeof AuthedOperationsReviewsRoute
   "/operations/shipments": typeof AuthedOperationsShipmentsRoute
@@ -664,11 +624,6 @@ export interface FileRoutesById {
   "/_authed/finanzas/personal": typeof AuthedFinanzasPersonalRouteWithChildren
   "/_authed/finanzas/production-balances": typeof AuthedFinanzasProductionBalancesRoute
   "/_authed/finanzas/statistics": typeof AuthedFinanzasStatisticsRoute
-  "/_authed/hr/attendance": typeof AuthedHrAttendanceRoute
-  "/_authed/hr/audit": typeof AuthedHrAuditRoute
-  "/_authed/hr/employees": typeof AuthedHrEmployeesRoute
-  "/_authed/hr/reports": typeof AuthedHrReportsRoute
-  "/_authed/hr/timesheets": typeof AuthedHrTimesheetsRoute
   "/_authed/operations/haulmer-dte": typeof AuthedOperationsHaulmerDteRoute
   "/_authed/operations/reviews": typeof AuthedOperationsReviewsRoute
   "/_authed/operations/shipments": typeof AuthedOperationsShipmentsRoute
@@ -742,11 +697,6 @@ export interface FileRouteTypes {
     | "/finanzas/personal"
     | "/finanzas/production-balances"
     | "/finanzas/statistics"
-    | "/hr/attendance"
-    | "/hr/audit"
-    | "/hr/employees"
-    | "/hr/reports"
-    | "/hr/timesheets"
     | "/operations/haulmer-dte"
     | "/operations/reviews"
     | "/operations/shipments"
@@ -811,11 +761,6 @@ export interface FileRouteTypes {
     | "/finanzas/personal"
     | "/finanzas/production-balances"
     | "/finanzas/statistics"
-    | "/hr/attendance"
-    | "/hr/audit"
-    | "/hr/employees"
-    | "/hr/reports"
-    | "/hr/timesheets"
     | "/operations/haulmer-dte"
     | "/operations/reviews"
     | "/operations/shipments"
@@ -888,11 +833,6 @@ export interface FileRouteTypes {
     | "/_authed/finanzas/personal"
     | "/_authed/finanzas/production-balances"
     | "/_authed/finanzas/statistics"
-    | "/_authed/hr/attendance"
-    | "/_authed/hr/audit"
-    | "/_authed/hr/employees"
-    | "/_authed/hr/reports"
-    | "/_authed/hr/timesheets"
     | "/_authed/operations/haulmer-dte"
     | "/_authed/operations/reviews"
     | "/_authed/operations/shipments"
@@ -1208,41 +1148,6 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof AuthedOperationsHaulmerDteRouteImport
       parentRoute: typeof AuthedOperationsRoute
     }
-    "/_authed/hr/timesheets": {
-      id: "/_authed/hr/timesheets"
-      path: "/timesheets"
-      fullPath: "/hr/timesheets"
-      preLoaderRoute: typeof AuthedHrTimesheetsRouteImport
-      parentRoute: typeof AuthedHrRoute
-    }
-    "/_authed/hr/reports": {
-      id: "/_authed/hr/reports"
-      path: "/reports"
-      fullPath: "/hr/reports"
-      preLoaderRoute: typeof AuthedHrReportsRouteImport
-      parentRoute: typeof AuthedHrRoute
-    }
-    "/_authed/hr/employees": {
-      id: "/_authed/hr/employees"
-      path: "/employees"
-      fullPath: "/hr/employees"
-      preLoaderRoute: typeof AuthedHrEmployeesRouteImport
-      parentRoute: typeof AuthedHrRoute
-    }
-    "/_authed/hr/audit": {
-      id: "/_authed/hr/audit"
-      path: "/audit"
-      fullPath: "/hr/audit"
-      preLoaderRoute: typeof AuthedHrAuditRouteImport
-      parentRoute: typeof AuthedHrRoute
-    }
-    "/_authed/hr/attendance": {
-      id: "/_authed/hr/attendance"
-      path: "/attendance"
-      fullPath: "/hr/attendance"
-      preLoaderRoute: typeof AuthedHrAttendanceRouteImport
-      parentRoute: typeof AuthedHrRoute
-    }
     "/_authed/finanzas/statistics": {
       id: "/_authed/finanzas/statistics"
       path: "/statistics"
@@ -1557,20 +1462,10 @@ const AuthedFinanzasRouteWithChildren = AuthedFinanzasRoute._addFileChildren(
 )
 
 interface AuthedHrRouteChildren {
-  AuthedHrAttendanceRoute: typeof AuthedHrAttendanceRoute
-  AuthedHrAuditRoute: typeof AuthedHrAuditRoute
-  AuthedHrEmployeesRoute: typeof AuthedHrEmployeesRoute
-  AuthedHrReportsRoute: typeof AuthedHrReportsRoute
-  AuthedHrTimesheetsRoute: typeof AuthedHrTimesheetsRoute
   AuthedHrIndexRoute: typeof AuthedHrIndexRoute
 }
 
 const AuthedHrRouteChildren: AuthedHrRouteChildren = {
-  AuthedHrAttendanceRoute: AuthedHrAttendanceRoute,
-  AuthedHrAuditRoute: AuthedHrAuditRoute,
-  AuthedHrEmployeesRoute: AuthedHrEmployeesRoute,
-  AuthedHrReportsRoute: AuthedHrReportsRoute,
-  AuthedHrTimesheetsRoute: AuthedHrTimesheetsRoute,
   AuthedHrIndexRoute: AuthedHrIndexRoute,
 }
 

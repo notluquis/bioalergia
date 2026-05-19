@@ -33,7 +33,7 @@ const routeApi = getRouteApi("/_authed/clinical/analytics");
 
 export const Route = createFileRoute("/_authed/clinical/analytics")({
   staticData: {
-    nav: { iconKey: "TrendingUp", label: "Analytics", order: 70, section: "Clínica" },
+    nav: { iconKey: "TrendingUp", label: "Series — analytics", order: 70, section: "Clínica" },
     permission: { action: "read", subject: "CalendarEvent" },
     title: "Analytics clínico",
   },

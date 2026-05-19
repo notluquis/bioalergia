@@ -14,7 +14,7 @@ const routeApi = getRouteApi("/_authed/clinical/day");
 
 export const Route = createFileRoute("/_authed/clinical/day")({
   staticData: {
-    nav: { iconKey: "CalendarCheck", label: "Día", order: 40, section: "Clínica" },
+    nav: { iconKey: "CalendarCheck", label: "Series — día", order: 40, section: "Clínica" },
     permission: { action: "read", subject: "CalendarDaily" },
     title: "Detalle diario clínico",
   },

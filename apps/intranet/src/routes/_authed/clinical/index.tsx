@@ -23,7 +23,7 @@ export const Route = createFileRoute("/_authed/clinical/")({
     </Suspense>
   ),
   staticData: {
-    nav: { iconKey: "ListChecks", label: "Series", order: 10, section: "Clínica" },
+    nav: { iconKey: "ListChecks", label: "Series — listado", order: 10, section: "Clínica" },
     permission: { action: "read", subject: "ClinicalSeries" },
     title: "Series clínicas",
   },
