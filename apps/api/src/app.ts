@@ -58,6 +58,7 @@ import { mlOpenAPIHandler, mlORPCHandler } from "./orpc/ml-sync.ts";
 import { registerDiagRoutes } from "./routes/diag.ts";
 import { registerGoogleMerchantFeed } from "./routes/google-merchant-feed.ts";
 import { registerMercadolibreOauthCallback } from "./routes/mercadolibre-oauth-callback.ts";
+import { registerMercadolibreWebhook } from "./routes/mercadolibre-webhook.ts";
 import { registerMercadopagoCheckoutWebhook } from "./routes/mercadopago-checkout-webhook.ts";
 import { notificationsOpenAPIHandler, notificationsORPCHandler } from "./orpc/notifications.ts";
 import { outreachOpenAPIHandler, outreachORPCHandler } from "./orpc/outreach.ts";
@@ -1306,6 +1307,7 @@ app.use("/api/orpc/ml/rpc/*", async (c, next) => {
 
 registerDiagRoutes(app);
 registerMercadolibreOauthCallback(app);
+registerMercadolibreWebhook(app);
 registerGoogleMerchantFeed(app);
 registerMercadopagoCheckoutWebhook(app);
 

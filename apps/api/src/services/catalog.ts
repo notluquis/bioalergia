@@ -61,6 +61,7 @@ export async function listProducts(opts: ProductListOptions) {
     include: {
       category: true,
       images: { orderBy: { position: "asc" } },
+      mlListing: true,
     },
   });
 
@@ -86,6 +87,7 @@ export async function getProductById(id: number) {
     include: {
       category: true,
       images: { orderBy: { position: "asc" } },
+      mlListing: true,
     },
   });
 }

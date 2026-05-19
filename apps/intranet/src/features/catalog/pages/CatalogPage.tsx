@@ -1,6 +1,6 @@
 import { Alert, Button, Card, Chip, Modal, Table } from "@heroui/react";
-import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
-import { Archive, Edit3, Lock, PlusCircle } from "lucide-react";
+import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import { Archive, Edit3, ExternalLink, Lock, PlusCircle, RefreshCw, Upload } from "lucide-react";
 import { useState } from "react";
 
 import { confirmAction } from "@/components/ui/ConfirmDialog";
@@ -9,7 +9,20 @@ import { useToast } from "@/context/ToastContext";
 import { archiveProduct, createProduct, updateProduct } from "../api";
 import { ImageUploader } from "../components/ImageUploader";
 import { ProductForm, type ProductFormValues } from "../components/ProductForm";
+import { mlORPCClient } from "../orpc-ml";
 import { catalogKeys } from "../queries";
+
+const ML_STATUS_LABEL: Record<
+  string,
+  { label: string; variant: "primary" | "secondary" | "soft" | "tertiary" }
+> = {
+  ACTIVE: { label: "Publicado", variant: "primary" },
+  PAUSED: { label: "Pausado", variant: "tertiary" },
+  CLOSED: { label: "Cerrado", variant: "soft" },
+  DRAFT: { label: "Borrador ML", variant: "secondary" },
+  ERROR: { label: "Error ML", variant: "tertiary" },
+};
+const ML_STATUS_FALLBACK = { label: "Borrador ML", variant: "secondary" as const };
 
 type QueryFn = NonNullable<ReturnType<typeof catalogKeys.products>["queryFn"]>;
 type ProductsList = Awaited<ReturnType<QueryFn>>;
@@ -48,6 +61,28 @@ export function CatalogPage() {
   const [error, setError] = useState<null | string>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editing, setEditing] = useState<ProductRow | null>(null);
+
+  const { data: mlStatus } = useQuery({
+    queryKey: ["ml", "status"] as const,
+    queryFn: () => mlORPCClient.status(),
+  });
+  const mlConnected = mlStatus?.data.connected === true;
+
+  const [publishingId, setPublishingId] = useState<null | number>(null);
+  const publishMutation = useMutation({
+    mutationFn: (productId: number) => mlORPCClient.publishProduct({ product_id: productId }),
+    onSuccess: (res) => {
+      toastSuccess(`Publicado en ML: ${res.data.permalink}`);
+      void queryClient.invalidateQueries({ queryKey: catalogKeys.all });
+    },
+    onError: (e) => toastError(e instanceof Error ? e.message : "Error al publicar"),
+    onSettled: () => setPublishingId(null),
+  });
+
+  function handlePublish(productId: number) {
+    setPublishingId(productId);
+    publishMutation.mutate(productId);
+  }
 
   const createMutation = useMutation({ mutationFn: createProduct });
   const updateMutation = useMutation({
@@ -173,6 +208,7 @@ export function CatalogPage() {
                   <Table.Column>Precio</Table.Column>
                   <Table.Column>Stock</Table.Column>
                   <Table.Column>Estado</Table.Column>
+                  <Table.Column>ML</Table.Column>
                   <Table.Column>Acciones</Table.Column>
                 </Table.Header>
                 <Table.Body>
@@ -191,6 +227,32 @@ export function CatalogPage() {
                           <Chip variant={badge.variant}>{badge.label}</Chip>
                         </Table.Cell>
                         <Table.Cell>
+                          {p.ml_listing ? (
+                            (() => {
+                              const ml = p.ml_listing;
+                              const mlBadge = ML_STATUS_LABEL[ml.status] ?? ML_STATUS_FALLBACK;
+                              return (
+                                <div className="flex items-center gap-1">
+                                  <Chip variant={mlBadge.variant}>{mlBadge.label}</Chip>
+                                  {ml.permalink && (
+                                    <a
+                                      aria-label="Ver en MercadoLibre"
+                                      className="text-foreground/60 hover:text-primary"
+                                      href={ml.permalink}
+                                      rel="noreferrer"
+                                      target="_blank"
+                                    >
+                                      <ExternalLink size={14} />
+                                    </a>
+                                  )}
+                                </div>
+                              );
+                            })()
+                          ) : (
+                            <Chip variant="soft">No publicado</Chip>
+                          )}
+                        </Table.Cell>
+                        <Table.Cell>
                           <div className="flex gap-2">
                             <Button
                               isDisabled={!canUpdate}
@@ -199,6 +261,26 @@ export function CatalogPage() {
                               variant="outline"
                             >
                               <Edit3 size={14} />
+                            </Button>
+                            <Button
+                              aria-label={
+                                mlConnected
+                                  ? p.ml_listing
+                                    ? "Re-sincronizar con MercadoLibre"
+                                    : "Publicar a MercadoLibre"
+                                  : "Conecta MercadoLibre primero"
+                              }
+                              isDisabled={
+                                !mlConnected ||
+                                !canUpdate ||
+                                publishingId === p.id ||
+                                p.status !== "ACTIVE"
+                              }
+                              onPress={() => handlePublish(p.id)}
+                              size="sm"
+                              variant="outline"
+                            >
+                              {p.ml_listing ? <RefreshCw size={14} /> : <Upload size={14} />}
                             </Button>
                             <Button
                               isDisabled={!canUpdate || p.status === "ARCHIVED"}

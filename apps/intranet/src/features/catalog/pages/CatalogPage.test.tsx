@@ -39,6 +39,14 @@ const authMock = vi.hoisted(() => ({
 
 vi.mock("../api", () => apiMocks);
 
+// ML OAuth status + publish — stubbed para evitar network en tests del catálogo.
+vi.mock("../orpc-ml", () => ({
+  mlORPCClient: {
+    status: vi.fn(async () => ({ data: { connected: false } })),
+    publishProduct: vi.fn(async () => ({ data: { ml_item_id: "MLC0", permalink: "https://x" } })),
+  },
+}));
+
 vi.mock("@/context/AuthContext", () => ({
   useAuth: () => authMock,
 }));

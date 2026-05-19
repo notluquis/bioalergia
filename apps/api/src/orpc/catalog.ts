@@ -152,6 +152,15 @@ function serializeProduct(p: NonNullable<ProductRow>) {
     available_qty: p.availableQty,
     safety_stock: p.safetyStock,
     images: (p.images ?? []).map(serializeImage),
+    ml_listing: p.mlListing
+      ? {
+          ml_item_id: p.mlListing.mlItemId,
+          status: p.mlListing.status as "DRAFT" | "ACTIVE" | "PAUSED" | "CLOSED" | "ERROR",
+          permalink: p.mlListing.permalink,
+          last_sync_at: p.mlListing.lastSyncAt,
+          last_error: p.mlListing.lastError,
+        }
+      : null,
     created_at: p.createdAt,
     updated_at: p.updatedAt,
   };

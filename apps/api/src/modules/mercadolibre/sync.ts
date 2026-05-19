@@ -5,6 +5,9 @@ import { db } from "@finanzas/db";
 import { createMlItem, predictCategory, updateMlItem } from "./client.ts";
 import { productToMlItem } from "./mappers.ts";
 
+// Re-export low-level helpers que los webhooks/handlers necesitan sin acoplarse a client.ts.
+export { getMlOrder, mlRequest } from "./client.ts";
+
 export async function publishProductToMl(productId: number, opts?: { categoryId?: string }) {
   const product = await db.product.findUnique({
     where: { id: productId },

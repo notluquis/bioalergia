@@ -50,6 +50,16 @@ export const productSchema = z.object({
   available_qty: z.number().int(),
   safety_stock: z.number().int(),
   images: z.array(productImageSchema).optional(),
+  ml_listing: z
+    .object({
+      ml_item_id: z.string(),
+      status: z.enum(["DRAFT", "ACTIVE", "PAUSED", "CLOSED", "ERROR"]),
+      permalink: z.string().nullable(),
+      last_sync_at: z.date().nullable(),
+      last_error: z.string().nullable(),
+    })
+    .nullable()
+    .optional(),
   created_at: z.date(),
   updated_at: z.date(),
 });
