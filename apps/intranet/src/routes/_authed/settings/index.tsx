@@ -1,8 +1,7 @@
-import { createFileRoute, getRouteApi } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_authed/settings/")({
   beforeLoad: () => {
-    const routeApi = getRouteApi("/_authed/settings/");
-    throw routeApi.redirect({ to: "/settings/roles" });
+    throw redirect({ to: "/admin/users", search: { tab: "roles" }, replace: true });
   },
 });

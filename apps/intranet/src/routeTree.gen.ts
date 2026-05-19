@@ -37,39 +37,16 @@ import { Route as AuthedHrIndexRouteImport } from "./routes/_authed/hr/index"
 import { Route as AuthedExamReportsIndexRouteImport } from "./routes/_authed/exam-reports/index"
 import { Route as AuthedClinicalIndexRouteImport } from "./routes/_authed/clinical/index"
 import { Route as AuthedCalendarIndexRouteImport } from "./routes/_authed/calendar/index"
-import { Route as AuthedWaCloudWebhooksRouteImport } from "./routes/_authed/wa-cloud/webhooks"
-import { Route as AuthedWaCloudProgramadosRouteImport } from "./routes/_authed/wa-cloud/programados"
-import { Route as AuthedWaCloudPlantillasRouteImport } from "./routes/_authed/wa-cloud/plantillas"
-import { Route as AuthedWaCloudConfiguracionRouteImport } from "./routes/_authed/wa-cloud/configuracion"
-import { Route as AuthedWaCloudCatalogoRouteImport } from "./routes/_authed/wa-cloud/catalogo"
-import { Route as AuthedWaCloudBuscarRouteImport } from "./routes/_authed/wa-cloud/buscar"
-import { Route as AuthedWaCloudBroadcastsRouteImport } from "./routes/_authed/wa-cloud/broadcasts"
-import { Route as AuthedWaCloudAnalyticsRouteImport } from "./routes/_authed/wa-cloud/analytics"
-import { Route as AuthedWaCloudAlertasRouteImport } from "./routes/_authed/wa-cloud/alertas"
-import { Route as AuthedSettingsTiendaRouteImport } from "./routes/_authed/settings/tienda"
-import { Route as AuthedSettingsRolesRouteImport } from "./routes/_authed/settings/roles"
-import { Route as AuthedSettingsNotificationsRouteImport } from "./routes/_authed/settings/notifications"
-import { Route as AuthedSettingsMercadopagoRouteImport } from "./routes/_authed/settings/mercadopago"
-import { Route as AuthedSettingsMercadolibreRouteImport } from "./routes/_authed/settings/mercadolibre"
-import { Route as AuthedSettingsInventarioRouteImport } from "./routes/_authed/settings/inventario"
 import { Route as AuthedSettingsHaulmerRouteImport } from "./routes/_authed/settings/haulmer"
 import { Route as AuthedSettingsDoctoraliaRouteImport } from "./routes/_authed/settings/doctoralia"
-import { Route as AuthedSettingsCsvUploadRouteImport } from "./routes/_authed/settings/csv-upload"
-import { Route as AuthedSettingsConclusionTemplatesRouteImport } from "./routes/_authed/settings/conclusion-templates"
-import { Route as AuthedSettingsClinicRouteImport } from "./routes/_authed/settings/clinic"
-import { Route as AuthedSettingsBackupsRouteImport } from "./routes/_authed/settings/backups"
 import { Route as AuthedServicesAgendaRouteImport } from "./routes/_authed/services/agenda"
 import { Route as AuthedPatientsNewRouteImport } from "./routes/_authed/patients/new"
 import { Route as AuthedPatientsCampaignsRouteImport } from "./routes/_authed/patients/campaigns"
-import { Route as AuthedOutreachEstablecimientosRouteImport } from "./routes/_authed/outreach/establecimientos"
 import { Route as AuthedOutreachDirectorioRouteImport } from "./routes/_authed/outreach/directorio"
-import { Route as AuthedOutreachDescubrirRouteImport } from "./routes/_authed/outreach/descubrir"
-import { Route as AuthedOutreachCrawlerMasivoRouteImport } from "./routes/_authed/outreach/crawler-masivo"
 import { Route as AuthedOutreachCampanasRouteImport } from "./routes/_authed/outreach/campanas"
 import { Route as AuthedOperationsSuppliesRouteImport } from "./routes/_authed/operations/supplies"
 import { Route as AuthedOperationsShipmentsRouteImport } from "./routes/_authed/operations/shipments"
 import { Route as AuthedOperationsReviewsRouteImport } from "./routes/_authed/operations/reviews"
-import { Route as AuthedOperationsInventoryRouteImport } from "./routes/_authed/operations/inventory"
 import { Route as AuthedOperationsHaulmerDteRouteImport } from "./routes/_authed/operations/haulmer-dte"
 import { Route as AuthedOperationsChannelPricesRouteImport } from "./routes/_authed/operations/channel-prices"
 import { Route as AuthedOperationsCatalogRouteImport } from "./routes/_authed/operations/catalog"
@@ -97,13 +74,10 @@ import { Route as AuthedClinicalClassifyRouteImport } from "./routes/_authed/cli
 import { Route as AuthedClinicalAnalyticsRouteImport } from "./routes/_authed/clinical/analytics"
 import { Route as AuthedClinicalAgendaRouteImport } from "./routes/_authed/clinical/agenda"
 import { Route as AuthedCertificatesMedicalRouteImport } from "./routes/_authed/certificates/medical"
-import { Route as AuthedCalendarSyncHistoryRouteImport } from "./routes/_authed/calendar/sync-history"
 import { Route as AuthedCalendarDteLinksRouteImport } from "./routes/_authed/calendar/dte-links"
 import { Route as AuthedAdminUsersRouteImport } from "./routes/_authed/admin/users"
 import { Route as AuthedAdminDatabaseRouteImport } from "./routes/_authed/admin/database"
-import { Route as AuthedSettingsUsersIndexRouteImport } from "./routes/_authed/settings/users/index"
 import { Route as AuthedPatientsIdIndexRouteImport } from "./routes/_authed/patients/$id/index"
-import { Route as AuthedSettingsUsersAddRouteImport } from "./routes/_authed/settings/users/add"
 import { Route as AuthedServicesIdEditRouteImport } from "./routes/_authed/services/$id.edit"
 import { Route as AuthedPatientsIdNewPaymentRouteImport } from "./routes/_authed/patients/$id/new-payment"
 import { Route as AuthedPatientsIdNewConsultationRouteImport } from "./routes/_authed/patients/$id/new-consultation"
@@ -252,87 +226,6 @@ const AuthedCalendarIndexRoute = AuthedCalendarIndexRouteImport.update({
   path: "/",
   getParentRoute: () => AuthedCalendarRoute,
 } as any)
-const AuthedWaCloudWebhooksRoute = AuthedWaCloudWebhooksRouteImport.update({
-  id: "/webhooks",
-  path: "/webhooks",
-  getParentRoute: () => AuthedWaCloudRoute,
-} as any)
-const AuthedWaCloudProgramadosRoute =
-  AuthedWaCloudProgramadosRouteImport.update({
-    id: "/programados",
-    path: "/programados",
-    getParentRoute: () => AuthedWaCloudRoute,
-  } as any)
-const AuthedWaCloudPlantillasRoute = AuthedWaCloudPlantillasRouteImport.update({
-  id: "/plantillas",
-  path: "/plantillas",
-  getParentRoute: () => AuthedWaCloudRoute,
-} as any)
-const AuthedWaCloudConfiguracionRoute =
-  AuthedWaCloudConfiguracionRouteImport.update({
-    id: "/configuracion",
-    path: "/configuracion",
-    getParentRoute: () => AuthedWaCloudRoute,
-  } as any)
-const AuthedWaCloudCatalogoRoute = AuthedWaCloudCatalogoRouteImport.update({
-  id: "/catalogo",
-  path: "/catalogo",
-  getParentRoute: () => AuthedWaCloudRoute,
-} as any)
-const AuthedWaCloudBuscarRoute = AuthedWaCloudBuscarRouteImport.update({
-  id: "/buscar",
-  path: "/buscar",
-  getParentRoute: () => AuthedWaCloudRoute,
-} as any)
-const AuthedWaCloudBroadcastsRoute = AuthedWaCloudBroadcastsRouteImport.update({
-  id: "/broadcasts",
-  path: "/broadcasts",
-  getParentRoute: () => AuthedWaCloudRoute,
-} as any)
-const AuthedWaCloudAnalyticsRoute = AuthedWaCloudAnalyticsRouteImport.update({
-  id: "/analytics",
-  path: "/analytics",
-  getParentRoute: () => AuthedWaCloudRoute,
-} as any)
-const AuthedWaCloudAlertasRoute = AuthedWaCloudAlertasRouteImport.update({
-  id: "/alertas",
-  path: "/alertas",
-  getParentRoute: () => AuthedWaCloudRoute,
-} as any)
-const AuthedSettingsTiendaRoute = AuthedSettingsTiendaRouteImport.update({
-  id: "/tienda",
-  path: "/tienda",
-  getParentRoute: () => AuthedSettingsRoute,
-} as any)
-const AuthedSettingsRolesRoute = AuthedSettingsRolesRouteImport.update({
-  id: "/roles",
-  path: "/roles",
-  getParentRoute: () => AuthedSettingsRoute,
-} as any)
-const AuthedSettingsNotificationsRoute =
-  AuthedSettingsNotificationsRouteImport.update({
-    id: "/notifications",
-    path: "/notifications",
-    getParentRoute: () => AuthedSettingsRoute,
-  } as any)
-const AuthedSettingsMercadopagoRoute =
-  AuthedSettingsMercadopagoRouteImport.update({
-    id: "/mercadopago",
-    path: "/mercadopago",
-    getParentRoute: () => AuthedSettingsRoute,
-  } as any)
-const AuthedSettingsMercadolibreRoute =
-  AuthedSettingsMercadolibreRouteImport.update({
-    id: "/mercadolibre",
-    path: "/mercadolibre",
-    getParentRoute: () => AuthedSettingsRoute,
-  } as any)
-const AuthedSettingsInventarioRoute =
-  AuthedSettingsInventarioRouteImport.update({
-    id: "/inventario",
-    path: "/inventario",
-    getParentRoute: () => AuthedSettingsRoute,
-  } as any)
 const AuthedSettingsHaulmerRoute = AuthedSettingsHaulmerRouteImport.update({
   id: "/haulmer",
   path: "/haulmer",
@@ -344,27 +237,6 @@ const AuthedSettingsDoctoraliaRoute =
     path: "/doctoralia",
     getParentRoute: () => AuthedSettingsRoute,
   } as any)
-const AuthedSettingsCsvUploadRoute = AuthedSettingsCsvUploadRouteImport.update({
-  id: "/csv-upload",
-  path: "/csv-upload",
-  getParentRoute: () => AuthedSettingsRoute,
-} as any)
-const AuthedSettingsConclusionTemplatesRoute =
-  AuthedSettingsConclusionTemplatesRouteImport.update({
-    id: "/conclusion-templates",
-    path: "/conclusion-templates",
-    getParentRoute: () => AuthedSettingsRoute,
-  } as any)
-const AuthedSettingsClinicRoute = AuthedSettingsClinicRouteImport.update({
-  id: "/clinic",
-  path: "/clinic",
-  getParentRoute: () => AuthedSettingsRoute,
-} as any)
-const AuthedSettingsBackupsRoute = AuthedSettingsBackupsRouteImport.update({
-  id: "/backups",
-  path: "/backups",
-  getParentRoute: () => AuthedSettingsRoute,
-} as any)
 const AuthedServicesAgendaRoute = AuthedServicesAgendaRouteImport.update({
   id: "/agenda",
   path: "/agenda",
@@ -380,27 +252,10 @@ const AuthedPatientsCampaignsRoute = AuthedPatientsCampaignsRouteImport.update({
   path: "/patients/campaigns",
   getParentRoute: () => AuthedRoute,
 } as any)
-const AuthedOutreachEstablecimientosRoute =
-  AuthedOutreachEstablecimientosRouteImport.update({
-    id: "/establecimientos",
-    path: "/establecimientos",
-    getParentRoute: () => AuthedOutreachRoute,
-  } as any)
 const AuthedOutreachDirectorioRoute =
   AuthedOutreachDirectorioRouteImport.update({
     id: "/directorio",
     path: "/directorio",
-    getParentRoute: () => AuthedOutreachRoute,
-  } as any)
-const AuthedOutreachDescubrirRoute = AuthedOutreachDescubrirRouteImport.update({
-  id: "/descubrir",
-  path: "/descubrir",
-  getParentRoute: () => AuthedOutreachRoute,
-} as any)
-const AuthedOutreachCrawlerMasivoRoute =
-  AuthedOutreachCrawlerMasivoRouteImport.update({
-    id: "/crawler-masivo",
-    path: "/crawler-masivo",
     getParentRoute: () => AuthedOutreachRoute,
   } as any)
 const AuthedOutreachCampanasRoute = AuthedOutreachCampanasRouteImport.update({
@@ -425,12 +280,6 @@ const AuthedOperationsReviewsRoute = AuthedOperationsReviewsRouteImport.update({
   path: "/reviews",
   getParentRoute: () => AuthedOperationsRoute,
 } as any)
-const AuthedOperationsInventoryRoute =
-  AuthedOperationsInventoryRouteImport.update({
-    id: "/inventory",
-    path: "/inventory",
-    getParentRoute: () => AuthedOperationsRoute,
-  } as any)
 const AuthedOperationsHaulmerDteRoute =
   AuthedOperationsHaulmerDteRouteImport.update({
     id: "/haulmer-dte",
@@ -574,12 +423,6 @@ const AuthedCertificatesMedicalRoute =
     path: "/medical",
     getParentRoute: () => AuthedCertificatesRoute,
   } as any)
-const AuthedCalendarSyncHistoryRoute =
-  AuthedCalendarSyncHistoryRouteImport.update({
-    id: "/sync-history",
-    path: "/sync-history",
-    getParentRoute: () => AuthedCalendarRoute,
-  } as any)
 const AuthedCalendarDteLinksRoute = AuthedCalendarDteLinksRouteImport.update({
   id: "/dte-links",
   path: "/dte-links",
@@ -595,21 +438,10 @@ const AuthedAdminDatabaseRoute = AuthedAdminDatabaseRouteImport.update({
   path: "/admin/database",
   getParentRoute: () => AuthedRoute,
 } as any)
-const AuthedSettingsUsersIndexRoute =
-  AuthedSettingsUsersIndexRouteImport.update({
-    id: "/users/",
-    path: "/users/",
-    getParentRoute: () => AuthedSettingsRoute,
-  } as any)
 const AuthedPatientsIdIndexRoute = AuthedPatientsIdIndexRouteImport.update({
   id: "/patients/$id/",
   path: "/patients/$id/",
   getParentRoute: () => AuthedRoute,
-} as any)
-const AuthedSettingsUsersAddRoute = AuthedSettingsUsersAddRouteImport.update({
-  id: "/users/add",
-  path: "/users/add",
-  getParentRoute: () => AuthedSettingsRoute,
 } as any)
 const AuthedServicesIdEditRoute = AuthedServicesIdEditRouteImport.update({
   id: "/$id/edit",
@@ -636,9 +468,9 @@ const AuthedPatientsIdNewBudgetRoute =
   } as any)
 const AuthedOutreachEstablecimientosRbdRoute =
   AuthedOutreachEstablecimientosRbdRouteImport.update({
-    id: "/$rbd",
-    path: "/$rbd",
-    getParentRoute: () => AuthedOutreachEstablecimientosRoute,
+    id: "/establecimientos/$rbd",
+    path: "/establecimientos/$rbd",
+    getParentRoute: () => AuthedOutreachRoute,
   } as any)
 const AuthedOutreachCampanasNuevaRoute =
   AuthedOutreachCampanasNuevaRouteImport.update({
@@ -679,7 +511,6 @@ export interface FileRoutesByFullPath {
   "/admin/database": typeof AuthedAdminDatabaseRoute
   "/admin/users": typeof AuthedAdminUsersRoute
   "/calendar/dte-links": typeof AuthedCalendarDteLinksRoute
-  "/calendar/sync-history": typeof AuthedCalendarSyncHistoryRoute
   "/certificates/medical": typeof AuthedCertificatesMedicalRoute
   "/clinical/agenda": typeof AuthedClinicalAgendaRoute
   "/clinical/analytics": typeof AuthedClinicalAnalyticsRoute
@@ -707,39 +538,16 @@ export interface FileRoutesByFullPath {
   "/operations/catalog": typeof AuthedOperationsCatalogRoute
   "/operations/channel-prices": typeof AuthedOperationsChannelPricesRoute
   "/operations/haulmer-dte": typeof AuthedOperationsHaulmerDteRoute
-  "/operations/inventory": typeof AuthedOperationsInventoryRoute
   "/operations/reviews": typeof AuthedOperationsReviewsRoute
   "/operations/shipments": typeof AuthedOperationsShipmentsRoute
   "/operations/supplies": typeof AuthedOperationsSuppliesRoute
   "/outreach/campanas": typeof AuthedOutreachCampanasRouteWithChildren
-  "/outreach/crawler-masivo": typeof AuthedOutreachCrawlerMasivoRoute
-  "/outreach/descubrir": typeof AuthedOutreachDescubrirRoute
   "/outreach/directorio": typeof AuthedOutreachDirectorioRoute
-  "/outreach/establecimientos": typeof AuthedOutreachEstablecimientosRouteWithChildren
   "/patients/campaigns": typeof AuthedPatientsCampaignsRoute
   "/patients/new": typeof AuthedPatientsNewRoute
   "/services/agenda": typeof AuthedServicesAgendaRoute
-  "/settings/backups": typeof AuthedSettingsBackupsRoute
-  "/settings/clinic": typeof AuthedSettingsClinicRoute
-  "/settings/conclusion-templates": typeof AuthedSettingsConclusionTemplatesRoute
-  "/settings/csv-upload": typeof AuthedSettingsCsvUploadRoute
   "/settings/doctoralia": typeof AuthedSettingsDoctoraliaRoute
   "/settings/haulmer": typeof AuthedSettingsHaulmerRoute
-  "/settings/inventario": typeof AuthedSettingsInventarioRoute
-  "/settings/mercadolibre": typeof AuthedSettingsMercadolibreRoute
-  "/settings/mercadopago": typeof AuthedSettingsMercadopagoRoute
-  "/settings/notifications": typeof AuthedSettingsNotificationsRoute
-  "/settings/roles": typeof AuthedSettingsRolesRoute
-  "/settings/tienda": typeof AuthedSettingsTiendaRoute
-  "/wa-cloud/alertas": typeof AuthedWaCloudAlertasRoute
-  "/wa-cloud/analytics": typeof AuthedWaCloudAnalyticsRoute
-  "/wa-cloud/broadcasts": typeof AuthedWaCloudBroadcastsRoute
-  "/wa-cloud/buscar": typeof AuthedWaCloudBuscarRoute
-  "/wa-cloud/catalogo": typeof AuthedWaCloudCatalogoRoute
-  "/wa-cloud/configuracion": typeof AuthedWaCloudConfiguracionRoute
-  "/wa-cloud/plantillas": typeof AuthedWaCloudPlantillasRoute
-  "/wa-cloud/programados": typeof AuthedWaCloudProgramadosRoute
-  "/wa-cloud/webhooks": typeof AuthedWaCloudWebhooksRoute
   "/calendar/": typeof AuthedCalendarIndexRoute
   "/clinical/": typeof AuthedClinicalIndexRoute
   "/exam-reports/": typeof AuthedExamReportsIndexRoute
@@ -759,9 +567,7 @@ export interface FileRoutesByFullPath {
   "/patients/$id/new-consultation": typeof AuthedPatientsIdNewConsultationRoute
   "/patients/$id/new-payment": typeof AuthedPatientsIdNewPaymentRoute
   "/services/$id/edit": typeof AuthedServicesIdEditRoute
-  "/settings/users/add": typeof AuthedSettingsUsersAddRoute
   "/patients/$id/": typeof AuthedPatientsIdIndexRoute
-  "/settings/users/": typeof AuthedSettingsUsersIndexRoute
 }
 export interface FileRoutesByTo {
   "/login": typeof LoginRoute
@@ -776,7 +582,6 @@ export interface FileRoutesByTo {
   "/admin/database": typeof AuthedAdminDatabaseRoute
   "/admin/users": typeof AuthedAdminUsersRoute
   "/calendar/dte-links": typeof AuthedCalendarDteLinksRoute
-  "/calendar/sync-history": typeof AuthedCalendarSyncHistoryRoute
   "/certificates/medical": typeof AuthedCertificatesMedicalRoute
   "/clinical/agenda": typeof AuthedClinicalAgendaRoute
   "/clinical/analytics": typeof AuthedClinicalAnalyticsRoute
@@ -804,39 +609,16 @@ export interface FileRoutesByTo {
   "/operations/catalog": typeof AuthedOperationsCatalogRoute
   "/operations/channel-prices": typeof AuthedOperationsChannelPricesRoute
   "/operations/haulmer-dte": typeof AuthedOperationsHaulmerDteRoute
-  "/operations/inventory": typeof AuthedOperationsInventoryRoute
   "/operations/reviews": typeof AuthedOperationsReviewsRoute
   "/operations/shipments": typeof AuthedOperationsShipmentsRoute
   "/operations/supplies": typeof AuthedOperationsSuppliesRoute
   "/outreach/campanas": typeof AuthedOutreachCampanasRouteWithChildren
-  "/outreach/crawler-masivo": typeof AuthedOutreachCrawlerMasivoRoute
-  "/outreach/descubrir": typeof AuthedOutreachDescubrirRoute
   "/outreach/directorio": typeof AuthedOutreachDirectorioRoute
-  "/outreach/establecimientos": typeof AuthedOutreachEstablecimientosRouteWithChildren
   "/patients/campaigns": typeof AuthedPatientsCampaignsRoute
   "/patients/new": typeof AuthedPatientsNewRoute
   "/services/agenda": typeof AuthedServicesAgendaRoute
-  "/settings/backups": typeof AuthedSettingsBackupsRoute
-  "/settings/clinic": typeof AuthedSettingsClinicRoute
-  "/settings/conclusion-templates": typeof AuthedSettingsConclusionTemplatesRoute
-  "/settings/csv-upload": typeof AuthedSettingsCsvUploadRoute
   "/settings/doctoralia": typeof AuthedSettingsDoctoraliaRoute
   "/settings/haulmer": typeof AuthedSettingsHaulmerRoute
-  "/settings/inventario": typeof AuthedSettingsInventarioRoute
-  "/settings/mercadolibre": typeof AuthedSettingsMercadolibreRoute
-  "/settings/mercadopago": typeof AuthedSettingsMercadopagoRoute
-  "/settings/notifications": typeof AuthedSettingsNotificationsRoute
-  "/settings/roles": typeof AuthedSettingsRolesRoute
-  "/settings/tienda": typeof AuthedSettingsTiendaRoute
-  "/wa-cloud/alertas": typeof AuthedWaCloudAlertasRoute
-  "/wa-cloud/analytics": typeof AuthedWaCloudAnalyticsRoute
-  "/wa-cloud/broadcasts": typeof AuthedWaCloudBroadcastsRoute
-  "/wa-cloud/buscar": typeof AuthedWaCloudBuscarRoute
-  "/wa-cloud/catalogo": typeof AuthedWaCloudCatalogoRoute
-  "/wa-cloud/configuracion": typeof AuthedWaCloudConfiguracionRoute
-  "/wa-cloud/plantillas": typeof AuthedWaCloudPlantillasRoute
-  "/wa-cloud/programados": typeof AuthedWaCloudProgramadosRoute
-  "/wa-cloud/webhooks": typeof AuthedWaCloudWebhooksRoute
   "/calendar": typeof AuthedCalendarIndexRoute
   "/clinical": typeof AuthedClinicalIndexRoute
   "/exam-reports": typeof AuthedExamReportsIndexRoute
@@ -856,9 +638,7 @@ export interface FileRoutesByTo {
   "/patients/$id/new-consultation": typeof AuthedPatientsIdNewConsultationRoute
   "/patients/$id/new-payment": typeof AuthedPatientsIdNewPaymentRoute
   "/services/$id/edit": typeof AuthedServicesIdEditRoute
-  "/settings/users/add": typeof AuthedSettingsUsersAddRoute
   "/patients/$id": typeof AuthedPatientsIdIndexRoute
-  "/settings/users": typeof AuthedSettingsUsersIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -882,7 +662,6 @@ export interface FileRoutesById {
   "/_authed/admin/database": typeof AuthedAdminDatabaseRoute
   "/_authed/admin/users": typeof AuthedAdminUsersRoute
   "/_authed/calendar/dte-links": typeof AuthedCalendarDteLinksRoute
-  "/_authed/calendar/sync-history": typeof AuthedCalendarSyncHistoryRoute
   "/_authed/certificates/medical": typeof AuthedCertificatesMedicalRoute
   "/_authed/clinical/agenda": typeof AuthedClinicalAgendaRoute
   "/_authed/clinical/analytics": typeof AuthedClinicalAnalyticsRoute
@@ -910,39 +689,16 @@ export interface FileRoutesById {
   "/_authed/operations/catalog": typeof AuthedOperationsCatalogRoute
   "/_authed/operations/channel-prices": typeof AuthedOperationsChannelPricesRoute
   "/_authed/operations/haulmer-dte": typeof AuthedOperationsHaulmerDteRoute
-  "/_authed/operations/inventory": typeof AuthedOperationsInventoryRoute
   "/_authed/operations/reviews": typeof AuthedOperationsReviewsRoute
   "/_authed/operations/shipments": typeof AuthedOperationsShipmentsRoute
   "/_authed/operations/supplies": typeof AuthedOperationsSuppliesRoute
   "/_authed/outreach/campanas": typeof AuthedOutreachCampanasRouteWithChildren
-  "/_authed/outreach/crawler-masivo": typeof AuthedOutreachCrawlerMasivoRoute
-  "/_authed/outreach/descubrir": typeof AuthedOutreachDescubrirRoute
   "/_authed/outreach/directorio": typeof AuthedOutreachDirectorioRoute
-  "/_authed/outreach/establecimientos": typeof AuthedOutreachEstablecimientosRouteWithChildren
   "/_authed/patients/campaigns": typeof AuthedPatientsCampaignsRoute
   "/_authed/patients/new": typeof AuthedPatientsNewRoute
   "/_authed/services/agenda": typeof AuthedServicesAgendaRoute
-  "/_authed/settings/backups": typeof AuthedSettingsBackupsRoute
-  "/_authed/settings/clinic": typeof AuthedSettingsClinicRoute
-  "/_authed/settings/conclusion-templates": typeof AuthedSettingsConclusionTemplatesRoute
-  "/_authed/settings/csv-upload": typeof AuthedSettingsCsvUploadRoute
   "/_authed/settings/doctoralia": typeof AuthedSettingsDoctoraliaRoute
   "/_authed/settings/haulmer": typeof AuthedSettingsHaulmerRoute
-  "/_authed/settings/inventario": typeof AuthedSettingsInventarioRoute
-  "/_authed/settings/mercadolibre": typeof AuthedSettingsMercadolibreRoute
-  "/_authed/settings/mercadopago": typeof AuthedSettingsMercadopagoRoute
-  "/_authed/settings/notifications": typeof AuthedSettingsNotificationsRoute
-  "/_authed/settings/roles": typeof AuthedSettingsRolesRoute
-  "/_authed/settings/tienda": typeof AuthedSettingsTiendaRoute
-  "/_authed/wa-cloud/alertas": typeof AuthedWaCloudAlertasRoute
-  "/_authed/wa-cloud/analytics": typeof AuthedWaCloudAnalyticsRoute
-  "/_authed/wa-cloud/broadcasts": typeof AuthedWaCloudBroadcastsRoute
-  "/_authed/wa-cloud/buscar": typeof AuthedWaCloudBuscarRoute
-  "/_authed/wa-cloud/catalogo": typeof AuthedWaCloudCatalogoRoute
-  "/_authed/wa-cloud/configuracion": typeof AuthedWaCloudConfiguracionRoute
-  "/_authed/wa-cloud/plantillas": typeof AuthedWaCloudPlantillasRoute
-  "/_authed/wa-cloud/programados": typeof AuthedWaCloudProgramadosRoute
-  "/_authed/wa-cloud/webhooks": typeof AuthedWaCloudWebhooksRoute
   "/_authed/calendar/": typeof AuthedCalendarIndexRoute
   "/_authed/clinical/": typeof AuthedClinicalIndexRoute
   "/_authed/exam-reports/": typeof AuthedExamReportsIndexRoute
@@ -962,9 +718,7 @@ export interface FileRoutesById {
   "/_authed/patients/$id/new-consultation": typeof AuthedPatientsIdNewConsultationRoute
   "/_authed/patients/$id/new-payment": typeof AuthedPatientsIdNewPaymentRoute
   "/_authed/services/$id/edit": typeof AuthedServicesIdEditRoute
-  "/_authed/settings/users/add": typeof AuthedSettingsUsersAddRoute
   "/_authed/patients/$id/": typeof AuthedPatientsIdIndexRoute
-  "/_authed/settings/users/": typeof AuthedSettingsUsersIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -988,7 +742,6 @@ export interface FileRouteTypes {
     | "/admin/database"
     | "/admin/users"
     | "/calendar/dte-links"
-    | "/calendar/sync-history"
     | "/certificates/medical"
     | "/clinical/agenda"
     | "/clinical/analytics"
@@ -1016,39 +769,16 @@ export interface FileRouteTypes {
     | "/operations/catalog"
     | "/operations/channel-prices"
     | "/operations/haulmer-dte"
-    | "/operations/inventory"
     | "/operations/reviews"
     | "/operations/shipments"
     | "/operations/supplies"
     | "/outreach/campanas"
-    | "/outreach/crawler-masivo"
-    | "/outreach/descubrir"
     | "/outreach/directorio"
-    | "/outreach/establecimientos"
     | "/patients/campaigns"
     | "/patients/new"
     | "/services/agenda"
-    | "/settings/backups"
-    | "/settings/clinic"
-    | "/settings/conclusion-templates"
-    | "/settings/csv-upload"
     | "/settings/doctoralia"
     | "/settings/haulmer"
-    | "/settings/inventario"
-    | "/settings/mercadolibre"
-    | "/settings/mercadopago"
-    | "/settings/notifications"
-    | "/settings/roles"
-    | "/settings/tienda"
-    | "/wa-cloud/alertas"
-    | "/wa-cloud/analytics"
-    | "/wa-cloud/broadcasts"
-    | "/wa-cloud/buscar"
-    | "/wa-cloud/catalogo"
-    | "/wa-cloud/configuracion"
-    | "/wa-cloud/plantillas"
-    | "/wa-cloud/programados"
-    | "/wa-cloud/webhooks"
     | "/calendar/"
     | "/clinical/"
     | "/exam-reports/"
@@ -1068,9 +798,7 @@ export interface FileRouteTypes {
     | "/patients/$id/new-consultation"
     | "/patients/$id/new-payment"
     | "/services/$id/edit"
-    | "/settings/users/add"
     | "/patients/$id/"
-    | "/settings/users/"
   fileRoutesByTo: FileRoutesByTo
   to:
     | "/login"
@@ -1085,7 +813,6 @@ export interface FileRouteTypes {
     | "/admin/database"
     | "/admin/users"
     | "/calendar/dte-links"
-    | "/calendar/sync-history"
     | "/certificates/medical"
     | "/clinical/agenda"
     | "/clinical/analytics"
@@ -1113,39 +840,16 @@ export interface FileRouteTypes {
     | "/operations/catalog"
     | "/operations/channel-prices"
     | "/operations/haulmer-dte"
-    | "/operations/inventory"
     | "/operations/reviews"
     | "/operations/shipments"
     | "/operations/supplies"
     | "/outreach/campanas"
-    | "/outreach/crawler-masivo"
-    | "/outreach/descubrir"
     | "/outreach/directorio"
-    | "/outreach/establecimientos"
     | "/patients/campaigns"
     | "/patients/new"
     | "/services/agenda"
-    | "/settings/backups"
-    | "/settings/clinic"
-    | "/settings/conclusion-templates"
-    | "/settings/csv-upload"
     | "/settings/doctoralia"
     | "/settings/haulmer"
-    | "/settings/inventario"
-    | "/settings/mercadolibre"
-    | "/settings/mercadopago"
-    | "/settings/notifications"
-    | "/settings/roles"
-    | "/settings/tienda"
-    | "/wa-cloud/alertas"
-    | "/wa-cloud/analytics"
-    | "/wa-cloud/broadcasts"
-    | "/wa-cloud/buscar"
-    | "/wa-cloud/catalogo"
-    | "/wa-cloud/configuracion"
-    | "/wa-cloud/plantillas"
-    | "/wa-cloud/programados"
-    | "/wa-cloud/webhooks"
     | "/calendar"
     | "/clinical"
     | "/exam-reports"
@@ -1165,9 +869,7 @@ export interface FileRouteTypes {
     | "/patients/$id/new-consultation"
     | "/patients/$id/new-payment"
     | "/services/$id/edit"
-    | "/settings/users/add"
     | "/patients/$id"
-    | "/settings/users"
   id:
     | "__root__"
     | "/_authed"
@@ -1190,7 +892,6 @@ export interface FileRouteTypes {
     | "/_authed/admin/database"
     | "/_authed/admin/users"
     | "/_authed/calendar/dte-links"
-    | "/_authed/calendar/sync-history"
     | "/_authed/certificates/medical"
     | "/_authed/clinical/agenda"
     | "/_authed/clinical/analytics"
@@ -1218,39 +919,16 @@ export interface FileRouteTypes {
     | "/_authed/operations/catalog"
     | "/_authed/operations/channel-prices"
     | "/_authed/operations/haulmer-dte"
-    | "/_authed/operations/inventory"
     | "/_authed/operations/reviews"
     | "/_authed/operations/shipments"
     | "/_authed/operations/supplies"
     | "/_authed/outreach/campanas"
-    | "/_authed/outreach/crawler-masivo"
-    | "/_authed/outreach/descubrir"
     | "/_authed/outreach/directorio"
-    | "/_authed/outreach/establecimientos"
     | "/_authed/patients/campaigns"
     | "/_authed/patients/new"
     | "/_authed/services/agenda"
-    | "/_authed/settings/backups"
-    | "/_authed/settings/clinic"
-    | "/_authed/settings/conclusion-templates"
-    | "/_authed/settings/csv-upload"
     | "/_authed/settings/doctoralia"
     | "/_authed/settings/haulmer"
-    | "/_authed/settings/inventario"
-    | "/_authed/settings/mercadolibre"
-    | "/_authed/settings/mercadopago"
-    | "/_authed/settings/notifications"
-    | "/_authed/settings/roles"
-    | "/_authed/settings/tienda"
-    | "/_authed/wa-cloud/alertas"
-    | "/_authed/wa-cloud/analytics"
-    | "/_authed/wa-cloud/broadcasts"
-    | "/_authed/wa-cloud/buscar"
-    | "/_authed/wa-cloud/catalogo"
-    | "/_authed/wa-cloud/configuracion"
-    | "/_authed/wa-cloud/plantillas"
-    | "/_authed/wa-cloud/programados"
-    | "/_authed/wa-cloud/webhooks"
     | "/_authed/calendar/"
     | "/_authed/clinical/"
     | "/_authed/exam-reports/"
@@ -1270,9 +948,7 @@ export interface FileRouteTypes {
     | "/_authed/patients/$id/new-consultation"
     | "/_authed/patients/$id/new-payment"
     | "/_authed/services/$id/edit"
-    | "/_authed/settings/users/add"
     | "/_authed/patients/$id/"
-    | "/_authed/settings/users/"
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -1480,111 +1156,6 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof AuthedCalendarIndexRouteImport
       parentRoute: typeof AuthedCalendarRoute
     }
-    "/_authed/wa-cloud/webhooks": {
-      id: "/_authed/wa-cloud/webhooks"
-      path: "/webhooks"
-      fullPath: "/wa-cloud/webhooks"
-      preLoaderRoute: typeof AuthedWaCloudWebhooksRouteImport
-      parentRoute: typeof AuthedWaCloudRoute
-    }
-    "/_authed/wa-cloud/programados": {
-      id: "/_authed/wa-cloud/programados"
-      path: "/programados"
-      fullPath: "/wa-cloud/programados"
-      preLoaderRoute: typeof AuthedWaCloudProgramadosRouteImport
-      parentRoute: typeof AuthedWaCloudRoute
-    }
-    "/_authed/wa-cloud/plantillas": {
-      id: "/_authed/wa-cloud/plantillas"
-      path: "/plantillas"
-      fullPath: "/wa-cloud/plantillas"
-      preLoaderRoute: typeof AuthedWaCloudPlantillasRouteImport
-      parentRoute: typeof AuthedWaCloudRoute
-    }
-    "/_authed/wa-cloud/configuracion": {
-      id: "/_authed/wa-cloud/configuracion"
-      path: "/configuracion"
-      fullPath: "/wa-cloud/configuracion"
-      preLoaderRoute: typeof AuthedWaCloudConfiguracionRouteImport
-      parentRoute: typeof AuthedWaCloudRoute
-    }
-    "/_authed/wa-cloud/catalogo": {
-      id: "/_authed/wa-cloud/catalogo"
-      path: "/catalogo"
-      fullPath: "/wa-cloud/catalogo"
-      preLoaderRoute: typeof AuthedWaCloudCatalogoRouteImport
-      parentRoute: typeof AuthedWaCloudRoute
-    }
-    "/_authed/wa-cloud/buscar": {
-      id: "/_authed/wa-cloud/buscar"
-      path: "/buscar"
-      fullPath: "/wa-cloud/buscar"
-      preLoaderRoute: typeof AuthedWaCloudBuscarRouteImport
-      parentRoute: typeof AuthedWaCloudRoute
-    }
-    "/_authed/wa-cloud/broadcasts": {
-      id: "/_authed/wa-cloud/broadcasts"
-      path: "/broadcasts"
-      fullPath: "/wa-cloud/broadcasts"
-      preLoaderRoute: typeof AuthedWaCloudBroadcastsRouteImport
-      parentRoute: typeof AuthedWaCloudRoute
-    }
-    "/_authed/wa-cloud/analytics": {
-      id: "/_authed/wa-cloud/analytics"
-      path: "/analytics"
-      fullPath: "/wa-cloud/analytics"
-      preLoaderRoute: typeof AuthedWaCloudAnalyticsRouteImport
-      parentRoute: typeof AuthedWaCloudRoute
-    }
-    "/_authed/wa-cloud/alertas": {
-      id: "/_authed/wa-cloud/alertas"
-      path: "/alertas"
-      fullPath: "/wa-cloud/alertas"
-      preLoaderRoute: typeof AuthedWaCloudAlertasRouteImport
-      parentRoute: typeof AuthedWaCloudRoute
-    }
-    "/_authed/settings/tienda": {
-      id: "/_authed/settings/tienda"
-      path: "/tienda"
-      fullPath: "/settings/tienda"
-      preLoaderRoute: typeof AuthedSettingsTiendaRouteImport
-      parentRoute: typeof AuthedSettingsRoute
-    }
-    "/_authed/settings/roles": {
-      id: "/_authed/settings/roles"
-      path: "/roles"
-      fullPath: "/settings/roles"
-      preLoaderRoute: typeof AuthedSettingsRolesRouteImport
-      parentRoute: typeof AuthedSettingsRoute
-    }
-    "/_authed/settings/notifications": {
-      id: "/_authed/settings/notifications"
-      path: "/notifications"
-      fullPath: "/settings/notifications"
-      preLoaderRoute: typeof AuthedSettingsNotificationsRouteImport
-      parentRoute: typeof AuthedSettingsRoute
-    }
-    "/_authed/settings/mercadopago": {
-      id: "/_authed/settings/mercadopago"
-      path: "/mercadopago"
-      fullPath: "/settings/mercadopago"
-      preLoaderRoute: typeof AuthedSettingsMercadopagoRouteImport
-      parentRoute: typeof AuthedSettingsRoute
-    }
-    "/_authed/settings/mercadolibre": {
-      id: "/_authed/settings/mercadolibre"
-      path: "/mercadolibre"
-      fullPath: "/settings/mercadolibre"
-      preLoaderRoute: typeof AuthedSettingsMercadolibreRouteImport
-      parentRoute: typeof AuthedSettingsRoute
-    }
-    "/_authed/settings/inventario": {
-      id: "/_authed/settings/inventario"
-      path: "/inventario"
-      fullPath: "/settings/inventario"
-      preLoaderRoute: typeof AuthedSettingsInventarioRouteImport
-      parentRoute: typeof AuthedSettingsRoute
-    }
     "/_authed/settings/haulmer": {
       id: "/_authed/settings/haulmer"
       path: "/haulmer"
@@ -1597,34 +1168,6 @@ declare module "@tanstack/react-router" {
       path: "/doctoralia"
       fullPath: "/settings/doctoralia"
       preLoaderRoute: typeof AuthedSettingsDoctoraliaRouteImport
-      parentRoute: typeof AuthedSettingsRoute
-    }
-    "/_authed/settings/csv-upload": {
-      id: "/_authed/settings/csv-upload"
-      path: "/csv-upload"
-      fullPath: "/settings/csv-upload"
-      preLoaderRoute: typeof AuthedSettingsCsvUploadRouteImport
-      parentRoute: typeof AuthedSettingsRoute
-    }
-    "/_authed/settings/conclusion-templates": {
-      id: "/_authed/settings/conclusion-templates"
-      path: "/conclusion-templates"
-      fullPath: "/settings/conclusion-templates"
-      preLoaderRoute: typeof AuthedSettingsConclusionTemplatesRouteImport
-      parentRoute: typeof AuthedSettingsRoute
-    }
-    "/_authed/settings/clinic": {
-      id: "/_authed/settings/clinic"
-      path: "/clinic"
-      fullPath: "/settings/clinic"
-      preLoaderRoute: typeof AuthedSettingsClinicRouteImport
-      parentRoute: typeof AuthedSettingsRoute
-    }
-    "/_authed/settings/backups": {
-      id: "/_authed/settings/backups"
-      path: "/backups"
-      fullPath: "/settings/backups"
-      preLoaderRoute: typeof AuthedSettingsBackupsRouteImport
       parentRoute: typeof AuthedSettingsRoute
     }
     "/_authed/services/agenda": {
@@ -1648,32 +1191,11 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof AuthedPatientsCampaignsRouteImport
       parentRoute: typeof AuthedRoute
     }
-    "/_authed/outreach/establecimientos": {
-      id: "/_authed/outreach/establecimientos"
-      path: "/establecimientos"
-      fullPath: "/outreach/establecimientos"
-      preLoaderRoute: typeof AuthedOutreachEstablecimientosRouteImport
-      parentRoute: typeof AuthedOutreachRoute
-    }
     "/_authed/outreach/directorio": {
       id: "/_authed/outreach/directorio"
       path: "/directorio"
       fullPath: "/outreach/directorio"
       preLoaderRoute: typeof AuthedOutreachDirectorioRouteImport
-      parentRoute: typeof AuthedOutreachRoute
-    }
-    "/_authed/outreach/descubrir": {
-      id: "/_authed/outreach/descubrir"
-      path: "/descubrir"
-      fullPath: "/outreach/descubrir"
-      preLoaderRoute: typeof AuthedOutreachDescubrirRouteImport
-      parentRoute: typeof AuthedOutreachRoute
-    }
-    "/_authed/outreach/crawler-masivo": {
-      id: "/_authed/outreach/crawler-masivo"
-      path: "/crawler-masivo"
-      fullPath: "/outreach/crawler-masivo"
-      preLoaderRoute: typeof AuthedOutreachCrawlerMasivoRouteImport
       parentRoute: typeof AuthedOutreachRoute
     }
     "/_authed/outreach/campanas": {
@@ -1702,13 +1224,6 @@ declare module "@tanstack/react-router" {
       path: "/reviews"
       fullPath: "/operations/reviews"
       preLoaderRoute: typeof AuthedOperationsReviewsRouteImport
-      parentRoute: typeof AuthedOperationsRoute
-    }
-    "/_authed/operations/inventory": {
-      id: "/_authed/operations/inventory"
-      path: "/inventory"
-      fullPath: "/operations/inventory"
-      preLoaderRoute: typeof AuthedOperationsInventoryRouteImport
       parentRoute: typeof AuthedOperationsRoute
     }
     "/_authed/operations/haulmer-dte": {
@@ -1900,13 +1415,6 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof AuthedCertificatesMedicalRouteImport
       parentRoute: typeof AuthedCertificatesRoute
     }
-    "/_authed/calendar/sync-history": {
-      id: "/_authed/calendar/sync-history"
-      path: "/sync-history"
-      fullPath: "/calendar/sync-history"
-      preLoaderRoute: typeof AuthedCalendarSyncHistoryRouteImport
-      parentRoute: typeof AuthedCalendarRoute
-    }
     "/_authed/calendar/dte-links": {
       id: "/_authed/calendar/dte-links"
       path: "/dte-links"
@@ -1928,26 +1436,12 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof AuthedAdminDatabaseRouteImport
       parentRoute: typeof AuthedRoute
     }
-    "/_authed/settings/users/": {
-      id: "/_authed/settings/users/"
-      path: "/users"
-      fullPath: "/settings/users/"
-      preLoaderRoute: typeof AuthedSettingsUsersIndexRouteImport
-      parentRoute: typeof AuthedSettingsRoute
-    }
     "/_authed/patients/$id/": {
       id: "/_authed/patients/$id/"
       path: "/patients/$id"
       fullPath: "/patients/$id/"
       preLoaderRoute: typeof AuthedPatientsIdIndexRouteImport
       parentRoute: typeof AuthedRoute
-    }
-    "/_authed/settings/users/add": {
-      id: "/_authed/settings/users/add"
-      path: "/users/add"
-      fullPath: "/settings/users/add"
-      preLoaderRoute: typeof AuthedSettingsUsersAddRouteImport
-      parentRoute: typeof AuthedSettingsRoute
     }
     "/_authed/services/$id/edit": {
       id: "/_authed/services/$id/edit"
@@ -1979,10 +1473,10 @@ declare module "@tanstack/react-router" {
     }
     "/_authed/outreach/establecimientos/$rbd": {
       id: "/_authed/outreach/establecimientos/$rbd"
-      path: "/$rbd"
+      path: "/establecimientos/$rbd"
       fullPath: "/outreach/establecimientos/$rbd"
       preLoaderRoute: typeof AuthedOutreachEstablecimientosRbdRouteImport
-      parentRoute: typeof AuthedOutreachEstablecimientosRoute
+      parentRoute: typeof AuthedOutreachRoute
     }
     "/_authed/outreach/campanas/nueva": {
       id: "/_authed/outreach/campanas/nueva"
@@ -2010,13 +1504,11 @@ declare module "@tanstack/react-router" {
 
 interface AuthedCalendarRouteChildren {
   AuthedCalendarDteLinksRoute: typeof AuthedCalendarDteLinksRoute
-  AuthedCalendarSyncHistoryRoute: typeof AuthedCalendarSyncHistoryRoute
   AuthedCalendarIndexRoute: typeof AuthedCalendarIndexRoute
 }
 
 const AuthedCalendarRouteChildren: AuthedCalendarRouteChildren = {
   AuthedCalendarDteLinksRoute: AuthedCalendarDteLinksRoute,
-  AuthedCalendarSyncHistoryRoute: AuthedCalendarSyncHistoryRoute,
   AuthedCalendarIndexRoute: AuthedCalendarIndexRoute,
 }
 
@@ -2129,7 +1621,6 @@ interface AuthedOperationsRouteChildren {
   AuthedOperationsCatalogRoute: typeof AuthedOperationsCatalogRoute
   AuthedOperationsChannelPricesRoute: typeof AuthedOperationsChannelPricesRoute
   AuthedOperationsHaulmerDteRoute: typeof AuthedOperationsHaulmerDteRoute
-  AuthedOperationsInventoryRoute: typeof AuthedOperationsInventoryRoute
   AuthedOperationsReviewsRoute: typeof AuthedOperationsReviewsRoute
   AuthedOperationsShipmentsRoute: typeof AuthedOperationsShipmentsRoute
   AuthedOperationsSuppliesRoute: typeof AuthedOperationsSuppliesRoute
@@ -2139,7 +1630,6 @@ const AuthedOperationsRouteChildren: AuthedOperationsRouteChildren = {
   AuthedOperationsCatalogRoute: AuthedOperationsCatalogRoute,
   AuthedOperationsChannelPricesRoute: AuthedOperationsChannelPricesRoute,
   AuthedOperationsHaulmerDteRoute: AuthedOperationsHaulmerDteRoute,
-  AuthedOperationsInventoryRoute: AuthedOperationsInventoryRoute,
   AuthedOperationsReviewsRoute: AuthedOperationsReviewsRoute,
   AuthedOperationsShipmentsRoute: AuthedOperationsShipmentsRoute,
   AuthedOperationsSuppliesRoute: AuthedOperationsSuppliesRoute,
@@ -2164,38 +1654,19 @@ const AuthedOutreachCampanasRouteWithChildren =
     AuthedOutreachCampanasRouteChildren,
   )
 
-interface AuthedOutreachEstablecimientosRouteChildren {
-  AuthedOutreachEstablecimientosRbdRoute: typeof AuthedOutreachEstablecimientosRbdRoute
-}
-
-const AuthedOutreachEstablecimientosRouteChildren: AuthedOutreachEstablecimientosRouteChildren =
-  {
-    AuthedOutreachEstablecimientosRbdRoute:
-      AuthedOutreachEstablecimientosRbdRoute,
-  }
-
-const AuthedOutreachEstablecimientosRouteWithChildren =
-  AuthedOutreachEstablecimientosRoute._addFileChildren(
-    AuthedOutreachEstablecimientosRouteChildren,
-  )
-
 interface AuthedOutreachRouteChildren {
   AuthedOutreachCampanasRoute: typeof AuthedOutreachCampanasRouteWithChildren
-  AuthedOutreachCrawlerMasivoRoute: typeof AuthedOutreachCrawlerMasivoRoute
-  AuthedOutreachDescubrirRoute: typeof AuthedOutreachDescubrirRoute
   AuthedOutreachDirectorioRoute: typeof AuthedOutreachDirectorioRoute
-  AuthedOutreachEstablecimientosRoute: typeof AuthedOutreachEstablecimientosRouteWithChildren
   AuthedOutreachIndexRoute: typeof AuthedOutreachIndexRoute
+  AuthedOutreachEstablecimientosRbdRoute: typeof AuthedOutreachEstablecimientosRbdRoute
 }
 
 const AuthedOutreachRouteChildren: AuthedOutreachRouteChildren = {
   AuthedOutreachCampanasRoute: AuthedOutreachCampanasRouteWithChildren,
-  AuthedOutreachCrawlerMasivoRoute: AuthedOutreachCrawlerMasivoRoute,
-  AuthedOutreachDescubrirRoute: AuthedOutreachDescubrirRoute,
   AuthedOutreachDirectorioRoute: AuthedOutreachDirectorioRoute,
-  AuthedOutreachEstablecimientosRoute:
-    AuthedOutreachEstablecimientosRouteWithChildren,
   AuthedOutreachIndexRoute: AuthedOutreachIndexRoute,
+  AuthedOutreachEstablecimientosRbdRoute:
+    AuthedOutreachEstablecimientosRbdRoute,
 }
 
 const AuthedOutreachRouteWithChildren = AuthedOutreachRoute._addFileChildren(
@@ -2219,40 +1690,15 @@ const AuthedServicesRouteWithChildren = AuthedServicesRoute._addFileChildren(
 )
 
 interface AuthedSettingsRouteChildren {
-  AuthedSettingsBackupsRoute: typeof AuthedSettingsBackupsRoute
-  AuthedSettingsClinicRoute: typeof AuthedSettingsClinicRoute
-  AuthedSettingsConclusionTemplatesRoute: typeof AuthedSettingsConclusionTemplatesRoute
-  AuthedSettingsCsvUploadRoute: typeof AuthedSettingsCsvUploadRoute
   AuthedSettingsDoctoraliaRoute: typeof AuthedSettingsDoctoraliaRoute
   AuthedSettingsHaulmerRoute: typeof AuthedSettingsHaulmerRoute
-  AuthedSettingsInventarioRoute: typeof AuthedSettingsInventarioRoute
-  AuthedSettingsMercadolibreRoute: typeof AuthedSettingsMercadolibreRoute
-  AuthedSettingsMercadopagoRoute: typeof AuthedSettingsMercadopagoRoute
-  AuthedSettingsNotificationsRoute: typeof AuthedSettingsNotificationsRoute
-  AuthedSettingsRolesRoute: typeof AuthedSettingsRolesRoute
-  AuthedSettingsTiendaRoute: typeof AuthedSettingsTiendaRoute
   AuthedSettingsIndexRoute: typeof AuthedSettingsIndexRoute
-  AuthedSettingsUsersAddRoute: typeof AuthedSettingsUsersAddRoute
-  AuthedSettingsUsersIndexRoute: typeof AuthedSettingsUsersIndexRoute
 }
 
 const AuthedSettingsRouteChildren: AuthedSettingsRouteChildren = {
-  AuthedSettingsBackupsRoute: AuthedSettingsBackupsRoute,
-  AuthedSettingsClinicRoute: AuthedSettingsClinicRoute,
-  AuthedSettingsConclusionTemplatesRoute:
-    AuthedSettingsConclusionTemplatesRoute,
-  AuthedSettingsCsvUploadRoute: AuthedSettingsCsvUploadRoute,
   AuthedSettingsDoctoraliaRoute: AuthedSettingsDoctoraliaRoute,
   AuthedSettingsHaulmerRoute: AuthedSettingsHaulmerRoute,
-  AuthedSettingsInventarioRoute: AuthedSettingsInventarioRoute,
-  AuthedSettingsMercadolibreRoute: AuthedSettingsMercadolibreRoute,
-  AuthedSettingsMercadopagoRoute: AuthedSettingsMercadopagoRoute,
-  AuthedSettingsNotificationsRoute: AuthedSettingsNotificationsRoute,
-  AuthedSettingsRolesRoute: AuthedSettingsRolesRoute,
-  AuthedSettingsTiendaRoute: AuthedSettingsTiendaRoute,
   AuthedSettingsIndexRoute: AuthedSettingsIndexRoute,
-  AuthedSettingsUsersAddRoute: AuthedSettingsUsersAddRoute,
-  AuthedSettingsUsersIndexRoute: AuthedSettingsUsersIndexRoute,
 }
 
 const AuthedSettingsRouteWithChildren = AuthedSettingsRoute._addFileChildren(
@@ -2260,28 +1706,10 @@ const AuthedSettingsRouteWithChildren = AuthedSettingsRoute._addFileChildren(
 )
 
 interface AuthedWaCloudRouteChildren {
-  AuthedWaCloudAlertasRoute: typeof AuthedWaCloudAlertasRoute
-  AuthedWaCloudAnalyticsRoute: typeof AuthedWaCloudAnalyticsRoute
-  AuthedWaCloudBroadcastsRoute: typeof AuthedWaCloudBroadcastsRoute
-  AuthedWaCloudBuscarRoute: typeof AuthedWaCloudBuscarRoute
-  AuthedWaCloudCatalogoRoute: typeof AuthedWaCloudCatalogoRoute
-  AuthedWaCloudConfiguracionRoute: typeof AuthedWaCloudConfiguracionRoute
-  AuthedWaCloudPlantillasRoute: typeof AuthedWaCloudPlantillasRoute
-  AuthedWaCloudProgramadosRoute: typeof AuthedWaCloudProgramadosRoute
-  AuthedWaCloudWebhooksRoute: typeof AuthedWaCloudWebhooksRoute
   AuthedWaCloudIndexRoute: typeof AuthedWaCloudIndexRoute
 }
 
 const AuthedWaCloudRouteChildren: AuthedWaCloudRouteChildren = {
-  AuthedWaCloudAlertasRoute: AuthedWaCloudAlertasRoute,
-  AuthedWaCloudAnalyticsRoute: AuthedWaCloudAnalyticsRoute,
-  AuthedWaCloudBroadcastsRoute: AuthedWaCloudBroadcastsRoute,
-  AuthedWaCloudBuscarRoute: AuthedWaCloudBuscarRoute,
-  AuthedWaCloudCatalogoRoute: AuthedWaCloudCatalogoRoute,
-  AuthedWaCloudConfiguracionRoute: AuthedWaCloudConfiguracionRoute,
-  AuthedWaCloudPlantillasRoute: AuthedWaCloudPlantillasRoute,
-  AuthedWaCloudProgramadosRoute: AuthedWaCloudProgramadosRoute,
-  AuthedWaCloudWebhooksRoute: AuthedWaCloudWebhooksRoute,
   AuthedWaCloudIndexRoute: AuthedWaCloudIndexRoute,
 }
 

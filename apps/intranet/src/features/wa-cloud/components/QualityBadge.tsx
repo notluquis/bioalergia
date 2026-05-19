@@ -60,7 +60,8 @@ export function QualityBadge({ phoneNumberId }: { phoneNumberId: number | undefi
             </p>
           )}
           <Link
-            to="/wa-cloud/alertas"
+            to="/wa-cloud"
+            search={{ tab: "alertas" }}
             className="block rounded-md bg-content2 px-2 py-1.5 text-center font-medium text-xs hover:bg-content3"
           >
             Ver alertas →

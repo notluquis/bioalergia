@@ -104,7 +104,11 @@ export function OutreachEstablishmentDetailPage() {
 
   return (
     <div className="space-y-4 p-6">
-      <Link to="/outreach/establecimientos" className="text-default-500 text-sm hover:underline">
+      <Link
+        to="/outreach/directorio"
+        search={{ tab: "establecimientos" }}
+        className="text-default-500 text-sm hover:underline"
+      >
         ← Volver al listado
       </Link>
 

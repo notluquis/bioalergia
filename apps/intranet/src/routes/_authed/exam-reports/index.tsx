@@ -1,11 +1,12 @@
 import { Tabs } from "@heroui/react";
 import { createFileRoute, redirect } from "@tanstack/react-router";
-import { Building2, FileText, ListChecks } from "lucide-react";
+import { Building2, FileText, FlaskConical, ListChecks } from "lucide-react";
 import { useCallback, useEffect } from "react";
 import { z } from "zod";
 
 import { ProtectedTab } from "@/components/auth/ProtectedTab";
 import { useToast } from "@/context/ToastContext";
+import { AllergensTagsPanel } from "@/features/exam-reports/pages/AllergensTagsPanel";
 import { ClinicSettingsPanel } from "@/features/exam-reports/pages/ClinicSettingsPanel";
 import { ConclusionTemplatesPanel } from "@/features/exam-reports/pages/ConclusionTemplatesPanel";
 import { ExamReportsListPanel } from "@/features/exam-reports/pages/ExamReportsListPanel";
@@ -25,7 +26,7 @@ import { useLazyTabs } from "@/hooks/use-lazy-tabs";
  * The `/exam-reports/$id` edit route stays separate. The two settings
  * routes are now redirect-only shells that land on the right tab here.
  */
-const tabKey = z.enum(["lista", "plantillas", "clinica"]);
+const tabKey = z.enum(["lista", "plantillas", "clinica", "allergens"]);
 type ExamReportsTab = z.infer<typeof tabKey>;
 
 const searchSchema = z.object({
@@ -108,6 +109,10 @@ function ExamReportsHostPage() {
               <Building2 size={14} /> Clínica
               <Tabs.Indicator />
             </Tabs.Tab>
+            <Tabs.Tab id="allergens">
+              <FlaskConical size={14} /> Alérgenos
+              <Tabs.Indicator />
+            </Tabs.Tab>
           </Tabs.List>
         </Tabs.ListContainer>
 
@@ -129,6 +134,16 @@ function ExamReportsHostPage() {
           {isTabMounted("clinica") ? (
             <ProtectedTab action="update" subject="ClinicSettings">
               <ClinicSettingsPanel />
+            </ProtectedTab>
+          ) : null}
+        </Tabs.Panel>
+        <Tabs.Panel id="allergens" className="pt-4">
+          {isTabMounted("allergens") ? (
+            // `ClinicalAllergen` isn't a CASL subject in this repo;
+            // the tag editor is gated on the same admin-level update
+            // permission as the conclusion templates above.
+            <ProtectedTab action="update" subject="ExamReport">
+              <AllergensTagsPanel />
             </ProtectedTab>
           ) : null}
         </Tabs.Panel>
