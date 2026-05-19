@@ -33,7 +33,7 @@ const searchSchema = z.object({
 
 export const Route = createFileRoute("/_authed/calendar/")({
   staticData: {
-    nav: { iconKey: "Calendar", label: "Calendario", order: 80, section: "Sistema" },
+    nav: { iconKey: "Calendar", label: "Calendario", order: 15, section: "Clínica" },
     permission: { action: "read", subject: "Calendar" },
     relatedSubjects: [
       "CalendarSyncLog",

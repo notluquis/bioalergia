@@ -26,12 +26,12 @@ export const Route = createFileRoute("/_authed/clinical/doctoralia")({
   staticData: {
     nav: {
       iconKey: "Stethoscope",
-      label: "Doctoralia",
+      label: "Doctoralia (analytics)",
       order: 20,
       section: "Clínica",
     },
     permission: { action: "read", subject: "DoctoraliaCalendarAppointment" },
-    title: "Doctoralia",
+    title: "Doctoralia — Analytics",
   },
   beforeLoad: ({ context }) => {
     if (!context.can("read", "DoctoraliaCalendarAppointment")) {

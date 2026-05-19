@@ -40,7 +40,7 @@ export const Route = createFileRoute("/_authed/finanzas/dte-analytics")({
   staticData: {
     nav: {
       iconKey: "ScanBarcode",
-      label: "Análisis DTEs",
+      label: "DTE (analytics)",
       order: 60,
       section: "Finanzas",
     },

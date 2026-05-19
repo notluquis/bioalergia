@@ -4,7 +4,7 @@ import { HaulmerDtePage } from "@/pages/operations/HaulmerDtePage";
 
 export const Route = createFileRoute("/_authed/operations/haulmer-dte")({
   staticData: {
-    nav: { iconKey: "FileText", label: "Haulmer DTE", order: 20, section: "Logística" },
+    nav: { iconKey: "FileText", label: "DTE (operaciones)", order: 20, section: "Logística" },
     permission: { action: "read", subject: "Haulmer" },
     title: "Haulmer DTE",
   },

@@ -3,7 +3,7 @@ import { PatientCampaignsPage } from "@/features/patient-campaigns/pages/Patient
 
 export const Route = createFileRoute("/_authed/patients/campaigns")({
   staticData: {
-    nav: { iconKey: "Megaphone", label: "Campañas", order: 20, section: "Pacientes" },
+    nav: { iconKey: "Megaphone", label: "Campañas pacientes", order: 20, section: "Pacientes" },
     permission: { action: "read", subject: "PatientCampaign" },
     title: "Pacientes — Campañas",
   },

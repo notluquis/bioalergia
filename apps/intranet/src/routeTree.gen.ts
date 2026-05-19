@@ -48,8 +48,6 @@ import { Route as AuthedOperationsSuppliesRouteImport } from "./routes/_authed/o
 import { Route as AuthedOperationsShipmentsRouteImport } from "./routes/_authed/operations/shipments"
 import { Route as AuthedOperationsReviewsRouteImport } from "./routes/_authed/operations/reviews"
 import { Route as AuthedOperationsHaulmerDteRouteImport } from "./routes/_authed/operations/haulmer-dte"
-import { Route as AuthedOperationsChannelPricesRouteImport } from "./routes/_authed/operations/channel-prices"
-import { Route as AuthedOperationsCatalogRouteImport } from "./routes/_authed/operations/catalog"
 import { Route as AuthedHrTimesheetsRouteImport } from "./routes/_authed/hr/timesheets"
 import { Route as AuthedHrReportsRouteImport } from "./routes/_authed/hr/reports"
 import { Route as AuthedHrEmployeesRouteImport } from "./routes/_authed/hr/employees"
@@ -286,17 +284,6 @@ const AuthedOperationsHaulmerDteRoute =
     path: "/haulmer-dte",
     getParentRoute: () => AuthedOperationsRoute,
   } as any)
-const AuthedOperationsChannelPricesRoute =
-  AuthedOperationsChannelPricesRouteImport.update({
-    id: "/channel-prices",
-    path: "/channel-prices",
-    getParentRoute: () => AuthedOperationsRoute,
-  } as any)
-const AuthedOperationsCatalogRoute = AuthedOperationsCatalogRouteImport.update({
-  id: "/catalog",
-  path: "/catalog",
-  getParentRoute: () => AuthedOperationsRoute,
-} as any)
 const AuthedHrTimesheetsRoute = AuthedHrTimesheetsRouteImport.update({
   id: "/timesheets",
   path: "/timesheets",
@@ -535,8 +522,6 @@ export interface FileRoutesByFullPath {
   "/hr/employees": typeof AuthedHrEmployeesRoute
   "/hr/reports": typeof AuthedHrReportsRoute
   "/hr/timesheets": typeof AuthedHrTimesheetsRoute
-  "/operations/catalog": typeof AuthedOperationsCatalogRoute
-  "/operations/channel-prices": typeof AuthedOperationsChannelPricesRoute
   "/operations/haulmer-dte": typeof AuthedOperationsHaulmerDteRoute
   "/operations/reviews": typeof AuthedOperationsReviewsRoute
   "/operations/shipments": typeof AuthedOperationsShipmentsRoute
@@ -606,8 +591,6 @@ export interface FileRoutesByTo {
   "/hr/employees": typeof AuthedHrEmployeesRoute
   "/hr/reports": typeof AuthedHrReportsRoute
   "/hr/timesheets": typeof AuthedHrTimesheetsRoute
-  "/operations/catalog": typeof AuthedOperationsCatalogRoute
-  "/operations/channel-prices": typeof AuthedOperationsChannelPricesRoute
   "/operations/haulmer-dte": typeof AuthedOperationsHaulmerDteRoute
   "/operations/reviews": typeof AuthedOperationsReviewsRoute
   "/operations/shipments": typeof AuthedOperationsShipmentsRoute
@@ -686,8 +669,6 @@ export interface FileRoutesById {
   "/_authed/hr/employees": typeof AuthedHrEmployeesRoute
   "/_authed/hr/reports": typeof AuthedHrReportsRoute
   "/_authed/hr/timesheets": typeof AuthedHrTimesheetsRoute
-  "/_authed/operations/catalog": typeof AuthedOperationsCatalogRoute
-  "/_authed/operations/channel-prices": typeof AuthedOperationsChannelPricesRoute
   "/_authed/operations/haulmer-dte": typeof AuthedOperationsHaulmerDteRoute
   "/_authed/operations/reviews": typeof AuthedOperationsReviewsRoute
   "/_authed/operations/shipments": typeof AuthedOperationsShipmentsRoute
@@ -766,8 +747,6 @@ export interface FileRouteTypes {
     | "/hr/employees"
     | "/hr/reports"
     | "/hr/timesheets"
-    | "/operations/catalog"
-    | "/operations/channel-prices"
     | "/operations/haulmer-dte"
     | "/operations/reviews"
     | "/operations/shipments"
@@ -837,8 +816,6 @@ export interface FileRouteTypes {
     | "/hr/employees"
     | "/hr/reports"
     | "/hr/timesheets"
-    | "/operations/catalog"
-    | "/operations/channel-prices"
     | "/operations/haulmer-dte"
     | "/operations/reviews"
     | "/operations/shipments"
@@ -916,8 +893,6 @@ export interface FileRouteTypes {
     | "/_authed/hr/employees"
     | "/_authed/hr/reports"
     | "/_authed/hr/timesheets"
-    | "/_authed/operations/catalog"
-    | "/_authed/operations/channel-prices"
     | "/_authed/operations/haulmer-dte"
     | "/_authed/operations/reviews"
     | "/_authed/operations/shipments"
@@ -1231,20 +1206,6 @@ declare module "@tanstack/react-router" {
       path: "/haulmer-dte"
       fullPath: "/operations/haulmer-dte"
       preLoaderRoute: typeof AuthedOperationsHaulmerDteRouteImport
-      parentRoute: typeof AuthedOperationsRoute
-    }
-    "/_authed/operations/channel-prices": {
-      id: "/_authed/operations/channel-prices"
-      path: "/channel-prices"
-      fullPath: "/operations/channel-prices"
-      preLoaderRoute: typeof AuthedOperationsChannelPricesRouteImport
-      parentRoute: typeof AuthedOperationsRoute
-    }
-    "/_authed/operations/catalog": {
-      id: "/_authed/operations/catalog"
-      path: "/catalog"
-      fullPath: "/operations/catalog"
-      preLoaderRoute: typeof AuthedOperationsCatalogRouteImport
       parentRoute: typeof AuthedOperationsRoute
     }
     "/_authed/hr/timesheets": {
@@ -1618,8 +1579,6 @@ const AuthedHrRouteWithChildren = AuthedHrRoute._addFileChildren(
 )
 
 interface AuthedOperationsRouteChildren {
-  AuthedOperationsCatalogRoute: typeof AuthedOperationsCatalogRoute
-  AuthedOperationsChannelPricesRoute: typeof AuthedOperationsChannelPricesRoute
   AuthedOperationsHaulmerDteRoute: typeof AuthedOperationsHaulmerDteRoute
   AuthedOperationsReviewsRoute: typeof AuthedOperationsReviewsRoute
   AuthedOperationsShipmentsRoute: typeof AuthedOperationsShipmentsRoute
@@ -1627,8 +1586,6 @@ interface AuthedOperationsRouteChildren {
 }
 
 const AuthedOperationsRouteChildren: AuthedOperationsRouteChildren = {
-  AuthedOperationsCatalogRoute: AuthedOperationsCatalogRoute,
-  AuthedOperationsChannelPricesRoute: AuthedOperationsChannelPricesRoute,
   AuthedOperationsHaulmerDteRoute: AuthedOperationsHaulmerDteRoute,
   AuthedOperationsReviewsRoute: AuthedOperationsReviewsRoute,
   AuthedOperationsShipmentsRoute: AuthedOperationsShipmentsRoute,

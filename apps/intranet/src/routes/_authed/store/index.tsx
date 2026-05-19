@@ -1,10 +1,11 @@
 import { Tabs } from "@heroui/react";
 import { createFileRoute, redirect } from "@tanstack/react-router";
-import { CreditCard, Package, ShoppingBag, Store } from "lucide-react";
+import { CreditCard, DollarSign, Package, ShoppingBag, Store } from "lucide-react";
 import { useCallback } from "react";
 import { z } from "zod";
 
 import { ProtectedTab } from "@/components/auth/ProtectedTab";
+import { ChannelPricesPage } from "@/pages/operations/ChannelPricesPage";
 import { StoreCanalesPanel } from "@/features/store/pages/StoreCanalesPanel";
 import { StoreMercadoLibrePanel } from "@/features/store/pages/StoreMercadoLibrePanel";
 import { StoreMercadoPagoPanel } from "@/features/store/pages/StoreMercadoPagoPanel";
@@ -27,7 +28,7 @@ import { useLazyTabs } from "@/hooks/use-lazy-tabs";
  * `beforeLoad` only enforces the LOOSEST permission (`read Setting`)
  * so deep-links stay valid for read-only operators.
  */
-const tabKey = z.enum(["canales", "productos", "mercadopago", "mercadolibre"]);
+const tabKey = z.enum(["canales", "productos", "precios-canal", "mercadopago", "mercadolibre"]);
 type StoreTab = z.infer<typeof tabKey>;
 
 const searchSchema = z.object({
@@ -91,6 +92,10 @@ function StoreHostPage() {
               <Package size={14} /> Productos
               <Tabs.Indicator />
             </Tabs.Tab>
+            <Tabs.Tab id="precios-canal">
+              <DollarSign size={14} /> Precios canal
+              <Tabs.Indicator />
+            </Tabs.Tab>
             <Tabs.Tab id="mercadopago">
               <CreditCard size={14} /> MercadoPago
               <Tabs.Indicator />
@@ -113,6 +118,13 @@ function StoreHostPage() {
           {isTabMounted("productos") ? (
             <ProtectedTab action="read" subject="InventoryItem">
               <StoreProductosPanel />
+            </ProtectedTab>
+          ) : null}
+        </Tabs.Panel>
+        <Tabs.Panel id="precios-canal" className="pt-4">
+          {isTabMounted("precios-canal") ? (
+            <ProtectedTab action="update" subject="Product">
+              <ChannelPricesPage />
             </ProtectedTab>
           ) : null}
         </Tabs.Panel>
