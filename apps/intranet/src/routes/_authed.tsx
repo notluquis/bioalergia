@@ -67,7 +67,7 @@ function AuthedLayout() {
   const isNavigating = useRouterState({ select: (s) => s.status === "pending" });
   const contentPaddingClass = useRouterState({
     select: (s) => {
-      return s.location.pathname.startsWith("/clinical/day") ? "p-1 md:p-2" : "p-3 md:p-5";
+      return s.location.pathname.startsWith("/clinical/day") ? "p-1" : "p-2 md:p-3";
     },
   });
 
@@ -223,7 +223,11 @@ function AuthedLayout() {
               `overflow-x` clamp (a clamp would silently clip real overflow
               bugs that layout-integrity.spec is meant to catch).
               ≥md: the inset recessed card scrolls internally. */}
-          <main className="flex-1 md:overflow-hidden md:rounded-3xl" id="main-content" tabIndex={-1}>
+          <main
+            className="flex-1 md:overflow-hidden md:rounded-3xl"
+            id="main-content"
+            tabIndex={-1}
+          >
             <RouteHeading />
             {/* Mobile: content sits directly on the page — no decorative
                 recessed card (rounded border + inner shadow is desktop
