@@ -68,7 +68,12 @@ export function RolesSettingsPage() {
     },
     onSuccess: () => {
       toast.success("Permisos sincronizados con el sistema");
-      void queryClient.invalidateQueries({ queryKey: ["roles"] });
+      // syncPermissions() rebuilds the permission CATALOG, which feeds the
+      // matrix columns via roleKeys.permissions() (queryKey ["permissions"]) —
+      // a different key from the roles list (["roles"]). Invalidate both, or
+      // the toast fires but the table never refetches the new permissions.
+      void queryClient.invalidateQueries({ queryKey: roleKeys.lists().queryKey });
+      void queryClient.invalidateQueries({ queryKey: roleKeys.permissions().queryKey });
     },
   });
 
@@ -434,19 +439,58 @@ function processNavSections(
 
 const CATEGORY_RULES: { category: string; test: (subject: string) => boolean }[] = [
   // Most-specific patterns first (Wa* / Whatsapp* before everything).
-  { category: "Comunicaciones", test: (s) => /^(Wa|Whatsapp|Baileys|Outreach|PatientCampaign|PushSubscription)/i.test(s) },
+  {
+    category: "Comunicaciones",
+    test: (s) => /^(Wa|Whatsapp|Baileys|Outreach|PatientCampaign|PushSubscription)/i.test(s),
+  },
   // Doctoralia is an integration but high-frequency clinical — own group.
-  { category: "Integraciones", test: (s) => /^(Doctoralia|Haulmer|MercadoPago|ProviderCredential)/i.test(s) },
+  {
+    category: "Integraciones",
+    test: (s) => /^(Doctoralia|Haulmer|MercadoPago|ProviderCredential)/i.test(s),
+  },
   { category: "DTE / Facturación", test: (s) => /^(DTE|EventDte)/i.test(s) },
-  { category: "Informes y documentos", test: (s) => /^(ExamReport|ConclusionTemplate|MedicalCertificate|Report|PatientAttachment|BulkData)/i.test(s) },
+  {
+    category: "Informes y documentos",
+    test: (s) =>
+      /^(ExamReport|ConclusionTemplate|MedicalCertificate|Report|PatientAttachment|BulkData)/i.test(
+        s
+      ),
+  },
   { category: "Agenda", test: (s) => /^(Calendar|Event|Service)/i.test(s) },
   { category: "Clínica", test: (s) => /^(Clinical|Consultation|AbandonmentContact)/i.test(s) },
   { category: "Pacientes", test: (s) => /^(Patient|Person|Address)/i.test(s) },
-  { category: "Operaciones", test: (s) => /^(Shipment|CommonSupply|SupplyRequest|Inventory|Office|ProductionBalance|DailyProductionBalance)/i.test(s) },
-  { category: "RRHH", test: (s) => /^(Employee|Timesheet|TimesheetAudit|TimesheetList|Attendance|AttendanceAdmin|AttendanceMark|Compensation)/i.test(s) },
-  { category: "Finanzas", test: (s) => /^(Transaction|Expense|Budget|Counterpart|Balance|DailyBalance|ReleaseTransaction|Settlement|WithdrawTransaction|PersonalCredit|UtilityAccount|UtilityBillSnapshot|Loan|BankAccount)/i.test(s) },
-  { category: "Configuración", test: (s) => /^(ClinicSettings|Setting|Holiday|Tax|ServiceTemplate)$|^Setting/i.test(s) },
-  { category: "Sistema y seguridad", test: (s) => /^(User|Role|Permission|Passkey|AuditLog|DebugToken|Backup|SyncLog|SecurityAlertState|Dashboard)/i.test(s) },
+  {
+    category: "Operaciones",
+    test: (s) =>
+      /^(Shipment|CommonSupply|SupplyRequest|Inventory|Office|ProductionBalance|DailyProductionBalance)/i.test(
+        s
+      ),
+  },
+  {
+    category: "RRHH",
+    test: (s) =>
+      /^(Employee|Timesheet|TimesheetAudit|TimesheetList|Attendance|AttendanceAdmin|AttendanceMark|Compensation)/i.test(
+        s
+      ),
+  },
+  {
+    category: "Finanzas",
+    test: (s) =>
+      /^(Transaction|Expense|Budget|Counterpart|Balance|DailyBalance|ReleaseTransaction|Settlement|WithdrawTransaction|PersonalCredit|UtilityAccount|UtilityBillSnapshot|Loan|BankAccount)/i.test(
+        s
+      ),
+  },
+  {
+    category: "Configuración",
+    test: (s) => /^(ClinicSettings|Setting|Holiday|Tax|ServiceTemplate)$|^Setting/i.test(s),
+  },
+  {
+    category: "Sistema y seguridad",
+    test: (s) =>
+      /^(User|Role|Permission|Passkey|AuditLog|DebugToken|Backup|SyncLog|SecurityAlertState|Dashboard)/i.test(
+        s
+      ),
+  },
 ];
 
 function categorizeSubject(subject: string): string {
