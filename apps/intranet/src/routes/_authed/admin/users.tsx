@@ -93,8 +93,15 @@ function UsersHostPage() {
           ) : null}
         </Tabs.Panel>
         <Tabs.Panel id="roles" className="pt-2">
+          {/* Granular RBAC: the permission seed grants concrete CRUD actions
+              (create/read/update/delete Role), never the CASL `manage`
+              wildcard. can("manage","Role") is false unless a literal `manage`
+              rule exists, so it locked out SystemAdministrator despite holding
+              every Role permission. Gate on `update Role` — the write action
+              that makes this an admin-only tab, consistent with the granular
+              model and the `read User` sibling tab above. */}
           {isTabMounted("roles") ? (
-            <ProtectedTab action="manage" subject="Role">
+            <ProtectedTab action="update" subject="Role">
               <RolesPanel />
             </ProtectedTab>
           ) : null}
