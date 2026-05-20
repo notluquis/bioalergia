@@ -146,6 +146,10 @@ data/
 
 # Local Claude context (not for repo)
 CLAUDE.local.md
+.claude/worktrees/
+
+# Playwright local profiles / throwaway diagnostic runs
+apps/api/scripts/*-test.mjs
 
 # Loose debug/query scripts in apps/api root (keep config files only)
 apps/api/*.ts
