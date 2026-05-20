@@ -2,11 +2,7 @@
   "$schema": "https://railway.com/railway.schema.json",
   "build": {
     "builder": "DOCKERFILE",
-    "dockerfilePath": "apps/doctoralia-scraper/Dockerfile"
-  },
-  "deploy": {
-    "restartPolicyType": "NEVER",
-    "cronSchedule": "*/30 * * * *",
+    "dockerfilePath": "apps/doctoralia-scraper/Dockerfile",
     "watchPatterns": [
       "apps/doctoralia-scraper/**",
       "package.json",
@@ -14,5 +10,9 @@
       "pnpm-lock.yaml",
       "pnpm-workspace.yaml"
     ]
+  },
+  "deploy": {
+    "restartPolicyType": "NEVER",
+    "cronSchedule": "*/30 * * * *"
   }
 }
