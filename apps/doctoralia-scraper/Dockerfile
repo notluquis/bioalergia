@@ -59,21 +59,22 @@ RUN --mount=type=cache,id=s/4990f681-049b-467f-9034-ef5c74a55f0a-/pnpm/store,tar
     pnpm --filter=@finanzas/doctoralia-scraper --prod deploy /app/deploy
 
 # ============================================================================
-# STAGE 4: Runner — installs Chromium for browser-based login fallback
+# STAGE 4: Runner — node 26 + Chromium (capa cacheable por BuildKit/Railpack)
 # ============================================================================
 FROM node:26-bookworm AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 
-# Chromium PRIMERO, antes de copiar el código. Esta capa solo depende de la
-# versión de Playwright (pinned) → Railway/BuildKit la cachea entre builds.
-# Antes estaba DESPUÉS del COPY del código → cada cambio de código invalidaba
-# la capa y reinstalaba chromium (170MB, ~8-10min) en CADA build.
+# Chromium + libs del SO ANTES del COPY del código. Sus inputs (versión de
+# Playwright pinned) no cambian con el código → BuildKit reusa esta capa entre
+# builds (Railway usa Railpack→BuildKit con sharable cache). Primer build baja
+# los 170MB una vez (~8min); los siguientes skipean la capa. Esto ES cacheable
+# vía Docker layers — distinto del CI artifact cache que el doc desaconseja.
 RUN npx playwright@1.59.1 install --with-deps chromium \
     && chmod -R o+rx /ms-playwright
 
-# Código al final: cambia en cada build pero chromium ya quedó cacheado arriba.
+# Código al final: cambia por build, pero la capa de chromium de arriba se reusa.
 COPY --from=build /app/deploy/ .
 
 USER node

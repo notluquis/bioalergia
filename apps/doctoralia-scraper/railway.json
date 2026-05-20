@@ -9,7 +9,6 @@
     "cronSchedule": "*/30 * * * *",
     "watchPatterns": [
       "apps/doctoralia-scraper/**",
-      "packages/db/**",
       "package.json",
       "turbo.json",
       "pnpm-lock.yaml",
