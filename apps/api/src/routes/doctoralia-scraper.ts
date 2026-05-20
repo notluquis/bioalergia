@@ -6,17 +6,13 @@ import type { DoctoraliaCalendarResponse } from "../lib/doctoralia/doctoralia-ca
 import { logError, logEvent } from "../lib/logger.ts";
 import { doctoraliaCalendarSyncService } from "../services/doctoralia-calendar.ts";
 import { consumeDoctoraliaScraperForceRun } from "../services/doctoralia-scraper-run-control.ts";
-import { decryptSecret, encryptSecret } from "../services/provider-credentials.ts";
+import {
+  decodeStoredCookies,
+  encodeStoredCookies,
+  type StoredCookie,
+} from "../lib/doctoralia/cookie-store-codec.ts";
 
 export const doctoraliaScraperRoutes = new Hono();
-
-type StoredCookie = {
-  name: string;
-  value: string;
-  domain?: string;
-  path?: string;
-  expires?: number;
-};
 
 const DEFAULT_LABEL = "default";
 
@@ -29,25 +25,6 @@ function bearerMatches(header: string | undefined | null): boolean {
   const b = Buffer.from(doctoraliaScraperApiToken);
   if (a.length !== b.length) return false;
   return timingSafeEqual(a, b);
-}
-
-// Cookies cifradas at-rest (AES-256-GCM, mismo helper que ProviderCredential).
-// Guardadas como { enc: "<blob>" } en el jsonb → base64, también esquiva el
-// problema de null-bytes en jsonb. Lee legacy (array plano) por compat.
-function decodeStoredCookies(raw: unknown): StoredCookie[] {
-  if (Array.isArray(raw)) return raw as StoredCookie[]; // legacy plaintext
-  if (raw && typeof raw === "object" && typeof (raw as { enc?: unknown }).enc === "string") {
-    try {
-      return JSON.parse(decryptSecret((raw as { enc: string }).enc)) as StoredCookie[];
-    } catch {
-      return [];
-    }
-  }
-  return [];
-}
-
-function encodeStoredCookies(cookies: StoredCookie[]): { enc: string } {
-  return { enc: encryptSecret(JSON.stringify(cookies)) };
 }
 
 doctoraliaScraperRoutes.use("*", async (c, next) => {
