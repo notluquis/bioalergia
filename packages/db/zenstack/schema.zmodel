@@ -4177,6 +4177,7 @@ model UtilityAccount {
   provider         UtilityProvider
   scope            ExpenseScope    @default(PERSONAL)
   serviceNumber    String          @unique @map("service_number") // Essbio: numero_servicio, CGE: CTA_CTO
+  externalAccountId String?        @map("external_account_id") // Essbio: id_servicio (677471), requerido para /getDatos/facturacion
   label            String?         // e.g. "Casa San Pedro", "Clínica"
 
   // Cached from last API fetch
@@ -4223,7 +4224,11 @@ model UtilityBillSnapshot {
   thirdAmount      Decimal?        @map("third_amount") @db.Decimal(15, 2)   // CGE devuelve 3 últimas
   currentDebt      Decimal?        @map("current_debt") @db.Decimal(15, 2)   // Essbio: deuda actual
   emissionDate     String?         @map("emission_date")                      // YYYY-MM-DD si lo da
-  dueDate          String?         @map("due_date")
+  dueDate          String?         @map("due_date")                           // Essbio /corteNoPago EFecha (fecha corte por no pago)
+  period           String?         @map("period")                             // Essbio FECFAC MM/YYYY — mes facturado
+  folio            String?         @map("folio")                              // Essbio FOLIO (SII-xxx), dedupe key del historial
+  consumption      Int?            @map("consumption")                        // Essbio CONSUMO m3
+  reading          Int?            @map("reading")                            // Essbio LECTURA medidor
   lastPaymentJson  Json?           @map("last_payment_json")                  // {amount, date}
   observation      String?
   rawResponse      Json            @map("raw_response")                       // todo el response crudo

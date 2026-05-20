@@ -15,6 +15,12 @@ export type Person = $ModelResult<$Schema, "Person">;
  * the carrier's coverage API at the time the user picks region/comuna.
  */
 export type Address = $ModelResult<$Schema, "Address">;
+/**
+ * Single-use, time-bound email link token used by the public shop /mi-cuenta
+ * passwordless flow. The plaintext token travels only in the email URL;
+ * only the SHA-256 hash is persisted. Once consumed, marked `consumedAt`.
+ */
+export type MagicLinkToken = $ModelResult<$Schema, "MagicLinkToken">;
 export type User = $ModelResult<$Schema, "User">;
 export type DebugToken = $ModelResult<$Schema, "DebugToken">;
 export type Passkey = $ModelResult<$Schema, "Passkey">;
@@ -135,6 +141,7 @@ export type ConclusionTemplate = $ModelResult<$Schema, "ConclusionTemplate">;
 export type ClinicSettings = $ModelResult<$Schema, "ClinicSettings">;
 export type ProductCategory = $ModelResult<$Schema, "ProductCategory">;
 export type Product = $ModelResult<$Schema, "Product">;
+export type ProductReview = $ModelResult<$Schema, "ProductReview">;
 export type ProductImage = $ModelResult<$Schema, "ProductImage">;
 export type StockReservation = $ModelResult<$Schema, "StockReservation">;
 export type Cart = $ModelResult<$Schema, "Cart">;

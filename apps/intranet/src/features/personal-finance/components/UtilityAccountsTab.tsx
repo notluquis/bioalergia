@@ -57,6 +57,7 @@ const PROVIDER_COLORS: Record<UtilityProvider, "warning" | "success" | "default"
 
 type AccountFormState = {
   expenseServiceId: null;
+  externalAccountId: string;
   isActive: boolean;
   label: string;
   notes: string;
@@ -66,6 +67,7 @@ type AccountFormState = {
 
 const DEFAULT_FORM: AccountFormState = {
   expenseServiceId: null,
+  externalAccountId: "",
   isActive: true,
   label: "",
   notes: "",
@@ -83,6 +85,8 @@ export function UtilityAccountsTab() {
   const [historyTarget, setHistoryTarget] = useState<null | {
     accountId: number;
     accountLabel: string;
+    hasExternalId: boolean;
+    provider: UtilityProvider;
   }>(null);
 
   const { data, isLoading } = useQuery({
@@ -94,6 +98,7 @@ export function UtilityAccountsTab() {
     mutationFn: (values: AccountFormState) =>
       utilityBillsClient.createAccount({
         expenseServiceId: values.expenseServiceId,
+        externalAccountId: values.externalAccountId || null,
         isActive: values.isActive,
         label: values.label || null,
         notes: values.notes || null,
@@ -119,6 +124,7 @@ export function UtilityAccountsTab() {
         id,
         payload: {
           expenseServiceId: values.expenseServiceId,
+          externalAccountId: values.externalAccountId || null,
           isActive: values.isActive,
           label: values.label || null,
           notes: values.notes || null,
@@ -257,6 +263,8 @@ export function UtilityAccountsTab() {
                         accountId: account.id,
                         accountLabel:
                           account.label ?? `${account.provider} ${account.serviceNumber}`,
+                        hasExternalId: Boolean(account.externalAccountId),
+                        provider: account.provider,
                       })
                     }
                   >
@@ -271,6 +279,7 @@ export function UtilityAccountsTab() {
                         id: account.id,
                         values: {
                           expenseServiceId: null,
+                          externalAccountId: account.externalAccountId ?? "",
                           isActive: account.isActive,
                           label: account.label ?? "",
                           notes: account.notes ?? "",
@@ -328,6 +337,8 @@ export function UtilityAccountsTab() {
         <UtilityBillHistoryModal
           accountId={historyTarget.accountId}
           accountLabel={historyTarget.accountLabel}
+          canImportEssbio={historyTarget.provider === "ESSBIO" && historyTarget.hasExternalId}
+          provider={historyTarget.provider}
           onClose={() => setHistoryTarget(null)}
         />
       )}
@@ -394,6 +405,10 @@ function AccountFormModal({
                         CGE
                         <ListBox.ItemIndicator />
                       </ListBox.Item>
+                      <ListBox.Item id="MEDIPASS" textValue="Medipass">
+                        Medipass
+                        <ListBox.ItemIndicator />
+                      </ListBox.Item>
                       <ListBox.Item id="OTHER" textValue="Otro">
                         Otro
                         <ListBox.ItemIndicator />
@@ -411,6 +426,18 @@ function AccountFormModal({
                   <Input placeholder="Ej: 1234567890" />
                   <FieldError />
                 </TextField>
+
+                {values.provider === "ESSBIO" && (
+                  <TextField value={values.externalAccountId} onChange={field("externalAccountId")}>
+                    <Label>ID servicio Essbio (opcional)</Label>
+                    <Input placeholder="Ej: 677471 — idservicio del login" />
+                    <p className="text-default-400 text-xs">
+                      Requerido para importar historial de facturación. Lo entrega el login de
+                      Essbio (campo idservicio).
+                    </p>
+                    <FieldError />
+                  </TextField>
+                )}
 
                 <TextField value={values.label} onChange={field("label")}>
                   <Label>Etiqueta (opcional)</Label>

@@ -63,6 +63,7 @@
     "fast-xml-parser": "^5.8.0",
     "gaxios": "^7.1.4",
     "google-auth-library": "^10.6.2",
+    "graphile-worker": "^0.16.6",
     "hono": "^4.12.19",
     "hono-rate-limiter": "^0.5.3",
     "isomorphic-dompurify": "^3.13.0",

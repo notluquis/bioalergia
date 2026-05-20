@@ -18,11 +18,15 @@ import type { Context as HonoContext } from "hono";
 import { z } from "zod";
 import { getSessionUser, hasPermission } from "../lib/auth.ts";
 import { medicalCertificateSchema } from "../modules/certificates/certificate.schema.ts";
-import {
-  generateMedicalCertificatePdf,
-  generateQRCode,
-  signPdf,
-} from "../modules/certificates/certificate.service.ts";
+// Lazy: pdf-lib weighs ~3MB+ in heap; only load on first /medical request.
+type CertificateService = typeof import("../modules/certificates/certificate.service.ts");
+let _certificateService: CertificateService | undefined;
+async function getCertificateService(): Promise<CertificateService> {
+  if (!_certificateService) {
+    _certificateService = await import("../modules/certificates/certificate.service.ts");
+  }
+  return _certificateService;
+}
 import { logError } from "../lib/logger.ts";
 import { configureSuperjson } from "../lib/superjson-config.ts";
 import { uploadCertificateToDrive } from "../services/certificates-drive.ts";
@@ -75,6 +79,8 @@ const certificatesORPCRouterBase = {
     .handler(async ({ context, input }) => {
       const parsed = medicalCertificateSchema.parse(input);
       const certificateId = crypto.randomUUID();
+      const { generateMedicalCertificatePdf, generateQRCode, signPdf } =
+        await getCertificateService();
       const qrCode = await generateQRCode(certificateId);
       const pdfBytes = await generateMedicalCertificatePdf(parsed, qrCode);
       const signedPdfBytes = await signPdf(pdfBytes);

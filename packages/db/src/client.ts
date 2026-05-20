@@ -38,7 +38,9 @@ const getEnv = (key: string): string | undefined => {
 // Connection pool — tuned for Railway PostgreSQL
 // - connectionTimeoutMillis: 20s to tolerate Railway cold starts (can reach 15s)
 // - idleTimeoutMillis: 10min to keep the pool warm between requests
-// - max: 10 conservative for Railway Hobby (max ~97 PG connections, multiple instances)
+// - max: 10 conservative for Railway Hobby (max ~97 PG connections, multiple instances).
+//   graphile-worker uses its own separate pool (apps/api/src/queue/runner.ts,
+//   maxPoolSize: 2) so app and queue don't compete for slots.
 // - min: 2 pre-warmed connections so the first requests don't incur connection overhead
 // - keepAlive: prevents Railway's NAT from silently dropping idle TCP connections
 const pool = new Pool({

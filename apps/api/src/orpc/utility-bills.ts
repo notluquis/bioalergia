@@ -3,6 +3,8 @@ import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
 import {
   cgeBillResultSchema,
   essbioBillResultSchema,
+  importCgeConsumoResponseSchema,
+  importEssbioHistoryResponseSchema,
   listSnapshotsInputSchema,
   listSnapshotsResponseSchema,
   listUtilityAccountsInputSchema,
@@ -23,6 +25,8 @@ import {
   deleteUtilityAccount,
   fetchCgeBill,
   fetchEssbioBill,
+  importCgeConsumoHistory,
+  importEssbioHistory,
   listUtilityAccounts,
   listUtilityBillSnapshots,
   refreshUtilityAccount,
@@ -137,6 +141,24 @@ const utilityBillsRouterBase = {
         limit: input.limit,
       });
       return { snapshots, status: "ok" as const };
+    }),
+
+  importEssbioHistory: authed
+    .route({ method: "POST", path: "/accounts/{id}/import-essbio-history" })
+    .input(idInputSchema)
+    .output(importEssbioHistoryResponseSchema)
+    .handler(async ({ input }) => {
+      const result = await importEssbioHistory(input.id);
+      return { ...result, status: "ok" as const };
+    }),
+
+  importCgeConsumo: authed
+    .route({ method: "POST", path: "/accounts/{id}/import-cge-consumo" })
+    .input(idInputSchema)
+    .output(importCgeConsumoResponseSchema)
+    .handler(async ({ input }) => {
+      const result = await importCgeConsumoHistory(input.id);
+      return { ...result, status: "ok" as const };
     }),
 };
 

@@ -120,6 +120,14 @@ export class SchemaType implements SchemaDef {
                         "person"
                     ] as readonly string[]
                 },
+                userId: {
+                    name: "userId",
+                    type: "Int",
+                    optional: true,
+                    foreignKeyFor: [
+                        "user"
+                    ] as readonly string[]
+                },
                 label: {
                     name: "label",
                     type: "String",
@@ -231,11 +239,64 @@ export class SchemaType implements SchemaDef {
                     name: "person",
                     type: "Person",
                     relation: { opposite: "addresses", fields: ["personId"], references: ["id"], onDelete: "Cascade" }
+                },
+                user: {
+                    name: "user",
+                    type: "User",
+                    optional: true,
+                    relation: { opposite: "shopAddresses", fields: ["userId"], references: ["id"], onDelete: "SetNull" }
                 }
             },
             idFields: ["id"],
             uniqueFields: {
                 id: { type: "Int" }
+            }
+        },
+        MagicLinkToken: {
+            name: "MagicLinkToken",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                userId: {
+                    name: "userId",
+                    type: "Int",
+                    foreignKeyFor: [
+                        "user"
+                    ] as readonly string[]
+                },
+                tokenHash: {
+                    name: "tokenHash",
+                    type: "String",
+                    unique: true
+                },
+                expiresAt: {
+                    name: "expiresAt",
+                    type: "DateTime"
+                },
+                consumedAt: {
+                    name: "consumedAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                user: {
+                    name: "user",
+                    type: "User",
+                    relation: { opposite: "magicLinkTokens", fields: ["userId"], references: ["id"], onDelete: "Cascade" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" },
+                tokenHash: { type: "String" }
             }
         },
         User: {
@@ -437,6 +498,18 @@ export class SchemaType implements SchemaDef {
                 shopOrders: {
                     name: "shopOrders",
                     type: "Order",
+                    array: true,
+                    relation: { opposite: "user" }
+                },
+                shopAddresses: {
+                    name: "shopAddresses",
+                    type: "Address",
+                    array: true,
+                    relation: { opposite: "user" }
+                },
+                magicLinkTokens: {
+                    name: "magicLinkTokens",
+                    type: "MagicLinkToken",
                     array: true,
                     relation: { opposite: "user" }
                 },
@@ -11118,6 +11191,11 @@ export class SchemaType implements SchemaDef {
                     type: "String",
                     unique: true
                 },
+                externalAccountId: {
+                    name: "externalAccountId",
+                    type: "String",
+                    optional: true
+                },
                 label: {
                     name: "label",
                     type: "String",
@@ -11255,6 +11333,26 @@ export class SchemaType implements SchemaDef {
                 dueDate: {
                     name: "dueDate",
                     type: "String",
+                    optional: true
+                },
+                period: {
+                    name: "period",
+                    type: "String",
+                    optional: true
+                },
+                folio: {
+                    name: "folio",
+                    type: "String",
+                    optional: true
+                },
+                consumption: {
+                    name: "consumption",
+                    type: "Int",
+                    optional: true
+                },
+                reading: {
+                    name: "reading",
+                    type: "Int",
                     optional: true
                 },
                 lastPaymentJson: {
@@ -12036,6 +12134,12 @@ export class SchemaType implements SchemaDef {
                     type: "ProductChannelPrice",
                     array: true,
                     relation: { opposite: "product" }
+                },
+                reviews: {
+                    name: "reviews",
+                    type: "ProductReview",
+                    array: true,
+                    relation: { opposite: "product" }
                 }
             },
             idFields: ["id"],
@@ -12043,6 +12147,76 @@ export class SchemaType implements SchemaDef {
                 id: { type: "Int" },
                 slug: { type: "String" },
                 sku: { type: "String" }
+            }
+        },
+        ProductReview: {
+            name: "ProductReview",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                productId: {
+                    name: "productId",
+                    type: "Int",
+                    foreignKeyFor: [
+                        "product"
+                    ] as readonly string[]
+                },
+                authorName: {
+                    name: "authorName",
+                    type: "String"
+                },
+                authorEmail: {
+                    name: "authorEmail",
+                    type: "String",
+                    optional: true
+                },
+                rating: {
+                    name: "rating",
+                    type: "Int"
+                },
+                title: {
+                    name: "title",
+                    type: "String",
+                    optional: true
+                },
+                body: {
+                    name: "body",
+                    type: "String"
+                },
+                verified: {
+                    name: "verified",
+                    type: "Boolean",
+                    default: false as FieldDefault
+                },
+                status: {
+                    name: "status",
+                    type: "String",
+                    default: "PENDING" as FieldDefault
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                product: {
+                    name: "product",
+                    type: "Product",
+                    relation: { opposite: "reviews", fields: ["productId"], references: ["id"], onDelete: "Cascade" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" }
             }
         },
         ProductImage: {

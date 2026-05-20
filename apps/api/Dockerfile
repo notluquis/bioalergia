@@ -73,4 +73,10 @@ USER node
 
 EXPOSE 3000
 
-CMD ["node", "src/index.ts"]
+# V8 flags inline (Railway env NODE_OPTIONS unreliable for memory flags):
+# - --max-old-space-size=1024: hard cap heap (was uncapped → V8 grew to 2.5GB).
+#   Lower to 512 after Fase 2 (lazy-load xlsx/pdf-lib) + Fase 3 (remove
+#   in-process schedulers) land and /api/diag/heap confirms steady < 400MB.
+# - --max-semi-space-size=32: pin semi-space; Node 22+ dynamic default can
+#   shrink to 1MB causing GC thrash (nodejs/node#62723)
+CMD ["node", "--max-old-space-size=1024", "--max-semi-space-size=32", "src/index.ts"]

@@ -55,6 +55,7 @@ export const utilityAccountItemSchema = z.object({
   createdAt: z.coerce.date(),
   credentialId: z.number().int().nullable().optional(),
   expenseServiceId: z.number().int().nullable(),
+  externalAccountId: z.string().nullable().optional(),
   id: z.number().int(),
   isActive: z.boolean(),
   label: z.string().nullable(),
@@ -70,6 +71,7 @@ export const utilityAccountItemSchema = z.object({
 
 export const utilityAccountPayloadSchema = z.object({
   expenseServiceId: z.number().int().nullable().optional(),
+  externalAccountId: z.string().nullable().optional(), // Essbio id_servicio (idservicio del login)
   isActive: z.boolean().optional(),
   label: z.string().nullable().optional(),
   notes: z.string().nullable().optional(),
@@ -111,18 +113,32 @@ export const utilityAccountRefreshResponseSchema = z.object({
 // ─── Snapshot history ─────────────────────────────────────────────────────────
 
 export const utilityBillSnapshotSchema = z.object({
+  consumption: z.number().nullable().optional(),
   currentAmount: z.number().nullable(),
   currentDebt: z.number().nullable(),
   dueDate: z.string().nullable(),
   emissionDate: z.string().nullable(),
   errorMessage: z.string().nullable(),
   fetchedAt: z.string(),
+  folio: z.string().nullable().optional(),
   id: z.string(),
   observation: z.string().nullable(),
+  period: z.string().nullable().optional(),
   previousAmount: z.number().nullable(),
+  reading: z.number().nullable().optional(),
   source: z.string(),
   thirdAmount: z.number().nullable(),
 });
+
+export const importEssbioHistoryResponseSchema = z.object({
+  imported: z.number().int(),
+  skipped: z.number().int(),
+  status: z.literal("ok"),
+  total: z.number().int(),
+});
+
+// CGE consumo histórico comparte la misma forma de respuesta
+export const importCgeConsumoResponseSchema = importEssbioHistoryResponseSchema;
 
 export const listSnapshotsInputSchema = z.object({
   limit: z.number().int().min(1).max(120).optional().default(24),
@@ -180,6 +196,18 @@ export const utilityBillsContract = {
     .route({ method: "GET", path: "/accounts/{utilityAccountId}/snapshots" })
     .input(listSnapshotsInputSchema)
     .output(listSnapshotsResponseSchema),
+
+  // Importa historial completo de facturación Essbio (12 meses) como snapshots
+  importEssbioHistory: oc
+    .route({ method: "POST", path: "/accounts/{id}/import-essbio-history" })
+    .input(z.object({ id: z.number().int() }))
+    .output(importEssbioHistoryResponseSchema),
+
+  // Importa historial de consumo CGE (kWh por período) como snapshots
+  importCgeConsumo: oc
+    .route({ method: "POST", path: "/accounts/{id}/import-cge-consumo" })
+    .input(z.object({ id: z.number().int() }))
+    .output(importCgeConsumoResponseSchema),
 };
 
 export type UtilityBillsContract = typeof utilityBillsContract;

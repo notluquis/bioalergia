@@ -1,3 +1,16 @@
+# Global options — applied before any site block. Drops in-memory cost of
+# Caddy features that don't add value behind Railway's TLS-terminating proxy:
+# - HTTP/3 (QUIC) buffers: ~50-100MB; Railway proxy doesn't expose UDP to
+#   the container so QUIC negotiation is a wasted code path.
+# - Local admin API (default :2019): one extra server + goroutines; we don't
+#   reload Caddy via the API in prod.
+{
+	servers {
+		protocols h1 h2
+	}
+	admin off
+}
+
 :{$PORT:3000} {
 	# Root directory for static files
 	root * /srv
