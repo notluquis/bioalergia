@@ -43,6 +43,9 @@ vi.mock("@/features/hr/employees/api", () => ({
 }));
 
 const api = await import("./api");
+// roleQueries moved to ./queries (single key/query source). Same orpc + hr
+// mocks above cover its transitive imports.
+const queries = await import("./queries");
 
 beforeEach(() => {
   for (const fn of Object.values(orpcMock.rolesORPCClient)) {
@@ -209,7 +212,7 @@ describe("roleQueries.mappings", () => {
   it("builds a query that fetches employees, mappings, and roles in parallel", async () => {
     orpcMock.rolesORPCClient.listMappings.mockResolvedValueOnce({ data: [] });
     orpcMock.rolesORPCClient.list.mockResolvedValueOnce({ roles: [{ id: 1, name: "A" }] });
-    const options = api.roleQueries.mappings();
+    const options = queries.roleQueries.mappings();
     const result = await options.queryFn!({} as never);
     expect(result.dbMappings).toEqual([]);
     expect(result.roles).toEqual([{ id: 1, name: "A" }]);
@@ -219,7 +222,7 @@ describe("roleQueries.mappings", () => {
 
 describe("roleQueries.users", () => {
   it("scopes the query key by roleId", () => {
-    const options = api.roleQueries.users(99);
+    const options = queries.roleQueries.users(99);
     expect(options.queryKey).toEqual(["roles", 99, "users"]);
   });
 });

@@ -6,7 +6,7 @@ import { Shield, UserPlus, Users } from "lucide-react";
 import { TanStackInputField } from "@/components/forms/TanStackFieldControls";
 import { useToast } from "@/context/ToastContext";
 import { fetchPeople, type PersonWithExtras } from "@/features/people/api";
-import { fetchRoles } from "@/features/roles/api";
+import { roleKeys } from "@/features/roles/queries";
 import { inviteUser, type InviteUserPayload } from "@/features/users/api";
 import { usePersonLinking } from "@/features/users/hooks/usePersonLinking";
 import { ApiError } from "@/lib/api-client";
@@ -40,10 +40,7 @@ export function AddUserFormContainer({
   const queryClient = useQueryClient();
   const { error: toastError, success } = useToast();
 
-  const { data: rolesData, isLoading: isRolesLoading } = useQuery({
-    queryFn: fetchRoles,
-    queryKey: ["roles"],
-  });
+  const { data: rolesData, isLoading: isRolesLoading } = useQuery(roleKeys.lists());
   const roles = rolesData ?? [];
 
   // Fetch people without users

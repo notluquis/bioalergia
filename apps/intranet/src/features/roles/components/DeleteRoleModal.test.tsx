@@ -35,6 +35,14 @@ vi.mock("@/features/roles/api", async (importOriginal) => {
     ...actual,
     deleteRole: apiMocks.deleteRole,
     reassignRoleUsers: apiMocks.reassignRoleUsers,
+  };
+});
+
+// roleKeys + roleQueries now live in ./queries (single source of truth).
+vi.mock("@/features/roles/queries", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/features/roles/queries")>();
+  return {
+    ...actual,
     roleQueries: {
       ...actual.roleQueries,
       users: (roleId: number) => ({

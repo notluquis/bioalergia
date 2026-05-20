@@ -19,7 +19,7 @@ import { DataTable } from "@/components/data-table/DataTable";
 import { useAuth } from "@/context/AuthContext";
 import { useConfirmDialog } from "@/context/ConfirmDialogContext";
 import { useToast } from "@/context/ToastContext";
-import { fetchRoles } from "@/features/roles/api";
+import { roleKeys } from "@/features/roles/queries";
 import {
   deleteUser,
   deleteUserPasskey,
@@ -309,10 +309,7 @@ export function UserManagementPage() {
   });
   const users = useMemo(() => usersData ?? [], [usersData]);
 
-  const { data: rolesData } = useQuery({
-    queryFn: fetchRoles,
-    queryKey: ["roles"],
-  });
+  const { data: rolesData } = useQuery(roleKeys.lists());
   const roles = rolesData ?? [];
 
   // Mutations

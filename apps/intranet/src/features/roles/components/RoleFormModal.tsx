@@ -9,7 +9,8 @@ import {
   TanStackTextAreaField,
 } from "@/components/forms/TanStackFieldControls";
 import { useToast } from "@/context/ToastContext";
-import { createRole, type RoleUser, roleKeys, roleQueries, updateRole } from "@/features/roles/api";
+import { createRole, type RoleUser, updateRole } from "@/features/roles/api";
+import { roleKeys, roleQueries } from "@/features/roles/queries";
 import type { Role } from "@/types/roles";
 
 interface RoleFormModalProps {

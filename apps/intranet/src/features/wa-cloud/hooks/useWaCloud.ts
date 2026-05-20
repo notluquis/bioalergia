@@ -727,6 +727,9 @@ export function useScheduleMessage() {
       waCloudORPCClient.scheduleMessage(input),
     onSuccess: (_, vars) => {
       void qc.invalidateQueries({ queryKey: [...KEY, "scheduled", vars.conversationId] });
+      // "scheduled-all" (global view) is a disjoint sibling key, not covered by
+      // the per-conversation prefix above — invalidate it explicitly.
+      void qc.invalidateQueries({ queryKey: [...KEY, "scheduled-all"] });
     },
   });
 }
@@ -744,7 +747,11 @@ export function useCancelScheduled() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: number) => waCloudORPCClient.cancelScheduled({ id }),
-    onSuccess: () => void qc.invalidateQueries({ queryKey: [...KEY, "scheduled"] }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: [...KEY, "scheduled"] });
+      // Plus the disjoint global view (sibling key, not a prefix match above).
+      void qc.invalidateQueries({ queryKey: [...KEY, "scheduled-all"] });
+    },
   });
 }
 

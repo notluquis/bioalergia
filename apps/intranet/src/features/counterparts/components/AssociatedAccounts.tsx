@@ -13,6 +13,7 @@ import type { Transaction } from "@/features/finance/types";
 import { fmtCLP } from "@/lib/format";
 import { formatRut } from "@/lib/rut";
 import { addCounterpartAccount, attachCounterpartRut, fetchAccountSuggestions } from "../api";
+import { counterpartKeys } from "../queries";
 import type { Counterpart, CounterpartAccount, CounterpartAccountSuggestion } from "../types";
 import { getAccountGroupColumns, getQuickViewColumns } from "./AssociatedAccountsColumns";
 import {
@@ -247,10 +248,10 @@ const useAssociatedAccountsModel = ({
     },
     onSuccess: (_data, variables) => {
       void queryClient.invalidateQueries({
-        queryKey: ["counterpart-detail", variables.id],
+        queryKey: counterpartKeys.details(variables.id),
       });
       void queryClient.invalidateQueries({
-        queryKey: ["counterpart-summary", variables.id],
+        queryKey: counterpartKeys.summaries(variables.id),
       });
       setAccountForm(ACCOUNT_FORM_DEFAULT);
       setSuggestionQuery("");
@@ -267,10 +268,10 @@ const useAssociatedAccountsModel = ({
     },
     onSuccess: (_, variables) => {
       void queryClient.invalidateQueries({
-        queryKey: ["counterpart-detail", variables.id],
+        queryKey: counterpartKeys.details(variables.id),
       });
       void queryClient.invalidateQueries({
-        queryKey: ["counterpart-summary", variables.id],
+        queryKey: counterpartKeys.summaries(variables.id),
       });
       setSuggestionQuery("");
       toastSuccess("RUT vinculado correctamente");

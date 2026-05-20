@@ -68,12 +68,11 @@ export function RolesSettingsPage() {
     },
     onSuccess: () => {
       toast.success("Permisos sincronizados con el sistema");
-      // syncPermissions() rebuilds the permission CATALOG, which feeds the
-      // matrix columns via roleKeys.permissions() (queryKey ["permissions"]) —
-      // a different key from the roles list (["roles"]). Invalidate both, or
-      // the toast fires but the table never refetches the new permissions.
-      void queryClient.invalidateQueries({ queryKey: roleKeys.lists().queryKey });
-      void queryClient.invalidateQueries({ queryKey: roleKeys.permissions().queryKey });
+      // syncPermissions() rebuilds the permission CATALOG and may shift role
+      // rows. roleKeys.all is the shared root, so one invalidation cascades to
+      // both the roles list and the permission catalog (prefix match) — no way
+      // to forget one and reproduce the stale-table bug.
+      void queryClient.invalidateQueries({ queryKey: roleKeys.all });
     },
   });
 
@@ -84,10 +83,11 @@ export function RolesSettingsPage() {
   } = useMutation({
     mutationFn: updateRolePermissions,
     onMutate: async ({ roleId, permissionIds }) => {
-      await queryClient.cancelQueries({ queryKey: ["roles"] });
-      const previousRoles = queryClient.getQueryData<Role[]>(["roles"]);
+      const listKey = roleKeys.lists().queryKey;
+      await queryClient.cancelQueries({ queryKey: listKey });
+      const previousRoles = queryClient.getQueryData<Role[]>(listKey);
 
-      queryClient.setQueryData<Role[]>(["roles"], (old: Role[] | undefined) =>
+      queryClient.setQueryData<Role[]>(listKey, (old: Role[] | undefined) =>
         optimisticUpdateRole(old, roleId, permissionIds)
       );
 
@@ -96,11 +96,11 @@ export function RolesSettingsPage() {
     onError: (_err, _newTodo, context) => {
       toast.error("Error al actualizar permisos. Inténtalo de nuevo.");
       if (context?.previousRoles) {
-        queryClient.setQueryData(["roles"], context.previousRoles);
+        queryClient.setQueryData(roleKeys.lists().queryKey, context.previousRoles);
       }
     },
     onSettled: () => {
-      void queryClient.invalidateQueries({ queryKey: ["roles"] });
+      void queryClient.invalidateQueries({ queryKey: roleKeys.all });
     },
   });
 

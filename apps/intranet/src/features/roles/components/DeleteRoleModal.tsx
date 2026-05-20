@@ -13,7 +13,8 @@ import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-q
 import { AlertCircle, AlertTriangle, ArrowRight } from "lucide-react";
 import { Suspense, useState } from "react";
 import { useToast } from "@/context/ToastContext";
-import { deleteRole, reassignRoleUsers, roleKeys, roleQueries } from "@/features/roles/api";
+import { deleteRole, reassignRoleUsers } from "@/features/roles/api";
+import { roleKeys, roleQueries } from "@/features/roles/queries";
 import type { Role } from "@/types/roles";
 
 interface DeleteRoleModalProps {
