@@ -61,26 +61,25 @@ RUN --mount=type=cache,id=s/4990f681-049b-467f-9034-ef5c74a55f0a-/pnpm/store,tar
 # ============================================================================
 # STAGE 4: Runner — node 26 + Chromium (capa cacheable por BuildKit/Railpack)
 # ============================================================================
-FROM node:26-bookworm AS runner
+# Imagen oficial Playwright: Chromium YA prebaked/extraído en /ms-playwright +
+# todas las libs del SO. Cero download/extract en build → mata el cuelgue del
+# extract que sufría node:26-bookworm en el builder de Railway.
+# Versión pinned = match con el playwright del proyecto (1.59.1 → mismo chromium).
+FROM mcr.microsoft.com/playwright:v1.59.1-noble AS runner
 WORKDIR /app
 ENV NODE_ENV=production
-ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Capas separadas + ANTES del COPY del código → cacheables por BuildKit/Railpack.
-# 1) Libs del SO (apt). Capa propia: si cambia el código no se reinstala.
-RUN npx playwright@1.59.1 install-deps chromium
+# La imagen MS ships Node 22. El proyecto corre .ts vía type-stripping nativo y
+# usa parameter properties (no erasables) → exige Node >=26. Lo instalamos encima
+# vía nodesource (apt, ~1min, confiable en Railway). Reemplaza el node 22 base.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl ca-certificates gnupg \
+    && curl -fsSL https://deb.nodesource.com/setup_26.x | bash - \
+    && apt-get install -y --no-install-recommends nodejs \
+    && rm -rf /var/lib/apt/lists/* \
+    && node --version
 
-# 2) Descarga del browser con timeout+retry. cdn.playwright.dev a veces se cuelga
-#    al 100% sin cerrar la conexión → `timeout` lo mata y reintenta (hasta 3x).
-RUN for i in 1 2 3; do \
-      timeout 360 npx playwright@1.59.1 install chromium && break; \
-      echo "playwright chromium download retry $i"; sleep 5; \
-    done; \
-    test -d /ms-playwright
-
-# Sin `chmod -R` ni `USER node`: corre como root (contenedor cron one-shot,
-# aislado). El chmod recursivo era sospechoso de cuelgue y es innecesario root.
 COPY --from=build /app/deploy/ .
 
 CMD ["node", "src/index.ts"]
