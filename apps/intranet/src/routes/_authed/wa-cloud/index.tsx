@@ -195,7 +195,9 @@ function WaCloudPage() {
   return (
     <div className="space-y-3 p-4">
       <Tabs aria-label="WhatsApp Cloud" selectedKey={tab} onSelectionChange={onTabChange}>
-        <Tabs.ListContainer>
+        {/* 8 tabs > 375px mobile = overflow horizontal de página. Scroll DENTRO
+            del contenedor (overflow-x-auto + max-w-full) en vez de expandir. */}
+        <Tabs.ListContainer className="max-w-full overflow-x-auto">
           <Tabs.List
             aria-label="Secciones"
             className="rounded-2xl border border-default-200/60 bg-background/70 p-1"
