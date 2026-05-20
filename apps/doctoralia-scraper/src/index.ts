@@ -124,120 +124,164 @@ async function askStdin(prompt: string): Promise<string> {
 }
 
 const LOGIN_URL = "https://l.doctoralia.cl/";
+// Entry para el login por browser: docplanner redirige al SSO con client_id →
+// tras login vuelve directo al panel (sin pasar por el chooser /apps).
+const ENTRY_URL = "https://docplanner.doctoralia.cl/#/";
 const SPA_SHELL_MARKER = /<div id="vuesaas">/i;
+
+// Lee el OTP de 2FA de Doctoralia del inbox (mail.spacemail.com) vía IMAP.
+// El código va en <strong>NNNNNN</strong>; from noreply@doctoralia.cl. Poll ~60s.
+async function fetchDoctoraliaOtp(config: ScraperConfig): Promise<string | null> {
+  const { ImapFlow } = await import("imapflow");
+  const client = new ImapFlow({
+    auth: { pass: config.imapPass, user: config.imapUser },
+    host: config.imapHost,
+    logger: false,
+    port: 993,
+    secure: true,
+  });
+  await client.connect();
+  try {
+    for (let attempt = 0; attempt < 12; attempt++) {
+      const lock = await client.getMailboxLock("INBOX");
+      try {
+        const total = client.mailbox && typeof client.mailbox !== "boolean" ? client.mailbox.exists : 0;
+        const from = Math.max(1, total - 29);
+        let code: null | string = null;
+        for await (const msg of client.fetch(`${from}:*`, { envelope: true, source: true })) {
+          const subj = msg.envelope?.subject ?? "";
+          const fromAddr = msg.envelope?.from?.[0]?.address ?? "";
+          if (!/doctoralia/i.test(fromAddr) || !/verificaci/i.test(subj)) continue;
+          const m = msg.source?.toString("utf8").match(/<strong>\s*(\d{6})\s*<\/strong>/);
+          if (m) code = m[1]; // último del fetch = más reciente
+        }
+        if (code) return code;
+      } finally {
+        lock.release();
+      }
+      await new Promise((r) => setTimeout(r, 5_000));
+    }
+    return null;
+  } finally {
+    await client.logout().catch(() => undefined);
+  }
+}
 
 async function performLoginWithBrowser(
   session: ImpitSession,
   config: ScraperConfig
 ): Promise<void> {
-  log("switching to Playwright browser-based login (captcha detected)...");
-  const { chromium } = await import("playwright");
-  const browser = await chromium.launch({
-    headless: true,
-    args: [
-      "--no-sandbox",
-      "--disable-setuid-sandbox",
-      "--disable-dev-shm-usage",
-      "--disable-gpu",
-      "--disable-blink-features=AutomationControlled",
-    ],
-  });
+  // WebKit: más liviano que chromium y verificado 2026-05 que pasa el Friendly
+  // Captcha de Doctoralia. La imagen Docker copia /ms-playwright completo (los 3
+  // browsers) → webkit disponible sin instalar nada extra.
+  log("switching to Playwright (webkit) browser-based login...");
+  const { webkit } = await import("playwright");
+  const browser = await webkit.launch({ headless: true });
   try {
-    const context = await browser.newContext({
-      locale: "es-CL",
-      userAgent:
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-    });
-
-    // Mask navigator.webdriver so Friendly Captcha headless detection fails.
+    const context = await browser.newContext({ locale: "es-CL" });
     await context.addInitScript(() => {
       Object.defineProperty(navigator, "webdriver", { get: () => undefined });
     });
-
     const page = await context.newPage();
 
-    log("  browser: navigating to", LOGIN_URL);
-    // domcontentloaded, NO networkidle: la SPA Doctoralia tiene polling/analytics
-    // constante y networkidle nunca dispara → goto timeout → login falla.
-    await page.goto(LOGIN_URL, { waitUntil: "domcontentloaded", timeout: 60_000 });
-    await page.waitForTimeout(2_000);
+    // Entry real: docplanner redirige al SSO con client_id → tras login vuelve
+    // DIRECTO al panel. Entrar a l.doctoralia.cl/ pelado lleva al chooser /apps.
+    log("  browser: entry", ENTRY_URL);
+    await page.goto(ENTRY_URL, { waitUntil: "domcontentloaded", timeout: 60_000 });
 
-    await page.fill(
-      'input[type="email"], input[name="email"], input[name="_username"]',
-      config.email
-    );
-    await page.fill(
-      'input[type="password"], input[name="password"], input[name="_password"]',
-      config.password
-    );
+    const emailSel = 'input[type="email"], input[name="email"], input[name="_username"]';
+    const passSel = 'input[type="password"], input[name="password"], input[name="_password"]';
+    await page.waitForSelector(emailSel, { timeout: 30_000 }).catch(() => {});
+    await page.waitForTimeout(1_500);
+    log("  browser: SSO url", page.url());
 
-    // Friendly Captcha default startMode is "focus" — the widget won't create the hidden
-    // input or start solving until focusin fires on the form. Dispatch it explicitly.
+    await page.fill(emailSel, config.email);
+    await page.fill(passSel, config.password);
+
+    // Friendly Captcha startMode "focus": disparar focusin para que arranque.
     await page.evaluate(() => {
       document.querySelector("form")?.dispatchEvent(new Event("focusin", { bubbles: true }));
     });
 
-    // FC v1 used name="frc-captcha-solution"; FC v2 uses name="frc-captcha-response".
-    // Try v2 first, fall back to v1. All "not ready" sentinels start with ".".
-    const FRC_SELECTORS = [
-      '[name="frc-captcha-response"]', // Friendly Captcha v2
-      '[name="frc-captcha-solution"]', // Friendly Captcha v1
-    ];
-    let frcSelector: string | null = null;
-    for (const sel of FRC_SELECTORS) {
+    // Esperar PoW del captcha (tolerante: no bloquea si no completa).
+    const frcSelectors = ['[name="frc-captcha-response"]', '[name="frc-captcha-solution"]'];
+    let frcSelector: null | string = null;
+    for (const sel of frcSelectors) {
       const el = await page
-        .waitForSelector(sel, { timeout: 15_000, state: "attached" })
+        .waitForSelector(sel, { state: "attached", timeout: 15_000 })
         .catch(() => null);
       if (el) {
         frcSelector = sel;
         break;
       }
     }
-
     if (frcSelector) {
-      log(`  browser: found captcha input (${frcSelector}), waiting for PoW to complete...`);
-      // NO hard-throw si el PoW no completa: Friendly Captcha acá NO es bloqueante
-      // (verificado 2026-05 — login pasa con el input vacío). Toleramos timeout y
-      // seguimos al submit; antes el waitForFunction throweaba → login fallaba →
-      // forzaba pegado manual de cookies.
       const solved = await page
         .waitForFunction(
           (sel) => {
             const el = document.querySelector<HTMLInputElement>(sel);
-            if (!el || el.value === "" || el.value.startsWith(".")) return false;
-            return true;
+            return Boolean(el && el.value !== "" && !el.value.startsWith("."));
           },
           frcSelector,
-          { timeout: 20_000, polling: 500 }
+          { polling: 500, timeout: 20_000 }
         )
         .then(() => true)
         .catch(() => false);
-      log(`  browser: captcha PoW ${solved ? "resuelto" : "no completó (sigo igual, no bloquea)"}`);
-    } else {
-      // Dump visible inputs to help diagnose future selector changes.
-      const inputNames = await page.evaluate(() =>
-        Array.from(document.querySelectorAll("input")).map((i) => `${i.name}|${i.type}`)
-      );
-      log("  browser: no frc captcha input found — page inputs:", inputNames.join(", "));
-      log("  browser: submitting without captcha token (may fail)");
+      log(`  browser: captcha PoW ${solved ? "resuelto" : "no completó (no bloquea)"}`);
     }
 
-    log("  browser: submitting form...");
-    await Promise.all([
-      page.waitForURL(/docplanner\.doctoralia\.cl/, { timeout: 30_000 }),
-      page.click('button[type="submit"], input[type="submit"]'),
-    ]);
+    log("  browser: submit");
+    await page.click('button[type="submit"], input[type="submit"]').catch(() => {});
 
-    log("  browser: redirected to panel, extracting cookies...");
+    // Resolver loop: Doctoralia mete pantallas en orden variable post-login.
+    const codeInput =
+      'input[type="text"], input[name="code"], input[autocomplete="one-time-code"]';
+    const deadline = Date.now() + 120_000;
+    let lastUrl = "";
+    while (Date.now() < deadline) {
+      await page.waitForTimeout(2_500);
+      const url = page.url();
+      if (url !== lastUrl) {
+        log("  browser: url", url);
+        lastUrl = url;
+      }
+      if (/docplanner\.doctoralia\.cl/.test(url)) {
+        log("  browser: panel reached");
+        break;
+      }
+      if (url.includes("/2fa")) {
+        const code = await fetchDoctoraliaOtp(config);
+        if (!code) {
+          log("  browser: 2FA pero no encontré OTP en el correo");
+          break;
+        }
+        log("  browser: OTP del correo obtenido");
+        await page.fill(codeInput, code).catch(() => {});
+        await page.click('button[type="submit"], button:has-text("Enviar")').catch(() => {});
+      } else if (url.includes("/weak-password")) {
+        await page
+          .click(
+            'button:has-text("Recuérdamelo"), a:has-text("Recuérdamelo"), :text("Recuérdamelo más tarde")'
+          )
+          .catch(() => {});
+      } else if (url.includes("/apps")) {
+        await page
+          .click('a:has-text("doctoralia.cl"), :text("www.doctoralia.cl")')
+          .catch(() => {});
+      }
+    }
+
     const playwrightCookies = await context.cookies();
-
     session.jar.clear();
     for (const c of playwrightCookies) {
       const expiresMs = c.expires > 0 ? Math.floor(c.expires * 1000) : undefined;
       session.jar.setRaw(c.name, c.value, c.domain, c.path, expiresMs);
     }
-
-    log(`  browser: extracted ${playwrightCookies.length} cookies`);
+    const hasAuth = playwrightCookies.some((c) => c.name === "mkplAuth");
+    log(`  browser: extracted ${playwrightCookies.length} cookies (mkplAuth=${hasAuth})`);
+    if (!hasAuth) {
+      throw new Error("browser login terminó sin mkplAuth — login incompleto");
+    }
   } finally {
     await browser.close();
   }

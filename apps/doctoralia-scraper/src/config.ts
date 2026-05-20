@@ -12,6 +12,9 @@ const configSchema = z.object({
   baseUrl: z.string().url(),
   email: z.string().min(1, "DOCTORALIA_SCRAPER_EMAIL is required"),
   password: z.string().min(1, "DOCTORALIA_SCRAPER_PASSWORD is required"),
+  imapHost: z.string().min(1),
+  imapUser: z.string().min(1),
+  imapPass: z.string(),
   importEndpoint: z.string().url().optional(),
   importToken: z.string().optional(),
   cookiesEndpoint: z.string().url(),
@@ -41,6 +44,9 @@ export function loadConfig(): ScraperConfig {
     baseUrl: process.env.DOCTORALIA_SCRAPER_BASE_URL ?? "https://docplanner.doctoralia.cl",
     email: process.env.DOCTORALIA_SCRAPER_EMAIL ?? "",
     password: process.env.DOCTORALIA_SCRAPER_PASSWORD ?? "",
+    imapHost: process.env.DOCTORALIA_SCRAPER_IMAP_HOST ?? "mail.spacemail.com",
+    imapUser: process.env.DOCTORALIA_SCRAPER_IMAP_USER ?? process.env.DOCTORALIA_SCRAPER_EMAIL ?? "",
+    imapPass: process.env.DOCTORALIA_SCRAPER_IMAP_PASS ?? "",
     importEndpoint: process.env.DOCTORALIA_SCRAPER_IMPORT_ENDPOINT || undefined,
     importToken:
       process.env.DOCTORALIA_SCRAPER_IMPORT_TOKEN ||
