@@ -717,21 +717,36 @@ export async function importEssbioHistory(accountId: number) {
     serviceNumber: account.serviceNumber,
   });
 
+  return ingestEssbioHistory(accountId, history, null);
+}
+
+// Persiste entries Essbio como snapshots (dedupe por folio). Reutilizado por
+// importEssbioHistory (fetch server-side) y por el endpoint del scraper (rows
+// posteadas desde el browser con sesión autenticada). dueDate se setea en el
+// snapshot más reciente (primera entry).
+export async function ingestEssbioHistory(
+  accountId: number,
+  entries: EssbioHistoryEntry[],
+  dueDate: null | string
+) {
   let imported = 0;
   let skipped = 0;
+  let first = true;
 
-  for (const entry of history) {
+  for (const entry of entries) {
     const existing = await db.utilityBillSnapshot.findFirst({
       where: { folio: entry.folio, utilityAccountId: accountId },
     });
     if (existing) {
       skipped += 1;
+      first = false;
       continue;
     }
     await db.utilityBillSnapshot.create({
       data: {
         consumption: entry.consumption,
         currentAmount: new Decimal(entry.total),
+        dueDate: first ? dueDate : null,
         emissionDate: periodToEmissionDate(entry.period),
         folio: entry.folio,
         period: entry.period,
@@ -742,9 +757,10 @@ export async function importEssbioHistory(accountId: number) {
       },
     });
     imported += 1;
+    first = false;
   }
 
-  return { imported, skipped, total: history.length };
+  return { imported, skipped, total: entries.length };
 }
 
 // "YYYYMMDD" → "YYYY-MM-DD" (null si inválido)
