@@ -380,6 +380,13 @@ const authORPCRouterBase = {
         userId: user.id,
       });
       setCookie(context.hono, COOKIE_NAME, token, COOKIE_OPTIONS);
+      // Reset the inactivity clock at login. resolveSessionUserFromToken
+      // rejects sessions idle > INACTIVITY_THRESHOLD_MS (8h) and only touches
+      // lastActivityAt AFTER passing that gate — so a user returning after >8h
+      // would be locked out: the freshly-issued token is valid, but the stale
+      // lastActivityAt from the previous session nulls it before it can be
+      // refreshed (deadlock). Stamping it now starts the new session clean.
+      await db.user.update({ where: { id: user.id }, data: { lastActivityAt: new Date() } });
 
       const { getAbilityRulesForUser } = await import("../lib/authz.ts");
       const abilityRules = (await getAbilityRulesForUser(user.id)) as RawRuleOf<AnyAbility>[];
@@ -451,6 +458,13 @@ const authORPCRouterBase = {
         userId: user.id,
       });
       setCookie(context.hono, COOKIE_NAME, token, COOKIE_OPTIONS);
+      // Reset the inactivity clock at login. resolveSessionUserFromToken
+      // rejects sessions idle > INACTIVITY_THRESHOLD_MS (8h) and only touches
+      // lastActivityAt AFTER passing that gate — so a user returning after >8h
+      // would be locked out: the freshly-issued token is valid, but the stale
+      // lastActivityAt from the previous session nulls it before it can be
+      // refreshed (deadlock). Stamping it now starts the new session clean.
+      await db.user.update({ where: { id: user.id }, data: { lastActivityAt: new Date() } });
 
       const { getAbilityRulesForUser } = await import("../lib/authz.ts");
       const abilityRules = (await getAbilityRulesForUser(user.id)) as RawRuleOf<AnyAbility>[];
@@ -888,6 +902,13 @@ const authORPCRouterBase = {
         userId: user.id,
       });
       setCookie(context.hono, COOKIE_NAME, token, COOKIE_OPTIONS);
+      // Reset the inactivity clock at login. resolveSessionUserFromToken
+      // rejects sessions idle > INACTIVITY_THRESHOLD_MS (8h) and only touches
+      // lastActivityAt AFTER passing that gate — so a user returning after >8h
+      // would be locked out: the freshly-issued token is valid, but the stale
+      // lastActivityAt from the previous session nulls it before it can be
+      // refreshed (deadlock). Stamping it now starts the new session clean.
+      await db.user.update({ where: { id: user.id }, data: { lastActivityAt: new Date() } });
 
       const { getAbilityRulesForUser } = await import("../lib/authz.ts");
       const abilityRules = (await getAbilityRulesForUser(user.id)) as RawRuleOf<AnyAbility>[];
