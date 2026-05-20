@@ -5895,7 +5895,8 @@ export class SchemaType implements SchemaDef {
                 },
                 patientReferenceId: {
                     name: "patientReferenceId",
-                    type: "String"
+                    type: "String",
+                    optional: true
                 },
                 patientPhone: {
                     name: "patientPhone",

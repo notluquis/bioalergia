@@ -7179,6 +7179,7 @@ export class SchemaType implements SchemaDef {
                 patientReferenceId: {
                     name: "patientReferenceId",
                     type: "String",
+                    optional: true,
                     attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("patient_reference_id") }] }] as readonly AttributeApplication[]
                 },
                 patientPhone: {

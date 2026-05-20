@@ -63,7 +63,7 @@ export interface DoctoraliaAppointment {
   serviceIsDeleted: boolean;
   attendance: number;
   patientId: number;
-  patientReferenceId: string;
+  patientReferenceId: null | string;
   patientPhone: string;
   patientEmail: string;
   patientBirthDate: string | null;

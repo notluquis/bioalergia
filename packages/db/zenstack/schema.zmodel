@@ -1947,7 +1947,7 @@ model DoctoraliaCalendarAppointment {
   serviceIsDeleted           Boolean            @default(false) @map("service_is_deleted")
   attendance                 Int                @default(0)
   patientExternalId          Int                @map("patient_external_id")
-  patientReferenceId         String             @map("patient_reference_id")
+  patientReferenceId         String?            @map("patient_reference_id")
   patientPhone               String?            @map("patient_phone")
   patientEmail               String?            @map("patient_email")
   patientBirthDate           DateTime?          @map("patient_birth_date")
