@@ -642,7 +642,9 @@ export async function refreshUtilityAccount(id: number, source: string = "MANUAL
       currentDebt: bill.currentDebt !== null ? new Decimal(bill.currentDebt) : null,
       dueDate: bill.dueDate,
       emissionDate: bill.emissionDate,
-      lastPaymentJson: bill.lastPayment as never,
+      // ZenStack v3 rechaza `null` crudo en Json?; `undefined` lo omite → SQL null.
+      // CGE/Medipass no traen lastPayment → null.
+      lastPaymentJson: (bill.lastPayment ?? undefined) as never,
       observation: bill.observation,
       previousAmount: new Decimal(bill.previousAmount),
       rawResponse: bill.raw as never,
