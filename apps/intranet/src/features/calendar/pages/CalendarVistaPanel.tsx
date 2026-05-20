@@ -32,7 +32,13 @@ const CalendarGrid = lazy(async () => {
           dayMaxEvents={3}
           editable={false}
           eventDisplay="block"
+          // FC default event color #3788d8 + white = 3.69 contrast (fails WCAG AA).
+          // CSS-var override loses to FC's runtime-injected styles, so set the
+          // color via these props — FC applies them inline and they win.
+          eventBackgroundColor="var(--color-primary)"
+          eventBorderColor="var(--color-primary)"
           events={events}
+          eventTextColor="var(--color-primary-foreground)"
           eventTimeFormat={{
             hour: "2-digit",
             hour12: false,

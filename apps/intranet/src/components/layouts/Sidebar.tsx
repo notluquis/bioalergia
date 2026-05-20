@@ -103,7 +103,7 @@ export function Sidebar({ isMobile, isOpen, onClose, sidebarId }: SidebarProps) 
           variant="outline"
         >
           <Avatar className="shrink-0 size-10">
-            <Avatar.Fallback className="bg-background font-bold text-primary">
+            <Avatar.Fallback className="bg-primary font-bold text-primary-foreground">
               {displayName.slice(0, 2).toUpperCase()}
             </Avatar.Fallback>
           </Avatar>
