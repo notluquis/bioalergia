@@ -87,6 +87,7 @@ function mapAppointmentData(scheduleId: number, appointment: DoctoraliaAppointme
     duration: appointment.duration,
     canNotifyPatient: appointment.canNotifyPatient,
     noShowProtection: appointment.noShowProtection,
+    followUpDate: parseDoctoraliaDateTime(appointment.followUpDateWithSameDoctor),
   };
 }
 

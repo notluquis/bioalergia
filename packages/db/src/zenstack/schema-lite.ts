@@ -5976,6 +5976,11 @@ export class SchemaType implements SchemaDef {
                     type: "Boolean",
                     default: false as FieldDefault
                 },
+                followUpDate: {
+                    name: "followUpDate",
+                    type: "DateTime",
+                    optional: true
+                },
                 createdAt: {
                     name: "createdAt",
                     type: "DateTime",

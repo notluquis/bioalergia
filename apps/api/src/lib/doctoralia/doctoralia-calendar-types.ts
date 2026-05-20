@@ -82,7 +82,7 @@ export interface DoctoraliaAppointment {
   onlinePaymentType: string | null;
   onlinePaymentStatus: string | null;
   isPaidOnline: boolean;
-  communicationChannel: string | null;
+  communicationChannel: null | number | string; // Doctoralia manda número a veces
   fake: boolean;
   isEventWithVoucher: boolean;
   duration: number;

@@ -1964,6 +1964,7 @@ model DoctoraliaCalendarAppointment {
   duration                   Int
   canNotifyPatient           Boolean            @map("can_notify_patient")
   noShowProtection           Boolean            @default(false) @map("no_show_protection")
+  followUpDate               DateTime?          @map("follow_up_date") @db.Timestamptz(3) // followUpDateWithSameDoctor: próximo control
   createdAt                  DateTime                     @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt                  DateTime                     @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
   schedule                   DoctoraliaSchedule           @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
