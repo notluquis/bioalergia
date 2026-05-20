@@ -196,8 +196,9 @@ function WaCloudPage() {
     <div className="space-y-3 p-4">
       <Tabs aria-label="WhatsApp Cloud" selectedKey={tab} onSelectionChange={onTabChange}>
         {/* 8 tabs > 375px mobile = overflow horizontal de página. Scroll DENTRO
-            del contenedor (overflow-x-auto + max-w-full) en vez de expandir. */}
-        <Tabs.ListContainer className="max-w-full overflow-x-auto">
+            del contenedor. min-w-0 es clave: como flex-item necesita poder encoger
+            bajo el ancho intrínseco de los tabs para que overflow-x-auto active. */}
+        <Tabs.ListContainer className="min-w-0 max-w-full overflow-x-auto">
           <Tabs.List
             aria-label="Secciones"
             className="rounded-2xl border border-default-200/60 bg-background/70 p-1"
