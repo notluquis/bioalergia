@@ -11,20 +11,63 @@ import {
   Settings2,
   Webhook,
 } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useState } from "react";
 import { z } from "zod";
 import { ProtectedTab } from "@/components/auth/ProtectedTab";
-import { WaCloudAlertsPage } from "@/features/wa-cloud/pages/WaCloudAlertsPage";
-import { WaCloudAnalyticsPage } from "@/features/wa-cloud/pages/WaCloudAnalyticsPage";
-import { WaCloudBroadcastsPage } from "@/features/wa-cloud/pages/WaCloudBroadcastsPage";
-import { WaCloudCatalogPage } from "@/features/wa-cloud/pages/WaCloudCatalogPage";
+// Inbox is the default tab — keep it eager. The other 9 tabs are code-split
+// into their own chunks (loaded on first open via the isTabMounted gate), so
+// the wa-cloud route bundle stays under its size budget instead of shipping
+// every tab's code up front. Named exports → unwrap to default for React.lazy.
 import { WaCloudInboxPage } from "@/features/wa-cloud/pages/WaCloudInboxPage";
-import { WaCloudScheduledPage } from "@/features/wa-cloud/pages/WaCloudScheduledPage";
-import { WaCloudSettingsPage } from "@/features/wa-cloud/pages/WaCloudSettingsPage";
-import { WaCloudTemplatesPage } from "@/features/wa-cloud/pages/WaCloudTemplatesPage";
-import { WaCloudWebhookLogsPage } from "@/features/wa-cloud/pages/WaCloudWebhookLogsPage";
 import { InboxSearchDrawer } from "@/features/wa-cloud/components/InboxSearchDrawer";
 import { useLazyTabs } from "@/hooks/use-lazy-tabs";
+
+const WaCloudAlertsPage = lazy(() =>
+  import("@/features/wa-cloud/pages/WaCloudAlertsPage").then((m) => ({
+    default: m.WaCloudAlertsPage,
+  }))
+);
+const WaCloudAnalyticsPage = lazy(() =>
+  import("@/features/wa-cloud/pages/WaCloudAnalyticsPage").then((m) => ({
+    default: m.WaCloudAnalyticsPage,
+  }))
+);
+const WaCloudBroadcastsPage = lazy(() =>
+  import("@/features/wa-cloud/pages/WaCloudBroadcastsPage").then((m) => ({
+    default: m.WaCloudBroadcastsPage,
+  }))
+);
+const WaCloudCatalogPage = lazy(() =>
+  import("@/features/wa-cloud/pages/WaCloudCatalogPage").then((m) => ({
+    default: m.WaCloudCatalogPage,
+  }))
+);
+const WaCloudScheduledPage = lazy(() =>
+  import("@/features/wa-cloud/pages/WaCloudScheduledPage").then((m) => ({
+    default: m.WaCloudScheduledPage,
+  }))
+);
+const WaCloudSettingsPage = lazy(() =>
+  import("@/features/wa-cloud/pages/WaCloudSettingsPage").then((m) => ({
+    default: m.WaCloudSettingsPage,
+  }))
+);
+const WaCloudTemplatesPage = lazy(() =>
+  import("@/features/wa-cloud/pages/WaCloudTemplatesPage").then((m) => ({
+    default: m.WaCloudTemplatesPage,
+  }))
+);
+const WaCloudWebhookLogsPage = lazy(() =>
+  import("@/features/wa-cloud/pages/WaCloudWebhookLogsPage").then((m) => ({
+    default: m.WaCloudWebhookLogsPage,
+  }))
+);
+
+const LAZY_TAB_FALLBACK = (
+  <div className="p-4 text-default-500 text-sm" aria-busy="true" aria-label="Cargando sección">
+    Cargando…
+  </div>
+);
 
 // Unified `/wa-cloud` host (Phase 2 IA consolidation). Replaces the
 // 10 separate sub-routes with a single tabbed page + a right-side
@@ -206,56 +249,72 @@ function WaCloudPage() {
         <Tabs.Panel id="plantillas" className="pt-4">
           {isTabMounted("plantillas") ? (
             <ProtectedTab action="read" subject="WaBusinessAccount">
-              <WaCloudTemplatesPage />
+              <Suspense fallback={LAZY_TAB_FALLBACK}>
+                <WaCloudTemplatesPage />
+              </Suspense>
             </ProtectedTab>
           ) : null}
         </Tabs.Panel>
         <Tabs.Panel id="programados" className="pt-4">
           {isTabMounted("programados") ? (
             <ProtectedTab action="read" subject="WaBusinessAccount">
-              <WaCloudScheduledPage />
+              <Suspense fallback={LAZY_TAB_FALLBACK}>
+                <WaCloudScheduledPage />
+              </Suspense>
             </ProtectedTab>
           ) : null}
         </Tabs.Panel>
         <Tabs.Panel id="broadcasts" className="pt-4">
           {isTabMounted("broadcasts") ? (
             <ProtectedTab action="create" subject="WaBusinessAccount">
-              <WaCloudBroadcastsPage />
+              <Suspense fallback={LAZY_TAB_FALLBACK}>
+                <WaCloudBroadcastsPage />
+              </Suspense>
             </ProtectedTab>
           ) : null}
         </Tabs.Panel>
         <Tabs.Panel id="catalogo" className="pt-4">
           {isTabMounted("catalogo") ? (
             <ProtectedTab action="create" subject="WaBusinessAccount">
-              <WaCloudCatalogPage />
+              <Suspense fallback={LAZY_TAB_FALLBACK}>
+                <WaCloudCatalogPage />
+              </Suspense>
             </ProtectedTab>
           ) : null}
         </Tabs.Panel>
         <Tabs.Panel id="alertas" className="pt-4">
           {isTabMounted("alertas") ? (
             <ProtectedTab action="read" subject="WaBusinessAccount">
-              <WaCloudAlertsPage />
+              <Suspense fallback={LAZY_TAB_FALLBACK}>
+                <WaCloudAlertsPage />
+              </Suspense>
             </ProtectedTab>
           ) : null}
         </Tabs.Panel>
         <Tabs.Panel id="webhooks" className="pt-4">
           {isTabMounted("webhooks") ? (
             <ProtectedTab action="read" subject="WaBusinessAccount">
-              <WaCloudWebhookLogsPage />
+              <Suspense fallback={LAZY_TAB_FALLBACK}>
+                <WaCloudWebhookLogsPage />
+              </Suspense>
             </ProtectedTab>
           ) : null}
         </Tabs.Panel>
         <Tabs.Panel id="analytics" className="pt-4">
           {isTabMounted("analytics") ? (
             <ProtectedTab action="read" subject="WaBusinessAccount">
-              <WaCloudAnalyticsPage />
+              <Suspense fallback={LAZY_TAB_FALLBACK}>
+                <WaCloudAnalyticsPage />
+              </Suspense>
             </ProtectedTab>
           ) : null}
         </Tabs.Panel>
         <Tabs.Panel id="configuracion" className="pt-4">
           {isTabMounted("configuracion") ? (
             <ProtectedTab action="update" subject="WaBusinessAccount">
-              <WaCloudSettingsPage />
+              <Suspense fallback={LAZY_TAB_FALLBACK}>
+                <WaCloudSettingsPage />
+              </Suspense>
             </ProtectedTab>
           ) : null}
         </Tabs.Panel>
