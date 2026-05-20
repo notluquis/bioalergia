@@ -1,7 +1,9 @@
 {
   "name": "@finanzas/orpc-client",
   "version": "0.0.1",
-  "files": ["src"],
+  "files": [
+    "src"
+  ],
   "type": "module",
   "main": "./src/index.ts",
   "types": "./src/index.ts",
@@ -19,7 +21,7 @@
   "dependencies": {
     "@orpc/client": "^1.14.3",
     "@orpc/shared": "^1.14.3",
-    "superjson": "^2.2.2"
+    "superjson": "^2.2.6"
   },
   "devDependencies": {
     "typescript": "^6.0.3"
