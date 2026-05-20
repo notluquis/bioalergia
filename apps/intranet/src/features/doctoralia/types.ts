@@ -28,7 +28,7 @@ export interface DoctoraliaCalendarAppointment {
   isPatientFirstTime: boolean;
   patientBirthDate: Date | null;
   patientExternalId: number;
-  patientReferenceId: string;
+  patientReferenceId: null | string;
   schedule: {
     displayName: string;
     externalId: number;

@@ -328,7 +328,7 @@ export const mergedCalendarAppointmentSchema = z.strictObject({
   isPatientFirstTime: z.boolean(),
   patientBirthDate: z.coerce.date().nullable(),
   patientExternalId: z.number(),
-  patientReferenceId: z.string(),
+  patientReferenceId: z.string().nullable(),
   schedule: z.strictObject({
     displayName: z.string(),
     externalId: z.number(),
