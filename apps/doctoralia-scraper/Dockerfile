@@ -63,7 +63,7 @@ RUN --mount=type=cache,id=s/4990f681-049b-467f-9034-ef5c74a55f0a-/pnpm/store,tar
 # ============================================================================
 # Fuente de chromium YA extraído (sin tocar node). Solo lo usamos para copiar
 # los binarios prebaked → evita el download+unzip que colgaba en Railway.
-FROM mcr.microsoft.com/playwright:v1.59.1-noble AS browsers
+FROM mcr.microsoft.com/playwright:v1.60.0-noble AS browsers
 
 # Runner: NODE 26 de base (requisito del proyecto: type-stripping + param props).
 FROM node:26-bookworm AS runner
@@ -74,7 +74,11 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 # Libs del SO para chromium (apt). Esto en Railway SÍ funciona — lo que colgaba
 # era la EXTRACCIÓN del zip, no el apt. No descargamos ni descomprimimos browser.
-RUN npx playwright@1.59.1 install-deps chromium \
+# install-deps = solo libs apt del SO (version-agnóstico). No pinneamos versión.
+# IMPORTANTE: la imagen `browsers` (arriba) DEBE matchear el minor del playwright
+# npm — son un bloque acoplado. Al subir playwright de minor, subir el tag de la
+# imagen MS también (v1.60.0-noble → v1.61.0-noble, etc).
+RUN npx -y playwright install-deps chromium \
     && rm -rf /var/lib/apt/lists/*
 
 # Chromium ya extraído, copiado de la imagen MS → es un COPY de archivos (capa
