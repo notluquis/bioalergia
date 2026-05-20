@@ -37,6 +37,7 @@ import { Route as AuthedHrIndexRouteImport } from "./routes/_authed/hr/index"
 import { Route as AuthedExamReportsIndexRouteImport } from "./routes/_authed/exam-reports/index"
 import { Route as AuthedClinicalIndexRouteImport } from "./routes/_authed/clinical/index"
 import { Route as AuthedCalendarIndexRouteImport } from "./routes/_authed/calendar/index"
+import { Route as AuthedWaCloudSplatRouteImport } from "./routes/_authed/wa-cloud/$"
 import { Route as AuthedSettingsHaulmerRouteImport } from "./routes/_authed/settings/haulmer"
 import { Route as AuthedSettingsDoctoraliaRouteImport } from "./routes/_authed/settings/doctoralia"
 import { Route as AuthedServicesAgendaRouteImport } from "./routes/_authed/services/agenda"
@@ -217,6 +218,11 @@ const AuthedCalendarIndexRoute = AuthedCalendarIndexRouteImport.update({
   id: "/",
   path: "/",
   getParentRoute: () => AuthedCalendarRoute,
+} as any)
+const AuthedWaCloudSplatRoute = AuthedWaCloudSplatRouteImport.update({
+  id: "/$",
+  path: "/$",
+  getParentRoute: () => AuthedWaCloudRoute,
 } as any)
 const AuthedSettingsHaulmerRoute = AuthedSettingsHaulmerRouteImport.update({
   id: "/haulmer",
@@ -490,6 +496,7 @@ export interface FileRoutesByFullPath {
   "/services/agenda": typeof AuthedServicesAgendaRoute
   "/settings/doctoralia": typeof AuthedSettingsDoctoraliaRoute
   "/settings/haulmer": typeof AuthedSettingsHaulmerRoute
+  "/wa-cloud/$": typeof AuthedWaCloudSplatRoute
   "/calendar/": typeof AuthedCalendarIndexRoute
   "/clinical/": typeof AuthedClinicalIndexRoute
   "/exam-reports/": typeof AuthedExamReportsIndexRoute
@@ -553,6 +560,7 @@ export interface FileRoutesByTo {
   "/services/agenda": typeof AuthedServicesAgendaRoute
   "/settings/doctoralia": typeof AuthedSettingsDoctoraliaRoute
   "/settings/haulmer": typeof AuthedSettingsHaulmerRoute
+  "/wa-cloud/$": typeof AuthedWaCloudSplatRoute
   "/calendar": typeof AuthedCalendarIndexRoute
   "/clinical": typeof AuthedClinicalIndexRoute
   "/exam-reports": typeof AuthedExamReportsIndexRoute
@@ -625,6 +633,7 @@ export interface FileRoutesById {
   "/_authed/services/agenda": typeof AuthedServicesAgendaRoute
   "/_authed/settings/doctoralia": typeof AuthedSettingsDoctoraliaRoute
   "/_authed/settings/haulmer": typeof AuthedSettingsHaulmerRoute
+  "/_authed/wa-cloud/$": typeof AuthedWaCloudSplatRoute
   "/_authed/calendar/": typeof AuthedCalendarIndexRoute
   "/_authed/clinical/": typeof AuthedClinicalIndexRoute
   "/_authed/exam-reports/": typeof AuthedExamReportsIndexRoute
@@ -697,6 +706,7 @@ export interface FileRouteTypes {
     | "/services/agenda"
     | "/settings/doctoralia"
     | "/settings/haulmer"
+    | "/wa-cloud/$"
     | "/calendar/"
     | "/clinical/"
     | "/exam-reports/"
@@ -760,6 +770,7 @@ export interface FileRouteTypes {
     | "/services/agenda"
     | "/settings/doctoralia"
     | "/settings/haulmer"
+    | "/wa-cloud/$"
     | "/calendar"
     | "/clinical"
     | "/exam-reports"
@@ -831,6 +842,7 @@ export interface FileRouteTypes {
     | "/_authed/services/agenda"
     | "/_authed/settings/doctoralia"
     | "/_authed/settings/haulmer"
+    | "/_authed/wa-cloud/$"
     | "/_authed/calendar/"
     | "/_authed/clinical/"
     | "/_authed/exam-reports/"
@@ -1057,6 +1069,13 @@ declare module "@tanstack/react-router" {
       fullPath: "/calendar/"
       preLoaderRoute: typeof AuthedCalendarIndexRouteImport
       parentRoute: typeof AuthedCalendarRoute
+    }
+    "/_authed/wa-cloud/$": {
+      id: "/_authed/wa-cloud/$"
+      path: "/$"
+      fullPath: "/wa-cloud/$"
+      preLoaderRoute: typeof AuthedWaCloudSplatRouteImport
+      parentRoute: typeof AuthedWaCloudRoute
     }
     "/_authed/settings/haulmer": {
       id: "/_authed/settings/haulmer"
@@ -1536,10 +1555,12 @@ const AuthedSettingsRouteWithChildren = AuthedSettingsRoute._addFileChildren(
 )
 
 interface AuthedWaCloudRouteChildren {
+  AuthedWaCloudSplatRoute: typeof AuthedWaCloudSplatRoute
   AuthedWaCloudIndexRoute: typeof AuthedWaCloudIndexRoute
 }
 
 const AuthedWaCloudRouteChildren: AuthedWaCloudRouteChildren = {
+  AuthedWaCloudSplatRoute: AuthedWaCloudSplatRoute,
   AuthedWaCloudIndexRoute: AuthedWaCloudIndexRoute,
 }
 
