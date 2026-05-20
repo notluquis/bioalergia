@@ -61,24 +61,26 @@ RUN --mount=type=cache,id=s/4990f681-049b-467f-9034-ef5c74a55f0a-/pnpm/store,tar
 # ============================================================================
 # STAGE 4: Runner — node 26 + Chromium (capa cacheable por BuildKit/Railpack)
 # ============================================================================
-# Imagen oficial Playwright: Chromium YA prebaked/extraído en /ms-playwright +
-# todas las libs del SO. Cero download/extract en build → mata el cuelgue del
-# extract que sufría node:26-bookworm en el builder de Railway.
-# Versión pinned = match con el playwright del proyecto (1.59.1 → mismo chromium).
-FROM mcr.microsoft.com/playwright:v1.59.1-noble AS runner
+# Fuente de chromium YA extraído (sin tocar node). Solo lo usamos para copiar
+# los binarios prebaked → evita el download+unzip que colgaba en Railway.
+FROM mcr.microsoft.com/playwright:v1.59.1-noble AS browsers
+
+# Runner: NODE 26 de base (requisito del proyecto: type-stripping + param props).
+FROM node:26-bookworm AS runner
 WORKDIR /app
 ENV NODE_ENV=production
+ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 ENV DEBIAN_FRONTEND=noninteractive
 
-# La imagen MS ships Node 22. El proyecto corre .ts vía type-stripping nativo y
-# usa parameter properties (no erasables) → exige Node >=26. Lo instalamos encima
-# vía nodesource (apt, ~1min, confiable en Railway). Reemplaza el node 22 base.
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends curl ca-certificates gnupg \
-    && curl -fsSL https://deb.nodesource.com/setup_26.x | bash - \
-    && apt-get install -y --no-install-recommends nodejs \
-    && rm -rf /var/lib/apt/lists/* \
-    && node --version
+# Libs del SO para chromium (apt). Esto en Railway SÍ funciona — lo que colgaba
+# era la EXTRACCIÓN del zip, no el apt. No descargamos ni descomprimimos browser.
+RUN npx playwright@1.59.1 install-deps chromium \
+    && rm -rf /var/lib/apt/lists/*
+
+# Chromium ya extraído, copiado de la imagen MS → es un COPY de archivos (capa
+# Docker), NO un unzip → sin el cuelgue. Versión 1.59.1 matchea el playwright del
+# proyecto (mismo build chromium-1217).
+COPY --from=browsers /ms-playwright /ms-playwright
 
 COPY --from=build /app/deploy/ .
 
