@@ -59,6 +59,14 @@ const CalendarGrid = lazy(async () => {
           slotDuration="00:30:00"
           slotMaxTime="22:00:00"
           slotMinTime="07:00:00"
+          // FC renders prev/next chevrons as <span role="img"> with no alt →
+          // axe role-img-alt. They're decorative (the button carries the label),
+          // so hide them from a11y once the toolbar mounts.
+          viewDidMount={() => {
+            for (const icon of document.querySelectorAll(".calendar-vista-wrapper .fc-icon")) {
+              icon.setAttribute("aria-hidden", "true");
+            }
+          }}
         />
       );
     },
