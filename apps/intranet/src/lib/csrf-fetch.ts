@@ -26,11 +26,18 @@ export async function csrfFetch(request: RequestInfo | URL, init?: RequestInit):
   const cookieBefore = readCsrfCookie();
   const first = await doFetch(request, init);
   if (first.status !== 403) return first;
-  // Only retry when the first call went out without a cookie — server
-  // issues one in the 403 Set-Cookie header so a single retry succeeds.
-  // Avoids masking legitimate 403s (auth denied) with a redundant call.
+  // Only self-heal when the call went out WITHOUT a cookie — a 403 with a
+  // cookie already present is a legitimate denial (auth/permission), not the
+  // bootstrap case, so don't mask it with a retry.
   if (cookieBefore) return first;
-  const cookieNow = readCsrfCookie();
-  if (!cookieNow) return first;
+  // Bootstrap: the cookie may not have landed yet (the mint in main.tsx is
+  // fire-and-forget, so on a cold load the first oRPC POST can race ahead of
+  // it — notably in Safari). Synchronously mint the csrf_token cookie, then
+  // retry once. This removes the race entirely instead of hoping the cookie
+  // appeared between the two reads.
+  if (!readCsrfCookie()) {
+    await fetch("/api/csrf", { credentials: "include" }).catch(() => undefined);
+  }
+  if (!readCsrfCookie()) return first;
   return doFetch(request, init);
 }
