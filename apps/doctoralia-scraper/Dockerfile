@@ -59,37 +59,25 @@ RUN --mount=type=cache,id=s/4990f681-049b-467f-9034-ef5c74a55f0a-/pnpm/store,tar
     pnpm --filter=@finanzas/doctoralia-scraper --prod deploy /app/deploy
 
 # ============================================================================
-# STAGE 4: Runner — node 26 + Chromium (capa cacheable por BuildKit/Railpack)
+# STAGE 4: Runner — node 26 + webkit instalado por npm (sin acoplamiento de imagen)
 # ============================================================================
-# Fuente de chromium YA extraído (sin tocar node). Solo lo usamos para copiar
-# los binarios prebaked → evita el download+unzip que colgaba en Railway.
-FROM mcr.microsoft.com/playwright:v1.60.0-noble AS browsers
-# Solo usamos webkit → borrar chromium/firefox/ffmpeg antes de copiar (ahorra
-# ~1GB). Globs = version-safe (no dependen del número de revisión).
-RUN rm -rf /ms-playwright/chromium-* /ms-playwright/chromium_headless_shell-* \
-    /ms-playwright/firefox-* /ms-playwright/ffmpeg-*
-
-# Runner: NODE 26 de base (requisito del proyecto: type-stripping + param props).
+# TEST: solo usamos webkit (~90MB, vs chromium 170MB que se colgaba al extraer en
+# el builder de Railway). Si el extract de webkit NO se cuelga, este método es
+# mejor: playwright npm instala el webkit que matchea su versión → "latest always"
+# sin imagen MS pinned ni bump manual. Fallback si cuelga = copy-from-image.
 FROM node:26-bookworm AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Libs del SO para chromium (apt). Esto en Railway SÍ funciona — lo que colgaba
-# era la EXTRACCIÓN del zip, no el apt. No descargamos ni descomprimimos browser.
-# install-deps WEBKIT (no chromium): el login corre webkit → necesita las libs
-# del SO de webkit (libwebkit2gtk, gstreamer, etc), no las de chromium.
-# IMPORTANTE: la imagen `browsers` (arriba) DEBE matchear el minor del playwright
-# npm — son un bloque acoplado. Al subir playwright de minor, subir el tag de la
-# imagen MS también (v1.60.0-noble → v1.61.0-noble, etc).
-RUN npx -y playwright install-deps webkit \
-    && rm -rf /var/lib/apt/lists/*
-
-# Chromium ya extraído, copiado de la imagen MS → es un COPY de archivos (capa
-# Docker), NO un unzip → sin el cuelgue. Versión 1.59.1 matchea el playwright del
-# proyecto (mismo build chromium-1217).
-COPY --from=browsers /ms-playwright /ms-playwright
+# install --with-deps webkit: baja el browser webkit (que matchea el playwright npm)
+# + libs del SO. timeout+retry por si el download/extract se cuelga (como chromium).
+RUN for i in 1 2 3; do \
+      timeout 300 npx -y playwright install --with-deps webkit && break; \
+      echo "playwright webkit install retry $i"; sleep 5; \
+    done; \
+    test -d /ms-playwright && chmod -R o+rx /ms-playwright
 
 COPY --from=build /app/deploy/ .
 
