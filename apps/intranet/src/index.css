@@ -51,7 +51,12 @@ html {
   --default-100: oklch(96% 0.003 85);
   --default-200: oklch(92% 0.004 85);
   --default-300: oklch(86% 0.006 85);
-  --default-400: oklch(70% 0.01 85);
+  /* 70% rendered 2.37 over cream bg → failing axe color-contrast WCAG 2.2 AA.
+     `text-default-400` is the de-facto muted-text class (202 usages, only 1
+     non-text border usage), so it must be readable: darken to 50% L (matches
+     the proven --default-500 ratio below). Steps 50–300 stay light for
+     surfaces/borders. */
+  --default-400: oklch(50% 0.01 85);
   /* 50% lightness → ratio 4.55 over cream bg (oklch 96.5% 0.013 85);
      prior 55% rendered 4.38, failing axe color-contrast WCAG 2.2 AA. */
   --default-500: oklch(50% 0.012 85);
@@ -583,4 +588,13 @@ body {
     -webkit-backdrop-filter: none !important;
     background-color: var(--content1) !important;
   }
+}
+
+/* === A11y: HeroUI Avatar fallback contrast (WCAG 2.2 AA) === */
+/* HeroUI renders fallback initials as text-primary (brand amber #e89d00) over
+   the page background → 2.04 contrast on cream, failing axe color-contrast.
+   Force a neutral high-contrast pairing (default-200 surface + default-700 ink). */
+.avatar__fallback {
+  background-color: var(--color-default-200);
+  color: var(--color-default-700);
 }
