@@ -66,12 +66,15 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 
-COPY --from=build /app/deploy/ .
-
-# Install to /ms-playwright (PLAYWRIGHT_BROWSERS_PATH) so root-installed browsers
-# are accessible to the unprivileged node user at runtime.
+# Chromium PRIMERO, antes de copiar el código. Esta capa solo depende de la
+# versión de Playwright (pinned) → Railway/BuildKit la cachea entre builds.
+# Antes estaba DESPUÉS del COPY del código → cada cambio de código invalidaba
+# la capa y reinstalaba chromium (170MB, ~8-10min) en CADA build.
 RUN npx playwright@1.59.1 install --with-deps chromium \
     && chmod -R o+rx /ms-playwright
+
+# Código al final: cambia en cada build pero chromium ya quedó cacheado arriba.
+COPY --from=build /app/deploy/ .
 
 USER node
 

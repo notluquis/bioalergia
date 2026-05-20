@@ -157,7 +157,10 @@ async function performLoginWithBrowser(
     const page = await context.newPage();
 
     log("  browser: navigating to", LOGIN_URL);
-    await page.goto(LOGIN_URL, { waitUntil: "networkidle" });
+    // domcontentloaded, NO networkidle: la SPA Doctoralia tiene polling/analytics
+    // constante y networkidle nunca dispara → goto timeout → login falla.
+    await page.goto(LOGIN_URL, { waitUntil: "domcontentloaded", timeout: 60_000 });
+    await page.waitForTimeout(2_000);
 
     await page.fill(
       'input[type="email"], input[name="email"], input[name="_username"]',
@@ -193,16 +196,23 @@ async function performLoginWithBrowser(
 
     if (frcSelector) {
       log(`  browser: found captcha input (${frcSelector}), waiting for PoW to complete...`);
-      await page.waitForFunction(
-        (sel) => {
-          const el = document.querySelector<HTMLInputElement>(sel);
-          if (!el || el.value === "" || el.value.startsWith(".")) return false;
-          return true;
-        },
-        frcSelector,
-        { timeout: 60_000, polling: 500 }
-      );
-      log("  browser: captcha solved");
+      // NO hard-throw si el PoW no completa: Friendly Captcha acá NO es bloqueante
+      // (verificado 2026-05 — login pasa con el input vacío). Toleramos timeout y
+      // seguimos al submit; antes el waitForFunction throweaba → login fallaba →
+      // forzaba pegado manual de cookies.
+      const solved = await page
+        .waitForFunction(
+          (sel) => {
+            const el = document.querySelector<HTMLInputElement>(sel);
+            if (!el || el.value === "" || el.value.startsWith(".")) return false;
+            return true;
+          },
+          frcSelector,
+          { timeout: 20_000, polling: 500 }
+        )
+        .then(() => true)
+        .catch(() => false);
+      log(`  browser: captcha PoW ${solved ? "resuelto" : "no completó (sigo igual, no bloquea)"}`);
     } else {
       // Dump visible inputs to help diagnose future selector changes.
       const inputNames = await page.evaluate(() =>
