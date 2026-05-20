@@ -61,6 +61,13 @@
   /* Primary brand action = amber (matches site CTA buttons). */
   --accent: var(--bioalergia-amber);
   --accent-foreground: var(--bioalergia-ink);
+  /* Soft-surface foreground (HeroUI button--secondary / soft chips read
+     --color-accent-soft-foreground). HeroUI defaults it to var(--accent) =
+     amber oklch(75%), which on the light --default surface (oklch 94%) is only
+     1.9:1 — fails WCAG 2.2 AA. Darken to a contrast-guaranteed amber: oklch
+     43% over the 94% surface ≈ 5.2:1. Brand --accent (buttons, CTAs) is left
+     untouched; only soft-on-light text changes. */
+  --accent-soft-foreground: oklch(43% 0.13 68);
 
   /* Status palette. Foregrounds = white for AA 4.5:1 over mid-saturated bg. */
   --success: oklch(48% 0.16 145);
@@ -140,6 +147,10 @@
 
   --accent: var(--bioalergia-amber);
   --accent-foreground: oklch(18% 0.025 240);
+  /* Dark surface is dark, so soft-foreground stays the bright brand amber
+     (oklch 78%) — ~5.2:1 over the dark --default. Explicit so it never
+     inherits the darkened light-mode value. */
+  --accent-soft-foreground: var(--accent);
 
   --success: oklch(70% 0.16 145);
   --success-foreground: oklch(15% 0.02 145);
