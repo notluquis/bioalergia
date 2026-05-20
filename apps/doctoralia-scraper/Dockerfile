@@ -64,6 +64,10 @@ RUN --mount=type=cache,id=s/4990f681-049b-467f-9034-ef5c74a55f0a-/pnpm/store,tar
 # Fuente de chromium YA extraído (sin tocar node). Solo lo usamos para copiar
 # los binarios prebaked → evita el download+unzip que colgaba en Railway.
 FROM mcr.microsoft.com/playwright:v1.60.0-noble AS browsers
+# Solo usamos webkit → borrar chromium/firefox/ffmpeg antes de copiar (ahorra
+# ~1GB). Globs = version-safe (no dependen del número de revisión).
+RUN rm -rf /ms-playwright/chromium-* /ms-playwright/chromium_headless_shell-* \
+    /ms-playwright/firefox-* /ms-playwright/ffmpeg-*
 
 # Runner: NODE 26 de base (requisito del proyecto: type-stripping + param props).
 FROM node:26-bookworm AS runner
@@ -74,11 +78,12 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 # Libs del SO para chromium (apt). Esto en Railway SÍ funciona — lo que colgaba
 # era la EXTRACCIÓN del zip, no el apt. No descargamos ni descomprimimos browser.
-# install-deps = solo libs apt del SO (version-agnóstico). No pinneamos versión.
+# install-deps WEBKIT (no chromium): el login corre webkit → necesita las libs
+# del SO de webkit (libwebkit2gtk, gstreamer, etc), no las de chromium.
 # IMPORTANTE: la imagen `browsers` (arriba) DEBE matchear el minor del playwright
 # npm — son un bloque acoplado. Al subir playwright de minor, subir el tag de la
 # imagen MS también (v1.60.0-noble → v1.61.0-noble, etc).
-RUN npx -y playwright install-deps chromium \
+RUN npx -y playwright install-deps webkit \
     && rm -rf /var/lib/apt/lists/*
 
 # Chromium ya extraído, copiado de la imagen MS → es un COPY de archivos (capa
