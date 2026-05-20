@@ -81,11 +81,47 @@ describe("csrfFetch", () => {
     expect(fetchSpy).toHaveBeenCalledTimes(1);
   });
 
-  it("does NOT retry when 403 returns and still no cookie is set", async () => {
+  it("self-heals: on 403 with no cookie, mints /api/csrf then retries (bootstrap race)", async () => {
+    // First oRPC POST races ahead of the fire-and-forget cookie mint in
+    // main.tsx (notably in Safari) → 403 with no cookie yet.
     fetchSpy.mockResolvedValueOnce(new Response(null, { status: 403 }));
+    // csrfFetch synchronously mints the cookie via /api/csrf.
+    fetchSpy.mockImplementationOnce(async () => {
+      setCookie("minted-token");
+      return new Response(null, { status: 204 });
+    });
+    // Retry of the original request now carries the header → 200.
+    fetchSpy.mockResolvedValueOnce(new Response(null, { status: 200 }));
+
     const r = await csrfFetch("/api/x");
+
+    expect(r.status).toBe(200);
+    expect(fetchSpy).toHaveBeenCalledTimes(3);
+    expect(fetchSpy.mock.calls[1]?.[0]).toBe("/api/csrf");
+    const retryInit = fetchSpy.mock.calls[2]?.[1] as RequestInit;
+    expect(new Headers(retryInit.headers).get("X-CSRF-Token")).toBe("minted-token");
+  });
+
+  it("gives up after minting /api/csrf if the cookie still never lands", async () => {
+    fetchSpy.mockResolvedValueOnce(new Response(null, { status: 403 }));
+    // /api/csrf responds but (e.g. blocked Set-Cookie) no cookie appears.
+    fetchSpy.mockResolvedValueOnce(new Response(null, { status: 204 }));
+
+    const r = await csrfFetch("/api/x");
+
     expect(r.status).toBe(403);
-    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
+    expect(fetchSpy.mock.calls[1]?.[0]).toBe("/api/csrf");
+  });
+
+  it("returns the original 403 when the /api/csrf mint itself fails", async () => {
+    fetchSpy.mockResolvedValueOnce(new Response(null, { status: 403 }));
+    fetchSpy.mockRejectedValueOnce(new Error("network down"));
+
+    const r = await csrfFetch("/api/x");
+
+    expect(r.status).toBe(403);
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
   });
 
   it("forwards custom headers from init alongside CSRF token", async () => {
