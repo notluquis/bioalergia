@@ -14,18 +14,33 @@ const CREDENTIALS_PATH = path.resolve(
   "credentials.json"
 );
 
+// Canonical route path — MUST match the mount in app.ts:
+//   app.route("/api/webhooks/google", googleCalendarWebhookRoutes) + .post("/calendar")
+// Drift here = Google pushes to a dead URL → 404 → silent webhook loss.
+const WEBHOOK_PATH = "/api/webhooks/google/calendar";
+
 function resolveWebhookEndpoint() {
-  const explicit = process.env.GOOGLE_CALENDAR_WEBHOOK_URL?.trim();
-  if (explicit) {
-    return explicit;
+  // Take only the ORIGIN and always append WEBHOOK_PATH, so a typo'd path in
+  // GOOGLE_CALENDAR_WEBHOOK_URL (e.g. /api/webhooks/google-calendar) can't drift
+  // from the actual route and 404 Google's push notifications.
+  // Priority: explicit env → RAILWAY_PUBLIC_DOMAIN (always set by Railway, points
+  // to THIS api service) → PUBLIC_URL (frontend, last resort) → localhost.
+  // NOTE: PUBLIC_URL is the intranet host, NOT the api — never the right webhook
+  // origin in prod; RAILWAY_PUBLIC_DOMAIN self-heals if the explicit env is wrong.
+  const railwayDomain = process.env.RAILWAY_PUBLIC_DOMAIN?.trim();
+  const base =
+    process.env.GOOGLE_CALENDAR_WEBHOOK_URL?.trim() ||
+    (railwayDomain ? `https://${railwayDomain}` : undefined) ||
+    process.env.PUBLIC_URL?.trim();
+  if (base) {
+    try {
+      return `${new URL(base).origin}${WEBHOOK_PATH}`;
+    } catch {
+      return `${base.replace(/\/+$/, "")}${WEBHOOK_PATH}`;
+    }
   }
 
-  const publicUrl = process.env.PUBLIC_URL?.trim();
-  if (publicUrl) {
-    return `${publicUrl.replace(/\/$/, "")}/api/webhooks/google/calendar`;
-  }
-
-  return "http://localhost:3000/api/webhooks/google/calendar";
+  return `http://localhost:3000${WEBHOOK_PATH}`;
 }
 
 const WEBHOOK_ENDPOINT = resolveWebhookEndpoint();
