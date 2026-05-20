@@ -49,7 +49,19 @@ function mergedEntryToCalendarEventDetail(
       : appointment.serviceColorSchemaId != null
         ? String(appointment.serviceColorSchemaId)
         : null;
+  // Estado real de Doctoralia (attendance + status) → campos que entiende el
+  // event-state genérico. attendance: 3=asistió, 6=no asistió; status: 1=cancelada,
+  // 6=confirmada. Email de cancelación también marca no asistió.
+  const isCancelled =
+    appointment.status === 1 || appointment.attendance === 6 || Boolean(emails.cancellation);
+  const attended = appointment.attendance === 3 ? true : isCancelled ? false : null;
+  const genericStatus = isCancelled
+    ? "cancelled"
+    : appointment.attendance === 3 || appointment.status === 6
+      ? "confirmed"
+      : "needsAction";
   return {
+    attended,
     calendarId: `doctoralia:${appointment.schedule.externalId}`,
     category: null,
     colorId,
@@ -70,7 +82,7 @@ function mergedEntryToCalendarEventDetail(
     startDate: appointment.startAt.toISOString().split("T")[0] ?? null,
     startDateTime: appointment.startAt.toISOString(),
     startTimeZone: null,
-    status: String(appointment.status),
+    status: genericStatus,
     summary: toTitleCase(appointment.title) || appointment.title,
     transparency: null,
     visibility: null,
