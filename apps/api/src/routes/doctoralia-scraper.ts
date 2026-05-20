@@ -1,10 +1,12 @@
 import { db } from "@finanzas/db";
 import { Hono } from "hono";
+import { timingSafeEqual } from "node:crypto";
 import { doctoraliaScraperApiToken } from "../lib/config.ts";
 import type { DoctoraliaCalendarResponse } from "../lib/doctoralia/doctoralia-calendar-types.ts";
 import { logError, logEvent } from "../lib/logger.ts";
 import { doctoraliaCalendarSyncService } from "../services/doctoralia-calendar.ts";
 import { consumeDoctoraliaScraperForceRun } from "../services/doctoralia-scraper-run-control.ts";
+import { decryptSecret, encryptSecret } from "../services/provider-credentials.ts";
 
 export const doctoraliaScraperRoutes = new Hono();
 
@@ -18,12 +20,34 @@ type StoredCookie = {
 
 const DEFAULT_LABEL = "default";
 
+// Comparación timing-safe (golden 2026): `===` filtra timing del token.
 function bearerMatches(header: string | undefined | null): boolean {
-  if (!doctoraliaScraperApiToken) return false;
-  if (!header) return false;
+  if (!doctoraliaScraperApiToken || !header) return false;
   const m = header.match(/^Bearer\s+(.+)$/i);
   if (!m) return false;
-  return m[1].trim() === doctoraliaScraperApiToken;
+  const a = Buffer.from(m[1].trim());
+  const b = Buffer.from(doctoraliaScraperApiToken);
+  if (a.length !== b.length) return false;
+  return timingSafeEqual(a, b);
+}
+
+// Cookies cifradas at-rest (AES-256-GCM, mismo helper que ProviderCredential).
+// Guardadas como { enc: "<blob>" } en el jsonb → base64, también esquiva el
+// problema de null-bytes en jsonb. Lee legacy (array plano) por compat.
+function decodeStoredCookies(raw: unknown): StoredCookie[] {
+  if (Array.isArray(raw)) return raw as StoredCookie[]; // legacy plaintext
+  if (raw && typeof raw === "object" && typeof (raw as { enc?: unknown }).enc === "string") {
+    try {
+      return JSON.parse(decryptSecret((raw as { enc: string }).enc)) as StoredCookie[];
+    } catch {
+      return [];
+    }
+  }
+  return [];
+}
+
+function encodeStoredCookies(cookies: StoredCookie[]): { enc: string } {
+  return { enc: encryptSecret(JSON.stringify(cookies)) };
 }
 
 doctoraliaScraperRoutes.use("*", async (c, next) => {
@@ -44,7 +68,7 @@ doctoraliaScraperRoutes.get("/cookies", async (c) => {
     return c.json({ error: "not_found", label }, 404);
   }
 
-  const cookies = (store.cookiesJson as unknown as StoredCookie[]) ?? [];
+  const cookies = decodeStoredCookies(store.cookiesJson);
 
   await db.doctoraliaCookieStore.update({
     where: { id: store.id },
@@ -78,15 +102,16 @@ doctoraliaScraperRoutes.post("/cookies", async (c) => {
   }
 
   try {
+    const encrypted = encodeStoredCookies(parsed.cookies);
     const store = await db.doctoraliaCookieStore.upsert({
       where: { label: parsed.label },
       create: {
         label: parsed.label,
-        cookiesJson: parsed.cookies,
+        cookiesJson: encrypted,
         lastUsedAt: new Date(),
       },
       update: {
-        cookiesJson: parsed.cookies,
+        cookiesJson: encrypted,
         lastUsedAt: new Date(),
       },
     });
