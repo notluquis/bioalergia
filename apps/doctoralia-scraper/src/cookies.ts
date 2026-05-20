@@ -15,8 +15,12 @@ type CookieJarOptions = {
 export class CookieJar {
   private cookies = new Map<string, StoredCookie>();
   private lastFetchedSnapshot: string | null = null;
+  private readonly options: CookieJarOptions;
 
-  constructor(private readonly options: CookieJarOptions) {}
+  // NO parameter properties: Node 26 strip-types las rechaza.
+  constructor(options: CookieJarOptions) {
+    this.options = options;
+  }
 
   async load(): Promise<void> {
     const url = new URL(this.options.endpoint);

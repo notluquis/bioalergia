@@ -73,7 +73,10 @@ type RunOverrideResult = {
 
 class ImpitSession {
   readonly impit: Impit;
-  constructor(readonly jar: CookieJar) {
+  readonly jar: CookieJar;
+  // NO parameter properties: Node 26 strip-types las rechaza (ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX).
+  constructor(jar: CookieJar) {
+    this.jar = jar;
     this.impit = new Impit({ browser: "chrome", ignoreTlsErrors: false });
   }
 
