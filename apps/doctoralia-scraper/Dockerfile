@@ -65,18 +65,22 @@ FROM node:26-bookworm AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+ENV DEBIAN_FRONTEND=noninteractive
 
-# Chromium + libs del SO ANTES del COPY del código. Sus inputs (versión de
-# Playwright pinned) no cambian con el código → BuildKit reusa esta capa entre
-# builds (Railway usa Railpack→BuildKit con sharable cache). Primer build baja
-# los 170MB una vez (~8min); los siguientes skipean la capa. Esto ES cacheable
-# vía Docker layers — distinto del CI artifact cache que el doc desaconseja.
-RUN npx playwright@1.59.1 install --with-deps chromium \
-    && chmod -R o+rx /ms-playwright
+# Capas separadas + ANTES del COPY del código → cacheables por BuildKit/Railpack.
+# 1) Libs del SO (apt). Capa propia: si cambia el código no se reinstala.
+RUN npx playwright@1.59.1 install-deps chromium
 
-# Código al final: cambia por build, pero la capa de chromium de arriba se reusa.
+# 2) Descarga del browser con timeout+retry. cdn.playwright.dev a veces se cuelga
+#    al 100% sin cerrar la conexión → `timeout` lo mata y reintenta (hasta 3x).
+RUN for i in 1 2 3; do \
+      timeout 360 npx playwright@1.59.1 install chromium && break; \
+      echo "playwright chromium download retry $i"; sleep 5; \
+    done; \
+    test -d /ms-playwright
+
+# Sin `chmod -R` ni `USER node`: corre como root (contenedor cron one-shot,
+# aislado). El chmod recursivo era sospechoso de cuelgue y es innecesario root.
 COPY --from=build /app/deploy/ .
-
-USER node
 
 CMD ["node", "src/index.ts"]
