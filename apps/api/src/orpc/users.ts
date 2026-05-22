@@ -1,9 +1,12 @@
 import { db } from "@finanzas/db";
 import { findOrCreatePerson } from "../services/people-factory.ts";
 import {
-  persistOwnProfileUpdate,
-  persistUserProfileUpdate,
-  persistUserStatusUpdate,
+  findUserByEffectiveLoginEmail,
+  normalizeEmail,
+  toNullableText,
+  updateOwnProfile,
+  updateUserProfile,
+  updateUserStatus,
 } from "../services/users.ts";
 import {
   inviteResponseSchema,
@@ -44,34 +47,11 @@ type UsersORPCContext = {
 
 const base = os.$context<UsersORPCContext>();
 
-function toNullableText(value: null | string | undefined): null | string {
-  if (typeof value !== "string") {
-    return null;
-  }
-
-  const trimmed = value.trim();
-  return trimmed.length > 0 ? trimmed : null;
-}
-
-function normalizeEmail(value: string) {
-  return value.toLowerCase().trim();
-}
-
+// normalizeEmail / toNullableText / findUserByEffectiveLoginEmail viven en
+// services/users.ts (compartidos con la lógica de negocio). normalizeRequiredRut
+// queda acá porque solo lo usa este router.
 function normalizeRequiredRut(value: null | string | undefined) {
   return normalizeRut(value ?? "") ?? "";
-}
-
-async function findUserByEffectiveLoginEmail(email: string, excludeUserId?: number) {
-  const rows = await db.$queryRaw<Array<{ id: number }>>`
-    SELECT u.id
-    FROM users u
-    JOIN people p ON p.id = u.person_id
-    WHERE lower(coalesce(nullif(u.login_email, ''), p.email)) = lower(${email})
-      AND (${excludeUserId ?? 0} = 0 OR u.id <> ${excludeUserId ?? 0})
-    LIMIT 1
-  `;
-
-  return rows[0] ?? null;
 }
 
 async function getUserLoginEmailMap(userIds: number[]) {
@@ -557,51 +537,7 @@ const usersORPCRouterBase = {
         context: { user: { id: number } };
         input: z.input<typeof updateOwnProfileSchema>;
       }) => {
-        const user = await db.user.findUnique({
-          where: { id: context.user.id },
-          include: { person: { include: { employee: true } } },
-        });
-
-        if (!user || !user.person) {
-          throw new ORPCError("NOT_FOUND", { message: "Usuario no encontrado" });
-        }
-
-        const normalizedNotificationEmail = normalizeEmail(user.person.email ?? "");
-        const normalizedLoginEmail = input.loginEmail
-          ? normalizeEmail(input.loginEmail)
-          : null;
-        const explicitLoginEmail =
-          normalizedLoginEmail && normalizedLoginEmail !== normalizedNotificationEmail
-            ? normalizedLoginEmail
-            : null;
-        const effectiveLoginEmail = explicitLoginEmail ?? normalizedNotificationEmail;
-
-        if (effectiveLoginEmail) {
-          const conflictingLogin = await findUserByEffectiveLoginEmail(
-            effectiveLoginEmail,
-            context.user.id
-          );
-          if (conflictingLogin) {
-            throw new ORPCError("CONFLICT", { message: "El correo de login ya está en uso" });
-          }
-        }
-
-        await persistOwnProfileUpdate({
-          userId: context.user.id,
-          personId: user.personId,
-          names: input.names.trim(),
-          fatherName: toNullableText(input.fatherName),
-          motherName: toNullableText(input.motherName),
-          phone: toNullableText(input.phone),
-          bankName: toNullableText(input.bankName),
-          bankAccountType: toNullableText(input.bankAccountType),
-          bankAccountNumber: toNullableText(input.bankAccountNumber),
-          explicitLoginEmail,
-          fallbackPosition: user.person.employee?.position ?? "Por definir",
-          fallbackStartDate: user.person.employee?.startDate ?? new Date(),
-          fallbackStatus: user.person.employee?.status ?? "ACTIVE",
-        });
-
+        await updateOwnProfile(context.user.id, input);
         return { status: "ok" as const };
       }
     ),
@@ -629,92 +565,7 @@ const usersORPCRouterBase = {
       }: {
         input: { id: number; payload: z.input<typeof updateUserProfileSchema> };
       }) => {
-        const targetUser = await db.user.findUnique({
-          where: { id: input.id },
-          include: {
-            person: {
-              include: { employee: true },
-            },
-          },
-        });
-
-        if (!targetUser) {
-          throw new ORPCError("NOT_FOUND", { message: "Usuario no encontrado" });
-        }
-
-        const notificationEmailInput = input.payload.notificationEmail ?? input.payload.email;
-        if (!notificationEmailInput) {
-          throw new ORPCError("BAD_REQUEST", { message: "Email de notificación requerido" });
-        }
-
-        const normalizedNotificationEmail = normalizeEmail(notificationEmailInput);
-        const normalizedLoginEmail = input.payload.loginEmail
-          ? normalizeEmail(input.payload.loginEmail)
-          : null;
-        const explicitLoginEmail =
-          normalizedLoginEmail && normalizedLoginEmail !== normalizedNotificationEmail
-            ? normalizedLoginEmail
-            : null;
-        const effectiveLoginEmail = explicitLoginEmail ?? normalizedNotificationEmail;
-        const normalizedRut = normalizeRut(input.payload.rut);
-
-        if (!normalizedRut) {
-          throw new ORPCError("BAD_REQUEST", { message: "RUT inválido" });
-        }
-
-        const [conflictingEmail, conflictingRut, conflictingLogin] = await Promise.all([
-          db.person.findFirst({
-            where: {
-              email: normalizedNotificationEmail,
-              NOT: { id: targetUser.personId },
-            },
-            select: { id: true },
-          }),
-          db.person.findFirst({
-            where: {
-              rut: normalizedRut,
-              NOT: { id: targetUser.personId },
-            },
-            select: { id: true },
-          }),
-          findUserByEffectiveLoginEmail(effectiveLoginEmail, input.id),
-        ]);
-
-        if (conflictingEmail) {
-          throw new ORPCError("CONFLICT", {
-            message: "El correo de notificación ya está en uso por otro usuario",
-          });
-        }
-
-        if (conflictingRut) {
-          throw new ORPCError("CONFLICT", { message: "El RUT ya está en uso por otro usuario" });
-        }
-
-        if (conflictingLogin) {
-          throw new ORPCError("CONFLICT", { message: "El correo de login ya está en uso" });
-        }
-
-        // DB (transacción) en el service layer; el handler hace la validación.
-        await persistUserProfileUpdate({
-          userId: input.id,
-          personId: targetUser.personId,
-          names: input.payload.names.trim(),
-          fatherName: toNullableText(input.payload.fatherName),
-          motherName: toNullableText(input.payload.motherName),
-          phone: toNullableText(input.payload.phone),
-          notificationEmail: normalizedNotificationEmail,
-          rut: normalizedRut,
-          position: input.payload.position.trim(),
-          department: toNullableText(input.payload.department),
-          bankName: toNullableText(input.payload.bankName),
-          bankAccountType: toNullableText(input.payload.bankAccountType),
-          bankAccountNumber: toNullableText(input.payload.bankAccountNumber),
-          mfaEnforced: input.payload.mfaEnforced,
-          explicitLoginEmail,
-          fallbackStartDate: targetUser.person.employee?.startDate ?? new Date(),
-          fallbackStatus: targetUser.person.employee?.status ?? "ACTIVE",
-        });
-
+        await updateUserProfile(input.id, input.payload);
         return { status: "ok" as const };
       }
     ),
@@ -757,7 +608,7 @@ const usersORPCRouterBase = {
           });
         }
 
-        await persistUserStatusUpdate(input.id, input.status);
+        await updateUserStatus(input.id, input.status);
 
         return { status: "ok" as const };
       }
