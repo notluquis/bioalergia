@@ -145,8 +145,9 @@ data/
 **/config.local.json
 
 # Local Claude context (not for repo)
+CLAUDE.md
 CLAUDE.local.md
-.claude/worktrees/
+.claude/
 
 # Playwright local profiles / throwaway diagnostic runs
 apps/api/scripts/*-test.mjs
