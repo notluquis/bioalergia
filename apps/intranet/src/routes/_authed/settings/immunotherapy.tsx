@@ -523,8 +523,11 @@ function TermsEditor() {
         <TextArea rows={10} placeholder="Estimado/a {{apoderado}}: …" />
       </TextField>
       <TextField value={terms ?? ""} onChange={(v) => setTerms(v)}>
-        <Label>Condiciones económicas (se imprimen al pie del presupuesto)</Label>
-        <TextArea rows={10} placeholder="Vigencia anual, renovación, ajuste proporcional…" />
+        <Label>Información importante y condiciones (se imprimen al pie del presupuesto)</Label>
+        <TextArea
+          rows={12}
+          placeholder="Riesgos, observación, alternativas, duración, condiciones económicas…"
+        />
       </TextField>
       <div className="flex justify-end">
         <Button className="gap-2" isPending={save.isPending} onPress={() => save.mutate()}>

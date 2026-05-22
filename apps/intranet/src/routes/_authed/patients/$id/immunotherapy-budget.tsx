@@ -41,7 +41,7 @@ const HIDEABLE: { key: HideableSection; label: string }[] = [
   { key: "breakdown", label: "Tabla de dosis" },
   { key: "discount", label: "Descuento" },
   { key: "maintenanceMl", label: "Volumen mantención" },
-  { key: "terms", label: "Condiciones económicas" },
+  { key: "terms", label: "Información y condiciones" },
   { key: "patientRut", label: "RUT del paciente" },
   { key: "signatures", label: "Firmas" },
 ];

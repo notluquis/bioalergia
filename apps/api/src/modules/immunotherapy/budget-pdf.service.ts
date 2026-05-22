@@ -215,7 +215,13 @@ export async function generateBudgetPdf(input: BudgetPdfInput): Promise<Uint8Arr
   if (!hidden("terms") && termsText) {
     y -= 12;
     newPageIfNeeded(170);
-    page.drawText("Condiciones económicas", { x: margin, y, size: 9, font: bold, color: ACCENT });
+    page.drawText("Información importante y condiciones", {
+      x: margin,
+      y,
+      size: 9,
+      font: bold,
+      color: ACCENT,
+    });
     y -= 13;
     drawParagraphs(termsText, 7.5);
   }
