@@ -479,17 +479,25 @@ function TermsEditor() {
   const [legalName, setLegalName] = useState<string | null>(null);
   const [legalRut, setLegalRut] = useState<string | null>(null);
   const [terms, setTerms] = useState<string | null>(null);
+  const [intro, setIntro] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
 
   if (termsQuery.data && !loaded) {
     setLegalName(termsQuery.data.legalName);
     setLegalRut(termsQuery.data.legalRut);
     setTerms(termsQuery.data.immunoBudgetTerms);
+    setIntro(termsQuery.data.immunoBudgetIntro);
     setLoaded(true);
   }
 
   const save = useMutation({
-    mutationFn: () => updateImmunoTerms({ legalName, legalRut, immunoBudgetTerms: terms }),
+    mutationFn: () =>
+      updateImmunoTerms({
+        legalName,
+        legalRut,
+        immunoBudgetTerms: terms,
+        immunoBudgetIntro: intro,
+      }),
     onSuccess: () => toast.success("Condiciones guardadas"),
     onError: (e) => toast.error(e instanceof Error ? e.message : "No se pudo guardar"),
   });
@@ -507,6 +515,13 @@ function TermsEditor() {
           <Input placeholder="76.406.172-1" />
         </TextField>
       </div>
+      <TextField value={intro ?? ""} onChange={(v) => setIntro(v)}>
+        <Label>
+          Texto introductorio (arriba del presupuesto) — placeholders {"{{paciente}}"}{" "}
+          {"{{apoderado}}"} {"{{diagnostico}}"}
+        </Label>
+        <TextArea rows={10} placeholder="Estimado/a {{apoderado}}: …" />
+      </TextField>
       <TextField value={terms ?? ""} onChange={(v) => setTerms(v)}>
         <Label>Condiciones económicas (se imprimen al pie del presupuesto)</Label>
         <TextArea rows={10} placeholder="Vigencia anual, renovación, ajuste proporcional…" />

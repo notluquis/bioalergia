@@ -6,11 +6,13 @@ import {
   CheckboxGroup,
   Chip,
   EmptyState,
+  Input,
   Label,
   ListBox,
   NumberField,
   SearchField,
   Spinner,
+  TextField,
   useFilter,
 } from "@heroui/react";
 import type { Key } from "react";
@@ -31,6 +33,7 @@ import { PAGE_CONTAINER } from "@/lib/styles";
 import { toast } from "@/lib/toast-interceptor";
 
 const HIDEABLE: { key: HideableSection; label: string }[] = [
+  { key: "intro", label: "Texto introductorio" },
   { key: "allergens", label: "Alérgenos" },
   { key: "concentration", label: "Concentración" },
   { key: "lab", label: "Laboratorio" },
@@ -77,6 +80,8 @@ function ImmunotherapyBudgetPage() {
   const [discountPct, setDiscountPct] = useState<number | undefined>(undefined);
   const [allergenIds, setAllergenIds] = useState<string[]>([]);
   const [hiddenSections, setHiddenSections] = useState<HideableSection[]>([]);
+  const [parentName, setParentName] = useState("");
+  const [diagnosis, setDiagnosis] = useState("");
 
   const products = productsQuery.data ?? EMPTY_PRODUCTS;
   const selectedProduct = useMemo<ProductDto | undefined>(
@@ -121,7 +126,12 @@ function ImmunotherapyBudgetPage() {
   const saveMutation = useMutation({
     mutationFn: () => {
       if (!quoteInput) throw new Error("Selecciona un producto");
-      return createImmunoBudget({ ...quoteInput, patientId });
+      return createImmunoBudget({
+        ...quoteInput,
+        patientId,
+        parentName: parentName.trim() || undefined,
+        diagnosis: diagnosis.trim() || undefined,
+      });
     },
     onSuccess: () => {
       toast.success("Presupuesto creado exitosamente");
@@ -136,7 +146,12 @@ function ImmunotherapyBudgetPage() {
   const pdfMutation = useMutation({
     mutationFn: () => {
       if (!quoteInput) throw new Error("Selecciona un producto");
-      return downloadImmunoBudgetPdf({ ...quoteInput, patientId });
+      return downloadImmunoBudgetPdf({
+        ...quoteInput,
+        patientId,
+        parentName: parentName.trim() || undefined,
+        diagnosis: diagnosis.trim() || undefined,
+      });
     },
     onError: (error) => {
       toast.error(error instanceof Error ? error.message : "No se pudo generar el PDF");
@@ -215,6 +230,17 @@ function ImmunotherapyBudgetPage() {
                     : ""}
                 </p>
               ) : null}
+              <div className="grid gap-4 sm:grid-cols-2">
+                <TextField value={parentName} onChange={setParentName}>
+                  <Label>Apoderado/a (para el texto introductorio)</Label>
+                  <Input placeholder="Nombre del apoderado/a" />
+                </TextField>
+                <TextField value={diagnosis} onChange={setDiagnosis}>
+                  <Label>Diagnóstico</Label>
+                  <Input placeholder="Ej: rinoconjuntivitis crónica" />
+                </TextField>
+              </div>
+
               <div className="grid gap-4 sm:grid-cols-2">
                 <NumberField
                   variant="secondary"

@@ -14712,6 +14712,12 @@ export class SchemaType implements SchemaDef {
                     optional: true,
                     attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("immuno_budget_terms") }] }, { name: "@db.Text" }] as readonly AttributeApplication[]
                 },
+                immunoBudgetIntro: {
+                    name: "immunoBudgetIntro",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("immuno_budget_intro") }] }, { name: "@db.Text" }] as readonly AttributeApplication[]
+                },
                 signatureUrl: {
                     name: "signatureUrl",
                     type: "String",

@@ -103,6 +103,7 @@ export const allergenListInputSchema = z
 // ── Quote / budget ───────────────────────────────────────────────────
 // Secciones del PDF que se pueden ocultar (el total siempre se muestra).
 export const hideableSectionSchema = z.enum([
+  "intro",
   "allergens",
   "concentration",
   "lab",
@@ -165,6 +166,9 @@ export const quoteResultSchema = z.object({
 export const createBudgetInputSchema = quoteInputSchema.extend({
   patientId: z.number().int(),
   title: z.string().min(1).optional(),
+  // Datos para interpolar la plantilla de introducción del PDF.
+  parentName: z.string().optional(),
+  diagnosis: z.string().optional(),
 });
 
 export const budgetCreatedResponseSchema = z.object({
@@ -178,11 +182,13 @@ export const clinicTermsSchema = z.object({
   legalName: z.string().nullable(),
   legalRut: z.string().nullable(),
   immunoBudgetTerms: z.string().nullable(),
+  immunoBudgetIntro: z.string().nullable(),
 });
 export const updateClinicTermsInputSchema = z.object({
   legalName: z.string().nullable().optional(),
   legalRut: z.string().nullable().optional(),
   immunoBudgetTerms: z.string().nullable().optional(),
+  immunoBudgetIntro: z.string().nullable().optional(),
 });
 
 // ── Contract ─────────────────────────────────────────────────────────

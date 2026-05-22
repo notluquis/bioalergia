@@ -253,6 +253,14 @@ const immunotherapyRouterBase = {
         .filter(Boolean)
         .join(" ");
 
+      // Interpola la plantilla de introducción con datos del presupuesto.
+      const intro = clinic.immunoBudgetIntro
+        ? clinic.immunoBudgetIntro
+            .replaceAll("{{paciente}}", fullName)
+            .replaceAll("{{apoderado}}", input.parentName?.trim() || "apoderado/a")
+            .replaceAll("{{diagnostico}}", input.diagnosis?.trim() || "su condición alérgica")
+        : null;
+
       // Lazy: pdf-lib pesa ~3MB en heap; cargar sólo al primer /pdf.
       const { generateBudgetPdf } = await import(
         "../modules/immunotherapy/budget-pdf.service.ts"
@@ -273,6 +281,7 @@ const immunotherapyRouterBase = {
         quote,
         lab: product?.lab ?? null,
         terms: clinic.immunoBudgetTerms,
+        intro,
       });
 
       const fileName = `presupuesto_inmunoterapia_${(patient.person.rut ?? "sin_rut").replace(
@@ -292,6 +301,7 @@ const immunotherapyRouterBase = {
         legalName: s.legalName,
         legalRut: s.legalRut,
         immunoBudgetTerms: s.immunoBudgetTerms,
+        immunoBudgetIntro: s.immunoBudgetIntro,
       };
     }),
 
@@ -313,6 +323,7 @@ const immunotherapyRouterBase = {
         legalName: s.legalName,
         legalRut: s.legalRut,
         immunoBudgetTerms: s.immunoBudgetTerms,
+        immunoBudgetIntro: s.immunoBudgetIntro,
       };
     }),
 };

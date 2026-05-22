@@ -4512,6 +4512,10 @@ model ClinicSettings {
   // (vigencia anual, renovación, ajuste proporcional 0,25 mL, no reembolsable,
   // suspensión, no garantía). Editable; se imprime al pie del PDF de presupuesto.
   immunoBudgetTerms String?  @map("immuno_budget_terms") @db.Text
+  // Texto introductorio del presupuesto de ITA (qué es ITA, efectos, objetivos,
+  // seguimiento). Editable; soporta placeholders {{paciente}} {{apoderado}}
+  // {{diagnostico}} interpolados por presupuesto. Se imprime arriba del PDF.
+  immunoBudgetIntro String?  @map("immuno_budget_intro") @db.Text
   signatureUrl      String?  @map("signature_url") @db.Text
   papuleThresholdMm Decimal  @default(3.0) @map("papule_threshold_mm") @db.Decimal(5, 2)
   // Prestador Superintendencia de Salud N — printed under doctor's signature

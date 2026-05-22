@@ -12041,6 +12041,11 @@ export class SchemaType implements SchemaDef {
                     type: "String",
                     optional: true
                 },
+                immunoBudgetIntro: {
+                    name: "immunoBudgetIntro",
+                    type: "String",
+                    optional: true
+                },
                 signatureUrl: {
                     name: "signatureUrl",
                     type: "String",

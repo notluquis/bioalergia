@@ -41,6 +41,7 @@ export type BudgetPdfInput = {
   quote: QuoteResult;
   lab: string | null;
   terms?: string | null;
+  intro?: string | null;
   date?: string;
 };
 
@@ -67,6 +68,25 @@ export async function generateBudgetPdf(input: BudgetPdfInput): Promise<Uint8Arr
   const margin = 50;
   let y = height - margin;
 
+  const newPageIfNeeded = (minY: number) => {
+    if (y < minY) {
+      page = pdfDoc.addPage([595.28, 841.89]);
+      y = height - margin;
+    }
+  };
+  const drawParagraphs = (text: string, size: number) => {
+    for (const paragraph of text.split(/\n\s*\n/)) {
+      for (const line of paragraph.split("\n")) {
+        for (const wline of wrapText(line.trim(), font, size, width - 2 * margin)) {
+          newPageIfNeeded(60);
+          page.drawText(wline, { x: margin, y, size, font, color: GRAY });
+          y -= size + 2.5;
+        }
+      }
+      y -= 5;
+    }
+  };
+
   await drawLogo(pdfDoc, page, margin, y);
   y -= 70;
 
@@ -90,7 +110,13 @@ export async function generateBudgetPdf(input: BudgetPdfInput): Promise<Uint8Arr
     font: bold,
     color: ACCENT,
   });
-  y -= 28;
+  y -= 24;
+
+  // Introducción (plantilla editable, interpolada). Sección ocultable.
+  if (!hidden("intro") && input.intro?.trim()) {
+    drawParagraphs(input.intro.trim(), 8.5);
+    y -= 6;
+  }
 
   // Datos paciente + fecha
   const date = dayjs(input.date ?? undefined).format("D [de] MMMM [de] YYYY");
@@ -185,31 +211,13 @@ export async function generateBudgetPdf(input: BudgetPdfInput): Promise<Uint8Arr
   drawTotal("Total anual", clp(quote.total), bold);
 
   // Condiciones económicas / disclosures (editables desde settings)
-  const newPageIfNeeded = (minY: number) => {
-    if (y < minY) {
-      page = pdfDoc.addPage([595.28, 841.89]);
-      y = height - margin;
-    }
-  };
   const termsText = input.terms?.trim();
   if (!hidden("terms") && termsText) {
     y -= 12;
     newPageIfNeeded(170);
     page.drawText("Condiciones económicas", { x: margin, y, size: 9, font: bold, color: ACCENT });
     y -= 13;
-    for (const paragraph of termsText.split(/\n\s*\n/)) {
-      for (const wline of wrapText(
-        paragraph.replace(/\s*\n\s*/g, " ").trim(),
-        font,
-        7.5,
-        width - 2 * margin
-      )) {
-        newPageIfNeeded(60);
-        page.drawText(wline, { x: margin, y, size: 7.5, font, color: GRAY });
-        y -= 10;
-      }
-      y -= 5;
-    }
+    drawParagraphs(termsText, 7.5);
   }
 
   // Firmas (al pie de la página actual)

@@ -78,6 +78,7 @@ export async function updateImmunoTerms(input: {
   legalName?: string | null;
   legalRut?: string | null;
   immunoBudgetTerms?: string | null;
+  immunoBudgetIntro?: string | null;
 }) {
   try {
     return await immunotherapyORPCClient.updateTerms(input);
