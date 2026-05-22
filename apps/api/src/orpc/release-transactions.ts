@@ -1,5 +1,4 @@
 import { authDb } from "@finanzas/db";
-import type { ReleaseTransactionWhereInput } from "@finanzas/db/input";
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
 import { ORPCError, onError, os } from "@orpc/server";
@@ -25,6 +24,13 @@ type ReleaseTransactionsORPCContext = {
 
 const base = os.$context<ReleaseTransactionsORPCContext>();
 const NUMERIC_PATTERN = /^\d+$/;
+
+// Tipo `where` derivado del propio método del cliente ZenStack v3.7. El alias
+// de @finanzas/db/input NO coincide con el WhereInput interno (Kysely + $expr)
+// que esperan findMany/count, así que se deriva de la firma real.
+type ReleaseTransactionWhereInput = NonNullable<
+  NonNullable<Parameters<typeof authDb.releaseTransaction.findMany>[0]>["where"]
+>;
 
 const authed = base.use(async ({ context, next }) => {
   const user = await getSessionUser(context.hono);
@@ -58,7 +64,7 @@ function buildReleaseWhere(
   const whereConditions: ReleaseTransactionWhereInput[] = [];
 
   if (from || to) {
-    const dateFilter: Record<string, Date> = {};
+    const dateFilter: { gte?: Date; lte?: Date } = {};
 
     if (from) {
       dateFilter.gte = new Date(from);

@@ -1,5 +1,4 @@
 import { type CounterpartCategory, db } from "@finanzas/db";
-import type { CounterpartAccountUpdateArgs } from "@finanzas/db/input";
 import {
   type assignRutToPayoutsResponseSchema,
   type counterpartAccountSchema,
@@ -11,7 +10,17 @@ import {
 } from "@finanzas/orpc-contracts/counterparts";
 import type { z } from "zod";
 
-type CounterpartAccountUpdateInput = NonNullable<CounterpartAccountUpdateArgs["data"]>;
+// Forma del payload del contrato oRPC (lo que realmente llega del handler).
+// El UpdateInput interno de ZenStack v3.7 es un XOR que no se puede re-narrow
+// desde este shape, así que el `data` se castea en el único punto db.update.
+type CounterpartAccountUpdateInput = {
+  accountNumber?: string;
+  accountType?: null | string;
+  bankName?: null | string;
+};
+type CounterpartAccountOrmUpdateData = NonNullable<
+  Parameters<typeof db.counterpartAccount.update>[0]
+>["data"];
 type CounterpartDto = z.output<typeof counterpartSchema>;
 type CounterpartAccountDto = z.output<typeof counterpartAccountSchema>;
 type CounterpartSuggestionDto = z.output<typeof counterpartSuggestionSchema>;
@@ -796,7 +805,8 @@ export async function updateCounterpartAccount(
   return mapCounterpartAccount(
     await db.counterpartAccount.update({
       where: { id: accountId },
-      data: updateData,
+      // Cast en el boundary ORM (XOR ZenStack v3.7 no re-narrow desde el shape del contrato).
+      data: updateData as CounterpartAccountOrmUpdateData,
     })
   );
 }

@@ -1,11 +1,12 @@
 import { db, schema } from "@finanzas/db";
-import type { RoleCreateArgs, RoleUpdateArgs } from "@finanzas/db/input";
+import type { RoleUncheckedCreateInput, RoleUncheckedUpdateInput } from "@finanzas/db/input";
 import { filterSafePermissions } from "../lib/permission-validator.ts";
 import { getSetting, updateSetting } from "./settings.ts";
 
-// Extract input types from Zenstack args
-type RoleCreateInput = NonNullable<RoleCreateArgs["data"]>;
-type RoleUpdateInput = NonNullable<RoleUpdateArgs["data"]>;
+// Patrón ZenStack v3.7 golden: usar los Unchecked*Input directos (no
+// NonNullable<Args["data"]>, que es XOR y no se puede re-narrow → TS2345).
+type RoleCreateInput = RoleUncheckedCreateInput;
+type RoleUpdateInput = RoleUncheckedUpdateInput;
 export interface RoleMapping {
   app_role: string;
   employee_role: string;
