@@ -23,6 +23,10 @@ import { getCurrentJobs as getCurrentBackupJobs } from "./services/backups.ts";
 import { balancesOpenAPIHandler, balancesORPCHandler } from "./orpc/balances.ts";
 import { calendarOpenAPIHandler, calendarORPCHandler } from "./orpc/calendar.ts";
 import { certificatesOpenAPIHandler, certificatesORPCHandler } from "./orpc/certificates.ts";
+import {
+  immunotherapyOpenAPIHandler,
+  immunotherapyORPCHandler,
+} from "./orpc/immunotherapy.ts";
 import { clinicalSeriesOpenAPIHandler, clinicalSeriesORPCHandler } from "./orpc/clinical-series.ts";
 import {
   clinicalRecordsOpenAPIHandler,
@@ -860,6 +864,19 @@ app.use("/api/orpc/calendar/rpc/*", async (c, next) => {
 app.use("/api/orpc/certificates/rpc/*", async (c, next) => {
   const { matched, response } = await certificatesORPCHandler.handle(createHonoORPCRequest(c), {
     prefix: "/api/orpc/certificates/rpc",
+    context: { hono: c },
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  return next();
+});
+
+app.use("/api/orpc/immunotherapy/rpc/*", async (c, next) => {
+  const { matched, response } = await immunotherapyORPCHandler.handle(createHonoORPCRequest(c), {
+    prefix: "/api/orpc/immunotherapy/rpc",
     context: { hono: c },
   });
 
@@ -2076,6 +2093,18 @@ app.use("/api/orpc/calendar/*", async (c, next) => {
 
 app.use("/api/orpc/certificates/*", async (c, next) => {
   const { matched, response } = await certificatesOpenAPIHandler.handle(createHonoORPCRequest(c), {
+    context: { hono: c },
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  return next();
+});
+
+app.use("/api/orpc/immunotherapy/*", async (c, next) => {
+  const { matched, response } = await immunotherapyOpenAPIHandler.handle(createHonoORPCRequest(c), {
     context: { hono: c },
   });
 

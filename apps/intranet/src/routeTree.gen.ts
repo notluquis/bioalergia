@@ -38,6 +38,7 @@ import { Route as AuthedExamReportsIndexRouteImport } from "./routes/_authed/exa
 import { Route as AuthedClinicalIndexRouteImport } from "./routes/_authed/clinical/index"
 import { Route as AuthedCalendarIndexRouteImport } from "./routes/_authed/calendar/index"
 import { Route as AuthedWaCloudSplatRouteImport } from "./routes/_authed/wa-cloud/$"
+import { Route as AuthedSettingsImmunotherapyRouteImport } from "./routes/_authed/settings/immunotherapy"
 import { Route as AuthedSettingsHaulmerRouteImport } from "./routes/_authed/settings/haulmer"
 import { Route as AuthedSettingsDoctoraliaRouteImport } from "./routes/_authed/settings/doctoralia"
 import { Route as AuthedServicesAgendaRouteImport } from "./routes/_authed/services/agenda"
@@ -75,6 +76,7 @@ import { Route as AuthedServicesIdEditRouteImport } from "./routes/_authed/servi
 import { Route as AuthedPatientsIdNewPaymentRouteImport } from "./routes/_authed/patients/$id/new-payment"
 import { Route as AuthedPatientsIdNewConsultationRouteImport } from "./routes/_authed/patients/$id/new-consultation"
 import { Route as AuthedPatientsIdNewBudgetRouteImport } from "./routes/_authed/patients/$id/new-budget"
+import { Route as AuthedPatientsIdImmunotherapyBudgetRouteImport } from "./routes/_authed/patients/$id/immunotherapy-budget"
 import { Route as AuthedOutreachEstablecimientosRbdRouteImport } from "./routes/_authed/outreach/establecimientos.$rbd"
 import { Route as AuthedOutreachCampanasNuevaRouteImport } from "./routes/_authed/outreach/campanas.nueva"
 import { Route as AuthedOutreachCampanasIdRouteImport } from "./routes/_authed/outreach/campanas.$id"
@@ -224,6 +226,12 @@ const AuthedWaCloudSplatRoute = AuthedWaCloudSplatRouteImport.update({
   path: "/$",
   getParentRoute: () => AuthedWaCloudRoute,
 } as any)
+const AuthedSettingsImmunotherapyRoute =
+  AuthedSettingsImmunotherapyRouteImport.update({
+    id: "/immunotherapy",
+    path: "/immunotherapy",
+    getParentRoute: () => AuthedSettingsRoute,
+  } as any)
 const AuthedSettingsHaulmerRoute = AuthedSettingsHaulmerRouteImport.update({
   id: "/haulmer",
   path: "/haulmer",
@@ -422,6 +430,12 @@ const AuthedPatientsIdNewBudgetRoute =
     path: "/patients/$id/new-budget",
     getParentRoute: () => AuthedRoute,
   } as any)
+const AuthedPatientsIdImmunotherapyBudgetRoute =
+  AuthedPatientsIdImmunotherapyBudgetRouteImport.update({
+    id: "/patients/$id/immunotherapy-budget",
+    path: "/patients/$id/immunotherapy-budget",
+    getParentRoute: () => AuthedRoute,
+  } as any)
 const AuthedOutreachEstablecimientosRbdRoute =
   AuthedOutreachEstablecimientosRbdRouteImport.update({
     id: "/establecimientos/$rbd",
@@ -496,6 +510,7 @@ export interface FileRoutesByFullPath {
   "/services/agenda": typeof AuthedServicesAgendaRoute
   "/settings/doctoralia": typeof AuthedSettingsDoctoraliaRoute
   "/settings/haulmer": typeof AuthedSettingsHaulmerRoute
+  "/settings/immunotherapy": typeof AuthedSettingsImmunotherapyRoute
   "/wa-cloud/$": typeof AuthedWaCloudSplatRoute
   "/calendar/": typeof AuthedCalendarIndexRoute
   "/clinical/": typeof AuthedClinicalIndexRoute
@@ -512,6 +527,7 @@ export interface FileRoutesByFullPath {
   "/outreach/campanas/$id": typeof AuthedOutreachCampanasIdRoute
   "/outreach/campanas/nueva": typeof AuthedOutreachCampanasNuevaRoute
   "/outreach/establecimientos/$rbd": typeof AuthedOutreachEstablecimientosRbdRoute
+  "/patients/$id/immunotherapy-budget": typeof AuthedPatientsIdImmunotherapyBudgetRoute
   "/patients/$id/new-budget": typeof AuthedPatientsIdNewBudgetRoute
   "/patients/$id/new-consultation": typeof AuthedPatientsIdNewConsultationRoute
   "/patients/$id/new-payment": typeof AuthedPatientsIdNewPaymentRoute
@@ -560,6 +576,7 @@ export interface FileRoutesByTo {
   "/services/agenda": typeof AuthedServicesAgendaRoute
   "/settings/doctoralia": typeof AuthedSettingsDoctoraliaRoute
   "/settings/haulmer": typeof AuthedSettingsHaulmerRoute
+  "/settings/immunotherapy": typeof AuthedSettingsImmunotherapyRoute
   "/wa-cloud/$": typeof AuthedWaCloudSplatRoute
   "/calendar": typeof AuthedCalendarIndexRoute
   "/clinical": typeof AuthedClinicalIndexRoute
@@ -576,6 +593,7 @@ export interface FileRoutesByTo {
   "/outreach/campanas/$id": typeof AuthedOutreachCampanasIdRoute
   "/outreach/campanas/nueva": typeof AuthedOutreachCampanasNuevaRoute
   "/outreach/establecimientos/$rbd": typeof AuthedOutreachEstablecimientosRbdRoute
+  "/patients/$id/immunotherapy-budget": typeof AuthedPatientsIdImmunotherapyBudgetRoute
   "/patients/$id/new-budget": typeof AuthedPatientsIdNewBudgetRoute
   "/patients/$id/new-consultation": typeof AuthedPatientsIdNewConsultationRoute
   "/patients/$id/new-payment": typeof AuthedPatientsIdNewPaymentRoute
@@ -633,6 +651,7 @@ export interface FileRoutesById {
   "/_authed/services/agenda": typeof AuthedServicesAgendaRoute
   "/_authed/settings/doctoralia": typeof AuthedSettingsDoctoraliaRoute
   "/_authed/settings/haulmer": typeof AuthedSettingsHaulmerRoute
+  "/_authed/settings/immunotherapy": typeof AuthedSettingsImmunotherapyRoute
   "/_authed/wa-cloud/$": typeof AuthedWaCloudSplatRoute
   "/_authed/calendar/": typeof AuthedCalendarIndexRoute
   "/_authed/clinical/": typeof AuthedClinicalIndexRoute
@@ -649,6 +668,7 @@ export interface FileRoutesById {
   "/_authed/outreach/campanas/$id": typeof AuthedOutreachCampanasIdRoute
   "/_authed/outreach/campanas/nueva": typeof AuthedOutreachCampanasNuevaRoute
   "/_authed/outreach/establecimientos/$rbd": typeof AuthedOutreachEstablecimientosRbdRoute
+  "/_authed/patients/$id/immunotherapy-budget": typeof AuthedPatientsIdImmunotherapyBudgetRoute
   "/_authed/patients/$id/new-budget": typeof AuthedPatientsIdNewBudgetRoute
   "/_authed/patients/$id/new-consultation": typeof AuthedPatientsIdNewConsultationRoute
   "/_authed/patients/$id/new-payment": typeof AuthedPatientsIdNewPaymentRoute
@@ -706,6 +726,7 @@ export interface FileRouteTypes {
     | "/services/agenda"
     | "/settings/doctoralia"
     | "/settings/haulmer"
+    | "/settings/immunotherapy"
     | "/wa-cloud/$"
     | "/calendar/"
     | "/clinical/"
@@ -722,6 +743,7 @@ export interface FileRouteTypes {
     | "/outreach/campanas/$id"
     | "/outreach/campanas/nueva"
     | "/outreach/establecimientos/$rbd"
+    | "/patients/$id/immunotherapy-budget"
     | "/patients/$id/new-budget"
     | "/patients/$id/new-consultation"
     | "/patients/$id/new-payment"
@@ -770,6 +792,7 @@ export interface FileRouteTypes {
     | "/services/agenda"
     | "/settings/doctoralia"
     | "/settings/haulmer"
+    | "/settings/immunotherapy"
     | "/wa-cloud/$"
     | "/calendar"
     | "/clinical"
@@ -786,6 +809,7 @@ export interface FileRouteTypes {
     | "/outreach/campanas/$id"
     | "/outreach/campanas/nueva"
     | "/outreach/establecimientos/$rbd"
+    | "/patients/$id/immunotherapy-budget"
     | "/patients/$id/new-budget"
     | "/patients/$id/new-consultation"
     | "/patients/$id/new-payment"
@@ -842,6 +866,7 @@ export interface FileRouteTypes {
     | "/_authed/services/agenda"
     | "/_authed/settings/doctoralia"
     | "/_authed/settings/haulmer"
+    | "/_authed/settings/immunotherapy"
     | "/_authed/wa-cloud/$"
     | "/_authed/calendar/"
     | "/_authed/clinical/"
@@ -858,6 +883,7 @@ export interface FileRouteTypes {
     | "/_authed/outreach/campanas/$id"
     | "/_authed/outreach/campanas/nueva"
     | "/_authed/outreach/establecimientos/$rbd"
+    | "/_authed/patients/$id/immunotherapy-budget"
     | "/_authed/patients/$id/new-budget"
     | "/_authed/patients/$id/new-consultation"
     | "/_authed/patients/$id/new-payment"
@@ -1076,6 +1102,13 @@ declare module "@tanstack/react-router" {
       fullPath: "/wa-cloud/$"
       preLoaderRoute: typeof AuthedWaCloudSplatRouteImport
       parentRoute: typeof AuthedWaCloudRoute
+    }
+    "/_authed/settings/immunotherapy": {
+      id: "/_authed/settings/immunotherapy"
+      path: "/immunotherapy"
+      fullPath: "/settings/immunotherapy"
+      preLoaderRoute: typeof AuthedSettingsImmunotherapyRouteImport
+      parentRoute: typeof AuthedSettingsRoute
     }
     "/_authed/settings/haulmer": {
       id: "/_authed/settings/haulmer"
@@ -1336,6 +1369,13 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof AuthedPatientsIdNewBudgetRouteImport
       parentRoute: typeof AuthedRoute
     }
+    "/_authed/patients/$id/immunotherapy-budget": {
+      id: "/_authed/patients/$id/immunotherapy-budget"
+      path: "/patients/$id/immunotherapy-budget"
+      fullPath: "/patients/$id/immunotherapy-budget"
+      preLoaderRoute: typeof AuthedPatientsIdImmunotherapyBudgetRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     "/_authed/outreach/establecimientos/$rbd": {
       id: "/_authed/outreach/establecimientos/$rbd"
       path: "/establecimientos/$rbd"
@@ -1541,12 +1581,14 @@ const AuthedServicesRouteWithChildren = AuthedServicesRoute._addFileChildren(
 interface AuthedSettingsRouteChildren {
   AuthedSettingsDoctoraliaRoute: typeof AuthedSettingsDoctoraliaRoute
   AuthedSettingsHaulmerRoute: typeof AuthedSettingsHaulmerRoute
+  AuthedSettingsImmunotherapyRoute: typeof AuthedSettingsImmunotherapyRoute
   AuthedSettingsIndexRoute: typeof AuthedSettingsIndexRoute
 }
 
 const AuthedSettingsRouteChildren: AuthedSettingsRouteChildren = {
   AuthedSettingsDoctoraliaRoute: AuthedSettingsDoctoraliaRoute,
   AuthedSettingsHaulmerRoute: AuthedSettingsHaulmerRoute,
+  AuthedSettingsImmunotherapyRoute: AuthedSettingsImmunotherapyRoute,
   AuthedSettingsIndexRoute: AuthedSettingsIndexRoute,
 }
 
@@ -1592,6 +1634,7 @@ interface AuthedRouteChildren {
   AuthedInventoryIndexRoute: typeof AuthedInventoryIndexRoute
   AuthedPatientsIndexRoute: typeof AuthedPatientsIndexRoute
   AuthedStoreIndexRoute: typeof AuthedStoreIndexRoute
+  AuthedPatientsIdImmunotherapyBudgetRoute: typeof AuthedPatientsIdImmunotherapyBudgetRoute
   AuthedPatientsIdNewBudgetRoute: typeof AuthedPatientsIdNewBudgetRoute
   AuthedPatientsIdNewConsultationRoute: typeof AuthedPatientsIdNewConsultationRoute
   AuthedPatientsIdNewPaymentRoute: typeof AuthedPatientsIdNewPaymentRoute
@@ -1622,6 +1665,8 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedInventoryIndexRoute: AuthedInventoryIndexRoute,
   AuthedPatientsIndexRoute: AuthedPatientsIndexRoute,
   AuthedStoreIndexRoute: AuthedStoreIndexRoute,
+  AuthedPatientsIdImmunotherapyBudgetRoute:
+    AuthedPatientsIdImmunotherapyBudgetRoute,
   AuthedPatientsIdNewBudgetRoute: AuthedPatientsIdNewBudgetRoute,
   AuthedPatientsIdNewConsultationRoute: AuthedPatientsIdNewConsultationRoute,
   AuthedPatientsIdNewPaymentRoute: AuthedPatientsIdNewPaymentRoute,

@@ -282,7 +282,21 @@ function PatientDetailsPage() {
             <Tabs.Panel id="budgets" className="space-y-4 py-4">
               {isTabMounted("budgets") ? (
                 <>
-                  <div className="flex justify-end">
+                  <div className="flex justify-end gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="gap-2"
+                      onPress={() => {
+                        void navigate({
+                          to: "/patients/$id/immunotherapy-budget",
+                          params: { id: String(id) },
+                        });
+                      }}
+                    >
+                      <PlusCircle size={16} />
+                      Presupuesto Inmunoterapia
+                    </Button>
                     <Button
                       size="sm"
                       className="gap-2"

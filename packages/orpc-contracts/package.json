@@ -183,6 +183,12 @@
       "import": "./dist/images.js",
       "default": "./dist/images.js"
     },
+    "./immunotherapy": {
+      "development": "./src/immunotherapy.ts",
+      "types": "./dist/immunotherapy.d.ts",
+      "import": "./dist/immunotherapy.js",
+      "default": "./dist/immunotherapy.js"
+    },
     "./inventory": {
       "development": "./src/inventory.ts",
       "types": "./dist/inventory.d.ts",

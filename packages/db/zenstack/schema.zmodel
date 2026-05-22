@@ -2605,6 +2605,64 @@ model Budget {
   @@map("budgets")
 }
 
+// Catálogo editable de productos de inmunoterapia subcutánea para PRESUPUESTO
+// (cobro al paciente). Las etapas de dosis y precios varían por producto
+// (Clustoid/Roxall, Alxoid, …) y son 100% editables desde DB — sin precios
+// hardcodeados. El presupuesto es ANUAL: fase inicio (dosis escalonadas) +
+// N dosis de mantención. El costo del vial (interno) NO se modela aquí.
+model ImmunotherapyProduct {
+  id                    Int      @id @default(autoincrement())
+  name                  String   // "Clustoid", "Alxoid"
+  lab                   String?  // "Roxall"
+  vaccineProduct        SubcutaneousVaccineProduct? @map("vaccine_product") // link opcional al enum clínico
+  // Composición/potencia (metadata, NO afecta el precio al paciente — el
+  // esquema de dosis manda). Se imprime en el PDF.
+  concentrationUtMl     Int?     @map("concentration_ut_ml") // ej. 10000, 30000 (UT/mL)
+  perAllergen           Boolean  @default(false) @map("per_allergen") // potencia es UT/mL POR alérgeno
+  maxAllergens          Int?     @map("max_allergens") // límite de alérgenos (Forte = 1); null = sin límite
+  maintenanceTargetMl   Decimal  @default(0.5) @map("maintenance_target_ml") @db.Decimal(5, 2) // volumen base de la etapa de mantención
+  maintenanceStepMl     Decimal  @default(0.25) @map("maintenance_step_ml") @db.Decimal(5, 2) // tramo de ajuste proporcional
+  maintenanceDefaultQty Int      @default(11) @map("maintenance_default_qty") // dosis de mantención/año por defecto
+  defaultDiscountPct    Decimal? @map("default_discount_pct") @db.Decimal(5, 2) // ej. 10.00 = 10%
+  isActive              Boolean  @default(true) @map("is_active")
+  sortOrder             Int      @default(0) @map("sort_order")
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @default(now()) @updatedAt @map("updated_at")
+
+  stages                ImmunotherapyDoseStage[]
+
+  @@deny('all', auth() == null)
+  @@allow('read', auth().status == 'ACTIVE')
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@map("immunotherapy_products")
+}
+
+// Etapa de dosis dentro de un producto: fase inicio (escalonada, qty fija) o
+// mantención (qty = maintenanceDefaultQty del producto, precio ajustable por
+// volumen). unitPrice de la etapa de mantención es el precio BASE al volumen
+// maintenanceTargetMl; para otro volumen se ajusta proporcional lineal.
+model ImmunotherapyDoseStage {
+  id            Int      @id @default(autoincrement())
+  productId     Int      @map("product_id")
+  label         String   // "Primera dosis", "Dosis mantención"
+  unitPrice     Decimal  @map("unit_price") @db.Decimal(15, 2)
+  defaultQty    Int      @default(1) @map("default_qty")
+  isMaintenance Boolean  @default(false) @map("is_maintenance") // la etapa ajustable por volumen
+  sortOrder     Int      @default(0) @map("sort_order")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @default(now()) @updatedAt @map("updated_at")
+
+  product       ImmunotherapyProduct @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@deny('all', auth() == null)
+  @@allow('read', auth().status == 'ACTIVE')
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@index([productId])
+  @@map("immunotherapy_dose_stages")
+}
+
 model PatientPayment {
   id            Int      @id @default(autoincrement())
   patientId     Int      @map("patient_id")
@@ -4446,6 +4504,14 @@ model ClinicSettings {
   doctorName        String   @default("DR JOSE MANUEL MARTINEZ M.") @map("doctor_name")
   doctorSpecialty   String   @default("ALERGOLOGO-INMUNOLOGO") @map("doctor_specialty")
   doctorRut         String?  @map("doctor_rut")
+  // Prestador institucional (razón social + RUT) para encabezado de
+  // presupuestos/consentimientos. Nullable → editable desde admin, sin hardcode.
+  legalName         String?  @map("legal_name")
+  legalRut          String?  @map("legal_rut")
+  // Condiciones económicas / disclosures del presupuesto de inmunoterapia
+  // (vigencia anual, renovación, ajuste proporcional 0,25 mL, no reembolsable,
+  // suspensión, no garantía). Editable; se imprime al pie del PDF de presupuesto.
+  immunoBudgetTerms String?  @map("immuno_budget_terms") @db.Text
   signatureUrl      String?  @map("signature_url") @db.Text
   papuleThresholdMm Decimal  @default(3.0) @map("papule_threshold_mm") @db.Decimal(5, 2)
   // Prestador Superintendencia de Salud N — printed under doctor's signature

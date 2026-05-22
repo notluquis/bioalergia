@@ -7019,6 +7019,158 @@ export class SchemaType implements SchemaDef {
                 id: { type: "Int" }
             }
         },
+        ImmunotherapyProduct: {
+            name: "ImmunotherapyProduct",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                name: {
+                    name: "name",
+                    type: "String"
+                },
+                lab: {
+                    name: "lab",
+                    type: "String",
+                    optional: true
+                },
+                vaccineProduct: {
+                    name: "vaccineProduct",
+                    type: "SubcutaneousVaccineProduct",
+                    optional: true
+                },
+                concentrationUtMl: {
+                    name: "concentrationUtMl",
+                    type: "Int",
+                    optional: true
+                },
+                perAllergen: {
+                    name: "perAllergen",
+                    type: "Boolean",
+                    default: false as FieldDefault
+                },
+                maxAllergens: {
+                    name: "maxAllergens",
+                    type: "Int",
+                    optional: true
+                },
+                maintenanceTargetMl: {
+                    name: "maintenanceTargetMl",
+                    type: "Decimal",
+                    default: 0.5 as FieldDefault
+                },
+                maintenanceStepMl: {
+                    name: "maintenanceStepMl",
+                    type: "Decimal",
+                    default: 0.25 as FieldDefault
+                },
+                maintenanceDefaultQty: {
+                    name: "maintenanceDefaultQty",
+                    type: "Int",
+                    default: 11 as FieldDefault
+                },
+                defaultDiscountPct: {
+                    name: "defaultDiscountPct",
+                    type: "Decimal",
+                    optional: true
+                },
+                isActive: {
+                    name: "isActive",
+                    type: "Boolean",
+                    default: true as FieldDefault
+                },
+                sortOrder: {
+                    name: "sortOrder",
+                    type: "Int",
+                    default: 0 as FieldDefault
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                stages: {
+                    name: "stages",
+                    type: "ImmunotherapyDoseStage",
+                    array: true,
+                    relation: { opposite: "product" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" }
+            }
+        },
+        ImmunotherapyDoseStage: {
+            name: "ImmunotherapyDoseStage",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                productId: {
+                    name: "productId",
+                    type: "Int",
+                    foreignKeyFor: [
+                        "product"
+                    ] as readonly string[]
+                },
+                label: {
+                    name: "label",
+                    type: "String"
+                },
+                unitPrice: {
+                    name: "unitPrice",
+                    type: "Decimal"
+                },
+                defaultQty: {
+                    name: "defaultQty",
+                    type: "Int",
+                    default: 1 as FieldDefault
+                },
+                isMaintenance: {
+                    name: "isMaintenance",
+                    type: "Boolean",
+                    default: false as FieldDefault
+                },
+                sortOrder: {
+                    name: "sortOrder",
+                    type: "Int",
+                    default: 0 as FieldDefault
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                product: {
+                    name: "product",
+                    type: "ImmunotherapyProduct",
+                    relation: { opposite: "stages", fields: ["productId"], references: ["id"], onDelete: "Cascade" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" }
+            }
+        },
         PatientPayment: {
             name: "PatientPayment",
             fields: {
@@ -11871,6 +12023,21 @@ export class SchemaType implements SchemaDef {
                 },
                 doctorRut: {
                     name: "doctorRut",
+                    type: "String",
+                    optional: true
+                },
+                legalName: {
+                    name: "legalName",
+                    type: "String",
+                    optional: true
+                },
+                legalRut: {
+                    name: "legalRut",
+                    type: "String",
+                    optional: true
+                },
+                immunoBudgetTerms: {
+                    name: "immunoBudgetTerms",
                     type: "String",
                     optional: true
                 },
