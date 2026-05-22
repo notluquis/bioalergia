@@ -2,6 +2,7 @@ import type { TransactionType } from "@finanzas/db";
 import { db } from "@finanzas/db";
 import { Decimal } from "decimal.js";
 import { AppError } from "../lib/app-error.ts";
+import { auditRowChange } from "../lib/audit-diff.ts";
 import { getPeriodRange, toChilePeriod } from "../lib/time.ts";
 import {
   fetchMergedTransactions,
@@ -1478,6 +1479,20 @@ export async function updateFinancialTransaction(
   id: number,
   data: UpdateFinancialTransactionInput
 ) {
+  // Snapshot previo para auditar el diff (edición manual de transacción = sensible).
+  const before = await db.financialTransaction.findUnique({
+    where: { id },
+    select: {
+      amount: true,
+      categoryId: true,
+      comment: true,
+      counterpartId: true,
+      date: true,
+      description: true,
+      type: true,
+    },
+  });
+
   const updateArgs = parseOrmArgs(db, "financialTransaction", "update", {
     where: { id },
     data: {
@@ -1490,7 +1505,18 @@ export async function updateFinancialTransaction(
       ...(data.comment !== undefined && { comment: data.comment }),
     },
   });
-  return db.financialTransaction.update(updateArgs);
+  const updated = await db.financialTransaction.update(updateArgs);
+
+  await auditRowChange({
+    kind: "FINANCIAL_CHANGE",
+    resource: "financial_transaction",
+    resourceId: id,
+    oldRow: (before ?? null) as Record<string, unknown> | null,
+    newRow: updated as unknown as Record<string, unknown>,
+    fields: ["amount", "type", "categoryId", "counterpartId", "description", "date"],
+  });
+
+  return updated;
 }
 
 export async function deleteFinancialTransaction(id: number) {
