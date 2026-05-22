@@ -101,6 +101,10 @@ export const db = new ZenStackClient(schema, {
 export const authDb = db.$use(new PolicyPlugin()) as unknown as ClientContract<SchemaType>;
 
 // Canonical client type re-export per ZenStack v3 docs.
+// NOTA (validado 2026-05-21): quitar este colapso reintroduce TS2321 "Excessive
+// stack depth" en callbacks db.$transaction (exam-reports.ts, users.ts) y NO
+// resuelve los rows lossy de shipments. El colapso sigue siendo necesario; los
+// rows completos se obtienen vía z.infer<contractSchema> donde haga falta.
 export type DbClient = ClientContract<SchemaType>;
 
 // Direct Kysely access for complex queries

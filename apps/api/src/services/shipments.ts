@@ -2,10 +2,10 @@ import { db } from "@finanzas/db";
 import { shipmentSchema } from "@finanzas/orpc-contracts/shipments";
 import { Decimal } from "decimal.js";
 
-// Fila real del modelo (para el spread). El cliente ZenStack colapsado
-// (`as unknown as ClientContract<SchemaType>` en client.ts) no materializa los
-// campos del row en el tipo de findMany, así que serializeShipment castea al
-// shape del contrato (la autoridad del API), que el runtime sí cumple.
+// El cliente ZenStack se colapsa a ClientContract<SchemaType> en client.ts (para
+// evitar TS2321 en db.$transaction), lo que vuelve lossy el row de findMany. Por
+// eso SerializedShipment = el contrato Zod (autoridad del API) y serializeShipment
+// castea (el runtime sí cumple el shape). Ver nota en packages/db/src/client.ts.
 type ShipmentRow = Awaited<ReturnType<typeof db.shipment.findMany>>[number];
 type SerializedShipment = z.infer<typeof shipmentSchema>;
 
