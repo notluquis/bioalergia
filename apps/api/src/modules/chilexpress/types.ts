@@ -109,27 +109,24 @@ export interface CxTransportOrderInput {
     labelType: number;
   };
   details: Array<{
-    addresses: {
-      deliveryAddress: {
-        streetName: string;
-        streetNumber: string;
-        supplement?: string;
-        county: {
-          coverageRegionCode: string;
-        };
-        isOrigin: false;
-        deliveryOnCommercialOffice: boolean;
-        commercialOfficeId: string;
-        observation?: string;
+    // ChileExpress espera arrays (IList<...>), no objetos con keys nombradas.
+    addresses: Array<{
+      streetName: string;
+      streetNumber: string;
+      supplement?: string;
+      county: {
+        coverageRegionCode: string;
       };
-    };
-    contacts: {
-      recipient: {
-        name: string;
-        phoneNumber: string;
-        mail?: string;
-      };
-    };
+      isOrigin: false;
+      deliveryOnCommercialOffice: boolean;
+      commercialOfficeId: string;
+      observation?: string;
+    }>;
+    contacts: Array<{
+      name: string;
+      phoneNumber: string;
+      mail?: string;
+    }>;
     packages: Array<{
       weight: number;
       height: number;

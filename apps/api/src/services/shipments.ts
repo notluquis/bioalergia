@@ -221,16 +221,16 @@ export async function createShipment(input: CreateShipmentInput) {
     },
     details: [
       {
-        addresses: {
-          deliveryAddress,
-        },
-        contacts: {
-          recipient: {
+        // ChileExpress espera arrays (IList<TransportOrderAddress/Contact>),
+        // no objetos con keys nombradas — devolvía 400 "requires a JSON array".
+        addresses: [deliveryAddress],
+        contacts: [
+          {
             name: input.recipientName,
             phoneNumber: input.recipientPhone,
             mail: input.recipientEmail ?? "",
           },
-        },
+        ],
         packages: [
           {
             weight: input.weight,
