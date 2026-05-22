@@ -2,6 +2,7 @@ import { kysely } from "@finanzas/db";
 import type { SchemaType } from "@finanzas/db/schema";
 import { sql, type Transaction } from "kysely";
 import { logAuditEvent } from "../lib/audit-log.ts";
+import { auditRowChange } from "../lib/audit-diff.ts";
 import { DomainError } from "../lib/errors.ts";
 import { downloadOneDriveItem } from "../lib/microsoft/onedrive.ts";
 import { logEvent, logWarn } from "../lib/logger.ts";
@@ -98,7 +99,17 @@ async function materializeRecord(
   resultHash: string
 ): Promise<void> {
   // UPSERT on source_import_id keeps the row stable across reprocess.
-  await sql`
+  // RETURNING old/new (PG18) audita qué campos clínicos cambian al reprocesar.
+  const upserted = await sql<{
+    old_result_hash: string | null;
+    new_result_hash: string;
+    old_patient_name: string | null;
+    new_patient_name: string | null;
+    old_diagnosis: string | null;
+    new_diagnosis: string | null;
+    old_consult_date: string | null;
+    new_consult_date: string | null;
+  }>`
     INSERT INTO clinical_records (
       id, clinical_series_id, source_import_id,
       consult_date, patient_name, age_label,
@@ -147,7 +158,34 @@ async function materializeRecord(
       raw_sections = EXCLUDED.raw_sections,
       result_hash = EXCLUDED.result_hash,
       updated_at = now()
+    RETURNING
+      old.result_hash AS old_result_hash, new.result_hash AS new_result_hash,
+      old.patient_name AS old_patient_name, new.patient_name AS new_patient_name,
+      old.diagnosis AS old_diagnosis, new.diagnosis AS new_diagnosis,
+      old.consult_date AS old_consult_date, new.consult_date AS new_consult_date
   `.execute(trx);
+
+  // Solo audita updates con cambio real de contenido (old != null y hash distinto).
+  const row = upserted.rows[0];
+  if (row && row.old_result_hash != null && row.old_result_hash !== row.new_result_hash) {
+    await auditRowChange({
+      kind: "IMPORT_UPSERT",
+      resource: "clinical_record",
+      resourceId: `crr_${importId}`,
+      oldRow: {
+        result_hash: row.old_result_hash,
+        patient_name: row.old_patient_name,
+        diagnosis: row.old_diagnosis,
+        consult_date: row.old_consult_date,
+      },
+      newRow: {
+        result_hash: row.new_result_hash,
+        patient_name: row.new_patient_name,
+        diagnosis: row.new_diagnosis,
+        consult_date: row.new_consult_date,
+      },
+    });
+  }
 }
 
 export async function reprocessClinicalRecordImport(id: string): Promise<{
