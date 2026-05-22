@@ -1,6 +1,11 @@
 import { db } from "@finanzas/db";
 import { findOrCreatePerson } from "../services/people-factory.ts";
 import {
+  persistOwnProfileUpdate,
+  persistUserProfileUpdate,
+  persistUserStatusUpdate,
+} from "../services/users.ts";
+import {
   inviteResponseSchema,
   inviteUserSchema,
   resetPasswordResponseSchema,
@@ -581,40 +586,20 @@ const usersORPCRouterBase = {
           }
         }
 
-        await db.$transaction(async (tx) => {
-          await tx.person.update({
-            where: { id: user.personId },
-            data: {
-              names: input.names.trim(),
-              fatherName: toNullableText(input.fatherName),
-              motherName: toNullableText(input.motherName),
-              phone: toNullableText(input.phone),
-            },
-          });
-
-          await tx.employee.upsert({
-            where: { personId: user.personId },
-            create: {
-              personId: user.personId,
-              position: user.person.employee?.position ?? "Por definir",
-              startDate: user.person.employee?.startDate ?? new Date(),
-              status: user.person.employee?.status ?? "ACTIVE",
-              bankName: toNullableText(input.bankName),
-              bankAccountType: toNullableText(input.bankAccountType),
-              bankAccountNumber: toNullableText(input.bankAccountNumber),
-            },
-            update: {
-              bankName: toNullableText(input.bankName),
-              bankAccountType: toNullableText(input.bankAccountType),
-              bankAccountNumber: toNullableText(input.bankAccountNumber),
-            },
-          });
-
-          await tx.$executeRaw`
-            UPDATE users
-            SET login_email = ${explicitLoginEmail}
-            WHERE id = ${context.user.id}
-          `;
+        await persistOwnProfileUpdate({
+          userId: context.user.id,
+          personId: user.personId,
+          names: input.names.trim(),
+          fatherName: toNullableText(input.fatherName),
+          motherName: toNullableText(input.motherName),
+          phone: toNullableText(input.phone),
+          bankName: toNullableText(input.bankName),
+          bankAccountType: toNullableText(input.bankAccountType),
+          bankAccountNumber: toNullableText(input.bankAccountNumber),
+          explicitLoginEmail,
+          fallbackPosition: user.person.employee?.position ?? "Por definir",
+          fallbackStartDate: user.person.employee?.startDate ?? new Date(),
+          fallbackStatus: user.person.employee?.status ?? "ACTIVE",
         });
 
         return { status: "ok" as const };
@@ -709,52 +694,25 @@ const usersORPCRouterBase = {
           throw new ORPCError("CONFLICT", { message: "El correo de login ya está en uso" });
         }
 
-        await db.$transaction(async (tx) => {
-          await tx.person.update({
-            where: { id: targetUser.personId },
-            data: {
-              email: normalizedNotificationEmail,
-              fatherName: toNullableText(input.payload.fatherName),
-              motherName: toNullableText(input.payload.motherName),
-              names: input.payload.names.trim(),
-              phone: toNullableText(input.payload.phone),
-              rut: normalizedRut,
-            },
-          });
-
-          await tx.employee.upsert({
-            where: { personId: targetUser.personId },
-            create: {
-              personId: targetUser.personId,
-              position: input.payload.position.trim(),
-              department: toNullableText(input.payload.department),
-              startDate: targetUser.person.employee?.startDate ?? new Date(),
-              status: targetUser.person.employee?.status ?? "ACTIVE",
-              bankName: toNullableText(input.payload.bankName),
-              bankAccountType: toNullableText(input.payload.bankAccountType),
-              bankAccountNumber: toNullableText(input.payload.bankAccountNumber),
-            },
-            update: {
-              position: input.payload.position.trim(),
-              department: toNullableText(input.payload.department),
-              bankName: toNullableText(input.payload.bankName),
-              bankAccountType: toNullableText(input.payload.bankAccountType),
-              bankAccountNumber: toNullableText(input.payload.bankAccountNumber),
-            },
-          });
-
-          if (typeof input.payload.mfaEnforced === "boolean") {
-            await tx.user.update({
-              where: { id: input.id },
-              data: { mfaEnforced: input.payload.mfaEnforced },
-            });
-          }
-
-          await tx.$executeRaw`
-          UPDATE users
-          SET login_email = ${explicitLoginEmail}
-          WHERE id = ${input.id}
-        `;
+        // DB (transacción) en el service layer; el handler hace la validación.
+        await persistUserProfileUpdate({
+          userId: input.id,
+          personId: targetUser.personId,
+          names: input.payload.names.trim(),
+          fatherName: toNullableText(input.payload.fatherName),
+          motherName: toNullableText(input.payload.motherName),
+          phone: toNullableText(input.payload.phone),
+          notificationEmail: normalizedNotificationEmail,
+          rut: normalizedRut,
+          position: input.payload.position.trim(),
+          department: toNullableText(input.payload.department),
+          bankName: toNullableText(input.payload.bankName),
+          bankAccountType: toNullableText(input.payload.bankAccountType),
+          bankAccountNumber: toNullableText(input.payload.bankAccountNumber),
+          mfaEnforced: input.payload.mfaEnforced,
+          explicitLoginEmail,
+          fallbackStartDate: targetUser.person.employee?.startDate ?? new Date(),
+          fallbackStatus: targetUser.person.employee?.status ?? "ACTIVE",
         });
 
         return { status: "ok" as const };
@@ -799,27 +757,7 @@ const usersORPCRouterBase = {
           });
         }
 
-        await db.$transaction(async (tx) => {
-          await tx.user.update({
-            where: { id: input.id },
-            data: {
-              status: input.status,
-              sessionVersion: { increment: 1 },
-              ...(input.status === "PENDING_SETUP"
-                ? {
-                    mfaEnabled: false,
-                    mfaSecret: null,
-                  }
-                : {}),
-            },
-          });
-
-          if (input.status === "PENDING_SETUP") {
-            await tx.passkey.deleteMany({
-              where: { userId: input.id },
-            });
-          }
-        });
+        await persistUserStatusUpdate(input.id, input.status);
 
         return { status: "ok" as const };
       }

@@ -1,7 +1,6 @@
 // @finanzas/db - ZenStack v3 Client
 // Pure TypeScript ORM built on Kysely
 
-import type { ClientContract } from "@zenstackhq/orm";
 import { ZenStackClient } from "@zenstackhq/orm";
 import { PostgresDialect } from "@zenstackhq/orm/dialects/postgres";
 import { PolicyPlugin } from "@zenstackhq/plugin-policy";
@@ -74,20 +73,15 @@ pool.on("connect", (client) => {
 
 // Base ORM client (no access control).
 //
-// Pinned to `ClientContract<SchemaType>` per the ZenStack v3 canonical
-// pattern (zenstack.dev/docs/orm/client). This collapses the client's
-// generic params at the package boundary so consumers see a concrete
-// contract instead of inferring `ZenStackClient<typeof schema, …>`
-// every time. In files large enough that the type checker would
-// otherwise blow its budget comparing
-// `TransactionClientContract<Schema, ?, …>` to itself (TS2321
-// "Excessive stack depth"), this collapse is what keeps
-// `db.$transaction(async (tx) => …)` from cascading every upstream
-// map/reduce callback to implicit-any.
-// Double-cast through `unknown` so TS never compares the deep inferred
-// RHS to the declared LHS — that comparison itself triggers TS2321
-// (Excessive stack depth). The `unknown` hop drops the inferred
-// generic chain; consumers see the concrete `ClientContract<SchemaType>`.
+// Tipo completo inferido (NO colapsado a `ClientContract<SchemaType>`). El
+// colapso era un workaround para el TS2321 "Excessive stack depth" que dispara
+// el `TransactionClientContract` profundo cuando `db.$transaction(async tx =>…)`
+// se instancia INLINE en archivos oRPC pesados. Solución golden 2026: toda la
+// lógica DB/transacción vive en el service layer (contexto de tipos liviano),
+// los handlers oRPC quedan finos → el TS2321 no ocurre y los rows de findMany
+// conservan TODOS los campos del modelo (sin colapso lossy). Ver
+// services/exam-reports.ts y services/users.ts. NO reintroducir el colapso:
+// si vuelve TS2321, mover el $transaction culpable a un servicio.
 export const db = new ZenStackClient(schema, {
   dialect: new PostgresDialect({ pool }),
   diagnostics: {
@@ -95,17 +89,13 @@ export const db = new ZenStackClient(schema, {
     slowQueryThresholdMs: 1000,
     slowQueryMaxRecords: 100,
   },
-}) as unknown as ClientContract<SchemaType>;
+});
 
-// ORM client with access control policies — pinned for the same reason.
-export const authDb = db.$use(new PolicyPlugin()) as unknown as ClientContract<SchemaType>;
+// ORM client with access control policies.
+export const authDb = db.$use(new PolicyPlugin());
 
-// Canonical client type re-export per ZenStack v3 docs.
-// NOTA (validado 2026-05-21): quitar este colapso reintroduce TS2321 "Excessive
-// stack depth" en callbacks db.$transaction (exam-reports.ts, users.ts) y NO
-// resuelve los rows lossy de shipments. El colapso sigue siendo necesario; los
-// rows completos se obtienen vía z.infer<contractSchema> donde haga falta.
-export type DbClient = ClientContract<SchemaType>;
+// Canonical client type re-export.
+export type DbClient = typeof db;
 
 // Direct Kysely access for complex queries
 import { Kysely } from "kysely";

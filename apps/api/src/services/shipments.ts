@@ -2,10 +2,11 @@ import { db } from "@finanzas/db";
 import { shipmentSchema } from "@finanzas/orpc-contracts/shipments";
 import { Decimal } from "decimal.js";
 
-// El cliente ZenStack se colapsa a ClientContract<SchemaType> en client.ts (para
-// evitar TS2321 en db.$transaction), lo que vuelve lossy el row de findMany. Por
-// eso SerializedShipment = el contrato Zod (autoridad del API) y serializeShipment
-// castea (el runtime sí cumple el shape). Ver nota en packages/db/src/client.ts.
+// El row de findMany ahora trae todos los campos (cliente sin colapsar), pero
+// el shape de SerializedShipment diverge del contrato Zod en tipos de fecha
+// (Date↔string/unknown) — no es un tema de rows lossy. El contrato es la
+// autoridad del API, así que SerializedShipment = z.infer<shipmentSchema> y
+// serializeShipment castea (el runtime cumple el shape).
 type ShipmentRow = Awaited<ReturnType<typeof db.shipment.findMany>>[number];
 type SerializedShipment = z.infer<typeof shipmentSchema>;
 

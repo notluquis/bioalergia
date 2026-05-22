@@ -4,6 +4,7 @@ import { db } from "@finanzas/db";
 import { examReportsContract } from "@finanzas/orpc-contracts/exam-reports";
 import { z } from "zod";
 
+import { applyExamReportUpdate } from "../services/exam-reports.ts";
 import { configureSuperjson } from "../lib/superjson-config.ts";
 import { logError } from "../lib/logger.ts";
 import { SuperJSONRPCHandler } from "./superjson.ts";
@@ -241,40 +242,11 @@ const examReportsRouterBase = {
     .input(examReportsContract.update["~orpc"].inputSchema!)
     .output(examReportsContract.update["~orpc"].outputSchema!)
     .handler(async ({ input }) => {
-      const { id, sections, ...rest } = input;
-      // Replace sections wholesale on update — simpler than diffing.
-      const updated = await db.$transaction(async (tx) => {
-        const data: Record<string, unknown> = {};
-        for (const [k, v] of Object.entries(rest)) {
-          if (v !== undefined) data[k] = v;
-        }
-        await tx.examReport.update({ where: { id }, data });
-        if (sections) {
-          await tx.examReportSection.deleteMany({ where: { examReportId: id } });
-          for (const [sIdx, s] of sections.entries()) {
-            await tx.examReportSection.create({
-              data: {
-                examReportId: id,
-                sectionKey: s.sectionKey,
-                label: s.label,
-                position: s.position ?? sIdx,
-                reactions: {
-                  create: s.reactions.map((rx, rxIdx) => ({
-                    allergenId: rx.allergenId,
-                    reaction: rx.reaction,
-                    papuleMm: rx.papuleMm ?? null,
-                    notes: rx.notes ?? null,
-                    position: rx.position ?? rxIdx,
-                  })),
-                },
-              },
-            });
-          }
-        }
-        return tx.examReport.findUniqueOrThrow({
-          where: { id },
-          include: reportDetailInclude,
-        });
+      // DB logic (transacción) en el service layer; el handler queda fino.
+      await applyExamReportUpdate(input);
+      const updated = await db.examReport.findUniqueOrThrow({
+        where: { id: input.id },
+        include: reportDetailInclude,
       });
       return serialiseDetail(updated);
     }),
