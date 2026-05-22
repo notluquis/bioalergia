@@ -2,7 +2,7 @@ import { kysely } from "@finanzas/db";
 import type { SchemaType } from "@finanzas/db/schema";
 import { sql, type Transaction } from "kysely";
 import { logAuditEvent } from "../lib/audit-log.ts";
-import { auditRowChange } from "../lib/audit-diff.ts";
+import { type AuditRowChangeInput, flushRowChangeAudits } from "../lib/audit-diff.ts";
 import { DomainError } from "../lib/errors.ts";
 import { downloadOneDriveItem } from "../lib/microsoft/onedrive.ts";
 import { logEvent, logWarn } from "../lib/logger.ts";
@@ -96,7 +96,8 @@ async function materializeRecord(
   importId: string,
   parsed: ParsedClinicalRecord,
   clinicalSeriesId: number,
-  resultHash: string
+  resultHash: string,
+  pendingAudits: AuditRowChangeInput[]
 ): Promise<void> {
   // UPSERT on source_import_id keeps the row stable across reprocess.
   // RETURNING old/new (PG18) audita qué campos clínicos cambian al reprocesar.
@@ -166,9 +167,10 @@ async function materializeRecord(
   `.execute(trx);
 
   // Solo audita updates con cambio real de contenido (old != null y hash distinto).
+  // Se acumula y se vacía DESPUÉS del commit (auditar hechos persistidos).
   const row = upserted.rows[0];
   if (row && row.old_result_hash != null && row.old_result_hash !== row.new_result_hash) {
-    await auditRowChange({
+    pendingAudits.push({
       kind: "IMPORT_UPSERT",
       resource: "clinical_record",
       resourceId: `crr_${importId}`,
@@ -219,16 +221,21 @@ export async function reprocessClinicalRecordImport(id: string): Promise<{
     return { status: "ERROR", reason: msg };
   }
 
-  return kysely.transaction().execute(async (trx) => {
+  // Acumular audits dentro de la tx; vaciarlos solo si commitea (hechos persistidos).
+  const pendingAudits: AuditRowChangeInput[] = [];
+  const result = await kysely.transaction().execute(async (trx) => {
     await sql`SELECT pg_advisory_xact_lock(hashtextextended(${`cri:${id}`}, 0))`.execute(trx);
-    return reprocessInLock(trx, id, buffer);
+    return reprocessInLock(trx, id, buffer, pendingAudits);
   });
+  await flushRowChangeAudits(pendingAudits);
+  return result;
 }
 
 async function reprocessInLock(
   trx: Trx,
   id: string,
-  buffer: Buffer
+  buffer: Buffer,
+  pendingAudits: AuditRowChangeInput[]
 ): Promise<{
   status: "IMPORTED" | "PENDING_REVIEW" | "ERROR";
   reason?: string;
@@ -241,7 +248,7 @@ async function reprocessInLock(
 
   if (match.matchedPatientId) {
     const seriesId = await ensureClinicalSeries(trx, match.matchedPatientId, parsed.patientName);
-    await materializeRecord(trx, id, parsed, seriesId, resultHash);
+    await materializeRecord(trx, id, parsed, seriesId, resultHash, pendingAudits);
     await sql`
       UPDATE clinical_record_imports SET
         status = 'IMPORTED',
@@ -347,6 +354,7 @@ export async function approveClinicalRecordImport(
   if (!parsed) {
     throw new DomainError("UNPROCESSABLE_ENTITY", "Import has no parsed payload — reprocess first");
   }
+  const pendingAudits: AuditRowChangeInput[] = [];
   const seriesId = await kysely.transaction().execute(async (trx) => {
     await sql`SELECT pg_advisory_xact_lock(hashtextextended(${`cri:${id}`}, 0))`.execute(trx);
     const sid = await ensureClinicalSeries(trx, patientId, parsed.patientName ?? null);
@@ -367,7 +375,8 @@ export async function approveClinicalRecordImport(
         confidence: parsed.confidence ?? 0,
       } as ParsedClinicalRecord,
       sid,
-      r.rows[0]?.resultHash ?? ""
+      r.rows[0]?.resultHash ?? "",
+      pendingAudits
     );
     await sql`
       UPDATE clinical_record_imports SET
@@ -383,6 +392,7 @@ export async function approveClinicalRecordImport(
     `.execute(trx);
     return sid;
   });
+  await flushRowChangeAudits(pendingAudits);
   await logAuditEvent({
     kind: "OTHER",
     userId: reviewedBy,

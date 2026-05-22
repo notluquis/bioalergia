@@ -1,13 +1,16 @@
 import { type AuditEventKind, logAuditEvent } from "./audit-log.ts";
 
 // Auditoría de cambios fila-a-fila (diff antes/después) sobre el AuditLog
-// HMAC-chained. Best-effort: logAuditEvent ya traga errores, así que esto
-// NUNCA rompe el flujo de negocio. Solo audita cuando:
+// HMAC-chained, vía `logAuditEvent` (db.auditLog.create — ZenStack puro).
+// Best-effort: NUNCA rompe el flujo de negocio. Solo audita cuando:
 //   - hay un estado previo (oldRow != null) → no audita inserts puros, y
 //   - al menos un campo observado cambió de verdad.
 //
-// El old/new se obtiene del read-then-update existente (Doctoralia) o de
-// `RETURNING old.*, new.*` (PG18) en los upserts Kysely (imports/financiero).
+// IMPORTANTE: cuando la mutación corre dentro de una transacción, llamar a
+// `auditRowChange` DESPUÉS de que la transacción commitea (no dentro), para no
+// dejar un audit huérfano si la tx hace rollback. Patrón: acumular en un
+// `AuditRowChangeInput[]` dentro de la tx y vaciarlo (`flushRowChangeAudits`)
+// al resolver con éxito.
 
 type Row = Record<string, unknown>;
 
@@ -63,6 +66,13 @@ export async function auditRowChange(input: AuditRowChangeInput): Promise<void> 
     ip: input.ip ?? null,
     outcome: "ok",
     message: `${changed.length} campo(s) cambiado(s): ${changed.join(", ")}`,
-    metadata: { changed, old: jsonSafe(oldVals), new: jsonSafe(newVals) },
+    metadata: { changed, new: jsonSafe(newVals), old: jsonSafe(oldVals) },
   });
+}
+
+/** Vacía una cola de diffs acumulada dentro de una tx, DESPUÉS del commit. */
+export async function flushRowChangeAudits(pending: AuditRowChangeInput[]): Promise<void> {
+  for (const entry of pending) {
+    await auditRowChange(entry);
+  }
 }

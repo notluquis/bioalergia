@@ -1,5 +1,5 @@
 import { kysely } from "@finanzas/db";
-import { auditRowChange } from "../lib/audit-diff.ts";
+import { type AuditRowChangeInput, flushRowChangeAudits } from "../lib/audit-diff.ts";
 import type { Transaction } from "kysely";
 import type { SchemaType } from "@finanzas/db/schema";
 import { createId } from "@paralleldrive/cuid2";
@@ -2546,7 +2546,9 @@ async function writeSkinTest(
   const interpretation = parsed.interpretation ?? emptyInterpretation();
   const resultHash = computeResultHash(parsed.results);
   if (!header.testDate) throw new Error("No se puede importar un test sin fecha.");
-  return kysely.transaction().execute(async (trx) => {
+  // Acumular audits dentro de la tx; vaciarlos solo tras commit (hechos persistidos).
+  const pendingAudits: AuditRowChangeInput[] = [];
+  const txResult = await kysely.transaction().execute(async (trx) => {
     // Per-import advisory lock serializes concurrent workers reprocessing
     // the same row, even across replicas, without holding any row locks.
     // The lock is auto-released at transaction commit/rollback.
@@ -2560,9 +2562,12 @@ async function writeSkinTest(
       header,
       interpretation,
       resultHash,
-      parsed
+      parsed,
+      pendingAudits
     );
   });
+  await flushRowChangeAudits(pendingAudits);
+  return txResult;
 }
 
 async function writeSkinTestInTransaction(
@@ -2572,7 +2577,8 @@ async function writeSkinTestInTransaction(
   header: ParsedSkinTestWorkbook["header"],
   interpretation: NonNullable<ParsedSkinTestWorkbook["interpretation"]>,
   resultHash: string,
-  parsed: Pick<ParsedSkinTestWorkbook, "header" | "interpretation" | "results">
+  parsed: Pick<ParsedSkinTestWorkbook, "header" | "interpretation" | "results">,
+  pendingAudits: AuditRowChangeInput[]
 ): Promise<void> {
   // Atomic upsert keyed on the unique source_import_id. The advisory
   // lock above already serializes per-import; the upsert is belt-and-
@@ -2656,9 +2662,10 @@ async function writeSkinTestInTransaction(
   // Auditar reproceso que cambia el contenido (old != null y hash distinto).
   // El batch de results hace DELETE+INSERT (siempre old NULL a nivel fila), así
   // que el cambio se detecta en el result_hash del padre clinical_skin_tests.
+  // Acumular; se vacía DESPUÉS del commit (auditar hechos persistidos).
   const head = upserted.rows[0];
   if (head && head.old_result_hash != null && head.old_result_hash !== head.new_result_hash) {
-    await auditRowChange({
+    pendingAudits.push({
       kind: "IMPORT_UPSERT",
       resource: "clinical_skin_test",
       resourceId: skinTestId,
