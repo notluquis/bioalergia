@@ -15937,6 +15937,10 @@ export class SchemaType implements SchemaDef {
                 WA_CONTACT_BLOCK: "WA_CONTACT_BLOCK",
                 WA_CONTACT_UNBLOCK: "WA_CONTACT_UNBLOCK",
                 SETTINGS_UPDATE: "SETTINGS_UPDATE",
+                DATA_UPDATE: "DATA_UPDATE",
+                APPOINTMENT_CHANGE: "APPOINTMENT_CHANGE",
+                IMPORT_UPSERT: "IMPORT_UPSERT",
+                FINANCIAL_CHANGE: "FINANCIAL_CHANGE",
                 OTHER: "OTHER"
             }
         },

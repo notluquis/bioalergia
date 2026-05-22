@@ -29,6 +29,10 @@ export type AuditEventKind =
   | "WA_CONTACT_BLOCK"
   | "WA_CONTACT_UNBLOCK"
   | "SETTINGS_UPDATE"
+  | "DATA_UPDATE"
+  | "APPOINTMENT_CHANGE"
+  | "IMPORT_UPSERT"
+  | "FINANCIAL_CHANGE"
   | "OTHER";
 
 export type AuditInput = {

@@ -1,5 +1,6 @@
 import { db, type JsonValue } from "@finanzas/db";
 
+import { auditRowChange } from "../audit-diff.ts";
 import { parseDoctoraliaDateTime } from "./doctoralia-date-parser.ts";
 import type {
   DoctoraliaAppointment,
@@ -131,6 +132,15 @@ async function upsertAppointment(
     console.log(
       `[DoctoraliaSync] appointment ${appointment.id} updated (${appointment.title} @ ${appointment.start})`
     );
+    // Auditar cambios de estado/horario de la cita (best-effort, no rompe el sync).
+    await auditRowChange({
+      kind: "APPOINTMENT_CHANGE",
+      resource: "doctoralia_calendar_appointment",
+      resourceId: existing.id,
+      oldRow: existing as Record<string, unknown>,
+      newRow: { ...existing, ...data } as Record<string, unknown>,
+      fields: ["startAt", "endAt", "status", "attendance", "followUpDate"],
+    });
     return "updated";
   }
 
