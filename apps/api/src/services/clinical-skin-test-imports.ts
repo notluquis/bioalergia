@@ -1,4 +1,5 @@
 import { kysely } from "@finanzas/db";
+import { auditRowChange } from "../lib/audit-diff.ts";
 import type { Transaction } from "kysely";
 import type { SchemaType } from "@finanzas/db/schema";
 import { createId } from "@paralleldrive/cuid2";
@@ -2579,7 +2580,11 @@ async function writeSkinTestInTransaction(
   // RETURNING id keeps the existing row's primary key when present so
   // child clinical_skin_test_results FKs stay valid.
   const candidateSkinTestId = createId();
-  const upserted = await sql<{ id: string }>`
+  const upserted = await sql<{
+    id: string;
+    old_result_hash: null | string;
+    new_result_hash: string;
+  }>`
     INSERT INTO clinical_skin_tests (
       id,
       clinical_series_id,
@@ -2642,9 +2647,25 @@ async function writeSkinTestInTransaction(
       result_hash = EXCLUDED.result_hash,
       raw_header = EXCLUDED.raw_header,
       updated_at = now()
-    RETURNING id
+    RETURNING id,
+      old.result_hash AS old_result_hash,
+      new.result_hash AS new_result_hash
   `.execute(trx);
   const skinTestId = upserted.rows[0]?.id ?? candidateSkinTestId;
+
+  // Auditar reproceso que cambia el contenido (old != null y hash distinto).
+  // El batch de results hace DELETE+INSERT (siempre old NULL a nivel fila), así
+  // que el cambio se detecta en el result_hash del padre clinical_skin_tests.
+  const head = upserted.rows[0];
+  if (head && head.old_result_hash != null && head.old_result_hash !== head.new_result_hash) {
+    await auditRowChange({
+      kind: "IMPORT_UPSERT",
+      resource: "clinical_skin_test",
+      resourceId: skinTestId,
+      oldRow: { result_hash: head.old_result_hash },
+      newRow: { result_hash: head.new_result_hash },
+    });
+  }
   // Drop stale result rows whose (section, code, allergen_name) no
   // longer appear in the freshly parsed payload. The per-result UPSERT
   // below covers updates and inserts; explicit cleanup covers removals.
