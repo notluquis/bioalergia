@@ -1,20 +1,15 @@
-import type { Shipment } from "@finanzas/db";
 import { db } from "@finanzas/db";
+import { shipmentSchema } from "@finanzas/orpc-contracts/shipments";
 import { Decimal } from "decimal.js";
 
-type SerializedShipment = Omit<
-  Shipment,
-  "cashOnDelivery" | "declaredValue" | "weight" | "height" | "width" | "length"
-> & {
-  cashOnDelivery: number;
-  declaredValue: number;
-  weight: number;
-  height: number;
-  width: number;
-  length: number;
-};
+// Fila real del modelo (para el spread). El cliente ZenStack colapsado
+// (`as unknown as ClientContract<SchemaType>` en client.ts) no materializa los
+// campos del row en el tipo de findMany, así que serializeShipment castea al
+// shape del contrato (la autoridad del API), que el runtime sí cumple.
+type ShipmentRow = Awaited<ReturnType<typeof db.shipment.findMany>>[number];
+type SerializedShipment = z.infer<typeof shipmentSchema>;
 
-function serializeShipment(s: Shipment): SerializedShipment {
+function serializeShipment(s: ShipmentRow): SerializedShipment {
   return {
     ...s,
     cashOnDelivery: Number(s.cashOnDelivery),
@@ -24,7 +19,7 @@ function serializeShipment(s: Shipment): SerializedShipment {
     width: Number(s.width),
     length: Number(s.length),
     additionalServicesCost: Number(s.additionalServicesCost ?? 0),
-  };
+  } as SerializedShipment;
 }
 import { chilexpressConfig } from "../lib/config.ts";
 import {
