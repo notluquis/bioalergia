@@ -330,6 +330,7 @@ export const patientsContract = {
             patientRut: z.string().nullable(),
             skinTestsCount: z.number(),
             eventsCount: z.number(),
+            clinicalDate: z.string().nullable(),
             createdAt: z.string(),
           })
         ),

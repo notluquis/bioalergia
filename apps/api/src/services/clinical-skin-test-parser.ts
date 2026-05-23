@@ -566,8 +566,11 @@ function extractResultRowsFromRow(
     const nearCells = byMetric.sawHeader
       ? numericCells
       : numericCells.filter((c) => c.col <= cell.col + 3);
-    const papule = byMetric.sawHeader ? byMetric.papule : (nearCells[0]?.text ?? null);
-    const erythema = byMetric.sawHeader ? byMetric.erythema : (nearCells[1]?.text ?? null);
+    const fallback = byMetric.sawHeader
+      ? null
+      : assignFallbackMetricsFromTableContext(ws, rowNumber, cell, nameCell, nearCells);
+    const papule = byMetric.sawHeader ? byMetric.papule : fallback?.papule;
+    const erythema = byMetric.sawHeader ? byMetric.erythema : fallback?.erythema;
     if (!byMetric.sawHeader && nearCells.length === 0) continue;
     const section = isControl
       ? "Controles"
@@ -591,6 +594,70 @@ function extractResultRowsFromRow(
     });
   }
   return results;
+}
+
+function assignFallbackMetricsFromTableContext(
+  ws: XLSX.WorkSheet,
+  rowNumber: number,
+  codeCell: { col: number; text: string },
+  nameCell: { col: number; text: string },
+  nearCells: Array<{ col: number; text: string }>
+): { erythema: null | string; papule: null | string } | null {
+  if (nearCells.length === 0) return null;
+  if (nearCells.length > 1) {
+    return { erythema: nearCells[1]?.text ?? null, papule: nearCells[0]?.text ?? null };
+  }
+
+  const only = nearCells[0];
+  if (!only) return null;
+  if (
+    only.col >= nameCell.col + 2 &&
+    (hasNeighborRowsWithTwoMetricColumns(ws, rowNumber, codeCell.col, nameCell.col) ||
+      hasMetricTableHeader(ws, rowNumber, nameCell.col))
+  ) {
+    return { erythema: only.text, papule: null };
+  }
+
+  return { erythema: null, papule: only.text };
+}
+
+function hasNeighborRowsWithTwoMetricColumns(
+  ws: XLSX.WorkSheet,
+  rowNumber: number,
+  codeCol: number,
+  nameCol: number
+): boolean {
+  const papuleCol = nameCol + 1;
+  const erythemaCol = nameCol + 2;
+  for (let row = Math.max(1, rowNumber - 8); row <= rowNumber + 8; row += 1) {
+    if (row === rowNumber) continue;
+    const code = getWorksheetCellText(ws, row, codeCol);
+    const name = getWorksheetCellText(ws, row, nameCol);
+    if (!normalizeCode(code) || !name || isResultValue(name)) continue;
+    if (
+      isResultValue(getWorksheetCellText(ws, row, papuleCol)) &&
+      isResultValue(getWorksheetCellText(ws, row, erythemaCol))
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function hasMetricTableHeader(ws: XLSX.WorkSheet, rowNumber: number, nameCol: number): boolean {
+  for (let row = rowNumber - 1; row >= Math.max(1, rowNumber - 8); row -= 1) {
+    const first = getWorksheetCellText(ws, row, nameCol + 1).toUpperCase();
+    const second = getWorksheetCellText(ws, row, nameCol + 2).toUpperCase();
+    if (first === "MM" || second === "MM") return true;
+    if (first === "P" || second === "E") return true;
+  }
+  return false;
+}
+
+function getWorksheetCellText(ws: XLSX.WorkSheet, row: number, col: number): string {
+  const addr = XLSX.utils.encode_cell({ r: row - 1, c: col - 1 });
+  const cell = ws[addr] as XLSX.CellObject | undefined;
+  return cell && cell.t !== "z" ? normalizeText(getCellText(cell)) : "";
 }
 
 function extractAinesResultFromRow(

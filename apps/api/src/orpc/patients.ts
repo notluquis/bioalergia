@@ -755,6 +755,7 @@ const patientsORPCRouterBase = {
             patientRut: z.string().nullable(),
             skinTestsCount: z.number(),
             eventsCount: z.number(),
+            clinicalDate: z.string().nullable(),
             createdAt: z.string(),
           })
         ),
@@ -772,21 +773,48 @@ const patientsORPCRouterBase = {
           patientName: true,
           patientRut: true,
           createdAt: true,
+          skinTests: {
+            orderBy: { testDate: "asc" },
+            take: 1,
+            select: { testDate: true },
+          },
+          events: {
+            orderBy: [{ startDate: "asc" }, { startDateTime: "asc" }, { id: "asc" }],
+            take: 1,
+            select: {
+              endDate: true,
+              endDateTime: true,
+              startDate: true,
+              startDateTime: true,
+            },
+          },
           _count: { select: { skinTests: true, events: true } },
         },
       });
       return {
-        items: series.map((s) => ({
-          id: s.id,
-          kind: s.kind,
-          status: s.status,
-          displayName: s.displayName,
-          patientName: s.patientName,
-          patientRut: s.patientRut,
-          skinTestsCount: s._count.skinTests,
-          eventsCount: s._count.events,
-          createdAt: s.createdAt.toISOString(),
-        })),
+        items: series.map((s) => {
+          const event = s.events[0] ?? null;
+          const eventDate = event
+            ? dayjs(event.startDate ?? event.startDateTime ?? event.endDate ?? event.endDateTime)
+                .tz(TIMEZONE)
+                .format("YYYY-MM-DD")
+            : null;
+          const skinTestDate = s.skinTests[0]?.testDate
+            ? dayjs(s.skinTests[0].testDate).format("YYYY-MM-DD")
+            : null;
+          return {
+            id: s.id,
+            kind: s.kind,
+            status: s.status,
+            displayName: s.displayName,
+            patientName: s.patientName,
+            patientRut: s.patientRut,
+            skinTestsCount: s._count.skinTests,
+            eventsCount: s._count.events,
+            clinicalDate: skinTestDate ?? eventDate,
+            createdAt: s.createdAt.toISOString(),
+          };
+        }),
       };
     }),
 

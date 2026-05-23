@@ -288,6 +288,72 @@ describe("clinical skin test parser", () => {
     expect(parsed.results).toHaveLength(10);
   });
 
+  it("keeps lone right-side panel values in the E column", async () => {
+    const buf = makeBuffer("Test", {
+      D4: s("MULTITEST CUTÁNEO"),
+      D5: s("PANEL 1, 2,3 Y ACAROS"),
+      B7: s("NOMBRE : Isaac Chacon chavez"),
+      H7: s("EDAD"),
+      I7: s(":"),
+      J7: s("9 años"),
+      B8: s("RUT"),
+      C8: s(": 25.416.248-5"),
+      H8: s("FECHA"),
+      I8: s(":"),
+      J8: s("20-03-2026"),
+      H13: s("PANEL 3"),
+      I12: s("mm"),
+      G14: s("G1"),
+      H14: s("GRAMA COMUN"),
+      I14: n(3),
+      J14: n(9),
+      G15: s("G2"),
+      H15: s("CENTENO"),
+      J15: n(10),
+      G16: s("G3"),
+      H16: s("BALLICO"),
+      I16: n(6),
+      J16: n(10),
+      G17: s("G4"),
+      H17: s("TRIGO"),
+      J17: n(9),
+      G18: s("G5"),
+      H18: s("POA PRATENSIS"),
+      I18: n(6),
+      J18: n(21),
+      G19: s("G6"),
+      H19: s("PHLEUM PRATENSE"),
+      J19: n(11),
+    });
+
+    const parsed = await parseSkinTestWorkbookBuffer(buf);
+
+    expect(parsed.results).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          allergenName: "CENTENO",
+          code: "G2",
+          erythemaMm: 10,
+          papuleMm: null,
+          rawErythema: "10",
+          rawPapule: null,
+        }),
+        expect.objectContaining({
+          allergenName: "TRIGO",
+          code: "G4",
+          erythemaMm: 9,
+          papuleMm: null,
+        }),
+        expect.objectContaining({
+          allergenName: "PHLEUM PRATENSE",
+          code: "G6",
+          erythemaMm: 11,
+          papuleMm: null,
+        }),
+      ])
+    );
+  });
+
   it("extracts interpretation notes and non-conclusive hyperreactivity flags", async () => {
     const buf = makeBuffer("Test", {
       B2: s("PRICKTEST CUTANEO"),

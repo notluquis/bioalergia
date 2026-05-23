@@ -74,9 +74,10 @@ const columns: ColumnDef<Series>[] = [
     cell: ({ row }) => <span className="text-sm">{row.original.skinTestsCount}</span>,
   },
   {
-    header: "Creada",
-    accessorKey: "createdAt",
-    cell: ({ row }) => dayjs(row.original.createdAt).format("DD/MM/YYYY"),
+    header: "Fecha",
+    accessorKey: "clinicalDate",
+    cell: ({ row }) =>
+      row.original.clinicalDate ? dayjs(row.original.clinicalDate).format("DD/MM/YYYY") : "—",
   },
 ];
 
