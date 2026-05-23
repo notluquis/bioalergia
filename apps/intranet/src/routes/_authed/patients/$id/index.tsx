@@ -8,7 +8,6 @@ import {
   Calendar,
   ChevronLeft,
   ClipboardList,
-  Clock,
   DollarSign,
   Download,
   ExternalLink,
@@ -20,7 +19,7 @@ import {
   Trash2,
   User,
 } from "lucide-react";
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
 import { AddressList } from "@/features/addresses/components/AddressList";
 import { fetchPatient } from "@/features/patients/api";
@@ -102,6 +101,7 @@ function PatientDetailsPage() {
 
   const person = patient.person;
   const age = getPatientAge(patient.birthDate);
+  const patientName = getPatientFullName(person);
 
   return (
     <section className="mx-auto max-w-6xl space-y-6">
@@ -111,62 +111,13 @@ function PatientDetailsPage() {
         id={id}
         navigate={navigate}
         person={person}
+        patientName={patientName}
       />
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        {/* Sidebar: Info rápida */}
-        <div className="space-y-6 lg:col-span-1">
-          <Card className="overflow-hidden border-none bg-background shadow-sm" data-phi-block>
-            <Card.Content className="p-0">
-              <div className="flex flex-col items-center bg-primary/5 p-6">
-                <div className="mb-3 flex items-center justify-center rounded-full bg-primary/10 text-primary size-20">
-                  <User size={40} />
-                </div>
-                <h3 className="text-center font-bold">Ficha Clínica #{patient.id}</h3>
-                <span className="text-default-400 text-xs">
-                  Registrado el {dayjs(patient.createdAt).format("DD/MM/YYYY")}
-                </span>
-              </div>
+      <div className="space-y-6">
+        <PatientSummaryCard patient={patient} person={person} />
 
-              <div className="space-y-4 p-6">
-                <div className="space-y-3">
-                  <div className="flex items-center gap-3 text-sm">
-                    <Mail size={16} className="text-default-300" />
-                    <span className="text-default-700">{person.email || "Sin correo"}</span>
-                  </div>
-                  <div className="flex items-center gap-3 text-sm">
-                    <Phone size={16} className="text-default-300" />
-                    <span className="font-mono text-default-700 text-sm">
-                      {person.phone || "Sin teléfono"}
-                    </span>
-                  </div>
-                  <div className="border-default-100 border-t pt-3">
-                    <AddressList personId={person.id} />
-                  </div>
-                  <div className="flex items-center gap-3 border-default-100 border-t pt-3 text-sm">
-                    <Clock size={16} className="text-default-300" />
-                    <span className="text-default-600">Grupo Sanguíneo: </span>
-                    <span className="font-bold text-primary">{patient.bloodType || "DA"}</span>
-                  </div>
-                </div>
-
-                <Separator className="my-2" />
-
-                <div className="space-y-2">
-                  <h4 className="font-bold text-default-300 text-xs uppercase tracking-wider">
-                    Notas
-                  </h4>
-                  <p className="rounded-lg bg-default-50/30 p-3 text-default-600 text-sm italic">
-                    {patient.notes || "No hay notas clínicas registradas."}
-                  </p>
-                </div>
-              </div>
-            </Card.Content>
-          </Card>
-        </div>
-
-        {/* Main: Tabs Content */}
-        <div className="lg:col-span-2">
+        <div>
           <Tabs
             aria-label="Patient details tabs"
             selectedKey={activeTab}
@@ -226,6 +177,11 @@ function PatientDetailsPage() {
                   <span>Documentos</span>
                   <Tabs.Indicator />
                 </Tabs.Tab>
+                <Tabs.Tab id="skin-tests" className="min-w-max gap-2 font-semibold">
+                  <FlaskConical size={18} />
+                  <span>Exámenes</span>
+                  <Tabs.Indicator />
+                </Tabs.Tab>
                 <Tabs.Tab id="info" className="min-w-max gap-2 font-semibold">
                   <User size={18} />
                   <span>Info Detallada</span>
@@ -234,11 +190,6 @@ function PatientDetailsPage() {
                 <Tabs.Tab id="clinical-series" className="min-w-max gap-2 font-semibold">
                   <Activity size={18} />
                   <span>Series Clínicas</span>
-                  <Tabs.Indicator />
-                </Tabs.Tab>
-                <Tabs.Tab id="skin-tests" className="min-w-max gap-2 font-semibold">
-                  <FlaskConical size={18} />
-                  <span>Tests Cutáneos</span>
                   <Tabs.Indicator />
                 </Tabs.Tab>
                 <Tabs.Tab id="clinical-records" className="min-w-max gap-2 font-semibold">
@@ -483,6 +434,72 @@ function PatientNotFoundState({ onBack }: { onBack: () => void }) {
   );
 }
 
+function PatientSummaryCard({ patient, person }: { patient: Patient; person: Person }) {
+  return (
+    <Card className="border-none bg-background shadow-sm" data-phi-block>
+      <Card.Header className="pb-2">
+        <div>
+          <Card.Title className="text-base">Datos del paciente</Card.Title>
+          <Card.Description>Contacto, dirección y notas clínicas</Card.Description>
+        </div>
+      </Card.Header>
+      <Card.Content className="grid gap-5 p-5 pt-0">
+        <div className="grid gap-4 md:grid-cols-4">
+          <PatientInfoLine
+            icon={<Calendar size={16} />}
+            label="Nacimiento"
+            value={
+              patient.birthDate
+                ? dayjs(patient.birthDate, "YYYY-MM-DD").format("DD/MM/YYYY")
+                : "Sin fecha"
+            }
+          />
+          <PatientInfoLine
+            icon={<Calendar size={16} />}
+            label="Registro"
+            value={dayjs(patient.createdAt).format("DD/MM/YYYY")}
+          />
+          <PatientInfoLine
+            icon={<Mail size={16} />}
+            label="Correo"
+            value={person.email || "Sin correo"}
+          />
+          <PatientInfoLine
+            icon={<Phone size={16} />}
+            label="Teléfono"
+            value={person.phone || "Sin teléfono"}
+          />
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          <Chip size="sm" variant="soft">
+            <Chip.Label>Grupo {patient.bloodType || "sin registro"}</Chip.Label>
+          </Chip>
+        </div>
+
+        <Separator />
+
+        <div className="grid gap-4 lg:grid-cols-2">
+          <div className="space-y-2">
+            <Card.Title className="text-sm">Dirección</Card.Title>
+            <AddressList personId={person.id} />
+          </div>
+          <div className="space-y-2">
+            <Card.Title className="text-sm">Notas</Card.Title>
+            <Card.Description className="leading-5">
+              {patient.notes || "No hay notas clínicas registradas."}
+            </Card.Description>
+          </div>
+        </div>
+      </Card.Content>
+    </Card>
+  );
+}
+
+function getPatientFullName(person: Person) {
+  return [person.names, person.fatherName, person.motherName].filter(Boolean).join(" ");
+}
+
 function getPatientAge(birthDate: null | string | undefined) {
   if (!birthDate) {
     return null;
@@ -490,17 +507,39 @@ function getPatientAge(birthDate: null | string | undefined) {
   return dayjs().diff(dayjs(birthDate, "YYYY-MM-DD"), "year");
 }
 
+function PatientInfoLine({
+  icon,
+  label,
+  value,
+}: {
+  icon: ReactNode;
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="flex items-start gap-3 text-sm">
+      <span className="mt-0.5 text-default-300">{icon}</span>
+      <div className="min-w-0 flex-1">
+        <p className="text-default-400 text-xs">{label}</p>
+        <p className="truncate text-default-700">{value}</p>
+      </div>
+    </div>
+  );
+}
+
 function PatientDetailsHeader({
   age,
   birthDate,
   id,
   navigate,
+  patientName,
   person,
 }: {
   age: null | number;
   birthDate: null | string | undefined;
   id: string;
   navigate: ReturnType<typeof useNavigate>;
+  patientName: string;
   person: Person;
 }) {
   const goBackToPatients = () => {
@@ -526,21 +565,36 @@ function PatientDetailsHeader({
 
   return (
     <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-      <div className="flex items-center gap-4">
+      <div className="flex min-w-0 items-center gap-4">
         <Button
-          className="min-w-0 rounded-full p-0 size-10"
+          aria-label="Volver a pacientes"
+          className="shrink-0"
+          isIconOnly
           onPress={goBackToPatients}
           variant="outline"
         >
           <ChevronLeft size={24} />
         </Button>
-        <div className="flex items-center gap-2" data-phi>
-          <span className="font-mono text-default-500 text-sm">{person.rut}</span>
-          {age !== null ? (
-            <div className="rounded-full bg-primary/10 px-2 py-0.5 font-medium text-primary text-xs">
-              {age} años
-            </div>
-          ) : null}
+        <div className="min-w-0 space-y-2" data-phi>
+          <div className="min-w-0">
+            <h1 className="truncate font-semibold text-2xl text-foreground">{patientName}</h1>
+            <p className="text-default-500 text-sm">Ficha clínica #{id}</p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Chip size="sm" variant="soft" color="accent">
+              <Chip.Label>{person.rut ?? "Sin RUT"}</Chip.Label>
+            </Chip>
+            <Chip size="sm" variant="soft">
+              <Chip.Label>
+                {birthDate ? dayjs(birthDate, "YYYY-MM-DD").format("DD/MM/YYYY") : "Sin fecha nac."}
+              </Chip.Label>
+            </Chip>
+            {age !== null ? (
+              <Chip size="sm" variant="soft">
+                <Chip.Label>{age} años</Chip.Label>
+              </Chip>
+            ) : null}
+          </div>
         </div>
       </div>
       <div className="flex flex-wrap gap-2">
