@@ -1636,6 +1636,51 @@ export class SchemaType implements SchemaDef {
                     type: "String",
                     optional: true
                 },
+                merchantCategoryCode: {
+                    name: "merchantCategoryCode",
+                    type: "String",
+                    optional: true
+                },
+                applicationId: {
+                    name: "applicationId",
+                    type: "String",
+                    optional: true
+                },
+                segmentDetail: {
+                    name: "segmentDetail",
+                    type: "String",
+                    optional: true
+                },
+                authorizationCode: {
+                    name: "authorizationCode",
+                    type: "String",
+                    optional: true
+                },
+                cardEntryMode: {
+                    name: "cardEntryMode",
+                    type: "String",
+                    optional: true
+                },
+                authenticatedPayer: {
+                    name: "authenticatedPayer",
+                    type: "String",
+                    optional: true
+                },
+                transactionDateShort: {
+                    name: "transactionDateShort",
+                    type: "String",
+                    optional: true
+                },
+                settlementDateShort: {
+                    name: "settlementDateShort",
+                    type: "String",
+                    optional: true
+                },
+                moneyReleaseDateShort: {
+                    name: "moneyReleaseDateShort",
+                    type: "String",
+                    optional: true
+                },
                 createdAt: {
                     name: "createdAt",
                     type: "DateTime",
@@ -1949,6 +1994,46 @@ export class SchemaType implements SchemaDef {
                 isReleased: {
                     name: "isReleased",
                     type: "Boolean",
+                    optional: true
+                },
+                countryIssuer: {
+                    name: "countryIssuer",
+                    type: "String",
+                    optional: true
+                },
+                merchantCategoryCode: {
+                    name: "merchantCategoryCode",
+                    type: "String",
+                    optional: true
+                },
+                cardEntryMode: {
+                    name: "cardEntryMode",
+                    type: "String",
+                    optional: true
+                },
+                authorizationCode: {
+                    name: "authorizationCode",
+                    type: "String",
+                    optional: true
+                },
+                applicationId: {
+                    name: "applicationId",
+                    type: "String",
+                    optional: true
+                },
+                segmentDetail: {
+                    name: "segmentDetail",
+                    type: "String",
+                    optional: true
+                },
+                dateShort: {
+                    name: "dateShort",
+                    type: "String",
+                    optional: true
+                },
+                transactionApprovalDateShort: {
+                    name: "transactionApprovalDateShort",
+                    type: "String",
                     optional: true
                 },
                 createdAt: {

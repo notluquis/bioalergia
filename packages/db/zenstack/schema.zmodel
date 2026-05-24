@@ -551,7 +551,20 @@ model SettlementTransaction {
   // Other wallets/banks
   poiWalletName        String?           @map("poi_wallet_name") @db.VarChar(200)
   poiBankName          String?           @map("poi_bank_name") @db.VarChar(200)
-  
+
+  // Card issuer / acquiring detail
+  merchantCategoryCode String?           @map("merchant_category_code")
+  applicationId        String?           @map("application_id")
+  segmentDetail        String?           @map("segment_detail")
+  authorizationCode    String?           @map("authorization_code")
+  cardEntryMode        String?           @map("card_entry_mode")
+  authenticatedPayer   String?           @map("authenticated_payer")
+
+  // Short dates (date-only display form from MP report)
+  transactionDateShort String?           @map("transaction_date_short")
+  settlementDateShort  String?           @map("settlement_date_short")
+  moneyReleaseDateShort String?          @map("money_release_date_short")
+
   // Metadata
   createdAt            DateTime          @default(now()) @map("created_at")
   updatedAt            DateTime          @default(now()) @updatedAt @map("updated_at")
@@ -650,6 +663,18 @@ model ReleaseTransaction {
   orderMp                 String?           @map("order_mp")
   purchaseId              String?           @map("purchase_id")
   isReleased              Boolean?          @map("is_released")
+
+  // Card issuer / acquiring detail
+  countryIssuer           String?           @map("country_issuer")
+  merchantCategoryCode    String?           @map("merchant_category_code")
+  cardEntryMode           String?           @map("card_entry_mode")
+  authorizationCode       String?           @map("authorization_code")
+  applicationId           String?           @map("application_id")
+  segmentDetail           String?           @map("segment_detail")
+
+  // Short dates (date-only display form from MP report)
+  dateShort               String?           @map("date_short")
+  transactionApprovalDateShort String?      @map("transaction_approval_date_short")
 
   createdAt               DateTime          @default(now()) @map("created_at")
   updatedAt               DateTime          @default(now()) @updatedAt @map("updated_at")

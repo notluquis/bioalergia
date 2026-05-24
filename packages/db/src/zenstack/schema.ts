@@ -1958,6 +1958,60 @@ export class SchemaType implements SchemaDef {
                     optional: true,
                     attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("poi_bank_name") }] }, { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(200) }] }] as readonly AttributeApplication[]
                 },
+                merchantCategoryCode: {
+                    name: "merchantCategoryCode",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("merchant_category_code") }] }] as readonly AttributeApplication[]
+                },
+                applicationId: {
+                    name: "applicationId",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("application_id") }] }] as readonly AttributeApplication[]
+                },
+                segmentDetail: {
+                    name: "segmentDetail",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("segment_detail") }] }] as readonly AttributeApplication[]
+                },
+                authorizationCode: {
+                    name: "authorizationCode",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("authorization_code") }] }] as readonly AttributeApplication[]
+                },
+                cardEntryMode: {
+                    name: "cardEntryMode",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("card_entry_mode") }] }] as readonly AttributeApplication[]
+                },
+                authenticatedPayer: {
+                    name: "authenticatedPayer",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("authenticated_payer") }] }] as readonly AttributeApplication[]
+                },
+                transactionDateShort: {
+                    name: "transactionDateShort",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("transaction_date_short") }] }] as readonly AttributeApplication[]
+                },
+                settlementDateShort: {
+                    name: "settlementDateShort",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("settlement_date_short") }] }] as readonly AttributeApplication[]
+                },
+                moneyReleaseDateShort: {
+                    name: "moneyReleaseDateShort",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("money_release_date_short") }] }] as readonly AttributeApplication[]
+                },
                 createdAt: {
                     name: "createdAt",
                     type: "DateTime",
@@ -2337,6 +2391,54 @@ export class SchemaType implements SchemaDef {
                     type: "Boolean",
                     optional: true,
                     attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("is_released") }] }] as readonly AttributeApplication[]
+                },
+                countryIssuer: {
+                    name: "countryIssuer",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("country_issuer") }] }] as readonly AttributeApplication[]
+                },
+                merchantCategoryCode: {
+                    name: "merchantCategoryCode",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("merchant_category_code") }] }] as readonly AttributeApplication[]
+                },
+                cardEntryMode: {
+                    name: "cardEntryMode",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("card_entry_mode") }] }] as readonly AttributeApplication[]
+                },
+                authorizationCode: {
+                    name: "authorizationCode",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("authorization_code") }] }] as readonly AttributeApplication[]
+                },
+                applicationId: {
+                    name: "applicationId",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("application_id") }] }] as readonly AttributeApplication[]
+                },
+                segmentDetail: {
+                    name: "segmentDetail",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("segment_detail") }] }] as readonly AttributeApplication[]
+                },
+                dateShort: {
+                    name: "dateShort",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("date_short") }] }] as readonly AttributeApplication[]
+                },
+                transactionApprovalDateShort: {
+                    name: "transactionApprovalDateShort",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("transaction_approval_date_short") }] }] as readonly AttributeApplication[]
                 },
                 createdAt: {
                     name: "createdAt",
