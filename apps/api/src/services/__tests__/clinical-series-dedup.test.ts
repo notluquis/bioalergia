@@ -207,6 +207,42 @@ describe("detectDuplicateSeries — same RUT, different name (subset)", () => {
     });
   });
 
+  it("detects same-day skin-test imports split by exact name and close RUT typo", async () => {
+    mockFindMany.mockResolvedValueOnce([
+      makeSeries(8114, "FELIPE CANDIA GONZALEZ", "26.536.164-7", "SKIN_TEST", 0),
+      makeSeries(6801, "FELIPE CANDIA GONZALEZ", "23.536.164-7", "SKIN_TEST", 0),
+    ]);
+    mockFindSkinTests.mockResolvedValueOnce([
+      { clinicalSeriesId: 8114, testDate: new Date("2021-06-04T00:00:00.000Z") },
+      { clinicalSeriesId: 6801, testDate: new Date("2021-06-04T00:00:00.000Z") },
+    ]);
+
+    const dupes = await detectDuplicateSeries();
+
+    expect(dupes).toHaveLength(1);
+    expect(dupes[0]).toMatchObject({
+      confidence: "high",
+      kind: "SKIN_TEST",
+      reason: "Mismo nombre, RUT cercano y fecha clínica entre exámenes",
+    });
+  });
+
+  it("does not use close-RUT skin-test import pairing when clinical dates differ", async () => {
+    mockFindMany.mockResolvedValueOnce([
+      makeSeries(9929, "ISIDORA HORMAZABAL", "23.022.624-5", "SKIN_TEST", 0),
+      makeSeries(6662, "ISIDORA HORMAZABAL", "23.022.625-5", "SKIN_TEST", 0),
+    ]);
+    mockFindSkinTests.mockResolvedValueOnce([
+      { clinicalSeriesId: 9929, testDate: new Date("2017-11-16T00:00:00.000Z") },
+      { clinicalSeriesId: 6662, testDate: new Date("2017-11-13T00:00:00.000Z") },
+    ]);
+
+    const dupes = await detectDuplicateSeries();
+
+    expect(dupes).toHaveLength(1);
+    expect(dupes[0]?.reason).toBe("Mismo nombre de paciente (ISIDORA HORMAZABAL)");
+  });
+
   it("does NOT merge different RUTs even when names are similar", async () => {
     mockFindMany.mockResolvedValueOnce([
       makeSeries(1, "juan perez garcia", "12345678-5", "SUBCUTANEOUS_TREATMENT", 3),

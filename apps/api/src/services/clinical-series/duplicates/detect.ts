@@ -10,6 +10,7 @@ import {
   scoreClinicalSeriesIdentityQuality,
 } from "../matching/compare.ts";
 import { isLikelyPersonName, normalizeName } from "../normalization/names.ts";
+import { isCloseNormalizedRut } from "../normalization/rut.ts";
 import type { ClinicalSeriesDuplicate, ClinicalSeriesKind } from "../types.ts";
 
 function toDateKey(value: Date): string {
@@ -152,6 +153,9 @@ export async function detectDuplicateSeries(): Promise<ClinicalSeriesDuplicate[]
     return Boolean(leftRut && rightRut && leftRut === rightRut);
   };
 
+  const hasClosePrimaryPatientRut = (left: SeriesRow, right: SeriesRow): boolean =>
+    isCloseNormalizedRut(left.patientRut, right.patientRut);
+
   const hasSameNormalizedPatientName = (left: SeriesRow, right: SeriesRow): boolean => {
     if (!left.patientName || !right.patientName) return false;
     const leftName = normalizeName(left.patientName);
@@ -170,6 +174,12 @@ export async function detectDuplicateSeries(): Promise<ClinicalSeriesDuplicate[]
       (rightHasEvents && !rightHasSkinTests && !leftHasEvents && leftHasSkinTests)
     );
   };
+
+  const hasOnlySkinTestEvidence = (left: SeriesRow, right: SeriesRow): boolean =>
+    left._count.events === 0 &&
+    right._count.events === 0 &&
+    left.skinTests.length > 0 &&
+    right.skinTests.length > 0;
 
   const chooseClinicalEvidenceTarget = (left: SeriesRow, right: SeriesRow): SeriesRow => {
     if (left._count.events > 0 && right._count.events === 0) return left;
@@ -192,7 +202,14 @@ export async function detectDuplicateSeries(): Promise<ClinicalSeriesDuplicate[]
       const sameNameEventTestEvidence =
         hasComplementaryEventAndSkinTestEvidence(left, right) &&
         hasSameNormalizedPatientName(left, right);
-      if (!samePatientEvidence && !sameNameEventTestEvidence) continue;
+      const sameNameCloseRutSkinTestEvidence =
+        left.kind === "SKIN_TEST" &&
+        hasOnlySkinTestEvidence(left, right) &&
+        hasSameNormalizedPatientName(left, right) &&
+        hasClosePrimaryPatientRut(left, right);
+      if (!samePatientEvidence && !sameNameEventTestEvidence && !sameNameCloseRutSkinTestEvidence) {
+        continue;
+      }
       if (!hasSharedClinicalDate(left, right)) continue;
 
       const target = chooseClinicalEvidenceTarget(left, right);
@@ -201,9 +218,11 @@ export async function detectDuplicateSeries(): Promise<ClinicalSeriesDuplicate[]
         confidence: "high",
         kind: target.kind,
         patientName: target.patientName,
-        reason: samePatientEvidence
-          ? "Mismo paciente y misma fecha clínica entre evento y examen"
-          : "Mismo nombre y misma fecha clínica entre evento y examen",
+        reason: sameNameCloseRutSkinTestEvidence
+          ? "Mismo nombre, RUT cercano y fecha clínica entre exámenes"
+          : samePatientEvidence
+            ? "Mismo paciente y misma fecha clínica entre evento y examen"
+            : "Mismo nombre y misma fecha clínica entre evento y examen",
         sourceEventCount: src._count.events,
         sourceId: src.id,
         sourcePatientName: src.patientName,
