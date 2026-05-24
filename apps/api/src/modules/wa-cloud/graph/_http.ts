@@ -24,6 +24,23 @@ export async function getAccountForPhoneNumber(phoneNumberId: number) {
   return phone;
 }
 
+// Narrowing helper: callers that already hold a `phone` from
+// `getAccountForPhoneNumber` know the token is present (that function
+// throws otherwise), but TS still types `systemUserToken` as
+// `string | null` because it is reassigned from `decryptSecret`. This
+// returns the token as a non-null `string`, throwing with a clear
+// message if it is somehow absent — preserving the previous `!`
+// runtime behavior without a non-null assertion.
+export function requireSystemUserToken(phone: {
+  account: { systemUserToken: string | null };
+}): string {
+  const token = phone.account.systemUserToken;
+  if (!token) {
+    throw new Error("WaBusinessAccount sin systemUserToken — configura en Settings");
+  }
+  return token;
+}
+
 // Same decryption logic for the account-only callers (templates, flows,
 // analytics, media downloadUrl).
 export async function loadAccount(accountId: number) {

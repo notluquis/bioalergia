@@ -1,8 +1,32 @@
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { ORPCError, onError, os } from "@orpc/server";
 import { db } from "@finanzas/db";
-import { examReportsContract } from "@finanzas/orpc-contracts/exam-reports";
-import { z } from "zod";
+import {
+  allergenListInputSchema,
+  allergenListOutputSchema,
+  allergenAdminRowSchema,
+  clinicSettingsSchema,
+  clinicSettingsUpdateInputSchema,
+  conclusionTemplateSchema,
+  conclusionTemplateCreateInputSchema,
+  conclusionTemplateUpdateInputSchema,
+  emptyInputSchema,
+  examReportDetailSchema,
+  examReportCreateInputSchema,
+  examReportIdInputSchema,
+  examReportListInputSchema,
+  examReportListResponseSchema,
+  examReportUpdateInputSchema,
+  latestPatientControlsInputSchema,
+  latestPatientControlsOutputSchema,
+  listAllergensWithTagsInputSchema,
+  listAllergensWithTagsOutputSchema,
+  listTemplatesInputSchema,
+  examReportListTemplatesResponseSchema,
+  markGeneratedResponseSchema,
+  examReportOkResponseSchema,
+  updateAllergenTagsInputSchema,
+} from "@finanzas/orpc-contracts/exam-reports";
 
 import { applyExamReportUpdate } from "../services/exam-reports.ts";
 import { configureSuperjson } from "../lib/superjson-config.ts";
@@ -90,7 +114,26 @@ const reportDetailInclude = {
   },
 } as const;
 
-function serialiseDetail(r: any) {
+// Row types derived from the actual ZenStack query shapes used below so
+// the serialisers are fully typed (no `any`). The generic
+// `findUnique<{ include }>` overload also requires `where`, so we capture
+// the row type from helper calls that pass the full args object — TS
+// infers the same payload the runtime queries return. The serialisers
+// convert Decimal columns (`{ toNumber() }`) → number and Date → ISO string.
+const _reportDetailRow = () =>
+  db.examReport.findUniqueOrThrow({ where: { id: 0 }, include: reportDetailInclude });
+type ReportDetailRow = Awaited<ReturnType<typeof _reportDetailRow>>;
+
+const _reportListRow = () =>
+  db.examReport.findMany({ select: reportListSelect });
+type ReportListRow = Awaited<ReturnType<typeof _reportListRow>>[number];
+
+type SectionRow = ReportDetailRow["sections"][number];
+type ReactionRow = SectionRow["reactions"][number];
+type TemplateRow = Awaited<ReturnType<typeof db.conclusionTemplate.findFirst>>;
+type SettingsRow = NonNullable<Awaited<ReturnType<typeof db.clinicSettings.findUnique>>>;
+
+function serialiseDetail(r: ReportDetailRow) {
   return {
     ...r,
     histamineMm: decimal(r.histamineMm),
@@ -104,9 +147,9 @@ function serialiseDetail(r: any) {
         ? r.patient.birthDate.toISOString().slice(0, 10)
         : null,
     },
-    sections: (r.sections ?? []).map((s: any) => ({
+    sections: (r.sections ?? []).map((s: SectionRow) => ({
       ...s,
-      reactions: (s.reactions ?? []).map((rx: any) => ({
+      reactions: (s.reactions ?? []).map((rx: ReactionRow) => ({
         ...rx,
         papuleMm: decimal(rx.papuleMm),
       })),
@@ -114,7 +157,7 @@ function serialiseDetail(r: any) {
   };
 }
 
-function serialiseList(r: any) {
+function serialiseList(r: ReportListRow) {
   return {
     ...r,
     generatedAt: r.generatedAt ? r.generatedAt.toISOString() : null,
@@ -123,7 +166,7 @@ function serialiseList(r: any) {
   };
 }
 
-function serialiseTemplate(t: any) {
+function serialiseTemplate(t: NonNullable<TemplateRow>) {
   return {
     ...t,
     createdAt: t.createdAt.toISOString(),
@@ -131,7 +174,7 @@ function serialiseTemplate(t: any) {
   };
 }
 
-function serialiseSettings(s: any) {
+function serialiseSettings(s: SettingsRow) {
   return {
     ...s,
     papuleThresholdMm: decimal(s.papuleThresholdMm) ?? 3,
@@ -142,8 +185,8 @@ function serialiseSettings(s: any) {
 const examReportsRouterBase = {
   list: base
     .route({ method: "GET", path: "/", tags: ["ExamReports"] })
-    .input(examReportsContract.list["~orpc"].inputSchema!)
-    .output(examReportsContract.list["~orpc"].outputSchema!)
+    .input(examReportListInputSchema)
+    .output(examReportListResponseSchema)
     .handler(async ({ input }) => {
       const where: Record<string, unknown> = {};
       if (input?.patientId) where.patientId = input.patientId;
@@ -179,8 +222,8 @@ const examReportsRouterBase = {
 
   get: base
     .route({ method: "GET", path: "/{id}", tags: ["ExamReports"] })
-    .input(examReportsContract.get["~orpc"].inputSchema!)
-    .output(examReportsContract.get["~orpc"].outputSchema!)
+    .input(examReportIdInputSchema)
+    .output(examReportDetailSchema)
     .handler(async ({ input }) => {
       const report = await db.examReport.findUnique({
         where: { id: input.id },
@@ -192,8 +235,8 @@ const examReportsRouterBase = {
 
   create: base
     .route({ method: "POST", path: "/", tags: ["ExamReports"] })
-    .input(examReportsContract.create["~orpc"].inputSchema!)
-    .output(examReportsContract.create["~orpc"].outputSchema!)
+    .input(examReportCreateInputSchema)
+    .output(examReportDetailSchema)
     .handler(async ({ input }) => {
       const settings = await db.clinicSettings.findUnique({ where: { id: 1 } });
       if (!settings) {
@@ -239,8 +282,8 @@ const examReportsRouterBase = {
 
   update: base
     .route({ method: "POST", path: "/{id}/update", tags: ["ExamReports"] })
-    .input(examReportsContract.update["~orpc"].inputSchema!)
-    .output(examReportsContract.update["~orpc"].outputSchema!)
+    .input(examReportUpdateInputSchema)
+    .output(examReportDetailSchema)
     .handler(async ({ input }) => {
       // DB logic (transacción) en el service layer; el handler queda fino.
       await applyExamReportUpdate(input);
@@ -253,8 +296,8 @@ const examReportsRouterBase = {
 
   delete: base
     .route({ method: "DELETE", path: "/{id}", tags: ["ExamReports"] })
-    .input(examReportsContract.delete["~orpc"].inputSchema!)
-    .output(examReportsContract.delete["~orpc"].outputSchema!)
+    .input(examReportIdInputSchema)
+    .output(examReportOkResponseSchema)
     .handler(async ({ input }) => {
       await db.examReport.delete({ where: { id: input.id } });
       return { ok: true as const };
@@ -262,22 +305,23 @@ const examReportsRouterBase = {
 
   markGenerated: base
     .route({ method: "POST", path: "/{id}/mark-generated", tags: ["ExamReports"] })
-    .input(examReportsContract.markGenerated["~orpc"].inputSchema!)
-    .output(examReportsContract.markGenerated["~orpc"].outputSchema!)
+    .input(examReportIdInputSchema)
+    .output(markGeneratedResponseSchema)
     .handler(async ({ input }) => {
       const updated = await db.examReport.update({
         where: { id: input.id },
         data: { generatedAt: new Date() },
         select: { generatedAt: true },
       });
-      return { generatedAt: updated.generatedAt!.toISOString() };
+      const { generatedAt } = updated;
+      return { generatedAt: (generatedAt ?? new Date()).toISOString() };
     }),
 
   // ── Conclusion templates ──────────────────────────────────────────
   listTemplates: base
     .route({ method: "GET", path: "/templates", tags: ["ExamReports"] })
-    .input(examReportsContract.listTemplates["~orpc"].inputSchema!)
-    .output(examReportsContract.listTemplates["~orpc"].outputSchema!)
+    .input(listTemplatesInputSchema)
+    .output(examReportListTemplatesResponseSchema)
     .handler(async ({ input }) => {
       const where: Record<string, unknown> = { isActive: true };
       if (input?.examType !== undefined) {
@@ -292,8 +336,8 @@ const examReportsRouterBase = {
 
   createTemplate: base
     .route({ method: "POST", path: "/templates", tags: ["ExamReports"] })
-    .input(examReportsContract.createTemplate["~orpc"].inputSchema!)
-    .output(examReportsContract.createTemplate["~orpc"].outputSchema!)
+    .input(conclusionTemplateCreateInputSchema)
+    .output(conclusionTemplateSchema)
     .handler(async ({ input }) => {
       const created = await db.conclusionTemplate.create({
         data: {
@@ -309,8 +353,8 @@ const examReportsRouterBase = {
 
   updateTemplate: base
     .route({ method: "POST", path: "/templates/{id}/update", tags: ["ExamReports"] })
-    .input(examReportsContract.updateTemplate["~orpc"].inputSchema!)
-    .output(examReportsContract.updateTemplate["~orpc"].outputSchema!)
+    .input(conclusionTemplateUpdateInputSchema)
+    .output(conclusionTemplateSchema)
     .handler(async ({ input }) => {
       const { id, ...rest } = input;
       const data: Record<string, unknown> = {};
@@ -323,8 +367,8 @@ const examReportsRouterBase = {
 
   deleteTemplate: base
     .route({ method: "DELETE", path: "/templates/{id}", tags: ["ExamReports"] })
-    .input(examReportsContract.deleteTemplate["~orpc"].inputSchema!)
-    .output(examReportsContract.deleteTemplate["~orpc"].outputSchema!)
+    .input(examReportIdInputSchema)
+    .output(examReportOkResponseSchema)
     .handler(async ({ input }) => {
       await db.conclusionTemplate.delete({ where: { id: input.id } });
       return { ok: true as const };
@@ -333,8 +377,8 @@ const examReportsRouterBase = {
   // ── ClinicSettings (singleton) ────────────────────────────────────
   getClinicSettings: base
     .route({ method: "GET", path: "/clinic-settings", tags: ["ExamReports"] })
-    .input(examReportsContract.getClinicSettings["~orpc"].inputSchema!)
-    .output(examReportsContract.getClinicSettings["~orpc"].outputSchema!)
+    .input(emptyInputSchema)
+    .output(clinicSettingsSchema)
     .handler(async () => {
       const settings = await db.clinicSettings.upsert({
         where: { id: 1 },
@@ -346,8 +390,8 @@ const examReportsRouterBase = {
 
   updateClinicSettings: base
     .route({ method: "POST", path: "/clinic-settings/update", tags: ["ExamReports"] })
-    .input(examReportsContract.updateClinicSettings["~orpc"].inputSchema!)
-    .output(examReportsContract.updateClinicSettings["~orpc"].outputSchema!)
+    .input(clinicSettingsUpdateInputSchema)
+    .output(clinicSettingsSchema)
     .handler(async ({ input }) => {
       const data: Record<string, unknown> = {};
       for (const [k, v] of Object.entries(input)) {
@@ -369,8 +413,8 @@ const examReportsRouterBase = {
   // override manually in the wizard.
   latestPatientControls: base
     .route({ method: "GET", path: "/patients/{patientId}/latest-controls", tags: ["ExamReports"] })
-    .input(examReportsContract.latestPatientControls["~orpc"].inputSchema!)
-    .output(examReportsContract.latestPatientControls["~orpc"].outputSchema!)
+    .input(latestPatientControlsInputSchema)
+    .output(latestPatientControlsOutputSchema)
     .handler(async ({ input }) => {
       const series = await db.clinicalSeries.findMany({
         where: { patientId: input.patientId },
@@ -426,8 +470,8 @@ const examReportsRouterBase = {
   // editor's purpose is also to retire tags from deprecated allergens.
   listAllergensWithTags: base
     .route({ method: "GET", path: "/allergens/admin", tags: ["ExamReports"] })
-    .input(examReportsContract.listAllergensWithTags["~orpc"].inputSchema!)
-    .output(examReportsContract.listAllergensWithTags["~orpc"].outputSchema!)
+    .input(listAllergensWithTagsInputSchema)
+    .output(listAllergensWithTagsOutputSchema)
     .handler(async ({ input }) => {
       const where: Record<string, unknown> = {};
       if (input?.search) {
@@ -462,8 +506,8 @@ const examReportsRouterBase = {
 
   updateAllergenTags: base
     .route({ method: "POST", path: "/allergens/{id}/tags", tags: ["ExamReports"] })
-    .input(examReportsContract.updateAllergenTags["~orpc"].inputSchema!)
-    .output(examReportsContract.updateAllergenTags["~orpc"].outputSchema!)
+    .input(updateAllergenTagsInputSchema)
+    .output(allergenAdminRowSchema)
     .handler(async ({ input }) => {
       // De-dupe tags (case where the combobox emits the same string
       // twice via paste). Preserve insertion order for human-friendly
@@ -489,8 +533,8 @@ const examReportsRouterBase = {
   // ── Allergen catalog (read-only proxy) ────────────────────────────
   listAllergens: base
     .route({ method: "GET", path: "/allergens", tags: ["ExamReports"] })
-    .input(examReportsContract.listAllergens["~orpc"].inputSchema!)
-    .output(examReportsContract.listAllergens["~orpc"].outputSchema!)
+    .input(allergenListInputSchema)
+    .output(allergenListOutputSchema)
     .handler(async ({ input }) => {
       const where: Record<string, unknown> = { isActive: true };
       if (input?.search) {

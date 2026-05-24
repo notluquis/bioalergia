@@ -184,12 +184,18 @@ export const SortableHeaderInteraction: Story = {
     const { within, userEvent, expect } = await import("storybook/test");
     const canvas = within(canvasElement);
     // Initial order = insertion order (Suscripción, Inmunoterapia, Control).
-    const rowsBefore = canvas.getAllByRole("row").slice(1).map((r) => r.textContent ?? "");
+    const rowsBefore = canvas
+      .getAllByRole("row")
+      .slice(1)
+      .map((r) => r.textContent ?? "");
     await expect(rowsBefore[0]).toMatch(/Suscripción/);
     // Click the "Nombre" column header to sort ascending.
     const nameHeader = canvas.getByRole("columnheader", { name: /Nombre/ });
     await userEvent.click(nameHeader);
-    const rowsAfter = canvas.getAllByRole("row").slice(1).map((r) => r.textContent ?? "");
+    const rowsAfter = canvas
+      .getAllByRole("row")
+      .slice(1)
+      .map((r) => r.textContent ?? "");
     // After ascending sort by name: Control < Inmunoterapia < Suscripción
     await expect(rowsAfter[0]).toMatch(/Control/);
   },
@@ -214,8 +220,9 @@ export const ViewOptionsColumnToggle: Story = {
     // the menu items render is enough to cover the trigger path that
     // jsdom couldn't reach; the toggle itself is covered by the pure
     // helper test on `applyVisibleSelection` in data-table-utils.test.ts.
-    const triggers = canvas.getAllByRole("button", { name: /^Columnas$/ });
-    await userEvent.click(triggers[0]!);
+    const [trigger] = canvas.getAllByRole("button", { name: /^Columnas$/ });
+    if (!trigger) throw new Error("No se encontró el botón Columnas");
+    await userEvent.click(trigger);
     const statusOption = await screen.findByRole("menuitemcheckbox", { name: /Estado/i });
     await expect(statusOption).toBeInTheDocument();
   },
@@ -253,8 +260,9 @@ export const FacetedFilterInteraction: Story = {
     await expect(canvas.getByText("Control anual")).toBeInTheDocument();
     // Open the Estado faceted filter — column-header + filter trigger
     // both match "Estado"; pick the first (toolbar trigger renders first).
-    const triggers = canvas.getAllByRole("button", { name: /Estado/i });
-    await userEvent.click(triggers[0]!);
+    const [trigger] = canvas.getAllByRole("button", { name: /Estado/i });
+    if (!trigger) throw new Error("No se encontró la opción Estado");
+    await userEvent.click(trigger);
     // Select "Activo" — only the Suscripción row should remain.
     const option = await screen.findByRole("menuitemcheckbox", { name: /Activo/i });
     await userEvent.click(option);

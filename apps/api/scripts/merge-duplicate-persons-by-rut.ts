@@ -19,7 +19,7 @@ function computeDv(body: string): string {
   let sum = 0;
   let m = 2;
   for (let i = body.length - 1; i >= 0; i--) {
-    sum += Number.parseInt(body[i]!, 10) * m;
+    sum += Number.parseInt(body[i], 10) * m;
     m = m === 7 ? 2 : m + 1;
   }
   const r = 11 - (sum % 11);
@@ -160,7 +160,7 @@ async function main() {
         if (a.score !== b.score) return b.score - a.score;
         return a.p.id - b.p.id;
       });
-    const winner = ranked[0]!.p;
+    const winner = ranked[0].p;
     const losers = ranked.slice(1).map((r) => r.p);
     console.log(
       `\nbody=${g.body} validDV=${validDv}`,

@@ -121,7 +121,7 @@ export async function detectDuplicateSeries(): Promise<ClinicalSeriesDuplicate[]
       const eventDelta = b._count.events - a._count.events;
       if (eventDelta !== 0) return eventDelta;
       return a.id - b.id;
-    })[0]!;
+    })[0];
 
   const clinicalEvidenceDates = (series: SeriesRow): Set<string> => {
     const dates = new Set<string>();

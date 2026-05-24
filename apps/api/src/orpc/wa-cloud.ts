@@ -811,7 +811,7 @@ const waRouterBase = {
           phoneNumberId: input.phoneNumberId,
           metaMessageId: metaId,
           direction: "OUTBOUND",
-          type: typeMap[input.type]!,
+          type: typeMap[input.type],
           status: "SENT",
           body: input.caption ?? null,
           mediaCaption: input.caption ?? null,

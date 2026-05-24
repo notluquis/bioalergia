@@ -78,28 +78,28 @@ export function parseAgeLabelYears(label: string | null): number | null {
   let matched = false;
   const yr = norm.match(/(\d{1,3})\s*(?:AÑOS?|ANOS?)\b/);
   if (yr) {
-    years += Number.parseInt(yr[1]!, 10);
+    years += Number.parseInt(yr[1], 10);
     matched = true;
   }
   const mo = norm.match(/(\d{1,3})\s*(?:MESES?|MES)\b/);
   if (mo) {
-    years += Number.parseInt(mo[1]!, 10) / 12;
+    years += Number.parseInt(mo[1], 10) / 12;
     matched = true;
   }
   const dy = norm.match(/(\d{1,4})\s*(?:DIAS?|DIA)\b/);
   if (dy) {
-    years += Number.parseInt(dy[1]!, 10) / 365;
+    years += Number.parseInt(dy[1], 10) / 365;
     matched = true;
   }
   const wk = norm.match(/(\d{1,3})\s*(?:SEM|SEMANAS?)\b/);
   if (wk && !matched) {
     // SEM alone (e.g. "RNT 39 SEM") is gestational age → infant.
-    return Number.parseInt(wk[1]!, 10) / 52;
+    return Number.parseInt(wk[1], 10) / 52;
   }
   if (matched) return years;
   // Bare integer fallback (e.g. "11" without unit).
   const bare = norm.match(/^\s*(\d{1,3})\s*$/);
-  if (bare) return Number.parseInt(bare[1]!, 10);
+  if (bare) return Number.parseInt(bare[1], 10);
   return null;
 }
 
@@ -137,7 +137,7 @@ export async function matchPatientForRecord(parsed: ParsedClinicalRecord): Promi
   // (probable surname) so single-name xlsx (raras pero existen) still
   // hit. Multiple tokens combined with OR keep the pool bounded while
   // catching variant orderings ("RUMINOT JOSE" vs "JOSE RUMINOT").
-  const searchTokens = Array.from(new Set([target[0]!, target[target.length - 1]!]));
+  const searchTokens = Array.from(new Set([target[0], target[target.length - 1]]));
   const searchTerms = searchTokens.map((t) => `%${t}%`);
   const pool = await sql<{
     patientId: number;

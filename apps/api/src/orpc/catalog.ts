@@ -275,7 +275,10 @@ const adminCreateRoute = requireStaff
       })
     );
     const full = await getProductById(product.id);
-    return { data: serializeProduct(full!), status: "ok" as const };
+    if (!full) {
+      throw new ORPCError("NOT_FOUND", { message: "Producto no encontrado" });
+    }
+    return { data: serializeProduct(full), status: "ok" as const };
   });
 
 const adminUpdateRoute = requireStaff

@@ -662,12 +662,12 @@ async function main() {
         progress.tick();
       })) {
         for (let i = 0; i < chunk.length; i++) progress.addRow();
-        if (dry) continue;
+        if (dry || !delegate) continue;
         try {
           const data = chunk.map((row) => normalizeRow(modelName, row));
           const r =
             (await createManyOverride(modelName, chunk, dbModule)) ??
-            (await delegate!.createMany({ data, skipDuplicates: true }));
+            (await delegate.createMany({ data, skipDuplicates: true }));
           inserted += r.count;
         } catch (err) {
           chunkErrors += 1;

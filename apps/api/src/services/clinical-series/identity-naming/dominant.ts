@@ -30,8 +30,8 @@ export function isSingleLetterPrefixedVariant(
 
   let changedTokens = 0;
   for (let i = 0; i < contaminatedTokens.length; i += 1) {
-    const contaminatedToken = contaminatedTokens[i]!;
-    const canonicalToken = canonicalTokens[i]!;
+    const contaminatedToken = contaminatedTokens[i];
+    const canonicalToken = canonicalTokens[i];
     if (contaminatedToken === canonicalToken) continue;
     if (contaminatedToken.length !== canonicalToken.length + 1) return false;
     if (!contaminatedToken.endsWith(canonicalToken)) return false;

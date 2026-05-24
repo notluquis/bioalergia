@@ -100,7 +100,7 @@ function normalize(s: string): string {
 
 function rowsFromBuffer(buffer: Buffer): Row[] {
   const wb = xlsx.read(buffer, { type: "buffer" });
-  const sheet = wb.Sheets[wb.SheetNames[0]!];
+  const sheet = wb.Sheets[wb.SheetNames[0]];
   if (!sheet) return [];
   const json = xlsx.utils.sheet_to_json<unknown[]>(sheet, {
     header: 1,
@@ -113,7 +113,7 @@ function rowsFromBuffer(buffer: Buffer): Row[] {
 
 function findCellRight(row: Row, fromIdx: number): string {
   for (let i = fromIdx + 1; i < row.length; i++) {
-    if (row[i]) return row[i]!;
+    if (row[i]) return row[i];
   }
   return "";
 }
@@ -175,9 +175,9 @@ export function parseSpanishDate(value: string): string | null {
   //   "21 DE JULIO DE 2025"
   const m = norm.match(/(\d{1,2})\s+(?:DE\s+)?([A-Z]+)(?:\s+DE)?(?:\s+DE)?\s+(\d{4})/);
   if (m) {
-    const day = Number.parseInt(m[1]!, 10);
-    const month = SPANISH_MONTHS[m[2]!];
-    const year = Number.parseInt(m[3]!, 10);
+    const day = Number.parseInt(m[1], 10);
+    const month = SPANISH_MONTHS[m[2]];
+    const year = Number.parseInt(m[3], 10);
     if (month && day >= 1 && day <= 31 && year >= 2000 && year <= 2100) {
       return `${year.toString().padStart(4, "0")}-${month.toString().padStart(2, "0")}-${day.toString().padStart(2, "0")}`;
     }
@@ -185,12 +185,12 @@ export function parseSpanishDate(value: string): string | null {
   // ISO fallback yyyy-mm-dd already normalized away by normalize(); try raw
   const iso = value.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
   if (iso) {
-    return `${iso[1]}-${iso[2]!.padStart(2, "0")}-${iso[3]!.padStart(2, "0")}`;
+    return `${iso[1]}-${iso[2].padStart(2, "0")}-${iso[3].padStart(2, "0")}`;
   }
   // dd/mm/yyyy or dd-mm-yyyy
   const slash = value.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
   if (slash) {
-    return `${slash[3]}-${slash[2]!.padStart(2, "0")}-${slash[1]!.padStart(2, "0")}`;
+    return `${slash[3]}-${slash[2].padStart(2, "0")}-${slash[1].padStart(2, "0")}`;
   }
   return null;
 }
@@ -222,8 +222,8 @@ function extractInlineAnthropometric(text: string, target: ParsedClinicalRecord)
   // Match patterns like "P: 8,100 T: 67,5 CC: 43,5" in any single cell.
   const matches = text.matchAll(/\b([A-ZÁÉÍÓÚÑ\/]+)\s*[:\-]\s*([\d.,]+)/g);
   for (const m of matches) {
-    const key = normalize(m[1]!);
-    const numTxt = m[2]!;
+    const key = normalize(m[1]);
+    const numTxt = m[2];
     target.anthropometric[key] = numTxt;
     if ((key === "P" || key === "PESO") && target.weightKg == null) {
       target.weightKg = parseDecimal(numTxt);
@@ -287,9 +287,9 @@ export function parseClinicalRecordWorkbook(buffer: Buffer): ParsedClinicalRecor
   let consultMarkerSeen = false;
 
   for (let r = 0; r < rows.length; r++) {
-    const row = rows[r]!;
+    const row = rows[r];
     for (let c = 0; c < row.length; c++) {
-      const cell = row[c]!.trim();
+      const cell = row[c].trim();
       if (!cell) continue;
       const norm = normalize(cell);
 
@@ -351,16 +351,16 @@ export function parseClinicalRecordWorkbook(buffer: Buffer): ParsedClinicalRecor
         // Sometimes the marker cell contains "HISTORIA: ..." with content inline.
         const inline = cell.replace(/^[^:]+:\s*/, "").trim();
         if (inline && inline.length > 1 && normalize(inline) !== norm) {
-          result.rawSections[sect]!.push(inline);
+          result.rawSections[sect].push(inline);
         }
         // Capture the right-cell value too (e.g. EXAMEN FÍSICO  P/E  N).
         const right = findCellRight(row, c);
         if (right && !isSectionMarker(normalize(right))) {
           if (sect === "physicalExam") {
             extractInlineAnthropometric(right, result);
-            result.rawSections.physicalExam!.push(right);
+            result.rawSections.physicalExam.push(right);
           } else if (!isListSection(sect)) {
-            result.rawSections[sect]!.push(right);
+            result.rawSections[sect].push(right);
           }
         }
         continue;
@@ -395,7 +395,7 @@ export function parseClinicalRecordWorkbook(buffer: Buffer): ParsedClinicalRecor
         const isNumberLabel = /^\d+\.?$/.test(cell);
         if (isNumberLabel) {
           const text = findCellRight(row, c);
-          if (text) result.rawSections[currentSection]!.push(text);
+          if (text) result.rawSections[currentSection].push(text);
           continue;
         }
       }
@@ -408,7 +408,7 @@ export function parseClinicalRecordWorkbook(buffer: Buffer): ParsedClinicalRecor
           continue;
         }
         extractInlineAnthropometric(cell, result);
-        result.rawSections[currentSection]!.push(cell);
+        result.rawSections[currentSection].push(cell);
       } else {
         // Pre-NOMBRE / pre-section header lines (consultorio address etc.)
         // are kept in rawHeader for debugging only.
@@ -420,17 +420,17 @@ export function parseClinicalRecordWorkbook(buffer: Buffer): ParsedClinicalRecor
   // Collapse section arrays into the final per-column shape:
   //   - text columns: \n-joined trim
   //   - list columns: array passed through, deduped + trimmed
-  result.history = result.rawSections.history!.join("\n").trim() || null;
-  result.physicalExam = result.rawSections.physicalExam!.join("\n").trim() || null;
-  result.diagnosis = result.rawSections.diagnosis!.join("\n").trim() || null;
-  result.observations = result.rawSections.observations!.join("\n").trim() || null;
+  result.history = result.rawSections.history.join("\n").trim() || null;
+  result.physicalExam = result.rawSections.physicalExam.join("\n").trim() || null;
+  result.diagnosis = result.rawSections.diagnosis.join("\n").trim() || null;
+  result.observations = result.rawSections.observations.join("\n").trim() || null;
   result.antecedents = {
-    personal: dedupeLines(result.rawSections.antecedentsPersonal!),
-    family: dedupeLines(result.rawSections.antecedentsFamily!),
+    personal: dedupeLines(result.rawSections.antecedentsPersonal),
+    family: dedupeLines(result.rawSections.antecedentsFamily),
   };
-  result.medications = dedupeLines(result.rawSections.medications!);
-  result.knownAllergies = dedupeLines(result.rawSections.knownAllergies!);
-  result.indications = dedupeLines(result.rawSections.indications!);
+  result.medications = dedupeLines(result.rawSections.medications);
+  result.knownAllergies = dedupeLines(result.rawSections.knownAllergies);
+  result.indications = dedupeLines(result.rawSections.indications);
 
   // Confidence + issues.
   if (!consultMarkerSeen) {

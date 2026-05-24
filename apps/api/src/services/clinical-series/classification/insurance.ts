@@ -132,11 +132,11 @@ export function inferHealthInsurance(events: InsuranceEventLike[]): InsuranceRes
     return { healthInsurance: null, isapreName: null };
   }
 
-  if (rankedTypes.length > 1 && rankedTypes[0]![1] === rankedTypes[1]![1]) {
+  if (rankedTypes.length > 1 && rankedTypes[0][1] === rankedTypes[1][1]) {
     return { healthInsurance: null, isapreName: null };
   }
 
-  const healthInsurance = rankedTypes[0]![0];
+  const healthInsurance = rankedTypes[0][0];
   if (healthInsurance !== "ISAPRE") {
     return { healthInsurance, isapreName: null };
   }
@@ -150,9 +150,9 @@ export function inferHealthInsurance(events: InsuranceEventLike[]): InsuranceRes
   const rankedProviders = [...providerCounts.entries()].sort((a, b) => b[1] - a[1]);
   const isapreName =
     rankedProviders.length === 0 ||
-    (rankedProviders.length > 1 && rankedProviders[0]![1] === rankedProviders[1]![1])
+    (rankedProviders.length > 1 && rankedProviders[0][1] === rankedProviders[1][1])
       ? null
-      : rankedProviders[0]![0];
+      : rankedProviders[0][0];
 
   return { healthInsurance, isapreName };
 }

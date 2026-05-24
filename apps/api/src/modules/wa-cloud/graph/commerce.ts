@@ -1,6 +1,11 @@
 import { db } from "@finanzas/db";
 import { decryptSecret } from "../../../lib/secret-cipher.ts";
-import { getAccountForPhoneNumber, graphGet, graphPost } from "./_http.ts";
+import {
+  getAccountForPhoneNumber,
+  graphGet,
+  graphPost,
+  requireSystemUserToken,
+} from "./_http.ts";
 
 // Meta Commerce catalog products + single-product interactive message.
 // Multi-product (MPM) lives in messages.ts. Catalog itself is managed
@@ -25,9 +30,10 @@ export async function listCommerceProducts(
   limit = 100
 ) {
   const account = await db.waBusinessAccount.findUnique({ where: { id: accountId } });
-  const token = decryptSecret(account?.systemUserToken);
+  if (!account) throw new Error("Account no encontrada");
+  const token = decryptSecret(account.systemUserToken);
   if (!token) throw new Error("Account sin token");
-  const v = account!.graphApiVersion;
+  const v = account.graphApiVersion;
   const qs = new URLSearchParams();
   qs.set("fields", "id,retailer_id,name,description,price,currency,image_url,availability");
   qs.set("limit", String(limit));
@@ -54,7 +60,7 @@ export type SendSingleProductInput = {
 export async function sendSingleProductMessage(input: SendSingleProductInput) {
   const phone = await getAccountForPhoneNumber(input.phoneNumberId);
   const v = phone.account.graphApiVersion;
-  const token = phone.account.systemUserToken!;
+  const token = requireSystemUserToken(phone);
   const interactive: Record<string, unknown> = {
     type: "product",
     ...(input.bodyText ? { body: { text: input.bodyText } } : {}),

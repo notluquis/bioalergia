@@ -1,4 +1,9 @@
-import { getAccountForPhoneNumber, graphGet, graphPost } from "./_http.ts";
+import {
+  getAccountForPhoneNumber,
+  graphGet,
+  graphPost,
+  requireSystemUserToken,
+} from "./_http.ts";
 
 // Conversational Automation (Meta 2026): ice breakers + commands +
 // welcome-message toggle, exposed at /{phone-number-id}/conversational_automation.
@@ -19,7 +24,7 @@ export type ConversationalAutomationConfig = {
 export async function getConversationalAutomation(phoneNumberId: number) {
   const phone = await getAccountForPhoneNumber(phoneNumberId);
   const v = phone.account.graphApiVersion;
-  const token = phone.account.systemUserToken!;
+  const token = requireSystemUserToken(phone);
   type Resp = {
     conversational_automation?: {
       enable_welcome_message?: boolean;
@@ -47,7 +52,7 @@ export async function updateConversationalAutomation(
 ) {
   const phone = await getAccountForPhoneNumber(phoneNumberId);
   const v = phone.account.graphApiVersion;
-  const token = phone.account.systemUserToken!;
+  const token = requireSystemUserToken(phone);
   // Meta expects all three fields when updating; missing fields revert
   // to the persisted value but commands array must be passed in full
   // (PATCH-style merge for that array doesn't exist).

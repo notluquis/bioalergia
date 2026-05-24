@@ -121,8 +121,8 @@ function computeWorkedMinutes(dayMarks: AttendanceMarkData[]): number | null {
     .filter((m) => m.type === "CLOCK_OUT")
     .sort((a, b) => b.markedAt.getTime() - a.markedAt.getTime());
   if (clockIns.length === 0 || clockOuts.length === 0) return null;
-  const firstIn = clockIns[0]!;
-  const lastOut = clockOuts[0]!;
+  const firstIn = clockIns[0];
+  const lastOut = clockOuts[0];
   if (lastOut.markedAt <= firstIn.markedAt) return null;
   return Math.floor((lastOut.markedAt.getTime() - firstIn.markedAt.getTime()) / 60_000);
 }
@@ -176,7 +176,7 @@ function ipMatchesCidr(ip: string, cidr: string): boolean {
 function ipToNumber(ip: string): number | null {
   const parts = ip.split(".").map(Number);
   if (parts.length !== 4 || parts.some((p) => Number.isNaN(p) || p < 0 || p > 255)) return null;
-  return ((parts[0]! << 24) | (parts[1]! << 16) | (parts[2]! << 8) | parts[3]!) >>> 0;
+  return ((parts[0] << 24) | (parts[1] << 16) | (parts[2] << 8) | parts[3]) >>> 0;
 }
 
 /**
@@ -281,8 +281,8 @@ export async function syncMarkToTimesheet(
 
   if (clockIns.length === 0 || clockOuts.length === 0) return false;
 
-  const firstIn = clockIns[0]!.markedAt;
-  const lastOut = clockOuts[clockOuts.length - 1]!.markedAt;
+  const firstIn = clockIns[0].markedAt;
+  const lastOut = clockOuts[clockOuts.length - 1].markedAt;
 
   if (lastOut <= firstIn) return false;
 
@@ -339,7 +339,7 @@ export async function getTodayStatus(employeeId: number): Promise<{
   const todayMarks = byDate.get(today) ?? [];
 
   // Current status
-  const lastMark = todayMarks.length > 0 ? todayMarks[todayMarks.length - 1]! : null;
+  const lastMark = todayMarks.length > 0 ? todayMarks[todayMarks.length - 1] : null;
   let currentStatus: AttendanceCurrentStatus;
   if (todayMarks.length === 0) currentStatus = "NO_MARKS_TODAY";
   else if (lastMark?.type === "CLOCK_IN") currentStatus = "CLOCKED_IN";
@@ -380,8 +380,10 @@ export async function getTodayStatus(employeeId: number): Promise<{
       if (hasCI && hasCO) {
         workedMinutes = computeWorkedMinutes(dayMarks);
       } else if (hasCI) {
-        const firstCI = dayMarks.find((m) => m.type === "CLOCK_IN")!;
-        workedMinutes = Math.floor((Date.now() - firstCI.markedAt.getTime()) / 60_000);
+        const firstCI = dayMarks.find((m) => m.type === "CLOCK_IN");
+        if (firstCI) {
+          workedMinutes = Math.floor((Date.now() - firstCI.markedAt.getTime()) / 60_000);
+        }
       }
     } else if (!hasCI && !hasCO) {
       status = "absent";
@@ -469,11 +471,11 @@ export async function listMarks(options: {
   for (const raw of rawMarks) {
     const dateStr = dayjs(raw.markedAt).tz(TIMEZONE).format("YYYY-MM-DD");
     const key = `${raw.employeeId}:${dateStr}`;
-    const existing = sessionMap.get(key);
-    if (!existing) {
-      sessionMap.set(key, { clockIns: [], clockOuts: [] });
+    let session = sessionMap.get(key);
+    if (!session) {
+      session = { clockIns: [], clockOuts: [] };
+      sessionMap.set(key, session);
     }
-    const session = sessionMap.get(key)!;
     if (raw.type === "CLOCK_IN") session.clockIns.push(raw.markedAt);
     else session.clockOuts.push(raw.markedAt);
   }
@@ -489,8 +491,8 @@ export async function listMarks(options: {
       incompleteDayKeys.add(key);
       incompleteDays++;
     } else {
-      const firstCI = session.clockIns.sort((a, b) => a.getTime() - b.getTime())[0]!;
-      const lastCO = session.clockOuts.sort((a, b) => b.getTime() - a.getTime())[0]!;
+      const firstCI = session.clockIns.sort((a, b) => a.getTime() - b.getTime())[0];
+      const lastCO = session.clockOuts.sort((a, b) => b.getTime() - a.getTime())[0];
       if (lastCO > firstCI) {
         totalWorkedMinutes += Math.floor((lastCO.getTime() - firstCI.getTime()) / 60_000);
       }

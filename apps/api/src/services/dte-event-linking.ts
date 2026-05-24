@@ -1225,14 +1225,14 @@ function buildBundleHypotheses(params: {
         bundles.set(dteSaleDetailIds.join("|"), {
           amountDiff,
           autoLinkEligible: score >= MIN_AUTO_LINK_SCORE,
-          clientName: sorted[0]!.document.clientName,
-          clientRUT: sorted[0]!.document.clientRUT,
+          clientName: sorted[0].document.clientName,
+          clientRUT: sorted[0].document.clientRUT,
           crossSeriesConflicts: [
             ...new Map(
               sorted.flatMap((a) => a.crossSeriesConflicts).map((c) => [c.seriesId, c])
             ).values(),
           ],
-          documentDate: sorted[0]!.document.documentDate,
+          documentDate: sorted[0].document.documentDate,
           documents: sorted.map((analysis) => analysis.document),
           dteSaleDetailIds,
           folios: sorted.map((analysis) => analysis.document.folio),
@@ -1263,7 +1263,7 @@ function buildBundleHypotheses(params: {
 
     if (current.length === 3) return;
     for (let index = startIndex; index < eligible.length; index += 1) {
-      current.push(eligible[index]!);
+      current.push(eligible[index]);
       visit(index + 1, current);
       current.pop();
     }
@@ -2279,8 +2279,8 @@ export function selectGlobalAutoLinkHypotheses(
 
   const maxRemaining = new Array<number>(ordered.length + 1).fill(0);
   for (let index = ordered.length - 1; index >= 0; index -= 1) {
-    const maxScore = ordered[index]!.hypotheses[0]?.score ?? 0;
-    maxRemaining[index] = maxRemaining[index + 1]! + maxScore;
+    const maxScore = ordered[index].hypotheses[0]?.score ?? 0;
+    maxRemaining[index] = maxRemaining[index + 1] + maxScore;
   }
 
   const visit = (
@@ -2289,7 +2289,7 @@ export function selectGlobalAutoLinkHypotheses(
     current: Map<string, MatchHypothesis>,
     usedDtes: Set<string>
   ) => {
-    if (currentScore + maxRemaining[index]! < bestScore) return;
+    if (currentScore + maxRemaining[index] < bestScore) return;
     if (index >= ordered.length) {
       if (currentScore > bestScore) {
         bestScore = currentScore;
@@ -2298,7 +2298,7 @@ export function selectGlobalAutoLinkHypotheses(
       return;
     }
 
-    const entry = ordered[index]!;
+    const entry = ordered[index];
     visit(index + 1, currentScore, current, usedDtes);
 
     for (const hypothesis of entry.hypotheses) {

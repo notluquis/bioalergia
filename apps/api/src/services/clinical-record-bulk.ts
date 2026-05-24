@@ -60,7 +60,7 @@ export function startBulkClinicalRecordReprocessJob(options?: {
 }): string {
   const active = getActiveJobsByType(JOB_TYPE);
   if (active.length > 0) {
-    return active[0]!.id;
+    return active[0].id;
   }
 
   const jobId = startJob(JOB_TYPE, 1);

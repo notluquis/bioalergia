@@ -32,13 +32,13 @@ export function computeSnapshotTiming(
   const lastEventDate = past.length
     ? past.reduce(
         (acc, event) => (event.eventDate > acc ? event.eventDate : acc),
-        past[0]!.eventDate
+        past[0].eventDate
       )
     : null;
   const nextEventDate = future.length
     ? future.reduce(
         (acc, event) => (event.eventDate < acc ? event.eventDate : acc),
-        future[0]!.eventDate
+        future[0].eventDate
       )
     : null;
   const upcomingCount = future.length;

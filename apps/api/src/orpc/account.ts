@@ -102,7 +102,7 @@ const myOrdersRoute = base
         created_at: o.createdAt.toISOString(),
         item_count: o.items.length,
       })),
-      next_cursor: hasMore ? sliced[sliced.length - 1]!.id : null,
+      next_cursor: hasMore ? sliced[sliced.length - 1].id : null,
     };
   });
 

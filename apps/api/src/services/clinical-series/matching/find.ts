@@ -81,23 +81,16 @@ export async function findMatchingSeries(
             thresholdDays
           )
         : undefined;
+      const exactSeries = exact != null ? ctx.seriesById.get(exact) : undefined;
+      const uniqueExactSeries = uniqueExact != null ? ctx.seriesById.get(uniqueExact) : undefined;
+      const phoneMatchSeries = phoneMatch != null ? ctx.seriesById.get(phoneMatch) : undefined;
       const chosen = chooseBetterSeriesCandidate(
         rutMatchEntry,
-        exact != null
-          ? { ...ctx.seriesById.get(exact)!, eventCount: ctx.seriesById.get(exact)!.eventCount }
+        exactSeries ? { ...exactSeries, eventCount: exactSeries.eventCount } : null,
+        uniqueExactSeries
+          ? { ...uniqueExactSeries, eventCount: uniqueExactSeries.eventCount }
           : null,
-        uniqueExact != null
-          ? {
-              ...ctx.seriesById.get(uniqueExact)!,
-              eventCount: ctx.seriesById.get(uniqueExact)!.eventCount,
-            }
-          : null,
-        phoneMatch != null
-          ? {
-              ...ctx.seriesById.get(phoneMatch)!,
-              eventCount: ctx.seriesById.get(phoneMatch)!.eventCount,
-            }
-          : null
+        phoneMatchSeries ? { ...phoneMatchSeries, eventCount: phoneMatchSeries.eventCount } : null
       );
       if (chosen) {
         const canonicalPhoneDuplicate = ctx.findCanonicalPhoneDuplicate(chosen.id);
@@ -170,7 +163,7 @@ export async function findMatchingSeries(
             patientRut: b.patientRut,
           }
         )
-      )[0]!;
+      )[0];
       if (
         !params.patientRut ||
         canonical.patientRut === params.patientRut ||
@@ -234,8 +227,8 @@ export async function findMatchingSeries(
         dates.length === 0
           ? Infinity
           : (() => {
-              const s = dates[0]!;
-              const e = dates[dates.length - 1]!;
+              const s = dates[0];
+              const e = dates[dates.length - 1];
               return eventDateDjs.isBefore(s)
                 ? s.diff(eventDateDjs, "day")
                 : eventDateDjs.isAfter(e)
@@ -307,7 +300,7 @@ export async function findMatchingSeries(
               id: candidate.id,
               patientName: candidate.patientName,
               patientRut: candidate.patientRut,
-            }))[0]!;
+            }))[0];
 
     let phoneCandidate: null | {
       beneficiaryName: null | string;
@@ -458,8 +451,8 @@ export async function findMatchingSeries(
           dates.length === 0
             ? Infinity
             : (() => {
-                const s = dates[0]!;
-                const e = dates[dates.length - 1]!;
+                const s = dates[0];
+                const e = dates[dates.length - 1];
                 return eventDateDjs.isBefore(s)
                   ? s.diff(eventDateDjs, "day")
                   : eventDateDjs.isAfter(e)

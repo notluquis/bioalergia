@@ -30,25 +30,25 @@ export function extractNamesFromCleanedText(text: string): string[] {
   let i = 0;
 
   while (i < tokens.length) {
-    if (!isNameToken(tokens[i]!)) {
+    if (!isNameToken(tokens[i])) {
       i++;
       continue;
     }
 
-    const seq: string[] = [tokens[i]!];
+    const seq: string[] = [tokens[i]];
     let j = i + 1;
 
     while (j < tokens.length && seq.length < 6) {
-      const t = tokens[j]!;
+      const t = tokens[j];
       if (isNameToken(t)) {
         seq.push(t);
         j++;
       } else if (isParticle(t)) {
         // Allow particles only when a name token eventually follows.
         let k = j + 1;
-        while (k < tokens.length && isParticle(tokens[k]!)) k++;
-        if (k < tokens.length && isNameToken(tokens[k]!)) {
-          while (j <= k) seq.push(tokens[j++]!);
+        while (k < tokens.length && isParticle(tokens[k])) k++;
+        if (k < tokens.length && isNameToken(tokens[k])) {
+          while (j <= k) seq.push(tokens[j++]);
         } else {
           break;
         }
@@ -58,7 +58,7 @@ export function extractNamesFromCleanedText(text: string): string[] {
     }
 
     // Names must not start or end with a particle.
-    while (seq.length > 0 && isParticle(seq[seq.length - 1]!)) seq.pop();
+    while (seq.length > 0 && isParticle(seq[seq.length - 1])) seq.pop();
     const collapsedSeq = collapseRepeatedNameEdges(seq);
     if (collapsedSeq.length >= 2) results.push(collapsedSeq.join(" "));
     i = j;
@@ -121,8 +121,8 @@ export function extractRutAdjacentNames(text: string): string[] {
       nameTokens.unshift(n);
     }
     // Drop leading/trailing particles — a name must start and end with a real token.
-    while (nameTokens.length > 0 && PARTICLES.has(nameTokens[0]!)) nameTokens.shift();
-    while (nameTokens.length > 0 && PARTICLES.has(nameTokens[nameTokens.length - 1]!))
+    while (nameTokens.length > 0 && PARTICLES.has(nameTokens[0])) nameTokens.shift();
+    while (nameTokens.length > 0 && PARTICLES.has(nameTokens[nameTokens.length - 1]))
       nameTokens.pop();
     const collapsedTokens = collapseRepeatedNameEdges(nameTokens);
     if (collapsedTokens.length >= 2) results.push(collapsedTokens.join(" "));

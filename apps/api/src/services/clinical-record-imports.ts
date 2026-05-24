@@ -88,7 +88,7 @@ async function ensureClinicalSeries(
     VALUES ('MEDICAL_CONSULTATION', 'ACTIVE', ${patientName ? `${patientName} · Fichas clínicas` : "Fichas clínicas"}, ${patientId}, ${patientName}, now(), now())
     RETURNING id
   `.execute(trx);
-  return created.rows[0]!.id;
+  return created.rows[0].id;
 }
 
 async function materializeRecord(

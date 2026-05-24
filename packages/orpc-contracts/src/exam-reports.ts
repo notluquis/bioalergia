@@ -80,7 +80,7 @@ const sectionOutputSchema = z.object({
   reactions: z.array(reactionOutputSchema),
 });
 
-const examReportListItemSchema = z.object({
+export const examReportListItemSchema = z.object({
   id: z.number().int(),
   patientId: z.number().int(),
   examType: examTypeSchema,
@@ -127,7 +127,7 @@ export const examReportDetailSchema = examReportListItemSchema.extend({
   sections: z.array(sectionOutputSchema),
 });
 
-const examReportCreateInputSchema = z.object({
+export const examReportCreateInputSchema = z.object({
   patientId: z.number().int().positive(),
   examType: examTypeSchema,
   conclusionText: z.string().min(1),
@@ -147,7 +147,7 @@ const examReportCreateInputSchema = z.object({
   sections: z.array(sectionInputSchema).min(1),
 });
 
-const examReportUpdateInputSchema = examReportCreateInputSchema.partial().extend({
+export const examReportUpdateInputSchema = examReportCreateInputSchema.partial().extend({
   id: z.number().int().positive(),
 });
 
@@ -164,7 +164,7 @@ export const conclusionTemplateSchema = z.object({
   updatedAt: z.iso.datetime(),
 });
 
-const conclusionTemplateCreateInputSchema = z.object({
+export const conclusionTemplateCreateInputSchema = z.object({
   text: z.string().min(1),
   examType: examTypeSchema.nullable().optional(),
   isDefault: z.boolean().optional(),
@@ -174,7 +174,7 @@ const conclusionTemplateCreateInputSchema = z.object({
 
 // Update accepts any subset — the toggle UI patches only `isDefault`
 // or `isActive` without re-sending `text`.
-const conclusionTemplateUpdateInputSchema = conclusionTemplateCreateInputSchema
+export const conclusionTemplateUpdateInputSchema = conclusionTemplateCreateInputSchema
   .partial()
   .extend({ id: z.number().int().positive() });
 
@@ -202,13 +202,13 @@ export const clinicSettingsSchema = z.object({
   updatedAt: z.iso.datetime(),
 });
 
-const clinicSettingsUpdateInputSchema = clinicSettingsSchema
+export const clinicSettingsUpdateInputSchema = clinicSettingsSchema
   .omit({ id: true, updatedAt: true })
   .partial();
 
 // ── Allergen catalog (read-only, filtered) ───────────────────────────
 
-const allergenListInputSchema = z
+export const allergenListInputSchema = z
   .object({
     search: z.string().optional(),
     categories: z.array(z.string()).optional(),
@@ -216,7 +216,7 @@ const allergenListInputSchema = z
   })
   .partial();
 
-const allergenListOutputSchema = z.object({
+export const allergenListOutputSchema = z.object({
   allergens: z.array(allergenLiteSchema),
   // Distinct categories present in the dataset — useful for the picker
   // groupings ("Polenes > Arboles", "Acaros", "Epitelios", etc).
@@ -233,11 +233,11 @@ const allergenListOutputSchema = z.object({
 // so the combobox can hint without forcing — the server accepts any
 // kebab-case-or-lowercase string to keep the admin workflow flexible.
 
-const allergenAdminRowSchema = allergenLiteSchema.extend({
+export const allergenAdminRowSchema = allergenLiteSchema.extend({
   isActive: z.boolean(),
 });
 
-const listAllergensWithTagsInputSchema = z
+export const listAllergensWithTagsInputSchema = z
   .object({
     search: z.string().optional(),
     limit: z.number().int().positive().max(500).optional(),
@@ -249,7 +249,7 @@ const listAllergensWithTagsInputSchema = z
   })
   .partial();
 
-const listAllergensWithTagsOutputSchema = z.object({
+export const listAllergensWithTagsOutputSchema = z.object({
   items: z.array(allergenAdminRowSchema),
   total: z.number().int().nonnegative(),
 });
@@ -263,7 +263,7 @@ const allergenTagSchema = z
   .max(40)
   .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/u, "tag must be lowercase kebab-case");
 
-const updateAllergenTagsInputSchema = z.object({
+export const updateAllergenTagsInputSchema = z.object({
   id: z.string().min(1),
   tags: z.array(allergenTagSchema).max(20),
 });
@@ -275,11 +275,11 @@ const updateAllergenTagsInputSchema = z.object({
 // via Patient → ClinicalSeries[] → ClinicalSkinTest[] →
 // ClinicalSkinTestResult[controlType]). Returns nulls when no snapshot
 // exists yet; the wizard falls back to manual entry.
-const latestPatientControlsInputSchema = z.object({
+export const latestPatientControlsInputSchema = z.object({
   patientId: z.number().int().positive(),
 });
 
-const latestPatientControlsOutputSchema = z.object({
+export const latestPatientControlsOutputSchema = z.object({
   histamineMm: z.number().nullable(),
   salineMm: z.number().nullable(),
   /** ISO date of the source skin-test (YYYY-MM-DD), null if no snapshot. */
@@ -307,30 +307,53 @@ export const ALLERGEN_TAG_SUGGESTIONS = [
 ] as const;
 export type AllergenTagSuggestion = (typeof ALLERGEN_TAG_SUGGESTIONS)[number];
 
+// ── Named schemas referenced by the contract (server router imports
+// these directly via `.input()`/`.output()` — no `["~orpc"]` accessor).
+export const examReportIdInputSchema = z.object({ id: z.number().int().positive() });
+
+export const examReportListInputSchema = z
+  .object({
+    patientId: z.number().int().positive().optional(),
+    examType: examTypeSchema.optional(),
+    search: z.string().optional(),
+    // ISO date (YYYY-MM-DD) inclusive bounds on createdAt. UI binds
+    // these to a DateRangePicker; server interprets `to` as the
+    // end-of-day to keep the range inclusive.
+    from: z.iso.date().optional(),
+    to: z.iso.date().optional(),
+    limit: z.number().int().positive().max(500).optional(),
+    offset: z.number().int().nonnegative().optional(),
+  })
+  .partial();
+
+export const examReportListResponseSchema = z.object({
+  items: z.array(examReportListItemSchema),
+  total: z.number().int(),
+});
+
+export const examReportOkResponseSchema = z.object({ ok: z.literal(true) });
+
+export const markGeneratedResponseSchema = z.object({ generatedAt: z.iso.datetime() });
+
+export const listTemplatesInputSchema = z
+  .object({ examType: examTypeSchema.nullable().optional() })
+  .partial();
+
+export const examReportListTemplatesResponseSchema = z.object({
+  templates: z.array(conclusionTemplateSchema),
+});
+
+export const emptyInputSchema = z.object({});
+
 export const examReportsContract = {
   list: oc
     .route({ method: "GET", path: "/" })
-    .input(
-      z
-        .object({
-          patientId: z.number().int().positive().optional(),
-          examType: examTypeSchema.optional(),
-          search: z.string().optional(),
-          // ISO date (YYYY-MM-DD) inclusive bounds on createdAt. UI binds
-          // these to a DateRangePicker; server interprets `to` as the
-          // end-of-day to keep the range inclusive.
-          from: z.iso.date().optional(),
-          to: z.iso.date().optional(),
-          limit: z.number().int().positive().max(500).optional(),
-          offset: z.number().int().nonnegative().optional(),
-        })
-        .partial()
-    )
-    .output(z.object({ items: z.array(examReportListItemSchema), total: z.number().int() })),
+    .input(examReportListInputSchema)
+    .output(examReportListResponseSchema),
 
   get: oc
     .route({ method: "GET", path: "/{id}" })
-    .input(z.object({ id: z.number().int().positive() }))
+    .input(examReportIdInputSchema)
     .output(examReportDetailSchema),
 
   create: oc
@@ -345,19 +368,19 @@ export const examReportsContract = {
 
   delete: oc
     .route({ method: "DELETE", path: "/{id}" })
-    .input(z.object({ id: z.number().int().positive() }))
-    .output(z.object({ ok: z.literal(true) })),
+    .input(examReportIdInputSchema)
+    .output(examReportOkResponseSchema),
 
   markGenerated: oc
     .route({ method: "POST", path: "/{id}/mark-generated" })
-    .input(z.object({ id: z.number().int().positive() }))
-    .output(z.object({ generatedAt: z.iso.datetime() })),
+    .input(examReportIdInputSchema)
+    .output(markGeneratedResponseSchema),
 
   // ConclusionTemplate CRUD (admin)
   listTemplates: oc
     .route({ method: "GET", path: "/templates" })
-    .input(z.object({ examType: examTypeSchema.nullable().optional() }).partial())
-    .output(z.object({ templates: z.array(conclusionTemplateSchema) })),
+    .input(listTemplatesInputSchema)
+    .output(examReportListTemplatesResponseSchema),
 
   createTemplate: oc
     .route({ method: "POST", path: "/templates" })
@@ -371,13 +394,13 @@ export const examReportsContract = {
 
   deleteTemplate: oc
     .route({ method: "DELETE", path: "/templates/{id}" })
-    .input(z.object({ id: z.number().int().positive() }))
-    .output(z.object({ ok: z.literal(true) })),
+    .input(examReportIdInputSchema)
+    .output(examReportOkResponseSchema),
 
   // ClinicSettings (singleton)
   getClinicSettings: oc
     .route({ method: "GET", path: "/clinic-settings" })
-    .input(z.object({}))
+    .input(emptyInputSchema)
     .output(clinicSettingsSchema),
 
   updateClinicSettings: oc

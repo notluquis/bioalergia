@@ -120,7 +120,7 @@ async function findUserByEmail(email: string) {
   `;
   if (rows.length === 0) return null;
   return db.user.findUnique({
-    where: { id: rows[0]!.id },
+    where: { id: rows[0].id },
     include: {
       person: true,
       passkeys: { select: { id: true } },
@@ -202,7 +202,7 @@ const siteAuthRouterBase = {
         // null until they explicitly add one from /mi-cuenta/seguridad.
         const personInput = {
           email,
-          names: input.name ?? email.split("@")[0]!,
+          names: input.name ?? email.split("@")[0],
         };
         const created = await db.user.create({
           data: {
@@ -316,9 +316,9 @@ const siteAuthRouterBase = {
             roles: { include: { role: true } },
           },
         });
-        if (input.rut && !existing.person?.rut) {
+        if (input.rut && existing.person && !existing.person.rut) {
           await db.person
-            .update({ where: { id: existing.person!.id }, data: { rut: input.rut } })
+            .update({ where: { id: existing.person.id }, data: { rut: input.rut } })
             .catch(() => undefined);
         }
         await setSiteSessionCookieAndIssue(context.hono, updated);

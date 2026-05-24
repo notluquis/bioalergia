@@ -1,4 +1,4 @@
-import { getAccountForPhoneNumber, graphPost } from "./_http.ts";
+import { getAccountForPhoneNumber, graphPost, requireSystemUserToken } from "./_http.ts";
 
 export type SendTextInput = {
   phoneNumberId: number;
@@ -11,7 +11,7 @@ export type SendTextInput = {
 export async function sendTextMessage(input: SendTextInput) {
   const phone = await getAccountForPhoneNumber(input.phoneNumberId);
   const v = phone.account.graphApiVersion;
-  const token = phone.account.systemUserToken!;
+  const token = requireSystemUserToken(phone);
   const payload: Record<string, unknown> = {
     messaging_product: "whatsapp",
     recipient_type: "individual",
@@ -94,7 +94,7 @@ export type SendTemplateInput = {
 export async function sendTemplateMessage(input: SendTemplateInput) {
   const phone = await getAccountForPhoneNumber(input.phoneNumberId);
   const v = phone.account.graphApiVersion;
-  const token = phone.account.systemUserToken!;
+  const token = requireSystemUserToken(phone);
   const payload: Record<string, unknown> = {
     messaging_product: "whatsapp",
     recipient_type: "individual",
@@ -130,7 +130,7 @@ export type SendMediaInput = {
 export async function sendMediaMessage(input: SendMediaInput) {
   const phone = await getAccountForPhoneNumber(input.phoneNumberId);
   const v = phone.account.graphApiVersion;
-  const token = phone.account.systemUserToken!;
+  const token = requireSystemUserToken(phone);
   const media: Record<string, unknown> = {};
   if (input.link) media.link = input.link;
   if (input.mediaId) media.id = input.mediaId;
@@ -168,7 +168,7 @@ export type SendFlowInput = {
 export async function sendFlowMessage(input: SendFlowInput) {
   const phone = await getAccountForPhoneNumber(input.phoneNumberId);
   const v = phone.account.graphApiVersion;
-  const token = phone.account.systemUserToken!;
+  const token = requireSystemUserToken(phone);
   const interactive: Record<string, unknown> = {
     type: "flow",
     body: { text: input.bodyText },
@@ -213,7 +213,7 @@ export async function sendReaction(
 ) {
   const phone = await getAccountForPhoneNumber(phoneNumberId);
   const v = phone.account.graphApiVersion;
-  const token = phone.account.systemUserToken!;
+  const token = requireSystemUserToken(phone);
   return graphPost<{ messages: Array<{ id: string }> }>(
     `/${phone.phoneNumberId}/messages`,
     {
@@ -246,7 +246,7 @@ export type SendInteractiveListInput = {
 export async function sendInteractiveListMessage(input: SendInteractiveListInput) {
   const phone = await getAccountForPhoneNumber(input.phoneNumberId);
   const v = phone.account.graphApiVersion;
-  const token = phone.account.systemUserToken!;
+  const token = requireSystemUserToken(phone);
   const interactive: Record<string, unknown> = {
     type: "list",
     body: { text: input.bodyText },
@@ -287,7 +287,7 @@ export type SendAddressMessageInput = {
 export async function sendAddressMessage(input: SendAddressMessageInput) {
   const phone = await getAccountForPhoneNumber(input.phoneNumberId);
   const v = phone.account.graphApiVersion;
-  const token = phone.account.systemUserToken!;
+  const token = requireSystemUserToken(phone);
   const interactive = {
     type: "address_message",
     body: { text: input.bodyText },
@@ -329,7 +329,7 @@ export type SendLocationInput = {
 export async function sendLocationMessage(input: SendLocationInput) {
   const phone = await getAccountForPhoneNumber(input.phoneNumberId);
   const v = phone.account.graphApiVersion;
-  const token = phone.account.systemUserToken!;
+  const token = requireSystemUserToken(phone);
   const location: Record<string, unknown> = {
     latitude: input.latitude,
     longitude: input.longitude,
@@ -370,7 +370,7 @@ export type SendContactsInput = {
 export async function sendContactsMessage(input: SendContactsInput) {
   const phone = await getAccountForPhoneNumber(input.phoneNumberId);
   const v = phone.account.graphApiVersion;
-  const token = phone.account.systemUserToken!;
+  const token = requireSystemUserToken(phone);
   const payload: Record<string, unknown> = {
     messaging_product: "whatsapp",
     recipient_type: "individual",
@@ -408,7 +408,7 @@ export type SendMultiProductInput = {
 export async function sendMultiProductMessage(input: SendMultiProductInput) {
   const phone = await getAccountForPhoneNumber(input.phoneNumberId);
   const v = phone.account.graphApiVersion;
-  const token = phone.account.systemUserToken!;
+  const token = requireSystemUserToken(phone);
   const interactive = {
     type: "product_list",
     header: { type: "text", text: input.headerText },
@@ -446,7 +446,7 @@ export type EditTextMessageInput = {
 export async function editTextMessage(input: EditTextMessageInput) {
   const phone = await getAccountForPhoneNumber(input.phoneNumberId);
   const v = phone.account.graphApiVersion;
-  const token = phone.account.systemUserToken!;
+  const token = requireSystemUserToken(phone);
   const payload = {
     messaging_product: "whatsapp",
     recipient_type: "individual",

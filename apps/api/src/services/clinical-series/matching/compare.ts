@@ -95,6 +95,7 @@ export function chooseCanonicalPhoneDuplicateCandidate<
   },
 >(base: null | T | undefined, peers: Array<T>): null | T {
   if (!base?.patientName || !base.patientPhones?.length) return base ?? null;
+  const basePatientName = base.patientName;
 
   return chooseBetterSeriesCandidate(
     base,
@@ -104,7 +105,7 @@ export function chooseCanonicalPhoneDuplicateCandidate<
         candidate.kind === base.kind &&
         !!candidate.patientName &&
         !!candidate.patientPhones?.some((phone) => base.patientPhones?.includes(phone)) &&
-        haveCompatiblePatientNames(candidate.patientName, base.patientName!)
+        haveCompatiblePatientNames(candidate.patientName, basePatientName)
     )
   );
 }

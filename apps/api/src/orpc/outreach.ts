@@ -107,7 +107,7 @@ async function runBulkCrawl(jobId: string, rbds: string[]) {
   let emailsFound = 0;
   let phonesFound = 0;
   for (let i = 0; i < rbds.length; i++) {
-    const rbd = rbds[i]!;
+    const rbd = rbds[i];
     try {
       const r = await runCrawler(rbd);
       if (r.success) successful += 1;

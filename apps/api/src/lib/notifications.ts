@@ -244,7 +244,7 @@ export async function broadcastPushNotification(payload: {
   const results = await Promise.allSettled(
     subscriptions.map((sub) => {
       const mode = sub.user?.pushPreviewMode ?? "GENERIC";
-      const notificationPayload = payloadByMode[mode] ?? payloadByMode.GENERIC!;
+      const notificationPayload = payloadByMode[mode] ?? payloadByMode.GENERIC;
       return webpush.sendNotification(
         {
           endpoint: sub.endpoint,

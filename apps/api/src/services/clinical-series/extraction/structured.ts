@@ -108,14 +108,15 @@ export function extractStructuredClinicalDescription(text: string): StructuredCl
 
   const values = new Map<string, string>();
   for (let index = 0; index < sections.length; index += 1) {
-    const section = sections[index]!;
+    const section = sections[index];
     const end = sections[index + 1]?.matchIndex ?? text.length;
     const rawValue = text.slice(section.valueStart, end).trim();
     const value = section.key === "boleta" ? rawValue : cleanStructuredFieldValue(rawValue);
     if (value) values.set(section.key, value);
   }
 
-  const boletaBlock = values.get("boleta") ? trimBoletaBlock(values.get("boleta")!) : null;
+  const boletaValue = values.get("boleta");
+  const boletaBlock = boletaValue ? trimBoletaBlock(boletaValue) : null;
   const beneficiaryCandidates: Array<{ name: null | string; rut: string }> = [];
   if (boletaBlock) {
     const boletaRutRegex = new RegExp(RUT_REGEX.source, "g");

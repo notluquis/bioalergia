@@ -997,9 +997,10 @@ export async function processWebhookPayload(payload: MetaWebhookPayload): Promis
             if (status === "DELIVERED") data.deliveredAt = ts;
             if (status === "READ") data.readAt = ts;
             if (status === "FAILED" && s.errors?.length) {
-              data.errorCode = String(s.errors[0]!.code);
-              data.errorTitle = s.errors[0]!.title;
-              data.errorDetails = s.errors[0]!.error_data?.details ?? s.errors[0]!.message ?? null;
+              const firstErr = s.errors[0];
+              data.errorCode = String(firstErr.code);
+              data.errorTitle = firstErr.title;
+              data.errorDetails = firstErr.error_data?.details ?? firstErr.message ?? null;
             }
             // Status enrichment fields (Meta sends these on each status event)
             if (s.conversation?.id) data.conversationWindowId = s.conversation.id;

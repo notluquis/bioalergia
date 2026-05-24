@@ -1,9 +1,15 @@
-import { getAccountForPhoneNumber, graphGet, graphPost, loadAccount } from "./_http.ts";
+import {
+  getAccountForPhoneNumber,
+  graphGet,
+  graphPost,
+  loadAccount,
+  requireSystemUserToken,
+} from "./_http.ts";
 
 export async function getPhoneHealth(phoneNumberId: number) {
   const phone = await getAccountForPhoneNumber(phoneNumberId);
   const v = phone.account.graphApiVersion;
-  const token = phone.account.systemUserToken!;
+  const token = requireSystemUserToken(phone);
   type Resp = {
     id: string;
     display_phone_number?: string;
@@ -24,7 +30,7 @@ export async function getPhoneHealth(phoneNumberId: number) {
 export async function registerPhoneNumber(phoneNumberId: number, pin: string) {
   const phone = await getAccountForPhoneNumber(phoneNumberId);
   const v = phone.account.graphApiVersion;
-  const token = phone.account.systemUserToken!;
+  const token = requireSystemUserToken(phone);
   return graphPost(
     `/${phone.phoneNumberId}/register`,
     { messaging_product: "whatsapp", pin },
@@ -36,14 +42,14 @@ export async function registerPhoneNumber(phoneNumberId: number, pin: string) {
 export async function deregisterPhoneNumber(phoneNumberId: number) {
   const phone = await getAccountForPhoneNumber(phoneNumberId);
   const v = phone.account.graphApiVersion;
-  const token = phone.account.systemUserToken!;
+  const token = requireSystemUserToken(phone);
   return graphPost(`/${phone.phoneNumberId}/deregister`, {}, token, v);
 }
 
 export async function setTwoStepPin(phoneNumberId: number, pin: string) {
   const phone = await getAccountForPhoneNumber(phoneNumberId);
   const v = phone.account.graphApiVersion;
-  const token = phone.account.systemUserToken!;
+  const token = requireSystemUserToken(phone);
   return graphPost(`/${phone.phoneNumberId}`, { pin }, token, v);
 }
 
@@ -59,7 +65,7 @@ export async function requestPhoneVerificationCode(
 ) {
   const phone = await getAccountForPhoneNumber(phoneNumberId);
   const v = phone.account.graphApiVersion;
-  const token = phone.account.systemUserToken!;
+  const token = requireSystemUserToken(phone);
   return graphPost(
     `/${phone.phoneNumberId}/request_code`,
     { code_method: codeMethod, language },
@@ -71,7 +77,7 @@ export async function requestPhoneVerificationCode(
 export async function verifyPhoneCode(phoneNumberId: number, code: string) {
   const phone = await getAccountForPhoneNumber(phoneNumberId);
   const v = phone.account.graphApiVersion;
-  const token = phone.account.systemUserToken!;
+  const token = requireSystemUserToken(phone);
   return graphPost(`/${phone.phoneNumberId}/verify_code`, { code }, token, v);
 }
 

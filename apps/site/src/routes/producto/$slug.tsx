@@ -41,7 +41,10 @@ function ProductDetailPage() {
   const productId = data?.data.id;
   const reviewsAggregateQ = useQuery({
     queryKey: ["shop", "reviews", productId],
-    queryFn: () => catalogClient.listReviews({ id: productId! }),
+    queryFn: () => {
+      if (typeof productId !== "number") throw new Error("productId requerido");
+      return catalogClient.listReviews({ id: productId });
+    },
     enabled: typeof productId === "number",
     staleTime: 1000 * 60 * 5,
   });
