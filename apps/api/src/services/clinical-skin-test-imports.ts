@@ -103,6 +103,8 @@ export type SkinTestImportStatus =
   | "SKIPPED"
   | "TEMPLATE";
 
+const MATERIALIZED_SKIN_TEST_IMPORT_STATUSES = new Set<SkinTestImportStatus>(["IMPORTED"]);
+
 type SkinTestWorkbookSnapshotStatus = "ARCHIVED" | "ERROR" | "MISSING" | "STALE";
 
 export interface SkinTestImportOutput {
@@ -1491,6 +1493,7 @@ export async function getSkinTestAnalytics(
   const pageSize = input.pageSize ?? 20;
   const whereSql = buildSkinTestAnalyticsWhereSql(input);
   const examTypeSql = skinTestExamTypeSql();
+  const patientIdentitySql = skinTestPatientIdentitySql();
 
   const [
     summaryResult,
@@ -1521,7 +1524,7 @@ export async function getSkinTestAnalytics(
         )
         SELECT
           count(*)::int AS "totalTests",
-          count(DISTINCT coalesce(nullif(patient_rut, ''), nullif(patient_name, ''), id))::int AS "totalPatients",
+          count(DISTINCT ${patientIdentitySql})::int AS "totalPatients",
           count(*) FILTER (WHERE nullif(patient_rut, '') IS NOT NULL)::int AS "withRut",
           count(*) FILTER (WHERE nullif(patient_rut, '') IS NULL)::int AS "withoutRut",
           min(test_date) AS "dateFrom",
@@ -1542,13 +1545,18 @@ export async function getSkinTestAnalytics(
               AND coalesce(r.papule_mm, 0) >= 3
           ), 0) AS "positiveTests",
           coalesce((
-            SELECT count(DISTINCT coalesce(nullif(f.patient_rut, ''), nullif(f.patient_name, ''), f.clinical_series_id::text, f.id))::int
+            SELECT count(DISTINCT coalesce(
+              nullif(regexp_replace(upper(coalesce(f.patient_rut, '')), '[^0-9K]', '', 'g'), ''),
+              nullif(regexp_replace(lower(coalesce(f.patient_name, '')), '[^[:alnum:]áéíóúüñ]+', ' ', 'g'), ''),
+              f.clinical_series_id::text,
+              f.id
+            ))::int
             FROM filtered f
             JOIN clinical_skin_test_results r ON r.skin_test_id = f.id
             WHERE r.control_type IS NULL
               AND coalesce(r.papule_mm, 0) >= 3
           ), 0) AS "patientsWithPositiveAllergen"
-        FROM filtered
+        FROM filtered t
       `.execute(kysely),
     sql<{ examType: string; total: number }>`
         SELECT ${examTypeSql} AS "examType", count(*)::int AS total
@@ -1599,7 +1607,7 @@ export async function getSkinTestAnalytics(
           r.allergen_name AS "allergenName",
           r.papule_mm::float AS "papuleMm",
           t.id AS "skinTestId",
-          coalesce(nullif(t.patient_rut, ''), nullif(t.patient_name, ''), t.clinical_series_id::text, t.id) AS "patientKey"
+          ${patientIdentitySql} AS "patientKey"
         FROM clinical_skin_test_results r
         JOIN clinical_skin_tests t ON t.id = r.skin_test_id
         LEFT JOIN clinical_skin_test_imports i ON i.id = t.source_import_id
@@ -1760,6 +1768,7 @@ export async function rejectSkinTestImport(id: string, userId: number, notes?: s
         updated_at = now()
     WHERE id = ${id}
   `.execute(kysely);
+  await syncSkinTestImportMaterialization(id, "REJECTED");
   return await getSkinTestImport(id);
 }
 
@@ -1821,6 +1830,7 @@ export async function reprocessSkinTestImport(id: string) {
           updated_at = now()
       WHERE id = ${id}
     `.execute(kysely);
+    await syncSkinTestImportMaterialization(id, "SKIPPED");
     return await getSkinTestImport(id);
   }
 
@@ -1841,6 +1851,7 @@ export async function reprocessSkinTestImport(id: string) {
           updated_at = now()
       WHERE id = ${id}
     `.execute(kysely);
+    await syncSkinTestImportMaterialization(id, "TEMPLATE");
     return await getSkinTestImport(id);
   }
 
@@ -1860,6 +1871,7 @@ export async function reprocessSkinTestImport(id: string) {
           updated_at = now()
       WHERE id = ${id}
     `.execute(kysely);
+    await syncSkinTestImportMaterialization(id, "SKIPPED");
     return await getSkinTestImport(id);
   }
   const materialization = await maybeMaterializeImport(id, parsed);
@@ -1868,10 +1880,12 @@ export async function reprocessSkinTestImport(id: string) {
     ...materialization.issues,
     ...(duplicate.kind === "probable" ? [duplicate.issue] : []),
   ];
+  const nextStatus: SkinTestImportStatus =
+    materialization.seriesId && canAutoImport(parsed, allIssues) ? "IMPORTED" : "PENDING_REVIEW";
   await sql`
     UPDATE clinical_skin_test_imports
     SET parser_version = ${SKIN_TEST_PARSER_VERSION},
-        status = ${materialization.seriesId && canAutoImport(parsed, allIssues) ? "IMPORTED" : "PENDING_REVIEW"}::"ClinicalSkinTestImportStatus",
+        status = ${nextStatus}::"ClinicalSkinTestImportStatus",
         confidence = ${computeConfidence(parsed.confidence, allIssues)},
         error = null,
         issues = ${JSON.stringify(allIssues)}::jsonb,
@@ -1884,6 +1898,8 @@ export async function reprocessSkinTestImport(id: string) {
   if (materialization.seriesId && canAutoImport(parsed, allIssues)) {
     await writeSkinTest(id, materialization.seriesId, parsed);
     await markImported(id);
+  } else {
+    await syncSkinTestImportMaterialization(id, nextStatus);
   }
   return await getSkinTestImport(id);
 }
@@ -3063,6 +3079,16 @@ async function upsertImport(params: {
       duplicate_of_import_id = EXCLUDED.duplicate_of_import_id,
       updated_at = now()
   `.execute(kysely);
+
+  await syncSkinTestImportMaterialization(params.id, params.status);
+}
+
+async function syncSkinTestImportMaterialization(importId: string, status: SkinTestImportStatus) {
+  if (MATERIALIZED_SKIN_TEST_IMPORT_STATUSES.has(status)) return;
+  await kysely.transaction().execute(async (trx) => {
+    await sql`DELETE FROM clinical_skin_test_results WHERE source_import_id = ${importId}`.execute(trx);
+    await sql`DELETE FROM clinical_skin_tests WHERE source_import_id = ${importId}`.execute(trx);
+  });
 }
 
 async function ensureImportMetadataRow(
@@ -3189,7 +3215,8 @@ function buildSkinTestAnalyticsWhereSql(input: SkinTestAnalyticsInput) {
   const examType = input.examType?.trim();
   const examTypeSql = skinTestExamTypeSql();
   return sql<boolean>`
-    (${input.dateFrom ?? null}::date IS NULL OR t.test_date >= ${input.dateFrom ?? null}::date)
+    (t.source_import_id IS NULL OR i.status = 'IMPORTED')
+    AND (${input.dateFrom ?? null}::date IS NULL OR t.test_date >= ${input.dateFrom ?? null}::date)
     AND (${input.dateTo ?? null}::date IS NULL OR t.test_date <= ${input.dateTo ?? null}::date)
     AND (${examType || null}::text IS NULL OR ${examTypeSql} = ${examType || null})
     AND (
@@ -3198,6 +3225,17 @@ function buildSkinTestAnalyticsWhereSql(input: SkinTestAnalyticsInput) {
       OR t.patient_rut ILIKE ${`%${query ?? ""}%`}
       OR t.panel_title ILIKE ${`%${query ?? ""}%`}
       OR i.filename ILIKE ${`%${query ?? ""}%`}
+    )
+  `;
+}
+
+function skinTestPatientIdentitySql() {
+  return sql<string>`
+    coalesce(
+      nullif(regexp_replace(upper(coalesce(t.patient_rut, '')), '[^0-9K]', '', 'g'), ''),
+      nullif(regexp_replace(lower(coalesce(t.patient_name, '')), '[^[:alnum:]áéíóúüñ]+', ' ', 'g'), ''),
+      t.clinical_series_id::text,
+      t.id
     )
   `;
 }
@@ -3808,7 +3846,7 @@ async function markOneDriveItemDeleted(accountId: string, driveId: string, itemI
     message: "El archivo fue eliminado de OneDrive según el delta de Graph.",
     severity: "info",
   };
-  await sql`
+  const updated = await sql<{ id: string }>`
     UPDATE clinical_skin_test_imports
     SET
       status = 'SKIPPED',
@@ -3822,7 +3860,11 @@ async function markOneDriveItemDeleted(accountId: string, driveId: string, itemI
       AND onedrive_drive_id = ${driveId}
       AND onedrive_item_id = ${itemId}
       AND status NOT IN ('IMPORTED', 'REJECTED')
+    RETURNING id
   `.execute(kysely);
+  await Promise.all(
+    updated.rows.map((row) => syncSkinTestImportMaterialization(row.id, "SKIPPED"))
+  );
 }
 
 function toDateString(value: Date | string): string {
