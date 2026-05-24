@@ -243,6 +243,80 @@ describe("detectDuplicateSeries — same RUT, different name (subset)", () => {
     expect(dupes[0]?.reason).toBe("Mismo nombre de paciente (ISIDORA HORMAZABAL)");
   });
 
+  it("detects skin-test event/import split with exact RUT and a one-day date drift", async () => {
+    mockFindMany.mockResolvedValueOnce([
+      makeSeries(372, "pedro monsalves matamala", "21.946.529-7", "SKIN_TEST", 1, {
+        events: [
+          {
+            startDate: new Date("2025-01-27T00:00:00.000Z"),
+            summary: "confirma test cutaneo ambiental Pedro Monsalves Matamala",
+          },
+        ],
+      }),
+      makeSeries(9984, "Pedro Monsalves Matamala", "21.946.529-7", "SKIN_TEST", 0),
+    ]);
+    mockFindSkinTests.mockResolvedValueOnce([
+      { clinicalSeriesId: 9984, testDate: new Date("2025-01-28T00:00:00.000Z") },
+    ]);
+
+    const dupes = await detectDuplicateSeries();
+
+    expect(dupes).toHaveLength(1);
+    expect(dupes[0]).toMatchObject({
+      reason: "Mismo paciente probable y fecha clínica cercana entre evento y examen",
+      sourceId: 9984,
+      targetId: 372,
+    });
+  });
+
+  it("detects skin-test event/import split by exact name and exam text with a two-day date drift", async () => {
+    mockFindMany.mockResolvedValueOnce([
+      makeSeries(4166, "dominique cisterna munoz", null, "SKIN_TEST", 1, {
+        events: [
+          {
+            startDate: new Date("2023-04-17T00:00:00.000Z"),
+            summary: "confirmada test cutaneo aeroalergeno pediatrico Dominique Cisterna Muñoz",
+          },
+        ],
+      }),
+      makeSeries(8966, "Dominique Cisterna Muñoz", "24.268.215-3", "SKIN_TEST", 0),
+    ]);
+    mockFindSkinTests.mockResolvedValueOnce([
+      { clinicalSeriesId: 8966, testDate: new Date("2023-04-15T00:00:00.000Z") },
+    ]);
+
+    const dupes = await detectDuplicateSeries();
+
+    expect(dupes).toHaveLength(1);
+    expect(dupes[0]).toMatchObject({
+      reason: "Mismo paciente probable y fecha clínica cercana entre evento y examen",
+      sourceId: 8966,
+      targetId: 4166,
+    });
+  });
+
+  it("does not use near-date name pairing when the event text is not a skin-test event", async () => {
+    mockFindMany.mockResolvedValueOnce([
+      makeSeries(1, "dominique cisterna munoz", null, "SKIN_TEST", 1, {
+        events: [
+          {
+            startDate: new Date("2023-04-17T00:00:00.000Z"),
+            summary: "control medico Dominique Cisterna Muñoz",
+          },
+        ],
+      }),
+      makeSeries(2, "Dominique Cisterna Muñoz", "24.268.215-3", "SKIN_TEST", 0),
+    ]);
+    mockFindSkinTests.mockResolvedValueOnce([
+      { clinicalSeriesId: 2, testDate: new Date("2023-04-15T00:00:00.000Z") },
+    ]);
+
+    const dupes = await detectDuplicateSeries();
+
+    expect(dupes).toHaveLength(1);
+    expect(dupes[0]?.reason).toBe("Mismo nombre de paciente (Dominique Cisterna Muñoz)");
+  });
+
   it("does NOT merge different RUTs even when names are similar", async () => {
     mockFindMany.mockResolvedValueOnce([
       makeSeries(1, "juan perez garcia", "12345678-5", "SUBCUTANEOUS_TREATMENT", 3),
