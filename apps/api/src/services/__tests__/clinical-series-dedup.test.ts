@@ -7,19 +7,23 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 // @finanzas/db/slices (sliced ZenStack client) — both should see the same
 // mockFindMany / mockFindFirst / mockFindUnique.
 
-const { mockFindMany, mockFindFirst, mockFindUnique, mockDb } = vi.hoisted(() => {
-  const mockFindMany = vi.fn();
-  const mockFindFirst = vi.fn();
-  const mockFindUnique = vi.fn();
-  const mockDb = {
-    clinicalSeries: {
-      findFirst: (...args: unknown[]) => mockFindFirst(...args),
-      findMany: (...args: unknown[]) => mockFindMany(...args),
-      findUnique: (...args: unknown[]) => mockFindUnique(...args),
-    },
-  };
-  return { mockFindMany, mockFindFirst, mockFindUnique, mockDb };
-});
+const { mockFindMany, mockFindFirst, mockFindSkinTests, mockFindUnique, mockDb } = vi.hoisted(
+  () => {
+    const mockFindMany = vi.fn();
+    const mockFindFirst = vi.fn();
+    const mockFindSkinTests = vi.fn();
+    const mockFindUnique = vi.fn();
+    const mockDb = {
+      $queryRaw: (...args: unknown[]) => mockFindSkinTests(...args),
+      clinicalSeries: {
+        findFirst: (...args: unknown[]) => mockFindFirst(...args),
+        findMany: (...args: unknown[]) => mockFindMany(...args),
+        findUnique: (...args: unknown[]) => mockFindUnique(...args),
+      },
+    };
+    return { mockFindMany, mockFindFirst, mockFindSkinTests, mockFindUnique, mockDb };
+  }
+);
 
 vi.mock("@finanzas/db", () => ({ db: mockDb, kysely: {} }));
 vi.mock("@finanzas/db/slices", () => ({ dbClinicalSeries: mockDb }));
@@ -39,7 +43,15 @@ function makeSeries(
     beneficiaryName?: string | null;
     beneficiaryPhones?: unknown;
     beneficiaryRut?: string | null;
-    events?: Array<{ description: null | string; summary: null | string }>;
+    events?: Array<{
+      description?: null | string;
+      endDate?: Date | null;
+      endDateTime?: Date | null;
+      startDate?: Date | null;
+      startDateTime?: Date | null;
+      summary?: null | string;
+    }>;
+    patientId?: number | null;
     patientPhones?: unknown;
   }
 ) {
@@ -47,9 +59,17 @@ function makeSeries(
     beneficiaryName: extras?.beneficiaryName ?? null,
     beneficiaryPhones: extras?.beneficiaryPhones ?? null,
     beneficiaryRut: extras?.beneficiaryRut ?? null,
-    events: extras?.events ?? [],
+    events: (extras?.events ?? []).map((event) => ({
+      description: event.description ?? null,
+      endDate: event.endDate ?? null,
+      endDateTime: event.endDateTime ?? null,
+      startDate: event.startDate ?? null,
+      startDateTime: event.startDateTime ?? null,
+      summary: event.summary ?? null,
+    })),
     id,
     kind,
+    patientId: extras?.patientId ?? null,
     patientName,
     patientPhones: extras?.patientPhones ?? null,
     patientRut,
@@ -63,6 +83,8 @@ describe("detectDuplicateSeries — same RUT, different name (subset)", () => {
   beforeEach(() => {
     mockFindFirst.mockReset();
     mockFindMany.mockReset();
+    mockFindSkinTests.mockReset();
+    mockFindSkinTests.mockResolvedValue([]);
     mockFindUnique.mockReset();
   });
 
@@ -113,6 +135,32 @@ describe("detectDuplicateSeries — same RUT, different name (subset)", () => {
     const dupes = await detectDuplicateSeries();
 
     expect(dupes).toHaveLength(0);
+  });
+
+  it("detects skin-test series split between calendar event and imported XLSX", async () => {
+    mockFindMany.mockResolvedValueOnce([
+      makeSeries(224, "Isaac Chacon chavez", "25416248-5", "SKIN_TEST", 1, {
+        events: [{ startDateTime: new Date("2026-03-20T17:45:00.000Z") }],
+        patientId: 6134,
+      }),
+      makeSeries(9525, "Isaac Chacon chavez", "25.416.248-5", "SKIN_TEST", 0, {
+        patientId: 6134,
+      }),
+    ]);
+    mockFindSkinTests.mockResolvedValueOnce([
+      { clinicalSeriesId: 9525, testDate: new Date("2026-03-20T00:00:00.000Z") },
+    ]);
+
+    const dupes = await detectDuplicateSeries();
+
+    expect(dupes).toHaveLength(1);
+    expect(dupes[0]).toMatchObject({
+      confidence: "high",
+      kind: "SKIN_TEST",
+      reason: "Mismo paciente y misma fecha clínica entre evento y examen",
+      sourceId: 9525,
+      targetId: 224,
+    });
   });
 
   it("does NOT merge different RUTs even when names are similar", async () => {

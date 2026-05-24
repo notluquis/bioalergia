@@ -18,6 +18,7 @@ import {
   classifyClinicalXlsxFilename,
   type ClinicalXlsxFileClassification,
 } from "../lib/clinical-xlsx-file-classifier.ts";
+import { normalizeRut as normalizeCanonicalRut } from "../lib/rut.ts";
 import { isImportableSkinTestFilename } from "../lib/skin-test-file-filter.ts";
 import {
   parseSkinTestWorkbookBuffer,
@@ -37,6 +38,7 @@ const DEFAULT_ARCHIVE_CONCURRENCY = 4;
 const MAX_ARCHIVE_CONCURRENCY = 8;
 const ARCHIVE_BATCH_SIZE = 500;
 const ARCHIVE_UNLIMITED_THRESHOLD = 10_000;
+const CLINICAL_TIMEZONE = "America/Santiago";
 
 export type SkinTestSyncProgressPhase =
   | "archiving"
@@ -2413,20 +2415,23 @@ async function matchOrCreateClinicalSeries(
     return { issues, seriesId: null };
   }
 
-  if (patientRut) {
+  const canonicalPatientRut = normalizeCanonicalRut(patientRut);
+  if (canonicalPatientRut) {
     const matches = await sql<{ id: number }>`
       SELECT cs.id
       FROM clinical_series cs
       LEFT JOIN events e ON e.clinical_series_id = cs.id
       WHERE cs.kind = 'SKIN_TEST'
-        AND cs.patient_rut = ${patientRut}
+        AND regexp_replace(upper(cs.patient_rut), '[^0-9K]', '', 'g') =
+            regexp_replace(upper(${canonicalPatientRut}), '[^0-9K]', '', 'g')
         AND (
           e.id IS NULL
-          OR e.start_date = ${testDate}::date
-          OR e.start_date BETWEEN (${testDate}::date - interval '14 days') AND (${testDate}::date + interval '14 days')
+          OR COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${CLINICAL_TIMEZONE})::date) = ${testDate}::date
+          OR COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${CLINICAL_TIMEZONE})::date)
+             BETWEEN (${testDate}::date - interval '14 days') AND (${testDate}::date + interval '14 days')
         )
       GROUP BY cs.id
-      ORDER BY min(abs(coalesce(e.start_date, ${testDate}::date) - ${testDate}::date)) NULLS LAST, cs.id DESC
+      ORDER BY min(abs(coalesce(COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${CLINICAL_TIMEZONE})::date), ${testDate}::date) - ${testDate}::date)) NULLS LAST, cs.id DESC
       LIMIT 3
     `.execute(kysely);
 
@@ -2445,7 +2450,9 @@ async function matchOrCreateClinicalSeries(
         seriesId: null,
       };
     }
-  } else if (patientName) {
+  }
+
+  if (patientName) {
     const nameMatch = await matchClinicalSeriesByNameAndDate(patientName, testDate);
     if (nameMatch.seriesId || nameMatch.issues.length > 0) return nameMatch;
   }
@@ -2506,11 +2513,12 @@ async function matchClinicalSeriesByNameAndDate(
       AND cs.patient_name IS NOT NULL
       AND (
         e.id IS NULL
-        OR e.start_date = ${testDate}::date
-        OR e.start_date BETWEEN (${testDate}::date - interval '14 days') AND (${testDate}::date + interval '14 days')
+        OR COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${CLINICAL_TIMEZONE})::date) = ${testDate}::date
+        OR COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${CLINICAL_TIMEZONE})::date)
+           BETWEEN (${testDate}::date - interval '14 days') AND (${testDate}::date + interval '14 days')
       )
     GROUP BY cs.id, cs.patient_name
-    ORDER BY min(abs(coalesce(e.start_date, ${testDate}::date) - ${testDate}::date)) NULLS LAST, cs.id DESC
+    ORDER BY min(abs(coalesce(COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${CLINICAL_TIMEZONE})::date), ${testDate}::date) - ${testDate}::date)) NULLS LAST, cs.id DESC
     LIMIT 100
   `.execute(kysely);
 
