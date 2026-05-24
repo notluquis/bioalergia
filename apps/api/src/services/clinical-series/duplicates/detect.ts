@@ -152,6 +152,25 @@ export async function detectDuplicateSeries(): Promise<ClinicalSeriesDuplicate[]
     return Boolean(leftRut && rightRut && leftRut === rightRut);
   };
 
+  const hasSameNormalizedPatientName = (left: SeriesRow, right: SeriesRow): boolean => {
+    if (!left.patientName || !right.patientName) return false;
+    const leftName = normalizeName(left.patientName);
+    const rightName = normalizeName(right.patientName);
+    return Boolean(leftName && leftName === rightName && isLikelyPersonName(leftName));
+  };
+
+  const hasComplementaryEventAndSkinTestEvidence = (left: SeriesRow, right: SeriesRow): boolean => {
+    const leftHasEvents = left._count.events > 0;
+    const rightHasEvents = right._count.events > 0;
+    const leftHasSkinTests = left.skinTests.length > 0;
+    const rightHasSkinTests = right.skinTests.length > 0;
+
+    return (
+      (leftHasEvents && !leftHasSkinTests && !rightHasEvents && rightHasSkinTests) ||
+      (rightHasEvents && !rightHasSkinTests && !leftHasEvents && leftHasSkinTests)
+    );
+  };
+
   const chooseClinicalEvidenceTarget = (left: SeriesRow, right: SeriesRow): SeriesRow => {
     if (left._count.events > 0 && right._count.events === 0) return left;
     if (right._count.events > 0 && left._count.events === 0) return right;
@@ -167,9 +186,13 @@ export async function detectDuplicateSeries(): Promise<ClinicalSeriesDuplicate[]
     for (const right of allSeries) {
       if (right.id <= left.id || usedAsSources.has(right.id)) continue;
       if (left.kind !== right.kind) continue;
-      if (!hasSamePrimaryPatientEvidence(left, right)) continue;
       if (hasHardPatientRutConflictForDuplicateDetection(left, right)) continue;
       if (hasConflictingPrimaryIdentity(left, right)) continue;
+      const samePatientEvidence = hasSamePrimaryPatientEvidence(left, right);
+      const sameNameEventTestEvidence =
+        hasComplementaryEventAndSkinTestEvidence(left, right) &&
+        hasSameNormalizedPatientName(left, right);
+      if (!samePatientEvidence && !sameNameEventTestEvidence) continue;
       if (!hasSharedClinicalDate(left, right)) continue;
 
       const target = chooseClinicalEvidenceTarget(left, right);
@@ -178,7 +201,9 @@ export async function detectDuplicateSeries(): Promise<ClinicalSeriesDuplicate[]
         confidence: "high",
         kind: target.kind,
         patientName: target.patientName,
-        reason: "Mismo paciente y misma fecha clínica entre evento y examen",
+        reason: samePatientEvidence
+          ? "Mismo paciente y misma fecha clínica entre evento y examen"
+          : "Mismo nombre y misma fecha clínica entre evento y examen",
         sourceEventCount: src._count.events,
         sourceId: src.id,
         sourcePatientName: src.patientName,
