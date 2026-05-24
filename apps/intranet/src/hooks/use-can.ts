@@ -1,9 +1,8 @@
 import { useAbility } from "@casl/react";
 
-import { AbilityContext } from "../lib/authz/AbilityProvider";
-
 export function useCan() {
-  const ability = useAbility(AbilityContext);
+  // @casl/react v7: useAbility() reads the AbilityProvider context (no arg).
+  const ability = useAbility();
 
   const can = (action: string, subject: string, field?: string) => {
     return ability.can(action, subject, field);

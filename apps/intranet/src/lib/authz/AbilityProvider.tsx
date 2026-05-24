@@ -1,16 +1,17 @@
 // src/lib/authz/AbilityProvider.tsx
+//
+// @casl/react v7: the library ships its own AbilityProvider (context-backed),
+// Can, and useAbility. We expose a no-arg wrapper that feeds the app-wide
+// singleton `ability` so call sites stay `<AbilityProvider>…</AbilityProvider>`.
 
-import type { MongoAbility } from "@casl/ability";
-import { createContextualCan } from "@casl/react";
-import React, { createContext } from "react";
+import { AbilityProvider as CaslAbilityProvider, Can, useAbility } from "@casl/react";
+import type { ReactNode } from "react";
 
 import { ability } from "./ability";
 
-export const AbilityContext = createContext<MongoAbility>(ability);
-export const Can = createContextualCan(AbilityContext.Consumer);
-
-export const AbilityProvider = ({ children }: { children: React.ReactNode }) => {
-  return <AbilityContext.Provider value={ability}>{children}</AbilityContext.Provider>;
+export const AbilityProvider = ({ children }: { children: ReactNode }) => {
+  return <CaslAbilityProvider value={ability}>{children}</CaslAbilityProvider>;
 };
 
-export const useAbility = () => React.useContext(AbilityContext);
+// Re-exported for consumers that want the canonical v7 primitives.
+export { Can, useAbility };

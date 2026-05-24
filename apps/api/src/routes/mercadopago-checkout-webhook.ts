@@ -8,12 +8,10 @@
 
 import { db } from "@finanzas/db";
 import type { Hono } from "hono";
+import { InvalidWebhookSignatureError, WebhookSignatureValidator } from "mercadopago";
 
 import { emitDte } from "../modules/haulmer/emit-dte.ts";
-import {
-  refetchPayment,
-  verifyMpWebhookSignature,
-} from "../modules/mercadopago-checkout/payment.ts";
+import { refetchPayment } from "../modules/mercadopago-checkout/payment.ts";
 import { pushStockToMl } from "../modules/mercadolibre/sync.ts";
 import { consumeReservations, releaseReservations } from "../modules/reservations/index.ts";
 import { attachDteToOrder, markOrderPaid } from "../services/orders.ts";
@@ -26,11 +24,26 @@ export function registerMercadopagoCheckoutWebhook(app: Hono) {
     const sigHeader = c.req.header("x-signature") ?? null;
     const reqId = c.req.header("x-request-id") ?? null;
 
-    const valid = verifyMpWebhookSignature({
-      signatureHeader: sigHeader,
-      requestId: reqId,
-      dataId: dataId ?? null,
-    });
+    // SDK validator: constant-time HMAC + 5-min replay window. Throws on failure.
+    let valid = false;
+    try {
+      WebhookSignatureValidator.validate({
+        xSignature: sigHeader,
+        xRequestId: reqId,
+        dataId: dataId ?? null,
+        secret: process.env.MERCADOPAGO_WEBHOOK_SECRET ?? "",
+        toleranceSeconds: 300,
+      });
+      valid = true;
+    } catch (err) {
+      if (err instanceof InvalidWebhookSignatureError) {
+        console.warn(
+          `[mp-webhook] signature rejected: ${err.reason} (req ${err.requestId ?? "?"})`
+        );
+      } else {
+        throw err;
+      }
+    }
 
     // Body para audit log.
     let payload: unknown;

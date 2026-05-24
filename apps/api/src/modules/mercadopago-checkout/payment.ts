@@ -14,7 +14,7 @@
 // and `/v1/payments` (legacy direct), per MP's 2026 unified API.
 
 import { MercadoPagoConfig, Order, Payment } from "mercadopago";
-import { createHmac, randomUUID } from "node:crypto";
+import { randomUUID } from "node:crypto";
 
 function getAccessToken(): string {
   const token = process.env.MP_ACCESS_TOKEN ?? process.env.MERCADOPAGO_ACCESS_TOKEN;
@@ -158,36 +158,6 @@ export function getStorefrontReturnUrls(orderNumber: string) {
   };
 }
 
-// Webhook signature verification — MP sends `x-signature` header with
-// `ts=<>,v1=<HMAC_SHA256>`. Manifest = `id:<dataId>;request-id:<reqId>;ts:<ts>;`
-// signed with MERCADOPAGO_WEBHOOK_SECRET. Constant-time compare.
-// Ref: https://www.mercadopago.cl/developers/en/docs/your-integrations/notifications/webhooks
-export function verifyMpWebhookSignature(opts: {
-  signatureHeader: string | null;
-  requestId: string | null;
-  dataId: string | null;
-  secret?: string;
-}): boolean {
-  const secret = opts.secret ?? process.env.MERCADOPAGO_WEBHOOK_SECRET;
-  if (!secret || !opts.signatureHeader || !opts.dataId) return false;
-
-  const parts = opts.signatureHeader
-    .split(",")
-    .reduce<Record<string, string>>((acc, kv) => {
-      const [k, v] = kv.split("=").map((s) => s.trim());
-      if (k && v) acc[k] = v;
-      return acc;
-    }, {});
-  const ts = parts.ts;
-  const v1 = parts.v1;
-  if (!ts || !v1) return false;
-
-  const manifest = `id:${opts.dataId};request-id:${opts.requestId ?? ""};ts:${ts};`;
-  const computed = createHmac("sha256", secret).update(manifest).digest("hex");
-  if (computed.length !== v1.length) return false;
-  let diff = 0;
-  for (let i = 0; i < computed.length; i++) {
-    diff |= computed.charCodeAt(i) ^ v1.charCodeAt(i);
-  }
-  return diff === 0;
-}
+// Webhook signature verification moved to MercadoPago SDK's
+// `WebhookSignatureValidator` (adds replay-window + version forward-compat).
+// See routes/mercadopago-checkout-webhook.ts.
