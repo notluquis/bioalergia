@@ -1,9 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { TimesheetEntryWithEmployee } from "../types";
-import {
-  detectOverlapsForDate,
-  getOverlappingEmployeesForDate,
-} from "./overlap-detection";
+import { detectOverlapsForDate, getOverlappingEmployeesForDate } from "./overlap-detection";
 
 function makeEntry(
   overrides: Partial<TimesheetEntryWithEmployee> & {
@@ -62,9 +59,7 @@ describe("overlap-detection — extra branch coverage", () => {
   });
 
   it("getOverlappingEmployeesForDate returns empty when no entries on date", () => {
-    const entries = [
-      makeEntry({ employee_id: 1, start_time: "08:00", end_time: "16:00" }),
-    ];
+    const entries = [makeEntry({ employee_id: 1, start_time: "08:00", end_time: "16:00" })];
     expect(getOverlappingEmployeesForDate(entries, "2099-12-31")).toStrictEqual([]);
   });
 

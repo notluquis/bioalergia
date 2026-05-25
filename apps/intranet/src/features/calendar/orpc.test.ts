@@ -115,8 +115,8 @@ describe("orpcFetch + error pipeline (driven via calendarORPCClient)", () => {
   });
 
   it("invokes global fetch with credentials + X-CSRF-Token header on a successful RPC call", async () => {
-    const fetchMock = vi.fn(
-      async (_input: RequestInfo | URL, _init?: RequestInit) => makeRpcSuccessResponse([])
+    const fetchMock = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) =>
+      makeRpcSuccessResponse([])
     );
     globalThis.fetch = fetchMock as unknown as typeof fetch;
 
@@ -136,8 +136,8 @@ describe("orpcFetch + error pipeline (driven via calendarORPCClient)", () => {
       configurable: true,
       get: () => "",
     });
-    const fetchMock = vi.fn(
-      async (_input: RequestInfo | URL, _init?: RequestInit) => makeRpcSuccessResponse([])
+    const fetchMock = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) =>
+      makeRpcSuccessResponse([])
     );
     globalThis.fetch = fetchMock as unknown as typeof fetch;
 
@@ -156,11 +156,12 @@ describe("orpcFetch + error pipeline (driven via calendarORPCClient)", () => {
   // care about its internal mapping; the goal is to exercise the
   // private helpers in this module.
   it("drives a 401 HTML response through the error pipeline", async () => {
-    globalThis.fetch = vi.fn(async () =>
-      new Response("<html>nope</html>", {
-        status: 401,
-        headers: { "content-type": "text/html" },
-      })
+    globalThis.fetch = vi.fn(
+      async () =>
+        new Response("<html>nope</html>", {
+          status: 401,
+          headers: { "content-type": "text/html" },
+        })
     ) as unknown as typeof fetch;
 
     await expect(
@@ -169,11 +170,12 @@ describe("orpcFetch + error pipeline (driven via calendarORPCClient)", () => {
   });
 
   it("drives a 403 plain-text response through the error pipeline (uses raw body trim)", async () => {
-    globalThis.fetch = vi.fn(async () =>
-      new Response("forbidden because reasons", {
-        status: 403,
-        headers: { "content-type": "text/plain" },
-      })
+    globalThis.fetch = vi.fn(
+      async () =>
+        new Response("forbidden because reasons", {
+          status: 403,
+          headers: { "content-type": "text/plain" },
+        })
     ) as unknown as typeof fetch;
 
     await expect(
@@ -182,11 +184,12 @@ describe("orpcFetch + error pipeline (driven via calendarORPCClient)", () => {
   });
 
   it("drives a 404 with empty body (defaultErrorMessageByStatus 404 branch)", async () => {
-    globalThis.fetch = vi.fn(async () =>
-      new Response("   ", {
-        status: 404,
-        headers: { "content-type": "text/plain" },
-      })
+    globalThis.fetch = vi.fn(
+      async () =>
+        new Response("   ", {
+          status: 404,
+          headers: { "content-type": "text/plain" },
+        })
     ) as unknown as typeof fetch;
 
     await expect(
@@ -195,11 +198,12 @@ describe("orpcFetch + error pipeline (driven via calendarORPCClient)", () => {
   });
 
   it("drives a 429 (RATE_LIMITED code branch + defaultErrorMessageByStatus 429)", async () => {
-    globalThis.fetch = vi.fn(async () =>
-      new Response("", {
-        status: 429,
-        headers: { "content-type": "text/plain" },
-      })
+    globalThis.fetch = vi.fn(
+      async () =>
+        new Response("", {
+          status: 429,
+          headers: { "content-type": "text/plain" },
+        })
     ) as unknown as typeof fetch;
 
     await expect(
@@ -208,11 +212,12 @@ describe("orpcFetch + error pipeline (driven via calendarORPCClient)", () => {
   });
 
   it("drives a non-standard upstream 599 status (normalizeORPCErrorStatus → 500)", async () => {
-    globalThis.fetch = vi.fn(async () =>
-      new Response("upstream meltdown", {
-        status: 599,
-        headers: { "content-type": "text/plain" },
-      })
+    globalThis.fetch = vi.fn(
+      async () =>
+        new Response("upstream meltdown", {
+          status: 599,
+          headers: { "content-type": "text/plain" },
+        })
     ) as unknown as typeof fetch;
 
     await expect(
@@ -221,11 +226,12 @@ describe("orpcFetch + error pipeline (driven via calendarORPCClient)", () => {
   });
 
   it("drives a JSON body with `message` field through the parsedMessage extraction branch", async () => {
-    globalThis.fetch = vi.fn(async () =>
-      new Response(JSON.stringify({ message: "specific server message" }), {
-        status: 400,
-        headers: { "content-type": "application/json" },
-      })
+    globalThis.fetch = vi.fn(
+      async () =>
+        new Response(JSON.stringify({ message: "specific server message" }), {
+          status: 400,
+          headers: { "content-type": "application/json" },
+        })
     ) as unknown as typeof fetch;
 
     await expect(
@@ -234,11 +240,12 @@ describe("orpcFetch + error pipeline (driven via calendarORPCClient)", () => {
   });
 
   it("drives a JSON body with only `error` field through the parsedMessage fallback branch", async () => {
-    globalThis.fetch = vi.fn(async () =>
-      new Response(JSON.stringify({ error: "fallback error string" }), {
-        status: 400,
-        headers: { "content-type": "application/json" },
-      })
+    globalThis.fetch = vi.fn(
+      async () =>
+        new Response(JSON.stringify({ error: "fallback error string" }), {
+          status: 400,
+          headers: { "content-type": "application/json" },
+        })
     ) as unknown as typeof fetch;
 
     await expect(
@@ -247,11 +254,12 @@ describe("orpcFetch + error pipeline (driven via calendarORPCClient)", () => {
   });
 
   it("drives a JSON body with no recognised string fields (parsedMessage undefined)", async () => {
-    globalThis.fetch = vi.fn(async () =>
-      new Response(JSON.stringify({ unrelated: 1 }), {
-        status: 400,
-        headers: { "content-type": "application/json" },
-      })
+    globalThis.fetch = vi.fn(
+      async () =>
+        new Response(JSON.stringify({ unrelated: 1 }), {
+          status: 400,
+          headers: { "content-type": "application/json" },
+        })
     ) as unknown as typeof fetch;
 
     await expect(
@@ -260,11 +268,12 @@ describe("orpcFetch + error pipeline (driven via calendarORPCClient)", () => {
   });
 
   it("drives a JSON body where `message`/`error` are non-strings (returns undefined branch)", async () => {
-    globalThis.fetch = vi.fn(async () =>
-      new Response(JSON.stringify({ message: 42, error: 99 }), {
-        status: 400,
-        headers: { "content-type": "application/json" },
-      })
+    globalThis.fetch = vi.fn(
+      async () =>
+        new Response(JSON.stringify({ message: 42, error: 99 }), {
+          status: 400,
+          headers: { "content-type": "application/json" },
+        })
     ) as unknown as typeof fetch;
 
     await expect(
@@ -274,11 +283,12 @@ describe("orpcFetch + error pipeline (driven via calendarORPCClient)", () => {
 
   it("drives an invalid-JSON body claiming application/json (JSON.parse catch branch + trim long-body branch)", async () => {
     const longBody = "x".repeat(500);
-    globalThis.fetch = vi.fn(async () =>
-      new Response(longBody, {
-        status: 400,
-        headers: { "content-type": "application/json" },
-      })
+    globalThis.fetch = vi.fn(
+      async () =>
+        new Response(longBody, {
+          status: 400,
+          headers: { "content-type": "application/json" },
+        })
     ) as unknown as typeof fetch;
 
     await expect(

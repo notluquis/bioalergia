@@ -105,9 +105,7 @@ describe("resolveSessionUserFromToken", () => {
   it("REGRESSION: admits the session once lastActivityAt is freshly stamped (login fix)", async () => {
     mockVerifyToken.mockResolvedValueOnce(sessionToken());
     // Simulates state immediately after a login handler reset lastActivityAt.
-    mockFindUnique.mockResolvedValueOnce(
-      makeUser({ lastActivityAt: new Date(Date.now() - 1000) })
-    );
+    mockFindUnique.mockResolvedValueOnce(makeUser({ lastActivityAt: new Date(Date.now() - 1000) }));
 
     const result = await resolveSessionUserFromToken("tok");
 

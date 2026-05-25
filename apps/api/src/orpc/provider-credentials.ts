@@ -110,15 +110,12 @@ export const providerCredentialsORPCHandler = new SuperJSONRPCHandler(
   }
 );
 
-export const providerCredentialsOpenAPIHandler = new OpenAPIHandler(
-  providerCredentialsORPCRouter,
-  {
-    plugins: [
-      new OpenAPIReferencePlugin({
-        schemaConverters: [new ZodToJsonSchemaConverter()],
-      }),
-    ],
-  }
-);
+export const providerCredentialsOpenAPIHandler = new OpenAPIHandler(providerCredentialsORPCRouter, {
+  plugins: [
+    new OpenAPIReferencePlugin({
+      schemaConverters: [new ZodToJsonSchemaConverter()],
+    }),
+  ],
+});
 
 export type ProviderCredentialsORPCRouter = typeof providerCredentialsORPCRouter;

@@ -29,10 +29,7 @@
  *   regression" we care about.
  */
 module.exports = {
-  plugins: [
-    "stylelint-plugin-defensive-css",
-    "stylelint-plugin-rhythmguard",
-  ],
+  plugins: ["stylelint-plugin-defensive-css", "stylelint-plugin-rhythmguard"],
   rules: {
     "defensive-css/require-dynamic-viewport-height": true,
     "defensive-css/no-fixed-sizes": null,
@@ -47,10 +44,7 @@ module.exports = {
     // which mirrors Tailwind v4's default spacing step (0.25rem). Set to
     // `warning` so it surfaces token drift without blocking CI while we
     // triage the existing raw px / rem values flagged in legacy CSS files.
-    "rhythmguard/prefer-token": [
-      true,
-      { preset: "rhythmic-4", severity: "warning" },
-    ],
+    "rhythmguard/prefer-token": [true, { preset: "rhythmic-4", severity: "warning" }],
   },
   ignoreFiles: [
     "node_modules/**",

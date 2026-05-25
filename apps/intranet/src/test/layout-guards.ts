@@ -32,8 +32,7 @@ export function expectNoSilentClipping(el: HTMLElement) {
   const cs = getComputedStyle(el);
   const hasEllipsis = cs.textOverflow === "ellipsis";
   const declaredTruncation = el.dataset.truncated === "true";
-  const visibleEllipsis =
-    el.textContent?.includes("…") || el.textContent?.includes("...");
+  const visibleEllipsis = el.textContent?.includes("…") || el.textContent?.includes("...");
   expect(
     hasEllipsis || declaredTruncation || visibleEllipsis,
     `${el.tagName} clips content (scrollWidth ${el.scrollWidth} > clientWidth ${el.clientWidth}) without text-overflow:ellipsis or visible indicator`

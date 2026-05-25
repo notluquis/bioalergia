@@ -3,11 +3,7 @@ import jaroWinkler from "talisman/metrics/jaro-winkler.js";
 
 import { joinClinicalText } from "../../../lib/clinical-text.ts";
 import { TIMEZONE } from "../constants.ts";
-import type {
-  HealthInsuranceType,
-  InsuranceEventLike,
-  InsuranceResolution,
-} from "../types.ts";
+import type { HealthInsuranceType, InsuranceEventLike, InsuranceResolution } from "../types.ts";
 
 // Health insurance — detect from descriptions using a normalized/fuzzy
 // pass so secretary notes with separators, casing differences, and

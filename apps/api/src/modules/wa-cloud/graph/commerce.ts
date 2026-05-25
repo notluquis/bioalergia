@@ -1,11 +1,6 @@
 import { db } from "@finanzas/db";
 import { decryptSecret } from "../../../lib/secret-cipher.ts";
-import {
-  getAccountForPhoneNumber,
-  graphGet,
-  graphPost,
-  requireSystemUserToken,
-} from "./_http.ts";
+import { getAccountForPhoneNumber, graphGet, graphPost, requireSystemUserToken } from "./_http.ts";
 
 // Meta Commerce catalog products + single-product interactive message.
 // Multi-product (MPM) lives in messages.ts. Catalog itself is managed

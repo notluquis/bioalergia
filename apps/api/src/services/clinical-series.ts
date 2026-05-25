@@ -65,10 +65,7 @@ export {
 
 // ── Status + rebuild orchestration ───────────────────────────────────
 export { updateAllSeriesStatuses } from "./clinical-series/status.ts";
-export {
-  rebuildClinicalSeries,
-  startRebuildClinicalSeries,
-} from "./clinical-series/rebuild.ts";
+export { rebuildClinicalSeries, startRebuildClinicalSeries } from "./clinical-series/rebuild.ts";
 
 // ── Snapshots ────────────────────────────────────────────────────────
 export { getClinicalSeriesSnapshotByExternalEvent } from "./clinical-series/snapshot/by-external-event.ts";

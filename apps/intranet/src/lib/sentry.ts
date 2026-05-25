@@ -94,7 +94,8 @@ export function initSentry(): void {
   // call optional-chained so older runtimes (or future removals) don't blow
   // up.
   const send = (name: string) => (metric: Metric) => {
-    const m = (Sentry as unknown as { metrics?: { distribution?: typeof distributionStub } }).metrics;
+    const m = (Sentry as unknown as { metrics?: { distribution?: typeof distributionStub } })
+      .metrics;
     m?.distribution?.(`web_vital.${name}`, metric.value, {
       tags: { rating: metric.rating },
     });

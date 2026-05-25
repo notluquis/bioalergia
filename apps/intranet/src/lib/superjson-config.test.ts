@@ -29,9 +29,7 @@ describe("configureSuperjson", () => {
 
   it("preserves null and undefined inside objects", () => {
     const sj = configureSuperjson();
-    const out = sj.parse<{ a: null; b: undefined }>(
-      sj.stringify({ a: null, b: undefined })
-    );
+    const out = sj.parse<{ a: null; b: undefined }>(sj.stringify({ a: null, b: undefined }));
     expect(out.a).toBeNull();
     expect(out.b).toBeUndefined();
   });

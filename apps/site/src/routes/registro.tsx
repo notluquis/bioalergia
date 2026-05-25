@@ -1,13 +1,4 @@
-import {
-  Alert,
-  Breadcrumbs,
-  Button,
-  Card,
-  Checkbox,
-  Input,
-  Label,
-  TextField,
-} from "@heroui/react";
+import { Alert, Breadcrumbs, Button, Card, Checkbox, Input, Label, TextField } from "@heroui/react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
@@ -37,15 +28,13 @@ function RegistroPage() {
       await queryClient.invalidateQueries({ queryKey: accountKeys.all });
       navigate({ to: "/mi-cuenta" });
     },
-    onError: (err) =>
-      setError(err instanceof Error ? err.message : "No se pudo registrar"),
+    onError: (err) => setError(err instanceof Error ? err.message : "No se pudo registrar"),
   });
 
   const magicLinkMutation = useMutation({
     mutationFn: () => siteAuthClient.requestMagicLink({ email, ...(name ? { name } : {}) }),
     onSuccess: () => setError(null),
-    onError: (err) =>
-      setError(err instanceof Error ? err.message : "No se pudo enviar el enlace"),
+    onError: (err) => setError(err instanceof Error ? err.message : "No se pudo enviar el enlace"),
   });
 
   const usePassword = password.length > 0;
@@ -62,8 +51,8 @@ function RegistroPage() {
       <header className="space-y-1">
         <h1 className="font-bold text-3xl">Crear cuenta</h1>
         <p className="text-default-500 text-sm">
-          Crea tu cuenta para hacer seguimiento a tus pedidos. La contraseña es opcional —
-          puedes acceder con enlace mágico.
+          Crea tu cuenta para hacer seguimiento a tus pedidos. La contraseña es opcional — puedes
+          acceder con enlace mágico.
         </p>
       </header>
 
@@ -83,11 +72,7 @@ function RegistroPage() {
           </TextField>
           <TextField onChange={setPassword} value={password}>
             <Label>Contraseña (opcional)</Label>
-            <Input
-              type="password"
-              placeholder="Mínimo 8 caracteres"
-              autoComplete="new-password"
-            />
+            <Input type="password" placeholder="Mínimo 8 caracteres" autoComplete="new-password" />
           </TextField>
           <Checkbox isSelected={terms} onChange={setTerms}>
             Acepto los{" "}
@@ -109,9 +94,7 @@ function RegistroPage() {
           )}
           <Button
             isDisabled={!canSubmit || registerMutation.isPending || magicLinkMutation.isPending}
-            onPress={() =>
-              usePassword ? registerMutation.mutate() : magicLinkMutation.mutate()
-            }
+            onPress={() => (usePassword ? registerMutation.mutate() : magicLinkMutation.mutate())}
             variant="primary"
           >
             {usePassword ? "Crear cuenta" : "Enviarme un enlace mágico"}

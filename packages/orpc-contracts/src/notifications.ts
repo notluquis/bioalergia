@@ -91,9 +91,7 @@ export const notificationsContract = {
     .route({ method: "POST", path: "/dismissed" })
     .input(dismissedInputSchema)
     .output(notificationsStatusResponseSchema),
-  unreadCount: oc
-    .route({ method: "GET", path: "/unread-count" })
-    .output(unreadCountResponseSchema),
+  unreadCount: oc.route({ method: "GET", path: "/unread-count" }).output(unreadCountResponseSchema),
   getPreviewMode: oc
     .route({ method: "GET", path: "/preview-mode" })
     .output(previewModeResponseSchema),

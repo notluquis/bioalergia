@@ -98,18 +98,12 @@ function OrderDetailPage() {
                     <td className="py-2">
                       {snap.name ?? `Producto #${item.product_id}`}
                       {snap.sku && (
-                        <span className="ml-1 text-default-400 text-xs">
-                          ({snap.sku})
-                        </span>
+                        <span className="ml-1 text-default-400 text-xs">({snap.sku})</span>
                       )}
                     </td>
                     <td className="py-2 text-right">{item.qty}</td>
-                    <td className="py-2 text-right">
-                      {CLP_FORMATTER.format(item.unit_price_clp)}
-                    </td>
-                    <td className="py-2 text-right">
-                      {CLP_FORMATTER.format(item.line_total_clp)}
-                    </td>
+                    <td className="py-2 text-right">{CLP_FORMATTER.format(item.unit_price_clp)}</td>
+                    <td className="py-2 text-right">{CLP_FORMATTER.format(item.line_total_clp)}</td>
                   </tr>
                 );
               })}
@@ -119,17 +113,13 @@ function OrderDetailPage() {
                 <td colSpan={3} className="py-2 text-right text-default-500">
                   Subtotal
                 </td>
-                <td className="py-2 text-right">
-                  {CLP_FORMATTER.format(order.subtotal_clp)}
-                </td>
+                <td className="py-2 text-right">{CLP_FORMATTER.format(order.subtotal_clp)}</td>
               </tr>
               <tr>
                 <td colSpan={3} className="py-2 text-right text-default-500">
                   Envío
                 </td>
-                <td className="py-2 text-right">
-                  {CLP_FORMATTER.format(order.shipping_clp)}
-                </td>
+                <td className="py-2 text-right">{CLP_FORMATTER.format(order.shipping_clp)}</td>
               </tr>
               <tr>
                 <td colSpan={3} className="py-2 text-right font-semibold">

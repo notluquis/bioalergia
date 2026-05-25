@@ -27,9 +27,10 @@ import defaultSuperjsonClass from "superjson";
 const defaultSuperjson = defaultSuperjsonClass as unknown as SuperJSONInstance;
 type SuperJSON = SuperJSONInstance;
 
-export class SuperJSONSerializer
-  implements Pick<StandardRPCSerializer, keyof StandardRPCSerializer>
-{
+export class SuperJSONSerializer implements Pick<
+  StandardRPCSerializer,
+  keyof StandardRPCSerializer
+> {
   private readonly superjson: SuperJSON;
 
   constructor(instance: SuperJSON = defaultSuperjson) {
@@ -72,7 +73,8 @@ export class SuperJSONSerializer
 }
 
 interface SuperJSONLinkOptions<T extends ClientContext>
-  extends LinkFetchClientOptions<T>,
+  extends
+    LinkFetchClientOptions<T>,
     Omit<StandardLinkOptions<T>, "plugins">,
     StandardRPCLinkCodecOptions<T> {
   superjson?: SuperJSON;

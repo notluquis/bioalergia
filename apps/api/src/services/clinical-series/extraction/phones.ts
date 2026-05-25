@@ -6,10 +6,7 @@ import {
   normalizeStoredPhoneArray,
 } from "../normalization/phones.ts";
 
-import {
-  extractStructuredClinicalDescription,
-  normalizeIdentitySourceText,
-} from "./structured.ts";
+import { extractStructuredClinicalDescription, normalizeIdentitySourceText } from "./structured.ts";
 
 export function extractSeriesPhones(
   summary: null | string,

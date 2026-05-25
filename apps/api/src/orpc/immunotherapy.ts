@@ -24,10 +24,7 @@ import type { Context as HonoContext } from "hono";
 import { getSessionUser, hasPermission } from "../lib/auth.ts";
 import { logError } from "../lib/logger.ts";
 import { configureSuperjson } from "../lib/superjson-config.ts";
-import {
-  computeQuote,
-  createImmunotherapyBudget,
-} from "../services/immunotherapy.ts";
+import { computeQuote, createImmunotherapyBudget } from "../services/immunotherapy.ts";
 import { SuperJSONRPCHandler } from "./superjson.ts";
 
 configureSuperjson();
@@ -245,11 +242,7 @@ const immunotherapyRouterBase = {
         select: { lab: true },
       });
 
-      const fullName = [
-        patient.person.names,
-        patient.person.fatherName,
-        patient.person.motherName,
-      ]
+      const fullName = [patient.person.names, patient.person.fatherName, patient.person.motherName]
         .filter(Boolean)
         .join(" ");
 
@@ -262,9 +255,7 @@ const immunotherapyRouterBase = {
         : null;
 
       // Lazy: pdf-lib pesa ~3MB en heap; cargar sólo al primer /pdf.
-      const { generateBudgetPdf } = await import(
-        "../modules/immunotherapy/budget-pdf.service.ts"
-      );
+      const { generateBudgetPdf } = await import("../modules/immunotherapy/budget-pdf.service.ts");
       const pdfBytes = await generateBudgetPdf({
         clinic: {
           name: clinic.name,

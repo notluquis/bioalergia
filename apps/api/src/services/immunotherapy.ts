@@ -55,15 +55,12 @@ export async function computeQuote(input: QuoteInput): Promise<QuoteResult> {
   }
 
   const targetMl = new Decimal(product.maintenanceTargetMl.toString());
-  const maintenanceMl =
-    input.maintenanceMl != null ? new Decimal(input.maintenanceMl) : targetMl;
+  const maintenanceMl = input.maintenanceMl != null ? new Decimal(input.maintenanceMl) : targetMl;
   if (maintenanceMl.lte(0)) {
     throw new DomainError("BAD_REQUEST", "El volumen de mantención debe ser mayor a 0");
   }
 
-  const overrideByStage = new Map(
-    (input.stageOverrides ?? []).map((o) => [o.stageId, o])
-  );
+  const overrideByStage = new Map((input.stageOverrides ?? []).map((o) => [o.stageId, o]));
 
   const lines = product.stages.map((stage: (typeof product.stages)[number]) => {
     const override = overrideByStage.get(stage.id);
@@ -93,17 +90,12 @@ export async function computeQuote(input: QuoteInput): Promise<QuoteResult> {
   });
 
   const subtotal = clp(
-    lines.reduce(
-      (acc: Decimal, l: (typeof lines)[number]) => acc.plus(l.subtotal),
-      new Decimal(0)
-    )
+    lines.reduce((acc: Decimal, l: (typeof lines)[number]) => acc.plus(l.subtotal), new Decimal(0))
   );
 
   const discountPct =
     input.discountPct ??
-    (product.defaultDiscountPct != null
-      ? Number(product.defaultDiscountPct.toString())
-      : 0);
+    (product.defaultDiscountPct != null ? Number(product.defaultDiscountPct.toString()) : 0);
   const discountAmount = clp(new Decimal(subtotal).times(discountPct).div(100));
   const total = clp(new Decimal(subtotal).minus(discountAmount));
 

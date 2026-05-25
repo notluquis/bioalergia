@@ -50,9 +50,7 @@ export function filterSafePermissions<T extends { action: string; subject: strin
  * Build a Prisma where clause to find dangerous permissions
  * Used by cleanup scripts to query the database
  */
-type DangerousWhereClause =
-  | { AND: [{ action: string }, { subject: string }] }
-  | { action: string };
+type DangerousWhereClause = { AND: [{ action: string }, { subject: string }] } | { action: string };
 
 export function buildDangerousPermissionsWhereClause(): { OR: DangerousWhereClause[] } {
   return {

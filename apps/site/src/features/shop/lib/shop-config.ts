@@ -20,8 +20,7 @@ export function makeStockState(
 ): StockState {
   const effective = availableQty - safetyStock;
   if (effective <= 0) return { label: "Agotado", color: "default" };
-  if (effective <= lowStockThreshold)
-    return { label: "Últimas unidades", color: "warning" };
+  if (effective <= lowStockThreshold) return { label: "Últimas unidades", color: "warning" };
   return { label: "Stock disponible", color: "success" };
 }
 

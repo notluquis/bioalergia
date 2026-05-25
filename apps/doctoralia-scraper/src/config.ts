@@ -45,7 +45,8 @@ export function loadConfig(): ScraperConfig {
     email: process.env.DOCTORALIA_SCRAPER_EMAIL ?? "",
     password: process.env.DOCTORALIA_SCRAPER_PASSWORD ?? "",
     imapHost: process.env.DOCTORALIA_SCRAPER_IMAP_HOST ?? "mail.spacemail.com",
-    imapUser: process.env.DOCTORALIA_SCRAPER_IMAP_USER ?? process.env.DOCTORALIA_SCRAPER_EMAIL ?? "",
+    imapUser:
+      process.env.DOCTORALIA_SCRAPER_IMAP_USER ?? process.env.DOCTORALIA_SCRAPER_EMAIL ?? "",
     imapPass: process.env.DOCTORALIA_SCRAPER_IMAP_PASS ?? "",
     importEndpoint: process.env.DOCTORALIA_SCRAPER_IMPORT_ENDPOINT || undefined,
     importToken:

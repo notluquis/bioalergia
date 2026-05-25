@@ -29,8 +29,7 @@ export async function publishProductToMl(productId: number, opts?: { categoryId?
   // 1. opts.categoryId (override manual desde UI)
   // 2. product.category.mlCategoryId (cache por categoría local)
   // 3. predict via ML domain_discovery
-  let categoryId =
-    opts?.categoryId ?? product.category?.mlCategoryId ?? null;
+  let categoryId = opts?.categoryId ?? product.category?.mlCategoryId ?? null;
   if (!categoryId) {
     const pred = await predictCategory(product.name);
     if (!pred) {

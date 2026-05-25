@@ -53,9 +53,7 @@ export const mlPredictCategoryResponseSchema = z.object({
 export const mlContract = {
   status: oc.route({ method: "GET", path: "/status" }).output(mlConnectionStatusSchema),
   connect: oc.route({ method: "POST", path: "/connect" }).output(mlConnectUrlResponseSchema),
-  disconnect: oc
-    .route({ method: "POST", path: "/disconnect" })
-    .output(mlStatusResponseSchema),
+  disconnect: oc.route({ method: "POST", path: "/disconnect" }).output(mlStatusResponseSchema),
   publishProduct: oc
     .route({ method: "POST", path: "/publish" })
     .input(mlPublishInputSchema)

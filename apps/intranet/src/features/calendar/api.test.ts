@@ -475,9 +475,7 @@ describe("DTE event-link fetchers", () => {
 
   it("confirmEventDteLink resolves on success and defaults dteSaleDetailIds", async () => {
     vi.mocked(dteEventLinksORPCClient.confirmLink).mockResolvedValue(null as never);
-    await expect(
-      confirmEventDteLink({ calendarId: "c", eventId: "e" })
-    ).resolves.toBeUndefined();
+    await expect(confirmEventDteLink({ calendarId: "c", eventId: "e" })).resolves.toBeUndefined();
     expect(dteEventLinksORPCClient.confirmLink).toHaveBeenCalledWith(
       expect.objectContaining({ dteSaleDetailIds: [] })
     );
@@ -497,9 +495,9 @@ describe("DTE event-link fetchers", () => {
 
   it("confirmEventDteLink wraps errors", async () => {
     vi.mocked(dteEventLinksORPCClient.confirmLink).mockRejectedValue(new Error("x"));
-    await expect(
-      confirmEventDteLink({ calendarId: "c", eventId: "e" })
-    ).rejects.toBeInstanceOf(ApiError);
+    await expect(confirmEventDteLink({ calendarId: "c", eventId: "e" })).rejects.toBeInstanceOf(
+      ApiError
+    );
   });
 
   it("unlinkEventDteLink resolves on success", async () => {
@@ -548,9 +546,7 @@ describe("DTE event-link fetchers", () => {
 
   it("autoLinkEventDteByPeriod wraps errors", async () => {
     vi.mocked(dteEventLinksORPCClient.autoLinkPeriod).mockRejectedValue(new Error("x"));
-    await expect(autoLinkEventDteByPeriod({ period: "2026-05" })).rejects.toBeInstanceOf(
-      ApiError
-    );
+    await expect(autoLinkEventDteByPeriod({ period: "2026-05" })).rejects.toBeInstanceOf(ApiError);
   });
 
   it("autoLinkEventDteByAllPeriods uses empty default payload and parses response", async () => {
@@ -632,9 +628,9 @@ describe("DTE event-link fetchers", () => {
 
   it("fetchEventDteLinksOverview wraps errors", async () => {
     vi.mocked(dteEventLinksORPCClient.overview).mockRejectedValue(new Error("x"));
-    await expect(
-      fetchEventDteLinksOverview({ period: "2026-05" })
-    ).rejects.toBeInstanceOf(ApiError);
+    await expect(fetchEventDteLinksOverview({ period: "2026-05" })).rejects.toBeInstanceOf(
+      ApiError
+    );
   });
 });
 

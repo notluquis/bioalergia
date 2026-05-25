@@ -80,9 +80,7 @@ export const ExtraLarge: Story = { render: () => <ModalDemo size="xl" footer /> 
 export const MobileLongTitle: Story = {
   globals: { viewport: { value: "mobile1", isRotated: false } },
   parameters: { viewport: { defaultViewport: "mobile1" } },
-  render: () => (
-    <ModalDemo size="sm" title="WhatsApp Cloud — Bandeja de entrada de pacientes" />
-  ),
+  render: () => <ModalDemo size="sm" title="WhatsApp Cloud — Bandeja de entrada de pacientes" />,
   play: async ({ canvasElement }) => {
     const { expect, within } = await import("storybook/test");
     const { expectNoSilentClipping } = await import("../../test/layout-guards");

@@ -4,21 +4,14 @@
 // Si la var no está, falla loud al primer create/update.
 
 import { db } from "@finanzas/db";
-import {
-  createCipheriv,
-  createDecipheriv,
-  randomBytes,
-  scryptSync,
-} from "node:crypto";
+import { createCipheriv, createDecipheriv, randomBytes, scryptSync } from "node:crypto";
 
 const ALGO = "aes-256-gcm";
 
 function getKey(): Buffer {
   const raw = process.env.PROVIDER_CREDENTIAL_KEY;
   if (!raw) {
-    throw new Error(
-      "PROVIDER_CREDENTIAL_KEY env var missing. Set 32-byte hex string (64 chars)."
-    );
+    throw new Error("PROVIDER_CREDENTIAL_KEY env var missing. Set 32-byte hex string (64 chars).");
   }
   if (raw.length === 64) {
     return Buffer.from(raw, "hex");
@@ -76,10 +69,7 @@ export interface CredentialPayload {
   secret: string;
 }
 
-export async function listProviderCredentials(filters: {
-  provider?: string;
-  scope?: string;
-}) {
+export async function listProviderCredentials(filters: { provider?: string; scope?: string }) {
   const credentials = await db.providerCredential.findMany({
     orderBy: [{ provider: "asc" }, { label: "asc" }],
     where: {
@@ -106,10 +96,7 @@ export async function createProviderCredential(payload: CredentialPayload) {
   return mapCredential(credential);
 }
 
-export async function updateProviderCredential(
-  id: number,
-  payload: Partial<CredentialPayload>
-) {
+export async function updateProviderCredential(id: number, payload: Partial<CredentialPayload>) {
   const credential = await db.providerCredential.update({
     where: { id },
     data: {
@@ -138,9 +125,7 @@ export async function getDecryptedSecret(id: number): Promise<null | string> {
 }
 
 // Test placeholder — los scrapers reales sobreescriben con login real.
-export async function testCredential(
-  id: number
-): Promise<{ message: string; success: boolean }> {
+export async function testCredential(id: number): Promise<{ message: string; success: boolean }> {
   const cred = await db.providerCredential.findFirst({ where: { id } });
   if (!cred) return { message: "Credential not found", success: false };
 

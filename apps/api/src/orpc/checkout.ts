@@ -106,8 +106,7 @@ const startRoute = base
       customerPhone: input.customer.phone ?? null,
       billingType: input.billing_type,
       shippingClp,
-      shippingAddress:
-        input.shipping.method === "chilexpress" ? input.shipping.address : null,
+      shippingAddress: input.shipping.method === "chilexpress" ? input.shipping.address : null,
       notes: input.notes ?? null,
     });
 
@@ -132,9 +131,7 @@ const startRoute = base
       items: order.items.map((i: OrderItem) => ({
         sku: i.product.sku,
         title: i.product.name,
-        ...(i.product.shortDescription
-          ? { description: i.product.shortDescription }
-          : {}),
+        ...(i.product.shortDescription ? { description: i.product.shortDescription } : {}),
         qty: i.qty,
         unitPriceClp: i.unitPriceClp,
       })),

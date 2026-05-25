@@ -486,9 +486,7 @@ async function fetchBillForProvider(
       currentDebt = pago.currentDebt;
       pagoRaw = pago.raw;
       observation =
-        pago.overdueDebt > 0
-          ? `Deuda vencida: ${pago.overdueDebt.toLocaleString("es-CL")}`
-          : null;
+        pago.overdueDebt > 0 ? `Deuda vencida: ${pago.overdueDebt.toLocaleString("es-CL")}` : null;
     } catch {
       // getPagoInfo no disponible — usamos solo deuda del cupón
     }

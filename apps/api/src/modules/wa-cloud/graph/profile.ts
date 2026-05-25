@@ -1,9 +1,4 @@
-import {
-  getAccountForPhoneNumber,
-  graphGet,
-  graphPost,
-  requireSystemUserToken,
-} from "./_http.ts";
+import { getAccountForPhoneNumber, graphGet, graphPost, requireSystemUserToken } from "./_http.ts";
 
 export type BusinessProfileFields = {
   about?: string;

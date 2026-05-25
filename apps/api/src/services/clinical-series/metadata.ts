@@ -1,9 +1,6 @@
 import { dbClinicalSeries as db } from "@finanzas/db/slices";
 
-import {
-  buildSeriesDisplayName,
-  computeExpectedSessions,
-} from "./classification/display.ts";
+import { buildSeriesDisplayName, computeExpectedSessions } from "./classification/display.ts";
 import { inferAllergenType, inferVaccineProduct } from "./classification/allergens.ts";
 import { inferDeliveryModality } from "./classification/delivery.ts";
 import { inferHealthInsurance } from "./classification/insurance.ts";

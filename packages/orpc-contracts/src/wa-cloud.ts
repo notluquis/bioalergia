@@ -1546,7 +1546,7 @@ export const waCloudContract = {
         countryCode: z.string().regex(/^\d{1,4}$/),
         phoneNumber: z.string().regex(/^\d{4,15}$/),
         migrate: z.boolean().default(true),
-      }),
+      })
     )
     .output(z.object({ phoneNumberId: z.string() })),
 

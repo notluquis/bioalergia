@@ -1,24 +1,11 @@
-import {
-  hasIdentitySourceText,
-  resolveClinicalIdentity,
-} from "../extraction/identity.ts";
+import { hasIdentitySourceText, resolveClinicalIdentity } from "../extraction/identity.ts";
 import { compareRepresentativeIdentity, haveCompatiblePatientNames } from "../matching/compare.ts";
 import { isLikelyPersonName } from "../normalization/names.ts";
 import { sanitizeRut } from "../normalization/rut.ts";
-import type {
-  ClinicalIdentity,
-  IdentityNameCounts,
-  StoredClinicalIdentity,
-} from "../types.ts";
+import type { ClinicalIdentity, IdentityNameCounts, StoredClinicalIdentity } from "../types.ts";
 
-import {
-  chooseDominantIdentityName,
-  incrementIdentityNameCount,
-} from "./dominant.ts";
-import {
-  buildIdentityGroupKey,
-  choosePreferredIdentityName,
-} from "./group-key.ts";
+import { chooseDominantIdentityName, incrementIdentityNameCount } from "./dominant.ts";
+import { buildIdentityGroupKey, choosePreferredIdentityName } from "./group-key.ts";
 
 export function shouldPromoteBeneficiaryToPatientIdentity(params: {
   beneficiaryName: null | string;

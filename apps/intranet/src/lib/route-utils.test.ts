@@ -169,8 +169,9 @@ describe("route-utils", () => {
       } as never;
       const out = auditRouteNavigation(route);
       // technical because index/empty path -> '/'
-      expect(out.technicalRoutes.concat(out.validRoutes, out.missingNav, out.missingPermission))
-        .toEqual(expect.any(Array));
+      expect(
+        out.technicalRoutes.concat(out.validRoutes, out.missingNav, out.missingPermission)
+      ).toEqual(expect.any(Array));
     });
   });
 });

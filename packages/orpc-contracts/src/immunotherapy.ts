@@ -96,9 +96,7 @@ export const allergenLiteSchema = z.object({
 export const allergenListResponseSchema = z.object({
   allergens: z.array(allergenLiteSchema),
 });
-export const allergenListInputSchema = z
-  .object({ q: z.string().optional() })
-  .optional();
+export const allergenListInputSchema = z.object({ q: z.string().optional() }).optional();
 
 // ── Quote / budget ───────────────────────────────────────────────────
 // Secciones del PDF que se pueden ocultar (el total siempre se muestra).
@@ -194,9 +192,7 @@ export const updateClinicTermsInputSchema = z.object({
 // ── Contract ─────────────────────────────────────────────────────────
 export const immunotherapyContract = {
   // Productos (catálogo editable)
-  listProducts: oc
-    .route({ method: "GET", path: "/products" })
-    .output(productListResponseSchema),
+  listProducts: oc.route({ method: "GET", path: "/products" }).output(productListResponseSchema),
   createProduct: oc
     .route({ method: "POST", path: "/products" })
     .input(createProductInputSchema)

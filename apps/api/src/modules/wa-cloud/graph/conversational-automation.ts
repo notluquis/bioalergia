@@ -1,9 +1,4 @@
-import {
-  getAccountForPhoneNumber,
-  graphGet,
-  graphPost,
-  requireSystemUserToken,
-} from "./_http.ts";
+import { getAccountForPhoneNumber, graphGet, graphPost, requireSystemUserToken } from "./_http.ts";
 
 // Conversational Automation (Meta 2026): ice breakers + commands +
 // welcome-message toggle, exposed at /{phone-number-id}/conversational_automation.

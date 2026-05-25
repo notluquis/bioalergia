@@ -112,9 +112,7 @@ export const siteAuthContract = {
     .route({ method: "POST", path: "/register" })
     .input(siteAuthRegisterPasswordInputSchema)
     .output(siteAuthLoginResponseSchema),
-  logout: oc
-    .route({ method: "POST", path: "/logout" })
-    .output(siteAuthStatusResponseSchema),
+  logout: oc.route({ method: "POST", path: "/logout" }).output(siteAuthStatusResponseSchema),
   me: oc.route({ method: "GET", path: "/me" }).output(siteAuthSessionResponseSchema),
   setPassword: oc
     .route({ method: "POST", path: "/set-password" })

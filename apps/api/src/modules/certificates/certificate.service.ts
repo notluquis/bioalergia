@@ -352,7 +352,11 @@ export async function signPdf(
     // namespace. TS resolves the .default as `typeof signpdf` (namespace)
     // under `module: NodeNext`, so cast to the instance type.
     const signpdf = signpdfModule.default as unknown as {
-      sign(pdfBuffer: Buffer | Uint8Array | string, signer: unknown, signingTime?: Date): Promise<Buffer>;
+      sign(
+        pdfBuffer: Buffer | Uint8Array | string,
+        signer: unknown,
+        signingTime?: Date
+      ): Promise<Buffer>;
     };
 
     // Create P12 signer with certificate

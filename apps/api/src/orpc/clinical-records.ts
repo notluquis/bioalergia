@@ -24,12 +24,7 @@ import {
   getClinicalRecordBulkJobType,
   startBulkClinicalRecordReprocessJob,
 } from "../services/clinical-record-bulk.ts";
-import {
-  cancelJob,
-  getActiveJobsByType,
-  getJobStatus,
-  type JobState,
-} from "../lib/jobQueue.ts";
+import { cancelJob, getActiveJobsByType, getJobStatus, type JobState } from "../lib/jobQueue.ts";
 import { SuperJSONRPCHandler } from "./superjson.ts";
 
 configureSuperjson();
@@ -273,8 +268,7 @@ const routerBase = {
           physicalExam: (row.physicalExam as string | null) ?? null,
           diagnosis: (row.diagnosis as string | null) ?? null,
           indications: (row.indications as string[] | null) ?? [],
-          antecedents:
-            (row.antecedents as { personal: string[]; family: string[] } | null) ?? null,
+          antecedents: (row.antecedents as { personal: string[]; family: string[] } | null) ?? null,
           medications: (row.medications as string[] | null) ?? [],
           knownAllergies: (row.knownAllergies as string[] | null) ?? [],
           observations: (row.observations as string | null) ?? null,
@@ -373,7 +367,6 @@ function jobToOutput(j: JobState | null) {
     updatedAt: j.updatedAt,
   };
 }
-
 
 export const clinicalRecordsORPCRouter = base
   .prefix("/api/orpc/clinical-records")

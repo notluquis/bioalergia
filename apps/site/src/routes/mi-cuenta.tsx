@@ -1,12 +1,6 @@
 import { Button, Card, Skeleton } from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  createFileRoute,
-  Link,
-  Outlet,
-  useLocation,
-  useNavigate,
-} from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useLocation, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 
 import { accountKeys } from "@/features/account/queries";

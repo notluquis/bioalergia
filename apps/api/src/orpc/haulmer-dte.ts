@@ -63,7 +63,12 @@ const haulmerDteORPCRouterBase = {
     }),
 
   taxpayer: requireStaff
-    .route({ method: "GET", path: "/taxpayer", summary: "Info contribuyente", tags: ["Haulmer DTE"] })
+    .route({
+      method: "GET",
+      path: "/taxpayer",
+      summary: "Info contribuyente",
+      tags: ["Haulmer DTE"],
+    })
     .output(dteTaxpayerResponseSchema)
     .handler(async () => {
       const t: TaxpayerInfo = await getTaxpayerInfo();
@@ -122,7 +127,12 @@ const haulmerDteORPCRouterBase = {
     }),
 
   emit: requireStaff
-    .route({ method: "POST", path: "/emit", summary: "Emitir boleta/factura", tags: ["Haulmer DTE"] })
+    .route({
+      method: "POST",
+      path: "/emit",
+      summary: "Emitir boleta/factura",
+      tags: ["Haulmer DTE"],
+    })
     .input(dteEmitInputSchema)
     .output(dteEmitResponseSchema)
     .handler(async ({ input }) => {

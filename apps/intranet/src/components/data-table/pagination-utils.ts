@@ -18,9 +18,7 @@ export function computePaginationView(params: {
   const { computedTotalPages, pageIndex } = params;
   const safePageIndex = Math.max(0, pageIndex);
   const hasKnownTotalPages = computedTotalPages !== -1;
-  const totalPages = hasKnownTotalPages
-    ? Math.max(1, computedTotalPages)
-    : safePageIndex + 1;
+  const totalPages = hasKnownTotalPages ? Math.max(1, computedTotalPages) : safePageIndex + 1;
   const canPrevious = safePageIndex > 0;
   const canNext = !hasKnownTotalPages || safePageIndex < totalPages - 1;
   const currentPageNumber = safePageIndex + 1;

@@ -76,9 +76,7 @@ const meta: Meta<typeof PatientRecordsTimeline> = {
     },
     msw: {
       handlers: [
-        http.post("*/api/orpc/clinicalRecords/rpc/listForPatient", () =>
-          ok({ records: RECORDS })
-        ),
+        http.post("*/api/orpc/clinicalRecords/rpc/listForPatient", () => ok({ records: RECORDS })),
       ],
     },
   },

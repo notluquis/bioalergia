@@ -110,7 +110,7 @@ export function parseAgeLabelYears(label: string | null): number | null {
 function ageAdjustment(
   parsedYears: number | null,
   birthDate: Date | null,
-  consultDate: string | null,
+  consultDate: string | null
 ): number {
   if (parsedYears == null || !birthDate || !consultDate) return 0;
   const consult = new Date(consultDate);

@@ -34,10 +34,7 @@ export async function createOrderFromCart(input: CreateOrderInput) {
   }
 
   type CartItem = (typeof cart.items)[number];
-  const subtotal = cart.items.reduce(
-    (acc: number, i: CartItem) => acc + i.unitPriceClp * i.qty,
-    0,
-  );
+  const subtotal = cart.items.reduce((acc: number, i: CartItem) => acc + i.unitPriceClp * i.qty, 0);
   const total = subtotal + input.shippingClp;
 
   return await db.order.create({
@@ -82,10 +79,7 @@ export async function markOrderPaid(orderId: number) {
   });
 }
 
-export async function attachDteToOrder(
-  orderId: number,
-  dte: { folio: string; type: string }
-) {
+export async function attachDteToOrder(orderId: number, dte: { folio: string; type: string }) {
   await db.order.update({
     where: { id: orderId },
     data: { dteFolio: dte.folio, dteType: dte.type },

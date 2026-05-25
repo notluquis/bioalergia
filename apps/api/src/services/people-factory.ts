@@ -75,9 +75,7 @@ function preferLonger(existing: string | null, incoming: string | null): string 
  * Throws DomainError("BAD_REQUEST") when the supplied RUT fails mod-11
  * validation — refuses to silently store invalid identities.
  */
-export async function findOrCreatePerson(
-  input: PersonInput,
-): Promise<FindOrCreatePersonResult> {
+export async function findOrCreatePerson(input: PersonInput): Promise<FindOrCreatePersonResult> {
   const names = trimOrNull(input.names) ?? "";
   if (!names) {
     throw new DomainError("BAD_REQUEST", "Person.names es obligatorio");
@@ -88,11 +86,9 @@ export async function findOrCreatePerson(
     try {
       canonicalRut = requireCanonicalRut(input.rut);
     } catch (err) {
-      throw new DomainError(
-        "BAD_REQUEST",
-        err instanceof Error ? err.message : "RUT inválido",
-        { rut: input.rut },
-      );
+      throw new DomainError("BAD_REQUEST", err instanceof Error ? err.message : "RUT inválido", {
+        rut: input.rut,
+      });
     }
   }
 

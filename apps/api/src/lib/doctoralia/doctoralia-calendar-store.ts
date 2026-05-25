@@ -80,9 +80,7 @@ function mapAppointmentData(scheduleId: number, appointment: DoctoraliaAppointme
     isPaidOnline: appointment.isPaidOnline,
     // Doctoralia a veces manda número acá; el schema es String? → coercer.
     communicationChannel:
-      appointment.communicationChannel == null
-        ? null
-        : String(appointment.communicationChannel),
+      appointment.communicationChannel == null ? null : String(appointment.communicationChannel),
     fake: appointment.fake,
     isEventWithVoucher: appointment.isEventWithVoucher,
     duration: appointment.duration,

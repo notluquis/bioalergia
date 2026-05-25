@@ -31,9 +31,7 @@ function readEnvConfig(): HaulmerConfig {
   const password = process.env.HAULMER_PASSWORD;
   const rut = process.env.HAULMER_RUT;
   if (!email || !password || !rut) {
-    throw new Error(
-      "[haulmer-session] HAULMER_EMAIL/HAULMER_PASSWORD/HAULMER_RUT no configurados"
-    );
+    throw new Error("[haulmer-session] HAULMER_EMAIL/HAULMER_PASSWORD/HAULMER_RUT no configurados");
   }
   return { email, password, rut };
 }
@@ -47,11 +45,7 @@ export async function getHaulmerJwt(config?: HaulmerConfig): Promise<string> {
   const key = configKeyOf(effective);
 
   // Cache hit válido + mismo config.
-  if (
-    cached &&
-    cached.configKey === key &&
-    !isJWTExpired(cached.expiresAt)
-  ) {
+  if (cached && cached.configKey === key && !isJWTExpired(cached.expiresAt)) {
     return cached.token;
   }
 

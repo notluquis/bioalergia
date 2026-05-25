@@ -52,7 +52,9 @@ describe("apiClient.get (JSON parsing)", () => {
       })
     );
     const schema = z.object({ hello: z.string() });
-    const out = await apiClient.get<{ hello: string }>("http://localhost/api/x", { responseSchema: schema });
+    const out = await apiClient.get<{ hello: string }>("http://localhost/api/x", {
+      responseSchema: schema,
+    });
     expect(out).toEqual({ hello: "world" });
   });
 
@@ -69,7 +71,9 @@ describe("apiClient.get (JSON parsing)", () => {
       })
     );
     const schema = z.object({ value: z.string() });
-    const out = await apiClient.get<{ value: string }>("http://localhost/api/x", { responseSchema: schema });
+    const out = await apiClient.get<{ value: string }>("http://localhost/api/x", {
+      responseSchema: schema,
+    });
     expect(out).toEqual({ value: "hello" });
   });
 
@@ -111,7 +115,9 @@ describe("apiClient.get (JSON parsing)", () => {
         headers: { "content-type": "application/json" },
       })
     );
-    const out = await apiClient.get<unknown>("http://localhost/api/x", { responseSchema: z.null() });
+    const out = await apiClient.get<unknown>("http://localhost/api/x", {
+      responseSchema: z.null(),
+    });
     expect(out).toBeNull();
   });
 
@@ -346,7 +352,9 @@ describe("apiClient.getRaw / postRaw (non-json response types)", () => {
         headers: { "content-type": "text/plain" },
       })
     );
-    const out = await apiClient.getRaw<string>("http://localhost/api/file", { responseType: "text" });
+    const out = await apiClient.getRaw<string>("http://localhost/api/file", {
+      responseType: "text",
+    });
     expect(out).toBe("hi");
   });
 
@@ -368,9 +376,7 @@ describe("apiClient.getRaw / postRaw (non-json response types)", () => {
 
 describe("apiClient error handling (handleKyError)", () => {
   it("maps 401 to default Spanish message when body is empty", async () => {
-    fetchSpy.mockResolvedValue(
-      makeResponse("", { status: 401, statusText: "" })
-    );
+    fetchSpy.mockResolvedValue(makeResponse("", { status: 401, statusText: "" }));
     const promise = apiClient.get("http://localhost/api/x", { responseSchema: z.object({}) });
     await expect(promise).rejects.toBeInstanceOf(ApiError);
     await expect(promise).rejects.toMatchObject({
@@ -383,7 +389,10 @@ describe("apiClient error handling (handleKyError)", () => {
     fetchSpy.mockResolvedValue(makeResponse("", { status: 403, statusText: "" }));
     await expect(
       apiClient.get("http://localhost/api/x", { responseSchema: z.object({}) })
-    ).rejects.toMatchObject({ status: 403, message: "No tienes permisos para realizar esta acción." });
+    ).rejects.toMatchObject({
+      status: 403,
+      message: "No tienes permisos para realizar esta acción.",
+    });
   });
 
   it("maps 404 default message", async () => {
@@ -408,9 +417,7 @@ describe("apiClient error handling (handleKyError)", () => {
   });
 
   it("uses statusText when no body is provided", async () => {
-    fetchSpy.mockResolvedValue(
-      makeResponse("", { status: 400, statusText: "Bad stuff" })
-    );
+    fetchSpy.mockResolvedValue(makeResponse("", { status: 400, statusText: "Bad stuff" }));
     await expect(
       apiClient.post("http://localhost/api/x", {}, { responseSchema: z.object({}) })
     ).rejects.toMatchObject({ status: 400, message: "Bad stuff" });
@@ -446,9 +453,7 @@ describe("apiClient error handling (handleKyError)", () => {
   });
 
   it("returns ApiError(400) when error body is a plain string", async () => {
-    fetchSpy.mockResolvedValue(
-      makeResponse("plain text error", { status: 400, statusText: "" })
-    );
+    fetchSpy.mockResolvedValue(makeResponse("plain text error", { status: 400, statusText: "" }));
     await expect(
       apiClient.post("http://localhost/api/x", {}, { responseSchema: z.object({}) })
     ).rejects.toMatchObject({ status: 400 });

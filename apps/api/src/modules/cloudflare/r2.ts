@@ -36,12 +36,7 @@ function getClient(): S3Client {
   return cachedClient;
 }
 
-const ALLOWED_MIME = new Set([
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-  "image/avif",
-]);
+const ALLOWED_MIME = new Set(["image/jpeg", "image/png", "image/webp", "image/avif"]);
 const MAX_BYTES = 5 * 1024 * 1024;
 
 export type PresignedUpload = {

@@ -7,10 +7,7 @@ import type { IdentityNameCounts } from "../types.ts";
 
 import { choosePreferredIdentityName } from "./group-key.ts";
 
-export function incrementIdentityNameCount(
-  counts: IdentityNameCounts,
-  name: null | string
-): void {
+export function incrementIdentityNameCount(counts: IdentityNameCounts, name: null | string): void {
   if (!name || !isLikelyPersonName(name)) return;
   const key = normalizeName(name);
   const current = counts.get(key);
@@ -20,10 +17,7 @@ export function incrementIdentityNameCount(
   });
 }
 
-export function isSingleLetterPrefixedVariant(
-  contaminated: string,
-  canonical: string
-): boolean {
+export function isSingleLetterPrefixedVariant(contaminated: string, canonical: string): boolean {
   const contaminatedTokens = normalizeName(contaminated).split(" ").filter(Boolean);
   const canonicalTokens = normalizeName(canonical).split(" ").filter(Boolean);
   if (contaminatedTokens.length !== canonicalTokens.length) return false;

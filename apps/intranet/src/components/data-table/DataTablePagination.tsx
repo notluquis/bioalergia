@@ -21,11 +21,17 @@ export function DataTablePagination<TData>({
   const currentPagination = pagination ?? table.getState().pagination;
   const currentPageSize = currentPagination.pageSize;
   const computedTotalPages = pageCount ?? table.getPageCount();
-  const { canNext, canPrevious, currentPageIndex, currentPageNumber, hasKnownTotalPages, totalPages } =
-    computePaginationView({
-      computedTotalPages,
-      pageIndex: currentPagination.pageIndex,
-    });
+  const {
+    canNext,
+    canPrevious,
+    currentPageIndex,
+    currentPageNumber,
+    hasKnownTotalPages,
+    totalPages,
+  } = computePaginationView({
+    computedTotalPages,
+    pageIndex: currentPagination.pageIndex,
+  });
   const normalizedOptions = normalizePageSizeOptions(pageSizeOptions, currentPageSize);
 
   const pageItems = hasKnownTotalPages

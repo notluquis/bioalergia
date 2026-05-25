@@ -313,36 +313,34 @@ const listMovementsRoute = requireReadInventoryMovements
   })
   .input(inventoryListMovementsInputSchema)
   .output(inventoryListMovementsResponseSchema)
-  .handler(
-    async ({ input }: { input: z.output<typeof inventoryListMovementsInputSchema> }) => {
-      const result = await listInventoryMovements({
-        cursor: input.cursor,
-        from: input.from,
-        itemId: input.item_id,
-        limit: input.limit,
-        search: input.search,
-        to: input.to,
-      });
+  .handler(async ({ input }: { input: z.output<typeof inventoryListMovementsInputSchema> }) => {
+    const result = await listInventoryMovements({
+      cursor: input.cursor,
+      from: input.from,
+      itemId: input.item_id,
+      limit: input.limit,
+      search: input.search,
+      to: input.to,
+    });
 
-      return {
-        data: {
-          movements: result.movements.map((movement) => ({
-            created_at: movement.createdAt,
-            id: movement.id,
-            item: {
-              id: movement.item.id,
-              name: movement.item.name,
-            },
-            item_id: movement.itemId,
-            quantity_change: movement.quantityChange,
-            reason: movement.reason,
-          })),
-          next_cursor: result.nextCursor,
-        },
-        status: "ok" as const,
-      };
-    }
-  );
+    return {
+      data: {
+        movements: result.movements.map((movement) => ({
+          created_at: movement.createdAt,
+          id: movement.id,
+          item: {
+            id: movement.item.id,
+            name: movement.item.name,
+          },
+          item_id: movement.itemId,
+          quantity_change: movement.quantityChange,
+          reason: movement.reason,
+        })),
+        next_cursor: result.nextCursor,
+      },
+      status: "ok" as const,
+    };
+  });
 
 const createMovementRoute = requireWriteInventory
   .route({

@@ -9,28 +9,33 @@ function dec(n: number) {
   return { toString: () => String(n) };
 }
 
-const { mockDb, mockProductFindUnique, mockAllergenFindMany, mockPatientFindUnique, mockBudgetCreate } =
-  vi.hoisted(() => {
-    const mockProductFindUnique = vi.fn();
-    const mockAllergenFindMany = vi.fn();
-    const mockPatientFindUnique = vi.fn();
-    const mockBudgetCreate = vi.fn();
-    const mockDb = {
-      immunotherapyProduct: {
-        findUnique: (...a: unknown[]) => mockProductFindUnique(...a),
-      },
-      clinicalAllergen: { findMany: (...a: unknown[]) => mockAllergenFindMany(...a) },
-      patient: { findUnique: (...a: unknown[]) => mockPatientFindUnique(...a) },
-      budget: { create: (...a: unknown[]) => mockBudgetCreate(...a) },
-    };
-    return {
-      mockDb,
-      mockProductFindUnique,
-      mockAllergenFindMany,
-      mockPatientFindUnique,
-      mockBudgetCreate,
-    };
-  });
+const {
+  mockDb,
+  mockProductFindUnique,
+  mockAllergenFindMany,
+  mockPatientFindUnique,
+  mockBudgetCreate,
+} = vi.hoisted(() => {
+  const mockProductFindUnique = vi.fn();
+  const mockAllergenFindMany = vi.fn();
+  const mockPatientFindUnique = vi.fn();
+  const mockBudgetCreate = vi.fn();
+  const mockDb = {
+    immunotherapyProduct: {
+      findUnique: (...a: unknown[]) => mockProductFindUnique(...a),
+    },
+    clinicalAllergen: { findMany: (...a: unknown[]) => mockAllergenFindMany(...a) },
+    patient: { findUnique: (...a: unknown[]) => mockPatientFindUnique(...a) },
+    budget: { create: (...a: unknown[]) => mockBudgetCreate(...a) },
+  };
+  return {
+    mockDb,
+    mockProductFindUnique,
+    mockAllergenFindMany,
+    mockPatientFindUnique,
+    mockBudgetCreate,
+  };
+});
 
 vi.mock("@finanzas/db", () => ({ db: mockDb, kysely: {} }));
 vi.mock("@finanzas/db/slices", () => ({ dbClinicalSeries: mockDb }));
@@ -54,11 +59,51 @@ function clustoid() {
     isActive: true,
     sortOrder: 0,
     stages: [
-      { id: 10, productId: 1, label: "Primera dosis", unitPrice: dec(40000), defaultQty: 1, isMaintenance: false, sortOrder: 0 },
-      { id: 11, productId: 1, label: "Segunda dosis", unitPrice: dec(60000), defaultQty: 1, isMaintenance: false, sortOrder: 1 },
-      { id: 12, productId: 1, label: "Tercera dosis", unitPrice: dec(80000), defaultQty: 1, isMaintenance: false, sortOrder: 2 },
-      { id: 13, productId: 1, label: "Cuarta dosis", unitPrice: dec(100000), defaultQty: 1, isMaintenance: false, sortOrder: 3 },
-      { id: 14, productId: 1, label: "Dosis mantención", unitPrice: dec(120000), defaultQty: 11, isMaintenance: true, sortOrder: 4 },
+      {
+        id: 10,
+        productId: 1,
+        label: "Primera dosis",
+        unitPrice: dec(40000),
+        defaultQty: 1,
+        isMaintenance: false,
+        sortOrder: 0,
+      },
+      {
+        id: 11,
+        productId: 1,
+        label: "Segunda dosis",
+        unitPrice: dec(60000),
+        defaultQty: 1,
+        isMaintenance: false,
+        sortOrder: 1,
+      },
+      {
+        id: 12,
+        productId: 1,
+        label: "Tercera dosis",
+        unitPrice: dec(80000),
+        defaultQty: 1,
+        isMaintenance: false,
+        sortOrder: 2,
+      },
+      {
+        id: 13,
+        productId: 1,
+        label: "Cuarta dosis",
+        unitPrice: dec(100000),
+        defaultQty: 1,
+        isMaintenance: false,
+        sortOrder: 3,
+      },
+      {
+        id: 14,
+        productId: 1,
+        label: "Dosis mantención",
+        unitPrice: dec(120000),
+        defaultQty: 11,
+        isMaintenance: true,
+        sortOrder: 4,
+      },
     ],
   };
 }
@@ -106,11 +151,15 @@ describe("computeQuote", () => {
   });
 
   it("rechaza más alérgenos que maxAllergens (Forte = 1)", async () => {
-    mockProductFindUnique.mockResolvedValue({ ...clustoid(), name: "Clustek Forte", maxAllergens: 1 });
+    mockProductFindUnique.mockResolvedValue({
+      ...clustoid(),
+      name: "Clustek Forte",
+      maxAllergens: 1,
+    });
     mockAllergenFindMany.mockResolvedValue([]);
-    await expect(
-      computeQuote({ productId: 1, allergenIds: ["a", "b"] })
-    ).rejects.toMatchObject({ kind: "BAD_REQUEST" });
+    await expect(computeQuote({ productId: 1, allergenIds: ["a", "b"] })).rejects.toMatchObject({
+      kind: "BAD_REQUEST",
+    });
   });
 
   it("lanza NOT_FOUND si el producto no existe", async () => {
@@ -137,8 +186,8 @@ describe("createImmunotherapyBudget", () => {
 
   it("lanza NOT_FOUND si el paciente no existe", async () => {
     mockPatientFindUnique.mockResolvedValue(null);
-    await expect(
-      createImmunotherapyBudget({ productId: 1, patientId: 999 })
-    ).rejects.toMatchObject({ kind: "NOT_FOUND" });
+    await expect(createImmunotherapyBudget({ productId: 1, patientId: 999 })).rejects.toMatchObject(
+      { kind: "NOT_FOUND" }
+    );
   });
 });

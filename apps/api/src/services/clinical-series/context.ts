@@ -6,10 +6,7 @@ import { normalizeRut } from "../../lib/rut.ts";
 import { TIMEZONE } from "./constants.ts";
 import { getSeriesPatientPhones } from "./extraction/phones.ts";
 import { compareSeriesCanonicalPriority, haveCompatiblePatientNames } from "./matching/compare.ts";
-import {
-  getSignificantNameTokens,
-  normalizeName,
-} from "./normalization/names.ts";
+import { getSignificantNameTokens, normalizeName } from "./normalization/names.ts";
 import type { ClinicalSeriesKind } from "./types.ts";
 
 export interface SeriesEntry {
@@ -95,7 +92,10 @@ export class SeriesAssignmentContext {
     });
     for (const s of rows) {
       const dates = s.events
-        .map((e: (typeof s.events)[number]) => e.startDate ?? e.startDateTime ?? e.endDate ?? e.endDateTime)
+        .map(
+          (e: (typeof s.events)[number]) =>
+            e.startDate ?? e.startDateTime ?? e.endDate ?? e.endDateTime
+        )
         .filter((v: Date | null): v is Date => v instanceof Date)
         .map((v: Date) => dayjs(v).tz(TIMEZONE))
         .sort((a: dayjs.Dayjs, b: dayjs.Dayjs) => a.valueOf() - b.valueOf());
@@ -158,10 +158,7 @@ export class SeriesAssignmentContext {
       .sort(compareSeriesCanonicalPriority)[0]?.id;
   }
 
-  findDuplicateCanonicalByExactName(
-    name: string,
-    kind: ClinicalSeriesKind
-  ): number | undefined {
+  findDuplicateCanonicalByExactName(name: string, kind: ClinicalSeriesKind): number | undefined {
     const ids = this.nameKindIndex.get(`${normalizeName(name)}:${kind}`) ?? [];
     if (ids.length !== 2) return undefined;
     return ids

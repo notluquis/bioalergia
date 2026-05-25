@@ -128,9 +128,7 @@ export const SingleActive: Story = {
   parameters: {
     msw: {
       handlers: [
-        http.post("*/api/orpc/patients/rpc/getClinicalSeries", () =>
-          ok({ items: [SERIES[0]] })
-        ),
+        http.post("*/api/orpc/patients/rpc/getClinicalSeries", () => ok({ items: [SERIES[0]] })),
       ],
     },
   },

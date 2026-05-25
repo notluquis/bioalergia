@@ -134,9 +134,7 @@ const predictRoute = requireStaff
   .handler(async ({ input }) => {
     const pred = await predictCategory(input.query);
     return {
-      data: pred
-        ? { category_id: pred.category_id, category_name: pred.category_name }
-        : null,
+      data: pred ? { category_id: pred.category_id, category_name: pred.category_name } : null,
       status: "ok" as const,
     };
   });

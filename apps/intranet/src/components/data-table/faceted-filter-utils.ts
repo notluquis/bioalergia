@@ -24,8 +24,7 @@ export function resolveFacetedFilterValue(
   options: readonly FacetedFilterOption[],
   keys: TableSelection
 ): string[] | undefined {
-  const nextKeys =
-    keys === "all" ? new Set(options.map((option) => option.value)) : new Set(keys);
+  const nextKeys = keys === "all" ? new Set(options.map((option) => option.value)) : new Set(keys);
 
   if (nextKeys.has("clear")) return undefined;
   if (nextKeys.size === 0) return undefined;

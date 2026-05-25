@@ -1,12 +1,4 @@
-import {
-  Alert,
-  Breadcrumbs,
-  Button,
-  Card,
-  Input,
-  Label,
-  TextField,
-} from "@heroui/react";
+import { Alert, Breadcrumbs, Button, Card, Input, Label, TextField } from "@heroui/react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
@@ -28,8 +20,7 @@ function LoginPage() {
       setMagicLinkSent(true);
       setError(null);
     },
-    onError: (err) =>
-      setError(err instanceof Error ? err.message : "No se pudo enviar el enlace"),
+    onError: (err) => setError(err instanceof Error ? err.message : "No se pudo enviar el enlace"),
   });
 
   const passwordMutation = useMutation({
@@ -38,8 +29,7 @@ function LoginPage() {
       await queryClient.invalidateQueries({ queryKey: accountKeys.all });
       navigate({ to: "/mi-cuenta" });
     },
-    onError: (err) =>
-      setError(err instanceof Error ? err.message : "Credenciales incorrectas"),
+    onError: (err) => setError(err instanceof Error ? err.message : "Credenciales incorrectas"),
   });
 
   const passkeyMutation = useMutation({
@@ -64,8 +54,7 @@ function LoginPage() {
   });
 
   const canSubmit = email.includes("@");
-  const passkeyAvailable =
-    typeof window !== "undefined" && Boolean(window.PublicKeyCredential);
+  const passkeyAvailable = typeof window !== "undefined" && Boolean(window.PublicKeyCredential);
 
   function onContinue() {
     setError(null);

@@ -1,13 +1,7 @@
-import {
-  getSignificantNameTokens,
-  normalizeName,
-} from "../normalization/names.ts";
+import { getSignificantNameTokens, normalizeName } from "../normalization/names.ts";
 import { sanitizeRut } from "../normalization/rut.ts";
 
-export function buildIdentityGroupKey(
-  name: null | string,
-  rut: null | string
-): null | string {
+export function buildIdentityGroupKey(name: null | string, rut: null | string): null | string {
   const normalizedRut = sanitizeRut(rut);
   if (normalizedRut) return `rut:${normalizedRut}`;
   const normalizedName = name ? normalizeName(name) : "";

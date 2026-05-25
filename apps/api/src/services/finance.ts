@@ -1404,9 +1404,7 @@ export async function getFinancialSummaryByCategory(params: { from?: Date; to?: 
   })) as FinanceGroupRow[];
 
   const categoryIds: number[] = Array.from(
-    new Set(
-      grouped.map((row) => row.categoryId).filter((id): id is number => id != null)
-    )
+    new Set(grouped.map((row) => row.categoryId).filter((id): id is number => id != null))
   );
 
   const categories =

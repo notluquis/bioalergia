@@ -138,10 +138,12 @@ export async function tryMatchDTEPurchaseToExpense(dteId: string): Promise<Match
  * Reconcilia todos los DTEs sin link en una ventana de tiempo.
  * Llamable manualmente desde UI (orpc endpoint) o desde un job admin.
  */
-export async function reconcileUnmatchedDTEs(options: {
-  daysBack?: number;
-  limit?: number;
-} = {}): Promise<{
+export async function reconcileUnmatchedDTEs(
+  options: {
+    daysBack?: number;
+    limit?: number;
+  } = {}
+): Promise<{
   results: MatchResult[];
   summary: {
     alreadyLinked: number;
@@ -186,10 +188,7 @@ export async function reconcileUnmatchedDTEs(options: {
 /**
  * Link manual de DTE a un Expense específico (override por UI).
  */
-export async function linkDTEToExpense(
-  dteId: string,
-  expenseId: number
-): Promise<MatchResult> {
+export async function linkDTEToExpense(dteId: string, expenseId: number): Promise<MatchResult> {
   const expense = await db.expense.findFirst({ where: { id: expenseId } });
   if (!expense) {
     return { dteId, expenseId: null, reason: "Expense not found", status: "ERROR" };

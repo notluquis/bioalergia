@@ -1,13 +1,4 @@
-import {
-  Alert,
-  Button,
-  Card,
-  Checkbox,
-  Input,
-  Label,
-  Skeleton,
-  TextField,
-} from "@heroui/react";
+import { Alert, Button, Card, Checkbox, Input, Label, Skeleton, TextField } from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
@@ -69,8 +60,7 @@ function MiCuentaAddresses() {
 
   const remove = useMutation({
     mutationFn: (id: number) => accountClient.deleteAddress({ id }),
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: accountKeys.addresses().queryKey }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: accountKeys.addresses().queryKey }),
   });
 
   function set<K extends keyof AddressFormState>(key: K, value: AddressFormState[K]) {
@@ -90,7 +80,8 @@ function MiCuentaAddresses() {
             <Card.Content className="flex items-start justify-between p-4">
               <div className="space-y-1">
                 <p className="font-semibold text-sm">
-                  {addr.label} {addr.is_primary && <span className="text-primary-700">(Principal)</span>}
+                  {addr.label}{" "}
+                  {addr.is_primary && <span className="text-primary-700">(Principal)</span>}
                 </p>
                 <p className="text-default-500 text-sm">
                   {addr.street} {addr.number}
@@ -180,19 +171,14 @@ function MiCuentaAddresses() {
               <Label>Referencia (opcional)</Label>
               <Input />
             </TextField>
-            <Checkbox
-              isSelected={form.isPrimary}
-              onChange={(v) => set("isPrimary", v)}
-            >
+            <Checkbox isSelected={form.isPrimary} onChange={(v) => set("isPrimary", v)}>
               Marcar como dirección principal
             </Checkbox>
             {upsert.isError && (
               <Alert status="danger">
                 <Alert.Content>
                   <Alert.Description>
-                    {upsert.error instanceof Error
-                      ? upsert.error.message
-                      : "No se pudo guardar"}
+                    {upsert.error instanceof Error ? upsert.error.message : "No se pudo guardar"}
                   </Alert.Description>
                 </Alert.Content>
               </Alert>

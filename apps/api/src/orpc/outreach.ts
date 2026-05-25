@@ -188,12 +188,19 @@ const outreachRouterBase = {
             _max: { fecha: true },
           })
         : [];
-      const cMap = new Map(contactCounts.map((r: (typeof contactCounts)[number]) => [r.establecimientoRbd, r._count._all]));
-      const iMap = new Map<string, { count: number; last: Date | null }>(
-        interactionAgg.map((r: (typeof interactionAgg)[number]): [string, { count: number; last: Date | null }] => [
+      const cMap = new Map(
+        contactCounts.map((r: (typeof contactCounts)[number]) => [
           r.establecimientoRbd,
-          { count: r._count._all, last: r._max.fecha },
+          r._count._all,
         ])
+      );
+      const iMap = new Map<string, { count: number; last: Date | null }>(
+        interactionAgg.map(
+          (r: (typeof interactionAgg)[number]): [string, { count: number; last: Date | null }] => [
+            r.establecimientoRbd,
+            { count: r._count._all, last: r._max.fecha },
+          ]
+        )
       );
       return {
         items: items.map((e) => ({
@@ -852,10 +859,22 @@ const outreachRouterBase = {
           activos,
           conEmail,
         },
-        porEstado: porEstado.map((r: (typeof porEstado)[number]) => ({ estado: r.estado, count: r._count._all })),
-        porTipo: porTipo.map((r: (typeof porTipo)[number]) => ({ tipo: r.tipo, count: r._count._all })),
-        porFuente: porFuente.map((r: (typeof porFuente)[number]) => ({ fuente: r.fuente, count: r._count._all })),
-        porDependencia: porDep.map((r: (typeof porDep)[number]) => ({ dependencia: r.dependencia, count: r._count._all })),
+        porEstado: porEstado.map((r: (typeof porEstado)[number]) => ({
+          estado: r.estado,
+          count: r._count._all,
+        })),
+        porTipo: porTipo.map((r: (typeof porTipo)[number]) => ({
+          tipo: r.tipo,
+          count: r._count._all,
+        })),
+        porFuente: porFuente.map((r: (typeof porFuente)[number]) => ({
+          fuente: r.fuente,
+          count: r._count._all,
+        })),
+        porDependencia: porDep.map((r: (typeof porDep)[number]) => ({
+          dependencia: r.dependencia,
+          count: r._count._all,
+        })),
         porComuna: porComuna
           .map((r: (typeof porComuna)[number]) => ({ comuna: r.comuna, count: r._count._all }))
           .sort((a: { count: number }, b: { count: number }) => b.count - a.count),

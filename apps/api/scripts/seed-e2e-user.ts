@@ -96,12 +96,7 @@ await sql`
 const existing = await db
   .selectFrom("users")
   .innerJoin("people", "people.id", "users.person_id")
-  .select([
-    "users.id as user_id",
-    "users.person_id",
-    "users.session_version",
-    "people.email",
-  ])
+  .select(["users.id as user_id", "users.person_id", "users.session_version", "people.email"])
   .where("users.login_email", "=", EMAIL)
   .executeTakeFirst();
 

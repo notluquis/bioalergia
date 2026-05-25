@@ -47,7 +47,9 @@ const role = await db
   .executeTakeFirst();
 
 if (!role) {
-  console.error(`[grant-e2e-readonly-read-perms] role ${ROLE_NAME} not found — run seed-e2e-user.ts first`);
+  console.error(
+    `[grant-e2e-readonly-read-perms] role ${ROLE_NAME} not found — run seed-e2e-user.ts first`
+  );
   await db.destroy();
   process.exit(3);
 }
@@ -72,5 +74,5 @@ await db.destroy();
 
 console.log(
   `[grant-e2e-readonly-read-perms] inserted ${result.numAffectedRows ?? 0} new link(s); ` +
-    `${ROLE_NAME} now holds ${granted.count} read permission(s).`,
+    `${ROLE_NAME} now holds ${granted.count} read permission(s).`
 );

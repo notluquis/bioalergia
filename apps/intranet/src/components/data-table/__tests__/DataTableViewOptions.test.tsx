@@ -94,12 +94,7 @@ describe("DataTableViewOptions", () => {
 
   it("renders nothing-hideable case (no columns) without crashing", () => {
     render(
-      <DataTable
-        columns={[]}
-        data={[]}
-        enablePagination={false}
-        enableVirtualization={false}
-      />
+      <DataTable columns={[]} data={[]} enablePagination={false} enableVirtualization={false} />
     );
     expect(getColumnasTrigger()).toBeInTheDocument();
   });

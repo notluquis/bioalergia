@@ -96,7 +96,7 @@ export async function addMigratingPhoneNumber(
   accountId: number,
   countryCode: string,
   phoneNumber: string,
-  migrate: boolean,
+  migrate: boolean
 ) {
   const account = await loadAccount(accountId);
   if (!account?.systemUserToken) throw new Error("Account sin token");
@@ -108,7 +108,7 @@ export async function addMigratingPhoneNumber(
       migrate_phone_number: migrate,
     },
     account.systemUserToken,
-    account.graphApiVersion,
+    account.graphApiVersion
   );
 }
 

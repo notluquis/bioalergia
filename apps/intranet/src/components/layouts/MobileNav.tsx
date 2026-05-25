@@ -93,11 +93,7 @@ export function BottomNav({ buildLabel, isHidden = false }: Readonly<BottomNavPr
                   className={`size-6 ${active ? "scale-110" : ""}`}
                   strokeWidth={active ? 2.5 : 2}
                 />
-                <span
-                  className={
-                    active ? "font-semibold text-foreground" : "text-default-600"
-                  }
-                >
+                <span className={active ? "font-semibold text-foreground" : "text-default-600"}>
                   {item.label}
                 </span>
               </span>

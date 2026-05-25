@@ -87,11 +87,7 @@ export async function createCartWithToken(tokenHash: string, userId: number | nu
   });
 }
 
-export async function addItemToCart(opts: {
-  cartId: number;
-  productId: number;
-  qty: number;
-}) {
+export async function addItemToCart(opts: { cartId: number; productId: number; qty: number }) {
   const product = await db.product.findUnique({
     where: { id: opts.productId },
     select: { id: true, status: true, priceClp: true, availableQty: true, safetyStock: true },
@@ -130,11 +126,7 @@ export async function addItemToCart(opts: {
   }
 }
 
-export async function updateItemQty(opts: {
-  cartId: number;
-  productId: number;
-  qty: number;
-}) {
+export async function updateItemQty(opts: { cartId: number; productId: number; qty: number }) {
   if (opts.qty === 0) {
     await db.cartItem.deleteMany({
       where: { cartId: opts.cartId, productId: opts.productId },
@@ -188,7 +180,7 @@ export function serializeCart(cart: CartWithItems) {
   type SerializedItem = (typeof items)[number];
   const subtotal = items.reduce(
     (acc: number, i: SerializedItem) => acc + i.unit_price_clp * i.qty,
-    0,
+    0
   );
   return {
     id: cart.id,

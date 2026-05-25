@@ -15,9 +15,7 @@ function MiCuentaDashboard() {
     <div className="space-y-6">
       <header>
         <h1 className="font-bold text-3xl">Hola, {name}</h1>
-        <p className="text-default-500 text-sm">
-          Bienvenida/o a tu cuenta Bioalergia.
-        </p>
+        <p className="text-default-500 text-sm">Bienvenida/o a tu cuenta Bioalergia.</p>
       </header>
 
       <Card>
@@ -46,14 +44,12 @@ function MiCuentaDashboard() {
                 <div>
                   <p className="font-semibold text-sm">Pedido {order.number}</p>
                   <p className="text-default-500 text-xs">
-                    {new Date(order.created_at).toLocaleDateString("es-CL")} ·{" "}
-                    {order.item_count} ítem(s)
+                    {new Date(order.created_at).toLocaleDateString("es-CL")} · {order.item_count}{" "}
+                    ítem(s)
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className="font-semibold text-sm">
-                    {CLP_FORMATTER.format(order.total_clp)}
-                  </p>
+                  <p className="font-semibold text-sm">{CLP_FORMATTER.format(order.total_clp)}</p>
                   <p className="text-default-500 text-xs">{order.status}</p>
                 </div>
               </div>

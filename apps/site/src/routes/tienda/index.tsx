@@ -13,10 +13,7 @@ import { shopKeys } from "@/features/shop/queries";
 type CatalogProduct = InferContractRouterOutputs<CatalogContract>["list"]["data"][number];
 
 const sortSchema = z.object({
-  sort: z
-    .enum(["relevancia", "precio_asc", "precio_desc"])
-    .optional()
-    .default("relevancia"),
+  sort: z.enum(["relevancia", "precio_asc", "precio_desc"]).optional().default("relevancia"),
 });
 
 function sortProducts(rows: CatalogProduct[], key: string) {
@@ -30,10 +27,7 @@ function TiendaPage() {
   const { sort } = Route.useSearch();
   const { data, isLoading, error } = useQuery(shopKeys.products());
 
-  const sorted = useMemo(
-    () => (data ? sortProducts(data.data, sort) : []),
-    [data, sort]
-  );
+  const sorted = useMemo(() => (data ? sortProducts(data.data, sort) : []), [data, sort]);
 
   return (
     <main className="mx-auto max-w-7xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
@@ -118,8 +112,7 @@ export const Route = createFileRoute("/tienda/")({
   component: TiendaPage,
   validateSearch: sortSchema,
   head: () => {
-    const origin =
-      typeof window === "undefined" ? "https://bioalergia.cl" : window.location.origin;
+    const origin = typeof window === "undefined" ? "https://bioalergia.cl" : window.location.origin;
     const url = `${origin}/tienda`;
     return {
       meta: [

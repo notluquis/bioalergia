@@ -243,7 +243,8 @@ export async function detectDuplicateSeries(): Promise<ClinicalSeriesDuplicate[]
         hasComplementaryEventAndSkinTestEvidence(left, right) &&
         (samePatientEvidence ||
           hasClosePrimaryPatientRut(left, right) ||
-          (sameNameEventTestEvidence && (hasSkinTestEventText(left) || hasSkinTestEventText(right)))) &&
+          (sameNameEventTestEvidence &&
+            (hasSkinTestEventText(left) || hasSkinTestEventText(right)))) &&
         hasClinicalDateWithinDays(left, right, 2);
       if (
         !samePatientEvidence &&
@@ -262,13 +263,14 @@ export async function detectDuplicateSeries(): Promise<ClinicalSeriesDuplicate[]
         confidence: "high",
         kind: target.kind,
         patientName: target.patientName,
-        reason: nearDateEventTestEvidence && !sharedClinicalDate
-          ? "Mismo paciente probable y fecha clínica cercana entre evento y examen"
-          : sameNameCloseRutSkinTestEvidence
-          ? "Mismo nombre, RUT cercano y fecha clínica entre exámenes"
-          : samePatientEvidence
-            ? "Mismo paciente y misma fecha clínica entre evento y examen"
-            : "Mismo nombre y misma fecha clínica entre evento y examen",
+        reason:
+          nearDateEventTestEvidence && !sharedClinicalDate
+            ? "Mismo paciente probable y fecha clínica cercana entre evento y examen"
+            : sameNameCloseRutSkinTestEvidence
+              ? "Mismo nombre, RUT cercano y fecha clínica entre exámenes"
+              : samePatientEvidence
+                ? "Mismo paciente y misma fecha clínica entre evento y examen"
+                : "Mismo nombre y misma fecha clínica entre evento y examen",
         sourceEventCount: src._count.events,
         sourceId: src.id,
         sourcePatientName: src.patientName,

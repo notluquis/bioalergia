@@ -1,12 +1,4 @@
-import {
-  Alert,
-  Button,
-  Card,
-  Input,
-  Label,
-  Skeleton,
-  TextField,
-} from "@heroui/react";
+import { Alert, Button, Card, Input, Label, Skeleton, TextField } from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
@@ -54,22 +46,19 @@ function MiCuentaSecurity() {
         body: credential,
       });
     },
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: accountKeys.passkeys().queryKey }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: accountKeys.passkeys().queryKey }),
   });
 
   const removePasskey = useMutation({
     mutationFn: (id: string) => siteAuthClient.passkeyDelete({ passkey_id: id }),
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: accountKeys.passkeys().queryKey }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: accountKeys.passkeys().queryKey }),
   });
 
   if (meQuery.isLoading) return <Skeleton className="h-32 w-full" />;
   const me = meQuery.data?.user;
   if (!me) return null;
 
-  const passkeyAvailable =
-    typeof window !== "undefined" && Boolean(window.PublicKeyCredential);
+  const passkeyAvailable = typeof window !== "undefined" && Boolean(window.PublicKeyCredential);
 
   return (
     <div className="space-y-4">
@@ -90,11 +79,7 @@ function MiCuentaSecurity() {
           )}
           <TextField onChange={setNewPassword} value={newPassword}>
             <Label>{me.has_password ? "Nueva contraseña" : "Definir contraseña"}</Label>
-            <Input
-              type="password"
-              placeholder="Mínimo 8 caracteres"
-              autoComplete="new-password"
-            />
+            <Input type="password" placeholder="Mínimo 8 caracteres" autoComplete="new-password" />
           </TextField>
           {pwError && (
             <Alert status="danger">
@@ -128,16 +113,12 @@ function MiCuentaSecurity() {
           {!passkeyAvailable && (
             <Alert status="warning">
               <Alert.Content>
-                <Alert.Description>
-                  Este navegador no soporta passkeys.
-                </Alert.Description>
+                <Alert.Description>Este navegador no soporta passkeys.</Alert.Description>
               </Alert.Content>
             </Alert>
           )}
           {passkeysQuery.data?.data.length === 0 && (
-            <p className="text-default-500 text-sm">
-              Aún no has registrado passkeys.
-            </p>
+            <p className="text-default-500 text-sm">Aún no has registrado passkeys.</p>
           )}
           <ul className="space-y-2">
             {passkeysQuery.data?.data.map((pk) => (

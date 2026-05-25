@@ -37,11 +37,7 @@ export const DTE_TYPE = {
 
 export type DteTypeCode = (typeof DTE_TYPE)[keyof typeof DTE_TYPE];
 
-async function call<T>(
-  method: "GET" | "POST",
-  path: string,
-  body?: unknown
-): Promise<T> {
+async function call<T>(method: "GET" | "POST", path: string, body?: unknown): Promise<T> {
   const token = await getHaulmerJwt();
   const headers: Record<string, string> = {
     Accept: "application/json",
@@ -261,7 +257,11 @@ function buildBorradorPayload(sesion: number, input: DraftInput, emisor: Taxpaye
 
 export async function saveDraft(input: DraftInput): Promise<{ sesion: number }> {
   const [sesion, emisor] = await Promise.all([getSession(input.dteType), getTaxpayerInfo()]);
-  await call("POST", `/v3/dte/core/docs/template/borrador/${RUT_NUMERIC}`, buildBorradorPayload(sesion, input, emisor));
+  await call(
+    "POST",
+    `/v3/dte/core/docs/template/borrador/${RUT_NUMERIC}`,
+    buildBorradorPayload(sesion, input, emisor)
+  );
   return { sesion };
 }
 
@@ -305,8 +305,7 @@ export async function emitFromOrder(input: {
   lines: Array<{ sku: string; name: string; qty: number; unitPriceClp: number }>;
   totalClp: number;
 }): Promise<EmitResult> {
-  const dteType: DteTypeCode =
-    input.documentType === "BOLETA" ? DTE_TYPE.BOLETA : DTE_TYPE.FACTURA;
+  const dteType: DteTypeCode = input.documentType === "BOLETA" ? DTE_TYPE.BOLETA : DTE_TYPE.FACTURA;
   const { sesion } = await saveDraft({
     dteType,
     customer: { rut: input.customerRut, razonSocial: input.customerName },

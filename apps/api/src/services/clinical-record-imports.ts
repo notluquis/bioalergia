@@ -241,7 +241,6 @@ async function reprocessInLock(
   reason?: string;
   candidates?: number;
 }> {
-
   const parsed = parseClinicalRecordWorkbook(buffer);
   const resultHash = computeResultHash(parsed);
   const match = await matchPatientForRecord(parsed);

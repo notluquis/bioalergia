@@ -35,9 +35,8 @@ if (process.env.DISABLE_QUEUE_RUNNER !== "true") {
 
 // Doctoralia integrations (off by default; deprecated path — Baileys removed).
 if (process.env.ENABLE_DOCTORALIA_CALENDAR_SYNC === "true") {
-  const { startDoctoraliaCalendarScheduler } = await import(
-    "./services/doctoralia-calendar-scheduler.ts"
-  );
+  const { startDoctoraliaCalendarScheduler } =
+    await import("./services/doctoralia-calendar-scheduler.ts");
   startDoctoraliaCalendarScheduler();
 }
 if (process.env.ENABLE_DOCTORALIA_IMAP === "true") {
@@ -45,9 +44,8 @@ if (process.env.ENABLE_DOCTORALIA_IMAP === "true") {
   startDoctoraliaImapListener();
 }
 if (process.env.ENABLE_SKIN_TEST_IMPORT_SYNC === "true") {
-  const { startClinicalSkinTestImportScheduler } = await import(
-    "./services/clinical-skin-test-scheduler.ts"
-  );
+  const { startClinicalSkinTestImportScheduler } =
+    await import("./services/clinical-skin-test-scheduler.ts");
   startClinicalSkinTestImportScheduler();
 }
 

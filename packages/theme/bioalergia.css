@@ -102,12 +102,8 @@
   --divider: var(--separator);
 
   /* Shadows tuned to ink hue for warm cream surfaces. */
-  --surface-shadow:
-    0 2px 4px 0 rgba(15, 28, 38, 0.04),
-    0 1px 2px 0 rgba(15, 28, 38, 0.06);
-  --overlay-shadow:
-    0 4px 16px 0 rgba(15, 28, 38, 0.08),
-    0 8px 24px 0 rgba(15, 28, 38, 0.09);
+  --surface-shadow: 0 2px 4px 0 rgba(15, 28, 38, 0.04), 0 1px 2px 0 rgba(15, 28, 38, 0.06);
+  --overlay-shadow: 0 4px 16px 0 rgba(15, 28, 38, 0.08), 0 8px 24px 0 rgba(15, 28, 38, 0.09);
   --field-shadow: 0 1px 2px 0 rgba(15, 28, 38, 0.04);
 
   --radius: 0.5rem;

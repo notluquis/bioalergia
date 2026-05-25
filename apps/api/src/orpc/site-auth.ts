@@ -55,10 +55,7 @@ const base = os.$context<SiteAuthContext>();
 
 // In-memory challenge store for WebAuthn (process-local; OK for now while
 // we run a single api instance — same pattern as intranet auth.ts).
-const challengeStore = new Map<
-  string,
-  { challenge: string; expires: number; userId?: number }
->();
+const challengeStore = new Map<string, { challenge: string; expires: number; userId?: number }>();
 
 function storeChallenge(key: string, challenge: string, userId?: number): void {
   challengeStore.set(key, {
@@ -173,9 +170,7 @@ function buildSiteUser(user: UserWithRelations) {
 
 async function setSiteSessionCookieAndIssue(hono: HonoContext, user: UserWithRelations) {
   await ensureUserHasShopCustomerRole(user.id);
-  const roles = user.roles.map(
-    (assignment: (typeof user.roles)[number]) => assignment.role.name
-  );
+  const roles = user.roles.map((assignment: (typeof user.roles)[number]) => assignment.role.name);
   const email = user.loginEmail ?? user.person?.email ?? "";
   const token = await issueSiteToken({
     userId: user.id,
@@ -483,8 +478,7 @@ const siteAuthRouterBase = {
           counter: BigInt(credential.counter),
           credentialId: credential.id,
           deviceType: credentialDeviceType,
-          friendlyName:
-            input.friendlyName ?? `Passkey (${new Date().toLocaleDateString("es-CL")})`,
+          friendlyName: input.friendlyName ?? `Passkey (${new Date().toLocaleDateString("es-CL")})`,
           publicKey: Buffer.from(credential.publicKey),
           transports: responseBody.response.transports ?? undefined,
           userId: session.id,
@@ -535,8 +529,7 @@ const siteAuthRouterBase = {
           counter: Number(passkey.counter),
           id: passkey.credentialId,
           publicKey: new Uint8Array(passkey.publicKey),
-          transports:
-            (passkey.transports as AuthenticatorTransportFuture[] | null) || undefined,
+          transports: (passkey.transports as AuthenticatorTransportFuture[] | null) || undefined,
         },
         expectedChallenge: input.challenge,
         expectedOrigin: SHOP_ORIGIN,

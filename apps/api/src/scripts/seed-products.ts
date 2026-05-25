@@ -63,7 +63,7 @@ async function main() {
   let updated = 0;
   for (const p of seed.products) {
     const slug = slugify(p.name);
-    const categoryId = p.category_slug ? categoryIdBySlug.get(p.category_slug) ?? null : null;
+    const categoryId = p.category_slug ? (categoryIdBySlug.get(p.category_slug) ?? null) : null;
 
     const existing = await db.product.findUnique({ where: { sku: p.sku } });
     if (existing) {

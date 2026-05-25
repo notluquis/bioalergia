@@ -15,10 +15,7 @@ type ProductForMl = {
 
 const DEFAULT_LISTING_TYPE = process.env.ML_LISTING_TYPE_ID ?? "gold_special";
 
-export function productToMlItem(
-  product: ProductForMl,
-  mlCategoryId: string
-): MlItemCreatePayload {
+export function productToMlItem(product: ProductForMl, mlCategoryId: string): MlItemCreatePayload {
   const attributes: MlItemCreatePayload["attributes"] = [];
   if (product.brand) {
     attributes.push({ id: "BRAND", value_name: product.brand });

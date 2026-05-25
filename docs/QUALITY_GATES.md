@@ -98,7 +98,7 @@ and the rationale for each:
 - **`page.emulateMedia({ reducedMotion: "reduce" })` at runtime** rather
   than `test.use({ reducedMotion: "reduce" })`. Empirically the
   context-level option does not flip `matchMedia` on Playwright 1.60.x
-  + Chromium 148 (open upstream).
+  - Chromium 148 (open upstream).
 - **HeroUI v3 input targeting** via attribute selectors
   (`input[type="email"]`, `input[autocomplete="username"]`,
   `input[type="password"]`) because the v3 wrapper div catches

@@ -96,7 +96,9 @@ try {
   const FRC = ['[name="frc-captcha-response"]', '[name="frc-captcha-solution"]'];
   let frcSel = null;
   for (const sel of FRC) {
-    const el = await page.waitForSelector(sel, { timeout: 10000, state: "attached" }).catch(() => null);
+    const el = await page
+      .waitForSelector(sel, { timeout: 10000, state: "attached" })
+      .catch(() => null);
     if (el) {
       frcSel = sel;
       break;
@@ -127,8 +129,7 @@ try {
   // Post-login Doctoralia mete pantallas en orden variable: /2fa (OTP email),
   // /weak-password ("Recuérdamelo más tarde"), /apps (elegir app). Iteramos
   // hasta docplanner panel o timeout.
-  const codeInput =
-    'input[type="text"], input[name="code"], input[autocomplete="one-time-code"]';
+  const codeInput = 'input[type="text"], input[name="code"], input[autocomplete="one-time-code"]';
   const deadline = Date.now() + 120_000;
   let lastUrl = "";
   while (Date.now() < deadline) {
@@ -151,9 +152,7 @@ try {
       }
       log("OTP email:", code);
       await page.fill(codeInput, code).catch(() => {});
-      await page
-        .click('button[type="submit"], button:has-text("Enviar")')
-        .catch(() => {});
+      await page.click('button[type="submit"], button:has-text("Enviar")').catch(() => {});
     } else if (url.includes("/weak-password")) {
       log('weak-password → "Recuérdamelo más tarde"');
       await page
@@ -163,9 +162,7 @@ try {
         .catch(() => {});
     } else if (url.includes("/apps")) {
       log("/apps → www.doctoralia.cl");
-      await page
-        .click('a:has-text("doctoralia.cl"), :text("www.doctoralia.cl")')
-        .catch(() => {});
+      await page.click('a:has-text("doctoralia.cl"), :text("www.doctoralia.cl")').catch(() => {});
     }
   }
 

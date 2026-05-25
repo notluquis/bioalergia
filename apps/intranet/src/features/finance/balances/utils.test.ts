@@ -22,9 +22,7 @@ describe("finance/balances/utils", () => {
 
     it("derives from first day with recordedBalance", () => {
       const r = makeReport({
-        days: [
-          { netChange: 200, recordedBalance: 1500, expectedBalance: null },
-        ],
+        days: [{ netChange: 200, recordedBalance: 1500, expectedBalance: null }],
       } as unknown as BalancesApiResponse);
       expect(deriveInitialBalance(r)).toBe(1300);
     });

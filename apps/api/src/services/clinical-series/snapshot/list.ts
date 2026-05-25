@@ -7,9 +7,7 @@ import type { ClinicalSeriesFilters, ClinicalSeriesSnapshot } from "../types.ts"
 import { getClinicalSeriesSnapshotById } from "./by-id.ts";
 import { prepareClinicalSeriesFilters } from "./filters.ts";
 
-export async function listClinicalSeriesSnapshots(
-  filters?: ClinicalSeriesFilters
-): Promise<{
+export async function listClinicalSeriesSnapshots(filters?: ClinicalSeriesFilters): Promise<{
   items: ClinicalSeriesSnapshot[];
   page: number;
   pageSize: number;

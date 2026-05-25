@@ -170,10 +170,7 @@ export function normalizeDate(input: string, boundary: "start" | "end"): string 
   return adjusted.format("YYYY-MM-DD HH:mm:ss");
 }
 
-export function normalizeTimestamp(
-  primary: string | Date | null,
-  fallback: string | null
-): string {
+export function normalizeTimestamp(primary: string | Date | null, fallback: string | null): string {
   const normalizedFallback = normalizeTimestampString(fallback);
   if (normalizedFallback) {
     return normalizedFallback;

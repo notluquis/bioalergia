@@ -148,7 +148,8 @@ async function fetchDoctoraliaOtp(config: ScraperConfig): Promise<string | null>
     for (let attempt = 0; attempt < 12; attempt++) {
       const lock = await client.getMailboxLock("INBOX");
       try {
-        const total = client.mailbox && typeof client.mailbox !== "boolean" ? client.mailbox.exists : 0;
+        const total =
+          client.mailbox && typeof client.mailbox !== "boolean" ? client.mailbox.exists : 0;
         const from = Math.max(1, total - 29);
         let code: null | string = null;
         for await (const msg of client.fetch(`${from}:*`, { envelope: true, source: true })) {
@@ -237,8 +238,7 @@ async function performLoginWithBrowser(
     await page.click('button[type="submit"], input[type="submit"]').catch(() => {});
 
     // Resolver loop: Doctoralia mete pantallas en orden variable post-login.
-    const codeInput =
-      'input[type="text"], input[name="code"], input[autocomplete="one-time-code"]';
+    const codeInput = 'input[type="text"], input[name="code"], input[autocomplete="one-time-code"]';
     const deadline = Date.now() + 120_000;
     let lastUrl = "";
     while (Date.now() < deadline) {
@@ -268,9 +268,7 @@ async function performLoginWithBrowser(
           )
           .catch(() => {});
       } else if (url.includes("/apps")) {
-        await page
-          .click('a:has-text("doctoralia.cl"), :text("www.doctoralia.cl")')
-          .catch(() => {});
+        await page.click('a:has-text("doctoralia.cl"), :text("www.doctoralia.cl")').catch(() => {});
       }
     }
 

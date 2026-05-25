@@ -40,14 +40,12 @@ function MiCuentaOrdersList() {
                 <div>
                   <p className="font-semibold">{order.number}</p>
                   <p className="text-default-500 text-xs">
-                    {new Date(order.created_at).toLocaleString("es-CL")} ·{" "}
-                    {order.item_count} ítem(s) · {order.channel}
+                    {new Date(order.created_at).toLocaleString("es-CL")} · {order.item_count}{" "}
+                    ítem(s) · {order.channel}
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className="font-semibold">
-                    {CLP_FORMATTER.format(order.total_clp)}
-                  </p>
+                  <p className="font-semibold">{CLP_FORMATTER.format(order.total_clp)}</p>
                   <p className="text-default-500 text-xs">{order.status}</p>
                 </div>
               </Card.Content>

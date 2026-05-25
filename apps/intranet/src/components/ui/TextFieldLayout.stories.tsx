@@ -59,9 +59,7 @@ export const NarrowFlexContainerTextarea: Story = {
     const { within } = await import("storybook/test");
     const { expectHorizontalTextFlow } = await import("../../test/layout-guards");
     const root = within(canvasElement);
-    const textarea = root.getByPlaceholderText(
-      "Long notes go here"
-    ) as HTMLTextAreaElement;
+    const textarea = root.getByPlaceholderText("Long notes go here") as HTMLTextAreaElement;
     expectHorizontalTextFlow(textarea);
   },
 };

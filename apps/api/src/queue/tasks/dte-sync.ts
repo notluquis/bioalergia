@@ -16,7 +16,7 @@ export const dte_sync: Task = async (_payload, helpers) => {
       acc.processed += r.processed;
       return acc;
     },
-    { inserted: 0, updated: 0, processed: 0 },
+    { inserted: 0, updated: 0, processed: 0 }
   );
   logEvent("queue.dte_sync.done", {
     ms: Date.now() - started,

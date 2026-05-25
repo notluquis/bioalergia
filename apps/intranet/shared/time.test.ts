@@ -1,11 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  durationToMinutes,
-  minutesToDuration,
-  minutesToTime,
-  parseTimeToMinutes,
-} from "./time";
+import { durationToMinutes, minutesToDuration, minutesToTime, parseTimeToMinutes } from "./time";
 
 describe("shared/time", () => {
   describe("durationToMinutes", () => {

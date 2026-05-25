@@ -90,7 +90,9 @@ function PatientsListPage() {
         accessorKey: "person.rut",
         header: "RUT",
         cell: ({ row }) => (
-          <span className="font-mono text-default-700" data-phi>{row.original.person.rut}</span>
+          <span className="font-mono text-default-700" data-phi>
+            {row.original.person.rut}
+          </span>
         ),
       },
       {

@@ -939,7 +939,8 @@ export async function processWebhookPayload(payload: MetaWebhookPayload): Promis
               });
               const senderName =
                 contact?.name ?? contact?.pushName ?? contact?.phoneE164 ?? "WhatsApp";
-              const bodyPreview = preview && preview.length > 120 ? `${preview.slice(0, 117)}…` : preview;
+              const bodyPreview =
+                preview && preview.length > 120 ? `${preview.slice(0, 117)}…` : preview;
               // Org-wide unread count for the badge. Aggregating
               // unreadCount across every conversation matches what the
               // operator sees in the inbox header (totalUnread).
@@ -952,9 +953,7 @@ export async function processWebhookPayload(payload: MetaWebhookPayload): Promis
                 generic: {
                   title: "Bioalergia",
                   body:
-                    badgeCount > 1
-                      ? `${badgeCount} mensajes nuevos`
-                      : "Mensaje nuevo en bandeja",
+                    badgeCount > 1 ? `${badgeCount} mensajes nuevos` : "Mensaje nuevo en bandeja",
                 },
                 phi: {
                   sender: senderName,

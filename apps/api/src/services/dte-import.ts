@@ -14,9 +14,7 @@ function tryMatchExpenseFailSoft(dteId: string): void {
   tryMatchDTEPurchaseToExpense(dteId)
     .then((result) => {
       if (result.status === "ERROR" || result.status === "NO_MATCH") {
-        console.warn(
-          `[DTE-Match] dte=${dteId} status=${result.status} reason=${result.reason}`
-        );
+        console.warn(`[DTE-Match] dte=${dteId} status=${result.status} reason=${result.reason}`);
       }
     })
     .catch((err) => {

@@ -6,11 +6,7 @@ import { normalizeRut } from "../../../lib/rut.ts";
 import { TIMEZONE } from "../constants.ts";
 import { normalizeName } from "../normalization/names.ts";
 import { normalizePhoneSearch } from "../normalization/phones.ts";
-import type {
-  ClinicalSeriesFilters,
-  ClinicalSeriesKind,
-  HealthInsuranceType,
-} from "../types.ts";
+import type { ClinicalSeriesFilters, ClinicalSeriesKind, HealthInsuranceType } from "../types.ts";
 
 export type PreparedClinicalSeriesFilters = {
   abandonmentFilterSql: ReturnType<typeof sql>;

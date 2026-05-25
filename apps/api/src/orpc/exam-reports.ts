@@ -124,8 +124,7 @@ const _reportDetailRow = () =>
   db.examReport.findUniqueOrThrow({ where: { id: 0 }, include: reportDetailInclude });
 type ReportDetailRow = Awaited<ReturnType<typeof _reportDetailRow>>;
 
-const _reportListRow = () =>
-  db.examReport.findMany({ select: reportListSelect });
+const _reportListRow = () => db.examReport.findMany({ select: reportListSelect });
 type ReportListRow = Awaited<ReturnType<typeof _reportListRow>>[number];
 
 type SectionRow = ReportDetailRow["sections"][number];
@@ -143,9 +142,7 @@ function serialiseDetail(r: ReportDetailRow) {
     updatedAt: r.updatedAt.toISOString(),
     patient: {
       ...r.patient,
-      birthDate: r.patient.birthDate
-        ? r.patient.birthDate.toISOString().slice(0, 10)
-        : null,
+      birthDate: r.patient.birthDate ? r.patient.birthDate.toISOString().slice(0, 10) : null,
     },
     sections: (r.sections ?? []).map((s: SectionRow) => ({
       ...s,
@@ -576,7 +573,10 @@ export const examReportsORPCRouter = base
 export const examReportsORPCHandler = new SuperJSONRPCHandler(examReportsORPCRouter, {
   interceptors: [
     onError((error) => {
-      logError("[exam-reports] handler error", error instanceof Error ? error : new Error(String(error)));
+      logError(
+        "[exam-reports] handler error",
+        error instanceof Error ? error : new Error(String(error))
+      );
     }),
   ],
 });
@@ -584,7 +584,10 @@ export const examReportsORPCHandler = new SuperJSONRPCHandler(examReportsORPCRou
 export const examReportsOpenAPIHandler = new OpenAPIHandler(examReportsORPCRouter, {
   interceptors: [
     onError((error) => {
-      logError("[exam-reports] openapi handler error", error instanceof Error ? error : new Error(String(error)));
+      logError(
+        "[exam-reports] openapi handler error",
+        error instanceof Error ? error : new Error(String(error))
+      );
     }),
   ],
 });

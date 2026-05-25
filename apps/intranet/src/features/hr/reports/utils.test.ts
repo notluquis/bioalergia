@@ -26,7 +26,11 @@ function entry(work_date: string, worked_minutes: number, overtime_minutes = 0):
   };
 }
 
-function emp(name: string, totalMinutes: number, overrides: Partial<EmployeeWorkData> = {}): EmployeeWorkData {
+function emp(
+  name: string,
+  totalMinutes: number,
+  overrides: Partial<EmployeeWorkData> = {}
+): EmployeeWorkData {
   return {
     avgDailyMinutes: 0,
     dailyBreakdown: {},
@@ -98,9 +102,13 @@ describe("hr/reports/utils", () => {
       expect(out.fullName).toBe("Alice");
     });
     it("includes salary summary when provided", () => {
-      const out = processEmployeeData(1, "B", "r", [], [
-        { month: "2026-01", net: 100, retention: 10, subtotal: 200 },
-      ]);
+      const out = processEmployeeData(
+        1,
+        "B",
+        "r",
+        [],
+        [{ month: "2026-01", net: 100, retention: 10, subtotal: 200 }]
+      );
       expect(out.monthlyGrossSalary).toEqual({ "2026-01": 200 });
       expect(out.monthlyNetSalary).toEqual({ "2026-01": 100 });
       expect(out.overtimePercentage).toBe(0);
@@ -111,9 +119,7 @@ describe("hr/reports/utils", () => {
     it("converts breakdown to chart points", () => {
       const e = emp("X", 120, { dailyBreakdown: { "2026-01-01": 60 } });
       const points = prepareChartData(e, "day");
-      expect(points).toEqual([
-        { X: 1, minutes: 60, period: "2026-01-01" },
-      ]);
+      expect(points).toEqual([{ X: 1, minutes: 60, period: "2026-01-01" }]);
     });
   });
 

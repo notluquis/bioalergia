@@ -9,10 +9,7 @@ export function readCsrfCookie(): string | null {
   return m ? decodeURIComponent(m[1] as string) : null;
 }
 
-export async function csrfFetch(
-  request: RequestInfo | URL,
-  init?: RequestInit
-): Promise<Response> {
+export async function csrfFetch(request: RequestInfo | URL, init?: RequestInit): Promise<Response> {
   const cookieBefore = readCsrfCookie();
   const first = await doFetch(request, init);
   if (first.status !== 403) return first;

@@ -21,10 +21,7 @@ async function getCredential(account: string): Promise<null | string> {
 
 // Senders conocidos → mapping a ExpenseService.name / UtilityProvider.
 // Lucas extiende según boletas que reciba.
-const KNOWN_SENDERS: Record<
-  string,
-  { provider: string; serviceHint: string }
-> = {
+const KNOWN_SENDERS: Record<string, { provider: string; serviceHint: string }> = {
   "boletas@cge.cl": { provider: "CGE", serviceHint: "Servicios básicos" },
   "boletas@essbio.cl": { provider: "ESSBIO", serviceHint: "Servicios básicos" },
   "boletas@telsur.cl": { provider: "TELSUR", serviceHint: "Telesur" },
@@ -86,19 +83,19 @@ function parseDueDate(text: string): null | string {
   return null;
 }
 
-export async function fetchUnreadBillEmails(options: {
-  imapHost?: string;
-  imapPort?: number;
-  imapSecure?: boolean;
-  markSeen?: boolean;
-} = {}): Promise<ParsedBillEmail[]> {
+export async function fetchUnreadBillEmails(
+  options: {
+    imapHost?: string;
+    imapPort?: number;
+    imapSecure?: boolean;
+    markSeen?: boolean;
+  } = {}
+): Promise<ParsedBillEmail[]> {
   const user = await getCredential("smtp_user");
   const pass = await getCredential("smtp_pass");
 
   if (!user || !pass) {
-    throw new Error(
-      "IMAP credentials missing from keychain (smtp_user, smtp_pass)"
-    );
+    throw new Error("IMAP credentials missing from keychain (smtp_user, smtp_pass)");
   }
 
   const client = new ImapFlow({

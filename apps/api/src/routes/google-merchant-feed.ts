@@ -50,8 +50,7 @@ export function registerGoogleMerchantFeed(app: Hono): void {
             (i: Img) => `      <g:additional_image_link>${esc(i.cdnUrl)}</g:additional_image_link>`
           )
           .join("\n");
-        const availability =
-          p.availableQty - p.safetyStock > 0 ? "in_stock" : "out_of_stock";
+        const availability = p.availableQty - p.safetyStock > 0 ? "in_stock" : "out_of_stock";
         return `    <item>
       <g:id>${esc(p.sku)}</g:id>
       <g:title>${esc(p.name)}</g:title>

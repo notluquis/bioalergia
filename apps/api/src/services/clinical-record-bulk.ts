@@ -78,15 +78,21 @@ export function startBulkClinicalRecordReprocessJob(options?: {
           jobId,
           { processed: 0, imported: 0, pending: 0, errors: 0 },
           "Sin fichas pendientes",
-          { phase: "completed" },
+          { phase: "completed" }
         );
         return;
       }
 
-      updateJobProgress(jobId, 0, `Procesando ${total} fichas clínicas`, {
-        phase: "running",
-        total,
-      }, total);
+      updateJobProgress(
+        jobId,
+        0,
+        `Procesando ${total} fichas clínicas`,
+        {
+          phase: "running",
+          total,
+        },
+        total
+      );
 
       let processed = 0;
       let imported = 0;
@@ -126,7 +132,7 @@ export function startBulkClinicalRecordReprocessJob(options?: {
               processed,
               `Procesando fichas clínicas (${processed}/${total})`,
               { phase: "running", imported, pending, errors },
-              total,
+              total
             );
           }
         }
@@ -136,7 +142,7 @@ export function startBulkClinicalRecordReprocessJob(options?: {
         jobId,
         { processed, imported, pending, errors },
         `Reprocesamiento completado — ${imported} importadas, ${pending} pendientes, ${errors} errores`,
-        { phase: "completed", imported, pending, errors },
+        { phase: "completed", imported, pending, errors }
       );
       logEvent("clinicalRecords.bulk.completed", {
         processed,
