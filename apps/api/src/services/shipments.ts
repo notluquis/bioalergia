@@ -198,11 +198,11 @@ export async function createShipment(input: CreateShipmentInput) {
     observation = "";
   }
   const deliveryAddress = {
+    countyCoverageCode: coverageRegionCode,
     streetName,
     streetNumber,
     supplement,
-    county: { coverageRegionCode },
-    isOrigin: false as const,
+    addressType: "DEST" as const,
     deliveryOnCommercialOffice,
     commercialOfficeId,
     observation,
@@ -211,7 +211,7 @@ export async function createShipment(input: CreateShipmentInput) {
   const response = await createTransportOrder(cfg, {
     header: {
       certificateNumber: 0,
-      clientRut: cfg.clientRut,
+      customerCardNumber: cfg.clientRut,
       countyOfOriginCoverageCode: cfg.originCoverageCode,
       labelType: 2,
     },
@@ -225,6 +225,7 @@ export async function createShipment(input: CreateShipmentInput) {
             name: input.recipientName,
             phoneNumber: input.recipientPhone,
             mail: input.recipientEmail ?? "",
+            contactType: "D" as const,
           },
         ],
         packages: [
