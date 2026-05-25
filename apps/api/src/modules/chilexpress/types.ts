@@ -104,20 +104,22 @@ export interface CxRateResponse {
 export interface CxTransportOrderInput {
   header: {
     certificateNumber: number;
-    clientRut: string;
+    // Número de Tarjeta Cliente Chilexpress (TCC). La API lo exige como
+    // `customerCardNumber`; enviarlo como `clientRut` provoca 400.
+    customerCardNumber: string;
     countyOfOriginCoverageCode: string;
     labelType: number;
   };
   details: Array<{
     // ChileExpress espera arrays (IList<...>), no objetos con keys nombradas.
     addresses: Array<{
+      // Código de cobertura de la comuna destino (campo plano, no anidado).
+      countyCoverageCode: string;
       streetName: string;
       streetNumber: string;
       supplement?: string;
-      county: {
-        coverageRegionCode: string;
-      };
-      isOrigin: false;
+      // "DEST" = dirección destino, "DEV" = dirección devolución.
+      addressType: "DEST" | "DEV";
       deliveryOnCommercialOffice: boolean;
       commercialOfficeId: string;
       observation?: string;
@@ -126,6 +128,8 @@ export interface CxTransportOrderInput {
       name: string;
       phoneNumber: string;
       mail?: string;
+      // "D" = destinatario, "R" = remitente.
+      contactType: "D" | "R";
     }>;
     packages: Array<{
       weight: number;
