@@ -20,13 +20,22 @@ export function parseCSVText(csvText: string): CSVRow[] {
     delimitersToGuess: [";", ",", "\t", "|"],
   });
 
-  if (results.errors.length > 0) {
-    const firstError = results.errors[0];
-    throw new Error(`CSV parse error: ${firstError.message}`);
+  // Haulmer emits malformed quoting in JSON-bearing columns (e.g. "Valor Otro
+  // Impuesto" = `"""[{\"codigo\":...}]"""` — backslash-escaped quotes instead of
+  // the CSV doubling convention). PapaParse flags these as non-fatal `Quotes`
+  // errors but still returns fully-parsed rows, so we tolerate them. Likewise
+  // `FieldMismatch` (trailing empty column) is recoverable. Only abort when the
+  // parser produced no rows at all.
+  const data = (results.data as CSVRow[]) || [];
+  const fatalErrors = results.errors.filter(
+    (e) => e.type !== "Quotes" && e.type !== "FieldMismatch",
+  );
+  if (fatalErrors.length > 0 || (data.length === 0 && results.errors.length > 0)) {
+    const firstError = (fatalErrors[0] ?? results.errors[0]).message;
+    throw new Error(`CSV parse error: ${firstError}`);
   }
 
-  // Type assertion is safe because header:true makes Papa.parse return object arrays
-  return (results.data as CSVRow[]) || [];
+  return data;
 }
 
 /**
@@ -263,14 +272,18 @@ const HAULMER_COLUMN_MAP: Record<string, string> = {
 
   "codigo otro imp.": "otherTaxCode",
   "codigo otro imp": "otherTaxCode",
+  "código otro impuesto": "otherTaxCode",
+  "codigo otro impuesto": "otherTaxCode",
   "other tax code": "otherTaxCode",
 
   "valor otro imp.": "otherTaxAmount",
   "valor otro imp": "otherTaxAmount",
+  "valor otro impuesto": "otherTaxAmount",
   "other tax amount": "otherTaxAmount",
 
   "tasa otro imp": "otherTaxRate",
   "tasa otro imp.": "otherTaxRate",
+  "tasa otro impuesto": "otherTaxRate",
   "other tax rate": "otherTaxRate",
 
   // Purchase fields

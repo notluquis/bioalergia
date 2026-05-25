@@ -270,7 +270,7 @@ export function buildDtePurchaseDetail(row: Record<string, unknown>): Record<str
     folio: toRequiredString(row.folio),
     documentDate: parseDate(row.documentDate),
     receiptDate: parseDate(row.receiptDate),
-    acknowledgeDate: parseDate(row.acknowledgeDate),
+    acknowledgeDate: parseDate(row.acknowledgeDate ?? row.receiptAcknowledgeDate),
     period: toRequiredString(row.period),
     exemptAmount: toDecimalOrZero(row.exemptAmount),
     netAmount: toDecimalOrZero(row.netAmount),
