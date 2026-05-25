@@ -74,7 +74,7 @@ export function SearchBar({ className = "" }: { className?: string }) {
                       {img && (
                         <img
                           alt=""
-                          className="h-10 w-10 flex-shrink-0 rounded-md object-cover"
+                          className="flex-shrink-0 rounded-md object-cover size-10"
                           src={img.cdn_url}
                         />
                       )}

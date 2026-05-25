@@ -1,5 +1,6 @@
 import { createInterface } from "node:readline";
 import { Readable } from "node:stream";
+import type { ReadableStream } from "node:stream/web";
 import { db } from "@finanzas/db";
 import { checkMpConfig, MP_ACCESS_TOKEN, redactMpUrl } from "./client.ts";
 import { isSettlementReport } from "./settlement-detector.ts";
@@ -154,7 +155,7 @@ export async function processReportUrl(url: string, reportType: string): Promise
       }
 
       // Convert Web Stream to Node Stream
-      const nodeStream = Readable.fromWeb(body as import("stream/web").ReadableStream);
+      const nodeStream = Readable.fromWeb(body as ReadableStream);
 
       await processCsvStream(
         nodeStream,

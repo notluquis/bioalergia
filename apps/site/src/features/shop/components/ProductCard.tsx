@@ -18,8 +18,7 @@ type Product = {
 };
 
 export function ProductCard({ product }: { product: Product }) {
-  const primary =
-    product.images?.find((i) => i.is_primary) ?? product.images?.[0] ?? null;
+  const primary = product.images?.find((i) => i.is_primary) ?? product.images?.[0] ?? null;
   const stock = useStockState(product.available_qty, product.safety_stock);
   const outOfStock = stock.label === "Agotado";
 
@@ -34,7 +33,7 @@ export function ProductCard({ product }: { product: Product }) {
           {primary ? (
             <img
               alt={primary.alt ?? product.name}
-              className="h-full w-full object-cover transition hover:scale-105"
+              className="object-cover transition hover:scale-105 size-full"
               loading="lazy"
               src={primary.cdn_url}
             />
@@ -67,12 +66,11 @@ export function ProductCard({ product }: { product: Product }) {
         <div className="flex flex-col">
           <div className="flex items-baseline gap-2">
             <span className="font-bold text-xl">{CLP_FORMATTER.format(product.price_clp)}</span>
-            {product.compare_at_price_clp &&
-              product.compare_at_price_clp > product.price_clp && (
-                <span className="text-foreground/50 text-sm line-through">
-                  {CLP_FORMATTER.format(product.compare_at_price_clp)}
-                </span>
-              )}
+            {product.compare_at_price_clp && product.compare_at_price_clp > product.price_clp && (
+              <span className="text-foreground/50 text-sm line-through">
+                {CLP_FORMATTER.format(product.compare_at_price_clp)}
+              </span>
+            )}
           </div>
           <span className="text-foreground/60 text-xs">IVA incluido</span>
         </div>

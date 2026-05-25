@@ -2,10 +2,14 @@
   "name": "@finanzas/theme",
   "version": "0.0.0",
   "private": true,
+  "files": [
+    "bioalergia.css"
+  ],
   "type": "module",
-  "sideEffects": ["*.css"],
+  "sideEffects": [
+    "*.css"
+  ],
   "exports": {
     "./bioalergia.css": "./bioalergia.css"
-  },
-  "files": ["bioalergia.css"]
+  }
 }

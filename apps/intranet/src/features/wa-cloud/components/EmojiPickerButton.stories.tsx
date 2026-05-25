@@ -46,6 +46,7 @@ export const InsideComposer: Story = {
               onChange={(e) => setText(e.target.value)}
               className="flex-1 rounded-lg bg-default-100 px-3 py-2 text-sm outline-none"
               placeholder="Escribe un mensaje…"
+              aria-label="Mensaje"
             />
             <EmojiPickerButton onSelect={(e) => setText((t) => t + e)} />
           </div>

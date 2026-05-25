@@ -14,6 +14,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type * as ReactRouterModule from "@tanstack/react-router";
+import type * as RechartsModule from "recharts";
 
 import { calendarKeys } from "@/features/calendar/queries";
 import type { TreatmentAnalytics } from "@/features/calendar/types";
@@ -24,7 +26,7 @@ const searchState = vi.hoisted(() => ({
 }));
 
 vi.mock("@tanstack/react-router", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@tanstack/react-router")>();
+  const actual = await importOriginal<typeof ReactRouterModule>();
   return {
     ...actual,
     getRouteApi: () => ({
@@ -35,7 +37,7 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
 });
 
 vi.mock("recharts", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("recharts")>();
+  const actual = await importOriginal<typeof RechartsModule>();
   return {
     ...actual,
     ResponsiveContainer: ({ children }: { children: React.ReactNode }) => (

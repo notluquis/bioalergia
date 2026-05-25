@@ -60,28 +60,30 @@ function StarRow({
 
 function StarPicker({ value, onChange }: { value: number; onChange: (v: number) => void }) {
   return (
-    <div className="flex items-center gap-1" role="radiogroup" aria-label="Tu calificación">
+    <fieldset className="flex items-center gap-1 border-0 p-0">
+      <legend className="sr-only">Tu calificación</legend>
       {[1, 2, 3, 4, 5].map((n) => {
         const filled = n <= value;
         return (
-          <button
-            aria-checked={n === value}
-            aria-label={`${n} estrella${n > 1 ? "s" : ""}`}
-            className="rounded p-1 hover:bg-foreground/5"
-            key={n}
-            onClick={() => onChange(n)}
-            role="radio"
-            type="button"
-          >
+          <label className="cursor-pointer rounded p-1 hover:bg-foreground/5" key={n}>
+            <input
+              aria-label={`${n} estrella${n > 1 ? "s" : ""}`}
+              checked={n === value}
+              className="sr-only"
+              name="review-rating"
+              onChange={() => onChange(n)}
+              type="radio"
+              value={n}
+            />
             <Star
               aria-hidden="true"
               className={filled ? "fill-warning text-warning" : "text-foreground/30"}
               size={28}
             />
-          </button>
+          </label>
         );
       })}
-    </div>
+    </fieldset>
   );
 }
 

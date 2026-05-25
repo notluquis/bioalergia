@@ -26,7 +26,7 @@ export function CartBadge() {
         <Badge color="accent" content={count > 0 ? String(count) : undefined} placement="top-right">
           <Button
             aria-label={`Carrito (${count} ítems)`}
-            className="h-12 w-12 rounded-full shadow-lg"
+            className="rounded-full shadow-lg size-12"
             isIconOnly
             variant="primary"
           >

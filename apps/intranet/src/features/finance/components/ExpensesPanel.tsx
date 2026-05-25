@@ -209,7 +209,9 @@ export function ExpensesPanel() {
               <th className="px-4 py-2 text-right">Pagado</th>
               <th className="px-4 py-2">Estado</th>
               <th className="px-4 py-2">Tipo</th>
-              <th className="px-4 py-2" />
+              <th className="px-4 py-2">
+                <span className="sr-only">Acciones</span>
+              </th>
             </tr>
           </thead>
           <tbody>

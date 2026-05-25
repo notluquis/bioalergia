@@ -14,6 +14,7 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type * as OrpcModule from "./orpc";
 
 const orpcMocks = vi.hoisted(() => ({
   createCredit: vi.fn(),
@@ -24,7 +25,7 @@ const orpcMocks = vi.hoisted(() => ({
 }));
 
 vi.mock("./orpc", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("./orpc")>();
+  const actual = await importOriginal<typeof OrpcModule>();
   return {
     personalFinanceORPCClient: orpcMocks,
     toPersonalFinanceApiError: actual.toPersonalFinanceApiError,

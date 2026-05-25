@@ -1,6 +1,16 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["typescript", "react", "vitest", "promise", "node", "unicorn"],
+  "plugins": [
+    "typescript",
+    "react",
+    "vitest",
+    "promise",
+    "node",
+    "unicorn",
+    "import",
+    "jsx-a11y",
+    "react-perf"
+  ],
   "jsPlugins": ["oxlint-tailwindcss"],
   "env": {
     "browser": true,
@@ -12,10 +22,7 @@
       "typescript": true
     },
     "tailwindcss": {
-      "entryPoint": [
-        "apps/intranet/src/index.css",
-        "apps/site/src/index.css"
-      ]
+      "entryPoint": ["apps/intranet/src/index.css", "apps/site/src/index.css"]
     }
   },
   "rules": {
@@ -34,7 +41,11 @@
     //
     // Reference: https://nodejs.org/api/typescript.html
     "react/only-export-components": ["warn", { "allowConstantExport": true }],
-    "import/extensions": ["error", { "js": "always", "ts": "always", "ignorePackages": true }],
+    // Scoped to apps/api in overrides (Node 26 strip-types backend needs
+    // explicit `.ts` on relative imports). Built packages emit `.js` and the
+    // Vite frontend resolves extensionless, so it's off globally and on only
+    // for api below.
+    "import/extensions": "off",
     "typescript/no-floating-promises": "error",
     "typescript/no-unsafe-assignment": "warn",
     "typescript/no-explicit-any": "error",
@@ -46,8 +57,24 @@
     // `invariant()` instead. Suppress with line-level disable + a
     // comment explaining why narrowing TS can't see is correct here.
     "typescript/no-non-null-assertion": "error",
+    // Golden 2026: explicit `import type` for type-only imports — keeps the
+    // runtime import graph clean (Node 26 type-stripping erases them) and
+    // helps build/HMR. Autofixable.
+    "typescript/consistent-type-imports": "error",
+    // ESM import hygiene (import plugin). no-cycle protects the api DAG
+    // rebuilt in the Phase-2 migration (0 cycles); the others are cheap
+    // correctness guards.
+    "import/no-cycle": "error",
+    "import/no-self-import": "error",
+    "import/no-duplicates": "error",
+    // Node protocol + Error idioms (golden, zero churn at adoption).
+    "unicorn/prefer-node-protocol": "error",
+    "unicorn/throw-new-error": "error",
     // ── Type-aware rules (require `oxlint --type-aware`, gated on CI) ──
     // Each catches a class of bug we have hit in production.
+    // no-unnecessary-type-assertion catches redundant `!`/`as` (the class
+    // cleaned up in the 179→0 lint pass) so it can't silently creep back.
+    "typescript/no-unnecessary-type-assertion": "error",
     "typescript/no-misused-promises": "error",
     "typescript/await-thenable": "error",
     "typescript/no-unsafe-argument": "warn",
@@ -123,6 +150,14 @@
       "files": ["**/*.stories.*"],
       "rules": {
         "import/no-default-export": "off"
+      }
+    },
+    {
+      // Node 26 strip-types backend: relative imports must carry `.ts`
+      // (no bundler/loader fallback). Verified 0 violations at adoption.
+      "files": ["apps/api/**"],
+      "rules": {
+        "import/extensions": ["error", "ignorePackages", { "js": "always", "ts": "always" }]
       }
     },
     {

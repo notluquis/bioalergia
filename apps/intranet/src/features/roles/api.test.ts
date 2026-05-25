@@ -11,6 +11,7 @@
  */
 
 import { describe, expect, it, vi, beforeEach } from "vitest";
+import type * as OrpcModule from "./orpc";
 import { ApiError } from "@/lib/api-client";
 
 const orpcMock = vi.hoisted(() => ({
@@ -31,7 +32,7 @@ const orpcMock = vi.hoisted(() => ({
 }));
 
 vi.mock("./orpc", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("./orpc")>();
+  const actual = await importOriginal<typeof OrpcModule>();
   return {
     ...actual,
     rolesORPCClient: orpcMock.rolesORPCClient,

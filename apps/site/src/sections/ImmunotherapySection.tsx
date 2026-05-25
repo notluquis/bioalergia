@@ -81,7 +81,7 @@ export function ImmunotherapySection() {
         <Card.Content className="grid gap-4 pb-6">
           {immunotherapyBenefits.map((benefit) => (
             <div className="flex items-start gap-3 text-sm leading-relaxed" key={benefit}>
-              <span className="mt-2 h-2 w-2 rounded-full bg-(--accent)" />
+              <span className="mt-2 rounded-full bg-(--accent) size-2" />
               <span className="text-(--ink-muted)">{benefit}</span>
             </div>
           ))}

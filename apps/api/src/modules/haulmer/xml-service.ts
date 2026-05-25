@@ -9,7 +9,6 @@ import {
   completeJob,
   failJob,
   getActiveJobsByType,
-  getJobStatus,
   isJobCancelled,
   startJob,
   updateJobProgress,

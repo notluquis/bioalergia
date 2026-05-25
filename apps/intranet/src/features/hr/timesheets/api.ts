@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { timesheetEntrySchema } from "@finanzas/orpc-contracts/timesheets";
+import type { timesheetEntrySchema } from "@finanzas/orpc-contracts/timesheets";
 import { apiClient } from "@/lib/api-client";
 import { zDateString } from "@/lib/api-validate";
 import { timesheetsORPCClient, toTimesheetsApiError } from "./orpc";

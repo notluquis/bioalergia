@@ -279,6 +279,7 @@ export function DoctoraliaCalendarJsonPanel() {
             <input
               ref={fileInputRef}
               type="file"
+              aria-label="Subir archivos JSON"
               accept=".json,application/json"
               multiple
               onChange={(e) => {

@@ -6,6 +6,7 @@ import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import type { Context as HonoContext } from "hono";
 import { z } from "zod";
 import { getSessionUser, hasPermission } from "../lib/auth.ts";
+import type { DoctoraliaCalendarResponse } from "../lib/doctoralia/doctoralia-calendar-types.ts";
 import {
   getDoctoraliaImapListenerStatus,
   runDoctoraliaImapIngestOnce,
@@ -490,7 +491,7 @@ const doctoraliaORPCRouterBase = {
       const entries = input.entries as Array<{
         ts?: string;
         src?: string;
-        data: import("../lib/doctoralia/doctoralia-calendar-types.ts").DoctoraliaCalendarResponse;
+        data: DoctoraliaCalendarResponse;
       }>;
 
       const result = await doctoraliaCalendarSyncService.importFromJsonEntries(entries);

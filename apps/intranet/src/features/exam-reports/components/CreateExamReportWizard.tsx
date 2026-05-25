@@ -31,7 +31,7 @@ import { CheckCircle, Eye, Pencil, Plus, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { useToast } from "@/context/ToastContext";
-import { fetchPatients } from "@/features/patients/api";
+import type { fetchPatients } from "@/features/patients/api";
 
 type Patient = Awaited<ReturnType<typeof fetchPatients>>[number];
 
@@ -50,6 +50,7 @@ import {
   EXAM_TYPE_ORDER,
 } from "../lib/exam-types";
 import { ExamReportPreviewModal } from "./ExamReportPreviewModal";
+import type * as PdfModule from "../lib/pdf";
 import type { ExamType, SkinReaction } from "@finanzas/orpc-contracts/exam-reports";
 
 /**
@@ -86,7 +87,7 @@ function writeDownloadOnSavePref(value: boolean): void {
  * heavy `jspdf` + `jspdf-autotable` payload only enters the page when
  * the user clicks "Vista previa" / "Generar y descargar".
  */
-async function loadPdfModule(): Promise<typeof import("../lib/pdf")> {
+async function loadPdfModule(): Promise<typeof PdfModule> {
   return import("../lib/pdf");
 }
 
@@ -1039,7 +1040,6 @@ function EditableSectionLabel({
     return (
       <TextField aria-label="Nombre del panel" className="flex-1" onChange={setDraft} value={draft}>
         <Input
-          autoFocus
           onBlur={() => {
             const next = draft.trim() || label;
             onChange(next);
@@ -1138,7 +1138,7 @@ function AllergenPicker({
       </Autocomplete.Trigger>
       <Autocomplete.Popover>
         <Autocomplete.Filter filter={contains}>
-          <SearchField autoFocus name="search" variant="secondary">
+          <SearchField name="search" variant="secondary">
             <SearchField.Group>
               <SearchField.SearchIcon />
               <SearchField.Input placeholder="Escribe para buscar…" />

@@ -254,6 +254,7 @@ export function ExpenseServicesModal({ onClose }: Props) {
                       <input
                         checked={form.isFixed}
                         type="checkbox"
+                        aria-label="Monto fijo"
                         onChange={(e) => setForm({ ...form, isFixed: e.target.checked })}
                       />
                       Monto fijo
@@ -262,6 +263,7 @@ export function ExpenseServicesModal({ onClose }: Props) {
                       <input
                         checked={form.isActive}
                         type="checkbox"
+                        aria-label="Activo"
                         onChange={(e) => setForm({ ...form, isActive: e.target.checked })}
                       />
                       Activo
@@ -288,7 +290,9 @@ export function ExpenseServicesModal({ onClose }: Props) {
                         <th className="px-3 py-2">Día venc</th>
                         <th className="px-3 py-2 text-right">Monto base</th>
                         <th className="px-3 py-2">Estado</th>
-                        <th className="px-3 py-2" />
+                        <th className="px-3 py-2">
+                          <span className="sr-only">Acciones</span>
+                        </th>
                       </tr>
                     </thead>
                     <tbody>

@@ -1,5 +1,4 @@
-import type { SortDescriptor } from "@heroui/react";
-import type { Selection as TableSelection } from "@heroui/react";
+import type { Selection as TableSelection, SortDescriptor } from "@heroui/react";
 import type { RowSelectionState, SortingState } from "@tanstack/react-table";
 
 /**

@@ -157,6 +157,7 @@ export function TextComposer({
       <input
         ref={fileRef}
         type="file"
+        aria-label="Adjuntar archivo"
         className="hidden"
         accept="image/*,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,audio/*,video/*"
         onChange={(e) => {
@@ -775,8 +776,11 @@ export function ScheduleSendModal({
                 Mínimo 30 segundos en el futuro
               </Description>
               <div>
-                <label className="mb-1 block font-medium text-sm">Mensaje</label>
+                <label htmlFor="wa-schedule-body" className="mb-1 block font-medium text-sm">
+                  Mensaje
+                </label>
                 <TextArea
+                  id="wa-schedule-body"
                   variant="secondary"
                   value={body}
                   onChange={(e) => setBody(e.currentTarget.value)}
@@ -919,7 +923,14 @@ function VoiceRecorderButton({
   if (preview) {
     return (
       <div className="flex items-center gap-1 rounded-full border border-default-200 bg-content2 px-2 py-1">
-        <audio src={preview.url} controls className="h-8" />
+        <audio
+          src={preview.url}
+          controls
+          aria-label="Previsualización de nota de voz"
+          className="h-8"
+        >
+          <track kind="captions" />
+        </audio>
         <Button
           size="sm"
           variant="outline"
@@ -1045,10 +1056,12 @@ export function MediaGalleryModal({
                           href={url}
                           target="_blank"
                           rel="noopener noreferrer"
+                          aria-label="Abrir video"
                           className="relative flex aspect-square items-center justify-center overflow-hidden rounded-lg border border-default-200 bg-black"
                         >
                           <video
                             src={url}
+                            aria-label="Vista previa de video"
                             className="size-full object-cover"
                             muted
                             preload="metadata"
@@ -1339,8 +1352,8 @@ function SnippetsButton({
             value={q}
             onChange={(e) => setQ(e.currentTarget.value)}
             placeholder="Buscar snippet…"
+            aria-label="Buscar snippet"
             className="w-full rounded-lg border border-default-200 bg-content2 px-3 py-1.5 text-sm outline-none focus:border-success"
-            autoFocus
           />
           <div className="max-h-80 space-y-0.5 overflow-y-auto">
             {list.isLoading ? (

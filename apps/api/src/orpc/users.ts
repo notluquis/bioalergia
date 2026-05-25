@@ -8,6 +8,7 @@ import {
   updateUserProfile,
   updateUserStatus,
 } from "../services/users.ts";
+import type { userStatusSchema } from "@finanzas/orpc-contracts/users";
 import {
   inviteResponseSchema,
   inviteUserSchema,
@@ -24,7 +25,6 @@ import {
   usersListInputSchema,
   usersResponseSchema,
   usersStatusResponseSchema,
-  userStatusSchema,
 } from "@finanzas/orpc-contracts/users";
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";

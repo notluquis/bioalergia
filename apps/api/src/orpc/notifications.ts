@@ -12,12 +12,11 @@ import {
   unsubscribeInputSchema,
 } from "@finanzas/orpc-contracts/notifications";
 import { db } from "@finanzas/db";
-import { logEvent } from "../lib/logger.ts";
+import { logError, logEvent } from "../lib/logger.ts";
 import { ORPCError, onError, os } from "@orpc/server";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import type { Context as HonoContext } from "hono";
 import { getSessionUser, hasPermission } from "../lib/auth.ts";
-import { logError } from "../lib/logger.ts";
 import { configureSuperjson } from "../lib/superjson-config.ts";
 import {
   rotatePushSubscription,

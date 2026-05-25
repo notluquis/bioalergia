@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type * as NotificationStore from "./use-notification-store";
 
-type NotificationStoreModule = typeof import("./use-notification-store");
+type NotificationStoreModule = typeof NotificationStore;
 
 const storageKey = (scope: string) => `bioalergia-notification-history:${scope}`;
 

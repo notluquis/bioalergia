@@ -5,7 +5,7 @@ import tailwindcss from "@tailwindcss/vite";
 import { tanstackRouter } from "@tanstack/router-plugin/vite";
 import { sentryVitePlugin } from "@sentry/vite-plugin";
 import react, { reactCompilerPreset } from "@vitejs/plugin-react";
-import { defineConfig } from "vite";
+import { defineConfig, type PreviewServer } from "vite";
 
 const reactCompiler = reactCompilerPreset();
 import checker from "vite-plugin-checker";
@@ -48,7 +48,7 @@ export default defineConfig(({ mode }) => {
     // middleware substitutes the placeholder with a per-request UUID and
     // emits a matching Content-Security-Policy header so React mounts and
     // Lighthouse / Playwright can audit the production bundle locally.
-    configurePreviewServer(server: import("vite").PreviewServer) {
+    configurePreviewServer(server: PreviewServer) {
       server.middlewares.use(async (req, res, next) => {
         const url = req.url ?? "/";
         const isHtml =

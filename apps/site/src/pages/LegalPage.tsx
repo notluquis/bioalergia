@@ -101,7 +101,7 @@ export function LegalPage({ document }: { document: LegalDocument }) {
               >
                 <Card.Content className="space-y-4 px-5 py-5 sm:px-6">
                   <div className="flex items-start gap-3">
-                    <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-(--accent-2)/10 font-semibold text-(--accent-2) text-sm">
+                    <div className="mt-0.5 flex shrink-0 items-center justify-center rounded-full bg-(--accent-2)/10 font-semibold text-(--accent-2) text-sm size-8">
                       {index + 1}
                     </div>
                     <div className="space-y-3">

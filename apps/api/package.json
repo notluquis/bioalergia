@@ -98,10 +98,6 @@
     "typescript": "^6.0.3",
     "vitest": "^4.1.7"
   },
-  "engines": {
-    "node": ">=26",
-    "npm": ">=10.0.0"
-  },
   "dependenciesMeta": {
     "@finanzas/db": {
       "injected": true
@@ -109,5 +105,9 @@
     "@finanzas/orpc-contracts": {
       "injected": true
     }
+  },
+  "engines": {
+    "node": ">=26",
+    "npm": ">=10.0.0"
   }
 }

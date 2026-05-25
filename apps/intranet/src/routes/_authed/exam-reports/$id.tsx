@@ -26,7 +26,7 @@ export const Route = createFileRoute("/_authed/exam-reports/$id")({
     }
     try {
       return await queryClient.ensureQueryData(examReportsKeys.detail(numericId));
-    } catch (_err) {
+    } catch {
       throw redirect({ to: "/exam-reports", search: { notFound: 1 } });
     }
   },

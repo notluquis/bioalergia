@@ -252,6 +252,7 @@ function CarouselCardEditor({
         <input
           ref={fileRef}
           type="file"
+          aria-label="Subir imagen de tarjeta"
           accept="image/jpeg,image/png"
           className="hidden"
           onChange={(e) => {

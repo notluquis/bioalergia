@@ -5,7 +5,7 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { act } from "react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { ConfirmDialogProvider, useConfirmDialog } from "./ConfirmDialogContext";
 
@@ -106,6 +106,3 @@ describe("ConfirmDialogProvider", () => {
     errSpy.mockRestore();
   });
 });
-
-// vi already imported above via the test runtime.
-import { vi } from "vitest";

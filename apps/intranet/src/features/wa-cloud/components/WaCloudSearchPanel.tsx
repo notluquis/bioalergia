@@ -21,15 +21,12 @@ import { useAccounts, useSearchMessages } from "../hooks/useWaCloud";
  */
 export interface WaCloudSearchPanelProps {
   onSelectConversation: (conversationId: number) => void;
-  /** Auto-focus the search input on mount (default true in drawer, false elsewhere). */
-  autoFocus?: boolean;
   /** Render the explanatory header above the field (off in drawer; drawer has its own heading). */
   showHeader?: boolean;
 }
 
 export function WaCloudSearchPanel({
   onSelectConversation,
-  autoFocus = true,
   showHeader = true,
 }: WaCloudSearchPanelProps) {
   const accounts = useAccounts();
@@ -68,13 +65,7 @@ export function WaCloudSearchPanel({
 
       <Card>
         <Card.Content className="space-y-3 p-4">
-          <SearchField
-            variant="secondary"
-            value={q}
-            onChange={setQ}
-            aria-label="Buscar mensajes"
-            autoFocus={autoFocus}
-          >
+          <SearchField variant="secondary" value={q} onChange={setQ} aria-label="Buscar mensajes">
             <SearchField.Group>
               <SearchField.SearchIcon />
               <SearchField.Input placeholder="Escribe al menos 2 caracteres…" />

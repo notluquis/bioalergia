@@ -176,7 +176,9 @@ export function ProviderCredentialsTab() {
               <th className="px-4 py-2">Método</th>
               <th className="px-4 py-2">Último login</th>
               <th className="px-4 py-2">Estado</th>
-              <th className="px-4 py-2" />
+              <th className="px-4 py-2">
+                <span className="sr-only">Acciones</span>
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -373,6 +375,7 @@ export function ProviderCredentialsTab() {
                     <input
                       checked={form.isActive}
                       type="checkbox"
+                      aria-label="Activo"
                       onChange={(e) => setForm({ ...form, isActive: e.target.checked })}
                     />
                     Activo

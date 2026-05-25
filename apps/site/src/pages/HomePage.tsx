@@ -64,14 +64,14 @@ export function HomePage({ onBook, onWhatsApp }: { onBook: () => void; onWhatsAp
 
       <Button
         aria-label="Escríbenos por WhatsApp"
-        className="fixed right-5 bottom-5 z-50 flex h-12 w-12 items-center justify-center rounded-full bg-[#25D366] text-white shadow-[0_18px_40px_rgba(10,20,30,0.25)] ring-2 ring-white/80 transition hover:scale-[1.03] hover:shadow-[0_22px_45px_rgba(10,20,30,0.28)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#25D366]/35 sm:right-7 sm:bottom-7 sm:h-14 sm:w-14"
+        className="fixed right-5 bottom-5 z-50 flex items-center justify-center rounded-full bg-[#25D366] text-white shadow-[0_18px_40px_rgba(10,20,30,0.25)] ring-2 ring-white/80 transition hover:scale-[1.03] hover:shadow-[0_22px_45px_rgba(10,20,30,0.28)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#25D366]/35 sm:right-7 sm:bottom-7 sm:h-14 sm:w-14 size-12"
         isIconOnly
         variant="primary"
         onPress={onWhatsApp}
       >
         <svg
           aria-hidden="true"
-          className="block h-6 w-6 sm:h-7 sm:w-7"
+          className="block sm:h-7 sm:w-7 size-6"
           fill="currentColor"
           viewBox="0 0 24 24"
         >

@@ -296,6 +296,7 @@ function LocationEditModal({
               <label className="flex items-center gap-2 text-sm">
                 <input
                   type="checkbox"
+                  aria-label="Predeterminada"
                   checked={isDefault}
                   onChange={(e) => setIsDefault(e.currentTarget.checked)}
                 />
@@ -1316,6 +1317,7 @@ function SnippetEditModal({ target, onClose }: { target: SnippetEditState; onClo
                   <input
                     ref={fileRef}
                     type="file"
+                    aria-label="Subir archivo"
                     className="hidden"
                     onChange={(e) => {
                       const f = e.target.files?.[0];

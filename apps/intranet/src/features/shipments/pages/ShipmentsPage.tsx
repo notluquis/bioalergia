@@ -150,7 +150,7 @@ function PatientSelectModal({
               >
                 <SearchField.Group>
                   <SearchField.SearchIcon />
-                  <SearchField.Input autoFocus placeholder="Buscar por nombre o RUT..." />
+                  <SearchField.Input placeholder="Buscar por nombre o RUT..." />
                   <SearchField.ClearButton />
                 </SearchField.Group>
               </SearchField>

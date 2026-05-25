@@ -1,4 +1,5 @@
 import { db } from "@finanzas/db";
+import type * as JobQueue from "../lib/jobQueue.ts";
 import { parseCalendarMetadata } from "./parsers.ts";
 
 export const MISSING_CLASSIFICATION_FILTERS = [
@@ -60,7 +61,7 @@ export function toTestMetadata(value: unknown): null | TestMetadata {
   };
 }
 
-type JobQueueModule = Awaited<typeof import("../lib/jobQueue.ts")>;
+type JobQueueModule = typeof JobQueue;
 type JobQueueFns = Pick<JobQueueModule, "completeJob" | "failJob" | "updateJobProgress">;
 
 type PartialReclassifyEvent = {
@@ -625,7 +626,7 @@ export async function startReclassifyAllEventsJob(): Promise<{
 
 export async function getCalendarJobStatus(
   jobId: string
-): Promise<ReturnType<typeof import("../lib/jobQueue.ts").getJobStatus>> {
+): Promise<ReturnType<typeof JobQueue.getJobStatus>> {
   const { getJobStatus } = await import("../lib/jobQueue.ts");
   return getJobStatus(jobId);
 }

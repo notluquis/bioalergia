@@ -9,7 +9,6 @@ import {
   sendSnippetInputSchema,
   snippetSchema,
   upsertSnippetInputSchema,
-  allScheduledItemSchema,
   conversationAnalyticsExtendedInputSchema,
   conversationAnalyticsExtendedResponseSchema,
   listAccountEventsInputSchema,
@@ -108,7 +107,6 @@ import { getSessionUser, hasPermission } from "../lib/auth.ts";
 import { logError } from "../lib/logger.ts";
 import { decryptSecret, encryptSecret } from "../lib/secret-cipher.ts";
 import { configureSuperjson } from "../lib/superjson-config.ts";
-import { emitWaEvent } from "../modules/wa-cloud/events.ts";
 import {
   blockUsers,
   cloneTemplateFromLibrary,
@@ -431,7 +429,9 @@ const waRouterBase = {
       return {
         items: items.map((c: (typeof items)[number]) => ({
           ...c,
-          channelPhoneNumberIds: c.channels.map((ch: (typeof c.channels)[number]) => ch.phoneNumberId),
+          channelPhoneNumberIds: c.channels.map(
+            (ch: (typeof c.channels)[number]) => ch.phoneNumberId
+          ),
         })),
         total,
         page: input.page,
@@ -2430,7 +2430,7 @@ const waRouterBase = {
         countryCode: z.string().regex(/^\d{1,4}$/),
         phoneNumber: z.string().regex(/^\d{4,15}$/),
         migrate: z.boolean().default(true),
-      }),
+      })
     )
     .output(z.object({ phoneNumberId: z.string() }))
     .handler(async ({ input }) => {
@@ -2438,7 +2438,7 @@ const waRouterBase = {
         input.accountId,
         input.countryCode,
         input.phoneNumber,
-        input.migrate,
+        input.migrate
       );
       return { phoneNumberId: r.id };
     }),

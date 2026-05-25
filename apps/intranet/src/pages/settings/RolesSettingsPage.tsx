@@ -275,7 +275,7 @@ export function RolesSettingsPage() {
           onClose={() => {
             setIsRoleModalOpen(false);
           }}
-          role={selectedRole}
+          roleData={selectedRole}
         />
       )}
 

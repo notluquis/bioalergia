@@ -31,8 +31,7 @@ import type { Context as HonoContext } from "hono";
 import { z } from "zod";
 import { getSessionUser } from "../lib/auth.ts";
 import { logError } from "../lib/logger.ts";
-import { DEFAULT_SETTINGS, settingsKeyToDbKey } from "../lib/settings.ts";
-import { getSetting } from "../lib/settings.ts";
+import { DEFAULT_SETTINGS, getSetting, settingsKeyToDbKey } from "../lib/settings.ts";
 import { configureSuperjson } from "../lib/superjson-config.ts";
 import {
   archiveProduct,

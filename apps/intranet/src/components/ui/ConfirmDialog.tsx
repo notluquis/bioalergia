@@ -93,7 +93,7 @@ export function ConfirmDialogHost() {
               ) : null}
               {requiresText ? (
                 <div className="mt-4">
-                  <TextField value={typed} onChange={setTyped} autoFocus>
+                  <TextField value={typed} onChange={setTyped}>
                     <Label className="mb-1 block font-medium text-foreground text-sm">
                       {state.requireTextLabel ?? `Escribe "${state.requireText}" para confirmar`}
                     </Label>

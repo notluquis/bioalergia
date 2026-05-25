@@ -1,7 +1,7 @@
 import { createORPCClient, ORPCError } from "@orpc/client";
 import type { ContractRouterClient } from "@orpc/contract";
-import {
-  type CounterpartsContract,
+import type {
+  CounterpartsContract,
   counterpartPayloadSchema,
 } from "@finanzas/orpc-contracts/counterparts";
 import { SuperJSONLink } from "@/features/calendar/orpc";

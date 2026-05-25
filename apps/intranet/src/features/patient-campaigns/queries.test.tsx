@@ -14,6 +14,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, renderHook, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type * as OrpcModule from "./orpc";
 
 const orpcMocks = vi.hoisted(() => ({
   listCampaigns: vi.fn(),
@@ -29,7 +30,7 @@ const orpcMocks = vi.hoisted(() => ({
 }));
 
 vi.mock("./orpc", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("./orpc")>();
+  const actual = await importOriginal<typeof OrpcModule>();
   return {
     patientCampaignsORPCClient: orpcMocks,
     toPatientCampaignsApiError: actual.toPatientCampaignsApiError,

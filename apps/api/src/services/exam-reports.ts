@@ -1,5 +1,5 @@
 import { db } from "@finanzas/db";
-import { examReportsContract } from "@finanzas/orpc-contracts/exam-reports";
+import type { examReportsContract } from "@finanzas/orpc-contracts/exam-reports";
 import type { z } from "zod";
 
 // Lógica DB del update de exam reports, fuera del handler oRPC. Mantener el

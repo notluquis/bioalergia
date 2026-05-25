@@ -307,6 +307,7 @@ function VideoLightbox({ src, onError }: { src: string; onError: () => void }) {
         {!loaded && <Skeleton className="absolute inset-0 h-72 w-full max-w-xs rounded-lg" />}
         <video
           src={src}
+          aria-label="Vista previa de video"
           className={`max-h-72 w-full max-w-xs object-cover transition-opacity ${
             loaded ? "opacity-100" : "opacity-0"
           }`}
@@ -342,7 +343,13 @@ function VideoLightbox({ src, onError }: { src: string; onError: () => void }) {
               >
                 <X size={16} />
               </Button>
-              <video src={src} controls autoPlay className="max-h-[92vh] max-w-[92vw] rounded-lg">
+              <video
+                src={src}
+                controls
+                autoPlay
+                aria-label="Reproductor de video"
+                className="max-h-[92vh] max-w-[92vw] rounded-lg"
+              >
                 <track kind="captions" />
               </video>
             </Modal.Dialog>
@@ -472,6 +479,7 @@ function AudioPlayer({ src, out, onError }: { src: string; out: boolean; onError
       <audio
         ref={audioRef}
         src={src}
+        aria-label="Nota de voz"
         preload="metadata"
         onPlay={() => setPlaying(true)}
         onPause={() => setPlaying(false)}

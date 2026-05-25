@@ -1,6 +1,6 @@
 // apps/api/src/app.ts
 import * as Sentry from "@sentry/node";
-import { Hono } from "hono";
+import { type Context as HonoContext, Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import { cors } from "hono/cors";
 import { csrf } from "hono/csrf";
@@ -23,10 +23,7 @@ import { getCurrentJobs as getCurrentBackupJobs } from "./services/backups.ts";
 import { balancesOpenAPIHandler, balancesORPCHandler } from "./orpc/balances.ts";
 import { calendarOpenAPIHandler, calendarORPCHandler } from "./orpc/calendar.ts";
 import { certificatesOpenAPIHandler, certificatesORPCHandler } from "./orpc/certificates.ts";
-import {
-  immunotherapyOpenAPIHandler,
-  immunotherapyORPCHandler,
-} from "./orpc/immunotherapy.ts";
+import { immunotherapyOpenAPIHandler, immunotherapyORPCHandler } from "./orpc/immunotherapy.ts";
 import { clinicalSeriesOpenAPIHandler, clinicalSeriesORPCHandler } from "./orpc/clinical-series.ts";
 import {
   clinicalRecordsOpenAPIHandler,
@@ -106,10 +103,7 @@ import { utilityBillsOpenAPIHandler, utilityBillsORPCHandler } from "./orpc/util
 import { providerCredentialsORPCHandler } from "./orpc/provider-credentials.ts";
 import { waCloudOpenAPIHandler, waCloudORPCHandler } from "./orpc/wa-cloud.ts";
 import { shipmentsOpenAPIHandler, shipmentsORPCHandler } from "./orpc/shipments.ts";
-import {
-  examReportsOpenAPIHandler,
-  examReportsORPCHandler,
-} from "./orpc/exam-reports.ts";
+import { examReportsOpenAPIHandler, examReportsORPCHandler } from "./orpc/exam-reports.ts";
 import { doctoraliaScraperRoutes } from "./routes/doctoralia-scraper.ts";
 import { googleCalendarWebhookRoutes } from "./routes/google-calendar-webhook.ts";
 import { mercadopagoReportWebhookRoutes } from "./routes/mercadopago-report-webhook.ts";
@@ -291,7 +285,7 @@ app.use("/api/auth/*", authRateLimiter);
 // Defense in depth on top of SameSite=Lax cookies + the CORS allow-list.
 // Webhooks excluded (Meta / Google / OneDrive cross-site by design and
 // already authenticated via HMAC signatures).
-const csrfAllowedOrigin = (origin: string, c: import("hono").Context): boolean => {
+const csrfAllowedOrigin = (origin: string, c: HonoContext): boolean => {
   // Always allow same-origin: when the Origin header host matches the
   // request's own host (the SPA hitting its own API), there is no CSRF
   // surface. hono/csrf normally provides this default but disables it
@@ -341,7 +335,7 @@ app.use("/api/wa-cloud/*", csrfDoubleSubmit());
 // mutation, and the SPA calls `auth/session` on every boot.
 const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
 
-function readOnlyRejection(c: import("hono").Context) {
+function readOnlyRejection(c: HonoContext) {
   return c.json(
     {
       status: "error",
@@ -352,7 +346,7 @@ function readOnlyRejection(c: import("hono").Context) {
   );
 }
 
-async function isE2EReadOnly(c: import("hono").Context): Promise<boolean> {
+async function isE2EReadOnly(c: HonoContext): Promise<boolean> {
   const user = await getSessionUser(c);
   return Boolean(user?.roles.some((r) => r.role.name === "E2EReadOnly"));
 }
@@ -2272,10 +2266,9 @@ app.use("/api/orpc/exam-reports/rpc/*", async (c, next) => {
 });
 
 app.use("/api/orpc/exam-reports/*", async (c, next) => {
-  const { matched, response } = await examReportsOpenAPIHandler.handle(
-    createHonoORPCRequest(c),
-    { context: {} }
-  );
+  const { matched, response } = await examReportsOpenAPIHandler.handle(createHonoORPCRequest(c), {
+    context: {},
+  });
   if (matched) return c.newResponse(response.body, response);
   return next();
 });

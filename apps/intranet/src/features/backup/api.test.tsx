@@ -7,6 +7,7 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type * as OrpcModule from "./orpc";
 
 const orpcMocks = vi.hoisted(() => ({
   list: vi.fn(),
@@ -18,7 +19,7 @@ const orpcMocks = vi.hoisted(() => ({
 }));
 
 vi.mock("./orpc", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("./orpc")>();
+  const actual = await importOriginal<typeof OrpcModule>();
   return {
     backupsORPCClient: orpcMocks,
     toBackupsApiError: actual.toBackupsApiError,

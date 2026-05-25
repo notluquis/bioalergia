@@ -4,6 +4,7 @@ import { type Context, Hono, type Next } from "hono";
 import { z } from "zod";
 import { getSessionUser, hasPermission } from "../lib/auth.ts";
 import { googleCalendarConfig } from "../lib/config.ts";
+import type * as JobQueue from "../lib/jobQueue.ts";
 import {
   type CalendarEventFilters,
   getCalendarAggregates,
@@ -135,7 +136,7 @@ const calendarQuerySchema = z.object({
 });
 
 type CalendarQuery = z.infer<typeof calendarQuerySchema>;
-type JobQueueModule = Awaited<typeof import("../lib/jobQueue.ts")>;
+type JobQueueModule = typeof JobQueue;
 type JobQueueFns = Pick<JobQueueModule, "completeJob" | "failJob" | "updateJobProgress">;
 type TestMetadata = {
   firstReading: boolean;

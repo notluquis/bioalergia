@@ -38,7 +38,6 @@ export function InboxSearchDrawer({
                   onSelectConversation(id);
                   onClose();
                 }}
-                autoFocus
                 showHeader={false}
               />
             </Drawer.Body>

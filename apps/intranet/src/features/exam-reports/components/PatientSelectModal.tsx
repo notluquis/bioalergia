@@ -1,12 +1,4 @@
-import {
-  Button,
-  Description,
-  Label,
-  ListBox,
-  Modal,
-  SearchField,
-  Spinner,
-} from "@heroui/react";
+import { Button, Description, Label, ListBox, Modal, SearchField, Spinner } from "@heroui/react";
 import { useQuery } from "@tanstack/react-query";
 import { UserPlus } from "lucide-react";
 import { useState } from "react";
@@ -64,7 +56,7 @@ export function PatientSelectModal({
               >
                 <SearchField.Group>
                   <SearchField.SearchIcon />
-                  <SearchField.Input autoFocus placeholder="Buscar por nombre o RUT..." />
+                  <SearchField.Input placeholder="Buscar por nombre o RUT..." />
                   <SearchField.ClearButton />
                 </SearchField.Group>
               </SearchField>
@@ -95,9 +87,7 @@ export function PatientSelectModal({
                         <Label>
                           {p.person.names} {p.person.fatherName ?? ""}
                         </Label>
-                        <Description className="font-mono">
-                          {p.person.rut ?? "Sin RUT"}
-                        </Description>
+                        <Description className="font-mono">{p.person.rut ?? "Sin RUT"}</Description>
                       </ListBox.Item>
                     ))}
                   </ListBox>
@@ -105,12 +95,7 @@ export function PatientSelectModal({
               </div>
 
               <div className="border-default-100 border-t pt-3">
-                <Button
-                  className="w-full gap-2"
-                  onPress={onCreateNew}
-                  size="sm"
-                  variant="outline"
-                >
+                <Button className="w-full gap-2" onPress={onCreateNew} size="sm" variant="outline">
                   <UserPlus size={15} />
                   Registrar nuevo paciente
                 </Button>

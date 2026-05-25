@@ -363,6 +363,7 @@ function CreateTemplateModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
                   </p>
                   <input
                     type="file"
+                    aria-label="Subir muestra de medio"
                     accept={
                       headerKind === "IMAGE"
                         ? "image/jpeg,image/png"

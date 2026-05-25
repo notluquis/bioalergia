@@ -4,13 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 
 type Image = { cdn_url: string; alt: string | null; is_primary: boolean };
 
-export function ProductGallery({
-  images,
-  productName,
-}: {
-  images: Image[];
-  productName: string;
-}) {
+export function ProductGallery({ images, productName }: { images: Image[]; productName: string }) {
   const sorted = images.length
     ? [...images].sort((a, b) => Number(b.is_primary) - Number(a.is_primary))
     : [];
@@ -46,7 +40,7 @@ export function ProductGallery({
               <div className="aspect-square">
                 <img
                   alt={img.alt ?? productName}
-                  className="h-full w-full object-cover"
+                  className="object-cover size-full"
                   fetchPriority={i === 0 ? "high" : "auto"}
                   loading={i === 0 ? "eager" : "lazy"}
                   src={img.cdn_url}
@@ -59,7 +53,7 @@ export function ProductGallery({
           <>
             <button
               aria-label="Anterior"
-              className="-translate-y-1/2 absolute top-1/2 left-3 grid h-9 w-9 place-items-center rounded-full bg-white/80 text-foreground shadow"
+              className="-translate-y-1/2 absolute top-1/2 left-3 grid place-items-center rounded-full bg-white/80 text-foreground shadow size-9"
               onClick={() => emblaApi?.scrollPrev()}
               type="button"
             >
@@ -67,7 +61,7 @@ export function ProductGallery({
             </button>
             <button
               aria-label="Siguiente"
-              className="-translate-y-1/2 absolute top-1/2 right-3 grid h-9 w-9 place-items-center rounded-full bg-white/80 text-foreground shadow"
+              className="-translate-y-1/2 absolute top-1/2 right-3 grid place-items-center rounded-full bg-white/80 text-foreground shadow size-9"
               onClick={() => emblaApi?.scrollNext()}
               type="button"
             >
@@ -81,14 +75,14 @@ export function ProductGallery({
           {sorted.map((img, i) => (
             <button
               aria-label={`Imagen ${i + 1}`}
-              className={`h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg border-2 transition ${
+              className={`flex-shrink-0 overflow-hidden rounded-lg border-2 transition size-16 ${
                 selectedIdx === i ? "border-foreground" : "border-transparent opacity-60"
               }`}
               key={img.cdn_url}
               onClick={() => scrollTo(i)}
               type="button"
             >
-              <img alt="" className="h-full w-full object-cover" loading="lazy" src={img.cdn_url} />
+              <img alt="" className="object-cover size-full" loading="lazy" src={img.cdn_url} />
             </button>
           ))}
         </div>

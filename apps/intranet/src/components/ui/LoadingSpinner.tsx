@@ -24,9 +24,9 @@ interface LoadingSpinnerProps extends Omit<HeroUISpinnerProps, "aria-label"> {
  */
 export function LoadingSpinner({ label = "Cargando", ...rest }: LoadingSpinnerProps) {
   return (
-    <div role="status" aria-live="polite">
+    <output aria-live="polite">
       <HeroUISpinner {...rest} />
       <span className="sr-only">{label}</span>
-    </div>
+    </output>
   );
 }

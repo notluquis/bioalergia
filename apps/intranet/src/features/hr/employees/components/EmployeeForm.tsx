@@ -386,10 +386,10 @@ function EmployeeFormContent({
         </TextField>
 
         <datalist id="bank-account-type-options">
-          <option value="RUT" />
-          <option value="VISTA" />
-          <option value="CORRIENTE" />
-          <option value="AHORRO" />
+          <option value="RUT">RUT</option>
+          <option value="VISTA">VISTA</option>
+          <option value="CORRIENTE">CORRIENTE</option>
+          <option value="AHORRO">AHORRO</option>
         </datalist>
         <TextField
           type="text"

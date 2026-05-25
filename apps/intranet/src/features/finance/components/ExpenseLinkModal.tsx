@@ -108,7 +108,9 @@ export function ExpenseLinkModal({
                       <th className="px-3 py-2">Fecha</th>
                       <th className="px-3 py-2">Descripción</th>
                       <th className="px-3 py-2 text-right">Monto</th>
-                      <th className="px-3 py-2" />
+                      <th className="px-3 py-2">
+                        <span className="sr-only">Acciones</span>
+                      </th>
                     </tr>
                   </thead>
                   <tbody>

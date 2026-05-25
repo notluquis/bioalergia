@@ -17,9 +17,10 @@ import timezone from "dayjs/plugin/timezone.js";
 import type { Context as HonoContext } from "hono";
 import { z } from "zod";
 import { getSessionUser, hasPermission } from "../lib/auth.ts";
+import type * as CertificateServiceModule from "../modules/certificates/certificate.service.ts";
 import { medicalCertificateSchema } from "../modules/certificates/certificate.schema.ts";
 // Lazy: pdf-lib weighs ~3MB+ in heap; only load on first /medical request.
-type CertificateService = typeof import("../modules/certificates/certificate.service.ts");
+type CertificateService = typeof CertificateServiceModule;
 let _certificateService: CertificateService | undefined;
 async function getCertificateService(): Promise<CertificateService> {
   if (!_certificateService) {

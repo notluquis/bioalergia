@@ -103,6 +103,7 @@ export function NewAttachmentModal({ isOpen, onClose, patientId }: NewAttachment
                         <input
                           ref={inputRef}
                           accept="application/pdf,image/*"
+                          aria-label="Seleccionar archivo"
                           className="hidden"
                           onChange={(event) => {
                             const selected = event.target.files?.[0];

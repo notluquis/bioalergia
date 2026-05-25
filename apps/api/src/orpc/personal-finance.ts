@@ -17,7 +17,7 @@ import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc.js";
 import { Decimal } from "decimal.js";
 import type { Context as HonoContext } from "hono";
-import { z } from "zod";
+import type { z } from "zod";
 import { createAuthContext, getSessionUser } from "../lib/auth.ts";
 import { logError } from "../lib/logger.ts";
 import { configureSuperjson } from "../lib/superjson-config.ts";

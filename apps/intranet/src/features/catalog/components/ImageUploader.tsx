@@ -118,6 +118,7 @@ export function ImageUploader({ productId, images }: ImageUploaderProps) {
         <span className="text-foreground/60 text-xs">JPEG/PNG/WebP/AVIF — máx 5MB</span>
         <input
           accept={ALLOWED.join(",")}
+          aria-label="Subir imagen"
           className="hidden"
           onChange={(e) => {
             const file = e.target.files?.[0];

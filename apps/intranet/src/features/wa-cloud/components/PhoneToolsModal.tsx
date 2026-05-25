@@ -335,6 +335,7 @@ function ProfilePictureCard({ phoneNumberId }: { phoneNumberId: number }) {
           <input
             ref={fileRef}
             type="file"
+            aria-label="Subir foto de perfil"
             accept="image/jpeg,image/png,image/webp"
             className="hidden"
             onChange={(e) => {

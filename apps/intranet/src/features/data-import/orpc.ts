@@ -1,8 +1,7 @@
 import { createORPCClient, ORPCError } from "@orpc/client";
 import type { ContractRouterClient } from "@orpc/contract";
-import type { CsvUploadContract } from "@finanzas/orpc-contracts/csv-upload";
+import type { CsvUploadContract, csvUploadTableSchema } from "@finanzas/orpc-contracts/csv-upload";
 import type { z } from "zod";
-import { csvUploadTableSchema } from "@finanzas/orpc-contracts/csv-upload";
 import { SuperJSONLink } from "@/features/calendar/orpc";
 import { ApiError } from "@/lib/api-client";
 import { csrfFetch } from "@/lib/csrf-fetch";

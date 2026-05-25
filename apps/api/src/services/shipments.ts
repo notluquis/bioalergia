@@ -1,5 +1,5 @@
 import { db } from "@finanzas/db";
-import { shipmentSchema } from "@finanzas/orpc-contracts/shipments";
+import type { createShipmentInputSchema, shipmentSchema } from "@finanzas/orpc-contracts/shipments";
 import { Decimal } from "decimal.js";
 
 // El row de findMany ahora trae todos los campos (cliente sin colapsar), pero
@@ -37,7 +37,6 @@ import {
   trackTransportOrder,
 } from "../modules/chilexpress/client.ts";
 import type { z } from "zod";
-import type { createShipmentInputSchema } from "@finanzas/orpc-contracts/shipments";
 
 export type CreateShipmentInput = z.infer<typeof createShipmentInputSchema>;
 

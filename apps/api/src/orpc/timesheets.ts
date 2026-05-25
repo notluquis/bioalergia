@@ -3,6 +3,7 @@ import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
 import { ORPCError, onError, os } from "@orpc/server";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
+import type { timesheetsContract } from "@finanzas/orpc-contracts/timesheets";
 import {
   timesheetBulkInputSchema,
   timesheetEmailPreviewInputSchema,
@@ -29,7 +30,6 @@ import {
   timesheetStatusResponseSchema,
   timesheetSummaryResponseSchema,
   timesheetUpdateInputSchema,
-  timesheetsContract,
 } from "@finanzas/orpc-contracts/timesheets";
 import dayjs from "dayjs";
 import timezone from "dayjs/plugin/timezone.js";

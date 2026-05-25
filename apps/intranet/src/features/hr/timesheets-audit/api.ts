@@ -3,7 +3,7 @@
  */
 
 import { z } from "zod";
-import { timesheetListEntrySchema } from "@finanzas/orpc-contracts/timesheets";
+import type { timesheetListEntrySchema } from "@finanzas/orpc-contracts/timesheets";
 import { zDateString } from "@/lib/api-validate";
 import { timesheetsORPCClient, toTimesheetsApiError } from "../timesheets/orpc";
 import type { TimesheetEntryWithEmployee } from "./types";

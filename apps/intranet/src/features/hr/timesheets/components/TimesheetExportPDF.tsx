@@ -1,6 +1,9 @@
 import { Button, Checkbox, Popover, Tooltip } from "@heroui/react";
 import dayjs from "dayjs";
+import type JsPDF from "jspdf";
+import type * as JsPdfModule from "jspdf";
 import type { CellHookData } from "jspdf-autotable";
+import type * as JsPdfAutotableModule from "jspdf-autotable";
 import { useRef, useState } from "react";
 import { useSettings } from "@/context/SettingsContext";
 import type { Employee } from "@/features/hr/employees/types";
@@ -40,12 +43,12 @@ const COLUMN_LABELS: Record<TimesheetColumnKey, string> = {
   worked: "Tiempo facturable",
 };
 
-type AutoTableFactory = typeof import("jspdf-autotable");
+type AutoTableFactory = typeof JsPdfAutotableModule;
 interface DetailTableProps {
   autoTable: AutoTableFactory["default"];
   bulkRows: BulkRow[];
   defaultCols: readonly TimesheetColumnKey[];
-  doc: import("jspdf").default;
+  doc: JsPDF;
   labels: Record<TimesheetColumnKey, string>;
   margin: number;
   pageWidth: number;
@@ -53,18 +56,18 @@ interface DetailTableProps {
   startY: number;
 }
 
-type JsPdfFactory = typeof import("jspdf");
+type JsPdfFactory = typeof JsPdfModule;
 
 interface SummaryTableProps {
   autoTable: AutoTableFactory["default"];
-  doc: import("jspdf").default;
+  doc: JsPDF;
   infoStartY: number;
   margin: number;
   pageWidth: number;
   summary: null | TimesheetSummaryRow;
 }
 
-function getSafePageWidth(doc: import("jspdf").default): number {
+function getSafePageWidth(doc: JsPDF): number {
   interface JsPdfPageSize {
     getWidth?: () => number;
     width?: number;
@@ -93,7 +96,7 @@ function openPdfPreviewOrAlert(dataUri: string) {
 }
 
 function finalizePdfExport(params: {
-  doc: import("jspdf").default;
+  doc: JsPDF;
   employee: Employee;
   monthLabel: string;
   preview: boolean;
@@ -305,7 +308,7 @@ interface HeaderResult {
 }
 
 async function addPdfHeader(
-  doc: import("jspdf").default,
+  doc: JsPDF,
   settings: { logoUrl?: string; orgName?: string; orgAddress?: string; orgPhone?: string },
   logoUrl: string,
   pageWidth: number,
@@ -355,7 +358,7 @@ async function addPdfHeader(
 }
 
 function addPrestadorInfo(
-  doc: import("jspdf").default,
+  doc: JsPDF,
   employee: Employee | null,
   monthLabel: string,
   summary: null | TimesheetSummaryRow,
@@ -393,7 +396,7 @@ function addPrestadorInfo(
   doc.setFont("helvetica", "normal");
 }
 
-function addLegalNote(doc: import("jspdf").default, pageWidth: number, margin: number): void {
+function addLegalNote(doc: JsPDF, pageWidth: number, margin: number): void {
   const finalTableRef = doc as unknown as { lastAutoTable?: { finalY: number } };
   const noteY = finalTableRef.lastAutoTable ? finalTableRef.lastAutoTable.finalY + 10 : 120;
   doc.setFontSize(8);

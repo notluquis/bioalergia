@@ -1,10 +1,10 @@
 import { createORPCClient, ORPCError } from "@orpc/client";
 import type { ContractRouterClient } from "@orpc/contract";
-import {
+import type {
+  ServicesContract,
   detailResponseSchema,
-  scheduleResponseSchema,
-  type ServicesContract,
   listResponseSchema,
+  scheduleResponseSchema,
 } from "@finanzas/orpc-contracts/services";
 import { SuperJSONLink } from "@/features/calendar/orpc";
 import { ApiError } from "@/lib/api-client";

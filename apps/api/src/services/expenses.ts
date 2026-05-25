@@ -1,7 +1,7 @@
-import { db, kysely } from "@finanzas/db";
+import { db } from "@finanzas/db";
 import type { ExpenseRecurrence, ExpenseScope, ExpenseSource, ExpenseStatus } from "@finanzas/db";
 import { Decimal } from "decimal.js";
-import { sql } from "kysely";
+import { sql, type SelectQueryBuilder } from "kysely";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -625,7 +625,7 @@ export async function getExpenseStats(filters: ExpenseStatsFilters = {}): Promis
       sql<number>`SUM("amountApplied")::float`.as("totalApplied"),
     ])
     .groupBy([sql`${periodExpr}`, sql`"scope"`])
-    .orderBy(sql`${periodExpr}`, "asc") as unknown as import("kysely").SelectQueryBuilder<
+    .orderBy(sql`${periodExpr}`, "asc") as unknown as SelectQueryBuilder<
     Record<string, Record<string, unknown>>,
     string,
     StatsQueryResult

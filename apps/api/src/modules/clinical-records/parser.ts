@@ -198,7 +198,7 @@ export function parseSpanishDate(value: string): string | null {
 function parseDecimal(value: string): number | null {
   if (!value) return null;
   // Chilean format uses comma as decimal: "7,830". Accept both.
-  const cleaned = value.replace(/[^\d,.\-]/g, "").replace(",", ".");
+  const cleaned = value.replace(/[^\d,.-]/g, "").replace(",", ".");
   if (!cleaned) return null;
   const n = Number.parseFloat(cleaned);
   return Number.isFinite(n) ? n : null;
@@ -220,7 +220,7 @@ function dedupeLines(lines: string[]): string[] {
 
 function extractInlineAnthropometric(text: string, target: ParsedClinicalRecord): void {
   // Match patterns like "P: 8,100 T: 67,5 CC: 43,5" in any single cell.
-  const matches = text.matchAll(/\b([A-ZÁÉÍÓÚÑ\/]+)\s*[:\-]\s*([\d.,]+)/g);
+  const matches = text.matchAll(/\b([A-ZÁÉÍÓÚÑ/]+)\s*[:-]\s*([\d.,]+)/g);
   for (const m of matches) {
     const key = normalize(m[1]);
     const numTxt = m[2];

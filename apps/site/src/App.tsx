@@ -1,7 +1,7 @@
 import { Button, Link } from "@heroui/react";
 import { useTheme } from "next-themes";
 import { usePostHog } from "posthog-js/react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 
 import { contactInfo } from "@/data/clinic";
 import { legalDocuments, type LegalDocumentKey } from "@/data/legal";
@@ -13,7 +13,7 @@ function ThemeIcon({ theme }: { theme: "light" | "dark" }) {
   return theme === "dark" ? (
     <svg
       aria-hidden="true"
-      className="h-4 w-4"
+      className="size-4"
       fill="none"
       stroke="currentColor"
       strokeWidth="1.6"
@@ -29,7 +29,7 @@ function ThemeIcon({ theme }: { theme: "light" | "dark" }) {
   ) : (
     <svg
       aria-hidden="true"
-      className="h-4 w-4"
+      className="size-4"
       fill="none"
       stroke="currentColor"
       strokeWidth="1.6"
@@ -148,7 +148,9 @@ export function App() {
         href="/tienda"
       >
         <span>🛍 Visita nuestra tienda</span>
-        <span aria-hidden className="opacity-80">— productos seleccionados, envío a todo Chile vía Chilexpress →</span>
+        <span aria-hidden className="opacity-80">
+          — productos seleccionados, envío a todo Chile vía Chilexpress →
+        </span>
       </a>
       <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-10 px-4 pt-6 pb-14 sm:px-6 md:gap-12 lg:gap-16 lg:px-8">
         <header className="sticky top-2 z-50 sm:top-3">
@@ -189,7 +191,7 @@ export function App() {
                   </Button>
                   <Button
                     aria-label={theme === "dark" ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
-                    className="h-8 w-8 rounded-full border-border text-(--ink-muted) sm:h-9 sm:w-9"
+                    className="rounded-full border-border text-(--ink-muted) sm:h-9 sm:w-9 size-8"
                     isIconOnly
                     variant="outline"
                     onPress={toggle}
@@ -279,7 +281,7 @@ export function App() {
                 </Button>
                 <Button
                   aria-label={theme === "dark" ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
-                  className="h-9 w-9 rounded-full border-border text-(--ink-muted)"
+                  className="rounded-full border-border text-(--ink-muted) size-9"
                   isIconOnly
                   variant="outline"
                   onPress={toggle}

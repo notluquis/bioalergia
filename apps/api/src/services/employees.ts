@@ -8,7 +8,7 @@ import type {
   EmployeeWhereInput,
   PersonUpdateInput,
 } from "../lib/db-types.ts";
-import { canonicalRutFilter, requireCanonicalRut } from "../lib/rut.ts";
+import { requireCanonicalRut } from "../lib/rut.ts";
 
 // Type for the frontend payload (snake_case)
 interface EmployeePayload {

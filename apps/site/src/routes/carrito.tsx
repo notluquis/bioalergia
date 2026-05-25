@@ -16,15 +16,12 @@ function CarritoPage() {
   const { data, isLoading } = useQuery(shopKeys.cart());
 
   const updateMutation = useMutation({
-    mutationFn: (input: { product_id: number; qty: number }) =>
-      cartClient.updateItem(input),
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: shopKeys.cart().queryKey }),
+    mutationFn: (input: { product_id: number; qty: number }) => cartClient.updateItem(input),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: shopKeys.cart().queryKey }),
   });
   const removeMutation = useMutation({
     mutationFn: (product_id: number) => cartClient.removeItem({ product_id }),
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: shopKeys.cart().queryKey }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: shopKeys.cart().queryKey }),
   });
 
   if (isLoading) {
@@ -70,11 +67,11 @@ function CarritoPage() {
             {cart.items.map((item: CartItem) => (
               <Card key={item.id}>
                 <Card.Content className="flex items-center gap-4 p-4">
-                  <div className="h-20 w-20 flex-shrink-0 overflow-hidden rounded-lg bg-foreground/5">
+                  <div className="flex-shrink-0 overflow-hidden rounded-lg bg-foreground/5 size-20">
                     {item.product.primary_image_url && (
                       <img
                         alt={item.product.name}
-                        className="h-full w-full object-cover"
+                        className="object-cover size-full"
                         src={item.product.primary_image_url}
                       />
                     )}

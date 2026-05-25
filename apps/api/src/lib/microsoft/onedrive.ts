@@ -611,7 +611,9 @@ function toFolderItem(item: OneDriveItem): OneDriveFolderItem {
 
 function isXlsxItem(item: OneDriveItem): boolean {
   const name = item.remoteItem?.name ?? item.name;
-  return Boolean(item.file ?? item.remoteItem?.file) && /\.xlsx$/i.test(name) && !/^~\$/.test(name);
+  return (
+    Boolean(item.file ?? item.remoteItem?.file) && /\.xlsx$/i.test(name) && !name.startsWith("~$")
+  );
 }
 
 export function getOneDriveQuickXorHash(item: OneDriveItem): string | null {

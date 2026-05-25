@@ -16,7 +16,7 @@ import type { Role } from "@/types/roles";
 interface RoleFormModalProps {
   isOpen: boolean;
   onClose: () => void;
-  role?: null | Role; // If present, Edit mode. If null, Create mode.
+  roleData?: null | Role; // If present, Edit mode. If null, Create mode.
 }
 
 const formSchema = z.object({
@@ -35,7 +35,7 @@ interface RoleBaseFormProps {
 
 type RoleFormData = z.infer<typeof formSchema>;
 
-export function RoleFormModal({ isOpen, onClose, role }: RoleFormModalProps) {
+export function RoleFormModal({ isOpen, onClose, roleData }: RoleFormModalProps) {
   return (
     <Modal>
       <Modal.Backdrop
@@ -50,11 +50,11 @@ export function RoleFormModal({ isOpen, onClose, role }: RoleFormModalProps) {
         <Modal.Container placement="center">
           <Modal.Dialog className="relative w-full max-w-2xl rounded-[28px] bg-background p-6 shadow-2xl">
             <Modal.Header className="mb-4 font-bold text-primary text-xl">
-              <Modal.Heading>{role ? "Editar Rol" : "Nuevo Rol"}</Modal.Heading>
+              <Modal.Heading>{roleData ? "Editar Rol" : "Nuevo Rol"}</Modal.Heading>
             </Modal.Header>
             <Modal.Body className="mt-2 max-h-[80vh] overflow-y-auto overscroll-contain text-foreground">
               <div className="pb-6">
-                {role ? (
+                {roleData ? (
                   <Suspense
                     fallback={
                       <div className="space-y-3 p-4">
@@ -64,7 +64,7 @@ export function RoleFormModal({ isOpen, onClose, role }: RoleFormModalProps) {
                       </div>
                     }
                   >
-                    <RoleEditForm onClose={onClose} roleEntity={role} />
+                    <RoleEditForm onClose={onClose} roleEntity={roleData} />
                   </Suspense>
                 ) : (
                   <RoleBaseForm onClose={onClose} roleEntity={null} userData={[]} />

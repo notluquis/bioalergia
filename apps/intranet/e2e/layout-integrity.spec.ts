@@ -1,4 +1,4 @@
-import { expect } from "@playwright/test";
+import { expect, type Page } from "@playwright/test";
 import { AUTHED_ROUTES, test as authed } from "./fixtures";
 
 /**
@@ -53,7 +53,7 @@ const ROUTES: { path: string; name: string }[] = [
   { path: "/finanzas", name: "finanzas-overview" },
 ];
 
-async function waitForRouteReady(page: import("@playwright/test").Page, path: string) {
+async function waitForRouteReady(page: Page, path: string) {
   await page.goto(path, { waitUntil: "domcontentloaded" });
   // Production routes keep SSE / polling channels open, so `networkidle`
   // never resolves (Playwright #22897). Wait for `load` + a real React

@@ -6,7 +6,7 @@ import { parseCalendarMetadata } from "../../../lib/parsers.ts";
 import { buildSeriesDisplayName } from "../classification/display.ts";
 import { inferSeriesKind } from "../classification/kind.ts";
 import { TIMEZONE } from "../constants.ts";
-import { SeriesAssignmentContext } from "../context.ts";
+import type { SeriesAssignmentContext } from "../context.ts";
 import { resolveClinicalIdentity } from "../extraction/identity.ts";
 import { extractSeriesPhones } from "../extraction/phones.ts";
 import { findMatchingSeries } from "../matching/find.ts";

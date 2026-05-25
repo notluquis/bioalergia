@@ -17,7 +17,7 @@ import { dteAnalyticsKeys } from "@/features/finance/dte-analytics/queries";
 import {
   CHART_THEME,
   type MonthlyChartData,
-  YearlyTotals,
+  type YearlyTotals,
 } from "@/features/finance/dte-analytics/types";
 import {
   buildMonthlyChartData,

@@ -10,10 +10,9 @@ import { useEffect, useMemo, useState } from "react";
 import { TrustBlock } from "@/features/shop/components/TrustBlock";
 import { CLP_FORMATTER } from "@/features/shop/lib/shop-config";
 import { shopKeys } from "@/features/shop/queries";
-import { cartClient, checkoutClient } from "@/lib/orpc-client";
+import { checkoutClient } from "@/lib/orpc-client";
 
-type QuoteOption =
-  InferContractRouterOutputs<CheckoutContract>["quote"]["data"]["options"][number];
+type QuoteOption = InferContractRouterOutputs<CheckoutContract>["quote"]["data"]["options"][number];
 type CartItem = InferContractRouterOutputs<CartContract>["get"]["data"]["items"][number];
 
 const PUBLIC_KEY = import.meta.env.VITE_MERCADOPAGO_PUBLIC_KEY as string | undefined;
@@ -43,8 +42,7 @@ function CheckoutPage() {
   const totalClp = useMemo(() => (cart?.total_clp ?? 0) + shippingClp, [cart, shippingClp]);
 
   const quoteMutation = useMutation({
-    mutationFn: (county: string) =>
-      checkoutClient.quote({ destination_county_code: county }),
+    mutationFn: (county: string) => checkoutClient.quote({ destination_county_code: county }),
     onSuccess: (res) => {
       setQuoteOptions(res.data.options);
       setQuoteError(null);
@@ -59,9 +57,7 @@ function CheckoutPage() {
 
   const startMutation = useMutation({
     mutationFn: async (
-      brick: InferContractRouterOutputs<CheckoutContract>["start"] extends infer R
-        ? unknown
-        : never
+      brick: InferContractRouterOutputs<CheckoutContract>["start"] extends infer R ? unknown : never
     ) =>
       checkoutClient.start({
         customer: { email, name, rut: rut || undefined },
@@ -196,6 +192,7 @@ function CheckoutPage() {
               {quoteError && <p className="text-danger text-sm">{quoteError}</p>}
               {quoteOptions.map((o) => (
                 <button
+                  aria-label={`${o.service_description} — ${CLP_FORMATTER.format(o.shipping_clp)}`}
                   className={`block w-full rounded-lg border p-3 text-left text-sm ${
                     serviceCode === o.service_code
                       ? "border-primary bg-primary/10"

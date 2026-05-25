@@ -14,6 +14,8 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type * as RolesApiModule from "@/features/roles/api";
+import type * as RolesQueriesModule from "@/features/roles/queries";
 import type { Role } from "@/types/roles";
 
 const apiMocks = vi.hoisted(() => ({
@@ -29,7 +31,7 @@ const toastMocks = vi.hoisted(() => ({
 }));
 
 vi.mock("@/features/roles/api", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@/features/roles/api")>();
+  const actual = await importOriginal<typeof RolesApiModule>();
   return {
     ...actual,
     createRole: apiMocks.createRole,
@@ -39,7 +41,7 @@ vi.mock("@/features/roles/api", async (importOriginal) => {
 
 // roleKeys + roleQueries now live in ./queries (single source of truth).
 vi.mock("@/features/roles/queries", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@/features/roles/queries")>();
+  const actual = await importOriginal<typeof RolesQueriesModule>();
   return {
     ...actual,
     roleQueries: {
@@ -77,7 +79,7 @@ beforeEach(() => {
 
 describe("RoleFormModal — create mode", () => {
   it("renders the Crear Rol heading and CTA", async () => {
-    wrap(<RoleFormModal isOpen={true} onClose={vi.fn()} role={null} />);
+    wrap(<RoleFormModal isOpen={true} onClose={vi.fn()} roleData={null} />);
     expect(await screen.findByText("Nuevo Rol")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /crear rol/i })).toBeInTheDocument();
   });
@@ -86,7 +88,7 @@ describe("RoleFormModal — create mode", () => {
     const user = userEvent.setup();
     apiMocks.createRole.mockResolvedValue({ status: "ok" });
     const onClose = vi.fn();
-    wrap(<RoleFormModal isOpen={true} onClose={onClose} role={null} />);
+    wrap(<RoleFormModal isOpen={true} onClose={onClose} roleData={null} />);
 
     await user.type(screen.getByLabelText(/nombre del rol/i), "Supervisor");
     await user.click(screen.getByRole("button", { name: /crear rol/i }));
@@ -105,7 +107,7 @@ describe("RoleFormModal — create mode", () => {
     const user = userEvent.setup();
     apiMocks.createRole.mockRejectedValue(new Error("duplicate name"));
     const onClose = vi.fn();
-    wrap(<RoleFormModal isOpen={true} onClose={onClose} role={null} />);
+    wrap(<RoleFormModal isOpen={true} onClose={onClose} roleData={null} />);
 
     await user.type(screen.getByLabelText(/nombre del rol/i), "Supervisor");
     await user.click(screen.getByRole("button", { name: /crear rol/i }));
@@ -116,7 +118,7 @@ describe("RoleFormModal — create mode", () => {
 
   it("does not call createRole when the name field is empty", async () => {
     const user = userEvent.setup();
-    wrap(<RoleFormModal isOpen={true} onClose={vi.fn()} role={null} />);
+    wrap(<RoleFormModal isOpen={true} onClose={vi.fn()} roleData={null} />);
     // Don't type anything; click submit.
     await user.click(screen.getByRole("button", { name: /crear rol/i }));
     // Zod min(1) keeps the mutation from firing.
@@ -139,7 +141,7 @@ describe("RoleFormModal — edit mode", () => {
       { id: 1, email: "user@example.cl", person: { names: "Ana", fatherName: "Pérez" } },
     ]);
 
-    wrap(<RoleFormModal isOpen={true} onClose={vi.fn()} role={editableRole} />);
+    wrap(<RoleFormModal isOpen={true} onClose={vi.fn()} roleData={editableRole} />);
 
     expect(await screen.findByText("Editar Rol")).toBeInTheDocument();
     const nameInput = await screen.findByLabelText<HTMLInputElement>(/nombre del rol/i);
@@ -154,7 +156,7 @@ describe("RoleFormModal — edit mode", () => {
     const onClose = vi.fn();
     const user = userEvent.setup();
 
-    wrap(<RoleFormModal isOpen={true} onClose={onClose} role={editableRole} />);
+    wrap(<RoleFormModal isOpen={true} onClose={onClose} roleData={editableRole} />);
 
     await screen.findByText("Editar Rol");
     const nameInput = await screen.findByLabelText<HTMLInputElement>(/nombre del rol/i);

@@ -15,6 +15,8 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type * as RolesApiModule from "@/features/roles/api";
+import type * as RolesQueriesModule from "@/features/roles/queries";
 import type { Role } from "@/types/roles";
 
 const apiMocks = vi.hoisted(() => ({
@@ -30,7 +32,7 @@ const toastMocks = vi.hoisted(() => ({
 }));
 
 vi.mock("@/features/roles/api", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@/features/roles/api")>();
+  const actual = await importOriginal<typeof RolesApiModule>();
   return {
     ...actual,
     deleteRole: apiMocks.deleteRole,
@@ -40,7 +42,7 @@ vi.mock("@/features/roles/api", async (importOriginal) => {
 
 // roleKeys + roleQueries now live in ./queries (single source of truth).
 vi.mock("@/features/roles/queries", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@/features/roles/queries")>();
+  const actual = await importOriginal<typeof RolesQueriesModule>();
   return {
     ...actual,
     roleQueries: {
