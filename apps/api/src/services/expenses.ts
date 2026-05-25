@@ -599,12 +599,12 @@ export async function getExpenseStats(filters: ExpenseStatsFilters = {}): Promis
   let periodExpr: ReturnType<typeof sql>;
 
   if (groupBy === "year") {
-    periodExpr = sql`TO_CHAR(TO_DATE("expenseMonth", 'YYYY-MM'), 'YYYY')`;
+    periodExpr = sql`TO_CHAR(TO_DATE("expense_month", 'YYYY-MM'), 'YYYY')`;
   } else if (groupBy === "quarter") {
-    periodExpr = sql`TO_CHAR(TO_DATE("expenseMonth", 'YYYY-MM'), 'YYYY-"Q"Q')`;
+    periodExpr = sql`TO_CHAR(TO_DATE("expense_month", 'YYYY-MM'), 'YYYY-"Q"Q')`;
   } else {
     // month (default)
-    periodExpr = sql`"expenseMonth"`;
+    periodExpr = sql`"expense_month"`;
   }
 
   type StatsQueryResult = {
@@ -621,8 +621,8 @@ export async function getExpenseStats(filters: ExpenseStatsFilters = {}): Promis
       sql<string>`${periodExpr}`.as("period"),
       sql<null | string>`"scope"`.as("scope"),
       sql<number>`COUNT(*)::int`.as("expenseCount"),
-      sql<number>`SUM("amountExpected")::float`.as("totalExpected"),
-      sql<number>`SUM("amountApplied")::float`.as("totalApplied"),
+      sql<number>`SUM("amount_expected")::float`.as("totalExpected"),
+      sql<number>`SUM("amount_applied")::float`.as("totalApplied"),
     ])
     .groupBy([sql`${periodExpr}`, sql`"scope"`])
     .orderBy(sql`${periodExpr}`, "asc") as unknown as SelectQueryBuilder<
@@ -632,11 +632,11 @@ export async function getExpenseStats(filters: ExpenseStatsFilters = {}): Promis
   >;
 
   if (from !== undefined) {
-    query = query.where(sql`"expenseMonth"`, ">=", from);
+    query = query.where(sql`"expense_month"`, ">=", from);
   }
 
   if (to !== undefined) {
-    query = query.where(sql`"expenseMonth"`, "<=", to);
+    query = query.where(sql`"expense_month"`, "<=", to);
   }
 
   if (scope !== undefined) {
