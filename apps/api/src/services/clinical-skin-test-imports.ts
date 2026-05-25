@@ -3086,7 +3086,9 @@ async function upsertImport(params: {
 async function syncSkinTestImportMaterialization(importId: string, status: SkinTestImportStatus) {
   if (MATERIALIZED_SKIN_TEST_IMPORT_STATUSES.has(status)) return;
   await kysely.transaction().execute(async (trx) => {
-    await sql`DELETE FROM clinical_skin_test_results WHERE source_import_id = ${importId}`.execute(trx);
+    await sql`DELETE FROM clinical_skin_test_results WHERE source_import_id = ${importId}`.execute(
+      trx
+    );
     await sql`DELETE FROM clinical_skin_tests WHERE source_import_id = ${importId}`.execute(trx);
   });
 }
@@ -3414,7 +3416,7 @@ function isRelevantXlsx(item: OneDriveItem): boolean {
   if (item.deleted) return false;
   if (!item.file && !item.remoteItem?.file) return false;
   if (!/\.xlsx$/i.test(name)) return false;
-  if (/^~\$/.test(name)) return false;
+  if (name.startsWith("~$")) return false;
   if (isBlockedDownloadPath(item.parentReference?.path)) return false;
   if (isBlockedDownloadPath(item.remoteItem?.parentReference?.path)) return false;
   return true;
