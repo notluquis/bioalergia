@@ -141,6 +141,97 @@ function toDecimalOrZero(value: unknown) {
   return parseAmount(value) ?? new Decimal(0);
 }
 
+export interface OtherTaxEntry {
+  code: string;
+  rate: number | null;
+  amount: number;
+}
+
+/**
+ * Haulmer packs SII "Otros Impuestos" two ways:
+ *  - scalar: separate Codigo/Valor/Tasa columns (single tax)
+ *  - multi:  a (doubly-encoded) JSON array `[{codigo,tasa,monto}, ...]` dumped
+ *            into the Valor column when a document carries more than one tax
+ * This normalizes both into a single array. Returns null when there is no tax.
+ */
+export function resolveOtherTaxes(row: Record<string, unknown>): OtherTaxEntry[] | null {
+  const fromBlob = parseOtherTaxBlob(row.otherTaxAmount);
+  if (fromBlob && fromBlob.length > 0) {
+    return fromBlob;
+  }
+
+  // Scalar fallback: build a single entry from the three columns.
+  const code = toOptionalString(row.otherTaxCode);
+  const amount = parseAmount(row.otherTaxAmount);
+  const rate = parseAmount(row.otherTaxRate);
+  if (!code && !amount && !rate) {
+    return null;
+  }
+  return [
+    {
+      code: code ?? "",
+      rate: rate ? rate.toNumber() : null,
+      amount: amount ? amount.toNumber() : 0,
+    },
+  ];
+}
+
+/**
+ * Decode the possibly doubly-JSON-encoded blob Haulmer puts in the Valor column.
+ * Returns null when the value is a plain scalar (or empty).
+ */
+function parseOtherTaxBlob(value: unknown): OtherTaxEntry[] | null {
+  if (value == null || value === "") {
+    return null;
+  }
+  let parsed: unknown = String(value).trim();
+  // Unwrap up to 3 layers of JSON-string encoding (Haulmer double-encodes).
+  for (let i = 0; i < 3 && typeof parsed === "string"; i++) {
+    const t = parsed.trim();
+    if (!(t.startsWith("[") || t.startsWith('"') || t.startsWith("{"))) {
+      return null; // plain scalar like "161" — not a blob
+    }
+    try {
+      parsed = JSON.parse(t);
+    } catch {
+      return null;
+    }
+  }
+  const arr = Array.isArray(parsed) ? parsed : parsed ? [parsed] : [];
+  const entries: OtherTaxEntry[] = [];
+  for (const item of arr) {
+    if (item == null || typeof item !== "object") {
+      continue;
+    }
+    const o = item as Record<string, unknown>;
+    const amount = parseAmount(o.monto ?? o.amount);
+    const rate = parseAmount(o.tasa ?? o.rate);
+    const code = toOptionalString(o.codigo ?? o.code) ?? "";
+    entries.push({
+      code,
+      rate: rate ? rate.toNumber() : null,
+      amount: amount ? amount.toNumber() : 0,
+    });
+  }
+  return entries.length > 0 ? entries : null;
+}
+
+/**
+ * Build the otherTax* columns for a purchase row. Scalar columns mirror the
+ * first entry (backward compat with UI/queries); the full array lives in
+ * otherTaxes (jsonb). Returns undefined-valued scalars when there is no tax.
+ */
+function buildOtherTaxFields(row: Record<string, unknown>): Record<string, unknown> {
+  const taxes = resolveOtherTaxes(row);
+  const first = taxes?.[0];
+  return {
+    otherTaxCode: first?.code ? first.code : undefined,
+    otherTaxAmount: new Decimal(first?.amount ?? 0),
+    otherTaxRate: first?.rate == null ? undefined : new Decimal(first.rate),
+    otherTaxes: taxes ?? undefined,
+  };
+}
+
 function isDecimalLike(value: unknown): value is { constructor: { name: string } } {
   return value instanceof Object && value.constructor.name === "Decimal";
 }
@@ -285,12 +376,7 @@ export function buildDtePurchaseDetail(row: Record<string, unknown>): Record<str
     pureTobacco: toDecimalOrZero(row.pureTobacco),
     cigaretteTobacco: toDecimalOrZero(row.cigaretteTobacco),
     elaboratedTobacco: toDecimalOrZero(row.elaboratedTobacco),
-    otherTaxCode: toOptionalString(row.otherTaxCode),
-    otherTaxAmount: toDecimalOrZero(row.otherTaxAmount),
-    otherTaxRate:
-      row.otherTaxRate == null || row.otherTaxRate === ""
-        ? undefined
-        : new Decimal(String(row.otherTaxRate)),
+    ...buildOtherTaxFields(row),
     referenceDocNote: toOptionalString(row.referenceDocNote),
     notes: toOptionalString(row.notes),
   };
@@ -315,6 +401,11 @@ export function areDataDifferent(
     }
     if (existingValue instanceof Date && nextValue instanceof Date) {
       return existingValue.getTime() !== nextValue.getTime();
+    }
+    // jsonb columns (e.g. otherTaxes) come back as parsed objects/arrays —
+    // compare structurally instead of by reference.
+    if (typeof existingValue === "object" || typeof nextValue === "object") {
+      return JSON.stringify(existingValue ?? null) !== JSON.stringify(nextValue ?? null);
     }
     return existingValue !== nextValue;
   };

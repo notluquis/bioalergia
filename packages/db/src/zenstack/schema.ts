@@ -9184,6 +9184,12 @@ export class SchemaType implements SchemaDef {
                     optional: true,
                     attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("other_tax_rate") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(5) }, { name: "s", value: ExpressionUtils.literal(2) }] }] as readonly AttributeApplication[]
                 },
+                otherTaxes: {
+                    name: "otherTaxes",
+                    type: "Json",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("other_taxes") }] }] as readonly AttributeApplication[]
+                },
                 referenceDocNote: {
                     name: "referenceDocNote",
                     type: "String",

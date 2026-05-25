@@ -2787,6 +2787,9 @@ model DTEPurchaseDetail {
   otherTaxCode          String?   @map("other_tax_code") @db.VarChar(10)
   otherTaxAmount        Decimal   @default(0) @map("other_tax_amount") @db.Decimal(15, 2)
   otherTaxRate          Decimal?  @map("other_tax_rate") @db.Decimal(5, 2)
+  // Full fidelity when SII returns multiple other-taxes as a JSON array.
+  // Scalar cols above mirror the first entry for backward compat.
+  otherTaxes            Json?     @map("other_taxes") // [{code,rate,amount}, ...]
   
   // Additional notes
   referenceDocNote      String?   @map("reference_doc_note") // NCE o NDE Sobre Fact. de Compra

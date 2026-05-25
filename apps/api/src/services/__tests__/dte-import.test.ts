@@ -9,6 +9,7 @@ import {
   buildDteSaleDetail,
   parseAmount,
   parseDate,
+  resolveOtherTaxes,
 } from "../dte-import.ts";
 
 describe("parseDate", () => {
@@ -189,6 +190,41 @@ describe("buildDtePurchaseDetail", () => {
     });
 
     expect(detail.providerName).toBe("MercadoLibre Chile Ltda.");
+  });
+
+  it("decodes Haulmer's doubly-encoded multi-tax JSON blob from the Valor column", () => {
+    const detail = buildDtePurchaseDetail({
+      period: "202605",
+      providerRUT: "76844939-2",
+      folio: "118531",
+      // exactly what PapaParse extracts from """[{\"codigo\":...}]"""
+      otherTaxAmount: '"[{\\"codigo\\":\\"27\\",\\"tasa\\":\\"10\\",\\"monto\\":\\"161\\"}]"',
+    });
+
+    expect(detail.otherTaxes).toEqual([{ code: "27", rate: 10, amount: 161 }]);
+    // scalar columns mirror the first entry for backward compat
+    expect(detail.otherTaxCode).toBe("27");
+    expect(String(detail.otherTaxAmount)).toBe("161");
+    expect(String(detail.otherTaxRate)).toBe("10");
+  });
+
+  it("keeps scalar other-tax columns when CSV sends separate Codigo/Valor/Tasa", () => {
+    const taxes = resolveOtherTaxes({
+      otherTaxCode: "27",
+      otherTaxAmount: "161",
+      otherTaxRate: "10",
+    });
+    expect(taxes).toEqual([{ code: "27", rate: 10, amount: 161 }]);
+  });
+
+  it("returns null other-taxes when columns are empty", () => {
+    const detail = buildDtePurchaseDetail({
+      period: "202605",
+      providerRUT: "76012288-2",
+      folio: "1274",
+    });
+    expect(detail.otherTaxes).toBeUndefined();
+    expect(resolveOtherTaxes({ otherTaxAmount: "" })).toBeNull();
   });
 });
 

@@ -7519,6 +7519,11 @@ export class SchemaType implements SchemaDef {
                     type: "Decimal",
                     optional: true
                 },
+                otherTaxes: {
+                    name: "otherTaxes",
+                    type: "Json",
+                    optional: true
+                },
                 referenceDocNote: {
                     name: "referenceDocNote",
                     type: "String",
