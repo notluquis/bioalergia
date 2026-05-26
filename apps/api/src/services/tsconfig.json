@@ -23,7 +23,6 @@
   "include": ["**/*.ts"],
   "exclude": ["**/__tests__/**"],
   "references": [
-    { "path": "../../../../packages/db" },
     { "path": "../../../../packages/orpc-contracts" },
     { "path": "../lib" },
     { "path": "../modules" },

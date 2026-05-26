@@ -1,30 +1,19 @@
 {
   "compilerOptions": {
-    // db is consumed two ways: type-checked via project references and bundled
-    // into apps/api at build time (rolldown/tsdown). It is never executed as
-    // standalone .js, so it follows the TS-recommended "library for a bundler"
-    // shape: bundler resolution (accepts ZenStack's extensionless generated
-    // imports — no fix-imports needed) + declaration-only emit (the .d.ts is
-    // all the composite/tsgo perf boundary consumes; runtime comes from the
-    // bundle). `module: preserve` is required — NodeNext is incompatible with
-    // bundler resolution (TS5095).
+    // db is type-checked here and COMPILED by tsdown (.js + .d.ts). TypeScript
+    // is purely a type-checker — no tsc emit, no composite, no tsbuildinfo
+    // (golden 2026 monorepo pattern: the bundler owns compilation). Bundler
+    // resolution accepts ZenStack's extensionless generated imports; the
+    // hand-written source uses explicit `.ts` (allowImportingTsExtensions).
+    // `module: preserve` is required — NodeNext rejects bundler resolution
+    // (TS5095).
     "module": "preserve",
     "moduleResolution": "bundler",
-    // Hand-written db source imports siblings with explicit `.ts`; generated
-    // ZenStack files import extensionless. Bundler resolution + this flag accept
-    // both, and rolldown resolves them when bundling into api.
     "allowImportingTsExtensions": true,
     "target": "esnext",
-    "sourceMap": true,
-    "outDir": "dist",
-    "rootDir": "src",
     "skipLibCheck": true,
     "noUncheckedSideEffectImports": true,
-    "declaration": true,
-    "declarationMap": true,
-    "emitDeclarationOnly": true,
-    "composite": true,
-    "incremental": true
+    "noEmit": true
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]

@@ -5,53 +5,48 @@
     "dist"
   ],
   "type": "module",
-  "main": "./dist/zenstack/schema.js",
-  "types": "./dist/zenstack/schema.d.ts",
+  "main": "./dist/zenstack/schema.mjs",
+  "types": "./dist/zenstack/schema.d.mts",
   "exports": {
     ".": {
-      "types": "./dist/client.d.ts",
-      "import": "./dist/client.js",
-      "default": "./dist/client.js"
+      "types": "./dist/client.d.mts",
+      "import": "./dist/client.mjs",
+      "default": "./dist/client.mjs"
     },
     "./input": {
-      "types": "./dist/zenstack/input.d.ts",
-      "import": "./dist/zenstack/input.js",
-      "default": "./dist/zenstack/input.js"
+      "types": "./dist/zenstack/input.d.mts",
+      "import": "./dist/zenstack/input.mjs",
+      "default": "./dist/zenstack/input.mjs"
     },
     "./schema": {
-      "types": "./dist/zenstack/schema.d.ts",
-      "import": "./dist/zenstack/schema.js",
-      "default": "./dist/zenstack/schema.js"
+      "types": "./dist/zenstack/schema.d.mts",
+      "import": "./dist/zenstack/schema.mjs",
+      "default": "./dist/zenstack/schema.mjs"
     },
     "./schema-lite": {
-      "types": "./dist/zenstack/schema-lite.d.ts",
-      "import": "./dist/zenstack/schema-lite.js",
-      "default": "./dist/zenstack/schema-lite.js"
+      "types": "./dist/zenstack/schema-lite.d.mts",
+      "import": "./dist/zenstack/schema-lite.mjs",
+      "default": "./dist/zenstack/schema-lite.mjs"
     },
     "./slices": {
-      "types": "./dist/slices.d.ts",
-      "import": "./dist/slices.js",
-      "default": "./dist/slices.js"
+      "types": "./dist/slices.d.mts",
+      "import": "./dist/slices.mjs",
+      "default": "./dist/slices.mjs"
     },
     "./models": {
-      "types": "./dist/zenstack/models.d.ts",
-      "import": "./dist/zenstack/models.js",
-      "default": "./dist/zenstack/models.js"
-    },
-    "./hooks": {
-      "types": "./dist/zenstack/hooks/index.d.ts",
-      "import": "./dist/zenstack/hooks/index.js",
-      "default": "./dist/zenstack/hooks/index.js"
+      "types": "./dist/zenstack/models.d.mts",
+      "import": "./dist/zenstack/models.mjs",
+      "default": "./dist/zenstack/models.mjs"
     },
     "./zod": {
-      "types": "./dist/zod.d.ts",
-      "import": "./dist/zod.js",
-      "default": "./dist/zod.js"
+      "types": "./dist/zod.d.mts",
+      "import": "./dist/zod.mjs",
+      "default": "./dist/zod.mjs"
     }
   },
   "scripts": {
-    "build": "pnpm generate && NODE_OPTIONS=--max-old-space-size=8192 tsc --emitDeclarationOnly && tsdown",
-    "type-check": "tsgo --build",
+    "build": "pnpm generate && tsdown",
+    "type-check": "tsgo --noEmit",
     "generate": "zen generate --lite",
     "zen:watch": "zen generate --watch",
     "db:pull": "zen db pull",

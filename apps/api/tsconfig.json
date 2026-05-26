@@ -21,7 +21,6 @@
   "include": ["src/**/*"],
   "exclude": ["src/utils/**", "src/lib/**", "src/modules/**", "src/services/**"],
   "references": [
-    { "path": "../../packages/db" },
     { "path": "../../packages/orpc-contracts" },
     { "path": "./src/utils" },
     { "path": "./src/lib" },

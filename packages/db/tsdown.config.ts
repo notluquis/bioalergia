@@ -25,8 +25,12 @@ export default defineConfig({
   format: ["esm"],
   platform: "node",
   target: "node26",
-  dts: false,
-  clean: false,
+  // Emit .d.ts here too (single tool). ZenStack's generated types are not
+  // isolated-declarations-able, so use the tsc resolver (oxc-transform falls
+  // back anyway); slower than oxc but correct, and it replaces the separate
+  // `tsc --emitDeclarationOnly` step entirely.
+  dts: { resolver: "tsc" },
+  clean: true,
   sourcemap: true,
   outDir: "dist",
   // db's own npm dependencies (@zenstackhq/orm, kysely, pg, zod, …) stay
