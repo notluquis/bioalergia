@@ -1,5 +1,11 @@
-# Dependencies (will be installed fresh)
+# Dependencies (will be installed fresh) — also nested (workspace pkgs)
 node_modules/
+**/node_modules/
+
+# Local Claude Code state: agent worktrees carry full repo + node_modules
+# copies that would balloon the build context (and never exist in Railway's
+# git-based context). Exclude entirely.
+.claude/
 
 # Testing
 coverage/
