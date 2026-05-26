@@ -12,9 +12,18 @@ const targetDir = path.join(process.cwd(), "src/zenstack");
 async function processFile(filePath) {
   const content = await readFile(filePath, "utf8");
 
-  const fixed = content
-    .replaceAll('from "./schema"', 'from "./schema.js"')
-    .replaceAll('from "./schema-lite"', 'from "./schema-lite.js"');
+  // ZenStack generates bundler-style extensionless relative imports
+  // (e.g. `from "./schema-lite"`), which Node ESM + NodeNext reject. Append
+  // `.js` to every extensionless relative import. Generated files only import
+  // sibling modules (never directories), so `.js` is always correct here.
+  // Leaves alone imports that already carry an extension (.js/.ts/.json/...).
+  const RELATIVE_IMPORT = /(from\s+["'])(\.\.?\/[^"']+?)(["'])/g;
+  const fixed = content.replaceAll(RELATIVE_IMPORT, (match, pre, spec, post) => {
+    if (/\.(js|ts|json|mjs|cjs)$/.test(spec)) {
+      return match;
+    }
+    return `${pre}${spec}.js${post}`;
+  });
 
   if (fixed !== content) {
     await writeFile(filePath, fixed, "utf8");
