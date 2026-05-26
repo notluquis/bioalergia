@@ -1,7 +1,14 @@
 import * as XLSX from "xlsx";
 import { validateRut, formatRut } from "../lib/rut.ts";
 
-export const SKIN_TEST_PARSER_VERSION = "2026-05-05.8";
+// 2026-05-25.1: fix cross-panel cell leak in two-column layouts. The allergen
+// name must share the code's panel (adjacent cell or same column block), so a
+// stray metric value (e.g. a control's erythema) can no longer be paired with
+// the next panel's code. normalizeCode now accepts bare 2-letter mezcla/material
+// codes (MH, ME, MO, MP, PC, LT…) that were previously dropped, while still
+// rejecting 3+ letter allergen names. isAllergenNameCell only demotes a section
+// header to a name when the preceding code sits in the same panel.
+export const SKIN_TEST_PARSER_VERSION = "2026-05-25.1";
 
 export interface SkinTestIssue {
   code: string;
@@ -551,6 +558,19 @@ function extractResultRowsFromRow(
     if (!code && !isControl) continue;
 
     const nameCell = isControl ? cell : cells[index + 1];
+    // The allergen name must belong to the SAME panel as the code. Accept an
+    // immediately-adjacent cell (gap 1, the common case) or any cell within the
+    // same 5-column block. Reject names that sit across a panel gutter in a
+    // different block — that is the cross-panel leak where a stray metric value
+    // (e.g. a control's erythema) gets paired with the next panel's code.
+    if (
+      !isControl &&
+      nameCell &&
+      nameCell.col - cell.col !== 1 &&
+      blockForColumn(nameCell.col) !== blockForColumn(cell.col)
+    ) {
+      continue;
+    }
     const allergenName = isControl ? normalizeText(cell.text) : normalizeText(nameCell?.text ?? "");
     if (!allergenName || allergenName.length < 2) continue;
     if (isResultValue(allergenName)) continue;
@@ -725,10 +745,20 @@ function isAllergenNameCell(
 ) {
   if (/^panel\s+\d+\s*$/i.test(normalizeText(cell.text))) return false;
   const previous = [...cells].reverse().find((candidate) => candidate.col < cell.col);
-  return previous
-    ? Boolean(normalizeCode(previous.text)) &&
-        (!isResultValue(previous.text) || cell.col - previous.col <= 1)
-    : false;
+  if (!previous) return false;
+  // Only a code in the SAME panel makes this an allergen name. A code sitting in
+  // a different column block (the left panel) must not demote a right-panel
+  // section header to a name — that wiped out sections like GRAMINEAS/ALIMENTOS.
+  if (
+    cell.col - previous.col !== 1 &&
+    blockForColumn(previous.col) !== blockForColumn(cell.col)
+  ) {
+    return false;
+  }
+  return (
+    Boolean(normalizeCode(previous.text)) &&
+    (!isResultValue(previous.text) || cell.col - previous.col <= 1)
+  );
 }
 
 function collectMetricCells(
@@ -798,8 +828,16 @@ function findMetricHeader(ws: XLSX.WorkSheet, rowNumber: number, col: number): M
 function normalizeCode(value: string): null | string {
   const text = value.trim().toUpperCase();
   if (text === "P" || text === "E") return null;
-  if (/^[A-Z]{2,3}$/.test(text) && text !== "MA" && text !== "MC") return null;
-  if (/^(?:[A-Z]{1,3}\d{0,2}|\d{1,2})$/.test(text)) return text;
+  // Patch-test grade tokens, never codes (also matched by isResultValue upstream).
+  if (text === "IR" || text === "NT") return null;
+  // 3+ pure-letter tokens are allergen names or section labels (POA, ARCE, LATEX),
+  // not codes. Reject so they pass through as names instead of swallowing the row.
+  if (/^[A-Z]{3,}$/.test(text)) return null;
+  // Accept: 1–3 letters + 0–2 digits — covers single-letter codes (L, M),
+  // letter+digit (D1, G5, A11) and bare 2-letter mezcla/material codes
+  // (MA, MC, MH, ME, MO, MP, PC, LT, LX, MG, MS, IB, PR — verified against the
+  // workbook corpus). Plus 1–2 digit food-panel codes (1..N).
+  if (/^[A-Z]{1,3}\d{0,2}$/.test(text) || /^\d{1,2}$/.test(text)) return text;
   return null;
 }
 
