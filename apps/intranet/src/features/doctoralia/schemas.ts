@@ -4,7 +4,7 @@ export const DoctoraliaEventServiceSchema = z.strictObject({
   duration: z.number(),
   isDefault: z.boolean().optional(),
   price: z.number(),
-  priceFrom: z.number().optional(),
+  priceFrom: z.union([z.number(), z.string()]).nullish(),
   quantity: z.number(),
   serviceId: z.number(),
   serviceName: z.string(),
