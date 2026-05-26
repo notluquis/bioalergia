@@ -2433,21 +2433,39 @@ async function matchOrCreateClinicalSeries(
 
   const canonicalPatientRut = normalizeCanonicalRut(patientRut);
   if (canonicalPatientRut) {
+    // A skin-test series carries its date in TWO places: events.start_date
+    // (a calendar appointment) OR clinical_skin_tests.test_date (the materialized
+    // test). Most skin-test series have no calendar event, so matching on `events`
+    // alone made the date filter degenerate to "match any date" via e.id IS NULL —
+    // every empty-of-events series for the RUT became a candidate and collided
+    // with the real one (false "multiple_series_candidates"). Union both date
+    // sources; only treat a series as date-agnostic when it has NO date at all.
     const matches = await sql<{ id: number }>`
-      SELECT cs.id
-      FROM clinical_series cs
-      LEFT JOIN events e ON e.clinical_series_id = cs.id
-      WHERE cs.kind = 'SKIN_TEST'
-        AND regexp_replace(upper(cs.patient_rut), '[^0-9K]', '', 'g') =
-            regexp_replace(upper(${canonicalPatientRut}), '[^0-9K]', '', 'g')
-        AND (
-          e.id IS NULL
-          OR COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${CLINICAL_TIMEZONE})::date) = ${testDate}::date
-          OR COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${CLINICAL_TIMEZONE})::date)
-             BETWEEN (${testDate}::date - interval '14 days') AND (${testDate}::date + interval '14 days')
+      WITH cand AS (
+        SELECT cs.id
+        FROM clinical_series cs
+        WHERE cs.kind = 'SKIN_TEST'
+          AND regexp_replace(upper(cs.patient_rut), '[^0-9K]', '', 'g') =
+              regexp_replace(upper(${canonicalPatientRut}), '[^0-9K]', '', 'g')
+      ),
+      series_dates AS (
+        SELECT c.id, COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${CLINICAL_TIMEZONE})::date) AS d
+        FROM cand c JOIN events e ON e.clinical_series_id = c.id
+        UNION ALL
+        SELECT c.id, t.test_date::date AS d
+        FROM cand c JOIN clinical_skin_tests t ON t.clinical_series_id = c.id
+      )
+      SELECT c.id
+      FROM cand c
+      WHERE NOT EXISTS (SELECT 1 FROM series_dates sd WHERE sd.id = c.id)
+        OR EXISTS (
+          SELECT 1 FROM series_dates sd
+          WHERE sd.id = c.id
+            AND sd.d BETWEEN (${testDate}::date - interval '14 days') AND (${testDate}::date + interval '14 days')
         )
-      GROUP BY cs.id
-      ORDER BY min(abs(coalesce(COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${CLINICAL_TIMEZONE})::date), ${testDate}::date) - ${testDate}::date)) NULLS LAST, cs.id DESC
+      ORDER BY
+        (SELECT min(abs(sd.d - ${testDate}::date)) FROM series_dates sd WHERE sd.id = c.id) NULLS LAST,
+        c.id DESC
       LIMIT 3
     `.execute(kysely);
 
@@ -2521,20 +2539,33 @@ async function matchClinicalSeriesByNameAndDate(
   const normalizedPatientName = normalizeDocumentName(patientName);
   if (!normalizedPatientName) return { issues: [], seriesId: null };
 
+  // Same dual date source as the RUT matcher: union events.start_date and
+  // clinical_skin_tests.test_date so date-less-of-events series don't match
+  // every date. Only series with NO date at all stay date-agnostic.
   const result = await sql<{ id: number; patientName: null | string }>`
-    SELECT cs.id, cs.patient_name AS "patientName"
-    FROM clinical_series cs
-    LEFT JOIN events e ON e.clinical_series_id = cs.id
-    WHERE cs.kind = 'SKIN_TEST'
-      AND cs.patient_name IS NOT NULL
-      AND (
-        e.id IS NULL
-        OR COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${CLINICAL_TIMEZONE})::date) = ${testDate}::date
-        OR COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${CLINICAL_TIMEZONE})::date)
-           BETWEEN (${testDate}::date - interval '14 days') AND (${testDate}::date + interval '14 days')
+    WITH cand AS (
+      SELECT cs.id, cs.patient_name AS "patientName"
+      FROM clinical_series cs
+      WHERE cs.kind = 'SKIN_TEST' AND cs.patient_name IS NOT NULL
+    ),
+    series_dates AS (
+      SELECT c.id, COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${CLINICAL_TIMEZONE})::date) AS d
+      FROM cand c JOIN events e ON e.clinical_series_id = c.id
+      UNION ALL
+      SELECT c.id, t.test_date::date AS d
+      FROM cand c JOIN clinical_skin_tests t ON t.clinical_series_id = c.id
+    )
+    SELECT c.id, c."patientName"
+    FROM cand c
+    WHERE NOT EXISTS (SELECT 1 FROM series_dates sd WHERE sd.id = c.id)
+      OR EXISTS (
+        SELECT 1 FROM series_dates sd
+        WHERE sd.id = c.id
+          AND sd.d BETWEEN (${testDate}::date - interval '14 days') AND (${testDate}::date + interval '14 days')
       )
-    GROUP BY cs.id, cs.patient_name
-    ORDER BY min(abs(coalesce(COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${CLINICAL_TIMEZONE})::date), ${testDate}::date) - ${testDate}::date)) NULLS LAST, cs.id DESC
+    ORDER BY
+      (SELECT min(abs(sd.d - ${testDate}::date)) FROM series_dates sd WHERE sd.id = c.id) NULLS LAST,
+      c.id DESC
     LIMIT 100
   `.execute(kysely);
 
