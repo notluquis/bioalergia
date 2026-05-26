@@ -11,4 +11,5 @@ import path from "node:path";
  * the source-run and bundled-run modes. `API_ASSETS_DIR` overrides it for
  * deployments that place assets elsewhere.
  */
-export const ASSETS_DIR = process.env.API_ASSETS_DIR ?? path.resolve(process.cwd(), "assets");
+export const ASSETS_DIR: string =
+  process.env.API_ASSETS_DIR ?? path.resolve(process.cwd(), "assets");
