@@ -50,10 +50,9 @@
     }
   },
   "scripts": {
-    "build": "pnpm generate && NODE_OPTIONS=--max-old-space-size=8192 tsc",
+    "build": "pnpm generate && NODE_OPTIONS=--max-old-space-size=8192 tsc --emitDeclarationOnly",
     "type-check": "tsgo --build",
-    "fix-imports": "node scripts/fix-imports.mjs",
-    "generate": "zen generate --lite && pnpm fix-imports",
+    "generate": "zen generate --lite",
     "zen:watch": "zen generate --watch",
     "db:pull": "zen db pull",
     "db:push": "zen db push",
