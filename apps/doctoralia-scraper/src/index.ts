@@ -335,6 +335,16 @@ async function performLogin(session: ImpitSession, config: ScraperConfig): Promi
   });
   log(`  → ${loginRes.status} ${loginRes.url}`);
 
+  // A 4xx on the POST means Doctoralia's WAF / Friendly Captcha rejected the
+  // headless HTTP login (commonly 403, even when the login HTML carried no
+  // captcha marker for the upfront check). The browser path solves the PoW
+  // captcha, so fall back to it instead of returning as a false success.
+  if (loginRes.status === 401 || loginRes.status === 403 || loginRes.status === 429) {
+    log(`  HTTP login blocked (${loginRes.status}) — retrying via Playwright browser.`);
+    await performLoginWithBrowser(session, config);
+    return;
+  }
+
   const bouncedToLogin = /l\.doctoralia\.cl/i.test(loginRes.url);
   if (bouncedToLogin) {
     const hasCaptchaInResponse = /data-form-field-captcha=/i.test(loginRes.text);
@@ -409,15 +419,26 @@ async function ensureLoggedIn(
   // always returns the shell. Detect "logged in" by poking an authenticated
   // endpoint: if the panel cookies are valid, the API accepts them.
   const isSpaShell = SPA_SHELL_MARKER.test(initial.text);
-  const hasSessionCookie = session.jar.size() > 0;
+  // The calendar API authenticates with the `mkplAuth` bearer cookie. Any other
+  // cookies (8+ analytics/session crumbs survive long after the bearer expires)
+  // do NOT count — only mkplAuth makes the session usable. Checking jar.size()>0
+  // gave a false "valid" and skipped relogin forever once mkplAuth dropped,
+  // leaving the calendar sync 401-ing for days.
+  const hasAuthCookie = Boolean(session.jar.get("mkplAuth"));
+
+  if (!hasAuthCookie) {
+    log("no mkplAuth cookie present — forcing relogin");
+    await performLogin(session, config);
+    return;
+  }
 
   if (!isSpaShell && !/l\.doctoralia\.cl/i.test(initial.url)) {
     log("session reused — already inside panel");
     return;
   }
 
-  if (hasSessionCookie && isSpaShell) {
-    log("got SPA shell with cookies — assuming session still valid (calendar fetch will verify)");
+  if (isSpaShell) {
+    log("got SPA shell with mkplAuth — assuming session still valid (calendar fetch will verify)");
     return;
   }
 
