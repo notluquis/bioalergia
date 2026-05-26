@@ -589,8 +589,8 @@ function extractResultRowsFromRow(
     const fallback = byMetric.sawHeader
       ? null
       : assignFallbackMetricsFromTableContext(ws, rowNumber, cell, nameCell, nearCells);
-    const papule = byMetric.sawHeader ? byMetric.papule : fallback?.papule;
-    const erythema = byMetric.sawHeader ? byMetric.erythema : fallback?.erythema;
+    const papule = (byMetric.sawHeader ? byMetric.papule : fallback?.papule) ?? null;
+    const erythema = (byMetric.sawHeader ? byMetric.erythema : fallback?.erythema) ?? null;
     if (!byMetric.sawHeader && nearCells.length === 0) continue;
     const section = isControl
       ? "Controles"
