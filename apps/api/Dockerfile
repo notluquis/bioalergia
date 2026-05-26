@@ -51,11 +51,20 @@ COPY --from=pruner /app/out/full/ .
 ENV CI=true
 ENV TURBO_TELEMETRY_DISABLED=1
 
-# Build API workspace dependencies
+# Build API workspace dependencies (generates the ZenStack client source that
+# the bundler inlines; also emits db .d.ts used by type-check in CI).
 RUN --mount=type=cache,id=s/fbf6a604-cc46-46af-8d95-9e7503753301-/app/.turbo/cache,target=/app/.turbo/cache \
     pnpm turbo run build --filter=@finanzas/api...
 
-# Create a self-contained production app with only runtime files and prod deps.
+# Bundle the app for production (golden 2026, Approach B): rolldown/tsdown inlines
+# the workspace packages (@finanzas/*) into apps/api/dist and leaves every npm
+# dependency external. The bundle is what runs in prod (node dist/index.mjs),
+# NOT the raw src/ — so packages/db is consumed from source via the bundler,
+# sidestepping Node's node_modules type-stripping ban.
+RUN pnpm -F @finanzas/api bundle
+
+# Materialize a self-contained node_modules (prod deps + workspace transitives)
+# via pnpm deploy. The bundle's external imports resolve from here at runtime.
 RUN --mount=type=cache,id=s/fbf6a604-cc46-46af-8d95-9e7503753301-/pnpm/store,target=/pnpm/store \
     pnpm --filter=@finanzas/api --prod deploy /app/deploy
 
@@ -66,8 +75,14 @@ FROM node:26-slim AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3000
+# Bundle runs from /app/dist; assets ship at /app/assets. Pin the absolute path
+# so asset resolution never depends on cwd or bundle layout.
+ENV API_ASSETS_DIR=/app/assets
 
 COPY --from=build /app/deploy/ .
+# Overlay the production bundle (pnpm deploy ships src/+assets+node_modules; the
+# bundle isn't in the package "files" field so it's copied explicitly).
+COPY --from=build /app/apps/api/dist ./dist
 
 USER node
 
@@ -79,4 +94,4 @@ EXPOSE 3000
 #   in-process schedulers) land and /api/diag/heap confirms steady < 400MB.
 # - --max-semi-space-size=32: pin semi-space; Node 22+ dynamic default can
 #   shrink to 1MB causing GC thrash (nodejs/node#62723)
-CMD ["node", "--max-old-space-size=1024", "--max-semi-space-size=32", "src/index.ts"]
+CMD ["node", "--max-old-space-size=1024", "--max-semi-space-size=32", "dist/index.mjs"]

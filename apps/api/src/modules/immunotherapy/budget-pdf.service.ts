@@ -5,9 +5,10 @@ import dayjs from "dayjs";
 import "dayjs/locale/es.js";
 import { PDFDocument, type PDFFont, type PDFPage, rgb, StandardFonts } from "pdf-lib";
 
+import { ASSETS_DIR } from "../../lib/assets.ts";
+
 dayjs.locale("es");
 
-const ASSETS_DIR = path.resolve(import.meta.dirname, "../../../assets");
 const LOGOS_DIR = path.join(ASSETS_DIR, "logos");
 
 const ACCENT = rgb(0.1, 0.4, 0.6);

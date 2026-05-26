@@ -21,8 +21,9 @@ export default defineConfig({
   sourcemap: true,
   // Keep the bundle readable in stack traces; Railway is not byte-constrained.
   minify: false,
-  // Don't wipe anything tsgo/tsc composite emits next to it.
-  clean: false,
+  // dist/ holds only the bundle (type-check runs --noEmit elsewhere), so wipe
+  // stale hashed chunks each build.
+  clean: true,
   // tsdown externalizes everything in package.json dependencies/peerDeps by
   // default — exactly what we want for npm packages. The workspace packages are
   // also listed there, so force them back IN with alwaysBundle (Approach B).
