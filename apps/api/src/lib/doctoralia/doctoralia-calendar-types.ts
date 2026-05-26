@@ -36,6 +36,7 @@ export interface DoctoraliaEventService {
   serviceName: string;
   duration: number;
   price: number;
+  priceFrom?: number;
   quantity: number;
   isDefault: boolean;
   voucherUsed: boolean;
