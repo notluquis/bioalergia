@@ -5,13 +5,13 @@ import { PDFDocument, type PDFFont, rgb, StandardFonts } from "pdf-lib";
 import "dayjs/locale/es.js";
 import QRCode from "qrcode";
 
-import { ASSETS_DIR } from "../../lib/assets.ts";
 import type { MedicalCertificateInput } from "./certificate.schema.ts";
 import { defaultDoctorInfo } from "./certificate.schema.ts";
 
 dayjs.locale("es");
 
-// Paths to assets (ASSETS_DIR is bundler-safe; see lib/assets.ts)
+// Paths to assets
+const ASSETS_DIR = path.resolve(import.meta.dirname, "../../../assets");
 const LOGOS_DIR = path.join(ASSETS_DIR, "logos");
 const SIGNATURES_DIR = path.join(ASSETS_DIR, "signatures");
 
