@@ -31,7 +31,10 @@ export async function startQueueRunner(): Promise<void> {
     return;
   }
 
-  const parsedCronItems = parseCronItems([
+  // Cron timezone: graphile-worker has no per-item TZ; it uses the process TZ
+  // (set TZ=America/Santiago on the api service). Interval crons (*/N) are
+  // TZ-insensitive anyway.
+  const cronItems = [
     {
       task: "dte_sync",
       match: "0 17 * * *",
@@ -44,7 +47,38 @@ export async function startQueueRunner(): Promise<void> {
       identifier: "orphan_cleanup",
       options: { backfillPeriod: 0 },
     },
-  ]);
+  ];
+
+  // Skin-test import sync + OneDrive subscription renewal — gated by the same
+  // flag the old node-cron scheduler used.
+  if (process.env.ENABLE_SKIN_TEST_IMPORT_SYNC === "true") {
+    cronItems.push(
+      {
+        task: "skin_test_sync",
+        match: process.env.SKIN_TEST_IMPORT_SYNC_CRON || "*/30 * * * *",
+        identifier: "skin_test_sync",
+        options: { backfillPeriod: 0 },
+      },
+      {
+        task: "onedrive_renew",
+        match: "0 */6 * * *",
+        identifier: "onedrive_renew",
+        options: { backfillPeriod: 0 },
+      }
+    );
+  }
+
+  // Doctoralia calendar auto-sync — gated by its flag.
+  if (process.env.ENABLE_DOCTORALIA_CALENDAR_SYNC === "true") {
+    cronItems.push({
+      task: "doctoralia_calendar_sync",
+      match: process.env.DOCTORALIA_CALENDAR_SYNC_CRON || "*/10 * * * *",
+      identifier: "doctoralia_calendar_sync",
+      options: { backfillPeriod: 0 },
+    });
+  }
+
+  const parsedCronItems = parseCronItems(cronItems);
 
   runner = await run({
     connectionString,
@@ -67,7 +101,7 @@ export async function startQueueRunner(): Promise<void> {
   logEvent("queue.runner.started", {
     schema: "graphile_worker",
     tasks: Object.keys(taskList),
-    cronJobs: 2,
+    cronJobs: parsedCronItems.length,
     tz: process.env.TZ ?? "(unset → UTC; set TZ=America/Santiago)",
   });
 }

@@ -1,4 +1,3 @@
-import cron from "node-cron";
 import {
   archiveMissingSkinTestWorkbookSnapshots,
   getSkinTestImportJobType,
@@ -17,47 +16,12 @@ import {
   startJob,
   updateJobProgress,
 } from "../lib/jobQueue.ts";
-import { logError, logEvent, logWarn } from "../lib/logger.ts";
-import { renewAllOneDriveSubscriptions } from "../lib/microsoft/onedrive.ts";
+import { logError, logEvent } from "../lib/logger.ts";
 
-const DEFAULT_CRON = "*/30 * * * *";
-const DEFAULT_TIMEZONE = "America/Santiago";
-
-export function startClinicalSkinTestImportScheduler() {
-  const cronExpression = process.env.SKIN_TEST_IMPORT_SYNC_CRON || DEFAULT_CRON;
-  const timezone = process.env.SKIN_TEST_IMPORT_SYNC_TIMEZONE || DEFAULT_TIMEZONE;
-
-  if (!cron.validate(cronExpression)) {
-    logWarn("clinicalSkinTests.scheduler.disabled", {
-      cronExpression,
-      reason: "invalid_cron",
-    });
-    return;
-  }
-
-  cron.schedule(
-    cronExpression,
-    () => {
-      void startClinicalSkinTestImportJob({ trigger: `cron:${cronExpression}` });
-    },
-    { timezone }
-  );
-
-  // Renew Microsoft OneDrive subscriptions every 6h.
-  // OneDrive personal subscriptions expire in max 3 days — daily renewal risks
-  // a 24h outage if the nightly cron fails once. 4x/day gives ample safety margin.
-  cron.schedule(
-    "0 */6 * * *",
-    () => {
-      void renewAllOneDriveSubscriptions().catch((error) => {
-        logError("onedrive.subscriptions.renew.failed", error);
-      });
-    },
-    { timezone }
-  );
-
-  logEvent("clinicalSkinTests.scheduler.started", { cronExpression, timezone });
-}
+// Scheduling moved to graphile-worker (queue/tasks/skin-test-sync.ts +
+// onedrive-renew.ts; cron items in queue/runner.ts, gated by
+// ENABLE_SKIN_TEST_IMPORT_SYNC). The job functions below do the work and are
+// invoked by those queue tasks and by oRPC handlers.
 
 export async function startClinicalSkinTestImportJob(options?: {
   accountId?: string;

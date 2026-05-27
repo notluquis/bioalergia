@@ -1,11 +1,12 @@
-import cron from "node-cron";
 import { doctoraliaCalendarSyncService } from "./doctoralia-calendar.ts";
 import { getSetting, updateSetting } from "./settings.ts";
 import { logEvent, logWarn } from "../lib/logger.ts";
 import { hasCalendarApiToken } from "../lib/doctoralia/doctoralia-calendar-client.ts";
 
-const DEFAULT_CRON = "*/10 * * * *";
-const DEFAULT_TIMEZONE = "America/Santiago";
+// Scheduling moved to graphile-worker (queue/tasks/doctoralia-calendar-sync.ts;
+// cron item in queue/runner.ts, gated by ENABLE_DOCTORALIA_CALENDAR_SYNC).
+// runDoctoraliaCalendarAutoSync keeps its own min-interval + running guards.
+
 const DEFAULT_MIN_SYNC_INTERVAL_MS = 60_000;
 const SETTINGS_KEYS = {
   lastAttemptAt: "doctoralia:calendar:lastAttemptAt",
@@ -13,43 +14,6 @@ const SETTINGS_KEYS = {
 };
 
 let isRunning = false;
-
-export function startDoctoraliaCalendarScheduler() {
-  if (process.env.ENABLE_DOCTORALIA_CALENDAR_SYNC !== "true") {
-    logWarn("doctoralia.calendar.scheduler.disabled", {
-      reason: "standby_mode",
-    });
-    return;
-  }
-
-  const cronExpression = process.env.DOCTORALIA_CALENDAR_SYNC_CRON || DEFAULT_CRON;
-  const timezone = process.env.DOCTORALIA_CALENDAR_SYNC_TIMEZONE || DEFAULT_TIMEZONE;
-
-  if (!cron.validate(cronExpression)) {
-    logWarn("doctoralia.calendar.scheduler.disabled", {
-      reason: "invalid_cron",
-      cronExpression,
-    });
-    return;
-  }
-
-  cron.schedule(
-    cronExpression,
-    async () => {
-      await runDoctoraliaCalendarAutoSync({ trigger: `cron:${cronExpression}` });
-    },
-    {
-      timezone,
-      noOverlap: true,
-      name: "doctoralia-calendar-alert-sync",
-    }
-  );
-
-  logEvent("doctoralia.calendar.scheduler.started", {
-    cronExpression,
-    timezone,
-  });
-}
 
 export async function runDoctoraliaCalendarAutoSync({ trigger }: { trigger: string }) {
   if (process.env.ENABLE_DOCTORALIA_CALENDAR_SYNC !== "true") {

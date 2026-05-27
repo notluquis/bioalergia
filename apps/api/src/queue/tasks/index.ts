@@ -10,10 +10,16 @@
 // inside the same Kysely transaction that creates the row (atomic enqueue).
 
 import type { TaskList } from "graphile-worker";
+import { doctoralia_calendar_sync } from "./doctoralia-calendar-sync.ts";
 import { dte_sync } from "./dte-sync.ts";
+import { onedrive_renew } from "./onedrive-renew.ts";
 import { orphan_cleanup } from "./orphan-cleanup.ts";
+import { skin_test_sync } from "./skin-test-sync.ts";
 
 export const taskList: TaskList = {
   dte_sync,
   orphan_cleanup,
+  skin_test_sync,
+  onedrive_renew,
+  doctoralia_calendar_sync,
 };

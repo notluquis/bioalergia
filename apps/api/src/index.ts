@@ -33,20 +33,12 @@ if (process.env.DISABLE_QUEUE_RUNNER !== "true") {
   });
 }
 
-// Doctoralia integrations (off by default; deprecated path — Baileys removed).
-if (process.env.ENABLE_DOCTORALIA_CALENDAR_SYNC === "true") {
-  const { startDoctoraliaCalendarScheduler } =
-    await import("./services/doctoralia-calendar-scheduler.ts");
-  startDoctoraliaCalendarScheduler();
-}
+// Doctoralia calendar sync + skin-test import sync + OneDrive renewal are now
+// graphile-worker cron tasks (queue/runner.ts), gated by the same ENABLE_*
+// flags. Only the IMAP listener remains a direct startup here.
 if (process.env.ENABLE_DOCTORALIA_IMAP === "true") {
   const { startDoctoraliaImapListener } = await import("./lib/doctoralia/imap-idle.ts");
   startDoctoraliaImapListener();
-}
-if (process.env.ENABLE_SKIN_TEST_IMPORT_SYNC === "true") {
-  const { startClinicalSkinTestImportScheduler } =
-    await import("./services/clinical-skin-test-scheduler.ts");
-  startClinicalSkinTestImportScheduler();
 }
 
 serve({ fetch: app.fetch, port });
