@@ -1,5 +1,6 @@
 import { db } from "@finanzas/db";
 import type { OutreachCampaign, OutreachCampaignFilters } from "@finanzas/orpc-contracts/outreach";
+import { sanitizeHtml } from "../lib/html-sanitizer.ts";
 import {
   apolloEnrichInputSchema,
   apolloEnrichResponseSchema,
@@ -425,7 +426,9 @@ const outreachRouterBase = {
         data: {
           nombre: input.nombre,
           asunto: input.asunto,
-          cuerpoHtml: input.cuerpoHtml,
+          // Sanitize admin-authored campaign HTML before it is stored and later
+          // emailed to recipients (XSS defense — DOMPurify RICH config).
+          cuerpoHtml: sanitizeHtml(input.cuerpoHtml, "rich"),
           cuerpoTexto: input.cuerpoTexto,
           fromEmail: input.fromEmail,
           fromNombre: input.fromNombre,
@@ -447,6 +450,10 @@ const outreachRouterBase = {
       const data: Record<string, unknown> = {};
       for (const [k, v] of Object.entries(rest)) {
         if (v !== undefined) data[k] = v;
+      }
+      // Same XSS defense as createCampaign for the editable HTML body.
+      if (typeof data.cuerpoHtml === "string") {
+        data.cuerpoHtml = sanitizeHtml(data.cuerpoHtml, "rich");
       }
       const campaign = await db.outreachEmailCampaign.update({ where: { id }, data });
       return { campaign: normalizeCampaign(campaign as Record<string, unknown>) };
