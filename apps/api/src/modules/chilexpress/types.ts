@@ -140,7 +140,9 @@ export interface CxTransportOrderInput {
       // spec en mayúscula. Probar "Dest" capitalizado también dio statusCode -7.
       addressType: "DEST" | "DEV";
       deliveryOnCommercialOffice: boolean;
-      commercialOfficeId: string;
+      // integer en el spec — incluir SOLO en entrega en sucursal. Mandar ""
+      // en domicilio rompe el binding del address (Chilexpress -7).
+      commercialOfficeId?: string;
       observation?: string;
     }>;
     contacts: Array<{

@@ -304,27 +304,32 @@ export const closeManifestInputSchema = z.object({
 });
 
 // Chilexpress devuelve tipos mixtos (certificateNumber como número, montos a
-// veces como string). coerce evita "Output validation failed" en el boundary.
+// veces string, campos null/ausentes). coerce + .catch() hacen cada campo
+// resiliente: un valor inesperado cae al fallback en vez de 500ear todo el
+// response en el boundary. Es un passthrough de API externa no confiable.
+const cxStr = () => z.coerce.string().nullish().catch(undefined);
+const cxNum = () => z.coerce.number().nullish().catch(undefined);
 export const closedCertificateSchema = z.object({
-  certificateNumber: z.coerce.string().optional(),
-  printedDate: z.string().optional(),
-  rutNumber: z.coerce.number().optional(),
-  businessName: z.string().optional(),
-  amountOfPieces: z.coerce.number().optional(),
-  customerCardNumber: z.coerce.number().optional(),
-  dropNumber: z.coerce.number().optional(),
-  pickupAddress: z.string().optional(),
-  binaryImage: z.string().optional(),
-  imagePdf: z.string().optional(),
+  certificateNumber: cxStr(),
+  printedDate: cxStr(),
+  rutNumber: cxNum(),
+  businessName: cxStr(),
+  amountOfPieces: cxNum(),
+  customerCardNumber: cxNum(),
+  dropNumber: cxNum(),
+  pickupAddress: cxStr(),
+  binaryImage: cxStr(),
+  imagePdf: cxStr(),
   detail: z
     .array(
       z.object({
-        product: z.string().optional(),
-        service: z.string().optional(),
-        amount: z.coerce.number().optional(),
+        product: cxStr(),
+        service: cxStr(),
+        amount: cxNum(),
       })
     )
-    .optional(),
+    .nullish()
+    .catch(undefined),
 });
 
 // ─── Contract ─────────────────────────────────────────────────────────────────

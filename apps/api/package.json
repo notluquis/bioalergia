@@ -11,7 +11,7 @@
     "dev": "NODE_COMPILE_CACHE=node_modules/.cache/node-compile node --watch --enable-source-maps src/index.ts",
     "build": "node -e \"console.log('@finanzas/api runs TypeScript natively via Node.js 26 type stripping; no JS bundle is emitted during build.')\"",
     "start": "NODE_COMPILE_CACHE=node_modules/.cache/node-compile node --enable-source-maps src/index.ts",
-    "type-check": "NODE_OPTIONS=--max-old-space-size=8192 tsgo --noEmit --pretty false",
+    "type-check": "tsc --build src/utils/tsconfig.json src/lib/tsconfig.json src/modules/tsconfig.json src/services/tsconfig.json && NODE_OPTIONS=--max-old-space-size=8192 tsgo --noEmit --pretty false",
     "type-check:watch": "NODE_OPTIONS=--max-old-space-size=8192 tsgo --watch --pretty false",
     "google:auth": "node src/scripts/google-auth.ts",
     "doctoralia:diagnose-login": "node src/scripts/diagnose-doctoralia-login.ts",

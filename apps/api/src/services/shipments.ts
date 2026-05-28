@@ -214,6 +214,21 @@ export async function closeShipmentCertificate(input: {
     certificateType: input.certificateType,
     dropNumber: input.dropNumber,
   });
+  // Diag: log el shape del response (sin el base64 gigante) para cazar qué
+  // campo rompía la validación de salida. Quitar tras estabilizar.
+  console.error(
+    "[shipments.closeCertificate.raw]",
+    JSON.stringify(
+      Object.fromEntries(
+        Object.entries(result as Record<string, unknown>).map(([k, v]) => [
+          k,
+          k === "imagePdf" || k === "binaryImage"
+            ? `<${typeof v}:${typeof v === "string" ? v.length : 0}>`
+            : v,
+        ])
+      )
+    )
+  );
   // Solo limpiar el KV si cerramos el que estaba activo.
   if (active && String(active.certificateNumber) === String(certificateNumber)) {
     await deleteSetting(ACTIVE_CERT_KEY);
@@ -331,6 +346,10 @@ export async function createShipment(input: CreateShipmentInput) {
     commercialOfficeId = input.commercialOfficeId;
     observation = "";
   }
+  // commercialOfficeId SOLO cuando la entrega es en sucursal. El spec lo tipa
+  // como integer; mandar "" en despacho a domicilio rompe el binding del
+  // address en Chilexpress → devuelve -7 "ingrese el tipo de dirección" (que
+  // es engañoso: el addressType estaba bien, el address completo no parseó).
   const deliveryAddress = {
     countyCoverageCode: coverageRegionCode,
     streetName,
@@ -338,8 +357,8 @@ export async function createShipment(input: CreateShipmentInput) {
     supplement,
     addressType: "DEST" as const,
     deliveryOnCommercialOffice,
-    commercialOfficeId,
     observation,
+    ...(deliveryOnCommercialOffice && commercialOfficeId ? { commercialOfficeId } : {}),
   };
 
   // Si hay un manifiesto abierto, la OT lo referencia para quedar agrupada.
