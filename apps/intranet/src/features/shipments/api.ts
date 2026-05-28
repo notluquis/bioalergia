@@ -80,6 +80,14 @@ export async function trackShipment(shipmentId: number) {
   }
 }
 
+export async function refreshAllTracking() {
+  try {
+    return await shipmentsORPCClient.refreshAllTracking({});
+  } catch (error) {
+    throw toShipmentsApiError(error);
+  }
+}
+
 export async function quoteShipment(input: {
   originCoverageCode: string;
   destinationCoverageCode: string;

@@ -39,6 +39,7 @@ import {
   quoteCourier,
   reprintLabel,
   searchStreets,
+  trackBulkTransportOrders,
   trackTransportOrder,
 } from "../modules/chilexpress/client.ts";
 import type { z } from "zod";
@@ -135,6 +136,46 @@ export async function refreshShipmentTracking(shipmentId: number) {
     },
   });
   return tracking;
+}
+
+/**
+ * Refresca el estado de TODAS las OTs en una sola request a Chilexpress
+ * (/tracking/bulk) en vez de N consultas. Matchea por reference
+ * (deliveryReference) y actualiza trackingStatus + trackingUpdatedAt.
+ */
+export async function refreshAllTracking(): Promise<{ updated: number; total: number }> {
+  const cfg = requireCxConfig();
+  const shipments = await db.shipment.findMany({
+    select: { id: true, otNumber: true, reference: true },
+  });
+  if (shipments.length === 0) return { updated: 0, total: 0 };
+
+  const results = await trackBulkTransportOrders(cfg, {
+    rut: cfg.companyRut ?? "",
+    showTrackingEvents: false,
+    items: shipments.map((s) => ({
+      transportOrderNumber: s.otNumber,
+      reference: s.reference ?? "",
+    })),
+  });
+
+  // Chilexpress devuelve el reference (deliveryReference) en cada entry; con eso
+  // matcheamos a nuestro shipment. Actualizamos solo los que traen estado.
+  const byReference = new Map(
+    shipments.filter((s) => s.reference).map((s) => [s.reference as string, s.id])
+  );
+  let updated = 0;
+  for (const r of results) {
+    const id = r.reference ? byReference.get(r.reference) : undefined;
+    const status = r.status ?? r.statusDescription;
+    if (id == null || !status) continue;
+    await db.shipment.update({
+      where: { id },
+      data: { trackingStatus: status, trackingUpdatedAt: new Date() },
+    });
+    updated++;
+  }
+  return { updated, total: shipments.length };
 }
 
 // ─── Manifiesto (certificado de transporte del día) ──────────────────────────

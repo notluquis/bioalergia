@@ -41,6 +41,7 @@ import {
   listShipmentsByPatient,
   openShipmentCertificate,
   quoteShipment,
+  refreshAllTracking,
   refreshShipmentTracking,
   reprintShipmentLabel,
 } from "../services/shipments.ts";
@@ -176,6 +177,17 @@ const shipmentsRouterBase = {
       const tracking = await refreshShipmentTracking(input.shipmentId);
       return { tracking };
     }),
+
+  refreshAllTracking: base
+    .route({
+      method: "POST",
+      path: "/tracking/refresh-all",
+      summary: "Refrescar estado de todas las OTs (bulk)",
+      tags: ["Shipments"],
+    })
+    .input(emptySchema)
+    .output(z.object({ updated: z.number().int(), total: z.number().int() }))
+    .handler(async () => refreshAllTracking()),
 
   quote: base
     .route({ method: "POST", path: "/quote", summary: "Quote shipment cost", tags: ["Shipments"] })

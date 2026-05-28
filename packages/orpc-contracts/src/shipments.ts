@@ -391,6 +391,10 @@ export const shipmentsContract = {
     .input(z.object({ shipmentId: z.number().int() }))
     .output(z.object({ tracking: cxTrackingResultSchema })),
 
+  refreshAllTracking: oc
+    .route({ method: "POST", path: "/tracking/refresh-all" })
+    .output(z.object({ updated: z.number().int(), total: z.number().int() })),
+
   quote: oc
     .route({ method: "POST", path: "/quote" })
     .input(quoteShipmentInputSchema)

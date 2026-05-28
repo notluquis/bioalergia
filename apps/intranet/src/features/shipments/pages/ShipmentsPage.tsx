@@ -18,7 +18,7 @@ import { DataTable } from "@/components/data-table/DataTable";
 import { useToast } from "@/context/ToastContext";
 import { fetchPatients } from "@/features/patients/api";
 import { CreatePatientModal } from "@/features/patients/components/CreatePatientModal";
-import { fetchAllShipments, reprintLabel } from "../api";
+import { fetchAllShipments, refreshAllTracking, reprintLabel } from "../api";
 import { CreateShipmentWizard } from "../components/CreateShipmentWizard";
 import { ManifestPanel } from "../components/ManifestPanel";
 import { ShipmentTrackingModal } from "../components/ShipmentTrackingModal";
@@ -218,6 +218,15 @@ export function ShipmentsPage() {
     staleTime: 1000 * 60,
   });
 
+  const refreshAllMutation = useMutation({
+    mutationFn: refreshAllTracking,
+    onError: (e) => toastError(e instanceof Error ? e.message : "Error al refrescar estados"),
+    onSuccess: (res) => {
+      success(`Estados actualizados: ${res.updated}/${res.total}`);
+      void queryClient.invalidateQueries({ queryKey: ["shipments-all"] });
+    },
+  });
+
   const reprintMutation = useMutation({
     mutationFn: (shipmentId: number) => reprintLabel(shipmentId),
     onError: (e) => toastError(e instanceof Error ? e.message : "Error al reimprimir"),
@@ -293,10 +302,23 @@ export function ShipmentsPage() {
         <p className="text-default-500 text-sm">
           {data?.shipments.length ?? 0} despacho(s) en total
         </p>
-        <Button size="sm" className="gap-2" onPress={() => setSelectPatientOpen(true)}>
-          <PlusCircle size={16} />
-          Nuevo Despacho
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            className="gap-2"
+            isDisabled={refreshAllMutation.isPending}
+            isPending={refreshAllMutation.isPending}
+            onPress={() => refreshAllMutation.mutate()}
+          >
+            <RefreshCw size={16} />
+            Refrescar estados
+          </Button>
+          <Button size="sm" className="gap-2" onPress={() => setSelectPatientOpen(true)}>
+            <PlusCircle size={16} />
+            Nuevo Despacho
+          </Button>
+        </div>
       </div>
 
       <ManifestPanel />
