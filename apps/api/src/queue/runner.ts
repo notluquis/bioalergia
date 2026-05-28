@@ -88,7 +88,11 @@ export async function startQueueRunner(): Promise<void> {
     maxPoolSize: 2,
     schema: "graphile_worker",
     concurrency: 1,
-    noHandleSignals: false,
+    // We own process signals (index.ts) so HTTP can drain in-flight requests
+    // before the worker stops. With noHandleSignals:false, graphile-worker
+    // hijacks SIGTERM, logs the graceful shutdown at ERROR level (0.16.6) and
+    // re-raises the signal to self-kill — bypassing the HTTP server drain.
+    noHandleSignals: true,
     taskList,
     parsedCronItems,
   });
@@ -107,4 +111,17 @@ export async function startQueueRunner(): Promise<void> {
     cronJobs: parsedCronItems.length,
     tz: process.env.TZ ?? "(unset → UTC; set TZ=America/Santiago)",
   });
+}
+
+/**
+ * Gracefully stop the queue runner: stop accepting new jobs and wait for
+ * in-flight ones to finish. Called from the process shutdown handler
+ * (index.ts) since we set noHandleSignals:true. Idempotent.
+ */
+export async function stopQueueRunner(): Promise<void> {
+  if (!runner) return;
+  const r = runner;
+  runner = null;
+  await r.stop();
+  logEvent("queue.runner.stopped", {});
 }
