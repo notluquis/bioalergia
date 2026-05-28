@@ -194,7 +194,12 @@ function InstallmentRow({
           </Chip>
 
           {!isPaid && (
-            <PayInstallmentModal creditId={creditId} installment={installment} iconOnly />
+            <PayInstallmentModal
+              creditId={creditId}
+              currency={currency}
+              installment={installment}
+              iconOnly
+            />
           )}
         </div>
       </div>

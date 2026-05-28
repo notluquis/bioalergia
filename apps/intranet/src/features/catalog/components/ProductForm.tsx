@@ -6,6 +6,7 @@ import {
   Input,
   Label,
   ListBox,
+  NumberField,
   Select,
   Switch,
   TextArea,
@@ -16,6 +17,14 @@ import type React from "react";
 import { useState } from "react";
 
 import { catalogKeys } from "../queries";
+
+const CLP_FORMAT_OPTIONS: Intl.NumberFormatOptions = {
+  currency: "CLP",
+  currencyDisplay: "symbol",
+  maximumFractionDigits: 0,
+  minimumFractionDigits: 0,
+  style: "currency",
+};
 
 const NO_CATEGORY_KEY = "__no_category__";
 const STATUS_OPTIONS = [
@@ -215,70 +224,88 @@ export function ProductForm({ initial, onCancel, onSave, saving }: ProductFormPr
       </TextField>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <TextField
+        <NumberField
           isRequired
+          formatOptions={CLP_FORMAT_OPTIONS}
+          isInvalid={form.price_clp < 0}
+          minValue={0}
           name="price_clp"
-          onChange={(v) => setField("price_clp", Number(v))}
-          type="number"
-          validate={(v) => (Number(v) >= 0 ? null : "Precio inválido")}
-          value={String(form.price_clp)}
+          onChange={(v) => setField("price_clp", v ?? 0)}
+          value={form.price_clp}
         >
           <Label>Precio CLP</Label>
-          <Input />
+          <NumberField.Group>
+            <NumberField.Input />
+          </NumberField.Group>
           <Description>IVA incluido</Description>
-          <FieldError />
-        </TextField>
-        <TextField
+          {form.price_clp < 0 && <FieldError>Precio inválido</FieldError>}
+        </NumberField>
+        <NumberField
+          formatOptions={CLP_FORMAT_OPTIONS}
+          minValue={0}
           name="compare_at_price_clp"
-          onChange={(v) => setField("compare_at_price_clp", v ? Number(v) : null)}
-          type="number"
-          value={form.compare_at_price_clp == null ? "" : String(form.compare_at_price_clp)}
+          onChange={(v) => setField("compare_at_price_clp", v ?? null)}
+          value={form.compare_at_price_clp ?? Number.NaN}
         >
           <Label>Precio antes (tachado)</Label>
-          <Input />
-        </TextField>
-        <TextField
+          <NumberField.Group>
+            <NumberField.Input />
+          </NumberField.Group>
+        </NumberField>
+        <NumberField
+          formatOptions={CLP_FORMAT_OPTIONS}
+          minValue={0}
           name="cost_clp"
-          onChange={(v) => setField("cost_clp", v ? Number(v) : null)}
-          type="number"
-          value={form.cost_clp == null ? "" : String(form.cost_clp)}
+          onChange={(v) => setField("cost_clp", v ?? null)}
+          value={form.cost_clp ?? Number.NaN}
         >
           <Label>Costo interno</Label>
-          <Input />
-        </TextField>
+          <NumberField.Group>
+            <NumberField.Input />
+          </NumberField.Group>
+        </NumberField>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <TextField
+        <NumberField
           isRequired
+          minValue={0}
           name="available_qty"
-          onChange={(v) => setField("available_qty", Number(v))}
-          type="number"
-          value={String(form.available_qty)}
+          onChange={(v) => setField("available_qty", v ?? 0)}
+          step={1}
+          value={form.available_qty}
         >
           <Label>Stock disponible</Label>
-          <Input />
-        </TextField>
-        <TextField
+          <NumberField.Group>
+            <NumberField.Input />
+          </NumberField.Group>
+        </NumberField>
+        <NumberField
+          minValue={0}
           name="safety_stock"
-          onChange={(v) => setField("safety_stock", Number(v))}
-          type="number"
-          value={String(form.safety_stock)}
+          onChange={(v) => setField("safety_stock", v ?? 0)}
+          step={1}
+          value={form.safety_stock}
         >
           <Label>Stock de seguridad</Label>
-          <Input />
+          <NumberField.Group>
+            <NumberField.Input />
+          </NumberField.Group>
           <Description>Reserva no vendible</Description>
-        </TextField>
-        <TextField
+        </NumberField>
+        <NumberField
+          minValue={0}
           name="weight_grams"
-          onChange={(v) => setField("weight_grams", v ? Number(v) : null)}
-          type="number"
-          value={form.weight_grams == null ? "" : String(form.weight_grams)}
+          onChange={(v) => setField("weight_grams", v ?? null)}
+          step={1}
+          value={form.weight_grams ?? Number.NaN}
         >
           <Label>Peso (g)</Label>
-          <Input />
+          <NumberField.Group>
+            <NumberField.Input />
+          </NumberField.Group>
           <Description>Para Chilexpress</Description>
-        </TextField>
+        </NumberField>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">

@@ -6,19 +6,18 @@ import {
   Description,
   FieldError,
   Form,
-  Input,
   Label,
   ListBox,
-  Modal,
+  NumberField,
   Select,
   Skeleton,
-  TextField,
 } from "@heroui/react";
 import { parseDate } from "@internationalized/date";
 import { useNavigate } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import { useState } from "react";
 import { z } from "zod";
+import { AppModal } from "@/components/ui/AppModal";
 
 import type {
   RegenerateServicePayload,
@@ -33,6 +32,16 @@ import type {
 
 import { ServiceScheduleAccordion } from "./ServiceScheduleAccordion";
 import { ServiceScheduleTable } from "./ServiceScheduleTable";
+
+// Services operate in CLP (no per-service currency field) → amounts have no
+// decimals. Mirror lib/utils.ts::formatCurrency for CLP.
+const CLP_FORMAT_OPTIONS: Intl.NumberFormatOptions = {
+  style: "currency",
+  currency: "CLP",
+  currencyDisplay: "symbol",
+  maximumFractionDigits: 0,
+  minimumFractionDigits: 0,
+};
 
 // Validation schema for regenerate modal
 const regenerateSchema = z.object({
@@ -439,149 +448,169 @@ function RegenerateServiceModal({
   service: ServiceSummary;
 }) {
   return (
-    <Modal.Backdrop isOpen={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <Modal.Container placement="center">
-        <Modal.Dialog className="sm:max-w-125">
-          <Modal.CloseTrigger />
-          <Modal.Header>
-            <Modal.Heading>Regenerar cronograma</Modal.Heading>
-          </Modal.Header>
-          <Modal.Body>
-            <Form className="space-y-4" onSubmit={onSubmit} validationBehavior="aria">
-              <TextField
-                defaultValue={String(service.nextGenerationMonths)}
-                isRequired
-                name="months"
-                type="number"
-              >
-                <Label>Meses a generar</Label>
-                <Input min={1} max={60} />
-                <FieldError />
-              </TextField>
+    <AppModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Regenerar cronograma"
+      size="md"
+      footer={
+        <>
+          <Button onPress={onClose} variant="secondary">
+            Cancelar
+          </Button>
+          <Button form="regenerate-service-form" isDisabled={regenerating} type="submit">
+            {regenerating ? "Actualizando..." : "Regenerar"}
+          </Button>
+        </>
+      }
+    >
+      <Form
+        className="space-y-4"
+        id="regenerate-service-form"
+        onSubmit={onSubmit}
+        validationBehavior="aria"
+      >
+        <NumberField
+          defaultValue={service.nextGenerationMonths}
+          isRequired
+          maxValue={60}
+          minValue={1}
+          name="months"
+        >
+          <Label>Meses a generar</Label>
+          <NumberField.Group>
+            <NumberField.Input />
+          </NumberField.Group>
+          <FieldError />
+        </NumberField>
 
-              <DatePicker
-                defaultValue={parseDate(dayjs(service.startDate).format("YYYY-MM-DD"))}
-                isRequired
-                name="startDate"
-              >
-                <Label>Nueva fecha de inicio</Label>
-                <DateField.Group>
-                  <DateField.InputContainer>
-                    <DateField.Input>
-                      {(segment) => <DateField.Segment segment={segment} />}
-                    </DateField.Input>
-                  </DateField.InputContainer>
-                  <DateField.Suffix>
-                    <DatePicker.Trigger>
-                      <DatePicker.TriggerIndicator />
-                    </DatePicker.Trigger>
-                  </DateField.Suffix>
-                </DateField.Group>
-                <FieldError />
-                <DatePicker.Popover>
-                  <Calendar aria-label="Nueva fecha de inicio">
-                    <Calendar.Header>
-                      <Calendar.YearPickerTrigger>
-                        <Calendar.YearPickerTriggerHeading />
-                        <Calendar.YearPickerTriggerIndicator />
-                      </Calendar.YearPickerTrigger>
-                      <Calendar.NavButton slot="previous" />
-                      <Calendar.NavButton slot="next" />
-                    </Calendar.Header>
-                    <Calendar.Grid>
-                      <Calendar.GridHeader>
-                        {(day) => <Calendar.HeaderCell>{day}</Calendar.HeaderCell>}
-                      </Calendar.GridHeader>
-                      <Calendar.GridBody>
-                        {(date) => <Calendar.Cell date={date} />}
-                      </Calendar.GridBody>
-                    </Calendar.Grid>
-                    <Calendar.YearPickerGrid>
-                      <Calendar.YearPickerGridBody>
-                        {({ year }) => <Calendar.YearPickerCell year={year} />}
-                      </Calendar.YearPickerGridBody>
-                    </Calendar.YearPickerGrid>
-                  </Calendar>
-                </DatePicker.Popover>
-              </DatePicker>
+        <DatePicker
+          defaultValue={parseDate(dayjs(service.startDate).format("YYYY-MM-DD"))}
+          isRequired
+          name="startDate"
+        >
+          <Label>Nueva fecha de inicio</Label>
+          <DateField.Group>
+            <DateField.InputContainer>
+              <DateField.Input>
+                {(segment) => <DateField.Segment segment={segment} />}
+              </DateField.Input>
+            </DateField.InputContainer>
+            <DateField.Suffix>
+              <DatePicker.Trigger>
+                <DatePicker.TriggerIndicator />
+              </DatePicker.Trigger>
+            </DateField.Suffix>
+          </DateField.Group>
+          <FieldError />
+          <DatePicker.Popover>
+            <Calendar aria-label="Nueva fecha de inicio">
+              <Calendar.Header>
+                <Calendar.YearPickerTrigger>
+                  <Calendar.YearPickerTriggerHeading />
+                  <Calendar.YearPickerTriggerIndicator />
+                </Calendar.YearPickerTrigger>
+                <Calendar.NavButton slot="previous" />
+                <Calendar.NavButton slot="next" />
+              </Calendar.Header>
+              <Calendar.Grid>
+                <Calendar.GridHeader>
+                  {(day) => <Calendar.HeaderCell>{day}</Calendar.HeaderCell>}
+                </Calendar.GridHeader>
+                <Calendar.GridBody>{(date) => <Calendar.Cell date={date} />}</Calendar.GridBody>
+              </Calendar.Grid>
+              <Calendar.YearPickerGrid>
+                <Calendar.YearPickerGridBody>
+                  {({ year }) => <Calendar.YearPickerCell year={year} />}
+                </Calendar.YearPickerGridBody>
+              </Calendar.YearPickerGrid>
+            </Calendar>
+          </DatePicker.Popover>
+        </DatePicker>
 
-              <TextField
-                defaultValue={String(service.defaultAmount)}
-                isRequired
-                name="defaultAmount"
-                type="number"
-              >
-                <Label>Monto base</Label>
-                <Input min={0} step="0.01" />
-                <FieldError />
-              </TextField>
+        <NumberField
+          defaultValue={service.defaultAmount}
+          formatOptions={CLP_FORMAT_OPTIONS}
+          isRequired
+          minValue={0}
+          name="defaultAmount"
+        >
+          <Label>Monto base</Label>
+          <NumberField.Group>
+            <NumberField.Input />
+          </NumberField.Group>
+          <FieldError />
+        </NumberField>
 
-              <TextField defaultValue={String(service.dueDay ?? "")} name="dueDay" type="number">
-                <Label>Día de vencimiento</Label>
-                <Input min={1} max={31} />
-              </TextField>
+        <NumberField
+          defaultValue={service.dueDay ?? Number.NaN}
+          maxValue={31}
+          minValue={1}
+          name="dueDay"
+        >
+          <Label>Día de vencimiento</Label>
+          <NumberField.Group>
+            <NumberField.Input />
+          </NumberField.Group>
+        </NumberField>
 
-              <Select isRequired name="frequency" value={service.frequency}>
-                <Label>Frecuencia</Label>
-                <Select.Trigger>
-                  <Select.Value />
-                  <Select.Indicator />
-                </Select.Trigger>
-                <Select.Popover>
-                  <ListBox>
-                    <ListBox.Item id="WEEKLY" key="WEEKLY">
-                      Semanal
-                    </ListBox.Item>
-                    <ListBox.Item id="BIWEEKLY" key="BIWEEKLY">
-                      Quincenal
-                    </ListBox.Item>
-                    <ListBox.Item id="MONTHLY" key="MONTHLY">
-                      Mensual
-                    </ListBox.Item>
-                    <ListBox.Item id="BIMONTHLY" key="BIMONTHLY">
-                      Bimensual
-                    </ListBox.Item>
-                    <ListBox.Item id="QUARTERLY" key="QUARTERLY">
-                      Trimestral
-                    </ListBox.Item>
-                    <ListBox.Item id="SEMIANNUAL" key="SEMIANNUAL">
-                      Semestral
-                    </ListBox.Item>
-                    <ListBox.Item id="ANNUAL" key="ANNUAL">
-                      Anual
-                    </ListBox.Item>
-                    <ListBox.Item id="ONCE" key="ONCE">
-                      Única vez
-                    </ListBox.Item>
-                  </ListBox>
-                </Select.Popover>
-              </Select>
+        <Select isRequired name="frequency" value={service.frequency}>
+          <Label>Frecuencia</Label>
+          <Select.Trigger>
+            <Select.Value />
+            <Select.Indicator />
+          </Select.Trigger>
+          <Select.Popover>
+            <ListBox>
+              <ListBox.Item id="WEEKLY" key="WEEKLY">
+                Semanal
+              </ListBox.Item>
+              <ListBox.Item id="BIWEEKLY" key="BIWEEKLY">
+                Quincenal
+              </ListBox.Item>
+              <ListBox.Item id="MONTHLY" key="MONTHLY">
+                Mensual
+              </ListBox.Item>
+              <ListBox.Item id="BIMONTHLY" key="BIMONTHLY">
+                Bimensual
+              </ListBox.Item>
+              <ListBox.Item id="QUARTERLY" key="QUARTERLY">
+                Trimestral
+              </ListBox.Item>
+              <ListBox.Item id="SEMIANNUAL" key="SEMIANNUAL">
+                Semestral
+              </ListBox.Item>
+              <ListBox.Item id="ANNUAL" key="ANNUAL">
+                Anual
+              </ListBox.Item>
+              <ListBox.Item id="ONCE" key="ONCE">
+                Única vez
+              </ListBox.Item>
+            </ListBox>
+          </Select.Popover>
+        </Select>
 
-              {service.emissionMode === "FIXED_DAY" && (
-                <TextField defaultValue={String(service.emissionDay ?? "")} name="emissionDay">
-                  <Label>Día de emisión</Label>
-                  <Input min={1} max={31} type="number" />
-                  <Description>Aplica a servicios con día fijo de emisión</Description>
-                </TextField>
-              )}
-              {error && (
-                <Description className="rounded-lg bg-rose-100 px-4 py-2 text-rose-700 text-sm">
-                  {error}
-                </Description>
-              )}
-              <div className="flex justify-end gap-3">
-                <Button slot="close" type="button" variant="secondary">
-                  Cancelar
-                </Button>
-                <Button isDisabled={regenerating} type="submit">
-                  {regenerating ? "Actualizando..." : "Regenerar"}
-                </Button>
-              </div>
-            </Form>
-          </Modal.Body>
-        </Modal.Dialog>
-      </Modal.Container>
-    </Modal.Backdrop>
+        {service.emissionMode === "FIXED_DAY" && (
+          <NumberField
+            defaultValue={service.emissionDay ?? Number.NaN}
+            maxValue={31}
+            minValue={1}
+            name="emissionDay"
+          >
+            <Label>Día de emisión</Label>
+            <NumberField.Group>
+              <NumberField.Input />
+            </NumberField.Group>
+            <Description>Aplica a servicios con día fijo de emisión</Description>
+          </NumberField>
+        )}
+        {error && (
+          <Description className="rounded-lg bg-rose-100 px-4 py-2 text-rose-700 text-sm">
+            {error}
+          </Description>
+        )}
+      </Form>
+    </AppModal>
   );
 }
 

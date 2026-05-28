@@ -1,4 +1,4 @@
-import { Input, Label, ListBox, Select, TextArea, TextField } from "@heroui/react";
+import { Input, Label, ListBox, NumberField, Select, TextArea, TextField } from "@heroui/react";
 import type { ChangeEvent } from "react";
 import { z } from "zod";
 import { GRID_2_COL_MD } from "@/lib/styles";
@@ -91,17 +91,19 @@ export function BasicInfoSection({
         </Select.Popover>
       </Select>
 
-      <TextField type="number">
+      <NumberField
+        maxValue={90}
+        minValue={0}
+        onChange={(value) => {
+          onChange("reminderDaysBefore", Number.isNaN(value) ? 0 : (value ?? 0));
+        }}
+        value={reminderDaysBefore}
+      >
         <Label>Recordar (días antes)</Label>
-        <Input
-          max={90}
-          min={0}
-          onChange={(event: ChangeEvent<HTMLInputElement>) => {
-            onChange("reminderDaysBefore", Number(event.target.value || 0));
-          }}
-          value={String(reminderDaysBefore)}
-        />
-      </TextField>
+        <NumberField.Group>
+          <NumberField.Input />
+        </NumberField.Group>
+      </NumberField>
 
       <TextField>
         <Label>Detalle</Label>

@@ -3,15 +3,13 @@ import {
   DateField,
   DatePicker,
   FieldError,
-  Input,
   Label,
   ListBox,
+  NumberField,
   Select,
-  TextField,
 } from "@heroui/react";
 import { parseDate } from "@internationalized/date";
 import dayjs from "dayjs";
-import type { ChangeEvent } from "react";
 
 import type { ServiceEmissionMode } from "../../types";
 import type { ServiceFormState } from "../ServiceForm";
@@ -72,46 +70,49 @@ export function EmissionSection({
         {errors.emissionMode?.message && <FieldError>{errors.emissionMode.message}</FieldError>}
       </Select>
       {(emissionMode ?? "FIXED_DAY") === "FIXED_DAY" && (
-        <TextField type="number">
+        <NumberField
+          maxValue={31}
+          minValue={1}
+          onChange={(value) => {
+            onChange("emissionDay", Number.isNaN(value) ? null : (value ?? null));
+          }}
+          value={emissionDay == null ? Number.NaN : emissionDay}
+        >
           <Label>Día emisión</Label>
-          <Input
-            max={31}
-            min={1}
-            onChange={(event: ChangeEvent<HTMLInputElement>) => {
-              onChange("emissionDay", event.target.value ? Number(event.target.value) : null);
-            }}
-            value={emissionDay == null ? "" : String(emissionDay)}
-          />
-        </TextField>
+          <NumberField.Group>
+            <NumberField.Input />
+          </NumberField.Group>
+        </NumberField>
       )}
       {(emissionMode ?? "FIXED_DAY") === "DATE_RANGE" && (
         <>
-          <TextField type="number">
+          <NumberField
+            maxValue={31}
+            minValue={1}
+            onChange={(value) => {
+              onChange("emissionStartDay", Number.isNaN(value) ? null : (value ?? null));
+            }}
+            value={emissionStartDay == null ? Number.NaN : emissionStartDay}
+          >
             <Label>Día inicio emisión</Label>
-            <Input
-              max={31}
-              min={1}
-              onChange={(event: ChangeEvent<HTMLInputElement>) => {
-                onChange(
-                  "emissionStartDay",
-                  event.target.value ? Number(event.target.value) : null
-                );
-              }}
-              value={emissionStartDay == null ? "" : String(emissionStartDay)}
-            />
-          </TextField>
+            <NumberField.Group>
+              <NumberField.Input />
+            </NumberField.Group>
+          </NumberField>
 
-          <TextField type="number">
+          <NumberField
+            maxValue={31}
+            minValue={1}
+            onChange={(value) => {
+              onChange("emissionEndDay", Number.isNaN(value) ? null : (value ?? null));
+            }}
+            value={emissionEndDay == null ? Number.NaN : emissionEndDay}
+          >
             <Label>Día término emisión</Label>
-            <Input
-              max={31}
-              min={1}
-              onChange={(event: ChangeEvent<HTMLInputElement>) => {
-                onChange("emissionEndDay", event.target.value ? Number(event.target.value) : null);
-              }}
-              value={emissionEndDay == null ? "" : String(emissionEndDay)}
-            />
-          </TextField>
+            <NumberField.Group>
+              <NumberField.Input />
+            </NumberField.Group>
+          </NumberField>
         </>
       )}
       {(emissionMode ?? "FIXED_DAY") === "SPECIFIC_DATE" && (

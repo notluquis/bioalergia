@@ -99,10 +99,27 @@ export const Default: Story = {
   // the AppModal.stories.tsx convention (Chromatic story-extractor
   // crashes on top-level imports of `storybook/test`).
   play: async ({ canvasElement }) => {
-    const { expect, within } = await import("storybook/test");
-    const root = within(canvasElement.ownerDocument.body);
+    const { expect, userEvent, within, waitFor } = await import("storybook/test");
+    const doc = canvasElement.ownerDocument;
+    const root = within(doc.body);
     const dialog = await root.findByRole("dialog");
     await expect(dialog).toBeVisible();
+
+    // Open the birth-date calendar popover and assert it is not clipped — the
+    // exact regression the prior raw-Modal (max-h-[80vh] overflow-y-auto) shipped:
+    // the calendar overflowed the scroll container and got cut off. AppModal's
+    // Modal.Container scroll="inside" + popover portal fixes it.
+    const trigger = dialog.querySelector<HTMLButtonElement>("button[aria-haspopup]");
+    await expect(trigger).not.toBeNull();
+    await userEvent.click(trigger as HTMLButtonElement);
+
+    await waitFor(async () => {
+      const grid = doc.body.querySelector<HTMLElement>('[role="application"] [role="grid"]');
+      await expect(grid).not.toBeNull();
+      const rect = (grid as HTMLElement).getBoundingClientRect();
+      await expect(rect.left).toBeGreaterThanOrEqual(0);
+      await expect(rect.right).toBeLessThanOrEqual(doc.documentElement.clientWidth);
+    });
   },
 };
 

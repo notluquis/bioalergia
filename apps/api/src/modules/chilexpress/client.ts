@@ -451,34 +451,340 @@ export async function reprintLabel(
   };
 }
 
+// ─── Tracking ─────────────────────────────────────────────────────────────────
+
+export interface CxTrackingEvent {
+  /** Fecha del evento (YYYY-MM-DD). */
+  date?: string;
+  /** Hora del evento. */
+  hour?: string;
+  /** ISO 8601 fecha+hora completa. */
+  dateTime?: string;
+  /** Descripción técnica Chilexpress (ej. "PIEZA ENTREGADA A DESTINATARIO"). */
+  description?: string;
+  /** Descripción mapeada al lenguaje del cliente (ej. "ENTREGADO"). */
+  clientDescription?: string;
+  /** Código interno del evento Chilexpress. */
+  eventCode?: string;
+  /** Código compuesto interno. */
+  compEventCode?: string;
+  /** Código mapeado al cliente. */
+  clientEventCode?: string;
+  motive?: string;
+  location?: string;
+  latitude?: string;
+  longitude?: string;
+  officeId?: string;
+  /** URL al PDF del certificado de entrega (POD), si el evento es entrega. */
+  certificadoEntrega?: string;
+}
+
+export interface CxTrackingResult {
+  statusDescription?: string;
+  /** Estado actual del envío (ej. "DESCARGADA", "ENTREGADO"). */
+  status?: string;
+  /** Locación del estado actual. */
+  locationStatus?: string;
+  /** Servicio (ej. DHS, CHEX). */
+  service?: string;
+  /** Producto (ENCOMIENDA, DOCUMENTO). */
+  product?: string;
+  /** Dimensiones (ej. "20x40x20"). */
+  dimensions?: string;
+  weight?: string;
+  certificateNumber?: string;
+  reference?: string;
+  delivery?: {
+    receptorName?: string;
+    receptorRut?: string;
+    deliveryDate?: string;
+    deliveryHour?: string;
+    deliveryDateTime?: string;
+  };
+  address?: {
+    address?: string;
+    destinationCoverageCode?: string;
+    originCoverageCode?: string;
+    latitude?: string;
+    longitude?: string;
+  };
+  events: CxTrackingEvent[];
+}
+
 export async function trackTransportOrder(
   config: ChilexpressConfig,
-  transportOrderNumber: string
-): Promise<{
-  statusCodeReference?: string;
-  statusDescription?: string;
-  events: Array<{ date?: string; name?: string; location?: string }>;
-}> {
+  input: {
+    transportOrderNumber: string | number;
+    /** Referencia del cliente (deliveryReference). Spec obligatorio. */
+    reference?: string;
+    /** RUT empresa sin puntos/DV (ej. 96756430). Spec obligatorio. */
+    rut?: string | number;
+    /** 0 = solo estado actual, 1 = todos los eventos. Default 1. */
+    showTrackingEvents?: 0 | 1;
+  }
+): Promise<CxTrackingResult> {
+  const body = {
+    transportOrderNumber:
+      typeof input.transportOrderNumber === "string"
+        ? Number(input.transportOrderNumber)
+        : input.transportOrderNumber,
+    reference: input.reference ?? "",
+    rut: typeof input.rut === "string" ? Number(input.rut) : (input.rut ?? 0),
+    showTrackingEvents: input.showTrackingEvents ?? 1,
+  };
   const res = await cxFetch<{
     data?: {
-      transportOrderNumber?: string;
-      statusCodeReference?: string;
-      statusDescription?: string;
-      events?: Array<{ eventDate?: string; eventName?: string; eventLocation?: string }>;
+      addressData?: {
+        destinationCoverageCode?: string;
+        originCoverageCode?: string;
+        address?: string;
+        latitude?: string;
+        longitude?: string;
+      };
+      deliveryData?: {
+        receptorRut?: string;
+        receptorName?: string;
+        deliveryDate?: string;
+        deliveryHour?: string;
+        deliveryDateTime?: string;
+      };
+      trackingEvents?: Array<{
+        eventDate?: string;
+        eventHour?: string;
+        description?: string;
+        motive?: string;
+        location?: string;
+        latitude?: string;
+        longitude?: string;
+        eventDateTime?: string;
+        officeId?: string;
+        certificadoEntrega?: string;
+        code?: {
+          eventCode?: string;
+          compEventCode?: string;
+          clientEventCode?: string;
+          clientCompEventCode?: string;
+          clientEventDescription?: string;
+        };
+      }>;
+      transportOrderData?: {
+        transportOrderNumber?: string;
+        certificateNumber?: string;
+        reference?: string;
+        product?: string;
+        service?: string;
+        dimensions?: string;
+        weight?: string;
+        status?: string;
+        locationStatus?: string;
+      };
     };
     statusCode?: number;
     statusDescription?: string;
   }>(config, "transport-orders", "/tracking", {
     method: "POST",
-    body: JSON.stringify({ transportOrderNumber }),
+    body: JSON.stringify(body),
   });
+
+  const data = res.data;
   return {
-    statusCodeReference: res.data?.statusCodeReference,
-    statusDescription: res.data?.statusDescription,
-    events: (res.data?.events ?? []).map((e) => ({
+    statusDescription: res.statusDescription,
+    status: data?.transportOrderData?.status,
+    locationStatus: data?.transportOrderData?.locationStatus,
+    service: data?.transportOrderData?.service,
+    product: data?.transportOrderData?.product,
+    dimensions: data?.transportOrderData?.dimensions,
+    weight: data?.transportOrderData?.weight,
+    certificateNumber: data?.transportOrderData?.certificateNumber,
+    reference: data?.transportOrderData?.reference,
+    delivery: data?.deliveryData,
+    address: data?.addressData,
+    events: (data?.trackingEvents ?? []).map((e) => ({
       date: e.eventDate,
-      name: e.eventName,
-      location: e.eventLocation,
+      hour: e.eventHour,
+      dateTime: e.eventDateTime,
+      description: e.description,
+      clientDescription: e.code?.clientEventDescription,
+      eventCode: e.code?.eventCode,
+      compEventCode: e.code?.compEventCode,
+      clientEventCode: e.code?.clientEventCode,
+      motive: e.motive,
+      location: e.location,
+      latitude: e.latitude,
+      longitude: e.longitude,
+      officeId: e.officeId,
+      certificadoEntrega: e.certificadoEntrega,
     })),
   };
+}
+
+/**
+ * Tracking en lote (hasta varias OTs en una sola request). El spec define
+ * `/tracking/bulk` con body `{rut, showTrackingEvents, trackingInput[{reference,
+ * transportOrderNumber}]}`. Útil para sincronizar estados de múltiples envíos
+ * en un cron en vez de hacer N requests.
+ */
+export async function trackBulkTransportOrders(
+  config: ChilexpressConfig,
+  input: {
+    rut: string | number;
+    showTrackingEvents?: boolean;
+    items: Array<{ transportOrderNumber: string | number; reference?: string }>;
+  }
+): Promise<CxTrackingResult[]> {
+  const res = await cxFetch<{
+    data?: Array<{
+      addressData?: unknown;
+      deliveryData?: unknown;
+      trackingEvents?: unknown[];
+      transportOrderData?: { transportOrderNumber?: string; status?: string };
+    }>;
+    statusCode?: number;
+    statusDescription?: string;
+  }>(config, "transport-orders", "/tracking/bulk", {
+    method: "POST",
+    body: JSON.stringify({
+      rut: typeof input.rut === "string" ? Number(input.rut) : input.rut,
+      showTrackingEvents: input.showTrackingEvents ?? true,
+      trackingInput: input.items.map((it) => ({
+        transportOrderNumber:
+          typeof it.transportOrderNumber === "string"
+            ? Number(it.transportOrderNumber)
+            : it.transportOrderNumber,
+        reference: it.reference ?? "",
+      })),
+    }),
+  });
+  // Cada entry en data tiene el mismo shape que /tracking. Reutilizamos el
+  // mapper inline (versión más simple, sin events porque bulk suele venir sin).
+  return (res.data ?? []).map((entry) => {
+    const td = entry.transportOrderData as
+      | { transportOrderNumber?: string; status?: string; reference?: string }
+      | undefined;
+    return {
+      statusDescription: res.statusDescription,
+      status: td?.status,
+      reference: td?.reference,
+      certificateNumber: undefined,
+      events: [],
+    } satisfies CxTrackingResult;
+  });
+}
+
+// ─── Manifiesto (certificados de transporte) ──────────────────────────────────
+//
+// Un certificado agrupa OTs creadas el mismo día y, al cerrarse, entrega el
+// PDF (base64) del manifiesto que la clínica imprime para entregar el lote al
+// courier. Flujo Chilexpress:
+//
+//   1. POST /transport-order-certificates?customerCardNumber=TCC
+//      → devuelve certificateNumber nuevo (queda OPEN).
+//   2. POST /transport-orders con header.certificateNumber = ese número
+//      → cada OT queda asociada al certificado (en vez de crear uno por OT).
+//   3. PUT /transport-order-certificates con {certificateNumber, certificateType,
+//      dropNumber} → cierra el certificado y entrega imagePdf (base64).
+//   4. GET /transport-order-certificates/{certificateNumber}
+//      → reconsultar manifiesto cerrado (PDF + detalle).
+
+export interface CxCertificateDetailEntry {
+  product?: string;
+  service?: string;
+  amount?: number;
+}
+
+export interface CxClosedCertificate {
+  certificateNumber?: string;
+  printedDate?: string;
+  rutNumber?: number;
+  businessName?: string;
+  amountOfPieces?: number;
+  customerCardNumber?: number;
+  dropNumber?: number;
+  pickupAddress?: string;
+  binaryImage?: string;
+  /** PDF del manifiesto cerrado, base64. */
+  imagePdf?: string;
+  detail?: CxCertificateDetailEntry[];
+}
+
+/** Crea un certificado nuevo (queda OPEN). Devuelve el certificateNumber. */
+export async function createCertificate(
+  config: ChilexpressConfig,
+  customerCardNumber?: string | number
+): Promise<{ certificateNumber: string; statusDescription?: string }> {
+  const tcc = customerCardNumber ?? config.clientRut;
+  const qs = tcc != null && String(tcc).trim() !== "" ? `?customerCardNumber=${tcc}` : "";
+  const res = await cxFetch<{
+    certificateNumber?: string;
+    statusCode?: number;
+    statusDescription?: string;
+  }>(config, "transport-orders", `/transport-order-certificates${qs}`, {
+    method: "POST",
+  });
+  if (res.statusCode !== 0 || !res.certificateNumber) {
+    throw new Error(
+      `Chilexpress create certificate failed: ${res.statusDescription ?? "sin detalles"}`
+    );
+  }
+  return {
+    certificateNumber: res.certificateNumber,
+    statusDescription: res.statusDescription,
+  };
+}
+
+/**
+ * Cierra el certificado y obtiene el PDF del manifiesto.
+ *
+ * @param certificateType 1 = imagen binaria, 2 = solo datos (sin PDF).
+ * @param dropNumber Número de retiro asociado (0 si no aplica).
+ */
+export async function closeCertificate(
+  config: ChilexpressConfig,
+  input: {
+    certificateNumber: string | number;
+    certificateType?: 1 | 2;
+    dropNumber?: number;
+  }
+): Promise<CxClosedCertificate> {
+  const res = await cxFetch<{
+    closedCertificate?: CxClosedCertificate;
+    statusCode?: number;
+    statusDescription?: string;
+  }>(config, "transport-orders", "/transport-order-certificates", {
+    method: "PUT",
+    body: JSON.stringify({
+      certificateNumber:
+        typeof input.certificateNumber === "string"
+          ? Number(input.certificateNumber)
+          : input.certificateNumber,
+      certificateType: input.certificateType ?? 1,
+      dropNumber: input.dropNumber ?? 0,
+    }),
+  });
+  if (res.statusCode !== 0 || !res.closedCertificate) {
+    throw new Error(
+      `Chilexpress close certificate failed: ${res.statusDescription ?? "sin detalles"}`
+    );
+  }
+  return res.closedCertificate;
+}
+
+/** Reconsulta el manifiesto cerrado (PDF + detalle). */
+export async function getCertificate(
+  config: ChilexpressConfig,
+  certificateNumber: string | number
+): Promise<CxClosedCertificate> {
+  const res = await cxFetch<{
+    data?: CxClosedCertificate;
+    statusCode?: number;
+    statusDescription?: string;
+  }>(config, "transport-orders", `/transport-order-certificates/${certificateNumber}`, {
+    method: "GET",
+  });
+  if (res.statusCode !== 0 || !res.data) {
+    throw new Error(
+      `Chilexpress get certificate failed: ${res.statusDescription ?? "sin detalles"}`
+    );
+  }
+  return res.data;
 }

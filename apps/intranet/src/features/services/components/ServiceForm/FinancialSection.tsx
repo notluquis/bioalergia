@@ -1,8 +1,17 @@
-import { Input, Label, ListBox, Select, TextField } from "@heroui/react";
-import type { ChangeEvent } from "react";
+import { Label, ListBox, NumberField, Select } from "@heroui/react";
 
 import type { ServiceAmountIndexation, ServiceLateFeeMode } from "../../types";
 import type { ServiceFormState } from "../ServiceForm";
+
+// Services operate in CLP (no per-service currency field) → amounts have no
+// decimals. Mirror lib/utils.ts::formatCurrency for CLP.
+const CLP_FORMAT_OPTIONS: Intl.NumberFormatOptions = {
+  style: "currency",
+  currency: "CLP",
+  currencyDisplay: "symbol",
+  maximumFractionDigits: 0,
+  minimumFractionDigits: 0,
+};
 
 interface FinancialSectionProps {
   amountIndexation?: string;
@@ -32,23 +41,26 @@ export function FinancialSection({
   lateFeeValue,
   onChange,
 }: FinancialSectionProps) {
+  const isPercentage = (lateFeeMode ?? "NONE") === "PERCENTAGE";
+
   return (
     <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-      <TextField isRequired type="number">
+      <NumberField
+        formatOptions={CLP_FORMAT_OPTIONS}
+        isRequired
+        minValue={0}
+        onChange={(value) => {
+          onChange("defaultAmount", value ?? 0);
+        }}
+        value={defaultAmount ?? 0}
+      >
         <Label>Monto base</Label>
-        <Input
-          min={0}
-          step="0.01"
-          onChange={(event: ChangeEvent<HTMLInputElement>) => {
-            onChange("defaultAmount", Number(event.target.value));
-          }}
-          value={String(defaultAmount ?? 0)}
-        />
-      </TextField>
+        <NumberField.Group>
+          <NumberField.Input />
+        </NumberField.Group>
+      </NumberField>
 
       <Select
-        // errorMessage={errors.amountIndexation?.message} // Removed as errors is not defined
-        // isInvalid={!!errors.amountIndexation} // Removed as errors is not defined
         onChange={(val) => onChange("amountIndexation", val as ServiceAmountIndexation)}
         value={amountIndexation ? amountIndexation : "NONE"}
       >
@@ -68,8 +80,6 @@ export function FinancialSection({
         </Select.Popover>
       </Select>
       <Select
-        // errorMessage={errors.lateFeeMode?.message} // Removed as errors is not defined
-        // isInvalid={!!errors.lateFeeMode} // Removed as errors is not defined
         onChange={(val) => onChange("lateFeeMode", val as ServiceLateFeeMode)}
         value={lateFeeMode ? lateFeeMode : "NONE"}
       >
@@ -90,34 +100,35 @@ export function FinancialSection({
       </Select>
       {(lateFeeMode ?? "NONE") !== "NONE" && (
         <>
-          <TextField type="number">
-            <Label>
-              {(lateFeeMode ?? "NONE") === "PERCENTAGE" ? "% recargo" : "Monto recargo"}
-            </Label>
-            <Input
-              min={0}
-              step="0.01"
-              onChange={(event: ChangeEvent<HTMLInputElement>) => {
-                onChange("lateFeeValue", Number(event.target.value));
-              }}
-              value={lateFeeValue == null ? "" : String(lateFeeValue)}
-            />
-          </TextField>
+          <NumberField
+            formatOptions={isPercentage ? undefined : CLP_FORMAT_OPTIONS}
+            minValue={0}
+            onChange={(value) => {
+              onChange("lateFeeValue", value ?? null);
+            }}
+            value={lateFeeValue == null ? Number.NaN : lateFeeValue}
+          >
+            {/* Stored percentage is a whole number (e.g. 5 = 5%), not a 0–1
+                fraction, so use decimal + a "%" label instead of style:"percent". */}
+            <Label>{isPercentage ? "% recargo" : "Monto recargo"}</Label>
+            <NumberField.Group>
+              <NumberField.Input />
+            </NumberField.Group>
+          </NumberField>
 
-          <TextField type="number">
+          <NumberField
+            maxValue={31}
+            minValue={0}
+            onChange={(value) => {
+              onChange("lateFeeGraceDays", Number.isNaN(value) ? null : (value ?? null));
+            }}
+            value={lateFeeGraceDays == null ? Number.NaN : lateFeeGraceDays}
+          >
             <Label>Días de gracia</Label>
-            <Input
-              max={31}
-              min={0}
-              onChange={(event: ChangeEvent<HTMLInputElement>) => {
-                onChange(
-                  "lateFeeGraceDays",
-                  event.target.value ? Number(event.target.value) : null
-                );
-              }}
-              value={lateFeeGraceDays == null ? "" : String(lateFeeGraceDays)}
-            />
-          </TextField>
+            <NumberField.Group>
+              <NumberField.Input />
+            </NumberField.Group>
+          </NumberField>
         </>
       )}
     </section>

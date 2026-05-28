@@ -11,7 +11,7 @@ import {
   Input,
   Label,
   ListBox,
-  Modal,
+  NumberField,
   parseColor,
   SearchField,
   Select,
@@ -29,6 +29,7 @@ import { X } from "lucide-react";
 import { lazy, startTransition, Suspense, useEffect, useMemo, useState } from "react";
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 import { z } from "zod";
+import { AppModal } from "@/components/ui/AppModal";
 import { useConfirmDialog } from "@/context/ConfirmDialogContext";
 import { fetchCounterparts } from "@/features/counterparts/api";
 import { useLazyTabs } from "@/hooks/use-lazy-tabs";
@@ -3738,129 +3739,114 @@ export function CashFlowPage() {
         </Suspense>
       ) : null}
 
-      <Modal>
-        <Modal.Backdrop
-          isOpen={isReallocateOpen}
-          onOpenChange={(open) => !open && setIsReallocateOpen(false)}
-        >
-          <Modal.Container size="md">
-            <Modal.Dialog>
-              <Modal.CloseTrigger />
-              <Modal.Header>
-                <Modal.Heading>Reasignar Movimiento a Otro Período</Modal.Heading>
-              </Modal.Header>
-              <Modal.Body>
-                <form
-                  className="space-y-3"
-                  id="reallocate-form"
-                  onSubmit={handleSubmitReallocation}
-                >
-                  <Description className="text-sm text-default-600">
-                    Selecciona perfil y período destino para arrastrar parte del monto.
-                  </Description>
-                  <TextField>
-                    <Label>Movimiento</Label>
-                    <Input
-                      readOnly
-                      value={
-                        reallocateTx
-                          ? `${dayjs(reallocateTx.date).format("DD-MM-YYYY")} · ${reallocateTx.description}`
-                          : ""
-                      }
-                    />
-                  </TextField>
+      <AppModal
+        isOpen={isReallocateOpen}
+        onClose={() => setIsReallocateOpen(false)}
+        title="Reasignar Movimiento a Otro Período"
+        size="md"
+        footer={
+          <>
+            <Button variant="secondary" onPress={() => setIsReallocateOpen(false)}>
+              Cancelar
+            </Button>
+            <Button
+              form="reallocate-form"
+              isPending={reallocateTransactionMutation.isPending}
+              type="submit"
+            >
+              Reasignar
+            </Button>
+          </>
+        }
+      >
+        <form className="space-y-3" id="reallocate-form" onSubmit={handleSubmitReallocation}>
+          <Description className="text-sm text-default-600">
+            Selecciona perfil y período destino para arrastrar parte del monto.
+          </Description>
+          <TextField>
+            <Label>Movimiento</Label>
+            <Input
+              readOnly
+              value={
+                reallocateTx
+                  ? `${dayjs(reallocateTx.date).format("DD-MM-YYYY")} · ${reallocateTx.description}`
+                  : ""
+              }
+            />
+          </TextField>
 
-                  <Select
-                    value={reallocateProfileId == null ? null : String(reallocateProfileId)}
-                    onChange={(key) => {
-                      const value = key == null ? null : Number(key);
-                      setReallocateProfileId(value);
-                    }}
+          <Select
+            value={reallocateProfileId == null ? null : String(reallocateProfileId)}
+            onChange={(key) => {
+              const value = key == null ? null : Number(key);
+              setReallocateProfileId(value);
+            }}
+          >
+            <Label>Perfil de compensación</Label>
+            <Select.Trigger>
+              <Select.Value />
+              <Select.Indicator />
+            </Select.Trigger>
+            <Select.Popover>
+              <ListBox>
+                {reallocationProfileOptions.map((profile) => (
+                  <ListBox.Item
+                    id={String(profile.id)}
+                    key={profile.id}
+                    textValue={`${profile.name} · ${profile.category.name}`}
                   >
-                    <Label>Perfil de compensación</Label>
-                    <Select.Trigger>
-                      <Select.Value />
-                      <Select.Indicator />
-                    </Select.Trigger>
-                    <Select.Popover>
-                      <ListBox>
-                        {reallocationProfileOptions.map((profile) => (
-                          <ListBox.Item
-                            id={String(profile.id)}
-                            key={profile.id}
-                            textValue={`${profile.name} · ${profile.category.name}`}
-                          >
-                            {profile.name} · {profile.category.name}
-                          </ListBox.Item>
-                        ))}
-                      </ListBox>
-                    </Select.Popover>
-                  </Select>
+                    {profile.name} · {profile.category.name}
+                  </ListBox.Item>
+                ))}
+              </ListBox>
+            </Select.Popover>
+          </Select>
 
-                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                    <TextField>
-                      <Label>Período origen</Label>
-                      <Input readOnly value={formatMonthLabel(reallocateFromPeriod)} />
-                    </TextField>
-                    <Select
-                      value={reallocateTargetPeriod}
-                      onChange={(key) => setReallocateTargetPeriod(String(key ?? ""))}
-                    >
-                      <Label>Período destino</Label>
-                      <Select.Trigger>
-                        <Select.Value />
-                        <Select.Indicator />
-                      </Select.Trigger>
-                      <Select.Popover>
-                        <ListBox>
-                          {targetPeriodOptions.map((option) => (
-                            <ListBox.Item id={option.value} key={option.value}>
-                              {option.label}
-                            </ListBox.Item>
-                          ))}
-                        </ListBox>
-                      </Select.Popover>
-                    </Select>
-                  </div>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <TextField>
+              <Label>Período origen</Label>
+              <Input readOnly value={formatMonthLabel(reallocateFromPeriod)} />
+            </TextField>
+            <Select
+              value={reallocateTargetPeriod}
+              onChange={(key) => setReallocateTargetPeriod(String(key ?? ""))}
+            >
+              <Label>Período destino</Label>
+              <Select.Trigger>
+                <Select.Value />
+                <Select.Indicator />
+              </Select.Trigger>
+              <Select.Popover>
+                <ListBox>
+                  {targetPeriodOptions.map((option) => (
+                    <ListBox.Item id={option.value} key={option.value}>
+                      {option.label}
+                    </ListBox.Item>
+                  ))}
+                </ListBox>
+              </Select.Popover>
+            </Select>
+          </div>
 
-                  <TextField
-                    value={reallocateAmount == null ? "" : String(reallocateAmount)}
-                    onChange={(v) => {
-                      if (v === "") {
-                        setReallocateAmount(null);
-                        return;
-                      }
-                      const parsed = Number(v);
-                      setReallocateAmount(Number.isFinite(parsed) ? parsed : null);
-                    }}
-                  >
-                    <Label>Monto a arrastrar</Label>
-                    <Input
-                      inputMode="decimal"
-                      min={0}
-                      placeholder="Ej: 120000"
-                      step="0.01"
-                      type="number"
-                    />
-                  </TextField>
-                </form>
-              </Modal.Body>
-              <Modal.Footer>
-                <Button variant="secondary" onPress={() => setIsReallocateOpen(false)}>
-                  Cancelar
-                </Button>
-                <Button
-                  form="reallocate-form"
-                  isPending={reallocateTransactionMutation.isPending}
-                  type="submit"
-                >
-                  Reasignar
-                </Button>
-              </Modal.Footer>
-            </Modal.Dialog>
-          </Modal.Container>
-        </Modal.Backdrop>
-      </Modal>
+          <NumberField
+            formatOptions={{
+              currency: "CLP",
+              currencyDisplay: "symbol",
+              maximumFractionDigits: 0,
+              minimumFractionDigits: 0,
+              style: "currency",
+            }}
+            minValue={0}
+            onChange={(value) => setReallocateAmount(value ?? null)}
+            value={reallocateAmount ?? undefined}
+          >
+            <Label>Monto a arrastrar</Label>
+            <NumberField.Group>
+              <NumberField.Input />
+            </NumberField.Group>
+          </NumberField>
+        </form>
+      </AppModal>
     </div>
   );
 }

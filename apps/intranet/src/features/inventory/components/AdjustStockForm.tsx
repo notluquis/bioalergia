@@ -1,4 +1,4 @@
-import { Button, Description, Input, Label, TextField } from "@heroui/react";
+import { Button, Description, Input, Label, NumberField, TextField } from "@heroui/react";
 import type React from "react";
 import { useState } from "react";
 
@@ -11,14 +11,14 @@ interface AdjustStockFormProps {
   saving: boolean;
 }
 export function AdjustStockForm({ item, onCancel, onSave, saving }: AdjustStockFormProps) {
-  const [quantityChange, setQuantityChange] = useState("");
+  const [quantityChange, setQuantityChange] = useState<number>(Number.NaN);
   const [reason, setReason] = useState("");
 
   const handleSubmit = (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
     onSave({
       item_id: item.id,
-      quantity_change: Number(quantityChange),
+      quantity_change: quantityChange,
       reason,
     });
   };
@@ -30,10 +30,17 @@ export function AdjustStockForm({ item, onCancel, onSave, saving }: AdjustStockF
         <Description className="text-default-500">Stock actual: {item.current_stock}</Description>
       </div>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <TextField isRequired onChange={setQuantityChange} type="number" value={quantityChange}>
+        <NumberField
+          isRequired
+          onChange={(v) => setQuantityChange(v ?? Number.NaN)}
+          step={1}
+          value={quantityChange}
+        >
           <Label>Cantidad a agregar/quitar</Label>
-          <Input placeholder="Ej: 20 (agrega) o -15 (quita)" />
-        </TextField>
+          <NumberField.Group>
+            <NumberField.Input placeholder="Ej: 20 (agrega) o -15 (quita)" />
+          </NumberField.Group>
+        </NumberField>
 
         <TextField isRequired onChange={setReason} type="text" value={reason}>
           <Label>Razón del ajuste</Label>

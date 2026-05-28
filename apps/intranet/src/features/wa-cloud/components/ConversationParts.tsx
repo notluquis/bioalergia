@@ -46,6 +46,7 @@ import {
   Zap,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { AppModal } from "@/components/ui/AppModal";
 import { SelectInput, TextInput } from "@/features/outreach/components/FormField";
 import { toast } from "@/lib/toast-interceptor";
 import { EmojiPickerButton } from "./EmojiPickerButton";
@@ -708,132 +709,121 @@ export function ScheduleSendModal({
   const pending = scheduled.filter((s) => s.status === "PENDING");
 
   return (
-    <Modal>
-      <Modal.Backdrop
-        isOpen={isOpen}
-        onOpenChange={(o) => !o && onClose()}
-        isDismissable
-        className="bg-black/40 backdrop-blur-[2px]"
-      >
-        <Modal.Container placement="center">
-          <Modal.Dialog className="relative w-full max-w-md rounded-[28px] bg-background p-6 shadow-2xl">
-            <Modal.Header className="mb-4">
-              <Modal.Heading className="font-bold text-primary text-xl">
-                Programar mensaje
-              </Modal.Heading>
-              <p className="text-default-500 text-xs">
-                El runner intenta enviar cada 30s. Recuerda: la ventana 24h debe estar abierta al
-                momento del envío para texto libre.
-              </p>
-            </Modal.Header>
-            <Modal.Body className="max-h-[70vh] space-y-3 overflow-y-auto">
-              <DatePicker
-                value={when}
-                onChange={(v) => v && setWhen(v as CalendarDateTime | ZonedDateTime)}
-                granularity="minute"
-                minValue={minDt}
-                hideTimeZone
-                hourCycle={24}
-              >
-                <Label>Fecha y hora</Label>
-                <DateField.Group fullWidth variant="secondary">
-                  <DateField.Input>
-                    {(segment) => <DateField.Segment segment={segment} />}
-                  </DateField.Input>
-                  <DateField.Suffix>
-                    <DatePicker.Trigger>
-                      <DatePicker.TriggerIndicator />
-                    </DatePicker.Trigger>
-                  </DateField.Suffix>
-                </DateField.Group>
-                <DatePicker.Popover>
-                  <Calendar aria-label="Fecha y hora">
-                    <Calendar.Header>
-                      <Calendar.YearPickerTrigger>
-                        <Calendar.YearPickerTriggerHeading />
-                        <Calendar.YearPickerTriggerIndicator />
-                      </Calendar.YearPickerTrigger>
-                      <Calendar.NavButton slot="previous" />
-                      <Calendar.NavButton slot="next" />
-                    </Calendar.Header>
-                    <Calendar.Grid>
-                      <Calendar.GridHeader>
-                        {(day) => <Calendar.HeaderCell>{day}</Calendar.HeaderCell>}
-                      </Calendar.GridHeader>
-                      <Calendar.GridBody>
-                        {(date) => <Calendar.Cell date={date} />}
-                      </Calendar.GridBody>
-                    </Calendar.Grid>
-                    <Calendar.YearPickerGrid>
-                      <Calendar.YearPickerGridBody>
-                        {({ year }) => <Calendar.YearPickerCell year={year} />}
-                      </Calendar.YearPickerGridBody>
-                    </Calendar.YearPickerGrid>
-                  </Calendar>
-                </DatePicker.Popover>
-              </DatePicker>
-              <Description className="text-default-500 text-xs">
-                Mínimo 30 segundos en el futuro
-              </Description>
-              <div>
-                <label htmlFor="wa-schedule-body" className="mb-1 block font-medium text-sm">
-                  Mensaje
-                </label>
-                <TextArea
-                  id="wa-schedule-body"
-                  variant="secondary"
-                  value={body}
-                  onChange={(e) => setBody(e.currentTarget.value)}
-                  rows={4}
-                  fullWidth
-                />
-              </div>
+    <AppModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Programar mensaje"
+      size="md"
+      footer={
+        <>
+          <Button variant="outline" onPress={onClose}>
+            <X size={14} />
+            Cerrar
+          </Button>
+          <Button onPress={submit} isPending={isPending}>
+            <CalendarClock size={14} />
+            Programar
+          </Button>
+        </>
+      }
+    >
+      <div className="space-y-3">
+        <p className="text-default-500 text-xs">
+          El runner intenta enviar cada 30s. Recuerda: la ventana 24h debe estar abierta al momento
+          del envío para texto libre.
+        </p>
+        <DatePicker
+          value={when}
+          onChange={(v) => v && setWhen(v as CalendarDateTime | ZonedDateTime)}
+          granularity="minute"
+          minValue={minDt}
+          hideTimeZone
+          hourCycle={24}
+        >
+          <Label>Fecha y hora</Label>
+          <DateField.Group fullWidth variant="secondary">
+            <DateField.Input>
+              {(segment) => <DateField.Segment segment={segment} />}
+            </DateField.Input>
+            <DateField.Suffix>
+              <DatePicker.Trigger>
+                <DatePicker.TriggerIndicator />
+              </DatePicker.Trigger>
+            </DateField.Suffix>
+          </DateField.Group>
+          <DatePicker.Popover>
+            <Calendar aria-label="Fecha y hora">
+              <Calendar.Header>
+                <Calendar.YearPickerTrigger>
+                  <Calendar.YearPickerTriggerHeading />
+                  <Calendar.YearPickerTriggerIndicator />
+                </Calendar.YearPickerTrigger>
+                <Calendar.NavButton slot="previous" />
+                <Calendar.NavButton slot="next" />
+              </Calendar.Header>
+              <Calendar.Grid>
+                <Calendar.GridHeader>
+                  {(day) => <Calendar.HeaderCell>{day}</Calendar.HeaderCell>}
+                </Calendar.GridHeader>
+                <Calendar.GridBody>{(date) => <Calendar.Cell date={date} />}</Calendar.GridBody>
+              </Calendar.Grid>
+              <Calendar.YearPickerGrid>
+                <Calendar.YearPickerGridBody>
+                  {({ year }) => <Calendar.YearPickerCell year={year} />}
+                </Calendar.YearPickerGridBody>
+              </Calendar.YearPickerGrid>
+            </Calendar>
+          </DatePicker.Popover>
+        </DatePicker>
+        <Description className="text-default-500 text-xs">
+          Mínimo 30 segundos en el futuro
+        </Description>
+        <div>
+          <label htmlFor="wa-schedule-body" className="mb-1 block font-medium text-sm">
+            Mensaje
+          </label>
+          <TextArea
+            id="wa-schedule-body"
+            variant="secondary"
+            value={body}
+            onChange={(e) => setBody(e.currentTarget.value)}
+            rows={4}
+            fullWidth
+          />
+        </div>
 
-              {pending.length > 0 && (
-                <div className="space-y-1 rounded-lg border border-default-200 bg-content2 p-3">
-                  <p className="font-medium text-default-700 text-xs uppercase">
-                    Programados ({pending.length})
-                  </p>
-                  <ul className="space-y-1">
-                    {pending.map((s) => (
-                      <li key={s.id} className="flex items-center justify-between gap-2 text-xs">
-                        <div className="min-w-0 flex-1">
-                          <p className="font-mono text-default-500">
-                            {dayjs(s.scheduledAt).format("DD-MM HH:mm")}
-                          </p>
-                          <p className="line-clamp-1 text-default-700">
-                            {s.body ?? `[${s.type.toLowerCase()}]`}
-                          </p>
-                        </div>
-                        <Button
-                          size="sm"
-                          variant="danger-soft"
-                          isIconOnly
-                          aria-label="Cancelar"
-                          onPress={() => onCancel(s.id)}
-                        >
-                          <X size={12} />
-                        </Button>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </Modal.Body>
-            <Modal.Footer className="mt-4 flex justify-end gap-2">
-              <Button variant="outline" onPress={onClose}>
-                <X size={14} />
-                Cerrar
-              </Button>
-              <Button onPress={submit} isPending={isPending}>
-                <CalendarClock size={14} />
-                Programar
-              </Button>
-            </Modal.Footer>
-          </Modal.Dialog>
-        </Modal.Container>
-      </Modal.Backdrop>
-    </Modal>
+        {pending.length > 0 && (
+          <div className="space-y-1 rounded-lg border border-default-200 bg-content2 p-3">
+            <p className="font-medium text-default-700 text-xs uppercase">
+              Programados ({pending.length})
+            </p>
+            <ul className="space-y-1">
+              {pending.map((s) => (
+                <li key={s.id} className="flex items-center justify-between gap-2 text-xs">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-mono text-default-500">
+                      {dayjs(s.scheduledAt).format("DD-MM HH:mm")}
+                    </p>
+                    <p className="line-clamp-1 text-default-700">
+                      {s.body ?? `[${s.type.toLowerCase()}]`}
+                    </p>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="danger-soft"
+                    isIconOnly
+                    aria-label="Cancelar"
+                    onPress={() => onCancel(s.id)}
+                  >
+                    <X size={12} />
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+    </AppModal>
   );
 }
 

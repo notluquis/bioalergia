@@ -1,9 +1,10 @@
 // oxlint-disable typescript/no-non-null-assertion -- TODO(strict-null): refactor each `!` to invariant() or explicit guard. Tracked in repo-wide non-null cleanup.
-import { Button, Card, Chip, Modal, ProgressBar, Spinner, Table } from "@heroui/react";
+import { Button, Card, Chip, ProgressBar, Spinner, Table } from "@heroui/react";
 import { WaTableSkeleton } from "../components/Skeletons";
 import { CalendarClock, Megaphone, Play, Plus, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { AppDateTimePicker } from "@/components/forms/AppDatePicker";
+import { AppModal } from "@/components/ui/AppModal";
 import { confirmAction } from "@/components/ui/ConfirmDialog";
 import { SelectInput, TextAreaInput, TextInput } from "@/features/outreach/components/FormField";
 import { toast } from "@/lib/toast-interceptor";
@@ -378,99 +379,88 @@ function CreateBroadcastModal({ isOpen, onClose }: { isOpen: boolean; onClose: (
   };
 
   return (
-    <Modal>
-      <Modal.Backdrop
-        isOpen={isOpen}
-        onOpenChange={(o) => !o && onClose()}
-        isDismissable
-        className="bg-black/40 backdrop-blur-[2px]"
-      >
-        <Modal.Container placement="center">
-          <Modal.Dialog className="relative w-full max-w-2xl rounded-[28px] bg-background p-6 shadow-2xl">
-            <Modal.Header className="mb-4">
-              <Modal.Heading className="font-bold text-primary text-xl">
-                Nueva campaña
-              </Modal.Heading>
-              <p className="text-default-500 text-xs">
-                Recuerda: marketing requiere opt-in. Auth/Utility no requieren ventana 24h pero sí
-                plantilla aprobada.
-              </p>
-            </Modal.Header>
-            <Modal.Body className="max-h-[70vh] space-y-3 overflow-y-auto">
-              <TextInput
-                label="Nombre"
-                value={name}
-                onValueChange={setName}
-                placeholder="Recordatorio cita Mayo"
-              />
-              <div className="grid grid-cols-2 gap-3">
-                <SelectInput
-                  label="Cuenta WABA"
-                  value={accountId}
-                  onValueChange={(v) => {
-                    setAccountId(v);
-                    setPhoneNumberId("");
-                    setTplKey("");
-                  }}
-                  options={accountOptions}
-                />
-                <SelectInput
-                  label="Enviar desde"
-                  value={phoneNumberId}
-                  onValueChange={setPhoneNumberId}
-                  options={phoneOptions}
-                />
-              </div>
-              <SelectInput
-                label="Plantilla"
-                value={tplKey}
-                onValueChange={setTplKey}
-                options={tplOptions}
-              />
-              <div className="grid grid-cols-2 gap-3">
-                <AppDateTimePicker
-                  label="Programar (opcional)"
-                  value={scheduledAt}
-                  onChange={setScheduledAt}
-                />
-                <TextInput
-                  label="Rate limit (msg/seg)"
-                  value={rateLimit}
-                  onValueChange={setRateLimit}
-                  placeholder="5"
-                />
-              </div>
-              <TextAreaInput
-                label="Destinatarios (uno por línea: teléfono[,var1,var2,…])"
-                value={recipientsRaw}
-                onValueChange={setRecipientsRaw}
-                placeholder={
-                  "+56912345678,Juan,2026-05-12 10:00\n+56987654321,María,2026-05-12 11:30"
-                }
-                rows={8}
-              />
-              <p className="text-default-500 text-xs">
-                Variables se mapean a {"{{1}}"}, {"{{2}}"}, … en la plantilla.
-              </p>
-            </Modal.Body>
-            <Modal.Footer className="mt-4 flex justify-end gap-2">
-              <Button variant="outline" onPress={onClose}>
-                <X size={14} />
-                Cancelar
-              </Button>
-              <Button
-                onPress={() => {
-                  void submit();
-                }}
-                isPending={create.isPending}
-              >
-                {scheduledAt ? <CalendarClock size={14} /> : <Plus size={14} />}
-                {scheduledAt ? "Crear y programar" : "Crear borrador"}
-              </Button>
-            </Modal.Footer>
-          </Modal.Dialog>
-        </Modal.Container>
-      </Modal.Backdrop>
-    </Modal>
+    <AppModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Nueva campaña"
+      size="lg"
+      footer={
+        <>
+          <Button variant="outline" onPress={onClose}>
+            <X size={14} />
+            Cancelar
+          </Button>
+          <Button
+            onPress={() => {
+              void submit();
+            }}
+            isPending={create.isPending}
+          >
+            {scheduledAt ? <CalendarClock size={14} /> : <Plus size={14} />}
+            {scheduledAt ? "Crear y programar" : "Crear borrador"}
+          </Button>
+        </>
+      }
+    >
+      <div className="space-y-3">
+        <p className="text-default-500 text-xs">
+          Recuerda: marketing requiere opt-in. Auth/Utility no requieren ventana 24h pero sí
+          plantilla aprobada.
+        </p>
+        <TextInput
+          label="Nombre"
+          value={name}
+          onValueChange={setName}
+          placeholder="Recordatorio cita Mayo"
+        />
+        <div className="grid grid-cols-2 gap-3">
+          <SelectInput
+            label="Cuenta WABA"
+            value={accountId}
+            onValueChange={(v) => {
+              setAccountId(v);
+              setPhoneNumberId("");
+              setTplKey("");
+            }}
+            options={accountOptions}
+          />
+          <SelectInput
+            label="Enviar desde"
+            value={phoneNumberId}
+            onValueChange={setPhoneNumberId}
+            options={phoneOptions}
+          />
+        </div>
+        <SelectInput
+          label="Plantilla"
+          value={tplKey}
+          onValueChange={setTplKey}
+          options={tplOptions}
+        />
+        <div className="grid grid-cols-2 gap-3">
+          <AppDateTimePicker
+            label="Programar (opcional)"
+            value={scheduledAt}
+            onChange={setScheduledAt}
+          />
+          <TextInput
+            label="Rate limit (msg/seg)"
+            value={rateLimit}
+            onValueChange={setRateLimit}
+            placeholder="5"
+          />
+        </div>
+        <TextAreaInput
+          label="Destinatarios (uno por línea: teléfono[,var1,var2,…])"
+          value={recipientsRaw}
+          onValueChange={setRecipientsRaw}
+          placeholder={"+56912345678,Juan,2026-05-12 10:00\n+56987654321,María,2026-05-12 11:30"}
+          rows={8}
+        />
+        <p className="text-default-500 text-xs">
+          Variables se mapean a {"{{1}}"}, {"{{2}}"}, … en la plantilla.
+        </p>
+      </div>
+    </AppModal>
   );
 }

@@ -1,4 +1,4 @@
-import { Button, FieldError, Input, Label, ListBox, Select, TextField } from "@heroui/react";
+import { Button, FieldError, Label, ListBox, NumberField, Select } from "@heroui/react";
 import { useForm, useStore } from "@tanstack/react-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
@@ -148,19 +148,23 @@ export function SupplyRequestForm({ commonSupplies, onSuccess }: SupplyRequestFo
       <form.Field name="quantity">
         {(field) => (
           <div>
-            <TextField
+            <NumberField
               isInvalid={field.state.meta.errors.length > 0}
               isRequired
-              onChange={(v) => field.handleChange(Number.parseInt(v, 10) || 1)}
-              type="number"
-              value={String(field.state.value)}
+              minValue={1}
+              onBlur={field.handleBlur}
+              onChange={(v) => field.handleChange(v ?? 1)}
+              step={1}
+              value={field.state.value}
             >
               <Label>Cantidad</Label>
-              <Input inputMode="numeric" min="1" onBlur={field.handleBlur} />
+              <NumberField.Group>
+                <NumberField.Input />
+              </NumberField.Group>
               {field.state.meta.errors.length > 0 && (
                 <FieldError>{formatErrors(field.state.meta.errors)}</FieldError>
               )}
-            </TextField>
+            </NumberField>
           </div>
         )}
       </form.Field>

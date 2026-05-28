@@ -1,4 +1,13 @@
-import { Button, Input, Label, ListBox, Select, TextArea, TextField } from "@heroui/react";
+import {
+  Button,
+  Input,
+  Label,
+  ListBox,
+  NumberField,
+  Select,
+  TextArea,
+  TextField,
+} from "@heroui/react";
 import type React from "react";
 import { useEffect, useState } from "react";
 
@@ -79,16 +88,19 @@ export function InventoryItemForm({ item, onCancel, onSave, saving }: InventoryI
         <TextArea rows={3} />
       </TextField>
 
-      <TextField
+      <NumberField
         isDisabled={Boolean(item)}
         isRequired
-        onChange={(v) => setForm({ ...form, current_stock: Number(v) })}
-        type="number"
-        value={String(form.current_stock ?? 0)}
+        minValue={0}
+        onChange={(v) => setForm({ ...form, current_stock: v ?? 0 })}
+        step={1}
+        value={form.current_stock ?? 0}
       >
         <Label>Stock inicial</Label>
-        <Input />
-      </TextField>
+        <NumberField.Group>
+          <NumberField.Input />
+        </NumberField.Group>
+      </NumberField>
 
       <div className="flex items-center justify-end gap-3 pt-4">
         <Button onPress={onCancel} type="button" variant="secondary">

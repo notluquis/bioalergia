@@ -1,4 +1,4 @@
-import { RouterProvider } from "@heroui/react";
+import { I18nProvider, RouterProvider } from "@heroui/react";
 import type { QueryClient } from "@tanstack/react-query";
 import { createRootRouteWithContext, Outlet, useNavigate } from "@tanstack/react-router";
 import { lazy, Suspense } from "react";
@@ -49,12 +49,14 @@ function RootComponent() {
   };
 
   return (
-    <RouterProvider navigate={handleNavigate}>
-      <Outlet />
-      <ConfirmDialogHost />
-      <Suspense>
-        <TanStackRouterDevtools position="bottom-right" />
-      </Suspense>
-    </RouterProvider>
+    <I18nProvider locale="es-CL">
+      <RouterProvider navigate={handleNavigate}>
+        <Outlet />
+        <ConfirmDialogHost />
+        <Suspense>
+          <TanStackRouterDevtools position="bottom-right" />
+        </Suspense>
+      </RouterProvider>
+    </I18nProvider>
   );
 }

@@ -7,7 +7,7 @@ import {
   Form,
   Input,
   Label,
-  Modal,
+  NumberField,
   TextField,
 } from "@heroui/react";
 import { parseDate } from "@internationalized/date";
@@ -15,6 +15,7 @@ import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-q
 import dayjs from "dayjs";
 import type { ChangeEvent } from "react";
 import { Suspense, useEffect, useMemo, useState } from "react";
+import { AppModal } from "@/components/ui/AppModal";
 import { useAuth } from "@/context/AuthContext";
 import {
   createLoan,
@@ -45,8 +46,12 @@ export function LoansPage() {
   const [createError, setCreateError] = useState<null | string>(null);
 
   const [paymentSchedule, setPaymentSchedule] = useState<LoanSchedule | null>(null);
-  const [paymentForm, setPaymentForm] = useState({
-    paidAmount: "",
+  const [paymentForm, setPaymentForm] = useState<{
+    paidAmount: number | undefined;
+    paidDate: string;
+    transactionId: string;
+  }>({
+    paidAmount: undefined,
     paidDate: dayjs().format("YYYY-MM-DD"),
     transactionId: "",
   });
@@ -123,10 +128,7 @@ export function LoansPage() {
   const openPaymentModal = (schedule: LoanSchedule) => {
     setPaymentSchedule(schedule);
     setPaymentForm({
-      paidAmount:
-        schedule.paid_amount == null
-          ? String(schedule.expected_amount)
-          : String(schedule.paid_amount),
+      paidAmount: schedule.paid_amount == null ? schedule.expected_amount : schedule.paid_amount,
       paidDate: schedule.paid_date ? schedule.paid_date : dayjs().format("YYYY-MM-DD"),
       transactionId: schedule.transaction_id ? String(schedule.transaction_id) : "",
     });
@@ -140,7 +142,7 @@ export function LoansPage() {
     }
 
     const transactionId = Number(paymentForm.transactionId);
-    const paidAmount = Number(paymentForm.paidAmount);
+    const paidAmount = paymentForm.paidAmount ?? 0;
     if (!Number.isFinite(transactionId) || transactionId <= 0) {
       setPaymentError("ID de transacción inválido");
       return;
@@ -228,177 +230,164 @@ export function LoansPage() {
         </div>
       </div>
 
-      <Modal>
-        <Modal.Backdrop
-          className="bg-black/40 backdrop-blur-[2px]"
-          isOpen={createOpen}
-          onOpenChange={(open) => {
-            if (!open) {
-              setCreateOpen(false);
-            }
+      <AppModal
+        isOpen={createOpen}
+        onClose={() => {
+          setCreateOpen(false);
+        }}
+        title="Nuevo préstamo"
+        size="lg"
+      >
+        <LoanForm
+          onCancel={() => {
+            setCreateOpen(false);
           }}
-        >
-          <Modal.Container placement="center">
-            <Modal.Dialog className="relative w-full max-w-2xl rounded-[28px] bg-background p-6 shadow-2xl">
-              <Modal.Header className="mb-4 font-bold text-primary text-xl">
-                <Modal.Heading>Nuevo préstamo</Modal.Heading>
-              </Modal.Header>
-              <Modal.Body className="mt-2 max-h-[80vh] overflow-y-auto overscroll-contain text-foreground">
-                <LoanForm
-                  onCancel={() => {
-                    setCreateOpen(false);
-                  }}
-                  onSubmit={async (payload) => {
-                    await handleCreateLoan(payload);
-                  }}
-                />
-
-                {createError && (
-                  <p className="mt-4 rounded-lg bg-rose-100 px-4 py-2 text-rose-700 text-sm">
-                    {createError}
-                  </p>
-                )}
-              </Modal.Body>
-            </Modal.Dialog>
-          </Modal.Container>
-        </Modal.Backdrop>
-      </Modal>
-
-      <Modal>
-        <Modal.Backdrop
-          className="bg-black/40 backdrop-blur-[2px]"
-          isOpen={Boolean(paymentSchedule)}
-          onOpenChange={(open) => {
-            if (!open) {
-              setPaymentSchedule(null);
-            }
+          onSubmit={async (payload) => {
+            await handleCreateLoan(payload);
           }}
-        >
-          <Modal.Container placement="center">
-            <Modal.Dialog className="relative w-full max-w-2xl rounded-[28px] bg-background p-6 shadow-2xl">
-              <Modal.Header className="mb-4 font-bold text-primary text-xl">
-                <Modal.Heading>
-                  {paymentSchedule
-                    ? `Registrar pago cuota #${paymentSchedule.installment_number}`
-                    : "Registrar pago"}
-                </Modal.Heading>
-              </Modal.Header>
-              <Modal.Body className="mt-2 max-h-[80vh] overflow-y-auto overscroll-contain text-foreground">
-                {paymentSchedule && (
-                  <Form
-                    className="space-y-4"
-                    onSubmit={(e) => {
-                      void handlePaymentSubmit(e);
-                    }}
-                    validationBehavior="aria"
-                  >
-                    <TextField isRequired>
-                      <Label>ID transacción</Label>
-                      <Input
-                        inputMode="numeric"
-                        onChange={(event: ChangeEvent<HTMLInputElement>) => {
-                          setPaymentForm((prev) => ({
-                            ...prev,
-                            transactionId: event.target.value,
-                          }));
-                        }}
-                        type="number"
-                        value={paymentForm.transactionId}
-                        variant="secondary"
-                      />
-                    </TextField>
+        />
 
-                    <TextField isRequired>
-                      <Label>Monto pagado</Label>
-                      <Input
-                        inputMode="decimal"
-                        min={0}
-                        onChange={(event: ChangeEvent<HTMLInputElement>) => {
-                          setPaymentForm((prev) => ({ ...prev, paidAmount: event.target.value }));
-                        }}
-                        step="0.01"
-                        type="number"
-                        value={paymentForm.paidAmount}
-                        variant="secondary"
-                      />
-                    </TextField>
+        {createError && (
+          <p className="mt-4 rounded-lg bg-rose-100 px-4 py-2 text-rose-700 text-sm">
+            {createError}
+          </p>
+        )}
+      </AppModal>
 
-                    <DatePicker
-                      isRequired
-                      onChange={(value) => {
-                        setPaymentForm((prev) => ({
-                          ...prev,
-                          paidDate: value?.toString() ?? "",
-                        }));
-                      }}
-                      value={paymentForm.paidDate ? parseDate(paymentForm.paidDate) : undefined}
-                    >
-                      <Label>Fecha de pago</Label>
-                      <DateField.Group>
-                        <DateField.InputContainer>
-                          <DateField.Input>
-                            {(segment) => <DateField.Segment segment={segment} />}
-                          </DateField.Input>
-                        </DateField.InputContainer>
-                        <DateField.Suffix>
-                          <DatePicker.Trigger>
-                            <DatePicker.TriggerIndicator />
-                          </DatePicker.Trigger>
-                        </DateField.Suffix>
-                      </DateField.Group>
-                      <DatePicker.Popover>
-                        <Calendar aria-label="Fecha de pago">
-                          <Calendar.Header>
-                            <Calendar.YearPickerTrigger>
-                              <Calendar.YearPickerTriggerHeading />
-                              <Calendar.YearPickerTriggerIndicator />
-                            </Calendar.YearPickerTrigger>
-                            <Calendar.NavButton slot="previous" />
-                            <Calendar.NavButton slot="next" />
-                          </Calendar.Header>
-                          <Calendar.Grid>
-                            <Calendar.GridHeader>
-                              {(day) => <Calendar.HeaderCell>{day}</Calendar.HeaderCell>}
-                            </Calendar.GridHeader>
-                            <Calendar.GridBody>
-                              {(date) => <Calendar.Cell date={date} />}
-                            </Calendar.GridBody>
-                          </Calendar.Grid>
-                          <Calendar.YearPickerGrid>
-                            <Calendar.YearPickerGridBody>
-                              {({ year }) => <Calendar.YearPickerCell year={year} />}
-                            </Calendar.YearPickerGridBody>
-                          </Calendar.YearPickerGrid>
-                        </Calendar>
-                      </DatePicker.Popover>
-                    </DatePicker>
+      <AppModal
+        isOpen={Boolean(paymentSchedule)}
+        onClose={() => {
+          setPaymentSchedule(null);
+        }}
+        title={
+          paymentSchedule
+            ? `Registrar pago cuota #${paymentSchedule.installment_number}`
+            : "Registrar pago"
+        }
+        size="lg"
+        footer={
+          <>
+            <Button
+              onPress={() => {
+                setPaymentSchedule(null);
+              }}
+              type="button"
+              variant="secondary"
+            >
+              Cancelar
+            </Button>
+            <Button
+              isDisabled={registerPaymentMutation.isPending}
+              type="submit"
+              form="loan-payment-form"
+            >
+              {registerPaymentMutation.isPending ? "Guardando..." : "Guardar pago"}
+            </Button>
+          </>
+        }
+      >
+        {paymentSchedule && (
+          <Form
+            id="loan-payment-form"
+            className="space-y-4"
+            onSubmit={(e) => {
+              void handlePaymentSubmit(e);
+            }}
+            validationBehavior="aria"
+          >
+            <TextField isRequired>
+              <Label>ID transacción</Label>
+              <Input
+                inputMode="numeric"
+                onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                  setPaymentForm((prev) => ({
+                    ...prev,
+                    transactionId: event.target.value,
+                  }));
+                }}
+                type="number"
+                value={paymentForm.transactionId}
+                variant="secondary"
+              />
+            </TextField>
 
-                    {paymentError && (
-                      <p className="rounded-lg bg-rose-100 px-4 py-2 text-rose-700 text-sm">
-                        {paymentError}
-                      </p>
-                    )}
-                    <div className="flex justify-end gap-3">
-                      <Button
-                        onPress={() => {
-                          setPaymentSchedule(null);
-                        }}
-                        type="button"
-                        variant="secondary"
-                      >
-                        Cancelar
-                      </Button>
-                      <Button isDisabled={registerPaymentMutation.isPending} type="submit">
-                        {registerPaymentMutation.isPending ? "Guardando..." : "Guardar pago"}
-                      </Button>
-                    </div>
-                  </Form>
-                )}
-              </Modal.Body>
-            </Modal.Dialog>
-          </Modal.Container>
-        </Modal.Backdrop>
-      </Modal>
+            <NumberField
+              isRequired
+              formatOptions={{
+                currency: "CLP",
+                currencyDisplay: "symbol",
+                maximumFractionDigits: 0,
+                minimumFractionDigits: 0,
+                style: "currency",
+              }}
+              minValue={0}
+              onChange={(value) => {
+                setPaymentForm((prev) => ({ ...prev, paidAmount: value }));
+              }}
+              value={paymentForm.paidAmount}
+            >
+              <Label>Monto pagado</Label>
+              <NumberField.Group>
+                <NumberField.Input />
+              </NumberField.Group>
+            </NumberField>
+
+            <DatePicker
+              isRequired
+              onChange={(value) => {
+                setPaymentForm((prev) => ({
+                  ...prev,
+                  paidDate: value?.toString() ?? "",
+                }));
+              }}
+              value={paymentForm.paidDate ? parseDate(paymentForm.paidDate) : undefined}
+            >
+              <Label>Fecha de pago</Label>
+              <DateField.Group>
+                <DateField.InputContainer>
+                  <DateField.Input>
+                    {(segment) => <DateField.Segment segment={segment} />}
+                  </DateField.Input>
+                </DateField.InputContainer>
+                <DateField.Suffix>
+                  <DatePicker.Trigger>
+                    <DatePicker.TriggerIndicator />
+                  </DatePicker.Trigger>
+                </DateField.Suffix>
+              </DateField.Group>
+              <DatePicker.Popover>
+                <Calendar aria-label="Fecha de pago">
+                  <Calendar.Header>
+                    <Calendar.YearPickerTrigger>
+                      <Calendar.YearPickerTriggerHeading />
+                      <Calendar.YearPickerTriggerIndicator />
+                    </Calendar.YearPickerTrigger>
+                    <Calendar.NavButton slot="previous" />
+                    <Calendar.NavButton slot="next" />
+                  </Calendar.Header>
+                  <Calendar.Grid>
+                    <Calendar.GridHeader>
+                      {(day) => <Calendar.HeaderCell>{day}</Calendar.HeaderCell>}
+                    </Calendar.GridHeader>
+                    <Calendar.GridBody>{(date) => <Calendar.Cell date={date} />}</Calendar.GridBody>
+                  </Calendar.Grid>
+                  <Calendar.YearPickerGrid>
+                    <Calendar.YearPickerGridBody>
+                      {({ year }) => <Calendar.YearPickerCell year={year} />}
+                    </Calendar.YearPickerGridBody>
+                  </Calendar.YearPickerGrid>
+                </Calendar>
+              </DatePicker.Popover>
+            </DatePicker>
+
+            {paymentError && (
+              <p className="rounded-lg bg-rose-100 px-4 py-2 text-rose-700 text-sm">
+                {paymentError}
+              </p>
+            )}
+          </Form>
+        )}
+      </AppModal>
     </section>
   );
 }

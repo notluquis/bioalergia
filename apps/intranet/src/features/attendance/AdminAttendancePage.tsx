@@ -6,7 +6,6 @@ import {
   Input,
   Label,
   ListBox,
-  Modal,
   Select,
   Skeleton,
   Table,
@@ -19,6 +18,7 @@ import timezone from "dayjs/plugin/timezone";
 import utc from "dayjs/plugin/utc";
 import { Suspense, useState } from "react";
 import { AppDatePicker, AppDateTimePicker } from "@/components/forms/AppDatePicker";
+import { AppModal } from "@/components/ui/AppModal";
 import type {
   attendanceMarkSchema,
   attendanceMarkTypeSchema,
@@ -83,77 +83,68 @@ function AdminMarkModal({ onClose }: AdminMarkModalProps) {
   });
 
   return (
-    <Modal>
-      <Modal.Backdrop
-        isOpen
-        onOpenChange={(open) => {
-          if (!open) onClose();
-        }}
-      >
-        <Modal.Container placement="center">
-          <Modal.Dialog className="w-full max-w-md">
-            <Modal.Header>
-              <Modal.Heading>Corrección manual</Modal.Heading>
-            </Modal.Header>
+    <AppModal
+      isOpen
+      onClose={onClose}
+      title="Corrección manual"
+      size="md"
+      footer={
+        <>
+          <Button variant="secondary" onPress={onClose}>
+            Cancelar
+          </Button>
+          <Button
+            isDisabled={!employeeId || mutation.isPending}
+            variant="primary"
+            onPress={() => mutation.mutate()}
+          >
+            {mutation.isPending ? "Guardando..." : "Guardar"}
+          </Button>
+        </>
+      }
+    >
+      <div className="flex flex-col gap-3">
+        <TextField value={employeeId} onChange={setEmployeeId}>
+          <Label>ID Empleado</Label>
+          <Input inputMode="numeric" placeholder="Ej: 1" />
+        </TextField>
 
-            <Modal.Body className="flex flex-col gap-3">
-              <TextField type="number" value={employeeId} onChange={setEmployeeId}>
-                <Label>ID Empleado</Label>
-                <Input placeholder="Ej: 1" />
-              </TextField>
+        <Select
+          value={type}
+          onChange={(key) => {
+            if (key) setType(key as MarkType);
+          }}
+        >
+          <Label>Tipo</Label>
+          <Select.Trigger>
+            <Select.Value />
+            <Select.Indicator />
+          </Select.Trigger>
+          <Select.Popover>
+            <ListBox>
+              <ListBox.Item id="CLOCK_IN">Entrada</ListBox.Item>
+              <ListBox.Item id="CLOCK_OUT">Salida</ListBox.Item>
+            </ListBox>
+          </Select.Popover>
+        </Select>
 
-              <Select
-                value={type}
-                onChange={(key) => {
-                  if (key) setType(key as MarkType);
-                }}
-              >
-                <Label>Tipo</Label>
-                <Select.Trigger>
-                  <Select.Value />
-                  <Select.Indicator />
-                </Select.Trigger>
-                <Select.Popover>
-                  <ListBox>
-                    <ListBox.Item id="CLOCK_IN">Entrada</ListBox.Item>
-                    <ListBox.Item id="CLOCK_OUT">Salida</ListBox.Item>
-                  </ListBox>
-                </Select.Popover>
-              </Select>
+        <AppDateTimePicker label="Fecha y hora" value={markedAt} onChange={setMarkedAt} />
 
-              <AppDateTimePicker label="Fecha y hora" value={markedAt} onChange={setMarkedAt} />
+        <TextField value={notes} onChange={setNotes}>
+          <Label>Notas (opcional)</Label>
+          <Input placeholder="Motivo de la corrección..." />
+        </TextField>
 
-              <TextField value={notes} onChange={setNotes}>
-                <Label>Notas (opcional)</Label>
-                <Input placeholder="Motivo de la corrección..." />
-              </TextField>
-
-              {error && (
-                <Alert status="danger">
-                  <Alert.Indicator />
-                  <Alert.Content>
-                    <Alert.Description>{error}</Alert.Description>
-                  </Alert.Content>
-                </Alert>
-              )}
-            </Modal.Body>
-
-            <div className="flex justify-end gap-2 p-6 pt-0">
-              <Button variant="secondary" onPress={onClose}>
-                Cancelar
-              </Button>
-              <Button
-                isDisabled={!employeeId || mutation.isPending}
-                variant="primary"
-                onPress={() => mutation.mutate()}
-              >
-                {mutation.isPending ? "Guardando..." : "Guardar"}
-              </Button>
-            </div>
-          </Modal.Dialog>
-        </Modal.Container>
-      </Modal.Backdrop>
-    </Modal>
+        {error && (
+          <Alert status="danger">
+            <Alert.Indicator />
+            <Alert.Content>
+              <Alert.Description>{error}</Alert.Description>
+            </Alert.Content>
+          </Alert>
+        )}
+      </div>
+    </AppModal>
   );
 }
 
@@ -363,58 +354,47 @@ function OfficeNetworkModal({ initialValue, onClose }: OfficeNetworkModalProps) 
   });
 
   return (
-    <Modal>
-      <Modal.Backdrop
-        isOpen
-        onOpenChange={(open) => {
-          if (!open) onClose();
-        }}
-      >
-        <Modal.Container placement="center">
-          <Modal.Dialog className="w-full max-w-md">
-            <Modal.Header>
-              <Modal.Heading>
-                {isEditing ? "Editar red de oficina" : "Agregar red de oficina"}
-              </Modal.Heading>
-            </Modal.Header>
+    <AppModal
+      isOpen
+      onClose={onClose}
+      title={isEditing ? "Editar red de oficina" : "Agregar red de oficina"}
+      size="md"
+      footer={
+        <>
+          <Button variant="secondary" onPress={onClose}>
+            Cancelar
+          </Button>
+          <Button
+            isDisabled={!name.trim() || !cidr.trim() || mutation.isPending}
+            variant="primary"
+            onPress={() => mutation.mutate()}
+          >
+            {mutation.isPending ? "Guardando..." : isEditing ? "Guardar cambios" : "Agregar"}
+          </Button>
+        </>
+      }
+    >
+      <div className="flex flex-col gap-3">
+        <TextField value={name} onChange={setName}>
+          <Label>Nombre</Label>
+          <Input placeholder="Casa matriz, sucursal, VPN..." />
+        </TextField>
 
-            <Modal.Body className="flex flex-col gap-3">
-              <TextField value={name} onChange={setName}>
-                <Label>Nombre</Label>
-                <Input placeholder="Casa matriz, sucursal, VPN..." />
-              </TextField>
+        <TextField value={cidr} onChange={setCidr}>
+          <Label>CIDR o IP</Label>
+          <Input placeholder="Ej: 200.10.20.0/24 o 200.10.20.15" />
+        </TextField>
 
-              <TextField value={cidr} onChange={setCidr}>
-                <Label>CIDR o IP</Label>
-                <Input placeholder="Ej: 200.10.20.0/24 o 200.10.20.15" />
-              </TextField>
-
-              {error && (
-                <Alert status="danger">
-                  <Alert.Indicator />
-                  <Alert.Content>
-                    <Alert.Description>{error}</Alert.Description>
-                  </Alert.Content>
-                </Alert>
-              )}
-            </Modal.Body>
-
-            <div className="flex justify-end gap-2 p-6 pt-0">
-              <Button variant="secondary" onPress={onClose}>
-                Cancelar
-              </Button>
-              <Button
-                isDisabled={!name.trim() || !cidr.trim() || mutation.isPending}
-                variant="primary"
-                onPress={() => mutation.mutate()}
-              >
-                {mutation.isPending ? "Guardando..." : isEditing ? "Guardar cambios" : "Agregar"}
-              </Button>
-            </div>
-          </Modal.Dialog>
-        </Modal.Container>
-      </Modal.Backdrop>
-    </Modal>
+        {error && (
+          <Alert status="danger">
+            <Alert.Indicator />
+            <Alert.Content>
+              <Alert.Description>{error}</Alert.Description>
+            </Alert.Content>
+          </Alert>
+        )}
+      </div>
+    </AppModal>
   );
 }
 
@@ -571,14 +551,9 @@ function AdminAttendanceContent() {
       <OfficeNetworksCard />
 
       <div className="flex flex-wrap items-end gap-3">
-        <TextField
-          className="w-40"
-          type="number"
-          value={employeeIdFilter}
-          onChange={setEmployeeIdFilter}
-        >
+        <TextField className="w-40" value={employeeIdFilter} onChange={setEmployeeIdFilter}>
           <Label>ID Empleado</Label>
-          <Input placeholder="Todos" />
+          <Input inputMode="numeric" placeholder="Todos" />
         </TextField>
 
         <AppDatePicker className="w-44" label="Desde" value={fromFilter} onChange={setFromFilter} />

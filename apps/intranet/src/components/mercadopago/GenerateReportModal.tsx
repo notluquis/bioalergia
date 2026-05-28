@@ -1,13 +1,4 @@
-import {
-  Button,
-  Calendar,
-  DateField,
-  DatePicker,
-  FieldError,
-  Form,
-  Label,
-  Modal,
-} from "@heroui/react";
+import { Button, Calendar, DateField, DatePicker, FieldError, Form, Label } from "@heroui/react";
 import { parseDate } from "@internationalized/date";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -15,6 +6,7 @@ import dayjs from "dayjs";
 import { Loader2 } from "lucide-react";
 import { useState } from "react";
 import { z } from "zod";
+import { AppModal } from "@/components/ui/AppModal";
 import { useToast } from "@/context/ToastContext";
 import { MPService, type MpReportType } from "@/services/mercadopago";
 
@@ -86,199 +78,187 @@ export function GenerateReportModal({ onClose, open, reportType }: Props) {
   };
 
   return (
-    <Modal>
-      <Modal.Backdrop
-        isOpen={open}
-        onOpenChange={(isOpen) => {
-          if (!isOpen) {
-            handleClose();
-          }
+    <AppModal
+      isOpen={open}
+      onClose={handleClose}
+      title={`Generar Reporte: ${reportType === "release" ? "Liberación" : "Conciliación"}`}
+      size="lg"
+      footer={
+        <>
+          <Button
+            isDisabled={mutation.isPending}
+            onPress={handleClose}
+            type="button"
+            variant="outline"
+          >
+            Cancelar
+          </Button>
+          <Button
+            isDisabled={mutation.isPending}
+            type="submit"
+            form="generate-report-form"
+            variant="primary"
+          >
+            {mutation.isPending ? (
+              <>
+                <Loader2 className="mr-2 animate-spin size-4" />
+                {progress ? `Creando ${progress.current}/${progress.total}...` : "Creando..."}
+              </>
+            ) : (
+              "Generar"
+            )}
+          </Button>
+        </>
+      }
+    >
+      <Form
+        id="generate-report-form"
+        className="space-y-4"
+        onSubmit={(e: React.FormEvent<HTMLFormElement>) => {
+          e.preventDefault();
+          void form.handleSubmit();
         }}
+        validationBehavior="aria"
       >
-        <Modal.Container placement="center">
-          <Modal.Dialog className="w-full max-w-2xl">
-            <Modal.Header>
-              <Modal.Heading>{`Generar Reporte: ${reportType === "release" ? "Liberación" : "Conciliación"}`}</Modal.Heading>
-            </Modal.Header>
-            <Modal.Body>
-              <Form
-                className="space-y-4"
-                onSubmit={(e: React.FormEvent<HTMLFormElement>) => {
-                  e.preventDefault();
-                  void form.handleSubmit();
-                }}
-                validationBehavior="aria"
-              >
-                <p className="text-default-600 text-sm">
-                  Selecciona el rango de fechas para generar el reporte de{" "}
-                  {reportType === "release" ? "liberación de fondos" : "conciliación"}. Si el rango
-                  es mayor a 60 días, se crearán múltiples reportes automáticamente.
-                </p>
+        <p className="text-default-600 text-sm">
+          Selecciona el rango de fechas para generar el reporte de{" "}
+          {reportType === "release" ? "liberación de fondos" : "conciliación"}. Si el rango es mayor
+          a 60 días, se crearán múltiples reportes automáticamente.
+        </p>
 
-                <div className="flex items-center gap-3">
-                  <Button
-                    isDisabled={mutation.isPending}
-                    onPress={() => {
-                      setUseNowAsEndDate((prev) => !prev);
-                    }}
-                    type="button"
-                    variant={useNowAsEndDate ? "primary" : "ghost"}
-                  >
-                    {useNowAsEndDate ? "Fecha fin: Ahora" : "Usar fecha actual como fin"}
-                  </Button>
-                  {useNowAsEndDate ? (
-                    <span className="text-default-500 text-xs">
-                      Se usará la hora actual al momento de generar.
-                    </span>
-                  ) : null}
-                </div>
+        <div className="flex items-center gap-3">
+          <Button
+            isDisabled={mutation.isPending}
+            onPress={() => {
+              setUseNowAsEndDate((prev) => !prev);
+            }}
+            type="button"
+            variant={useNowAsEndDate ? "primary" : "ghost"}
+          >
+            {useNowAsEndDate ? "Fecha fin: Ahora" : "Usar fecha actual como fin"}
+          </Button>
+          {useNowAsEndDate ? (
+            <span className="text-default-500 text-xs">
+              Se usará la hora actual al momento de generar.
+            </span>
+          ) : null}
+        </div>
 
-                <form.Field name="begin_date">
-                  {(field) => (
-                    <DatePicker
-                      isInvalid={field.state.meta.errors.length > 0}
-                      isRequired
-                      onBlur={field.handleBlur}
-                      onChange={(value) => {
-                        if (!value) {
-                          return;
-                        }
-                        field.handleChange(dayjs(value.toString(), "YYYY-MM-DD").toDate());
-                      }}
-                      value={parseDate(dayjs(field.state.value).format("YYYY-MM-DD"))}
-                    >
-                      <Label>Fecha Inicio</Label>
-                      <DateField.Group>
-                        <DateField.InputContainer>
-                          <DateField.Input>
-                            {(segment) => <DateField.Segment segment={segment} />}
-                          </DateField.Input>
-                        </DateField.InputContainer>
-                        <DateField.Suffix>
-                          <DatePicker.Trigger>
-                            <DatePicker.TriggerIndicator />
-                          </DatePicker.Trigger>
-                        </DateField.Suffix>
-                      </DateField.Group>
-                      {field.state.meta.errors.length > 0 && (
-                        <FieldError>{String(field.state.meta.errors[0])}</FieldError>
-                      )}
-                      <DatePicker.Popover>
-                        <Calendar aria-label="Fecha inicio">
-                          <Calendar.Header>
-                            <Calendar.YearPickerTrigger>
-                              <Calendar.YearPickerTriggerHeading />
-                              <Calendar.YearPickerTriggerIndicator />
-                            </Calendar.YearPickerTrigger>
-                            <Calendar.NavButton slot="previous" />
-                            <Calendar.NavButton slot="next" />
-                          </Calendar.Header>
-                          <Calendar.Grid>
-                            <Calendar.GridHeader>
-                              {(day) => <Calendar.HeaderCell>{day}</Calendar.HeaderCell>}
-                            </Calendar.GridHeader>
-                            <Calendar.GridBody>
-                              {(date) => <Calendar.Cell date={date} />}
-                            </Calendar.GridBody>
-                          </Calendar.Grid>
-                          <Calendar.YearPickerGrid>
-                            <Calendar.YearPickerGridBody>
-                              {({ year }) => <Calendar.YearPickerCell year={year} />}
-                            </Calendar.YearPickerGridBody>
-                          </Calendar.YearPickerGrid>
-                        </Calendar>
-                      </DatePicker.Popover>
-                    </DatePicker>
-                  )}
-                </form.Field>
+        <form.Field name="begin_date">
+          {(field) => (
+            <DatePicker
+              isInvalid={field.state.meta.errors.length > 0}
+              isRequired
+              onBlur={field.handleBlur}
+              onChange={(value) => {
+                if (!value) {
+                  return;
+                }
+                field.handleChange(dayjs(value.toString(), "YYYY-MM-DD").toDate());
+              }}
+              value={parseDate(dayjs(field.state.value).format("YYYY-MM-DD"))}
+            >
+              <Label>Fecha Inicio</Label>
+              <DateField.Group>
+                <DateField.InputContainer>
+                  <DateField.Input>
+                    {(segment) => <DateField.Segment segment={segment} />}
+                  </DateField.Input>
+                </DateField.InputContainer>
+                <DateField.Suffix>
+                  <DatePicker.Trigger>
+                    <DatePicker.TriggerIndicator />
+                  </DatePicker.Trigger>
+                </DateField.Suffix>
+              </DateField.Group>
+              {field.state.meta.errors.length > 0 && (
+                <FieldError>{String(field.state.meta.errors[0])}</FieldError>
+              )}
+              <DatePicker.Popover>
+                <Calendar aria-label="Fecha inicio">
+                  <Calendar.Header>
+                    <Calendar.YearPickerTrigger>
+                      <Calendar.YearPickerTriggerHeading />
+                      <Calendar.YearPickerTriggerIndicator />
+                    </Calendar.YearPickerTrigger>
+                    <Calendar.NavButton slot="previous" />
+                    <Calendar.NavButton slot="next" />
+                  </Calendar.Header>
+                  <Calendar.Grid>
+                    <Calendar.GridHeader>
+                      {(day) => <Calendar.HeaderCell>{day}</Calendar.HeaderCell>}
+                    </Calendar.GridHeader>
+                    <Calendar.GridBody>{(date) => <Calendar.Cell date={date} />}</Calendar.GridBody>
+                  </Calendar.Grid>
+                  <Calendar.YearPickerGrid>
+                    <Calendar.YearPickerGridBody>
+                      {({ year }) => <Calendar.YearPickerCell year={year} />}
+                    </Calendar.YearPickerGridBody>
+                  </Calendar.YearPickerGrid>
+                </Calendar>
+              </DatePicker.Popover>
+            </DatePicker>
+          )}
+        </form.Field>
 
-                <form.Field name="end_date">
-                  {(field) => (
-                    <DatePicker
-                      isDisabled={useNowAsEndDate}
-                      isInvalid={field.state.meta.errors.length > 0}
-                      isRequired
-                      onBlur={field.handleBlur}
-                      onChange={(value) => {
-                        if (!value) {
-                          return;
-                        }
-                        field.handleChange(dayjs(value.toString(), "YYYY-MM-DD").toDate());
-                      }}
-                      value={parseDate(dayjs(field.state.value).format("YYYY-MM-DD"))}
-                    >
-                      <Label>Fecha Fin</Label>
-                      <DateField.Group>
-                        <DateField.InputContainer>
-                          <DateField.Input>
-                            {(segment) => <DateField.Segment segment={segment} />}
-                          </DateField.Input>
-                        </DateField.InputContainer>
-                        <DateField.Suffix>
-                          <DatePicker.Trigger>
-                            <DatePicker.TriggerIndicator />
-                          </DatePicker.Trigger>
-                        </DateField.Suffix>
-                      </DateField.Group>
-                      {field.state.meta.errors.length > 0 && (
-                        <FieldError>{String(field.state.meta.errors[0])}</FieldError>
-                      )}
-                      <DatePicker.Popover>
-                        <Calendar aria-label="Fecha fin">
-                          <Calendar.Header>
-                            <Calendar.YearPickerTrigger>
-                              <Calendar.YearPickerTriggerHeading />
-                              <Calendar.YearPickerTriggerIndicator />
-                            </Calendar.YearPickerTrigger>
-                            <Calendar.NavButton slot="previous" />
-                            <Calendar.NavButton slot="next" />
-                          </Calendar.Header>
-                          <Calendar.Grid>
-                            <Calendar.GridHeader>
-                              {(day) => <Calendar.HeaderCell>{day}</Calendar.HeaderCell>}
-                            </Calendar.GridHeader>
-                            <Calendar.GridBody>
-                              {(date) => <Calendar.Cell date={date} />}
-                            </Calendar.GridBody>
-                          </Calendar.Grid>
-                          <Calendar.YearPickerGrid>
-                            <Calendar.YearPickerGridBody>
-                              {({ year }) => <Calendar.YearPickerCell year={year} />}
-                            </Calendar.YearPickerGridBody>
-                          </Calendar.YearPickerGrid>
-                        </Calendar>
-                      </DatePicker.Popover>
-                    </DatePicker>
-                  )}
-                </form.Field>
-
-                <div className="mt-6 flex justify-end gap-3">
-                  <Button
-                    isDisabled={mutation.isPending}
-                    onPress={handleClose}
-                    type="button"
-                    variant="outline"
-                  >
-                    Cancelar
-                  </Button>
-                  <Button isDisabled={mutation.isPending} type="submit" variant="primary">
-                    {mutation.isPending ? (
-                      <>
-                        <Loader2 className="mr-2 animate-spin size-4" />
-                        {progress
-                          ? `Creando ${progress.current}/${progress.total}...`
-                          : "Creando..."}
-                      </>
-                    ) : (
-                      "Generar"
-                    )}
-                  </Button>
-                </div>
-              </Form>
-            </Modal.Body>
-          </Modal.Dialog>
-        </Modal.Container>
-      </Modal.Backdrop>
-    </Modal>
+        <form.Field name="end_date">
+          {(field) => (
+            <DatePicker
+              isDisabled={useNowAsEndDate}
+              isInvalid={field.state.meta.errors.length > 0}
+              isRequired
+              onBlur={field.handleBlur}
+              onChange={(value) => {
+                if (!value) {
+                  return;
+                }
+                field.handleChange(dayjs(value.toString(), "YYYY-MM-DD").toDate());
+              }}
+              value={parseDate(dayjs(field.state.value).format("YYYY-MM-DD"))}
+            >
+              <Label>Fecha Fin</Label>
+              <DateField.Group>
+                <DateField.InputContainer>
+                  <DateField.Input>
+                    {(segment) => <DateField.Segment segment={segment} />}
+                  </DateField.Input>
+                </DateField.InputContainer>
+                <DateField.Suffix>
+                  <DatePicker.Trigger>
+                    <DatePicker.TriggerIndicator />
+                  </DatePicker.Trigger>
+                </DateField.Suffix>
+              </DateField.Group>
+              {field.state.meta.errors.length > 0 && (
+                <FieldError>{String(field.state.meta.errors[0])}</FieldError>
+              )}
+              <DatePicker.Popover>
+                <Calendar aria-label="Fecha fin">
+                  <Calendar.Header>
+                    <Calendar.YearPickerTrigger>
+                      <Calendar.YearPickerTriggerHeading />
+                      <Calendar.YearPickerTriggerIndicator />
+                    </Calendar.YearPickerTrigger>
+                    <Calendar.NavButton slot="previous" />
+                    <Calendar.NavButton slot="next" />
+                  </Calendar.Header>
+                  <Calendar.Grid>
+                    <Calendar.GridHeader>
+                      {(day) => <Calendar.HeaderCell>{day}</Calendar.HeaderCell>}
+                    </Calendar.GridHeader>
+                    <Calendar.GridBody>{(date) => <Calendar.Cell date={date} />}</Calendar.GridBody>
+                  </Calendar.Grid>
+                  <Calendar.YearPickerGrid>
+                    <Calendar.YearPickerGridBody>
+                      {({ year }) => <Calendar.YearPickerCell year={year} />}
+                    </Calendar.YearPickerGridBody>
+                  </Calendar.YearPickerGrid>
+                </Calendar>
+              </DatePicker.Popover>
+            </DatePicker>
+          )}
+        </form.Field>
+      </Form>
+    </AppModal>
   );
 }

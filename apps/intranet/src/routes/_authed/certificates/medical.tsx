@@ -7,12 +7,11 @@ import {
   DateRangePicker,
   FieldError,
   Form,
-  Input,
   Label,
   ListBox,
+  NumberField,
   RangeCalendar,
   Select,
-  TextField,
 } from "@heroui/react";
 import { parseDate } from "@internationalized/date";
 import { useForm } from "@tanstack/react-form";
@@ -287,14 +286,19 @@ function MedicalCertificatePage() {
             <div className="grid gap-4 sm:grid-cols-3">
               <form.Field name="restDays">
                 {(field) => (
-                  <TextField
-                    type="number"
-                    value={field.state.value?.toString() || "0"}
-                    onChange={(v) => field.handleChange(Number(v))}
+                  <NumberField
+                    minValue={0}
+                    onBlur={field.handleBlur}
+                    onChange={(v) => field.handleChange(v ?? 0)}
+                    step={1}
+                    value={field.state.value ?? 0}
+                    variant="secondary"
                   >
                     <Label>Días de Reposo</Label>
-                    <Input variant="secondary" min={0} onBlur={field.handleBlur} />
-                  </TextField>
+                    <NumberField.Group>
+                      <NumberField.Input />
+                    </NumberField.Group>
+                  </NumberField>
                 )}
               </form.Field>
 

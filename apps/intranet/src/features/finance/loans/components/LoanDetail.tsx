@@ -4,18 +4,17 @@ import {
   DateField,
   DatePicker,
   Description,
-  Input,
   Label,
   ListBox,
-  Modal,
+  NumberField,
   Select,
   Spinner,
-  TextField,
 } from "@heroui/react";
 import { parseDate } from "@internationalized/date";
 import dayjs from "dayjs";
-import type { ChangeEvent } from "react";
 import { useState } from "react";
+
+import { AppModal } from "@/components/ui/AppModal";
 
 import type { LoanSchedule, LoanSummary, RegenerateSchedulePayload } from "../types";
 
@@ -191,159 +190,149 @@ export function LoanDetail({
         </div>
       )}
 
-      <Modal>
-        <Modal.Backdrop
-          className="bg-black/40 backdrop-blur-[2px]"
-          isOpen={regenerateOpen}
-          onOpenChange={(open) => {
-            if (!open) {
-              setRegenerateOpen(false);
-            }
+      <AppModal
+        isOpen={regenerateOpen}
+        onClose={() => {
+          setRegenerateOpen(false);
+        }}
+        title="Regenerar cronograma"
+        size="lg"
+        footer={
+          <>
+            <Button
+              isDisabled={regenerating}
+              onPress={() => {
+                setRegenerateOpen(false);
+              }}
+              type="button"
+              variant="secondary"
+            >
+              Cancelar
+            </Button>
+            <Button isDisabled={regenerating} type="submit" form="regenerate-schedule-form">
+              {regenerating ? "Actualizando..." : "Regenerar"}
+            </Button>
+          </>
+        }
+      >
+        <form
+          id="regenerate-schedule-form"
+          className="space-y-4"
+          onSubmit={(e) => {
+            void handleRegenerate(e);
           }}
         >
-          <Modal.Container placement="center">
-            <Modal.Dialog className="relative w-full max-w-2xl rounded-[28px] bg-background p-6 shadow-2xl">
-              <Modal.Header className="mb-4 font-bold text-primary text-xl">
-                <Modal.Heading>Regenerar cronograma</Modal.Heading>
-              </Modal.Header>
-              <Modal.Body className="mt-2 max-h-[80vh] overflow-y-auto overscroll-contain text-foreground">
-                <form
-                  className="space-y-4"
-                  onSubmit={(e) => {
-                    void handleRegenerate(e);
-                  }}
-                >
-                  <TextField>
-                    <Label>Nuevo total de cuotas</Label>
-                    <Input
-                      max={360}
-                      min={1}
-                      onChange={(event: ChangeEvent<HTMLInputElement>) => {
-                        setRegenerateForm((prev) => ({
-                          ...prev,
-                          totalInstallments: Number(event.target.value),
-                        }));
-                      }}
-                      type="number"
-                      value={regenerateForm.totalInstallments ?? loan.total_installments}
-                      variant="secondary"
-                    />
-                  </TextField>
+          <NumberField
+            maxValue={360}
+            minValue={1}
+            onChange={(value) => {
+              setRegenerateForm((prev) => ({
+                ...prev,
+                totalInstallments: value,
+              }));
+            }}
+            value={regenerateForm.totalInstallments ?? loan.total_installments}
+          >
+            <Label>Nuevo total de cuotas</Label>
+            <NumberField.Group>
+              <NumberField.Input />
+            </NumberField.Group>
+          </NumberField>
 
-                  <DatePicker
-                    onChange={(value) => {
-                      setRegenerateForm((prev) => ({
-                        ...prev,
-                        startDate: value?.toString() ?? "",
-                      }));
-                    }}
-                    value={parseDate(regenerateForm.startDate ?? loan.start_date)}
-                  >
-                    <Label>Nueva fecha de inicio</Label>
-                    <DateField.Group>
-                      <DateField.InputContainer>
-                        <DateField.Input>
-                          {(segment) => <DateField.Segment segment={segment} />}
-                        </DateField.Input>
-                      </DateField.InputContainer>
-                      <DateField.Suffix>
-                        <DatePicker.Trigger>
-                          <DatePicker.TriggerIndicator />
-                        </DatePicker.Trigger>
-                      </DateField.Suffix>
-                    </DateField.Group>
-                    <DatePicker.Popover>
-                      <Calendar aria-label="Nueva fecha de inicio">
-                        <Calendar.Header>
-                          <Calendar.YearPickerTrigger>
-                            <Calendar.YearPickerTriggerHeading />
-                            <Calendar.YearPickerTriggerIndicator />
-                          </Calendar.YearPickerTrigger>
-                          <Calendar.NavButton slot="previous" />
-                          <Calendar.NavButton slot="next" />
-                        </Calendar.Header>
-                        <Calendar.Grid>
-                          <Calendar.GridHeader>
-                            {(day) => <Calendar.HeaderCell>{day}</Calendar.HeaderCell>}
-                          </Calendar.GridHeader>
-                          <Calendar.GridBody>
-                            {(date) => <Calendar.Cell date={date} />}
-                          </Calendar.GridBody>
-                        </Calendar.Grid>
-                        <Calendar.YearPickerGrid>
-                          <Calendar.YearPickerGridBody>
-                            {({ year }) => <Calendar.YearPickerCell year={year} />}
-                          </Calendar.YearPickerGridBody>
-                        </Calendar.YearPickerGrid>
-                      </Calendar>
-                    </DatePicker.Popover>
-                  </DatePicker>
+          <DatePicker
+            onChange={(value) => {
+              setRegenerateForm((prev) => ({
+                ...prev,
+                startDate: value?.toString() ?? "",
+              }));
+            }}
+            value={parseDate(regenerateForm.startDate ?? loan.start_date)}
+          >
+            <Label>Nueva fecha de inicio</Label>
+            <DateField.Group>
+              <DateField.InputContainer>
+                <DateField.Input>
+                  {(segment) => <DateField.Segment segment={segment} />}
+                </DateField.Input>
+              </DateField.InputContainer>
+              <DateField.Suffix>
+                <DatePicker.Trigger>
+                  <DatePicker.TriggerIndicator />
+                </DatePicker.Trigger>
+              </DateField.Suffix>
+            </DateField.Group>
+            <DatePicker.Popover>
+              <Calendar aria-label="Nueva fecha de inicio">
+                <Calendar.Header>
+                  <Calendar.YearPickerTrigger>
+                    <Calendar.YearPickerTriggerHeading />
+                    <Calendar.YearPickerTriggerIndicator />
+                  </Calendar.YearPickerTrigger>
+                  <Calendar.NavButton slot="previous" />
+                  <Calendar.NavButton slot="next" />
+                </Calendar.Header>
+                <Calendar.Grid>
+                  <Calendar.GridHeader>
+                    {(day) => <Calendar.HeaderCell>{day}</Calendar.HeaderCell>}
+                  </Calendar.GridHeader>
+                  <Calendar.GridBody>{(date) => <Calendar.Cell date={date} />}</Calendar.GridBody>
+                </Calendar.Grid>
+                <Calendar.YearPickerGrid>
+                  <Calendar.YearPickerGridBody>
+                    {({ year }) => <Calendar.YearPickerCell year={year} />}
+                  </Calendar.YearPickerGridBody>
+                </Calendar.YearPickerGrid>
+              </Calendar>
+            </DatePicker.Popover>
+          </DatePicker>
 
-                  <TextField>
-                    <Label>Tasa de interés (%)</Label>
-                    <Input
-                      min={0}
-                      onChange={(event: ChangeEvent<HTMLInputElement>) => {
-                        setRegenerateForm((prev) => ({
-                          ...prev,
-                          interestRate: Number(event.target.value),
-                        }));
-                      }}
-                      step="0.01"
-                      type="number"
-                      value={regenerateForm.interestRate ?? loan.interest_rate}
-                      variant="secondary"
-                    />
-                  </TextField>
+          <NumberField
+            minValue={0}
+            step={0.01}
+            formatOptions={{ minimumFractionDigits: 0, maximumFractionDigits: 2 }}
+            onChange={(value) => {
+              setRegenerateForm((prev) => ({
+                ...prev,
+                interestRate: value,
+              }));
+            }}
+            value={regenerateForm.interestRate ?? loan.interest_rate}
+          >
+            <Label>Tasa de interés (%)</Label>
+            <NumberField.Group>
+              <NumberField.Input />
+            </NumberField.Group>
+          </NumberField>
 
-                  <Select
-                    onChange={(key) => {
-                      setRegenerateForm((prev) => ({
-                        ...prev,
-                        frequency: key as RegenerateSchedulePayload["frequency"],
-                      }));
-                    }}
-                    value={regenerateForm.frequency ?? loan.frequency}
-                  >
-                    <Label>Frecuencia</Label>
-                    <Select.Trigger>
-                      <Select.Value />
-                      <Select.Indicator />
-                    </Select.Trigger>
-                    <Select.Popover>
-                      <ListBox>
-                        <ListBox.Item id="WEEKLY">Semanal</ListBox.Item>
-                        <ListBox.Item id="BIWEEKLY">Quincenal</ListBox.Item>
-                        <ListBox.Item id="MONTHLY">Mensual</ListBox.Item>
-                      </ListBox>
-                    </Select.Popover>
-                  </Select>
-                  {regenerateError && (
-                    <Description className="rounded-lg bg-rose-100 px-4 py-2 text-rose-700 text-sm">
-                      {regenerateError}
-                    </Description>
-                  )}
-                  <div className="flex justify-end gap-3">
-                    <Button
-                      isDisabled={regenerating}
-                      onPress={() => {
-                        setRegenerateOpen(false);
-                      }}
-                      type="button"
-                      variant="secondary"
-                    >
-                      Cancelar
-                    </Button>
-                    <Button isDisabled={regenerating} type="submit">
-                      {regenerating ? "Actualizando..." : "Regenerar"}
-                    </Button>
-                  </div>
-                </form>
-              </Modal.Body>
-            </Modal.Dialog>
-          </Modal.Container>
-        </Modal.Backdrop>
-      </Modal>
+          <Select
+            onChange={(key) => {
+              setRegenerateForm((prev) => ({
+                ...prev,
+                frequency: key as RegenerateSchedulePayload["frequency"],
+              }));
+            }}
+            value={regenerateForm.frequency ?? loan.frequency}
+          >
+            <Label>Frecuencia</Label>
+            <Select.Trigger>
+              <Select.Value />
+              <Select.Indicator />
+            </Select.Trigger>
+            <Select.Popover>
+              <ListBox>
+                <ListBox.Item id="WEEKLY">Semanal</ListBox.Item>
+                <ListBox.Item id="BIWEEKLY">Quincenal</ListBox.Item>
+                <ListBox.Item id="MONTHLY">Mensual</ListBox.Item>
+              </ListBox>
+            </Select.Popover>
+          </Select>
+          {regenerateError && (
+            <Description className="rounded-lg bg-rose-100 px-4 py-2 text-rose-700 text-sm">
+              {regenerateError}
+            </Description>
+          )}
+        </form>
+      </AppModal>
 
       {loading && (
         <div className="absolute inset-0 z-30 flex items-center justify-center bg-background/40 backdrop-blur-sm">

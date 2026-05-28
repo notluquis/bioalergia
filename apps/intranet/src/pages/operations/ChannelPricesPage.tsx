@@ -1,4 +1,4 @@
-import { Button, Card, Input, Label, Skeleton, TextField } from "@heroui/react";
+import { Button, Card, Label, NumberField, Skeleton } from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 
@@ -112,21 +112,21 @@ function ChannelRow({
   productId: number;
   onSaved: () => void;
 }) {
-  const [price, setPrice] = useState<string>(currentPrice !== null ? String(currentPrice) : "");
+  const [price, setPrice] = useState<number>(currentPrice ?? Number.NaN);
 
   const upsert = useMutation({
     mutationFn: () =>
       catalogORPCClient.upsertChannelPrice({
         product_id: productId,
         channel,
-        price_clp: Number(price),
+        price_clp: price,
       }),
     onSuccess: onSaved,
   });
   const del = useMutation({
     mutationFn: () => catalogORPCClient.deleteChannelPrice({ product_id: productId, channel }),
     onSuccess: () => {
-      setPrice("");
+      setPrice(Number.NaN);
       onSaved();
     },
   });
@@ -134,12 +134,26 @@ function ChannelRow({
   return (
     <div className="flex items-end gap-3">
       <div className="w-40 font-semibold text-sm">{channel.replace(/_/g, " ")}</div>
-      <TextField className="flex-1" onChange={setPrice} value={price}>
+      <NumberField
+        className="flex-1"
+        formatOptions={{
+          currency: "CLP",
+          currencyDisplay: "symbol",
+          maximumFractionDigits: 0,
+          minimumFractionDigits: 0,
+          style: "currency",
+        }}
+        minValue={0}
+        onChange={(v) => setPrice(v ?? Number.NaN)}
+        value={price}
+      >
         <Label className="sr-only">Precio {channel}</Label>
-        <Input placeholder="CLP" type="number" />
-      </TextField>
+        <NumberField.Group>
+          <NumberField.Input placeholder="CLP" />
+        </NumberField.Group>
+      </NumberField>
       <Button
-        isDisabled={!price || upsert.isPending}
+        isDisabled={Number.isNaN(price) || upsert.isPending}
         onPress={() => upsert.mutate()}
         size="sm"
         variant="primary"

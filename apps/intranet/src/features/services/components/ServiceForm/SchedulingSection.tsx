@@ -3,15 +3,13 @@ import {
   DateField,
   DatePicker,
   Description,
-  Input,
   Label,
   ListBox,
+  NumberField,
   Select,
-  TextField,
 } from "@heroui/react";
 import { parseDate } from "@internationalized/date";
 import dayjs from "dayjs";
-import type { ChangeEvent } from "react";
 import { GRID_2_COL_MD } from "@/lib/styles";
 
 import type { ServiceFrequency, ServiceRecurrenceType } from "../../types";
@@ -117,32 +115,37 @@ export function SchedulingSection({
         </DatePicker.Popover>
       </DatePicker>
 
-      <TextField isDisabled={recurrenceType === "ONE_OFF" || frequency === "ONCE"} type="number">
+      <NumberField
+        isDisabled={recurrenceType === "ONE_OFF" || frequency === "ONCE"}
+        maxValue={60}
+        minValue={1}
+        onChange={(value) => {
+          onChange("monthsToGenerate", Number.isNaN(value) ? 1 : (value ?? 1));
+        }}
+        value={effectiveMonths}
+      >
         <Label>Meses a generar</Label>
-        <Input
-          max={60}
-          min={1}
-          onChange={(event: ChangeEvent<HTMLInputElement>) => {
-            onChange("monthsToGenerate", Number(event.target.value));
-          }}
-          value={String(effectiveMonths)}
-        />
+        <NumberField.Group>
+          <NumberField.Input />
+        </NumberField.Group>
         {recurrenceType === "ONE_OFF" || frequency === "ONCE" ? (
           <Description>Para servicios puntuales se genera un único periodo</Description>
         ) : null}
-      </TextField>
+      </NumberField>
 
-      <TextField type="number">
+      <NumberField
+        maxValue={31}
+        minValue={1}
+        onChange={(value) => {
+          onChange("dueDay", Number.isNaN(value) ? null : (value ?? null));
+        }}
+        value={dueDay == null ? Number.NaN : dueDay}
+      >
         <Label>Día de vencimiento</Label>
-        <Input
-          max={31}
-          min={1}
-          onChange={(event: ChangeEvent<HTMLInputElement>) => {
-            onChange("dueDay", event.target.value ? Number(event.target.value) : null);
-          }}
-          value={dueDay == null ? "" : String(dueDay)}
-        />
-      </TextField>
+        <NumberField.Group>
+          <NumberField.Input />
+        </NumberField.Group>
+      </NumberField>
     </section>
   );
 }

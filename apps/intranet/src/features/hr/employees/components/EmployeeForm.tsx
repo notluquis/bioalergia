@@ -6,6 +6,7 @@ import {
   Input,
   Label,
   ListBox,
+  NumberField,
   Select,
   TextField,
 } from "@heroui/react";
@@ -19,6 +20,14 @@ import type { EmployeeSalaryType } from "@/types/schema";
 import { getRetentionRateForYear } from "~/shared/retention";
 import { createEmployee, updateEmployee } from "../api";
 import type { Employee, EmployeePayload, EmployeeUpdatePayload } from "../types";
+
+const CLP_FORMAT_OPTIONS: Intl.NumberFormatOptions = {
+  currency: "CLP",
+  currencyDisplay: "symbol",
+  maximumFractionDigits: 0,
+  minimumFractionDigits: 0,
+  style: "currency",
+};
 
 interface EmployeeFormProps {
   employee?: Employee | null;
@@ -400,16 +409,19 @@ function EmployeeFormContent({
           <Input placeholder="12345678" />
         </TextField>
 
-        <TextField
+        <NumberField
+          formatOptions={CLP_FORMAT_OPTIONS}
           isDisabled={form.salaryType !== "HOURLY"}
           isRequired={form.salaryType === "HOURLY"}
-          type="number"
-          value={form.hourlyRate}
-          onChange={(v) => setForm((prev) => ({ ...prev, hourlyRate: v }))}
+          minValue={0}
+          value={form.hourlyRate === "" ? Number.NaN : Number(form.hourlyRate)}
+          onChange={(v) => setForm((prev) => ({ ...prev, hourlyRate: v == null ? "" : String(v) }))}
         >
           <Label>Valor hora (CLP)</Label>
-          <Input min="0" placeholder="$ 0" />
-        </TextField>
+          <NumberField.Group>
+            <NumberField.Input placeholder="$ 0" />
+          </NumberField.Group>
+        </NumberField>
 
         {form.salaryType === "FIXED" && (
           <TextField
@@ -422,14 +434,19 @@ function EmployeeFormContent({
             <Input inputMode="numeric" min="0" placeholder="$ 1.500.000" />
           </TextField>
         )}
-        <TextField
-          type="number"
-          value={form.overtimeRate}
-          onChange={(v) => setForm((prev) => ({ ...prev, overtimeRate: v }))}
+        <NumberField
+          formatOptions={CLP_FORMAT_OPTIONS}
+          minValue={0}
+          value={form.overtimeRate === "" ? Number.NaN : Number(form.overtimeRate)}
+          onChange={(v) =>
+            setForm((prev) => ({ ...prev, overtimeRate: v == null ? "" : String(v) }))
+          }
         >
           <Label>Valor hora extra (CLP)</Label>
-          <Input min="0" placeholder="Opcional - dejar vacío si no aplica" />
-        </TextField>
+          <NumberField.Group>
+            <NumberField.Input placeholder="Opcional - dejar vacío si no aplica" />
+          </NumberField.Group>
+        </NumberField>
 
         <TextField
           type="text"

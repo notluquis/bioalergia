@@ -53,7 +53,7 @@ const installmentColumns = (
     cell: ({ row }) => (
       <div className="flex justify-end">
         {row.original.status !== "PAID" && (
-          <PayInstallmentModal creditId={creditId} installment={row.original} />
+          <PayInstallmentModal creditId={creditId} currency={currency} installment={row.original} />
         )}
       </div>
     ),

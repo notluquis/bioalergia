@@ -1,5 +1,7 @@
 /// <reference types="vite/client" />
 
+import { I18nProvider } from "@heroui/react";
+import type { ReactElement } from "react";
 import { withThemeByDataAttribute } from "@storybook/addon-themes";
 import { initialize, mswLoader } from "msw-storybook-addon";
 
@@ -14,6 +16,13 @@ initialize({ onUnhandledRequest: "bypass" });
 
 const preview = {
   decorators: [
+    // Mirror the app root (__root.tsx): React Aria date/number components
+    // default to en-US otherwise, so snapshots would diverge from prod's es-CL.
+    (Story: () => ReactElement) => (
+      <I18nProvider locale="es-CL">
+        <Story />
+      </I18nProvider>
+    ),
     withThemeByDataAttribute({
       themes: {
         light: "light",
