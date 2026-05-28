@@ -495,8 +495,18 @@ export async function createShipment(input: CreateShipmentInput) {
     throw new Error(friendly ?? `ChileExpress no generó la OT: ${raw}`);
   }
 
-  const otNumber = result.transportOrderNumber;
+  // Chilexpress devuelve transportOrderNumber como NÚMERO; otNumber es String.
+  const otNumber = String(result.transportOrderNumber);
   const labelBase64 = result.label?.labelData ?? null;
+  // label.labelType en la respuesta es string ("Binary"/"EPL"/"Datos"); nuestro
+  // campo es Int. Guardamos el tipo numérico que solicitamos (2 = binario).
+  const labelTypeNum = typeof result.label?.labelType === "number" ? result.label.labelType : 2;
+  // certificateNumber del header puede venir number o string; el campo Int y el
+  // contrato esperan number. Coercer (null si ausente).
+  const headerCertNum =
+    response.data?.header?.certificateNumber != null
+      ? Number(response.data.header.certificateNumber)
+      : null;
 
   const shipment = await db.shipment.create({
     data: {
@@ -518,11 +528,11 @@ export async function createShipment(input: CreateShipmentInput) {
       commercialOfficeName: input.commercialOfficeName ?? "",
       coverageCode: input.destinationCoverageCode,
       contentDescription: input.contentDescription,
-      certificateNumber: response.data?.header?.certificateNumber ?? null,
+      certificateNumber: headerCertNum,
       reference: result.reference ?? null,
       barcode: result.barcode ?? null,
       labelBase64,
-      labelType: result.label?.labelType ?? null,
+      labelType: labelTypeNum,
       additionalServiceCodes: input.additionalServiceCodes ?? [],
       additionalServicesCost: new Decimal(input.additionalServicesCost ?? 0),
       status: "CREATED",
@@ -533,7 +543,7 @@ export async function createShipment(input: CreateShipmentInput) {
     shipment: serializeShipment(shipment),
     otNumber,
     barcode: result.barcode ?? null,
-    certificateNumber: response.data?.header?.certificateNumber ?? null,
+    certificateNumber: headerCertNum,
     labelBase64,
   };
 }
