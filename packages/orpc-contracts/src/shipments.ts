@@ -283,6 +283,48 @@ export const listAllShipmentsOutputSchema = z.object({
   shipments: z.array(shipmentWithPatientSchema),
 });
 
+// ─── Manifiesto (certificado de transporte) ───────────────────────────────────
+
+export const activeManifestSchema = z.object({
+  certificateNumber: z.string(),
+  openedAt: z.string(),
+});
+
+export const openManifestOutputSchema = z.object({
+  certificateNumber: z.string(),
+  statusDescription: z.string().optional(),
+  openedAt: z.string(),
+  alreadyOpen: z.boolean(),
+});
+
+export const closeManifestInputSchema = z.object({
+  certificateNumber: z.union([z.string(), z.number()]).optional(),
+  certificateType: z.union([z.literal(1), z.literal(2)]).optional(),
+  dropNumber: z.number().int().optional(),
+});
+
+export const closedCertificateSchema = z.object({
+  certificateNumber: z.string().optional(),
+  printedDate: z.string().optional(),
+  rutNumber: z.number().optional(),
+  businessName: z.string().optional(),
+  amountOfPieces: z.number().optional(),
+  customerCardNumber: z.number().optional(),
+  dropNumber: z.number().optional(),
+  pickupAddress: z.string().optional(),
+  binaryImage: z.string().optional(),
+  imagePdf: z.string().optional(),
+  detail: z
+    .array(
+      z.object({
+        product: z.string().optional(),
+        service: z.string().optional(),
+        amount: z.number().optional(),
+      })
+    )
+    .optional(),
+});
+
 // ─── Contract ─────────────────────────────────────────────────────────────────
 
 export const shipmentsContract = {
@@ -358,6 +400,24 @@ export const shipmentsContract = {
     .output(listShipmentsOutputSchema),
 
   listAll: oc.route({ method: "GET", path: "/all" }).output(listAllShipmentsOutputSchema),
+
+  getActiveCertificate: oc
+    .route({ method: "GET", path: "/certificates/active" })
+    .output(z.object({ active: activeManifestSchema.nullable() })),
+
+  openCertificate: oc
+    .route({ method: "POST", path: "/certificates/open" })
+    .output(openManifestOutputSchema),
+
+  closeCertificate: oc
+    .route({ method: "POST", path: "/certificates/close" })
+    .input(closeManifestInputSchema)
+    .output(closedCertificateSchema),
+
+  getCertificate: oc
+    .route({ method: "GET", path: "/certificates/{certificateNumber}" })
+    .input(z.object({ certificateNumber: z.string() }))
+    .output(closedCertificateSchema),
 };
 
 export type ShipmentsContract = typeof shipmentsContract;

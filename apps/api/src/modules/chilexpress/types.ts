@@ -209,6 +209,12 @@ export interface CxTransportOrderResult {
     labelData: string;
     labelType: number;
   };
+  // Cuando un detalle falla, Chilexpress devuelve el motivo a nivel de detalle
+  // (el statusDescription top-level solo dice "ninguno fue exitoso"). Estos
+  // campos traen la causa accionable (cobertura inválida, servicio no
+  // habilitado para el destino, peso/dimensión fuera de rango, etc).
+  statusCode?: number;
+  statusDescription?: string;
 }
 
 export interface CxTransportOrderResponse {

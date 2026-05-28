@@ -3,6 +3,9 @@ import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
 import { onError, os } from "@orpc/server";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import {
+  activeManifestSchema,
+  closedCertificateSchema,
+  closeManifestInputSchema,
   createShipmentInputSchema,
   createShipmentOutputSchema,
   cxCommercialOfficeSchema,
@@ -15,6 +18,7 @@ import {
   cxStreetSchema,
   cxTrackingResultSchema,
   listShipmentsInputSchema,
+  openManifestOutputSchema,
   quoteShipmentInputSchema,
   quoteShipmentOutputSchema,
   shipmentSchema,
@@ -31,6 +35,7 @@ import {
   fetchStreetNumbers,
   fetchStreets,
   geocodeAddress,
+  getActiveManifest,
   getShipmentCertificate,
   listAllShipments,
   listShipmentsByPatient,
@@ -55,28 +60,6 @@ const officeSchema = cxCommercialOfficeSchema;
 
 const base = os.$context<Record<string, never>>();
 const emptySchema = z.object({});
-
-const closedCertificateSchema = z.object({
-  certificateNumber: z.string().optional(),
-  printedDate: z.string().optional(),
-  rutNumber: z.number().optional(),
-  businessName: z.string().optional(),
-  amountOfPieces: z.number().optional(),
-  customerCardNumber: z.number().optional(),
-  dropNumber: z.number().optional(),
-  pickupAddress: z.string().optional(),
-  binaryImage: z.string().optional(),
-  imagePdf: z.string().optional(),
-  detail: z
-    .array(
-      z.object({
-        product: z.string().optional(),
-        service: z.string().optional(),
-        amount: z.number().optional(),
-      })
-    )
-    .optional(),
-});
 
 const shipmentsRouterBase = {
   getRegions: base
@@ -247,6 +230,17 @@ const shipmentsRouterBase = {
   // Flujo Chilexpress: abrir certificado → OTs lo referencian → cerrar al final
   // del día → obtener PDF base64 del manifiesto. Reconsulta via getCertificate.
 
+  getActiveCertificate: base
+    .route({
+      method: "GET",
+      path: "/certificates/active",
+      summary: "Manifiesto del día actualmente abierto (o null)",
+      tags: ["Shipments"],
+    })
+    .input(emptySchema)
+    .output(z.object({ active: activeManifestSchema.nullable() }))
+    .handler(async () => ({ active: await getActiveManifest() })),
+
   openCertificate: base
     .route({
       method: "POST",
@@ -255,12 +249,7 @@ const shipmentsRouterBase = {
       tags: ["Shipments"],
     })
     .input(emptySchema)
-    .output(
-      z.object({
-        certificateNumber: z.string(),
-        statusDescription: z.string().optional(),
-      })
-    )
+    .output(openManifestOutputSchema)
     .handler(async () => openShipmentCertificate()),
 
   closeCertificate: base
@@ -270,13 +259,7 @@ const shipmentsRouterBase = {
       summary: "Cerrar certificado y obtener PDF del manifiesto",
       tags: ["Shipments"],
     })
-    .input(
-      z.object({
-        certificateNumber: z.union([z.string(), z.number()]),
-        certificateType: z.union([z.literal(1), z.literal(2)]).optional(),
-        dropNumber: z.number().int().optional(),
-      })
-    )
+    .input(closeManifestInputSchema)
     .output(closedCertificateSchema)
     .handler(async ({ input }) => closeShipmentCertificate(input)),
 

@@ -1024,7 +1024,10 @@ function QuoteStep({
         <NumberField
           fullWidth
           isRequired
-          minValue={1}
+          // minValue DEBE ser múltiplo de step: React Aria engancha el valor a la
+          // grilla minValue + n*step. Con minValue=1, step=1000 la grilla era
+          // 1, 1001, …, 60001 → 60000 se redondeaba a 60001. minValue=0 alinea.
+          minValue={0}
           step={1000}
           value={dims.declaredValue}
           formatOptions={{ style: "currency", currency: "CLP", maximumFractionDigits: 0 }}

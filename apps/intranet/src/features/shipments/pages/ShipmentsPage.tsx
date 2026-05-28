@@ -20,6 +20,7 @@ import { fetchPatients } from "@/features/patients/api";
 import { CreatePatientModal } from "@/features/patients/components/CreatePatientModal";
 import { fetchAllShipments, reprintLabel } from "../api";
 import { CreateShipmentWizard } from "../components/CreateShipmentWizard";
+import { ManifestPanel } from "../components/ManifestPanel";
 import { ShipmentTrackingModal } from "../components/ShipmentTrackingModal";
 
 type Shipment = Awaited<ReturnType<typeof fetchAllShipments>>["shipments"][number];
@@ -297,6 +298,8 @@ export function ShipmentsPage() {
           Nuevo Despacho
         </Button>
       </div>
+
+      <ManifestPanel />
 
       <DataTable
         columns={columns}

@@ -140,3 +140,41 @@ export async function fetchAllShipments() {
     throw toShipmentsApiError(error);
   }
 }
+
+// ─── Manifiesto (certificado de transporte del día) ───────────────────────────
+
+export async function fetchActiveManifest() {
+  try {
+    return await shipmentsORPCClient.getActiveCertificate({});
+  } catch (error) {
+    throw toShipmentsApiError(error);
+  }
+}
+
+export async function openManifest() {
+  try {
+    return await shipmentsORPCClient.openCertificate({});
+  } catch (error) {
+    throw toShipmentsApiError(error);
+  }
+}
+
+export async function closeManifest(input?: {
+  certificateNumber?: string | number;
+  certificateType?: 1 | 2;
+  dropNumber?: number;
+}) {
+  try {
+    return await shipmentsORPCClient.closeCertificate(input ?? {});
+  } catch (error) {
+    throw toShipmentsApiError(error);
+  }
+}
+
+export async function fetchManifestCertificate(certificateNumber: string) {
+  try {
+    return await shipmentsORPCClient.getCertificate({ certificateNumber });
+  } catch (error) {
+    throw toShipmentsApiError(error);
+  }
+}

@@ -23,6 +23,7 @@ function serializeShipment(s: ShipmentRow): SerializedShipment {
   } as SerializedShipment;
 }
 import { chilexpressConfig } from "../lib/config.ts";
+import { deleteSetting, getSetting, updateSetting } from "../lib/settings.ts";
 import {
   createTransportOrder,
   closeCertificate,
@@ -136,32 +137,88 @@ export async function refreshShipmentTracking(shipmentId: number) {
   return tracking;
 }
 
-/**
- * Manifiesto del día: crea un certificado, devuelve su número. Las OTs
- * generadas en lo que resta del día deberían referenciar este certificateNumber
- * en su header (en vez del 0 default) para quedar agrupadas. Al final del día
- * se cierra con `closeShipmentCertificate(certificateNumber)` para obtener
- * el PDF del manifiesto.
- */
-export async function openShipmentCertificate() {
-  const cfg = requireCxConfig();
-  const result = await createCertificate(cfg, cfg.clientRut);
-  return result;
+// ─── Manifiesto (certificado de transporte del día) ──────────────────────────
+//
+// El certificado activo se persiste como Setting KV (no requiere migración).
+// Mientras hay uno abierto, cada OT creada referencia su certificateNumber en
+// el header → quedan agrupadas en ese manifiesto. Al cerrar se limpia el KV y
+// se obtiene el PDF.
+const ACTIVE_CERT_KEY = "shipments.activeCertificate";
+
+type ActiveManifest = { certificateNumber: string; openedAt: string };
+
+/** Lee el certificado actualmente abierto desde el Setting KV (o null). */
+export async function getActiveManifest(): Promise<ActiveManifest | null> {
+  const raw = await getSetting(ACTIVE_CERT_KEY);
+  if (!raw) return null;
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (
+      parsed &&
+      typeof parsed === "object" &&
+      "certificateNumber" in parsed &&
+      typeof (parsed as ActiveManifest).certificateNumber === "string"
+    ) {
+      return parsed as ActiveManifest;
+    }
+  } catch {
+    // KV corrupto → tratar como sin manifiesto activo.
+  }
+  return null;
 }
 
 /**
- * Cierra el certificado del día y devuelve el PDF del manifiesto (base64) +
- * detalle por producto/servicio. Operación de fin-de-día: una vez cerrado el
- * certificado, las OTs asociadas no se pueden alterar y se imprime el
- * manifiesto para entregar el lote al courier en la sucursal.
+ * Abre el manifiesto del día: si ya hay uno activo lo devuelve (idempotente),
+ * si no crea un certificado en Chilexpress y lo persiste. Las OTs creadas
+ * mientras esté abierto referencian su certificateNumber en el header.
+ */
+export async function openShipmentCertificate() {
+  const cfg = requireCxConfig();
+  const existing = await getActiveManifest();
+  if (existing) {
+    return { ...existing, alreadyOpen: true as const };
+  }
+  const result = await createCertificate(cfg, cfg.clientRut);
+  const openedAt = new Date().toISOString();
+  await updateSetting(
+    ACTIVE_CERT_KEY,
+    JSON.stringify({ certificateNumber: result.certificateNumber, openedAt })
+  );
+  return {
+    certificateNumber: result.certificateNumber,
+    statusDescription: result.statusDescription,
+    openedAt,
+    alreadyOpen: false as const,
+  };
+}
+
+/**
+ * Cierra el manifiesto y devuelve el PDF (base64) + detalle por
+ * producto/servicio. Operación de fin-de-día: una vez cerrado, las OTs
+ * asociadas no se pueden alterar. Si no se pasa certificateNumber se usa el
+ * manifiesto activo. Limpia el KV para que las próximas OTs no lo referencien.
  */
 export async function closeShipmentCertificate(input: {
-  certificateNumber: string | number;
+  certificateNumber?: string | number;
   certificateType?: 1 | 2;
   dropNumber?: number;
 }) {
   const cfg = requireCxConfig();
-  return closeCertificate(cfg, input);
+  const active = await getActiveManifest();
+  const certificateNumber = input.certificateNumber ?? active?.certificateNumber;
+  if (certificateNumber == null) {
+    throw new Error("No hay manifiesto activo para cerrar");
+  }
+  const result = await closeCertificate(cfg, {
+    certificateNumber,
+    certificateType: input.certificateType,
+    dropNumber: input.dropNumber,
+  });
+  // Solo limpiar el KV si cerramos el que estaba activo.
+  if (active && String(active.certificateNumber) === String(certificateNumber)) {
+    await deleteSetting(ACTIVE_CERT_KEY);
+  }
+  return result;
 }
 
 /** Reconsulta un certificado cerrado para obtener su PDF (base64) y detalle. */
@@ -285,9 +342,14 @@ export async function createShipment(input: CreateShipmentInput) {
     observation,
   };
 
+  // Si hay un manifiesto abierto, la OT lo referencia para quedar agrupada.
+  // Sin manifiesto activo se manda 0 (OT suelta, comportamiento legacy).
+  const activeManifest = await getActiveManifest();
+  const headerCertificateNumber = activeManifest ? Number(activeManifest.certificateNumber) : 0;
+
   const response = await createTransportOrder(cfg, {
     header: {
-      certificateNumber: 0,
+      certificateNumber: Number.isFinite(headerCertificateNumber) ? headerCertificateNumber : 0,
       customerCardNumber: cfg.clientRut,
       countyOfOriginCoverageCode: cfg.originCoverageCode,
       labelType: 2,
@@ -343,15 +405,32 @@ export async function createShipment(input: CreateShipmentInput) {
 
   const result = response.data?.detail?.[0];
   if (!result?.transportOrderNumber) {
-    // Mensaje crudo: Chilexpress devuelve 200 OK con statusDescription
-    // detallando por qué no creó la OT (TCC suspendida, servicio no
-    // habilitado, sin cobertura, etc). Lo traducimos a UX accionable.
-    const raw = response.statusDescription ?? response.message ?? "sin detalles";
+    // Chilexpress devuelve 200 OK con el motivo real a NIVEL DE DETALLE
+    // (response.data.detail[i].statusDescription); el statusDescription
+    // top-level solo dice "ninguno de los detalles fue exitoso". Preferir
+    // el del detalle, que es accionable (cobertura inválida, servicio no
+    // habilitado para el destino, peso/dimensión fuera de rango, etc).
+    const detailReason = response.data?.detail?.[0]?.statusDescription;
+    const topReason = response.statusDescription ?? response.message;
+    const raw = detailReason ?? topReason ?? "sin detalles";
+    // Log estructurado de la respuesta completa: bug prod-only, sin esto no
+    // hay forma de saber qué detalle rechazó Chilexpress (regla logs-first).
+    console.error(
+      "[shipments.createOT.failed]",
+      JSON.stringify({
+        topStatusCode: response.statusCode,
+        topStatusDescription: topReason,
+        detail: response.data?.detail,
+        sentHeaderCertificate: headerCertificateNumber,
+        coverageCode: input.destinationCoverageCode,
+        serviceTypeCode: input.serviceTypeCode,
+      })
+    );
     const friendly = friendlyChilexpressError(
       200,
       JSON.stringify({ statusDescription: raw, statusCode: response.statusCode })
     );
-    throw new Error(friendly ?? `ChileExpress no devolvió OT. Mensaje: ${raw}`);
+    throw new Error(friendly ?? `ChileExpress no generó la OT: ${raw}`);
   }
 
   const otNumber = result.transportOrderNumber;
