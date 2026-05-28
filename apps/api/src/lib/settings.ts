@@ -21,6 +21,11 @@ export type AppSettings = {
   calendarExcludeSummaries: string;
   calendarDailyMaxDays: string;
   shopLowStockThreshold: string;
+  // Dirección de devolución (DEV) de la clínica para las OTs Chilexpress.
+  // Chilexpress exige DEST + DEV en cada envío; sin DEV devuelve -7.
+  shipmentReturnStreet: string;
+  shipmentReturnNumber: string;
+  shipmentReturnCoverageCode: string;
 };
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -46,6 +51,9 @@ export const DEFAULT_SETTINGS: AppSettings = {
   calendarExcludeSummaries: "No Disponible",
   calendarDailyMaxDays: "31",
   shopLowStockThreshold: "3",
+  shipmentReturnStreet: "",
+  shipmentReturnNumber: "",
+  shipmentReturnCoverageCode: "",
 };
 
 const SETTINGS_KEY_MAP: Record<keyof AppSettings, string> = {
@@ -71,6 +79,9 @@ const SETTINGS_KEY_MAP: Record<keyof AppSettings, string> = {
   calendarExcludeSummaries: "calendar.excludeSummaries",
   calendarDailyMaxDays: "calendar.dailyMaxDays",
   shopLowStockThreshold: "shop.lowStockThreshold",
+  shipmentReturnStreet: "shipments.return.street",
+  shipmentReturnNumber: "shipments.return.number",
+  shipmentReturnCoverageCode: "shipments.return.coverageCode",
 };
 
 export function settingsKeyToDbKey(key: keyof AppSettings): string {

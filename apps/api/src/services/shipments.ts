@@ -378,6 +378,20 @@ export async function createShipment(input: CreateShipmentInput) {
   // Chilexpress la retorna en tracking + cierre de certificado.
   const shipmentRef = `BIO-${input.patientId}-${Math.floor(Date.now() / 1000)}`;
 
+  // Dirección de devolución (DEV) de la clínica. Chilexpress exige una DEST +
+  // una DEV en cada OT (el ejemplo del spec siempre manda ambas); sin la DEV
+  // devuelve -7 "ingrese el tipo de dirección". Se configura en Settings (DB):
+  // shipments.return.{street,number,coverageCode}. coverage cae a originCoverageCode.
+  const returnAddress = {
+    countyCoverageCode: brand.shipmentReturnCoverageCode || cfg.originCoverageCode,
+    streetName: brand.shipmentReturnStreet || brand.orgAddress || senderName,
+    streetNumber: brand.shipmentReturnNumber || "1",
+    supplement: "",
+    addressType: "DEV" as const,
+    deliveryOnCommercialOffice: false,
+    observation: "",
+  };
+
   const otPayload = {
     header: {
       certificateNumber: Number.isFinite(headerCertificateNumber) ? headerCertificateNumber : 0,
@@ -389,7 +403,9 @@ export async function createShipment(input: CreateShipmentInput) {
       {
         // ChileExpress espera arrays (IList<TransportOrderAddress/Contact>),
         // no objetos con keys nombradas — devolvía 400 "requires a JSON array".
-        addresses: [deliveryAddress],
+        // DEST (entrega) + DEV (devolución) — ambas obligatorias; el request log
+        // confirmó que mandar solo DEST devuelve -7.
+        addresses: [deliveryAddress, returnAddress],
         contacts: [
           {
             name: input.recipientName,
