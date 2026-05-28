@@ -148,9 +148,22 @@ export async function quoteShipment(input: {
     contentType: 1,
     declaredWorth: String(Math.round(input.declaredValue)),
     deliveryTime: 0,
+    // Pasar la TCC enruta a /rates/business → la respuesta trae
+    // `serviceValueDiscount` con el precio rebajado por contrato de empresa.
+    // Caer al cotizador estándar solo si la cuenta no tiene TCC configurada.
+    customerCardNumber: cfg.clientRut || undefined,
   });
 
-  return response.data?.courierServiceOptions ?? [];
+  const services = response.data?.courierServiceOptions ?? [];
+  // Si la respuesta vino de /rates/business, sobrescribir serviceValue con
+  // serviceValueDiscount (el precio efectivo a cobrar) para que el wizard
+  // muestre la tarifa real y la OT use ese valor.
+  return services.map((s) => {
+    if (s.serviceValueDiscount != null && s.serviceValueDiscount !== "") {
+      return { ...s, serviceValue: s.serviceValueDiscount };
+    }
+    return s;
+  });
 }
 
 export async function createShipment(input: CreateShipmentInput) {

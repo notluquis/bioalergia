@@ -355,14 +355,54 @@ export async function georeferenceAddress(
 
 // ─── Rating ───────────────────────────────────────────────────────────────────
 
+/**
+ * Cotización. Si `input.customerCardNumber` (TCC) está presente, se llama al
+ * endpoint /rates/business (tarifa empresa) que devuelve `serviceValueDiscount`
+ * con el precio final tras el descuento de cliente. Sin TCC, /rates/courier
+ * (tarifa estándar).
+ *
+ * El spec declara `package.weight/height/width/length` como strings con punto
+ * decimal. JSON.stringify de un number JS produce el mismo texto, pero
+ * serializamos a string explícitamente para alinear con el spec y soportar
+ * decimales en dimensiones (FAQ "hasta 2 decimales separados por punto").
+ */
 export async function quoteCourier(
   config: ChilexpressConfig,
   input: CxRateInput
 ): Promise<CxRateResponse> {
-  return cxFetch<CxRateResponse>(config, "rating", "/rates/courier", {
+  const isBusiness =
+    typeof input.customerCardNumber === "string" && input.customerCardNumber.trim() !== "";
+  const path = isBusiness ? "/rates/business" : "/rates/courier";
+  const body = {
+    originCountyCode: input.originCountyCode,
+    destinationCountyCode: input.destinationCountyCode,
+    package: {
+      weight: toRateDecimal(input.package.weight),
+      height: toRateDecimal(input.package.height),
+      width: toRateDecimal(input.package.width),
+      length: toRateDecimal(input.package.length),
+    },
+    productType: input.productType,
+    contentType: input.contentType,
+    declaredWorth: input.declaredWorth,
+    deliveryTime: input.deliveryTime,
+    ...(isBusiness ? { customerCardNumber: input.customerCardNumber } : {}),
+  };
+  return cxFetch<CxRateResponse>(config, "rating", path, {
     method: "POST",
-    body: JSON.stringify(input),
+    body: JSON.stringify(body),
   });
+}
+
+/**
+ * Convierte un número JS a la string con punto decimal y ≤2 decimales que
+ * exige el spec de cotización. `toFixed(2)` daría `"0.20"`; preferimos
+ * `"0.2"`/`"5"` (sin ceros sobrantes) para coincidir con los ejemplos.
+ */
+function toRateDecimal(value: number | string): string {
+  if (typeof value === "string") return value;
+  const rounded = Math.round(value * 100) / 100;
+  return Number.isInteger(rounded) ? String(rounded) : String(rounded);
 }
 
 // ─── Transport Orders ─────────────────────────────────────────────────────────

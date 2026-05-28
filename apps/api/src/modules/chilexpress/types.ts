@@ -73,21 +73,36 @@ export interface CxRateInput {
   originCountyCode: string;
   destinationCountyCode: string;
   package: {
-    weight: number;
-    height: number;
-    width: number;
-    length: number;
+    // Spec declara string con punto. Aceptamos number (se serializa antes de
+    // mandar) o string ya pre-formateado.
+    weight: number | string;
+    height: number | string;
+    width: number | string;
+    length: number | string;
   };
   productType: number;
   contentType: number;
   declaredWorth: string;
   deliveryTime: number;
+  /**
+   * TCC del cliente. Si está presente, se usa /rates/business y la respuesta
+   * incluye `serviceValueDiscount` con el precio con descuento de empresa.
+   */
+  customerCardNumber?: string;
 }
 
 export interface CxServiceOption {
-  serviceTypeCode: string;
+  serviceTypeCode: string | number;
   serviceDescription: string;
-  serviceValue: number;
+  // Spec: string ("8569"). Algunos callers reciben number tras coerción Zod
+  // upstream; aceptamos ambos.
+  serviceValue: number | string;
+  /** Precio final con descuento de empresa (solo /rates/business). */
+  serviceValueDiscount?: number | string;
+  finalWeight?: number | string;
+  didUseVolumetricWeight?: boolean | string;
+  conditions?: string;
+  deliveryType?: number;
   deliveryTime?: string;
 }
 
@@ -96,6 +111,7 @@ export interface CxRateResponse {
     courierServiceOptions?: CxServiceOption[];
   };
   statusCode?: number;
+  statusDescription?: string;
   message?: string;
 }
 
