@@ -277,7 +277,7 @@ function ImmunotherapySettingsPage() {
               onChange={(v) => setDraft((d) => ({ ...d, concentrationUtMl: v ? v : null }))}
             >
               <Label>Concentración (UT/mL)</Label>
-              <NumberField.Group>
+              <NumberField.Group className="grid-cols-1">
                 <NumberField.Input />
               </NumberField.Group>
             </NumberField>
@@ -288,7 +288,7 @@ function ImmunotherapySettingsPage() {
               onChange={(v) => setDraft((d) => ({ ...d, maxAllergens: v ? v : null }))}
             >
               <Label>Máx alérgenos (0 = sin límite)</Label>
-              <NumberField.Group>
+              <NumberField.Group className="grid-cols-1">
                 <NumberField.Input />
               </NumberField.Group>
             </NumberField>
@@ -310,7 +310,7 @@ function ImmunotherapySettingsPage() {
               onChange={(v) => setDraft((d) => ({ ...d, maintenanceTargetMl: v ?? 0 }))}
             >
               <Label>Volumen mantención (mL)</Label>
-              <NumberField.Group>
+              <NumberField.Group className="grid-cols-1">
                 <NumberField.Input />
               </NumberField.Group>
             </NumberField>
@@ -321,7 +321,7 @@ function ImmunotherapySettingsPage() {
               onChange={(v) => setDraft((d) => ({ ...d, maintenanceStepMl: v ?? 0 }))}
             >
               <Label>Tramo de ajuste (mL)</Label>
-              <NumberField.Group>
+              <NumberField.Group className="grid-cols-1">
                 <NumberField.Input />
               </NumberField.Group>
             </NumberField>
@@ -332,7 +332,7 @@ function ImmunotherapySettingsPage() {
               onChange={(v) => setDraft((d) => ({ ...d, maintenanceDefaultQty: v ?? 0 }))}
             >
               <Label>Dosis mantención/año</Label>
-              <NumberField.Group>
+              <NumberField.Group className="grid-cols-1">
                 <NumberField.Input />
               </NumberField.Group>
             </NumberField>
@@ -344,7 +344,7 @@ function ImmunotherapySettingsPage() {
               onChange={(v) => setDraft((d) => ({ ...d, defaultDiscountPct: v ?? 0 }))}
             >
               <Label>Descuento por defecto (%)</Label>
-              <NumberField.Group>
+              <NumberField.Group className="grid-cols-1">
                 <NumberField.Input />
               </NumberField.Group>
             </NumberField>
@@ -396,7 +396,7 @@ function ImmunotherapySettingsPage() {
                     onChange={(v) => updateStage(idx, { unitPrice: v ?? 0 })}
                   >
                     <Label>Precio</Label>
-                    <NumberField.Group>
+                    <NumberField.Group className="grid-cols-1">
                       <NumberField.Input />
                     </NumberField.Group>
                   </NumberField>
@@ -409,7 +409,7 @@ function ImmunotherapySettingsPage() {
                     onChange={(v) => updateStage(idx, { defaultQty: v ?? 1 })}
                   >
                     <Label>Cant.</Label>
-                    <NumberField.Group>
+                    <NumberField.Group className="grid-cols-1">
                       <NumberField.Input />
                     </NumberField.Group>
                   </NumberField>
