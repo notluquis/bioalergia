@@ -139,6 +139,22 @@ export async function refreshShipmentTracking(shipmentId: number) {
 }
 
 /**
+ * Cancela un envío. Chilexpress NO expone anulación de OT en su REST API, así
+ * que es una cancelación LOCAL: marca status=CANCELLED para que no se imprima
+ * ni se considere despachado. La OT en Chilexpress queda sin usar (no se cobra
+ * mientras no se entregue el bulto al courier).
+ */
+export async function cancelShipment(shipmentId: number) {
+  const shipment = await db.shipment.findUnique({ where: { id: shipmentId } });
+  if (!shipment) throw new Error("Shipment no encontrado");
+  const updated = await db.shipment.update({
+    where: { id: shipmentId },
+    data: { status: "CANCELLED" },
+  });
+  return serializeShipment(updated);
+}
+
+/**
  * Refresca el estado de TODAS las OTs en una sola request a Chilexpress
  * (/tracking/bulk) en vez de N consultas. Matchea por reference
  * (deliveryReference) y actualiza trackingStatus + trackingUpdatedAt.

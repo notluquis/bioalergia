@@ -12,13 +12,14 @@ import {
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 import dayjs from "dayjs";
-import { Activity, PackageCheck, PlusCircle, RefreshCw, UserPlus } from "lucide-react";
+import { Activity, Ban, PackageCheck, PlusCircle, RefreshCw, UserPlus } from "lucide-react";
 import { useMemo, useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
 import { useToast } from "@/context/ToastContext";
 import { fetchPatients } from "@/features/patients/api";
 import { CreatePatientModal } from "@/features/patients/components/CreatePatientModal";
-import { fetchAllShipments, refreshAllTracking, reprintLabel } from "../api";
+import { confirmAction } from "@/components/ui/ConfirmDialog";
+import { cancelShipment, fetchAllShipments, refreshAllTracking, reprintLabel } from "../api";
 import { CreateShipmentWizard } from "../components/CreateShipmentWizard";
 import { ManifestPanel } from "../components/ManifestPanel";
 import { ShipmentTrackingModal } from "../components/ShipmentTrackingModal";
@@ -28,9 +29,10 @@ type Patient = Awaited<ReturnType<typeof fetchPatients>>[number];
 
 const CLP = new Intl.NumberFormat("es-CL", { style: "currency", currency: "CLP" });
 
-const STATUS_COLOR: Record<string, "success" | "warning" | "default"> = {
+const STATUS_COLOR: Record<string, "success" | "warning" | "danger" | "default"> = {
   CREATED: "success",
   PENDING: "warning",
+  CANCELLED: "danger",
 };
 
 const baseColumns: ColumnDef<Shipment>[] = [
@@ -227,6 +229,15 @@ export function ShipmentsPage() {
     },
   });
 
+  const cancelMutation = useMutation({
+    mutationFn: (shipmentId: number) => cancelShipment(shipmentId),
+    onError: (e) => toastError(e instanceof Error ? e.message : "Error al cancelar"),
+    onSuccess: () => {
+      success("Envío cancelado");
+      void queryClient.invalidateQueries({ queryKey: ["shipments-all"] });
+    },
+  });
+
   const reprintMutation = useMutation({
     mutationFn: (shipmentId: number) => reprintLabel(shipmentId),
     onError: (e) => toastError(e instanceof Error ? e.message : "Error al reimprimir"),
@@ -278,11 +289,34 @@ export function ShipmentsPage() {
             >
               <Activity size={16} />
             </Button>
+            {row.original.status !== "CANCELLED" && (
+              <Button
+                aria-label="Cancelar envío"
+                isIconOnly
+                isDisabled={cancelMutation.isPending}
+                onPress={() => {
+                  void (async () => {
+                    const ok = await confirmAction({
+                      title: "Cancelar envío",
+                      description:
+                        "Marca el envío como cancelado (no se imprime ni entra al manifiesto). Chilexpress no anula OTs por API: si ya entregaste el bulto al courier, esto NO lo detiene.",
+                      confirmLabel: "Cancelar envío",
+                      variant: "danger",
+                    });
+                    if (ok) cancelMutation.mutate(row.original.id);
+                  })();
+                }}
+                size="sm"
+                variant="danger"
+              >
+                <Ban size={16} />
+              </Button>
+            )}
           </div>
         ),
       },
     ],
-    [reprintMutation]
+    [reprintMutation, cancelMutation]
   );
 
   function handlePatientSelect(patient: Patient) {

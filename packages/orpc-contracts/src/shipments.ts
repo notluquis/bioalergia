@@ -395,6 +395,11 @@ export const shipmentsContract = {
     .route({ method: "POST", path: "/tracking/refresh-all" })
     .output(z.object({ updated: z.number().int(), total: z.number().int() })),
 
+  cancelShipment: oc
+    .route({ method: "POST", path: "/{shipmentId}/cancel" })
+    .input(z.object({ shipmentId: z.number().int() }))
+    .output(z.object({ shipment: shipmentSchema })),
+
   quote: oc
     .route({ method: "POST", path: "/quote" })
     .input(quoteShipmentInputSchema)

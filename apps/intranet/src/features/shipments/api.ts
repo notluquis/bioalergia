@@ -88,6 +88,14 @@ export async function refreshAllTracking() {
   }
 }
 
+export async function cancelShipment(shipmentId: number) {
+  try {
+    return await shipmentsORPCClient.cancelShipment({ shipmentId });
+  } catch (error) {
+    throw toShipmentsApiError(error);
+  }
+}
+
 export async function quoteShipment(input: {
   originCoverageCode: string;
   destinationCoverageCode: string;

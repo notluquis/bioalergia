@@ -26,6 +26,7 @@ import {
 import { z } from "zod";
 import { logError } from "../lib/logger.ts";
 import {
+  cancelShipment,
   closeShipmentCertificate,
   createShipment,
   fetchCommercialOffices,
@@ -188,6 +189,20 @@ const shipmentsRouterBase = {
     .input(emptySchema)
     .output(z.object({ updated: z.number().int(), total: z.number().int() }))
     .handler(async () => refreshAllTracking()),
+
+  cancelShipment: base
+    .route({
+      method: "POST",
+      path: "/{shipmentId}/cancel",
+      summary: "Cancelar envío (local; Chilexpress no anula OTs por API)",
+      tags: ["Shipments"],
+    })
+    .input(z.object({ shipmentId: z.number().int() }))
+    .output(z.object({ shipment: serializedShipmentSchema }))
+    .handler(async ({ input }) => {
+      const shipment = await cancelShipment(input.shipmentId);
+      return { shipment };
+    }),
 
   quote: base
     .route({ method: "POST", path: "/quote", summary: "Quote shipment cost", tags: ["Shipments"] })
