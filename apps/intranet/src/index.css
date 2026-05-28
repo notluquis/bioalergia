@@ -598,3 +598,15 @@ body {
   background-color: var(--color-default-200);
   color: var(--color-default-700);
 }
+
+/* === HeroUI NumberField without steppers === */
+/* .number-field__group is a 3-col grid (grid-template-columns: 40px 1fr 40px)
+   sized for [DecrementButton][Input][IncrementButton]. When the steppers are
+   omitted — our default for plain numeric entry — the lone <Input> auto-places
+   into the first 40px column and clips its value horizontally (e.g. "0,5"
+   renders "0," + a sliced "5"). Collapse to a single column when neither
+   stepper slot is present so the input spans the full group width. Keyed on
+   the same [slot] hooks HeroUI's own number-field.css uses. */
+.number-field__group:not(:has([slot="decrement"])):not(:has([slot="increment"])) {
+  grid-template-columns: 1fr;
+}

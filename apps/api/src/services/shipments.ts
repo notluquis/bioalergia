@@ -386,7 +386,7 @@ export async function createShipment(input: CreateShipmentInput) {
     countyCoverageCode: brand.shipmentReturnCoverageCode || cfg.originCoverageCode,
     streetName: brand.shipmentReturnStreet || brand.orgAddress || senderName,
     streetNumber: brand.shipmentReturnNumber || "1",
-    supplement: "",
+    supplement: brand.shipmentReturnSupplement || "",
     addressType: "DEV" as const,
     deliveryOnCommercialOffice: false,
     observation: "",

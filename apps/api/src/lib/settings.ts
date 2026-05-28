@@ -25,6 +25,7 @@ export type AppSettings = {
   // Chilexpress exige DEST + DEV en cada envío; sin DEV devuelve -7.
   shipmentReturnStreet: string;
   shipmentReturnNumber: string;
+  shipmentReturnSupplement: string;
   shipmentReturnCoverageCode: string;
 };
 
@@ -53,6 +54,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   shopLowStockThreshold: "3",
   shipmentReturnStreet: "",
   shipmentReturnNumber: "",
+  shipmentReturnSupplement: "",
   shipmentReturnCoverageCode: "",
 };
 
@@ -81,6 +83,7 @@ const SETTINGS_KEY_MAP: Record<keyof AppSettings, string> = {
   shopLowStockThreshold: "shop.lowStockThreshold",
   shipmentReturnStreet: "shipments.return.street",
   shipmentReturnNumber: "shipments.return.number",
+  shipmentReturnSupplement: "shipments.return.supplement",
   shipmentReturnCoverageCode: "shipments.return.coverageCode",
 };
 
