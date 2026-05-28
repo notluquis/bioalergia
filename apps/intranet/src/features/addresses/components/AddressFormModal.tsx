@@ -27,7 +27,10 @@ import {
   getStreetNumbers,
   searchStreets,
 } from "@/features/shipments/api";
-import { createAddress, updateAddress } from "../api";
+import { createAddress, listAddresses, updateAddress } from "../api";
+
+// Etiquetas comunes sugeridas; el campo acepta valor personalizado igual.
+const LABEL_PRESETS = ["Principal", "Casa", "Trabajo", "Familiar", "Consulta"] as const;
 
 interface AddressFormState {
   label: string;
@@ -78,9 +81,20 @@ export function AddressFormModal({
   });
   const regions = regionsResponse?.regions ?? [];
 
+  // Direcciones existentes del paciente: solo para decidir si esta es la
+  // PRIMERA (entonces sugerimos "Principal"). Sin esto, defaulteábamos
+  // "Principal" siempre, incluso en la 2ª/3ª dirección.
+  const { data: existingAddresses } = useQuery({
+    queryKey: ["addresses", personId],
+    queryFn: () => listAddresses(personId),
+    enabled: isOpen && !isEditMode,
+    staleTime: 1000 * 30,
+  });
+  const isFirstAddress = !isEditMode && (existingAddresses?.length ?? 0) === 0;
+
   const form = useForm({
     defaultValues: {
-      label: draft?.label ?? "Principal",
+      label: draft?.label ?? "",
       street: draft?.street ?? "",
       number: draft?.number ?? "",
       supplement: draft?.supplement ?? "",
@@ -137,6 +151,18 @@ export function AddressFormModal({
   // render and never reactively updates.
   const regionValue = useStore(form.store, (state) => String(state.values.region ?? ""));
   const comunaValue = useStore(form.store, (state) => String(state.values.comuna ?? ""));
+  const labelValue = useStore(form.store, (state) => state.values.label);
+
+  // Si es la primera dirección del paciente y aún no escribió etiqueta,
+  // sugerir "Principal" (precargada, editable). En la 2ª+ queda vacía para
+  // que elija una etiqueta común o personalizada.
+  const [labelDefaulted, setLabelDefaulted] = useState(false);
+  useEffect(() => {
+    if (isFirstAddress && !labelDefaulted && labelValue === "") {
+      form.setFieldValue("label", "Principal");
+      setLabelDefaulted(true);
+    }
+  }, [isFirstAddress, labelDefaulted, labelValue, form]);
 
   const { data: communesResponse, isLoading: loadingCommunes } = useQuery({
     queryKey: ["cx-communes", regionValue],
@@ -248,14 +274,33 @@ export function AddressFormModal({
               >
                 <form.Field name="label">
                   {(field) => (
-                    <TextField
+                    <ComboBox
+                      allowsCustomValue
+                      allowsEmptyCollection
                       isRequired
-                      onChange={(v) => field.handleChange(v)}
-                      value={field.state.value}
+                      menuTrigger="focus"
+                      inputValue={field.state.value}
+                      onInputChange={(v) => field.handleChange(v)}
+                      onSelectionChange={(key) => {
+                        if (key != null) field.handleChange(String(key));
+                      }}
                     >
                       <Label>Etiqueta</Label>
-                      <Input placeholder="Casa, Trabajo, ..." />
-                    </TextField>
+                      <ComboBox.InputGroup>
+                        <Input placeholder="Principal, Casa, Trabajo..." />
+                        <ComboBox.Trigger />
+                      </ComboBox.InputGroup>
+                      <ComboBox.Popover>
+                        <ListBox>
+                          {LABEL_PRESETS.map((preset) => (
+                            <ListBox.Item key={preset} id={preset} textValue={preset}>
+                              {preset}
+                              <ListBox.ItemIndicator />
+                            </ListBox.Item>
+                          ))}
+                        </ListBox>
+                      </ComboBox.Popover>
+                    </ComboBox>
                   )}
                 </form.Field>
 
