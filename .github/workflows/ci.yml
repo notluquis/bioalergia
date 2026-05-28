@@ -47,6 +47,13 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # intranet's vitest config has a browser-mode Storybook project
+      # (instances: [{ browser: "chromium" }]). `turbo run test` launches it,
+      # so chromium must be present or the run dies with an unhandled
+      # "Executable doesn't exist" error. Mirrors quality.yml / snapshots.yml.
+      - name: Install Chromium for browser-mode vitest
+        run: pnpm -F @finanzas/intranet exec playwright install --with-deps chromium
+
       - name: Lint, type-check and test
         env:
           TURBO_TELEMETRY_DISABLED: "1"
