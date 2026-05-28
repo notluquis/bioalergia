@@ -378,7 +378,7 @@ export async function createShipment(input: CreateShipmentInput) {
   // Chilexpress la retorna en tracking + cierre de certificado.
   const shipmentRef = `BIO-${input.patientId}-${Math.floor(Date.now() / 1000)}`;
 
-  const response = await createTransportOrder(cfg, {
+  const otPayload = {
     header: {
       certificateNumber: Number.isFinite(headerCertificateNumber) ? headerCertificateNumber : 0,
       customerCardNumber: cfg.clientRut,
@@ -441,7 +441,13 @@ export async function createShipment(input: CreateShipmentInput) {
         ],
       },
     ],
-  });
+  };
+
+  // Diag temporal: log del request EXACTO que recibe Chilexpress (sin base64;
+  // el request no lo tiene). Para cazar por qué -7 con addressType correcto.
+  console.error("[shipments.createOT.request]", JSON.stringify(otPayload));
+
+  const response = await createTransportOrder(cfg, otPayload);
 
   const result = response.data?.detail?.[0];
   if (!result?.transportOrderNumber) {
