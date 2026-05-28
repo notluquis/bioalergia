@@ -8,6 +8,7 @@ import {
   getStreetNumbers,
   reprintLabel,
   searchStreets,
+  trackBulkTransportOrders,
   trackTransportOrder,
 } from "../client.ts";
 
@@ -261,12 +262,19 @@ describe("chilexpress client", () => {
   });
 
   it("reprintLabel posts transportOrderNumber + parses label", async () => {
+    // Spec: data.detail[] (array) con label anidado en detail[i].label.labelData.
     fetchSpy.mockReturnValueOnce(
       mockJson({
         statusCode: 0,
         data: {
-          detail: { transportOrderNumber: "OT123", reference: "ref", barcode: "BC1" },
-          label: "BASE64==",
+          detail: [
+            {
+              transportOrderNumber: "OT123",
+              reference: "ref",
+              barcode: "BC1",
+              label: { labelData: "BASE64==", labelType: "Binary" },
+            },
+          ],
         },
       })
     );
@@ -323,5 +331,36 @@ describe("chilexpress client", () => {
       location: "Conce",
     });
     expect(fetchSpy.mock.calls[0]?.[0]).toContain("/tracking");
+  });
+
+  it("trackBulkTransportOrders maps each entry via the shared mapper", async () => {
+    fetchSpy.mockReturnValueOnce(
+      mockJson({
+        statusDescription: "OK",
+        data: [
+          {
+            transportOrderData: { status: "ENTREGADO", reference: "BIO-1" },
+            trackingEvents: [{ eventDate: "2026-05-08", description: "ENTREGADO" }],
+          },
+          {
+            transportOrderData: { status: "EN RUTA", reference: "BIO-2" },
+            trackingEvents: [],
+          },
+        ],
+      })
+    );
+    const r = await trackBulkTransportOrders(cfg, {
+      rut: 96756430,
+      showTrackingEvents: true,
+      items: [
+        { transportOrderNumber: "OT1", reference: "BIO-1" },
+        { transportOrderNumber: "OT2", reference: "BIO-2" },
+      ],
+    });
+    expect(r).toHaveLength(2);
+    expect(r[0]).toMatchObject({ status: "ENTREGADO", reference: "BIO-1" });
+    expect(r[0]?.events[0]).toMatchObject({ date: "2026-05-08", description: "ENTREGADO" });
+    expect(r[1]).toMatchObject({ status: "EN RUTA", reference: "BIO-2", events: [] });
+    expect(fetchSpy.mock.calls[0]?.[0]).toContain("/tracking/bulk");
   });
 });

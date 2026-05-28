@@ -4,9 +4,14 @@ on:
   push:
     branches:
       - main
+      # forthcoming-ocelot es la rama de deploy (Railway). Antes solo main
+      # corría lint/type-check/test/build, así que cambios api-only en la rama
+      # de deploy no tenían gate (quality.yml cubre solo intranet/packages).
+      - forthcoming-ocelot
   pull_request:
     branches:
       - main
+      - forthcoming-ocelot
 
 jobs:
   quality:

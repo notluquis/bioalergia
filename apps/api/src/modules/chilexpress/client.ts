@@ -426,21 +426,27 @@ export async function createTransportOrder(
 
 export async function reprintLabel(
   config: ChilexpressConfig,
-  input: { transportOrderNumber: string; labelType?: number; reportType?: number }
+  input: { transportOrderNumber: string; labelType?: number }
 ): Promise<{ label?: string; barcode?: string; reference?: string }> {
+  // Spec /transport-orders-labels: body {transportOrderNumber, labelType}.
+  // labelType 2 = imagen binaria (base64). reportType NO está en el spec.
   const body = {
-    transportOrderNumber: input.transportOrderNumber,
+    transportOrderNumber:
+      typeof input.transportOrderNumber === "string"
+        ? Number(input.transportOrderNumber)
+        : input.transportOrderNumber,
     labelType: input.labelType ?? 2,
-    reportType: input.reportType ?? 0,
   };
+  // La respuesta tiene el MISMO shape que generar OT: data.detail[] (array) con
+  // la etiqueta anidada en detail[i].label.labelData (no en data.label).
   const res = await cxFetch<{
     data?: {
-      detail?: {
-        transportOrderNumber: string;
+      detail?: Array<{
+        transportOrderNumber?: string;
         reference?: string;
         barcode?: string;
-      };
-      label?: string;
+        label?: { labelData?: string; labelType?: number | string };
+      }>;
     };
     statusCode?: number;
     statusDescription?: string;
@@ -448,13 +454,14 @@ export async function reprintLabel(
     method: "POST",
     body: JSON.stringify(body),
   });
-  if (res.statusCode !== 0 || !res.data) {
+  const detail = res.data?.detail?.[0];
+  if (res.statusCode !== 0 || !detail) {
     throw new Error(`Chilexpress reprint failed: ${res.statusDescription ?? "unknown"}`);
   }
   return {
-    label: res.data.label,
-    barcode: res.data.detail?.barcode,
-    reference: res.data.detail?.reference,
+    label: detail.label?.labelData,
+    barcode: detail.barcode,
+    reference: detail.reference,
   };
 }
 
@@ -518,84 +525,61 @@ export interface CxTrackingResult {
   events: CxTrackingEvent[];
 }
 
-export async function trackTransportOrder(
-  config: ChilexpressConfig,
-  input: {
-    transportOrderNumber: string | number;
-    /** Referencia del cliente (deliveryReference). Spec obligatorio. */
-    reference?: string;
-    /** RUT empresa sin puntos/DV (ej. 96756430). Spec obligatorio. */
-    rut?: string | number;
-    /** 0 = solo estado actual, 1 = todos los eventos. Default 1. */
-    showTrackingEvents?: 0 | 1;
-  }
-): Promise<CxTrackingResult> {
-  const body = {
-    transportOrderNumber:
-      typeof input.transportOrderNumber === "string"
-        ? Number(input.transportOrderNumber)
-        : input.transportOrderNumber,
-    reference: input.reference ?? "",
-    rut: typeof input.rut === "string" ? Number(input.rut) : (input.rut ?? 0),
-    showTrackingEvents: input.showTrackingEvents ?? 1,
+/** Shape de `data` en /tracking (y de cada entry en /tracking/bulk). */
+interface CxTrackingRawData {
+  addressData?: {
+    destinationCoverageCode?: string;
+    originCoverageCode?: string;
+    address?: string;
+    latitude?: string;
+    longitude?: string;
   };
-  const res = await cxFetch<{
-    data?: {
-      addressData?: {
-        destinationCoverageCode?: string;
-        originCoverageCode?: string;
-        address?: string;
-        latitude?: string;
-        longitude?: string;
-      };
-      deliveryData?: {
-        receptorRut?: string;
-        receptorName?: string;
-        deliveryDate?: string;
-        deliveryHour?: string;
-        deliveryDateTime?: string;
-      };
-      trackingEvents?: Array<{
-        eventDate?: string;
-        eventHour?: string;
-        description?: string;
-        motive?: string;
-        location?: string;
-        latitude?: string;
-        longitude?: string;
-        eventDateTime?: string;
-        officeId?: string;
-        certificadoEntrega?: string;
-        code?: {
-          eventCode?: string;
-          compEventCode?: string;
-          clientEventCode?: string;
-          clientCompEventCode?: string;
-          clientEventDescription?: string;
-        };
-      }>;
-      transportOrderData?: {
-        transportOrderNumber?: string;
-        certificateNumber?: string;
-        reference?: string;
-        product?: string;
-        service?: string;
-        dimensions?: string;
-        weight?: string;
-        status?: string;
-        locationStatus?: string;
-      };
+  deliveryData?: {
+    receptorRut?: string;
+    receptorName?: string;
+    deliveryDate?: string;
+    deliveryHour?: string;
+    deliveryDateTime?: string;
+  };
+  trackingEvents?: Array<{
+    eventDate?: string;
+    eventHour?: string;
+    description?: string;
+    motive?: string;
+    location?: string;
+    latitude?: string;
+    longitude?: string;
+    eventDateTime?: string;
+    officeId?: string;
+    certificadoEntrega?: string;
+    code?: {
+      eventCode?: string;
+      compEventCode?: string;
+      clientEventCode?: string;
+      clientCompEventCode?: string;
+      clientEventDescription?: string;
     };
-    statusCode?: number;
-    statusDescription?: string;
-  }>(config, "transport-orders", "/tracking", {
-    method: "POST",
-    body: JSON.stringify(body),
-  });
+  }>;
+  transportOrderData?: {
+    transportOrderNumber?: string;
+    certificateNumber?: string;
+    reference?: string;
+    product?: string;
+    service?: string;
+    dimensions?: string;
+    weight?: string;
+    status?: string;
+    locationStatus?: string;
+  };
+}
 
-  const data = res.data;
+/** Mapea el `data` de tracking (single o un entry de bulk) a CxTrackingResult. */
+function mapTrackingResult(
+  data: CxTrackingRawData | undefined,
+  statusDescription?: string
+): CxTrackingResult {
   return {
-    statusDescription: res.statusDescription,
+    statusDescription,
     status: data?.transportOrderData?.status,
     locationStatus: data?.transportOrderData?.locationStatus,
     service: data?.transportOrderData?.service,
@@ -625,6 +609,38 @@ export async function trackTransportOrder(
   };
 }
 
+export async function trackTransportOrder(
+  config: ChilexpressConfig,
+  input: {
+    transportOrderNumber: string | number;
+    /** Referencia del cliente (deliveryReference). Spec obligatorio. */
+    reference?: string;
+    /** RUT empresa sin puntos/DV (ej. 96756430). Spec obligatorio. */
+    rut?: string | number;
+    /** 0 = solo estado actual, 1 = todos los eventos. Default 1. */
+    showTrackingEvents?: 0 | 1;
+  }
+): Promise<CxTrackingResult> {
+  const body = {
+    transportOrderNumber:
+      typeof input.transportOrderNumber === "string"
+        ? Number(input.transportOrderNumber)
+        : input.transportOrderNumber,
+    reference: input.reference ?? "",
+    rut: typeof input.rut === "string" ? Number(input.rut) : (input.rut ?? 0),
+    showTrackingEvents: input.showTrackingEvents ?? 1,
+  };
+  const res = await cxFetch<{
+    data?: CxTrackingRawData;
+    statusCode?: number;
+    statusDescription?: string;
+  }>(config, "transport-orders", "/tracking", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+  return mapTrackingResult(res.data, res.statusDescription);
+}
+
 /**
  * Tracking en lote (hasta varias OTs en una sola request). El spec define
  * `/tracking/bulk` con body `{rut, showTrackingEvents, trackingInput[{reference,
@@ -639,13 +655,12 @@ export async function trackBulkTransportOrders(
     items: Array<{ transportOrderNumber: string | number; reference?: string }>;
   }
 ): Promise<CxTrackingResult[]> {
+  // Spec BulkTrackingRequest: {rut, showTrackingEvents:boolean, trackingInput[
+  // {transportOrderNumber, reference}]}. El response de /tracking/bulk no está
+  // documentado en el spec; asumimos data[] de entries con el MISMO shape que
+  // /tracking single y reusamos el mismo mapper (parse completo, con eventos).
   const res = await cxFetch<{
-    data?: Array<{
-      addressData?: unknown;
-      deliveryData?: unknown;
-      trackingEvents?: unknown[];
-      transportOrderData?: { transportOrderNumber?: string; status?: string };
-    }>;
+    data?: CxTrackingRawData[];
     statusCode?: number;
     statusDescription?: string;
   }>(config, "transport-orders", "/tracking/bulk", {
@@ -662,20 +677,7 @@ export async function trackBulkTransportOrders(
       })),
     }),
   });
-  // Cada entry en data tiene el mismo shape que /tracking. Reutilizamos el
-  // mapper inline (versión más simple, sin events porque bulk suele venir sin).
-  return (res.data ?? []).map((entry) => {
-    const td = entry.transportOrderData as
-      | { transportOrderNumber?: string; status?: string; reference?: string }
-      | undefined;
-    return {
-      statusDescription: res.statusDescription,
-      status: td?.status,
-      reference: td?.reference,
-      certificateNumber: undefined,
-      events: [],
-    } satisfies CxTrackingResult;
-  });
+  return (res.data ?? []).map((entry) => mapTrackingResult(entry, res.statusDescription));
 }
 
 // ─── Manifiesto (certificados de transporte) ──────────────────────────────────
