@@ -403,12 +403,16 @@ export function AddressFormModal({
                   </div>
                   <form.Field name="number">
                     {(field) => {
-                      const num = Number(field.state.value);
+                      const raw = field.state.value;
+                      const num = Number(raw);
                       const outOfRange =
                         validNumbers.length > 0 &&
                         Number.isFinite(num) &&
                         num > 0 &&
                         !validNumbers.includes(num);
+                      // Chilexpress FAQ "No hay órdenes generadas": el campo
+                      // numeración solo admite dígitos (texto rompe la API).
+                      const nonNumeric = raw.trim() !== "" && !/^\d+$/.test(raw.trim());
                       return (
                         <TextField
                           isRequired
@@ -416,10 +420,15 @@ export function AddressFormModal({
                           value={field.state.value}
                         >
                           <Label>Número</Label>
-                          <Input placeholder="1234" />
+                          <Input placeholder="1234" inputMode="numeric" />
                           {minNumber != null && maxNumber != null ? (
                             <Description>
                               Rango Chilexpress: {minNumber} – {maxNumber}
+                            </Description>
+                          ) : null}
+                          {nonNumeric ? (
+                            <Description className="text-danger">
+                              Solo dígitos: Chilexpress rechaza letras en la numeración.
                             </Description>
                           ) : null}
                           {outOfRange ? (
@@ -441,6 +450,31 @@ export function AddressFormModal({
                     </TextField>
                   )}
                 </form.Field>
+
+                {/*
+                  Chilexpress FAQ "Cuál es el largo de la dirección que se
+                  muestra en la etiqueta": la API trunca a 47 caracteres entre
+                  calle + número + complemento (queda completo en el sistema
+                  pero la etiqueta impresa pierde el sobrante). Avisamos al
+                  operador antes de guardar para que reescriba si quiere que
+                  la etiqueta quede legible.
+                */}
+                <form.Subscribe
+                  selector={(s) => [s.values.street, s.values.number, s.values.supplement] as const}
+                >
+                  {([street, number, supplement]) => {
+                    const joined =
+                      `${street} ${number}${supplement ? " " + supplement : ""}`.trim();
+                    const len = joined.length;
+                    if (len <= 47) return null;
+                    return (
+                      <p className="rounded-md bg-warning-50 px-3 py-2 text-sm text-warning-700">
+                        Dirección de {len} caracteres — Chilexpress trunca la etiqueta a 47. Se
+                        guardará completa, pero la etiqueta impresa solo mostrará los primeros 47.
+                      </p>
+                    );
+                  }}
+                </form.Subscribe>
 
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <form.Field name="postalCode">

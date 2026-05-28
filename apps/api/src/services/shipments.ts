@@ -25,6 +25,7 @@ function serializeShipment(s: ShipmentRow): SerializedShipment {
 import { chilexpressConfig } from "../lib/config.ts";
 import {
   createTransportOrder,
+  friendlyChilexpressError,
   georeferenceAddress,
   getCommercialOffices,
   getCommunes,
@@ -255,9 +256,15 @@ export async function createShipment(input: CreateShipmentInput) {
 
   const result = response.data?.detail?.[0];
   if (!result?.transportOrderNumber) {
-    throw new Error(
-      `ChileExpress no devolvió OT. Mensaje: ${response.statusDescription ?? response.message ?? "sin detalles"}`
+    // Mensaje crudo: Chilexpress devuelve 200 OK con statusDescription
+    // detallando por qué no creó la OT (TCC suspendida, servicio no
+    // habilitado, sin cobertura, etc). Lo traducimos a UX accionable.
+    const raw = response.statusDescription ?? response.message ?? "sin detalles";
+    const friendly = friendlyChilexpressError(
+      200,
+      JSON.stringify({ statusDescription: raw, statusCode: response.statusCode })
     );
+    throw new Error(friendly ?? `ChileExpress no devolvió OT. Mensaje: ${raw}`);
   }
 
   const otNumber = result.transportOrderNumber;

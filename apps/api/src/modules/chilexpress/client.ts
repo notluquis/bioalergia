@@ -52,10 +52,57 @@ async function cxFetch<T>(
 
   if (!res.ok) {
     const text = await res.text().catch(() => res.statusText);
-    throw new Error(`ChileExpress API error ${res.status}: ${text}`);
+    const friendly = friendlyChilexpressError(res.status, text);
+    throw new Error(friendly ?? `ChileExpress API error ${res.status}: ${text}`);
   }
 
   return res.json() as Promise<T>;
+}
+
+/**
+ * Mapea mensajes conocidos de Chilexpress (statusDescription + HTTP status) a
+ * texto accionable en español para el operador. Cubre los casos del FAQ
+ * oficial y los códigos que aparecen en respuestas de error reales.
+ *
+ * Devuelve null si no hay match → el caller usa el mensaje original.
+ */
+export function friendlyChilexpressError(httpStatus: number, body: string): null | string {
+  // Intentar parsear como JSON; varias APIs (orders, rating) devuelven
+  // { statusCode, message, statusDescription } incluso en HTTP 4xx/5xx.
+  let parsed: { message?: string; statusDescription?: string; statusCode?: number } | null = null;
+  try {
+    parsed = JSON.parse(body);
+  } catch {
+    parsed = null;
+  }
+  const msg = parsed?.statusDescription ?? parsed?.message ?? body;
+  const haystack = msg.toLowerCase();
+
+  if (httpStatus === 401 || /invalid subscription key|access denied/i.test(msg)) {
+    return "Chilexpress: las credenciales (subscription key) no son válidas o están deshabilitadas. Revisar las API keys del producto correspondiente en el portal dev.";
+  }
+  if (/no existe tarjeta chilexpress|no existe tarjeta cliente/i.test(haystack)) {
+    return "Chilexpress: la TCC configurada no existe en este ambiente. Si estás en sandbox usar la TCC de pruebas (18578680); si estás en producción contactar al ejecutivo.";
+  }
+  if (/tarjeta no se encuentra vigente|tcc.*suspend|tcc.*vencid/i.test(haystack)) {
+    return "Chilexpress: la TCC está suspendida (no pago o cupo excedido). Habilitación tras contactar al ejecutivo demora ~24 h.";
+  }
+  if (/tcc.*no se encuentra habilitada.*servicio/i.test(haystack)) {
+    return "Chilexpress: la TCC no tiene habilitado este servicio (Prioritario / Devolución). Pedirlo al ejecutivo.";
+  }
+  if (/no existe servicio de entrega.*comunas/i.test(haystack)) {
+    return "Chilexpress: no hay servicio de entrega disponible para la combinación origen-destino seleccionada.";
+  }
+  if (/el largo de la numeraci[oó]n excede/i.test(haystack)) {
+    return "Chilexpress: la numeración de la dirección excede el largo permitido.";
+  }
+  if (/json de entrada no es v[aá]lido/i.test(haystack)) {
+    return "Chilexpress: payload JSON inválido (campo malformado o vacío). Reportar como bug si persiste.";
+  }
+  if (/la orden de transporte consultada no se corresponde al.*rut/i.test(haystack)) {
+    return "Chilexpress: la OT consultada no corresponde al RUT del cliente (sandbox usa el RUT 96756430).";
+  }
+  return null;
 }
 
 // ─── Coverage ─────────────────────────────────────────────────────────────────
@@ -193,14 +240,24 @@ export async function getCommercialOffices(
 
 export async function getNearbyOffices(
   config: ChilexpressConfig,
-  addressId: number
+  addressId: number,
+  options?: {
+    /** Spec: 0 = sucursales propias (default) | 4 = Tiendas Pick Up. */
+    type?: 0 | 4;
+    /** Radio de búsqueda en km (entero, opcional). */
+    radius?: number;
+  }
 ): Promise<Array<{ distance: string; office: CxCommercialOffice }>> {
   // Per spec the response key is "nearbyOffice" (singular). Also
   // tolerate "nearbyOffices" in case the API ever harmonises.
+  const params = new URLSearchParams();
+  if (options?.type != null) params.set("type", String(options.type));
+  if (options?.radius != null) params.set("radius", String(Math.trunc(options.radius)));
+  const qs = params.toString();
   const data = await cxFetch<{
     nearbyOffice?: Array<{ distance: string; office: CxRawOffice }>;
     nearbyOffices?: Array<{ distance: string; office: CxRawOffice }>;
-  }>(config, "georeference", `/nearby-offices/${addressId}`);
+  }>(config, "georeference", `/nearby-offices/${addressId}${qs ? `?${qs}` : ""}`);
   const list = data.nearbyOffice ?? data.nearbyOffices ?? [];
   return list.map((entry) => ({
     distance: entry.distance,
@@ -256,8 +313,18 @@ export async function searchStreets(
  */
 export async function getStreetNumbers(
   config: ChilexpressConfig,
-  streetNameId: number
+  streetNameId: number,
+  /**
+   * Filtro opcional del spec: cuando se pasa, el endpoint solo devuelve la
+   * entrada exacta para ese número (útil para validar un número específico
+   * sin descargar la lista completa de numeraciones de la calle).
+   */
+  streetNumber?: string | number
 ): Promise<Array<{ number: number; latitude?: number; longitude?: number; addressId: number }>> {
+  const qs =
+    streetNumber != null && String(streetNumber).trim() !== ""
+      ? `?streetNumber=${encodeURIComponent(String(streetNumber))}`
+      : "";
   const data = await cxFetch<{
     streetNumbers?: Array<{
       number: number;
@@ -265,7 +332,7 @@ export async function getStreetNumbers(
       longitude?: number;
       addressId: number;
     }>;
-  }>(config, "georeference", `/streets/${streetNameId}/numbers`);
+  }>(config, "georeference", `/streets/${streetNameId}/numbers${qs}`);
   return data.streetNumbers ?? [];
 }
 
