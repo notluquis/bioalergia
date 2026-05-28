@@ -1,6 +1,20 @@
 import { db } from "@finanzas/db";
 import dayjs from "dayjs";
+import { DomainError } from "../lib/errors.ts";
 import "../lib/time.ts";
+
+// pg unique-violation SQLSTATE. ZenStack/Kysely surface the underlying pg
+// error untouched, so `code === "23505"` is the stable check.
+const PG_UNIQUE_VIOLATION = "23505";
+
+function isPgUniqueViolation(err: unknown): boolean {
+  return (
+    typeof err === "object" &&
+    err !== null &&
+    "code" in err &&
+    (err as { code?: unknown }).code === PG_UNIQUE_VIOLATION
+  );
+}
 
 export type ProductionBalancePayload = {
   balanceDate: string;
@@ -52,29 +66,46 @@ export async function getProductionBalanceById(id: number) {
 }
 
 export async function createProductionBalance(data: ProductionBalancePayload, userId: number) {
-  return await db.dailyProductionBalance.create({
-    data: {
-      balanceDate: toDateOnly(data.balanceDate),
-      ingresoTarjetas: data.ingresoTarjetas,
-      ingresoTransferencias: data.ingresoTransferencias,
-      ingresoEfectivo: data.ingresoEfectivo,
-      gastosDiarios: data.gastosDiarios,
-      otrosAbonos: data.otrosAbonos,
-      comentarios: data.comentarios ?? null,
-      status: data.status ?? "DRAFT",
-      changeReason: data.changeReason ?? null,
-      createdBy: userId,
-      consultasMonto: data.consultasMonto,
-      controlesMonto: data.controlesMonto,
-      testsMonto: data.testsMonto,
-      vacunasMonto: data.vacunasMonto,
-      licenciasMonto: data.licenciasMonto,
-      roxairMonto: data.roxairMonto,
-    },
-    include: {
-      user: { select: { person: { select: { email: true } } } },
-    },
-  });
+  try {
+    return await db.dailyProductionBalance.create({
+      data: {
+        balanceDate: toDateOnly(data.balanceDate),
+        ingresoTarjetas: data.ingresoTarjetas,
+        ingresoTransferencias: data.ingresoTransferencias,
+        ingresoEfectivo: data.ingresoEfectivo,
+        gastosDiarios: data.gastosDiarios,
+        otrosAbonos: data.otrosAbonos,
+        comentarios: data.comentarios ?? null,
+        status: data.status ?? "DRAFT",
+        changeReason: data.changeReason ?? null,
+        createdBy: userId,
+        consultasMonto: data.consultasMonto,
+        controlesMonto: data.controlesMonto,
+        testsMonto: data.testsMonto,
+        vacunasMonto: data.vacunasMonto,
+        licenciasMonto: data.licenciasMonto,
+        roxairMonto: data.roxairMonto,
+      },
+      include: {
+        user: { select: { person: { select: { email: true } } } },
+      },
+    });
+  } catch (err) {
+    // `balanceDate` is `@unique` (one balance per day). Translate the pg
+    // duplicate-key into a typed CONFLICT so the boundary returns 409 with a
+    // useful message instead of a generic 500. Prior to the mapResponse fix,
+    // the first save succeeded in DB but oRPC output validation threw 500;
+    // every retry hit this constraint. The 409 lets the UI prompt a reload
+    // even if a similar race surfaces in the future.
+    if (isPgUniqueViolation(err)) {
+      throw new DomainError(
+        "CONFLICT",
+        "Ya existe un balance para esta fecha. Recarga la página para editarlo.",
+        { balanceDate: data.balanceDate }
+      );
+    }
+    throw err;
+  }
 }
 
 export async function updateProductionBalance(id: number, data: ProductionBalanceUpdatePayload) {
