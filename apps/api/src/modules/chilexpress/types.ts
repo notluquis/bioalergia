@@ -159,6 +159,22 @@ export interface CxTransportOrderInput {
       productCode: string;
       multivariateCode: string;
       numberOfPackages: number;
+      /**
+       * Referencia única del envío (identifica este bulto en tracking + cierre
+       * de certificado). Spec marca obligatorio.
+       */
+      deliveryReference: string;
+      /**
+       * Referencia del grupo de bultos. Para envíos de un solo bulto, igual
+       * a deliveryReference. Spec marca obligatorio.
+       */
+      groupReference: string;
+      /**
+       * Código del tipo de producto enviado (declaredContent). Spec:
+       * 1 = Artículos Personales, 2 = Educación, 4 = Vestuario, 5 = Otros,
+       * 7 = Tecnología, 10000331 = Celular.
+       */
+      declaredContent?: string;
       /** Add-on services per package (e.g. 417 = Cobertura Extendida). */
       additionalServices?: Array<{ serviceTypeCode: number }>;
     }>;

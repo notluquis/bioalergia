@@ -254,6 +254,16 @@ export async function createShipment(input: CreateShipmentInput) {
             productCode: "2",
             multivariateCode: input.serviceTypeCode,
             numberOfPackages: 1,
+            // Spec marca deliveryReference y groupReference como obligatorios.
+            // Generamos identificador único por shipment usando el patientId
+            // del input + epoch en segundos — Chilexpress lo retorna en
+            // tracking + cierre de certificado para conciliar con nuestra DB.
+            deliveryReference: `BIO-${input.patientId}-${Math.floor(Date.now() / 1000)}`,
+            groupReference: `BIO-${input.patientId}-${Math.floor(Date.now() / 1000)}`,
+            // declaredContent: 1 Personales, 2 Educación, 4 Vestuario, 5 Otros,
+            // 7 Tecnología. Inmunoterapia no encaja en ninguna específica
+            // → "Otros" es lo más correcto sin inventar categoría.
+            declaredContent: "5",
             ...(input.additionalServiceCodes && input.additionalServiceCodes.length > 0
               ? {
                   additionalServices: input.additionalServiceCodes.map((c) => ({
