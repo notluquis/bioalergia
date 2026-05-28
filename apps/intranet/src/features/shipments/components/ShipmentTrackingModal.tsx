@@ -93,14 +93,14 @@ export function ShipmentTrackingModal({
               ) : (
                 <>
                   <div className="flex items-center gap-2 rounded-xl border border-default-100 bg-default-50 px-4 py-3">
-                    <Chip
-                      color={statusChipColor(data.tracking.statusCodeReference)}
-                      size="sm"
-                      variant="soft"
-                    >
-                      <Chip.Label>{data.tracking.statusCodeReference ?? "—"}</Chip.Label>
+                    <Chip color={statusChipColor(data.tracking.status)} size="sm" variant="soft">
+                      <Chip.Label>{data.tracking.status ?? "—"}</Chip.Label>
                     </Chip>
-                    <Label>{data.tracking.statusDescription ?? "Sin estado"}</Label>
+                    <Label>
+                      {data.tracking.statusDescription ??
+                        data.tracking.locationStatus ??
+                        "Sin estado"}
+                    </Label>
                   </div>
 
                   {data.tracking.events.length === 0 ? (
@@ -144,7 +144,13 @@ export function ShipmentTrackingModal({
 function TimelineList({
   events,
 }: {
-  events: Array<{ name?: string | null; location?: string | null; date?: string | null }>;
+  events: Array<{
+    description?: string | null;
+    clientDescription?: string | null;
+    location?: string | null;
+    date?: string | null;
+    hour?: string | null;
+  }>;
 }) {
   // Most recent at top. We mark the freshest event as "current" with a
   // pulsing CheckCircle2 ring so the operator's eye lands on it.
@@ -153,9 +159,11 @@ function TimelineList({
       <span aria-hidden className="absolute top-2 bottom-2 left-3 w-px bg-default-200" />
       {events.map((e, i) => {
         const isCurrent = i === 0;
-        const { Icon, color } = styleForEvent(e.name);
+        const label = e.clientDescription ?? e.description;
+        const { Icon, color } = styleForEvent(label);
+        const when = [e.date, e.hour].filter(Boolean).join(" ");
         return (
-          <li key={`${i}-${e.date ?? e.name ?? "ev"}`} className="relative">
+          <li key={`${i}-${e.date ?? label ?? "ev"}`} className="relative">
             <span
               aria-hidden
               className={`absolute -left-7 top-0.5 inline-flex size-6 items-center justify-center rounded-full ring-2 ${
@@ -170,7 +178,7 @@ function TimelineList({
             </span>
             <div className="space-y-0.5">
               <div className="flex flex-wrap items-center gap-1.5">
-                <Label className="text-sm">{e.name ?? "Evento"}</Label>
+                <Label className="text-sm">{label ?? "Evento"}</Label>
                 <Chip color={color} size="sm" variant="soft">
                   <Chip.Label>{isCurrent ? "Actual" : "Histórico"}</Chip.Label>
                 </Chip>
@@ -181,9 +189,7 @@ function TimelineList({
                   {e.location}
                 </Description>
               ) : null}
-              {e.date ? (
-                <Description className="text-default-400 text-xs">{e.date}</Description>
-              ) : null}
+              {when ? <Description className="text-default-400 text-xs">{when}</Description> : null}
             </div>
           </li>
         );

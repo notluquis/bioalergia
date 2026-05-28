@@ -85,13 +85,49 @@ export const cxGeocodeSchema = z.object({
 
 export const cxTrackingEventSchema = z.object({
   date: z.string().optional(),
-  name: z.string().optional(),
+  hour: z.string().optional(),
+  dateTime: z.string().optional(),
+  description: z.string().optional(),
+  clientDescription: z.string().optional(),
+  eventCode: z.string().optional(),
+  compEventCode: z.string().optional(),
+  clientEventCode: z.string().optional(),
+  motive: z.string().optional(),
   location: z.string().optional(),
+  latitude: z.string().optional(),
+  longitude: z.string().optional(),
+  officeId: z.string().optional(),
+  certificadoEntrega: z.string().optional(),
 });
 
 export const cxTrackingResultSchema = z.object({
-  statusCodeReference: z.string().optional(),
   statusDescription: z.string().optional(),
+  status: z.string().optional(),
+  locationStatus: z.string().optional(),
+  service: z.string().optional(),
+  product: z.string().optional(),
+  dimensions: z.string().optional(),
+  weight: z.string().optional(),
+  certificateNumber: z.string().optional(),
+  reference: z.string().optional(),
+  delivery: z
+    .object({
+      receptorName: z.string().optional(),
+      receptorRut: z.string().optional(),
+      deliveryDate: z.string().optional(),
+      deliveryHour: z.string().optional(),
+      deliveryDateTime: z.string().optional(),
+    })
+    .optional(),
+  address: z
+    .object({
+      address: z.string().optional(),
+      destinationCoverageCode: z.string().optional(),
+      originCoverageCode: z.string().optional(),
+      latitude: z.string().optional(),
+      longitude: z.string().optional(),
+    })
+    .optional(),
   events: z.array(cxTrackingEventSchema),
 });
 

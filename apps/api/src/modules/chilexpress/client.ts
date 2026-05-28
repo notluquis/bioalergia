@@ -14,7 +14,14 @@ export interface ChilexpressConfig {
   coverageApiKey: string;
   ratingApiKey: string;
   ordersApiKey: string;
+  /** TCC (Tarjeta Cliente Chilexpress) — el cargo de los envíos va acá. */
   clientRut: string;
+  /**
+   * RUT de la empresa que genera las OTs (sin puntos ni DV). Necesario para
+   * los endpoints /tracking y /tracking/bulk como campo obligatorio según el
+   * spec. En sandbox = 96756430.
+   */
+  companyRut?: string;
   originCoverageCode: string;
   sandbox: boolean;
 }

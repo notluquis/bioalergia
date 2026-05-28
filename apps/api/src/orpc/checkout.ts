@@ -74,9 +74,9 @@ const quoteRoute = base
 
     const options =
       res.data?.courierServiceOptions?.map((o) => ({
-        service_code: o.serviceTypeCode,
+        service_code: String(o.serviceTypeCode),
         service_description: o.serviceDescription,
-        shipping_clp: Math.round(o.serviceValue),
+        shipping_clp: Math.round(Number(o.serviceValue)),
         delivery_time_days: o.deliveryTime ?? null,
       })) ?? [];
 

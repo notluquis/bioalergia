@@ -22,6 +22,7 @@ import {
 import { z } from "zod";
 import { logError } from "../lib/logger.ts";
 import {
+  closeShipmentCertificate,
   createShipment,
   fetchCommercialOffices,
   fetchCommunes,
@@ -30,8 +31,10 @@ import {
   fetchStreetNumbers,
   fetchStreets,
   geocodeAddress,
+  getShipmentCertificate,
   listAllShipments,
   listShipmentsByPatient,
+  openShipmentCertificate,
   quoteShipment,
   refreshShipmentTracking,
   reprintShipmentLabel,
@@ -52,6 +55,28 @@ const officeSchema = cxCommercialOfficeSchema;
 
 const base = os.$context<Record<string, never>>();
 const emptySchema = z.object({});
+
+const closedCertificateSchema = z.object({
+  certificateNumber: z.string().optional(),
+  printedDate: z.string().optional(),
+  rutNumber: z.number().optional(),
+  businessName: z.string().optional(),
+  amountOfPieces: z.number().optional(),
+  customerCardNumber: z.number().optional(),
+  dropNumber: z.number().optional(),
+  pickupAddress: z.string().optional(),
+  binaryImage: z.string().optional(),
+  imagePdf: z.string().optional(),
+  detail: z
+    .array(
+      z.object({
+        product: z.string().optional(),
+        service: z.string().optional(),
+        amount: z.number().optional(),
+      })
+    )
+    .optional(),
+});
 
 const shipmentsRouterBase = {
   getRegions: base
@@ -216,6 +241,55 @@ const shipmentsRouterBase = {
       const shipments = await listAllShipments();
       return { shipments };
     }),
+
+  // ─── Manifiesto (certificados de transporte) ────────────────────────────
+  //
+  // Flujo Chilexpress: abrir certificado → OTs lo referencian → cerrar al final
+  // del día → obtener PDF base64 del manifiesto. Reconsulta via getCertificate.
+
+  openCertificate: base
+    .route({
+      method: "POST",
+      path: "/certificates/open",
+      summary: "Abrir certificado (manifiesto) Chilexpress",
+      tags: ["Shipments"],
+    })
+    .input(emptySchema)
+    .output(
+      z.object({
+        certificateNumber: z.string(),
+        statusDescription: z.string().optional(),
+      })
+    )
+    .handler(async () => openShipmentCertificate()),
+
+  closeCertificate: base
+    .route({
+      method: "POST",
+      path: "/certificates/close",
+      summary: "Cerrar certificado y obtener PDF del manifiesto",
+      tags: ["Shipments"],
+    })
+    .input(
+      z.object({
+        certificateNumber: z.union([z.string(), z.number()]),
+        certificateType: z.union([z.literal(1), z.literal(2)]).optional(),
+        dropNumber: z.number().int().optional(),
+      })
+    )
+    .output(closedCertificateSchema)
+    .handler(async ({ input }) => closeShipmentCertificate(input)),
+
+  getCertificate: base
+    .route({
+      method: "GET",
+      path: "/certificates/{certificateNumber}",
+      summary: "Consultar certificado cerrado (PDF + detalle)",
+      tags: ["Shipments"],
+    })
+    .input(z.object({ certificateNumber: z.string() }))
+    .output(closedCertificateSchema)
+    .handler(async ({ input }) => getShipmentCertificate(input.certificateNumber)),
 };
 
 export const shipmentsORPCRouter = base.prefix("/api/orpc/shipments").router(shipmentsRouterBase);

@@ -159,6 +159,12 @@ export interface ChilexpressConfig {
   ratingApiKey: string;
   ordersApiKey: string;
   clientRut: string;
+  /**
+   * RUT de la empresa que emite las OTs (sin puntos ni DV). Sandbox = 96756430;
+   * en producción es el RUT real de la clínica. Necesario para /tracking y
+   * manifiestos (cierre y consulta de certificados).
+   */
+  companyRut?: string;
   originCoverageCode: string;
   sandbox: boolean;
 }
@@ -174,6 +180,8 @@ const cxClientRut = process.env.CHILEXPRESS_TCC;
 if (!cxClientRut) cxMissing.push("CHILEXPRESS_TCC");
 const cxOriginCode = process.env.CHILEXPRESS_ORIGIN_COVERAGE_CODE;
 if (!cxOriginCode) cxMissing.push("CHILEXPRESS_ORIGIN_COVERAGE_CODE");
+// Opcional: si no está, tracking funciona en sandbox pero prod requiere RUT real.
+const cxCompanyRut = process.env.CHILEXPRESS_COMPANY_RUT;
 
 export const chilexpressConfig: ChilexpressConfig | null =
   cxCoverageKey && cxRatingKey && cxOrdersKey && cxClientRut && cxOriginCode
@@ -182,6 +190,7 @@ export const chilexpressConfig: ChilexpressConfig | null =
         ratingApiKey: cxRatingKey,
         ordersApiKey: cxOrdersKey,
         clientRut: cxClientRut,
+        companyRut: cxCompanyRut || undefined,
         originCoverageCode: cxOriginCode,
         sandbox: process.env.CHILEXPRESS_SANDBOX !== "false",
       }

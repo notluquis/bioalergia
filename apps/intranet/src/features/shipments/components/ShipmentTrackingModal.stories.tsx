@@ -15,22 +15,22 @@ const ok = (data: unknown) => HttpResponse.json({ json: data, meta: [] });
 
 const DELIVERED_EVENTS = [
   {
-    name: "Entregado al destinatario",
+    description: "Entregado al destinatario",
     location: "Las Condes, Región Metropolitana",
     date: "2026-05-12 14:32",
   },
   {
-    name: "En reparto",
+    description: "En reparto",
     location: "Centro de distribución Vitacura",
     date: "2026-05-12 09:10",
   },
   {
-    name: "En tránsito hacia centro de distribución",
+    description: "En tránsito hacia centro de distribución",
     location: "Aeropuerto SCL",
     date: "2026-05-11 22:45",
   },
   {
-    name: "Admitido en oficina origen",
+    description: "Admitido en oficina origen",
     location: "Sucursal Las Condes Apoquindo",
     date: "2026-05-11 16:20",
   },
@@ -38,17 +38,17 @@ const DELIVERED_EVENTS = [
 
 const IN_TRANSIT_EVENTS = [
   {
-    name: "En reparto",
+    description: "En reparto",
     location: "Centro de distribución Vitacura",
     date: "2026-05-13 08:00",
   },
   {
-    name: "En tránsito",
+    description: "En tránsito",
     location: "Camión de larga distancia",
     date: "2026-05-12 22:00",
   },
   {
-    name: "Recepcionado en oficina origen",
+    description: "Recepcionado en oficina origen",
     location: "Sucursal Las Condes Apoquindo",
     date: "2026-05-12 17:15",
   },
@@ -56,17 +56,17 @@ const IN_TRANSIT_EVENTS = [
 
 const REJECTED_EVENTS = [
   {
-    name: "Devolución a remitente",
+    description: "Devolución a remitente",
     location: "Centro de distribución Vitacura",
     date: "2026-05-13 11:20",
   },
   {
-    name: "Entrega fallida — destinatario ausente",
+    description: "Entrega fallida — destinatario ausente",
     location: "Las Condes",
     date: "2026-05-13 09:05",
   },
   {
-    name: "En reparto",
+    description: "En reparto",
     location: "Centro de distribución Vitacura",
     date: "2026-05-13 07:40",
   },
@@ -137,7 +137,7 @@ export const Delivered: Story = {
         http.post("*/api/orpc/shipments/rpc/trackShipment", () =>
           ok({
             tracking: {
-              statusCodeReference: "ENT",
+              status: "ENT",
               statusDescription: "Entregado al destinatario",
               events: DELIVERED_EVENTS,
             },
@@ -157,7 +157,7 @@ export const InTransit: Story = {
         http.post("*/api/orpc/shipments/rpc/trackShipment", () =>
           ok({
             tracking: {
-              statusCodeReference: "RUTA",
+              status: "RUTA",
               statusDescription: "En ruta de distribución",
               events: IN_TRANSIT_EVENTS,
             },
@@ -177,7 +177,7 @@ export const NoEventsYet: Story = {
         http.post("*/api/orpc/shipments/rpc/trackShipment", () =>
           ok({
             tracking: {
-              statusCodeReference: "P",
+              status: "P",
               statusDescription: "Pendiente de retiro",
               events: [],
             },
@@ -197,7 +197,7 @@ export const Rejected: Story = {
         http.post("*/api/orpc/shipments/rpc/trackShipment", () =>
           ok({
             tracking: {
-              statusCodeReference: "DEV",
+              status: "DEV",
               statusDescription: "Devolución en proceso",
               events: REJECTED_EVENTS,
             },
@@ -217,7 +217,7 @@ export const Loading: Story = {
         http.post("*/api/orpc/shipments/rpc/trackShipment", async () => {
           await new Promise((resolve) => setTimeout(resolve, 60_000));
           return ok({
-            tracking: { statusCodeReference: null, statusDescription: null, events: [] },
+            tracking: { status: null, statusDescription: null, events: [] },
           });
         }),
       ],

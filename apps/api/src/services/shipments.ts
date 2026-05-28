@@ -25,8 +25,11 @@ function serializeShipment(s: ShipmentRow): SerializedShipment {
 import { chilexpressConfig } from "../lib/config.ts";
 import {
   createTransportOrder,
+  closeCertificate,
+  createCertificate,
   friendlyChilexpressError,
   georeferenceAddress,
+  getCertificate,
   getCommercialOffices,
   getCommunes,
   getNearbyOffices,
@@ -114,15 +117,57 @@ export async function refreshShipmentTracking(shipmentId: number) {
   const cfg = requireCxConfig();
   const shipment = await db.shipment.findUnique({ where: { id: shipmentId } });
   if (!shipment) throw new Error("Shipment no encontrado");
-  const tracking = await trackTransportOrder(cfg, shipment.otNumber);
+  // Spec /tracking exige transportOrderNumber + reference + rut + showTrackingEvents.
+  // shipment.reference es el deliveryReference que mandamos al crear la OT;
+  // companyRut viene de la env CHILEXPRESS_COMPANY_RUT (en sandbox = 96756430).
+  const tracking = await trackTransportOrder(cfg, {
+    transportOrderNumber: shipment.otNumber,
+    reference: shipment.reference ?? undefined,
+    rut: cfg.companyRut,
+    showTrackingEvents: 1,
+  });
   await db.shipment.update({
     where: { id: shipmentId },
     data: {
-      trackingStatus: tracking.statusDescription ?? null,
+      trackingStatus: tracking.status ?? tracking.statusDescription ?? null,
       trackingUpdatedAt: new Date(),
     },
   });
   return tracking;
+}
+
+/**
+ * Manifiesto del día: crea un certificado, devuelve su número. Las OTs
+ * generadas en lo que resta del día deberían referenciar este certificateNumber
+ * en su header (en vez del 0 default) para quedar agrupadas. Al final del día
+ * se cierra con `closeShipmentCertificate(certificateNumber)` para obtener
+ * el PDF del manifiesto.
+ */
+export async function openShipmentCertificate() {
+  const cfg = requireCxConfig();
+  const result = await createCertificate(cfg, cfg.clientRut);
+  return result;
+}
+
+/**
+ * Cierra el certificado del día y devuelve el PDF del manifiesto (base64) +
+ * detalle por producto/servicio. Operación de fin-de-día: una vez cerrado el
+ * certificado, las OTs asociadas no se pueden alterar y se imprime el
+ * manifiesto para entregar el lote al courier en la sucursal.
+ */
+export async function closeShipmentCertificate(input: {
+  certificateNumber: string | number;
+  certificateType?: 1 | 2;
+  dropNumber?: number;
+}) {
+  const cfg = requireCxConfig();
+  return closeCertificate(cfg, input);
+}
+
+/** Reconsulta un certificado cerrado para obtener su PDF (base64) y detalle. */
+export async function getShipmentCertificate(certificateNumber: string | number) {
+  const cfg = requireCxConfig();
+  return getCertificate(cfg, certificateNumber);
 }
 
 export async function quoteShipment(input: {
@@ -155,15 +200,34 @@ export async function quoteShipment(input: {
   });
 
   const services = response.data?.courierServiceOptions ?? [];
-  // Si la respuesta vino de /rates/business, sobrescribir serviceValue con
-  // serviceValueDiscount (el precio efectivo a cobrar) para que el wizard
-  // muestre la tarifa real y la OT use ese valor.
+  // Chilexpress devuelve tipos mixtos (string|number, "true"/"1"/bool) según
+  // tier y env. Normalizar al shape del contrato (cxServiceOptionSchema) acá,
+  // en el boundary, para que el output validator no caiga y el wizard reciba
+  // tipos limpios. Si la respuesta vino de /rates/business, usar
+  // serviceValueDiscount (precio efectivo a cobrar) en vez de serviceValue.
   return services.map((s) => {
-    if (s.serviceValueDiscount != null && s.serviceValueDiscount !== "") {
-      return { ...s, serviceValue: s.serviceValueDiscount };
-    }
-    return s;
+    const effectiveValue =
+      s.serviceValueDiscount != null && s.serviceValueDiscount !== ""
+        ? s.serviceValueDiscount
+        : s.serviceValue;
+    return {
+      serviceTypeCode: String(s.serviceTypeCode),
+      serviceDescription: s.serviceDescription,
+      serviceValue: Number(effectiveValue),
+      deliveryTime: s.deliveryTime,
+      didUseVolumetricWeight: coerceBool(s.didUseVolumetricWeight),
+      finalWeight: s.finalWeight == null ? undefined : Number(s.finalWeight),
+      conditions: s.conditions,
+      deliveryType: s.deliveryType,
+    };
   });
+}
+
+/** Chilexpress manda bool como `true`/`false` o "true"/"1"/"0". Normalizar. */
+function coerceBool(value: boolean | string | undefined): boolean | undefined {
+  if (value == null) return undefined;
+  if (typeof value === "boolean") return value;
+  return value === "true" || value === "1";
 }
 
 export async function createShipment(input: CreateShipmentInput) {
