@@ -1,6 +1,12 @@
 import * as XLSX from "xlsx";
 import { validateRut, formatRut } from "../lib/rut.ts";
 
+// 2026-05-27.1: standalone-RUT scan now reaches r16 (was r12, missed clinics
+// with tall logo headers pushing RUT to r13/r14). Bad-DV RUTs surface as
+// `malformed_rut [warning]` instead of `missing_rut [error]` so imports with
+// a typo (transposed body digit, off-by-1 DV, K↔digit confusion) materialize
+// via name+date matching while keeping the raw typo visible for manual fix.
+//
 // 2026-05-25.1: fix cross-panel cell leak in two-column layouts. The allergen
 // name must share the code's panel (adjacent cell or same column block), so a
 // stray metric value (e.g. a control's erythema) can no longer be paired with
@@ -8,7 +14,7 @@ import { validateRut, formatRut } from "../lib/rut.ts";
 // codes (MH, ME, MO, MP, PC, LT…) that were previously dropped, while still
 // rejecting 3+ letter allergen names. isAllergenNameCell only demotes a section
 // header to a name when the preceding code sits in the same panel.
-export const SKIN_TEST_PARSER_VERSION = "2026-05-25.1";
+export const SKIN_TEST_PARSER_VERSION = "2026-05-27.1";
 
 export interface SkinTestIssue {
   code: string;
@@ -126,7 +132,25 @@ export function parseSkinTestWorksheet(worksheet: XLSX.WorkSheet): ParsedSkinTes
     });
   }
   if (!header.patientRut) {
-    issues.push({ code: "missing_rut", message: "No se encontró RUT válido.", severity: "error" });
+    // A RUT-shaped value may be present but rejected by módulo-11 validation
+    // (data-entry typo: wrong check digit, transposed body digits, K↔digit
+    // confusion). We can't auto-link to a patient with a bad RUT, but we
+    // shouldn't block the whole import — fall back to name+date matching and
+    // surface the malformed value as a warning so a human can fix it.
+    const malformed = extractMalformedRutCandidate(cells);
+    if (malformed) {
+      issues.push({
+        code: "malformed_rut",
+        message: `RUT presente pero con dígito verificador inválido: "${malformed}". Se importará vinculando por nombre y fecha; corregir manualmente.`,
+        severity: "warning",
+      });
+    } else {
+      issues.push({
+        code: "missing_rut",
+        message: "No se encontró RUT válido.",
+        severity: "error",
+      });
+    }
   }
   if (!header.testDate) {
     issues.push({
@@ -345,13 +369,25 @@ function extractRowLabelValue(cells: CellPoint[], label: string): null | string 
   return null;
 }
 
+// RUT body 7–8 digits with optional . , or space thousand-separators, dash, DV
+// (digit or K, case-insensitive). Tolerates Excel's "25,883,164-7" formatting.
+const RUT_LIKE_PATTERN = /\b(?:\d{1,2}[\s.,]?\d{3}[\s.,]?\d{3}|\d{7,8})\s*-\s*[\dkK]\b/;
+
 function extractStandaloneRut(cells: CellPoint[]): null | string {
-  const rutPattern = /\b(?:\d{1,2}[\s.,]?\d{3}[\s.,]?\d{3}|\d{7,8})\s*-\s*[\dkK]\b/;
+  // Header zone scan: some clinics push the RUT row down to r13/r14 with a tall
+  // logo block; row<=16 covers observed layouts without leaking into results.
   const candidate = cells
-    .filter((cell) => cell.row <= 12)
+    .filter((cell) => cell.row <= 16)
     .sort((left, right) => left.row - right.row || left.col - right.col)
-    .find((cell) => rutPattern.test(cell.text));
-  return candidate?.text.match(rutPattern)?.[0] ?? null;
+    .find((cell) => RUT_LIKE_PATTERN.test(cell.text));
+  return candidate?.text.match(RUT_LIKE_PATTERN)?.[0] ?? null;
+}
+
+// Locate a RUT-shaped value WITHOUT modulo-11 validation, for malformed_rut
+// reporting. Returns the raw cell substring so the warning can quote the typo
+// verbatim (the operator can spot which digit/DV is wrong).
+function extractMalformedRutCandidate(cells: CellPoint[]): null | string {
+  return extractStandaloneRut(cells);
 }
 
 function cleanHeaderValue(value: null | string): null | string {
