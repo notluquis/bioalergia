@@ -150,17 +150,15 @@ export interface CxTransportOrderInput {
       contactType: "D" | "R";
     }>;
     packages: Array<{
-      weight: number;
-      height: number;
-      width: number;
-      length: number;
+      // Spec (Package): peso/dimensiones como string con punto.
+      weight: string;
+      height: string;
+      width: string;
+      length: string;
+      /** Código del servicio de entrega, obtenido de la API Cotización. */
       serviceDeliveryCode: string;
-      declaredValue: string;
-      cashOnDelivery: string;
-      descriptionOfContent: string;
+      /** 1 = Documento, 3 = Encomienda. */
       productCode: string;
-      multivariateCode: string;
-      numberOfPackages: number;
       /**
        * Referencia única del envío (identifica este bulto en tracking + cierre
        * de certificado). Spec marca obligatorio.
@@ -171,12 +169,16 @@ export interface CxTransportOrderInput {
        * a deliveryReference. Spec marca obligatorio.
        */
       groupReference: string;
+      /** Valor declarado del producto. */
+      declaredValue?: string;
       /**
        * Código del tipo de producto enviado (declaredContent). Spec:
        * 1 = Artículos Personales, 2 = Educación, 4 = Vestuario, 5 = Otros,
        * 7 = Tecnología, 10000331 = Celular.
        */
       declaredContent?: string;
+      /** Monto a cobrar contra entrega (COD), si está habilitado. */
+      receivableAmountInDelivery?: number;
       /** Add-on services per package (e.g. 417 = Cobertura Extendida). */
       additionalServices?: Array<{ serviceTypeCode: number }>;
     }>;

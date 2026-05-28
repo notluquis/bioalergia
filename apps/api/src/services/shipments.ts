@@ -23,7 +23,7 @@ function serializeShipment(s: ShipmentRow): SerializedShipment {
   } as SerializedShipment;
 }
 import { chilexpressConfig } from "../lib/config.ts";
-import { deleteSetting, getSetting, updateSetting } from "../lib/settings.ts";
+import { deleteSetting, getSetting, loadSettings, updateSetting } from "../lib/settings.ts";
 import {
   createTransportOrder,
   closeCertificate,
@@ -347,6 +347,18 @@ export async function createShipment(input: CreateShipmentInput) {
   const activeManifest = await getActiveManifest();
   const headerCertificateNumber = activeManifest ? Number(activeManifest.certificateNumber) : 0;
 
+  // Chilexpress exige contacto destinatario (D) Y remitente (R). El remitente
+  // es la clínica: tomamos nombre/teléfono/correo de Settings (con fallback).
+  const brand = await loadSettings();
+  const senderName = brand.orgName || "Bioalergia";
+  const senderPhone = (brand.orgPhone || "").replace(/\D/g, "") || "000000000";
+  const senderMail = brand.supportEmail || "contacto@bioalergia.cl";
+
+  // Referencia única del envío (deliveryReference == groupReference para un
+  // solo bulto). Calcularla UNA vez: con dos Date.now() podían diferir por 1ms.
+  // Chilexpress la retorna en tracking + cierre de certificado.
+  const shipmentRef = `BIO-${input.patientId}-${Math.floor(Date.now() / 1000)}`;
+
   const response = await createTransportOrder(cfg, {
     header: {
       certificateNumber: Number.isFinite(headerCertificateNumber) ? headerCertificateNumber : 0,
@@ -366,30 +378,39 @@ export async function createShipment(input: CreateShipmentInput) {
             mail: input.recipientEmail ?? "",
             contactType: "D" as const,
           },
+          {
+            // Remitente (R) — la clínica. Spec lo marca obligatorio junto al D.
+            name: senderName,
+            phoneNumber: senderPhone,
+            mail: senderMail,
+            contactType: "R" as const,
+          },
         ],
         packages: [
           {
-            weight: input.weight,
-            height: input.height,
-            width: input.width,
-            length: input.length,
+            // Spec (Package): weight/height/width/length como string con punto.
+            weight: String(input.weight),
+            height: String(input.height),
+            width: String(input.width),
+            length: String(input.length),
+            // Código del servicio elegido en cotización (3=EXPRESS, etc).
             serviceDeliveryCode: input.serviceTypeCode,
+            // productCode: 1 = Documento, 3 = Encomienda. Antes "2" (inválido).
+            productCode: "3",
+            // deliveryReference y groupReference obligatorios (spec). Mismo valor
+            // para envío de un solo bulto. Chilexpress los retorna en tracking +
+            // cierre de certificado para conciliar con nuestra DB.
+            deliveryReference: shipmentRef,
+            groupReference: shipmentRef,
             declaredValue: String(Math.round(input.declaredValue)),
-            cashOnDelivery: String(Math.round(input.cashOnDelivery)),
-            descriptionOfContent: input.contentDescription,
-            productCode: "2",
-            multivariateCode: input.serviceTypeCode,
-            numberOfPackages: 1,
-            // Spec marca deliveryReference y groupReference como obligatorios.
-            // Generamos identificador único por shipment usando el patientId
-            // del input + epoch en segundos — Chilexpress lo retorna en
-            // tracking + cierre de certificado para conciliar con nuestra DB.
-            deliveryReference: `BIO-${input.patientId}-${Math.floor(Date.now() / 1000)}`,
-            groupReference: `BIO-${input.patientId}-${Math.floor(Date.now() / 1000)}`,
             // declaredContent: 1 Personales, 2 Educación, 4 Vestuario, 5 Otros,
-            // 7 Tecnología. Inmunoterapia no encaja en ninguna específica
-            // → "Otros" es lo más correcto sin inventar categoría.
+            // 7 Tecnología. Inmunoterapia → "Otros".
             declaredContent: "5",
+            // receivableAmountInDelivery: monto a cobrar contra entrega (COD).
+            // Solo si > 0; inmunoterapia normalmente es prepagada.
+            ...(input.cashOnDelivery > 0
+              ? { receivableAmountInDelivery: Math.round(input.cashOnDelivery) }
+              : {}),
             ...(input.additionalServiceCodes && input.additionalServiceCodes.length > 0
               ? {
                   additionalServices: input.additionalServiceCodes.map((c) => ({
