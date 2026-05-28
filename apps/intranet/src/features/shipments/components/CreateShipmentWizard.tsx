@@ -1005,8 +1005,12 @@ function QuoteStep({
           fullWidth
           isRequired
           minValue={0.1}
+          // Chilexpress rejects shipments over 100 kg (FAQ "Dimensión y/o peso máximo").
+          maxValue={100}
           step={0.1}
           value={dims.weight}
+          // FAQ "Cómo se ingresan los valores de pesos y dimensiones": hasta 2 decimales,
+          // separados por punto. JS number → JSON.stringify usa siempre punto.
           formatOptions={{ minimumFractionDigits: 1, maximumFractionDigits: 2 }}
           onChange={(v) => setDims((d) => ({ ...d, weight: v }))}
         >
@@ -1033,11 +1037,19 @@ function QuoteStep({
             <NumberField.IncrementButton />
           </NumberField.Group>
         </NumberField>
+        {/*
+          Chilexpress acepta hasta 2 decimales por lado (FAQ "valores de pesos y
+          dimensiones") y rechaza envíos con cualquier lado >200 cm. Sobre 70 cm
+          o sobre 15 kg el servicio se enruta a "Encomiendas Grandes" (cód 41/42).
+        */}
         <NumberField
           fullWidth
           isRequired
           minValue={1}
+          maxValue={200}
+          step={0.5}
           value={dims.height}
+          formatOptions={{ maximumFractionDigits: 2 }}
           onChange={(v) => setDims((d) => ({ ...d, height: v }))}
         >
           <Label>Alto (cm)</Label>
@@ -1051,7 +1063,10 @@ function QuoteStep({
           fullWidth
           isRequired
           minValue={1}
+          maxValue={200}
+          step={0.5}
           value={dims.width}
+          formatOptions={{ maximumFractionDigits: 2 }}
           onChange={(v) => setDims((d) => ({ ...d, width: v }))}
         >
           <Label>Ancho (cm)</Label>
@@ -1065,8 +1080,11 @@ function QuoteStep({
           fullWidth
           isRequired
           minValue={1}
+          maxValue={200}
+          step={0.5}
           value={dims.length}
           className="col-span-2"
+          formatOptions={{ maximumFractionDigits: 2 }}
           onChange={(v) => setDims((d) => ({ ...d, length: v }))}
         >
           <Label>Largo (cm)</Label>
@@ -1077,6 +1095,13 @@ function QuoteStep({
           </NumberField.Group>
         </NumberField>
       </div>
+
+      {(dims.weight > 15 || dims.height > 70 || dims.width > 70 || dims.length > 70) && (
+        <p className="rounded-md bg-warning-50 px-3 py-2 text-sm text-warning-700">
+          Esta carga supera 70 cm o 15 kg: Chilexpress la enrutará al servicio{" "}
+          <strong>Encomiendas Grandes</strong> (tarifa distinta, tiempo de entrega más largo).
+        </p>
+      )}
 
       {isFetching ? (
         <div className="flex items-center justify-center gap-2 py-4 text-default-500 text-sm">
