@@ -46,7 +46,10 @@ export function ManifestPanel() {
   });
 
   const closeMutation = useMutation({
-    mutationFn: () => closeManifest(),
+    // Pasamos el certificateNumber que la UI ya muestra en vez de depender de
+    // que el server re-lea el KV (evita "No hay manifiesto activo" por desync).
+    mutationFn: (certificateNumber?: string) =>
+      closeManifest(certificateNumber ? { certificateNumber } : undefined),
     onError: (e) => toastError(e instanceof Error ? e.message : "Error al cerrar manifiesto"),
     onSuccess: (res) => {
       const pdf = res.imagePdf ?? res.binaryImage;
@@ -70,7 +73,7 @@ export function ManifestPanel() {
       confirmLabel: "Cerrar y descargar PDF",
       variant: "danger",
     });
-    if (ok) closeMutation.mutate();
+    if (ok) closeMutation.mutate(active?.certificateNumber);
   }
 
   if (isLoading) {

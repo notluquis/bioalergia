@@ -134,10 +134,11 @@ export interface CxTransportOrderInput {
       streetName: string;
       streetNumber: string;
       supplement?: string;
-      // Chilexpress exige exactamente "Dest" (destinatario) o "Dev"
-      // (devolución) — capitalizado así, NO en mayúsculas ("DEST" → 400
-      // "ingrese el tipo de dirección correctamente como Dev o Dest").
-      addressType: "Dest" | "Dev";
+      // Spec (TransportOrderAddress + ejemplo JSON): valor MAYÚSCULA "DEST"
+      // (entrega) / "DEV" (devolución). El mensaje de error de Chilexpress
+      // muestra "Dest/Dev" en texto humano, pero el token aceptado es el del
+      // spec en mayúscula. Probar "Dest" capitalizado también dio statusCode -7.
+      addressType: "DEST" | "DEV";
       deliveryOnCommercialOffice: boolean;
       commercialOfficeId: string;
       observation?: string;

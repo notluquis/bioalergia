@@ -13,6 +13,23 @@ function toJsonValue(value: unknown): JsonValue {
   return JSON.parse(JSON.stringify(value)) as JsonValue;
 }
 
+// pg unique-violation SQLSTATE. ZenStack envuelve el error de pg en un ORMError
+// con `dbErrorCode`; el pg crudo trae `code` (y a veces queda en `cause.code`).
+// Chequear los tres para ser robusto al boundary que lo lance.
+const PG_UNIQUE_VIOLATION = "23505";
+
+function isUniqueViolation(err: unknown): boolean {
+  if (typeof err !== "object" || err === null) {
+    return false;
+  }
+  const e = err as { code?: unknown; dbErrorCode?: unknown; cause?: { code?: unknown } };
+  return (
+    e.code === PG_UNIQUE_VIOLATION ||
+    e.dbErrorCode === PG_UNIQUE_VIOLATION ||
+    e.cause?.code === PG_UNIQUE_VIOLATION
+  );
+}
+
 function hasShallowDataChanges<TRecord extends Record<string, unknown>>(
   existing: Record<string, unknown>,
   data: TRecord
@@ -103,13 +120,14 @@ async function upsertAppointment(
     return "skipped";
   }
 
+  // El externalId es GLOBALMENTE único en Doctoralia (constraint
+  // `doctoralia_calendar_appointments_external_id_key`). Una cita puede MOVERSE
+  // de schedule (otro doctor/agenda) conservando su externalId. Buscar por el
+  // compuesto (scheduleId, externalId) devolvía null al moverse → create →
+  // 23505 dup key sobre external_id. La búsqueda y el update van por externalId
+  // solo; el scheduleId es un atributo que se actualiza si la cita migró.
   const existing = await db.doctoraliaCalendarAppointment.findUnique({
-    where: {
-      scheduleId_externalId: {
-        scheduleId,
-        externalId: appointment.id,
-      },
-    },
+    where: { externalId: appointment.id },
   });
 
   if (existing) {
@@ -119,12 +137,7 @@ async function upsertAppointment(
     }
 
     await db.doctoraliaCalendarAppointment.update({
-      where: {
-        scheduleId_externalId: {
-          scheduleId,
-          externalId: appointment.id,
-        },
-      },
+      where: { externalId: appointment.id },
       data,
     });
     console.log(
@@ -142,7 +155,21 @@ async function upsertAppointment(
     return "updated";
   }
 
-  await db.doctoraliaCalendarAppointment.create({ data });
+  try {
+    await db.doctoraliaCalendarAppointment.create({ data });
+  } catch (error) {
+    // Carrera: otra entrada del mismo batch (Promise.all) insertó esta cita
+    // entre el findUnique y el create. external_id es único → 23505. Es
+    // idempotente reintentar como update en vez de propagar el error.
+    if (isUniqueViolation(error)) {
+      await db.doctoraliaCalendarAppointment.update({
+        where: { externalId: appointment.id },
+        data,
+      });
+      return "updated";
+    }
+    throw error;
+  }
   console.log(
     `[DoctoraliaSync] appointment ${appointment.id} inserted (${appointment.title} @ ${appointment.start})`
   );

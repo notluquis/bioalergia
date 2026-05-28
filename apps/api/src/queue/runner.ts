@@ -82,9 +82,12 @@ export async function startQueueRunner(): Promise<void> {
 
   runner = await run({
     connectionString,
+    // Pool = 1 LISTEN + concurrency work slots. concurrency 1 matches the
+    // RAM-minimal design (heavy sequential syncs, no parallelism needed) and
+    // keeps maxPoolSize (2) > concurrency — graphile-worker warns otherwise.
     maxPoolSize: 2,
     schema: "graphile_worker",
-    concurrency: 3,
+    concurrency: 1,
     noHandleSignals: false,
     taskList,
     parsedCronItems,
