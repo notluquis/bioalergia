@@ -336,7 +336,7 @@ export async function createShipment(input: CreateShipmentInput) {
     streetName,
     streetNumber,
     supplement,
-    addressType: "DEST" as const,
+    addressType: "Dest" as const,
     deliveryOnCommercialOffice,
     commercialOfficeId,
     observation,

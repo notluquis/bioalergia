@@ -303,14 +303,16 @@ export const closeManifestInputSchema = z.object({
   dropNumber: z.number().int().optional(),
 });
 
+// Chilexpress devuelve tipos mixtos (certificateNumber como número, montos a
+// veces como string). coerce evita "Output validation failed" en el boundary.
 export const closedCertificateSchema = z.object({
-  certificateNumber: z.string().optional(),
+  certificateNumber: z.coerce.string().optional(),
   printedDate: z.string().optional(),
-  rutNumber: z.number().optional(),
+  rutNumber: z.coerce.number().optional(),
   businessName: z.string().optional(),
-  amountOfPieces: z.number().optional(),
-  customerCardNumber: z.number().optional(),
-  dropNumber: z.number().optional(),
+  amountOfPieces: z.coerce.number().optional(),
+  customerCardNumber: z.coerce.number().optional(),
+  dropNumber: z.coerce.number().optional(),
   pickupAddress: z.string().optional(),
   binaryImage: z.string().optional(),
   imagePdf: z.string().optional(),
@@ -319,7 +321,7 @@ export const closedCertificateSchema = z.object({
       z.object({
         product: z.string().optional(),
         service: z.string().optional(),
-        amount: z.number().optional(),
+        amount: z.coerce.number().optional(),
       })
     )
     .optional(),

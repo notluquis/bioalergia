@@ -134,8 +134,10 @@ export interface CxTransportOrderInput {
       streetName: string;
       streetNumber: string;
       supplement?: string;
-      // "DEST" = dirección destino, "DEV" = dirección devolución.
-      addressType: "DEST" | "DEV";
+      // Chilexpress exige exactamente "Dest" (destinatario) o "Dev"
+      // (devolución) — capitalizado así, NO en mayúsculas ("DEST" → 400
+      // "ingrese el tipo de dirección correctamente como Dev o Dest").
+      addressType: "Dest" | "Dev";
       deliveryOnCommercialOffice: boolean;
       commercialOfficeId: string;
       observation?: string;

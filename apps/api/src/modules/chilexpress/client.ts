@@ -722,19 +722,23 @@ export async function createCertificate(
   const tcc = customerCardNumber ?? config.clientRut;
   const qs = tcc != null && String(tcc).trim() !== "" ? `?customerCardNumber=${tcc}` : "";
   const res = await cxFetch<{
-    certificateNumber?: string;
+    // Chilexpress devuelve certificateNumber como NÚMERO (no string) y a veces
+    // anidado bajo `data`. Aceptar ambos y coercer a string.
+    certificateNumber?: string | number;
+    data?: { certificateNumber?: string | number };
     statusCode?: number;
     statusDescription?: string;
   }>(config, "transport-orders", `/transport-order-certificates${qs}`, {
     method: "POST",
   });
-  if (res.statusCode !== 0 || !res.certificateNumber) {
+  const rawCertificateNumber = res.certificateNumber ?? res.data?.certificateNumber;
+  if (res.statusCode !== 0 || rawCertificateNumber == null) {
     throw new Error(
       `Chilexpress create certificate failed: ${res.statusDescription ?? "sin detalles"}`
     );
   }
   return {
-    certificateNumber: res.certificateNumber,
+    certificateNumber: String(rawCertificateNumber),
     statusDescription: res.statusDescription,
   };
 }
