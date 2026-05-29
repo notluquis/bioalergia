@@ -89,7 +89,7 @@ export function ManifestPanel() {
 
   return (
     <Card variant="secondary">
-      <Card.Header className="flex-row items-center justify-between gap-3">
+      <Card.Header className="flex-row flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <FileText className="size-5 text-primary" aria-hidden="true" />
           <Card.Title className="text-base">Manifiesto del día</Card.Title>
