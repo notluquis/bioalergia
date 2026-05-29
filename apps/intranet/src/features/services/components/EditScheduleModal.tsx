@@ -156,7 +156,7 @@ export function EditScheduleModal({ isOpen, onClose, schedule }: EditScheduleMod
           name="expectedAmount"
         >
           <Label>Monto esperado</Label>
-          <NumberField.Group>
+          <NumberField.Group className="grid-cols-1">
             <NumberField.Input />
           </NumberField.Group>
           <FieldError />

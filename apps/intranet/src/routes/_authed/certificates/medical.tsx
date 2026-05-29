@@ -295,7 +295,7 @@ function MedicalCertificatePage() {
                     variant="secondary"
                   >
                     <Label>Días de Reposo</Label>
-                    <NumberField.Group>
+                    <NumberField.Group className="grid-cols-1">
                       <NumberField.Input />
                     </NumberField.Group>
                   </NumberField>

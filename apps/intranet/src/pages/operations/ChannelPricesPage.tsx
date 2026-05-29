@@ -148,7 +148,7 @@ function ChannelRow({
         value={price}
       >
         <Label className="sr-only">Precio {channel}</Label>
-        <NumberField.Group>
+        <NumberField.Group className="grid-cols-1">
           <NumberField.Input placeholder="CLP" />
         </NumberField.Group>
       </NumberField>

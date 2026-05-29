@@ -125,7 +125,7 @@ export function SchedulingSection({
         value={effectiveMonths}
       >
         <Label>Meses a generar</Label>
-        <NumberField.Group>
+        <NumberField.Group className="grid-cols-1">
           <NumberField.Input />
         </NumberField.Group>
         {recurrenceType === "ONE_OFF" || frequency === "ONCE" ? (
@@ -142,7 +142,7 @@ export function SchedulingSection({
         value={dueDay == null ? Number.NaN : dueDay}
       >
         <Label>Día de vencimiento</Label>
-        <NumberField.Group>
+        <NumberField.Group className="grid-cols-1">
           <NumberField.Input />
         </NumberField.Group>
       </NumberField>

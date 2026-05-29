@@ -327,7 +327,7 @@ export function LoansPage() {
               value={paymentForm.paidAmount}
             >
               <Label>Monto pagado</Label>
-              <NumberField.Group>
+              <NumberField.Group className="grid-cols-1">
                 <NumberField.Input />
               </NumberField.Group>
             </NumberField>

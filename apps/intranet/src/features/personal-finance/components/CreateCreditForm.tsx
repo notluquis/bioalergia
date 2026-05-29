@@ -193,7 +193,7 @@ export function CreateCreditForm() {
                       value={field.state.value}
                     >
                       <Label>Monto Total</Label>
-                      <NumberField.Group>
+                      <NumberField.Group className="grid-cols-1">
                         <NumberField.Input />
                       </NumberField.Group>
                       {field.state.meta.errors.length > 0 && (
@@ -257,7 +257,7 @@ export function CreateCreditForm() {
                   value={field.state.value}
                 >
                   <Label>Cuotas</Label>
-                  <NumberField.Group>
+                  <NumberField.Group className="grid-cols-1">
                     <NumberField.Input />
                   </NumberField.Group>
                   {field.state.meta.errors.length > 0 && (

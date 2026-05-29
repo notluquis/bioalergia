@@ -137,7 +137,7 @@ function NewBudgetPage() {
                   value={field.state.value}
                 >
                   <Label>Descuento Global</Label>
-                  <NumberField.Group>
+                  <NumberField.Group className="grid-cols-1">
                     <NumberField.Input />
                   </NumberField.Group>
                   {field.state.meta.errors.length > 0 ? (
@@ -206,7 +206,7 @@ function NewBudgetPage() {
                               value={subField.state.value}
                             >
                               <Label>Cant.</Label>
-                              <NumberField.Group>
+                              <NumberField.Group className="grid-cols-1">
                                 <NumberField.Input />
                               </NumberField.Group>
                               {subField.state.meta.errors.length > 0 ? (
@@ -235,7 +235,7 @@ function NewBudgetPage() {
                               value={subField.state.value}
                             >
                               <Label>Precio Unit.</Label>
-                              <NumberField.Group>
+                              <NumberField.Group className="grid-cols-1">
                                 <NumberField.Input />
                               </NumberField.Group>
                               {subField.state.meta.errors.length > 0 ? (

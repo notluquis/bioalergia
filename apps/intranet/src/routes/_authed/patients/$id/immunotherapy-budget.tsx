@@ -250,7 +250,7 @@ function ImmunotherapyBudgetPage() {
                   onChange={(v) => setMaintenanceMl(v ?? undefined)}
                 >
                   <Label>Volumen mantención (mL)</Label>
-                  <NumberField.Group>
+                  <NumberField.Group className="grid-cols-1">
                     <NumberField.Input />
                   </NumberField.Group>
                 </NumberField>
@@ -262,7 +262,7 @@ function ImmunotherapyBudgetPage() {
                   onChange={(v) => setMaintenanceQty(v ?? undefined)}
                 >
                   <Label>Dosis de mantención</Label>
-                  <NumberField.Group>
+                  <NumberField.Group className="grid-cols-1">
                     <NumberField.Input />
                   </NumberField.Group>
                 </NumberField>
@@ -275,7 +275,7 @@ function ImmunotherapyBudgetPage() {
                   onChange={(v) => setDiscountPct(v ?? undefined)}
                 >
                   <Label>Descuento (%)</Label>
-                  <NumberField.Group>
+                  <NumberField.Group className="grid-cols-1">
                     <NumberField.Input />
                   </NumberField.Group>
                 </NumberField>

@@ -478,7 +478,7 @@ function RegenerateServiceModal({
           name="months"
         >
           <Label>Meses a generar</Label>
-          <NumberField.Group>
+          <NumberField.Group className="grid-cols-1">
             <NumberField.Input />
           </NumberField.Group>
           <FieldError />
@@ -536,7 +536,7 @@ function RegenerateServiceModal({
           name="defaultAmount"
         >
           <Label>Monto base</Label>
-          <NumberField.Group>
+          <NumberField.Group className="grid-cols-1">
             <NumberField.Input />
           </NumberField.Group>
           <FieldError />
@@ -549,7 +549,7 @@ function RegenerateServiceModal({
           name="dueDay"
         >
           <Label>Día de vencimiento</Label>
-          <NumberField.Group>
+          <NumberField.Group className="grid-cols-1">
             <NumberField.Input />
           </NumberField.Group>
         </NumberField>
@@ -598,7 +598,7 @@ function RegenerateServiceModal({
             name="emissionDay"
           >
             <Label>Día de emisión</Label>
-            <NumberField.Group>
+            <NumberField.Group className="grid-cols-1">
               <NumberField.Input />
             </NumberField.Group>
             <Description>Aplica a servicios con día fijo de emisión</Description>

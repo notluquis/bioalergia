@@ -100,7 +100,7 @@ export function BasicInfoSection({
         value={reminderDaysBefore}
       >
         <Label>Recordar (días antes)</Label>
-        <NumberField.Group>
+        <NumberField.Group className="grid-cols-1">
           <NumberField.Input />
         </NumberField.Group>
       </NumberField>

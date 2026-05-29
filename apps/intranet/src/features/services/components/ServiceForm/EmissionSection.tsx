@@ -79,7 +79,7 @@ export function EmissionSection({
           value={emissionDay == null ? Number.NaN : emissionDay}
         >
           <Label>Día emisión</Label>
-          <NumberField.Group>
+          <NumberField.Group className="grid-cols-1">
             <NumberField.Input />
           </NumberField.Group>
         </NumberField>
@@ -95,7 +95,7 @@ export function EmissionSection({
             value={emissionStartDay == null ? Number.NaN : emissionStartDay}
           >
             <Label>Día inicio emisión</Label>
-            <NumberField.Group>
+            <NumberField.Group className="grid-cols-1">
               <NumberField.Input />
             </NumberField.Group>
           </NumberField>
@@ -109,7 +109,7 @@ export function EmissionSection({
             value={emissionEndDay == null ? Number.NaN : emissionEndDay}
           >
             <Label>Día término emisión</Label>
-            <NumberField.Group>
+            <NumberField.Group className="grid-cols-1">
               <NumberField.Input />
             </NumberField.Group>
           </NumberField>

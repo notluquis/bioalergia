@@ -97,7 +97,7 @@ export function InventoryItemForm({ item, onCancel, onSave, saving }: InventoryI
         value={form.current_stock ?? 0}
       >
         <Label>Stock inicial</Label>
-        <NumberField.Group>
+        <NumberField.Group className="grid-cols-1">
           <NumberField.Input />
         </NumberField.Group>
       </NumberField>

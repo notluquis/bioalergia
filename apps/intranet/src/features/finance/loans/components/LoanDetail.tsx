@@ -234,7 +234,7 @@ export function LoanDetail({
             value={regenerateForm.totalInstallments ?? loan.total_installments}
           >
             <Label>Nuevo total de cuotas</Label>
-            <NumberField.Group>
+            <NumberField.Group className="grid-cols-1">
               <NumberField.Input />
             </NumberField.Group>
           </NumberField>
@@ -299,7 +299,7 @@ export function LoanDetail({
             value={regenerateForm.interestRate ?? loan.interest_rate}
           >
             <Label>Tasa de interés (%)</Label>
-            <NumberField.Group>
+            <NumberField.Group className="grid-cols-1">
               <NumberField.Input />
             </NumberField.Group>
           </NumberField>

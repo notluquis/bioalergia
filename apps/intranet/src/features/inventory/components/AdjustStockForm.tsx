@@ -37,7 +37,7 @@ export function AdjustStockForm({ item, onCancel, onSave, saving }: AdjustStockF
           value={quantityChange}
         >
           <Label>Cantidad a agregar/quitar</Label>
-          <NumberField.Group>
+          <NumberField.Group className="grid-cols-1">
             <NumberField.Input placeholder="Ej: 20 (agrega) o -15 (quita)" />
           </NumberField.Group>
         </NumberField>

@@ -158,7 +158,7 @@ export function SupplyRequestForm({ commonSupplies, onSuccess }: SupplyRequestFo
               value={field.state.value}
             >
               <Label>Cantidad</Label>
-              <NumberField.Group>
+              <NumberField.Group className="grid-cols-1">
                 <NumberField.Input />
               </NumberField.Group>
               {field.state.meta.errors.length > 0 && (

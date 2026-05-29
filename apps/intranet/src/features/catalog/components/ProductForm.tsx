@@ -234,7 +234,7 @@ export function ProductForm({ initial, onCancel, onSave, saving }: ProductFormPr
           value={form.price_clp}
         >
           <Label>Precio CLP</Label>
-          <NumberField.Group>
+          <NumberField.Group className="grid-cols-1">
             <NumberField.Input />
           </NumberField.Group>
           <Description>IVA incluido</Description>
@@ -248,7 +248,7 @@ export function ProductForm({ initial, onCancel, onSave, saving }: ProductFormPr
           value={form.compare_at_price_clp ?? Number.NaN}
         >
           <Label>Precio antes (tachado)</Label>
-          <NumberField.Group>
+          <NumberField.Group className="grid-cols-1">
             <NumberField.Input />
           </NumberField.Group>
         </NumberField>
@@ -260,7 +260,7 @@ export function ProductForm({ initial, onCancel, onSave, saving }: ProductFormPr
           value={form.cost_clp ?? Number.NaN}
         >
           <Label>Costo interno</Label>
-          <NumberField.Group>
+          <NumberField.Group className="grid-cols-1">
             <NumberField.Input />
           </NumberField.Group>
         </NumberField>
@@ -276,7 +276,7 @@ export function ProductForm({ initial, onCancel, onSave, saving }: ProductFormPr
           value={form.available_qty}
         >
           <Label>Stock disponible</Label>
-          <NumberField.Group>
+          <NumberField.Group className="grid-cols-1">
             <NumberField.Input />
           </NumberField.Group>
         </NumberField>
@@ -288,7 +288,7 @@ export function ProductForm({ initial, onCancel, onSave, saving }: ProductFormPr
           value={form.safety_stock}
         >
           <Label>Stock de seguridad</Label>
-          <NumberField.Group>
+          <NumberField.Group className="grid-cols-1">
             <NumberField.Input />
           </NumberField.Group>
           <Description>Reserva no vendible</Description>
@@ -301,7 +301,7 @@ export function ProductForm({ initial, onCancel, onSave, saving }: ProductFormPr
           value={form.weight_grams ?? Number.NaN}
         >
           <Label>Peso (g)</Label>
-          <NumberField.Group>
+          <NumberField.Group className="grid-cols-1">
             <NumberField.Input />
           </NumberField.Group>
           <Description>Para Chilexpress</Description>

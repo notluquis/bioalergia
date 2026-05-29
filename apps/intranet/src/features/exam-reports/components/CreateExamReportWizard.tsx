@@ -892,7 +892,7 @@ function Step2Allergens({
                     }
                     value={r.papuleMm ?? undefined}
                   >
-                    <NumberField.Group>
+                    <NumberField.Group className="grid-cols-1">
                       <NumberField.Input placeholder="mm" />
                     </NumberField.Group>
                   </NumberField>
@@ -971,7 +971,7 @@ function ControlsBlock({
             onChange={(v) => onHistamineChange(Number.isFinite(v) ? v : null)}
             value={histamineMm ?? undefined}
           >
-            <NumberField.Group>
+            <NumberField.Group className="grid-cols-1">
               <NumberField.Input placeholder="mm" />
             </NumberField.Group>
           </NumberField>
@@ -998,7 +998,7 @@ function ControlsBlock({
             onChange={(v) => onSalineChange(Number.isFinite(v) ? v : null)}
             value={salineMm ?? undefined}
           >
-            <NumberField.Group>
+            <NumberField.Group className="grid-cols-1">
               <NumberField.Input placeholder="mm" />
             </NumberField.Group>
           </NumberField>

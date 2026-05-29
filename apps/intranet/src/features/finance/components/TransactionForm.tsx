@@ -237,7 +237,7 @@ export function TransactionForm({ categories, isOpen, onClose, initialData }: Pr
                       value={formData.amount}
                     >
                       <Label>Monto</Label>
-                      <NumberField.Group>
+                      <NumberField.Group className="grid-cols-1">
                         <NumberField.Input />
                       </NumberField.Group>
                       <FieldError>{errors.amount}</FieldError>

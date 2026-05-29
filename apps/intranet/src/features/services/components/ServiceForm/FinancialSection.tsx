@@ -55,7 +55,7 @@ export function FinancialSection({
         value={defaultAmount ?? 0}
       >
         <Label>Monto base</Label>
-        <NumberField.Group>
+        <NumberField.Group className="grid-cols-1">
           <NumberField.Input />
         </NumberField.Group>
       </NumberField>
@@ -111,7 +111,7 @@ export function FinancialSection({
             {/* Stored percentage is a whole number (e.g. 5 = 5%), not a 0–1
                 fraction, so use decimal + a "%" label instead of style:"percent". */}
             <Label>{isPercentage ? "% recargo" : "Monto recargo"}</Label>
-            <NumberField.Group>
+            <NumberField.Group className="grid-cols-1">
               <NumberField.Input />
             </NumberField.Group>
           </NumberField>
@@ -125,7 +125,7 @@ export function FinancialSection({
             value={lateFeeGraceDays == null ? Number.NaN : lateFeeGraceDays}
           >
             <Label>Días de gracia</Label>
-            <NumberField.Group>
+            <NumberField.Group className="grid-cols-1">
               <NumberField.Input />
             </NumberField.Group>
           </NumberField>

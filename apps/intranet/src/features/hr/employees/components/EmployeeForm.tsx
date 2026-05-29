@@ -418,7 +418,7 @@ function EmployeeFormContent({
           onChange={(v) => setForm((prev) => ({ ...prev, hourlyRate: v == null ? "" : String(v) }))}
         >
           <Label>Valor hora (CLP)</Label>
-          <NumberField.Group>
+          <NumberField.Group className="grid-cols-1">
             <NumberField.Input placeholder="$ 0" />
           </NumberField.Group>
         </NumberField>
@@ -443,7 +443,7 @@ function EmployeeFormContent({
           }
         >
           <Label>Valor hora extra (CLP)</Label>
-          <NumberField.Group>
+          <NumberField.Group className="grid-cols-1">
             <NumberField.Input placeholder="Opcional - dejar vacío si no aplica" />
           </NumberField.Group>
         </NumberField>

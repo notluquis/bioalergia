@@ -341,7 +341,7 @@ export function ServicesOverviewContent() {
               value={paymentForm.transactionId ? Number(paymentForm.transactionId) : Number.NaN}
             >
               <Label>ID transacción</Label>
-              <NumberField.Group>
+              <NumberField.Group className="grid-cols-1">
                 <NumberField.Input />
               </NumberField.Group>
               <FieldError />
@@ -358,7 +358,7 @@ export function ServicesOverviewContent() {
               value={paymentForm.paidAmount ? Number(paymentForm.paidAmount) : Number.NaN}
             >
               <Label>Monto pagado</Label>
-              <NumberField.Group>
+              <NumberField.Group className="grid-cols-1">
                 <NumberField.Input />
               </NumberField.Group>
               <FieldError />

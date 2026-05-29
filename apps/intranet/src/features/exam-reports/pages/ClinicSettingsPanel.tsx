@@ -154,7 +154,7 @@ export function ClinicSettingsPanel() {
                 }
                 value={form.papuleThresholdMm}
               >
-                <NumberField.Group>
+                <NumberField.Group className="grid-cols-1">
                   <NumberField.Input />
                 </NumberField.Group>
               </NumberField>
