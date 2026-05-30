@@ -294,7 +294,12 @@ export function CreateCreditForm() {
                   {field.state.meta.errors.length > 0 && (
                     <FieldError>{field.state.meta.errors.join(", ")}</FieldError>
                   )}
-                  <DatePicker.Popover>
+                  {/* max-w-none: HeroUI 3.1 clamps the popover to trigger width
+                      (max-w-(--trigger-width)), so the fixed 252px calendar
+                      overflows a narrow grid-cell field on mobile. Let it size
+                      to the calendar; React Aria shifts it on-screen. Systemic
+                      fix for all date pickers tracked separately. */}
+                  <DatePicker.Popover className="max-w-none">
                     <Calendar aria-label="Fecha inicio">
                       <Calendar.Header>
                         <Calendar.YearPickerTrigger>

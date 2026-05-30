@@ -22,7 +22,11 @@
       "typescript": true
     },
     "tailwindcss": {
-      "entryPoint": ["apps/intranet/src/index.css", "apps/site/src/index.css"]
+      "entryPoint": [
+        { "files": "apps/intranet/**", "use": "apps/intranet/src/index.css" },
+        { "files": "apps/site/**", "use": "apps/site/src/index.css" },
+        { "files": "**", "use": "apps/intranet/src/index.css" }
+      ]
     }
   },
   "rules": {

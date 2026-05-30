@@ -19,8 +19,8 @@
     "clean": "rm -rf dist .turbo"
   },
   "dependencies": {
-    "@orpc/client": "^1.14.3",
-    "@orpc/shared": "^1.14.3",
+    "@orpc/client": "^1.14.4",
+    "@orpc/shared": "^1.14.4",
     "superjson": "^2.2.6"
   },
   "devDependencies": {
