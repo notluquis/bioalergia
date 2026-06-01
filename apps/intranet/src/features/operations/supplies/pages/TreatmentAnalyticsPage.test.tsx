@@ -13,7 +13,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type * as ReactRouterModule from "@tanstack/react-router";
 import type * as RechartsModule from "recharts";
 
@@ -140,8 +140,19 @@ function renderPage(search: Record<string, unknown> = {}): QueryClient {
 
 describe("TreatmentAnalyticsPage", () => {
   beforeEach(() => {
+    // Pin the clock to mid-May 2026 so getDefaultRange() (today−3mo startOf →
+    // today+1mo endOf) === the seeded range (2026-02-01 … 2026-06-30). Without
+    // this the test breaks every time the real month rolls over (it silently
+    // started failing on 2026-06-01). Fake only Date so userEvent's timers stay
+    // real.
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date(2026, 4, 15, 12, 0, 0));
     navigateMock.mockReset();
     searchState.current = {};
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it("renders KPI cards and detail table with seeded analytics", () => {
