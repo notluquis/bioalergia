@@ -168,50 +168,44 @@ export default defineConfig(({ mode }) => {
           ],
         },
         manifest: {
+          // Stable install identity (golden 2026). Without `id`, identity is
+          // derived from start_url and a path change forks a duplicate install.
+          id: "/?source=pwa",
           name: "Bioalergia Suite",
           short_name: "Bioalergia",
           description:
             "Suite de administración: Finanzas, Servicios, Calendario, RR.HH e Inventario",
-          start_url: "/",
+          start_url: "/?source=pwa",
           scope: "/",
           display: "standalone",
+          // Desktop (Win/macOS) reclaim titlebar when available; graceful fallback.
+          display_override: ["window-controls-overlay", "standalone", "minimal-ui"],
+          // Re-launch / deep-link / share-target focuses the running window
+          // instead of spawning a second one.
+          launch_handler: { client_mode: ["focus-existing", "auto"] },
           // Splash screen colors
           background_color: "#000000",
           theme_color: "#0e64b7",
-          orientation: "portrait-primary",
+          // `any` so installed tablet/desktop (data-table heavy) isn't locked
+          // to portrait.
+          orientation: "any",
           lang: "es-CL",
-          categories: ["business", "productivity"],
+          categories: ["business", "productivity", "medical"],
+          // NOTE: these PNGs are full-bleed (no safe-zone), so declared `any`
+          // ONLY — NOT `maskable`. Claiming maskable on a full-bleed asset
+          // makes Android crop the logo. A dedicated padded maskable-512 is a
+          // design TODO (PWA audit); add it as a separate `purpose:"maskable"`
+          // entry once produced.
           icons: [
             { src: "/icons/icon-72.png", sizes: "72x72", type: "image/png" },
             { src: "/icons/icon-96.png", sizes: "96x96", type: "image/png" },
             { src: "/icons/icon-128.png", sizes: "128x128", type: "image/png" },
             { src: "/icons/icon-144.png", sizes: "144x144", type: "image/png" },
             { src: "/icons/icon-152.png", sizes: "152x152", type: "image/png" },
-            {
-              src: "/icons/icon-180.png",
-              sizes: "180x180",
-              type: "image/png",
-              purpose: "any maskable",
-            },
-            {
-              src: "/icons/icon-192.png",
-              sizes: "192x192",
-              type: "image/png",
-              purpose: "any maskable",
-            },
+            { src: "/icons/icon-180.png", sizes: "180x180", type: "image/png" },
+            { src: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
             { src: "/icons/icon-384.png", sizes: "384x384", type: "image/png" },
-            {
-              src: "/icons/icon-512.png",
-              sizes: "512x512",
-              type: "image/png",
-              purpose: "any maskable",
-            },
-            {
-              src: "/logo_bimi.svg",
-              sizes: "any",
-              type: "image/svg+xml",
-              purpose: "any maskable",
-            },
+            { src: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
           ],
           shortcuts: [
             {
@@ -256,21 +250,11 @@ export default defineConfig(({ mode }) => {
               ],
             },
           },
-          // iOS/macOS specific
-          screenshots: [
-            {
-              src: "/icons/icon-192.png",
-              sizes: "192x192",
-              form_factor: "narrow",
-              type: "image/png",
-            },
-            {
-              src: "/icons/icon-512.png",
-              sizes: "512x512",
-              form_factor: "wide",
-              type: "image/png",
-            },
-          ],
+          // `screenshots` intentionally omitted: Chromium's richer install
+          // dialog needs REAL app screenshots at proper aspect ratios
+          // (e.g. 1280×720 wide, 720×1280 narrow). The previous entries
+          // reused 192/512 icons, which Chromium rejects. Add real captures
+          // (design TODO) to re-enable the richer install UI.
         },
         devOptions: { enabled: false },
       }),

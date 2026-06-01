@@ -2,6 +2,7 @@ import { Button, Link, Tooltip } from "@heroui/react";
 import { useDebouncedValue } from "@tanstack/react-pacer";
 import { createFileRoute, getRouteApi, Outlet, useRouterState } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { InstallPrompt } from "@/components/features/InstallPrompt";
 import { UpdateNotification } from "@/components/features/UpdateNotification";
 import { Header } from "@/components/layouts/Header";
 import { BottomNav } from "@/components/layouts/MobileNav";
@@ -216,7 +217,7 @@ function AuthedLayout() {
         />
 
         {/* Main content */}
-        <div className="layout-container flex min-w-0 flex-1 flex-col gap-3 pt-[calc(env(safe-area-inset-top)+0.25rem)] pb-[calc(110px+env(safe-area-inset-bottom))] md:pt-0 md:pb-0">
+        <div className="layout-container flex min-w-0 flex-1 flex-col gap-3 pt-[calc(env(safe-area-inset-top)+0.25rem)] pb-[calc(110px+env(safe-area-inset-bottom))] md:py-0">
           <Header onMenuToggle={toggleSidebar} sidebarId={sidebarId} sidebarOpen={sidebarOpen} />
 
           {/* Mobile: content flows in the document — no nested scroll, no
@@ -278,6 +279,9 @@ function AuthedLayout() {
 
         {/* Update notification popup */}
         <UpdateNotification />
+
+        {/* PWA install affordance (Android/desktop prompt + iOS add-to-home hint) */}
+        <InstallPrompt />
       </div>
     </>
   );
