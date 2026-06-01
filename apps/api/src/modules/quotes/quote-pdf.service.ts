@@ -154,10 +154,11 @@ export async function generateQuotePdf(input: QuotePdfInput): Promise<Uint8Array
 
   // ── Tabla de líneas ────────────────────────────────────────────────
   const colNum = margin;
-  const colCode = margin + 22;
-  const colDetail = margin + 80;
-  const colQty = width - margin - 150;
-  const colUnit = width - margin - 95;
+  const colCode = margin + 20;
+  const colDetail = margin + 72;
+  const colFormat = width - margin - 200;
+  const colQty = width - margin - 145;
+  const colUnit = width - margin - 92;
   const colTotal = width - margin - 5;
 
   const drawHeader = () => {
@@ -171,6 +172,7 @@ export async function generateQuotePdf(input: QuotePdfInput): Promise<Uint8Array
     text("#", colNum, y, 8, bold);
     text("Código", colCode, y, 8, bold);
     text("Detalle", colDetail, y, 8, bold);
+    text("Formato", colFormat, y, 8, bold);
     text("Cant", colQty, y, 8, bold);
     text("P. Unit", colUnit, y, 8, bold);
     page.drawText("Total", {
@@ -190,9 +192,8 @@ export async function generateQuotePdf(input: QuotePdfInput): Promise<Uint8Array
     text(String(idx + 1), colNum, y, 8.5, font);
     text(it.code ?? "—", colCode, y, 8.5, font);
     text(it.description, colDetail, y, 8.5, font);
-    const qtyStr = `${it.quantity % 1 === 0 ? it.quantity : it.quantity.toFixed(2)}${
-      it.format ? ` ${it.format}` : ""
-    }`;
+    text(it.format ?? "—", colFormat, y, 8.5, font);
+    const qtyStr = it.quantity % 1 === 0 ? String(it.quantity) : it.quantity.toFixed(2);
     text(qtyStr, colQty, y, 8.5, font);
     text(clp(it.unitPrice), colUnit, y, 8.5, font);
     page.drawText(clp(it.subtotal), {
