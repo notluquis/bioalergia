@@ -1,13 +1,9 @@
 import {
   Alert,
   Button,
-  Calendar,
   Card,
   Chip,
-  DateField,
-  DatePicker,
   Description,
-  Label,
   ProgressBar,
   Skeleton,
   Surface,
@@ -18,6 +14,7 @@ import dayjs from "dayjs";
 import { History, Play, StopCircle } from "lucide-react";
 import { useMemo, useState } from "react";
 
+import { AppDateRangePicker } from "@/components/forms/AppDatePicker";
 import { useToast } from "@/context/ToastContext";
 import {
   cancelDoctoraliaCalendarBackfill,
@@ -100,103 +97,23 @@ export function DoctoraliaCalendarBackfillPanel() {
           </Description>
         </Card.Header>
         <Card.Content className="space-y-4">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <DatePicker
-              aria-label="Fecha de inicio del backfill"
-              isDisabled={running}
-              minValue={parseDate(minEndDate)}
-              maxValue={parseDate(defaultStartDate)}
-              onChange={(value) => {
-                if (value) setStartDate(value.toString());
-              }}
-              value={parseDate(startDate)}
-            >
-              <Label>Desde</Label>
-              <DateField.Group>
-                <DateField.InputContainer>
-                  <DateField.Input>
-                    {(segment) => <DateField.Segment segment={segment} />}
-                  </DateField.Input>
-                </DateField.InputContainer>
-                <DateField.Suffix>
-                  <DatePicker.Trigger>
-                    <DatePicker.TriggerIndicator />
-                  </DatePicker.Trigger>
-                </DateField.Suffix>
-              </DateField.Group>
-              <DatePicker.Popover>
-                <Calendar aria-label="Fecha inicial del backfill">
-                  <Calendar.Header>
-                    <Calendar.YearPickerTrigger>
-                      <Calendar.YearPickerTriggerHeading />
-                      <Calendar.YearPickerTriggerIndicator />
-                    </Calendar.YearPickerTrigger>
-                    <Calendar.NavButton slot="previous" />
-                    <Calendar.NavButton slot="next" />
-                  </Calendar.Header>
-                  <Calendar.Grid>
-                    <Calendar.GridHeader>
-                      {(day) => <Calendar.HeaderCell>{day}</Calendar.HeaderCell>}
-                    </Calendar.GridHeader>
-                    <Calendar.GridBody>{(date) => <Calendar.Cell date={date} />}</Calendar.GridBody>
-                  </Calendar.Grid>
-                  <Calendar.YearPickerGrid>
-                    <Calendar.YearPickerGridBody>
-                      {({ year }) => <Calendar.YearPickerCell year={year} />}
-                    </Calendar.YearPickerGridBody>
-                  </Calendar.YearPickerGrid>
-                </Calendar>
-              </DatePicker.Popover>
-            </DatePicker>
-
-            <DatePicker
-              aria-label="Fecha final del backfill"
-              isDisabled={running}
-              minValue={parseDate(minEndDate)}
-              maxValue={parseDate(startDate)}
-              onChange={(value) => {
-                if (value) setEndDate(value.toString());
-              }}
-              value={parseDate(endDate)}
-            >
-              <Label>Hasta</Label>
-              <DateField.Group>
-                <DateField.InputContainer>
-                  <DateField.Input>
-                    {(segment) => <DateField.Segment segment={segment} />}
-                  </DateField.Input>
-                </DateField.InputContainer>
-                <DateField.Suffix>
-                  <DatePicker.Trigger>
-                    <DatePicker.TriggerIndicator />
-                  </DatePicker.Trigger>
-                </DateField.Suffix>
-              </DateField.Group>
-              <DatePicker.Popover>
-                <Calendar aria-label="Fecha final del backfill">
-                  <Calendar.Header>
-                    <Calendar.YearPickerTrigger>
-                      <Calendar.YearPickerTriggerHeading />
-                      <Calendar.YearPickerTriggerIndicator />
-                    </Calendar.YearPickerTrigger>
-                    <Calendar.NavButton slot="previous" />
-                    <Calendar.NavButton slot="next" />
-                  </Calendar.Header>
-                  <Calendar.Grid>
-                    <Calendar.GridHeader>
-                      {(day) => <Calendar.HeaderCell>{day}</Calendar.HeaderCell>}
-                    </Calendar.GridHeader>
-                    <Calendar.GridBody>{(date) => <Calendar.Cell date={date} />}</Calendar.GridBody>
-                  </Calendar.Grid>
-                  <Calendar.YearPickerGrid>
-                    <Calendar.YearPickerGridBody>
-                      {({ year }) => <Calendar.YearPickerCell year={year} />}
-                    </Calendar.YearPickerGridBody>
-                  </Calendar.YearPickerGrid>
-                </Calendar>
-              </DatePicker.Popover>
-            </DatePicker>
-          </div>
+          {/* Backfill corre hacia atrás: el rango es [endDate (más antiguo) →
+              startDate (más reciente)]. El DateRangePicker mapea start=endDate,
+              end=startDate y fuerza start ≤ end nativamente. */}
+          <AppDateRangePicker
+            aria-label="Rango de fechas del backfill"
+            label="Rango de fechas"
+            isDisabled={running}
+            minValue={parseDate(minEndDate)}
+            maxValue={parseDate(defaultStartDate)}
+            visibleMonths={2}
+            startValue={endDate}
+            endValue={startDate}
+            onChange={(from, to) => {
+              setEndDate(from);
+              setStartDate(to);
+            }}
+          />
 
           <Description className="text-default-500 text-xs">
             Las semanas ya cargadas se contarán como "sin cambios" (skipped).

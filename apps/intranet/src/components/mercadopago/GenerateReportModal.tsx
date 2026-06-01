@@ -1,11 +1,11 @@
-import { Button, Calendar, DateField, DatePicker, FieldError, Form, Label } from "@heroui/react";
-import { parseDate } from "@internationalized/date";
+import { Button, Form } from "@heroui/react";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import { Loader2 } from "lucide-react";
 import { useState } from "react";
 import { z } from "zod";
+import { AppDateRangePicker } from "@/components/forms/AppDatePicker";
 import { AppModal } from "@/components/ui/AppModal";
 import { useToast } from "@/context/ToastContext";
 import { MPService, type MpReportType } from "@/services/mercadopago";
@@ -14,7 +14,7 @@ const schema = z.object({
   begin_date: z.coerce.date(),
   end_date: z.coerce.date(),
 });
-// Date range validation (begin < end) is handled by DatePicker components + browser
+// begin ≤ end enforced natively by the DateRangePicker (AppDateRangePicker).
 
 type FormData = z.infer<typeof schema>;
 
@@ -144,120 +144,21 @@ export function GenerateReportModal({ onClose, open, reportType }: Props) {
           ) : null}
         </div>
 
-        <form.Field name="begin_date">
-          {(field) => (
-            <DatePicker
-              isInvalid={field.state.meta.errors.length > 0}
+        <form.Subscribe selector={(s) => ({ begin: s.values.begin_date, end: s.values.end_date })}>
+          {({ begin, end }) => (
+            <AppDateRangePicker
               isRequired
-              onBlur={field.handleBlur}
-              onChange={(value) => {
-                if (!value) {
-                  return;
-                }
-                field.handleChange(dayjs(value.toString(), "YYYY-MM-DD").toDate());
+              isDisabled={mutation.isPending}
+              label="Rango de fechas"
+              startValue={begin ? dayjs(begin).format("YYYY-MM-DD") : null}
+              endValue={end ? dayjs(end).format("YYYY-MM-DD") : null}
+              onChange={(from, to) => {
+                if (from) form.setFieldValue("begin_date", dayjs(from, "YYYY-MM-DD").toDate());
+                if (to) form.setFieldValue("end_date", dayjs(to, "YYYY-MM-DD").toDate());
               }}
-              value={parseDate(dayjs(field.state.value).format("YYYY-MM-DD"))}
-            >
-              <Label>Fecha Inicio</Label>
-              <DateField.Group>
-                <DateField.InputContainer>
-                  <DateField.Input>
-                    {(segment) => <DateField.Segment segment={segment} />}
-                  </DateField.Input>
-                </DateField.InputContainer>
-                <DateField.Suffix>
-                  <DatePicker.Trigger>
-                    <DatePicker.TriggerIndicator />
-                  </DatePicker.Trigger>
-                </DateField.Suffix>
-              </DateField.Group>
-              {field.state.meta.errors.length > 0 && (
-                <FieldError>{String(field.state.meta.errors[0])}</FieldError>
-              )}
-              <DatePicker.Popover>
-                <Calendar aria-label="Fecha inicio">
-                  <Calendar.Header>
-                    <Calendar.YearPickerTrigger>
-                      <Calendar.YearPickerTriggerHeading />
-                      <Calendar.YearPickerTriggerIndicator />
-                    </Calendar.YearPickerTrigger>
-                    <Calendar.NavButton slot="previous" />
-                    <Calendar.NavButton slot="next" />
-                  </Calendar.Header>
-                  <Calendar.Grid>
-                    <Calendar.GridHeader>
-                      {(day) => <Calendar.HeaderCell>{day}</Calendar.HeaderCell>}
-                    </Calendar.GridHeader>
-                    <Calendar.GridBody>{(date) => <Calendar.Cell date={date} />}</Calendar.GridBody>
-                  </Calendar.Grid>
-                  <Calendar.YearPickerGrid>
-                    <Calendar.YearPickerGridBody>
-                      {({ year }) => <Calendar.YearPickerCell year={year} />}
-                    </Calendar.YearPickerGridBody>
-                  </Calendar.YearPickerGrid>
-                </Calendar>
-              </DatePicker.Popover>
-            </DatePicker>
+            />
           )}
-        </form.Field>
-
-        <form.Field name="end_date">
-          {(field) => (
-            <DatePicker
-              isDisabled={useNowAsEndDate}
-              isInvalid={field.state.meta.errors.length > 0}
-              isRequired
-              onBlur={field.handleBlur}
-              onChange={(value) => {
-                if (!value) {
-                  return;
-                }
-                field.handleChange(dayjs(value.toString(), "YYYY-MM-DD").toDate());
-              }}
-              value={parseDate(dayjs(field.state.value).format("YYYY-MM-DD"))}
-            >
-              <Label>Fecha Fin</Label>
-              <DateField.Group>
-                <DateField.InputContainer>
-                  <DateField.Input>
-                    {(segment) => <DateField.Segment segment={segment} />}
-                  </DateField.Input>
-                </DateField.InputContainer>
-                <DateField.Suffix>
-                  <DatePicker.Trigger>
-                    <DatePicker.TriggerIndicator />
-                  </DatePicker.Trigger>
-                </DateField.Suffix>
-              </DateField.Group>
-              {field.state.meta.errors.length > 0 && (
-                <FieldError>{String(field.state.meta.errors[0])}</FieldError>
-              )}
-              <DatePicker.Popover>
-                <Calendar aria-label="Fecha fin">
-                  <Calendar.Header>
-                    <Calendar.YearPickerTrigger>
-                      <Calendar.YearPickerTriggerHeading />
-                      <Calendar.YearPickerTriggerIndicator />
-                    </Calendar.YearPickerTrigger>
-                    <Calendar.NavButton slot="previous" />
-                    <Calendar.NavButton slot="next" />
-                  </Calendar.Header>
-                  <Calendar.Grid>
-                    <Calendar.GridHeader>
-                      {(day) => <Calendar.HeaderCell>{day}</Calendar.HeaderCell>}
-                    </Calendar.GridHeader>
-                    <Calendar.GridBody>{(date) => <Calendar.Cell date={date} />}</Calendar.GridBody>
-                  </Calendar.Grid>
-                  <Calendar.YearPickerGrid>
-                    <Calendar.YearPickerGridBody>
-                      {({ year }) => <Calendar.YearPickerCell year={year} />}
-                    </Calendar.YearPickerGridBody>
-                  </Calendar.YearPickerGrid>
-                </Calendar>
-              </DatePicker.Popover>
-            </DatePicker>
-          )}
-        </form.Field>
+        </form.Subscribe>
       </Form>
     </AppModal>
   );

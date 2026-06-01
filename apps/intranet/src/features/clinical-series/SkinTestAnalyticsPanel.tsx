@@ -17,7 +17,7 @@ import {
 import type { Key } from "@heroui/react";
 import { ExternalLink, Stethoscope } from "lucide-react";
 import { useDeferredValue, useMemo, useState } from "react";
-import { AppDatePicker } from "@/components/forms/AppDatePicker";
+import { AppDateRangePicker } from "@/components/forms/AppDatePicker";
 import { useSkinTestAnalytics } from "./skin-tests-queries";
 
 const EXAM_TYPE_OPTIONS = [
@@ -410,8 +410,17 @@ function SkinTestAnalyticsFilters({
             </ListBox>
           </Select.Popover>
         </Select>
-        <AppDatePicker label="Desde" value={dateFrom} onChange={setDateFrom} />
-        <AppDatePicker label="Hasta" value={dateTo} onChange={setDateTo} />
+        <AppDateRangePicker
+          className="w-72"
+          label="Rango de fechas"
+          startValue={dateFrom}
+          endValue={dateTo}
+          visibleMonths={2}
+          onChange={(from, to) => {
+            setDateFrom(from);
+            setDateTo(to);
+          }}
+        />
       </div>
     </Surface>
   );

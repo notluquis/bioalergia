@@ -17,7 +17,7 @@ import dayjs from "dayjs";
 import timezone from "dayjs/plugin/timezone";
 import utc from "dayjs/plugin/utc";
 import { Suspense, useState } from "react";
-import { AppDatePicker, AppDateTimePicker } from "@/components/forms/AppDatePicker";
+import { AppDateRangePicker, AppDateTimePicker } from "@/components/forms/AppDatePicker";
 import { AppModal } from "@/components/ui/AppModal";
 import type {
   attendanceMarkSchema,
@@ -464,7 +464,7 @@ function OfficeNetworksCard() {
             networks.map((network) => (
               <div
                 key={network.id}
-                className="flex flex-col gap-3 rounded-2xl border border-default-200 px-4 py-4 md:flex-row md:items-center md:justify-between"
+                className="flex flex-col gap-3 rounded-2xl border border-default-200 md:flex-row md:items-center md:justify-between p-4"
               >
                 <div className="space-y-1">
                   <div className="flex flex-wrap items-center gap-2">
@@ -556,9 +556,17 @@ function AdminAttendanceContent() {
           <Input inputMode="numeric" placeholder="Todos" />
         </TextField>
 
-        <AppDatePicker className="w-44" label="Desde" value={fromFilter} onChange={setFromFilter} />
-
-        <AppDatePicker className="w-44" label="Hasta" value={toFilter} onChange={setToFilter} />
+        <AppDateRangePicker
+          className="w-72"
+          label="Rango de fechas"
+          startValue={fromFilter}
+          endValue={toFilter}
+          visibleMonths={2}
+          onChange={(from, to) => {
+            setFromFilter(from);
+            setToFilter(to);
+          }}
+        />
 
         <Select
           className="w-44"
