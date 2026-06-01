@@ -104,6 +104,12 @@ export class SchemaType implements SchemaDef {
                     type: "Address",
                     array: true,
                     relation: { opposite: "person" }
+                },
+                companyContacts: {
+                    name: "companyContacts",
+                    type: "CompanyContact",
+                    array: true,
+                    relation: { opposite: "person" }
                 }
             },
             attributes: [
@@ -591,6 +597,13 @@ export class SchemaType implements SchemaDef {
                     type: "MagicLinkToken",
                     array: true,
                     relation: { opposite: "user" }
+                },
+                createdQuotes: {
+                    name: "createdQuotes",
+                    type: "Quote",
+                    array: true,
+                    attributes: [{ name: "@relation", args: [{ name: "name", value: ExpressionUtils.literal("QuoteCreatedBy") }] }] as readonly AttributeApplication[],
+                    relation: { opposite: "createdBy", name: "QuoteCreatedBy" }
                 },
                 person: {
                     name: "person",
@@ -9025,6 +9038,557 @@ export class SchemaType implements SchemaDef {
                 id: { type: "String" }
             }
         },
+        Company: {
+            name: "Company",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                razonSocial: {
+                    name: "razonSocial",
+                    type: "String",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("razon_social") }] }] as readonly AttributeApplication[]
+                },
+                rut: {
+                    name: "rut",
+                    type: "String",
+                    unique: true,
+                    optional: true,
+                    attributes: [{ name: "@unique" }, { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(20) }] }] as readonly AttributeApplication[]
+                },
+                giro: {
+                    name: "giro",
+                    type: "String",
+                    optional: true
+                },
+                direccion: {
+                    name: "direccion",
+                    type: "String",
+                    optional: true
+                },
+                comuna: {
+                    name: "comuna",
+                    type: "String",
+                    optional: true
+                },
+                ciudad: {
+                    name: "ciudad",
+                    type: "String",
+                    optional: true
+                },
+                email: {
+                    name: "email",
+                    type: "String",
+                    optional: true
+                },
+                phone: {
+                    name: "phone",
+                    type: "String",
+                    optional: true
+                },
+                condicionPago: {
+                    name: "condicionPago",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("condicion_pago") }] }] as readonly AttributeApplication[]
+                },
+                notes: {
+                    name: "notes",
+                    type: "String",
+                    optional: true
+                },
+                isActive: {
+                    name: "isActive",
+                    type: "Boolean",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(true) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("is_active") }] }] as readonly AttributeApplication[],
+                    default: true as FieldDefault
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@updatedAt" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                contacts: {
+                    name: "contacts",
+                    type: "CompanyContact",
+                    array: true,
+                    relation: { opposite: "company" }
+                },
+                quotes: {
+                    name: "quotes",
+                    type: "Quote",
+                    array: true,
+                    relation: { opposite: "company" }
+                }
+            },
+            attributes: [
+                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("razonSocial")]) }] },
+                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("companies") }] }
+            ] as readonly AttributeApplication[],
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" },
+                rut: { type: "String" }
+            }
+        },
+        CompanyContact: {
+            name: "CompanyContact",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                companyId: {
+                    name: "companyId",
+                    type: "Int",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("company_id") }] }] as readonly AttributeApplication[],
+                    foreignKeyFor: [
+                        "company"
+                    ] as readonly string[]
+                },
+                personId: {
+                    name: "personId",
+                    type: "Int",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("person_id") }] }] as readonly AttributeApplication[],
+                    foreignKeyFor: [
+                        "person"
+                    ] as readonly string[]
+                },
+                name: {
+                    name: "name",
+                    type: "String"
+                },
+                email: {
+                    name: "email",
+                    type: "String",
+                    optional: true
+                },
+                phone: {
+                    name: "phone",
+                    type: "String",
+                    optional: true
+                },
+                role: {
+                    name: "role",
+                    type: "String",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@updatedAt" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                company: {
+                    name: "company",
+                    type: "Company",
+                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("companyId")]) }, { name: "references", value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("Cascade") }] }] as readonly AttributeApplication[],
+                    relation: { opposite: "contacts", fields: ["companyId"], references: ["id"], onDelete: "Cascade" }
+                },
+                person: {
+                    name: "person",
+                    type: "Person",
+                    optional: true,
+                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("personId")]) }, { name: "references", value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("SetNull") }] }] as readonly AttributeApplication[],
+                    relation: { opposite: "companyContacts", fields: ["personId"], references: ["id"], onDelete: "SetNull" }
+                },
+                quotes: {
+                    name: "quotes",
+                    type: "Quote",
+                    array: true,
+                    relation: { opposite: "contact" }
+                }
+            },
+            attributes: [
+                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("companyId")]) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("personId")]) }] },
+                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("company_contacts") }] }
+            ] as readonly AttributeApplication[],
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" }
+            }
+        },
+        QuoteProduct: {
+            name: "QuoteProduct",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                code: {
+                    name: "code",
+                    type: "String",
+                    optional: true
+                },
+                brand: {
+                    name: "brand",
+                    type: "String",
+                    optional: true
+                },
+                category: {
+                    name: "category",
+                    type: "String",
+                    optional: true
+                },
+                name: {
+                    name: "name",
+                    type: "String"
+                },
+                format: {
+                    name: "format",
+                    type: "String",
+                    optional: true
+                },
+                unitPrice: {
+                    name: "unitPrice",
+                    type: "Decimal",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("unit_price") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(15) }, { name: "s", value: ExpressionUtils.literal(2) }] }] as readonly AttributeApplication[]
+                },
+                isActive: {
+                    name: "isActive",
+                    type: "Boolean",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(true) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("is_active") }] }] as readonly AttributeApplication[],
+                    default: true as FieldDefault
+                },
+                sortOrder: {
+                    name: "sortOrder",
+                    type: "Int",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("sort_order") }] }] as readonly AttributeApplication[],
+                    default: 0 as FieldDefault
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@updatedAt" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                items: {
+                    name: "items",
+                    type: "QuoteItem",
+                    array: true,
+                    relation: { opposite: "product" }
+                }
+            },
+            attributes: [
+                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("code")]) }] },
+                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("quote_products") }] }
+            ] as readonly AttributeApplication[],
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" }
+            }
+        },
+        Quote: {
+            name: "Quote",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                folio: {
+                    name: "folio",
+                    type: "Int",
+                    unique: true,
+                    attributes: [{ name: "@unique" }] as readonly AttributeApplication[]
+                },
+                companyId: {
+                    name: "companyId",
+                    type: "Int",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("company_id") }] }] as readonly AttributeApplication[],
+                    foreignKeyFor: [
+                        "company"
+                    ] as readonly string[]
+                },
+                contactId: {
+                    name: "contactId",
+                    type: "Int",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("contact_id") }] }] as readonly AttributeApplication[],
+                    foreignKeyFor: [
+                        "contact"
+                    ] as readonly string[]
+                },
+                createdById: {
+                    name: "createdById",
+                    type: "Int",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_by_id") }] }] as readonly AttributeApplication[],
+                    foreignKeyFor: [
+                        "createdBy"
+                    ] as readonly string[]
+                },
+                issueDate: {
+                    name: "issueDate",
+                    type: "DateTime",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("issue_date") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                dueDate: {
+                    name: "dueDate",
+                    type: "DateTime",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("due_date") }] }] as readonly AttributeApplication[]
+                },
+                condicionPago: {
+                    name: "condicionPago",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("condicion_pago") }] }] as readonly AttributeApplication[]
+                },
+                status: {
+                    name: "status",
+                    type: "QuoteStatus",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("DRAFT") }] }] as readonly AttributeApplication[],
+                    default: "DRAFT" as FieldDefault
+                },
+                subtotal: {
+                    name: "subtotal",
+                    type: "Decimal",
+                    attributes: [{ name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(15) }, { name: "s", value: ExpressionUtils.literal(2) }] }] as readonly AttributeApplication[]
+                },
+                discount: {
+                    name: "discount",
+                    type: "Decimal",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(15) }, { name: "s", value: ExpressionUtils.literal(2) }] }] as readonly AttributeApplication[],
+                    default: 0 as FieldDefault
+                },
+                taxRate: {
+                    name: "taxRate",
+                    type: "Decimal",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(19) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("tax_rate") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(5) }, { name: "s", value: ExpressionUtils.literal(2) }] }] as readonly AttributeApplication[],
+                    default: 19 as FieldDefault
+                },
+                taxAmount: {
+                    name: "taxAmount",
+                    type: "Decimal",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("tax_amount") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(15) }, { name: "s", value: ExpressionUtils.literal(2) }] }] as readonly AttributeApplication[]
+                },
+                total: {
+                    name: "total",
+                    type: "Decimal",
+                    attributes: [{ name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(15) }, { name: "s", value: ExpressionUtils.literal(2) }] }] as readonly AttributeApplication[]
+                },
+                comments: {
+                    name: "comments",
+                    type: "String",
+                    optional: true
+                },
+                notes: {
+                    name: "notes",
+                    type: "String",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@updatedAt" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                company: {
+                    name: "company",
+                    type: "Company",
+                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("companyId")]) }, { name: "references", value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("Restrict") }] }] as readonly AttributeApplication[],
+                    relation: { opposite: "quotes", fields: ["companyId"], references: ["id"], onDelete: "Restrict" }
+                },
+                contact: {
+                    name: "contact",
+                    type: "CompanyContact",
+                    optional: true,
+                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("contactId")]) }, { name: "references", value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("SetNull") }] }] as readonly AttributeApplication[],
+                    relation: { opposite: "quotes", fields: ["contactId"], references: ["id"], onDelete: "SetNull" }
+                },
+                createdBy: {
+                    name: "createdBy",
+                    type: "User",
+                    optional: true,
+                    attributes: [{ name: "@relation", args: [{ name: "name", value: ExpressionUtils.literal("QuoteCreatedBy") }, { name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("createdById")]) }, { name: "references", value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("SetNull") }] }] as readonly AttributeApplication[],
+                    relation: { opposite: "createdQuotes", name: "QuoteCreatedBy", fields: ["createdById"], references: ["id"], onDelete: "SetNull" }
+                },
+                items: {
+                    name: "items",
+                    type: "QuoteItem",
+                    array: true,
+                    relation: { opposite: "quote" }
+                }
+            },
+            attributes: [
+                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("companyId")]) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("folio")]) }] },
+                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("quotes") }] }
+            ] as readonly AttributeApplication[],
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" },
+                folio: { type: "Int" }
+            }
+        },
+        QuoteItem: {
+            name: "QuoteItem",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                quoteId: {
+                    name: "quoteId",
+                    type: "Int",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("quote_id") }] }] as readonly AttributeApplication[],
+                    foreignKeyFor: [
+                        "quote"
+                    ] as readonly string[]
+                },
+                productId: {
+                    name: "productId",
+                    type: "Int",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("product_id") }] }] as readonly AttributeApplication[],
+                    foreignKeyFor: [
+                        "product"
+                    ] as readonly string[]
+                },
+                code: {
+                    name: "code",
+                    type: "String",
+                    optional: true
+                },
+                brand: {
+                    name: "brand",
+                    type: "String",
+                    optional: true
+                },
+                category: {
+                    name: "category",
+                    type: "String",
+                    optional: true
+                },
+                description: {
+                    name: "description",
+                    type: "String"
+                },
+                format: {
+                    name: "format",
+                    type: "String",
+                    optional: true
+                },
+                quantity: {
+                    name: "quantity",
+                    type: "Decimal",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(1) }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(12) }, { name: "s", value: ExpressionUtils.literal(2) }] }] as readonly AttributeApplication[],
+                    default: 1 as FieldDefault
+                },
+                unitPrice: {
+                    name: "unitPrice",
+                    type: "Decimal",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("unit_price") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(15) }, { name: "s", value: ExpressionUtils.literal(2) }] }] as readonly AttributeApplication[]
+                },
+                discount: {
+                    name: "discount",
+                    type: "Decimal",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(15) }, { name: "s", value: ExpressionUtils.literal(2) }] }] as readonly AttributeApplication[],
+                    default: 0 as FieldDefault
+                },
+                exempt: {
+                    name: "exempt",
+                    type: "Boolean",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(false) }] }] as readonly AttributeApplication[],
+                    default: false as FieldDefault
+                },
+                subtotal: {
+                    name: "subtotal",
+                    type: "Decimal",
+                    attributes: [{ name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(15) }, { name: "s", value: ExpressionUtils.literal(2) }] }] as readonly AttributeApplication[]
+                },
+                sortOrder: {
+                    name: "sortOrder",
+                    type: "Int",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("sort_order") }] }] as readonly AttributeApplication[],
+                    default: 0 as FieldDefault
+                },
+                quote: {
+                    name: "quote",
+                    type: "Quote",
+                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("quoteId")]) }, { name: "references", value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("Cascade") }] }] as readonly AttributeApplication[],
+                    relation: { opposite: "items", fields: ["quoteId"], references: ["id"], onDelete: "Cascade" }
+                },
+                product: {
+                    name: "product",
+                    type: "QuoteProduct",
+                    optional: true,
+                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("productId")]) }, { name: "references", value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("SetNull") }] }] as readonly AttributeApplication[],
+                    relation: { opposite: "items", fields: ["productId"], references: ["id"], onDelete: "SetNull" }
+                }
+            },
+            attributes: [
+                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("quoteId")]) }] },
+                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("quote_items") }] }
+            ] as readonly AttributeApplication[],
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" }
+            }
+        },
         DTEPurchaseDetail: {
             name: "DTEPurchaseDetail",
             fields: {
@@ -16622,6 +17186,16 @@ export class SchemaType implements SchemaDef {
                 EXAM: "EXAM",
                 RECIPE: "RECIPE",
                 OTHER: "OTHER"
+            }
+        },
+        QuoteStatus: {
+            name: "QuoteStatus",
+            values: {
+                DRAFT: "DRAFT",
+                SENT: "SENT",
+                ACCEPTED: "ACCEPTED",
+                REJECTED: "REJECTED",
+                EXPIRED: "EXPIRED"
             }
         },
         DTEType: {

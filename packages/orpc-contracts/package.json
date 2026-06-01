@@ -285,6 +285,12 @@
       "import": "./dist/settings.js",
       "default": "./dist/settings.js"
     },
+    "./quotes": {
+      "development": "./src/quotes.ts",
+      "types": "./dist/quotes.d.ts",
+      "import": "./dist/quotes.js",
+      "default": "./dist/quotes.js"
+    },
     "./roles": {
       "development": "./src/roles.ts",
       "types": "./dist/roles.d.ts",

@@ -49,6 +49,7 @@ model Person {
   user       User?
   patient    Patient?
   addresses  Address[]
+  companyContacts CompanyContact[]
 
   // Access policies
   @@deny('all', auth() == null)
@@ -195,6 +196,7 @@ model User {
   shopOrders              Order[]
   shopAddresses           Address[]
   magicLinkTokens         MagicLinkToken[]
+  createdQuotes           Quote[]                  @relation("QuoteCreatedBy")
   person                  Person                   @relation(fields: [personId], references: [id], onDelete: Cascade)
 
   // This model represents the authenticated user
@@ -2745,6 +2747,162 @@ enum AttachmentType {
   EXAM
   RECIPE
   OTHER
+}
+
+// ============================================================
+// Cotizaciones (Quotes) — documento comercial B2B
+// ============================================================
+// Cliente empresa (razón social, RUT, giro, …). Distinto de Patient/Person:
+// el destinatario de una cotización/factura es una empresa. El emisor
+// (Bioalergia) sale de ClinicSettings (singleton, sin hardcode).
+
+model Company {
+  id            Int              @id @default(autoincrement())
+  razonSocial   String           @map("razon_social")
+  rut           String?          @unique @db.VarChar(20)
+  giro          String?
+  direccion     String?
+  comuna        String?
+  ciudad        String?
+  email         String?
+  phone         String?
+  condicionPago String?          @map("condicion_pago") // "CREDITO 7 DIAS", "CONTADO"
+  notes         String?
+  isActive      Boolean          @default(true) @map("is_active")
+  createdAt     DateTime         @default(now()) @map("created_at")
+  updatedAt     DateTime         @default(now()) @updatedAt @map("updated_at")
+
+  contacts      CompanyContact[]
+  quotes        Quote[]
+
+  @@deny('all', auth() == null)
+  @@allow('read', auth().status == 'ACTIVE')
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@index([razonSocial])
+  @@map("companies")
+}
+
+// Contacto/solicitante dentro de una empresa. Puede enlazar a un Person
+// existente (personId) o guardar datos inline.
+model CompanyContact {
+  id        Int      @id @default(autoincrement())
+  companyId Int      @map("company_id")
+  personId  Int?     @map("person_id")
+  name      String
+  email     String?
+  phone     String?
+  role      String?  // "Solicitante", "Compras", …
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  person    Person?  @relation(fields: [personId], references: [id], onDelete: SetNull)
+  quotes    Quote[]
+
+  @@deny('all', auth() == null)
+  @@allow('read', auth().status == 'ACTIVE')
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@index([companyId])
+  @@index([personId])
+  @@map("company_contacts")
+}
+
+// Catálogo editable de productos cotizables (sin precios hardcodeados).
+// Espeja columnas de la cotización: Marca/Categoría/Detalle/Formato/Precio.
+model QuoteProduct {
+  id        Int      @id @default(autoincrement())
+  code      String?  // "E802", "T526"
+  brand     String?  // Marca: DIATER, Roxall, Allos
+  category  String?  // Categoría: Gramínea, Ácaros, Árbol
+  name      String   // Detalle / Alérgeno
+  format    String?  // "2 mL", "2.5 mL"
+  unitPrice Decimal  @map("unit_price") @db.Decimal(15, 2)
+  isActive  Boolean  @default(true) @map("is_active")
+  sortOrder Int      @default(0) @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  items     QuoteItem[]
+
+  @@deny('all', auth() == null)
+  @@allow('read', auth().status == 'ACTIVE')
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@index([code])
+  @@map("quote_products")
+}
+
+model Quote {
+  id            Int             @id @default(autoincrement())
+  folio         Int             @unique // Nº de orden (secuencial, calculado en servicio)
+  companyId     Int             @map("company_id")
+  contactId     Int?            @map("contact_id")
+  createdById   Int?            @map("created_by_id") // vendedor = usuario que crea
+  issueDate     DateTime        @default(now()) @map("issue_date")
+  dueDate       DateTime?       @map("due_date")
+  condicionPago String?         @map("condicion_pago")
+  status        QuoteStatus     @default(DRAFT)
+  subtotal      Decimal         @db.Decimal(15, 2)
+  discount      Decimal         @default(0) @db.Decimal(15, 2)
+  taxRate       Decimal         @default(19) @map("tax_rate") @db.Decimal(5, 2)
+  taxAmount     Decimal         @map("tax_amount") @db.Decimal(15, 2)
+  total         Decimal         @db.Decimal(15, 2)
+  comments      String?
+  notes         String?
+  createdAt     DateTime        @default(now()) @map("created_at")
+  updatedAt     DateTime        @default(now()) @updatedAt @map("updated_at")
+
+  company       Company         @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  contact       CompanyContact? @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  createdBy     User?           @relation("QuoteCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  items         QuoteItem[]
+
+  @@deny('all', auth() == null)
+  @@allow('read', auth().status == 'ACTIVE')
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@index([companyId])
+  @@index([folio])
+  @@map("quotes")
+}
+
+// Línea de cotización con SNAPSHOTS del catálogo: una vez emitida, editar el
+// catálogo NO altera la cotización histórica.
+model QuoteItem {
+  id          Int           @id @default(autoincrement())
+  quoteId     Int           @map("quote_id")
+  productId   Int?          @map("product_id")
+  code        String?
+  brand       String?
+  category    String?
+  description String
+  format      String?
+  quantity    Decimal       @default(1) @db.Decimal(12, 2)
+  unitPrice   Decimal       @map("unit_price") @db.Decimal(15, 2)
+  discount    Decimal       @default(0) @db.Decimal(15, 2) // recargo/descuento por línea
+  exempt      Boolean       @default(false) // exento de IVA
+  subtotal    Decimal       @db.Decimal(15, 2)
+  sortOrder   Int           @default(0) @map("sort_order")
+
+  quote       Quote         @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  product     QuoteProduct? @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  @@deny('all', auth() == null)
+  @@allow('read', auth().status == 'ACTIVE')
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@index([quoteId])
+  @@map("quote_items")
+}
+
+enum QuoteStatus {
+  DRAFT
+  SENT
+  ACCEPTED
+  REJECTED
+  EXPIRED
 }
 
 // ============================================================

@@ -30,18 +30,23 @@ import { Route as AuthedWaCloudIndexRouteImport } from "./routes/_authed/wa-clou
 import { Route as AuthedStoreIndexRouteImport } from "./routes/_authed/store/index"
 import { Route as AuthedSettingsIndexRouteImport } from "./routes/_authed/settings/index"
 import { Route as AuthedServicesIndexRouteImport } from "./routes/_authed/services/index"
+import { Route as AuthedQuotesIndexRouteImport } from "./routes/_authed/quotes/index"
 import { Route as AuthedPatientsIndexRouteImport } from "./routes/_authed/patients/index"
 import { Route as AuthedOutreachIndexRouteImport } from "./routes/_authed/outreach/index"
 import { Route as AuthedInventoryIndexRouteImport } from "./routes/_authed/inventory/index"
 import { Route as AuthedHrIndexRouteImport } from "./routes/_authed/hr/index"
 import { Route as AuthedExamReportsIndexRouteImport } from "./routes/_authed/exam-reports/index"
+import { Route as AuthedCompaniesIndexRouteImport } from "./routes/_authed/companies/index"
 import { Route as AuthedClinicalIndexRouteImport } from "./routes/_authed/clinical/index"
 import { Route as AuthedCalendarIndexRouteImport } from "./routes/_authed/calendar/index"
 import { Route as AuthedWaCloudSplatRouteImport } from "./routes/_authed/wa-cloud/$"
+import { Route as AuthedSettingsQuotesCatalogRouteImport } from "./routes/_authed/settings/quotes-catalog"
 import { Route as AuthedSettingsImmunotherapyRouteImport } from "./routes/_authed/settings/immunotherapy"
 import { Route as AuthedSettingsHaulmerRouteImport } from "./routes/_authed/settings/haulmer"
 import { Route as AuthedSettingsDoctoraliaRouteImport } from "./routes/_authed/settings/doctoralia"
 import { Route as AuthedServicesAgendaRouteImport } from "./routes/_authed/services/agenda"
+import { Route as AuthedQuotesNewRouteImport } from "./routes/_authed/quotes/new"
+import { Route as AuthedQuotesIdRouteImport } from "./routes/_authed/quotes/$id"
 import { Route as AuthedPatientsNewRouteImport } from "./routes/_authed/patients/new"
 import { Route as AuthedPatientsCampaignsRouteImport } from "./routes/_authed/patients/campaigns"
 import { Route as AuthedOutreachDirectorioRouteImport } from "./routes/_authed/outreach/directorio"
@@ -60,6 +65,7 @@ import { Route as AuthedFinanzasCounterpartsRouteImport } from "./routes/_authed
 import { Route as AuthedFinanzasCashFlowRouteImport } from "./routes/_authed/finanzas/cash-flow"
 import { Route as AuthedExamReportsIdRouteImport } from "./routes/_authed/exam-reports/$id"
 import { Route as AuthedDevRoutesAuditRouteImport } from "./routes/_authed/dev/routes-audit"
+import { Route as AuthedCompaniesIdRouteImport } from "./routes/_authed/companies/$id"
 import { Route as AuthedClinicalRecordsRouteImport } from "./routes/_authed/clinical/records"
 import { Route as AuthedClinicalHeatmapRouteImport } from "./routes/_authed/clinical/heatmap"
 import { Route as AuthedClinicalDoctoraliaRouteImport } from "./routes/_authed/clinical/doctoralia"
@@ -186,6 +192,11 @@ const AuthedServicesIndexRoute = AuthedServicesIndexRouteImport.update({
   path: "/",
   getParentRoute: () => AuthedServicesRoute,
 } as any)
+const AuthedQuotesIndexRoute = AuthedQuotesIndexRouteImport.update({
+  id: "/quotes/",
+  path: "/quotes/",
+  getParentRoute: () => AuthedRoute,
+} as any)
 const AuthedPatientsIndexRoute = AuthedPatientsIndexRouteImport.update({
   id: "/patients/",
   path: "/patients/",
@@ -211,6 +222,11 @@ const AuthedExamReportsIndexRoute = AuthedExamReportsIndexRouteImport.update({
   path: "/exam-reports/",
   getParentRoute: () => AuthedRoute,
 } as any)
+const AuthedCompaniesIndexRoute = AuthedCompaniesIndexRouteImport.update({
+  id: "/companies/",
+  path: "/companies/",
+  getParentRoute: () => AuthedRoute,
+} as any)
 const AuthedClinicalIndexRoute = AuthedClinicalIndexRouteImport.update({
   id: "/",
   path: "/",
@@ -226,6 +242,12 @@ const AuthedWaCloudSplatRoute = AuthedWaCloudSplatRouteImport.update({
   path: "/$",
   getParentRoute: () => AuthedWaCloudRoute,
 } as any)
+const AuthedSettingsQuotesCatalogRoute =
+  AuthedSettingsQuotesCatalogRouteImport.update({
+    id: "/quotes-catalog",
+    path: "/quotes-catalog",
+    getParentRoute: () => AuthedSettingsRoute,
+  } as any)
 const AuthedSettingsImmunotherapyRoute =
   AuthedSettingsImmunotherapyRouteImport.update({
     id: "/immunotherapy",
@@ -247,6 +269,16 @@ const AuthedServicesAgendaRoute = AuthedServicesAgendaRouteImport.update({
   id: "/agenda",
   path: "/agenda",
   getParentRoute: () => AuthedServicesRoute,
+} as any)
+const AuthedQuotesNewRoute = AuthedQuotesNewRouteImport.update({
+  id: "/quotes/new",
+  path: "/quotes/new",
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedQuotesIdRoute = AuthedQuotesIdRouteImport.update({
+  id: "/quotes/$id",
+  path: "/quotes/$id",
+  getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedPatientsNewRoute = AuthedPatientsNewRouteImport.update({
   id: "/patients/new",
@@ -343,6 +375,11 @@ const AuthedExamReportsIdRoute = AuthedExamReportsIdRouteImport.update({
 const AuthedDevRoutesAuditRoute = AuthedDevRoutesAuditRouteImport.update({
   id: "/dev/routes-audit",
   path: "/dev/routes-audit",
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedCompaniesIdRoute = AuthedCompaniesIdRouteImport.update({
+  id: "/companies/$id",
+  path: "/companies/$id",
   getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedClinicalRecordsRoute = AuthedClinicalRecordsRouteImport.update({
@@ -489,6 +526,7 @@ export interface FileRoutesByFullPath {
   "/clinical/doctoralia": typeof AuthedClinicalDoctoraliaRoute
   "/clinical/heatmap": typeof AuthedClinicalHeatmapRoute
   "/clinical/records": typeof AuthedClinicalRecordsRoute
+  "/companies/$id": typeof AuthedCompaniesIdRoute
   "/dev/routes-audit": typeof AuthedDevRoutesAuditRoute
   "/exam-reports/$id": typeof AuthedExamReportsIdRoute
   "/finanzas/cash-flow": typeof AuthedFinanzasCashFlowRoute
@@ -507,18 +545,23 @@ export interface FileRoutesByFullPath {
   "/outreach/directorio": typeof AuthedOutreachDirectorioRoute
   "/patients/campaigns": typeof AuthedPatientsCampaignsRoute
   "/patients/new": typeof AuthedPatientsNewRoute
+  "/quotes/$id": typeof AuthedQuotesIdRoute
+  "/quotes/new": typeof AuthedQuotesNewRoute
   "/services/agenda": typeof AuthedServicesAgendaRoute
   "/settings/doctoralia": typeof AuthedSettingsDoctoraliaRoute
   "/settings/haulmer": typeof AuthedSettingsHaulmerRoute
   "/settings/immunotherapy": typeof AuthedSettingsImmunotherapyRoute
+  "/settings/quotes-catalog": typeof AuthedSettingsQuotesCatalogRoute
   "/wa-cloud/$": typeof AuthedWaCloudSplatRoute
   "/calendar/": typeof AuthedCalendarIndexRoute
   "/clinical/": typeof AuthedClinicalIndexRoute
+  "/companies/": typeof AuthedCompaniesIndexRoute
   "/exam-reports/": typeof AuthedExamReportsIndexRoute
   "/hr/": typeof AuthedHrIndexRoute
   "/inventory/": typeof AuthedInventoryIndexRoute
   "/outreach/": typeof AuthedOutreachIndexRoute
   "/patients/": typeof AuthedPatientsIndexRoute
+  "/quotes/": typeof AuthedQuotesIndexRoute
   "/services/": typeof AuthedServicesIndexRoute
   "/settings/": typeof AuthedSettingsIndexRoute
   "/store/": typeof AuthedStoreIndexRoute
@@ -555,6 +598,7 @@ export interface FileRoutesByTo {
   "/clinical/doctoralia": typeof AuthedClinicalDoctoraliaRoute
   "/clinical/heatmap": typeof AuthedClinicalHeatmapRoute
   "/clinical/records": typeof AuthedClinicalRecordsRoute
+  "/companies/$id": typeof AuthedCompaniesIdRoute
   "/dev/routes-audit": typeof AuthedDevRoutesAuditRoute
   "/exam-reports/$id": typeof AuthedExamReportsIdRoute
   "/finanzas/cash-flow": typeof AuthedFinanzasCashFlowRoute
@@ -573,18 +617,23 @@ export interface FileRoutesByTo {
   "/outreach/directorio": typeof AuthedOutreachDirectorioRoute
   "/patients/campaigns": typeof AuthedPatientsCampaignsRoute
   "/patients/new": typeof AuthedPatientsNewRoute
+  "/quotes/$id": typeof AuthedQuotesIdRoute
+  "/quotes/new": typeof AuthedQuotesNewRoute
   "/services/agenda": typeof AuthedServicesAgendaRoute
   "/settings/doctoralia": typeof AuthedSettingsDoctoraliaRoute
   "/settings/haulmer": typeof AuthedSettingsHaulmerRoute
   "/settings/immunotherapy": typeof AuthedSettingsImmunotherapyRoute
+  "/settings/quotes-catalog": typeof AuthedSettingsQuotesCatalogRoute
   "/wa-cloud/$": typeof AuthedWaCloudSplatRoute
   "/calendar": typeof AuthedCalendarIndexRoute
   "/clinical": typeof AuthedClinicalIndexRoute
+  "/companies": typeof AuthedCompaniesIndexRoute
   "/exam-reports": typeof AuthedExamReportsIndexRoute
   "/hr": typeof AuthedHrIndexRoute
   "/inventory": typeof AuthedInventoryIndexRoute
   "/outreach": typeof AuthedOutreachIndexRoute
   "/patients": typeof AuthedPatientsIndexRoute
+  "/quotes": typeof AuthedQuotesIndexRoute
   "/services": typeof AuthedServicesIndexRoute
   "/settings": typeof AuthedSettingsIndexRoute
   "/store": typeof AuthedStoreIndexRoute
@@ -630,6 +679,7 @@ export interface FileRoutesById {
   "/_authed/clinical/doctoralia": typeof AuthedClinicalDoctoraliaRoute
   "/_authed/clinical/heatmap": typeof AuthedClinicalHeatmapRoute
   "/_authed/clinical/records": typeof AuthedClinicalRecordsRoute
+  "/_authed/companies/$id": typeof AuthedCompaniesIdRoute
   "/_authed/dev/routes-audit": typeof AuthedDevRoutesAuditRoute
   "/_authed/exam-reports/$id": typeof AuthedExamReportsIdRoute
   "/_authed/finanzas/cash-flow": typeof AuthedFinanzasCashFlowRoute
@@ -648,18 +698,23 @@ export interface FileRoutesById {
   "/_authed/outreach/directorio": typeof AuthedOutreachDirectorioRoute
   "/_authed/patients/campaigns": typeof AuthedPatientsCampaignsRoute
   "/_authed/patients/new": typeof AuthedPatientsNewRoute
+  "/_authed/quotes/$id": typeof AuthedQuotesIdRoute
+  "/_authed/quotes/new": typeof AuthedQuotesNewRoute
   "/_authed/services/agenda": typeof AuthedServicesAgendaRoute
   "/_authed/settings/doctoralia": typeof AuthedSettingsDoctoraliaRoute
   "/_authed/settings/haulmer": typeof AuthedSettingsHaulmerRoute
   "/_authed/settings/immunotherapy": typeof AuthedSettingsImmunotherapyRoute
+  "/_authed/settings/quotes-catalog": typeof AuthedSettingsQuotesCatalogRoute
   "/_authed/wa-cloud/$": typeof AuthedWaCloudSplatRoute
   "/_authed/calendar/": typeof AuthedCalendarIndexRoute
   "/_authed/clinical/": typeof AuthedClinicalIndexRoute
+  "/_authed/companies/": typeof AuthedCompaniesIndexRoute
   "/_authed/exam-reports/": typeof AuthedExamReportsIndexRoute
   "/_authed/hr/": typeof AuthedHrIndexRoute
   "/_authed/inventory/": typeof AuthedInventoryIndexRoute
   "/_authed/outreach/": typeof AuthedOutreachIndexRoute
   "/_authed/patients/": typeof AuthedPatientsIndexRoute
+  "/_authed/quotes/": typeof AuthedQuotesIndexRoute
   "/_authed/services/": typeof AuthedServicesIndexRoute
   "/_authed/settings/": typeof AuthedSettingsIndexRoute
   "/_authed/store/": typeof AuthedStoreIndexRoute
@@ -705,6 +760,7 @@ export interface FileRouteTypes {
     | "/clinical/doctoralia"
     | "/clinical/heatmap"
     | "/clinical/records"
+    | "/companies/$id"
     | "/dev/routes-audit"
     | "/exam-reports/$id"
     | "/finanzas/cash-flow"
@@ -723,18 +779,23 @@ export interface FileRouteTypes {
     | "/outreach/directorio"
     | "/patients/campaigns"
     | "/patients/new"
+    | "/quotes/$id"
+    | "/quotes/new"
     | "/services/agenda"
     | "/settings/doctoralia"
     | "/settings/haulmer"
     | "/settings/immunotherapy"
+    | "/settings/quotes-catalog"
     | "/wa-cloud/$"
     | "/calendar/"
     | "/clinical/"
+    | "/companies/"
     | "/exam-reports/"
     | "/hr/"
     | "/inventory/"
     | "/outreach/"
     | "/patients/"
+    | "/quotes/"
     | "/services/"
     | "/settings/"
     | "/store/"
@@ -771,6 +832,7 @@ export interface FileRouteTypes {
     | "/clinical/doctoralia"
     | "/clinical/heatmap"
     | "/clinical/records"
+    | "/companies/$id"
     | "/dev/routes-audit"
     | "/exam-reports/$id"
     | "/finanzas/cash-flow"
@@ -789,18 +851,23 @@ export interface FileRouteTypes {
     | "/outreach/directorio"
     | "/patients/campaigns"
     | "/patients/new"
+    | "/quotes/$id"
+    | "/quotes/new"
     | "/services/agenda"
     | "/settings/doctoralia"
     | "/settings/haulmer"
     | "/settings/immunotherapy"
+    | "/settings/quotes-catalog"
     | "/wa-cloud/$"
     | "/calendar"
     | "/clinical"
+    | "/companies"
     | "/exam-reports"
     | "/hr"
     | "/inventory"
     | "/outreach"
     | "/patients"
+    | "/quotes"
     | "/services"
     | "/settings"
     | "/store"
@@ -845,6 +912,7 @@ export interface FileRouteTypes {
     | "/_authed/clinical/doctoralia"
     | "/_authed/clinical/heatmap"
     | "/_authed/clinical/records"
+    | "/_authed/companies/$id"
     | "/_authed/dev/routes-audit"
     | "/_authed/exam-reports/$id"
     | "/_authed/finanzas/cash-flow"
@@ -863,18 +931,23 @@ export interface FileRouteTypes {
     | "/_authed/outreach/directorio"
     | "/_authed/patients/campaigns"
     | "/_authed/patients/new"
+    | "/_authed/quotes/$id"
+    | "/_authed/quotes/new"
     | "/_authed/services/agenda"
     | "/_authed/settings/doctoralia"
     | "/_authed/settings/haulmer"
     | "/_authed/settings/immunotherapy"
+    | "/_authed/settings/quotes-catalog"
     | "/_authed/wa-cloud/$"
     | "/_authed/calendar/"
     | "/_authed/clinical/"
+    | "/_authed/companies/"
     | "/_authed/exam-reports/"
     | "/_authed/hr/"
     | "/_authed/inventory/"
     | "/_authed/outreach/"
     | "/_authed/patients/"
+    | "/_authed/quotes/"
     | "/_authed/services/"
     | "/_authed/settings/"
     | "/_authed/store/"
@@ -1047,6 +1120,13 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof AuthedServicesIndexRouteImport
       parentRoute: typeof AuthedServicesRoute
     }
+    "/_authed/quotes/": {
+      id: "/_authed/quotes/"
+      path: "/quotes"
+      fullPath: "/quotes/"
+      preLoaderRoute: typeof AuthedQuotesIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     "/_authed/patients/": {
       id: "/_authed/patients/"
       path: "/patients"
@@ -1082,6 +1162,13 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof AuthedExamReportsIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
+    "/_authed/companies/": {
+      id: "/_authed/companies/"
+      path: "/companies"
+      fullPath: "/companies/"
+      preLoaderRoute: typeof AuthedCompaniesIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     "/_authed/clinical/": {
       id: "/_authed/clinical/"
       path: "/"
@@ -1102,6 +1189,13 @@ declare module "@tanstack/react-router" {
       fullPath: "/wa-cloud/$"
       preLoaderRoute: typeof AuthedWaCloudSplatRouteImport
       parentRoute: typeof AuthedWaCloudRoute
+    }
+    "/_authed/settings/quotes-catalog": {
+      id: "/_authed/settings/quotes-catalog"
+      path: "/quotes-catalog"
+      fullPath: "/settings/quotes-catalog"
+      preLoaderRoute: typeof AuthedSettingsQuotesCatalogRouteImport
+      parentRoute: typeof AuthedSettingsRoute
     }
     "/_authed/settings/immunotherapy": {
       id: "/_authed/settings/immunotherapy"
@@ -1130,6 +1224,20 @@ declare module "@tanstack/react-router" {
       fullPath: "/services/agenda"
       preLoaderRoute: typeof AuthedServicesAgendaRouteImport
       parentRoute: typeof AuthedServicesRoute
+    }
+    "/_authed/quotes/new": {
+      id: "/_authed/quotes/new"
+      path: "/quotes/new"
+      fullPath: "/quotes/new"
+      preLoaderRoute: typeof AuthedQuotesNewRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    "/_authed/quotes/$id": {
+      id: "/_authed/quotes/$id"
+      path: "/quotes/$id"
+      fullPath: "/quotes/$id"
+      preLoaderRoute: typeof AuthedQuotesIdRouteImport
+      parentRoute: typeof AuthedRoute
     }
     "/_authed/patients/new": {
       id: "/_authed/patients/new"
@@ -1255,6 +1363,13 @@ declare module "@tanstack/react-router" {
       path: "/dev/routes-audit"
       fullPath: "/dev/routes-audit"
       preLoaderRoute: typeof AuthedDevRoutesAuditRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    "/_authed/companies/$id": {
+      id: "/_authed/companies/$id"
+      path: "/companies/$id"
+      fullPath: "/companies/$id"
+      preLoaderRoute: typeof AuthedCompaniesIdRouteImport
       parentRoute: typeof AuthedRoute
     }
     "/_authed/clinical/records": {
@@ -1582,6 +1697,7 @@ interface AuthedSettingsRouteChildren {
   AuthedSettingsDoctoraliaRoute: typeof AuthedSettingsDoctoraliaRoute
   AuthedSettingsHaulmerRoute: typeof AuthedSettingsHaulmerRoute
   AuthedSettingsImmunotherapyRoute: typeof AuthedSettingsImmunotherapyRoute
+  AuthedSettingsQuotesCatalogRoute: typeof AuthedSettingsQuotesCatalogRoute
   AuthedSettingsIndexRoute: typeof AuthedSettingsIndexRoute
 }
 
@@ -1589,6 +1705,7 @@ const AuthedSettingsRouteChildren: AuthedSettingsRouteChildren = {
   AuthedSettingsDoctoraliaRoute: AuthedSettingsDoctoraliaRoute,
   AuthedSettingsHaulmerRoute: AuthedSettingsHaulmerRoute,
   AuthedSettingsImmunotherapyRoute: AuthedSettingsImmunotherapyRoute,
+  AuthedSettingsQuotesCatalogRoute: AuthedSettingsQuotesCatalogRoute,
   AuthedSettingsIndexRoute: AuthedSettingsIndexRoute,
 }
 
@@ -1626,13 +1743,18 @@ interface AuthedRouteChildren {
   AuthedIndexRoute: typeof AuthedIndexRoute
   AuthedAdminDatabaseRoute: typeof AuthedAdminDatabaseRoute
   AuthedAdminUsersRoute: typeof AuthedAdminUsersRoute
+  AuthedCompaniesIdRoute: typeof AuthedCompaniesIdRoute
   AuthedDevRoutesAuditRoute: typeof AuthedDevRoutesAuditRoute
   AuthedExamReportsIdRoute: typeof AuthedExamReportsIdRoute
   AuthedPatientsCampaignsRoute: typeof AuthedPatientsCampaignsRoute
   AuthedPatientsNewRoute: typeof AuthedPatientsNewRoute
+  AuthedQuotesIdRoute: typeof AuthedQuotesIdRoute
+  AuthedQuotesNewRoute: typeof AuthedQuotesNewRoute
+  AuthedCompaniesIndexRoute: typeof AuthedCompaniesIndexRoute
   AuthedExamReportsIndexRoute: typeof AuthedExamReportsIndexRoute
   AuthedInventoryIndexRoute: typeof AuthedInventoryIndexRoute
   AuthedPatientsIndexRoute: typeof AuthedPatientsIndexRoute
+  AuthedQuotesIndexRoute: typeof AuthedQuotesIndexRoute
   AuthedStoreIndexRoute: typeof AuthedStoreIndexRoute
   AuthedPatientsIdImmunotherapyBudgetRoute: typeof AuthedPatientsIdImmunotherapyBudgetRoute
   AuthedPatientsIdNewBudgetRoute: typeof AuthedPatientsIdNewBudgetRoute
@@ -1657,13 +1779,18 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedIndexRoute: AuthedIndexRoute,
   AuthedAdminDatabaseRoute: AuthedAdminDatabaseRoute,
   AuthedAdminUsersRoute: AuthedAdminUsersRoute,
+  AuthedCompaniesIdRoute: AuthedCompaniesIdRoute,
   AuthedDevRoutesAuditRoute: AuthedDevRoutesAuditRoute,
   AuthedExamReportsIdRoute: AuthedExamReportsIdRoute,
   AuthedPatientsCampaignsRoute: AuthedPatientsCampaignsRoute,
   AuthedPatientsNewRoute: AuthedPatientsNewRoute,
+  AuthedQuotesIdRoute: AuthedQuotesIdRoute,
+  AuthedQuotesNewRoute: AuthedQuotesNewRoute,
+  AuthedCompaniesIndexRoute: AuthedCompaniesIndexRoute,
   AuthedExamReportsIndexRoute: AuthedExamReportsIndexRoute,
   AuthedInventoryIndexRoute: AuthedInventoryIndexRoute,
   AuthedPatientsIndexRoute: AuthedPatientsIndexRoute,
+  AuthedQuotesIndexRoute: AuthedQuotesIndexRoute,
   AuthedStoreIndexRoute: AuthedStoreIndexRoute,
   AuthedPatientsIdImmunotherapyBudgetRoute:
     AuthedPatientsIdImmunotherapyBudgetRoute,

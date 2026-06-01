@@ -95,6 +95,12 @@ export class SchemaType implements SchemaDef {
                     type: "Address",
                     array: true,
                     relation: { opposite: "person" }
+                },
+                companyContacts: {
+                    name: "companyContacts",
+                    type: "CompanyContact",
+                    array: true,
+                    relation: { opposite: "person" }
                 }
             },
             idFields: ["id"],
@@ -512,6 +518,12 @@ export class SchemaType implements SchemaDef {
                     type: "MagicLinkToken",
                     array: true,
                     relation: { opposite: "user" }
+                },
+                createdQuotes: {
+                    name: "createdQuotes",
+                    type: "Quote",
+                    array: true,
+                    relation: { opposite: "createdBy", name: "QuoteCreatedBy" }
                 },
                 person: {
                     name: "person",
@@ -7387,6 +7399,470 @@ export class SchemaType implements SchemaDef {
                 id: { type: "String" }
             }
         },
+        Company: {
+            name: "Company",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                razonSocial: {
+                    name: "razonSocial",
+                    type: "String"
+                },
+                rut: {
+                    name: "rut",
+                    type: "String",
+                    unique: true,
+                    optional: true
+                },
+                giro: {
+                    name: "giro",
+                    type: "String",
+                    optional: true
+                },
+                direccion: {
+                    name: "direccion",
+                    type: "String",
+                    optional: true
+                },
+                comuna: {
+                    name: "comuna",
+                    type: "String",
+                    optional: true
+                },
+                ciudad: {
+                    name: "ciudad",
+                    type: "String",
+                    optional: true
+                },
+                email: {
+                    name: "email",
+                    type: "String",
+                    optional: true
+                },
+                phone: {
+                    name: "phone",
+                    type: "String",
+                    optional: true
+                },
+                condicionPago: {
+                    name: "condicionPago",
+                    type: "String",
+                    optional: true
+                },
+                notes: {
+                    name: "notes",
+                    type: "String",
+                    optional: true
+                },
+                isActive: {
+                    name: "isActive",
+                    type: "Boolean",
+                    default: true as FieldDefault
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                contacts: {
+                    name: "contacts",
+                    type: "CompanyContact",
+                    array: true,
+                    relation: { opposite: "company" }
+                },
+                quotes: {
+                    name: "quotes",
+                    type: "Quote",
+                    array: true,
+                    relation: { opposite: "company" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" },
+                rut: { type: "String" }
+            }
+        },
+        CompanyContact: {
+            name: "CompanyContact",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                companyId: {
+                    name: "companyId",
+                    type: "Int",
+                    foreignKeyFor: [
+                        "company"
+                    ] as readonly string[]
+                },
+                personId: {
+                    name: "personId",
+                    type: "Int",
+                    optional: true,
+                    foreignKeyFor: [
+                        "person"
+                    ] as readonly string[]
+                },
+                name: {
+                    name: "name",
+                    type: "String"
+                },
+                email: {
+                    name: "email",
+                    type: "String",
+                    optional: true
+                },
+                phone: {
+                    name: "phone",
+                    type: "String",
+                    optional: true
+                },
+                role: {
+                    name: "role",
+                    type: "String",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                company: {
+                    name: "company",
+                    type: "Company",
+                    relation: { opposite: "contacts", fields: ["companyId"], references: ["id"], onDelete: "Cascade" }
+                },
+                person: {
+                    name: "person",
+                    type: "Person",
+                    optional: true,
+                    relation: { opposite: "companyContacts", fields: ["personId"], references: ["id"], onDelete: "SetNull" }
+                },
+                quotes: {
+                    name: "quotes",
+                    type: "Quote",
+                    array: true,
+                    relation: { opposite: "contact" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" }
+            }
+        },
+        QuoteProduct: {
+            name: "QuoteProduct",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                code: {
+                    name: "code",
+                    type: "String",
+                    optional: true
+                },
+                brand: {
+                    name: "brand",
+                    type: "String",
+                    optional: true
+                },
+                category: {
+                    name: "category",
+                    type: "String",
+                    optional: true
+                },
+                name: {
+                    name: "name",
+                    type: "String"
+                },
+                format: {
+                    name: "format",
+                    type: "String",
+                    optional: true
+                },
+                unitPrice: {
+                    name: "unitPrice",
+                    type: "Decimal"
+                },
+                isActive: {
+                    name: "isActive",
+                    type: "Boolean",
+                    default: true as FieldDefault
+                },
+                sortOrder: {
+                    name: "sortOrder",
+                    type: "Int",
+                    default: 0 as FieldDefault
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                items: {
+                    name: "items",
+                    type: "QuoteItem",
+                    array: true,
+                    relation: { opposite: "product" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" }
+            }
+        },
+        Quote: {
+            name: "Quote",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                folio: {
+                    name: "folio",
+                    type: "Int",
+                    unique: true
+                },
+                companyId: {
+                    name: "companyId",
+                    type: "Int",
+                    foreignKeyFor: [
+                        "company"
+                    ] as readonly string[]
+                },
+                contactId: {
+                    name: "contactId",
+                    type: "Int",
+                    optional: true,
+                    foreignKeyFor: [
+                        "contact"
+                    ] as readonly string[]
+                },
+                createdById: {
+                    name: "createdById",
+                    type: "Int",
+                    optional: true,
+                    foreignKeyFor: [
+                        "createdBy"
+                    ] as readonly string[]
+                },
+                issueDate: {
+                    name: "issueDate",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                dueDate: {
+                    name: "dueDate",
+                    type: "DateTime",
+                    optional: true
+                },
+                condicionPago: {
+                    name: "condicionPago",
+                    type: "String",
+                    optional: true
+                },
+                status: {
+                    name: "status",
+                    type: "QuoteStatus",
+                    default: "DRAFT" as FieldDefault
+                },
+                subtotal: {
+                    name: "subtotal",
+                    type: "Decimal"
+                },
+                discount: {
+                    name: "discount",
+                    type: "Decimal",
+                    default: 0 as FieldDefault
+                },
+                taxRate: {
+                    name: "taxRate",
+                    type: "Decimal",
+                    default: 19 as FieldDefault
+                },
+                taxAmount: {
+                    name: "taxAmount",
+                    type: "Decimal"
+                },
+                total: {
+                    name: "total",
+                    type: "Decimal"
+                },
+                comments: {
+                    name: "comments",
+                    type: "String",
+                    optional: true
+                },
+                notes: {
+                    name: "notes",
+                    type: "String",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                company: {
+                    name: "company",
+                    type: "Company",
+                    relation: { opposite: "quotes", fields: ["companyId"], references: ["id"], onDelete: "Restrict" }
+                },
+                contact: {
+                    name: "contact",
+                    type: "CompanyContact",
+                    optional: true,
+                    relation: { opposite: "quotes", fields: ["contactId"], references: ["id"], onDelete: "SetNull" }
+                },
+                createdBy: {
+                    name: "createdBy",
+                    type: "User",
+                    optional: true,
+                    relation: { opposite: "createdQuotes", name: "QuoteCreatedBy", fields: ["createdById"], references: ["id"], onDelete: "SetNull" }
+                },
+                items: {
+                    name: "items",
+                    type: "QuoteItem",
+                    array: true,
+                    relation: { opposite: "quote" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" },
+                folio: { type: "Int" }
+            }
+        },
+        QuoteItem: {
+            name: "QuoteItem",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                quoteId: {
+                    name: "quoteId",
+                    type: "Int",
+                    foreignKeyFor: [
+                        "quote"
+                    ] as readonly string[]
+                },
+                productId: {
+                    name: "productId",
+                    type: "Int",
+                    optional: true,
+                    foreignKeyFor: [
+                        "product"
+                    ] as readonly string[]
+                },
+                code: {
+                    name: "code",
+                    type: "String",
+                    optional: true
+                },
+                brand: {
+                    name: "brand",
+                    type: "String",
+                    optional: true
+                },
+                category: {
+                    name: "category",
+                    type: "String",
+                    optional: true
+                },
+                description: {
+                    name: "description",
+                    type: "String"
+                },
+                format: {
+                    name: "format",
+                    type: "String",
+                    optional: true
+                },
+                quantity: {
+                    name: "quantity",
+                    type: "Decimal",
+                    default: 1 as FieldDefault
+                },
+                unitPrice: {
+                    name: "unitPrice",
+                    type: "Decimal"
+                },
+                discount: {
+                    name: "discount",
+                    type: "Decimal",
+                    default: 0 as FieldDefault
+                },
+                exempt: {
+                    name: "exempt",
+                    type: "Boolean",
+                    default: false as FieldDefault
+                },
+                subtotal: {
+                    name: "subtotal",
+                    type: "Decimal"
+                },
+                sortOrder: {
+                    name: "sortOrder",
+                    type: "Int",
+                    default: 0 as FieldDefault
+                },
+                quote: {
+                    name: "quote",
+                    type: "Quote",
+                    relation: { opposite: "items", fields: ["quoteId"], references: ["id"], onDelete: "Cascade" }
+                },
+                product: {
+                    name: "product",
+                    type: "QuoteProduct",
+                    optional: true,
+                    relation: { opposite: "items", fields: ["productId"], references: ["id"], onDelete: "SetNull" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" }
+            }
+        },
         DTEPurchaseDetail: {
             name: "DTEPurchaseDetail",
             fields: {
@@ -13673,6 +14149,16 @@ export class SchemaType implements SchemaDef {
                 EXAM: "EXAM",
                 RECIPE: "RECIPE",
                 OTHER: "OTHER"
+            }
+        },
+        QuoteStatus: {
+            name: "QuoteStatus",
+            values: {
+                DRAFT: "DRAFT",
+                SENT: "SENT",
+                ACCEPTED: "ACCEPTED",
+                REJECTED: "REJECTED",
+                EXPIRED: "EXPIRED"
             }
         },
         DTEType: {
