@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useState } from "react";
 
-import { AppDatePicker, AppDateTimePicker } from "./AppDatePicker";
+import { AppDatePicker, AppDateRangePicker, AppDateTimePicker } from "./AppDatePicker";
 
 const meta: Meta<typeof AppDatePicker> = {
   title: "Forms/AppDatePicker",
@@ -62,5 +62,54 @@ export const DateTimeVariant: Story = {
         <p className="text-default-500 text-xs">Valor: {value}</p>
       </div>
     );
+  },
+};
+
+function RangeDemo({ start = "2026-05-05", end = "2026-05-20" }: { start?: string; end?: string }) {
+  const [range, setRange] = useState({ start, end });
+  return (
+    <div className="max-w-sm space-y-2 p-4">
+      <AppDateRangePicker
+        label="Rango de fechas"
+        startValue={range.start}
+        endValue={range.end}
+        onChange={(s, e) => setRange({ end: e, start: s })}
+      />
+      <p className="text-default-500 text-xs">
+        Rango: {range.start || "(vacío)"} → {range.end || "(vacío)"}
+      </p>
+    </div>
+  );
+}
+
+export const DateRange: Story = { render: () => <RangeDemo /> };
+
+export const DateRangeEmpty: Story = { render: () => <RangeDemo end="" start="" /> };
+
+/**
+ * Mobile guard: opening the range calendar must not clip off-screen. This is
+ * the regression the `max-w-none` popover + DateRangePicker (vs two single
+ * DatePickers in a narrow grid cell) protects against under HeroUI 3.1.
+ */
+export const RangeOpensInViewport: Story = {
+  name: "Rango — abre en viewport (móvil)",
+  globals: { viewport: { value: "mobile1", isRotated: false } },
+  parameters: { viewport: { defaultViewport: "mobile1" } },
+  render: () => <RangeDemo />,
+  play: async ({ canvasElement }) => {
+    const { expect, userEvent, waitFor } = await import("storybook/test");
+    const doc = canvasElement.ownerDocument;
+
+    const trigger = doc.body.querySelector<HTMLButtonElement>('button[aria-haspopup="dialog"]');
+    await expect(trigger).not.toBeNull();
+    await userEvent.click(trigger as HTMLButtonElement);
+
+    await waitFor(async () => {
+      const grid = doc.body.querySelector<HTMLElement>('[role="application"] [role="grid"]');
+      await expect(grid).not.toBeNull();
+      const rect = (grid as HTMLElement).getBoundingClientRect();
+      await expect(rect.left).toBeGreaterThanOrEqual(0);
+      await expect(rect.right).toBeLessThanOrEqual(doc.documentElement.clientWidth);
+    });
   },
 };
