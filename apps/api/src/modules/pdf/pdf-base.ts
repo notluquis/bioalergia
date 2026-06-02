@@ -10,7 +10,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import fontkit from "@pdf-lib/fontkit";
-import { type PDFDocument, type PDFFont, type PDFImage, type PDFPage, rgb } from "pdf-lib";
+import { type PDFDocument, type PDFFont, type PDFImage, type PDFPage, PDFName, rgb } from "pdf-lib";
 
 const ASSETS_DIR = path.resolve(import.meta.dirname, "../../../assets");
 const FONTS_DIR = path.join(ASSETS_DIR, "fonts");
@@ -146,6 +146,14 @@ export function setPdfMetadata(
   const now = new Date();
   pdfDoc.setCreationDate(now);
   pdfDoc.setModificationDate(now);
+
+  // Accesibilidad (golden 2026, sin tagging completo): idioma del documento
+  // (los lectores de pantalla anuncian español) + ViewerPreferences para que
+  // el visor muestre el Title en la barra, no el nombre de archivo. El texto ya
+  // es real + embebido, así que es extraíble por tecnologías de asistencia.
+  pdfDoc.setLanguage("es-CL");
+  const viewerPrefs = pdfDoc.context.obj({ DisplayDocTitle: true });
+  pdfDoc.catalog.set(PDFName.of("ViewerPreferences"), viewerPrefs);
 }
 
 export function wrapText(text: string, font: PDFFont, size: number, maxWidth: number): string[] {

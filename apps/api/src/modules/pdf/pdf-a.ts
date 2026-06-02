@@ -24,6 +24,8 @@ function pdfaDefPs(iccPath: string, title: string): string {
   const safeTitle = title.replace(/([()\\])/g, "\\$1");
   return `%!
 [ /Title (${safeTitle}) /DOCINFO pdfmark
+[{Catalog} <</Lang (es-CL)>> /PUT pdfmark
+[{Catalog} <</ViewerPreferences <</DisplayDocTitle true>>>> /PUT pdfmark
 [/_objdef {icc_PDFA} /type /stream /OBJ pdfmark
 [{icc_PDFA} <</N 3>> /PUT pdfmark
 [{icc_PDFA} (${iccPath}) (r) file /PUT pdfmark
