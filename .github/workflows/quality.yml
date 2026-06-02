@@ -56,15 +56,13 @@ jobs:
       - run: pnpm audit:dead:advisory
 
   coverage:
-    # Advisory: prints + uploads vitest coverage. Job stays green so a
-    # regression highlights in the PR check but doesn't block merges.
-    # Thresholds in vite.config.ts are deliberately below the current
-    # baseline (~65% lines under loaded-only, lower with `all: true`)
-    # — they're a trend tracker, not a gate. Lift to enforcing 80/75
-    # once the test suite catches up.
-    name: vitest coverage (advisory)
+    # GATING: vitest `test:coverage` enforces the thresholds in
+    # vite.config.ts (statements 75 / branches 65 / functions 72 / lines 79),
+    # set to the measured baseline (77/68/74/82) minus a small headroom. A
+    # coverage regression below these now blocks the merge. Ratchet the
+    # thresholds UP after a test batch raises the actuals.
+    name: vitest coverage (gating)
     runs-on: ubuntu-latest
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v6
       - uses: pnpm/action-setup@v6
