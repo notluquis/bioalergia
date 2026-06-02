@@ -57,8 +57,10 @@
 		# to /api/0/envelope/ is blocked by CSP and events disappear.
 		# *.r2.cloudflarestorage.com is the R2 S3 endpoint for browser PUT
 		# uploads via presigned URLs (product images + clinic logos/signature).
-		# Reads are served from the public CDN domain via img-src https:.
-		Content-Security-Policy "default-src 'self'; script-src 'nonce-{http.request.uuid}' 'strict-dynamic' 'unsafe-inline' https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://*.ingest.sentry.io https://*.ingest.us.sentry.io https://*.r2.cloudflarestorage.com; media-src 'self' blob:; worker-src 'self' blob:; manifest-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'; object-src 'none'"
+		# cdn.bioalergia.cl is the R2 public CDN: <img>/<picture> reads go via
+		# img-src (https:), but it's also in connect-src so service-worker
+		# runtime-caching fetch() of those images isn't blocked.
+		Content-Security-Policy "default-src 'self'; script-src 'nonce-{http.request.uuid}' 'strict-dynamic' 'unsafe-inline' https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://*.ingest.sentry.io https://*.ingest.us.sentry.io https://*.r2.cloudflarestorage.com https://cdn.bioalergia.cl; media-src 'self' blob:; worker-src 'self' blob:; manifest-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'; object-src 'none'"
 		Content-Security-Policy-Report-Only "require-trusted-types-for 'script'; trusted-types default dompurify 'allow-duplicates'"
 	}
 
