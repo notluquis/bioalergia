@@ -14,7 +14,12 @@ type Product = {
   available_qty: number;
   safety_stock: number;
   requires_prescription: boolean;
-  images?: Array<{ cdn_url: string; is_primary: boolean; alt: string | null }>;
+  images?: Array<{
+    cdn_url: string;
+    srcset?: string | null;
+    is_primary: boolean;
+    alt: string | null;
+  }>;
 };
 
 export function ProductCard({ product }: { product: Product }) {
@@ -36,7 +41,9 @@ export function ProductCard({ product }: { product: Product }) {
               className="object-cover transition hover:scale-105 size-full"
               loading="lazy"
               decoding="async"
+              sizes="(max-width: 640px) 50vw, 280px"
               src={primary.cdn_url}
+              srcSet={primary.srcset ?? undefined}
             />
           ) : (
             <div className="flex h-full items-center justify-center text-foreground/30 text-xs">

@@ -4,6 +4,7 @@ export async function createProductImage(input: {
   productId: number;
   r2Key: string;
   cdnUrl: string;
+  srcset?: string | null;
   alt?: string | null;
   width?: number | null;
   height?: number | null;
@@ -32,6 +33,7 @@ export async function createProductImage(input: {
       productId: input.productId,
       r2Key: input.r2Key,
       cdnUrl: input.cdnUrl,
+      srcset: input.srcset ?? null,
       alt: input.alt ?? null,
       width: input.width ?? null,
       height: input.height ?? null,

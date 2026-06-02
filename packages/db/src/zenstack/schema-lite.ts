@@ -12997,6 +12997,11 @@ export class SchemaType implements SchemaDef {
                     name: "cdnUrl",
                     type: "String"
                 },
+                srcset: {
+                    name: "srcset",
+                    type: "String",
+                    optional: true
+                },
                 alt: {
                     name: "alt",
                     type: "String",

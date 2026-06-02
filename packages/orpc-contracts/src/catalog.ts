@@ -8,6 +8,7 @@ export const productImageSchema = z.object({
   product_id: z.number().int(),
   r2_key: z.string(),
   cdn_url: z.string().url(),
+  srcset: z.string().nullable(),
   alt: z.string().nullable(),
   position: z.number().int(),
   width: z.number().int().nullable(),

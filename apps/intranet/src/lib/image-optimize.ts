@@ -60,3 +60,56 @@ export async function optimizeImageForUpload(
   const base = file.name.replace(/\.[^.]+$/, "");
   return { blob, filename: `${base}.webp`, contentType: "image/webp", width, height };
 }
+
+export type ImageVariant = { width: number; blob: Blob; filename: string; contentType: string };
+
+/**
+ * Genera variantes WebP responsivas (400/800/1600w, capadas al ancho nativo y a
+ * 1600) para `srcset`. Todo client-side (canvas) → sin servicios pagos. El
+ * navegador baja sólo el tamaño que necesita.
+ */
+export async function generateImageVariants(
+  file: File,
+  opts?: { widths?: number[]; cap?: number; quality?: number }
+): Promise<{ variants: ImageVariant[]; intrinsic: { width: number; height: number } } | null> {
+  if (!/^image\/(jpeg|png|webp|avif)$/.test(file.type)) return null;
+
+  let bitmap: ImageBitmap;
+  try {
+    bitmap = await createImageBitmap(file);
+  } catch {
+    return null;
+  }
+
+  const cap = Math.min(bitmap.width, opts?.cap ?? 1600);
+  const aspect = bitmap.height / bitmap.width;
+  const requested = opts?.widths ?? [400, 800, 1600];
+  const widths = [...new Set(requested.filter((w) => w < cap).concat(cap))].sort((a, b) => a - b);
+  const quality = opts?.quality ?? 0.82;
+
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+  if (!ctx) {
+    bitmap.close();
+    return null;
+  }
+
+  const base = file.name.replace(/\.[^.]+$/, "");
+  const variants: ImageVariant[] = [];
+  for (const w of widths) {
+    const h = Math.max(1, Math.round(w * aspect));
+    canvas.width = w;
+    canvas.height = h;
+    ctx.clearRect(0, 0, w, h);
+    ctx.drawImage(bitmap, 0, 0, w, h);
+    const blob = await new Promise<Blob | null>((resolve) => {
+      canvas.toBlob(resolve, "image/webp", quality);
+    });
+    if (blob) {
+      variants.push({ width: w, blob, filename: `${base}-${w}w.webp`, contentType: "image/webp" });
+    }
+  }
+  const intrinsic = { width: cap, height: Math.max(1, Math.round(cap * aspect)) };
+  bitmap.close();
+  return variants.length ? { variants, intrinsic } : null;
+}

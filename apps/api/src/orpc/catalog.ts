@@ -81,6 +81,7 @@ function serializeImage(img: {
   productId: number;
   r2Key: string;
   cdnUrl: string;
+  srcset: string | null;
   alt: string | null;
   position: number;
   width: number | null;
@@ -92,6 +93,7 @@ function serializeImage(img: {
     product_id: img.productId,
     r2_key: img.r2Key,
     cdn_url: img.cdnUrl,
+    srcset: img.srcset,
     alt: img.alt,
     position: img.position,
     width: img.width,

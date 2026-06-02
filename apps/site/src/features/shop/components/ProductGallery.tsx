@@ -2,7 +2,7 @@ import useEmblaCarousel from "embla-carousel-react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
-type Image = { cdn_url: string; alt: string | null; is_primary: boolean };
+type Image = { cdn_url: string; srcset?: string | null; alt: string | null; is_primary: boolean };
 
 export function ProductGallery({ images, productName }: { images: Image[]; productName: string }) {
   const sorted = images.length
@@ -44,7 +44,9 @@ export function ProductGallery({ images, productName }: { images: Image[]; produ
                   fetchPriority={i === 0 ? "high" : "auto"}
                   loading={i === 0 ? "eager" : "lazy"}
                   decoding="async"
+                  sizes="(max-width: 1024px) 100vw, 520px"
                   src={img.cdn_url}
+                  srcSet={img.srcset ?? undefined}
                 />
               </div>
             </div>

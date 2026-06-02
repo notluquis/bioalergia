@@ -5,13 +5,14 @@ import { useRef, useState } from "react";
 
 import { confirmAction } from "@/components/ui/ConfirmDialog";
 import { useToast } from "@/context/ToastContext";
-import { optimizeImageForUpload } from "@/lib/image-optimize";
+import { generateImageVariants, optimizeImageForUpload } from "@/lib/image-optimize";
 import { imagesORPCClient } from "../orpc-images";
 import { catalogKeys } from "../queries";
 
 type ExistingImage = {
   id: number;
   cdn_url: string;
+  srcset?: string | null;
   is_primary: boolean;
   alt: string | null;
 };
@@ -53,31 +54,58 @@ export function ImageUploader({ productId, images }: ImageUploaderProps) {
     }
     setUploading(true);
     try {
-      // Optimiza client-side (resize + WebP) antes de subir — menos peso en R2
-      // y CDN, carga más rápida en la tienda. Sin servicios pagos.
-      const opt = await optimizeImageForUpload(file);
-      const presign = await imagesORPCClient.presignUpload({
-        product_id: productId,
-        filename: opt.filename,
-        content_type: opt.contentType as AllowedType,
-      });
-      const putRes = await fetch(presign.data.url, {
-        method: "PUT",
-        body: opt.blob,
-        headers: { "Content-Type": opt.contentType },
-      });
-      if (!putRes.ok) {
-        throw new Error(`R2 PUT falló: ${putRes.status}`);
+      // Genera variantes responsivas WebP (400/800/1600w) client-side y sube
+      // cada una a R2 → arma el `srcset`. Sin servicios pagos. Si el navegador
+      // no puede rasterizar, cae al upload simple.
+      async function putVariant(blob: Blob, filename: string, contentType: string) {
+        const presign = await imagesORPCClient.presignUpload({
+          product_id: productId,
+          filename,
+          content_type: contentType as AllowedType,
+        });
+        const res = await fetch(presign.data.url, {
+          method: "PUT",
+          body: blob,
+          headers: { "Content-Type": contentType },
+        });
+        if (!res.ok) throw new Error(`R2 PUT falló: ${res.status}`);
+        return { cdnUrl: presign.data.cdn_url, r2Key: presign.data.r2_key };
       }
-      const dims =
-        opt.width > 0 ? { width: opt.width, height: opt.height } : await readImageDimensions(file);
-      await imagesORPCClient.confirmUpload({
-        product_id: productId,
-        r2_key: presign.data.r2_key,
-        cdn_url: presign.data.cdn_url,
-        width: dims?.width ?? null,
-        height: dims?.height ?? null,
-      });
+
+      const generated = await generateImageVariants(file);
+      if (generated && generated.variants.length > 0) {
+        const uploaded = [];
+        for (const v of generated.variants) {
+          const { cdnUrl, r2Key } = await putVariant(v.blob, v.filename, v.contentType);
+          uploaded.push({ width: v.width, cdnUrl, r2Key });
+        }
+        const largest = uploaded.at(-1);
+        if (!largest) throw new Error("No se generaron variantes");
+        const srcset = uploaded.map((u) => `${u.cdnUrl} ${u.width}w`).join(", ");
+        await imagesORPCClient.confirmUpload({
+          product_id: productId,
+          r2_key: largest.r2Key,
+          cdn_url: largest.cdnUrl,
+          srcset: uploaded.length > 1 ? srcset : null,
+          width: generated.intrinsic.width,
+          height: generated.intrinsic.height,
+        });
+      } else {
+        // Fallback: una sola imagen optimizada.
+        const opt = await optimizeImageForUpload(file);
+        const { cdnUrl, r2Key } = await putVariant(opt.blob, opt.filename, opt.contentType);
+        const dims =
+          opt.width > 0
+            ? { width: opt.width, height: opt.height }
+            : await readImageDimensions(file);
+        await imagesORPCClient.confirmUpload({
+          product_id: productId,
+          r2_key: r2Key,
+          cdn_url: cdnUrl,
+          width: dims?.width ?? null,
+          height: dims?.height ?? null,
+        });
+      }
       toastSuccess("Imagen subida");
       invalidate();
     } catch (err) {
@@ -149,7 +177,10 @@ export function ImageUploader({ productId, images }: ImageUploaderProps) {
                     alt={img.alt ?? ""}
                     className="object-cover size-full"
                     loading="lazy"
+                    decoding="async"
+                    sizes="(max-width: 640px) 50vw, 200px"
                     src={img.cdn_url}
+                    srcSet={img.srcset ?? undefined}
                   />
                   {img.is_primary && (
                     <span className="absolute top-2 left-2 rounded-full bg-primary px-2 py-0.5 text-primary-foreground text-xs">

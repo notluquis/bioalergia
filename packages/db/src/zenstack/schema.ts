@@ -15855,6 +15855,12 @@ export class SchemaType implements SchemaDef {
                     type: "String",
                     attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("cdn_url") }] }] as readonly AttributeApplication[]
                 },
+                srcset: {
+                    name: "srcset",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@db.Text" }] as readonly AttributeApplication[]
+                },
                 alt: {
                     name: "alt",
                     type: "String",
