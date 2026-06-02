@@ -1,0 +1,65 @@
+name: e2e-hermetic
+
+# Authed e2e against an EPHEMERAL, synthetically-seeded Postgres — $0, no PHI.
+# Non-blocking until proven stable; keep OUT of branch-protection required
+# checks. Triggered manually + on PRs touching the app.
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main, forthcoming-ocelot]
+    paths:
+      - "apps/intranet/**"
+      - "apps/api/**"
+      - "packages/db/**"
+      - ".github/workflows/e2e-hermetic.yml"
+
+jobs:
+  e2e-hermetic:
+    runs-on: ubuntu-latest
+    env:
+      # Ephemeral DB — destroyed with the job. NEVER prod.
+      DATABASE_URL: postgres://e2e:e2e@localhost:5432/bioalergia_e2e
+      NODE_ENV: test
+      CI: "true"
+      DISABLE_QUEUE_RUNNER: "true"
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: e2e
+          POSTGRES_PASSWORD: e2e
+          POSTGRES_DB: bioalergia_e2e
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v6
+        with: { node-version: 26, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+
+      # db .mjs (api/intranet import it) + fresh schema via db push (NOT
+      # migrate deploy — the rebaseline migration assumes existing tables;
+      # db push is correct for a throwaway DB) + synthetic faker data.
+      - run: pnpm -F @finanzas/db build
+      - run: pnpm -F @finanzas/db db:push
+      - run: pnpm -F @finanzas/db seed:synthetic
+      - run: node apps/api/scripts/seed-e2e-user.ts
+
+      # Production SPA bundle (preview serves dist/).
+      - run: pnpm -F @finanzas/intranet build
+
+      # Playwright boots api(:4000)+preview(:4173) via its webServer array
+      # (HERMETIC=true because DATABASE_URL is set and E2E_BASE_URL is not).
+      - run: pnpm -F @finanzas/intranet exec playwright install --with-deps chromium webkit
+      - run: pnpm -F @finanzas/intranet exec playwright test
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report-hermetic
+          path: apps/intranet/playwright-report
+          retention-days: 7

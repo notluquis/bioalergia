@@ -11,6 +11,10 @@ const isCI = Boolean(process.env.CI);
 // the API-probe in e2e/login.ts gates them off cleanly.
 const PREVIEW_URL = "http://localhost:4173";
 const AUTHED_URL = process.env.E2E_BASE_URL ?? PREVIEW_URL;
+// Hermetic mode = no remote E2E_BASE_URL → boot a LOCAL api against an
+// ephemeral seeded Postgres (DATABASE_URL) so authed specs run against fake
+// data, never prod/PHI. The preview server proxies /api → 127.0.0.1:4000.
+const HERMETIC = !process.env.E2E_BASE_URL && Boolean(process.env.DATABASE_URL);
 
 // Viewport anchors aligned with Chromatic Story Modes (.storybook/modes.ts).
 // A regression in any of these widths narrows to the same bucket regardless
@@ -149,10 +153,31 @@ export default defineConfig({
     },
   ],
 
-  webServer: {
-    command: "pnpm preview --port 4173 --strictPort",
-    url: PREVIEW_URL,
-    reuseExistingServer: !isCI,
-    timeout: 120_000,
-  },
+  webServer: [
+    // Local api (hermetic only) on :4000, against the ephemeral seeded DB.
+    // queue runner off + NODE_ENV=test so localhost CORS is auto-allowed and
+    // graphile-worker doesn't boot.
+    ...(HERMETIC
+      ? [
+          {
+            command: "pnpm -F @finanzas/api start",
+            url: "http://127.0.0.1:4000/api/health",
+            reuseExistingServer: !isCI,
+            timeout: 120_000,
+            env: {
+              DATABASE_URL: process.env.DATABASE_URL ?? "",
+              NODE_ENV: "test",
+              PORT: "4000",
+              DISABLE_QUEUE_RUNNER: "true",
+            },
+          },
+        ]
+      : []),
+    {
+      command: "pnpm preview --port 4173 --strictPort",
+      url: PREVIEW_URL,
+      reuseExistingServer: !isCI,
+      timeout: 120_000,
+    },
+  ],
 });
