@@ -19,7 +19,10 @@ import {
   type ClinicalXlsxFileClassification,
 } from "../lib/clinical-xlsx-file-classifier.ts";
 import { normalizeRut as normalizeCanonicalRut } from "../lib/rut.ts";
-import { isImportableSkinTestFilename } from "../lib/skin-test-file-filter.ts";
+import {
+  isImportableSkinTestFilename,
+  isSkinTestTemplateFilename,
+} from "../lib/skin-test-file-filter.ts";
 import {
   parseSkinTestWorkbookBuffer,
   SKIN_TEST_PARSER_VERSION,
@@ -4121,7 +4124,14 @@ async function markOneDriveItemDeleted(accountId: string, driveId: string, itemI
 const SKIN_TEST_DEQUALIFIED_ISSUE: SkinTestIssue = {
   code: "no_longer_importable",
   message:
-    "El archivo se renombró en OneDrive y su nombre ya no corresponde a un examen importable (formato/plantilla). Metadata sincronizada; no se importará automáticamente.",
+    "El archivo se renombró/reclasificó en OneDrive y ya no corresponde a un examen importable. Metadata sincronizada; no se importará automáticamente.",
+  severity: "info",
+};
+
+const SKIN_TEST_TEMPLATE_RENAMED_ISSUE: SkinTestIssue = {
+  code: "template_filename",
+  message:
+    "El archivo se renombró en OneDrive a un nombre de plantilla (formato sin paciente); se movió a plantillas.",
   severity: "info",
 };
 
@@ -4193,7 +4203,14 @@ async function reconcileDequalifiedSkinTestImport(
   const existing = await getImportByOneDriveItemId(accountId, driveId, itemId);
   if (!existing) return;
   const terminal = isTerminalSkinTestImportStatus(existing.status);
-  const nextStatus = terminal ? existing.status : "SKIPPED";
+  // A template-shaped filename is a template, not garbage: route it to TEMPLATE so
+  // it lands in the plantillas bucket. A genuine reclassification (no longer a
+  // skin test at all) goes to SKIPPED.
+  const isTemplateName = isSkinTestTemplateFilename(patch.filename);
+  const nextStatus = terminal ? existing.status : isTemplateName ? "TEMPLATE" : "SKIPPED";
+  const dequalIssueJson = JSON.stringify([
+    isTemplateName ? SKIN_TEST_TEMPLATE_RENAMED_ISSUE : SKIN_TEST_DEQUALIFIED_ISSUE,
+  ]);
 
   const updated = await sql<{ id: string }>`
     UPDATE clinical_skin_test_imports
@@ -4214,8 +4231,8 @@ async function reconcileDequalifiedSkinTestImport(
       status = ${nextStatus}::"ClinicalSkinTestImportStatus",
       issues = CASE
         WHEN ${terminal} THEN issues
-        WHEN COALESCE(issues, '[]'::jsonb) @> ${JSON.stringify([SKIN_TEST_DEQUALIFIED_ISSUE])}::jsonb THEN issues
-        ELSE COALESCE(issues, '[]'::jsonb) || ${JSON.stringify([SKIN_TEST_DEQUALIFIED_ISSUE])}::jsonb
+        WHEN COALESCE(issues, '[]'::jsonb) @> ${dequalIssueJson}::jsonb THEN issues
+        ELSE COALESCE(issues, '[]'::jsonb) || ${dequalIssueJson}::jsonb
       END,
       updated_at = now()
     WHERE id = ${existing.id}
@@ -4224,7 +4241,7 @@ async function reconcileDequalifiedSkinTestImport(
 
   if (!terminal) {
     await Promise.all(
-      updated.rows.map((row) => syncSkinTestImportMaterialization(row.id, "SKIPPED"))
+      updated.rows.map((row) => syncSkinTestImportMaterialization(row.id, nextStatus))
     );
   }
 }
