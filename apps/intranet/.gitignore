@@ -52,3 +52,7 @@ tmp/
 
 # Generated files
 routeTree.gen.ts
+
+# Stryker mutation testing
+reports/
+.stryker-tmp/
