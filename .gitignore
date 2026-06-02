@@ -155,6 +155,7 @@ apps/api/scripts/*-test.mjs
 # Loose debug/query scripts in apps/api root (keep config files only)
 apps/api/*.ts
 !apps/api/vitest.config.ts
+!apps/api/vitest.stryker.config.ts
 playwright/.auth/
 **/playwright/.auth/
 

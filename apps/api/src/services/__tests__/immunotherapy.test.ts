@@ -166,6 +166,69 @@ describe("computeQuote", () => {
     mockProductFindUnique.mockResolvedValue(null);
     await expect(computeQuote({ productId: 99 })).rejects.toMatchObject({ kind: "NOT_FOUND" });
   });
+
+  it("rechaza un producto sin etapas configuradas", async () => {
+    mockProductFindUnique.mockResolvedValue({ ...clustoid(), stages: [] });
+    await expect(computeQuote({ productId: 1 })).rejects.toMatchObject({
+      kind: "BAD_REQUEST",
+      message: expect.stringMatching(/etapas/i),
+    });
+  });
+
+  it("no aplica límite de alérgenos cuando maxAllergens es null", async () => {
+    mockProductFindUnique.mockResolvedValue(clustoid()); // maxAllergens: null
+    mockAllergenFindMany.mockResolvedValue([]);
+    await expect(
+      computeQuote({ productId: 1, allergenIds: ["a", "b", "c", "d"] })
+    ).resolves.toBeDefined();
+  });
+
+  it("permite exactamente maxAllergens alérgenos (límite es >, no >=)", async () => {
+    mockProductFindUnique.mockResolvedValue({ ...clustoid(), maxAllergens: 1 });
+    mockAllergenFindMany.mockResolvedValue([]);
+    await expect(computeQuote({ productId: 1, allergenIds: ["a"] })).resolves.toBeDefined();
+  });
+
+  it("rechaza maintenanceMl <= 0", async () => {
+    mockProductFindUnique.mockResolvedValue(clustoid());
+    mockAllergenFindMany.mockResolvedValue([]);
+    await expect(computeQuote({ productId: 1, maintenanceMl: 0 })).rejects.toMatchObject({
+      kind: "BAD_REQUEST",
+      message: expect.stringMatching(/mayor a 0/i),
+    });
+  });
+
+  it("trata defaultDiscountPct null como 0% (sin descuento)", async () => {
+    mockProductFindUnique.mockResolvedValue({ ...clustoid(), defaultDiscountPct: null });
+    mockAllergenFindMany.mockResolvedValue([]);
+    const quote = await computeQuote({ productId: 1 });
+    expect(quote.discountPct).toBe(0);
+    expect(quote.discountAmount).toBe(0);
+    expect(quote.total).toBe(quote.subtotal);
+  });
+
+  it("aplica override de unitPrice por etapa", async () => {
+    mockProductFindUnique.mockResolvedValue(clustoid());
+    mockAllergenFindMany.mockResolvedValue([]);
+    const quote = await computeQuote({
+      productId: 1,
+      discountPct: 0,
+      stageOverrides: [{ stageId: 10, unitPrice: 99_999 }],
+    });
+    const first = quote.lines.find((l) => l.stageId === 10);
+    expect(first?.unitPrice).toBe(99_999);
+  });
+
+  it("preserva el orden de selección de alérgenos (no el de la DB)", async () => {
+    mockProductFindUnique.mockResolvedValue(clustoid());
+    // findMany devuelve a,b; el usuario seleccionó b,a → debe respetar b,a.
+    mockAllergenFindMany.mockResolvedValue([
+      { id: "a", commonName: "Ácaro", scientificName: null },
+      { id: "b", commonName: "Polen", scientificName: null },
+    ]);
+    const quote = await computeQuote({ productId: 1, allergenIds: ["b", "a"] });
+    expect(quote.allergens.map((x) => x.id)).toEqual(["b", "a"]);
+  });
 });
 
 describe("createImmunotherapyBudget", () => {
@@ -184,10 +247,28 @@ describe("createImmunotherapyBudget", () => {
     expect(JSON.parse(arg.data.notes)).toMatchObject({ kind: "immunotherapy", productId: 1 });
   });
 
-  it("lanza NOT_FOUND si el paciente no existe", async () => {
+  it("lanza NOT_FOUND si el paciente no existe y NO crea Budget", async () => {
+    mockBudgetCreate.mockClear();
     mockPatientFindUnique.mockResolvedValue(null);
     await expect(createImmunotherapyBudget({ productId: 1, patientId: 999 })).rejects.toMatchObject(
       { kind: "NOT_FOUND" }
     );
+    expect(mockBudgetCreate).not.toHaveBeenCalled();
+  });
+
+  it("genera título por defecto y respeta el título explícito", async () => {
+    mockProductFindUnique.mockResolvedValue(clustoid());
+    mockAllergenFindMany.mockResolvedValue([]);
+    mockPatientFindUnique.mockResolvedValue({ id: 7 });
+    mockBudgetCreate.mockResolvedValue({ id: 1 });
+
+    await createImmunotherapyBudget({ productId: 1, patientId: 7 });
+    const def = mockBudgetCreate.mock.calls[0][0] as { data: { title: string } };
+    expect(def.data.title).toBe("Inmunoterapia Clustoid (anual)");
+
+    mockBudgetCreate.mockClear();
+    await createImmunotherapyBudget({ productId: 1, patientId: 7, title: "Plan personalizado" });
+    const custom = mockBudgetCreate.mock.calls[0][0] as { data: { title: string } };
+    expect(custom.data.title).toBe("Plan personalizado");
   });
 });
