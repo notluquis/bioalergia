@@ -48,7 +48,18 @@ jobs:
       - run: pnpm -F @finanzas/db build
       - run: pnpm -F @finanzas/db db:push
       - run: pnpm -F @finanzas/db seed:synthetic
-      - run: node apps/api/scripts/seed-e2e-user.ts
+
+      # Seed the dedicated E2E user (random password each run) and export the
+      # printed creds so authed specs actually log in (the fixture bails on
+      # `!E2E_USER` and would otherwise skip every authed spec vacuously).
+      - name: Seed E2E user + export creds
+        run: |
+          CREDS=$(node apps/api/scripts/seed-e2e-user.ts | tail -1)
+          E2E_USER=$(printf '%s' "$CREDS" | sed -n 's/.*EMAIL=\([^ ]*\).*/\1/p')
+          E2E_PASS=$(printf '%s' "$CREDS" | sed -n 's/.*PASS=\([^ ]*\).*/\1/p')
+          echo "::add-mask::$E2E_PASS"
+          echo "E2E_USER=$E2E_USER" >> "$GITHUB_ENV"
+          echo "E2E_PASS=$E2E_PASS" >> "$GITHUB_ENV"
 
       # Production SPA bundle (preview serves dist/).
       - run: pnpm -F @finanzas/intranet build

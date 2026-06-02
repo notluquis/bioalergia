@@ -93,29 +93,67 @@ jobs:
       - run: pnpm -F @finanzas/intranet audit:size
 
   e2e-and-a11y:
-    name: playwright + axe
+    name: playwright + axe (hermetic)
     runs-on: ubuntu-latest
+    # Hermetic: authed smoke + a11y run against an EPHEMERAL, synthetically
+    # seeded Postgres — never prod, no PHI. The run is mutation-safe BY
+    # CONSTRUCTION (no production data exists to mutate), which is why the
+    # app-level (ZenStack @@deny) and DB-level (readonly role) E2E guards are
+    # unnecessary. The network-layer read-only guard in fixtures.ts stays on as
+    # belt-and-suspenders.
+    env:
+      DATABASE_URL: postgres://e2e:e2e@localhost:5432/bioalergia_e2e
+      NODE_ENV: test
+      CI: "true"
+      DISABLE_QUEUE_RUNNER: "true"
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: e2e
+          POSTGRES_PASSWORD: e2e
+          POSTGRES_DB: bioalergia_e2e
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - uses: actions/checkout@v6
       - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v6
         with: { node-version: "${{ env.NODE_VERSION }}", cache: pnpm }
       - run: pnpm install --frozen-lockfile
+
+      # db .mjs (api/intranet import it) + fresh schema via db push (NOT migrate
+      # deploy — the rebaseline migration assumes existing tables; db push is
+      # correct for a throwaway DB) + synthetic faker data.
+      - run: pnpm -F @finanzas/db build
+      - run: pnpm -F @finanzas/db db:push
+      - run: pnpm -F @finanzas/db seed:synthetic
+
+      # Seed the dedicated E2E user (random password each run) and export the
+      # printed creds so the authed specs actually log in. Without this the
+      # fixture bails (`!E2E_USER`) and authed specs skip vacuously.
+      - name: Seed E2E user + export creds
+        run: |
+          CREDS=$(node apps/api/scripts/seed-e2e-user.ts | tail -1)
+          E2E_USER=$(printf '%s' "$CREDS" | sed -n 's/.*EMAIL=\([^ ]*\).*/\1/p')
+          E2E_PASS=$(printf '%s' "$CREDS" | sed -n 's/.*PASS=\([^ ]*\).*/\1/p')
+          echo "::add-mask::$E2E_PASS"
+          echo "E2E_USER=$E2E_USER" >> "$GITHUB_ENV"
+          echo "E2E_PASS=$E2E_PASS" >> "$GITHUB_ENV"
+
       - name: Build intranet (preview server target)
         run: pnpm turbo run build --filter=@finanzas/intranet
-      - name: Install Chromium
+      - name: Install browsers
         # WebKit needed by the ios-webkit project (one spec — wa-cloud-inbox)
         # for true iOS Safari URL-bar shrink dvh testing.
         run: pnpm -F @finanzas/intranet exec playwright install --with-deps chromium webkit
-      - name: Run smoke + a11y suite
-        env:
-          CI: "true"
-          E2E_USER: ${{ secrets.E2E_USER }}
-          E2E_PASS: ${{ secrets.E2E_PASS }}
-          # When set, fixture targets the deployed environment instead of
-          # local vite preview (which has no backend in CI). Required for the
-          # authed routes — login posts via /api/orpc/auth.
-          E2E_BASE_URL: ${{ secrets.E2E_BASE_URL }}
+      - name: Run smoke + a11y suite (hermetic, no prod, no PHI)
+        # No E2E_BASE_URL → HERMETIC=true (DATABASE_URL is set) → playwright
+        # boots a local api(:4000)+preview(:4173) against the ephemeral DB.
         run: pnpm -F @finanzas/intranet audit:e2e
       - name: Upload Playwright report on failure
         if: failure()
