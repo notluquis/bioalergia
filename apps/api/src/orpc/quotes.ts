@@ -222,7 +222,9 @@ const quotesRouterBase = {
 
       // Lazy: pdf-lib pesa ~3MB en heap; cargar sólo al primer /pdf.
       const { generateQuotePdf } = await import("../modules/quotes/quote-pdf.service.ts");
-      const pdfBytes = await generateQuotePdf({ clinic, quote: serializeQuote(quote) });
+      const { toPdfA3 } = await import("../modules/pdf/pdf-a.ts");
+      const raw = await generateQuotePdf({ clinic, quote: serializeQuote(quote) });
+      const pdfBytes = await toPdfA3(raw, `Cotización N° ${quote.folio}`);
 
       const fileName = `cotizacion_${String(quote.folio).padStart(4, "0")}.pdf`;
       return new File([Buffer.from(pdfBytes)], fileName, { type: "application/pdf" });

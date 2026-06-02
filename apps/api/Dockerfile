@@ -74,6 +74,12 @@ ENV PORT=3000
 # container, persists across restarts of the same container.
 ENV NODE_COMPILE_CACHE=/tmp/node-compile-cache
 
+# Ghostscript: post-procesa los PDFs a PDF/A-3 (OutputIntent sRGB) — ver
+# modules/pdf/pdf-a.ts. Si faltara, toPdfA3 degrada al PDF original.
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends ghostscript \
+  && rm -rf /var/lib/apt/lists/*
+
 COPY --from=build /app/deploy/ .
 
 USER node

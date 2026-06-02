@@ -92,7 +92,11 @@ const certificatesORPCRouterBase = {
         primary: clinic.logoUrl,
         secondary: clinic.secondaryLogoUrl,
       });
-      const signedPdfBytes = await signPdf(pdfBytes);
+      // PDF/A-3 ANTES de firmar (firmar después conserva validez; convertir
+      // después de firmar invalidaría la firma). PDF/A-2+ admite firmas.
+      const { toPdfA3 } = await import("../modules/pdf/pdf-a.ts");
+      const pdfaBytes = await toPdfA3(pdfBytes, "Certificado médico");
+      const signedPdfBytes = await signPdf(pdfaBytes);
       const pdfHash = crypto.createHash("sha256").update(signedPdfBytes).digest("hex");
       const tempPath = path.join(os.tmpdir(), `${certificateId}.pdf`);
       const fileName = `certificado_medico_${parsed.rut.replace(/\./g, "")}.pdf`;

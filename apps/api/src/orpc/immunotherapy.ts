@@ -256,7 +256,8 @@ const immunotherapyRouterBase = {
 
       // Lazy: pdf-lib pesa ~3MB en heap; cargar sólo al primer /pdf.
       const { generateBudgetPdf } = await import("../modules/immunotherapy/budget-pdf.service.ts");
-      const pdfBytes = await generateBudgetPdf({
+      const { toPdfA3 } = await import("../modules/pdf/pdf-a.ts");
+      const rawPdf = await generateBudgetPdf({
         clinic: {
           name: clinic.name,
           legalName: clinic.legalName,
@@ -276,6 +277,7 @@ const immunotherapyRouterBase = {
         intro,
       });
 
+      const pdfBytes = await toPdfA3(rawPdf, "Presupuesto de inmunoterapia");
       const fileName = `presupuesto_inmunoterapia_${(patient.person.rut ?? "sin_rut").replace(
         /\./g,
         ""
