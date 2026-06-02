@@ -22,10 +22,12 @@
       "typescript": true
     },
     "tailwindcss": {
+      "//": "entryPoint `use` resolves relative to oxlint's CWD, which differs between `pnpm lint` (repo root) and `turbo run lint` (per-package). The `files` glob matches the linted path AS SEEN from that cwd: root → `apps/site/src/...`; package → `src/...`. Cover both — root-cwd globs first, then package-cwd `src/**`.",
       "entryPoint": [
         { "files": "apps/intranet/**", "use": "apps/intranet/src/index.css" },
         { "files": "apps/site/**", "use": "apps/site/src/index.css" },
-        { "files": "**", "use": "apps/intranet/src/index.css" }
+        { "files": "src/**", "use": "src/index.css" },
+        { "files": "**", "use": "src/index.css" }
       ]
     }
   },
