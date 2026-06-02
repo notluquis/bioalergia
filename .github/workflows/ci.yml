@@ -47,14 +47,11 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      # intranet's vitest config has a browser-mode Storybook project
-      # (instances: [{ browser: "chromium" }]). `turbo run test` launches it,
-      # so chromium must be present or the run dies with an unhandled
-      # "Executable doesn't exist" error. Mirrors quality.yml / snapshots.yml.
-      - name: Install Chromium for browser-mode vitest
-        run: pnpm -F @finanzas/intranet exec playwright install --with-deps chromium
-
-      - name: Lint, type-check and test
+      # NOTE: intranet's `test` script is now `vitest --project=unit` (jsdom
+      # only); the browser-mode `storybook` project runs in the separate
+      # `storybook-browser` job below. So this gating job needs NO Chromium and
+      # stays fast + deterministic (decoupled from browser-mode flakiness).
+      - name: Lint, type-check and unit tests
         env:
           TURBO_TELEMETRY_DISABLED: "1"
           TURBO_RUN_FLAGS: ${{ github.event_name == 'pull_request' && '--affected' || '' }}
@@ -64,6 +61,35 @@ jobs:
           # local checkout has no main branch tracking pointer.
           TURBO_SCM_BASE: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || 'origin/main' }}
         run: pnpm turbo run lint type-check test $TURBO_RUN_FLAGS --continue=never --summarize --output-logs=errors-only
+
+  # Browser-mode Storybook component tests (@storybook/addon-vitest, Chromium),
+  # split off `quality` so browser flakiness / Chromium availability never
+  # blocks the fast unit signal. Keep this OUT of branch-protection required
+  # checks until proven stable, then promote it.
+  storybook-browser:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+      - name: Use Node.js 26
+        uses: actions/setup-node@v6
+        with:
+          node-version: 26
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Install Chromium for browser-mode vitest
+        run: pnpm -F @finanzas/intranet exec playwright install --with-deps chromium
+      - name: Storybook component tests
+        env:
+          TURBO_TELEMETRY_DISABLED: "1"
+        run: pnpm -F @finanzas/intranet test:storybook
 
   build:
     needs: quality

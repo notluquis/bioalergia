@@ -153,3 +153,13 @@ jobs:
           # still completes; only the status check is skipped.
           LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
         run: pnpm -F @finanzas/intranet audit:perf
+      - name: Run Lighthouse CI (mobile emulation)
+        # Mobile is Lighthouse's default form factor and what matters most for
+        # a PWA on phones. Public /login only — authed routes stay OFF until a
+        # staging DB exists (auditing prod patient pages = PHI in reports; see
+        # lhci-puppeteer-login.cjs). Perf assertions are `warn` to avoid flaky
+        # gating on emulated-mobile throttling.
+        env:
+          CHROME_PATH: ${{ steps.setup-chrome.outputs.chrome-path }}
+          LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
+        run: pnpm -F @finanzas/intranet audit:perf:mobile
