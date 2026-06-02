@@ -35,6 +35,7 @@ export function ProductCard({ product }: { product: Product }) {
               alt={primary.alt ?? product.name}
               className="object-cover transition hover:scale-105 size-full"
               loading="lazy"
+              decoding="async"
               src={primary.cdn_url}
             />
           ) : (

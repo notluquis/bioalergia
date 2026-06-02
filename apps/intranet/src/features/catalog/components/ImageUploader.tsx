@@ -5,6 +5,7 @@ import { useRef, useState } from "react";
 
 import { confirmAction } from "@/components/ui/ConfirmDialog";
 import { useToast } from "@/context/ToastContext";
+import { optimizeImageForUpload } from "@/lib/image-optimize";
 import { imagesORPCClient } from "../orpc-images";
 import { catalogKeys } from "../queries";
 
@@ -52,21 +53,24 @@ export function ImageUploader({ productId, images }: ImageUploaderProps) {
     }
     setUploading(true);
     try {
+      // Optimiza client-side (resize + WebP) antes de subir — menos peso en R2
+      // y CDN, carga más rápida en la tienda. Sin servicios pagos.
+      const opt = await optimizeImageForUpload(file);
       const presign = await imagesORPCClient.presignUpload({
         product_id: productId,
-        filename: file.name,
-        content_type: file.type as AllowedType,
+        filename: opt.filename,
+        content_type: opt.contentType as AllowedType,
       });
       const putRes = await fetch(presign.data.url, {
         method: "PUT",
-        body: file,
-        headers: { "Content-Type": file.type },
+        body: opt.blob,
+        headers: { "Content-Type": opt.contentType },
       });
       if (!putRes.ok) {
         throw new Error(`R2 PUT falló: ${putRes.status}`);
       }
-      // Lee dimensiones (opcional).
-      const dims = await readImageDimensions(file);
+      const dims =
+        opt.width > 0 ? { width: opt.width, height: opt.height } : await readImageDimensions(file);
       await imagesORPCClient.confirmUpload({
         product_id: productId,
         r2_key: presign.data.r2_key,

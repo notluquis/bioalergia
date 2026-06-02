@@ -43,6 +43,7 @@ export function ProductGallery({ images, productName }: { images: Image[]; produ
                   className="object-cover size-full"
                   fetchPriority={i === 0 ? "high" : "auto"}
                   loading={i === 0 ? "eager" : "lazy"}
+                  decoding="async"
                   src={img.cdn_url}
                 />
               </div>
