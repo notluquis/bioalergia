@@ -62,15 +62,21 @@ export async function optimizeImageForUpload(
 }
 
 export type ImageVariant = { width: number; blob: Blob; filename: string; contentType: string };
+export type VariantFormat = "image/webp" | "image/avif";
+
+const EXT: Record<VariantFormat, string> = { "image/webp": "webp", "image/avif": "avif" };
 
 /**
- * Genera variantes WebP responsivas (400/800/1600w, capadas al ancho nativo y a
- * 1600) para `srcset`. Todo client-side (canvas) → sin servicios pagos. El
- * navegador baja sólo el tamaño que necesita.
+ * Genera variantes responsivas (400/800/1600w, capadas al ancho nativo y a
+ * 1600) en el formato pedido para `srcset`. Todo client-side (canvas) → $0.
+ *
+ * AVIF: `canvas.toBlob("image/avif")` sólo lo soporta el encoder de algunos
+ * navegadores (Chrome/Edge); si no, el blob no será AVIF → devolvemos null y el
+ * llamador se queda con WebP (o el backfill server-side lo genera luego).
  */
 export async function generateImageVariants(
   file: File,
-  opts?: { widths?: number[]; cap?: number; quality?: number }
+  opts?: { widths?: number[]; cap?: number; quality?: number; format?: VariantFormat }
 ): Promise<{ variants: ImageVariant[]; intrinsic: { width: number; height: number } } | null> {
   if (!/^image\/(jpeg|png|webp|avif)$/.test(file.type)) return null;
 
@@ -86,6 +92,7 @@ export async function generateImageVariants(
   const requested = opts?.widths ?? [400, 800, 1600];
   const widths = [...new Set(requested.filter((w) => w < cap).concat(cap))].sort((a, b) => a - b);
   const quality = opts?.quality ?? 0.82;
+  const format = opts?.format ?? "image/webp";
 
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d");
@@ -103,11 +110,19 @@ export async function generateImageVariants(
     ctx.clearRect(0, 0, w, h);
     ctx.drawImage(bitmap, 0, 0, w, h);
     const blob = await new Promise<Blob | null>((resolve) => {
-      canvas.toBlob(resolve, "image/webp", quality);
+      canvas.toBlob(resolve, format, quality);
     });
-    if (blob) {
-      variants.push({ width: w, blob, filename: `${base}-${w}w.webp`, contentType: "image/webp" });
+    // Si el navegador no soporta el encoder pedido, cae a PNG → descartar todo.
+    if (!blob || blob.type !== format) {
+      bitmap.close();
+      return null;
     }
+    variants.push({
+      width: w,
+      blob,
+      filename: `${base}-${w}w.${EXT[format]}`,
+      contentType: format,
+    });
   }
   const intrinsic = { width: cap, height: Math.max(1, Math.round(cap * aspect)) };
   bitmap.close();

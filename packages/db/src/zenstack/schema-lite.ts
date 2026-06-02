@@ -13002,6 +13002,11 @@ export class SchemaType implements SchemaDef {
                     type: "String",
                     optional: true
                 },
+                avifSrcset: {
+                    name: "avifSrcset",
+                    type: "String",
+                    optional: true
+                },
                 alt: {
                     name: "alt",
                     type: "String",

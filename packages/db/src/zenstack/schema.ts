@@ -15861,6 +15861,12 @@ export class SchemaType implements SchemaDef {
                     optional: true,
                     attributes: [{ name: "@db.Text" }] as readonly AttributeApplication[]
                 },
+                avifSrcset: {
+                    name: "avifSrcset",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("avif_srcset") }] }, { name: "@db.Text" }] as readonly AttributeApplication[]
+                },
                 alt: {
                     name: "alt",
                     type: "String",

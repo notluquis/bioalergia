@@ -2,7 +2,13 @@ import useEmblaCarousel from "embla-carousel-react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
-type Image = { cdn_url: string; srcset?: string | null; alt: string | null; is_primary: boolean };
+type Image = {
+  cdn_url: string;
+  srcset?: string | null;
+  avif_srcset?: string | null;
+  alt: string | null;
+  is_primary: boolean;
+};
 
 export function ProductGallery({ images, productName }: { images: Image[]; productName: string }) {
   const sorted = images.length
@@ -38,16 +44,30 @@ export function ProductGallery({ images, productName }: { images: Image[]; produ
           {sorted.map((img, i) => (
             <div className="min-w-0 flex-[0_0_100%]" key={img.cdn_url}>
               <div className="aspect-square">
-                <img
-                  alt={img.alt ?? productName}
-                  className="object-cover size-full"
-                  fetchPriority={i === 0 ? "high" : "auto"}
-                  loading={i === 0 ? "eager" : "lazy"}
-                  decoding="async"
-                  sizes="(max-width: 1024px) 100vw, 520px"
-                  src={img.cdn_url}
-                  srcSet={img.srcset ?? undefined}
-                />
+                <picture className="contents">
+                  {img.avif_srcset ? (
+                    <source
+                      type="image/avif"
+                      srcSet={img.avif_srcset}
+                      sizes="(max-width: 1024px) 100vw, 520px"
+                    />
+                  ) : null}
+                  {img.srcset ? (
+                    <source
+                      type="image/webp"
+                      srcSet={img.srcset}
+                      sizes="(max-width: 1024px) 100vw, 520px"
+                    />
+                  ) : null}
+                  <img
+                    alt={img.alt ?? productName}
+                    className="object-cover size-full"
+                    fetchPriority={i === 0 ? "high" : "auto"}
+                    loading={i === 0 ? "eager" : "lazy"}
+                    decoding="async"
+                    src={img.cdn_url}
+                  />
+                </picture>
               </div>
             </div>
           ))}

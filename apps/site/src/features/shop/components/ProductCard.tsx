@@ -17,6 +17,7 @@ type Product = {
   images?: Array<{
     cdn_url: string;
     srcset?: string | null;
+    avif_srcset?: string | null;
     is_primary: boolean;
     alt: string | null;
   }>;
@@ -36,15 +37,29 @@ export function ProductCard({ product }: { product: Product }) {
           to="/producto/$slug"
         >
           {primary ? (
-            <img
-              alt={primary.alt ?? product.name}
-              className="object-cover transition hover:scale-105 size-full"
-              loading="lazy"
-              decoding="async"
-              sizes="(max-width: 640px) 50vw, 280px"
-              src={primary.cdn_url}
-              srcSet={primary.srcset ?? undefined}
-            />
+            <picture className="contents">
+              {primary.avif_srcset ? (
+                <source
+                  type="image/avif"
+                  srcSet={primary.avif_srcset}
+                  sizes="(max-width: 640px) 50vw, 280px"
+                />
+              ) : null}
+              {primary.srcset ? (
+                <source
+                  type="image/webp"
+                  srcSet={primary.srcset}
+                  sizes="(max-width: 640px) 50vw, 280px"
+                />
+              ) : null}
+              <img
+                alt={primary.alt ?? product.name}
+                className="object-cover transition hover:scale-105 size-full"
+                loading="lazy"
+                decoding="async"
+                src={primary.cdn_url}
+              />
+            </picture>
           ) : (
             <div className="flex h-full items-center justify-center text-foreground/30 text-xs">
               Sin imagen

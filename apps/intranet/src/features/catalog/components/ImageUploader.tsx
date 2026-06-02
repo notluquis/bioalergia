@@ -13,6 +13,7 @@ type ExistingImage = {
   id: number;
   cdn_url: string;
   srcset?: string | null;
+  avif_srcset?: string | null;
   is_primary: boolean;
   alt: string | null;
 };
@@ -82,11 +83,26 @@ export function ImageUploader({ productId, images }: ImageUploaderProps) {
         const largest = uploaded.at(-1);
         if (!largest) throw new Error("No se generaron variantes");
         const srcset = uploaded.map((u) => `${u.cdnUrl} ${u.width}w`).join(", ");
+
+        // AVIF best-effort (Chrome/Edge): si el navegador puede codificarlo,
+        // subimos variantes AVIF y armamos su srcset; si no, queda en WebP.
+        let avifSrcset: string | null = null;
+        const avif = await generateImageVariants(file, { format: "image/avif" });
+        if (avif && avif.variants.length > 1) {
+          const avifUploaded = [];
+          for (const v of avif.variants) {
+            const { cdnUrl } = await putVariant(v.blob, v.filename, v.contentType);
+            avifUploaded.push({ width: v.width, cdnUrl });
+          }
+          avifSrcset = avifUploaded.map((u) => `${u.cdnUrl} ${u.width}w`).join(", ");
+        }
+
         await imagesORPCClient.confirmUpload({
           product_id: productId,
           r2_key: largest.r2Key,
           cdn_url: largest.cdnUrl,
           srcset: uploaded.length > 1 ? srcset : null,
+          avif_srcset: avifSrcset,
           width: generated.intrinsic.width,
           height: generated.intrinsic.height,
         });
@@ -173,15 +189,29 @@ export function ImageUploader({ productId, images }: ImageUploaderProps) {
             <Card key={img.id} variant="secondary">
               <Card.Content className="p-0">
                 <div className="relative aspect-square overflow-hidden rounded-t-[18px] bg-foreground/5">
-                  <img
-                    alt={img.alt ?? ""}
-                    className="object-cover size-full"
-                    loading="lazy"
-                    decoding="async"
-                    sizes="(max-width: 640px) 50vw, 200px"
-                    src={img.cdn_url}
-                    srcSet={img.srcset ?? undefined}
-                  />
+                  <picture className="contents">
+                    {img.avif_srcset ? (
+                      <source
+                        type="image/avif"
+                        srcSet={img.avif_srcset}
+                        sizes="(max-width: 640px) 50vw, 200px"
+                      />
+                    ) : null}
+                    {img.srcset ? (
+                      <source
+                        type="image/webp"
+                        srcSet={img.srcset}
+                        sizes="(max-width: 640px) 50vw, 200px"
+                      />
+                    ) : null}
+                    <img
+                      alt={img.alt ?? ""}
+                      className="object-cover size-full"
+                      loading="lazy"
+                      decoding="async"
+                      src={img.cdn_url}
+                    />
+                  </picture>
                   {img.is_primary && (
                     <span className="absolute top-2 left-2 rounded-full bg-primary px-2 py-0.5 text-primary-foreground text-xs">
                       Principal

@@ -6,6 +6,7 @@ export async function createProductImage(input: {
   r2Key: string;
   cdnUrl: string;
   srcset?: string | null;
+  avifSrcset?: string | null;
   alt?: string | null;
   width?: number | null;
   height?: number | null;
@@ -35,6 +36,7 @@ export async function createProductImage(input: {
       r2Key: input.r2Key,
       cdnUrl: input.cdnUrl,
       srcset: input.srcset ?? null,
+      avifSrcset: input.avifSrcset ?? null,
       alt: input.alt ?? null,
       width: input.width ?? null,
       height: input.height ?? null,
@@ -47,10 +49,11 @@ export async function createProductImage(input: {
 export async function deleteProductImage(id: number) {
   const img = await db.productImage.findUnique({ where: { id } });
   if (!img) return;
-  // Borra el objeto principal + todas las variantes WebP del srcset.
+  // Borra el objeto principal + todas las variantes WebP y AVIF.
   const keys = [img.r2Key];
-  if (img.srcset) {
-    for (const part of img.srcset.split(",")) {
+  for (const set of [img.srcset, img.avifSrcset]) {
+    if (!set) continue;
+    for (const part of set.split(",")) {
       const url = part.trim().split(/\s+/)[0];
       const key = url ? r2KeyFromCdnUrl(url) : null;
       if (key) keys.push(key);

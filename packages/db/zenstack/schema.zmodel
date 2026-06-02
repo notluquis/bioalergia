@@ -4891,6 +4891,9 @@ model ProductImage {
   // WebP pre-generadas client-side). El navegador elige el tamaño según
   // viewport/densidad. Vacío → fallback a cdnUrl sola.
   srcset      String?   @db.Text
+  // Variante AVIF (mejor compresión que WebP). El front la prefiere vía
+  // <picture><source type="image/avif">; cae a srcset (WebP) → cdnUrl.
+  avifSrcset  String?   @map("avif_srcset") @db.Text
   alt         String?
   position    Int       @default(0)
   width       Int?

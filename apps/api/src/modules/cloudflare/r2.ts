@@ -121,6 +121,24 @@ export const R2_LIMITS = {
   MAX_BYTES,
 } as const;
 
+/** Sube bytes directo a R2 (server-side, sin presign). Devuelve la CDN URL. */
+export async function putR2Object(
+  key: string,
+  body: Uint8Array | Buffer,
+  contentType: string
+): Promise<string> {
+  await getClient().send(
+    new PutObjectCommand({
+      Bucket: getEnv("CF_R2_BUCKET"),
+      Key: key,
+      Body: body,
+      ContentType: contentType,
+    })
+  );
+  const cdnBase = getEnv("CF_R2_PUBLIC_BASE_URL").replace(/\/+$/, "");
+  return `${cdnBase}/${key}`;
+}
+
 /** Deriva la key R2 a partir de una CDN URL pública (o null si no matchea). */
 export function r2KeyFromCdnUrl(url: string): string | null {
   const base = `${getEnv("CF_R2_PUBLIC_BASE_URL").replace(/\/+$/, "")}/`;
