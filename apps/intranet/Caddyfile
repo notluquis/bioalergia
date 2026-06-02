@@ -71,6 +71,18 @@
 		Content-Security-Policy "default-src 'self'; script-src 'nonce-{http.request.uuid}' 'strict-dynamic' 'unsafe-inline' https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://*.ingest.sentry.io https://*.ingest.us.sentry.io https://*.r2.cloudflarestorage.com https://cdn.bioalergia.cl; media-src 'self' blob:; worker-src 'self' blob:; manifest-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'; object-src 'none'"
 	}
 
+	# Allow embedding the clinic logo from external origins. CORP defaults to
+	# same-origin above; transactional emails (timesheet-email-template.ts)
+	# embed <img src="https://intranet.bioalergia.cl/logo_sin_eslogan.png">,
+	# which webmail/email clients fetch cross-origin → same-origin CORP cancels
+	# the load and the logo breaks in the email. It's a public brand image, so
+	# it opts into cross-origin CORP (mirrors apps/site/Caddyfile @brand).
+	@brand path /logo_sin_eslogan.png /logo.png
+	header @brand {
+		Access-Control-Allow-Origin "*"
+		Cross-Origin-Resource-Policy "cross-origin"
+	}
+
 	# ========== LOGGING CONFIGURATION ==========
 	# Skip health checks and favicon (high-frequency, low-value logs)
 	# These go to HTTP Logs in Railway but generate noise
