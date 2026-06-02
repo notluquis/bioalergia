@@ -320,6 +320,96 @@ export async function setOneDriveFolderPath(
   await setupOneDriveSubscription(accountId).catch(() => null);
 }
 
+const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+// True when Graph signals the delta token is no longer usable (HTTP 410 +
+// resyncChanges*). Per the delta docs the client must restart enumeration from
+// scratch and discard the stale token. Detect by status OR error code so we are
+// robust to either surface.
+export function isDeltaResyncStatus(status: number, errorCode?: null | string): boolean {
+  // HTTP 410 OR a resyncChanges* error code => the delta token is dead.
+  return status === 410 || /resync/i.test(errorCode ?? "");
+}
+
+function isDeltaResyncError(error: unknown): boolean {
+  if (!(error instanceof MicrosoftGraphError)) return false;
+  return isDeltaResyncStatus(error.status, error.parsed?.error?.code);
+}
+
+// Fetch a single delta page with golden-2026 resilience the bare graphFetch lacks
+// (scan-guidance + throttling docs): honor Retry-After on 429/503, back off on
+// 5xx, and on 401 force a token refresh (the access token can expire mid-
+// pagination on large drives — a single token is fetched once per sync). 410 and
+// other 4xx are thrown for the caller (resync handling lives in the delta loop).
+async function graphFetchDeltaPage(accountId: string, url: string): Promise<DeltaResponse> {
+  const MAX_ATTEMPTS = 5;
+  let lastError: Error | null = null;
+  let forceTokenRefresh = false;
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    const accessToken = await getOneDriveAccessToken(accountId, { forceRefresh: forceTokenRefresh });
+    forceTokenRefresh = false;
+    const response = await fetch(url, {
+      headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+    });
+
+    if (response.ok) return (await response.json()) as DeltaResponse;
+
+    // 401: token rejected mid-pagination — force a refresh and retry.
+    if (response.status === 401 && attempt < MAX_ATTEMPTS) {
+      lastError = new Error("graph-401");
+      forceTokenRefresh = true;
+      continue;
+    }
+
+    // 429/503: pause and honor Retry-After (scan-guidance: pause ALL requests).
+    if (response.status === 429 || response.status === 503) {
+      const retryAfter = Number(response.headers.get("Retry-After") ?? "0");
+      const waitMs = retryAfter > 0 ? retryAfter * 1000 : 2 ** attempt * 1000;
+      lastError = new Error(`graph-throttled-${response.status}`);
+      if (attempt < MAX_ATTEMPTS) {
+        await sleep(waitMs);
+        continue;
+      }
+    } else if (response.status >= 500 && attempt < MAX_ATTEMPTS) {
+      lastError = new Error(`graph-5xx-${response.status}`);
+      await sleep(2 ** attempt * 500);
+      continue;
+    }
+
+    // Non-retryable (incl. 410 resync) — surface a structured error.
+    const body = await response.text();
+    let parsed: MicrosoftGraphError["parsed"];
+    try {
+      parsed = JSON.parse(body) as MicrosoftGraphError["parsed"];
+    } catch {
+      parsed = undefined;
+    }
+    throw new MicrosoftGraphError(
+      `Microsoft Graph failed ${response.status}`,
+      response.status,
+      body,
+      parsed
+    );
+  }
+  throw lastError ?? new Error("Delta page failed after retries");
+}
+
+// Persist the deltaLink ONLY after the caller has successfully processed every
+// item from the page set (B). Persisting inside listOneDriveDeltaItems (before
+// processing) meant a crash/cancel mid-processing advanced the token past
+// unprocessed changes — they were never re-delivered. Call this after the work
+// pool drains successfully.
+export async function commitOneDriveDeltaSync(
+  accountId: string,
+  deltaLink: null | string
+): Promise<void> {
+  if (!deltaLink) return;
+  await db.oneDriveAccount.update({
+    where: { accountId },
+    data: { deltaLink, lastDeltaSyncAt: new Date() },
+  });
+}
+
 export async function listOneDriveDeltaItems(
   accountId: string,
   options?: {
@@ -329,7 +419,7 @@ export async function listOneDriveDeltaItems(
     force?: boolean;
     onPage?: (snapshot: { items: OneDriveItem[]; itemsSoFar: number; page: number }) => void;
   }
-): Promise<{ items: OneDriveItem[]; totalPages: number }> {
+): Promise<{ deltaLink: null | string; items: OneDriveItem[]; totalPages: number }> {
   const account = await db.oneDriveAccount.findFirst({
     where: { accountId },
     select: { deltaLink: true, folderDriveId: true, folderItemId: true, folderPath: true },
@@ -337,11 +427,9 @@ export async function listOneDriveDeltaItems(
 
   if (!account) throw new Error("Account not found");
 
-  const accessToken = await getOneDriveAccessToken(accountId);
   const configuredFolder = options?.folderPath ?? account.folderPath ?? "";
   const folderDriveId = options?.folderDriveId ?? account.folderDriveId;
   const folderItemId = options?.folderItemId ?? account.folderItemId;
-  const existingDelta = options?.force ? null : account.deltaLink;
 
   // Use $select on the initial URL only — deltaLinks already carry their own query params.
   // Only requesting the fields used by isImportableXlsx + processOneDriveSkinTestItem
@@ -349,34 +437,50 @@ export async function listOneDriveDeltaItems(
   const DELTA_SELECT =
     "id,name,file,folder,deleted,eTag,cTag,size,parentReference,lastModifiedDateTime,webUrl,remoteItem,sharepointIds";
   const initialUrl = `${buildDeltaUrl({ driveId: folderDriveId, folderPath: configuredFolder, itemId: folderItemId })}?$select=${DELTA_SELECT}&$top=${DELTA_PAGE_SIZE}`;
-  let url = existingDelta || initialUrl;
 
-  const items: OneDriveItem[] = [];
-  let totalPages = 0;
-  let finalDeltaLink: string | null = null;
+  const runEnumeration = async (startUrl: string) => {
+    const collected: OneDriveItem[] = [];
+    let pages = 0;
+    let deltaLink: null | string = null;
+    let url = startUrl;
+    while (url) {
+      pages += 1;
+      const response = await graphFetchDeltaPage(accountId, url);
+      const pageItems = response.value ?? [];
+      collected.push(...pageItems);
+      options?.onPage?.({ items: pageItems, itemsSoFar: collected.length, page: pages });
+      url = response["@odata.nextLink"] ?? "";
+      if (response["@odata.deltaLink"]) deltaLink = response["@odata.deltaLink"];
+    }
+    return { collected, deltaLink, pages };
+  };
 
-  while (url) {
-    totalPages += 1;
-    const response = await graphFetch<DeltaResponse>(url, accessToken);
-    const pageItems = response.value ?? [];
-    items.push(...pageItems);
-    options?.onPage?.({ items: pageItems, itemsSoFar: items.length, page: totalPages });
-    url = response["@odata.nextLink"] ?? "";
-    if (response["@odata.deltaLink"]) {
-      finalDeltaLink = response["@odata.deltaLink"];
+  const existingDelta = options?.force ? null : account.deltaLink;
+  let result: Awaited<ReturnType<typeof runEnumeration>>;
+  try {
+    result = await runEnumeration(existingDelta || initialUrl);
+  } catch (error) {
+    // 410 resyncRequired: the stored token is no longer usable. Discard it and
+    // re-enumerate from scratch so the auto-sync self-heals instead of 410ing
+    // forever (A). Only retry once, and only when we were using a stored token.
+    if (existingDelta && isDeltaResyncError(error)) {
+      await db.oneDriveAccount.update({ where: { accountId }, data: { deltaLink: null } });
+      result = await runEnumeration(initialUrl);
+    } else {
+      throw error;
     }
   }
 
-  // Single DB write at the end — avoids one UPDATE per delta page
-  await db.oneDriveAccount.update({
-    where: { accountId },
-    data: {
-      ...(finalDeltaLink ? { deltaLink: finalDeltaLink, lastDeltaSyncAt: new Date() } : {}),
-      lastSyncAt: new Date(),
-    },
-  });
+  // Dedup by id, keeping the LAST occurrence (delta docs: an item may appear more
+  // than once in a feed; the last occurrence is authoritative).
+  const deduped = [...new Map(result.collected.map((item) => [item.id, item])).values()];
 
-  return { items, totalPages };
+  // Record the attempt; the deltaLink is NOT persisted here. The caller commits it
+  // via commitOneDriveDeltaSync AFTER processing every item (B) so a mid-processing
+  // failure does not advance the token past unprocessed changes.
+  await db.oneDriveAccount.update({ where: { accountId }, data: { lastSyncAt: new Date() } });
+
+  return { deltaLink: result.deltaLink, items: deduped, totalPages: result.pages };
 }
 
 export async function downloadOneDriveItem(
@@ -423,11 +527,19 @@ export async function downloadOneDriveItem(
   throw lastError ?? new Error("OneDrive download failed after retries");
 }
 
-async function getOneDriveAccessToken(accountId: string): Promise<string> {
-  // Check in-memory cache first (eliminates DB hit for every file download during sync)
-  const cached = _tokenCache.get(accountId);
-  if (cached && Date.now() < cached.expiresAt - 60_000) {
-    return cached.token;
+async function getOneDriveAccessToken(
+  accountId: string,
+  options?: { forceRefresh?: boolean }
+): Promise<string> {
+  // forceRefresh skips both caches and goes straight to a refresh_token grant.
+  // Used after a 401 mid-pagination: the server rejected the token even though
+  // our cache/DB believed it still valid (clock skew, revocation, early expiry).
+  if (!options?.forceRefresh) {
+    // Check in-memory cache first (eliminates DB hit for every file download during sync)
+    const cached = _tokenCache.get(accountId);
+    if (cached && Date.now() < cached.expiresAt - 60_000) {
+      return cached.token;
+    }
   }
 
   const account = await db.oneDriveAccount.findFirst({
@@ -438,7 +550,12 @@ async function getOneDriveAccessToken(accountId: string): Promise<string> {
   if (!account) throw new Error("OneDrive no conectado.");
 
   const expiresAt = Number(account.expiresAt);
-  if (account.accessToken && Number.isFinite(expiresAt) && Date.now() < expiresAt - 60_000) {
+  if (
+    !options?.forceRefresh &&
+    account.accessToken &&
+    Number.isFinite(expiresAt) &&
+    Date.now() < expiresAt - 60_000
+  ) {
     // Warm the cache from the persisted token
     _tokenCache.set(accountId, { expiresAt, token: account.accessToken });
     return account.accessToken;

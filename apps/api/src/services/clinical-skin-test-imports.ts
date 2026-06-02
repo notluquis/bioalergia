@@ -6,6 +6,7 @@ import { createId } from "@paralleldrive/cuid2";
 import { createHash } from "node:crypto";
 import { sql } from "kysely";
 import {
+  commitOneDriveDeltaSync,
   downloadOneDriveItem,
   getOneDriveStatus,
   getOneDriveCrc32Hash,
@@ -578,6 +579,28 @@ export async function syncClinicalSkinTestImports(options?: {
     item: OneDriveItem;
     key: string;
   }> = [];
+  // Per-account deltaLinks captured during enumeration, committed only AFTER the
+  // work pool drains successfully (B) — a mid-processing crash/cancel must not
+  // advance the token past unprocessed changes.
+  const pendingDeltaCommits: Array<{ accountId: string; deltaLink: null | string }> = [];
+  const commitDeltaLinks = async () => {
+    for (const commit of pendingDeltaCommits) {
+      await commitOneDriveDeltaSync(commit.accountId, commit.deltaLink);
+    }
+  };
+
+  // Resync reconciliation (G): only safe on an UNSCOPED full re-enumeration, where
+  // the returned set is the account's complete current state. An ad-hoc folder
+  // scope would make out-of-scope rows look "vanished", so we skip it entirely.
+  const optionsFolderScoped = Boolean(
+    options?.folderPath || options?.folderDriveId || options?.folderItemId
+  );
+  const resyncSeenIdsByAccount = new Map<string, Set<string>>();
+  const reconcileVanished = async () => {
+    for (const [acctId, seen] of resyncSeenIdsByAccount) {
+      await markVanishedSkinTestImports(acctId, seen);
+    }
+  };
 
   const emit = (message: string, progress: SkinTestSyncProgress) => {
     options?.onProgress?.({ ...progress, message });
@@ -617,7 +640,7 @@ export async function syncClinicalSkinTestImports(options?: {
     });
 
     let accountXlsxSoFar = 0;
-    const { items } = await listOneDriveDeltaItems(account.accountId, {
+    const { items, deltaLink } = await listOneDriveDeltaItems(account.accountId, {
       folderDriveId: options?.folderDriveId,
       folderItemId: options?.folderItemId,
       folderPath: options?.folderPath,
@@ -663,6 +686,10 @@ export async function syncClinicalSkinTestImports(options?: {
     workItems.push(
       ...xlsxItems.map((item) => ({ account, item, key: `${account.accountId}:${item.id}` }))
     );
+    pendingDeltaCommits.push({ accountId: account.accountId, deltaLink });
+    if (options?.force && !optionsFolderScoped) {
+      resyncSeenIdsByAccount.set(account.accountId, new Set(items.map((i) => i.id)));
+    }
 
     emit(`[${account.email}] ${items.length} cambio(s), ${xlsxItems.length} xlsx`, {
       accountEmail: account.email,
@@ -703,6 +730,9 @@ export async function syncClinicalSkinTestImports(options?: {
       filesProcessed,
       filesTotal: 0,
     });
+    // No items to process => the delta is fully consumed; safe to commit (B).
+    await reconcileVanished();
+    await commitDeltaLinks();
     return {
       discovered,
       documents,
@@ -841,6 +871,12 @@ export async function syncClinicalSkinTestImports(options?: {
   });
 
   await Promise.all(workers);
+
+  // All items processed successfully — reconcile vanished files on a full resync
+  // (G), then advance the delta token for each account (B). A throw/cancel above
+  // skips both, so the next sync re-enumerates and re-delivers.
+  await reconcileVanished();
+  await commitDeltaLinks();
 
   emit(
     `Sync terminado: ${discovered} xlsx descubierto(s), ${unchanged} sin cambios, ${errors} error(es)`,
@@ -4082,6 +4118,46 @@ function toImportOutput(row: ImportRow): SkinTestImportOutput {
       updatedAt: row.workbookSnapshotUpdatedAt?.toISOString() ?? null,
     },
   };
+}
+
+// Resync reconciliation (G). A full re-enumeration (force, or after a 410 resync)
+// returns the CURRENT items but NO `deleted` facets for files removed since the
+// last token — so deletions are invisible to a force sync. Per the delta docs'
+// resync guidance, after a full enumeration the client must remove local items
+// the server did not return. We do this CONSERVATIVELY: only NON-terminal rows
+// (never IMPORTED/REJECTED — a transient miss must not erase clinical data) are
+// dropped to SKIPPED + breadcrumb. Worst case a still-present row is re-discovered
+// on the next normal sync. Gated by the caller to UNSCOPED full enumerations only.
+async function markVanishedSkinTestImports(
+  accountId: string,
+  seenItemIds: Set<string>
+): Promise<number> {
+  const vanishedIssue: SkinTestIssue = {
+    code: "onedrive_vanished_resync",
+    message:
+      "El archivo no apareció en la re-enumeración completa de OneDrive (probable borrado/movido fuera de alcance). Se marca como omitido.",
+    severity: "info",
+  };
+  const seen = [...seenItemIds];
+  // An empty enumeration is never "everything was deleted" — it is an error or an
+  // empty scope. `<> ALL('{}')` is vacuously true for every row, so bail out.
+  if (seen.length === 0) return 0;
+  const updated = await sql<{ id: string }>`
+    UPDATE clinical_skin_test_imports
+    SET
+      status = 'SKIPPED',
+      issues = (COALESCE(issues, '[]'::jsonb) || ${JSON.stringify([vanishedIssue])}::jsonb),
+      updated_at = now()
+    WHERE
+      onedrive_account_id = ${accountId}
+      AND status IN ('DISCOVERED', 'PENDING_REVIEW', 'ERROR', 'TEMPLATE')
+      AND onedrive_item_id <> ALL(${seen}::text[])
+    RETURNING id
+  `.execute(kysely);
+  await Promise.all(
+    updated.rows.map((row) => syncSkinTestImportMaterialization(row.id, "SKIPPED"))
+  );
+  return updated.rows.length;
 }
 
 async function markOneDriveItemDeleted(accountId: string, driveId: string, itemId: string) {
