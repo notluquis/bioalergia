@@ -14,6 +14,11 @@
     "src/services/dte-expense-matcher.ts",
     "src/services/people-factory.ts",
     "src/services/cart.ts",
+    "src/services/dte-event-linking.ts",
+    "src/services/finance.ts",
+    "src/services/loans.ts",
+    "src/services/expenses.ts",
+    "src/services/transactions.ts",
     "!src/services/**/*.test.ts",
     "!src/services/**/__tests__/**",
     "!src/services/**/*.d.ts"
