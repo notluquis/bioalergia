@@ -9,6 +9,11 @@
   "coverageAnalysis": "perTest",
   "mutate": [
     "src/services/immunotherapy.ts",
+    "src/services/balances.ts",
+    "src/services/dte-import.ts",
+    "src/services/dte-expense-matcher.ts",
+    "src/services/people-factory.ts",
+    "src/services/cart.ts",
     "!src/services/**/*.test.ts",
     "!src/services/**/__tests__/**",
     "!src/services/**/*.d.ts"
