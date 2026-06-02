@@ -2362,39 +2362,45 @@ interface StaleSkinTestImportRow {
 // next delta reprocesses automatically (the SKIPPED_UNCHANGED guard sees the eTag
 // differ), not an orphan — including it would flag every edited-after-import row.
 // Source of truth = the library row.
-const STALE_SKIN_TEST_IMPORTS_QUERY = sql`
-  SELECT
-    i.id AS "importId",
-    i.status::text AS "importStatus",
-    f.onedrive_account_id AS "oneDriveAccountId",
-    f.onedrive_drive_id AS "oneDriveDriveId",
-    f.onedrive_item_id AS "oneDriveItemId",
-    f.onedrive_etag AS "oneDriveETag",
-    f.onedrive_ctag AS "oneDriveCTag",
-    f.onedrive_web_url AS "oneDriveWebUrl",
-    f.onedrive_source_key AS "oneDriveSourceKey",
-    f.onedrive_source_drive_id AS "oneDriveSourceDriveId",
-    f.onedrive_source_item_id AS "oneDriveSourceItemId",
-    f.onedrive_sharepoint_unique_id AS "oneDriveSharePointUniqueId",
-    f.path,
-    f.filename,
-    f.mime_type AS "mimeType",
-    f.size,
-    f.modified_at::text AS "modifiedAt",
-    f.classification
-  FROM clinical_skin_test_imports i
-  JOIN clinical_xlsx_files f
-    ON f.onedrive_account_id = i.onedrive_account_id
-   AND f.onedrive_drive_id IS NOT DISTINCT FROM i.onedrive_drive_id
-   AND f.onedrive_item_id = i.onedrive_item_id
-  WHERE i.filename IS DISTINCT FROM f.filename
-     OR i.onedrive_web_url IS DISTINCT FROM f.onedrive_web_url
-`;
+function buildStaleSkinTestImportsQuery(accountId?: string) {
+  const accountFilter = accountId ? sql`AND i.onedrive_account_id = ${accountId}` : sql``;
+  return sql`
+    SELECT
+      i.id AS "importId",
+      i.status::text AS "importStatus",
+      f.onedrive_account_id AS "oneDriveAccountId",
+      f.onedrive_drive_id AS "oneDriveDriveId",
+      f.onedrive_item_id AS "oneDriveItemId",
+      f.onedrive_etag AS "oneDriveETag",
+      f.onedrive_ctag AS "oneDriveCTag",
+      f.onedrive_web_url AS "oneDriveWebUrl",
+      f.onedrive_source_key AS "oneDriveSourceKey",
+      f.onedrive_source_drive_id AS "oneDriveSourceDriveId",
+      f.onedrive_source_item_id AS "oneDriveSourceItemId",
+      f.onedrive_sharepoint_unique_id AS "oneDriveSharePointUniqueId",
+      f.path,
+      f.filename,
+      f.mime_type AS "mimeType",
+      f.size,
+      f.modified_at::text AS "modifiedAt",
+      f.classification
+    FROM clinical_skin_test_imports i
+    JOIN clinical_xlsx_files f
+      ON f.onedrive_account_id = i.onedrive_account_id
+     AND f.onedrive_drive_id IS NOT DISTINCT FROM i.onedrive_drive_id
+     AND f.onedrive_item_id = i.onedrive_item_id
+    WHERE (i.filename IS DISTINCT FROM f.filename
+        OR i.onedrive_web_url IS DISTINCT FROM f.onedrive_web_url)
+      ${accountFilter}
+  `;
+}
 
 // Count desynced (orphan) skin-test imports — drives the targeted button label.
-export async function countStaleSkinTestImports(): Promise<number> {
+// Optional accountId scopes the count (used to heal a single account, and by the
+// integration suite to assert against an isolated fixture account).
+export async function countStaleSkinTestImports(accountId?: string): Promise<number> {
   const result = await sql<{ count: string }>`
-    SELECT count(*)::text AS count FROM (${STALE_SKIN_TEST_IMPORTS_QUERY}) AS stale
+    SELECT count(*)::text AS count FROM (${buildStaleSkinTestImportsQuery(accountId)}) AS stale
   `.execute(kysely);
   return Number(result.rows[0]?.count ?? 0);
 }
@@ -2406,12 +2412,13 @@ export async function countStaleSkinTestImports(): Promise<number> {
 // reprocess buttons); otherwise demote it (de-qualified -> SKIPPED). Safe to
 // re-run; converges to zero stale rows.
 export async function reconcileStaleSkinTestImports(options?: {
+  accountId?: string;
   onProgress?: (progress: SkinTestSyncProgress & { message: string }) => void;
   shouldCancel?: () => boolean;
 }) {
   const rows = (
     await sql<StaleSkinTestImportRow>`
-      ${STALE_SKIN_TEST_IMPORTS_QUERY}
+      ${buildStaleSkinTestImportsQuery(options?.accountId)}
       ORDER BY i.updated_at ASC
     `.execute(kysely)
   ).rows;
@@ -2493,6 +2500,119 @@ export async function reconcileStaleSkinTestImports(options?: {
   }
 
   return { dequalified, errors, processed: total, requeued, total };
+}
+
+// Same desync signature as skin-tests, for the clinical_document_imports pipeline:
+// the library row (clinical_xlsx_files) drifted from the document import (rename/
+// move). Used by the shared "Reconciliar" heal so one button fixes BOTH pipelines.
+function buildStaleClinicalDocumentImportsQuery(accountId?: string) {
+  const accountFilter = accountId ? sql`AND i.onedrive_account_id = ${accountId}` : sql``;
+  return sql`
+    SELECT
+      i.id AS "importId",
+      i.status::text AS "importStatus",
+      f.onedrive_account_id AS "oneDriveAccountId",
+      f.onedrive_drive_id AS "oneDriveDriveId",
+      f.onedrive_item_id AS "oneDriveItemId",
+      f.onedrive_etag AS "oneDriveETag",
+      f.onedrive_ctag AS "oneDriveCTag",
+      f.onedrive_web_url AS "oneDriveWebUrl",
+      f.onedrive_source_key AS "oneDriveSourceKey",
+      f.onedrive_source_drive_id AS "oneDriveSourceDriveId",
+      f.onedrive_source_item_id AS "oneDriveSourceItemId",
+      f.onedrive_sharepoint_unique_id AS "oneDriveSharePointUniqueId",
+      f.path,
+      f.filename,
+      f.mime_type AS "mimeType",
+      f.size,
+      f.modified_at::text AS "modifiedAt",
+      f.classification
+    FROM clinical_document_imports i
+    JOIN clinical_xlsx_files f
+      ON f.onedrive_account_id = i.onedrive_account_id
+     AND f.onedrive_drive_id IS NOT DISTINCT FROM i.onedrive_drive_id
+     AND f.onedrive_item_id = i.onedrive_item_id
+    WHERE (i.filename IS DISTINCT FROM f.filename
+        OR i.onedrive_web_url IS DISTINCT FROM f.onedrive_web_url)
+      ${accountFilter}
+  `;
+}
+
+export async function countStaleClinicalDocumentImports(accountId?: string): Promise<number> {
+  const result = await sql<{ count: string }>`
+    SELECT count(*)::text AS count FROM (${buildStaleClinicalDocumentImportsQuery(accountId)}) AS stale
+  `.execute(kysely);
+  return Number(result.rows[0]?.count ?? 0);
+}
+
+export async function reconcileStaleClinicalDocumentImports(options?: {
+  accountId?: string;
+  onProgress?: (progress: SkinTestSyncProgress & { message: string }) => void;
+  shouldCancel?: () => boolean;
+}) {
+  const rows = (
+    await sql<StaleSkinTestImportRow>`
+      ${buildStaleClinicalDocumentImportsQuery(options?.accountId)}
+      ORDER BY i.updated_at ASC
+    `.execute(kysely)
+  ).rows;
+
+  const total = rows.length;
+  let refreshed = 0;
+  let dequalified = 0;
+  let errors = 0;
+
+  for (const [index, row] of rows.entries()) {
+    if (options?.shouldCancel?.()) throw new Error("SYNC_CANCELLED");
+    options?.onProgress?.({
+      filesProcessed: index,
+      filesTotal: total,
+      filename: row.filename,
+      phase: "reconcile-stale",
+      processed: index,
+      total,
+      message: `Reconciliando documento ${index + 1}/${total}: ${row.filename}`,
+    });
+    try {
+      const patch = buildReconcilePatchFromLibraryRow(row);
+      const stillDocument =
+        classifyClinicalXlsxFilename(row.filename).classification === "CLINICAL_DOCUMENT";
+      if (stillDocument) {
+        // Renamed but still a clinical document: refresh metadata, keep status.
+        await sql`
+          UPDATE clinical_document_imports
+          SET
+            onedrive_etag = ${patch.eTag},
+            onedrive_ctag = ${patch.cTag},
+            onedrive_web_url = ${patch.webUrl},
+            path = COALESCE(${patch.path}, path),
+            filename = ${patch.filename},
+            mime_type = ${patch.mimeType},
+            size = ${patch.size},
+            modified_at = ${patch.modifiedAt}::timestamptz,
+            updated_at = now()
+          WHERE id = ${row.importId}
+        `.execute(kysely);
+        refreshed += 1;
+      } else {
+        await reconcileDequalifiedClinicalDocumentImport(
+          row.oneDriveAccountId,
+          row.oneDriveDriveId ?? "unknown",
+          row.oneDriveItemId,
+          patch
+        );
+        dequalified += 1;
+      }
+    } catch (error) {
+      errors += 1;
+      console.error(
+        `[reconcileStaleClinicalDocumentImports] ${row.importId}:`,
+        error instanceof Error ? error.message : String(error)
+      );
+    }
+  }
+
+  return { dequalified, errors, processed: total, refreshed, total };
 }
 
 export async function listSkinTestsBySeries(clinicalSeriesId: number) {
@@ -4128,7 +4248,7 @@ function toImportOutput(row: ImportRow): SkinTestImportOutput {
 // (never IMPORTED/REJECTED — a transient miss must not erase clinical data) are
 // dropped to SKIPPED + breadcrumb. Worst case a still-present row is re-discovered
 // on the next normal sync. Gated by the caller to UNSCOPED full enumerations only.
-async function markVanishedSkinTestImports(
+export async function markVanishedSkinTestImports(
   accountId: string,
   seenItemIds: Set<string>
 ): Promise<number> {

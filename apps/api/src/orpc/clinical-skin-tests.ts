@@ -62,6 +62,7 @@ import { logError } from "../lib/logger.ts";
 import { configureSuperjson } from "../lib/superjson-config.ts";
 import {
   approveSkinTestImport,
+  countStaleClinicalDocumentImports,
   countStaleSkinTestImports,
   getSkinTestAnalytics,
   getSkinTestImportJobType,
@@ -346,7 +347,14 @@ const routerBase = {
     .route({ method: "GET", path: "/imports/stale-count" })
     .input(z.object({}))
     .output(z.object({ count: z.number() }))
-    .handler(async () => ({ count: await countStaleSkinTestImports() })),
+    .handler(async () => {
+      // The single "Reconciliar" button heals both pipelines, so the badge counts both.
+      const [skinTests, documents] = await Promise.all([
+        countStaleSkinTestImports(),
+        countStaleClinicalDocumentImports(),
+      ]);
+      return { count: skinTests + documents };
+    }),
 
   // Targeted heal: reconcile ONLY the desynced imports (refresh metadata, requeue
   // still-importable ones, demote de-qualified ones). Idempotent. The existing

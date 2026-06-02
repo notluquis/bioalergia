@@ -2,6 +2,7 @@ import {
   archiveMissingSkinTestWorkbookSnapshots,
   getSkinTestImportJobType,
   processDiscoveredSkinTestImports,
+  reconcileStaleClinicalDocumentImports,
   reconcileStaleSkinTestImports,
   reprocessPendingSkinTestImports,
   reclassifyClinicalXlsxLibrary,
@@ -468,12 +469,25 @@ export async function startClinicalSkinTestReconcileStaleJob(options?: {
 
   void (async () => {
     try {
-      const result = await reconcileStaleSkinTestImports({
+      const skinTestResult = await reconcileStaleSkinTestImports({
         shouldCancel: () => isJobCancelled(jobId),
         onProgress: ({ message, processed, total, ...meta }) => {
           updateJobProgress(jobId, processed, message, { ...meta, mode: "reconcile-stale" }, total);
         },
       });
+      // One button heals both pipelines: also reconcile stale clinical-document imports.
+      const documentResult = await reconcileStaleClinicalDocumentImports({
+        shouldCancel: () => isJobCancelled(jobId),
+        onProgress: ({ message, processed, total, ...meta }) => {
+          updateJobProgress(jobId, processed, message, { ...meta, mode: "reconcile-stale" }, total);
+        },
+      });
+      const result = {
+        ...skinTestResult,
+        documents: documentResult,
+        processed: skinTestResult.processed + documentResult.processed,
+        total: skinTestResult.total + documentResult.total,
+      };
       completeJob(jobId, result, "Reconciliación de importaciones desincronizadas completada", {
         ...result,
         mode: "reconcile-stale",
