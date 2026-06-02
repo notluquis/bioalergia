@@ -1242,7 +1242,8 @@ export async function discoverOneDriveClinicalDocument(
       onedrive_etag = EXCLUDED.onedrive_etag,
       onedrive_ctag = EXCLUDED.onedrive_ctag,
       onedrive_web_url = EXCLUDED.onedrive_web_url,
-      path = EXCLUDED.path,
+      -- Graph delta omits parentReference.path on move; keep last-known path.
+      path = COALESCE(EXCLUDED.path, clinical_document_imports.path),
       filename = EXCLUDED.filename,
       mime_type = EXCLUDED.mime_type,
       size = EXCLUDED.size,
@@ -3193,7 +3194,8 @@ async function upsertClinicalXlsxFile(params: {
       onedrive_etag = EXCLUDED.onedrive_etag,
       onedrive_ctag = EXCLUDED.onedrive_ctag,
       onedrive_web_url = EXCLUDED.onedrive_web_url,
-      path = EXCLUDED.path,
+      -- Graph delta omits parentReference.path on move; keep last-known path.
+      path = COALESCE(EXCLUDED.path, clinical_xlsx_files.path),
       filename = EXCLUDED.filename,
       mime_type = EXCLUDED.mime_type,
       size = EXCLUDED.size,
@@ -3293,7 +3295,8 @@ async function upsertImport(params: {
       onedrive_etag = EXCLUDED.onedrive_etag,
       onedrive_ctag = EXCLUDED.onedrive_ctag,
       onedrive_web_url = EXCLUDED.onedrive_web_url,
-      path = EXCLUDED.path,
+      -- Graph delta omits parentReference.path on move; keep last-known path.
+      path = COALESCE(EXCLUDED.path, clinical_skin_test_imports.path),
       filename = EXCLUDED.filename,
       mime_type = EXCLUDED.mime_type,
       size = EXCLUDED.size,
@@ -3403,7 +3406,8 @@ async function ensureImportMetadataRow(
       onedrive_etag = EXCLUDED.onedrive_etag,
       onedrive_ctag = EXCLUDED.onedrive_ctag,
       onedrive_web_url = EXCLUDED.onedrive_web_url,
-      path = EXCLUDED.path,
+      -- Graph delta omits parentReference.path on move; keep last-known path.
+      path = COALESCE(EXCLUDED.path, clinical_skin_test_imports.path),
       filename = EXCLUDED.filename,
       mime_type = EXCLUDED.mime_type,
       size = EXCLUDED.size,
