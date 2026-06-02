@@ -5,7 +5,7 @@ import { PDFDocument, type PDFFont, rgb } from "pdf-lib";
 import "dayjs/locale/es.js";
 import QRCode from "qrcode";
 
-import { drawImageTopLeft, embedLogo, loadPdfFonts } from "../pdf/pdf-base.ts";
+import { drawImageTopLeft, embedLogo, loadPdfFonts, setPdfMetadata } from "../pdf/pdf-base.ts";
 import type { MedicalCertificateInput } from "./certificate.schema.ts";
 import { defaultDoctorInfo } from "./certificate.schema.ts";
 
@@ -209,6 +209,12 @@ export async function generateMedicalCertificatePdf(
 
   // Fuente embebida (IBM Plex Sans, subset) — portabilidad/PDF-A.
   const { font: helvetica, bold: helveticaBold } = await loadPdfFonts(pdfDoc);
+  setPdfMetadata(pdfDoc, {
+    title: "Certificado médico",
+    subject: "Certificado médico",
+    author: createDoctorInfo(input).name,
+    keywords: ["certificado", "médico", input.patientName],
+  });
 
   const margin = 50;
   let y = height - margin;

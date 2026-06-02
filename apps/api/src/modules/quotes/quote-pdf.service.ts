@@ -8,6 +8,7 @@ import {
   formatCLP,
   loadPdfFonts,
   PDF_COLORS,
+  setPdfMetadata,
   wrapText,
 } from "../pdf/pdf-base.ts";
 
@@ -43,6 +44,11 @@ export async function generateQuotePdf(input: QuotePdfInput): Promise<Uint8Array
   let page = pdfDoc.addPage([595.28, 841.89]); // A4
   const { width, height } = page.getSize();
   const { font, bold } = await loadPdfFonts(pdfDoc);
+  setPdfMetadata(pdfDoc, {
+    title: `Cotización N° ${quote.folio}`,
+    subject: "Cotización",
+    keywords: ["cotización", company.razonSocial],
+  });
   const margin = 45;
   let y = height - margin;
 

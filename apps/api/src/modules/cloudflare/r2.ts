@@ -6,7 +6,7 @@
 //   CF_R2_ACCOUNT_ID, CF_R2_ACCESS_KEY, CF_R2_SECRET,
 //   CF_R2_BUCKET, CF_R2_PUBLIC_BASE_URL
 
-import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { DeleteObjectsCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 function getEnv(name: string): string {
@@ -120,3 +120,25 @@ export const R2_LIMITS = {
   CLINIC_ASSET_MIME: Array.from(CLINIC_ASSET_MIME),
   MAX_BYTES,
 } as const;
+
+/** Deriva la key R2 a partir de una CDN URL pública (o null si no matchea). */
+export function r2KeyFromCdnUrl(url: string): string | null {
+  const base = `${getEnv("CF_R2_PUBLIC_BASE_URL").replace(/\/+$/, "")}/`;
+  return url.startsWith(base) ? url.slice(base.length) : null;
+}
+
+/** Borra objetos de R2 por key (best-effort; ignora si no existen). */
+export async function deleteR2Objects(keys: string[]): Promise<void> {
+  const unique = [...new Set(keys.filter(Boolean))];
+  if (unique.length === 0) return;
+  try {
+    await getClient().send(
+      new DeleteObjectsCommand({
+        Bucket: getEnv("CF_R2_BUCKET"),
+        Delete: { Objects: unique.map((Key) => ({ Key })), Quiet: true },
+      })
+    );
+  } catch (error) {
+    console.warn("[r2] no se pudieron borrar objetos:", error);
+  }
+}

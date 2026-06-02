@@ -1,4 +1,5 @@
 import { db } from "@finanzas/db";
+import { deleteR2Objects, r2KeyFromCdnUrl } from "../modules/cloudflare/r2.ts";
 
 export async function createProductImage(input: {
   productId: number;
@@ -44,7 +45,18 @@ export async function createProductImage(input: {
 }
 
 export async function deleteProductImage(id: number) {
-  // TODO: borrar también el objeto en R2 (background job).
+  const img = await db.productImage.findUnique({ where: { id } });
+  if (!img) return;
+  // Borra el objeto principal + todas las variantes WebP del srcset.
+  const keys = [img.r2Key];
+  if (img.srcset) {
+    for (const part of img.srcset.split(",")) {
+      const url = part.trim().split(/\s+/)[0];
+      const key = url ? r2KeyFromCdnUrl(url) : null;
+      if (key) keys.push(key);
+    }
+  }
+  await deleteR2Objects(keys);
   await db.productImage.delete({ where: { id } });
 }
 

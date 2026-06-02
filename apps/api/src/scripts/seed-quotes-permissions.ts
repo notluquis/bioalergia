@@ -10,7 +10,7 @@ const ACTIONS = ["read", "create", "update", "delete"] as const;
 
 const TARGET_ROLES = process.env.QUOTES_SEED_ROLES?.split(",")
   .map((s) => s.trim())
-  .filter(Boolean) ?? ["SystemAdministrator", "Admin", "Administrador", "GOD"];
+  .filter(Boolean) ?? ["SystemAdministrator", "Socio", "Admin", "Administrador", "GOD"];
 
 async function main() {
   const { db } = await import("@finanzas/db");

@@ -127,6 +127,27 @@ export function formatCLP(value: number): string {
   return clpFormatter.format(value);
 }
 
+/**
+ * Metadata estándar del documento (Title/Author/Subject/Producer/Creator +
+ * fechas). Mejora indexación, accesibilidad y prolijidad. NOTA: esto NO es
+ * PDF/A completo — conformidad PDF/A-3 (OutputIntent sRGB + XMP + ICC) requiere
+ * post-procesar con ghostscript/veraPDF; pdf-lib no la emite nativamente.
+ */
+export function setPdfMetadata(
+  pdfDoc: PDFDocument,
+  meta: { title: string; subject?: string; author?: string; keywords?: string[] }
+): void {
+  pdfDoc.setTitle(meta.title);
+  if (meta.subject) pdfDoc.setSubject(meta.subject);
+  pdfDoc.setAuthor(meta.author ?? "Bioalergia");
+  pdfDoc.setCreator("Bioalergia Intranet");
+  pdfDoc.setProducer("Bioalergia (pdf-lib)");
+  if (meta.keywords?.length) pdfDoc.setKeywords(meta.keywords);
+  const now = new Date();
+  pdfDoc.setCreationDate(now);
+  pdfDoc.setModificationDate(now);
+}
+
 export function wrapText(text: string, font: PDFFont, size: number, maxWidth: number): string[] {
   const out: string[] = [];
   for (const raw of text.split("\n")) {

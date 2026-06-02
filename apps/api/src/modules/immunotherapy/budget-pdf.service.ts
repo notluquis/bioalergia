@@ -8,6 +8,7 @@ import {
   formatCLP,
   loadPdfFonts,
   PDF_COLORS,
+  setPdfMetadata,
   wrapText,
 } from "../pdf/pdf-base.ts";
 
@@ -48,6 +49,11 @@ export async function generateBudgetPdf(input: BudgetPdfInput): Promise<Uint8Arr
   let page = pdfDoc.addPage([595.28, 841.89]); // A4
   const { width, height } = page.getSize();
   const { font, bold } = await loadPdfFonts(pdfDoc);
+  setPdfMetadata(pdfDoc, {
+    title: "Presupuesto de inmunoterapia",
+    subject: "Presupuesto",
+    keywords: ["presupuesto", "inmunoterapia", patient.name],
+  });
   const margin = 50;
   let y = height - margin;
 
