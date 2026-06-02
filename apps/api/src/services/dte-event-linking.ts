@@ -2644,7 +2644,27 @@ export async function autoLinkAllEventPeriodsWithProgress(params: {
 }
 
 export function normalizeLinkDate(input: string): string {
-  const parsed = dayjs(input, "YYYY-MM-DD", true);
-  if (!parsed.isValid()) throw new Error("Fecha inválida. Usa formato YYYY-MM-DD");
-  return parsed.tz(TIMEZONE).format("YYYY-MM-DD");
+  // A link date is a CALENDAR DATE (the day the user picked), not an instant. The
+  // DB compares it as `${date}::date` against the event's local date (start_date,
+  // or start_date_time AT TIME ZONE TIMEZONE), so the input must round-trip its
+  // Y/M/D exactly. We validate the components directly (UTC, no instant/tz
+  // conversion, no dayjs plugin dependency) so the result is timezone-independent
+  // by construction — the prior `dayjs(input).tz(TIMEZONE)` shifted the day by one
+  // whenever the process TZ was at/east of UTC (CI runs UTC → off-by-one), and
+  // strict calendar validity depended on whether customParseFormat was loaded.
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(input);
+  if (!match) throw new Error("Fecha inválida. Usa formato YYYY-MM-DD");
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  // Reject impossible dates (month 13, Feb 30, …) that would otherwise roll over.
+  if (
+    date.getUTCFullYear() !== year ||
+    date.getUTCMonth() !== month - 1 ||
+    date.getUTCDate() !== day
+  ) {
+    throw new Error("Fecha inválida. Usa formato YYYY-MM-DD");
+  }
+  return input;
 }
