@@ -1,4 +1,7 @@
+import { addressSchema } from "@finanzas/orpc-contracts/addresses";
+import { personSchema } from "@finanzas/orpc-contracts/patients";
 import { http, HttpResponse } from "msw";
+import type { z } from "zod";
 
 /**
  * MSW handlers for Storybook + addon-vitest.
@@ -24,6 +27,22 @@ import { http, HttpResponse } from "msw";
  */
 
 const ok = (data: unknown = { ok: true }) => HttpResponse.json({ json: data, meta: [] });
+
+/**
+ * Anchor fixtures to the real oRPC Zod contracts. If a contract output schema
+ * changes, this throws at module load so every story/browser-test fails LOUDLY
+ * instead of silently passing against a stale hand-typed shape (the classic
+ * MSW false-green). Validates the reused leaf entities (person, address).
+ */
+function assertFixture<S extends z.ZodType>(schema: S, value: unknown, label: string): z.infer<S> {
+  const result = schema.safeParse(value);
+  if (!result.success) {
+    throw new Error(
+      `[msw-handlers] fixture "${label}" drifted from its oRPC contract:\n${result.error.message}`
+    );
+  }
+  return result.data;
+}
 
 const SAMPLE_ADDRESS = {
   id: 1,
@@ -52,18 +71,27 @@ const SAMPLE_ADDRESS = {
   updatedAt: new Date("2026-01-01T00:00:00Z").toISOString(),
 };
 
+const SAMPLE_PERSON = {
+  id: 1,
+  rut: "12345678-9",
+  names: "María José",
+  fatherName: "Pérez",
+  motherName: "González",
+  email: "demo@bioalergia.cl",
+  phone: "+56912345678",
+  personType: "NATURAL",
+  createdAt: new Date("2026-01-01T00:00:00Z").toISOString(),
+  updatedAt: new Date("2026-01-01T00:00:00Z").toISOString(),
+};
+
 const SAMPLE_PATIENT = {
   id: 1,
-  person: {
-    id: 1,
-    rut: "12345678-9",
-    names: "María José",
-    fatherName: "Pérez",
-    motherName: "González",
-    email: "demo@bioalergia.cl",
-    phone: "+56912345678",
-  },
+  person: SAMPLE_PERSON,
 };
+
+// Contract-anchored: throws at load if the schemas drift from these fixtures.
+assertFixture(addressSchema, SAMPLE_ADDRESS, "SAMPLE_ADDRESS");
+assertFixture(personSchema, SAMPLE_PERSON, "SAMPLE_PERSON");
 
 export const handlers = [
   // CSRF token — every csrfFetch fetches this first.

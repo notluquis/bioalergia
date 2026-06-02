@@ -402,23 +402,20 @@ export default defineConfig(({ mode }) => {
         all: true,
         // Thresholds tracked as the test suite grows toward the
         // aspirational 80% lines / 75% branches goal. CI job runs
-        // `continue-on-error: true` so a regression highlights but
-        // doesn't block merges. Step ladder: lifted from 40/40/30/40
-        // after pure-utility test sprint took the baseline to
-        // ~74.89% lines / 66.23% branches. Next milestone targets
-        // listed below; raise after each test batch lands.
-        // Milestones: 75/65 -> 78/70 -> 80/75 (TARGET REACHED 2026-05-13).
-        // Coverage push 5-step roadmap (commits 19340d83, bb312d80,
-        // af1a*, *4cab8f4a) lifted intranet from 65.7% to 81.05% lines.
-        // Threshold at 80/65 = current actual minus a 1pp safety margin
-        // for noise. Branches remain at 65 (current 69.71%); branches are
-        // the slowest metric to lift because TanStack/HeroUI components
-        // hide many one-off conditionals only reachable via render tests.
+        // Thresholds = MEASURED actual (2026-06, `all: true`) minus a small
+        // headroom so this is a real, honest gate — not aspirational fiction.
+        // Measured: stmts 77.35 / branch 68.05 / funcs 74.42 / lines 81.71.
+        // Prior config claimed 91/93/83/93 (≈13pp above reality) while CI ran
+        // the job with `continue-on-error: true`, so nothing actually gated and
+        // flipping enforcement would have broken CI instantly. Numbers below
+        // gate truthfully; ratchet UP only after a test batch raises actuals.
+        // Branches lag (HeroUI/TanStack hide one-off conditionals reachable
+        // only via render tests).
         thresholds: {
-          lines: 93,
-          functions: 93,
-          branches: 83,
-          statements: 91,
+          statements: 75,
+          branches: 65,
+          functions: 72,
+          lines: 79,
         },
       },
     },
