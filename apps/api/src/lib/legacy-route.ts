@@ -41,7 +41,3 @@ export const requirePermission = (action: string, subject: string): MiddlewareHa
 
     await next();
   });
-
-export function toErrorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
-}

@@ -61,6 +61,3 @@ export function isRpcTunnelRead(pathname: string): boolean {
   const method = PROCEDURE_METHODS.get(`${match[1]}/${match[2]}`);
   return method !== undefined && READ_METHODS.has(method);
 }
-
-/** Total procedures registered — exported for a boot-time sanity check / tests. */
-export const REGISTERED_PROCEDURE_COUNT: number = PROCEDURE_METHODS.size;

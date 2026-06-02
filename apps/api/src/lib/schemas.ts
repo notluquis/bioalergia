@@ -6,8 +6,6 @@ import { z } from "zod";
 
 export const colorRegex: RegExp = /^(?:#(?:[0-9a-fA-F]{3}){1,2}|(?:oklch|hsl|rgb|var)\(.+\))$/;
 export const dateRegex: RegExp = /^\d{4}-\d{2}-\d{2}$/;
-export const timeRegex: RegExp = /^\d{2}:\d{2}$/;
-export const monthRegex: RegExp = /^\d{4}-\d{2}$/;
 
 // URL schemas
 export const httpsUrlSchema: z.ZodType<string, string> = z

@@ -398,18 +398,6 @@ export function isIgnoredEvent(summary: string | null | undefined): boolean {
   return IGNORE_PATTERNS.some((pattern) => pattern.test(text));
 }
 
-/** Normalize event date to ISO string */
-export function normalizeEventDate(value: string | null | undefined): string | null {
-  if (!value) {
-    return null;
-  }
-  try {
-    return dayjs(value).toISOString();
-  } catch {
-    return null;
-  }
-}
-
 /** Helper to test if any pattern matches */
 function matchesAny(text: string, patterns: RegExp[]): boolean {
   return patterns.some((p) => p.test(text));
