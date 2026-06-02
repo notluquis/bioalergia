@@ -5,7 +5,6 @@ import { useRef, useState } from "react";
 
 import { confirmAction } from "@/components/ui/ConfirmDialog";
 import { useToast } from "@/context/ToastContext";
-import { generateImageVariants, optimizeImageForUpload } from "@/lib/image-optimize";
 import { imagesORPCClient } from "../orpc-images";
 import { catalogKeys } from "../queries";
 
@@ -14,6 +13,7 @@ type ExistingImage = {
   cdn_url: string;
   srcset?: string | null;
   avif_srcset?: string | null;
+  jxl_srcset?: string | null;
   is_primary: boolean;
   alt: string | null;
 };
@@ -55,73 +55,25 @@ export function ImageUploader({ productId, images }: ImageUploaderProps) {
     }
     setUploading(true);
     try {
-      // Genera variantes responsivas WebP (400/800/1600w) client-side y sube
-      // cada una a R2 → arma el `srcset`. Sin servicios pagos. Si el navegador
-      // no puede rasterizar, cae al upload simple.
-      async function putVariant(blob: Blob, filename: string, contentType: string) {
-        const presign = await imagesORPCClient.presignUpload({
-          product_id: productId,
-          filename,
-          content_type: contentType as AllowedType,
-        });
-        const res = await fetch(presign.data.url, {
-          method: "PUT",
-          body: blob,
-          headers: { "Content-Type": contentType },
-        });
-        if (!res.ok) throw new Error(`R2 PUT falló: ${res.status}`);
-        return { cdnUrl: presign.data.cdn_url, r2Key: presign.data.r2_key };
-      }
-
-      const generated = await generateImageVariants(file);
-      if (generated && generated.variants.length > 0) {
-        const uploaded = [];
-        for (const v of generated.variants) {
-          const { cdnUrl, r2Key } = await putVariant(v.blob, v.filename, v.contentType);
-          uploaded.push({ width: v.width, cdnUrl, r2Key });
-        }
-        const largest = uploaded.at(-1);
-        if (!largest) throw new Error("No se generaron variantes");
-        const srcset = uploaded.map((u) => `${u.cdnUrl} ${u.width}w`).join(", ");
-
-        // AVIF best-effort (Chrome/Edge): si el navegador puede codificarlo,
-        // subimos variantes AVIF y armamos su srcset; si no, queda en WebP.
-        let avifSrcset: string | null = null;
-        const avif = await generateImageVariants(file, { format: "image/avif" });
-        if (avif && avif.variants.length > 1) {
-          const avifUploaded = [];
-          for (const v of avif.variants) {
-            const { cdnUrl } = await putVariant(v.blob, v.filename, v.contentType);
-            avifUploaded.push({ width: v.width, cdnUrl });
-          }
-          avifSrcset = avifUploaded.map((u) => `${u.cdnUrl} ${u.width}w`).join(", ");
-        }
-
-        await imagesORPCClient.confirmUpload({
-          product_id: productId,
-          r2_key: largest.r2Key,
-          cdn_url: largest.cdnUrl,
-          srcset: uploaded.length > 1 ? srcset : null,
-          avif_srcset: avifSrcset,
-          width: generated.intrinsic.width,
-          height: generated.intrinsic.height,
-        });
-      } else {
-        // Fallback: una sola imagen optimizada.
-        const opt = await optimizeImageForUpload(file);
-        const { cdnUrl, r2Key } = await putVariant(opt.blob, opt.filename, opt.contentType);
-        const dims =
-          opt.width > 0
-            ? { width: opt.width, height: opt.height }
-            : await readImageDimensions(file);
-        await imagesORPCClient.confirmUpload({
-          product_id: productId,
-          r2_key: r2Key,
-          cdn_url: cdnUrl,
-          width: dims?.width ?? null,
-          height: dims?.height ?? null,
-        });
-      }
+      // Sube el ORIGINAL a R2; el servidor genera las variantes responsivas
+      // next-gen (WebP + AVIF + JXL) con sharp. Encoder confiable para todos
+      // los formatos — a diferencia del canvas, que no codifica AVIF en Safari.
+      const presign = await imagesORPCClient.presignUpload({
+        product_id: productId,
+        filename: file.name,
+        content_type: file.type as AllowedType,
+      });
+      const res = await fetch(presign.data.url, {
+        method: "PUT",
+        body: file,
+        headers: { "Content-Type": file.type },
+      });
+      if (!res.ok) throw new Error(`R2 PUT falló: ${res.status}`);
+      await imagesORPCClient.confirmUpload({
+        product_id: productId,
+        r2_key: presign.data.r2_key,
+        cdn_url: presign.data.cdn_url,
+      });
       toastSuccess("Imagen subida");
       invalidate();
     } catch (err) {
@@ -190,6 +142,13 @@ export function ImageUploader({ productId, images }: ImageUploaderProps) {
               <Card.Content className="p-0">
                 <div className="relative aspect-square overflow-hidden rounded-t-[18px] bg-foreground/5">
                   <picture className="contents">
+                    {img.jxl_srcset ? (
+                      <source
+                        type="image/jxl"
+                        srcSet={img.jxl_srcset}
+                        sizes="(max-width: 640px) 50vw, 200px"
+                      />
+                    ) : null}
                     {img.avif_srcset ? (
                       <source
                         type="image/avif"
@@ -247,20 +206,4 @@ export function ImageUploader({ productId, images }: ImageUploaderProps) {
       )}
     </div>
   );
-}
-
-function readImageDimensions(file: File): Promise<{ width: number; height: number } | null> {
-  return new Promise((resolve) => {
-    const url = URL.createObjectURL(file);
-    const img = new Image();
-    img.onload = () => {
-      URL.revokeObjectURL(url);
-      resolve({ width: img.naturalWidth, height: img.naturalHeight });
-    };
-    img.onerror = () => {
-      URL.revokeObjectURL(url);
-      resolve(null);
-    };
-    img.src = url;
-  });
 }

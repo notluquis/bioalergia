@@ -13007,6 +13007,11 @@ export class SchemaType implements SchemaDef {
                     type: "String",
                     optional: true
                 },
+                jxlSrcset: {
+                    name: "jxlSrcset",
+                    type: "String",
+                    optional: true
+                },
                 alt: {
                     name: "alt",
                     type: "String",

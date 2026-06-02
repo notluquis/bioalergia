@@ -36,6 +36,7 @@ export const productImageResponseSchema = z.object({
     cdn_url: z.string().url(),
     srcset: z.string().nullable(),
     avif_srcset: z.string().nullable(),
+    jxl_srcset: z.string().nullable(),
     r2_key: z.string(),
     alt: z.string().nullable(),
     position: z.number().int(),

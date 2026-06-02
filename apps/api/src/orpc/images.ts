@@ -18,6 +18,8 @@ import { presignProductImageUpload } from "../modules/cloudflare/r2.ts";
 import {
   createProductImage,
   deleteProductImage,
+  getProductImage,
+  processProductImageVariants,
   reorderProductImages,
   setPrimaryImage,
 } from "../services/product-images.ts";
@@ -65,19 +67,25 @@ const confirmRoute = requireStaff
   .input(confirmUploadInputSchema)
   .output(productImageResponseSchema)
   .handler(async ({ input }) => {
-    const img = await createProductImage(
+    const created = await createProductImage(
       stripUndefined({
         productId: input.product_id,
         r2Key: input.r2_key,
         cdnUrl: input.cdn_url,
-        srcset: input.srcset ?? null,
-        avifSrcset: input.avif_srcset ?? null,
         alt: input.alt ?? null,
         width: input.width ?? null,
         height: input.height ?? null,
         isPrimary: input.is_primary,
       })
     );
+    // Genera variantes responsivas next-gen (WebP+AVIF+JXL) server-side. Si
+    // falla, la imagen igual queda usable vía cdn_url (fallback <img>).
+    try {
+      await processProductImageVariants(created.id);
+    } catch (error) {
+      logError(error, { module: "api", operation: "images.processVariants" });
+    }
+    const img = (await getProductImage(created.id)) ?? created;
     return {
       data: {
         id: img.id,
@@ -85,6 +93,7 @@ const confirmRoute = requireStaff
         cdn_url: img.cdnUrl,
         srcset: img.srcset,
         avif_srcset: img.avifSrcset,
+        jxl_srcset: img.jxlSrcset,
         r2_key: img.r2Key,
         alt: img.alt,
         position: img.position,

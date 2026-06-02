@@ -4894,6 +4894,10 @@ model ProductImage {
   // Variante AVIF (mejor compresión que WebP). El front la prefiere vía
   // <picture><source type="image/avif">; cae a srcset (WebP) → cdnUrl.
   avifSrcset  String?   @map("avif_srcset") @db.Text
+  // Variante JPEG XL (mejor compresión aún; Safari 17+ la decodea por defecto,
+  // Chrome la re-habilita 2026). Generada server-side con sharp. Primera fuente
+  // del <picture> (early-adopter): JXL → AVIF → WebP → original.
+  jxlSrcset   String?   @map("jxl_srcset") @db.Text
   alt         String?
   position    Int       @default(0)
   width       Int?

@@ -6,6 +6,7 @@ type Image = {
   cdn_url: string;
   srcset?: string | null;
   avif_srcset?: string | null;
+  jxl_srcset?: string | null;
   alt: string | null;
   is_primary: boolean;
 };
@@ -45,6 +46,13 @@ export function ProductGallery({ images, productName }: { images: Image[]; produ
             <div className="min-w-0 flex-[0_0_100%]" key={img.cdn_url}>
               <div className="aspect-square">
                 <picture className="contents">
+                  {img.jxl_srcset ? (
+                    <source
+                      type="image/jxl"
+                      srcSet={img.jxl_srcset}
+                      sizes="(max-width: 1024px) 100vw, 520px"
+                    />
+                  ) : null}
                   {img.avif_srcset ? (
                     <source
                       type="image/avif"

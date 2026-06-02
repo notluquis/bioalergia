@@ -25,6 +25,8 @@
     "format:check": "oxfmt --check",
     "check": "pnpm lint",
     "test": "vitest",
+    "test:mutation": "stryker run",
+    "test:mutation:since": "stryker run --since",
     "clean": "rm -rf dist"
   },
   "dependencies": {
@@ -77,6 +79,7 @@
     "pdf-lib": "^1.17.1",
     "qrcode": "^1.5.4",
     "qs": "^6.15.2",
+    "sharp": "^0.34.5",
     "stream-json": "^3.3.0",
     "superjson": "^2.2.6",
     "talisman": "^1.1.4",
@@ -85,6 +88,8 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@stryker-mutator/core": "^9.6.1",
+    "@stryker-mutator/vitest-runner": "^9.6.1",
     "@types/node": "^25.9.1",
     "@types/papaparse": "^5.5.2",
     "@types/pg": "^8.20.0",
@@ -93,7 +98,6 @@
     "@types/web-push": "^3.6.4",
     "dotenv": "^17.4.2",
     "pg": "8.21.0",
-    "sharp": "^0.34.5",
     "typescript": "^6.0.3",
     "vitest": "^4.1.7"
   },

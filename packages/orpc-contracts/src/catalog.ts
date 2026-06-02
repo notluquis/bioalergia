@@ -10,6 +10,7 @@ export const productImageSchema = z.object({
   cdn_url: z.string().url(),
   srcset: z.string().nullable(),
   avif_srcset: z.string().nullable(),
+  jxl_srcset: z.string().nullable(),
   alt: z.string().nullable(),
   position: z.number().int(),
   width: z.number().int().nullable(),

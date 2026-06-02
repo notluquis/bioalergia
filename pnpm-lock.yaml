@@ -201,6 +201,9 @@ importers:
       qs:
         specifier: ^6.15.2
         version: 6.15.2
+      sharp:
+        specifier: ^0.34.5
+        version: 0.34.5
       stream-json:
         specifier: ^3.3.0
         version: 3.3.0
@@ -225,6 +228,12 @@ importers:
       '@finanzas/orpc-contracts':
         injected: true
     devDependencies:
+      '@stryker-mutator/core':
+        specifier: ^9.6.1
+        version: 9.6.1(@types/node@25.9.1)
+      '@stryker-mutator/vitest-runner':
+        specifier: ^9.6.1
+        version: 9.6.1(@stryker-mutator/core@9.6.1(@types/node@25.9.1))(vitest@4.1.7)
       '@types/node':
         specifier: ^25.9.1
         version: 25.9.1
@@ -249,9 +258,6 @@ importers:
       pg:
         specifier: 8.21.0
         version: 8.21.0
-      sharp:
-        specifier: ^0.34.5
-        version: 0.34.5
       typescript:
         specifier: ^6.0.3
         version: 6.0.3

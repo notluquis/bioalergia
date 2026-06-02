@@ -18,6 +18,7 @@ type Product = {
     cdn_url: string;
     srcset?: string | null;
     avif_srcset?: string | null;
+    jxl_srcset?: string | null;
     is_primary: boolean;
     alt: string | null;
   }>;
@@ -38,6 +39,13 @@ export function ProductCard({ product }: { product: Product }) {
         >
           {primary ? (
             <picture className="contents">
+              {primary.jxl_srcset ? (
+                <source
+                  type="image/jxl"
+                  srcSet={primary.jxl_srcset}
+                  sizes="(max-width: 640px) 50vw, 280px"
+                />
+              ) : null}
               {primary.avif_srcset ? (
                 <source
                   type="image/avif"

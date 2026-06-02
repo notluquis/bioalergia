@@ -83,6 +83,7 @@ function serializeImage(img: {
   cdnUrl: string;
   srcset: string | null;
   avifSrcset: string | null;
+  jxlSrcset: string | null;
   alt: string | null;
   position: number;
   width: number | null;
@@ -96,6 +97,7 @@ function serializeImage(img: {
     cdn_url: img.cdnUrl,
     srcset: img.srcset,
     avif_srcset: img.avifSrcset,
+    jxl_srcset: img.jxlSrcset,
     alt: img.alt,
     position: img.position,
     width: img.width,
