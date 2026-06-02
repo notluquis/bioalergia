@@ -30,8 +30,9 @@
 	#   every <script> tag in index.html (see vite.config.ts
 	#   cspNoncePlugin) and the `templates` directive below substitutes
 	#   it at serve time.
-	# - require-trusted-types-for 'script' closes DOM-XSS sinks (React
-	#   19 has built-in Trusted Types support).
+	# - Trusted Types (require-trusted-types-for) is NOT shipped — see the
+	#   note above the Content-Security-Policy header for why (app not
+	#   TT-compliant; the old report-only was inert + spammed Safari 26).
 	# - style-src keeps 'unsafe-inline' because HeroUI v3 / React Aria
 	#   set inline `style="…"` for popovers; OWASP explicitly accepts
 	#   this trade-off because style-based XSS is dramatically lower
@@ -44,12 +45,19 @@
 		Cross-Origin-Opener-Policy "same-origin"
 		Cross-Origin-Resource-Policy "same-origin"
 		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
-		# Enforced CSP: strict-dynamic + nonce. require-trusted-types-for moved
-		# to a Report-Only header below — Cloudflare Bot Fight Mode and
-		# similar edge-injected scripts use innerHTML / .src assignment that
-		# violates Trusted Types regardless of nonce. Tracking violations in
-		# report-only lets us migrate first-party code to TrustedHTML/Script
-		# without breaking the live app.
+		# Enforced CSP: strict-dynamic + nonce + object-src/base-uri 'none'.
+		# Trusted Types is intentionally NOT shipped (neither enforced nor
+		# report-only): (1) no `default`/`dompurify` TT policy is created in
+		# app code, so violations can never clear; (2) the app isn't TT-compliant
+		# — the FB SDK loader (EmbeddedSignupButton) assigns script.src as a raw
+		# string and react-aria/HeroUI internals are unaudited, so enforcement
+		# would break the live app; (3) the prior Report-Only header had no
+		# `report-to`/`Reporting-Endpoints`, so it was inert AND, once Safari 26
+		# (2025) added TT support, it spammed every Safari user with [Report Only]
+		# console violations that nobody collected. The strict script-src nonce +
+		# strict-dynamic + object-src 'none' already close the high-impact sinks.
+		# Revisit TT enforcement (default policy backed by DOMPurify + TrustedScriptURL
+		# for the FB loader) only as a funded security pass.
 		# connect-src includes Sentry ingest endpoints so the browser SDK
 		# can transmit errors / replays / metrics. *.ingest.sentry.io covers
 		# both region-specific (us.ingest, eu.ingest) and the legacy global
@@ -61,7 +69,6 @@
 		# img-src (https:), but it's also in connect-src so service-worker
 		# runtime-caching fetch() of those images isn't blocked.
 		Content-Security-Policy "default-src 'self'; script-src 'nonce-{http.request.uuid}' 'strict-dynamic' 'unsafe-inline' https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://*.ingest.sentry.io https://*.ingest.us.sentry.io https://*.r2.cloudflarestorage.com https://cdn.bioalergia.cl; media-src 'self' blob:; worker-src 'self' blob:; manifest-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'; object-src 'none'"
-		Content-Security-Policy-Report-Only "require-trusted-types-for 'script'; trusted-types default dompurify 'allow-duplicates'"
 	}
 
 	# ========== LOGGING CONFIGURATION ==========
