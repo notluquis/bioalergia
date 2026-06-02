@@ -23,7 +23,6 @@
  */
 
 import * as Sentry from "@sentry/react";
-import { onCLS, onINP, onLCP, type Metric } from "web-vitals/attribution";
 
 const dsn = import.meta.env.VITE_SENTRY_DSN;
 
@@ -90,19 +89,12 @@ export function initSentry(): void {
   // after confirming the CDN script loads cleanly + measuring overhead.
   // void loadReplay();
 
-  // Pipe Web Vitals to Sentry. v10 exposes `metrics` from @sentry/core; we
-  // call optional-chained so older runtimes (or future removals) don't blow
-  // up.
-  const send = (name: string) => (metric: Metric) => {
-    const m = (Sentry as unknown as { metrics?: { distribution?: typeof distributionStub } })
-      .metrics;
-    m?.distribution?.(`web_vital.${name}`, metric.value, {
-      tags: { rating: metric.rating },
-    });
-  };
-  onCLS(send("cls"));
-  onINP(send("inp"));
-  onLCP(send("lcp"));
+  // Web Vitals (LCP/CLS/INP) are captured automatically by
+  // browserTracingIntegration into transactions/spans (accepted on the free
+  // Developer plan). The old manual `Sentry.metrics.distribution(...)` piping
+  // was REMOVED: custom Metrics is a trial/paid feature — on the free plan
+  // (post-trial) every metric envelope 403'd ("Failed to load resource:
+  // envelope" spam), and it duplicated what tracing already records.
 }
 
 // NOTE: Session Replay deliberately NOT wired.
@@ -117,13 +109,5 @@ export function initSentry(): void {
 //   current Sentry docs — the PHI-safe option block lived here in git
 //   history (maskAllText / maskAllInputs / blockAllMedia /
 //   networkDetailAllowUrls: [] / [data-phi] selectors).
-
-// Type stub purely so the optional-chained metrics call above type-checks
-// across SDK versions where `metrics` may or may not exist.
-declare function distributionStub(
-  name: string,
-  value: number,
-  data?: { tags?: Record<string, string> }
-): void;
 
 export { Sentry };
