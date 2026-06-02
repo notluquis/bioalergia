@@ -51,6 +51,7 @@
     "zen:watch": "zen generate --watch",
     "db:pull": "zen db pull",
     "db:push": "zen db push",
+    "seed:synthetic": "node scripts/seed-synthetic.ts",
     "migrate:dev": "zen migrate dev",
     "migrate:deploy": "zen migrate deploy",
     "clean": "rm -rf dist",
@@ -72,6 +73,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@faker-js/faker": "^10.4.0",
     "@tanstack/react-query": "^5.100.14",
     "@types/node": "^25.9.1",
     "@types/pg": "^8.20.0",

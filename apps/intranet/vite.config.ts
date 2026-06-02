@@ -386,6 +386,20 @@ export default defineConfig(({ mode }) => {
         },
       },
     },
+    // `vite preview` (production bundle) has no proxy by default, so the SPA's
+    // same-origin `/api/...` calls 404. Hermetic e2e/Lighthouse serve the build
+    // via preview and need the API reachable — mirror the dev proxy so authed
+    // specs hit the local api (DATABASE_URL → ephemeral seeded Postgres).
+    preview: {
+      proxy: {
+        "/api": {
+          target: API_PROXY_TARGET,
+          changeOrigin: true,
+          secure: API_PROXY_SECURE,
+          cookieDomainRewrite: "localhost",
+        },
+      },
+    },
     test: {
       name: "unit",
       environment: "jsdom",
