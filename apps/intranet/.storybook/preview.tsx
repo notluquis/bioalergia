@@ -14,6 +14,24 @@ import { handlers } from "./msw-handlers";
 
 initialize({ onUnhandledRequest: "bypass" });
 
+// "ResizeObserver loop completed with undelivered notifications" / "loop limit
+// exceeded" are benign per the spec — the browser simply defers the observer
+// callback to the next frame. But Vitest's browser runner surfaces the resulting
+// uncaught `error` event as a test failure, which flakes stories whose play()
+// opens a HeroUI date-picker popover (the calendar resizes for a frame or two
+// before settling). Swallow ONLY these two messages so layout can settle without
+// failing the assertion; every other error still propagates.
+if (typeof window !== "undefined") {
+  const RESIZE_OBSERVER_LOOP =
+    /ResizeObserver loop (?:completed with undelivered notifications|limit exceeded)/;
+  window.addEventListener("error", (event) => {
+    if (RESIZE_OBSERVER_LOOP.test(event.message)) {
+      event.stopImmediatePropagation();
+      event.preventDefault();
+    }
+  });
+}
+
 const preview = {
   decorators: [
     // Mirror the app root (__root.tsx): React Aria date/number components
