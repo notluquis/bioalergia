@@ -1,11 +1,13 @@
 import { kysely } from "@finanzas/db";
+import { dbClinicalSeries as db } from "@finanzas/db/slices";
 import { sql } from "kysely";
 
 import { TIMEZONE } from "../constants.ts";
 import type { ClinicalSeriesFilters, ClinicalSeriesSnapshot } from "../types.ts";
 
-import { getClinicalSeriesSnapshotById } from "./by-id.ts";
+import { assembleClinicalSeriesSnapshot, type SeriesWithEventsAndContacts } from "./assemble.ts";
 import { prepareClinicalSeriesFilters } from "./filters.ts";
+import { loadSnapshotLinkMaps } from "./links.ts";
 
 export async function listClinicalSeriesSnapshots(filters?: ClinicalSeriesFilters): Promise<{
   items: ClinicalSeriesSnapshot[];
@@ -164,11 +166,40 @@ export async function listClinicalSeriesSnapshots(filters?: ClinicalSeriesFilter
     OFFSET ${(page - 1) * pageSize}
   `.execute(kysely);
 
-  const series = seriesResult.rows;
+  // Page ids in the SQL-determined display order. The order must be preserved
+  // when we re-assemble below (findMany does not guarantee it).
+  const orderedIds = seriesResult.rows.map((row) => row.id);
 
-  const items = (
-    await Promise.all(series.map((item) => getClinicalSeriesSnapshotById(item.id)))
-  ).filter((item): item is ClinicalSeriesSnapshot => item != null);
+  // Batched fetch: one findMany for every series on the page + one
+  // loadSnapshotLinkMaps (three `ANY($ids)` queries) — replaces the former
+  // N+1 (~6 queries per row).
+  const [seriesRows, linkMapsBySeriesId] = await Promise.all([
+    db.clinicalSeries.findMany({
+      where: { id: { in: orderedIds } },
+      include: {
+        abandonmentContacts: {
+          orderBy: { contactedAt: "desc" },
+          take: 1,
+          select: { contactedAt: true, outcome: true },
+        },
+        events: {
+          include: { calendar: { select: { googleId: true } } },
+          orderBy: [{ startDate: "asc" }, { startDateTime: "asc" }, { id: "asc" }],
+        },
+      },
+    }) as Promise<SeriesWithEventsAndContacts[]>,
+    loadSnapshotLinkMaps(orderedIds),
+  ]);
+
+  const seriesById = new Map(seriesRows.map((row) => [row.id, row]));
+
+  const items = orderedIds
+    .map((id) => {
+      const series = seriesById.get(id);
+      if (!series) return null;
+      return assembleClinicalSeriesSnapshot(series, linkMapsBySeriesId.get(id));
+    })
+    .filter((item): item is ClinicalSeriesSnapshot => item != null);
 
   return { items, page, pageSize, total };
 }

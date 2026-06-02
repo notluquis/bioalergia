@@ -71,6 +71,17 @@ pool.on("connect", (client) => {
   }
 });
 
+// Pool error handler. node-postgres emits 'error' on the Pool when an IDLE
+// client's connection dies (Railway/PgBouncer idle kill, NAT drop, server
+// restart). Without a listener that emission becomes an unhandled 'error'
+// event → uncaught exception → the whole API process crashes ("Connection
+// terminated unexpectedly"). The pool already evicts the broken client and
+// the next acquire transparently opens a fresh one, so we only need to log
+// and swallow — never rethrow, or we reintroduce the crash.
+pool.on("error", (err) => {
+  console.error("[db] idle pool client error (recovered, connection evicted):", err.message);
+});
+
 // Base ORM client (no access control).
 //
 // Tipo completo inferido (NO colapsado a `ClientContract<SchemaType>`). El
