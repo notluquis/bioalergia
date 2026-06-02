@@ -267,6 +267,7 @@ const immunotherapyRouterBase = {
           email: clinic.email,
           doctorName: clinic.doctorName,
           doctorRut: clinic.doctorRut,
+          logoUrl: clinic.logoUrl,
         },
         patient: { name: fullName, rut: patient.person.rut },
         quote,

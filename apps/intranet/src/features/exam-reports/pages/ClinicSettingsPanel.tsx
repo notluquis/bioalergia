@@ -8,19 +8,19 @@ import {
   Surface,
   TextField,
 } from "@heroui/react";
+import type { ClinicAssetKind } from "@finanzas/orpc-contracts/exam-reports";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Save } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Image as ImageIcon, Save, Trash2, Upload } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 
 import { useToast } from "@/context/ToastContext";
 import { examReportsORPCClient } from "@/features/exam-reports/orpc";
 import { examReportsKeys } from "@/features/exam-reports/queries";
 
 /**
- * Clinic profile panel — extracted from the old `/settings/clinic` route
- * so it can be hosted as a `<Tabs.Panel>` inside the unified
- * `/exam-reports` page (Phase 3 IA consolidation). The route file is now
- * a thin redirect shell.
+ * Clinic profile panel — datos + logos administrables. Los logos/firma se
+ * suben a R2 (presign → PUT directo) y se persisten como URL en ClinicSettings;
+ * los generadores de PDF los embeben (fallback al asset local si está vacío).
  */
 const FIELDS: { key: keyof FormState; label: string; placeholder?: string }[] = [
   { key: "name", label: "Nombre" },
@@ -35,7 +35,6 @@ const FIELDS: { key: keyof FormState; label: string; placeholder?: string }[] = 
   { key: "doctorName", label: "Doctor (nombre)" },
   { key: "doctorSpecialty", label: "Doctor (especialidad)" },
   { key: "doctorRut", label: "Doctor (RUT)" },
-  { key: "signatureUrl", label: "Firma (URL imagen)" },
   {
     key: "superintendenciaNumber",
     label: "Prestador Superintendencia de Salud N°",
@@ -57,9 +56,13 @@ interface FormState {
   doctorSpecialty: string;
   doctorRut: string;
   signatureUrl: string;
+  logoUrl: string;
+  secondaryLogoUrl: string;
   superintendenciaNumber: string;
   papuleThresholdMm: number;
 }
+
+const ASSET_MIME = ["image/png", "image/jpeg"];
 
 export function ClinicSettingsPanel() {
   const toast = useToast();
@@ -84,10 +87,15 @@ export function ClinicSettingsPanel() {
       doctorSpecialty: settingsQ.data.doctorSpecialty,
       doctorRut: settingsQ.data.doctorRut ?? "",
       signatureUrl: settingsQ.data.signatureUrl ?? "",
+      logoUrl: settingsQ.data.logoUrl ?? "",
+      secondaryLogoUrl: settingsQ.data.secondaryLogoUrl ?? "",
       superintendenciaNumber: settingsQ.data.superintendenciaNumber ?? "",
       papuleThresholdMm: settingsQ.data.papuleThresholdMm,
     });
   }, [settingsQ.data, form]);
+
+  const invalidate = () =>
+    qc.invalidateQueries({ queryKey: [...examReportsKeys.all, "clinic-settings"] });
 
   const save = useMutation({
     mutationFn: () => {
@@ -96,15 +104,24 @@ export function ClinicSettingsPanel() {
         ...form,
         doctorRut: form.doctorRut || null,
         signatureUrl: form.signatureUrl || null,
+        logoUrl: form.logoUrl || null,
+        secondaryLogoUrl: form.secondaryLogoUrl || null,
         superintendenciaNumber: form.superintendenciaNumber || null,
       });
     },
     onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: [...examReportsKeys.all, "clinic-settings"] });
+      void invalidate();
       toast.success("Datos guardados");
     },
     onError: (e) => toast.error((e as Error).message),
   });
+
+  // Persiste un asset (logo/firma) de forma inmediata + actualiza el form.
+  async function persistAsset(field: keyof FormState, url: string | null) {
+    await examReportsORPCClient.updateClinicSettings({ [field]: url });
+    setForm((f) => (f ? { ...f, [field]: url ?? "" } : f));
+    void invalidate();
+  }
 
   if (!form) {
     return (
@@ -119,9 +136,47 @@ export function ClinicSettingsPanel() {
       <header>
         <h2 className="font-semibold text-foreground text-xl">Datos de la clínica</h2>
         <p className="text-default-600 text-sm">
-          Información que aparece en el footer y firma de cada PDF de informe.
+          Información, logos y firma que aparecen en cada PDF (informes, cotizaciones, presupuestos,
+          certificados).
         </p>
       </header>
+
+      {/* Logos + firma (R2, embebidos en PDFs) */}
+      <Surface className="rounded-3xl border border-default-100 p-4" variant="default">
+        <h3 className="mb-3 font-medium text-foreground">Logos y firma</h3>
+        <div className="grid gap-4 sm:grid-cols-3">
+          <ClinicAssetUploader
+            label="Logo principal"
+            hint="PNG/JPEG. Se usa en todos los PDFs."
+            kind="logo"
+            value={form.logoUrl}
+            onUploaded={(url) => persistAsset("logoUrl", url)}
+            onRemove={() => persistAsset("logoUrl", null)}
+            onError={(m) => toast.error(m)}
+            onSuccess={(m) => toast.success(m)}
+          />
+          <ClinicAssetUploader
+            label="Logo secundario"
+            hint="Opcional (ej. AAAEIC en certificados)."
+            kind="secondary-logo"
+            value={form.secondaryLogoUrl}
+            onUploaded={(url) => persistAsset("secondaryLogoUrl", url)}
+            onRemove={() => persistAsset("secondaryLogoUrl", null)}
+            onError={(m) => toast.error(m)}
+            onSuccess={(m) => toast.success(m)}
+          />
+          <ClinicAssetUploader
+            label="Firma"
+            hint="Imagen de la firma del médico."
+            kind="signature"
+            value={form.signatureUrl}
+            onUploaded={(url) => persistAsset("signatureUrl", url)}
+            onRemove={() => persistAsset("signatureUrl", null)}
+            onError={(m) => toast.error(m)}
+            onSuccess={(m) => toast.success(m)}
+          />
+        </div>
+      </Surface>
 
       <Surface className="rounded-3xl border border-default-100 p-4" variant="default">
         <Form
@@ -168,6 +223,111 @@ export function ClinicSettingsPanel() {
           </div>
         </Form>
       </Surface>
+    </div>
+  );
+}
+
+type ClinicAssetUploaderProps = {
+  label: string;
+  hint: string;
+  kind: ClinicAssetKind;
+  value: string;
+  onUploaded: (url: string) => void | Promise<void>;
+  onRemove: () => void | Promise<void>;
+  onError: (message: string) => void;
+  onSuccess: (message: string) => void;
+};
+
+function ClinicAssetUploader({
+  label,
+  hint,
+  kind,
+  value,
+  onUploaded,
+  onRemove,
+  onError,
+  onSuccess,
+}: ClinicAssetUploaderProps) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [busy, setBusy] = useState(false);
+
+  async function handleFile(file: File) {
+    if (!ASSET_MIME.includes(file.type)) {
+      onError("Sólo PNG o JPEG (se embeben en el PDF).");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      onError("Imagen mayor a 5MB.");
+      return;
+    }
+    setBusy(true);
+    try {
+      const presign = await examReportsORPCClient.presignClinicAsset({
+        kind,
+        filename: file.name,
+        contentType: file.type as "image/png" | "image/jpeg",
+      });
+      const put = await fetch(presign.url, {
+        method: "PUT",
+        body: file,
+        headers: { "Content-Type": file.type },
+      });
+      if (!put.ok) throw new Error(`Subida a R2 falló: ${put.status}`);
+      await onUploaded(presign.cdnUrl);
+      onSuccess(`${label} actualizado`);
+    } catch (err) {
+      onError(err instanceof Error ? err.message : "Error subiendo imagen");
+    } finally {
+      setBusy(false);
+      if (inputRef.current) inputRef.current.value = "";
+    }
+  }
+
+  return (
+    <div className="space-y-2">
+      <Label>{label}</Label>
+      <div className="flex h-24 items-center justify-center rounded-xl border border-default-200 border-dashed bg-default-50 p-2">
+        {value ? (
+          <img alt={label} className="max-h-full max-w-full object-contain" src={value} />
+        ) : (
+          <ImageIcon className="size-8 text-default-300" />
+        )}
+      </div>
+      <p className="text-default-500 text-xs">{hint}</p>
+      <div className="flex gap-2">
+        <Button
+          size="sm"
+          variant="outline"
+          className="gap-1"
+          isPending={busy}
+          onPress={() => inputRef.current?.click()}
+        >
+          <Upload size={14} /> {value ? "Reemplazar" : "Subir"}
+        </Button>
+        {value ? (
+          <Button
+            size="sm"
+            variant="outline"
+            isIconOnly
+            className="text-danger"
+            aria-label={`Quitar ${label}`}
+            onPress={() => void onRemove()}
+          >
+            <Trash2 size={14} />
+          </Button>
+        ) : null}
+      </div>
+      <input
+        ref={inputRef}
+        type="file"
+        aria-label={`Subir ${label}`}
+        accept="image/png,image/jpeg"
+        className="hidden"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) void handleFile(file);
+        }}
+      />
     </div>
   );
 }

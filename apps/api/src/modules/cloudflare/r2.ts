@@ -79,7 +79,44 @@ export async function presignProductImageUpload(opts: {
   return { url, cdnUrl, r2Key, expiresIn: 300 };
 }
 
+// Logos/firma de la clínica embebidos en PDFs: pdf-lib sólo embebe PNG/JPEG
+// (NO WebP/AVIF), así que restringimos el tipo. Claves bajo `clinic/`.
+const CLINIC_ASSET_MIME = new Set(["image/jpeg", "image/png"]);
+export type ClinicAssetKind = "logo" | "secondary-logo" | "signature";
+
+export async function presignClinicAssetUpload(opts: {
+  kind: ClinicAssetKind;
+  filename: string;
+  contentType: string;
+}): Promise<PresignedUpload> {
+  if (!CLINIC_ASSET_MIME.has(opts.contentType)) {
+    throw new Error(`Tipo no permitido (sólo PNG/JPEG): ${opts.contentType}`);
+  }
+
+  const safeName = opts.filename
+    .toLowerCase()
+    .replace(/[^a-z0-9._-]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 80);
+  const stamp = Date.now();
+  const rnd = Math.random().toString(36).slice(2, 8);
+  const r2Key = `clinic/${opts.kind}/${stamp}-${rnd}-${safeName}`;
+
+  const cmd = new PutObjectCommand({
+    Bucket: getEnv("CF_R2_BUCKET"),
+    Key: r2Key,
+    ContentType: opts.contentType,
+  });
+
+  const url = await getSignedUrl(getClient(), cmd, { expiresIn: 300 });
+  const cdnBase = getEnv("CF_R2_PUBLIC_BASE_URL").replace(/\/+$/, "");
+  const cdnUrl = `${cdnBase}/${r2Key}`;
+
+  return { url, cdnUrl, r2Key, expiresIn: 300 };
+}
+
 export const R2_LIMITS = {
   ALLOWED_MIME: Array.from(ALLOWED_MIME),
+  CLINIC_ASSET_MIME: Array.from(CLINIC_ASSET_MIME),
   MAX_BYTES,
 } as const;

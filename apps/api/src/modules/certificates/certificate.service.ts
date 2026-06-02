@@ -1,18 +1,21 @@
 import fs from "node:fs";
 import path from "node:path";
 import dayjs from "dayjs";
-import { PDFDocument, type PDFFont, rgb, StandardFonts } from "pdf-lib";
+import { PDFDocument, type PDFFont, rgb } from "pdf-lib";
 import "dayjs/locale/es.js";
 import QRCode from "qrcode";
 
+import { drawImageTopLeft, embedLogo, loadPdfFonts } from "../pdf/pdf-base.ts";
 import type { MedicalCertificateInput } from "./certificate.schema.ts";
 import { defaultDoctorInfo } from "./certificate.schema.ts";
+
+/** URLs administrables de logos (ClinicSettings). Vacío → fallback local. */
+export type CertificateLogoUrls = { primary?: string | null; secondary?: string | null };
 
 dayjs.locale("es");
 
 // Paths to assets
 const ASSETS_DIR = path.resolve(import.meta.dirname, "../../../assets");
-const LOGOS_DIR = path.join(ASSETS_DIR, "logos");
 const SIGNATURES_DIR = path.join(ASSETS_DIR, "signatures");
 
 const createDoctorInfo = (input: MedicalCertificateInput) => ({
@@ -24,62 +27,28 @@ const createDoctorInfo = (input: MedicalCertificateInput) => ({
   address: input.doctorAddress || defaultDoctorInfo.address,
 });
 
-const drawLogoIfExists = async (
-  pdfDoc: PDFDocument,
-  page: Awaited<ReturnType<PDFDocument["addPage"]>>,
-  logoPath: string,
-  options: { alignRight?: boolean; scale: number; x: number; y: number },
-  label: string
-) => {
-  try {
-    if (!fs.existsSync(logoPath)) {
-      return;
-    }
-    const logoBytes = fs.readFileSync(logoPath);
-    const logoImage = await pdfDoc.embedPng(logoBytes);
-    const logoDims = logoImage.scale(options.scale);
-    page.drawImage(logoImage, {
-      x: options.alignRight ? options.x - logoDims.width : options.x,
-      y: options.y - logoDims.height,
-      width: logoDims.width,
-      height: logoDims.height,
-    });
-  } catch (error) {
-    console.warn(`Could not load ${label} logo:`, error);
-  }
-};
-
 const drawHeaderLogos = async (
   pdfDoc: PDFDocument,
   page: Awaited<ReturnType<PDFDocument["addPage"]>>,
   margin: number,
   width: number,
-  y: number
+  y: number,
+  logoUrls?: CertificateLogoUrls
 ) => {
-  await drawLogoIfExists(
-    pdfDoc,
-    page,
-    path.join(LOGOS_DIR, "bioalergia.png"),
-    {
-      scale: 0.5,
-      x: margin,
-      y,
-    },
-    "bioalergia"
-  );
+  // Logo Bioalergia (izquierda): URL administrable o fallback local.
+  const primary = await embedLogo(pdfDoc, logoUrls?.primary, "bioalergia.png");
+  if (primary) drawImageTopLeft(page, primary, { x: margin, topY: y, targetWidth: 165 });
 
-  await drawLogoIfExists(
-    pdfDoc,
-    page,
-    path.join(LOGOS_DIR, "aaaeic.png"),
-    {
-      alignRight: true,
-      scale: 0.3,
+  // Logo AAAEIC (derecha): URL administrable o fallback local.
+  const secondary = await embedLogo(pdfDoc, logoUrls?.secondary, "aaaeic.png");
+  if (secondary) {
+    drawImageTopLeft(page, secondary, {
       x: width - margin,
-      y,
-    },
-    "aaaeic"
-  );
+      topY: y,
+      targetWidth: 110,
+      alignRight: true,
+    });
+  }
 };
 
 const drawPatientInfo = (
@@ -231,21 +200,21 @@ export async function generateQRCode(certificateId: string): Promise<Buffer> {
  */
 export async function generateMedicalCertificatePdf(
   input: MedicalCertificateInput,
-  qrCodeBuffer?: Buffer
+  qrCodeBuffer?: Buffer,
+  logoUrls?: CertificateLogoUrls
 ): Promise<Uint8Array> {
   const pdfDoc = await PDFDocument.create();
   const page = pdfDoc.addPage([595.28, 841.89]); // A4
   const { width, height } = page.getSize();
 
-  // Embed fonts
-  const helvetica = await pdfDoc.embedFont(StandardFonts.Helvetica);
-  const helveticaBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+  // Fuente embebida (IBM Plex Sans, subset) — portabilidad/PDF-A.
+  const { font: helvetica, bold: helveticaBold } = await loadPdfFonts(pdfDoc);
 
   const margin = 50;
   let y = height - margin;
 
   // --- HEADER: Logos ---
-  await drawHeaderLogos(pdfDoc, page, margin, width, y);
+  await drawHeaderLogos(pdfDoc, page, margin, width, y, logoUrls);
 
   y -= 80;
 

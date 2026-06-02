@@ -12617,6 +12617,16 @@ export class SchemaType implements SchemaDef {
                     type: "String",
                     optional: true
                 },
+                logoUrl: {
+                    name: "logoUrl",
+                    type: "String",
+                    optional: true
+                },
+                secondaryLogoUrl: {
+                    name: "secondaryLogoUrl",
+                    type: "String",
+                    optional: true
+                },
                 papuleThresholdMm: {
                     name: "papuleThresholdMm",
                     type: "Decimal",

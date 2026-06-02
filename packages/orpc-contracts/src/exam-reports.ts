@@ -195,6 +195,8 @@ export const clinicSettingsSchema = z.object({
   doctorSpecialty: z.string(),
   doctorRut: z.string().nullable(),
   signatureUrl: z.string().nullable(),
+  logoUrl: z.string().nullable(),
+  secondaryLogoUrl: z.string().nullable(),
   papuleThresholdMm: z.number(),
   // Prestador Superintendencia de Salud N — printed under doctor's
   // signature block on every exam-report PDF.
@@ -205,6 +207,20 @@ export const clinicSettingsSchema = z.object({
 export const clinicSettingsUpdateInputSchema = clinicSettingsSchema
   .omit({ id: true, updatedAt: true })
   .partial();
+
+// Presign R2 para subir logos/firma de la clínica (PNG/JPEG — embebibles en PDF).
+export const clinicAssetKindSchema = z.enum(["logo", "secondary-logo", "signature"]);
+export type ClinicAssetKind = z.infer<typeof clinicAssetKindSchema>;
+export const presignClinicAssetInputSchema = z.object({
+  kind: clinicAssetKindSchema,
+  filename: z.string().min(1),
+  contentType: z.enum(["image/png", "image/jpeg"]),
+});
+export const presignClinicAssetResponseSchema = z.object({
+  url: z.string(),
+  cdnUrl: z.string(),
+  r2Key: z.string(),
+});
 
 // ── Allergen catalog (read-only, filtered) ───────────────────────────
 
@@ -407,6 +423,11 @@ export const examReportsContract = {
     .route({ method: "POST", path: "/clinic-settings/update" })
     .input(clinicSettingsUpdateInputSchema)
     .output(clinicSettingsSchema),
+
+  presignClinicAsset: oc
+    .route({ method: "POST", path: "/clinic-settings/presign-asset" })
+    .input(presignClinicAssetInputSchema)
+    .output(presignClinicAssetResponseSchema),
 
   // Allergen catalog (read-only — wraps the existing ClinicalAllergen
   // table so the wizard's picker has a single endpoint without

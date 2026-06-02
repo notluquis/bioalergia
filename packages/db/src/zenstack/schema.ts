@@ -15396,6 +15396,18 @@ export class SchemaType implements SchemaDef {
                     optional: true,
                     attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("signature_url") }] }, { name: "@db.Text" }] as readonly AttributeApplication[]
                 },
+                logoUrl: {
+                    name: "logoUrl",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("logo_url") }] }, { name: "@db.Text" }] as readonly AttributeApplication[]
+                },
+                secondaryLogoUrl: {
+                    name: "secondaryLogoUrl",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("secondary_logo_url") }] }, { name: "@db.Text" }] as readonly AttributeApplication[]
+                },
                 papuleThresholdMm: {
                     name: "papuleThresholdMm",
                     type: "Decimal",

@@ -83,7 +83,15 @@ const certificatesORPCRouterBase = {
       const { generateMedicalCertificatePdf, generateQRCode, signPdf } =
         await getCertificateService();
       const qrCode = await generateQRCode(certificateId);
-      const pdfBytes = await generateMedicalCertificatePdf(parsed, qrCode);
+      const clinic = await db.clinicSettings.upsert({
+        where: { id: 1 },
+        update: {},
+        create: { id: 1 },
+      });
+      const pdfBytes = await generateMedicalCertificatePdf(parsed, qrCode, {
+        primary: clinic.logoUrl,
+        secondary: clinic.secondaryLogoUrl,
+      });
       const signedPdfBytes = await signPdf(pdfBytes);
       const pdfHash = crypto.createHash("sha256").update(signedPdfBytes).digest("hex");
       const tempPath = path.join(os.tmpdir(), `${certificateId}.pdf`);

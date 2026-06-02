@@ -1,27 +1,22 @@
-import fs from "node:fs";
-import path from "node:path";
 import type { QuoteResult } from "@finanzas/orpc-contracts/immunotherapy";
 import dayjs from "dayjs";
 import "dayjs/locale/es.js";
-import { PDFDocument, type PDFFont, type PDFPage, rgb, StandardFonts } from "pdf-lib";
+import { type PDFFont, PDFDocument, rgb } from "pdf-lib";
+import {
+  drawImageTopLeft,
+  embedLogo,
+  formatCLP,
+  loadPdfFonts,
+  PDF_COLORS,
+  wrapText,
+} from "../pdf/pdf-base.ts";
 
 dayjs.locale("es");
 
-const ASSETS_DIR = path.resolve(import.meta.dirname, "../../../assets");
-const LOGOS_DIR = path.join(ASSETS_DIR, "logos");
-
-const ACCENT = rgb(0.1, 0.4, 0.6);
-const GRAY = rgb(0.35, 0.35, 0.35);
-const LINE = rgb(0.8, 0.8, 0.8);
-
-const clpFormatter = new Intl.NumberFormat("es-CL", {
-  style: "currency",
-  currency: "CLP",
-  maximumFractionDigits: 0,
-});
-function clp(value: number): string {
-  return clpFormatter.format(value);
-}
+const ACCENT = PDF_COLORS.accent;
+const GRAY = PDF_COLORS.gray;
+const LINE = PDF_COLORS.line;
+const clp = formatCLP;
 
 export type BudgetPdfClinic = {
   name: string;
@@ -33,6 +28,7 @@ export type BudgetPdfClinic = {
   email: string;
   doctorName: string;
   doctorRut: string | null;
+  logoUrl?: string | null;
 };
 
 export type BudgetPdfInput = {
@@ -45,26 +41,13 @@ export type BudgetPdfInput = {
   date?: string;
 };
 
-async function drawLogo(pdfDoc: PDFDocument, page: PDFPage, x: number, y: number): Promise<void> {
-  try {
-    const logoPath = path.join(LOGOS_DIR, "bioalergia.png");
-    if (!fs.existsSync(logoPath)) return;
-    const img = await pdfDoc.embedPng(fs.readFileSync(logoPath));
-    const dims = img.scale(0.5);
-    page.drawImage(img, { x, y: y - dims.height, width: dims.width, height: dims.height });
-  } catch (error) {
-    console.warn("No se pudo cargar el logo:", error);
-  }
-}
-
 export async function generateBudgetPdf(input: BudgetPdfInput): Promise<Uint8Array> {
   const { clinic, patient, quote } = input;
   const hidden = (k: QuoteResult["hiddenSections"][number]) => quote.hiddenSections.includes(k);
   const pdfDoc = await PDFDocument.create();
   let page = pdfDoc.addPage([595.28, 841.89]); // A4
   const { width, height } = page.getSize();
-  const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
-  const bold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+  const { font, bold } = await loadPdfFonts(pdfDoc);
   const margin = 50;
   let y = height - margin;
 
@@ -87,7 +70,8 @@ export async function generateBudgetPdf(input: BudgetPdfInput): Promise<Uint8Arr
     }
   };
 
-  await drawLogo(pdfDoc, page, margin, y);
+  const logoImg = await embedLogo(pdfDoc, clinic.logoUrl, "bioalergia.png");
+  if (logoImg) drawImageTopLeft(page, logoImg, { x: margin, topY: y, targetWidth: 165 });
   y -= 70;
 
   // Prestador institucional
@@ -260,21 +244,4 @@ export async function generateBudgetPdf(input: BudgetPdfInput): Promise<Uint8Arr
   }
 
   return await pdfDoc.save();
-}
-
-function wrapText(text: string, font: PDFFont, size: number, maxWidth: number): string[] {
-  const words = text.split(" ");
-  const lines: string[] = [];
-  let current = "";
-  for (const word of words) {
-    const test = current ? `${current} ${word}` : word;
-    if (font.widthOfTextAtSize(test, size) > maxWidth && current) {
-      lines.push(current);
-      current = word;
-    } else {
-      current = test;
-    }
-  }
-  if (current) lines.push(current);
-  return lines;
 }

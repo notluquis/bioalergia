@@ -4703,6 +4703,10 @@ model ClinicSettings {
   // {{diagnostico}} interpolados por presupuesto. Se imprime arriba del PDF.
   immunoBudgetIntro String?  @map("immuno_budget_intro") @db.Text
   signatureUrl      String?  @map("signature_url") @db.Text
+  // Logos administrables (R2/CDN, PNG/JPEG) que se embeben en los PDFs.
+  // Vacío → fallback al asset local apps/api/assets/logos/bioalergia.png.
+  logoUrl           String?  @map("logo_url") @db.Text
+  secondaryLogoUrl  String?  @map("secondary_logo_url") @db.Text
   papuleThresholdMm Decimal  @default(3.0) @map("papule_threshold_mm") @db.Decimal(5, 2)
   // Prestador Superintendencia de Salud N — printed under doctor's signature
   // block on every exam-report PDF. Free-text (Superintendencia issues alpha-

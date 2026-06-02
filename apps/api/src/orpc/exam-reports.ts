@@ -7,6 +7,8 @@ import {
   allergenAdminRowSchema,
   clinicSettingsSchema,
   clinicSettingsUpdateInputSchema,
+  presignClinicAssetInputSchema,
+  presignClinicAssetResponseSchema,
   conclusionTemplateSchema,
   conclusionTemplateCreateInputSchema,
   conclusionTemplateUpdateInputSchema,
@@ -400,6 +402,20 @@ const examReportsRouterBase = {
         create: { id: 1, ...data },
       });
       return serialiseSettings(updated);
+    }),
+
+  presignClinicAsset: base
+    .route({ method: "POST", path: "/clinic-settings/presign-asset", tags: ["ExamReports"] })
+    .input(presignClinicAssetInputSchema)
+    .output(presignClinicAssetResponseSchema)
+    .handler(async ({ input }) => {
+      const { presignClinicAssetUpload } = await import("../modules/cloudflare/r2.ts");
+      const result = await presignClinicAssetUpload({
+        kind: input.kind,
+        filename: input.filename,
+        contentType: input.contentType,
+      });
+      return { url: result.url, cdnUrl: result.cdnUrl, r2Key: result.r2Key };
     }),
 
   // ── Latest skin-test controls for a patient (XLSX SoT) ────────────
