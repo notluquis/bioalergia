@@ -31,6 +31,16 @@ describe("RUT Utilities", () => {
     it("should return null for invalid characters", () => {
       expect(normalizeRut("abc")).toBeNull();
     });
+
+    it("should return null when input is only separators (cleans to empty)", () => {
+      // Kills the post-clean `if (!cleaned)` guard mutant.
+      expect(normalizeRut("...---...")).toBeNull();
+    });
+
+    it("should strip leading zeros from the body", () => {
+      // Number.parseInt drops leading zeros; guards the body-parse path.
+      expect(normalizeRut("0012345678-5")).toBe("12345678-5");
+    });
   });
 
   describe("formatRut", () => {
@@ -50,12 +60,29 @@ describe("RUT Utilities", () => {
       expect(formatRut("")).toBe("");
       expect(formatRut("invalid")).toBe("");
     });
+
+    it("returns a single cleaned char as-is (below the 2-char threshold)", () => {
+      // Kills the `cleaned.length < 2` boundary mutant.
+      expect(formatRut("5")).toBe("5");
+    });
+
+    it("formats a minimal 2-char RUT with the dash", () => {
+      // At length 2 the body/dv split kicks in → "5-5", not "55".
+      expect(formatRut("55")).toBe("5-5");
+    });
   });
 
   describe("validateRut", () => {
     it("should return true for valid RUTs", () => {
       expect(validateRut(VALID_RUT)).toBe(true);
       expect(validateRut("11.111.111-1")).toBe(true);
+    });
+
+    it("validates a 7-digit body (exercises the 2→7→2 multiplier wrap)", () => {
+      // Body 1234567 → check digit 4. A different body length than the 8-digit
+      // cases above, so it constrains the `multiplier === 7 ? 2 : +1` cycle.
+      expect(validateRut("1.234.567-4")).toBe(true);
+      expect(validateRut("1.234.567-3")).toBe(false);
     });
 
     it("should return true for valid RUT with K", () => {
