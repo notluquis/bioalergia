@@ -43,6 +43,7 @@ import {
   startClinicalSkinTestArchiveSnapshotsJob,
   startClinicalSkinTestImportJob,
   startClinicalSkinTestProcessDiscoveredJob,
+  startClinicalSkinTestReconcileStaleJob,
   startClinicalSkinTestReprocessPendingJob,
   startClinicalXlsxLibraryReclassifyJob,
 } from "../services/clinical-skin-test-scheduler.ts";
@@ -61,6 +62,7 @@ import { logError } from "../lib/logger.ts";
 import { configureSuperjson } from "../lib/superjson-config.ts";
 import {
   approveSkinTestImport,
+  countStaleSkinTestImports,
   getSkinTestAnalytics,
   getSkinTestImportJobType,
   getSkinTestImport,
@@ -334,6 +336,29 @@ const routerBase = {
       return {
         jobId: await startClinicalXlsxLibraryReclassifyJob({
           trigger: "manual:reclassify-xlsx-library",
+        }),
+      };
+    }),
+
+  // Count of imports whose stored OneDrive metadata drifted from the library
+  // (orphans of the rename/de-qualification bug) — drives the targeted button.
+  staleImportsCount: readClinicalSkinTests
+    .route({ method: "GET", path: "/imports/stale-count" })
+    .input(z.object({}))
+    .output(z.object({ count: z.number() }))
+    .handler(async () => ({ count: await countStaleSkinTestImports() })),
+
+  // Targeted heal: reconcile ONLY the desynced imports (refresh metadata, requeue
+  // still-importable ones, demote de-qualified ones). Idempotent. The existing
+  // reprocess-pending button then re-parses the requeued rows.
+  reconcileStaleImports: updateClinicalSkinTests
+    .route({ method: "POST", path: "/imports/reconcile-stale" })
+    .input(z.object({}))
+    .output(skinTestSyncOutputSchema)
+    .handler(async () => {
+      return {
+        jobId: await startClinicalSkinTestReconcileStaleJob({
+          trigger: "manual:reconcile-stale",
         }),
       };
     }),

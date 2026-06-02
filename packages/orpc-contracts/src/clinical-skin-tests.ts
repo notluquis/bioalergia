@@ -507,6 +507,14 @@ export const clinicalSkinTestsContract = {
     .route({ method: "POST", path: "/xlsx-library/reclassify" })
     .input(z.object({}))
     .output(skinTestSyncOutputSchema),
+  staleImportsCount: oc
+    .route({ method: "GET", path: "/imports/stale-count" })
+    .input(z.object({}))
+    .output(z.object({ count: z.number() })),
+  reconcileStaleImports: oc
+    .route({ method: "POST", path: "/imports/reconcile-stale" })
+    .input(z.object({}))
+    .output(skinTestSyncOutputSchema),
   archiveSnapshots: oc
     .route({ method: "POST", path: "/imports/archive-snapshots" })
     .input(skinTestArchiveSnapshotsInputSchema)

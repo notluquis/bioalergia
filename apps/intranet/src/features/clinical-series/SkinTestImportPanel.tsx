@@ -53,6 +53,8 @@ import {
   useOneDriveFolderPreview,
   useRejectSkinTestImport,
   useReclassifyClinicalXlsxLibrary,
+  useReconcileStaleSkinTestImports,
+  useStaleSkinTestImportsCount,
   useRenewOneDriveSubscription,
   useReprocessSkinTestImport,
   useSkinTestImports,
@@ -273,6 +275,8 @@ export function SkinTestImportPanel() {
   const cancelJobMutation = useCancelClinicalSkinTestJob();
   const archiveSnapshotsMutation = useArchiveSkinTestWorkbookSnapshots();
   const reclassifyXlsxLibraryMutation = useReclassifyClinicalXlsxLibrary();
+  const reconcileStaleMutation = useReconcileStaleSkinTestImports();
+  const staleCountQuery = useStaleSkinTestImportsCount();
   const processDiscoveredMutation = useProcessDiscoveredSkinTestImports();
   const processSelectedMutation = useProcessSkinTestImports();
   const reprocessPendingMutation = useReprocessPendingSkinTestImports();
@@ -520,6 +524,17 @@ export function SkinTestImportPanel() {
     }
   }
 
+  async function handleReconcileStaleImports() {
+    try {
+      const result = await reconcileStaleMutation.mutateAsync();
+      setActiveJobId(result.jobId);
+      setSelectedImportIds({});
+      toast.success("Reconciliación de desincronizados iniciada", "Tests cutáneos");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "No se pudo iniciar reconciliación");
+    }
+  }
+
   return (
     <div className="space-y-4">
       <Surface className="rounded-xl p-4">
@@ -699,6 +714,37 @@ export function SkinTestImportPanel() {
                 >
                   <RotateCw size={14} />
                   Reprocesar pendientes
+                </Button>
+              </div>
+            </div>
+
+            <div className="flex min-h-36 flex-col justify-between rounded-lg bg-content2 p-3">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <Chip size="sm" color="accent" variant="soft">
+                    5
+                  </Chip>
+                  <h3 className="text-sm font-semibold">Reconciliar desincronizados</h3>
+                </div>
+                <p className="text-xs text-foreground-500">
+                  Repara importaciones cuyo nombre/metadata en OneDrive cambió y quedó desfasado acá
+                  (renombrados). Sincroniza metadata, reencola los importables y descarta los que ya
+                  no aplican.
+                </p>
+              </div>
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onPress={() => void handleReconcileStaleImports()}
+                  isDisabled={isSyncInProgress || (staleCountQuery.data?.count ?? 0) === 0}
+                  isPending={reconcileStaleMutation.isPending}
+                >
+                  <RotateCw size={14} />
+                  Reconciliar{" "}
+                  {staleCountQuery.data?.count
+                    ? `(${staleCountQuery.data.count})`
+                    : "desincronizados"}
                 </Button>
               </div>
             </div>

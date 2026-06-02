@@ -47,6 +47,7 @@ export type SkinTestSyncProgressPhase =
   | "discovered-processing"
   | "pending-reprocessing"
   | "processing"
+  | "reconcile-stale"
   | "scanned"
   | "starting";
 
@@ -477,7 +478,35 @@ export async function reclassifyClinicalXlsxLibrary(options?: {
         }
       } else {
         libraryOnlySkinTests += 1;
+        // De-qualified by rename (importable -> template name): keep any existing
+        // skin-test import row's metadata in sync and drop it out of the queue.
+        await reconcileDequalifiedSkinTestImport(
+          row.oneDriveAccountId,
+          row.oneDriveDriveId ?? "unknown",
+          row.oneDriveItemId,
+          buildReconcilePatchFromLibraryRow(row)
+        );
       }
+    } else {
+      // Classification flipped away from SKIN_TEST (e.g. -> CLINICAL_DOCUMENT /
+      // OTHER): reconcile any stale skin-test import so it doesn't orphan.
+      await reconcileDequalifiedSkinTestImport(
+        row.oneDriveAccountId,
+        row.oneDriveDriveId ?? "unknown",
+        row.oneDriveItemId,
+        buildReconcilePatchFromLibraryRow(row)
+      );
+    }
+
+    // Flipped away from CLINICAL_DOCUMENT (#2): reconcile any stale document
+    // import so it doesn't orphan. No-op when none exists.
+    if (next.classification !== "CLINICAL_DOCUMENT") {
+      await reconcileDequalifiedClinicalDocumentImport(
+        row.oneDriveAccountId,
+        row.oneDriveDriveId ?? "unknown",
+        row.oneDriveItemId,
+        buildReconcilePatchFromLibraryRow(row)
+      );
     }
 
     const processed = index + 1;
@@ -876,8 +905,7 @@ export async function processOneDriveSkinTestItem(
     !options?.force &&
     existing.status !== "ERROR" &&
     existing.status !== "PENDING_REVIEW" &&
-    existing.oneDriveETag === item.eTag &&
-    existing.oneDriveCTag === item.cTag
+    isOneDriveItemUnchanged(existing.oneDriveETag, existing.oneDriveCTag, item.eTag, item.cTag)
   ) {
     const incomingHash = getOneDriveQuickXorHash(item);
     if (incomingHash && !existing.oneDriveQuickXorHash) {
@@ -1062,8 +1090,7 @@ async function discoverOneDriveClinicalXlsxItem(
   if (
     existing &&
     !options?.force &&
-    existing.oneDriveETag === metadata.eTag &&
-    existing.oneDriveCTag === metadata.cTag &&
+    isOneDriveItemUnchanged(existing.oneDriveETag, existing.oneDriveCTag, metadata.eTag, metadata.cTag) &&
     existing.classification === classification.classification
   ) {
     return {
@@ -1082,10 +1109,24 @@ async function discoverOneDriveClinicalXlsxItem(
     metadata,
   });
 
-  if (
+  const isImportableSkinTest =
     classification.classification === "SKIN_TEST" &&
-    isImportableSkinTestFilename(metadata.filename)
-  ) {
+    isImportableSkinTestFilename(metadata.filename);
+  const isClinicalDocument = classification.classification === "CLINICAL_DOCUMENT";
+
+  // Golden 2026: metadata sync is decoupled from qualification. Reconcile any
+  // stale row in the pipeline(s) this item no longer belongs to (e.g. a rename
+  // that flips importable<->template, or a reclassification skin-test<->document)
+  // so it never orphans with a stale filename. Each reconcile is a no-op when no
+  // row exists for the item.
+  if (!isImportableSkinTest) {
+    await reconcileDequalifiedSkinTestImportFromItem(accountId, item);
+  }
+  if (!isClinicalDocument) {
+    await reconcileDequalifiedClinicalDocumentImportFromItem(accountId, item);
+  }
+
+  if (isImportableSkinTest) {
     const result = await discoverOneDriveSkinTestItem(accountId, item, options);
     return {
       classification: "SKIN_TEST",
@@ -1095,7 +1136,7 @@ async function discoverOneDriveClinicalXlsxItem(
     };
   }
 
-  if (classification.classification === "CLINICAL_DOCUMENT") {
+  if (isClinicalDocument) {
     const result = await discoverOneDriveClinicalDocument(accountId, item);
     return {
       classification: "CLINICAL_DOCUMENT",
@@ -1226,8 +1267,7 @@ async function discoverOneDriveSkinTestItem(
   if (
     existing &&
     !options?.force &&
-    existing.oneDriveETag === item.eTag &&
-    existing.oneDriveCTag === item.cTag
+    isOneDriveItemUnchanged(existing.oneDriveETag, existing.oneDriveCTag, item.eTag, item.cTag)
   ) {
     const incomingHash = getOneDriveQuickXorHash(item);
     if (incomingHash && !existing.oneDriveQuickXorHash) {
@@ -1270,7 +1310,9 @@ async function discoverOneDriveSkinTestItem(
           onedrive_etag = ${metadata.eTag},
           onedrive_ctag = ${metadata.cTag},
           onedrive_web_url = ${metadata.webUrl},
-          path = ${metadata.path},
+          -- Graph delta omits parentReference.path on move/folder-rename; keep
+          -- the last-known path instead of wiping it to null.
+          path = COALESCE(${metadata.path}, path),
           filename = ${metadata.filename},
           mime_type = ${metadata.mimeType},
           size = ${metadata.size},
@@ -2249,6 +2291,168 @@ export async function reprocessPendingSkinTestImports(options?: {
   }
 
   return { errors, imported, pending, processed: total, skipped, total };
+}
+
+interface StaleSkinTestImportRow {
+  classification: ClinicalXlsxFileClassification;
+  filename: string;
+  importId: string;
+  importStatus: string;
+  mimeType: null | string;
+  modifiedAt: null | string;
+  oneDriveAccountId: string;
+  oneDriveCTag: null | string;
+  oneDriveDriveId: null | string;
+  oneDriveETag: null | string;
+  oneDriveItemId: string;
+  oneDriveSharePointUniqueId: null | string;
+  oneDriveSourceDriveId: null | string;
+  oneDriveSourceItemId: null | string;
+  oneDriveSourceKey: null | string;
+  oneDriveWebUrl: null | string;
+  path: null | string;
+  size: null | number;
+}
+
+// The desync signature of the rename/de-qualification orphan bug: the library
+// (clinical_xlsx_files, updated on every scan) drifted from the import row
+// (clinical_skin_test_imports, which the bug skipped). We key ONLY on filename /
+// web_url drift — the rename/move signature. We deliberately EXCLUDE pure eTag
+// drift: an unchanged-name file whose content changed is normal churn that the
+// next delta reprocesses automatically (the SKIPPED_UNCHANGED guard sees the eTag
+// differ), not an orphan — including it would flag every edited-after-import row.
+// Source of truth = the library row.
+const STALE_SKIN_TEST_IMPORTS_QUERY = sql`
+  SELECT
+    i.id AS "importId",
+    i.status::text AS "importStatus",
+    f.onedrive_account_id AS "oneDriveAccountId",
+    f.onedrive_drive_id AS "oneDriveDriveId",
+    f.onedrive_item_id AS "oneDriveItemId",
+    f.onedrive_etag AS "oneDriveETag",
+    f.onedrive_ctag AS "oneDriveCTag",
+    f.onedrive_web_url AS "oneDriveWebUrl",
+    f.onedrive_source_key AS "oneDriveSourceKey",
+    f.onedrive_source_drive_id AS "oneDriveSourceDriveId",
+    f.onedrive_source_item_id AS "oneDriveSourceItemId",
+    f.onedrive_sharepoint_unique_id AS "oneDriveSharePointUniqueId",
+    f.path,
+    f.filename,
+    f.mime_type AS "mimeType",
+    f.size,
+    f.modified_at::text AS "modifiedAt",
+    f.classification
+  FROM clinical_skin_test_imports i
+  JOIN clinical_xlsx_files f
+    ON f.onedrive_account_id = i.onedrive_account_id
+   AND f.onedrive_drive_id IS NOT DISTINCT FROM i.onedrive_drive_id
+   AND f.onedrive_item_id = i.onedrive_item_id
+  WHERE i.filename IS DISTINCT FROM f.filename
+     OR i.onedrive_web_url IS DISTINCT FROM f.onedrive_web_url
+`;
+
+// Count desynced (orphan) skin-test imports — drives the targeted button label.
+export async function countStaleSkinTestImports(): Promise<number> {
+  const result = await sql<{ count: string }>`
+    SELECT count(*)::text AS count FROM (${STALE_SKIN_TEST_IMPORTS_QUERY}) AS stale
+  `.execute(kysely);
+  return Number(result.rows[0]?.count ?? 0);
+}
+
+// Targeted, idempotent heal for the orphans the rename/de-qualification bug left
+// behind. For each desynced import: sync its metadata from the library row, then
+// — if the current filename is STILL an importable skin test — keep its review
+// status (it stays in the pending/discovered queue, ready for the existing
+// reprocess buttons); otherwise demote it (de-qualified -> SKIPPED). Safe to
+// re-run; converges to zero stale rows.
+export async function reconcileStaleSkinTestImports(options?: {
+  onProgress?: (progress: SkinTestSyncProgress & { message: string }) => void;
+  shouldCancel?: () => boolean;
+}) {
+  const rows = (
+    await sql<StaleSkinTestImportRow>`
+      ${STALE_SKIN_TEST_IMPORTS_QUERY}
+      ORDER BY i.updated_at ASC
+    `.execute(kysely)
+  ).rows;
+
+  const total = rows.length;
+  let requeued = 0;
+  let dequalified = 0;
+  let errors = 0;
+
+  const emit = (message: string, processed: number, filename?: string) => {
+    options?.onProgress?.({
+      errors,
+      failed: errors,
+      filesProcessed: processed,
+      filesTotal: total,
+      filename,
+      phase: "reconcile-stale",
+      processed,
+      total,
+      message,
+    });
+  };
+
+  emit(`Preparando ${total} importación(es) desincronizada(s)`, 0);
+
+  for (const [index, row] of rows.entries()) {
+    if (options?.shouldCancel?.()) throw new Error("SYNC_CANCELLED");
+    emit(`Reconciliando ${index + 1}/${total}: ${row.filename}`, index, row.filename);
+    try {
+      const patch = buildReconcilePatchFromLibraryRow(row);
+      const stillImportable =
+        row.classification === "SKIN_TEST" && isImportableSkinTestFilename(row.filename);
+      if (stillImportable && !isTerminalSkinTestImportStatus(row.importStatus)) {
+        // Refresh metadata only — keep review status so it stays in the queue and
+        // the existing reprocess buttons re-parse it. Mark snapshot STALE when the
+        // content tag drifted so the reprocess re-downloads from OneDrive.
+        await sql`
+          UPDATE clinical_skin_test_imports
+          SET
+            onedrive_source_key = ${patch.sourceKey},
+            onedrive_source_drive_id = ${patch.sourceDriveId},
+            onedrive_source_item_id = ${patch.sourceItemId},
+            onedrive_sharepoint_unique_id = ${patch.sharePointUniqueId},
+            onedrive_web_url = ${patch.webUrl},
+            path = COALESCE(${patch.path}, path),
+            filename = ${patch.filename},
+            mime_type = ${patch.mimeType},
+            size = ${patch.size},
+            modified_at = ${patch.modifiedAt}::timestamptz,
+            workbook_snapshot_status = CASE
+              WHEN workbook_snapshot_status = 'ARCHIVED'
+                AND onedrive_etag IS DISTINCT FROM ${patch.eTag}
+              THEN 'STALE'::"ClinicalSkinTestWorkbookSnapshotStatus"
+              ELSE workbook_snapshot_status
+            END,
+            onedrive_etag = ${patch.eTag},
+            onedrive_ctag = ${patch.cTag},
+            updated_at = now()
+          WHERE id = ${row.importId}
+        `.execute(kysely);
+        requeued += 1;
+      } else {
+        await reconcileDequalifiedSkinTestImport(
+          row.oneDriveAccountId,
+          row.oneDriveDriveId ?? "unknown",
+          row.oneDriveItemId,
+          patch
+        );
+        dequalified += 1;
+      }
+    } catch (error) {
+      errors += 1;
+      console.error(
+        `[reconcileStaleSkinTestImports] ${row.importId}:`,
+        error instanceof Error ? error.message : String(error)
+      );
+    }
+    emit(`Reconciliados ${index + 1}/${total}`, index + 1, row.filename);
+  }
+
+  return { dequalified, errors, processed: total, requeued, total };
 }
 
 export async function listSkinTestsBySeries(clinicalSeriesId: number) {
@@ -3879,14 +4083,13 @@ async function markOneDriveItemDeleted(accountId: string, driveId: string, itemI
     message: "El archivo fue eliminado de OneDrive según el delta de Graph.",
     severity: "info",
   };
+  const deletedIssueJson = JSON.stringify([deletedIssue]);
+  // Non-terminal rows: drop to SKIPPED + breadcrumb (their snapshot/source is gone).
   const updated = await sql<{ id: string }>`
     UPDATE clinical_skin_test_imports
     SET
       status = 'SKIPPED',
-      issues = (
-        COALESCE(issues, '[]'::jsonb) ||
-        ${JSON.stringify([deletedIssue])}::jsonb
-      ),
+      issues = (COALESCE(issues, '[]'::jsonb) || ${deletedIssueJson}::jsonb),
       updated_at = now()
     WHERE
       onedrive_account_id = ${accountId}
@@ -3895,9 +4098,232 @@ async function markOneDriveItemDeleted(accountId: string, driveId: string, itemI
       AND status NOT IN ('IMPORTED', 'REJECTED')
     RETURNING id
   `.execute(kysely);
+  // Terminal rows (IMPORTED/REJECTED): KEEP status + materialized exam — a source
+  // file being deleted in OneDrive must not erase imported clinical data — but
+  // still stamp the breadcrumb (idempotent) so the source deletion is auditable.
+  await sql`
+    UPDATE clinical_skin_test_imports
+    SET
+      issues = (COALESCE(issues, '[]'::jsonb) || ${deletedIssueJson}::jsonb),
+      updated_at = now()
+    WHERE
+      onedrive_account_id = ${accountId}
+      AND onedrive_drive_id = ${driveId}
+      AND onedrive_item_id = ${itemId}
+      AND status IN ('IMPORTED', 'REJECTED')
+      AND NOT (COALESCE(issues, '[]'::jsonb) @> ${deletedIssueJson}::jsonb)
+  `.execute(kysely);
   await Promise.all(
     updated.rows.map((row) => syncSkinTestImportMaterialization(row.id, "SKIPPED"))
   );
+}
+
+const SKIN_TEST_DEQUALIFIED_ISSUE: SkinTestIssue = {
+  code: "no_longer_importable",
+  message:
+    "El archivo se renombró en OneDrive y su nombre ya no corresponde a un examen importable (formato/plantilla). Metadata sincronizada; no se importará automáticamente.",
+  severity: "info",
+};
+
+// Terminal rows must NOT be clobbered when their source file de-qualifies — only
+// metadata is refreshed and the status is preserved. IMPORTED/REJECTED are the
+// code-level terminals; MOVED_TO_RECORD is a DB-only audit breadcrumb (absent
+// from the code status union) that is equally terminal. Pure + exported so the
+// safety contract is unit-tested without a DB.
+export function isTerminalSkinTestImportStatus(status: string): boolean {
+  return status === "IMPORTED" || status === "REJECTED" || status === "MOVED_TO_RECORD";
+}
+
+// OneDrive change detection (golden 2026). eTag changes on ANY change (content OR
+// metadata incl. rename/move); cTag is content-only and OneDrive for Business
+// OMITS it on Create/Modify (Graph delta docs). Comparing a stored value against
+// an absent (`undefined`/`null`) cTag with `===` yields a false "changed" and
+// triggers a needless re-download every sync. Treat the item as unchanged when
+// eTag matches AND the incoming cTag is either equal or absent (trust eTag alone
+// when cTag is omitted). eTag must be present — a missing eTag is never a match.
+function normalizeOneDriveTag(tag: null | string | undefined): null | string {
+  return tag == null || tag === "" ? null : tag;
+}
+
+export function isOneDriveItemUnchanged(
+  existingETag: null | string | undefined,
+  existingCTag: null | string | undefined,
+  incomingETag: null | string | undefined,
+  incomingCTag: null | string | undefined
+): boolean {
+  const eTag = normalizeOneDriveTag(existingETag);
+  if (eTag === null || eTag !== normalizeOneDriveTag(incomingETag)) return false;
+  const incomingC = normalizeOneDriveTag(incomingCTag);
+  if (incomingC === null) return true;
+  return normalizeOneDriveTag(existingCTag) === incomingC;
+}
+
+type DequalifiedReconcilePatch = Pick<
+  OneDriveItemMetadata,
+  | "cTag"
+  | "eTag"
+  | "filename"
+  | "mimeType"
+  | "modifiedAt"
+  | "path"
+  | "sharePointUniqueId"
+  | "size"
+  | "sourceDriveId"
+  | "sourceItemId"
+  | "sourceKey"
+  | "webUrl"
+>;
+
+// Golden 2026: OneDrive metadata sync must NOT be gated behind import
+// qualification. When a tracked skin-test file is renamed so it stops matching
+// isImportableSkinTestFilename (e.g. patient name -> "_PRICK TEST ... (2).xlsx")
+// or its classification flips away from SKIN_TEST, the existing import row would
+// otherwise keep a STALE filename forever. Delta already reconciles deletes
+// (markOneDriveItemDeleted) and importable renames (discoverOneDriveSkinTestItem);
+// this closes the de-qualification gap. Terminal rows
+// (IMPORTED/REJECTED/MOVED_TO_RECORD) keep their status — only metadata is
+// refreshed; non-terminal rows drop to SKIPPED so they leave the actionable
+// review queue. No-op when no import row exists for the item.
+async function reconcileDequalifiedSkinTestImport(
+  accountId: string,
+  driveId: string,
+  itemId: string,
+  patch: DequalifiedReconcilePatch
+): Promise<void> {
+  const existing = await getImportByOneDriveItemId(accountId, driveId, itemId);
+  if (!existing) return;
+  const terminal = isTerminalSkinTestImportStatus(existing.status);
+  const nextStatus = terminal ? existing.status : "SKIPPED";
+
+  const updated = await sql<{ id: string }>`
+    UPDATE clinical_skin_test_imports
+    SET
+      onedrive_source_key = ${patch.sourceKey},
+      onedrive_source_drive_id = ${patch.sourceDriveId},
+      onedrive_source_item_id = ${patch.sourceItemId},
+      onedrive_sharepoint_unique_id = ${patch.sharePointUniqueId},
+      onedrive_etag = ${patch.eTag},
+      onedrive_ctag = ${patch.cTag},
+      onedrive_web_url = ${patch.webUrl},
+      -- Keep last-known path if the de-qualified source no longer reports one.
+      path = COALESCE(${patch.path}, path),
+      filename = ${patch.filename},
+      mime_type = ${patch.mimeType},
+      size = ${patch.size},
+      modified_at = ${patch.modifiedAt}::timestamptz,
+      status = ${nextStatus}::"ClinicalSkinTestImportStatus",
+      issues = CASE
+        WHEN ${terminal} THEN issues
+        WHEN COALESCE(issues, '[]'::jsonb) @> ${JSON.stringify([SKIN_TEST_DEQUALIFIED_ISSUE])}::jsonb THEN issues
+        ELSE COALESCE(issues, '[]'::jsonb) || ${JSON.stringify([SKIN_TEST_DEQUALIFIED_ISSUE])}::jsonb
+      END,
+      updated_at = now()
+    WHERE id = ${existing.id}
+    RETURNING id
+  `.execute(kysely);
+
+  if (!terminal) {
+    await Promise.all(
+      updated.rows.map((row) => syncSkinTestImportMaterialization(row.id, "SKIPPED"))
+    );
+  }
+}
+
+// Delta-path wrapper: derive the reconcile patch from a live OneDriveItem.
+async function reconcileDequalifiedSkinTestImportFromItem(
+  accountId: string,
+  item: OneDriveItem
+): Promise<void> {
+  const driveId = item.parentReference?.driveId ?? "unknown";
+  const metadata = buildOneDriveItemMetadata(item, driveId);
+  await reconcileDequalifiedSkinTestImport(accountId, driveId, item.id, metadata);
+}
+
+const CLINICAL_DOCUMENT_DEQUALIFIED_ISSUE = {
+  code: "no_longer_clinical_document",
+  message:
+    "El archivo se renombró/reclasificó en OneDrive y ya no corresponde a un documento clínico. Metadata sincronizada.",
+  severity: "info" as const,
+};
+
+// Mirror of reconcileDequalifiedSkinTestImport for the clinical_document_imports
+// pipeline (#2): when a file stops being classified CLINICAL_DOCUMENT, keep its
+// metadata in sync and drop only NON-actioned rows (DISCOVERED/UNMATCHED) to
+// SKIPPED. MATCHED (active series link) and REJECTED (operator decision) are
+// preserved — only metadata + an audit breadcrumb are written. No-op if none.
+async function reconcileDequalifiedClinicalDocumentImport(
+  accountId: string,
+  driveId: string,
+  itemId: string,
+  patch: DequalifiedReconcilePatch
+): Promise<void> {
+  const issueJson = JSON.stringify([CLINICAL_DOCUMENT_DEQUALIFIED_ISSUE]);
+  await sql`
+    UPDATE clinical_document_imports
+    SET
+      onedrive_etag = ${patch.eTag},
+      onedrive_ctag = ${patch.cTag},
+      onedrive_web_url = ${patch.webUrl},
+      path = COALESCE(${patch.path}, path),
+      filename = ${patch.filename},
+      mime_type = ${patch.mimeType},
+      size = ${patch.size},
+      modified_at = ${patch.modifiedAt}::timestamptz,
+      status = CASE
+        WHEN status IN ('DISCOVERED', 'UNMATCHED')
+        THEN 'SKIPPED'::"ClinicalDocumentImportStatus"
+        ELSE status
+      END,
+      issues = CASE
+        WHEN COALESCE(issues, '[]'::jsonb) @> ${issueJson}::jsonb THEN issues
+        ELSE COALESCE(issues, '[]'::jsonb) || ${issueJson}::jsonb
+      END,
+      updated_at = now()
+    WHERE onedrive_account_id = ${accountId}
+      AND onedrive_drive_id = ${driveId}
+      AND onedrive_item_id = ${itemId}
+  `.execute(kysely);
+}
+
+async function reconcileDequalifiedClinicalDocumentImportFromItem(
+  accountId: string,
+  item: OneDriveItem
+): Promise<void> {
+  const driveId = item.parentReference?.driveId ?? "unknown";
+  const metadata = buildOneDriveItemMetadata(item, driveId);
+  await reconcileDequalifiedClinicalDocumentImport(accountId, driveId, item.id, metadata);
+}
+
+// Reclassify-path wrapper: derive the reconcile patch from a clinical_xlsx_files
+// library row (no live OneDriveItem available).
+function buildReconcilePatchFromLibraryRow(row: {
+  filename: string;
+  mimeType: null | string;
+  modifiedAt: null | string;
+  oneDriveCTag: null | string;
+  oneDriveETag: null | string;
+  oneDriveSharePointUniqueId: null | string;
+  oneDriveSourceDriveId: null | string;
+  oneDriveSourceItemId: null | string;
+  oneDriveSourceKey: null | string;
+  oneDriveWebUrl: null | string;
+  path: null | string;
+  size: null | number;
+}): DequalifiedReconcilePatch {
+  return {
+    cTag: row.oneDriveCTag,
+    eTag: row.oneDriveETag,
+    filename: row.filename,
+    mimeType: row.mimeType,
+    modifiedAt: row.modifiedAt,
+    path: row.path,
+    sharePointUniqueId: row.oneDriveSharePointUniqueId,
+    size: row.size,
+    sourceDriveId: row.oneDriveSourceDriveId,
+    sourceItemId: row.oneDriveSourceItemId,
+    sourceKey: row.oneDriveSourceKey,
+    webUrl: row.oneDriveWebUrl,
+  };
 }
 
 function toDateString(value: Date | string): string {

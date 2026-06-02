@@ -39,6 +39,7 @@ export interface SkinTestAnalyticsFilters {
 export const skinTestImportKeys = {
   all: ["clinical-skin-tests"] as const,
   activeJob: () => [...skinTestImportKeys.all, "active-job"] as const,
+  staleCount: () => [...skinTestImportKeys.all, "stale-count"] as const,
   analytics: (filters?: SkinTestAnalyticsFilters) =>
     [...skinTestImportKeys.all, "analytics", filters] as const,
   importsBase: () => [...skinTestImportKeys.all, "imports"] as const,
@@ -319,6 +320,30 @@ export function useReclassifyClinicalXlsxLibrary() {
     mutationFn: async () => await clinicalSkinTestsORPCClient.reclassifyXlsxLibrary({}),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: skinTestImportKeys.activeJob() });
+    },
+  });
+}
+
+// Count of imports whose metadata drifted from OneDrive (rename/de-qualification
+// orphans) — labels the targeted reconcile button.
+export function useStaleSkinTestImportsCount() {
+  return useQuery({
+    queryFn: async () => await clinicalSkinTestsORPCClient.staleImportsCount({}),
+    queryKey: skinTestImportKeys.staleCount(),
+    refetchOnWindowFocus: false,
+  });
+}
+
+// Targeted heal: reconcile ONLY the desynced imports. Requeued (still-importable)
+// rows can then be re-parsed with the existing reprocess-pending button.
+export function useReconcileStaleSkinTestImports() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async () => await clinicalSkinTestsORPCClient.reconcileStaleImports({}),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: skinTestImportKeys.activeJob() });
+      void queryClient.invalidateQueries({ queryKey: skinTestImportKeys.staleCount() });
+      void queryClient.invalidateQueries({ queryKey: skinTestImportKeys.importsBase() });
     },
   });
 }

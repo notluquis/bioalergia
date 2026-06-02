@@ -2,6 +2,7 @@ import {
   archiveMissingSkinTestWorkbookSnapshots,
   getSkinTestImportJobType,
   processDiscoveredSkinTestImports,
+  reconcileStaleSkinTestImports,
   reprocessPendingSkinTestImports,
   reclassifyClinicalXlsxLibrary,
   syncClinicalSkinTestImports,
@@ -442,6 +443,58 @@ export async function startClinicalXlsxLibraryReclassifyJob(options?: {
 
       failJob(jobId, message);
       logError("clinicalSkinTests.xlsxLibraryReclassify.failed", error, {
+        trigger: options?.trigger ?? "manual",
+      });
+    }
+  })();
+
+  return jobId;
+}
+
+export async function startClinicalSkinTestReconcileStaleJob(options?: {
+  trigger?: string;
+}): Promise<string> {
+  const jobType = getSkinTestImportJobType();
+  const activeJobs = getActiveJobsByType(jobType);
+  if (activeJobs.length > 0) {
+    return activeJobs[0].id;
+  }
+
+  const jobId = startJob(jobType, 1);
+  updateJobProgress(jobId, 0, "Preparando reconciliación de importaciones desincronizadas", {
+    mode: "reconcile-stale",
+    phase: "reconcile-stale",
+  });
+
+  void (async () => {
+    try {
+      const result = await reconcileStaleSkinTestImports({
+        shouldCancel: () => isJobCancelled(jobId),
+        onProgress: ({ message, processed, total, ...meta }) => {
+          updateJobProgress(jobId, processed, message, { ...meta, mode: "reconcile-stale" }, total);
+        },
+      });
+      completeJob(jobId, result, "Reconciliación de importaciones desincronizadas completada", {
+        ...result,
+        mode: "reconcile-stale",
+        phase: "completed",
+      });
+      logEvent("clinicalSkinTests.reconcileStale.completed", {
+        result,
+        trigger: options?.trigger ?? "manual",
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      if (message === "SYNC_CANCELLED") {
+        cancelJob(jobId, "Reconciliación cancelada por usuario");
+        logEvent("clinicalSkinTests.reconcileStale.cancelled", {
+          trigger: options?.trigger ?? "manual",
+        });
+        return;
+      }
+
+      failJob(jobId, message);
+      logError("clinicalSkinTests.reconcileStale.failed", error, {
         trigger: options?.trigger ?? "manual",
       });
     }
