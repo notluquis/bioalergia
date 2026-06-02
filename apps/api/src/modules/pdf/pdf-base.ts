@@ -95,9 +95,18 @@ export async function embedLogo(
   } catch {
     try {
       return await pdfDoc.embedJpg(bytes);
-    } catch (error) {
-      console.warn("Logo en formato no embebible (no PNG/JPEG):", error);
-      return null;
+    } catch {
+      // Blindaje (golden 2026): pdf-lib sólo embebe PNG RGB/RGBA + JPEG. Si el
+      // admin subió un PNG de paleta, WebP, AVIF, etc., normalizamos a PNG RGBA
+      // con sharp (lazy) y reintentamos. Garantiza que CUALQUIER logo aparezca.
+      try {
+        const sharp = (await import("sharp")).default;
+        const png = await sharp(Buffer.from(bytes)).ensureAlpha().png().toBuffer();
+        return await pdfDoc.embedPng(new Uint8Array(png));
+      } catch (error) {
+        console.warn("Logo no embebible ni tras normalizar:", error);
+        return null;
+      }
     }
   }
 }

@@ -5,6 +5,8 @@ import {
   imageIdInputSchema,
   imageReorderInputSchema,
   imagesStatusResponseSchema,
+  presignImageInputSchema,
+  presignImageResponseSchema,
   presignUploadInputSchema,
   presignUploadResponseSchema,
   productImageResponseSchema,
@@ -58,6 +60,28 @@ const presignRoute = requireStaff
         r2_key: result.r2Key,
         expires_in: result.expiresIn,
       },
+      status: "ok" as const,
+    };
+  });
+
+const presignImageRoute = requireStaff
+  .route({
+    method: "POST",
+    path: "/presign-image",
+    summary: "Presign R2 upload (campaign/category image)",
+    tags: ["Images"],
+  })
+  .input(presignImageInputSchema)
+  .output(presignImageResponseSchema)
+  .handler(async ({ input }) => {
+    const { presignGenericImageUpload } = await import("../modules/cloudflare/r2.ts");
+    const result = await presignGenericImageUpload({
+      target: input.target,
+      filename: input.filename,
+      contentType: input.content_type,
+    });
+    return {
+      data: { url: result.url, cdn_url: result.cdnUrl, r2_key: result.r2Key },
       status: "ok" as const,
     };
   });
@@ -137,6 +161,7 @@ const setPrimaryRoute = requireStaff
 
 const imagesORPCRouterBase = {
   presignUpload: presignRoute,
+  presignImage: presignImageRoute,
   confirmUpload: confirmRoute,
   deleteImage: deleteRoute,
   reorder: reorderRoute,

@@ -45,6 +45,22 @@ export const productImageResponseSchema = z.object({
   status: z.literal("ok"),
 });
 
+// Presign genérico para imágenes que sólo se muestran en el browser
+// (campañas, categorías) — no van a PDF, aceptan formatos next-gen.
+export const presignImageInputSchema = z.object({
+  target: z.enum(["campaign", "category"]),
+  filename: z.string().min(1).max(120),
+  content_type: z.enum(["image/jpeg", "image/png", "image/webp", "image/avif"]),
+});
+export const presignImageResponseSchema = z.object({
+  data: z.object({
+    url: z.string().url(),
+    cdn_url: z.string().url(),
+    r2_key: z.string(),
+  }),
+  status: z.literal("ok"),
+});
+
 export const imageIdInputSchema = z.object({
   id: z.coerce.number().int().positive(),
 });
@@ -63,6 +79,10 @@ export const imagesContract = {
     .route({ method: "POST", path: "/presign" })
     .input(presignUploadInputSchema)
     .output(presignUploadResponseSchema),
+  presignImage: oc
+    .route({ method: "POST", path: "/presign-image" })
+    .input(presignImageInputSchema)
+    .output(presignImageResponseSchema),
   confirmUpload: oc
     .route({ method: "POST", path: "/confirm" })
     .input(confirmUploadInputSchema)

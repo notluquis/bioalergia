@@ -115,6 +115,46 @@ export async function presignClinicAssetUpload(opts: {
   return { url, cdnUrl, r2Key, expiresIn: 300 };
 }
 
+// Imágenes que sólo se muestran en el browser (campañas, categorías) — NO van
+// a PDF, así que aceptan formatos next-gen. Prefijo whitelisteado (no key
+// arbitraria) para evitar inyección de path.
+const GENERIC_IMAGE_PREFIX: Record<string, string> = {
+  campaign: "campaigns",
+  category: "categories",
+};
+
+export type GenericImageTarget = keyof typeof GENERIC_IMAGE_PREFIX;
+
+export async function presignGenericImageUpload(opts: {
+  target: GenericImageTarget;
+  filename: string;
+  contentType: string;
+}): Promise<PresignedUpload> {
+  if (!ALLOWED_MIME.has(opts.contentType)) {
+    throw new Error(`Tipo de imagen no permitido: ${opts.contentType}`);
+  }
+  const prefix = GENERIC_IMAGE_PREFIX[opts.target];
+  if (!prefix) throw new Error(`Target inválido: ${opts.target}`);
+
+  const safeName = opts.filename
+    .toLowerCase()
+    .replace(/[^a-z0-9._-]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 80);
+  const stamp = Date.now();
+  const rnd = Math.random().toString(36).slice(2, 8);
+  const r2Key = `${prefix}/${stamp}-${rnd}-${safeName}`;
+
+  const cmd = new PutObjectCommand({
+    Bucket: getEnv("CF_R2_BUCKET"),
+    Key: r2Key,
+    ContentType: opts.contentType,
+  });
+  const url = await getSignedUrl(getClient(), cmd, { expiresIn: 300 });
+  const cdnBase = getEnv("CF_R2_PUBLIC_BASE_URL").replace(/\/+$/, "");
+  return { url, cdnUrl: `${cdnBase}/${r2Key}`, r2Key, expiresIn: 300 };
+}
+
 export const R2_LIMITS = {
   ALLOWED_MIME: Array.from(ALLOWED_MIME),
   CLINIC_ASSET_MIME: Array.from(CLINIC_ASSET_MIME),

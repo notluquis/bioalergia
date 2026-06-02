@@ -7,6 +7,7 @@ import {
   TanStackTextAreaField,
 } from "@/components/forms/TanStackFieldControls";
 import { confirmAction } from "@/components/ui/ConfirmDialog";
+import { ImageUploadField } from "@/components/ui/ImageUploadField";
 import { useToast } from "@/context/ToastContext";
 import { useCreatePatientCampaign, useUpdatePatientCampaign } from "../queries";
 import type { PatientCampaignWithCounts } from "../types";
@@ -161,10 +162,12 @@ export function CampaignFormModal({ isOpen, onClose, campaign }: Readonly<Campai
 
                 <form.Field name="imageUrl">
                   {(field) => (
-                    <TanStackInputField
-                      field={field}
-                      label="URL de imagen (opcional)"
-                      placeholder="https://..."
+                    <ImageUploadField
+                      target="campaign"
+                      label="Imagen (opcional)"
+                      hint="Se sube a R2. PNG/JPEG/WebP/AVIF, máx 5MB."
+                      value={field.state.value}
+                      onChange={(url) => field.handleChange(url)}
                     />
                   )}
                 </form.Field>
