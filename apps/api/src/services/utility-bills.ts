@@ -113,7 +113,7 @@ const ESSBIO_HEADERS = {
 };
 
 // "DD/MM/YYYY" → "YYYY-MM-DD" (null si vacío/invalid)
-function essbioDateToISO(value: null | string | undefined): null | string {
+export function essbioDateToISO(value: null | string | undefined): null | string {
   if (!value) return null;
   const m = value.trim().match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
   if (!m) return null;
@@ -215,7 +215,7 @@ export interface CgeBillResult {
 
 // Headers comunes del orchestrator CGE. `token` = AccessToken Cognito; si no
 // hay credencial, cae al valor estático histórico "bioalergia" (puede fallar).
-function cgeHeaders(token: null | string): Record<string, string> {
+export function cgeHeaders(token: null | string): Record<string, string> {
   return {
     "Content-Type": "application/json",
     Accept: "*/*",
@@ -547,7 +547,7 @@ export interface UtilityAccountPayload {
 
 type RawAccount = Awaited<ReturnType<typeof db.utilityAccount.findFirstOrThrow>>;
 
-function mapAccount(a: RawAccount) {
+export function mapAccount(a: RawAccount) {
   return {
     ...a,
     lastAmount: a.lastAmount !== null ? Number(a.lastAmount) : null,
@@ -690,7 +690,7 @@ export async function listUtilityBillSnapshots(
 }
 
 // FECFAC "MM/YYYY" → emissionDate "YYYY-MM-01" (día 1 del mes facturado)
-function periodToEmissionDate(period: string): null | string {
+export function periodToEmissionDate(period: string): null | string {
   const m = period.trim().match(/^(\d{2})\/(\d{4})$/);
   if (!m) return null;
   return `${m[2]}-${m[1]}-01`;

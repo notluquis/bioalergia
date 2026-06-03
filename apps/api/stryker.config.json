@@ -19,6 +19,10 @@
     "src/services/loans.ts",
     "src/services/expenses.ts",
     "src/services/transactions.ts",
+    "src/services/timesheets.ts",
+    "src/services/attendance.ts",
+    "src/services/timesheet-email-template.ts",
+    "src/services/utility-bills.ts",
     "!src/services/**/*.test.ts",
     "!src/services/**/__tests__/**",
     "!src/services/**/*.d.ts"

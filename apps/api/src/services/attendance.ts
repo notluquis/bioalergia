@@ -113,7 +113,7 @@ function mapMark(raw: {
 }
 
 /** Compute worked minutes between earliest CLOCK_IN and latest CLOCK_OUT in a set of marks */
-function computeWorkedMinutes(dayMarks: AttendanceMarkData[]): number | null {
+export function computeWorkedMinutes(dayMarks: AttendanceMarkData[]): number | null {
   const clockIns = dayMarks
     .filter((m) => m.type === "CLOCK_IN")
     .sort((a, b) => a.markedAt.getTime() - b.markedAt.getTime());
@@ -157,7 +157,7 @@ export async function checkIsOfficeNetwork(ip: string): Promise<boolean> {
   return false;
 }
 
-function ipMatchesCidr(ip: string, cidr: string): boolean {
+export function ipMatchesCidr(ip: string, cidr: string): boolean {
   if (!cidr.includes("/")) return ip === cidr;
 
   const [network, prefixStr] = cidr.split("/");
@@ -173,7 +173,7 @@ function ipMatchesCidr(ip: string, cidr: string): boolean {
   return (ipNum & mask) >>> 0 === (netNum & mask) >>> 0;
 }
 
-function ipToNumber(ip: string): number | null {
+export function ipToNumber(ip: string): number | null {
   const parts = ip.split(".").map(Number);
   if (parts.length !== 4 || parts.some((p) => Number.isNaN(p) || p < 0 || p > 255)) return null;
   return ((parts[0] << 24) | (parts[1] << 16) | (parts[2] << 8) | parts[3]) >>> 0;

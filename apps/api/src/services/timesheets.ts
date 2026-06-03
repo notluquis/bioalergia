@@ -59,11 +59,11 @@ export interface ListTimesheetOptions {
   to: string;
 }
 
-function parseDateOnlyUtc(value: string) {
+export function parseDateOnlyUtc(value: string) {
   return dayjs.utc(value, DATE_ONLY_FORMAT, true);
 }
 
-function dateOnlyStartUtc(value: string): Date {
+export function dateOnlyStartUtc(value: string): Date {
   const parsed = parseDateOnlyUtc(value);
   if (!parsed.isValid()) {
     throw new Error(`Invalid date format: ${value}. Expected ${DATE_ONLY_FORMAT}`);
@@ -71,7 +71,7 @@ function dateOnlyStartUtc(value: string): Date {
   return parsed.startOf("day").toDate();
 }
 
-function dateOnlyEndUtc(value: string): Date {
+export function dateOnlyEndUtc(value: string): Date {
   const parsed = parseDateOnlyUtc(value);
   if (!parsed.isValid()) {
     throw new Error(`Invalid date format: ${value}. Expected ${DATE_ONLY_FORMAT}`);
@@ -79,7 +79,7 @@ function dateOnlyEndUtc(value: string): Date {
   return parsed.endOf("day").toDate();
 }
 
-function monthStartUtc(month: string) {
+export function monthStartUtc(month: string) {
   const parsed = dayjs.utc(month, "YYYY-MM", true);
   if (!parsed.isValid()) {
     throw new Error(`Invalid month format: ${month}. Expected YYYY-MM`);
@@ -87,7 +87,7 @@ function monthStartUtc(month: string) {
   return parsed.startOf("month");
 }
 
-function formatDbDateOnly(value: Date | string) {
+export function formatDbDateOnly(value: Date | string) {
   return dayjs.utc(value).format(DATE_ONLY_FORMAT);
 }
 
@@ -99,7 +99,7 @@ function formatDbDateOnly(value: Date | string) {
 /**
  * Convert time string (HH:MM or HH:MM:SS) to minutes since midnight.
  */
-function timeToMinutes(time: string): number {
+export function timeToMinutes(time: string): number {
   if (!time) {
     throw new Error("Time string is required");
   }
@@ -128,7 +128,7 @@ function timeToMinutes(time: string): number {
  * - ISO 8601 timestamp (e.g., "2025-12-02T12:40:00.000Z")
  * For ISO timestamps, converts to America/Santiago timezone and extracts time
  */
-function normalizeTimeString(time: string): string | null {
+export function normalizeTimeString(time: string): string | null {
   if (!time) {
     return null;
   }
@@ -172,7 +172,10 @@ function normalizeTimeString(time: string): string | null {
  * Uses reference date (work_date) and America/Santiago timezone
  * ZenStack/Prisma extracts only TIME component for PostgreSQL TIME columns
  */
-function timeStringToDate(time: string | null | undefined, referenceDate: Date = new Date()): Date {
+export function timeStringToDate(
+  time: string | null | undefined,
+  referenceDate: Date = new Date()
+): Date {
   if (!time) {
     throw new Error("Time string is required for date conversion");
   }
@@ -215,7 +218,7 @@ function timeStringToDate(time: string | null | undefined, referenceDate: Date =
 /**
  * Format Date object from ZenStack to "HH:MM" string for API responses
  */
-function dateToTimeString(date: Date | string | null): string | null {
+export function dateToTimeString(date: Date | string | null): string | null {
   if (!date) {
     return null;
   }
@@ -379,7 +382,7 @@ function normalizeUpsertPayload(payload: UpsertTimesheetPayload): NormalizedUpse
   return { endTimeStr, startTimeStr, workDateDb, workDateObj, workedMinutes };
 }
 
-function calculateWorkedMinutes(payload: UpsertTimesheetPayload): number {
+export function calculateWorkedMinutes(payload: UpsertTimesheetPayload): number {
   const providedWorkedMinutes = payload.worked_minutes ?? 0;
   if (providedWorkedMinutes > 0 || !payload.start_time || !payload.end_time) {
     return providedWorkedMinutes;
