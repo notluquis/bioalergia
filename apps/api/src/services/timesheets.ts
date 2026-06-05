@@ -180,39 +180,49 @@ export function timeStringToDate(
     throw new Error("Time string is required for date conversion");
   }
 
-  // Format reference date as YYYY-MM-DD in Santiago timezone
-  const refDateStr = dayjs(referenceDate).tz(TIMEZONE).format("YYYY-MM-DD");
+  // ZenStack/Prisma maps @db.Time to/from a Date by its UTC components
+  // (09:00 <-> 1970-01-01T09:00:00Z). The wall-clock time must therefore be
+  // anchored in UTC, NOT in America/Santiago — otherwise the stored time is
+  // shifted +3h/+4h. The reference date only contributes the calendar day,
+  // which Postgres ignores for a time-only column; we anchor it in UTC too.
+  let hours: number;
+  let minutes: number;
+  let seconds: number;
 
-  // Try parsing as ISO datetime first
   const d = dayjs(time);
   if (d.isValid() && (time.includes("T") || time.includes("-"))) {
-    // Build datetime string in Santiago timezone: "YYYY-MM-DD HH:mm:ss"
-    const timeStr = `${d.hour().toString().padStart(2, "0")}:${d.minute().toString().padStart(2, "0")}:${d.second().toString().padStart(2, "0")}`;
-    return dayjs.tz(`${refDateStr} ${timeStr}`, TIMEZONE).toDate();
-  }
-
-  // Parse HH:MM or HH:MM:SS format
-  if (TIME_FORMAT_PATTERN.test(time)) {
+    hours = d.hour();
+    minutes = d.minute();
+    seconds = d.second();
+  } else if (TIME_FORMAT_PATTERN.test(time)) {
     const parts = time.split(":").map(Number);
-    const [hours, minutes, seconds = 0] = parts;
+    const [h, m, s = 0] = parts;
     if (
-      hours === undefined ||
-      minutes === undefined ||
-      hours < 0 ||
-      hours > 23 ||
-      minutes < 0 ||
-      minutes >= 60 ||
-      seconds < 0 ||
-      seconds >= 60
+      h === undefined ||
+      m === undefined ||
+      h < 0 ||
+      h > 23 ||
+      m < 0 ||
+      m >= 60 ||
+      s < 0 ||
+      s >= 60
     ) {
       throw new Error(`Invalid time components in: ${time}`);
     }
-    // Build datetime string in Santiago timezone: "YYYY-MM-DD HH:mm:ss"
-    const timeStr = `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
-    return dayjs.tz(`${refDateStr} ${timeStr}`, TIMEZONE).toDate();
+    hours = h;
+    minutes = m;
+    seconds = s;
+  } else {
+    throw new Error(`Unable to parse time string: ${time}`);
   }
 
-  throw new Error(`Unable to parse time string: ${time}`);
+  return dayjs
+    .utc(referenceDate)
+    .hour(hours)
+    .minute(minutes)
+    .second(seconds)
+    .millisecond(0)
+    .toDate();
 }
 
 /**
@@ -241,7 +251,10 @@ export function dateToTimeString(date: Date | string | null): string | null {
     return null;
   }
 
-  const d = dayjs(date);
+  // ZenStack/Prisma maps @db.Time to a Date anchored at 1970-01-01 in UTC
+  // (e.g. 1970-01-01T10:30:00Z). Format in UTC so the server TZ
+  // (America/Santiago) doesn't shift the wall-clock time by -3h.
+  const d = dayjs.utc(date);
   if (!d.isValid()) {
     return null;
   }
@@ -372,12 +385,14 @@ type NormalizedUpsertPayload = {
   workedMinutes: number;
 };
 
-function normalizeUpsertPayload(payload: UpsertTimesheetPayload): NormalizedUpsertPayload {
+export function normalizeUpsertPayload(payload: UpsertTimesheetPayload): NormalizedUpsertPayload {
   const workDateObj = dateOnlyStartUtc(payload.work_date);
   const startTimeStr = payload.start_time ? normalizeTimeString(payload.start_time) : null;
   const endTimeStr = payload.end_time ? normalizeTimeString(payload.end_time) : null;
   const workedMinutes = calculateWorkedMinutes(payload);
-  const workDateDb = dayjs(workDateObj).format("YYYY-MM-DD");
+  // workDateObj is UTC-anchored midnight; format in UTC to avoid rolling back a
+  // day under server TZ (America/Santiago) -> dayjs() local would shift it.
+  const workDateDb = dayjs.utc(workDateObj).format("YYYY-MM-DD");
 
   return { endTimeStr, startTimeStr, workDateDb, workDateObj, workedMinutes };
 }

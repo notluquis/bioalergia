@@ -20,6 +20,7 @@ import {
   formatDbDateOnly,
   monthStartUtc,
   normalizeTimeString,
+  normalizeUpsertPayload,
   parseDateOnlyUtc,
   timeStringToDate,
   timeToMinutes,
@@ -197,24 +198,32 @@ describe("normalizeTimeString", () => {
 });
 
 describe("timeStringToDate", () => {
-  it("builds a Date from HH:MM anchored to the reference date in Santiago tz", () => {
-    // reference midday UTC on 2026-01-15 -> Santiago (UTC-3 summer) still the
-    // 15th; 09:00 local -> 12:00Z.
+  it("anchors HH:MM as the UTC wall-clock time (no +3h/+4h shift)", () => {
+    // @db.Time round-trips by UTC components: 09:00 must be stored as 09:00Z,
+    // NOT 12:00Z. The reference day is preserved (UTC), time set from input.
     const ref = new Date("2026-01-15T12:00:00.000Z");
     const d = timeStringToDate("09:00", ref);
-    expect(d.toISOString()).toBe("2026-01-15T12:00:00.000Z");
+    expect(d.toISOString()).toBe("2026-01-15T09:00:00.000Z");
   });
 
   it("builds a Date from HH:MM:SS preserving seconds", () => {
     const ref = new Date("2026-01-15T05:00:00.000Z");
     const d = timeStringToDate("09:30:15", ref);
-    expect(d.toISOString()).toBe("2026-01-15T12:30:15.000Z");
+    expect(d.toISOString()).toBe("2026-01-15T09:30:15.000Z");
   });
 
-  it("respects winter offset (UTC-4) for the reference day", () => {
+  it("is timezone-independent — winter/summer offsets do not shift the time", () => {
     const ref = new Date("2026-07-15T12:00:00.000Z");
     const d = timeStringToDate("08:00", ref);
-    expect(d.toISOString()).toBe("2026-07-15T12:00:00.000Z");
+    expect(d.toISOString()).toBe("2026-07-15T08:00:00.000Z");
+  });
+
+  it("anchors the reference day in UTC (a Santiago-evening ref keeps its UTC day)", () => {
+    // 2026-05-04T00:00:00Z is how ZenStack returns a @db.Date workDate. The
+    // stored time component must land on that same UTC day, not roll back.
+    const ref = new Date("2026-05-04T00:00:00.000Z");
+    const d = timeStringToDate("10:30", ref);
+    expect(d.toISOString()).toBe("2026-05-04T10:30:00.000Z");
   });
 
   it("throws when no time string is provided", () => {
@@ -250,14 +259,41 @@ describe("dateToTimeString", () => {
     expect(dateToTimeString("7:05")).toBe("07:05");
   });
 
-  it("formats a Date object to HH:mm (local)", () => {
-    // 1970-01-01T08:15:00 local time, constructed via component ctor to be tz-stable
-    const date = new Date(2026, 0, 15, 8, 15, 0);
+  it("formats a UTC-anchored @db.Time Date to HH:mm (no TZ shift)", () => {
+    // ZenStack/Prisma returns @db.Time columns as Dates anchored at
+    // 1970-01-01 in UTC. Must format in UTC so server TZ (America/Santiago)
+    // doesn't shift the wall-clock time by -3h.
+    const date = new Date("1970-01-01T08:15:00.000Z");
     expect(dateToTimeString(date)).toBe("08:15");
   });
 
   it("returns null for an unparseable string", () => {
     expect(dateToTimeString("not-a-time")).toBeNull();
+  });
+});
+
+describe("normalizeUpsertPayload (regression: work_date must not roll back a day)", () => {
+  // Bug 2026-06-05: under server TZ=America/Santiago, `dayjs(utcMidnight).format`
+  // rolled the work_date back one day (2026-05-04 stored as 2026-05-03). The
+  // vitest env pins TZ=America/Santiago so this test reproduces the prod TZ.
+  it("preserves the work_date string round-trip", () => {
+    const n = normalizeUpsertPayload(
+      payload({ work_date: "2026-05-04", start_time: "10:30", end_time: "19:45" })
+    );
+    expect(n.workDateDb).toBe("2026-05-04");
+  });
+
+  it("keeps times as plain HH:MM:SS strings (no TZ shift on write)", () => {
+    const n = normalizeUpsertPayload(
+      payload({ work_date: "2026-05-04", start_time: "10:30", end_time: "19:45" })
+    );
+    expect(n.startTimeStr).toBe("10:30:00");
+    expect(n.endTimeStr).toBe("19:45:00");
+  });
+
+  it("preserves work_date across a DST boundary (winter month)", () => {
+    const n = normalizeUpsertPayload(payload({ work_date: "2026-07-15" }));
+    expect(n.workDateDb).toBe("2026-07-15");
   });
 });
 
@@ -323,10 +359,10 @@ describe("timeStringToDate default reference date (pinned clock)", () => {
     vi.useRealTimers();
   });
 
-  it("anchors to today's Santiago date when no reference is given", () => {
-    // System now: 2026-05-15T12:00:00Z. Santiago in May is UTC-4 -> local 08:00,
-    // so today's Santiago date is 2026-05-15. 09:00 local -> 13:00Z.
+  it("anchors to today's UTC date when no reference is given", () => {
+    // System now: 2026-05-15T12:00:00Z. UTC day is 2026-05-15; 09:00 wall-clock
+    // is anchored as 09:00Z on that day (no TZ offset applied).
     const d = timeStringToDate("09:00");
-    expect(d.toISOString()).toBe("2026-05-15T13:00:00.000Z");
+    expect(d.toISOString()).toBe("2026-05-15T09:00:00.000Z");
   });
 });

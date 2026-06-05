@@ -5,6 +5,7 @@ import { ORPCError, onError, os } from "@orpc/server";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import dayjs from "dayjs";
 import timezone from "dayjs/plugin/timezone.js";
+import utc from "dayjs/plugin/utc.js";
 import { Decimal } from "decimal.js";
 import type { Context as HonoContext } from "hono";
 import type {
@@ -26,6 +27,7 @@ import { syncPatientDteSaleSources } from "../services/patients-router.ts";
 import { SuperJSONRPCHandler } from "./superjson.ts";
 
 configureSuperjson();
+dayjs.extend(utc);
 dayjs.extend(timezone);
 
 const dbSchemas = createSchemaFactory(schema);
@@ -794,13 +796,25 @@ const patientsORPCRouterBase = {
       return {
         items: series.map((s) => {
           const event = s.events[0] ?? null;
+          // startDate/endDate are @db.Date (UTC-anchored midnight) -> format in
+          // UTC. startDateTime/endDateTime are @db.Timestamptz (true instant) ->
+          // convert to Santiago for the local calendar day. Same priority order
+          // as before (start over end), but the right rule per column type.
           const eventDate = event
-            ? dayjs(event.startDate ?? event.startDateTime ?? event.endDate ?? event.endDateTime)
-                .tz(TIMEZONE)
-                .format("YYYY-MM-DD")
+            ? event.startDate
+              ? dayjs.utc(event.startDate).format("YYYY-MM-DD")
+              : event.startDateTime
+                ? dayjs(event.startDateTime).tz(TIMEZONE).format("YYYY-MM-DD")
+                : event.endDate
+                  ? dayjs.utc(event.endDate).format("YYYY-MM-DD")
+                  : event.endDateTime
+                    ? dayjs(event.endDateTime).tz(TIMEZONE).format("YYYY-MM-DD")
+                    : null
             : null;
+          // testDate is @db.Date read via ZenStack -> UTC-anchored midnight.
+          // Format in UTC, else server TZ (America/Santiago) rolls it back a day.
           const skinTestDate = s.skinTests[0]?.testDate
-            ? dayjs(s.skinTests[0].testDate).format("YYYY-MM-DD")
+            ? dayjs.utc(s.skinTests[0].testDate).format("YYYY-MM-DD")
             : null;
           return {
             id: s.id,
