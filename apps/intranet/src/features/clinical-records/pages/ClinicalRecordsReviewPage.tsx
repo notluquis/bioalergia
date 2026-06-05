@@ -11,7 +11,16 @@ import {
   Spinner,
 } from "@heroui/react";
 import { useEffect, useState } from "react";
-import { ClipboardList, FileSearch, Pause, Play, RefreshCw } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  ClipboardList,
+  ExternalLink,
+  FileSearch,
+  Pause,
+  Play,
+  RefreshCw,
+} from "lucide-react";
 import { confirmAction } from "@/components/ui/ConfirmDialog";
 import { useToast } from "@/context/ToastContext";
 import {
@@ -27,10 +36,15 @@ import {
 
 const STATUS_OPTIONS = [
   { value: "PENDING_REVIEW", label: "Pendientes" },
+  { value: "DISCOVERED", label: "Descubiertos (sin procesar)" },
   { value: "IMPORTED", label: "Importados" },
   { value: "ERROR", label: "Con error" },
   { value: "REJECTED", label: "Rechazados" },
+  { value: "SKIPPED", label: "Omitidos" },
+  { value: "TEMPLATE", label: "Plantillas" },
 ] as const;
+
+const PAGE_SIZE = 50;
 
 type Status = (typeof STATUS_OPTIONS)[number]["value"];
 
@@ -38,11 +52,16 @@ export function ClinicalRecordsReviewPage() {
   const toast = useToast();
   const [status, setStatus] = useState<Status>("PENDING_REVIEW");
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  // Reset to the first page whenever the filter or query changes.
+  useEffect(() => {
+    setPage(1);
+  }, [status, search]);
   const list = useClinicalRecordImports({
     status,
     search: search.trim() || undefined,
-    page: 1,
-    pageSize: 50,
+    page,
+    pageSize: PAGE_SIZE,
   });
   const reprocess = useReprocessClinicalRecordImport();
   const approve = useApproveClinicalRecordImport();
@@ -67,9 +86,11 @@ export function ClinicalRecordsReviewPage() {
 
   const items = list.data?.items ?? [];
   const total = list.data?.total ?? 0;
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const jobActive = job && (job.status === "pending" || job.status === "running");
   const progressPct =
     job && job.total > 0 ? Math.min(100, Math.round((job.progress / job.total) * 100)) : 0;
+  const jobPhase = typeof job?.meta?.phase === "string" ? job.meta.phase : null;
 
   // Reprocess every pending/error ficha. The bulk job re-parses each xlsx with
   // the deployed parser and re-runs patient matching; confirm first since it
@@ -155,9 +176,10 @@ export function ClinicalRecordsReviewPage() {
             </ProgressBar.Track>
           </ProgressBar>
           <p className="mt-2 text-default-500 text-xs">
-            {job.status} · {job.progress} / {job.total || "?"}
+            {job.status}
+            {jobPhase && ` · ${jobPhase}`} · {job.progress} / {job.total || "?"}
             {job.result &&
-              ` · imported ${job.result.imported} · pending ${job.result.pending} · errors ${job.result.errors}`}
+              ` · importadas ${job.result.imported} · pendientes ${job.result.pending} · errores ${job.result.errors}`}
           </p>
         </Card>
       )}
@@ -231,6 +253,17 @@ export function ClinicalRecordsReviewPage() {
                       )}
                     </div>
                     <div className="flex shrink-0 items-center gap-2">
+                      {it.oneDriveWebUrl && (
+                        <a
+                          href={it.oneDriveWebUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-default-500 text-xs hover:bg-default-100 hover:text-default-700"
+                        >
+                          <ExternalLink size={14} />
+                          <span>Abrir</span>
+                        </a>
+                      )}
                       <Chip
                         size="sm"
                         variant="soft"
@@ -296,6 +329,34 @@ export function ClinicalRecordsReviewPage() {
             );
           })}
         </ul>
+      )}
+
+      {total > PAGE_SIZE && (
+        <div className="flex items-center justify-between gap-3 px-1">
+          <p className="text-default-500 text-xs">
+            Página {page} de {totalPages} · {total} fichas
+          </p>
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="secondary"
+              isDisabled={page <= 1 || list.isFetching}
+              onPress={() => setPage((p) => Math.max(1, p - 1))}
+            >
+              <ChevronLeft size={14} />
+              <span>Anterior</span>
+            </Button>
+            <Button
+              size="sm"
+              variant="secondary"
+              isDisabled={page >= totalPages || list.isFetching}
+              onPress={() => setPage((p) => Math.min(totalPages, p + 1))}
+            >
+              <span>Siguiente</span>
+              <ChevronRight size={14} />
+            </Button>
+          </div>
+        </div>
       )}
     </div>
   );
