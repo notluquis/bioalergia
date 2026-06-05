@@ -23,10 +23,11 @@ export function getPeriodRange(period: string): { from: Date; to: Date } {
   if (!PERIOD_REGEX.test(period)) {
     throw new Error(`Invalid period: ${period}`);
   }
-  const start = dayjs.tz(`${period}-01`, "YYYY-MM-DD", TIMEZONE);
+  const [year, month] = period.split("-").map(Number);
+  const start = Temporal.PlainDate.from({ year, month, day: 1 }).toZonedDateTime(TIMEZONE);
   return {
-    from: start.toDate(),
-    to: start.add(1, "month").subtract(1, "millisecond").toDate(),
+    from: new Date(start.epochMilliseconds),
+    to: new Date(start.add({ months: 1 }).epochMilliseconds - 1),
   };
 }
 
@@ -75,6 +76,14 @@ const CHILE_DATE_FORMAT = new Intl.DateTimeFormat("en-CA", {
   month: "2-digit",
   day: "2-digit",
 });
+
+const ISO_DATE_ONLY = /^(\d{4})-(\d{2})-(\d{2})$/;
+
+// A JS Date (instant) as a Temporal.ZonedDateTime in Chile local time. Native
+// Temporal is present in Node 26 official/nvm builds + node:26-slim (prod) + CI.
+function toChileZoned(date: Date): Temporal.ZonedDateTime {
+  return Temporal.Instant.fromEpochMilliseconds(date.getTime()).toZonedDateTimeISO(TIMEZONE);
+}
 
 /**
  * Format a @db.Date column value as "YYYY-MM-DD". Reads the UTC wall-clock
@@ -150,10 +159,17 @@ export function instantToChileDate(value: Date | string | null | undefined): str
  * Parse "YYYY-MM-DD" as midnight in Chile local time, returning the equivalent UTC instant.
  */
 export function parseChileDateOnly(value: string): Date | null {
-  const trimmed = value.trim();
-  if (!trimmed) return null;
-  const parsed = dayjs.tz(trimmed, "YYYY-MM-DD", TIMEZONE);
-  return parsed.isValid() ? parsed.startOf("day").toDate() : null;
+  const m = value.trim().match(ISO_DATE_ONLY);
+  if (!m) return null;
+  try {
+    const zoned = Temporal.PlainDate.from(
+      { year: +m[1], month: +m[2], day: +m[3] },
+      { overflow: "reject" }
+    ).toZonedDateTime(TIMEZONE);
+    return new Date(zoned.epochMilliseconds);
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -173,9 +189,16 @@ export function buildChileDate(
   minute: number,
   second = 0
 ): Date {
-  const pad = (n: number) => n.toString().padStart(2, "0");
-  const iso = `${year}-${pad(month + 1)}-${pad(day)}T${pad(hour)}:${pad(minute)}:${pad(second)}`;
-  return dayjs.tz(iso, TIMEZONE).toDate();
+  const zoned = Temporal.ZonedDateTime.from({
+    timeZone: TIMEZONE,
+    year,
+    month: month + 1, // Temporal months are 1-indexed; param is 0-indexed (JS Date)
+    day,
+    hour,
+    minute,
+    second,
+  });
+  return new Date(zoned.epochMilliseconds);
 }
 
 /**
@@ -264,12 +287,13 @@ export function normalizeDate(input: string, boundary: "start" | "end"): string 
   if (!year || !month || !day) {
     return null;
   }
-  const base = dayjs.tz(trimmed, "YYYY-MM-DD", TIMEZONE);
-  if (!base.isValid()) {
+  try {
+    // Validate the calendar date; the boundary time is a fixed wall-clock suffix.
+    const date = Temporal.PlainDate.from({ year, month, day }, { overflow: "reject" }).toString();
+    return boundary === "start" ? `${date} 00:00:00` : `${date} 23:59:59`;
+  } catch {
     return null;
   }
-  const adjusted = boundary === "start" ? base.startOf("day") : base.endOf("day");
-  return adjusted.format("YYYY-MM-DD HH:mm:ss");
 }
 
 export function normalizeTimestamp(primary: string | Date | null, fallback: string | null): string {
@@ -336,38 +360,30 @@ export function normalizeTimestampString(value: string | Date | null): string {
 
 export function iterateDateRange(start: Date, end: Date): string[] {
   const dates: string[] = [];
-  let cursor = dayjs(start).tz(TIMEZONE).startOf("day");
-  const limit = dayjs(end).tz(TIMEZONE).startOf("day");
-  while (cursor.valueOf() <= limit.valueOf()) {
-    dates.push(cursor.format("YYYY-MM-DD"));
-    cursor = cursor.add(1, "day");
+  let cursor = toChileZoned(start).toPlainDate();
+  const limit = toChileZoned(end).toPlainDate();
+  while (Temporal.PlainDate.compare(cursor, limit) <= 0) {
+    dates.push(cursor.toString());
+    cursor = cursor.add({ days: 1 });
   }
   return dates;
 }
 
 export function parseDateOnly(value: string): Date | null {
-  const trimmed = value.trim();
-  if (!trimmed) {
+  const m = value.trim().match(ISO_DATE_ONLY);
+  if (!m) {
     return null;
   }
-  const parts = trimmed.split("-").map(Number);
-  if (parts.length !== 3) {
+  try {
+    // overflow: "reject" rejects impossible calendar dates (2024-02-30, 2024-13-01).
+    const zoned = Temporal.PlainDate.from(
+      { year: +m[1], month: +m[2], day: +m[3] },
+      { overflow: "reject" }
+    ).toZonedDateTime(TIMEZONE);
+    return new Date(zoned.epochMilliseconds);
+  } catch {
     return null;
   }
-  const [year, month, day] = parts;
-  if (!year || !month || !day) {
-    return null;
-  }
-  const parsed = dayjs.tz(trimmed, "YYYY-MM-DD", TIMEZONE);
-  if (
-    !parsed.isValid() ||
-    parsed.year() !== year ||
-    parsed.month() !== month - 1 ||
-    parsed.date() !== day
-  ) {
-    return null;
-  }
-  return parsed.toDate();
 }
 
 export function formatDateOnly(date: Date): string {
@@ -384,26 +400,27 @@ export function coerceDateOnly(value: string): string | null {
 }
 
 export function getNthBusinessDay(base: Date, n: number): Date {
-  let cursor = dayjs(base).tz(TIMEZONE);
+  let cursor = toChileZoned(base);
   let count = 0;
   while (count < n) {
-    const day = cursor.day();
-    if (day !== 0 && day !== 6) {
+    const dow = cursor.dayOfWeek; // Temporal: 1=Mon … 6=Sat, 7=Sun
+    if (dow !== 6 && dow !== 7) {
       count += 1;
       if (count === n) {
         break;
       }
     }
-    cursor = cursor.add(1, "day");
+    cursor = cursor.add({ days: 1 });
   }
-  return cursor.toDate();
+  return new Date(cursor.epochMilliseconds);
 }
 
 export function getMonthRange(month: string): { from: string; to: string } {
-  const start = dayjs.tz(`${month}-01`, "YYYY-MM-DD", TIMEZONE);
-  const end = start.add(1, "month").subtract(1, "day");
+  const [year, m] = month.split("-").map(Number);
+  const start = Temporal.PlainDate.from({ year, month: m, day: 1 });
+  const end = start.add({ months: 1 }).subtract({ days: 1 });
   return {
-    from: start.format("YYYY-MM-DD"),
-    to: end.format("YYYY-MM-DD"),
+    from: start.toString(),
+    to: end.toString(),
   };
 }
