@@ -5,20 +5,8 @@
 // helpers (normalization/, extraction/) can import them without
 // pulling the heavy logic graph.
 
-import dayjs from "dayjs";
-import timezone from "dayjs/plugin/timezone.js";
-import utc from "dayjs/plugin/utc.js";
-
-// Single-init dayjs plugin extension for the whole clinical-series
-// module. Every sub-module imports from this file (for TIMEZONE etc.),
-// so loading this file once guarantees `.tz()` is available
-// everywhere downstream. Without it, sub-modules that use dayjs.tz()
-// in isolation fail with "Property 'tz' does not exist on type
-// 'Dayjs'" because the plugins were previously extended only in
-// the (now-deleted) monolithic clinical-series.ts.
-dayjs.extend(utc);
-dayjs.extend(timezone);
-
+// clinical-series date/time logic is native (Temporal/Intl via lib/time.ts);
+// the dayjs plugin init was removed once every sub-module dropped dayjs.
 export const TIMEZONE = "America/Santiago";
 
 export const RUT_REGEX = /\b\d{1,2}\.?\d{3}\.?\d{3}-?[\dkK]\b/g;
