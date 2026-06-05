@@ -1,9 +1,9 @@
 import { db } from "@finanzas/db";
-import dayjs from "dayjs";
 import { type Context, Hono, type Next } from "hono";
 import { z } from "zod";
 import { getSessionUser, hasPermission } from "../lib/auth.ts";
 import { googleCalendarConfig } from "../lib/config.ts";
+import { formatChile, toChileDateString } from "../lib/time.ts";
 import type * as JobQueue from "../lib/jobQueue.ts";
 import {
   type CalendarEventFilters,
@@ -112,8 +112,10 @@ function isMissingClassificationFilterKey(value: string): value is MissingClassi
 const dateSchema = z
   .string()
   .optional()
-  .refine((val) => !val || dayjs(val).isValid(), { message: "Invalid date format" })
-  .transform((val) => (val ? dayjs(val).format("YYYY-MM-DD") : undefined));
+  .refine((val) => !val || !Number.isNaN(new Date(val).getTime()), {
+    message: "Invalid date format",
+  })
+  .transform((val) => (val ? formatChile(val, "YYYY-MM-DD") : undefined));
 
 const arrayPreprocess = (val: unknown) => {
   if (!val) {
@@ -637,7 +639,8 @@ function toOptionalFilter<T>(values: T[]) {
 }
 
 function normalizeDateRange(from: string, to: string) {
-  if (!dayjs(from).isAfter(dayjs(to))) {
+  // from/to are YYYY-MM-DD -> lexicographic compare is chronological.
+  if (from <= to) {
     return { from, to };
   }
 
@@ -651,7 +654,7 @@ async function buildFiltersFromValidQuery(query: CalendarQuery) {
 
   const lookaheadRaw = Number(settings["calendar.syncLookaheadDays"] ?? "365");
   const lookaheadDays = parsePositiveCappedInt(lookaheadRaw, 365, 1095);
-  const defaultEnd = dayjs().add(lookaheadDays, "day").format("YYYY-MM-DD");
+  const defaultEnd = toChileDateString(new Date(Date.now() + lookaheadDays * 86_400_000));
 
   const normalizedRange = normalizeDateRange(query.from ?? configStart, query.to ?? defaultEnd);
 
@@ -766,9 +769,8 @@ calendarRoutes.get(
 
     // Set default date range if not provided (last 30 days)
     if (!filters.from || !filters.to) {
-      const today = dayjs();
-      filters.from = filters.from || today.subtract(30, "day").format("YYYY-MM-DD");
-      filters.to = filters.to || today.format("YYYY-MM-DD");
+      filters.from = filters.from || toChileDateString(new Date(Date.now() - 30 * 86_400_000));
+      filters.to = filters.to || toChileDateString(new Date());
     }
 
     try {
