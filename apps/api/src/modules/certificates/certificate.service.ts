@@ -1,18 +1,15 @@
 import fs from "node:fs";
 import path from "node:path";
-import dayjs from "dayjs";
 import { PDFDocument, type PDFFont, rgb } from "pdf-lib";
-import "dayjs/locale/es.js";
 import QRCode from "qrcode";
 
+import { formatChileLongDate, formatChileShortDate } from "../../lib/time.ts";
 import { drawImageTopLeft, embedLogo, loadPdfFonts, setPdfMetadata } from "../pdf/pdf-base.ts";
 import type { MedicalCertificateInput } from "./certificate.schema.ts";
 import { defaultDoctorInfo } from "./certificate.schema.ts";
 
 /** URLs administrables de logos (ClinicSettings). Vacío → fallback local. */
 export type CertificateLogoUrls = { primary?: string | null; secondary?: string | null };
-
-dayjs.locale("es");
 
 // Paths to assets
 const ASSETS_DIR = path.resolve(import.meta.dirname, "../../../assets");
@@ -103,7 +100,7 @@ const drawWatermark = (
   height: number,
   date: string
 ) => {
-  const watermarkText = `Válido ${dayjs(date).format("DD/MM/YYYY")}`;
+  const watermarkText = `Válido ${formatChileShortDate(date)}`;
   page.drawText(watermarkText, {
     x: width / 2 - 100,
     y: height / 2,
@@ -352,7 +349,7 @@ export async function signPdf(
 // --- Helper Functions ---
 
 function formatDate(dateStr: string): string {
-  return dayjs(dateStr).format("D [de] MMMM [de] YYYY");
+  return formatChileLongDate(dateStr);
 }
 
 function generateBodyText(input: MedicalCertificateInput): string[] {

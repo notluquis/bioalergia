@@ -6,6 +6,8 @@ import {
   dbDateToISO,
   dbTimeToHHmm,
   formatChileDateTime,
+  formatChileLongDate,
+  formatChileShortDate,
   formatDateForDB,
   formatDateOnly,
   getMonthRange,
@@ -462,6 +464,23 @@ describe("time", () => {
       const resultStr = formatDateOnly(result);
       // Mon(1), Tue(2), Wed(3), Thu(4), Fri(5)
       expect(resultStr).toBe("2024-06-07");
+    });
+  });
+
+  describe("formatChileLongDate / formatChileShortDate", () => {
+    it("formats an instant Date in Spanish long form (Chile)", () => {
+      expect(formatChileLongDate(new Date("2026-06-05T14:23:00Z"))).toBe("5 de junio de 2026");
+    });
+    it("formats a bare YYYY-MM-DD without day rollback", () => {
+      expect(formatChileLongDate("2026-06-15")).toBe("15 de junio de 2026");
+      expect(formatChileShortDate("2026-06-15")).toBe("15/06/2026");
+    });
+    it("short form uses slashes (not Intl default dashes)", () => {
+      expect(formatChileShortDate(new Date("2026-01-09T12:00:00Z"))).toBe("09/01/2026");
+    });
+    it("null/undefined falls back to today (valid format)", () => {
+      expect(formatChileLongDate(undefined)).toMatch(/^\d{1,2} de \w+ de \d{4}$/);
+      expect(formatChileShortDate(null)).toMatch(/^\d{2}\/\d{2}\/\d{4}$/);
     });
   });
 

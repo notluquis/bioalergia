@@ -1,7 +1,6 @@
 import type { QuoteDto } from "@finanzas/orpc-contracts/quotes";
-import dayjs from "dayjs";
-import "dayjs/locale/es.js";
 import { type PDFFont, PDFDocument, rgb } from "pdf-lib";
+import { formatChileLongDate } from "../../lib/time.ts";
 import {
   drawImageTopLeft,
   embedLogo,
@@ -11,8 +10,6 @@ import {
   setPdfMetadata,
   wrapText,
 } from "../pdf/pdf-base.ts";
-
-dayjs.locale("es");
 
 const ACCENT = PDF_COLORS.accent;
 const DARK = PDF_COLORS.dark;
@@ -122,10 +119,10 @@ export async function generateQuotePdf(input: QuotePdfInput): Promise<Uint8Array
     { label: "Contacto / Solicitante", value: solicitante },
     { label: "Email", value: company.email },
     { label: "Condición de pago", value: quote.condicionPago ?? company.condicionPago },
-    { label: "Fecha", value: dayjs(quote.issueDate).format("D [de] MMMM [de] YYYY") },
+    { label: "Fecha", value: formatChileLongDate(quote.issueDate) },
     {
       label: "Vencimiento",
-      value: quote.dueDate ? dayjs(quote.dueDate).format("D [de] MMMM [de] YYYY") : null,
+      value: quote.dueDate ? formatChileLongDate(quote.dueDate) : null,
     },
     { label: "Vendedor", value: quote.createdByName },
   ];

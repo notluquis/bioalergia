@@ -6,6 +6,7 @@ import jaroWinkler from "talisman/metrics/jaro-winkler.js";
 import { symmetric as mongeElkanSymmetric } from "talisman/metrics/monge-elkan.js";
 import { joinClinicalText } from "../lib/clinical-text.ts";
 import { normalizeRut } from "../lib/rut.ts";
+import { toChileDateString } from "../lib/time.ts";
 import {
   type ClinicalSeriesSnapshot,
   extractIdentityHints,
@@ -1738,7 +1739,7 @@ export async function listEventDteLinkOverview(params: {
   const hasSearch = trimmedQuery.length > 0;
   const offset = page * pageSize;
   const periodDate = dayjs(`${params.period}-01`, "YYYY-MM-DD", true);
-  const today = dayjs().tz(TIMEZONE).format("YYYY-MM-DD");
+  const today = toChileDateString(new Date());
 
   if (!periodDate.isValid()) throw new Error("Periodo inválido. Usa formato YYYY-MM");
 
@@ -2321,7 +2322,7 @@ export async function autoLinkEventDate(params: {
   strategy?: AutoLinkStrategy;
   userId: number;
 }) {
-  const today = dayjs().tz(TIMEZONE).format("YYYY-MM-DD");
+  const today = toChileDateString(new Date());
   if (params.date > today) {
     throw new Error(
       `No se puede auto-vincular una fecha futura (${params.date}). Hoy es ${today} en ${TIMEZONE}.`
@@ -2436,7 +2437,7 @@ export async function autoLinkEventPeriod(params: {
   const periodDate = dayjs(`${params.period}-01`, "YYYY-MM-DD", true);
   if (!periodDate.isValid()) throw new Error("Periodo inválido. Usa formato YYYY-MM");
 
-  const today = dayjs().tz(TIMEZONE).format("YYYY-MM-DD");
+  const today = toChileDateString(new Date());
   const periodStart = periodDate.startOf("month").format("YYYY-MM-DD");
   const periodEnd = periodDate.endOf("month").format("YYYY-MM-DD");
   const maxDate = periodEnd < today ? periodEnd : today;
@@ -2561,7 +2562,7 @@ export async function autoLinkAllEventPeriods(params: {
 }
 
 export async function listAutoLinkEligiblePeriods() {
-  const today = dayjs().tz(TIMEZONE).format("YYYY-MM-DD");
+  const today = toChileDateString(new Date());
   return db.$queryRaw<Array<{ period: string }>>`
     SELECT DISTINCT
       to_char(COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date), 'YYYY-MM') AS "period"

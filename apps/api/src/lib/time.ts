@@ -85,6 +85,43 @@ function toChileZoned(date: Date): Temporal.ZonedDateTime {
   return Temporal.Instant.fromEpochMilliseconds(date.getTime()).toZonedDateTimeISO(TIMEZONE);
 }
 
+// Display formatters (es-CL, Chile timezone). Replace dayjs locale formatting.
+const CHILE_LONG_DATE = new Intl.DateTimeFormat("es-CL", {
+  timeZone: TIMEZONE,
+  day: "numeric",
+  month: "long",
+  year: "numeric",
+});
+const CHILE_SHORT_DATE = new Intl.DateTimeFormat("es-CL", {
+  timeZone: TIMEZONE,
+  day: "2-digit",
+  month: "2-digit",
+  year: "numeric",
+});
+
+// Coerce a display input to a Date: null/undefined -> now; a bare "YYYY-MM-DD"
+// is anchored at noon UTC so it renders as that same calendar day in Chile
+// (avoids the midnight-rollback); anything else parses as an instant.
+function toDisplayDate(value: Date | string | null | undefined): Date {
+  if (value == null) return new Date();
+  if (value instanceof Date) return value;
+  const s = value.trim();
+  return /^\d{4}-\d{2}-\d{2}$/.test(s) ? new Date(`${s}T12:00:00Z`) : new Date(s);
+}
+
+/** Spanish long date, e.g. "5 de junio de 2026". (Replaces dayjs "D [de] MMMM [de] YYYY".) */
+export function formatChileLongDate(value: Date | string | null | undefined): string {
+  return CHILE_LONG_DATE.format(toDisplayDate(value));
+}
+
+/** "DD/MM/YYYY" in Chile. (Replaces dayjs "DD/MM/YYYY"; Intl alone uses "-".) */
+export function formatChileShortDate(value: Date | string | null | undefined): string {
+  const p = Object.fromEntries(
+    CHILE_SHORT_DATE.formatToParts(toDisplayDate(value)).map((x) => [x.type, x.value])
+  );
+  return `${p.day}/${p.month}/${p.year}`;
+}
+
 /**
  * Format a @db.Date column value as "YYYY-MM-DD". Reads the UTC wall-clock
  * (the column has no timezone; both ZenStack and $qb return UTC-midnight).

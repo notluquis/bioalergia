@@ -1,7 +1,6 @@
 import type { QuoteResult } from "@finanzas/orpc-contracts/immunotherapy";
-import dayjs from "dayjs";
-import "dayjs/locale/es.js";
 import { type PDFFont, PDFDocument, rgb } from "pdf-lib";
+import { formatChileLongDate } from "../../lib/time.ts";
 import {
   drawImageTopLeft,
   embedLogo,
@@ -11,8 +10,6 @@ import {
   setPdfMetadata,
   wrapText,
 } from "../pdf/pdf-base.ts";
-
-dayjs.locale("es");
 
 const ACCENT = PDF_COLORS.accent;
 const GRAY = PDF_COLORS.gray;
@@ -109,7 +106,7 @@ export async function generateBudgetPdf(input: BudgetPdfInput): Promise<Uint8Arr
   }
 
   // Datos paciente + fecha
-  const date = dayjs(input.date ?? undefined).format("D [de] MMMM [de] YYYY");
+  const date = formatChileLongDate(input.date);
   const concentrationLine =
     !hidden("concentration") && quote.concentrationUtMl != null
       ? `Concentración: ${quote.concentrationUtMl.toLocaleString("es-CL")} UT/mL${
