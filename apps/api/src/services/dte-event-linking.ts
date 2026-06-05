@@ -1,12 +1,9 @@
 import { db } from "@finanzas/db";
-import dayjs from "dayjs";
-import timezone from "dayjs/plugin/timezone.js";
-import utc from "dayjs/plugin/utc.js";
 import jaroWinkler from "talisman/metrics/jaro-winkler.js";
 import { symmetric as mongeElkanSymmetric } from "talisman/metrics/monge-elkan.js";
 import { joinClinicalText } from "../lib/clinical-text.ts";
 import { normalizeRut } from "../lib/rut.ts";
-import { toChileDateString } from "../lib/time.ts";
+import { getMonthRange, toChileDateString } from "../lib/time.ts";
 import {
   type ClinicalSeriesSnapshot,
   extractIdentityHints,
@@ -14,8 +11,7 @@ import {
   syncClinicalSeriesForInternalEventId,
 } from "./clinical-series.ts";
 
-dayjs.extend(utc);
-dayjs.extend(timezone);
+const PERIOD_REGEX = /^\d{4}-(0[1-9]|1[0-2])$/;
 
 const TIMEZONE = "America/Santiago";
 const RUT_REGEX = /\b\d{1,2}\.?\d{3}\.?\d{3}-?[\dkK]\b/g;
@@ -730,12 +726,11 @@ export function resolveSuggestionDateWindow(params: {
     params.sameDayOnly && reembolsoMultiDateBundleEnabled && isReembolsoBundleEvent(params.event);
 
   if (enableReembolsoMultiDate) {
-    const parsedDate = dayjs(params.event.eventDate, "YYYY-MM-DD", true);
-    const eventDate = parsedDate.isValid() ? parsedDate : dayjs(params.event.eventDate);
+    const base = Temporal.PlainDate.from(params.event.eventDate.slice(0, 10));
     return {
-      from: eventDate.subtract(reembolsoMultiDateWindowDays, "day").format("YYYY-MM-DD"),
+      from: base.subtract({ days: reembolsoMultiDateWindowDays }).toString(),
       mode: "reembolso_multi_date",
-      to: eventDate.add(reembolsoMultiDateWindowDays, "day").format("YYYY-MM-DD"),
+      to: base.add({ days: reembolsoMultiDateWindowDays }).toString(),
     };
   }
 
@@ -1738,13 +1733,9 @@ export async function listEventDteLinkOverview(params: {
   const trimmedQuery = params.query?.trim() ?? "";
   const hasSearch = trimmedQuery.length > 0;
   const offset = page * pageSize;
-  const periodDate = dayjs(`${params.period}-01`, "YYYY-MM-DD", true);
+  if (!PERIOD_REGEX.test(params.period)) throw new Error("Periodo inválido. Usa formato YYYY-MM");
   const today = toChileDateString(new Date());
-
-  if (!periodDate.isValid()) throw new Error("Periodo inválido. Usa formato YYYY-MM");
-
-  const periodStart = periodDate.startOf("month").format("YYYY-MM-DD");
-  const periodEnd = periodDate.endOf("month").format("YYYY-MM-DD");
+  const { from: periodStart, to: periodEnd } = getMonthRange(params.period);
   const searchLike = `%${trimmedQuery}%`;
 
   const statsRows = await db.$queryRaw<
@@ -2434,12 +2425,10 @@ export async function autoLinkEventPeriod(params: {
   strategy?: AutoLinkStrategy;
   userId: number;
 }) {
-  const periodDate = dayjs(`${params.period}-01`, "YYYY-MM-DD", true);
-  if (!periodDate.isValid()) throw new Error("Periodo inválido. Usa formato YYYY-MM");
+  if (!PERIOD_REGEX.test(params.period)) throw new Error("Periodo inválido. Usa formato YYYY-MM");
 
   const today = toChileDateString(new Date());
-  const periodStart = periodDate.startOf("month").format("YYYY-MM-DD");
-  const periodEnd = periodDate.endOf("month").format("YYYY-MM-DD");
+  const { from: periodStart, to: periodEnd } = getMonthRange(params.period);
   const maxDate = periodEnd < today ? periodEnd : today;
 
   if (periodStart > maxDate) {

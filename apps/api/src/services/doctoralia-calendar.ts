@@ -1,9 +1,8 @@
-import dayjs from "dayjs";
 import {
   getCalendarAlerts,
   getCalendarEvents,
 } from "../lib/doctoralia/doctoralia-calendar-client.ts";
-import { TIMEZONE } from "../lib/time.ts";
+import { getMonthRange, toChileDateString, toChilePeriod } from "../lib/time.ts";
 import {
   applyDoctoraliaAlertUpdates,
   createDoctoraliaSyncLog,
@@ -381,12 +380,11 @@ export class DoctoraliaCalendarSyncService {
    * Sync events for the current week
    */
   async syncCurrentWeek(scheduleIds?: number[]) {
-    const today = dayjs().tz(TIMEZONE);
-    const startOfWeek = today.subtract(today.day(), "day");
-    const endOfWeek = startOfWeek.add(6, "day");
-
-    const from = startOfWeek.format("YYYY-MM-DD");
-    const to = endOfWeek.format("YYYY-MM-DD");
+    // Sunday-start week (dayOfWeek % 7: Sun=0 … Sat=6).
+    const todayPlain = Temporal.PlainDate.from(toChileDateString(new Date()));
+    const startOfWeek = todayPlain.subtract({ days: todayPlain.dayOfWeek % 7 });
+    const from = startOfWeek.toString();
+    const to = startOfWeek.add({ days: 6 }).toString();
 
     return this.syncCalendar(from, to, scheduleIds);
   }
@@ -395,9 +393,7 @@ export class DoctoraliaCalendarSyncService {
    * Sync events for the current month
    */
   async syncCurrentMonth(scheduleIds?: number[]) {
-    const today = dayjs().tz(TIMEZONE);
-    const from = today.startOf("month").format("YYYY-MM-DD");
-    const to = today.endOf("month").format("YYYY-MM-DD");
+    const { from, to } = getMonthRange(toChilePeriod(new Date()));
 
     return this.syncCalendar(from, to, scheduleIds);
   }
