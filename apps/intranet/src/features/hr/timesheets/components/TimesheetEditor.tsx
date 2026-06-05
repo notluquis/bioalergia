@@ -103,7 +103,7 @@ function TimesheetEditorInner({
   summaryRow,
 }: TimesheetEditorProps & { initialRows: BulkRow[] }) {
   const queryClient = useQueryClient();
-  const { success: toastSuccess } = useToast();
+  const { success: toastSuccess, error: toastError } = useToast();
   const confirm = useConfirmDialog();
   const detailQueryKey = timesheetKeys.detail(employeeId, month);
   const summaryQueryKey = timesheetKeys.summary(month);
@@ -200,6 +200,7 @@ function TimesheetEditorInner({
     setEmailPrepareStatus,
     setErrorLocal,
     summaryRow,
+    toastError,
     toastSuccess,
   });
 
@@ -473,6 +474,7 @@ function createHandlePrepareEmail({
   setEmailPrepareStatus,
   setErrorLocal,
   summaryRow,
+  toastError,
   toastSuccess,
 }: {
   emailHasError: boolean;
@@ -486,6 +488,7 @@ function createHandlePrepareEmail({
   setEmailPrepareStatus: (value: PrepareStatus) => void;
   setErrorLocal: (value: null | string) => void;
   summaryRow: null | TimesheetSummaryRow;
+  toastError: (message: unknown) => void;
   toastSuccess: (message: string) => void;
 }) {
   return async () => {
@@ -511,11 +514,15 @@ function createHandlePrepareEmail({
       }
       toastSuccess("Email enviado correctamente");
     } catch (error_) {
+      const message = error_ instanceof Error ? error_.message : "Error al preparar el email";
+      setEmailPrepareStatus(null);
+      // Inline Alert solo si la mutation no marcó error ya (evita duplicado);
+      // el toast SIEMPRE se muestra para que el fallo no pase desapercibido
+      // (antes el éxito era toast y el error solo Alert inline → "no salía nada").
       if (!emailHasError) {
-        const message = error_ instanceof Error ? error_.message : "Error al preparar el email";
         setErrorLocal(message);
-        setEmailPrepareStatus(null);
       }
+      toastError(message);
     }
   };
 }
