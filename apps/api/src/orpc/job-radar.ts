@@ -1,5 +1,7 @@
 import {
   jobRadarListInputSchema,
+  jobRadarSettingsSchema,
+  jobRadarSettingsUpdateSchema,
   jobRadarSyncResultSchema,
   jobRadarUpdateInputSchema,
   jobPostingSchema,
@@ -14,7 +16,13 @@ import { getSessionUser } from "../lib/auth.ts";
 import { DomainError } from "../lib/errors.ts";
 import { logError } from "../lib/logger.ts";
 import { configureSuperjson } from "../lib/superjson-config.ts";
-import { listJobPostings, syncJobRadar, updateJobApplication } from "../services/job-radar.ts";
+import {
+  getJobRadarSettings,
+  listJobPostings,
+  syncJobRadar,
+  updateJobApplication,
+  updateJobRadarSettings,
+} from "../services/job-radar.ts";
 import { SuperJSONRPCHandler } from "./superjson.ts";
 
 configureSuperjson();
@@ -62,6 +70,23 @@ const jobRadarORPCRouterBase = {
     .handler(async ({ context }) => {
       await requireUser(context.hono);
       return syncJobRadar({ triggerSource: "manual" });
+    }),
+
+  getSettings: base
+    .route({ method: "GET", path: "/settings", summary: "Get config", tags: ["Job Radar"] })
+    .output(jobRadarSettingsSchema)
+    .handler(async ({ context }) => {
+      await requireUser(context.hono);
+      return getJobRadarSettings();
+    }),
+
+  updateSettings: base
+    .route({ method: "PATCH", path: "/settings", summary: "Update config", tags: ["Job Radar"] })
+    .input(jobRadarSettingsUpdateSchema)
+    .output(jobRadarSettingsSchema)
+    .handler(async ({ context, input }) => {
+      await requireUser(context.hono);
+      return updateJobRadarSettings(input);
     }),
 };
 

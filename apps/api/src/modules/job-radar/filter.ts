@@ -1,13 +1,10 @@
-// Filtro de perfil: decide qué ofertas merecen alerta. Configurable por env
-// (ver [feedback_minimize_hardcoded] — no hardcodear listas). Si NO hay config,
-// matchea todo (notifica cualquier oferta nueva).
-//
-//   JOB_RADAR_KEYWORDS     CSV; matchea contra title + department + location.
-//   JOB_RADAR_DEPARTMENTS  CSV; matchea contra department (exacto, case-insensitive).
+// Filtro de perfil: decide qué ofertas merecen alerta. Los valores
+// (keywords/departamentos) los provee el caller (config desde DB). Si ambos
+// están vacíos → matchea todo (notifica cualquier oferta nueva).
 
 import type { RawJob } from "./types.ts";
 
-const DEFAULT_KEYWORDS = [
+export const DEFAULT_KEYWORDS = [
   "riesgo",
   "data",
   "datos",
@@ -17,25 +14,9 @@ const DEFAULT_KEYWORDS = [
   "plaft",
 ];
 
-function parseCsvEnv(value: string | undefined, fallback: string[]): string[] {
-  if (value === undefined) return fallback;
-  const items = value
-    .split(",")
-    .map((s) => s.trim().toLowerCase())
-    .filter((s) => s.length > 0);
-  return items; // "" explícito → [] → matchea todo en esa dimensión
-}
-
 export interface ProfileFilter {
   keywords: string[];
   departments: string[];
-}
-
-export function getProfileFilter(): ProfileFilter {
-  return {
-    keywords: parseCsvEnv(process.env.JOB_RADAR_KEYWORDS, DEFAULT_KEYWORDS),
-    departments: parseCsvEnv(process.env.JOB_RADAR_DEPARTMENTS, []),
-  };
 }
 
 export function matchesProfile(job: RawJob, filter: ProfileFilter): boolean {

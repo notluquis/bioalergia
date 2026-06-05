@@ -18,6 +18,7 @@
 
 import { run, parseCronItems, type Runner } from "graphile-worker";
 import { logError, logEvent } from "../lib/logger.ts";
+import { getSetting } from "../lib/settings.ts";
 import { taskList } from "./tasks/index.ts";
 
 let runner: Runner | null = null;
@@ -78,15 +79,17 @@ export async function startQueueRunner(): Promise<void> {
     });
   }
 
-  // Job Radar — scrape de ofertas de empleo + alerta Telegram. Gateado por flag.
-  if (process.env.ENABLE_JOB_RADAR === "true") {
-    cronItems.push({
-      task: "job_radar_sync",
-      match: process.env.JOB_RADAR_CRON || "*/30 * * * *",
-      identifier: "job_radar_sync",
-      options: { backfillPeriod: 0 },
-    });
-  }
+  // Job Radar — scrape de ofertas de empleo + alerta Telegram. El cron se
+  // registra SIEMPRE; el on/off vive en DB (`jobRadar.enabled`) y lo chequea
+  // el task en cada tick (toggle sin reiniciar). El schedule sí se lee al boot.
+  const jobRadarCron =
+    (await getSetting("jobRadar.cron")) || process.env.JOB_RADAR_CRON || "*/30 * * * *";
+  cronItems.push({
+    task: "job_radar_sync",
+    match: jobRadarCron,
+    identifier: "job_radar_sync",
+    options: { backfillPeriod: 0 },
+  });
 
   const parsedCronItems = parseCronItems(cronItems);
 

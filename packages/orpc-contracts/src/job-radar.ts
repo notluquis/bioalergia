@@ -64,6 +64,28 @@ export const jobRadarSyncResultSchema = z.object({
   notified: z.number().int(),
 });
 
+export const jobRadarSettingsSchema = z.object({
+  enabled: z.boolean(),
+  companies: z.string(),
+  bci: z.boolean(),
+  keywords: z.string(),
+  departments: z.string(),
+  cron: z.string(),
+  telegramBotToken: z.string(),
+  telegramChatId: z.string(),
+});
+
+export const jobRadarSettingsUpdateSchema = z.object({
+  enabled: z.boolean().optional(),
+  companies: z.string().optional(),
+  bci: z.boolean().optional(),
+  keywords: z.string().optional(),
+  departments: z.string().optional(),
+  cron: z.string().optional(),
+  telegramBotToken: z.string().optional(),
+  telegramChatId: z.string().optional(),
+});
+
 export const jobRadarContract = {
   list: oc
     .route({ method: "GET", path: "/postings" })
@@ -74,8 +96,14 @@ export const jobRadarContract = {
     .input(jobRadarUpdateInputSchema)
     .output(jobPostingSchema),
   syncNow: oc.route({ method: "POST", path: "/sync" }).output(jobRadarSyncResultSchema),
+  getSettings: oc.route({ method: "GET", path: "/settings" }).output(jobRadarSettingsSchema),
+  updateSettings: oc
+    .route({ method: "PATCH", path: "/settings" })
+    .input(jobRadarSettingsUpdateSchema)
+    .output(jobRadarSettingsSchema),
 };
 
 export type JobRadarContract = typeof jobRadarContract;
 export type JobPostingDTO = z.output<typeof jobPostingSchema>;
 export type JobApplicationStatus = z.infer<typeof jobApplicationStatusSchema>;
+export type JobRadarSettings = z.output<typeof jobRadarSettingsSchema>;

@@ -9,11 +9,95 @@
 import { db, type JsonValue } from "@finanzas/db";
 import { DomainError } from "../lib/errors.ts";
 import { logEvent, logWarn } from "../lib/logger.ts";
+import { getSettings, updateSettings } from "../lib/settings.ts";
 import { fetchBciJobs } from "../modules/job-radar/bci.ts";
-import { getProfileFilter, matchesProfile } from "../modules/job-radar/filter.ts";
+import {
+  DEFAULT_KEYWORDS,
+  matchesProfile,
+  type ProfileFilter,
+} from "../modules/job-radar/filter.ts";
 import { fetchTeamtailorJobs } from "../modules/job-radar/teamtailor.ts";
-import { sendTelegramMessage, telegramConfigured } from "../modules/job-radar/telegram.ts";
+import {
+  sendTelegramMessage,
+  telegramConfigured,
+  type TelegramCreds,
+} from "../modules/job-radar/telegram.ts";
 import type { RawJob } from "../modules/job-radar/types.ts";
+
+// ── Configuración (DB-backed, fallback env, fallback default) ─────────────────
+// Toda la config vive en la tabla `settings` (keys `jobRadar.*`), editable desde
+// el dashboard. Se lee fresca en cada sync → cambios sin reiniciar (salvo el cron
+// schedule, que se registra al boot en queue/runner.ts).
+
+export const JOB_RADAR_DEFAULT_CRON = "*/30 * * * *";
+
+const KEYS = {
+  enabled: "jobRadar.enabled",
+  companies: "jobRadar.companies",
+  bci: "jobRadar.bci",
+  keywords: "jobRadar.keywords",
+  departments: "jobRadar.departments",
+  cron: "jobRadar.cron",
+  telegramBotToken: "jobRadar.telegramBotToken",
+  telegramChatId: "jobRadar.telegramChatId",
+} as const;
+
+export interface JobRadarConfig {
+  enabled: boolean;
+  companies: string[];
+  bci: boolean;
+  keywords: string[];
+  departments: string[];
+  cron: string;
+  telegram: TelegramCreds;
+}
+
+function parseCsv(value: string): string[] {
+  return value
+    .split(",")
+    .map((s) => s.trim().toLowerCase())
+    .filter((s) => s.length > 0);
+}
+
+function parseBool(value: string | undefined, fallback: boolean): boolean {
+  if (value === undefined) return fallback;
+  return value === "true" || value === "1";
+}
+
+// rec[key] si existe (incluso ""), si no → env, si no → default.
+function pick(
+  rec: Record<string, string>,
+  key: string,
+  env: string | undefined
+): string | undefined {
+  if (key in rec) return rec[key];
+  return env;
+}
+
+export async function getJobRadarConfig(): Promise<JobRadarConfig> {
+  const rec = await getSettings();
+
+  const companiesRaw = pick(rec, KEYS.companies, process.env.JOB_RADAR_COMPANIES) ?? "";
+  const keywordsRaw = pick(rec, KEYS.keywords, process.env.JOB_RADAR_KEYWORDS);
+  const departmentsRaw = pick(rec, KEYS.departments, process.env.JOB_RADAR_DEPARTMENTS) ?? "";
+
+  return {
+    enabled: parseBool(pick(rec, KEYS.enabled, process.env.ENABLE_JOB_RADAR), false),
+    companies: parseCsv(companiesRaw),
+    // bci on por defecto (env JOB_RADAR_BCI=false lo apaga)
+    bci: parseBool(
+      pick(rec, KEYS.bci, process.env.JOB_RADAR_BCI === "false" ? "false" : undefined),
+      true
+    ),
+    keywords: keywordsRaw === undefined ? DEFAULT_KEYWORDS : parseCsv(keywordsRaw),
+    departments: parseCsv(departmentsRaw),
+    cron: pick(rec, KEYS.cron, process.env.JOB_RADAR_CRON) || JOB_RADAR_DEFAULT_CRON,
+    telegram: {
+      botToken: pick(rec, KEYS.telegramBotToken, process.env.TELEGRAM_BOT_TOKEN) ?? "",
+      chatId: pick(rec, KEYS.telegramChatId, process.env.TELEGRAM_CHAT_ID) ?? "",
+    },
+  };
+}
 
 // Una fuente a sincronizar: identificada por (source, company) y su fetcher.
 interface JobSource {
@@ -23,15 +107,9 @@ interface JobSource {
   fetch: () => Promise<RawJob[]>;
 }
 
-function getSources(): JobSource[] {
+function getSources(config: JobRadarConfig): JobSource[] {
   const sources: JobSource[] = [];
-
-  // Teamtailor multi-empresa (CSV de subdominios)
-  const companies = (process.env.JOB_RADAR_COMPANIES ?? "")
-    .split(",")
-    .map((s) => s.trim().toLowerCase())
-    .filter((s) => s.length > 0);
-  for (const company of companies) {
+  for (const company of config.companies) {
     sources.push({
       source: "teamtailor",
       company,
@@ -39,17 +117,8 @@ function getSources(): JobSource[] {
       fetch: () => fetchTeamtailorJobs(company),
     });
   }
-
-  // BCI (trabajaenbci.cl) — on por defecto; apagar con JOB_RADAR_BCI=false
-  if (process.env.JOB_RADAR_BCI !== "false") {
+  if (config.bci) {
     sources.push({ source: "bci", company: "bci", label: "bci", fetch: fetchBciJobs });
-  }
-
-  if (sources.length === 0) {
-    throw new DomainError(
-      "BAD_REQUEST",
-      "Sin fuentes configuradas (JOB_RADAR_COMPANIES vacío y JOB_RADAR_BCI=false)"
-    );
   }
   return sources;
 }
@@ -93,7 +162,7 @@ function formatJobMessage(job: RawJob): string {
 async function upsertSourceJobs(
   src: JobSource,
   jobs: RawJob[],
-  filter: ReturnType<typeof getProfileFilter>
+  filter: ProfileFilter
 ): Promise<{ inserted: number; updated: number; closed: number }> {
   let inserted = 0;
   let updated = 0;
@@ -178,8 +247,8 @@ async function upsertSourceJobs(
   return { inserted, updated, closed };
 }
 
-async function notifyNewMatches(): Promise<number> {
-  if (!telegramConfigured()) {
+async function notifyNewMatches(creds: TelegramCreds | null): Promise<number> {
+  if (!telegramConfigured(creds)) {
     logWarn("job_radar.notify.skipped_no_telegram", {});
     return 0;
   }
@@ -203,7 +272,8 @@ async function notifyNewMatches(): Promise<number> {
         publishedAt: job.publishedAt,
         lastmod: job.lastmod,
         raw: job.raw,
-      })
+      }),
+      creds
     );
     if (!ok) break; // Telegram caído → reintenta en la próxima corrida
     await db.jobPosting.update({ where: { id: job.id }, data: { notified: true } });
@@ -214,8 +284,24 @@ async function notifyNewMatches(): Promise<number> {
 
 export async function syncJobRadar(options: JobRadarSyncOptions = {}): Promise<JobRadarSyncResult> {
   const started = Date.now();
-  const sources = getSources();
-  const filter = getProfileFilter();
+  const trigger = options.triggerSource ?? "manual";
+  const config = await getJobRadarConfig();
+
+  // Cron respeta el flag DB `jobRadar.enabled`; el sync manual (botón dashboard)
+  // corre siempre.
+  if (trigger === "cron" && !config.enabled) {
+    logEvent("job_radar.skipped_disabled", { trigger });
+    return { sources: [], fetched: 0, inserted: 0, updated: 0, closed: 0, notified: 0 };
+  }
+
+  const sources = getSources(config);
+  if (sources.length === 0) {
+    throw new DomainError(
+      "BAD_REQUEST",
+      "Sin fuentes configuradas (agrega empresas Teamtailor o activa BCI en ajustes)"
+    );
+  }
+  const filter: ProfileFilter = { keywords: config.keywords, departments: config.departments };
 
   let fetched = 0;
   let inserted = 0;
@@ -235,12 +321,12 @@ export async function syncJobRadar(options: JobRadarSyncOptions = {}): Promise<J
     closed += r.closed;
   }
 
-  const notified = await notifyNewMatches();
+  const notified = await notifyNewMatches(config.telegram);
 
   const labels = sources.map((s) => s.label);
   logEvent("job_radar.done", {
     ms: Date.now() - started,
-    triggerSource: options.triggerSource ?? "manual",
+    triggerSource: trigger,
     sources: labels,
     fetched,
     inserted,
@@ -318,4 +404,59 @@ export async function updateJobApplication(input: UpdateJobApplicationInput) {
   if (input.notes !== undefined) data.notes = input.notes;
 
   return db.jobPosting.update({ where: { id: input.id }, data });
+}
+
+// ── Ajustes (DB-backed, editables desde el dashboard) ────────────────────────
+
+export interface JobRadarSettingsDTO {
+  enabled: boolean;
+  companies: string; // CSV
+  bci: boolean;
+  keywords: string; // CSV
+  departments: string; // CSV
+  cron: string;
+  telegramBotToken: string;
+  telegramChatId: string;
+}
+
+export async function getJobRadarSettings(): Promise<JobRadarSettingsDTO> {
+  const config = await getJobRadarConfig();
+  return {
+    enabled: config.enabled,
+    companies: config.companies.join(", "),
+    bci: config.bci,
+    keywords: config.keywords.join(", "),
+    departments: config.departments.join(", "),
+    cron: config.cron,
+    telegramBotToken: config.telegram.botToken,
+    telegramChatId: config.telegram.chatId,
+  };
+}
+
+export interface UpdateJobRadarSettingsInput {
+  enabled?: boolean;
+  companies?: string;
+  bci?: boolean;
+  keywords?: string;
+  departments?: string;
+  cron?: string;
+  telegramBotToken?: string;
+  telegramChatId?: string;
+}
+
+export async function updateJobRadarSettings(
+  input: UpdateJobRadarSettingsInput
+): Promise<JobRadarSettingsDTO> {
+  const rows: Record<string, string> = {};
+  if (input.enabled !== undefined) rows[KEYS.enabled] = input.enabled ? "true" : "false";
+  if (input.bci !== undefined) rows[KEYS.bci] = input.bci ? "true" : "false";
+  if (input.companies !== undefined) rows[KEYS.companies] = input.companies;
+  if (input.keywords !== undefined) rows[KEYS.keywords] = input.keywords;
+  if (input.departments !== undefined) rows[KEYS.departments] = input.departments;
+  if (input.cron !== undefined) rows[KEYS.cron] = input.cron;
+  if (input.telegramBotToken !== undefined) rows[KEYS.telegramBotToken] = input.telegramBotToken;
+  if (input.telegramChatId !== undefined) rows[KEYS.telegramChatId] = input.telegramChatId;
+
+  if (Object.keys(rows).length > 0) await updateSettings(rows);
+  return getJobRadarSettings();
 }

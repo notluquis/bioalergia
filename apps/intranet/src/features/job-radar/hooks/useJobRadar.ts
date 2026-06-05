@@ -22,3 +22,16 @@ export function useSyncJobRadar() {
     onSuccess: () => void qc.invalidateQueries({ queryKey: jobRadarKeys.all }),
   });
 }
+
+export function useJobRadarSettings() {
+  return useQuery(jobRadarQueries.settings());
+}
+
+export function useUpdateJobRadarSettings() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: Parameters<typeof jobRadarORPCClient.updateSettings>[0]) =>
+      jobRadarORPCClient.updateSettings(input),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: jobRadarKeys.all }),
+  });
+}

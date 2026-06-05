@@ -12,6 +12,22 @@
     "matched": "Profile match",
     "changeStatus": "Change status",
     "viewOffer": "View offer",
+    "settings": {
+      "toggle": "Settings",
+      "title": "Job Radar settings",
+      "description": "Configuration stored in the database.",
+      "enabled": "Automatic sync",
+      "bci": "Include BCI (Chile + Peru)",
+      "companies": "Teamtailor companies (CSV of subdomains)",
+      "cron": "Frequency (cron)",
+      "keywords": "Profile keywords (CSV)",
+      "departments": "Departments (CSV)",
+      "telegramBotToken": "Telegram Bot Token",
+      "telegramChatId": "Telegram Chat ID",
+      "save": "Save",
+      "saved": "Saved",
+      "cronNote": "Changing frequency needs a service restart; on/off is immediate."
+    },
     "filters": {
       "all": "All",
       "applicationStatus": "Application status",

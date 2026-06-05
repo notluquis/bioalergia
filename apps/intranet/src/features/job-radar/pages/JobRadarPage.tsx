@@ -13,6 +13,7 @@ import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import dayjs from "dayjs";
 import type { JobApplicationStatus, JobPostingDTO } from "@finanzas/orpc-contracts/job-radar";
+import { JobRadarSettingsPanel } from "../components/JobRadarSettingsPanel";
 import { useJobPostings, useSyncJobRadar, useUpdateJobApplication } from "../hooks/useJobRadar";
 import type { JobRadarListFilters } from "../queries";
 
@@ -48,6 +49,7 @@ export function JobRadarPage() {
   const [postingStatus, setPostingStatus] = useState<"OPEN" | "CLOSED" | "ALL">("OPEN");
   const [source, setSource] = useState<string>("ALL");
   const [search, setSearch] = useState("");
+  const [showSettings, setShowSettings] = useState(false);
 
   const filters: JobRadarListFilters = useMemo(() => {
     const f: JobRadarListFilters = { postingStatus };
@@ -78,10 +80,17 @@ export function JobRadarPage() {
             {t("jobRadar.count", { count: postings?.length ?? 0 })}
           </p>
         </div>
-        <Button variant="primary" isPending={sync.isPending} onPress={() => sync.mutate()}>
-          {t("jobRadar.sync")}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="tertiary" onPress={() => setShowSettings((v) => !v)}>
+            {t("jobRadar.settings.toggle")}
+          </Button>
+          <Button variant="primary" isPending={sync.isPending} onPress={() => sync.mutate()}>
+            {t("jobRadar.sync")}
+          </Button>
+        </div>
       </header>
+
+      {showSettings && <JobRadarSettingsPanel />}
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Select

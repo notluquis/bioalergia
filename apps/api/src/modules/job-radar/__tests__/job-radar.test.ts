@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { fetchBciJobs } from "../bci.ts";
-import { getProfileFilter, matchesProfile, type ProfileFilter } from "../filter.ts";
+import { matchesProfile, type ProfileFilter } from "../filter.ts";
 import { fetchTeamtailorJobs } from "../teamtailor.ts";
 import type { RawJob } from "../types.ts";
 
@@ -187,26 +187,5 @@ describe("matchesProfile", () => {
     const filter: ProfileFilter = { keywords: [], departments: ["riesgo"] };
     expect(matchesProfile(makeJob({ department: "Riesgo" }), filter)).toBe(true);
     expect(matchesProfile(makeJob({ department: "Comercial" }), filter)).toBe(false);
-  });
-});
-
-describe("getProfileFilter", () => {
-  const orig = { kw: process.env.JOB_RADAR_KEYWORDS, dept: process.env.JOB_RADAR_DEPARTMENTS };
-  afterEach(() => {
-    process.env.JOB_RADAR_KEYWORDS = orig.kw;
-    process.env.JOB_RADAR_DEPARTMENTS = orig.dept;
-  });
-
-  it("uses defaults when env unset", () => {
-    delete process.env.JOB_RADAR_KEYWORDS;
-    delete process.env.JOB_RADAR_DEPARTMENTS;
-    const f = getProfileFilter();
-    expect(f.keywords).toContain("riesgo");
-    expect(f.departments).toEqual([]);
-  });
-
-  it("empty string env → [] (match-all dimension)", () => {
-    process.env.JOB_RADAR_KEYWORDS = "";
-    expect(getProfileFilter().keywords).toEqual([]);
   });
 });

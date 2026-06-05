@@ -12,6 +12,22 @@
     "matched": "Match perfil",
     "changeStatus": "Cambiar estado",
     "viewOffer": "Ver oferta",
+    "settings": {
+      "toggle": "Ajustes",
+      "title": "Ajustes de Job Radar",
+      "description": "Configuración guardada en la base de datos.",
+      "enabled": "Sincronización automática",
+      "bci": "Incluir BCI (Chile + Perú)",
+      "companies": "Empresas Teamtailor (CSV de subdominios)",
+      "cron": "Frecuencia (cron)",
+      "keywords": "Palabras clave del perfil (CSV)",
+      "departments": "Departamentos (CSV)",
+      "telegramBotToken": "Telegram Bot Token",
+      "telegramChatId": "Telegram Chat ID",
+      "save": "Guardar",
+      "saved": "Guardado",
+      "cronNote": "Cambiar la frecuencia requiere reiniciar el servicio; el on/off es inmediato."
+    },
     "filters": {
       "all": "Todos",
       "applicationStatus": "Estado postulación",
