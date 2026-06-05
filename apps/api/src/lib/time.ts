@@ -59,9 +59,22 @@ export function toChileDateString(date: Date): string {
 // Anti-pattern that caused the recurring off-by-one bugs: bare `dayjs(x)` or
 // `dayjs(x).tz(TZ)` on a @db.Date/@db.Time value rolls the calendar day back
 // under Santiago. NEVER do that — use these helpers.
+//
+// These helpers are intentionally dayjs-free: native Date + Intl only. (Temporal
+// is NOT available in the Node 26 runtime — verified, even with --harmony-temporal
+// — so we don't depend on it.) `en-CA` locale renders YYYY-MM-DD, which combined
+// with `timeZone` gives a correct, DST-aware local calendar date.
 // ===========================================================================
 
 const HHMM_OR_HHMMSS = /^(\d{1,2}):(\d{2})(?::\d{2})?/;
+
+// Reusable: a true instant -> its calendar date in America/Santiago, "YYYY-MM-DD".
+const CHILE_DATE_FORMAT = new Intl.DateTimeFormat("en-CA", {
+  timeZone: TIMEZONE,
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
 
 /**
  * Format a @db.Date column value as "YYYY-MM-DD". Reads the UTC wall-clock
@@ -95,7 +108,8 @@ export function isoToDbDate(iso: string): Date {
 export function dbTimeToHHmm(value: Date | string | null | undefined): string | null {
   if (value == null) return null;
   if (value instanceof Date) {
-    return Number.isNaN(value.getTime()) ? null : dayjs.utc(value).format("HH:mm");
+    // UTC-anchored @db.Time Date -> "HH:mm" from the UTC time part (native).
+    return Number.isNaN(value.getTime()) ? null : value.toISOString().slice(11, 16);
   }
   const match = value.match(HHMM_OR_HHMMSS);
   if (!match) return null;
@@ -118,7 +132,7 @@ export function hhmmToDbTime(value: string | null | undefined): Date | null {
   const minutes = Number(m);
   const seconds = Number(s);
   if (hours > 23 || minutes > 59 || seconds > 59) return null;
-  return dayjs.utc(0).hour(hours).minute(minutes).second(seconds).millisecond(0).toDate();
+  return new Date(Date.UTC(1970, 0, 1, hours, minutes, seconds, 0));
 }
 
 /**
@@ -128,8 +142,8 @@ export function hhmmToDbTime(value: string | null | undefined): Date | null {
  */
 export function instantToChileDate(value: Date | string | null | undefined): string | null {
   if (value == null) return null;
-  const d = dayjs(value).tz(TIMEZONE);
-  return d.isValid() ? d.format("YYYY-MM-DD") : null;
+  const d = value instanceof Date ? value : new Date(value);
+  return Number.isNaN(d.getTime()) ? null : CHILE_DATE_FORMAT.format(d);
 }
 
 /**
