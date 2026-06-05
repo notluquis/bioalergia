@@ -1,8 +1,7 @@
-import dayjs from "dayjs";
 import jaroWinkler from "talisman/metrics/jaro-winkler.js";
 
 import { joinClinicalText } from "../../../lib/clinical-text.ts";
-import { TIMEZONE } from "../constants.ts";
+import { dbDateToISO } from "../../../lib/time.ts";
 import type { HealthInsuranceType, InsuranceEventLike, InsuranceResolution } from "../types.ts";
 
 // Health insurance — detect from descriptions using a normalized/fuzzy
@@ -92,8 +91,10 @@ function inferInsuranceFromEventText(
 
 function resolveInsuranceEventSortKey(event: InsuranceEventLike): string {
   if (event.eventDate) return `${event.eventDate}T23:59:59`;
-  if (event.startDateTime) return dayjs(event.startDateTime).tz(TIMEZONE).toISOString();
-  if (event.startDate) return dayjs(event.startDate).tz(TIMEZONE).endOf("day").toISOString();
+  // startDateTime is a real instant; startDate is @db.Date (end-of-day key,
+  // dbDateToISO avoids the .tz() rollback, matching the eventDate-branch form).
+  if (event.startDateTime) return new Date(event.startDateTime).toISOString();
+  if (event.startDate) return `${dbDateToISO(event.startDate)}T23:59:59`;
   return "0000-00-00T00:00:00.000Z";
 }
 

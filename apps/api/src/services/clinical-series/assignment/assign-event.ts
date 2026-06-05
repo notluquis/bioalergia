@@ -1,11 +1,9 @@
 import { dbClinicalSeries as db } from "@finanzas/db/slices";
-import dayjs from "dayjs";
 
 import { parseCalendarMetadata } from "../../../lib/parsers.ts";
 
 import { buildSeriesDisplayName } from "../classification/display.ts";
 import { inferSeriesKind } from "../classification/kind.ts";
-import { TIMEZONE } from "../constants.ts";
 import type { SeriesAssignmentContext } from "../context.ts";
 import { resolveClinicalIdentity } from "../extraction/identity.ts";
 import { extractSeriesPhones } from "../extraction/phones.ts";
@@ -105,7 +103,7 @@ export async function assignEventToSeries(
     }
   }
 
-  const eventDateDjs = dayjs.tz(event.eventDate, TIMEZONE);
+  const eventDateDjs = Temporal.PlainDate.from(event.eventDate.slice(0, 10));
 
   if (!targetSeriesId) {
     const created = await db.clinicalSeries.create({

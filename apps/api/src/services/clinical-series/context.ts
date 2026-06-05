@@ -1,13 +1,55 @@
 import { dbClinicalSeries as db } from "@finanzas/db/slices";
-import dayjs from "dayjs";
 
+import { dbDateToISO, instantToChileDate } from "../../lib/time.ts";
 import { normalizeRut } from "../../lib/rut.ts";
 
-import { TIMEZONE } from "./constants.ts";
 import { getSeriesPatientPhones } from "./extraction/phones.ts";
 import { compareSeriesCanonicalPriority, haveCompatiblePatientNames } from "./matching/compare.ts";
 import { getSignificantNameTokens, normalizeName } from "./normalization/names.ts";
 import type { ClinicalSeriesKind } from "./types.ts";
+
+type EventDateFields = {
+  startDate?: Date | null;
+  startDateTime?: Date | null;
+  endDate?: Date | null;
+  endDateTime?: Date | null;
+};
+
+// The event's Chile calendar day. @db.Date via dbDateToISO (UTC, no rollback);
+// @db.Timestamptz via instantToChileDate. Same priority as the old coalesce.
+function eventPlainDate(e: EventDateFields): Temporal.PlainDate | null {
+  const iso =
+    dbDateToISO(e.startDate) ??
+    instantToChileDate(e.startDateTime) ??
+    dbDateToISO(e.endDate) ??
+    instantToChileDate(e.endDateTime);
+  return iso ? Temporal.PlainDate.from(iso) : null;
+}
+
+/** Sorted (asc) list of each event's Chile calendar day. */
+export function toEventPlainDates(events: EventDateFields[]): Temporal.PlainDate[] {
+  return events
+    .map(eventPlainDate)
+    .filter((v): v is Temporal.PlainDate => v != null)
+    .sort(Temporal.PlainDate.compare);
+}
+
+/** Distance in days from eventDate to the [min,max] span (0 if inside). */
+export function dayDistanceToSpan(
+  eventDate: Temporal.PlainDate,
+  sortedDates: Temporal.PlainDate[]
+): number {
+  if (sortedDates.length === 0) return Infinity;
+  const min = sortedDates[0];
+  const max = sortedDates[sortedDates.length - 1];
+  if (Temporal.PlainDate.compare(eventDate, min) < 0) {
+    return eventDate.until(min, { largestUnit: "day" }).days;
+  }
+  if (Temporal.PlainDate.compare(eventDate, max) > 0) {
+    return max.until(eventDate, { largestUnit: "day" }).days;
+  }
+  return 0;
+}
 
 export interface SeriesEntry {
   beneficiaryName: null | string;
@@ -15,8 +57,8 @@ export interface SeriesEntry {
   eventCount: number;
   id: number;
   kind: ClinicalSeriesKind;
-  maxDate: dayjs.Dayjs | null;
-  minDate: dayjs.Dayjs | null;
+  maxDate: Temporal.PlainDate | null;
+  minDate: Temporal.PlainDate | null;
   patientName: null | string;
   patientPhones: string[];
   patientRut: null | string;
@@ -91,14 +133,7 @@ export class SeriesAssignmentContext {
       orderBy: { id: "asc" },
     });
     for (const s of rows) {
-      const dates = s.events
-        .map(
-          (e: (typeof s.events)[number]) =>
-            e.startDate ?? e.startDateTime ?? e.endDate ?? e.endDateTime
-        )
-        .filter((v: Date | null): v is Date => v instanceof Date)
-        .map((v: Date) => dayjs(v).tz(TIMEZONE))
-        .sort((a: dayjs.Dayjs, b: dayjs.Dayjs) => a.valueOf() - b.valueOf());
+      const dates = toEventPlainDates(s.events);
       ctx.addEntry({
         beneficiaryName: s.beneficiaryName,
         beneficiaryRut: s.beneficiaryRut,
@@ -116,10 +151,14 @@ export class SeriesAssignmentContext {
   }
 
   /** Distance in days between eventDate and the series' event span. */
-  private dist(entry: SeriesEntry, eventDate: dayjs.Dayjs): number {
+  private dist(entry: SeriesEntry, eventDate: Temporal.PlainDate): number {
     if (!entry.minDate || !entry.maxDate) return Infinity;
-    if (eventDate.isBefore(entry.minDate)) return entry.minDate.diff(eventDate, "day");
-    if (eventDate.isAfter(entry.maxDate)) return eventDate.diff(entry.maxDate, "day");
+    if (Temporal.PlainDate.compare(eventDate, entry.minDate) < 0) {
+      return eventDate.until(entry.minDate, { largestUnit: "day" }).days;
+    }
+    if (Temporal.PlainDate.compare(eventDate, entry.maxDate) > 0) {
+      return entry.maxDate.until(eventDate, { largestUnit: "day" }).days;
+    }
     return 0;
   }
 
@@ -132,7 +171,7 @@ export class SeriesAssignmentContext {
   findByName(
     name: string,
     kind: ClinicalSeriesKind,
-    eventDate: dayjs.Dayjs,
+    eventDate: Temporal.PlainDate,
     thresholdDays: number
   ): number | undefined {
     const ids = this.nameKindIndex.get(`${normalizeName(name)}:${kind}`) ?? [];
@@ -171,7 +210,7 @@ export class SeriesAssignmentContext {
     phones: string[],
     name: string,
     kind: ClinicalSeriesKind,
-    eventDate: dayjs.Dayjs,
+    eventDate: Temporal.PlainDate,
     thresholdDays: number
   ): number | undefined {
     void eventDate;
@@ -227,7 +266,7 @@ export class SeriesAssignmentContext {
   findByTokenOverlap(
     name: string,
     kind: ClinicalSeriesKind,
-    eventDate: dayjs.Dayjs,
+    eventDate: Temporal.PlainDate,
     thresholdDays: number
   ): number | undefined {
     const eventTokens = getSignificantNameTokens(name);
@@ -276,10 +315,12 @@ export class SeriesAssignmentContext {
   }
 
   /** Extend the series' date span after assigning an event to it. */
-  touch(id: number, eventDate: dayjs.Dayjs): void {
+  touch(id: number, eventDate: Temporal.PlainDate): void {
     const entry = this.seriesById.get(id);
     if (!entry) return;
-    if (!entry.minDate || eventDate.isBefore(entry.minDate)) entry.minDate = eventDate;
-    if (!entry.maxDate || eventDate.isAfter(entry.maxDate)) entry.maxDate = eventDate;
+    if (!entry.minDate || Temporal.PlainDate.compare(eventDate, entry.minDate) < 0)
+      entry.minDate = eventDate;
+    if (!entry.maxDate || Temporal.PlainDate.compare(eventDate, entry.maxDate) > 0)
+      entry.maxDate = eventDate;
   }
 }

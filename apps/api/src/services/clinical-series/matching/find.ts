@@ -1,12 +1,10 @@
 import { dbClinicalSeries as db } from "@finanzas/db/slices";
-import dayjs from "dayjs";
 
 import { getSeriesPatientPhones } from "../extraction/phones.ts";
 import { getSignificantNameTokens } from "../normalization/names.ts";
 import { isCloseNormalizedRut } from "../normalization/rut.ts";
 
-import { TIMEZONE } from "../constants.ts";
-import type { SeriesAssignmentContext } from "../context.ts";
+import { dayDistanceToSpan, type SeriesAssignmentContext, toEventPlainDates } from "../context.ts";
 import { getSeriesWindowDays } from "../classification/kind.ts";
 import {
   chooseBetterSeriesCandidate,
@@ -30,7 +28,7 @@ export async function findMatchingSeries(
   },
   ctx?: SeriesAssignmentContext
 ): Promise<null | number> {
-  const eventDateDjs = dayjs.tz(params.eventDate, TIMEZONE);
+  const eventDateDjs = Temporal.PlainDate.from(params.eventDate.slice(0, 10));
   const thresholdDays = getSeriesWindowDays(params.kind);
 
   // ── Fast path: all lookups in memory (O(1) / O(k)) ───────────────────────
@@ -216,26 +214,7 @@ export async function findMatchingSeries(
     });
     let best: null | { distance: number; id: number; score: number } = null;
     for (const c of nameCandidates) {
-      const dates = c.events
-        .map(
-          (e: (typeof c.events)[number]) =>
-            e.startDate ?? e.startDateTime ?? e.endDate ?? e.endDateTime
-        )
-        .filter((v: Date | null): v is Date => v instanceof Date)
-        .map((v: Date) => dayjs(v).tz(TIMEZONE))
-        .sort((a: dayjs.Dayjs, b: dayjs.Dayjs) => a.valueOf() - b.valueOf());
-      const distance =
-        dates.length === 0
-          ? Infinity
-          : (() => {
-              const s = dates[0];
-              const e = dates[dates.length - 1];
-              return eventDateDjs.isBefore(s)
-                ? s.diff(eventDateDjs, "day")
-                : eventDateDjs.isAfter(e)
-                  ? eventDateDjs.diff(e, "day")
-                  : 0;
-            })();
+      const distance = dayDistanceToSpan(eventDateDjs, toEventPlainDates(c.events));
       if (distance > thresholdDays) continue;
       const score = scoreClinicalSeriesIdentityQuality({
         beneficiaryName: c.beneficiaryName,
@@ -443,26 +422,7 @@ export async function findMatchingSeries(
         const cTokens = getSignificantNameTokens(c.patientName);
         const overlap = eventTokens.filter((t) => cTokens.includes(t)).length;
         if (overlap < 2 || overlap / Math.min(eventTokens.length, cTokens.length) < 2 / 3) continue;
-        const dates = c.events
-          .map(
-            (e: (typeof c.events)[number]) =>
-              e.startDate ?? e.startDateTime ?? e.endDate ?? e.endDateTime
-          )
-          .filter((v: Date | null): v is Date => v instanceof Date)
-          .map((v: Date) => dayjs(v).tz(TIMEZONE))
-          .sort((a: dayjs.Dayjs, b: dayjs.Dayjs) => a.valueOf() - b.valueOf());
-        const distance =
-          dates.length === 0
-            ? Infinity
-            : (() => {
-                const s = dates[0];
-                const e = dates[dates.length - 1];
-                return eventDateDjs.isBefore(s)
-                  ? s.diff(eventDateDjs, "day")
-                  : eventDateDjs.isAfter(e)
-                    ? eventDateDjs.diff(e, "day")
-                    : 0;
-              })();
+        const distance = dayDistanceToSpan(eventDateDjs, toEventPlainDates(c.events));
         if (distance > thresholdDays) continue;
         const score = scoreClinicalSeriesIdentityQuality({
           beneficiaryName: c.beneficiaryName,
