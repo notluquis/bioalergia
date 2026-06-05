@@ -1,7 +1,17 @@
-import { Button, Chip, Input, Label, ListBox, Select, TextField, Tooltip } from "@heroui/react";
+import {
+  Button,
+  Chip,
+  Dropdown,
+  Input,
+  Label,
+  ListBox,
+  Select,
+  TextField,
+  Tooltip,
+} from "@heroui/react";
 import type { ColumnDef } from "@tanstack/react-table";
 import dayjs from "dayjs";
-import { Ban, ExternalLink, Eye, RefreshCw, Send, Sparkles, Star } from "lucide-react";
+import { Ban, ExternalLink, Eye, ListChecks, RefreshCw, Send, Sparkles, Star } from "lucide-react";
 import { type ReactNode, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { JobApplicationStatus, JobPostingDTO } from "@finanzas/orpc-contracts/job-radar";
@@ -194,6 +204,27 @@ export function JobRadarPage() {
                 <Ban size={16} aria-hidden />,
                 () => setStatus(job.id, "DISCARDED")
               )}
+              <Dropdown>
+                <Dropdown.Trigger>
+                  <Button
+                    aria-label={t("jobRadar.changeStatus")}
+                    isIconOnly
+                    size="sm"
+                    variant="outline"
+                  >
+                    <ListChecks size={16} aria-hidden />
+                  </Button>
+                </Dropdown.Trigger>
+                <Dropdown.Popover>
+                  <Dropdown.Menu onAction={(key) => setStatus(job.id, key as JobApplicationStatus)}>
+                    {APP_STATUSES.map((s) => (
+                      <Dropdown.Item key={s} id={s} textValue={statusLabel(s)}>
+                        <Label>{statusLabel(s)}</Label>
+                      </Dropdown.Item>
+                    ))}
+                  </Dropdown.Menu>
+                </Dropdown.Popover>
+              </Dropdown>
             </div>
           );
         },

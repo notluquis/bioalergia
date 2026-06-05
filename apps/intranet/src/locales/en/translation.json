@@ -37,6 +37,7 @@
       "description": "Configuration stored in the database.",
       "enabled": "Automatic sync",
       "bci": "Include BCI (Chile + Peru)",
+      "getonbrd": "Include GetOnBoard (searches by keywords)",
       "companies": "Teamtailor companies (CSV of subdomains)",
       "greenhouse": "Greenhouse boards (CSV of tokens)",
       "lever": "Lever companies (CSV of slugs)",

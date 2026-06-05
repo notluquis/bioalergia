@@ -37,6 +37,7 @@
       "description": "Configuración guardada en la base de datos.",
       "enabled": "Sincronización automática",
       "bci": "Incluir BCI (Chile + Perú)",
+      "getonbrd": "Incluir GetOnBoard (busca por keywords)",
       "companies": "Empresas Teamtailor (CSV de subdominios)",
       "greenhouse": "Boards Greenhouse (CSV de tokens)",
       "lever": "Empresas Lever (CSV de slugs)",

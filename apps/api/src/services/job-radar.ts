@@ -16,6 +16,7 @@ import {
   matchesProfile,
   type ProfileFilter,
 } from "../modules/job-radar/filter.ts";
+import { fetchGetonbrdJobs } from "../modules/job-radar/getonbrd.ts";
 import { fetchGreenhouseJobs } from "../modules/job-radar/greenhouse.ts";
 import { fetchLeverJobs } from "../modules/job-radar/lever.ts";
 import { fetchTeamtailorJobs } from "../modules/job-radar/teamtailor.ts";
@@ -37,6 +38,7 @@ const KEYS = {
   enabled: "jobRadar.enabled",
   companies: "jobRadar.companies",
   bci: "jobRadar.bci",
+  getonbrd: "jobRadar.getonbrd",
   greenhouse: "jobRadar.greenhouse",
   lever: "jobRadar.lever",
   keywords: "jobRadar.keywords",
@@ -50,6 +52,7 @@ export interface JobRadarConfig {
   enabled: boolean;
   companies: string[];
   bci: boolean;
+  getonbrd: boolean;
   greenhouse: string[];
   lever: string[];
   keywords: string[];
@@ -97,6 +100,7 @@ export async function getJobRadarConfig(): Promise<JobRadarConfig> {
       pick(rec, KEYS.bci, process.env.JOB_RADAR_BCI === "false" ? "false" : undefined),
       true
     ),
+    getonbrd: parseBool(pick(rec, KEYS.getonbrd, process.env.JOB_RADAR_GETONBRD), false),
     greenhouse: parseCsv(greenhouseRaw),
     lever: parseCsv(leverRaw),
     keywords: keywordsRaw === undefined ? DEFAULT_KEYWORDS : parseCsv(keywordsRaw),
@@ -129,6 +133,14 @@ function getSources(config: JobRadarConfig): JobSource[] {
   }
   if (config.bci) {
     sources.push({ source: "bci", company: "bci", label: "bci", fetch: fetchBciJobs });
+  }
+  if (config.getonbrd) {
+    sources.push({
+      source: "getonbrd",
+      company: "getonbrd",
+      label: "getonbrd",
+      fetch: () => fetchGetonbrdJobs(config.keywords),
+    });
   }
   for (const board of config.greenhouse) {
     sources.push({
@@ -438,6 +450,7 @@ export interface JobRadarSettingsDTO {
   enabled: boolean;
   companies: string; // CSV
   bci: boolean;
+  getonbrd: boolean;
   greenhouse: string; // CSV
   lever: string; // CSV
   keywords: string; // CSV
@@ -453,6 +466,7 @@ export async function getJobRadarSettings(): Promise<JobRadarSettingsDTO> {
     enabled: config.enabled,
     companies: config.companies.join(", "),
     bci: config.bci,
+    getonbrd: config.getonbrd,
     greenhouse: config.greenhouse.join(", "),
     lever: config.lever.join(", "),
     keywords: config.keywords.join(", "),
@@ -467,6 +481,7 @@ export interface UpdateJobRadarSettingsInput {
   enabled?: boolean;
   companies?: string;
   bci?: boolean;
+  getonbrd?: boolean;
   greenhouse?: string;
   lever?: string;
   keywords?: string;
@@ -482,6 +497,7 @@ export async function updateJobRadarSettings(
   const rows: Record<string, string> = {};
   if (input.enabled !== undefined) rows[KEYS.enabled] = input.enabled ? "true" : "false";
   if (input.bci !== undefined) rows[KEYS.bci] = input.bci ? "true" : "false";
+  if (input.getonbrd !== undefined) rows[KEYS.getonbrd] = input.getonbrd ? "true" : "false";
   if (input.companies !== undefined) rows[KEYS.companies] = input.companies;
   if (input.greenhouse !== undefined) rows[KEYS.greenhouse] = input.greenhouse;
   if (input.lever !== undefined) rows[KEYS.lever] = input.lever;

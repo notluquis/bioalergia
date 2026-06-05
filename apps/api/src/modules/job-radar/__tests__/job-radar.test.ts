@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { fetchBciJobs } from "../bci.ts";
 import { matchesProfile, type ProfileFilter } from "../filter.ts";
+import { fetchGetonbrdJobs } from "../getonbrd.ts";
 import { fetchGreenhouseJobs } from "../greenhouse.ts";
 import { fetchLeverJobs } from "../lever.ts";
 import { fetchTeamtailorJobs } from "../teamtailor.ts";
@@ -238,6 +239,56 @@ describe("fetchLeverJobs", () => {
   it("returns [] on non-array", async () => {
     fetchSpy.mockResolvedValue(res("{}"));
     expect(await fetchLeverJobs("x")).toEqual([]);
+  });
+});
+
+const GOB_JSON = JSON.stringify({
+  meta: { page: 1, per_page: 50, total_pages: 1 },
+  data: [
+    {
+      id: "data-analyst-chile-cumplo-santiago",
+      type: "job",
+      attributes: {
+        title: "Data Analyst",
+        description: "<p>desc</p>",
+        category_name: "Data Science / Analytics",
+        remote_modality: "hybrid",
+        remote_zone: "America/Santiago",
+        published_at: 1_780_690_567,
+        company: { data: { attributes: { name: "Cumplo" } } },
+      },
+      links: { public_url: "https://www.getonbrd.com/jobs/data-analyst-chile-cumplo-santiago" },
+    },
+  ],
+});
+
+describe("fetchGetonbrdJobs", () => {
+  let fetchSpy: ReturnType<typeof vi.spyOn>;
+  beforeEach(() => {
+    fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(res(GOB_JSON));
+  });
+  afterEach(() => fetchSpy.mockRestore());
+
+  it("queries the public search endpoint per keyword and maps jobs", async () => {
+    const jobs = await fetchGetonbrdJobs(["data"]);
+    expect(String(fetchSpy.mock.calls[0][0])).toContain("/api/v0/search/jobs?query=data");
+    expect(jobs).toHaveLength(1);
+    expect(jobs[0]).toMatchObject({
+      source: "getonbrd",
+      company: "getonbrd",
+      externalId: "data-analyst-chile-cumplo-santiago",
+      title: "Data Analyst · Cumplo",
+      department: "Data Science / Analytics",
+      remote: "hybrid",
+      url: "https://www.getonbrd.com/jobs/data-analyst-chile-cumplo-santiago",
+    });
+    expect(jobs[0].publishedAt).toBeInstanceOf(Date);
+  });
+
+  it("dedupes across keywords and returns [] with no keywords", async () => {
+    expect(await fetchGetonbrdJobs([])).toEqual([]);
+    const jobs = await fetchGetonbrdJobs(["data", "riesgo"]);
+    expect(jobs).toHaveLength(1); // mismo id en ambas queries → dedup
   });
 });
 
