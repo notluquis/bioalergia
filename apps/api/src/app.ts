@@ -74,6 +74,7 @@ import {
   personalFinanceOpenAPIHandler,
   personalFinanceORPCHandler,
 } from "./orpc/personal-finance.ts";
+import { jobRadarOpenAPIHandler, jobRadarORPCHandler } from "./orpc/job-radar.ts";
 import {
   productionBalancesOpenAPIHandler,
   productionBalancesORPCHandler,
@@ -1467,6 +1468,19 @@ app.use("/api/orpc/personal-finance/rpc/*", async (c, next) => {
   return next();
 });
 
+app.use("/api/orpc/job-radar/rpc/*", async (c, next) => {
+  const { matched, response } = await jobRadarORPCHandler.handle(createHonoORPCRequest(c), {
+    prefix: "/api/orpc/job-radar/rpc",
+    context: { hono: c },
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  return next();
+});
+
 app.use("/api/orpc/settings/rpc/*", async (c, next) => {
   const { matched, response } = await settingsORPCHandler.handle(createHonoORPCRequest(c), {
     prefix: "/api/orpc/settings/rpc",
@@ -1915,6 +1929,18 @@ app.use("/api/orpc/personal-finance/*", async (c, next) => {
       context: { hono: c },
     }
   );
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  return next();
+});
+
+app.use("/api/orpc/job-radar/*", async (c, next) => {
+  const { matched, response } = await jobRadarOpenAPIHandler.handle(createHonoORPCRequest(c), {
+    context: { hono: c },
+  });
 
   if (matched) {
     return c.newResponse(response.body, response);

@@ -13773,6 +13773,122 @@ export class SchemaType implements SchemaDef {
                 id: { type: "Int" },
                 provider_topic_externalId: { provider: { type: "String" }, topic: { type: "String" }, externalId: { type: "String" } }
             }
+        },
+        JobPosting: {
+            name: "JobPosting",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "String",
+                    id: true,
+                    default: ExpressionUtils.call("cuid") as FieldDefault
+                },
+                source: {
+                    name: "source",
+                    type: "String"
+                },
+                company: {
+                    name: "company",
+                    type: "String"
+                },
+                externalId: {
+                    name: "externalId",
+                    type: "String"
+                },
+                title: {
+                    name: "title",
+                    type: "String"
+                },
+                url: {
+                    name: "url",
+                    type: "String"
+                },
+                department: {
+                    name: "department",
+                    type: "String",
+                    optional: true
+                },
+                location: {
+                    name: "location",
+                    type: "String",
+                    optional: true
+                },
+                remote: {
+                    name: "remote",
+                    type: "String",
+                    optional: true
+                },
+                descriptionHtml: {
+                    name: "descriptionHtml",
+                    type: "String",
+                    optional: true
+                },
+                publishedAt: {
+                    name: "publishedAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                lastmod: {
+                    name: "lastmod",
+                    type: "DateTime",
+                    optional: true
+                },
+                status: {
+                    name: "status",
+                    type: "JobPostingStatus",
+                    default: "OPEN" as FieldDefault
+                },
+                notified: {
+                    name: "notified",
+                    type: "Boolean",
+                    default: false as FieldDefault
+                },
+                matched: {
+                    name: "matched",
+                    type: "Boolean",
+                    default: false as FieldDefault
+                },
+                applicationStatus: {
+                    name: "applicationStatus",
+                    type: "JobApplicationStatus",
+                    default: "NEW" as FieldDefault
+                },
+                appliedAt: {
+                    name: "appliedAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                statusUpdatedAt: {
+                    name: "statusUpdatedAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                notes: {
+                    name: "notes",
+                    type: "String",
+                    optional: true
+                },
+                firstSeenAt: {
+                    name: "firstSeenAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                lastSeenAt: {
+                    name: "lastSeenAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                raw: {
+                    name: "raw",
+                    type: "Json",
+                    optional: true
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "String" },
+                source_company_externalId: { source: { type: "String" }, company: { type: "String" }, externalId: { type: "String" } }
+            }
         }
     } as const;
     enums = {
@@ -14603,6 +14719,32 @@ export class SchemaType implements SchemaDef {
                 PEDIDOS_YA: "PEDIDOS_YA",
                 RAPPI: "RAPPI"
             }
+        },
+        JobPostingStatus: {
+            name: "JobPostingStatus",
+            values: {
+                OPEN: "OPEN",
+                CLOSED: "CLOSED"
+            },
+            attributes: [
+                { name: "@@schema", args: [{ name: "map", value: ExpressionUtils.literal("personal") }] }
+            ] as readonly AttributeApplication[]
+        },
+        JobApplicationStatus: {
+            name: "JobApplicationStatus",
+            values: {
+                NEW: "NEW",
+                SEEN: "SEEN",
+                INTERESTED: "INTERESTED",
+                APPLIED: "APPLIED",
+                INTERVIEW: "INTERVIEW",
+                OFFER: "OFFER",
+                REJECTED: "REJECTED",
+                DISCARDED: "DISCARDED"
+            },
+            attributes: [
+                { name: "@@schema", args: [{ name: "map", value: ExpressionUtils.literal("personal") }] }
+            ] as readonly AttributeApplication[]
         }
     } as const;
     authType = "User" as const;

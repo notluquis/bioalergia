@@ -261,6 +261,12 @@
       "import": "./dist/personal-finance.js",
       "default": "./dist/personal-finance.js"
     },
+    "./job-radar": {
+      "development": "./src/job-radar.ts",
+      "types": "./dist/job-radar.d.ts",
+      "import": "./dist/job-radar.js",
+      "default": "./dist/job-radar.js"
+    },
     "./production-balances": {
       "development": "./src/production-balances.ts",
       "types": "./dist/production-balances.d.ts",

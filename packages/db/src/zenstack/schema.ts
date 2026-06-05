@@ -16815,6 +16815,146 @@ export class SchemaType implements SchemaDef {
                 id: { type: "Int" },
                 provider_topic_externalId: { provider: { type: "String" }, topic: { type: "String" }, externalId: { type: "String" } }
             }
+        },
+        JobPosting: {
+            name: "JobPosting",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "String",
+                    id: true,
+                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("cuid") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("cuid") as FieldDefault
+                },
+                source: {
+                    name: "source",
+                    type: "String"
+                },
+                company: {
+                    name: "company",
+                    type: "String"
+                },
+                externalId: {
+                    name: "externalId",
+                    type: "String",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("external_id") }] }] as readonly AttributeApplication[]
+                },
+                title: {
+                    name: "title",
+                    type: "String"
+                },
+                url: {
+                    name: "url",
+                    type: "String"
+                },
+                department: {
+                    name: "department",
+                    type: "String",
+                    optional: true
+                },
+                location: {
+                    name: "location",
+                    type: "String",
+                    optional: true
+                },
+                remote: {
+                    name: "remote",
+                    type: "String",
+                    optional: true
+                },
+                descriptionHtml: {
+                    name: "descriptionHtml",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("description_html") }] }] as readonly AttributeApplication[]
+                },
+                publishedAt: {
+                    name: "publishedAt",
+                    type: "DateTime",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("published_at") }] }] as readonly AttributeApplication[]
+                },
+                lastmod: {
+                    name: "lastmod",
+                    type: "DateTime",
+                    optional: true
+                },
+                status: {
+                    name: "status",
+                    type: "JobPostingStatus",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("OPEN") }] }] as readonly AttributeApplication[],
+                    default: "OPEN" as FieldDefault
+                },
+                notified: {
+                    name: "notified",
+                    type: "Boolean",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(false) }] }] as readonly AttributeApplication[],
+                    default: false as FieldDefault
+                },
+                matched: {
+                    name: "matched",
+                    type: "Boolean",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(false) }] }] as readonly AttributeApplication[],
+                    default: false as FieldDefault
+                },
+                applicationStatus: {
+                    name: "applicationStatus",
+                    type: "JobApplicationStatus",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("NEW") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("application_status") }] }] as readonly AttributeApplication[],
+                    default: "NEW" as FieldDefault
+                },
+                appliedAt: {
+                    name: "appliedAt",
+                    type: "DateTime",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("applied_at") }] }] as readonly AttributeApplication[]
+                },
+                statusUpdatedAt: {
+                    name: "statusUpdatedAt",
+                    type: "DateTime",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("status_updated_at") }] }] as readonly AttributeApplication[]
+                },
+                notes: {
+                    name: "notes",
+                    type: "String",
+                    optional: true
+                },
+                firstSeenAt: {
+                    name: "firstSeenAt",
+                    type: "DateTime",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("first_seen_at") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                lastSeenAt: {
+                    name: "lastSeenAt",
+                    type: "DateTime",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("last_seen_at") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                raw: {
+                    name: "raw",
+                    type: "Json",
+                    optional: true
+                }
+            },
+            attributes: [
+                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.literal(true) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
+                { name: "@@unique", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("source"), ExpressionUtils.field("company"), ExpressionUtils.field("externalId")]) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("JobPostingStatus", [ExpressionUtils.field("status")]) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("Boolean", [ExpressionUtils.field("notified")]) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("JobApplicationStatus", [ExpressionUtils.field("applicationStatus")]) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("DateTime", [ExpressionUtils.field("firstSeenAt")]) }] },
+                { name: "@@schema", args: [{ name: "map", value: ExpressionUtils.literal("personal") }] },
+                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("job_postings") }] }
+            ] as readonly AttributeApplication[],
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "String" },
+                source_company_externalId: { source: { type: "String" }, company: { type: "String" }, externalId: { type: "String" } }
+            }
         }
     } as const;
     enums = {
@@ -17645,6 +17785,32 @@ export class SchemaType implements SchemaDef {
                 PEDIDOS_YA: "PEDIDOS_YA",
                 RAPPI: "RAPPI"
             }
+        },
+        JobPostingStatus: {
+            name: "JobPostingStatus",
+            values: {
+                OPEN: "OPEN",
+                CLOSED: "CLOSED"
+            },
+            attributes: [
+                { name: "@@schema", args: [{ name: "map", value: ExpressionUtils.literal("personal") }] }
+            ] as readonly AttributeApplication[]
+        },
+        JobApplicationStatus: {
+            name: "JobApplicationStatus",
+            values: {
+                NEW: "NEW",
+                SEEN: "SEEN",
+                INTERESTED: "INTERESTED",
+                APPLIED: "APPLIED",
+                INTERVIEW: "INTERVIEW",
+                OFFER: "OFFER",
+                REJECTED: "REJECTED",
+                DISCARDED: "DISCARDED"
+            },
+            attributes: [
+                { name: "@@schema", args: [{ name: "map", value: ExpressionUtils.literal("personal") }] }
+            ] as readonly AttributeApplication[]
         }
     } as const;
     authType = "User" as const;

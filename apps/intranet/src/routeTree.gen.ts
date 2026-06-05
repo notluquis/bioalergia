@@ -20,6 +20,7 @@ import { Route as AuthedServicesRouteImport } from "./routes/_authed/services"
 import { Route as AuthedOutreachRouteImport } from "./routes/_authed/outreach"
 import { Route as AuthedOperationsRouteImport } from "./routes/_authed/operations"
 import { Route as AuthedMarcarRouteImport } from "./routes/_authed/marcar"
+import { Route as AuthedJobRadarRouteImport } from "./routes/_authed/job-radar"
 import { Route as AuthedHrRouteImport } from "./routes/_authed/hr"
 import { Route as AuthedFinanzasRouteImport } from "./routes/_authed/finanzas"
 import { Route as AuthedClinicalRouteImport } from "./routes/_authed/clinical"
@@ -140,6 +141,11 @@ const AuthedOperationsRoute = AuthedOperationsRouteImport.update({
 const AuthedMarcarRoute = AuthedMarcarRouteImport.update({
   id: "/marcar",
   path: "/marcar",
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedJobRadarRoute = AuthedJobRadarRouteImport.update({
+  id: "/job-radar",
+  path: "/job-radar",
   getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedHrRoute = AuthedHrRouteImport.update({
@@ -508,6 +514,7 @@ export interface FileRoutesByFullPath {
   "/clinical": typeof AuthedClinicalRouteWithChildren
   "/finanzas": typeof AuthedFinanzasRouteWithChildren
   "/hr": typeof AuthedHrRouteWithChildren
+  "/job-radar": typeof AuthedJobRadarRoute
   "/marcar": typeof AuthedMarcarRoute
   "/operations": typeof AuthedOperationsRouteWithChildren
   "/outreach": typeof AuthedOutreachRouteWithChildren
@@ -583,6 +590,7 @@ export interface FileRoutesByTo {
   "/account": typeof AuthedAccountRoute
   "/certificates": typeof AuthedCertificatesRouteWithChildren
   "/finanzas": typeof AuthedFinanzasRouteWithChildren
+  "/job-radar": typeof AuthedJobRadarRoute
   "/marcar": typeof AuthedMarcarRoute
   "/operations": typeof AuthedOperationsRouteWithChildren
   "/verify/$id": typeof VerifyIdRoute
@@ -660,6 +668,7 @@ export interface FileRoutesById {
   "/_authed/clinical": typeof AuthedClinicalRouteWithChildren
   "/_authed/finanzas": typeof AuthedFinanzasRouteWithChildren
   "/_authed/hr": typeof AuthedHrRouteWithChildren
+  "/_authed/job-radar": typeof AuthedJobRadarRoute
   "/_authed/marcar": typeof AuthedMarcarRoute
   "/_authed/operations": typeof AuthedOperationsRouteWithChildren
   "/_authed/outreach": typeof AuthedOutreachRouteWithChildren
@@ -742,6 +751,7 @@ export interface FileRouteTypes {
     | "/clinical"
     | "/finanzas"
     | "/hr"
+    | "/job-radar"
     | "/marcar"
     | "/operations"
     | "/outreach"
@@ -817,6 +827,7 @@ export interface FileRouteTypes {
     | "/account"
     | "/certificates"
     | "/finanzas"
+    | "/job-radar"
     | "/marcar"
     | "/operations"
     | "/verify/$id"
@@ -893,6 +904,7 @@ export interface FileRouteTypes {
     | "/_authed/clinical"
     | "/_authed/finanzas"
     | "/_authed/hr"
+    | "/_authed/job-radar"
     | "/_authed/marcar"
     | "/_authed/operations"
     | "/_authed/outreach"
@@ -1048,6 +1060,13 @@ declare module "@tanstack/react-router" {
       path: "/marcar"
       fullPath: "/marcar"
       preLoaderRoute: typeof AuthedMarcarRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    "/_authed/job-radar": {
+      id: "/_authed/job-radar"
+      path: "/job-radar"
+      fullPath: "/job-radar"
+      preLoaderRoute: typeof AuthedJobRadarRouteImport
       parentRoute: typeof AuthedRoute
     }
     "/_authed/hr": {
@@ -1734,6 +1753,7 @@ interface AuthedRouteChildren {
   AuthedClinicalRoute: typeof AuthedClinicalRouteWithChildren
   AuthedFinanzasRoute: typeof AuthedFinanzasRouteWithChildren
   AuthedHrRoute: typeof AuthedHrRouteWithChildren
+  AuthedJobRadarRoute: typeof AuthedJobRadarRoute
   AuthedMarcarRoute: typeof AuthedMarcarRoute
   AuthedOperationsRoute: typeof AuthedOperationsRouteWithChildren
   AuthedOutreachRoute: typeof AuthedOutreachRouteWithChildren
@@ -1770,6 +1790,7 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedClinicalRoute: AuthedClinicalRouteWithChildren,
   AuthedFinanzasRoute: AuthedFinanzasRouteWithChildren,
   AuthedHrRoute: AuthedHrRouteWithChildren,
+  AuthedJobRadarRoute: AuthedJobRadarRoute,
   AuthedMarcarRoute: AuthedMarcarRoute,
   AuthedOperationsRoute: AuthedOperationsRouteWithChildren,
   AuthedOutreachRoute: AuthedOutreachRouteWithChildren,

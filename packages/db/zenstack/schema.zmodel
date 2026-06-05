@@ -5154,3 +5154,68 @@ model WebhookEvent {
 
   @@map("webhook_events")
 }
+
+// ─── Job Radar ────────────────────────────────────────────────────────────────
+// Búsqueda de empleo personal (NO data de clínica): un cron in-process scrapea
+// portales de empleo (Teamtailor multi-empresa) y notifica vía Telegram solo las
+// ofertas NUEVAS que matchean el perfil. Aislado en schema `personal`.
+
+enum JobPostingStatus {
+  OPEN
+  CLOSED
+
+  @@schema("personal")
+}
+
+// Estado de seguimiento de postulación (lo gestiona el usuario en el dashboard).
+// Distinto de JobPostingStatus (ciclo de vida de la oferta misma).
+enum JobApplicationStatus {
+  NEW         // recién detectada, no vista
+  SEEN        // vista
+  INTERESTED  // me interesa / guardada
+  APPLIED     // postulado
+  INTERVIEW   // en entrevista
+  OFFER       // oferta recibida
+  REJECTED    // rechazado
+  DISCARDED   // descartada por mí
+
+  @@schema("personal")
+}
+
+model JobPosting {
+  id             String           @id @default(cuid())
+  source         String           // ATS: "teamtailor"
+  company        String           // subdominio/empresa, ej. "tenpo"
+  externalId     String           @map("external_id") // id del job en el ATS
+  title          String
+  url            String
+  department     String?
+  location       String?
+  remote         String?          // ej. "Completamente remoto", "Híbrido"
+  descriptionHtml String?         @map("description_html")
+  publishedAt    DateTime?        @map("published_at")
+  lastmod        DateTime?        // <lastmod> del sitemap
+  status         JobPostingStatus @default(OPEN)
+  notified       Boolean          @default(false) // alerta Telegram ya enviada
+  matched        Boolean          @default(false) // pasó el filtro de perfil
+  // Seguimiento de postulación (gestión manual en el dashboard)
+  applicationStatus JobApplicationStatus @default(NEW) @map("application_status")
+  appliedAt      DateTime?        @map("applied_at")
+  statusUpdatedAt DateTime?       @map("status_updated_at")
+  notes          String?
+  firstSeenAt    DateTime         @default(now()) @map("first_seen_at")
+  lastSeenAt     DateTime         @default(now()) @map("last_seen_at")
+  raw            Json?            // payload normalizado completo
+
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@unique([source, company, externalId])
+  @@index([status])
+  @@index([notified])
+  @@index([applicationStatus])
+  @@index([firstSeenAt])
+  @@schema("personal")
+  @@map("job_postings")
+}

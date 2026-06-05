@@ -3,6 +3,39 @@
     "title": "Bioalergia Suite",
     "loading": "Loading..."
   },
+  "jobRadar": {
+    "title": "Job Radar",
+    "count": "{{count}} openings",
+    "sync": "Sync now",
+    "loading": "Loading openings",
+    "empty": "No openings match these filters.",
+    "matched": "Profile match",
+    "changeStatus": "Change status",
+    "viewOffer": "View offer",
+    "filters": {
+      "all": "All",
+      "applicationStatus": "Application status",
+      "postingStatus": "Validity",
+      "source": "Source",
+      "search": "Search",
+      "searchPlaceholder": "Role, company, area…"
+    },
+    "posting": {
+      "OPEN": "Open",
+      "CLOSED": "Closed",
+      "ALL": "All"
+    },
+    "status": {
+      "NEW": "New",
+      "SEEN": "Seen",
+      "INTERESTED": "Interested",
+      "APPLIED": "Applied",
+      "INTERVIEW": "Interviewing",
+      "OFFER": "Offer",
+      "REJECTED": "Rejected",
+      "DISCARDED": "Discarded"
+    }
+  },
   "calendar": {
     "heatmap": "Calendar heat map",
     "schedule": "Interactive calendar",

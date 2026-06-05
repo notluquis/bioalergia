@@ -1,0 +1,212 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { fetchBciJobs } from "../bci.ts";
+import { getProfileFilter, matchesProfile, type ProfileFilter } from "../filter.ts";
+import { fetchTeamtailorJobs } from "../teamtailor.ts";
+import type { RawJob } from "../types.ts";
+
+const SITEMAP = `<?xml version="1.0"?>
+<urlset>
+  <url><loc>https://acme.teamtailor.com/</loc><lastmod>2026-06-01T00:00:00-04:00</lastmod></url>
+  <url><loc>https://acme.teamtailor.com/jobs/100-analista-de-riesgo</loc><lastmod>2026-06-04T23:45:09-04:00</lastmod></url>
+  <url><loc>https://acme.teamtailor.com/jobs/200-disenador-grafico</loc><lastmod>2026-06-03T10:00:00-04:00</lastmod></url>
+</urlset>`;
+
+// jobs.json solo trae el job 100 → el 200 cae al fallback de slug.
+const JOBS_JSON = JSON.stringify({
+  version: "https://jsonfeed.org/version/1.1",
+  items: [
+    {
+      id: "uuid-1",
+      title: "Analista de Riesgo Operacional",
+      url: "https://acme.teamtailor.com/jobs/100-analista-de-riesgo",
+      date_published: "2026-06-04T18:45:05-04:00",
+      content_html: "<p>desc</p>",
+      _jobposting: {
+        "@type": "JobPosting",
+        jobLocation: [{ "@type": "Place", address: { addressLocality: "Las Condes" } }],
+      },
+    },
+  ],
+});
+
+function res(body: string, ok = true, status = 200): Response {
+  return { ok, status, text: () => Promise.resolve(body) } as unknown as Response;
+}
+
+describe("fetchTeamtailorJobs", () => {
+  let fetchSpy: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    fetchSpy = vi.spyOn(globalThis, "fetch").mockImplementation((input) => {
+      const url = String(input);
+      if (url.endsWith("/sitemap.xml")) return Promise.resolve(res(SITEMAP));
+      if (url.endsWith("/jobs.json")) return Promise.resolve(res(JOBS_JSON));
+      return Promise.resolve(res("", false, 404));
+    });
+  });
+
+  afterEach(() => fetchSpy.mockRestore());
+
+  it("merges sitemap (complete) with jobs.json metadata", async () => {
+    const jobs = await fetchTeamtailorJobs("acme");
+    expect(jobs).toHaveLength(2);
+
+    const enriched = jobs.find((j) => j.externalId === "100");
+    expect(enriched).toMatchObject({
+      source: "teamtailor",
+      company: "acme",
+      title: "Analista de Riesgo Operacional",
+      location: "Las Condes",
+      descriptionHtml: "<p>desc</p>",
+      url: "https://acme.teamtailor.com/jobs/100-analista-de-riesgo",
+    });
+    expect(enriched?.lastmod).toBeInstanceOf(Date);
+    expect(enriched?.publishedAt).toBeInstanceOf(Date);
+  });
+
+  it("derives title from slug when job is absent from jobs.json", async () => {
+    const jobs = await fetchTeamtailorJobs("acme");
+    const fallback = jobs.find((j) => j.externalId === "200");
+    expect(fallback?.title).toBe("Disenador Grafico");
+    expect(fallback?.descriptionHtml).toBeNull();
+    expect(fallback?.lastmod).toBeInstanceOf(Date);
+  });
+
+  it("ignores non-job sitemap entries", async () => {
+    const jobs = await fetchTeamtailorJobs("acme");
+    expect(jobs.every((j) => /^\d+$/.test(j.externalId))).toBe(true);
+  });
+
+  it("returns [] when sitemap fetch fails", async () => {
+    fetchSpy.mockResolvedValue(res("", false, 500));
+    expect(await fetchTeamtailorJobs("acme")).toEqual([]);
+  });
+});
+
+const BCI_ES = JSON.stringify({
+  hits: {
+    total: 2,
+    hits: [
+      {
+        _source: {
+          id: 112152,
+          title: "Analista de Riesgo Operacional ",
+          public_url: "/offers/112152",
+          commune_name: "Santiago",
+          region_name: "Región Metropolitana",
+          bci_department_title: "Gerencia de Riesgo",
+          postulation_process_type_name: "Externo",
+          is_peruvian_process: false,
+          long_description: "<p>desc</p>",
+          published_at_date_text: "04/06/2026",
+          updated_at: "2026-06-04T18:01:27-04:00",
+        },
+      },
+      {
+        _source: {
+          id: 112148,
+          title: "Analista Riesgo Liquidez",
+          public_url: "/offers/112148",
+          commune_name: null,
+          region_name: null,
+          is_peruvian_process: true,
+          postulation_process_type_name: "Proceso Bci Perú",
+        },
+      },
+    ],
+  },
+});
+
+describe("fetchBciJobs", () => {
+  let fetchSpy: ReturnType<typeof vi.spyOn>;
+  beforeEach(() => {
+    fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(res(BCI_ES));
+  });
+  afterEach(() => fetchSpy.mockRestore());
+
+  it("maps ES _source hits to RawJob (CL + PE)", async () => {
+    const jobs = await fetchBciJobs();
+    expect(jobs).toHaveLength(2);
+    const cl = jobs.find((j) => j.externalId === "112152");
+    expect(cl).toMatchObject({
+      source: "bci",
+      company: "bci",
+      title: "Analista de Riesgo Operacional",
+      department: "Gerencia de Riesgo",
+      location: "Santiago, Región Metropolitana",
+      url: "https://trabajaenbci.cl/offers/112152",
+    });
+    const pe = jobs.find((j) => j.externalId === "112148");
+    expect(pe?.location).toBe("Perú"); // sin comuna/región → fallback Perú
+  });
+
+  it("posts a match_all query to the public _search endpoint", async () => {
+    await fetchBciJobs();
+    const [url, opts] = fetchSpy.mock.calls[0];
+    expect(String(url)).toContain("/api/v3/bci_portals/_search");
+    expect((opts as RequestInit).method).toBe("POST");
+  });
+
+  it("returns [] on non-ok", async () => {
+    fetchSpy.mockResolvedValue(res("", false, 500));
+    expect(await fetchBciJobs()).toEqual([]);
+  });
+});
+
+function makeJob(over: Partial<RawJob>): RawJob {
+  return {
+    source: "teamtailor",
+    company: "acme",
+    externalId: "1",
+    title: "Cargo X",
+    url: "https://x",
+    department: null,
+    location: null,
+    remote: null,
+    descriptionHtml: null,
+    publishedAt: null,
+    lastmod: null,
+    raw: null,
+    ...over,
+  };
+}
+
+describe("matchesProfile", () => {
+  it("matches everything when filter is empty", () => {
+    const filter: ProfileFilter = { keywords: [], departments: [] };
+    expect(matchesProfile(makeJob({ title: "Cocinero" }), filter)).toBe(true);
+  });
+
+  it("matches keyword against title (case-insensitive)", () => {
+    const filter: ProfileFilter = { keywords: ["riesgo"], departments: [] };
+    expect(matchesProfile(makeJob({ title: "Analista de RIESGO" }), filter)).toBe(true);
+    expect(matchesProfile(makeJob({ title: "Diseñador" }), filter)).toBe(false);
+  });
+
+  it("matches department exactly", () => {
+    const filter: ProfileFilter = { keywords: [], departments: ["riesgo"] };
+    expect(matchesProfile(makeJob({ department: "Riesgo" }), filter)).toBe(true);
+    expect(matchesProfile(makeJob({ department: "Comercial" }), filter)).toBe(false);
+  });
+});
+
+describe("getProfileFilter", () => {
+  const orig = { kw: process.env.JOB_RADAR_KEYWORDS, dept: process.env.JOB_RADAR_DEPARTMENTS };
+  afterEach(() => {
+    process.env.JOB_RADAR_KEYWORDS = orig.kw;
+    process.env.JOB_RADAR_DEPARTMENTS = orig.dept;
+  });
+
+  it("uses defaults when env unset", () => {
+    delete process.env.JOB_RADAR_KEYWORDS;
+    delete process.env.JOB_RADAR_DEPARTMENTS;
+    const f = getProfileFilter();
+    expect(f.keywords).toContain("riesgo");
+    expect(f.departments).toEqual([]);
+  });
+
+  it("empty string env → [] (match-all dimension)", () => {
+    process.env.JOB_RADAR_KEYWORDS = "";
+    expect(getProfileFilter().keywords).toEqual([]);
+  });
+});

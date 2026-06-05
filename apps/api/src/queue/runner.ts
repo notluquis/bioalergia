@@ -78,6 +78,16 @@ export async function startQueueRunner(): Promise<void> {
     });
   }
 
+  // Job Radar — scrape de ofertas de empleo + alerta Telegram. Gateado por flag.
+  if (process.env.ENABLE_JOB_RADAR === "true") {
+    cronItems.push({
+      task: "job_radar_sync",
+      match: process.env.JOB_RADAR_CRON || "*/30 * * * *",
+      identifier: "job_radar_sync",
+      options: { backfillPeriod: 0 },
+    });
+  }
+
   const parsedCronItems = parseCronItems(cronItems);
 
   runner = await run({
