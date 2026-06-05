@@ -9,11 +9,11 @@ import {
 } from "@finanzas/orpc-contracts/production-balances";
 import { ORPCError, onError, os } from "@orpc/server";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
-import dayjs from "dayjs";
 import type { Context as HonoContext } from "hono";
 import { getSessionUser, hasPermission } from "../lib/auth.ts";
 import { logError } from "../lib/logger.ts";
 import { configureSuperjson } from "../lib/superjson-config.ts";
+import { dbDateToISO, toChileDateString } from "../lib/time.ts";
 import {
   createProductionBalance,
   listProductionBalances,
@@ -68,10 +68,8 @@ export function mapProductionBalanceResponse(p: ProductionBalanceRow) {
 
   return {
     id: p.id,
-    // The DB column is `@db.Date`; format to YYYY-MM-DD to match the contract.
-    // `dayjs.utc(Date)` reads the UTC components — pg returns the DATE as a
-    // UTC-midnight Date on the Railway UTC runtime.
-    date: dayjs.utc(p.balanceDate).format("YYYY-MM-DD"),
+    // balanceDate is @db.Date (UTC-midnight) -> "YYYY-MM-DD" via canonical helper.
+    date: dbDateToISO(p.balanceDate) ?? "",
     ingresoTarjetas: p.ingresoTarjetas,
     ingresoTransferencias: p.ingresoTransferencias,
     ingresoEfectivo: p.ingresoEfectivo,
@@ -180,9 +178,8 @@ const productionBalancesORPCRouterBase = {
     .input(productionBalanceQuerySchema)
     .output(productionBalancesListResponseSchema)
     .handler(async ({ input }) => {
-      const today = dayjs();
-      const toDateStr = input.to ?? today.format("YYYY-MM-DD");
-      const fromDateStr = input.from ?? today.subtract(30, "day").format("YYYY-MM-DD");
+      const toDateStr = input.to ?? toChileDateString(new Date());
+      const fromDateStr = input.from ?? toChileDateString(new Date(Date.now() - 30 * 86_400_000));
       const items = await listProductionBalances(fromDateStr, toDateStr);
 
       return {

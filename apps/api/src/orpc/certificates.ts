@@ -12,8 +12,6 @@ import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
 import { ORPCError, onError, os as orpcOs } from "@orpc/server";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
-import dayjs from "dayjs";
-import timezone from "dayjs/plugin/timezone.js";
 import type { Context as HonoContext } from "hono";
 import { z } from "zod";
 import { getSessionUser, hasPermission } from "../lib/auth.ts";
@@ -30,20 +28,20 @@ async function getCertificateService(): Promise<CertificateService> {
 }
 import { logError } from "../lib/logger.ts";
 import { configureSuperjson } from "../lib/superjson-config.ts";
+import { parseChileDateOnly } from "../lib/time.ts";
 import { uploadCertificateToDrive } from "../services/certificates-drive.ts";
 import { SuperJSONRPCHandler } from "./superjson.ts";
 
 configureSuperjson();
-dayjs.extend(timezone);
 
 type CertificatesORPCContext = {
   hono: HonoContext;
 };
 
-const TIMEZONE = "America/Santiago";
 const base = orpcOs.$context<CertificatesORPCContext>();
 
-const parseDateOnly = (value: string) => dayjs.tz(value, "YYYY-MM-DD", TIMEZONE).toDate();
+// Parse "YYYY-MM-DD" as Chile-local midnight -> UTC instant (Date). Invalid -> Invalid Date.
+const parseDateOnly = (value: string) => parseChileDateOnly(value) ?? new Date(NaN);
 
 const authed = base.use(async ({ context, next }) => {
   const user = await getSessionUser(context.hono);

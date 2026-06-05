@@ -1,9 +1,6 @@
 import type { AttachmentType } from "@finanzas/db";
 import { db } from "@finanzas/db";
 import type { PatientWhereInput } from "@finanzas/db/input";
-import dayjs from "dayjs";
-import timezone from "dayjs/plugin/timezone.js";
-import utc from "dayjs/plugin/utc.js";
 import { Decimal } from "decimal.js";
 import { Hono } from "hono";
 import { sql } from "kysely";
@@ -11,6 +8,7 @@ import type { AuthSession } from "../lib/auth.ts";
 import { AppError } from "../lib/app-error.ts";
 import { requirePermission, requireSession } from "../lib/legacy-route.ts";
 import { canonicalRutFilter, normalizeRut, requireCanonicalRut } from "../lib/rut.ts";
+import { parseChileDateOnly } from "../lib/time.ts";
 import { findOrCreatePerson } from "./people-factory.ts";
 import { writeTempUpload } from "../lib/temp-file.ts";
 import { zValidator } from "../lib/zod-validator.ts";
@@ -26,11 +24,7 @@ import {
   updatePatientSchema,
 } from "./patients.schema.ts";
 
-dayjs.extend(utc);
-dayjs.extend(timezone);
-
-const TIMEZONE = "America/Santiago";
-const parseDateOnly = (value: string) => dayjs.tz(value, "YYYY-MM-DD", TIMEZONE).toDate();
+const parseDateOnly = (value: string) => parseChileDateOnly(value) ?? new Date(NaN);
 export const withBudgetItems = <T extends { budgets?: unknown[] }>(payload: T): T => {
   if (!Array.isArray(payload.budgets)) {
     return payload;

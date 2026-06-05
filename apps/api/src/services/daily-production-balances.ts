@@ -1,7 +1,6 @@
 import { db } from "@finanzas/db";
-import dayjs from "dayjs";
 import { DomainError } from "../lib/errors.ts";
-import "../lib/time.ts";
+import { isoToDbDate } from "../lib/time.ts";
 
 // pg unique-violation SQLSTATE. ZenStack/Kysely surface the underlying pg
 // error untouched, so `code === "23505"` is the stable check.
@@ -36,11 +35,11 @@ export type ProductionBalancePayload = {
 
 export type ProductionBalanceUpdatePayload = Partial<ProductionBalancePayload>;
 
-const toDateOnly = (value: string) => dayjs.utc(value, "YYYY-MM-DD").startOf("day").toDate();
+const toDateOnly = (value: string) => isoToDbDate(value);
 
 export async function listProductionBalances(from: string, to: string) {
-  const fromDate = dayjs.utc(from, "YYYY-MM-DD").startOf("day").toDate();
-  const toDate = dayjs.utc(to, "YYYY-MM-DD").endOf("day").toDate();
+  const fromDate = isoToDbDate(from); // UTC midnight of `from`
+  const toDate = new Date(`${to}T23:59:59.999Z`); // end of `to` day (UTC)
 
   return await db.dailyProductionBalance.findMany({
     where: {

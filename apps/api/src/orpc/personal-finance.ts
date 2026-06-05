@@ -13,19 +13,17 @@ import {
 } from "@finanzas/orpc-contracts/personal-finance";
 import { ORPCError, onError, os } from "@orpc/server";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
-import dayjs from "dayjs";
-import utc from "dayjs/plugin/utc.js";
 import { Decimal } from "decimal.js";
 import type { Context as HonoContext } from "hono";
 import type { z } from "zod";
 import { createAuthContext, getSessionUser } from "../lib/auth.ts";
 import { logError } from "../lib/logger.ts";
 import { configureSuperjson } from "../lib/superjson-config.ts";
+import { instantToChileDate, isoToDbDate } from "../lib/time.ts";
 import { getUFValue } from "../services/cmf-uf.ts";
 import { SuperJSONRPCHandler } from "./superjson.ts";
 
 configureSuperjson();
-dayjs.extend(utc);
 
 type PersonalFinanceORPCContext = {
   hono: HonoContext;
@@ -33,7 +31,7 @@ type PersonalFinanceORPCContext = {
 
 const base = os.$context<PersonalFinanceORPCContext>();
 function parseDateOnlyUtc(value: string): Date {
-  return dayjs.utc(value, "YYYY-MM-DD", true).toDate();
+  return isoToDbDate(value);
 }
 
 function toNumberValue(value: unknown) {
@@ -152,7 +150,7 @@ const personalFinanceORPCRouterBase = {
           }
 
           try {
-            const paymentDate = dayjs(installment.paidAt).format("YYYY-MM-DD");
+            const paymentDate = instantToChileDate(installment.paidAt) ?? "";
             const ufValue = await getUFValue(paymentDate);
             const paidAmountCLP = installment.paidAmount.times(ufValue);
 
