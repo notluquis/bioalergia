@@ -61,6 +61,7 @@ import type { Context as HonoContext } from "hono";
 import { z } from "zod";
 import { getSessionUser, hasPermission } from "../lib/auth.ts";
 import { googleCalendarConfig } from "../lib/config.ts";
+import { dbDateToISO } from "../lib/time.ts";
 import {
   getCalendarJobStatus,
   isMissingClassificationFilterKey,
@@ -212,11 +213,8 @@ function normalizeDateRange(from: string, to: string) {
 }
 
 function toDateOnlyString(value: Date | null | undefined): null | string {
-  if (!value) {
-    return null;
-  }
-
-  return value.toISOString().slice(0, 10);
+  // @db.Date (UTC-anchored) -> "YYYY-MM-DD". Canonical helper in lib/time.ts.
+  return dbDateToISO(value);
 }
 
 function toDateTimeString(value: Date | null | undefined): null | string {

@@ -44,6 +44,94 @@ export function toChileDateString(date: Date): string {
   return dayjs(date).tz(TIMEZONE).format("YYYY-MM-DD");
 }
 
+// ===========================================================================
+// Canonical DB date/time helpers — the ONE way to read/write @db.Date,
+// @db.Time and @db.Timestamptz columns. See ~/.claude memory
+// "project-datetime-architecture" + plan starry-sauteeing-moon.
+//
+// Empirically verified (server TZ=America/Santiago, ZenStack v3 = Kysely+pg):
+//   @db.Date (1082)  -> Date at UTC midnight in BOTH ZenStack and $qb.
+//   @db.Time (1083)  -> Date anchored 1970-01-01 UTC (ZenStack) OR "HH:MM:SS"
+//                       string ($qb). Helpers accept Date | string.
+//   @db.Timestamptz  -> a real instant; this is the ONLY class where .tz() is
+//                       correct (instantToChileDate).
+//
+// Anti-pattern that caused the recurring off-by-one bugs: bare `dayjs(x)` or
+// `dayjs(x).tz(TZ)` on a @db.Date/@db.Time value rolls the calendar day back
+// under Santiago. NEVER do that — use these helpers.
+// ===========================================================================
+
+const HHMM_OR_HHMMSS = /^(\d{1,2}):(\d{2})(?::\d{2})?/;
+
+/**
+ * Format a @db.Date column value as "YYYY-MM-DD". Reads the UTC wall-clock
+ * (the column has no timezone; both ZenStack and $qb return UTC-midnight).
+ * Accepts the Date from ZenStack/$qb, or an already-"YYYY-MM-DD" string.
+ */
+export function dbDateToISO(value: Date | string | null | undefined): string | null {
+  if (value == null) return null;
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? null : value.toISOString().slice(0, 10);
+  }
+  const trimmed = value.trim();
+  return /^\d{4}-\d{2}-\d{2}/.test(trimmed) ? trimmed.slice(0, 10) : null;
+}
+
+/**
+ * Build the value to WRITE to a @db.Date column from a "YYYY-MM-DD" string:
+ * a Date anchored at UTC midnight, so the stored calendar day is exact.
+ */
+export function isoToDbDate(iso: string): Date {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) {
+    throw new Error(`Invalid date: ${iso}. Expected YYYY-MM-DD`);
+  }
+  return new Date(`${iso}T00:00:00.000Z`);
+}
+
+/**
+ * Format a @db.Time column value as "HH:mm". Accepts the UTC-anchored Date
+ * (ZenStack) or the "HH:MM:SS" string ($qb). Reads UTC components.
+ */
+export function dbTimeToHHmm(value: Date | string | null | undefined): string | null {
+  if (value == null) return null;
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? null : dayjs.utc(value).format("HH:mm");
+  }
+  const match = value.match(HHMM_OR_HHMMSS);
+  if (!match) return null;
+  const [, hours, minutes] = match;
+  if (!hours || !minutes) return null;
+  return `${hours.padStart(2, "0")}:${minutes}`;
+}
+
+/**
+ * Build the value to WRITE to a @db.Time column from "HH:mm[:ss]": a Date whose
+ * UTC components are the wall-clock time (Postgres stores the UTC time part).
+ * Anchored at the epoch day (Postgres ignores the date for a TIME column).
+ */
+export function hhmmToDbTime(value: string | null | undefined): Date | null {
+  if (value == null) return null;
+  const match = value.trim().match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+  if (!match) return null;
+  const [, h, m, s = "0"] = match;
+  const hours = Number(h);
+  const minutes = Number(m);
+  const seconds = Number(s);
+  if (hours > 23 || minutes > 59 || seconds > 59) return null;
+  return dayjs.utc(0).hour(hours).minute(minutes).second(seconds).millisecond(0).toDate();
+}
+
+/**
+ * Format a @db.Timestamptz (true instant) as its Chile-local calendar date
+ * "YYYY-MM-DD". This is the ONLY date helper that applies .tz() — never use it
+ * on a @db.Date value.
+ */
+export function instantToChileDate(value: Date | string | null | undefined): string | null {
+  if (value == null) return null;
+  const d = dayjs(value).tz(TIMEZONE);
+  return d.isValid() ? d.format("YYYY-MM-DD") : null;
+}
+
 /**
  * Parse "YYYY-MM-DD" as midnight in Chile local time, returning the equivalent UTC instant.
  */

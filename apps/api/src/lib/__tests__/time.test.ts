@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   buildChileDate,
   coerceDateOnly,
+  dbDateToISO,
+  dbTimeToHHmm,
   formatChileDateTime,
   formatDateForDB,
   formatDateOnly,
@@ -12,6 +14,9 @@ import {
   normalizeDate,
   normalizeTimestamp,
   normalizeTimestampForDb,
+  hhmmToDbTime,
+  instantToChileDate,
+  isoToDbDate,
   normalizeTimestampString,
   parseChileDateOnly,
   parseChileDateTime,
@@ -489,6 +494,75 @@ describe("time", () => {
       const { from, to } = getMonthRange("2024-12");
       expect(from).toBe("2024-12-01");
       expect(to).toBe("2024-12-31");
+    });
+  });
+
+  // Canonical DB date/time helpers. The vitest env pins TZ=America/Santiago,
+  // so these reproduce the production server timezone where the off-by-one bugs
+  // manifested.
+  describe("dbDateToISO (@db.Date read — UTC, no day rollback)", () => {
+    it("reads a UTC-midnight Date (how ZenStack & $qb return @db.Date)", () => {
+      // Under Santiago, a bare dayjs(x) would format this as 2026-05-03.
+      expect(dbDateToISO(new Date("2026-05-04T00:00:00.000Z"))).toBe("2026-05-04");
+    });
+    it("accepts a YYYY-MM-DD string ($qb after a future parser flip)", () => {
+      expect(dbDateToISO("2026-05-04")).toBe("2026-05-04");
+      expect(dbDateToISO("2026-05-04T00:00:00.000Z")).toBe("2026-05-04");
+    });
+    it("returns null for null/invalid", () => {
+      expect(dbDateToISO(null)).toBeNull();
+      expect(dbDateToISO(undefined)).toBeNull();
+      expect(dbDateToISO(new Date("nope"))).toBeNull();
+    });
+  });
+
+  describe("isoToDbDate (@db.Date write — UTC-midnight anchor)", () => {
+    it("anchors at UTC midnight so the stored calendar day is exact", () => {
+      expect(isoToDbDate("2026-05-04").toISOString()).toBe("2026-05-04T00:00:00.000Z");
+    });
+    it("round-trips with dbDateToISO", () => {
+      expect(dbDateToISO(isoToDbDate("2026-12-31"))).toBe("2026-12-31");
+    });
+    it("throws on malformed input", () => {
+      expect(() => isoToDbDate("2026/05/04")).toThrow(/Expected YYYY-MM-DD/);
+    });
+  });
+
+  describe("dbTimeToHHmm (@db.Time read — UTC, no -3h shift)", () => {
+    it("reads a UTC-anchored Date (ZenStack @db.Time)", () => {
+      // Under Santiago, bare dayjs(x) would format this as 07:30.
+      expect(dbTimeToHHmm(new Date("1970-01-01T10:30:00.000Z"))).toBe("10:30");
+    });
+    it("reads a HH:MM:SS string ($qb @db.Time)", () => {
+      expect(dbTimeToHHmm("10:30:00")).toBe("10:30");
+      expect(dbTimeToHHmm("7:05")).toBe("07:05");
+    });
+    it("returns null for null/unparseable", () => {
+      expect(dbTimeToHHmm(null)).toBeNull();
+      expect(dbTimeToHHmm("not-a-time")).toBeNull();
+    });
+  });
+
+  describe("hhmmToDbTime (@db.Time write — UTC wall-clock)", () => {
+    it("anchors the wall-clock in UTC (stored time = input, no +3h)", () => {
+      expect(hhmmToDbTime("10:30")?.toISOString()).toBe("1970-01-01T10:30:00.000Z");
+    });
+    it("round-trips with dbTimeToHHmm", () => {
+      expect(dbTimeToHHmm(hhmmToDbTime("19:45"))).toBe("19:45");
+    });
+    it("returns null on null/out-of-range", () => {
+      expect(hhmmToDbTime(null)).toBeNull();
+      expect(hhmmToDbTime("25:00")).toBeNull();
+    });
+  });
+
+  describe("instantToChileDate (@db.Timestamptz — local calendar day)", () => {
+    it("converts a true instant to its Chile local date", () => {
+      // 2026-05-05T01:00:00Z is still 2026-05-04 in Santiago (UTC-4 in May).
+      expect(instantToChileDate(new Date("2026-05-05T01:00:00.000Z"))).toBe("2026-05-04");
+    });
+    it("returns null for null/invalid", () => {
+      expect(instantToChileDate(null)).toBeNull();
     });
   });
 });

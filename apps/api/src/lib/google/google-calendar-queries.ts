@@ -264,14 +264,19 @@ function applyDateRangeFilters(
 ): EventBaseQuery {
   let q = query;
 
+  // Compare on the event's LOCAL calendar date (EVENT_DATE_ONLY already
+  // converts start_date_time via AT TIME ZONE and coalesces with the bare
+  // @db.Date start_date). Pass bare YYYY-MM-DD literals cast ::date so it's a
+  // date-to-date comparison — the old `coalesce(...) >= <Santiago-midnight
+  // instant>` dropped all-day events on the boundary day (date 00:00Z < 03:00Z).
   if (filters.from && dayjs(filters.from).isValid()) {
-    const fromDate = dayjs(filters.from).startOf("day").toISOString();
-    q = q.where(sql`coalesce(e.start_date_time, e.start_date)`, ">=", fromDate);
+    const fromDate = dayjs(filters.from).format("YYYY-MM-DD");
+    q = q.where(sql<boolean>`${EVENT_DATE_ONLY} >= ${fromDate}::date`);
   }
 
   if (filters.to && dayjs(filters.to).isValid()) {
-    const toDate = dayjs(filters.to).endOf("day").toISOString();
-    q = q.where(sql`coalesce(e.start_date_time, e.start_date)`, "<=", toDate);
+    const toDate = dayjs(filters.to).format("YYYY-MM-DD");
+    q = q.where(sql<boolean>`${EVENT_DATE_ONLY} <= ${toDate}::date`);
   }
 
   return q;
@@ -978,7 +983,10 @@ const dosageAggregateSql = sql<number>`
   )
 `;
 
-const treatDateExpression = sql`coalesce(e.start_date_time, e.start_date)`;
+// Local Chile calendar date of the event (handles @db.Date start_date AND
+// @db.Timestamptz start_date_time via AT TIME ZONE). DB session TZ is UTC, so
+// never group/compare on the raw coalesce — that buckets evening events a day off.
+const treatDateExpression = EVENT_DATE_ONLY;
 
 function buildTreatmentBaseQuery(filters: TreatmentAnalyticsFilters) {
   let baseQuery = db.$qb
@@ -988,18 +996,12 @@ function buildTreatmentBaseQuery(filters: TreatmentAnalyticsFilters) {
     .where("e.category", "=", "Tratamiento subcutáneo");
 
   if (filters.from && dayjs(filters.from).isValid()) {
-    baseQuery = baseQuery.where(
-      treatDateExpression,
-      ">=",
-      dayjs(filters.from).startOf("day").toISOString()
-    );
+    const fromDate = dayjs(filters.from).format("YYYY-MM-DD");
+    baseQuery = baseQuery.where(sql<boolean>`${treatDateExpression} >= ${fromDate}::date`);
   }
   if (filters.to && dayjs(filters.to).isValid()) {
-    baseQuery = baseQuery.where(
-      treatDateExpression,
-      "<=",
-      dayjs(filters.to).endOf("day").toISOString()
-    );
+    const toDate = dayjs(filters.to).format("YYYY-MM-DD");
+    baseQuery = baseQuery.where(sql<boolean>`${treatDateExpression} <= ${toDate}::date`);
   }
   if (filters.calendarIds && filters.calendarIds.length > 0) {
     baseQuery = baseQuery.where("c.googleId", "in", filters.calendarIds);
@@ -1087,8 +1089,8 @@ async function getTreatmentByDate(baseQuery: ReturnType<typeof buildTreatmentBas
 async function getTreatmentByWeek(baseQuery: ReturnType<typeof buildTreatmentBaseQuery>) {
   return baseQuery
     .select([
-      sql<number>`extract(isoyear from coalesce(e.start_date_time, e.start_date))`.as("isoYear"),
-      sql<number>`extract(week from coalesce(e.start_date_time, e.start_date))`.as("isoWeek"),
+      sql<number>`extract(isoyear from ${EVENT_DATE_EXPR})`.as("isoYear"),
+      sql<number>`extract(week from ${EVENT_DATE_EXPR})`.as("isoWeek"),
       sql<number>`count(e.id)`.as("events"),
       sql<number>`coalesce(sum(${EFFECTIVE_AMOUNT_EXPECTED_SQL}), 0)`.as("amountExpected"),
       sql<number>`coalesce(sum(${EFFECTIVE_AMOUNT_PAID_SQL}), 0)`.as("amountPaid"),
@@ -1102,19 +1104,19 @@ async function getTreatmentByWeek(baseQuery: ReturnType<typeof buildTreatmentBas
       ),
     ])
     .groupBy([
-      sql`extract(isoyear from coalesce(e.start_date_time, e.start_date))`,
-      sql`extract(week from coalesce(e.start_date_time, e.start_date))`,
+      sql`extract(isoyear from ${EVENT_DATE_EXPR})`,
+      sql`extract(week from ${EVENT_DATE_EXPR})`,
     ])
-    .orderBy(sql`extract(isoyear from coalesce(e.start_date_time, e.start_date))`, "desc")
-    .orderBy(sql`extract(week from coalesce(e.start_date_time, e.start_date))`, "desc")
+    .orderBy(sql`extract(isoyear from ${EVENT_DATE_EXPR})`, "desc")
+    .orderBy(sql`extract(week from ${EVENT_DATE_EXPR})`, "desc")
     .execute();
 }
 
 async function getTreatmentByMonth(baseQuery: ReturnType<typeof buildTreatmentBaseQuery>) {
   return baseQuery
     .select([
-      sql<number>`extract(year from coalesce(e.start_date_time, e.start_date))`.as("year"),
-      sql<number>`extract(month from coalesce(e.start_date_time, e.start_date))`.as("month"),
+      sql<number>`extract(year from ${EVENT_DATE_EXPR})`.as("year"),
+      sql<number>`extract(month from ${EVENT_DATE_EXPR})`.as("month"),
       sql<number>`count(e.id)`.as("events"),
       sql<number>`coalesce(sum(${EFFECTIVE_AMOUNT_EXPECTED_SQL}), 0)`.as("amountExpected"),
       sql<number>`coalesce(sum(${EFFECTIVE_AMOUNT_PAID_SQL}), 0)`.as("amountPaid"),
@@ -1128,11 +1130,11 @@ async function getTreatmentByMonth(baseQuery: ReturnType<typeof buildTreatmentBa
       ),
     ])
     .groupBy([
-      sql`extract(year from coalesce(e.start_date_time, e.start_date))`,
-      sql`extract(month from coalesce(e.start_date_time, e.start_date))`,
+      sql`extract(year from ${EVENT_DATE_EXPR})`,
+      sql`extract(month from ${EVENT_DATE_EXPR})`,
     ])
-    .orderBy(sql`extract(year from coalesce(e.start_date_time, e.start_date))`, "desc")
-    .orderBy(sql`extract(month from coalesce(e.start_date_time, e.start_date))`, "desc")
+    .orderBy(sql`extract(year from ${EVENT_DATE_EXPR})`, "desc")
+    .orderBy(sql`extract(month from ${EVENT_DATE_EXPR})`, "desc")
     .execute();
 }
 

@@ -27,7 +27,7 @@ import type { z } from "zod";
 import { getSessionUser, hasPermission } from "../lib/auth.ts";
 import { logError } from "../lib/logger.ts";
 import { configureSuperjson } from "../lib/superjson-config.ts";
-import { TIMEZONE } from "../lib/time.ts";
+import { dbDateToISO, TIMEZONE } from "../lib/time.ts";
 import { SuperJSONRPCHandler } from "./superjson.ts";
 
 const parsePeriodStart = (period: string) =>
@@ -166,7 +166,7 @@ const dteAnalyticsORPCRouterBase = {
 
       return {
         data: rows.map((row) => ({
-          documentDate: dayjs(row.documentDate).format("YYYY-MM-DD"),
+          documentDate: dbDateToISO(row.documentDate) ?? "",
           documentType: Number(row.documentType),
           exemptAmount: Number(row.exemptAmount),
           folio: row.folio,
@@ -177,7 +177,7 @@ const dteAnalyticsORPCRouterBase = {
           providerName: row.providerName,
           providerRUT: row.providerRUT,
           purchaseType: row.purchaseType,
-          receiptDate: dayjs(row.receiptDate).format("YYYY-MM-DD"),
+          receiptDate: dbDateToISO(row.receiptDate) ?? "",
           recoverableIVA: Number(row.recoverableIVA),
           totalAmount: Number(row.totalAmount),
         })),
@@ -222,13 +222,11 @@ const dteAnalyticsORPCRouterBase = {
         );
       }
       if (input.year) {
+        // document_date is @db.Date — compare date-to-date so a Jan-1 / Dec-31
+        // row isn't dropped by a TZ-shifted instant boundary (UTC-3 -> 03:00Z).
         query = query
-          .where(
-            sql<boolean>`p.document_date >= ${dayjs.tz(`${input.year}-01-01`, "YYYY-MM-DD", TIMEZONE).startOf("year").toISOString()}`
-          )
-          .where(
-            sql<boolean>`p.document_date <= ${dayjs.tz(`${input.year}-01-01`, "YYYY-MM-DD", TIMEZONE).endOf("year").toISOString()}`
-          );
+          .where(sql<boolean>`p.document_date >= ${`${input.year}-01-01`}::date`)
+          .where(sql<boolean>`p.document_date <= ${`${input.year}-12-31`}::date`);
       }
 
       const results = await query.execute();
@@ -337,7 +335,7 @@ const dteAnalyticsORPCRouterBase = {
         data: rows.map((row) => ({
           clientName: row.clientName,
           clientRUT: row.clientRUT,
-          documentDate: dayjs(row.documentDate).format("YYYY-MM-DD"),
+          documentDate: dbDateToISO(row.documentDate) ?? "",
           documentType: Number(row.documentType),
           emitterRUT: row.emitterRUT,
           exemptAmount: Number(row.exemptAmount),
@@ -469,7 +467,7 @@ const dteAnalyticsORPCRouterBase = {
             dte: {
               clientName: dteRow.clientName,
               clientRUT: dteRow.clientRUT,
-              documentDate: dayjs(dteRow.documentDate).format("YYYY-MM-DD"),
+              documentDate: dbDateToISO(dteRow.documentDate) ?? "",
               documentType: Number(dteRow.documentType),
               emitterRUT: dteRow.emitterRUT,
               exemptAmount: Number(dteRow.exemptAmount),
@@ -523,13 +521,10 @@ const dteAnalyticsORPCRouterBase = {
         );
       }
       if (input.year) {
+        // document_date is @db.Date — compare date-to-date (see purchases query).
         query = query
-          .where(
-            sql<boolean>`s.document_date >= ${dayjs.tz(`${input.year}-01-01`, "YYYY-MM-DD", TIMEZONE).startOf("year").toISOString()}`
-          )
-          .where(
-            sql<boolean>`s.document_date <= ${dayjs.tz(`${input.year}-01-01`, "YYYY-MM-DD", TIMEZONE).endOf("year").toISOString()}`
-          );
+          .where(sql<boolean>`s.document_date >= ${`${input.year}-01-01`}::date`)
+          .where(sql<boolean>`s.document_date <= ${`${input.year}-12-31`}::date`);
       }
 
       const results = await query.execute();

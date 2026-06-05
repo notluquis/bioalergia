@@ -13,13 +13,12 @@ const DATE_ONLY_FORMAT = "YYYY-MM-DD";
 // Regex patterns for performance (top-level definition)
 const TIME_FORMAT_PATTERN = /^[0-9]{1,2}:[0-9]{2}(:[0-9]{2})?$/;
 const TIME_EXTRACT_PATTERN = /^(\d{1,2}):(\d{2})(?::(\d{2}))?$/;
-const TIME_ONLY_PATTERN = /^(\d{1,2}):(\d{2})/;
 
 import { roundCurrency } from "../lib/currency.ts";
 import type { EmployeeTimesheet, EmployeeTimesheetUpdateInput } from "../lib/db-types.ts";
 import { logEvent, logWarn } from "../lib/logger.ts";
 import { getEffectiveRetentionRate } from "../lib/retention.ts";
-import { formatDateOnly, getNthBusinessDay } from "../lib/time.ts";
+import { dbDateToISO, dbTimeToHHmm, formatDateOnly, getNthBusinessDay } from "../lib/time.ts";
 import { getEmployeeById, listEmployees } from "./employees.ts";
 
 // Types
@@ -88,7 +87,8 @@ export function monthStartUtc(month: string) {
 }
 
 export function formatDbDateOnly(value: Date | string) {
-  return dayjs.utc(value).format(DATE_ONLY_FORMAT);
+  // @db.Date workDate -> "YYYY-MM-DD". Canonical helper (UTC, no .tz).
+  return dbDateToISO(value) ?? dayjs.utc(value).format(DATE_ONLY_FORMAT);
 }
 
 // Helper Functions
@@ -226,39 +226,12 @@ export function timeStringToDate(
 }
 
 /**
- * Format Date object from ZenStack to "HH:MM" string for API responses
+ * Format a @db.Time value (UTC-anchored Date from ZenStack, or "HH:MM:SS"
+ * string from $qb) to "HH:MM" for API responses. Canonical impl lives in
+ * lib/time.ts::dbTimeToHHmm; kept here as a named re-export for call-sites.
  */
 export function dateToTimeString(date: Date | string | null): string | null {
-  if (!date) {
-    return null;
-  }
-
-  // If it's already a string in HH:MM or HH:MM:SS format, extract just HH:MM
-  if (typeof date === "string") {
-    const match = date.match(TIME_ONLY_PATTERN);
-    if (match) {
-      const [, hours, minutes] = match;
-      if (hours && minutes) {
-        return `${hours.padStart(2, "0")}:${minutes}`;
-      }
-      return null;
-    }
-    // Try parsing as date/time
-    const d = dayjs(date);
-    if (d.isValid()) {
-      return d.format("HH:mm");
-    }
-    return null;
-  }
-
-  // ZenStack/Prisma maps @db.Time to a Date anchored at 1970-01-01 in UTC
-  // (e.g. 1970-01-01T10:30:00Z). Format in UTC so the server TZ
-  // (America/Santiago) doesn't shift the wall-clock time by -3h.
-  const d = dayjs.utc(date);
-  if (!d.isValid()) {
-    return null;
-  }
-  return d.format("HH:mm");
+  return dbTimeToHHmm(date);
 }
 
 /**

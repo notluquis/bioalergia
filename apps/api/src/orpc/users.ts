@@ -1,4 +1,5 @@
 import { db } from "@finanzas/db";
+import { instantToChileDate, isoToDbDate } from "../lib/time.ts";
 import { findOrCreatePerson } from "../services/people-factory.ts";
 import {
   findUserByEffectiveLoginEmail,
@@ -270,7 +271,9 @@ const usersORPCRouterBase = {
         create: {
           personId: targetPersonId,
           position: input.position,
-          startDate: new Date(),
+          startDate: isoToDbDate(
+            instantToChileDate(new Date()) ?? new Date().toISOString().slice(0, 10)
+          ),
           status: "ACTIVE",
         },
         update: { position: input.position },
@@ -493,7 +496,9 @@ const usersORPCRouterBase = {
           create: {
             personId: user.personId,
             position: "Por definir",
-            startDate: new Date(),
+            startDate: isoToDbDate(
+              instantToChileDate(new Date()) ?? new Date().toISOString().slice(0, 10)
+            ),
             bankName: input.bankName,
             bankAccountType: input.bankAccountType,
             bankAccountNumber: input.bankAccountNumber,

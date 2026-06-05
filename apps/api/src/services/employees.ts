@@ -9,6 +9,7 @@ import type {
   PersonUpdateInput,
 } from "../lib/db-types.ts";
 import { requireCanonicalRut } from "../lib/rut.ts";
+import { instantToChileDate, isoToDbDate } from "../lib/time.ts";
 
 // Type for the frontend payload (snake_case)
 interface EmployeePayload {
@@ -205,7 +206,9 @@ export async function createEmployee(payload: EmployeePayload & { names: string;
         bankName: payload.bank_name,
         bankAccountType: payload.bank_account_type,
         bankAccountNumber: payload.bank_account_number,
-        startDate: new Date(),
+        startDate: isoToDbDate(
+          instantToChileDate(new Date()) ?? new Date().toISOString().slice(0, 10)
+        ),
         status: "ACTIVE",
       },
       include: { person: true },

@@ -19,6 +19,7 @@ import { z } from "zod";
 import { getSessionUser, hasPermission } from "../lib/auth.ts";
 import { logError } from "../lib/logger.ts";
 import { requireCanonicalRut } from "../lib/rut.ts";
+import { dbDateToISO, instantToChileDate } from "../lib/time.ts";
 import { findOrCreatePerson } from "../services/people-factory.ts";
 import { configureSuperjson } from "../lib/superjson-config.ts";
 import { writeTempUpload } from "../lib/temp-file.ts";
@@ -796,26 +797,16 @@ const patientsORPCRouterBase = {
       return {
         items: series.map((s) => {
           const event = s.events[0] ?? null;
-          // startDate/endDate are @db.Date (UTC-anchored midnight) -> format in
-          // UTC. startDateTime/endDateTime are @db.Timestamptz (true instant) ->
-          // convert to Santiago for the local calendar day. Same priority order
-          // as before (start over end), but the right rule per column type.
+          // start/endDate are @db.Date (dbDateToISO, UTC); start/endDateTime are
+          // @db.Timestamptz instants (instantToChileDate, local). Same priority
+          // (start over end), right rule per column type.
           const eventDate = event
-            ? event.startDate
-              ? dayjs.utc(event.startDate).format("YYYY-MM-DD")
-              : event.startDateTime
-                ? dayjs(event.startDateTime).tz(TIMEZONE).format("YYYY-MM-DD")
-                : event.endDate
-                  ? dayjs.utc(event.endDate).format("YYYY-MM-DD")
-                  : event.endDateTime
-                    ? dayjs(event.endDateTime).tz(TIMEZONE).format("YYYY-MM-DD")
-                    : null
+            ? (dbDateToISO(event.startDate) ??
+              instantToChileDate(event.startDateTime) ??
+              dbDateToISO(event.endDate) ??
+              instantToChileDate(event.endDateTime))
             : null;
-          // testDate is @db.Date read via ZenStack -> UTC-anchored midnight.
-          // Format in UTC, else server TZ (America/Santiago) rolls it back a day.
-          const skinTestDate = s.skinTests[0]?.testDate
-            ? dayjs.utc(s.skinTests[0].testDate).format("YYYY-MM-DD")
-            : null;
+          const skinTestDate = dbDateToISO(s.skinTests[0]?.testDate);
           return {
             id: s.id,
             kind: s.kind,
@@ -871,7 +862,7 @@ const patientsORPCRouterBase = {
       return {
         items: tests.map((t) => ({
           id: t.id,
-          testDate: t.testDate.toISOString().split("T")[0],
+          testDate: dbDateToISO(t.testDate) ?? "",
           patientName: t.patientName,
           patientRut: t.patientRut,
           panelTitle: t.panelTitle,
