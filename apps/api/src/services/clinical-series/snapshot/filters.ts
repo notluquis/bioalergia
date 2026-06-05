@@ -1,9 +1,8 @@
-import dayjs from "dayjs";
 import { sql } from "kysely";
 
 import { normalizeRut } from "../../../lib/rut.ts";
+import { toChileDateString } from "../../../lib/time.ts";
 
-import { TIMEZONE } from "../constants.ts";
 import { normalizeName } from "../normalization/names.ts";
 import { normalizePhoneSearch } from "../normalization/phones.ts";
 import type { ClinicalSeriesFilters, ClinicalSeriesKind, HealthInsuranceType } from "../types.ts";
@@ -34,7 +33,7 @@ export type PreparedClinicalSeriesFilters = {
 
 export function resolveClinicalSeriesOrderBy(
   filters?: ClinicalSeriesFilters,
-  today = dayjs().tz(TIMEZONE).format("YYYY-MM-DD")
+  today = toChileDateString(new Date())
 ): ReturnType<typeof sql> {
   const sortColumn = filters?.sortColumn ?? "lastEvent";
   const sortDirection = filters?.sortDirection === "ascending" ? "ASC" : "DESC";
@@ -70,7 +69,7 @@ export function prepareClinicalSeriesFilters(
 ): PreparedClinicalSeriesFilters {
   const page = Math.max(1, filters?.page ?? 1);
   const pageSize = Math.min(100, Math.max(1, filters?.pageSize ?? 20));
-  const today = dayjs().tz(TIMEZONE).format("YYYY-MM-DD");
+  const today = toChileDateString(new Date());
   const view = filters?.view ?? "series";
   const normalizedBeneficiaryRut = filters?.beneficiaryRut
     ? normalizeRut(filters.beneficiaryRut)

@@ -1,5 +1,3 @@
-import dayjs from "dayjs";
-
 import type { ClinicalSeriesSnapshot } from "../types.ts";
 
 export function isPastOrTodayEvent(eventDate: string, today: string): boolean {
@@ -43,7 +41,10 @@ export function computeSnapshotTiming(
     : null;
   const upcomingCount = future.length;
   const daysSinceLastEvent = lastEventDate
-    ? dayjs(today, "YYYY-MM-DD").diff(dayjs(lastEventDate, "YYYY-MM-DD"), "day")
+    ? // today - lastEventDate in whole days (both bare YYYY-MM-DD).
+      Temporal.PlainDate.from(today).since(Temporal.PlainDate.from(lastEventDate), {
+        largestUnit: "day",
+      }).days
     : null;
 
   return {

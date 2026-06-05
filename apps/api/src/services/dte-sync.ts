@@ -4,8 +4,8 @@
  */
 
 import { db } from "@finanzas/db";
-import dayjs from "dayjs";
 import { haulmerConfig } from "../lib/config.ts";
+import { toChilePeriod } from "../lib/time.ts";
 import { syncPeriods } from "./haulmer-service.ts";
 
 export interface DTESyncOptions {
@@ -20,7 +20,11 @@ export interface DTESyncOptions {
  * @param monthsBack How many months back (default: 1 for last month)
  */
 export function getLastMonthPeriod(monthsBack: number = 1): string {
-  return dayjs().subtract(monthsBack, "month").format("YYYYMM");
+  // Current Chile year-month minus N months, compact "YYYYMM".
+  return Temporal.PlainYearMonth.from(toChilePeriod(new Date()))
+    .subtract({ months: monthsBack })
+    .toString()
+    .replace("-", "");
 }
 
 /**

@@ -6,7 +6,6 @@
  */
 
 import { createReadStream, createWriteStream } from "node:fs";
-import dayjs from "dayjs";
 
 import { getBackupFolderId, getDriveClient } from "../lib/google/google-core.ts";
 import { GoogleApiError, parseGoogleError, retryGoogleCall } from "../lib/google/google-errors.ts";
@@ -185,7 +184,8 @@ export async function cleanupOldBackups(
     const drive = await getDriveClient();
     const folderId = await getBackupFolderId();
 
-    const cutoffDate = dayjs().subtract(retentionDays, "day").toISOString();
+    // Retention cutoff is an absolute instant — timezone-irrelevant.
+    const cutoffDate = new Date(Date.now() - retentionDays * 86_400_000).toISOString();
 
     const response = await retryGoogleCall(
       () =>

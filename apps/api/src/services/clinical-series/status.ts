@@ -1,6 +1,6 @@
 import { dbClinicalSeries as db } from "@finanzas/db/slices";
-import dayjs from "dayjs";
 
+import { toChileDateString } from "../../lib/time.ts";
 import { TIMEZONE } from "./constants.ts";
 
 /**
@@ -19,8 +19,8 @@ import { TIMEZONE } from "./constants.ts";
  *   COMPLETED → last started event > 180 days ago
  */
 export async function updateAllSeriesStatuses(): Promise<{ updated: number }> {
-  const today = dayjs().tz(TIMEZONE).format("YYYY-MM-DD");
-  const now = dayjs().tz(TIMEZONE).toDate();
+  const today = toChileDateString(new Date());
+  const now = new Date();
   const result = await db.$executeRaw`
     UPDATE clinical_series cs
     SET status = (
