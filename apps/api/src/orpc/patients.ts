@@ -3,9 +3,6 @@ import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
 import { ORPCError, onError, os } from "@orpc/server";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
-import dayjs from "dayjs";
-import timezone from "dayjs/plugin/timezone.js";
-import utc from "dayjs/plugin/utc.js";
 import { Decimal } from "decimal.js";
 import type { Context as HonoContext } from "hono";
 import type {
@@ -19,7 +16,7 @@ import { z } from "zod";
 import { getSessionUser, hasPermission } from "../lib/auth.ts";
 import { logError } from "../lib/logger.ts";
 import { requireCanonicalRut } from "../lib/rut.ts";
-import { dbDateToISO, instantToChileDate } from "../lib/time.ts";
+import { dbDateToISO, instantToChileDate, parseChileDateOnly } from "../lib/time.ts";
 import { findOrCreatePerson } from "../services/people-factory.ts";
 import { configureSuperjson } from "../lib/superjson-config.ts";
 import { writeTempUpload } from "../lib/temp-file.ts";
@@ -28,12 +25,8 @@ import { syncPatientDteSaleSources } from "../services/patients-router.ts";
 import { SuperJSONRPCHandler } from "./superjson.ts";
 
 configureSuperjson();
-dayjs.extend(utc);
-dayjs.extend(timezone);
 
 const dbSchemas = createSchemaFactory(schema);
-
-const TIMEZONE = "America/Santiago";
 
 type PatientsORPCContext = {
   hono: HonoContext;
@@ -260,7 +253,7 @@ const patientDteSyncResponseSchema = z.object({
 });
 
 function parseDateOnly(value: string) {
-  return dayjs.tz(value, "YYYY-MM-DD", TIMEZONE).toDate();
+  return parseChileDateOnly(value) ?? new Date(NaN);
 }
 
 /**
