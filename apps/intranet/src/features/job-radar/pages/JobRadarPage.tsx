@@ -1,18 +1,11 @@
-import {
-  Button,
-  Card,
-  Chip,
-  Input,
-  Label,
-  ListBox,
-  Select,
-  Spinner,
-  TextField,
-} from "@heroui/react";
-import { useMemo, useState } from "react";
-import { useTranslation } from "react-i18next";
+import { Button, Chip, Input, Label, ListBox, Select, TextField, Tooltip } from "@heroui/react";
+import type { ColumnDef } from "@tanstack/react-table";
 import dayjs from "dayjs";
+import { Ban, ExternalLink, Eye, RefreshCw, Send, Sparkles, Star } from "lucide-react";
+import { type ReactNode, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import type { JobApplicationStatus, JobPostingDTO } from "@finanzas/orpc-contracts/job-radar";
+import { DataTable } from "@/components/data-table/DataTable";
 import { JobRadarSettingsPanel } from "../components/JobRadarSettingsPanel";
 import { useJobPostings, useSyncJobRadar, useUpdateJobApplication } from "../hooks/useJobRadar";
 import type { JobRadarListFilters } from "../queries";
@@ -43,6 +36,10 @@ const STATUS_COLOR: Record<JobApplicationStatus, ChipColor> = {
 
 const POSTING_STATUS_OPTIONS = ["OPEN", "CLOSED", "ALL"] as const;
 
+function fmtDate(d: Date | null): string {
+  return d ? dayjs(d).format("DD/MM/YYYY") : "—";
+}
+
 export function JobRadarPage() {
   const { t } = useTranslation();
   const [appStatus, setAppStatus] = useState<"ALL" | JobApplicationStatus>("ALL");
@@ -64,6 +61,8 @@ export function JobRadarPage() {
   const sync = useSyncJobRadar();
 
   const statusLabel = (s: JobApplicationStatus) => t(`jobRadar.status.${s}`);
+  const setStatus = (id: string, applicationStatus: JobApplicationStatus) =>
+    update.mutate({ id, applicationStatus });
 
   const sources = useMemo(() => {
     const set = new Set<string>();
@@ -71,11 +70,143 @@ export function JobRadarPage() {
     return [...set].sort();
   }, [postings]);
 
+  // Conteo por estado de la tanda cargada — "más cosas" en pantalla.
+  const counts = useMemo(() => {
+    const c = new Map<JobApplicationStatus, number>();
+    for (const p of postings ?? [])
+      c.set(p.applicationStatus, (c.get(p.applicationStatus) ?? 0) + 1);
+    return c;
+  }, [postings]);
+
+  const columns = useMemo<ColumnDef<JobPostingDTO>[]>(
+    () => [
+      {
+        accessorKey: "applicationStatus",
+        header: t("jobRadar.col.status"),
+        cell: ({ row }) => (
+          <Chip color={STATUS_COLOR[row.original.applicationStatus]} size="sm" variant="soft">
+            {statusLabel(row.original.applicationStatus)}
+          </Chip>
+        ),
+      },
+      {
+        accessorKey: "title",
+        header: t("jobRadar.col.title"),
+        cell: ({ row }) => (
+          <a
+            href={row.original.url}
+            target="_blank"
+            rel="noreferrer"
+            className="font-medium hover:underline"
+          >
+            {row.original.title}
+          </a>
+        ),
+      },
+      {
+        accessorKey: "company",
+        header: t("jobRadar.col.company"),
+        cell: ({ row }) => <span className="capitalize">{row.original.company}</span>,
+      },
+      { accessorKey: "source", header: t("jobRadar.col.source") },
+      {
+        accessorKey: "department",
+        header: t("jobRadar.col.department"),
+        cell: ({ row }) => row.original.department ?? "—",
+      },
+      {
+        accessorKey: "location",
+        header: t("jobRadar.col.location"),
+        cell: ({ row }) => {
+          const { location, remote } = row.original;
+          return [location, remote].filter(Boolean).join(" · ") || "—";
+        },
+      },
+      {
+        accessorKey: "publishedAt",
+        header: t("jobRadar.col.published"),
+        cell: ({ row }) => fmtDate(row.original.publishedAt),
+      },
+      {
+        accessorKey: "firstSeenAt",
+        header: t("jobRadar.col.detected"),
+        cell: ({ row }) => fmtDate(row.original.firstSeenAt),
+      },
+      {
+        id: "match",
+        header: t("jobRadar.col.match"),
+        cell: ({ row }) =>
+          row.original.matched ? (
+            <Chip color="success" size="sm" variant="soft">
+              <Sparkles size={12} aria-hidden /> {t("jobRadar.matched")}
+            </Chip>
+          ) : (
+            "—"
+          ),
+      },
+      {
+        id: "actions",
+        header: t("jobRadar.col.actions"),
+        cell: ({ row }) => {
+          const job = row.original;
+          const action = (
+            key: string,
+            label: string,
+            icon: ReactNode,
+            onPress: () => void,
+            variant: "outline" | "ghost" = "outline"
+          ) => (
+            <Tooltip key={key}>
+              <Tooltip.Trigger>
+                <Button aria-label={label} isIconOnly size="sm" variant={variant} onPress={onPress}>
+                  {icon}
+                </Button>
+              </Tooltip.Trigger>
+              <Tooltip.Content>{label}</Tooltip.Content>
+            </Tooltip>
+          );
+          return (
+            <div className="flex items-center gap-1">
+              {action(
+                "open",
+                t("jobRadar.actions.view"),
+                <ExternalLink size={16} aria-hidden />,
+                () => window.open(job.url, "_blank", "noopener,noreferrer")
+              )}
+              {action("seen", t("jobRadar.actions.seen"), <Eye size={16} aria-hidden />, () =>
+                setStatus(job.id, "SEEN")
+              )}
+              {action(
+                "interested",
+                t("jobRadar.actions.interested"),
+                <Star size={16} aria-hidden />,
+                () => setStatus(job.id, "INTERESTED")
+              )}
+              {action(
+                "applied",
+                t("jobRadar.actions.applied"),
+                <Send size={16} aria-hidden />,
+                () => setStatus(job.id, "APPLIED")
+              )}
+              {action(
+                "discarded",
+                t("jobRadar.actions.discard"),
+                <Ban size={16} aria-hidden />,
+                () => setStatus(job.id, "DISCARDED")
+              )}
+            </div>
+          );
+        },
+      },
+    ],
+    [t, postings] // eslint-disable-line react-hooks/exhaustive-deps
+  );
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div className="space-y-1">
-          <h1 className="text-2xl font-semibold">{t("jobRadar.title")}</h1>
+          <h2 className="text-xl font-semibold">{t("jobRadar.title")}</h2>
           <p className="text-sm text-default-500">
             {t("jobRadar.count", { count: postings?.length ?? 0 })}
           </p>
@@ -84,13 +215,28 @@ export function JobRadarPage() {
           <Button variant="tertiary" onPress={() => setShowSettings((v) => !v)}>
             {t("jobRadar.settings.toggle")}
           </Button>
-          <Button variant="primary" isPending={sync.isPending} onPress={() => sync.mutate()}>
-            {t("jobRadar.sync")}
+          <Button
+            aria-label={t("jobRadar.sync")}
+            isIconOnly
+            variant="primary"
+            isPending={sync.isPending}
+            onPress={() => sync.mutate()}
+          >
+            <RefreshCw size={16} aria-hidden />
           </Button>
         </div>
       </header>
 
       {showSettings && <JobRadarSettingsPanel />}
+
+      {/* Resumen por estado */}
+      <div className="flex flex-wrap gap-2">
+        {APP_STATUSES.filter((s) => (counts.get(s) ?? 0) > 0).map((s) => (
+          <Chip key={s} color={STATUS_COLOR[s]} size="sm" variant="soft">
+            {statusLabel(s)}: {counts.get(s)}
+          </Chip>
+        ))}
+      </div>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Select
@@ -158,108 +304,16 @@ export function JobRadarPage() {
         </TextField>
       </div>
 
-      {isPending ? (
-        <div
-          className="flex justify-center py-16"
-          aria-busy="true"
-          aria-label={t("jobRadar.loading")}
-        >
-          <Spinner />
-        </div>
-      ) : (postings?.length ?? 0) === 0 ? (
-        <Card variant="tertiary" className="rounded-3xl">
-          <Card.Content className="py-12 text-center text-default-500">
-            {t("jobRadar.empty")}
-          </Card.Content>
-        </Card>
-      ) : (
-        <ul className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          {(postings ?? []).map((job) => (
-            <li key={job.id}>
-              <JobCard
-                job={job}
-                statusLabel={statusLabel}
-                onChangeStatus={(applicationStatus) =>
-                  update.mutate({ id: job.id, applicationStatus })
-                }
-                t={t}
-              />
-            </li>
-          ))}
-        </ul>
-      )}
+      <DataTable
+        columns={columns}
+        data={postings ?? []}
+        isLoading={isPending}
+        enableGlobalFilter={false}
+        enableExport={false}
+        noDataMessage={t("jobRadar.empty")}
+        pageSizeOptions={[10, 25, 50, 100]}
+        scrollMaxHeight="min(68dvh, 760px)"
+      />
     </div>
-  );
-}
-
-function JobCard({
-  job,
-  statusLabel,
-  onChangeStatus,
-  t,
-}: {
-  job: JobPostingDTO;
-  statusLabel: (s: JobApplicationStatus) => string;
-  onChangeStatus: (s: JobApplicationStatus) => void;
-  t: ReturnType<typeof useTranslation>["t"];
-}) {
-  const meta = [job.company, job.department, job.location].filter(Boolean).join(" · ");
-  const closed = job.status === "CLOSED";
-
-  return (
-    <Card variant="tertiary" className="h-full rounded-3xl shadow-sm">
-      <Card.Header className="gap-2 p-5">
-        <div className="flex flex-wrap items-center gap-2">
-          <Chip color={STATUS_COLOR[job.applicationStatus]} size="sm" variant="soft">
-            {statusLabel(job.applicationStatus)}
-          </Chip>
-          {job.matched && (
-            <Chip color="success" size="sm" variant="soft">
-              {t("jobRadar.matched")}
-            </Chip>
-          )}
-          {closed && (
-            <Chip color="default" size="sm" variant="soft">
-              {t("jobRadar.posting.CLOSED")}
-            </Chip>
-          )}
-        </div>
-        <Card.Title className="text-lg leading-snug">
-          <a href={job.url} target="_blank" rel="noreferrer" className="hover:underline">
-            {job.title}
-          </a>
-        </Card.Title>
-        <Card.Description>{meta}</Card.Description>
-      </Card.Header>
-      <Card.Content className="flex flex-col gap-3 p-5 pt-0">
-        <Select
-          value={job.applicationStatus}
-          onChange={(k) => k && onChangeStatus(k as JobApplicationStatus)}
-        >
-          <Label className="text-xs text-default-500">{t("jobRadar.changeStatus")}</Label>
-          <Select.Trigger>
-            <Select.Value />
-            <Select.Indicator />
-          </Select.Trigger>
-          <Select.Popover>
-            <ListBox>
-              {APP_STATUSES.map((s) => (
-                <ListBox.Item key={s} id={s}>
-                  {statusLabel(s)}
-                </ListBox.Item>
-              ))}
-            </ListBox>
-          </Select.Popover>
-        </Select>
-        <div className="flex items-center justify-between text-xs text-default-400">
-          <span>{job.publishedAt ? dayjs(job.publishedAt).format("DD/MM/YYYY") : ""}</span>
-          <a href={job.url} target="_blank" rel="noreferrer">
-            <Button variant="tertiary" size="sm">
-              {t("jobRadar.viewOffer")}
-            </Button>
-          </a>
-        </div>
-      </Card.Content>
-    </Card>
   );
 }

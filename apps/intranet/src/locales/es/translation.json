@@ -12,6 +12,25 @@
     "matched": "Match perfil",
     "changeStatus": "Cambiar estado",
     "viewOffer": "Ver oferta",
+    "col": {
+      "status": "Estado",
+      "title": "Cargo",
+      "company": "Empresa",
+      "source": "Fuente",
+      "department": "Área",
+      "location": "Ubicación",
+      "published": "Publicado",
+      "detected": "Detectado",
+      "match": "Match",
+      "actions": "Acciones"
+    },
+    "actions": {
+      "view": "Ver oferta",
+      "seen": "Marcar vista",
+      "interested": "Me interesa",
+      "applied": "Marcar postulado",
+      "discard": "Descartar"
+    },
     "settings": {
       "toggle": "Ajustes",
       "title": "Ajustes de Job Radar",

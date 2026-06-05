@@ -12,6 +12,25 @@
     "matched": "Profile match",
     "changeStatus": "Change status",
     "viewOffer": "View offer",
+    "col": {
+      "status": "Status",
+      "title": "Role",
+      "company": "Company",
+      "source": "Source",
+      "department": "Area",
+      "location": "Location",
+      "published": "Published",
+      "detected": "Detected",
+      "match": "Match",
+      "actions": "Actions"
+    },
+    "actions": {
+      "view": "View offer",
+      "seen": "Mark seen",
+      "interested": "Interested",
+      "applied": "Mark applied",
+      "discard": "Discard"
+    },
     "settings": {
       "toggle": "Settings",
       "title": "Job Radar settings",
