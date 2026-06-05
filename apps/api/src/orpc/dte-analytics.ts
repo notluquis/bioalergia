@@ -20,20 +20,20 @@ import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
 import { ORPCError, onError, os } from "@orpc/server";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
-import dayjs from "dayjs";
 import type { Context as HonoContext } from "hono";
 import { sql } from "kysely";
 import type { z } from "zod";
 import { getSessionUser, hasPermission } from "../lib/auth.ts";
 import { logError } from "../lib/logger.ts";
 import { configureSuperjson } from "../lib/superjson-config.ts";
-import { dbDateToISO, TIMEZONE } from "../lib/time.ts";
+import { dbDateToISO, getMonthRange } from "../lib/time.ts";
 import { SuperJSONRPCHandler } from "./superjson.ts";
 
-const parsePeriodStart = (period: string) =>
-  dayjs.tz(`${period}-01`, "YYYY-MM-DD", TIMEZONE).startOf("month");
-const parsePeriodEnd = (period: string) =>
-  dayjs.tz(`${period}-01`, "YYYY-MM-DD", TIMEZONE).endOf("month");
+// Month bounds as "YYYY-MM-DD" date literals. document_date is @db.Date, so
+// comparisons must be date-to-date — NOT against a Santiago-shifted instant
+// (the old dayjs.tz(...).toISOString() dropped boundary-day rows under UTC).
+const periodStartDate = (period: string) => getMonthRange(period).from;
+const periodEndDate = (period: string) => getMonthRange(period).to;
 
 configureSuperjson();
 
@@ -121,14 +121,14 @@ const dteAnalyticsORPCRouterBase = {
         .where(excludeAnnulledByNCE("p", "DTEPurchaseDetail"));
 
       if (input.period) {
-        const startDate = parsePeriodStart(input.period).toISOString();
-        const endDate = parsePeriodEnd(input.period).toISOString();
+        const startDate = periodStartDate(input.period);
+        const endDate = periodEndDate(input.period);
         countQuery = countQuery
-          .where(sql<boolean>`p.document_date >= ${startDate}`)
-          .where(sql<boolean>`p.document_date <= ${endDate}`);
+          .where(sql<boolean>`p.document_date >= ${startDate}::date`)
+          .where(sql<boolean>`p.document_date <= ${endDate}::date`);
         dataQuery = dataQuery
-          .where(sql<boolean>`p.document_date >= ${startDate}`)
-          .where(sql<boolean>`p.document_date <= ${endDate}`);
+          .where(sql<boolean>`p.document_date >= ${startDate}::date`)
+          .where(sql<boolean>`p.document_date <= ${endDate}::date`);
       }
 
       const totalResult = await countQuery
@@ -213,12 +213,12 @@ const dteAnalyticsORPCRouterBase = {
 
       if (input.startPeriod) {
         query = query.where(
-          sql<boolean>`p.document_date >= ${parsePeriodStart(input.startPeriod).toISOString()}`
+          sql<boolean>`p.document_date >= ${periodStartDate(input.startPeriod)}::date`
         );
       }
       if (input.endPeriod) {
         query = query.where(
-          sql<boolean>`p.document_date <= ${parsePeriodEnd(input.endPeriod).toISOString()}`
+          sql<boolean>`p.document_date <= ${periodEndDate(input.endPeriod)}::date`
         );
       }
       if (input.year) {
@@ -282,14 +282,14 @@ const dteAnalyticsORPCRouterBase = {
         .where(excludeAnnulledByNCE("s", "DTESaleDetail"));
 
       if (input.period) {
-        const startDate = parsePeriodStart(input.period).toISOString();
-        const endDate = parsePeriodEnd(input.period).toISOString();
+        const startDate = periodStartDate(input.period);
+        const endDate = periodEndDate(input.period);
         countQuery = countQuery
-          .where(sql<boolean>`s.document_date >= ${startDate}`)
-          .where(sql<boolean>`s.document_date <= ${endDate}`);
+          .where(sql<boolean>`s.document_date >= ${startDate}::date`)
+          .where(sql<boolean>`s.document_date <= ${endDate}::date`);
         dataQuery = dataQuery
-          .where(sql<boolean>`s.document_date >= ${startDate}`)
-          .where(sql<boolean>`s.document_date <= ${endDate}`);
+          .where(sql<boolean>`s.document_date >= ${startDate}::date`)
+          .where(sql<boolean>`s.document_date <= ${endDate}::date`);
       }
 
       const totalResult = await countQuery
@@ -512,12 +512,12 @@ const dteAnalyticsORPCRouterBase = {
 
       if (input.startPeriod) {
         query = query.where(
-          sql<boolean>`s.document_date >= ${parsePeriodStart(input.startPeriod).toISOString()}`
+          sql<boolean>`s.document_date >= ${periodStartDate(input.startPeriod)}::date`
         );
       }
       if (input.endPeriod) {
         query = query.where(
-          sql<boolean>`s.document_date <= ${parsePeriodEnd(input.endPeriod).toISOString()}`
+          sql<boolean>`s.document_date <= ${periodEndDate(input.endPeriod)}::date`
         );
       }
       if (input.year) {
@@ -641,15 +641,15 @@ const dteAnalyticsORPCRouterBase = {
         });
       }
 
-      const startDate = parsePeriodStart(input.period).toISOString();
-      const endDate = parsePeriodEnd(input.period).toISOString();
+      const startDate = periodStartDate(input.period);
+      const endDate = periodEndDate(input.period);
 
       let dteIds: string[];
       if (input.direction === "sales") {
         const rows = await db.$queryRaw<Array<{ id: string }>>`
             SELECT s.id FROM dte_sale_details s
-            WHERE s.document_date >= ${startDate}
-              AND s.document_date <= ${endDate}
+            WHERE s.document_date >= ${startDate}::date
+              AND s.document_date <= ${endDate}::date
               AND s.document_type <> 61
               ${input.onlyMissing ? sql`AND NOT EXISTS (SELECT 1 FROM dte_line_items li WHERE li.dte_sale_detail_id = s.id)` : sql``}
             ORDER BY s.document_date DESC
@@ -658,8 +658,8 @@ const dteAnalyticsORPCRouterBase = {
       } else {
         const rows = await db.$queryRaw<Array<{ id: string }>>`
             SELECT p.id FROM dte_purchase_details p
-            WHERE p.document_date >= ${startDate}
-              AND p.document_date <= ${endDate}
+            WHERE p.document_date >= ${startDate}::date
+              AND p.document_date <= ${endDate}::date
               ${input.onlyMissing ? sql`AND NOT EXISTS (SELECT 1 FROM dte_line_items li WHERE li.dte_purchase_detail_id = p.id)` : sql``}
             ORDER BY p.document_date DESC
           `;
