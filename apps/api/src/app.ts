@@ -164,11 +164,7 @@ app.use("*", async (c, next) => {
     "img-src 'self' data: https:",
     "media-src 'self' blob:",
     "font-src 'self' data:",
-    // local-mail-agent corre en el loopback del operador (SMTP send daemon);
-    // la intranet HTTPS se conecta a él. Solo HTTPS loopback: http desde una
-    // página HTTPS es mixed-content (Safari lo bloquea igual) → correr el agente
-    // con TLS (mkcert). El token + CORS del agente son los guardas reales.
-    "connect-src 'self' https://api.cloudflare.com https://127.0.0.1:* https://localhost:*",
+    "connect-src 'self' https://api.cloudflare.com",
     "worker-src 'self' blob:",
     "manifest-src 'self'",
     "frame-ancestors 'none'",
