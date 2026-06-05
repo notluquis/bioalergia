@@ -16,7 +16,7 @@ import xlsx from "xlsx";
 // can't parse weight, etc.) come back as a structured array so the
 // reprocess job can decide IMPORTED vs PENDING_REVIEW.
 
-export const CLINICAL_RECORD_PARSER_VERSION = "0.2.0";
+export const CLINICAL_RECORD_PARSER_VERSION = "0.3.0";
 
 export type ClinicalRecordIssue = {
   code: string;
@@ -237,6 +237,195 @@ function extractInlineAnthropometric(text: string, target: ParsedClinicalRecord)
   }
 }
 
+// --- Positional ("dash") consulta variant ---------------------------------
+// A large slice of the 2024-2026 corpus uses a label-less template: row 0 is
+// `CONSULTA MEDICA- PEGAR CUADERNO`, the header fields (name / age-city / date)
+// sit in col >= 2 of dash-marked rows (col 0 == "-"), and the clinical body is
+// purely positional:
+//
+//   col 1  HISTORIA lines → (col >=3 ANTECEDENTES) → EXAMEN lines
+//   "-"    separator
+//   col 1  DIAGNÓSTICO
+//   "-"    separator
+//   col 1  INDICACIONES
+//
+// The marker-based pass above produces nothing here (no NOMBRE / HISTORIA text
+// labels exist), so when it fails to find a name we fall back to this layout.
+
+function cellAt(row: Row, c: number): string {
+  return (row[c] ?? "").trim();
+}
+
+// A structural separator row: the marker column (`base`) is literally "-" and
+// the rest of the row is empty. Header rows hold a value further right (not a
+// separator); blank trailing rows have an empty marker column (also not a
+// separator) — both must be excluded so the DIAGNÓSTICO / INDICACIONES brackets
+// land on the real dashes.
+function isSeparatorRow(row: Row, base: number): boolean {
+  if (cellAt(row, base) !== "-") return false;
+  for (let c = 0; c < row.length; c++) {
+    if (c !== base && cellAt(row, c)) return false;
+  }
+  return true;
+}
+
+// The template is sometimes shifted one column to the right (dashes in col 1,
+// body in col 2, header values in col 3). Anchor everything to the column that
+// holds the `CONSULTA MEDICA` banner so the offset is handled generically.
+function findPositionalBase(rows: Row[]): number {
+  for (let r = 0; r < Math.min(rows.length, 4); r++) {
+    for (let c = 0; c < rows[r].length; c++) {
+      if (normalize(cellAt(rows[r], c)).includes("CONSULTA MEDICA")) return c;
+    }
+  }
+  return 0;
+}
+
+function looksLikeAge(value: string): boolean {
+  return /\b\d+\s*(AÑOS?|ANOS?|MES|MESES|D[IÍ]AS?|SEMANAS?|RNT|RNPT)\b/i.test(value);
+}
+
+// "38 AÑOS - SAN PEDRO DE LA PAZ" → ageLabel "38 AÑOS" + rawHeader.CIUDAD. The
+// clinic frequently appends the comuna after a dash on the EDAD line.
+function setAgeLabel(result: ParsedClinicalRecord, value: string): void {
+  const [age, ...city] = value.split(/\s+-\s+/);
+  result.ageLabel = age.trim();
+  if (city.length > 0) result.rawHeader.CIUDAD = city.join(" - ").trim();
+  result.rawHeader.EDAD = value;
+}
+
+function applyPositionalConsulta(rows: Row[], result: ParsedClinicalRecord): void {
+  const base = findPositionalBase(rows); // "-" marker column
+  const bodyCol = base + 1; // HISTORIA / EXAMEN / DIAGNÓSTICO / INDICACIONES
+  const headerCol = base + 2; // start of NOMBRE / EDAD / FECHA values
+
+  // First row carrying clinical text in the body column marks the body start.
+  let firstBodyRow = -1;
+  for (let r = 0; r < rows.length; r++) {
+    if (cellAt(rows[r], bodyCol)) {
+      firstBodyRow = r;
+      break;
+    }
+  }
+  if (firstBodyRow < 0) return;
+
+  // Header: the first non-dash value in headerCol+ of each row above the body.
+  const headerValues: string[] = [];
+  for (let r = 0; r < firstBodyRow; r++) {
+    for (let c = headerCol; c < rows[r].length; c++) {
+      const v = cellAt(rows[r], c);
+      if (v && v !== "-") {
+        headerValues.push(v);
+        break;
+      }
+    }
+  }
+  for (const v of headerValues) {
+    const iso = parseSpanishDate(v);
+    if (iso && !result.consultDate) {
+      result.consultDate = iso;
+      result.rawHeader.FECHA = v;
+      continue;
+    }
+    if (looksLikeAge(v) && !result.ageLabel) {
+      setAgeLabel(result, v);
+      continue;
+    }
+    if (!result.patientName) {
+      result.patientName = v;
+      result.rawHeader.NOMBRE = v;
+    }
+  }
+
+  // Body: split DIAGNÓSTICO / INDICACIONES off the two trailing "-" separators.
+  const sepRows: number[] = [];
+  for (let r = firstBodyRow; r < rows.length; r++) {
+    if (isSeparatorRow(rows[r], base)) sepRows.push(r);
+  }
+  const lastSep = sepRows.length >= 1 ? sepRows[sepRows.length - 1] : -1;
+  const prevSep = sepRows.length >= 2 ? sepRows[sepRows.length - 2] : -1;
+
+  const historyLines: string[] = [];
+  const examLines: string[] = [];
+  const diagLines: string[] = [];
+  const indLines: string[] = [];
+  const antPersonal: string[] = [];
+  const antFamily: string[] = [];
+  let seenAntecedent = false;
+
+  for (let r = firstBodyRow; r < rows.length; r++) {
+    if (isSeparatorRow(rows[r], base)) continue;
+    const c1 = cellAt(rows[r], bodyCol);
+
+    // Stop at the doctor signature footer.
+    const nc1 = normalize(c1);
+    if (nc1.startsWith("DR ") || nc1.includes("ALERGOLOGO") || nc1.includes("INMUNOLOGO")) {
+      break;
+    }
+
+    // Indications: everything in the body column after the last separator.
+    if (lastSep >= 0 && r > lastSep) {
+      if (c1) indLines.push(c1);
+      continue;
+    }
+    // Diagnosis: body column between the two trailing separators.
+    if (prevSep >= 0 && r > prevSep && r < lastSep) {
+      if (c1) diagLines.push(c1);
+      continue;
+    }
+
+    // Antecedentes / overflow: text in the column right of the body column,
+    // ignoring stray single-letter junk cells.
+    let other = "";
+    for (let c = bodyCol + 2; c < rows[r].length; c++) {
+      const v = cellAt(rows[r], c);
+      if (v && v !== "-" && v.length >= 3) {
+        other = v;
+        break;
+      }
+    }
+    if (other && !c1) {
+      seenAntecedent = true;
+      if (/padre|madre|hermano|abuel|familiar|t[ií]o|t[ií]a|primo/i.test(other)) antFamily.push(other);
+      else antPersonal.push(other);
+    }
+    // Body column before the antecedentes block is HISTORIA; after it EXAMEN.
+    if (c1) {
+      if (seenAntecedent) examLines.push(c1);
+      else historyLines.push(c1);
+    }
+  }
+
+  if (!result.history && historyLines.length > 0) result.history = historyLines.join("\n").trim();
+  if (!result.physicalExam && examLines.length > 0) result.physicalExam = examLines.join("\n").trim();
+  if (!result.diagnosis && diagLines.length > 0) result.diagnosis = diagLines.join("\n").trim();
+  if (result.indications.length === 0 && indLines.length > 0) {
+    result.indications = dedupeLines(indLines);
+  }
+  if (antPersonal.length > 0) result.antecedents.personal.push(...dedupeLines(antPersonal));
+  if (antFamily.length > 0) result.antecedents.family.push(...dedupeLines(antFamily));
+}
+
+// Detect non-ficha documents that share the OneDrive folder: lab-order
+// requests, prescriptions, misrouted skin-test panels (those belong to the
+// clinical-skin-test pipeline), allergen/vaccine inventories and the doctor's
+// weekly schedule. All carry an unambiguous banner in their first rows, so a
+// title match there is enough to flag — no real ficha opens with these words.
+function detectNonFichaDocument(rows: Row[]): boolean {
+  const top = rows
+    .slice(0, 4)
+    .flat()
+    .map((c) => normalize(c))
+    .join(" ");
+  return (
+    /SOLICITUD DE EXAMEN/.test(top) ||
+    /\bRECETA\b/.test(top) ||
+    /MULTITEST CUTANEO/.test(top) ||
+    /\bINVENTARIO\b/.test(top) ||
+    /\bCALENDARIO\b/.test(top)
+  );
+}
+
 export function parseClinicalRecordWorkbook(buffer: Buffer): ParsedClinicalRecord {
   const rows = rowsFromBuffer(buffer);
   const issues: ClinicalRecordIssue[] = [];
@@ -309,8 +498,7 @@ export function parseClinicalRecordWorkbook(buffer: Buffer): ParsedClinicalRecor
       if (norm === "EDAD") {
         const value = findCellRight(row, c);
         if (value && !result.ageLabel) {
-          result.ageLabel = value;
-          result.rawHeader.EDAD = value;
+          setAgeLabel(result, value);
         }
         continue;
       }
@@ -431,6 +619,23 @@ export function parseClinicalRecordWorkbook(buffer: Buffer): ParsedClinicalRecor
   result.medications = dedupeLines(result.rawSections.medications);
   result.knownAllergies = dedupeLines(result.rawSections.knownAllergies);
   result.indications = dedupeLines(result.rawSections.indications);
+
+  // Label-less "dash" template: the marker pass found no NOMBRE. Recover the
+  // header + body positionally.
+  if (!result.patientName) {
+    applyPositionalConsulta(rows, result);
+  }
+
+  // Lab orders / recetas / skin-test panels / inventories / schedules that
+  // aren't fichas at all but share the OneDrive folder.
+  if (detectNonFichaDocument(rows)) {
+    issues.push({
+      code: "document_type_not_ficha",
+      message:
+        "El documento no es una ficha clínica (solicitud de exámenes, receta, test cutáneo, inventario o calendario).",
+      severity: "warning",
+    });
+  }
 
   // Confidence + issues.
   if (!consultMarkerSeen) {
