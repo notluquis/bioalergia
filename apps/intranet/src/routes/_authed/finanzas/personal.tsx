@@ -5,7 +5,7 @@ import { personalFinanceQueries } from "@/features/personal-finance/queries";
 import { PersonalPage } from "@/features/personal-finance/pages/PersonalPage";
 
 const searchSchema = z.object({
-  tab: z.enum(["creditos", "servicios", "gastos", "credenciales"]).catch("creditos"),
+  tab: z.enum(["creditos", "servicios", "gastos", "credenciales", "trabajos"]).catch("creditos"),
 });
 
 export const Route = createFileRoute("/_authed/finanzas/personal")({
