@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { fetchBciJobs } from "../bci.ts";
 import { matchesProfile, type ProfileFilter } from "../filter.ts";
+import { fetchGreenhouseJobs } from "../greenhouse.ts";
+import { fetchLeverJobs } from "../lever.ts";
 import { fetchTeamtailorJobs } from "../teamtailor.ts";
 import type { RawJob } from "../types.ts";
 
@@ -150,6 +152,92 @@ describe("fetchBciJobs", () => {
   it("returns [] on non-ok", async () => {
     fetchSpy.mockResolvedValue(res("", false, 500));
     expect(await fetchBciJobs()).toEqual([]);
+  });
+});
+
+const GH_JSON = JSON.stringify({
+  jobs: [
+    {
+      id: 7376944,
+      title: "Senior DevOps Engineer",
+      absolute_url: "https://job-boards.greenhouse.io/chile/jobs/7376944",
+      location: { name: "Santiago, Región Metropolitana, Chile" },
+      content: "&lt;p&gt;desc&lt;/p&gt;",
+      updated_at: "2026-06-01T10:00:00-04:00",
+      first_published: "2026-05-20T10:00:00-04:00",
+      departments: [{ name: "Engineering" }],
+    },
+  ],
+});
+
+describe("fetchGreenhouseJobs", () => {
+  let fetchSpy: ReturnType<typeof vi.spyOn>;
+  beforeEach(() => {
+    fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(res(GH_JSON));
+  });
+  afterEach(() => fetchSpy.mockRestore());
+
+  it("maps Greenhouse jobs and hits the public board API", async () => {
+    const jobs = await fetchGreenhouseJobs("chile");
+    expect(String(fetchSpy.mock.calls[0][0])).toContain(
+      "boards-api.greenhouse.io/v1/boards/chile/jobs"
+    );
+    expect(jobs).toHaveLength(1);
+    expect(jobs[0]).toMatchObject({
+      source: "greenhouse",
+      company: "chile",
+      externalId: "7376944",
+      title: "Senior DevOps Engineer",
+      department: "Engineering",
+      location: "Santiago, Región Metropolitana, Chile",
+    });
+    expect(jobs[0].publishedAt).toBeInstanceOf(Date);
+  });
+
+  it("returns [] on non-ok", async () => {
+    fetchSpy.mockResolvedValue(res("", false, 404));
+    expect(await fetchGreenhouseJobs("nope")).toEqual([]);
+  });
+});
+
+const LV_JSON = JSON.stringify([
+  {
+    id: "abc-123",
+    text: "Software Engineer",
+    hostedUrl: "https://jobs.lever.co/fintual/abc-123",
+    categories: { location: "Región Metropolitana de Santiago", team: "Engineering" },
+    description: "<p>desc</p>",
+    workplaceType: "remote",
+    createdAt: 1_780_000_000_000,
+  },
+]);
+
+describe("fetchLeverJobs", () => {
+  let fetchSpy: ReturnType<typeof vi.spyOn>;
+  beforeEach(() => {
+    fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(res(LV_JSON));
+  });
+  afterEach(() => fetchSpy.mockRestore());
+
+  it("maps Lever postings and hits the public postings API", async () => {
+    const jobs = await fetchLeverJobs("fintual");
+    expect(String(fetchSpy.mock.calls[0][0])).toContain("api.lever.co/v0/postings/fintual");
+    expect(jobs).toHaveLength(1);
+    expect(jobs[0]).toMatchObject({
+      source: "lever",
+      company: "fintual",
+      externalId: "abc-123",
+      title: "Software Engineer",
+      department: "Engineering",
+      location: "Región Metropolitana de Santiago",
+      remote: "remote",
+    });
+    expect(jobs[0].publishedAt).toBeInstanceOf(Date);
+  });
+
+  it("returns [] on non-array", async () => {
+    fetchSpy.mockResolvedValue(res("{}"));
+    expect(await fetchLeverJobs("x")).toEqual([]);
   });
 });
 

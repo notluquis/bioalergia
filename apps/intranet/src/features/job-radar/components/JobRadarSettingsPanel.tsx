@@ -8,6 +8,8 @@ const EMPTY: JobRadarSettings = {
   enabled: false,
   companies: "",
   bci: true,
+  greenhouse: "",
+  lever: "",
   keywords: "",
   departments: "",
   cron: "",
@@ -46,12 +48,22 @@ export function JobRadarSettingsPanel() {
 
         <TextField value={form.companies} onChange={(v) => set("companies", v)}>
           <Label>{t("jobRadar.settings.companies")}</Label>
-          <Input placeholder="tenpo, otra-empresa" />
+          <Input placeholder="tenpo, tinet, mindwork, global66" />
         </TextField>
 
         <TextField value={form.cron} onChange={(v) => set("cron", v)}>
           <Label>{t("jobRadar.settings.cron")}</Label>
           <Input placeholder="*/30 * * * *" />
+        </TextField>
+
+        <TextField value={form.greenhouse} onChange={(v) => set("greenhouse", v)}>
+          <Label>{t("jobRadar.settings.greenhouse")}</Label>
+          <Input placeholder="chile" />
+        </TextField>
+
+        <TextField value={form.lever} onChange={(v) => set("lever", v)}>
+          <Label>{t("jobRadar.settings.lever")}</Label>
+          <Input placeholder="fintual, xepelin" />
         </TextField>
 
         <TextField value={form.keywords} onChange={(v) => set("keywords", v)}>

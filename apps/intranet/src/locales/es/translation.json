@@ -19,6 +19,8 @@
       "enabled": "Sincronización automática",
       "bci": "Incluir BCI (Chile + Perú)",
       "companies": "Empresas Teamtailor (CSV de subdominios)",
+      "greenhouse": "Boards Greenhouse (CSV de tokens)",
+      "lever": "Empresas Lever (CSV de slugs)",
       "cron": "Frecuencia (cron)",
       "keywords": "Palabras clave del perfil (CSV)",
       "departments": "Departamentos (CSV)",

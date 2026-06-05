@@ -16,6 +16,8 @@ import {
   matchesProfile,
   type ProfileFilter,
 } from "../modules/job-radar/filter.ts";
+import { fetchGreenhouseJobs } from "../modules/job-radar/greenhouse.ts";
+import { fetchLeverJobs } from "../modules/job-radar/lever.ts";
 import { fetchTeamtailorJobs } from "../modules/job-radar/teamtailor.ts";
 import {
   sendTelegramMessage,
@@ -35,6 +37,8 @@ const KEYS = {
   enabled: "jobRadar.enabled",
   companies: "jobRadar.companies",
   bci: "jobRadar.bci",
+  greenhouse: "jobRadar.greenhouse",
+  lever: "jobRadar.lever",
   keywords: "jobRadar.keywords",
   departments: "jobRadar.departments",
   cron: "jobRadar.cron",
@@ -46,6 +50,8 @@ export interface JobRadarConfig {
   enabled: boolean;
   companies: string[];
   bci: boolean;
+  greenhouse: string[];
+  lever: string[];
   keywords: string[];
   departments: string[];
   cron: string;
@@ -78,6 +84,8 @@ export async function getJobRadarConfig(): Promise<JobRadarConfig> {
   const rec = await getSettings();
 
   const companiesRaw = pick(rec, KEYS.companies, process.env.JOB_RADAR_COMPANIES) ?? "";
+  const greenhouseRaw = pick(rec, KEYS.greenhouse, process.env.JOB_RADAR_GREENHOUSE) ?? "";
+  const leverRaw = pick(rec, KEYS.lever, process.env.JOB_RADAR_LEVER) ?? "";
   const keywordsRaw = pick(rec, KEYS.keywords, process.env.JOB_RADAR_KEYWORDS);
   const departmentsRaw = pick(rec, KEYS.departments, process.env.JOB_RADAR_DEPARTMENTS) ?? "";
 
@@ -89,6 +97,8 @@ export async function getJobRadarConfig(): Promise<JobRadarConfig> {
       pick(rec, KEYS.bci, process.env.JOB_RADAR_BCI === "false" ? "false" : undefined),
       true
     ),
+    greenhouse: parseCsv(greenhouseRaw),
+    lever: parseCsv(leverRaw),
     keywords: keywordsRaw === undefined ? DEFAULT_KEYWORDS : parseCsv(keywordsRaw),
     departments: parseCsv(departmentsRaw),
     cron: pick(rec, KEYS.cron, process.env.JOB_RADAR_CRON) || JOB_RADAR_DEFAULT_CRON,
@@ -119,6 +129,22 @@ function getSources(config: JobRadarConfig): JobSource[] {
   }
   if (config.bci) {
     sources.push({ source: "bci", company: "bci", label: "bci", fetch: fetchBciJobs });
+  }
+  for (const board of config.greenhouse) {
+    sources.push({
+      source: "greenhouse",
+      company: board,
+      label: `greenhouse:${board}`,
+      fetch: () => fetchGreenhouseJobs(board),
+    });
+  }
+  for (const company of config.lever) {
+    sources.push({
+      source: "lever",
+      company,
+      label: `lever:${company}`,
+      fetch: () => fetchLeverJobs(company),
+    });
   }
   return sources;
 }
@@ -412,6 +438,8 @@ export interface JobRadarSettingsDTO {
   enabled: boolean;
   companies: string; // CSV
   bci: boolean;
+  greenhouse: string; // CSV
+  lever: string; // CSV
   keywords: string; // CSV
   departments: string; // CSV
   cron: string;
@@ -425,6 +453,8 @@ export async function getJobRadarSettings(): Promise<JobRadarSettingsDTO> {
     enabled: config.enabled,
     companies: config.companies.join(", "),
     bci: config.bci,
+    greenhouse: config.greenhouse.join(", "),
+    lever: config.lever.join(", "),
     keywords: config.keywords.join(", "),
     departments: config.departments.join(", "),
     cron: config.cron,
@@ -437,6 +467,8 @@ export interface UpdateJobRadarSettingsInput {
   enabled?: boolean;
   companies?: string;
   bci?: boolean;
+  greenhouse?: string;
+  lever?: string;
   keywords?: string;
   departments?: string;
   cron?: string;
@@ -451,6 +483,8 @@ export async function updateJobRadarSettings(
   if (input.enabled !== undefined) rows[KEYS.enabled] = input.enabled ? "true" : "false";
   if (input.bci !== undefined) rows[KEYS.bci] = input.bci ? "true" : "false";
   if (input.companies !== undefined) rows[KEYS.companies] = input.companies;
+  if (input.greenhouse !== undefined) rows[KEYS.greenhouse] = input.greenhouse;
+  if (input.lever !== undefined) rows[KEYS.lever] = input.lever;
   if (input.keywords !== undefined) rows[KEYS.keywords] = input.keywords;
   if (input.departments !== undefined) rows[KEYS.departments] = input.departments;
   if (input.cron !== undefined) rows[KEYS.cron] = input.cron;
