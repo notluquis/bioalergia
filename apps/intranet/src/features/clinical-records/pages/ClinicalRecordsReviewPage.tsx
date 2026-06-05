@@ -12,6 +12,8 @@ import {
 } from "@heroui/react";
 import { useEffect, useState } from "react";
 import { ClipboardList, FileSearch, Pause, Play, RefreshCw } from "lucide-react";
+import { confirmAction } from "@/components/ui/ConfirmDialog";
+import { useToast } from "@/context/ToastContext";
 import {
   useActiveBulkJob,
   useApproveClinicalRecordImport,
@@ -33,6 +35,7 @@ const STATUS_OPTIONS = [
 type Status = (typeof STATUS_OPTIONS)[number]["value"];
 
 export function ClinicalRecordsReviewPage() {
+  const toast = useToast();
   const [status, setStatus] = useState<Status>("PENDING_REVIEW");
   const [search, setSearch] = useState("");
   const list = useClinicalRecordImports({
@@ -68,6 +71,31 @@ export function ClinicalRecordsReviewPage() {
   const progressPct =
     job && job.total > 0 ? Math.min(100, Math.round((job.progress / job.total) * 100)) : 0;
 
+  // Reprocess every pending/error ficha. The bulk job re-parses each xlsx with
+  // the deployed parser and re-runs patient matching; confirm first since it
+  // can touch thousands of rows.
+  async function handleReprocessAll() {
+    // total is only the pending/error count when that tab is selected.
+    const known =
+      (status === "PENDING_REVIEW" || status === "ERROR") && list.data ? list.data.total : null;
+    const ok = await confirmAction({
+      title: "Reprocesar todas las fichas",
+      description:
+        known != null
+          ? `Se reprocesarán las ${known} fichas pendientes y con error con el parser actual. Puedes detenerlo en cualquier momento.`
+          : "Se reprocesarán todas las fichas pendientes y con error con el parser actual. Puedes detenerlo en cualquier momento.",
+      confirmLabel: "Reprocesar todo",
+    });
+    if (!ok) return;
+    try {
+      const r = await startBulk.mutateAsync({});
+      setTrackedJobId(r.jobId);
+      toast.success("Reprocesamiento de fichas iniciado", "Fichas clínicas");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "No se pudo iniciar el reprocesamiento");
+    }
+  }
+
   return (
     <div className="flex flex-col gap-4 p-4">
       <header className="flex flex-wrap items-center justify-between gap-3">
@@ -93,16 +121,11 @@ export function ClinicalRecordsReviewPage() {
             <Button
               size="sm"
               variant="primary"
-              onPress={() => {
-                void (async () => {
-                  const r = await startBulk.mutateAsync({});
-                  setTrackedJobId(r.jobId);
-                })();
-              }}
+              onPress={() => void handleReprocessAll()}
               isPending={startBulk.isPending}
             >
               <Play size={14} />
-              <span>Procesar cola</span>
+              <span>Reprocesar todo</span>
             </Button>
           )}
         </div>
