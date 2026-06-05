@@ -122,6 +122,66 @@ export function formatChileShortDate(value: Date | string | null | undefined): s
   return `${p.day}/${p.month}/${p.year}`;
 }
 
+// ---- dayjs-token format shim (Intl, es-CL, Chile tz) -----------------------
+// Replaces dayjs `.tz(TZ).format(pattern)`. Verified byte-identical to dayjs es
+// across YYYY/YY/MMMM/MMM/MM/M/DD/D/dddd/ddd/HH/mm/ss + "[de]" literals.
+const TOKEN_NUMERIC = new Intl.DateTimeFormat("en-CA", {
+  timeZone: TIMEZONE,
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+  hour: "2-digit",
+  minute: "2-digit",
+  second: "2-digit",
+  hour12: false,
+});
+const TOKEN_MONTH_LONG = new Intl.DateTimeFormat("es-CL", { timeZone: TIMEZONE, month: "long" });
+const TOKEN_MONTH_SHORT = new Intl.DateTimeFormat("es-CL", { timeZone: TIMEZONE, month: "short" });
+const TOKEN_WEEKDAY_LONG = new Intl.DateTimeFormat("es-CL", {
+  timeZone: TIMEZONE,
+  weekday: "long",
+});
+const TOKEN_WEEKDAY_SHORT = new Intl.DateTimeFormat("es-CL", {
+  timeZone: TIMEZONE,
+  weekday: "short",
+});
+const TOKEN_RE = /\[([^\]]*)\]|YYYY|YY|MMMM|MMM|MM|M|DD|D|dddd|ddd|HH|mm|ss/g;
+
+function chileTokens(date: Date): Record<string, string> {
+  const p = Object.fromEntries(TOKEN_NUMERIC.formatToParts(date).map((x) => [x.type, x.value]));
+  return {
+    YYYY: p.year,
+    YY: p.year.slice(-2),
+    MM: p.month,
+    M: String(Number(p.month)),
+    DD: p.day,
+    D: String(Number(p.day)),
+    HH: p.hour === "24" ? "00" : p.hour, // en-CA emits "24" at midnight
+    mm: p.minute,
+    ss: p.second,
+    MMMM: TOKEN_MONTH_LONG.format(date),
+    MMM: TOKEN_MONTH_SHORT.format(date).replace(".", ""),
+    dddd: TOKEN_WEEKDAY_LONG.format(date),
+    ddd: TOKEN_WEEKDAY_SHORT.format(date).replace(".", ""),
+  };
+}
+
+/**
+ * Format a value with a dayjs-style token pattern in Chile local time.
+ * Native (Intl), replaces `dayjs(value).tz(TZ).format(pattern)`.
+ */
+export function formatChile(value: Date | string | null | undefined, pattern: string): string {
+  const tokens = chileTokens(toDisplayDate(value));
+  return pattern.replace(TOKEN_RE, (match, literal) =>
+    literal === undefined ? (tokens[match] ?? match) : literal
+  );
+}
+
+/** "HH:mm" of an instant in Chile. (Replaces dayjs `.tz(TZ).format("HH:mm")`.) */
+export function formatChileTime(value: Date | string | null | undefined): string {
+  return formatChile(value, "HH:mm");
+}
+
 /**
  * Format a @db.Date column value as "YYYY-MM-DD". Reads the UTC wall-clock
  * (the column has no timezone; both ZenStack and $qb return UTC-midnight).
@@ -428,7 +488,7 @@ export function formatDateOnly(date: Date): string {
 }
 
 export function formatChileDateTime(date: Date | string, pattern = "DD/MM/YYYY HH:mm"): string {
-  return dayjs(date).tz(TIMEZONE).format(pattern);
+  return formatChile(date, pattern);
 }
 
 export function coerceDateOnly(value: string): string | null {

@@ -5,9 +5,11 @@ import {
   coerceDateOnly,
   dbDateToISO,
   dbTimeToHHmm,
+  formatChile,
   formatChileDateTime,
   formatChileLongDate,
   formatChileShortDate,
+  formatChileTime,
   formatDateForDB,
   formatDateOnly,
   getMonthRange,
@@ -464,6 +466,32 @@ describe("time", () => {
       const resultStr = formatDateOnly(result);
       // Mon(1), Tue(2), Wed(3), Thu(4), Fri(5)
       expect(resultStr).toBe("2024-06-07");
+    });
+  });
+
+  describe("formatChile (token shim)", () => {
+    // Monday 2026-03-09, 15:45:30 Chile (UTC-3 in March).
+    const d = new Date("2026-03-09T18:45:30Z");
+    it.each([
+      ["DD/MM/YYYY HH:mm", "09/03/2026 15:45"],
+      ["YYYY-MM-DD", "2026-03-09"],
+      ["D [de] MMMM [de] YYYY", "9 de marzo de 2026"],
+      ["dddd D [de] MMMM", "lunes 9 de marzo"],
+      ["DD MMM YYYY", "09 mar 2026"],
+      ["HH:mm", "15:45"],
+      ["MMMM YYYY", "marzo 2026"],
+      ["DD-MM-YY HH:mm", "09-03-26 15:45"],
+      ["D MMM", "9 mar"],
+      ["YYYYMM", "202603"],
+      ["HH:mm:ss", "15:45:30"],
+    ])("formats %s -> %s", (pattern, expected) => {
+      expect(formatChile(d, pattern)).toBe(expected);
+    });
+    it("anchors a bare YYYY-MM-DD string at the same calendar day", () => {
+      expect(formatChile("2026-03-09", "DD/MM/YYYY")).toBe("09/03/2026");
+    });
+    it("formatChileTime extracts HH:mm", () => {
+      expect(formatChileTime(d)).toBe("15:45");
     });
   });
 
