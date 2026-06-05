@@ -34,14 +34,14 @@ export function getPeriodRange(period: string): { from: Date; to: Date } {
  * Return the YYYY-MM period that a given Date belongs to, in Chile local time.
  */
 export function toChilePeriod(date: Date): string {
-  return dayjs(date).tz(TIMEZONE).format("YYYY-MM");
+  return (instantToChileDate(date) ?? "").slice(0, 7);
 }
 
 /**
  * Return the YYYY-MM-DD string of a given Date, in Chile local time.
  */
 export function toChileDateString(date: Date): string {
-  return dayjs(date).tz(TIMEZONE).format("YYYY-MM-DD");
+  return instantToChileDate(date) ?? "";
 }
 
 // ===========================================================================
@@ -371,7 +371,7 @@ export function parseDateOnly(value: string): Date | null {
 }
 
 export function formatDateOnly(date: Date): string {
-  return dayjs(date).tz(TIMEZONE).format("YYYY-MM-DD");
+  return instantToChileDate(date) ?? "";
 }
 
 export function formatChileDateTime(date: Date | string, pattern = "DD/MM/YYYY HH:mm"): string {
