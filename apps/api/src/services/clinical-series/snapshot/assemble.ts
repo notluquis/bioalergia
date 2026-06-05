@@ -1,11 +1,33 @@
 import type { SchemaType } from "@finanzas/db/schema";
 import type { ModelResult } from "@zenstackhq/orm";
-import dayjs from "dayjs";
 
+import {
+  dbDateToISO,
+  formatChileTime,
+  instantToChileDate,
+  toChileDateString,
+} from "../../../lib/time.ts";
 import { inferHealthInsurance } from "../classification/insurance.ts";
-import { TIMEZONE } from "../constants.ts";
 import { extractSeriesPhones } from "../extraction/phones.ts";
 import { normalizeStoredPhoneArray } from "../normalization/phones.ts";
+
+// Event calendar date: startDate/endDate are @db.Date (UTC, dbDateToISO);
+// startDateTime/endDateTime are @db.Timestamptz instants (instantToChileDate).
+// Same priority as the old coalesce, but the right rule per column type.
+function coalesceEventDate(item: {
+  startDate?: Date | null;
+  startDateTime?: Date | null;
+  endDate?: Date | null;
+  endDateTime?: Date | null;
+}): string {
+  return (
+    dbDateToISO(item.startDate) ??
+    instantToChileDate(item.startDateTime) ??
+    dbDateToISO(item.endDate) ??
+    instantToChileDate(item.endDateTime) ??
+    ""
+  );
+}
 import type {
   ClinicalSeriesEventSnapshot,
   ClinicalSeriesKind,
@@ -79,14 +101,12 @@ export function assembleClinicalSeriesSnapshot(
   series: SeriesWithEventsAndContacts,
   linkMaps: SnapshotLinkMaps = EMPTY_LINK_MAPS
 ): ClinicalSeriesSnapshot {
-  const today = dayjs().tz(TIMEZONE).format("YYYY-MM-DD");
+  const today = toChileDateString(new Date());
   const lastAbandonmentContact = resolveLastAbandonmentContact(series);
   const inferredInsurance = inferHealthInsurance(
     series.events.map((item) => ({
       description: item.description ?? null,
-      eventDate: dayjs(item.startDate ?? item.startDateTime ?? item.endDate ?? item.endDateTime)
-        .tz(TIMEZONE)
-        .format("YYYY-MM-DD"),
+      eventDate: coalesceEventDate(item),
       eventId: item.id,
       summary: item.summary ?? null,
     }))
@@ -165,14 +185,12 @@ export function assembleClinicalSeriesSnapshot(
     description: item.description ?? null,
     dosageUnit: item.dosageUnit ?? null,
     dosageValue: item.dosageValue ?? null,
-    eventDate: dayjs(item.startDate ?? item.startDateTime ?? item.endDate ?? item.endDateTime)
-      .tz(TIMEZONE)
-      .format("YYYY-MM-DD"),
+    eventDate: coalesceEventDate(item),
     eventTime:
       item.startDateTime != null
-        ? dayjs(item.startDateTime).tz(TIMEZONE).format("HH:mm")
+        ? formatChileTime(item.startDateTime)
         : item.endDateTime != null
-          ? dayjs(item.endDateTime).tz(TIMEZONE).format("HH:mm")
+          ? formatChileTime(item.endDateTime)
           : null,
     eventId: item.id,
     externalEventId: item.externalEventId,
@@ -193,17 +211,15 @@ export function assembleClinicalSeriesSnapshot(
   const eventDates = events.map((item) => item.eventDate).sort();
   const startDate = eventDates[0] ?? today;
   const endDate = eventDates[eventDates.length - 1] ?? startDate;
-  const eligibleDocumentDateFrom = dayjs
-    .tz(startDate, TIMEZONE)
-    .subtract(7, "day")
-    .format("YYYY-MM-DD");
-  const eligibleDocumentDateTo = dayjs
-    .tz(endDate, TIMEZONE)
-    .add(30, "day")
-    .endOf("day")
-    .isAfter(dayjs().tz(TIMEZONE))
-    ? dayjs().tz(TIMEZONE).format("YYYY-MM-DD")
-    : dayjs.tz(endDate, TIMEZONE).add(30, "day").format("YYYY-MM-DD");
+  // startDate/endDate are YYYY-MM-DD event-date strings -> PlainDate math.
+  const eligibleDocumentDateFrom = Temporal.PlainDate.from(startDate)
+    .subtract({ days: 7 })
+    .toString();
+  const endPlus30 = Temporal.PlainDate.from(endDate).add({ days: 30 });
+  const eligibleDocumentDateTo =
+    Temporal.PlainDate.compare(endPlus30, Temporal.PlainDate.from(today)) >= 0
+      ? today
+      : endPlus30.toString();
 
   const baseSnapshot: ClinicalSeriesSnapshot = {
     allergenType: (series.allergenType as SubcutaneousAllergenType | null) ?? null,
