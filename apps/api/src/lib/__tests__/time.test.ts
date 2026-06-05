@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   buildChileDate,
+  chileDateMonthsAgo,
   coerceDateOnly,
   dbDateToISO,
   dbTimeToHHmm,
@@ -17,6 +18,7 @@ import {
   hhmmToDbTime,
   instantToChileDate,
   isoToDbDate,
+  iterateChileMonths,
   normalizeTimestampString,
   parseChileDateOnly,
   parseChileDateTime,
@@ -460,6 +462,32 @@ describe("time", () => {
       const resultStr = formatDateOnly(result);
       // Mon(1), Tue(2), Wed(3), Thu(4), Fri(5)
       expect(resultStr).toBe("2024-06-07");
+    });
+  });
+
+  describe("iterateChileMonths", () => {
+    it("lists inclusive YYYY-MM months across a YYYY-MM-DD range", () => {
+      expect(iterateChileMonths("2024-03-15", "2024-06-20")).toEqual([
+        "2024-03",
+        "2024-04",
+        "2024-05",
+        "2024-06",
+      ]);
+    });
+    it("returns a single month when from/to share a month", () => {
+      expect(iterateChileMonths("2024-06-01", "2024-06-30")).toEqual(["2024-06"]);
+    });
+    it("crosses a year boundary", () => {
+      expect(iterateChileMonths("2024-11", "2025-01")).toEqual(["2024-11", "2024-12", "2025-01"]);
+    });
+  });
+
+  describe("chileDateMonthsAgo", () => {
+    it("returns a YYYY-MM-DD string", () => {
+      expect(chileDateMonthsAgo(12)).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    });
+    it("is earlier than today", () => {
+      expect(chileDateMonthsAgo(1) < (instantToChileDate(new Date()) ?? "")).toBe(true);
     });
   });
 

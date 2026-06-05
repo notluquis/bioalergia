@@ -424,3 +424,27 @@ export function getMonthRange(month: string): { from: string; to: string } {
     to: end.toString(),
   };
 }
+
+/**
+ * The current calendar date in Chile, shifted back `n` months, as "YYYY-MM-DD".
+ * (Replaces `dayjs.tz(TZ).subtract(n, "month").format("YYYY-MM-DD")`.)
+ */
+export function chileDateMonthsAgo(n: number): string {
+  return toChileZoned(new Date()).toPlainDate().subtract({ months: n }).toString();
+}
+
+/**
+ * Inclusive list of "YYYY-MM" months spanned by `from`..`to`. Accepts
+ * "YYYY-MM-DD" or "YYYY-MM" bounds (only the year-month is used).
+ * (Replaces the dayjs month-iteration loop in salary summaries.)
+ */
+export function iterateChileMonths(from: string, to: string): string[] {
+  let cursor = Temporal.PlainYearMonth.from(from.slice(0, 7));
+  const end = Temporal.PlainYearMonth.from(to.slice(0, 7));
+  const months: string[] = [];
+  while (Temporal.PlainYearMonth.compare(cursor, end) <= 0) {
+    months.push(cursor.toString());
+    cursor = cursor.add({ months: 1 });
+  }
+  return months;
+}

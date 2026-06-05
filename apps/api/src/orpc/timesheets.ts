@@ -31,14 +31,19 @@ import {
   timesheetSummaryResponseSchema,
   timesheetUpdateInputSchema,
 } from "@finanzas/orpc-contracts/timesheets";
-import dayjs from "dayjs";
-import timezone from "dayjs/plugin/timezone.js";
-import utc from "dayjs/plugin/utc.js";
 import type { Context as HonoContext } from "hono";
 import { z } from "zod";
 import { getSessionUser, hasPermission } from "../lib/auth.ts";
 import { logError } from "../lib/logger.ts";
 import { configureSuperjson } from "../lib/superjson-config.ts";
+import {
+  chileDateMonthsAgo,
+  dbDateToISO,
+  getMonthRange,
+  iterateChileMonths,
+  toChileDateString,
+  toChilePeriod,
+} from "../lib/time.ts";
 import { getEmployeeById } from "../services/employees.ts";
 import { buildTimesheetEmailComposition } from "../services/timesheet-email-template.ts";
 import {
@@ -52,11 +57,8 @@ import {
 } from "../services/timesheets.ts";
 import { SuperJSONRPCHandler } from "./superjson.ts";
 
-dayjs.extend(utc);
-dayjs.extend(timezone);
 configureSuperjson();
 
-const TIMEZONE = "America/Santiago";
 const EMAIL_FROM_ADDRESS = "lpulgar@bioalergia.cl";
 const PDF_FILENAME = "resumen_honorarios.pdf";
 
@@ -81,9 +83,10 @@ const multiDetailEntrySchema = z.looseObject({
 });
 
 function defaultRangeQuery(query: { from?: string | null; to?: string | null }) {
+  const month = getMonthRange(toChilePeriod(new Date()));
   return {
-    from: query.from || dayjs.tz(TIMEZONE).startOf("month").format("YYYY-MM-DD"),
-    to: query.to || dayjs.tz(TIMEZONE).endOf("month").format("YYYY-MM-DD"),
+    from: query.from || month.from,
+    to: query.to || month.to,
   };
 }
 
@@ -99,26 +102,16 @@ async function getHistoricalDateRange() {
     take: 1,
   });
 
-  const from = minResult[0]
-    ? dayjs.utc(minResult[0].workDate).format("YYYY-MM-DD")
-    : dayjs.tz(TIMEZONE).subtract(12, "month").format("YYYY-MM-DD");
+  const from = minResult[0] ? (dbDateToISO(minResult[0].workDate) ?? "") : chileDateMonthsAgo(12);
   const to = maxResult[0]
-    ? dayjs.utc(maxResult[0].workDate).format("YYYY-MM-DD")
-    : dayjs.tz(TIMEZONE).format("YYYY-MM-DD");
+    ? (dbDateToISO(maxResult[0].workDate) ?? "")
+    : toChileDateString(new Date());
 
   return { from, to };
 }
 
 async function buildSalarySummaryData(from: string, to: string, employeeIds?: number[]) {
-  const startMonth = dayjs.tz(from, "YYYY-MM-DD", TIMEZONE);
-  const endMonth = dayjs.tz(to, "YYYY-MM-DD", TIMEZONE);
-  let current = startMonth.clone().startOf("month");
-  const months: string[] = [];
-
-  while (current.isBefore(endMonth.endOf("month")) || current.isSame(endMonth, "month")) {
-    months.push(current.format("YYYY-MM"));
-    current = current.add(1, "month");
-  }
+  const months = iterateChileMonths(from, to);
 
   const data: Record<
     string,
@@ -126,8 +119,7 @@ async function buildSalarySummaryData(from: string, to: string, employeeIds?: nu
   > = {};
 
   for (const month of months) {
-    const monthStart = dayjs.tz(month, "YYYY-MM", TIMEZONE).startOf("month").format("YYYY-MM-DD");
-    const monthEnd = dayjs.tz(month, "YYYY-MM", TIMEZONE).endOf("month").format("YYYY-MM-DD");
+    const { from: monthStart, to: monthEnd } = getMonthRange(month);
     const summary = await buildMonthlySummary(monthStart, monthEnd);
 
     for (const employee of summary.employees) {
@@ -329,9 +321,8 @@ const timesheetsORPCRouterBase = {
     .input(timesheetEmployeeDetailInputSchema)
     .output(timesheetRangeResponseSchema)
     .handler(async ({ input }) => {
-      const month = input.month || dayjs.tz(TIMEZONE).format("YYYY-MM");
-      const from = dayjs.tz(month, "YYYY-MM", TIMEZONE).startOf("month").format("YYYY-MM-DD");
-      const to = dayjs.tz(month, "YYYY-MM", TIMEZONE).endOf("month").format("YYYY-MM-DD");
+      const month = input.month || toChilePeriod(new Date());
+      const { from, to } = getMonthRange(month);
       const entries = await listTimesheetEntries({ employee_id: input.employeeId, from, to });
       return { entries, from, status: "ok" as const, to };
     }),
@@ -346,8 +337,9 @@ const timesheetsORPCRouterBase = {
     .input(timesheetEmployeeRangeInputSchema)
     .output(timesheetRangeResponseSchema)
     .handler(async ({ input }) => {
-      const startDate = input.startDate || dayjs.tz(TIMEZONE).startOf("month").format("YYYY-MM-DD");
-      const endDate = input.endDate || dayjs.tz(TIMEZONE).endOf("month").format("YYYY-MM-DD");
+      const currentMonth = getMonthRange(toChilePeriod(new Date()));
+      const startDate = input.startDate || currentMonth.from;
+      const endDate = input.endDate || currentMonth.to;
       const entries = await listTimesheetEntries({
         employee_id: input.employeeId,
         from: startDate,
@@ -375,11 +367,11 @@ const timesheetsORPCRouterBase = {
     .route({ method: "GET", path: "/months", summary: "List months", tags: ["Timesheets"] })
     .output(timesheetMonthsResponseSchema)
     .handler(async () => {
-      const months: string[] = [];
-      const today = dayjs();
-      for (let i = 0; i < 24; i++) {
-        months.push(today.subtract(i, "month").format("YYYY-MM"));
-      }
+      // Last 24 months, current first (descending), in Chile local time.
+      const currentYM = Temporal.PlainYearMonth.from(toChilePeriod(new Date()));
+      const months = Array.from({ length: 24 }, (_, i) =>
+        currentYM.subtract({ months: i }).toString()
+      );
       return { months, monthsWithData: [], status: "ok" as const };
     }),
 
@@ -422,10 +414,10 @@ const timesheetsORPCRouterBase = {
     .input(timesheetMultiMonthInputSchema)
     .output(timesheetMultiMonthResponseSchema)
     .handler(async ({ input }) => {
-      const start = input.startMonth || dayjs.tz(TIMEZONE).format("YYYY-MM");
+      const start = input.startMonth || toChilePeriod(new Date());
       const end = input.endMonth || start;
-      const from = dayjs.tz(start, "YYYY-MM", TIMEZONE).startOf("month").format("YYYY-MM-DD");
-      const to = dayjs.tz(end, "YYYY-MM", TIMEZONE).endOf("month").format("YYYY-MM-DD");
+      const from = getMonthRange(start).from;
+      const to = getMonthRange(end).to;
       const data: Record<
         string,
         { entries: Awaited<ReturnType<typeof listTimesheetEntries>>; month: string }
@@ -535,9 +527,8 @@ const timesheetsORPCRouterBase = {
     .input(timesheetMonthInputSchema)
     .output(timesheetSummaryResponseSchema)
     .handler(async ({ input }) => {
-      const month = input.month || dayjs.tz(TIMEZONE).format("YYYY-MM");
-      const from = dayjs.tz(month, "YYYY-MM", TIMEZONE).startOf("month").format("YYYY-MM-DD");
-      const to = dayjs.tz(month, "YYYY-MM", TIMEZONE).endOf("month").format("YYYY-MM-DD");
+      const month = input.month || toChilePeriod(new Date());
+      const { from, to } = getMonthRange(month);
       const summary = await buildMonthlySummary(from, to, input.employeeId);
       return { ...summary, from, month, status: "ok" as const, to };
     }),
