@@ -410,6 +410,12 @@ export default defineConfig(({ mode }) => {
         "test/employees.integration.test.ts",
         // Playwright specs run under playwright, not vitest.
         "e2e/**/*.spec.ts",
+        // Stryker copies the whole project (incl. e2e specs) into
+        // .stryker-tmp/sandbox-*/ during mutation runs; a leftover
+        // sandbox otherwise leaks those specs into the unit run (the
+        // e2e glob above is root-relative and misses the nested copy)
+        // → "Playwright Test did not expect test() to be called here".
+        "**/.stryker-tmp/**",
         // Storybook stories run under the `storybook` project (vitest.config.ts).
         "src/**/*.stories.@(ts|tsx)",
       ],

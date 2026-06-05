@@ -1,6 +1,6 @@
 import { db } from "@finanzas/db";
 import { calendar, type calendar_v3 } from "@googleapis/calendar";
-import { JWT } from "google-auth-library";
+import { GoogleAuth } from "google-auth-library";
 import { compileExcludePatterns, googleCalendarConfig } from "../lib/config.ts";
 import { joinClinicalText } from "../lib/clinical-text.ts";
 import type { CalendarEventRecord } from "./google-calendar.ts";
@@ -182,13 +182,14 @@ export class CalendarSyncService {
       throw new Error("Google Calendar configuration is missing");
     }
 
-    const auth = new JWT({
-      email: googleCalendarConfig.serviceAccountEmail,
-      key: googleCalendarConfig.privateKey,
+    const auth = new GoogleAuth({
+      credentials: {
+        client_email: googleCalendarConfig.serviceAccountEmail,
+        private_key: googleCalendarConfig.privateKey,
+      },
       scopes: ["https://www.googleapis.com/auth/calendar.readonly"],
     });
 
-    await auth.authorize();
     this.client = calendar({ version: "v3", auth });
     return this.client;
   }

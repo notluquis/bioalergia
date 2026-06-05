@@ -33,3 +33,24 @@ allowBuilds:
 # Opt out of pnpm 11's default 24h release-age gate (lockfile path
 # unaffected — pnpm/pnpm#10438).
 minimumReleaseAge: 0
+
+# Dependency overrides. pnpm 11 reads these from pnpm-workspace.yaml,
+# NOT the root package.json `pnpm.overrides` block (silently ignored
+# when a pnpm-workspace.yaml exists — was the case here pre-2026-06, the
+# playwright/kysely pins below sat inert until moved here).
+#
+# google-auth-library: DEDUP pin, not a version pin. googleapis-common
+# (under @googleapis/calendar + @googleapis/drive) bundles its own
+# google-auth-library; without this override the tree carries two copies
+# (10.5.0 transitive + 10.7.0 direct). The `GoogleAuth` instance we build
+# from the 10.7.0 copy then fails to assign to `calendar({ auth })` whose
+# Options.auth type comes from the 10.5.0 copy (TS2769 — separate private
+# `redirectUri` decls). Deduping to one version aligns the types. Keep at
+# whatever google-auth-library the api directly depends on. Code uses
+# `new GoogleAuth({ credentials, scopes })`, NOT `new JWT(...)`: 10.7.0
+# added a private field to OAuth2Client that breaks JWT's structural
+# assignability to the auth union (GoogleAuth is in the union explicitly).
+overrides:
+  playwright: 1.60.0
+  kysely: 0.29.2
+  google-auth-library: 10.7.0

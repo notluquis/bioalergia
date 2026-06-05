@@ -33,14 +33,14 @@
     "@emnapi/core": "^1.10.0",
     "@emnapi/runtime": "^1.10.0",
     "@types/node": "^25.9.1",
-    "@typescript/native-preview": "7.0.0-dev.20260527.2",
-    "@zenstackhq/cli": "^3.7.1",
-    "@zenstackhq/sdk": "^3.7.1",
+    "@typescript/native-preview": "7.0.0-dev.20260604.1",
+    "@zenstackhq/cli": "^3.7.2",
+    "@zenstackhq/sdk": "^3.7.2",
     "husky": "^9.1.7",
-    "knip": "^6.14.2",
-    "lint-staged": "^17.0.5",
-    "oxfmt": "^0.52.0",
-    "oxlint": "^1.67.0",
+    "knip": "^6.15.0",
+    "lint-staged": "^17.0.7",
+    "oxfmt": "^0.53.0",
+    "oxlint": "^1.68.0",
     "oxlint-tailwindcss": "^1.1.0",
     "oxlint-tsgolint": "^0.23.0",
     "turbo": "^2.9.16"
@@ -51,10 +51,5 @@
     "pnpm": ">=11.1.1"
   },
   "packageManager": "pnpm@11.1.1+sha512.d1fdf5f73c617b64fa1a56a81c3c8dfe0e966e33a6010aa256b517ae77be21d93e05affc0de1a83b0e4f29d569f68b446ae8f068cd7247c0bb3df0fb4d7bdf9a",
-  "pnpm": {
-    "overrides": {
-      "playwright": "1.60.0",
-      "kysely": "0.29.2"
-    }
-  }
+  "pnpm": {}
 }
