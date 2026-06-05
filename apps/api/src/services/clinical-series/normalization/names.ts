@@ -92,6 +92,7 @@ export function stripStopwordPrefix(token: string): string {
   while (current.length > 0) {
     let bestMatchedPrefixLength = 0;
     let bestStopwordLength = 0;
+    let bestRemainderLength = -1;
 
     for (const sw of LOWERCASE_NAME_STOPWORDS) {
       if (NON_DEGLUE_STOPWORDS.has(sw)) continue;
@@ -102,6 +103,9 @@ export function stripStopwordPrefix(token: string): string {
 
       const matchedPrefixLength = match[0].length;
       const remainderLength = current.length - matchedPrefixLength;
+      // A short non-empty remainder (<4) is not a recoverable name; skip.
+      // remainderLength === 0 (token IS the stopword in full) stays in the
+      // running so the LONGEST full-word match wins over a shorter prefix.
       if (remainderLength !== 0 && remainderLength < 4) continue;
 
       if (
@@ -110,10 +114,15 @@ export function stripStopwordPrefix(token: string): string {
       ) {
         bestMatchedPrefixLength = matchedPrefixLength;
         bestStopwordLength = sw.length;
+        bestRemainderLength = remainderLength;
       }
     }
 
     if (bestMatchedPrefixLength === 0) break;
+    // Whole-word stopword (remainder 0): leave the token intact so the caller's
+    // stopword check breaks the name sequence, rather than degluing it to "" and
+    // fusing the surrounding name tokens ("chavez clusted max" → "chavez max").
+    if (bestRemainderLength === 0) break;
     current = current.slice(bestMatchedPrefixLength);
   }
 
