@@ -1,9 +1,8 @@
 import { db } from "@finanzas/db";
-import dayjs from "dayjs";
 import { randomUUID } from "node:crypto";
 import { Decimal } from "decimal.js";
 import { AppError } from "../lib/app-error.ts";
-import "../lib/time.ts";
+import { dbDateToISO, isoToDbDate, toChileDateString } from "../lib/time.ts";
 
 type LoanStatus = "ACTIVE" | "COMPLETED" | "DEFAULTED";
 type LoanBorrowerType = "COMPANY" | "PERSON";
@@ -50,8 +49,8 @@ const PERIODS_PER_YEAR: Record<LoanFrequency, number> = {
   WEEKLY: 52,
 };
 
-const toDateOnly = (value: string) => dayjs.utc(value, "YYYY-MM-DD").startOf("day").toDate();
-const formatDateOnly = (value: Date) => dayjs.utc(value).format("YYYY-MM-DD");
+const toDateOnly = (value: string) => isoToDbDate(value);
+const formatDateOnly = (value: Date) => dbDateToISO(value) ?? "";
 const toDecimal = (value: Decimal.Value) => new Decimal(value);
 const toMoney = (value: Decimal.Value) => toDecimal(value).toDecimalPlaces(2, MONEY_ROUNDING);
 const optionalNote = (value?: null | string) => {
@@ -66,13 +65,14 @@ const getDueDateForInstallment = (
   frequency: LoanFrequency,
   installmentNumber: number
 ) => {
-  const date = dayjs.utc(startDate);
+  // startDate is @db.Date (UTC-anchored calendar date); compute on PlainDate.
+  const base = Temporal.PlainDate.from(dbDateToISO(startDate) ?? "");
   if (frequency === "MONTHLY") {
-    return date.add(installmentNumber, "month").startOf("day").toDate();
+    return isoToDbDate(base.add({ months: installmentNumber }).toString());
   }
 
   const weeks = frequency === "BIWEEKLY" ? installmentNumber * 2 : installmentNumber;
-  return date.add(weeks, "week").startOf("day").toDate();
+  return isoToDbDate(base.add({ weeks }).toString());
 };
 
 const mapScheduleStatus = (schedule: {
@@ -88,7 +88,8 @@ const mapScheduleStatus = (schedule: {
     return schedule.status;
   }
 
-  if (dayjs(schedule.dueDate).isBefore(dayjs(), "day")) {
+  // dueDate is @db.Date; compare calendar days (UTC date vs today in Chile).
+  if ((dbDateToISO(schedule.dueDate) ?? "") < toChileDateString(new Date())) {
     return "OVERDUE" as const;
   }
 
@@ -592,9 +593,8 @@ export async function registerLoanPayment(scheduleId: number, data: LoanPaymentP
 
 export async function unlinkLoanPayment(scheduleId: number) {
   const schedule = await ensureScheduleExists(scheduleId);
-  const nextStatus: LoanScheduleStatus = dayjs(schedule.dueDate).isBefore(dayjs(), "day")
-    ? "OVERDUE"
-    : "PENDING";
+  const nextStatus: LoanScheduleStatus =
+    (dbDateToISO(schedule.dueDate) ?? "") < toChileDateString(new Date()) ? "OVERDUE" : "PENDING";
 
   const updated = await db.loanSchedule.update({
     where: { id: scheduleId },
