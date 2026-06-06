@@ -20,6 +20,8 @@ import {
 import { fetchGetonbrdJobs } from "../modules/job-radar/getonbrd.ts";
 import { fetchGreenhouseJobs } from "../modules/job-radar/greenhouse.ts";
 import { fetchLeverJobs } from "../modules/job-radar/lever.ts";
+import { fetchSmartRecruitersJobs } from "../modules/job-radar/smartrecruiters.ts";
+import { fetchWorkdayJobs, parseWorkdayEntry } from "../modules/job-radar/workday.ts";
 import { fetchTeamtailorJobs } from "../modules/job-radar/teamtailor.ts";
 import {
   sendTelegramMessage,
@@ -43,6 +45,8 @@ const KEYS = {
   greenhouse: "jobRadar.greenhouse",
   lever: "jobRadar.lever",
   ashby: "jobRadar.ashby",
+  smartrecruiters: "jobRadar.smartrecruiters",
+  workday: "jobRadar.workday",
   keywords: "jobRadar.keywords",
   departments: "jobRadar.departments",
   cron: "jobRadar.cron",
@@ -58,6 +62,8 @@ export interface JobRadarConfig {
   greenhouse: string[];
   lever: string[];
   ashby: string[];
+  smartrecruiters: string[];
+  workday: string[];
   keywords: string[];
   departments: string[];
   cron: string;
@@ -68,6 +74,14 @@ function parseCsv(value: string): string[] {
   return value
     .split(",")
     .map((s) => s.trim().toLowerCase())
+    .filter((s) => s.length > 0);
+}
+
+// Preserva mayúsculas (SmartRecruiters companyId / Workday site son case-sensitive).
+function parseCsvKeepCase(value: string): string[] {
+  return value
+    .split(",")
+    .map((s) => s.trim())
     .filter((s) => s.length > 0);
 }
 
@@ -93,6 +107,9 @@ export async function getJobRadarConfig(): Promise<JobRadarConfig> {
   const greenhouseRaw = pick(rec, KEYS.greenhouse, process.env.JOB_RADAR_GREENHOUSE) ?? "";
   const leverRaw = pick(rec, KEYS.lever, process.env.JOB_RADAR_LEVER) ?? "";
   const ashbyRaw = pick(rec, KEYS.ashby, process.env.JOB_RADAR_ASHBY) ?? "";
+  const smartRaw = pick(rec, KEYS.smartrecruiters, process.env.JOB_RADAR_SMARTRECRUITERS) ?? "";
+  // Workday entries son "tenant:wd:site" → no lowercasear (site es case-sensitive).
+  const workdayRaw = pick(rec, KEYS.workday, process.env.JOB_RADAR_WORKDAY) ?? "";
   const keywordsRaw = pick(rec, KEYS.keywords, process.env.JOB_RADAR_KEYWORDS);
   const departmentsRaw = pick(rec, KEYS.departments, process.env.JOB_RADAR_DEPARTMENTS) ?? "";
 
@@ -108,6 +125,8 @@ export async function getJobRadarConfig(): Promise<JobRadarConfig> {
     greenhouse: parseCsv(greenhouseRaw),
     lever: parseCsv(leverRaw),
     ashby: parseCsv(ashbyRaw),
+    smartrecruiters: parseCsvKeepCase(smartRaw),
+    workday: parseCsvKeepCase(workdayRaw),
     keywords: keywordsRaw === undefined ? DEFAULT_KEYWORDS : parseCsv(keywordsRaw),
     departments: parseCsv(departmentsRaw),
     cron: pick(rec, KEYS.cron, process.env.JOB_RADAR_CRON) || JOB_RADAR_DEFAULT_CRON,
@@ -169,6 +188,27 @@ function getSources(config: JobRadarConfig): JobSource[] {
       company: org,
       label: `ashby:${org}`,
       fetch: () => fetchAshbyJobs(org),
+    });
+  }
+  for (const company of config.smartrecruiters) {
+    sources.push({
+      source: "smartrecruiters",
+      company,
+      label: `smartrecruiters:${company}`,
+      fetch: () => fetchSmartRecruitersJobs(company),
+    });
+  }
+  for (const raw of config.workday) {
+    const entry = parseWorkdayEntry(raw);
+    if (!entry) {
+      logWarn("job_radar.workday.bad_entry", { raw });
+      continue;
+    }
+    sources.push({
+      source: "workday",
+      company: entry.tenant,
+      label: `workday:${entry.tenant}`,
+      fetch: () => fetchWorkdayJobs(entry, config.keywords),
     });
   }
   return sources;
@@ -474,6 +514,8 @@ export interface JobRadarSettingsDTO {
   greenhouse: string; // CSV
   lever: string; // CSV
   ashby: string; // CSV
+  smartrecruiters: string; // CSV
+  workday: string; // CSV de "tenant:wd:site"
   keywords: string; // CSV
   departments: string; // CSV
   cron: string;
@@ -491,6 +533,8 @@ export async function getJobRadarSettings(): Promise<JobRadarSettingsDTO> {
     greenhouse: config.greenhouse.join(", "),
     lever: config.lever.join(", "),
     ashby: config.ashby.join(", "),
+    smartrecruiters: config.smartrecruiters.join(", "),
+    workday: config.workday.join(", "),
     keywords: config.keywords.join(", "),
     departments: config.departments.join(", "),
     cron: config.cron,
@@ -507,6 +551,8 @@ export interface UpdateJobRadarSettingsInput {
   greenhouse?: string;
   lever?: string;
   ashby?: string;
+  smartrecruiters?: string;
+  workday?: string;
   keywords?: string;
   departments?: string;
   cron?: string;
@@ -525,6 +571,8 @@ export async function updateJobRadarSettings(
   if (input.greenhouse !== undefined) rows[KEYS.greenhouse] = input.greenhouse;
   if (input.lever !== undefined) rows[KEYS.lever] = input.lever;
   if (input.ashby !== undefined) rows[KEYS.ashby] = input.ashby;
+  if (input.smartrecruiters !== undefined) rows[KEYS.smartrecruiters] = input.smartrecruiters;
+  if (input.workday !== undefined) rows[KEYS.workday] = input.workday;
   if (input.keywords !== undefined) rows[KEYS.keywords] = input.keywords;
   if (input.departments !== undefined) rows[KEYS.departments] = input.departments;
   if (input.cron !== undefined) rows[KEYS.cron] = input.cron;

@@ -5,7 +5,9 @@ import { matchesProfile, type ProfileFilter } from "../filter.ts";
 import { fetchGetonbrdJobs } from "../getonbrd.ts";
 import { fetchGreenhouseJobs } from "../greenhouse.ts";
 import { fetchLeverJobs } from "../lever.ts";
+import { fetchSmartRecruitersJobs } from "../smartrecruiters.ts";
 import { fetchTeamtailorJobs } from "../teamtailor.ts";
+import { fetchWorkdayJobs, parseWorkdayEntry } from "../workday.ts";
 import type { RawJob } from "../types.ts";
 
 const SITEMAP = `<?xml version="1.0"?>
@@ -339,6 +341,100 @@ describe("fetchAshbyJobs", () => {
   it("returns [] on non-ok", async () => {
     fetchSpy.mockResolvedValue(res("", false, 404));
     expect(await fetchAshbyJobs("nope")).toEqual([]);
+  });
+});
+
+const SR_JSON = JSON.stringify({
+  offset: 0,
+  limit: 100,
+  totalFound: 1,
+  content: [
+    {
+      id: "744000130390560",
+      name: "Finance Business Partner",
+      refNumber: "REF27957O",
+      releasedDate: "2026-06-05T08:22:58.881Z",
+      location: {
+        city: "Santiago",
+        country: "cl",
+        fullLocation: "Santiago, Chile",
+        remote: false,
+        hybrid: true,
+      },
+      department: { label: "Finanzas" },
+      function: { label: "Purchasing" },
+    },
+  ],
+});
+
+describe("fetchSmartRecruitersJobs", () => {
+  let fetchSpy: ReturnType<typeof vi.spyOn>;
+  beforeEach(() => {
+    fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(res(SR_JSON));
+  });
+  afterEach(() => fetchSpy.mockRestore());
+
+  it("maps SmartRecruiters postings", async () => {
+    const jobs = await fetchSmartRecruitersJobs("Sodexo");
+    expect(String(fetchSpy.mock.calls[0][0])).toContain(
+      "api.smartrecruiters.com/v1/companies/Sodexo/postings"
+    );
+    expect(jobs[0]).toMatchObject({
+      source: "smartrecruiters",
+      company: "Sodexo",
+      externalId: "744000130390560",
+      title: "Finance Business Partner",
+      department: "Finanzas",
+      location: "Santiago, Chile",
+      remote: "Híbrido",
+      url: "https://jobs.smartrecruiters.com/Sodexo/744000130390560",
+    });
+    expect(jobs[0].publishedAt).toBeInstanceOf(Date);
+  });
+});
+
+const WD_JSON = JSON.stringify({
+  total: 1,
+  jobPostings: [
+    {
+      title: "Analista de Riesgo",
+      externalPath: "/job/Santiago/Analista-de-Riesgo_JR123",
+      locationsText: "Santiago, Chile",
+      postedOn: "Posted Today",
+      bulletFields: ["JR123"],
+    },
+  ],
+});
+
+describe("workday", () => {
+  it("parseWorkdayEntry parses tenant:wd:site (and rejects bad)", () => {
+    expect(parseWorkdayEntry("nvidia:wd5:NVIDIAExternalCareerSite")).toEqual({
+      tenant: "nvidia",
+      wd: "wd5",
+      site: "NVIDIAExternalCareerSite",
+    });
+    expect(parseWorkdayEntry("nope")).toBeNull();
+    expect(parseWorkdayEntry("a:b")).toBeNull();
+  });
+
+  it("maps Workday CXS postings via searchText", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(res(WD_JSON));
+    const entry = parseWorkdayEntry("falabella:wd3:Falabella")!;
+    const jobs = await fetchWorkdayJobs(entry, ["riesgo"]);
+    const [url, opts] = fetchSpy.mock.calls[0];
+    expect(String(url)).toBe(
+      "https://falabella.wd3.myworkdayjobs.com/wday/cxs/falabella/Falabella/jobs"
+    );
+    expect((opts as RequestInit).method).toBe("POST");
+    expect(jobs[0]).toMatchObject({
+      source: "workday",
+      company: "falabella",
+      externalId: "JR123",
+      title: "Analista de Riesgo",
+      location: "Santiago, Chile",
+      url: "https://falabella.wd3.myworkdayjobs.com/Falabella/job/Santiago/Analista-de-Riesgo_JR123",
+    });
+    fetchSpy.mockRestore();
   });
 });
 

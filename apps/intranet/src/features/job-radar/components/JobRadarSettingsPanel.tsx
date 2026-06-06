@@ -12,6 +12,8 @@ const EMPTY: JobRadarSettings = {
   greenhouse: "",
   lever: "",
   ashby: "",
+  smartrecruiters: "",
+  workday: "",
   keywords: "",
   departments: "",
   cron: "",
@@ -74,6 +76,16 @@ export function JobRadarSettingsPanel() {
         <TextField value={form.ashby} onChange={(v) => set("ashby", v)}>
           <Label>{t("jobRadar.settings.ashby")}</Label>
           <Input placeholder="toku, belvo" />
+        </TextField>
+
+        <TextField value={form.smartrecruiters} onChange={(v) => set("smartrecruiters", v)}>
+          <Label>{t("jobRadar.settings.smartrecruiters")}</Label>
+          <Input placeholder="Sodexo, Concentrix" />
+        </TextField>
+
+        <TextField value={form.workday} onChange={(v) => set("workday", v)}>
+          <Label>{t("jobRadar.settings.workday")}</Label>
+          <Input placeholder="nvidia:wd5:NVIDIAExternalCareerSite" />
         </TextField>
 
         <TextField value={form.keywords} onChange={(v) => set("keywords", v)}>

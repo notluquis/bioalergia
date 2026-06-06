@@ -50,6 +50,8 @@
       "greenhouse": "Greenhouse boards (CSV of tokens)",
       "lever": "Lever companies (CSV of slugs)",
       "ashby": "Ashby boards (CSV of slugs)",
+      "smartrecruiters": "SmartRecruiters (CSV of companyId, case-sensitive)",
+      "workday": "Workday (CSV of tenant:wd:site)",
       "cron": "Frequency (cron)",
       "keywords": "Profile keywords (CSV)",
       "departments": "Departments (CSV)",
