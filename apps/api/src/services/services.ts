@@ -13,7 +13,6 @@ import {
 import type { ServiceInclude } from "@finanzas/db/input";
 import { Decimal } from "decimal.js";
 import { dbDateToISO, isoToDbDate } from "../lib/time.ts";
-import "../lib/time.ts";
 
 type ServicePayload = {
   name: string;
