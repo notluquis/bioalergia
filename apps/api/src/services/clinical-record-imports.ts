@@ -1,3 +1,4 @@
+import { createId } from "@paralleldrive/cuid2";
 import { kysely } from "@finanzas/db";
 import type { SchemaType } from "@finanzas/db/schema";
 import { sql, type Transaction } from "kysely";
@@ -426,6 +427,81 @@ export async function rejectClinicalRecordImport(
     message: "import_rejected",
     metadata: { notes: notes ?? null },
   });
+}
+
+// OneDrive item metadata needed to enqueue a ficha. Mirrors the subset of
+// buildOneDriveItemMetadata the scan already produces — passed in so the ficha
+// module owns the clinical_record_imports insert without depending on the
+// skin-test scan internals.
+export type OneDriveRecordMetadata = {
+  id: string;
+  driveId: string | null;
+  sourceKey?: string | null;
+  sourceDriveId?: string | null;
+  sourceItemId?: string | null;
+  sharePointUniqueId?: string | null;
+  quickXorHash?: string | null;
+  sha1Hash?: string | null;
+  crc32Hash?: string | null;
+  eTag?: string | null;
+  cTag?: string | null;
+  webUrl?: string | null;
+  path?: string | null;
+  filename: string;
+  mimeType?: string | null;
+  size?: number | null;
+  modifiedAt?: string | null;
+};
+
+// Enqueue (or refresh) a OneDrive-discovered ficha into clinical_record_imports
+// as PENDING_REVIEW + unparsed — the same state the corpus backfill produced,
+// so the existing reprocess/auto-approve pipeline picks it up. Owned by the
+// ficha module; the generic OneDrive scan calls this for CLINICAL_RECORD docs.
+// Idempotent: re-discovery of an already-processed row only refreshes the
+// OneDrive metadata, never resets its status/parse.
+export async function enqueueClinicalRecordImportFromOneDrive(
+  accountId: string,
+  metadata: OneDriveRecordMetadata
+): Promise<{ id: string; created: boolean }> {
+  const existing = await sql<{ id: string }>`
+    SELECT id FROM clinical_record_imports
+    WHERE onedrive_account_id = ${accountId}
+      AND onedrive_drive_id = ${metadata.driveId}
+      AND onedrive_item_id = ${metadata.id}
+  `.execute(kysely);
+  const importId = existing.rows[0]?.id ?? createId();
+
+  await sql`
+    INSERT INTO clinical_record_imports (
+      id, onedrive_account_id, onedrive_item_id, onedrive_drive_id,
+      onedrive_source_key, onedrive_source_drive_id, onedrive_source_item_id,
+      onedrive_sharepoint_unique_id, onedrive_quick_xor_hash, onedrive_sha1_hash,
+      onedrive_crc32_hash, onedrive_etag, onedrive_ctag, onedrive_web_url,
+      path, filename, mime_type, size, modified_at,
+      parser_version, status, confidence, created_at, updated_at
+    ) VALUES (
+      ${importId}, ${accountId}, ${metadata.id}, ${metadata.driveId},
+      ${metadata.sourceKey ?? null}, ${metadata.sourceDriveId ?? null}, ${metadata.sourceItemId ?? null},
+      ${metadata.sharePointUniqueId ?? null}, ${metadata.quickXorHash ?? null}, ${metadata.sha1Hash ?? null},
+      ${metadata.crc32Hash ?? null}, ${metadata.eTag ?? null}, ${metadata.cTag ?? null}, ${metadata.webUrl ?? null},
+      ${metadata.path ?? null}, ${metadata.filename}, ${metadata.mimeType ?? null}, ${metadata.size ?? null},
+      ${metadata.modifiedAt ?? null}::timestamptz,
+      '', 'PENDING_REVIEW', 0, now(), now()
+    )
+    ON CONFLICT (onedrive_account_id, onedrive_drive_id, onedrive_item_id)
+    DO UPDATE SET
+      onedrive_etag = EXCLUDED.onedrive_etag,
+      onedrive_ctag = EXCLUDED.onedrive_ctag,
+      onedrive_web_url = EXCLUDED.onedrive_web_url,
+      path = COALESCE(EXCLUDED.path, clinical_record_imports.path),
+      filename = EXCLUDED.filename,
+      mime_type = EXCLUDED.mime_type,
+      size = EXCLUDED.size,
+      modified_at = EXCLUDED.modified_at,
+      updated_at = now()
+  `.execute(kysely);
+
+  return { id: importId, created: existing.rows.length === 0 };
 }
 
 // Multi-select approve: one transaction per import (reusing the single-row
