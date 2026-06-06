@@ -32,6 +32,8 @@ export async function fetchAshbyJobs(org: string): Promise<RawJob[]> {
     const url = asString(job.jobUrl);
     if (!externalId || !title || !url) continue;
     const workplace = asString(job.workplaceType);
+    // compensation.compensationTierSummary = string legible (ej "$2k–$3k USD")
+    const salary = asString(asRecord(job.compensation)?.compensationTierSummary);
     out.push({
       source: "ashby",
       company: org,
@@ -41,6 +43,7 @@ export async function fetchAshbyJobs(org: string): Promise<RawJob[]> {
       department: asString(job.department) ?? asString(job.team),
       location: asString(job.location),
       remote: job.isRemote === true ? (workplace ?? "Remote") : workplace,
+      salary,
       descriptionHtml: asString(job.descriptionHtml),
       publishedAt: parseDate(job.publishedAt),
       lastmod: null,

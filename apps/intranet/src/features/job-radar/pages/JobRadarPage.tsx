@@ -129,7 +129,8 @@ export function JobRadarPage() {
         cell: ({ row }) => (
           <button
             type="button"
-            className="text-left font-medium hover:underline"
+            title={row.original.title}
+            className="line-clamp-2 block max-w-[34ch] text-left font-medium hover:underline"
             onClick={() => setDetailJob(row.original)}
           >
             {row.original.title}
@@ -167,6 +168,16 @@ export function JobRadarPage() {
           const { location, remote } = row.original;
           return [location, remote].filter(Boolean).join(" · ") || "—";
         },
+      },
+      {
+        accessorKey: "salary",
+        header: t("jobRadar.col.salary"),
+        cell: ({ row }) =>
+          row.original.salary ? (
+            <span className="whitespace-nowrap text-success">{row.original.salary}</span>
+          ) : (
+            "—"
+          ),
       },
       {
         accessorKey: "publishedAt",

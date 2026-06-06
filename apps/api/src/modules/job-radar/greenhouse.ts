@@ -50,6 +50,7 @@ export async function fetchGreenhouseJobs(board: string): Promise<RawJob[]> {
       department: firstDepartment(job),
       location: asString(asRecord(job.location)?.name),
       remote: null,
+      salary: null,
       descriptionHtml: asString(job.content),
       publishedAt: parseDate(job.first_published) ?? parseDate(job.updated_at),
       lastmod: parseDate(job.updated_at),

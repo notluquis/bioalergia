@@ -50,6 +50,7 @@ export async function fetchSmartRecruitersJobs(company: string): Promise<RawJob[
       department,
       location,
       remote,
+      salary: null,
       descriptionHtml: null,
       publishedAt: parseDate(job.releasedDate),
       lastmod: null,

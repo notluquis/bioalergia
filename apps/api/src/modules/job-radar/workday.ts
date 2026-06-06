@@ -59,6 +59,7 @@ async function fetchPage(entry: WorkdayEntry, searchText: string): Promise<RawJo
       department: null,
       location: asString(job.locationsText),
       remote: asString(job.remoteType),
+      salary: null,
       descriptionHtml: null,
       publishedAt: null, // postedOn es texto relativo ("Posted Today")
       lastmod: null,

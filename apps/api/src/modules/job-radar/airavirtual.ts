@@ -81,6 +81,7 @@ export async function fetchAiravirtualJobs(company: string): Promise<RawJob[]> {
       department: cleanArea(asString(o.area), asString(o.subarea)),
       location: cleanLocation(asString(o.city), asString(o.region)),
       remote: mapRemote(asString(o.remote_work)),
+      salary: null,
       descriptionHtml: null,
       publishedAt: publishedFrom(o.publication_days),
       lastmod: null,

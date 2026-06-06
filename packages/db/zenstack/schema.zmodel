@@ -5233,6 +5233,7 @@ model JobPosting {
   department     String?
   location       String?
   remote         String?          // ej. "Completamente remoto", "Híbrido"
+  salary         String?          // texto legible (ej "$1.036.481", "USD 2000-3000")
   descriptionHtml String?         @map("description_html")
   publishedAt    DateTime?        @map("published_at")
   lastmod        DateTime?        // <lastmod> del sitemap

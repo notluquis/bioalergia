@@ -9,6 +9,7 @@ const EMPTY: JobRadarSettings = {
   enabled: false,
   bci: true,
   getonbrd: false,
+  empleospublicos: false,
   keywords: "",
   departments: "",
   cron: "",
@@ -45,6 +46,9 @@ export function JobRadarSettingsPanel() {
           </Switch>
           <Switch isSelected={form.getonbrd} onChange={(v) => set("getonbrd", v)}>
             {t("jobRadar.settings.getonbrd")}
+          </Switch>
+          <Switch isSelected={form.empleospublicos} onChange={(v) => set("empleospublicos", v)}>
+            {t("jobRadar.settings.empleospublicos")}
           </Switch>
         </div>
 

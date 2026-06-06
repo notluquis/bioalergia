@@ -10,6 +10,7 @@ export interface RawJob {
   department: string | null;
   location: string | null;
   remote: string | null;
+  salary: string | null; // texto legible (ej "$1.036.481" / "USD 2000-3000")
   descriptionHtml: string | null;
   publishedAt: Date | null;
   lastmod: Date | null;

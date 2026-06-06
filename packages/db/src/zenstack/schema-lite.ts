@@ -13879,6 +13879,11 @@ export class SchemaType implements SchemaDef {
                     type: "String",
                     optional: true
                 },
+                salary: {
+                    name: "salary",
+                    type: "String",
+                    optional: true
+                },
                 descriptionHtml: {
                     name: "descriptionHtml",
                     type: "String",

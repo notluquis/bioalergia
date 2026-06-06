@@ -152,6 +152,7 @@ export async function fetchTeamtailorJobs(company: string): Promise<RawJob[]> {
       department: m?.department ?? null,
       location: m?.location ?? null,
       remote: m?.remote ?? null,
+      salary: null,
       descriptionHtml: m?.descriptionHtml ?? null,
       publishedAt: m?.publishedAt ?? null,
       lastmod: e.lastmod,

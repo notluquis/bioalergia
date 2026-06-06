@@ -13,6 +13,7 @@ function p(over: Partial<JobPostingDTO>): JobPostingDTO {
     department: null,
     location: null,
     remote: null,
+    salary: null,
     descriptionHtml: null,
     publishedAt: null,
     lastmod: null,

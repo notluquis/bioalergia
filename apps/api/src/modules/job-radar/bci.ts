@@ -64,6 +64,7 @@ function mapHit(source: Record<string, unknown>): RawJob | null {
     department: asString(source.bci_department_title),
     location: peru ? (buildLocation(source) ?? "Perú") : buildLocation(source),
     remote: null, // BCI no expone modalidad estructurada en el índice
+    salary: null,
     descriptionHtml: asString(source.long_description) ?? asString(source.description),
     publishedAt: parseDate(source.published_at_date_text) ?? parseDate(source.created_at),
     lastmod: parseDate(source.updated_at),

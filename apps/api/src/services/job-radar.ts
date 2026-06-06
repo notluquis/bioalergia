@@ -13,6 +13,7 @@ import { getSettings, updateSettings } from "../lib/settings.ts";
 import { fetchAiravirtualJobs } from "../modules/job-radar/airavirtual.ts";
 import { fetchAshbyJobs } from "../modules/job-radar/ashby.ts";
 import { fetchBciJobs } from "../modules/job-radar/bci.ts";
+import { fetchEmpleosPublicosJobs } from "../modules/job-radar/empleospublicos.ts";
 import {
   DEFAULT_KEYWORDS,
   matchesProfile,
@@ -42,6 +43,7 @@ const KEYS = {
   enabled: "jobRadar.enabled",
   bci: "jobRadar.bci",
   getonbrd: "jobRadar.getonbrd",
+  empleospublicos: "jobRadar.empleospublicos",
   keywords: "jobRadar.keywords",
   departments: "jobRadar.departments",
   cron: "jobRadar.cron",
@@ -53,6 +55,7 @@ export interface JobRadarConfig {
   enabled: boolean;
   bci: boolean;
   getonbrd: boolean;
+  empleospublicos: boolean;
   keywords: string[];
   departments: string[];
   cron: string;
@@ -94,6 +97,10 @@ export async function getJobRadarConfig(): Promise<JobRadarConfig> {
       true
     ),
     getonbrd: parseBool(pick(rec, KEYS.getonbrd, process.env.JOB_RADAR_GETONBRD), false),
+    empleospublicos: parseBool(
+      pick(rec, KEYS.empleospublicos, process.env.JOB_RADAR_EMPLEOSPUBLICOS),
+      false
+    ),
     keywords: keywordsRaw === undefined ? DEFAULT_KEYWORDS : parseCsv(keywordsRaw),
     departments: parseCsv(departmentsRaw),
     cron: pick(rec, KEYS.cron, process.env.JOB_RADAR_CRON) || JOB_RADAR_DEFAULT_CRON,
@@ -196,6 +203,14 @@ async function getSources(config: JobRadarConfig): Promise<JobSource[]> {
       fetch: () => fetchGetonbrdJobs(config.keywords),
     });
   }
+  if (config.empleospublicos) {
+    sources.push({
+      source: "empleospublicos",
+      company: "empleospublicos",
+      label: "empleospublicos",
+      fetch: fetchEmpleosPublicosJobs,
+    });
+  }
   return sources;
 }
 
@@ -231,6 +246,7 @@ function formatJobMessage(job: RawJob): string {
       `📍 ${escapeHtml(job.location ?? "")}${job.remote ? ` · ${escapeHtml(job.remote)}` : ""}`.trim()
     );
   }
+  if (job.salary) lines.push(`💰 ${escapeHtml(job.salary)}`);
   lines.push(`🔗 ${escapeHtml(job.url)}`);
   return lines.join("\n");
 }
@@ -268,6 +284,7 @@ async function upsertSourceJobs(
           department: job.department,
           location: job.location,
           remote: job.remote,
+          salary: job.salary,
           descriptionHtml: job.descriptionHtml,
           publishedAt: job.publishedAt,
           lastmod: job.lastmod,
@@ -289,6 +306,7 @@ async function upsertSourceJobs(
           department: job.department,
           location: job.location,
           remote: job.remote,
+          salary: job.salary,
           descriptionHtml: job.descriptionHtml,
           publishedAt: job.publishedAt,
           lastmod: job.lastmod,
@@ -379,6 +397,7 @@ async function notifyNewMatches(creds: TelegramCreds | null): Promise<number> {
         department: job.department,
         location: job.location,
         remote: job.remote,
+        salary: job.salary,
         descriptionHtml: job.descriptionHtml,
         publishedAt: job.publishedAt,
         lastmod: job.lastmod,
@@ -533,6 +552,7 @@ export interface JobRadarSettingsDTO {
   enabled: boolean;
   bci: boolean;
   getonbrd: boolean;
+  empleospublicos: boolean;
   keywords: string; // CSV
   departments: string; // CSV
   cron: string;
@@ -546,6 +566,7 @@ export async function getJobRadarSettings(): Promise<JobRadarSettingsDTO> {
     enabled: config.enabled,
     bci: config.bci,
     getonbrd: config.getonbrd,
+    empleospublicos: config.empleospublicos,
     keywords: config.keywords.join(", "),
     departments: config.departments.join(", "),
     cron: config.cron,
@@ -558,6 +579,7 @@ export interface UpdateJobRadarSettingsInput {
   enabled?: boolean;
   bci?: boolean;
   getonbrd?: boolean;
+  empleospublicos?: boolean;
   keywords?: string;
   departments?: string;
   cron?: string;
@@ -572,6 +594,8 @@ export async function updateJobRadarSettings(
   if (input.enabled !== undefined) rows[KEYS.enabled] = input.enabled ? "true" : "false";
   if (input.bci !== undefined) rows[KEYS.bci] = input.bci ? "true" : "false";
   if (input.getonbrd !== undefined) rows[KEYS.getonbrd] = input.getonbrd ? "true" : "false";
+  if (input.empleospublicos !== undefined)
+    rows[KEYS.empleospublicos] = input.empleospublicos ? "true" : "false";
   if (input.keywords !== undefined) rows[KEYS.keywords] = input.keywords;
   if (input.departments !== undefined) rows[KEYS.departments] = input.departments;
   if (input.cron !== undefined) rows[KEYS.cron] = input.cron;

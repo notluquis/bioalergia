@@ -18,6 +18,17 @@ const BASE = "https://www.getonbrd.com/api/v0/search/jobs";
 const SITE = "https://www.getonbrd.com";
 const PER_PAGE = 50;
 
+// GetOnBoard da min_salary/max_salary en USD (números). → "USD 2,000–3,000".
+function gobSalary(minRaw: unknown, maxRaw: unknown): string | null {
+  const num = (v: unknown) => (typeof v === "number" && v > 0 ? v : null);
+  const min = num(minRaw);
+  const max = num(maxRaw);
+  const f = (n: number) => n.toLocaleString("en-US");
+  if (min && max) return `USD ${f(min)}–${f(max)}`;
+  const only = min ?? max;
+  return only ? `USD ${f(only)}` : null;
+}
+
 function parseEpochSeconds(v: unknown): Date | null {
   if (typeof v !== "number" || !Number.isFinite(v)) return null;
   return new Date(v * 1000);
@@ -57,6 +68,7 @@ async function fetchOne(query: string): Promise<RawJob[]> {
       department: asString(attr.category_name),
       location: asString(attr.remote_zone),
       remote: remoteModality && remoteModality !== "no" ? remoteModality : null,
+      salary: gobSalary(attr.min_salary, attr.max_salary),
       descriptionHtml: asString(attr.description),
       publishedAt: parseEpochSeconds(attr.published_at),
       lastmod: null,

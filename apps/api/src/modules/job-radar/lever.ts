@@ -39,6 +39,7 @@ export async function fetchLeverJobs(company: string): Promise<RawJob[]> {
       department: asString(cats?.team),
       location: asString(cats?.location),
       remote: asString(p.workplaceType),
+      salary: null,
       descriptionHtml: asString(p.description) ?? asString(p.descriptionPlain),
       publishedAt: parseEpoch(p.createdAt),
       lastmod: null,

@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { fetchAiravirtualJobs } from "../airavirtual.ts";
 import { fetchAshbyJobs } from "../ashby.ts";
 import { fetchBciJobs } from "../bci.ts";
+import { fetchEmpleosPublicosJobs } from "../empleospublicos.ts";
 import { matchesProfile, type ProfileFilter } from "../filter.ts";
 import { fetchGetonbrdJobs } from "../getonbrd.ts";
 import { fetchGreenhouseJobs } from "../greenhouse.ts";
@@ -486,6 +487,44 @@ describe("fetchAiravirtualJobs", () => {
   });
 });
 
+const EP_JSON =
+  "﻿" +
+  JSON.stringify([
+    {
+      Cargo: "Analista de Riesgo",
+      "Institución / Entidad": "Servicio de Impuestos Internos",
+      "Área de Trabajo": "Fiscalización",
+      Región: "Región Metropolitana",
+      Ciudad: "Santiago",
+      "Renta Bruta": "1036481,00",
+      "Fecha Inicio": "03/06/2026 0:00:00",
+      url: "https://www.empleospublicos.cl/pub/convocatorias/convpostularavisoTrabajo.aspx?i=138836&c=0",
+    },
+  ]);
+
+describe("fetchEmpleosPublicosJobs", () => {
+  let fetchSpy: ReturnType<typeof vi.spyOn>;
+  beforeEach(() => {
+    fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(res(EP_JSON));
+  });
+  afterEach(() => fetchSpy.mockRestore());
+
+  it("parses the BOM JSON feed + formats salary/location/id", async () => {
+    const jobs = await fetchEmpleosPublicosJobs();
+    expect(String(fetchSpy.mock.calls[0][0])).toContain("convocatorias2_nueva.txt");
+    expect(jobs[0]).toMatchObject({
+      source: "empleospublicos",
+      company: "empleospublicos",
+      externalId: "138836",
+      title: "Analista de Riesgo",
+      department: "Servicio de Impuestos Internos",
+      location: "Santiago, Región Metropolitana",
+      salary: "$1.036.481",
+    });
+    expect(jobs[0].publishedAt).toBeInstanceOf(Date);
+  });
+});
+
 function makeJob(over: Partial<RawJob>): RawJob {
   return {
     source: "teamtailor",
@@ -496,6 +535,7 @@ function makeJob(over: Partial<RawJob>): RawJob {
     department: null,
     location: null,
     remote: null,
+    salary: null,
     descriptionHtml: null,
     publishedAt: null,
     lastmod: null,

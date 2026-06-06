@@ -55,7 +55,9 @@ export function JobDetailDrawer({
     );
   }
 
-  const meta = job ? [job.company, job.department, job.location, job.remote].filter(Boolean) : [];
+  const meta = job
+    ? [job.company, job.department, job.location, job.remote, job.salary].filter(Boolean)
+    : [];
   const safeHtml = job?.descriptionHtml ? DOMPurify.sanitize(job.descriptionHtml) : "";
 
   return (

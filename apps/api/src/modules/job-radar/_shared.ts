@@ -19,7 +19,7 @@ export function asString(v: unknown): string | null {
 
 export function safeJsonParse(text: string): unknown {
   try {
-    return JSON.parse(text);
+    return JSON.parse(text.replace(/^﻿/, "")); // tolera BOM (ej. empleospublicos)
   } catch {
     return null;
   }
