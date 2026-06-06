@@ -10,12 +10,10 @@
 // miles de avisos; sin query traeríamos ruido. publishedAt queda null (postedOn es
 // texto relativo "Posted Today").
 
-import { logWarn } from "../../lib/logger.ts";
+import { asRecord, asString, requestText, safeJsonParse } from "./_shared.ts";
 import type { RawJob } from "./types.ts";
 
-const FETCH_TIMEOUT_MS = 15_000;
 const LIMIT = 20;
-const UA = "BioalergiaJobRadar/1.0 (+personal job search)";
 
 export interface WorkdayEntry {
   tenant: string;
@@ -30,51 +28,17 @@ export function parseWorkdayEntry(raw: string): WorkdayEntry | null {
   return { tenant: parts[0], wd: parts[1], site: parts[2] };
 }
 
-function asRecord(v: unknown): Record<string, unknown> | null {
-  return typeof v === "object" && v !== null ? (v as Record<string, unknown>) : null;
-}
-
-function asString(v: unknown): string | null {
-  if (typeof v === "string") return v.trim().length > 0 ? v.trim() : null;
-  if (typeof v === "number") return String(v);
-  return null;
-}
-
 async function fetchPage(entry: WorkdayEntry, searchText: string): Promise<RawJob[]> {
   const host = `https://${entry.tenant}.${entry.wd}.myworkdayjobs.com`;
   const url = `${host}/wday/cxs/${entry.tenant}/${entry.site}/jobs`;
-  let text: string;
-  try {
-    const res = await fetch(url, {
-      method: "POST",
-      headers: { "content-type": "application/json", "user-agent": UA, accept: "application/json" },
-      body: JSON.stringify({ appliedFacets: {}, limit: LIMIT, offset: 0, searchText }),
-      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-    });
-    if (!res.ok) {
-      logWarn("job_radar.workday.non_ok", {
-        tenant: entry.tenant,
-        site: entry.site,
-        status: res.status,
-      });
-      return [];
-    }
-    text = await res.text();
-  } catch (err) {
-    logWarn("job_radar.workday.error", {
-      tenant: entry.tenant,
-      error: err instanceof Error ? err.message : String(err),
-    });
-    return [];
-  }
-
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(text);
-  } catch {
-    return [];
-  }
-  const postings = asRecord(parsed)?.jobPostings;
+  const text = await requestText(url, {
+    method: "POST",
+    body: JSON.stringify({ appliedFacets: {}, limit: LIMIT, offset: 0, searchText }),
+    tag: "job_radar.workday",
+    ctx: { tenant: entry.tenant, site: entry.site },
+  });
+  if (!text) return [];
+  const postings = asRecord(safeJsonParse(text))?.jobPostings;
   if (!Array.isArray(postings)) return [];
 
   const out: RawJob[] = [];

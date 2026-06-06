@@ -17,6 +17,7 @@ import { type ReactNode, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { JobApplicationStatus, JobPostingDTO } from "@finanzas/orpc-contracts/job-radar";
 import { DataTable } from "@/components/data-table/DataTable";
+import { useToast } from "@/context/ToastContext";
 import { JobDetailDrawer } from "../components/JobDetailDrawer";
 import { JobRadarSettingsPanel } from "../components/JobRadarSettingsPanel";
 import { dedupePostings, type DedupedPosting } from "../dedupe";
@@ -74,10 +75,18 @@ export function JobRadarPage() {
   const { data: postings, isPending } = useJobPostings(filters);
   const update = useUpdateJobApplication();
   const sync = useSyncJobRadar();
+  const { success: toastSuccess, error: toastError } = useToast();
 
   const statusLabel = (s: JobApplicationStatus) => t(`jobRadar.status.${s}`);
   const setStatus = (id: string, applicationStatus: JobApplicationStatus) =>
-    update.mutate({ id, applicationStatus });
+    update.mutate(
+      { id, applicationStatus },
+      {
+        onSuccess: () =>
+          toastSuccess(t("jobRadar.statusUpdated", { status: statusLabel(applicationStatus) })),
+        onError: (e) => toastError(e),
+      }
+    );
 
   // Dedup cross-source en display (la DB conserva todas las filas).
   const rows = useMemo(() => dedupePostings(postings ?? []), [postings]);

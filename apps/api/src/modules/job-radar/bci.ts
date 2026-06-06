@@ -10,24 +10,12 @@
 // índice `bci_solutions-production-portals`. Si rota a token/cambia índice, se rompe
 // (decisión consciente: reverse ES en vez de headless browser).
 
-import { logWarn } from "../../lib/logger.ts";
+import { asRecord, asString, requestText, safeJsonParse } from "./_shared.ts";
 import type { RawJob } from "./types.ts";
 
 const SEARCH_URL = "https://trabajaenbci.cl/api/v3/bci_portals/_search";
 const SITE_BASE = "https://trabajaenbci.cl";
-const FETCH_TIMEOUT_MS = 15_000;
 const PAGE_SIZE = 100;
-const UA = "BioalergiaJobRadar/1.0 (+personal job search)";
-
-function asRecord(v: unknown): Record<string, unknown> | null {
-  return typeof v === "object" && v !== null ? (v as Record<string, unknown>) : null;
-}
-
-function asString(v: unknown): string | null {
-  if (typeof v === "string") return v.trim().length > 0 ? v.trim() : null;
-  if (typeof v === "number") return String(v);
-  return null;
-}
 
 function asBool(v: unknown): boolean {
   return v === true;
@@ -88,33 +76,13 @@ function mapHit(source: Record<string, unknown>): RawJob | null {
  * Devuelve [] si el endpoint falla.
  */
 export async function fetchBciJobs(): Promise<RawJob[]> {
-  let text: string;
-  try {
-    const res = await fetch(SEARCH_URL, {
-      method: "POST",
-      headers: { "content-type": "application/json", "user-agent": UA, accept: "application/json" },
-      body: JSON.stringify({ query: { match_all: {} }, size: PAGE_SIZE }),
-      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-    });
-    if (!res.ok) {
-      logWarn("job_radar.bci.non_ok", { status: res.status });
-      return [];
-    }
-    text = await res.text();
-  } catch (err) {
-    logWarn("job_radar.bci.error", { error: err instanceof Error ? err.message : String(err) });
-    return [];
-  }
-
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(text);
-  } catch {
-    logWarn("job_radar.bci.bad_json", {});
-    return [];
-  }
-
-  const hits = asRecord(asRecord(parsed)?.hits)?.hits;
+  const text = await requestText(SEARCH_URL, {
+    method: "POST",
+    body: JSON.stringify({ query: { match_all: {} }, size: PAGE_SIZE }),
+    tag: "job_radar.bci",
+  });
+  if (!text) return [];
+  const hits = asRecord(asRecord(safeJsonParse(text))?.hits)?.hits;
   if (!Array.isArray(hits)) return [];
 
   const jobs: RawJob[] = [];

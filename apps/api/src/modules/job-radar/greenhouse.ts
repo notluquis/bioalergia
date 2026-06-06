@@ -4,21 +4,8 @@
 //                first_published, content (HTML entity-encoded), departments:[{name}] }] }
 // `board` = token del board (slug de la empresa). content=true incluye la descripción.
 
-import { logWarn } from "../../lib/logger.ts";
+import { asRecord, asString, requestText, safeJsonParse } from "./_shared.ts";
 import type { RawJob } from "./types.ts";
-
-const FETCH_TIMEOUT_MS = 15_000;
-const UA = "BioalergiaJobRadar/1.0 (+personal job search)";
-
-function asRecord(v: unknown): Record<string, unknown> | null {
-  return typeof v === "object" && v !== null ? (v as Record<string, unknown>) : null;
-}
-
-function asString(v: unknown): string | null {
-  if (typeof v === "string") return v.trim().length > 0 ? v.trim() : null;
-  if (typeof v === "number") return String(v);
-  return null;
-}
 
 function parseDate(raw: unknown): Date | null {
   const s = asString(raw);
@@ -38,35 +25,12 @@ function firstDepartment(job: Record<string, unknown>): string | null {
 }
 
 export async function fetchGreenhouseJobs(board: string): Promise<RawJob[]> {
-  let text: string;
-  try {
-    const res = await fetch(
-      `https://boards-api.greenhouse.io/v1/boards/${encodeURIComponent(board)}/jobs?content=true`,
-      {
-        headers: { "user-agent": UA, accept: "application/json" },
-        signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-      }
-    );
-    if (!res.ok) {
-      logWarn("job_radar.greenhouse.non_ok", { board, status: res.status });
-      return [];
-    }
-    text = await res.text();
-  } catch (err) {
-    logWarn("job_radar.greenhouse.error", {
-      board,
-      error: err instanceof Error ? err.message : String(err),
-    });
-    return [];
-  }
-
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(text);
-  } catch {
-    return [];
-  }
-  const jobs = asRecord(parsed)?.jobs;
+  const text = await requestText(
+    `https://boards-api.greenhouse.io/v1/boards/${encodeURIComponent(board)}/jobs?content=true`,
+    { tag: "job_radar.greenhouse", ctx: { board } }
+  );
+  if (!text) return [];
+  const jobs = asRecord(safeJsonParse(text))?.jobs;
   if (!Array.isArray(jobs)) return [];
 
   const out: RawJob[] = [];

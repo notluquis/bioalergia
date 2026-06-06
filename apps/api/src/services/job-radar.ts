@@ -351,6 +351,28 @@ async function upsertSourceJobs(
   return { inserted, updated, closed };
 }
 
+// Clave de dedup cross-source (título normalizado + empleador). getonbrd guarda
+// "Cargo · Empleador"; el resto usa company. Espeja apps/intranet .../dedupe.ts.
+function notifyKey(title: string, source: string, company: string): string {
+  let base = title;
+  let employer = company;
+  if (source === "getonbrd") {
+    const idx = title.lastIndexOf(" · ");
+    if (idx > 0) {
+      base = title.slice(0, idx);
+      employer = title.slice(idx + 3);
+    }
+  }
+  const norm = (s: string) =>
+    s
+      .normalize("NFD")
+      .replace(/\p{Diacritic}/gu, "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, " ")
+      .trim();
+  return `${norm(base)}@${norm(employer)}`;
+}
+
 async function notifyNewMatches(creds: TelegramCreds | null): Promise<number> {
   if (!telegramConfigured(creds)) {
     logWarn("job_radar.notify.skipped_no_telegram", {});
@@ -360,8 +382,21 @@ async function notifyNewMatches(creds: TelegramCreds | null): Promise<number> {
     where: { status: "OPEN", matched: true, notified: false },
     orderBy: { firstSeenAt: "asc" },
   });
-  let notified = 0;
+
+  // Dedup cross-source: una misma oferta en 2 fuentes se avisa UNA vez; igual se
+  // marcan notified todas las filas del grupo para no re-avisar la próxima corrida.
+  const groups = new Map<string, typeof pending>();
   for (const job of pending) {
+    const key = notifyKey(job.title, job.source, job.company);
+    const arr = groups.get(key);
+    if (arr) arr.push(job);
+    else groups.set(key, [job]);
+  }
+
+  let notified = 0;
+  for (const group of groups.values()) {
+    const job = group[0];
+    if (!job) continue;
     const ok = await sendTelegramMessage(
       formatJobMessage({
         source: job.source,
@@ -380,7 +415,10 @@ async function notifyNewMatches(creds: TelegramCreds | null): Promise<number> {
       creds
     );
     if (!ok) break; // Telegram caído → reintenta en la próxima corrida
-    await db.jobPosting.update({ where: { id: job.id }, data: { notified: true } });
+    await db.jobPosting.updateMany({
+      where: { id: { in: group.map((g) => g.id) } },
+      data: { notified: true },
+    });
     notified += 1;
   }
   return notified;

@@ -11,6 +11,7 @@
     "empty": "No openings match these filters.",
     "matched": "Profile match",
     "changeStatus": "Change status",
+    "statusUpdated": "Status: {{status}}",
     "viewOffer": "View offer",
     "col": {
       "status": "Status",

@@ -6,22 +6,10 @@
 // Usado por corporativos. La descripción no viene en el listado (requiere detalle)
 // → queda null; el filtro de perfil usa título/área.
 
-import { logWarn } from "../../lib/logger.ts";
+import { asRecord, asString, requestText, safeJsonParse } from "./_shared.ts";
 import type { RawJob } from "./types.ts";
 
-const FETCH_TIMEOUT_MS = 15_000;
 const LIMIT = 100;
-const UA = "BioalergiaJobRadar/1.0 (+personal job search)";
-
-function asRecord(v: unknown): Record<string, unknown> | null {
-  return typeof v === "object" && v !== null ? (v as Record<string, unknown>) : null;
-}
-
-function asString(v: unknown): string | null {
-  if (typeof v === "string") return v.trim().length > 0 ? v.trim() : null;
-  if (typeof v === "number") return String(v);
-  return null;
-}
 
 function parseDate(raw: unknown): Date | null {
   const s = asString(raw);
@@ -31,35 +19,12 @@ function parseDate(raw: unknown): Date | null {
 }
 
 export async function fetchSmartRecruitersJobs(company: string): Promise<RawJob[]> {
-  let text: string;
-  try {
-    const res = await fetch(
-      `https://api.smartrecruiters.com/v1/companies/${encodeURIComponent(company)}/postings?limit=${LIMIT}`,
-      {
-        headers: { "user-agent": UA, accept: "application/json" },
-        signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-      }
-    );
-    if (!res.ok) {
-      logWarn("job_radar.smartrecruiters.non_ok", { company, status: res.status });
-      return [];
-    }
-    text = await res.text();
-  } catch (err) {
-    logWarn("job_radar.smartrecruiters.error", {
-      company,
-      error: err instanceof Error ? err.message : String(err),
-    });
-    return [];
-  }
-
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(text);
-  } catch {
-    return [];
-  }
-  const content = asRecord(parsed)?.content;
+  const text = await requestText(
+    `https://api.smartrecruiters.com/v1/companies/${encodeURIComponent(company)}/postings?limit=${LIMIT}`,
+    { tag: "job_radar.smartrecruiters", ctx: { company } }
+  );
+  if (!text) return [];
+  const content = asRecord(safeJsonParse(text))?.content;
   if (!Array.isArray(content)) return [];
 
   const out: RawJob[] = [];

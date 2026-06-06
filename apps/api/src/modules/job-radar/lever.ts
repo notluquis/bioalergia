@@ -4,21 +4,8 @@
 //        description (HTML), descriptionPlain, createdAt (epoch ms) }]
 // `company` = slug del board Lever.
 
-import { logWarn } from "../../lib/logger.ts";
+import { asRecord, asString, requestText, safeJsonParse } from "./_shared.ts";
 import type { RawJob } from "./types.ts";
-
-const FETCH_TIMEOUT_MS = 15_000;
-const UA = "BioalergiaJobRadar/1.0 (+personal job search)";
-
-function asRecord(v: unknown): Record<string, unknown> | null {
-  return typeof v === "object" && v !== null ? (v as Record<string, unknown>) : null;
-}
-
-function asString(v: unknown): string | null {
-  if (typeof v === "string") return v.trim().length > 0 ? v.trim() : null;
-  if (typeof v === "number") return String(v);
-  return null;
-}
 
 function parseEpoch(v: unknown): Date | null {
   if (typeof v !== "number" || !Number.isFinite(v)) return null;
@@ -26,34 +13,12 @@ function parseEpoch(v: unknown): Date | null {
 }
 
 export async function fetchLeverJobs(company: string): Promise<RawJob[]> {
-  let text: string;
-  try {
-    const res = await fetch(
-      `https://api.lever.co/v0/postings/${encodeURIComponent(company)}?mode=json`,
-      {
-        headers: { "user-agent": UA, accept: "application/json" },
-        signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-      }
-    );
-    if (!res.ok) {
-      logWarn("job_radar.lever.non_ok", { company, status: res.status });
-      return [];
-    }
-    text = await res.text();
-  } catch (err) {
-    logWarn("job_radar.lever.error", {
-      company,
-      error: err instanceof Error ? err.message : String(err),
-    });
-    return [];
-  }
-
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(text);
-  } catch {
-    return [];
-  }
+  const text = await requestText(
+    `https://api.lever.co/v0/postings/${encodeURIComponent(company)}?mode=json`,
+    { tag: "job_radar.lever", ctx: { company } }
+  );
+  if (!text) return [];
+  const parsed = safeJsonParse(text);
   if (!Array.isArray(parsed)) return [];
 
   const out: RawJob[] = [];

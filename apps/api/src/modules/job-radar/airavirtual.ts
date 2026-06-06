@@ -6,21 +6,8 @@
 // ripley, entel, copec, sodexo, komatsu, finning, etc. Todo Chile.
 // `company` = slug del feed. La descripción no viene en el listado (null).
 
-import { logWarn } from "../../lib/logger.ts";
+import { asRecord, asString, requestText, safeJsonParse } from "./_shared.ts";
 import type { RawJob } from "./types.ts";
-
-const FETCH_TIMEOUT_MS = 15_000;
-const UA = "BioalergiaJobRadar/1.0 (+personal job search)";
-
-function asRecord(v: unknown): Record<string, unknown> | null {
-  return typeof v === "object" && v !== null ? (v as Record<string, unknown>) : null;
-}
-
-function asString(v: unknown): string | null {
-  if (typeof v === "string") return v.trim().length > 0 ? v.trim() : null;
-  if (typeof v === "number") return String(v);
-  return null;
-}
 
 function titleCase(s: string): string {
   return s
@@ -70,36 +57,12 @@ function publishedFrom(days: unknown): Date | null {
 }
 
 export async function fetchAiravirtualJobs(company: string): Promise<RawJob[]> {
-  let text: string;
-  try {
-    const res = await fetch(
-      `https://gcs-files.airavirtual.com/public/feeds/aira_${encodeURIComponent(company)}.json`,
-      {
-        headers: { "user-agent": UA, accept: "application/json" },
-        redirect: "follow",
-        signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-      }
-    );
-    if (!res.ok) {
-      logWarn("job_radar.airavirtual.non_ok", { company, status: res.status });
-      return [];
-    }
-    text = await res.text();
-  } catch (err) {
-    logWarn("job_radar.airavirtual.error", {
-      company,
-      error: err instanceof Error ? err.message : String(err),
-    });
-    return [];
-  }
-
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(text);
-  } catch {
-    return [];
-  }
-  const offers = asRecord(parsed)?.offers;
+  const text = await requestText(
+    `https://gcs-files.airavirtual.com/public/feeds/aira_${encodeURIComponent(company)}.json`,
+    { tag: "job_radar.airavirtual", ctx: { company } }
+  );
+  if (!text) return [];
+  const offers = asRecord(safeJsonParse(text))?.offers;
   if (!Array.isArray(offers)) return [];
 
   const out: RawJob[] = [];

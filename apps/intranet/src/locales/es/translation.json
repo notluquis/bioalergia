@@ -11,6 +11,7 @@
     "empty": "No hay ofertas con estos filtros.",
     "matched": "Match perfil",
     "changeStatus": "Cambiar estado",
+    "statusUpdated": "Estado: {{status}}",
     "viewOffer": "Ver oferta",
     "col": {
       "status": "Estado",

@@ -9,11 +9,8 @@
 // si un job del sitemap no aparece en el feed, title se deriva del slug).
 // Todo público, sin auth, sin browser (fetch nativo).
 
-import { logWarn } from "../../lib/logger.ts";
+import { asRecord, asString, requestText, safeJsonParse } from "./_shared.ts";
 import type { RawJob } from "./types.ts";
-
-const FETCH_TIMEOUT_MS = 15_000;
-const UA = "BioalergiaJobRadar/1.0 (+personal job search)";
 
 interface SitemapEntry {
   externalId: string;
@@ -22,25 +19,8 @@ interface SitemapEntry {
   lastmod: Date | null;
 }
 
-async function fetchText(url: string): Promise<string | null> {
-  try {
-    const res = await fetch(url, {
-      headers: { "user-agent": UA, accept: "application/json, text/xml, */*" },
-      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-    });
-    if (!res.ok) {
-      logWarn("job_radar.fetch.non_ok", { url, status: res.status });
-      return null;
-    }
-    return await res.text();
-  } catch (err) {
-    logWarn("job_radar.fetch.error", {
-      url,
-      error: err instanceof Error ? err.message : String(err),
-    });
-    return null;
-  }
-}
+const fetchText = (url: string): Promise<string | null> =>
+  requestText(url, { tag: "job_radar.teamtailor", ctx: { url } });
 
 // Extrae el id numérico del job desde una URL Teamtailor:
 //   https://x.teamtailor.com/jobs/7855469-analista... → "7855469"
@@ -97,14 +77,6 @@ interface FeedMeta {
   raw: unknown;
 }
 
-function asRecord(v: unknown): Record<string, unknown> | null {
-  return typeof v === "object" && v !== null ? (v as Record<string, unknown>) : null;
-}
-
-function asString(v: unknown): string | null {
-  return typeof v === "string" && v.length > 0 ? v : null;
-}
-
 // schema.org JobPosting embebido en `_jobposting` — extrae location best-effort.
 // `jobLocation` puede ser un objeto o un array de Place (Teamtailor usa array).
 // department/remote NO vienen en el feed (son del listing client-rendered) →
@@ -130,13 +102,7 @@ function extractJobPosting(jp: Record<string, unknown> | null): {
 
 function parseJobsJson(text: string): Map<string, FeedMeta> {
   const byId = new Map<string, FeedMeta>();
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(text);
-  } catch {
-    return byId;
-  }
-  const root = asRecord(parsed);
+  const root = asRecord(safeJsonParse(text));
   const items = root?.items;
   if (!Array.isArray(items)) return byId;
   for (const item of items) {
