@@ -1,8 +1,10 @@
-import { Alert, Button, Card, Chip, Modal, Table } from "@heroui/react";
+import { Alert, Button, Card, Chip, Modal } from "@heroui/react";
 import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import type { ColumnDef } from "@tanstack/react-table";
 import { Archive, Edit3, ExternalLink, Lock, PlusCircle, RefreshCw, Upload } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
+import { DataTable } from "@/components/data-table/DataTable";
 import { confirmAction } from "@/components/ui/ConfirmDialog";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
@@ -171,6 +173,106 @@ export function CatalogPage() {
     }
   }
 
+  const columns = useMemo<ColumnDef<ProductRow>[]>(
+    () => [
+      {
+        accessorKey: "sku",
+        header: "SKU",
+        cell: ({ row }) => <span className="font-mono text-xs">{row.original.sku}</span>,
+      },
+      { accessorKey: "name", header: "Nombre" },
+      { accessorKey: "brand", header: "Marca", cell: ({ row }) => row.original.brand ?? "—" },
+      {
+        accessorKey: "price_clp",
+        header: "Precio",
+        cell: ({ row }) => CLP.format(row.original.price_clp),
+      },
+      { accessorKey: "available_qty", header: "Stock" },
+      {
+        accessorKey: "status",
+        header: "Estado",
+        cell: ({ row }) => {
+          const badge = STATUS_LABEL[row.original.status] ?? STATUS_FALLBACK;
+          return <Chip variant={badge.variant}>{badge.label}</Chip>;
+        },
+      },
+      {
+        id: "ml",
+        header: "ML",
+        enableSorting: false,
+        cell: ({ row }) => {
+          const ml = row.original.ml_listing;
+          if (!ml) return <Chip variant="soft">No publicado</Chip>;
+          const mlBadge = ML_STATUS_LABEL[ml.status] ?? ML_STATUS_FALLBACK;
+          return (
+            <div className="flex items-center gap-1">
+              <Chip variant={mlBadge.variant}>{mlBadge.label}</Chip>
+              {ml.permalink && (
+                <a
+                  aria-label="Ver en MercadoLibre"
+                  className="text-foreground/60 hover:text-primary"
+                  href={ml.permalink}
+                  rel="noreferrer"
+                  target="_blank"
+                >
+                  <ExternalLink size={14} />
+                </a>
+              )}
+            </div>
+          );
+        },
+      },
+      {
+        id: "actions",
+        header: "Acciones",
+        enableSorting: false,
+        cell: ({ row }) => {
+          const p = row.original;
+          return (
+            <div className="flex gap-2">
+              <Button
+                isDisabled={!canUpdate}
+                onPress={() => openEdit(p)}
+                size="sm"
+                variant="outline"
+              >
+                <Edit3 size={14} />
+              </Button>
+              <Button
+                aria-label={
+                  mlConnected
+                    ? p.ml_listing
+                      ? "Re-sincronizar con MercadoLibre"
+                      : "Publicar a MercadoLibre"
+                    : "Conecta MercadoLibre primero"
+                }
+                isDisabled={
+                  !mlConnected || !canUpdate || publishingId === p.id || p.status !== "ACTIVE"
+                }
+                onPress={() => handlePublish(p.id)}
+                size="sm"
+                variant="outline"
+              >
+                {p.ml_listing ? <RefreshCw size={14} /> : <Upload size={14} />}
+              </Button>
+              <Button
+                isDisabled={!canUpdate || p.status === "ARCHIVED"}
+                onPress={() => {
+                  void handleArchive(p.id);
+                }}
+                size="sm"
+                variant="danger-soft"
+              >
+                <Archive size={14} />
+              </Button>
+            </div>
+          );
+        },
+      },
+    ],
+    [canUpdate, mlConnected, publishingId] // eslint-disable-line react-hooks/exhaustive-deps
+  );
+
   return (
     <section className="space-y-6">
       {error && (
@@ -196,117 +298,15 @@ export function CatalogPage() {
           </Button>
         </Card.Header>
 
-        {/* Desktop / tablet: tabla HeroUI compound (scroll horizontal en pantallas chicas) */}
+        {/* Desktop / tablet: DataTable (scroll horizontal en pantallas chicas) */}
         <Card.Content className="hidden md:block">
-          <Table>
-            <Table.ScrollContainer>
-              <Table.Content aria-label="Productos del catálogo" className="min-w-[760px]">
-                <Table.Header>
-                  <Table.Column isRowHeader>SKU</Table.Column>
-                  <Table.Column>Nombre</Table.Column>
-                  <Table.Column>Marca</Table.Column>
-                  <Table.Column>Precio</Table.Column>
-                  <Table.Column>Stock</Table.Column>
-                  <Table.Column>Estado</Table.Column>
-                  <Table.Column>ML</Table.Column>
-                  <Table.Column>Acciones</Table.Column>
-                </Table.Header>
-                <Table.Body>
-                  {products.map((p) => {
-                    const badge = STATUS_LABEL[p.status] ?? STATUS_FALLBACK;
-                    return (
-                      <Table.Row id={String(p.id)} key={p.id}>
-                        <Table.Cell>
-                          <span className="font-mono text-xs">{p.sku}</span>
-                        </Table.Cell>
-                        <Table.Cell>{p.name}</Table.Cell>
-                        <Table.Cell>{p.brand ?? "—"}</Table.Cell>
-                        <Table.Cell>{CLP.format(p.price_clp)}</Table.Cell>
-                        <Table.Cell>{p.available_qty}</Table.Cell>
-                        <Table.Cell>
-                          <Chip variant={badge.variant}>{badge.label}</Chip>
-                        </Table.Cell>
-                        <Table.Cell>
-                          {p.ml_listing ? (
-                            (() => {
-                              const ml = p.ml_listing;
-                              const mlBadge = ML_STATUS_LABEL[ml.status] ?? ML_STATUS_FALLBACK;
-                              return (
-                                <div className="flex items-center gap-1">
-                                  <Chip variant={mlBadge.variant}>{mlBadge.label}</Chip>
-                                  {ml.permalink && (
-                                    <a
-                                      aria-label="Ver en MercadoLibre"
-                                      className="text-foreground/60 hover:text-primary"
-                                      href={ml.permalink}
-                                      rel="noreferrer"
-                                      target="_blank"
-                                    >
-                                      <ExternalLink size={14} />
-                                    </a>
-                                  )}
-                                </div>
-                              );
-                            })()
-                          ) : (
-                            <Chip variant="soft">No publicado</Chip>
-                          )}
-                        </Table.Cell>
-                        <Table.Cell>
-                          <div className="flex gap-2">
-                            <Button
-                              isDisabled={!canUpdate}
-                              onPress={() => openEdit(p)}
-                              size="sm"
-                              variant="outline"
-                            >
-                              <Edit3 size={14} />
-                            </Button>
-                            <Button
-                              aria-label={
-                                mlConnected
-                                  ? p.ml_listing
-                                    ? "Re-sincronizar con MercadoLibre"
-                                    : "Publicar a MercadoLibre"
-                                  : "Conecta MercadoLibre primero"
-                              }
-                              isDisabled={
-                                !mlConnected ||
-                                !canUpdate ||
-                                publishingId === p.id ||
-                                p.status !== "ACTIVE"
-                              }
-                              onPress={() => handlePublish(p.id)}
-                              size="sm"
-                              variant="outline"
-                            >
-                              {p.ml_listing ? <RefreshCw size={14} /> : <Upload size={14} />}
-                            </Button>
-                            <Button
-                              isDisabled={!canUpdate || p.status === "ARCHIVED"}
-                              onPress={() => {
-                                void handleArchive(p.id);
-                              }}
-                              size="sm"
-                              variant="danger-soft"
-                            >
-                              <Archive size={14} />
-                            </Button>
-                          </div>
-                        </Table.Cell>
-                      </Table.Row>
-                    );
-                  })}
-                </Table.Body>
-              </Table.Content>
-            </Table.ScrollContainer>
-          </Table>
-
-          {products.length === 0 && (
-            <p className="py-8 text-center text-foreground/60 text-sm">
-              Sin productos. Crea el primero con el botón de arriba.
-            </p>
-          )}
+          <DataTable
+            columns={columns}
+            data={products}
+            enableToolbar={false}
+            enableVirtualization={false}
+            noDataMessage="Sin productos. Crea el primero con el botón de arriba."
+          />
         </Card.Content>
 
         {/* Mobile: lista de cards (estilo stack) */}

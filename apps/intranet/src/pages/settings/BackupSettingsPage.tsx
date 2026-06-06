@@ -9,9 +9,9 @@ import {
   ScrollShadow,
   Skeleton,
   Surface,
-  Table,
 } from "@heroui/react";
 import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import type { ColumnDef } from "@tanstack/react-table";
 import {
   AlertTriangle,
   CheckCircle,
@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 import { type Dispatch, type SetStateAction, useCallback, useEffect, useState } from "react";
 import { GoogleDriveConnect } from "@/components/backup/GoogleDriveConnect";
+import { DataTable } from "@/components/data-table/DataTable";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
 import { triggerBackup, triggerRestore } from "@/features/backup/api";
@@ -197,6 +198,18 @@ function LastCompletedBackupCard({ result }: { result: BackupJob["result"] | nul
   const statsEntries = result.stats ? Object.entries(result.stats) : [];
   const hasStats = statsEntries.length > 0;
 
+  const statsRows = statsEntries
+    .map(([tableName, stat]) => ({ count: stat.count, tableName }))
+    .sort((a, b) => a.tableName.localeCompare(b.tableName));
+  const statsColumns: ColumnDef<(typeof statsRows)[number]>[] = [
+    { accessorKey: "tableName", header: "Tabla" },
+    {
+      accessorKey: "count",
+      header: () => <span className="block text-right">Registros</span>,
+      cell: ({ row }) => <span className="block text-right">{row.original.count}</span>,
+    },
+  ];
+
   return (
     <Surface className="rounded-[28px] p-6 shadow-inner" variant="secondary">
       <div className="mb-3 flex items-center justify-between gap-3">
@@ -225,26 +238,16 @@ function LastCompletedBackupCard({ result }: { result: BackupJob["result"] | nul
       {hasStats ? (
         <div className="rounded-lg border border-default-200 bg-background p-3">
           <span className="mb-2 block font-medium text-sm">Conteo por tabla</span>
-          <Table variant="secondary">
-            <Table.ScrollContainer className="max-h-56">
-              <Table.Content aria-label="Conteo por tabla del último backup" className="min-w-90">
-                <Table.Header>
-                  <Table.Column isRowHeader>Tabla</Table.Column>
-                  <Table.Column className="text-right">Registros</Table.Column>
-                </Table.Header>
-                <Table.Body>
-                  {statsEntries
-                    .sort(([a], [b]) => a.localeCompare(b))
-                    .map(([tableName, stat]) => (
-                      <Table.Row id={tableName} key={tableName}>
-                        <Table.Cell>{tableName}</Table.Cell>
-                        <Table.Cell className="text-right">{stat.count}</Table.Cell>
-                      </Table.Row>
-                    ))}
-                </Table.Body>
-              </Table.Content>
-            </Table.ScrollContainer>
-          </Table>
+          <DataTable
+            columns={statsColumns}
+            containerVariant="plain"
+            data={statsRows}
+            enablePagination={false}
+            enableToolbar={false}
+            enableVirtualization={false}
+            noDataMessage="Sin estadísticas por tabla."
+            scrollMaxHeight={224}
+          />
         </div>
       ) : (
         <div className="rounded-lg border border-default-200 bg-background p-3 text-default-500 text-sm">

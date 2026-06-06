@@ -1,9 +1,11 @@
-import { Button, Card, EmptyState, SearchField, Spinner, Table } from "@heroui/react";
+import { Button, Card, SearchField } from "@heroui/react";
 import type { CompanyDto } from "@finanzas/orpc-contracts/quotes";
 import { useQuery } from "@tanstack/react-query";
+import type { ColumnDef } from "@tanstack/react-table";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Building2, Pencil, Plus } from "lucide-react";
 import { useMemo, useState } from "react";
+import { DataTable } from "@/components/data-table/DataTable";
 import { CompanyFormModal } from "@/features/quotes/components/CompanyFormModal";
 import { listCompanies, quotesKeys } from "@/features/quotes/api";
 import { PAGE_CONTAINER } from "@/lib/styles";
@@ -41,6 +43,44 @@ function CompaniesPage() {
     );
   }, [companies, search]);
 
+  const columns = useMemo<ColumnDef<CompanyDto>[]>(
+    () => [
+      {
+        accessorKey: "razonSocial",
+        header: "Razón social",
+        cell: ({ row }) => <span className="font-medium">{row.original.razonSocial}</span>,
+      },
+      { accessorKey: "rut", header: "RUT", cell: ({ row }) => row.original.rut ?? "—" },
+      { accessorKey: "giro", header: "Giro", cell: ({ row }) => row.original.giro ?? "—" },
+      { accessorKey: "comuna", header: "Comuna", cell: ({ row }) => row.original.comuna ?? "—" },
+      {
+        id: "contacts",
+        header: "Contactos",
+        cell: ({ row }) => row.original.contacts.length,
+      },
+      {
+        id: "actions",
+        header: " ",
+        enableSorting: false,
+        cell: ({ row }) => (
+          <Button
+            variant="outline"
+            size="sm"
+            isIconOnly
+            aria-label={`Editar ${row.original.razonSocial}`}
+            onPress={() => {
+              setEditing(row.original);
+              setModalOpen(true);
+            }}
+          >
+            <Pencil size={16} />
+          </Button>
+        ),
+      },
+    ],
+    []
+  );
+
   return (
     <div className={PAGE_CONTAINER}>
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
@@ -72,58 +112,15 @@ function CompaniesPage() {
           </SearchField.Group>
         </SearchField>
 
-        {companiesQuery.isLoading ? (
-          <Spinner aria-label="Cargando empresas" />
-        ) : filtered.length === 0 ? (
-          <EmptyState>No hay empresas.</EmptyState>
-        ) : (
-          <Table>
-            <Table.ScrollContainer>
-              <Table.Content aria-label="Empresas" className="min-w-[640px]">
-                <Table.Header>
-                  <Table.Column isRowHeader>Razón social</Table.Column>
-                  <Table.Column>RUT</Table.Column>
-                  <Table.Column>Giro</Table.Column>
-                  <Table.Column>Comuna</Table.Column>
-                  <Table.Column>Contactos</Table.Column>
-                  <Table.Column> </Table.Column>
-                </Table.Header>
-                <Table.Body>
-                  {filtered.map((c) => (
-                    <Table.Row
-                      key={c.id}
-                      id={c.id}
-                      onAction={() =>
-                        void navigate({ to: "/companies/$id", params: { id: String(c.id) } })
-                      }
-                      className="cursor-pointer"
-                    >
-                      <Table.Cell className="font-medium">{c.razonSocial}</Table.Cell>
-                      <Table.Cell>{c.rut ?? "—"}</Table.Cell>
-                      <Table.Cell>{c.giro ?? "—"}</Table.Cell>
-                      <Table.Cell>{c.comuna ?? "—"}</Table.Cell>
-                      <Table.Cell>{c.contacts.length}</Table.Cell>
-                      <Table.Cell>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          isIconOnly
-                          aria-label={`Editar ${c.razonSocial}`}
-                          onPress={() => {
-                            setEditing(c);
-                            setModalOpen(true);
-                          }}
-                        >
-                          <Pencil size={16} />
-                        </Button>
-                      </Table.Cell>
-                    </Table.Row>
-                  ))}
-                </Table.Body>
-              </Table.Content>
-            </Table.ScrollContainer>
-          </Table>
-        )}
+        <DataTable
+          columns={columns}
+          data={filtered}
+          isLoading={companiesQuery.isLoading}
+          enableToolbar={false}
+          enableVirtualization={false}
+          noDataMessage="No hay empresas."
+          onRowClick={(c) => void navigate({ to: "/companies/$id", params: { id: String(c.id) } })}
+        />
       </Card>
 
       <CompanyFormModal isOpen={modalOpen} onOpenChange={setModalOpen} company={editing} />

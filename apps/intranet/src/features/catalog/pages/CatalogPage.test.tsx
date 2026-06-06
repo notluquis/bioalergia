@@ -252,11 +252,14 @@ describe("CatalogPage", () => {
       </Wrapper>
     );
 
-    await screen.findByText("Producto Uno");
-    const buttons = screen.getAllByRole("button");
-    // Find archive icon buttons (lucide-archive).
-    const archiveBtn = buttons.find((b) => b.querySelector("svg.lucide-archive"));
-    expect(archiveBtn).toBeDefined();
+    await screen.findAllByText("Producto Uno");
+    // Las filas del DataTable (con los botones de acción) montan un tick después
+    // del texto; esperamos a que el botón exista.
+    let archiveBtn: HTMLElement | undefined;
+    await waitFor(() => {
+      archiveBtn = screen.getAllByRole("button").find((b) => b.querySelector("svg.lucide-archive"));
+      expect(archiveBtn).toBeDefined();
+    });
     await user.click(archiveBtn!);
 
     await waitFor(() => expect(confirmActionMock).toHaveBeenCalled());
@@ -275,9 +278,12 @@ describe("CatalogPage", () => {
       </Wrapper>
     );
 
-    await screen.findByText("Producto Uno");
-    const buttons = screen.getAllByRole("button");
-    const archiveBtn = buttons.find((b) => b.querySelector("svg.lucide-archive"));
+    await screen.findAllByText("Producto Uno");
+    let archiveBtn: HTMLElement | undefined;
+    await waitFor(() => {
+      archiveBtn = screen.getAllByRole("button").find((b) => b.querySelector("svg.lucide-archive"));
+      expect(archiveBtn).toBeDefined();
+    });
     await user.click(archiveBtn!);
 
     await waitFor(() => expect(apiMocks.archiveProduct).toHaveBeenCalledWith(1));
@@ -294,12 +300,14 @@ describe("CatalogPage", () => {
       </Wrapper>
     );
 
-    await screen.findByText("Producto Uno");
+    await screen.findAllByText("Producto Uno");
     // Edit3 icon ships as lucide-pen-line (lucide v0.5+ renamed it).
-    const editBtn = screen
-      .getAllByRole("button")
-      .find((b) => b.innerHTML.includes("lucide-pen-line"));
-    expect(editBtn).toBeDefined();
+    // Las filas del DataTable montan un tick después del texto.
+    let editBtn: HTMLElement | undefined;
+    await waitFor(() => {
+      editBtn = screen.getAllByRole("button").find((b) => b.innerHTML.includes("lucide-pen-line"));
+      expect(editBtn).toBeDefined();
+    });
     await user.click(editBtn!);
 
     expect(await screen.findByTestId("image-uploader")).toBeInTheDocument();

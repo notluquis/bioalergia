@@ -1,11 +1,12 @@
 import { formatChile } from "@/lib/dates";
-import { Button, Card, Chip, Table } from "@heroui/react";
+import { Button, Card, Chip } from "@heroui/react";
+import type { ColumnDef } from "@tanstack/react-table";
 import { CalendarClock, X } from "lucide-react";
 import { useState } from "react";
+import { DataTable } from "@/components/data-table/DataTable";
 import { confirmAction } from "@/components/ui/ConfirmDialog";
 import { SelectInput } from "@/features/outreach/components/FormField";
 import { toast } from "@/lib/toast-interceptor";
-import { WaTableSkeleton } from "../components/Skeletons";
 import { useAllScheduled, useCancelScheduled } from "../hooks/useWaCloud";
 
 const STATUS_COLOR: Record<string, "success" | "warning" | "danger" | "default"> = {
@@ -32,6 +33,99 @@ export function WaCloudScheduledPage() {
   );
   const cancel = useCancelScheduled();
   const items = all.data?.scheduled ?? [];
+  type ScheduledRow = (typeof items)[number];
+
+  const columns: ColumnDef<ScheduledRow>[] = [
+    {
+      id: "scheduledAt",
+      header: "Fecha",
+      cell: ({ row }) => (
+        <span className="font-mono text-default-700 text-xs">
+          {formatChile(row.original.scheduledAt, "DD-MM HH:mm")}
+        </span>
+      ),
+    },
+    {
+      id: "contact",
+      header: "Contacto",
+      cell: ({ row }) => (
+        <div className="min-w-0">
+          <p className="truncate font-medium text-sm">
+            {row.original.contactName ?? row.original.phoneE164}
+          </p>
+          <p className="font-mono text-default-400 text-xs">{row.original.phoneE164}</p>
+        </div>
+      ),
+    },
+    {
+      id: "type",
+      header: "Tipo",
+      cell: ({ row }) => (
+        <Chip size="sm" variant="soft" color="default">
+          <Chip.Label>{row.original.type}</Chip.Label>
+        </Chip>
+      ),
+    },
+    {
+      id: "body",
+      header: "Mensaje",
+      cell: ({ row }) => (
+        <p className="line-clamp-2 max-w-md text-default-700 text-xs">
+          {row.original.body ??
+            (row.original.templateName ? `[plantilla] ${row.original.templateName}` : "—")}
+        </p>
+      ),
+    },
+    {
+      id: "status",
+      header: "Estado",
+      cell: ({ row }) => (
+        <>
+          <Chip size="sm" color={STATUS_COLOR[row.original.status]} variant="soft">
+            <Chip.Label>{row.original.status}</Chip.Label>
+          </Chip>
+          {row.original.errorMessage && (
+            <p className="mt-0.5 line-clamp-1 text-danger text-xs">{row.original.errorMessage}</p>
+          )}
+        </>
+      ),
+    },
+    {
+      id: "actions",
+      header: "Acción",
+      cell: ({ row }) => {
+        const s = row.original;
+        if (s.status !== "PENDING") return null;
+        return (
+          <Button
+            size="sm"
+            variant="danger-soft"
+            isIconOnly
+            aria-label="Cancelar"
+            isPending={cancel.isPending}
+            onPress={() => {
+              void (async () => {
+                const ok = await confirmAction({
+                  title: "Cancelar envío programado",
+                  description: "El mensaje no se enviará. Esta acción no se puede deshacer.",
+                  confirmLabel: "Cancelar envío",
+                  cancelLabel: "Volver",
+                  variant: "danger",
+                });
+                if (!ok) return;
+                cancel.mutate(s.id, {
+                  onSuccess: () => toast.success("Cancelado"),
+                  onError: (e) => toast.error(`Error: ${String(e)}`),
+                });
+              })();
+            }}
+          >
+            <X size={12} />
+          </Button>
+        );
+      },
+    },
+  ];
 
   return (
     <div className="mx-auto max-w-5xl space-y-4 p-6">
@@ -50,105 +144,17 @@ export function WaCloudScheduledPage() {
         </div>
       </div>
 
-      {all.isLoading ? (
-        <Card>
-          <WaTableSkeleton rows={6} cols={5} />
-        </Card>
-      ) : items.length === 0 ? (
-        <Card>
-          <Card.Content className="p-8 text-center text-default-500 text-sm">
-            Sin mensajes programados.
-          </Card.Content>
-        </Card>
-      ) : (
-        <Card>
-          <Card.Content className="p-0">
-            <Table>
-              <Table.ScrollContainer>
-                <Table.Content aria-label="Programados">
-                  <Table.Header>
-                    <Table.Column isRowHeader>Fecha</Table.Column>
-                    <Table.Column>Contacto</Table.Column>
-                    <Table.Column>Tipo</Table.Column>
-                    <Table.Column>Mensaje</Table.Column>
-                    <Table.Column>Estado</Table.Column>
-                    <Table.Column>Acción</Table.Column>
-                  </Table.Header>
-                  <Table.Body items={items}>
-                    {(s) => (
-                      <Table.Row id={String(s.id)}>
-                        <Table.Cell>
-                          <span className="font-mono text-default-700 text-xs">
-                            {formatChile(s.scheduledAt, "DD-MM HH:mm")}
-                          </span>
-                        </Table.Cell>
-                        <Table.Cell>
-                          <div className="min-w-0">
-                            <p className="truncate font-medium text-sm">
-                              {s.contactName ?? s.phoneE164}
-                            </p>
-                            <p className="font-mono text-default-400 text-xs">{s.phoneE164}</p>
-                          </div>
-                        </Table.Cell>
-                        <Table.Cell>
-                          <Chip size="sm" variant="soft" color="default">
-                            <Chip.Label>{s.type}</Chip.Label>
-                          </Chip>
-                        </Table.Cell>
-                        <Table.Cell>
-                          <p className="line-clamp-2 max-w-md text-default-700 text-xs">
-                            {s.body ?? (s.templateName ? `[plantilla] ${s.templateName}` : "—")}
-                          </p>
-                        </Table.Cell>
-                        <Table.Cell>
-                          <Chip size="sm" color={STATUS_COLOR[s.status]} variant="soft">
-                            <Chip.Label>{s.status}</Chip.Label>
-                          </Chip>
-                          {s.errorMessage && (
-                            <p className="mt-0.5 line-clamp-1 text-danger text-xs">
-                              {s.errorMessage}
-                            </p>
-                          )}
-                        </Table.Cell>
-                        <Table.Cell>
-                          {s.status === "PENDING" && (
-                            <Button
-                              size="sm"
-                              variant="danger-soft"
-                              isIconOnly
-                              aria-label="Cancelar"
-                              isPending={cancel.isPending}
-                              onPress={() => {
-                                void (async () => {
-                                  const ok = await confirmAction({
-                                    title: "Cancelar envío programado",
-                                    description:
-                                      "El mensaje no se enviará. Esta acción no se puede deshacer.",
-                                    confirmLabel: "Cancelar envío",
-                                    cancelLabel: "Volver",
-                                    variant: "danger",
-                                  });
-                                  if (!ok) return;
-                                  cancel.mutate(s.id, {
-                                    onSuccess: () => toast.success("Cancelado"),
-                                    onError: (e) => toast.error(`Error: ${String(e)}`),
-                                  });
-                                })();
-                              }}
-                            >
-                              <X size={12} />
-                            </Button>
-                          )}
-                        </Table.Cell>
-                      </Table.Row>
-                    )}
-                  </Table.Body>
-                </Table.Content>
-              </Table.ScrollContainer>
-            </Table>
-          </Card.Content>
-        </Card>
-      )}
+      <Card>
+        <Card.Content className="p-0">
+          <DataTable
+            enableToolbar={false}
+            columns={columns}
+            data={items}
+            isLoading={all.isLoading}
+            noDataMessage="Sin mensajes programados."
+          />
+        </Card.Content>
+      </Card>
     </div>
   );
 }

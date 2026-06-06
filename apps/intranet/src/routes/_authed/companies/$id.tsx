@@ -1,8 +1,10 @@
-import { Button, Card, Chip, EmptyState, Spinner, Table } from "@heroui/react";
+import { Button, Card, Chip, EmptyState, Spinner } from "@heroui/react";
 import { useQuery } from "@tanstack/react-query";
+import type { ColumnDef } from "@tanstack/react-table";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { ChevronLeft, Pencil, Plus } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { DataTable } from "@/components/data-table/DataTable";
 import { CompanyFormModal } from "@/features/quotes/components/CompanyFormModal";
 import { getCompany, listQuotes, quotesKeys } from "@/features/quotes/api";
 import { formatCurrency } from "@/lib/utils";
@@ -48,6 +50,35 @@ function CompanyDetailPage() {
 
   const company = companyQuery.data;
   const quotes = quotesQuery.data ?? [];
+
+  type QuoteRow = (typeof quotes)[number];
+  const columns = useMemo<ColumnDef<QuoteRow>[]>(
+    () => [
+      {
+        accessorKey: "folio",
+        header: "Folio",
+        cell: ({ row }) => (
+          <span className="font-medium">N° {String(row.original.folio).padStart(4, "0")}</span>
+        ),
+      },
+      {
+        accessorKey: "issueDate",
+        header: "Fecha",
+        cell: ({ row }) => formatDate(row.original.issueDate),
+      },
+      {
+        accessorKey: "status",
+        header: "Estado",
+        cell: ({ row }) => STATUS_LABELS[row.original.status],
+      },
+      {
+        accessorKey: "total",
+        header: "Total",
+        cell: ({ row }) => formatCurrency(row.original.total),
+      },
+    ],
+    []
+  );
 
   return (
     <div className={PAGE_CONTAINER}>
@@ -107,43 +138,16 @@ function CompanyDetailPage() {
 
           <Card className="mt-6 space-y-4 p-4">
             <h2 className="font-semibold">Cotizaciones</h2>
-            {quotesQuery.isLoading ? (
-              <Spinner aria-label="Cargando cotizaciones" />
-            ) : quotes.length === 0 ? (
-              <EmptyState>Sin cotizaciones para esta empresa.</EmptyState>
-            ) : (
-              <Table>
-                <Table.ScrollContainer>
-                  <Table.Content aria-label="Cotizaciones de la empresa" className="min-w-[560px]">
-                    <Table.Header>
-                      <Table.Column isRowHeader>Folio</Table.Column>
-                      <Table.Column>Fecha</Table.Column>
-                      <Table.Column>Estado</Table.Column>
-                      <Table.Column>Total</Table.Column>
-                    </Table.Header>
-                    <Table.Body>
-                      {quotes.map((q) => (
-                        <Table.Row
-                          key={q.id}
-                          id={q.id}
-                          className="cursor-pointer"
-                          onAction={() =>
-                            void navigate({ to: "/quotes/$id", params: { id: String(q.id) } })
-                          }
-                        >
-                          <Table.Cell className="font-medium">
-                            N° {String(q.folio).padStart(4, "0")}
-                          </Table.Cell>
-                          <Table.Cell>{formatDate(q.issueDate)}</Table.Cell>
-                          <Table.Cell>{STATUS_LABELS[q.status]}</Table.Cell>
-                          <Table.Cell>{formatCurrency(q.total)}</Table.Cell>
-                        </Table.Row>
-                      ))}
-                    </Table.Body>
-                  </Table.Content>
-                </Table.ScrollContainer>
-              </Table>
-            )}
+            <DataTable
+              columns={columns}
+              data={quotes}
+              isLoading={quotesQuery.isLoading}
+              enableToolbar={false}
+              enableVirtualization={false}
+              enablePagination={false}
+              noDataMessage="Sin cotizaciones para esta empresa."
+              onRowClick={(q) => void navigate({ to: "/quotes/$id", params: { id: String(q.id) } })}
+            />
           </Card>
 
           <CompanyFormModal isOpen={modalOpen} onOpenChange={setModalOpen} company={company} />

@@ -1,8 +1,10 @@
-import { Button, Card, EmptyState, SearchField, Spinner, Table } from "@heroui/react";
+import { Button, Card, SearchField } from "@heroui/react";
 import { useQuery } from "@tanstack/react-query";
+import type { ColumnDef } from "@tanstack/react-table";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { FileText, Plus } from "lucide-react";
 import { useMemo, useState } from "react";
+import { DataTable } from "@/components/data-table/DataTable";
 import { listQuotes, quotesKeys } from "@/features/quotes/api";
 import { STATUS_LABELS } from "@/features/quotes/labels";
 import { formatCurrency } from "@/lib/utils";
@@ -40,6 +42,41 @@ function QuotesPage() {
     );
   }, [quotes, search]);
 
+  type QuoteRow = (typeof quotes)[number];
+  const columns = useMemo<ColumnDef<QuoteRow>[]>(
+    () => [
+      {
+        accessorKey: "folio",
+        header: "Folio",
+        cell: ({ row }) => (
+          <span className="font-medium">N° {String(row.original.folio).padStart(4, "0")}</span>
+        ),
+      },
+      { accessorKey: "companyName", header: "Empresa" },
+      {
+        accessorKey: "issueDate",
+        header: "Fecha",
+        cell: ({ row }) => formatDate(row.original.issueDate),
+      },
+      {
+        accessorKey: "createdByName",
+        header: "Vendedor",
+        cell: ({ row }) => row.original.createdByName ?? "—",
+      },
+      {
+        accessorKey: "status",
+        header: "Estado",
+        cell: ({ row }) => STATUS_LABELS[row.original.status],
+      },
+      {
+        accessorKey: "total",
+        header: "Total",
+        cell: ({ row }) => formatCurrency(row.original.total),
+      },
+    ],
+    []
+  );
+
   return (
     <div className={PAGE_CONTAINER}>
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
@@ -65,47 +102,15 @@ function QuotesPage() {
           </SearchField.Group>
         </SearchField>
 
-        {quotesQuery.isLoading ? (
-          <Spinner aria-label="Cargando cotizaciones" />
-        ) : filtered.length === 0 ? (
-          <EmptyState>No hay cotizaciones.</EmptyState>
-        ) : (
-          <Table>
-            <Table.ScrollContainer>
-              <Table.Content aria-label="Cotizaciones" className="min-w-[680px]">
-                <Table.Header>
-                  <Table.Column isRowHeader>Folio</Table.Column>
-                  <Table.Column>Empresa</Table.Column>
-                  <Table.Column>Fecha</Table.Column>
-                  <Table.Column>Vendedor</Table.Column>
-                  <Table.Column>Estado</Table.Column>
-                  <Table.Column>Total</Table.Column>
-                </Table.Header>
-                <Table.Body>
-                  {filtered.map((q) => (
-                    <Table.Row
-                      key={q.id}
-                      id={q.id}
-                      className="cursor-pointer"
-                      onAction={() =>
-                        void navigate({ to: "/quotes/$id", params: { id: String(q.id) } })
-                      }
-                    >
-                      <Table.Cell className="font-medium">
-                        N° {String(q.folio).padStart(4, "0")}
-                      </Table.Cell>
-                      <Table.Cell>{q.companyName}</Table.Cell>
-                      <Table.Cell>{formatDate(q.issueDate)}</Table.Cell>
-                      <Table.Cell>{q.createdByName ?? "—"}</Table.Cell>
-                      <Table.Cell>{STATUS_LABELS[q.status]}</Table.Cell>
-                      <Table.Cell>{formatCurrency(q.total)}</Table.Cell>
-                    </Table.Row>
-                  ))}
-                </Table.Body>
-              </Table.Content>
-            </Table.ScrollContainer>
-          </Table>
-        )}
+        <DataTable
+          columns={columns}
+          data={filtered}
+          isLoading={quotesQuery.isLoading}
+          enableToolbar={false}
+          enableVirtualization={false}
+          noDataMessage="No hay cotizaciones."
+          onRowClick={(q) => void navigate({ to: "/quotes/$id", params: { id: String(q.id) } })}
+        />
       </Card>
     </div>
   );

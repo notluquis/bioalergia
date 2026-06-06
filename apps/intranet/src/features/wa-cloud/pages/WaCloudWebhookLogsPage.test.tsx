@@ -56,7 +56,9 @@ describe("WaCloudWebhookLogsPage", () => {
         <WaCloudWebhookLogsPage />
       </Wrapper>
     );
-    expect(screen.getByText("Webhook logs")).toBeInTheDocument();
+    // El header se renderiza durante la carga; el skeleton ahora vive en el
+    // cuerpo del DataTable (isLoading) en vez del header.
+    expect(screen.getByText(/Webhook logs/)).toBeInTheDocument();
   });
 
   it("renders rows once data arrives and shows the refresh title", async () => {
@@ -83,8 +85,10 @@ describe("WaCloudWebhookLogsPage", () => {
     await waitFor(() =>
       expect(screen.getByText(/Webhook logs \(refresh 3s\)/)).toBeInTheDocument()
     );
-    expect(screen.getByText("OK")).toBeInTheDocument(); // signatureValid chip
-    expect(screen.getByText("messages")).toBeInTheDocument(); // fields chip
+    // El DataTable construye su colección de filas un tick después del header,
+    // así que esperamos el contenido de la fila con findBy.
+    expect(await screen.findByText("OK")).toBeInTheDocument(); // signatureValid chip
+    expect(await screen.findByText("messages")).toBeInTheDocument(); // fields chip
   });
 
   it("renders INVALID signature chip and 'no' processed chip", async () => {

@@ -1,8 +1,9 @@
 // oxlint-disable typescript/no-non-null-assertion -- TODO(strict-null): refactor each `!` to invariant() or explicit guard. Tracked in repo-wide non-null cleanup.
-import { Button, Card, Chip, ProgressBar, Spinner, Table } from "@heroui/react";
-import { WaTableSkeleton } from "../components/Skeletons";
+import { Button, Card, Chip, ProgressBar, Spinner } from "@heroui/react";
+import type { ColumnDef } from "@tanstack/react-table";
 import { CalendarClock, Megaphone, Play, Plus, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { DataTable } from "@/components/data-table/DataTable";
 import { AppDateTimePicker } from "@/components/forms/AppDatePicker";
 import { AppModal } from "@/components/ui/AppModal";
 import { confirmAction } from "@/components/ui/ConfirmDialog";
@@ -32,6 +33,79 @@ export function WaCloudBroadcastsPage() {
   const [createOpen, setCreateOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<number | null>(null);
 
+  const broadcasts = list.data?.broadcasts ?? [];
+  type BroadcastRow = (typeof broadcasts)[number];
+
+  const columns: ColumnDef<BroadcastRow>[] = [
+    {
+      id: "name",
+      header: "Nombre",
+      cell: ({ row }) => (
+        <button
+          type="button"
+          className="text-left font-medium text-accent hover:underline"
+          onClick={() => setSelectedId(row.original.id)}
+        >
+          {row.original.name}
+        </button>
+      ),
+    },
+    {
+      id: "template",
+      header: "Plantilla",
+      cell: ({ row }) => (
+        <span className="font-mono text-xs">
+          {row.original.templateName} · {row.original.templateLanguage}
+        </span>
+      ),
+    },
+    {
+      id: "status",
+      header: "Estado",
+      cell: ({ row }) => (
+        <Chip size="sm" color={STATUS_COLOR[row.original.status]} variant="soft">
+          <Chip.Label>{row.original.status}</Chip.Label>
+        </Chip>
+      ),
+    },
+    {
+      id: "progress",
+      header: "Progreso",
+      cell: ({ row }) => (
+        <ProgressLine
+          sent={row.original.sentCount}
+          failed={row.original.failedCount}
+          total={row.original.totalRecipients}
+        />
+      ),
+    },
+    {
+      id: "scheduledAt",
+      header: "Programada",
+      cell: ({ row }) =>
+        row.original.scheduledAt ? (
+          <span className="font-mono text-default-600 text-xs">
+            {new Date(row.original.scheduledAt).toLocaleString("es-CL", {
+              day: "2-digit",
+              month: "2-digit",
+              year: "2-digit",
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
+          </span>
+        ) : (
+          <span className="text-default-400 text-xs">—</span>
+        ),
+    },
+    {
+      id: "actions",
+      header: "Acciones",
+      cell: ({ row }) => (
+        <BroadcastActions broadcastId={row.original.id} status={row.original.status} />
+      ),
+    },
+  ];
+
   return (
     <div className="space-y-4 p-6">
       <div className="flex items-center justify-between">
@@ -45,86 +119,17 @@ export function WaCloudBroadcastsPage() {
         </Button>
       </div>
 
-      {list.isLoading ? (
-        <Card>
-          <WaTableSkeleton rows={5} cols={6} />
-        </Card>
-      ) : (list.data?.broadcasts.length ?? 0) === 0 ? (
-        <Card>
-          <Card.Content className="p-8 text-center text-default-500 text-sm">
-            Sin campañas todavía. Crea una para enviar plantillas a múltiples contactos.
-          </Card.Content>
-        </Card>
-      ) : (
-        <Card>
-          <Card.Content className="p-0">
-            <Table>
-              <Table.ScrollContainer>
-                <Table.Content aria-label="Campañas">
-                  <Table.Header>
-                    <Table.Column isRowHeader>Nombre</Table.Column>
-                    <Table.Column>Plantilla</Table.Column>
-                    <Table.Column>Estado</Table.Column>
-                    <Table.Column>Progreso</Table.Column>
-                    <Table.Column>Programada</Table.Column>
-                    <Table.Column>Acciones</Table.Column>
-                  </Table.Header>
-                  <Table.Body items={list.data?.broadcasts ?? []}>
-                    {(b) => (
-                      <Table.Row id={String(b.id)}>
-                        <Table.Cell>
-                          <button
-                            type="button"
-                            className="text-left font-medium text-accent hover:underline"
-                            onClick={() => setSelectedId(b.id)}
-                          >
-                            {b.name}
-                          </button>
-                        </Table.Cell>
-                        <Table.Cell>
-                          <span className="font-mono text-xs">
-                            {b.templateName} · {b.templateLanguage}
-                          </span>
-                        </Table.Cell>
-                        <Table.Cell>
-                          <Chip size="sm" color={STATUS_COLOR[b.status]} variant="soft">
-                            <Chip.Label>{b.status}</Chip.Label>
-                          </Chip>
-                        </Table.Cell>
-                        <Table.Cell>
-                          <ProgressLine
-                            sent={b.sentCount}
-                            failed={b.failedCount}
-                            total={b.totalRecipients}
-                          />
-                        </Table.Cell>
-                        <Table.Cell>
-                          {b.scheduledAt ? (
-                            <span className="font-mono text-default-600 text-xs">
-                              {new Date(b.scheduledAt).toLocaleString("es-CL", {
-                                day: "2-digit",
-                                month: "2-digit",
-                                year: "2-digit",
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })}
-                            </span>
-                          ) : (
-                            <span className="text-default-400 text-xs">—</span>
-                          )}
-                        </Table.Cell>
-                        <Table.Cell>
-                          <BroadcastActions broadcastId={b.id} status={b.status} />
-                        </Table.Cell>
-                      </Table.Row>
-                    )}
-                  </Table.Body>
-                </Table.Content>
-              </Table.ScrollContainer>
-            </Table>
-          </Card.Content>
-        </Card>
-      )}
+      <Card>
+        <Card.Content className="p-0">
+          <DataTable
+            enableToolbar={false}
+            columns={columns}
+            data={broadcasts}
+            isLoading={list.isLoading}
+            noDataMessage="Sin campañas todavía. Crea una para enviar plantillas a múltiples contactos."
+          />
+        </Card.Content>
+      </Card>
 
       {selectedId && <BroadcastDetail id={selectedId} onClose={() => setSelectedId(null)} />}
 
@@ -196,6 +201,53 @@ function BroadcastActions({ broadcastId, status }: { broadcastId: number; status
 
 function BroadcastDetail({ id, onClose }: { id: number; onClose: () => void }) {
   const detail = useBroadcast(id);
+  const recipients = detail.data?.recipients ?? [];
+  type RecipientRow = (typeof recipients)[number];
+
+  const columns: ColumnDef<RecipientRow>[] = [
+    {
+      id: "phone",
+      header: "Teléfono",
+      cell: ({ row }) => <span className="font-mono text-xs">{row.original.phoneE164}</span>,
+    },
+    {
+      id: "variables",
+      header: "Variables",
+      cell: ({ row }) => (
+        <span className="text-default-600 text-xs">
+          {row.original.variables.length > 0 ? row.original.variables.join(" · ") : "—"}
+        </span>
+      ),
+    },
+    {
+      id: "status",
+      header: "Estado",
+      cell: ({ row }) => (
+        <Chip
+          size="sm"
+          color={
+            row.original.status === "SENT"
+              ? "success"
+              : row.original.status === "FAILED"
+                ? "danger"
+                : row.original.status === "SKIPPED"
+                  ? "warning"
+                  : "default"
+          }
+          variant="soft"
+        >
+          <Chip.Label>{row.original.status}</Chip.Label>
+        </Chip>
+      ),
+    },
+    {
+      id: "error",
+      header: "Error",
+      cell: ({ row }) => (
+        <span className="line-clamp-1 text-danger text-xs">{row.original.errorMessage ?? ""}</span>
+      ),
+    },
+  ];
 
   return (
     <Card>
@@ -214,54 +266,13 @@ function BroadcastDetail({ id, onClose }: { id: number; onClose: () => void }) {
             <Spinner size="sm" />
           </div>
         ) : (
-          <Table>
-            <Table.ScrollContainer className="max-h-96">
-              <Table.Content aria-label="Destinatarios">
-                <Table.Header>
-                  <Table.Column isRowHeader>Teléfono</Table.Column>
-                  <Table.Column>Variables</Table.Column>
-                  <Table.Column>Estado</Table.Column>
-                  <Table.Column>Error</Table.Column>
-                </Table.Header>
-                <Table.Body items={detail.data.recipients}>
-                  {(r) => (
-                    <Table.Row id={String(r.id)}>
-                      <Table.Cell>
-                        <span className="font-mono text-xs">{r.phoneE164}</span>
-                      </Table.Cell>
-                      <Table.Cell>
-                        <span className="text-default-600 text-xs">
-                          {r.variables.length > 0 ? r.variables.join(" · ") : "—"}
-                        </span>
-                      </Table.Cell>
-                      <Table.Cell>
-                        <Chip
-                          size="sm"
-                          color={
-                            r.status === "SENT"
-                              ? "success"
-                              : r.status === "FAILED"
-                                ? "danger"
-                                : r.status === "SKIPPED"
-                                  ? "warning"
-                                  : "default"
-                          }
-                          variant="soft"
-                        >
-                          <Chip.Label>{r.status}</Chip.Label>
-                        </Chip>
-                      </Table.Cell>
-                      <Table.Cell>
-                        <span className="line-clamp-1 text-danger text-xs">
-                          {r.errorMessage ?? ""}
-                        </span>
-                      </Table.Cell>
-                    </Table.Row>
-                  )}
-                </Table.Body>
-              </Table.Content>
-            </Table.ScrollContainer>
-          </Table>
+          <DataTable
+            enableToolbar={false}
+            columns={columns}
+            data={recipients}
+            noDataMessage="Sin destinatarios."
+            scrollMaxHeight={384}
+          />
         )}
       </Card.Content>
     </Card>

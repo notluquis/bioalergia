@@ -1,9 +1,11 @@
-import { Button, Card, Chip, EmptyState, SearchField, Spinner, Table } from "@heroui/react";
+import { Button, Card, Chip, EmptyState, SearchField } from "@heroui/react";
 import type { QuoteProductDto } from "@finanzas/orpc-contracts/quotes";
 import { useQuery } from "@tanstack/react-query";
+import type { ColumnDef } from "@tanstack/react-table";
 import { createFileRoute, getRouteApi } from "@tanstack/react-router";
 import { FileSpreadsheet, Plus } from "lucide-react";
 import { useMemo, useState } from "react";
+import { DataTable } from "@/components/data-table/DataTable";
 import { QuoteProductFormModal } from "@/features/quotes/components/QuoteProductFormModal";
 import { listQuoteProducts, quotesKeys } from "@/features/quotes/api";
 import { formatCurrency } from "@/lib/utils";
@@ -57,6 +59,44 @@ function QuotesCatalogSettingsPage() {
     setModalOpen(true);
   };
 
+  const columns = useMemo<ColumnDef<QuoteProductDto>[]>(
+    () => [
+      {
+        accessorKey: "name",
+        header: "Detalle",
+        cell: ({ row }) => <span className="font-medium">{row.original.name}</span>,
+      },
+      { accessorKey: "code", header: "Código", cell: ({ row }) => row.original.code ?? "—" },
+      { accessorKey: "brand", header: "Marca", cell: ({ row }) => row.original.brand ?? "—" },
+      {
+        accessorKey: "category",
+        header: "Categoría",
+        cell: ({ row }) => row.original.category ?? "—",
+      },
+      { accessorKey: "format", header: "Formato", cell: ({ row }) => row.original.format ?? "—" },
+      {
+        accessorKey: "unitPrice",
+        header: "Precio",
+        cell: ({ row }) => formatCurrency(row.original.unitPrice),
+      },
+      {
+        accessorKey: "isActive",
+        header: "Estado",
+        cell: ({ row }) =>
+          row.original.isActive ? (
+            <Chip variant="primary" size="sm">
+              Activo
+            </Chip>
+          ) : (
+            <Chip variant="secondary" size="sm">
+              Inactivo
+            </Chip>
+          ),
+      },
+    ],
+    []
+  );
+
   return (
     <div className={PAGE_CONTAINER}>
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
@@ -87,65 +127,25 @@ function QuotesCatalogSettingsPage() {
           </SearchField.Group>
         </SearchField>
 
-        {productsQuery.isLoading ? (
-          <Spinner aria-label="Cargando productos" />
-        ) : filtered.length === 0 ? (
+        {!productsQuery.isLoading && products.length === 0 ? (
           <EmptyState>
-            {products.length === 0 ? (
-              <div className="space-y-3 text-center">
-                <p>Aún no hay productos en el catálogo.</p>
-                <Button className="gap-2" onPress={openNew}>
-                  <Plus size={18} /> Agregar el primero
-                </Button>
-              </div>
-            ) : (
-              "Sin resultados para la búsqueda."
-            )}
+            <div className="space-y-3 text-center">
+              <p>Aún no hay productos en el catálogo.</p>
+              <Button className="gap-2" onPress={openNew}>
+                <Plus size={18} /> Agregar el primero
+              </Button>
+            </div>
           </EmptyState>
         ) : (
-          <Table>
-            <Table.ScrollContainer>
-              <Table.Content aria-label="Catálogo de productos" className="min-w-[720px]">
-                <Table.Header>
-                  <Table.Column isRowHeader>Detalle</Table.Column>
-                  <Table.Column>Código</Table.Column>
-                  <Table.Column>Marca</Table.Column>
-                  <Table.Column>Categoría</Table.Column>
-                  <Table.Column>Formato</Table.Column>
-                  <Table.Column>Precio</Table.Column>
-                  <Table.Column>Estado</Table.Column>
-                </Table.Header>
-                <Table.Body>
-                  {filtered.map((p) => (
-                    <Table.Row
-                      key={p.id}
-                      id={p.id}
-                      className="cursor-pointer"
-                      onAction={() => openEdit(p)}
-                    >
-                      <Table.Cell className="font-medium">{p.name}</Table.Cell>
-                      <Table.Cell>{p.code ?? "—"}</Table.Cell>
-                      <Table.Cell>{p.brand ?? "—"}</Table.Cell>
-                      <Table.Cell>{p.category ?? "—"}</Table.Cell>
-                      <Table.Cell>{p.format ?? "—"}</Table.Cell>
-                      <Table.Cell>{formatCurrency(p.unitPrice)}</Table.Cell>
-                      <Table.Cell>
-                        {p.isActive ? (
-                          <Chip variant="primary" size="sm">
-                            Activo
-                          </Chip>
-                        ) : (
-                          <Chip variant="secondary" size="sm">
-                            Inactivo
-                          </Chip>
-                        )}
-                      </Table.Cell>
-                    </Table.Row>
-                  ))}
-                </Table.Body>
-              </Table.Content>
-            </Table.ScrollContainer>
-          </Table>
+          <DataTable
+            columns={columns}
+            data={filtered}
+            isLoading={productsQuery.isLoading}
+            enableToolbar={false}
+            enableVirtualization={false}
+            noDataMessage="Sin resultados para la búsqueda."
+            onRowClick={(p) => openEdit(p)}
+          />
         )}
       </Card>
 

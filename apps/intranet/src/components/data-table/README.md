@@ -39,3 +39,12 @@ paginación (la antigua `ClassificationPagination` fue eliminada).
 > **Gotcha**: nunca llamar `table.getRowModel()` dentro de un componente que
 > recibe `table` por prop — el row model queda stale. Computarlo donde vive
 > `useReactTable`. Ver `DataTable.pagination.test.tsx`.
+
+## Excepción: editores de texto libre por fila
+
+Los `<input>`/`<TextArea>` editables **dentro de una celda** del DataTable NO
+funcionan: la `<Table>` de HeroUI (React-Aria, role grid) remonta el contenido de
+la celda en cada re-render y el campo pierde el valor/foco en cada tecla. Botones,
+chips, links y selects sí funcionan en celdas. Para tablas cuyo caso de uso es
+editar texto libre por fila (ej. `exam-reports/AllergensTagsPanel`), mantener una
+`<Table>` a mano es la opción correcta — es la única excepción permitida.

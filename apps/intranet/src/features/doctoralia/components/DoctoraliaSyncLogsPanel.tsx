@@ -1,20 +1,11 @@
 import { formatChile } from "@/lib/dates";
-import {
-  Alert,
-  Button,
-  Card,
-  Chip,
-  Description,
-  Label,
-  ListBox,
-  Select,
-  Skeleton,
-  Table,
-} from "@heroui/react";
+import { Button, Card, Chip, Description, Label, ListBox, Select } from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import type { ColumnDef } from "@tanstack/react-table";
 import { History, RefreshCw } from "lucide-react";
 import { useMemo, useState } from "react";
 
+import { DataTable } from "@/components/data-table/DataTable";
 import { useToast } from "@/context/ToastContext";
 import { triggerDoctoraliaCalendarSync } from "@/features/doctoralia/api";
 import { doctoraliaSettingsKeys } from "@/features/doctoralia/settings-queries";
@@ -83,6 +74,81 @@ export function DoctoraliaSyncLogsPanel() {
       return true;
     });
   }, [logs, syncTypeFilter, statusFilter]);
+
+  const columns = useMemo<ColumnDef<DoctoraliaSyncLog>[]>(
+    () => [
+      {
+        accessorKey: "startedAt",
+        header: "Inicio",
+        cell: ({ row }) => (
+          <>
+            <div className="font-medium text-default-900 text-sm">
+              {formatDate(row.original.startedAt)}
+            </div>
+            {row.original.endedAt ? (
+              <div className="text-default-400 text-xs">Fin {formatDate(row.original.endedAt)}</div>
+            ) : null}
+          </>
+        ),
+      },
+      {
+        accessorKey: "syncType",
+        header: "Tipo",
+        cell: ({ row }) => (
+          <Chip size="sm" variant="soft">
+            {row.original.syncType === "CALENDAR" ? "Calendario" : "Correo"}
+          </Chip>
+        ),
+      },
+      {
+        accessorKey: "status",
+        header: "Estado",
+        cell: ({ row }) => (
+          <>
+            <Chip color={statusColor(row.original.status)} size="sm" variant="soft">
+              {row.original.status}
+            </Chip>
+            {row.original.errorMessage ? (
+              <div className="mt-1 text-danger-500 text-xs">{row.original.errorMessage}</div>
+            ) : null}
+          </>
+        ),
+      },
+      {
+        id: "source",
+        header: "Origen",
+        cell: ({ row }) => (
+          <span className="text-default-500 text-xs">
+            {row.original.triggerSource ?? "—"}
+            {row.original.triggerUserId ? ` · user#${row.original.triggerUserId}` : ""}
+          </span>
+        ),
+      },
+      {
+        id: "duration",
+        header: "Duración",
+        cell: ({ row }) => (
+          <span className="text-default-500 text-xs">
+            {formatDuration(row.original.startedAt, row.original.endedAt)}
+          </span>
+        ),
+      },
+      {
+        id: "summary",
+        header: "Resumen",
+        cell: ({ row }) => (
+          <div className="flex flex-wrap gap-1">
+            {Object.entries(row.original.counts).map(([key, value]) => (
+              <Chip key={key} size="sm" variant="soft">
+                {key}: {value}
+              </Chip>
+            ))}
+          </div>
+        ),
+      },
+    ],
+    []
+  );
 
   return (
     <div className="mt-4 space-y-4">
@@ -158,75 +224,17 @@ export function DoctoraliaSyncLogsPanel() {
             </Chip>
           </div>
 
-          {isPending ? (
-            <Skeleton className="h-64 w-full rounded-2xl" />
-          ) : filtered.length === 0 ? (
-            <Alert status="default">
-              <Alert.Content>
-                <Alert.Description>Sin registros para los filtros seleccionados.</Alert.Description>
-              </Alert.Content>
-            </Alert>
-          ) : (
-            <div className="overflow-hidden rounded-2xl border border-default-100">
-              <Table variant="secondary">
-                <Table.Content aria-label="Logs de sincronización de Doctoralia">
-                  <Table.Header>
-                    <Table.Column isRowHeader>Inicio</Table.Column>
-                    <Table.Column>Tipo</Table.Column>
-                    <Table.Column>Estado</Table.Column>
-                    <Table.Column className="hidden md:table-cell">Origen</Table.Column>
-                    <Table.Column className="hidden md:table-cell">Duración</Table.Column>
-                    <Table.Column>Resumen</Table.Column>
-                  </Table.Header>
-                  <Table.Body>
-                    {filtered.map((log) => (
-                      <Table.Row id={String(log.id)} key={log.id}>
-                        <Table.Cell>
-                          <div className="font-medium text-default-900 text-sm">
-                            {formatDate(log.startedAt)}
-                          </div>
-                          {log.endedAt ? (
-                            <div className="text-default-400 text-xs">
-                              Fin {formatDate(log.endedAt)}
-                            </div>
-                          ) : null}
-                        </Table.Cell>
-                        <Table.Cell>
-                          <Chip size="sm" variant="soft">
-                            {log.syncType === "CALENDAR" ? "Calendario" : "Correo"}
-                          </Chip>
-                        </Table.Cell>
-                        <Table.Cell>
-                          <Chip color={statusColor(log.status)} size="sm" variant="soft">
-                            {log.status}
-                          </Chip>
-                          {log.errorMessage ? (
-                            <div className="mt-1 text-danger-500 text-xs">{log.errorMessage}</div>
-                          ) : null}
-                        </Table.Cell>
-                        <Table.Cell className="hidden md:table-cell text-default-500 text-xs">
-                          {log.triggerSource ?? "—"}
-                          {log.triggerUserId ? ` · user#${log.triggerUserId}` : ""}
-                        </Table.Cell>
-                        <Table.Cell className="hidden md:table-cell text-default-500 text-xs">
-                          {formatDuration(log.startedAt, log.endedAt)}
-                        </Table.Cell>
-                        <Table.Cell>
-                          <div className="flex flex-wrap gap-1">
-                            {Object.entries(log.counts).map(([key, value]) => (
-                              <Chip key={key} size="sm" variant="soft">
-                                {key}: {value}
-                              </Chip>
-                            ))}
-                          </div>
-                        </Table.Cell>
-                      </Table.Row>
-                    ))}
-                  </Table.Body>
-                </Table.Content>
-              </Table>
-            </div>
-          )}
+          <DataTable
+            enableToolbar={false}
+            columns={columns}
+            containerVariant="plain"
+            data={filtered}
+            enableExport={false}
+            enableGlobalFilter={false}
+            enableVirtualization={false}
+            isLoading={isPending}
+            noDataMessage="Sin registros para los filtros seleccionados."
+          />
         </Card.Content>
       </Card>
     </div>

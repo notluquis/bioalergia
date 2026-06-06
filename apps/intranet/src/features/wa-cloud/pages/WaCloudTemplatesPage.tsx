@@ -1,7 +1,9 @@
-import { Button, Card, Chip, Modal, Spinner, Table } from "@heroui/react";
+import { Button, Card, Chip, Modal, Spinner } from "@heroui/react";
+import type { ColumnDef } from "@tanstack/react-table";
 import { WaCardGridSkeleton } from "../components/Skeletons";
 import { BookOpen, Plus, Trash2, X } from "lucide-react";
 import { useEffect, useState } from "react";
+import { DataTable } from "@/components/data-table/DataTable";
 import { SelectInput, TextAreaInput, TextInput } from "@/features/outreach/components/FormField";
 import { toast } from "@/lib/toast-interceptor";
 import {
@@ -47,6 +49,76 @@ export function WaCloudTemplatesPage() {
     );
   }
 
+  const templates = tpl.data.templates;
+  type TemplateRow = (typeof templates)[number];
+
+  const columns: ColumnDef<TemplateRow>[] = [
+    {
+      id: "name",
+      header: "Nombre",
+      cell: ({ row }) => row.original.name,
+    },
+    {
+      id: "language",
+      header: "Idioma",
+      cell: ({ row }) => row.original.language,
+    },
+    {
+      id: "category",
+      header: "Categoría",
+      cell: ({ row }) => (
+        <Chip size="sm" variant="soft">
+          <Chip.Label>{row.original.category}</Chip.Label>
+        </Chip>
+      ),
+    },
+    {
+      id: "status",
+      header: "Estado",
+      cell: ({ row }) => (
+        <Chip
+          size="sm"
+          color={
+            row.original.status === "APPROVED"
+              ? "success"
+              : row.original.status === "REJECTED" || row.original.status === "DISABLED"
+                ? "danger"
+                : "warning"
+          }
+          variant="soft"
+        >
+          <Chip.Label>{row.original.status}</Chip.Label>
+        </Chip>
+      ),
+    },
+    {
+      id: "qualityScore",
+      header: "Calidad",
+      cell: ({ row }) => row.original.qualityScore ?? "—",
+    },
+    {
+      id: "actions",
+      header: "Acciones",
+      cell: ({ row }) => (
+        <Button
+          size="sm"
+          variant="danger-soft"
+          isIconOnly
+          aria-label="Eliminar"
+          onPress={() =>
+            setConfirmDel({
+              id: row.original.id,
+              accountId: row.original.accountId,
+              name: row.original.name,
+            })
+          }
+        >
+          <Trash2 size={14} />
+        </Button>
+      ),
+    },
+  ];
+
   return (
     <div className="space-y-4 p-6">
       <div className="flex justify-end gap-2">
@@ -62,62 +134,13 @@ export function WaCloudTemplatesPage() {
 
       <Card>
         <Card.Content className="p-0">
-          <Table>
-            <Table.ScrollContainer>
-              <Table.Content aria-label="Templates">
-                <Table.Header>
-                  <Table.Column isRowHeader>Nombre</Table.Column>
-                  <Table.Column>Idioma</Table.Column>
-                  <Table.Column>Categoría</Table.Column>
-                  <Table.Column>Estado</Table.Column>
-                  <Table.Column>Calidad</Table.Column>
-                  <Table.Column>Acciones</Table.Column>
-                </Table.Header>
-                <Table.Body items={tpl.data.templates}>
-                  {(t) => (
-                    <Table.Row id={String(t.id)}>
-                      <Table.Cell>{t.name}</Table.Cell>
-                      <Table.Cell>{t.language}</Table.Cell>
-                      <Table.Cell>
-                        <Chip size="sm" variant="soft">
-                          <Chip.Label>{t.category}</Chip.Label>
-                        </Chip>
-                      </Table.Cell>
-                      <Table.Cell>
-                        <Chip
-                          size="sm"
-                          color={
-                            t.status === "APPROVED"
-                              ? "success"
-                              : t.status === "REJECTED" || t.status === "DISABLED"
-                                ? "danger"
-                                : "warning"
-                          }
-                          variant="soft"
-                        >
-                          <Chip.Label>{t.status}</Chip.Label>
-                        </Chip>
-                      </Table.Cell>
-                      <Table.Cell>{t.qualityScore ?? "—"}</Table.Cell>
-                      <Table.Cell>
-                        <Button
-                          size="sm"
-                          variant="danger-soft"
-                          isIconOnly
-                          aria-label="Eliminar"
-                          onPress={() =>
-                            setConfirmDel({ id: t.id, accountId: t.accountId, name: t.name })
-                          }
-                        >
-                          <Trash2 size={14} />
-                        </Button>
-                      </Table.Cell>
-                    </Table.Row>
-                  )}
-                </Table.Body>
-              </Table.Content>
-            </Table.ScrollContainer>
-          </Table>
+          <DataTable
+            enableToolbar={false}
+            columns={columns}
+            data={templates}
+            noDataMessage="Sin plantillas."
+            enablePagination={false}
+          />
         </Card.Content>
       </Card>
 

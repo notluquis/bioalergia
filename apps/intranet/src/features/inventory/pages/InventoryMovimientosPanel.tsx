@@ -4,19 +4,18 @@ import {
   Chip,
   DateField,
   DateRangePicker,
-  EmptyState,
   Label,
   RangeCalendar,
   SearchField,
-  Skeleton,
   Surface,
-  Table,
 } from "@heroui/react";
 import { parseDate } from "@internationalized/date";
+import type { ColumnDef } from "@tanstack/react-table";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { useDebouncedValue } from "@tanstack/react-pacer";
 import { useMemo, useState } from "react";
 
+import { DataTable } from "@/components/data-table/DataTable";
 import type { ListMovementsResponse } from "../api";
 import { inventoryQueries } from "../queries";
 
@@ -51,6 +50,41 @@ export function InventoryMovimientosPanel() {
   const rows = useMemo(
     () => query.data?.pages.flatMap((page: ListMovementsResponse) => page.data.movements) ?? [],
     [query.data]
+  );
+
+  const columns = useMemo<ColumnDef<(typeof rows)[number]>[]>(
+    () => [
+      {
+        id: "fecha",
+        header: "Fecha",
+        cell: ({ row }) => (
+          <span className="tabular-nums">
+            {formatChile(row.original.created_at, "DD/MM/YYYY HH:mm")}
+          </span>
+        ),
+      },
+      { id: "item", header: "Item", cell: ({ row }) => row.original.item.name },
+      {
+        id: "cantidad",
+        header: "Cantidad",
+        cell: ({ row }) => {
+          const isPositive = row.original.quantity_change >= 0;
+          return (
+            <Chip color={isPositive ? "success" : "danger"} size="sm" variant="soft">
+              {isPositive ? "↑" : "↓"} {Math.abs(row.original.quantity_change)}
+            </Chip>
+          );
+        },
+      },
+      {
+        id: "motivo",
+        header: "Motivo",
+        cell: ({ row }) => (
+          <span className="text-foreground-500">{row.original.reason ?? "—"}</span>
+        ),
+      },
+    ],
+    []
   );
 
   const dateRangeValue = from && to ? { end: parseDate(to), start: parseDate(from) } : null;
@@ -114,54 +148,17 @@ export function InventoryMovimientosPanel() {
         </SearchField>
       </div>
 
-      <Table>
-        <Table.ScrollContainer>
-          <Table.Content aria-label="Movimientos de inventario">
-            <Table.Header>
-              <Table.Column isRowHeader>Fecha</Table.Column>
-              <Table.Column>Item</Table.Column>
-              <Table.Column>Cantidad</Table.Column>
-              <Table.Column>Motivo</Table.Column>
-            </Table.Header>
-            <Table.Body
-              items={rows}
-              renderEmptyState={() =>
-                query.isLoading ? (
-                  <div className="space-y-2 p-2">
-                    <Skeleton className="h-8 rounded-md" />
-                    <Skeleton className="h-8 rounded-md" />
-                    <Skeleton className="h-8 rounded-md" />
-                  </div>
-                ) : (
-                  <EmptyState className="p-6 text-center">
-                    Sin movimientos para los filtros seleccionados.
-                  </EmptyState>
-                )
-              }
-            >
-              {(movement) => {
-                const isPositive = movement.quantity_change >= 0;
-                return (
-                  <Table.Row id={String(movement.id)}>
-                    <Table.Cell className="tabular-nums">
-                      {formatChile(movement.created_at, "DD/MM/YYYY HH:mm")}
-                    </Table.Cell>
-                    <Table.Cell>{movement.item.name}</Table.Cell>
-                    <Table.Cell>
-                      <Chip color={isPositive ? "success" : "danger"} size="sm" variant="soft">
-                        {isPositive ? "↑" : "↓"} {Math.abs(movement.quantity_change)}
-                      </Chip>
-                    </Table.Cell>
-                    <Table.Cell className="text-foreground-500">
-                      {movement.reason ?? "—"}
-                    </Table.Cell>
-                  </Table.Row>
-                );
-              }}
-            </Table.Body>
-          </Table.Content>
-        </Table.ScrollContainer>
-      </Table>
+      {/* Cursor/infinite: el DataTable sólo renderiza las filas acumuladas
+          (enablePagination=false); el botón "Cargar más" vive afuera. */}
+      <DataTable
+        columns={columns}
+        data={rows}
+        enablePagination={false}
+        enableToolbar={false}
+        enableVirtualization={false}
+        isLoading={query.isLoading}
+        noDataMessage="Sin movimientos para los filtros seleccionados."
+      />
 
       {query.hasNextPage ? (
         <div className="flex justify-center">
