@@ -1,14 +1,3 @@
-import dayjs from "dayjs";
-import isSameOrBefore from "dayjs/plugin/isSameOrBefore.js";
-import isoWeek from "dayjs/plugin/isoWeek.js";
-import timezone from "dayjs/plugin/timezone.js";
-import utc from "dayjs/plugin/utc.js";
-
-dayjs.extend(utc);
-dayjs.extend(timezone);
-dayjs.extend(isoWeek);
-dayjs.extend(isSameOrBefore);
-
 export const SCRAPER_TIMEZONE = "America/Santiago";
 
 export type TierKey = "W0" | "W1" | "W2" | "M1" | "M2" | "M3";
@@ -29,16 +18,101 @@ export type TickDebugInfo = {
   withinBusinessHours: boolean;
 };
 
-type Dayjs = ReturnType<typeof dayjs>;
-
 const BUSINESS_HOUR_START = 9;
 const BUSINESS_HOUR_END = 19;
+const DAY_MS = 86_400_000;
 
-function weekWindow(monday: Dayjs, tier: TierKey): WindowRequest {
-  const sunday = monday.add(6, "day");
+// ---- native Chile-local helpers (Intl + civil-noon UTC anchor) -------------
+// A calendar day is a "YYYY-MM-DD" string; we anchor it at noon-UTC for all
+// arithmetic so adding whole days never crosses a DST boundary into the wrong
+// day. The wall-clock (hour/minute) of an instant is read via Intl in the
+// requested zone — replaces the old `dayjs.utc(now).tz(zone)` projection.
+
+type LocalParts = { isoDate: string; hour: number; minute: number; second: number };
+
+function localParts(now: Date, timeZone: string): LocalParts {
+  const fmt = new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  });
+  const parts = fmt.formatToParts(now);
+  const get = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((p) => p.type === type)?.value ?? "";
+  let hour = Number(get("hour"));
+  if (hour === 24) hour = 0; // en-CA emits "24" at midnight
   return {
-    from: monday.format("YYYY-MM-DD"),
-    to: `${sunday.format("YYYY-MM-DD")}T23:59:59`,
+    isoDate: `${get("year")}-${get("month")}-${get("day")}`,
+    hour,
+    minute: Number(get("minute")),
+    second: Number(get("second")),
+  };
+}
+
+function civilNoon(isoDate: string): Date {
+  return new Date(`${isoDate}T12:00:00Z`);
+}
+
+function isoOf(d: Date): string {
+  return d.toISOString().slice(0, 10);
+}
+
+function addDays(isoDate: string, n: number): string {
+  return isoOf(new Date(civilNoon(isoDate).getTime() + n * DAY_MS));
+}
+
+/** ISO weekday 1=Mon … 7=Sun. */
+function isoWeekday(isoDate: string): number {
+  return ((civilNoon(isoDate).getUTCDay() + 6) % 7) + 1;
+}
+
+/** Monday of the ISO week containing `isoDate`. */
+function startOfIsoWeek(isoDate: string): string {
+  return addDays(isoDate, -(isoWeekday(isoDate) - 1));
+}
+
+/** ISO-8601 week number (1–53). */
+function isoWeekNumber(isoDate: string): number {
+  const d = civilNoon(isoDate);
+  const day = (d.getUTCDay() + 6) % 7; // Mon=0 … Sun=6
+  d.setUTCDate(d.getUTCDate() - day + 3); // Thursday of this ISO week
+  const firstThursday = new Date(Date.UTC(d.getUTCFullYear(), 0, 4, 12));
+  const fday = (firstThursday.getUTCDay() + 6) % 7;
+  firstThursday.setUTCDate(firstThursday.getUTCDate() - fday + 3);
+  return 1 + Math.round((d.getTime() - firstThursday.getTime()) / (7 * DAY_MS));
+}
+
+/** Shift a "YYYY-MM[-DD]" by n months, returning the first-of-month "YYYY-MM-DD". */
+function addMonths(isoDate: string, n: number): string {
+  const year = Number(isoDate.slice(0, 4));
+  const month = Number(isoDate.slice(5, 7));
+  return isoOf(new Date(Date.UTC(year, month - 1 + n, 1, 12)));
+}
+
+/** Last day of the month containing `isoDate`, "YYYY-MM-DD". */
+function lastOfMonth(isoDate: string): string {
+  const year = Number(isoDate.slice(0, 4));
+  const month = Number(isoDate.slice(5, 7));
+  // day 0 of next month = last day of this month.
+  return isoOf(new Date(Date.UTC(year, month, 0, 12)));
+}
+
+function pad2(n: number): string {
+  return String(n).padStart(2, "0");
+}
+
+// ----------------------------------------------------------------------------
+
+function weekWindow(mondayIso: string, tier: TierKey): WindowRequest {
+  const sundayIso = addDays(mondayIso, 6);
+  return {
+    from: mondayIso,
+    to: `${sundayIso}T23:59:59`,
     tier,
   };
 }
@@ -47,21 +121,25 @@ export function forcedCurrentWeekWindow(
   now: Date,
   timezone: string = SCRAPER_TIMEZONE
 ): WindowRequest {
-  const local = dayjs.utc(now).tz(timezone);
-  return weekWindow(local.startOf("isoWeek"), "W0");
+  const { isoDate } = localParts(now, timezone);
+  return weekWindow(startOfIsoWeek(isoDate), "W0");
 }
 
-function monthAsWeekWindows(local: Dayjs, monthOffset: number, tier: TierKey): WindowRequest[] {
-  const monthStart = local.startOf("month").add(monthOffset, "month");
-  const monthEnd = monthStart.endOf("month");
-  const firstMonday = monthStart.startOf("isoWeek");
-  const lastMonday = monthEnd.startOf("isoWeek");
+function monthAsWeekWindows(
+  localIso: string,
+  monthOffset: number,
+  tier: TierKey
+): WindowRequest[] {
+  const monthStart = addMonths(localIso, monthOffset); // first-of-month
+  const monthEnd = lastOfMonth(monthStart);
+  const firstMonday = startOfIsoWeek(monthStart);
+  const lastMonday = startOfIsoWeek(monthEnd);
 
   const windows: WindowRequest[] = [];
   let cursor = firstMonday;
-  while (cursor.isSameOrBefore(lastMonday, "day")) {
+  while (cursor <= lastMonday) {
     windows.push(weekWindow(cursor, tier));
-    cursor = cursor.add(7, "day");
+    cursor = addDays(cursor, 7);
   }
   return windows;
 }
@@ -83,39 +161,38 @@ export function selectWindowsForTick(
   now: Date,
   timezone: string = SCRAPER_TIMEZONE
 ): WindowRequest[] {
-  const local = dayjs.utc(now).tz(timezone);
-  const hour = local.hour();
+  const { isoDate, hour, minute } = localParts(now, timezone);
   if (hour < BUSINESS_HOUR_START || hour >= BUSINESS_HOUR_END) return [];
 
-  const tickInDay = (hour - BUSINESS_HOUR_START) * 2 + (local.minute() >= 30 ? 1 : 0);
+  const tickInDay = (hour - BUSINESS_HOUR_START) * 2 + (minute >= 30 ? 1 : 0);
   const isFirstTickOfDay = tickInDay === 0;
-  const isMonday = local.isoWeekday() === 1;
+  const isMonday = isoWeekday(isoDate) === 1;
   const isFirstTickOfWeek = isFirstTickOfDay && isMonday;
-  const isoWeekNumber = local.isoWeek();
+  const weekNumber = isoWeekNumber(isoDate);
 
-  const monday = local.startOf("isoWeek");
+  const monday = startOfIsoWeek(isoDate);
   const windows: WindowRequest[] = [];
 
   windows.push(weekWindow(monday, "W0"));
 
   if (tickInDay % 3 === 0) {
-    windows.push(weekWindow(monday.add(1, "week"), "W1"));
+    windows.push(weekWindow(addDays(monday, 7), "W1"));
   }
 
   if (isFirstTickOfDay) {
-    windows.push(weekWindow(monday.add(2, "week"), "W2"));
+    windows.push(weekWindow(addDays(monday, 14), "W2"));
   }
 
   if (isFirstTickOfWeek) {
-    windows.push(...monthAsWeekWindows(local, 1, "M1"));
+    windows.push(...monthAsWeekWindows(isoDate, 1, "M1"));
   }
 
-  if (isFirstTickOfWeek && isoWeekNumber % 2 === 0) {
-    windows.push(...monthAsWeekWindows(local, 2, "M2"));
+  if (isFirstTickOfWeek && weekNumber % 2 === 0) {
+    windows.push(...monthAsWeekWindows(isoDate, 2, "M2"));
   }
 
-  if (isFirstTickOfWeek && isoWeekNumber % 3 === 0) {
-    windows.push(...monthAsWeekWindows(local, 3, "M3"));
+  if (isFirstTickOfWeek && weekNumber % 3 === 0) {
+    windows.push(...monthAsWeekWindows(isoDate, 3, "M3"));
   }
 
   const seen = new Set<string>();
@@ -128,15 +205,13 @@ export function selectWindowsForTick(
 }
 
 export function getTickDebugInfo(now: Date, timezone: string = SCRAPER_TIMEZONE): TickDebugInfo {
-  const local = dayjs.utc(now).tz(timezone);
-  const hour = local.hour();
-  const minute = local.minute();
+  const { isoDate, hour, minute, second } = localParts(now, timezone);
   const withinBusinessHours = hour >= BUSINESS_HOUR_START && hour < BUSINESS_HOUR_END;
 
   return {
     hour,
     isoNow: now.toISOString(),
-    localIso: local.format(),
+    localIso: `${isoDate}T${pad2(hour)}:${pad2(minute)}:${pad2(second)}`,
     minute,
     tickInDay: withinBusinessHours
       ? (hour - BUSINESS_HOUR_START) * 2 + (minute >= 30 ? 1 : 0)

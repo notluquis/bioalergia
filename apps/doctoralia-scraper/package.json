@@ -13,7 +13,6 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "dayjs": "^1.11.21",
     "dotenv": "^17.4.2",
     "imapflow": "^1.3.5",
     "impit": "^0.14.1",
