@@ -1,5 +1,5 @@
 import { Button, Card, Chip } from "@heroui/react";
-import dayjs from "dayjs";
+import { formatChile } from "@/lib/dates";
 import {
   CalendarClock,
   CheckCircle2,
@@ -139,10 +139,11 @@ function buildRightSideBadges(event: CalendarEventDetail) {
 }
 
 export function DailyEventCard({ event, eventDteLink, onLinkClick }: DailyEventCardProps) {
-  const start = event.startDateTime ? dayjs(event.startDateTime).tz() : null;
-  const end = event.endDateTime ? dayjs(event.endDateTime).tz() : null;
-  const durationMinutes = start && end ? end.diff(start, "minute") : null;
-  const today = dayjs().format("YYYY-MM-DD");
+  const startMs = event.startDateTime ? new Date(event.startDateTime).getTime() : null;
+  const endMs = event.endDateTime ? new Date(event.endDateTime).getTime() : null;
+  const durationMinutes =
+    startMs != null && endMs != null ? Math.round((endMs - startMs) / 60_000) : null;
+  const today = formatChile(new Date(), "YYYY-MM-DD");
   const isPendingEmission = event.eventDate > today && !eventDteLink;
   const indicatorColor = getCategoryIndicatorColor(event.category);
   const stateBadges: StateBadge[] = getCalendarEventStates(event).map((state) => ({
@@ -162,7 +163,7 @@ export function DailyEventCard({ event, eventDteLink, onLinkClick }: DailyEventC
         <div className="flex flex-col items-center gap-0.5 text-center">
           {/* Start Time */}
           <span className="font-bold text-sm tabular-nums">
-            {start ? start.format("HH:mm") : "--:--"}
+            {event.startDateTime ? formatChile(event.startDateTime, "HH:mm") : "--:--"}
           </span>
 
           {/* Category Color Indicator */}
@@ -177,7 +178,7 @@ export function DailyEventCard({ event, eventDteLink, onLinkClick }: DailyEventC
 
           {/* End Time */}
           <span className="font-medium text-foreground-500 text-xs tabular-nums">
-            {end ? end.format("HH:mm") : "--:--"}
+            {event.endDateTime ? formatChile(event.endDateTime, "HH:mm") : "--:--"}
           </span>
         </div>
 

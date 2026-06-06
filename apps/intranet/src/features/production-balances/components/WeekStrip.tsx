@@ -1,6 +1,7 @@
 import { Button, Skeleton } from "@heroui/react";
-import dayjs from "dayjs";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+
+import { chileDay } from "@/lib/dates";
 import { useMemo } from "react";
 
 import { fmtCLP } from "@/lib/format";
@@ -82,8 +83,8 @@ export function WeekStrip({
         {weekData?.days.map((day) => (
           <DayCellButton
             day={day}
-            isSelected={dayjs(day.date).isSame(currentDate, "day")}
-            isToday={dayjs(day.date).isSame(today, "day")}
+            isSelected={chileDay(day.date) === chileDay(currentDate)}
+            isToday={chileDay(day.date) === chileDay(today)}
             key={day.date.toISOString()}
             onPress={() => {
               onSelectDate(day.date);
