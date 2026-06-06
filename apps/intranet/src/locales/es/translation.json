@@ -52,6 +52,7 @@
       "ashby": "Boards Ashby (CSV de slugs)",
       "smartrecruiters": "SmartRecruiters (CSV de companyId, case-sensitive)",
       "workday": "Workday (CSV de tenant:wd:site)",
+      "airavirtual": "airavirtual 🇨🇱 (CSV: walmart, cencosud, ripley…)",
       "cron": "Frecuencia (cron)",
       "keywords": "Palabras clave del perfil (CSV)",
       "departments": "Departamentos (CSV)",

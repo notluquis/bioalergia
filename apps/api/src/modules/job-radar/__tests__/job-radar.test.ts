@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { fetchAiravirtualJobs } from "../airavirtual.ts";
 import { fetchAshbyJobs } from "../ashby.ts";
 import { fetchBciJobs } from "../bci.ts";
 import { matchesProfile, type ProfileFilter } from "../filter.ts";
@@ -435,6 +436,53 @@ describe("workday", () => {
       url: "https://falabella.wd3.myworkdayjobs.com/Falabella/job/Santiago/Analista-de-Riesgo_JR123",
     });
     fetchSpy.mockRestore();
+  });
+});
+
+const AIRA_JSON = JSON.stringify({
+  updated_at: "2026-06-05",
+  offers: [
+    {
+      id: 605364,
+      name: "Analista de Riesgo Operacional",
+      city: "chile##metropolitana##quilicura",
+      region: "chile##metropolitana",
+      country: "chile",
+      area: "finanzas",
+      subarea: "finanzas##riesgo",
+      remote_work: "NO_REMOTE",
+      link: "https://login.airavirtual.com/postula/abc123",
+      publication_days: 1,
+    },
+  ],
+});
+
+describe("fetchAiravirtualJobs", () => {
+  let fetchSpy: ReturnType<typeof vi.spyOn>;
+  beforeEach(() => {
+    fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(res(AIRA_JSON));
+  });
+  afterEach(() => fetchSpy.mockRestore());
+
+  it("maps airavirtual offers feed (cleans CL location/area)", async () => {
+    const jobs = await fetchAiravirtualJobs("walmart");
+    expect(String(fetchSpy.mock.calls[0][0])).toContain("feeds/aira_walmart.json");
+    expect(jobs[0]).toMatchObject({
+      source: "airavirtual",
+      company: "walmart",
+      externalId: "605364",
+      title: "Analista de Riesgo Operacional",
+      department: "Riesgo",
+      location: "Quilicura, Metropolitana",
+      remote: null,
+      url: "https://login.airavirtual.com/postula/abc123",
+    });
+    expect(jobs[0].publishedAt).toBeInstanceOf(Date);
+  });
+
+  it("returns [] on non-ok", async () => {
+    fetchSpy.mockResolvedValue(res("", false, 404));
+    expect(await fetchAiravirtualJobs("nope")).toEqual([]);
   });
 });
 

@@ -14,6 +14,7 @@ const EMPTY: JobRadarSettings = {
   ashby: "",
   smartrecruiters: "",
   workday: "",
+  airavirtual: "",
   keywords: "",
   departments: "",
   cron: "",
@@ -86,6 +87,11 @@ export function JobRadarSettingsPanel() {
         <TextField value={form.workday} onChange={(v) => set("workday", v)}>
           <Label>{t("jobRadar.settings.workday")}</Label>
           <Input placeholder="nvidia:wd5:NVIDIAExternalCareerSite" />
+        </TextField>
+
+        <TextField value={form.airavirtual} onChange={(v) => set("airavirtual", v)}>
+          <Label>{t("jobRadar.settings.airavirtual")}</Label>
+          <Input placeholder="walmart, cencosud, ripley, entel, copec" />
         </TextField>
 
         <TextField value={form.keywords} onChange={(v) => set("keywords", v)}>

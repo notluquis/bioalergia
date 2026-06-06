@@ -10,6 +10,7 @@ import { db, type JsonValue } from "@finanzas/db";
 import { DomainError } from "../lib/errors.ts";
 import { logEvent, logWarn } from "../lib/logger.ts";
 import { getSettings, updateSettings } from "../lib/settings.ts";
+import { fetchAiravirtualJobs } from "../modules/job-radar/airavirtual.ts";
 import { fetchAshbyJobs } from "../modules/job-radar/ashby.ts";
 import { fetchBciJobs } from "../modules/job-radar/bci.ts";
 import {
@@ -47,6 +48,7 @@ const KEYS = {
   ashby: "jobRadar.ashby",
   smartrecruiters: "jobRadar.smartrecruiters",
   workday: "jobRadar.workday",
+  airavirtual: "jobRadar.airavirtual",
   keywords: "jobRadar.keywords",
   departments: "jobRadar.departments",
   cron: "jobRadar.cron",
@@ -64,6 +66,7 @@ export interface JobRadarConfig {
   ashby: string[];
   smartrecruiters: string[];
   workday: string[];
+  airavirtual: string[];
   keywords: string[];
   departments: string[];
   cron: string;
@@ -110,6 +113,7 @@ export async function getJobRadarConfig(): Promise<JobRadarConfig> {
   const smartRaw = pick(rec, KEYS.smartrecruiters, process.env.JOB_RADAR_SMARTRECRUITERS) ?? "";
   // Workday entries son "tenant:wd:site" → no lowercasear (site es case-sensitive).
   const workdayRaw = pick(rec, KEYS.workday, process.env.JOB_RADAR_WORKDAY) ?? "";
+  const airaRaw = pick(rec, KEYS.airavirtual, process.env.JOB_RADAR_AIRAVIRTUAL) ?? "";
   const keywordsRaw = pick(rec, KEYS.keywords, process.env.JOB_RADAR_KEYWORDS);
   const departmentsRaw = pick(rec, KEYS.departments, process.env.JOB_RADAR_DEPARTMENTS) ?? "";
 
@@ -127,6 +131,7 @@ export async function getJobRadarConfig(): Promise<JobRadarConfig> {
     ashby: parseCsv(ashbyRaw),
     smartrecruiters: parseCsvKeepCase(smartRaw),
     workday: parseCsvKeepCase(workdayRaw),
+    airavirtual: parseCsv(airaRaw),
     keywords: keywordsRaw === undefined ? DEFAULT_KEYWORDS : parseCsv(keywordsRaw),
     departments: parseCsv(departmentsRaw),
     cron: pick(rec, KEYS.cron, process.env.JOB_RADAR_CRON) || JOB_RADAR_DEFAULT_CRON,
@@ -209,6 +214,14 @@ function getSources(config: JobRadarConfig): JobSource[] {
       company: entry.tenant,
       label: `workday:${entry.tenant}`,
       fetch: () => fetchWorkdayJobs(entry, config.keywords),
+    });
+  }
+  for (const company of config.airavirtual) {
+    sources.push({
+      source: "airavirtual",
+      company,
+      label: `airavirtual:${company}`,
+      fetch: () => fetchAiravirtualJobs(company),
     });
   }
   return sources;
@@ -516,6 +529,7 @@ export interface JobRadarSettingsDTO {
   ashby: string; // CSV
   smartrecruiters: string; // CSV
   workday: string; // CSV de "tenant:wd:site"
+  airavirtual: string; // CSV de slugs
   keywords: string; // CSV
   departments: string; // CSV
   cron: string;
@@ -535,6 +549,7 @@ export async function getJobRadarSettings(): Promise<JobRadarSettingsDTO> {
     ashby: config.ashby.join(", "),
     smartrecruiters: config.smartrecruiters.join(", "),
     workday: config.workday.join(", "),
+    airavirtual: config.airavirtual.join(", "),
     keywords: config.keywords.join(", "),
     departments: config.departments.join(", "),
     cron: config.cron,
@@ -553,6 +568,7 @@ export interface UpdateJobRadarSettingsInput {
   ashby?: string;
   smartrecruiters?: string;
   workday?: string;
+  airavirtual?: string;
   keywords?: string;
   departments?: string;
   cron?: string;
@@ -573,6 +589,7 @@ export async function updateJobRadarSettings(
   if (input.ashby !== undefined) rows[KEYS.ashby] = input.ashby;
   if (input.smartrecruiters !== undefined) rows[KEYS.smartrecruiters] = input.smartrecruiters;
   if (input.workday !== undefined) rows[KEYS.workday] = input.workday;
+  if (input.airavirtual !== undefined) rows[KEYS.airavirtual] = input.airavirtual;
   if (input.keywords !== undefined) rows[KEYS.keywords] = input.keywords;
   if (input.departments !== undefined) rows[KEYS.departments] = input.departments;
   if (input.cron !== undefined) rows[KEYS.cron] = input.cron;
