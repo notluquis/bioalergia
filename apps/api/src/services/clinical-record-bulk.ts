@@ -17,23 +17,35 @@ import {
 
 // Background bulk reprocess for clinical_record_imports. One in-flight
 // job at a time (in-process lock via the existing jobQueue's
-// getActiveJobsByType). Operator triggers via the intranet review
-// page; the worker walks the PENDING_REVIEW + ERROR queue in batches
-// of REPROCESS_BATCH and reports incremental progress so the UI can
-// poll without blocking the operator.
+// getActiveJobsByType). Operator triggers via the intranet review page; the
+// worker walks the PENDING_REVIEW + ERROR queue by keyset pagination and
+// reports incremental progress so the UI can poll without blocking.
 //
-// Concurrency=1 inside the loop so no two reprocesses target the
-// same import row at once (reprocessClinicalRecordImport already
-// holds a pg_advisory_xact_lock for cross-replica safety, but
-// avoiding parallel calls inside the same process keeps OneDrive
-// rate limits + Postgres connection use predictable).
+// Throughput: a bounded worker pool (CLINICAL_RECORD_REPROCESS_CONCURRENCY,
+// default 6, capped under the pg pool of 10) runs reprocesses in parallel.
+// The slow part — the OneDrive xlsx download — happens OUTSIDE each import's
+// short advisory-locked transaction, so distinct ids never contend and the
+// network-bound work overlaps. Serial processing was the bottleneck on the
+// ~14k backfilled corpus.
 //
-// Cancellable: the worker checks isJobCancelled(jobId) between
-// imports so the operator can stop a runaway batch from the UI.
+// Cancellable: workers check isJobCancelled(jobId) between imports so the
+// operator can stop a runaway batch from the UI.
 
 const JOB_TYPE = "clinical-record-bulk-reprocess";
 const AUTO_APPROVE_JOB_TYPE = "clinical-record-auto-approve";
-const REPROCESS_BATCH = 25;
+// Rows fetched per keyset page. The real throughput knob is concurrency below.
+const FETCH_BATCH = 200;
+// Each reprocess does the slow OneDrive download OUTSIDE its (short) advisory-
+// locked transaction, so workers parallelize the network-bound part. Cap well
+// under the pg pool (max 10) to leave headroom for the rest of the app.
+const DEFAULT_REPROCESS_CONCURRENCY = 6;
+const MAX_REPROCESS_CONCURRENCY = 10;
+
+function resolveReprocessConcurrency(): number {
+  const raw = Number.parseInt(process.env.CLINICAL_RECORD_REPROCESS_CONCURRENCY ?? "", 10);
+  if (!Number.isFinite(raw) || raw < 1) return DEFAULT_REPROCESS_CONCURRENCY;
+  return Math.min(raw, MAX_REPROCESS_CONCURRENCY);
+}
 
 export function getClinicalRecordBulkJobType(): string {
   return JOB_TYPE;
@@ -43,14 +55,23 @@ export function getClinicalRecordAutoApproveJobType(): string {
   return AUTO_APPROVE_JOB_TYPE;
 }
 
-async function fetchPendingIds(limit: number, excludeIds: Set<string>): Promise<string[]> {
-  const rows = await sql<{ id: string }>`
-    SELECT id FROM clinical_record_imports
+type PendingCursor = { createdAt: Date; id: string } | null;
+
+// Keyset pagination over the pending queue: walk (created_at, id) forward so
+// each row is visited exactly once per run — even the no-match rows that stay
+// PENDING_REVIEW after reprocess. Avoids the old O(n²) growing exclude-set.
+async function fetchPendingBatch(
+  limit: number,
+  after: PendingCursor
+): Promise<Array<{ id: string; createdAt: Date }>> {
+  const rows = await sql<{ id: string; created_at: Date }>`
+    SELECT id, created_at FROM clinical_record_imports
     WHERE status IN ('PENDING_REVIEW', 'ERROR')
-    ORDER BY created_at ASC
-    LIMIT ${limit + excludeIds.size}
+      ${after ? sql`AND (created_at, id) > (${after.createdAt}::timestamptz, ${after.id})` : sql``}
+    ORDER BY created_at ASC, id ASC
+    LIMIT ${limit}
   `.execute(kysely);
-  return rows.rows.map((r) => r.id).filter((id) => !excludeIds.has(id));
+  return rows.rows.map((r) => ({ id: r.id, createdAt: r.created_at }));
 }
 
 async function countPending(): Promise<number> {
@@ -106,44 +127,53 @@ export function startBulkClinicalRecordReprocessJob(options?: {
       let imported = 0;
       let pending = 0;
       let errors = 0;
-      // Track ids that flipped status this run so the next fetchPendingIds
-      // call doesn't re-pick them while their status update is still
-      // visible to a stale read (also defends against bugs that leave
-      // status PENDING after a parser failure).
-      const seen = new Set<string>();
+      const concurrency = resolveReprocessConcurrency();
+      let cursor: PendingCursor = null;
 
       while (processed < total) {
         if (isJobCancelled(jobId)) {
           throw new Error("SYNC_CANCELLED");
         }
-        const remaining = total - processed;
-        const fetched = await fetchPendingIds(Math.min(REPROCESS_BATCH, remaining), seen);
-        if (fetched.length === 0) break;
-        for (const id of fetched) {
-          if (isJobCancelled(jobId)) {
-            throw new Error("SYNC_CANCELLED");
+        const batch = await fetchPendingBatch(Math.min(FETCH_BATCH, total - processed), cursor);
+        if (batch.length === 0) break;
+        // Advance the keyset past this page before processing — reprocess may
+        // leave a no-match row PENDING_REVIEW, and we must not revisit it.
+        const last = batch[batch.length - 1];
+        cursor = { createdAt: last.createdAt, id: last.id };
+
+        // Bounded worker pool: N workers pull from the shared batch. Counter
+        // increments are safe (single-threaded between awaits). The slow part
+        // (OneDrive download) runs outside the per-import advisory lock, so
+        // distinct ids never contend.
+        let idx = 0;
+        const worker = async () => {
+          while (idx < batch.length && processed < total) {
+            if (isJobCancelled(jobId)) {
+              throw new Error("SYNC_CANCELLED");
+            }
+            const { id } = batch[idx++];
+            try {
+              const r = await reprocessClinicalRecordImport(id);
+              if (r.status === "IMPORTED") imported += 1;
+              else if (r.status === "PENDING_REVIEW") pending += 1;
+              else errors += 1;
+            } catch (err) {
+              errors += 1;
+              logError("[clinical-record.bulk] import failed", err, { id });
+            }
+            processed += 1;
+            if (processed % 25 === 0 || processed === total) {
+              updateJobProgress(
+                jobId,
+                processed,
+                `Procesando fichas clínicas (${processed}/${total})`,
+                { phase: "running", imported, pending, errors, concurrency },
+                total
+              );
+            }
           }
-          seen.add(id);
-          try {
-            const r = await reprocessClinicalRecordImport(id);
-            if (r.status === "IMPORTED") imported += 1;
-            else if (r.status === "PENDING_REVIEW") pending += 1;
-            else errors += 1;
-          } catch (err) {
-            errors += 1;
-            logError("[clinical-record.bulk] import failed", err, { id });
-          }
-          processed += 1;
-          if (processed % 5 === 0 || processed === total) {
-            updateJobProgress(
-              jobId,
-              processed,
-              `Procesando fichas clínicas (${processed}/${total})`,
-              { phase: "running", imported, pending, errors },
-              total
-            );
-          }
-        }
+        };
+        await Promise.all(Array.from({ length: Math.min(concurrency, batch.length) }, worker));
       }
 
       completeJob(
