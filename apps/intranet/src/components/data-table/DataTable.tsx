@@ -172,6 +172,7 @@ interface DataTableContentProps<TData> {
   readonly onSortingChange: (sorting: SortingState) => void;
   readonly onSelectionChange: (keys: Selection) => void;
   readonly renderSubComponent?: (props: { row: Row<TData> }) => ReactNode;
+  readonly rows: Row<TData>[];
   readonly selectedKeys: Set<string>;
   readonly sorting: SortingState;
   readonly table: TanStackTable<TData>;
@@ -205,6 +206,7 @@ function DataTableContent<TData>({
   onSortingChange,
   onSelectionChange,
   renderSubComponent,
+  rows,
   scrollMaxHeight,
   scrollMode,
   selectedKeys,
@@ -213,7 +215,6 @@ function DataTableContent<TData>({
   virtualizationMaxHeight,
 }: DataTableContentProps<TData>) {
   const tableContainerRef = useRef<HTMLDivElement>(null);
-  const rows = table.getRowModel().rows;
   const shouldEnableInternalVerticalScroll = shouldEnableInternalScroll({
     enableVirtualization,
     hasPagination: Boolean(table.getState().pagination),
@@ -525,6 +526,13 @@ export function DataTable<TData, TValue, TMeta extends TableMeta<TData> = TableM
       sorting,
     },
   });
+  // IMPORTANTE: el row model DEBE computarse aquí, en el componente que llama a
+  // useReactTable. Si se llama table.getRowModel() dentro del hijo DataTableContent
+  // (que recibe `table` por prop), el memo de TanStack queda STALE por el orden de
+  // render padre→hijo: getState().pagination ya refleja la página nueva pero
+  // getRowModel() devuelve la página anterior → la paginación (y cualquier cambio
+  // de estado) no se reflejaba. Reproducido en tanstack-iso.repro.test.tsx.
+  const tableRows = table.getRowModel().rows;
   const selectedKeys = useMemo(() => rowSelectionToKeys(rowSelection), [rowSelection]);
   const handleSelectionChange = (keys: Selection) => {
     const visibleRowIds = table.getRowModel().rows.map((row) => row.id);
@@ -554,6 +562,7 @@ export function DataTable<TData, TValue, TMeta extends TableMeta<TData> = TableM
         onSelectionChange={handleSelectionChange}
         onSortingChange={setSorting}
         renderSubComponent={renderSubComponent}
+        rows={tableRows}
         scrollMaxHeight={scrollMaxHeight}
         scrollMode={effectiveScrollMode}
         selectedKeys={selectedKeys}
