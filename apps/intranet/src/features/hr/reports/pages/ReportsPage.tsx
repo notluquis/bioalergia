@@ -16,12 +16,20 @@ import {
 } from "@heroui/react";
 import { parseDate } from "@internationalized/date";
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
-import dayjs from "dayjs";
-import isoWeek from "dayjs/plugin/isoWeek";
 import { BarChart2, BarChart3, Calendar, Clock, Filter, List, TrendingUp, X } from "lucide-react";
 import { lazy, Suspense, useEffect, useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
 
+import {
+  chileDay,
+  diffDays,
+  endOfMonth,
+  endOfMonthFor,
+  formatChile,
+  startOfMonth,
+  startOfWeek,
+  today,
+} from "@/lib/dates";
 import { useAuth } from "@/context/AuthContext";
 import { EmployeeMultiSelectPopover } from "@/features/hr/components/EmployeeMultiSelectPopover";
 import { employeeKeys } from "@/features/hr/employees/queries";
@@ -34,8 +42,6 @@ import { getHRReportsColumns, type HRReportsTableMeta } from "../components/HRRe
 import type { EmployeeWorkData, ReportGranularity } from "../types";
 import { calculateStats, prepareComparisonData } from "../utils";
 
-import "dayjs/locale/es";
-
 // Lazy-load chart components (Recharts ~400KB)
 const TemporalChart = lazy(() =>
   import("../components/ReportCharts").then((m) => ({ default: m.TemporalChart }))
@@ -43,11 +49,6 @@ const TemporalChart = lazy(() =>
 const DistributionChart = lazy(() =>
   import("../components/ReportCharts").then((m) => ({ default: m.DistributionChart }))
 );
-
-dayjs.extend(isoWeek);
-dayjs.locale("es");
-
-const DATE_FORMAT = "YYYY-MM-DD";
 
 // --- Helper Functions in Scope ---
 interface RawTimesheetEntry {
@@ -64,10 +65,8 @@ export function ReportsPage() {
 
   // Selection state
   const [viewMode, setViewMode] = useState<ViewMode>("month");
-  const [startDate, setStartDate] = useState<string>(() =>
-    dayjs().startOf("month").format(DATE_FORMAT)
-  );
-  const [endDate, setEndDate] = useState<string>(() => dayjs().endOf("month").format(DATE_FORMAT));
+  const [startDate, setStartDate] = useState<string>(() => startOfMonth());
+  const [endDate, setEndDate] = useState<string>(() => endOfMonth());
   const [granularity, setGranularity] = useState<ReportGranularity>("month");
   const granularityLabel = { day: "día", month: "mes", week: "sem" }[granularity];
 
@@ -119,18 +118,17 @@ export function ReportsPage() {
       if (!selectedMonth) {
         return null;
       }
-      start = dayjs(`${selectedMonth}-01`).startOf("month").format(DATE_FORMAT);
-      end = dayjs(`${selectedMonth}-01`).endOf("month").format(DATE_FORMAT);
+      start = `${selectedMonth}-01`;
+      end = endOfMonthFor(`${selectedMonth}-01`);
     } else if (viewMode === "all") {
       const available = [...monthsWithData].toSorted((a, b) => a.localeCompare(b));
       if (available.length > 0) {
-        start = dayjs(`${available[0]}-01`).startOf("month").format(DATE_FORMAT);
-        end = dayjs(`${available.at(-1)}-01`)
-          .endOf("month")
-          .format(DATE_FORMAT);
+        start = `${available[0]}-01`;
+        end = endOfMonthFor(`${available.at(-1)}-01`);
       } else {
-        start = dayjs().subtract(1, "year").format(DATE_FORMAT);
-        end = dayjs().format(DATE_FORMAT);
+        const t = today();
+        start = `${Number(t.slice(0, 4)) - 1}${t.slice(4)}`;
+        end = t;
       }
     }
     return { end, start };
@@ -190,15 +188,14 @@ export function ReportsPage() {
     if (!dateParams) {
       return 1;
     }
-    const start = dayjs(dateParams.start);
-    const end = dayjs(dateParams.end);
+    const spanDays = diffDays(dateParams.end, dateParams.start);
     let count = 1;
     if (granularity === "day") {
-      count = end.diff(start, "day") + 1;
+      count = spanDays + 1;
     } else if (granularity === "week") {
-      count = end.diff(start, "week", true);
+      count = spanDays / 7;
     } else {
-      count = end.diff(start, "month", true);
+      count = spanDays / 30;
     }
     return Math.max(1, Math.ceil(count));
   })();
@@ -364,7 +361,7 @@ function ReportsFiltersPanel({
                   <ListBox>
                     {months.map((month) => (
                       <ListBox.Item id={month} key={month}>
-                        {dayjs(`${month}-01`).format("MMMM YYYY")}{" "}
+                        {formatChile(`${month}-01`, "MMMM YYYY")}{" "}
                         {monthsWithData.has(month) ? "✓" : ""}
                       </ListBox.Item>
                     ))}
@@ -594,8 +591,8 @@ function ReportsResultsPanel({
     <div className="space-y-6 lg:col-span-8">
       {reportData.length === 0 && !loading ? (
         <div className="flex min-h-65 flex-col items-center justify-center rounded-3xl border-2 border-default-200 border-dashed bg-default-50/50 p-6 text-center sm:min-h-100 sm:p-8">
-          <div className="mb-5 flex items-center justify-center rounded-full bg-default-50 sm:mb-6 sm:h-20 sm:w-20 size-16">
-            <BarChart2 className="text-default-200 sm:h-10 sm:w-10 size-9" />
+          <div className="mb-5 flex items-center justify-center rounded-full bg-default-50 sm:mb-6 size-16 sm:size-20">
+            <BarChart2 className="text-default-200 size-9 sm:size-10" />
           </div>
           <h3 className="font-bold text-foreground text-lg sm:text-xl">Sin datos para mostrar</h3>
           <p className="mt-2 max-w-sm text-default-500 text-sm sm:text-base">
@@ -793,9 +790,9 @@ function accumulateEntryMetrics(map: Map<number, EmployeeWorkData>, entries: Raw
     data.totalMinutes += entry.worked_minutes;
     data.totalOvertimeMinutes += entry.overtime_minutes;
 
-    const dateKey = dayjs(entry.work_date, DATE_FORMAT).format(DATE_FORMAT);
-    const weekKey = dayjs(entry.work_date, DATE_FORMAT).startOf("isoWeek").format(DATE_FORMAT);
-    const monthKey = dayjs(entry.work_date, DATE_FORMAT).format("YYYY-MM");
+    const dateKey = chileDay(entry.work_date);
+    const weekKey = startOfWeek(entry.work_date);
+    const monthKey = chileDay(entry.work_date).slice(0, 7);
 
     data.dailyBreakdown[dateKey] = (data.dailyBreakdown[dateKey] ?? 0) + entry.worked_minutes;
     data.weeklyBreakdown[weekKey] = (data.weeklyBreakdown[weekKey] ?? 0) + entry.worked_minutes;

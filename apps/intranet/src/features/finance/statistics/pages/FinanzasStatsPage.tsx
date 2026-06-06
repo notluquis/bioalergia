@@ -16,10 +16,17 @@ import {
   Spinner,
 } from "@heroui/react";
 import { parseDate } from "@internationalized/date";
-import dayjs from "dayjs";
 import { ArrowDown, ArrowUp, BarChart3, Calendar, TrendingUp } from "lucide-react";
 import { useState } from "react";
 
+import {
+  endOfMonth,
+  endOfYear,
+  monthsAgoEnd,
+  monthsAgoStart,
+  startOfMonth,
+  startOfYear,
+} from "@/lib/dates";
 import { useAuth } from "@/context/AuthContext";
 import { BalanceSummary } from "@/features/finance/balances/components/BalanceSummary";
 import { PAGE_CONTAINER } from "@/lib/styles";
@@ -29,42 +36,36 @@ import { MovementTypeList } from "../components/MovementTypeList";
 import { TopParticipantsSection } from "../components/TopParticipantsSection";
 import { useStatsData } from "../hooks/use-stats-data";
 
-import "dayjs/locale/es";
-
-const DATE_FORMAT = "YYYY-MM-DD";
-
-dayjs.locale("es");
-
 // Quick date ranges
 const QUICK_MONTHS = [
   {
-    from: dayjs().startOf("month").format(DATE_FORMAT),
+    from: startOfMonth(),
     label: "Este mes",
-    to: dayjs().endOf("month").format(DATE_FORMAT),
+    to: endOfMonth(),
     value: "current",
   },
   {
-    from: dayjs().subtract(1, "month").startOf("month").format(DATE_FORMAT),
+    from: monthsAgoStart(1),
     label: "Mes pasado",
-    to: dayjs().subtract(1, "month").endOf("month").format(DATE_FORMAT),
+    to: monthsAgoEnd(1),
     value: "previous",
   },
   {
-    from: dayjs().subtract(3, "month").startOf("month").format(DATE_FORMAT),
+    from: monthsAgoStart(3),
     label: "Últimos 3 meses",
-    to: dayjs().endOf("month").format(DATE_FORMAT),
+    to: endOfMonth(),
     value: "3months",
   },
   {
-    from: dayjs().subtract(6, "month").startOf("month").format(DATE_FORMAT),
+    from: monthsAgoStart(6),
     label: "Últimos 6 meses",
-    to: dayjs().endOf("month").format(DATE_FORMAT),
+    to: endOfMonth(),
     value: "6months",
   },
   {
-    from: dayjs().startOf("year").format(DATE_FORMAT),
+    from: startOfYear(),
     label: "Este año",
-    to: dayjs().endOf("year").format(DATE_FORMAT),
+    to: endOfYear(),
     value: "year",
   },
 ];

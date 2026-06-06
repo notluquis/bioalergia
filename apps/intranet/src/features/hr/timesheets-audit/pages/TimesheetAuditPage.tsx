@@ -18,8 +18,6 @@ import {
   ToggleButtonGroup,
 } from "@heroui/react";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import dayjs from "dayjs";
-import isoWeek from "dayjs/plugin/isoWeek";
 import { Users, X } from "lucide-react";
 import { lazy, startTransition, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
@@ -33,20 +31,29 @@ import {
 } from "@/features/hr/timesheets-audit/hooks/use-timesheet-audit";
 import type { TimesheetEntryWithEmployee } from "@/features/hr/timesheets-audit/types";
 import { detectAllOverlaps } from "@/features/hr/timesheets-audit/utils/overlap-detection";
-import { endOfMonth, monthsAgoEnd, monthsAgoStart, startOfMonth } from "@/lib/dates";
+import {
+  addDays,
+  addMonths,
+  civilNoon,
+  endOfMonth,
+  endOfMonthFor,
+  endOfWeek,
+  formatChile,
+  getISOWeek,
+  monthsAgoEnd,
+  monthsAgoStart,
+  startOfMonth,
+  startOfWeek,
+  today,
+} from "@/lib/dates";
 import { PAGE_CONTAINER } from "@/lib/styles";
 import { cn } from "@/lib/utils";
-
-import "dayjs/locale/es";
 
 const TimesheetAuditCalendar = lazy(() =>
   import("@/features/hr/timesheets-audit/components/TimesheetAuditCalendar").then((m) => ({
     default: m.TimesheetAuditCalendar,
   }))
 );
-
-dayjs.extend(isoWeek);
-dayjs.locale("es");
 
 type QuickRange =
   | "custom"
@@ -113,7 +120,7 @@ export function TimesheetAuditPage() {
   // Set default month when months load (only once)
   useEffect(() => {
     if (months.length > 0 && !selectedMonth && !monthInitialized.current) {
-      const prevMonth = dayjs().subtract(1, "month").format("YYYY-MM");
+      const prevMonth = addMonths(today(), -1).slice(0, 7);
       setSelectedMonth(months.includes(prevMonth) ? prevMonth : (months[0] ?? ""));
       monthInitialized.current = true;
     }
@@ -190,9 +197,7 @@ export function TimesheetAuditPage() {
     if (effectiveRanges.length === 0) {
       return "";
     }
-    const first = dayjs(effectiveRanges[0]?.start);
-    const last = dayjs(effectiveRanges.at(-1)?.end);
-    return `${first.format("D MMM")} → ${last.format("D MMM YYYY")}`;
+    return `${formatChile(effectiveRanges[0]?.start, "D MMM")} → ${formatChile(effectiveRanges.at(-1)?.end, "D MMM YYYY")}`;
   })();
 
   const isMaxEmployees = selectedEmployeeIds.length >= MAX_EMPLOYEES;
@@ -351,7 +356,7 @@ function PeriodSelectionPanel({
                     <ListBox>
                       {months.map((month) => (
                         <ListBox.Item id={month} key={month}>
-                          {dayjs(`${month}-01`).format("MMMM YYYY")}
+                          {formatChile(`${month}-01`, "MMMM YYYY")}
                         </ListBox.Item>
                       ))}
                     </ListBox>
@@ -700,59 +705,59 @@ function LegendPanel({
   );
 }
 function buildWeeksForMonth(month: string): WeekDefinition[] {
-  const baseDate = dayjs(`${month}-01`);
-  const monthStart = baseDate.startOf("month");
-  const monthEnd = baseDate.endOf("month");
+  const monthStart = `${month}-01`;
+  const monthEnd = endOfMonthFor(monthStart);
 
   const weeks: WeekDefinition[] = [];
   const seen = new Set<number>();
-  let cursor = monthStart.startOf("isoWeek");
+  let cursor = startOfWeek(monthStart); // ISO Monday "YYYY-MM-DD"
 
-  while (cursor.isBefore(monthEnd) || cursor.isSame(monthEnd, "day")) {
-    const weekNumber = cursor.isoWeek();
+  while (cursor <= monthEnd) {
+    const weekNumber = getISOWeek(cursor);
     if (!seen.has(weekNumber)) {
-      const weekStart = cursor.startOf("isoWeek");
-      const weekEnd = cursor.endOf("isoWeek");
-      const clampedStart = weekStart.isBefore(monthStart) ? monthStart : weekStart;
-      const clampedEnd = weekEnd.isAfter(monthEnd) ? monthEnd : weekEnd;
+      const weekStart = cursor; // already ISO Monday
+      const weekEnd = endOfWeek(cursor); // ISO Sunday
+      const clampedStart = weekStart < monthStart ? monthStart : weekStart;
+      const clampedEnd = weekEnd > monthEnd ? monthEnd : weekEnd;
       weeks.push({
-        end: clampedEnd.toDate(),
+        end: civilNoon(clampedEnd),
         key: `${month}:${weekNumber}`,
-        label: `S${weekNumber} (${clampedStart.format("D")} - ${clampedEnd.format("D MMM")})`,
+        label: `S${weekNumber} (${formatChile(clampedStart, "D")} - ${formatChile(clampedEnd, "D MMM")})`,
         month,
         number: weekNumber,
-        start: clampedStart.toDate(),
+        start: civilNoon(clampedStart),
       });
       seen.add(weekNumber);
     }
-    cursor = cursor.add(1, "week");
+    cursor = addDays(cursor, 7);
   }
 
   return weeks;
 }
 
 function getQuickRangeValues(range: QuickRange): null | { end: Date; start: Date } {
-  const today = dayjs();
+  const t = today();
+  const lastWeek = addDays(t, -7);
   const ranges: Partial<Record<QuickRange, { end: Date; start: Date }>> = {
     "last-month": {
-      end: dayjs(monthsAgoEnd(1)).toDate(),
-      start: dayjs(monthsAgoStart(1)).toDate(),
+      end: civilNoon(monthsAgoEnd(1)),
+      start: civilNoon(monthsAgoStart(1)),
     },
     "last-week": {
-      end: today.subtract(1, "week").endOf("isoWeek").toDate(),
-      start: today.subtract(1, "week").startOf("isoWeek").toDate(),
+      end: civilNoon(endOfWeek(lastWeek)),
+      start: civilNoon(startOfWeek(lastWeek)),
     },
     "this-month": {
-      end: dayjs(endOfMonth()).toDate(),
-      start: dayjs(startOfMonth()).toDate(),
+      end: civilNoon(endOfMonth()),
+      start: civilNoon(startOfMonth()),
     },
     "this-week": {
-      end: today.endOf("isoWeek").toDate(),
-      start: today.startOf("isoWeek").toDate(),
+      end: civilNoon(endOfWeek(t)),
+      start: civilNoon(startOfWeek(t)),
     },
     "two-months-ago": {
-      end: dayjs(monthsAgoEnd(2)).toDate(),
-      start: dayjs(monthsAgoStart(2)).toDate(),
+      end: civilNoon(monthsAgoEnd(2)),
+      start: civilNoon(monthsAgoStart(2)),
     },
   };
 
