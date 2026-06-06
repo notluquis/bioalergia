@@ -13,8 +13,6 @@ import {
   Spinner,
 } from "@heroui/react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import dayjs from "dayjs";
-import localeEs from "dayjs/locale/es";
 import { Check, Download, RefreshCw, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { z } from "zod";
@@ -28,8 +26,12 @@ import {
   syncHaulmerIncremental,
   syncHaulmerPeriods,
 } from "@/features/settings/haulmer-api";
+import { formatChile } from "@/lib/dates";
 
-dayjs.locale(localeEs);
+// A Haulmer period is a "YYYYMM" string → "YYYY-MM-01" ISO anchor.
+function periodToISO(period: string): string {
+  return `${period.slice(0, 4)}-${period.slice(4, 6)}-01`;
+}
 
 const SyncResultSchema = z.object({
   period: z.string(),
@@ -90,7 +92,7 @@ function periodToMonthPeriod(
 }
 
 function formatPeriodLabel(period: string): string {
-  return dayjs(period, "YYYYMM").format("MMMM YYYY");
+  return formatChile(periodToISO(period), "MMMM YYYY");
 }
 
 interface AvailablePeriodsData {
@@ -448,7 +450,7 @@ export function HaulmerSyncPage() {
 
       for (const period of postSyncAutoLink.periods) {
         const result = await autoLinkEventDteByPeriod({
-          period: dayjs(period, "YYYYMM").format("YYYY-MM"),
+          period: `${period.slice(0, 4)}-${period.slice(4, 6)}`,
         });
         linked += result.linked;
         skipped += result.skipped;
@@ -906,7 +908,7 @@ export function HaulmerSyncPage() {
                 <div className="space-y-2 rounded-lg border border-default-200 p-3">
                   <Checkbox
                     id="sync-sales-checkbox"
-                    className="w-full rounded-md px-2 py-2 hover:bg-default-50"
+                    className="w-full rounded-md hover:bg-default-50 p-2"
                     isSelected={syncSalesSelected}
                     onChange={setSyncSalesSelected}
                     variant="secondary"
@@ -922,7 +924,7 @@ export function HaulmerSyncPage() {
                   </Checkbox>
                   <Checkbox
                     id="sync-purchases-checkbox"
-                    className="w-full rounded-md px-2 py-2 hover:bg-default-50"
+                    className="w-full rounded-md hover:bg-default-50 p-2"
                     isSelected={syncPurchasesSelected}
                     onChange={setSyncPurchasesSelected}
                     variant="secondary"

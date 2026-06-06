@@ -1,6 +1,5 @@
 import { Alert, Button } from "@heroui/react";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import dayjs from "dayjs";
 import { lazy, Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useConfirmDialog } from "@/context/ConfirmDialogContext";
 import { useToast } from "@/context/ToastContext";
@@ -27,6 +26,7 @@ import {
   isValidTimeString,
   parseDuration,
 } from "@/features/hr/timesheets/utils";
+import { chileDay, today } from "@/lib/dates";
 import { timesheetKeys, timesheetQueries } from "@/features/hr/timesheets/queries";
 import type { Employee } from "../../employees/types";
 
@@ -438,7 +438,7 @@ function serializeBulkRows(rows: BulkRow[]) {
   return JSON.stringify(
     rows.map((row) => ({
       comment: row.comment,
-      date: dayjs(row.date).format("YYYY-MM-DD"),
+      date: chileDay(row.date),
       entrada: row.entrada,
       entryId: row.entryId,
       overtime: row.overtime,
@@ -807,7 +807,7 @@ function buildImmediateSaveEntry(row: BulkRow): null | TimesheetUpsertEntry {
     end_time: row.salida || null,
     overtime_minutes: overtime,
     start_time: row.entrada || null,
-    work_date: dayjs(row.date).format("YYYY-MM-DD"),
+    work_date: chileDay(row.date),
   };
 }
 
@@ -928,7 +928,7 @@ function processBulkRow(
       end_time: salida || null,
       overtime_minutes: overtime,
       start_time: entrada || null,
-      work_date: dayjs(row.date).format("YYYY-MM-DD"),
+      work_date: chileDay(row.date),
     },
   };
 }
@@ -1003,16 +1003,25 @@ function createHandleBulkSave({
   };
 }
 
-// Utility to ensure month is always YYYY-MM
+// Utility to ensure month is always YYYY-MM. Accepts the same input shapes the
+// old dayjs multi-format parser did: YYYY-MM, YYYY/MM, MM/YYYY, YYYY-MM-DD, DD/MM/YYYY.
 function formatMonthString(m: string): string {
   if (MONTH_STRING_REGEX.test(m)) {
     return m;
   }
-  const d = dayjs(m, ["YYYY-MM", "YYYY/MM", "MM/YYYY", "YYYY-MM-DD", "DD/MM/YYYY"]);
-  if (d.isValid()) {
-    return d.format("YYYY-MM");
+  const ymSep = m.match(/^(\d{4})[/-](\d{2})(?:[/-]\d{2})?$/); // YYYY-MM, YYYY/MM, YYYY-MM-DD
+  if (ymSep) {
+    return `${ymSep[1]}-${ymSep[2]}`;
   }
-  return dayjs().format("YYYY-MM");
+  const mY = m.match(/^(\d{2})\/(\d{4})$/); // MM/YYYY
+  if (mY) {
+    return `${mY[2]}-${mY[1]}`;
+  }
+  const dmY = m.match(/^\d{2}\/(\d{2})\/(\d{4})$/); // DD/MM/YYYY
+  if (dmY) {
+    return `${dmY[2]}-${dmY[1]}`;
+  }
+  return today().slice(0, 7);
 }
 
 function validateBulkRow(row: BulkRow): string | null {

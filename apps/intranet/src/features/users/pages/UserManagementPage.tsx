@@ -11,8 +11,6 @@ import {
   TextField,
 } from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import dayjs from "dayjs";
-import relativeTime from "dayjs/plugin/relativeTime";
 import { Copy, Key, Shield, UserCog, UserPlus } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
@@ -35,11 +33,6 @@ import { getColumns } from "@/features/users/components/columns";
 import type { User } from "@/features/users/types";
 import { getPersonFullName } from "@/lib/person";
 import { PAGE_CONTAINER } from "@/lib/styles";
-
-import "dayjs/locale/es";
-
-dayjs.extend(relativeTime);
-dayjs.locale("es");
 
 type RoleOption = { id: number; name: string };
 type UserDetailsFormState = {
