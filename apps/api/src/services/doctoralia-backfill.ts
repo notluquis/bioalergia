@@ -1,15 +1,9 @@
-import dayjs from "dayjs";
-import isoWeek from "dayjs/plugin/isoWeek.js";
-import timezone from "dayjs/plugin/timezone.js";
-import utc from "dayjs/plugin/utc.js";
-
-import { TIMEZONE } from "../lib/time.ts";
+import { toChileDateString } from "../lib/time.ts";
 import { logEvent, logWarn } from "../lib/logger.ts";
 import { doctoraliaCalendarSyncService } from "./doctoralia-calendar.ts";
 
-dayjs.extend(utc);
-dayjs.extend(timezone);
-dayjs.extend(isoWeek);
+// Monday of the ISO week containing `d` (dayOfWeek: 1=Mon … 7=Sun).
+const isoMonday = (d: Temporal.PlainDate) => d.subtract({ days: d.dayOfWeek - 1 });
 
 export const DOCTORALIA_BACKFILL_MIN_DATE = "2017-08-21";
 
@@ -114,8 +108,8 @@ function sleep(ms: number): Promise<void> {
 }
 
 export type PlannedBackfill = {
-  startMonday: dayjs.Dayjs;
-  stopMonday: dayjs.Dayjs;
+  startMonday: Temporal.PlainDate;
+  stopMonday: Temporal.PlainDate;
   effectiveEndDate: string;
   weeksTotal: number;
 };
@@ -125,45 +119,52 @@ export function planDoctoraliaBackfill(
   startDate?: string,
   now: Date = new Date()
 ): PlannedBackfill {
-  const endDateNormalized = dayjs.tz(endDate, TIMEZONE).startOf("day");
-  if (!endDateNormalized.isValid()) {
+  let endDateNormalized: Temporal.PlainDate;
+  try {
+    endDateNormalized = Temporal.PlainDate.from(endDate);
+  } catch {
     throw new Error("Fecha objetivo inválida");
   }
 
-  const minDate = dayjs.tz(DOCTORALIA_BACKFILL_MIN_DATE, TIMEZONE).startOf("day");
-  const effectiveEnd = endDateNormalized.isBefore(minDate) ? minDate : endDateNormalized;
+  const minDate = Temporal.PlainDate.from(DOCTORALIA_BACKFILL_MIN_DATE);
+  const effectiveEnd =
+    Temporal.PlainDate.compare(endDateNormalized, minDate) < 0 ? minDate : endDateNormalized;
 
-  const todayLocal = dayjs(now).tz(TIMEZONE).startOf("day");
-  const currentMonday = todayLocal.startOf("isoWeek");
+  const currentMonday = isoMonday(Temporal.PlainDate.from(toChileDateString(now)));
 
   // Start from a specific date or default to last week
-  let startMonday: dayjs.Dayjs;
+  let startMonday: Temporal.PlainDate;
   if (startDate) {
-    const startNormalized = dayjs.tz(startDate, TIMEZONE).startOf("day");
-    if (!startNormalized.isValid()) {
+    let startNormalized: Temporal.PlainDate;
+    try {
+      startNormalized = Temporal.PlainDate.from(startDate);
+    } catch {
       throw new Error("Fecha de inicio inválida");
     }
-    startMonday = startNormalized.startOf("isoWeek");
+    startMonday = isoMonday(startNormalized);
     // Don't allow start in the future
-    const maxStart = currentMonday.subtract(1, "week");
-    if (startMonday.isAfter(maxStart)) {
+    const maxStart = currentMonday.subtract({ weeks: 1 });
+    if (Temporal.PlainDate.compare(startMonday, maxStart) > 0) {
       startMonday = maxStart;
     }
   } else {
-    startMonday = currentMonday.subtract(1, "week");
+    startMonday = currentMonday.subtract({ weeks: 1 });
   }
 
-  if (!effectiveEnd.isBefore(startMonday.add(1, "week"), "day")) {
+  if (Temporal.PlainDate.compare(effectiveEnd, startMonday.add({ weeks: 1 })) >= 0) {
     throw new Error("La fecha final debe ser anterior a la fecha de inicio.");
   }
 
-  const targetMonday = effectiveEnd.startOf("isoWeek");
-  const weeksTotal = Math.max(1, startMonday.diff(targetMonday, "week") + 1);
+  const targetMonday = isoMonday(effectiveEnd);
+  const weeksTotal = Math.max(
+    1,
+    targetMonday.until(startMonday, { largestUnit: "week" }).weeks + 1
+  );
 
   return {
     startMonday,
     stopMonday: targetMonday,
-    effectiveEndDate: effectiveEnd.format("YYYY-MM-DD"),
+    effectiveEndDate: effectiveEnd.toString(),
     weeksTotal,
   };
 }
@@ -212,17 +213,17 @@ function addCounts(target: BackfillBucketCounts, delta: BackfillBucketCounts) {
 }
 
 async function runBackfillLoop(params: {
-  startMonday: dayjs.Dayjs;
-  stopMonday: dayjs.Dayjs;
+  startMonday: Temporal.PlainDate;
+  stopMonday: Temporal.PlainDate;
   triggerUserId: number;
 }) {
   try {
     let cursor = params.startMonday;
-    while (!cursor.isBefore(params.stopMonday, "day")) {
+    while (Temporal.PlainDate.compare(cursor, params.stopMonday) >= 0) {
       if (state.cancelRequested) break;
 
-      const from = cursor.format("YYYY-MM-DD");
-      const to = cursor.add(6, "day").format("YYYY-MM-DD");
+      const from = cursor.toString();
+      const to = cursor.add({ days: 6 }).toString();
       state.currentWindow = { from, to };
 
       try {
@@ -257,7 +258,7 @@ async function runBackfillLoop(params: {
         await sleep(weekDelayMs);
       }
 
-      cursor = cursor.subtract(1, "week");
+      cursor = cursor.subtract({ weeks: 1 });
     }
   } finally {
     const wasCancelled = state.cancelRequested;
