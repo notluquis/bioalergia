@@ -1,6 +1,6 @@
+import { formatChile } from "@/lib/dates";
 import { Button, Checkbox, Chip, ListBox, Select } from "@heroui/react";
 import type { ColumnDef } from "@tanstack/react-table";
-import dayjs from "dayjs";
 import { ArrowRightLeft, ArrowUpDown, Pencil } from "lucide-react";
 import type { ReactNode } from "react";
 import { isNonAccountableCategory } from "../utils/non-accountable-category";
@@ -194,7 +194,7 @@ export const columns: ColumnDef<CashFlowTransaction>[] = [
         </Button>
       );
     },
-    cell: ({ row }) => dayjs(row.getValue("date")).tz().format("DD-MM-YY HH:mm"),
+    cell: ({ row }) => formatChile(row.getValue("date"), "DD-MM-YY HH:mm"),
   },
   {
     accessorKey: "sourceId",

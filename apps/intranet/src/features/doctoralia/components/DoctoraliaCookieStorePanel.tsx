@@ -1,3 +1,4 @@
+import { formatChile, fromNow } from "@/lib/dates";
 import {
   Alert,
   Button,
@@ -11,7 +12,6 @@ import {
   TextField,
 } from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import dayjs from "dayjs";
 import { Cookie, Save } from "lucide-react";
 import { useMemo, useState } from "react";
 
@@ -22,12 +22,12 @@ const COOKIES_QUERY_KEY = ["doctoralia", "scraper", "cookies", "status"];
 
 function formatRelative(date: Date | null): string {
   if (!date) return "—";
-  return dayjs(date).fromNow();
+  return fromNow(date);
 }
 
 function formatDate(date: Date | null): string {
   if (!date) return "—";
-  return dayjs(date).tz().format("D MMM YYYY, HH:mm");
+  return formatChile(date, "D MMM YYYY, HH:mm");
 }
 
 export function DoctoraliaCookieStorePanel() {

@@ -1,6 +1,6 @@
+import { endOfMonth, startOfMonth } from "@/lib/dates";
 import { Button, Chip, DateField, DateRangePicker, Label, RangeCalendar } from "@heroui/react";
 import { parseDate } from "@internationalized/date";
-import dayjs from "dayjs";
 import { useMemo, useState } from "react";
 
 import { ExpensePlaceholder } from "../components/ExpensePlaceholder";
@@ -11,8 +11,8 @@ import type { DateRange } from "../types";
 
 export function FinancialDashboardPage() {
   const [dateRange, setDateRange] = useState<DateRange>({
-    from: dayjs().startOf("month").format("YYYY-MM-DD"),
-    to: dayjs().endOf("month").format("YYYY-MM-DD"),
+    from: startOfMonth(),
+    to: endOfMonth(),
   });
 
   const { summary, isLoading } = useFinancialSummary(dateRange);

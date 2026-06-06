@@ -1,15 +1,15 @@
 import { parseTime, type Time } from "@internationalized/date";
-import dayjs from "dayjs";
 
+import { formatChile } from "@/lib/dates";
 import type { BulkRow, TimesheetEntry, TimesheetSummaryRow } from "./types";
 
 export function buildBulkRows(month: string, entries: TimesheetEntry[]): BulkRow[] {
-  const base = dayjs(`${month}-01`);
-  const days = base.daysInMonth();
+  const parts = month.split("-");
+  const days = new Date(Number(parts[0]), Number(parts[1]), 0).getDate(); // last day of month
   const entryMap = new Map(entries.map((entry) => [entry.work_date, entry]));
   const rows: BulkRow[] = [];
   for (let day = 1; day <= days; day += 1) {
-    const dateKey = base.date(day).format("YYYY-MM-DD");
+    const dateKey = `${month}-${String(day).padStart(2, "0")}`;
     const dateValue = new Date(`${dateKey}T00:00:00`);
     const entry = entryMap.get(dateKey);
     const extraMinutes = entry?.overtime_minutes || 0;
@@ -84,8 +84,8 @@ export function formatDateLabel(value: Date | string | null): string {
   if (!value) {
     return "—";
   }
-  const date = dayjs(value);
-  return date.isValid() ? date.format("DD-MM-YYYY") : String(value);
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? String(value) : formatChile(value, "DD-MM-YYYY");
 }
 
 export function formatExtraHours(row: TimesheetSummaryRow): string {

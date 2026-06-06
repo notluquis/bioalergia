@@ -1,5 +1,3 @@
-import dayjs from "dayjs";
-
 import type { CalendarEventDetail } from "@/features/calendar/types";
 
 export type CalendarEventStateTone = "danger" | "default" | "success" | "warning";
@@ -21,8 +19,8 @@ function isRescheduleEvent(event: CalendarEventDetail): boolean {
 }
 
 function getAttendanceState(event: CalendarEventDetail): CalendarEventState {
-  const start = event.startDateTime ? dayjs(event.startDateTime) : null;
-  const isPastOrNow = start ? !start.isAfter(dayjs()) : false;
+  const startMs = event.startDateTime ? new Date(event.startDateTime).getTime() : null;
+  const isPastOrNow = startMs !== null ? startMs <= Date.now() : false;
 
   if (event.attended === true) {
     if (event.isDomicilio === true) {
