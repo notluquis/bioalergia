@@ -1,6 +1,6 @@
 // oxlint-disable typescript/no-non-null-assertion -- TODO(strict-null)
+import { formatChile } from "@/lib/dates";
 import { Card, Chip, EmptyState, Kbd, ScrollShadow, SearchField } from "@heroui/react";
-import dayjs from "dayjs";
 import { MessageSquareText, Phone, Search } from "lucide-react";
 import { useEffect, useState } from "react";
 import { WaListSkeleton } from "./Skeletons";
@@ -129,7 +129,7 @@ export function WaCloudSearchPanel({
                     <div className="flex flex-wrap items-baseline justify-between gap-2">
                       <span className="font-medium text-sm">{m.contactName ?? m.phoneE164}</span>
                       <span className="text-default-400 text-xs">
-                        {dayjs(m.timestamp).format("DD-MM-YY HH:mm")}
+                        {formatChile(m.timestamp, "DD-MM-YY HH:mm")}
                       </span>
                     </div>
                     <p className="line-clamp-2 text-default-600 text-sm">

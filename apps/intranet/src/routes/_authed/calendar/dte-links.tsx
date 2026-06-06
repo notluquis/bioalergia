@@ -1,5 +1,5 @@
+import { formatChile } from "@/lib/dates";
 import { createFileRoute, getRouteApi } from "@tanstack/react-router";
-import dayjs from "dayjs";
 import { z } from "zod";
 
 const routeApi = getRouteApi("/_authed/calendar/dte-links");
@@ -18,7 +18,7 @@ const dteLinksSearchSchema = z
   .transform((search) => ({
     page: search.page ?? 0,
     pageSize: search.pageSize ?? 25,
-    period: search.period ?? dayjs().format("YYYY-MM"),
+    period: search.period ?? formatChile(new Date(), "YYYY-MM"),
     query: search.query,
     status: search.status ?? "all",
   }));

@@ -1,3 +1,4 @@
+import { formatChile } from "@/lib/dates";
 import {
   Button,
   Chip,
@@ -10,7 +11,6 @@ import {
   TextField,
 } from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import dayjs from "dayjs";
 import { PencilIcon, PlugIcon, PlusIcon, Trash2Icon } from "lucide-react";
 import { useState } from "react";
 import { confirmAction } from "@/components/ui/ConfirmDialog";
@@ -203,9 +203,9 @@ export function ProviderCredentialsTab() {
                   <td className="px-4 py-2 text-default-500 text-xs">{c.authMethod}</td>
                   <td className="px-4 py-2 text-default-500 text-xs">
                     {c.lastLoginAt
-                      ? dayjs(c.lastLoginAt).format("DD MMM YY HH:mm")
+                      ? formatChile(c.lastLoginAt, "DD MMM YY HH:mm")
                       : c.lastErrorAt
-                        ? `Error ${dayjs(c.lastErrorAt).format("DD MMM YY")}`
+                        ? `Error ${formatChile(c.lastErrorAt, "DD MMM YY")}`
                         : "Nunca"}
                   </td>
                   <td className="px-4 py-2">

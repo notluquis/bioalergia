@@ -1,5 +1,5 @@
+import { formatChile } from "@/lib/dates";
 import { Button, Popover } from "@heroui/react";
-import dayjs from "dayjs";
 import { CornerUpLeft, Pencil, Smile } from "lucide-react";
 import { MediaAttachment } from "./MediaAttachment";
 import {
@@ -78,7 +78,7 @@ export function ChatBubble({
             <Smile size={14} />
           </Button>
         </Popover.Trigger>
-        <Popover.Content className="rounded-full border border-default-200 bg-content1 px-1 py-1 shadow-md">
+        <Popover.Content className="rounded-full border border-default-200 bg-content1 shadow-md p-1">
           <Popover.Dialog className="flex gap-0.5 p-0">
             {QUICK_REACTIONS.map((e) => (
               <Button
@@ -189,7 +189,7 @@ export function ChatBubble({
                   : "mt-1 text-default-500"
             }`}
           >
-            <span>{dayjs(row.timestamp).format("HH:mm")}</span>
+            <span>{formatChile(row.timestamp, "HH:mm")}</span>
             {out && <StatusTicks status={row.status} />}
           </div>
           {failed && row.errorTitle && (

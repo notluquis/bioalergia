@@ -1,5 +1,5 @@
+import { formatChile } from "@/lib/dates";
 import { createFileRoute, getRouteApi } from "@tanstack/react-router";
-import dayjs from "dayjs";
 import { z } from "zod";
 
 import { DTEAnalyticsPage } from "@/pages/finanzas/DTEAnalyticsPage";
@@ -29,7 +29,7 @@ const dteAnalyticsSearchSchema = z
   .transform((search) => ({
     page: search.page ?? 0,
     pageSize: search.pageSize ?? 25,
-    period: search.period ?? dayjs().format("YYYY-MM"),
+    period: search.period ?? formatChile(new Date(), "YYYY-MM"),
     query: search.query,
     status: search.status ?? "all",
     tab: search.tab ?? "purchases-monthly",

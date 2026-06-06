@@ -1,8 +1,8 @@
+import { formatChile } from "@/lib/dates";
 import { Alert, Button, Description, Surface } from "@heroui/react";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { useNavigate, useParams } from "@tanstack/react-router";
 import { useStore } from "@tanstack/react-store";
-import dayjs from "dayjs";
 import { useMemo, useState } from "react";
 import {
   fetchServiceDetail,
@@ -107,7 +107,7 @@ export function ServiceEditPage() {
       {
         helper: "Registro en base de datos",
         label: "Última actualización",
-        value: dayjs(service.updatedAt).tz().format("DD MMM YYYY HH:mm"),
+        value: formatChile(service.updatedAt, "DD MMM YYYY HH:mm"),
       },
     ];
   }, [detail]);
@@ -116,12 +116,12 @@ export function ServiceEditPage() {
     const { service } = detail;
     const items: { date: string; description?: string; title: string }[] = [
       {
-        date: dayjs(service.createdAt).tz().format("DD MMM YYYY HH:mm"),
+        date: formatChile(service.createdAt, "DD MMM YYYY HH:mm"),
         description: "Servicio registrado en la plataforma",
         title: "Creación",
       },
       {
-        date: dayjs(service.updatedAt).tz().format("DD MMM YYYY HH:mm"),
+        date: formatChile(service.updatedAt, "DD MMM YYYY HH:mm"),
         description: "Datos del servicio actualizados",
         title: "Última modificación",
       },
@@ -129,7 +129,7 @@ export function ServiceEditPage() {
 
     if (service.overdueCount > 0) {
       items.push({
-        date: dayjs().format("DD MMM YYYY"),
+        date: formatChile(new Date(), "DD MMM YYYY"),
         description: `${service.overdueCount} cuotas requieren revisión`,
         title: "Cuotas vencidas",
       });

@@ -1,3 +1,4 @@
+import { formatChile } from "@/lib/dates";
 import {
   Button,
   Chip,
@@ -14,7 +15,6 @@ import {
 import { parseDate } from "@internationalized/date";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { useDebouncedValue } from "@tanstack/react-pacer";
-import dayjs from "dayjs";
 import { useMemo, useState } from "react";
 
 import type { ListMovementsResponse } from "../api";
@@ -144,7 +144,7 @@ export function InventoryMovimientosPanel() {
                 return (
                   <Table.Row id={String(movement.id)}>
                     <Table.Cell className="tabular-nums">
-                      {dayjs(movement.created_at).format("DD/MM/YYYY HH:mm")}
+                      {formatChile(movement.created_at, "DD/MM/YYYY HH:mm")}
                     </Table.Cell>
                     <Table.Cell>{movement.item.name}</Table.Cell>
                     <Table.Cell>

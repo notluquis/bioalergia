@@ -1,5 +1,5 @@
+import { formatChile } from "@/lib/dates";
 import { Card, Chip, Table } from "@heroui/react";
-import dayjs from "dayjs";
 import { useQuery } from "@tanstack/react-query";
 import { WaTableSkeleton } from "../components/Skeletons";
 import { waCloudORPCClient } from "../orpc";
@@ -49,7 +49,7 @@ export function WaCloudWebhookLogsPage() {
                 <Table.Body items={data.logs}>
                   {(l) => (
                     <Table.Row id={String(l.id)}>
-                      <Table.Cell>{dayjs(l.receivedAt).format("HH:mm:ss")}</Table.Cell>
+                      <Table.Cell>{formatChile(l.receivedAt, "HH:mm:ss")}</Table.Cell>
                       <Table.Cell>
                         <Chip
                           size="sm"

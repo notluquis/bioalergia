@@ -1,4 +1,5 @@
 // oxlint-disable typescript/no-non-null-assertion -- TODO(strict-null): refactor each `!` to invariant() or explicit guard. Tracked in repo-wide non-null cleanup.
+import { formatChile } from "@/lib/dates";
 import {
   Button,
   Calendar,
@@ -20,7 +21,6 @@ import {
   now,
   type ZonedDateTime,
 } from "@internationalized/date";
-import dayjs from "dayjs";
 import {
   Ban,
   CalendarClock,
@@ -802,7 +802,7 @@ export function ScheduleSendModal({
                 <li key={s.id} className="flex items-center justify-between gap-2 text-xs">
                   <div className="min-w-0 flex-1">
                     <p className="font-mono text-default-500">
-                      {dayjs(s.scheduledAt).format("DD-MM HH:mm")}
+                      {formatChile(s.scheduledAt, "DD-MM HH:mm")}
                     </p>
                     <p className="line-clamp-1 text-default-700">
                       {s.body ?? `[${s.type.toLowerCase()}]`}

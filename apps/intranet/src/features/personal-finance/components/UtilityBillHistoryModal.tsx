@@ -1,6 +1,6 @@
+import { formatChile } from "@/lib/dates";
 import { Button, Chip, Modal } from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import dayjs from "dayjs";
 import { DownloadIcon, TrendingDownIcon, TrendingUpIcon } from "lucide-react";
 
 import type { UtilityProvider } from "@finanzas/orpc-contracts/utility-bills";
@@ -166,7 +166,7 @@ export function UtilityBillHistoryModal({
                             <td className="px-3 py-2 font-medium">
                               {s.period ?? (
                                 <span className="text-default-400 text-xs">
-                                  {dayjs(s.fetchedAt).format("DD MMM YY")}
+                                  {formatChile(s.fetchedAt, "DD MMM YY")}
                                 </span>
                               )}
                             </td>

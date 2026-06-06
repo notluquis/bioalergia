@@ -2,8 +2,8 @@
  * Lazy-loaded Chart Components for Reports
  * These are separated to enable code-splitting of Recharts (~400KB)
  */
+import { formatChile } from "@/lib/dates";
 import { Chip } from "@heroui/react";
-import dayjs from "dayjs";
 import { BarChart2, PieChart as PieChartIcon } from "lucide-react";
 import {
   Bar,
@@ -172,7 +172,7 @@ export function TemporalChart({ chartData, granularity, reportData }: TemporalCh
   const formatSalaryTick = (value: number | string) => compactClpFormatter.format(Number(value));
   const formatPeriodLabel = (label: unknown) => {
     const value = typeof label === "string" || typeof label === "number" ? String(label) : "";
-    return granularity === "month" && value ? dayjs(value).format("MMM YYYY") : value;
+    return granularity === "month" && value ? formatChile(value, "MMM YYYY") : value;
   };
 
   return (

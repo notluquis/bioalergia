@@ -1,3 +1,4 @@
+import { formatChile } from "@/lib/dates";
 import {
   Alert,
   Button,
@@ -16,7 +17,6 @@ import {
 } from "@heroui/react";
 import { parseDate } from "@internationalized/date";
 import { useStore } from "@tanstack/react-store";
-import dayjs from "dayjs";
 import { useState } from "react";
 import { AppModal } from "@/components/ui/AppModal";
 import { EditScheduleModal } from "@/features/services/components/EditScheduleModal";
@@ -302,7 +302,7 @@ export function ServicesOverviewContent() {
         size="md"
         title={
           paymentSchedule
-            ? `Registrar pago ${dayjs(paymentSchedule.periodStart).format("MMM YYYY")}`
+            ? `Registrar pago ${formatChile(paymentSchedule.periodStart, "MMM YYYY")}`
             : "Registrar pago"
         }
         footer={
@@ -370,7 +370,7 @@ export function ServicesOverviewContent() {
               onChange={(value) => {
                 handlePaymentFieldChange("paidDate", value?.toString() ?? "");
               }}
-              value={parseDate(dayjs(paymentForm.paidDate).format("YYYY-MM-DD"))}
+              value={parseDate(formatChile(paymentForm.paidDate, "YYYY-MM-DD"))}
             >
               <Label>Fecha de pago</Label>
               <DateField.Group>

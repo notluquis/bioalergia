@@ -1,3 +1,4 @@
+import { formatChile } from "@/lib/dates";
 import {
   Button,
   Description,
@@ -8,7 +9,6 @@ import {
   Modal,
   TextField,
 } from "@heroui/react";
-import dayjs from "dayjs";
 import { useServiceMutations } from "../hooks/use-service-mutations";
 import type { ServiceSchedule } from "../types";
 
@@ -54,7 +54,7 @@ export function SkipScheduleModal({ isOpen, onClose, schedule }: SkipScheduleMod
                   vencidos.
                 </Description>
                 <Description className="mt-2 text-amber-700 text-xs dark:text-amber-400">
-                  <strong>Periodo:</strong> {dayjs(schedule.periodStart).format("MMM YYYY")} •{" "}
+                  <strong>Periodo:</strong> {formatChile(schedule.periodStart, "MMM YYYY")} •{" "}
                   <strong>Monto:</strong> ${schedule.expectedAmount.toLocaleString("es-CL")}
                 </Description>
               </div>

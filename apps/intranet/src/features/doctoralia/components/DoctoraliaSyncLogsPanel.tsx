@@ -1,3 +1,4 @@
+import { formatChile } from "@/lib/dates";
 import {
   Alert,
   Button,
@@ -11,7 +12,6 @@ import {
   Table,
 } from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import dayjs from "dayjs";
 import { History, RefreshCw } from "lucide-react";
 import { useMemo, useState } from "react";
 
@@ -26,7 +26,7 @@ const STATUSES = ["ALL", "OK", "ERROR", "RUNNING"] as const;
 
 function formatDate(value: Date | null) {
   if (!value) return "—";
-  return dayjs(value).format("DD/MM HH:mm:ss");
+  return formatChile(value, "DD/MM HH:mm:ss");
 }
 
 function formatDuration(start: Date, end: Date | null) {

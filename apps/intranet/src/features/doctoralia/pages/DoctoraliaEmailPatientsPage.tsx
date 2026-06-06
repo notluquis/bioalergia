@@ -1,6 +1,6 @@
+import { formatChile } from "@/lib/dates";
 import { Button, Drawer, Label, SearchField, Table } from "@heroui/react";
 import { useQuery } from "@tanstack/react-query";
-import dayjs from "dayjs";
 import { useCallback, useDeferredValue, useState } from "react";
 import { fetchDoctoraliaEmailPatientHistory, fetchDoctoraliaEmailPatients } from "../api";
 import type { DoctoraliaEmailNotification, DoctoraliaEmailPatient } from "../types";
@@ -72,7 +72,7 @@ function PatientHistoryDrawer({
                         </span>
                         {n.appointmentDate && (
                           <span className="text-default-500 text-xs">
-                            {dayjs(n.appointmentDate).tz().format("D MMM YYYY, HH:mm")}
+                            {formatChile(n.appointmentDate, "D MMM YYYY, HH:mm")}
                           </span>
                         )}
                       </div>
@@ -161,7 +161,7 @@ export function DoctoraliaEmailPatientsPage() {
                     </Table.Cell>
                     <Table.Cell className="hidden md:table-cell text-default-500">
                       {patient.lastAppointmentDate
-                        ? dayjs(patient.lastAppointmentDate).format("D MMM YYYY")
+                        ? formatChile(patient.lastAppointmentDate, "D MMM YYYY")
                         : "—"}
                     </Table.Cell>
                     <Table.Cell className="text-right">

@@ -1,5 +1,5 @@
+import { formatChile } from "@/lib/dates";
 import { Card, Chip } from "@heroui/react";
-import dayjs from "dayjs";
 import {
   AlertTriangle,
   ClipboardList,
@@ -32,7 +32,7 @@ export type RecordCardProps = {
 
 function fmtDate(value: string | null): string {
   if (!value) return "Sin fecha";
-  return dayjs(value).format("DD MMM YYYY");
+  return formatChile(value, "DD MMM YYYY");
 }
 
 function Section({

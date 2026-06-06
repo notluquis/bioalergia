@@ -1,3 +1,4 @@
+import { formatChile } from "@/lib/dates";
 import {
   Button,
   Calendar,
@@ -12,7 +13,6 @@ import {
   TextField,
 } from "@heroui/react";
 import { parseDate } from "@internationalized/date";
-import dayjs from "dayjs";
 import { z } from "zod";
 import { AppModal } from "@/components/ui/AppModal";
 import { useServiceMutations } from "../hooks/use-service-mutations";
@@ -105,7 +105,7 @@ export function EditScheduleModal({ isOpen, onClose, schedule }: EditScheduleMod
         validationBehavior="aria"
       >
         <DatePicker
-          defaultValue={parseDate(dayjs(schedule.dueDate).format("YYYY-MM-DD"))}
+          defaultValue={parseDate(formatChile(schedule.dueDate, "YYYY-MM-DD"))}
           isRequired
           name="dueDate"
         >

@@ -1,3 +1,4 @@
+import { formatChile } from "@/lib/dates";
 import {
   Button,
   Chip,
@@ -11,7 +12,6 @@ import {
 } from "@heroui/react";
 import { useDebouncedValue } from "@tanstack/react-pacer";
 import type { ColumnDef } from "@tanstack/react-table";
-import dayjs from "dayjs";
 import { Ban, ExternalLink, Eye, ListChecks, RefreshCw, Send, Sparkles, Star } from "lucide-react";
 import { type ReactNode, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -50,7 +50,7 @@ const STATUS_COLOR: Record<JobApplicationStatus, ChipColor> = {
 const POSTING_STATUS_OPTIONS = ["OPEN", "CLOSED", "ALL"] as const;
 
 function fmtDate(d: Date | null): string {
-  return d ? dayjs(d).format("DD/MM/YYYY") : "—";
+  return d ? formatChile(d, "DD/MM/YYYY") : "—";
 }
 
 export function JobRadarPage() {

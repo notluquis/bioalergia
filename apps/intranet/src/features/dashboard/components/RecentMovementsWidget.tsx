@@ -1,6 +1,6 @@
+import { formatChile } from "@/lib/dates";
 import { Button, Chip } from "@heroui/react";
 import { useNavigate } from "@tanstack/react-router";
-import dayjs from "dayjs";
 
 import type { Transaction } from "@/features/finance/types";
 
@@ -55,7 +55,7 @@ export function RecentMovementsWidget({ rows }: { rows: Transaction[] }) {
                     {row.description ?? row.sourceId ?? "(sin descripción)"}
                   </p>
                   <p className="text-default-500 text-xs uppercase tracking-wide">
-                    {dayjs(row.transactionDate).tz().format("DD MMM YYYY HH:mm")}
+                    {formatChile(row.transactionDate, "DD MMM YYYY HH:mm")}
                   </p>
                 </div>
                 <span

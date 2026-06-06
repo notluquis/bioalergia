@@ -4,13 +4,13 @@
  * Optimized for production with proper type safety and performance
  */
 
+import { formatChile } from "@/lib/dates";
 import type { CalendarApi, EventContentArg } from "@fullcalendar/core";
 import esLocale from "@fullcalendar/core/locales/es";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import FullCalendar from "@fullcalendar/react";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import { Skeleton, Tooltip } from "@heroui/react";
-import dayjs from "dayjs";
 import { useEffect, useRef, useState } from "react";
 
 import type { CalendarEventData, TimesheetEntryWithEmployee } from "../types";
@@ -223,8 +223,8 @@ export function TimesheetAuditCalendar({
     }
     return entries.filter((entry) =>
       visibleDateRanges.some((range) => {
-        const startKey = dayjs(range.start).format("YYYY-MM-DD");
-        const endKey = dayjs(range.end).format("YYYY-MM-DD");
+        const startKey = formatChile(range.start, "YYYY-MM-DD");
+        const endKey = formatChile(range.end, "YYYY-MM-DD");
         return entry.work_date >= startKey && entry.work_date <= endKey;
       })
     );

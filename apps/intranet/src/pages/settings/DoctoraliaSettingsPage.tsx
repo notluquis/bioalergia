@@ -1,3 +1,4 @@
+import { formatChile } from "@/lib/dates";
 import {
   Alert,
   Button,
@@ -9,7 +10,6 @@ import {
   Tabs,
 } from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import dayjs from "dayjs";
 import {
   Activity,
   AlertCircle,
@@ -444,5 +444,5 @@ export function DoctoraliaSettingsPage() {
 }
 
 function formatStatusDate(value: Date | null | undefined) {
-  return value ? dayjs(value).tz().format("DD/MM/YYYY HH:mm") : "Sin registro";
+  return value ? formatChile(value, "DD/MM/YYYY HH:mm") : "Sin registro";
 }

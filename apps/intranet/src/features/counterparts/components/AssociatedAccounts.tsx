@@ -1,7 +1,6 @@
 import { Alert, Button, Card, Input, Label, Modal, Surface, TextField } from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
-import dayjs from "dayjs";
 import { Lock } from "lucide-react";
 import type { ChangeEvent } from "react";
 import { useEffect, useState } from "react";
@@ -162,7 +161,7 @@ const useQuickViewTransactions = (quickViewGroup: AccountGroup | null, activeRan
       }
 
       return [...dedup.values()].toSorted(
-        (a, b) => dayjs(b.transactionDate).valueOf() - dayjs(a.transactionDate).valueOf()
+        (a, b) => new Date(b.transactionDate).getTime() - new Date(a.transactionDate).getTime()
       );
     },
     queryKey: [

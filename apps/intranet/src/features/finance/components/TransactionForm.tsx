@@ -1,3 +1,4 @@
+import { formatChile } from "@/lib/dates";
 import {
   Button,
   Chip,
@@ -14,7 +15,6 @@ import {
 } from "@heroui/react";
 import { parseDate } from "@internationalized/date";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import dayjs from "dayjs";
 import { useEffect, useState } from "react";
 import { z } from "zod";
 import { toast } from "@/lib/toast-interceptor";
@@ -49,7 +49,7 @@ export function TransactionForm({ categories, isOpen, onClose, initialData }: Pr
   const queryClient = useQueryClient();
 
   const [formData, setFormData] = useState<FormValues>({
-    date: dayjs().format("YYYY-MM-DD"),
+    date: formatChile(new Date(), "YYYY-MM-DD"),
     description: "",
     amount: 0,
     type: "EXPENSE",
@@ -63,7 +63,7 @@ export function TransactionForm({ categories, isOpen, onClose, initialData }: Pr
     if (isOpen) {
       if (initialData) {
         setFormData({
-          date: dayjs(initialData.date).format("YYYY-MM-DD"),
+          date: formatChile(initialData.date, "YYYY-MM-DD"),
           description: initialData.description,
           amount: Number(initialData.amount),
           type: initialData.type === "INCOME" ? "INCOME" : "EXPENSE",
@@ -72,7 +72,7 @@ export function TransactionForm({ categories, isOpen, onClose, initialData }: Pr
         });
       } else {
         setFormData({
-          date: dayjs().format("YYYY-MM-DD"),
+          date: formatChile(new Date(), "YYYY-MM-DD"),
           description: "",
           amount: 0,
           type: "EXPENSE",

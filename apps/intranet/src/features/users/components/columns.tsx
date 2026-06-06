@@ -1,6 +1,6 @@
+import { formatChile } from "@/lib/dates";
 import { Avatar, Button, Chip, Dropdown, Separator, Tooltip } from "@heroui/react";
 import type { ColumnDef } from "@tanstack/react-table";
-import dayjs from "dayjs";
 import {
   Fingerprint,
   Key,
@@ -161,7 +161,7 @@ export const getColumns = (actions: {
     accessorKey: "createdAt",
     cell: ({ row }) => (
       <span className="text-default-600 text-sm">
-        {dayjs(row.original.createdAt).format("DD MMM YYYY")}
+        {formatChile(row.original.createdAt, "DD MMM YYYY")}
       </span>
     ),
 

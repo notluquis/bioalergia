@@ -1,5 +1,5 @@
+import { formatChile } from "@/lib/dates";
 import { Button, Card, Chip, Table } from "@heroui/react";
-import dayjs from "dayjs";
 import { CalendarClock, X } from "lucide-react";
 import { useState } from "react";
 import { confirmAction } from "@/components/ui/ConfirmDialog";
@@ -79,7 +79,7 @@ export function WaCloudScheduledPage() {
                       <Table.Row id={String(s.id)}>
                         <Table.Cell>
                           <span className="font-mono text-default-700 text-xs">
-                            {dayjs(s.scheduledAt).format("DD-MM HH:mm")}
+                            {formatChile(s.scheduledAt, "DD-MM HH:mm")}
                           </span>
                         </Table.Cell>
                         <Table.Cell>

@@ -1,7 +1,7 @@
+import { formatChile } from "@/lib/dates";
 import { Button, Card, Checkbox, Chip, Spinner, Table } from "@heroui/react";
 import { Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import dayjs from "dayjs";
 import type {
   OutreachDependencia,
   OutreachProspectSource,
@@ -262,7 +262,7 @@ export function OutreachEstablishmentsPage() {
                         </Table.Cell>
                         <Table.Cell>
                           {it.ultimoContactoAt
-                            ? dayjs(it.ultimoContactoAt).format("DD-MM-YYYY")
+                            ? formatChile(it.ultimoContactoAt, "DD-MM-YYYY")
                             : "—"}
                         </Table.Cell>
                       </Table.Row>

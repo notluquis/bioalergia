@@ -1,3 +1,4 @@
+import { formatChile } from "@/lib/dates";
 import {
   Button,
   Calendar,
@@ -10,7 +11,6 @@ import {
 import { parseDate } from "@internationalized/date";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import dayjs from "dayjs";
 import { Check } from "lucide-react";
 import { useState } from "react";
 import { AppModal } from "@/components/ui/AppModal";
@@ -77,7 +77,7 @@ export function PayInstallmentModal({
   const form = useForm({
     defaultValues: {
       amount: Number(installment.amount),
-      paymentDate: dayjs().format("YYYY-MM-DD"),
+      paymentDate: formatChile(new Date(), "YYYY-MM-DD"),
     } as PayInstallmentInput,
     onSubmit: ({ value }) => {
       mutation.mutate(value);
@@ -125,8 +125,7 @@ export function PayInstallmentModal({
         }
       >
         <div className="mb-4 text-muted text-sm">
-          Registrar pago de la cuota vencida el{" "}
-          {dayjs(installment.dueDate, "YYYY-MM-DD").format("DD/MM/YYYY")}.
+          Registrar pago de la cuota vencida el {formatChile(installment.dueDate, "DD/MM/YYYY")}.
         </div>
 
         <form

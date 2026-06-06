@@ -1,5 +1,5 @@
+import { formatChile } from "@/lib/dates";
 import { Skeleton } from "@heroui/react";
-import dayjs from "dayjs";
 
 const RANGE_DAYS = 30;
 export function DashboardChart({
@@ -70,7 +70,7 @@ export function DashboardChart({
                 </div>
                 <div className="space-y-1 text-center">
                   <span className="block font-medium text-foreground text-xs">
-                    {dayjs(row.month).format("MMM YY")}
+                    {formatChile(row.month, "MMM YY")}
                   </span>
                   <span className="block text-xs text-default-500">
                     {new Intl.NumberFormat("es-CL", { notation: "compact" }).format(

@@ -1,9 +1,9 @@
+import { formatChile } from "@/lib/dates";
 import { Button, Chip, Drawer, Label, ListBox, Select, TextArea, TextField } from "@heroui/react";
 import DOMPurify from "dompurify";
 import { ExternalLink } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import dayjs from "dayjs";
 import type { JobApplicationStatus, JobPostingDTO } from "@finanzas/orpc-contracts/job-radar";
 import { useToast } from "@/context/ToastContext";
 import { useUpdateJobApplication } from "../hooks/useJobRadar";
@@ -94,10 +94,10 @@ export function JobDetailDrawer({
                 <div className="flex flex-wrap gap-3 text-xs text-default-400">
                   <span>
                     {t("jobRadar.col.published")}:{" "}
-                    {job.publishedAt ? dayjs(job.publishedAt).format("DD/MM/YYYY") : "—"}
+                    {job.publishedAt ? formatChile(job.publishedAt, "DD/MM/YYYY") : "—"}
                   </span>
                   <span>
-                    {t("jobRadar.col.detected")}: {dayjs(job.firstSeenAt).format("DD/MM/YYYY")}
+                    {t("jobRadar.col.detected")}: {formatChile(job.firstSeenAt, "DD/MM/YYYY")}
                   </span>
                   <span>
                     {t("jobRadar.col.source")}: {job.source}

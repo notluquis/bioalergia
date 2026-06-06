@@ -1,3 +1,4 @@
+import { formatChile } from "@/lib/dates";
 import {
   Button,
   Calendar,
@@ -14,7 +15,6 @@ import {
 } from "@heroui/react";
 import { parseDate } from "@internationalized/date";
 import { useNavigate } from "@tanstack/react-router";
-import dayjs from "dayjs";
 import { useState } from "react";
 import { z } from "zod";
 import { AppModal } from "@/components/ui/AppModal";
@@ -152,7 +152,7 @@ const getEmissionSummary = (service: ServiceSummary) => {
     return `Entre día ${service.emissionStartDay} y ${service.emissionEndDay}`;
   }
   if (service.emissionMode === "SPECIFIC_DATE" && service.emissionExactDate) {
-    return `Fecha ${dayjs(service.emissionExactDate).format("DD MMM YYYY")}`;
+    return `Fecha ${formatChile(service.emissionExactDate, "DD MMM YYYY")}`;
   }
   return "Sin especificar";
 };
@@ -297,7 +297,7 @@ function ServiceHeader({
           {getOwnershipLabel(service.ownership)}
         </Description>
         <div className="flex flex-wrap items-center gap-3 text-default-500 text-xs">
-          <span>Inicio {dayjs(service.startDate).format("DD MMM YYYY")}</span>
+          <span>Inicio {formatChile(service.startDate, "DD MMM YYYY")}</span>
           <span>Frecuencia {getFrequencyLabel(service.frequency).toLowerCase()}</span>
           {service.dueDay && <span>Vence día {service.dueDay}</span>}
           <span>{getRecurrenceLabel(service.recurrenceType)}</span>
@@ -485,7 +485,7 @@ function RegenerateServiceModal({
         </NumberField>
 
         <DatePicker
-          defaultValue={parseDate(dayjs(service.startDate).format("YYYY-MM-DD"))}
+          defaultValue={parseDate(formatChile(service.startDate, "YYYY-MM-DD"))}
           isRequired
           name="startDate"
         >

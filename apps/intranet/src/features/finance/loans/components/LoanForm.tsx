@@ -1,3 +1,4 @@
+import { formatChile } from "@/lib/dates";
 import {
   Alert,
   Button,
@@ -17,7 +18,6 @@ import {
 } from "@heroui/react";
 import { parseDate } from "@internationalized/date";
 import { useForm, useStore } from "@tanstack/react-form";
-import dayjs from "dayjs";
 import type React from "react";
 import { z } from "zod";
 import { zDateString } from "@/lib/api-validate";
@@ -99,7 +99,7 @@ export function LoanForm({ onCancel, onSubmit }: LoanFormProps) {
       interestType: "SIMPLE" as const,
       notes: "",
       principalAmount: 0,
-      startDate: dayjs().format("YYYY-MM-DD"),
+      startDate: formatChile(new Date(), "YYYY-MM-DD"),
       title: "",
       totalInstallments: 10,
     } as LoanFormData,

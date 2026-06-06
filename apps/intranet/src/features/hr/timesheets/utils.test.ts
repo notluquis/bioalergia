@@ -1,4 +1,4 @@
-import dayjs from "dayjs";
+import { formatChile } from "@/lib/dates";
 import { describe, expect, it } from "vitest";
 
 import type { TimesheetEntry } from "./types";
@@ -20,7 +20,7 @@ describe("timesheets utils", () => {
     ];
 
     const rows = buildBulkRows("2026-01", entries);
-    const row = rows.find((item) => dayjs(item.date).format("YYYY-MM-DD") === "2026-01-12");
+    const row = rows.find((item) => formatChile(item.date, "YYYY-MM-DD") === "2026-01-12");
 
     expect(row).toBeDefined();
     expect(row?.entrada).toBe("09:40");

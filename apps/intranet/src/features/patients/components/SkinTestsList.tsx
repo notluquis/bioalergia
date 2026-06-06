@@ -1,6 +1,6 @@
+import { formatChile } from "@/lib/dates";
 import { Button, Card, Chip, Separator, Skeleton } from "@heroui/react";
 import { useQuery } from "@tanstack/react-query";
-import dayjs from "dayjs";
 import { ExternalLink, FlaskConical } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useSkinTestsBySeries } from "@/features/clinical-series/skin-tests-queries";
@@ -72,7 +72,7 @@ export function SkinTestsList({ patientId }: { patientId: number }) {
               <div className="min-w-0 flex-1">
                 <p className="truncate font-medium">{test.panelTitle ?? "Test cutáneo"}</p>
                 <p className="text-default-500 text-xs">
-                  {dayjs(test.testDate).format("DD/MM/YYYY")} · {test.resultsCount} resultados
+                  {formatChile(test.testDate, "DD/MM/YYYY")} · {test.resultsCount} resultados
                 </p>
               </div>
               <Chip
@@ -161,7 +161,7 @@ function SkinTestDetailView({ test }: { test: SkinTestDetail }) {
         <div className="min-w-0">
           <Card.Title className="truncate text-lg">{test.panelTitle ?? "Test cutáneo"}</Card.Title>
           <Card.Description>
-            {dayjs(test.testDate).format("DD/MM/YYYY")} · {test.results.length} resultados
+            {formatChile(test.testDate, "DD/MM/YYYY")} · {test.results.length} resultados
           </Card.Description>
         </div>
         {test.oneDriveWebUrl ? (

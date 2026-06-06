@@ -1,3 +1,4 @@
+import { formatChile } from "@/lib/dates";
 import {
   Button,
   Calendar,
@@ -14,7 +15,6 @@ import {
 import { parseDate } from "@internationalized/date";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import dayjs from "dayjs";
 import { PlusIcon } from "lucide-react";
 import { useState } from "react";
 import { AppModal } from "@/components/ui/AppModal";
@@ -67,7 +67,7 @@ export function CreateCreditForm() {
       creditNumber: "",
       currency: "CLP" as const,
       description: "",
-      startDate: dayjs().format("YYYY-MM-DD"),
+      startDate: formatChile(new Date(), "YYYY-MM-DD"),
       totalAmount: 0,
       totalInstallments: 1,
     } as CreateCreditInput,

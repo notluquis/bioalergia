@@ -1,3 +1,4 @@
+import { formatChile } from "@/lib/dates";
 import {
   Alert,
   Button,
@@ -12,7 +13,6 @@ import {
 } from "@heroui/react";
 import { parseDate } from "@internationalized/date";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
-import dayjs from "dayjs";
 import type { ChangeEvent } from "react";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { AppModal } from "@/components/ui/AppModal";
@@ -52,7 +52,7 @@ export function LoansPage() {
     transactionId: string;
   }>({
     paidAmount: undefined,
-    paidDate: dayjs().format("YYYY-MM-DD"),
+    paidDate: formatChile(new Date(), "YYYY-MM-DD"),
     transactionId: "",
   });
   const [paymentError, setPaymentError] = useState<null | string>(null);
@@ -129,7 +129,7 @@ export function LoansPage() {
     setPaymentSchedule(schedule);
     setPaymentForm({
       paidAmount: schedule.paid_amount == null ? schedule.expected_amount : schedule.paid_amount,
-      paidDate: schedule.paid_date ? schedule.paid_date : dayjs().format("YYYY-MM-DD"),
+      paidDate: schedule.paid_date ? schedule.paid_date : formatChile(new Date(), "YYYY-MM-DD"),
       transactionId: schedule.transaction_id ? String(schedule.transaction_id) : "",
     });
     setPaymentError(null);

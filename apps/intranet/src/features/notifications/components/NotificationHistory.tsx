@@ -1,6 +1,6 @@
+import { formatChile } from "@/lib/dates";
 import { Button, Chip, Description, Popover, ScrollShadow } from "@heroui/react";
 import { useStore } from "@tanstack/react-store";
-import dayjs from "dayjs";
 import { Bell, CheckCheck, Trash2, X } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -149,7 +149,7 @@ function NotificationItem({ notification, onRead, onRemove }: Readonly<Notificat
               </span>
             )}
             <span className="shrink-0 whitespace-nowrap text-xs text-default-400">
-              {dayjs(notification.timestamp).tz().format("DD/MM HH:mm")}
+              {formatChile(notification.timestamp, "DD/MM HH:mm")}
             </span>
           </div>
           <Description

@@ -1,6 +1,6 @@
+import { formatChile } from "@/lib/dates";
 import { Button, Chip, Spinner } from "@heroui/react";
 import type { ColumnDef } from "@tanstack/react-table";
-import dayjs from "dayjs";
 import { Download, RefreshCw } from "lucide-react";
 import type { MPReport } from "@/services/mercadopago";
 
@@ -27,7 +27,7 @@ export const getMpReportColumns = (
       const date = row.original.date_created ?? row.original.begin_date;
       return (
         <span className="whitespace-nowrap text-sm">
-          {date ? dayjs(date).tz().format("DD/MM/YY HH:mm") : "-"}
+          {date ? formatChile(date, "DD/MM/YY HH:mm") : "-"}
         </span>
       );
     },
@@ -38,7 +38,7 @@ export const getMpReportColumns = (
     accessorKey: "begin_date",
     cell: ({ row }) => (
       <span className="whitespace-nowrap text-default-600 text-sm">
-        {row.original.begin_date ? dayjs(row.original.begin_date).format("DD/MM/YYYY") : "-"}
+        {row.original.begin_date ? formatChile(row.original.begin_date, "DD/MM/YYYY") : "-"}
       </span>
     ),
 
@@ -48,7 +48,7 @@ export const getMpReportColumns = (
     accessorKey: "end_date",
     cell: ({ row }) => (
       <span className="whitespace-nowrap text-default-600 text-sm">
-        {row.original.end_date ? dayjs(row.original.end_date).format("DD/MM/YYYY") : "-"}
+        {row.original.end_date ? formatChile(row.original.end_date, "DD/MM/YYYY") : "-"}
       </span>
     ),
 

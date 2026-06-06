@@ -1,3 +1,4 @@
+import { formatChile } from "@/lib/dates";
 import {
   Button,
   Calendar,
@@ -13,7 +14,6 @@ import { parseDate } from "@internationalized/date";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import dayjs from "dayjs";
 import { ChevronLeft, Save } from "lucide-react";
 import { z } from "zod";
 import {
@@ -99,7 +99,7 @@ function NewPaymentPage() {
     defaultValues: {
       budgetId: "",
       amount: 0,
-      paymentDate: dayjs().format("YYYY-MM-DD"),
+      paymentDate: formatChile(new Date(), "YYYY-MM-DD"),
       paymentMethod: "Transferencia",
       reference: "",
       notes: "",

@@ -1,4 +1,5 @@
 // oxlint-disable typescript/no-non-null-assertion -- TODO(strict-null): refactor each `!` to invariant() or explicit guard. Tracked in repo-wide non-null cleanup.
+import { formatChile } from "@/lib/dates";
 import {
   Button,
   Chip,
@@ -11,7 +12,6 @@ import {
 } from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
-import dayjs from "dayjs";
 import { Activity, Ban, PackageCheck, PlusCircle, RefreshCw, UserPlus } from "lucide-react";
 import { useMemo, useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
@@ -95,7 +95,7 @@ const baseColumns: ColumnDef<Shipment>[] = [
   {
     header: "Fecha",
     accessorKey: "createdAt",
-    cell: ({ row }) => dayjs(row.original.createdAt).format("DD/MM/YYYY HH:mm"),
+    cell: ({ row }) => formatChile(row.original.createdAt, "DD/MM/YYYY HH:mm"),
   },
 ];
 

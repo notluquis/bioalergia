@@ -1,8 +1,8 @@
+import { formatChile } from "@/lib/dates";
 import { Chip } from "@heroui/react";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { useQuery } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
-import dayjs from "dayjs";
 import { Activity } from "lucide-react";
 import { DataTable } from "@/components/data-table/DataTable";
 import { fetchPatientClinicalSeries } from "../api";
@@ -77,7 +77,7 @@ const columns: ColumnDef<Series>[] = [
     header: "Fecha",
     accessorKey: "clinicalDate",
     cell: ({ row }) =>
-      row.original.clinicalDate ? dayjs(row.original.clinicalDate).format("DD/MM/YYYY") : "—",
+      row.original.clinicalDate ? formatChile(row.original.clinicalDate, "DD/MM/YYYY") : "—",
   },
 ];
 

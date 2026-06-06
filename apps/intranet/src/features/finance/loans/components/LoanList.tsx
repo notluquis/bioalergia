@@ -1,5 +1,5 @@
+import { formatChile } from "@/lib/dates";
 import { Button, Meter } from "@heroui/react";
-import dayjs from "dayjs";
 
 import type { LoanSummary } from "../types";
 
@@ -78,7 +78,7 @@ export function LoanList({
                   {loan.paid_installments}/{loan.total_installments} cuotas
                 </span>
                 <span className="text-default-500">
-                  Inicio {dayjs(loan.start_date, "YYYY-MM-DD").format("DD MMM YYYY")}
+                  Inicio {formatChile(loan.start_date, "DD MMM YYYY")}
                 </span>
               </div>
               <Meter

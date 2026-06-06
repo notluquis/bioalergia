@@ -1,7 +1,7 @@
+import { formatChile } from "@/lib/dates";
 import { Button, Card, Chip, Description, Label, ListBox, Select, Surface } from "@heroui/react";
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import type { ColumnDef, PaginationState } from "@tanstack/react-table";
-import dayjs from "dayjs";
 import { Check } from "lucide-react";
 import { useEffect, useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
@@ -50,12 +50,12 @@ function buildPurchaseColumns(
     {
       accessorKey: "documentDate",
       header: "document_date",
-      cell: ({ row }) => dayjs(row.original.documentDate).format("DD-MM-YYYY"),
+      cell: ({ row }) => formatChile(row.original.documentDate, "DD-MM-YYYY"),
     },
     {
       accessorKey: "receiptDate",
       header: "receipt_date",
-      cell: ({ row }) => dayjs(row.original.receiptDate).format("DD-MM-YYYY"),
+      cell: ({ row }) => formatChile(row.original.receiptDate, "DD-MM-YYYY"),
     },
     {
       accessorKey: "exemptAmount",

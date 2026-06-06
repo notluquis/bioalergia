@@ -1,5 +1,5 @@
+import { formatChile } from "@/lib/dates";
 import { Badge, Button, Card, Chip, EmptyState } from "@heroui/react";
-import dayjs from "dayjs";
 import { Bell, Check, Megaphone, Settings2, ShieldAlert } from "lucide-react";
 import { useState } from "react";
 import { WaListSkeleton } from "../components/Skeletons";
@@ -90,7 +90,7 @@ export function WaCloudAlertsPage() {
                         <Chip.Label>{e.kind}</Chip.Label>
                       </Chip>
                       <span className="text-default-400 text-xs">
-                        {dayjs(e.receivedAt).format("DD-MM HH:mm")}
+                        {formatChile(e.receivedAt, "DD-MM HH:mm")}
                       </span>
                     </div>
                     {e.description && <p className="text-default-600 text-sm">{e.description}</p>}

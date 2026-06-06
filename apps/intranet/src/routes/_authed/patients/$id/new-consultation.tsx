@@ -1,3 +1,4 @@
+import { formatChile } from "@/lib/dates";
 import {
   Button,
   Calendar,
@@ -12,7 +13,6 @@ import { parseDate } from "@internationalized/date";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import dayjs from "dayjs";
 import { ChevronLeft, Save } from "lucide-react";
 import { z } from "zod";
 import { TanStackTextAreaField } from "@/components/forms/TanStackFieldControls";
@@ -64,7 +64,7 @@ function NewConsultationPage() {
 
   const form = useForm({
     defaultValues: {
-      date: dayjs().format("YYYY-MM-DD"),
+      date: formatChile(new Date(), "YYYY-MM-DD"),
       reason: "",
       diagnosis: "",
       treatment: "",

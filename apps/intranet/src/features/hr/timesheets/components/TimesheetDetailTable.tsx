@@ -1,6 +1,6 @@
+import { formatChile } from "@/lib/dates";
 import { Button, Modal, Surface } from "@heroui/react";
 import type { ColumnDef } from "@tanstack/react-table";
-import dayjs from "dayjs";
 import { useState, type ReactNode } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
 import { useAuth } from "@/context/AuthContext";
@@ -63,7 +63,7 @@ export function TimesheetDetailTable({
     initialRows,
     notWorkedDays,
     onCloseOvertime: (date) => {
-      const dateKey = dayjs(date).format("YYYY-MM-DD");
+      const dateKey = formatChile(date, "YYYY-MM-DD");
       setOpenOvertimeEditors((prev) => {
         const next = new Set(prev);
         next.delete(dateKey);
@@ -71,7 +71,7 @@ export function TimesheetDetailTable({
       });
     },
     onOpenOvertime: (date) => {
-      const dateKey = dayjs(date).format("YYYY-MM-DD");
+      const dateKey = formatChile(date, "YYYY-MM-DD");
       setOpenOvertimeEditors((prev) => {
         const next = new Set(prev);
         next.add(dateKey);

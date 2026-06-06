@@ -1,3 +1,4 @@
+import { formatChile } from "@/lib/dates";
 import {
   Button,
   Calendar,
@@ -11,7 +12,6 @@ import {
   Spinner,
 } from "@heroui/react";
 import { parseDate } from "@internationalized/date";
-import dayjs from "dayjs";
 import { useState } from "react";
 
 import { AppModal } from "@/components/ui/AppModal";
@@ -105,7 +105,7 @@ export function LoanDetail({
             {loan.borrower_name} · {loan.borrower_type === "PERSON" ? "Persona natural" : "Empresa"}
           </Description>
           <div className="flex flex-wrap items-center gap-3 text-default-500 text-xs">
-            <span>Inicio {dayjs(loan.start_date, "YYYY-MM-DD").format("DD MMM YYYY")}</span>
+            <span>Inicio {formatChile(loan.start_date, "DD MMM YYYY")}</span>
             <span>
               {loan.total_installments} cuotas ·{" "}
               {

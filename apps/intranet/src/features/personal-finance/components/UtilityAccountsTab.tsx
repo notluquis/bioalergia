@@ -1,3 +1,4 @@
+import { formatChile } from "@/lib/dates";
 import {
   Button,
   Chip,
@@ -13,7 +14,6 @@ import {
   TextField,
 } from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import dayjs from "dayjs";
 import { HistoryIcon, PencilIcon, PlusIcon, RefreshCwIcon, Trash2Icon } from "lucide-react";
 import { useState } from "react";
 
@@ -234,7 +234,7 @@ export function UtilityAccountsTab() {
                     </div>
                     {account.lastFetchedAt && (
                       <div className="text-xs text-default-400">
-                        {dayjs(account.lastFetchedAt).format("DD/MM/YYYY HH:mm")}
+                        {formatChile(account.lastFetchedAt, "DD/MM/YYYY HH:mm")}
                       </div>
                     )}
                   </div>

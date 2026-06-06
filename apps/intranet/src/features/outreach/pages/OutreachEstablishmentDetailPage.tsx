@@ -1,6 +1,6 @@
+import { formatChile } from "@/lib/dates";
 import { Button, Card, Checkbox, Chip, Spinner } from "@heroui/react";
 import { Link, useParams } from "@tanstack/react-router";
-import dayjs from "dayjs";
 import { useState } from "react";
 import { AppDateTimePicker } from "@/components/forms/AppDatePicker";
 import type {
@@ -79,7 +79,7 @@ export function OutreachEstablishmentDetailPage() {
   const [showInterForm, setShowInterForm] = useState(false);
   const [interDraft, setInterDraft] = useState({
     tipo: "LLAMADA_REALIZADA" as OutreachInteractionType,
-    fecha: dayjs().format("YYYY-MM-DDTHH:mm"),
+    fecha: formatChile(new Date(), "YYYY-MM-DDTHH:mm"),
     contenido: "",
     contactoId: "",
     resultado: "",
@@ -394,7 +394,7 @@ export function OutreachEstablishmentDetailPage() {
                   });
                   setInterDraft({
                     tipo: "LLAMADA_REALIZADA",
-                    fecha: dayjs().format("YYYY-MM-DDTHH:mm"),
+                    fecha: formatChile(new Date(), "YYYY-MM-DDTHH:mm"),
                     contenido: "",
                     contactoId: "",
                     resultado: "",
@@ -460,7 +460,7 @@ export function OutreachEstablishmentDetailPage() {
                         {INTERACCION_LABELS[i.tipo]}
                       </Chip>
                       <span className="text-default-500 text-xs">
-                        {dayjs(i.fecha).format("DD-MM-YYYY HH:mm")}
+                        {formatChile(i.fecha, "DD-MM-YYYY HH:mm")}
                       </span>
                       {i.creadoPorNombre && (
                         <span className="text-default-400 text-xs">· {i.creadoPorNombre}</span>

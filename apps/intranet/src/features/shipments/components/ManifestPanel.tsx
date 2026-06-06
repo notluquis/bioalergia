@@ -1,6 +1,6 @@
+import { formatChile } from "@/lib/dates";
 import { Button, Card, Chip, Spinner } from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import dayjs from "dayjs";
 import { FileCheck2, FileText, PackagePlus } from "lucide-react";
 import { confirmAction } from "@/components/ui/ConfirmDialog";
 import { useToast } from "@/context/ToastContext";
@@ -131,7 +131,7 @@ export function ManifestPanel() {
       <Card.Content>
         <Card.Description>
           {active
-            ? `Abierto ${dayjs(active.openedAt).format("DD/MM/YYYY HH:mm")}. Cada despacho nuevo se agrupa en este manifiesto hasta que lo cierres.`
+            ? `Abierto ${formatChile(active.openedAt, "DD/MM/YYYY HH:mm")}. Cada despacho nuevo se agrupa en este manifiesto hasta que lo cierres.`
             : "Abre un manifiesto para agrupar los despachos del día. Mientras esté abierto, cada OT creada queda asociada; al cerrarlo se genera el PDF para entregar el lote al courier."}
         </Card.Description>
       </Card.Content>
