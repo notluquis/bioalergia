@@ -2,7 +2,7 @@ import { Button, Card, Chip, SearchField, Tabs } from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import type { ColumnDef, PaginationState } from "@tanstack/react-table";
-import dayjs from "dayjs";
+import { ageYears, formatChile } from "@/lib/dates";
 import { ArrowRight, Database, RefreshCw, User, UserPlus } from "lucide-react";
 import { useMemo, useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
@@ -103,12 +103,12 @@ function PatientsListPage() {
           if (!birthDate) {
             return <span className="text-default-600 text-sm">Sin fecha</span>;
           }
-          const age = dayjs().diff(dayjs(birthDate, "YYYY-MM-DD"), "year");
+          const age = ageYears(birthDate);
           return (
             <div className="flex flex-col" data-phi>
               <span className="text-default-700 text-sm">{age} años</span>
               <span className="text-xs text-default-600">
-                {dayjs(birthDate, "YYYY-MM-DD").format("DD/MM/YYYY")}
+                {formatChile(birthDate, "DD/MM/YYYY")}
               </span>
             </div>
           );
@@ -171,7 +171,7 @@ function PatientsListPage() {
         header: "FECHA DOC",
         cell: ({ row }) => {
           const date = row.original.documentDate;
-          return date ? dayjs(date).format("DD/MM/YYYY") : "-";
+          return date ? formatChile(date, "DD/MM/YYYY") : "-";
         },
       },
     ],

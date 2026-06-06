@@ -110,6 +110,15 @@ export function diffDays(a: string, b: string): number {
   return Math.round((civilNoon(a).getTime() - civilNoon(b).getTime()) / DAY_MS);
 }
 
+/** Completed years between `birth` and today in Chile (drop-in for dayjs().diff(birth,"year")). */
+export function ageYears(birth: DateInput): number {
+  const b = chileDay(birth);
+  const t = today();
+  let years = Number(t.slice(0, 4)) - Number(b.slice(0, 4));
+  if (t.slice(5) < b.slice(5)) years--; // birthday not reached yet this year
+  return years;
+}
+
 function ym(isoDate: string): { year: number; month: number } {
   const parts = isoDate.split("-");
   return { year: Number(parts[0]), month: Number(parts[1]) };

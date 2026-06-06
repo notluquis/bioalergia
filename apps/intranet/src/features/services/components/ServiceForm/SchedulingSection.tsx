@@ -9,7 +9,7 @@ import {
   Select,
 } from "@heroui/react";
 import { parseDate } from "@internationalized/date";
-import dayjs from "dayjs";
+import { chileDay, civilNoon } from "@/lib/dates";
 import { GRID_2_COL_MD } from "@/lib/styles";
 
 import type { ServiceFrequency, ServiceRecurrenceType } from "../../types";
@@ -73,9 +73,9 @@ export function SchedulingSection({
           if (!value) {
             return;
           }
-          onChange("startDate", dayjs(value.toString(), "YYYY-MM-DD").toDate());
+          onChange("startDate", civilNoon(value.toString()));
         }}
-        value={startDate ? parseDate(dayjs(startDate).format("YYYY-MM-DD")) : undefined}
+        value={startDate ? parseDate(chileDay(startDate)) : undefined}
       >
         <Label>Fecha de inicio</Label>
         <DateField.Group>

@@ -1,7 +1,6 @@
 import { Button, Chip, type ChipProps } from "@heroui/react";
 import type { ColumnDef } from "@tanstack/react-table";
-import dayjs from "dayjs";
-
+import { chileDay, formatChile, today } from "@/lib/dates";
 import { currencyFormatter } from "@/lib/format";
 
 import type { LoanSchedule } from "../types";
@@ -10,8 +9,7 @@ import type { LoanSchedule } from "../types";
 const isScheduleLate = (schedule: LoanSchedule) => {
   return (
     schedule.status === "OVERDUE" ||
-    (schedule.status === "PENDING" &&
-      dayjs(schedule.due_date, "YYYY-MM-DD").isBefore(dayjs(), "day"))
+    (schedule.status === "PENDING" && chileDay(schedule.due_date) < today())
   );
 };
 
@@ -37,7 +35,7 @@ export const getColumns = (
       const isLate = isScheduleLate(schedule);
       return (
         <span className={isLate ? "font-semibold text-rose-600" : ""}>
-          {dayjs(schedule.due_date, "YYYY-MM-DD").format("DD MMM YYYY")}
+          {formatChile(schedule.due_date, "DD MMM YYYY")}
         </span>
       );
     },
@@ -123,7 +121,7 @@ export const getColumns = (
           </span>
           {schedule.paid_date && (
             <span className="text-xs text-default-400">
-              {dayjs(schedule.paid_date, "YYYY-MM-DD").format("DD MMM")}
+              {formatChile(schedule.paid_date, "DD MMM")}
             </span>
           )}
         </div>

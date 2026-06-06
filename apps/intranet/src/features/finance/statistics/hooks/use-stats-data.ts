@@ -3,9 +3,9 @@
  */
 
 import { useSuspenseQuery } from "@tanstack/react-query";
-import dayjs from "dayjs";
 import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
+import { addMonths, today } from "@/lib/dates";
 import { balanceKeys } from "@/features/finance/balances/queries";
 import type { BalancesApiResponse } from "@/features/finance/balances/types";
 import { statsKeys } from "../queries";
@@ -30,10 +30,8 @@ interface UseStatsDataResult {
 
 export function useStatsData(): UseStatsDataResult {
   const { can } = useAuth();
-  const [from, setFrom] = useState(
-    dayjs().subtract(3, "month").startOf("month").format("YYYY-MM-DD")
-  );
-  const [to, setTo] = useState(dayjs().format("YYYY-MM-DD"));
+  const [from, setFrom] = useState(addMonths(today(), -3));
+  const [to, setTo] = useState(today());
 
   const canView = can("read", "Transaction");
 

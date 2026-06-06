@@ -1,4 +1,4 @@
-import dayjs from "dayjs";
+import { endOfMonthFor, today } from "@/lib/dates";
 
 interface RangeParams {
   from?: string;
@@ -17,20 +17,19 @@ export function resolveRange(quickValue: string, fromValue: string, toValue: str
     return range;
   }
 
-  const value = quickValue === "current" ? dayjs().format("YYYY-MM") : quickValue;
+  const value = quickValue === "current" ? today().slice(0, 7) : quickValue;
   const [yearStr, monthStr] = value.split("-");
   const year = Number(yearStr);
-  const monthIndex = Number(monthStr) - 1;
+  const monthNumber = Number(monthStr);
 
-  if (!Number.isFinite(year) || !Number.isFinite(monthIndex)) {
+  if (!Number.isFinite(year) || !Number.isFinite(monthNumber)) {
     return {};
   }
 
-  const start = dayjs(new Date(year, monthIndex, 1));
-  const end = start.endOf("month");
+  const start = `${year}-${String(monthNumber).padStart(2, "0")}-01`;
 
   return {
-    from: start.format("YYYY-MM-DD"),
-    to: end.format("YYYY-MM-DD"),
+    from: start,
+    to: endOfMonthFor(start),
   };
 }

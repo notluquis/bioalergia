@@ -9,8 +9,8 @@ import {
   Select,
 } from "@heroui/react";
 import { parseDate } from "@internationalized/date";
-import dayjs from "dayjs";
 
+import { chileDay, civilNoon } from "@/lib/dates";
 import type { ServiceEmissionMode } from "../../types";
 import type { ServiceFormState } from "../ServiceForm";
 
@@ -118,14 +118,9 @@ export function EmissionSection({
       {(emissionMode ?? "FIXED_DAY") === "SPECIFIC_DATE" && (
         <DatePicker
           onChange={(value) => {
-            onChange(
-              "emissionExactDate",
-              value ? dayjs(value.toString(), "YYYY-MM-DD").toDate() : null
-            );
+            onChange("emissionExactDate", value ? civilNoon(value.toString()) : null);
           }}
-          value={
-            emissionExactDate ? parseDate(dayjs(emissionExactDate).format("YYYY-MM-DD")) : undefined
-          }
+          value={emissionExactDate ? parseDate(chileDay(emissionExactDate)) : undefined}
         >
           <Label>Fecha emisión</Label>
           <DateField.Group>

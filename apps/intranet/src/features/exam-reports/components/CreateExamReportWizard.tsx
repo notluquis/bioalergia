@@ -26,7 +26,7 @@ import {
   type Key,
 } from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import dayjs from "dayjs";
+import { ageYears } from "@/lib/dates";
 import { CheckCircle, Eye, Pencil, Plus, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
@@ -119,7 +119,7 @@ const REACTION_OPTIONS: { value: SkinReaction; label: string }[] = [
 
 function computeAge(birthDate: string | null | undefined): string | null {
   if (!birthDate) return null;
-  const years = dayjs().diff(dayjs(birthDate, "YYYY-MM-DD"), "year");
+  const years = ageYears(birthDate);
   return Number.isFinite(years) && years >= 0 ? `${years} años` : null;
 }
 

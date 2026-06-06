@@ -2,7 +2,7 @@ import { Button, Card, Chip, Separator, Skeleton, Tabs } from "@heroui/react";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate, useParams } from "@tanstack/react-router";
 import type { ColumnDef } from "@tanstack/react-table";
-import dayjs from "dayjs";
+import { ageYears, formatChile } from "@/lib/dates";
 import {
   Activity,
   Calendar,
@@ -361,9 +361,7 @@ function PatientDetailsPage() {
                       <DetailRow
                         label="Fecha Nacimiento"
                         value={
-                          patient.birthDate
-                            ? dayjs(patient.birthDate, "YYYY-MM-DD").format("DD/MM/YYYY")
-                            : "N/A"
+                          patient.birthDate ? formatChile(patient.birthDate, "DD/MM/YYYY") : "N/A"
                         }
                       />
 
@@ -448,16 +446,12 @@ function PatientSummaryCard({ patient, person }: { patient: Patient; person: Per
           <PatientInfoLine
             icon={<Calendar size={16} />}
             label="Nacimiento"
-            value={
-              patient.birthDate
-                ? dayjs(patient.birthDate, "YYYY-MM-DD").format("DD/MM/YYYY")
-                : "Sin fecha"
-            }
+            value={patient.birthDate ? formatChile(patient.birthDate, "DD/MM/YYYY") : "Sin fecha"}
           />
           <PatientInfoLine
             icon={<Calendar size={16} />}
             label="Registro"
-            value={dayjs(patient.createdAt).format("DD/MM/YYYY")}
+            value={formatChile(patient.createdAt, "DD/MM/YYYY")}
           />
           <PatientInfoLine
             icon={<Mail size={16} />}
@@ -504,7 +498,7 @@ function getPatientAge(birthDate: null | string | undefined) {
   if (!birthDate) {
     return null;
   }
-  return dayjs().diff(dayjs(birthDate, "YYYY-MM-DD"), "year");
+  return ageYears(birthDate);
 }
 
 function PatientInfoLine({
@@ -586,7 +580,7 @@ function PatientDetailsHeader({
             </Chip>
             <Chip size="sm" variant="soft">
               <Chip.Label>
-                {birthDate ? dayjs(birthDate, "YYYY-MM-DD").format("DD/MM/YYYY") : "Sin fecha nac."}
+                {birthDate ? formatChile(birthDate, "DD/MM/YYYY") : "Sin fecha nac."}
               </Chip.Label>
             </Chip>
             {age !== null ? (
@@ -632,7 +626,7 @@ const consultationColumns: ColumnDef<Consultation>[] = [
   {
     header: "Fecha",
     accessorKey: "date",
-    cell: ({ row }) => dayjs(row.original.date, "YYYY-MM-DD").format("DD/MM/YYYY"),
+    cell: ({ row }) => formatChile(row.original.date, "DD/MM/YYYY"),
   },
   {
     header: "Motivo",
@@ -683,7 +677,7 @@ const budgetColumns: ColumnDef<Budget>[] = [
   {
     header: "Fecha",
     accessorKey: "updatedAt",
-    cell: ({ row }) => dayjs(row.original.updatedAt).format("DD/MM/YYYY"),
+    cell: ({ row }) => formatChile(row.original.updatedAt, "DD/MM/YYYY"),
   },
 ];
 
@@ -691,7 +685,7 @@ const paymentColumns: ColumnDef<PatientPayment>[] = [
   {
     header: "Fecha",
     accessorKey: "paymentDate",
-    cell: ({ row }) => dayjs(row.original.paymentDate, "YYYY-MM-DD").format("DD/MM/YYYY"),
+    cell: ({ row }) => formatChile(row.original.paymentDate, "DD/MM/YYYY"),
   },
   {
     header: "Monto",
@@ -724,7 +718,7 @@ const attachmentColumns: ColumnDef<PatientAttachment>[] = [
   {
     header: "Fecha",
     accessorKey: "uploadedAt",
-    cell: ({ row }) => dayjs(row.original.uploadedAt).format("DD/MM/YYYY"),
+    cell: ({ row }) => formatChile(row.original.uploadedAt, "DD/MM/YYYY"),
   },
   {
     id: "actions",
@@ -745,7 +739,7 @@ const certificateColumns: ColumnDef<MedicalCertificate>[] = [
   {
     header: "Fecha",
     accessorKey: "issuedAt",
-    cell: ({ row }) => dayjs(row.original.issuedAt, "YYYY-MM-DD").format("DD/MM/YYYY"),
+    cell: ({ row }) => formatChile(row.original.issuedAt, "DD/MM/YYYY"),
   },
   {
     header: "Diagnóstico",

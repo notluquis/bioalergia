@@ -2,9 +2,9 @@
 
 import { Button, Chip, Modal, Skeleton } from "@heroui/react";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import dayjs from "dayjs";
 import { AlertCircle, CheckCircle2, Clock } from "lucide-react";
 import { Suspense } from "react";
+import { chileDay, formatChile, today } from "@/lib/dates";
 import { formatCurrency } from "@/lib/utils";
 import { personalFinanceQueries } from "../queries";
 import type { PersonalCreditInstallment } from "../types";
@@ -146,9 +146,8 @@ function InstallmentRow({
   currency: string;
 }) {
   const isPaid = installment.status === "PAID";
-  const dueDate = dayjs(installment.dueDate).format("DD/MM/YYYY");
-  const dueDateObj = dayjs(installment.dueDate);
-  const isOverdue = dueDateObj.isBefore(dayjs()) && !isPaid;
+  const dueDate = formatChile(installment.dueDate, "DD/MM/YYYY");
+  const isOverdue = chileDay(installment.dueDate) < today() && !isPaid;
 
   const StatusIcon = isPaid ? CheckCircle2 : isOverdue ? AlertCircle : Clock;
   const statusColor = isPaid
