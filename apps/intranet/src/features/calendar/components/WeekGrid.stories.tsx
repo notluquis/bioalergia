@@ -1,11 +1,8 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import dayjs from "dayjs";
-import isoWeek from "dayjs/plugin/isoWeek";
 
+import { addDays } from "@/lib/dates";
 import type { CalendarEventDetail } from "../types";
 import { WeekGrid } from "./WeekGrid";
-
-dayjs.extend(isoWeek);
 
 // Stories for the weekly schedule grid. The component does its own time
 // math (UTC → America/Santiago), overlap-aware column layout (max 6) and
@@ -35,15 +32,13 @@ function eventAt({
   colorId?: string;
 }): CalendarEventDetail {
   // Chile = UTC-4 (no DST in effect). Build the UTC ISO that, after
-  // tz("America/Santiago"), reads back as the desired local hh:mm.
-  const date = dayjs(FIXED_MONDAY).add(day, "day").format("YYYY-MM-DD");
+  // converting to America/Santiago, reads back as the desired local hh:mm.
+  const date = addDays(FIXED_MONDAY, day);
   const toUtc = (hhmm: string) => {
     const [hStr, mStr] = hhmm.split(":");
     const h = Number(hStr ?? "0");
     const m = Number(mStr ?? "0");
-    return dayjs(
-      `${date}T${String(h + 4).padStart(2, "0")}:${String(m).padStart(2, "0")}:00.000Z`
-    ).toISOString();
+    return `${date}T${String(h + 4).padStart(2, "0")}:${String(m).padStart(2, "0")}:00.000Z`;
   };
   return {
     amountExpected: null,
