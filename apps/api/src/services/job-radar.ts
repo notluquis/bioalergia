@@ -370,7 +370,7 @@ async function notifyNewMatches(creds: TelegramCreds | null): Promise<number> {
   }
   const pending = await db.jobPosting.findMany({
     where: { status: "OPEN", matched: true, notified: false },
-    orderBy: { firstSeenAt: "asc" },
+    orderBy: [{ firstSeenAt: "asc" }, { id: "asc" }],
   });
 
   // Dedup cross-source: una misma oferta en 2 fuentes se avisa UNA vez; igual se
@@ -517,7 +517,11 @@ export async function listJobPostings(filters: ListJobPostingsFilters = {}) {
   }
   return db.jobPosting.findMany({
     where,
-    orderBy: [{ applicationStatus: "asc" }, { firstSeenAt: "desc" }],
+    // `id` como desempate ÚNICO y estable: firstSeenAt es idéntico en filas
+    // insertadas en el mismo sync masivo, y sin desempate Postgres devuelve los
+    // empates en orden de heap arbitrario que se reordena al mutar una fila
+    // (marcar vista) → la página saltaba. id garantiza orden total determinístico.
+    orderBy: [{ applicationStatus: "asc" }, { firstSeenAt: "desc" }, { id: "asc" }],
   });
 }
 
