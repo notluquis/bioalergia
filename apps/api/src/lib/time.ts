@@ -1,12 +1,4 @@
-import dayjs from "dayjs";
-import customParseFormat from "dayjs/plugin/customParseFormat.js";
-import timezone from "dayjs/plugin/timezone.js";
-import utc from "dayjs/plugin/utc.js";
-
-dayjs.extend(utc);
-dayjs.extend(timezone);
-dayjs.extend(customParseFormat);
-
+// This module is dayjs-free: native Temporal + Intl + Date only.
 export const TIMEZONE = "America/Santiago";
 
 const PERIOD_REGEX = /^\d{4}-(0[1-9]|1[0-2])$/;
@@ -61,10 +53,9 @@ export function toChileDateString(date: Date): string {
 // `dayjs(x).tz(TZ)` on a @db.Date/@db.Time value rolls the calendar day back
 // under Santiago. NEVER do that — use these helpers.
 //
-// These helpers are intentionally dayjs-free: native Date + Intl only. (Temporal
-// is NOT available in the Node 26 runtime — verified, even with --harmony-temporal
-// — so we don't depend on it.) `en-CA` locale renders YYYY-MM-DD, which combined
-// with `timeZone` gives a correct, DST-aware local calendar date.
+// These helpers use native Temporal + Intl + Date (Temporal is present in the
+// Node 26 official/nvm build + node:26-slim prod + CI). `en-CA` locale renders
+// YYYY-MM-DD, which combined with `timeZone` gives a DST-aware local calendar date.
 // ===========================================================================
 
 const HHMM_OR_HHMMSS = /^(\d{1,2}):(\d{2})(?::\d{2})?/;
@@ -298,66 +289,72 @@ export function buildChileDate(
   return new Date(zoned.epochMilliseconds);
 }
 
+// YYYY-MM-DD or YYYY/MM/DD, optional " HH:mm[:ss]" / "THH:mm[:ss]".
+const YMD = /^(\d{4})[-/](\d{2})[-/](\d{2})(?:[ T](\d{2}):(\d{2})(?::(\d{2}))?)?$/;
+// DD/MM/YYYY (slashes only — the dash form DD-MM-YYYY is intentionally
+// unsupported/ambiguous, returns null), optional time.
+const DMY = /^(\d{2})\/(\d{2})\/(\d{4})(?:[ T](\d{2}):(\d{2})(?::(\d{2}))?)?$/;
+
+// Wall-clock components interpreted in Chile -> UTC instant; null if invalid.
+function chileWallClockToInstant(
+  year: number,
+  month: number,
+  day: number,
+  hour: number,
+  minute: number,
+  second: number
+): Date | null {
+  try {
+    const zdt = Temporal.ZonedDateTime.from(
+      { timeZone: TIMEZONE, year, month, day, hour, minute, second },
+      { overflow: "reject" }
+    );
+    return new Date(zdt.epochMilliseconds);
+  } catch {
+    return null;
+  }
+}
+
 /**
- * Parse an arbitrary date string as Chile local time when no timezone designator is present.
- * If the string already carries a `Z`/offset, honor that offset.
+ * Parse an arbitrary date string as Chile local time when no timezone designator
+ * is present. A string with a `Z`/offset is honored as an absolute instant.
+ * Supported local forms: YYYY-MM-DD, YYYY/MM/DD, DD/MM/YYYY (each with an
+ * optional " HH:mm[:ss]" / "THH:mm[:ss]" tail). Invalid calendar dates and the
+ * ambiguous DD-MM-YYYY (dash) form return null. Native (Temporal), no dayjs.
  */
 export function parseChileDateTime(value: string | null | undefined): Date | null {
   if (value == null) return null;
   const trimmed = typeof value === "string" ? value.trim() : "";
   if (!trimmed) return null;
 
-  // Belt-and-suspenders: dayjs.tz / new Date can throw RangeError
-  // ("Invalid time value") on certain pathological inputs instead of
-  // returning an Invalid Date. The caller already null-guards the
-  // result, so swallow throws and return null — the row will be
-  // demoted to a per-row error message upstream.
-  try {
-    if (TZ_DESIGNATOR_REGEX.test(trimmed)) {
-      const d = new Date(trimmed);
-      return Number.isNaN(d.getTime()) ? null : d;
-    }
-
-    const formats = [
-      "YYYY-MM-DDTHH:mm:ss.SSS",
-      "YYYY-MM-DDTHH:mm:ss",
-      "YYYY-MM-DD HH:mm:ss.SSS",
-      "YYYY-MM-DD HH:mm:ss",
-      "YYYY-MM-DD HH:mm",
-      "YYYY-MM-DD",
-      "DD-MM-YYYY HH:mm:ss",
-      "DD-MM-YYYY HH:mm",
-      "DD-MM-YYYY",
-      "DD/MM/YYYY HH:mm:ss",
-      "DD/MM/YYYY HH:mm",
-      "DD/MM/YYYY",
-    ];
-    for (const fmt of formats) {
-      try {
-        const parsed = dayjs.tz(trimmed, fmt, TIMEZONE);
-        if (parsed.isValid() && parsed.format(fmt) === trimmed) {
-          return parsed.toDate();
-        }
-      } catch {
-        // dayjs.tz(value, fmt, tz) can throw RangeError when the
-        // `fmt` doesn't match `trimmed` shape (e.g. fmt expects
-        // "HH:mm:ss" but trimmed is "2026-05-18"). The outer catch
-        // would swallow this and skip ALL remaining formats —
-        // causing every date to return null. Per-format catch lets
-        // the loop continue to the next pattern.
-        continue;
-      }
-    }
-
-    try {
-      const loose = dayjs.tz(trimmed, TIMEZONE);
-      return loose.isValid() ? loose.toDate() : null;
-    } catch {
-      return null;
-    }
-  } catch {
-    return null;
+  if (TZ_DESIGNATOR_REGEX.test(trimmed)) {
+    const d = new Date(trimmed);
+    return Number.isNaN(d.getTime()) ? null : d;
   }
+
+  const ymd = trimmed.match(YMD);
+  if (ymd) {
+    return chileWallClockToInstant(
+      +ymd[1],
+      +ymd[2],
+      +ymd[3],
+      +(ymd[4] ?? 0),
+      +(ymd[5] ?? 0),
+      +(ymd[6] ?? 0)
+    );
+  }
+  const dmy = trimmed.match(DMY);
+  if (dmy) {
+    return chileWallClockToInstant(
+      +dmy[3],
+      +dmy[2],
+      +dmy[1],
+      +(dmy[4] ?? 0),
+      +(dmy[5] ?? 0),
+      +(dmy[6] ?? 0)
+    );
+  }
+  return null;
 }
 
 export function formatDateForDB(date: Date) {
