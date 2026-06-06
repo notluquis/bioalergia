@@ -125,8 +125,9 @@ function lastOfMonth(isoDate: string): string {
   return civilISO(new Date(Date.UTC(year, month, 0, 12)));
 }
 
-function addMonths(isoDate: string, n: number): string {
-  const { year, month } = ym(isoDate);
+/** Shift a "YYYY-MM[-DD]" by n months, returning the first-of-month "YYYY-MM-DD". */
+export function addMonths(isoDate: string, n: number): string {
+  const { year, month } = ym(`${isoDate.slice(0, 7)}-01`);
   return civilISO(new Date(Date.UTC(year, month - 1 + n, 1, 12)));
 }
 
@@ -184,6 +185,29 @@ export function monthsAgoEnd(months: number): string {
 /** Cualquier fecha -> "YYYY-MM-DD" (en Chile). */
 export function formatISO(date: DateInput): string {
   return chileDay(date);
+}
+
+/** Inclusive list of "YYYY-MM" months spanning fromYM..toYM (each accepts YYYY-MM[-DD]). */
+export function iterateMonths(fromYM: string, toYM: string): string[] {
+  const end = toYM.slice(0, 7);
+  const out: string[] = [];
+  let cur = fromYM.slice(0, 7);
+  while (cur <= end && out.length < 1200) {
+    out.push(cur);
+    cur = addMonths(`${cur}-01`, 1).slice(0, 7);
+  }
+  return out;
+}
+
+/** Days in the month of `isoDate` (YYYY-MM[-DD]). */
+export function daysInMonth(isoDate: string): number {
+  const { year, month } = ym(`${isoDate.slice(0, 7)}-01`);
+  return new Date(year, month, 0).getDate();
+}
+
+/** ISO weekday (1=Mon … 7=Sun) of `isoDate` (YYYY-MM-DD). */
+export function isoWeekday(isoDate: string): number {
+  return ((civilNoon(isoDate).getUTCDay() + 6) % 7) + 1;
 }
 
 // ---- ISO week --------------------------------------------------------------
