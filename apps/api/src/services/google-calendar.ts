@@ -5,11 +5,11 @@ import { performance } from "node:perf_hooks";
 // import { CalendarEventRecord } from "./google-calendar.ts";
 import { db } from "@finanzas/db";
 import { calendar, type calendar_v3 } from "@googleapis/calendar";
-import dayjs from "dayjs";
 import { GoogleAuth } from "google-auth-library";
 import { compileExcludePatterns, googleCalendarConfig } from "../lib/config.ts";
 import { joinClinicalText } from "../lib/clinical-text.ts";
 import { parseCalendarMetadata } from "../lib/parsers.ts";
+import { formatChile, parseChileDateOnly, toChileDateString } from "../lib/time.ts";
 import { loadSettings } from "./settings.ts";
 import { logEvent, logWarn } from "../lib/logger.ts";
 import { removeGoogleCalendarEvents, upsertGoogleCalendarEvents } from "./google-calendar-store.ts";
@@ -165,23 +165,34 @@ async function getLastSuccessfulSyncTime(): Promise<Date | null> {
 }
 
 function buildFetchRange(runtime: CalendarRuntimeConfig, lastFetchedAt: Date | null): FetchRange {
-  const startDate = dayjs(runtime.syncStartDate);
-  const configuredStart = startDate.isValid()
-    ? startDate.startOf("day")
-    : dayjs("2000-01-01").startOf("day");
-  const safetyStart = lastFetchedAt ? dayjs(lastFetchedAt).subtract(5, "minute") : null;
-  const effectiveStart = safetyStart?.isAfter(configuredStart)
-    ? safetyStart.startOf("minute")
-    : configuredStart;
-  const endDate = dayjs().add(runtime.syncLookAheadDays, "day").add(1, "day").startOf("day");
+  // Chile-local midnight of syncStartDate (or 2000-01-01), as a UTC instant.
+  const configuredStart =
+    (!Number.isNaN(new Date(runtime.syncStartDate).getTime())
+      ? parseChileDateOnly(formatChile(runtime.syncStartDate, "YYYY-MM-DD"))
+      : parseChileDateOnly("2000-01-01")) ?? new Date(NaN);
+
+  // Re-fetch from 5 min before the last sync (truncated to the minute), but
+  // only when that is after the configured start.
+  const safetyRaw = lastFetchedAt ? new Date(lastFetchedAt.getTime() - 5 * 60_000) : null;
+  const useSafety = safetyRaw != null && safetyRaw.getTime() > configuredStart.getTime();
+  const safetyMinute = safetyRaw
+    ? new Date(Math.floor(safetyRaw.getTime() / 60_000) * 60_000)
+    : null;
+  const effectiveStart = useSafety && safetyMinute ? safetyMinute : configuredStart;
+
+  // Chile-local midnight of (today + lookAhead + 1 days).
+  const endDate =
+    parseChileDateOnly(
+      Temporal.PlainDate.from(toChileDateString(new Date()))
+        .add({ days: runtime.syncLookAheadDays + 1 })
+        .toString()
+    ) ?? new Date(NaN);
 
   return {
     timeMin: effectiveStart.toISOString(),
     timeMax: endDate.toISOString(),
     timeZone: runtime.timeZone,
-    updatedMin: safetyStart?.isAfter(configuredStart)
-      ? safetyStart.startOf("minute").toISOString()
-      : undefined,
+    updatedMin: useSafety && safetyMinute ? safetyMinute.toISOString() : undefined,
   };
 }
 
