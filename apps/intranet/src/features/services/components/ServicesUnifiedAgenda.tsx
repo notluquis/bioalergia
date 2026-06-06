@@ -1,7 +1,6 @@
 import { Button, Description, Skeleton } from "@heroui/react";
-import dayjs from "dayjs";
 import { useState } from "react";
-import { today } from "@/lib/dates";
+import { chileDay, civilNoon, diffDays, startOfWeek, today } from "@/lib/dates";
 import { currencyFormatter } from "@/lib/format";
 
 import type { ServiceSchedule, ServiceSummary } from "../types";
@@ -30,9 +29,8 @@ const dateFormatter = new Intl.DateTimeFormat("es-CL", {
   weekday: "long",
 });
 
-function computeLabel(dueDate: dayjs.Dayjs) {
-  const today = dayjs().startOf("day");
-  const diff = dueDate.startOf("day").diff(today, "day");
+function computeLabel(dueDateISO: string) {
+  const diff = diffDays(dueDateISO, today());
   if (diff === 0) {
     return "Hoy";
   }
@@ -48,7 +46,7 @@ function computeLabel(dueDate: dayjs.Dayjs) {
   if (diff < -1 && diff >= -7) {
     return `Hace ${Math.abs(diff)} días`;
   }
-  return capitalize(dateFormatter.format(dueDate.toDate()));
+  return capitalize(dateFormatter.format(civilNoon(dueDateISO)));
 }
 
 const statusClasses: Record<ServiceSchedule["status"], string> = {
@@ -74,13 +72,12 @@ export function ServicesUnifiedAgenda({
     }
     const map = new Map<string, AgendaGroup>();
     for (const { schedule, service } of items) {
-      const dueDate = dayjs(schedule.dueDate).startOf("day");
-      const key = dueDate.format("YYYY-MM-DD");
+      const key = chileDay(schedule.dueDate);
       if (!map.has(key)) {
         map.set(key, {
           dateKey: key,
           entries: [],
-          label: computeLabel(dueDate),
+          label: computeLabel(key),
           total: 0,
         });
       }
@@ -95,19 +92,19 @@ export function ServicesUnifiedAgenda({
   })();
 
   const totals = (() => {
-    const today = dayjs().startOf("day");
+    const todayISO = today();
     let daySum = 0;
     let weekSum = 0;
     let monthSum = 0;
     for (const { schedule } of items) {
-      const dueDate = dayjs(schedule.dueDate).startOf("day");
-      if (dueDate.isSame(today, "day")) {
+      const dueISO = chileDay(schedule.dueDate);
+      if (dueISO === todayISO) {
         daySum += schedule.expectedAmount;
       }
-      if (dueDate.isSame(today, "week")) {
+      if (startOfWeek(dueISO) === startOfWeek(todayISO)) {
         weekSum += schedule.expectedAmount;
       }
-      if (dueDate.isSame(today, "month")) {
+      if (dueISO.slice(0, 7) === todayISO.slice(0, 7)) {
         monthSum += schedule.expectedAmount;
       }
     }
@@ -241,9 +238,9 @@ export function ServicesUnifiedAgenda({
                 {isExpanded && (
                   <div className="space-y-2 border-default-200/70 border-t px-4 py-3">
                     {group.entries.map(({ schedule, service }) => {
-                      const dueDate = dayjs(schedule.dueDate);
-                      const diffDays = dueDate.startOf("day").diff(dayjs().startOf("day"), "day");
-                      const isOverdue = schedule.status === "PENDING" && diffDays < 0;
+                      const dueISO = chileDay(schedule.dueDate);
+                      const dayDiff = diffDays(dueISO, today());
+                      const isOverdue = schedule.status === "PENDING" && dayDiff < 0;
                       return (
                         <div
                           className="surface-recessed p-3 transition hover:border-primary/40"
@@ -261,7 +258,7 @@ export function ServicesUnifiedAgenda({
                               )}
                               <Description className="mt-1 text-default-300 text-xs">
                                 {currencyFormatter.format(schedule.expectedAmount)} · Vence el{" "}
-                                {dateFormatter.format(dueDate.toDate())}
+                                {dateFormatter.format(civilNoon(dueISO))}
                               </Description>
                             </div>
                             <span

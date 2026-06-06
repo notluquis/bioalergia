@@ -1,6 +1,6 @@
 import { Card, Skeleton, Surface } from "@heroui/react";
 import { useStore } from "@tanstack/react-store";
-import dayjs from "dayjs";
+import { chileDay, startOfWeek, today } from "@/lib/dates";
 import { EditScheduleModal } from "@/features/services/components/EditScheduleModal";
 import { ServicesUnifiedAgenda } from "@/features/services/components/ServicesUnifiedAgenda";
 import { SkipScheduleModal } from "@/features/services/components/SkipScheduleModal";
@@ -34,14 +34,15 @@ export function ServicesAgendaContent() {
 
   const totals = unifiedAgendaItems.reduce(
     (acc, item) => {
-      const dueDate = dayjs(item.schedule.dueDate);
-      if (dueDate.isSame(dayjs(), "day")) {
+      const dueISO = chileDay(item.schedule.dueDate);
+      const todayISO = today();
+      if (dueISO === todayISO) {
         acc.day += item.schedule.expectedAmount;
       }
-      if (dueDate.isSame(dayjs(), "week")) {
+      if (startOfWeek(dueISO) === startOfWeek(todayISO)) {
         acc.week += item.schedule.expectedAmount;
       }
-      if (dueDate.isSame(dayjs(), "month")) {
+      if (dueISO.slice(0, 7) === todayISO.slice(0, 7)) {
         acc.month += item.schedule.expectedAmount;
       }
       return acc;

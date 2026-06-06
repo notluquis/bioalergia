@@ -10,8 +10,8 @@ import {
 } from "@heroui/react";
 import { parseDate } from "@internationalized/date";
 import { useQuery } from "@tanstack/react-query";
-import dayjs from "dayjs";
 import { useState } from "react";
+import { chileDay, diffDays, endOfMonth, formatChile, startOfMonth } from "@/lib/dates";
 import { fetchCalendarDaily } from "@/features/calendar/api";
 
 type EventForDaily = {
@@ -24,15 +24,15 @@ type EventForDaily = {
 };
 
 export function DailyIncomePage() {
-  const [from, setFrom] = useState(dayjs().startOf("month").format("YYYY-MM-DD"));
-  const [to, setTo] = useState(dayjs().endOf("month").format("YYYY-MM-DD"));
+  const [from, setFrom] = useState(startOfMonth());
+  const [to, setTo] = useState(endOfMonth());
 
   const { data, isLoading } = useQuery({
     queryFn: () =>
       fetchCalendarDaily({
         categories: [],
         from,
-        maxDays: Math.max(dayjs(to).diff(dayjs(from), "day") + 1, 1),
+        maxDays: Math.max(diffDays(to, from) + 1, 1),
         to,
       }),
     queryKey: ["daily-income", from, to],
@@ -52,7 +52,7 @@ export function DailyIncomePage() {
   // Group by date
   const grouped = (events || []).reduce(
     (acc, event) => {
-      const date = event.startDate ? dayjs(event.startDate).format("YYYY-MM-DD") : "Sin fecha";
+      const date = event.startDate ? chileDay(event.startDate) : "Sin fecha";
       if (!acc[date]) {
         acc[date] = [];
       }
@@ -166,7 +166,7 @@ export function DailyIncomePage() {
               <Card.Content className="gap-4 p-4">
                 <div className="flex items-center justify-between">
                   <h3 className="font-semibold text-lg capitalize">
-                    {dayjs(date, "YYYY-MM-DD").format("dddd D [de] MMMM")}
+                    {formatChile(date, "dddd D [de] MMMM")}
                   </h3>
                   <div className="text-right text-sm">
                     <div className="text-default-600">

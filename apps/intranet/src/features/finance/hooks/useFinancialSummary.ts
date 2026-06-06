@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import dayjs from "dayjs";
 import { useMemo } from "react";
+import { civilNoon, diffDays } from "@/lib/dates";
 import { fetchCalendarDaily } from "@/features/calendar/api";
 import type { DateRange, FinancialSummary, IncomeCategoryGroup, IncomeItem } from "../types";
 
@@ -20,7 +20,7 @@ export function useFinancialSummary(dateRange: DateRange) {
       fetchCalendarDaily({
         categories: [],
         from: dateRange.from,
-        maxDays: Math.max(dayjs(dateRange.to).diff(dayjs(dateRange.from), "day") + 1, 1),
+        maxDays: Math.max(diffDays(dateRange.to, dateRange.from) + 1, 1),
         to: dateRange.to,
       }),
     queryKey: ["financial-summary", dateRange.from, dateRange.to],
@@ -98,7 +98,7 @@ function mapEventToIncomeItem(event: EventForIncome): IncomeItem {
 
   return {
     id: event.externalEventId || String(event.id),
-    date: event.startDate ? dayjs(event.startDate, "YYYY-MM-DD").toDate() : dayjs().toDate(),
+    date: event.startDate ? civilNoon(event.startDate) : new Date(),
     summary: event.summary || "Sin título",
     category,
     amount: event.amountPaid || 0,
@@ -108,7 +108,7 @@ function mapEventToIncomeItem(event: EventForIncome): IncomeItem {
       eventType: event.eventType,
       externalEventId: event.externalEventId,
       id: event.id,
-      startDate: event.startDate ? dayjs(event.startDate, "YYYY-MM-DD").toDate() : null,
+      startDate: event.startDate ? civilNoon(event.startDate) : null,
       summary: event.summary,
     },
   };

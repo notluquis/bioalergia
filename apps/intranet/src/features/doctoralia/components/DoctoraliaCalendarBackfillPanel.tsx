@@ -10,10 +10,10 @@ import {
 } from "@heroui/react";
 import { parseDate } from "@internationalized/date";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import dayjs from "dayjs";
 import { History, Play, StopCircle } from "lucide-react";
 import { useMemo, useState } from "react";
 
+import { addDays, formatChile, today, weekday } from "@/lib/dates";
 import { AppDateRangePicker } from "@/components/forms/AppDatePicker";
 import { useToast } from "@/context/ToastContext";
 import {
@@ -25,10 +25,10 @@ import { doctoraliaSettingsKeys } from "@/features/doctoralia/settings-queries";
 import type { DoctoraliaCalendarBackfillBucketCounts } from "@/features/doctoralia/types";
 
 function lastCompletedSunday(): string {
-  const today = dayjs();
-  const weekday = today.day();
-  const diff = weekday === 0 ? 7 : weekday;
-  return today.subtract(diff, "day").format("YYYY-MM-DD");
+  const t = today();
+  const wd = weekday(t);
+  const diff = wd === 0 ? 7 : wd;
+  return addDays(t, -diff);
 }
 
 export function DoctoraliaCalendarBackfillPanel() {
@@ -281,5 +281,5 @@ function SummaryCell({
 }
 
 function formatStatusDate(value: string | null) {
-  return value ? dayjs(value).format("DD/MM HH:mm") : "—";
+  return value ? formatChile(value, "DD/MM HH:mm") : "—";
 }
