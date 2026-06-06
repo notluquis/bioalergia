@@ -1,6 +1,7 @@
 import {
   Button,
   Card,
+  Checkbox,
   Chip,
   EmptyState,
   Label,
@@ -10,8 +11,9 @@ import {
   Select,
   Spinner,
 } from "@heroui/react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
+  CheckCircle2,
   ChevronLeft,
   ChevronRight,
   ClipboardList,
@@ -20,19 +22,26 @@ import {
   Pause,
   Play,
   RefreshCw,
+  Sparkles,
+  XCircle,
 } from "lucide-react";
 import { confirmAction } from "@/components/ui/ConfirmDialog";
 import { useToast } from "@/context/ToastContext";
 import {
   useActiveBulkJob,
   useApproveClinicalRecordImport,
+  useApproveClinicalRecordImports,
   useBulkJobStatus,
   useCancelBulkJob,
   useClinicalRecordImports,
   useRejectClinicalRecordImport,
+  useRejectClinicalRecordImports,
   useReprocessClinicalRecordImport,
+  useStartAutoApprove,
   useStartBulkReprocess,
 } from "../hooks/useClinicalRecords";
+
+const AUTO_APPROVE_MIN_SCORE = 0.9;
 
 const STATUS_OPTIONS = [
   { value: "PENDING_REVIEW", label: "Pendientes" },
@@ -53,10 +62,16 @@ export function ClinicalRecordsReviewPage() {
   const [status, setStatus] = useState<Status>("PENDING_REVIEW");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
+  // Multi-select state (ids of PENDING_REVIEW rows ticked on the current page).
+  const [selected, setSelected] = useState<Set<string>>(new Set());
   // Reset to the first page whenever the filter or query changes.
   useEffect(() => {
     setPage(1);
   }, [status, search]);
+  // Clear the multi-select whenever the visible page changes.
+  useEffect(() => {
+    setSelected(new Set());
+  }, [status, search, page]);
   const list = useClinicalRecordImports({
     status,
     search: search.trim() || undefined,
@@ -66,7 +81,10 @@ export function ClinicalRecordsReviewPage() {
   const reprocess = useReprocessClinicalRecordImport();
   const approve = useApproveClinicalRecordImport();
   const reject = useRejectClinicalRecordImport();
+  const approveMany = useApproveClinicalRecordImports();
+  const rejectMany = useRejectClinicalRecordImports();
   const startBulk = useStartBulkReprocess();
+  const startAutoApprove = useStartAutoApprove();
   const cancelBulk = useCancelBulkJob();
   const activeBulk = useActiveBulkJob();
   // Track the jobId we just started so the local poller follows it even
@@ -91,6 +109,98 @@ export function ClinicalRecordsReviewPage() {
   const progressPct =
     job && job.total > 0 ? Math.min(100, Math.round((job.progress / job.total) * 100)) : 0;
   const jobPhase = typeof job?.meta?.phase === "string" ? job.meta.phase : null;
+
+  // Rows eligible for multi-select (only the review queue).
+  const pendingItems = useMemo(
+    () => (list.data?.items ?? []).filter((it) => it.status === "PENDING_REVIEW"),
+    [list.data?.items]
+  );
+  const allSelected =
+    pendingItems.length > 0 && pendingItems.every((it) => selected.has(it.id));
+
+  function toggleOne(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+  function toggleAll() {
+    setSelected((prev) =>
+      prev.size > 0 && allSelected ? new Set() : new Set(pendingItems.map((it) => it.id))
+    );
+  }
+
+  async function handleApproveSelected() {
+    // Each selected row imports with its best candidate; rows without a
+    // candidate can't be auto-targeted and are skipped.
+    const chosen = pendingItems.flatMap((it) => {
+      if (!selected.has(it.id)) return [];
+      const top = it.matchCandidates[0];
+      return top ? [{ id: it.id, patientId: top.patientId }] : [];
+    });
+    const selectedCount = pendingItems.filter((it) => selected.has(it.id)).length;
+    const skipped = selectedCount - chosen.length;
+    if (chosen.length === 0) {
+      toast.error("Ninguna ficha seleccionada tiene candidato de match");
+      return;
+    }
+    const ok = await confirmAction({
+      title: "Aprobar fichas seleccionadas",
+      description: `Se importarán ${chosen.length} fichas con su mejor candidato${
+        skipped > 0 ? ` (${skipped} sin candidato se omitirán)` : ""
+      }.`,
+      confirmLabel: "Aprobar",
+    });
+    if (!ok) return;
+    try {
+      const r = await approveMany.mutateAsync({ items: chosen });
+      setSelected(new Set());
+      toast.success(
+        `${r.approved} aprobadas${r.errors.length > 0 ? `, ${r.errors.length} con error` : ""}`,
+        "Fichas clínicas"
+      );
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "No se pudieron aprobar");
+    }
+  }
+
+  async function handleRejectSelected() {
+    const ids = pendingItems.filter((it) => selected.has(it.id)).map((it) => it.id);
+    if (ids.length === 0) return;
+    const ok = await confirmAction({
+      title: "Rechazar fichas seleccionadas",
+      description: `Se rechazarán ${ids.length} fichas.`,
+      confirmLabel: "Rechazar",
+      variant: "danger",
+    });
+    if (!ok) return;
+    try {
+      const r = await rejectMany.mutateAsync({ ids });
+      setSelected(new Set());
+      toast.success(`${r.rejected} rechazadas`, "Fichas clínicas");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "No se pudieron rechazar");
+    }
+  }
+
+  async function handleAutoApprove() {
+    const ok = await confirmAction({
+      title: `Auto-aprobar coincidencias ≥ ${Math.round(AUTO_APPROVE_MIN_SCORE * 100)}%`,
+      description:
+        "Se importarán automáticamente todas las fichas pendientes cuyo mejor candidato supere el umbral. Corre en segundo plano y puedes detenerlo.",
+      confirmLabel: "Auto-aprobar",
+    });
+    if (!ok) return;
+    try {
+      const r = await startAutoApprove.mutateAsync({ minScore: AUTO_APPROVE_MIN_SCORE });
+      setTrackedJobId(r.jobId);
+      toast.success("Auto-aprobación iniciada", "Fichas clínicas");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "No se pudo iniciar");
+    }
+  }
 
   // Reprocess every pending/error ficha. The bulk job re-parses each xlsx with
   // the deployed parser and re-runs patient matching; confirm first since it
@@ -118,7 +228,7 @@ export function ClinicalRecordsReviewPage() {
   }
 
   return (
-    <div className="flex flex-col gap-4 p-4">
+    <div className="flex flex-col gap-4">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="flex items-center gap-2 font-semibold text-xl">
           <ClipboardList size={20} className="text-primary" />
@@ -139,15 +249,26 @@ export function ClinicalRecordsReviewPage() {
               <span>Detener</span>
             </Button>
           ) : (
-            <Button
-              size="sm"
-              variant="primary"
-              onPress={() => void handleReprocessAll()}
-              isPending={startBulk.isPending}
-            >
-              <Play size={14} />
-              <span>Reprocesar todo</span>
-            </Button>
+            <>
+              <Button
+                size="sm"
+                variant="secondary"
+                onPress={() => void handleAutoApprove()}
+                isPending={startAutoApprove.isPending}
+              >
+                <Sparkles size={14} />
+                <span>Auto-aprobar ≥{Math.round(AUTO_APPROVE_MIN_SCORE * 100)}%</span>
+              </Button>
+              <Button
+                size="sm"
+                variant="primary"
+                onPress={() => void handleReprocessAll()}
+                isPending={startBulk.isPending}
+              >
+                <Play size={14} />
+                <span>Reprocesar todo</span>
+              </Button>
+            </>
           )}
         </div>
       </header>
@@ -220,6 +341,46 @@ export function ClinicalRecordsReviewPage() {
         </div>
       </Card>
 
+      {pendingItems.length > 0 && (
+        <div className="flex flex-wrap items-center justify-between gap-2 px-1">
+          <Checkbox
+            aria-label="Seleccionar todas las fichas pendientes visibles"
+            isSelected={allSelected}
+            onChange={() => toggleAll()}
+          >
+            <Checkbox.Control>
+              <Checkbox.Indicator />
+            </Checkbox.Control>
+            <Checkbox.Content>
+              <Label>Seleccionar visibles ({pendingItems.length})</Label>
+            </Checkbox.Content>
+          </Checkbox>
+          {selected.size > 0 && (
+            <div className="flex items-center gap-2">
+              <span className="text-default-500 text-xs">{selected.size} seleccionadas</span>
+              <Button
+                size="sm"
+                variant="primary"
+                onPress={() => void handleApproveSelected()}
+                isPending={approveMany.isPending}
+              >
+                <CheckCircle2 size={14} />
+                <span>Aprobar</span>
+              </Button>
+              <Button
+                size="sm"
+                variant="danger"
+                onPress={() => void handleRejectSelected()}
+                isPending={rejectMany.isPending}
+              >
+                <XCircle size={14} />
+                <span>Rechazar</span>
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
+
       {list.isLoading ? (
         <div className="flex h-32 items-center justify-center">
           <Spinner />
@@ -238,6 +399,18 @@ export function ClinicalRecordsReviewPage() {
               <li key={it.id}>
                 <Card className="p-3">
                   <div className="flex flex-wrap items-start justify-between gap-3">
+                    {it.status === "PENDING_REVIEW" && (
+                      <Checkbox
+                        aria-label={`Seleccionar ${it.filename}`}
+                        isSelected={selected.has(it.id)}
+                        onChange={() => toggleOne(it.id)}
+                        className="mt-0.5"
+                      >
+                        <Checkbox.Control>
+                          <Checkbox.Indicator />
+                        </Checkbox.Control>
+                      </Checkbox>
+                    )}
                     <div className="min-w-0 flex-1">
                       <p className="truncate font-medium text-sm">{it.filename}</p>
                       <p className="text-default-500 text-xs">

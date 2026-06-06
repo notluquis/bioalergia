@@ -10,7 +10,10 @@ import {
   updateJobProgress,
 } from "../lib/jobQueue.ts";
 import { logError, logEvent } from "../lib/logger.ts";
-import { reprocessClinicalRecordImport } from "./clinical-record-imports.ts";
+import {
+  approveClinicalRecordImport,
+  reprocessClinicalRecordImport,
+} from "./clinical-record-imports.ts";
 
 // Background bulk reprocess for clinical_record_imports. One in-flight
 // job at a time (in-process lock via the existing jobQueue's
@@ -29,10 +32,15 @@ import { reprocessClinicalRecordImport } from "./clinical-record-imports.ts";
 // imports so the operator can stop a runaway batch from the UI.
 
 const JOB_TYPE = "clinical-record-bulk-reprocess";
+const AUTO_APPROVE_JOB_TYPE = "clinical-record-auto-approve";
 const REPROCESS_BATCH = 25;
 
 export function getClinicalRecordBulkJobType(): string {
   return JOB_TYPE;
+}
+
+export function getClinicalRecordAutoApproveJobType(): string {
+  return AUTO_APPROVE_JOB_TYPE;
 }
 
 async function fetchPendingIds(limit: number, excludeIds: Set<string>): Promise<string[]> {
@@ -160,6 +168,127 @@ export function startBulkClinicalRecordReprocessJob(options?: {
       }
       failJob(jobId, message);
       logError("clinicalRecords.bulk.failed", error, { trigger: options?.trigger ?? "manual" });
+    }
+  })();
+
+  return jobId;
+}
+
+// Auto-approve every PENDING_REVIEW import whose best match candidate clears
+// the score threshold. Reuses the single-row approve path (materializes the
+// ClinicalRecord + ClinicalSeries) and reports progress via the same job
+// status schema so the UI can poll/cancel it like the reprocess job.
+export function startAutoApproveHighConfidenceJob(options: {
+  minScore: number;
+  reviewedBy: number;
+  trigger?: string;
+}): string {
+  const active = getActiveJobsByType(AUTO_APPROVE_JOB_TYPE);
+  if (active.length > 0) {
+    return active[0].id;
+  }
+
+  const jobId = startJob(AUTO_APPROVE_JOB_TYPE, 1);
+  updateJobProgress(jobId, 0, "Buscando fichas con match de alta confianza", {
+    phase: "starting",
+  });
+
+  void (async () => {
+    try {
+      type Cand = { patientId: number; score: number };
+      const rows = (
+        await sql<{ id: string; cands: Cand[] | null }>`
+          SELECT id, match_candidates AS cands
+          FROM clinical_record_imports
+          WHERE status = 'PENDING_REVIEW'
+            AND match_candidates IS NOT NULL
+            AND jsonb_array_length(match_candidates::jsonb) > 0
+          ORDER BY created_at ASC
+        `.execute(kysely)
+      ).rows;
+
+      const eligible: Array<{ id: string; patientId: number }> = [];
+      for (const r of rows) {
+        let best: Cand | null = null;
+        for (const c of r.cands ?? []) {
+          if (!best || c.score > best.score) best = c;
+        }
+        if (best && best.score >= options.minScore) {
+          eligible.push({ id: r.id, patientId: best.patientId });
+        }
+      }
+
+      const total = eligible.length;
+      if (total === 0) {
+        completeJob(
+          jobId,
+          { processed: 0, imported: 0, pending: 0, errors: 0 },
+          "Sin fichas que superen el umbral",
+          { phase: "completed" }
+        );
+        return;
+      }
+
+      updateJobProgress(
+        jobId,
+        0,
+        `Aprobando ${total} fichas de alta confianza`,
+        { phase: "running", total, minScore: options.minScore },
+        total
+      );
+
+      let imported = 0;
+      let errors = 0;
+      let processed = 0;
+      for (const e of eligible) {
+        if (isJobCancelled(jobId)) {
+          throw new Error("SYNC_CANCELLED");
+        }
+        try {
+          await approveClinicalRecordImport(
+            e.id,
+            e.patientId,
+            options.reviewedBy,
+            `auto-approve ≥ ${options.minScore}`
+          );
+          imported += 1;
+        } catch {
+          errors += 1;
+        }
+        processed += 1;
+        if (processed % 5 === 0 || processed === total) {
+          updateJobProgress(
+            jobId,
+            processed,
+            `Aprobadas ${imported} de ${total}`,
+            { phase: "running", imported, errors },
+            total
+          );
+        }
+      }
+
+      completeJob(
+        jobId,
+        { processed, imported, pending: 0, errors },
+        `Auto-aprobación completada — ${imported} importadas, ${errors} errores`,
+        { phase: "completed", imported, errors }
+      );
+      logEvent("clinicalRecords.autoApprove.completed", {
+        processed,
+        imported,
+        errors,
+        minScore: options.minScore,
+        trigger: options.trigger ?? "intranet",
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      if (message === "SYNC_CANCELLED") {
+        cancelJob(jobId, "Auto-aprobación cancelada por usuario");
+        logEvent("clinicalRecords.autoApprove.cancelled", {});
+        return;
+      }
+      failJob(jobId, message);
+      logError("clinicalRecords.autoApprove.failed", error, {});
     }
   })();
 

@@ -96,6 +96,43 @@ export function useCancelBulkJob() {
   });
 }
 
+export function useApproveClinicalRecordImports() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: {
+      items: Array<{ id: string; patientId: number }>;
+      notes?: string;
+    }) => clinicalRecordsORPCClient.approveImports(input),
+    onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
+  });
+}
+
+export function useRejectClinicalRecordImports() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { ids: string[]; notes?: string }) =>
+      clinicalRecordsORPCClient.rejectImports(input),
+    onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
+  });
+}
+
+export function useStartAutoApprove() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { minScore: number }) =>
+      clinicalRecordsORPCClient.startAutoApprove(input),
+    onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
+  });
+}
+
+export function useClinicalRecordAnalytics(input: { dateFrom?: string; dateTo?: string }) {
+  return useQuery({
+    queryKey: [...KEY, "analytics", input],
+    queryFn: () => clinicalRecordsORPCClient.analytics(input),
+    staleTime: 60_000,
+  });
+}
+
 export function usePatientClinicalRecords(patientId: number | null) {
   return useQuery({
     queryKey: [...KEY, "by-patient", patientId],

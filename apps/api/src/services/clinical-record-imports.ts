@@ -428,6 +428,56 @@ export async function rejectClinicalRecordImport(
   });
 }
 
+// Multi-select approve: one transaction per import (reusing the single-row
+// path), collecting per-item failures so one bad row doesn't abort the batch.
+export async function approveClinicalRecordImports(
+  items: Array<{ id: string; patientId: number }>,
+  reviewedBy: number,
+  notes?: string
+): Promise<{ approved: number; errors: Array<{ id: string; message: string }> }> {
+  let approved = 0;
+  const errors: Array<{ id: string; message: string }> = [];
+  for (const it of items) {
+    try {
+      await approveClinicalRecordImport(it.id, it.patientId, reviewedBy, notes);
+      approved += 1;
+    } catch (error) {
+      errors.push({ id: it.id, message: error instanceof Error ? error.message : "error" });
+    }
+  }
+  return { approved, errors };
+}
+
+export async function rejectClinicalRecordImports(
+  ids: string[],
+  reviewedBy: number,
+  notes?: string
+): Promise<{ rejected: number }> {
+  if (ids.length === 0) return { rejected: 0 };
+  const r = await sql<{ id: string }>`
+    UPDATE clinical_record_imports SET
+      status = 'REJECTED',
+      reviewed_by = ${reviewedBy},
+      reviewed_at = now(),
+      review_notes = ${notes ?? null},
+      updated_at = now()
+    WHERE id = ANY(${ids})
+    RETURNING id
+  `.execute(kysely);
+  for (const row of r.rows) {
+    await logAuditEvent({
+      kind: "OTHER",
+      userId: reviewedBy,
+      resource: "clinical_record_imports",
+      resourceId: row.id,
+      outcome: "denied",
+      message: "import_rejected",
+      metadata: { notes: notes ?? null, bulk: true },
+    });
+  }
+  return { rejected: r.rows.length };
+}
+
 export async function reprocessPendingClinicalRecordImports(limit = 200): Promise<{
   processed: number;
   imported: number;

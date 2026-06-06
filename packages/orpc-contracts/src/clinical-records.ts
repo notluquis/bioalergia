@@ -132,6 +132,26 @@ export const clinicalRecordJobStatusSchema = z.object({
   updatedAt: z.date(),
 });
 
+export const clinicalRecordAnalyticsSchema = z.object({
+  byStatus: z.array(
+    z.object({ status: clinicalRecordImportStatusSchema, count: z.number().int() })
+  ),
+  totals: z.object({
+    imports: z.number().int(),
+    imported: z.number().int(),
+    pending: z.number().int(),
+    discovered: z.number().int(),
+    errors: z.number().int(),
+    rejected: z.number().int(),
+  }),
+  // imported / (imported + pending + rejected), 0..1
+  matchRate: z.number(),
+  records: z.object({ total: z.number().int(), withDate: z.number().int() }),
+  byMonth: z.array(z.object({ month: z.string(), count: z.number().int() })),
+  topDiagnoses: z.array(z.object({ label: z.string(), count: z.number().int() })),
+  topPatients: z.array(z.object({ patientName: z.string(), count: z.number().int() })),
+});
+
 export const clinicalRecordsContract = {
   listImports: oc
     .route({ method: "POST", path: "/imports/list", tags: ["Clinical Records"] })
@@ -217,6 +237,47 @@ export const clinicalRecordsContract = {
     .route({ method: "POST", path: "/imports/bulk-reprocess/active", tags: ["Clinical Records"] })
     .input(z.object({}))
     .output(z.object({ job: clinicalRecordJobStatusSchema.nullable() })),
+
+  // Multi-select queue actions (operator picks rows on the current page).
+  approveImports: oc
+    .route({ method: "POST", path: "/imports/approve-many", tags: ["Clinical Records"] })
+    .input(
+      z.object({
+        items: z
+          .array(
+            z.object({
+              id: z.string().min(1),
+              patientId: z.number().int().positive(),
+            })
+          )
+          .min(1)
+          .max(200),
+        notes: z.string().optional(),
+      })
+    )
+    .output(
+      z.object({
+        approved: z.number().int(),
+        errors: z.array(z.object({ id: z.string(), message: z.string() })),
+      })
+    ),
+
+  rejectImports: oc
+    .route({ method: "POST", path: "/imports/reject-many", tags: ["Clinical Records"] })
+    .input(z.object({ ids: z.array(z.string().min(1)).min(1).max(200), notes: z.string().optional() }))
+    .output(z.object({ rejected: z.number().int() })),
+
+  // Auto-approve every PENDING_REVIEW import whose top match candidate clears
+  // the score threshold. Runs as a background job (same status schema).
+  startAutoApprove: oc
+    .route({ method: "POST", path: "/imports/auto-approve/start", tags: ["Clinical Records"] })
+    .input(z.object({ minScore: z.number().min(0).max(1).default(0.9) }))
+    .output(z.object({ jobId: z.string() })),
+
+  analytics: oc
+    .route({ method: "POST", path: "/analytics", tags: ["Clinical Records"] })
+    .input(z.object({ dateFrom: z.string().optional(), dateTo: z.string().optional() }))
+    .output(clinicalRecordAnalyticsSchema),
 };
 
 export type ClinicalRecordsContract = typeof clinicalRecordsContract;

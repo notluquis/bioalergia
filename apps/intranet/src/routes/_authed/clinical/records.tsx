@@ -3,9 +3,9 @@ import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { createFileRoute, getRouteApi } from "@tanstack/react-router";
 import { lazy, Suspense } from "react";
 
-const ClinicalRecordsReviewPage = lazy(() =>
-  import("@/features/clinical-records/pages/ClinicalRecordsReviewPage").then((m) => ({
-    default: m.ClinicalRecordsReviewPage,
+const ClinicalRecordsWorkspacePage = lazy(() =>
+  import("@/features/clinical-records/pages/ClinicalRecordsWorkspacePage").then((m) => ({
+    default: m.ClinicalRecordsWorkspacePage,
   }))
 );
 
@@ -20,7 +20,7 @@ export const Route = createFileRoute("/_authed/clinical/records")({
         </div>
       }
     >
-      <ClinicalRecordsReviewPage />
+      <ClinicalRecordsWorkspacePage />
     </Suspense>
   ),
   staticData: {

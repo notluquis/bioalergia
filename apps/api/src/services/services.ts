@@ -11,8 +11,8 @@ import {
   type ServiceType,
 } from "@finanzas/db";
 import type { ServiceInclude } from "@finanzas/db/input";
-import dayjs from "dayjs";
 import { Decimal } from "decimal.js";
+import { dbDateToISO, isoToDbDate } from "../lib/time.ts";
 import "../lib/time.ts";
 
 type ServicePayload = {
@@ -247,7 +247,9 @@ export async function generateSchedules(options: GenerateSchedulesOptions) {
   }
 
   const startFrom = fromDate ?? new Date(service.startDate);
-  const startFromUtc = dayjs.utc(startFrom);
+  // UTC calendar date of startFrom; periods are computed in UTC (the columns
+  // are @db.Date written at UTC midnight via isoToDbDate).
+  const baseMonth = Temporal.PlainDate.from(dbDateToISO(startFrom) ?? "");
   const schedules: Array<{
     serviceId: number;
     periodStart: Date;
@@ -260,21 +262,20 @@ export async function generateSchedules(options: GenerateSchedulesOptions) {
   }> = [];
 
   for (let i = 0; i < months; i++) {
-    const periodStartUtc = startFromUtc.add(i, "month").startOf("month");
-    const periodEndUtc = periodStartUtc.endOf("month").startOf("day");
-    const periodStart = periodStartUtc.toDate();
-    const periodEnd = periodEndUtc.toDate();
+    const periodStartPlain = baseMonth.add({ months: i }).with({ day: 1 });
+    const periodEndPlain = periodStartPlain.with({ day: periodStartPlain.daysInMonth });
+    const periodStart = isoToDbDate(periodStartPlain.toString());
+    const periodEnd = isoToDbDate(periodEndPlain.toString());
 
     if (service.endDate && periodStart > new Date(service.endDate)) {
       break;
     }
 
     const dueDay = service.dueDay ?? 1;
-    let dueDateUtc = periodStartUtc.date(dueDay);
-    if (dueDateUtc.isBefore(periodStartUtc)) {
-      dueDateUtc = dueDateUtc.add(1, "month");
-    }
-    const dueDate = dueDateUtc.toDate();
+    // periodStart is day 1 and dueDay >= 1, so the due date never precedes it.
+    const dueDate = isoToDbDate(
+      periodStartPlain.with({ day: dueDay }, { overflow: "constrain" }).toString()
+    );
 
     const existing = await db.serviceSchedule.findUnique({
       where: {

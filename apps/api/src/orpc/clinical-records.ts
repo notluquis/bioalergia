@@ -1,5 +1,6 @@
 import { kysely } from "@finanzas/db";
 import {
+  clinicalRecordAnalyticsSchema,
   clinicalRecordImportSchema,
   clinicalRecordImportStatusSchema,
   clinicalRecordJobStatusSchema,
@@ -17,13 +18,18 @@ import { logError } from "../lib/logger.ts";
 import { configureSuperjson } from "../lib/superjson-config.ts";
 import {
   approveClinicalRecordImport,
+  approveClinicalRecordImports,
   rejectClinicalRecordImport,
+  rejectClinicalRecordImports,
   reprocessClinicalRecordImport,
 } from "../services/clinical-record-imports.ts";
 import {
+  getClinicalRecordAutoApproveJobType,
   getClinicalRecordBulkJobType,
+  startAutoApproveHighConfidenceJob,
   startBulkClinicalRecordReprocessJob,
 } from "../services/clinical-record-bulk.ts";
+import { getClinicalRecordAnalytics } from "../services/clinical-record-analytics.ts";
 import { cancelJob, getActiveJobsByType, getJobStatus, type JobState } from "../lib/jobQueue.ts";
 import { SuperJSONRPCHandler } from "./superjson.ts";
 
@@ -335,8 +341,64 @@ const routerBase = {
     .input(z.object({}))
     .output(z.object({ job: clinicalRecordJobStatusSchema.nullable() }))
     .handler(async () => {
-      const active = getActiveJobsByType(getClinicalRecordBulkJobType());
-      return { job: jobToOutput(active[0] ?? null) };
+      // Surface whichever queue job is running so the UI can resume on mount.
+      const active =
+        getActiveJobsByType(getClinicalRecordBulkJobType())[0] ??
+        getActiveJobsByType(getClinicalRecordAutoApproveJobType())[0] ??
+        null;
+      return { job: jobToOutput(active) };
+    }),
+
+  approveImports: updateClinicalRecords
+    .route({ method: "POST", path: "/imports/approve-many", tags: ["Clinical Records"] })
+    .input(
+      z.object({
+        items: z
+          .array(z.object({ id: z.string().min(1), patientId: z.number().int().positive() }))
+          .min(1)
+          .max(200),
+        notes: z.string().optional(),
+      })
+    )
+    .output(
+      z.object({
+        approved: z.number().int(),
+        errors: z.array(z.object({ id: z.string(), message: z.string() })),
+      })
+    )
+    .handler(async ({ input, context }) => {
+      return approveClinicalRecordImports(input.items, context.user.id, input.notes);
+    }),
+
+  rejectImports: updateClinicalRecords
+    .route({ method: "POST", path: "/imports/reject-many", tags: ["Clinical Records"] })
+    .input(
+      z.object({ ids: z.array(z.string().min(1)).min(1).max(200), notes: z.string().optional() })
+    )
+    .output(z.object({ rejected: z.number().int() }))
+    .handler(async ({ input, context }) => {
+      return rejectClinicalRecordImports(input.ids, context.user.id, input.notes);
+    }),
+
+  startAutoApprove: updateClinicalRecords
+    .route({ method: "POST", path: "/imports/auto-approve/start", tags: ["Clinical Records"] })
+    .input(z.object({ minScore: z.number().min(0).max(1).default(0.9) }))
+    .output(z.object({ jobId: z.string() }))
+    .handler(async ({ input, context }) => {
+      const jobId = startAutoApproveHighConfidenceJob({
+        minScore: input.minScore,
+        reviewedBy: context.user.id,
+        trigger: "intranet",
+      });
+      return { jobId };
+    }),
+
+  analytics: readClinicalRecords
+    .route({ method: "POST", path: "/analytics", tags: ["Clinical Records"] })
+    .input(z.object({ dateFrom: z.string().optional(), dateTo: z.string().optional() }))
+    .output(clinicalRecordAnalyticsSchema)
+    .handler(async ({ input }) => {
+      return getClinicalRecordAnalytics({ dateFrom: input.dateFrom, dateTo: input.dateTo });
     }),
 };
 
