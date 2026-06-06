@@ -24,11 +24,11 @@ import {
 } from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { RowSelectionState } from "@tanstack/react-table";
-import dayjs from "dayjs";
 import { X } from "lucide-react";
 import { lazy, startTransition, Suspense, useEffect, useMemo, useState } from "react";
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 import { z } from "zod";
+import { addMonths, chileDay, formatChile, today } from "@/lib/dates";
 import { AppModal } from "@/components/ui/AppModal";
 import { useConfirmDialog } from "@/context/ConfirmDialogContext";
 import { fetchCounterparts } from "@/features/counterparts/api";
@@ -668,7 +668,7 @@ function CategoryColorPicker({
 export function CashFlowPage() {
   const confirm = useConfirmDialog();
   const [page, setPage] = useState(1);
-  const [selectedMonth, setSelectedMonth] = useState(dayjs().format("YYYY-MM"));
+  const [selectedMonth, setSelectedMonth] = useState(today().slice(0, 7));
   const [activeTab, setActiveTab] = useState<CashFlowTab>("cash-flow");
   const { isTabMounted, markTabAsMounted } = useLazyTabs<CashFlowTab>("cash-flow");
   const [selectedCategoryFilters, setSelectedCategoryFilters] = useState<string[]>([]);
@@ -728,8 +728,8 @@ export function CashFlowPage() {
   const [isReallocateOpen, setIsReallocateOpen] = useState(false);
   const [reallocateTx, setReallocateTx] = useState<null | CashFlowTransaction>(null);
   const [reallocateProfileId, setReallocateProfileId] = useState<null | number>(null);
-  const [reallocateFromPeriod, setReallocateFromPeriod] = useState(dayjs().format("YYYY-MM"));
-  const [reallocateTargetPeriod, setReallocateTargetPeriod] = useState(dayjs().format("YYYY-MM"));
+  const [reallocateFromPeriod, setReallocateFromPeriod] = useState(today().slice(0, 7));
+  const [reallocateTargetPeriod, setReallocateTargetPeriod] = useState(today().slice(0, 7));
   const [reallocateAmount, setReallocateAmount] = useState<null | number>(null);
   const [showNonAccountableMovements, setShowNonAccountableMovements] = useState(false);
   const [showOnlyUncategorizedMovements, setShowOnlyUncategorizedMovements] = useState(false);
@@ -741,7 +741,7 @@ export function CashFlowPage() {
     ).sort((a, b) => b.localeCompare(a));
 
     if (uniqueMonths.length === 0) {
-      const value = dayjs().startOf("month").format("YYYY-MM");
+      const value = today().slice(0, 7);
       return [{ label: formatMonthLabel(value), value }];
     }
 
@@ -887,7 +887,7 @@ export function CashFlowPage() {
     });
   }, [activeCompensationProfiles, reallocateTx]);
   const targetPeriodOptions = useMemo(() => {
-    const nextPeriod = dayjs(`${reallocateFromPeriod}-01`).add(1, "month").format("YYYY-MM");
+    const nextPeriod = addMonths(`${reallocateFromPeriod}-01`, 1).slice(0, 7);
     const filtered = monthOptions.filter((option) => option.value >= nextPeriod);
     if (filtered.some((option) => option.value === nextPeriod)) {
       return filtered;
@@ -1780,8 +1780,8 @@ export function CashFlowPage() {
       return;
     }
 
-    const fromPeriod = dayjs(tx.date).format("YYYY-MM");
-    const targetPeriod = dayjs(`${fromPeriod}-01`).add(1, "month").format("YYYY-MM");
+    const fromPeriod = chileDay(tx.date).slice(0, 7);
+    const targetPeriod = addMonths(`${fromPeriod}-01`, 1).slice(0, 7);
     const defaultProfile = matchingProfiles[0];
     setReallocateTx(tx);
     setReallocateProfileId(defaultProfile?.id ?? null);
@@ -3769,7 +3769,7 @@ export function CashFlowPage() {
               readOnly
               value={
                 reallocateTx
-                  ? `${dayjs(reallocateTx.date).format("DD-MM-YYYY")} · ${reallocateTx.description}`
+                  ? `${formatChile(reallocateTx.date, "DD-MM-YYYY")} · ${reallocateTx.description}`
                   : ""
               }
             />

@@ -13,10 +13,8 @@ import {
   Tooltip,
 } from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import dayjs from "dayjs";
-import timezone from "dayjs/plugin/timezone";
-import utc from "dayjs/plugin/utc";
 import { Suspense, useState } from "react";
+import { formatChile, startOfMonth, today } from "@/lib/dates";
 import { AppDateRangePicker, AppDateTimePicker } from "@/components/forms/AppDatePicker";
 import { AppModal } from "@/components/ui/AppModal";
 import type {
@@ -28,11 +26,6 @@ import type { z } from "zod";
 import { attendanceORPCClient, toAttendanceApiError } from "./orpc";
 import { getAttendanceNetworkOrigin } from "./network-origin";
 import { attendanceQueries } from "./queries";
-
-dayjs.extend(utc);
-dayjs.extend(timezone);
-
-const TIMEZONE = "America/Santiago";
 
 type AttendanceMark = z.infer<typeof attendanceMarkSchema> & {
   employeeName?: string;
@@ -61,7 +54,7 @@ function AdminMarkModal({ onClose }: AdminMarkModalProps) {
   const queryClient = useQueryClient();
   const [employeeId, setEmployeeId] = useState("");
   const [type, setType] = useState<MarkType>("CLOCK_IN");
-  const [markedAt, setMarkedAt] = useState(dayjs().tz(TIMEZONE).format("YYYY-MM-DDTHH:mm"));
+  const [markedAt, setMarkedAt] = useState(formatChile(new Date(), "YYYY-MM-DDTHH:mm"));
   const [notes, setNotes] = useState("");
   const [error, setError] = useState<string | null>(null);
 
@@ -235,7 +228,7 @@ function MarksTable({ isDeletingId, marks, onDelete, summary }: MarksTableProps)
                       </Chip>
                     </Table.Cell>
                     <Table.Cell className="font-medium tabular-nums">
-                      {dayjs(mark.markedAt).tz(TIMEZONE).format("DD/MM/YYYY HH:mm")}
+                      {formatChile(mark.markedAt, "DD/MM/YYYY HH:mm")}
                     </Table.Cell>
                     <Table.Cell>
                       <Chip color={networkOrigin.tone} size="sm" variant="secondary">
@@ -518,10 +511,8 @@ function OfficeNetworksCard() {
 function AdminAttendanceContent() {
   const queryClient = useQueryClient();
   const [employeeIdFilter, setEmployeeIdFilter] = useState("");
-  const [fromFilter, setFromFilter] = useState(
-    dayjs().tz(TIMEZONE).startOf("month").format("YYYY-MM-DD")
-  );
-  const [toFilter, setToFilter] = useState(dayjs().tz(TIMEZONE).format("YYYY-MM-DD"));
+  const [fromFilter, setFromFilter] = useState(startOfMonth());
+  const [toFilter, setToFilter] = useState(today());
   const [completionFilter, setCompletionFilter] = useState<CompletionFilter>("all");
   const [showModal, setShowModal] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);

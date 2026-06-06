@@ -1,9 +1,7 @@
 import { Button, Card, Chip } from "@heroui/react";
-import dayjs from "dayjs";
 import type { CalendarSyncStep } from "@/features/calendar/types";
+import { formatChile } from "@/lib/dates";
 import { numberFormatter } from "@/lib/format";
-
-import "dayjs/locale/es";
 
 interface LastSyncInfo {
   excluded: number;
@@ -162,8 +160,8 @@ export function SyncProgressPanel({
         <div className="flex gap-2">
           <Chip size="sm" variant="soft" className="text-foreground-600 text-xs">
             {lastSyncInfo && !syncing && !syncError
-              ? dayjs(lastSyncInfo.fetchedAt).tz().format("DD MMM YYYY · HH:mm")
-              : dayjs().tz().format("DD MMM YYYY · HH:mm")}
+              ? formatChile(lastSyncInfo.fetchedAt, "DD MMM YYYY · HH:mm")
+              : formatChile(new Date(), "DD MMM YYYY · HH:mm")}
           </Chip>
           {showSyncButton && onSyncNow && (
             <Button
@@ -189,7 +187,7 @@ export function SyncProgressPanel({
             {numberFormatter.format(lastSyncInfo.updated)}
           </p>
           <p className="text-foreground-500 md:col-span-2">
-            Ejecutado el {dayjs(lastSyncInfo.fetchedAt).tz().format("DD MMM YYYY · HH:mm")}
+            Ejecutado el {formatChile(lastSyncInfo.fetchedAt, "DD MMM YYYY · HH:mm")}
           </p>
         </div>
       )}
