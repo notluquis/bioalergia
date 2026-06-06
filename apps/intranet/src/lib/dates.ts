@@ -278,3 +278,19 @@ export function fromNow(value: DateInput): string {
   }
   return RELATIVE.format(0, "second");
 }
+
+/** "3 días" / "2 horas" — magnitude only, no direction. Drop-in for dayjs().fromNow(true). */
+export function fromNowShort(value: DateInput): string {
+  const abs = Math.abs(toDisplayDate(value).getTime() - Date.now());
+  for (const [unit, ms] of RELATIVE_UNITS) {
+    if (abs >= ms || unit === "second") {
+      const n = Math.round(abs / ms);
+      return new Intl.NumberFormat(LOCALE, { style: "unit", unit, unitDisplay: "long" }).format(n);
+    }
+  }
+  return new Intl.NumberFormat(LOCALE, {
+    style: "unit",
+    unit: "second",
+    unitDisplay: "long",
+  }).format(0);
+}

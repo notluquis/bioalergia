@@ -1,6 +1,6 @@
 import { createFileRoute, getRouteApi } from "@tanstack/react-router";
-import dayjs from "dayjs";
 
+import { addMonths, endOfMonthFor, today } from "@/lib/dates";
 import { type CalendarSearchParams, calendarSearchSchema } from "@/features/calendar/types";
 import { CalendarHeatmapPage } from "@/pages/CalendarHeatmapPage";
 
@@ -10,8 +10,8 @@ export const Route = createFileRoute("/_authed/clinical/heatmap")({
   validateSearch: (search: Record<string, unknown>): CalendarSearchParams => {
     const parsed = calendarSearchSchema.parse(search);
     if (!parsed.from || !parsed.to) {
-      const defaultFrom = dayjs().subtract(1, "month").startOf("month").format("YYYY-MM-DD");
-      const defaultTo = dayjs().add(1, "month").endOf("month").format("YYYY-MM-DD");
+      const defaultFrom = addMonths(today(), -1);
+      const defaultTo = endOfMonthFor(addMonths(today(), 1));
       return {
         ...parsed,
         from: parsed.from ?? defaultFrom,

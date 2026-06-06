@@ -1,13 +1,13 @@
 import { Button, Form } from "@heroui/react";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import dayjs from "dayjs";
 import { Loader2 } from "lucide-react";
 import { useState } from "react";
 import { z } from "zod";
 import { AppDateRangePicker } from "@/components/forms/AppDatePicker";
 import { AppModal } from "@/components/ui/AppModal";
 import { useToast } from "@/context/ToastContext";
+import { addDays, chileDay, civilNoon, today } from "@/lib/dates";
 import { MPService, type MpReportType } from "@/services/mercadopago";
 
 const schema = z.object({
@@ -59,8 +59,8 @@ export function GenerateReportModal({ onClose, open, reportType }: Props) {
 
   const form = useForm({
     defaultValues: {
-      begin_date: dayjs().subtract(7, "day").toDate(),
-      end_date: dayjs().toDate(),
+      begin_date: civilNoon(addDays(today(), -7)),
+      end_date: civilNoon(today()),
     } as FormData,
     onSubmit: async ({ value }) => {
       const payload: FormData = {
@@ -150,11 +150,11 @@ export function GenerateReportModal({ onClose, open, reportType }: Props) {
               isRequired
               isDisabled={mutation.isPending}
               label="Rango de fechas"
-              startValue={begin ? dayjs(begin).format("YYYY-MM-DD") : null}
-              endValue={end ? dayjs(end).format("YYYY-MM-DD") : null}
+              startValue={begin ? chileDay(begin) : null}
+              endValue={end ? chileDay(end) : null}
               onChange={(from, to) => {
-                if (from) form.setFieldValue("begin_date", dayjs(from, "YYYY-MM-DD").toDate());
-                if (to) form.setFieldValue("end_date", dayjs(to, "YYYY-MM-DD").toDate());
+                if (from) form.setFieldValue("begin_date", civilNoon(from));
+                if (to) form.setFieldValue("end_date", civilNoon(to));
               }}
             />
           )}

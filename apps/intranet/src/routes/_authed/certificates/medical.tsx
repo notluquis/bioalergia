@@ -17,7 +17,7 @@ import { parseDate } from "@internationalized/date";
 import { useForm } from "@tanstack/react-form";
 import { useMutation } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import dayjs from "dayjs";
+import { addDays, formatChile, today } from "@/lib/dates";
 import { z } from "zod";
 import {
   TanStackInputField,
@@ -77,7 +77,7 @@ function MedicalCertificatePage() {
       const url = URL.createObjectURL(pdfBlob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `certificado_${variables.rut.replace(/\./g, "")}_${dayjs().format("YYYYMMDD")}.pdf`;
+      a.download = `certificado_${variables.rut.replace(/\./g, "")}_${formatChile(new Date(), "YYYYMMDD")}.pdf`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -94,14 +94,14 @@ function MedicalCertificatePage() {
     defaultValues: {
       patientName: search.patientName || "",
       rut: search.rut || "",
-      birthDate: search.birthDate || dayjs().subtract(25, "years").format("YYYY-MM-DD"),
+      birthDate: search.birthDate || `${Number(today().slice(0, 4)) - 25}${today().slice(4)}`,
       address: search.address || "",
-      date: dayjs().format("YYYY-MM-DD"),
+      date: today(),
       diagnosis: "",
       symptoms: "",
       restDays: 0,
-      restStartDate: dayjs().format("YYYY-MM-DD"),
-      restEndDate: dayjs().add(7, "days").format("YYYY-MM-DD"),
+      restStartDate: today(),
+      restEndDate: addDays(today(), 7),
       purpose: "trabajo" as "trabajo" | "estudio" | "otro",
       purposeDetail: "",
     },

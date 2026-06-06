@@ -12,8 +12,6 @@ import {
   Table,
 } from "@heroui/react";
 import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
-import dayjs from "dayjs";
-import relativeTime from "dayjs/plugin/relativeTime";
 import {
   AlertTriangle,
   CheckCircle,
@@ -36,13 +34,9 @@ import { triggerBackup, triggerRestore } from "@/features/backup/api";
 import { backupKeys } from "@/features/backup/queries";
 import type { BackupFile, BackupJob, RestoreJob } from "@/features/backup/types";
 import { ApiError } from "@/lib/api-client";
+import { formatChile, fromNowShort } from "@/lib/dates";
 import { formatFileSize } from "@/lib/format";
 import { cn } from "@/lib/utils";
-
-import "dayjs/locale/es";
-
-dayjs.extend(relativeTime);
-dayjs.locale("es");
 
 type BackupProgressMessage = {
   job: BackupJob | RestoreJob;
@@ -290,7 +284,7 @@ function BackupSummaryCards({
         color="warning"
         icon={<Clock className="size-5 text-warning" />}
         label="Último backup"
-        value={latestBackupCreatedTime ? dayjs(latestBackupCreatedTime).fromNow(true) : "-"}
+        value={latestBackupCreatedTime ? fromNowShort(latestBackupCreatedTime) : "-"}
       />
     </div>
   );
@@ -472,7 +466,7 @@ function BackupRow({ backup, onSuccess }: { backup: BackupFile; onSuccess: () =>
                 <span className="truncate font-medium">{backup.name}</span>
               </div>
               <Description className="leading-5 text-default-500 text-xs">
-                {dayjs(backup.createdTime).tz().format("DD MMM YYYY, HH:mm")} •{" "}
+                {formatChile(backup.createdTime, "DD MMM YYYY, HH:mm")} •{" "}
                 {formatFileSize(Number(backup.size))}
               </Description>
             </div>

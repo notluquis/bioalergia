@@ -8,8 +8,6 @@ import {
 } from "@tanstack/react-query";
 import type { ColumnDef, PaginationState } from "@tanstack/react-table";
 import { getRouteApi } from "@tanstack/react-router";
-import dayjs from "dayjs";
-import isoWeek from "dayjs/plugin/isoWeek";
 import { Activity, BarChart3, Mail, RefreshCw, TrendingUp, Users } from "lucide-react";
 import { lazy, startTransition, Suspense, useEffect, useMemo } from "react";
 import type React from "react";
@@ -30,12 +28,8 @@ import {
 } from "@/features/doctoralia/api";
 import type { DoctoraliaEmailNotification, DoctoraliaSyncLog } from "@/features/doctoralia/types";
 import { useLazyTabs } from "@/hooks/use-lazy-tabs";
+import { formatChile } from "@/lib/dates";
 import { numberFormatter } from "@/lib/format";
-
-import "dayjs/locale/es";
-
-dayjs.extend(isoWeek);
-dayjs.locale("es");
 
 type DoctoraliaTabId = "mensual" | "comparativa" | "pacientes" | "eventos" | "sincronizacion";
 
@@ -101,7 +95,7 @@ const notificationColumns: ColumnDef<DoctoraliaEmailNotification>[] = [
     accessorKey: "appointmentDate",
     cell: ({ row }) =>
       row.original.appointmentDate
-        ? dayjs(row.original.appointmentDate).tz().format("DD/MM/YYYY HH:mm")
+        ? formatChile(row.original.appointmentDate, "DD/MM/YYYY HH:mm")
         : "—",
     header: "Fecha cita",
   },
@@ -225,7 +219,7 @@ function formatCounts(counts: Record<string, number>): string {
 const syncLogColumns: ColumnDef<DoctoraliaSyncLog>[] = [
   {
     accessorKey: "startedAt",
-    cell: ({ row }) => dayjs(row.original.startedAt).tz().format("DD/MM/YYYY HH:mm"),
+    cell: ({ row }) => formatChile(row.original.startedAt, "DD/MM/YYYY HH:mm"),
     header: "Inicio",
   },
   {
