@@ -1,9 +1,9 @@
 // oxlint-disable typescript/no-non-null-assertion -- TODO(strict-null): refactor each `!` to invariant() or explicit guard. Tracked in repo-wide non-null cleanup.
 import { Avatar, Button, Card, Chip, Spinner } from "@heroui/react";
 import { useQueryClient } from "@tanstack/react-query";
-import dayjs from "dayjs";
 import { Ban, Bell, BellOff } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { chileDay, fromNowShort } from "@/lib/dates";
 import { confirmAction } from "@/components/ui/ConfirmDialog";
 import { toast } from "@/lib/toast-interceptor";
 import { ChatBubble } from "./ChatBubble";
@@ -439,10 +439,9 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
     (a, b) => +new Date(a.timestamp) - +new Date(b.timestamp)
   );
   for (const m of combined) {
-    const d = dayjs(m.timestamp);
-    const day = d.format("YYYY-MM-DD");
+    const day = chileDay(m.timestamp);
     if (day !== lastDay) {
-      allMessages.push({ kind: "divider", key: `d-${day}`, label: dayLabel(d) });
+      allMessages.push({ kind: "divider", key: `d-${day}`, label: dayLabel(m.timestamp) });
       lastDay = day;
     }
     let quoted: { body: string; out: boolean } | null = null;
@@ -504,7 +503,7 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
           {c.windowOpen ? (
             <Chip color="success" variant="soft" size="sm">
               <Chip.Label>
-                Ventana {c.windowExpiresAt && dayjs(c.windowExpiresAt).fromNow(true)}
+                Ventana {c.windowExpiresAt && fromNowShort(c.windowExpiresAt)}
               </Chip.Label>
             </Chip>
           ) : (

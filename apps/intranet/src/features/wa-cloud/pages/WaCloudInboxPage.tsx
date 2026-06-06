@@ -22,7 +22,6 @@ import {
 // Spinner removed in favour of ConversationListSkeleton for the inbox list.
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { getRouteApi } from "@tanstack/react-router";
-import dayjs from "dayjs";
 import {
   ArrowLeft,
   Bell,
@@ -40,6 +39,7 @@ import { SharedPayloadModal } from "../components/SharedPayloadModal";
 import { useFaviconBadge } from "../hooks/useFaviconBadge";
 import { useSharedPayload } from "../hooks/useSharedPayload";
 import { useAccounts, useConversations, useMarkRead, useSearchMessages } from "../hooks/useWaCloud";
+import { addDays, chileDay, diffDays, formatChile, today } from "@/lib/dates";
 import { usePushNotifications } from "@/hooks/use-push-notifications";
 import {
   getPushPreviewMode,
@@ -103,12 +103,12 @@ function initialsOf(name: string): string {
 }
 function formatRelative(d: Date | null | undefined): string {
   if (!d) return "";
-  const now = dayjs();
-  const m = dayjs(d);
-  if (m.isSame(now, "day")) return m.format("HH:mm");
-  if (m.isSame(now.subtract(1, "day"), "day")) return "Ayer";
-  if (m.isAfter(now.subtract(7, "day"))) return m.format("ddd");
-  return m.format("DD-MM-YY");
+  const day = chileDay(d);
+  const t = today();
+  if (day === t) return formatChile(d, "HH:mm");
+  if (day === addDays(t, -1)) return "Ayer";
+  if (diffDays(t, day) < 7) return formatChile(d, "ddd").replace(/\.$/, "");
+  return formatChile(d, "DD-MM-YY");
 }
 
 export interface WaCloudInboxPageProps {
@@ -436,7 +436,7 @@ export function WaCloudInboxPage({ onOpenSearchDrawer }: WaCloudInboxPageProps =
                         key={c.id}
                         id={String(c.id)}
                         textValue={name}
-                        className="rounded-none border-default-200 border-b px-3 py-3 transition-[background-color] duration-150 ease-out"
+                        className="rounded-none border-default-200 border-b transition-[background-color] duration-150 ease-out p-3"
                       >
                         <div className="flex w-full items-center gap-3" data-phi-block>
                           {c.unreadCount > 0 ? (
@@ -503,7 +503,7 @@ export function WaCloudInboxPage({ onOpenSearchDrawer }: WaCloudInboxPageProps =
                               {m.contactName ?? m.phoneE164}
                             </span>
                             <span className="shrink-0 text-default-400 text-xs">
-                              {dayjs(m.timestamp).format("DD-MM HH:mm")}
+                              {formatChile(m.timestamp, "DD-MM HH:mm")}
                             </span>
                           </div>
                           <p className="line-clamp-2 text-default-600 text-xs">
@@ -561,7 +561,7 @@ function ConversationListSkeleton() {
   return (
     <div className="space-y-0 divide-default-200 divide-y">
       {Array.from({ length: 8 }).map((_, i) => (
-        <div key={i} className="flex items-center gap-3 px-3 py-3">
+        <div key={i} className="flex items-center gap-3 p-3">
           <Skeleton className="size-11 shrink-0 rounded-full" />
           <div className="min-w-0 flex-1 space-y-2">
             <div className="flex items-baseline justify-between gap-2">

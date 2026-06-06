@@ -5,8 +5,8 @@
  */
 
 import { render, screen } from "@testing-library/react";
-import dayjs from "dayjs";
 import { describe, expect, it } from "vitest";
+import { addDays, formatChile, today } from "@/lib/dates";
 import { dayLabel, initialsOf, QUICK_REACTIONS, StatusTicks } from "./_shared";
 
 describe("StatusTicks (a11y)", () => {
@@ -38,21 +38,21 @@ describe("StatusTicks (a11y)", () => {
 
 describe("dayLabel", () => {
   it("returns 'Hoy' for today", () => {
-    expect(dayLabel(dayjs())).toBe("Hoy");
+    expect(dayLabel(new Date())).toBe("Hoy");
   });
 
   it("returns 'Ayer' for yesterday", () => {
-    expect(dayLabel(dayjs().subtract(1, "day"))).toBe("Ayer");
+    expect(dayLabel(addDays(today(), -1))).toBe("Ayer");
   });
 
   it("returns the weekday name within last 7 days", () => {
-    const threeDaysAgo = dayjs().subtract(3, "day");
-    expect(dayLabel(threeDaysAgo)).toBe(threeDaysAgo.format("dddd"));
+    const threeDaysAgo = addDays(today(), -3);
+    expect(dayLabel(threeDaysAgo)).toBe(formatChile(threeDaysAgo, "dddd"));
   });
 
   it("returns DD MMM YYYY for older dates", () => {
-    const old = dayjs().subtract(30, "day");
-    expect(dayLabel(old)).toBe(old.format("DD MMM YYYY"));
+    const old = addDays(today(), -30);
+    expect(dayLabel(old)).toBe(formatChile(old, "DD MMM YYYY"));
   });
 });
 

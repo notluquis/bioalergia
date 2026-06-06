@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import dayjs from "dayjs";
 
+import { addDays, today as todayISO } from "@/lib/dates";
 import type { CalendarEventDetail, EventDteConfirmedLink } from "../types";
 import { DailyEventCard } from "./DailyEventCard";
 
@@ -12,9 +12,9 @@ import { DailyEventCard } from "./DailyEventCard";
 // asistida + pagada, (d) evento futuro pendiente de emisión, (e) evento
 // cancelado, sin botón de vincular.
 
-const today = dayjs().format("YYYY-MM-DD");
-const tomorrow = dayjs().add(1, "day").format("YYYY-MM-DD");
-const yesterday = dayjs().subtract(1, "day").format("YYYY-MM-DD");
+const today = todayISO();
+const tomorrow = addDays(today, 1);
+const yesterday = addDays(today, -1);
 
 function buildBase(overrides: Partial<CalendarEventDetail>): CalendarEventDetail {
   return {

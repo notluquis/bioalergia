@@ -1,6 +1,6 @@
 // oxlint-disable typescript/no-non-null-assertion -- TODO(strict-null): refactor each `!` to invariant() or explicit guard. Tracked in repo-wide non-null cleanup.
-import dayjs from "dayjs";
 import { AlertCircle, Check, CheckCheck, Clock } from "lucide-react";
+import { addDays, chileDay, type DateInput, diffDays, formatChile, today } from "@/lib/dates";
 
 export const QUICK_REACTIONS = ["👍", "❤️", "😂", "😮", "😢", "🙏"];
 
@@ -18,12 +18,13 @@ export function StatusTicks({ status }: { status: MessageStatus }) {
   return <Check className={cls} size={14} aria-label="enviado" />;
 }
 
-export function dayLabel(d: dayjs.Dayjs): string {
-  const today = dayjs();
-  if (d.isSame(today, "day")) return "Hoy";
-  if (d.isSame(today.subtract(1, "day"), "day")) return "Ayer";
-  if (d.isAfter(today.subtract(7, "day"))) return d.format("dddd");
-  return d.format("DD MMM YYYY");
+export function dayLabel(value: DateInput): string {
+  const day = chileDay(value);
+  const t = today();
+  if (day === t) return "Hoy";
+  if (day === addDays(t, -1)) return "Ayer";
+  if (diffDays(t, day) < 7) return formatChile(value, "dddd");
+  return formatChile(value, "DD MMM YYYY");
 }
 
 export function initialsOf(name: string): string {
