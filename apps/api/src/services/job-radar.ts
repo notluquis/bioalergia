@@ -10,6 +10,7 @@ import { db, type JsonValue } from "@finanzas/db";
 import { DomainError } from "../lib/errors.ts";
 import { logEvent, logWarn } from "../lib/logger.ts";
 import { getSettings, updateSettings } from "../lib/settings.ts";
+import { fetchAshbyJobs } from "../modules/job-radar/ashby.ts";
 import { fetchBciJobs } from "../modules/job-radar/bci.ts";
 import {
   DEFAULT_KEYWORDS,
@@ -41,6 +42,7 @@ const KEYS = {
   getonbrd: "jobRadar.getonbrd",
   greenhouse: "jobRadar.greenhouse",
   lever: "jobRadar.lever",
+  ashby: "jobRadar.ashby",
   keywords: "jobRadar.keywords",
   departments: "jobRadar.departments",
   cron: "jobRadar.cron",
@@ -55,6 +57,7 @@ export interface JobRadarConfig {
   getonbrd: boolean;
   greenhouse: string[];
   lever: string[];
+  ashby: string[];
   keywords: string[];
   departments: string[];
   cron: string;
@@ -89,6 +92,7 @@ export async function getJobRadarConfig(): Promise<JobRadarConfig> {
   const companiesRaw = pick(rec, KEYS.companies, process.env.JOB_RADAR_COMPANIES) ?? "";
   const greenhouseRaw = pick(rec, KEYS.greenhouse, process.env.JOB_RADAR_GREENHOUSE) ?? "";
   const leverRaw = pick(rec, KEYS.lever, process.env.JOB_RADAR_LEVER) ?? "";
+  const ashbyRaw = pick(rec, KEYS.ashby, process.env.JOB_RADAR_ASHBY) ?? "";
   const keywordsRaw = pick(rec, KEYS.keywords, process.env.JOB_RADAR_KEYWORDS);
   const departmentsRaw = pick(rec, KEYS.departments, process.env.JOB_RADAR_DEPARTMENTS) ?? "";
 
@@ -103,6 +107,7 @@ export async function getJobRadarConfig(): Promise<JobRadarConfig> {
     getonbrd: parseBool(pick(rec, KEYS.getonbrd, process.env.JOB_RADAR_GETONBRD), false),
     greenhouse: parseCsv(greenhouseRaw),
     lever: parseCsv(leverRaw),
+    ashby: parseCsv(ashbyRaw),
     keywords: keywordsRaw === undefined ? DEFAULT_KEYWORDS : parseCsv(keywordsRaw),
     departments: parseCsv(departmentsRaw),
     cron: pick(rec, KEYS.cron, process.env.JOB_RADAR_CRON) || JOB_RADAR_DEFAULT_CRON,
@@ -156,6 +161,14 @@ function getSources(config: JobRadarConfig): JobSource[] {
       company,
       label: `lever:${company}`,
       fetch: () => fetchLeverJobs(company),
+    });
+  }
+  for (const org of config.ashby) {
+    sources.push({
+      source: "ashby",
+      company: org,
+      label: `ashby:${org}`,
+      fetch: () => fetchAshbyJobs(org),
     });
   }
   return sources;
@@ -460,6 +473,7 @@ export interface JobRadarSettingsDTO {
   getonbrd: boolean;
   greenhouse: string; // CSV
   lever: string; // CSV
+  ashby: string; // CSV
   keywords: string; // CSV
   departments: string; // CSV
   cron: string;
@@ -476,6 +490,7 @@ export async function getJobRadarSettings(): Promise<JobRadarSettingsDTO> {
     getonbrd: config.getonbrd,
     greenhouse: config.greenhouse.join(", "),
     lever: config.lever.join(", "),
+    ashby: config.ashby.join(", "),
     keywords: config.keywords.join(", "),
     departments: config.departments.join(", "),
     cron: config.cron,
@@ -491,6 +506,7 @@ export interface UpdateJobRadarSettingsInput {
   getonbrd?: boolean;
   greenhouse?: string;
   lever?: string;
+  ashby?: string;
   keywords?: string;
   departments?: string;
   cron?: string;
@@ -508,6 +524,7 @@ export async function updateJobRadarSettings(
   if (input.companies !== undefined) rows[KEYS.companies] = input.companies;
   if (input.greenhouse !== undefined) rows[KEYS.greenhouse] = input.greenhouse;
   if (input.lever !== undefined) rows[KEYS.lever] = input.lever;
+  if (input.ashby !== undefined) rows[KEYS.ashby] = input.ashby;
   if (input.keywords !== undefined) rows[KEYS.keywords] = input.keywords;
   if (input.departments !== undefined) rows[KEYS.departments] = input.departments;
   if (input.cron !== undefined) rows[KEYS.cron] = input.cron;

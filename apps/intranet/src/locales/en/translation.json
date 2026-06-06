@@ -49,6 +49,7 @@
       "companies": "Teamtailor companies (CSV of subdomains)",
       "greenhouse": "Greenhouse boards (CSV of tokens)",
       "lever": "Lever companies (CSV of slugs)",
+      "ashby": "Ashby boards (CSV of slugs)",
       "cron": "Frequency (cron)",
       "keywords": "Profile keywords (CSV)",
       "departments": "Departments (CSV)",

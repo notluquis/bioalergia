@@ -11,6 +11,7 @@ const EMPTY: JobRadarSettings = {
   getonbrd: false,
   greenhouse: "",
   lever: "",
+  ashby: "",
   keywords: "",
   departments: "",
   cron: "",
@@ -68,6 +69,11 @@ export function JobRadarSettingsPanel() {
         <TextField value={form.lever} onChange={(v) => set("lever", v)}>
           <Label>{t("jobRadar.settings.lever")}</Label>
           <Input placeholder="fintual, xepelin" />
+        </TextField>
+
+        <TextField value={form.ashby} onChange={(v) => set("ashby", v)}>
+          <Label>{t("jobRadar.settings.ashby")}</Label>
+          <Input placeholder="toku, belvo" />
         </TextField>
 
         <TextField value={form.keywords} onChange={(v) => set("keywords", v)}>

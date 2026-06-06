@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { fetchAshbyJobs } from "../ashby.ts";
 import { fetchBciJobs } from "../bci.ts";
 import { matchesProfile, type ProfileFilter } from "../filter.ts";
 import { fetchGetonbrdJobs } from "../getonbrd.ts";
@@ -289,6 +290,55 @@ describe("fetchGetonbrdJobs", () => {
     expect(await fetchGetonbrdJobs([])).toEqual([]);
     const jobs = await fetchGetonbrdJobs(["data", "riesgo"]);
     expect(jobs).toHaveLength(1); // mismo id en ambas queries → dedup
+  });
+});
+
+const ASHBY_JSON = JSON.stringify({
+  jobs: [
+    {
+      id: "9c327e8b-1cf3-45da-a99a-e60420df8a0c",
+      title: "Software Engineer",
+      department: "Engineering",
+      team: "Devs",
+      location: "Chile",
+      isRemote: true,
+      workplaceType: "Remote",
+      jobUrl: "https://jobs.ashbyhq.com/toku/9c327e8b",
+      descriptionHtml: "<p>desc</p>",
+      publishedAt: "2025-08-13T19:16:52.961+00:00",
+    },
+  ],
+});
+
+describe("fetchAshbyJobs", () => {
+  let fetchSpy: ReturnType<typeof vi.spyOn>;
+  beforeEach(() => {
+    fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(res(ASHBY_JSON));
+  });
+  afterEach(() => fetchSpy.mockRestore());
+
+  it("maps Ashby posting-api jobs", async () => {
+    const jobs = await fetchAshbyJobs("toku");
+    expect(String(fetchSpy.mock.calls[0][0])).toContain(
+      "api.ashbyhq.com/posting-api/job-board/toku"
+    );
+    expect(jobs).toHaveLength(1);
+    expect(jobs[0]).toMatchObject({
+      source: "ashby",
+      company: "toku",
+      externalId: "9c327e8b-1cf3-45da-a99a-e60420df8a0c",
+      title: "Software Engineer",
+      department: "Engineering",
+      location: "Chile",
+      remote: "Remote",
+      url: "https://jobs.ashbyhq.com/toku/9c327e8b",
+    });
+    expect(jobs[0].publishedAt).toBeInstanceOf(Date);
+  });
+
+  it("returns [] on non-ok", async () => {
+    fetchSpy.mockResolvedValue(res("", false, 404));
+    expect(await fetchAshbyJobs("nope")).toEqual([]);
   });
 });
 
