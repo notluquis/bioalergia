@@ -30,6 +30,7 @@ import {
   clinicalRecordsOpenAPIHandler,
   clinicalRecordsORPCHandler,
 } from "./orpc/clinical-records.ts";
+import { onedriveOpenAPIHandler, onedriveORPCHandler } from "./orpc/onedrive.ts";
 import {
   clinicalSkinTestsOpenAPIHandler,
   clinicalSkinTestsORPCHandler,
@@ -968,6 +969,17 @@ app.use("/api/orpc/clinical-skin-tests/rpc/*", async (c, next) => {
 app.use("/api/orpc/clinical-records/rpc/*", async (c, next) => {
   const { matched, response } = await clinicalRecordsORPCHandler.handle(createHonoORPCRequest(c), {
     prefix: "/api/orpc/clinical-records/rpc",
+    context: { hono: c },
+  });
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+  return next();
+});
+
+app.use("/api/orpc/onedrive/rpc/*", async (c, next) => {
+  const { matched, response } = await onedriveORPCHandler.handle(createHonoORPCRequest(c), {
+    prefix: "/api/orpc/onedrive/rpc",
     context: { hono: c },
   });
   if (matched) {
@@ -2194,6 +2206,16 @@ app.use("/api/orpc/clinical-records/*", async (c, next) => {
       context: { hono: c },
     }
   );
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+  return next();
+});
+
+app.use("/api/orpc/onedrive/*", async (c, next) => {
+  const { matched, response } = await onedriveOpenAPIHandler.handle(createHonoORPCRequest(c), {
+    context: { hono: c },
+  });
   if (matched) {
     return c.newResponse(response.body, response);
   }

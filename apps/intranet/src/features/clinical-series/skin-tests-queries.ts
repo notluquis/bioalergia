@@ -2,6 +2,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { compactORPCInput } from "@/lib/orpc-input";
 import { clinicalSeriesKeys } from "./queries";
+import { onedriveORPCClient } from "@/features/onedrive/orpc";
 import { clinicalSkinTestsORPCClient, toClinicalSkinTestsApiError } from "./skin-tests-orpc";
 import {
   ClinicalDocumentImportSchema,
@@ -69,7 +70,7 @@ export const skinTestImportKeys = {
 
 export function useOneDriveSkinTestStatus() {
   return useQuery({
-    queryFn: async () => clinicalSkinTestsORPCClient.getOneDriveStatus({}),
+    queryFn: async () => onedriveORPCClient.getOneDriveStatus({}),
     queryKey: skinTestImportKeys.oneDriveStatus(),
   });
 }
@@ -94,7 +95,7 @@ export function useActiveClinicalSkinTestJob(options?: { enabled?: boolean }) {
 export function useGetOneDriveAuthUrl(redirectUri: string) {
   return useQuery({
     enabled: false, // only run on demand
-    queryFn: async () => clinicalSkinTestsORPCClient.getOneDriveAuthUrl({ redirectUri }),
+    queryFn: async () => onedriveORPCClient.getOneDriveAuthUrl({ redirectUri }),
     queryKey: ["onedrive-auth-url", redirectUri],
   });
 }
@@ -103,7 +104,7 @@ export function useConnectOneDrive() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (params: { code: string; redirectUri: string }) =>
-      clinicalSkinTestsORPCClient.connectOneDrive(params),
+      onedriveORPCClient.connectOneDrive(params),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: skinTestImportKeys.oneDriveStatus() });
     },
@@ -194,7 +195,7 @@ export function useConfigureOneDriveFolder() {
       folderPath?: string;
       itemId?: null | string;
       name?: null | string;
-    }) => await clinicalSkinTestsORPCClient.configureOneDriveFolder(params),
+    }) => await onedriveORPCClient.configureOneDriveFolder(params),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: skinTestImportKeys.oneDriveStatus() });
     },
@@ -210,7 +211,7 @@ export function useOneDriveFolderChildren(params: {
   return useQuery({
     enabled: params.enabled ?? true,
     queryFn: async () => {
-      const result = await clinicalSkinTestsORPCClient.listOneDriveFolderChildren({
+      const result = await onedriveORPCClient.listOneDriveFolderChildren({
         accountId: params.accountId,
         driveId: params.driveId,
         itemId: params.itemId,
@@ -230,7 +231,7 @@ export function useRenewOneDriveSubscription() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (accountId: string) =>
-      await clinicalSkinTestsORPCClient.renewOneDriveSubscription({ accountId }),
+      await onedriveORPCClient.renewOneDriveSubscription({ accountId }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: skinTestImportKeys.oneDriveStatus() });
     },
@@ -241,7 +242,7 @@ export function useDisconnectOneDrive() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (accountId: string) =>
-      await clinicalSkinTestsORPCClient.disconnectOneDrive({ accountId }),
+      await onedriveORPCClient.disconnectOneDrive({ accountId }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: skinTestImportKeys.oneDriveStatus() });
     },
@@ -420,7 +421,7 @@ export function useOneDriveFolderPreview(params: {
     // Only fetch when a specific folder is selected (not root — too expensive without a target)
     enabled: (params.enabled ?? true) && !!(params.driveId && params.itemId),
     queryFn: async () =>
-      await clinicalSkinTestsORPCClient.folderPreview({
+      await onedriveORPCClient.folderPreview({
         accountId: params.accountId,
         driveId: params.driveId,
         itemId: params.itemId,

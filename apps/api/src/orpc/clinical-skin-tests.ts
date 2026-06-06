@@ -2,16 +2,6 @@ import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
 import {
   clinicalDocumentsBySeriesOutputSchema,
-  oneDriveAuthUrlInputSchema,
-  oneDriveCallbackInputSchema,
-  oneDriveDisconnectInputSchema,
-  oneDriveDisconnectOutputSchema,
-  oneDriveFolderChildrenInputSchema,
-  oneDriveFolderChildrenOutputSchema,
-  oneDriveFolderInputSchema,
-  oneDriveFolderPreviewInputSchema,
-  oneDriveFolderPreviewOutputSchema,
-  oneDriveStatusOutputSchema,
   skinTestAnalyticsInputSchema,
   skinTestAnalyticsOutputSchema,
   skinTestArchiveSnapshotsInputSchema,
@@ -48,16 +38,6 @@ import {
   startClinicalXlsxLibraryReclassifyJob,
 } from "../services/clinical-skin-test-scheduler.ts";
 import { cancelJob, getActiveJobsByType, getJobStatus } from "../lib/jobQueue.ts";
-import {
-  connectOneDriveWithCode,
-  disconnectOneDrive,
-  getOneDriveAuthUrl,
-  getOneDriveFolderPreview,
-  getOneDriveStatus,
-  listOneDriveFolderChildren,
-  renewOneDriveSubscriptionNow,
-  setOneDriveFolderPath,
-} from "../lib/microsoft/onedrive.ts";
 import { logError } from "../lib/logger.ts";
 import { configureSuperjson } from "../lib/superjson-config.ts";
 import {
@@ -132,83 +112,6 @@ const routerBase = {
         return await approveSkinTestImport(input.id, context.user.id, input.notes);
       }
     ),
-
-  configureOneDriveFolder: updateClinicalSkinTests
-    .route({ method: "POST", path: "/onedrive/folder" })
-    .input(oneDriveFolderInputSchema)
-    .output(oneDriveStatusOutputSchema)
-    .handler(async ({ input }: { input: z.input<typeof oneDriveFolderInputSchema> }) => {
-      await setOneDriveFolderPath(input.accountId, {
-        driveId: input.driveId,
-        folderPath: input.folderPath,
-        itemId: input.itemId,
-        name: input.name,
-      });
-      return await getOneDriveStatus();
-    }),
-
-  listOneDriveFolderChildren: readClinicalSkinTests
-    .route({ method: "GET", path: "/onedrive/folders" })
-    .input(oneDriveFolderChildrenInputSchema)
-    .output(oneDriveFolderChildrenOutputSchema)
-    .handler(async ({ input }: { input: z.input<typeof oneDriveFolderChildrenInputSchema> }) => {
-      return await listOneDriveFolderChildren(input.accountId, {
-        driveId: input.driveId,
-        itemId: input.itemId,
-      });
-    }),
-
-  folderPreview: readClinicalSkinTests
-    .route({ method: "GET", path: "/onedrive/folder-preview" })
-    .input(oneDriveFolderPreviewInputSchema)
-    .output(oneDriveFolderPreviewOutputSchema)
-    .handler(async ({ input }: { input: z.input<typeof oneDriveFolderPreviewInputSchema> }) => {
-      return await getOneDriveFolderPreview(input.accountId, {
-        driveId: input.driveId,
-        itemId: input.itemId,
-      });
-    }),
-
-  renewOneDriveSubscription: updateClinicalSkinTests
-    .route({ method: "POST", path: "/onedrive/subscription/renew" })
-    .input(oneDriveDisconnectInputSchema)
-    .output(oneDriveStatusOutputSchema)
-    .handler(async ({ input }: { input: z.input<typeof oneDriveDisconnectInputSchema> }) => {
-      await renewOneDriveSubscriptionNow(input.accountId);
-      return await getOneDriveStatus();
-    }),
-
-  connectOneDrive: updateClinicalSkinTests
-    .route({ method: "POST", path: "/onedrive/callback" })
-    .input(oneDriveCallbackInputSchema)
-    .output(oneDriveStatusOutputSchema)
-    .handler(async ({ input }: { input: z.input<typeof oneDriveCallbackInputSchema> }) => {
-      await connectOneDriveWithCode(input.code, input.redirectUri ?? defaultRedirectUri());
-      return await getOneDriveStatus();
-    }),
-
-  disconnectOneDrive: updateClinicalSkinTests
-    .route({ method: "POST", path: "/onedrive/disconnect" })
-    .input(oneDriveDisconnectInputSchema)
-    .output(oneDriveDisconnectOutputSchema)
-    .handler(async ({ input }: { input: z.input<typeof oneDriveDisconnectInputSchema> }) => {
-      await disconnectOneDrive(input.accountId);
-      return { connected: false };
-    }),
-
-  getOneDriveAuthUrl: updateClinicalSkinTests
-    .route({ method: "GET", path: "/onedrive/auth-url" })
-    .input(oneDriveAuthUrlInputSchema)
-    .output(z.object({ url: z.string() }))
-    .handler(({ input }: { input: z.input<typeof oneDriveAuthUrlInputSchema> }) => {
-      return { url: getOneDriveAuthUrl(input.redirectUri ?? defaultRedirectUri()) };
-    }),
-
-  getOneDriveStatus: readClinicalSkinTests
-    .route({ method: "GET", path: "/onedrive/status" })
-    .input(z.object({}))
-    .output(oneDriveStatusOutputSchema)
-    .handler(async () => await getOneDriveStatus()),
 
   importDetail: readClinicalSkinTests
     .route({ method: "GET", path: "/imports/{id}" })
@@ -407,13 +310,6 @@ const routerBase = {
       };
     }),
 };
-
-function defaultRedirectUri() {
-  return (
-    process.env.MICROSOFT_OAUTH_REDIRECT_URI ||
-    `${process.env.PUBLIC_URL || "http://localhost:3000"}/api/orpc/clinical-skin-tests/oauth/callback`
-  );
-}
 
 export const clinicalSkinTestsORPCRouter = base
   .prefix("/api/orpc/clinical-skin-tests")

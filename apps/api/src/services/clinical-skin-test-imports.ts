@@ -24,6 +24,7 @@ import {
   isImportableSkinTestFilename,
   isSkinTestTemplateFilename,
 } from "../lib/skin-test-file-filter.ts";
+import { enqueueClinicalRecordImportFromOneDrive } from "./clinical-record-imports.ts";
 import {
   parseSkinTestWorkbookBuffer,
   SKIN_TEST_PARSER_VERSION,
@@ -1293,6 +1294,13 @@ export async function discoverOneDriveClinicalDocument(
       imported_at = coalesce(clinical_document_imports.imported_at, now()),
       updated_at = now()
   `.execute(kysely);
+
+  // Fichas clínicas: a CLINICAL_RECORD document also feeds the ficha pipeline
+  // (clinical_record_imports). The ficha module owns that insert; the scan just
+  // hands off the OneDrive metadata so new/changed fichas auto-ingest.
+  if (documentKind === "CLINICAL_RECORD") {
+    await enqueueClinicalRecordImportFromOneDrive(accountId, metadata);
+  }
 
   return { clinicalSeriesId, documentKind, extractedPatientName, id: importId, status };
 }

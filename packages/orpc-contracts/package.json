@@ -105,6 +105,12 @@
       "import": "./dist/clinical-skin-tests.js",
       "default": "./dist/clinical-skin-tests.js"
     },
+    "./onedrive": {
+      "development": "./src/onedrive.ts",
+      "types": "./dist/onedrive.d.ts",
+      "import": "./dist/onedrive.js",
+      "default": "./dist/onedrive.js"
+    },
     "./counterparts": {
       "development": "./src/counterparts.ts",
       "types": "./dist/counterparts.d.ts",
