@@ -1,5 +1,6 @@
 import { kysely } from "@finanzas/db";
 import { sql } from "kysely";
+import xlsx from "xlsx";
 import {
   extractSkinTestWorkbookSnapshot,
   SKIN_TEST_WORKBOOK_SNAPSHOT_VERSION,
@@ -23,24 +24,38 @@ export async function extractXlsxSnapshot(buffer: Buffer): Promise<XlsxSnapshot>
   return extractSkinTestWorkbookSnapshot(buffer);
 }
 
-// Reconstruct the dense row/col grid a parser expects, matching
-// xlsx.sheet_to_json(sheet, { header: 1, raw: false, defval: null,
-// blankrows: false }): 1-indexed cells placed at [r-1][c-1] as trimmed text,
-// then fully-blank rows dropped.
+// Reconstruct the exact row grid a parser sees from a buffer. Rather than hand-
+// build the matrix (which drifts from SheetJS's blank-row/range handling), we
+// rebuild a worksheet from the snapshot's A1 cells as plain strings and run the
+// SAME sheet_to_json call rowsFromBuffer uses.
+//
+// Verified against real fichas: all clinically-meaningful fields (name, date,
+// diagnosis, history, exam, indications, anthropometrics) + confidence + the
+// dedup resultHash come out identical to a buffer parse. The only drift is the
+// debug-only rawHeader "L{row}" keys, whose numbering can shift by one when the
+// snapshot's blank-cell skipping differs from SheetJS on a leading blank row —
+// immaterial (rawHeader isn't shown or hashed).
 export function snapshotToRows(snapshot: XlsxSnapshot): string[][] {
   const cells = snapshot.sheet.cells;
   if (cells.length === 0) return [];
+  const sheet: xlsx.WorkSheet = {};
   let maxR = 0;
   let maxC = 0;
   for (const cell of cells) {
-    if (cell.r > maxR) maxR = cell.r;
-    if (cell.c > maxC) maxC = cell.c;
+    // Anchor at the captured visible text as a string cell; sheet_to_json
+    // raw:false then yields that same text, matching the original parse.
+    sheet[cell.a1] = { t: "s", v: cell.text ?? "" };
+    if (cell.r - 1 > maxR) maxR = cell.r - 1;
+    if (cell.c - 1 > maxC) maxC = cell.c - 1;
   }
-  const grid: string[][] = Array.from({ length: maxR }, () => Array.from({ length: maxC }, () => ""));
-  for (const cell of cells) {
-    grid[cell.r - 1][cell.c - 1] = (cell.text ?? "").trim();
-  }
-  return grid.filter((row) => row.some((c) => c !== ""));
+  sheet["!ref"] = xlsx.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: maxR, c: maxC } });
+  const json = xlsx.utils.sheet_to_json<unknown[]>(sheet, {
+    header: 1,
+    raw: false,
+    defval: null,
+    blankrows: false,
+  });
+  return json.map((row) => (row as unknown[]).map((c) => (c == null ? "" : String(c).trim())));
 }
 
 export type XlsxSnapshotRecord = {

@@ -427,7 +427,12 @@ function detectNonFichaDocument(rows: Row[]): boolean {
 }
 
 export function parseClinicalRecordWorkbook(buffer: Buffer): ParsedClinicalRecord {
-  const rows = rowsFromBuffer(buffer);
+  return parseClinicalRecordRows(rowsFromBuffer(buffer));
+}
+
+// Parse from an already-extracted row grid (e.g. reconstructed from a stored
+// snapshot), so reprocess can re-parse without re-downloading the xlsx.
+export function parseClinicalRecordRows(rows: Row[]): ParsedClinicalRecord {
   const issues: ClinicalRecordIssue[] = [];
 
   const result: ParsedClinicalRecord = {

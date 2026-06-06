@@ -12,9 +12,17 @@ import { matchPatientForRecord } from "../modules/clinical-records/match.ts";
 type Trx = Transaction<SchemaType>;
 import {
   CLINICAL_RECORD_PARSER_VERSION,
+  parseClinicalRecordRows,
   parseClinicalRecordWorkbook,
   type ParsedClinicalRecord,
 } from "../modules/clinical-records/parser.ts";
+import {
+  findXlsxFileByOneDriveItem,
+  isSnapshotFresh,
+  persistXlsxFileSnapshot,
+  readXlsxFileSnapshot,
+  snapshotToRows,
+} from "./xlsx-snapshot.ts";
 
 // Reprocess pipeline for clinical_record_imports. Mirror of
 // services/clinical-skin-test-imports.reprocessSkinTestImport but for
@@ -204,29 +212,63 @@ export async function reprocessClinicalRecordImport(id: string): Promise<{
   const row = await loadImport(id);
   if (!row) throw new DomainError("NOT_FOUND", `Import ${id} not found`);
 
-  let buffer: Buffer;
-  try {
-    buffer = await downloadOneDriveItem(
-      row.oneDriveAccountId ?? "",
-      row.oneDriveItemId,
-      row.oneDriveDriveId ?? undefined
-    );
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    await sql`
-      UPDATE clinical_record_imports
-      SET status = 'ERROR', error = ${msg}, parser_version = ${CLINICAL_RECORD_PARSER_VERSION},
-          updated_at = now()
-      WHERE id = ${id}
-    `.execute(kysely);
-    return { status: "ERROR", reason: msg };
+  // Prefer the shared snapshot: if the scanned library has a fresh first-sheet
+  // snapshot for this OneDrive item, re-parse from DB and skip the download
+  // entirely. Otherwise download once, parse, and archive the snapshot so the
+  // next reprocess is free.
+  let parsed: ParsedClinicalRecord | null = null;
+  const xlsxFile = await findXlsxFileByOneDriveItem(
+    row.oneDriveAccountId,
+    row.oneDriveDriveId,
+    row.oneDriveItemId
+  );
+  if (xlsxFile) {
+    const snap = await readXlsxFileSnapshot(xlsxFile.id);
+    if (snap && isSnapshotFresh(snap, { etag: xlsxFile.etag, ctag: xlsxFile.ctag }) && snap.snapshot) {
+      parsed = parseClinicalRecordRows(snapshotToRows(snap.snapshot));
+    }
+  }
+
+  if (!parsed) {
+    let buffer: Buffer;
+    try {
+      buffer = await downloadOneDriveItem(
+        row.oneDriveAccountId ?? "",
+        row.oneDriveItemId,
+        row.oneDriveDriveId ?? undefined
+      );
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      await sql`
+        UPDATE clinical_record_imports
+        SET status = 'ERROR', error = ${msg}, parser_version = ${CLINICAL_RECORD_PARSER_VERSION},
+            updated_at = now()
+        WHERE id = ${id}
+      `.execute(kysely);
+      return { status: "ERROR", reason: msg };
+    }
+    parsed = parseClinicalRecordWorkbook(buffer);
+    // Archive for next time (best-effort; only when the library row exists).
+    if (xlsxFile) {
+      try {
+        await persistXlsxFileSnapshot(xlsxFile.id, buffer, {
+          etag: xlsxFile.etag,
+          ctag: xlsxFile.ctag,
+        });
+      } catch (err) {
+        logWarn("[clinical-record] snapshot archive failed", {
+          id,
+          error: err instanceof Error ? err.message : String(err),
+        });
+      }
+    }
   }
 
   // Acumular audits dentro de la tx; vaciarlos solo si commitea (hechos persistidos).
   const pendingAudits: AuditRowChangeInput[] = [];
   const result = await kysely.transaction().execute(async (trx) => {
     await sql`SELECT pg_advisory_xact_lock(hashtextextended(${`cri:${id}`}, 0))`.execute(trx);
-    return reprocessInLock(trx, id, buffer, pendingAudits);
+    return reprocessInLock(trx, id, parsed, pendingAudits);
   });
   await flushRowChangeAudits(pendingAudits);
   return result;
@@ -235,14 +277,13 @@ export async function reprocessClinicalRecordImport(id: string): Promise<{
 async function reprocessInLock(
   trx: Trx,
   id: string,
-  buffer: Buffer,
+  parsed: ParsedClinicalRecord,
   pendingAudits: AuditRowChangeInput[]
 ): Promise<{
   status: "IMPORTED" | "PENDING_REVIEW" | "ERROR";
   reason?: string;
   candidates?: number;
 }> {
-  const parsed = parseClinicalRecordWorkbook(buffer);
   const resultHash = computeResultHash(parsed);
   const match = await matchPatientForRecord(parsed);
 
