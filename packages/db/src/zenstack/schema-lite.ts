@@ -3777,6 +3777,46 @@ export class SchemaType implements SchemaDef {
                     type: "String",
                     optional: true
                 },
+                snapshotStatus: {
+                    name: "snapshotStatus",
+                    type: "String",
+                    optional: true
+                },
+                snapshotJson: {
+                    name: "snapshotJson",
+                    type: "Json",
+                    optional: true
+                },
+                snapshotEtag: {
+                    name: "snapshotEtag",
+                    type: "String",
+                    optional: true
+                },
+                snapshotCtag: {
+                    name: "snapshotCtag",
+                    type: "String",
+                    optional: true
+                },
+                snapshotExtractorVersion: {
+                    name: "snapshotExtractorVersion",
+                    type: "String",
+                    optional: true
+                },
+                snapshotCellCount: {
+                    name: "snapshotCellCount",
+                    type: "Int",
+                    optional: true
+                },
+                snapshotArchivedAt: {
+                    name: "snapshotArchivedAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                snapshotError: {
+                    name: "snapshotError",
+                    type: "String",
+                    optional: true
+                },
                 createdAt: {
                     name: "createdAt",
                     type: "DateTime",

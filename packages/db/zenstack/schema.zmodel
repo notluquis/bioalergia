@@ -1263,6 +1263,18 @@ model ClinicalXlsxFile {
   modifiedAt            DateTime?                    @map("modified_at") @db.Timestamptz(3)
   classification        ClinicalXlsxFileClassification @default(OTHER)
   classificationReason  String?                      @map("classification_reason")
+  // Shared first-sheet snapshot (structured cells). Archived once per file so
+  // any feature (skin-tests, fichas) re-parses from DB instead of re-downloading
+  // from OneDrive. snapshotEtag/Ctag are the OneDrive tags at archive time; a
+  // mismatch vs oneDriveETag/CTag (refreshed by the scan) means STALE → re-fetch.
+  snapshotStatus           String?                   @map("snapshot_status")
+  snapshotJson             Json?                     @map("snapshot_json")
+  snapshotEtag             String?                   @map("snapshot_etag")
+  snapshotCtag             String?                   @map("snapshot_ctag")
+  snapshotExtractorVersion String?                   @map("snapshot_extractor_version")
+  snapshotCellCount        Int?                      @map("snapshot_cell_count")
+  snapshotArchivedAt       DateTime?                 @map("snapshot_archived_at") @db.Timestamptz(3)
+  snapshotError            String?                   @map("snapshot_error")
   createdAt             DateTime                     @default(now()) @map("created_at")
   updatedAt             DateTime                     @default(now()) @updatedAt @map("updated_at")
 

@@ -4558,6 +4558,54 @@ export class SchemaType implements SchemaDef {
                     optional: true,
                     attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("classification_reason") }] }] as readonly AttributeApplication[]
                 },
+                snapshotStatus: {
+                    name: "snapshotStatus",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("snapshot_status") }] }] as readonly AttributeApplication[]
+                },
+                snapshotJson: {
+                    name: "snapshotJson",
+                    type: "Json",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("snapshot_json") }] }] as readonly AttributeApplication[]
+                },
+                snapshotEtag: {
+                    name: "snapshotEtag",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("snapshot_etag") }] }] as readonly AttributeApplication[]
+                },
+                snapshotCtag: {
+                    name: "snapshotCtag",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("snapshot_ctag") }] }] as readonly AttributeApplication[]
+                },
+                snapshotExtractorVersion: {
+                    name: "snapshotExtractorVersion",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("snapshot_extractor_version") }] }] as readonly AttributeApplication[]
+                },
+                snapshotCellCount: {
+                    name: "snapshotCellCount",
+                    type: "Int",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("snapshot_cell_count") }] }] as readonly AttributeApplication[]
+                },
+                snapshotArchivedAt: {
+                    name: "snapshotArchivedAt",
+                    type: "DateTime",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("snapshot_archived_at") }] }, { name: "@db.Timestamptz", args: [{ name: "x", value: ExpressionUtils.literal(3) }] }] as readonly AttributeApplication[]
+                },
+                snapshotError: {
+                    name: "snapshotError",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("snapshot_error") }] }] as readonly AttributeApplication[]
+                },
                 createdAt: {
                     name: "createdAt",
                     type: "DateTime",
