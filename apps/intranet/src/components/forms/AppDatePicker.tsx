@@ -62,7 +62,7 @@ export function AppDatePicker({
       </DateField.Group>
       {description ? <Description>{description}</Description> : null}
       {errorMessage ? <FieldError>{errorMessage}</FieldError> : null}
-      <DatePicker.Popover>
+      <DatePicker.Popover className="max-w-none">
         <Calendar aria-label={label ?? "Seleccionar fecha"}>
           <Calendar.Header>
             <Calendar.YearPickerTrigger>
@@ -139,7 +139,7 @@ export function AppDateTimePicker({
       </DateField.Group>
       {description ? <Description>{description}</Description> : null}
       {errorMessage ? <FieldError>{errorMessage}</FieldError> : null}
-      <DatePicker.Popover>
+      <DatePicker.Popover className="max-w-none">
         <Calendar aria-label={label ?? "Seleccionar fecha y hora"}>
           <Calendar.Header>
             <Calendar.YearPickerTrigger>

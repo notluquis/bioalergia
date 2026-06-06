@@ -1,6 +1,6 @@
 import { parseTime, type Time } from "@internationalized/date";
 
-import { formatChile } from "@/lib/dates";
+import { civilNoon, formatChile } from "@/lib/dates";
 import type { BulkRow, TimesheetEntry, TimesheetSummaryRow } from "./types";
 
 export function buildBulkRows(month: string, entries: TimesheetEntry[]): BulkRow[] {
@@ -10,7 +10,9 @@ export function buildBulkRows(month: string, entries: TimesheetEntry[]): BulkRow
   const rows: BulkRow[] = [];
   for (let day = 1; day <= days; day += 1) {
     const dateKey = `${month}-${String(day).padStart(2, "0")}`;
-    const dateValue = new Date(`${dateKey}T00:00:00`);
+    // Noon-UTC day anchor so formatChile() renders the intended calendar day in
+    // any timezone (local-midnight shifts back a day west of Santiago).
+    const dateValue = civilNoon(dateKey);
     const entry = entryMap.get(dateKey);
     const extraMinutes = entry?.overtime_minutes || 0;
     rows.push({
