@@ -37,19 +37,27 @@ export function JobRadarSettingsPanel() {
         <Card.Description>{t("jobRadar.settings.description")}</Card.Description>
       </Card.Header>
       <Card.Content className="space-y-5 p-5 pt-3">
-        <div className="flex flex-wrap items-center gap-6">
-          <Switch isSelected={form.enabled} onChange={(v) => set("enabled", v)}>
-            {t("jobRadar.settings.enabled")}
-          </Switch>
-          <Switch isSelected={form.bci} onChange={(v) => set("bci", v)}>
-            {t("jobRadar.settings.bci")}
-          </Switch>
-          <Switch isSelected={form.getonbrd} onChange={(v) => set("getonbrd", v)}>
-            {t("jobRadar.settings.getonbrd")}
-          </Switch>
-          <Switch isSelected={form.empleospublicos} onChange={(v) => set("empleospublicos", v)}>
-            {t("jobRadar.settings.empleospublicos")}
-          </Switch>
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:gap-x-8 sm:gap-y-3">
+          <ToggleRow
+            label={t("jobRadar.settings.enabled")}
+            isSelected={form.enabled}
+            onChange={(v) => set("enabled", v)}
+          />
+          <ToggleRow
+            label={t("jobRadar.settings.bci")}
+            isSelected={form.bci}
+            onChange={(v) => set("bci", v)}
+          />
+          <ToggleRow
+            label={t("jobRadar.settings.getonbrd")}
+            isSelected={form.getonbrd}
+            onChange={(v) => set("getonbrd", v)}
+          />
+          <ToggleRow
+            label={t("jobRadar.settings.empleospublicos")}
+            isSelected={form.empleospublicos}
+            onChange={(v) => set("empleospublicos", v)}
+          />
         </div>
 
         {/* Fuentes como filas (no CSV) */}
@@ -96,5 +104,26 @@ export function JobRadarSettingsPanel() {
         </div>
       </Card.Content>
     </Card>
+  );
+}
+
+function ToggleRow({
+  label,
+  isSelected,
+  onChange,
+}: {
+  label: string;
+  isSelected: boolean;
+  onChange: (v: boolean) => void;
+}) {
+  return (
+    <Switch isSelected={isSelected} onChange={onChange}>
+      <Switch.Control>
+        <Switch.Thumb />
+      </Switch.Control>
+      <Switch.Content>
+        <Label className="cursor-pointer text-sm">{label}</Label>
+      </Switch.Content>
+    </Switch>
   );
 }

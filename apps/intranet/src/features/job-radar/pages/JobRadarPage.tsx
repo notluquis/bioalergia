@@ -18,6 +18,7 @@ import { useTranslation } from "react-i18next";
 import type { JobApplicationStatus, JobPostingDTO } from "@finanzas/orpc-contracts/job-radar";
 import { DataTable } from "@/components/data-table/DataTable";
 import { useToast } from "@/context/ToastContext";
+import { toast } from "@/lib/toast-interceptor";
 import { JobDetailDrawer } from "../components/JobDetailDrawer";
 import { JobRadarSettingsPanel } from "../components/JobRadarSettingsPanel";
 import { dedupePostings, type DedupedPosting } from "../dedupe";
@@ -83,15 +84,37 @@ export function JobRadarPage() {
   const { data: postings, isPending } = useJobPostings(filters);
   const update = useUpdateJobApplication();
   const sync = useSyncJobRadar();
-  const { success: toastSuccess, error: toastError } = useToast();
+  const { error: toastError } = useToast();
 
   const statusLabel = (s: JobApplicationStatus) => t(`jobRadar.status.${s}`);
-  const setStatus = (id: string, applicationStatus: JobApplicationStatus) =>
+
+  // Cambia el estado y deja un toast con botón "Deshacer" que revierte al previo.
+  const setStatus = (
+    id: string,
+    applicationStatus: JobApplicationStatus,
+    prevStatus?: JobApplicationStatus
+  ) =>
     update.mutate(
       { id, applicationStatus },
       {
         onSuccess: () =>
-          toastSuccess(t("jobRadar.statusUpdated", { status: statusLabel(applicationStatus) })),
+          toast.success(t("jobRadar.statusUpdated", { status: statusLabel(applicationStatus) }), {
+            description: "Job Radar",
+            actionProps:
+              prevStatus && prevStatus !== applicationStatus
+                ? {
+                    children: t("jobRadar.undo"),
+                    onPress: () =>
+                      update.mutate(
+                        { id, applicationStatus: prevStatus },
+                        {
+                          onSuccess: () => toast.success(t("jobRadar.undone")),
+                          onError: (e) => toastError(e),
+                        }
+                      ),
+                  }
+                : undefined,
+          }),
         onError: (e) => toastError(e),
       }
     );
@@ -235,25 +258,25 @@ export function JobRadarPage() {
                 () => window.open(job.url, "_blank", "noopener,noreferrer")
               )}
               {action("seen", t("jobRadar.actions.seen"), <Eye size={16} aria-hidden />, () =>
-                setStatus(job.id, "SEEN")
+                setStatus(job.id, "SEEN", job.applicationStatus)
               )}
               {action(
                 "interested",
                 t("jobRadar.actions.interested"),
                 <Star size={16} aria-hidden />,
-                () => setStatus(job.id, "INTERESTED")
+                () => setStatus(job.id, "INTERESTED", job.applicationStatus)
               )}
               {action(
                 "applied",
                 t("jobRadar.actions.applied"),
                 <Send size={16} aria-hidden />,
-                () => setStatus(job.id, "APPLIED")
+                () => setStatus(job.id, "APPLIED", job.applicationStatus)
               )}
               {action(
                 "discarded",
                 t("jobRadar.actions.discard"),
                 <Ban size={16} aria-hidden />,
-                () => setStatus(job.id, "DISCARDED")
+                () => setStatus(job.id, "DISCARDED", job.applicationStatus)
               )}
               <Dropdown>
                 <Dropdown.Trigger>
@@ -267,7 +290,11 @@ export function JobRadarPage() {
                   </Button>
                 </Dropdown.Trigger>
                 <Dropdown.Popover>
-                  <Dropdown.Menu onAction={(key) => setStatus(job.id, key as JobApplicationStatus)}>
+                  <Dropdown.Menu
+                    onAction={(key) =>
+                      setStatus(job.id, key as JobApplicationStatus, job.applicationStatus)
+                    }
+                  >
                     {APP_STATUSES.map((s) => (
                       <Dropdown.Item key={s} id={s} textValue={statusLabel(s)}>
                         <Label>{statusLabel(s)}</Label>

@@ -50,7 +50,6 @@ INSERT INTO "personal"."job_sources" ("id", "kind", "identifier", "label", "enab
   (gen_random_uuid()::text, 'ASHBY',      'nubank',                    'Nubank',             false),
   (gen_random_uuid()::text, 'ASHBY',      'mural',                     'Mural',              false),
   (gen_random_uuid()::text, 'SMARTRECRUITERS', 'Sodexo',               'Sodexo',             false),
-  (gen_random_uuid()::text, 'WORKDAY',    'citi:wd5:2',                'Citi',               true),
   (gen_random_uuid()::text, 'WORKDAY',    'finning:wd3:External',      'Finning',            false),
   (gen_random_uuid()::text, 'WORKDAY',    'nvidia:wd5:NVIDIAExternalCareerSite', 'NVIDIA',  false),
   (gen_random_uuid()::text, 'WORKDAY',    'walmart:wd5:WalmartExternal','Walmart (global)',  false),

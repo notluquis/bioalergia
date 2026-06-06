@@ -12,6 +12,8 @@
     "matched": "Profile match",
     "changeStatus": "Change status",
     "statusUpdated": "Status: {{status}}",
+    "undo": "Undo",
+    "undone": "Action undone",
     "viewOffer": "View offer",
     "col": {
       "status": "Status",

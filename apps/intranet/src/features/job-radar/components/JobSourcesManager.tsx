@@ -89,39 +89,56 @@ export function JobSourcesManager() {
         </Button>
       </div>
 
-      {/* Lista por fuente */}
-      <div className="space-y-3">
+      {/* Lista por fuente — una tarjeta por ATS */}
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         {KINDS.map((k) => {
           const rows = byKind(k);
           if (rows.length === 0) return null;
+          const activos = rows.filter((s) => s.enabled).length;
           return (
-            <div key={k} className="space-y-1.5">
-              <p className="text-xs font-semibold text-default-500">{k}</p>
-              <div className="flex flex-wrap gap-2">
+            <div key={k} className="rounded-2xl border border-default-200 bg-default-50/50 p-3">
+              <div className="mb-2 flex items-center justify-between">
+                <p className="text-xs font-semibold tracking-wide text-default-600">{k}</p>
+                <Chip size="sm" variant="soft" color="default">
+                  {activos}/{rows.length}
+                </Chip>
+              </div>
+              <div className="flex flex-col gap-1">
                 {rows.map((s) => (
-                  <span
+                  <div
                     key={s.id}
-                    className="flex items-center gap-1.5 rounded-full border border-default-200 px-2 py-1"
+                    className="group flex items-center justify-between gap-2 rounded-lg px-1.5 py-1 hover:bg-default-100"
                   >
                     <Switch
                       isSelected={s.enabled}
                       size="sm"
+                      className="min-w-0 flex-1"
                       onChange={(enabled) => toggle.mutate({ id: s.id, enabled })}
                     >
-                      <Chip size="sm" variant="soft" color={s.enabled ? "success" : "default"}>
-                        {s.label ?? s.identifier}
-                      </Chip>
+                      <Switch.Control>
+                        <Switch.Thumb />
+                      </Switch.Control>
+                      <Switch.Content className="min-w-0">
+                        <Label
+                          className={`cursor-pointer truncate text-sm ${
+                            s.enabled ? "text-foreground" : "text-default-400"
+                          }`}
+                        >
+                          {s.label ?? s.identifier}
+                        </Label>
+                      </Switch.Content>
                     </Switch>
                     <Button
                       aria-label={t("jobRadar.sources.remove")}
                       isIconOnly
                       size="sm"
                       variant="ghost"
+                      className="opacity-0 transition-opacity group-hover:opacity-100"
                       onPress={() => remove.mutate({ id: s.id })}
                     >
                       <Trash2 size={14} aria-hidden />
                     </Button>
-                  </span>
+                  </div>
                 ))}
               </div>
             </div>

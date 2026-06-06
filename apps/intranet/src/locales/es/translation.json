@@ -12,6 +12,8 @@
     "matched": "Match perfil",
     "changeStatus": "Cambiar estado",
     "statusUpdated": "Estado: {{status}}",
+    "undo": "Deshacer",
+    "undone": "Acción deshecha",
     "viewOffer": "Ver oferta",
     "col": {
       "status": "Estado",
