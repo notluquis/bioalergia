@@ -1,5 +1,6 @@
 import type { ColumnDef, PaginationState } from "@tanstack/react-table";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 
 import { DataTable } from "../DataTable";
@@ -44,6 +45,22 @@ describe("DataTable pagination (regression)", () => {
 
     rerender(<Harness pagination={{ pageIndex: 1, pageSize: 10 }} />);
     expect(screen.getByText("Fila 11")).toBeInTheDocument();
+    expect(screen.queryByText("Fila 1")).not.toBeInTheDocument();
+  });
+
+  it("internal pagination: clicking Siguiente advances the page", async () => {
+    const user = userEvent.setup();
+    render(
+      <DataTable columns={cols} data={data} enableToolbar={false} enableVirtualization={false} />
+    );
+    expect(screen.getByText("Fila 1")).toBeInTheDocument();
+    expect(screen.queryByText("Fila 11")).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /Siguiente/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Fila 11")).toBeInTheDocument();
+    });
     expect(screen.queryByText("Fila 1")).not.toBeInTheDocument();
   });
 
