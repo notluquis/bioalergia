@@ -19,6 +19,7 @@ import type { JobApplicationStatus, JobPostingDTO } from "@finanzas/orpc-contrac
 import { DataTable } from "@/components/data-table/DataTable";
 import { JobDetailDrawer } from "../components/JobDetailDrawer";
 import { JobRadarSettingsPanel } from "../components/JobRadarSettingsPanel";
+import { dedupePostings, type DedupedPosting } from "../dedupe";
 import { useJobPostings, useSyncJobRadar, useUpdateJobApplication } from "../hooks/useJobRadar";
 import type { JobRadarListFilters } from "../queries";
 
@@ -78,21 +79,23 @@ export function JobRadarPage() {
   const setStatus = (id: string, applicationStatus: JobApplicationStatus) =>
     update.mutate({ id, applicationStatus });
 
+  // Dedup cross-source en display (la DB conserva todas las filas).
+  const rows = useMemo(() => dedupePostings(postings ?? []), [postings]);
+
   const sources = useMemo(() => {
     const set = new Set<string>();
     for (const p of postings ?? []) set.add(p.source);
     return [...set].sort();
   }, [postings]);
 
-  // Conteo por estado de la tanda cargada — "más cosas" en pantalla.
+  // Conteo por estado (sobre las filas ya deduplicadas).
   const counts = useMemo(() => {
     const c = new Map<JobApplicationStatus, number>();
-    for (const p of postings ?? [])
-      c.set(p.applicationStatus, (c.get(p.applicationStatus) ?? 0) + 1);
+    for (const p of rows) c.set(p.applicationStatus, (c.get(p.applicationStatus) ?? 0) + 1);
     return c;
-  }, [postings]);
+  }, [rows]);
 
-  const columns = useMemo<ColumnDef<JobPostingDTO>[]>(
+  const columns = useMemo<ColumnDef<DedupedPosting>[]>(
     () => [
       {
         accessorKey: "applicationStatus",
@@ -121,7 +124,20 @@ export function JobRadarPage() {
         header: t("jobRadar.col.company"),
         cell: ({ row }) => <span className="capitalize">{row.original.company}</span>,
       },
-      { accessorKey: "source", header: t("jobRadar.col.source") },
+      {
+        accessorKey: "source",
+        header: t("jobRadar.col.source"),
+        cell: ({ row }) => (
+          <span className="flex items-center gap-1">
+            {row.original.source}
+            {row.original.alsoOn?.length ? (
+              <Chip size="sm" variant="soft" color="default">
+                +{row.original.alsoOn.join(", ")}
+              </Chip>
+            ) : null}
+          </span>
+        ),
+      },
       {
         accessorKey: "department",
         header: t("jobRadar.col.department"),
@@ -241,9 +257,7 @@ export function JobRadarPage() {
       <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div className="space-y-1">
           <h2 className="text-xl font-semibold">{t("jobRadar.title")}</h2>
-          <p className="text-sm text-default-500">
-            {t("jobRadar.count", { count: postings?.length ?? 0 })}
-          </p>
+          <p className="text-sm text-default-500">{t("jobRadar.count", { count: rows.length })}</p>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="tertiary" onPress={() => setShowSettings((v) => !v)}>
@@ -340,7 +354,7 @@ export function JobRadarPage() {
 
       <DataTable
         columns={columns}
-        data={postings ?? []}
+        data={rows}
         isLoading={isPending}
         enableGlobalFilter={false}
         enableExport={false}
