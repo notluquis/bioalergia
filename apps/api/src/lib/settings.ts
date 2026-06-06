@@ -27,6 +27,12 @@ export type AppSettings = {
   shipmentReturnNumber: string;
   shipmentReturnSupplement: string;
   shipmentReturnCoverageCode: string;
+  // Email senders (non-secret config; the API key + webhook secret live in env).
+  // `from` = transactional sender, `broadcastFrom` = marketing sender (separate
+  // subdomain label keeps reputation isolated), `replyTo` = human inbox.
+  emailFrom: string;
+  emailBroadcastFrom: string;
+  emailReplyTo: string;
 };
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -56,6 +62,9 @@ export const DEFAULT_SETTINGS: AppSettings = {
   shipmentReturnNumber: "",
   shipmentReturnSupplement: "",
   shipmentReturnCoverageCode: "",
+  emailFrom: "Bioalergia <noreply@send.bioalergia.cl>",
+  emailBroadcastFrom: "Bioalergia <novedades@send.bioalergia.cl>",
+  emailReplyTo: "contacto@bioalergia.cl",
 };
 
 const SETTINGS_KEY_MAP: Record<keyof AppSettings, string> = {
@@ -85,6 +94,9 @@ const SETTINGS_KEY_MAP: Record<keyof AppSettings, string> = {
   shipmentReturnNumber: "shipments.return.number",
   shipmentReturnSupplement: "shipments.return.supplement",
   shipmentReturnCoverageCode: "shipments.return.coverageCode",
+  emailFrom: "email.from",
+  emailBroadcastFrom: "email.broadcastFrom",
+  emailReplyTo: "email.replyTo",
 };
 
 export function settingsKeyToDbKey(key: keyof AppSettings): string {

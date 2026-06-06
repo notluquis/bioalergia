@@ -11,6 +11,16 @@ export { db };
 export const MP_ACCESS_TOKEN: string | undefined = process.env.MP_ACCESS_TOKEN;
 export const PORT: number = Number(process.env.PORT ?? 3000);
 
+// Email — SECRETS ONLY in env. The non-secret sender config (from / broadcast
+// from / reply-to) lives in DB settings (lib/settings.ts, keys email.*) so it's
+// editable from the admin UI without a redeploy. Provider is Resend; swapping to
+// AWS SES later only adds a new adapter behind services/email (no caller change).
+export const resendApiKey: string | undefined = process.env.RESEND_API_KEY;
+
+if (!resendApiKey) {
+  console.warn("[config] Email deshabilitado. Falta RESEND_API_KEY.");
+}
+
 // Haulmer Config
 export interface HaulmerEnvConfig {
   rut: string;

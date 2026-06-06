@@ -22,6 +22,7 @@ import {
 import { type ReactNode, useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
 import { AddressList } from "@/features/addresses/components/AddressList";
+import { PatientEmailOptInToggle } from "@/features/email/components/PatientEmailOptInToggle";
 import { fetchPatient } from "@/features/patients/api";
 import { PatientRecordsTimeline } from "@/features/clinical-records/components/PatientRecordsTimeline";
 import { ClinicalSeriesList } from "@/features/patients/components/ClinicalSeriesList";
@@ -367,6 +368,9 @@ function PatientDetailsPage() {
 
                       <DetailRow label="Email" value={person.email || "N/A"} />
                       <DetailRow label="Teléfono" value={person.phone || "N/A"} />
+                      <div className="md:col-span-2">
+                        <PatientEmailOptInToggle personId={person.id} email={person.email} />
+                      </div>
                       <div className="md:col-span-2">
                         <AddressList personId={person.id} />
                       </div>

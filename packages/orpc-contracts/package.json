@@ -153,6 +153,12 @@
       "import": "./dist/exam-reports.js",
       "default": "./dist/exam-reports.js"
     },
+    "./email": {
+      "development": "./src/email.ts",
+      "types": "./dist/email.d.ts",
+      "import": "./dist/email.js",
+      "default": "./dist/email.js"
+    },
     "./employees": {
       "development": "./src/employees.ts",
       "types": "./dist/employees.d.ts",

@@ -24,9 +24,10 @@ function resolveWebhookEndpoint() {
   // GOOGLE_CALENDAR_WEBHOOK_URL (e.g. /api/webhooks/google-calendar) can't drift
   // from the actual route and 404 Google's push notifications.
   // Priority: explicit env → RAILWAY_PUBLIC_DOMAIN (always set by Railway, points
-  // to THIS api service) → PUBLIC_URL (frontend, last resort) → localhost.
-  // NOTE: PUBLIC_URL is the intranet host, NOT the api — never the right webhook
-  // origin in prod; RAILWAY_PUBLIC_DOMAIN self-heals if the explicit env is wrong.
+  // to THIS api service) → PUBLIC_URL → localhost.
+  // NOTE: PUBLIC_URL now points at the api host (api.bioalergia.cl), so it's a
+  // valid fallback; RAILWAY_PUBLIC_DOMAIN still self-heals if the explicit env
+  // is stale (e.g. an old *.up.railway.app value).
   const railwayDomain = process.env.RAILWAY_PUBLIC_DOMAIN?.trim();
   const base =
     process.env.GOOGLE_CALENDAR_WEBHOOK_URL?.trim() ||

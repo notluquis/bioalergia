@@ -49,6 +49,7 @@ import { Route as AuthedQuotesNewRouteImport } from "./routes/_authed/quotes/new
 import { Route as AuthedQuotesIdRouteImport } from "./routes/_authed/quotes/$id"
 import { Route as AuthedPatientsNewRouteImport } from "./routes/_authed/patients/new"
 import { Route as AuthedPatientsCampaignsRouteImport } from "./routes/_authed/patients/campaigns"
+import { Route as AuthedPatientsBroadcastRouteImport } from "./routes/_authed/patients/broadcast"
 import { Route as AuthedOutreachDirectorioRouteImport } from "./routes/_authed/outreach/directorio"
 import { Route as AuthedOutreachCampanasRouteImport } from "./routes/_authed/outreach/campanas"
 import { Route as AuthedOperationsSuppliesRouteImport } from "./routes/_authed/operations/supplies"
@@ -288,6 +289,11 @@ const AuthedPatientsNewRoute = AuthedPatientsNewRouteImport.update({
 const AuthedPatientsCampaignsRoute = AuthedPatientsCampaignsRouteImport.update({
   id: "/patients/campaigns",
   path: "/patients/campaigns",
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedPatientsBroadcastRoute = AuthedPatientsBroadcastRouteImport.update({
+  id: "/patients/broadcast",
+  path: "/patients/broadcast",
   getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedOutreachDirectorioRoute =
@@ -543,6 +549,7 @@ export interface FileRoutesByFullPath {
   "/operations/supplies": typeof AuthedOperationsSuppliesRoute
   "/outreach/campanas": typeof AuthedOutreachCampanasRouteWithChildren
   "/outreach/directorio": typeof AuthedOutreachDirectorioRoute
+  "/patients/broadcast": typeof AuthedPatientsBroadcastRoute
   "/patients/campaigns": typeof AuthedPatientsCampaignsRoute
   "/patients/new": typeof AuthedPatientsNewRoute
   "/quotes/$id": typeof AuthedQuotesIdRoute
@@ -615,6 +622,7 @@ export interface FileRoutesByTo {
   "/operations/supplies": typeof AuthedOperationsSuppliesRoute
   "/outreach/campanas": typeof AuthedOutreachCampanasRouteWithChildren
   "/outreach/directorio": typeof AuthedOutreachDirectorioRoute
+  "/patients/broadcast": typeof AuthedPatientsBroadcastRoute
   "/patients/campaigns": typeof AuthedPatientsCampaignsRoute
   "/patients/new": typeof AuthedPatientsNewRoute
   "/quotes/$id": typeof AuthedQuotesIdRoute
@@ -696,6 +704,7 @@ export interface FileRoutesById {
   "/_authed/operations/supplies": typeof AuthedOperationsSuppliesRoute
   "/_authed/outreach/campanas": typeof AuthedOutreachCampanasRouteWithChildren
   "/_authed/outreach/directorio": typeof AuthedOutreachDirectorioRoute
+  "/_authed/patients/broadcast": typeof AuthedPatientsBroadcastRoute
   "/_authed/patients/campaigns": typeof AuthedPatientsCampaignsRoute
   "/_authed/patients/new": typeof AuthedPatientsNewRoute
   "/_authed/quotes/$id": typeof AuthedQuotesIdRoute
@@ -777,6 +786,7 @@ export interface FileRouteTypes {
     | "/operations/supplies"
     | "/outreach/campanas"
     | "/outreach/directorio"
+    | "/patients/broadcast"
     | "/patients/campaigns"
     | "/patients/new"
     | "/quotes/$id"
@@ -849,6 +859,7 @@ export interface FileRouteTypes {
     | "/operations/supplies"
     | "/outreach/campanas"
     | "/outreach/directorio"
+    | "/patients/broadcast"
     | "/patients/campaigns"
     | "/patients/new"
     | "/quotes/$id"
@@ -929,6 +940,7 @@ export interface FileRouteTypes {
     | "/_authed/operations/supplies"
     | "/_authed/outreach/campanas"
     | "/_authed/outreach/directorio"
+    | "/_authed/patients/broadcast"
     | "/_authed/patients/campaigns"
     | "/_authed/patients/new"
     | "/_authed/quotes/$id"
@@ -1251,6 +1263,13 @@ declare module "@tanstack/react-router" {
       path: "/patients/campaigns"
       fullPath: "/patients/campaigns"
       preLoaderRoute: typeof AuthedPatientsCampaignsRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    "/_authed/patients/broadcast": {
+      id: "/_authed/patients/broadcast"
+      path: "/patients/broadcast"
+      fullPath: "/patients/broadcast"
+      preLoaderRoute: typeof AuthedPatientsBroadcastRouteImport
       parentRoute: typeof AuthedRoute
     }
     "/_authed/outreach/directorio": {
@@ -1746,6 +1765,7 @@ interface AuthedRouteChildren {
   AuthedCompaniesIdRoute: typeof AuthedCompaniesIdRoute
   AuthedDevRoutesAuditRoute: typeof AuthedDevRoutesAuditRoute
   AuthedExamReportsIdRoute: typeof AuthedExamReportsIdRoute
+  AuthedPatientsBroadcastRoute: typeof AuthedPatientsBroadcastRoute
   AuthedPatientsCampaignsRoute: typeof AuthedPatientsCampaignsRoute
   AuthedPatientsNewRoute: typeof AuthedPatientsNewRoute
   AuthedQuotesIdRoute: typeof AuthedQuotesIdRoute
@@ -1782,6 +1802,7 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedCompaniesIdRoute: AuthedCompaniesIdRoute,
   AuthedDevRoutesAuditRoute: AuthedDevRoutesAuditRoute,
   AuthedExamReportsIdRoute: AuthedExamReportsIdRoute,
+  AuthedPatientsBroadcastRoute: AuthedPatientsBroadcastRoute,
   AuthedPatientsCampaignsRoute: AuthedPatientsCampaignsRoute,
   AuthedPatientsNewRoute: AuthedPatientsNewRoute,
   AuthedQuotesIdRoute: AuthedQuotesIdRoute,

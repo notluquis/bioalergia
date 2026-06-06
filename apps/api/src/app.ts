@@ -70,6 +70,14 @@ import {
   patientCampaignsOpenAPIHandler,
   patientCampaignsORPCHandler,
 } from "./orpc/patient-campaigns.ts";
+import { emailOpenAPIHandler, emailORPCHandler } from "./orpc/email.ts";
+import { unsubscribeByToken } from "./services/email/broadcast-service.ts";
+import {
+  handleResendEvent,
+  type ResendWebhookEvent,
+  verifyResendSignature,
+} from "./services/email/webhook-service.ts";
+import { isDomainError } from "./lib/errors.ts";
 import { peopleOpenAPIHandler, peopleORPCHandler } from "./orpc/people.ts";
 import {
   personalFinanceOpenAPIHandler,
@@ -1651,6 +1659,19 @@ app.use("/api/orpc/patient-campaigns/rpc/*", async (c, next) => {
   return next();
 });
 
+app.use("/api/orpc/email/rpc/*", async (c, next) => {
+  const { matched, response } = await emailORPCHandler.handle(createHonoORPCRequest(c), {
+    prefix: "/api/orpc/email/rpc",
+    context: { hono: c },
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  return next();
+});
+
 app.use("/api/orpc/outreach/rpc/*", async (c, next) => {
   const { matched, response } = await outreachORPCHandler.handle(createHonoORPCRequest(c), {
     prefix: "/api/orpc/outreach/rpc",
@@ -2087,6 +2108,41 @@ app.use("/api/orpc/patient-campaigns/*", async (c, next) => {
   return next();
 });
 
+app.use("/api/orpc/email/*", async (c, next) => {
+  const { matched, response } = await emailOpenAPIHandler.handle(createHonoORPCRequest(c), {
+    context: { hono: c },
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  return next();
+});
+
+// Public one-click unsubscribe (RFC 8058). NOT under /api/orpc so it skips
+// CSRF — mail clients POST cross-origin. POST = one-click header target;
+// GET = human clicking the link in the footer (returns a small HTML page).
+async function handleUnsubscribe(c: HonoContext): Promise<Response> {
+  const token = c.req.param("token") ?? "";
+  try {
+    await unsubscribeByToken(token);
+    return c.html(
+      `<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Baja confirmada</title></head><body style="font-family:system-ui,sans-serif;max-width:32rem;margin:4rem auto;padding:0 1rem;text-align:center"><h1>Te diste de baja</h1><p>No recibirás más correos de novedades de Bioalergia. Los correos importantes de tu atención (recordatorios, etc.) seguirán llegando.</p></body></html>`,
+      200
+    );
+  } catch (err) {
+    const status = isDomainError(err) && err.kind === "NOT_FOUND" ? 404 : 400;
+    return c.html(
+      `<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Enlace inválido</title></head><body style="font-family:system-ui,sans-serif;max-width:32rem;margin:4rem auto;padding:0 1rem;text-align:center"><h1>Enlace inválido</h1><p>No pudimos procesar la baja. El enlace puede haber expirado.</p></body></html>`,
+      status
+    );
+  }
+}
+
+app.get("/api/email/unsubscribe/:token", handleUnsubscribe);
+app.post("/api/email/unsubscribe/:token", handleUnsubscribe);
+
 app.use("/api/orpc/outreach/*", async (c, next) => {
   const { matched, response } = await outreachOpenAPIHandler.handle(createHonoORPCRequest(c), {
     context: { hono: c },
@@ -2354,6 +2410,35 @@ app.route("/api/webhooks/meta", waCloudWebhookRoutes);
 app.route("/api/wa-cloud/media", waCloudMediaRoutes);
 app.route("/api/wa-cloud/sse", waCloudSseRoutes);
 app.route("/api/webhooks/mercadopago", mercadopagoReportWebhookRoutes);
+
+// Resend email webhooks (svix-signed). Suppresses recipients on permanent
+// bounce / spam complaint. Raw body is required for signature verification —
+// read it BEFORE any JSON parsing. Always 200 on accepted events so Resend's
+// retry backoff stops; 401 only on signature failure.
+app.post("/api/webhooks/resend", async (c) => {
+  const rawBody = await c.req.text();
+  const verified = verifyResendSignature(rawBody, {
+    svixId: c.req.header("svix-id") ?? null,
+    svixTimestamp: c.req.header("svix-timestamp") ?? null,
+    svixSignature: c.req.header("svix-signature") ?? null,
+  });
+  if (!verified) {
+    return c.json({ error: "invalid signature" }, 401);
+  }
+  let event: ResendWebhookEvent;
+  try {
+    event = JSON.parse(rawBody) as ResendWebhookEvent;
+  } catch {
+    return c.json({ error: "invalid payload" }, 400);
+  }
+  try {
+    await handleResendEvent(event);
+  } catch (err) {
+    // Don't make Resend retry forever on our DB hiccup — log + 200.
+    logError(err, { module: "api", operation: "webhook.resend", type: event.type });
+  }
+  return c.json({ ok: true }, 200);
+});
 
 // Bearer-auth ingress for the Doctoralia scraper bot (reads/writes manual cookies).
 app.route("/api/scraper/doctoralia", doctoraliaScraperRoutes);
