@@ -346,8 +346,15 @@ export async function syncJobRadar(options: JobRadarSyncOptions = {}): Promise<J
   let updated = 0;
   let closed = 0;
 
-  for (const src of sources) {
-    const jobs = await src.fetch();
+  // Fetch de todas las fuentes EN PARALELO (la parte lenta es la red). Cada
+  // adapter ya captura sus errores → []; el .catch es defensa extra para que
+  // una fuente caída no tumbe el Promise.all. El upsert (DB) queda secuencial
+  // por fuente para no contender la conexión ni cruzar la lógica de CLOSED.
+  const results = await Promise.all(
+    sources.map(async (src) => ({ src, jobs: await src.fetch().catch(() => [] as RawJob[]) }))
+  );
+
+  for (const { src, jobs } of results) {
     fetched += jobs.length;
     if (jobs.length === 0) {
       logWarn("job_radar.source.empty", { source: src.label });

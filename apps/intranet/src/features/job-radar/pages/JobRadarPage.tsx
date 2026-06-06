@@ -9,6 +9,7 @@ import {
   TextField,
   Tooltip,
 } from "@heroui/react";
+import { useDebouncedValue } from "@tanstack/react-pacer";
 import type { ColumnDef } from "@tanstack/react-table";
 import dayjs from "dayjs";
 import { Ban, ExternalLink, Eye, ListChecks, RefreshCw, Send, Sparkles, Star } from "lucide-react";
@@ -16,6 +17,7 @@ import { type ReactNode, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { JobApplicationStatus, JobPostingDTO } from "@finanzas/orpc-contracts/job-radar";
 import { DataTable } from "@/components/data-table/DataTable";
+import { JobDetailDrawer } from "../components/JobDetailDrawer";
 import { JobRadarSettingsPanel } from "../components/JobRadarSettingsPanel";
 import { useJobPostings, useSyncJobRadar, useUpdateJobApplication } from "../hooks/useJobRadar";
 import type { JobRadarListFilters } from "../queries";
@@ -57,14 +59,16 @@ export function JobRadarPage() {
   const [source, setSource] = useState<string>("ALL");
   const [search, setSearch] = useState("");
   const [showSettings, setShowSettings] = useState(false);
+  const [detailJob, setDetailJob] = useState<JobPostingDTO | null>(null);
+  const [debouncedSearch] = useDebouncedValue(search, { wait: 300 });
 
   const filters: JobRadarListFilters = useMemo(() => {
     const f: JobRadarListFilters = { postingStatus };
     if (appStatus !== "ALL") f.applicationStatus = appStatus;
     if (source !== "ALL") f.source = source;
-    if (search.trim()) f.search = search.trim();
+    if (debouncedSearch.trim()) f.search = debouncedSearch.trim();
     return f;
-  }, [appStatus, postingStatus, source, search]);
+  }, [appStatus, postingStatus, source, debouncedSearch]);
 
   const { data: postings, isPending } = useJobPostings(filters);
   const update = useUpdateJobApplication();
@@ -103,14 +107,13 @@ export function JobRadarPage() {
         accessorKey: "title",
         header: t("jobRadar.col.title"),
         cell: ({ row }) => (
-          <a
-            href={row.original.url}
-            target="_blank"
-            rel="noreferrer"
-            className="font-medium hover:underline"
+          <button
+            type="button"
+            className="text-left font-medium hover:underline"
+            onClick={() => setDetailJob(row.original)}
           >
             {row.original.title}
-          </a>
+          </button>
         ),
       },
       {
@@ -345,6 +348,8 @@ export function JobRadarPage() {
         pageSizeOptions={[10, 25, 50, 100]}
         scrollMaxHeight="min(68dvh, 760px)"
       />
+
+      <JobDetailDrawer job={detailJob} onClose={() => setDetailJob(null)} />
     </div>
   );
 }

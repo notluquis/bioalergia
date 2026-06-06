@@ -31,6 +31,14 @@
       "applied": "Mark applied",
       "discard": "Discard"
     },
+    "detail": {
+      "notes": "Notes",
+      "notesPlaceholder": "Notes, contact, follow-up…",
+      "description": "Description",
+      "noDescription": "No description available.",
+      "save": "Save",
+      "saved": "Saved"
+    },
     "settings": {
       "toggle": "Settings",
       "title": "Job Radar settings",

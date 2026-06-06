@@ -31,6 +31,14 @@
       "applied": "Marcar postulado",
       "discard": "Descartar"
     },
+    "detail": {
+      "notes": "Notas",
+      "notesPlaceholder": "Apuntes, contacto, seguimiento…",
+      "description": "Descripción",
+      "noDescription": "Sin descripción disponible.",
+      "save": "Guardar",
+      "saved": "Guardado"
+    },
     "settings": {
       "toggle": "Ajustes",
       "title": "Ajustes de Job Radar",
