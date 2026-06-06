@@ -1,9 +1,9 @@
 import { parseTime, type Time } from "@internationalized/date";
 import { Button, Dropdown, TimeField, Tooltip } from "@heroui/react";
 import { createColumnHelper } from "@tanstack/react-table";
-import dayjs from "dayjs";
 import { useEffect, useState, type FocusEvent } from "react";
 
+import { chileDay, weekday } from "@/lib/dates";
 import type { BulkRow } from "../types";
 
 import {
@@ -109,8 +109,8 @@ function toTimeValue(value: { hour: number; minute: number }) {
 }
 
 const DateCell = ({ meta, row }: { meta: TimesheetTableMeta; row: BulkRow }) => {
-  const dateKey = row.date ? dayjs(row.date).format("YYYY-MM-DD") : "";
-  const dayIdx = dayjs(row.date).day();
+  const dateKey = row.date ? chileDay(row.date) : "";
+  const dayIdx = weekday(chileDay(row.date));
   const labels = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
   const isSun = dayIdx === 0;
   const isMarkedNotWorked = meta.notWorkedDays.has(dateKey);
@@ -142,8 +142,8 @@ const InputCell = ({
   meta: TimesheetTableMeta;
   row: BulkRow;
 }) => {
-  const dateKey = row.date ? dayjs(row.date).format("YYYY-MM-DD") : "";
-  const isSunday = dayjs(row.date).day() === 0;
+  const dateKey = row.date ? chileDay(row.date) : "";
+  const isSunday = weekday(chileDay(row.date)) === 0;
   const canEditRow = meta.canEdit && !isSunday;
   const isMarkedNotWorked = meta.notWorkedDays.has(dateKey);
 
@@ -163,7 +163,7 @@ const InputCell = ({
 };
 
 const WorkedCell = ({ meta, row }: { meta: TimesheetTableMeta; row: BulkRow }) => {
-  const dateKey = row.date ? dayjs(row.date).format("YYYY-MM-DD") : "";
+  const dateKey = row.date ? chileDay(row.date) : "";
   const mins = calculateWorkedMinutes(row.entrada, row.salida);
   const duration = minutesToDuration(mins);
   const isMarkedNotWorked = meta.notWorkedDays.has(dateKey);
@@ -184,8 +184,8 @@ const OvertimeCell = ({
   meta: TimesheetTableMeta;
   row: BulkRow;
 }) => {
-  const dateKey = row.date ? dayjs(row.date).format("YYYY-MM-DD") : "";
-  const isSunday = dayjs(row.date).day() === 0;
+  const dateKey = row.date ? chileDay(row.date) : "";
+  const isSunday = weekday(chileDay(row.date)) === 0;
   const canEditRow = meta.canEdit && !isSunday;
   const isMarkedNotWorked = meta.notWorkedDays.has(dateKey);
   const isOvertimeOpen = meta.openOvertimeEditors.has(dateKey);
@@ -250,7 +250,7 @@ const StatusCell = ({
   const initial = meta.initialRows[index];
   const dirty = isRowDirty(row, initial);
   const status = computeStatus(row, dirty);
-  const dateKey = row.date ? dayjs(row.date).format("YYYY-MM-DD") : "";
+  const dateKey = row.date ? chileDay(row.date) : "";
   const isMarkedNotWorked = meta.notWorkedDays.has(dateKey);
 
   // Warning Logic
@@ -338,11 +338,11 @@ const ActionsCell = ({
   meta: TimesheetTableMeta;
   row: BulkRow;
 }) => {
-  const isSunday = dayjs(row.date).day() === 0;
+  const isSunday = weekday(chileDay(row.date)) === 0;
   const canEditRow = meta.canEdit && !isSunday;
   const initial = meta.initialRows[index];
   const dirty = isRowDirty(row, initial);
-  const dateKey = row.date ? dayjs(row.date).format("YYYY-MM-DD") : "";
+  const dateKey = row.date ? chileDay(row.date) : "";
   const isMarkedNotWorked = meta.notWorkedDays.has(dateKey);
 
   if (!canEditRow) {

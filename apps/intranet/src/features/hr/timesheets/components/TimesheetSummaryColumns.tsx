@@ -1,6 +1,6 @@
 import type { ColumnDef } from "@tanstack/react-table";
-import dayjs from "dayjs";
 
+import { formatChile } from "@/lib/dates";
 import { fmtCLP } from "@/lib/format";
 
 import type { TimesheetSummaryRow } from "../types";
@@ -67,9 +67,7 @@ export const getTimesheetSummaryColumns = (): ColumnDef<TimesheetSummaryRow>[] =
     accessorKey: "payDate",
     cell: ({ getValue }) => {
       const val = getValue() as null | string;
-      return val && dayjs(val, "YYYY-MM-DD", true).isValid()
-        ? dayjs(val, "YYYY-MM-DD").format("DD-MM-YYYY")
-        : "—";
+      return val && /^\d{4}-\d{2}-\d{2}$/.test(val) ? formatChile(val, "DD-MM-YYYY") : "—";
     },
     header: "Fecha pago",
   },

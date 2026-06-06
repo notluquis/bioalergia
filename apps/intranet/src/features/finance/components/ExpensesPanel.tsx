@@ -1,10 +1,10 @@
 import { Button, Chip, ListBox, Select } from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import dayjs from "dayjs";
 import { CheckIcon, LinkIcon, RefreshCwIcon, SettingsIcon, SparklesIcon } from "lucide-react";
 import { useState } from "react";
 
 import type { ExpenseScope, ExpenseStatus } from "@finanzas/orpc-contracts/expenses";
+import { addMonths, endOfMonthFor, formatChile, today } from "@/lib/dates";
 import { dteSyncORPCClient } from "@/features/settings/dte-sync-orpc";
 import { toast } from "@/lib/toast-interceptor";
 
@@ -42,7 +42,7 @@ function formatCLP(value: number): string {
 export function ExpensesPanel() {
   const queryClient = useQueryClient();
   const [scope, setScope] = useState<"all" | ExpenseScope>("BIOALERGIA");
-  const [month, setMonth] = useState(() => dayjs().format("YYYY-MM"));
+  const [month, setMonth] = useState(() => formatChile(new Date(), "YYYY-MM"));
   const [linkTarget, setLinkTarget] = useState<null | {
     expectedAmount: number;
     name: string;
@@ -52,7 +52,7 @@ export function ExpensesPanel() {
   const [servicesModalOpen, setServicesModalOpen] = useState(false);
 
   const monthStart = `${month}-01`;
-  const monthEnd = dayjs(monthStart).endOf("month").format("YYYY-MM-DD");
+  const monthEnd = endOfMonthFor(monthStart);
 
   const expensesQuery = useQuery({
     queryFn: () =>
@@ -108,8 +108,8 @@ export function ExpensesPanel() {
 
   const monthOptions: { label: string; value: string }[] = [];
   for (let i = -6; i <= 3; i++) {
-    const d = dayjs().add(i, "month");
-    monthOptions.push({ label: d.format("MMM YYYY"), value: d.format("YYYY-MM") });
+    const d = addMonths(today(), i);
+    monthOptions.push({ label: formatChile(d, "MMM YYYY"), value: formatChile(d, "YYYY-MM") });
   }
 
   return (
@@ -233,7 +233,7 @@ export function ExpensesPanel() {
                   <td className="px-4 py-2 font-medium">{e.name}</td>
                   <td className="px-4 py-2 text-default-500">{e.detail ?? "—"}</td>
                   <td className="px-4 py-2 text-default-500">
-                    {e.dueDate ? dayjs(e.dueDate).format("DD MMM") : "—"}
+                    {e.dueDate ? formatChile(e.dueDate, "DD MMM") : "—"}
                   </td>
                   <td className="px-4 py-2 text-right tabular-nums">
                     {formatCLP(e.amountExpected)}

@@ -215,6 +215,17 @@ export function weekday(isoDate: string): number {
   return civilNoon(isoDate).getUTCDay();
 }
 
+/** Monday ("YYYY-MM-DD") of the ISO week containing `date`'s Chile calendar day. */
+export function startOfWeek(date: DateInput): string {
+  const iso = chileDay(date);
+  return addDays(iso, -(isoWeekday(iso) - 1));
+}
+
+/** Sunday ("YYYY-MM-DD") of the ISO week containing `date`'s Chile calendar day. */
+export function endOfWeek(date: DateInput): string {
+  return addDays(startOfWeek(date), 6);
+}
+
 // ---- ISO week --------------------------------------------------------------
 /** ISO-8601 week number (1–53) of `date`'s Chile calendar day. */
 export function getISOWeek(date: DateInput): number {

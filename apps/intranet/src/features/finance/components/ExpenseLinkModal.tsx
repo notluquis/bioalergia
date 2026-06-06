@@ -1,10 +1,10 @@
 import { Button, Input, Label, Modal, TextField } from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import dayjs from "dayjs";
 import { SearchIcon } from "lucide-react";
 import { useState } from "react";
 
 import type { ExpenseScope } from "@finanzas/orpc-contracts/expenses";
+import { addDays, formatChile, today } from "@/lib/dates";
 import { financeORPCClient } from "@/features/finance/orpc";
 import { toast } from "@/lib/toast-interceptor";
 
@@ -42,11 +42,11 @@ export function ExpenseLinkModal({
   const txQuery = useQuery({
     queryFn: () =>
       financeORPCClient.transactionsList({
-        from: dayjs().subtract(90, "day").format("YYYY-MM-DD"),
+        from: addDays(today(), -90),
         page: 1,
         pageSize: 30,
         search: search || undefined,
-        to: dayjs().add(7, "day").format("YYYY-MM-DD"),
+        to: addDays(today(), 7),
         type: "EXPENSE",
       }),
     queryKey: ["finance", "transactions", "for-link", search],
@@ -130,7 +130,7 @@ export function ExpenseLinkModal({
                       transactions.map((tx) => (
                         <tr className="border-default-100 border-t" key={tx.id}>
                           <td className="px-3 py-2 text-default-500 text-xs">
-                            {dayjs(tx.date).format("DD MMM YYYY")}
+                            {formatChile(tx.date, "DD MMM YYYY")}
                           </td>
                           <td className="px-3 py-2">{tx.description}</td>
                           <td className="px-3 py-2 text-right tabular-nums">
