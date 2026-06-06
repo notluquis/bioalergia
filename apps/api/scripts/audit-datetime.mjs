@@ -73,6 +73,12 @@ for await (const entry of glob("**/*.ts", {
 
 const rules = [
   {
+    id: "no-dayjs-import",
+    message:
+      "apps/api is dayjs-free — use the native helpers in lib/time.ts (Temporal/Intl). Do not import dayjs.",
+    pattern: /\bfrom\s+["']dayjs(?:\/[^"']*)?["']|\brequire\(\s*["']dayjs(?:\/[^"']*)?["']\s*\)/g,
+  },
+  {
     id: "dayjs-format-date-only",
     message:
       'Bare dayjs(x).format("YYYY-MM-DD") rolls a @db.Date back a day under Santiago. Use dbDateToISO() (@db.Date) or instantToChileDate() (@db.Timestamptz) from lib/time.ts.',
