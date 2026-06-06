@@ -1,7 +1,4 @@
-import dayjs from "dayjs";
-import isoWeek from "dayjs/plugin/isoWeek";
-
-dayjs.extend(isoWeek);
+import { addDays, diffDays, isoWeekday, today, weekday } from "@/lib/dates";
 
 import type { CalendarFilters } from "../types";
 
@@ -64,31 +61,33 @@ export const computeDefaultFilters = (settings: {
   const configuredMax =
     Number.isFinite(defaultMax) && defaultMax > 0 ? Math.min(Math.floor(defaultMax), 365) : 28;
   // Default to ±2 weeks from today for faster initial load
-  const defaultFrom = dayjs().subtract(2, "week");
-  const defaultTo = dayjs().add(2, "week");
-  const startDate = dayjs(syncStart);
-  const from = startDate.isValid() && startDate.isAfter(defaultFrom) ? startDate : defaultFrom;
-  const maxForward = dayjs().add(lookahead, "day");
-  const toCandidate = defaultTo.isAfter(maxForward) ? maxForward : defaultTo;
-  const spanDays = Math.max(1, toCandidate.diff(from, "day") + 1);
+  const todayStr = today();
+  const defaultFrom = addDays(todayStr, -14);
+  const defaultTo = addDays(todayStr, 14);
+  const startValid = /^\d{4}-\d{2}-\d{2}$/.test(syncStart);
+  // ISO "YYYY-MM-DD" strings compare lexicographically == chronologically.
+  const from = startValid && syncStart > defaultFrom ? syncStart : defaultFrom;
+  const maxForward = addDays(todayStr, lookahead);
+  const toCandidate = defaultTo > maxForward ? maxForward : defaultTo;
+  const spanDays = Math.max(1, diffDays(toCandidate, from) + 1);
   const maxDays = Math.min(Math.max(spanDays, configuredMax), 365);
   return {
     calendarIds: [],
     categories: [],
-    from: from.format("YYYY-MM-DD"),
+    from,
     maxDays,
     search: "",
-    to: toCandidate.format("YYYY-MM-DD"),
+    to: toCandidate,
   };
 };
 
 export function getScheduleDefaultRange() {
-  const now = dayjs();
+  const now = today();
   // If it's Sunday, jump to the next week's Monday
-  const base = now.day() === 0 ? now.add(1, "day") : now;
-  const start = base.isoWeekday(1);
+  const base = weekday(now) === 0 ? addDays(now, 1) : now;
+  const start = addDays(base, -(isoWeekday(base) - 1));
   return {
-    from: start.format("YYYY-MM-DD"),
-    to: start.add(5, "day").format("YYYY-MM-DD"),
+    from: start,
+    to: addDays(start, 5),
   };
 }

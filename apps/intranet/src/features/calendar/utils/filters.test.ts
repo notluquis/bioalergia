@@ -1,5 +1,5 @@
-import dayjs from "dayjs";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { addDays, diffDays, today } from "@/lib/dates";
 import type { CalendarFilters } from "../types";
 import {
   arraysEqual,
@@ -171,9 +171,7 @@ describe("computeDefaultFilters", () => {
 
   it("caps lookahead at 1095 days", () => {
     const result = computeDefaultFilters({ calendarSyncLookaheadDays: "99999" });
-    const to = dayjs(result.to);
-    const from = dayjs(result.from);
-    const span = to.diff(from, "day");
+    const span = diffDays(result.to, result.from);
     expect(span).toBeLessThanOrEqual(1095 + 1);
   });
 
@@ -193,7 +191,7 @@ describe("computeDefaultFilters", () => {
   });
 
   it("uses syncStart date when it's after default from", () => {
-    const farFuture = dayjs().add(10, "year").format("YYYY-MM-DD");
+    const farFuture = addDays(today(), 3650);
     // syncStart in far future means from moves forward
     const result = computeDefaultFilters({ calendarSyncStart: farFuture });
     expect(result.from).toBe(farFuture);
@@ -210,10 +208,9 @@ describe("computeDefaultFilters", () => {
     // lookahead=7 days → maxForward = today+7 days; defaultTo = today+14 days
     // defaultTo.isAfter(maxForward) → toCandidate = maxForward
     const result = computeDefaultFilters({ calendarSyncLookaheadDays: "7" });
-    const to = dayjs(result.to);
-    const expected = dayjs().add(7, "day");
+    const expected = addDays(today(), 7);
     // Within 1 day tolerance to absorb timezone/midnight rollover
-    expect(Math.abs(to.diff(expected, "day"))).toBeLessThanOrEqual(1);
+    expect(Math.abs(diffDays(result.to, expected))).toBeLessThanOrEqual(1);
   });
 });
 
@@ -228,7 +225,7 @@ describe("getScheduleDefaultRange", () => {
 
   it("to is 5 days after from", () => {
     const { from, to } = getScheduleDefaultRange();
-    const diff = dayjs(to).diff(dayjs(from), "day");
+    const diff = diffDays(to, from);
     expect(diff).toBe(5);
   });
 

@@ -12,9 +12,8 @@ import { useCalendarEvents } from "@/features/calendar/hooks/use-calendar-events
 import { calendarDteLinkQueries } from "@/features/calendar/queries";
 import type { CalendarEventDetail } from "@/features/calendar/types";
 import { useDisclosure } from "@/hooks/use-disclosure";
+import { chileDay, formatChile } from "@/lib/dates";
 const routeApi = getRouteApi("/_authed/clinical/day");
-import "dayjs/locale/es";
-import dayjs from "dayjs";
 import { useEffect, useMemo, useState } from "react";
 
 function CalendarDailyPage() {
@@ -39,13 +38,10 @@ function CalendarDailyPage() {
     }
   }, [appliedFilters, filtersOpen]);
 
-  const selectedDateString = useMemo(
-    () => dayjs(currentSelectedDate).format("YYYY-MM-DD"),
-    [currentSelectedDate]
-  );
+  const selectedDateString = useMemo(() => chileDay(currentSelectedDate), [currentSelectedDate]);
 
   const selectedDayEntry = useMemo(
-    () => daily?.days.find((d) => dayjs(d.date).format("YYYY-MM-DD") === selectedDateString),
+    () => daily?.days.find((d) => chileDay(d.date) === selectedDateString),
     [daily?.days, selectedDateString]
   );
 
@@ -70,7 +66,7 @@ function CalendarDailyPage() {
             void navigate({
               search: (prev) => ({
                 ...prev,
-                date: dayjs(newDate).format("YYYY-MM-DD"),
+                date: chileDay(newDate),
                 from: undefined,
                 to: undefined,
               }),
@@ -151,7 +147,7 @@ function CalendarDailyPage() {
                 </div>
                 <h3 className="font-semibold text-default-600">Sin eventos</h3>
                 <p className="mt-1 max-w-xs text-default-400 text-sm">
-                  No hay eventos para el {dayjs(currentSelectedDate).format("DD [de] MMMM")}.
+                  No hay eventos para el {formatChile(currentSelectedDate, "DD [de] MMMM")}.
                 </p>
               </div>
             );
@@ -171,7 +167,7 @@ function CalendarDailyPage() {
               {/* Footer */}
               <div className="flex justify-center pt-2 text-default-300 text-xs">
                 {selectedDayEntry.total} evento{selectedDayEntry.total === 1 ? "" : "s"} ·{" "}
-                {dayjs(currentSelectedDate).format("dddd, D [de] MMMM")}
+                {formatChile(currentSelectedDate, "dddd, D [de] MMMM")}
               </div>
             </>
           );

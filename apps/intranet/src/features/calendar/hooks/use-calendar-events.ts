@@ -1,10 +1,9 @@
 import { skipToken, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSearch } from "@tanstack/react-router";
-import dayjs from "dayjs";
 import { type Dispatch, type SetStateAction, useState } from "react";
 import { useSettings } from "@/context/SettingsContext";
 import { useToast } from "@/context/ToastContext";
-import { today } from "@/lib/dates";
+import { addDays, civilNoon, today } from "@/lib/dates";
 import { fetchCalendarSyncLogs, syncCalendarEvents } from "../api";
 import { calendarQueries, calendarSyncQueries } from "../queries";
 import {
@@ -40,8 +39,8 @@ const hasFreshRunningSync = (logs: CalendarSyncLog[] | undefined) => {
     if (!log.startedAt) {
       return false;
     }
-    const started = dayjs(log.startedAt);
-    return started.isValid() && Date.now() - started.valueOf() < STALE_SYNC_WINDOW_MS;
+    const started = new Date(log.startedAt).getTime();
+    return !Number.isNaN(started) && Date.now() - started < STALE_SYNC_WINDOW_MS;
   });
 };
 
@@ -60,16 +59,16 @@ function deriveEffectiveFilters(
   search: CalendarSearchParams,
   filters: CalendarFilters
 ): CalendarFilters {
-  const dateParam = search.date ? dayjs(search.date, "YYYY-MM-DD") : null;
+  const dateParam = search.date && /^\d{4}-\d{2}-\d{2}$/.test(search.date) ? search.date : null;
   const maxDaysRaw = search.maxDays ?? filters.maxDays;
   const maxDays =
     Number.isFinite(maxDaysRaw) && maxDaysRaw > 0 ? Math.min(Math.floor(maxDaysRaw), 120) : 31;
 
-  const dateWindow = dateParam?.isValid()
+  const dateWindow = dateParam
     ? (() => {
         const half = Math.floor((maxDays - 1) / 2);
-        const from = dateParam.subtract(half, "day").format("YYYY-MM-DD");
-        const to = dateParam.add(maxDays - half - 1, "day").format("YYYY-MM-DD");
+        const from = addDays(dateParam, -half);
+        const to = addDays(dateParam, maxDays - half - 1);
         return { from, to };
       })()
     : null;
@@ -337,7 +336,9 @@ export function useCalendarEvents(options?: { enabled?: boolean }) {
 
   // Display date defaults to today (unless explicitly set via URL param)
   // This is separate from the data range (from/to) which buffers -2 weeks for performance
-  const currentSelectedDate = dayjs(search.date ?? today(), "YYYY-MM-DD").toDate();
+  const selectedISO =
+    search.date && /^\d{4}-\d{2}-\d{2}$/.test(search.date) ? search.date : today();
+  const currentSelectedDate = civilNoon(selectedISO);
   const availableCalendars = summary?.available.calendars ?? [];
   const availableCategories = summary?.available.categories ?? [];
 

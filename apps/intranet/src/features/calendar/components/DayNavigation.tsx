@@ -1,9 +1,9 @@
 import { Button, ButtonGroup } from "@heroui/react";
-import dayjs from "dayjs";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { ReactNode } from "react";
 import { useCallback, useEffect, useMemo } from "react";
 
+import { addDays, chileDay, civilNoon, formatChile, today as todayISO, weekday } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 
 interface DayNavigationProps {
@@ -11,7 +11,7 @@ interface DayNavigationProps {
   onSelect: (date: Date) => void;
   /** Optional slot for content to render on the right side of the header */
   rightSlot?: ReactNode;
-  /** Optional list of allowed weekdays (dayjs day indices: 0=Sun ... 6=Sat) */
+  /** Optional list of allowed weekdays (0=Sun ... 6=Sat) */
   allowedWeekdays?: number[];
   selectedDate: Date;
 }
@@ -23,28 +23,28 @@ export function DayNavigation({
   rightSlot,
   selectedDate,
 }: Readonly<DayNavigationProps>) {
-  const current = useMemo(() => dayjs(selectedDate), [selectedDate]);
-  const today = dayjs();
+  const current = useMemo(() => chileDay(selectedDate), [selectedDate]);
+  const today = todayISO();
   const allowedSet = useMemo(
     () => (allowedWeekdays?.length ? new Set(allowedWeekdays) : null),
     [allowedWeekdays]
   );
 
   const isAllowed = useCallback(
-    (date: dayjs.Dayjs) => {
+    (date: string) => {
       if (!allowedSet) {
         return true;
       }
-      return allowedSet.has(date.day());
+      return allowedSet.has(weekday(date));
     },
     [allowedSet]
   );
 
   const findAdjacentAllowed = useCallback(
-    (date: dayjs.Dayjs, direction: 1 | -1) => {
+    (date: string, direction: 1 | -1) => {
       let cursor = date;
       for (let i = 0; i < 7; i += 1) {
-        cursor = cursor.add(direction, "day");
+        cursor = addDays(cursor, direction);
         if (isAllowed(cursor)) {
           return cursor;
         }
@@ -55,7 +55,7 @@ export function DayNavigation({
   );
 
   const normalizeToAllowed = useCallback(
-    (date: dayjs.Dayjs) => {
+    (date: string) => {
       if (isAllowed(date)) {
         return date;
       }
@@ -65,23 +65,23 @@ export function DayNavigation({
   );
 
   // Generate range of dates (-4 to +4 around selected = 9 days)
-  const days = Array.from({ length: 9 }, (_, i) => current.add(i - 4, "day")).filter(isAllowed);
+  const days = Array.from({ length: 9 }, (_, i) => addDays(current, i - 4)).filter(isAllowed);
 
   const handlePrev = () => {
-    onSelect(findAdjacentAllowed(current, -1).toDate());
+    onSelect(civilNoon(findAdjacentAllowed(current, -1)));
   };
   const handleNext = () => {
-    onSelect(findAdjacentAllowed(current, 1).toDate());
+    onSelect(civilNoon(findAdjacentAllowed(current, 1)));
   };
   const handleToday = () => {
-    onSelect(normalizeToAllowed(today).toDate());
+    onSelect(civilNoon(normalizeToAllowed(today)));
   };
 
   useEffect(() => {
     if (!isAllowed(current)) {
       const normalized = normalizeToAllowed(current);
-      if (!normalized.isSame(current, "day")) {
-        onSelect(normalized.toDate());
+      if (normalized !== current) {
+        onSelect(civilNoon(normalized));
       }
     }
   }, [current, isAllowed, normalizeToAllowed, onSelect]);
@@ -89,7 +89,9 @@ export function DayNavigation({
   return (
     <div className={cn("flex flex-col gap-4", className)}>
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="font-bold text-lg capitalize sm:text-xl">{current.format("MMMM YYYY")}</h2>
+        <h2 className="font-bold text-lg capitalize sm:text-xl">
+          {formatChile(current, "MMMM YYYY")}
+        </h2>
 
         {/* Right side: optional slot + navigation buttons */}
         <div className="flex items-center gap-2">
@@ -112,8 +114,8 @@ export function DayNavigation({
         {/* Day Strip */}
         <div className="no-scrollbar flex min-h-16 touch-pan-x items-center justify-between overflow-x-auto rounded-xl border border-default-200 bg-content1 p-3 shadow-sm">
           {days.map((date) => {
-            const isSelected = date.isSame(current, "day");
-            const isToday = date.isSame(today, "day");
+            const isSelected = date === current;
+            const isToday = date === today;
 
             return (
               <Button
@@ -124,9 +126,9 @@ export function DayNavigation({
                     : "text-foreground-500 hover:bg-default-100",
                   isToday && !isSelected && "bg-default-100 font-medium text-foreground"
                 )}
-                key={date.toString()}
+                key={date}
                 onPress={() => {
-                  onSelect(date.toDate());
+                  onSelect(civilNoon(date));
                 }}
                 size="sm"
                 variant="outline"
@@ -140,12 +142,12 @@ export function DayNavigation({
                     isSelected ? "text-primary-foreground/90" : "text-foreground-500"
                   )}
                 >
-                  {date.format("ddd")}
+                  {formatChile(date, "ddd").replace(/\.$/, "")}
                 </span>
                 <span
                   className={cn("text-lg tabular-nums leading-none", isSelected && "font-bold")}
                 >
-                  {date.format("D")}
+                  {formatChile(date, "D")}
                 </span>
               </Button>
             );

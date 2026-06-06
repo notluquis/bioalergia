@@ -210,6 +210,11 @@ export function isoWeekday(isoDate: string): number {
   return ((civilNoon(isoDate).getUTCDay() + 6) % 7) + 1;
 }
 
+/** Weekday index (0=Sun … 6=Sat, matches dayjs `.day()`) of `isoDate`. */
+export function weekday(isoDate: string): number {
+  return civilNoon(isoDate).getUTCDay();
+}
+
 // ---- ISO week --------------------------------------------------------------
 /** ISO-8601 week number (1–53) of `date`'s Chile calendar day. */
 export function getISOWeek(date: DateInput): number {
