@@ -1,5 +1,4 @@
 import { Button, Checkbox, Popover, Tooltip } from "@heroui/react";
-import dayjs from "dayjs";
 import type JsPDF from "jspdf";
 import type * as JsPdfModule from "jspdf";
 import type { CellHookData } from "jspdf-autotable";
@@ -8,15 +7,13 @@ import { useRef, useState } from "react";
 import { useSettings } from "@/context/SettingsContext";
 import type { Employee } from "@/features/hr/employees/types";
 import { apiClient } from "@/lib/api-client";
+import { chileDay, formatChile, monthLabelToISO, weekday } from "@/lib/dates";
 import { fmtCLP } from "@/lib/format";
 import { toast } from "@/lib/toast-interceptor";
 import { formatRetentionPercent } from "~/shared/retention";
 
 import type { BulkRow, TimesheetSummaryRow } from "../types";
 
-import "dayjs/locale/es";
-
-const MONTH_LABEL_REGEX = /^(\d{4})-(\d{2})$/;
 const URL_REGEX = /^https?:\/\//i;
 const TIME_HH_MM_REGEX = /^\d{1,2}:\d{2}$/;
 
@@ -366,20 +363,10 @@ function addPrestadorInfo(
   margin: number,
   infoStartY: number
 ): void {
-  dayjs.locale("es");
-  let periodEs = monthLabel;
-  const monthMatch = MONTH_LABEL_REGEX.exec(monthLabel);
-  if (monthMatch) {
-    periodEs = dayjs(`${monthMatch[1]}-${monthMatch[2]}-01`).locale("es").format("MMMM YYYY");
-  } else if (dayjs(monthLabel, "MMMM YYYY", "en").isValid()) {
-    periodEs = dayjs(monthLabel, "MMMM YYYY", "en").locale("es").format("MMMM YYYY");
-  } else if (dayjs(monthLabel, "MMMM YYYY", "es").isValid()) {
-    periodEs = dayjs(monthLabel, "MMMM YYYY", "es").locale("es").format("MMMM YYYY");
-  }
+  const iso = monthLabelToISO(monthLabel);
+  let periodEs = iso ? formatChile(iso, "MMMM YYYY") : monthLabel;
   periodEs = periodEs.charAt(0).toUpperCase() + periodEs.slice(1);
-  const payDateFormatted = summary?.payDate
-    ? dayjs(summary.payDate, "YYYY-MM-DD").format("DD-MM-YYYY")
-    : null;
+  const payDateFormatted = summary?.payDate ? formatChile(summary.payDate, "DD-MM-YYYY") : null;
 
   doc.setFontSize(10);
   doc.text(`Prestador: ${employee?.full_name || "-"}`, margin, infoStartY);
@@ -452,7 +439,7 @@ function drawDetailTable({
     colKeys.map((key): string => {
       switch (key) {
         case "date": {
-          return dayjs(row.date).isValid() ? dayjs(row.date).format("DD-MM-YYYY") : "-";
+          return row.date ? formatChile(row.date, "DD-MM-YYYY") : "-";
         }
         case "entrada": {
           return row.entrada || "-";
@@ -504,7 +491,7 @@ function drawDetailTable({
       if (data.section === "body") {
         const rowIndex = data.row.index;
         const rawDate = workedRows[rowIndex]?.date;
-        const isSunday = rawDate && dayjs(rawDate).day() === 0;
+        const isSunday = rawDate && weekday(chileDay(rawDate)) === 0;
         if (isSunday) {
           data.cell.styles.fillColor = [245, 245, 245];
         }

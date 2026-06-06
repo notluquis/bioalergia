@@ -134,6 +134,58 @@ function lastOfMonth(isoDate: string): string {
   return civilISO(new Date(Date.UTC(year, month, 0, 12)));
 }
 
+// English + Spanish month names → 1-12. Covers the multi-format month-label
+// parsing dayjs's customParseFormat used to do ("January 2026" / "enero 2026").
+const MONTH_NAME_TO_NUM: Record<string, number> = {
+  january: 1,
+  february: 2,
+  march: 3,
+  april: 4,
+  may: 5,
+  june: 6,
+  july: 7,
+  august: 8,
+  september: 9,
+  october: 10,
+  november: 11,
+  december: 12,
+  enero: 1,
+  febrero: 2,
+  marzo: 3,
+  abril: 4,
+  mayo: 5,
+  junio: 6,
+  julio: 7,
+  agosto: 8,
+  septiembre: 9,
+  setiembre: 9,
+  octubre: 10,
+  noviembre: 11,
+  diciembre: 12,
+};
+
+/**
+ * Parse a month label to a first-of-month "YYYY-MM-DD", or null if unrecognized.
+ * Accepts "YYYY-MM" and "<Month name> YYYY" (English or Spanish, any case).
+ */
+export function monthLabelToISO(label: string): string | null {
+  const trimmed = label.trim();
+  const ym = /^(\d{4})-(\d{2})$/.exec(trimmed);
+  if (ym) {
+    return `${ym[1]}-${ym[2]}-01`;
+  }
+  const named = /^([A-Za-zÁÉÍÓÚáéíóúñ]+)\s+(\d{4})$/.exec(trimmed);
+  const name = named?.[1];
+  const yearPart = named?.[2];
+  if (name && yearPart) {
+    const month = MONTH_NAME_TO_NUM[name.toLowerCase()];
+    if (month) {
+      return `${yearPart}-${String(month).padStart(2, "0")}-01`;
+    }
+  }
+  return null;
+}
+
 /** Shift a "YYYY-MM[-DD]" by n months, returning the first-of-month "YYYY-MM-DD". */
 export function addMonths(isoDate: string, n: number): string {
   const { year, month } = ym(`${isoDate.slice(0, 7)}-01`);

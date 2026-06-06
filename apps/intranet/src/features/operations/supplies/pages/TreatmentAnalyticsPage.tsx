@@ -13,9 +13,7 @@ import {
 import { parseDate } from "@internationalized/date";
 import { useQuery } from "@tanstack/react-query";
 import { getRouteApi } from "@tanstack/react-router";
-import dayjs from "dayjs";
 import type React from "react";
-import "dayjs/locale/es";
 import {
   Calendar as CalendarIcon,
   DollarSign,
@@ -39,13 +37,12 @@ import {
   YAxis,
 } from "recharts";
 
-dayjs.locale("es");
-
 import type { ColumnDef } from "@tanstack/react-table";
 import { DataTable } from "@/components/data-table/DataTable";
 import { calendarQueries } from "@/features/calendar/queries";
 import type { TreatmentAnalytics, TreatmentAnalyticsFilters } from "@/features/calendar/types";
 import { useChartPalette } from "@/lib/chart-palette";
+import { addDays, addMonths, endOfMonthFor, formatChile, monthsAgoStart, today } from "@/lib/dates";
 import { formatCurrency } from "@/lib/utils";
 const routeApi = getRouteApi("/_authed/clinical/analytics");
 
@@ -65,18 +62,18 @@ const KPI_ICON_STYLES: Record<
 
 // --- Quick Ranges Helpers ---
 const getDefaultRange = () => ({
-  from: dayjs().subtract(3, "month").startOf("month").format("YYYY-MM-DD"),
-  to: dayjs().add(1, "month").endOf("month").format("YYYY-MM-DD"),
+  from: monthsAgoStart(3),
+  to: endOfMonthFor(addMonths(today(), 1)),
 });
 
 const getMonthRange = (month: string) => {
-  const base = dayjs(`${month}-01`);
-  if (!base.isValid()) {
+  const base = `${month}-01`;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(base)) {
     return getDefaultRange();
   }
   return {
-    from: base.startOf("month").format("YYYY-MM-DD"),
-    to: base.endOf("month").format("YYYY-MM-DD"),
+    from: base,
+    to: endOfMonthFor(base),
   };
 };
 
@@ -159,7 +156,7 @@ function buildTrendData(
   }
   return data?.byMonth?.map((d) => ({
     ...d,
-    label: dayjs(`${d.year}-${d.month}-01`).format("MMM YYYY"),
+    label: formatChile(`${d.year}-${String(d.month).padStart(2, "0")}-01`, "MMM YYYY"),
   }));
 }
 
@@ -210,7 +207,7 @@ export function TreatmentAnalyticsPage() {
   const handleDateChange = (from: string, to: string) => {
     // Validar si ambas fechas están presentes
     if (from && to) {
-      if (dayjs(from).isAfter(dayjs(to))) {
+      if (from > to) {
         setDateRangeError("La fecha 'desde' debe ser anterior a 'hasta'");
         return;
       }
@@ -261,7 +258,7 @@ export function TreatmentAnalyticsPage() {
   const trendData = buildTrendData(data, period);
 
   return (
-    <div className="mx-auto max-w-7xl space-y-4 px-3 py-3 pb-6 sm:px-4 lg:px-6">
+    <div className="mx-auto max-w-7xl space-y-4 pb-6 sm:px-4 lg:px-6 p-3">
       <AnalyticsHeader
         dateRangeError={dateRangeError}
         filters={filters}
@@ -381,7 +378,7 @@ function AnalyticsCharts({
       totalEvents - (month.induccionCount || 0) - (month.mantencionCount || 0);
 
     return {
-      label: dayjs(`${month.year}-${month.month}-01`).format("MMM YYYY"),
+      label: formatChile(`${month.year}-${String(month.month).padStart(2, "0")}-01`, "MMM YYYY"),
       pieDataStage: [
         { name: "Inducción", value: month.induccionCount || 0 },
         { name: "Mantención", value: month.mantencionCount || 0 },
@@ -431,7 +428,7 @@ function AnalyticsCharts({
                   tick={{ fontSize: 12 }}
                   tickLine={false}
                   axisLine={false}
-                  tickFormatter={(val) => (period === "day" ? dayjs(val).format("D MMM") : val)}
+                  tickFormatter={(val) => (period === "day" ? formatChile(val, "D MMM") : val)}
                 />
 
                 <YAxis
@@ -590,7 +587,9 @@ const CustomTooltip = ({
     return (
       <div className="rounded-lg border border-default-200 bg-content1 p-2 text-xs shadow-lg">
         <Description className="mb-1.5 font-semibold text-foreground text-xs">
-          {dayjs(label).isValid() ? dayjs(label).format("DD MMM YYYY") : label}
+          {typeof label === "string" && /^\d{4}-\d{2}-\d{2}/.test(label)
+            ? formatChile(label, "DD MMM YYYY")
+            : label}
         </Description>
         <div className="space-y-1">
           {payload.map((p) => (
@@ -624,7 +623,7 @@ function AnalyticsDetailTable({
         // Safe access as we defined interface
         const val = (period === "day" ? row.original.date : row.original.label) || "";
         if (period === "day") {
-          return dayjs(val).format("dddd DD MMM");
+          return formatChile(val, "dddd DD MMM");
         }
         return val;
       },
@@ -705,11 +704,10 @@ function PeriodIndicator({
   let displayText = "";
 
   if (isMonthSelected && selectedMonth) {
-    const monthDate = dayjs(`${selectedMonth}-01`);
-    displayText = monthDate.format("MMMM YYYY");
+    displayText = formatChile(`${selectedMonth}-01`, "MMMM YYYY");
   } else {
-    const fromDate = dayjs(from).format("D MMM");
-    const toDate = dayjs(to).format("D MMM YYYY");
+    const fromDate = formatChile(from, "D MMM");
+    const toDate = formatChile(to, "D MMM YYYY");
     displayText = `${fromDate} - ${toDate}`;
   }
 
@@ -750,9 +748,9 @@ function AnalyticsHeader({
   onSetPeriod: (p: "day" | "week") => void;
   period: "day" | "week" | "month";
 }) {
-  const prevMonth = dayjs().subtract(1, "month").format("YYYY-MM");
-  const currentMonth = dayjs().format("YYYY-MM");
-  const nextMonth = dayjs().add(1, "month").format("YYYY-MM");
+  const prevMonth = addMonths(today(), -1).slice(0, 7);
+  const currentMonth = today().slice(0, 7);
+  const nextMonth = addMonths(today(), 1).slice(0, 7);
 
   return (
     <div className="space-y-3">
@@ -862,9 +860,9 @@ function AnalyticsFilters({
   onMonthSelect: (month: string) => void;
 }) {
   const applyQuickRange = (days: number) => {
-    const to = dayjs().endOf("day");
-    const from = to.subtract(days, "day").startOf("day");
-    onDateChange(from.format("YYYY-MM-DD"), to.format("YYYY-MM-DD"));
+    const to = today();
+    const from = addDays(to, -days);
+    onDateChange(from, to);
   };
   return (
     <Card className="border-default-100 bg-content2/50 shadow-none">
@@ -873,7 +871,7 @@ function AnalyticsFilters({
         <div className="rounded-lg bg-default-50 p-2.5">
           <Description className="text-default-500 text-xs">
             <span className="font-semibold">Rango actual:</span>{" "}
-            {dayjs(filters.from).format("D MMM")} - {dayjs(filters.to).format("D MMM YYYY")}
+            {formatChile(filters.from, "D MMM")} - {formatChile(filters.to, "D MMM YYYY")}
           </Description>
         </div>
 
@@ -990,7 +988,7 @@ function AnalyticsFilters({
             <Button
               size="sm"
               variant="outline"
-              onPress={() => onMonthSelect(dayjs().subtract(1, "month").format("YYYY-MM"))}
+              onPress={() => onMonthSelect(addMonths(today(), -1).slice(0, 7))}
               className="text-xs"
             >
               Mes anterior
@@ -998,7 +996,7 @@ function AnalyticsFilters({
             <Button
               size="sm"
               variant="outline"
-              onPress={() => onMonthSelect(dayjs().format("YYYY-MM"))}
+              onPress={() => onMonthSelect(today().slice(0, 7))}
               className="text-xs"
             >
               Mes actual
@@ -1006,7 +1004,7 @@ function AnalyticsFilters({
             <Button
               size="sm"
               variant="outline"
-              onPress={() => onMonthSelect(dayjs().add(1, "month").format("YYYY-MM"))}
+              onPress={() => onMonthSelect(addMonths(today(), 1).slice(0, 7))}
               className="text-xs"
             >
               Mes siguiente
@@ -1093,7 +1091,7 @@ function KpiCard({
     <Card className="border-default-200 shadow-sm">
       <Card.Content className="flex flex-row items-center gap-2.5 p-2.5 sm:p-3">
         <div className={`shrink-0 rounded-lg p-2 ${iconStyle.bgClass} ${iconStyle.textClass}`}>
-          <Icon className="sm:h-5 sm:w-5 size-4" />
+          <Icon className="size-4 sm:size-5" />
         </div>
         <div className="flex flex-col justify-center gap-0.5">
           <Description className="font-medium text-default-500 text-xs uppercase">

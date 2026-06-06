@@ -11,17 +11,13 @@ import {
   Tabs,
   TextField,
 } from "@heroui/react";
-import dayjs from "dayjs";
 import { useQuery } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { formatChile, monthLabelToISO } from "@/lib/dates";
 import type { Employee } from "@/features/hr/employees/types";
 import { fetchTimesheetEmailPreview } from "@/features/hr/timesheets/api";
 
 import type { TimesheetSummaryRow } from "../types";
-
-import "dayjs/locale/es";
-
-const MONTH_LABEL_REGEX = /^(\d{4})-(\d{2})$/;
 
 interface EmailPreviewModalProps {
   employee: Employee | null;
@@ -582,13 +578,8 @@ function normalizeAgentUrl(value: string) {
 }
 
 function getMonthLabelInSpanish(monthLabel: string) {
-  dayjs.locale("es");
-  const monthMatch = MONTH_LABEL_REGEX.exec(monthLabel);
-  const normalizedMonthLabel = monthMatch
-    ? dayjs(`${monthMatch[1]}-${monthMatch[2]}-01`).locale("es").format("MMMM YYYY")
-    : dayjs(monthLabel, "MMMM YYYY", "en").isValid()
-      ? dayjs(monthLabel, "MMMM YYYY", "en").locale("es").format("MMMM YYYY")
-      : monthLabel;
+  const iso = monthLabelToISO(monthLabel);
+  const normalizedMonthLabel = iso ? formatChile(iso, "MMMM YYYY") : monthLabel;
   return normalizedMonthLabel.charAt(0).toUpperCase() + normalizedMonthLabel.slice(1);
 }
 
