@@ -2,17 +2,16 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
-import { ClassificationPagination } from "../ClassificationPagination";
+import { AppPagination } from "../AppPagination";
 
-// ClassificationPagination es presentacional + controlado por el padre. Recibe
-// `page` 0-based y emite onPageChange con índice 0-based, pero muestra números
-// 1-based. Estos tests fijan esa conversión y los límites (la fuente histórica
-// de bugs off-by-one en paginaciones).
+// AppPagination es la paginación presentacional única (HeroUI). Contrato 0-based
+// en `page`/`onPageChange`, muestra números 1-based. Estos tests fijan la
+// conversión y los límites (fuente histórica de bugs off-by-one).
 
-function setup(overrides: Partial<Parameters<typeof ClassificationPagination>[0]> = {}) {
+function setup(overrides: Partial<Parameters<typeof AppPagination>[0]> = {}) {
   const onPageChange = vi.fn<(page: number) => void>();
   render(
-    <ClassificationPagination
+    <AppPagination
       loading={false}
       onPageChange={onPageChange}
       page={0}
@@ -25,9 +24,9 @@ function setup(overrides: Partial<Parameters<typeof ClassificationPagination>[0]
   return { onPageChange };
 }
 
-describe("ClassificationPagination", () => {
+describe("AppPagination", () => {
   it("se oculta cuando totalCount <= pageSize", () => {
-    const { onPageChange } = setup({ totalCount: 20, pageSize: 20 });
+    const { onPageChange } = setup({ totalCount: 20, pageSize: 20, totalPages: 1 });
     expect(screen.queryByText(/Página/)).not.toBeInTheDocument();
     expect(onPageChange).not.toHaveBeenCalled();
   });
@@ -53,8 +52,7 @@ describe("ClassificationPagination", () => {
 
   it("Anterior está deshabilitado en la primera página", () => {
     const { onPageChange } = setup({ page: 0 });
-    const prev = screen.getByRole("button", { name: /Anterior/i });
-    expect(prev).toBeDisabled();
+    expect(screen.getByRole("button", { name: /Anterior/i })).toBeDisabled();
     expect(onPageChange).not.toHaveBeenCalledWith(-1);
   });
 
@@ -63,5 +61,16 @@ describe("ClassificationPagination", () => {
     const { onPageChange } = setup({ page: 0 });
     await user.click(screen.getByRole("button", { name: "3" }));
     expect(onPageChange).toHaveBeenCalledWith(2);
+  });
+
+  it("deriva totalPages desde totalCount cuando no se entrega", () => {
+    setup({ page: 0, totalCount: 45, pageSize: 20, totalPages: undefined });
+    expect(screen.getByText("Página 1 de 3")).toBeInTheDocument();
+  });
+
+  it("total desconocido (totalPages = -1): muestra 'Página N' sin total y Siguiente habilitado", () => {
+    setup({ page: 0, totalCount: undefined, totalPages: -1 });
+    expect(screen.getByText("Página 1")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Siguiente/i })).not.toBeDisabled();
   });
 });

@@ -14,7 +14,7 @@ import {
 import { CalendarActionModal } from "@/features/calendar/components/CalendarActionModal";
 import { ClassificationEmptyState } from "@/features/calendar/components/ClassificationEmptyState";
 import { ClassificationFilters } from "@/features/calendar/components/ClassificationFilters";
-import { ClassificationPagination } from "@/features/calendar/components/ClassificationPagination";
+import { AppPagination } from "@/components/pagination/AppPagination";
 import { ClassificationRow } from "@/features/calendar/components/ClassificationRow";
 import { ClassificationStats } from "@/features/calendar/components/ClassificationStats";
 import { ClassificationToolbar } from "@/features/calendar/components/ClassificationToolbar";
@@ -323,7 +323,7 @@ function CalendarClassificationPage() {
         </div>
       )}
 
-      <ClassificationPagination
+      <AppPagination
         loading={loading}
         onPageChange={(nextPage) => handleSearchChange({ page: nextPage })}
         page={page}

@@ -1,7 +1,7 @@
-import { Label, ListBox, Pagination, Select } from "@heroui/react";
+import { Label, ListBox, Select } from "@heroui/react";
 import type { PaginationState, Table } from "@tanstack/react-table";
-import { buildPaginationItems } from "@/components/pagination/pagination-items";
-import { computePaginationView, normalizePageSizeOptions } from "./pagination-utils";
+import { AppPagination } from "@/components/pagination/AppPagination";
+import { normalizePageSizeOptions } from "./pagination-utils";
 
 interface DataTablePaginationProps<TData> {
   readonly enablePageSizeSelector?: boolean;
@@ -20,26 +20,9 @@ export function DataTablePagination<TData>({
 }: DataTablePaginationProps<TData>) {
   const currentPagination = pagination ?? table.getState().pagination;
   const currentPageSize = currentPagination.pageSize;
+  // `-1` (sentinel TanStack) cuando el total es desconocido (server-side sin count).
   const computedTotalPages = pageCount ?? table.getPageCount();
-  const {
-    canNext,
-    canPrevious,
-    currentPageIndex,
-    currentPageNumber,
-    hasKnownTotalPages,
-    totalPages,
-  } = computePaginationView({
-    computedTotalPages,
-    pageIndex: currentPagination.pageIndex,
-  });
   const normalizedOptions = normalizePageSizeOptions(pageSizeOptions, currentPageSize);
-
-  const pageItems = hasKnownTotalPages
-    ? buildPaginationItems({
-        currentPage: currentPageNumber,
-        totalPages,
-      })
-    : [];
 
   return (
     <div className="flex flex-col items-start justify-between gap-3 px-2 sm:flex-row sm:items-center">
@@ -77,57 +60,13 @@ export function DataTablePagination<TData>({
           </>
         )}
       </div>
-      <Pagination className="w-full sm:w-auto" size="sm">
-        <Pagination.Summary className="text-default-500 text-sm">
-          {hasKnownTotalPages
-            ? `Página ${currentPageNumber} de ${totalPages}`
-            : `Página ${currentPageNumber}`}
-        </Pagination.Summary>
-        <Pagination.Content>
-          <Pagination.Item>
-            <Pagination.Previous
-              isDisabled={!canPrevious}
-              onPress={() => {
-                table.setPageIndex(Math.max(0, currentPageIndex - 1));
-              }}
-            >
-              <Pagination.PreviousIcon />
-              <span>Anterior</span>
-            </Pagination.Previous>
-          </Pagination.Item>
-          {hasKnownTotalPages
-            ? pageItems.map((pageItem) =>
-                pageItem.type === "ellipsis" ? (
-                  <Pagination.Item key={pageItem.key}>
-                    <Pagination.Ellipsis />
-                  </Pagination.Item>
-                ) : (
-                  <Pagination.Item key={pageItem.key}>
-                    <Pagination.Link
-                      isActive={pageItem.value === currentPageNumber}
-                      onPress={() => {
-                        table.setPageIndex((pageItem.value ?? 1) - 1);
-                      }}
-                    >
-                      {pageItem.value}
-                    </Pagination.Link>
-                  </Pagination.Item>
-                )
-              )
-            : null}
-          <Pagination.Item>
-            <Pagination.Next
-              isDisabled={!canNext}
-              onPress={() => {
-                table.setPageIndex(currentPageIndex + 1);
-              }}
-            >
-              <span>Siguiente</span>
-              <Pagination.NextIcon />
-            </Pagination.Next>
-          </Pagination.Item>
-        </Pagination.Content>
-      </Pagination>
+      <AppPagination
+        className="w-full sm:w-auto"
+        onPageChange={(p) => table.setPageIndex(p)}
+        page={currentPagination.pageIndex}
+        pageSize={currentPageSize}
+        totalPages={computedTotalPages}
+      />
     </div>
   );
 }
