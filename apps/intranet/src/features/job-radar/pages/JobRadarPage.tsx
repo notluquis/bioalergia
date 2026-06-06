@@ -390,6 +390,7 @@ export function JobRadarPage() {
         isLoading={isPending}
         enableGlobalFilter={false}
         enableExport={false}
+        enableVirtualization={false}
         noDataMessage={t("jobRadar.empty")}
         pageSizeOptions={[10, 25, 50, 100]}
         scrollMaxHeight="min(68dvh, 760px)"
