@@ -38,25 +38,23 @@ function payload(overrides: Partial<UpsertTimesheetPayload>): UpsertTimesheetPay
 }
 
 describe("parseDateOnlyUtc", () => {
-  it("parses a valid YYYY-MM-DD into a valid UTC dayjs", () => {
+  it("parses a valid YYYY-MM-DD into a PlainDate", () => {
     const d = parseDateOnlyUtc("2026-03-09");
-    expect(d.isValid()).toBe(true);
-    expect(d.year()).toBe(2026);
-    expect(d.month()).toBe(2); // 0-indexed: March
-    expect(d.date()).toBe(9);
-    expect(d.hour()).toBe(0);
-    expect(d.minute()).toBe(0);
+    expect(d?.toString()).toBe("2026-03-09");
+    expect(d?.year).toBe(2026);
+    expect(d?.month).toBe(3); // PlainDate months are 1-indexed
+    expect(d?.day).toBe(9);
   });
 
-  it("is invalid for a non-strict / wrong format", () => {
-    expect(parseDateOnlyUtc("2026-3-9").isValid()).toBe(false);
-    expect(parseDateOnlyUtc("03/09/2026").isValid()).toBe(false);
-    expect(parseDateOnlyUtc("not-a-date").isValid()).toBe(false);
-    expect(parseDateOnlyUtc("").isValid()).toBe(false);
+  it("is null for a non-strict / wrong format", () => {
+    expect(parseDateOnlyUtc("2026-3-9")).toBeNull();
+    expect(parseDateOnlyUtc("03/09/2026")).toBeNull();
+    expect(parseDateOnlyUtc("not-a-date")).toBeNull();
+    expect(parseDateOnlyUtc("")).toBeNull();
   });
 
   it("rejects an out-of-range month via strict parsing", () => {
-    expect(parseDateOnlyUtc("2026-13-01").isValid()).toBe(false);
+    expect(parseDateOnlyUtc("2026-13-01")).toBeNull();
   });
 });
 
@@ -94,14 +92,12 @@ describe("dateOnlyEndUtc", () => {
 });
 
 describe("monthStartUtc", () => {
-  it("returns the UTC start-of-month dayjs for YYYY-MM", () => {
-    const d = monthStartUtc("2026-03");
-    expect(d.toDate().toISOString()).toBe("2026-03-01T00:00:00.000Z");
+  it("returns the first-of-month PlainDate for YYYY-MM", () => {
+    expect(monthStartUtc("2026-03").toString()).toBe("2026-03-01");
   });
 
   it("supports adding a month to derive the exclusive upper bound", () => {
-    const next = monthStartUtc("2026-12").add(1, "month");
-    expect(next.toDate().toISOString()).toBe("2027-01-01T00:00:00.000Z");
+    expect(monthStartUtc("2026-12").add({ months: 1 }).toString()).toBe("2027-01-01");
   });
 
   it("throws on a full date or invalid month", () => {
