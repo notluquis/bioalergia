@@ -68,6 +68,31 @@ export class SchemaType implements SchemaDef {
                     attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("NATURAL") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("person_type") }] }] as readonly AttributeApplication[],
                     default: "NATURAL" as FieldDefault
                 },
+                emailMarketingOptIn: {
+                    name: "emailMarketingOptIn",
+                    type: "Boolean",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(false) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("email_marketing_opt_in") }] }] as readonly AttributeApplication[],
+                    default: false as FieldDefault
+                },
+                emailMarketingOptInAt: {
+                    name: "emailMarketingOptInAt",
+                    type: "DateTime",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("email_marketing_opt_in_at") }] }] as readonly AttributeApplication[]
+                },
+                emailUnsubscribedAt: {
+                    name: "emailUnsubscribedAt",
+                    type: "DateTime",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("email_unsubscribed_at") }] }] as readonly AttributeApplication[]
+                },
+                emailUnsubscribeToken: {
+                    name: "emailUnsubscribeToken",
+                    type: "String",
+                    unique: true,
+                    optional: true,
+                    attributes: [{ name: "@unique" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("email_unsubscribe_token") }] }] as readonly AttributeApplication[]
+                },
                 createdAt: {
                     name: "createdAt",
                     type: "DateTime",
@@ -122,7 +147,8 @@ export class SchemaType implements SchemaDef {
             uniqueFields: {
                 id: { type: "Int" },
                 rut: { type: "String" },
-                email: { type: "String" }
+                email: { type: "String" },
+                emailUnsubscribeToken: { type: "String" }
             }
         },
         Address: {
@@ -16816,6 +16842,57 @@ export class SchemaType implements SchemaDef {
                 provider_topic_externalId: { provider: { type: "String" }, topic: { type: "String" }, externalId: { type: "String" } }
             }
         },
+        JobSource: {
+            name: "JobSource",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "String",
+                    id: true,
+                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("cuid") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("cuid") as FieldDefault
+                },
+                kind: {
+                    name: "kind",
+                    type: "JobSourceKind"
+                },
+                identifier: {
+                    name: "identifier",
+                    type: "String"
+                },
+                label: {
+                    name: "label",
+                    type: "String",
+                    optional: true
+                },
+                enabled: {
+                    name: "enabled",
+                    type: "Boolean",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(true) }] }] as readonly AttributeApplication[],
+                    default: true as FieldDefault
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                }
+            },
+            attributes: [
+                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.literal(true) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
+                { name: "@@unique", args: [{ name: "fields", value: ExpressionUtils.array("JobSourceKind", [ExpressionUtils.field("kind"), ExpressionUtils.field("identifier")]) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("Boolean", [ExpressionUtils.field("enabled")]) }] },
+                { name: "@@schema", args: [{ name: "map", value: ExpressionUtils.literal("personal") }] },
+                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("job_sources") }] }
+            ] as readonly AttributeApplication[],
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "String" },
+                kind_identifier: { kind: { type: "JobSourceKind" }, identifier: { type: "String" } }
+            }
+        },
         JobPosting: {
             name: "JobPosting",
             fields: {
@@ -17791,6 +17868,21 @@ export class SchemaType implements SchemaDef {
             values: {
                 OPEN: "OPEN",
                 CLOSED: "CLOSED"
+            },
+            attributes: [
+                { name: "@@schema", args: [{ name: "map", value: ExpressionUtils.literal("personal") }] }
+            ] as readonly AttributeApplication[]
+        },
+        JobSourceKind: {
+            name: "JobSourceKind",
+            values: {
+                TEAMTAILOR: "TEAMTAILOR",
+                GREENHOUSE: "GREENHOUSE",
+                LEVER: "LEVER",
+                ASHBY: "ASHBY",
+                SMARTRECRUITERS: "SMARTRECRUITERS",
+                WORKDAY: "WORKDAY",
+                AIRAVIRTUAL: "AIRAVIRTUAL"
             },
             attributes: [
                 { name: "@@schema", args: [{ name: "map", value: ExpressionUtils.literal("personal") }] }

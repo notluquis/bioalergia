@@ -35,3 +35,34 @@ export function useUpdateJobRadarSettings() {
     onSuccess: () => void qc.invalidateQueries({ queryKey: jobRadarKeys.all }),
   });
 }
+
+export function useJobSources() {
+  return useQuery(jobRadarQueries.sources());
+}
+
+export function useAddJobSource() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: Parameters<typeof jobRadarORPCClient.addSource>[0]) =>
+      jobRadarORPCClient.addSource(input),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: jobRadarKeys.sources() }),
+  });
+}
+
+export function useToggleJobSource() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: Parameters<typeof jobRadarORPCClient.toggleSource>[0]) =>
+      jobRadarORPCClient.toggleSource(input),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: jobRadarKeys.sources() }),
+  });
+}
+
+export function useDeleteJobSource() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: Parameters<typeof jobRadarORPCClient.deleteSource>[0]) =>
+      jobRadarORPCClient.deleteSource(input),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: jobRadarKeys.sources() }),
+  });
+}

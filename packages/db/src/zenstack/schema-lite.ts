@@ -61,6 +61,27 @@ export class SchemaType implements SchemaDef {
                     type: "PersonType",
                     default: "NATURAL" as FieldDefault
                 },
+                emailMarketingOptIn: {
+                    name: "emailMarketingOptIn",
+                    type: "Boolean",
+                    default: false as FieldDefault
+                },
+                emailMarketingOptInAt: {
+                    name: "emailMarketingOptInAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                emailUnsubscribedAt: {
+                    name: "emailUnsubscribedAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                emailUnsubscribeToken: {
+                    name: "emailUnsubscribeToken",
+                    type: "String",
+                    unique: true,
+                    optional: true
+                },
                 createdAt: {
                     name: "createdAt",
                     type: "DateTime",
@@ -107,7 +128,8 @@ export class SchemaType implements SchemaDef {
             uniqueFields: {
                 id: { type: "Int" },
                 rut: { type: "String" },
-                email: { type: "String" }
+                email: { type: "String" },
+                emailUnsubscribeToken: { type: "String" }
             }
         },
         Address: {
@@ -13774,6 +13796,45 @@ export class SchemaType implements SchemaDef {
                 provider_topic_externalId: { provider: { type: "String" }, topic: { type: "String" }, externalId: { type: "String" } }
             }
         },
+        JobSource: {
+            name: "JobSource",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "String",
+                    id: true,
+                    default: ExpressionUtils.call("cuid") as FieldDefault
+                },
+                kind: {
+                    name: "kind",
+                    type: "JobSourceKind"
+                },
+                identifier: {
+                    name: "identifier",
+                    type: "String"
+                },
+                label: {
+                    name: "label",
+                    type: "String",
+                    optional: true
+                },
+                enabled: {
+                    name: "enabled",
+                    type: "Boolean",
+                    default: true as FieldDefault
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "String" },
+                kind_identifier: { kind: { type: "JobSourceKind" }, identifier: { type: "String" } }
+            }
+        },
         JobPosting: {
             name: "JobPosting",
             fields: {
@@ -14725,6 +14786,21 @@ export class SchemaType implements SchemaDef {
             values: {
                 OPEN: "OPEN",
                 CLOSED: "CLOSED"
+            },
+            attributes: [
+                { name: "@@schema", args: [{ name: "map", value: ExpressionUtils.literal("personal") }] }
+            ] as readonly AttributeApplication[]
+        },
+        JobSourceKind: {
+            name: "JobSourceKind",
+            values: {
+                TEAMTAILOR: "TEAMTAILOR",
+                GREENHOUSE: "GREENHOUSE",
+                LEVER: "LEVER",
+                ASHBY: "ASHBY",
+                SMARTRECRUITERS: "SMARTRECRUITERS",
+                WORKDAY: "WORKDAY",
+                AIRAVIRTUAL: "AIRAVIRTUAL"
             },
             attributes: [
                 { name: "@@schema", args: [{ name: "map", value: ExpressionUtils.literal("personal") }] }

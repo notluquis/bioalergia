@@ -5,6 +5,10 @@ import {
   jobRadarSyncResultSchema,
   jobRadarUpdateInputSchema,
   jobPostingSchema,
+  jobSourceSchema,
+  jobSourceAddInputSchema,
+  jobSourceToggleInputSchema,
+  jobSourceIdInputSchema,
 } from "@finanzas/orpc-contracts/job-radar";
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
@@ -17,8 +21,12 @@ import { DomainError } from "../lib/errors.ts";
 import { logError } from "../lib/logger.ts";
 import { configureSuperjson } from "../lib/superjson-config.ts";
 import {
+  addJobSource,
+  deleteJobSource,
   getJobRadarSettings,
   listJobPostings,
+  listJobSources,
+  setJobSourceEnabled,
   syncJobRadar,
   updateJobApplication,
   updateJobRadarSettings,
@@ -87,6 +95,54 @@ const jobRadarORPCRouterBase = {
     .handler(async ({ context, input }) => {
       await requireUser(context.hono);
       return updateJobRadarSettings(input);
+    }),
+
+  listSources: base
+    .route({ method: "GET", path: "/sources", summary: "List sources", tags: ["Job Radar"] })
+    .output(z.array(jobSourceSchema))
+    .handler(async ({ context }) => {
+      await requireUser(context.hono);
+      const rows = await listJobSources();
+      return rows as unknown as z.output<typeof jobSourceSchema>[];
+    }),
+
+  addSource: base
+    .route({ method: "POST", path: "/sources", summary: "Add a source", tags: ["Job Radar"] })
+    .input(jobSourceAddInputSchema)
+    .output(jobSourceSchema)
+    .handler(async ({ context, input }) => {
+      await requireUser(context.hono);
+      const row = await addJobSource(input);
+      return row as unknown as z.output<typeof jobSourceSchema>;
+    }),
+
+  toggleSource: base
+    .route({
+      method: "PATCH",
+      path: "/sources/{id}",
+      summary: "Enable/disable source",
+      tags: ["Job Radar"],
+    })
+    .input(jobSourceToggleInputSchema)
+    .output(jobSourceSchema)
+    .handler(async ({ context, input }) => {
+      await requireUser(context.hono);
+      const row = await setJobSourceEnabled(input.id, input.enabled);
+      return row as unknown as z.output<typeof jobSourceSchema>;
+    }),
+
+  deleteSource: base
+    .route({
+      method: "DELETE",
+      path: "/sources/{id}",
+      summary: "Delete source",
+      tags: ["Job Radar"],
+    })
+    .input(jobSourceIdInputSchema)
+    .output(z.object({ id: z.string() }))
+    .handler(async ({ context, input }) => {
+      await requireUser(context.hono);
+      return deleteJobSource(input.id);
     }),
 };
 

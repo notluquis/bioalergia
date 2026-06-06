@@ -40,15 +40,8 @@ export const JOB_RADAR_DEFAULT_CRON = "*/30 * * * *";
 
 const KEYS = {
   enabled: "jobRadar.enabled",
-  companies: "jobRadar.companies",
   bci: "jobRadar.bci",
   getonbrd: "jobRadar.getonbrd",
-  greenhouse: "jobRadar.greenhouse",
-  lever: "jobRadar.lever",
-  ashby: "jobRadar.ashby",
-  smartrecruiters: "jobRadar.smartrecruiters",
-  workday: "jobRadar.workday",
-  airavirtual: "jobRadar.airavirtual",
   keywords: "jobRadar.keywords",
   departments: "jobRadar.departments",
   cron: "jobRadar.cron",
@@ -58,15 +51,8 @@ const KEYS = {
 
 export interface JobRadarConfig {
   enabled: boolean;
-  companies: string[];
   bci: boolean;
   getonbrd: boolean;
-  greenhouse: string[];
-  lever: string[];
-  ashby: string[];
-  smartrecruiters: string[];
-  workday: string[];
-  airavirtual: string[];
   keywords: string[];
   departments: string[];
   cron: string;
@@ -77,14 +63,6 @@ function parseCsv(value: string): string[] {
   return value
     .split(",")
     .map((s) => s.trim().toLowerCase())
-    .filter((s) => s.length > 0);
-}
-
-// Preserva mayúsculas (SmartRecruiters companyId / Workday site son case-sensitive).
-function parseCsvKeepCase(value: string): string[] {
-  return value
-    .split(",")
-    .map((s) => s.trim())
     .filter((s) => s.length > 0);
 }
 
@@ -105,33 +83,17 @@ function pick(
 
 export async function getJobRadarConfig(): Promise<JobRadarConfig> {
   const rec = await getSettings();
-
-  const companiesRaw = pick(rec, KEYS.companies, process.env.JOB_RADAR_COMPANIES) ?? "";
-  const greenhouseRaw = pick(rec, KEYS.greenhouse, process.env.JOB_RADAR_GREENHOUSE) ?? "";
-  const leverRaw = pick(rec, KEYS.lever, process.env.JOB_RADAR_LEVER) ?? "";
-  const ashbyRaw = pick(rec, KEYS.ashby, process.env.JOB_RADAR_ASHBY) ?? "";
-  const smartRaw = pick(rec, KEYS.smartrecruiters, process.env.JOB_RADAR_SMARTRECRUITERS) ?? "";
-  // Workday entries son "tenant:wd:site" → no lowercasear (site es case-sensitive).
-  const workdayRaw = pick(rec, KEYS.workday, process.env.JOB_RADAR_WORKDAY) ?? "";
-  const airaRaw = pick(rec, KEYS.airavirtual, process.env.JOB_RADAR_AIRAVIRTUAL) ?? "";
   const keywordsRaw = pick(rec, KEYS.keywords, process.env.JOB_RADAR_KEYWORDS);
   const departmentsRaw = pick(rec, KEYS.departments, process.env.JOB_RADAR_DEPARTMENTS) ?? "";
 
   return {
     enabled: parseBool(pick(rec, KEYS.enabled, process.env.ENABLE_JOB_RADAR), false),
-    companies: parseCsv(companiesRaw),
     // bci on por defecto (env JOB_RADAR_BCI=false lo apaga)
     bci: parseBool(
       pick(rec, KEYS.bci, process.env.JOB_RADAR_BCI === "false" ? "false" : undefined),
       true
     ),
     getonbrd: parseBool(pick(rec, KEYS.getonbrd, process.env.JOB_RADAR_GETONBRD), false),
-    greenhouse: parseCsv(greenhouseRaw),
-    lever: parseCsv(leverRaw),
-    ashby: parseCsv(ashbyRaw),
-    smartrecruiters: parseCsvKeepCase(smartRaw),
-    workday: parseCsvKeepCase(workdayRaw),
-    airavirtual: parseCsv(airaRaw),
     keywords: keywordsRaw === undefined ? DEFAULT_KEYWORDS : parseCsv(keywordsRaw),
     departments: parseCsv(departmentsRaw),
     cron: pick(rec, KEYS.cron, process.env.JOB_RADAR_CRON) || JOB_RADAR_DEFAULT_CRON,
@@ -150,15 +112,78 @@ interface JobSource {
   fetch: () => Promise<RawJob[]>;
 }
 
-function getSources(config: JobRadarConfig): JobSource[] {
+// Mapea una fila JobSource (kind + identifier) a su fetcher. null si el
+// identifier es inválido (ej. Workday mal formado).
+function sourceFromRow(kind: string, identifier: string, keywords: string[]): JobSource | null {
+  switch (kind) {
+    case "TEAMTAILOR":
+      return {
+        source: "teamtailor",
+        company: identifier,
+        label: `teamtailor:${identifier}`,
+        fetch: () => fetchTeamtailorJobs(identifier),
+      };
+    case "GREENHOUSE":
+      return {
+        source: "greenhouse",
+        company: identifier,
+        label: `greenhouse:${identifier}`,
+        fetch: () => fetchGreenhouseJobs(identifier),
+      };
+    case "LEVER":
+      return {
+        source: "lever",
+        company: identifier,
+        label: `lever:${identifier}`,
+        fetch: () => fetchLeverJobs(identifier),
+      };
+    case "ASHBY":
+      return {
+        source: "ashby",
+        company: identifier,
+        label: `ashby:${identifier}`,
+        fetch: () => fetchAshbyJobs(identifier),
+      };
+    case "SMARTRECRUITERS":
+      return {
+        source: "smartrecruiters",
+        company: identifier,
+        label: `smartrecruiters:${identifier}`,
+        fetch: () => fetchSmartRecruitersJobs(identifier),
+      };
+    case "AIRAVIRTUAL":
+      return {
+        source: "airavirtual",
+        company: identifier,
+        label: `airavirtual:${identifier}`,
+        fetch: () => fetchAiravirtualJobs(identifier),
+      };
+    case "WORKDAY": {
+      const entry = parseWorkdayEntry(identifier);
+      if (!entry) {
+        logWarn("job_radar.workday.bad_entry", { identifier });
+        return null;
+      }
+      return {
+        source: "workday",
+        company: entry.tenant,
+        label: `workday:${entry.tenant}`,
+        fetch: () => fetchWorkdayJobs(entry, keywords),
+      };
+    }
+    default:
+      return null;
+  }
+}
+
+// Fuentes activas: filas habilitadas en job_sources (por kind+identifier) +
+// BCI / GetOnBoard que son toggles globales en settings (sin identifier).
+async function getSources(config: JobRadarConfig): Promise<JobSource[]> {
   const sources: JobSource[] = [];
-  for (const company of config.companies) {
-    sources.push({
-      source: "teamtailor",
-      company,
-      label: `teamtailor:${company}`,
-      fetch: () => fetchTeamtailorJobs(company),
-    });
+  const rows = await db.jobSource.findMany({ where: { enabled: true } });
+  for (const row of rows) {
+    const s = sourceFromRow(row.kind, row.identifier, config.keywords);
+    if (s) sources.push(s);
   }
   if (config.bci) {
     sources.push({ source: "bci", company: "bci", label: "bci", fetch: fetchBciJobs });
@@ -169,59 +194,6 @@ function getSources(config: JobRadarConfig): JobSource[] {
       company: "getonbrd",
       label: "getonbrd",
       fetch: () => fetchGetonbrdJobs(config.keywords),
-    });
-  }
-  for (const board of config.greenhouse) {
-    sources.push({
-      source: "greenhouse",
-      company: board,
-      label: `greenhouse:${board}`,
-      fetch: () => fetchGreenhouseJobs(board),
-    });
-  }
-  for (const company of config.lever) {
-    sources.push({
-      source: "lever",
-      company,
-      label: `lever:${company}`,
-      fetch: () => fetchLeverJobs(company),
-    });
-  }
-  for (const org of config.ashby) {
-    sources.push({
-      source: "ashby",
-      company: org,
-      label: `ashby:${org}`,
-      fetch: () => fetchAshbyJobs(org),
-    });
-  }
-  for (const company of config.smartrecruiters) {
-    sources.push({
-      source: "smartrecruiters",
-      company,
-      label: `smartrecruiters:${company}`,
-      fetch: () => fetchSmartRecruitersJobs(company),
-    });
-  }
-  for (const raw of config.workday) {
-    const entry = parseWorkdayEntry(raw);
-    if (!entry) {
-      logWarn("job_radar.workday.bad_entry", { raw });
-      continue;
-    }
-    sources.push({
-      source: "workday",
-      company: entry.tenant,
-      label: `workday:${entry.tenant}`,
-      fetch: () => fetchWorkdayJobs(entry, config.keywords),
-    });
-  }
-  for (const company of config.airavirtual) {
-    sources.push({
-      source: "airavirtual",
-      company,
-      label: `airavirtual:${company}`,
-      fetch: () => fetchAiravirtualJobs(company),
     });
   }
   return sources;
@@ -436,11 +408,11 @@ export async function syncJobRadar(options: JobRadarSyncOptions = {}): Promise<J
     return { sources: [], fetched: 0, inserted: 0, updated: 0, closed: 0, notified: 0 };
   }
 
-  const sources = getSources(config);
+  const sources = await getSources(config);
   if (sources.length === 0) {
     throw new DomainError(
       "BAD_REQUEST",
-      "Sin fuentes configuradas (agrega empresas Teamtailor o activa BCI en ajustes)"
+      "Sin fuentes configuradas (agrega fuentes o activa BCI/GetOnBoard en ajustes)"
     );
   }
   const filter: ProfileFilter = { keywords: config.keywords, departments: config.departments };
@@ -559,15 +531,8 @@ export async function updateJobApplication(input: UpdateJobApplicationInput) {
 
 export interface JobRadarSettingsDTO {
   enabled: boolean;
-  companies: string; // CSV
   bci: boolean;
   getonbrd: boolean;
-  greenhouse: string; // CSV
-  lever: string; // CSV
-  ashby: string; // CSV
-  smartrecruiters: string; // CSV
-  workday: string; // CSV de "tenant:wd:site"
-  airavirtual: string; // CSV de slugs
   keywords: string; // CSV
   departments: string; // CSV
   cron: string;
@@ -579,15 +544,8 @@ export async function getJobRadarSettings(): Promise<JobRadarSettingsDTO> {
   const config = await getJobRadarConfig();
   return {
     enabled: config.enabled,
-    companies: config.companies.join(", "),
     bci: config.bci,
     getonbrd: config.getonbrd,
-    greenhouse: config.greenhouse.join(", "),
-    lever: config.lever.join(", "),
-    ashby: config.ashby.join(", "),
-    smartrecruiters: config.smartrecruiters.join(", "),
-    workday: config.workday.join(", "),
-    airavirtual: config.airavirtual.join(", "),
     keywords: config.keywords.join(", "),
     departments: config.departments.join(", "),
     cron: config.cron,
@@ -598,15 +556,8 @@ export async function getJobRadarSettings(): Promise<JobRadarSettingsDTO> {
 
 export interface UpdateJobRadarSettingsInput {
   enabled?: boolean;
-  companies?: string;
   bci?: boolean;
   getonbrd?: boolean;
-  greenhouse?: string;
-  lever?: string;
-  ashby?: string;
-  smartrecruiters?: string;
-  workday?: string;
-  airavirtual?: string;
   keywords?: string;
   departments?: string;
   cron?: string;
@@ -621,13 +572,6 @@ export async function updateJobRadarSettings(
   if (input.enabled !== undefined) rows[KEYS.enabled] = input.enabled ? "true" : "false";
   if (input.bci !== undefined) rows[KEYS.bci] = input.bci ? "true" : "false";
   if (input.getonbrd !== undefined) rows[KEYS.getonbrd] = input.getonbrd ? "true" : "false";
-  if (input.companies !== undefined) rows[KEYS.companies] = input.companies;
-  if (input.greenhouse !== undefined) rows[KEYS.greenhouse] = input.greenhouse;
-  if (input.lever !== undefined) rows[KEYS.lever] = input.lever;
-  if (input.ashby !== undefined) rows[KEYS.ashby] = input.ashby;
-  if (input.smartrecruiters !== undefined) rows[KEYS.smartrecruiters] = input.smartrecruiters;
-  if (input.workday !== undefined) rows[KEYS.workday] = input.workday;
-  if (input.airavirtual !== undefined) rows[KEYS.airavirtual] = input.airavirtual;
   if (input.keywords !== undefined) rows[KEYS.keywords] = input.keywords;
   if (input.departments !== undefined) rows[KEYS.departments] = input.departments;
   if (input.cron !== undefined) rows[KEYS.cron] = input.cron;
@@ -636,4 +580,54 @@ export async function updateJobRadarSettings(
 
   if (Object.keys(rows).length > 0) await updateSettings(rows);
   return getJobRadarSettings();
+}
+
+// ── Fuentes (filas job_sources) ──────────────────────────────────────────────
+
+export type JobSourceKindDTO =
+  | "TEAMTAILOR"
+  | "GREENHOUSE"
+  | "LEVER"
+  | "ASHBY"
+  | "SMARTRECRUITERS"
+  | "WORKDAY"
+  | "AIRAVIRTUAL";
+
+export async function listJobSources() {
+  return db.jobSource.findMany({ orderBy: [{ kind: "asc" }, { identifier: "asc" }] });
+}
+
+export interface AddJobSourceInput {
+  kind: JobSourceKindDTO;
+  identifier: string;
+  label?: string | null;
+}
+
+export async function addJobSource(input: AddJobSourceInput) {
+  const identifier = input.identifier.trim();
+  if (identifier.length === 0) throw new DomainError("BAD_REQUEST", "Identificador vacío");
+  if (input.kind === "WORKDAY" && !parseWorkdayEntry(identifier)) {
+    throw new DomainError("BAD_REQUEST", "Workday debe ser 'tenant:wd:site'");
+  }
+  const existing = await db.jobSource.findUnique({
+    where: { kind_identifier: { kind: input.kind, identifier } },
+    select: { id: true },
+  });
+  if (existing) throw new DomainError("CONFLICT", "Esa fuente ya existe");
+  return db.jobSource.create({
+    data: { kind: input.kind, identifier, label: input.label?.trim() || null, enabled: true },
+  });
+}
+
+export async function setJobSourceEnabled(id: string, enabled: boolean) {
+  const existing = await db.jobSource.findUnique({ where: { id }, select: { id: true } });
+  if (!existing) throw new DomainError("NOT_FOUND", "Fuente no encontrada");
+  return db.jobSource.update({ where: { id }, data: { enabled } });
+}
+
+export async function deleteJobSource(id: string) {
+  const existing = await db.jobSource.findUnique({ where: { id }, select: { id: true } });
+  if (!existing) throw new DomainError("NOT_FOUND", "Fuente no encontrada");
+  await db.jobSource.delete({ where: { id } });
+  return { id };
 }

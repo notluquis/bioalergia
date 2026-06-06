@@ -43,6 +43,15 @@ model Person {
   email      String?    @unique
   phone      String?
   personType PersonType @default(NATURAL) @map("person_type")
+  // Email marketing consent (Ley 21.719). Broadcasts go ONLY to persons with
+  // emailMarketingOptIn = true AND emailUnsubscribedAt = null. Transactional
+  // mail (resets, reminders) ignores these flags — it's not marketing.
+  emailMarketingOptIn   Boolean   @default(false) @map("email_marketing_opt_in")
+  emailMarketingOptInAt DateTime? @map("email_marketing_opt_in_at")
+  emailUnsubscribedAt   DateTime? @map("email_unsubscribed_at")
+  // Per-person random token embedded in the List-Unsubscribe URL so the
+  // public one-click endpoint identifies the row without exposing id/email.
+  emailUnsubscribeToken String?   @unique @map("email_unsubscribe_token")
   createdAt  DateTime   @default(now()) @map("created_at")
   updatedAt  DateTime   @default(now()) @updatedAt @map("updated_at")
   employee   Employee?
@@ -5165,6 +5174,38 @@ enum JobPostingStatus {
   CLOSED
 
   @@schema("personal")
+}
+
+// Fuentes/empresas a scrapear, gestionadas como filas (no CSV en settings).
+// kind = ATS; identifier = slug / "tenant:wd:site" (workday) / companyId (SR).
+enum JobSourceKind {
+  TEAMTAILOR
+  GREENHOUSE
+  LEVER
+  ASHBY
+  SMARTRECRUITERS
+  WORKDAY
+  AIRAVIRTUAL
+
+  @@schema("personal")
+}
+
+model JobSource {
+  id         String        @id @default(cuid())
+  kind       JobSourceKind
+  identifier String // slug | "tenant:wd:site" | companyId
+  label      String?
+  enabled    Boolean       @default(true)
+  createdAt  DateTime      @default(now()) @map("created_at")
+
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@unique([kind, identifier])
+  @@index([enabled])
+  @@schema("personal")
+  @@map("job_sources")
 }
 
 // Estado de seguimiento de postulación (lo gestiona el usuario en el dashboard).

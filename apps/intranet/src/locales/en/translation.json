@@ -32,6 +32,13 @@
       "applied": "Mark applied",
       "discard": "Discard"
     },
+    "sources": {
+      "title": "Sources (companies to scrape)",
+      "kind": "ATS",
+      "identifier": "Identifier",
+      "add": "Add",
+      "remove": "Remove"
+    },
     "detail": {
       "notes": "Notes",
       "notesPlaceholder": "Notes, contact, follow-up…",

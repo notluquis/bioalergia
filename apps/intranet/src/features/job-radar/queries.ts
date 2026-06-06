@@ -7,6 +7,7 @@ export const jobRadarKeys = {
   all: ["job-radar"] as const,
   list: (filters: JobRadarListFilters) => [...jobRadarKeys.all, "list", filters] as const,
   settings: () => [...jobRadarKeys.all, "settings"] as const,
+  sources: () => [...jobRadarKeys.all, "sources"] as const,
 };
 
 export const jobRadarQueries = {
@@ -19,5 +20,10 @@ export const jobRadarQueries = {
     queryOptions({
       queryKey: jobRadarKeys.settings(),
       queryFn: () => jobRadarORPCClient.getSettings(),
+    }),
+  sources: () =>
+    queryOptions({
+      queryKey: jobRadarKeys.sources(),
+      queryFn: () => jobRadarORPCClient.listSources(),
     }),
 };

@@ -32,6 +32,13 @@
       "applied": "Marcar postulado",
       "discard": "Descartar"
     },
+    "sources": {
+      "title": "Fuentes (empresas a scrapear)",
+      "kind": "ATS",
+      "identifier": "Identificador",
+      "add": "Agregar",
+      "remove": "Quitar"
+    },
     "detail": {
       "notes": "Notas",
       "notesPlaceholder": "Apuntes, contacto, seguimiento…",

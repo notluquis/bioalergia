@@ -66,15 +66,8 @@ export const jobRadarSyncResultSchema = z.object({
 
 export const jobRadarSettingsSchema = z.object({
   enabled: z.boolean(),
-  companies: z.string(),
   bci: z.boolean(),
   getonbrd: z.boolean(),
-  greenhouse: z.string(),
-  lever: z.string(),
-  ashby: z.string(),
-  smartrecruiters: z.string(),
-  workday: z.string(),
-  airavirtual: z.string(),
   keywords: z.string(),
   departments: z.string(),
   cron: z.string(),
@@ -84,21 +77,44 @@ export const jobRadarSettingsSchema = z.object({
 
 export const jobRadarSettingsUpdateSchema = z.object({
   enabled: z.boolean().optional(),
-  companies: z.string().optional(),
   bci: z.boolean().optional(),
   getonbrd: z.boolean().optional(),
-  greenhouse: z.string().optional(),
-  lever: z.string().optional(),
-  ashby: z.string().optional(),
-  smartrecruiters: z.string().optional(),
-  workday: z.string().optional(),
-  airavirtual: z.string().optional(),
   keywords: z.string().optional(),
   departments: z.string().optional(),
   cron: z.string().optional(),
   telegramBotToken: z.string().optional(),
   telegramChatId: z.string().optional(),
 });
+
+export const jobSourceKindSchema = z.enum([
+  "TEAMTAILOR",
+  "GREENHOUSE",
+  "LEVER",
+  "ASHBY",
+  "SMARTRECRUITERS",
+  "WORKDAY",
+  "AIRAVIRTUAL",
+]);
+
+export const jobSourceSchema = z
+  .object({
+    id: z.string(),
+    kind: jobSourceKindSchema,
+    identifier: z.string(),
+    label: z.string().nullable(),
+    enabled: z.boolean(),
+    createdAt: z.date(),
+  })
+  .passthrough();
+
+export const jobSourceAddInputSchema = z.object({
+  kind: jobSourceKindSchema,
+  identifier: z.string().min(1),
+  label: z.string().nullable().optional(),
+});
+
+export const jobSourceToggleInputSchema = z.object({ id: z.string().min(1), enabled: z.boolean() });
+export const jobSourceIdInputSchema = z.object({ id: z.string().min(1) });
 
 export const jobRadarContract = {
   list: oc
@@ -115,9 +131,24 @@ export const jobRadarContract = {
     .route({ method: "PATCH", path: "/settings" })
     .input(jobRadarSettingsUpdateSchema)
     .output(jobRadarSettingsSchema),
+  listSources: oc.route({ method: "GET", path: "/sources" }).output(z.array(jobSourceSchema)),
+  addSource: oc
+    .route({ method: "POST", path: "/sources" })
+    .input(jobSourceAddInputSchema)
+    .output(jobSourceSchema),
+  toggleSource: oc
+    .route({ method: "PATCH", path: "/sources/{id}" })
+    .input(jobSourceToggleInputSchema)
+    .output(jobSourceSchema),
+  deleteSource: oc
+    .route({ method: "DELETE", path: "/sources/{id}" })
+    .input(jobSourceIdInputSchema)
+    .output(z.object({ id: z.string() })),
 };
 
 export type JobRadarContract = typeof jobRadarContract;
 export type JobPostingDTO = z.output<typeof jobPostingSchema>;
 export type JobApplicationStatus = z.infer<typeof jobApplicationStatusSchema>;
 export type JobRadarSettings = z.output<typeof jobRadarSettingsSchema>;
+export type JobSourceDTO = z.output<typeof jobSourceSchema>;
+export type JobSourceKind = z.infer<typeof jobSourceKindSchema>;
