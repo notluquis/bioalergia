@@ -51,6 +51,12 @@ vi.mock("./skin-tests-orpc", async () => {
   };
 });
 
+// OneDrive account/folder/webhook procs moved to the shared onedrive client;
+// point it at the same mock object so the existing assertions still apply.
+vi.mock("@/features/onedrive/orpc", () => ({
+  onedriveORPCClient: mocks,
+}));
+
 const {
   useApproveSkinTestImport,
   useRejectSkinTestImport,

@@ -14,6 +14,7 @@ export * from "./checkout.ts";
 export * from "./clinical-records.ts";
 export * from "./clinical-series.ts";
 export * from "./clinical-skin-tests.ts";
+export * from "./onedrive.ts";
 export * from "./counterparts.ts";
 export * from "./csv-upload.ts";
 export * from "./dte.ts";
