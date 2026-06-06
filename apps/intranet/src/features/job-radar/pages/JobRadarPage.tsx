@@ -11,7 +11,7 @@ import {
   Tooltip,
 } from "@heroui/react";
 import { useDebouncedValue } from "@tanstack/react-pacer";
-import type { ColumnDef } from "@tanstack/react-table";
+import type { ColumnDef, SortingFn } from "@tanstack/react-table";
 import { Ban, ExternalLink, Eye, ListChecks, RefreshCw, Send, Sparkles, Star } from "lucide-react";
 import { type ReactNode, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -53,6 +53,14 @@ const POSTING_STATUS_OPTIONS = ["OPEN", "CLOSED", "ALL"] as const;
 function fmtDate(d: Date | null): string {
   return d ? formatChile(d, "DD/MM/YYYY") : "—";
 }
+
+// Orden por fecha null-safe (los null al fondo); evita el crash de "datetime" de
+// TanStack con valores nulos y el orden raro del sortingFn "basic".
+const dateSort: SortingFn<DedupedPosting> = (a, b, id) => {
+  const av = (a.getValue(id) as Date | null)?.getTime() ?? -Infinity;
+  const bv = (b.getValue(id) as Date | null)?.getTime() ?? -Infinity;
+  return av - bv;
+};
 
 export function JobRadarPage() {
   const { t } = useTranslation();
@@ -163,16 +171,19 @@ export function JobRadarPage() {
       {
         accessorKey: "publishedAt",
         header: t("jobRadar.col.published"),
+        sortingFn: dateSort,
         cell: ({ row }) => fmtDate(row.original.publishedAt),
       },
       {
         accessorKey: "firstSeenAt",
         header: t("jobRadar.col.detected"),
+        sortingFn: dateSort,
         cell: ({ row }) => fmtDate(row.original.firstSeenAt),
       },
       {
         id: "match",
         header: t("jobRadar.col.match"),
+        enableSorting: false,
         cell: ({ row }) =>
           row.original.matched ? (
             <Chip color="success" size="sm" variant="soft">
@@ -185,6 +196,7 @@ export function JobRadarPage() {
       {
         id: "actions",
         header: t("jobRadar.col.actions"),
+        enableSorting: false,
         cell: ({ row }) => {
           const job = row.original;
           const action = (
