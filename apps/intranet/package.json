@@ -20,6 +20,7 @@
     "type-check": "node ./scripts/generate-routes.mjs && tsgo --noEmit",
     "lint:type-aware": "oxlint --type-check-only src shared",
     "lint:heroui-composition": "node ./scripts/check-heroui-composition.mjs",
+    "audit:datetime": "node ./scripts/audit-datetime.mjs",
     "audit:validations": "node ./scripts/audit-validations.mjs",
     "audit:design": "node ./scripts/audit-design-tokens.mjs",
     "audit:css": "stylelint \"src/**/*.css\"",
