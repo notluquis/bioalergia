@@ -6,9 +6,6 @@ import { withThemeByDataAttribute } from "@storybook/addon-themes";
 import { initialize, mswLoader } from "msw-storybook-addon";
 
 import "../src/index.css";
-// Side-effect import: registers dayjs plugins (utc, timezone, isoWeek, …)
-// that production code assumes are extended at boot via main.tsx.
-import "../src/lib/dayjs";
 import { allModes } from "./modes";
 import { handlers } from "./msw-handlers";
 

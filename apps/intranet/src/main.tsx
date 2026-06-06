@@ -30,8 +30,6 @@ import { initPerformanceMonitoring } from "./lib/performance";
 import { initSentry, isSentryEnabled, Sentry } from "./lib/sentry";
 // Import the generated route tree
 import { routeTree } from "./routeTree.gen";
-// Initialize global dayjs configuration
-import "@/lib/dayjs";
 
 import "./index.css";
 import "./i18n";
