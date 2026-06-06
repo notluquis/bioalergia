@@ -1,8 +1,8 @@
 import { useStore } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
-import dayjs from "dayjs";
 import { useMemo } from "react";
 
+import { addDays, chileDay, civilNoon, formatChile, startOfWeek, today } from "@/lib/dates";
 import type { BalanceSummary, DailyBalanceFormData, DayCell, DayStatus, WeekData } from "../types";
 
 import { calculateSummary, getDayAbbrev } from "../utils";
@@ -53,41 +53,38 @@ export const dailyBalanceStore = new Store<DailyBalanceState>({
   isSaving: false,
   lastSaved: null,
   originalData: { ...defaultFormData },
-  selectedDate: dayjs().toDate(),
+  selectedDate: new Date(),
   weekData: null,
 });
 
-import "dayjs/locale/es";
-
-// Set locale globally to ensure weeks start on Monday
-dayjs.locale("es");
-
 export function generateWeekData(centerDate: Date, entries: Record<string, number>): WeekData {
-  const center = dayjs(centerDate);
-  const startOfWeek = center.startOf("week"); // Sunday
-  const endOfWeek = center.endOf("week");
+  const centerISO = chileDay(centerDate);
+  const weekStart = startOfWeek(centerISO); // ISO Monday
+  const todayISO = today();
 
   const days: DayCell[] = [];
 
   for (let i = 0; i < 7; i++) {
-    const d = startOfWeek.add(i, "day");
-    const dateStr = d.format("YYYY-MM-DD");
+    const dateStr = addDays(weekStart, i);
     const total = entries[dateStr] ?? 0;
+    const dateObj = civilNoon(dateStr);
 
     days.push({
-      date: d.toDate(),
-      dayName: getDayAbbrev(d.toDate()),
-      dayNumber: d.date(),
-      isSelected: d.isSame(center, "day"),
-      isToday: d.isSame(dayjs(), "day"),
+      date: dateObj,
+      dayName: getDayAbbrev(dateObj),
+      dayNumber: Number(dateStr.slice(8, 10)),
+      isSelected: dateStr === centerISO,
+      isToday: dateStr === todayISO,
       status: total > 0 ? "balanced" : "empty",
       total,
     });
   }
 
+  const weekEnd = addDays(weekStart, 6);
+
   return {
     days,
-    weekLabel: `${startOfWeek.format("D")} – ${endOfWeek.format("D MMM YYYY")}`,
+    weekLabel: `${formatChile(weekStart, "D")} – ${formatChile(weekEnd, "D MMM YYYY")}`,
   };
 }
 

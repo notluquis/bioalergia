@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
-import dayjs from "dayjs";
 import { useCallback, useEffect, useRef } from "react";
 
+import { addDays, chileDay, civilNoon, endOfWeek, startOfWeek } from "@/lib/dates";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "@/lib/toast-interceptor";
 import { dailyBalanceApi, type ProductionBalanceApiItem } from "../api";
@@ -10,8 +10,6 @@ import type { DailyBalanceFormData } from "../types";
 import { generateWeekData, useDailyBalanceStore } from "./use-daily-balance-store";
 
 const AUTOSAVE_DELAY_MS = 2000;
-
-const DATE_FORMAT = "YYYY-MM-DD";
 
 type SaveOptions = {
   errorMessage?: string;
@@ -22,7 +20,7 @@ type SaveOptions = {
 
 function buildDailyBalancePayload(data: DailyBalanceFormData, selectedDate: Date, userId?: number) {
   return {
-    date: dayjs(selectedDate).format(DATE_FORMAT),
+    date: chileDay(selectedDate),
     comentarios: data.nota,
     consultasMonto: data.consultas,
     controlesMonto: data.controles,
@@ -43,13 +41,7 @@ function getSelectedDayItem(
   data: ProductionBalanceApiItem[] | undefined,
   selectedDate: Date
 ): null | ProductionBalanceApiItem {
-  return (
-    data?.find(
-      (item) =>
-        dayjs(item.date, DATE_FORMAT).format(DATE_FORMAT) ===
-        dayjs(selectedDate).format(DATE_FORMAT)
-    ) ?? null
-  );
+  return data?.find((item) => chileDay(item.date) === chileDay(selectedDate)) ?? null;
 }
 
 function areFormDataEqual(a: DailyBalanceFormData, b: DailyBalanceFormData): boolean {
@@ -87,7 +79,7 @@ function areWeekDataEqual(
       day.isToday === nextDay.isToday &&
       day.status === nextDay.status &&
       day.total === nextDay.total &&
-      dayjs(day.date).isSame(nextDay.date, "day")
+      chileDay(day.date) === chileDay(nextDay.date)
     );
   });
 }
@@ -170,7 +162,7 @@ function useSyncWeekData(params: {
           item.ingresoEfectivo +
           item.otrosAbonos;
         if (item.date) {
-          const dateKey = dayjs(item.date, DATE_FORMAT).format(DATE_FORMAT);
+          const dateKey = chileDay(item.date);
           entries[dateKey] = calculatedTotal;
         }
       }
@@ -239,10 +231,10 @@ export function useDailyBalanceForm() {
 
   // Fetch entry for selected date (and week context)
   // We fetch a 7-day range to populate the week strip logic
-  const startOfWeek = dayjs(selectedDate).startOf("week").format(DATE_FORMAT);
-  const endOfWeek = dayjs(selectedDate).endOf("week").format(DATE_FORMAT);
+  const weekStartISO = startOfWeek(selectedDate);
+  const weekEndISO = endOfWeek(selectedDate);
 
-  const weekQuery = useSuspenseQuery(productionBalanceKeys.week(startOfWeek, endOfWeek));
+  const weekQuery = useSuspenseQuery(productionBalanceKeys.week(weekStartISO, weekEndISO));
 
   useSyncSelectedDayForm({
     currentEntryId,
@@ -360,15 +352,15 @@ export function useDailyBalanceForm() {
 
   // Navigation
   const goToPrevWeek = useCallback(() => {
-    setSelectedDate(dayjs(selectedDate).subtract(7, "day").toDate());
+    setSelectedDate(civilNoon(addDays(chileDay(selectedDate), -7)));
   }, [selectedDate, setSelectedDate]);
 
   const goToNextWeek = useCallback(() => {
-    setSelectedDate(dayjs(selectedDate).add(7, "day").toDate());
+    setSelectedDate(civilNoon(addDays(chileDay(selectedDate), 7)));
   }, [selectedDate, setSelectedDate]);
 
   const goToToday = useCallback(() => {
-    setSelectedDate(dayjs().toDate());
+    setSelectedDate(new Date());
   }, [setSelectedDate]);
 
   const selectDate = useCallback(

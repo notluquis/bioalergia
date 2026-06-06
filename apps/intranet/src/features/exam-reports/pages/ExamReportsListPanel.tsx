@@ -30,7 +30,7 @@ import { examReportsKeys } from "@/features/exam-reports/queries";
 import type { fetchPatients } from "@/features/patients/api";
 import { CreatePatientModal } from "@/features/patients/components/CreatePatientModal";
 import { useCan } from "@/hooks/use-can";
-import { dayjs } from "@/lib/dayjs";
+import { ageYears, chileDay, endOfWeek, formatChile, getISOWeek, startOfWeek } from "@/lib/dates";
 import type { ExamType } from "@finanzas/orpc-contracts/exam-reports";
 
 type Patient = Awaited<ReturnType<typeof fetchPatients>>[number];
@@ -116,9 +116,7 @@ export function ExamReportsListPanel() {
             ]
               .filter(Boolean)
               .join(" "),
-            age: detail.patient.birthDate
-              ? `${dayjs().diff(dayjs(detail.patient.birthDate, "YYYY-MM-DD"), "year")} años`
-              : null,
+            age: detail.patient.birthDate ? `${ageYears(detail.patient.birthDate)} años` : null,
             rut: detail.patient.person.rut,
           },
           sections: detail.sections.map((s) => ({
@@ -175,7 +173,7 @@ export function ExamReportsListPanel() {
           </div>
           <p className="mt-1 line-clamp-1 text-default-600 text-xs">{r.conclusionText}</p>
           <p className="text-default-600 text-xs">
-            {dayjs(r.createdAt).format("DD MMM YYYY · HH:mm")}
+            {formatChile(r.createdAt, "DD MMM YYYY · HH:mm")}
             {r.generatedAt ? " · PDF descargado" : ""}
           </p>
         </div>
@@ -492,22 +490,24 @@ interface YearGroup {
 function groupByYearMonthWeek(items: ExamReportListItem[]): YearGroup[] {
   // Items arrive sorted desc by createdAt from the server. Walk once,
   // bucketing into Year > Month > IsoWeek so the UI can render nested
-  // Disclosures. Labels use the `es` dayjs locale already configured.
+  // Disclosures. Labels render in es-CL via formatChile.
   const years = new Map<number, MonthGroup[]>();
   const monthIndex = new Map<string, MonthGroup>();
   const weekIndex = new Map<string, WeekGroup>();
 
   for (const r of items) {
-    const d = dayjs(r.createdAt);
-    const year = d.year();
-    const monthKey = `${year}-${d.month()}`;
-    const weekKey = `${year}-W${d.isoWeek()}`;
+    const iso = chileDay(r.createdAt);
+    const year = Number(iso.slice(0, 4));
+    const month0 = Number(iso.slice(5, 7)) - 1;
+    const isoWeek = getISOWeek(r.createdAt);
+    const monthKey = `${year}-${month0}`;
+    const weekKey = `${year}-W${isoWeek}`;
 
     let monthGroup = monthIndex.get(monthKey);
     if (!monthGroup) {
       monthGroup = {
         key: monthKey,
-        label: d.format("MMMM YYYY"),
+        label: formatChile(r.createdAt, "MMMM YYYY"),
         count: 0,
         weeks: [],
       };
@@ -519,11 +519,11 @@ function groupByYearMonthWeek(items: ExamReportListItem[]): YearGroup[] {
 
     let weekGroup = weekIndex.get(weekKey);
     if (!weekGroup) {
-      const weekStart = d.startOf("isoWeek");
-      const weekEnd = d.endOf("isoWeek");
+      const weekStart = startOfWeek(r.createdAt);
+      const weekEnd = endOfWeek(r.createdAt);
       weekGroup = {
         key: weekKey,
-        label: `Semana ${d.isoWeek()} · ${weekStart.format("DD MMM")} – ${weekEnd.format("DD MMM")}`,
+        label: `Semana ${isoWeek} · ${formatChile(weekStart, "DD MMM")} – ${formatChile(weekEnd, "DD MMM")}`,
         items: [],
       };
       weekIndex.set(weekKey, weekGroup);
