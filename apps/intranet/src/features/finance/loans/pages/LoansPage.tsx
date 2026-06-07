@@ -16,6 +16,7 @@ import {
 } from "@heroui/react";
 import { parseDate } from "@internationalized/date";
 import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import { getRouteApi } from "@tanstack/react-router";
 import type { ChangeEvent } from "react";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { AppModal } from "@/components/ui/AppModal";
@@ -50,6 +51,8 @@ import type {
 } from "@/features/finance/loans/types";
 import { PAGE_CONTAINER } from "@/lib/styles";
 
+const routeApi = getRouteApi("/_authed/finanzas/loans");
+
 type LoanEditForm = {
   borrowerName: string;
   borrowerType: "COMPANY" | "PERSON";
@@ -80,7 +83,12 @@ export function LoansPage() {
   const canManage = can("update", "Loan");
   const canView = can("read", "Loan");
 
-  const [selectedId, setSelectedId] = useState<null | string>(null);
+  const { loan: selectedSearch } = routeApi.useSearch();
+  const navigate = routeApi.useNavigate();
+  const selectedId = selectedSearch ?? null;
+  const setSelectedId = (publicId: null | string) => {
+    void navigate({ search: { loan: publicId ?? undefined } });
+  };
   const [selectorOpen, setSelectorOpen] = useState(false);
 
   const [createOpen, setCreateOpen] = useState(false);
@@ -141,15 +149,13 @@ export function LoansPage() {
   const loans = useMemo(() => loansResponse.loans, [loansResponse.loans]);
   const selectedLoan = loans.find((loan) => loan.public_id === selectedId) ?? null;
 
-  // Auto-selection
+  // No auto-selección: la página abre en el resumen. Solo limpiar si el
+  // préstamo seleccionado dejó de existir (eliminado).
   useEffect(() => {
-    if (loans.length > 0 && !selectedId) {
-      setSelectedId(loans[0]?.public_id ?? null);
-    } else if (loans.length === 0 && selectedId) {
+    if (selectedId && !loans.some((l) => l.public_id === selectedId)) {
       setSelectedId(null);
-    } else if (selectedId && !loans.some((l) => l.public_id === selectedId) && loans.length > 0) {
-      setSelectedId(loans[0]?.public_id ?? null);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loans, selectedId]);
 
   // REST API mutations
@@ -432,6 +438,15 @@ export function LoansPage() {
                 </p>
               </div>
               <div className="flex flex-wrap gap-2">
+                <Button
+                  onPress={() => {
+                    setSelectedId(null);
+                  }}
+                  type="button"
+                  variant="secondary"
+                >
+                  ← Ver listado
+                </Button>
                 <Button
                   onPress={() => {
                     setSelectorOpen(true);
