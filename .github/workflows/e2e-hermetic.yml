@@ -42,6 +42,11 @@ jobs:
         with: { node-version: 26, cache: pnpm }
       - run: pnpm install --frozen-lockfile
 
+      # orpc-contracts dist (api imports @finanzas/orpc-contracts at runtime;
+      # without this the api webServer + seed-e2e-user crash with
+      # ERR_MODULE_NOT_FOUND on dist/index.js).
+      - run: pnpm -F @finanzas/orpc-contracts build
+
       # db .mjs (api/intranet import it) + fresh schema via db push (NOT
       # migrate deploy — the rebaseline migration assumes existing tables;
       # db push is correct for a throwaway DB) + synthetic faker data.
