@@ -16,6 +16,7 @@ type ExpenseScope = "BIOALERGIA" | "PERSONAL";
 type LoanPayload = {
   borrowerName: string;
   borrowerType: LoanBorrowerType;
+  counterpartId?: null | number;
   frequency: LoanFrequency;
   generateSchedule?: boolean;
   interestRate: number;
@@ -33,6 +34,7 @@ type LoanUpdatePayload = Partial<Omit<LoanPayload, "generateSchedule">>;
 type StructuredLoanPayload = {
   borrowerName: string;
   borrowerType: LoanBorrowerType;
+  counterpartId?: null | number;
   equalSchedule?: {
     firstDueDate: string;
     frequency: LoanFrequency;
@@ -301,6 +303,12 @@ const computeSummary = (
 type LoanWithSchedules = {
   borrowerName: string;
   borrowerType: LoanBorrowerType;
+  counterpart?: {
+    bankAccountHolder: string;
+    category: string;
+    id: number;
+    identificationNumber: string;
+  } | null;
   counterpartId: null | number;
   createdAt: Date;
   frequency: LoanFrequency;
@@ -342,6 +350,15 @@ const mapLoanSummary = (loan: LoanWithSchedules) => {
   return {
     borrower_name: loan.borrowerName,
     borrower_type: loan.borrowerType,
+    counterpart: loan.counterpart
+      ? {
+          bankAccountHolder: loan.counterpart.bankAccountHolder,
+          category: loan.counterpart.category,
+          id: loan.counterpart.id,
+          identificationNumber: loan.counterpart.identificationNumber,
+        }
+      : null,
+    counterpart_id: loan.counterpartId,
     created_at: loan.createdAt,
     frequency: loan.frequency,
     id: loan.id,
@@ -545,6 +562,14 @@ const getLoanWithSchedules = async (publicId: string) => {
   return await db.loan.findUnique({
     where: { publicId },
     include: {
+      counterpart: {
+        select: {
+          bankAccountHolder: true,
+          category: true,
+          id: true,
+          identificationNumber: true,
+        },
+      },
       sources: {
         orderBy: { id: "asc" },
       },
@@ -636,6 +661,14 @@ export async function listLoans() {
   const loans = await db.loan.findMany({
     orderBy: { createdAt: "desc" },
     include: {
+      counterpart: {
+        select: {
+          bankAccountHolder: true,
+          category: true,
+          id: true,
+          identificationNumber: true,
+        },
+      },
       schedules: {
         select: {
           dueDate: true,
@@ -666,6 +699,7 @@ export async function createLoan(data: LoanPayload) {
     data: {
       borrowerName: data.borrowerName.trim(),
       borrowerType: data.borrowerType,
+      counterpartId: data.counterpartId ?? null,
       frequency: data.frequency,
       interestRate: toDecimal(data.interestRate),
       interestType: data.interestType,
@@ -715,6 +749,7 @@ export async function createStructuredLoan(data: StructuredLoanPayload) {
     data: {
       borrowerName: data.borrowerName.trim(),
       borrowerType: data.borrowerType,
+      counterpartId: data.counterpartId ?? null,
       frequency,
       interestRate: new Decimal(0),
       interestType: "SIMPLE",
@@ -797,6 +832,7 @@ export async function updateLoan(publicId: string, data: LoanUpdatePayload) {
       ...(data.title === undefined ? {} : { title: data.title.trim() }),
       ...(data.borrowerName === undefined ? {} : { borrowerName: data.borrowerName.trim() }),
       ...(data.borrowerType === undefined ? {} : { borrowerType: data.borrowerType }),
+      ...(data.counterpartId === undefined ? {} : { counterpartId: data.counterpartId }),
       ...(data.frequency === undefined ? {} : { frequency: data.frequency }),
       ...(data.interestRate === undefined ? {} : { interestRate: toDecimal(data.interestRate) }),
       ...(data.interestType === undefined ? {} : { interestType: data.interestType }),

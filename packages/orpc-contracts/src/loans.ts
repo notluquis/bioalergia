@@ -32,6 +32,7 @@ export const loanScheduleIdSchema = z.object({
 export const loanCreateInputSchema = z.object({
   borrowerName: z.string().min(1),
   borrowerType: loanBorrowerTypeSchema,
+  counterpartId: z.number().int().positive().nullable().optional(),
   frequency: loanFrequencySchema,
   generateSchedule: z.boolean().optional(),
   interestRate: z.number(),
@@ -84,6 +85,7 @@ export const loanStructuredEqualScheduleInputSchema = z.object({
 export const loanStructuredCreateInputSchema = z.object({
   borrowerName: z.string().min(1),
   borrowerType: loanBorrowerTypeSchema,
+  counterpartId: z.number().int().positive().nullable().optional(),
   equalSchedule: loanStructuredEqualScheduleInputSchema.optional(),
   manualInstallments: z.array(loanStructuredManualInstallmentInputSchema).optional(),
   notes: z.string().nullable().optional(),
@@ -168,6 +170,16 @@ export const loanScheduleSchema = z.object({
 export const loanSummarySchema = z.object({
   borrower_name: z.string(),
   borrower_type: loanBorrowerTypeSchema,
+  counterpart: z
+    .object({
+      bankAccountHolder: z.string(),
+      category: z.string(),
+      id: z.number().int(),
+      identificationNumber: z.string(),
+    })
+    .nullable()
+    .optional(),
+  counterpart_id: z.number().int().nullable(),
   created_at: z.coerce.date(),
   frequency: loanFrequencySchema,
   id: z.number().int(),

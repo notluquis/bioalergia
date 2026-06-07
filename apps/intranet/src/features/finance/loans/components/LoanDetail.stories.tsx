@@ -14,6 +14,7 @@ import { LoanDetail } from "./LoanDetail";
 const LOAN: LoanSummary = {
   borrower_name: "Juan Pérez",
   borrower_type: "PERSON",
+  counterpart_id: null,
   created_at: new Date("2026-01-01"),
   frequency: "MONTHLY",
   id: 1,

@@ -206,20 +206,18 @@ export function LoansPage() {
 
   return (
     <section className={PAGE_CONTAINER}>
-      <div className="grid gap-4 lg:grid-cols-[300px,1fr]">
-        <div className="min-h-[70vh] rounded-2xl border border-default-200 bg-background p-6 shadow-sm">
-          <LoanList
-            canManage={canManage}
-            loans={loans}
-            onCreateRequest={() => {
-              setCreateOpen(true);
-              setCreateError(null);
-            }}
-            onSelect={setSelectedId}
-            selectedId={selectedId}
-          />
-        </div>
-        <div className="min-h-[70vh] rounded-2xl border border-default-200 bg-background p-6 shadow-sm">
+      <div className="grid min-h-[calc(100dvh-11rem)] gap-4 xl:grid-cols-[360px,minmax(0,1fr)]">
+        <LoanList
+          canManage={canManage}
+          loans={loans}
+          onCreateRequest={() => {
+            setCreateOpen(true);
+            setCreateError(null);
+          }}
+          onSelect={setSelectedId}
+          selectedId={selectedId}
+        />
+        <div className="min-h-0">
           {!selectedId && (
             <div className="flex h-full items-center justify-center text-center">
               <p className="text-default-500 text-sm">

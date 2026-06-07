@@ -4,6 +4,16 @@ import { zDateString } from "@/lib/api-validate";
 export const LoanSummarySchema = z.strictObject({
   borrower_name: z.string(),
   borrower_type: z.enum(["COMPANY", "PERSON"]),
+  counterpart: z
+    .strictObject({
+      bankAccountHolder: z.string(),
+      category: z.string(),
+      id: z.number(),
+      identificationNumber: z.string(),
+    })
+    .nullable()
+    .optional(),
+  counterpart_id: z.number().nullable(),
   created_at: z.coerce.date(),
   frequency: z.enum(["BIWEEKLY", "IRREGULAR", "MONTHLY", "WEEKLY"]),
   id: z.number(),

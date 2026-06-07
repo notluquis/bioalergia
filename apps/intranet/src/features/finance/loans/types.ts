@@ -1,6 +1,7 @@
 export interface CreateLoanPayload {
   borrowerName: string;
   borrowerType: "COMPANY" | "PERSON";
+  counterpartId?: null | number;
   frequency: "BIWEEKLY" | "MONTHLY" | "WEEKLY";
   generateSchedule?: boolean;
   interestRate: number;
@@ -29,6 +30,7 @@ export interface LoanDetailResponse {
 export interface CreateStructuredLoanPayload {
   borrowerName: string;
   borrowerType: "COMPANY" | "PERSON";
+  counterpartId?: null | number;
   equalSchedule?: {
     firstDueDate: string;
     frequency: "BIWEEKLY" | "IRREGULAR" | "MONTHLY" | "WEEKLY";
@@ -134,6 +136,8 @@ export interface LoanSource {
 export interface LoanSummary {
   borrower_name: string;
   borrower_type: "COMPANY" | "PERSON";
+  counterpart?: LoanCounterpart | null;
+  counterpart_id: null | number;
   created_at: Date;
   frequency: "BIWEEKLY" | "IRREGULAR" | "MONTHLY" | "WEEKLY";
   id: number;
@@ -152,6 +156,13 @@ export interface LoanSummary {
   total_installments: number;
   total_paid: number;
   updated_at: Date;
+}
+
+export interface LoanCounterpart {
+  bankAccountHolder: string;
+  category: string;
+  id: number;
+  identificationNumber: string;
 }
 
 export interface RegenerateSchedulePayload {
