@@ -92,6 +92,10 @@ export const getColumns = (
         props.color = "warning";
         props.variant = "primary";
         statusLabel = "Parcial";
+      } else if (schedule.status === "SKIPPED") {
+        props.color = "default";
+        props.variant = "secondary";
+        statusLabel = "Omitida";
       } else if (isLate) {
         props.color = "danger";
         props.variant = "primary";
@@ -172,7 +176,6 @@ export const getColumns = (
                 </Button>
                 {schedule.status !== "PAID" && (
                   <Button
-                    isDisabled={schedule.loan_id === 0}
                     onPress={() => {
                       actions.onRegisterPayment(schedule);
                     }}

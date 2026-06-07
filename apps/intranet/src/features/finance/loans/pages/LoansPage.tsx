@@ -16,6 +16,7 @@ import {
 } from "@heroui/react";
 import { parseDate } from "@internationalized/date";
 import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import { getRouteApi } from "@tanstack/react-router";
 import type { ChangeEvent } from "react";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { AppModal } from "@/components/ui/AppModal";
@@ -50,6 +51,8 @@ import type {
 } from "@/features/finance/loans/types";
 import { PAGE_CONTAINER } from "@/lib/styles";
 
+const routeApi = getRouteApi("/_authed/finanzas/loans");
+
 type LoanEditForm = {
   borrowerName: string;
   borrowerType: "COMPANY" | "PERSON";
@@ -80,7 +83,12 @@ export function LoansPage() {
   const canManage = can("update", "Loan");
   const canView = can("read", "Loan");
 
-  const [selectedId, setSelectedId] = useState<null | string>(null);
+  const { loan: selectedSearch } = routeApi.useSearch();
+  const navigate = routeApi.useNavigate();
+  const selectedId = selectedSearch ?? null;
+  const setSelectedId = (publicId: null | string) => {
+    void navigate({ search: (prev) => ({ ...prev, loan: publicId ?? undefined }) });
+  };
   const [selectorOpen, setSelectorOpen] = useState(false);
 
   const [createOpen, setCreateOpen] = useState(false);
@@ -141,16 +149,14 @@ export function LoansPage() {
   const loans = useMemo(() => loansResponse.loans, [loansResponse.loans]);
   const selectedLoan = loans.find((loan) => loan.public_id === selectedId) ?? null;
 
-  // Auto-selection
+  // No auto-selección: la página abre en el resumen. Solo limpiar si el
+  // préstamo seleccionado dejó de existir (o el ?loan= es inválido). Usa
+  // replace para no atrapar el historial en el id borrado.
   useEffect(() => {
-    if (loans.length > 0 && !selectedId) {
-      setSelectedId(loans[0]?.public_id ?? null);
-    } else if (loans.length === 0 && selectedId) {
-      setSelectedId(null);
-    } else if (selectedId && !loans.some((l) => l.public_id === selectedId) && loans.length > 0) {
-      setSelectedId(loans[0]?.public_id ?? null);
+    if (selectedId && !loans.some((l) => l.public_id === selectedId)) {
+      void navigate({ replace: true, search: (prev) => ({ ...prev, loan: undefined }) });
     }
-  }, [loans, selectedId]);
+  }, [loans, selectedId, navigate]);
 
   // REST API mutations
   const createMutation = useMutation({
@@ -422,16 +428,25 @@ export function LoansPage() {
   return (
     <section className={PAGE_CONTAINER}>
       <div className="grid gap-3 lg:min-h-[calc(100dvh-11rem)]">
-        {selectedId ? (
+        {selectedLoan ? (
           <>
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="min-w-0">
                 <p className="text-default-500 text-xs">Préstamo seleccionado</p>
                 <p className="truncate font-semibold text-foreground text-sm">
-                  {selectedLoan?.title ?? "Préstamo"}
+                  {selectedLoan.title}
                 </p>
               </div>
               <div className="flex flex-wrap gap-2">
+                <Button
+                  onPress={() => {
+                    setSelectedId(null);
+                  }}
+                  type="button"
+                  variant="secondary"
+                >
+                  ← Ver listado
+                </Button>
                 <Button
                   onPress={() => {
                     setSelectorOpen(true);
@@ -466,7 +481,7 @@ export function LoansPage() {
                 <LoanDetailSection
                   canDelete={canDelete}
                   canManage={canManage}
-                  loanId={selectedId}
+                  loanId={selectedLoan.public_id}
                   onDeleteRequest={(loan) => {
                     void handleDeleteLoan(loan);
                   }}
