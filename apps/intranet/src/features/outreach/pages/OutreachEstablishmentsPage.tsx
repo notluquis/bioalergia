@@ -1,6 +1,13 @@
+import { DataTable } from "@/components/data-table/DataTable";
 import { formatChile } from "@/lib/dates";
-import { Button, Card, Checkbox, Chip, Spinner, Table } from "@heroui/react";
+import { Button, Card, Checkbox, Chip } from "@heroui/react";
 import { Link } from "@tanstack/react-router";
+import type {
+  ColumnDef,
+  OnChangeFn,
+  PaginationState,
+  RowSelectionState,
+} from "@tanstack/react-table";
 import { useMemo, useState } from "react";
 import type {
   OutreachDependencia,
@@ -59,6 +66,9 @@ const FUENTE_OPTIONS = [
   { value: "MANUAL", label: "Manual" },
 ];
 
+type EstablishmentItem = NonNullable<ReturnType<typeof useEstablishments>["data"]>["items"][number];
+type EstablishmentRow = EstablishmentItem & { id: string };
+
 export function OutreachEstablishmentsPage() {
   const [page, setPage] = useState(1);
   const pageSize = 50;
@@ -93,13 +103,115 @@ export function OutreachEstablishmentsPage() {
 
   const totalPages = data ? Math.max(1, Math.ceil(data.total / pageSize)) : 1;
 
-  const onSelectionChange = (keys: "all" | Set<unknown>) => {
-    if (keys === "all") {
-      setSelected(new Set(data?.items.map((i) => i.rbd) ?? []));
-      return;
-    }
-    setSelected(new Set(Array.from(keys, (k) => String(k))));
+  // El DataTable usa el `id` de la fila como clave de selección; los items se
+  // identifican por `rbd`, así que lo proyectamos a `id` para que selección y
+  // bulk update hablen el mismo idioma.
+  const rows = useMemo<EstablishmentRow[]>(
+    () => (data?.items ?? []).map((it) => ({ ...it, id: it.rbd })),
+    [data?.items]
+  );
+
+  const rowSelection = useMemo<RowSelectionState>(
+    () => Object.fromEntries(Array.from(selected, (rbd) => [rbd, true])),
+    [selected]
+  );
+
+  const handleRowSelectionChange: OnChangeFn<RowSelectionState> = (updater) => {
+    const next = typeof updater === "function" ? updater(rowSelection) : updater;
+    setSelected(
+      new Set(
+        Object.entries(next)
+          .filter(([, v]) => v)
+          .map(([rbd]) => rbd)
+      )
+    );
   };
+
+  const handlePaginationChange: OnChangeFn<PaginationState> = (updater) => {
+    const prev: PaginationState = { pageIndex: page - 1, pageSize };
+    const next = typeof updater === "function" ? updater(prev) : updater;
+    setPage(next.pageIndex + 1);
+  };
+
+  const columns = useMemo<ColumnDef<EstablishmentRow>[]>(
+    () => [
+      {
+        accessorKey: "nombre",
+        header: "Nombre",
+        enableSorting: false,
+        cell: ({ row }) => (
+          <>
+            <Link
+              to="/outreach/establecimientos/$rbd"
+              params={{ rbd: row.original.rbd }}
+              className="font-medium hover:underline"
+            >
+              {row.original.nombre}
+            </Link>
+            <p className="text-default-400 text-xs">{row.original.rbd}</p>
+          </>
+        ),
+      },
+      {
+        accessorKey: "tipo",
+        header: "Tipo",
+        enableSorting: false,
+        cell: ({ row }) => (
+          <Chip size="sm" variant="soft">
+            {row.original.tipo}
+          </Chip>
+        ),
+      },
+      { accessorKey: "comuna", header: "Comuna", enableSorting: false },
+      {
+        accessorKey: "emailMineduc",
+        header: "Email",
+        enableSorting: false,
+        cell: ({ row }) =>
+          row.original.emailMineduc ? (
+            <span className="text-xs">{row.original.emailMineduc}</span>
+          ) : (
+            <span className="text-default-400 text-xs">sin email</span>
+          ),
+      },
+      {
+        accessorKey: "estado",
+        header: "Estado",
+        enableSorting: false,
+        cell: ({ row }) => (
+          <Chip size="sm" color={ESTADO_COLOR[row.original.estado]} variant="soft">
+            {ESTADO_LABELS[row.original.estado]}
+          </Chip>
+        ),
+      },
+      {
+        accessorKey: "prioridad",
+        header: "Prioridad",
+        enableSorting: false,
+        cell: ({ row }) => (
+          <Chip size="sm" color={PRIORIDAD_COLOR[row.original.prioridad]} variant="soft">
+            {PRIORIDAD_LABELS[row.original.prioridad]}
+          </Chip>
+        ),
+      },
+      {
+        accessorKey: "score",
+        header: "Score",
+        enableSorting: false,
+        cell: ({ row }) => <span className="font-mono text-xs">{row.original.score}</span>,
+      },
+      {
+        accessorKey: "ultimoContactoAt",
+        header: "Último contacto",
+        enableSorting: false,
+        cell: ({ row }) =>
+          row.original.ultimoContactoAt
+            ? formatChile(row.original.ultimoContactoAt, "DD-MM-YYYY")
+            : "—",
+      },
+    ],
+    []
+  );
 
   const handleBulkEstado = async (newEstado: OutreachStatus) => {
     if (selected.size === 0) return;
@@ -196,111 +308,28 @@ export function OutreachEstablishmentsPage() {
         </Card.Content>
       </Card>
 
-      {isLoading || !data ? (
-        <div className="flex h-64 items-center justify-center">
-          <Spinner />
-        </div>
-      ) : (
-        <Card>
-          <Card.Content className="p-0">
-            <Table>
-              <Table.ScrollContainer>
-                <Table.Content
-                  aria-label="Establecimientos"
-                  selectionMode="multiple"
-                  selectedKeys={selected}
-                  onSelectionChange={onSelectionChange as never}
-                >
-                  <Table.Header>
-                    <Table.Column isRowHeader>Nombre</Table.Column>
-                    <Table.Column>Tipo</Table.Column>
-                    <Table.Column>Comuna</Table.Column>
-                    <Table.Column>Email</Table.Column>
-                    <Table.Column>Estado</Table.Column>
-                    <Table.Column>Prioridad</Table.Column>
-                    <Table.Column>Score</Table.Column>
-                    <Table.Column>Último contacto</Table.Column>
-                  </Table.Header>
-                  <Table.Body items={data.items}>
-                    {(it) => (
-                      <Table.Row id={it.rbd}>
-                        <Table.Cell>
-                          <Link
-                            to="/outreach/establecimientos/$rbd"
-                            params={{ rbd: it.rbd }}
-                            className="font-medium hover:underline"
-                          >
-                            {it.nombre}
-                          </Link>
-                          <p className="text-default-400 text-xs">{it.rbd}</p>
-                        </Table.Cell>
-                        <Table.Cell>
-                          <Chip size="sm" variant="soft">
-                            {it.tipo}
-                          </Chip>
-                        </Table.Cell>
-                        <Table.Cell>{it.comuna}</Table.Cell>
-                        <Table.Cell>
-                          {it.emailMineduc ? (
-                            <span className="text-xs">{it.emailMineduc}</span>
-                          ) : (
-                            <span className="text-default-400 text-xs">sin email</span>
-                          )}
-                        </Table.Cell>
-                        <Table.Cell>
-                          <Chip size="sm" color={ESTADO_COLOR[it.estado]} variant="soft">
-                            {ESTADO_LABELS[it.estado]}
-                          </Chip>
-                        </Table.Cell>
-                        <Table.Cell>
-                          <Chip size="sm" color={PRIORIDAD_COLOR[it.prioridad]} variant="soft">
-                            {PRIORIDAD_LABELS[it.prioridad]}
-                          </Chip>
-                        </Table.Cell>
-                        <Table.Cell>
-                          <span className="font-mono text-xs">{it.score}</span>
-                        </Table.Cell>
-                        <Table.Cell>
-                          {it.ultimoContactoAt
-                            ? formatChile(it.ultimoContactoAt, "DD-MM-YYYY")
-                            : "—"}
-                        </Table.Cell>
-                      </Table.Row>
-                    )}
-                  </Table.Body>
-                </Table.Content>
-              </Table.ScrollContainer>
-            </Table>
-          </Card.Content>
-        </Card>
-      )}
+      {data && <span className="text-default-500 text-sm">{`${data.total} establecimientos`}</span>}
 
-      <div className="flex items-center justify-between">
-        <span className="text-default-500 text-sm">
-          {data ? `${data.total} establecimientos` : ""}
-        </span>
-        <div className="flex items-center gap-2">
-          <Button
-            size="sm"
-            variant="secondary"
-            isDisabled={page <= 1}
-            onPress={() => setPage((p) => p - 1)}
-          >
-            Anterior
-          </Button>
-          <span className="text-sm">
-            Página {page} de {totalPages}
-          </span>
-          <Button
-            size="sm"
-            variant="secondary"
-            isDisabled={page >= totalPages}
-            onPress={() => setPage((p) => p + 1)}
-          >
-            Siguiente
-          </Button>
-        </div>
-      </div>
+      <Card>
+        <Card.Content className="p-0">
+          <DataTable
+            columns={columns}
+            data={rows}
+            enablePageSizeSelector={false}
+            enableToolbar={false}
+            enableVirtualization={false}
+            isLoading={isLoading}
+            noDataMessage="Sin establecimientos"
+            onPaginationChange={handlePaginationChange}
+            onRowSelectionChange={handleRowSelectionChange}
+            pageCount={totalPages}
+            pageSizeOptions={[pageSize]}
+            pagination={{ pageIndex: page - 1, pageSize }}
+            rowSelection={rowSelection}
+            scrollMode="container"
+          />
+        </Card.Content>
+      </Card>
     </div>
   );
 }

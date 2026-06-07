@@ -1077,7 +1077,7 @@ const patientColumn: ColumnDef<ClinicalSeriesSnapshot> = {
     const samePerson = isSamePatientAndBeneficiary(s);
     return (
       <div className="flex flex-col gap-1">
-        <span className="font-medium text-foreground text-sm transition-colors group-hover:text-accent">
+        <span className="font-medium text-foreground text-sm transition-colors hover:text-accent">
           {s.patientName ?? s.displayName ?? (
             <span className="text-foreground-400 italic">Sin nombre</span>
           )}
