@@ -87,7 +87,7 @@ export function LoansPage() {
   const navigate = routeApi.useNavigate();
   const selectedId = selectedSearch ?? null;
   const setSelectedId = (publicId: null | string) => {
-    void navigate({ search: { loan: publicId ?? undefined } });
+    void navigate({ search: (prev) => ({ ...prev, loan: publicId ?? undefined }) });
   };
   const [selectorOpen, setSelectorOpen] = useState(false);
 
@@ -150,13 +150,13 @@ export function LoansPage() {
   const selectedLoan = loans.find((loan) => loan.public_id === selectedId) ?? null;
 
   // No auto-selección: la página abre en el resumen. Solo limpiar si el
-  // préstamo seleccionado dejó de existir (eliminado).
+  // préstamo seleccionado dejó de existir (o el ?loan= es inválido). Usa
+  // replace para no atrapar el historial en el id borrado.
   useEffect(() => {
     if (selectedId && !loans.some((l) => l.public_id === selectedId)) {
-      setSelectedId(null);
+      void navigate({ replace: true, search: (prev) => ({ ...prev, loan: undefined }) });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loans, selectedId]);
+  }, [loans, selectedId, navigate]);
 
   // REST API mutations
   const createMutation = useMutation({
@@ -428,13 +428,13 @@ export function LoansPage() {
   return (
     <section className={PAGE_CONTAINER}>
       <div className="grid gap-3 lg:min-h-[calc(100dvh-11rem)]">
-        {selectedId ? (
+        {selectedLoan ? (
           <>
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="min-w-0">
                 <p className="text-default-500 text-xs">Préstamo seleccionado</p>
                 <p className="truncate font-semibold text-foreground text-sm">
-                  {selectedLoan?.title ?? "Préstamo"}
+                  {selectedLoan.title}
                 </p>
               </div>
               <div className="flex flex-wrap gap-2">
@@ -481,7 +481,7 @@ export function LoansPage() {
                 <LoanDetailSection
                   canDelete={canDelete}
                   canManage={canManage}
-                  loanId={selectedId}
+                  loanId={selectedLoan.public_id}
                   onDeleteRequest={(loan) => {
                     void handleDeleteLoan(loan);
                   }}

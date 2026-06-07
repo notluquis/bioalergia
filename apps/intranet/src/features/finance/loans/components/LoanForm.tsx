@@ -315,30 +315,35 @@ export function LoanForm({ onCancel, onSubmit, onSubmitStructured }: LoanFormPro
                 },
               }
             : {
-                manualInstallments: usableManualInstallments.map((installment) => ({
-                  dueDate: installment.dueDate,
-                  expectedAmount: installment.expectedAmount,
-                  expectedInterest: installment.expectedInterest,
-                  expectedPrincipal: Math.max(
-                    0,
-                    installment.expectedAmount - installment.expectedInterest
-                  ),
-                  note: installment.note || undefined,
-                  payments: installment.payments
-                    .filter((payment) => payment.amount > 0 && payment.paidDate)
-                    .map((payment) => {
-                      const transactionId = Number(payment.transactionId);
-                      return {
-                        amount: payment.amount,
-                        kind: payment.kind,
-                        note: payment.note || undefined,
-                        paidDate: payment.paidDate,
-                        ...(Number.isFinite(transactionId) && transactionId > 0
-                          ? { transactionId }
-                          : {}),
-                      };
-                    }),
-                })),
+                manualInstallments: usableManualInstallments.map((installment) => {
+                  // Clamp interés a la cuota para mantener el invariante
+                  // expectedPrincipal + expectedInterest === expectedAmount.
+                  const expectedInterest = Math.min(
+                    installment.expectedInterest,
+                    installment.expectedAmount
+                  );
+                  return {
+                    dueDate: installment.dueDate,
+                    expectedAmount: installment.expectedAmount,
+                    expectedInterest,
+                    expectedPrincipal: installment.expectedAmount - expectedInterest,
+                    note: installment.note || undefined,
+                    payments: installment.payments
+                      .filter((payment) => payment.amount > 0 && payment.paidDate)
+                      .map((payment) => {
+                        const transactionId = Number(payment.transactionId);
+                        return {
+                          amount: payment.amount,
+                          kind: payment.kind,
+                          note: payment.note || undefined,
+                          paidDate: payment.paidDate,
+                          ...(Number.isFinite(transactionId) && transactionId > 0
+                            ? { transactionId }
+                            : {}),
+                        };
+                      }),
+                  };
+                }),
               }),
           notes: value.notes,
           sources: usableSources.map((source) => ({
