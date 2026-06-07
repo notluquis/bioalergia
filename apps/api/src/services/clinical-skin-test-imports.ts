@@ -27,6 +27,7 @@ import {
 import { enqueueClinicalRecordImportFromOneDrive } from "./clinical-record-imports.ts";
 import {
   parseSkinTestWorkbookBuffer,
+  parseSkinTestWorksheet,
   SKIN_TEST_PARSER_VERSION,
   type ParsedSkinTestInterpretation,
   type ParsedSkinTestResult,
@@ -34,6 +35,13 @@ import {
   type SkinTestIssue,
 } from "./clinical-skin-test-parser.ts";
 import { persistSkinTestWorkbookSnapshot } from "./clinical-skin-test-workbook-snapshots.ts";
+import {
+  findXlsxFileByOneDriveItem,
+  isSnapshotFresh,
+  persistXlsxFileSnapshot,
+  readXlsxFileSnapshot,
+  snapshotToWorksheet,
+} from "./xlsx-snapshot.ts";
 
 const AUTO_IMPORT_MIN_CONFIDENCE = 80;
 const JOB_TYPE = "clinical-skin-test-import-sync";
@@ -1870,16 +1878,20 @@ export async function reprocessSkinTestImport(id: string) {
     oneDriveCTag: string | null;
     oneDriveETag: string | null;
     size: number | null;
+    storedSha256: string | null;
   }>`
     SELECT
-      onedrive_drive_id AS "oneDriveDriveId",
-      onedrive_item_id AS "oneDriveItemId",
-      onedrive_account_id AS "oneDriveAccountId",
-      onedrive_ctag AS "oneDriveCTag",
-      onedrive_etag AS "oneDriveETag",
-      size
-    FROM clinical_skin_test_imports
-    WHERE id = ${id}
+      i.onedrive_drive_id AS "oneDriveDriveId",
+      i.onedrive_item_id AS "oneDriveItemId",
+      i.onedrive_account_id AS "oneDriveAccountId",
+      i.onedrive_ctag AS "oneDriveCTag",
+      i.onedrive_etag AS "oneDriveETag",
+      i.size,
+      wf.sha256 AS "storedSha256"
+    FROM clinical_skin_test_imports i
+    LEFT JOIN clinical_skin_test_workbook_snapshots ws ON ws.source_import_id = i.id
+    LEFT JOIN clinical_skin_test_workbook_files wf ON wf.id = ws.workbook_file_id
+    WHERE i.id = ${id}
   `.execute(kysely);
   const driveId = result.rows[0]?.oneDriveDriveId;
   const itemId = result.rows[0]?.oneDriveItemId;
@@ -1896,16 +1908,45 @@ export async function reprocessSkinTestImport(id: string) {
 
   if (!accountId) throw new Error("No hay cuenta de OneDrive para re-procesar.");
 
-  const buffer = await downloadOneDriveItem(accountId, itemId, driveId);
-  const snapshotResult = await persistSkinTestWorkbookSnapshot({
-    buffer,
-    importId: id,
-    sourceCTag: result.rows[0]?.oneDriveCTag,
-    sourceETag: result.rows[0]?.oneDriveETag,
-    sourceSizeBytes: result.rows[0]?.size,
-  });
+  // Prefer the shared OneDrive snapshot (clinical_xlsx_files): if a fresh
+  // snapshot exists for this item and we already have its content sha256
+  // stored (from a prior ingest), re-parse straight from DB — no download.
+  // Otherwise download once, persist BOTH the legacy per-import snapshot AND
+  // the shared library snapshot, so the next reprocess is instant.
+  let parsed: ParsedSkinTestWorkbook;
+  let dedupSha256: string;
+  const lib = await findXlsxFileByOneDriveItem(accountId, driveId, itemId);
+  const storedSha256 = result.rows[0]?.storedSha256 ?? null;
+  const snapRec = lib && storedSha256 ? await readXlsxFileSnapshot(lib.id) : null;
+  if (
+    lib &&
+    storedSha256 &&
+    snapRec?.snapshot &&
+    isSnapshotFresh(snapRec, { etag: lib.etag, ctag: lib.ctag })
+  ) {
+    parsed = parseSkinTestWorksheet(snapshotToWorksheet(snapRec.snapshot));
+    dedupSha256 = storedSha256;
+  } else {
+    const buffer = await downloadOneDriveItem(accountId, itemId, driveId);
+    const snapshotResult = await persistSkinTestWorkbookSnapshot({
+      buffer,
+      importId: id,
+      sourceCTag: result.rows[0]?.oneDriveCTag,
+      sourceETag: result.rows[0]?.oneDriveETag,
+      sourceSizeBytes: result.rows[0]?.size,
+    });
+    // Best-effort archive into the shared library so future reprocess skips
+    // the download. Never let archival failure break the reprocess.
+    if (lib) {
+      await persistXlsxFileSnapshot(lib.id, buffer, { etag: lib.etag, ctag: lib.ctag }).catch(
+        () => undefined
+      );
+    }
+    dedupSha256 = snapshotResult.sha256;
+    parsed = await parseSkinTestWorkbookBuffer(buffer);
+  }
 
-  const sha256Duplicate = await findWorkbookSha256DuplicateImport(snapshotResult.sha256, id);
+  const sha256Duplicate = await findWorkbookSha256DuplicateImport(dedupSha256, id);
   if (sha256Duplicate) {
     await sql`
       UPDATE clinical_skin_test_imports
@@ -1924,7 +1965,6 @@ export async function reprocessSkinTestImport(id: string) {
     return await getSkinTestImport(id);
   }
 
-  const parsed = await parseSkinTestWorkbookBuffer(buffer);
   const resultHash = computeResultHash(parsed.results);
   const templateIssue = getTemplateSkinTestIssue(parsed);
   if (templateIssue) {

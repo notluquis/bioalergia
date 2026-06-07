@@ -58,6 +58,32 @@ export function snapshotToRows(snapshot: XlsxSnapshot): string[][] {
   return json.map((row) => (row as unknown[]).map((c) => (c == null ? "" : String(c).trim())));
 }
 
+// Reconstruct a SheetJS worksheet from the snapshot for parsers that read the
+// worksheet directly (by A1 address) rather than row arrays. Each captured cell
+// becomes a string cell whose `w` (formatted text) AND `v` equal the snapshot's
+// visible text, so a parser's getCellText(cell) — which prefers `cell.w` — yields
+// the exact same text it saw from the original buffer. The skin-test parser only
+// reads cells through getCellText + `!ref`; it never inspects merges or numeric
+// types, so a string-cell grid reproduces its output faithfully.
+export function snapshotToWorksheet(snapshot: XlsxSnapshot): xlsx.WorkSheet {
+  const cells = snapshot.sheet.cells;
+  const sheet: xlsx.WorkSheet = {};
+  if (cells.length === 0) {
+    sheet["!ref"] = "A1:A1";
+    return sheet;
+  }
+  let maxR = 0;
+  let maxC = 0;
+  for (const cell of cells) {
+    const text = cell.text ?? "";
+    sheet[cell.a1] = { t: "s", v: text, w: text };
+    if (cell.r - 1 > maxR) maxR = cell.r - 1;
+    if (cell.c - 1 > maxC) maxC = cell.c - 1;
+  }
+  sheet["!ref"] = xlsx.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: maxR, c: maxC } });
+  return sheet;
+}
+
 export type XlsxSnapshotRecord = {
   status: string | null;
   snapshot: XlsxSnapshot | null;
