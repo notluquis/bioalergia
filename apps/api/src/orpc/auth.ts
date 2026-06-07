@@ -41,7 +41,7 @@ import { isLockedNow, recordLoginFailure, recordLoginSuccess } from "../lib/acco
 import { ipFromContext, logAuditFromContext } from "../lib/audit-log.ts";
 import { fakeVerifyPassword } from "../lib/crypto.ts";
 import { DomainError } from "../lib/errors.ts";
-import { logError } from "../lib/logger.ts";
+import { logError, logEvent } from "../lib/logger.ts";
 import { requestPasswordReset, resetPasswordWithToken } from "../services/password-reset.ts";
 import {
   clearEmailLoginFailure,
@@ -500,8 +500,17 @@ const authORPCRouterBase = {
     .input(forgotPasswordSchema)
     .output(forgotPasswordResponseSchema)
     .handler(async ({ input }) => {
-      // Fire-and-forget semantics: always return ok (anti-enumeration).
-      await requestPasswordReset(input.email);
+      // Anti-enumeration: ALWAYS return ok, even on internal failure (DB error,
+      // etc.). Surfacing a non-200 here would let an attacker distinguish
+      // existing vs unknown emails. requestPasswordReset already swallows email
+      // send failures; this catch covers query/update throws.
+      try {
+        await requestPasswordReset(input.email);
+      } catch (err) {
+        logEvent("[password-reset] request failed (swallowed for anti-enumeration)", {
+          error: err instanceof Error ? err.message : String(err),
+        });
+      }
       return { status: "ok" as const };
     }),
 

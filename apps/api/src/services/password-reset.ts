@@ -77,7 +77,8 @@ export async function resetPasswordWithToken(token: string, newPassword: string)
     where: { id: user.id },
     data: {
       passwordHash,
-      status: "ACTIVE",
+      // NOTE: do NOT touch `status` here — a self-service reset must not
+      // unsuspend a SUSPENDED account. Only credentials + lockout are reset.
       passwordResetTokenHash: null,
       passwordResetExpiresAt: null,
       sessionVersion: { increment: 1 },

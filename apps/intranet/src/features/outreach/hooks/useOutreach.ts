@@ -290,7 +290,7 @@ export function useSendBatch() {
     mutationFn: (input: { campaignId: number; limit: number }) =>
       outreachORPCClient.sendBatch(input),
     onSuccess: (_res, vars) => {
-      void qc.invalidateQueries({ queryKey: ["outreach", "campaign", vars.campaignId] });
+      void qc.invalidateQueries({ queryKey: [...BASE_KEY, "campaign", vars.campaignId] });
     },
   });
 }

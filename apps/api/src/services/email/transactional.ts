@@ -1,5 +1,13 @@
+import { createHash } from "node:crypto";
 import { sendEmail } from "./index.ts";
 import type { EmailSendResult } from "./types.ts";
+
+// Idempotency keys are sent as the Idempotency-Key header AND logged, so they
+// must never contain credential material. Hash secrets one-way to keep
+// per-credential dedupe without leaking the password/token.
+function idemDigest(secret: string): string {
+  return createHash("sha256").update(secret).digest("hex").slice(0, 16);
+}
 
 // Transactional email templates (reset, forgot-password link, honorarios PDF).
 // Minimal inline HTML — no marketing chrome, no List-Unsubscribe (these are not
@@ -40,7 +48,7 @@ export async function sendPasswordResetEmail(args: {
     subject: "Tu acceso a Bioalergia fue restablecido",
     html,
     text: `Hola ${args.name}, tu contraseña fue restablecida. Contraseña temporal: ${args.tempPassword}. Ingresa en ${appUrl()}/login y define una nueva.`,
-    idempotencyKey: `pwreset/${args.to}/${args.tempPassword.slice(0, 8)}`,
+    idempotencyKey: `pwreset/${args.to}/${idemDigest(args.tempPassword)}`,
   });
 }
 
@@ -65,7 +73,7 @@ export async function sendPasswordResetLinkEmail(args: {
     subject: "Restablece tu contraseña — Bioalergia",
     html,
     text: `Hola ${args.name}, restablece tu contraseña aquí (válido 1 hora): ${url}`,
-    idempotencyKey: `pwlink/${args.token.slice(0, 12)}`,
+    idempotencyKey: `pwlink/${idemDigest(args.token)}`,
   });
 }
 
