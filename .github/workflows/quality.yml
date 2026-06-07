@@ -39,6 +39,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm -F @finanzas/intranet audit:design
       - run: pnpm -F @finanzas/intranet audit:datetime
+      - run: pnpm -F @finanzas/api audit:datetime
       - run: pnpm -F @finanzas/intranet audit:css
 
   dead-code:
