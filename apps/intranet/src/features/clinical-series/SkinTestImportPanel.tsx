@@ -11,7 +11,6 @@ import {
   Label,
   ListBox,
   Modal,
-  Pagination,
   Select,
   Separator,
   Spinner,
@@ -38,7 +37,7 @@ import {
   Link as LinkIcon,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { buildPaginationItems } from "@/components/pagination/pagination-items";
+import { AppPagination } from "@/components/pagination/AppPagination";
 import { useToast } from "@/context/ToastContext";
 import {
   useActiveClinicalSkinTestJob,
@@ -322,10 +321,6 @@ export function SkinTestImportPanel() {
   );
   const importsTotal = imports.data?.total ?? 0;
   const importsTotalPages = Math.max(1, Math.ceil(importsTotal / IMPORTS_PAGE_SIZE));
-  const importsPageItems = buildPaginationItems({
-    currentPage: importsPage,
-    totalPages: importsTotalPages,
-  });
   const visibleStart = importsTotal === 0 ? 0 : (importsPage - 1) * IMPORTS_PAGE_SIZE + 1;
   const visibleEnd = Math.min(importsTotal, importsPage * IMPORTS_PAGE_SIZE);
   const visibleDiscoveredItems =
@@ -1087,48 +1082,13 @@ export function SkinTestImportPanel() {
           )}
         </div>
 
-        {importsTotal > IMPORTS_PAGE_SIZE && (
-          <Pagination className="justify-center pt-4" size="sm">
-            <Pagination.Summary>{`Página ${importsPage} de ${importsTotalPages}`}</Pagination.Summary>
-            <Pagination.Content>
-              <Pagination.Item>
-                <Pagination.Previous
-                  isDisabled={importsPage <= 1 || imports.isFetching}
-                  onPress={() => setImportsPage((page) => Math.max(1, page - 1))}
-                >
-                  <Pagination.PreviousIcon />
-                  <span>Anterior</span>
-                </Pagination.Previous>
-              </Pagination.Item>
-              {importsPageItems.map((item) =>
-                item.type === "ellipsis" ? (
-                  <Pagination.Item key={item.key}>
-                    <Pagination.Ellipsis />
-                  </Pagination.Item>
-                ) : (
-                  <Pagination.Item key={item.key}>
-                    <Pagination.Link
-                      isActive={item.value === importsPage}
-                      isDisabled={imports.isFetching}
-                      onPress={() => setImportsPage(item.value ?? 1)}
-                    >
-                      {item.value}
-                    </Pagination.Link>
-                  </Pagination.Item>
-                )
-              )}
-              <Pagination.Item>
-                <Pagination.Next
-                  isDisabled={importsPage >= importsTotalPages || imports.isFetching}
-                  onPress={() => setImportsPage((page) => Math.min(importsTotalPages, page + 1))}
-                >
-                  <span>Siguiente</span>
-                  <Pagination.NextIcon />
-                </Pagination.Next>
-              </Pagination.Item>
-            </Pagination.Content>
-          </Pagination>
-        )}
+        <AppPagination
+          loading={imports.isFetching}
+          onPageChange={(p) => setImportsPage(p + 1)}
+          page={importsPage - 1}
+          pageSize={IMPORTS_PAGE_SIZE}
+          totalCount={importsTotal}
+        />
       </Surface>
       <AlertDialog.Backdrop
         isOpen={isReprocessPendingOpen}
