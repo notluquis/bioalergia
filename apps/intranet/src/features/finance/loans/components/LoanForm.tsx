@@ -19,12 +19,13 @@ import {
 import { parseDate } from "@internationalized/date";
 import { useForm, useStore } from "@tanstack/react-form";
 import type React from "react";
+import { useMemo, useState } from "react";
 import { z } from "zod";
 import { zDateString } from "@/lib/api-validate";
 import { formatErrors } from "@/lib/form-errors";
 import { GRID_2_COL_MD } from "@/lib/styles";
 
-import type { CreateLoanPayload } from "../types";
+import type { CreateLoanPayload, CreateStructuredLoanPayload } from "../types";
 
 const loanFormSchema = z.object({
   borrowerName: z.string().trim().min(1, "El beneficiario es requerido"),
@@ -45,7 +46,28 @@ type LoanFormData = z.infer<typeof loanFormSchema>;
 interface LoanFormProps {
   readonly onCancel: () => void;
   readonly onSubmit: (payload: CreateLoanPayload) => Promise<void>;
+  readonly onSubmitStructured?: (payload: CreateStructuredLoanPayload) => Promise<void>;
 }
+
+type LoanFormMode = "classic" | "structured";
+
+type SourceDraft = {
+  feeAmount: number;
+  fixedInterestRate: number;
+  id: string;
+  label: string;
+  principalAmount: number;
+  sourceType: "BANK_CREDIT" | "CREDIT_CARD" | "OTHER" | "PERSON_LOAN" | "TRANSFER";
+};
+
+const createSourceDraft = (): SourceDraft => ({
+  feeAmount: 0,
+  fixedInterestRate: 0,
+  id: crypto.randomUUID(),
+  label: "",
+  principalAmount: 0,
+  sourceType: "PERSON_LOAN",
+});
 
 type LoanInputProps = {
   as?: "input" | "textarea";
@@ -88,7 +110,21 @@ function LoanInputField({
   );
 }
 
-export function LoanForm({ onCancel, onSubmit }: LoanFormProps) {
+export function LoanForm({ onCancel, onSubmit, onSubmitStructured }: LoanFormProps) {
+  const [mode, setMode] = useState<LoanFormMode>("classic");
+  const [sources, setSources] = useState<SourceDraft[]>([createSourceDraft()]);
+
+  const sourceTotals = useMemo(
+    () =>
+      sources.map((source) => {
+        const interest = Math.round(source.principalAmount * (source.fixedInterestRate / 100));
+        const total = source.principalAmount + interest + source.feeAmount;
+        return { interest, total };
+      }),
+    [sources]
+  );
+  const structuredTotal = sourceTotals.reduce((sum, item) => sum + item.total, 0);
+
   const form = useForm({
     defaultValues: {
       borrowerName: "",
@@ -98,12 +134,38 @@ export function LoanForm({ onCancel, onSubmit }: LoanFormProps) {
       interestRate: 0,
       interestType: "SIMPLE" as const,
       notes: "",
-      principalAmount: 0,
+      principalAmount: 1,
       startDate: formatChile(new Date(), "YYYY-MM-DD"),
       title: "",
       totalInstallments: 10,
     } as LoanFormData,
     onSubmit: async ({ value }) => {
+      if (mode === "structured" && onSubmitStructured) {
+        const usableSources = sources.filter(
+          (source) => source.label.trim() && source.principalAmount > 0
+        );
+        await onSubmitStructured({
+          borrowerName: value.borrowerName,
+          borrowerType: value.borrowerType,
+          equalSchedule: {
+            firstDueDate: value.startDate,
+            frequency: value.frequency,
+            installments: value.totalInstallments,
+          },
+          notes: value.notes,
+          sources: usableSources.map((source) => ({
+            feeAmount: source.feeAmount,
+            fixedInterestRate: source.fixedInterestRate,
+            label: source.label,
+            principalAmount: source.principalAmount,
+            sourceType: source.sourceType,
+          })),
+          startDate: value.startDate,
+          title: value.title,
+        });
+        return;
+      }
+
       await onSubmit(value as CreateLoanPayload);
     },
     validators: {
@@ -124,6 +186,25 @@ export function LoanForm({ onCancel, onSubmit }: LoanFormProps) {
       }}
       validationBehavior="aria"
     >
+      {onSubmitStructured && (
+        <div className="flex flex-wrap gap-2">
+          <Button
+            onPress={() => setMode("classic")}
+            type="button"
+            variant={mode === "classic" ? "primary" : "secondary"}
+          >
+            Clásico
+          </Button>
+          <Button
+            onPress={() => setMode("structured")}
+            type="button"
+            variant={mode === "structured" ? "primary" : "secondary"}
+          >
+            Por fuentes
+          </Button>
+        </div>
+      )}
+
       <div className={GRID_2_COL_MD}>
         <form.Field name="title">
           {(field) => (
@@ -189,80 +270,86 @@ export function LoanForm({ onCancel, onSubmit }: LoanFormProps) {
           )}
         </form.Field>
 
-        <form.Field name="principalAmount">
-          {(field) => (
-            <NumberField
-              isInvalid={field.state.meta.errors.length > 0}
-              minValue={0.01}
-              onBlur={field.handleBlur}
-              onChange={(value) => {
-                field.handleChange(value ?? 0);
-              }}
-              step={0.01}
-              value={field.state.value || 0}
-            >
-              <Label>Monto Principal</Label>
-              <HeroInput variant="secondary" />
-              {field.state.meta.errors.length > 0 && (
-                <FieldError>{formatErrors(field.state.meta.errors)}</FieldError>
+        {mode === "classic" && (
+          <>
+            <form.Field name="principalAmount">
+              {(field) => (
+                <NumberField
+                  isInvalid={field.state.meta.errors.length > 0}
+                  minValue={0.01}
+                  onBlur={field.handleBlur}
+                  onChange={(value) => {
+                    field.handleChange(value ?? 0);
+                  }}
+                  step={0.01}
+                  value={field.state.value || 0}
+                >
+                  <Label>Monto Principal</Label>
+                  <HeroInput variant="secondary" />
+                  {field.state.meta.errors.length > 0 && (
+                    <FieldError>{formatErrors(field.state.meta.errors)}</FieldError>
+                  )}
+                </NumberField>
               )}
-            </NumberField>
-          )}
-        </form.Field>
+            </form.Field>
 
-        <form.Field name="interestRate">
-          {(field) => (
-            <NumberField
-              isInvalid={field.state.meta.errors.length > 0}
-              minValue={0}
-              maxValue={100}
-              step={0.01}
-              value={field.state.value || 0}
-              onChange={(value) => field.handleChange(value)}
-              onBlur={field.handleBlur}
-            >
-              <Label>Tasa de Interés Anual (%)</Label>
-              <HeroInput variant="secondary" />
-              {field.state.meta.errors.length > 0 && (
-                <FieldError>{formatErrors(field.state.meta.errors)}</FieldError>
+            <form.Field name="interestRate">
+              {(field) => (
+                <NumberField
+                  isInvalid={field.state.meta.errors.length > 0}
+                  minValue={0}
+                  maxValue={100}
+                  step={0.01}
+                  value={field.state.value || 0}
+                  onChange={(value) => field.handleChange(value)}
+                  onBlur={field.handleBlur}
+                >
+                  <Label>Tasa de Interés Anual (%)</Label>
+                  <HeroInput variant="secondary" />
+                  {field.state.meta.errors.length > 0 && (
+                    <FieldError>{formatErrors(field.state.meta.errors)}</FieldError>
+                  )}
+                </NumberField>
               )}
-            </NumberField>
-          )}
-        </form.Field>
+            </form.Field>
+          </>
+        )}
 
-        <form.Field name="interestType">
-          {(field) => (
-            <div>
-              <Select
-                isInvalid={field.state.meta.errors.length > 0}
-                onBlur={field.handleBlur}
-                onChange={(key) => {
-                  field.handleChange(key as "COMPOUND" | "SIMPLE");
-                }}
-                value={field.state.value}
-              >
-                <Label>Tipo de Interés</Label>
-                <Select.Trigger>
-                  <Select.Value />
-                  <Select.Indicator />
-                </Select.Trigger>
-                <Select.Popover>
-                  <ListBox>
-                    <ListBox.Item id="SIMPLE" key="SIMPLE">
-                      Simple
-                    </ListBox.Item>
-                    <ListBox.Item id="COMPOUND" key="COMPOUND">
-                      Compuesto
-                    </ListBox.Item>
-                  </ListBox>
-                </Select.Popover>
-                {field.state.meta.errors.length > 0 && (
-                  <FieldError>{formatErrors(field.state.meta.errors)}</FieldError>
-                )}
-              </Select>
-            </div>
-          )}
-        </form.Field>
+        {mode === "classic" && (
+          <form.Field name="interestType">
+            {(field) => (
+              <div>
+                <Select
+                  isInvalid={field.state.meta.errors.length > 0}
+                  onBlur={field.handleBlur}
+                  onChange={(key) => {
+                    field.handleChange(key as "COMPOUND" | "SIMPLE");
+                  }}
+                  value={field.state.value}
+                >
+                  <Label>Tipo de Interés</Label>
+                  <Select.Trigger>
+                    <Select.Value />
+                    <Select.Indicator />
+                  </Select.Trigger>
+                  <Select.Popover>
+                    <ListBox>
+                      <ListBox.Item id="SIMPLE" key="SIMPLE">
+                        Simple
+                      </ListBox.Item>
+                      <ListBox.Item id="COMPOUND" key="COMPOUND">
+                        Compuesto
+                      </ListBox.Item>
+                    </ListBox>
+                  </Select.Popover>
+                  {field.state.meta.errors.length > 0 && (
+                    <FieldError>{formatErrors(field.state.meta.errors)}</FieldError>
+                  )}
+                </Select>
+              </div>
+            )}
+          </form.Field>
+        )}
 
         <form.Field name="frequency">
           {(field) => (
@@ -380,25 +467,158 @@ export function LoanForm({ onCancel, onSubmit }: LoanFormProps) {
           )}
         </form.Field>
 
-        <form.Field name="generateSchedule">
-          {(field) => (
-            <div>
-              <Checkbox isSelected={field.state.value} onChange={field.handleChange}>
-                <Checkbox.Control>
-                  <Checkbox.Indicator />
-                </Checkbox.Control>
-                <Checkbox.Content>
-                  <Label>Generar cronograma automáticamente</Label>
-                </Checkbox.Content>
-              </Checkbox>
+        {mode === "classic" && (
+          <form.Field name="generateSchedule">
+            {(field) => (
+              <div>
+                <Checkbox isSelected={field.state.value} onChange={field.handleChange}>
+                  <Checkbox.Control>
+                    <Checkbox.Indicator />
+                  </Checkbox.Control>
+                  <Checkbox.Content>
+                    <Label>Generar cronograma automáticamente</Label>
+                  </Checkbox.Content>
+                </Checkbox>
 
-              {field.state.meta.errors.length > 0 && (
-                <FieldError>{formatErrors(field.state.meta.errors)}</FieldError>
-              )}
-            </div>
-          )}
-        </form.Field>
+                {field.state.meta.errors.length > 0 && (
+                  <FieldError>{formatErrors(field.state.meta.errors)}</FieldError>
+                )}
+              </div>
+            )}
+          </form.Field>
+        )}
       </div>
+
+      {mode === "structured" && (
+        <section className="space-y-3 rounded-lg border border-default-200 bg-default-50 p-4">
+          <header className="flex items-center justify-between gap-3">
+            <div>
+              <h3 className="font-semibold text-foreground text-sm">Fuentes del préstamo</h3>
+              <p className="text-default-500 text-xs">
+                Total generado ${structuredTotal.toLocaleString("es-CL")}
+              </p>
+            </div>
+            <Button
+              onPress={() => setSources((current) => [...current, createSourceDraft()])}
+              size="sm"
+              type="button"
+              variant="secondary"
+            >
+              Agregar fuente
+            </Button>
+          </header>
+          <div className="space-y-3">
+            {sources.map((source, index) => (
+              <div
+                className="grid gap-3 rounded-md border border-default-200 bg-background p-3 md:grid-cols-[1.2fr,0.8fr,0.8fr,0.8fr,0.8fr,auto]"
+                key={source.id}
+              >
+                <TextField
+                  onChange={(value) =>
+                    setSources((current) =>
+                      current.map((item) =>
+                        item.id === source.id ? { ...item, label: value } : item
+                      )
+                    )
+                  }
+                  value={source.label}
+                >
+                  <Label>Origen</Label>
+                  <HeroInput
+                    placeholder="Tarjeta Santander, efectivo, Valeria..."
+                    variant="secondary"
+                  />
+                </TextField>
+                <Select
+                  onChange={(key) =>
+                    setSources((current) =>
+                      current.map((item) =>
+                        item.id === source.id
+                          ? { ...item, sourceType: key as SourceDraft["sourceType"] }
+                          : item
+                      )
+                    )
+                  }
+                  value={source.sourceType}
+                >
+                  <Label>Tipo</Label>
+                  <Select.Trigger>
+                    <Select.Value />
+                    <Select.Indicator />
+                  </Select.Trigger>
+                  <Select.Popover>
+                    <ListBox>
+                      <ListBox.Item id="PERSON_LOAN">Persona</ListBox.Item>
+                      <ListBox.Item id="CREDIT_CARD">Tarjeta</ListBox.Item>
+                      <ListBox.Item id="BANK_CREDIT">Banco</ListBox.Item>
+                      <ListBox.Item id="TRANSFER">Transferencia</ListBox.Item>
+                      <ListBox.Item id="OTHER">Otro</ListBox.Item>
+                    </ListBox>
+                  </Select.Popover>
+                </Select>
+                <NumberField
+                  minValue={0}
+                  onChange={(value) =>
+                    setSources((current) =>
+                      current.map((item) =>
+                        item.id === source.id ? { ...item, principalAmount: value ?? 0 } : item
+                      )
+                    )
+                  }
+                  value={source.principalAmount}
+                >
+                  <Label>Capital</Label>
+                  <HeroInput variant="secondary" />
+                </NumberField>
+                <NumberField
+                  minValue={0}
+                  onChange={(value) =>
+                    setSources((current) =>
+                      current.map((item) =>
+                        item.id === source.id ? { ...item, fixedInterestRate: value ?? 0 } : item
+                      )
+                    )
+                  }
+                  value={source.fixedInterestRate}
+                >
+                  <Label>Interés fijo %</Label>
+                  <HeroInput variant="secondary" />
+                </NumberField>
+                <NumberField
+                  minValue={0}
+                  onChange={(value) =>
+                    setSources((current) =>
+                      current.map((item) =>
+                        item.id === source.id ? { ...item, feeAmount: value ?? 0 } : item
+                      )
+                    )
+                  }
+                  value={source.feeAmount}
+                >
+                  <Label>Comisión</Label>
+                  <HeroInput variant="secondary" />
+                </NumberField>
+                <div className="flex min-w-28 flex-col justify-end gap-2">
+                  <span className="text-default-500 text-xs">
+                    ${sourceTotals[index]?.total.toLocaleString("es-CL") ?? 0}
+                  </span>
+                  <Button
+                    isDisabled={sources.length === 1}
+                    onPress={() =>
+                      setSources((current) => current.filter((item) => item.id !== source.id))
+                    }
+                    size="sm"
+                    type="button"
+                    variant="secondary"
+                  >
+                    Quitar
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       <form.Field name="notes">
         {(field) => (

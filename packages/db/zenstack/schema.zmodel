@@ -864,6 +864,7 @@ model Loan {
   scope           ExpenseScope   @default(BIOALERGIA)
   createdAt       DateTime       @default(now()) @map("created_at")
   updatedAt       DateTime       @default(now()) @updatedAt @map("updated_at")
+  sources         LoanSource[]
   schedules       LoanSchedule[]
   counterpart     Counterpart?   @relation(fields: [counterpartId], references: [id], onDelete: SetNull)
 
@@ -875,6 +876,31 @@ model Loan {
   @@index([counterpartId])
   @@index([scope])
   @@map("loans")
+}
+
+model LoanSource {
+  id                Int                  @id @default(autoincrement())
+  loanId            Int                  @map("loan_id")
+  label             String
+  sourceType        LoanSourceType       @default(OTHER) @map("source_type")
+  principalAmount   Decimal              @map("principal_amount") @db.Decimal(15, 2)
+  fixedInterestRate Decimal              @default(0) @map("fixed_interest_rate") @db.Decimal(9, 6)
+  interestAmount    Decimal              @default(0) @map("interest_amount") @db.Decimal(15, 2)
+  feeAmount         Decimal              @default(0) @map("fee_amount") @db.Decimal(15, 2)
+  totalAmount       Decimal              @map("total_amount") @db.Decimal(15, 2)
+  disbursementDate  DateTime?            @map("disbursement_date") @db.Date
+  note              String?
+  createdAt         DateTime             @default(now()) @map("created_at")
+  updatedAt         DateTime             @default(now()) @updatedAt @map("updated_at")
+  loan              Loan                 @relation(fields: [loanId], references: [id], onDelete: Cascade)
+
+  // Access policies
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@index([loanId])
+  @@map("loan_sources")
 }
 
 model LoanSchedule {
@@ -892,6 +918,7 @@ model LoanSchedule {
   status            LoanScheduleStatus @default(PENDING)
   loan              Loan               @relation(fields: [loanId], references: [id], onDelete: Cascade)
   transaction       FinancialTransaction? @relation(fields: [transactionId], references: [id], onDelete: SetNull)
+  payments          LoanSchedulePayment[]
   createdAt         DateTime           @default(now()) @map("created_at")
   updatedAt         DateTime           @default(now()) @updatedAt @map("updated_at")
 
@@ -903,6 +930,29 @@ model LoanSchedule {
   @@index([loanId])
   @@index([transactionId])
   @@map("loan_schedules")
+}
+
+model LoanSchedulePayment {
+  id            Int                     @id @default(autoincrement())
+  scheduleId    Int                     @map("schedule_id")
+  amount        Decimal                 @db.Decimal(15, 2)
+  paidDate      DateTime                @map("paid_date") @db.Date
+  kind          LoanSchedulePaymentKind @default(PAYMENT)
+  transactionId Int?                    @map("transaction_id")
+  note          String?
+  createdAt     DateTime                @default(now()) @map("created_at")
+  updatedAt     DateTime                @default(now()) @updatedAt @map("updated_at")
+  schedule      LoanSchedule            @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  transaction   FinancialTransaction?   @relation(fields: [transactionId], references: [id], onDelete: SetNull)
+
+  // Access policies
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@index([scheduleId])
+  @@index([transactionId])
+  @@map("loan_schedule_payments")
 }
 
 
@@ -2256,6 +2306,20 @@ enum LoanBorrowerType {
   COMPANY
 }
 
+enum LoanSourceType {
+  BANK_CREDIT
+  CREDIT_CARD
+  PERSON_LOAN
+  TRANSFER
+  OTHER
+}
+
+enum LoanSchedulePaymentKind {
+  PAYMENT
+  DISCOUNT
+  ADJUSTMENT
+}
+
 enum LoanFrequency {
   WEEKLY
   BIWEEKLY
@@ -3298,6 +3362,7 @@ model FinancialTransaction {
   category         TransactionCategory?             @relation(fields: [categoryId], references: [id])
   counterpart      Counterpart?                     @relation(fields: [counterpartId], references: [id])
   allocations      FinancialTransactionAllocation[]
+  loanSchedulePayments LoanSchedulePayment[]
   loanSchedules    LoanSchedule[]
   serviceSchedules ServiceSchedule[]
   comment          String?
