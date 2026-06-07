@@ -1,27 +1,193 @@
 import { kysely } from "@finanzas/db";
 import { sql } from "kysely";
-import xlsx from "xlsx";
-import {
-  extractSkinTestWorkbookSnapshot,
-  SKIN_TEST_WORKBOOK_SNAPSHOT_VERSION,
-  type SkinTestWorkbookSnapshot,
-} from "./clinical-skin-test-workbook-snapshots.ts";
+import * as xlsx from "xlsx";
 
-// Shared OneDrive XLSX snapshot layer. The first sheet of each scanned xlsx is
-// extracted to a structured cell grid and stored on the shared clinical_xlsx_files
-// row, so any feature (tests cutáneos, fichas clínicas) re-parses from DB instead
-// of re-downloading from OneDrive.
-//
-// The extraction (buffer → cells) is feature-agnostic; for now it is re-exported
-// from the skin-test snapshot service where it currently lives (moved into this
-// module in a later phase). The persist/read/reconstruct helpers below operate on
-// the shared library table.
+// Shared OneDrive XLSX snapshot layer. This module OWNS the feature-agnostic
+// extraction (buffer → structured first-sheet cell grid) and the persist/read/
+// reconstruct helpers over the shared clinical_xlsx_files row, so any feature
+// (tests cutáneos, fichas clínicas) re-parses from DB instead of re-downloading
+// from OneDrive. The skin-test snapshot service re-exports these under its
+// legacy names for back-compat.
 
-export type XlsxSnapshot = SkinTestWorkbookSnapshot;
-export const XLSX_SNAPSHOT_EXTRACTOR_VERSION = SKIN_TEST_WORKBOOK_SNAPSHOT_VERSION;
+// Bumped from 2026-04-27.1: migrated from ExcelJS to SheetJS 0.20.3 (fixes
+// merged-cell richText bugs). Keep this value stable — existing snapshots are
+// keyed by it.
+export const XLSX_SNAPSHOT_EXTRACTOR_VERSION = "2026-05-02.1";
+
+export type XlsxSnapshotCellType =
+  | "blank"
+  | "boolean"
+  | "date"
+  | "error"
+  | "formula"
+  | "number"
+  | "richText"
+  | "string";
+
+export type XlsxSnapshotRawValue =
+  | { kind: "blank"; value: null }
+  | { kind: "boolean"; value: boolean }
+  | { kind: "date"; value: string }
+  | { kind: "error"; value: string }
+  | { kind: "formula"; formula: string; result: XlsxSnapshotRawValue }
+  | { kind: "hyperlink"; hyperlink: string; text: string }
+  | { kind: "number"; value: number }
+  | { kind: "richText"; value: string }
+  | { kind: "string"; value: string };
+
+interface XlsxSnapshotCellRef {
+  a1: string;
+  c: number;
+  r: number;
+  text: string;
+}
+
+export interface XlsxSnapshotCell extends XlsxSnapshotCellRef {
+  formula?: string;
+  note?: string;
+  raw: XlsxSnapshotRawValue;
+  result?: XlsxSnapshotRawValue;
+  style?: {
+    alignment?: { horizontal?: string; vertical?: string };
+    border?: boolean;
+    fillColor?: string;
+    font?: {
+      bold?: boolean;
+      color?: string;
+      italic?: boolean;
+      name?: string;
+      size?: number;
+      underline?: boolean;
+    };
+    numFmt?: string;
+  };
+  type: XlsxSnapshotCellType;
+}
+
+export interface XlsxSnapshot {
+  sheet: {
+    cells: XlsxSnapshotCell[];
+    merges: Array<{ bottom: number; left: number; range: string; right: number; top: number }>;
+    name: string;
+  };
+  version: 1;
+}
 
 export async function extractXlsxSnapshot(buffer: Buffer): Promise<XlsxSnapshot> {
-  return extractSkinTestWorkbookSnapshot(buffer);
+  const wb = xlsx.read(buffer, {
+    type: "buffer",
+    cellDates: true,
+    cellFormula: true,
+    cellHTML: false,
+    cellNF: true,
+  });
+
+  const sheetName = wb.SheetNames[0];
+  if (!sheetName) throw new Error("El archivo no tiene hojas para snapshot.");
+
+  const ws = wb.Sheets[sheetName];
+  if (!ws || !ws["!ref"]) {
+    return { sheet: { cells: [], merges: [], name: sheetName }, version: 1 };
+  }
+
+  const range = xlsx.utils.decode_range(ws["!ref"]);
+  const cells: XlsxSnapshotCell[] = [];
+
+  for (let R = range.s.r; R <= range.e.r; R++) {
+    for (let C = range.s.c; C <= range.e.c; C++) {
+      const addr = xlsx.utils.encode_cell({ r: R, c: C });
+      const cell = ws[addr] as xlsx.CellObject | undefined;
+      if (!cell || cell.t === "z") continue;
+
+      try {
+        const text = getCellText(cell);
+        if (!text.trim()) continue;
+
+        cells.push({
+          a1: addr,
+          c: C + 1,
+          r: R + 1,
+          text,
+          type: getCellType(cell),
+          raw: serializeCellValue(cell),
+          ...(cell.f ? { formula: cell.f, result: serializeScalar(cell) } : {}),
+          ...(getCellNote(cell) ? { note: getCellNote(cell) } : {}),
+        });
+      } catch {
+        // skip malformed cell, continue with rest of sheet
+      }
+    }
+  }
+
+  const merges = (ws["!merges"] ?? []).map((m) => ({
+    bottom: m.e.r + 1,
+    left: m.s.c + 1,
+    range: `${xlsx.utils.encode_cell(m.s)}:${xlsx.utils.encode_cell(m.e)}`,
+    right: m.e.c + 1,
+    top: m.s.r + 1,
+  }));
+
+  return { sheet: { cells, merges, name: sheetName }, version: 1 };
+}
+
+function getCellType(cell: xlsx.CellObject): XlsxSnapshotCellType {
+  if (cell.f) return "formula";
+  switch (cell.t) {
+    case "n":
+      return "number";
+    case "s":
+      return "string";
+    case "b":
+      return "boolean";
+    case "e":
+      return "error";
+    case "d":
+      return "date";
+    default:
+      return "blank";
+  }
+}
+
+function getCellText(cell: xlsx.CellObject): string {
+  if (cell.t === "d") {
+    const date = cell.v as Date;
+    return isNaN(date.getTime()) ? "Invalid Date" : date.toISOString().slice(0, 10);
+  }
+  if (cell.w != null) return cell.w;
+  if (cell.v == null) return "";
+  if (cell.t === "b") return cell.v ? "TRUE" : "FALSE";
+  return String(cell.v);
+}
+
+function serializeCellValue(cell: xlsx.CellObject): XlsxSnapshotRawValue {
+  if (cell.f) return { kind: "formula", formula: cell.f, result: serializeScalar(cell) };
+  return serializeScalar(cell);
+}
+
+function serializeScalar(cell: xlsx.CellObject): XlsxSnapshotRawValue {
+  switch (cell.t) {
+    case "n":
+      return { kind: "number", value: cell.v as number };
+    case "s":
+      return { kind: "string", value: cell.w ?? String(cell.v ?? "") };
+    case "b":
+      return { kind: "boolean", value: cell.v as boolean };
+    case "e":
+      return { kind: "error", value: cell.w ?? String(cell.v ?? "") };
+    case "d": {
+      const date = cell.v as Date;
+      return { kind: "date", value: isNaN(date.getTime()) ? "Invalid Date" : date.toISOString() };
+    }
+    default:
+      return { kind: "blank", value: null };
+  }
+}
+
+function getCellNote(cell: xlsx.CellObject): string | undefined {
+  const comments = cell.c;
+  if (!comments?.length) return undefined;
+  const text = comments.map((c) => c.t ?? "").join("\n");
+  return text || undefined;
 }
 
 // Reconstruct the exact row grid a parser sees from a buffer. Rather than hand-
