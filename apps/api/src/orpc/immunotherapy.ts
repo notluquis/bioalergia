@@ -8,6 +8,7 @@ import {
   createProductInputSchema,
   idInputSchema,
   okResponseSchema,
+  prescriptionPdfInputSchema,
   productListResponseSchema,
   productResponseSchema,
   quoteInputSchema,
@@ -279,6 +280,74 @@ const immunotherapyRouterBase = {
 
       const pdfBytes = await toPdfA3(rawPdf, "Presupuesto de inmunoterapia");
       const fileName = `presupuesto_inmunoterapia_${(patient.person.rut ?? "sin_rut").replace(
+        /\./g,
+        ""
+      )}.pdf`;
+      return new File([Buffer.from(pdfBytes)], fileName, { type: "application/pdf" });
+    }),
+
+  generatePrescriptionPdf: createBudgets
+    .route({ method: "POST", path: "/prescription-pdf", tags: ["Immunotherapy"] })
+    .input(prescriptionPdfInputSchema)
+    .output(z.file())
+    .handler(async ({ input }) => {
+      const patient = await db.patient.findUnique({
+        where: { id: input.patientId },
+        select: {
+          birthDate: true,
+          person: {
+            select: {
+              names: true,
+              fatherName: true,
+              motherName: true,
+              rut: true,
+              email: true,
+              phone: true,
+            },
+          },
+        },
+      });
+      if (!patient) throw new ORPCError("NOT_FOUND", { message: "Paciente no encontrado" });
+
+      const [quote, clinic, product] = await Promise.all([
+        computeQuote(input),
+        db.clinicSettings.upsert({ where: { id: 1 }, update: {}, create: { id: 1 } }),
+        db.immunotherapyProduct.findUnique({
+          where: { id: input.productId },
+          select: { name: true, vaccineProduct: true },
+        }),
+      ]);
+      if (!product) throw new ORPCError("NOT_FOUND", { message: "Producto no encontrado" });
+
+      const fullName = [patient.person.names, patient.person.fatherName, patient.person.motherName]
+        .filter(Boolean)
+        .join(" ");
+
+      const { generatePrescriptionPdf } = await import(
+        "../modules/immunotherapy/prescription-pdf.service.ts"
+      );
+      const { toPdfA3 } = await import("../modules/pdf/pdf-a.ts");
+      const rawPdf = await generatePrescriptionPdf({
+        patient: {
+          name: fullName,
+          rut: patient.person.rut,
+          birthDate: patient.birthDate,
+          phone: patient.person.phone,
+          email: patient.person.email,
+        },
+        clinic: {
+          doctorName: clinic.doctorName,
+          doctorRut: clinic.doctorRut,
+          email: clinic.email,
+        },
+        quote,
+        product,
+        diagnosis: input.diagnosis,
+        observations: input.observations,
+      });
+
+      const pdfBytes = await toPdfA3(rawPdf, "Prescripción de inmunoterapia");
+      const fileName = `receta_inmunoterapia_${(patient.person.rut ?? "sin_rut").replace(
         /\./g,
         ""
       )}.pdf`;
