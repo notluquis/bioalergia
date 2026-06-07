@@ -8,8 +8,10 @@ import {
   oneDriveFolderChildrenInputSchema,
   oneDriveFolderChildrenOutputSchema,
   oneDriveFolderInputSchema,
+  oneDriveArchiveInputSchema,
   oneDriveFolderPreviewInputSchema,
   oneDriveFolderPreviewOutputSchema,
+  oneDriveJobStatusSchema,
   oneDriveStatusOutputSchema,
 } from "@finanzas/orpc-contracts/onedrive";
 import { onError, ORPCError, os } from "@orpc/server";
@@ -17,6 +19,7 @@ import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import type { Context as HonoContext } from "hono";
 import { z } from "zod";
 import { getSessionUser, hasPermission } from "../lib/auth.ts";
+import { cancelJob, getActiveJobsByType, getJobStatus, type JobState } from "../lib/jobQueue.ts";
 import { logError } from "../lib/logger.ts";
 import {
   connectOneDriveWithCode,
@@ -28,6 +31,10 @@ import {
   renewOneDriveSubscriptionNow,
   setOneDriveFolderPath,
 } from "../lib/microsoft/onedrive.ts";
+import {
+  getOneDriveArchiveJobType,
+  startArchiveXlsxSnapshotsJob,
+} from "../services/onedrive-archive.ts";
 import { configureSuperjson } from "../lib/superjson-config.ts";
 import { SuperJSONRPCHandler } from "./superjson.ts";
 
@@ -147,7 +154,72 @@ const routerBase = {
       await renewOneDriveSubscriptionNow(input.accountId);
       return await getOneDriveStatus();
     }),
+
+  archiveSnapshots: manageOneDrive
+    .route({ method: "POST", path: "/snapshots/archive" })
+    .input(oneDriveArchiveInputSchema)
+    .output(z.object({ jobId: z.string() }))
+    .handler(async ({ input }: { input: z.input<typeof oneDriveArchiveInputSchema> }) => {
+      const jobId = startArchiveXlsxSnapshotsJob({
+        classification: input.classification,
+        accountId: input.accountId,
+        force: input.force,
+        trigger: "intranet",
+      });
+      return { jobId };
+    }),
+
+  getArchiveJob: readOneDrive
+    .route({ method: "POST", path: "/snapshots/archive/status" })
+    .input(z.object({ jobId: z.string().min(1) }))
+    .output(z.object({ job: oneDriveJobStatusSchema.nullable() }))
+    .handler(({ input }: { input: { jobId: string } }) => {
+      return { job: jobToOutput(getJobStatus(input.jobId)) };
+    }),
+
+  getActiveArchiveJob: readOneDrive
+    .route({ method: "POST", path: "/snapshots/archive/active" })
+    .input(z.object({}))
+    .output(z.object({ job: oneDriveJobStatusSchema.nullable() }))
+    .handler(() => {
+      return { job: jobToOutput(getActiveJobsByType(getOneDriveArchiveJobType())[0] ?? null) };
+    }),
+
+  cancelArchiveJob: manageOneDrive
+    .route({ method: "POST", path: "/snapshots/archive/cancel" })
+    .input(z.object({ jobId: z.string().min(1) }))
+    .output(z.object({ cancelled: z.boolean() }))
+    .handler(({ input }: { input: { jobId: string } }) => {
+      return { cancelled: cancelJob(input.jobId) };
+    }),
 };
+
+function jobToOutput(j: JobState | null) {
+  if (!j) return null;
+  const result =
+    j.result && typeof j.result === "object"
+      ? (j.result as { processed?: number; archived?: number; errors?: number })
+      : null;
+  return {
+    id: j.id,
+    type: j.type,
+    status: j.status,
+    progress: j.progress,
+    total: j.total,
+    message: j.message,
+    meta: j.meta,
+    result: result
+      ? {
+          processed: result.processed ?? 0,
+          archived: result.archived ?? 0,
+          errors: result.errors ?? 0,
+        }
+      : null,
+    error: j.error,
+    createdAt: j.createdAt,
+    updatedAt: j.updatedAt,
+  };
+}
 
 export const onedriveORPCRouter = base.prefix("/api/orpc/onedrive").router(routerBase);
 

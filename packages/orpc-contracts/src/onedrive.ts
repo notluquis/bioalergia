@@ -102,6 +102,32 @@ export const oneDriveDisconnectOutputSchema = z.object({
   connected: z.boolean(),
 });
 
+export const oneDriveJobStatusSchema = z.object({
+  id: z.string(),
+  type: z.string(),
+  status: z.enum(["pending", "running", "completed", "failed", "cancelled"]),
+  progress: z.number().int(),
+  total: z.number().int(),
+  message: z.string(),
+  meta: z.record(z.string(), z.unknown()).nullable(),
+  result: z
+    .object({
+      processed: z.number().int(),
+      archived: z.number().int(),
+      errors: z.number().int(),
+    })
+    .nullable(),
+  error: z.string().nullable(),
+  createdAt: z.date(),
+  updatedAt: z.date(),
+});
+
+export const oneDriveArchiveInputSchema = z.object({
+  classification: z.enum(["SKIN_TEST", "CLINICAL_DOCUMENT", "OTHER"]).optional(),
+  accountId: z.string().optional(),
+  force: z.boolean().optional(),
+});
+
 export const oneDriveContract = {
   getOneDriveStatus: oc
     .route({ method: "GET", path: "/status", tags: ["OneDrive"] })
@@ -135,6 +161,25 @@ export const oneDriveContract = {
     .route({ method: "POST", path: "/subscription/renew", tags: ["OneDrive"] })
     .input(oneDriveDisconnectInputSchema)
     .output(oneDriveStatusOutputSchema),
+
+  // Shared snapshot archive: download each library xlsx once and store its first
+  // sheet, so every OneDrive consumer re-parses from DB. Background job.
+  archiveSnapshots: oc
+    .route({ method: "POST", path: "/snapshots/archive", tags: ["OneDrive"] })
+    .input(oneDriveArchiveInputSchema)
+    .output(z.object({ jobId: z.string() })),
+  getArchiveJob: oc
+    .route({ method: "POST", path: "/snapshots/archive/status", tags: ["OneDrive"] })
+    .input(z.object({ jobId: z.string().min(1) }))
+    .output(z.object({ job: oneDriveJobStatusSchema.nullable() })),
+  getActiveArchiveJob: oc
+    .route({ method: "POST", path: "/snapshots/archive/active", tags: ["OneDrive"] })
+    .input(z.object({}))
+    .output(z.object({ job: oneDriveJobStatusSchema.nullable() })),
+  cancelArchiveJob: oc
+    .route({ method: "POST", path: "/snapshots/archive/cancel", tags: ["OneDrive"] })
+    .input(z.object({ jobId: z.string().min(1) }))
+    .output(z.object({ cancelled: z.boolean() })),
 };
 
 export type OneDriveContract = typeof oneDriveContract;
