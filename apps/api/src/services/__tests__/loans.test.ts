@@ -25,6 +25,7 @@ const { mockDb, state } = vi.hoisted(() => {
     detailSchedules: AnyRow[];
     refreshedLoan: AnyRow | null;
     scheduleRow: AnyRow | null;
+    schedulePayments: AnyRow[];
     transactionRow: AnyRow | null;
     findManySchedules: AnyRow[];
     updatedSchedule: AnyRow | null;
@@ -36,6 +37,7 @@ const { mockDb, state } = vi.hoisted(() => {
     detailSchedules: [],
     refreshedLoan: null,
     scheduleRow: null,
+    schedulePayments: [],
     transactionRow: null,
     findManySchedules: [],
     updatedSchedule: null,
@@ -73,9 +75,26 @@ const { mockDb, state } = vi.hoisted(() => {
       deleteMany: vi.fn(() => Promise.resolve({ count: 0 })),
       findMany: vi.fn(() => Promise.resolve(state.findManySchedules)),
       findUnique: vi.fn(() => Promise.resolve(state.scheduleRow)),
+      findUniqueOrThrow: vi.fn(() =>
+        Promise.resolve({ ...state.scheduleRow, payments: state.schedulePayments })
+      ),
       update: vi.fn((args: { data: AnyRow }) => {
         state.statusUpdates.push(args.data);
         return Promise.resolve({ ...state.updatedSchedule, ...args.data });
+      }),
+    },
+    loanSchedulePayment: {
+      create: vi.fn((args: { data: AnyRow }) => {
+        state.schedulePayments.push({
+          id: state.schedulePayments.length + 1,
+          ...args.data,
+        });
+        return Promise.resolve(state.schedulePayments.at(-1));
+      }),
+      deleteMany: vi.fn(() => {
+        const count = state.schedulePayments.length;
+        state.schedulePayments = [];
+        return Promise.resolve({ count });
       }),
     },
     financialTransaction: {
@@ -164,6 +183,7 @@ beforeEach(() => {
   state.detailSchedules = [];
   state.refreshedLoan = null;
   state.scheduleRow = null;
+  state.schedulePayments = [];
   state.transactionRow = null;
   state.findManySchedules = [];
   state.updatedSchedule = null;
