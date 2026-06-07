@@ -26,7 +26,7 @@ export function LoanScheduleTable({
   const columns = getColumns(actions, canManage);
 
   return (
-    <div className="rounded-2xl border border-default-200 bg-background shadow-sm">
+    <div className="overflow-hidden rounded-lg border border-default-200 bg-background">
       <DataTable
         columns={columns}
         data={schedules}
@@ -34,7 +34,7 @@ export function LoanScheduleTable({
         enablePagination={false}
         enableToolbar={false}
         noDataMessage="No hay cronograma disponible."
-        scrollMaxHeight="32rem"
+        scrollMaxHeight="42dvh"
       />
     </div>
   );

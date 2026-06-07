@@ -23,9 +23,12 @@ import type { LoanSchedule, LoanSource, LoanSummary, RegenerateSchedulePayload }
 import { LoanScheduleTable } from "./LoanScheduleTable";
 
 interface LoanDetailProps {
+  canDelete: boolean;
   canManage: boolean;
   loading: boolean;
   loan: LoanSummary | null;
+  onDeleteRequest: (loan: LoanSummary) => void;
+  onEditRequest: (loan: LoanSummary) => void;
   onRegenerate: (payload: RegenerateSchedulePayload) => Promise<void>;
   onRegisterPayment: (schedule: LoanSchedule) => void;
   onUnlinkPayment: (schedule: LoanSchedule) => void;
@@ -56,17 +59,20 @@ function MetricCard({
   }[tone];
 
   return (
-    <div className="rounded-lg border border-default-200 bg-default-50 px-3 py-2">
+    <div className="rounded-md border border-default-200 bg-default-50 px-3 py-2">
       <Description className="text-default-500 text-xs">{label}</Description>
-      <span className={`block font-semibold text-lg ${toneClassName}`}>{value}</span>
+      <span className={`block font-semibold text-base tabular-nums ${toneClassName}`}>{value}</span>
     </div>
   );
 }
 
 export function LoanDetail({
   canManage,
+  canDelete,
   loading,
   loan,
+  onDeleteRequest,
+  onEditRequest,
   onRegenerate,
   onRegisterPayment,
   onUnlinkPayment,
@@ -132,53 +138,86 @@ export function LoanDetail({
       : "Empresa";
 
   return (
-    <section className="relative flex h-full min-h-0 flex-col gap-4">
-      <Card className="border-default-200 bg-background shadow-sm">
-        <Card.Header className="flex-col items-start gap-4 px-6 pt-6 pb-4 lg:flex-row lg:items-center lg:justify-between">
-          <div className="min-w-0 space-y-2">
-            <div className="flex flex-wrap items-center gap-2">
-              <Card.Title className="text-2xl text-primary">{loan.title}</Card.Title>
-              <Chip className={statusBadge.className} size="sm" variant="soft">
-                {statusBadge.label}
-              </Chip>
-            </div>
-            <Card.Description className="text-foreground/90 text-sm">
-              {beneficiaryName} · {beneficiaryDetail}
-            </Card.Description>
-            <div className="flex flex-wrap items-center gap-2">
-              <Chip size="sm" variant="soft">
-                Inicio {formatChile(loan.start_date, "DD MMM YYYY")}
-              </Chip>
-              <Chip size="sm" variant="soft">
-                {loan.total_installments} cuotas ·{" "}
-                {
+    <Card className="relative flex h-full min-h-0 flex-col overflow-hidden border-default-200 bg-background shadow-sm">
+      <Card.Header className="items-start gap-4 border-default-200 border-b px-5 py-4">
+        <div className="min-w-0 flex-1 space-y-2">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+            <div className="min-w-0 space-y-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <Card.Title className="text-xl text-primary">{loan.title}</Card.Title>
+                <Chip className={statusBadge.className} size="sm" variant="soft">
+                  {statusBadge.label}
+                </Chip>
+              </div>
+              <Card.Description className="text-foreground/90 text-sm">
+                {beneficiaryName} · {beneficiaryDetail}
+              </Card.Description>
+              <div className="flex flex-wrap items-center gap-2">
+                <Chip size="sm" variant="soft">
+                  Inicio {formatChile(loan.start_date, "DD MMM YYYY")}
+                </Chip>
+                <Chip size="sm" variant="soft">
+                  {loan.total_installments} cuotas ·{" "}
                   {
-                    BIWEEKLY: "quincenal",
-                    IRREGULAR: "irregular",
-                    MONTHLY: "mensual",
-                    WEEKLY: "semanal",
-                  }[loan.frequency]
-                }
-              </Chip>
-              <Chip size="sm" variant="soft">
-                Tasa {loan.interest_rate.toLocaleString("es-CL")}%
-              </Chip>
+                    {
+                      BIWEEKLY: "quincenal",
+                      IRREGULAR: "irregular",
+                      MONTHLY: "mensual",
+                      WEEKLY: "semanal",
+                    }[loan.frequency]
+                  }
+                </Chip>
+                <Chip size="sm" variant="soft">
+                  Tasa {loan.interest_rate.toLocaleString("es-CL")}%
+                </Chip>
+              </div>
             </div>
+            {(canManage || canDelete) && (
+              <div className="flex shrink-0 flex-wrap gap-2">
+                {canManage && (
+                  <>
+                    <Button
+                      onPress={() => {
+                        onEditRequest(loan);
+                      }}
+                      size="sm"
+                      type="button"
+                      variant="secondary"
+                    >
+                      Editar
+                    </Button>
+                    <Button
+                      onPress={() => {
+                        setRegenerateOpen(true);
+                      }}
+                      size="sm"
+                      type="button"
+                      variant="secondary"
+                    >
+                      Regenerar cronograma
+                    </Button>
+                  </>
+                )}
+                {canDelete && (
+                  <Button
+                    onPress={() => {
+                      onDeleteRequest(loan);
+                    }}
+                    size="sm"
+                    type="button"
+                    variant="danger"
+                  >
+                    Eliminar
+                  </Button>
+                )}
+              </div>
+            )}
           </div>
-          {canManage && (
-            <Button
-              onPress={() => {
-                setRegenerateOpen(true);
-              }}
-              type="button"
-              variant="secondary"
-            >
-              Regenerar cronograma
-            </Button>
-          )}
-        </Card.Header>
+        </div>
+      </Card.Header>
 
-        <Card.Content className="grid gap-3 px-6 pt-0 pb-6 sm:grid-cols-4">
+      <Card.Content className="muted-scrollbar min-h-0 flex-1 space-y-4 overflow-y-auto p-5">
+        <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <MetricCard label="Capital" value={`$${loan.principal_amount.toLocaleString("es-CL")}`} />
           <MetricCard
             label="Total esperado"
@@ -194,68 +233,66 @@ export function LoanDetail({
             tone="danger"
             value={`$${(summary?.remaining_amount ?? 0).toLocaleString("es-CL")}`}
           />
-        </Card.Content>
-      </Card>
+        </section>
 
-      {sources.length > 0 && (
-        <Card className="border-default-200 bg-background shadow-sm">
-          <Card.Header className="px-5 pt-5 pb-2">
-            <Card.Title className="text-sm">Origen del préstamo</Card.Title>
-            <Card.Description>Fuentes que componen el capital y sus cargos.</Card.Description>
-          </Card.Header>
-          <Card.Content className="grid gap-2 px-5 pb-5 md:grid-cols-2">
-            {sources.map((source) => (
-              <div
-                className="space-y-2 rounded-lg border border-default-200 bg-default-50 px-3 py-2"
-                key={source.id}
-              >
-                <div className="flex items-center justify-between gap-3">
-                  <span className="font-semibold">{source.label}</span>
-                  <Chip size="sm" variant="soft">
-                    {source.source_type}
-                  </Chip>
-                </div>
-                <div className="flex flex-wrap gap-x-4 gap-y-1 text-default-500 text-xs">
-                  <span>Capital ${source.principal_amount.toLocaleString("es-CL")}</span>
-                  <span>Interés {source.fixed_interest_rate.toLocaleString("es-CL")}%</span>
-                  <span>Total ${source.total_amount.toLocaleString("es-CL")}</span>
-                </div>
-                {source.note && <Description className="mt-1 text-xs">{source.note}</Description>}
+        {sources.length > 0 && (
+          <section className="border-default-200 border-t pt-4">
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <div>
+                <h3 className="font-semibold text-foreground text-sm">Origen del préstamo</h3>
+                <p className="text-default-500 text-xs">
+                  Fuentes que componen el capital y sus cargos.
+                </p>
               </div>
-            ))}
-          </Card.Content>
-        </Card>
-      )}
+            </div>
+            <div className="grid gap-2 md:grid-cols-2">
+              {sources.map((source) => (
+                <div
+                  className="space-y-2 rounded-lg border border-default-200 bg-default-50 px-3 py-2"
+                  key={source.id}
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="font-semibold">{source.label}</span>
+                    <Chip size="sm" variant="soft">
+                      {source.source_type}
+                    </Chip>
+                  </div>
+                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-default-500 text-xs">
+                    <span>Capital ${source.principal_amount.toLocaleString("es-CL")}</span>
+                    <span>Interés {source.fixed_interest_rate.toLocaleString("es-CL")}%</span>
+                    <span>Total ${source.total_amount.toLocaleString("es-CL")}</span>
+                  </div>
+                  {source.note && <Description className="mt-1 text-xs">{source.note}</Description>}
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
 
-      <Card className="min-h-0 border-default-200 bg-background shadow-sm">
-        <Card.Header className="px-5 pt-5 pb-2">
-          <Card.Title className="text-sm">Cronograma de cuotas</Card.Title>
-          <Card.Description>
-            {summary
-              ? `${summary.paid_installments} pagadas · ${summary.pending_installments} pendientes`
-              : "Cuotas registradas del préstamo"}
-          </Card.Description>
-        </Card.Header>
-        <Card.Content className="px-5 pb-5">
+        <section className="min-h-0 border-default-200 border-t pt-4">
+          <div className="mb-3">
+            <h3 className="font-semibold text-foreground text-sm">Cronograma de cuotas</h3>
+            <p className="text-default-500 text-xs">
+              {summary
+                ? `${summary.paid_installments} pagadas · ${summary.pending_installments} pendientes`
+                : "Cuotas registradas del préstamo"}
+            </p>
+          </div>
           <LoanScheduleTable
             canManage={canManage}
             onRegisterPayment={onRegisterPayment}
             onUnlinkPayment={onUnlinkPayment}
             schedules={schedules}
           />
-        </Card.Content>
-      </Card>
+        </section>
 
-      {loan.notes && (
-        <Card className="border-default-200 bg-background shadow-sm">
-          <Card.Header className="px-5 pt-5 pb-1">
-            <Card.Title className="text-sm">Notas</Card.Title>
-          </Card.Header>
-          <Card.Content className="px-5 pb-5">
+        {loan.notes && (
+          <section className="border-default-200 border-t pt-4">
+            <h3 className="mb-2 font-semibold text-foreground text-sm">Notas</h3>
             <Description>{loan.notes}</Description>
-          </Card.Content>
-        </Card>
-      )}
+          </section>
+        )}
+      </Card.Content>
 
       <AppModal
         isOpen={regenerateOpen}
@@ -409,6 +446,6 @@ export function LoanDetail({
           </div>
         </div>
       )}
-    </section>
+    </Card>
   );
 }

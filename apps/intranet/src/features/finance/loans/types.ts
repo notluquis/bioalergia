@@ -82,6 +82,21 @@ export interface LoanPaymentPayload {
   transactionId: number;
 }
 
+export interface UpdateLoanPayload {
+  borrowerName?: string;
+  borrowerType?: "COMPANY" | "PERSON";
+  counterpartId?: null | number;
+  frequency?: "BIWEEKLY" | "IRREGULAR" | "MONTHLY" | "WEEKLY";
+  interestRate?: number;
+  interestType?: "COMPOUND" | "SIMPLE";
+  notes?: null | string;
+  principalAmount?: number;
+  startDate?: string;
+  status?: "ACTIVE" | "COMPLETED" | "DEFAULTED";
+  title?: string;
+  totalInstallments?: number;
+}
+
 export interface LoanSchedule {
   created_at: Date;
   due_date: string;

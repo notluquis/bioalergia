@@ -83,9 +83,12 @@ const meta: Meta<typeof LoanDetail> = {
     ),
   ],
   args: {
+    canDelete: true,
     canManage: true,
     loading: false,
     loan: LOAN,
+    onDeleteRequest: () => {},
+    onEditRequest: () => {},
     schedules: SCHEDULES,
     summary: SUMMARY,
     onRegenerate: async () => {},

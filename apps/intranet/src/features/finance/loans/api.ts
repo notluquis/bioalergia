@@ -12,6 +12,7 @@ import type {
   LoanPaymentPayload,
   LoanSchedule,
   RegenerateSchedulePayload,
+  UpdateLoanPayload,
 } from "./types";
 
 export async function createLoan(payload: CreateLoanPayload): Promise<LoanDetailResponse> {
@@ -48,6 +49,14 @@ export async function fetchLoans(): Promise<LoanListResponse> {
   }
 }
 
+export async function deleteLoan(publicId: string): Promise<{ status: "ok" }> {
+  try {
+    return await loansORPCClient.delete({ publicId });
+  } catch (error) {
+    throw toLoansApiError(error);
+  }
+}
+
 export async function regenerateSchedules(
   publicId: string,
   payload: RegenerateSchedulePayload
@@ -56,6 +65,17 @@ export async function regenerateSchedules(
     return LoanDetailResponseSchema.parse(
       await loansORPCClient.regenerateSchedules({ payload, publicId })
     );
+  } catch (error) {
+    throw toLoansApiError(error);
+  }
+}
+
+export async function updateLoan(
+  publicId: string,
+  payload: UpdateLoanPayload
+): Promise<LoanDetailResponse> {
+  try {
+    return LoanDetailResponseSchema.parse(await loansORPCClient.update({ payload, publicId }));
   } catch (error) {
     throw toLoansApiError(error);
   }

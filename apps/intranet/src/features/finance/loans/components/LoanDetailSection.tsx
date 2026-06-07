@@ -1,18 +1,28 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { LoanDetail } from "@/features/finance/loans/components/LoanDetail";
 import { loanKeys } from "@/features/finance/loans/queries";
-import type { LoanSchedule, RegenerateSchedulePayload } from "@/features/finance/loans/types";
+import type {
+  LoanSchedule,
+  LoanSummary,
+  RegenerateSchedulePayload,
+} from "@/features/finance/loans/types";
 
 interface LoanDetailSectionProps {
+  canDelete: boolean;
   canManage: boolean;
   loanId: string;
+  onDeleteRequest: (loan: LoanSummary) => void;
+  onEditRequest: (loan: LoanSummary) => void;
   onRegenerate: (overrides: RegenerateSchedulePayload) => Promise<void>;
   onRegisterPayment: (schedule: LoanSchedule) => void;
   onUnlinkPayment: (schedule: LoanSchedule) => void;
 }
 export function LoanDetailSection({
   canManage,
+  canDelete,
   loanId,
+  onDeleteRequest,
+  onEditRequest,
   onRegenerate,
   onRegisterPayment,
   onUnlinkPayment,
@@ -22,9 +32,12 @@ export function LoanDetailSection({
 
   return (
     <LoanDetail
+      canDelete={canDelete}
       canManage={canManage}
       loading={false}
       loan={loan}
+      onDeleteRequest={onDeleteRequest}
+      onEditRequest={onEditRequest}
       onRegenerate={onRegenerate}
       onRegisterPayment={onRegisterPayment}
       onUnlinkPayment={onUnlinkPayment}
