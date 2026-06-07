@@ -12,6 +12,7 @@ import {
   NumberField,
   SearchField,
   Spinner,
+  TextArea,
   TextField,
   useFilter,
 } from "@heroui/react";
@@ -24,6 +25,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   createImmunoBudget,
   downloadImmunoBudgetPdf,
+  downloadImmunoPrescriptionPdf,
   listImmunoAllergens,
   listImmunoProducts,
   quoteImmunotherapy,
@@ -82,6 +84,7 @@ function ImmunotherapyBudgetPage() {
   const [hiddenSections, setHiddenSections] = useState<HideableSection[]>([]);
   const [parentName, setParentName] = useState("");
   const [diagnosis, setDiagnosis] = useState("");
+  const [prescriptionObservations, setPrescriptionObservations] = useState("");
 
   const products = productsQuery.data ?? EMPTY_PRODUCTS;
   const selectedProduct = useMemo<ProductDto | undefined>(
@@ -122,17 +125,18 @@ function ImmunotherapyBudgetPage() {
     placeholderData: keepPreviousData,
   });
   const quote = quoteQuery.data;
+  const buildBudgetInput = () => {
+    if (!quoteInput) throw new Error("Selecciona un producto");
+    return {
+      ...quoteInput,
+      patientId,
+      parentName: parentName.trim() || undefined,
+      diagnosis: diagnosis.trim() || undefined,
+    };
+  };
 
   const saveMutation = useMutation({
-    mutationFn: () => {
-      if (!quoteInput) throw new Error("Selecciona un producto");
-      return createImmunoBudget({
-        ...quoteInput,
-        patientId,
-        parentName: parentName.trim() || undefined,
-        diagnosis: diagnosis.trim() || undefined,
-      });
-    },
+    mutationFn: () => createImmunoBudget(buildBudgetInput()),
     onSuccess: () => {
       toast.success("Presupuesto creado exitosamente");
       void queryClient.invalidateQueries({ queryKey: ["patient", id] });
@@ -144,17 +148,20 @@ function ImmunotherapyBudgetPage() {
   });
 
   const pdfMutation = useMutation({
-    mutationFn: () => {
-      if (!quoteInput) throw new Error("Selecciona un producto");
-      return downloadImmunoBudgetPdf({
-        ...quoteInput,
-        patientId,
-        parentName: parentName.trim() || undefined,
-        diagnosis: diagnosis.trim() || undefined,
-      });
-    },
+    mutationFn: () => downloadImmunoBudgetPdf(buildBudgetInput()),
     onError: (error) => {
       toast.error(error instanceof Error ? error.message : "No se pudo generar el PDF");
+    },
+  });
+
+  const prescriptionPdfMutation = useMutation({
+    mutationFn: () =>
+      downloadImmunoPrescriptionPdf({
+        ...buildBudgetInput(),
+        observations: prescriptionObservations.trim() || undefined,
+      }),
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : "No se pudo generar la receta");
     },
   });
 
@@ -240,6 +247,10 @@ function ImmunotherapyBudgetPage() {
                   <Input placeholder="Ej: rinoconjuntivitis crónica" />
                 </TextField>
               </div>
+              <TextField value={prescriptionObservations} onChange={setPrescriptionObservations}>
+                <Label>Observaciones receta</Label>
+                <TextArea rows={3} placeholder="Indicaciones u observaciones para la receta" />
+              </TextField>
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <NumberField
@@ -289,13 +300,16 @@ function ImmunotherapyBudgetPage() {
                     {selectedAllergens.map((a) => (
                       <Chip key={a.id} variant="secondary" className="gap-1">
                         {a.commonName}
-                        <button
-                          type="button"
+                        <Button
+                          isIconOnly
+                          size="sm"
+                          variant="ghost"
+                          className="size-5 min-w-5"
                           aria-label={`Quitar ${a.commonName}`}
-                          onClick={() => setAllergenIds((prev) => prev.filter((x) => x !== a.id))}
+                          onPress={() => setAllergenIds((prev) => prev.filter((x) => x !== a.id))}
                         >
                           <X size={14} />
-                        </button>
+                        </Button>
                       </Chip>
                     ))}
                   </div>
@@ -425,6 +439,15 @@ function ImmunotherapyBudgetPage() {
                 >
                   <Download size={18} />
                   Generar PDF
+                </Button>
+                <Button
+                  variant="outline"
+                  className="gap-2"
+                  isPending={prescriptionPdfMutation.isPending}
+                  onPress={() => prescriptionPdfMutation.mutate()}
+                >
+                  <Download size={18} />
+                  Generar receta
                 </Button>
                 <Button
                   className="gap-2"

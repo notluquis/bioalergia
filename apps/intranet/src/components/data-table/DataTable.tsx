@@ -153,6 +153,17 @@ interface DataTableProps<TData, TValue, TMeta extends TableMeta<TData> = TableMe
   readonly renderSubComponent?: (props: { row: Row<TData> }) => ReactNode;
   readonly rowSelection?: RowSelectionState;
   /**
+   * Controlled sorting state. When provided (together with `onSortingChange`),
+   * the table is sorting-controlled. Pair with `manualSorting` for server-side
+   * sorting (the parent maps the SortingState to its query).
+   */
+  readonly sorting?: SortingState;
+  readonly onSortingChange?: OnChangeFn<SortingState>;
+  /**
+   * Disable client-side sorting (server already sorts). Defaults to false.
+   */
+  readonly manualSorting?: boolean;
+  /**
    * Minimum row count to activate virtualization.
    * Keeps small tables simple while enabling virtualization for large datasets.
    * @default 80
@@ -454,9 +465,14 @@ export function DataTable<TData, TValue, TMeta extends TableMeta<TData> = TableM
   pagination,
   renderSubComponent,
   rowSelection: controlledRowSelection,
+  sorting: controlledSorting,
+  onSortingChange: controlledOnSortingChange,
+  manualSorting = false,
   virtualizationThreshold = 80,
 }: DataTableProps<TData, TValue, TMeta>) {
-  const [sorting, setSorting] = useState<SortingState>([]);
+  const [internalSorting, setInternalSorting] = useState<SortingState>([]);
+  const sorting = controlledSorting ?? internalSorting;
+  const onSortingChange = controlledOnSortingChange ?? setInternalSorting;
   const [internalColumnVisibility, setInternalColumnVisibility] = useState<VisibilityState>({});
   const [internalRowSelection, setInternalRowSelection] = useState({});
   const [expanded, setExpanded] = useState<ExpandedState>({});
@@ -505,6 +521,7 @@ export function DataTable<TData, TValue, TMeta extends TableMeta<TData> = TableM
     getSortedRowModel: getSortedRowModel(),
     getRowId: getStableRowId,
     manualPagination,
+    manualSorting,
     meta,
     onColumnFiltersChange: setColumnFilters,
     onColumnPinningChange: setColumnPinning,
@@ -513,7 +530,7 @@ export function DataTable<TData, TValue, TMeta extends TableMeta<TData> = TableM
     onGlobalFilterChange: setGlobalFilter,
     onPaginationChange: onPaginationChange ?? setPagination,
     onRowSelectionChange,
-    onSortingChange: setSorting,
+    onSortingChange,
     pageCount,
     state: {
       columnFilters,
@@ -560,7 +577,7 @@ export function DataTable<TData, TValue, TMeta extends TableMeta<TData> = TableM
         noDataMessage={noDataMessage}
         onRowClick={onRowClick}
         onSelectionChange={handleSelectionChange}
-        onSortingChange={setSorting}
+        onSortingChange={onSortingChange}
         renderSubComponent={renderSubComponent}
         rows={tableRows}
         scrollMaxHeight={scrollMaxHeight}

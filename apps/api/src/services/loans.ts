@@ -8,6 +8,8 @@ type LoanStatus = "ACTIVE" | "COMPLETED" | "DEFAULTED";
 type LoanBorrowerType = "COMPANY" | "PERSON";
 type LoanFrequency = "BIWEEKLY" | "IRREGULAR" | "MONTHLY" | "WEEKLY";
 type LoanInterestType = "COMPOUND" | "SIMPLE";
+type LoanSourceType = "BANK_CREDIT" | "CREDIT_CARD" | "OTHER" | "PERSON_LOAN" | "TRANSFER";
+type LoanSchedulePaymentKind = "ADJUSTMENT" | "DISCOUNT" | "PAYMENT";
 type LoanScheduleStatus = "OVERDUE" | "PAID" | "PARTIAL" | "PENDING" | "SKIPPED";
 type ExpenseScope = "BIOALERGIA" | "PERSONAL";
 
@@ -27,6 +29,46 @@ type LoanPayload = {
 };
 
 type LoanUpdatePayload = Partial<Omit<LoanPayload, "generateSchedule">>;
+
+type StructuredLoanPayload = {
+  borrowerName: string;
+  borrowerType: LoanBorrowerType;
+  equalSchedule?: {
+    firstDueDate: string;
+    frequency: LoanFrequency;
+    installments: number;
+  };
+  manualInstallments?: Array<{
+    dueDate: string;
+    expectedAmount: number;
+    expectedInterest?: number;
+    expectedPrincipal?: number;
+    note?: null | string;
+    payments?: StructuredLoanPaymentPayload[];
+  }>;
+  notes?: null | string;
+  sources: Array<{
+    disbursementDate?: string;
+    feeAmount?: number;
+    fixedInterestRate?: number;
+    label: string;
+    note?: null | string;
+    principalAmount: number;
+    sourceType?: LoanSourceType;
+    totalAmount?: number;
+  }>;
+  startDate: string;
+  status?: LoanStatus;
+  title: string;
+};
+
+type StructuredLoanPaymentPayload = {
+  amount: number;
+  kind?: LoanSchedulePaymentKind;
+  note?: null | string;
+  paidDate: string;
+  transactionId?: number;
+};
 
 type LoanPaymentPayload = {
   paidAmount: number;
@@ -119,6 +161,53 @@ const mapTransaction = (
   };
 };
 
+const mapSource = (source: {
+  disbursementDate: Date | null;
+  feeAmount: Decimal;
+  fixedInterestRate: Decimal;
+  id: number;
+  interestAmount: Decimal;
+  label: string;
+  note: null | string;
+  principalAmount: Decimal;
+  sourceType: LoanSourceType;
+  totalAmount: Decimal;
+}) => ({
+  disbursement_date: source.disbursementDate ? formatDateOnly(source.disbursementDate) : null,
+  fee_amount: Number(source.feeAmount),
+  fixed_interest_rate: Number(source.fixedInterestRate),
+  id: source.id,
+  interest_amount: Number(source.interestAmount),
+  label: source.label,
+  note: source.note,
+  principal_amount: Number(source.principalAmount),
+  source_type: source.sourceType,
+  total_amount: Number(source.totalAmount),
+});
+
+const mapSchedulePayment = (payment: {
+  amount: Decimal;
+  id: number;
+  kind: LoanSchedulePaymentKind;
+  note: null | string;
+  paidDate: Date;
+  transaction?: {
+    amount: Decimal;
+    date: Date;
+    description: string;
+    id: number;
+  } | null;
+  transactionId: number | null;
+}) => ({
+  amount: Number(payment.amount),
+  id: payment.id,
+  kind: payment.kind,
+  note: payment.note,
+  paid_date: formatDateOnly(payment.paidDate),
+  transaction: mapTransaction(payment.transaction),
+  transaction_id: payment.transactionId,
+});
+
 const mapSchedule = (schedule: {
   createdAt: Date;
   dueDate: Date;
@@ -139,6 +228,20 @@ const mapSchedule = (schedule: {
   } | null;
   transactionId: number | null;
   updatedAt: Date;
+  payments?: Array<{
+    amount: Decimal;
+    id: number;
+    kind: LoanSchedulePaymentKind;
+    note: null | string;
+    paidDate: Date;
+    transaction?: {
+      amount: Decimal;
+      date: Date;
+      description: string;
+      id: number;
+    } | null;
+    transactionId: number | null;
+  }>;
 }) => {
   const effectiveStatus = mapScheduleStatus(schedule);
 
@@ -153,6 +256,7 @@ const mapSchedule = (schedule: {
     loan_id: schedule.loanId,
     paid_amount: schedule.paidAmount ? Number(schedule.paidAmount) : null,
     paid_date: schedule.paidDate ? formatDateOnly(schedule.paidDate) : null,
+    payments: schedule.payments?.map(mapSchedulePayment) ?? [],
     status: effectiveStatus,
     transaction: mapTransaction(schedule.transaction),
     transaction_id: schedule.transactionId,
@@ -211,6 +315,18 @@ type LoanWithSchedules = {
     expectedAmount: Decimal;
     paidAmount: Decimal | null;
     status: LoanScheduleStatus;
+  }>;
+  sources?: Array<{
+    disbursementDate: Date | null;
+    feeAmount: Decimal;
+    fixedInterestRate: Decimal;
+    id: number;
+    interestAmount: Decimal;
+    label: string;
+    note: null | string;
+    principalAmount: Decimal;
+    sourceType: LoanSourceType;
+    totalAmount: Decimal;
   }>;
   scope: ExpenseScope;
   startDate: Date;
@@ -338,12 +454,115 @@ const generateSchedules = (loan: LoanForSchedule) => {
   return schedules;
 };
 
+const getDueDateFromBase = (
+  firstDueDate: Date,
+  frequency: LoanFrequency,
+  installmentNumber: number
+) => {
+  const base = Temporal.PlainDate.from(dbDateToISO(firstDueDate) ?? "");
+  if (installmentNumber === 1) {
+    return firstDueDate;
+  }
+  if (frequency === "MONTHLY") {
+    return isoToDbDate(base.add({ months: installmentNumber - 1 }).toString());
+  }
+
+  const weeks = frequency === "BIWEEKLY" ? (installmentNumber - 1) * 2 : installmentNumber - 1;
+  return isoToDbDate(base.add({ weeks }).toString());
+};
+
+const buildStructuredSources = (sources: StructuredLoanPayload["sources"]) =>
+  sources.map((source) => {
+    const principal = toMoney(source.principalAmount);
+    const rate = toDecimal(source.fixedInterestRate ?? 0);
+    const fee = toMoney(source.feeAmount ?? 0);
+    const interest = toMoney(principal.mul(rate).div(100));
+    const total = toMoney(source.totalAmount ?? principal.plus(interest).plus(fee));
+
+    return {
+      disbursementDate: source.disbursementDate ? toDateOnly(source.disbursementDate) : null,
+      feeAmount: fee,
+      fixedInterestRate: rate,
+      interestAmount: toMoney(total.minus(principal).minus(fee)),
+      label: source.label.trim(),
+      note: optionalNote(source.note),
+      principalAmount: principal,
+      sourceType: source.sourceType ?? "OTHER",
+      totalAmount: total,
+    };
+  });
+
+const buildEqualStructuredSchedules = (params: {
+  firstDueDate: Date;
+  frequency: LoanFrequency;
+  installments: number;
+  loanId: number;
+  totalAmount: Decimal;
+  totalInterest: Decimal;
+  totalPrincipal: Decimal;
+}) => {
+  const baseAmount = toMoney(params.totalAmount.div(params.installments));
+  const basePrincipal = toMoney(params.totalPrincipal.div(params.installments));
+  const baseInterest = toMoney(params.totalInterest.div(params.installments));
+  let remainingAmount = params.totalAmount;
+  let remainingPrincipal = params.totalPrincipal;
+  let remainingInterest = params.totalInterest;
+
+  return Array.from({ length: params.installments }, (_, index) => {
+    const installmentNumber = index + 1;
+    const isLast = installmentNumber === params.installments;
+    const expectedAmount = isLast ? remainingAmount : baseAmount;
+    const expectedPrincipal = isLast ? remainingPrincipal : basePrincipal;
+    const expectedInterest = isLast ? remainingInterest : baseInterest;
+
+    remainingAmount = Decimal.max(remainingAmount.minus(expectedAmount), 0);
+    remainingPrincipal = Decimal.max(remainingPrincipal.minus(expectedPrincipal), 0);
+    remainingInterest = Decimal.max(remainingInterest.minus(expectedInterest), 0);
+
+    return {
+      dueDate: getDueDateFromBase(params.firstDueDate, params.frequency, installmentNumber),
+      expectedAmount,
+      expectedInterest,
+      expectedPrincipal,
+      installmentNumber,
+      loanId: params.loanId,
+      status: "PENDING" as const,
+    };
+  });
+};
+
+const summarizePayments = (payments: StructuredLoanPaymentPayload[] = []) => {
+  const totalPaid = payments.reduce((sum, payment) => sum.plus(payment.amount), new Decimal(0));
+  const paidDate = payments.reduce<Date | null>((latest, payment) => {
+    const next = toDateOnly(payment.paidDate);
+    return !latest || next > latest ? next : latest;
+  }, null);
+
+  return { paidDate, totalPaid: toMoney(totalPaid) };
+};
+
 const getLoanWithSchedules = async (publicId: string) => {
   return await db.loan.findUnique({
     where: { publicId },
     include: {
+      sources: {
+        orderBy: { id: "asc" },
+      },
       schedules: {
         include: {
+          payments: {
+            include: {
+              transaction: {
+                select: {
+                  amount: true,
+                  date: true,
+                  description: true,
+                  id: true,
+                },
+              },
+            },
+            orderBy: { paidDate: "asc" },
+          },
           transaction: {
             select: {
               amount: true,
@@ -437,6 +656,7 @@ export async function getLoanDetail(publicId: string) {
   return {
     loan: mapLoanSummary(loan),
     schedules: loan.schedules.map(mapSchedule),
+    sources: loan.sources?.map(mapSource) ?? [],
     summary: computeSummary(loan.schedules),
   };
 }
@@ -466,6 +686,105 @@ export async function createLoan(data: LoanPayload) {
     }
   }
 
+  return await getLoanDetail(loan.publicId);
+}
+
+export async function createStructuredLoan(data: StructuredLoanPayload) {
+  if (!data.equalSchedule && !data.manualInstallments?.length) {
+    throw new AppError(400, {
+      code: "LOAN_SCHEDULE_REQUIRED",
+      message: "Debes entregar cuotas manuales o una configuración de cuotas iguales",
+    });
+  }
+
+  const sources = buildStructuredSources(data.sources);
+  const totalAmount = sources.reduce((sum, source) => sum.plus(source.totalAmount), new Decimal(0));
+  const totalPrincipal = sources.reduce(
+    (sum, source) => sum.plus(source.principalAmount),
+    new Decimal(0)
+  );
+  const totalInterest = sources.reduce(
+    (sum, source) => sum.plus(source.interestAmount).plus(source.feeAmount),
+    new Decimal(0)
+  );
+  const totalInstallments =
+    data.manualInstallments?.length ?? data.equalSchedule?.installments ?? 1;
+  const frequency = data.equalSchedule?.frequency ?? "IRREGULAR";
+
+  const loan = await db.loan.create({
+    data: {
+      borrowerName: data.borrowerName.trim(),
+      borrowerType: data.borrowerType,
+      frequency,
+      interestRate: new Decimal(0),
+      interestType: "SIMPLE",
+      notes: optionalNote(data.notes),
+      principalAmount: toMoney(totalAmount),
+      publicId: createPublicId(),
+      startDate: toDateOnly(data.startDate),
+      status: data.status ?? "ACTIVE",
+      title: data.title.trim(),
+      totalInstallments,
+      sources: {
+        create: sources,
+      },
+    },
+  });
+
+  if (data.manualInstallments?.length) {
+    for (const [index, installment] of data.manualInstallments.entries()) {
+      const payments = installment.payments ?? [];
+      const expectedAmount = toMoney(installment.expectedAmount);
+      const expectedPrincipal = toMoney(
+        installment.expectedPrincipal ?? installment.expectedAmount
+      );
+      const expectedInterest = toMoney(installment.expectedInterest ?? 0);
+      const { paidDate, totalPaid } = summarizePayments(payments);
+      const status = totalPaid.isZero()
+        ? "PENDING"
+        : totalPaid.greaterThanOrEqualTo(expectedAmount)
+          ? "PAID"
+          : "PARTIAL";
+
+      await db.loanSchedule.create({
+        data: {
+          dueDate: toDateOnly(installment.dueDate),
+          expectedAmount,
+          expectedInterest,
+          expectedPrincipal,
+          installmentNumber: index + 1,
+          loanId: loan.id,
+          note: optionalNote(installment.note),
+          paidAmount: totalPaid.isZero() ? null : totalPaid,
+          paidDate,
+          status,
+          payments: {
+            create: payments.map((payment) => ({
+              amount: toMoney(payment.amount),
+              kind: payment.kind ?? "PAYMENT",
+              note: optionalNote(payment.note),
+              paidDate: toDateOnly(payment.paidDate),
+              transactionId: payment.transactionId ?? null,
+            })),
+          },
+        },
+      });
+    }
+  } else if (data.equalSchedule) {
+    await db.loanSchedule.createMany({
+      data: buildEqualStructuredSchedules({
+        firstDueDate: toDateOnly(data.equalSchedule.firstDueDate),
+        frequency: data.equalSchedule.frequency,
+        installments: data.equalSchedule.installments,
+        loanId: loan.id,
+        totalAmount: toMoney(totalAmount),
+        totalInterest: toMoney(totalInterest),
+        totalPrincipal: toMoney(totalPrincipal),
+      }),
+    });
+  }
+
+  await syncLoanStatus(loan.id);
   return await getLoanDetail(loan.publicId);
 }
 

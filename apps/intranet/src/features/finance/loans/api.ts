@@ -6,6 +6,7 @@ import {
 import { loansORPCClient, toLoansApiError } from "./orpc";
 import type {
   CreateLoanPayload,
+  CreateStructuredLoanPayload,
   LoanDetailResponse,
   LoanListResponse,
   LoanPaymentPayload,
@@ -16,6 +17,16 @@ import type {
 export async function createLoan(payload: CreateLoanPayload): Promise<LoanDetailResponse> {
   try {
     return LoanDetailResponseSchema.parse(await loansORPCClient.create(payload));
+  } catch (error) {
+    throw toLoansApiError(error);
+  }
+}
+
+export async function createStructuredLoan(
+  payload: CreateStructuredLoanPayload
+): Promise<LoanDetailResponse> {
+  try {
+    return LoanDetailResponseSchema.parse(await loansORPCClient.createStructured(payload));
   } catch (error) {
     throw toLoansApiError(error);
   }

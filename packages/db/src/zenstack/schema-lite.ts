@@ -2676,6 +2676,12 @@ export class SchemaType implements SchemaDef {
                     updatedAt: true,
                     default: ExpressionUtils.call("now") as FieldDefault
                 },
+                sources: {
+                    name: "sources",
+                    type: "LoanSource",
+                    array: true,
+                    relation: { opposite: "loan" }
+                },
                 schedules: {
                     name: "schedules",
                     type: "LoanSchedule",
@@ -2693,6 +2699,86 @@ export class SchemaType implements SchemaDef {
             uniqueFields: {
                 id: { type: "Int" },
                 publicId: { type: "String" }
+            }
+        },
+        LoanSource: {
+            name: "LoanSource",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                loanId: {
+                    name: "loanId",
+                    type: "Int",
+                    foreignKeyFor: [
+                        "loan"
+                    ] as readonly string[]
+                },
+                label: {
+                    name: "label",
+                    type: "String"
+                },
+                sourceType: {
+                    name: "sourceType",
+                    type: "LoanSourceType",
+                    default: "OTHER" as FieldDefault
+                },
+                principalAmount: {
+                    name: "principalAmount",
+                    type: "Decimal"
+                },
+                fixedInterestRate: {
+                    name: "fixedInterestRate",
+                    type: "Decimal",
+                    default: 0 as FieldDefault
+                },
+                interestAmount: {
+                    name: "interestAmount",
+                    type: "Decimal",
+                    default: 0 as FieldDefault
+                },
+                feeAmount: {
+                    name: "feeAmount",
+                    type: "Decimal",
+                    default: 0 as FieldDefault
+                },
+                totalAmount: {
+                    name: "totalAmount",
+                    type: "Decimal"
+                },
+                disbursementDate: {
+                    name: "disbursementDate",
+                    type: "DateTime",
+                    optional: true
+                },
+                note: {
+                    name: "note",
+                    type: "String",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                loan: {
+                    name: "loan",
+                    type: "Loan",
+                    relation: { opposite: "sources", fields: ["loanId"], references: ["id"], onDelete: "Cascade" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" }
             }
         },
         LoanSchedule: {
@@ -2770,6 +2856,12 @@ export class SchemaType implements SchemaDef {
                     optional: true,
                     relation: { opposite: "loanSchedules", fields: ["transactionId"], references: ["id"], onDelete: "SetNull" }
                 },
+                payments: {
+                    name: "payments",
+                    type: "LoanSchedulePayment",
+                    array: true,
+                    relation: { opposite: "schedule" }
+                },
                 createdAt: {
                     name: "createdAt",
                     type: "DateTime",
@@ -2780,6 +2872,76 @@ export class SchemaType implements SchemaDef {
                     type: "DateTime",
                     updatedAt: true,
                     default: ExpressionUtils.call("now") as FieldDefault
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" }
+            }
+        },
+        LoanSchedulePayment: {
+            name: "LoanSchedulePayment",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                scheduleId: {
+                    name: "scheduleId",
+                    type: "Int",
+                    foreignKeyFor: [
+                        "schedule"
+                    ] as readonly string[]
+                },
+                amount: {
+                    name: "amount",
+                    type: "Decimal"
+                },
+                paidDate: {
+                    name: "paidDate",
+                    type: "DateTime"
+                },
+                kind: {
+                    name: "kind",
+                    type: "LoanSchedulePaymentKind",
+                    default: "PAYMENT" as FieldDefault
+                },
+                transactionId: {
+                    name: "transactionId",
+                    type: "Int",
+                    optional: true,
+                    foreignKeyFor: [
+                        "transaction"
+                    ] as readonly string[]
+                },
+                note: {
+                    name: "note",
+                    type: "String",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                schedule: {
+                    name: "schedule",
+                    type: "LoanSchedule",
+                    relation: { opposite: "payments", fields: ["scheduleId"], references: ["id"], onDelete: "Cascade" }
+                },
+                transaction: {
+                    name: "transaction",
+                    type: "FinancialTransaction",
+                    optional: true,
+                    relation: { opposite: "loanSchedulePayments", fields: ["transactionId"], references: ["id"], onDelete: "SetNull" }
                 }
             },
             idFields: ["id"],
@@ -9039,6 +9201,12 @@ export class SchemaType implements SchemaDef {
                     array: true,
                     relation: { opposite: "transaction" }
                 },
+                loanSchedulePayments: {
+                    name: "loanSchedulePayments",
+                    type: "LoanSchedulePayment",
+                    array: true,
+                    relation: { opposite: "transaction" }
+                },
                 loanSchedules: {
                     name: "loanSchedules",
                     type: "LoanSchedule",
@@ -14205,6 +14373,24 @@ export class SchemaType implements SchemaDef {
             values: {
                 PERSON: "PERSON",
                 COMPANY: "COMPANY"
+            }
+        },
+        LoanSourceType: {
+            name: "LoanSourceType",
+            values: {
+                BANK_CREDIT: "BANK_CREDIT",
+                CREDIT_CARD: "CREDIT_CARD",
+                PERSON_LOAN: "PERSON_LOAN",
+                TRANSFER: "TRANSFER",
+                OTHER: "OTHER"
+            }
+        },
+        LoanSchedulePaymentKind: {
+            name: "LoanSchedulePaymentKind",
+            values: {
+                PAYMENT: "PAYMENT",
+                DISCOUNT: "DISCOUNT",
+                ADJUSTMENT: "ADJUSTMENT"
             }
         },
         LoanFrequency: {

@@ -19,6 +19,7 @@ import { AppModal } from "@/components/ui/AppModal";
 import { useAuth } from "@/context/AuthContext";
 import {
   createLoan,
+  createStructuredLoan,
   regenerateSchedules,
   registerLoanPayment,
   unlinkLoanPayment,
@@ -29,6 +30,7 @@ import { LoanList } from "@/features/finance/loans/components/LoanList";
 import { loanKeys } from "@/features/finance/loans/queries";
 import type {
   CreateLoanPayload,
+  CreateStructuredLoanPayload,
   LoanPaymentPayload,
   LoanSchedule,
   RegenerateSchedulePayload,
@@ -81,6 +83,13 @@ export function LoansPage() {
     },
   });
 
+  const createStructuredMutation = useMutation({
+    mutationFn: createStructuredLoan,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: loanKeys.all });
+    },
+  });
+
   const registerPaymentMutation = useMutation({
     mutationFn: ({ payload, scheduleId }: { payload: LoanPaymentPayload; scheduleId: number }) =>
       registerLoanPayment(scheduleId, payload),
@@ -106,6 +115,16 @@ export function LoansPage() {
     setCreateError(null);
     try {
       await createMutation.mutateAsync(payload);
+      setCreateOpen(false);
+    } catch (error) {
+      setCreateError(error instanceof Error ? error.message : "Error al crear préstamo");
+    }
+  };
+
+  const handleCreateStructuredLoan = async (payload: CreateStructuredLoanPayload) => {
+    setCreateError(null);
+    try {
+      await createStructuredMutation.mutateAsync(payload);
       setCreateOpen(false);
     } catch (error) {
       setCreateError(error instanceof Error ? error.message : "Error al crear préstamo");
@@ -244,6 +263,9 @@ export function LoansPage() {
           }}
           onSubmit={async (payload) => {
             await handleCreateLoan(payload);
+          }}
+          onSubmitStructured={async (payload) => {
+            await handleCreateStructuredLoan(payload);
           }}
         />
 

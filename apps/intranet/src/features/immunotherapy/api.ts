@@ -1,6 +1,7 @@
 import type {
   CreateBudgetInput,
   CreateProductInput,
+  PrescriptionPdfInput,
   QuoteInput,
   UpdateProductInput,
 } from "@finanzas/orpc-contracts/immunotherapy";
@@ -96,6 +97,23 @@ export async function downloadImmunoBudgetPdf(input: CreateBudgetInput): Promise
     const a = document.createElement("a");
     a.href = url;
     a.download = file instanceof File && file.name ? file.name : "presupuesto_inmunoterapia.pdf";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  } catch (error) {
+    throw toImmunotherapyApiError(error);
+  }
+}
+
+export async function downloadImmunoPrescriptionPdf(input: PrescriptionPdfInput): Promise<void> {
+  try {
+    const file = await immunotherapyORPCClient.generatePrescriptionPdf(input);
+    const blob = file instanceof Blob ? file : new Blob([file as BlobPart]);
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = file instanceof File && file.name ? file.name : "receta_inmunoterapia.pdf";
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);

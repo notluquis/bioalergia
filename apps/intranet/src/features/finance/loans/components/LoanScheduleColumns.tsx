@@ -124,6 +124,20 @@ export const getColumns = (
               {formatChile(schedule.paid_date, "DD MMM")}
             </span>
           )}
+          {schedule.payments && schedule.payments.length > 0 && (
+            <div className="mt-1 flex flex-col items-end gap-0.5 text-default-500 text-[11px]">
+              {schedule.payments.map((payment) => (
+                <span key={payment.id}>
+                  {payment.kind === "DISCOUNT"
+                    ? "Desc."
+                    : payment.kind === "ADJUSTMENT"
+                      ? "Ajuste"
+                      : "Pago"}{" "}
+                  {currencyFormatter.format(payment.amount)}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
       );
     },

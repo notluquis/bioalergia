@@ -16,7 +16,7 @@ import { useState } from "react";
 
 import { AppModal } from "@/components/ui/AppModal";
 
-import type { LoanSchedule, LoanSummary, RegenerateSchedulePayload } from "../types";
+import type { LoanSchedule, LoanSource, LoanSummary, RegenerateSchedulePayload } from "../types";
 
 import { LoanScheduleTable } from "./LoanScheduleTable";
 
@@ -28,6 +28,7 @@ interface LoanDetailProps {
   onRegisterPayment: (schedule: LoanSchedule) => void;
   onUnlinkPayment: (schedule: LoanSchedule) => void;
   schedules: LoanSchedule[];
+  sources?: LoanSource[];
   summary: null | {
     paid_installments: number;
     pending_installments: number;
@@ -45,6 +46,7 @@ export function LoanDetail({
   onRegisterPayment,
   onUnlinkPayment,
   schedules,
+  sources = [],
   summary,
 }: LoanDetailProps) {
   const [regenerateOpen, setRegenerateOpen] = useState(false);
@@ -111,6 +113,7 @@ export function LoanDetail({
               {
                 {
                   BIWEEKLY: "quincenal",
+                  IRREGULAR: "irregular",
                   MONTHLY: "mensual",
                   WEEKLY: "semanal",
                 }[loan.frequency]
@@ -173,6 +176,35 @@ export function LoanDetail({
           </span>
         </div>
       </section>
+
+      {sources.length > 0 && (
+        <section className="rounded-2xl border border-default-200 bg-default-50 p-4 text-foreground text-sm">
+          <header className="mb-3">
+            <Description className="text-default-400 text-xs uppercase tracking-wide">
+              Origen del préstamo
+            </Description>
+          </header>
+          <div className="grid gap-2 md:grid-cols-2">
+            {sources.map((source) => (
+              <div
+                className="rounded-md border border-default-200 bg-background px-3 py-2"
+                key={source.id}
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <span className="font-semibold">{source.label}</span>
+                  <span className="text-default-500 text-xs">{source.source_type}</span>
+                </div>
+                <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-default-500 text-xs">
+                  <span>Capital ${source.principal_amount.toLocaleString("es-CL")}</span>
+                  <span>Interés {source.fixed_interest_rate.toLocaleString("es-CL")}%</span>
+                  <span>Total ${source.total_amount.toLocaleString("es-CL")}</span>
+                </div>
+                {source.note && <Description className="mt-1 text-xs">{source.note}</Description>}
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       <LoanScheduleTable
         canManage={canManage}

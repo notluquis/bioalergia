@@ -10,6 +10,7 @@ import {
   loanRegenerateSchedulesInputSchema,
   loanScheduleIdSchema,
   loanScheduleResponseSchema,
+  loanStructuredCreateInputSchema,
   loanUpdateInputSchema,
 } from "@finanzas/orpc-contracts/loans";
 import { ORPCError, onError, os } from "@orpc/server";
@@ -20,6 +21,7 @@ import { logError } from "../lib/logger.ts";
 import { configureSuperjson } from "../lib/superjson-config.ts";
 import {
   createLoan,
+  createStructuredLoan,
   deleteLoan,
   getLoanDetail,
   listLoans,
@@ -91,6 +93,20 @@ const loansORPCRouterBase = {
     .output(loanDetailResponseSchema)
     .handler(async ({ input }) => {
       const created = await createLoan(input);
+      return { ...created, status: "ok" as const };
+    }),
+
+  createStructured: createLoans
+    .route({
+      method: "POST",
+      path: "/structured",
+      summary: "Create a structured loan from funding sources",
+      tags: ["Loans"],
+    })
+    .input(loanStructuredCreateInputSchema)
+    .output(loanDetailResponseSchema)
+    .handler(async ({ input }) => {
+      const created = await createStructuredLoan(input);
       return { ...created, status: "ok" as const };
     }),
 

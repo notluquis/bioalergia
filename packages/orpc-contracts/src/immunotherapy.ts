@@ -169,6 +169,10 @@ export const createBudgetInputSchema = quoteInputSchema.extend({
   diagnosis: z.string().optional(),
 });
 
+export const prescriptionPdfInputSchema = createBudgetInputSchema.extend({
+  observations: z.string().max(800).optional(),
+});
+
 export const budgetCreatedResponseSchema = z.object({
   budgetId: z.number().int(),
   quote: quoteResultSchema,
@@ -223,6 +227,10 @@ export const immunotherapyContract = {
     .route({ method: "POST", path: "/pdf" })
     .input(createBudgetInputSchema)
     .output(z.file()),
+  generatePrescriptionPdf: oc
+    .route({ method: "POST", path: "/prescription-pdf" })
+    .input(prescriptionPdfInputSchema)
+    .output(z.file()),
   // Términos económicos + prestador (editable, singleton)
   getTerms: oc.route({ method: "GET", path: "/terms" }).output(clinicTermsSchema),
   updateTerms: oc
@@ -235,6 +243,7 @@ export type ImmunotherapyContract = typeof immunotherapyContract;
 export type QuoteInput = z.infer<typeof quoteInputSchema>;
 export type QuoteResult = z.infer<typeof quoteResultSchema>;
 export type CreateBudgetInput = z.infer<typeof createBudgetInputSchema>;
+export type PrescriptionPdfInput = z.infer<typeof prescriptionPdfInputSchema>;
 export type ProductDto = z.infer<typeof productSchema>;
 export type CreateProductInput = z.infer<typeof createProductInputSchema>;
 export type UpdateProductInput = z.infer<typeof updateProductInputSchema>;

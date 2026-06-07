@@ -18,7 +18,7 @@ export function LoanDetailSection({
   onUnlinkPayment,
 }: LoanDetailSectionProps) {
   const { data } = useSuspenseQuery(loanKeys.detail(loanId));
-  const { loan, schedules, summary } = data;
+  const { loan, schedules, sources, summary } = data;
 
   return (
     <LoanDetail
@@ -29,6 +29,7 @@ export function LoanDetailSection({
       onRegisterPayment={onRegisterPayment}
       onUnlinkPayment={onUnlinkPayment}
       schedules={schedules}
+      sources={sources}
       summary={summary}
     />
   );
