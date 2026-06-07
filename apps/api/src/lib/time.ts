@@ -199,6 +199,19 @@ export function isoToDbDate(iso: string): Date {
 }
 
 /**
+ * Epoch-ms at the UTC-midnight anchor of a @db.Date column. Use this for
+ * day-window arithmetic on calendar columns instead of raw `.getTime()`, so
+ * the access stays correct if the pg parser ever returns "YYYY-MM-DD" strings.
+ * Only for @db.Date fields — NOT for @db.Timestamp/Timestamptz instants
+ * (those carry a real time-of-day that this would silently discard).
+ */
+export function dbDateToMs(value: Date | string): number {
+  if (value instanceof Date) return value.getTime();
+  const iso = dbDateToISO(value);
+  return iso == null ? Number.NaN : new Date(`${iso}T00:00:00.000Z`).getTime();
+}
+
+/**
  * Format a @db.Time column value as "HH:mm". Accepts the UTC-anchored Date
  * (ZenStack) or the "HH:MM:SS" string ($qb). Reads UTC components.
  */
