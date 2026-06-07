@@ -8,17 +8,20 @@ import { getColumns } from "./LoanScheduleColumns";
 
 interface LoanScheduleTableProps {
   canManage: boolean;
+  onEditSchedule: (schedule: LoanSchedule) => void;
   onRegisterPayment: (schedule: LoanSchedule) => void;
   onUnlinkPayment: (schedule: LoanSchedule) => void;
   schedules: LoanSchedule[];
 }
 export function LoanScheduleTable({
   canManage,
+  onEditSchedule,
   onRegisterPayment,
   onUnlinkPayment,
   schedules,
 }: LoanScheduleTableProps) {
   const actions = {
+    onEditSchedule,
     onRegisterPayment,
     onUnlinkPayment,
   };

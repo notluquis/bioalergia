@@ -13,6 +13,7 @@ interface LoanDetailSectionProps {
   loanId: string;
   onDeleteRequest: (loan: LoanSummary) => void;
   onEditRequest: (loan: LoanSummary) => void;
+  onEditSchedule: (schedule: LoanSchedule) => void;
   onRegenerate: (overrides: RegenerateSchedulePayload) => Promise<void>;
   onRegisterPayment: (schedule: LoanSchedule) => void;
   onUnlinkPayment: (schedule: LoanSchedule) => void;
@@ -23,6 +24,7 @@ export function LoanDetailSection({
   loanId,
   onDeleteRequest,
   onEditRequest,
+  onEditSchedule,
   onRegenerate,
   onRegisterPayment,
   onUnlinkPayment,
@@ -38,6 +40,7 @@ export function LoanDetailSection({
       loan={loan}
       onDeleteRequest={onDeleteRequest}
       onEditRequest={onEditRequest}
+      onEditSchedule={onEditSchedule}
       onRegenerate={onRegenerate}
       onRegisterPayment={onRegisterPayment}
       onUnlinkPayment={onUnlinkPayment}

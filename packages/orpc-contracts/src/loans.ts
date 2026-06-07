@@ -115,6 +115,17 @@ export const loanPaymentInputSchema = z.object({
   transactionId: z.number().int().positive().nullable().optional(),
 });
 
+export const loanScheduleUpdateInputSchema = z.object({
+  dueDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
+  expectedAmount: z.number().positive().optional(),
+  expectedInterest: z.number().min(0).optional(),
+  expectedPrincipal: z.number().min(0).optional(),
+  note: z.string().nullable().optional(),
+});
+
 export const loanSchedulePaymentCandidatesInputSchema = z.object({
   daysAfter: z.coerce.number().int().min(0).max(30).default(7),
   daysBefore: z.coerce.number().int().min(0).max(30).default(7),
@@ -176,6 +187,7 @@ export const loanScheduleSchema = z.object({
   id: z.number().int(),
   installment_number: z.number().int(),
   loan_id: z.number().int(),
+  note: z.string().nullable(),
   paid_amount: z.number().nullable(),
   paid_date: z
     .string()
@@ -287,6 +299,10 @@ export const loansContract = {
   unlinkSchedulePayment: oc
     .route({ method: "POST", path: "/schedules/{id}/unlink" })
     .input(loanScheduleIdSchema)
+    .output(loanScheduleResponseSchema),
+  updateSchedule: oc
+    .route({ method: "PUT", path: "/schedules/{id}" })
+    .input(loanScheduleIdSchema.extend({ payload: loanScheduleUpdateInputSchema }))
     .output(loanScheduleResponseSchema),
   update: oc
     .route({ method: "PUT", path: "/{publicId}" })

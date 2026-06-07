@@ -29,6 +29,7 @@ interface LoanDetailProps {
   loan: LoanSummary | null;
   onDeleteRequest: (loan: LoanSummary) => void;
   onEditRequest: (loan: LoanSummary) => void;
+  onEditSchedule: (schedule: LoanSchedule) => void;
   onRegenerate: (payload: RegenerateSchedulePayload) => Promise<void>;
   onRegisterPayment: (schedule: LoanSchedule) => void;
   onUnlinkPayment: (schedule: LoanSchedule) => void;
@@ -73,6 +74,7 @@ export function LoanDetail({
   loan,
   onDeleteRequest,
   onEditRequest,
+  onEditSchedule,
   onRegenerate,
   onRegisterPayment,
   onUnlinkPayment,
@@ -280,6 +282,7 @@ export function LoanDetail({
           </div>
           <LoanScheduleTable
             canManage={canManage}
+            onEditSchedule={onEditSchedule}
             onRegisterPayment={onRegisterPayment}
             onUnlinkPayment={onUnlinkPayment}
             schedules={schedules}

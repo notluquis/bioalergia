@@ -15,6 +15,7 @@ const isScheduleLate = (schedule: LoanSchedule) => {
 
 export const getColumns = (
   actions: {
+    onEditSchedule: (schedule: LoanSchedule) => void;
     onRegisterPayment: (schedule: LoanSchedule) => void;
     onUnlinkPayment: (schedule: LoanSchedule) => void;
   },
@@ -115,24 +116,33 @@ export const getColumns = (
         return <div className="text-right text-default-200">—</div>;
       }
       return (
-        <div className="flex flex-col items-end">
+        <div className="flex min-w-28 flex-col items-end gap-1">
           <span className="font-bold text-success">
             {currencyFormatter.format(schedule.paid_amount)}
           </span>
-          {schedule.paid_date && (
-            <span className="text-xs text-default-400">
-              {formatChile(schedule.paid_date, "DD MMM")}
+          <div className="flex items-center gap-1 text-default-400 text-xs">
+            {schedule.paid_date && <span>{formatChile(schedule.paid_date, "DD MMM")}</span>}
+            {schedule.payments && schedule.payments.length > 1 && (
+              <span>· {schedule.payments.length} pagos</span>
+            )}
+          </div>
+          {schedule.payments && schedule.payments.length === 1 && (
+            <span className="max-w-28 truncate text-default-500 text-xs">
+              {schedule.payments[0]?.kind === "DISCOUNT"
+                ? "Desc."
+                : schedule.payments[0]?.kind === "ADJUSTMENT"
+                  ? "Ajuste"
+                  : "Pago"}{" "}
+              {currencyFormatter.format(schedule.payments[0]?.amount ?? 0)}
             </span>
           )}
-          {schedule.payments && schedule.payments.length > 0 && (
-            <div className="mt-1 flex flex-col items-end gap-0.5 text-default-500 text-xs">
+          {schedule.payments && schedule.payments.length > 1 && (
+            <div className="flex max-w-40 flex-wrap justify-end gap-1">
               {schedule.payments.map((payment) => (
-                <span key={payment.id}>
-                  {payment.kind === "DISCOUNT"
-                    ? "Desc."
-                    : payment.kind === "ADJUSTMENT"
-                      ? "Ajuste"
-                      : "Pago"}{" "}
+                <span
+                  className="rounded-full bg-default-100 px-1.5 py-0.5 text-default-600 text-xs"
+                  key={payment.id}
+                >
                   {currencyFormatter.format(payment.amount)}
                 </span>
               ))}
@@ -151,6 +161,15 @@ export const getColumns = (
             const hasPayments = schedule.status === "PAID" || schedule.status === "PARTIAL";
             return (
               <div className="flex justify-end gap-2">
+                <Button
+                  onPress={() => {
+                    actions.onEditSchedule(schedule);
+                  }}
+                  size="sm"
+                  variant="secondary"
+                >
+                  Editar
+                </Button>
                 {schedule.status !== "PAID" && (
                   <Button
                     isDisabled={schedule.loan_id === 0}

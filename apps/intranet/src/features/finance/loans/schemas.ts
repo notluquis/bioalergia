@@ -73,6 +73,7 @@ export const LoanScheduleSchema = z.strictObject({
   id: z.number(),
   installment_number: z.number(),
   loan_id: z.number(),
+  note: z.string().nullable(),
   paid_amount: z.number().nullable(),
   paid_date: zDateString.nullable(),
   payments: z.array(LoanSchedulePaymentSchema).optional(),

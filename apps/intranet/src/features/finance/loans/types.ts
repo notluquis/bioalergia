@@ -84,6 +84,14 @@ export interface LoanPaymentPayload {
   transactionId?: null | number;
 }
 
+export interface LoanScheduleUpdatePayload {
+  dueDate?: string;
+  expectedAmount?: number;
+  expectedInterest?: number;
+  expectedPrincipal?: number;
+  note?: null | string;
+}
+
 export interface LoanPaymentCandidate {
   already_linked_amount: number;
   amount: number;
@@ -120,6 +128,7 @@ export interface LoanSchedule {
   id: number;
   installment_number: number;
   loan_id: number;
+  note: null | string;
   paid_amount: null | number;
   paid_date: null | string;
   payments?: LoanSchedulePayment[];

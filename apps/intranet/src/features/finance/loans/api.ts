@@ -13,6 +13,7 @@ import type {
   LoanPaymentCandidate,
   LoanPaymentPayload,
   LoanSchedule,
+  LoanScheduleUpdatePayload,
   RegenerateSchedulePayload,
   UpdateLoanPayload,
 } from "./types";
@@ -120,6 +121,19 @@ export async function unlinkLoanPayment(
   try {
     return LoanScheduleResponseSchema.parse(
       await loansORPCClient.unlinkSchedulePayment({ id: scheduleId })
+    );
+  } catch (error) {
+    throw toLoansApiError(error);
+  }
+}
+
+export async function updateLoanSchedule(
+  scheduleId: number,
+  payload: LoanScheduleUpdatePayload
+): Promise<{ schedule: LoanSchedule; status: "ok" }> {
+  try {
+    return LoanScheduleResponseSchema.parse(
+      await loansORPCClient.updateSchedule({ id: scheduleId, payload })
     );
   } catch (error) {
     throw toLoansApiError(error);

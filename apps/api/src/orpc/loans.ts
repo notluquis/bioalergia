@@ -12,6 +12,7 @@ import {
   loanSchedulePaymentCandidatesInputSchema,
   loanSchedulePaymentCandidatesResponseSchema,
   loanScheduleResponseSchema,
+  loanScheduleUpdateInputSchema,
   loanStructuredCreateInputSchema,
   loanUpdateInputSchema,
 } from "@finanzas/orpc-contracts/loans";
@@ -32,6 +33,7 @@ import {
   registerLoanPayment,
   unlinkLoanPayment,
   updateLoan,
+  updateLoanSchedule,
 } from "../services/loans.ts";
 import { SuperJSONRPCHandler } from "./superjson.ts";
 
@@ -192,6 +194,20 @@ const loansORPCRouterBase = {
     .output(loanScheduleResponseSchema)
     .handler(async ({ input }) => ({
       schedule: await unlinkLoanPayment(input.id),
+      status: "ok" as const,
+    })),
+
+  updateSchedule: updateLoans
+    .route({
+      method: "PUT",
+      path: "/schedules/{id}",
+      summary: "Update a loan schedule installment",
+      tags: ["Loans"],
+    })
+    .input(loanScheduleIdSchema.extend({ payload: loanScheduleUpdateInputSchema }))
+    .output(loanScheduleResponseSchema)
+    .handler(async ({ input }) => ({
+      schedule: await updateLoanSchedule(input.id, input.payload),
       status: "ok" as const,
     })),
 

@@ -86,6 +86,14 @@ type LoanPaymentCandidatesPayload = {
   limit: number;
 };
 
+type LoanScheduleUpdatePayload = {
+  dueDate?: string;
+  expectedAmount?: number;
+  expectedInterest?: number;
+  expectedPrincipal?: number;
+  note?: null | string;
+};
+
 type LoanSchedulePaymentRow = {
   amount: Decimal;
   paidDate: Date;
@@ -239,6 +247,7 @@ const mapSchedule = (schedule: {
   id: number;
   installmentNumber: number;
   loanId: number;
+  note: null | string;
   paidAmount: Decimal | null;
   paidDate: Date | null;
   status: LoanScheduleStatus;
@@ -276,6 +285,7 @@ const mapSchedule = (schedule: {
     id: schedule.id,
     installment_number: schedule.installmentNumber,
     loan_id: schedule.loanId,
+    note: schedule.note,
     paid_amount: schedule.paidAmount ? Number(schedule.paidAmount) : null,
     paid_date: schedule.paidDate ? formatDateOnly(schedule.paidDate) : null,
     payments: schedule.payments?.map(mapSchedulePayment) ?? [],
@@ -693,14 +703,16 @@ const refreshSchedulePaymentSummary = async (scheduleId: number) => {
   });
 
   const payments = schedule.payments as LoanSchedulePaymentRow[];
-  const totalPaid = payments.reduce(
-    (sum, payment) => sum.plus(payment.amount),
-    new Decimal(0)
-  );
-  const paidDate = payments.reduce<Date | null>(
-    (latest, payment) => (!latest || payment.paidDate > latest ? payment.paidDate : latest),
-    null
-  );
+  const hasSplitPayments = payments.length > 0;
+  const totalPaid = hasSplitPayments
+    ? payments.reduce((sum, payment) => sum.plus(payment.amount), new Decimal(0))
+    : toMoney(schedule.paidAmount ?? 0);
+  const paidDate = hasSplitPayments
+    ? payments.reduce<Date | null>(
+        (latest, payment) => (!latest || payment.paidDate > latest ? payment.paidDate : latest),
+        null
+      )
+    : schedule.paidDate;
   const expectedAmount = toMoney(schedule.expectedAmount);
   const nextStatus: LoanScheduleStatus = totalPaid.isZero()
     ? (dbDateToISO(schedule.dueDate) ?? "") < toChileDateString(new Date())
@@ -717,7 +729,7 @@ const refreshSchedulePaymentSummary = async (scheduleId: number) => {
       paidAmount: totalPaid.isZero() ? null : toMoney(totalPaid),
       paidDate,
       status: nextStatus,
-      transactionId: primaryPayment?.transactionId ?? null,
+      transactionId: hasSplitPayments ? (primaryPayment?.transactionId ?? null) : (schedule.transactionId ?? null),
     },
     include: {
       payments: {
@@ -1111,6 +1123,32 @@ export async function unlinkLoanPayment(scheduleId: number) {
   await db.loanSchedulePayment.deleteMany({ where: { scheduleId } });
   const updated = await refreshSchedulePaymentSummary(scheduleId);
 
+  await syncLoanStatus(schedule.loanId);
+
+  return mapSchedule(updated);
+}
+
+export async function updateLoanSchedule(scheduleId: number, data: LoanScheduleUpdatePayload) {
+  const schedule = await ensureScheduleExists(scheduleId);
+
+  await db.loanSchedule.update({
+    where: { id: scheduleId },
+    data: {
+      ...(data.dueDate === undefined ? {} : { dueDate: toDateOnly(data.dueDate) }),
+      ...(data.expectedAmount === undefined
+        ? {}
+        : { expectedAmount: toMoney(data.expectedAmount) }),
+      ...(data.expectedInterest === undefined
+        ? {}
+        : { expectedInterest: toMoney(data.expectedInterest) }),
+      ...(data.expectedPrincipal === undefined
+        ? {}
+        : { expectedPrincipal: toMoney(data.expectedPrincipal) }),
+      ...(data.note === undefined ? {} : { note: optionalNote(data.note) }),
+    },
+  });
+
+  const updated = await refreshSchedulePaymentSummary(scheduleId);
   await syncLoanStatus(schedule.loanId);
 
   return mapSchedule(updated);

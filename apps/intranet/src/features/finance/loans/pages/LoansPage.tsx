@@ -31,6 +31,7 @@ import {
   registerLoanPayment,
   unlinkLoanPayment,
   updateLoan,
+  updateLoanSchedule,
 } from "@/features/finance/loans/api";
 import { LoanDetailSection } from "@/features/finance/loans/components/LoanDetailSection";
 import { LoanForm } from "@/features/finance/loans/components/LoanForm";
@@ -42,6 +43,7 @@ import type {
   CreateStructuredLoanPayload,
   LoanPaymentPayload,
   LoanSchedule,
+  LoanScheduleUpdatePayload,
   LoanSummary,
   RegenerateSchedulePayload,
   UpdateLoanPayload,
@@ -63,6 +65,14 @@ type LoanEditForm = {
   totalInstallments: number;
 };
 
+type ScheduleEditForm = {
+  dueDate: string;
+  expectedAmount: number;
+  expectedInterest: number;
+  expectedPrincipal: number;
+  note: string;
+};
+
 export function LoansPage() {
   const { can } = useAuth();
   const queryClient = useQueryClient();
@@ -71,6 +81,7 @@ export function LoansPage() {
   const canView = can("read", "Loan");
 
   const [selectedId, setSelectedId] = useState<null | string>(null);
+  const [selectorOpen, setSelectorOpen] = useState(false);
 
   const [createOpen, setCreateOpen] = useState(false);
   const [createError, setCreateError] = useState<null | string>(null);
@@ -89,6 +100,15 @@ export function LoansPage() {
     status: "ACTIVE",
     title: "",
     totalInstallments: 1,
+  });
+  const [scheduleEdit, setScheduleEdit] = useState<LoanSchedule | null>(null);
+  const [scheduleEditError, setScheduleEditError] = useState<null | string>(null);
+  const [scheduleEditForm, setScheduleEditForm] = useState<ScheduleEditForm>({
+    dueDate: formatChile(new Date(), "YYYY-MM-DD"),
+    expectedAmount: 0,
+    expectedInterest: 0,
+    expectedPrincipal: 0,
+    note: "",
   });
 
   const [paymentSchedule, setPaymentSchedule] = useState<LoanSchedule | null>(null);
@@ -119,6 +139,7 @@ export function LoansPage() {
   });
 
   const loans = useMemo(() => loansResponse.loans, [loansResponse.loans]);
+  const selectedLoan = loans.find((loan) => loan.public_id === selectedId) ?? null;
 
   // Auto-selection
   useEffect(() => {
@@ -161,6 +182,22 @@ export function LoansPage() {
       void queryClient.invalidateQueries({
         queryKey: loanKeys.detail(variables.publicId).queryKey,
       });
+    },
+  });
+
+  const updateScheduleMutation = useMutation({
+    mutationFn: ({
+      payload,
+      scheduleId,
+    }: {
+      payload: LoanScheduleUpdatePayload;
+      scheduleId: number;
+    }) => updateLoanSchedule(scheduleId, payload),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: loanKeys.all });
+      if (selectedId) {
+        void queryClient.invalidateQueries({ queryKey: loanKeys.detail(selectedId).queryKey });
+      }
     },
   });
 
@@ -293,6 +330,41 @@ export function LoansPage() {
     setPaymentError(null);
   };
 
+  const openScheduleEditModal = (schedule: LoanSchedule) => {
+    setScheduleEdit(schedule);
+    setScheduleEditError(null);
+    setScheduleEditForm({
+      dueDate: schedule.due_date,
+      expectedAmount: schedule.expected_amount,
+      expectedInterest: schedule.expected_interest,
+      expectedPrincipal: schedule.expected_principal,
+      note: schedule.note ?? "",
+    });
+  };
+
+  const handleScheduleEditSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!scheduleEdit) {
+      return;
+    }
+    setScheduleEditError(null);
+    try {
+      await updateScheduleMutation.mutateAsync({
+        payload: {
+          dueDate: scheduleEditForm.dueDate,
+          expectedAmount: scheduleEditForm.expectedAmount,
+          expectedInterest: scheduleEditForm.expectedInterest,
+          expectedPrincipal: scheduleEditForm.expectedPrincipal,
+          note: scheduleEditForm.note || null,
+        },
+        scheduleId: scheduleEdit.id,
+      });
+      setScheduleEdit(null);
+    } catch (error) {
+      setScheduleEditError(error instanceof Error ? error.message : "Error al actualizar cuota");
+    }
+  };
+
   const handlePaymentSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!paymentSchedule) {
@@ -349,51 +421,107 @@ export function LoansPage() {
 
   return (
     <section className={PAGE_CONTAINER}>
-      <div className="grid gap-4 lg:min-h-[calc(100dvh-11rem)] lg:grid-cols-[minmax(24rem,30rem)_minmax(0,1fr)]">
-        <LoanList
-          canManage={canManage}
-          loans={loans}
-          onCreateRequest={() => {
-            setCreateOpen(true);
-            setCreateError(null);
-          }}
-          onSelect={setSelectedId}
-          selectedId={selectedId}
-        />
-        <div className="min-h-[34rem] lg:min-h-0">
-          {!selectedId && (
-            <div className="flex h-full items-center justify-center text-center">
-              <p className="text-default-500 text-sm">
-                Selecciona un préstamo para ver los detalles
-              </p>
+      <div className="grid gap-3 lg:min-h-[calc(100dvh-11rem)]">
+        {selectedId ? (
+          <>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-default-500 text-xs">Préstamo seleccionado</p>
+                <p className="truncate font-semibold text-foreground text-sm">
+                  {selectedLoan?.title ?? "Préstamo"}
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  onPress={() => {
+                    setSelectorOpen(true);
+                  }}
+                  type="button"
+                  variant="secondary"
+                >
+                  Cambiar préstamo
+                </Button>
+                {canManage && (
+                  <Button
+                    onPress={() => {
+                      setCreateOpen(true);
+                      setCreateError(null);
+                    }}
+                    type="button"
+                    variant="primary"
+                  >
+                    Nuevo préstamo
+                  </Button>
+                )}
+              </div>
             </div>
-          )}
-          {selectedId && (
-            <Suspense
-              fallback={
-                <div className="flex h-full items-center justify-center">
-                  <div className="rounded-full border-4 border-t-transparent bg-default-50 opacity-50 size-10" />
-                </div>
-              }
-            >
-              <LoanDetailSection
-                canDelete={canDelete}
-                canManage={canManage}
-                loanId={selectedId}
-                onDeleteRequest={(loan) => {
-                  void handleDeleteLoan(loan);
-                }}
-                onEditRequest={openEditModal}
-                onRegenerate={handleRegenerate}
-                onRegisterPayment={openPaymentModal}
-                onUnlinkPayment={(...args) => {
-                  void handleUnlink(...args);
-                }}
-              />
-            </Suspense>
-          )}
-        </div>
+            <div className="min-h-[42rem] lg:min-h-0">
+              <Suspense
+                fallback={
+                  <div className="flex h-full items-center justify-center">
+                    <div className="rounded-full border-4 border-t-transparent bg-default-50 opacity-50 size-10" />
+                  </div>
+                }
+              >
+                <LoanDetailSection
+                  canDelete={canDelete}
+                  canManage={canManage}
+                  loanId={selectedId}
+                  onDeleteRequest={(loan) => {
+                    void handleDeleteLoan(loan);
+                  }}
+                  onEditRequest={openEditModal}
+                  onEditSchedule={openScheduleEditModal}
+                  onRegenerate={handleRegenerate}
+                  onRegisterPayment={openPaymentModal}
+                  onUnlinkPayment={(...args) => {
+                    void handleUnlink(...args);
+                  }}
+                />
+              </Suspense>
+            </div>
+          </>
+        ) : (
+          <div className="mx-auto w-full max-w-3xl">
+            <LoanList
+              canManage={canManage}
+              loans={loans}
+              onCreateRequest={() => {
+                setCreateOpen(true);
+                setCreateError(null);
+              }}
+              onSelect={setSelectedId}
+              selectedId={selectedId}
+            />
+          </div>
+        )}
       </div>
+
+      <AppModal
+        isOpen={selectorOpen}
+        onClose={() => {
+          setSelectorOpen(false);
+        }}
+        title="Cambiar préstamo"
+        size="lg"
+      >
+        <div className="h-[70dvh]">
+          <LoanList
+            canManage={canManage}
+            loans={loans}
+            onCreateRequest={() => {
+              setSelectorOpen(false);
+              setCreateOpen(true);
+              setCreateError(null);
+            }}
+            onSelect={(publicId) => {
+              setSelectedId(publicId);
+              setSelectorOpen(false);
+            }}
+            selectedId={selectedId}
+          />
+        </div>
+      </AppModal>
 
       <AppModal
         isOpen={createOpen}
@@ -710,6 +838,152 @@ export function LoansPage() {
             {editError && (
               <p className="rounded-lg bg-rose-100 px-4 py-2 text-rose-700 text-sm md:col-span-2">
                 {editError}
+              </p>
+            )}
+          </Form>
+        )}
+      </AppModal>
+
+      <AppModal
+        isOpen={Boolean(scheduleEdit)}
+        onClose={() => {
+          setScheduleEdit(null);
+        }}
+        title={scheduleEdit ? `Editar cuota #${scheduleEdit.installment_number}` : "Editar cuota"}
+        size="lg"
+        footer={
+          <>
+            <Button
+              isDisabled={updateScheduleMutation.isPending}
+              onPress={() => {
+                setScheduleEdit(null);
+              }}
+              type="button"
+              variant="secondary"
+            >
+              Cancelar
+            </Button>
+            <Button
+              form="loan-schedule-edit-form"
+              isDisabled={updateScheduleMutation.isPending}
+              type="submit"
+            >
+              {updateScheduleMutation.isPending ? "Guardando..." : "Guardar cuota"}
+            </Button>
+          </>
+        }
+      >
+        {scheduleEdit && (
+          <Form
+            className="grid gap-4 md:grid-cols-2"
+            id="loan-schedule-edit-form"
+            onSubmit={(event) => {
+              void handleScheduleEditSubmit(event);
+            }}
+            validationBehavior="aria"
+          >
+            <DatePicker
+              isRequired
+              onChange={(value) => {
+                setScheduleEditForm((prev) => ({ ...prev, dueDate: value?.toString() ?? "" }));
+              }}
+              value={scheduleEditForm.dueDate ? parseDate(scheduleEditForm.dueDate) : undefined}
+            >
+              <Label>Vencimiento</Label>
+              <DateField.Group>
+                <DateField.InputContainer>
+                  <DateField.Input>
+                    {(segment) => <DateField.Segment segment={segment} />}
+                  </DateField.Input>
+                </DateField.InputContainer>
+                <DateField.Suffix>
+                  <DatePicker.Trigger>
+                    <DatePicker.TriggerIndicator />
+                  </DatePicker.Trigger>
+                </DateField.Suffix>
+              </DateField.Group>
+              <DatePicker.Popover>
+                <Calendar aria-label="Vencimiento de cuota">
+                  <Calendar.Header>
+                    <Calendar.YearPickerTrigger>
+                      <Calendar.YearPickerTriggerHeading />
+                      <Calendar.YearPickerTriggerIndicator />
+                    </Calendar.YearPickerTrigger>
+                    <Calendar.NavButton slot="previous" />
+                    <Calendar.NavButton slot="next" />
+                  </Calendar.Header>
+                  <Calendar.Grid>
+                    <Calendar.GridHeader>
+                      {(day) => <Calendar.HeaderCell>{day}</Calendar.HeaderCell>}
+                    </Calendar.GridHeader>
+                    <Calendar.GridBody>{(date) => <Calendar.Cell date={date} />}</Calendar.GridBody>
+                  </Calendar.Grid>
+                  <Calendar.YearPickerGrid>
+                    <Calendar.YearPickerGridBody>
+                      {({ year }) => <Calendar.YearPickerCell year={year} />}
+                    </Calendar.YearPickerGridBody>
+                  </Calendar.YearPickerGrid>
+                </Calendar>
+              </DatePicker.Popover>
+            </DatePicker>
+
+            <NumberField
+              isRequired
+              minValue={0}
+              onChange={(value) => {
+                setScheduleEditForm((prev) => ({ ...prev, expectedPrincipal: value ?? 0 }));
+              }}
+              value={scheduleEditForm.expectedPrincipal}
+            >
+              <Label>Capital</Label>
+              <NumberField.Group className="grid-cols-1">
+                <NumberField.Input />
+              </NumberField.Group>
+            </NumberField>
+
+            <NumberField
+              isRequired
+              minValue={0}
+              onChange={(value) => {
+                setScheduleEditForm((prev) => ({ ...prev, expectedInterest: value ?? 0 }));
+              }}
+              value={scheduleEditForm.expectedInterest}
+            >
+              <Label>Interés</Label>
+              <NumberField.Group className="grid-cols-1">
+                <NumberField.Input />
+              </NumberField.Group>
+            </NumberField>
+
+            <NumberField
+              isRequired
+              minValue={0.01}
+              onChange={(value) => {
+                setScheduleEditForm((prev) => ({ ...prev, expectedAmount: value ?? 0 }));
+              }}
+              value={scheduleEditForm.expectedAmount}
+            >
+              <Label>Cuota</Label>
+              <NumberField.Group className="grid-cols-1">
+                <NumberField.Input />
+              </NumberField.Group>
+            </NumberField>
+
+            <TextField className="md:col-span-2">
+              <Label>Nota de renegociación</Label>
+              <TextArea
+                onChange={(event: ChangeEvent<HTMLTextAreaElement>) => {
+                  setScheduleEditForm((prev) => ({ ...prev, note: event.target.value }));
+                }}
+                rows={3}
+                value={scheduleEditForm.note}
+                variant="secondary"
+              />
+            </TextField>
+
+            {scheduleEditError && (
+              <p className="rounded-lg bg-rose-100 px-4 py-2 text-rose-700 text-sm md:col-span-2">
+                {scheduleEditError}
               </p>
             )}
           </Form>
