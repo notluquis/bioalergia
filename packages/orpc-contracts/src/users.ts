@@ -163,6 +163,8 @@ export const inviteResponseSchema = z.object({
 export const resetPasswordResponseSchema = z.object({
   status: z.literal("ok"),
   tempPassword: z.string(),
+  /** Whether the temp password was also emailed to the user. */
+  emailed: z.boolean().default(false),
 });
 
 export const toggleMfaResponseSchema = z.object({

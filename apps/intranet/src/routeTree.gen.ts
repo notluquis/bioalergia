@@ -9,8 +9,10 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from "./routes/__root"
+import { Route as ResetPasswordRouteImport } from "./routes/reset-password"
 import { Route as OnboardingRouteImport } from "./routes/onboarding"
 import { Route as LoginRouteImport } from "./routes/login"
+import { Route as ForgotPasswordRouteImport } from "./routes/forgot-password"
 import { Route as AuthedRouteImport } from "./routes/_authed"
 import { Route as AuthedIndexRouteImport } from "./routes/_authed/index"
 import { Route as VerifyIdRouteImport } from "./routes/verify.$id"
@@ -89,6 +91,11 @@ import { Route as AuthedOutreachCampanasNuevaRouteImport } from "./routes/_authe
 import { Route as AuthedOutreachCampanasIdRouteImport } from "./routes/_authed/outreach/campanas.$id"
 import { Route as AuthedFinanzasPersonalCreditIdRouteImport } from "./routes/_authed/finanzas/personal.$creditId"
 
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: "/reset-password",
+  path: "/reset-password",
+  getParentRoute: () => rootRouteImport,
+} as any)
 const OnboardingRoute = OnboardingRouteImport.update({
   id: "/onboarding",
   path: "/onboarding",
@@ -97,6 +104,11 @@ const OnboardingRoute = OnboardingRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: "/login",
   path: "/login",
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
+  id: "/forgot-password",
+  path: "/forgot-password",
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthedRoute = AuthedRouteImport.update({
@@ -506,8 +518,10 @@ const AuthedFinanzasPersonalCreditIdRoute =
 
 export interface FileRoutesByFullPath {
   "/": typeof AuthedIndexRoute
+  "/forgot-password": typeof ForgotPasswordRoute
   "/login": typeof LoginRoute
   "/onboarding": typeof OnboardingRoute
+  "/reset-password": typeof ResetPasswordRoute
   "/account": typeof AuthedAccountRoute
   "/calendar": typeof AuthedCalendarRouteWithChildren
   "/certificates": typeof AuthedCertificatesRouteWithChildren
@@ -585,8 +599,10 @@ export interface FileRoutesByFullPath {
   "/patients/$id/": typeof AuthedPatientsIdIndexRoute
 }
 export interface FileRoutesByTo {
+  "/forgot-password": typeof ForgotPasswordRoute
   "/login": typeof LoginRoute
   "/onboarding": typeof OnboardingRoute
+  "/reset-password": typeof ResetPasswordRoute
   "/account": typeof AuthedAccountRoute
   "/certificates": typeof AuthedCertificatesRouteWithChildren
   "/finanzas": typeof AuthedFinanzasRouteWithChildren
@@ -660,8 +676,10 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   "/_authed": typeof AuthedRouteWithChildren
+  "/forgot-password": typeof ForgotPasswordRoute
   "/login": typeof LoginRoute
   "/onboarding": typeof OnboardingRoute
+  "/reset-password": typeof ResetPasswordRoute
   "/_authed/account": typeof AuthedAccountRoute
   "/_authed/calendar": typeof AuthedCalendarRouteWithChildren
   "/_authed/certificates": typeof AuthedCertificatesRouteWithChildren
@@ -743,8 +761,10 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | "/"
+    | "/forgot-password"
     | "/login"
     | "/onboarding"
+    | "/reset-password"
     | "/account"
     | "/calendar"
     | "/certificates"
@@ -822,8 +842,10 @@ export interface FileRouteTypes {
     | "/patients/$id/"
   fileRoutesByTo: FileRoutesByTo
   to:
+    | "/forgot-password"
     | "/login"
     | "/onboarding"
+    | "/reset-password"
     | "/account"
     | "/certificates"
     | "/finanzas"
@@ -896,8 +918,10 @@ export interface FileRouteTypes {
   id:
     | "__root__"
     | "/_authed"
+    | "/forgot-password"
     | "/login"
     | "/onboarding"
+    | "/reset-password"
     | "/_authed/account"
     | "/_authed/calendar"
     | "/_authed/certificates"
@@ -978,13 +1002,22 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   AuthedRoute: typeof AuthedRouteWithChildren
+  ForgotPasswordRoute: typeof ForgotPasswordRoute
   LoginRoute: typeof LoginRoute
   OnboardingRoute: typeof OnboardingRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
   VerifyIdRoute: typeof VerifyIdRoute
 }
 
 declare module "@tanstack/react-router" {
   interface FileRoutesByPath {
+    "/reset-password": {
+      id: "/reset-password"
+      path: "/reset-password"
+      fullPath: "/reset-password"
+      preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     "/onboarding": {
       id: "/onboarding"
       path: "/onboarding"
@@ -997,6 +1030,13 @@ declare module "@tanstack/react-router" {
       path: "/login"
       fullPath: "/login"
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/forgot-password": {
+      id: "/forgot-password"
+      path: "/forgot-password"
+      fullPath: "/forgot-password"
+      preLoaderRoute: typeof ForgotPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
     "/_authed": {
@@ -1826,8 +1866,10 @@ const AuthedRouteWithChildren =
 
 const rootRouteChildren: RootRouteChildren = {
   AuthedRoute: AuthedRouteWithChildren,
+  ForgotPasswordRoute: ForgotPasswordRoute,
   LoginRoute: LoginRoute,
   OnboardingRoute: OnboardingRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
   VerifyIdRoute: VerifyIdRoute,
 }
 export const routeTree = rootRouteImport

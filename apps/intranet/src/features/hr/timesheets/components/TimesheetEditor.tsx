@@ -6,7 +6,7 @@ import { useToast } from "@/context/ToastContext";
 import {
   bulkUpsertTimesheets,
   deleteTimesheet,
-  prepareTimesheetEmailPayload,
+  sendTimesheetEmailViaProvider,
 } from "@/features/hr/timesheets/api";
 import type { PrepareStatus } from "@/features/hr/timesheets/components/EmailPreviewModal";
 import { EmailPreviewModal } from "@/features/hr/timesheets/components/EmailPreviewModal";
@@ -31,10 +31,6 @@ import { timesheetKeys, timesheetQueries } from "@/features/hr/timesheets/querie
 import type { Employee } from "../../employees/types";
 
 const MONTH_STRING_REGEX = /^\d{4}-\d{2}$/;
-const DEFAULT_LOCAL_AGENT_URL = getDefaultLocalAgentUrl();
-const LOCAL_AGENT_TOKEN_KEY = "bioalergia_local_mail_agent_token";
-const LOCAL_AGENT_URL_KEY = "bioalergia_local_mail_agent_url";
-const TRAILING_SLASHES_REGEX = /\/+$/;
 
 const TimesheetExportPDF = lazy(() =>
   import("@/features/hr/timesheets/components/TimesheetExportPDF").then((m) => ({
@@ -177,7 +173,7 @@ function TimesheetEditorInner({
 
   // Email Mutation
   const emailMutation = useMutation({
-    mutationFn: prepareTimesheetEmailPayload,
+    mutationFn: sendTimesheetEmailViaProvider,
     onError: (err) => {
       const message = err instanceof Error ? err.message : "Error al preparar el email";
       setErrorLocal(message);
@@ -479,8 +475,8 @@ function createHandlePrepareEmail({
 }: {
   emailHasError: boolean;
   emailMutateAsync: (
-    args: Parameters<typeof prepareTimesheetEmailPayload>[0]
-  ) => Promise<Awaited<ReturnType<typeof prepareTimesheetEmailPayload>>>;
+    args: Parameters<typeof sendTimesheetEmailViaProvider>[0]
+  ) => Promise<Awaited<ReturnType<typeof sendTimesheetEmailViaProvider>>>;
   generatePdfBase64: () => Promise<null | string>;
   month: string;
   monthLabel: string;
@@ -537,8 +533,8 @@ async function runPrepareEmail({
   summaryRow,
 }: {
   emailMutateAsync: (
-    args: Parameters<typeof prepareTimesheetEmailPayload>[0]
-  ) => Promise<Awaited<ReturnType<typeof prepareTimesheetEmailPayload>>>;
+    args: Parameters<typeof sendTimesheetEmailViaProvider>[0]
+  ) => Promise<Awaited<ReturnType<typeof sendTimesheetEmailViaProvider>>>;
   generatePdfBase64: () => Promise<null | string>;
   month: string;
   monthLabel: string;
@@ -551,7 +547,7 @@ async function runPrepareEmail({
     throw new Error("No se pudo generar el PDF");
   }
 
-  setEmailPrepareStatus("preparing-payload");
+  setEmailPrepareStatus("sending");
 
   const payload = buildPrepareEmailPayload({
     month,
@@ -561,10 +557,11 @@ async function runPrepareEmail({
     summaryRow,
   });
 
-  const data = await emailMutateAsync(payload);
-  ensurePrepareEmailSuccess(data);
-  setEmailPrepareStatus("sending");
-  return sendLocalAgentEmail(data.payload);
+  const result = await emailMutateAsync(payload);
+  if (!result.sent) {
+    throw new Error("No se pudo enviar el correo");
+  }
+  return null;
 }
 
 function buildPrepareEmailPayload({
@@ -603,143 +600,6 @@ function buildEmailSummary(summaryRow: TimesheetSummaryRow) {
     subtotal: summaryRow.subtotal,
     workedMinutes: summaryRow.workedMinutes,
   };
-}
-
-function ensurePrepareEmailSuccess(data: Awaited<ReturnType<typeof prepareTimesheetEmailPayload>>) {
-  if (data.status !== "ok") {
-    throw new Error(data.message || "Error al preparar el email");
-  }
-}
-
-async function sendLocalAgentEmail(payload: {
-  to: string;
-  from: string;
-  subject: string;
-  html: string;
-  text?: string;
-  attachments: Array<{ filename: string; contentBase64: string; contentType: string }>;
-}): Promise<null | string> {
-  const token = getLocalAgentToken();
-  if (!token) {
-    throw new Error("Token del agente local no configurado");
-  }
-
-  const agentUrl = getLocalAgentUrl();
-  let response: Response;
-  try {
-    response = await fetch(`${normalizeAgentUrl(agentUrl)}/send`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Local-Agent-Token": token,
-      },
-      body: JSON.stringify(payload),
-    });
-  } catch (error) {
-    if (error instanceof TypeError) {
-      throw new Error(
-        "No se pudo conectar con el agente local. Revisa URL, HTTPS/certificado y que esté corriendo."
-      );
-    }
-    throw error;
-  }
-
-  if (!response.ok) {
-    const message = await buildLocalAgentErrorMessage(response, "Error al enviar el email");
-    throw new Error(message);
-  }
-
-  const contentType = response.headers.get("content-type") ?? "";
-  if (!contentType.includes("application/json")) {
-    return null;
-  }
-
-  try {
-    const data = (await response.json()) as {
-      sentFolderPath?: null | string;
-      sentFolderSaved?: boolean;
-    };
-    if (data.sentFolderSaved === false) {
-      return "Email enviado, pero no se pudo guardar la copia en Sent (IMAP).";
-    }
-    if (data.sentFolderSaved && data.sentFolderPath) {
-      return null;
-    }
-  } catch {
-    return null;
-  }
-
-  return null;
-}
-
-function getLocalAgentToken() {
-  const storedToken = localStorage.getItem(LOCAL_AGENT_TOKEN_KEY);
-  if (storedToken) {
-    return storedToken;
-  }
-  return null;
-}
-
-function getLocalAgentUrl() {
-  const storedUrl = localStorage.getItem(LOCAL_AGENT_URL_KEY);
-  if (storedUrl) {
-    return storedUrl;
-  }
-  return DEFAULT_LOCAL_AGENT_URL;
-}
-
-function normalizeAgentUrl(value: string) {
-  return value.trim().replace(TRAILING_SLASHES_REGEX, "");
-}
-
-function getDefaultLocalAgentUrl() {
-  if (import.meta.env.VITE_LOCAL_MAIL_AGENT_URL) {
-    return import.meta.env.VITE_LOCAL_MAIL_AGENT_URL;
-  }
-  if (typeof window !== "undefined" && window.location.protocol === "http:") {
-    return "http://127.0.0.1:3333";
-  }
-  return "https://127.0.0.1:3333";
-}
-
-async function buildLocalAgentErrorMessage(response: Response, fallbackMessage: string) {
-  const baseMessage = await readLocalAgentErrorMessage(response, fallbackMessage);
-
-  if (response.status === 401) {
-    return "Token inválido o no autorizado";
-  }
-  if (response.status === 413) {
-    return "El adjunto supera el límite de 30 MB";
-  }
-  if (response.status === 502) {
-    return `SMTP rechazó el envío: ${baseMessage}`;
-  }
-  if (response.status === 500) {
-    return `Error interno del agente local: ${baseMessage}`;
-  }
-
-  return baseMessage;
-}
-
-async function readLocalAgentErrorMessage(response: Response, fallbackMessage: string) {
-  const contentType = response.headers.get("content-type") ?? "";
-
-  if (!contentType.includes("application/json")) {
-    return fallbackMessage;
-  }
-
-  try {
-    const data = (await response.json()) as { code?: string; message?: string };
-    if (!data?.message) {
-      return fallbackMessage;
-    }
-    if (data.code) {
-      return `${data.message} (${data.code})`;
-    }
-    return data.message;
-  } catch {
-    return fallbackMessage;
-  }
 }
 
 function createHandleRowChange(

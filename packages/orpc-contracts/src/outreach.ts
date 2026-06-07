@@ -561,6 +561,13 @@ export const nextDeliveryBatchResponseSchema = z.object({
   remaining: z.number().int(),
 });
 
+// Server-side batch send (Resend) — replaces the browser → local-agent loop.
+export const outreachSendBatchResponseSchema = z.object({
+  sent: z.number().int().nonnegative(),
+  failed: z.number().int().nonnegative(),
+  remaining: z.number().int().nonnegative(),
+});
+
 export const dashboardResponseSchema = z.object({
   totales: z.object({
     establecimientos: z.number().int(),
@@ -672,14 +679,10 @@ export const outreachContract = {
     .route({ method: "POST", path: "/campaigns/pause", tags: ["Outreach"] })
     .input(campaignIdInputSchema)
     .output(campaignResponseSchema),
-  nextDeliveryBatch: oc
-    .route({ method: "POST", path: "/campaigns/next-batch", tags: ["Outreach"] })
+  sendBatch: oc
+    .route({ method: "POST", path: "/campaigns/send-batch", tags: ["Outreach"] })
     .input(nextDeliveryBatchInputSchema)
-    .output(nextDeliveryBatchResponseSchema),
-  recordDeliveryResult: oc
-    .route({ method: "POST", path: "/campaigns/record-result", tags: ["Outreach"] })
-    .input(recordDeliveryResultInputSchema)
-    .output(okResponseSchema),
+    .output(outreachSendBatchResponseSchema),
 
   // Importación
   importMineduc: oc

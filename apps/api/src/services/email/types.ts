@@ -26,6 +26,18 @@ export interface EmailMessage {
    * sent at most once. Pattern: `<event>/<entityId>` e.g. `reset/123`.
    */
   idempotencyKey?: string;
+  /**
+   * File attachments. Base64 `content`. NOTE: not supported by the batch
+   * endpoint (Resend limitation) — only single `send()`.
+   */
+  attachments?: EmailAttachment[];
+}
+
+export interface EmailAttachment {
+  filename: string;
+  /** Base64-encoded file content. */
+  content: string;
+  contentType?: string;
 }
 
 /** Outcome of a single send. `id` is the provider's message id when sent. */

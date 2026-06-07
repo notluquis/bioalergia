@@ -1,22 +1,13 @@
 import { Button, Card, Chip, Spinner } from "@heroui/react";
 import { Link, useParams } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   useCampaign,
   useLaunchCampaign,
-  useNextDeliveryBatch,
   usePauseCampaign,
-  useRecordDeliveryResult,
+  useSendBatch,
 } from "../hooks/useOutreach";
 import { CAMPAIGN_STATUS_LABELS, DELIVERY_STATUS_LABELS } from "../labels";
-import {
-  checkAgentHealth,
-  getLocalAgentToken,
-  getLocalAgentUrl,
-  sendOutreachEmailViaAgent,
-  setLocalAgentConfig,
-} from "../mail-agent";
-import { TextInput } from "../components/FormField";
 
 export function OutreachCampaignDetailPage() {
   const { id } = useParams({ from: "/_authed/outreach/campanas/$id" });
@@ -24,18 +15,10 @@ export function OutreachCampaignDetailPage() {
   const { data, isLoading } = useCampaign(numId);
   const launch = useLaunchCampaign();
   const pause = usePauseCampaign();
-  const nextBatch = useNextDeliveryBatch();
-  const recordResult = useRecordDeliveryResult();
+  const sendBatchMutation = useSendBatch();
 
-  const [agentUrl, setAgentUrl] = useState(getLocalAgentUrl());
-  const [agentToken, setAgentToken] = useState(getLocalAgentToken() ?? "");
-  const [agentReady, setAgentReady] = useState<boolean | null>(null);
   const [sending, setSending] = useState(false);
   const [log, setLog] = useState<string[]>([]);
-
-  useEffect(() => {
-    void checkAgentHealth().then(setAgentReady);
-  }, []);
 
   if (isLoading || !data) {
     return (
@@ -48,45 +31,22 @@ export function OutreachCampaignDetailPage() {
   const c = data.campaign;
   const pendientes = data.envios.filter((e) => e.estado === "PENDIENTE").length;
 
-  const saveAgentConfig = () => {
-    setLocalAgentConfig(agentUrl, agentToken);
-    void checkAgentHealth().then(setAgentReady);
-  };
-
   const sendBatch = async () => {
     if (sending) return;
     setSending(true);
     try {
-      const batch = await nextBatch.mutateAsync({ campaignId: numId, limit: 5 });
-      if (batch.items.length === 0) {
+      const res = await sendBatchMutation.mutateAsync({ campaignId: numId, limit: 25 });
+      const stamp = new Date().toLocaleTimeString();
+      if (res.sent === 0 && res.failed === 0) {
+        setLog((l) => [...l, `${stamp} · sin envíos (rate horario o pendientes=${res.remaining})`]);
+      } else {
         setLog((l) => [
           ...l,
-          `${new Date().toLocaleTimeString()} · sin items disponibles (rate o pendientes=${batch.remaining})`,
+          `${stamp} · ✓ ${res.sent} enviados, ✗ ${res.failed} fallidos, quedan ${res.remaining}`,
         ]);
-        return;
       }
-      for (const item of batch.items) {
-        try {
-          await sendOutreachEmailViaAgent({
-            to: item.emailDestinatario,
-            from: item.fromEmail,
-            subject: item.asunto,
-            html: item.cuerpoHtml,
-            text: item.cuerpoTexto,
-            replyTo: item.replyTo ?? undefined,
-          });
-          await recordResult.mutateAsync({ deliveryId: item.deliveryId, status: "ENVIADO" });
-          setLog((l) => [...l, `✓ ${item.emailDestinatario} (${item.establecimientoNombre})`]);
-        } catch (err) {
-          const msg = err instanceof Error ? err.message : "error desconocido";
-          await recordResult.mutateAsync({
-            deliveryId: item.deliveryId,
-            status: "ERROR",
-            errorMensaje: msg,
-          });
-          setLog((l) => [...l, `✗ ${item.emailDestinatario}: ${msg}`]);
-        }
-      }
+    } catch (err) {
+      setLog((l) => [...l, `✗ ${err instanceof Error ? err.message : "error"}`]);
     } finally {
       setSending(false);
     }
@@ -135,45 +95,22 @@ export function OutreachCampaignDetailPage() {
 
       <Card>
         <Card.Header>
-          <Card.Title>Agente local de correo</Card.Title>
+          <Card.Title>Envío de correos</Card.Title>
           <Card.Description>
-            Los emails se envían desde tu equipo via el agente local. Configura URL + token.
+            Los correos se envían desde el servidor vía Resend, respetando el límite por hora de la
+            campaña. Cada lote envía hasta 25 (o lo que permita el rate).
           </Card.Description>
         </Card.Header>
         <Card.Content className="space-y-3 p-4">
-          <div className="grid grid-cols-1 gap-2 md:grid-cols-3">
-            <TextInput
-              label="URL agente"
-              placeholder="https://127.0.0.1:3333"
-              value={agentUrl}
-              onValueChange={setAgentUrl}
-            />
-            <TextInput
-              label="Token"
-              placeholder="X-Local-Agent-Token"
-              value={agentToken}
-              onValueChange={setAgentToken}
-            />
-            <div className="flex items-end">
-              <Button size="sm" variant="secondary" onPress={saveAgentConfig}>
-                Guardar y verificar
-              </Button>
-            </div>
-          </div>
-          {agentReady !== null && (
-            <Chip size="sm" color={agentReady ? "success" : "danger"} variant="soft">
-              Agente {agentReady ? "OK" : "no disponible"}
-            </Chip>
-          )}
           <div className="flex items-center gap-2">
             <Button
               variant="primary"
-              isDisabled={c.estado !== "ENVIANDO" || !agentReady || sending}
+              isDisabled={c.estado !== "ENVIANDO" || sending}
               onPress={() => {
                 void sendBatch();
               }}
             >
-              {sending ? "Enviando..." : "Enviar siguiente lote (5)"}
+              {sending ? "Enviando..." : "Enviar siguiente lote"}
             </Button>
           </div>
           {log.length > 0 && (

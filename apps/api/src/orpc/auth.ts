@@ -7,6 +7,10 @@ import {
   authExchangeDebugTokenSchema,
   authIssueDebugTokenResponseSchema,
   authIssueDebugTokenSchema,
+  forgotPasswordResponseSchema,
+  forgotPasswordSchema,
+  resetPasswordTokenResponseSchema,
+  resetPasswordTokenSchema,
   authLoginOkResponseSchema,
   authLoginResponseSchema,
   authLoginSchema,
@@ -38,6 +42,7 @@ import { ipFromContext, logAuditFromContext } from "../lib/audit-log.ts";
 import { fakeVerifyPassword } from "../lib/crypto.ts";
 import { DomainError } from "../lib/errors.ts";
 import { logError } from "../lib/logger.ts";
+import { requestPasswordReset, resetPasswordWithToken } from "../services/password-reset.ts";
 import {
   clearEmailLoginFailure,
   isEmailThrottled,
@@ -483,6 +488,35 @@ const authORPCRouterBase = {
           status: user.status,
         },
       };
+    }),
+
+  forgotPassword: base
+    .route({
+      method: "POST",
+      path: "/forgot-password",
+      summary: "Request password reset",
+      tags: ["Auth"],
+    })
+    .input(forgotPasswordSchema)
+    .output(forgotPasswordResponseSchema)
+    .handler(async ({ input }) => {
+      // Fire-and-forget semantics: always return ok (anti-enumeration).
+      await requestPasswordReset(input.email);
+      return { status: "ok" as const };
+    }),
+
+  resetPassword: base
+    .route({
+      method: "POST",
+      path: "/reset-password",
+      summary: "Reset password with token",
+      tags: ["Auth"],
+    })
+    .input(resetPasswordTokenSchema)
+    .output(resetPasswordTokenResponseSchema)
+    .handler(async ({ input }) => {
+      await resetPasswordWithToken(input.token, input.password);
+      return { status: "ok" as const };
     }),
 
   logout: base

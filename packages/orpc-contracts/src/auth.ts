@@ -27,6 +27,25 @@ export const authPasskeyResponseSchema = z.object({
 
 export const authEmptySchema = z.object({});
 
+// Self-service password reset (public, unauthenticated).
+export const forgotPasswordSchema = z.object({
+  email: z.email(),
+});
+
+export const forgotPasswordResponseSchema = z.object({
+  // Always "ok" regardless of whether the email exists (anti-enumeration).
+  status: z.literal("ok"),
+});
+
+export const resetPasswordTokenSchema = z.object({
+  token: z.string().min(1),
+  password: z.string().min(8, "Mínimo 8 caracteres").max(200),
+});
+
+export const resetPasswordTokenResponseSchema = z.object({
+  status: z.literal("ok"),
+});
+
 export const authUserSchema = z.object({
   email: z.string(),
   hasPasskey: z.boolean().optional(),
@@ -168,6 +187,14 @@ export const authContract = {
     .route({ method: "POST", path: "/logout" })
     .input(authEmptySchema)
     .output(authStatusResponseSchema),
+  forgotPassword: oc
+    .route({ method: "POST", path: "/forgot-password" })
+    .input(forgotPasswordSchema)
+    .output(forgotPasswordResponseSchema),
+  resetPassword: oc
+    .route({ method: "POST", path: "/reset-password" })
+    .input(resetPasswordTokenSchema)
+    .output(resetPasswordTokenResponseSchema),
   session: oc.route({ method: "GET", path: "/me/session" }).output(authSessionResponseSchema),
   issueDebugToken: oc
     .route({ method: "POST", path: "/debug/token" })

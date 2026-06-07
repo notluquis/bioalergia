@@ -13,10 +13,6 @@ const config: KnipConfig = {
     "**/storybook-static/**",
     "**/dist/**",
     "**/.turbo/**",
-    // WIP IMAP fetcher for inbound utility-bill parsing (CGE/ESSBIO/...).
-    // STUB: connect+list implemented, per-sender parser TODO. Kept as
-    // scaffolding; same pattern as apps/api/src/services/scrapers/.
-    "apps/local-mail-agent/src/imap-fetcher.ts",
     // Knip false negative: SharedPayloadModal + its lib helpers are
     // consumed by WaCloudInboxPage but knip's resolver mis-walks the
     // .ts extension import chain. Verified live in commit 739ac07a.

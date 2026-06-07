@@ -41,8 +41,7 @@ const orpcMocks = vi.hoisted(() => ({
   recomputeScore: vi.fn(),
   bulkCrawl: vi.fn(),
   bulkCrawlStatus: vi.fn(),
-  nextDeliveryBatch: vi.fn(),
-  recordDeliveryResult: vi.fn(),
+  sendBatch: vi.fn(),
 }));
 
 vi.mock("../orpc", () => ({
@@ -59,8 +58,7 @@ const {
   useEstablishments,
   useImportMineduc,
   useLaunchCampaign,
-  useNextDeliveryBatch,
-  useRecordDeliveryResult,
+  useSendBatch,
 } = await import("./useOutreach");
 
 function buildWrapper() {
@@ -242,22 +240,12 @@ describe("useBulkCrawlStatus polling", () => {
 });
 
 describe("delivery batch mutations", () => {
-  it("useNextDeliveryBatch forwards { campaignId, limit }", async () => {
-    orpcMocks.nextDeliveryBatch.mockResolvedValue({ batch: [] });
-    const { result } = renderHook(() => useNextDeliveryBatch(), { wrapper: buildWrapper() });
+  it("useSendBatch forwards { campaignId, limit }", async () => {
+    orpcMocks.sendBatch.mockResolvedValue({ sent: 0, failed: 0, remaining: 0 });
+    const { result } = renderHook(() => useSendBatch(), { wrapper: buildWrapper() });
     await act(async () => {
       await result.current.mutateAsync({ campaignId: 1, limit: 25 });
     });
-    expect(orpcMocks.nextDeliveryBatch).toHaveBeenCalledWith({ campaignId: 1, limit: 25 });
-  });
-
-  it("useRecordDeliveryResult forwards full record", async () => {
-    orpcMocks.recordDeliveryResult.mockResolvedValue({ ok: true });
-    const { result } = renderHook(() => useRecordDeliveryResult(), { wrapper: buildWrapper() });
-    const payload = { id: 5, status: "ENVIADO" } as never;
-    await act(async () => {
-      await result.current.mutateAsync(payload);
-    });
-    expect(orpcMocks.recordDeliveryResult).toHaveBeenCalledWith(payload);
+    expect(orpcMocks.sendBatch).toHaveBeenCalledWith({ campaignId: 1, limit: 25 });
   });
 });
