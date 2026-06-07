@@ -1,5 +1,6 @@
 import { kysely } from "@finanzas/db";
 import { sql } from "kysely";
+import { dbDateToISO, dbDateToMs } from "../../lib/time.ts";
 import type { ParsedClinicalRecord } from "./parser.ts";
 
 // Resolve a ParsedClinicalRecord to a patients row by normalised name
@@ -115,7 +116,7 @@ function ageAdjustment(
   if (parsedYears == null || !birthDate || !consultDate) return 0;
   const consult = new Date(consultDate);
   if (Number.isNaN(consult.getTime())) return 0;
-  const actualYears = (consult.getTime() - birthDate.getTime()) / (365.25 * 24 * 3600 * 1000);
+  const actualYears = (consult.getTime() - dbDateToMs(birthDate)) / (365.25 * 24 * 3600 * 1000);
   if (actualYears < 0) return -0.4;
   const diff = Math.abs(parsedYears - actualYears);
   if (diff < 0.25) return 0.3;
@@ -184,7 +185,7 @@ export async function matchPatientForRecord(parsed: ParsedClinicalRecord): Promi
       personId: row.personId,
       fullName,
       rut: row.rut,
-      birthDate: row.birthDate ? row.birthDate.toISOString().slice(0, 10) : null,
+      birthDate: dbDateToISO(row.birthDate),
       score: Math.round(finalScore * 100) / 100,
       reason: reasons.join("+"),
     });

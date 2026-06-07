@@ -4,6 +4,7 @@ import {
   chileDateMonthsAgo,
   coerceDateOnly,
   dbDateToISO,
+  dbDateToMs,
   dbTimeToHHmm,
   formatChile,
   formatChileDateTime,
@@ -600,6 +601,26 @@ describe("time", () => {
     });
     it("throws on malformed input", () => {
       expect(() => isoToDbDate("2026/05/04")).toThrow(/Expected YYYY-MM-DD/);
+    });
+  });
+
+  describe("dbDateToMs (@db.Date day-window arithmetic)", () => {
+    it("returns the UTC-midnight epoch ms for a ZenStack Date (== raw getTime)", () => {
+      const d = new Date("2026-05-04T00:00:00.000Z");
+      expect(dbDateToMs(d)).toBe(d.getTime());
+    });
+    it("parses a 'YYYY-MM-DD' string to the same UTC-midnight anchor", () => {
+      expect(dbDateToMs("2026-05-04")).toBe(new Date("2026-05-04T00:00:00.000Z").getTime());
+    });
+    it("Date and string forms agree (parser-agnostic)", () => {
+      expect(dbDateToMs(new Date("2026-12-31T00:00:00.000Z"))).toBe(dbDateToMs("2026-12-31"));
+    });
+    it("exact-day differences come out as whole days", () => {
+      const ms = dbDateToMs("2026-05-11") - dbDateToMs("2026-05-04");
+      expect(ms / (24 * 60 * 60 * 1000)).toBe(7);
+    });
+    it("returns NaN for an unparseable string", () => {
+      expect(Number.isNaN(dbDateToMs("not-a-date"))).toBe(true);
     });
   });
 

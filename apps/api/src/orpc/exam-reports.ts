@@ -1,6 +1,7 @@
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { ORPCError, onError, os } from "@orpc/server";
 import { db } from "@finanzas/db";
+import { dbDateToISO } from "../lib/time.ts";
 import {
   allergenListInputSchema,
   allergenListOutputSchema,
@@ -144,7 +145,7 @@ function serialiseDetail(r: ReportDetailRow) {
     updatedAt: r.updatedAt.toISOString(),
     patient: {
       ...r.patient,
-      birthDate: r.patient.birthDate ? r.patient.birthDate.toISOString().slice(0, 10) : null,
+      birthDate: dbDateToISO(r.patient.birthDate),
     },
     sections: (r.sections ?? []).map((s: SectionRow) => ({
       ...s,
@@ -471,7 +472,7 @@ const examReportsRouterBase = {
       return {
         histamineMm: hist,
         salineMm: sal,
-        testDate: skinTest.testDate.toISOString().slice(0, 10),
+        testDate: dbDateToISO(skinTest.testDate),
         skinTestId: skinTest.id,
       };
     }),

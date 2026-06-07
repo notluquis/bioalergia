@@ -12,7 +12,7 @@ import {
 } from "@finanzas/db";
 import type { ServiceInclude } from "@finanzas/db/input";
 import { Decimal } from "decimal.js";
-import { dbDateToISO, isoToDbDate } from "../lib/time.ts";
+import { dbDateToISO, dbDateToMs, isoToDbDate } from "../lib/time.ts";
 
 type ServicePayload = {
   name: string;
@@ -402,10 +402,10 @@ export async function syncServiceSchedulesWithFinancialTransactions(
   }
 
   const minDate = new Date(
-    Math.min(...schedules.map((schedule) => schedule.periodStart.getTime())) - 7 * DAY_IN_MS
+    Math.min(...schedules.map((schedule) => dbDateToMs(schedule.periodStart))) - 7 * DAY_IN_MS
   );
   const maxDate = new Date(
-    Math.max(...schedules.map((schedule) => schedule.dueDate.getTime())) + 7 * DAY_IN_MS
+    Math.max(...schedules.map((schedule) => dbDateToMs(schedule.dueDate))) + 7 * DAY_IN_MS
   );
 
   const alreadyLinkedRows = await db.serviceSchedule.findMany({
@@ -456,8 +456,8 @@ export async function syncServiceSchedulesWithFinancialTransactions(
       continue;
     }
 
-    const windowStart = schedule.periodStart.getTime() - 7 * DAY_IN_MS;
-    const windowEnd = schedule.dueDate.getTime() + 7 * DAY_IN_MS;
+    const windowStart = dbDateToMs(schedule.periodStart) - 7 * DAY_IN_MS;
+    const windowEnd = dbDateToMs(schedule.dueDate) + 7 * DAY_IN_MS;
     const tolerance = getAmountTolerance(expectedAmount);
 
     let bestMatch: (typeof candidateTransactions)[number] | null = null;
@@ -479,7 +479,7 @@ export async function syncServiceSchedulesWithFinancialTransactions(
         continue;
       }
 
-      const dayDiff = Math.abs(txDate - schedule.dueDate.getTime()) / DAY_IN_MS;
+      const dayDiff = Math.abs(txDate - dbDateToMs(schedule.dueDate)) / DAY_IN_MS;
       const score = amountDiff + dayDiff * 100;
 
       if (score < bestScore) {
