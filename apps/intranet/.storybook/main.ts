@@ -18,12 +18,11 @@ const config: StorybookConfig = {
     // CLI with `IS_CHROMATIC=true` per chromatic.com/docs/ischromatic).
     // Local dev + Vitest test:storybook still load it.
     ...(process.env.IS_CHROMATIC ? [] : ["@storybook/addon-vitest"]),
-    // Auto-instruments story files for coverage. NOTE: the actual coverage
-    // report is produced by the `unit` Vitest project (`pnpm test:coverage`,
-    // see vite.config.ts → test.coverage). Stories are excluded from that
-    // include glob to keep the % metric measuring production code, not
-    // demo wrappers — the story-coverage signal here is advisory only.
-    "@storybook/addon-coverage",
+    // NOTE: @storybook/addon-coverage fue removido (2026-06): solo
+    // auto-instrumentaba stories para una señal de coverage advisory que no
+    // corría en CI, y arrastraba vite-plugin-istanbul ^6 (peer vite <=6) que
+    // rompe contra vite 8. El coverage real lo produce el proyecto Vitest
+    // `unit` (`pnpm test:coverage`, vite.config.ts → test.coverage).
     "storybook-addon-tag-badges",
   ],
   framework: "@storybook/react-vite",
