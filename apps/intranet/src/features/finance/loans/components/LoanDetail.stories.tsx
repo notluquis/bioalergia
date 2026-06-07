@@ -77,7 +77,7 @@ const meta: Meta<typeof LoanDetail> = {
   decorators: [
     (Story) => (
       <I18nProvider locale="es-CL">
-        <div className="h-screen p-8">
+        <div className="h-screen p-3 md:p-8">
           <Story />
         </div>
       </I18nProvider>
