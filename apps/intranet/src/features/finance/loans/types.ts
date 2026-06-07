@@ -1,7 +1,7 @@
 export interface CreateLoanPayload {
   borrowerName: string;
   borrowerType: "COMPANY" | "PERSON";
-  frequency: "BIWEEKLY" | "MONTHLY" | "WEEKLY";
+  frequency: "BIWEEKLY" | "IRREGULAR" | "MONTHLY" | "WEEKLY";
   generateSchedule?: boolean;
   interestRate: number;
   interestType: "COMPOUND" | "SIMPLE";
@@ -155,7 +155,7 @@ export interface LoanSummary {
 }
 
 export interface RegenerateSchedulePayload {
-  frequency?: "BIWEEKLY" | "IRREGULAR" | "MONTHLY" | "WEEKLY";
+  frequency?: "BIWEEKLY" | "MONTHLY" | "WEEKLY";
   interestRate?: number;
   startDate?: string; // YYYY-MM-DD
   totalInstallments?: number;

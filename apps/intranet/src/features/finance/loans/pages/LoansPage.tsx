@@ -13,6 +13,7 @@ import {
 } from "@heroui/react";
 import { parseDate } from "@internationalized/date";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import { getRouteApi } from "@tanstack/react-router";
 import type { ChangeEvent } from "react";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { AppModal } from "@/components/ui/AppModal";
@@ -36,13 +37,21 @@ import type {
   RegenerateSchedulePayload,
 } from "@/features/finance/loans/types";
 import { PAGE_CONTAINER } from "@/lib/styles";
+
+const routeApi = getRouteApi("/_authed/finanzas/loans");
+
 export function LoansPage() {
   const { can } = useAuth();
   const queryClient = useQueryClient();
   const canManage = can("update", "Loan");
   const canView = can("read", "Loan");
 
-  const [selectedId, setSelectedId] = useState<null | string>(null);
+  const { loan: selectedSearch } = routeApi.useSearch();
+  const navigate = routeApi.useNavigate();
+  const selectedId = selectedSearch ?? null;
+  const setSelectedId = (publicId: null | string) => {
+    void navigate({ search: { loan: publicId ?? undefined } });
+  };
 
   const [createOpen, setCreateOpen] = useState(false);
   const [createError, setCreateError] = useState<null | string>(null);
@@ -64,15 +73,13 @@ export function LoansPage() {
 
   const loans = useMemo(() => loansResponse.loans, [loansResponse.loans]);
 
-  // Auto-selection
+  // No auto-selección: la página abre en el resumen. Solo limpiar si el
+  // préstamo seleccionado dejó de existir (eliminado).
   useEffect(() => {
-    if (loans.length > 0 && !selectedId) {
-      setSelectedId(loans[0]?.public_id ?? null);
-    } else if (loans.length === 0 && selectedId) {
+    if (selectedId && !loans.some((l) => l.public_id === selectedId)) {
       setSelectedId(null);
-    } else if (selectedId && !loans.some((l) => l.public_id === selectedId) && loans.length > 0) {
-      setSelectedId(loans[0]?.public_id ?? null);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loans, selectedId]);
 
   // REST API mutations
@@ -228,23 +235,35 @@ export function LoansPage() {
             </div>
           )}
           {selectedId && (
-            <Suspense
-              fallback={
-                <div className="flex h-full items-center justify-center">
-                  <div className="rounded-full border-4 border-t-transparent bg-default-50 opacity-50 size-10" />
-                </div>
-              }
-            >
-              <LoanDetailSection
-                canManage={canManage}
-                loanId={selectedId}
-                onRegenerate={handleRegenerate}
-                onRegisterPayment={openPaymentModal}
-                onUnlinkPayment={(...args) => {
-                  void handleUnlink(...args);
+            <div className="space-y-4">
+              <Button
+                onPress={() => {
+                  setSelectedId(null);
                 }}
-              />
-            </Suspense>
+                size="sm"
+                type="button"
+                variant="secondary"
+              >
+                ← Volver al listado
+              </Button>
+              <Suspense
+                fallback={
+                  <div className="flex h-full items-center justify-center">
+                    <div className="rounded-full border-4 border-t-transparent bg-default-50 opacity-50 size-10" />
+                  </div>
+                }
+              >
+                <LoanDetailSection
+                  canManage={canManage}
+                  loanId={selectedId}
+                  onRegenerate={handleRegenerate}
+                  onRegisterPayment={openPaymentModal}
+                  onUnlinkPayment={(...args) => {
+                    void handleUnlink(...args);
+                  }}
+                />
+              </Suspense>
+            </div>
           )}
         </div>
       </div>

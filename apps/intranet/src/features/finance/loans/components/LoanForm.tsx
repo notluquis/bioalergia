@@ -76,6 +76,7 @@ type PaymentDraft = {
 type ManualInstallmentDraft = {
   dueDate: string;
   expectedAmount: number;
+  expectedInterest: number;
   id: string;
   note: string;
   payments: PaymentDraft[];
@@ -105,6 +106,7 @@ const createManualInstallmentDraft = (
 ): ManualInstallmentDraft => ({
   dueDate,
   expectedAmount,
+  expectedInterest: 0,
   id: crypto.randomUUID(),
   note: "",
   payments: [],
@@ -297,7 +299,11 @@ export function LoanForm({ onCancel, onSubmit, onSubmitStructured }: LoanFormPro
                 manualInstallments: usableManualInstallments.map((installment) => ({
                   dueDate: installment.dueDate,
                   expectedAmount: installment.expectedAmount,
-                  expectedPrincipal: installment.expectedAmount,
+                  expectedInterest: installment.expectedInterest,
+                  expectedPrincipal: Math.max(
+                    0,
+                    installment.expectedAmount - installment.expectedInterest
+                  ),
                   note: installment.note || undefined,
                   payments: installment.payments
                     .filter((payment) => payment.amount > 0 && payment.paidDate)
@@ -614,9 +620,6 @@ export function LoanForm({ onCancel, onSubmit, onSubmitStructured }: LoanFormPro
                     </ListBox.Item>
                     <ListBox.Item id="MONTHLY" key="MONTHLY">
                       Mensual
-                    </ListBox.Item>
-                    <ListBox.Item id="IRREGULAR" key="IRREGULAR">
-                      Irregular (cuotas variables)
                     </ListBox.Item>
                   </ListBox>
                 </Select.Popover>
@@ -955,7 +958,7 @@ export function LoanForm({ onCancel, onSubmit, onSubmitStructured }: LoanFormPro
                     className="space-y-3 rounded-md border border-default-200 bg-background p-3"
                     key={installment.id}
                   >
-                    <div className="grid gap-3 md:grid-cols-[0.5fr,0.9fr,0.8fr,1fr,auto]">
+                    <div className="grid gap-3 md:grid-cols-[0.4fr,0.9fr,0.8fr,0.8fr,0.7fr,1fr,auto]">
                       <div className="flex items-end">
                         <span className="rounded-md bg-default-100 px-2 py-1 font-semibold text-default-600 text-xs">
                           #{installmentIndex + 1}
@@ -973,6 +976,23 @@ export function LoanForm({ onCancel, onSubmit, onSubmitStructured }: LoanFormPro
                         }
                         value={installment.expectedAmount}
                       />
+                      <LoanMoneyField
+                        label="Interés"
+                        onChange={(value) =>
+                          updateInstallment(installment.id, { expectedInterest: value })
+                        }
+                        value={installment.expectedInterest}
+                      />
+                      <div className="flex flex-col justify-end">
+                        <Label className="text-default-500 text-xs">Capital</Label>
+                        <p className="font-semibold text-foreground text-sm">
+                          $
+                          {Math.max(
+                            0,
+                            installment.expectedAmount - installment.expectedInterest
+                          ).toLocaleString("es-CL")}
+                        </p>
+                      </div>
                       <TextField
                         onChange={(value) => updateInstallment(installment.id, { note: value })}
                         value={installment.note}
