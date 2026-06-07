@@ -343,7 +343,12 @@ export function LoanDetail({
                 frequency: key as RegenerateSchedulePayload["frequency"],
               }));
             }}
-            value={regenerateForm.frequency ?? loan.frequency}
+            value={
+              regenerateForm.frequency ??
+              // El ListBox solo ofrece W/BIW/M; un préstamo IRREGULAR no tiene
+              // opción válida → default a MONTHLY para no dejar el Select vacío.
+              (loan.frequency === "IRREGULAR" ? "MONTHLY" : loan.frequency)
+            }
           >
             <Label>Frecuencia</Label>
             <Select.Trigger>

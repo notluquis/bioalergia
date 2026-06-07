@@ -972,14 +972,28 @@ export function LoanForm({ onCancel, onSubmit, onSubmitStructured }: LoanFormPro
                       <LoanMoneyField
                         label="Cuota"
                         onChange={(value) =>
-                          updateInstallment(installment.id, { expectedAmount: value })
+                          updateInstallment(installment.id, {
+                            expectedAmount: value,
+                            // Mantener el invariante cuota = capital + interés: si la
+                            // nueva cuota baja del interés, recortar el interés.
+                            expectedInterest: Math.min(
+                              installment.expectedInterest,
+                              Math.max(0, value)
+                            ),
+                          })
                         }
                         value={installment.expectedAmount}
                       />
                       <LoanMoneyField
                         label="Interés"
                         onChange={(value) =>
-                          updateInstallment(installment.id, { expectedInterest: value })
+                          updateInstallment(installment.id, {
+                            // El interés no puede exceder la cuota (capital >= 0).
+                            expectedInterest: Math.min(
+                              Math.max(0, value),
+                              installment.expectedAmount
+                            ),
+                          })
                         }
                         value={installment.expectedInterest}
                       />
