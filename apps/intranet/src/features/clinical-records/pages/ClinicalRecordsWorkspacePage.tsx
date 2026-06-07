@@ -1,10 +1,11 @@
 import { Card, Tabs } from "@heroui/react";
-import { BarChart3, ClipboardList } from "lucide-react";
+import { BarChart3, ClipboardList, Cloud } from "lucide-react";
 import { useState } from "react";
+import { ClinicalRecordsOneDrivePanel } from "../components/ClinicalRecordsOneDrivePanel";
 import { ClinicalRecordsAnalyticsPanel } from "./ClinicalRecordsAnalyticsPanel";
 import { ClinicalRecordsReviewPage } from "./ClinicalRecordsReviewPage";
 
-type Tab = "review" | "analytics";
+type Tab = "review" | "onedrive" | "analytics";
 
 export function ClinicalRecordsWorkspacePage() {
   const [tab, setTab] = useState<Tab>("review");
@@ -21,6 +22,11 @@ export function ClinicalRecordsWorkspacePage() {
                   Revisión
                   <Tabs.Indicator />
                 </Tabs.Tab>
+                <Tabs.Tab id="onedrive">
+                  <Cloud size={16} />
+                  OneDrive
+                  <Tabs.Indicator />
+                </Tabs.Tab>
                 <Tabs.Tab id="analytics">
                   <BarChart3 size={16} />
                   Análisis
@@ -32,7 +38,13 @@ export function ClinicalRecordsWorkspacePage() {
         </Card.Content>
       </Card>
 
-      {tab === "review" ? <ClinicalRecordsReviewPage /> : <ClinicalRecordsAnalyticsPanel />}
+      {tab === "review" ? (
+        <ClinicalRecordsReviewPage />
+      ) : tab === "onedrive" ? (
+        <ClinicalRecordsOneDrivePanel />
+      ) : (
+        <ClinicalRecordsAnalyticsPanel />
+      )}
     </div>
   );
 }
