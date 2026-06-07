@@ -57,7 +57,7 @@ const meta: Meta<typeof PayInstallmentModal> = {
     (Story) => (
       <I18nProvider locale="es-CL">
         <QueryClientProvider client={makeQueryClient()}>
-          <div className="p-8">
+          <div className="p-2 sm:p-8">
             <Story />
           </div>
         </QueryClientProvider>
