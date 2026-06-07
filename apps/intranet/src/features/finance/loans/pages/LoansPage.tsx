@@ -36,6 +36,7 @@ import { LoanDetailSection } from "@/features/finance/loans/components/LoanDetai
 import { LoanForm } from "@/features/finance/loans/components/LoanForm";
 import { LoanList } from "@/features/finance/loans/components/LoanList";
 import { loanKeys } from "@/features/finance/loans/queries";
+import { currencyFormatter } from "@/lib/format";
 import type {
   CreateLoanPayload,
   CreateStructuredLoanPayload,
@@ -92,10 +93,14 @@ export function LoansPage() {
 
   const [paymentSchedule, setPaymentSchedule] = useState<LoanSchedule | null>(null);
   const [paymentForm, setPaymentForm] = useState<{
+    kind: "ADJUSTMENT" | "DISCOUNT" | "PAYMENT";
+    note: string;
     paidAmount: number | undefined;
     paidDate: string;
     transactionId: string;
   }>({
+    kind: "PAYMENT",
+    note: "",
     paidAmount: undefined,
     paidDate: formatChile(new Date(), "YYYY-MM-DD"),
     transactionId: "",
@@ -107,6 +112,10 @@ export function LoansPage() {
   const { data: counterparts = [], isLoading: isLoadingCounterparts } = useQuery({
     queryFn: fetchCounterparts,
     queryKey: counterpartKeys.lists(),
+  });
+  const { data: paymentCandidates = [], isLoading: isLoadingPaymentCandidates } = useQuery({
+    ...loanKeys.candidates(paymentSchedule?.id ?? 0),
+    enabled: Boolean(paymentSchedule),
   });
 
   const loans = useMemo(() => loansResponse.loans, [loansResponse.loans]);
@@ -162,6 +171,11 @@ export function LoansPage() {
       void queryClient.invalidateQueries({ queryKey: loanKeys.all });
       if (selectedId) {
         void queryClient.invalidateQueries({ queryKey: loanKeys.detail(selectedId).queryKey });
+      }
+      if (paymentSchedule) {
+        void queryClient.invalidateQueries({
+          queryKey: loanKeys.candidates(paymentSchedule.id).queryKey,
+        });
       }
     },
   });
@@ -267,9 +281,12 @@ export function LoansPage() {
   };
 
   const openPaymentModal = (schedule: LoanSchedule) => {
+    const pendingAmount = Math.max(schedule.expected_amount - (schedule.paid_amount ?? 0), 0);
     setPaymentSchedule(schedule);
     setPaymentForm({
-      paidAmount: schedule.paid_amount == null ? schedule.expected_amount : schedule.paid_amount,
+      kind: "PAYMENT",
+      note: "",
+      paidAmount: pendingAmount || schedule.expected_amount,
       paidDate: schedule.paid_date ? schedule.paid_date : formatChile(new Date(), "YYYY-MM-DD"),
       transactionId: schedule.transaction_id ? String(schedule.transaction_id) : "",
     });
@@ -282,9 +299,11 @@ export function LoansPage() {
       return;
     }
 
-    const transactionId = Number(paymentForm.transactionId);
+    const transactionId = paymentForm.transactionId.trim()
+      ? Number(paymentForm.transactionId)
+      : null;
     const paidAmount = paymentForm.paidAmount ?? 0;
-    if (!Number.isFinite(transactionId) || transactionId <= 0) {
+    if (transactionId !== null && (!Number.isFinite(transactionId) || transactionId <= 0)) {
       setPaymentError("ID de transacción inválido");
       return;
     }
@@ -292,6 +311,8 @@ export function LoansPage() {
     try {
       await registerPaymentMutation.mutateAsync({
         payload: {
+          kind: paymentForm.kind,
+          note: paymentForm.note || null,
           paidAmount,
           paidDate: paymentForm.paidDate,
           transactionId,
@@ -736,7 +757,44 @@ export function LoansPage() {
             }}
             validationBehavior="aria"
           >
-            <TextField isRequired>
+            <div className="rounded-lg border border-default-200 bg-default-50 px-3 py-2 text-sm">
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-default-500">Saldo cuota</span>
+                <span className="font-semibold">
+                  {currencyFormatter.format(
+                    Math.max(
+                      paymentSchedule.expected_amount - (paymentSchedule.paid_amount ?? 0),
+                      0
+                    )
+                  )}
+                </span>
+              </div>
+            </div>
+
+            <Select
+              onChange={(key) => {
+                setPaymentForm((prev) => ({
+                  ...prev,
+                  kind: key as "ADJUSTMENT" | "DISCOUNT" | "PAYMENT",
+                }));
+              }}
+              value={paymentForm.kind}
+            >
+              <Label>Tipo</Label>
+              <Select.Trigger>
+                <Select.Value />
+                <Select.Indicator />
+              </Select.Trigger>
+              <Select.Popover>
+                <ListBox>
+                  <ListBox.Item id="PAYMENT">Pago</ListBox.Item>
+                  <ListBox.Item id="DISCOUNT">Descuento</ListBox.Item>
+                  <ListBox.Item id="ADJUSTMENT">Ajuste</ListBox.Item>
+                </ListBox>
+              </Select.Popover>
+            </Select>
+
+            <TextField>
               <Label>ID transacción</Label>
               <Input
                 inputMode="numeric"
@@ -751,6 +809,61 @@ export function LoansPage() {
                 variant="secondary"
               />
             </TextField>
+
+            <div className="space-y-2">
+              <Label>Transacciones sugeridas</Label>
+              <div className="max-h-56 space-y-2 overflow-y-auto rounded-lg border border-default-200 bg-background p-2">
+                {isLoadingPaymentCandidates && (
+                  <p className="px-2 py-3 text-default-500 text-sm">Buscando coincidencias...</p>
+                )}
+                {!isLoadingPaymentCandidates && paymentCandidates.length === 0 && (
+                  <p className="px-2 py-3 text-default-500 text-sm">
+                    No hay transacciones de la contraparte en los dias cercanos.
+                  </p>
+                )}
+                {paymentCandidates.map((candidate) => (
+                  <Button
+                    className="h-auto w-full justify-between gap-3 px-3 py-2 text-left"
+                    key={candidate.id}
+                    onPress={() => {
+                      setPaymentForm((prev) => ({
+                        ...prev,
+                        paidAmount: Math.abs(candidate.amount),
+                        paidDate: candidate.date,
+                        transactionId: String(candidate.id),
+                      }));
+                    }}
+                    type="button"
+                    variant="secondary"
+                  >
+                    <span className="min-w-0">
+                      <span className="block truncate font-medium text-sm">
+                        {candidate.description}
+                      </span>
+                      <span className="block text-default-500 text-xs">
+                        {formatChile(candidate.date, "DD MMM YYYY")} ·{" "}
+                        {candidate.days_from_due === 0
+                          ? "mismo dia"
+                          : `${Math.abs(candidate.days_from_due)} dias ${
+                              candidate.days_from_due < 0 ? "antes" : "despues"
+                            }`}
+                        {candidate.is_linked
+                          ? ` · ya vinculado ${currencyFormatter.format(candidate.already_linked_amount)}`
+                          : ""}
+                      </span>
+                    </span>
+                    <span className="shrink-0 text-right">
+                      <span className="block font-semibold">
+                        {currencyFormatter.format(Math.abs(candidate.amount))}
+                      </span>
+                      <span className="block text-default-500 text-xs">
+                        Score {candidate.score}
+                      </span>
+                    </span>
+                  </Button>
+                ))}
+              </div>
+            </div>
 
             <NumberField
               isRequired
@@ -820,6 +933,18 @@ export function LoansPage() {
                 </Calendar>
               </DatePicker.Popover>
             </DatePicker>
+
+            <TextField>
+              <Label>Nota</Label>
+              <TextArea
+                onChange={(event: ChangeEvent<HTMLTextAreaElement>) => {
+                  setPaymentForm((prev) => ({ ...prev, note: event.target.value }));
+                }}
+                rows={2}
+                value={paymentForm.note}
+                variant="secondary"
+              />
+            </TextField>
 
             {paymentError && (
               <p className="rounded-lg bg-rose-100 px-4 py-2 text-rose-700 text-sm">

@@ -148,19 +148,10 @@ export const getColumns = (
         {
           cell: ({ row }) => {
             const schedule = row.original;
+            const hasPayments = schedule.status === "PAID" || schedule.status === "PARTIAL";
             return (
-              <div className="flex justify-end">
-                {schedule.status === "PAID" || schedule.status === "PARTIAL" ? (
-                  <Button
-                    onPress={() => {
-                      actions.onUnlinkPayment(schedule);
-                    }}
-                    size="sm"
-                    variant="outline"
-                  >
-                    Desvincular
-                  </Button>
-                ) : (
+              <div className="flex justify-end gap-2">
+                {schedule.status !== "PAID" && (
                   <Button
                     isDisabled={schedule.loan_id === 0}
                     onPress={() => {
@@ -169,7 +160,18 @@ export const getColumns = (
                     size="sm"
                     variant="primary"
                   >
-                    Pagar
+                    {schedule.status === "PARTIAL" ? "Agregar" : "Pagar"}
+                  </Button>
+                )}
+                {hasPayments && (
+                  <Button
+                    onPress={() => {
+                      actions.onUnlinkPayment(schedule);
+                    }}
+                    size="sm"
+                    variant="outline"
+                  >
+                    Desvincular
                   </Button>
                 )}
               </div>

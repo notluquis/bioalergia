@@ -73,9 +73,29 @@ type StructuredLoanPaymentPayload = {
 };
 
 type LoanPaymentPayload = {
+  kind?: LoanSchedulePaymentKind;
+  note?: null | string;
   paidAmount: number;
   paidDate: string;
-  transactionId: number;
+  transactionId?: null | number;
+};
+
+type LoanPaymentCandidatesPayload = {
+  daysAfter: number;
+  daysBefore: number;
+  limit: number;
+};
+
+type LoanSchedulePaymentRow = {
+  amount: Decimal;
+  paidDate: Date;
+  transactionId: null | number;
+};
+
+type LoanLinkedPaymentRow = {
+  amount: Decimal;
+  id: number;
+  scheduleId: number;
 };
 
 type RegenerateLoanSchedulesPayload = {
@@ -488,6 +508,11 @@ const getDueDateFromBase = (
   return isoToDbDate(base.add({ weeks }).toString());
 };
 
+const addDays = (date: Date, days: number) => {
+  const plainDate = Temporal.PlainDate.from(dbDateToISO(date) ?? "");
+  return isoToDbDate(plainDate.add({ days }).toString());
+};
+
 const buildStructuredSources = (sources: StructuredLoanPayload["sources"]) =>
   sources.map((source) => {
     const principal = toMoney(source.principalAmount);
@@ -655,6 +680,69 @@ const ensureScheduleExists = async (scheduleId: number) => {
   }
 
   return schedule;
+};
+
+const refreshSchedulePaymentSummary = async (scheduleId: number) => {
+  const schedule = await db.loanSchedule.findUniqueOrThrow({
+    where: { id: scheduleId },
+    include: {
+      payments: {
+        orderBy: { paidDate: "asc" },
+      },
+    },
+  });
+
+  const payments = schedule.payments as LoanSchedulePaymentRow[];
+  const totalPaid = payments.reduce(
+    (sum, payment) => sum.plus(payment.amount),
+    new Decimal(0)
+  );
+  const paidDate = payments.reduce<Date | null>(
+    (latest, payment) => (!latest || payment.paidDate > latest ? payment.paidDate : latest),
+    null
+  );
+  const expectedAmount = toMoney(schedule.expectedAmount);
+  const nextStatus: LoanScheduleStatus = totalPaid.isZero()
+    ? (dbDateToISO(schedule.dueDate) ?? "") < toChileDateString(new Date())
+      ? "OVERDUE"
+      : "PENDING"
+    : totalPaid.greaterThanOrEqualTo(expectedAmount)
+      ? "PAID"
+      : "PARTIAL";
+  const primaryPayment = payments.find((payment) => payment.transactionId !== null);
+
+  return await db.loanSchedule.update({
+    where: { id: scheduleId },
+    data: {
+      paidAmount: totalPaid.isZero() ? null : toMoney(totalPaid),
+      paidDate,
+      status: nextStatus,
+      transactionId: primaryPayment?.transactionId ?? null,
+    },
+    include: {
+      payments: {
+        include: {
+          transaction: {
+            select: {
+              amount: true,
+              date: true,
+              description: true,
+              id: true,
+            },
+          },
+        },
+        orderBy: { paidDate: "asc" },
+      },
+      transaction: {
+        select: {
+          amount: true,
+          date: true,
+          description: true,
+          id: true,
+        },
+      },
+    },
+  });
 };
 
 export async function listLoans() {
@@ -903,74 +991,125 @@ export async function regenerateLoanSchedules(
 export async function registerLoanPayment(scheduleId: number, data: LoanPaymentPayload) {
   const schedule = await ensureScheduleExists(scheduleId);
 
-  const transaction = await db.financialTransaction.findUnique({
-    where: { id: data.transactionId },
-    select: { id: true },
-  });
-
-  if (!transaction) {
-    throw new AppError(404, {
-      code: "TRANSACTION_NOT_FOUND",
-      message: "Transacción no encontrada",
+  if (data.transactionId != null) {
+    const transaction = await db.financialTransaction.findUnique({
+      where: { id: data.transactionId },
+      select: { id: true },
     });
+
+    if (!transaction) {
+      throw new AppError(404, {
+        code: "TRANSACTION_NOT_FOUND",
+        message: "Transacción no encontrada",
+      });
+    }
   }
 
-  const paidAmount = toMoney(data.paidAmount);
-  const expectedAmount = toMoney(schedule.expectedAmount);
-  const nextStatus: LoanScheduleStatus = paidAmount.greaterThanOrEqualTo(expectedAmount)
-    ? "PAID"
-    : "PARTIAL";
-
-  const updated = await db.loanSchedule.update({
-    where: { id: scheduleId },
+  await db.loanSchedulePayment.create({
     data: {
-      paidAmount,
+      amount: toMoney(data.paidAmount),
+      kind: data.kind ?? "PAYMENT",
+      note: optionalNote(data.note),
       paidDate: toDateOnly(data.paidDate),
-      status: nextStatus,
-      transactionId: data.transactionId,
-    },
-    include: {
-      transaction: {
-        select: {
-          amount: true,
-          date: true,
-          description: true,
-          id: true,
-        },
-      },
+      scheduleId,
+      transactionId: data.transactionId ?? null,
     },
   });
 
+  const updated = await refreshSchedulePaymentSummary(scheduleId);
   await syncLoanStatus(schedule.loanId);
 
   return mapSchedule(updated);
 }
 
-export async function unlinkLoanPayment(scheduleId: number) {
-  const schedule = await ensureScheduleExists(scheduleId);
-  const nextStatus: LoanScheduleStatus =
-    (dbDateToISO(schedule.dueDate) ?? "") < toChileDateString(new Date()) ? "OVERDUE" : "PENDING";
-
-  const updated = await db.loanSchedule.update({
+export async function listLoanPaymentCandidates(
+  scheduleId: number,
+  params: LoanPaymentCandidatesPayload
+) {
+  const schedule = await db.loanSchedule.findUnique({
     where: { id: scheduleId },
-    data: {
-      note: null,
-      paidAmount: null,
-      paidDate: null,
-      status: nextStatus,
-      transactionId: null,
-    },
     include: {
-      transaction: {
+      loan: {
         select: {
-          amount: true,
-          date: true,
-          description: true,
-          id: true,
+          counterpartId: true,
         },
       },
     },
   });
+
+  if (!schedule) {
+    throw new AppError(404, {
+      code: "LOAN_SCHEDULE_NOT_FOUND",
+      message: "Cuota no encontrada",
+    });
+  }
+
+  if (!schedule.loan.counterpartId) {
+    return [];
+  }
+
+  const from = addDays(schedule.dueDate, -params.daysBefore);
+  const to = addDays(schedule.dueDate, params.daysAfter);
+  const expectedAmount = toMoney(schedule.expectedAmount);
+
+  const transactions = await db.financialTransaction.findMany({
+    where: {
+      counterpartId: schedule.loan.counterpartId,
+      date: {
+        gte: from,
+        lte: to,
+      },
+    },
+    include: {
+      loanSchedulePayments: {
+        select: {
+          amount: true,
+          id: true,
+          scheduleId: true,
+        },
+      },
+    },
+    orderBy: [{ date: "asc" }, { id: "asc" }],
+    take: params.limit,
+  });
+
+  return transactions
+    .map((transaction) => {
+      const linkedPayments = transaction.loanSchedulePayments as LoanLinkedPaymentRow[];
+      const alreadyLinkedAmount = linkedPayments.reduce(
+        (sum, payment) => sum.plus(payment.amount),
+        new Decimal(0)
+      );
+      const transactionDate = dbDateToISO(transaction.date) ?? "";
+      const dueDate = Temporal.PlainDate.from(dbDateToISO(schedule.dueDate) ?? "");
+      const date = Temporal.PlainDate.from(transactionDate);
+      const daysFromDue = date.since(dueDate).days;
+      const remainingExpected = Decimal.max(expectedAmount.minus(schedule.paidAmount ?? 0), 0);
+      const amountDelta = Decimal.abs(toMoney(transaction.amount).abs().minus(remainingExpected));
+      const amountScore = Number(Decimal.max(new Decimal(100).minus(amountDelta.div(1000)), 0));
+      const dateScore = Math.max(30 - Math.abs(daysFromDue) * 4, 0);
+      const linkedPenalty = alreadyLinkedAmount.greaterThan(0) ? 25 : 0;
+
+      return {
+        already_linked_amount: Number(toMoney(alreadyLinkedAmount)),
+        amount: Number(transaction.amount),
+        date: transactionDate,
+        days_from_due: daysFromDue,
+        description: transaction.description,
+        id: transaction.id,
+        is_linked: alreadyLinkedAmount.greaterThan(0),
+        score: Math.max(Math.round(amountScore + dateScore - linkedPenalty), 0),
+        source_id: transaction.sourceId,
+      };
+    })
+    .sort((a, b) => b.score - a.score || Math.abs(a.days_from_due) - Math.abs(b.days_from_due));
+}
+
+export async function unlinkLoanPayment(scheduleId: number) {
+  const schedule = await ensureScheduleExists(scheduleId);
+
+  await db.loanSchedulePayment.deleteMany({ where: { scheduleId } });
+  const updated = await refreshSchedulePaymentSummary(scheduleId);
 
   await syncLoanStatus(schedule.loanId);
 

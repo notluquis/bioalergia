@@ -77,9 +77,23 @@ export interface LoanListResponse {
 }
 
 export interface LoanPaymentPayload {
+  kind?: "ADJUSTMENT" | "DISCOUNT" | "PAYMENT";
+  note?: null | string;
   paidAmount: number;
   paidDate: string; // YYYY-MM-DD
-  transactionId: number;
+  transactionId?: null | number;
+}
+
+export interface LoanPaymentCandidate {
+  already_linked_amount: number;
+  amount: number;
+  date: string;
+  days_from_due: number;
+  description: string;
+  id: number;
+  is_linked: boolean;
+  score: number;
+  source_id: null | string;
 }
 
 export interface UpdateLoanPayload {

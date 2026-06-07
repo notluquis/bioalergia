@@ -9,6 +9,8 @@ import {
   loanPublicIdSchema,
   loanRegenerateSchedulesInputSchema,
   loanScheduleIdSchema,
+  loanSchedulePaymentCandidatesInputSchema,
+  loanSchedulePaymentCandidatesResponseSchema,
   loanScheduleResponseSchema,
   loanStructuredCreateInputSchema,
   loanUpdateInputSchema,
@@ -24,6 +26,7 @@ import {
   createStructuredLoan,
   deleteLoan,
   getLoanDetail,
+  listLoanPaymentCandidates,
   listLoans,
   regenerateLoanSchedules,
   registerLoanPayment,
@@ -133,6 +136,20 @@ const loansORPCRouterBase = {
     .output(loanListResponseSchema)
     .handler(async () => ({
       loans: await listLoans(),
+      status: "ok" as const,
+    })),
+
+  paymentCandidates: readLoans
+    .route({
+      method: "GET",
+      path: "/schedules/{id}/payment-candidates",
+      summary: "List candidate transactions for a loan schedule payment",
+      tags: ["Loans"],
+    })
+    .input(loanSchedulePaymentCandidatesInputSchema)
+    .output(loanSchedulePaymentCandidatesResponseSchema)
+    .handler(async ({ input }) => ({
+      candidates: await listLoanPaymentCandidates(input.id, input),
       status: "ok" as const,
     })),
 

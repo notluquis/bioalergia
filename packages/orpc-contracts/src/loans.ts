@@ -108,9 +108,18 @@ export const loanRegenerateSchedulesInputSchema = z.object({
 });
 
 export const loanPaymentInputSchema = z.object({
+  kind: loanSchedulePaymentKindSchema.default("PAYMENT"),
+  note: z.string().nullable().optional(),
   paidAmount: z.number().positive(),
   paidDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  transactionId: z.number().int().positive(),
+  transactionId: z.number().int().positive().nullable().optional(),
+});
+
+export const loanSchedulePaymentCandidatesInputSchema = z.object({
+  daysAfter: z.coerce.number().int().min(0).max(30).default(7),
+  daysBefore: z.coerce.number().int().min(0).max(30).default(7),
+  id: z.coerce.number().int().positive(),
+  limit: z.coerce.number().int().min(1).max(50).default(12),
 });
 
 export const loanScheduleTransactionSchema = z.object({
@@ -144,6 +153,18 @@ export const loanSchedulePaymentSchema = z.object({
   paid_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   transaction: loanScheduleTransactionSchema.nullable().optional(),
   transaction_id: z.number().int().nullable(),
+});
+
+export const loanSchedulePaymentCandidateSchema = z.object({
+  already_linked_amount: z.number(),
+  amount: z.number(),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  days_from_due: z.number().int(),
+  description: z.string(),
+  id: z.number().int(),
+  is_linked: z.boolean(),
+  score: z.number(),
+  source_id: z.string().nullable(),
 });
 
 export const loanScheduleSchema = z.object({
@@ -224,6 +245,11 @@ export const loanScheduleResponseSchema = z.object({
   status: z.literal("ok"),
 });
 
+export const loanSchedulePaymentCandidatesResponseSchema = z.object({
+  candidates: z.array(loanSchedulePaymentCandidateSchema),
+  status: z.literal("ok"),
+});
+
 export const loanDeleteResponseSchema = z.object({
   status: z.literal("ok"),
 });
@@ -246,6 +272,10 @@ export const loansContract = {
     .input(loanPublicIdSchema)
     .output(loanDetailResponseSchema),
   list: oc.route({ method: "GET", path: "/" }).output(loanListResponseSchema),
+  paymentCandidates: oc
+    .route({ method: "GET", path: "/schedules/{id}/payment-candidates" })
+    .input(loanSchedulePaymentCandidatesInputSchema)
+    .output(loanSchedulePaymentCandidatesResponseSchema),
   paySchedule: oc
     .route({ method: "POST", path: "/schedules/{id}/pay" })
     .input(loanScheduleIdSchema.extend({ payload: loanPaymentInputSchema }))

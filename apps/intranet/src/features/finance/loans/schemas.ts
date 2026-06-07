@@ -105,3 +105,20 @@ export const LoanScheduleResponseSchema = z.strictObject({
   schedule: LoanScheduleSchema,
   status: z.literal("ok"),
 });
+
+export const LoanPaymentCandidateSchema = z.strictObject({
+  already_linked_amount: z.number(),
+  amount: z.number(),
+  date: zDateString,
+  days_from_due: z.number(),
+  description: z.string(),
+  id: z.number(),
+  is_linked: z.boolean(),
+  score: z.number(),
+  source_id: z.string().nullable(),
+});
+
+export const LoanPaymentCandidatesResponseSchema = z.strictObject({
+  candidates: z.array(LoanPaymentCandidateSchema),
+  status: z.literal("ok"),
+});
