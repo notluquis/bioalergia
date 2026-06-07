@@ -27,6 +27,7 @@ import {
   timesheetRemoveInputSchema,
   timesheetSalarySummaryInputSchema,
   timesheetSalarySummaryResponseSchema,
+  timesheetSendEmailResponseSchema,
   timesheetStatusResponseSchema,
   timesheetSummaryResponseSchema,
   timesheetUpdateInputSchema,
@@ -45,6 +46,7 @@ import {
   toChilePeriod,
 } from "../lib/time.ts";
 import { getEmployeeById } from "../services/employees.ts";
+import { sendTimesheetEmail } from "../services/email/transactional.ts";
 import { buildTimesheetEmailComposition } from "../services/timesheet-email-template.ts";
 import {
   buildMonthlySummary,
@@ -445,6 +447,39 @@ const timesheetsORPCRouterBase = {
       const filename = `resumen_honorarios_${input.month}_${input.employeeId}.eml`;
       const emlBase64 = Buffer.from(buildEmlFromPayload(payload)).toString("base64");
       return { emlBase64, filename, status: "ok" as const };
+    }),
+
+  sendEmail: readTimesheets
+    .route({
+      method: "POST",
+      path: "/send-email",
+      summary: "Send honorarios email with PDF attachment",
+      tags: ["Timesheets"],
+    })
+    .input(timesheetEmailPayloadInputSchema)
+    .output(timesheetSendEmailResponseSchema)
+    .handler(async ({ input }) => {
+      const composition = buildTimesheetEmailComposition({
+        employeeName: input.employeeName,
+        monthLabel: input.monthLabel,
+        summary: input.summary,
+      });
+      // Send from the configured (Resend-verified) sender — NOT the legacy
+      // lpulgar@ address, which isn't on send.bioalergia.cl and would fail/spam.
+      const result = await sendTimesheetEmail({
+        to: input.employeeEmail,
+        subject: composition.subject,
+        html: composition.html,
+        text: composition.text,
+        pdfBase64: input.pdfBase64,
+        pdfFilename: `resumen_honorarios_${input.month}_${input.employeeId}.pdf`,
+      });
+      return {
+        status: "ok" as const,
+        sent: result.ok,
+        messageId: result.id,
+        to: input.employeeEmail,
+      };
     }),
 
   prepareEmailPayload: readTimesheets

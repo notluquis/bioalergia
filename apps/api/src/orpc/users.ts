@@ -36,6 +36,7 @@ import { z } from "zod";
 import { getSessionUser, hasPermission } from "../lib/auth.ts";
 import { hashPassword } from "../lib/crypto.ts";
 import { logError } from "../lib/logger.ts";
+import { sendPasswordResetEmail } from "../services/email/transactional.ts";
 import { normalizeRut, requireCanonicalRut } from "../lib/rut.ts";
 import { configureSuperjson } from "../lib/superjson-config.ts";
 import { SuperJSONRPCHandler } from "./superjson.ts";
@@ -398,7 +399,10 @@ const usersORPCRouterBase = {
     .handler(async ({ input }: { input: z.input<typeof userIdSchema> }) => {
       const targetUser = await db.user.findUnique({
         where: { id: input.id },
-        select: { id: true },
+        select: {
+          id: true,
+          person: { select: { email: true, names: true, fatherName: true } },
+        },
       });
 
       if (!targetUser) {
@@ -420,7 +424,28 @@ const usersORPCRouterBase = {
         },
       });
 
-      return { status: "ok" as const, tempPassword };
+      // Best-effort email the user the temp password. Never fail the reset if
+      // email is down/unconfigured — the admin still gets `tempPassword` back.
+      const email = targetUser.person?.email;
+      let emailed = false;
+      if (email) {
+        try {
+          await sendPasswordResetEmail({
+            to: email,
+            name: targetUser.person?.names ?? "",
+            tempPassword,
+          });
+          emailed = true;
+        } catch (err) {
+          logError(err, {
+            module: "api",
+            operation: "users.resetPassword.email",
+            userId: input.id,
+          });
+        }
+      }
+
+      return { status: "ok" as const, tempPassword, emailed };
     }),
 
   setup: authed

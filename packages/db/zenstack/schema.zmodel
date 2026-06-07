@@ -172,6 +172,10 @@ model User {
   lastActivityAt          DateTime?                @map("last_activity_at")
   lastLoginAt             DateTime?                @map("last_login_at")
   lastLoginIp             String?                  @map("last_login_ip")
+  // Self-service password reset: SHA-256 hash of the one-time token sent by
+  // email + its expiry (1h). Never store the plaintext token. Cleared on use.
+  passwordResetTokenHash  String?                  @map("password_reset_token_hash")
+  passwordResetExpiresAt  DateTime?                @map("password_reset_expires_at")
 
 
   // Relationships

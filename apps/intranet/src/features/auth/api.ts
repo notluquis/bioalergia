@@ -120,3 +120,21 @@ export async function verifyPasskeyRegistration({ body, challenge }: PasskeyVeri
     throw toAuthApiError(error);
   }
 }
+
+// --- Self-service password reset ---
+
+export async function requestPasswordReset(email: string): Promise<void> {
+  try {
+    await authORPCClient.forgotPassword({ email });
+  } catch (error) {
+    throw toAuthApiError(error);
+  }
+}
+
+export async function resetPasswordWithToken(token: string, password: string): Promise<void> {
+  try {
+    await authORPCClient.resetPassword({ token, password });
+  } catch (error) {
+    throw toAuthApiError(error);
+  }
+}

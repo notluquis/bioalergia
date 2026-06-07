@@ -7,7 +7,6 @@ type Bulk = Parameters<typeof outreachORPCClient.bulkUpdateEstablishments>[0];
 type Update = Parameters<typeof outreachORPCClient.updateEstablishment>[0];
 type Upsert = Parameters<typeof outreachORPCClient.upsertContact>[0];
 type Create = Parameters<typeof outreachORPCClient.createInteraction>[0];
-type Record_ = Parameters<typeof outreachORPCClient.recordDeliveryResult>[0];
 type Preview = Parameters<typeof outreachORPCClient.previewCampaign>[0];
 type CampaignCreate = Parameters<typeof outreachORPCClient.createCampaign>[0];
 type CampaignUpdate = Parameters<typeof outreachORPCClient.updateCampaign>[0];
@@ -285,15 +284,13 @@ export function useBulkCrawlStatus(jobId: string | null) {
   });
 }
 
-export function useNextDeliveryBatch() {
+export function useSendBatch() {
+  const qc = useQueryClient();
   return useMutation({
     mutationFn: (input: { campaignId: number; limit: number }) =>
-      outreachORPCClient.nextDeliveryBatch(input),
-  });
-}
-
-export function useRecordDeliveryResult() {
-  return useMutation({
-    mutationFn: (input: Record_) => outreachORPCClient.recordDeliveryResult(input as Record_),
+      outreachORPCClient.sendBatch(input),
+    onSuccess: (_res, vars) => {
+      void qc.invalidateQueries({ queryKey: [...BASE_KEY, "campaign", vars.campaignId] });
+    },
   });
 }

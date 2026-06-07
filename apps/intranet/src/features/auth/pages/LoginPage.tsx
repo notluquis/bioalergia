@@ -215,6 +215,11 @@ function CredentialsStep({
           <Label>Contraseña</Label>
           <Input autoComplete="current-password" enterKeyHint="go" placeholder="••••••••" />
         </TextField>
+        <div className="pt-1 text-right">
+          <Link href="/forgot-password" className="text-primary text-xs">
+            ¿Olvidaste tu contraseña?
+          </Link>
+        </div>
       </div>
 
       <div className="mx-auto w-full max-w-xs">

@@ -36,6 +36,13 @@ function toResendPayload(m: EmailMessage, defaultFrom: string): Record<string, u
   if (m.cc !== undefined) payload.cc = toArray(m.cc);
   if (m.bcc !== undefined) payload.bcc = toArray(m.bcc);
   if (m.headers !== undefined) payload.headers = m.headers;
+  if (m.attachments?.length) {
+    payload.attachments = m.attachments.map((a) => ({
+      filename: a.filename,
+      content: a.content,
+      ...(a.contentType ? { content_type: a.contentType } : {}),
+    }));
+  }
   return payload;
 }
 
@@ -99,6 +106,13 @@ export function createResendProvider(apiKey: string, defaultFrom = ""): EmailPro
         throw new DomainError(
           "BAD_REQUEST",
           `Batch excede el máximo de ${MAX_BATCH} (recibidos ${messages.length})`,
+          { provider: "resend" }
+        );
+      }
+      if (messages.some((m) => m.attachments?.length)) {
+        throw new DomainError(
+          "BAD_REQUEST",
+          "El endpoint batch no soporta adjuntos; usa send() individual.",
           { provider: "resend" }
         );
       }

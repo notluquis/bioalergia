@@ -42,10 +42,9 @@ import {
   listEstablishmentsInputSchema,
   listEstablishmentsResponseSchema,
   nextDeliveryBatchInputSchema,
-  nextDeliveryBatchResponseSchema,
   okResponseSchema,
+  outreachSendBatchResponseSchema,
   previewCampaignInputSchema,
-  recordDeliveryResultInputSchema,
   updateCampaignInputSchema,
   updateEstablishmentInputSchema,
   upsertContactInputSchema,
@@ -71,6 +70,7 @@ import { buildCampaignDeliveries, selectCandidates } from "../modules/outreach/c
 import { discoverGooglePlaces } from "../modules/outreach/google-places.ts";
 import { hunterEnrichProspect, verifyEmail } from "../modules/outreach/hunter.ts";
 import { importMineducDataset } from "../modules/outreach/mineduc-importer.ts";
+import { sendOutreachNextBatch } from "../services/outreach-email.ts";
 import { recomputeProspectScore } from "../modules/outreach/scoring.ts";
 import { renderTemplate } from "../modules/outreach/template.ts";
 import { crawlProspect as runCrawler } from "../modules/outreach/web-crawler.ts";
@@ -523,119 +523,12 @@ const outreachRouterBase = {
       return { campaign: normalizeCampaign(campaign as Record<string, unknown>) };
     }),
 
-  nextDeliveryBatch: updateOutreach
-    .route({ method: "POST", path: "/campaigns/next-batch", tags: ["Outreach"] })
+  sendBatch: updateOutreach
+    .route({ method: "POST", path: "/campaigns/send-batch", tags: ["Outreach"] })
     .input(nextDeliveryBatchInputSchema)
-    .output(nextDeliveryBatchResponseSchema)
+    .output(outreachSendBatchResponseSchema)
     .handler(async ({ input }) => {
-      const campaign = await db.outreachEmailCampaign.findUnique({
-        where: { id: input.campaignId },
-      });
-      if (!campaign) throw new ORPCError("NOT_FOUND", { message: "Campaña no encontrada" });
-      if (campaign.estado !== "ENVIANDO") {
-        return { items: [], remaining: 0 };
-      }
-      const sinceHour = new Date(Date.now() - 60 * 60 * 1000);
-      const sentLastHour = await db.outreachEmailDelivery.count({
-        where: {
-          campaignId: input.campaignId,
-          estado: "ENVIADO",
-          enviadoEn: { gte: sinceHour },
-        },
-      });
-      const cap = Math.max(0, campaign.ratePerHour - sentLastHour);
-      const limit = Math.min(input.limit, cap);
-      if (limit <= 0) {
-        const remaining = await db.outreachEmailDelivery.count({
-          where: { campaignId: input.campaignId, estado: "PENDIENTE" },
-        });
-        return { items: [], remaining };
-      }
-      const pending = await db.outreachEmailDelivery.findMany({
-        where: { campaignId: input.campaignId, estado: "PENDIENTE" },
-        include: { establishment: { select: { nombre: true } } },
-        orderBy: { id: "asc" },
-        take: limit,
-      });
-      const remaining = await db.outreachEmailDelivery.count({
-        where: { campaignId: input.campaignId, estado: "PENDIENTE" },
-      });
-      return {
-        items: pending.map((d) => ({
-          deliveryId: d.id,
-          emailDestinatario: d.emailDestinatario,
-          asunto: d.asuntoRender ?? campaign.asunto,
-          cuerpoHtml: d.cuerpoHtmlRender ?? campaign.cuerpoHtml,
-          cuerpoTexto: d.cuerpoTextoRender ?? campaign.cuerpoTexto,
-          fromEmail: campaign.fromEmail,
-          fromNombre: campaign.fromNombre,
-          replyTo: campaign.replyTo,
-          establecimientoNombre: d.establishment.nombre,
-        })),
-        remaining,
-      };
-    }),
-
-  recordDeliveryResult: updateOutreach
-    .route({ method: "POST", path: "/campaigns/record-result", tags: ["Outreach"] })
-    .input(recordDeliveryResultInputSchema)
-    .output(okResponseSchema)
-    .handler(async ({ context, input }) => {
-      const delivery = await db.outreachEmailDelivery.findUnique({
-        where: { id: input.deliveryId },
-      });
-      if (!delivery) throw new ORPCError("NOT_FOUND", { message: "Delivery no encontrado" });
-      const enviado = input.status === "ENVIADO";
-      await db.outreachEmailDelivery.update({
-        where: { id: input.deliveryId },
-        data: {
-          estado: input.status,
-          errorMensaje: input.errorMensaje ?? null,
-          enviadoEn: enviado ? new Date() : null,
-          intentos: { increment: 1 },
-        },
-      });
-      const campaign = await db.outreachEmailCampaign.findUnique({
-        where: { id: delivery.campaignId },
-      });
-      if (campaign) {
-        const inc: Record<string, { increment: number }> = {};
-        if (enviado) inc.enviados = { increment: 1 };
-        else inc.errores = { increment: 1 };
-        await db.outreachEmailCampaign.update({ where: { id: campaign.id }, data: inc });
-        const stillPending = await db.outreachEmailDelivery.count({
-          where: { campaignId: campaign.id, estado: "PENDIENTE" },
-        });
-        if (stillPending === 0 && campaign.estado === "ENVIANDO") {
-          await db.outreachEmailCampaign.update({
-            where: { id: campaign.id },
-            data: { estado: "COMPLETADA" },
-          });
-        }
-      }
-      if (enviado) {
-        await db.outreachInteraction.create({
-          data: {
-            establecimientoRbd: delivery.establecimientoRbd,
-            contactoId: delivery.contactoId,
-            tipo: "EMAIL_ENVIADO",
-            fecha: new Date(),
-            asunto: delivery.asuntoRender,
-            contenido: delivery.cuerpoTextoRender ?? "",
-            emailHacia: delivery.emailDestinatario,
-            creadoPorUserId: context.user.id,
-            creadoPorNombre: "Campaña automática",
-          },
-        });
-        await db.outreachEstablishment.update({
-          where: { rbd: delivery.establecimientoRbd },
-          data: {
-            ultimoContactoAt: new Date(),
-            estado: "CONTACTADO",
-          },
-        });
-      }
-      return { status: "ok" as const };
+      return sendOutreachNextBatch(input.campaignId, input.limit);
     }),
 
   zonas: readOutreach

@@ -301,6 +301,35 @@ export async function prepareTimesheetEmailPayload(payload: {
   return data;
 }
 
+// Send the honorarios email directly via the provider (Resend) with the PDF
+// attached — no local mail agent needed. Same payload shape as prepare.
+export async function sendTimesheetEmailViaProvider(payload: {
+  employeeEmail: string;
+  employeeId: number;
+  employeeName: string;
+  month: string;
+  monthLabel: string;
+  pdfBase64: string;
+  summary: {
+    net: number;
+    overtimeMinutes: number;
+    payDate: string;
+    retention: number;
+    retention_rate?: null | number;
+    retentionRate?: null | number;
+    role: string;
+    subtotal: number;
+    workedMinutes: number;
+  };
+}): Promise<{ sent: boolean; messageId: null | string; to: string }> {
+  try {
+    const data = await timesheetsORPCClient.sendEmail(payload);
+    return { sent: data.sent, messageId: data.messageId, to: data.to };
+  } catch (error) {
+    throw toTimesheetsApiError(error);
+  }
+}
+
 export async function fetchTimesheetEmailPreview(payload: {
   employeeEmail: string;
   employeeId: number;

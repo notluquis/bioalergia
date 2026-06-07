@@ -3,10 +3,6 @@
   "private": true,
   "scripts": {
     "dev": "pnpm -r --if-present dev",
-    "mail:start": "node scripts/mail-agent.mjs start",
-    "mail:status": "node scripts/mail-agent.mjs status",
-    "mail:stop": "node scripts/mail-agent.mjs stop",
-    "mail:logs": "node scripts/mail-agent.mjs logs",
     "build": "turbo run build --continue=never",
     "test": "turbo run test --continue=never",
     "lint": "oxlint",

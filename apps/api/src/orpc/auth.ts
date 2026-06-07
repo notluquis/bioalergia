@@ -7,6 +7,10 @@ import {
   authExchangeDebugTokenSchema,
   authIssueDebugTokenResponseSchema,
   authIssueDebugTokenSchema,
+  forgotPasswordResponseSchema,
+  forgotPasswordSchema,
+  resetPasswordTokenResponseSchema,
+  resetPasswordTokenSchema,
   authLoginOkResponseSchema,
   authLoginResponseSchema,
   authLoginSchema,
@@ -37,7 +41,8 @@ import { isLockedNow, recordLoginFailure, recordLoginSuccess } from "../lib/acco
 import { ipFromContext, logAuditFromContext } from "../lib/audit-log.ts";
 import { fakeVerifyPassword } from "../lib/crypto.ts";
 import { DomainError } from "../lib/errors.ts";
-import { logError } from "../lib/logger.ts";
+import { logError, logEvent } from "../lib/logger.ts";
+import { requestPasswordReset, resetPasswordWithToken } from "../services/password-reset.ts";
 import {
   clearEmailLoginFailure,
   isEmailThrottled,
@@ -483,6 +488,44 @@ const authORPCRouterBase = {
           status: user.status,
         },
       };
+    }),
+
+  forgotPassword: base
+    .route({
+      method: "POST",
+      path: "/forgot-password",
+      summary: "Request password reset",
+      tags: ["Auth"],
+    })
+    .input(forgotPasswordSchema)
+    .output(forgotPasswordResponseSchema)
+    .handler(async ({ input }) => {
+      // Anti-enumeration: ALWAYS return ok, even on internal failure (DB error,
+      // etc.). Surfacing a non-200 here would let an attacker distinguish
+      // existing vs unknown emails. requestPasswordReset already swallows email
+      // send failures; this catch covers query/update throws.
+      try {
+        await requestPasswordReset(input.email);
+      } catch (err) {
+        logEvent("[password-reset] request failed (swallowed for anti-enumeration)", {
+          error: err instanceof Error ? err.message : String(err),
+        });
+      }
+      return { status: "ok" as const };
+    }),
+
+  resetPassword: base
+    .route({
+      method: "POST",
+      path: "/reset-password",
+      summary: "Reset password with token",
+      tags: ["Auth"],
+    })
+    .input(resetPasswordTokenSchema)
+    .output(resetPasswordTokenResponseSchema)
+    .handler(async ({ input }) => {
+      await resetPasswordWithToken(input.token, input.password);
+      return { status: "ok" as const };
     }),
 
   logout: base
