@@ -717,6 +717,16 @@ function excludedColumnRef(column: string) {
   return `excluded.${toDbColumnName(column)}` as never;
 }
 
+// In an ON CONFLICT DO UPDATE ... WHERE clause both the target table and the
+// `excluded` pseudo-relation are in scope, so an UNQUALIFIED column that exists
+// in both (e.g. identification_number) raises Postgres 42702 "column reference
+// is ambiguous". Qualify the existing-row side with the physical target table
+// name. Physical (snake_case) names match excludedColumnRef and bypass $qb's
+// model→column mapping the same way.
+function targetColumnRef(table: string, column: string) {
+  return `${table}.${toDbColumnName(column)}` as never;
+}
+
 function countUpsertResults(returnedRows: UpsertReturnedRow[], inputRows: number) {
   const inserted = returnedRows.filter((row) => row.inserted).length;
   const updated = returnedRows.length - inserted;
@@ -944,7 +954,11 @@ async function upsertReleaseBatch(
         .where((eb) =>
           eb.or(
             RELEASE_UPDATE_COLUMNS.map((column) =>
-              eb(column, "is distinct from", eb.ref(excludedColumnRef(column)))
+              eb(
+                eb.ref(targetColumnRef("release_transactions", column)),
+                "is distinct from",
+                eb.ref(excludedColumnRef(column))
+              )
             )
           )
         )
@@ -1059,7 +1073,11 @@ async function upsertSettlementBatch(
         .where((eb) =>
           eb.or(
             SETTLEMENT_UPDATE_COLUMNS.map((column) =>
-              eb(column, "is distinct from", eb.ref(excludedColumnRef(column)))
+              eb(
+                eb.ref(targetColumnRef("settlement_transactions", column)),
+                "is distinct from",
+                eb.ref(excludedColumnRef(column))
+              )
             )
           )
         )
