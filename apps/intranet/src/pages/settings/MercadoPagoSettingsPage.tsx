@@ -559,33 +559,24 @@ export function MercadoPagoSettingsPage() {
                         <Table.Column>Antes</Table.Column>
                         <Table.Column>Después</Table.Column>
                       </Table.Header>
-                      {isImportChangesPending ? (
-                        <Table.Body aria-busy="true">
-                          <Table.Row id="loading">
-                            <Table.Cell colSpan={5}>
-                              <div className="py-6 text-center text-default-500">
-                                Cargando cambios...
-                              </div>
-                            </Table.Cell>
-                          </Table.Row>
-                        </Table.Body>
-                      ) : importChanges.length === 0 ? (
-                        <Table.Body>
-                          <Table.Row id="empty">
-                            <Table.Cell colSpan={5}>
-                              <div className="py-6 text-center text-default-500">
-                                No hay cambios de campo para este sync.
-                              </div>
-                            </Table.Cell>
-                          </Table.Row>
-                        </Table.Body>
-                      ) : (
-                        <Table.Body>
-                          {importChanges.map((change) => (
-                            <MpImportChangeRow change={change} key={change.id.toString()} />
-                          ))}
-                        </Table.Body>
-                      )}
+                      {/* Single Table.Body — swapping between bodies with rows
+                          of changing ids (loading/empty/data) makes React Aria
+                          throw "Cannot change the id of an item". renderEmptyState
+                          covers both the loading and no-data cases. */}
+                      <Table.Body
+                        aria-busy={isImportChangesPending}
+                        renderEmptyState={() => (
+                          <div className="py-6 text-center text-default-500">
+                            {isImportChangesPending
+                              ? "Cargando cambios..."
+                              : "No hay cambios de campo para este sync."}
+                          </div>
+                        )}
+                      >
+                        {importChanges.map((change) => (
+                          <MpImportChangeRow change={change} key={change.id.toString()} />
+                        ))}
+                      </Table.Body>
                     </Table.Content>
                   </Table.ScrollContainer>
 
