@@ -116,11 +116,15 @@ function MedicalPrescriptionPage() {
         throw toCertificatesApiError(error);
       }
     },
-    onSuccess: (pdfBlob, variables) => {
-      const url = URL.createObjectURL(pdfBlob);
+    onSuccess: (file, variables) => {
+      const blob = file instanceof Blob ? file : new Blob([file as BlobPart]);
+      const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `receta_${variables.patientId}_${formatChile(new Date(), "YYYYMMDD")}.pdf`;
+      a.download =
+        file instanceof File && file.name
+          ? file.name
+          : `receta_${variables.patientId}_${formatChile(new Date(), "YYYYMMDD")}.pdf`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
