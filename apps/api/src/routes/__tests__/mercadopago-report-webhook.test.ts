@@ -3,9 +3,50 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const SECRET = "test-secret-123";
 
-const { processReport } = vi.hoisted(() => ({
-  processReport: vi.fn(),
+const { createMpSyncLogEntry, finalizeMpSyncLogEntry, logMpImportAuditEvent, processReport } =
+  vi.hoisted(() => ({
+    createMpSyncLogEntry: vi.fn<() => Promise<bigint>>(),
+    finalizeMpSyncLogEntry: vi.fn<() => Promise<void>>(),
+    logMpImportAuditEvent: vi.fn<() => Promise<void>>(),
+    processReport: vi.fn<() => Promise<unknown>>(),
+  }));
+
+vi.mock("../../services/mercadopago-sync.ts", () => ({
+  createMpSyncLogEntry,
+  finalizeMpSyncLogEntry,
+  logMpImportAuditEvent,
 }));
+
+vi.mock("../../services/mercadopago-sync", () => ({
+  createMpSyncLogEntry,
+  finalizeMpSyncLogEntry,
+  logMpImportAuditEvent,
+}));
+
+const defaultImportStats = {
+  duplicateRows: 0,
+  errors: [],
+  fieldChangeCount: 0,
+  insertedRows: 0,
+  skippedRows: 0,
+  totalRows: 0,
+  unchangedRows: 0,
+  updatedRows: 0,
+  validRows: 0,
+};
+
+const legacyImportStats = {
+  inserted: 0,
+  updated: 0,
+  skipped: 0,
+  excluded: 0,
+  errors: [],
+};
+
+const makeStats = () => ({
+  ...legacyImportStats,
+  ...defaultImportStats,
+});
 
 vi.mock("../../services/mercadopago", () => ({
   MP_WEBHOOK_PASSWORD: "test-secret-123",
@@ -26,9 +67,9 @@ vi.mock("../../services/mercadopago", () => ({
 }));
 
 vi.mock("../../lib/logger", () => ({
-  logEvent: vi.fn(),
-  logWarn: vi.fn(),
-  logError: vi.fn(),
+  logEvent: vi.fn<() => void>(),
+  logWarn: vi.fn<() => void>(),
+  logError: vi.fn<() => void>(),
 }));
 
 import { mercadopagoReportWebhookRoutes } from "../mercadopago-report-webhook.ts";
@@ -63,14 +104,14 @@ const flush = () => new Promise((r) => setTimeout(r, 10));
 
 describe("MercadoPago report webhook", () => {
   beforeEach(() => {
+    createMpSyncLogEntry.mockReset();
+    createMpSyncLogEntry.mockResolvedValue(123n);
+    finalizeMpSyncLogEntry.mockReset();
+    finalizeMpSyncLogEntry.mockResolvedValue(undefined);
+    logMpImportAuditEvent.mockReset();
+    logMpImportAuditEvent.mockResolvedValue(undefined);
     processReport.mockReset();
-    processReport.mockResolvedValue({
-      inserted: 0,
-      updated: 0,
-      skipped: 0,
-      excluded: 0,
-      errors: [],
-    });
+    processReport.mockResolvedValue(makeStats());
   });
 
   afterEach(() => {
@@ -118,8 +159,26 @@ describe("MercadoPago report webhook", () => {
     const res = await post(buildPayload());
     expect(res.status).toBe(202);
     await flush();
+    expect(createMpSyncLogEntry).toHaveBeenCalledWith({
+      triggerLabel: "release:release-2026-05.csv",
+      triggerSource: "mp:webhook",
+    });
     expect(processReport).toHaveBeenCalledOnce();
-    expect(processReport).toHaveBeenCalledWith("release", { url: "https://example.com/file.csv" });
+    expect(processReport).toHaveBeenCalledWith("release", {
+      syncLogId: 123n,
+      url: "https://example.com/file.csv",
+    });
+    expect(finalizeMpSyncLogEntry).toHaveBeenCalledWith(
+      123n,
+      expect.objectContaining({ status: "SUCCESS" })
+    );
+    expect(logMpImportAuditEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        reportType: "release",
+        syncLogId: 123n,
+        triggerSource: "mp:webhook",
+      })
+    );
   });
 
   it("skips processing when is_test=true", async () => {
@@ -127,6 +186,7 @@ describe("MercadoPago report webhook", () => {
     expect(res.status).toBe(202);
     await flush();
     expect(processReport).not.toHaveBeenCalled();
+    expect(createMpSyncLogEntry).not.toHaveBeenCalled();
   });
 
   it("does not call processReport when files array is empty", async () => {
@@ -134,6 +194,7 @@ describe("MercadoPago report webhook", () => {
     expect(res.status).toBe(202);
     await flush();
     expect(processReport).not.toHaveBeenCalled();
+    expect(createMpSyncLogEntry).not.toHaveBeenCalled();
   });
 
   it("filters out files missing name or url", async () => {
@@ -149,7 +210,10 @@ describe("MercadoPago report webhook", () => {
     expect(res.status).toBe(202);
     await flush();
     expect(processReport).toHaveBeenCalledOnce();
-    expect(processReport).toHaveBeenCalledWith("release", { url: "https://example.com/ok.csv" });
+    expect(processReport).toHaveBeenCalledWith("release", {
+      syncLogId: 123n,
+      url: "https://example.com/ok.csv",
+    });
   });
 
   it("skips non-csv files (xlsx) but still 202", async () => {
@@ -161,6 +225,7 @@ describe("MercadoPago report webhook", () => {
     expect(res.status).toBe(202);
     await flush();
     expect(processReport).not.toHaveBeenCalled();
+    expect(createMpSyncLogEntry).not.toHaveBeenCalled();
   });
 
   it.each([
@@ -182,13 +247,18 @@ describe("MercadoPago report webhook", () => {
     vi.resetModules();
     vi.doMock("../../services/mercadopago", () => ({
       MP_WEBHOOK_PASSWORD: "",
-      MercadoPagoService: { processReport: vi.fn() },
+      MercadoPagoService: { processReport: vi.fn<() => Promise<unknown>>() },
       isSettlementReport: () => false,
     }));
     vi.doMock("../../lib/logger", () => ({
-      logEvent: vi.fn(),
-      logWarn: vi.fn(),
-      logError: vi.fn(),
+      logEvent: vi.fn<() => void>(),
+      logWarn: vi.fn<() => void>(),
+      logError: vi.fn<() => void>(),
+    }));
+    vi.doMock("../../services/mercadopago-sync.ts", () => ({
+      createMpSyncLogEntry: vi.fn<() => Promise<bigint>>(),
+      finalizeMpSyncLogEntry: vi.fn<() => Promise<void>>(),
+      logMpImportAuditEvent: vi.fn<() => Promise<void>>(),
     }));
 
     const mod = await import("../mercadopago-report-webhook.ts");

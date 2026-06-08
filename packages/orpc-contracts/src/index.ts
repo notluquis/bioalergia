@@ -52,6 +52,8 @@ export {
   type DoctoraliaContract,
 } from "./doctoralia.ts";
 export {
+  importChangeSchema as mercadopagoImportChangeSchema,
+  importChangesResponseSchema as mercadopagoImportChangesResponseSchema,
   listReportsResponseSchema as mercadopagoListReportsResponseSchema,
   mercadopagoContract,
   mpReportSchema,

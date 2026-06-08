@@ -1,13 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const { executeMock, insertIntoMock } = vi.hoisted(() => {
-  const executeMock = vi.fn<() => Promise<Array<{ inserted: boolean }>>>();
+  const executeMock = vi.fn<() => Promise<Array<{ inserted: boolean; sourceId: string }>>>();
   const insertIntoMock = vi.fn<(table: string) => unknown>();
   return { executeMock, insertIntoMock };
 });
 
 vi.mock("@finanzas/db", () => {
   const builder = {
+    execute: executeMock,
     onConflict: vi.fn<(callback: (oc: unknown) => unknown) => unknown>((callback) => {
       callback({
         column: vi.fn<(column: string) => unknown>(() => ({
@@ -18,9 +19,7 @@ vi.mock("@finanzas/db", () => {
       });
       return builder;
     }),
-    returning: vi.fn<(selection: unknown) => unknown>(() => ({
-      execute: executeMock,
-    })),
+    returning: vi.fn<(selection: unknown) => unknown>(() => builder),
     values: vi.fn<(values: unknown) => unknown>(() => builder),
   };
 
@@ -32,6 +31,7 @@ vi.mock("@finanzas/db", () => {
         insertInto: insertIntoMock,
       },
     },
+    kysely: {},
   };
 });
 
@@ -43,7 +43,7 @@ describe("processReportUrl", () => {
   });
 
   it("counts upserted report rows as updated instead of duplicate", async () => {
-    executeMock.mockResolvedValue([{ inserted: false }]);
+    executeMock.mockResolvedValue([{ inserted: false, sourceId: "MP-1" }]);
     vi.stubGlobal(
       "fetch",
       vi.fn(async () => {

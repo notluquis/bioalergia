@@ -14,6 +14,7 @@ import { apiClient, ApiError } from "../lib/api-client";
 export interface ImportStats {
   duplicateRows: number;
   errors: string[];
+  fieldChangeCount: number;
   insertedRows: number;
   processedSourceIds?: string[];
   skippedRows: number;
@@ -56,9 +57,21 @@ export interface MpSyncLog {
   updated?: number | null;
 }
 
+export interface MpImportChange {
+  changedAt: Date;
+  fieldName: string;
+  id: bigint;
+  newValue: unknown;
+  oldValue: unknown;
+  reportType: MpReportType;
+  sourceId: string;
+  syncLogId: bigint;
+}
+
 export interface MpSyncImportStats {
   duplicateRows: number;
   errorCount?: number;
+  fieldChangeCount?: number;
   insertedRows: number;
   skippedRows: number;
   totalRows: number;
@@ -118,11 +131,28 @@ const MpSyncLogsResponseSchema = z.object({
   total: z.number(),
 });
 
+const MpImportChangeSchema = z.object({
+  changedAt: z.coerce.date(),
+  fieldName: z.string(),
+  id: z.coerce.bigint(),
+  newValue: z.unknown().nullable(),
+  oldValue: z.unknown().nullable(),
+  reportType: z.enum(["release", "settlement"]),
+  sourceId: z.string(),
+  syncLogId: z.coerce.bigint(),
+});
+
+const MpImportChangesResponseSchema = z.object({
+  changes: z.array(MpImportChangeSchema),
+  total: z.number(),
+});
+
 const ProcessReportResponseSchema = z.object({
   message: z.string(),
   stats: z.object({
     duplicateRows: z.number(),
     errors: z.array(z.string()),
+    fieldChangeCount: z.number(),
     insertedRows: z.number(),
     processedSourceIds: z.array(z.string()).optional(),
     skippedRows: z.number(),
@@ -303,6 +333,28 @@ export const MPService = {
       throw toMercadoPagoApiError(error);
     }
     return { logs: response.logs ?? [], total: response.total ?? 0 };
+  },
+
+  listImportChanges: async (params: {
+    fieldName?: string;
+    limit?: number;
+    offset?: number;
+    sourceId?: string;
+    syncLogId: bigint;
+  }): Promise<{ changes: MpImportChange[]; total: number }> => {
+    try {
+      return MpImportChangesResponseSchema.parse(
+        await mercadopagoORPCClient.listImportChanges({
+          ...(params.fieldName ? { fieldName: params.fieldName } : {}),
+          ...(params.limit != null ? { limit: params.limit } : {}),
+          ...(params.offset != null ? { offset: params.offset } : {}),
+          ...(params.sourceId ? { sourceId: params.sourceId } : {}),
+          syncLogId: params.syncLogId,
+        })
+      );
+    } catch (error) {
+      throw toMercadoPagoApiError(error);
+    }
   },
 
   processReport: async (fileName: string, type: MpReportType): Promise<ImportStats> => {

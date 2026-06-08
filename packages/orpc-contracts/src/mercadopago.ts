@@ -30,6 +30,14 @@ export const syncLogsInputSchema = z.object({
   offset: z.number().int().min(0).optional(),
 });
 
+export const importChangesInputSchema = z.object({
+  fieldName: z.string().min(1).optional(),
+  limit: z.number().int().min(1).max(500).optional(),
+  offset: z.number().int().min(0).optional(),
+  sourceId: z.string().min(1).optional(),
+  syncLogId: z.bigint(),
+});
+
 export const mpReportSchema = z.object({
   begin_date: z.coerce.date(),
   created_from: z.string().nullable().optional(),
@@ -67,6 +75,22 @@ export const syncLogsResponseSchema = z.object({
   total: z.number(),
 });
 
+export const importChangeSchema = z.object({
+  changedAt: z.coerce.date(),
+  fieldName: z.string(),
+  id: z.coerce.bigint(),
+  newValue: z.unknown().nullable(),
+  oldValue: z.unknown().nullable(),
+  reportType: reportTypeSchema,
+  sourceId: z.string(),
+  syncLogId: z.coerce.bigint(),
+});
+
+export const importChangesResponseSchema = z.object({
+  changes: z.array(importChangeSchema),
+  total: z.number(),
+});
+
 export const processReportResponseSchema = z.object({
   cashFlowSync: z
     .object({
@@ -81,6 +105,7 @@ export const processReportResponseSchema = z.object({
   stats: z.object({
     duplicateRows: z.number(),
     errors: z.array(z.string()),
+    fieldChangeCount: z.number(),
     insertedRows: z.number(),
     skippedRows: z.number(),
     totalRows: z.number(),
@@ -108,6 +133,10 @@ export const mercadopagoContract = {
     .route({ method: "GET", path: "/sync/logs" })
     .input(syncLogsInputSchema)
     .output(syncLogsResponseSchema),
+  listImportChanges: oc
+    .route({ method: "GET", path: "/sync/import-changes" })
+    .input(importChangesInputSchema)
+    .output(importChangesResponseSchema),
   processReport: oc
     .route({ method: "POST", path: "/process-report" })
     .input(processReportInputSchema)

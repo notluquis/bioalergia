@@ -1789,6 +1789,7 @@ model SyncLog {
   excluded      Int?      @default(0)
   errorMessage  String?   @map("error_message")
   changeDetails Json?     @map("change_details")
+  mercadopagoImportChanges MercadoPagoImportChange[]
 
   // Access policies
   @@deny('all', auth() == null)
@@ -1797,6 +1798,29 @@ model SyncLog {
   @@index([triggerSource])
   @@index([startedAt])
   @@map("sync_logs")
+}
+
+model MercadoPagoImportChange {
+  id         BigInt   @id @default(autoincrement())
+  syncLogId  BigInt   @map("sync_log_id")
+  reportType String   @map("report_type")
+  sourceId   String   @map("source_id") @db.VarChar(100)
+  fieldName  String   @map("field_name")
+  oldValue   Json?    @map("old_value")
+  newValue   Json?    @map("new_value")
+  changedAt  DateTime @default(now()) @map("changed_at")
+
+  syncLog    SyncLog  @relation(fields: [syncLogId], references: [id], onDelete: Cascade)
+
+  @@deny('all', auth() == null)
+  @@allow('read', auth() != null)
+
+  @@index([syncLogId])
+  @@index([sourceId])
+  @@index([fieldName])
+  @@index([changedAt(sort: Desc)])
+  @@index([reportType, sourceId])
+  @@map("mercadopago_import_changes")
 }
 
 model InventoryCategory {

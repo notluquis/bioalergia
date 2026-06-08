@@ -1,6 +1,8 @@
 import {
   createReportInputSchema as contractCreateReportInputSchema,
   downloadReportInputSchema as contractDownloadReportInputSchema,
+  importChangesInputSchema as contractImportChangesInputSchema,
+  importChangesResponseSchema as contractImportChangesResponseSchema,
   listReportsInputSchema as contractListReportsInputSchema,
   listReportsResponseSchema as contractListReportsResponseSchema,
   mpReportSchema as contractMpReportSchema,
@@ -22,7 +24,9 @@ import { formatMpDate, MercadoPagoService } from "../services/mercadopago/index.
 import {
   createMpSyncLogEntry,
   finalizeMpSyncLogEntry,
+  listMpImportChanges,
   listMpSyncLogs,
+  logMpImportAuditEvent,
 } from "../services/mercadopago-sync.ts";
 import { SuperJSONRPCHandler } from "./superjson.ts";
 
@@ -194,6 +198,25 @@ const mercadopagoORPCRouterBase = {
       };
     }),
 
+  listImportChanges: integrationRead
+    .route({
+      method: "GET",
+      path: "/sync/import-changes",
+      summary: "List MercadoPago import field changes",
+      tags: ["MercadoPago"],
+    })
+    .input(contractImportChangesInputSchema)
+    .output(contractImportChangesResponseSchema)
+    .handler(async ({ input }) => {
+      return await listMpImportChanges({
+        fieldName: input.fieldName,
+        limit: input.limit,
+        offset: input.offset,
+        sourceId: input.sourceId,
+        syncLogId: input.syncLogId,
+      });
+    }),
+
   processReport: integrationCreate
     .route({
       method: "POST",
@@ -215,6 +238,7 @@ const mercadopagoORPCRouterBase = {
 
         const stats = await MercadoPagoService.processReport(input.reportType, {
           fileName: input.fileName,
+          syncLogId: logId ?? undefined,
         });
 
         if (stats.sourceUnavailable) {
@@ -259,6 +283,7 @@ const mercadopagoORPCRouterBase = {
               importStats: {
                 duplicateRows: stats.duplicateRows,
                 errorCount: stats.errors?.length ?? 0,
+                fieldChangeCount: stats.fieldChangeCount,
                 insertedRows: stats.insertedRows,
                 skippedRows: stats.skippedRows,
                 totalRows: stats.totalRows,
@@ -270,6 +295,7 @@ const mercadopagoORPCRouterBase = {
                 [input.reportType]: {
                   duplicateRows: stats.duplicateRows,
                   errorCount: stats.errors?.length ?? 0,
+                  fieldChangeCount: stats.fieldChangeCount,
                   insertedRows: stats.insertedRows,
                   skippedRows: stats.skippedRows,
                   totalRows: stats.totalRows,
@@ -286,6 +312,15 @@ const mercadopagoORPCRouterBase = {
             skipped: stats.skippedRows,
             updated: stats.updatedRows,
             status: "SUCCESS",
+          });
+          await logMpImportAuditEvent({
+            changeCount: stats.fieldChangeCount,
+            fileName: input.fileName,
+            reportType: input.reportType,
+            stats,
+            syncLogId: logId,
+            triggerSource: "mp:manual",
+            userId: context.user.id,
           });
         }
 
@@ -314,6 +349,7 @@ const mercadopagoORPCRouterBase = {
             stats: {
               duplicateRows: 0,
               errors: [message],
+              fieldChangeCount: 0,
               insertedRows: 0,
               skippedRows: 0,
               totalRows: 0,

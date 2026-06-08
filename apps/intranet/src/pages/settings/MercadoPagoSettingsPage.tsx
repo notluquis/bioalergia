@@ -7,6 +7,7 @@ import {
   Description,
   Modal,
   Skeleton,
+  Table,
   Tabs,
   Tooltip,
 } from "@heroui/react";
@@ -31,6 +32,7 @@ import {
   type ImportStats,
   type MPReport,
   MPService,
+  type MpImportChange,
   type MpReportType,
   type MpSyncChangeDetails,
   type MpSyncImportStats,
@@ -168,6 +170,7 @@ export function MercadoPagoSettingsPage() {
     status: true,
   });
   const [lastImportStats, setLastImportStats] = useState<ImportStats | null>(null);
+  const [selectedChangeLog, setSelectedChangeLog] = useState<MpSyncLog | null>(null);
   const [reportPagination, setReportPagination] = useState<PaginationState>({
     pageIndex: 0,
     pageSize: 10,
@@ -218,6 +221,27 @@ export function MercadoPagoSettingsPage() {
   const syncErrorMessage =
     syncError instanceof Error ? syncError.message : syncError ? String(syncError) : null;
   const isSyncLoading = isSyncPending && !syncResponse;
+  const selectedChangeLogId = selectedChangeLog?.id;
+  const {
+    data: importChangesResponse,
+    error: importChangesError,
+    isPending: isImportChangesPending,
+  } = useQuery({
+    ...mercadoPagoKeys.importChanges({
+      limit: 100,
+      offset: 0,
+      syncLogId: selectedChangeLogId ?? 0n,
+    }),
+    enabled: selectedChangeLogId != null,
+  });
+  const importChanges = importChangesResponse?.changes ?? [];
+  const importChangesTotal = importChangesResponse?.total ?? 0;
+  const importChangesErrorMessage =
+    importChangesError instanceof Error
+      ? importChangesError.message
+      : importChangesError
+        ? String(importChangesError)
+        : null;
 
   const {
     confirmingFile,
@@ -249,7 +273,10 @@ export function MercadoPagoSettingsPage() {
   );
   const reportPageCount = Math.max(1, Math.ceil(reportTotal / reportPagination.pageSize));
 
-  const syncColumns = useMemo<ColumnDef<MpSyncLog>[]>(() => buildSyncColumns(), []);
+  const syncColumns = useMemo<ColumnDef<MpSyncLog>[]>(
+    () => buildSyncColumns(setSelectedChangeLog),
+    []
+  );
   const syncPageCount = Math.max(1, Math.ceil(syncTotal / syncPagination.pageSize));
   const onTabChange = (key: React.Key) => {
     const next = String(key);
@@ -672,6 +699,96 @@ export function MercadoPagoSettingsPage() {
         </Modal.Backdrop>
       </Modal>
 
+      <Modal>
+        <Modal.Backdrop
+          isOpen={Boolean(selectedChangeLog)}
+          onOpenChange={(open) => {
+            if (!open) {
+              setSelectedChangeLog(null);
+            }
+          }}
+        >
+          <Modal.Container placement="center">
+            <Modal.Dialog className="w-full max-w-5xl">
+              <Modal.Header>
+                <Modal.Heading>Cambios por campo</Modal.Heading>
+              </Modal.Header>
+              <Modal.Body>
+                <div className="space-y-4">
+                  <div className="flex flex-wrap items-center justify-between gap-2 text-default-500 text-sm">
+                    <span>
+                      Sync #{selectedChangeLog?.id.toString() ?? "-"} ·{" "}
+                      {selectedChangeLog?.triggerLabel ?? selectedChangeLog?.triggerSource ?? "-"}
+                    </span>
+                    <span>Total cambios: {importChangesTotal}</span>
+                  </div>
+
+                  {importChangesErrorMessage && (
+                    <Alert status="danger">
+                      <Alert.Content>
+                        <Alert.Description>{importChangesErrorMessage}</Alert.Description>
+                      </Alert.Content>
+                    </Alert>
+                  )}
+
+                  <Table.ScrollContainer className="max-h-[62dvh] rounded border border-default-200">
+                    <Table.Content aria-label="Cambios de importación MercadoPago">
+                      <Table.Header>
+                        <Table.Column isRowHeader>SOURCE_ID</Table.Column>
+                        <Table.Column>Reporte</Table.Column>
+                        <Table.Column>Campo</Table.Column>
+                        <Table.Column>Antes</Table.Column>
+                        <Table.Column>Después</Table.Column>
+                      </Table.Header>
+                      {isImportChangesPending ? (
+                        <Table.Body aria-busy="true">
+                          <Table.Row id="loading">
+                            <Table.Cell colSpan={5}>
+                              <div className="py-6 text-center text-default-500">
+                                Cargando cambios...
+                              </div>
+                            </Table.Cell>
+                          </Table.Row>
+                        </Table.Body>
+                      ) : importChanges.length === 0 ? (
+                        <Table.Body>
+                          <Table.Row id="empty">
+                            <Table.Cell colSpan={5}>
+                              <div className="py-6 text-center text-default-500">
+                                No hay cambios de campo para este sync.
+                              </div>
+                            </Table.Cell>
+                          </Table.Row>
+                        </Table.Body>
+                      ) : (
+                        <Table.Body>
+                          {importChanges.map((change) => (
+                            <MpImportChangeRow change={change} key={change.id.toString()} />
+                          ))}
+                        </Table.Body>
+                      )}
+                    </Table.Content>
+                  </Table.ScrollContainer>
+
+                  {importChangesTotal > importChanges.length && (
+                    <p className="text-default-500 text-xs">
+                      Mostrando primeros {importChanges.length} cambios. Usa el backend con filtros
+                      por SOURCE_ID/campo para auditorías más específicas.
+                    </p>
+                  )}
+
+                  <div className="flex justify-end">
+                    <Button onPress={() => setSelectedChangeLog(null)} variant="primary">
+                      Cerrar
+                    </Button>
+                  </div>
+                </div>
+              </Modal.Body>
+            </Modal.Dialog>
+          </Modal.Container>
+        </Modal.Backdrop>
+      </Modal>
+
       {/* Modals */}
       {isGenerateModalOpen ? (
         <GenerateReportModal
@@ -686,7 +803,7 @@ export function MercadoPagoSettingsPage() {
   );
 }
 
-function buildSyncColumns(): ColumnDef<MpSyncLog>[] {
+function buildSyncColumns(onViewChanges: (log: MpSyncLog) => void): ColumnDef<MpSyncLog>[] {
   return [
     {
       accessorKey: "status",
@@ -873,7 +990,77 @@ function buildSyncColumns(): ColumnDef<MpSyncLog>[] {
         );
       },
     },
+    {
+      id: "changes",
+      header: "Cambios",
+      cell: ({ row }) => {
+        const stats = getSyncImportStats(row.original.changeDetails);
+        const changeCount = stats?.fieldChangeCount ?? 0;
+        const updatedRows = stats?.updatedRows ?? row.original.updated ?? 0;
+        const disabled = changeCount <= 0 && updatedRows <= 0;
+
+        return (
+          <Button
+            isDisabled={disabled}
+            onPress={() => onViewChanges(row.original)}
+            size="sm"
+            variant="secondary"
+          >
+            Ver cambios
+          </Button>
+        );
+      },
+    },
   ];
+}
+
+function MpImportChangeRow({ change }: { change: MpImportChange }) {
+  return (
+    <Table.Row id={change.id.toString()}>
+      <Table.Cell>
+        <span className="font-mono text-xs">{change.sourceId}</span>
+      </Table.Cell>
+      <Table.Cell>
+        <span
+          className={cn(
+            "rounded px-1.5 py-0.5 text-caption",
+            change.reportType === "release" && "bg-primary/10 text-primary",
+            change.reportType === "settlement" && "bg-warning/10 text-warning"
+          )}
+        >
+          {change.reportType === "release" ? "Liberación" : "Conciliación"}
+        </span>
+      </Table.Cell>
+      <Table.Cell>
+        <span className="font-medium">{change.fieldName}</span>
+      </Table.Cell>
+      <Table.Cell>
+        <AuditValue value={change.oldValue} />
+      </Table.Cell>
+      <Table.Cell>
+        <AuditValue value={change.newValue} />
+      </Table.Cell>
+    </Table.Row>
+  );
+}
+
+function AuditValue({ value }: { value: unknown }) {
+  const text = formatAuditValue(value);
+  return (
+    <code className="block truncate rounded bg-default-50 px-1.5 py-1 text-default-700 text-xs">
+      {text}
+    </code>
+  );
+}
+
+function formatAuditValue(value: unknown) {
+  if (value == null) {
+    return "null";
+  }
+  if (typeof value === "string") {
+    return value;
+  }
+  return JSON.stringify(value);
 }
 
 function getPagination(pagination: PaginationState) {
@@ -921,6 +1108,7 @@ function getSyncImportStats(details?: MpSyncChangeDetails | null) {
     validRows: toNumber(raw.validRows),
     insertedRows: toNumber(raw.insertedRows),
     duplicateRows: toNumber(raw.duplicateRows),
+    fieldChangeCount: toNumber(raw.fieldChangeCount),
     updatedRows: toNumber(raw.updatedRows),
     unchangedRows: toNumber(raw.unchangedRows ?? raw.duplicateRows),
     skippedRows: toNumber(raw.skippedRows),
@@ -948,6 +1136,7 @@ function getSyncImportStatsByType(log: MpSyncLog) {
       validRows: toNumber(stats.validRows),
       insertedRows: toNumber(stats.insertedRows),
       duplicateRows: toNumber(stats.duplicateRows),
+      fieldChangeCount: toNumber(stats.fieldChangeCount),
       updatedRows: toNumber(stats.updatedRows),
       unchangedRows: toNumber(stats.unchangedRows ?? stats.duplicateRows),
       skippedRows: toNumber(stats.skippedRows),

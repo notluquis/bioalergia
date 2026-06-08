@@ -6,6 +6,11 @@ import { sql } from "kysely";
 import { checkMpConfig, MP_ACCESS_TOKEN, redactMpUrl } from "./client.ts";
 import { isSettlementReport } from "./settlement-detector.ts";
 import { mapRowToReleaseTransaction, mapRowToSettlementTransaction } from "./mappers.ts";
+import {
+  insertMpImportChanges,
+  type MpImportChangeInput,
+  type MpReportType,
+} from "../mercadopago-sync.ts";
 
 // Batch size for insertions
 const BATCH_SIZE = 100;
@@ -67,6 +72,7 @@ export interface ImportStats {
   insertedRows: number;
   updatedRows: number;
   duplicateRows: number;
+  fieldChangeCount: number;
   unchangedRows: number;
   errors: string[];
   processedSourceIds: string[];
@@ -84,12 +90,20 @@ type MpJsonReportPayload = {
   };
 };
 
+type ProcessReportOptions = {
+  syncLogId?: bigint;
+};
+
 /**
  * Downloads and processes a CSV report from a URL.
  * Returns detailed statistics about the import.
  */
 
-export async function processReportUrl(url: string, reportType: string): Promise<ImportStats> {
+export async function processReportUrl(
+  url: string,
+  reportType: string,
+  options: ProcessReportOptions = {}
+): Promise<ImportStats> {
   const processedSourceIdSet = new Set<string>();
   const stats: ImportStats = {
     totalRows: 0,
@@ -98,6 +112,7 @@ export async function processReportUrl(url: string, reportType: string): Promise
     insertedRows: 0,
     updatedRows: 0,
     duplicateRows: 0,
+    fieldChangeCount: 0,
     unchangedRows: 0,
     errors: [],
     processedSourceIds: [],
@@ -134,11 +149,12 @@ export async function processReportUrl(url: string, reportType: string): Promise
       if (batchState.batch.length === 0) {
         return;
       }
-      const result = await upsertBatch(reportType, batchState.batch);
+      const result = await upsertBatch(reportType, batchState.batch, options);
       stats.insertedRows += result.inserted;
       stats.updatedRows += result.updated;
       stats.unchangedRows += result.unchanged;
       stats.duplicateRows += result.unchanged;
+      stats.fieldChangeCount += result.fieldChangeCount;
       batchState.batch = [];
     };
 
@@ -246,6 +262,7 @@ type SettlementInput = ReturnType<typeof mapRowToSettlementTransaction>;
 type ReportRowInput = ReleaseInput | SettlementInput;
 
 type UpsertBatchResult = {
+  fieldChangeCount: number;
   inserted: number;
   unchanged: number;
   updated: number;
@@ -253,6 +270,11 @@ type UpsertBatchResult = {
 
 type UpsertReturnedRow = {
   inserted: boolean;
+  sourceId: string;
+};
+
+type ExistingReportRow = Record<string, unknown> & {
+  sourceId: string;
 };
 
 type BatchState = {
@@ -697,20 +719,148 @@ function countUpsertResults(returnedRows: UpsertReturnedRow[], inputRows: number
   };
 }
 
-async function upsertBatch(reportType: string, rows: ReportRowInput[]): Promise<UpsertBatchResult> {
+async function upsertBatch(
+  reportType: string,
+  rows: ReportRowInput[],
+  options: ProcessReportOptions
+): Promise<UpsertBatchResult> {
   if (rows.length === 0) {
-    return { inserted: 0, unchanged: 0, updated: 0 };
+    return { fieldChangeCount: 0, inserted: 0, unchanged: 0, updated: 0 };
   }
 
   if (isSettlementReport(reportType)) {
-    return upsertSettlementBatch(rows as SettlementInput[]);
+    return upsertSettlementBatch(rows as SettlementInput[], options);
   }
 
-  return upsertReleaseBatch(rows as ReleaseInput[]);
+  return upsertReleaseBatch(rows as ReleaseInput[], options);
 }
 
-async function upsertReleaseBatch(rows: ReleaseInput[]): Promise<UpsertBatchResult> {
+async function selectExistingReleaseRows(sourceIds: string[]) {
+  if (sourceIds.length === 0) {
+    return new Map<string, ExistingReportRow>();
+  }
+  const rows = (await db.$qb
+    .selectFrom("ReleaseTransaction")
+    .selectAll()
+    .where("sourceId", "in", sourceIds)
+    .execute()) as ExistingReportRow[];
+  return new Map(rows.map((row) => [row.sourceId, row]));
+}
+
+async function selectExistingSettlementRows(sourceIds: string[]) {
+  if (sourceIds.length === 0) {
+    return new Map<string, ExistingReportRow>();
+  }
+  const rows = (await db.$qb
+    .selectFrom("SettlementTransaction")
+    .selectAll()
+    .where("sourceId", "in", sourceIds)
+    .execute()) as ExistingReportRow[];
+  return new Map(rows.map((row) => [row.sourceId, row]));
+}
+
+function normalizeAuditValue(value: unknown): unknown {
+  if (value == null) {
+    return null;
+  }
+  if (value instanceof Date) {
+    return value.toISOString();
+  }
+  if (typeof value === "bigint") {
+    return value.toString();
+  }
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? String(value) : null;
+  }
+  if (typeof value !== "object") {
+    return value;
+  }
+  if (value.constructor?.name === "Decimal" && "toString" in value) {
+    return String(value);
+  }
+  if (Array.isArray(value)) {
+    return value.map((item) => normalizeAuditValue(item));
+  }
+
+  const normalized: Record<string, unknown> = {};
+  for (const key of Object.keys(value as Record<string, unknown>).sort()) {
+    normalized[key] = normalizeAuditValue((value as Record<string, unknown>)[key]);
+  }
+  return normalized;
+}
+
+function auditValuesEqual(a: unknown, b: unknown) {
+  return JSON.stringify(normalizeAuditValue(a)) === JSON.stringify(normalizeAuditValue(b));
+}
+
+function buildImportChanges(params: {
+  fields: readonly string[];
+  newRowsBySourceId: Map<string, ReportRowInput>;
+  oldRowsBySourceId: Map<string, ExistingReportRow>;
+  reportType: MpReportType;
+  syncLogId: bigint;
+  updatedSourceIds: Set<string>;
+}) {
+  const changes: MpImportChangeInput[] = [];
+  for (const sourceId of params.updatedSourceIds) {
+    const oldRow = params.oldRowsBySourceId.get(sourceId);
+    const newRow = params.newRowsBySourceId.get(sourceId);
+    if (!oldRow || !newRow) {
+      continue;
+    }
+    for (const fieldName of params.fields) {
+      const oldValue = normalizeAuditValue(oldRow[fieldName]);
+      const newValue = normalizeAuditValue((newRow as Record<string, unknown>)[fieldName]);
+      if (auditValuesEqual(oldValue, newValue)) {
+        continue;
+      }
+      changes.push({
+        fieldName,
+        newValue: newValue as never,
+        oldValue: oldValue as never,
+        reportType: params.reportType,
+        sourceId,
+        syncLogId: params.syncLogId,
+      });
+    }
+  }
+  return changes;
+}
+
+async function persistImportChanges(params: {
+  fields: readonly string[];
+  newRowsBySourceId: Map<string, ReportRowInput>;
+  oldRowsBySourceId: Map<string, ExistingReportRow>;
+  reportType: MpReportType;
+  syncLogId?: bigint;
+  updatedSourceIds: Set<string>;
+}) {
+  if (!params.syncLogId || params.updatedSourceIds.size === 0) {
+    return 0;
+  }
+
+  const changes = buildImportChanges({
+    fields: params.fields,
+    newRowsBySourceId: params.newRowsBySourceId,
+    oldRowsBySourceId: params.oldRowsBySourceId,
+    reportType: params.reportType,
+    syncLogId: params.syncLogId,
+    updatedSourceIds: params.updatedSourceIds,
+  });
+  return insertMpImportChanges(changes);
+}
+
+async function upsertReleaseBatch(
+  rows: ReleaseInput[],
+  options: ProcessReportOptions
+): Promise<UpsertBatchResult> {
   const uniqueRows = dedupeRowsBySourceId(rows);
+  const newRowsBySourceId = new Map<string, ReportRowInput>(
+    uniqueRows.map((row) => [row.sourceId.trim(), row])
+  );
+  const oldRowsBySourceId = options.syncLogId
+    ? await selectExistingReleaseRows(Array.from(newRowsBySourceId.keys()))
+    : new Map<string, ExistingReportRow>();
   const updatedAt = new Date().toISOString();
   const returnedRows = await db.$qb
     .insertInto("ReleaseTransaction")
@@ -791,14 +941,36 @@ async function upsertReleaseBatch(rows: ReleaseInput[]): Promise<UpsertBatchResu
           )
         )
     )
+    .returning(["sourceId"])
     .returning(sql<boolean>`xmax = 0`.as("inserted"))
     .execute();
 
-  return countUpsertResults(returnedRows, rows.length);
+  const updatedSourceIds = new Set(
+    returnedRows.filter((row) => !row.inserted).map((row) => row.sourceId)
+  );
+  const fieldChangeCount = await persistImportChanges({
+    fields: RELEASE_UPDATE_COLUMNS,
+    newRowsBySourceId,
+    oldRowsBySourceId,
+    reportType: "release",
+    syncLogId: options.syncLogId,
+    updatedSourceIds,
+  });
+
+  return { ...countUpsertResults(returnedRows, rows.length), fieldChangeCount };
 }
 
-async function upsertSettlementBatch(rows: SettlementInput[]): Promise<UpsertBatchResult> {
+async function upsertSettlementBatch(
+  rows: SettlementInput[],
+  options: ProcessReportOptions
+): Promise<UpsertBatchResult> {
   const uniqueRows = dedupeRowsBySourceId(rows);
+  const newRowsBySourceId = new Map<string, ReportRowInput>(
+    uniqueRows.map((row) => [row.sourceId.trim(), row])
+  );
+  const oldRowsBySourceId = options.syncLogId
+    ? await selectExistingSettlementRows(Array.from(newRowsBySourceId.keys()))
+    : new Map<string, ExistingReportRow>();
   const updatedAt = new Date().toISOString();
   const returnedRows = await db.$qb
     .insertInto("SettlementTransaction")
@@ -884,8 +1056,21 @@ async function upsertSettlementBatch(rows: SettlementInput[]): Promise<UpsertBat
           )
         )
     )
+    .returning(["sourceId"])
     .returning(sql<boolean>`xmax = 0`.as("inserted"))
     .execute();
 
-  return countUpsertResults(returnedRows, rows.length);
+  const updatedSourceIds = new Set(
+    returnedRows.filter((row) => !row.inserted).map((row) => row.sourceId)
+  );
+  const fieldChangeCount = await persistImportChanges({
+    fields: SETTLEMENT_UPDATE_COLUMNS,
+    newRowsBySourceId,
+    oldRowsBySourceId,
+    reportType: "settlement",
+    syncLogId: options.syncLogId,
+    updatedSourceIds,
+  });
+
+  return { ...countUpsertResults(returnedRows, rows.length), fieldChangeCount };
 }

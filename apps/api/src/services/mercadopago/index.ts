@@ -117,7 +117,7 @@ export const MercadoPagoService = {
    */
   async processReport(
     type: "release" | "settlement",
-    source: { url?: string; fileName?: string }
+    source: { url?: string; fileName?: string; syncLogId?: bigint }
   ): Promise<ImportStats> {
     let downloadUrl = source.url;
 
@@ -130,7 +130,7 @@ export const MercadoPagoService = {
       throw new Error("Either url or fileName must be provided");
     }
 
-    return await processReportUrl(downloadUrl, type);
+    return await processReportUrl(downloadUrl, type, { syncLogId: source.syncLogId });
   },
 
   /**
