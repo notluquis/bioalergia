@@ -2,9 +2,8 @@ import { formatChile } from "@/lib/dates";
 import { Button, Chip, Spinner } from "@heroui/react";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Download, RefreshCw } from "lucide-react";
+import { isReportPending } from "@/features/finance/mercadopago/reportStatus";
 import type { MPReport } from "@/services/mercadopago";
-
-const REPORT_PENDING_REGEX = /processing|pending|in_progress|waiting|generating|queued|creating/i;
 
 export const getMpReportColumns = (
   handleDownload: (fileName: string) => void,
@@ -146,10 +145,3 @@ export const getMpReportColumns = (
     id: "actions",
   },
 ];
-
-function isReportPending(status?: null | string) {
-  if (!status) {
-    return false;
-  }
-  return REPORT_PENDING_REGEX.test(status);
-}

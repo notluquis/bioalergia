@@ -1,16 +1,5 @@
 import { formatChile } from "@/lib/dates";
-import {
-  Alert,
-  AlertDialog,
-  Button,
-  Card,
-  Description,
-  Modal,
-  Skeleton,
-  Table,
-  Tabs,
-  Tooltip,
-} from "@heroui/react";
+import { Alert, AlertDialog, Button, Modal, Table, Tabs, Tooltip } from "@heroui/react";
 import {
   keepPreviousData,
   type QueryClient,
@@ -19,14 +8,22 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import type { ColumnDef, PaginationState, VisibilityState } from "@tanstack/react-table";
-import { CheckCircle2, Clock, FileText, Plus } from "lucide-react";
+import { CheckCircle2, Clock, Plus } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 
 import { DataTable } from "@/components/data-table/DataTable";
 import { GenerateReportModal } from "@/components/mercadopago/GenerateReportModal";
+import { ErrorAlert } from "@/components/ui/ErrorAlert";
 import { useToast } from "@/context/ToastContext";
 import { getMpReportColumns } from "@/features/finance/mercadopago/components/MpReportColumns";
+import { MpReportTabPanel } from "@/features/finance/mercadopago/components/MpReportTabPanel";
 import { mercadoPagoKeys } from "@/features/finance/mercadopago/queries";
+import { isReportPending } from "@/features/finance/mercadopago/reportStatus";
+import {
+  getSyncImportStats,
+  getSyncImportStatsByType,
+  getSyncReportTypes,
+} from "@/features/finance/mercadopago/sync-stats";
 import { cn } from "@/lib/utils";
 import {
   type ImportStats,
@@ -34,12 +31,8 @@ import {
   MPService,
   type MpImportChange,
   type MpReportType,
-  type MpSyncChangeDetails,
-  type MpSyncImportStats,
   type MpSyncLog,
 } from "@/services/mercadopago";
-
-const REPORT_PENDING_REGEX = /processing|pending|in_progress|waiting|generating|queued|creating/i;
 
 type MpTab = MpReportType | "sync";
 type ToastFn = (message: string, title?: string) => void;
@@ -55,20 +48,8 @@ type ReportActions = {
   setConfirmingFile: (value: null | string) => void;
 };
 
-const resolveLastReportLabel = (reports: MPReport[]) => {
-  const lastReport = reports[0];
-  if (!lastReport) {
-    return "N/A";
-  }
-
-  const date = lastReport.date_created ?? lastReport.begin_date;
-  return date ? formatChile(date, "D MMM, HH:mm") : "N/A";
-};
-
 const resolveReportTypeFromTab = (tab: MpTab): MpReportType => (tab === "sync" ? "release" : tab);
 const resolveSyncRefetchInterval = (isSyncTab: boolean) => (isSyncTab ? 30_000 : false);
-const resolveReportTypeLabel = (reportType: MpReportType) =>
-  reportType === "release" ? "Liberación" : "Conciliación";
 
 const useReportActions = ({
   queryClient,
@@ -275,7 +256,7 @@ export function MercadoPagoSettingsPage() {
 
   const syncColumns = useMemo<ColumnDef<MpSyncLog>[]>(
     () => buildSyncColumns(setSelectedChangeLog),
-    []
+    [setSelectedChangeLog]
   );
   const syncPageCount = Math.max(1, Math.ceil(syncTotal / syncPagination.pageSize));
   const onTabChange = (key: React.Key) => {
@@ -331,206 +312,44 @@ export function MercadoPagoSettingsPage() {
 
         <Tabs.Panel className="space-y-5 pt-4" id="release">
           {activeTab === "release" ? (
-            <>
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                {/* Last Report Card */}
-                <Card className="h-full p-6" variant="secondary">
-                  <Card.Header className="items-start justify-between p-0">
-                    <div>
-                      <Card.Description className="font-semibold text-default-600 text-xs uppercase tracking-wide">
-                        Último Reporte
-                      </Card.Description>
-                      <Card.Title
-                        aria-busy={isReportLoading || undefined}
-                        aria-label={isReportLoading ? "Cargando último reporte" : undefined}
-                        className="mt-2 line-clamp-1 text-lg"
-                      >
-                        {isReportLoading ? (
-                          <Skeleton aria-hidden="true" className="h-5 w-28 rounded-lg" />
-                        ) : (
-                          resolveLastReportLabel(reports)
-                        )}
-                      </Card.Title>
-                    </div>
-                    <Clock className="text-primary size-5" />
-                  </Card.Header>
-                  <Card.Content className="p-0 pt-4">
-                    <Description className="truncate text-default-600 text-xs">
-                      {isReportLoading
-                        ? "Obteniendo últimos reportes..."
-                        : (reports[0]?.file_name ?? "Sin reportes recientes")}
-                    </Description>
-                  </Card.Content>
-                </Card>
-
-                {/* Total Reports Card */}
-                <Card className="h-full p-6" variant="secondary">
-                  <Card.Header className="items-start justify-between p-0">
-                    <div>
-                      <Card.Title className="text-sm">Total Reportes</Card.Title>
-                      <Card.Description>{`Tipo: ${resolveReportTypeLabel(reportType)}`}</Card.Description>
-                    </div>
-                    <FileText className="text-primary size-5" />
-                  </Card.Header>
-                  <Card.Content className="p-0 pt-3">
-                    <p className="font-semibold text-3xl">
-                      {isReportLoading ? "..." : reportTotal}
-                    </p>
-                  </Card.Content>
-                </Card>
-              </div>
-
-              {reportErrorMessage && (
-                <Alert status="danger">
-                  <Alert.Content>
-                    <Alert.Description>{reportErrorMessage}</Alert.Description>
-                  </Alert.Content>
-                </Alert>
-              )}
-
-              <div className="space-y-3">
-                <div className="flex flex-wrap items-center justify-between gap-3 px-1">
-                  <div className="flex items-center gap-2">
-                    <FileText className="text-primary size-4" />
-                    <div>
-                      <span className="block font-semibold text-lg">Historial de Reportes</span>
-                      <span className="block text-default-500 text-xs">Total: {reportTotal}</span>
-                    </div>
-                  </div>
-                </div>
-
-                <DataTable
-                  columns={columns}
-                  containerVariant="plain"
-                  columnVisibility={columnVisibility}
-                  data={reports}
-                  enableExport={false}
-                  enableGlobalFilter={false}
-                  isLoading={isReportLoading}
-                  key={`mp-reports-${reportType}-${reportPagination.pageIndex}-${reports.length}`}
-                  pageSizeOptions={[10, 25, 50]}
-                  pagination={reportPagination}
-                  onPaginationChange={setReportPagination}
-                  onColumnVisibilityChange={setColumnVisibility}
-                  pageCount={reportPageCount}
-                  noDataMessage={
-                    isReportLoading
-                      ? "Cargando reportes de MercadoPago..."
-                      : "Aún no hay reportes. Genera uno para comenzar."
-                  }
-                  scrollMaxHeight="min(68dvh, 760px)"
-                />
-              </div>
-            </>
+            <MpReportTabPanel
+              columns={columns}
+              columnVisibility={columnVisibility}
+              errorMessage={reportErrorMessage}
+              isLoading={isReportLoading}
+              onColumnVisibilityChange={setColumnVisibility}
+              onPaginationChange={setReportPagination}
+              pageCount={reportPageCount}
+              pagination={reportPagination}
+              reports={reports}
+              reportTotal={reportTotal}
+              reportType={reportType}
+            />
           ) : null}
         </Tabs.Panel>
 
         <Tabs.Panel className="space-y-5 pt-4" id="settlement">
           {activeTab === "settlement" ? (
-            <>
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                {/* Last Report Card */}
-                <Card className="h-full p-6" variant="secondary">
-                  <Card.Header className="items-start justify-between p-0">
-                    <div>
-                      <Card.Description className="font-semibold text-default-600 text-xs uppercase tracking-wide">
-                        Último Reporte
-                      </Card.Description>
-                      <Card.Title
-                        aria-busy={isReportLoading || undefined}
-                        aria-label={isReportLoading ? "Cargando último reporte" : undefined}
-                        className="mt-2 line-clamp-1 text-lg"
-                      >
-                        {isReportLoading ? (
-                          <Skeleton aria-hidden="true" className="h-5 w-28 rounded-lg" />
-                        ) : (
-                          resolveLastReportLabel(reports)
-                        )}
-                      </Card.Title>
-                    </div>
-                    <Clock className="text-primary size-5" />
-                  </Card.Header>
-                  <Card.Content className="p-0 pt-4">
-                    <Description className="truncate text-default-600 text-xs">
-                      {isReportLoading
-                        ? "Obteniendo últimos reportes..."
-                        : (reports[0]?.file_name ?? "Sin reportes recientes")}
-                    </Description>
-                  </Card.Content>
-                </Card>
-
-                {/* Total Reports Card */}
-                <Card className="h-full p-6" variant="secondary">
-                  <Card.Header className="items-start justify-between p-0">
-                    <div>
-                      <Card.Title className="text-sm">Total Reportes</Card.Title>
-                      <Card.Description>{`Tipo: ${resolveReportTypeLabel(reportType)}`}</Card.Description>
-                    </div>
-                    <FileText className="text-primary size-5" />
-                  </Card.Header>
-                  <Card.Content className="p-0 pt-3">
-                    <p className="font-semibold text-3xl">
-                      {isReportLoading ? "..." : reportTotal}
-                    </p>
-                  </Card.Content>
-                </Card>
-              </div>
-
-              {reportErrorMessage && (
-                <Alert status="danger">
-                  <Alert.Content>
-                    <Alert.Description>{reportErrorMessage}</Alert.Description>
-                  </Alert.Content>
-                </Alert>
-              )}
-
-              <div className="space-y-3">
-                <div className="flex flex-wrap items-center justify-between gap-3 px-1">
-                  <div className="flex items-center gap-2">
-                    <FileText className="text-primary size-4" />
-                    <div>
-                      <span className="block font-semibold text-lg">Historial de Reportes</span>
-                      <span className="block text-default-500 text-xs">Total: {reportTotal}</span>
-                    </div>
-                  </div>
-                </div>
-
-                <DataTable
-                  columns={columns}
-                  containerVariant="plain"
-                  columnVisibility={columnVisibility}
-                  data={reports}
-                  enableExport={false}
-                  enableGlobalFilter={false}
-                  isLoading={isReportLoading}
-                  key={`mp-reports-${reportType}-${reportPagination.pageIndex}-${reports.length}`}
-                  pageSizeOptions={[10, 25, 50]}
-                  pagination={reportPagination}
-                  onPaginationChange={setReportPagination}
-                  onColumnVisibilityChange={setColumnVisibility}
-                  pageCount={reportPageCount}
-                  noDataMessage={
-                    isReportLoading
-                      ? "Cargando reportes de MercadoPago..."
-                      : "Aún no hay reportes. Genera uno para comenzar."
-                  }
-                  scrollMaxHeight="min(68dvh, 760px)"
-                />
-              </div>
-            </>
+            <MpReportTabPanel
+              columns={columns}
+              columnVisibility={columnVisibility}
+              errorMessage={reportErrorMessage}
+              isLoading={isReportLoading}
+              onColumnVisibilityChange={setColumnVisibility}
+              onPaginationChange={setReportPagination}
+              pageCount={reportPageCount}
+              pagination={reportPagination}
+              reports={reports}
+              reportTotal={reportTotal}
+              reportType={reportType}
+            />
           ) : null}
         </Tabs.Panel>
 
         <Tabs.Panel className="space-y-5 pt-4" id="sync">
           {activeTab === "sync" ? (
             <>
-              {syncErrorMessage && (
-                <Alert status="danger">
-                  <Alert.Content>
-                    <Alert.Description>{syncErrorMessage}</Alert.Description>
-                  </Alert.Content>
-                </Alert>
-              )}
+              <ErrorAlert message={syncErrorMessage} />
 
               <div className="space-y-3">
                 <div className="flex flex-wrap items-center justify-between gap-3 px-1">
@@ -1082,116 +901,4 @@ function getMpReportsRefetchInterval(query: { state: { data?: { reports?: MPRepo
 
   const hasPending = reports.some((report) => isReportPending(report.status));
   return hasPending ? 15_000 : 60_000;
-}
-
-function isReportPending(status?: null | string) {
-  if (!status) {
-    return false;
-  }
-  return REPORT_PENDING_REGEX.test(status);
-}
-
-function getSyncImportStats(details?: MpSyncChangeDetails | null) {
-  if (!details || typeof details !== "object") {
-    return null;
-  }
-  const raw = details.importStats;
-  if (!raw || typeof raw !== "object") {
-    return null;
-  }
-  const toNumber = (value: unknown) => {
-    const num = Number(value);
-    return Number.isFinite(num) ? num : 0;
-  };
-  return {
-    totalRows: toNumber(raw.totalRows),
-    validRows: toNumber(raw.validRows),
-    insertedRows: toNumber(raw.insertedRows),
-    duplicateRows: toNumber(raw.duplicateRows),
-    fieldChangeCount: toNumber(raw.fieldChangeCount),
-    updatedRows: toNumber(raw.updatedRows),
-    unchangedRows: toNumber(raw.unchangedRows ?? raw.duplicateRows),
-    skippedRows: toNumber(raw.skippedRows),
-    errorCount: toNumber(raw.errorCount),
-  };
-}
-
-function getSyncImportStatsByType(log: MpSyncLog) {
-  const details = log.changeDetails;
-  if (!details || typeof details !== "object") {
-    return null;
-  }
-  const raw = details.importStatsByType;
-  const toNumber = (value: unknown) => {
-    const num = Number(value);
-    return Number.isFinite(num) ? num : 0;
-  };
-
-  const buildStats = (stats?: MpSyncImportStats | null) => {
-    if (!stats) {
-      return null;
-    }
-    return {
-      totalRows: toNumber(stats.totalRows),
-      validRows: toNumber(stats.validRows),
-      insertedRows: toNumber(stats.insertedRows),
-      duplicateRows: toNumber(stats.duplicateRows),
-      fieldChangeCount: toNumber(stats.fieldChangeCount),
-      updatedRows: toNumber(stats.updatedRows),
-      unchangedRows: toNumber(stats.unchangedRows ?? stats.duplicateRows),
-      skippedRows: toNumber(stats.skippedRows),
-      errorCount: toNumber(stats.errorCount),
-    };
-  };
-
-  const entries: Array<{
-    label: string;
-    stats: ReturnType<typeof buildStats>;
-    tone: "release" | "settlement";
-  }> = [];
-
-  if (raw && typeof raw === "object") {
-    const releaseStats = buildStats(raw.release ?? null);
-    if (releaseStats) {
-      entries.push({ label: "Liberación", stats: releaseStats, tone: "release" });
-    }
-    const settlementStats = buildStats(raw.settlement ?? null);
-    if (settlementStats) {
-      entries.push({ label: "Conciliación", stats: settlementStats, tone: "settlement" });
-    }
-  }
-
-  if (entries.length > 0) {
-    return entries;
-  }
-
-  const fallback = getSyncImportStats(details);
-  const reportTypes = getSyncReportTypes(log);
-  if (!fallback || reportTypes.length !== 1) {
-    return null;
-  }
-
-  return [
-    {
-      label: reportTypes[0] === "release" ? "Liberación" : "Conciliación",
-      stats: fallback,
-      tone: reportTypes[0],
-    },
-  ];
-}
-
-function getSyncReportTypes(log: MpSyncLog) {
-  const details = log.changeDetails;
-  if (details && typeof details === "object") {
-    const raw = details.reportTypes;
-    if (Array.isArray(raw)) {
-      return raw.filter(
-        (item): item is "release" | "settlement" => item === "release" || item === "settlement"
-      );
-    }
-  }
-  if (log.triggerSource === "mp:auto-sync") {
-    return ["release", "settlement"] as const;
-  }
-  return [];
 }
