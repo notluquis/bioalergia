@@ -160,11 +160,6 @@
     "workbox-strategies": "^7.4.1",
     "workbox-window": "^7.4.1"
   },
-  "overrides": {
-    "@internationalized/date": "3.11.0",
-    "hono": "^4.12.1",
-    "jspdf": "$jspdf"
-  },
   "engines": {
     "node": ">=26",
     "npm": ">=10.0.0"
