@@ -1,5 +1,5 @@
 import { formatChile } from "@/lib/dates";
-import { Alert, AlertDialog, Button, Modal, Table, Tabs, Tooltip } from "@heroui/react";
+import { Alert, AlertDialog, Button, Modal, Tabs, Tooltip } from "@heroui/react";
 import {
   keepPreviousData,
   type QueryClient,
@@ -258,6 +258,7 @@ export function MercadoPagoSettingsPage() {
     () => buildSyncColumns(setSelectedChangeLog),
     [setSelectedChangeLog]
   );
+  const importChangeColumns = useMemo(() => buildImportChangeColumns(), []);
   const syncPageCount = Math.max(1, Math.ceil(syncTotal / syncPagination.pageSize));
   const onTabChange = (key: React.Key) => {
     const next = String(key);
@@ -550,35 +551,18 @@ export function MercadoPagoSettingsPage() {
                     </Alert>
                   )}
 
-                  <Table.ScrollContainer className="max-h-[62dvh] rounded border border-default-200">
-                    <Table.Content aria-label="Cambios de importación MercadoPago">
-                      <Table.Header>
-                        <Table.Column isRowHeader>SOURCE_ID</Table.Column>
-                        <Table.Column>Reporte</Table.Column>
-                        <Table.Column>Campo</Table.Column>
-                        <Table.Column>Antes</Table.Column>
-                        <Table.Column>Después</Table.Column>
-                      </Table.Header>
-                      {/* Single Table.Body — swapping between bodies with rows
-                          of changing ids (loading/empty/data) makes React Aria
-                          throw "Cannot change the id of an item". renderEmptyState
-                          covers both the loading and no-data cases. */}
-                      <Table.Body
-                        aria-busy={isImportChangesPending}
-                        renderEmptyState={() => (
-                          <div className="py-6 text-center text-default-500">
-                            {isImportChangesPending
-                              ? "Cargando cambios..."
-                              : "No hay cambios de campo para este sync."}
-                          </div>
-                        )}
-                      >
-                        {importChanges.map((change) => (
-                          <MpImportChangeRow change={change} key={change.id.toString()} />
-                        ))}
-                      </Table.Body>
-                    </Table.Content>
-                  </Table.ScrollContainer>
+                  <DataTable
+                    columns={importChangeColumns}
+                    containerVariant="plain"
+                    data={importChanges}
+                    enableExport={false}
+                    enableGlobalFilter={false}
+                    enablePagination={false}
+                    enableToolbar={false}
+                    isLoading={isImportChangesPending}
+                    noDataMessage="No hay cambios de campo para este sync."
+                    scrollMaxHeight="62dvh"
+                  />
 
                   {importChangesTotal > importChanges.length && (
                     <p className="text-default-500 text-xs">
@@ -812,34 +796,44 @@ function buildSyncColumns(onViewChanges: (log: MpSyncLog) => void): ColumnDef<Mp
   ];
 }
 
-function MpImportChangeRow({ change }: { change: MpImportChange }) {
-  return (
-    <Table.Row id={change.id.toString()}>
-      <Table.Cell>
-        <span className="font-mono text-xs">{change.sourceId}</span>
-      </Table.Cell>
-      <Table.Cell>
+function buildImportChangeColumns(): ColumnDef<MpImportChange>[] {
+  return [
+    {
+      accessorKey: "sourceId",
+      cell: ({ row }) => <span className="font-mono text-xs">{row.original.sourceId}</span>,
+      header: "SOURCE_ID",
+    },
+    {
+      accessorKey: "reportType",
+      cell: ({ row }) => (
         <span
           className={cn(
             "rounded px-1.5 py-0.5 text-caption",
-            change.reportType === "release" && "bg-primary/10 text-primary",
-            change.reportType === "settlement" && "bg-warning/10 text-warning"
+            row.original.reportType === "release" && "bg-primary/10 text-primary",
+            row.original.reportType === "settlement" && "bg-warning/10 text-warning"
           )}
         >
-          {change.reportType === "release" ? "Liberación" : "Conciliación"}
+          {row.original.reportType === "release" ? "Liberación" : "Conciliación"}
         </span>
-      </Table.Cell>
-      <Table.Cell>
-        <span className="font-medium">{change.fieldName}</span>
-      </Table.Cell>
-      <Table.Cell>
-        <AuditValue value={change.oldValue} />
-      </Table.Cell>
-      <Table.Cell>
-        <AuditValue value={change.newValue} />
-      </Table.Cell>
-    </Table.Row>
-  );
+      ),
+      header: "Reporte",
+    },
+    {
+      accessorKey: "fieldName",
+      cell: ({ row }) => <span className="font-medium">{row.original.fieldName}</span>,
+      header: "Campo",
+    },
+    {
+      accessorKey: "oldValue",
+      cell: ({ row }) => <AuditValue value={row.original.oldValue} />,
+      header: "Antes",
+    },
+    {
+      accessorKey: "newValue",
+      cell: ({ row }) => <AuditValue value={row.original.newValue} />,
+      header: "Después",
+    },
+  ];
 }
 
 function AuditValue({ value }: { value: unknown }) {
