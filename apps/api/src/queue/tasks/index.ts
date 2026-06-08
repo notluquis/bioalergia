@@ -15,6 +15,7 @@ import { dte_sync } from "./dte-sync.ts";
 import { job_radar_sync } from "./job-radar-sync.ts";
 import { onedrive_renew } from "./onedrive-renew.ts";
 import { orphan_cleanup } from "./orphan-cleanup.ts";
+import { send_outreach_tick } from "./outreach-send.ts";
 import { skin_test_sync } from "./skin-test-sync.ts";
 
 export const taskList: TaskList = {
@@ -24,4 +25,5 @@ export const taskList: TaskList = {
   onedrive_renew,
   doctoralia_calendar_sync,
   job_radar_sync,
+  send_outreach_tick,
 };

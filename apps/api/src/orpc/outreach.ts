@@ -65,11 +65,14 @@ import {
   startJob,
   updateJobProgress,
 } from "../lib/job-queue/jobQueue.ts";
+import { enqueueJob } from "../queue/runner.ts";
+import { outreachDrainJobKey } from "../queue/tasks/outreach-send.ts";
 import { enrichProspectWithApollo } from "../modules/outreach/apollo.ts";
-import { buildCampaignDeliveries, selectCandidates } from "../modules/outreach/campaign-builder.ts";
+import { selectCandidates } from "../modules/outreach/campaign-builder.ts";
 import { discoverGooglePlaces } from "../modules/outreach/google-places.ts";
 import { hunterEnrichProspect, verifyEmail } from "../modules/outreach/hunter.ts";
 import { importMineducDataset } from "../modules/outreach/mineduc-importer.ts";
+import { launchOrResumeCampaign } from "../services/outreach-campaign.ts";
 import { sendOutreachNextBatch } from "../services/outreach-email.ts";
 import { recomputeProspectScore } from "../modules/outreach/scoring.ts";
 import { renderTemplate } from "../modules/outreach/template.ts";
@@ -503,11 +506,16 @@ const outreachRouterBase = {
     .input(launchCampaignInputSchema)
     .output(campaignResponseSchema)
     .handler(async ({ input }) => {
-      await buildCampaignDeliveries(input.id);
-      const campaign = await db.outreachEmailCampaign.update({
-        where: { id: input.id },
-        data: { estado: "ENVIANDO", enviadoEn: new Date() },
-      });
+      const campaign = await launchOrResumeCampaign(input.id);
+      // Kick off the auto-drain chain (queue paces sends to ratePerHour). The
+      // jobKey + replace mode means a relaunch/resume never spawns a parallel
+      // chain. No-ops when the queue runner is disabled — the manual
+      // "Enviar siguiente lote" button stays as the fallback path.
+      await enqueueJob(
+        "send_outreach_tick",
+        { campaignId: input.id },
+        { jobKey: outreachDrainJobKey(input.id), jobKeyMode: "replace" }
+      );
       return { campaign: normalizeCampaign(campaign as Record<string, unknown>) };
     }),
 

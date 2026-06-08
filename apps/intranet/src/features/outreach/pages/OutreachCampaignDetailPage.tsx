@@ -97,8 +97,9 @@ export function OutreachCampaignDetailPage() {
         <Card.Header>
           <Card.Title>Envío de correos</Card.Title>
           <Card.Description>
-            Los correos se envían desde el servidor vía Resend, respetando el límite por hora de la
-            campaña. Cada lote envía hasta 25 (o lo que permita el rate).
+            Al iniciar la campaña, el servidor envía los correos automáticamente vía Resend,
+            respetando el límite por hora. Usa el botón solo si quieres forzar el siguiente lote
+            manualmente (envía hasta 25, o lo que permita el rate).
           </Card.Description>
         </Card.Header>
         <Card.Content className="space-y-3 p-4">

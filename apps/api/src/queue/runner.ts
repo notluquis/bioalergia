@@ -16,12 +16,31 @@
 // - setInterval WA pollers — DEFERRED until createBroadcast / scheduleMessage
 //   handlers exist (currently no rows are ever created, polling was waste).
 
-import { run, parseCronItems, type Runner } from "graphile-worker";
+import { run, parseCronItems, type Runner, type TaskSpec } from "graphile-worker";
 import { logError, logEvent } from "../lib/logger.ts";
 import { getSetting } from "../lib/settings.ts";
 import { taskList } from "./tasks/index.ts";
 
 let runner: Runner | null = null;
+
+/**
+ * Enqueue a job onto the in-process queue. No-op (logged) when the runner is
+ * disabled (DISABLE_QUEUE_RUNNER) or not yet booted — callers must keep a
+ * manual fallback path. Used e.g. by launchCampaign to kick off the outreach
+ * auto-drain chain.
+ */
+export async function enqueueJob(
+  identifier: string,
+  payload: Record<string, unknown>,
+  spec?: TaskSpec
+): Promise<boolean> {
+  if (!runner) {
+    logEvent("queue.enqueue.skipped", { identifier, reason: "runner-unavailable" });
+    return false;
+  }
+  await runner.addJob(identifier, payload, spec);
+  return true;
+}
 
 export async function startQueueRunner(): Promise<void> {
   if (runner) return;

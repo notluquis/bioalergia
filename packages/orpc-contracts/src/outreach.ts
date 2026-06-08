@@ -347,24 +347,6 @@ export const nextDeliveryBatchInputSchema = z.object({
   limit: z.number().int().min(1).max(100).default(10),
 });
 
-export const deliveryBatchItemSchema = z.object({
-  deliveryId: z.number().int(),
-  emailDestinatario: z.string(),
-  asunto: z.string(),
-  cuerpoHtml: z.string(),
-  cuerpoTexto: z.string(),
-  fromEmail: z.string(),
-  fromNombre: z.string(),
-  replyTo: z.string().nullable(),
-  establecimientoNombre: z.string(),
-});
-
-export const recordDeliveryResultInputSchema = z.object({
-  deliveryId: z.number().int().positive(),
-  status: z.enum(["ENVIADO", "ERROR"]),
-  errorMensaje: z.string().nullable().optional(),
-});
-
 // ── Discovery / enrichment inputs ───────────────────────────────────────────
 
 export const zonaSchema = z.object({
@@ -554,11 +536,6 @@ export const campaignPreviewResponseSchema = z.object({
 
 export const importMineducResponseSchema = z.object({
   log: outreachImportLogSchema,
-});
-
-export const nextDeliveryBatchResponseSchema = z.object({
-  items: z.array(deliveryBatchItemSchema),
-  remaining: z.number().int(),
 });
 
 // Server-side batch send (Resend) — replaces the browser → local-agent loop.
