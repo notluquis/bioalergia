@@ -165,8 +165,8 @@ describe("MercadoPago report webhook", () => {
     });
     expect(processReport).toHaveBeenCalledOnce();
     expect(processReport).toHaveBeenCalledWith("release", {
+      fileName: "release-2026-05.csv",
       syncLogId: 123n,
-      url: "https://example.com/file.csv",
     });
     expect(finalizeMpSyncLogEntry).toHaveBeenCalledWith(
       123n,
@@ -197,12 +197,11 @@ describe("MercadoPago report webhook", () => {
     expect(createMpSyncLogEntry).not.toHaveBeenCalled();
   });
 
-  it("filters out files missing name or url", async () => {
+  it("filters out files missing name and ingests by file name", async () => {
     const res = await post(
       buildPayload({
         files: [
           { name: "ok.csv", url: "https://example.com/ok.csv", type: ".csv" },
-          { name: "no-url.csv", type: ".csv" },
           { url: "https://example.com/no-name.csv", type: ".csv" },
         ],
       })
@@ -211,8 +210,8 @@ describe("MercadoPago report webhook", () => {
     await flush();
     expect(processReport).toHaveBeenCalledOnce();
     expect(processReport).toHaveBeenCalledWith("release", {
+      fileName: "ok.csv",
       syncLogId: 123n,
-      url: "https://example.com/ok.csv",
     });
   });
 

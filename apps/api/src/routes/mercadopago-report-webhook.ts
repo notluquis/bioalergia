@@ -107,7 +107,7 @@ async function verifySignature(payload: ReportWebhookPayload, secret: string): P
 
 async function processReport(payload: ReportWebhookPayload) {
   const validFiles = (payload.files ?? []).filter(
-    (f): f is { name: string; url: string; type?: string } => Boolean(f.name && f.url)
+    (f): f is { name: string; url?: string; type?: string } => Boolean(f.name)
   );
 
   if (validFiles.length === 0) {
@@ -138,8 +138,8 @@ async function processReport(payload: ReportWebhookPayload) {
       });
       logId = syncLogId;
       const stats = await MercadoPagoService.processReport(reportType, {
+        fileName: file.name,
         syncLogId,
-        url: file.url,
       });
       await finalizeMpSyncLogEntry(syncLogId, {
         changeDetails: {

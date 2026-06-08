@@ -129,11 +129,11 @@ const mercadopagoORPCRouterBase = {
       const type = input.type ?? "release";
       const limit = input.limit ?? 50;
       const offset = input.offset ?? 0;
-      const data = mpReportsListSchema.parse(await MercadoPagoService.listReports(type));
-      const sliced = data.slice(offset, offset + limit);
+      const data = await MercadoPagoService.listReports(type, { limit, offset });
+      const reports = mpReportsListSchema.parse(data.reports);
       return {
-        reports: sliced,
-        total: data.length,
+        reports,
+        total: data.total,
       };
     }),
 

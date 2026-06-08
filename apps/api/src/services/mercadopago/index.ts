@@ -57,16 +57,50 @@ export interface MPSearchResponse {
   results?: MPSearchResultItem[];
 }
 
+export interface MPListReportsResult {
+  reports: Array<MPReportTask | MPSearchResultItem>;
+  total: number;
+}
+
 export { isSettlementReport } from "./settlement-detector.ts";
 
 export const MercadoPagoService = {
   /**
    * List available reports from MP API
    */
-  async listReports(type: "release" | "settlement", options?: { silent?: boolean }) {
+  async listReports(
+    type: "release" | "settlement",
+    options?: { limit?: number; offset?: number; silent?: boolean }
+  ): Promise<MPListReportsResult> {
+    try {
+      const searchData = await this.searchReports(
+        type,
+        {
+          limit: options?.limit ?? 50,
+          offset: options?.offset ?? 0,
+        },
+        options
+      );
+      const reports = searchData.results ?? [];
+      if (reports.length > 0) {
+        return {
+          reports,
+          total: searchData.paging?.total ?? reports.length,
+        };
+      }
+    } catch (error) {
+      if (!options?.silent) {
+        console.warn(`[MP Service] ${type} report search failed; falling back to list:`, error);
+      }
+    }
+
     const baseUrl = type === "release" ? MP_API.RELEASE : MP_API.SETTLEMENT;
     const res = await mpFetch("/list", baseUrl, { log: !options?.silent });
-    return safeMpJson(res);
+    const listData = (await safeMpJson(res)) as MPReportTask[];
+    return {
+      reports: listData,
+      total: listData.length,
+    };
   },
 
   /**
@@ -119,11 +153,13 @@ export const MercadoPagoService = {
     type: "release" | "settlement",
     source: { url?: string; fileName?: string; syncLogId?: bigint }
   ): Promise<ImportStats> {
-    let downloadUrl = source.url;
+    let downloadUrl: string | undefined;
 
-    if (!downloadUrl && source.fileName) {
+    if (source.fileName) {
       const baseUrl = type === "release" ? MP_API.RELEASE : MP_API.SETTLEMENT;
       downloadUrl = `${baseUrl}/${source.fileName}`;
+    } else {
+      downloadUrl = source.url;
     }
 
     if (!downloadUrl) {
