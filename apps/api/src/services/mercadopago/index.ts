@@ -52,6 +52,17 @@ function isPendingReportStatus(status?: string | null): boolean {
   return status ? PENDING_REPORT_STATUSES.has(status.toLowerCase()) : false;
 }
 
+// Float in-flight ("Generando") rows to the top. The intranet table renders
+// rows in backend order, and MP's release /search returns an in-flight report
+// LAST (its date_created is still null), so without this the generating row
+// sinks to the bottom on the liberación tab. Stable sort preserves the rest of
+// the order (Array.prototype.sort is stable since ES2019).
+function floatPendingReportsFirst<T extends { status?: string | null }>(reports: T[]): T[] {
+  return [...reports].sort(
+    (a, b) => Number(isPendingReportStatus(b.status)) - Number(isPendingReportStatus(a.status))
+  );
+}
+
 export interface MPSearchResultItem {
   id?: number;
   user_id?: number;
@@ -132,7 +143,8 @@ export const MercadoPagoService = {
     // If /search returned nothing, fall back to the full /list (old behavior)
     // so a type whose /search is empty never regresses.
     if (!searchHasFiles) {
-      return { reports: tasks.length > 0 ? tasks : files, total: tasks.length || total };
+      const base = tasks.length > 0 ? tasks : files;
+      return { reports: floatPendingReportsFirst(base), total: tasks.length || total };
     }
 
     // 3. Prepend in-flight tasks not yet represented as an available file.
@@ -153,7 +165,10 @@ export const MercadoPagoService = {
     // Only the first page carries the in-flight head; deeper pages stay pure
     // history so pagination math doesn't drift.
     const reports = offset === 0 ? [...pending, ...files] : files;
-    return { reports, total: offset === 0 ? total + pending.length : total };
+    return {
+      reports: floatPendingReportsFirst(reports),
+      total: offset === 0 ? total + pending.length : total,
+    };
   },
 
   /**

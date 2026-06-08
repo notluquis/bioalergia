@@ -77,6 +77,27 @@ describe("MercadoPagoService.listReports merge", () => {
     expect(out.total).toBe(1);
   });
 
+  it("floats an in-flight report to the top even when /search returns it last (release tab)", async () => {
+    const { MercadoPagoService } = await import("../index.ts");
+    // release /list carries no in-flight task; the generating report only shows
+    // in /search, returned LAST because its date_created is null.
+    stubFetch({
+      search: {
+        paging: { total: 2 },
+        results: [
+          { id: 1, status: "available", file_name: "rel-done.csv" },
+          { id: 2, status: "pending", file_name: null },
+        ],
+      },
+      list: [{ id: 1, status: "processed", file_name: "rel-done.csv" }],
+    });
+
+    const out = await MercadoPagoService.listReports("release", { silent: true });
+
+    expect(out.reports[0]).toMatchObject({ id: 2, status: "pending" });
+    expect(out.reports[1]).toMatchObject({ id: 1, file_name: "rel-done.csv" });
+  });
+
   it("falls back to the full /list when /search returns no files", async () => {
     const { MercadoPagoService } = await import("../index.ts");
     stubFetch({
