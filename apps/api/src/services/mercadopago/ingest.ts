@@ -717,6 +717,28 @@ function excludedColumnRef(column: string) {
   return `excluded.${toDbColumnName(column)}` as never;
 }
 
+// node-postgres serializes objects that lack a toPostgres() method via
+// JSON.stringify. decimal.js Decimal.toJSON() returns the numeric string, so a
+// Decimal binds as a QUOTED string (e.g. "-23090") and Postgres rejects it for
+// numeric columns with 22P02 "invalid input syntax for type numeric". The raw
+// $qb/kysely insert path doesn't go through ZenStack's Decimal handling (the
+// normal db.model.create() path does), so convert Decimal instances to plain
+// numeric strings before binding. constructor.name check survives duplicate
+// decimal.js module copies where `instanceof` would fail.
+export function serializeRowForPg<T extends Record<string, unknown>>(row: T): T {
+  const out: Record<string, unknown> = {};
+  for (const key in row) {
+    const value = row[key];
+    out[key] =
+      value != null &&
+      typeof value === "object" &&
+      (value as { constructor?: { name?: string } }).constructor?.name === "Decimal"
+        ? String(value)
+        : value;
+  }
+  return out as T;
+}
+
 // In an ON CONFLICT DO UPDATE ... WHERE clause both the target table and the
 // `excluded` pseudo-relation are in scope, so an UNQUALIFIED column that exists
 // in both (e.g. identification_number) raises Postgres 42702 "column reference
@@ -882,7 +904,7 @@ async function upsertReleaseBatch(
   const updatedAt = new Date().toISOString();
   const returnedRows = await db.$qb
     .insertInto("ReleaseTransaction")
-    .values(uniqueRows as never)
+    .values(uniqueRows.map((row) => serializeRowForPg(row)) as never)
     .onConflict((oc) =>
       oc
         .column("sourceId")
@@ -996,7 +1018,7 @@ async function upsertSettlementBatch(
   const updatedAt = new Date().toISOString();
   const returnedRows = await db.$qb
     .insertInto("SettlementTransaction")
-    .values(uniqueRows as never)
+    .values(uniqueRows.map((row) => serializeRowForPg(row)) as never)
     .onConflict((oc) =>
       oc
         .column("sourceId")

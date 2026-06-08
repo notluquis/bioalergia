@@ -98,3 +98,28 @@ describe("processReportUrl", () => {
     });
   });
 });
+
+describe("serializeRowForPg", () => {
+  it("converts decimal.js Decimal fields to numeric strings (pg binds objects via JSON.stringify → quoted → 22P02)", async () => {
+    const { Decimal } = await import("decimal.js");
+    const { serializeRowForPg } = await import("../ingest.ts");
+
+    const out = serializeRowForPg({
+      sourceId: "abc",
+      transactionAmount: new Decimal(-23090),
+      feeAmount: new Decimal("0.00"),
+      userId: "2040207498",
+      installments: 1,
+      metadata: { foo: "bar" },
+    });
+
+    expect(out.transactionAmount).toBe("-23090");
+    expect(typeof out.transactionAmount).toBe("string");
+    expect(out.feeAmount).toBe("0");
+    // non-Decimal fields pass through untouched
+    expect(out.sourceId).toBe("abc");
+    expect(out.userId).toBe("2040207498");
+    expect(out.installments).toBe(1);
+    expect(out.metadata).toEqual({ foo: "bar" });
+  });
+});
