@@ -650,7 +650,8 @@ function buildSyncColumns(onViewChanges: (log: MpSyncLog) => void): ColumnDef<Mp
                       className={cn(
                         "rounded px-1.5 py-0.5 text-caption",
                         tone === "release" && "bg-primary/10 text-primary",
-                        tone === "settlement" && "bg-warning/10 text-warning"
+                        tone === "settlement" && "bg-warning/10 text-warning",
+                        tone === "withdraw" && "bg-secondary/10 text-secondary"
                       )}
                     >
                       {label}
@@ -748,6 +749,11 @@ function buildSyncColumns(onViewChanges: (log: MpSyncLog) => void): ColumnDef<Mp
                     Conciliación
                   </span>
                 )}
+                {reportTypes.includes("withdraw") && (
+                  <span className="rounded bg-secondary/10 px-1.5 py-0.5 text-secondary">
+                    Retiros
+                  </span>
+                )}
               </div>
             )}
             <span className="rounded bg-success/10 px-1.5 py-0.5 text-success">
@@ -810,10 +816,15 @@ function buildImportChangeColumns(): ColumnDef<MpImportChange>[] {
           className={cn(
             "rounded px-1.5 py-0.5 text-caption",
             row.original.reportType === "release" && "bg-primary/10 text-primary",
-            row.original.reportType === "settlement" && "bg-warning/10 text-warning"
+            row.original.reportType === "settlement" && "bg-warning/10 text-warning",
+            row.original.reportType === "withdraw" && "bg-secondary/10 text-secondary"
           )}
         >
-          {row.original.reportType === "release" ? "Liberación" : "Conciliación"}
+          {row.original.reportType === "release"
+            ? "Liberación"
+            : row.original.reportType === "settlement"
+              ? "Conciliación"
+              : "Retiros"}
         </span>
       ),
       header: "Reporte",

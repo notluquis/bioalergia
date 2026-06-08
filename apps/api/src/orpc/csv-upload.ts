@@ -18,6 +18,12 @@ import { getSessionUser, hasPermission } from "../lib/auth.ts";
 import { logError } from "../lib/logger.ts";
 import { configureSuperjson } from "../lib/superjson-config.ts";
 import { parseChileDateTime } from "../lib/time.ts";
+import {
+  createMpSyncLogEntry,
+  finalizeMpSyncLogEntry,
+  insertMpImportChanges,
+  type MpImportChangeInput,
+} from "../services/mercadopago-sync.ts";
 import { SuperJSONRPCHandler } from "./superjson.ts";
 
 configureSuperjson();
@@ -48,6 +54,25 @@ type WithdrawImportRow = {
   withdrawId: string;
 };
 
+type ExistingWithdrawRow = Record<string, unknown> & { withdrawId: string };
+
+// Tracked for the field-change audit. withdrawId + dateCreated are keys → excluded.
+const WITHDRAW_AUDIT_FIELDS = [
+  "identificationNumber",
+  "status",
+  "statusDetail",
+  "amount",
+  "fee",
+  "bankAccountHolder",
+  "identificationType",
+  "bankId",
+  "bankName",
+  "bankBranch",
+  "bankAccountType",
+  "bankAccountNumber",
+  "payoutDescription",
+] as const satisfies readonly (keyof WithdrawImportRow)[];
+
 type PreviewLikeResponse = {
   errors?: string[];
   insertRowIndexes?: number[];
@@ -65,6 +90,9 @@ type PreviewLikeResponse = {
 const base = os.$context<CsvUploadORPCContext>();
 const UPSERT_CHUNK_SIZE = Number(process.env.BIOALERGIA_UPSERT_CHUNK_SIZE || 250);
 const NON_RUT_CHARS_REGEX = /[^0-9k]/gi;
+
+type AuthedUser = NonNullable<Awaited<ReturnType<typeof getSessionUser>>>;
+type CsvUploadAuthedContext = CsvUploadORPCContext & { user: AuthedUser };
 
 const authed = base.use(async ({ context, next }) => {
   const user = await getSessionUser(context.hono);
@@ -232,6 +260,7 @@ async function classifyWithdrawalRows(validRows: WithdrawImportRow[]) {
   const withdrawIds = [...new Set(validRows.map((row) => row.withdrawId))];
   if (withdrawIds.length === 0) {
     return {
+      existingById: new Map<string, ExistingWithdrawRow>(),
       existingIds: new Set<string>(),
       insertRows: [] as WithdrawImportRow[],
       updateRows: [] as WithdrawImportRow[],
@@ -240,14 +269,16 @@ async function classifyWithdrawalRows(validRows: WithdrawImportRow[]) {
 
   const existing = await db.withdrawTransaction.findMany({
     where: { withdrawId: { in: withdrawIds } },
-    select: { withdrawId: true },
   });
 
-  const existingIds = new Set(existing.map((row) => row.withdrawId));
+  const existingById = new Map<string, ExistingWithdrawRow>(
+    existing.map((row) => [row.withdrawId, row as ExistingWithdrawRow])
+  );
+  const existingIds = new Set(existingById.keys());
   const insertRows = validRows.filter((row) => !existingIds.has(row.withdrawId));
   const updateRows = validRows.filter((row) => existingIds.has(row.withdrawId));
 
-  return { existingIds, insertRows, updateRows };
+  return { existingById, existingIds, insertRows, updateRows };
 }
 
 function buildWithdrawalPreview(params: {
@@ -359,14 +390,80 @@ function chunkRows<T>(rows: T[], size: number): T[][] {
   return chunks;
 }
 
-async function importWithdrawals(input: { data: CsvUploadRow[]; mode?: CsvUploadMode }) {
+// Mirrors normalizeAuditValue/auditValuesEqual in services/mercadopago/ingest.ts:
+// compares string/number/null/Decimal (amount/fee) by normalized string form.
+function normalizeWithdrawAuditValue(value: unknown): unknown {
+  if (value == null) {
+    return null;
+  }
+  if (value instanceof Date) {
+    return value.toISOString();
+  }
+  if (typeof value === "bigint") {
+    return value.toString();
+  }
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? String(value) : null;
+  }
+  if (typeof value !== "object") {
+    return value;
+  }
+  if (value.constructor?.name === "Decimal" && "toString" in value) {
+    return String(value);
+  }
+  return value;
+}
+
+function withdrawAuditValuesEqual(a: unknown, b: unknown): boolean {
+  return (
+    JSON.stringify(normalizeWithdrawAuditValue(a)) ===
+    JSON.stringify(normalizeWithdrawAuditValue(b))
+  );
+}
+
+function buildWithdrawImportChanges(params: {
+  existingById: Map<string, ExistingWithdrawRow>;
+  syncLogId: bigint;
+  updateRows: WithdrawImportRow[];
+}): MpImportChangeInput[] {
+  const changes: MpImportChangeInput[] = [];
+  for (const newRow of params.updateRows) {
+    const oldRow = params.existingById.get(newRow.withdrawId);
+    if (!oldRow) {
+      continue;
+    }
+    for (const fieldName of WITHDRAW_AUDIT_FIELDS) {
+      const oldValue = oldRow[fieldName];
+      const newValue = newRow[fieldName];
+      if (withdrawAuditValuesEqual(oldValue, newValue)) {
+        continue;
+      }
+      changes.push({
+        fieldName,
+        newValue: normalizeWithdrawAuditValue(newValue) as MpImportChangeInput["newValue"],
+        oldValue: normalizeWithdrawAuditValue(oldValue) as MpImportChangeInput["oldValue"],
+        reportType: "withdraw",
+        sourceId: newRow.withdrawId,
+        syncLogId: params.syncLogId,
+      });
+    }
+  }
+  return changes;
+}
+
+async function importWithdrawals(input: {
+  data: CsvUploadRow[];
+  mode?: CsvUploadMode;
+  syncLogId?: bigint;
+}) {
   const mode = input.mode ?? "insert-only";
   const { errors, validRows } = parseWithdrawalRows(input.data);
-  const { insertRows, updateRows } = await classifyWithdrawalRows(validRows);
+  const { existingById, insertRows, updateRows } = await classifyWithdrawalRows(validRows);
 
   let inserted = 0;
   let updated = 0;
   let skipped = errors.length;
+  let changes: MpImportChangeInput[] = [];
 
   if (mode === "insert-only") {
     inserted = await createWithdrawalRows(insertRows);
@@ -380,7 +477,17 @@ async function importWithdrawals(input: { data: CsvUploadRow[]; mode?: CsvUpload
     skipped += insertRows.length - inserted;
   }
 
+  // Field-change audit only for rows actually written via update (not insert-only).
+  if (input.syncLogId != null && mode !== "insert-only") {
+    changes = buildWithdrawImportChanges({
+      existingById,
+      syncLogId: input.syncLogId,
+      updateRows,
+    });
+  }
+
   return {
+    changes,
     errors: errors.length > 0 ? errors : undefined,
     inserted,
     skipped,
@@ -402,55 +509,119 @@ const csvUploadORPCRouterBase = {
     })
     .input(csvUploadImportInputSchema)
     .output(csvUploadImportResponseSchema)
-    .handler(async ({ input }: { input: z.input<typeof csvUploadImportInputSchema> }) => {
-      if (input.table !== "withdrawals") {
+    .handler(
+      async ({
+        context,
+        input,
+      }: {
+        context: CsvUploadAuthedContext;
+        input: z.input<typeof csvUploadImportInputSchema>;
+      }) => {
+        if (input.table !== "withdrawals") {
+          return {
+            status: "ok" as const,
+            inserted: 0,
+            updated: 0,
+            skipped: 0,
+            toInsert: input.data.length,
+            toUpdate: 0,
+            toSkip: 0,
+          };
+        }
+
+        const { validRows } = parseWithdrawalRows(input.data);
+        const syncLogId = await createMpSyncLogEntry({
+          triggerLabel: `withdraw:${validRows.length} filas`,
+          triggerSource: "mp:csv-withdraw",
+          triggerUserId: context.user.id ?? null,
+        });
+
+        const chunks = chunkRows(input.data, UPSERT_CHUNK_SIZE);
+        let inserted = 0;
+        let updated = 0;
+        let skipped = 0;
+        let toInsert = 0;
+        let toUpdate = 0;
+        let toSkip = 0;
+        const errors: string[] = [];
+        const changes: MpImportChangeInput[] = [];
+
+        try {
+          for (const chunk of chunks) {
+            const result = await importWithdrawals({
+              data: chunk,
+              mode: input.mode,
+              syncLogId,
+            });
+            inserted += result.inserted;
+            updated += result.updated;
+            skipped += result.skipped;
+            toInsert += result.toInsert;
+            toUpdate += result.toUpdate;
+            toSkip += result.toSkip;
+            changes.push(...result.changes);
+            if (result.errors) {
+              errors.push(...result.errors);
+            }
+          }
+        } catch (err) {
+          await finalizeMpSyncLogEntry(syncLogId, {
+            errorMessage: err instanceof Error ? err.message : String(err),
+            inserted,
+            skipped,
+            status: "ERROR",
+            updated,
+          });
+          throw err;
+        }
+
+        // Audit is fail-soft: a failure here must not fail the import.
+        try {
+          await insertMpImportChanges(changes);
+        } catch (auditErr) {
+          console.error("[Withdraw Import] audit failed, continuing:", auditErr);
+        }
+
+        const totalRows = input.data.length;
+        const stats = {
+          duplicateRows: 0,
+          errorCount: errors.length,
+          fieldChangeCount: changes.length,
+          insertedRows: inserted,
+          skippedRows: skipped,
+          totalRows,
+          unchangedRows: Math.max(toUpdate - updated, 0),
+          updatedRows: updated,
+          validRows: validRows.length,
+        };
+
+        await finalizeMpSyncLogEntry(syncLogId, {
+          changeDetails: {
+            fileName: null,
+            importStats: stats,
+            importStatsByType: { withdraw: stats },
+            reportType: "withdraw",
+            reportTypes: ["withdraw"],
+            transactionId: null,
+          },
+          inserted,
+          skipped,
+          status: "SUCCESS",
+          updated,
+        });
+
         return {
+          errors: errors.length > 0 ? errors : undefined,
+          inserted,
+          skipped,
           status: "ok" as const,
-          inserted: 0,
-          updated: 0,
-          skipped: 0,
-          toInsert: input.data.length,
-          toUpdate: 0,
-          toSkip: 0,
+          toInsert,
+          toSkip,
+          toUpdate,
+          updated,
         };
       }
-
-      const chunks = chunkRows(input.data, UPSERT_CHUNK_SIZE);
-      let inserted = 0;
-      let updated = 0;
-      let skipped = 0;
-      let toInsert = 0;
-      let toUpdate = 0;
-      let toSkip = 0;
-      const errors: string[] = [];
-
-      for (const chunk of chunks) {
-        const result = await importWithdrawals({
-          data: chunk,
-          mode: input.mode,
-        });
-        inserted += result.inserted;
-        updated += result.updated;
-        skipped += result.skipped;
-        toInsert += result.toInsert;
-        toUpdate += result.toUpdate;
-        toSkip += result.toSkip;
-        if (result.errors) {
-          errors.push(...result.errors);
-        }
-      }
-
-      return {
-        errors: errors.length > 0 ? errors : undefined,
-        inserted,
-        skipped,
-        status: "ok" as const,
-        toInsert,
-        toSkip,
-        toUpdate,
-        updated,
-      };
-    }),
+    ),
 
   preview: canReadCsvUpload
     .route({

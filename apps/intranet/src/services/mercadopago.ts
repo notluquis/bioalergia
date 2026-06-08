@@ -4,7 +4,7 @@
  */
 
 import { z } from "zod";
-import type { MpReportType } from "../../shared/mercadopago";
+import type { MpChangeReportType, MpReportType } from "../../shared/mercadopago";
 import { mercadopagoORPCClient, toMercadoPagoApiError } from "../features/finance/mercadopago/orpc";
 import { apiClient, ApiError } from "../lib/api-client";
 
@@ -63,7 +63,7 @@ export interface MpImportChange {
   id: bigint;
   newValue: unknown;
   oldValue: unknown;
-  reportType: MpReportType;
+  reportType: MpChangeReportType;
   sourceId: string;
   syncLogId: bigint;
 }
@@ -82,8 +82,8 @@ export interface MpSyncImportStats {
 
 export type MpSyncChangeDetails = Record<string, unknown> & {
   importStats?: MpSyncImportStats;
-  importStatsByType?: Partial<Record<"release" | "settlement", MpSyncImportStats>>;
-  reportTypes?: Array<"release" | "settlement">;
+  importStatsByType?: Partial<Record<MpChangeReportType, MpSyncImportStats>>;
+  reportTypes?: Array<MpChangeReportType>;
 };
 
 interface ProcessReportResponse {
@@ -137,7 +137,7 @@ const MpImportChangeSchema = z.object({
   id: z.coerce.bigint(),
   newValue: z.unknown().nullable(),
   oldValue: z.unknown().nullable(),
-  reportType: z.enum(["release", "settlement"]),
+  reportType: z.enum(["release", "settlement", "withdraw"]),
   sourceId: z.string(),
   syncLogId: z.coerce.bigint(),
 });

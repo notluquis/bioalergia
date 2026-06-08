@@ -4,7 +4,7 @@ import { logAuditEvent } from "../lib/audit-log.ts";
 
 type NonNullJsonValue = Exclude<JsonValue, null>;
 
-export type MpReportType = "release" | "settlement";
+export type MpReportType = "release" | "settlement" | "withdraw";
 
 export type MpImportChangeInput = {
   fieldName: string;

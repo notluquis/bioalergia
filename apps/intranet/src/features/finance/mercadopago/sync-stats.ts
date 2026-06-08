@@ -1,5 +1,11 @@
 import type { MpSyncChangeDetails, MpSyncImportStats, MpSyncLog } from "@/services/mercadopago";
 
+const REPORT_TYPE_LABELS: Record<"release" | "settlement" | "withdraw", string> = {
+  release: "Liberación",
+  settlement: "Conciliación",
+  withdraw: "Retiros",
+};
+
 function toNumber(value: unknown) {
   const num = Number(value);
   return Number.isFinite(num) ? num : 0;
@@ -53,7 +59,7 @@ export function getSyncImportStatsByType(log: MpSyncLog) {
   const entries: Array<{
     label: string;
     stats: ReturnType<typeof buildStats>;
-    tone: "release" | "settlement";
+    tone: "release" | "settlement" | "withdraw";
   }> = [];
 
   if (raw && typeof raw === "object") {
@@ -65,6 +71,10 @@ export function getSyncImportStatsByType(log: MpSyncLog) {
     if (settlementStats) {
       entries.push({ label: "Conciliación", stats: settlementStats, tone: "settlement" });
     }
+    const withdrawStats = buildStats(raw.withdraw ?? null);
+    if (withdrawStats) {
+      entries.push({ label: "Retiros", stats: withdrawStats, tone: "withdraw" });
+    }
   }
 
   if (entries.length > 0) {
@@ -73,31 +83,33 @@ export function getSyncImportStatsByType(log: MpSyncLog) {
 
   const fallback = getSyncImportStats(details);
   const reportTypes = getSyncReportTypes(log);
-  if (!fallback || reportTypes.length !== 1) {
+  const soleType = reportTypes.length === 1 ? reportTypes[0] : undefined;
+  if (!fallback || !soleType) {
     return null;
   }
 
   return [
     {
-      label: reportTypes[0] === "release" ? "Liberación" : "Conciliación",
+      label: REPORT_TYPE_LABELS[soleType],
       stats: fallback,
-      tone: reportTypes[0],
+      tone: soleType,
     },
   ];
 }
 
-export function getSyncReportTypes(log: MpSyncLog) {
+export function getSyncReportTypes(log: MpSyncLog): Array<"release" | "settlement" | "withdraw"> {
   const details = log.changeDetails;
   if (details && typeof details === "object") {
     const raw = details.reportTypes;
     if (Array.isArray(raw)) {
       return raw.filter(
-        (item): item is "release" | "settlement" => item === "release" || item === "settlement"
+        (item): item is "release" | "settlement" | "withdraw" =>
+          item === "release" || item === "settlement" || item === "withdraw"
       );
     }
   }
   if (log.triggerSource === "mp:auto-sync") {
-    return ["release", "settlement"] as const;
+    return ["release", "settlement"];
   }
   return [];
 }

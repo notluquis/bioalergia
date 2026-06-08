@@ -3,6 +3,11 @@ import { z } from "zod";
 
 export const reportTypeSchema = z.enum(["release", "settlement"]);
 
+// Import-change rows can originate from withdraw CSV imports too, which never
+// flow through the create/list/download report inputs. Keep a separate enum so
+// "withdraw" does not leak into those.
+export const changeReportTypeSchema = z.enum(["release", "settlement", "withdraw"]);
+
 export const listReportsInputSchema = z.object({
   limit: z.number().int().min(1).max(200).optional(),
   offset: z.number().int().min(0).optional(),
@@ -81,7 +86,7 @@ export const importChangeSchema = z.object({
   id: z.coerce.bigint(),
   newValue: z.unknown().nullable(),
   oldValue: z.unknown().nullable(),
-  reportType: reportTypeSchema,
+  reportType: changeReportTypeSchema,
   sourceId: z.string(),
   syncLogId: z.coerce.bigint(),
 });
