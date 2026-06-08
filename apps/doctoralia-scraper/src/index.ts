@@ -288,6 +288,15 @@ async function performLoginWithBrowser(
   }
 }
 
+// JS-gated interstitials Doctoralia inserts in the login flow. The raw HTTP
+// path can't clear them (they need client-side JS); only performLoginWithBrowser
+// handles /weak-password, /2fa, /apps. Match by URL or the "JavaScript
+// desactivado" shell the POST bounces into.
+function isJsInterstitial(url: string, body: string): boolean {
+  if (/\/(weak-password|2fa|apps)(\b|\/|\?|$)/i.test(url)) return true;
+  return /JavaScript est[áa] desactivado/i.test(body);
+}
+
 async function performLogin(session: ImpitSession, config: ScraperConfig): Promise<void> {
   log("not logged in — fetching login page at", LOGIN_URL);
   const loginPage = await session.request(LOGIN_URL);
@@ -305,6 +314,17 @@ async function performLogin(session: ImpitSession, config: ScraperConfig): Promi
 
   if (/data-form-field-captcha=/i.test(loginPage.text)) {
     log("⚠️ login form uses Friendly Captcha / reCAPTCHA — switching to browser-based login.");
+    await performLoginWithBrowser(session, config);
+    return;
+  }
+
+  // Doctoralia may redirect the login GET to a JS-required interstitial
+  // (/weak-password, /2fa, /apps). These render client-side and reject the raw
+  // HTTP POST with "JavaScript está desactivado". Only the browser path
+  // (performLoginWithBrowser) handles them — fall back instead of POSTing into
+  // a guaranteed bounce.
+  if (isJsInterstitial(loginPage.url, loginPage.text)) {
+    log(`  login redirected to JS-required interstitial (${loginPage.url}) — using browser.`);
     await performLoginWithBrowser(session, config);
     return;
   }
@@ -350,6 +370,15 @@ async function performLogin(session: ImpitSession, config: ScraperConfig): Promi
     const hasCaptchaInResponse = /data-form-field-captcha=/i.test(loginRes.text);
     if (hasCaptchaInResponse) {
       log("  HTTP login bounced with captcha — retrying via Playwright browser.");
+      await performLoginWithBrowser(session, config);
+      return;
+    }
+
+    // Bounce to a JS-required interstitial (weak-password/2fa/apps) or a
+    // "JavaScript desactivado" shell — same deal as the upfront check, the HTTP
+    // path can't proceed. Hand off to the browser instead of throwing fatal.
+    if (isJsInterstitial(loginRes.url, loginRes.text)) {
+      log(`  HTTP login bounced to JS-required interstitial (${loginRes.url}) — using browser.`);
       await performLoginWithBrowser(session, config);
       return;
     }
