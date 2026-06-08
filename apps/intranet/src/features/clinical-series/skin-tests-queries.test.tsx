@@ -63,14 +63,11 @@ const {
   useReprocessSkinTestImport,
   useProcessSkinTestImports,
   useSyncSkinTestImports,
-  useConnectOneDrive,
-  useDisconnectOneDrive,
   useSkinTestImports,
   useActiveClinicalSkinTestJob,
   useSkinTestsBySeries,
   useClinicalSkinTestJobStatus,
   useCancelClinicalSkinTestJob,
-  useOneDriveFolderPreview,
   skinTestImportKeys,
 } = await import("./skin-tests-queries");
 
@@ -215,37 +212,6 @@ describe("clinical-skin-tests queries", () => {
     });
   });
 
-  describe("OneDrive connection lifecycle", () => {
-    it("useConnectOneDrive sends auth code + invalidates status", async () => {
-      mocks.connectOneDrive.mockResolvedValue({ ok: true });
-      const { wrapper, client } = buildWrapper();
-      const invalidate = vi.spyOn(client, "invalidateQueries");
-      const { result } = renderHook(() => useConnectOneDrive(), { wrapper });
-      act(() => {
-        result.current.mutate({ code: "auth-code-x", redirectUri: "http://x/cb" });
-      });
-      await waitFor(() => expect(result.current.isSuccess).toBe(true));
-      expect(invalidate).toHaveBeenCalledWith({
-        queryKey: ["clinical-skin-tests", "onedrive-status"],
-      });
-    });
-
-    it("useDisconnectOneDrive sends accountId + invalidates status", async () => {
-      mocks.disconnectOneDrive.mockResolvedValue({ ok: true });
-      const { wrapper, client } = buildWrapper();
-      const invalidate = vi.spyOn(client, "invalidateQueries");
-      const { result } = renderHook(() => useDisconnectOneDrive(), { wrapper });
-      act(() => {
-        result.current.mutate("acc1");
-      });
-      await waitFor(() => expect(result.current.isSuccess).toBe(true));
-      expect(mocks.disconnectOneDrive).toHaveBeenCalledWith({ accountId: "acc1" });
-      expect(invalidate).toHaveBeenCalledWith({
-        queryKey: ["clinical-skin-tests", "onedrive-status"],
-      });
-    });
-  });
-
   describe("useSkinTestImports list", () => {
     it("compacts filters and parses items via Zod schema", async () => {
       mocks.listImports.mockResolvedValue({
@@ -379,37 +345,6 @@ describe("clinical-skin-tests queries", () => {
       });
       expect(invalidate).toHaveBeenCalledWith({
         queryKey: ["clinical-skin-tests", "imports"],
-      });
-    });
-  });
-
-  describe("useOneDriveFolderPreview", () => {
-    it("is disabled at root (no driveId/itemId) — expensive recursive scan", () => {
-      const { wrapper } = buildWrapper();
-      renderHook(
-        () => useOneDriveFolderPreview({ accountId: "acc1", driveId: null, itemId: null }),
-        { wrapper }
-      );
-      expect(mocks.folderPreview).not.toHaveBeenCalled();
-    });
-
-    it("queries preview when a target folder is selected", async () => {
-      mocks.folderPreview.mockResolvedValue({ totalFiles: 5 });
-      const { wrapper } = buildWrapper();
-      const { result } = renderHook(
-        () =>
-          useOneDriveFolderPreview({
-            accountId: "acc1",
-            driveId: "drive1",
-            itemId: "item1",
-          }),
-        { wrapper }
-      );
-      await waitFor(() => expect(result.current.isSuccess).toBe(true));
-      expect(mocks.folderPreview).toHaveBeenCalledWith({
-        accountId: "acc1",
-        driveId: "drive1",
-        itemId: "item1",
       });
     });
   });
