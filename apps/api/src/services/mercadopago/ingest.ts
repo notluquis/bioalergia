@@ -899,7 +899,19 @@ async function persistImportChanges(params: {
     syncLogId: params.syncLogId,
     updatedSourceIds: params.updatedSourceIds,
   });
-  return insertMpImportChanges(changes);
+  // The field-change audit is secondary — the report rows are already persisted
+  // by the time we get here. A failure writing the audit (e.g. the
+  // mercadopago_import_changes table not yet migrated in an environment) must
+  // NOT fail the whole ingest file.
+  try {
+    return await insertMpImportChanges(changes);
+  } catch (error) {
+    console.error(
+      `[MP Ingest] import-changes audit failed for ${params.reportType} (${changes.length} changes), continuing:`,
+      error instanceof Error ? error.message : error
+    );
+    return 0;
+  }
 }
 
 async function upsertReleaseBatch(
