@@ -262,6 +262,8 @@ const mercadopagoORPCRouterBase = {
                 insertedRows: stats.insertedRows,
                 skippedRows: stats.skippedRows,
                 totalRows: stats.totalRows,
+                unchangedRows: stats.unchangedRows,
+                updatedRows: stats.updatedRows,
                 validRows: stats.validRows,
               },
               importStatsByType: {
@@ -271,6 +273,8 @@ const mercadopagoORPCRouterBase = {
                   insertedRows: stats.insertedRows,
                   skippedRows: stats.skippedRows,
                   totalRows: stats.totalRows,
+                  unchangedRows: stats.unchangedRows,
+                  updatedRows: stats.updatedRows,
                   validRows: stats.validRows,
                 },
               },
@@ -280,6 +284,7 @@ const mercadopagoORPCRouterBase = {
             excluded: stats.duplicateRows,
             inserted: stats.insertedRows,
             skipped: stats.skippedRows,
+            updated: stats.updatedRows,
             status: "SUCCESS",
           });
         }
@@ -312,6 +317,8 @@ const mercadopagoORPCRouterBase = {
               insertedRows: 0,
               skippedRows: 0,
               totalRows: 0,
+              unchangedRows: 0,
+              updatedRows: 0,
               validRows: 0,
             },
             status: "error" as const,

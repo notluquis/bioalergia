@@ -84,6 +84,8 @@ export const processReportResponseSchema = z.object({
     insertedRows: z.number(),
     skippedRows: z.number(),
     totalRows: z.number(),
+    unchangedRows: z.number(),
+    updatedRows: z.number(),
     validRows: z.number(),
   }),
   status: z.enum(["error", "success"]),

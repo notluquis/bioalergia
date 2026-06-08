@@ -111,7 +111,7 @@ const useReportActions = ({
     onSuccess: (stats) => {
       setLastImportStats(stats);
       showSuccess(
-        `Reporte procesado: ${stats.insertedRows} insertados, ${stats.duplicateRows} duplicados`
+        `Reporte procesado: ${stats.insertedRows} insertadas, ${stats.updatedRows} actualizadas, ${stats.unchangedRows} sin cambios`
       );
       setProcessingFile(null);
       void queryClient.invalidateQueries({ queryKey: ["mp-reports", reportType] });
@@ -616,10 +616,16 @@ export function MercadoPagoSettingsPage() {
                         <span className="block text-success/70 text-xs">Insertadas</span>
                       </div>
                       <div className="text-center">
-                        <span className="block font-bold text-2xl text-warning">
-                          {lastImportStats.duplicateRows}
+                        <span className="block font-bold text-2xl text-primary">
+                          {lastImportStats.updatedRows}
                         </span>
-                        <span className="block text-warning/70 text-xs">Duplicados</span>
+                        <span className="block text-primary/70 text-xs">Actualizadas</span>
+                      </div>
+                      <div className="text-center">
+                        <span className="block font-bold text-2xl text-warning">
+                          {lastImportStats.unchangedRows}
+                        </span>
+                        <span className="block text-warning/70 text-xs">Sin cambios</span>
                       </div>
                       <div className="text-center">
                         <span className="block font-bold text-2xl">
@@ -781,13 +787,23 @@ function buildSyncColumns(): ColumnDef<MpSyncLog>[] {
                       </Tooltip.Content>
                     </Tooltip>
                     <Tooltip delay={0}>
-                      <Tooltip.Trigger aria-label="Filas duplicadas">
-                        <span className="rounded bg-warning/10 px-1.5 py-0.5 text-warning">
-                          D{stats.duplicateRows}
+                      <Tooltip.Trigger aria-label="Filas actualizadas">
+                        <span className="rounded bg-primary/10 px-1.5 py-0.5 text-primary">
+                          U{stats.updatedRows}
                         </span>
                       </Tooltip.Trigger>
                       <Tooltip.Content>
-                        <p>Duplicados</p>
+                        <p>Actualizadas</p>
+                      </Tooltip.Content>
+                    </Tooltip>
+                    <Tooltip delay={0}>
+                      <Tooltip.Trigger aria-label="Filas sin cambios">
+                        <span className="rounded bg-warning/10 px-1.5 py-0.5 text-warning">
+                          ={stats.unchangedRows}
+                        </span>
+                      </Tooltip.Trigger>
+                      <Tooltip.Content>
+                        <p>Sin cambios</p>
                       </Tooltip.Content>
                     </Tooltip>
                     <Tooltip delay={0}>
@@ -905,6 +921,8 @@ function getSyncImportStats(details?: MpSyncChangeDetails | null) {
     validRows: toNumber(raw.validRows),
     insertedRows: toNumber(raw.insertedRows),
     duplicateRows: toNumber(raw.duplicateRows),
+    updatedRows: toNumber(raw.updatedRows),
+    unchangedRows: toNumber(raw.unchangedRows ?? raw.duplicateRows),
     skippedRows: toNumber(raw.skippedRows),
     errorCount: toNumber(raw.errorCount),
   };
@@ -930,6 +948,8 @@ function getSyncImportStatsByType(log: MpSyncLog) {
       validRows: toNumber(stats.validRows),
       insertedRows: toNumber(stats.insertedRows),
       duplicateRows: toNumber(stats.duplicateRows),
+      updatedRows: toNumber(stats.updatedRows),
+      unchangedRows: toNumber(stats.unchangedRows ?? stats.duplicateRows),
       skippedRows: toNumber(stats.skippedRows),
       errorCount: toNumber(stats.errorCount),
     };

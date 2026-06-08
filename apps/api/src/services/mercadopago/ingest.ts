@@ -2,6 +2,7 @@ import { createInterface } from "node:readline";
 import { Readable } from "node:stream";
 import type { ReadableStream } from "node:stream/web";
 import { db } from "@finanzas/db";
+import { sql } from "kysely";
 import { checkMpConfig, MP_ACCESS_TOKEN, redactMpUrl } from "./client.ts";
 import { isSettlementReport } from "./settlement-detector.ts";
 import { mapRowToReleaseTransaction, mapRowToSettlementTransaction } from "./mappers.ts";
@@ -64,7 +65,9 @@ export interface ImportStats {
   validRows: number;
   skippedRows: number;
   insertedRows: number;
+  updatedRows: number;
   duplicateRows: number;
+  unchangedRows: number;
   errors: string[];
   processedSourceIds: string[];
   sourceUnavailable?: boolean;
@@ -93,7 +96,9 @@ export async function processReportUrl(url: string, reportType: string): Promise
     validRows: 0,
     skippedRows: 0,
     insertedRows: 0,
+    updatedRows: 0,
     duplicateRows: 0,
+    unchangedRows: 0,
     errors: [],
     processedSourceIds: [],
     sourceUnavailable: false,
@@ -122,7 +127,6 @@ export async function processReportUrl(url: string, reportType: string): Promise
     const isFirstRow = { value: true };
     const batchState: BatchState = {
       batch: [],
-      batchValid: 0,
       flushPromise: Promise.resolve(),
     };
 
@@ -130,11 +134,12 @@ export async function processReportUrl(url: string, reportType: string): Promise
       if (batchState.batch.length === 0) {
         return;
       }
-      const inserted = await insertBatch(reportType, batchState.batch);
-      stats.insertedRows += inserted;
-      stats.duplicateRows += Math.max(batchState.batchValid - inserted, 0);
+      const result = await upsertBatch(reportType, batchState.batch);
+      stats.insertedRows += result.inserted;
+      stats.updatedRows += result.updated;
+      stats.unchangedRows += result.unchanged;
+      stats.duplicateRows += result.unchanged;
       batchState.batch = [];
-      batchState.batchValid = 0;
     };
 
     if (contentType.includes("application/json")) {
@@ -240,9 +245,18 @@ type ReleaseInput = ReturnType<typeof mapRowToReleaseTransaction>;
 type SettlementInput = ReturnType<typeof mapRowToSettlementTransaction>;
 type ReportRowInput = ReleaseInput | SettlementInput;
 
+type UpsertBatchResult = {
+  inserted: number;
+  unchanged: number;
+  updated: number;
+};
+
+type UpsertReturnedRow = {
+  inserted: boolean;
+};
+
 type BatchState = {
   batch: ReportRowInput[];
-  batchValid: number;
   flushPromise: Promise<void>;
 };
 
@@ -377,7 +391,6 @@ const enqueueBatchRecord = async (
   reject: (reason?: unknown) => void
 ) => {
   batchState.batch.push(record);
-  batchState.batchValid += 1;
   stats.validRows += 1;
 
   if (batchState.batch.length < BATCH_SIZE) {
@@ -514,7 +527,6 @@ async function processMpJsonPayload(
       }
 
       batchState.batch.push(record);
-      batchState.batchValid += 1;
       stats.validRows += 1;
 
       if (batchState.batch.length >= BATCH_SIZE) {
@@ -532,22 +544,348 @@ async function processMpJsonPayload(
   console.log(`[MP Ingest] Finished processing JSON for ${reportType}. Stats:`, stats);
 }
 
-async function insertBatch(reportType: string, rows: ReportRowInput[]) {
+const RELEASE_UPDATE_COLUMNS = [
+  "identificationNumber",
+  "date",
+  "externalReference",
+  "recordType",
+  "description",
+  "netCreditAmount",
+  "netDebitAmount",
+  "grossAmount",
+  "sellerAmount",
+  "mpFeeAmount",
+  "financingFeeAmount",
+  "shippingFeeAmount",
+  "taxesAmount",
+  "couponAmount",
+  "effectiveCouponAmount",
+  "balanceAmount",
+  "taxAmountTelco",
+  "installments",
+  "paymentMethod",
+  "paymentMethodType",
+  "taxDetail",
+  "taxesDisaggregated",
+  "transactionApprovalDate",
+  "transactionIntentId",
+  "posId",
+  "posName",
+  "externalPosId",
+  "storeId",
+  "storeName",
+  "externalStoreId",
+  "currency",
+  "shippingId",
+  "shipmentMode",
+  "shippingOrderId",
+  "orderId",
+  "packId",
+  "poiId",
+  "itemId",
+  "metadata",
+  "cardInitialNumber",
+  "operationTags",
+  "lastFourDigits",
+  "franchise",
+  "issuerName",
+  "poiBankName",
+  "poiWalletName",
+  "businessUnit",
+  "subUnit",
+  "payoutBankAccountNumber",
+  "productSku",
+  "saleDetail",
+  "orderMp",
+  "purchaseId",
+  "isReleased",
+  "countryIssuer",
+  "merchantCategoryCode",
+  "cardEntryMode",
+  "authorizationCode",
+  "applicationId",
+  "segmentDetail",
+  "dateShort",
+  "transactionApprovalDateShort",
+] as const;
+
+const SETTLEMENT_UPDATE_COLUMNS = [
+  "identificationNumber",
+  "transactionDate",
+  "settlementDate",
+  "moneyReleaseDate",
+  "externalReference",
+  "userId",
+  "paymentMethodType",
+  "paymentMethod",
+  "site",
+  "transactionType",
+  "transactionAmount",
+  "transactionCurrency",
+  "sellerAmount",
+  "feeAmount",
+  "settlementNetAmount",
+  "settlementCurrency",
+  "realAmount",
+  "couponAmount",
+  "metadata",
+  "mkpFeeAmount",
+  "financingFeeAmount",
+  "shippingFeeAmount",
+  "taxesAmount",
+  "installments",
+  "taxDetail",
+  "taxesDisaggregated",
+  "description",
+  "cardInitialNumber",
+  "operationTags",
+  "businessUnit",
+  "subUnit",
+  "productSku",
+  "saleDetail",
+  "transactionIntentId",
+  "franchise",
+  "issuerName",
+  "lastFourDigits",
+  "orderMp",
+  "invoicingPeriod",
+  "payBankTransferId",
+  "isReleased",
+  "tipAmount",
+  "purchaseId",
+  "totalCouponAmount",
+  "posId",
+  "posName",
+  "externalPosId",
+  "storeId",
+  "storeName",
+  "externalStoreId",
+  "poiId",
+  "orderId",
+  "shippingId",
+  "shipmentMode",
+  "packId",
+  "shippingOrderId",
+  "poiWalletName",
+  "poiBankName",
+  "merchantCategoryCode",
+  "applicationId",
+  "segmentDetail",
+  "authorizationCode",
+  "cardEntryMode",
+  "authenticatedPayer",
+  "transactionDateShort",
+  "settlementDateShort",
+  "moneyReleaseDateShort",
+] as const;
+
+function dedupeRowsBySourceId<T extends ReportRowInput>(rows: T[]) {
+  const bySourceId = new Map<string, T>();
+  for (const row of rows) {
+    bySourceId.set(row.sourceId.trim(), row);
+  }
+  return Array.from(bySourceId.values());
+}
+
+function countUpsertResults(returnedRows: UpsertReturnedRow[], inputRows: number) {
+  const inserted = returnedRows.filter((row) => row.inserted).length;
+  const updated = returnedRows.length - inserted;
+  return {
+    inserted,
+    updated,
+    unchanged: Math.max(inputRows - returnedRows.length, 0),
+  };
+}
+
+async function upsertBatch(reportType: string, rows: ReportRowInput[]): Promise<UpsertBatchResult> {
   if (rows.length === 0) {
-    return 0;
+    return { inserted: 0, unchanged: 0, updated: 0 };
   }
 
   if (isSettlementReport(reportType)) {
-    const result = await db.settlementTransaction.createMany({
-      data: rows as SettlementInput[],
-      skipDuplicates: true,
-    });
-    return result.count;
+    return upsertSettlementBatch(rows as SettlementInput[]);
   }
 
-  const result = await db.releaseTransaction.createMany({
-    data: rows as ReleaseInput[],
-    skipDuplicates: true,
-  });
-  return result.count;
+  return upsertReleaseBatch(rows as ReleaseInput[]);
+}
+
+async function upsertReleaseBatch(rows: ReleaseInput[]): Promise<UpsertBatchResult> {
+  const uniqueRows = dedupeRowsBySourceId(rows);
+  const updatedAt = new Date().toISOString();
+  const returnedRows = await db.$qb
+    .insertInto("ReleaseTransaction")
+    .values(uniqueRows as never)
+    .onConflict((oc) =>
+      oc
+        .column("sourceId")
+        .doUpdateSet(({ ref }) => ({
+          identificationNumber: ref("excluded.identificationNumber"),
+          date: ref("excluded.date"),
+          externalReference: ref("excluded.externalReference"),
+          recordType: ref("excluded.recordType"),
+          description: ref("excluded.description"),
+          netCreditAmount: ref("excluded.netCreditAmount"),
+          netDebitAmount: ref("excluded.netDebitAmount"),
+          grossAmount: ref("excluded.grossAmount"),
+          sellerAmount: ref("excluded.sellerAmount"),
+          mpFeeAmount: ref("excluded.mpFeeAmount"),
+          financingFeeAmount: ref("excluded.financingFeeAmount"),
+          shippingFeeAmount: ref("excluded.shippingFeeAmount"),
+          taxesAmount: ref("excluded.taxesAmount"),
+          couponAmount: ref("excluded.couponAmount"),
+          effectiveCouponAmount: ref("excluded.effectiveCouponAmount"),
+          balanceAmount: ref("excluded.balanceAmount"),
+          taxAmountTelco: ref("excluded.taxAmountTelco"),
+          installments: ref("excluded.installments"),
+          paymentMethod: ref("excluded.paymentMethod"),
+          paymentMethodType: ref("excluded.paymentMethodType"),
+          taxDetail: ref("excluded.taxDetail"),
+          taxesDisaggregated: ref("excluded.taxesDisaggregated"),
+          transactionApprovalDate: ref("excluded.transactionApprovalDate"),
+          transactionIntentId: ref("excluded.transactionIntentId"),
+          posId: ref("excluded.posId"),
+          posName: ref("excluded.posName"),
+          externalPosId: ref("excluded.externalPosId"),
+          storeId: ref("excluded.storeId"),
+          storeName: ref("excluded.storeName"),
+          externalStoreId: ref("excluded.externalStoreId"),
+          currency: ref("excluded.currency"),
+          shippingId: ref("excluded.shippingId"),
+          shipmentMode: ref("excluded.shipmentMode"),
+          shippingOrderId: ref("excluded.shippingOrderId"),
+          orderId: ref("excluded.orderId"),
+          packId: ref("excluded.packId"),
+          poiId: ref("excluded.poiId"),
+          itemId: ref("excluded.itemId"),
+          metadata: ref("excluded.metadata"),
+          cardInitialNumber: ref("excluded.cardInitialNumber"),
+          operationTags: ref("excluded.operationTags"),
+          lastFourDigits: ref("excluded.lastFourDigits"),
+          franchise: ref("excluded.franchise"),
+          issuerName: ref("excluded.issuerName"),
+          poiBankName: ref("excluded.poiBankName"),
+          poiWalletName: ref("excluded.poiWalletName"),
+          businessUnit: ref("excluded.businessUnit"),
+          subUnit: ref("excluded.subUnit"),
+          payoutBankAccountNumber: ref("excluded.payoutBankAccountNumber"),
+          productSku: ref("excluded.productSku"),
+          saleDetail: ref("excluded.saleDetail"),
+          orderMp: ref("excluded.orderMp"),
+          purchaseId: ref("excluded.purchaseId"),
+          isReleased: ref("excluded.isReleased"),
+          countryIssuer: ref("excluded.countryIssuer"),
+          merchantCategoryCode: ref("excluded.merchantCategoryCode"),
+          cardEntryMode: ref("excluded.cardEntryMode"),
+          authorizationCode: ref("excluded.authorizationCode"),
+          applicationId: ref("excluded.applicationId"),
+          segmentDetail: ref("excluded.segmentDetail"),
+          dateShort: ref("excluded.dateShort"),
+          transactionApprovalDateShort: ref("excluded.transactionApprovalDateShort"),
+          updatedAt,
+        }))
+        .where((eb) =>
+          eb.or(
+            RELEASE_UPDATE_COLUMNS.map((column) =>
+              eb(column, "is distinct from", eb.ref(`excluded.${column}`))
+            )
+          )
+        )
+    )
+    .returning(sql<boolean>`xmax = 0`.as("inserted"))
+    .execute();
+
+  return countUpsertResults(returnedRows, rows.length);
+}
+
+async function upsertSettlementBatch(rows: SettlementInput[]): Promise<UpsertBatchResult> {
+  const uniqueRows = dedupeRowsBySourceId(rows);
+  const updatedAt = new Date().toISOString();
+  const returnedRows = await db.$qb
+    .insertInto("SettlementTransaction")
+    .values(uniqueRows as never)
+    .onConflict((oc) =>
+      oc
+        .column("sourceId")
+        .doUpdateSet(({ ref }) => ({
+          identificationNumber: ref("excluded.identificationNumber"),
+          transactionDate: ref("excluded.transactionDate"),
+          settlementDate: ref("excluded.settlementDate"),
+          moneyReleaseDate: ref("excluded.moneyReleaseDate"),
+          externalReference: ref("excluded.externalReference"),
+          userId: ref("excluded.userId"),
+          paymentMethodType: ref("excluded.paymentMethodType"),
+          paymentMethod: ref("excluded.paymentMethod"),
+          site: ref("excluded.site"),
+          transactionType: ref("excluded.transactionType"),
+          transactionAmount: ref("excluded.transactionAmount"),
+          transactionCurrency: ref("excluded.transactionCurrency"),
+          sellerAmount: ref("excluded.sellerAmount"),
+          feeAmount: ref("excluded.feeAmount"),
+          settlementNetAmount: ref("excluded.settlementNetAmount"),
+          settlementCurrency: ref("excluded.settlementCurrency"),
+          realAmount: ref("excluded.realAmount"),
+          couponAmount: ref("excluded.couponAmount"),
+          metadata: ref("excluded.metadata"),
+          mkpFeeAmount: ref("excluded.mkpFeeAmount"),
+          financingFeeAmount: ref("excluded.financingFeeAmount"),
+          shippingFeeAmount: ref("excluded.shippingFeeAmount"),
+          taxesAmount: ref("excluded.taxesAmount"),
+          installments: ref("excluded.installments"),
+          taxDetail: ref("excluded.taxDetail"),
+          taxesDisaggregated: ref("excluded.taxesDisaggregated"),
+          description: ref("excluded.description"),
+          cardInitialNumber: ref("excluded.cardInitialNumber"),
+          operationTags: ref("excluded.operationTags"),
+          businessUnit: ref("excluded.businessUnit"),
+          subUnit: ref("excluded.subUnit"),
+          productSku: ref("excluded.productSku"),
+          saleDetail: ref("excluded.saleDetail"),
+          transactionIntentId: ref("excluded.transactionIntentId"),
+          franchise: ref("excluded.franchise"),
+          issuerName: ref("excluded.issuerName"),
+          lastFourDigits: ref("excluded.lastFourDigits"),
+          orderMp: ref("excluded.orderMp"),
+          invoicingPeriod: ref("excluded.invoicingPeriod"),
+          payBankTransferId: ref("excluded.payBankTransferId"),
+          isReleased: ref("excluded.isReleased"),
+          tipAmount: ref("excluded.tipAmount"),
+          purchaseId: ref("excluded.purchaseId"),
+          totalCouponAmount: ref("excluded.totalCouponAmount"),
+          posId: ref("excluded.posId"),
+          posName: ref("excluded.posName"),
+          externalPosId: ref("excluded.externalPosId"),
+          storeId: ref("excluded.storeId"),
+          storeName: ref("excluded.storeName"),
+          externalStoreId: ref("excluded.externalStoreId"),
+          poiId: ref("excluded.poiId"),
+          orderId: ref("excluded.orderId"),
+          shippingId: ref("excluded.shippingId"),
+          shipmentMode: ref("excluded.shipmentMode"),
+          packId: ref("excluded.packId"),
+          shippingOrderId: ref("excluded.shippingOrderId"),
+          poiWalletName: ref("excluded.poiWalletName"),
+          poiBankName: ref("excluded.poiBankName"),
+          merchantCategoryCode: ref("excluded.merchantCategoryCode"),
+          applicationId: ref("excluded.applicationId"),
+          segmentDetail: ref("excluded.segmentDetail"),
+          authorizationCode: ref("excluded.authorizationCode"),
+          cardEntryMode: ref("excluded.cardEntryMode"),
+          authenticatedPayer: ref("excluded.authenticatedPayer"),
+          transactionDateShort: ref("excluded.transactionDateShort"),
+          settlementDateShort: ref("excluded.settlementDateShort"),
+          moneyReleaseDateShort: ref("excluded.moneyReleaseDateShort"),
+          updatedAt,
+        }))
+        .where((eb) =>
+          eb.or(
+            SETTLEMENT_UPDATE_COLUMNS.map((column) =>
+              eb(column, "is distinct from", eb.ref(`excluded.${column}`))
+            )
+          )
+        )
+    )
+    .returning(sql<boolean>`xmax = 0`.as("inserted"))
+    .execute();
+
+  return countUpsertResults(returnedRows, rows.length);
 }

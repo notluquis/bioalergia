@@ -19,6 +19,8 @@ export interface ImportStats {
   skippedRows: number;
   sourceUnavailable?: boolean;
   totalRows: number;
+  unchangedRows: number;
+  updatedRows: number;
   validRows: number;
 }
 
@@ -60,6 +62,8 @@ export interface MpSyncImportStats {
   insertedRows: number;
   skippedRows: number;
   totalRows: number;
+  unchangedRows?: number;
+  updatedRows?: number;
   validRows: number;
 }
 
@@ -124,6 +128,8 @@ const ProcessReportResponseSchema = z.object({
     skippedRows: z.number(),
     sourceUnavailable: z.boolean().optional(),
     totalRows: z.number(),
+    unchangedRows: z.number(),
+    updatedRows: z.number(),
     validRows: z.number(),
   }),
   status: z.string(),
@@ -275,7 +281,7 @@ export const MPService = {
       return report;
     };
     return {
-      reports: (response.reports ?? []).map(normalizeReportStatus),
+      reports: (response.reports ?? []).map((report) => normalizeReportStatus(report)),
       total: response.total ?? 0,
     };
   },
