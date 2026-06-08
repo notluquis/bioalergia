@@ -664,22 +664,10 @@ function buildSyncColumns(onViewChanges: (log: MpSyncLog) => void): ColumnDef<Mp
         const importStatsByType = getSyncImportStatsByType(row.original);
         const reportTypes = getSyncReportTypes(row.original);
         if (importStatsByType) {
+          // Each per-type stats group below already renders its own type label
+          // ({label}), so the standalone reportTypes chips would duplicate it.
           return (
             <div className="flex flex-wrap items-center gap-2 text-xs">
-              {reportTypes.length > 0 && (
-                <div className="flex items-center gap-1">
-                  {reportTypes.includes("release") && (
-                    <span className="rounded bg-primary/10 px-1.5 py-0.5 text-primary">
-                      Liberación
-                    </span>
-                  )}
-                  {reportTypes.includes("settlement") && (
-                    <span className="rounded bg-warning/10 px-1.5 py-0.5 text-warning">
-                      Conciliación
-                    </span>
-                  )}
-                </div>
-              )}
               {importStatsByType.map(({ label, stats, tone }) =>
                 stats ? (
                   <div className="flex items-center gap-1" key={label}>
