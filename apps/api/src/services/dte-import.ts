@@ -7,6 +7,7 @@ import { db } from "@finanzas/db";
 import { Decimal } from "decimal.js";
 
 import { tryMatchDTEPurchaseToExpense } from "./dte-expense-matcher.ts";
+import { logError, logWarn } from "../lib/logger.ts";
 
 // Hook fail-soft que dispara matcher después de import.
 // Si match falla, NO interrumpe el import (solo loguea).
@@ -14,11 +15,19 @@ function tryMatchExpenseFailSoft(dteId: string): void {
   tryMatchDTEPurchaseToExpense(dteId)
     .then((result) => {
       if (result.status === "ERROR" || result.status === "NO_MATCH") {
-        console.warn(`[DTE-Match] dte=${dteId} status=${result.status} reason=${result.reason}`);
+        // NO_MATCH es estado de negocio esperado (proveedor sin Counterpart aún),
+        // no una excepción. Se emite por logWarn (level:"warn" en el JSON) para que
+        // Railway no lo clasifique como `error` — `console.warn` con string plano va
+        // a stderr y queda tageado error.
+        logWarn("dte.match.no_counterpart", {
+          dteId,
+          status: result.status,
+          reason: result.reason,
+        });
       }
     })
     .catch((err) => {
-      console.error(`[DTE-Match] dte=${dteId} unexpected error:`, err);
+      logError("dte.match.unexpected_error", err, { dteId });
     });
 }
 
