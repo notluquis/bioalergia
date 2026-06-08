@@ -100,26 +100,34 @@ describe("processReportUrl", () => {
 });
 
 describe("serializeRowForPg", () => {
-  it("converts decimal.js Decimal fields to numeric strings (pg binds objects via JSON.stringify → quoted → 22P02)", async () => {
+  it("massages Decimal → numeric string and Json object/array → JSON string for the raw $qb bind", async () => {
     const { Decimal } = await import("decimal.js");
     const { serializeRowForPg } = await import("../ingest.ts");
 
+    const txDate = new Date("2026-06-07T07:45:56.000Z");
     const out = serializeRowForPg({
       sourceId: "abc",
+      transactionDate: txDate,
       transactionAmount: new Decimal(-23090),
       feeAmount: new Decimal("0.00"),
       userId: "2040207498",
       installments: 1,
       metadata: { foo: "bar" },
+      operationTags: [{}],
     });
 
+    // Decimal → plain numeric string (else pg quotes it → 22P02 numeric)
     expect(out.transactionAmount).toBe("-23090");
     expect(typeof out.transactionAmount).toBe("string");
     expect(out.feeAmount).toBe("0");
-    // non-Decimal fields pass through untouched
+    // Json object / array → JSON string (else a JS array binds as pg array
+    // literal {"{}"} → 22P02 invalid json)
+    expect(out.metadata).toBe('{"foo":"bar"}');
+    expect(out.operationTags).toBe("[{}]");
+    // Date binds natively, untouched; primitives pass through
+    expect(out.transactionDate).toBe(txDate);
     expect(out.sourceId).toBe("abc");
     expect(out.userId).toBe("2040207498");
     expect(out.installments).toBe(1);
-    expect(out.metadata).toEqual({ foo: "bar" });
   });
 });

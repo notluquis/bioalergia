@@ -717,24 +717,36 @@ function excludedColumnRef(column: string) {
   return `excluded.${toDbColumnName(column)}` as never;
 }
 
-// node-postgres serializes objects that lack a toPostgres() method via
-// JSON.stringify. decimal.js Decimal.toJSON() returns the numeric string, so a
-// Decimal binds as a QUOTED string (e.g. "-23090") and Postgres rejects it for
-// numeric columns with 22P02 "invalid input syntax for type numeric". The raw
-// $qb/kysely insert path doesn't go through ZenStack's Decimal handling (the
-// normal db.model.create() path does), so convert Decimal instances to plain
-// numeric strings before binding. constructor.name check survives duplicate
-// decimal.js module copies where `instanceof` would fail.
+// The raw $qb/kysely insert path doesn't go through ZenStack's value handling
+// (the normal db.model.create() path does), so JS values must be massaged to
+// match how node-postgres binds them, per target column type:
+//
+//   - Decimal: pg serializes objects without toPostgres() via JSON.stringify,
+//     and decimal.js Decimal.toJSON() returns the numeric string → binds as a
+//     QUOTED string ("-23090") → numeric column rejects it (22P02). Convert to
+//     a plain numeric string.
+//   - Plain object / array (Json/jsonb columns): pg renders a JS ARRAY as a
+//     Postgres ARRAY literal ({"{}"}), which is invalid JSON → jsonb rejects it
+//     (22P02 "invalid input syntax for type json"). Pre-serialize to a JSON
+//     string that pg parses straight into jsonb. (All object-typed columns on
+//     these rows are Json — there are no native String[]/array columns.)
+//   - Date binds natively; leave it.
+//
+// constructor.name check survives duplicate decimal.js module copies where
+// `instanceof` would fail.
 export function serializeRowForPg<T extends Record<string, unknown>>(row: T): T {
   const out: Record<string, unknown> = {};
   for (const key in row) {
     const value = row[key];
-    out[key] =
-      value != null &&
-      typeof value === "object" &&
-      (value as { constructor?: { name?: string } }).constructor?.name === "Decimal"
-        ? String(value)
-        : value;
+    if (value == null || typeof value !== "object") {
+      out[key] = value;
+    } else if ((value as { constructor?: { name?: string } }).constructor?.name === "Decimal") {
+      out[key] = String(value);
+    } else if (value instanceof Date) {
+      out[key] = value;
+    } else {
+      out[key] = JSON.stringify(value);
+    }
   }
   return out as T;
 }
