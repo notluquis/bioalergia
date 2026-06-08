@@ -172,6 +172,27 @@ export const medicalCertificateSchema = z.object({
   symptoms: z.string().nullable().optional(),
 });
 
+export const medicalPrescriptionSchema = z.object({
+  date: z.coerce.date(),
+  diagnosis: z.string().nullable().optional(),
+  doctorAddress: z.string().nullable().optional(),
+  doctorEmail: z.string().nullable().optional(),
+  doctorName: z.string().nullable().optional(),
+  doctorRut: z.string().nullable().optional(),
+  doctorSpecialty: z.string().nullable().optional(),
+  driveFileId: z.string(),
+  id: z.string(),
+  issuedAt: z.coerce.date(),
+  issuedBy: z.number().int(),
+  medications: z.unknown(),
+  metadata: z.unknown().nullable().optional(),
+  notes: z.string().nullable().optional(),
+  patientId: z.number().int(),
+  patientName: z.string(),
+  patientRut: z.string().nullable().optional(),
+  pdfHash: z.string(),
+});
+
 export const patientListItemSchema = z.object({
   birthDate: z.coerce.date().nullable().optional(),
   bloodType: z.string().nullable().optional(),
@@ -192,6 +213,7 @@ export const patientDetailSchema = z.object({
   createdAt: z.coerce.date(),
   id: z.number().int(),
   medicalCertificates: z.array(medicalCertificateSchema),
+  medicalPrescriptions: z.array(medicalPrescriptionSchema),
   notes: z.string().nullable().optional(),
   payments: z.array(patientPaymentSchema),
   person: personSchema,

@@ -2,6 +2,7 @@ import {
   Button,
   Calendar,
   Card,
+  Chip,
   DateField,
   DatePicker,
   FieldError,
@@ -13,10 +14,13 @@ import {
   TextField,
 } from "@heroui/react";
 import { parseDate } from "@internationalized/date";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import type { GenerateMedicalPrescriptionInput } from "@finanzas/orpc-contracts/certificates";
-import { Plus, Trash2 } from "lucide-react";
+import type {
+  GenerateMedicalPrescriptionInput,
+  MedicalPrescription,
+} from "@finanzas/orpc-contracts/certificates";
+import { FileText, Plus, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { z } from "zod";
 
@@ -79,6 +83,7 @@ function patientFullName(patient: SelectedPatient): string {
 
 function MedicalPrescriptionPage() {
   const search = Route.useSearch();
+  const queryClient = useQueryClient();
   const searchPatientId = search.patientId;
   const [selectPatientOpen, setSelectPatientOpen] = useState(false);
   const [createPatientOpen, setCreatePatientOpen] = useState(false);
@@ -107,6 +112,14 @@ function MedicalPrescriptionPage() {
   }, [selectedPatientQ.data]);
 
   const patientLabel = useMemo(() => (patient ? patientFullName(patient) : ""), [patient]);
+  const prescriptionsQ = useQuery({
+    queryKey: ["medical-prescriptions", patient?.id ?? "all"],
+    queryFn: async () =>
+      certificatesORPCClient.listPrescriptions({
+        limit: 50,
+        patientId: patient?.id,
+      }),
+  });
 
   const generateMutation = useMutation({
     mutationFn: async (input: GenerateMedicalPrescriptionInput) => {
@@ -129,6 +142,7 @@ function MedicalPrescriptionPage() {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
+      void queryClient.invalidateQueries({ queryKey: ["medical-prescriptions"] });
       toast.success("Receta generada");
     },
     onError: (error) => {
@@ -193,6 +207,12 @@ function MedicalPrescriptionPage() {
         </div>
       </Card>
 
+      <PrescriptionHistory
+        isLoading={prescriptionsQ.isLoading}
+        items={prescriptionsQ.data?.items ?? []}
+        title={patient ? `Recetas de ${patientLabel}` : "Recetas recientes"}
+      />
+
       {patient ? (
         <PrescriptionModal
           date={date}
@@ -234,6 +254,81 @@ function MedicalPrescriptionPage() {
         }}
       />
     </div>
+  );
+}
+
+function medicationSummary(value: unknown): string {
+  if (!Array.isArray(value)) return "Sin medicamentos";
+  const names = value
+    .map((item) =>
+      item && typeof item === "object" && "name" in item && typeof item.name === "string"
+        ? item.name
+        : null
+    )
+    .filter((name): name is string => Boolean(name));
+  if (names.length === 0) return "Sin medicamentos";
+  return names.join(", ");
+}
+
+function PrescriptionHistory({
+  isLoading,
+  items,
+  title,
+}: {
+  isLoading: boolean;
+  items: MedicalPrescription[];
+  title: string;
+}) {
+  return (
+    <Card className="p-6">
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <div>
+          <h3 className="font-semibold text-foreground text-base">{title}</h3>
+          <p className="text-default-600 text-sm">
+            {isLoading ? "Cargando..." : `${items.length} receta${items.length === 1 ? "" : "s"}`}
+          </p>
+        </div>
+      </div>
+
+      {isLoading ? (
+        <p className="text-default-600 text-sm">Cargando recetas...</p>
+      ) : items.length === 0 ? (
+        <p className="text-default-600 text-sm">No hay recetas registradas.</p>
+      ) : (
+        <div className="divide-y divide-default-200">
+          {items.map((item) => (
+            <article className="flex flex-col gap-2 py-3 sm:flex-row sm:items-start" key={item.id}>
+              <div className="flex min-w-0 flex-1 gap-3">
+                <span className="mt-1 flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                  <FileText size={16} />
+                </span>
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <strong className="truncate text-sm">
+                      {[item.patient.person.names, item.patient.person.fatherName]
+                        .filter(Boolean)
+                        .join(" ")}
+                    </strong>
+                    <Chip size="sm" variant="soft">
+                      <Chip.Label>{formatChile(item.date, "DD/MM/YYYY")}</Chip.Label>
+                    </Chip>
+                  </div>
+                  <p className="mt-1 line-clamp-1 text-default-700 text-sm">
+                    {medicationSummary(item.medications)}
+                  </p>
+                  {item.diagnosis ? (
+                    <p className="line-clamp-1 text-default-500 text-xs">{item.diagnosis}</p>
+                  ) : null}
+                  <p className="text-default-500 text-xs">
+                    Emitida {formatChile(item.issuedAt, "DD/MM/YYYY HH:mm")}
+                  </p>
+                </div>
+              </div>
+            </article>
+          ))}
+        </div>
+      )}
+    </Card>
   );
 }
 

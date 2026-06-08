@@ -8,6 +8,7 @@ import type { Context as HonoContext } from "hono";
 import type {
   Consultation,
   MedicalCertificate,
+  MedicalPrescription,
   PatientAttachment,
   Person,
 } from "@finanzas/db/models";
@@ -154,6 +155,10 @@ const medicalCertificateSchema = dbSchemas.makeModelSchema(
   "MedicalCertificate"
 ) as unknown as z.ZodType<MedicalCertificate>;
 
+const medicalPrescriptionSchema = dbSchemas.makeModelSchema(
+  "MedicalPrescription"
+) as unknown as z.ZodType<MedicalPrescription>;
+
 const patientListItemSchema = z.object({
   birthDate: z.date().nullable().optional(),
   bloodType: z.string().nullable().optional(),
@@ -174,6 +179,7 @@ const patientDetailSchema = z.object({
   createdAt: z.date(),
   id: z.number().int(),
   medicalCertificates: z.array(medicalCertificateSchema),
+  medicalPrescriptions: z.array(medicalPrescriptionSchema),
   notes: z.string().nullable().optional(),
   payments: z.array(patientPaymentSchema),
   person: personSchema,
@@ -633,6 +639,10 @@ const patientsORPCRouterBase = {
             take: 10,
           },
           medicalCertificates: {
+            orderBy: { issuedAt: "desc" },
+            take: 10,
+          },
+          medicalPrescriptions: {
             orderBy: { issuedAt: "desc" },
             take: 10,
           },

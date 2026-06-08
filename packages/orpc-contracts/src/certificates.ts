@@ -46,6 +46,41 @@ export const generateMedicalPrescriptionInputSchema = z.object({
   patientId: z.number().int().positive(),
 });
 
+export const listMedicalPrescriptionsInputSchema = z
+  .object({
+    limit: z.number().int().positive().max(200).optional(),
+    patientId: z.number().int().positive().optional(),
+  })
+  .optional();
+
+export const medicalPrescriptionSchema = z.object({
+  date: z.coerce.date(),
+  diagnosis: z.string().nullable(),
+  doctorName: z.string().nullable(),
+  driveFileId: z.string(),
+  id: z.string(),
+  issuedAt: z.coerce.date(),
+  medications: z.unknown(),
+  notes: z.string().nullable(),
+  patient: z.object({
+    id: z.number().int(),
+    person: z.object({
+      fatherName: z.string().nullable().optional(),
+      motherName: z.string().nullable().optional(),
+      names: z.string(),
+      rut: z.string().nullable().optional(),
+    }),
+  }),
+  patientId: z.number().int(),
+  patientName: z.string(),
+  patientRut: z.string().nullable(),
+  pdfHash: z.string(),
+});
+
+export const medicalPrescriptionListResponseSchema = z.object({
+  items: z.array(medicalPrescriptionSchema),
+});
+
 export const certificateVerifyResponseSchema = z.union([
   z.object({
     diagnosis: z.string(),
@@ -78,6 +113,10 @@ export const certificatesContract = {
     .route({ method: "POST", path: "/prescription" })
     .input(generateMedicalPrescriptionInputSchema)
     .output(z.file()),
+  listPrescriptions: oc
+    .route({ method: "GET", path: "/prescriptions" })
+    .input(listMedicalPrescriptionsInputSchema)
+    .output(medicalPrescriptionListResponseSchema),
   verify: oc
     .route({ method: "GET", path: "/verify/{id}" })
     .input(certificateVerifyInputSchema)
@@ -88,3 +127,4 @@ export type CertificatesContract = typeof certificatesContract;
 export type GenerateMedicalPrescriptionInput = z.infer<
   typeof generateMedicalPrescriptionInputSchema
 >;
+export type MedicalPrescription = z.infer<typeof medicalPrescriptionSchema>;

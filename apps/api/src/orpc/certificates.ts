@@ -8,6 +8,8 @@ import {
   certificateVerifyResponseSchema,
   generateMedicalCertificateInputSchema,
   generateMedicalPrescriptionInputSchema,
+  listMedicalPrescriptionsInputSchema,
+  medicalPrescriptionListResponseSchema,
 } from "@finanzas/orpc-contracts/certificates";
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
@@ -64,6 +66,14 @@ const authed = base.use(async ({ context, next }) => {
 const createMedicalCertificates = authed.use(async ({ context, next }) => {
   const canCreate = await hasPermission(context.user, "create", "MedicalCertificate");
   if (!canCreate) {
+    throw new ORPCError("FORBIDDEN", { message: "Forbidden" });
+  }
+  return next();
+});
+
+const readMedicalCertificates = authed.use(async ({ context, next }) => {
+  const canRead = await hasPermission(context.user, "read", "MedicalCertificate");
+  if (!canRead) {
     throw new ORPCError("FORBIDDEN", { message: "Forbidden" });
   }
   return next();
@@ -151,7 +161,7 @@ const certificatesORPCRouterBase = {
     })
     .input(generateMedicalPrescriptionInputSchema)
     .output(z.file())
-    .handler(async ({ input }) => {
+    .handler(async ({ context, input }) => {
       const parsed = medicalPrescriptionSchema.parse(input);
       const patient = await db.patient.findUnique({
         where: { id: parsed.patientId },
@@ -189,9 +199,85 @@ const certificatesORPCRouterBase = {
       );
       const { toPdfA3 } = await import("../modules/pdf/pdf-a.ts");
       const pdfBytes = await toPdfA3(rawPdf, "Receta médica");
+      const pdfHash = crypto.createHash("sha256").update(pdfBytes).digest("hex");
       const fileName = `receta_medica_${(patient.person.rut ?? "sin_rut").replace(/\./g, "")}.pdf`;
+      const prescriptionId = crypto.randomUUID();
+      const tempPath = path.join(os.tmpdir(), `${prescriptionId}.pdf`);
+
+      fs.writeFileSync(tempPath, pdfBytes);
+
+      try {
+        const { fileId } = await uploadCertificateToDrive(
+          tempPath,
+          `receta_${(patient.person.rut ?? "sin_rut").replace(/\./g, "")}_${Date.now()}.pdf`,
+          {
+            ...parsed,
+            documentType: "medical_prescription",
+            patientName: fullName,
+            patientRut: patient.person.rut,
+          },
+          pdfHash,
+          "prescription"
+        );
+
+        await db.medicalPrescription.create({
+          data: {
+            date: parseDateOnly(parsed.date),
+            diagnosis: parsed.diagnosis,
+            doctorAddress: parsed.doctorAddress,
+            doctorEmail: parsed.doctorEmail,
+            doctorName: parsed.doctorName,
+            doctorRut: parsed.doctorRut,
+            doctorSpecialty: parsed.doctorSpecialty,
+            driveFileId: fileId,
+            id: prescriptionId,
+            issuedBy: context.user.id,
+            medications: parsed.medications,
+            metadata: {
+              ...parsed,
+              patientName: fullName,
+              patientRut: patient.person.rut,
+            },
+            notes: parsed.notes,
+            patientId: parsed.patientId,
+            patientName: fullName,
+            patientRut: patient.person.rut,
+            pdfHash,
+          },
+        });
+      } finally {
+        if (fs.existsSync(tempPath)) {
+          fs.unlinkSync(tempPath);
+        }
+      }
 
       return new File([Buffer.from(pdfBytes)], fileName, { type: "application/pdf" });
+    }),
+
+  listPrescriptions: readMedicalCertificates
+    .route({
+      method: "GET",
+      path: "/prescriptions",
+      summary: "List medical prescriptions",
+      tags: ["Certificates"],
+    })
+    .input(listMedicalPrescriptionsInputSchema)
+    .output(medicalPrescriptionListResponseSchema)
+    .handler(async ({ input }) => {
+      const prescriptions = await db.medicalPrescription.findMany({
+        where: input?.patientId ? { patientId: input.patientId } : {},
+        orderBy: { issuedAt: "desc" },
+        take: input?.limit ?? 100,
+        include: {
+          patient: {
+            include: {
+              person: true,
+            },
+          },
+        },
+      });
+
+      return { items: prescriptions };
     }),
 
   verify: base

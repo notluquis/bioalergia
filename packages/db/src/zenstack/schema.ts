@@ -549,6 +549,12 @@ export class SchemaType implements SchemaDef {
                     array: true,
                     relation: { opposite: "issuer" }
                 },
+                medicalPrescriptions: {
+                    name: "medicalPrescriptions",
+                    type: "MedicalPrescription",
+                    array: true,
+                    relation: { opposite: "issuer" }
+                },
                 issuedDebugTokens: {
                     name: "issuedDebugTokens",
                     type: "DebugToken",
@@ -8452,6 +8458,138 @@ export class SchemaType implements SchemaDef {
                 id: { type: "String" }
             }
         },
+        MedicalPrescription: {
+            name: "MedicalPrescription",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "String",
+                    id: true,
+                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("cuid") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("cuid") as FieldDefault
+                },
+                patientId: {
+                    name: "patientId",
+                    type: "Int",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("patient_id") }] }] as readonly AttributeApplication[],
+                    foreignKeyFor: [
+                        "patient"
+                    ] as readonly string[]
+                },
+                patientName: {
+                    name: "patientName",
+                    type: "String",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("patient_name") }] }] as readonly AttributeApplication[]
+                },
+                patientRut: {
+                    name: "patientRut",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("patient_rut") }] }] as readonly AttributeApplication[]
+                },
+                date: {
+                    name: "date",
+                    type: "DateTime",
+                    attributes: [{ name: "@db.Date" }] as readonly AttributeApplication[]
+                },
+                diagnosis: {
+                    name: "diagnosis",
+                    type: "String",
+                    optional: true
+                },
+                medications: {
+                    name: "medications",
+                    type: "Json"
+                },
+                notes: {
+                    name: "notes",
+                    type: "String",
+                    optional: true
+                },
+                doctorName: {
+                    name: "doctorName",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("doctor_name") }] }] as readonly AttributeApplication[]
+                },
+                doctorSpecialty: {
+                    name: "doctorSpecialty",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("doctor_specialty") }] }] as readonly AttributeApplication[]
+                },
+                doctorRut: {
+                    name: "doctorRut",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("doctor_rut") }] }] as readonly AttributeApplication[]
+                },
+                doctorEmail: {
+                    name: "doctorEmail",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("doctor_email") }] }] as readonly AttributeApplication[]
+                },
+                doctorAddress: {
+                    name: "doctorAddress",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("doctor_address") }] }] as readonly AttributeApplication[]
+                },
+                issuedBy: {
+                    name: "issuedBy",
+                    type: "Int",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("issued_by") }] }] as readonly AttributeApplication[],
+                    foreignKeyFor: [
+                        "issuer"
+                    ] as readonly string[]
+                },
+                issuedAt: {
+                    name: "issuedAt",
+                    type: "DateTime",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("issued_at") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                driveFileId: {
+                    name: "driveFileId",
+                    type: "String",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("drive_file_id") }] }] as readonly AttributeApplication[]
+                },
+                pdfHash: {
+                    name: "pdfHash",
+                    type: "String",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("pdf_hash") }] }] as readonly AttributeApplication[]
+                },
+                metadata: {
+                    name: "metadata",
+                    type: "Json",
+                    optional: true
+                },
+                issuer: {
+                    name: "issuer",
+                    type: "User",
+                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("issuedBy")]) }, { name: "references", value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]) }] }] as readonly AttributeApplication[],
+                    relation: { opposite: "medicalPrescriptions", fields: ["issuedBy"], references: ["id"] }
+                },
+                patient: {
+                    name: "patient",
+                    type: "Patient",
+                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("patientId")]) }, { name: "references", value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("Cascade") }] }] as readonly AttributeApplication[],
+                    relation: { opposite: "medicalPrescriptions", fields: ["patientId"], references: ["id"], onDelete: "Cascade" }
+                }
+            },
+            attributes: [
+                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,read") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("patientId"), ExpressionUtils.field("issuedAt")]) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("DateTime", [ExpressionUtils.field("issuedAt")]) }] },
+                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("medical_prescriptions") }] }
+            ] as readonly AttributeApplication[],
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "String" }
+            }
+        },
         Patient: {
             name: "Patient",
             fields: {
@@ -8516,6 +8654,12 @@ export class SchemaType implements SchemaDef {
                 medicalCertificates: {
                     name: "medicalCertificates",
                     type: "MedicalCertificate",
+                    array: true,
+                    relation: { opposite: "patient" }
+                },
+                medicalPrescriptions: {
+                    name: "medicalPrescriptions",
+                    type: "MedicalPrescription",
                     array: true,
                     relation: { opposite: "patient" }
                 },

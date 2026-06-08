@@ -34,6 +34,7 @@ type Patient = Awaited<ReturnType<typeof fetchPatient>>;
 type Person = Patient["person"];
 type Consultation = Patient["consultations"][number];
 type MedicalCertificate = Patient["medicalCertificates"][number];
+type MedicalPrescription = Patient["medicalPrescriptions"][number];
 type Budget = Patient["budgets"][number];
 type PatientPayment = Patient["payments"][number];
 type PatientAttachment = Patient["attachments"][number];
@@ -235,14 +236,28 @@ function PatientDetailsPage() {
                       Nueva receta
                     </Button>
                   </div>
-                  <DataTable
-                    columns={certificateColumns}
-                    data={patient.medicalCertificates || []}
-                    enablePagination={false}
-                    enableToolbar={false}
-                    noDataMessage="No se han emitido certificados a este paciente."
-                    scrollMaxHeight="min(56dvh, 640px)"
-                  />
+                  <section className="space-y-2">
+                    <h3 className="font-semibold text-foreground text-sm">Recetas médicas</h3>
+                    <DataTable
+                      columns={prescriptionColumns}
+                      data={patient.medicalPrescriptions || []}
+                      enablePagination={false}
+                      enableToolbar={false}
+                      noDataMessage="No se han emitido recetas a este paciente."
+                      scrollMaxHeight="min(40dvh, 420px)"
+                    />
+                  </section>
+                  <section className="space-y-2">
+                    <h3 className="font-semibold text-foreground text-sm">Certificados médicos</h3>
+                    <DataTable
+                      columns={certificateColumns}
+                      data={patient.medicalCertificates || []}
+                      enablePagination={false}
+                      enableToolbar={false}
+                      noDataMessage="No se han emitido certificados a este paciente."
+                      scrollMaxHeight="min(40dvh, 420px)"
+                    />
+                  </section>
                 </div>
               ) : null}
             </Tabs.Panel>
@@ -760,6 +775,35 @@ const certificateColumns: ColumnDef<MedicalCertificate>[] = [
     header: "Fecha",
     accessorKey: "issuedAt",
     cell: ({ row }) => formatChile(row.original.issuedAt, "DD/MM/YYYY"),
+  },
+  {
+    header: "Diagnóstico",
+    accessorKey: "diagnosis",
+  },
+];
+
+function patientPrescriptionMedicationSummary(value: unknown): string {
+  if (!Array.isArray(value)) return "Sin medicamentos";
+  const names = value
+    .map((item) =>
+      item && typeof item === "object" && "name" in item && typeof item.name === "string"
+        ? item.name
+        : null
+    )
+    .filter((name): name is string => Boolean(name));
+  return names.length > 0 ? names.join(", ") : "Sin medicamentos";
+}
+
+const prescriptionColumns: ColumnDef<MedicalPrescription>[] = [
+  {
+    header: "Fecha",
+    accessorKey: "date",
+    cell: ({ row }) => formatChile(row.original.date, "DD/MM/YYYY"),
+  },
+  {
+    header: "Medicamentos",
+    accessorKey: "medications",
+    cell: ({ row }) => patientPrescriptionMedicationSummary(row.original.medications),
   },
   {
     header: "Diagnóstico",

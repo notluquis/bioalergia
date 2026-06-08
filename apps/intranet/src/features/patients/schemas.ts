@@ -63,6 +63,27 @@ export const MedicalCertificateSchema = z.strictObject({
   symptoms: z.string().nullable().optional(),
 });
 
+export const MedicalPrescriptionSchema = z.strictObject({
+  date: zDateString,
+  diagnosis: z.string().nullable().optional(),
+  doctorAddress: z.string().nullable().optional(),
+  doctorEmail: z.string().nullable().optional(),
+  doctorName: z.string().nullable().optional(),
+  doctorRut: z.string().nullable().optional(),
+  doctorSpecialty: z.string().nullable().optional(),
+  driveFileId: z.string(),
+  id: z.string(),
+  issuedAt: zDateString,
+  issuedBy: z.number(),
+  medications: z.unknown(),
+  metadata: z.unknown().nullable().optional(),
+  notes: z.string().nullable().optional(),
+  patientId: z.number(),
+  patientName: z.string(),
+  patientRut: z.string().nullable().optional(),
+  pdfHash: z.string(),
+});
+
 export const BudgetItemSchema = z.strictObject({
   budgetId: z.number(),
   description: z.string(),
@@ -120,6 +141,7 @@ export const PatientDetailSchema = z.strictObject({
   createdAt: z.coerce.date(),
   id: z.number(),
   medicalCertificates: z.array(MedicalCertificateSchema),
+  medicalPrescriptions: z.array(MedicalPrescriptionSchema),
   notes: z.string().nullable().optional(),
   payments: z.array(PatientPaymentSchema),
   person: PersonSchema,

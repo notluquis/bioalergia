@@ -467,6 +467,12 @@ export class SchemaType implements SchemaDef {
                     array: true,
                     relation: { opposite: "issuer" }
                 },
+                medicalPrescriptions: {
+                    name: "medicalPrescriptions",
+                    type: "MedicalPrescription",
+                    array: true,
+                    relation: { opposite: "issuer" }
+                },
                 issuedDebugTokens: {
                     name: "issuedDebugTokens",
                     type: "DebugToken",
@@ -6914,6 +6920,115 @@ export class SchemaType implements SchemaDef {
                 id: { type: "String" }
             }
         },
+        MedicalPrescription: {
+            name: "MedicalPrescription",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "String",
+                    id: true,
+                    default: ExpressionUtils.call("cuid") as FieldDefault
+                },
+                patientId: {
+                    name: "patientId",
+                    type: "Int",
+                    foreignKeyFor: [
+                        "patient"
+                    ] as readonly string[]
+                },
+                patientName: {
+                    name: "patientName",
+                    type: "String"
+                },
+                patientRut: {
+                    name: "patientRut",
+                    type: "String",
+                    optional: true
+                },
+                date: {
+                    name: "date",
+                    type: "DateTime"
+                },
+                diagnosis: {
+                    name: "diagnosis",
+                    type: "String",
+                    optional: true
+                },
+                medications: {
+                    name: "medications",
+                    type: "Json"
+                },
+                notes: {
+                    name: "notes",
+                    type: "String",
+                    optional: true
+                },
+                doctorName: {
+                    name: "doctorName",
+                    type: "String",
+                    optional: true
+                },
+                doctorSpecialty: {
+                    name: "doctorSpecialty",
+                    type: "String",
+                    optional: true
+                },
+                doctorRut: {
+                    name: "doctorRut",
+                    type: "String",
+                    optional: true
+                },
+                doctorEmail: {
+                    name: "doctorEmail",
+                    type: "String",
+                    optional: true
+                },
+                doctorAddress: {
+                    name: "doctorAddress",
+                    type: "String",
+                    optional: true
+                },
+                issuedBy: {
+                    name: "issuedBy",
+                    type: "Int",
+                    foreignKeyFor: [
+                        "issuer"
+                    ] as readonly string[]
+                },
+                issuedAt: {
+                    name: "issuedAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                driveFileId: {
+                    name: "driveFileId",
+                    type: "String"
+                },
+                pdfHash: {
+                    name: "pdfHash",
+                    type: "String"
+                },
+                metadata: {
+                    name: "metadata",
+                    type: "Json",
+                    optional: true
+                },
+                issuer: {
+                    name: "issuer",
+                    type: "User",
+                    relation: { opposite: "medicalPrescriptions", fields: ["issuedBy"], references: ["id"] }
+                },
+                patient: {
+                    name: "patient",
+                    type: "Patient",
+                    relation: { opposite: "medicalPrescriptions", fields: ["patientId"], references: ["id"], onDelete: "Cascade" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "String" }
+            }
+        },
         Patient: {
             name: "Patient",
             fields: {
@@ -6971,6 +7086,12 @@ export class SchemaType implements SchemaDef {
                 medicalCertificates: {
                     name: "medicalCertificates",
                     type: "MedicalCertificate",
+                    array: true,
+                    relation: { opposite: "patient" }
+                },
+                medicalPrescriptions: {
+                    name: "medicalPrescriptions",
+                    type: "MedicalPrescription",
                     array: true,
                     relation: { opposite: "patient" }
                 },
