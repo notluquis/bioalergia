@@ -89,14 +89,18 @@ export async function insertMpImportChanges(changes: MpImportChangeInput[]) {
     return 0;
   }
 
+  // Keys MUST be snake_case to match the jsonb_to_recordset column names below
+  // (it matches JSON keys to output column names case-sensitively; camelCase
+  // keys silently yield NULL for every column → not-null violation on
+  // sync_log_id).
   const payload = JSON.stringify(
     changes.map((change) => ({
-      fieldName: change.fieldName,
-      newValue: change.newValue ?? null,
-      oldValue: change.oldValue ?? null,
-      reportType: change.reportType,
-      sourceId: change.sourceId,
-      syncLogId: change.syncLogId.toString(),
+      field_name: change.fieldName,
+      new_value: change.newValue ?? null,
+      old_value: change.oldValue ?? null,
+      report_type: change.reportType,
+      source_id: change.sourceId,
+      sync_log_id: change.syncLogId.toString(),
     }))
   );
 
