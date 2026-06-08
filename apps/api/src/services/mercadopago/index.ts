@@ -31,6 +31,25 @@ export interface MPReportTask {
   currency_id?: string;
   format?: "CSV" | "XLSX";
   file_name?: string | null;
+  // Present on /search results, absent on /list tasks (which carry
+  // generation_date). Declared so the merge in listReports can backfill it.
+  date_created?: string | null;
+}
+
+// Mirrors the frontend REPORT_PENDING_REGEX: a report whose generation task
+// hasn't materialized a downloadable file yet shows as "Generando".
+const PENDING_REPORT_STATUSES = new Set([
+  "pending",
+  "processing",
+  "in_progress",
+  "waiting",
+  "queued",
+  "creating",
+  "generating",
+]);
+
+function isPendingReportStatus(status?: string | null): boolean {
+  return status ? PENDING_REPORT_STATUSES.has(status.toLowerCase()) : false;
 }
 
 export interface MPSearchResultItem {
@@ -72,35 +91,69 @@ export const MercadoPagoService = {
     type: "release" | "settlement",
     options?: { limit?: number; offset?: number; silent?: boolean }
   ): Promise<MPListReportsResult> {
+    const limit = options?.limit ?? 50;
+    const offset = options?.offset ?? 0;
+    const baseUrl = type === "release" ? MP_API.RELEASE : MP_API.SETTLEMENT;
+
+    // 1. Available files (reliable file_name) via /search.
+    let files: Array<MPReportTask | MPSearchResultItem> = [];
+    let total = 0;
+    let searchHasFiles = false;
     try {
-      const searchData = await this.searchReports(
-        type,
-        {
-          limit: options?.limit ?? 50,
-          offset: options?.offset ?? 0,
-        },
-        options
-      );
-      const reports = searchData.results ?? [];
-      if (reports.length > 0) {
-        return {
-          reports,
-          total: searchData.paging?.total ?? reports.length,
-        };
-      }
+      const searchData = await this.searchReports(type, { limit, offset }, options);
+      files = searchData.results ?? [];
+      total = searchData.paging?.total ?? files.length;
+      searchHasFiles = files.length > 0;
     } catch (error) {
       if (!options?.silent) {
         console.warn(`[MP Service] ${type} report search failed; falling back to list:`, error);
       }
     }
 
-    const baseUrl = type === "release" ? MP_API.RELEASE : MP_API.SETTLEMENT;
-    const res = await mpFetch("/list", baseUrl, { log: !options?.silent });
-    const listData = (await safeMpJson(res)) as MPReportTask[];
-    return {
-      reports: listData,
-      total: listData.length,
-    };
+    // 2. Generation tasks via /list. This surfaces in-flight reports
+    //    ("Generando") that /search can't return yet because no file exists.
+    //    Released-money /list only carries finished files while settlement
+    //    /list carries the full task queue incl. pending — merging is correct
+    //    for both and is what lets "liberación" show the in-flight state
+    //    instead of jumping straight to "disponible".
+    let tasks: MPReportTask[] = [];
+    try {
+      const res = await mpFetch("/list", baseUrl, { log: false });
+      const listData = await safeMpJson(res);
+      if (Array.isArray(listData)) {
+        tasks = listData as MPReportTask[];
+      }
+    } catch (error) {
+      if (!options?.silent) {
+        console.warn(`[MP Service] ${type} report /list failed:`, error);
+      }
+    }
+
+    // If /search returned nothing, fall back to the full /list (old behavior)
+    // so a type whose /search is empty never regresses.
+    if (!searchHasFiles) {
+      return { reports: tasks.length > 0 ? tasks : files, total: tasks.length || total };
+    }
+
+    // 3. Prepend in-flight tasks not yet represented as an available file.
+    //    Match by file_name; a task without a file_name is always in-flight.
+    const knownFileNames = new Set(
+      files
+        .map((report) => ("file_name" in report ? report.file_name : null))
+        .filter((name): name is string => Boolean(name))
+    );
+    const pending = tasks
+      .filter(
+        (task) =>
+          isPendingReportStatus(task.status) &&
+          (!task.file_name || !knownFileNames.has(task.file_name))
+      )
+      .map((task) => ({ ...task, date_created: task.date_created ?? task.generation_date ?? null }));
+
+    // Only the first page carries the in-flight head; deeper pages stay pure
+    // history so pagination math doesn't drift.
+    const reports = offset === 0 ? [...pending, ...files] : files;
+    return { reports, total: offset === 0 ? total + pending.length : total };
   },
 
   /**
