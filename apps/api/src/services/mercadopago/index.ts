@@ -207,6 +207,25 @@ export const MercadoPagoService = {
     });
 
     if (!res.ok) {
+      // Diagnostic: MP's account-report path may 302-redirect to a short-lived
+      // signed storage URL, so an older file can 404 even though it shows in the
+      // list. Capture the real response so we stop guessing why download fails.
+      let bodySnippet = "";
+      try {
+        bodySnippet = (await res.text()).slice(0, 300);
+      } catch {
+        // ignore body read failure
+      }
+      console.error(
+        `[MP Download] failed ${res.status} ${res.statusText} for ${type} ${fileName}`,
+        {
+          redirected: res.redirected,
+          finalUrl: res.url,
+          location: res.headers.get("location"),
+          contentType: res.headers.get("content-type"),
+          body: bodySnippet,
+        }
+      );
       throw new Error(`Download failed: ${res.status}`);
     }
     return res;
