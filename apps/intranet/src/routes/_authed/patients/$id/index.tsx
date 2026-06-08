@@ -218,7 +218,23 @@ function PatientDetailsPage() {
 
             <Tabs.Panel id="certificates" className="py-4">
               {isTabMounted("certificates") ? (
-                <div data-phi-block>
+                <div className="space-y-4" data-phi-block>
+                  <div className="flex justify-end">
+                    <Button
+                      className="gap-2"
+                      onPress={() => {
+                        void navigate({
+                          search: { patientId: patient.id },
+                          to: "/certificates/prescription",
+                        });
+                      }}
+                      size="sm"
+                      variant="outline"
+                    >
+                      <PlusCircle size={16} />
+                      Nueva receta
+                    </Button>
+                  </div>
                   <DataTable
                     columns={certificateColumns}
                     data={patient.medicalCertificates || []}

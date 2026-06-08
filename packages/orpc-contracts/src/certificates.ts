@@ -25,6 +25,27 @@ export const generateMedicalCertificateInputSchema = z.object({
   symptoms: z.string().optional(),
 });
 
+export const prescriptionMedicationSchema = z.object({
+  dosage: z.string().max(160).optional(),
+  duration: z.string().max(160).optional(),
+  frequency: z.string().max(160).optional(),
+  instructions: z.string().max(300).optional(),
+  name: z.string().min(1).max(180),
+});
+
+export const generateMedicalPrescriptionInputSchema = z.object({
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  diagnosis: z.string().max(500).optional(),
+  doctorAddress: z.string().optional(),
+  doctorEmail: z.string().optional(),
+  doctorName: z.string().optional(),
+  doctorRut: z.string().optional(),
+  doctorSpecialty: z.string().optional(),
+  medications: z.array(prescriptionMedicationSchema).min(1).max(12),
+  notes: z.string().max(1000).optional(),
+  patientId: z.number().int().positive(),
+});
+
 export const certificateVerifyResponseSchema = z.union([
   z.object({
     diagnosis: z.string(),
@@ -53,6 +74,10 @@ export const certificatesContract = {
     .route({ method: "POST", path: "/medical" })
     .input(generateMedicalCertificateInputSchema)
     .output(z.file()),
+  generatePrescription: oc
+    .route({ method: "POST", path: "/prescription" })
+    .input(generateMedicalPrescriptionInputSchema)
+    .output(z.file()),
   verify: oc
     .route({ method: "GET", path: "/verify/{id}" })
     .input(certificateVerifyInputSchema)
@@ -60,3 +85,6 @@ export const certificatesContract = {
 };
 
 export type CertificatesContract = typeof certificatesContract;
+export type GenerateMedicalPrescriptionInput = z.infer<
+  typeof generateMedicalPrescriptionInputSchema
+>;

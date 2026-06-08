@@ -7,6 +7,7 @@ import {
   certificateVerifyInputSchema,
   certificateVerifyResponseSchema,
   generateMedicalCertificateInputSchema,
+  generateMedicalPrescriptionInputSchema,
 } from "@finanzas/orpc-contracts/certificates";
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
@@ -16,7 +17,10 @@ import type { Context as HonoContext } from "hono";
 import { z } from "zod";
 import { getSessionUser, hasPermission } from "../lib/auth.ts";
 import type * as CertificateServiceModule from "../modules/certificates/certificate.service.ts";
-import { medicalCertificateSchema } from "../modules/certificates/certificate.schema.ts";
+import {
+  medicalCertificateSchema,
+  medicalPrescriptionSchema,
+} from "../modules/certificates/certificate.schema.ts";
 // Lazy: pdf-lib weighs ~3MB+ in heap; only load on first /medical request.
 type CertificateService = typeof CertificateServiceModule;
 let _certificateService: CertificateService | undefined;
@@ -136,6 +140,58 @@ const certificatesORPCRouterBase = {
       }
 
       return new File([Buffer.from(signedPdfBytes)], fileName, { type: "application/pdf" });
+    }),
+
+  generatePrescription: createMedicalCertificates
+    .route({
+      method: "POST",
+      path: "/prescription",
+      summary: "Generate a medical prescription PDF",
+      tags: ["Certificates"],
+    })
+    .input(generateMedicalPrescriptionInputSchema)
+    .output(z.file())
+    .handler(async ({ input }) => {
+      const parsed = medicalPrescriptionSchema.parse(input);
+      const patient = await db.patient.findUnique({
+        where: { id: parsed.patientId },
+        select: {
+          person: {
+            select: {
+              fatherName: true,
+              motherName: true,
+              names: true,
+              rut: true,
+            },
+          },
+        },
+      });
+      if (!patient) throw new ORPCError("NOT_FOUND", { message: "Paciente no encontrado" });
+
+      const clinic = await db.clinicSettings.upsert({
+        where: { id: 1 },
+        update: {},
+        create: { id: 1 },
+      });
+      const { generateMedicalPrescriptionPdf } = await getCertificateService();
+      const fullName = [patient.person.names, patient.person.fatherName, patient.person.motherName]
+        .filter(Boolean)
+        .join(" ");
+      const rawPdf = await generateMedicalPrescriptionPdf(
+        {
+          ...parsed,
+          patient: { name: fullName, rut: patient.person.rut },
+        },
+        {
+          primary: clinic.logoUrl,
+          secondary: clinic.secondaryLogoUrl,
+        }
+      );
+      const { toPdfA3 } = await import("../modules/pdf/pdf-a.ts");
+      const pdfBytes = await toPdfA3(rawPdf, "Receta médica");
+      const fileName = `receta_medica_${(patient.person.rut ?? "sin_rut").replace(/\./g, "")}.pdf`;
+
+      return new File([Buffer.from(pdfBytes)], fileName, { type: "application/pdf" });
     }),
 
   verify: base

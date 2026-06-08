@@ -42,6 +42,29 @@ export const medicalCertificateSchema = z.object({
 
 export type MedicalCertificateInput = z.infer<typeof medicalCertificateSchema>;
 
+export const prescriptionMedicationSchema = z.object({
+  name: z.string().min(1, "Medicamento es requerido").max(180),
+  dosage: z.string().max(160).optional(),
+  frequency: z.string().max(160).optional(),
+  duration: z.string().max(160).optional(),
+  instructions: z.string().max(300).optional(),
+});
+
+export const medicalPrescriptionSchema = z.object({
+  patientId: z.number().int().positive(),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Fecha inválida"),
+  diagnosis: z.string().max(500).optional(),
+  medications: z.array(prescriptionMedicationSchema).min(1).max(12),
+  notes: z.string().max(1000).optional(),
+  doctorName: z.string().optional(),
+  doctorSpecialty: z.string().optional(),
+  doctorRut: z.string().optional(),
+  doctorEmail: z.email().optional(),
+  doctorAddress: z.string().optional(),
+});
+
+export type MedicalPrescriptionInput = z.infer<typeof medicalPrescriptionSchema>;
+
 /**
  * Default doctor information (loaded from env or config)
  */

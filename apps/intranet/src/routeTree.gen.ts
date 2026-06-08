@@ -76,6 +76,7 @@ import { Route as AuthedClinicalDayRouteImport } from "./routes/_authed/clinical
 import { Route as AuthedClinicalClassifyRouteImport } from "./routes/_authed/clinical/classify"
 import { Route as AuthedClinicalAnalyticsRouteImport } from "./routes/_authed/clinical/analytics"
 import { Route as AuthedClinicalAgendaRouteImport } from "./routes/_authed/clinical/agenda"
+import { Route as AuthedCertificatesPrescriptionRouteImport } from "./routes/_authed/certificates/prescription"
 import { Route as AuthedCertificatesMedicalRouteImport } from "./routes/_authed/certificates/medical"
 import { Route as AuthedCalendarDteLinksRouteImport } from "./routes/_authed/calendar/dte-links"
 import { Route as AuthedAdminUsersRouteImport } from "./routes/_authed/admin/users"
@@ -436,6 +437,12 @@ const AuthedClinicalAgendaRoute = AuthedClinicalAgendaRouteImport.update({
   path: "/agenda",
   getParentRoute: () => AuthedClinicalRoute,
 } as any)
+const AuthedCertificatesPrescriptionRoute =
+  AuthedCertificatesPrescriptionRouteImport.update({
+    id: "/prescription",
+    path: "/prescription",
+    getParentRoute: () => AuthedCertificatesRoute,
+  } as any)
 const AuthedCertificatesMedicalRoute =
   AuthedCertificatesMedicalRouteImport.update({
     id: "/medical",
@@ -539,6 +546,7 @@ export interface FileRoutesByFullPath {
   "/admin/users": typeof AuthedAdminUsersRoute
   "/calendar/dte-links": typeof AuthedCalendarDteLinksRoute
   "/certificates/medical": typeof AuthedCertificatesMedicalRoute
+  "/certificates/prescription": typeof AuthedCertificatesPrescriptionRoute
   "/clinical/agenda": typeof AuthedClinicalAgendaRoute
   "/clinical/analytics": typeof AuthedClinicalAnalyticsRoute
   "/clinical/classify": typeof AuthedClinicalClassifyRoute
@@ -614,6 +622,7 @@ export interface FileRoutesByTo {
   "/admin/users": typeof AuthedAdminUsersRoute
   "/calendar/dte-links": typeof AuthedCalendarDteLinksRoute
   "/certificates/medical": typeof AuthedCertificatesMedicalRoute
+  "/certificates/prescription": typeof AuthedCertificatesPrescriptionRoute
   "/clinical/agenda": typeof AuthedClinicalAgendaRoute
   "/clinical/analytics": typeof AuthedClinicalAnalyticsRoute
   "/clinical/classify": typeof AuthedClinicalClassifyRoute
@@ -698,6 +707,7 @@ export interface FileRoutesById {
   "/_authed/admin/users": typeof AuthedAdminUsersRoute
   "/_authed/calendar/dte-links": typeof AuthedCalendarDteLinksRoute
   "/_authed/certificates/medical": typeof AuthedCertificatesMedicalRoute
+  "/_authed/certificates/prescription": typeof AuthedCertificatesPrescriptionRoute
   "/_authed/clinical/agenda": typeof AuthedClinicalAgendaRoute
   "/_authed/clinical/analytics": typeof AuthedClinicalAnalyticsRoute
   "/_authed/clinical/classify": typeof AuthedClinicalClassifyRoute
@@ -782,6 +792,7 @@ export interface FileRouteTypes {
     | "/admin/users"
     | "/calendar/dte-links"
     | "/certificates/medical"
+    | "/certificates/prescription"
     | "/clinical/agenda"
     | "/clinical/analytics"
     | "/clinical/classify"
@@ -857,6 +868,7 @@ export interface FileRouteTypes {
     | "/admin/users"
     | "/calendar/dte-links"
     | "/certificates/medical"
+    | "/certificates/prescription"
     | "/clinical/agenda"
     | "/clinical/analytics"
     | "/clinical/classify"
@@ -940,6 +952,7 @@ export interface FileRouteTypes {
     | "/_authed/admin/users"
     | "/_authed/calendar/dte-links"
     | "/_authed/certificates/medical"
+    | "/_authed/certificates/prescription"
     | "/_authed/clinical/agenda"
     | "/_authed/clinical/analytics"
     | "/_authed/clinical/classify"
@@ -1480,6 +1493,13 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof AuthedClinicalAgendaRouteImport
       parentRoute: typeof AuthedClinicalRoute
     }
+    "/_authed/certificates/prescription": {
+      id: "/_authed/certificates/prescription"
+      path: "/prescription"
+      fullPath: "/certificates/prescription"
+      preLoaderRoute: typeof AuthedCertificatesPrescriptionRouteImport
+      parentRoute: typeof AuthedCertificatesRoute
+    }
     "/_authed/certificates/medical": {
       id: "/_authed/certificates/medical"
       path: "/medical"
@@ -1597,10 +1617,12 @@ const AuthedCalendarRouteWithChildren = AuthedCalendarRoute._addFileChildren(
 
 interface AuthedCertificatesRouteChildren {
   AuthedCertificatesMedicalRoute: typeof AuthedCertificatesMedicalRoute
+  AuthedCertificatesPrescriptionRoute: typeof AuthedCertificatesPrescriptionRoute
 }
 
 const AuthedCertificatesRouteChildren: AuthedCertificatesRouteChildren = {
   AuthedCertificatesMedicalRoute: AuthedCertificatesMedicalRoute,
+  AuthedCertificatesPrescriptionRoute: AuthedCertificatesPrescriptionRoute,
 }
 
 const AuthedCertificatesRouteWithChildren =

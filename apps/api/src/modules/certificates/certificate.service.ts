@@ -5,7 +5,7 @@ import QRCode from "qrcode";
 
 import { formatChileLongDate, formatChileShortDate } from "../../lib/time.ts";
 import { drawImageTopLeft, embedLogo, loadPdfFonts, setPdfMetadata } from "../pdf/pdf-base.ts";
-import type { MedicalCertificateInput } from "./certificate.schema.ts";
+import type { MedicalCertificateInput, MedicalPrescriptionInput } from "./certificate.schema.ts";
 import { defaultDoctorInfo } from "./certificate.schema.ts";
 
 /** URLs administrables de logos (ClinicSettings). Vacío → fallback local. */
@@ -15,7 +15,12 @@ export type CertificateLogoUrls = { primary?: string | null; secondary?: string 
 const ASSETS_DIR = path.resolve(import.meta.dirname, "../../../assets");
 const SIGNATURES_DIR = path.join(ASSETS_DIR, "signatures");
 
-const createDoctorInfo = (input: MedicalCertificateInput) => ({
+const createDoctorInfo = (
+  input: Pick<
+    MedicalCertificateInput | MedicalPrescriptionInput,
+    "doctorAddress" | "doctorEmail" | "doctorName" | "doctorRut" | "doctorSpecialty"
+  >
+) => ({
   name: input.doctorName || defaultDoctorInfo.name,
   specialty: input.doctorSpecialty || defaultDoctorInfo.specialty,
   title: defaultDoctorInfo.title,
@@ -264,6 +269,151 @@ export async function generateMedicalCertificatePdf(
 
   // --- FOOTER TEXT ---
   drawFooterNote(page, helvetica, width);
+
+  return await pdfDoc.save();
+}
+
+export type MedicalPrescriptionPdfInput = MedicalPrescriptionInput & {
+  patient: {
+    name: string;
+    rut: string | null;
+  };
+};
+
+/**
+ * Generate a general medical prescription PDF linked to an existing patient.
+ */
+export async function generateMedicalPrescriptionPdf(
+  input: MedicalPrescriptionPdfInput,
+  logoUrls?: CertificateLogoUrls
+): Promise<Uint8Array> {
+  const pdfDoc = await PDFDocument.create();
+  let page = pdfDoc.addPage([595.28, 841.89]); // A4
+  const { width, height } = page.getSize();
+  const { font, bold } = await loadPdfFonts(pdfDoc);
+  const doctor = createDoctorInfo(input);
+
+  setPdfMetadata(pdfDoc, {
+    title: "Receta médica",
+    subject: "Receta médica",
+    author: doctor.name,
+    keywords: ["receta", "médica", input.patient.name],
+  });
+
+  const margin = 50;
+  const contentWidth = width - 2 * margin;
+  let y = height - margin;
+
+  const newPageIfNeeded = (minY: number) => {
+    if (y >= minY) return;
+    page = pdfDoc.addPage([595.28, 841.89]);
+    y = height - margin;
+  };
+
+  const drawWrapped = (
+    text: string,
+    x: number,
+    startY: number,
+    maxWidth: number,
+    size: number,
+    textFont: PDFFont = font
+  ) => {
+    let nextY = startY;
+    for (const line of wrapText(text, textFont, size, maxWidth)) {
+      page.drawText(line, { x, y: nextY, size, font: textFont });
+      nextY -= size + 4;
+    }
+    return nextY;
+  };
+
+  await drawHeaderLogos(pdfDoc, page, margin, width, y, logoUrls);
+  y -= 80;
+
+  const title = "Receta médica";
+  page.drawText(title, {
+    x: width / 2 - bold.widthOfTextAtSize(title, 16) / 2,
+    y,
+    size: 16,
+    font: bold,
+    color: rgb(0.1, 0.4, 0.6),
+  });
+  y -= 34;
+
+  const patientLines = [
+    `Paciente: ${input.patient.name}`,
+    `RUT: ${input.patient.rut ?? "Sin RUT"}`,
+    `Fecha: ${formatDate(input.date)}`,
+    ...(input.diagnosis?.trim() ? [`Diagnóstico: ${input.diagnosis.trim()}`] : []),
+  ];
+  for (const line of patientLines) {
+    y = drawWrapped(line, margin, y, contentWidth, 10);
+    y -= 4;
+  }
+
+  y -= 8;
+  page.drawText("Indicaciones farmacológicas", {
+    x: margin,
+    y,
+    size: 11,
+    font: bold,
+    color: rgb(0.1, 0.4, 0.6),
+  });
+  y -= 18;
+
+  for (const [index, medication] of input.medications.entries()) {
+    newPageIfNeeded(180);
+    page.drawRectangle({
+      x: margin,
+      y: y - 8,
+      width: contentWidth,
+      height: 1,
+      color: rgb(0.8, 0.8, 0.8),
+    });
+    y -= 20;
+    y = drawWrapped(`${index + 1}. ${medication.name}`, margin, y, contentWidth, 10, bold);
+    const detailLines = [
+      medication.dosage ? `Dosis: ${medication.dosage}` : null,
+      medication.frequency ? `Frecuencia: ${medication.frequency}` : null,
+      medication.duration ? `Duración: ${medication.duration}` : null,
+      medication.instructions ? `Instrucciones: ${medication.instructions}` : null,
+    ].filter((value): value is string => Boolean(value));
+    for (const line of detailLines) {
+      y = drawWrapped(line, margin + 14, y, contentWidth - 14, 9);
+    }
+    y -= 6;
+  }
+
+  if (input.notes?.trim()) {
+    newPageIfNeeded(190);
+    y -= 8;
+    page.drawText("Observaciones", {
+      x: margin,
+      y,
+      size: 11,
+      font: bold,
+      color: rgb(0.1, 0.4, 0.6),
+    });
+    y -= 16;
+    y = drawWrapped(input.notes.trim(), margin, y, contentWidth, 9);
+  }
+
+  newPageIfNeeded(170);
+  drawDoctorFooter(page, doctor, font, bold, margin, 135);
+  page.drawLine({
+    start: { x: width - margin - 180, y: 135 },
+    end: { x: width - margin, y: 135 },
+    thickness: 0.5,
+    color: rgb(0.4, 0.4, 0.4),
+  });
+  page.drawText("Firma y timbre", {
+    x: width - margin - 125,
+    y: 118,
+    size: 9,
+    font,
+    color: rgb(0.1, 0.4, 0.6),
+  });
+
+  drawFooterNote(page, font, width);
 
   return await pdfDoc.save();
 }
