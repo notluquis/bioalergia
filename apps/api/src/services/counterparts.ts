@@ -6,6 +6,7 @@ import {
   type counterpartSuggestionSchema,
   type counterpartSummarySchema,
   type counterpartsSyncResponseSchema,
+  type payoutAccountMovementSchema,
   type unassignedPayoutAccountSchema,
 } from "@finanzas/orpc-contracts/counterparts";
 import type { z } from "zod";
@@ -491,6 +492,101 @@ export async function listUnassignedPayoutAccounts(params: {
     rows: rows.map(mapUnassignedPayoutAccount),
     total,
   };
+}
+
+type PayoutAccountMovement = z.output<typeof payoutAccountMovementSchema>;
+
+const decimalToNumber = (amount: unknown): number => {
+  if (amount === null || amount === undefined) {
+    return 0;
+  }
+  return Number(String(amount));
+};
+
+export async function listPayoutAccountMovements(params: {
+  account: string;
+  page: number;
+  pageSize: number;
+}) {
+  const normalizedAccount = normalizeAccountNumber(params.account);
+  const safePageSize = Math.max(params.pageSize, 1);
+  const safePage = Math.max(params.page, 1);
+
+  if (!normalizedAccount) {
+    return {
+      page: safePage,
+      pageSize: safePageSize,
+      rows: [] as PayoutAccountMovement[],
+      total: 0,
+    };
+  }
+
+  const releaseRows = await db.releaseTransaction.findMany({
+    select: {
+      date: true,
+      description: true,
+      grossAmount: true,
+      payoutBankAccountNumber: true,
+      recordType: true,
+      sourceId: true,
+    },
+    where: {
+      payoutBankAccountNumber: buildPayoutBankAccountWhere(params.account),
+    },
+  });
+
+  // buildPayoutBankAccountWhere is a fuzzy `contains` prefilter; the exact match
+  // is the normalized equality (uppercase + strip leading zeros), mirroring
+  // listUnassignedPayoutAccounts.
+  const matchedReleases = releaseRows.filter(
+    (row) => normalizeAccountNumber(row.payoutBankAccountNumber ?? "") === normalizedAccount
+  );
+
+  const sourceIds = matchedReleases.map((row) => row.sourceId);
+
+  const settlementRows =
+    sourceIds.length > 0
+      ? await db.settlementTransaction.findMany({
+          select: {
+            sourceId: true,
+            transactionAmount: true,
+            transactionDate: true,
+            transactionType: true,
+          },
+          where: { sourceId: { in: sourceIds } },
+        })
+      : [];
+
+  const movements: PayoutAccountMovement[] = [
+    ...matchedReleases.map((row) => ({
+      amount: decimalToNumber(row.grossAmount),
+      date: row.date,
+      description: row.description,
+      source: "release" as const,
+      sourceId: row.sourceId,
+      type: row.recordType,
+    })),
+    ...settlementRows.map((row) => ({
+      amount: decimalToNumber(row.transactionAmount),
+      date: row.transactionDate,
+      description: null,
+      source: "settlement" as const,
+      sourceId: row.sourceId,
+      type: row.transactionType,
+    })),
+  ];
+
+  movements.sort((a, b) => {
+    const aTime = a.date ? a.date.getTime() : Number.NEGATIVE_INFINITY;
+    const bTime = b.date ? b.date.getTime() : Number.NEGATIVE_INFINITY;
+    return bTime - aTime;
+  });
+
+  const total = movements.length;
+  const start = (safePage - 1) * safePageSize;
+  const rows = movements.slice(start, start + safePageSize);
+
+  return { page: safePage, pageSize: safePageSize, rows, total };
 }
 
 export async function getCounterpartSuggestions(query: string, limit: number) {

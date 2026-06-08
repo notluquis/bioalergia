@@ -124,6 +124,12 @@ interface DataTableProps<TData, TValue, TMeta extends TableMeta<TData> = TableMe
    * Faceted filters for specific columns
    */
   readonly filters?: DataTableFilterOption[];
+  /**
+   * Determines whether a given row can be expanded. Required to enable
+   * row expansion when rows have no nested `subRows` (TanStack returns
+   * `false` from `getCanExpand` otherwise). Pair with `renderSubComponent`.
+   */
+  readonly getRowCanExpand?: (row: Row<TData>) => boolean;
   readonly initialPinning?: ColumnPinningState;
   readonly isLoading?: boolean;
   /**
@@ -452,6 +458,7 @@ export function DataTable<TData, TValue, TMeta extends TableMeta<TData> = TableM
   scrollMode = "auto",
   virtualizationMaxHeight = "70dvh",
   filters = [],
+  getRowCanExpand,
   initialPinning = {},
   isLoading,
   meta,
@@ -518,6 +525,7 @@ export function DataTable<TData, TValue, TMeta extends TableMeta<TData> = TableM
     getExpandedRowModel: getExpandedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: shouldPaginate ? getPaginationRowModel() : undefined,
+    getRowCanExpand,
     getSortedRowModel: getSortedRowModel(),
     getRowId: getStableRowId,
     manualPagination,
