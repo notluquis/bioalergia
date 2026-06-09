@@ -15,7 +15,7 @@ export function useServicesList() {
   const filters = useStore(servicesStore, (state) => state.filters);
 
   // Fetch
-  const { data, error } = useSuspenseQuery(serviceQueries.list(canView));
+  const { data, error } = useSuspenseQuery(serviceQueries.list());
   const services = data?.services ?? [];
 
   // Filter Logic

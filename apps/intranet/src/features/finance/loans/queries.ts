@@ -12,7 +12,6 @@ export const loanKeys = {
     }),
   detail: (id: string) =>
     queryOptions({
-      enabled: Boolean(id),
       queryFn: () => fetchLoanDetail(id),
       queryKey: ["loans", "detail", id],
     }),

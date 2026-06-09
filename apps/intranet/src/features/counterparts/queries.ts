@@ -10,7 +10,6 @@ export const counterpartKeys = {
   details: (id: number) => [...counterpartKeys.all, "detail", id] as const,
   detail: (id: number) =>
     queryOptions({
-      enabled: Boolean(id),
       queryFn: () => fetchCounterpart(id),
       queryKey: counterpartKeys.details(id),
     }),

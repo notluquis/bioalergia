@@ -16,6 +16,6 @@ export const Route = createFileRoute("/_authed/services/")({
   beforeLoad: requirePermission("read", "ServiceList"),
   component: ServicesPage,
   loader: async ({ context: { queryClient } }) => {
-    await queryClient.ensureQueryData(serviceQueries.list(true));
+    await queryClient.ensureQueryData(serviceQueries.list());
   },
 });
