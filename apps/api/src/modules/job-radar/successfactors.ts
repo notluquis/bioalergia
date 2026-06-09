@@ -11,8 +11,7 @@
 import { BROWSER_UA, requestText } from "./_shared.ts";
 import type { RawJob } from "./types.ts";
 
-const PAGE_SIZE = 40;
-const MAX_PAGES = 30; // tope de seguridad (1200 ofertas)
+const MAX_PAGES = 40; // tope de seguridad
 
 const MONTHS: Record<string, number> = {
   ene: 0, feb: 1, mar: 2, abr: 3, may: 4, jun: 5,
@@ -103,14 +102,17 @@ export async function fetchSuccessFactorsJobs(identifier: string): Promise<RawJo
   const base = identifier.replace(/^https?:\/\//, "").replace(/\/+$/, "");
   const out: RawJob[] = [];
   const seen = new Set<string>();
+  // `startrow` avanza por la cantidad real de tiles de la página (el page size
+  // varía por tenant: 25/40/…), no por un PAGE_SIZE fijo que saltaría filas.
+  let startrow = 0;
   for (let page = 0; page < MAX_PAGES; page++) {
-    const startrow = page * PAGE_SIZE;
     const html = await requestText(
       `https://${base}/tile-search-results/?q=&startrow=${startrow}`,
       { tag: "job_radar.successfactors", ctx: { base, startrow }, accept: "text/html,*/*", userAgent: BROWSER_UA }
     );
     if (!html) break;
     const jobs = parseTiles(html, base);
+    if (jobs.length === 0) break;
     let added = 0;
     for (const j of jobs) {
       if (seen.has(j.externalId)) continue;
@@ -118,8 +120,9 @@ export async function fetchSuccessFactorsJobs(identifier: string): Promise<RawJo
       out.push(j);
       added++;
     }
-    // Última página: menos de PAGE_SIZE tiles nuevos (o ninguno).
-    if (jobs.length < PAGE_SIZE || added === 0) break;
+    // Sin ids nuevos (tenant que ignora startrow o última página) → cortar.
+    if (added === 0) break;
+    startrow += jobs.length;
   }
   return out;
 }
