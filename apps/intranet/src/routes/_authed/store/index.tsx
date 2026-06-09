@@ -1,4 +1,5 @@
 import { Tabs } from "@heroui/react";
+import { PAGE_CONTAINER } from "@/lib/styles";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { CreditCard, DollarSign, Package, ShoppingBag, Store } from "lucide-react";
 import { useCallback } from "react";
@@ -77,7 +78,7 @@ function StoreHostPage() {
   );
 
   return (
-    <div className="space-y-3 p-4">
+    <div className={PAGE_CONTAINER}>
       <Tabs aria-label="Tienda" selectedKey={tab} onSelectionChange={onTabChange}>
         <Tabs.ListContainer>
           <Tabs.List

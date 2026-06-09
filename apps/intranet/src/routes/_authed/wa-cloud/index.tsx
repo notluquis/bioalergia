@@ -1,4 +1,5 @@
 import { Tabs } from "@heroui/react";
+import { PAGE_CONTAINER } from "@/lib/styles";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import {
   BarChart3,
@@ -193,7 +194,7 @@ function WaCloudPage() {
   );
 
   return (
-    <div className="space-y-3 p-4">
+    <div className={PAGE_CONTAINER}>
       <Tabs aria-label="WhatsApp Cloud" selectedKey={tab} onSelectionChange={onTabChange}>
         {/* 8 tabs > 375px mobile = overflow horizontal de página. Scroll DENTRO
             del contenedor. min-w-0 es clave: como flex-item necesita poder encoger

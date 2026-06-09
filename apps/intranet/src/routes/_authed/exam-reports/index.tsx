@@ -1,4 +1,5 @@
 import { Tabs } from "@heroui/react";
+import { PAGE_CONTAINER } from "@/lib/styles";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { Building2, FileText, FlaskConical, ListChecks } from "lucide-react";
 import { useCallback, useEffect } from "react";
@@ -90,7 +91,7 @@ function ExamReportsHostPage() {
   );
 
   return (
-    <div className="space-y-3 p-4">
+    <div className={PAGE_CONTAINER}>
       <Tabs aria-label="Informes" selectedKey={tab} onSelectionChange={onTabChange}>
         <Tabs.ListContainer>
           <Tabs.List

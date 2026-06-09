@@ -1,4 +1,5 @@
 import { Tabs } from "@heroui/react";
+import { PAGE_CONTAINER } from "@/lib/styles";
 import { createFileRoute } from "@tanstack/react-router";
 import { Bell, Lock, UserRound } from "lucide-react";
 import { useCallback } from "react";
@@ -56,7 +57,7 @@ function AccountHostPage() {
   );
 
   return (
-    <div className="space-y-3 p-4">
+    <div className={PAGE_CONTAINER}>
       <Tabs aria-label="Mi cuenta" selectedKey={tab} onSelectionChange={onTabChange}>
         <Tabs.ListContainer>
           <Tabs.List

@@ -1,11 +1,8 @@
 import { formatChile } from "@/lib/dates";
 import {
   Button,
-  Calendar,
   Card,
   Chip,
-  DateField,
-  DatePicker,
   Description,
   Label,
   ListBox,
@@ -13,9 +10,9 @@ import {
   Select,
   Spinner,
 } from "@heroui/react";
-import { parseDate } from "@internationalized/date";
 import { useState } from "react";
 
+import { AppDatePicker } from "@/components/forms/AppDatePicker";
 import { AppModal } from "@/components/ui/AppModal";
 
 import type { LoanSchedule, LoanSource, LoanSummary, RegenerateSchedulePayload } from "../types";
@@ -346,52 +343,13 @@ export function LoanDetail({
             </NumberField.Group>
           </NumberField>
 
-          <DatePicker
+          <AppDatePicker
+            label="Nueva fecha de inicio"
             onChange={(value) => {
-              setRegenerateForm((prev) => ({
-                ...prev,
-                startDate: value?.toString() ?? "",
-              }));
+              setRegenerateForm((prev) => ({ ...prev, startDate: value }));
             }}
-            value={parseDate(regenerateForm.startDate ?? loan.start_date)}
-          >
-            <Label>Nueva fecha de inicio</Label>
-            <DateField.Group>
-              <DateField.InputContainer>
-                <DateField.Input>
-                  {(segment) => <DateField.Segment segment={segment} />}
-                </DateField.Input>
-              </DateField.InputContainer>
-              <DateField.Suffix>
-                <DatePicker.Trigger>
-                  <DatePicker.TriggerIndicator />
-                </DatePicker.Trigger>
-              </DateField.Suffix>
-            </DateField.Group>
-            <DatePicker.Popover>
-              <Calendar aria-label="Nueva fecha de inicio">
-                <Calendar.Header>
-                  <Calendar.YearPickerTrigger>
-                    <Calendar.YearPickerTriggerHeading />
-                    <Calendar.YearPickerTriggerIndicator />
-                  </Calendar.YearPickerTrigger>
-                  <Calendar.NavButton slot="previous" />
-                  <Calendar.NavButton slot="next" />
-                </Calendar.Header>
-                <Calendar.Grid>
-                  <Calendar.GridHeader>
-                    {(day) => <Calendar.HeaderCell>{day}</Calendar.HeaderCell>}
-                  </Calendar.GridHeader>
-                  <Calendar.GridBody>{(date) => <Calendar.Cell date={date} />}</Calendar.GridBody>
-                </Calendar.Grid>
-                <Calendar.YearPickerGrid>
-                  <Calendar.YearPickerGridBody>
-                    {({ year }) => <Calendar.YearPickerCell year={year} />}
-                  </Calendar.YearPickerGridBody>
-                </Calendar.YearPickerGrid>
-              </Calendar>
-            </DatePicker.Popover>
-          </DatePicker>
+            value={regenerateForm.startDate ?? loan.start_date}
+          />
 
           <NumberField
             minValue={0}

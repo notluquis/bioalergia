@@ -1,4 +1,4 @@
-import { Button, Link, Tooltip } from "@heroui/react";
+import { Button, Link, ScrollShadow, Surface, Tooltip } from "@heroui/react";
 import { useDebouncedValue } from "@tanstack/react-pacer";
 import { createFileRoute, getRouteApi, Outlet, useRouterState } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -68,7 +68,7 @@ function AuthedLayout() {
   const isNavigating = useRouterState({ select: (s) => s.status === "pending" });
   const contentPaddingClass = useRouterState({
     select: (s) => {
-      return s.location.pathname.startsWith("/clinical/day") ? "p-1" : "p-1 md:p-2";
+      return s.location.pathname.startsWith("/clinical/day") ? "p-1" : "p-2 md:p-3";
     },
   });
 
@@ -217,7 +217,7 @@ function AuthedLayout() {
         />
 
         {/* Main content */}
-        <div className="layout-container flex min-w-0 flex-1 flex-col gap-3 pt-[calc(env(safe-area-inset-top)+0.25rem)] pb-[calc(110px+env(safe-area-inset-bottom))] md:py-0">
+        <div className="layout-container flex min-w-0 flex-1 flex-col gap-1 pt-[calc(env(safe-area-inset-top)+0.25rem)] pb-[calc(110px+env(safe-area-inset-bottom))] md:py-0">
           <Header onMenuToggle={toggleSidebar} sidebarId={sidebarId} sidebarOpen={sidebarOpen} />
 
           {/* Mobile: content flows in the document — no nested scroll, no
@@ -234,13 +234,17 @@ function AuthedLayout() {
                 recessed card (rounded border + inner shadow is desktop
                 chrome that just eats width on a 375px screen).
                 ≥md: the inset recessed card with its own scroll. */}
-            <div className="w-full md:size-full md:overflow-hidden md:rounded-3xl md:border md:border-default-100/50 md:bg-background/50 md:shadow-inner">
-              <div
-                className={`${contentPaddingClass} md:size-full md:overflow-x-hidden md:overflow-y-auto`}
+            <Surface
+              variant="transparent"
+              className="w-full md:size-full md:overflow-hidden md:rounded-3xl md:border md:border-default-100/50 md:bg-background/50 md:shadow-inner"
+            >
+              <ScrollShadow
+                hideScrollBar
+                className={`${contentPaddingClass} md:size-full md:overflow-x-hidden`}
               >
                 <Outlet />
-              </div>
-            </div>
+              </ScrollShadow>
+            </Surface>
           </main>
 
           <footer className="surface-elevated hidden px-4 py-2 text-foreground text-sm md:flex md:px-6">

@@ -105,7 +105,7 @@ export function Header({ onMenuToggle, sidebarId, sidebarOpen = false }: HeaderP
   };
 
   return (
-    <header className="surface-elevated sticky top-0 z-30 px-4 py-3 md:px-6">
+    <header className="surface-elevated sticky top-0 z-30 px-4 py-1.5 md:px-6">
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div className="flex min-w-0 flex-1 items-center gap-2">
           {onMenuToggle && (
@@ -124,7 +124,7 @@ export function Header({ onMenuToggle, sidebarId, sidebarOpen = false }: HeaderP
               {sidebarOpen ? <X className="size-4" /> : <Menu className="size-4" />}
             </Button>
           )}
-          <div className="min-w-0 flex-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div className="min-w-0 flex-1 overflow-x-auto" data-scrollbar="none">
             {showBreadcrumbs ? (
               <Breadcrumbs className="whitespace-nowrap font-medium text-default-500 text-xs">
                 {breadcrumbItems.map((crumb) => {

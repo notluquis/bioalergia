@@ -1,4 +1,5 @@
 import { Tabs } from "@heroui/react";
+import { PAGE_CONTAINER } from "@/lib/styles";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { HardDrive, Upload } from "lucide-react";
 import { useCallback } from "react";
@@ -72,7 +73,7 @@ function DatabaseHostPage() {
   );
 
   return (
-    <div className="space-y-3 p-4">
+    <div className={PAGE_CONTAINER}>
       <Tabs aria-label="Base de datos" selectedKey={tab} onSelectionChange={onTabChange}>
         <Tabs.ListContainer>
           <Tabs.List

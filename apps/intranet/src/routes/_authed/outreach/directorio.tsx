@@ -1,4 +1,5 @@
 import { Tabs } from "@heroui/react";
+import { PAGE_CONTAINER } from "@/lib/styles";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { Bot, School, SearchCode } from "lucide-react";
 import { useCallback } from "react";
@@ -75,7 +76,7 @@ function DirectorioHostPage() {
   );
 
   return (
-    <div className="space-y-3 p-4">
+    <div className={PAGE_CONTAINER}>
       <Tabs aria-label="Directorio" selectedKey={tab} onSelectionChange={onTabChange}>
         <Tabs.ListContainer>
           <Tabs.List
