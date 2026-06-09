@@ -10,7 +10,7 @@ import { TimesheetSummaryTable } from "@/features/hr/timesheets/components/Times
 import { useMonths } from "@/features/hr/timesheets/hooks/use-months";
 import { timesheetQueries } from "@/features/hr/timesheets/queries";
 import { useWakeLock } from "@/hooks/use-wake-lock";
-import { PAGE_CONTAINER } from "@/lib/styles";
+import { Page } from "@/components/layouts/Page";
 
 const MONTH_STRING_REGEX = /^\d{4}-\d{2}$/;
 export function TimesheetsPage() {
@@ -67,7 +67,7 @@ export function TimesheetsPage() {
   }
 
   return (
-    <section className={PAGE_CONTAINER}>
+    <Page>
       <Surface
         className="rounded-[28px] border border-default-200/70 p-4 sm:p-5"
         variant="secondary"
@@ -157,7 +157,7 @@ export function TimesheetsPage() {
           summaryRow={employeeSummaryRow}
         />
       )}
-    </section>
+    </Page>
   );
 }
 

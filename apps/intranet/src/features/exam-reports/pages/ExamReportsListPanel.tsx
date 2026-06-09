@@ -4,13 +4,11 @@ import {
   DateField,
   DateRangePicker,
   Disclosure,
-  EmptyState,
   Label,
   ListBox,
   RangeCalendar,
   SearchField,
   Select,
-  Spinner,
   Surface,
 } from "@heroui/react";
 import { parseDate } from "@internationalized/date";
@@ -19,6 +17,8 @@ import { useNavigate } from "@tanstack/react-router";
 import { ChevronDown, Download, Edit3, FileText, PlusCircle, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 
+import { PageHeader } from "@/components/layouts/PageHeader";
+import { PageState } from "@/components/ui/PageState";
 import { useConfirmDialog } from "@/context/ConfirmDialogContext";
 import { useToast } from "@/context/ToastContext";
 import { CreateExamReportWizard } from "@/features/exam-reports/components/CreateExamReportWizard";
@@ -231,18 +231,18 @@ export function ExamReportsListPanel() {
 
   return (
     <div className="mx-auto max-w-7xl space-y-6 p-4 md:p-6">
-      <header className="flex items-center justify-between gap-3">
-        <div>
-          <h2 className="font-semibold text-foreground text-xl">Informes de exámenes</h2>
-          <p className="text-default-600 text-sm">{listQ.data?.total ?? 0} informe(s) generados</p>
-        </div>
-        {canCreate && (
-          <Button className="gap-2" onPress={() => setSelectPatientOpen(true)} size="sm">
-            <PlusCircle size={16} />
-            Nuevo Informe
-          </Button>
-        )}
-      </header>
+      <PageHeader
+        title="Informes de exámenes"
+        description={`${listQ.data?.total ?? 0} informe(s) generados`}
+        actions={
+          canCreate ? (
+            <Button className="gap-2" onPress={() => setSelectPatientOpen(true)} size="sm">
+              <PlusCircle size={16} />
+              Nuevo Informe
+            </Button>
+          ) : null
+        }
+      />
 
       {/* Filter bar */}
       <Surface className="rounded-2xl border border-default-100 p-3" variant="default">
@@ -350,88 +350,86 @@ export function ExamReportsListPanel() {
 
       {/* Grouped list */}
       <Surface className="rounded-3xl border border-default-100 p-2" variant="default">
-        {listQ.isLoading ? (
-          <div className="flex items-center justify-center gap-2 p-8 text-default-600">
-            <Spinner size="sm" />
-            Cargando…
-          </div>
-        ) : items.length === 0 ? (
-          <EmptyState className="p-8 text-center">
-            Sin informes para los filtros actuales.
-          </EmptyState>
-        ) : (
-          <div className="space-y-2 p-1">
-            {grouped.map((yearGroup) => (
-              <Disclosure defaultExpanded key={yearGroup.year}>
-                <Disclosure.Heading>
-                  <Button
-                    className="flex w-full items-center justify-between gap-2 px-3 py-2 font-semibold text-base"
-                    size="sm"
-                    slot="trigger"
-                    variant="outline"
-                  >
-                    <span className="flex items-center gap-2">
-                      <FileText className="size-4 text-default-500" />
-                      {yearGroup.year}
-                    </span>
-                    <span className="flex items-center gap-2 text-default-500 text-xs">
-                      {yearGroup.count} informe(s)
-                      <ChevronDown className="size-4 transition group-data-[expanded]:rotate-180" />
-                    </span>
-                  </Button>
-                </Disclosure.Heading>
-                <Disclosure.Content>
-                  <Disclosure.Body className="space-y-2 p-2 pl-4">
-                    {yearGroup.months.map((monthGroup) => (
-                      <Disclosure defaultExpanded={false} key={monthGroup.key}>
-                        <Disclosure.Heading>
-                          <Button
-                            className="flex w-full items-center justify-between gap-2 px-3 py-1.5 text-sm capitalize"
-                            size="sm"
-                            slot="trigger"
-                            variant="ghost"
-                          >
-                            <span>{monthGroup.label}</span>
-                            <span className="text-default-500 text-xs">{monthGroup.count}</span>
-                          </Button>
-                        </Disclosure.Heading>
-                        <Disclosure.Content>
-                          <Disclosure.Body className="space-y-1 p-1 pl-3">
-                            {monthGroup.weeks.map((weekGroup) => (
-                              <Disclosure
-                                defaultExpanded={monthGroup.weeks.length === 1}
-                                key={weekGroup.key}
-                              >
-                                <Disclosure.Heading>
-                                  <Button
-                                    className="flex w-full items-center justify-between gap-2 px-3 py-1 text-default-600 text-xs"
-                                    size="sm"
-                                    slot="trigger"
-                                    variant="ghost"
-                                  >
-                                    <span>{weekGroup.label}</span>
-                                    <span>{weekGroup.items.length}</span>
-                                  </Button>
-                                </Disclosure.Heading>
-                                <Disclosure.Content>
-                                  <Disclosure.Body className="p-0">
-                                    <ul className="overflow-hidden rounded-xl border border-default-100">
-                                      {weekGroup.items.map(renderRow)}
-                                    </ul>
-                                  </Disclosure.Body>
-                                </Disclosure.Content>
-                              </Disclosure>
-                            ))}
-                          </Disclosure.Body>
-                        </Disclosure.Content>
-                      </Disclosure>
-                    ))}
-                  </Disclosure.Body>
-                </Disclosure.Content>
-              </Disclosure>
-            ))}
-          </div>
-        )}
+        <PageState
+          query={listQ}
+          isEmpty={() => items.length === 0}
+          emptyTitle="Sin informes para los filtros actuales."
+          loadingLabel="Cargando…"
+        >
+          {() => (
+            <div className="space-y-2 p-1">
+              {grouped.map((yearGroup) => (
+                <Disclosure defaultExpanded key={yearGroup.year}>
+                  <Disclosure.Heading>
+                    <Button
+                      className="flex w-full items-center justify-between gap-2 px-3 py-2 font-semibold text-base"
+                      size="sm"
+                      slot="trigger"
+                      variant="outline"
+                    >
+                      <span className="flex items-center gap-2">
+                        <FileText className="size-4 text-default-500" />
+                        {yearGroup.year}
+                      </span>
+                      <span className="flex items-center gap-2 text-default-500 text-xs">
+                        {yearGroup.count} informe(s)
+                        <ChevronDown className="size-4 transition group-data-[expanded]:rotate-180" />
+                      </span>
+                    </Button>
+                  </Disclosure.Heading>
+                  <Disclosure.Content>
+                    <Disclosure.Body className="space-y-2 p-2 pl-4">
+                      {yearGroup.months.map((monthGroup) => (
+                        <Disclosure defaultExpanded={false} key={monthGroup.key}>
+                          <Disclosure.Heading>
+                            <Button
+                              className="flex w-full items-center justify-between gap-2 px-3 py-1.5 text-sm capitalize"
+                              size="sm"
+                              slot="trigger"
+                              variant="ghost"
+                            >
+                              <span>{monthGroup.label}</span>
+                              <span className="text-default-500 text-xs">{monthGroup.count}</span>
+                            </Button>
+                          </Disclosure.Heading>
+                          <Disclosure.Content>
+                            <Disclosure.Body className="space-y-1 p-1 pl-3">
+                              {monthGroup.weeks.map((weekGroup) => (
+                                <Disclosure
+                                  defaultExpanded={monthGroup.weeks.length === 1}
+                                  key={weekGroup.key}
+                                >
+                                  <Disclosure.Heading>
+                                    <Button
+                                      className="flex w-full items-center justify-between gap-2 px-3 py-1 text-default-600 text-xs"
+                                      size="sm"
+                                      slot="trigger"
+                                      variant="ghost"
+                                    >
+                                      <span>{weekGroup.label}</span>
+                                      <span>{weekGroup.items.length}</span>
+                                    </Button>
+                                  </Disclosure.Heading>
+                                  <Disclosure.Content>
+                                    <Disclosure.Body className="p-0">
+                                      <ul className="overflow-hidden rounded-xl border border-default-100">
+                                        {weekGroup.items.map(renderRow)}
+                                      </ul>
+                                    </Disclosure.Body>
+                                  </Disclosure.Content>
+                                </Disclosure>
+                              ))}
+                            </Disclosure.Body>
+                          </Disclosure.Content>
+                        </Disclosure>
+                      ))}
+                    </Disclosure.Body>
+                  </Disclosure.Content>
+                </Disclosure>
+              ))}
+            </div>
+          )}
+        </PageState>
       </Surface>
 
       <PatientSelectModal

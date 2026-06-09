@@ -31,8 +31,8 @@ import {
 import { AddUserFormContainer } from "@/features/users/components/AddUserFormContainer";
 import { getColumns } from "@/features/users/components/columns";
 import type { User } from "@/features/users/types";
+import { Page } from "@/components/layouts/Page";
 import { getPersonFullName } from "@/lib/person";
-import { PAGE_CONTAINER } from "@/lib/styles";
 
 type RoleOption = { id: number; name: string };
 type UserDetailsFormState = {
@@ -389,7 +389,7 @@ export function UserManagementPage() {
   const filteredUsers = useMemo(() => filterUsersByRole(users, roleFilter), [users, roleFilter]);
 
   return (
-    <div className={PAGE_CONTAINER}>
+    <Page>
       {users.length > 0 && <UserSecurityOverview users={users} />}
 
       {/* User Management Table */}
@@ -542,7 +542,7 @@ export function UserManagementPage() {
           }
         }}
       />
-    </div>
+    </Page>
   );
 }
 

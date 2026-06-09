@@ -10,7 +10,7 @@ import { columns } from "@/features/hr/employees/components/columns";
 import { EmployeeForm } from "@/features/hr/employees/components/EmployeeForm";
 import { employeeKeys } from "@/features/hr/employees/queries";
 import type { Employee } from "@/features/hr/employees/types";
-import { PAGE_CONTAINER } from "@/lib/styles";
+import { Page } from "@/components/layouts/Page";
 // ... existing imports
 export function EmployeesPage() {
   const { can } = useAuth();
@@ -92,7 +92,7 @@ export function EmployeesPage() {
   }
 
   return (
-    <section className={PAGE_CONTAINER}>
+    <Page>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="flex flex-wrap items-center gap-3">
           <Switch
@@ -187,6 +187,6 @@ export function EmployeesPage() {
           scrollMaxHeight="min(68dvh, 760px)"
         />
       </div>
-    </section>
+    </Page>
   );
 }
