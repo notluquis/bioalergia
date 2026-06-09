@@ -1,10 +1,18 @@
 // Adapter airavirtual (ATS chileno) — feed JSON público por empresa:
 //   GET https://gcs-files.airavirtual.com/public/feeds/aira_{company}.json  (302→GCS)
-//   → { updated_at, offers: [{ id, name, city, region, country, area, subarea,
-//        hire_mode, contract_type, remote_work, link, publication_days }], ... }
 // Potencia portales de grandes empleadores CL: walmart, cencosud, cencosud_scotiabank,
 // ripley, entel, copec, sodexo, komatsu, finning, etc. Todo Chile.
 // `company` = slug del feed. La descripción no viene en el listado (null).
+//
+// DOS formatos en convivencia (airavirtual migró el schema sin avisar):
+//   A (legacy): { updated_at, offers: [{ id, name, city, region, remote_work,
+//                 area, subarea, publication_days, link }], ... }
+//   B (nuevo):  { data: [{ id, name, city, area, subarea, area_text,
+//                 activation_date /*días*/, link }] }  // sin region/remote_work
+//   C (rss):    { publisher, lastBuildDate, data: { offers: [{ id, name, city,
+//                 publication_days, link }] } }  // slim, anidado
+// Resolvemos el array probando offers → data(array) → data.offers, y mapeamos
+// los campos que difieren (días, region, remote).
 
 import { asRecord, asString, requestText, safeJsonParse } from "./_shared.ts";
 import type { RawJob } from "./types.ts";
@@ -62,16 +70,27 @@ export async function fetchAiravirtualJobs(company: string): Promise<RawJob[]> {
     { tag: "job_radar.airavirtual", ctx: { company } }
   );
   if (!text) return [];
-  const offers = asRecord(safeJsonParse(text))?.offers;
-  if (!Array.isArray(offers)) return [];
+  const root = asRecord(safeJsonParse(text));
+  // A: root.offers | B: root.data (array) | C: root.data.offers (anidado).
+  const list = Array.isArray(root?.offers)
+    ? root.offers
+    : Array.isArray(root?.data)
+      ? root.data
+      : (() => {
+          const nested = asRecord(root?.data)?.offers;
+          return Array.isArray(nested) ? nested : null;
+        })();
+  if (!list) return [];
 
   const out: RawJob[] = [];
-  for (const item of offers) {
+  for (const item of list) {
     const o = asRecord(item);
     if (!o) continue;
     const externalId = asString(o.id);
     const title = asString(o.name);
     if (!externalId || !title) continue;
+    // `publication_days` (A) o `activation_date` (B): ambos = días desde publicación.
+    const days = typeof o.publication_days === "number" ? o.publication_days : o.activation_date;
     out.push({
       source: "airavirtual",
       company,
@@ -83,7 +102,7 @@ export async function fetchAiravirtualJobs(company: string): Promise<RawJob[]> {
       remote: mapRemote(asString(o.remote_work)),
       salary: null,
       descriptionHtml: null,
-      publishedAt: publishedFrom(o.publication_days),
+      publishedAt: publishedFrom(days),
       lastmod: null,
       raw: item,
     });

@@ -19,8 +19,10 @@ interface SitemapEntry {
   lastmod: Date | null;
 }
 
-const fetchText = (url: string): Promise<string | null> =>
-  requestText(url, { tag: "job_radar.teamtailor", ctx: { url } });
+// El sitemap es XML: Teamtailor (Cloudflare) responde 404 si Accept=application/json,
+// así que pedimos XML explícito. jobs.json sí es JSON (Accept default).
+const fetchText = (url: string, accept?: string): Promise<string | null> =>
+  requestText(url, { tag: "job_radar.teamtailor", ctx: { url }, accept });
 
 // Extrae el id numérico del job desde una URL Teamtailor:
 //   https://x.teamtailor.com/jobs/7855469-analista... → "7855469"
@@ -133,7 +135,7 @@ function parseJobsJson(text: string): Map<string, FeedMeta> {
 export async function fetchTeamtailorJobs(company: string): Promise<RawJob[]> {
   const base = `https://${company}.teamtailor.com`;
   const [sitemapXml, jobsJson] = await Promise.all([
-    fetchText(`${base}/sitemap.xml`),
+    fetchText(`${base}/sitemap.xml`, "application/xml,text/xml;q=0.9,*/*;q=0.8"),
     fetchText(`${base}/jobs.json`),
   ]);
 

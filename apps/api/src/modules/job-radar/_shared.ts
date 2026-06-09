@@ -30,6 +30,10 @@ export interface RequestOptions {
   body?: string;
   tag: string; // ej "job_radar.ashby" → loguea {tag}.non_ok / {tag}.error
   ctx?: Record<string, unknown>;
+  // Algunos orígenes (Teamtailor sitemap.xml tras Cloudflare) responden 404 si
+  // el Accept no matchea el content-type real. Default JSON (la mayoría de las
+  // fuentes son APIs), override a XML/`*​/*` para sitemaps.
+  accept?: string;
 }
 
 /**
@@ -37,13 +41,13 @@ export interface RequestOptions {
  * Nunca lanza: el sync sigue con las demás fuentes aunque una falle.
  */
 export async function requestText(url: string, opts: RequestOptions): Promise<string | null> {
-  const { method = "GET", body, tag, ctx = {} } = opts;
+  const { method = "GET", body, tag, ctx = {}, accept = "application/json" } = opts;
   try {
     const res = await fetch(url, {
       method,
       headers: {
         "user-agent": JOB_RADAR_UA,
-        accept: "application/json",
+        accept,
         ...(body ? { "content-type": "application/json" } : {}),
       },
       body,
