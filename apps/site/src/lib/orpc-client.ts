@@ -5,6 +5,7 @@ import type { CartContract } from "@finanzas/orpc-contracts/cart";
 import type { CatalogContract } from "@finanzas/orpc-contracts/catalog";
 import type { CheckoutContract } from "@finanzas/orpc-contracts/checkout";
 import type { SiteAuthContract } from "@finanzas/orpc-contracts/site-auth";
+import type { VerificationContract } from "@finanzas/orpc-contracts/verification";
 
 import { siteSuperJSONLink } from "@/lib/superjson-link";
 
@@ -27,3 +28,8 @@ export const siteAuthClient = createORPCClient(siteSuperJSONLink, {
 export const accountClient = createORPCClient(siteSuperJSONLink, {
   path: ["api", "orpc", "account", "rpc"],
 }) as ContractRouterClient<AccountContract>;
+
+// Verificación pública de documentos (recetas/certificados) — sin auth.
+export const verificationClient = createORPCClient(siteSuperJSONLink, {
+  path: ["api", "orpc", "verification", "rpc"],
+}) as ContractRouterClient<VerificationContract>;

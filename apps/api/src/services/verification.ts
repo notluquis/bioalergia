@@ -132,11 +132,32 @@ export type VerificationResult =
       documentType: DocumentType;
       documentLabel: string;
       issuedAt: Date;
-      doctor: { name: string; specialty: string };
+      doctor: { name: string; specialty: string; license?: string };
       patientInitials: string;
+      // RUT parcial (primeros + últimos dígitos) para confirmar identidad SIN
+      // exponer el RUT completo. Nunca el RUT entero.
+      patientRutMasked?: string;
+      prescriptionType?: string;
+      folio?: string;
       pdfIntact?: boolean;
     }
   | { valid: false };
+
+// "20.275.995-5" → "20·····95-5": muestra primeros 2 + últimos 2 dígitos + DV.
+function maskRut(rut: null | string | undefined): string | undefined {
+  if (!rut) return undefined;
+  const clean = rut.replace(/[.\-\s]/g, "");
+  if (clean.length < 4) return undefined;
+  const body = clean.slice(0, -1);
+  const dv = clean.slice(-1);
+  return `${body.slice(0, 2)}·····${body.slice(-2)}-${dv}`;
+}
+
+const PRESCRIPTION_TYPE_LABEL: Record<string, string> = {
+  SIMPLE: "Receta simple",
+  RETENIDA: "Receta retenida",
+  CHEQUE: "Receta cheque",
+};
 
 const INVALID: VerificationResult = { valid: false };
 
@@ -189,6 +210,7 @@ async function projectCertificate(
     issuedAt: certificate.issuedAt,
     doctor: { name: doctorName, specialty: DEFAULT_SPECIALTY },
     patientInitials: toInitials(certificate.patientName),
+    ...(maskRut(certificate.patientRut) ? { patientRutMasked: maskRut(certificate.patientRut) } : {}),
     ...integrityBadge(storedHash ?? certificate.pdfHash, expectedHash),
   };
 }
@@ -215,8 +237,16 @@ async function projectPrescription(
     documentType: "prescription",
     documentLabel: "Receta médica",
     issuedAt: prescription.issuedAt,
-    doctor: { name: doctorName, specialty },
+    doctor: {
+      name: doctorName,
+      specialty,
+      ...(prescription.doctorLicense?.trim() ? { license: prescription.doctorLicense.trim() } : {}),
+    },
     patientInitials: toInitials(prescription.patientName),
+    ...(maskRut(prescription.patientRut) ? { patientRutMasked: maskRut(prescription.patientRut) } : {}),
+    prescriptionType:
+      PRESCRIPTION_TYPE_LABEL[prescription.prescriptionType] ?? prescription.prescriptionType,
+    ...(prescription.folio ? { folio: prescription.folio } : {}),
     ...integrityBadge(storedHash ?? prescription.pdfHash, expectedHash),
   };
 }

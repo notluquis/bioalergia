@@ -11,7 +11,8 @@ export const verifyDocumentInputSchema = z.object({
 
 const documentTypeSchema = z.enum(["prescription", "certificate"]);
 
-// Proyección MÍNIMA segura: sin nombre completo, sin RUT, sin contenido clínico.
+// Proyección MÍNIMA segura: sin nombre completo, sin RUT COMPLETO, sin
+// contenido clínico (diagnóstico/medicamentos). RUT sólo parcial (enmascarado).
 export const verifyDocumentResponseSchema = z.union([
   z.object({
     valid: z.literal(true),
@@ -21,8 +22,12 @@ export const verifyDocumentResponseSchema = z.union([
     doctor: z.object({
       name: z.string(),
       specialty: z.string(),
+      license: z.string().optional(),
     }),
     patientInitials: z.string(),
+    patientRutMasked: z.string().optional(),
+    prescriptionType: z.string().optional(),
+    folio: z.string().optional(),
     pdfIntact: z.boolean().optional(),
   }),
   z.object({

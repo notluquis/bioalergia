@@ -8,6 +8,14 @@ import { drawImageTopLeft, embedLogo, loadPdfFonts, setPdfMetadata } from "../pd
 import type { MedicalCertificateInput, MedicalPrescriptionInput } from "./certificate.schema.ts";
 import { defaultDoctorInfo } from "./certificate.schema.ts";
 
+// Tokens de marca Bioalergia (packages/theme/bioalergia.css → RGB para pdf-lib).
+const BRAND_BLUE = rgb(0.102, 0.302, 0.478); // #1a4d7a
+const BRAND_AMBER = rgb(0.831, 0.643, 0.208); // #d4a435
+const BRAND_INK = rgb(0.09, 0.13, 0.17); // #17222b
+const BRAND_GRAY = rgb(0.42, 0.45, 0.5);
+const BRAND_BORDER = rgb(0.8, 0.84, 0.89);
+const BRAND_TINT = rgb(0.95, 0.97, 0.99); // fondo azul muy suave
+
 /** URLs administrables de logos (ClinicSettings). Vacío → fallback local. */
 export type CertificateLogoUrls = { primary?: string | null; secondary?: string | null };
 
@@ -145,24 +153,24 @@ const drawDoctorFooter = (
     y,
     size: 10,
     font: boldFont,
-    color: rgb(0.1, 0.4, 0.6),
+    color: BRAND_BLUE,
   });
   y -= 14;
-  page.drawText(doctor.specialty, { x: margin, y, size: 9, font, color: rgb(0.1, 0.4, 0.6) });
+  page.drawText(doctor.specialty, { x: margin, y, size: 9, font, color: BRAND_BLUE });
   y -= 12;
-  page.drawText(doctor.title, { x: margin, y, size: 9, font, color: rgb(0.1, 0.4, 0.6) });
+  page.drawText(doctor.title, { x: margin, y, size: 9, font, color: BRAND_BLUE });
   y -= 12;
   page.drawText(`RUT: ${doctor.rut}`, {
     x: margin,
     y,
     size: 9,
     font,
-    color: rgb(0.1, 0.4, 0.6),
+    color: BRAND_BLUE,
   });
   y -= 12;
-  page.drawText(doctor.email, { x: margin, y, size: 9, font, color: rgb(0.1, 0.4, 0.6) });
+  page.drawText(doctor.email, { x: margin, y, size: 9, font, color: BRAND_BLUE });
   y -= 12;
-  page.drawText(doctor.address, { x: margin, y, size: 9, font, color: rgb(0.1, 0.4, 0.6) });
+  page.drawText(doctor.address, { x: margin, y, size: 9, font, color: BRAND_BLUE });
 };
 
 const drawFooterNote = (
@@ -176,7 +184,7 @@ const drawFooterNote = (
     y: 66,
     size: 9,
     font,
-    color: rgb(0.1, 0.4, 0.6),
+    color: BRAND_BLUE,
   });
   const repro = "La reproducción gráfica es sólo con fines informativos.";
   page.drawText(repro, {
@@ -212,7 +220,10 @@ const drawQrCode = async (
  * Generate QR code for certificate verification
  */
 export async function generateQRCode(code: string): Promise<Buffer> {
-  const verifyUrl = `${process.env.APP_URL || "http://localhost:5173"}/verificar/${code}`;
+  // La verificación pública vive en el sitio público (bioalergia.cl/verificar),
+  // no en la intranet. Override con VERIFY_BASE_URL si cambia.
+  const base = (process.env.VERIFY_BASE_URL || "https://bioalergia.cl").replace(/\/+$/, "");
+  const verifyUrl = `${base}/verificar/${code}`;
   return await QRCode.toBuffer(verifyUrl, {
     errorCorrectionLevel: "M",
     type: "png",
@@ -257,7 +268,7 @@ export async function generateMedicalCertificatePdf(
     y,
     size: 14,
     font: helveticaBold,
-    color: rgb(0.1, 0.4, 0.6),
+    color: BRAND_BLUE,
   });
 
   y -= 30;
@@ -342,6 +353,9 @@ export async function generateMedicalPrescriptionPdf(
   // Banda inferior reservada para el footer (firma + médico + notas). El
   // contenido nunca baja de acá; si no cabe, salta de página.
   const FOOTER_TOP = 205;
+  // El QR se ancla a esta franja inferior (sobre la firma) para equilibrar la
+  // hoja en recetas cortas; si el contenido llega hasta acá, el QR salta de hoja.
+  const QR_TOP = 272;
   const showStatic = (input.mode ?? "full") !== "overlay";
   const showData = (input.mode ?? "full") !== "template";
   const pdfDoc = await PDFDocument.create();
@@ -367,7 +381,7 @@ export async function generateMedicalPrescriptionPdf(
     let hy = height - margin;
     if (showStatic) {
       const cont = "Receta médica (continuación)";
-      pg.drawText(cont, { x: margin, y: hy, size: 11, font: bold, color: rgb(0.1, 0.4, 0.6) });
+      pg.drawText(cont, { x: margin, y: hy, size: 11, font: bold, color: BRAND_BLUE });
     }
     if (showData && input.folio) {
       const f = `Folio: ${input.folio}`;
@@ -433,11 +447,18 @@ export async function generateMedicalPrescriptionPdf(
       y,
       size: 13,
       font: bold,
-      color: rgb(0.1, 0.4, 0.6),
+      color: BRAND_BLUE,
+    });
+    // Línea fina bajo el título (acento de marca).
+    page.drawLine({
+      start: { x: margin, y: y - 9 },
+      end: { x: width - margin, y: y - 9 },
+      thickness: 0.6,
+      color: BRAND_BORDER,
     });
   }
   // El folio va bajo el QR (no arriba) — ver bloque de verificación más abajo.
-  y -= 22;
+  y -= 30;
 
   // ── Bloque paciente: recuadro con datos (data). Inspirado en el recetario
   // electrónico SNRE (Nombre · RUN · Edad · Fecha). ─────────────────────────
@@ -460,32 +481,32 @@ export async function generateMedicalPrescriptionPdf(
       y: boxTop - boxHeight,
       width: contentWidth,
       height: boxHeight,
-      borderColor: rgb(0.78, 0.82, 0.88),
+      borderColor: BRAND_BORDER,
       borderWidth: 0.8,
-      color: rgb(0.97, 0.98, 1),
+      color: BRAND_TINT,
     });
     const px = margin + PATIENT_BOX_PAD;
     let py = boxTop - PATIENT_BOX_PAD - 7;
-    // header: "PACIENTE" izq + tipo de receta a la derecha.
-    page.drawText("PACIENTE", { x: px, y: py, size: 6.5, font, color: rgb(0.5, 0.5, 0.5) });
+    // header: "PACIENTE" izq + tipo de receta a la derecha (acento ámbar).
+    page.drawText("PACIENTE", { x: px, y: py, size: 6.5, font, color: BRAND_GRAY });
     if (typeLabel) {
-      const tw = font.widthOfTextAtSize(typeLabel.toUpperCase(), 6.5);
+      const tw = bold.widthOfTextAtSize(typeLabel.toUpperCase(), 6.5);
       page.drawText(typeLabel.toUpperCase(), {
         x: margin + contentWidth - PATIENT_BOX_PAD - tw,
         y: py,
         size: 6.5,
-        font,
-        color: rgb(0.1, 0.4, 0.6),
+        font: bold,
+        color: BRAND_AMBER,
       });
     }
-    py -= 13;
-    page.drawText(input.patient.name, { x: px, y: py, size: 10, font: bold });
+    py -= 14;
+    page.drawText(input.patient.name, { x: px, y: py, size: 10.5, font: bold, color: BRAND_INK });
     py -= 13;
     for (const line of [...infoLines, ...dxLines]) {
-      page.drawText(line, { x: px, y: py, size: 9, font });
+      page.drawText(line, { x: px, y: py, size: 9, font, color: BRAND_INK });
       py -= 13;
     }
-    y = boxTop - boxHeight - 14;
+    y = boxTop - boxHeight - 22;
   } else {
     // template: reservar alto del bloque paciente (header + nombre + 2 líneas)
     // para que el overlay caiga en el mismo Y.
@@ -494,9 +515,9 @@ export async function generateMedicalPrescriptionPdf(
 
   // ── "Rp." en itálica — etiqueta clásica de receta (chrome). ───────────────
   if (showStatic) {
-    page.drawText("Rp.", { x: margin, y, size: 15, font: italic ?? bold, color: rgb(0.1, 0.4, 0.6) });
+    page.drawText("Rp.", { x: margin, y, size: 16, font: italic ?? bold, color: BRAND_BLUE });
   }
-  y -= 18;
+  y -= 24;
 
   // ── Tarjetas de medicamento (data): recuadro + barra de título + posología
   // etiquetada. Inspirado en la tarjeta del recetario electrónico SNRE. ──────
@@ -520,23 +541,30 @@ export async function generateMedicalPrescriptionPdf(
         y: cardTop - cardH,
         width: contentWidth,
         height: cardH,
-        borderColor: rgb(0.78, 0.82, 0.88),
+        borderColor: BRAND_BORDER,
         borderWidth: 0.8,
       });
-      // barra de título
+      // barra de título + filete ámbar a la izquierda (acento de marca).
       page.drawRectangle({
         x: margin,
         y: cardTop - headerH,
         width: contentWidth,
         height: headerH,
-        color: rgb(0.92, 0.95, 0.99),
+        color: BRAND_TINT,
+      });
+      page.drawRectangle({
+        x: margin,
+        y: cardTop - headerH,
+        width: 3,
+        height: headerH,
+        color: BRAND_AMBER,
       });
       page.drawText(`${index + 1}. ${medication.name}`, {
-        x: margin + PATIENT_BOX_PAD,
+        x: margin + PATIENT_BOX_PAD + 2,
         y: cardTop - 14,
         size: 10,
         font: bold,
-        color: rgb(0.1, 0.3, 0.5),
+        color: BRAND_BLUE,
       });
       let cy = cardTop - headerH - PATIENT_BOX_PAD - 9 + 4;
       if (posology) cy = drawWrapped(posology, margin + PATIENT_BOX_PAD, cy, innerW, 9);
@@ -550,7 +578,7 @@ export async function generateMedicalPrescriptionPdf(
           font
         );
       }
-      y = cardTop - cardH - 8;
+      y = cardTop - cardH - 12;
     }
 
     if (input.notes?.trim()) {
@@ -561,65 +589,55 @@ export async function generateMedicalPrescriptionPdf(
         y,
         size: 10,
         font: bold,
-        color: rgb(0.1, 0.4, 0.6),
+        color: BRAND_BLUE,
       });
       y -= 14;
       y = drawWrapped(input.notes.trim(), margin, y, contentWidth, 9);
     }
 
-    // ── QR + código de verificación + nota al farmacéutico (data). Se ubica en
-    // el flujo, garantizando espacio sobre el footer (SNRE-style). ───────────
+    // ── QR + código + folio anclados a la franja inferior (sobre la firma)
+    // para equilibrar la hoja. Si el contenido ya llegó a la zona del QR, salta
+    // de página. Es DATA → también aparece en overlay. ───────────────────────
     if (input.qrCodeBuffer) {
-      newPageIfNeeded(FOOTER_TOP + 90);
-      const qrSize = 56;
+      const QR_SIZE = 56;
+      newPageIfNeeded(QR_TOP + 14);
       const qrImg = await pdfDoc.embedPng(input.qrCodeBuffer);
-      const qrTop = y;
-      page.drawImage(qrImg, { x: margin, y: qrTop - qrSize, width: qrSize, height: qrSize });
-      const tx = margin + qrSize + 10;
+      page.drawImage(qrImg, { x: margin, y: QR_TOP - QR_SIZE, width: QR_SIZE, height: QR_SIZE });
+      const tx = margin + QR_SIZE + 12;
       page.drawText("Verificar autenticidad", {
         x: tx,
-        y: qrTop - 12,
+        y: QR_TOP - 11,
         size: 8,
         font: bold,
-        color: rgb(0.3, 0.3, 0.3),
+        color: BRAND_GRAY,
       });
       if (input.verificationCode) {
         page.drawText(input.verificationCode, {
           x: tx,
-          y: qrTop - 26,
-          size: 11,
+          y: QR_TOP - 27,
+          size: 12,
           font: bold,
-          color: rgb(0.1, 0.4, 0.6),
+          color: BRAND_BLUE,
         });
       }
-      drawWrapped(
+      const noteLines = wrapText(
         "En caso de dudas, consulte a su Químico(a) Farmacéutico(a) o al prescriptor.",
-        tx,
-        qrTop - 40,
-        contentWidth - qrSize - 10,
-        7.5
+        font,
+        7.5,
+        contentWidth - QR_SIZE - 12
       );
-      // Folio bajo el QR (anti-scraping + auditoría).
+      for (const [i, line] of noteLines.entries()) {
+        page.drawText(line, { x: tx, y: QR_TOP - 42 - i * 10, size: 7.5, font, color: BRAND_GRAY });
+      }
       if (input.folio) {
         page.drawText(`Folio: ${input.folio}`, {
           x: margin,
-          y: qrTop - qrSize - 11,
+          y: QR_TOP - QR_SIZE - 12,
           size: 8,
           font,
-          color: rgb(0.4, 0.4, 0.4),
+          color: BRAND_GRAY,
         });
       }
-      y = qrTop - qrSize - 24;
-    } else if (input.folio) {
-      // Sin QR (raro): el folio igual debe aparecer.
-      page.drawText(`Folio: ${input.folio}`, {
-        x: margin,
-        y,
-        size: 8,
-        font,
-        color: rgb(0.4, 0.4, 0.4),
-      });
-      y -= 16;
     }
   }
 
@@ -645,7 +663,7 @@ export async function generateMedicalPrescriptionPdf(
         y: sigLineY - 12,
         size: 8.5,
         font,
-        color: rgb(0.1, 0.4, 0.6),
+        color: BRAND_BLUE,
       });
       if (input.doctorLicense?.trim()) {
         const reg = `Reg. SIS N° ${input.doctorLicense.trim()}`;
@@ -659,10 +677,10 @@ export async function generateMedicalPrescriptionPdf(
       }
       // Bloque médico compacto (izquierda, debajo de la firma).
       let dy = 150;
-      pg.drawText(doctor.name, { x: margin, y: dy, size: 9.5, font: bold, color: rgb(0.1, 0.4, 0.6) });
+      pg.drawText(doctor.name, { x: margin, y: dy, size: 9.5, font: bold, color: BRAND_BLUE });
       dy -= 12;
       for (const line of wrapText(doctor.specialty, font, 8, contentWidth)) {
-        pg.drawText(line, { x: margin, y: dy, size: 8, font, color: rgb(0.1, 0.4, 0.6) });
+        pg.drawText(line, { x: margin, y: dy, size: 8, font, color: BRAND_BLUE });
         dy -= 11;
       }
       const contactLine = [
