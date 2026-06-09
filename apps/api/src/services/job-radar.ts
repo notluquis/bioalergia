@@ -6,7 +6,8 @@
 // aparecer en el sitemap se marcan CLOSED. Se notifica una sola vez por job
 // (flag `notified`).
 
-import { db, type JsonValue } from "@finanzas/db";
+import { db, kysely, type JsonValue } from "@finanzas/db";
+import { sql } from "kysely";
 import { DomainError } from "../lib/errors.ts";
 import { logEvent, logWarn } from "../lib/logger.ts";
 import { getSettings, updateSettings } from "../lib/settings.ts";
@@ -342,6 +343,9 @@ function formatJobMessage(job: RawJob): string {
   return lines.join("\n");
 }
 
+// Filas por statement del bulk upsert (cada fila ~20 params → 400×20=8000 < 65535).
+const UPSERT_CHUNK = 400;
+
 async function upsertSourceJobs(
   src: JobSource,
   jobs: RawJob[],
@@ -350,66 +354,43 @@ async function upsertSourceJobs(
   let inserted = 0;
   let updated = 0;
   const now = new Date();
-  const presentIds: string[] = [];
+  const presentIds: string[] = jobs.map((j) => j.externalId);
 
-  for (const job of jobs) {
-    presentIds.push(job.externalId);
-    const matched = matchesProfile(job, filter);
-    const existing = await db.jobPosting.findUnique({
-      where: {
-        source_company_externalId: {
-          source: job.source,
-          company: job.company,
-          externalId: job.externalId,
-        },
-      },
-      select: { id: true },
+  // Bulk upsert: UN `INSERT … ON CONFLICT DO UPDATE` por chunk en vez de
+  // findUnique+update/create por oferta (eran ~2 round-trips/oferta → 90s+ con
+  // miles de ofertas contra la DB remota). `xmax = 0` distingue insert de update.
+  // ON CONFLICT NO toca first_seen_at/notified/application_status/notes/appliedAt
+  // (estado del usuario), solo refresca los campos de la oferta + status OPEN.
+  for (let i = 0; i < jobs.length; i += UPSERT_CHUNK) {
+    const chunk = jobs.slice(i, i + UPSERT_CHUNK);
+    const values = chunk.map((job) => {
+      const raw = toJsonValue(job.raw);
+      return sql`(
+        gen_random_uuid()::text, ${job.source}, ${job.company}, ${job.externalId},
+        ${job.title}, ${job.url}, ${job.department}, ${job.location}, ${job.remote},
+        ${job.salary}, ${job.descriptionHtml}, ${job.publishedAt}, ${job.lastmod},
+        'OPEN'::personal."JobPostingStatus", ${matchesProfile(job, filter)}, false,
+        'NEW'::personal."JobApplicationStatus", ${now}, ${now},
+        ${raw === undefined ? null : JSON.stringify(raw)}::jsonb
+      )`;
     });
-
-    if (existing) {
-      await db.jobPosting.update({
-        where: { id: existing.id },
-        data: {
-          title: job.title,
-          url: job.url,
-          department: job.department,
-          location: job.location,
-          remote: job.remote,
-          salary: job.salary,
-          descriptionHtml: job.descriptionHtml,
-          publishedAt: job.publishedAt,
-          lastmod: job.lastmod,
-          status: "OPEN",
-          matched,
-          lastSeenAt: now,
-          raw: toJsonValue(job.raw),
-        },
-      });
-      updated += 1;
-    } else {
-      await db.jobPosting.create({
-        data: {
-          source: job.source,
-          company: job.company,
-          externalId: job.externalId,
-          title: job.title,
-          url: job.url,
-          department: job.department,
-          location: job.location,
-          remote: job.remote,
-          salary: job.salary,
-          descriptionHtml: job.descriptionHtml,
-          publishedAt: job.publishedAt,
-          lastmod: job.lastmod,
-          status: "OPEN",
-          matched,
-          notified: false,
-          firstSeenAt: now,
-          lastSeenAt: now,
-          raw: toJsonValue(job.raw),
-        },
-      });
-      inserted += 1;
+    const result = await sql<{ inserted: boolean }>`
+      INSERT INTO personal.job_postings
+        (id, source, company, external_id, title, url, department, location, remote,
+         salary, description_html, published_at, lastmod, status, matched, notified,
+         application_status, first_seen_at, last_seen_at, raw)
+      VALUES ${sql.join(values, sql`, `)}
+      ON CONFLICT (source, company, external_id) DO UPDATE SET
+        title = EXCLUDED.title, url = EXCLUDED.url, department = EXCLUDED.department,
+        location = EXCLUDED.location, remote = EXCLUDED.remote, salary = EXCLUDED.salary,
+        description_html = EXCLUDED.description_html, published_at = EXCLUDED.published_at,
+        lastmod = EXCLUDED.lastmod, status = 'OPEN'::personal."JobPostingStatus",
+        matched = EXCLUDED.matched, last_seen_at = EXCLUDED.last_seen_at, raw = EXCLUDED.raw
+      RETURNING (xmax = 0) AS inserted
+    `.execute(kysely);
+    for (const r of result.rows) {
+      if (r.inserted) inserted += 1;
+      else updated += 1;
     }
   }
 

@@ -13,7 +13,8 @@ import {
 import { useDebouncedValue } from "@tanstack/react-pacer";
 import type { ColumnDef, OnChangeFn, RowSelectionState, SortingFn } from "@tanstack/react-table";
 import { Ban, ExternalLink, Eye, ListChecks, RefreshCw, Send, Sparkles, Star } from "lucide-react";
-import { type ReactNode, useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { JobApplicationStatus, JobPostingDTO } from "@finanzas/orpc-contracts/job-radar";
 import { DataTable } from "@/components/data-table/DataTable";
@@ -30,7 +31,7 @@ import {
   useUpdateJobApplication,
 } from "../hooks/useJobRadar";
 import { SyncProgressBar } from "../components/SyncProgressBar";
-import type { JobRadarListFilters } from "../queries";
+import { jobRadarKeys, type JobRadarListFilters } from "../queries";
 
 const APP_STATUSES: JobApplicationStatus[] = [
   "NEW",
@@ -95,8 +96,28 @@ export function JobRadarPage() {
   const update = useUpdateJobApplication();
   const bulkUpdate = useBulkUpdateJobApplications();
   const sync = useSyncJobRadar();
-  const syncProgress = useJobRadarSyncProgress(sync.isPending);
+  // `syncing` mantiene el poll vivo aunque la mutación HTTP (que puede tardar
+  // >90s y morir en el gateway) ya haya terminado: seguimos hasta que el SERVER
+  // reporte running:false. Así la barra no se congela.
+  const [syncing, setSyncing] = useState(false);
+  const sawRunning = useRef(false);
+  const syncProgress = useJobRadarSyncProgress(syncing || sync.isPending);
+  const queryClient = useQueryClient();
   const { error: toastError } = useToast();
+
+  // Cerramos el poll sólo DESPUÉS de haber visto running:true (evita la carrera
+  // con el estado `done` de un sync anterior). La mutación pudo no resolver si el
+  // gateway cortó la request larga → refrescamos la lista igual.
+  useEffect(() => {
+    const p = syncProgress.data;
+    if (!syncing || !p) return;
+    if (p.running) sawRunning.current = true;
+    else if (sawRunning.current) {
+      sawRunning.current = false;
+      setSyncing(false);
+      void queryClient.invalidateQueries({ queryKey: jobRadarKeys.all });
+    }
+  }, [syncProgress.data, syncing, queryClient]);
 
   const statusLabel = (s: JobApplicationStatus) => t(`jobRadar.status.${s}`);
 
@@ -396,14 +417,17 @@ export function JobRadarPage() {
             isIconOnly
             variant="primary"
             isPending={sync.isPending}
-            onPress={() => sync.mutate()}
+            onPress={() => {
+              setSyncing(true);
+              sync.mutate();
+            }}
           >
             <RefreshCw size={16} aria-hidden />
           </Button>
         </div>
       </header>
 
-      <SyncProgressBar progress={syncProgress.data} active={sync.isPending} />
+      <SyncProgressBar progress={syncProgress.data} active={syncing || sync.isPending} />
 
       {showSettings && <JobRadarSettingsPanel />}
 
