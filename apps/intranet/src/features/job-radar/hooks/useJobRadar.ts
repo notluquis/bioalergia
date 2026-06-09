@@ -24,6 +24,17 @@ export function useBulkUpdateJobApplications() {
   });
 }
 
+// Poll del progreso del sync mientras `enabled` (el botón está corriendo).
+export function useJobRadarSyncProgress(enabled: boolean) {
+  return useQuery({
+    queryKey: [...jobRadarKeys.all, "syncProgress"],
+    queryFn: () => jobRadarORPCClient.syncProgress(),
+    enabled,
+    refetchInterval: enabled ? 1200 : false,
+    gcTime: 0,
+  });
+}
+
 export function useSyncJobRadar() {
   const qc = useQueryClient();
   return useMutation({

@@ -7,6 +7,16 @@
     "title": "Job Radar",
     "count": "{{count}} openings",
     "sync": "Sync now",
+    "syncProgress": {
+      "fetched": "{{count}} openings found",
+      "phase": {
+        "idle": "Idle",
+        "fetching": "Fetching openings from sources",
+        "saving": "Saving openings",
+        "notifying": "Notifying",
+        "done": "Done"
+      }
+    },
     "loading": "Loading openings",
     "empty": "No openings match these filters.",
     "matched": "Profile match",

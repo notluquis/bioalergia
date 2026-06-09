@@ -25,9 +25,11 @@ import { dedupePostings, type DedupedPosting } from "../dedupe";
 import {
   useBulkUpdateJobApplications,
   useJobPostings,
+  useJobRadarSyncProgress,
   useSyncJobRadar,
   useUpdateJobApplication,
 } from "../hooks/useJobRadar";
+import { SyncProgressBar } from "../components/SyncProgressBar";
 import type { JobRadarListFilters } from "../queries";
 
 const APP_STATUSES: JobApplicationStatus[] = [
@@ -93,6 +95,7 @@ export function JobRadarPage() {
   const update = useUpdateJobApplication();
   const bulkUpdate = useBulkUpdateJobApplications();
   const sync = useSyncJobRadar();
+  const syncProgress = useJobRadarSyncProgress(sync.isPending);
   const { error: toastError } = useToast();
 
   const statusLabel = (s: JobApplicationStatus) => t(`jobRadar.status.${s}`);
@@ -399,6 +402,8 @@ export function JobRadarPage() {
           </Button>
         </div>
       </header>
+
+      <SyncProgressBar progress={syncProgress.data} active={sync.isPending} />
 
       {showSettings && <JobRadarSettingsPanel />}
 

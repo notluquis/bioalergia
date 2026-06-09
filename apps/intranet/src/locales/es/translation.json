@@ -7,6 +7,16 @@
     "title": "Job Radar",
     "count": "{{count}} ofertas",
     "sync": "Sincronizar ahora",
+    "syncProgress": {
+      "fetched": "{{count}} ofertas encontradas",
+      "phase": {
+        "idle": "En espera",
+        "fetching": "Buscando ofertas en las fuentes",
+        "saving": "Guardando ofertas",
+        "notifying": "Notificando",
+        "done": "Listo"
+      }
+    },
     "loading": "Cargando ofertas",
     "empty": "No hay ofertas con estos filtros.",
     "matched": "Match perfil",

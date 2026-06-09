@@ -496,6 +496,42 @@ async function notifyNewMatches(creds: TelegramCreds | null): Promise<number> {
   return notified;
 }
 
+// ── Progreso del sync (in-memory, mismo proceso que el botón y el cron) ───────
+// El dashboard lo poll-ea durante el refresh para mostrar fase/avance/ETA.
+export interface JobRadarSyncProgress {
+  running: boolean;
+  phase: "idle" | "fetching" | "saving" | "notifying" | "done";
+  total: number;
+  done: number;
+  fetched: number;
+  currentLabel: string | null;
+  startedAt: number | null;
+  finishedAt: number | null;
+}
+
+let syncProgress: JobRadarSyncProgress = {
+  running: false,
+  phase: "idle",
+  total: 0,
+  done: 0,
+  fetched: 0,
+  currentLabel: null,
+  startedAt: null,
+  finishedAt: null,
+};
+
+export function getJobRadarSyncProgress(): JobRadarSyncProgress {
+  // Si un sync lanzó y dejó el flag colgado, lo damos por terminado tras 5 min.
+  if (
+    syncProgress.running &&
+    syncProgress.startedAt !== null &&
+    Date.now() - syncProgress.startedAt > 300_000
+  ) {
+    return { ...syncProgress, running: false, phase: "done" };
+  }
+  return syncProgress;
+}
+
 export async function syncJobRadar(options: JobRadarSyncOptions = {}): Promise<JobRadarSyncResult> {
   const started = Date.now();
   const trigger = options.triggerSource ?? "manual";
@@ -522,27 +558,61 @@ export async function syncJobRadar(options: JobRadarSyncOptions = {}): Promise<J
   let updated = 0;
   let closed = 0;
 
+  syncProgress = {
+    running: true,
+    phase: "fetching",
+    total: sources.length,
+    done: 0,
+    fetched: 0,
+    currentLabel: null,
+    startedAt: started,
+    finishedAt: null,
+  };
+
   // Fetch de todas las fuentes EN PARALELO (la parte lenta es la red). Cada
   // adapter ya captura sus errores → []; el .catch es defensa extra para que
   // una fuente caída no tumbe el Promise.all. El upsert (DB) queda secuencial
   // por fuente para no contender la conexión ni cruzar la lógica de CLOSED.
   const results = await Promise.all(
-    sources.map(async (src) => ({ src, jobs: await src.fetch().catch(() => [] as RawJob[]) }))
+    sources.map(async (src) => {
+      const jobs = await src.fetch().catch(() => [] as RawJob[]);
+      // Avance de la fase de fetch: cada fuente que resuelve suma.
+      syncProgress = {
+        ...syncProgress,
+        done: syncProgress.done + 1,
+        fetched: syncProgress.fetched + jobs.length,
+        currentLabel: src.label,
+      };
+      return { src, jobs };
+    })
   );
 
+  // Fase de guardado (secuencial): reiniciamos el contador sobre las fuentes con
+  // ofertas. Es la parte más lenta (upsert por oferta) → progreso fino acá.
+  const withJobs = results.filter((r) => r.jobs.length > 0);
+  syncProgress = { ...syncProgress, phase: "saving", total: withJobs.length, done: 0 };
   for (const { src, jobs } of results) {
     fetched += jobs.length;
     if (jobs.length === 0) {
       logWarn("job_radar.source.empty", { source: src.label });
       continue;
     }
+    syncProgress = { ...syncProgress, currentLabel: src.label };
     const r = await upsertSourceJobs(src, jobs, filter);
     inserted += r.inserted;
     updated += r.updated;
     closed += r.closed;
+    syncProgress = { ...syncProgress, done: syncProgress.done + 1 };
   }
 
+  syncProgress = { ...syncProgress, phase: "notifying", currentLabel: null };
   const notified = await notifyNewMatches(config.telegram);
+  syncProgress = {
+    ...syncProgress,
+    running: false,
+    phase: "done",
+    finishedAt: Date.now(),
+  };
 
   const labels = sources.map((s) => s.label);
   logEvent("job_radar.done", {

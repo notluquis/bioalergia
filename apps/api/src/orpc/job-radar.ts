@@ -4,6 +4,7 @@ import {
   jobRadarBulkUpdateResultSchema,
   jobRadarSettingsSchema,
   jobRadarSettingsUpdateSchema,
+  jobRadarSyncProgressSchema,
   jobRadarSyncResultSchema,
   jobRadarUpdateInputSchema,
   jobPostingSchema,
@@ -27,6 +28,7 @@ import {
   bulkUpdateJobApplications,
   deleteJobSource,
   getJobRadarSettings,
+  getJobRadarSyncProgress,
   listJobPostings,
   listJobSources,
   setJobSourceEnabled,
@@ -95,6 +97,19 @@ const jobRadarORPCRouterBase = {
     .handler(async ({ context }) => {
       await requireUser(context.hono);
       return syncJobRadar({ triggerSource: "manual" });
+    }),
+
+  syncProgress: base
+    .route({
+      method: "GET",
+      path: "/sync/progress",
+      summary: "Live sync progress (poll while syncing)",
+      tags: ["Job Radar"],
+    })
+    .output(jobRadarSyncProgressSchema)
+    .handler(async ({ context }) => {
+      await requireUser(context.hono);
+      return getJobRadarSyncProgress();
     }),
 
   getSettings: base

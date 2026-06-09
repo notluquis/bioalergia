@@ -64,6 +64,17 @@ export const jobRadarBulkUpdateInputSchema = z.object({
 
 export const jobRadarBulkUpdateResultSchema = z.object({ count: z.number().int() });
 
+export const jobRadarSyncProgressSchema = z.object({
+  running: z.boolean(),
+  phase: z.enum(["idle", "fetching", "saving", "notifying", "done"]),
+  total: z.number().int(),
+  done: z.number().int(),
+  fetched: z.number().int(),
+  currentLabel: z.string().nullable(),
+  startedAt: z.number().nullable(),
+  finishedAt: z.number().nullable(),
+});
+
 export const jobRadarSyncResultSchema = z.object({
   sources: z.array(z.string()),
   fetched: z.number().int(),
@@ -150,6 +161,9 @@ export const jobRadarContract = {
     .input(jobRadarBulkUpdateInputSchema)
     .output(jobRadarBulkUpdateResultSchema),
   syncNow: oc.route({ method: "POST", path: "/sync" }).output(jobRadarSyncResultSchema),
+  syncProgress: oc
+    .route({ method: "GET", path: "/sync/progress" })
+    .output(jobRadarSyncProgressSchema),
   getSettings: oc.route({ method: "GET", path: "/settings" }).output(jobRadarSettingsSchema),
   updateSettings: oc
     .route({ method: "PATCH", path: "/settings" })
@@ -173,6 +187,7 @@ export const jobRadarContract = {
 export type JobRadarContract = typeof jobRadarContract;
 export type JobPostingDTO = z.output<typeof jobPostingSchema>;
 export type JobApplicationStatus = z.infer<typeof jobApplicationStatusSchema>;
+export type JobRadarSyncProgress = z.output<typeof jobRadarSyncProgressSchema>;
 export type JobRadarSettings = z.output<typeof jobRadarSettingsSchema>;
 export type JobSourceDTO = z.output<typeof jobSourceSchema>;
 export type JobSourceKind = z.infer<typeof jobSourceKindSchema>;
