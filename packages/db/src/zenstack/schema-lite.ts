@@ -15235,7 +15235,8 @@ export class SchemaType implements SchemaDef {
                 GENOMAWORK: "GENOMAWORK",
                 HIRINGROOM: "HIRINGROOM",
                 BUK: "BUK",
-                HIREFRONT: "HIREFRONT"
+                HIREFRONT: "HIREFRONT",
+                CORNERSTONE: "CORNERSTONE"
             },
             attributes: [
                 { name: "@@schema", args: [{ name: "map", value: ExpressionUtils.literal("personal") }] }

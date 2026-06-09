@@ -26,6 +26,7 @@ const KINDS: JobSourceKind[] = [
   "HIRINGROOM",
   "BUK",
   "HIREFRONT",
+  "CORNERSTONE",
 ];
 
 const PLACEHOLDER: Record<JobSourceKind, string> = {
@@ -43,6 +44,7 @@ const PLACEHOLDER: Record<JobSourceKind, string> = {
   HIRINGROOM: "cinepolis",
   BUK: "hites",
   HIREFRONT: "junji",
+  CORNERSTONE: "cencosud:5",
 };
 
 export function JobSourcesManager() {
