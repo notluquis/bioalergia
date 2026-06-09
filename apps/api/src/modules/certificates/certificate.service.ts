@@ -57,18 +57,23 @@ const drawHeaderLogos = async (
   const primaryHeight = primary ? (primary.height * primaryWidth) / primary.width : 0;
   const secondaryHeight = secondary ? (secondary.height * secondaryWidth) / secondary.width : 0;
   const band = Math.max(primaryHeight, secondaryHeight);
+  // Alinear por la BASE (no por el centro): el texto de ambos logos tiene su
+  // línea base cerca del borde inferior; los íconos (molécula / caballito de mar)
+  // sobresalen ARRIBA con distinto alto. Alineando los bordes inferiores, las
+  // letras "Bioalergia" y "AAAeIC" quedan a la misma altura.
+  const bottomY = y - band;
 
   if (primary) {
     drawImageTopLeft(page, primary, {
       x: margin,
-      topY: y - (band - primaryHeight) / 2,
+      topY: bottomY + primaryHeight,
       targetWidth: primaryWidth,
     });
   }
   if (secondary) {
     drawImageTopLeft(page, secondary, {
       x: width - margin,
-      topY: y - (band - secondaryHeight) / 2,
+      topY: bottomY + secondaryHeight,
       targetWidth: secondaryWidth,
       alignRight: true,
     });
@@ -181,18 +186,18 @@ const drawFooterNote = (
   const validez = "Válida solo con firma y timbre";
   page.drawText(validez, {
     x: width / 2 - font.widthOfTextAtSize(validez, 9) / 2,
-    y: 66,
+    y: 58,
     size: 9,
     font,
     color: BRAND_BLUE,
   });
-  const repro = "La reproducción gráfica es sólo con fines informativos.";
-  page.drawText(repro, {
-    x: width / 2 - font.widthOfTextAtSize(repro, 7) / 2,
-    y: 56,
+  const verify = "Verificá la autenticidad escaneando el código QR.";
+  page.drawText(verify, {
+    x: width / 2 - font.widthOfTextAtSize(verify, 7) / 2,
+    y: 48,
     size: 7,
     font,
-    color: rgb(0.55, 0.55, 0.55),
+    color: BRAND_GRAY,
   });
 };
 
@@ -353,9 +358,6 @@ export async function generateMedicalPrescriptionPdf(
   // Banda inferior reservada para el footer (firma + médico + notas). El
   // contenido nunca baja de acá; si no cabe, salta de página.
   const FOOTER_TOP = 205;
-  // El QR se ancla a esta franja inferior (sobre la firma) para equilibrar la
-  // hoja en recetas cortas; si el contenido llega hasta acá, el QR salta de hoja.
-  const QR_TOP = 272;
   const showStatic = (input.mode ?? "full") !== "overlay";
   const showData = (input.mode ?? "full") !== "template";
   const pdfDoc = await PDFDocument.create();
@@ -431,15 +433,29 @@ export async function generateMedicalPrescriptionPdf(
   const measureWrapped = (text: string, size: number, maxWidth: number, textFont = font) =>
     wrapText(text, textFont, size, maxWidth).length * (size + 4);
 
-  // ── Encabezado: logos alineados (Bioalergia izq / AAAeIC der), centrados en
-  // una banda común — solo chrome (full/template). ──────────────────────────
-  if (showStatic) {
-    const band = await drawHeaderLogos(pdfDoc, page, margin, width, y, logoUrls, 140, 116);
-    y -= band + 22;
-  } else {
-    y -= 62; // reservar la banda de logos para alinear el overlay
-  }
+  // Trunca un texto a un ancho con elipsis (mantiene el alto fijo del recuadro).
+  const truncateToWidth = (text: string, textFont: typeof font, size: number, maxW: number) => {
+    if (textFont.widthOfTextAtSize(text, size) <= maxW) return text;
+    let t = text;
+    while (t.length > 1 && textFont.widthOfTextAtSize(`${t}…`, size) > maxW) t = t.slice(0, -1);
+    return `${t}…`;
+  };
 
+  // ALTURAS FIJAS del encabezado: el chrome estático (template) y los datos
+  // (overlay) deben caer en el MISMO Y para que el overlay se imprima exacto
+  // sobre el recetario pre-impreso. Nada acá puede depender del contenido.
+  const LOGO_BAND_H = 46;
+  const PATIENT_BOX_PAD = 10;
+  const PATIENT_BOX_H = 16 + 15 + 14 + 2 * PATIENT_BOX_PAD; // nombre + datos + diagnóstico
+  const typeLabel = PRESCRIPTION_TYPE_LABEL[input.prescriptionType ?? "SIMPLE"];
+
+  // ── Logos (estático), banda de alto FIJO en ambos modos. ──────────────────
+  if (showStatic) {
+    await drawHeaderLogos(pdfDoc, page, margin, width, y, logoUrls, 140, 116);
+  }
+  y -= LOGO_BAND_H + 12;
+
+  // ── Título + regla (estático). ────────────────────────────────────────────
   if (showStatic) {
     const title = "Receta médica";
     page.drawText(title, {
@@ -449,7 +465,6 @@ export async function generateMedicalPrescriptionPdf(
       font: bold,
       color: BRAND_BLUE,
     });
-    // Línea fina bajo el título (acento de marca).
     page.drawLine({
       start: { x: margin, y: y - 9 },
       end: { x: width - margin, y: y - 9 },
@@ -457,67 +472,72 @@ export async function generateMedicalPrescriptionPdf(
       color: BRAND_BORDER,
     });
   }
-  // El folio va bajo el QR (no arriba) — ver bloque de verificación más abajo.
   y -= 30;
 
-  // ── Bloque paciente: recuadro con datos (data). Inspirado en el recetario
-  // electrónico SNRE (Nombre · RUN · Edad · Fecha). ─────────────────────────
-  const typeLabel = PRESCRIPTION_TYPE_LABEL[input.prescriptionType ?? "SIMPLE"];
-  const PATIENT_BOX_PAD = 8;
-  if (showData) {
-    const innerW = contentWidth - 2 * PATIENT_BOX_PAD;
-    const ageText = input.patientAge != null ? `${input.patientAge} años` : "—";
-    const infoText = `RUT: ${input.patient.rut ?? "Sin RUT"}   ·   Edad: ${ageText}   ·   Fecha: ${formatDate(input.date)}`;
-    const infoLines = wrapText(infoText, font, 9, innerW);
-    const dxLines = input.diagnosis?.trim()
-      ? wrapText(`Diagnóstico: ${input.diagnosis.trim()}`, font, 9, innerW)
-      : [];
-    // header(14) + nombre(13) + infoLines + dxLines, todo dentro del pad.
-    const boxHeight =
-      14 + 13 + infoLines.length * 13 + dxLines.length * 13 + 2 * PATIENT_BOX_PAD;
-    const boxTop = y + 4;
+  // ── Bloque paciente: el RECUADRO + label "PACIENTE" son ESTÁTICOS (van
+  // pre-impresos en el recetario). Los VALORES (nombre, RUT, edad, fecha,
+  // diagnóstico, tipo) son DATA (overlay). Alto FIJO para que alineen. ───────
+  const boxTop = y + 4;
+  const px = margin + PATIENT_BOX_PAD;
+  // Etiqueta gris + valor (negrita opcional) inline; devuelve x final.
+  const drawField = (label: string, value: string, x: number, yy: number, valueBold = false) => {
+    page.drawText(label, { x, y: yy, size: 8.5, font, color: BRAND_GRAY });
+    const lw = font.widthOfTextAtSize(`${label} `, 8.5);
+    const vFont = valueBold ? bold : font;
+    const vSize = valueBold ? 9.5 : 9;
+    page.drawText(value, { x: x + lw, y: yy, size: vSize, font: vFont, color: BRAND_INK });
+    return x + lw + vFont.widthOfTextAtSize(value, vSize);
+  };
+  if (showStatic) {
     page.drawRectangle({
       x: margin,
-      y: boxTop - boxHeight,
+      y: boxTop - PATIENT_BOX_H,
       width: contentWidth,
-      height: boxHeight,
+      height: PATIENT_BOX_H,
       borderColor: BRAND_BORDER,
       borderWidth: 0.8,
       color: BRAND_TINT,
     });
-    const px = margin + PATIENT_BOX_PAD;
-    let py = boxTop - PATIENT_BOX_PAD - 7;
-    // header: "PACIENTE" izq + tipo de receta a la derecha (acento ámbar).
-    page.drawText("PACIENTE", { x: px, y: py, size: 6.5, font, color: BRAND_GRAY });
+  }
+  if (showData) {
+    const innerW = contentWidth - 2 * PATIENT_BOX_PAD;
+    let py = boxTop - PATIENT_BOX_PAD - 8;
+    // Fila 1: Paciente: NOMBRE (negrita) + tipo de receta a la derecha (ámbar).
+    drawField("Paciente:", input.patient.name, px, py, true);
     if (typeLabel) {
       const tw = bold.widthOfTextAtSize(typeLabel.toUpperCase(), 6.5);
       page.drawText(typeLabel.toUpperCase(), {
         x: margin + contentWidth - PATIENT_BOX_PAD - tw,
-        y: py,
+        y: py + 1,
         size: 6.5,
         font: bold,
         color: BRAND_AMBER,
       });
     }
+    py -= 15;
+    // Fila 2: RUT · Edad · Fecha (RUT en negrita para identificar rápido).
+    const ageText = input.patientAge != null ? `${input.patientAge} años` : "—";
+    let fx = drawField("RUT:", input.patient.rut ?? "Sin RUT", px, py, true);
+    fx = drawField("Edad:", ageText, fx + 16, py);
+    drawField("Fecha:", formatDate(input.date), fx + 16, py);
     py -= 14;
-    page.drawText(input.patient.name, { x: px, y: py, size: 10.5, font: bold, color: BRAND_INK });
-    py -= 13;
-    for (const line of [...infoLines, ...dxLines]) {
-      page.drawText(line, { x: px, y: py, size: 9, font, color: BRAND_INK });
-      py -= 13;
+    // Fila 3: Diagnóstico separado (1 línea truncada → alto fijo p/ overlay).
+    if (input.diagnosis?.trim()) {
+      drawField(
+        "Diagnóstico:",
+        truncateToWidth(input.diagnosis.trim(), font, 9, innerW - 70),
+        px,
+        py
+      );
     }
-    y = boxTop - boxHeight - 22;
-  } else {
-    // template: reservar alto del bloque paciente (header + nombre + 2 líneas)
-    // para que el overlay caiga en el mismo Y.
-    y -= 14 + 13 + 2 * 13 + 2 * PATIENT_BOX_PAD + 14;
   }
+  y = boxTop - PATIENT_BOX_H - 18;
 
-  // ── "Rp." en itálica — etiqueta clásica de receta (chrome). ───────────────
+  // ── "Rp." en itálica — etiqueta clásica de receta (chrome estático). ───────
   if (showStatic) {
-    page.drawText("Rp.", { x: margin, y, size: 16, font: italic ?? bold, color: BRAND_BLUE });
+    page.drawText("Rp.", { x: margin, y, size: 12, font: italic ?? bold, color: BRAND_BLUE });
   }
-  y -= 24;
+  y -= 20;
 
   // ── Tarjetas de medicamento (data): recuadro + barra de título + posología
   // etiquetada. Inspirado en la tarjeta del recetario electrónico SNRE. ──────
@@ -595,51 +615,13 @@ export async function generateMedicalPrescriptionPdf(
       y = drawWrapped(input.notes.trim(), margin, y, contentWidth, 9);
     }
 
-    // ── QR + código + folio anclados a la franja inferior (sobre la firma)
-    // para equilibrar la hoja. Si el contenido ya llegó a la zona del QR, salta
-    // de página. Es DATA → también aparece en overlay. ───────────────────────
-    if (input.qrCodeBuffer) {
-      const QR_SIZE = 56;
-      newPageIfNeeded(QR_TOP + 14);
-      const qrImg = await pdfDoc.embedPng(input.qrCodeBuffer);
-      page.drawImage(qrImg, { x: margin, y: QR_TOP - QR_SIZE, width: QR_SIZE, height: QR_SIZE });
-      const tx = margin + QR_SIZE + 12;
-      page.drawText("Verificar autenticidad", {
-        x: tx,
-        y: QR_TOP - 11,
-        size: 8,
-        font: bold,
-        color: BRAND_GRAY,
-      });
-      if (input.verificationCode) {
-        page.drawText(input.verificationCode, {
-          x: tx,
-          y: QR_TOP - 27,
-          size: 12,
-          font: bold,
-          color: BRAND_BLUE,
-        });
-      }
-      const noteLines = wrapText(
-        "En caso de dudas, consulte a su Químico(a) Farmacéutico(a) o al prescriptor.",
-        font,
-        7.5,
-        contentWidth - QR_SIZE - 12
-      );
-      for (const [i, line] of noteLines.entries()) {
-        page.drawText(line, { x: tx, y: QR_TOP - 42 - i * 10, size: 7.5, font, color: BRAND_GRAY });
-      }
-      if (input.folio) {
-        page.drawText(`Folio: ${input.folio}`, {
-          x: margin,
-          y: QR_TOP - QR_SIZE - 12,
-          size: 8,
-          font,
-          color: BRAND_GRAY,
-        });
-      }
-    }
+    // El QR + folio + código van a la esquina inferior izquierda (footer), no
+    // en el flujo — ver el forEach de páginas más abajo.
   }
+
+  // QR embebido una vez (el forEach es síncrono, no puede await).
+  const qrImage =
+    showData && input.qrCodeBuffer ? await pdfDoc.embedPng(input.qrCodeBuffer) : null;
 
   // Footer en CADA página: doctor + firma + registro + "Página X de Y" + nota.
   // El chrome (doctor/firma/registro/nota) solo en full/template; en overlay va
@@ -647,10 +629,11 @@ export async function generateMedicalPrescriptionPdf(
   const allPages = pdfDoc.getPages();
   const total = allPages.length;
   allPages.forEach((pg, index) => {
+    const lastPage = index === total - 1;
     if (showStatic) {
-      // Zona de firma (arriba del bloque médico, mitad derecha) — no colisiona
-      // con el texto del médico, que va abajo a la izquierda.
-      const sigLineY = 184;
+      // Zona de firma (derecha) — solo línea + "Firma y timbre". El Nº de
+      // registro va UNA sola vez, en el bloque médico (no duplicado acá).
+      const sigLineY = 176;
       pg.drawLine({
         start: { x: width - margin - 150, y: sigLineY },
         end: { x: width - margin, y: sigLineY },
@@ -665,17 +648,7 @@ export async function generateMedicalPrescriptionPdf(
         font,
         color: BRAND_BLUE,
       });
-      if (input.doctorLicense?.trim()) {
-        const reg = `Reg. SIS N° ${input.doctorLicense.trim()}`;
-        pg.drawText(reg, {
-          x: width - margin - 75 - font.widthOfTextAtSize(reg, 8) / 2,
-          y: sigLineY - 24,
-          size: 8,
-          font,
-          color: rgb(0.35, 0.35, 0.35),
-        });
-      }
-      // Bloque médico compacto (izquierda, debajo de la firma).
+      // Bloque médico compacto (izquierda).
       let dy = 150;
       pg.drawText(doctor.name, { x: margin, y: dy, size: 9.5, font: bold, color: BRAND_BLUE });
       dy -= 12;
@@ -697,6 +670,24 @@ export async function generateMedicalPrescriptionPdf(
         dy -= 11;
       }
       drawFooterNote(pg, font, width);
+    }
+    // QR + código + folio en la esquina inferior DERECHA (data → también en
+    // overlay). Solo en la última página. Bajo la zona de firma.
+    if (showData && lastPage) {
+      const qrSize = 46;
+      const qx = width - margin - qrSize;
+      const qy = 128;
+      if (qrImage) {
+        pg.drawImage(qrImage, { x: qx, y: qy - qrSize, width: qrSize, height: qrSize });
+      }
+      // Texto a la izquierda del QR, alineado a la derecha (pegado al QR).
+      const rightEdge = qx - 8;
+      const drawRight = (text: string, ty: number, size: number, f = font, color = BRAND_GRAY) => {
+        pg.drawText(text, { x: rightEdge - f.widthOfTextAtSize(text, size), y: ty, size, font: f, color });
+      };
+      drawRight("Verificar autenticidad", qy - 10, 7.5);
+      if (input.verificationCode) drawRight(input.verificationCode, qy - 24, 11, bold, BRAND_BLUE);
+      if (input.folio) drawRight(`Folio: ${input.folio}`, qy - 38, 7.5);
     }
     if (total > 1) {
       // y=46 (~16 mm) — sobre el margen inferior no imprimible de impresoras
