@@ -19,7 +19,7 @@ import type {
   GenerateMedicalPrescriptionInput,
   MedicalPrescription,
 } from "@finanzas/orpc-contracts/certificates";
-import { Ban, Download, FileText, Mail, Pencil, Plus, Trash2 } from "lucide-react";
+import { Ban, Download, FileText, Mail, Pencil, Plus, Printer, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 import {
@@ -200,6 +200,44 @@ async function downloadPrescriptionPdf(
 
 async function downloadBlankRecetario(): Promise<void> {
   await downloadFromUrl("/api/certificates/prescription/blank-template", "recetario_blanco.pdf");
+}
+
+// Imprime el PDF directo: lo carga en un iframe oculto y dispara el diálogo de
+// impresión del navegador (sin descargar archivo). El iframe se limpia tras
+// imprimir o a los 60s. mode "overlay" imprime SOLO los datos sobre el
+// recetario pre-impreso (impresora Epson del médico).
+async function printPrescriptionPdf(id: string, mode: "full" | "overlay" = "full"): Promise<void> {
+  const res = await fetch(`/api/certificates/prescription/${id}/pdf?mode=${mode}`, {
+    credentials: "include",
+  });
+  if (!res.ok) {
+    toast.error("No se pudo abrir la receta para imprimir");
+    return;
+  }
+  const objectUrl = URL.createObjectURL(await res.blob());
+  const iframe = document.createElement("iframe");
+  iframe.style.position = "fixed";
+  iframe.style.right = "0";
+  iframe.style.bottom = "0";
+  iframe.style.width = "0";
+  iframe.style.height = "0";
+  iframe.style.border = "0";
+  const cleanup = () => {
+    if (iframe.parentNode) document.body.removeChild(iframe);
+    URL.revokeObjectURL(objectUrl);
+  };
+  iframe.addEventListener("load", () => {
+    try {
+      iframe.contentWindow?.focus();
+      iframe.contentWindow?.print();
+    } catch {
+      // Fallback: si el navegador bloquea print() en el iframe, abre el PDF.
+      window.open(objectUrl, "_blank", "noopener");
+    }
+    setTimeout(cleanup, 60_000);
+  });
+  iframe.src = objectUrl;
+  document.body.appendChild(iframe);
 }
 
 function patientFullName(patient: SelectedPatient): string {
@@ -624,6 +662,15 @@ function PrescriptionHistory({
                 <div className="flex flex-wrap gap-1 sm:justify-end">
                   <Button
                     className="gap-2"
+                    onPress={() => void printPrescriptionPdf(item.id, "full")}
+                    size="sm"
+                    variant="primary"
+                  >
+                    <Printer size={14} />
+                    Imprimir
+                  </Button>
+                  <Button
+                    className="gap-2"
                     onPress={() => void downloadPrescriptionPdf(item.id, "full")}
                     size="sm"
                     variant="outline"
@@ -633,11 +680,20 @@ function PrescriptionHistory({
                   </Button>
                   <Button
                     className="gap-2"
+                    onPress={() => void printPrescriptionPdf(item.id, "overlay")}
+                    size="sm"
+                    variant="ghost"
+                  >
+                    <Printer size={14} />
+                    Recetario
+                  </Button>
+                  <Button
+                    className="gap-2"
                     onPress={() => void downloadPrescriptionPdf(item.id, "overlay")}
                     size="sm"
                     variant="ghost"
                   >
-                    Para recetario
+                    PDF datos
                   </Button>
                 </div>
                 <div className="flex flex-wrap gap-1 sm:justify-end">

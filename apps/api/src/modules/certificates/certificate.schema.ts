@@ -81,6 +81,62 @@ export const medicalPrescriptionSchema = z.object({
 });
 
 export type MedicalPrescriptionInput = z.infer<typeof medicalPrescriptionSchema>;
+export type PrescriptionMedicationInput = z.infer<typeof prescriptionMedicationSchema>;
+export type PrescriptionDiagnosisInput = z.infer<typeof prescriptionDiagnosisSchema>;
+
+// JSON-safe: sólo strings reales (sin claves `undefined`). Los campos opcionales
+// de Zod (`.optional()`) llegan como `undefined` cuando el médico no los
+// completa; ZenStack valida los `Json` y RECHAZA `undefined` (sólo `null` es
+// JSON válido). Persistimos una forma normalizada y tipada, no el objeto crudo.
+export type StoredPrescriptionMedication = {
+  name: string;
+  dosage?: string;
+  frequency?: string;
+  duration?: string;
+  instructions?: string;
+};
+
+export function toStoredMedications(
+  medications: PrescriptionMedicationInput[]
+): StoredPrescriptionMedication[] {
+  return medications.map((m) => {
+    const stored: StoredPrescriptionMedication = { name: m.name };
+    if (m.dosage) stored.dosage = m.dosage;
+    if (m.frequency) stored.frequency = m.frequency;
+    if (m.duration) stored.duration = m.duration;
+    if (m.instructions) stored.instructions = m.instructions;
+    return stored;
+  });
+}
+
+export type StoredPrescriptionDiagnosis = {
+  id: string;
+  label: string;
+  source: "CIE-11" | "CUSTOM";
+  code?: string;
+  cie10Code?: string;
+  category?: string;
+  release?: string;
+  sourceLabel?: string;
+  uri?: string;
+  custom?: boolean;
+};
+
+export function toStoredDiagnoses(
+  diagnoses: PrescriptionDiagnosisInput[]
+): StoredPrescriptionDiagnosis[] {
+  return diagnoses.map((d) => {
+    const stored: StoredPrescriptionDiagnosis = { id: d.id, label: d.label, source: d.source };
+    if (d.code) stored.code = d.code;
+    if (d.cie10Code) stored.cie10Code = d.cie10Code;
+    if (d.category) stored.category = d.category;
+    if (d.release) stored.release = d.release;
+    if (d.sourceLabel) stored.sourceLabel = d.sourceLabel;
+    if (d.uri) stored.uri = d.uri;
+    if (d.custom !== undefined) stored.custom = d.custom;
+    return stored;
+  });
+}
 
 /**
  * Default doctor information (loaded from env or config)

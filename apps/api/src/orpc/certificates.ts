@@ -29,6 +29,8 @@ import type * as CertificateServiceModule from "../modules/certificates/certific
 import {
   medicalCertificateSchema,
   medicalPrescriptionSchema,
+  toStoredDiagnoses,
+  toStoredMedications,
 } from "../modules/certificates/certificate.schema.ts";
 import { buildFolio } from "../modules/certificates/folio.ts";
 // Lazy: pdf-lib weighs ~3MB+ in heap; only load on first /medical request.
@@ -251,8 +253,12 @@ const certificatesORPCRouterBase = {
       const verificationCode = generateVerificationCode();
       const prescriptionQr = await generateQRCode(verificationCode);
 
-      // El array `diagnoses` va a su columna dedicada, no al metadata Json.
-      const { diagnoses: _diagnoses, ...metadataInput } = parsed;
+      // Normalización tipada → fila JSON-safe (sin claves `undefined`, que
+      // ZenStack rechaza en columnas Json). El PDF sigue usando `parsed`.
+      const storedMedications = toStoredMedications(parsed.medications);
+      const storedDiagnoses = parsed.diagnoses
+        ? toStoredDiagnoses(parsed.diagnoses)
+        : undefined;
       const rawPdf = await generateMedicalPrescriptionPdf(
         {
           ...parsed,
@@ -299,7 +305,7 @@ const certificatesORPCRouterBase = {
             prescriptionType,
             doctorLicense,
             diagnosis: diagnosisText,
-            diagnoses: parsed.diagnoses,
+            diagnoses: storedDiagnoses,
             doctorAddress: parsed.doctorAddress,
             doctorEmail: parsed.doctorEmail,
             doctorName: parsed.doctorName,
@@ -308,15 +314,18 @@ const certificatesORPCRouterBase = {
             driveFileId: fileId,
             id: prescriptionId,
             issuedBy: context.user.id,
-            medications: parsed.medications,
-            // `diagnoses` (array CIE-11) se persiste en su columna dedicada; lo
-            // excluimos del metadata Json para no romper el tipo JsonObject
-            // (sus props opcionales no son `JsonValue`).
+            medications: storedMedications,
+            // Metadata = respaldo Json plano. Optativos ausentes → `null` (JSON
+            // válido), nunca `undefined`. Diagnoses van a su columna dedicada.
             metadata: {
-              ...metadataInput,
-              diagnosis: diagnosisText,
+              prescriptionType,
+              medications: storedMedications,
+              diagnosis: diagnosisText ?? null,
+              notes: parsed.notes ?? null,
               patientName: fullName,
-              patientRut: patient.person.rut,
+              patientRut: patient.person.rut ?? null,
+              ...(storedDiagnoses ? { diagnoses: storedDiagnoses } : {}),
+              ...(parsed.supersedesId ? { supersedesId: parsed.supersedesId } : {}),
             } as unknown as JsonInput,
             notes: parsed.notes,
             patientId: parsed.patientId,
