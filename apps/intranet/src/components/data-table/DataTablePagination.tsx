@@ -9,6 +9,8 @@ interface DataTablePaginationProps<TData> {
   readonly pageSizeOptions?: number[];
   readonly pagination?: PaginationState;
   readonly table: Table<TData>;
+  /** Total de filas filtradas (client-side) computado en el padre. */
+  readonly totalRows?: number;
 }
 
 export function DataTablePagination<TData>({
@@ -17,11 +19,19 @@ export function DataTablePagination<TData>({
   pageSizeOptions = [10, 25, 50],
   pagination,
   table,
+  totalRows,
 }: DataTablePaginationProps<TData>) {
   const currentPagination = pagination ?? table.getState().pagination;
   const currentPageSize = currentPagination.pageSize;
-  // `-1` (sentinel TanStack) cuando el total es desconocido (server-side sin count).
-  const computedTotalPages = pageCount ?? table.getPageCount();
+  // Derivamos el nº de páginas del conteo real de filas (determinístico).
+  // `pageCount` (server-side) manda; si no, `totalRows/pageSize`; último
+  // fallback `table.getPageCount()` que puede dar 1/-1 en ciertos estados y
+  // ocultar la paginación aunque haya miles de filas.
+  const computedTotalPages =
+    pageCount ??
+    (totalRows !== undefined
+      ? Math.max(1, Math.ceil(totalRows / Math.max(1, currentPageSize)))
+      : table.getPageCount());
   const normalizedOptions = normalizePageSizeOptions(pageSizeOptions, currentPageSize);
 
   return (

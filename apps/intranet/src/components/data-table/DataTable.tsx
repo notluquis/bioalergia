@@ -588,6 +588,11 @@ export function DataTable<TData, TValue, TMeta extends TableMeta<TData> = TableM
   // getRowModel() devuelve la página anterior → la paginación (y cualquier cambio
   // de estado) no se reflejaba. Reproducido en tanstack-iso.repro.test.tsx.
   const tableRows = table.getRowModel().rows;
+  // Total de filas tras filtros, ANTES de paginar. Se computa acá (donde vive
+  // useReactTable) y se pasa al footer para derivar el nº de páginas de forma
+  // determinística — `table.getPageCount()` puede devolver 1/-1 en algunos
+  // estados aunque haya miles de filas, ocultando la paginación.
+  const filteredRowCount = manualPagination ? undefined : table.getFilteredRowModel().rows.length;
   const selectedKeys = useMemo(() => rowSelectionToKeys(rowSelection), [rowSelection]);
   const handleSelectionChange = (keys: Selection) => {
     const visibleRowIds = table.getRowModel().rows.map((row) => row.id);
@@ -633,6 +638,7 @@ export function DataTable<TData, TValue, TMeta extends TableMeta<TData> = TableM
           pageSizeOptions={pageSizeOptions}
           pagination={pagination ?? internalPagination}
           table={table}
+          totalRows={filteredRowCount}
         />
       )}
     </div>

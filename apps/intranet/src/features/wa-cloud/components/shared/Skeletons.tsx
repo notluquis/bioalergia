@@ -9,7 +9,7 @@ export function WaListSkeleton({ rows = 6 }: { rows?: number }) {
   return (
     <div className="divide-default-200 divide-y">
       {Array.from({ length: rows }).map((_, i) => (
-        <div key={i} className="flex items-center gap-3 px-3 py-3">
+        <div key={i} className="flex items-center gap-3 p-3">
           <Skeleton className="size-11 shrink-0 rounded-full" />
           <div className="min-w-0 flex-1 space-y-2">
             <div className="flex items-baseline justify-between gap-2">
