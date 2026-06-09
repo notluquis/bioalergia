@@ -89,6 +89,21 @@ export const listMedicalPrescriptionsInputSchema = z
   .object({
     limit: z.number().int().positive().max(200).optional(),
     patientId: z.number().int().positive().optional(),
+    // Búsqueda libre: nombre paciente / RUT / diagnóstico / medicamento.
+    search: z.string().max(120).optional(),
+    // Rango de fechas (YYYY-MM-DD) aplicado al campo `dateField`.
+    from: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/)
+      .optional(),
+    to: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/)
+      .optional(),
+    // Qué fecha filtrar: la de la receta o la de emisión (default).
+    dateField: z.enum(["date", "issuedAt"]).optional(),
+    prescriptionType: z.enum(["SIMPLE", "RETENIDA", "CHEQUE"]).optional(),
+    status: z.enum(["ISSUED", "ANNULLED"]).optional(),
   })
   .optional();
 

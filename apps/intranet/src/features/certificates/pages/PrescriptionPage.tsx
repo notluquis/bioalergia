@@ -31,6 +31,7 @@ import {
   Plus,
   Printer,
   Trash2,
+  X,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
@@ -263,6 +264,33 @@ export function PrescriptionPage() {
   // Modificar = re-emitir: id de la receta que se anula al generar la nueva.
   const [supersedesId, setSupersedesId] = useState<string | null>(null);
   const [emailTarget, setEmailTarget] = useState<MedicalPrescription | null>(null);
+  // Filtros del historial (búsqueda server-side sobre TODO el historial).
+  const [searchText, setSearchText] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
+  const [dateField, setDateField] = useState<"date" | "issuedAt">("issuedAt");
+  const [filterType, setFilterType] = useState<"ALL" | "SIMPLE" | "RETENIDA" | "CHEQUE">("ALL");
+  const [filterStatus, setFilterStatus] = useState<"ALL" | "ISSUED" | "ANNULLED">("ALL");
+  const hasFilters =
+    Boolean(debouncedSearch || fromDate || toDate) ||
+    filterType !== "ALL" ||
+    filterStatus !== "ALL";
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(searchText.trim()), 300);
+    return () => clearTimeout(t);
+  }, [searchText]);
+
+  const clearFilters = () => {
+    setSearchText("");
+    setDebouncedSearch("");
+    setFromDate("");
+    setToDate("");
+    setDateField("issuedAt");
+    setFilterType("ALL");
+    setFilterStatus("ALL");
+  };
 
   const selectedPatientQ = useQuery({
     enabled: searchPatientId != null,
@@ -283,11 +311,26 @@ export function PrescriptionPage() {
 
   const patientLabel = useMemo(() => (patient ? patientFullName(patient) : ""), [patient]);
   const prescriptionsQ = useQuery({
-    queryKey: ["medical-prescriptions", patient?.id ?? "all"],
+    queryKey: [
+      "medical-prescriptions",
+      patient?.id ?? "all",
+      debouncedSearch,
+      fromDate,
+      toDate,
+      dateField,
+      filterType,
+      filterStatus,
+    ],
     queryFn: async () =>
       certificatesORPCClient.listPrescriptions({
-        limit: 50,
+        limit: 200,
         patientId: patient?.id,
+        search: debouncedSearch || undefined,
+        from: fromDate || undefined,
+        to: toDate || undefined,
+        dateField,
+        prescriptionType: filterType === "ALL" ? undefined : filterType,
+        status: filterStatus === "ALL" ? undefined : filterStatus,
       }),
   });
 
@@ -473,6 +516,23 @@ export function PrescriptionPage() {
         </div>
       </Card>
 
+      <PrescriptionFilters
+        dateField={dateField}
+        filterStatus={filterStatus}
+        filterType={filterType}
+        fromDate={fromDate}
+        hasFilters={hasFilters}
+        onClear={clearFilters}
+        onDateFieldChange={setDateField}
+        onFromChange={setFromDate}
+        onSearchChange={setSearchText}
+        onStatusChange={setFilterStatus}
+        onToChange={setToDate}
+        onTypeChange={setFilterType}
+        search={searchText}
+        toDate={toDate}
+      />
+
       <PrescriptionHistory
         isLoading={prescriptionsQ.isLoading}
         items={prescriptionsQ.data?.items ?? []}
@@ -556,6 +616,95 @@ function medicationSummary(value: unknown): string {
     .filter((name): name is string => Boolean(name));
   if (names.length === 0) return "Sin medicamentos";
   return names.join(", ");
+}
+
+const DATE_FIELD_OPTIONS: CodeDisplay[] = [
+  { code: "issuedAt", display: "Fecha de emisión" },
+  { code: "date", display: "Fecha de receta" },
+];
+const TYPE_FILTER_OPTIONS: CodeDisplay[] = [
+  { code: "ALL", display: "Todos los tipos" },
+  { code: "SIMPLE", display: "Simple" },
+  { code: "RETENIDA", display: "Retenida" },
+  { code: "CHEQUE", display: "Cheque" },
+];
+const STATUS_FILTER_OPTIONS: CodeDisplay[] = [
+  { code: "ALL", display: "Todos los estados" },
+  { code: "ISSUED", display: "Vigente" },
+  { code: "ANNULLED", display: "Anulada" },
+];
+
+// Barra de filtros del historial: búsqueda libre (server-side) + rango de
+// fechas (sobre emisión o receta) + tipo + estado.
+function PrescriptionFilters({
+  dateField,
+  filterStatus,
+  filterType,
+  fromDate,
+  hasFilters,
+  onClear,
+  onDateFieldChange,
+  onFromChange,
+  onSearchChange,
+  onStatusChange,
+  onToChange,
+  onTypeChange,
+  search,
+  toDate,
+}: {
+  dateField: "date" | "issuedAt";
+  filterStatus: "ALL" | "ISSUED" | "ANNULLED";
+  filterType: "ALL" | "SIMPLE" | "RETENIDA" | "CHEQUE";
+  fromDate: string;
+  hasFilters: boolean;
+  onClear: () => void;
+  onDateFieldChange: (v: "date" | "issuedAt") => void;
+  onFromChange: (v: string) => void;
+  onSearchChange: (v: string) => void;
+  onStatusChange: (v: "ALL" | "ISSUED" | "ANNULLED") => void;
+  onToChange: (v: string) => void;
+  onTypeChange: (v: "ALL" | "SIMPLE" | "RETENIDA" | "CHEQUE") => void;
+  search: string;
+  toDate: string;
+}) {
+  return (
+    <Card className="p-4">
+      <div className="grid gap-3 lg:grid-cols-[2fr_1fr_1fr]">
+        <TextField aria-label="Buscar recetas" value={search} onChange={onSearchChange}>
+          <Label>Buscar</Label>
+          <Input placeholder="Paciente, RUT, diagnóstico o medicamento…" />
+        </TextField>
+        <CodeSelect
+          label="Tipo"
+          onChange={(c) => onTypeChange(c as "ALL" | "SIMPLE" | "RETENIDA" | "CHEQUE")}
+          options={TYPE_FILTER_OPTIONS}
+          value={filterType}
+        />
+        <CodeSelect
+          label="Estado"
+          onChange={(c) => onStatusChange(c as "ALL" | "ISSUED" | "ANNULLED")}
+          options={STATUS_FILTER_OPTIONS}
+          value={filterStatus}
+        />
+      </div>
+      <div className="mt-3 grid items-end gap-3 sm:grid-cols-2 lg:grid-cols-[1.3fr_1fr_1fr_auto]">
+        <CodeSelect
+          label="Filtrar por"
+          onChange={(c) => onDateFieldChange(c as "date" | "issuedAt")}
+          options={DATE_FIELD_OPTIONS}
+          value={dateField}
+        />
+        <AppDatePicker label="Desde" onChange={onFromChange} value={fromDate} />
+        <AppDatePicker label="Hasta" onChange={onToChange} value={toDate} />
+        {hasFilters ? (
+          <Button className="gap-2" onPress={onClear} variant="ghost">
+            <X size={14} />
+            Limpiar
+          </Button>
+        ) : null}
+      </div>
+    </Card>
+  );
 }
 
 // Acciones secundarias de cada receta en un menú overflow (declutter del row).

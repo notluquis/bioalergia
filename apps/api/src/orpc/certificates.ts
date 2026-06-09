@@ -344,10 +344,40 @@ const certificatesORPCRouterBase = {
     .input(listMedicalPrescriptionsInputSchema)
     .output(medicalPrescriptionListResponseSchema)
     .handler(async ({ input }) => {
+      const f = input ?? {};
+      const where: Record<string, unknown> = {};
+      if (f.patientId) where.patientId = f.patientId;
+      if (f.prescriptionType) where.prescriptionType = f.prescriptionType;
+      if (f.status) where.status = f.status;
+
+      // Rango de fechas sobre `date` (receta) o `issuedAt` (emisión, default).
+      if (f.from || f.to) {
+        const range: { gte?: Date; lt?: Date } = {};
+        if (f.from) range.gte = parseDateOnly(f.from);
+        if (f.to) {
+          // `lt` al día siguiente → incluye todo el día `to` (cubre timestamps).
+          const toMid = parseDateOnly(f.to);
+          range.lt = new Date(toMid.getTime() + 86_400_000);
+        }
+        if (f.dateField === "date") where.date = range;
+        else where.issuedAt = range;
+      }
+
+      // Búsqueda libre: paciente / RUT / diagnóstico / medicamento (Json).
+      if (f.search?.trim()) {
+        const q = f.search.trim();
+        where.OR = [
+          { patientName: { contains: q, mode: "insensitive" as const } },
+          { patientRut: { contains: q, mode: "insensitive" as const } },
+          { diagnosis: { contains: q, mode: "insensitive" as const } },
+          { medications: { string_contains: q } },
+        ];
+      }
+
       const prescriptions = await db.medicalPrescription.findMany({
-        where: input?.patientId ? { patientId: input.patientId } : {},
+        where,
         orderBy: { issuedAt: "desc" },
-        take: input?.limit ?? 100,
+        take: f.limit ?? 200,
         include: {
           patient: {
             include: {
