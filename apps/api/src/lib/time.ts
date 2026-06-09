@@ -188,6 +188,23 @@ export function dbDateToISO(value: Date | string | null | undefined): string | n
 }
 
 /**
+ * Edad en años cumplidos a partir de un @db.Date de nacimiento (anclado a UTC
+ * medianoche). Devuelve undefined si no hay fecha o es futura/ inválida.
+ */
+export function ageFromBirthDate(value: Date | string | null | undefined): number | undefined {
+  const iso = dbDateToISO(value);
+  if (!iso) return undefined;
+  const [y, m, d] = iso.split("-").map(Number);
+  if (!y || !m || !d) return undefined;
+  const now = new Date();
+  let age = now.getUTCFullYear() - y;
+  const beforeBirthday =
+    now.getUTCMonth() + 1 < m || (now.getUTCMonth() + 1 === m && now.getUTCDate() < d);
+  if (beforeBirthday) age -= 1;
+  return age >= 0 && age < 130 ? age : undefined;
+}
+
+/**
  * Build the value to WRITE to a @db.Date column from a "YYYY-MM-DD" string:
  * a Date anchored at UTC midnight, so the stored calendar day is exact.
  */

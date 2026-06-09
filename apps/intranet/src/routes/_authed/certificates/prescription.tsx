@@ -19,7 +19,7 @@ import type {
   GenerateMedicalPrescriptionInput,
   MedicalPrescription,
 } from "@finanzas/orpc-contracts/certificates";
-import { Download, FileText, Plus, Trash2 } from "lucide-react";
+import { Ban, Download, FileText, Mail, Pencil, Plus, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { z } from "zod";
 
@@ -45,6 +45,7 @@ import { certificatesORPCClient, toCertificatesApiError } from "@/features/certi
 import { PatientSelectModal } from "@/features/exam-reports/components/PatientSelectModal";
 import { fetchPatient } from "@/features/patients/api";
 import { CreatePatientModal } from "@/features/patients/components/CreatePatientModal";
+import { confirmAction } from "@/components/ui/ConfirmDialog";
 import { formatChile, today } from "@/lib/dates";
 import { toast } from "@/lib/toast-interceptor";
 
@@ -152,6 +153,31 @@ function newMedicationDraft(): MedicationDraft {
   };
 }
 
+// Reconstruye un draft editable desde un medicamento guardado. La posología
+// estructurada (dosis/frecuencia/duración) se guardó ya compuesta como texto;
+// la volcamos al campo libre `instructions` (sin pérdida) para que el médico la
+// revise — los selects estructurados quedan vacíos y se re-componen si los toca.
+function draftFromStored(med: Record<string, unknown>): MedicationDraft {
+  const posology = [med.dosage, med.frequency, med.duration]
+    .map((v) => (typeof v === "string" ? v.trim() : ""))
+    .filter(Boolean)
+    .join(" · ");
+  const existing = typeof med.instructions === "string" ? med.instructions.trim() : "";
+  const instructions = [posology, existing].filter(Boolean).join(" — ");
+  return {
+    ...newMedicationDraft(),
+    instructions,
+    name: typeof med.name === "string" ? med.name : "",
+  };
+}
+
+function draftsFromStored(value: unknown): MedicationDraft[] {
+  if (!Array.isArray(value) || value.length === 0) return [newMedicationDraft()];
+  return value
+    .filter((m): m is Record<string, unknown> => Boolean(m) && typeof m === "object")
+    .map(draftFromStored);
+}
+
 // Descarga el PDF desde el endpoint raw (bytes correctos; oRPC/SuperJSON
 // corrompe binario). Sirve para emitir y para re-descargar desde el historial.
 async function downloadFromUrl(url: string, filename: string): Promise<void> {
@@ -210,6 +236,9 @@ function MedicalPrescriptionPage() {
   const [notes, setNotes] = useState("");
   const [medications, setMedications] = useState<MedicationDraft[]>(() => [newMedicationDraft()]);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  // Modificar = re-emitir: id de la receta que se anula al generar la nueva.
+  const [supersedesId, setSupersedesId] = useState<string | null>(null);
+  const [emailTarget, setEmailTarget] = useState<MedicalPrescription | null>(null);
 
   const selectedPatientQ = useQuery({
     enabled: searchPatientId != null,
@@ -256,6 +285,95 @@ function MedicalPrescriptionPage() {
       toast.error(error instanceof Error ? error.message : "Error al generar receta");
     },
   });
+
+  const annulMutation = useMutation({
+    mutationFn: async (id: string) => {
+      try {
+        return await certificatesORPCClient.annulPrescription({ id });
+      } catch (error) {
+        throw toCertificatesApiError(error);
+      }
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["medical-prescriptions"] });
+      toast.success("Receta anulada");
+    },
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : "Error al anular receta");
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      try {
+        return await certificatesORPCClient.deletePrescription({ id });
+      } catch (error) {
+        throw toCertificatesApiError(error);
+      }
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["medical-prescriptions"] });
+      toast.success("Receta eliminada");
+    },
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : "Error al eliminar receta");
+    },
+  });
+
+  const emailMutation = useMutation({
+    mutationFn: async (args: { id: string; to: string; message?: string }) => {
+      try {
+        return await certificatesORPCClient.emailPrescription(args);
+      } catch (error) {
+        throw toCertificatesApiError(error);
+      }
+    },
+    onSuccess: () => {
+      setEmailTarget(null);
+      toast.success("Receta enviada por email");
+    },
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : "Error al enviar receta");
+    },
+  });
+
+  const handleAnnul = async (item: MedicalPrescription) => {
+    const ok = await confirmAction({
+      title: "Anular receta",
+      description: `La receta${item.folio ? ` ${item.folio}` : ""} quedará marcada como ANULADA (se conserva para auditoría). ¿Continuar?`,
+      confirmLabel: "Anular",
+      variant: "danger",
+    });
+    if (ok) annulMutation.mutate(item.id);
+  };
+
+  const handleDelete = async (item: MedicalPrescription) => {
+    const ok = await confirmAction({
+      title: "Eliminar receta",
+      description:
+        "Esto borra la receta de forma permanente. Para documentos ya entregados prefiere anular. ¿Eliminar definitivamente?",
+      confirmLabel: "Eliminar",
+      variant: "danger",
+      requireText: "ELIMINAR",
+    });
+    if (ok) deleteMutation.mutate(item.id);
+  };
+
+  // Modificar = cargar la receta al formulario y re-emitir (la vieja se anula).
+  const handleEditPrescription = (item: MedicalPrescription) => {
+    setPatient({ id: item.patient.id, person: item.patient.person });
+    setDate(formatChile(item.date, "YYYY-MM-DD"));
+    setPrescriptionType(
+      (item.prescriptionType as "SIMPLE" | "RETENIDA" | "CHEQUE" | null) ?? "SIMPLE"
+    );
+    setSelectedDiagnoses(
+      Array.isArray(item.diagnoses) ? (item.diagnoses as PrescriptionDiagnosis[]) : []
+    );
+    setNotes(item.notes ?? "");
+    setMedications(draftsFromStored(item.medications));
+    setSupersedesId(item.id);
+    setSubmitError(null);
+  };
 
   const updateMedication = (id: string, patch: Partial<MedicationDraft>) => {
     setMedications((current) =>
@@ -320,7 +438,13 @@ function MedicalPrescriptionPage() {
       notes: notes.trim() || undefined,
       patientId: patient.id,
       prescriptionType,
+      supersedesId: supersedesId ?? undefined,
     });
+    // Re-emisión completada: limpia el vínculo y deja el formulario fresco.
+    setSupersedesId(null);
+    setSelectedDiagnoses([]);
+    setNotes("");
+    setMedications([newMedicationDraft()]);
   };
 
   return (
@@ -353,7 +477,20 @@ function MedicalPrescriptionPage() {
       <PrescriptionHistory
         isLoading={prescriptionsQ.isLoading}
         items={prescriptionsQ.data?.items ?? []}
+        onAnnul={handleAnnul}
+        onDelete={handleDelete}
+        onEdit={handleEditPrescription}
+        onEmail={setEmailTarget}
         title={patient ? `Recetas de ${patientLabel}` : "Recetas recientes"}
+      />
+
+      <EmailPrescriptionModal
+        isPending={emailMutation.isPending}
+        onClose={() => setEmailTarget(null)}
+        onSend={(to, message) =>
+          emailTarget && emailMutation.mutate({ id: emailTarget.id, message, to })
+        }
+        target={emailTarget}
       />
 
       {patient ? (
@@ -361,6 +498,7 @@ function MedicalPrescriptionPage() {
           customDiagnosis={customDiagnosis}
           date={date}
           generatePending={generateMutation.isPending}
+          isEditing={supersedesId != null}
           medications={medications}
           notes={notes}
           selectedDiagnoses={selectedDiagnoses}
@@ -368,7 +506,10 @@ function MedicalPrescriptionPage() {
           onAddDiagnosis={addDiagnosis}
           onAddMedication={() => setMedications((current) => [...current, newMedicationDraft()])}
           onCustomDiagnosisChange={setCustomDiagnosis}
-          onClose={() => setPatient(null)}
+          onClose={() => {
+            setPatient(null);
+            setSupersedesId(null);
+          }}
           onDateChange={setDate}
           onMedicationChange={updateMedication}
           onMedicationRemove={removeMedication}
@@ -422,10 +563,18 @@ function medicationSummary(value: unknown): string {
 function PrescriptionHistory({
   isLoading,
   items,
+  onAnnul,
+  onDelete,
+  onEdit,
+  onEmail,
   title,
 }: {
   isLoading: boolean;
   items: MedicalPrescription[];
+  onAnnul: (item: MedicalPrescription) => void;
+  onDelete: (item: MedicalPrescription) => void;
+  onEdit: (item: MedicalPrescription) => void;
+  onEmail: (item: MedicalPrescription) => void;
   title: string;
 }) {
   return (
@@ -461,6 +610,16 @@ function PrescriptionHistory({
                     <Chip size="sm" variant="soft">
                       <Chip.Label>{formatChile(item.date, "DD/MM/YYYY")}</Chip.Label>
                     </Chip>
+                    {item.folio ? (
+                      <Chip size="sm" variant="soft">
+                        <Chip.Label>{item.folio}</Chip.Label>
+                      </Chip>
+                    ) : null}
+                    {item.status === "ANNULLED" ? (
+                      <Chip color="danger" size="sm" variant="soft">
+                        <Chip.Label>Anulada</Chip.Label>
+                      </Chip>
+                    ) : null}
                   </div>
                   <p className="mt-1 line-clamp-1 text-default-700 text-sm">
                     {medicationSummary(item.medications)}
@@ -474,29 +633,149 @@ function PrescriptionHistory({
                 </div>
               </div>
               <div className="flex shrink-0 flex-col gap-1 sm:items-end">
-                <Button
-                  className="gap-2"
-                  onPress={() => void downloadPrescriptionPdf(item.id, "full")}
-                  size="sm"
-                  variant="outline"
-                >
-                  <Download size={14} />
-                  Descargar
-                </Button>
-                <Button
-                  className="gap-2"
-                  onPress={() => void downloadPrescriptionPdf(item.id, "overlay")}
-                  size="sm"
-                  variant="ghost"
-                >
-                  Para recetario
-                </Button>
+                <div className="flex flex-wrap gap-1 sm:justify-end">
+                  <Button
+                    className="gap-2"
+                    onPress={() => void downloadPrescriptionPdf(item.id, "full")}
+                    size="sm"
+                    variant="outline"
+                  >
+                    <Download size={14} />
+                    Descargar
+                  </Button>
+                  <Button
+                    className="gap-2"
+                    onPress={() => void downloadPrescriptionPdf(item.id, "overlay")}
+                    size="sm"
+                    variant="ghost"
+                  >
+                    Para recetario
+                  </Button>
+                </div>
+                <div className="flex flex-wrap gap-1 sm:justify-end">
+                  <Button className="gap-2" onPress={() => onEmail(item)} size="sm" variant="ghost">
+                    <Mail size={14} />
+                    Enviar
+                  </Button>
+                  {item.status === "ANNULLED" ? null : (
+                    <>
+                      <Button
+                        className="gap-2"
+                        onPress={() => onEdit(item)}
+                        size="sm"
+                        variant="ghost"
+                      >
+                        <Pencil size={14} />
+                        Modificar
+                      </Button>
+                      <Button
+                        className="gap-2 text-warning"
+                        onPress={() => void onAnnul(item)}
+                        size="sm"
+                        variant="ghost"
+                      >
+                        <Ban size={14} />
+                        Anular
+                      </Button>
+                    </>
+                  )}
+                  <Button
+                    className="gap-2 text-danger"
+                    onPress={() => void onDelete(item)}
+                    size="sm"
+                    variant="ghost"
+                  >
+                    <Trash2 size={14} />
+                    Eliminar
+                  </Button>
+                </div>
               </div>
             </article>
           ))}
         </div>
       )}
     </Card>
+  );
+}
+
+function EmailPrescriptionModal({
+  isPending,
+  onClose,
+  onSend,
+  target,
+}: {
+  isPending: boolean;
+  onClose: () => void;
+  onSend: (to: string, message?: string) => void;
+  target: MedicalPrescription | null;
+}) {
+  const [to, setTo] = useState("");
+  const [message, setMessage] = useState("");
+
+  // Prefilla el email del paciente si lo trae la persona, al abrir.
+  useEffect(() => {
+    if (target) {
+      setTo("");
+      setMessage("");
+    }
+  }, [target]);
+
+  if (!target) return null;
+  const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to.trim());
+
+  return (
+    <Modal>
+      <Modal.Backdrop
+        className="bg-black/40 backdrop-blur-[2px]"
+        isOpen
+        onOpenChange={(open) => {
+          if (!open) onClose();
+        }}
+      >
+        <Modal.Container placement="center">
+          <Modal.Dialog className="relative w-full max-w-md rounded-[28px] bg-background p-6 shadow-2xl">
+            <Modal.Header className="mb-4">
+              <Modal.Heading className="font-semibold text-primary text-xl">
+                Enviar receta por email
+              </Modal.Heading>
+              <p className="text-default-600 text-sm">
+                {target.patientName}
+                {target.folio ? ` · ${target.folio}` : ""}
+              </p>
+            </Modal.Header>
+            <Modal.Body>
+              <Form
+                onSubmit={(event: React.FormEvent<HTMLFormElement>) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  if (validEmail) onSend(to.trim(), message.trim() || undefined);
+                }}
+              >
+                <div className="space-y-3">
+                  <TextField value={to} onChange={setTo}>
+                    <Label>Email del destinatario</Label>
+                    <Input placeholder="paciente@correo.cl" type="email" />
+                  </TextField>
+                  <TextField value={message} onChange={setMessage}>
+                    <Label>Mensaje (opcional)</Label>
+                    <TextArea placeholder="Mensaje adicional para el paciente" rows={3} />
+                  </TextField>
+                  <div className="flex justify-end gap-2 pt-2">
+                    <Button onPress={onClose} type="button" variant="ghost">
+                      Cancelar
+                    </Button>
+                    <Button isDisabled={!validEmail || isPending} type="submit">
+                      <Mail size={16} />
+                      {isPending ? "Enviando..." : "Enviar"}
+                    </Button>
+                  </div>
+                </div>
+              </Form>
+            </Modal.Body>
+          </Modal.Dialog>
+        </Modal.Container>
+      </Modal.Backdrop>
+    </Modal>
   );
 }
 
@@ -623,6 +902,7 @@ function PrescriptionModal({
   customDiagnosis,
   date,
   generatePending,
+  isEditing,
   medications,
   notes,
   selectedDiagnoses,
@@ -645,6 +925,7 @@ function PrescriptionModal({
   customDiagnosis: string;
   date: string;
   generatePending: boolean;
+  isEditing: boolean;
   medications: MedicationDraft[];
   notes: string;
   selectedDiagnoses: PrescriptionDiagnosis[];
@@ -677,9 +958,14 @@ function PrescriptionModal({
           <Modal.Dialog className="relative max-h-[92vh] w-full max-w-4xl overflow-y-auto rounded-[28px] bg-background p-6 shadow-2xl">
             <Modal.Header className="mb-4">
               <Modal.Heading className="font-semibold text-primary text-xl">
-                Receta médica
+                {isEditing ? "Modificar receta" : "Receta médica"}
               </Modal.Heading>
               <p className="text-default-600 text-sm">{patientLabel}</p>
+              {isEditing ? (
+                <p className="mt-2 rounded-lg bg-warning/10 px-3 py-2 text-warning text-xs">
+                  Al generar, la receta original se anulará y se emitirá una nueva con folio nuevo.
+                </p>
+              ) : null}
             </Modal.Header>
             <Modal.Body>
               <Form

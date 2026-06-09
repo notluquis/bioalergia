@@ -54,23 +54,23 @@ export async function loadPdfFonts(pdfDoc: PDFDocument): Promise<PdfFonts> {
 const logoBytesCache = new Map<string, Uint8Array>();
 
 async function fetchLogoBytes(url: string | null | undefined): Promise<Uint8Array | null> {
-  if (url) {
-    const cached = logoBytesCache.get(url);
-    if (cached) return cached;
-    try {
-      const res = await fetch(url);
-      if (res.ok) {
-        const bytes = new Uint8Array(await res.arrayBuffer());
-        logoBytesCache.set(url, bytes);
-        return bytes;
-      }
-    } catch (error) {
-      console.warn("No se pudo descargar el logo desde la URL:", error);
+  if (!url) return null;
+  const cached = logoBytesCache.get(url);
+  if (cached) return cached;
+  try {
+    const res = await fetch(url);
+    if (res.ok) {
+      const bytes = new Uint8Array(await res.arrayBuffer());
+      logoBytesCache.set(url, bytes);
+      return bytes;
     }
+  } catch (error) {
+    console.warn("No se pudo descargar el logo desde la URL:", error);
   }
-  // Fallback: asset local versionado (apps/api/assets/logos/bioalergia.png).
-  const local = path.join(LOGOS_DIR, "bioalergia.png");
-  if (fs.existsSync(local)) return new Uint8Array(fs.readFileSync(local));
+  // NO caer a un asset hardcodeado acá: el fallback correcto depende de QUÉ logo
+  // es (bioalergia vs aaaeic), y eso lo resuelve embedLogo con `fallbackName`.
+  // Antes esto devolvía bioalergia.png para cualquier logo → un fallo de red en
+  // el logo secundario (AAAeIC) lo reemplazaba por Bioalergia (logo repetido).
   return null;
 }
 

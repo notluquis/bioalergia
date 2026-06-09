@@ -60,7 +60,33 @@ export const generateMedicalPrescriptionInputSchema = z.object({
   medications: z.array(prescriptionMedicationSchema).min(1).max(12),
   notes: z.string().max(1000).optional(),
   prescriptionType: z.enum(["SIMPLE", "RETENIDA", "CHEQUE"]).optional(),
+  // Modificar = re-emitir: si viene, la receta original se anula al crear esta.
+  supersedesId: z.string().optional(),
   patientId: z.number().int().positive(),
+});
+
+export const prescriptionIdInputSchema = z.object({
+  id: z.string().min(1),
+});
+
+export const annulPrescriptionResponseSchema = z.object({
+  id: z.string(),
+  status: z.string(),
+});
+
+export const deletePrescriptionResponseSchema = z.object({
+  id: z.string(),
+});
+
+export const emailPrescriptionInputSchema = z.object({
+  id: z.string().min(1),
+  message: z.string().max(1000).optional(),
+  to: z.email(),
+});
+
+export const emailPrescriptionResponseSchema = z.object({
+  id: z.string().nullable(),
+  ok: z.boolean(),
 });
 
 export const listMedicalPrescriptionsInputSchema = z
@@ -145,6 +171,18 @@ export const certificatesContract = {
     .route({ method: "GET", path: "/prescriptions" })
     .input(listMedicalPrescriptionsInputSchema)
     .output(medicalPrescriptionListResponseSchema),
+  annulPrescription: oc
+    .route({ method: "POST", path: "/prescription/{id}/annul" })
+    .input(prescriptionIdInputSchema)
+    .output(annulPrescriptionResponseSchema),
+  deletePrescription: oc
+    .route({ method: "POST", path: "/prescription/{id}/delete" })
+    .input(prescriptionIdInputSchema)
+    .output(deletePrescriptionResponseSchema),
+  emailPrescription: oc
+    .route({ method: "POST", path: "/prescription/{id}/email" })
+    .input(emailPrescriptionInputSchema)
+    .output(emailPrescriptionResponseSchema),
   verify: oc
     .route({ method: "GET", path: "/verify/{id}" })
     .input(certificateVerifyInputSchema)

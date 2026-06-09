@@ -5,13 +5,18 @@ import path from "node:path";
 import { db, kysely } from "@finanzas/db";
 import { sql } from "kysely";
 import {
+  annulPrescriptionResponseSchema,
   certificateVerifyInputSchema,
   certificateVerifyResponseSchema,
+  deletePrescriptionResponseSchema,
+  emailPrescriptionInputSchema,
+  emailPrescriptionResponseSchema,
   generateMedicalCertificateInputSchema,
   generateMedicalPrescriptionInputSchema,
   listMedicalPrescriptionsInputSchema,
   medicalPrescriptionGenerateResponseSchema,
   medicalPrescriptionListResponseSchema,
+  prescriptionIdInputSchema,
 } from "@finanzas/orpc-contracts/certificates";
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
@@ -37,8 +42,13 @@ async function getCertificateService(): Promise<CertificateService> {
 }
 import { logError } from "../lib/logger.ts";
 import { configureSuperjson } from "../lib/superjson-config.ts";
-import { parseChileDateOnly } from "../lib/time.ts";
+import { ageFromBirthDate, parseChileDateOnly } from "../lib/time.ts";
 import { uploadCertificateToDrive } from "../services/certificates-drive.ts";
+import {
+  annulPrescription,
+  deletePrescription,
+  emailPrescription,
+} from "../services/prescriptions.ts";
 import { SuperJSONRPCHandler } from "./superjson.ts";
 
 configureSuperjson();
@@ -191,6 +201,7 @@ const certificatesORPCRouterBase = {
       const patient = await db.patient.findUnique({
         where: { id: parsed.patientId },
         select: {
+          birthDate: true,
           person: {
             select: {
               fatherName: true,
@@ -202,6 +213,7 @@ const certificatesORPCRouterBase = {
         },
       });
       if (!patient) throw new ORPCError("NOT_FOUND", { message: "Paciente no encontrado" });
+      const patientAge = ageFromBirthDate(patient.birthDate);
 
       const clinic = await db.clinicSettings.upsert({
         where: { id: 1 },
@@ -233,6 +245,7 @@ const certificatesORPCRouterBase = {
           folio,
           prescriptionType,
           doctorLicense,
+          patientAge,
           patient: { name: fullName, rut: patient.person.rut },
         },
         {
@@ -302,10 +315,56 @@ const certificatesORPCRouterBase = {
         }
       }
 
+      // Modificar = re-emitir: anula la receta original (folio viejo queda como
+      // ANULADA en auditoría), la nueva ya quedó creada con folio fresco.
+      if (parsed.supersedesId) {
+        try {
+          await annulPrescription(parsed.supersedesId);
+        } catch (error) {
+          // No romper la emisión si la vieja ya estaba anulada / no existe.
+          logError("prescription.supersede.annul", error, { supersedesId: parsed.supersedesId });
+        }
+      }
+
       // El PDF se descarga aparte (GET raw) — devolver el File por oRPC/SuperJSON
       // corrompe el binario. Devolvemos solo el id.
       return { id: prescriptionId };
     }),
+
+  annulPrescription: createMedicalCertificates
+    .route({
+      method: "POST",
+      path: "/prescription/{id}/annul",
+      summary: "Annul a medical prescription (soft, keeps audit record)",
+      tags: ["Certificates"],
+    })
+    .input(prescriptionIdInputSchema)
+    .output(annulPrescriptionResponseSchema)
+    .handler(async ({ input }) => annulPrescription(input.id)),
+
+  deletePrescription: createMedicalCertificates
+    .route({
+      method: "POST",
+      path: "/prescription/{id}/delete",
+      summary: "Permanently delete a medical prescription",
+      tags: ["Certificates"],
+    })
+    .input(prescriptionIdInputSchema)
+    .output(deletePrescriptionResponseSchema)
+    .handler(async ({ input }) => deletePrescription(input.id)),
+
+  emailPrescription: createMedicalCertificates
+    .route({
+      method: "POST",
+      path: "/prescription/{id}/email",
+      summary: "Email a medical prescription PDF to the patient",
+      tags: ["Certificates"],
+    })
+    .input(emailPrescriptionInputSchema)
+    .output(emailPrescriptionResponseSchema)
+    .handler(async ({ input }) =>
+      emailPrescription({ id: input.id, to: input.to, message: input.message })
+    ),
 
   listPrescriptions: readMedicalCertificates
     .route({
