@@ -2,6 +2,7 @@ import { Card, Chip, Skeleton } from "@heroui/react";
 import { useQuery } from "@tanstack/react-query";
 
 import { haulmerDteClient } from "@/features/haulmer-dte/orpc";
+import { haulmerKeys } from "@/features/operations/queries";
 
 const CLP = new Intl.NumberFormat("es-CL", {
   style: "currency",
@@ -11,22 +12,22 @@ const CLP = new Intl.NumberFormat("es-CL", {
 
 export function HaulmerDtePage() {
   const taxpayerQ = useQuery({
-    queryKey: ["haulmer-dte", "taxpayer"],
+    queryKey: haulmerKeys.taxpayer,
     queryFn: () => haulmerDteClient.taxpayer(),
     staleTime: 1000 * 60 * 60,
   });
   const ufQ = useQuery({
-    queryKey: ["haulmer-dte", "uf"],
+    queryKey: haulmerKeys.uf,
     queryFn: () => haulmerDteClient.uf(),
     staleTime: 1000 * 60 * 60,
   });
   const foliosQ = useQuery({
-    queryKey: ["haulmer-dte", "folios"],
+    queryKey: haulmerKeys.folios,
     queryFn: () => haulmerDteClient.folios(),
     staleTime: 1000 * 60 * 5,
   });
   const emittedQ = useQuery({
-    queryKey: ["haulmer-dte", "emitted", 39],
+    queryKey: haulmerKeys.emitted(39),
     queryFn: () => haulmerDteClient.emitted({ dte_type: 39, page: 1, limit: 15 }),
     staleTime: 1000 * 60 * 5,
   });

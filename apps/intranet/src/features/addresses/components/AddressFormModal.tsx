@@ -28,6 +28,7 @@ import {
   searchStreets,
 } from "@/features/shipments/api";
 import { createAddress, listAddresses, updateAddress } from "../api";
+import { addressKeys, cxKeys } from "../queries";
 
 // Etiquetas comunes sugeridas; el campo acepta valor personalizado igual.
 const LABEL_PRESETS = ["Principal", "Casa", "Trabajo", "Familiar", "Consulta"] as const;
@@ -75,7 +76,7 @@ export function AddressFormModal({
   const isEditMode = Boolean(draft?.id);
 
   const { data: regionsResponse, isLoading: loadingRegions } = useQuery({
-    queryKey: ["cx-regions"],
+    queryKey: cxKeys.regions,
     queryFn: fetchRegions,
     staleTime: 1000 * 60 * 60,
   });
@@ -85,7 +86,7 @@ export function AddressFormModal({
   // PRIMERA (entonces sugerimos "Principal"). Sin esto, defaulteábamos
   // "Principal" siempre, incluso en la 2ª/3ª dirección.
   const { data: existingAddresses } = useQuery({
-    queryKey: ["addresses", personId],
+    queryKey: addressKeys.byPerson(personId),
     queryFn: () => listAddresses(personId),
     enabled: isOpen && !isEditMode,
     staleTime: 1000 * 30,
@@ -112,7 +113,7 @@ export function AddressFormModal({
       const region = regions.find((r) => r.regionId === String(value.region));
       const regionDisplay = region?.regionName ?? String(value.region);
       const communes = await queryClient.fetchQuery({
-        queryKey: ["cx-communes", String(value.region)],
+        queryKey: cxKeys.communes(String(value.region)),
         queryFn: () => fetchCommunes(String(value.region)),
         staleTime: 1000 * 60 * 60,
       });
@@ -165,7 +166,7 @@ export function AddressFormModal({
   }, [isFirstAddress, labelDefaulted, labelValue, form]);
 
   const { data: communesResponse, isLoading: loadingCommunes } = useQuery({
-    queryKey: ["cx-communes", regionValue],
+    queryKey: cxKeys.communes(regionValue),
     queryFn: () => fetchCommunes(regionValue),
     enabled: regionValue.length > 0,
     staleTime: 1000 * 60 * 60,
@@ -180,7 +181,7 @@ export function AddressFormModal({
   // selecting it overrides the comuna's coverageCode so Chilexpress
   // tarification matches the actual delivery area.
   const { data: subzonesData } = useQuery({
-    queryKey: ["cx-communes-type2", regionValue],
+    queryKey: cxKeys.communesType2(regionValue),
     queryFn: () => fetchCommunes(regionValue, "2"),
     enabled: regionValue.length > 0,
     staleTime: 1000 * 60 * 60,
@@ -207,7 +208,7 @@ export function AddressFormModal({
   const ackBlocking = hasLimits && !limitsAcknowledged;
 
   const { data: streetNumbersData } = useQuery({
-    queryKey: ["cx-street-numbers", pickedStreetId],
+    queryKey: cxKeys.streetNumbers(pickedStreetId),
     queryFn: () => getStreetNumbers(pickedStreetId!),
     enabled: pickedStreetId != null,
     staleTime: 1000 * 60 * 30,
@@ -220,7 +221,7 @@ export function AddressFormModal({
     mutationFn: createAddress,
     onError: (err) => toastError(err instanceof Error ? err.message : "Error al guardar dirección"),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["addresses", personId] });
+      void queryClient.invalidateQueries({ queryKey: addressKeys.byPerson(personId) });
       success("Dirección guardada");
       form.reset();
       onClose();
@@ -232,7 +233,7 @@ export function AddressFormModal({
     onError: (err) =>
       toastError(err instanceof Error ? err.message : "Error al actualizar dirección"),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["addresses", personId] });
+      void queryClient.invalidateQueries({ queryKey: addressKeys.byPerson(personId) });
       success("Dirección actualizada");
       form.reset();
       onClose();
@@ -620,7 +621,7 @@ function StreetAutocomplete({
   }, [inputValue]);
 
   const { data: streetsResponse, isLoading } = useQuery({
-    queryKey: ["cx-streets", countyName, debounced],
+    queryKey: cxKeys.streets(countyName, debounced),
     queryFn: () => searchStreets({ countyName, query: debounced }),
     enabled: countyName.length > 0 && debounced.trim().length >= 2,
     staleTime: 1000 * 60 * 10,

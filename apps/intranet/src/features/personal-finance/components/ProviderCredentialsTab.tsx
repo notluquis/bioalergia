@@ -25,6 +25,7 @@ import {
   providerCredentialsClient,
   toProviderCredentialsError,
 } from "../provider-credentials-orpc";
+import { providerCredentialsKeys } from "../queries";
 
 interface FormState {
   authMethod: ProviderAuthMethod;
@@ -79,7 +80,7 @@ export function ProviderCredentialsTab() {
 
   const listQuery = useQuery({
     queryFn: () => providerCredentialsClient.list({}),
-    queryKey: ["provider-credentials"],
+    queryKey: providerCredentialsKeys.all,
   });
 
   const createMutation = useMutation({
@@ -87,7 +88,7 @@ export function ProviderCredentialsTab() {
     onError: (err) => toast.error(toProviderCredentialsError(err).message),
     onSuccess: () => {
       toast.success("Credencial guardada");
-      void queryClient.invalidateQueries({ queryKey: ["provider-credentials"] });
+      void queryClient.invalidateQueries({ queryKey: providerCredentialsKeys.all });
       reset();
     },
   });
@@ -114,7 +115,7 @@ export function ProviderCredentialsTab() {
     onError: (err) => toast.error(toProviderCredentialsError(err).message),
     onSuccess: () => {
       toast.success("Credencial actualizada");
-      void queryClient.invalidateQueries({ queryKey: ["provider-credentials"] });
+      void queryClient.invalidateQueries({ queryKey: providerCredentialsKeys.all });
       reset();
     },
   });
@@ -124,7 +125,7 @@ export function ProviderCredentialsTab() {
     onError: (err) => toast.error(toProviderCredentialsError(err).message),
     onSuccess: () => {
       toast.success("Credencial eliminada");
-      void queryClient.invalidateQueries({ queryKey: ["provider-credentials"] });
+      void queryClient.invalidateQueries({ queryKey: providerCredentialsKeys.all });
     },
   });
 

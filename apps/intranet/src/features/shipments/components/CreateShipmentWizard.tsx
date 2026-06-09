@@ -37,7 +37,9 @@ import { FeatureErrorBoundary } from "@/components/ui/FeatureErrorBoundary";
 import { useToast } from "@/context/ToastContext";
 import { listAddresses } from "@/features/addresses/api";
 import { AddressFormModal } from "@/features/addresses/components/AddressFormModal";
+import { addressKeys, cxKeys } from "@/features/addresses/queries";
 import { fetchPatient } from "@/features/patients/api";
+import { patientKeys } from "@/features/patients/queries";
 import {
   createShipment,
   fetchCommercialOffices,
@@ -46,6 +48,7 @@ import {
   fetchRegions,
   quoteShipment,
 } from "../api";
+import { shipmentKeys } from "../queries";
 
 const CLP = new Intl.NumberFormat("es-CL", { style: "currency", currency: "CLP" });
 
@@ -116,7 +119,7 @@ export function CreateShipmentWizard({
   });
 
   const { data: patientData } = useQuery({
-    queryKey: ["patient", String(patientId)],
+    queryKey: patientKeys.detail(String(patientId)),
     queryFn: () => fetchPatient(patientId),
     staleTime: 1000 * 60 * 5,
   });
@@ -212,7 +215,9 @@ export function CreateShipmentWizard({
                     onSuccess={(res) => {
                       setResult(res);
                       setStep("done");
-                      void queryClient.invalidateQueries({ queryKey: ["shipments", patientId] });
+                      void queryClient.invalidateQueries({
+                        queryKey: shipmentKeys.byPatient(patientId),
+                      });
                       success(`OT ${res.otNumber} creada correctamente`);
                     }}
                     onError={(msg) => toastError(msg)}
@@ -403,7 +408,7 @@ function HomeAddressPicker({
   onNext: (data: Partial<WizardState>) => void;
 }) {
   const { data: addresses = [], isLoading } = useQuery({
-    queryKey: ["addresses", personId],
+    queryKey: addressKeys.byPerson(personId),
     queryFn: () => listAddresses(personId),
   });
   // Auto-select primary (or first) on first render. User can override.
@@ -548,20 +553,20 @@ function OfficePicker({
   const [officeKind, setOfficeKind] = useState<"0" | "4">("0");
 
   const { data: regionsData, isLoading: loadingRegions } = useQuery({
-    queryKey: ["cx-regions"],
+    queryKey: cxKeys.regions,
     queryFn: fetchRegions,
     staleTime: 1000 * 60 * 60,
   });
 
   const { data: communesData, isLoading: loadingCommunes } = useQuery({
-    queryKey: ["cx-communes", regionId],
+    queryKey: cxKeys.communes(regionId),
     queryFn: () => fetchCommunes(String(regionId)),
     enabled: Boolean(regionId),
     staleTime: 1000 * 60 * 60,
   });
 
   const { data: officesData, isLoading: loadingOffices } = useQuery({
-    queryKey: ["cx-offices", regionId, communeName, officeKind],
+    queryKey: cxKeys.offices(regionId, communeName, officeKind),
     queryFn: () =>
       fetchCommercialOffices({
         regionCode: String(regionId),
@@ -577,7 +582,7 @@ function OfficePicker({
   // /addresses/georeference). Only enabled when we have a chilexpress
   // addressId on file.
   const { data: addressesData } = useQuery({
-    queryKey: ["addresses", personId],
+    queryKey: addressKeys.byPerson(personId),
     queryFn: () => listAddresses(personId),
     staleTime: 1000 * 60,
   });
@@ -587,7 +592,7 @@ function OfficePicker({
   const nearbyAddressId = primaryAddressId?.chilexpressAddressId ?? null;
 
   const { data: nearbyData } = useQuery({
-    queryKey: ["cx-nearby-offices", nearbyAddressId],
+    queryKey: cxKeys.nearbyOffices(nearbyAddressId),
     queryFn: () => fetchNearbyOffices(nearbyAddressId!),
     enabled: nearbyAddressId != null,
     staleTime: 1000 * 60 * 30,
@@ -935,15 +940,14 @@ function QuoteStep({
     isError,
     error,
   } = useQuery({
-    queryKey: [
-      "cx-quote",
+    queryKey: cxKeys.quote(
       state.coverageRegionCode,
       debouncedDims.weight,
       debouncedDims.height,
       debouncedDims.width,
       debouncedDims.length,
-      debouncedDims.declaredValue,
-    ],
+      debouncedDims.declaredValue
+    ),
     queryFn: () =>
       quoteShipment({
         originCoverageCode: state.coverageRegionCode ?? "",

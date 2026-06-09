@@ -5,6 +5,7 @@ import { formatChile } from "@/lib/dates";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 import { fetchMultiEmployeeTimesheets } from "../api";
+import { timesheetAuditKeys } from "../queries";
 import type { TimesheetEntryWithEmployee } from "../types";
 
 export interface AuditDateRange {
@@ -45,7 +46,7 @@ export function useTimesheetAudit({ employeeIds, ranges }: UseTimesheetAuditOpti
       );
       return filterAuditEntries(data, sortedRanges);
     },
-    queryKey: ["timesheet-audit", employeeIds, firstDay, lastDay, sortedRanges],
+    queryKey: timesheetAuditKeys.audit(employeeIds, firstDay, lastDay, sortedRanges),
   });
 
   return { entries: entries, error, isLoading };

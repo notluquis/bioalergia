@@ -53,6 +53,7 @@ tmp/
 # Generated files
 routeTree.gen.ts
 
-# Stryker mutation testing
-reports/
+# Stryker mutation testing (root-anchored so it doesn't swallow
+# src/features/hr/reports/)
+/reports/
 .stryker-tmp/

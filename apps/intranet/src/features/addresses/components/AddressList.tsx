@@ -5,6 +5,7 @@ import { useState } from "react";
 import { confirmAction } from "@/components/ui/ConfirmDialog";
 import { useToast } from "@/context/ToastContext";
 import { deleteAddress, listAddresses, setPrimaryAddress } from "../api";
+import { addressKeys } from "../queries";
 import type { AddressDraft } from "./AddressFormModal";
 import { AddressFormModal } from "./AddressFormModal";
 
@@ -19,7 +20,7 @@ export function AddressList({ personId }: Readonly<AddressListProps>) {
   const [editingDraft, setEditingDraft] = useState<AddressDraft | undefined>(undefined);
 
   const { data: addresses = [], isLoading } = useQuery({
-    queryKey: ["addresses", personId],
+    queryKey: addressKeys.byPerson(personId),
     queryFn: () => listAddresses(personId),
   });
 
@@ -27,7 +28,7 @@ export function AddressList({ personId }: Readonly<AddressListProps>) {
     mutationFn: (id: number) => setPrimaryAddress(id, personId),
     onError: (err) => toastError(err instanceof Error ? err.message : "No se pudo cambiar"),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["addresses", personId] });
+      void queryClient.invalidateQueries({ queryKey: addressKeys.byPerson(personId) });
       success("Dirección principal actualizada");
     },
   });
@@ -36,7 +37,7 @@ export function AddressList({ personId }: Readonly<AddressListProps>) {
     mutationFn: (id: number) => deleteAddress(id),
     onError: (err) => toastError(err instanceof Error ? err.message : "No se pudo eliminar"),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["addresses", personId] });
+      void queryClient.invalidateQueries({ queryKey: addressKeys.byPerson(personId) });
       success("Dirección eliminada");
     },
   });

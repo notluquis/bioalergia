@@ -21,6 +21,7 @@ import { useConfirmDialog } from "@/context/ConfirmDialogContext";
 import { useToast } from "@/context/ToastContext";
 import { autoLinkEventDteByPeriod } from "@/features/calendar/api";
 import { DteXmlJobProgress } from "@/features/finance/dte-analytics/components/DteXmlJobProgress";
+import { haulmerKeys } from "@/features/operations/queries";
 import {
   fetchHaulmerAvailablePeriods,
   syncHaulmerIncremental,
@@ -478,7 +479,7 @@ export function HaulmerSyncPage() {
     isLoading: isLoadingPeriods,
     error: periodsError,
   } = useQuery({
-    queryKey: ["haulmer-available-periods"],
+    queryKey: haulmerKeys.availablePeriods,
     queryFn: async () => fetchHaulmerAvailablePeriods(),
     staleTime: 5 * 60 * 1000, // 5 minutes
   });

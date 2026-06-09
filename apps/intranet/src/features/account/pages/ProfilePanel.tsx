@@ -4,6 +4,7 @@ import { useMemo } from "react";
 
 import { ProfileForm, type ProfileFormValues } from "@/features/account/components/ProfileForm";
 import { fetchUserProfile, updateOwnProfile } from "@/features/users/api";
+import { userProfileKey } from "@/features/users/queries";
 import { toast } from "@/lib/toast-interceptor";
 
 /**
@@ -22,7 +23,7 @@ export function ProfilePanel() {
   const queryClient = useQueryClient();
 
   const profileQuery = useQuery({
-    queryKey: ["user", "profile"],
+    queryKey: userProfileKey,
     queryFn: fetchUserProfile,
   });
 
@@ -40,7 +41,7 @@ export function ProfilePanel() {
       }),
     onSuccess: () => {
       toast.success("Perfil actualizado");
-      void queryClient.invalidateQueries({ queryKey: ["user", "profile"] });
+      void queryClient.invalidateQueries({ queryKey: userProfileKey });
       void queryClient.invalidateQueries({ queryKey: ["auth", "session"] });
     },
     onError: (mutationError: unknown) => {

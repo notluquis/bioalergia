@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
-import { civilNoon, diffDays } from "@/lib/dates";
-import { fetchCalendarDaily } from "@/features/calendar/api";
+import { civilNoon } from "@/lib/dates";
+import { statsKeys } from "@/features/finance/statistics/queries";
 import type { DateRange, FinancialSummary, IncomeCategoryGroup, IncomeItem } from "../types";
 
 type EventForIncome = {
@@ -15,16 +15,7 @@ type EventForIncome = {
 };
 
 export function useFinancialSummary(dateRange: DateRange) {
-  const { data, isLoading } = useQuery({
-    queryFn: () =>
-      fetchCalendarDaily({
-        categories: [],
-        from: dateRange.from,
-        maxDays: Math.max(diffDays(dateRange.to, dateRange.from) + 1, 1),
-        to: dateRange.to,
-      }),
-    queryKey: ["financial-summary", dateRange.from, dateRange.to],
-  });
+  const { data, isLoading } = useQuery(statsKeys.summary(dateRange.from, dateRange.to));
   const events = useMemo(
     () =>
       data?.days

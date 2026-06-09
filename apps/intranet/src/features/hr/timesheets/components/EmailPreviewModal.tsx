@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { formatChile, monthLabelToISO } from "@/lib/dates";
 import type { Employee } from "@/features/hr/employees/types";
 import { fetchTimesheetEmailPreview } from "@/features/hr/timesheets/api";
+import { timesheetAuditKeys } from "@/features/hr/timesheets-audit/queries";
 
 import type { TimesheetSummaryRow } from "../types";
 
@@ -64,7 +65,7 @@ export function EmailPreviewModal({
   const previewQuery = useQuery({
     enabled: isOpen && Boolean(employeeEmail),
     queryFn: () => fetchTimesheetEmailPreview(previewRequest),
-    queryKey: ["timesheet-email-preview", previewRequest],
+    queryKey: timesheetAuditKeys.emailPreview(previewRequest),
     staleTime: 60_000,
   });
 

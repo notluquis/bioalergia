@@ -18,8 +18,10 @@ import { DataTable } from "@/components/data-table/DataTable";
 import { useToast } from "@/context/ToastContext";
 import { fetchPatients } from "@/features/patients/api";
 import { CreatePatientModal } from "@/features/patients/components/CreatePatientModal";
+import { patientKeys } from "@/features/patients/queries";
 import { confirmAction } from "@/components/ui/ConfirmDialog";
 import { cancelShipment, fetchAllShipments, refreshAllTracking, reprintLabel } from "../api";
+import { shipmentKeys } from "../queries";
 import { CreateShipmentWizard } from "../components/CreateShipmentWizard";
 import { ManifestPanel } from "../components/ManifestPanel";
 import { ShipmentTrackingModal } from "../components/ShipmentTrackingModal";
@@ -125,7 +127,7 @@ function PatientSelectModal({
   const [search, setSearch] = useState("");
 
   const { data: patients = [], isLoading } = useQuery({
-    queryKey: ["patients", search],
+    queryKey: patientKeys.nameSearch(search),
     queryFn: () => fetchPatients(search || undefined),
     staleTime: 1000 * 30,
   });
@@ -215,7 +217,7 @@ export function ShipmentsPage() {
   const [tracking, setTracking] = useState<{ id: number; otNumber: string } | null>(null);
 
   const { data, isLoading, refetch } = useQuery({
-    queryKey: ["shipments-all"],
+    queryKey: shipmentKeys.allShipments,
     queryFn: fetchAllShipments,
     staleTime: 1000 * 60,
   });
@@ -225,7 +227,7 @@ export function ShipmentsPage() {
     onError: (e) => toastError(e instanceof Error ? e.message : "Error al refrescar estados"),
     onSuccess: (res) => {
       success(`Estados actualizados: ${res.updated}/${res.total}`);
-      void queryClient.invalidateQueries({ queryKey: ["shipments-all"] });
+      void queryClient.invalidateQueries({ queryKey: shipmentKeys.allShipments });
     },
   });
 
@@ -234,7 +236,7 @@ export function ShipmentsPage() {
     onError: (e) => toastError(e instanceof Error ? e.message : "Error al cancelar"),
     onSuccess: () => {
       success("Envío cancelado");
-      void queryClient.invalidateQueries({ queryKey: ["shipments-all"] });
+      void queryClient.invalidateQueries({ queryKey: shipmentKeys.allShipments });
     },
   });
 
@@ -246,7 +248,7 @@ export function ShipmentsPage() {
         const ot = data?.shipments.find((s) => s.id === shipmentId)?.otNumber ?? String(shipmentId);
         downloadLabel(ot, res.result.label);
         success("Etiqueta reimpresa");
-        void queryClient.invalidateQueries({ queryKey: ["shipments-all"] });
+        void queryClient.invalidateQueries({ queryKey: shipmentKeys.allShipments });
       }
     },
   });

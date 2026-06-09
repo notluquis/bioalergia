@@ -5,6 +5,7 @@ import { FileCheck2, FileText, PackagePlus } from "lucide-react";
 import { confirmAction } from "@/components/ui/ConfirmDialog";
 import { useToast } from "@/context/ToastContext";
 import { closeManifest, fetchActiveManifest, openManifest } from "../api";
+import { shipmentKeys } from "../queries";
 
 // Descarga el PDF del manifiesto (base64) que Chilexpress devuelve al cerrar
 // el certificado. imagePdf es el PDF; binaryImage es un fallback de imagen.
@@ -25,7 +26,7 @@ export function ManifestPanel() {
   const { error: toastError, success } = useToast();
 
   const { data, isLoading } = useQuery({
-    queryKey: ["shipment-manifest-active"],
+    queryKey: shipmentKeys.manifestActive,
     queryFn: fetchActiveManifest,
     staleTime: 1000 * 30,
   });
@@ -41,7 +42,7 @@ export function ManifestPanel() {
           ? `Ya había un manifiesto abierto (#${res.certificateNumber})`
           : `Manifiesto #${res.certificateNumber} abierto`
       );
-      void queryClient.invalidateQueries({ queryKey: ["shipment-manifest-active"] });
+      void queryClient.invalidateQueries({ queryKey: shipmentKeys.manifestActive });
     },
   });
 
@@ -60,8 +61,8 @@ export function ManifestPanel() {
         );
       }
       success(`Manifiesto cerrado${res.amountOfPieces ? ` · ${res.amountOfPieces} pieza(s)` : ""}`);
-      void queryClient.invalidateQueries({ queryKey: ["shipment-manifest-active"] });
-      void queryClient.invalidateQueries({ queryKey: ["shipments-all"] });
+      void queryClient.invalidateQueries({ queryKey: shipmentKeys.manifestActive });
+      void queryClient.invalidateQueries({ queryKey: shipmentKeys.allShipments });
     },
   });
 

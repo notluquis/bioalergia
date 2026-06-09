@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 
 import { catalogORPCClient } from "@/features/catalog/orpc";
+import { channelPriceKeys } from "@/features/operations/queries";
 
 const CHANNELS = ["WEB", "MERCADO_LIBRE", "UBER_EATS", "PEDIDOS_YA", "RAPPI"] as const;
 type Channel = (typeof CHANNELS)[number];
@@ -18,7 +19,7 @@ export function ChannelPricesPage() {
   const [productId, setProductId] = useState<number | null>(null);
 
   const productsQ = useQuery({
-    queryKey: ["catalog", "products-all"],
+    queryKey: channelPriceKeys.catalogProducts,
     queryFn: () => catalogORPCClient.list({ limit: 100, include_inactive: true }),
     staleTime: 1000 * 60 * 5,
   });
@@ -70,7 +71,7 @@ function ChannelPriceEditor({
   queryClient: ReturnType<typeof useQueryClient>;
 }) {
   const pricesQ = useQuery({
-    queryKey: ["channel-prices", productId],
+    queryKey: channelPriceKeys.forProduct(productId),
     queryFn: () => catalogORPCClient.listChannelPrices({ id: productId }),
   });
 
@@ -91,7 +92,9 @@ function ChannelPriceEditor({
             currentPrice={existing.get(channel)?.price_clp ?? null}
             key={channel}
             onSaved={() => {
-              void queryClient.invalidateQueries({ queryKey: ["channel-prices", productId] });
+              void queryClient.invalidateQueries({
+                queryKey: channelPriceKeys.forProduct(productId),
+              });
             }}
             productId={productId}
           />

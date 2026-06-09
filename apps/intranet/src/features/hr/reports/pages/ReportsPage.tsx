@@ -40,6 +40,7 @@ import { cn } from "@/lib/utils";
 import { fetchGlobalTimesheetRange, fetchSalarySummary } from "../api";
 import { getHRReportsColumns, type HRReportsTableMeta } from "../components/HRReportsColumns";
 import type { EmployeeWorkData, ReportGranularity } from "../types";
+import { reportKeys } from "../queries";
 import { calculateStats, prepareComparisonData } from "../utils";
 
 // Lazy-load chart components (Recharts ~400KB)
@@ -157,7 +158,7 @@ export function ReportsPage() {
         salarySummary
       );
     },
-    queryKey: ["reports-data", dateParams, selectedEmployeeIds, timestamp, employees],
+    queryKey: reportKeys.data(dateParams, selectedEmployeeIds, timestamp, employees),
   });
 
   const handleGenerateReport = () => {

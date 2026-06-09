@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import type { ComponentType } from "react";
 import { trackShipment } from "../api";
+import { shipmentKeys } from "../queries";
 
 interface ShipmentTrackingModalProps {
   isOpen: boolean;
@@ -62,7 +63,7 @@ export function ShipmentTrackingModal({
   otNumber,
 }: Readonly<ShipmentTrackingModalProps>) {
   const { data, isLoading, refetch, isFetching } = useQuery({
-    queryKey: ["shipment-tracking", shipmentId],
+    queryKey: shipmentKeys.tracking(shipmentId),
     queryFn: () => trackShipment(shipmentId!),
     enabled: isOpen && shipmentId != null,
     staleTime: 1000 * 30,
