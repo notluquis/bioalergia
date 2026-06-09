@@ -3,17 +3,11 @@ import { useSearch } from "@tanstack/react-router";
 import { type Dispatch, type SetStateAction, useState } from "react";
 import { useSettings } from "@/features/settings/hooks/use-settings";
 import { useToast } from "@/context/ToastContext";
-import { addDays, civilNoon, today } from "@/lib/dates";
+import { civilNoon, today } from "@/lib/dates";
 import { fetchCalendarSyncLogs, syncCalendarEvents } from "../api";
 import { calendarQueries, calendarSyncQueries } from "../queries";
-import {
-  type CalendarFilters,
-  type CalendarSearchParams,
-  type CalendarSyncLog,
-  type CalendarSyncStep,
-  calendarSearchSchema,
-} from "../types";
-import { computeDefaultFilters, normalizeFilters } from "../utils/filters";
+import { type CalendarSyncLog, type CalendarSyncStep, calendarSearchSchema } from "../types";
+import { computeDefaultFilters, deriveEffectiveFilters, normalizeFilters } from "../utils/filters";
 
 type SyncProgressEntry = CalendarSyncStep & { status: SyncProgressStatus };
 
@@ -54,43 +48,6 @@ const resolveRefetchInterval = (logs: CalendarSyncLog[] | undefined): number | u
 };
 
 const markAllAsError = (entries: SyncProgressEntry[]) => entries.map((e) => markEntryAsError(e));
-
-function deriveEffectiveFilters(
-  search: CalendarSearchParams,
-  filters: CalendarFilters
-): CalendarFilters {
-  const dateParam = search.date && /^\d{4}-\d{2}-\d{2}$/.test(search.date) ? search.date : null;
-  const maxDaysRaw = search.maxDays ?? filters.maxDays;
-  const maxDays =
-    Number.isFinite(maxDaysRaw) && maxDaysRaw > 0 ? Math.min(Math.floor(maxDaysRaw), 120) : 31;
-
-  const dateWindow = dateParam
-    ? (() => {
-        const half = Math.floor((maxDays - 1) / 2);
-        const from = addDays(dateParam, -half);
-        const to = addDays(dateParam, maxDays - half - 1);
-        return { from, to };
-      })()
-    : null;
-
-  const routeFrom = search.from ?? (dateWindow ? dateWindow.from : filters.from);
-  const routeTo = search.to ?? (dateWindow ? dateWindow.to : filters.to);
-
-  return {
-    beneficiaryRut: search.beneficiaryRut ?? filters.beneficiaryRut,
-    calendarIds: search.calendarId ?? filters.calendarIds,
-    categories: search.category?.length ? search.category : filters.categories,
-    clinicalSeriesId: search.clinicalSeriesId ?? filters.clinicalSeriesId,
-    from: routeFrom,
-    maxDays,
-    patientName: search.patientName ?? filters.patientName,
-    patientRut: search.patientRut ?? filters.patientRut,
-    search: search.search ?? filters.search,
-    seriesKind: search.seriesKind ?? filters.seriesKind,
-    seriesStatus: search.seriesStatus ?? filters.seriesStatus,
-    to: routeTo,
-  };
-}
 
 async function processSyncPollTick(params: {
   logId: number;

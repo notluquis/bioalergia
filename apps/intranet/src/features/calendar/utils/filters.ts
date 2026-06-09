@@ -1,6 +1,6 @@
 import { addDays, diffDays, isoWeekday, today, weekday } from "@/lib/dates";
 
-import type { CalendarFilters } from "../types";
+import type { CalendarFilters, CalendarSearchParams } from "../types";
 
 export const unique = (values: string[]) =>
   [...new Set(values)].toSorted((a, b) => a.localeCompare(b));
@@ -80,6 +80,63 @@ export const computeDefaultFilters = (settings: {
     to: toCandidate,
   };
 };
+
+/**
+ * Resolves effective calendar filters from URL search params layered over a
+ * set of defaults (Source of Truth: URL > Defaults). A `date` param expands to
+ * a window of `maxDays` centered on that date. Shared by the calendar hook AND
+ * the route loaders so the prefetched query key matches what the component
+ * fetches (a divergent loader key wastes the prefetch).
+ */
+export function deriveEffectiveFilters(
+  search: CalendarSearchParams,
+  filters: CalendarFilters
+): CalendarFilters {
+  const dateParam = search.date && /^\d{4}-\d{2}-\d{2}$/.test(search.date) ? search.date : null;
+  const maxDaysRaw = search.maxDays ?? filters.maxDays;
+  const maxDays =
+    Number.isFinite(maxDaysRaw) && maxDaysRaw > 0 ? Math.min(Math.floor(maxDaysRaw), 120) : 31;
+
+  const dateWindow = dateParam
+    ? (() => {
+        const half = Math.floor((maxDays - 1) / 2);
+        const from = addDays(dateParam, -half);
+        const to = addDays(dateParam, maxDays - half - 1);
+        return { from, to };
+      })()
+    : null;
+
+  const routeFrom = search.from ?? (dateWindow ? dateWindow.from : filters.from);
+  const routeTo = search.to ?? (dateWindow ? dateWindow.to : filters.to);
+
+  return {
+    beneficiaryRut: search.beneficiaryRut ?? filters.beneficiaryRut,
+    calendarIds: search.calendarId ?? filters.calendarIds,
+    categories: search.category?.length ? search.category : filters.categories,
+    clinicalSeriesId: search.clinicalSeriesId ?? filters.clinicalSeriesId,
+    from: routeFrom,
+    maxDays,
+    patientName: search.patientName ?? filters.patientName,
+    patientRut: search.patientRut ?? filters.patientRut,
+    search: search.search ?? filters.search,
+    seriesKind: search.seriesKind ?? filters.seriesKind,
+    seriesStatus: search.seriesStatus ?? filters.seriesStatus,
+    to: routeTo,
+  };
+}
+
+/**
+ * One-call filter builder: defaults from `settings`, then URL overrides.
+ * Use in route loaders (`buildCalendarFilters(search, {})` — settings aren't
+ * loader-available, the empty-settings defaults match the hook for the common
+ * case) and anywhere the calendar query filters are derived.
+ */
+export function buildCalendarFilters(
+  search: CalendarSearchParams,
+  settings: Parameters<typeof computeDefaultFilters>[0]
+): CalendarFilters {
+  return deriveEffectiveFilters(search, computeDefaultFilters(settings));
+}
 
 export function getScheduleDefaultRange() {
   const now = today();

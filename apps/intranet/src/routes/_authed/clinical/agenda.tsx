@@ -2,14 +2,10 @@ import { createFileRoute } from "@tanstack/react-router";
 import { requirePermission } from "@/lib/authz/route-guards";
 
 import { calendarQueries } from "@/features/calendar/queries";
-import { computeDefaultFilters, getScheduleDefaultRange } from "@/features/calendar/utils/filters";
+import { buildCalendarFilters, getScheduleDefaultRange } from "@/features/calendar/utils/filters";
 import { CalendarSchedulePage } from "@/pages/CalendarSchedulePage";
 
-import {
-  type CalendarFilters,
-  type CalendarSearchParams,
-  calendarSearchSchema,
-} from "@/features/calendar/types";
+import { type CalendarSearchParams, calendarSearchSchema } from "@/features/calendar/types";
 
 export const Route = createFileRoute("/_authed/clinical/agenda")({
   staticData: {
@@ -37,21 +33,11 @@ export const Route = createFileRoute("/_authed/clinical/agenda")({
       return;
     }
 
-    const defaults = computeDefaultFilters({});
-    const filters: CalendarFilters = {
-      beneficiaryRut: search.beneficiaryRut,
-      calendarIds: search.calendarId ?? [],
-      categories: search.category ?? [],
-      clinicalSeriesId: search.clinicalSeriesId,
-      from: search.from ?? (search.date ? search.date : defaults.from),
-      maxDays: search.maxDays ?? defaults.maxDays,
-      patientName: search.patientName,
-      patientRut: search.patientRut,
-      search: search.search ?? "",
-      seriesKind: search.seriesKind,
-      seriesStatus: search.seriesStatus,
-      to: search.to ?? (search.date ? search.date : defaults.to),
-    };
+    // Mirror the hook's filter derivation (deriveEffectiveFilters) so the
+    // prefetched key matches what useCalendarEvents fetches. Settings aren't
+    // loader-available; empty-settings defaults match the common case (the
+    // dominant prior bug was the date→window divergence, now shared).
+    const filters = buildCalendarFilters(search, {});
 
     await Promise.all([
       context.queryClient.ensureQueryData(calendarQueries.summary(filters)),
