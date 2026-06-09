@@ -20,6 +20,7 @@ import {
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Users, X } from "lucide-react";
 import { lazy, startTransition, Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { Page } from "@/components/layouts/Page";
 import { useAuth } from "@/features/auth/hooks/use-auth";
 import { EmployeeMultiSelectPopover } from "@/features/hr/components/EmployeeMultiSelectPopover";
 import { employeeKeys } from "@/features/hr/employees/queries";
@@ -46,7 +47,6 @@ import {
   startOfWeek,
   today,
 } from "@/lib/dates";
-import { PAGE_CONTAINER } from "@/lib/styles";
 import { cn } from "@/lib/utils";
 
 const TimesheetAuditCalendar = lazy(() =>
@@ -204,7 +204,7 @@ export function TimesheetAuditPage() {
   const canShowCalendar = selectedEmployeeIds.length > 0 && effectiveRanges.length > 0;
 
   return (
-    <section className={PAGE_CONTAINER}>
+    <Page>
       <PeriodSelectionPanel
         customWeeksOpen={customWeeksOpen}
         handleQuickRangeChange={handleQuickRangeChange}
@@ -258,7 +258,7 @@ export function TimesheetAuditPage() {
         onToggle={setLegendOpen}
         show={canShowCalendar}
       />
-    </section>
+    </Page>
   );
 }
 

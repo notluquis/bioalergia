@@ -29,7 +29,7 @@ import {
 } from "@/lib/dates";
 import { useAuth } from "@/features/auth/hooks/use-auth";
 import { BalanceSummary } from "@/features/finance/balances/components/BalanceSummary";
-import { PAGE_CONTAINER } from "@/lib/styles";
+import { Page } from "@/components/layouts/Page";
 
 import { MonthlyFlowChart } from "../components/MonthlyFlowChart";
 import { MovementTypeList } from "../components/MovementTypeList";
@@ -121,7 +121,7 @@ export function FinanzasStatsPage() {
 
   if (!canView) {
     return (
-      <section className={PAGE_CONTAINER}>
+      <Page>
         <Alert status="danger">
           <Alert.Content>
             <Alert.Description>
@@ -129,12 +129,12 @@ export function FinanzasStatsPage() {
             </Alert.Description>
           </Alert.Content>
         </Alert>
-      </section>
+      </Page>
     );
   }
 
   return (
-    <section className={PAGE_CONTAINER}>
+    <Page>
       {/* Date Range Filters */}
       <form
         className="grid gap-4 rounded-2xl border border-default-100 bg-background p-6 shadow-sm sm:grid-cols-5"
@@ -363,6 +363,6 @@ export function FinanzasStatsPage() {
           </Alert.Content>
         </Alert>
       )}
-    </section>
+    </Page>
   );
 }

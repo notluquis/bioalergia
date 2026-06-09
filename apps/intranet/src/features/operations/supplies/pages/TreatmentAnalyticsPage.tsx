@@ -39,6 +39,7 @@ import {
 
 import type { ColumnDef } from "@tanstack/react-table";
 import { DataTable } from "@/components/data-table/DataTable";
+import { Page } from "@/components/layouts/Page";
 import { calendarQueries } from "@/features/calendar/queries";
 import type { TreatmentAnalytics, TreatmentAnalyticsFilters } from "@/features/calendar/types";
 import { useChartPalette } from "@/lib/chart-palette";
@@ -258,7 +259,7 @@ export function TreatmentAnalyticsPage() {
   const trendData = buildTrendData(data, period);
 
   return (
-    <div className="mx-auto max-w-7xl space-y-4 pb-6 sm:px-4 lg:px-6 p-3">
+    <Page variant="relaxed" className="pb-6 p-3 sm:px-4 lg:px-6">
       <AnalyticsHeader
         dateRangeError={dateRangeError}
         filters={filters}
@@ -291,7 +292,7 @@ export function TreatmentAnalyticsPage() {
         totals={totals}
         trendData={trendData}
       />
-    </div>
+    </Page>
   );
 }
 

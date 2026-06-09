@@ -19,6 +19,7 @@ import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { BarChart2, BarChart3, Calendar, Clock, Filter, List, TrendingUp, X } from "lucide-react";
 import { lazy, Suspense, useEffect, useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
+import { Page } from "@/components/layouts/Page";
 
 import {
   chileDay,
@@ -35,7 +36,6 @@ import { EmployeeMultiSelectPopover } from "@/features/hr/components/EmployeeMul
 import { employeeKeys } from "@/features/hr/employees/queries";
 import type { Employee } from "@/features/hr/employees/types";
 import { useMonths } from "@/features/hr/timesheets/hooks/use-months";
-import { PAGE_CONTAINER } from "@/lib/styles";
 import { cn } from "@/lib/utils";
 import { fetchGlobalTimesheetRange, fetchSalarySummary } from "../api";
 import { getHRReportsColumns, type HRReportsTableMeta } from "../components/HRReportsColumns";
@@ -222,7 +222,7 @@ export function ReportsPage() {
   }
 
   return (
-    <section className={PAGE_CONTAINER}>
+    <Page>
       <div className="grid gap-6 lg:grid-cols-12">
         <ReportsFiltersPanel
           activeEmployees={activeEmployees}
@@ -259,7 +259,7 @@ export function ReportsPage() {
           stats={stats}
         />
       </div>
-    </section>
+    </Page>
   );
 }
 // ---------------------------------

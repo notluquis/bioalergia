@@ -27,10 +27,10 @@ import { DoctoraliaScraperRunControlPanel } from "@/features/doctoralia/componen
 import { DoctoraliaSyncLogsPanel } from "@/features/doctoralia/components/DoctoraliaSyncLogsPanel";
 import { useMemo } from "react";
 
+import { Page } from "@/components/layouts/Page";
 import { useToast } from "@/context/ToastContext";
 import { triggerDoctoraliaEmailIngest } from "@/features/doctoralia/settings-api";
 import { doctoraliaSettingsKeys } from "@/features/doctoralia/settings-queries";
-import { PAGE_CONTAINER } from "@/lib/styles";
 import { ChecklistRow, FlowStep } from "./messaging-settings-shared";
 
 export function DoctoraliaSettingsPage() {
@@ -122,7 +122,7 @@ export function DoctoraliaSettingsPage() {
   }, [overview]);
 
   return (
-    <div className={PAGE_CONTAINER}>
+    <Page>
       <Tabs defaultSelectedKey="overview">
         <Tabs.ListContainer>
           <Tabs.List aria-label="Secciones de Doctoralia">
@@ -439,7 +439,7 @@ export function DoctoraliaSettingsPage() {
           <DoctoraliaSyncLogsPanel />
         </Tabs.Panel>
       </Tabs>
-    </div>
+    </Page>
   );
 }
 

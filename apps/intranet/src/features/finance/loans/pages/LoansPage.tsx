@@ -39,6 +39,7 @@ import { LoanForm } from "@/features/finance/loans/components/LoanForm";
 import { LoanList } from "@/features/finance/loans/components/LoanList";
 import { loanKeys } from "@/features/finance/loans/queries";
 import { currencyFormatter } from "@/lib/format";
+import { Page } from "@/components/layouts/Page";
 import type {
   CreateLoanPayload,
   CreateStructuredLoanPayload,
@@ -49,7 +50,6 @@ import type {
   RegenerateSchedulePayload,
   UpdateLoanPayload,
 } from "@/features/finance/loans/types";
-import { PAGE_CONTAINER } from "@/lib/styles";
 
 const routeApi = getRouteApi("/_authed/finanzas/loans");
 
@@ -413,7 +413,7 @@ export function LoansPage() {
 
   if (!canView) {
     return (
-      <section className={PAGE_CONTAINER}>
+      <Page>
         <Alert status="danger">
           <Alert.Content>
             <Alert.Description>
@@ -421,12 +421,12 @@ export function LoansPage() {
             </Alert.Description>
           </Alert.Content>
         </Alert>
-      </section>
+      </Page>
     );
   }
 
   return (
-    <section className={PAGE_CONTAINER}>
+    <Page>
       <div className="grid gap-3 lg:min-h-[calc(100dvh-11rem)]">
         {selectedLoan ? (
           <>
@@ -1243,6 +1243,6 @@ export function LoansPage() {
           </Form>
         )}
       </AppModal>
-    </section>
+    </Page>
   );
 }
