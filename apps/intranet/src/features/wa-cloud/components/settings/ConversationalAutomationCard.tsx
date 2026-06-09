@@ -7,7 +7,7 @@ import {
   useAccounts,
   useConversationalAutomation,
   useUpdateConversationalAutomation,
-} from "../hooks/useWaCloud";
+} from "../../hooks/useWaCloud";
 
 type LocalCommand = { command_name: string; command_description: string };
 

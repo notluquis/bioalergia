@@ -1,7 +1,7 @@
 import { Chip, Popover } from "@heroui/react";
 import { AlertTriangle, ShieldCheck, ShieldOff } from "lucide-react";
 import { Link } from "@tanstack/react-router";
-import { usePhoneQualitySummary } from "../hooks/useWaCloud";
+import { usePhoneQualitySummary } from "../../hooks/useWaCloud";
 
 // Header badge that summarises Meta phone quality + unacknowledged
 // account events. Click → goes to the alerts page filtered by phone.

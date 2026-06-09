@@ -2,7 +2,7 @@ import { formatChile } from "@/lib/dates";
 import { Badge, Button, Card, Chip, EmptyState } from "@heroui/react";
 import { Bell, Check, Megaphone, Settings2, ShieldAlert } from "lucide-react";
 import { useState } from "react";
-import { WaListSkeleton } from "../components/Skeletons";
+import { WaListSkeleton } from "../components/shared/Skeletons";
 import { useAccountEvents, useAcknowledgeAccountEvent } from "../hooks/useWaCloud";
 
 const SEVERITY_COLOR: Record<string, "success" | "warning" | "danger" | "default" | "accent"> = {

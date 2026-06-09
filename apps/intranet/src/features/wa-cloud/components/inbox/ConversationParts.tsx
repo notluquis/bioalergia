@@ -59,7 +59,7 @@ import {
   useSendSavedList,
   useSendSavedLocation,
   useSnippets,
-} from "../hooks/useWaCloud";
+} from "../../hooks/useWaCloud";
 
 // ── Composer ────────────────────────────────────────────────────────────────
 

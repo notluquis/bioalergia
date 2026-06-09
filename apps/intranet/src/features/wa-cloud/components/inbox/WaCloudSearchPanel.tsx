@@ -3,8 +3,8 @@ import { formatChile } from "@/lib/dates";
 import { Card, Chip, EmptyState, Kbd, ScrollShadow, SearchField } from "@heroui/react";
 import { MessageSquareText, Phone, Search } from "lucide-react";
 import { useEffect, useState } from "react";
-import { WaListSkeleton } from "./Skeletons";
-import { useAccounts, useSearchMessages } from "../hooks/useWaCloud";
+import { WaListSkeleton } from "../shared/Skeletons";
+import { useAccounts, useSearchMessages } from "../../hooks/useWaCloud";
 
 /**
  * Shared global-search UI for wa-cloud messages.

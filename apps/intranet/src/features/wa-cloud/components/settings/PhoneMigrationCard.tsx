@@ -11,7 +11,7 @@ import {
   useRegisterPhone,
   useRequestPhoneCode,
   useVerifyPhoneCode,
-} from "../hooks/useWaCloud";
+} from "../../hooks/useWaCloud";
 
 // Full Cloud API phone migration wizard (Meta 2026 sequence):
 //

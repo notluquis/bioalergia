@@ -34,8 +34,8 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { WaConversationStatus } from "@finanzas/orpc-contracts/wa-cloud";
-import { ConversationDetail } from "../components/ConversationDetail";
-import { SharedPayloadModal } from "../components/SharedPayloadModal";
+import { ConversationDetail } from "../components/inbox/ConversationDetail";
+import { SharedPayloadModal } from "../components/modals/SharedPayloadModal";
 import { useFaviconBadge } from "../hooks/useFaviconBadge";
 import { useSharedPayload } from "../hooks/useSharedPayload";
 import { useAccounts, useConversations, useMarkRead, useSearchMessages } from "../hooks/useWaCloud";

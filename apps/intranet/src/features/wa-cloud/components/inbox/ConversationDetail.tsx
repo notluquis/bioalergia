@@ -7,7 +7,7 @@ import { chileDay, fromNowShort } from "@/lib/dates";
 import { confirmAction } from "@/components/ui/ConfirmDialog";
 import { toast } from "@/lib/toast-interceptor";
 import { ChatBubble } from "./ChatBubble";
-import { CommerceSelectorModal } from "./CommerceSelectorModal";
+import { CommerceSelectorModal } from "../modals/CommerceSelectorModal";
 import {
   ContactsSendModal,
   ConvSettingsMenu,
@@ -20,10 +20,10 @@ import {
   ScheduleSendModal,
   TextComposer,
 } from "./ConversationParts";
-import { QualityBadge } from "./QualityBadge";
+import { QualityBadge } from "../shared/QualityBadge";
 import { type CarouselCardState, type CopyCodeState, TemplateComposer } from "./TemplateComposer";
-import { dayLabel, initialsOf, type MessageStatus } from "./_shared";
-import { useQualityAlerts } from "../hooks/useQualityAlerts";
+import { dayLabel, initialsOf, type MessageStatus } from "../shared/_shared";
+import { useQualityAlerts } from "../../hooks/useQualityAlerts";
 import {
   uploadWaMedia,
   useAccounts,
@@ -44,7 +44,7 @@ import {
   useUnblockContact,
   useSetMute,
   useUpdateConversation,
-} from "../hooks/useWaCloud";
+} from "../../hooks/useWaCloud";
 
 export function ConversationDetail({ conversationId }: { conversationId: number }) {
   const qc = useQueryClient();

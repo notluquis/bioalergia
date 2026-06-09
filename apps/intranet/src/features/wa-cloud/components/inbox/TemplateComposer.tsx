@@ -4,7 +4,7 @@ import { useMemo, useRef, useState } from "react";
 import { AppDateTimePicker } from "@/components/forms/AppDatePicker";
 import { SelectInput, TextInput } from "@/features/outreach/components/FormField";
 import { toast } from "@/lib/toast-interceptor";
-import { uploadWaMedia } from "../hooks/useWaCloud";
+import { uploadWaMedia } from "../../hooks/useWaCloud";
 
 export type CarouselCardState = {
   cardIndex: number;

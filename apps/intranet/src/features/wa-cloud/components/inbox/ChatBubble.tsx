@@ -9,7 +9,7 @@ import {
   LocationBubble,
   UnsupportedBubble,
 } from "./SpecialMessage";
-import { type MessageStatus, QUICK_REACTIONS, StatusTicks } from "./_shared";
+import { type MessageStatus, QUICK_REACTIONS, StatusTicks } from "../shared/_shared";
 
 export type ChatBubbleRow = {
   messageId: number | null;

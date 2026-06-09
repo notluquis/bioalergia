@@ -1,5 +1,5 @@
 import { Button, Card, Chip, Modal } from "@heroui/react";
-import { WaSettingsSkeleton } from "../components/Skeletons";
+import { WaSettingsSkeleton } from "../components/shared/Skeletons";
 import {
   Check,
   Copy,
@@ -16,11 +16,11 @@ import {
 import { useState } from "react";
 import { TextInput } from "@/features/outreach/components/FormField";
 import { toast } from "@/lib/toast-interceptor";
-import { CommerceCatalogCard } from "../components/CommerceCatalogCard";
-import { ConversationalAutomationCard } from "../components/ConversationalAutomationCard";
-import { EmbeddedSignupButton } from "../components/EmbeddedSignupButton";
-import { PhoneMigrationCard } from "../components/PhoneMigrationCard";
-import { PhoneToolsModal } from "../components/PhoneToolsModal";
+import { CommerceCatalogCard } from "../components/settings/CommerceCatalogCard";
+import { ConversationalAutomationCard } from "../components/settings/ConversationalAutomationCard";
+import { EmbeddedSignupButton } from "../components/settings/EmbeddedSignupButton";
+import { PhoneMigrationCard } from "../components/settings/PhoneMigrationCard";
+import { PhoneToolsModal } from "../components/modals/PhoneToolsModal";
 import {
   useAccounts,
   useDeleteAccount,

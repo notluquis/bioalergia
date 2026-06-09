@@ -11,7 +11,7 @@ import {
   useRegisterPhone,
   useSetTwoStepPin,
   useUpdateBusinessProfile,
-} from "../hooks/useWaCloud";
+} from "../../hooks/useWaCloud";
 
 const VERTICAL_OPTIONS = [
   { value: "", label: "Sin categoría" },

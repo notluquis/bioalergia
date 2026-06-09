@@ -3,7 +3,7 @@ import { Button } from "@heroui/react";
 import { LogIn, Smartphone } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "@/lib/toast-interceptor";
-import { useEmbeddedSignupComplete } from "../hooks/useWaCloud";
+import { useEmbeddedSignupComplete } from "../../hooks/useWaCloud";
 
 // Two variants of Meta Embedded Signup:
 //   - "embedded_signup": standard flow — number moves exclusively to Cloud API.

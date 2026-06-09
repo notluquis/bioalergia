@@ -1,5 +1,5 @@
 import { Button, Card, Chip, EmptyState } from "@heroui/react";
-import { WaTableSkeleton } from "../components/Skeletons";
+import { WaTableSkeleton } from "../components/shared/Skeletons";
 import { BarChart3, MessageSquareText, RefreshCw, TrendingUp } from "lucide-react";
 import { useMemo, useState } from "react";
 import { SelectInput } from "@/features/outreach/components/FormField";

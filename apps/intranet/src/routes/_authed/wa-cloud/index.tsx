@@ -21,7 +21,7 @@ import { ProtectedTab } from "@/components/auth/ProtectedTab";
 // the wa-cloud route bundle stays under its size budget instead of shipping
 // every tab's code up front. Named exports → unwrap to default for React.lazy.
 import { WaCloudInboxPage } from "@/features/wa-cloud/pages/WaCloudInboxPage";
-import { InboxSearchDrawer } from "@/features/wa-cloud/components/InboxSearchDrawer";
+import { InboxSearchDrawer } from "@/features/wa-cloud/components/inbox/InboxSearchDrawer";
 import { useLazyTabs } from "@/hooks/use-lazy-tabs";
 
 const WaCloudAlertsPage = lazy(() =>

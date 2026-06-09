@@ -2,19 +2,19 @@ import { Button, Modal } from "@heroui/react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AlertCircle, CheckCircle2, Loader2, Paperclip, XCircle } from "lucide-react";
 import { toast } from "@/lib/toast-interceptor";
-import type { SharedPayload, SharedPayloadFile } from "../hooks/useSharedPayload";
-import { uploadWaMedia, useConversation, useSendMedia, useSendText } from "../hooks/useWaCloud";
+import type { SharedPayload, SharedPayloadFile } from "../../hooks/useSharedPayload";
+import { uploadWaMedia, useConversation, useSendMedia, useSendText } from "../../hooks/useWaCloud";
 import {
   isLockHeldByAnotherTab,
   releaseSendLock,
   tryAcquireSendLock,
-} from "../lib/share-send-lock";
+} from "../../lib/share-send-lock";
 import {
   buildSharedCaption,
   classifyFile,
   isHeic,
   tryConvertHeicToJpeg,
-} from "../lib/wa-media-limits";
+} from "../../lib/wa-media-limits";
 
 // Per-file state machine for the granular progress UI. Each file
 // rendered in the list shows its own spinner / check / X based on

@@ -1,6 +1,6 @@
 import { Button, Card, Chip, Modal, Spinner } from "@heroui/react";
 import type { ColumnDef } from "@tanstack/react-table";
-import { WaCardGridSkeleton } from "../components/Skeletons";
+import { WaCardGridSkeleton } from "../components/shared/Skeletons";
 import { BookOpen, Plus, Trash2, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";

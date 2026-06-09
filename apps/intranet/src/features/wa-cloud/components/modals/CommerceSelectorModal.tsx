@@ -9,7 +9,7 @@ import {
   useCommerceProducts,
   useSendMultiProduct,
   useSendSingleProduct,
-} from "../hooks/useWaCloud";
+} from "../../hooks/useWaCloud";
 
 // Composer modal: pick products from the linked Meta Commerce catalog
 // and send as either a single-product or a multi-product (MPM)

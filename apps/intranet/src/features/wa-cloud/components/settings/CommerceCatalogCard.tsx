@@ -3,7 +3,7 @@ import { Save, Search, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { SelectInput, TextInput } from "@/features/outreach/components/FormField";
 import { toast } from "@/lib/toast-interceptor";
-import { useAccounts, useCommerceProducts, useSetCommerceCatalog } from "../hooks/useWaCloud";
+import { useAccounts, useCommerceProducts, useSetCommerceCatalog } from "../../hooks/useWaCloud";
 
 // Per-account Meta Commerce catalog: link a catalog id (managed in
 // Meta Business Suite) so MPM and single-product messages can pull
