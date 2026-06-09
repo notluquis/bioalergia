@@ -154,23 +154,38 @@ function newMedicationDraft(): MedicationDraft {
 
 // Descarga el PDF desde el endpoint raw (bytes correctos; oRPC/SuperJSON
 // corrompe binario). Sirve para emitir y para re-descargar desde el historial.
-async function downloadPrescriptionPdf(id: string): Promise<void> {
-  const res = await fetch(`/api/certificates/prescription/${id}/pdf`, {
-    credentials: "include",
-  });
+async function downloadFromUrl(url: string, filename: string): Promise<void> {
+  const res = await fetch(url, { credentials: "include" });
   if (!res.ok) {
     toast.error("No se pudo descargar el PDF");
     return;
   }
   const blob = await res.blob();
-  const url = URL.createObjectURL(blob);
+  const objectUrl = URL.createObjectURL(blob);
   const a = document.createElement("a");
-  a.href = url;
-  a.download = `receta_${id}.pdf`;
+  a.href = objectUrl;
+  a.download = filename;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  URL.revokeObjectURL(objectUrl);
+}
+
+// mode: "full" = digital completa · "overlay" = solo datos (sobre recetario
+// pre-impreso) · "template" = recetario en blanco.
+async function downloadPrescriptionPdf(
+  id: string,
+  mode: "full" | "overlay" = "full"
+): Promise<void> {
+  const suffix = mode === "overlay" ? "_recetario" : "";
+  await downloadFromUrl(
+    `/api/certificates/prescription/${id}/pdf?mode=${mode}`,
+    `receta_${id}${suffix}.pdf`
+  );
+}
+
+async function downloadBlankRecetario(): Promise<void> {
+  await downloadFromUrl("/api/certificates/prescription/blank-template", "recetario_blanco.pdf");
 }
 
 function patientFullName(patient: SelectedPatient): string {
@@ -318,10 +333,20 @@ function MedicalPrescriptionPage() {
               {patient ? patientLabel : "Selecciona un paciente para generar una receta"}
             </p>
           </div>
-          <Button className="gap-2" onPress={() => setSelectPatientOpen(true)}>
-            <Plus size={16} />
-            Nueva receta
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              className="gap-2"
+              onPress={() => void downloadBlankRecetario()}
+              variant="outline"
+            >
+              <FileText size={16} />
+              Recetario en blanco
+            </Button>
+            <Button className="gap-2" onPress={() => setSelectPatientOpen(true)}>
+              <Plus size={16} />
+              Nueva receta
+            </Button>
+          </div>
         </div>
       </Card>
 
@@ -448,15 +473,23 @@ function PrescriptionHistory({
                   </p>
                 </div>
               </div>
-              <div className="flex shrink-0 gap-2">
+              <div className="flex shrink-0 flex-col gap-1 sm:items-end">
                 <Button
                   className="gap-2"
-                  onPress={() => void downloadPrescriptionPdf(item.id)}
+                  onPress={() => void downloadPrescriptionPdf(item.id, "full")}
                   size="sm"
                   variant="outline"
                 >
                   <Download size={14} />
                   Descargar
+                </Button>
+                <Button
+                  className="gap-2"
+                  onPress={() => void downloadPrescriptionPdf(item.id, "overlay")}
+                  size="sm"
+                  variant="ghost"
+                >
+                  Para recetario
                 </Button>
               </div>
             </article>

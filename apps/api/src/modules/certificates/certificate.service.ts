@@ -275,6 +275,14 @@ export async function generateMedicalCertificatePdf(
   return await pdfDoc.save();
 }
 
+// Modo de render:
+//  - "full": todo (digital completa).
+//  - "template": solo el chrome estático (logos, título, "Indicaciones",
+//    footer/firma) — el RECETARIO EN BLANCO para imprimir en bulk.
+//  - "overlay": solo la data variable (folio, paciente, medicamentos) en las
+//    MISMAS coordenadas → calza encima del recetario pre-impreso.
+export type PrescriptionPdfMode = "full" | "template" | "overlay";
+
 export type MedicalPrescriptionPdfInput = MedicalPrescriptionInput & {
   patient: {
     name: string;
@@ -283,6 +291,7 @@ export type MedicalPrescriptionPdfInput = MedicalPrescriptionInput & {
   // Derivados server-side (no input del médico).
   folio?: string;
   doctorLicense?: string;
+  mode?: PrescriptionPdfMode;
 };
 
 const PRESCRIPTION_TYPE_LABEL: Record<string, string> = {
@@ -298,11 +307,13 @@ export async function generateMedicalPrescriptionPdf(
   input: MedicalPrescriptionPdfInput,
   logoUrls?: CertificateLogoUrls
 ): Promise<Uint8Array> {
-  // Media carta (half-letter) vertical: 5.5" × 8.5" = 396 × 612 pt. Tamaño
-  // estándar de recetario médico en Chile.
-  const HALF_LETTER: [number, number] = [396, 612];
+  // Media carta (half-letter) vertical: 5.5"×8.5" = 396×612 pt. Tamaño estándar
+  // de recetario en Chile. Se imprime centrado en hoja Letter/A4.
+  const PAGE: [number, number] = [396, 612];
+  const showStatic = (input.mode ?? "full") !== "overlay";
+  const showData = (input.mode ?? "full") !== "template";
   const pdfDoc = await PDFDocument.create();
-  let page = pdfDoc.addPage(HALF_LETTER);
+  let page = pdfDoc.addPage(PAGE);
   const { width, height } = page.getSize();
   const { font, bold } = await loadPdfFonts(pdfDoc);
   const doctor = createDoctorInfo(input);
@@ -322,9 +333,11 @@ export async function generateMedicalPrescriptionPdf(
   // ninguna hoja suelta quede sin identificación.
   const drawContinuationHeader = (pg: typeof page): number => {
     let hy = height - margin;
-    const cont = "Receta médica (continuación)";
-    pg.drawText(cont, { x: margin, y: hy, size: 11, font: bold, color: rgb(0.1, 0.4, 0.6) });
-    if (input.folio) {
+    if (showStatic) {
+      const cont = "Receta médica (continuación)";
+      pg.drawText(cont, { x: margin, y: hy, size: 11, font: bold, color: rgb(0.1, 0.4, 0.6) });
+    }
+    if (showData && input.folio) {
       const f = `Folio: ${input.folio}`;
       pg.drawText(f, {
         x: width - margin - font.widthOfTextAtSize(f, 8),
@@ -335,18 +348,20 @@ export async function generateMedicalPrescriptionPdf(
       });
     }
     hy -= 14;
-    pg.drawText(`Paciente: ${input.patient.name} · ${input.patient.rut ?? "Sin RUT"}`, {
-      x: margin,
-      y: hy,
-      size: 9,
-      font,
-      color: rgb(0.3, 0.3, 0.3),
-    });
+    if (showData) {
+      pg.drawText(`Paciente: ${input.patient.name} · ${input.patient.rut ?? "Sin RUT"}`, {
+        x: margin,
+        y: hy,
+        size: 9,
+        font,
+        color: rgb(0.3, 0.3, 0.3),
+      });
+    }
     return hy - 20;
   };
   const newPageIfNeeded = (minY: number) => {
     if (y >= minY) return;
-    page = pdfDoc.addPage(HALF_LETTER);
+    page = pdfDoc.addPage(PAGE);
     y = drawContinuationHeader(page);
   };
 
@@ -366,20 +381,24 @@ export async function generateMedicalPrescriptionPdf(
     return nextY;
   };
 
-  // Logos compactos para media carta.
-  await drawHeaderLogos(pdfDoc, page, margin, width, y, logoUrls, 95, 64);
+  // Logos compactos para A5 — solo chrome (full/template).
+  if (showStatic) {
+    await drawHeaderLogos(pdfDoc, page, margin, width, y, logoUrls, 95, 64);
+  }
   y -= 40;
 
-  const title = "Receta médica";
-  page.drawText(title, {
-    x: width / 2 - bold.widthOfTextAtSize(title, 14) / 2,
-    y,
-    size: 14,
-    font: bold,
-    color: rgb(0.1, 0.4, 0.6),
-  });
-  // Folio arriba a la derecha (correlativo + sufijo aleatorio).
-  if (input.folio) {
+  if (showStatic) {
+    const title = "Receta médica";
+    page.drawText(title, {
+      x: width / 2 - bold.widthOfTextAtSize(title, 14) / 2,
+      y,
+      size: 14,
+      font: bold,
+      color: rgb(0.1, 0.4, 0.6),
+    });
+  }
+  // Folio arriba a la derecha (data).
+  if (showData && input.folio) {
     const folioText = `Folio: ${input.folio}`;
     page.drawText(folioText, {
       x: width - margin - font.widthOfTextAtSize(folioText, 8),
@@ -391,32 +410,41 @@ export async function generateMedicalPrescriptionPdf(
   }
   y -= 22;
 
-  // Bloque paciente compacto (2 líneas) — deja sitio para los medicamentos.
+  // Bloque paciente compacto (data).
   const typeLabel = PRESCRIPTION_TYPE_LABEL[input.prescriptionType ?? "SIMPLE"];
-  const line1 = `Paciente: ${input.patient.name}   ·   RUT: ${input.patient.rut ?? "Sin RUT"}`;
-  const line2 = [`Fecha: ${formatDate(input.date)}`, typeLabel ? `Tipo: ${typeLabel}` : null]
-    .filter(Boolean)
-    .join("   ·   ");
-  y = drawWrapped(line1, margin, y, contentWidth, 9);
-  y -= 2;
-  y = drawWrapped(line2, margin, y, contentWidth, 9);
-  if (input.diagnosis?.trim()) {
+  if (showData) {
+    const line1 = `Paciente: ${input.patient.name}   ·   RUT: ${input.patient.rut ?? "Sin RUT"}`;
+    const line2 = [`Fecha: ${formatDate(input.date)}`, typeLabel ? `Tipo: ${typeLabel}` : null]
+      .filter(Boolean)
+      .join("   ·   ");
+    y = drawWrapped(line1, margin, y, contentWidth, 9);
     y -= 2;
-    y = drawWrapped(`Diagnóstico: ${input.diagnosis.trim()}`, margin, y, contentWidth, 9);
+    y = drawWrapped(line2, margin, y, contentWidth, 9);
+    if (input.diagnosis?.trim()) {
+      y -= 2;
+      y = drawWrapped(`Diagnóstico: ${input.diagnosis.trim()}`, margin, y, contentWidth, 9);
+    }
+  } else {
+    // template: reservar el alto del bloque paciente (≈3 líneas) para que el
+    // overlay caiga en el mismo Y.
+    y -= 3 * 13;
   }
 
   y -= 10;
-  page.drawText("Indicaciones farmacológicas", {
-    x: margin,
-    y,
-    size: 10,
-    font: bold,
-    color: rgb(0.1, 0.4, 0.6),
-  });
+  if (showStatic) {
+    page.drawText("Indicaciones farmacológicas", {
+      x: margin,
+      y,
+      size: 10,
+      font: bold,
+      color: rgb(0.1, 0.4, 0.6),
+    });
+  }
   y -= 14;
 
-  for (const [index, medication] of input.medications.entries()) {
-    newPageIfNeeded(165);
+  if (showData) {
+    for (const [index, medication] of input.medications.entries()) {
+      newPageIfNeeded(165);
     y = drawWrapped(`${index + 1}. ${medication.name}`, margin, y, contentWidth, 10, bold);
     // Dosis · frecuencia · duración en UNA línea (compacto media carta).
     const posology = [medication.dosage, medication.frequency, medication.duration]
@@ -447,37 +475,41 @@ export async function generateMedicalPrescriptionPdf(
     });
     y -= 14;
     y = drawWrapped(input.notes.trim(), margin, y, contentWidth, 9);
+    }
   }
 
   // Footer en CADA página: doctor + firma + registro + "Página X de Y" + nota.
-  // Así toda hoja (incl. continuaciones) es una receta válida y trazable por sí
-  // sola — nunca queda una hoja suelta sin firma ni datos.
+  // El chrome (doctor/firma/registro/nota) solo en full/template; en overlay va
+  // pre-impreso. "Página X de Y" en todas. Así ninguna hoja queda sin firma.
   const allPages = pdfDoc.getPages();
   const total = allPages.length;
   allPages.forEach((pg, index) => {
-    drawDoctorFooter(pg, doctor, font, bold, margin, 135);
-    if (input.doctorLicense?.trim()) {
-      pg.drawText(`Reg. SIS N° ${input.doctorLicense.trim()}`, {
-        x: width - margin - 180,
-        y: 100,
-        size: 8,
-        font,
-        color: rgb(0.35, 0.35, 0.35),
+    if (showStatic) {
+      drawDoctorFooter(pg, doctor, font, bold, margin, 135);
+      if (input.doctorLicense?.trim()) {
+        pg.drawText(`Reg. SIS N° ${input.doctorLicense.trim()}`, {
+          x: width - margin - 180,
+          y: 100,
+          size: 8,
+          font,
+          color: rgb(0.35, 0.35, 0.35),
+        });
+      }
+      pg.drawLine({
+        start: { x: width - margin - 180, y: 135 },
+        end: { x: width - margin, y: 135 },
+        thickness: 0.5,
+        color: rgb(0.4, 0.4, 0.4),
       });
+      pg.drawText("Firma y timbre", {
+        x: width - margin - 125,
+        y: 118,
+        size: 9,
+        font,
+        color: rgb(0.1, 0.4, 0.6),
+      });
+      drawFooterNote(pg, font, width);
     }
-    pg.drawLine({
-      start: { x: width - margin - 180, y: 135 },
-      end: { x: width - margin, y: 135 },
-      thickness: 0.5,
-      color: rgb(0.4, 0.4, 0.4),
-    });
-    pg.drawText("Firma y timbre", {
-      x: width - margin - 125,
-      y: 118,
-      size: 9,
-      font,
-      color: rgb(0.1, 0.4, 0.6),
-    });
     if (total > 1) {
       // y=46 (~16 mm) — sobre el margen inferior no imprimible de impresoras
       // Epson (puede llegar a ~14 mm en papel normal).
@@ -490,7 +522,6 @@ export async function generateMedicalPrescriptionPdf(
         color: rgb(0.5, 0.5, 0.5),
       });
     }
-    drawFooterNote(pg, font, width);
   });
 
   return await pdfDoc.save();
