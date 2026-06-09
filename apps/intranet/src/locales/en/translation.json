@@ -64,6 +64,7 @@
       "bci": "Include BCI (Chile + Peru)",
       "getonbrd": "Include GetOnBoard (searches by keywords)",
       "empleospublicos": "Include Empleos Públicos 🇨🇱 (public sector)",
+      "muevete": "Include Falabella (group: Sodimac, Tottus, IKEA…)",
       "companies": "Teamtailor companies (CSV of subdomains)",
       "greenhouse": "Greenhouse boards (CSV of tokens)",
       "lever": "Lever companies (CSV of slugs)",

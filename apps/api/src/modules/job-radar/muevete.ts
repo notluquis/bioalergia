@@ -47,6 +47,9 @@ export async function fetchMueveteJobs(): Promise<RawJob[]> {
   for (const item of arr) {
     const o = asRecord(item);
     if (!o) continue;
+    // El feed mezcla países (CO/PE/MX/UY/AR); el radar es Chile → filtramos.
+    const country = asString(o.country);
+    if (country && country.toLowerCase() !== "chile") continue;
     const externalId = asString(o.offer_id);
     const title = asString(o.title);
     if (!externalId || !title) continue;

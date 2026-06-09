@@ -78,6 +78,7 @@ export const jobRadarSettingsSchema = z.object({
   bci: z.boolean(),
   getonbrd: z.boolean(),
   empleospublicos: z.boolean(),
+  muevete: z.boolean(),
   keywords: z.string(),
   departments: z.string(),
   cron: z.string(),
@@ -90,6 +91,7 @@ export const jobRadarSettingsUpdateSchema = z.object({
   bci: z.boolean().optional(),
   getonbrd: z.boolean().optional(),
   empleospublicos: z.boolean().optional(),
+  muevete: z.boolean().optional(),
   keywords: z.string().optional(),
   departments: z.string().optional(),
   cron: z.string().optional(),
@@ -107,7 +109,6 @@ export const jobSourceKindSchema = z.enum([
   "AIRAVIRTUAL",
   "SUCCESSFACTORS",
   "TRABAJANDO",
-  "MUEVETE",
 ]);
 
 export const jobSourceSchema = z

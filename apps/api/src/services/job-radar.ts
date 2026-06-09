@@ -47,6 +47,7 @@ const KEYS = {
   bci: "jobRadar.bci",
   getonbrd: "jobRadar.getonbrd",
   empleospublicos: "jobRadar.empleospublicos",
+  muevete: "jobRadar.muevete",
   keywords: "jobRadar.keywords",
   departments: "jobRadar.departments",
   cron: "jobRadar.cron",
@@ -59,6 +60,7 @@ export interface JobRadarConfig {
   bci: boolean;
   getonbrd: boolean;
   empleospublicos: boolean;
+  muevete: boolean;
   keywords: string[];
   departments: string[];
   cron: string;
@@ -103,6 +105,11 @@ export async function getJobRadarConfig(): Promise<JobRadarConfig> {
     empleospublicos: parseBool(
       pick(rec, KEYS.empleospublicos, process.env.JOB_RADAR_EMPLEOSPUBLICOS),
       false
+    ),
+    // muevete (grupo Falabella) on por defecto
+    muevete: parseBool(
+      pick(rec, KEYS.muevete, process.env.JOB_RADAR_MUEVETE === "false" ? "false" : undefined),
+      true
     ),
     keywords: keywordsRaw === undefined ? DEFAULT_KEYWORDS : parseCsv(keywordsRaw),
     departments: parseCsv(departmentsRaw),
@@ -182,14 +189,9 @@ function sourceFromRow(kind: string, identifier: string, keywords: string[]): Jo
         label: `trabajando:${identifier}`,
         fetch: () => fetchTrabajandoJobs(identifier),
       };
-    case "MUEVETE":
-      // Fuente única (agrega todo el grupo Falabella); identifier ignorado.
-      return {
-        source: "muevete",
-        company: identifier || "falabella",
-        label: "muevete",
-        fetch: fetchMueveteJobs,
-      };
+    // MUEVETE (grupo Falabella) NO es fila: es toggle global `config.muevete`
+    // (como BCI/GetOnBoard), porque es una fuente única que agrega todas las
+    // marcas del grupo. Ver getSources().
     case "WORKDAY": {
       const entry = parseWorkdayEntry(identifier);
       if (!entry) {
@@ -219,6 +221,14 @@ async function getSources(config: JobRadarConfig): Promise<JobSource[]> {
   }
   if (config.bci) {
     sources.push({ source: "bci", company: "bci", label: "bci", fetch: fetchBciJobs });
+  }
+  if (config.muevete) {
+    sources.push({
+      source: "muevete",
+      company: "falabella",
+      label: "muevete",
+      fetch: fetchMueveteJobs,
+    });
   }
   if (config.getonbrd) {
     sources.push({
@@ -604,6 +614,7 @@ export interface JobRadarSettingsDTO {
   bci: boolean;
   getonbrd: boolean;
   empleospublicos: boolean;
+  muevete: boolean;
   keywords: string; // CSV
   departments: string; // CSV
   cron: string;
@@ -618,6 +629,7 @@ export async function getJobRadarSettings(): Promise<JobRadarSettingsDTO> {
     bci: config.bci,
     getonbrd: config.getonbrd,
     empleospublicos: config.empleospublicos,
+    muevete: config.muevete,
     keywords: config.keywords.join(", "),
     departments: config.departments.join(", "),
     cron: config.cron,
@@ -631,6 +643,7 @@ export interface UpdateJobRadarSettingsInput {
   bci?: boolean;
   getonbrd?: boolean;
   empleospublicos?: boolean;
+  muevete?: boolean;
   keywords?: string;
   departments?: string;
   cron?: string;
@@ -647,6 +660,7 @@ export async function updateJobRadarSettings(
   if (input.getonbrd !== undefined) rows[KEYS.getonbrd] = input.getonbrd ? "true" : "false";
   if (input.empleospublicos !== undefined)
     rows[KEYS.empleospublicos] = input.empleospublicos ? "true" : "false";
+  if (input.muevete !== undefined) rows[KEYS.muevete] = input.muevete ? "true" : "false";
   if (input.keywords !== undefined) rows[KEYS.keywords] = input.keywords;
   if (input.departments !== undefined) rows[KEYS.departments] = input.departments;
   if (input.cron !== undefined) rows[KEYS.cron] = input.cron;
@@ -668,8 +682,7 @@ export type JobSourceKindDTO =
   | "WORKDAY"
   | "AIRAVIRTUAL"
   | "SUCCESSFACTORS"
-  | "TRABAJANDO"
-  | "MUEVETE";
+  | "TRABAJANDO";
 
 export async function listJobSources() {
   return db.jobSource.findMany({ orderBy: [{ kind: "asc" }, { identifier: "asc" }] });

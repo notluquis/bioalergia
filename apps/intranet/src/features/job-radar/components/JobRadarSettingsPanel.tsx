@@ -10,6 +10,7 @@ const EMPTY: JobRadarSettings = {
   bci: true,
   getonbrd: false,
   empleospublicos: false,
+  muevete: true,
   keywords: "",
   departments: "",
   cron: "",
@@ -57,6 +58,11 @@ export function JobRadarSettingsPanel() {
             label={t("jobRadar.settings.empleospublicos")}
             isSelected={form.empleospublicos}
             onChange={(v) => set("empleospublicos", v)}
+          />
+          <ToggleRow
+            label={t("jobRadar.settings.muevete")}
+            isSelected={form.muevete}
+            onChange={(v) => set("muevete", v)}
           />
         </div>
 
