@@ -8595,11 +8595,13 @@ export class SchemaType implements SchemaDef {
                 driveFileId: {
                     name: "driveFileId",
                     type: "String",
+                    optional: true,
                     attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("drive_file_id") }] }] as readonly AttributeApplication[]
                 },
                 pdfHash: {
                     name: "pdfHash",
                     type: "String",
+                    optional: true,
                     attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("pdf_hash") }] }] as readonly AttributeApplication[]
                 },
                 metadata: {
@@ -8628,7 +8630,7 @@ export class SchemaType implements SchemaDef {
             },
             attributes: [
                 { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,read,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,read,update") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
                 { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("patientId"), ExpressionUtils.field("issuedAt")]) }] },
                 { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("DateTime", [ExpressionUtils.field("issuedAt")]) }] },
                 { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("medical_prescriptions") }] }

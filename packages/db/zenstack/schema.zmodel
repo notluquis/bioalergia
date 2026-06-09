@@ -2627,8 +2627,11 @@ model MedicalPrescription {
 
   issuedBy    Int      @map("issued_by")
   issuedAt    DateTime @default(now()) @map("issued_at")
-  driveFileId String   @map("drive_file_id")
-  pdfHash     String   @map("pdf_hash")
+  // Receta NO se archiva en Drive ni se guarda el PDF: se regenera
+  // determinísticamente desde esta fila (fuente de verdad única). El documento
+  // es inmutable — solo se puede anular (status=ANNULLED), nunca editar/borrar.
+  driveFileId String?  @map("drive_file_id")
+  pdfHash     String?  @map("pdf_hash")
   metadata    Json?
 
   issuer      User     @relation(fields: [issuedBy], references: [id])
@@ -2636,7 +2639,9 @@ model MedicalPrescription {
   verification DocumentVerification?
 
   @@deny('all', auth() == null)
-  @@allow('create,read,update,delete', auth().status == 'ACTIVE')
+  // Inmutable salvo anulación: create + read + update (solo status→ANNULLED).
+  // NO delete — una receta emitida es un documento legal, no se borra.
+  @@allow('create,read,update', auth().status == 'ACTIVE')
 
   @@index([patientId, issuedAt])
   @@index([issuedAt])

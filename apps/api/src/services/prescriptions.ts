@@ -110,20 +110,6 @@ export async function annulPrescription(id: string): Promise<{ id: string; statu
 }
 
 /**
- * Borra una receta de forma permanente. Preferir `annulPrescription` para
- * documentos ya entregados; este path es para borradores / errores de captura.
- */
-export async function deletePrescription(id: string): Promise<{ id: string }> {
-  const found = await db.medicalPrescription.findUnique({
-    where: { id },
-    select: { id: true },
-  });
-  if (!found) throw new DomainError("NOT_FOUND", "Receta no encontrada");
-  await db.medicalPrescription.delete({ where: { id } });
-  return { id };
-}
-
-/**
  * Envía la receta por email con el PDF adjunto (Resend). Regenera el PDF al
  * vuelo desde la fila guardada. Lanza CONFLICT si email no está configurado.
  */

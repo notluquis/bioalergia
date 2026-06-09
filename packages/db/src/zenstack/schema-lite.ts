@@ -7039,11 +7039,13 @@ export class SchemaType implements SchemaDef {
                 },
                 driveFileId: {
                     name: "driveFileId",
-                    type: "String"
+                    type: "String",
+                    optional: true
                 },
                 pdfHash: {
                     name: "pdfHash",
-                    type: "String"
+                    type: "String",
+                    optional: true
                 },
                 metadata: {
                     name: "metadata",

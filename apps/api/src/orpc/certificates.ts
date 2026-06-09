@@ -8,7 +8,6 @@ import {
   annulPrescriptionResponseSchema,
   certificateVerifyInputSchema,
   certificateVerifyResponseSchema,
-  deletePrescriptionResponseSchema,
   emailPrescriptionInputSchema,
   emailPrescriptionResponseSchema,
   generateMedicalCertificateInputSchema,
@@ -44,13 +43,9 @@ async function getCertificateService(): Promise<CertificateService> {
 }
 import { logError } from "../lib/logger.ts";
 import { configureSuperjson } from "../lib/superjson-config.ts";
-import { ageFromBirthDate, parseChileDateOnly } from "../lib/time.ts";
+import { parseChileDateOnly } from "../lib/time.ts";
 import { uploadCertificateToDrive } from "../services/certificates-drive.ts";
-import {
-  annulPrescription,
-  deletePrescription,
-  emailPrescription,
-} from "../services/prescriptions.ts";
+import { annulPrescription, emailPrescription } from "../services/prescriptions.ts";
 import { createVerification, generateVerificationCode } from "../services/verification.ts";
 import { SuperJSONRPCHandler } from "./superjson.ts";
 
@@ -212,7 +207,6 @@ const certificatesORPCRouterBase = {
       const patient = await db.patient.findUnique({
         where: { id: parsed.patientId },
         select: {
-          birthDate: true,
           person: {
             select: {
               fatherName: true,
@@ -224,14 +218,12 @@ const certificatesORPCRouterBase = {
         },
       });
       if (!patient) throw new ORPCError("NOT_FOUND", { message: "Paciente no encontrado" });
-      const patientAge = ageFromBirthDate(patient.birthDate);
 
       const clinic = await db.clinicSettings.upsert({
         where: { id: 1 },
         update: {},
         create: { id: 1 },
       });
-      const { generateMedicalPrescriptionPdf, generateQRCode } = await getCertificateService();
       const fullName = [patient.person.names, patient.person.fatherName, patient.person.motherName]
         .filter(Boolean)
         .join(" ");
@@ -246,106 +238,61 @@ const certificatesORPCRouterBase = {
       const folio = buildFolio(folioSeq, Number(parsed.date.slice(0, 4)));
       const doctorLicense = clinic.superintendenciaNumber ?? undefined;
       const prescriptionType = parsed.prescriptionType ?? "SIMPLE";
-
-      // Código + QR de verificación: el código se codifica en el QR y se persiste
-      // tras crear la receta (createVerification con `code` fijo).
       const prescriptionId = crypto.randomUUID();
       const verificationCode = generateVerificationCode();
-      const prescriptionQr = await generateQRCode(verificationCode);
 
       // Normalización tipada → fila JSON-safe (sin claves `undefined`, que
-      // ZenStack rechaza en columnas Json). El PDF sigue usando `parsed`.
+      // ZenStack rechaza en columnas Json).
       const storedMedications = toStoredMedications(parsed.medications);
       const storedDiagnoses = parsed.diagnoses
         ? toStoredDiagnoses(parsed.diagnoses)
         : undefined;
-      const rawPdf = await generateMedicalPrescriptionPdf(
-        {
-          ...parsed,
-          diagnosis: diagnosisText,
+
+      // SIN Drive ni PDF al crear: el PDF es función pura de esta fila y se
+      // genera al descargar/imprimir/enviar (services/prescriptions.ts). Esto
+      // hace el create instantáneo y mantiene la receta inmutable (la fila es la
+      // única fuente de verdad; el documento solo se anula, nunca se edita).
+      await db.medicalPrescription.create({
+        data: {
+          date: parseDateOnly(parsed.date),
           folio,
+          folioSeq,
           prescriptionType,
           doctorLicense,
-          patientAge,
-          qrCodeBuffer: prescriptionQr,
-          verificationCode,
-          patient: { name: fullName, rut: patient.person.rut },
-        },
-        {
-          primary: clinic.logoUrl,
-          secondary: clinic.secondaryLogoUrl,
-        }
-      );
-      const { toPdfA3 } = await import("../modules/pdf/pdf-a.ts");
-      const pdfBytes = await toPdfA3(rawPdf, "Receta médica");
-      const pdfHash = crypto.createHash("sha256").update(pdfBytes).digest("hex");
-      const tempPath = path.join(os.tmpdir(), `${prescriptionId}.pdf`);
-
-      fs.writeFileSync(tempPath, pdfBytes);
-
-      try {
-        const { fileId } = await uploadCertificateToDrive(
-          tempPath,
-          `receta_${(patient.person.rut ?? "sin_rut").replace(/\./g, "")}_${Date.now()}.pdf`,
-          {
-            ...parsed,
-            documentType: "medical_prescription",
-            patientName: fullName,
-            patientRut: patient.person.rut,
-          },
-          pdfHash,
-          "prescription"
-        );
-
-        await db.medicalPrescription.create({
-          data: {
-            date: parseDateOnly(parsed.date),
-            folio,
-            folioSeq,
+          diagnosis: diagnosisText,
+          diagnoses: storedDiagnoses,
+          doctorAddress: parsed.doctorAddress,
+          doctorEmail: parsed.doctorEmail,
+          doctorName: parsed.doctorName,
+          doctorRut: parsed.doctorRut,
+          doctorSpecialty: parsed.doctorSpecialty,
+          id: prescriptionId,
+          issuedBy: context.user.id,
+          medications: storedMedications,
+          // Metadata = respaldo Json plano. Optativos ausentes → `null` (JSON
+          // válido), nunca `undefined`. Diagnoses van a su columna dedicada.
+          metadata: {
             prescriptionType,
-            doctorLicense,
-            diagnosis: diagnosisText,
-            diagnoses: storedDiagnoses,
-            doctorAddress: parsed.doctorAddress,
-            doctorEmail: parsed.doctorEmail,
-            doctorName: parsed.doctorName,
-            doctorRut: parsed.doctorRut,
-            doctorSpecialty: parsed.doctorSpecialty,
-            driveFileId: fileId,
-            id: prescriptionId,
-            issuedBy: context.user.id,
             medications: storedMedications,
-            // Metadata = respaldo Json plano. Optativos ausentes → `null` (JSON
-            // válido), nunca `undefined`. Diagnoses van a su columna dedicada.
-            metadata: {
-              prescriptionType,
-              medications: storedMedications,
-              diagnosis: diagnosisText ?? null,
-              notes: parsed.notes ?? null,
-              patientName: fullName,
-              patientRut: patient.person.rut ?? null,
-              ...(storedDiagnoses ? { diagnoses: storedDiagnoses } : {}),
-              ...(parsed.supersedesId ? { supersedesId: parsed.supersedesId } : {}),
-            } as unknown as JsonInput,
-            notes: parsed.notes,
-            patientId: parsed.patientId,
+            diagnosis: diagnosisText ?? null,
+            notes: parsed.notes ?? null,
             patientName: fullName,
-            patientRut: patient.person.rut,
-            pdfHash,
-          },
-        });
+            patientRut: patient.person.rut ?? null,
+            ...(storedDiagnoses ? { diagnoses: storedDiagnoses } : {}),
+            ...(parsed.supersedesId ? { supersedesId: parsed.supersedesId } : {}),
+          } as unknown as JsonInput,
+          notes: parsed.notes,
+          patientId: parsed.patientId,
+          patientName: fullName,
+          patientRut: patient.person.rut,
+        },
+      });
 
-        await createVerification({
-          documentType: "prescription",
-          prescriptionId,
-          code: verificationCode,
-          pdfHash,
-        });
-      } finally {
-        if (fs.existsSync(tempPath)) {
-          fs.unlinkSync(tempPath);
-        }
-      }
+      await createVerification({
+        documentType: "prescription",
+        prescriptionId,
+        code: verificationCode,
+      });
 
       // Modificar = re-emitir: anula la receta original (folio viejo queda como
       // ANULADA en auditoría), la nueva ya quedó creada con folio fresco.
@@ -373,17 +320,6 @@ const certificatesORPCRouterBase = {
     .input(prescriptionIdInputSchema)
     .output(annulPrescriptionResponseSchema)
     .handler(async ({ input }) => annulPrescription(input.id)),
-
-  deletePrescription: createMedicalCertificates
-    .route({
-      method: "POST",
-      path: "/prescription/{id}/delete",
-      summary: "Permanently delete a medical prescription",
-      tags: ["Certificates"],
-    })
-    .input(prescriptionIdInputSchema)
-    .output(deletePrescriptionResponseSchema)
-    .handler(async ({ input }) => deletePrescription(input.id)),
 
   emailPrescription: createMedicalCertificates
     .route({

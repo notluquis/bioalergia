@@ -74,10 +74,6 @@ export const annulPrescriptionResponseSchema = z.object({
   status: z.string(),
 });
 
-export const deletePrescriptionResponseSchema = z.object({
-  id: z.string(),
-});
-
 export const emailPrescriptionInputSchema = z.object({
   id: z.string().min(1),
   message: z.string().max(1000).optional(),
@@ -102,7 +98,7 @@ export const medicalPrescriptionSchema = z.object({
   diagnoses: z.unknown().nullable().optional(),
   doctorLicense: z.string().nullable().optional(),
   doctorName: z.string().nullable(),
-  driveFileId: z.string(),
+  driveFileId: z.string().nullable().optional(),
   folio: z.string().nullable().optional(),
   id: z.string(),
   prescriptionType: z.string().nullable().optional(),
@@ -122,7 +118,7 @@ export const medicalPrescriptionSchema = z.object({
   patientId: z.number().int(),
   patientName: z.string(),
   patientRut: z.string().nullable(),
-  pdfHash: z.string(),
+  pdfHash: z.string().nullable().optional(),
 });
 
 export const medicalPrescriptionListResponseSchema = z.object({
@@ -175,10 +171,6 @@ export const certificatesContract = {
     .route({ method: "POST", path: "/prescription/{id}/annul" })
     .input(prescriptionIdInputSchema)
     .output(annulPrescriptionResponseSchema),
-  deletePrescription: oc
-    .route({ method: "POST", path: "/prescription/{id}/delete" })
-    .input(prescriptionIdInputSchema)
-    .output(deletePrescriptionResponseSchema),
   emailPrescription: oc
     .route({ method: "POST", path: "/prescription/{id}/email" })
     .input(emailPrescriptionInputSchema)

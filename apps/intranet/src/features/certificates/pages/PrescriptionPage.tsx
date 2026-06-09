@@ -330,23 +330,6 @@ export function PrescriptionPage() {
     },
   });
 
-  const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      try {
-        return await certificatesORPCClient.deletePrescription({ id });
-      } catch (error) {
-        throw toCertificatesApiError(error);
-      }
-    },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["medical-prescriptions"] });
-      toast.success("Receta eliminada");
-    },
-    onError: (error) => {
-      toast.error(error instanceof Error ? error.message : "Error al eliminar receta");
-    },
-  });
-
   const emailMutation = useMutation({
     mutationFn: async (args: { id: string; to: string; message?: string }) => {
       try {
@@ -372,18 +355,6 @@ export function PrescriptionPage() {
       variant: "danger",
     });
     if (ok) annulMutation.mutate(item.id);
-  };
-
-  const handleDelete = async (item: MedicalPrescription) => {
-    const ok = await confirmAction({
-      title: "Eliminar receta",
-      description:
-        "Esto borra la receta de forma permanente. Para documentos ya entregados prefiere anular. ¿Eliminar definitivamente?",
-      confirmLabel: "Eliminar",
-      variant: "danger",
-      requireText: "ELIMINAR",
-    });
-    if (ok) deleteMutation.mutate(item.id);
   };
 
   // Modificar = cargar la receta al formulario y re-emitir (la vieja se anula).
@@ -505,7 +476,6 @@ export function PrescriptionPage() {
         isLoading={prescriptionsQ.isLoading}
         items={prescriptionsQ.data?.items ?? []}
         onAnnul={handleAnnul}
-        onDelete={handleDelete}
         onEdit={handleEditPrescription}
         onEmail={setEmailTarget}
         title={patient ? `Recetas de ${patientLabel}` : "Recetas recientes"}
@@ -591,17 +561,16 @@ function medicationSummary(value: unknown): string {
 function PrescriptionRowMenu({
   item,
   onAnnul,
-  onDelete,
   onEdit,
   onEmail,
 }: {
   item: MedicalPrescription;
   onAnnul: (item: MedicalPrescription) => void;
-  onDelete: (item: MedicalPrescription) => void;
   onEdit: (item: MedicalPrescription) => void;
   onEmail: (item: MedicalPrescription) => void;
 }) {
   const annulled = item.status === "ANNULLED";
+  // Receta inmutable: NO se elimina (documento legal). Solo anular o re-emitir.
   const menuItems = [
     { icon: <Printer size={14} />, id: "print-overlay", label: "Imprimir en recetario" },
     { icon: <Download size={14} />, id: "download-overlay", label: "PDF solo datos" },
@@ -609,10 +578,9 @@ function PrescriptionRowMenu({
     ...(annulled
       ? []
       : [
-          { icon: <Pencil size={14} />, id: "edit", label: "Modificar" },
+          { icon: <Pencil size={14} />, id: "edit", label: "Modificar (re-emitir)" },
           { icon: <Ban size={14} />, id: "annul", label: "Anular" },
         ]),
-    { icon: <Trash2 size={14} />, id: "delete", label: "Eliminar" },
   ];
 
   const onAction = (key: string) => {
@@ -631,9 +599,6 @@ function PrescriptionRowMenu({
         break;
       case "annul":
         onAnnul(item);
-        break;
-      case "delete":
-        onDelete(item);
         break;
     }
   };
@@ -667,7 +632,6 @@ function PrescriptionHistory({
   isLoading,
   items,
   onAnnul,
-  onDelete,
   onEdit,
   onEmail,
   title,
@@ -675,7 +639,6 @@ function PrescriptionHistory({
   isLoading: boolean;
   items: MedicalPrescription[];
   onAnnul: (item: MedicalPrescription) => void;
-  onDelete: (item: MedicalPrescription) => void;
   onEdit: (item: MedicalPrescription) => void;
   onEmail: (item: MedicalPrescription) => void;
   title: string;
@@ -758,7 +721,6 @@ function PrescriptionHistory({
                 <PrescriptionRowMenu
                   item={item}
                   onAnnul={onAnnul}
-                  onDelete={onDelete}
                   onEdit={onEdit}
                   onEmail={onEmail}
                 />

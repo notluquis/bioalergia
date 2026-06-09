@@ -14,7 +14,7 @@ const { mockDb } = vi.hoisted(() => {
 vi.mock("@finanzas/db", () => ({ db: mockDb }));
 
 import { DomainError } from "../lib/errors.ts";
-import { annulPrescription, deletePrescription } from "./prescriptions.ts";
+import { annulPrescription } from "./prescriptions.ts";
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -48,21 +48,5 @@ describe("annulPrescription", () => {
   it("propagates DomainError instances", async () => {
     mockDb.medicalPrescription.findUnique.mockResolvedValue(null);
     await expect(annulPrescription("x")).rejects.toBeInstanceOf(DomainError);
-  });
-});
-
-describe("deletePrescription", () => {
-  it("throws NOT_FOUND when missing", async () => {
-    mockDb.medicalPrescription.findUnique.mockResolvedValue(null);
-    await expect(deletePrescription("x")).rejects.toMatchObject({ kind: "NOT_FOUND" });
-    expect(mockDb.medicalPrescription.delete).not.toHaveBeenCalled();
-  });
-
-  it("deletes when present", async () => {
-    mockDb.medicalPrescription.findUnique.mockResolvedValue({ id: "x" });
-    mockDb.medicalPrescription.delete.mockResolvedValue({ id: "x" });
-    const out = await deletePrescription("x");
-    expect(out).toEqual({ id: "x" });
-    expect(mockDb.medicalPrescription.delete).toHaveBeenCalledWith({ where: { id: "x" } });
   });
 });
