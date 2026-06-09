@@ -5,8 +5,8 @@ import { useQuery } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Activity } from "lucide-react";
 import { DataTable } from "@/components/data-table/DataTable";
-import { fetchPatientClinicalSeries } from "../api";
-import { patientKeys } from "../queries";
+import type { fetchPatientClinicalSeries } from "../api";
+import { patientQueries } from "../queries";
 
 type Series = Awaited<ReturnType<typeof fetchPatientClinicalSeries>>["items"][number];
 
@@ -83,11 +83,7 @@ const columns: ColumnDef<Series>[] = [
 ];
 
 export function ClinicalSeriesList({ patientId }: { patientId: number }) {
-  const { data, isLoading } = useQuery({
-    queryKey: patientKeys.clinicalSeries(patientId),
-    queryFn: () => fetchPatientClinicalSeries(patientId),
-    staleTime: 1000 * 60,
-  });
+  const { data, isLoading } = useQuery(patientQueries.clinicalSeries(patientId));
 
   if (isLoading) {
     return (

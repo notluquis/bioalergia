@@ -1,3 +1,7 @@
+import { queryOptions } from "@tanstack/react-query";
+import { findPersonByRut } from "@/features/people/api";
+import { fetchPatientClinicalSeries, fetchPatients, fetchPatientSkinTests } from "./api";
+
 // Centralized query-key factory for the patients feature.
 //
 // Hierarchical const pattern (mirrors features/calendar/queries.ts `calendarKeys`).
@@ -21,4 +25,37 @@ export const patientKeys = {
   nameSearch: (name: string) => ["patients", name] as const,
   personByRut: (rut: string) => ["person-by-rut", rut] as const,
   skinTests: (patientId: number) => ["patient-skin-tests", patientId] as const,
+} as const;
+
+// Full `queryOptions()` factory (key + queryFn bundled), mirroring
+// features/calendar/queries.ts `calendarQueries`. Each entry reuses the shape
+// from `patientKeys` for its queryKey, so invalidateQueries/setQueryData can
+// reference either `patientKeys.X(...)` or `patientQueries.X(...).queryKey`
+// (identical arrays). Call-site-specific options (e.g. `enabled` driven by
+// local debounced state) are spread at the call site, not baked in here.
+export const patientQueries = {
+  clinicalSeries: (patientId: number) =>
+    queryOptions({
+      queryFn: () => fetchPatientClinicalSeries(patientId),
+      queryKey: patientKeys.clinicalSeries(patientId),
+      staleTime: 1000 * 60,
+    }),
+  nameSearch: (name: string) =>
+    queryOptions({
+      queryFn: () => fetchPatients(name),
+      queryKey: patientKeys.nameSearch(name),
+      staleTime: 1000 * 30,
+    }),
+  personByRut: (rut: string) =>
+    queryOptions({
+      queryFn: () => findPersonByRut(rut),
+      queryKey: patientKeys.personByRut(rut),
+      staleTime: 1000 * 30,
+    }),
+  skinTests: (patientId: number) =>
+    queryOptions({
+      queryFn: () => fetchPatientSkinTests(patientId),
+      queryKey: patientKeys.skinTests(patientId),
+      staleTime: 1000 * 60,
+    }),
 } as const;

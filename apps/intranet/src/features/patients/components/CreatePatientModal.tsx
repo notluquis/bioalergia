@@ -22,9 +22,8 @@ import {
 import { AppModal } from "@/components/ui/AppModal";
 import { FeatureErrorBoundary } from "@/components/ui/FeatureErrorBoundary";
 import { useToast } from "@/context/ToastContext";
-import { createPatient, fetchPatients } from "@/features/patients/api";
-import { patientKeys } from "@/features/patients/queries";
-import { findPersonByRut } from "@/features/people/api";
+import { createPatient } from "@/features/patients/api";
+import { patientKeys, patientQueries } from "@/features/patients/queries";
 import { formatRut, validateRut } from "@/lib/rut";
 
 const BLOOD_TYPES = ["O+", "O-", "A+", "A-", "B+", "B-", "AB+", "AB-"];
@@ -118,10 +117,8 @@ export function CreatePatientModal({ isOpen, onClose }: Readonly<CreatePatientMo
   // person without patient ⇒ employee/user etc. ⇒ offer to autofill and
   // attach a patient profile to the same Person on submit.
   const { data: existingPerson } = useQuery({
-    queryKey: patientKeys.personByRut(debouncedRut),
-    queryFn: () => findPersonByRut(debouncedRut),
+    ...patientQueries.personByRut(debouncedRut),
     enabled: validateRut(debouncedRut),
-    staleTime: 1000 * 30,
   });
 
   const hasExistingPatient = Boolean(
@@ -130,10 +127,8 @@ export function CreatePatientModal({ isOpen, onClose }: Readonly<CreatePatientMo
 
   // Name-based "similar patients" hint stays as best-effort contains match.
   const { data: nameMatches } = useQuery({
-    queryKey: patientKeys.nameSearch(debouncedName),
-    queryFn: () => fetchPatients(debouncedName),
+    ...patientQueries.nameSearch(debouncedName),
     enabled: debouncedName.trim().length >= 3,
-    staleTime: 1000 * 30,
   });
 
   const similarByName = nameMatches?.filter((p) => p.person.id !== existingPerson?.id) ?? [];
