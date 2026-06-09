@@ -1,4 +1,5 @@
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
+import { requirePermission } from "@/lib/authz/route-guards";
 import { DailyIncomePage } from "@/features/finance/pages/DailyIncomePage";
 
 export const Route = createFileRoute("/_authed/finanzas/daily")({
@@ -13,9 +14,5 @@ export const Route = createFileRoute("/_authed/finanzas/daily")({
     permission: { action: "read", subject: "Event" },
     title: "Ingresos Diarios",
   },
-  beforeLoad: ({ context }) => {
-    if (!context.can("read", "Event")) {
-      throw redirect({ to: "/" });
-    }
-  },
+  beforeLoad: requirePermission("read", "Event"),
 });

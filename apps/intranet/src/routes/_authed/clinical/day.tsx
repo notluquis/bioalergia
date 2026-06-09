@@ -1,4 +1,5 @@
-import { createFileRoute, getRouteApi } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
+import { requirePermission } from "@/lib/authz/route-guards";
 
 import { calendarQueries } from "@/features/calendar/queries";
 import { computeDefaultFilters } from "@/features/calendar/utils/filters";
@@ -10,20 +11,13 @@ import {
   calendarSearchSchema,
 } from "@/features/calendar/types";
 
-const routeApi = getRouteApi("/_authed/clinical/day");
-
 export const Route = createFileRoute("/_authed/clinical/day")({
   staticData: {
     nav: { iconKey: "CalendarCheck", label: "Calendario — día", order: 17, section: "Clínica" },
     permission: { action: "read", subject: "CalendarDaily" },
     title: "Detalle diario clínico",
   },
-  beforeLoad: ({ context }) => {
-    if (!context.can("read", "CalendarDaily")) {
-      // eslint-disable-next-line @typescript-eslint/only-throw-error
-      throw routeApi.redirect({ to: "/" });
-    }
-  },
+  beforeLoad: requirePermission("read", "CalendarDaily"),
   validateSearch: (search: Record<string, unknown>): CalendarSearchParams =>
     calendarSearchSchema.parse(search),
   loaderDeps: ({ search }) => search,

@@ -1,4 +1,5 @@
-import { createFileRoute, getRouteApi } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
+import { requirePermission } from "@/lib/authz/route-guards";
 
 import { HaulmerDtePage } from "@/pages/operations/HaulmerDtePage";
 
@@ -8,11 +9,6 @@ export const Route = createFileRoute("/_authed/operations/haulmer-dte")({
     permission: { action: "read", subject: "Haulmer" },
     title: "Haulmer DTE",
   },
-  beforeLoad: ({ context }) => {
-    if (!context.can("read", "Haulmer")) {
-      const routeApi = getRouteApi("/_authed/operations/haulmer-dte");
-      throw routeApi.redirect({ to: "/" });
-    }
-  },
+  beforeLoad: requirePermission("read", "Haulmer"),
   component: HaulmerDtePage,
 });

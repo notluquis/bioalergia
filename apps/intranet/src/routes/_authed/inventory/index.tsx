@@ -1,6 +1,7 @@
 import { Tabs } from "@heroui/react";
 import { PAGE_CONTAINER } from "@/lib/styles";
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
+import { requirePermission } from "@/lib/authz/route-guards";
 import { ClipboardList, Package, Settings } from "lucide-react";
 import { useCallback } from "react";
 import { z } from "zod";
@@ -48,12 +49,7 @@ export const Route = createFileRoute("/_authed/inventory/")({
     title: "Inventario",
   },
   validateSearch: searchSchema,
-  beforeLoad: ({ context }) => {
-    if (!context.can("read", "InventoryItem")) {
-      // eslint-disable-next-line @typescript-eslint/only-throw-error
-      throw redirect({ to: "/" });
-    }
-  },
+  beforeLoad: requirePermission("read", "InventoryItem"),
   loader: ({ context: { queryClient } }) => {
     return queryClient.ensureQueryData(inventoryKeys.items());
   },

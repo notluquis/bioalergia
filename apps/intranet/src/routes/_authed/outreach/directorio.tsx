@@ -1,6 +1,7 @@
 import { Tabs } from "@heroui/react";
 import { PAGE_CONTAINER } from "@/lib/styles";
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
+import { requirePermission } from "@/lib/authz/route-guards";
 import { Bot, School, SearchCode } from "lucide-react";
 import { useCallback } from "react";
 import { z } from "zod";
@@ -47,12 +48,7 @@ export const Route = createFileRoute("/_authed/outreach/directorio")({
     title: "Directorio",
   },
   validateSearch: searchSchema,
-  beforeLoad: ({ context }) => {
-    if (!context.can("read", "OutreachEstablishment")) {
-      // eslint-disable-next-line @typescript-eslint/only-throw-error
-      throw redirect({ to: "/" });
-    }
-  },
+  beforeLoad: requirePermission("read", "OutreachEstablishment"),
   component: DirectorioHostPage,
 });
 

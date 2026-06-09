@@ -1,5 +1,6 @@
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
-import { createFileRoute, getRouteApi } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
+import { requirePermission } from "@/lib/authz/route-guards";
 import { lazy, Suspense } from "react";
 
 const ClinicalSeriesPage = lazy(() =>
@@ -7,8 +8,6 @@ const ClinicalSeriesPage = lazy(() =>
     default: m.ClinicalSeriesPage,
   }))
 );
-
-const routeApi = getRouteApi("/_authed/clinical/");
 
 export const Route = createFileRoute("/_authed/clinical/")({
   component: () => (
@@ -27,10 +26,5 @@ export const Route = createFileRoute("/_authed/clinical/")({
     permission: { action: "read", subject: "ClinicalSeries" },
     title: "Series clínicas",
   },
-  beforeLoad: ({ context }) => {
-    if (!context.can("read", "ClinicalSeries")) {
-      // eslint-disable-next-line @typescript-eslint/only-throw-error
-      throw routeApi.redirect({ to: "/" });
-    }
-  },
+  beforeLoad: requirePermission("read", "ClinicalSeries"),
 });

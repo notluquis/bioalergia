@@ -1,4 +1,5 @@
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
+import { requirePermission } from "@/lib/authz/route-guards";
 import { OutreachCampaignsPage } from "@/features/outreach/pages/OutreachCampaignsPage";
 
 export const Route = createFileRoute("/_authed/outreach/campanas")({
@@ -7,10 +8,6 @@ export const Route = createFileRoute("/_authed/outreach/campanas")({
     permission: { action: "read", subject: "OutreachEstablishment" },
     title: "Campañas",
   },
-  beforeLoad: ({ context }) => {
-    if (!context.can("read", "OutreachEstablishment")) {
-      throw redirect({ to: "/" });
-    }
-  },
+  beforeLoad: requirePermission("read", "OutreachEstablishment"),
   component: OutreachCampaignsPage,
 });

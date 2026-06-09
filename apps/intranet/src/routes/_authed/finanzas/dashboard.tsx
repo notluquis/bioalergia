@@ -1,6 +1,7 @@
 import { Tabs } from "@heroui/react";
 import { PAGE_CONTAINER } from "@/lib/styles";
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
+import { requirePermission } from "@/lib/authz/route-guards";
 import { BarChart3, LayoutDashboard } from "lucide-react";
 import { useCallback } from "react";
 import { z } from "zod";
@@ -40,11 +41,7 @@ export const Route = createFileRoute("/_authed/finanzas/dashboard")({
     title: "Tablero Financiero",
   },
   validateSearch: searchSchema,
-  beforeLoad: ({ context }) => {
-    if (!context.can("read", "Event")) {
-      throw redirect({ to: "/" });
-    }
-  },
+  beforeLoad: requirePermission("read", "Event"),
   component: FinanzasDashboardHostPage,
 });
 

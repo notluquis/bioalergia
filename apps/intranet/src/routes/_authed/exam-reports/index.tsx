@@ -1,6 +1,7 @@
 import { Tabs } from "@heroui/react";
 import { PAGE_CONTAINER } from "@/lib/styles";
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
+import { requirePermission } from "@/lib/authz/route-guards";
 import { Building2, FileText, FlaskConical, ListChecks } from "lucide-react";
 import { useCallback, useEffect } from "react";
 import { z } from "zod";
@@ -47,14 +48,7 @@ export const Route = createFileRoute("/_authed/exam-reports/")({
     title: "Informes",
   },
   validateSearch: searchSchema,
-  beforeLoad: ({ context }) => {
-    // Outer route enforces the LOOSEST permission across all tabs
-    // (read ExamReport). Tab-specific RBAC (update ConclusionTemplate /
-    // update ClinicSettings) is enforced per-panel via <ProtectedTab>.
-    if (!context.can("read", "ExamReport")) {
-      throw redirect({ to: "/" });
-    }
-  },
+  beforeLoad: requirePermission("read", "ExamReport"),
   component: ExamReportsHostPage,
 });
 

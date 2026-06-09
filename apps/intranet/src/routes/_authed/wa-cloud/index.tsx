@@ -1,6 +1,7 @@
 import { Tabs } from "@heroui/react";
 import { PAGE_CONTAINER } from "@/lib/styles";
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
+import { requirePermission } from "@/lib/authz/route-guards";
 import {
   BarChart3,
   Bell,
@@ -117,14 +118,7 @@ export const Route = createFileRoute("/_authed/wa-cloud/")({
     permission: { action: "read", subject: "WaBusinessAccount" },
     title: "WhatsApp Cloud",
   },
-  beforeLoad: ({ context }) => {
-    // Outer route enforces the LOOSEST permission across all tabs
-    // (read WaBusinessAccount). Tab-specific RBAC (e.g. update for
-    // Configuración) is enforced per-panel via <ProtectedTab>.
-    if (!context.can("read", "WaBusinessAccount")) {
-      throw redirect({ to: "/" });
-    }
-  },
+  beforeLoad: requirePermission("read", "WaBusinessAccount"),
   component: WaCloudPage,
 });
 

@@ -1,4 +1,5 @@
-import { createFileRoute, getRouteApi } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
+import { requirePermission } from "@/lib/authz/route-guards";
 
 import { serviceQueries } from "@/features/services/queries";
 import { ServicesPage } from "@/features/services/pages/ServicesPage";
@@ -12,12 +13,7 @@ export const Route = createFileRoute("/_authed/services/")({
     breadcrumb: "Servicios",
     title: "Servicios",
   },
-  beforeLoad: ({ context }) => {
-    if (!context.can("read", "ServiceList")) {
-      const routeApi = getRouteApi("/_authed/services/");
-      throw routeApi.redirect({ to: "/" });
-    }
-  },
+  beforeLoad: requirePermission("read", "ServiceList"),
   component: ServicesPage,
   loader: async ({ context: { queryClient } }) => {
     await queryClient.ensureQueryData(serviceQueries.list(true));

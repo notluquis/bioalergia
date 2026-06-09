@@ -1,6 +1,6 @@
 import { Tabs } from "@heroui/react";
 import { PAGE_CONTAINER } from "@/lib/styles";
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { Clock, LayoutGrid } from "lucide-react";
 import { useCallback } from "react";
 import { z } from "zod";
@@ -10,6 +10,7 @@ import { CalendarSyncHistoryPanel } from "@/features/calendar/pages/CalendarSync
 import { CalendarVistaPanel } from "@/features/calendar/pages/CalendarVistaPanel";
 import { calendarSyncQueries } from "@/features/calendar/queries";
 import { useLazyTabs } from "@/hooks/use-lazy-tabs";
+import { requirePermission } from "@/lib/authz/route-guards";
 
 /**
  * Unified `/calendar` host (Phase 5 IA consolidation). Two tabs:
@@ -49,12 +50,7 @@ export const Route = createFileRoute("/_authed/calendar/")({
     title: "Calendario",
   },
   validateSearch: searchSchema,
-  beforeLoad: ({ context }) => {
-    if (!context.can("read", "Calendar")) {
-      // eslint-disable-next-line @typescript-eslint/only-throw-error
-      throw redirect({ to: "/" });
-    }
-  },
+  beforeLoad: requirePermission("read", "Calendar"),
   loader: ({ context }) => context.queryClient.ensureQueryData(calendarSyncQueries.logs(50)),
   component: CalendarHostPage,
 });

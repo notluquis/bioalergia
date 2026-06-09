@@ -13,7 +13,8 @@ import {
 } from "@heroui/react";
 import type { ProductDto } from "@finanzas/orpc-contracts/immunotherapy";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute, getRouteApi } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
+import { requirePermission } from "@/lib/authz/route-guards";
 import { Plus, Save, Trash2 } from "lucide-react";
 import { useState } from "react";
 import {
@@ -34,12 +35,7 @@ export const Route = createFileRoute("/_authed/settings/immunotherapy")({
     permission: { action: "update", subject: "Setting" },
     title: "Configuración — Inmunoterapia",
   },
-  beforeLoad: ({ context }) => {
-    if (!context.can("update", "Setting")) {
-      const routeApi = getRouteApi("/_authed/settings/immunotherapy");
-      throw routeApi.redirect({ to: "/" });
-    }
-  },
+  beforeLoad: requirePermission("update", "Setting"),
   component: ImmunotherapySettingsPage,
 });
 

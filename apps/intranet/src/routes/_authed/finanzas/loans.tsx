@@ -1,4 +1,5 @@
-import { createFileRoute, getRouteApi } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
+import { requirePermission } from "@/lib/authz/route-guards";
 
 import { loanKeys } from "@/features/finance/loans/queries";
 import { LoansPage } from "@/features/finance/loans/pages/LoansPage";
@@ -12,13 +13,7 @@ export const Route = createFileRoute("/_authed/finanzas/loans")({
   validateSearch: (search: Record<string, unknown>): { loan?: string } => ({
     loan: typeof search.loan === "string" ? search.loan : undefined,
   }),
-  beforeLoad: ({ context }) => {
-    if (!context.can("read", "Loan")) {
-      const routeApi = getRouteApi("/_authed/finanzas/loans");
-      // eslint-disable-next-line @typescript-eslint/only-throw-error
-      throw routeApi.redirect({ to: "/" });
-    }
-  },
+  beforeLoad: requirePermission("read", "Loan"),
   component: LoansPage,
 
   loader: async ({ context: { queryClient } }) => {

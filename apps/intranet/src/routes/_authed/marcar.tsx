@@ -1,4 +1,5 @@
-import { createFileRoute, getRouteApi } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
+import { requirePermission } from "@/lib/authz/route-guards";
 import { attendanceQueries } from "@/features/attendance/queries";
 import { MarcarPage } from "@/features/attendance/MarcarPage";
 
@@ -9,12 +10,7 @@ export const Route = createFileRoute("/_authed/marcar")({
     relatedSubjects: ["Attendance"],
     title: "Marcar asistencia",
   },
-  beforeLoad: ({ context }) => {
-    if (!context.can("create", "Attendance")) {
-      const routeApi = getRouteApi("/_authed/marcar");
-      throw routeApi.redirect({ to: "/" });
-    }
-  },
+  beforeLoad: requirePermission("create", "Attendance"),
   loader: async ({ context }) => {
     await context.queryClient.ensureQueryData(attendanceQueries.status());
   },

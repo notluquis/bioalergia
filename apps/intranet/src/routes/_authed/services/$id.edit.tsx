@@ -1,16 +1,11 @@
-import { createFileRoute, getRouteApi } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
+import { requirePermission } from "@/lib/authz/route-guards";
 
 import { serviceQueries } from "@/features/services/queries";
 import { ServiceEditPage } from "@/features/services/pages/EditServicePage";
 
 export const Route = createFileRoute("/_authed/services/$id/edit")({
-  beforeLoad: ({ context }) => {
-    if (!context.can("update", "Service")) {
-      const routeApi = getRouteApi("/_authed/services/$id/edit");
-      // eslint-disable-next-line @typescript-eslint/only-throw-error
-      throw routeApi.redirect({ to: "/" });
-    }
-  },
+  beforeLoad: requirePermission("update", "Service"),
   loader: async ({ context: { queryClient }, params: { id } }) => {
     return await queryClient.ensureQueryData(serviceQueries.detail(id));
   },

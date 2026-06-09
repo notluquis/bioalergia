@@ -2,7 +2,8 @@ import { Button, Card, Chip, EmptyState, SearchField } from "@heroui/react";
 import type { QuoteProductDto } from "@finanzas/orpc-contracts/quotes";
 import { useQuery } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
-import { createFileRoute, getRouteApi } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
+import { requirePermission } from "@/lib/authz/route-guards";
 import { FileSpreadsheet, Plus } from "lucide-react";
 import { useMemo, useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
@@ -24,12 +25,7 @@ export const Route = createFileRoute("/_authed/settings/quotes-catalog")({
     permission: { action: "update", subject: "QuoteProduct" },
     title: "Configuración — Catálogo de cotizaciones",
   },
-  beforeLoad: ({ context }) => {
-    if (!context.can("update", "QuoteProduct")) {
-      const routeApi = getRouteApi("/_authed/settings/quotes-catalog");
-      throw routeApi.redirect({ to: "/" });
-    }
-  },
+  beforeLoad: requirePermission("update", "QuoteProduct"),
   component: QuotesCatalogSettingsPage,
 });
 

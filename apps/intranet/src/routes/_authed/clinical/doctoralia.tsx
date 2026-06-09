@@ -1,4 +1,5 @@
-import { createFileRoute, getRouteApi } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
+import { requirePermission } from "@/lib/authz/route-guards";
 import { z } from "zod";
 
 import { DoctoraliaAnalyticsPage } from "@/pages/clinical/DoctoraliaAnalyticsPage";
@@ -19,8 +20,6 @@ const doctoraliaSearchSchema = z
     compareMetric: search.compareMetric ?? "total",
   }));
 
-const routeApi = getRouteApi("/_authed/clinical/doctoralia");
-
 export const Route = createFileRoute("/_authed/clinical/doctoralia")({
   component: DoctoraliaAnalyticsPage,
   staticData: {
@@ -33,11 +32,6 @@ export const Route = createFileRoute("/_authed/clinical/doctoralia")({
     permission: { action: "read", subject: "DoctoraliaCalendarAppointment" },
     title: "Doctoralia — Analytics",
   },
-  beforeLoad: ({ context }) => {
-    if (!context.can("read", "DoctoraliaCalendarAppointment")) {
-      // eslint-disable-next-line @typescript-eslint/only-throw-error
-      throw routeApi.redirect({ to: "/" });
-    }
-  },
+  beforeLoad: requirePermission("read", "DoctoraliaCalendarAppointment"),
   validateSearch: (search: Record<string, unknown>) => doctoraliaSearchSchema.parse(search),
 });

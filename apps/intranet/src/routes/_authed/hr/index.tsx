@@ -1,6 +1,7 @@
 import { Tabs } from "@heroui/react";
 import { PAGE_CONTAINER } from "@/lib/styles";
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
+import { requirePermission } from "@/lib/authz/route-guards";
 import { ClipboardList, FileBarChart, History, Timer, UserCheck } from "lucide-react";
 import { useCallback } from "react";
 import { z } from "zod";
@@ -52,11 +53,7 @@ export const Route = createFileRoute("/_authed/hr/")({
     title: "RRHH",
   },
   validateSearch: searchSchema,
-  beforeLoad: ({ context }) => {
-    if (!context.can("read", "Employee")) {
-      throw redirect({ to: "/" });
-    }
-  },
+  beforeLoad: requirePermission("read", "Employee"),
   component: HrHostPage,
 });
 
