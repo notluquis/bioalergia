@@ -5,6 +5,7 @@ import {
   Chip,
   DateField,
   DatePicker,
+  Disclosure,
   FieldError,
   Form,
   Input,
@@ -445,44 +446,56 @@ function DiagnosisPicker({
         query={icdQuery}
       />
 
-      <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
-        <TextField
-          value={cie10Input}
-          onChange={(value) => {
-            setCie10Input(value);
-            if (cie10Error) setCie10Error(null);
-          }}
-        >
-          <Label>¿Tienes el código CIE-10 viejo?</Label>
-          <Input placeholder="Ej: J30.1 — lo convierto a CIE-11" />
-          {cie10Error ? <FieldError>{cie10Error}</FieldError> : null}
-        </TextField>
-        <Button
-          className="self-end"
-          isDisabled={!cie10Input.trim()}
-          onPress={lookupCie10}
-          type="button"
-          variant="outline"
-        >
-          Buscar CIE-11
-        </Button>
-      </div>
+      <Disclosure>
+        <Disclosure.Heading>
+          <Button size="sm" slot="trigger" variant="ghost">
+            Más opciones (código CIE-10 viejo · diagnóstico escrito)
+            <Disclosure.Indicator />
+          </Button>
+        </Disclosure.Heading>
+        <Disclosure.Content>
+          <Disclosure.Body className="space-y-3 pt-2">
+            <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
+              <TextField
+                value={cie10Input}
+                onChange={(value) => {
+                  setCie10Input(value);
+                  if (cie10Error) setCie10Error(null);
+                }}
+              >
+                <Label>¿Tienes el código CIE-10 viejo?</Label>
+                <Input placeholder="Ej: J30.1 — lo convierto a CIE-11" />
+                {cie10Error ? <FieldError>{cie10Error}</FieldError> : null}
+              </TextField>
+              <Button
+                className="self-end"
+                isDisabled={!cie10Input.trim()}
+                onPress={lookupCie10}
+                type="button"
+                variant="outline"
+              >
+                Buscar CIE-11
+              </Button>
+            </div>
 
-      <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
-        <TextField value={customDiagnosis} onChange={onCustomDiagnosisChange}>
-          <Label>Diagnóstico escrito</Label>
-          <Input placeholder="Agregar diagnóstico no listado en CIE-11" />
-        </TextField>
-        <Button
-          className="self-end"
-          isDisabled={!customDiagnosis.trim()}
-          onPress={onAddCustomDiagnosis}
-          type="button"
-          variant="outline"
-        >
-          Agregar escrito
-        </Button>
-      </div>
+            <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
+              <TextField value={customDiagnosis} onChange={onCustomDiagnosisChange}>
+                <Label>Diagnóstico escrito</Label>
+                <Input placeholder="Agregar diagnóstico no listado en CIE-11" />
+              </TextField>
+              <Button
+                className="self-end"
+                isDisabled={!customDiagnosis.trim()}
+                onPress={onAddCustomDiagnosis}
+                type="button"
+                variant="outline"
+              >
+                Agregar escrito
+              </Button>
+            </div>
+          </Disclosure.Body>
+        </Disclosure.Content>
+      </Disclosure>
     </div>
   );
 }

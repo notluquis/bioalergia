@@ -1,5 +1,5 @@
-import { Collection, ComboBox, Input, Label, ListBox, Spinner } from "@heroui/react";
-import type { Key } from "react";
+import { Input, Label, Spinner, TextField } from "@heroui/react";
+import { Search } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import type { PrescriptionDiagnosis } from "./diagnosis-catalog";
@@ -7,11 +7,13 @@ import { cie10Equivalent, loadIcd11To10 } from "./icd-crosswalk";
 import { type Icd11SearchResult, searchIcd11 } from "./icd11-search";
 
 // Buscador CIE-11 nativo HeroUI. Consulta la API oficial WHO (id.who.int) — el
-// ranking/NLP es server-side — y renderiza los resultados con el look de la app.
-// Controlado por `query` para que los atajos (frecuentes / código CIE-10) puedan
-// disparar una búsqueda seteando el texto.
+// ranking/NLP es server-side — y muestra los resultados INLINE (no en popover):
+// así un atajo (frecuente / código CIE-10) que setea el texto deja ver el
+// "Buscando…" y la lista sin que el usuario tenga que abrir nada.
+// Controlado por `query`.
 
 const DEBOUNCE_MS = 250;
+const MAX_RESULTS = 15;
 
 function toDiagnosis(result: Icd11SearchResult): PrescriptionDiagnosis {
   return {
@@ -41,7 +43,6 @@ export function Icd11DiagnosisPicker({
     void loadIcd11To10();
   }, []);
 
-  // Búsqueda con debounce + cancelación de la request anterior.
   useEffect(() => {
     const q = query.trim();
     if (q.length < 2) {
@@ -54,7 +55,7 @@ export function Icd11DiagnosisPicker({
     const timer = setTimeout(() => {
       searchIcd11(q, controller.signal)
         .then((items) => {
-          setResults(items);
+          setResults(items.slice(0, MAX_RESULTS));
           setLoading(false);
         })
         .catch((error: unknown) => {
@@ -69,65 +70,59 @@ export function Icd11DiagnosisPicker({
     };
   }, [query]);
 
-  const handleSelection = (key: Key | null) => {
-    if (key == null) return;
-    const hit = results.find((result) => result.id === key);
-    if (!hit) return;
-    onSelect(toDiagnosis(hit));
+  const pick = (result: Icd11SearchResult) => {
+    onSelect(toDiagnosis(result));
     onQueryChange("");
     setResults([]);
   };
 
+  const showPanel = query.trim().length >= 2;
+
   return (
-    <ComboBox
-      allowsEmptyCollection
-      className="w-full"
-      inputValue={query}
-      items={results}
-      menuTrigger="input"
-      onInputChange={onQueryChange}
-      onSelectionChange={handleSelection}
-      selectedKey={null}
-    >
-      <Label>Buscar diagnóstico CIE-11</Label>
-      <ComboBox.InputGroup>
+    <div className="space-y-2">
+      <TextField onChange={onQueryChange} value={query}>
+        <Label>Buscar diagnóstico CIE-11</Label>
         <Input placeholder="Ej: rinitis, urticaria, asma alérgica…" />
-        {loading ? <Spinner size="sm" /> : <ComboBox.Trigger />}
-      </ComboBox.InputGroup>
-      <ComboBox.Popover>
-        <ListBox
-          renderEmptyState={() => (
-            <div className="px-3 py-6 text-center text-default-500 text-sm">
-              {query.trim().length < 2
-                ? "Escribe al menos 2 letras"
-                : loading
-                  ? "Buscando…"
-                  : "Sin resultados CIE-11"}
+      </TextField>
+
+      {showPanel ? (
+        <div className="overflow-hidden rounded-lg border border-default-200">
+          {loading ? (
+            <div className="flex items-center gap-2 text-default-500 text-sm p-3">
+              <Spinner size="sm" />
+              Buscando en CIE-11…
             </div>
+          ) : results.length === 0 ? (
+            <div className="text-default-500 text-sm p-3">Sin resultados CIE-11</div>
+          ) : (
+            <ul className="max-h-72 divide-y divide-default-100 overflow-y-auto">
+              {results.map((result) => {
+                const cie10 = result.code ? cie10Equivalent(result.code) : undefined;
+                return (
+                  <li key={result.id}>
+                    <button
+                      className="flex w-full items-center gap-2 px-3 py-2 text-left transition hover:bg-default-100"
+                      onClick={() => pick(result)}
+                      type="button"
+                    >
+                      <Search className="size-3.5 shrink-0 text-default-400" />
+                      {result.code ? (
+                        <span className="shrink-0 font-mono font-semibold text-primary text-xs">
+                          {result.code}
+                        </span>
+                      ) : null}
+                      <span className="min-w-0 flex-1 truncate text-sm">{result.title}</span>
+                      {cie10 ? (
+                        <span className="shrink-0 text-default-400 text-xs">≈CIE-10 {cie10}</span>
+                      ) : null}
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
           )}
-        >
-          <Collection items={results}>
-            {(item) => (
-              <ListBox.Item id={item.id} key={item.id} textValue={item.title}>
-                <div className="flex w-full items-center gap-2">
-                  {item.code ? (
-                    <span className="shrink-0 font-mono font-semibold text-primary text-xs">
-                      {item.code}
-                    </span>
-                  ) : null}
-                  <span className="min-w-0 flex-1 truncate text-sm">{item.title}</span>
-                  {item.code && cie10Equivalent(item.code) ? (
-                    <span className="shrink-0 text-default-400 text-xs">
-                      ≈CIE-10 {cie10Equivalent(item.code)}
-                    </span>
-                  ) : null}
-                </div>
-                <ListBox.ItemIndicator />
-              </ListBox.Item>
-            )}
-          </Collection>
-        </ListBox>
-      </ComboBox.Popover>
-    </ComboBox>
+        </div>
+      ) : null}
+    </div>
   );
 }
