@@ -20,7 +20,9 @@ function parseDate(raw: unknown): Date | null {
 
 export async function fetchSmartRecruitersJobs(company: string): Promise<RawJob[]> {
   const text = await requestText(
-    `https://api.smartrecruiters.com/v1/companies/${encodeURIComponent(company)}/postings?limit=${LIMIT}`,
+    // `country=cl`: los boards corporativos son globales; sin filtro trae cientos
+    // de ofertas no-CL. El radar es Chile.
+    `https://api.smartrecruiters.com/v1/companies/${encodeURIComponent(company)}/postings?limit=${LIMIT}&country=cl`,
     { tag: "job_radar.smartrecruiters", ctx: { company } }
   );
   if (!text) return [];

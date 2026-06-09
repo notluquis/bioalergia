@@ -14,7 +14,6 @@
 import { BROWSER_UA, asRecord, asString, requestText, safeJsonParse } from "./_shared.ts";
 import type { RawJob } from "./types.ts";
 
-const SEARCH_URL = "https://us.api.csod.com/rec-job-search/external/jobs";
 const PAGE_SIZE = 50;
 const MAX_PAGES = 40;
 
@@ -85,6 +84,10 @@ export async function fetchCornerstoneJobs(identifier: string): Promise<RawJob[]
   const token = html.match(/"token"\s*:\s*"([^"]+)"/)?.[1];
   if (!token) return [];
   const cultureId = cultureFromToken(token);
+  // El host del API cloud es per-tenant ({region}.api.csod.com); lo leemos de la
+  // página (endpoints.cloud), fallback us.
+  const cloud = html.match(/"cloud"\s*:\s*"(https:\/\/[^"]+?)\/?"/)?.[1] ?? "https://us.api.csod.com";
+  const searchUrl = `${cloud}/rec-job-search/external/jobs`;
 
   const out: RawJob[] = [];
   const seen = new Set<string>();
@@ -107,7 +110,7 @@ export async function fetchCornerstoneJobs(identifier: string): Promise<RawJob[]
       customFieldDropdowns: [],
       customFieldRadios: [],
     });
-    const text = await requestText(SEARCH_URL, {
+    const text = await requestText(searchUrl, {
       method: "POST",
       body,
       tag: "job_radar.cornerstone",
