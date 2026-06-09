@@ -60,6 +60,53 @@ function pickMatchedTerm(entity: RawEntity, title: string): string | undefined {
   return pv ? stripHtml(pv.label ?? "") : undefined;
 }
 
+export type Icd11Detail = {
+  definition?: string;
+  browserUrl?: string;
+  exclusions: string[];
+  synonyms: string[];
+};
+
+type LangValue = { "@value"?: string } | undefined;
+type LabeledEntry = { label?: LangValue };
+type RawEntityDetail = {
+  definition?: LangValue;
+  browserUrl?: string;
+  exclusion?: LabeledEntry[];
+  synonym?: LabeledEntry[];
+};
+
+const langVal = (v: LangValue): string => stripHtml(v?.["@value"] ?? "");
+const labels = (arr: LabeledEntry[] | undefined): string[] =>
+  (arr ?? []).map((e) => langVal(e.label)).filter(Boolean);
+
+// Detalle completo de un entity (definición, exclusiones, sinónimos, link WHO).
+// Lazy: se llama solo al expandir un resultado. Quita el sufijo residual
+// (/unspecified, /other) para llegar al entity codeable que trae la definición.
+export async function fetchIcd11Detail(id: string, signal?: AbortSignal): Promise<Icd11Detail> {
+  // Los ids vienen como http://; forzar https evita el bloqueo mixed-content.
+  // Quitar el sufijo residual (/unspecified, /other) → entity codeable con def.
+  const url = id.replace(/^http:/i, "https:").replace(/\/(unspecified|other)$/i, "");
+  const token = await getToken();
+  const response = await fetch(url, {
+    signal,
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "API-Version": "v2",
+      Accept: "application/json",
+      "Accept-Language": "es",
+    },
+  });
+  if (!response.ok) throw new Error(`ICD-11 detail failed: ${response.status}`);
+  const data = (await response.json()) as RawEntityDetail;
+  return {
+    browserUrl: data.browserUrl,
+    definition: langVal(data.definition) || undefined,
+    exclusions: labels(data.exclusion),
+    synonyms: labels(data.synonym),
+  };
+}
+
 export async function searchIcd11(
   query: string,
   signal?: AbortSignal
