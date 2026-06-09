@@ -101,19 +101,28 @@ export function Icd11DiagnosisPicker({
                 return (
                   <li key={result.id}>
                     <button
-                      className="flex w-full items-center gap-2 px-3 py-2 text-left transition hover:bg-default-100"
+                      className="flex w-full items-start gap-2 px-3 py-2 text-left transition hover:bg-default-100"
                       onClick={() => pick(result)}
                       type="button"
                     >
-                      <Search className="size-3.5 shrink-0 text-default-400" />
+                      <Search className="mt-0.5 size-3.5 shrink-0 text-default-400" />
                       {result.code ? (
-                        <span className="shrink-0 font-mono font-semibold text-primary text-xs">
+                        <span className="mt-0.5 shrink-0 font-mono font-semibold text-primary text-xs">
                           {result.code}
                         </span>
                       ) : null}
-                      <span className="min-w-0 flex-1 truncate text-sm">{result.title}</span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-sm">{result.title}</span>
+                        {result.matchedTerm ? (
+                          <span className="block truncate text-default-400 text-xs">
+                            coincide: {result.matchedTerm}
+                          </span>
+                        ) : null}
+                      </span>
                       {cie10 ? (
-                        <span className="shrink-0 text-default-400 text-xs">≈CIE-10 {cie10}</span>
+                        <span className="mt-0.5 shrink-0 text-default-400 text-xs">
+                          ≈CIE-10 {cie10}
+                        </span>
                       ) : null}
                     </button>
                   </li>

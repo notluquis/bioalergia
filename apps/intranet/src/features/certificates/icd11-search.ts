@@ -10,10 +10,12 @@ const SEARCH_URL = `https://id.who.int/icd/release/11/${RELEASE}/mms/search`;
 export type Icd11SearchResult = {
   /** Linearization URI estable (id == foundation/linearization). */
   id: string;
-  /** Código CIE-11 (MMS), p.ej. "CA08.0". */
+  /** Código CIE-11 (MMS), p.ej. "CA08.0". Vacío en entidades agrupadoras. */
   code: string;
   /** Título en español, sin markup. */
   title: string;
+  /** Sinónimo/término que disparó el match (si difiere del título). */
+  matchedTerm?: string;
 };
 
 let tokenCache: { token: string; expiresAt: number } | null = null;
@@ -35,7 +37,28 @@ function stripHtml(value: string): string {
     .trim();
 }
 
-type RawEntity = { id?: string; code?: string; title?: string };
+type RawMatchingPV = { label?: string; propertyId?: string };
+type RawEntity = {
+  id?: string;
+  // En los resultados de búsqueda el código viene en `theCode` (NO `code`).
+  theCode?: string;
+  code?: string;
+  title?: string;
+  matchingPVs?: RawMatchingPV[];
+};
+
+// Sinónimo/título-de-otra-entidad que disparó el match, si difiere del título.
+function pickMatchedTerm(entity: RawEntity, title: string): string | undefined {
+  const pv = entity.matchingPVs?.find((p) => {
+    const label = stripHtml(p.label ?? "");
+    return (
+      label &&
+      label.toLowerCase() !== title.toLowerCase() &&
+      (p.propertyId === "Synonym" || p.propertyId === "TitleOfOtherEntity")
+    );
+  });
+  return pv ? stripHtml(pv.label ?? "") : undefined;
+}
 
 export async function searchIcd11(
   query: string,
@@ -57,10 +80,14 @@ export async function searchIcd11(
   if (!response.ok) throw new Error(`ICD-11 search failed: ${response.status}`);
   const data = (await response.json()) as { destinationEntities?: RawEntity[] };
   return (data.destinationEntities ?? [])
-    .map((entity) => ({
-      id: entity.id ?? "",
-      code: (entity.code ?? "").trim(),
-      title: stripHtml(entity.title ?? ""),
-    }))
+    .map((entity) => {
+      const title = stripHtml(entity.title ?? "");
+      return {
+        id: entity.id ?? "",
+        code: (entity.theCode ?? entity.code ?? "").trim(),
+        matchedTerm: pickMatchedTerm(entity, title),
+        title,
+      };
+    })
     .filter((entity) => entity.id && entity.title);
 }

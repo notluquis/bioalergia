@@ -1,10 +1,7 @@
 import {
   Button,
-  Calendar,
   Card,
   Chip,
-  DateField,
-  DatePicker,
   Disclosure,
   FieldError,
   Form,
@@ -14,7 +11,6 @@ import {
   TextArea,
   TextField,
 } from "@heroui/react";
-import { parseDate } from "@internationalized/date";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import type {
@@ -29,6 +25,7 @@ import {
   formatPrescriptionDiagnoses,
   type PrescriptionDiagnosis,
 } from "@/features/certificates/diagnosis-catalog";
+import { AppDatePicker } from "@/components/forms/AppDatePicker";
 import { FrequentDiagnosisCombobox } from "@/features/certificates/FrequentDiagnosisCombobox";
 import { cie11Equivalent, loadIcd10To11 } from "@/features/certificates/icd-crosswalk";
 import { Icd11DiagnosisPicker } from "@/features/certificates/Icd11DiagnosisPicker";
@@ -568,50 +565,12 @@ function PrescriptionModal({
                 validationBehavior="aria"
               >
                 <div className="grid gap-4">
-                  <DatePicker
+                  <AppDatePicker
                     className="sm:w-64"
-                    onChange={(value) => onDateChange(value?.toString() ?? "")}
-                    value={date ? parseDate(date) : undefined}
-                  >
-                    <Label>Fecha</Label>
-                    <DateField.Group>
-                      <DateField.InputContainer>
-                        <DateField.Input>
-                          {(segment) => <DateField.Segment segment={segment} />}
-                        </DateField.Input>
-                      </DateField.InputContainer>
-                      <DateField.Suffix>
-                        <DatePicker.Trigger>
-                          <DatePicker.TriggerIndicator />
-                        </DatePicker.Trigger>
-                      </DateField.Suffix>
-                    </DateField.Group>
-                    <DatePicker.Popover>
-                      <Calendar aria-label="Fecha de la receta">
-                        <Calendar.Header>
-                          <Calendar.YearPickerTrigger>
-                            <Calendar.YearPickerTriggerHeading />
-                            <Calendar.YearPickerTriggerIndicator />
-                          </Calendar.YearPickerTrigger>
-                          <Calendar.NavButton slot="previous" />
-                          <Calendar.NavButton slot="next" />
-                        </Calendar.Header>
-                        <Calendar.Grid>
-                          <Calendar.GridHeader>
-                            {(day) => <Calendar.HeaderCell>{day}</Calendar.HeaderCell>}
-                          </Calendar.GridHeader>
-                          <Calendar.GridBody>
-                            {(calendarDate) => <Calendar.Cell date={calendarDate} />}
-                          </Calendar.GridBody>
-                        </Calendar.Grid>
-                        <Calendar.YearPickerGrid>
-                          <Calendar.YearPickerGridBody>
-                            {({ year }) => <Calendar.YearPickerCell year={year} />}
-                          </Calendar.YearPickerGridBody>
-                        </Calendar.YearPickerGrid>
-                      </Calendar>
-                    </DatePicker.Popover>
-                  </DatePicker>
+                    label="Fecha"
+                    onChange={onDateChange}
+                    value={date}
+                  />
 
                   <DiagnosisPicker
                     customDiagnosis={customDiagnosis}
