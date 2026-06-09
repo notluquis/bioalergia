@@ -8492,6 +8492,37 @@ export class SchemaType implements SchemaDef {
                     type: "DateTime",
                     attributes: [{ name: "@db.Date" }] as readonly AttributeApplication[]
                 },
+                folio: {
+                    name: "folio",
+                    type: "String",
+                    unique: true,
+                    optional: true,
+                    attributes: [{ name: "@unique" }] as readonly AttributeApplication[]
+                },
+                folioSeq: {
+                    name: "folioSeq",
+                    type: "Int",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("folio_seq") }] }] as readonly AttributeApplication[]
+                },
+                prescriptionType: {
+                    name: "prescriptionType",
+                    type: "String",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("SIMPLE") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("prescription_type") }] }] as readonly AttributeApplication[],
+                    default: "SIMPLE" as FieldDefault
+                },
+                doctorLicense: {
+                    name: "doctorLicense",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("doctor_license") }] }] as readonly AttributeApplication[]
+                },
+                status: {
+                    name: "status",
+                    type: "String",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("ISSUED") }] }] as readonly AttributeApplication[],
+                    default: "ISSUED" as FieldDefault
+                },
                 diagnosis: {
                     name: "diagnosis",
                     type: "String",
@@ -8592,7 +8623,8 @@ export class SchemaType implements SchemaDef {
             ] as readonly AttributeApplication[],
             idFields: ["id"],
             uniqueFields: {
-                id: { type: "String" }
+                id: { type: "String" },
+                folio: { type: "String" }
             }
         },
         Patient: {

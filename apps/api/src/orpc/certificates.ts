@@ -2,7 +2,8 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { db } from "@finanzas/db";
+import { db, kysely } from "@finanzas/db";
+import { sql } from "kysely";
 import {
   certificateVerifyInputSchema,
   certificateVerifyResponseSchema,
@@ -24,6 +25,7 @@ import {
   medicalCertificateSchema,
   medicalPrescriptionSchema,
 } from "../modules/certificates/certificate.schema.ts";
+import { buildFolio } from "../modules/certificates/folio.ts";
 // Lazy: pdf-lib weighs ~3MB+ in heap; only load on first /medical request.
 type CertificateService = typeof CertificateServiceModule;
 let _certificateService: CertificateService | undefined;
@@ -212,12 +214,25 @@ const certificatesORPCRouterBase = {
         .join(" ");
       const diagnosisText =
         parsed.diagnosis?.trim() || formatPrescriptionDiagnoses(parsed.diagnoses);
+
+      // Folio: correlativo desde la secuencia (auditoría) + sufijo aleatorio.
+      const folioRes = await sql<{
+        v: number;
+      }>`SELECT nextval('medical_prescription_folio_seq')::int AS v`.execute(kysely);
+      const folioSeq = folioRes.rows[0]?.v ?? 0;
+      const folio = buildFolio(folioSeq, Number(parsed.date.slice(0, 4)));
+      const doctorLicense = clinic.superintendenciaNumber ?? undefined;
+      const prescriptionType = parsed.prescriptionType ?? "SIMPLE";
+
       // El array `diagnoses` va a su columna dedicada, no al metadata Json.
       const { diagnoses: _diagnoses, ...metadataInput } = parsed;
       const rawPdf = await generateMedicalPrescriptionPdf(
         {
           ...parsed,
           diagnosis: diagnosisText,
+          folio,
+          prescriptionType,
+          doctorLicense,
           patient: { name: fullName, rut: patient.person.rut },
         },
         {
@@ -250,6 +265,10 @@ const certificatesORPCRouterBase = {
         await db.medicalPrescription.create({
           data: {
             date: parseDateOnly(parsed.date),
+            folio,
+            folioSeq,
+            prescriptionType,
+            doctorLicense,
             diagnosis: diagnosisText,
             diagnoses: parsed.diagnoses,
             doctorAddress: parsed.doctorAddress,

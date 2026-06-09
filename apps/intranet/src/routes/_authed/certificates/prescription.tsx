@@ -187,6 +187,9 @@ function MedicalPrescriptionPage() {
   const [createPatientOpen, setCreatePatientOpen] = useState(false);
   const [patient, setPatient] = useState<SelectedPatient | null>(null);
   const [date, setDate] = useState(today());
+  const [prescriptionType, setPrescriptionType] = useState<"SIMPLE" | "RETENIDA" | "CHEQUE">(
+    "SIMPLE"
+  );
   const [selectedDiagnoses, setSelectedDiagnoses] = useState<PrescriptionDiagnosis[]>([]);
   const [customDiagnosis, setCustomDiagnosis] = useState("");
   const [notes, setNotes] = useState("");
@@ -301,6 +304,7 @@ function MedicalPrescriptionPage() {
       medications: cleanMedications,
       notes: notes.trim() || undefined,
       patientId: patient.id,
+      prescriptionType,
     });
   };
 
@@ -344,9 +348,11 @@ function MedicalPrescriptionPage() {
           onMedicationChange={updateMedication}
           onMedicationRemove={removeMedication}
           onNotesChange={setNotes}
+          onPrescriptionTypeChange={setPrescriptionType}
           onRemoveDiagnosis={removeDiagnosis}
           onSubmit={handleSubmit}
           patientLabel={patientLabel}
+          prescriptionType={prescriptionType}
           submitError={submitError}
         />
       ) : null}
@@ -596,9 +602,11 @@ function PrescriptionModal({
   onMedicationChange,
   onMedicationRemove,
   onNotesChange,
+  onPrescriptionTypeChange,
   onRemoveDiagnosis,
   onSubmit,
   patientLabel,
+  prescriptionType,
   submitError,
 }: {
   customDiagnosis: string;
@@ -616,9 +624,11 @@ function PrescriptionModal({
   onMedicationChange: (id: string, patch: Partial<MedicationDraft>) => void;
   onMedicationRemove: (id: string) => void;
   onNotesChange: (value: string) => void;
+  onPrescriptionTypeChange: (value: "SIMPLE" | "RETENIDA" | "CHEQUE") => void;
   onRemoveDiagnosis: (id: string) => void;
   onSubmit: () => Promise<void>;
   patientLabel: string;
+  prescriptionType: "SIMPLE" | "RETENIDA" | "CHEQUE";
   submitError: string | null;
 }) {
   return (
@@ -648,12 +658,21 @@ function PrescriptionModal({
                 validationBehavior="aria"
               >
                 <div className="grid gap-4">
-                  <AppDatePicker
-                    className="sm:w-64"
-                    label="Fecha"
-                    onChange={onDateChange}
-                    value={date}
-                  />
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <AppDatePicker label="Fecha" onChange={onDateChange} value={date} />
+                    <CodeSelect
+                      label="Tipo de receta"
+                      onChange={(code) =>
+                        onPrescriptionTypeChange(code as "SIMPLE" | "RETENIDA" | "CHEQUE")
+                      }
+                      options={[
+                        { code: "SIMPLE", display: "Simple" },
+                        { code: "RETENIDA", display: "Retenida" },
+                        { code: "CHEQUE", display: "Cheque" },
+                      ]}
+                      value={prescriptionType}
+                    />
+                  </div>
 
                   <DiagnosisPicker
                     customDiagnosis={customDiagnosis}

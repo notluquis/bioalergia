@@ -6949,6 +6949,32 @@ export class SchemaType implements SchemaDef {
                     name: "date",
                     type: "DateTime"
                 },
+                folio: {
+                    name: "folio",
+                    type: "String",
+                    unique: true,
+                    optional: true
+                },
+                folioSeq: {
+                    name: "folioSeq",
+                    type: "Int",
+                    optional: true
+                },
+                prescriptionType: {
+                    name: "prescriptionType",
+                    type: "String",
+                    default: "SIMPLE" as FieldDefault
+                },
+                doctorLicense: {
+                    name: "doctorLicense",
+                    type: "String",
+                    optional: true
+                },
+                status: {
+                    name: "status",
+                    type: "String",
+                    default: "ISSUED" as FieldDefault
+                },
                 diagnosis: {
                     name: "diagnosis",
                     type: "String",
@@ -7031,7 +7057,8 @@ export class SchemaType implements SchemaDef {
             },
             idFields: ["id"],
             uniqueFields: {
-                id: { type: "String" }
+                id: { type: "String" },
+                folio: { type: "String" }
             }
         },
         Patient: {

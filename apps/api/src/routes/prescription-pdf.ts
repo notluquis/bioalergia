@@ -49,6 +49,12 @@ prescriptionPdfRoutes.get("/:id/pdf", async (c) => {
         diagnosis: prescription.diagnosis ?? undefined,
         medications,
         notes: prescription.notes ?? undefined,
+        folio: prescription.folio ?? undefined,
+        prescriptionType: (prescription.prescriptionType ?? "SIMPLE") as
+          | "SIMPLE"
+          | "RETENIDA"
+          | "CHEQUE",
+        doctorLicense: prescription.doctorLicense ?? undefined,
         doctorName: prescription.doctorName ?? undefined,
         doctorSpecialty: prescription.doctorSpecialty ?? undefined,
         doctorRut: prescription.doctorRut ?? undefined,

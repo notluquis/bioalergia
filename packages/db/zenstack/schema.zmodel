@@ -2603,6 +2603,16 @@ model MedicalPrescription {
   patientRut  String?  @map("patient_rut")
 
   date        DateTime @db.Date
+  // Folio público RX-AAAA-NNNNNN-XXXX: correlativo (auditoría) + sufijo
+  // aleatorio (anti-enumeración/scraping). folioSeq = correlativo interno.
+  folio       String?  @unique
+  folioSeq    Int?     @map("folio_seq")
+  // SIMPLE | RETENIDA | CHEQUE
+  prescriptionType String @default("SIMPLE") @map("prescription_type")
+  // Nº registro Superintendencia de Salud del médico (de ClinicSettings).
+  doctorLicense String? @map("doctor_license")
+  // ISSUED | ANNULLED
+  status      String   @default("ISSUED")
   diagnosis   String?
   diagnoses   Json?
   medications Json

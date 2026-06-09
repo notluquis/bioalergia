@@ -59,6 +59,7 @@ export const generateMedicalPrescriptionInputSchema = z.object({
   doctorSpecialty: z.string().optional(),
   medications: z.array(prescriptionMedicationSchema).min(1).max(12),
   notes: z.string().max(1000).optional(),
+  prescriptionType: z.enum(["SIMPLE", "RETENIDA", "CHEQUE"]).optional(),
   patientId: z.number().int().positive(),
 });
 
@@ -73,9 +74,13 @@ export const medicalPrescriptionSchema = z.object({
   date: z.coerce.date(),
   diagnosis: z.string().nullable(),
   diagnoses: z.unknown().nullable().optional(),
+  doctorLicense: z.string().nullable().optional(),
   doctorName: z.string().nullable(),
   driveFileId: z.string(),
+  folio: z.string().nullable().optional(),
   id: z.string(),
+  prescriptionType: z.string().nullable().optional(),
+  status: z.string().nullable().optional(),
   issuedAt: z.coerce.date(),
   medications: z.unknown(),
   notes: z.string().nullable(),
