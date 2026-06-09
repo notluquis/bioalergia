@@ -9,6 +9,7 @@ import {
   generateMedicalCertificateInputSchema,
   generateMedicalPrescriptionInputSchema,
   listMedicalPrescriptionsInputSchema,
+  medicalPrescriptionGenerateResponseSchema,
   medicalPrescriptionListResponseSchema,
 } from "@finanzas/orpc-contracts/certificates";
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
@@ -182,7 +183,7 @@ const certificatesORPCRouterBase = {
       tags: ["Certificates"],
     })
     .input(generateMedicalPrescriptionInputSchema)
-    .output(z.file())
+    .output(medicalPrescriptionGenerateResponseSchema)
     .handler(async ({ context, input }) => {
       const parsed = medicalPrescriptionSchema.parse(input);
       const patient = await db.patient.findUnique({
@@ -227,7 +228,6 @@ const certificatesORPCRouterBase = {
       const { toPdfA3 } = await import("../modules/pdf/pdf-a.ts");
       const pdfBytes = await toPdfA3(rawPdf, "Receta médica");
       const pdfHash = crypto.createHash("sha256").update(pdfBytes).digest("hex");
-      const fileName = `receta_medica_${(patient.person.rut ?? "sin_rut").replace(/\./g, "")}.pdf`;
       const prescriptionId = crypto.randomUUID();
       const tempPath = path.join(os.tmpdir(), `${prescriptionId}.pdf`);
 
@@ -283,7 +283,9 @@ const certificatesORPCRouterBase = {
         }
       }
 
-      return new File([Buffer.from(pdfBytes)], fileName, { type: "application/pdf" });
+      // El PDF se descarga aparte (GET raw) — devolver el File por oRPC/SuperJSON
+      // corrompe el binario. Devolvemos solo el id.
+      return { id: prescriptionId };
     }),
 
   listPrescriptions: readMedicalCertificates

@@ -19,7 +19,7 @@ import type {
   GenerateMedicalPrescriptionInput,
   MedicalPrescription,
 } from "@finanzas/orpc-contracts/certificates";
-import { FileText, Plus, Trash2 } from "lucide-react";
+import { Download, FileText, Plus, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { z } from "zod";
 
@@ -152,6 +152,27 @@ function newMedicationDraft(): MedicationDraft {
   };
 }
 
+// Descarga el PDF desde el endpoint raw (bytes correctos; oRPC/SuperJSON
+// corrompe binario). Sirve para emitir y para re-descargar desde el historial.
+async function downloadPrescriptionPdf(id: string): Promise<void> {
+  const res = await fetch(`/api/certificates/prescription/${id}/pdf`, {
+    credentials: "include",
+  });
+  if (!res.ok) {
+    toast.error("No se pudo descargar el PDF");
+    return;
+  }
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `receta_${id}.pdf`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
 function patientFullName(patient: SelectedPatient): string {
   return [patient.person.names, patient.person.fatherName, patient.person.motherName]
     .filter(Boolean)
@@ -207,19 +228,9 @@ function MedicalPrescriptionPage() {
         throw toCertificatesApiError(error);
       }
     },
-    onSuccess: (file, variables) => {
-      const blob = file instanceof Blob ? file : new Blob([file as BlobPart]);
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download =
-        file instanceof File && file.name
-          ? file.name
-          : `receta_${variables.patientId}_${formatChile(new Date(), "YYYYMMDD")}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+    onSuccess: (result) => {
+      // El PDF se descarga del endpoint raw (oRPC/SuperJSON corrompe binario).
+      downloadPrescriptionPdf(result.id);
       void queryClient.invalidateQueries({ queryKey: ["medical-prescriptions"] });
       toast.success("Receta generada");
     },
@@ -430,6 +441,17 @@ function PrescriptionHistory({
                     Emitida {formatChile(item.issuedAt, "DD/MM/YYYY HH:mm")}
                   </p>
                 </div>
+              </div>
+              <div className="flex shrink-0 gap-2">
+                <Button
+                  className="gap-2"
+                  onPress={() => void downloadPrescriptionPdf(item.id)}
+                  size="sm"
+                  variant="outline"
+                >
+                  <Download size={14} />
+                  Descargar
+                </Button>
               </div>
             </article>
           ))}

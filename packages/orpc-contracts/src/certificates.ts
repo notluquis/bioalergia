@@ -121,15 +121,21 @@ export const certificateVerifyResponseSchema = z.union([
   }),
 ]);
 
+export const medicalPrescriptionGenerateResponseSchema = z.object({
+  id: z.string(),
+});
+
 export const certificatesContract = {
   generateMedical: oc
     .route({ method: "POST", path: "/medical" })
     .input(generateMedicalCertificateInputSchema)
     .output(z.file()),
+  // Devuelve solo el id; el PDF se descarga aparte por GET raw
+  // /api/certificates/prescription/{id}/pdf (oRPC/SuperJSON corrompe binario).
   generatePrescription: oc
     .route({ method: "POST", path: "/prescription" })
     .input(generateMedicalPrescriptionInputSchema)
-    .output(z.file()),
+    .output(medicalPrescriptionGenerateResponseSchema),
   listPrescriptions: oc
     .route({ method: "GET", path: "/prescriptions" })
     .input(listMedicalPrescriptionsInputSchema)
