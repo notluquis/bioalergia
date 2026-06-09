@@ -2,7 +2,7 @@
  * Statistics Data Hook
  */
 
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useSuspenseQueries } from "@tanstack/react-query";
 import { useState } from "react";
 import { useAuth } from "@/features/auth/hooks/use-auth";
 import { addMonths, today } from "@/lib/dates";
@@ -35,14 +35,14 @@ export function useStatsData(): UseStatsDataResult {
 
   const canView = can("read", "Transaction");
 
-  // Stats query
-  const statsQuery = useSuspenseQuery(statsKeys.main(from, to));
-
-  // Balances query
-  const balancesQuery = useSuspenseQuery(balanceKeys.range(from, to));
-
-  // Top participants query
-  const participantsQuery = useSuspenseQuery(statsKeys.participants(from, to));
+  // Parallel suspense — fire stats, balances, and participants at once (no waterfall)
+  const [statsQuery, balancesQuery, participantsQuery] = useSuspenseQueries({
+    queries: [
+      statsKeys.main(from, to),
+      balanceKeys.range(from, to),
+      statsKeys.participants(from, to),
+    ],
+  });
 
   const refetch = async () => {
     if (!canView) {

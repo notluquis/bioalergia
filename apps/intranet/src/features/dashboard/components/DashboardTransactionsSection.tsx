@@ -1,4 +1,4 @@
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useSuspenseQueries } from "@tanstack/react-query";
 
 import { dashboardKeys } from "../queries";
 import { DashboardChart } from "./DashboardChart";
@@ -9,8 +9,10 @@ interface Props {
   statsParams: { from: string; to: string };
 }
 export function DashboardTransactionsSection({ statsParams }: Props) {
-  const { data: stats } = useSuspenseQuery(dashboardKeys.stats(statsParams));
-  const { data: recentMovements } = useSuspenseQuery(dashboardKeys.recentMovements());
+  // Parallel suspense — fire stats and recent movements at once (no waterfall)
+  const [{ data: stats }, { data: recentMovements }] = useSuspenseQueries({
+    queries: [dashboardKeys.stats(statsParams), dashboardKeys.recentMovements()],
+  });
 
   const rawTotals = stats.totals ?? {};
   const totalIn = rawTotals.in ?? rawTotals.IN ?? 0;
