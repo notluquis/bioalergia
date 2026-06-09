@@ -18,6 +18,7 @@ import { fetchCornerstoneJobs } from "../modules/job-radar/cornerstone.ts";
 import { fetchGenomaworkJobs } from "../modules/job-radar/genomawork.ts";
 import { fetchHirefrontJobs } from "../modules/job-radar/hirefront.ts";
 import { fetchHiringRoomJobs } from "../modules/job-radar/hiringroom.ts";
+import { fetchPandapeJobs } from "../modules/job-radar/pandape.ts";
 import { fetchSfClassicJobs } from "../modules/job-radar/sfclassic.ts";
 import { fetchEmpleosPublicosJobs } from "../modules/job-radar/empleospublicos.ts";
 import {
@@ -236,6 +237,13 @@ function sourceFromRow(kind: string, identifier: string, keywords: string[]): Jo
         company: identifier.split(":")[0] ?? identifier,
         label: `cornerstone:${identifier}`,
         fetch: () => fetchCornerstoneJobs(identifier),
+      };
+    case "PANDAPE":
+      return {
+        source: "pandape",
+        company: identifier,
+        label: `pandape:${identifier}`,
+        fetch: () => fetchPandapeJobs(identifier),
       };
     // MUEVETE (grupo Falabella) NO es fila: es toggle global `config.muevete`
     // (como BCI/GetOnBoard), porque es una fuente única que agrega todas las
@@ -817,7 +825,8 @@ export type JobSourceKindDTO =
   | "HIRINGROOM"
   | "BUK"
   | "HIREFRONT"
-  | "CORNERSTONE";
+  | "CORNERSTONE"
+  | "PANDAPE";
 
 export async function listJobSources() {
   return db.jobSource.findMany({ orderBy: [{ kind: "asc" }, { identifier: "asc" }] });

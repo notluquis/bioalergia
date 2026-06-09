@@ -15263,7 +15263,8 @@ export class SchemaType implements SchemaDef {
                 HIRINGROOM: "HIRINGROOM",
                 BUK: "BUK",
                 HIREFRONT: "HIREFRONT",
-                CORNERSTONE: "CORNERSTONE"
+                CORNERSTONE: "CORNERSTONE",
+                PANDAPE: "PANDAPE"
             },
             attributes: [
                 { name: "@@schema", args: [{ name: "map", value: ExpressionUtils.literal("personal") }] }

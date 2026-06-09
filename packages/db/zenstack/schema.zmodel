@@ -2634,7 +2634,7 @@ model MedicalPrescription {
   patient     Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
 
   @@deny('all', auth() == null)
-  @@allow('create,read', auth().status == 'ACTIVE')
+  @@allow('create,read,update,delete', auth().status == 'ACTIVE')
 
   @@index([patientId, issuedAt])
   @@index([issuedAt])
@@ -5348,6 +5348,7 @@ enum JobSourceKind {
   BUK
   HIREFRONT
   CORNERSTONE
+  PANDAPE
 
   @@schema("personal")
 }
