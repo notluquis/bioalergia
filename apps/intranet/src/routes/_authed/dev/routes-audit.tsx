@@ -1,4 +1,5 @@
 import { Card, Chip, SearchField, ToggleButton, ToggleButtonGroup, Toolbar } from "@heroui/react";
+import { PAGE_CONTAINER } from "@/lib/styles";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { AlertCircle, CheckCircle, Settings, ShieldAlert } from "lucide-react";
@@ -94,7 +95,7 @@ function RoutesAuditPage() {
   }
 
   return (
-    <div className="w-full space-y-6 px-4 py-8 md:px-6">
+    <div className={PAGE_CONTAINER}>
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-4">
         <Card>

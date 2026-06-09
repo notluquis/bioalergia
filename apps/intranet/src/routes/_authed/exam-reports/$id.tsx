@@ -1,4 +1,5 @@
 import { Button, Spinner, Surface } from "@heroui/react";
+import { PAGE_CONTAINER_RELAXED } from "@/lib/styles";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, redirect, useNavigate, useParams } from "@tanstack/react-router";
 import { ChevronLeft } from "lucide-react";
@@ -44,7 +45,7 @@ function ExamReportEditPage() {
 
   if (detailQ.isLoading || !detailQ.data) {
     return (
-      <div className="mx-auto max-w-7xl space-y-6 p-4 md:p-6">
+      <div className={PAGE_CONTAINER_RELAXED}>
         <Surface
           className="flex items-center justify-center gap-2 rounded-2xl p-8 text-default-600"
           variant="default"
@@ -59,7 +60,7 @@ function ExamReportEditPage() {
   const report = detailQ.data;
 
   return (
-    <div className="mx-auto max-w-7xl space-y-6 p-4 md:p-6">
+    <div className={PAGE_CONTAINER_RELAXED}>
       <header className="flex items-center justify-between gap-3">
         <Button
           className="gap-2"
