@@ -138,6 +138,17 @@ const router = createRouter({
   defaultPreload: "intent",
   // Integrate with React Query for cache invalidation on navigation
   defaultPreloadStaleTime: 0,
+  defaultNotFoundComponent: () => (
+    <div className="flex min-h-[40vh] flex-col items-center justify-center gap-4 p-8">
+      <div className="max-w-lg rounded-2xl border border-default-200 bg-background p-6 text-center">
+        <h2 className="mb-2 font-bold text-xl text-foreground">Página no encontrada</h2>
+        <p className="text-default-500 text-sm">La ruta que buscas no existe o fue movida.</p>
+        <Button className="mt-6" variant="primary" onPress={() => (window.location.href = "/")}>
+          Volver al inicio
+        </Button>
+      </div>
+    </div>
+  ),
   defaultErrorComponent: ({ error }) => {
     // Log the error immediately
     useEffect(() => {
