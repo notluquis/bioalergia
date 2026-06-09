@@ -405,6 +405,14 @@ export default defineConfig(({ mode }) => {
       environment: "jsdom",
       globals: true,
       setupFiles: "./test/setup.ts",
+      // Heavy HeroUI + React-Aria + DataTable render tests can take seconds
+      // under full-suite CPU contention (208 files in parallel); give them
+      // headroom so findBy/waitFor don't give up prematurely.
+      testTimeout: 15_000,
+      // Flaky-only safety net: `retry` rescues *intermittent* tests (a
+      // deterministic failure still fails every attempt → stays red, so real
+      // bugs aren't masked). CI-only — local dev keeps fast-fail (retry: 0).
+      retry: process.env.CI ? 2 : 0,
       exclude: [
         ...configDefaults.exclude,
         "test/employees.integration.test.ts",

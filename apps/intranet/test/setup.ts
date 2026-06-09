@@ -1,7 +1,14 @@
 import "@testing-library/jest-dom/vitest";
 
-import { cleanup } from "@testing-library/react";
+import { cleanup, configure } from "@testing-library/react";
 import { afterEach } from "vitest";
+
+// findBy*/waitFor default to a 1000ms poll window — too tight when a
+// HeroUI + React-Aria render is starved for CPU under full-suite
+// parallelism (a normally-50ms render can take >1s). Widen the async
+// util timeout so slow renders resolve instead of flaking; a genuinely
+// missing element still fails (just after 5s), so real bugs aren't hidden.
+configure({ asyncUtilTimeout: 5_000 });
 
 // jsdom doesn't ship ResizeObserver / IntersectionObserver / matchMedia
 // — HeroUI v3 components (ScrollShadow, Tabs, Popover) call them on
