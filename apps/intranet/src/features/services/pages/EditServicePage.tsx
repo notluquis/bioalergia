@@ -14,6 +14,7 @@ import { ServiceForm } from "@/features/services/components/ServiceForm";
 import { ServiceScheduleAccordion } from "@/features/services/components/ServiceScheduleAccordion";
 import { ServiceScheduleTable } from "@/features/services/components/ServiceScheduleTable";
 import { SkipScheduleModal } from "@/features/services/components/SkipScheduleModal";
+import { serviceKeys } from "@/features/services/queries";
 import { servicesActions, servicesStore } from "@/features/services/store";
 import type { CreateServicePayload, ServiceDetailResponse } from "@/features/services/types";
 import { fmtCLP } from "@/lib/format";
@@ -35,7 +36,7 @@ export function ServiceEditPage() {
       }
       return fetchServiceDetail(id);
     },
-    queryKey: ["service-detail", id],
+    queryKey: serviceKeys.detail(id),
   });
 
   // Use REST API mutation for service updates (ZenStack has strict Decimal type requirements)
@@ -43,7 +44,7 @@ export function ServiceEditPage() {
     mutationFn: (payload: CreateServicePayload) => updateService(id, payload),
     onSuccess: () =>
       Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["service-detail", id] }),
+        queryClient.invalidateQueries({ queryKey: serviceKeys.detail(id) }),
         queryClient.invalidateQueries({ queryKey: ["services-audit"] }),
       ]),
   });
@@ -54,7 +55,7 @@ export function ServiceEditPage() {
   ) => {
     try {
       const updated = await regenerateServiceSchedules(serviceId, payload ?? {});
-      queryClient.setQueryData(["service-detail", id], updated);
+      queryClient.setQueryData(serviceKeys.detail(id), updated);
       setSaveMessage("Proyecciones regeneradas correctamente.");
     } catch (error_) {
       console.error("Regenerate failed:", error_);
