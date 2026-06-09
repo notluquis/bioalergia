@@ -2585,6 +2585,7 @@ model MedicalCertificate {
 
   issuer        User      @relation(fields: [issuedBy], references: [id])
   patient       Patient?  @relation(fields: [patientId], references: [id])
+  verification  DocumentVerification?
 
   @@deny('all', auth() == null)
   @@allow('read', auth().id == issuedBy)
@@ -2632,6 +2633,7 @@ model MedicalPrescription {
 
   issuer      User     @relation(fields: [issuedBy], references: [id])
   patient     Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  verification DocumentVerification?
 
   @@deny('all', auth() == null)
   @@allow('create,read,update,delete', auth().status == 'ACTIVE')
@@ -5423,4 +5425,48 @@ model JobPosting {
   @@index([firstSeenAt])
   @@schema("personal")
   @@map("job_postings")
+}
+
+model Medication {
+  id               String   @id @default(cuid())
+  name             String   // commercial / display name
+  genericName      String?  @map("generic_name")
+  activeIngredient String?  @map("active_ingredient")
+  laboratory       String?
+  form             String?  // forma farmacéutica (comprimido, jarabe, aerosol, ...)
+  presentation     String?  // e.g. "10 mg", "120 mcg/dosis"
+  source           String   @default("curated") // curated | isp | manual
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@deny('all', auth() == null)
+  @@allow('read', auth().status == 'ACTIVE')
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@index([name])
+  @@index([genericName])
+  @@map("medications")
+}
+
+model DocumentVerification {
+  id             String    @id @default(cuid())
+  // Código humano corto BA-XXXX-XXXX (Crockford base32, anti-enumeración).
+  code           String    @unique
+  // "prescription" | "certificate"
+  documentType   String    @map("document_type")
+  certificateId  String?   @unique @map("certificate_id")
+  prescriptionId String?   @unique @map("prescription_id")
+  // SHA-256 del PDF firmado, para el badge "documento íntegro".
+  pdfHash        String?   @map("pdf_hash")
+  issuedAt       DateTime  @default(now()) @map("issued_at")
+  revokedAt      DateTime? @map("revoked_at")
+
+  certificate    MedicalCertificate?  @relation(fields: [certificateId], references: [id], onDelete: SetNull)
+  prescription   MedicalPrescription? @relation(fields: [prescriptionId], references: [id], onDelete: SetNull)
+
+  @@deny('all', auth() == null)
+  @@allow('read,create', auth().status == 'ACTIVE')
+
+  @@index([code])
+  @@map("document_verifications")
 }

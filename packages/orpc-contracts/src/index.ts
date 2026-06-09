@@ -69,6 +69,8 @@ export * from "./patient-campaigns.ts";
 export * from "./people.ts";
 export * from "./personal-finance.ts";
 export * from "./job-radar.ts";
+export * from "./medications.ts";
+export * from "./verification.ts";
 export * from "./production-balances.ts";
 export * from "./release-transactions.ts";
 export * from "./roles.ts";

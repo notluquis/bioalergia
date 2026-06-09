@@ -16,6 +16,7 @@ import { Route as ForgotPasswordRouteImport } from "./routes/forgot-password"
 import { Route as AuthedRouteImport } from "./routes/_authed"
 import { Route as AuthedIndexRouteImport } from "./routes/_authed/index"
 import { Route as VerifyIdRouteImport } from "./routes/verify.$id"
+import { Route as VerificarCodeRouteImport } from "./routes/verificar.$code"
 import { Route as AuthedWaCloudRouteImport } from "./routes/_authed/wa-cloud"
 import { Route as AuthedSettingsRouteImport } from "./routes/_authed/settings"
 import { Route as AuthedServicesRouteImport } from "./routes/_authed/services"
@@ -124,6 +125,11 @@ const AuthedIndexRoute = AuthedIndexRouteImport.update({
 const VerifyIdRoute = VerifyIdRouteImport.update({
   id: "/verify/$id",
   path: "/verify/$id",
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VerificarCodeRoute = VerificarCodeRouteImport.update({
+  id: "/verificar/$code",
+  path: "/verificar/$code",
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthedWaCloudRoute = AuthedWaCloudRouteImport.update({
@@ -541,6 +547,7 @@ export interface FileRoutesByFullPath {
   "/services": typeof AuthedServicesRouteWithChildren
   "/settings": typeof AuthedSettingsRouteWithChildren
   "/wa-cloud": typeof AuthedWaCloudRouteWithChildren
+  "/verificar/$code": typeof VerificarCodeRoute
   "/verify/$id": typeof VerifyIdRoute
   "/admin/database": typeof AuthedAdminDatabaseRoute
   "/admin/users": typeof AuthedAdminUsersRoute
@@ -616,6 +623,7 @@ export interface FileRoutesByTo {
   "/finanzas": typeof AuthedFinanzasRouteWithChildren
   "/marcar": typeof AuthedMarcarRoute
   "/operations": typeof AuthedOperationsRouteWithChildren
+  "/verificar/$code": typeof VerificarCodeRoute
   "/verify/$id": typeof VerifyIdRoute
   "/": typeof AuthedIndexRoute
   "/admin/database": typeof AuthedAdminDatabaseRoute
@@ -701,6 +709,7 @@ export interface FileRoutesById {
   "/_authed/services": typeof AuthedServicesRouteWithChildren
   "/_authed/settings": typeof AuthedSettingsRouteWithChildren
   "/_authed/wa-cloud": typeof AuthedWaCloudRouteWithChildren
+  "/verificar/$code": typeof VerificarCodeRoute
   "/verify/$id": typeof VerifyIdRoute
   "/_authed/": typeof AuthedIndexRoute
   "/_authed/admin/database": typeof AuthedAdminDatabaseRoute
@@ -787,6 +796,7 @@ export interface FileRouteTypes {
     | "/services"
     | "/settings"
     | "/wa-cloud"
+    | "/verificar/$code"
     | "/verify/$id"
     | "/admin/database"
     | "/admin/users"
@@ -862,6 +872,7 @@ export interface FileRouteTypes {
     | "/finanzas"
     | "/marcar"
     | "/operations"
+    | "/verificar/$code"
     | "/verify/$id"
     | "/"
     | "/admin/database"
@@ -946,6 +957,7 @@ export interface FileRouteTypes {
     | "/_authed/services"
     | "/_authed/settings"
     | "/_authed/wa-cloud"
+    | "/verificar/$code"
     | "/verify/$id"
     | "/_authed/"
     | "/_authed/admin/database"
@@ -1019,6 +1031,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   OnboardingRoute: typeof OnboardingRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  VerificarCodeRoute: typeof VerificarCodeRoute
   VerifyIdRoute: typeof VerifyIdRoute
 }
 
@@ -1071,6 +1084,13 @@ declare module "@tanstack/react-router" {
       path: "/verify/$id"
       fullPath: "/verify/$id"
       preLoaderRoute: typeof VerifyIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/verificar/$code": {
+      id: "/verificar/$code"
+      path: "/verificar/$code"
+      fullPath: "/verificar/$code"
+      preLoaderRoute: typeof VerificarCodeRouteImport
       parentRoute: typeof rootRouteImport
     }
     "/_authed/wa-cloud": {
@@ -1892,6 +1912,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   OnboardingRoute: OnboardingRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  VerificarCodeRoute: VerificarCodeRoute,
   VerifyIdRoute: VerifyIdRoute,
 }
 export const routeTree = rootRouteImport

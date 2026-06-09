@@ -49,6 +49,7 @@ import {
   deletePrescription,
   emailPrescription,
 } from "../services/prescriptions.ts";
+import { createVerification, generateVerificationCode } from "../services/verification.ts";
 import { SuperJSONRPCHandler } from "./superjson.ts";
 
 configureSuperjson();
@@ -129,7 +130,8 @@ const certificatesORPCRouterBase = {
       const certificateId = crypto.randomUUID();
       const { generateMedicalCertificatePdf, generateQRCode, signPdf } =
         await getCertificateService();
-      const qrCode = await generateQRCode(certificateId);
+      const verificationCode = generateVerificationCode();
+      const qrCode = await generateQRCode(verificationCode);
       const clinic = await db.clinicSettings.upsert({
         where: { id: 1 },
         update: {},
@@ -178,6 +180,13 @@ const certificatesORPCRouterBase = {
             symptoms: parsed.symptoms,
           },
         });
+
+        await createVerification({
+          documentType: "certificate",
+          certificateId,
+          code: verificationCode,
+          pdfHash,
+        });
       } finally {
         if (fs.existsSync(tempPath)) {
           fs.unlinkSync(tempPath);
@@ -220,7 +229,7 @@ const certificatesORPCRouterBase = {
         update: {},
         create: { id: 1 },
       });
-      const { generateMedicalPrescriptionPdf } = await getCertificateService();
+      const { generateMedicalPrescriptionPdf, generateQRCode } = await getCertificateService();
       const fullName = [patient.person.names, patient.person.fatherName, patient.person.motherName]
         .filter(Boolean)
         .join(" ");
@@ -236,6 +245,12 @@ const certificatesORPCRouterBase = {
       const doctorLicense = clinic.superintendenciaNumber ?? undefined;
       const prescriptionType = parsed.prescriptionType ?? "SIMPLE";
 
+      // Código + QR de verificación: el código se codifica en el QR y se persiste
+      // tras crear la receta (createVerification con `code` fijo).
+      const prescriptionId = crypto.randomUUID();
+      const verificationCode = generateVerificationCode();
+      const prescriptionQr = await generateQRCode(verificationCode);
+
       // El array `diagnoses` va a su columna dedicada, no al metadata Json.
       const { diagnoses: _diagnoses, ...metadataInput } = parsed;
       const rawPdf = await generateMedicalPrescriptionPdf(
@@ -246,6 +261,8 @@ const certificatesORPCRouterBase = {
           prescriptionType,
           doctorLicense,
           patientAge,
+          qrCodeBuffer: prescriptionQr,
+          verificationCode,
           patient: { name: fullName, rut: patient.person.rut },
         },
         {
@@ -256,7 +273,6 @@ const certificatesORPCRouterBase = {
       const { toPdfA3 } = await import("../modules/pdf/pdf-a.ts");
       const pdfBytes = await toPdfA3(rawPdf, "Receta médica");
       const pdfHash = crypto.createHash("sha256").update(pdfBytes).digest("hex");
-      const prescriptionId = crypto.randomUUID();
       const tempPath = path.join(os.tmpdir(), `${prescriptionId}.pdf`);
 
       fs.writeFileSync(tempPath, pdfBytes);
@@ -308,6 +324,13 @@ const certificatesORPCRouterBase = {
             patientRut: patient.person.rut,
             pdfHash,
           },
+        });
+
+        await createVerification({
+          documentType: "prescription",
+          prescriptionId,
+          code: verificationCode,
+          pdfHash,
         });
       } finally {
         if (fs.existsSync(tempPath)) {

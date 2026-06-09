@@ -279,6 +279,18 @@
       "import": "./dist/job-radar.js",
       "default": "./dist/job-radar.js"
     },
+    "./medications": {
+      "development": "./src/medications.ts",
+      "types": "./dist/medications.d.ts",
+      "import": "./dist/medications.js",
+      "default": "./dist/medications.js"
+    },
+    "./verification": {
+      "development": "./src/verification.ts",
+      "types": "./dist/verification.d.ts",
+      "import": "./dist/verification.js",
+      "default": "./dist/verification.js"
+    },
     "./production-balances": {
       "development": "./src/production-balances.ts",
       "types": "./dist/production-balances.d.ts",

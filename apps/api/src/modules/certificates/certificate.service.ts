@@ -211,8 +211,8 @@ const drawQrCode = async (
 /**
  * Generate QR code for certificate verification
  */
-export async function generateQRCode(certificateId: string): Promise<Buffer> {
-  const verifyUrl = `${process.env.APP_URL || "http://localhost:5173"}/verify/${certificateId}`;
+export async function generateQRCode(code: string): Promise<Buffer> {
+  const verifyUrl = `${process.env.APP_URL || "http://localhost:5173"}/verificar/${code}`;
   return await QRCode.toBuffer(verifyUrl, {
     errorCorrectionLevel: "M",
     type: "png",

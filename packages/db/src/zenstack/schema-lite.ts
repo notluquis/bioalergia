@@ -6913,6 +6913,12 @@ export class SchemaType implements SchemaDef {
                     type: "Patient",
                     optional: true,
                     relation: { opposite: "medicalCertificates", fields: ["patientId"], references: ["id"] }
+                },
+                verification: {
+                    name: "verification",
+                    type: "DocumentVerification",
+                    optional: true,
+                    relation: { opposite: "certificate" }
                 }
             },
             idFields: ["id"],
@@ -7053,6 +7059,12 @@ export class SchemaType implements SchemaDef {
                     name: "patient",
                     type: "Patient",
                     relation: { opposite: "medicalPrescriptions", fields: ["patientId"], references: ["id"], onDelete: "Cascade" }
+                },
+                verification: {
+                    name: "verification",
+                    type: "DocumentVerification",
+                    optional: true,
+                    relation: { opposite: "prescription" }
                 }
             },
             idFields: ["id"],
@@ -14385,6 +14397,138 @@ export class SchemaType implements SchemaDef {
             uniqueFields: {
                 id: { type: "String" },
                 source_company_externalId: { source: { type: "String" }, company: { type: "String" }, externalId: { type: "String" } }
+            }
+        },
+        Medication: {
+            name: "Medication",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "String",
+                    id: true,
+                    default: ExpressionUtils.call("cuid") as FieldDefault
+                },
+                name: {
+                    name: "name",
+                    type: "String"
+                },
+                genericName: {
+                    name: "genericName",
+                    type: "String",
+                    optional: true
+                },
+                activeIngredient: {
+                    name: "activeIngredient",
+                    type: "String",
+                    optional: true
+                },
+                laboratory: {
+                    name: "laboratory",
+                    type: "String",
+                    optional: true
+                },
+                form: {
+                    name: "form",
+                    type: "String",
+                    optional: true
+                },
+                presentation: {
+                    name: "presentation",
+                    type: "String",
+                    optional: true
+                },
+                source: {
+                    name: "source",
+                    type: "String",
+                    default: "curated" as FieldDefault
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now") as FieldDefault
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "String" }
+            }
+        },
+        DocumentVerification: {
+            name: "DocumentVerification",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "String",
+                    id: true,
+                    default: ExpressionUtils.call("cuid") as FieldDefault
+                },
+                code: {
+                    name: "code",
+                    type: "String",
+                    unique: true
+                },
+                documentType: {
+                    name: "documentType",
+                    type: "String"
+                },
+                certificateId: {
+                    name: "certificateId",
+                    type: "String",
+                    unique: true,
+                    optional: true,
+                    foreignKeyFor: [
+                        "certificate"
+                    ] as readonly string[]
+                },
+                prescriptionId: {
+                    name: "prescriptionId",
+                    type: "String",
+                    unique: true,
+                    optional: true,
+                    foreignKeyFor: [
+                        "prescription"
+                    ] as readonly string[]
+                },
+                pdfHash: {
+                    name: "pdfHash",
+                    type: "String",
+                    optional: true
+                },
+                issuedAt: {
+                    name: "issuedAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                revokedAt: {
+                    name: "revokedAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                certificate: {
+                    name: "certificate",
+                    type: "MedicalCertificate",
+                    optional: true,
+                    relation: { opposite: "verification", fields: ["certificateId"], references: ["id"], onDelete: "SetNull" }
+                },
+                prescription: {
+                    name: "prescription",
+                    type: "MedicalPrescription",
+                    optional: true,
+                    relation: { opposite: "verification", fields: ["prescriptionId"], references: ["id"], onDelete: "SetNull" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "String" },
+                code: { type: "String" },
+                certificateId: { type: "String" },
+                prescriptionId: { type: "String" }
             }
         }
     } as const;

@@ -31,6 +31,7 @@ import { AppDatePicker } from "@/components/forms/AppDatePicker";
 import { FrequentDiagnosisCombobox } from "@/features/certificates/FrequentDiagnosisCombobox";
 import { cie11Equivalent, loadIcd10To11 } from "@/features/certificates/icd-crosswalk";
 import { Icd11DiagnosisPicker } from "@/features/certificates/Icd11DiagnosisPicker";
+import { MedicationAutocomplete } from "@/features/certificates/MedicationAutocomplete";
 import { SelectedDiagnosisChip } from "@/features/certificates/SelectedDiagnosisChip";
 import {
   type CodeDisplay,
@@ -1022,14 +1023,16 @@ function PrescriptionModal({
                         className="space-y-3 rounded-lg border border-default-200 p-3"
                         key={medication.id}
                       >
-                        <TextField
-                          isRequired
+                        <MedicationAutocomplete
+                          label={`Medicamento ${index + 1}`}
                           value={medication.name}
-                          onChange={(value) => onMedicationChange(medication.id, { name: value })}
-                        >
-                          <Label>Medicamento {index + 1}</Label>
-                          <Input placeholder="Nombre del fármaco" />
-                        </TextField>
+                          onChange={(name) => onMedicationChange(medication.id, { name })}
+                          onSelect={(med) =>
+                            onMedicationChange(medication.id, {
+                              name: med.presentation ? `${med.name} ${med.presentation}` : med.name,
+                            })
+                          }
+                        />
 
                         <div className="grid gap-3 sm:grid-cols-[6rem_1fr_1fr]">
                           <TextField
