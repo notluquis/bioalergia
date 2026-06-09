@@ -3,6 +3,7 @@ import {
   Card,
   Chip,
   Disclosure,
+  Dropdown,
   FieldError,
   Form,
   Input,
@@ -19,7 +20,17 @@ import type {
   GenerateMedicalPrescriptionInput,
   MedicalPrescription,
 } from "@finanzas/orpc-contracts/certificates";
-import { Ban, Download, FileText, Mail, Pencil, Plus, Printer, Trash2 } from "lucide-react";
+import {
+  Ban,
+  Download,
+  FileText,
+  Mail,
+  MoreHorizontal,
+  Pencil,
+  Plus,
+  Printer,
+  Trash2,
+} from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 import {
@@ -202,42 +213,28 @@ async function downloadBlankRecetario(): Promise<void> {
   await downloadFromUrl("/api/certificates/prescription/blank-template", "recetario_blanco.pdf");
 }
 
-// Imprime el PDF directo: lo carga en un iframe oculto y dispara el diálogo de
-// impresión del navegador (sin descargar archivo). El iframe se limpia tras
-// imprimir o a los 60s. mode "overlay" imprime SOLO los datos sobre el
-// recetario pre-impreso (impresora Epson del médico).
-async function printPrescriptionPdf(id: string, mode: "full" | "overlay" = "full"): Promise<void> {
-  const res = await fetch(`/api/certificates/prescription/${id}/pdf?mode=${mode}`, {
-    credentials: "include",
-  });
-  if (!res.ok) {
-    toast.error("No se pudo abrir la receta para imprimir");
+// Imprime el PDF: lo abre en una pestaña (visor PDF nativo del navegador) y
+// dispara el diálogo de impresión. El iframe oculto imprimía en blanco (visor
+// no renderiza en iframe 0×0); la pestaña SIEMPRE muestra el PDF real. mode
+// "overlay" imprime SOLO los datos sobre el recetario pre-impreso (Epson).
+function printPrescriptionPdf(id: string, mode: "full" | "overlay" = "full"): void {
+  // OJO: sin "noopener" — esa flag hace que window.open devuelva null y se
+  // pierde la referencia para .print(). Mismo origen → la referencia es segura.
+  const win = window.open(`/api/certificates/prescription/${id}/pdf?mode=${mode}`, "_blank");
+  if (!win) {
+    toast.error("Permite ventanas emergentes para imprimir, o usa Descargar");
     return;
   }
-  const objectUrl = URL.createObjectURL(await res.blob());
-  const iframe = document.createElement("iframe");
-  iframe.style.position = "fixed";
-  iframe.style.right = "0";
-  iframe.style.bottom = "0";
-  iframe.style.width = "0";
-  iframe.style.height = "0";
-  iframe.style.border = "0";
-  const cleanup = () => {
-    if (iframe.parentNode) document.body.removeChild(iframe);
-    URL.revokeObjectURL(objectUrl);
-  };
-  iframe.addEventListener("load", () => {
+  // Best-effort: dispara el diálogo de impresión cuando cargue el visor. Si el
+  // navegador no lo permite, el PDF ya quedó visible para imprimir a mano.
+  win.addEventListener("load", () => {
     try {
-      iframe.contentWindow?.focus();
-      iframe.contentWindow?.print();
+      win.focus();
+      win.print();
     } catch {
-      // Fallback: si el navegador bloquea print() en el iframe, abre el PDF.
-      window.open(objectUrl, "_blank", "noopener");
+      /* el visor nativo permite imprimir manualmente */
     }
-    setTimeout(cleanup, 60_000);
   });
-  iframe.src = objectUrl;
-  document.body.appendChild(iframe);
 }
 
 function patientFullName(patient: SelectedPatient): string {
@@ -301,9 +298,13 @@ export function PrescriptionPage() {
         throw toCertificatesApiError(error);
       }
     },
-    onSuccess: (result) => {
-      // El PDF se descarga del endpoint raw (oRPC/SuperJSON corrompe binario).
-      downloadPrescriptionPdf(result.id);
+    onSuccess: () => {
+      // Cierra el modal y refresca el historial: la receta nueva aparece arriba
+      // con Imprimir/Descargar. NO auto-descargamos (regeneraba el PDF de nuevo
+      // server-side → lentitud + descarga inesperada). El médico imprime desde
+      // la fila cuando quiere (Imprimir full o Recetario overlay).
+      setPatient(null);
+      setSupersedesId(null);
       void queryClient.invalidateQueries({ queryKey: ["medical-prescriptions"] });
       toast.success("Receta generada");
     },
@@ -586,6 +587,82 @@ function medicationSummary(value: unknown): string {
   return names.join(", ");
 }
 
+// Acciones secundarias de cada receta en un menú overflow (declutter del row).
+function PrescriptionRowMenu({
+  item,
+  onAnnul,
+  onDelete,
+  onEdit,
+  onEmail,
+}: {
+  item: MedicalPrescription;
+  onAnnul: (item: MedicalPrescription) => void;
+  onDelete: (item: MedicalPrescription) => void;
+  onEdit: (item: MedicalPrescription) => void;
+  onEmail: (item: MedicalPrescription) => void;
+}) {
+  const annulled = item.status === "ANNULLED";
+  const menuItems = [
+    { icon: <Printer size={14} />, id: "print-overlay", label: "Imprimir en recetario" },
+    { icon: <Download size={14} />, id: "download-overlay", label: "PDF solo datos" },
+    { icon: <Mail size={14} />, id: "email", label: "Enviar por email" },
+    ...(annulled
+      ? []
+      : [
+          { icon: <Pencil size={14} />, id: "edit", label: "Modificar" },
+          { icon: <Ban size={14} />, id: "annul", label: "Anular" },
+        ]),
+    { icon: <Trash2 size={14} />, id: "delete", label: "Eliminar" },
+  ];
+
+  const onAction = (key: string) => {
+    switch (key) {
+      case "print-overlay":
+        printPrescriptionPdf(item.id, "overlay");
+        break;
+      case "download-overlay":
+        void downloadPrescriptionPdf(item.id, "overlay");
+        break;
+      case "email":
+        onEmail(item);
+        break;
+      case "edit":
+        onEdit(item);
+        break;
+      case "annul":
+        onAnnul(item);
+        break;
+      case "delete":
+        onDelete(item);
+        break;
+    }
+  };
+
+  return (
+    <Dropdown>
+      <Dropdown.Trigger>
+        <Button aria-label="Más acciones" className="px-2" size="sm" variant="ghost">
+          <MoreHorizontal size={16} />
+        </Button>
+      </Dropdown.Trigger>
+      <Dropdown.Popover className="min-w-52" placement="bottom end">
+        <Dropdown.Menu
+          aria-label="Más acciones de la receta"
+          items={menuItems}
+          onAction={(key) => onAction(String(key))}
+        >
+          {(entry: (typeof menuItems)[number]) => (
+            <Dropdown.Item id={entry.id} key={entry.id} textValue={entry.label}>
+              {entry.icon}
+              <Label>{entry.label}</Label>
+            </Dropdown.Item>
+          )}
+        </Dropdown.Menu>
+      </Dropdown.Popover>
+    </Dropdown>
+  );
+}
+
 function PrescriptionHistory({
   isLoading,
   items,
@@ -658,81 +735,33 @@ function PrescriptionHistory({
                   </p>
                 </div>
               </div>
-              <div className="flex shrink-0 flex-col gap-1 sm:items-end">
-                <div className="flex flex-wrap gap-1 sm:justify-end">
-                  <Button
-                    className="gap-2"
-                    onPress={() => void printPrescriptionPdf(item.id, "full")}
-                    size="sm"
-                    variant="primary"
-                  >
-                    <Printer size={14} />
-                    Imprimir
-                  </Button>
-                  <Button
-                    className="gap-2"
-                    onPress={() => void downloadPrescriptionPdf(item.id, "full")}
-                    size="sm"
-                    variant="outline"
-                  >
-                    <Download size={14} />
-                    Descargar
-                  </Button>
-                  <Button
-                    className="gap-2"
-                    onPress={() => void printPrescriptionPdf(item.id, "overlay")}
-                    size="sm"
-                    variant="ghost"
-                  >
-                    <Printer size={14} />
-                    Recetario
-                  </Button>
-                  <Button
-                    className="gap-2"
-                    onPress={() => void downloadPrescriptionPdf(item.id, "overlay")}
-                    size="sm"
-                    variant="ghost"
-                  >
-                    PDF datos
-                  </Button>
-                </div>
-                <div className="flex flex-wrap gap-1 sm:justify-end">
-                  <Button className="gap-2" onPress={() => onEmail(item)} size="sm" variant="ghost">
-                    <Mail size={14} />
-                    Enviar
-                  </Button>
-                  {item.status === "ANNULLED" ? null : (
-                    <>
-                      <Button
-                        className="gap-2"
-                        onPress={() => onEdit(item)}
-                        size="sm"
-                        variant="ghost"
-                      >
-                        <Pencil size={14} />
-                        Modificar
-                      </Button>
-                      <Button
-                        className="gap-2 text-warning"
-                        onPress={() => void onAnnul(item)}
-                        size="sm"
-                        variant="ghost"
-                      >
-                        <Ban size={14} />
-                        Anular
-                      </Button>
-                    </>
-                  )}
-                  <Button
-                    className="gap-2 text-danger"
-                    onPress={() => void onDelete(item)}
-                    size="sm"
-                    variant="ghost"
-                  >
-                    <Trash2 size={14} />
-                    Eliminar
-                  </Button>
-                </div>
+              <div className="flex shrink-0 items-center gap-1 sm:self-start">
+                <Button
+                  className="gap-2"
+                  isDisabled={item.status === "ANNULLED"}
+                  onPress={() => printPrescriptionPdf(item.id, "full")}
+                  size="sm"
+                  variant="primary"
+                >
+                  <Printer size={14} />
+                  Imprimir
+                </Button>
+                <Button
+                  className="gap-2"
+                  onPress={() => void downloadPrescriptionPdf(item.id, "full")}
+                  size="sm"
+                  variant="outline"
+                >
+                  <Download size={14} />
+                  Descargar
+                </Button>
+                <PrescriptionRowMenu
+                  item={item}
+                  onAnnul={onAnnul}
+                  onDelete={onDelete}
+                  onEdit={onEdit}
+                  onEmail={onEmail}
+                />
               </div>
             </article>
           ))}
