@@ -3,20 +3,12 @@
  * medications. Curated clinical starting set (the doctor refines it later);
  * the full ISP registry CSV loads on top via `source = "isp"`.
  *
- * Run from repo root:
- *   pnpm -F @finanzas/db exec node scripts/seed-medications.ts
- * or:
- *   cd packages/db && node scripts/seed-medications.ts
+ * Run from packages/db (Node 26 carga el .env nativo, sin dotenv):
+ *   node --env-file=.env scripts/seed-medications.ts
  *
  * Idempotent: upserts by (name, presentation) — re-running updates fields,
- * never duplicates. Requires packages/db/.env with DATABASE_URL.
+ * never duplicates. Requires packages/db/.env con DATABASE_URL.
  */
-import { dirname, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
-import { config } from "dotenv";
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
-config({ path: resolve(__dirname, "../.env") });
 
 type Seed = {
   activeIngredient?: string;

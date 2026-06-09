@@ -52,6 +52,7 @@
     "db:pull": "zen db pull",
     "db:push": "zen db push",
     "seed:synthetic": "node scripts/seed-synthetic.ts",
+    "seed:medications": "node --env-file=.env scripts/seed-medications.ts",
     "migrate:dev": "zen migrate dev",
     "migrate:deploy": "zen migrate deploy",
     "clean": "rm -rf dist",
