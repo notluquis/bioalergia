@@ -20,13 +20,13 @@ import {
 describe("WaListSkeleton", () => {
   it("renders the requested number of rows (default 6)", () => {
     const { container } = render(<WaListSkeleton />);
-    // Each row has a `.flex.items-center.gap-3.px-3.py-3` wrapper.
-    expect(container.querySelectorAll(".px-3.py-3").length).toBe(6);
+    // Each row has a `.flex.items-center.gap-3.p-3` wrapper.
+    expect(container.querySelectorAll(".flex.items-center.gap-3.p-3").length).toBe(6);
   });
 
   it("respects custom rows prop", () => {
     const { container } = render(<WaListSkeleton rows={3} />);
-    expect(container.querySelectorAll(".px-3.py-3").length).toBe(3);
+    expect(container.querySelectorAll(".flex.items-center.gap-3.p-3").length).toBe(3);
   });
 
   it("renders zero heading or table-header elements (a11y contract)", () => {

@@ -428,6 +428,8 @@ function CropModal({
     canvas.height = TARGET;
     const ctx = canvas.getContext("2d");
     if (!ctx) throw new Error("Canvas no disponible");
+    // canvas 2D fill: white JPEG-export backdrop behind transparent crop, not UI chrome
+    // design-lint-ignore: hardcoded-hex
     ctx.fillStyle = "#ffffff";
     ctx.fillRect(0, 0, TARGET, TARGET);
     ctx.drawImage(img, pixels.x, pixels.y, pixels.width, pixels.height, 0, 0, TARGET, TARGET);
