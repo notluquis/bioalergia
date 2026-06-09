@@ -182,7 +182,7 @@ export function PayInstallmentModal({
                     </DatePicker.Trigger>
                   </DateField.Suffix>
                 </DateField.Group>
-                <DatePicker.Popover>
+                <DatePicker.Popover className="max-w-none">
                   <Calendar aria-label="Fecha de pago">
                     <Calendar.Header>
                       <Calendar.YearPickerTrigger>
