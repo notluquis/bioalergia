@@ -22,6 +22,7 @@ import type {
 } from "@finanzas/orpc-contracts/certificates";
 import {
   Ban,
+  ChevronDown,
   Download,
   FileText,
   Mail,
@@ -57,7 +58,7 @@ import { PatientSelectModal } from "@/features/exam-reports/components/PatientSe
 import { fetchPatient } from "@/features/patients/api";
 import { CreatePatientModal } from "@/features/patients/components/CreatePatientModal";
 import { confirmAction } from "@/components/ui/ConfirmDialog";
-import { formatChile, today } from "@/lib/dates";
+import { chileDay, endOfWeek, formatChile, getISOWeek, startOfWeek, today } from "@/lib/dates";
 import { toast } from "@/lib/toast-interceptor";
 
 const routeApi = getRouteApi("/_authed/certificates/prescription");
@@ -628,6 +629,72 @@ function PrescriptionRowMenu({
   );
 }
 
+// Agrupa recetas por año › mes › semana ISO (igual que el historial de
+// informes). Agrupa por la fecha de la receta (`date`). Server las entrega
+// ordenadas DESC por issuedAt.
+interface PxWeekGroup {
+  key: string;
+  label: string;
+  items: MedicalPrescription[];
+}
+interface PxMonthGroup {
+  key: string;
+  label: string;
+  count: number;
+  weeks: PxWeekGroup[];
+}
+interface PxYearGroup {
+  year: number;
+  count: number;
+  months: PxMonthGroup[];
+}
+
+function groupPrescriptions(items: MedicalPrescription[]): PxYearGroup[] {
+  const years = new Map<number, PxMonthGroup[]>();
+  const monthIndex = new Map<string, PxMonthGroup>();
+  const weekIndex = new Map<string, PxWeekGroup>();
+
+  for (const r of items) {
+    const when = r.date;
+    const iso = chileDay(when);
+    const year = Number(iso.slice(0, 4));
+    const month0 = Number(iso.slice(5, 7)) - 1;
+    const isoWeek = getISOWeek(when);
+    const monthKey = `${year}-${month0}`;
+    const weekKey = `${year}-W${isoWeek}`;
+
+    let monthGroup = monthIndex.get(monthKey);
+    if (!monthGroup) {
+      monthGroup = { key: monthKey, label: formatChile(when, "MMMM YYYY"), count: 0, weeks: [] };
+      monthIndex.set(monthKey, monthGroup);
+      const bucket = years.get(year) ?? [];
+      bucket.push(monthGroup);
+      years.set(year, bucket);
+    }
+
+    let weekGroup = weekIndex.get(weekKey);
+    if (!weekGroup) {
+      weekGroup = {
+        key: weekKey,
+        label: `Semana ${isoWeek} · ${formatChile(startOfWeek(when), "DD MMM")} – ${formatChile(endOfWeek(when), "DD MMM")}`,
+        items: [],
+      };
+      weekIndex.set(weekKey, weekGroup);
+      monthGroup.weeks.push(weekGroup);
+    }
+    weekGroup.items.push(r);
+    monthGroup.count += 1;
+  }
+
+  return Array.from(years.entries())
+    .map(([year, months]) => ({
+      year,
+      count: months.reduce((acc, m) => acc + m.count, 0),
+      months,
+    }))
+    .sort((a, b) => b.year - a.year);
+}
+
 function PrescriptionHistory({
   isLoading,
   items,
@@ -643,6 +710,73 @@ function PrescriptionHistory({
   onEmail: (item: MedicalPrescription) => void;
   title: string;
 }) {
+  const grouped = groupPrescriptions(items);
+
+  const renderRow = (item: MedicalPrescription) => (
+    <article
+      className="flex flex-col gap-2 border-default-100 border-b p-3 last:border-b-0 sm:flex-row sm:items-start"
+      key={item.id}
+    >
+      <div className="flex min-w-0 flex-1 gap-3">
+        <span className="mt-1 flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+          <FileText size={16} />
+        </span>
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <strong className="truncate text-sm">
+              {[item.patient.person.names, item.patient.person.fatherName]
+                .filter(Boolean)
+                .join(" ")}
+            </strong>
+            <Chip size="sm" variant="soft">
+              <Chip.Label>{formatChile(item.date, "DD/MM/YYYY")}</Chip.Label>
+            </Chip>
+            {item.folio ? (
+              <Chip size="sm" variant="soft">
+                <Chip.Label>{item.folio}</Chip.Label>
+              </Chip>
+            ) : null}
+            {item.status === "ANNULLED" ? (
+              <Chip color="danger" size="sm" variant="soft">
+                <Chip.Label>Anulada</Chip.Label>
+              </Chip>
+            ) : null}
+          </div>
+          <p className="mt-1 line-clamp-1 text-default-700 text-sm">
+            {medicationSummary(item.medications)}
+          </p>
+          {item.diagnosis ? (
+            <p className="line-clamp-1 text-default-500 text-xs">{item.diagnosis}</p>
+          ) : null}
+          <p className="text-default-500 text-xs">
+            Emitida {formatChile(item.issuedAt, "DD/MM/YYYY HH:mm")}
+          </p>
+        </div>
+      </div>
+      <div className="flex shrink-0 items-center gap-1 sm:self-start">
+        <Button
+          className="gap-2"
+          isDisabled={item.status === "ANNULLED"}
+          onPress={() => printPrescriptionPdf(item.id, "full")}
+          size="sm"
+          variant="primary"
+        >
+          <Printer size={14} />
+          Imprimir
+        </Button>
+        <Button
+          className="gap-2"
+          onPress={() => void downloadPrescriptionPdf(item.id, "full")}
+          size="sm"
+          variant="outline"
+        >
+          <Download size={14} />
+          Descargar
+        </Button>
+        <PrescriptionRowMenu item={item} onAnnul={onAnnul} onEdit={onEdit} onEmail={onEmail} />
+      </div>
+    </article>
+  );
   return (
     <Card className="p-6">
       <div className="mb-4 flex items-center justify-between gap-3">
@@ -659,73 +793,83 @@ function PrescriptionHistory({
       ) : items.length === 0 ? (
         <p className="text-default-600 text-sm">No hay recetas registradas.</p>
       ) : (
-        <div className="divide-y divide-default-200">
-          {items.map((item) => (
-            <article className="flex flex-col gap-2 py-3 sm:flex-row sm:items-start" key={item.id}>
-              <div className="flex min-w-0 flex-1 gap-3">
-                <span className="mt-1 flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-                  <FileText size={16} />
-                </span>
-                <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <strong className="truncate text-sm">
-                      {[item.patient.person.names, item.patient.person.fatherName]
-                        .filter(Boolean)
-                        .join(" ")}
-                    </strong>
-                    <Chip size="sm" variant="soft">
-                      <Chip.Label>{formatChile(item.date, "DD/MM/YYYY")}</Chip.Label>
-                    </Chip>
-                    {item.folio ? (
-                      <Chip size="sm" variant="soft">
-                        <Chip.Label>{item.folio}</Chip.Label>
-                      </Chip>
-                    ) : null}
-                    {item.status === "ANNULLED" ? (
-                      <Chip color="danger" size="sm" variant="soft">
-                        <Chip.Label>Anulada</Chip.Label>
-                      </Chip>
-                    ) : null}
-                  </div>
-                  <p className="mt-1 line-clamp-1 text-default-700 text-sm">
-                    {medicationSummary(item.medications)}
-                  </p>
-                  {item.diagnosis ? (
-                    <p className="line-clamp-1 text-default-500 text-xs">{item.diagnosis}</p>
-                  ) : null}
-                  <p className="text-default-500 text-xs">
-                    Emitida {formatChile(item.issuedAt, "DD/MM/YYYY HH:mm")}
-                  </p>
-                </div>
-              </div>
-              <div className="flex shrink-0 items-center gap-1 sm:self-start">
+        <div className="space-y-2">
+          {grouped.map((yearGroup) => (
+            <Disclosure defaultExpanded key={yearGroup.year}>
+              <Disclosure.Heading>
                 <Button
-                  className="gap-2"
-                  isDisabled={item.status === "ANNULLED"}
-                  onPress={() => printPrescriptionPdf(item.id, "full")}
-                  size="sm"
-                  variant="primary"
-                >
-                  <Printer size={14} />
-                  Imprimir
-                </Button>
-                <Button
-                  className="gap-2"
-                  onPress={() => void downloadPrescriptionPdf(item.id, "full")}
-                  size="sm"
+                  className="group flex w-full items-center justify-between px-3 py-2"
+                  slot="trigger"
                   variant="outline"
                 >
-                  <Download size={14} />
-                  Descargar
+                  <span className="flex items-center gap-2 font-medium">
+                    <FileText className="size-4 text-default-500" />
+                    {yearGroup.year}
+                  </span>
+                  <span className="flex items-center gap-2 text-default-500 text-xs">
+                    {yearGroup.count} receta{yearGroup.count === 1 ? "" : "s"}
+                    <ChevronDown className="size-4 transition group-data-[expanded]:rotate-180" />
+                  </span>
                 </Button>
-                <PrescriptionRowMenu
-                  item={item}
-                  onAnnul={onAnnul}
-                  onEdit={onEdit}
-                  onEmail={onEmail}
-                />
-              </div>
-            </article>
+              </Disclosure.Heading>
+              <Disclosure.Content>
+                <Disclosure.Body className="space-y-2 p-2 pl-4">
+                  {yearGroup.months.map((monthGroup) => (
+                    <Disclosure
+                      defaultExpanded={yearGroup.months.length === 1}
+                      key={monthGroup.key}
+                    >
+                      <Disclosure.Heading>
+                        <Button
+                          className="group flex w-full items-center justify-between gap-2 px-3 py-1.5 text-sm capitalize"
+                          size="sm"
+                          slot="trigger"
+                          variant="ghost"
+                        >
+                          <span>{monthGroup.label}</span>
+                          <span className="flex items-center gap-2 text-default-500 text-xs">
+                            {monthGroup.count}
+                            <ChevronDown className="size-3.5 transition group-data-[expanded]:rotate-180" />
+                          </span>
+                        </Button>
+                      </Disclosure.Heading>
+                      <Disclosure.Content>
+                        <Disclosure.Body className="space-y-1 p-1 pl-3">
+                          {monthGroup.weeks.map((weekGroup) => (
+                            <Disclosure
+                              defaultExpanded={monthGroup.weeks.length === 1}
+                              key={weekGroup.key}
+                            >
+                              <Disclosure.Heading>
+                                <Button
+                                  className="group flex w-full items-center justify-between gap-2 px-3 py-1 text-default-600 text-xs"
+                                  size="sm"
+                                  slot="trigger"
+                                  variant="ghost"
+                                >
+                                  <span>{weekGroup.label}</span>
+                                  <span className="flex items-center gap-2">
+                                    {weekGroup.items.length}
+                                    <ChevronDown className="size-3.5 transition group-data-[expanded]:rotate-180" />
+                                  </span>
+                                </Button>
+                              </Disclosure.Heading>
+                              <Disclosure.Content>
+                                <Disclosure.Body className="p-0">
+                                  <div className="overflow-hidden rounded-xl border border-default-100">
+                                    {weekGroup.items.map(renderRow)}
+                                  </div>
+                                </Disclosure.Body>
+                              </Disclosure.Content>
+                            </Disclosure>
+                          ))}
+                        </Disclosure.Body>
+                      </Disclosure.Content>
+                    </Disclosure>
+                  ))}
+                </Disclosure.Body>
+              </Disclosure.Content>
+            </Disclosure>
           ))}
         </div>
       )}
