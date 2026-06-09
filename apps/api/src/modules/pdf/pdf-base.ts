@@ -28,6 +28,7 @@ export const PDF_COLORS = {
 // ── Fuente embebida (IBM Plex Sans) ──────────────────────────────────
 let regularBytes: Uint8Array | null = null;
 let boldBytes: Uint8Array | null = null;
+let italicBytes: Uint8Array | null = null;
 
 function readFontBytes(): { regular: Uint8Array; bold: Uint8Array } {
   if (!regularBytes) {
@@ -39,7 +40,15 @@ function readFontBytes(): { regular: Uint8Array; bold: Uint8Array } {
   return { regular: regularBytes, bold: boldBytes };
 }
 
-export type PdfFonts = { font: PDFFont; bold: PDFFont };
+function readItalicBytes(): Uint8Array | null {
+  if (italicBytes) return italicBytes;
+  const p = path.join(FONTS_DIR, "IBMPlexSans-Italic.ttf");
+  if (!fs.existsSync(p)) return null;
+  italicBytes = new Uint8Array(fs.readFileSync(p));
+  return italicBytes;
+}
+
+export type PdfFonts = { font: PDFFont; bold: PDFFont; italic?: PDFFont };
 
 /** Registra fontkit y embebe IBM Plex Sans (subset) en el documento. */
 export async function loadPdfFonts(pdfDoc: PDFDocument): Promise<PdfFonts> {
@@ -47,7 +56,18 @@ export async function loadPdfFonts(pdfDoc: PDFDocument): Promise<PdfFonts> {
   const { regular, bold } = readFontBytes();
   const font = await pdfDoc.embedFont(regular, { subset: true });
   const boldFont = await pdfDoc.embedFont(bold, { subset: true });
-  return { font, bold: boldFont };
+  // Itálica opcional (sólo para "Rp."): si falta el asset o no embebe, el
+  // llamador cae a la bold sin romper.
+  let italic: PDFFont | undefined;
+  const italicData = readItalicBytes();
+  if (italicData) {
+    try {
+      italic = await pdfDoc.embedFont(italicData, { subset: true });
+    } catch {
+      italic = undefined;
+    }
+  }
+  return { font, bold: boldFont, italic };
 }
 
 // ── Logo (URL administrable + fallback local) ────────────────────────

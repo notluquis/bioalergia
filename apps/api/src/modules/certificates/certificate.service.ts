@@ -347,7 +347,7 @@ export async function generateMedicalPrescriptionPdf(
   const pdfDoc = await PDFDocument.create();
   let page = pdfDoc.addPage(PAGE);
   const { width, height } = page.getSize();
-  const { font, bold } = await loadPdfFonts(pdfDoc);
+  const { font, bold, italic } = await loadPdfFonts(pdfDoc);
   const doctor = createDoctorInfo(input);
 
   setPdfMetadata(pdfDoc, {
@@ -421,33 +421,23 @@ export async function generateMedicalPrescriptionPdf(
   // una banda común — solo chrome (full/template). ──────────────────────────
   if (showStatic) {
     const band = await drawHeaderLogos(pdfDoc, page, margin, width, y, logoUrls, 140, 116);
-    y -= band + 10;
+    y -= band + 22;
   } else {
-    y -= 50; // reservar la banda de logos para alinear el overlay
+    y -= 62; // reservar la banda de logos para alinear el overlay
   }
 
   if (showStatic) {
     const title = "Receta médica";
     page.drawText(title, {
-      x: width / 2 - bold.widthOfTextAtSize(title, 14) / 2,
+      x: width / 2 - bold.widthOfTextAtSize(title, 13) / 2,
       y,
-      size: 14,
+      size: 13,
       font: bold,
       color: rgb(0.1, 0.4, 0.6),
     });
   }
-  // Folio arriba a la derecha (data).
-  if (showData && input.folio) {
-    const folioText = `Folio: ${input.folio}`;
-    page.drawText(folioText, {
-      x: width - margin - font.widthOfTextAtSize(folioText, 8),
-      y: y + 2,
-      size: 8,
-      font,
-      color: rgb(0.35, 0.35, 0.35),
-    });
-  }
-  y -= 20;
+  // El folio va bajo el QR (no arriba) — ver bloque de verificación más abajo.
+  y -= 22;
 
   // ── Bloque paciente: recuadro con datos (data). Inspirado en el recetario
   // electrónico SNRE (Nombre · RUN · Edad · Fecha). ─────────────────────────
@@ -502,16 +492,9 @@ export async function generateMedicalPrescriptionPdf(
     y -= 14 + 13 + 2 * 13 + 2 * PATIENT_BOX_PAD + 14;
   }
 
-  // ── "Rp." (prescripción) — etiqueta clásica de receta (chrome). ───────────
+  // ── "Rp." en itálica — etiqueta clásica de receta (chrome). ───────────────
   if (showStatic) {
-    page.drawText("Rp.", { x: margin, y, size: 13, font: bold, color: rgb(0.1, 0.4, 0.6) });
-    page.drawText("(Prescripción)", {
-      x: margin + 28,
-      y: y + 1,
-      size: 9,
-      font,
-      color: rgb(0.45, 0.45, 0.45),
-    });
+    page.drawText("Rp.", { x: margin, y, size: 15, font: italic ?? bold, color: rgb(0.1, 0.4, 0.6) });
   }
   y -= 18;
 
@@ -616,7 +599,27 @@ export async function generateMedicalPrescriptionPdf(
         contentWidth - qrSize - 10,
         7.5
       );
-      y = qrTop - qrSize - 10;
+      // Folio bajo el QR (anti-scraping + auditoría).
+      if (input.folio) {
+        page.drawText(`Folio: ${input.folio}`, {
+          x: margin,
+          y: qrTop - qrSize - 11,
+          size: 8,
+          font,
+          color: rgb(0.4, 0.4, 0.4),
+        });
+      }
+      y = qrTop - qrSize - 24;
+    } else if (input.folio) {
+      // Sin QR (raro): el folio igual debe aparecer.
+      page.drawText(`Folio: ${input.folio}`, {
+        x: margin,
+        y,
+        size: 8,
+        font,
+        color: rgb(0.4, 0.4, 0.4),
+      });
+      y -= 16;
     }
   }
 
@@ -662,7 +665,13 @@ export async function generateMedicalPrescriptionPdf(
         pg.drawText(line, { x: margin, y: dy, size: 8, font, color: rgb(0.1, 0.4, 0.6) });
         dy -= 11;
       }
-      const contactLine = [`RUT: ${doctor.rut}`, doctor.email].filter(Boolean).join("  ·  ");
+      const contactLine = [
+        `RUT: ${doctor.rut}`,
+        input.doctorLicense?.trim() ? `Reg. SIS N° ${input.doctorLicense.trim()}` : null,
+        doctor.email,
+      ]
+        .filter(Boolean)
+        .join("  ·  ");
       pg.drawText(contactLine, { x: margin, y: dy, size: 8, font, color: rgb(0.35, 0.35, 0.35) });
       dy -= 11;
       for (const line of wrapText(doctor.address, font, 8, contentWidth)) {

@@ -44,10 +44,17 @@ export async function buildPrescriptionPdfBytes(
     select: { birthDate: true },
   });
   const clinic = await db.clinicSettings.findUnique({ where: { id: 1 } });
-  const { generateMedicalPrescriptionPdf } = await import(
+  // Código de verificación (vive en DocumentVerification, no en la receta) →
+  // regenerar el QR. Sin esto, re-descargas/impresiones salían SIN QR.
+  const verification = await db.documentVerification.findUnique({
+    where: { prescriptionId: id },
+    select: { code: true },
+  });
+  const { generateMedicalPrescriptionPdf, generateQRCode } = await import(
     "../modules/certificates/certificate.service.ts"
   );
   const { toPdfA3 } = await import("../modules/pdf/pdf-a.ts");
+  const qrCodeBuffer = verification?.code ? await generateQRCode(verification.code) : undefined;
 
   const rawPdf = await generateMedicalPrescriptionPdf(
     {
@@ -60,6 +67,8 @@ export async function buildPrescriptionPdfBytes(
       mode,
       status: prescription.status ?? undefined,
       folio: prescription.folio ?? undefined,
+      qrCodeBuffer,
+      verificationCode: verification?.code ?? undefined,
       prescriptionType: (prescription.prescriptionType ?? "SIMPLE") as
         | "SIMPLE"
         | "RETENIDA"
