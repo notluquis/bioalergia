@@ -398,6 +398,11 @@ function notifyKey(title: string, source: string, company: string): string {
   return `${norm(base)}@${norm(employer)}`;
 }
 
+// Tope de avisos por corrida: evita ráfagas a Telegram (rate-limit 429) cuando
+// entra un backlog grande, p.ej. tras sumar muchas fuentes nuevas. El resto
+// queda notified=false y se drena en las siguientes corridas (orden FIFO).
+const MAX_NOTIFY_PER_RUN = 25;
+
 async function notifyNewMatches(creds: TelegramCreds | null): Promise<number> {
   if (!telegramConfigured(creds)) {
     logWarn("job_radar.notify.skipped_no_telegram", {});
@@ -420,6 +425,7 @@ async function notifyNewMatches(creds: TelegramCreds | null): Promise<number> {
 
   let notified = 0;
   for (const group of groups.values()) {
+    if (notified >= MAX_NOTIFY_PER_RUN) break; // resto se drena la próxima corrida
     const job = group[0];
     if (!job) continue;
     const ok = await sendTelegramMessage(
