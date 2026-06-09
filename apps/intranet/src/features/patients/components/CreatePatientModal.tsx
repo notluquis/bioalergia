@@ -23,6 +23,7 @@ import { AppModal } from "@/components/ui/AppModal";
 import { FeatureErrorBoundary } from "@/components/ui/FeatureErrorBoundary";
 import { useToast } from "@/context/ToastContext";
 import { createPatient, fetchPatients } from "@/features/patients/api";
+import { patientKeys } from "@/features/patients/queries";
 import { findPersonByRut } from "@/features/people/api";
 import { formatRut, validateRut } from "@/lib/rut";
 
@@ -57,7 +58,7 @@ export function CreatePatientModal({ isOpen, onClose }: Readonly<CreatePatientMo
       toastError(err instanceof Error ? err.message : "Error al registrar paciente");
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["patients"] });
+      void queryClient.invalidateQueries({ queryKey: patientKeys.all });
       success("Paciente registrado exitosamente");
       form.reset();
       onClose();
@@ -117,7 +118,7 @@ export function CreatePatientModal({ isOpen, onClose }: Readonly<CreatePatientMo
   // person without patient ⇒ employee/user etc. ⇒ offer to autofill and
   // attach a patient profile to the same Person on submit.
   const { data: existingPerson } = useQuery({
-    queryKey: ["person-by-rut", debouncedRut],
+    queryKey: patientKeys.personByRut(debouncedRut),
     queryFn: () => findPersonByRut(debouncedRut),
     enabled: validateRut(debouncedRut),
     staleTime: 1000 * 30,
@@ -129,7 +130,7 @@ export function CreatePatientModal({ isOpen, onClose }: Readonly<CreatePatientMo
 
   // Name-based "similar patients" hint stays as best-effort contains match.
   const { data: nameMatches } = useQuery({
-    queryKey: ["patients", debouncedName],
+    queryKey: patientKeys.nameSearch(debouncedName),
     queryFn: () => fetchPatients(debouncedName),
     enabled: debouncedName.trim().length >= 3,
     staleTime: 1000 * 30,

@@ -6,6 +6,7 @@ import { useMemo, useState } from "react";
 import { useSkinTestsBySeries } from "@/features/clinical-series/skin-tests-queries";
 import type { SkinTestDetail, SkinTestResult } from "@/features/clinical-series/skin-tests-types";
 import { fetchPatientSkinTests } from "../api";
+import { patientKeys } from "../queries";
 
 const KIND_LABEL: Record<string, string> = {
   PATCH_TEST: "Parche",
@@ -22,7 +23,7 @@ const KIND_COLOR: Record<string, "warning" | "accent" | "success" | "default"> =
 export function SkinTestsList({ patientId }: { patientId: number }) {
   const [selectedId, setSelectedId] = useState<null | string>(null);
   const { data, isLoading } = useQuery({
-    queryKey: ["patient-skin-tests", patientId],
+    queryKey: patientKeys.skinTests(patientId),
     queryFn: () => fetchPatientSkinTests(patientId),
     staleTime: 1000 * 60,
   });

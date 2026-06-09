@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { FileUp, Save, X } from "lucide-react";
 import { useRef, useState } from "react";
 import { uploadPatientAttachment } from "@/features/patients/api";
+import { patientKeys } from "@/features/patients/queries";
 import { toast } from "@/lib/toast-interceptor";
 
 interface NewAttachmentModalProps {
@@ -32,7 +33,7 @@ export function NewAttachmentModal({ isOpen, onClose, patientId }: NewAttachment
     },
     onSuccess: () => {
       toast.success("Documento subido exitosamente");
-      void queryClient.invalidateQueries({ queryKey: ["patient", patientId] });
+      void queryClient.invalidateQueries({ queryKey: patientKeys.detail(patientId) });
       handleClose();
     },
     onError: (error) => {
