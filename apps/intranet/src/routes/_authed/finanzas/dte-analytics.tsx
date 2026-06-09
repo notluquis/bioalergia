@@ -4,6 +4,7 @@ import { requirePermission } from "@/lib/authz/route-guards";
 import { z } from "zod";
 
 import { DTEAnalyticsPage } from "@/pages/finanzas/DTEAnalyticsPage";
+import { dteAnalyticsKeys } from "@/features/finance/dte-analytics/queries";
 
 const dteAnalyticsSearchSchema = z
   .object({
@@ -50,5 +51,13 @@ export const Route = createFileRoute("/_authed/finanzas/dte-analytics")({
     title: "Análisis de DTEs",
   },
   beforeLoad: requirePermission("read", "DTEPurchaseDetail"),
+  // Prefetch both top-level suspense queries in parallel so the page's two
+  // sequential useSuspenseQuery calls (purchases, sales) resolve from cache
+  // instead of waterfalling on render.
+  loader: ({ context: { queryClient } }) =>
+    Promise.all([
+      queryClient.ensureQueryData(dteAnalyticsKeys.purchases()),
+      queryClient.ensureQueryData(dteAnalyticsKeys.sales()),
+    ]),
   validateSearch: (search: Record<string, unknown>) => dteAnalyticsSearchSchema.parse(search),
 });

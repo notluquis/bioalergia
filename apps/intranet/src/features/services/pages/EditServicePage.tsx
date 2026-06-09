@@ -42,11 +42,7 @@ export function ServiceEditPage() {
   // Use REST API mutation for service updates (ZenStack has strict Decimal type requirements)
   const updateMutation = useMutation({
     mutationFn: (payload: CreateServicePayload) => updateService(id, payload),
-    onSuccess: () =>
-      Promise.all([
-        queryClient.invalidateQueries({ queryKey: serviceKeys.detail(id) }),
-        queryClient.invalidateQueries({ queryKey: ["services-audit"] }),
-      ]),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: serviceKeys.detail(id) }),
   });
 
   const handleRegenerate = async (
