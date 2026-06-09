@@ -7,7 +7,9 @@ import {
   Form,
   Input,
   Label,
+  ListBox,
   Modal,
+  Select,
   TextArea,
   TextField,
 } from "@heroui/react";
@@ -30,6 +32,15 @@ import { FrequentDiagnosisCombobox } from "@/features/certificates/FrequentDiagn
 import { cie11Equivalent, loadIcd10To11 } from "@/features/certificates/icd-crosswalk";
 import { Icd11DiagnosisPicker } from "@/features/certificates/Icd11DiagnosisPicker";
 import { SelectedDiagnosisChip } from "@/features/certificates/SelectedDiagnosisChip";
+import {
+  type CodeDisplay,
+  SNRE_DRUG_FORM_LABEL,
+  SNRE_DRUG_FORMS,
+  SNRE_ROUTE_LABEL,
+  SNRE_ROUTES,
+  SNRE_TIME_UNIT_LABEL,
+  SNRE_TIME_UNITS,
+} from "@/features/certificates/snre-valuesets";
 import { certificatesORPCClient, toCertificatesApiError } from "@/features/certificates/orpc";
 import { PatientSelectModal } from "@/features/exam-reports/components/PatientSelectModal";
 import { fetchPatient } from "@/features/patients/api";
@@ -48,13 +59,69 @@ type SelectedPatient = {
 };
 
 type MedicationDraft = {
-  dosage: string;
-  duration: string;
-  frequency: string;
   id: string;
-  instructions: string;
   name: string;
+  doseValue: string;
+  doseUnit: string; // SNRE_DRUG_FORMS code
+  route: string; // SNRE_ROUTES code
+  freqValue: string;
+  freqUnit: string; // SNRE_TIME_UNITS code
+  durValue: string;
+  durUnit: string; // SNRE_TIME_UNITS code
+  instructions: string;
 };
+
+// Compone los campos estructurados (value sets SNRE) en los strings que ya
+// recibe el contrato/PDF: dosis "10 mg, vía oral", frecuencia "cada 8 horas",
+// duración "7 días".
+function composeDosage(m: MedicationDraft): string | undefined {
+  const value = m.doseValue.trim();
+  const base = value ? `${value} ${SNRE_DRUG_FORM_LABEL[m.doseUnit] ?? m.doseUnit}` : "";
+  const route = SNRE_ROUTE_LABEL[m.route];
+  if (base && route) return `${base}, vía ${route}`;
+  return base || undefined;
+}
+function composeFrequency(m: MedicationDraft): string | undefined {
+  const value = m.freqValue.trim();
+  return value ? `cada ${value} ${SNRE_TIME_UNIT_LABEL[m.freqUnit] ?? m.freqUnit}` : undefined;
+}
+function composeDuration(m: MedicationDraft): string | undefined {
+  const value = m.durValue.trim();
+  return value ? `${value} ${SNRE_TIME_UNIT_LABEL[m.durUnit] ?? m.durUnit}` : undefined;
+}
+
+function CodeSelect({
+  label,
+  options,
+  value,
+  onChange,
+  className,
+}: {
+  label: string;
+  options: CodeDisplay[];
+  value: string;
+  onChange: (code: string) => void;
+  className?: string;
+}) {
+  return (
+    <Select className={className} onChange={(key) => onChange(String(key))} value={value}>
+      <Label>{label}</Label>
+      <Select.Trigger>
+        <Select.Value />
+        <Select.Indicator />
+      </Select.Trigger>
+      <Select.Popover>
+        <ListBox className="max-h-72 overflow-y-auto">
+          {options.map((option) => (
+            <ListBox.Item id={option.code} key={option.code}>
+              {option.display}
+            </ListBox.Item>
+          ))}
+        </ListBox>
+      </Select.Popover>
+    </Select>
+  );
+}
 
 const prescriptionSearchSchema = z.object({
   patientId: z.coerce.number().int().positive().optional(),
@@ -72,12 +139,16 @@ export const Route = createFileRoute("/_authed/certificates/prescription")({
 
 function newMedicationDraft(): MedicationDraft {
   return {
-    dosage: "",
-    duration: "",
-    frequency: "",
+    doseUnit: "comprimido",
+    doseValue: "",
+    durUnit: "d",
+    durValue: "",
+    freqUnit: "h",
+    freqValue: "",
     id: crypto.randomUUID(),
     instructions: "",
     name: "",
+    route: "oral",
   };
 }
 
@@ -198,10 +269,10 @@ function MedicalPrescriptionPage() {
       return;
     }
     const cleanMedications = medications
-      .map(({ id: _id, ...item }) => ({
-        dosage: item.dosage.trim() || undefined,
-        duration: item.duration.trim() || undefined,
-        frequency: item.frequency.trim() || undefined,
+      .map((item) => ({
+        dosage: composeDosage(item),
+        duration: composeDuration(item),
+        frequency: composeFrequency(item),
         instructions: item.instructions.trim() || undefined,
         name: item.name.trim(),
       }))
@@ -588,7 +659,7 @@ function PrescriptionModal({
 
                     {medications.map((medication, index) => (
                       <div
-                        className="grid gap-3 rounded-lg border border-default-200 p-3 sm:grid-cols-2"
+                        className="space-y-3 rounded-lg border border-default-200 p-3"
                         key={medication.id}
                       >
                         <TextField
@@ -597,44 +668,88 @@ function PrescriptionModal({
                           onChange={(value) => onMedicationChange(medication.id, { name: value })}
                         >
                           <Label>Medicamento {index + 1}</Label>
-                          <Input placeholder="Nombre" />
+                          <Input placeholder="Nombre del fármaco" />
                         </TextField>
+
+                        <div className="grid gap-3 sm:grid-cols-[6rem_1fr_1fr]">
+                          <TextField
+                            value={medication.doseValue}
+                            onChange={(value) =>
+                              onMedicationChange(medication.id, { doseValue: value })
+                            }
+                          >
+                            <Label>Dosis</Label>
+                            <Input inputMode="decimal" placeholder="Ej: 1" />
+                          </TextField>
+                          <CodeSelect
+                            label="Unidad"
+                            onChange={(code) =>
+                              onMedicationChange(medication.id, { doseUnit: code })
+                            }
+                            options={SNRE_DRUG_FORMS}
+                            value={medication.doseUnit}
+                          />
+                          <CodeSelect
+                            label="Vía"
+                            onChange={(code) => onMedicationChange(medication.id, { route: code })}
+                            options={SNRE_ROUTES}
+                            value={medication.route}
+                          />
+                        </div>
+
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          <div className="grid grid-cols-[auto_5rem_1fr] items-end gap-2">
+                            <span className="pb-2 text-default-600 text-sm">cada</span>
+                            <TextField
+                              value={medication.freqValue}
+                              onChange={(value) =>
+                                onMedicationChange(medication.id, { freqValue: value })
+                              }
+                            >
+                              <Label>Frecuencia</Label>
+                              <Input inputMode="numeric" placeholder="8" />
+                            </TextField>
+                            <CodeSelect
+                              label="​"
+                              onChange={(code) =>
+                                onMedicationChange(medication.id, { freqUnit: code })
+                              }
+                              options={SNRE_TIME_UNITS}
+                              value={medication.freqUnit}
+                            />
+                          </div>
+                          <div className="grid grid-cols-[5rem_1fr] items-end gap-2">
+                            <TextField
+                              value={medication.durValue}
+                              onChange={(value) =>
+                                onMedicationChange(medication.id, { durValue: value })
+                              }
+                            >
+                              <Label>Duración</Label>
+                              <Input inputMode="numeric" placeholder="7" />
+                            </TextField>
+                            <CodeSelect
+                              label="​"
+                              onChange={(code) =>
+                                onMedicationChange(medication.id, { durUnit: code })
+                              }
+                              options={SNRE_TIME_UNITS}
+                              value={medication.durUnit}
+                            />
+                          </div>
+                        </div>
+
                         <TextField
-                          value={medication.dosage}
-                          onChange={(value) => onMedicationChange(medication.id, { dosage: value })}
-                        >
-                          <Label>Dosis</Label>
-                          <Input placeholder="Ej: 1 comprimido" />
-                        </TextField>
-                        <TextField
-                          value={medication.frequency}
-                          onChange={(value) =>
-                            onMedicationChange(medication.id, { frequency: value })
-                          }
-                        >
-                          <Label>Frecuencia</Label>
-                          <Input placeholder="Ej: cada 12 horas" />
-                        </TextField>
-                        <TextField
-                          value={medication.duration}
-                          onChange={(value) =>
-                            onMedicationChange(medication.id, { duration: value })
-                          }
-                        >
-                          <Label>Duración</Label>
-                          <Input placeholder="Ej: por 7 días" />
-                        </TextField>
-                        <TextField
-                          className="sm:col-span-2"
                           value={medication.instructions}
                           onChange={(value) =>
                             onMedicationChange(medication.id, { instructions: value })
                           }
                         >
                           <Label>Instrucciones</Label>
-                          <TextArea rows={2} />
+                          <TextArea placeholder="Ej: tomar con alimentos" rows={2} />
                         </TextField>
-                        <div className="flex justify-end sm:col-span-2">
+
+                        <div className="flex justify-end">
                           <Button
                             className="gap-2"
                             isDisabled={medications.length <= 1}
