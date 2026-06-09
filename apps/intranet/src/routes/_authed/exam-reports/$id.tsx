@@ -1,11 +1,10 @@
-import { Button, Spinner, Surface } from "@heroui/react";
+import { Button } from "@heroui/react";
 import { PAGE_CONTAINER_RELAXED } from "@/lib/styles";
-import { useQuery } from "@tanstack/react-query";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, redirect, useNavigate, useParams } from "@tanstack/react-router";
 import { ChevronLeft } from "lucide-react";
 
 import { CreateExamReportWizard } from "@/features/exam-reports/components/CreateExamReportWizard";
-import { examReportsORPCClient } from "@/features/exam-reports/orpc";
 import { examReportsKeys } from "@/features/exam-reports/queries";
 
 /**
@@ -38,26 +37,7 @@ function ExamReportEditPage() {
   const { id } = useParams({ from: "/_authed/exam-reports/$id" });
   const navigate = useNavigate();
   const numericId = Number(id);
-  const detailQ = useQuery({
-    ...examReportsKeys.detail(numericId),
-    queryFn: () => examReportsORPCClient.get({ id: numericId }),
-  });
-
-  if (detailQ.isLoading || !detailQ.data) {
-    return (
-      <div className={PAGE_CONTAINER_RELAXED}>
-        <Surface
-          className="flex items-center justify-center gap-2 rounded-2xl p-8 text-default-600"
-          variant="default"
-        >
-          <Spinner size="sm" />
-          Cargando informe…
-        </Surface>
-      </div>
-    );
-  }
-
-  const report = detailQ.data;
+  const { data: report } = useSuspenseQuery(examReportsKeys.detail(numericId));
 
   return (
     <div className={PAGE_CONTAINER_RELAXED}>
