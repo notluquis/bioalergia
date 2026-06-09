@@ -6,7 +6,10 @@ import type { JobPostingDTO } from "@finanzas/orpc-contracts/job-radar";
 // NO se mergean cargos homónimos de empresas distintas ("Analista de Riesgo" en dos
 // empresas siguen separados).
 
-export type DedupedPosting = JobPostingDTO & { alsoOn?: string[] };
+// `mergedIds` = ids de TODAS las filas DB agrupadas en esta fila de display
+// (incluye la primaria). Permite que las acciones (bulk o single) apliquen el
+// estado a todas las publicaciones de la misma oferta, no solo a la primaria.
+export type DedupedPosting = JobPostingDTO & { alsoOn?: string[]; mergedIds: string[] };
 
 function norm(s: string): string {
   return s
@@ -57,7 +60,8 @@ export function dedupePostings(postings: JobPostingDTO[]): DedupedPosting[] {
     const alsoOn = [...new Set(sorted.slice(1).map((p) => p.source))].filter(
       (s) => s !== primary.source
     );
-    out.push(alsoOn.length > 0 ? { ...primary, alsoOn } : primary);
+    const mergedIds = sorted.map((p) => p.id);
+    out.push(alsoOn.length > 0 ? { ...primary, alsoOn, mergedIds } : { ...primary, mergedIds });
   }
   return out;
 }

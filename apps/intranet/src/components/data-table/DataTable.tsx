@@ -1,4 +1,5 @@
 import {
+  Checkbox,
   EmptyState,
   Skeleton,
   type SortDescriptor,
@@ -188,6 +189,7 @@ interface DataTableContentProps<TData> {
   readonly onRowClick?: (row: TData) => void;
   readonly onSortingChange: (sorting: SortingState) => void;
   readonly onSelectionChange: (keys: Selection) => void;
+  readonly selectionEnabled: boolean;
   readonly renderSubComponent?: (props: { row: Row<TData> }) => ReactNode;
   readonly rows: Row<TData>[];
   readonly selectedKeys: Set<string>;
@@ -222,6 +224,7 @@ function DataTableContent<TData>({
   onRowClick,
   onSortingChange,
   onSelectionChange,
+  selectionEnabled,
   renderSubComponent,
   rows,
   scrollMaxHeight,
@@ -277,6 +280,11 @@ function DataTableContent<TData>({
     <Table.Body aria-busy="true">
       {["1", "2", "3", "4", "5", "6"].map((rowKey) => (
         <Table.Row id={`skeleton-row-${rowKey}`} key={`skeleton-row-${rowKey}`}>
+          {selectionEnabled && (
+            <Table.Cell aria-label="Cargando selección" className="pr-0">
+              <Skeleton aria-hidden="true" className="size-4 rounded-md" />
+            </Table.Cell>
+          )}
           {activeHeaderGroup.headers.map((header, headerIndex) => {
             const loadingColumnKey = String(header.column.id ?? header.id ?? "column");
             // First cell receives role=rowheader from React Aria's grid
@@ -309,7 +317,7 @@ function DataTableContent<TData>({
         if (item.kind === "expanded") {
           return (
             <Table.Row id={item.id}>
-              <Table.Cell colSpan={item.visibleCellCount}>
+              <Table.Cell colSpan={item.visibleCellCount + (selectionEnabled ? 1 : 0)}>
                 {renderSubComponent?.({ row: item.row })}
               </Table.Cell>
             </Table.Row>
@@ -324,6 +332,15 @@ function DataTableContent<TData>({
             id={item.id}
             onAction={() => onRowClick?.(item.row.original)}
           >
+            {selectionEnabled && (
+              <Table.Cell className="pr-0">
+                <Checkbox aria-label="Seleccionar fila" slot="selection" variant="secondary">
+                  <Checkbox.Control>
+                    <Checkbox.Indicator />
+                  </Checkbox.Control>
+                </Checkbox>
+              </Table.Cell>
+            )}
             {visibleCells.map((cell) => (
               <Table.Cell key={cell.id}>
                 {flexRender(cell.column.columnDef.cell, cell.getContext())}
@@ -382,6 +399,15 @@ function DataTableContent<TData>({
         onSelectionChange={onSelectionChange}
       >
         <Table.Header className={enableVirtualization ? "size-full" : undefined}>
+          {selectionEnabled && (
+            <Table.Column className="pr-0" id="__selection__" minWidth={40}>
+              <Checkbox aria-label="Seleccionar todo" slot="selection">
+                <Checkbox.Control>
+                  <Checkbox.Indicator />
+                </Checkbox.Control>
+              </Checkbox>
+            </Table.Column>
+          )}
           {activeHeaderGroup.headers.map((header) => {
             const headerContent = header.isPlaceholder
               ? null
@@ -486,6 +512,10 @@ export function DataTable<TData, TValue, TMeta extends TableMeta<TData> = TableM
 
   const rowSelection = controlledRowSelection ?? internalRowSelection;
   const onRowSelectionChange = controlledOnRowSelectionChange ?? setInternalRowSelection;
+  // Solo mostramos la columna de checkboxes cuando el caller controla la
+  // selección (pasa onRowSelectionChange). HeroUI v3 NO auto-renderiza los
+  // checkboxes con selectionMode; hay que inyectar Checkbox slot="selection".
+  const selectionEnabled = controlledOnRowSelectionChange != null;
   const columnVisibility = controlledColumnVisibility ?? internalColumnVisibility;
   const onColumnVisibilityChange =
     controlledOnColumnVisibilityChange ?? setInternalColumnVisibility;
@@ -585,6 +615,7 @@ export function DataTable<TData, TValue, TMeta extends TableMeta<TData> = TableM
         noDataMessage={noDataMessage}
         onRowClick={onRowClick}
         onSelectionChange={handleSelectionChange}
+        selectionEnabled={selectionEnabled}
         onSortingChange={onSortingChange}
         renderSubComponent={renderSubComponent}
         rows={tableRows}

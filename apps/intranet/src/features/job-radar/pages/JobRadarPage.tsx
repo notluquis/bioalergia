@@ -95,35 +95,38 @@ export function JobRadarPage() {
 
   const statusLabel = (s: JobApplicationStatus) => t(`jobRadar.status.${s}`);
 
+  // Aplica el estado a 1..N ids (todas las publicaciones mergeadas de la oferta).
+  // 1 id → update (preserva notas); varios → bulkUpdate. Devuelve la promesa.
+  const mutateStatus = (ids: string[], applicationStatus: JobApplicationStatus) => {
+    const single = ids.length === 1 ? ids[0] : undefined;
+    return single
+      ? update.mutateAsync({ id: single, applicationStatus })
+      : bulkUpdate.mutateAsync({ ids, applicationStatus });
+  };
+
   // Cambia el estado y deja un toast con botón "Deshacer" que revierte al previo.
   const setStatus = (
-    id: string,
+    ids: string[],
     applicationStatus: JobApplicationStatus,
     prevStatus?: JobApplicationStatus
   ) =>
-    update.mutate(
-      { id, applicationStatus },
-      {
-        onSuccess: () =>
-          toast.success(t("jobRadar.statusUpdated", { status: statusLabel(applicationStatus) }), {
-            description: "Job Radar",
-            actionProps:
-              prevStatus && prevStatus !== applicationStatus
-                ? {
-                    children: t("jobRadar.undo"),
-                    onPress: () =>
-                      update.mutate(
-                        { id, applicationStatus: prevStatus },
-                        {
-                          onSuccess: () => toast.success(t("jobRadar.undone")),
-                          onError: (e) => toastError(e),
-                        }
-                      ),
-                  }
-                : undefined,
-          }),
-        onError: (e) => toastError(e),
-      }
+    mutateStatus(ids, applicationStatus).then(
+      () =>
+        toast.success(t("jobRadar.statusUpdated", { status: statusLabel(applicationStatus) }), {
+          description: "Job Radar",
+          actionProps:
+            prevStatus && prevStatus !== applicationStatus
+              ? {
+                  children: t("jobRadar.undo"),
+                  onPress: () =>
+                    void mutateStatus(ids, prevStatus).then(
+                      () => toast.success(t("jobRadar.undone")),
+                      (e) => toastError(e)
+                    ),
+                }
+              : undefined,
+        }),
+      (e) => toastError(e)
     );
 
   // Dedup cross-source en display (la DB conserva todas las filas).
@@ -146,10 +149,19 @@ export function JobRadarPage() {
     );
   };
 
-  // Aplica el estado a todas las filas seleccionadas de una sola vez.
+  // Mapa id-primario → todas las publicaciones mergeadas, para expandir la
+  // selección a TODAS las filas DB de cada oferta elegida (select-all merged).
+  const mergedByRow = useMemo(() => {
+    const m = new Map<string, string[]>();
+    for (const r of rows) m.set(r.id, r.mergedIds);
+    return m;
+  }, [rows]);
+
+  // Aplica el estado a todas las filas seleccionadas de una sola vez,
+  // expandiendo cada fila a sus publicaciones mergeadas.
   const handleBulkStatus = (applicationStatus: JobApplicationStatus) => {
     if (selected.size === 0) return;
-    const ids = Array.from(selected);
+    const ids = [...new Set(Array.from(selected).flatMap((id) => mergedByRow.get(id) ?? [id]))];
     bulkUpdate.mutate(
       { ids, applicationStatus },
       {
@@ -304,25 +316,25 @@ export function JobRadarPage() {
                 () => window.open(job.url, "_blank", "noopener,noreferrer")
               )}
               {action("seen", t("jobRadar.actions.seen"), <Eye size={16} aria-hidden />, () =>
-                setStatus(job.id, "SEEN", job.applicationStatus)
+                setStatus(job.mergedIds, "SEEN", job.applicationStatus)
               )}
               {action(
                 "interested",
                 t("jobRadar.actions.interested"),
                 <Star size={16} aria-hidden />,
-                () => setStatus(job.id, "INTERESTED", job.applicationStatus)
+                () => setStatus(job.mergedIds, "INTERESTED", job.applicationStatus)
               )}
               {action(
                 "applied",
                 t("jobRadar.actions.applied"),
                 <Send size={16} aria-hidden />,
-                () => setStatus(job.id, "APPLIED", job.applicationStatus)
+                () => setStatus(job.mergedIds, "APPLIED", job.applicationStatus)
               )}
               {action(
                 "discarded",
                 t("jobRadar.actions.discard"),
                 <Ban size={16} aria-hidden />,
-                () => setStatus(job.id, "DISCARDED", job.applicationStatus)
+                () => setStatus(job.mergedIds, "DISCARDED", job.applicationStatus)
               )}
               <Dropdown>
                 <Dropdown.Trigger>
@@ -338,7 +350,7 @@ export function JobRadarPage() {
                 <Dropdown.Popover>
                   <Dropdown.Menu
                     onAction={(key) =>
-                      setStatus(job.id, key as JobApplicationStatus, job.applicationStatus)
+                      setStatus(job.mergedIds, key as JobApplicationStatus, job.applicationStatus)
                     }
                   >
                     {APP_STATUSES.map((s) => (
