@@ -15230,7 +15230,12 @@ export class SchemaType implements SchemaDef {
                 AIRAVIRTUAL: "AIRAVIRTUAL",
                 SUCCESSFACTORS: "SUCCESSFACTORS",
                 TRABAJANDO: "TRABAJANDO",
-                MUEVETE: "MUEVETE"
+                MUEVETE: "MUEVETE",
+                SFCLASSIC: "SFCLASSIC",
+                GENOMAWORK: "GENOMAWORK",
+                HIRINGROOM: "HIRINGROOM",
+                BUK: "BUK",
+                HIREFRONT: "HIREFRONT"
             },
             attributes: [
                 { name: "@@schema", args: [{ name: "map", value: ExpressionUtils.literal("personal") }] }

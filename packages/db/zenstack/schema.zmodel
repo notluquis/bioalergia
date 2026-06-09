@@ -5332,6 +5332,11 @@ enum JobSourceKind {
   SUCCESSFACTORS
   TRABAJANDO
   MUEVETE
+  SFCLASSIC
+  GENOMAWORK
+  HIRINGROOM
+  BUK
+  HIREFRONT
 
   @@schema("personal")
 }

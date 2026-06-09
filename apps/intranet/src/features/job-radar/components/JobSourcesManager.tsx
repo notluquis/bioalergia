@@ -21,6 +21,11 @@ const KINDS: JobSourceKind[] = [
   "AIRAVIRTUAL",
   "SUCCESSFACTORS",
   "TRABAJANDO",
+  "SFCLASSIC",
+  "GENOMAWORK",
+  "HIRINGROOM",
+  "BUK",
+  "HIREFRONT",
 ];
 
 const PLACEHOLDER: Record<JobSourceKind, string> = {
@@ -33,6 +38,11 @@ const PLACEHOLDER: Record<JobSourceKind, string> = {
   AIRAVIRTUAL: "walmart",
   SUCCESSFACTORS: "trabajos.achs.cl",
   TRABAJANDO: "cge",
+  SFCLASSIC: "career8.successfactors.com:career:lan:es_CL",
+  GENOMAWORK: "sky-airline",
+  HIRINGROOM: "cinepolis",
+  BUK: "hites",
+  HIREFRONT: "junji",
 };
 
 export function JobSourcesManager() {

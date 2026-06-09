@@ -13,6 +13,11 @@ import { getSettings, updateSettings } from "../lib/settings.ts";
 import { fetchAiravirtualJobs } from "../modules/job-radar/airavirtual.ts";
 import { fetchAshbyJobs } from "../modules/job-radar/ashby.ts";
 import { fetchBciJobs } from "../modules/job-radar/bci.ts";
+import { fetchBukJobs } from "../modules/job-radar/buk.ts";
+import { fetchGenomaworkJobs } from "../modules/job-radar/genomawork.ts";
+import { fetchHirefrontJobs } from "../modules/job-radar/hirefront.ts";
+import { fetchHiringRoomJobs } from "../modules/job-radar/hiringroom.ts";
+import { fetchSfClassicJobs } from "../modules/job-radar/sfclassic.ts";
 import { fetchEmpleosPublicosJobs } from "../modules/job-radar/empleospublicos.ts";
 import {
   DEFAULT_KEYWORDS,
@@ -188,6 +193,41 @@ function sourceFromRow(kind: string, identifier: string, keywords: string[]): Jo
         company: identifier,
         label: `trabajando:${identifier}`,
         fetch: () => fetchTrabajandoJobs(identifier),
+      };
+    case "SFCLASSIC":
+      return {
+        source: "sfclassic",
+        company: identifier.split(":")[2] ?? identifier,
+        label: `sfclassic:${identifier.split(":")[2] ?? identifier}`,
+        fetch: () => fetchSfClassicJobs(identifier),
+      };
+    case "GENOMAWORK":
+      return {
+        source: "genomawork",
+        company: identifier,
+        label: `genomawork:${identifier}`,
+        fetch: () => fetchGenomaworkJobs(identifier),
+      };
+    case "HIRINGROOM":
+      return {
+        source: "hiringroom",
+        company: identifier,
+        label: `hiringroom:${identifier}`,
+        fetch: () => fetchHiringRoomJobs(identifier),
+      };
+    case "BUK":
+      return {
+        source: "buk",
+        company: identifier,
+        label: `buk:${identifier}`,
+        fetch: () => fetchBukJobs(identifier),
+      };
+    case "HIREFRONT":
+      return {
+        source: "hirefront",
+        company: identifier,
+        label: `hirefront:${identifier}`,
+        fetch: () => fetchHirefrontJobs(identifier),
       };
     // MUEVETE (grupo Falabella) NO es fila: es toggle global `config.muevete`
     // (como BCI/GetOnBoard), porque es una fuente única que agrega todas las
@@ -688,7 +728,12 @@ export type JobSourceKindDTO =
   | "WORKDAY"
   | "AIRAVIRTUAL"
   | "SUCCESSFACTORS"
-  | "TRABAJANDO";
+  | "TRABAJANDO"
+  | "SFCLASSIC"
+  | "GENOMAWORK"
+  | "HIRINGROOM"
+  | "BUK"
+  | "HIREFRONT";
 
 export async function listJobSources() {
   return db.jobSource.findMany({ orderBy: [{ kind: "asc" }, { identifier: "asc" }] });

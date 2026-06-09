@@ -109,6 +109,11 @@ export const jobSourceKindSchema = z.enum([
   "AIRAVIRTUAL",
   "SUCCESSFACTORS",
   "TRABAJANDO",
+  "SFCLASSIC",
+  "GENOMAWORK",
+  "HIRINGROOM",
+  "BUK",
+  "HIREFRONT",
 ]);
 
 export const jobSourceSchema = z
