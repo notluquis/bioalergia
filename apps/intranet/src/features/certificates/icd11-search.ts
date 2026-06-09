@@ -83,10 +83,14 @@ const labels = (arr: LabeledEntry[] | undefined): string[] =>
 // Detalle completo de un entity (definición, exclusiones, sinónimos, link WHO).
 // Lazy: se llama solo al expandir un resultado. Quita el sufijo residual
 // (/unspecified, /other) para llegar al entity codeable que trae la definición.
+const detailCache = new Map<string, Icd11Detail>();
+
 export async function fetchIcd11Detail(id: string, signal?: AbortSignal): Promise<Icd11Detail> {
   // Los ids vienen como http://; forzar https evita el bloqueo mixed-content.
   // Quitar el sufijo residual (/unspecified, /other) → entity codeable con def.
   const url = id.replace(/^http:/i, "https:").replace(/\/(unspecified|other)$/i, "");
+  const cached = detailCache.get(url);
+  if (cached) return cached;
   const token = await getToken();
   const response = await fetch(url, {
     signal,
@@ -99,12 +103,14 @@ export async function fetchIcd11Detail(id: string, signal?: AbortSignal): Promis
   });
   if (!response.ok) throw new Error(`ICD-11 detail failed: ${response.status}`);
   const data = (await response.json()) as RawEntityDetail;
-  return {
+  const detail: Icd11Detail = {
     browserUrl: data.browserUrl,
     definition: langVal(data.definition) || undefined,
     exclusions: labels(data.exclusion),
     synonyms: labels(data.synonym),
   };
+  detailCache.set(url, detail);
+  return detail;
 }
 
 export async function searchIcd11(

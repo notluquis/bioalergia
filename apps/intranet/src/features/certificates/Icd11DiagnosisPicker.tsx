@@ -1,20 +1,15 @@
 import { Input, Label, Spinner, TextField } from "@heroui/react";
-import { ChevronDown, ExternalLink, Info, Search } from "lucide-react";
+import { ChevronDown, Info, Search } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import type { PrescriptionDiagnosis } from "./diagnosis-catalog";
 import { cie10Equivalent, loadIcd11To10 } from "./icd-crosswalk";
-import {
-  fetchIcd11Detail,
-  type Icd11Detail,
-  type Icd11SearchResult,
-  searchIcd11,
-} from "./icd11-search";
+import { Icd11DetailPanel } from "./Icd11DetailPanel";
+import { type Icd11SearchResult, searchIcd11 } from "./icd11-search";
 
 // Buscador CIE-11 nativo HeroUI. Consulta la API oficial WHO (id.who.int) — el
 // ranking/NLP es server-side — y muestra los resultados INLINE (no en popover).
-// Cada resultado se puede expandir (ⓘ) para ver la definición oficial,
-// exclusiones, sinónimos y un link al navegador WHO (GET lazy del entity).
+// Cada resultado se expande (ⓘ) para ver definición/exclusiones/link WHO.
 // Controlado por `query`.
 
 const DEBOUNCE_MS = 250;
@@ -32,8 +27,6 @@ function toDiagnosis(result: Icd11SearchResult): PrescriptionDiagnosis {
   };
 }
 
-type DetailState = Icd11Detail | "loading" | "error";
-
 export function Icd11DiagnosisPicker({
   query,
   onQueryChange,
@@ -46,7 +39,6 @@ export function Icd11DiagnosisPicker({
   const [results, setResults] = useState<Icd11SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [details, setDetails] = useState<Record<string, DetailState>>({});
 
   useEffect(() => {
     void loadIcd11To10();
@@ -86,20 +78,6 @@ export function Icd11DiagnosisPicker({
     setResults([]);
   };
 
-  const toggleDetail = (id: string) => {
-    if (expandedId === id) {
-      setExpandedId(null);
-      return;
-    }
-    setExpandedId(id);
-    if (!details[id]) {
-      setDetails((prev) => ({ ...prev, [id]: "loading" }));
-      fetchIcd11Detail(id)
-        .then((detail) => setDetails((prev) => ({ ...prev, [id]: detail })))
-        .catch(() => setDetails((prev) => ({ ...prev, [id]: "error" })));
-    }
-  };
-
   const showPanel = query.trim().length >= 2;
 
   return (
@@ -123,7 +101,6 @@ export function Icd11DiagnosisPicker({
               {results.map((result) => {
                 const cie10 = result.code ? cie10Equivalent(result.code) : undefined;
                 const expanded = expandedId === result.id;
-                const detail = details[result.id];
                 return (
                   <li key={result.id}>
                     <div className="flex items-stretch">
@@ -156,51 +133,15 @@ export function Icd11DiagnosisPicker({
                         aria-expanded={expanded}
                         aria-label={`Detalles de ${result.title}`}
                         className="flex shrink-0 items-center border-default-100 border-l px-2 text-default-400 transition hover:bg-default-100 hover:text-primary"
-                        onClick={() => toggleDetail(result.id)}
+                        onClick={() => setExpandedId(expanded ? null : result.id)}
                         type="button"
                       >
                         {expanded ? <ChevronDown size={14} /> : <Info size={14} />}
                       </button>
                     </div>
                     {expanded ? (
-                      <div className="bg-default-50 px-3 py-2 text-default-600 text-xs">
-                        {detail === "loading" || detail === undefined ? (
-                          <span className="flex items-center gap-2">
-                            <Spinner size="sm" /> Cargando definición…
-                          </span>
-                        ) : detail === "error" ? (
-                          "No se pudo cargar el detalle."
-                        ) : (
-                          <div className="space-y-1">
-                            {detail.definition ? (
-                              <p>{detail.definition}</p>
-                            ) : (
-                              <p>Sin definición.</p>
-                            )}
-                            {detail.synonyms.length > 0 ? (
-                              <p>
-                                <span className="font-semibold">Sinónimos: </span>
-                                {detail.synonyms.slice(0, 6).join(", ")}
-                              </p>
-                            ) : null}
-                            {detail.exclusions.length > 0 ? (
-                              <p>
-                                <span className="font-semibold">No incluye: </span>
-                                {detail.exclusions.slice(0, 6).join("; ")}
-                              </p>
-                            ) : null}
-                            {detail.browserUrl ? (
-                              <a
-                                className="inline-flex items-center gap-1 text-primary hover:underline"
-                                href={detail.browserUrl}
-                                rel="noreferrer"
-                                target="_blank"
-                              >
-                                Ver en navegador WHO <ExternalLink size={11} />
-                              </a>
-                            ) : null}
-                          </div>
-                        )}
+                      <div className="bg-default-50 px-3 py-2">
+                        <Icd11DetailPanel uri={result.id} />
                       </div>
                     ) : null}
                   </li>

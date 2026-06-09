@@ -17,7 +17,7 @@ import type {
   GenerateMedicalPrescriptionInput,
   MedicalPrescription,
 } from "@finanzas/orpc-contracts/certificates";
-import { FileText, Plus, Trash2, X } from "lucide-react";
+import { FileText, Plus, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { z } from "zod";
 
@@ -29,6 +29,7 @@ import { AppDatePicker } from "@/components/forms/AppDatePicker";
 import { FrequentDiagnosisCombobox } from "@/features/certificates/FrequentDiagnosisCombobox";
 import { cie11Equivalent, loadIcd10To11 } from "@/features/certificates/icd-crosswalk";
 import { Icd11DiagnosisPicker } from "@/features/certificates/Icd11DiagnosisPicker";
+import { SelectedDiagnosisChip } from "@/features/certificates/SelectedDiagnosisChip";
 import { certificatesORPCClient, toCertificatesApiError } from "@/features/certificates/orpc";
 import { PatientSelectModal } from "@/features/exam-reports/components/PatientSelectModal";
 import { fetchPatient } from "@/features/patients/api";
@@ -417,22 +418,11 @@ function DiagnosisPicker({
       {selectedDiagnoses.length > 0 ? (
         <div className="flex flex-wrap gap-2">
           {selectedDiagnoses.map((diagnosis) => (
-            <Chip key={diagnosis.id} size="sm" variant="soft">
-              <Chip.Label>
-                {diagnosis.code ? `${diagnosis.code} - ${diagnosis.label}` : diagnosis.label}
-                {diagnosis.cie10Code ? (
-                  <span className="ml-1 text-default-500">· ≈CIE-10 {diagnosis.cie10Code}</span>
-                ) : null}
-              </Chip.Label>
-              <button
-                aria-label={`Quitar ${diagnosis.label}`}
-                className="ml-1 inline-flex text-default-500 hover:text-danger"
-                onClick={() => onRemoveDiagnosis(diagnosis.id)}
-                type="button"
-              >
-                <X size={12} />
-              </button>
-            </Chip>
+            <SelectedDiagnosisChip
+              diagnosis={diagnosis}
+              key={diagnosis.id}
+              onRemove={() => onRemoveDiagnosis(diagnosis.id)}
+            />
           ))}
         </div>
       ) : null}
