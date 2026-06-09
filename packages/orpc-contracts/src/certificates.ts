@@ -33,9 +33,25 @@ export const prescriptionMedicationSchema = z.object({
   name: z.string().min(1).max(180),
 });
 
+export const prescriptionDiagnosisSchema = z.object({
+  category: z.string().max(120).optional(),
+  // Código CIE-10 equivalente (crosswalk WHO, aproximado).
+  cie10Code: z.string().max(40).optional(),
+  code: z.string().max(40).optional(),
+  custom: z.boolean().optional(),
+  id: z.string().min(1).max(240),
+  label: z.string().min(1).max(240),
+  release: z.string().max(160).optional(),
+  source: z.enum(["CIE-11", "CUSTOM"]),
+  sourceLabel: z.string().max(160).optional(),
+  // Foundation URI estable del entity CIE-11 (id.who.int/icd/entity/...).
+  uri: z.string().max(300).optional(),
+});
+
 export const generateMedicalPrescriptionInputSchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   diagnosis: z.string().max(500).optional(),
+  diagnoses: z.array(prescriptionDiagnosisSchema).max(8).optional(),
   doctorAddress: z.string().optional(),
   doctorEmail: z.string().optional(),
   doctorName: z.string().optional(),
@@ -56,6 +72,7 @@ export const listMedicalPrescriptionsInputSchema = z
 export const medicalPrescriptionSchema = z.object({
   date: z.coerce.date(),
   diagnosis: z.string().nullable(),
+  diagnoses: z.unknown().nullable().optional(),
   doctorName: z.string().nullable(),
   driveFileId: z.string(),
   id: z.string(),

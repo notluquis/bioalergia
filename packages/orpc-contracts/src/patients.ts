@@ -175,6 +175,7 @@ export const medicalCertificateSchema = z.object({
 export const medicalPrescriptionSchema = z.object({
   date: z.coerce.date(),
   diagnosis: z.string().nullable().optional(),
+  diagnoses: z.unknown().nullable().optional(),
   doctorAddress: z.string().nullable().optional(),
   doctorEmail: z.string().nullable().optional(),
   doctorName: z.string().nullable().optional(),

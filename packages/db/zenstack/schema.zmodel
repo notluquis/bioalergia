@@ -2604,6 +2604,7 @@ model MedicalPrescription {
 
   date        DateTime @db.Date
   diagnosis   String?
+  diagnoses   Json?
   medications Json
   notes       String?
 

@@ -50,10 +50,24 @@ export const prescriptionMedicationSchema = z.object({
   instructions: z.string().max(300).optional(),
 });
 
+export const prescriptionDiagnosisSchema = z.object({
+  category: z.string().max(120).optional(),
+  cie10Code: z.string().max(40).optional(),
+  code: z.string().max(40).optional(),
+  custom: z.boolean().optional(),
+  id: z.string().min(1).max(240),
+  label: z.string().min(1).max(240),
+  release: z.string().max(160).optional(),
+  source: z.enum(["CIE-11", "CUSTOM"]),
+  sourceLabel: z.string().max(160).optional(),
+  uri: z.string().max(300).optional(),
+});
+
 export const medicalPrescriptionSchema = z.object({
   patientId: z.number().int().positive(),
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Fecha inválida"),
   diagnosis: z.string().max(500).optional(),
+  diagnoses: z.array(prescriptionDiagnosisSchema).max(8).optional(),
   medications: z.array(prescriptionMedicationSchema).min(1).max(12),
   notes: z.string().max(1000).optional(),
   doctorName: z.string().optional(),

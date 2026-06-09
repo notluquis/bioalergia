@@ -8497,6 +8497,11 @@ export class SchemaType implements SchemaDef {
                     type: "String",
                     optional: true
                 },
+                diagnoses: {
+                    name: "diagnoses",
+                    type: "Json",
+                    optional: true
+                },
                 medications: {
                     name: "medications",
                     type: "Json"

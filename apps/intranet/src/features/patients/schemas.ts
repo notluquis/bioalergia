@@ -66,6 +66,7 @@ export const MedicalCertificateSchema = z.strictObject({
 export const MedicalPrescriptionSchema = z.strictObject({
   date: zDateString,
   diagnosis: z.string().nullable().optional(),
+  diagnoses: z.unknown().nullable().optional(),
   doctorAddress: z.string().nullable().optional(),
   doctorEmail: z.string().nullable().optional(),
   doctorName: z.string().nullable().optional(),

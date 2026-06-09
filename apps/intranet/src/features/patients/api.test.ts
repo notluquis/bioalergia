@@ -155,6 +155,38 @@ function makeAttachment(overrides: Record<string, unknown> = {}) {
   };
 }
 
+function makeMedicalPrescription(overrides: Record<string, unknown> = {}) {
+  return {
+    date: "2026-06-08",
+    diagnosis: "Rinitis alérgica",
+    doctorAddress: "Av. Siempre Viva 123",
+    doctorEmail: "doctor@example.cl",
+    doctorName: "Dra. Ana Contreras",
+    doctorRut: "12.345.678-9",
+    doctorSpecialty: "Inmunología",
+    driveFileId: "drive_prescription",
+    id: "prescription_1",
+    issuedAt: "2026-06-08",
+    issuedBy: 9,
+    medications: [
+      {
+        dosage: "10 mg",
+        duration: "7 días",
+        frequency: "Cada 24 horas",
+        instructions: "Tomar con agua",
+        name: "Loratadina",
+      },
+    ],
+    metadata: null,
+    notes: null,
+    patientId: 42,
+    patientName: "María José Pérez González",
+    patientRut: "16.123.456-5",
+    pdfHash: "hash_prescription",
+    ...overrides,
+  };
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
 });
@@ -196,6 +228,7 @@ describe("fetchPatient", () => {
         budgets: [makeBudget()],
         consultations: [makeConsultation()],
         medicalCertificates: [],
+        medicalPrescriptions: [makeMedicalPrescription()],
         payments: [makePayment()],
       },
     } as never);
@@ -203,6 +236,7 @@ describe("fetchPatient", () => {
     const result = await fetchPatient(42);
     expect(result.id).toBe(42);
     expect(result.budgets[0]?.totalAmount).toBe(120000);
+    expect(result.medicalPrescriptions[0]?.id).toBe("prescription_1");
     expect(result.payments[0]?.amount).toBe(50000);
     expect(patientsORPCClient.detail).toHaveBeenCalledWith({ patientId: 42 });
   });

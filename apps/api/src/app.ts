@@ -116,6 +116,7 @@ import { shipmentsOpenAPIHandler, shipmentsORPCHandler } from "./orpc/shipments.
 import { examReportsOpenAPIHandler, examReportsORPCHandler } from "./orpc/exam-reports.ts";
 import { doctoraliaScraperRoutes } from "./routes/doctoralia-scraper.ts";
 import { googleCalendarWebhookRoutes } from "./routes/google-calendar-webhook.ts";
+import { icd11TokenRoutes } from "./routes/icd11-token.ts";
 import { mercadopagoReportWebhookRoutes } from "./routes/mercadopago-report-webhook.ts";
 import { onedriveWebhookRoutes } from "./routes/onedrive-webhook.ts";
 import { waCloudMediaRoutes } from "./routes/wa-cloud-media.ts";
@@ -2409,6 +2410,7 @@ app.route("/api/webhooks/onedrive", onedriveWebhookRoutes);
 app.route("/api/webhooks/meta", waCloudWebhookRoutes);
 app.route("/api/wa-cloud/media", waCloudMediaRoutes);
 app.route("/api/wa-cloud/sse", waCloudSseRoutes);
+app.route("/api/icd11", icd11TokenRoutes);
 app.route("/api/webhooks/mercadopago", mercadopagoReportWebhookRoutes);
 
 // Resend email webhooks (svix-signed). Suppresses recipients on permanent

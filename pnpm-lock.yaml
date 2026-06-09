@@ -369,6 +369,9 @@ importers:
       '@tanstack/react-virtual':
         specifier: ^3.14.2
         version: 3.14.2(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      '@whoicd/icd11ect':
+        specifier: ^1.8.0
+        version: 1.8.0
       '@zenstackhq/language':
         specifier: ^3.7.2
         version: 3.7.2
@@ -5135,6 +5138,9 @@ packages:
 
   '@webcontainer/env@1.1.1':
     resolution: {integrity: sha512-6aN99yL695Hi9SuIk1oC88l9o0gmxL1nGWWQ/kNy81HigJ0FoaoTXpytCj6ItzgyCEwA9kF1wixsTuv5cjsgng==}
+
+  '@whoicd/icd11ect@1.8.0':
+    resolution: {integrity: sha512-fMQJwoz+wldhgIZNz+KlJRr8DGTdcIPZnv2m+iMw1PYhgcAdQ9NgD5dEm6iD6LOjhZ/E72g/Cs1S/HkxRVKQRA==}
 
   '@zenstackhq/cli@3.7.2':
     resolution: {integrity: sha512-gfhNc2VInf5IL80dktgKmfT6LnIJ6GSwvrxFOhM0U4eZvdrEsgWvo7iHzmvNXlHvbjAVcF/UgyIAUPAyQe39Bg==}
@@ -14700,6 +14706,8 @@ snapshots:
       tinyrainbow: 3.1.0
 
   '@webcontainer/env@1.1.1': {}
+
+  '@whoicd/icd11ect@1.8.0': {}
 
   '@zenstackhq/cli@3.7.2(hono@4.12.23)(pg@8.21.0)(typescript@6.0.3)':
     dependencies:

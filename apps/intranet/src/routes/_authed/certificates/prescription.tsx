@@ -20,10 +20,20 @@ import type {
   GenerateMedicalPrescriptionInput,
   MedicalPrescription,
 } from "@finanzas/orpc-contracts/certificates";
-import { FileText, Plus, Trash2 } from "lucide-react";
+import { FileText, Plus, Trash2, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { z } from "zod";
 
+import {
+  formatPrescriptionDiagnoses,
+  type PrescriptionDiagnosis,
+} from "@/features/certificates/diagnosis-catalog";
+import { FrequentDiagnosisCombobox } from "@/features/certificates/FrequentDiagnosisCombobox";
+import { cie11Equivalent, loadIcd10To11 } from "@/features/certificates/icd-crosswalk";
+import {
+  Icd11DiagnosisPicker,
+  triggerIcd11Search,
+} from "@/features/certificates/Icd11DiagnosisPicker";
 import { certificatesORPCClient, toCertificatesApiError } from "@/features/certificates/orpc";
 import { PatientSelectModal } from "@/features/exam-reports/components/PatientSelectModal";
 import { fetchPatient } from "@/features/patients/api";
@@ -89,7 +99,8 @@ function MedicalPrescriptionPage() {
   const [createPatientOpen, setCreatePatientOpen] = useState(false);
   const [patient, setPatient] = useState<SelectedPatient | null>(null);
   const [date, setDate] = useState(today());
-  const [diagnosis, setDiagnosis] = useState("");
+  const [selectedDiagnoses, setSelectedDiagnoses] = useState<PrescriptionDiagnosis[]>([]);
+  const [customDiagnosis, setCustomDiagnosis] = useState("");
   const [notes, setNotes] = useState("");
   const [medications, setMedications] = useState<MedicationDraft[]>(() => [newMedicationDraft()]);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -162,6 +173,29 @@ function MedicalPrescriptionPage() {
     );
   };
 
+  const addDiagnosis = (diagnosis: PrescriptionDiagnosis) => {
+    setSelectedDiagnoses((current) =>
+      current.some((item) => item.id === diagnosis.id) ? current : [...current, diagnosis]
+    );
+  };
+
+  const addCustomDiagnosis = () => {
+    const label = customDiagnosis.trim();
+    if (!label) return;
+    addDiagnosis({
+      custom: true,
+      id: `custom-${crypto.randomUUID()}`,
+      label,
+      source: "CUSTOM",
+      sourceLabel: "Diagnóstico escrito",
+    });
+    setCustomDiagnosis("");
+  };
+
+  const removeDiagnosis = (id: string) => {
+    setSelectedDiagnoses((current) => current.filter((item) => item.id !== id));
+  };
+
   const handleSubmit = async () => {
     if (!patient) {
       setSubmitError("Selecciona un paciente");
@@ -180,10 +214,12 @@ function MedicalPrescriptionPage() {
       setSubmitError("Agrega al menos un medicamento");
       return;
     }
+    const diagnosisText = formatPrescriptionDiagnoses(selectedDiagnoses);
     setSubmitError(null);
     await generateMutation.mutateAsync({
       date,
-      diagnosis: diagnosis.trim() || undefined,
+      diagnosis: diagnosisText || undefined,
+      diagnoses: selectedDiagnoses.length > 0 ? selectedDiagnoses : undefined,
       medications: cleanMedications,
       notes: notes.trim() || undefined,
       patientId: patient.id,
@@ -215,18 +251,22 @@ function MedicalPrescriptionPage() {
 
       {patient ? (
         <PrescriptionModal
+          customDiagnosis={customDiagnosis}
           date={date}
-          diagnosis={diagnosis}
           generatePending={generateMutation.isPending}
           medications={medications}
           notes={notes}
+          selectedDiagnoses={selectedDiagnoses}
+          onAddCustomDiagnosis={addCustomDiagnosis}
+          onAddDiagnosis={addDiagnosis}
           onAddMedication={() => setMedications((current) => [...current, newMedicationDraft()])}
+          onCustomDiagnosisChange={setCustomDiagnosis}
           onClose={() => setPatient(null)}
           onDateChange={setDate}
-          onDiagnosisChange={setDiagnosis}
           onMedicationChange={updateMedication}
           onMedicationRemove={removeMedication}
           onNotesChange={setNotes}
+          onRemoveDiagnosis={removeDiagnosis}
           onSubmit={handleSubmit}
           patientLabel={patientLabel}
           submitError={submitError}
@@ -332,35 +372,156 @@ function PrescriptionHistory({
   );
 }
 
+function DiagnosisPicker({
+  customDiagnosis,
+  selectedDiagnoses,
+  onAddCustomDiagnosis,
+  onAddDiagnosis,
+  onCustomDiagnosisChange,
+  onRemoveDiagnosis,
+}: {
+  customDiagnosis: string;
+  selectedDiagnoses: PrescriptionDiagnosis[];
+  onAddCustomDiagnosis: () => void;
+  onAddDiagnosis: (diagnosis: PrescriptionDiagnosis) => void;
+  onCustomDiagnosisChange: (value: string) => void;
+  onRemoveDiagnosis: (id: string) => void;
+}) {
+  const [cie10Input, setCie10Input] = useState("");
+  const [cie10Error, setCie10Error] = useState<string | null>(null);
+
+  // Pre-carga el crosswalk CIE-10→CIE-11 para la búsqueda dual por código viejo.
+  useEffect(() => {
+    void loadIcd10To11();
+  }, []);
+
+  const lookupCie10 = () => {
+    const hit = cie11Equivalent(cie10Input);
+    if (!hit) {
+      setCie10Error("Código CIE-10 sin equivalente en CIE-11");
+      return;
+    }
+    setCie10Error(null);
+    setCie10Input("");
+    // Inyecta el código CIE-11 al buscador oficial → el dr confirma el oficial.
+    triggerIcd11Search(hit.c);
+  };
+
+  return (
+    <div className="space-y-3">
+      <div>
+        <Label>Diagnósticos</Label>
+        <p className="text-default-500 text-xs">
+          Atajo de frecuentes o búsqueda oficial CIE-11 (OMS) en español. Uno o más diagnósticos.
+        </p>
+      </div>
+
+      <FrequentDiagnosisCombobox onPick={(query) => triggerIcd11Search(query)} />
+
+      {selectedDiagnoses.length > 0 ? (
+        <div className="flex flex-wrap gap-2">
+          {selectedDiagnoses.map((diagnosis) => (
+            <Chip key={diagnosis.id} size="sm" variant="soft">
+              <Chip.Label>
+                {diagnosis.code ? `${diagnosis.code} - ${diagnosis.label}` : diagnosis.label}
+                {diagnosis.cie10Code ? (
+                  <span className="ml-1 text-default-500">· ≈CIE-10 {diagnosis.cie10Code}</span>
+                ) : null}
+              </Chip.Label>
+              <button
+                aria-label={`Quitar ${diagnosis.label}`}
+                className="ml-1 inline-flex text-default-500 hover:text-danger"
+                onClick={() => onRemoveDiagnosis(diagnosis.id)}
+                type="button"
+              >
+                <X size={12} />
+              </button>
+            </Chip>
+          ))}
+        </div>
+      ) : null}
+
+      <Icd11DiagnosisPicker onSelect={onAddDiagnosis} />
+
+      <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
+        <TextField
+          value={cie10Input}
+          onChange={(value) => {
+            setCie10Input(value);
+            if (cie10Error) setCie10Error(null);
+          }}
+        >
+          <Label>¿Tienes el código CIE-10 viejo?</Label>
+          <Input placeholder="Ej: J30.1 — lo convierto a CIE-11" />
+          {cie10Error ? <FieldError>{cie10Error}</FieldError> : null}
+        </TextField>
+        <Button
+          className="self-end"
+          isDisabled={!cie10Input.trim()}
+          onPress={lookupCie10}
+          type="button"
+          variant="outline"
+        >
+          Buscar CIE-11
+        </Button>
+      </div>
+
+      <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
+        <TextField value={customDiagnosis} onChange={onCustomDiagnosisChange}>
+          <Label>Diagnóstico escrito</Label>
+          <Input placeholder="Agregar diagnóstico no listado en CIE-11" />
+        </TextField>
+        <Button
+          className="self-end"
+          isDisabled={!customDiagnosis.trim()}
+          onPress={onAddCustomDiagnosis}
+          type="button"
+          variant="outline"
+        >
+          Agregar escrito
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 function PrescriptionModal({
+  customDiagnosis,
   date,
-  diagnosis,
   generatePending,
   medications,
   notes,
+  selectedDiagnoses,
+  onAddCustomDiagnosis,
+  onAddDiagnosis,
   onAddMedication,
+  onCustomDiagnosisChange,
   onClose,
   onDateChange,
-  onDiagnosisChange,
   onMedicationChange,
   onMedicationRemove,
   onNotesChange,
+  onRemoveDiagnosis,
   onSubmit,
   patientLabel,
   submitError,
 }: {
+  customDiagnosis: string;
   date: string;
-  diagnosis: string;
   generatePending: boolean;
   medications: MedicationDraft[];
   notes: string;
+  selectedDiagnoses: PrescriptionDiagnosis[];
+  onAddCustomDiagnosis: () => void;
+  onAddDiagnosis: (diagnosis: PrescriptionDiagnosis) => void;
   onAddMedication: () => void;
+  onCustomDiagnosisChange: (value: string) => void;
   onClose: () => void;
   onDateChange: (value: string) => void;
-  onDiagnosisChange: (value: string) => void;
   onMedicationChange: (id: string, patch: Partial<MedicationDraft>) => void;
   onMedicationRemove: (id: string) => void;
   onNotesChange: (value: string) => void;
+  onRemoveDiagnosis: (id: string) => void;
   onSubmit: () => Promise<void>;
   patientLabel: string;
   submitError: string | null;
@@ -437,10 +598,14 @@ function PrescriptionModal({
                     </DatePicker.Popover>
                   </DatePicker>
 
-                  <TextField value={diagnosis} onChange={onDiagnosisChange}>
-                    <Label>Diagnóstico</Label>
-                    <TextArea rows={2} />
-                  </TextField>
+                  <DiagnosisPicker
+                    customDiagnosis={customDiagnosis}
+                    selectedDiagnoses={selectedDiagnoses}
+                    onAddCustomDiagnosis={onAddCustomDiagnosis}
+                    onAddDiagnosis={onAddDiagnosis}
+                    onCustomDiagnosisChange={onCustomDiagnosisChange}
+                    onRemoveDiagnosis={onRemoveDiagnosis}
+                  />
 
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">

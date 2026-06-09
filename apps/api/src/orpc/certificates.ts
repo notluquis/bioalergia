@@ -46,8 +46,30 @@ type CertificatesORPCContext = {
 
 const base = orpcOs.$context<CertificatesORPCContext>();
 
+// JSON-safe recursivo local que ESPEJA el `JsonValue` de ZenStack: `null` solo
+// es válido DENTRO de objetos/arrays, no en el top-level (el `JsonValue`
+// exportado por @finanzas/db sí permite null al tope y por eso no asigna al
+// payload Json). Mismo enfoque que services/employees.ts.
+type JsonInput =
+  | string
+  | number
+  | boolean
+  | { [key: string]: JsonInput | null }
+  | Array<JsonInput | null>;
+
 // Parse "YYYY-MM-DD" as Chile-local midnight -> UTC instant (Date). Invalid -> Invalid Date.
 const parseDateOnly = (value: string) => parseChileDateOnly(value) ?? new Date(NaN);
+
+function formatPrescriptionDiagnoses(
+  diagnoses: Array<{ code?: string; label: string }> | undefined
+): string | undefined {
+  if (!diagnoses || diagnoses.length === 0) return undefined;
+  return diagnoses
+    .map((diagnosis) =>
+      diagnosis.code ? `${diagnosis.code} - ${diagnosis.label}` : diagnosis.label
+    )
+    .join("; ");
+}
 
 const authed = base.use(async ({ context, next }) => {
   const user = await getSessionUser(context.hono);
@@ -187,9 +209,14 @@ const certificatesORPCRouterBase = {
       const fullName = [patient.person.names, patient.person.fatherName, patient.person.motherName]
         .filter(Boolean)
         .join(" ");
+      const diagnosisText =
+        parsed.diagnosis?.trim() || formatPrescriptionDiagnoses(parsed.diagnoses);
+      // El array `diagnoses` va a su columna dedicada, no al metadata Json.
+      const { diagnoses: _diagnoses, ...metadataInput } = parsed;
       const rawPdf = await generateMedicalPrescriptionPdf(
         {
           ...parsed,
+          diagnosis: diagnosisText,
           patient: { name: fullName, rut: patient.person.rut },
         },
         {
@@ -223,7 +250,8 @@ const certificatesORPCRouterBase = {
         await db.medicalPrescription.create({
           data: {
             date: parseDateOnly(parsed.date),
-            diagnosis: parsed.diagnosis,
+            diagnosis: diagnosisText,
+            diagnoses: parsed.diagnoses,
             doctorAddress: parsed.doctorAddress,
             doctorEmail: parsed.doctorEmail,
             doctorName: parsed.doctorName,
@@ -233,11 +261,15 @@ const certificatesORPCRouterBase = {
             id: prescriptionId,
             issuedBy: context.user.id,
             medications: parsed.medications,
+            // `diagnoses` (array CIE-11) se persiste en su columna dedicada; lo
+            // excluimos del metadata Json para no romper el tipo JsonObject
+            // (sus props opcionales no son `JsonValue`).
             metadata: {
-              ...parsed,
+              ...metadataInput,
+              diagnosis: diagnosisText,
               patientName: fullName,
               patientRut: patient.person.rut,
-            },
+            } as unknown as JsonInput,
             notes: parsed.notes,
             patientId: parsed.patientId,
             patientName: fullName,
