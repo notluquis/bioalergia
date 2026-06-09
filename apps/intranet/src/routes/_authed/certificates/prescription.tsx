@@ -30,10 +30,7 @@ import {
 } from "@/features/certificates/diagnosis-catalog";
 import { FrequentDiagnosisCombobox } from "@/features/certificates/FrequentDiagnosisCombobox";
 import { cie11Equivalent, loadIcd10To11 } from "@/features/certificates/icd-crosswalk";
-import {
-  Icd11DiagnosisPicker,
-  triggerIcd11Search,
-} from "@/features/certificates/Icd11DiagnosisPicker";
+import { Icd11DiagnosisPicker } from "@/features/certificates/Icd11DiagnosisPicker";
 import { certificatesORPCClient, toCertificatesApiError } from "@/features/certificates/orpc";
 import { PatientSelectModal } from "@/features/exam-reports/components/PatientSelectModal";
 import { fetchPatient } from "@/features/patients/api";
@@ -387,6 +384,7 @@ function DiagnosisPicker({
   onCustomDiagnosisChange: (value: string) => void;
   onRemoveDiagnosis: (id: string) => void;
 }) {
+  const [icdQuery, setIcdQuery] = useState("");
   const [cie10Input, setCie10Input] = useState("");
   const [cie10Error, setCie10Error] = useState<string | null>(null);
 
@@ -404,7 +402,7 @@ function DiagnosisPicker({
     setCie10Error(null);
     setCie10Input("");
     // Inyecta el código CIE-11 al buscador oficial → el dr confirma el oficial.
-    triggerIcd11Search(hit.c);
+    setIcdQuery(hit.c);
   };
 
   return (
@@ -416,7 +414,7 @@ function DiagnosisPicker({
         </p>
       </div>
 
-      <FrequentDiagnosisCombobox onPick={(query) => triggerIcd11Search(query)} />
+      <FrequentDiagnosisCombobox onPick={(query) => setIcdQuery(query)} />
 
       {selectedDiagnoses.length > 0 ? (
         <div className="flex flex-wrap gap-2">
@@ -441,7 +439,11 @@ function DiagnosisPicker({
         </div>
       ) : null}
 
-      <Icd11DiagnosisPicker onSelect={onAddDiagnosis} />
+      <Icd11DiagnosisPicker
+        onQueryChange={setIcdQuery}
+        onSelect={onAddDiagnosis}
+        query={icdQuery}
+      />
 
       <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
         <TextField
