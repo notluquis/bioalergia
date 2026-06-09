@@ -399,12 +399,17 @@ async function upsertSourceJobs(
 
   // Las que ya no aparecen en la fuente → CLOSED (solo si trajimos algo;
   // una respuesta vacía por error transitorio no debe cerrar todo).
+  // OJO: cerramos por las companies REALMENTE vistas en este batch, NO por
+  // `src.company`: varios adapters guardan job.company ≠ identifier (trabajando
+  // = "CGE S.A." vs slug "cge", muevete = marca vs "falabella", genomawork =
+  // "Sky Airline" vs slug) → filtrar por src.company nunca cerraba esas filas.
   let closed = 0;
   if (presentIds.length > 0) {
+    const presentCompanies = [...new Set(jobs.map((j) => j.company))];
     const res = await db.jobPosting.updateMany({
       where: {
         source: src.source,
-        company: src.company,
+        company: { in: presentCompanies },
         status: "OPEN",
         externalId: { notIn: presentIds },
       },

@@ -20,6 +20,33 @@ export function asString(v: unknown): string | null {
   return null;
 }
 
+// "Publicado hace 4 días", "hace 23 horas", "hace 3 días, 23 horas" → Date aprox
+// (now - delta). `now` se pasa para tests; default Date.now().
+export function parseRelativeEs(text: string | null, now: number = Date.now()): Date | null {
+  if (!text) return null;
+  const t = text.toLowerCase();
+  let ms = 0;
+  let matched = false;
+  for (const m of t.matchAll(/(\d+)\s*(minuto|hora|d[íi]a|semana|mes|a[ñn]o)/g)) {
+    const n = Number(m[1]);
+    const unit = m[2];
+    const factor = unit.startsWith("minuto")
+      ? 60_000
+      : unit.startsWith("hora")
+        ? 3_600_000
+        : unit.startsWith("d")
+          ? 86_400_000
+          : unit.startsWith("semana")
+            ? 604_800_000
+            : unit.startsWith("mes")
+              ? 2_592_000_000
+              : 31_536_000_000; // año
+    ms += n * factor;
+    matched = true;
+  }
+  return matched ? new Date(now - ms) : null;
+}
+
 export function safeJsonParse(text: string): unknown {
   try {
     return JSON.parse(text.replace(/^﻿/, "")); // tolera BOM (ej. empleospublicos)
