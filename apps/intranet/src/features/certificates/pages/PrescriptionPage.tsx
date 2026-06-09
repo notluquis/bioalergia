@@ -365,12 +365,31 @@ export function PrescriptionPage() {
         throw toCertificatesApiError(error);
       }
     },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["medical-prescriptions"] });
-      toast.success("Receta anulada");
+    // Update OPTIMISTA: marca ANNULLED en el cache al instante. Lo lento no era
+    // anular (2 queries) sino el refetch del historial completo que disparaba
+    // después; con el patch optimista no hace falta refetch.
+    onMutate: async (id: string) => {
+      await queryClient.cancelQueries({ queryKey: ["medical-prescriptions"] });
+      const snapshots = queryClient.getQueriesData<{ items: MedicalPrescription[] }>({
+        queryKey: ["medical-prescriptions"],
+      });
+      for (const [key, data] of snapshots) {
+        if (!data) continue;
+        queryClient.setQueryData(key, {
+          ...data,
+          items: data.items.map((it) => (it.id === id ? { ...it, status: "ANNULLED" } : it)),
+        });
+      }
+      return { snapshots };
     },
-    onError: (error) => {
+    onError: (error, _id, ctx) => {
+      for (const [key, data] of ctx?.snapshots ?? []) {
+        queryClient.setQueryData(key, data);
+      }
       toast.error(error instanceof Error ? error.message : "Error al anular receta");
+    },
+    onSuccess: () => {
+      toast.success("Receta anulada");
     },
   });
 
