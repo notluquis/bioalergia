@@ -22,6 +22,13 @@ import { ALLERGEN_TAG_SUGGESTIONS } from "@finanzas/orpc-contracts/exam-reports"
 
 const PAGE_LIMIT = 50;
 
+// Shape of the cached `allergensWithTags` list — derived from the query
+// factory's queryFn so the optimistic patch stays in sync with the contract.
+type AllergensWithTagsQueryFn = NonNullable<
+  ReturnType<typeof examReportsKeys.allergensWithTags>["queryFn"]
+>;
+type AllergensWithTagsData = Awaited<ReturnType<AllergensWithTagsQueryFn>>;
+
 const TAG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/u;
 
 interface AllergenRow {
@@ -85,14 +92,16 @@ export function AllergensTagsPanel() {
     setPage(0);
   }, [search, onlyTagged]);
 
-  const listQ = useQuery(
-    examReportsKeys.allergensWithTags({
-      search: search.trim() || undefined,
-      onlyTagged: onlyTagged || undefined,
-      limit: PAGE_LIMIT,
-      offset: page * PAGE_LIMIT,
-    })
-  );
+  // Single source of truth for the active list params so the query key and
+  // the optimistic patch in `updateMut` target the SAME cache entry.
+  const listParams = {
+    search: search.trim() || undefined,
+    onlyTagged: onlyTagged || undefined,
+    limit: PAGE_LIMIT,
+    offset: page * PAGE_LIMIT,
+  };
+  const listOptions = examReportsKeys.allergensWithTags(listParams);
+  const listQ = useQuery(listOptions);
 
   // Draft state keyed by allergen id. Each entry is the raw text in
   // the row's TextArea — we parse on submit so the user can paste a
@@ -119,17 +128,44 @@ export function AllergensTagsPanel() {
   const updateMut = useMutation({
     mutationFn: (vars: { id: string; tags: string[] }) =>
       examReportsORPCClient.updateAllergenTags(vars),
+    // Optimistic update: patch the edited row's `tags` in the cached list so
+    // the table reflects the save instantly (no spinner flash). `onSettled`
+    // still reconciles against server truth — this is a UX layer only.
+    onMutate: async (vars) => {
+      const listKey = listOptions.queryKey;
+      await qc.cancelQueries({ queryKey: listKey });
+      const previous = qc.getQueryData<AllergensWithTagsData>(listKey);
+      qc.setQueryData<AllergensWithTagsData>(listKey, (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          items: old.items.map((item) =>
+            item.id === vars.id ? { ...item, tags: vars.tags } : item
+          ),
+        };
+      });
+      return { listKey, previous };
+    },
+    onError: (e, _vars, ctx) => {
+      if (ctx?.previous !== undefined) {
+        qc.setQueryData(ctx.listKey, ctx.previous);
+      }
+      toast.error((e as Error).message);
+    },
     onSuccess: (updated) => {
       // Patch the local draft so any whitespace the user typed gets
       // canonicalised after save.
       setDrafts((prev) => ({ ...prev, [updated.id]: updated.tags.join(", ") }));
+      toast.success("Etiquetas guardadas");
+    },
+    onSettled: () => {
+      // Reconcile the admin list with server truth (folds the prior
+      // onSuccess invalidation here so optimistic + pessimistic converge).
       void qc.invalidateQueries({ queryKey: [...examReportsKeys.all, "allergens-admin"] });
       // Also bust the wizard-side `listAllergens` cache so the PDF
       // generator picks up the new tags without a hard refresh.
       void qc.invalidateQueries({ queryKey: [...examReportsKeys.all, "allergens"] });
-      toast.success("Etiquetas guardadas");
     },
-    onError: (e) => toast.error((e as Error).message),
   });
 
   const handleSave = useCallback(
