@@ -1,5 +1,7 @@
 import {
   jobRadarListInputSchema,
+  jobRadarBulkUpdateInputSchema,
+  jobRadarBulkUpdateResultSchema,
   jobRadarSettingsSchema,
   jobRadarSettingsUpdateSchema,
   jobRadarSyncResultSchema,
@@ -22,6 +24,7 @@ import { logError } from "../lib/logger.ts";
 import { configureSuperjson } from "../lib/superjson-config.ts";
 import {
   addJobSource,
+  bulkUpdateJobApplications,
   deleteJobSource,
   getJobRadarSettings,
   listJobPostings,
@@ -70,6 +73,20 @@ const jobRadarORPCRouterBase = {
       await requireUser(context.hono);
       const row = await updateJobApplication(input);
       return row as unknown as z.output<typeof jobPostingSchema>;
+    }),
+
+  bulkUpdate: base
+    .route({
+      method: "PATCH",
+      path: "/postings/bulk",
+      summary: "Bulk update application status",
+      tags: ["Job Radar"],
+    })
+    .input(jobRadarBulkUpdateInputSchema)
+    .output(jobRadarBulkUpdateResultSchema)
+    .handler(async ({ context, input }) => {
+      await requireUser(context.hono);
+      return bulkUpdateJobApplications(input);
     }),
 
   syncNow: base

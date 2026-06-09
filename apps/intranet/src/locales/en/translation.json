@@ -12,6 +12,12 @@
     "matched": "Profile match",
     "changeStatus": "Change status",
     "statusUpdated": "Status: {{status}}",
+    "bulkUpdated": "{{count}} postings → {{status}}",
+    "bulk": {
+      "selected": "{{count}} selected",
+      "changeStatus": "Change status to…",
+      "clear": "Clear selection"
+    },
     "undo": "Undo",
     "undone": "Action undone",
     "viewOffer": "View offer",

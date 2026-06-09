@@ -56,6 +56,13 @@ export const jobRadarUpdateInputSchema = z.object({
   notes: z.string().nullable().optional(),
 });
 
+export const jobRadarBulkUpdateInputSchema = z.object({
+  ids: z.array(z.string().min(1)).min(1),
+  applicationStatus: jobApplicationStatusSchema,
+});
+
+export const jobRadarBulkUpdateResultSchema = z.object({ count: z.number().int() });
+
 export const jobRadarSyncResultSchema = z.object({
   sources: z.array(z.string()),
   fetched: z.number().int(),
@@ -128,6 +135,10 @@ export const jobRadarContract = {
     .route({ method: "PATCH", path: "/postings/{id}" })
     .input(jobRadarUpdateInputSchema)
     .output(jobPostingSchema),
+  bulkUpdate: oc
+    .route({ method: "PATCH", path: "/postings/bulk" })
+    .input(jobRadarBulkUpdateInputSchema)
+    .output(jobRadarBulkUpdateResultSchema),
   syncNow: oc.route({ method: "POST", path: "/sync" }).output(jobRadarSyncResultSchema),
   getSettings: oc.route({ method: "GET", path: "/settings" }).output(jobRadarSettingsSchema),
   updateSettings: oc

@@ -12,6 +12,12 @@
     "matched": "Match perfil",
     "changeStatus": "Cambiar estado",
     "statusUpdated": "Estado: {{status}}",
+    "bulkUpdated": "{{count}} ofertas → {{status}}",
+    "bulk": {
+      "selected": "{{count}} seleccionadas",
+      "changeStatus": "Cambiar estado a…",
+      "clear": "Limpiar selección"
+    },
     "undo": "Deshacer",
     "undone": "Acción deshecha",
     "viewOffer": "Ver oferta",

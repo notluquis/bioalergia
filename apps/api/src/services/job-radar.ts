@@ -550,6 +550,26 @@ export async function updateJobApplication(input: UpdateJobApplicationInput) {
   return db.jobPosting.update({ where: { id: input.id }, data });
 }
 
+export interface BulkUpdateJobApplicationsInput {
+  ids: string[];
+  applicationStatus: ApplicationStatus;
+}
+
+export async function bulkUpdateJobApplications(input: BulkUpdateJobApplicationsInput) {
+  const now = new Date();
+  const data: Record<string, unknown> = {
+    applicationStatus: input.applicationStatus,
+    statusUpdatedAt: now,
+  };
+  if (input.applicationStatus === "APPLIED") data.appliedAt = now;
+
+  const result = await db.jobPosting.updateMany({
+    where: { id: { in: input.ids } },
+    data,
+  });
+  return { count: result.count };
+}
+
 // ── Ajustes (DB-backed, editables desde el dashboard) ────────────────────────
 
 export interface JobRadarSettingsDTO {

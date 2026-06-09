@@ -11,7 +11,7 @@ import {
   Tooltip,
 } from "@heroui/react";
 import { useDebouncedValue } from "@tanstack/react-pacer";
-import type { ColumnDef, SortingFn } from "@tanstack/react-table";
+import type { ColumnDef, OnChangeFn, RowSelectionState, SortingFn } from "@tanstack/react-table";
 import { Ban, ExternalLink, Eye, ListChecks, RefreshCw, Send, Sparkles, Star } from "lucide-react";
 import { type ReactNode, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -22,7 +22,12 @@ import { toast } from "@/lib/toast-interceptor";
 import { JobDetailDrawer } from "../components/JobDetailDrawer";
 import { JobRadarSettingsPanel } from "../components/JobRadarSettingsPanel";
 import { dedupePostings, type DedupedPosting } from "../dedupe";
-import { useJobPostings, useSyncJobRadar, useUpdateJobApplication } from "../hooks/useJobRadar";
+import {
+  useBulkUpdateJobApplications,
+  useJobPostings,
+  useSyncJobRadar,
+  useUpdateJobApplication,
+} from "../hooks/useJobRadar";
 import type { JobRadarListFilters } from "../queries";
 
 const APP_STATUSES: JobApplicationStatus[] = [
@@ -71,6 +76,7 @@ export function JobRadarPage() {
   const [search, setSearch] = useState("");
   const [showSettings, setShowSettings] = useState(false);
   const [detailJob, setDetailJob] = useState<JobPostingDTO | null>(null);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
   const [debouncedSearch] = useDebouncedValue(search, { wait: 300 });
 
   const filters: JobRadarListFilters = useMemo(() => {
@@ -83,6 +89,7 @@ export function JobRadarPage() {
 
   const { data: postings, isPending } = useJobPostings(filters);
   const update = useUpdateJobApplication();
+  const bulkUpdate = useBulkUpdateJobApplications();
   const sync = useSyncJobRadar();
   const { error: toastError } = useToast();
 
@@ -121,6 +128,45 @@ export function JobRadarPage() {
 
   // Dedup cross-source en display (la DB conserva todas las filas).
   const rows = useMemo(() => dedupePostings(postings ?? []), [postings]);
+
+  // El DataTable usa el `id` de la fila como clave de selección (getStableRowId).
+  const rowSelection = useMemo<RowSelectionState>(
+    () => Object.fromEntries(Array.from(selected, (id) => [id, true])),
+    [selected]
+  );
+
+  const handleRowSelectionChange: OnChangeFn<RowSelectionState> = (updater) => {
+    const next = typeof updater === "function" ? updater(rowSelection) : updater;
+    setSelected(
+      new Set(
+        Object.entries(next)
+          .filter(([, v]) => v)
+          .map(([id]) => id)
+      )
+    );
+  };
+
+  // Aplica el estado a todas las filas seleccionadas de una sola vez.
+  const handleBulkStatus = (applicationStatus: JobApplicationStatus) => {
+    if (selected.size === 0) return;
+    const ids = Array.from(selected);
+    bulkUpdate.mutate(
+      { ids, applicationStatus },
+      {
+        onSuccess: (res) => {
+          setSelected(new Set());
+          toast.success(
+            t("jobRadar.bulkUpdated", {
+              count: res.count,
+              status: statusLabel(applicationStatus),
+            }),
+            { description: "Job Radar" }
+          );
+        },
+        onError: (e) => toastError(e),
+      }
+    );
+  };
 
   const sources = useMemo(() => {
     const set = new Set<string>();
@@ -411,6 +457,33 @@ export function JobRadarPage() {
         </TextField>
       </div>
 
+      {selected.size > 0 && (
+        <div className="flex flex-wrap items-center gap-3 rounded-medium bg-default-100 p-3">
+          <span className="text-sm font-medium">
+            {t("jobRadar.bulk.selected", { count: selected.size })}
+          </span>
+          <Dropdown>
+            <Dropdown.Trigger>
+              <Button size="sm" variant="primary" isPending={bulkUpdate.isPending}>
+                {t("jobRadar.bulk.changeStatus")}
+              </Button>
+            </Dropdown.Trigger>
+            <Dropdown.Popover>
+              <Dropdown.Menu onAction={(key) => handleBulkStatus(key as JobApplicationStatus)}>
+                {APP_STATUSES.map((s) => (
+                  <Dropdown.Item key={s} id={s} textValue={statusLabel(s)}>
+                    <Label>{statusLabel(s)}</Label>
+                  </Dropdown.Item>
+                ))}
+              </Dropdown.Menu>
+            </Dropdown.Popover>
+          </Dropdown>
+          <Button size="sm" variant="tertiary" onPress={() => setSelected(new Set())}>
+            {t("jobRadar.bulk.clear")}
+          </Button>
+        </div>
+      )}
+
       <DataTable
         columns={columns}
         data={rows}
@@ -421,6 +494,8 @@ export function JobRadarPage() {
         noDataMessage={t("jobRadar.empty")}
         pageSizeOptions={[10, 25, 50, 100]}
         scrollMaxHeight="min(68dvh, 760px)"
+        rowSelection={rowSelection}
+        onRowSelectionChange={handleRowSelectionChange}
       />
 
       <JobDetailDrawer job={detailJob} onClose={() => setDetailJob(null)} />

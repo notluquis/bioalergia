@@ -15,6 +15,15 @@ export function useUpdateJobApplication() {
   });
 }
 
+export function useBulkUpdateJobApplications() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: Parameters<typeof jobRadarORPCClient.bulkUpdate>[0]) =>
+      jobRadarORPCClient.bulkUpdate(input),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: jobRadarKeys.all }),
+  });
+}
+
 export function useSyncJobRadar() {
   const qc = useQueryClient();
   return useMutation({
