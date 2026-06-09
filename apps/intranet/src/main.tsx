@@ -18,11 +18,9 @@ import { ApiError } from "@/lib/api-client";
 import { AppFallback } from "./components/features/AppFallback";
 import { ChunkErrorBoundary } from "./components/ui/ChunkErrorBoundary";
 import { GlobalError } from "./components/ui/GlobalError";
-import { useAuth } from "./context/AuthContext";
 import { ConfirmDialogProvider } from "./context/ConfirmDialogContext";
-import { SettingsProvider } from "./context/SettingsContext";
 import { ToastProvider } from "./context/ToastContext";
-import type { AuthContextType } from "./features/auth/hooks/use-auth";
+import { type AuthContextType, useAuth } from "./features/auth/hooks/use-auth";
 import { signalAppFallback } from "./lib/app-recovery";
 import { AbilityProvider } from "./lib/authz/AbilityProvider";
 import { createLogger } from "./lib/logger";
@@ -237,18 +235,16 @@ ReactDOM.createRoot(rootElement).render(
         <ChunkErrorBoundary>
           <QueryClientProvider client={queryClient}>
             <AuthListener />
-            <SettingsProvider>
-              <ConfirmDialogProvider>
-                <ToastProvider>
-                  <AbilityProvider>
-                    <InnerApp />
-                    <Suspense fallback={null}>
-                      <ReactQueryDevtools initialIsOpen={false} />
-                    </Suspense>
-                  </AbilityProvider>
-                </ToastProvider>
-              </ConfirmDialogProvider>
-            </SettingsProvider>
+            <ConfirmDialogProvider>
+              <ToastProvider>
+                <AbilityProvider>
+                  <InnerApp />
+                  <Suspense fallback={null}>
+                    <ReactQueryDevtools initialIsOpen={false} />
+                  </Suspense>
+                </AbilityProvider>
+              </ToastProvider>
+            </ConfirmDialogProvider>
           </QueryClientProvider>
         </ChunkErrorBoundary>
       </GlobalError>

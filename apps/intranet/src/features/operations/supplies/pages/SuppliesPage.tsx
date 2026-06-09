@@ -1,6 +1,6 @@
 import { Button, Surface } from "@heroui/react";
 import { RefreshCcw } from "lucide-react";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/features/auth/hooks/use-auth";
 import { SupplyRequestForm } from "@/features/supplies/components/SupplyRequestForm";
 import { SupplyRequestsTable } from "@/features/supplies/components/SupplyRequestsTable";
 import { useSupplyManagement } from "@/features/supplies/hooks/use-supply-management";

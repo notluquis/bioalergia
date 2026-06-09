@@ -13,7 +13,7 @@ import {
 import { useMutation } from "@tanstack/react-query";
 import type React from "react";
 import { useEffect, useState } from "react";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/features/auth/hooks/use-auth";
 import { useToast } from "@/context/ToastContext";
 import { formatRut, normalizeRut, validateRut } from "@/lib/rut";
 import type { EmployeeSalaryType } from "@/types/schema";

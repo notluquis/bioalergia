@@ -3,7 +3,7 @@
  * archive flow.
  *
  * Mocks at module boundaries only: `../api` (orpc CRUD wrappers),
- * `@/context/AuthContext` (can() permission gate), `@/context/ToastContext`,
+ * `@/features/auth/hooks/use-auth` (can() permission gate), `@/context/ToastContext`,
  * `@/components/ui/ConfirmDialog` (confirmAction), and `../components/*`
  * (form/uploader are tested in isolation).
  */
@@ -47,7 +47,7 @@ vi.mock("../orpc-ml", () => ({
   },
 }));
 
-vi.mock("@/context/AuthContext", () => ({
+vi.mock("@/features/auth/hooks/use-auth", () => ({
   useAuth: () => authMock,
 }));
 

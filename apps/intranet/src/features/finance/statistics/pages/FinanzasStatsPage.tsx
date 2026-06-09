@@ -27,7 +27,7 @@ import {
   startOfMonth,
   startOfYear,
 } from "@/lib/dates";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/features/auth/hooks/use-auth";
 import { BalanceSummary } from "@/features/finance/balances/components/BalanceSummary";
 import { PAGE_CONTAINER } from "@/lib/styles";
 

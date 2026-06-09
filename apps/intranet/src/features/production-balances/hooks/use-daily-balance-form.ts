@@ -2,7 +2,7 @@ import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-q
 import { useCallback, useEffect, useRef } from "react";
 
 import { addDays, chileDay, civilNoon, endOfWeek, startOfWeek } from "@/lib/dates";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/features/auth/hooks/use-auth";
 import { toast } from "@/lib/toast-interceptor";
 import { dailyBalanceApi, type ProductionBalanceApiItem } from "../api";
 import { productionBalanceKeys } from "../queries";

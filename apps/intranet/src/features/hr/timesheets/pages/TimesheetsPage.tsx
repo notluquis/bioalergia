@@ -2,7 +2,7 @@ import { Label, ListBox, Select, Surface } from "@heroui/react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { startTransition, useState } from "react";
 
-import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/features/auth/hooks/use-auth";
 import { addMonths, formatChile, today } from "@/lib/dates";
 import { employeeKeys } from "@/features/hr/employees/queries";
 import { TimesheetEditor } from "@/features/hr/timesheets/components/TimesheetEditor";

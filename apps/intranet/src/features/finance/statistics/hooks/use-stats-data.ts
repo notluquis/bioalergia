@@ -4,7 +4,7 @@
 
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/features/auth/hooks/use-auth";
 import { addMonths, today } from "@/lib/dates";
 import { balanceKeys } from "@/features/finance/balances/queries";
 import type { BalancesApiResponse } from "@/features/finance/balances/types";

@@ -3,7 +3,7 @@ import { useLocation } from "@tanstack/react-router";
 import { Fingerprint, Mail, Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 import type { FormEvent } from "react";
-import { useSettings } from "@/context/SettingsContext";
+import { useSettings } from "@/features/settings/hooks/use-settings";
 import { useLoginLogic } from "@/features/auth/hooks/useLoginLogic";
 
 type LoginStep = "credentials" | "mfa" | "passkey";

@@ -26,7 +26,7 @@ import { Check, ChevronRight, Filter, Plus, RefreshCcw } from "lucide-react";
 import { startTransition, Suspense, useMemo, useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
 import { TableRegion } from "@/components/data-table/TableRegion";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/features/auth/hooks/use-auth";
 import { useToast } from "@/context/ToastContext";
 import {
   assignRutToPayouts,

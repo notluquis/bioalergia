@@ -18,7 +18,7 @@ import {
   Wallet,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/features/auth/hooks/use-auth";
 import { useToast } from "@/context/ToastContext";
 import {
   sendUnmappedSubjectsTelemetry,

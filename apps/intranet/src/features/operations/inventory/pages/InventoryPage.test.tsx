@@ -3,7 +3,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Suspense } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type * as AuthContextModule from "@/context/AuthContext";
+import type * as AuthContextModule from "@/features/auth/hooks/use-auth";
 import type * as ToastContextModule from "@/context/ToastContext";
 
 import { inventoryKeys } from "@/features/inventory/queries";
@@ -13,7 +13,7 @@ const canMock = vi.hoisted(() => vi.fn<(action: string, subject: string) => bool
 const toastSuccessMock = vi.hoisted(() => vi.fn<(message: string) => void>());
 const toastErrorMock = vi.hoisted(() => vi.fn<(message: unknown) => void>());
 
-vi.mock("@/context/AuthContext", async (importOriginal) => {
+vi.mock("@/features/auth/hooks/use-auth", async (importOriginal) => {
   const actual = await importOriginal<typeof AuthContextModule>();
   return {
     ...actual,

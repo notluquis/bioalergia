@@ -4,7 +4,7 @@ import { Loader2, LogOut, Menu, Moon, Sun, X } from "lucide-react";
 
 import { useTheme } from "next-themes";
 
-import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/features/auth/hooks/use-auth";
 import { NotificationHistory } from "@/features/notifications/components/NotificationHistory";
 
 import { Clock } from "../features/Clock";

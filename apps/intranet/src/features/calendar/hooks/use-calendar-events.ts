@@ -1,7 +1,7 @@
 import { skipToken, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSearch } from "@tanstack/react-router";
 import { type Dispatch, type SetStateAction, useState } from "react";
-import { useSettings } from "@/context/SettingsContext";
+import { useSettings } from "@/features/settings/hooks/use-settings";
 import { useToast } from "@/context/ToastContext";
 import { addDays, civilNoon, today } from "@/lib/dates";
 import { fetchCalendarSyncLogs, syncCalendarEvents } from "../api";

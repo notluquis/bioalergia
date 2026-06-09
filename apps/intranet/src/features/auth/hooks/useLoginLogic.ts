@@ -2,7 +2,7 @@ import { startAuthentication } from "@simplewebauthn/browser";
 import { useMutation } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useCallback, useState } from "react";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/features/auth/hooks/use-auth";
 import { fetchPasskeyLoginOptions } from "@/features/auth/api";
 import { logger } from "@/lib/logger";
 

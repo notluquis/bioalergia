@@ -10,7 +10,7 @@
  */
 
 import { Alert, Button, Skeleton } from "@heroui/react";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/features/auth/hooks/use-auth";
 
 import { CierrePanel } from "./components/CierrePanel";
 import { EntryForm } from "./components/EntryForm";

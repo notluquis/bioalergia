@@ -21,7 +21,7 @@ import type { ChangeEvent } from "react";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { AppModal } from "@/components/ui/AppModal";
 import { confirmAction } from "@/components/ui/ConfirmDialog";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/features/auth/hooks/use-auth";
 import { fetchCounterparts } from "@/features/counterparts/api";
 import { counterpartKeys } from "@/features/counterparts/queries";
 import {

@@ -20,7 +20,7 @@ import {
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Users, X } from "lucide-react";
 import { lazy, startTransition, Suspense, useEffect, useMemo, useRef, useState } from "react";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/features/auth/hooks/use-auth";
 import { EmployeeMultiSelectPopover } from "@/features/hr/components/EmployeeMultiSelectPopover";
 import { employeeKeys } from "@/features/hr/employees/queries";
 import type { Employee } from "@/features/hr/employees/types";

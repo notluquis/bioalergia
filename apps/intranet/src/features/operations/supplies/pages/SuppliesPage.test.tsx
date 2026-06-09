@@ -2,7 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type * as AuthContextModule from "@/context/AuthContext";
+import type * as AuthContextModule from "@/features/auth/hooks/use-auth";
 
 import type { CommonSupply, SupplyRequest } from "@/features/supplies/types";
 
@@ -38,7 +38,7 @@ const mockCommonSupplies: CommonSupply[] = [
   { id: 2, name: "Algodón hidrófilo" },
 ];
 
-vi.mock("@/context/AuthContext", async (importOriginal) => {
+vi.mock("@/features/auth/hooks/use-auth", async (importOriginal) => {
   const actual = await importOriginal<typeof AuthContextModule>();
   return {
     ...actual,

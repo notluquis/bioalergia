@@ -4,7 +4,7 @@ import type * as JsPdfModule from "jspdf";
 import type { CellHookData } from "jspdf-autotable";
 import type * as JsPdfAutotableModule from "jspdf-autotable";
 import { useRef, useState } from "react";
-import { useSettings } from "@/context/SettingsContext";
+import { useSettings } from "@/features/settings/hooks/use-settings";
 import type { Employee } from "@/features/hr/employees/types";
 import { apiClient } from "@/lib/api-client";
 import { chileDay, formatChile, monthLabelToISO, weekday } from "@/lib/dates";

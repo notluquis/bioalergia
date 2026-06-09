@@ -6,7 +6,7 @@ import { useMemo, useState } from "react";
 
 import { DataTable } from "@/components/data-table/DataTable";
 import { confirmAction } from "@/components/ui/ConfirmDialog";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/features/auth/hooks/use-auth";
 import { useToast } from "@/context/ToastContext";
 import { archiveProduct, createProduct, updateProduct } from "../api";
 import { ImageUploader } from "../components/ImageUploader";

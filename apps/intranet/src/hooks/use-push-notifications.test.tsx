@@ -30,7 +30,7 @@ vi.mock("@/context/ToastContext", () => ({
 const authMocks = vi.hoisted(() => ({
   user: { id: "u1" } as { id: string } | null,
 }));
-vi.mock("@/context/AuthContext", () => ({
+vi.mock("@/features/auth/hooks/use-auth", () => ({
   useAuth: () => authMocks,
 }));
 

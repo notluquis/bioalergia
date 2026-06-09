@@ -4,7 +4,7 @@ import type { PaginationState } from "@tanstack/react-table";
 import { ChevronUp, Plus } from "lucide-react";
 import { useEffect, useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/features/auth/hooks/use-auth";
 import { updateEmployee } from "@/features/hr/employees/api";
 import { columns } from "@/features/hr/employees/components/columns";
 import { EmployeeForm } from "@/features/hr/employees/components/EmployeeForm";

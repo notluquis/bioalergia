@@ -2,7 +2,7 @@ import { Avatar, Button, Drawer, Dropdown, Label, Separator, Surface } from "@he
 import { useRouter } from "@tanstack/react-router";
 import { LogOut, User } from "lucide-react";
 
-import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/features/auth/hooks/use-auth";
 import { useCan } from "@/hooks/use-can";
 import { getNavSections } from "@/lib/nav-generator";
 import { cn } from "@/lib/utils";

@@ -3,7 +3,7 @@ import type { QueryClient } from "@tanstack/react-query";
 import { createRootRouteWithContext, Outlet, useNavigate } from "@tanstack/react-router";
 import { lazy, Suspense } from "react";
 
-import type { AuthContextType } from "@/context/AuthContext";
+import type { AuthContextType } from "@/features/auth/hooks/use-auth";
 
 // Lazy load devtools for development only
 const TanStackRouterDevtools =

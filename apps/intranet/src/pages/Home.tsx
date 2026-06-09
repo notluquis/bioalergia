@@ -2,7 +2,7 @@ import { Skeleton } from "@heroui/react";
 import { Link } from "@tanstack/react-router";
 import { ArrowRightLeft, ArrowUpRight, CalendarDays, Users, Wallet } from "lucide-react";
 import { Suspense, useEffect } from "react";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/features/auth/hooks/use-auth";
 import { DashboardParticipantsSection } from "@/features/dashboard/components/DashboardParticipantsSection";
 import { DashboardPersonalLiabilities } from "@/features/dashboard/components/DashboardPersonalLiabilities";
 import { DashboardTransactionsSection } from "@/features/dashboard/components/DashboardTransactionsSection";

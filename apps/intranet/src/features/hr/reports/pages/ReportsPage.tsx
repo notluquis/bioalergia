@@ -30,7 +30,7 @@ import {
   startOfWeek,
   today,
 } from "@/lib/dates";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/features/auth/hooks/use-auth";
 import { EmployeeMultiSelectPopover } from "@/features/hr/components/EmployeeMultiSelectPopover";
 import { employeeKeys } from "@/features/hr/employees/queries";
 import type { Employee } from "@/features/hr/employees/types";
