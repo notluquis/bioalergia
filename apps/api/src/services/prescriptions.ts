@@ -75,6 +75,9 @@ export async function buildPrescriptionPdfBytes(
         | "CHEQUE",
       doctorLicense: prescription.doctorLicense ?? undefined,
       patientAge: ageFromBirthDate(patient?.birthDate),
+      patientBirthDate: patient?.birthDate
+        ? patient.birthDate.toISOString().slice(0, 10)
+        : undefined,
       doctorName: prescription.doctorName ?? undefined,
       doctorSpecialty: prescription.doctorSpecialty ?? undefined,
       doctorRut: prescription.doctorRut ?? undefined,

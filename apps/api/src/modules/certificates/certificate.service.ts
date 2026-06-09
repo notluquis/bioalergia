@@ -183,21 +183,15 @@ const drawFooterNote = (
   font: PDFFont,
   width: number
 ) => {
+  // Una sola nota legal centrada al pie. La autenticidad ya la indica el QR
+  // ("Verificar autenticidad") → no se repite acá.
   const validez = "Válida solo con firma y timbre";
   page.drawText(validez, {
-    x: width / 2 - font.widthOfTextAtSize(validez, 9) / 2,
-    y: 58,
-    size: 9,
+    x: width / 2 - font.widthOfTextAtSize(validez, 8.5) / 2,
+    y: 50,
+    size: 8.5,
     font,
     color: BRAND_BLUE,
-  });
-  const verify = "Verificá la autenticidad escaneando el código QR.";
-  page.drawText(verify, {
-    x: width / 2 - font.widthOfTextAtSize(verify, 7) / 2,
-    y: 48,
-    size: 7,
-    font,
-    color: BRAND_GRAY,
   });
 };
 
@@ -330,6 +324,8 @@ export type MedicalPrescriptionPdfInput = MedicalPrescriptionInput & {
   folio?: string;
   doctorLicense?: string;
   patientAge?: number;
+  // Fecha de nacimiento (YYYY-MM-DD) — requisito Código Sanitario Art. 101.
+  patientBirthDate?: string;
   mode?: PrescriptionPdfMode;
   // ISSUED | ANNULLED — ANNULLED estampa marca de agua "ANULADA".
   status?: string;
@@ -446,7 +442,7 @@ export async function generateMedicalPrescriptionPdf(
   // sobre el recetario pre-impreso. Nada acá puede depender del contenido.
   const LOGO_BAND_H = 46;
   const PATIENT_BOX_PAD = 10;
-  const PATIENT_BOX_H = 16 + 15 + 14 + 2 * PATIENT_BOX_PAD; // nombre + datos + diagnóstico
+  const PATIENT_BOX_H = 15 + 13 + 13 + 13 + 2 * PATIENT_BOX_PAD; // nombre+datos+emisión+dx
   const typeLabel = PRESCRIPTION_TYPE_LABEL[input.prescriptionType ?? "SIMPLE"];
 
   // ── Logos (estático), banda de alto FIJO en ambos modos. ──────────────────
@@ -515,13 +511,19 @@ export async function generateMedicalPrescriptionPdf(
       });
     }
     py -= 15;
-    // Fila 2: RUT · Edad · Fecha (RUT en negrita para identificar rápido).
+    // Fila 2: RUT · Fecha de nacimiento · Edad (requisito Código Sanitario).
     const ageText = input.patientAge != null ? `${input.patientAge} años` : "—";
+    const birthText = input.patientBirthDate
+      ? `${input.patientBirthDate.slice(8, 10)}/${input.patientBirthDate.slice(5, 7)}/${input.patientBirthDate.slice(0, 4)}`
+      : "—";
     let fx = drawField("RUT:", input.patient.rut ?? "Sin RUT", px, py, true);
-    fx = drawField("Edad:", ageText, fx + 16, py);
-    drawField("Fecha:", formatDate(input.date), fx + 16, py);
-    py -= 14;
-    // Fila 3: Diagnóstico separado (1 línea truncada → alto fijo p/ overlay).
+    fx = drawField("Nac:", birthText, fx + 14, py);
+    drawField("Edad:", ageText, fx + 14, py);
+    py -= 13;
+    // Fila 3: fecha de emisión (separada).
+    drawField("Fecha de emisión:", formatDate(input.date), px, py);
+    py -= 13;
+    // Fila 4: Diagnóstico separado (1 línea truncada → alto fijo p/ overlay).
     if (input.diagnosis?.trim()) {
       drawField(
         "Diagnóstico:",
@@ -630,10 +632,34 @@ export async function generateMedicalPrescriptionPdf(
   const total = allPages.length;
   allPages.forEach((pg, index) => {
     const lastPage = index === total - 1;
+    // Footer en DOS columnas: IZQUIERDA = identidad del médico; DERECHA =
+    // firma + verificación (QR). Nota legal única centrada al pie.
+    const leftColW = 190; // el bloque médico se mantiene en la mitad izquierda
     if (showStatic) {
-      // Zona de firma (derecha) — solo línea + "Firma y timbre". El Nº de
-      // registro va UNA sola vez, en el bloque médico (no duplicado acá).
-      const sigLineY = 176;
+      // Columna IZQUIERDA: bloque médico.
+      let dy = 152;
+      pg.drawText(doctor.name, { x: margin, y: dy, size: 9.5, font: bold, color: BRAND_BLUE });
+      dy -= 12;
+      for (const line of wrapText(doctor.specialty, font, 8, leftColW)) {
+        pg.drawText(line, { x: margin, y: dy, size: 8, font, color: BRAND_BLUE });
+        dy -= 10;
+      }
+      const regLine = [
+        `RUT: ${doctor.rut}`,
+        input.doctorLicense?.trim() ? `Reg. SIS N° ${input.doctorLicense.trim()}` : null,
+      ]
+        .filter(Boolean)
+        .join("   ·   ");
+      pg.drawText(regLine, { x: margin, y: dy, size: 8, font, color: rgb(0.35, 0.35, 0.35) });
+      dy -= 10;
+      pg.drawText(doctor.email, { x: margin, y: dy, size: 8, font, color: rgb(0.35, 0.35, 0.35) });
+      dy -= 10;
+      for (const line of wrapText(doctor.address, font, 8, leftColW)) {
+        pg.drawText(line, { x: margin, y: dy, size: 8, font, color: rgb(0.35, 0.35, 0.35) });
+        dy -= 10;
+      }
+      // Columna DERECHA (arriba): zona de firma.
+      const sigLineY = 170;
       pg.drawLine({
         start: { x: width - margin - 150, y: sigLineY },
         end: { x: width - margin, y: sigLineY },
@@ -648,46 +674,31 @@ export async function generateMedicalPrescriptionPdf(
         font,
         color: BRAND_BLUE,
       });
-      // Bloque médico compacto (izquierda).
-      let dy = 150;
-      pg.drawText(doctor.name, { x: margin, y: dy, size: 9.5, font: bold, color: BRAND_BLUE });
-      dy -= 12;
-      for (const line of wrapText(doctor.specialty, font, 8, contentWidth)) {
-        pg.drawText(line, { x: margin, y: dy, size: 8, font, color: BRAND_BLUE });
-        dy -= 11;
-      }
-      const contactLine = [
-        `RUT: ${doctor.rut}`,
-        input.doctorLicense?.trim() ? `Reg. SIS N° ${input.doctorLicense.trim()}` : null,
-        doctor.email,
-      ]
-        .filter(Boolean)
-        .join("  ·  ");
-      pg.drawText(contactLine, { x: margin, y: dy, size: 8, font, color: rgb(0.35, 0.35, 0.35) });
-      dy -= 11;
-      for (const line of wrapText(doctor.address, font, 8, contentWidth)) {
-        pg.drawText(line, { x: margin, y: dy, size: 8, font, color: rgb(0.35, 0.35, 0.35) });
-        dy -= 11;
-      }
       drawFooterNote(pg, font, width);
     }
-    // QR + código + folio en la esquina inferior DERECHA (data → también en
-    // overlay). Solo en la última página. Bajo la zona de firma.
+    // Columna DERECHA (abajo, data): QR + código + folio. Solo última página.
     if (showData && lastPage) {
-      const qrSize = 46;
+      const qrSize = 50;
       const qx = width - margin - qrSize;
-      const qy = 128;
+      const qy = 132;
       if (qrImage) {
         pg.drawImage(qrImage, { x: qx, y: qy - qrSize, width: qrSize, height: qrSize });
       }
-      // Texto a la izquierda del QR, alineado a la derecha (pegado al QR).
+      // Texto a la IZQUIERDA del QR, alineado a la derecha (pegado al QR), sin
+      // invadir la columna del médico (queda a la derecha de leftColW).
       const rightEdge = qx - 8;
       const drawRight = (text: string, ty: number, size: number, f = font, color = BRAND_GRAY) => {
-        pg.drawText(text, { x: rightEdge - f.widthOfTextAtSize(text, size), y: ty, size, font: f, color });
+        pg.drawText(text, {
+          x: rightEdge - f.widthOfTextAtSize(text, size),
+          y: ty,
+          size,
+          font: f,
+          color,
+        });
       };
-      drawRight("Verificar autenticidad", qy - 10, 7.5);
-      if (input.verificationCode) drawRight(input.verificationCode, qy - 24, 11, bold, BRAND_BLUE);
-      if (input.folio) drawRight(`Folio: ${input.folio}`, qy - 38, 7.5);
+      drawRight("Verificar autenticidad", qy - 12, 7.5);
+      if (input.verificationCode) drawRight(input.verificationCode, qy - 26, 11, bold, BRAND_BLUE);
+      if (input.folio) drawRight(`Folio: ${input.folio}`, qy - 40, 7.5);
     }
     if (total > 1) {
       // y=46 (~16 mm) — sobre el margen inferior no imprimible de impresoras
