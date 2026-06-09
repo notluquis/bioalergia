@@ -42,6 +42,7 @@ import type {
   TransactionCategoryOption,
 } from "../components/CashFlowColumns";
 import { financeORPCClient, toFinanceApiError } from "../orpc";
+import { cashflowKeys } from "../queries";
 import { isNonAccountableCategory } from "../utils/non-accountable-category";
 import {
   buildCategoryFrequencyMap,
@@ -254,7 +255,7 @@ const UpdateTransactionResponseSchema = z.object({
 
 function useFinancialTransactions(params: TransactionQueryParams) {
   return useQuery<FinancialTransactionsResponse>({
-    queryKey: ["FinancialTransaction", params],
+    queryKey: cashflowKeys.financialTransactions.list(params),
     queryFn: async () => {
       try {
         return FinancialTransactionsResponseSchema.parse(
@@ -276,7 +277,7 @@ function useFinancialTransactions(params: TransactionQueryParams) {
 
 function useHistoricalTransactionCategoryFrequencies() {
   return useQuery<Map<number, number>>({
-    queryKey: ["FinancialTransaction", "category-frequencies"],
+    queryKey: cashflowKeys.financialTransactions.categoryFrequencies,
     queryFn: async () => {
       const pageSize = 1000;
       let page = 1;
@@ -322,7 +323,7 @@ function useHistoricalTransactionCategoryFrequencies() {
 
 function useTransactionCategories() {
   return useQuery<TransactionCategoryOption[]>({
-    queryKey: ["TransactionCategory"],
+    queryKey: cashflowKeys.transactionCategories.all,
     queryFn: async () => {
       const payload = TransactionCategoriesResponseSchema.parse(
         await financeORPCClient.categoriesList()
@@ -334,7 +335,7 @@ function useTransactionCategories() {
 
 function useCounterparts() {
   return useQuery<CounterpartOption[]>({
-    queryKey: ["Counterpart"],
+    queryKey: cashflowKeys.counterparts.all,
     queryFn: async () => {
       const payload = CounterpartsResponseSchema.parse({
         counterparts: await fetchCounterparts(),
@@ -349,7 +350,7 @@ type CompensationProfileOption = z.infer<typeof CompensationProfileSchema>;
 
 function useCompensationProfiles() {
   return useQuery<CompensationProfileOption[]>({
-    queryKey: ["CompensationProfile"],
+    queryKey: cashflowKeys.compensationProfiles.all,
     queryFn: async () => {
       const payload = CompensationProfilesResponseSchema.parse(
         await financeORPCClient.compensationProfilesList()
@@ -364,7 +365,7 @@ function useCompensationLedger(profileId: null | number, period: string) {
   const toPeriod = period;
   return useQuery<z.infer<typeof CompensationLedgerEntrySchema>[]>({
     enabled: profileId != null,
-    queryKey: ["CompensationLedger", profileId, fromPeriod, toPeriod],
+    queryKey: cashflowKeys.compensationLedger.entry(profileId, fromPeriod, toPeriod),
     queryFn: async () => {
       const payload = CompensationLedgerResponseSchema.parse(
         await financeORPCClient.compensationProfilesLedger({
@@ -380,7 +381,7 @@ function useCompensationLedger(profileId: null | number, period: string) {
 
 function useFinancialAutoCategoryRules() {
   return useQuery<FinancialAutoCategoryRule[]>({
-    queryKey: ["FinancialAutoCategoryRule"],
+    queryKey: cashflowKeys.autoCategoryRules.all,
     queryFn: async () => {
       const payload = AutoCategoryRulesResponseSchema.parse(
         await financeORPCClient.autoCategoryRulesList()
@@ -392,7 +393,7 @@ function useFinancialAutoCategoryRules() {
 
 function useAvailableFinancialMonths() {
   return useQuery<string[]>({
-    queryKey: ["FinancialTransaction", "available-months"],
+    queryKey: cashflowKeys.financialTransactions.availableMonths,
     queryFn: async () => {
       const payload = AvailableMonthsResponseSchema.parse(
         await financeORPCClient.transactionsAvailableMonths()
@@ -1090,7 +1091,7 @@ export function CashFlowPage() {
 
   const getFinancialTransactionsSnapshot = () =>
     queryClient.getQueriesData<FinancialTransactionsResponse>({
-      queryKey: ["FinancialTransaction"],
+      queryKey: cashflowKeys.financialTransactions.all,
     });
   const applyCategoryToTransactionCache = (transactionIds: number[], categoryId: null | number) => {
     const targetIds = new Set(transactionIds);
@@ -1100,7 +1101,7 @@ export function CashFlowPage() {
         : (categories.find((category) => category.id === categoryId) ?? null);
 
     queryClient.setQueriesData<FinancialTransactionsResponse>(
-      { queryKey: ["FinancialTransaction"] },
+      { queryKey: cashflowKeys.financialTransactions.all },
       (current) => {
         if (!isFinancialTransactionsPayload(current)) {
           return current;
@@ -1162,7 +1163,7 @@ export function CashFlowPage() {
       }
     },
     onMutate: async ({ categoryId, transactionId }) => {
-      await queryClient.cancelQueries({ queryKey: ["FinancialTransaction"] });
+      await queryClient.cancelQueries({ queryKey: cashflowKeys.financialTransactions.all });
       const previousFinancialTransactions = getFinancialTransactionsSnapshot();
       applyCategoryToTransactionCache([transactionId], categoryId);
       markTransactionCategoryUpdates([transactionId]);
@@ -1170,7 +1171,7 @@ export function CashFlowPage() {
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({
-        queryKey: ["FinancialTransaction"],
+        queryKey: cashflowKeys.financialTransactions.all,
         refetchType: "active",
       });
     },
@@ -1237,7 +1238,7 @@ export function CashFlowPage() {
     onSettled: async (_data, _error, variables) => {
       unmarkTransactionCategoryUpdates(variables.transactionIds);
       await queryClient.invalidateQueries({
-        queryKey: ["FinancialTransaction"],
+        queryKey: cashflowKeys.financialTransactions.all,
         refetchType: "active",
       });
     },
@@ -1254,7 +1255,7 @@ export function CashFlowPage() {
       }
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["TransactionCategory"] });
+      void queryClient.invalidateQueries({ queryKey: cashflowKeys.transactionCategories.all });
       setNewCategoryName("");
       setNewCategoryColor("#64748b");
       setNewCategoryIsNonAccountable(false);
@@ -1291,21 +1292,21 @@ export function CashFlowPage() {
     },
     onMutate: async (payload) => {
       await Promise.all([
-        queryClient.cancelQueries({ queryKey: ["TransactionCategory"] }),
-        queryClient.cancelQueries({ queryKey: ["FinancialTransaction"] }),
+        queryClient.cancelQueries({ queryKey: cashflowKeys.transactionCategories.all }),
+        queryClient.cancelQueries({ queryKey: cashflowKeys.financialTransactions.all }),
       ]);
       const previousTransactionCategories = queryClient.getQueriesData<TransactionCategoryOption[]>(
         {
-          queryKey: ["TransactionCategory"],
+          queryKey: cashflowKeys.transactionCategories.all,
         }
       );
       const previousFinancialTransactions =
         queryClient.getQueriesData<FinancialTransactionsResponse>({
-          queryKey: ["FinancialTransaction"],
+          queryKey: cashflowKeys.financialTransactions.all,
         });
 
       queryClient.setQueriesData<TransactionCategoryOption[]>(
-        { queryKey: ["TransactionCategory"] },
+        { queryKey: cashflowKeys.transactionCategories.all },
         (current) => {
           if (!Array.isArray(current)) {
             return current;
@@ -1323,7 +1324,7 @@ export function CashFlowPage() {
       );
 
       queryClient.setQueriesData<FinancialTransactionsResponse>(
-        { queryKey: ["FinancialTransaction"] },
+        { queryKey: cashflowKeys.financialTransactions.all },
         (current) => {
           if (!isFinancialTransactionsPayload(current)) {
             return current;
@@ -1356,11 +1357,11 @@ export function CashFlowPage() {
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({
-          queryKey: ["TransactionCategory"],
+          queryKey: cashflowKeys.transactionCategories.all,
           refetchType: "active",
         }),
         queryClient.invalidateQueries({
-          queryKey: ["FinancialTransaction"],
+          queryKey: cashflowKeys.financialTransactions.all,
           refetchType: "active",
         }),
       ]);
@@ -1391,8 +1392,8 @@ export function CashFlowPage() {
       }
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["TransactionCategory"] });
-      void queryClient.invalidateQueries({ queryKey: ["FinancialTransaction"] });
+      void queryClient.invalidateQueries({ queryKey: cashflowKeys.transactionCategories.all });
+      void queryClient.invalidateQueries({ queryKey: cashflowKeys.financialTransactions.all });
       toast.success("Categoría eliminada");
     },
     onError: (error) => {
@@ -1418,7 +1419,7 @@ export function CashFlowPage() {
       }
     },
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["CompensationProfile"] });
+      await queryClient.invalidateQueries({ queryKey: cashflowKeys.compensationProfiles.all });
       setNewCompensationName("");
       setNewCompensationCategoryId(null);
       setNewCompensationCounterpartId(null);
@@ -1453,7 +1454,7 @@ export function CashFlowPage() {
       }
     },
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["CompensationLedger"] });
+      await queryClient.invalidateQueries({ queryKey: cashflowKeys.compensationLedger.all });
       toast.success("Presupuesto de período actualizado");
     },
     onError: (error) => {
@@ -1486,8 +1487,8 @@ export function CashFlowPage() {
     },
     onSuccess: async () => {
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["FinancialTransaction"] }),
-        queryClient.invalidateQueries({ queryKey: ["CompensationLedger"] }),
+        queryClient.invalidateQueries({ queryKey: cashflowKeys.financialTransactions.all }),
+        queryClient.invalidateQueries({ queryKey: cashflowKeys.compensationLedger.all }),
       ]);
       toast.success("Movimiento reasignado al período destino");
       setIsReallocateOpen(false);
@@ -1526,8 +1527,8 @@ export function CashFlowPage() {
     },
     onSuccess: async () => {
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["FinancialAutoCategoryRule"] }),
-        queryClient.invalidateQueries({ queryKey: ["FinancialTransaction"] }),
+        queryClient.invalidateQueries({ queryKey: cashflowKeys.autoCategoryRules.all }),
+        queryClient.invalidateQueries({ queryKey: cashflowKeys.financialTransactions.all }),
       ]);
       setNewRuleName("");
       setNewRuleCounterpartId(null);
@@ -1581,8 +1582,8 @@ export function CashFlowPage() {
     },
     onSuccess: async () => {
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["FinancialAutoCategoryRule"] }),
-        queryClient.invalidateQueries({ queryKey: ["FinancialTransaction"] }),
+        queryClient.invalidateQueries({ queryKey: cashflowKeys.autoCategoryRules.all }),
+        queryClient.invalidateQueries({ queryKey: cashflowKeys.financialTransactions.all }),
       ]);
       setEditingRuleId(null);
       toast.success("Regla automática actualizada");
@@ -1605,8 +1606,8 @@ export function CashFlowPage() {
     },
     onSuccess: async () => {
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["FinancialAutoCategoryRule"] }),
-        queryClient.invalidateQueries({ queryKey: ["FinancialTransaction"] }),
+        queryClient.invalidateQueries({ queryKey: cashflowKeys.autoCategoryRules.all }),
+        queryClient.invalidateQueries({ queryKey: cashflowKeys.financialTransactions.all }),
       ]);
       toast.success("Regla automática eliminada");
     },
@@ -1627,7 +1628,7 @@ export function CashFlowPage() {
       }
     },
     onSuccess: async (response) => {
-      await queryClient.invalidateQueries({ queryKey: ["FinancialTransaction"] });
+      await queryClient.invalidateQueries({ queryKey: cashflowKeys.financialTransactions.all });
       toast.success(`Sincronización completada: ${response.data.updated} categorizados`);
     },
     onError: (error) => {

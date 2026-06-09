@@ -18,6 +18,7 @@ import type { ExpenseRecurrence, ExpenseScope } from "@finanzas/orpc-contracts/e
 import { toast } from "@/lib/toast-interceptor";
 
 import { expensesORPCClient, toExpensesApiError } from "../expenses-orpc";
+import { expenseKeys } from "../queries";
 
 interface Props {
   onClose: () => void;
@@ -85,7 +86,7 @@ export function ExpenseServicesModal({ onClose }: Props) {
 
   const servicesQuery = useQuery({
     queryFn: () => expensesORPCClient.listServices({}),
-    queryKey: ["expenses", "services"],
+    queryKey: expenseKeys.services,
   });
 
   const createMutation = useMutation({
@@ -94,7 +95,7 @@ export function ExpenseServicesModal({ onClose }: Props) {
     onError: (err) => toast.error(toExpensesApiError(err).message),
     onSuccess: () => {
       toast.success("Plantilla creada");
-      void queryClient.invalidateQueries({ queryKey: ["expenses", "services"] });
+      void queryClient.invalidateQueries({ queryKey: expenseKeys.services });
       resetForm();
     },
   });
@@ -105,7 +106,7 @@ export function ExpenseServicesModal({ onClose }: Props) {
     onError: (err) => toast.error(toExpensesApiError(err).message),
     onSuccess: () => {
       toast.success("Plantilla actualizada");
-      void queryClient.invalidateQueries({ queryKey: ["expenses", "services"] });
+      void queryClient.invalidateQueries({ queryKey: expenseKeys.services });
       resetForm();
     },
   });
@@ -115,7 +116,7 @@ export function ExpenseServicesModal({ onClose }: Props) {
     onError: (err) => toast.error(toExpensesApiError(err).message),
     onSuccess: () => {
       toast.success("Plantilla eliminada");
-      void queryClient.invalidateQueries({ queryKey: ["expenses", "services"] });
+      void queryClient.invalidateQueries({ queryKey: expenseKeys.services });
     },
   });
 

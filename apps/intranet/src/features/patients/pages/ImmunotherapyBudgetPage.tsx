@@ -30,6 +30,7 @@ import {
   listImmunoProducts,
   quoteImmunotherapy,
 } from "@/features/immunotherapy/api";
+import { immunoKeys } from "@/features/immunotherapy/queries";
 import { formatCurrency } from "@/lib/utils";
 import { PAGE_CONTAINER } from "@/lib/styles";
 import { toast } from "@/lib/toast-interceptor";
@@ -61,11 +62,11 @@ export function ImmunotherapyBudgetPage() {
   const { contains } = useFilter({ sensitivity: "base" });
 
   const productsQuery = useQuery({
-    queryKey: ["immuno", "products"],
+    queryKey: immunoKeys.products,
     queryFn: listImmunoProducts,
   });
   const allergensQuery = useQuery({
-    queryKey: ["immuno", "allergens"],
+    queryKey: immunoKeys.allergens,
     queryFn: () => listImmunoAllergens(),
   });
 
@@ -109,7 +110,7 @@ export function ImmunotherapyBudgetPage() {
   );
 
   const quoteQuery = useQuery({
-    queryKey: ["immuno", "quote", quoteInput],
+    queryKey: immunoKeys.quote(quoteInput),
     queryFn: () => {
       if (!quoteInput) throw new Error("Selecciona un producto");
       return quoteImmunotherapy(quoteInput);

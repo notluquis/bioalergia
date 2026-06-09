@@ -9,6 +9,7 @@ import { financeORPCClient } from "@/features/finance/orpc";
 import { toast } from "@/lib/toast-interceptor";
 
 import { expensesORPCClient, toExpensesApiError } from "../expenses-orpc";
+import { expenseKeys } from "../queries";
 
 interface Props {
   expectedAmount: number;
@@ -49,7 +50,7 @@ export function ExpenseLinkModal({
         to: addDays(today(), 7),
         type: "EXPENSE",
       }),
-    queryKey: ["finance", "transactions", "for-link", search],
+    queryKey: expenseKeys.financeForLink(search),
   });
 
   const linkMutation = useMutation({
@@ -62,7 +63,7 @@ export function ExpenseLinkModal({
     onError: (err) => toast.error(toExpensesApiError(err).message),
     onSuccess: () => {
       toast.success("Pago vinculado");
-      void queryClient.invalidateQueries({ queryKey: ["finance"] });
+      void queryClient.invalidateQueries({ queryKey: expenseKeys.financeRoot });
       onLinked();
     },
   });

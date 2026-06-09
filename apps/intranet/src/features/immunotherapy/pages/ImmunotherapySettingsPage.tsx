@@ -23,6 +23,7 @@ import {
   updateImmunoProduct,
   updateImmunoTerms,
 } from "@/features/immunotherapy/api";
+import { immunoKeys } from "@/features/immunotherapy/queries";
 import { confirmAction } from "@/components/ui/ConfirmDialog";
 import { PAGE_CONTAINER } from "@/lib/styles";
 import { toast } from "@/lib/toast-interceptor";
@@ -103,10 +104,10 @@ function draftFromProduct(p: ProductDto): Draft {
 
 export function ImmunotherapySettingsPage() {
   const queryClient = useQueryClient();
-  const productsQuery = useQuery({ queryKey: ["immuno", "products"], queryFn: listImmunoProducts });
+  const productsQuery = useQuery({ queryKey: immunoKeys.products, queryFn: listImmunoProducts });
   const [draft, setDraft] = useState<Draft>(emptyDraft());
 
-  const invalidate = () => queryClient.invalidateQueries({ queryKey: ["immuno", "products"] });
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: immunoKeys.products });
 
   const saveMutation = useMutation({
     mutationFn: async () => {
@@ -459,7 +460,7 @@ export function ImmunotherapySettingsPage() {
 }
 
 function TermsEditor() {
-  const termsQuery = useQuery({ queryKey: ["immuno", "terms"], queryFn: getImmunoTerms });
+  const termsQuery = useQuery({ queryKey: immunoKeys.terms, queryFn: getImmunoTerms });
   const [legalName, setLegalName] = useState<string | null>(null);
   const [legalRut, setLegalRut] = useState<string | null>(null);
   const [terms, setTerms] = useState<string | null>(null);

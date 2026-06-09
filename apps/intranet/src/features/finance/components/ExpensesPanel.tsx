@@ -9,6 +9,7 @@ import { dteSyncORPCClient } from "@/features/settings/dte-sync-orpc";
 import { toast } from "@/lib/toast-interceptor";
 
 import { expensesORPCClient, toExpensesApiError } from "../expenses-orpc";
+import { expenseKeys } from "../queries";
 import { ExpenseLinkModal } from "./ExpenseLinkModal";
 import { ExpenseServicesModal } from "./ExpenseServicesModal";
 
@@ -61,7 +62,7 @@ export function ExpensesPanel() {
         scope: scope === "all" ? undefined : scope,
         to: monthEnd,
       }),
-    queryKey: ["expenses", "list", scope, month],
+    queryKey: expenseKeys.list(scope, month),
   });
 
   const statsQuery = useQuery({
@@ -72,7 +73,7 @@ export function ExpensesPanel() {
         scope: scope === "all" ? undefined : scope,
         to: monthEnd,
       }),
-    queryKey: ["expenses", "stats", scope, month],
+    queryKey: expenseKeys.stats(scope, month),
   });
 
   const generateMutation = useMutation({
@@ -80,7 +81,7 @@ export function ExpensesPanel() {
     onError: (err) => toast.error(toExpensesApiError(err).message),
     onSuccess: (data) => {
       toast.success(`Generados ${data.created} gastos del mes`);
-      void queryClient.invalidateQueries({ queryKey: ["expenses"] });
+      void queryClient.invalidateQueries({ queryKey: expenseKeys.all });
     },
   });
 
@@ -95,7 +96,7 @@ export function ExpensesPanel() {
       toast.success(
         `Reconciliado ${s.total} DTEs · ${s.createdExpense} expense creados · ${s.linkedExisting} linkeados · ${s.noMatch} sin match`
       );
-      void queryClient.invalidateQueries({ queryKey: ["expenses"] });
+      void queryClient.invalidateQueries({ queryKey: expenseKeys.all });
     },
   });
 
@@ -176,7 +177,7 @@ export function ExpensesPanel() {
           <Button
             variant="outline"
             onPress={() => {
-              void queryClient.invalidateQueries({ queryKey: ["expenses"] });
+              void queryClient.invalidateQueries({ queryKey: expenseKeys.all });
             }}
           >
             <RefreshCwIcon className="size-4" />
@@ -288,7 +289,7 @@ export function ExpensesPanel() {
           onClose={() => setLinkTarget(null)}
           onLinked={() => {
             setLinkTarget(null);
-            void queryClient.invalidateQueries({ queryKey: ["expenses"] });
+            void queryClient.invalidateQueries({ queryKey: expenseKeys.all });
           }}
         />
       )}
