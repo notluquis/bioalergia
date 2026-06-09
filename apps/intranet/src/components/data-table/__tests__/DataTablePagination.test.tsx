@@ -93,6 +93,14 @@ describe("DataTablePagination", () => {
     expect(screen.getByText(/Página 1$/)).toBeInTheDocument();
   });
 
+  it("shows the pager for a large client-side dataset (derives pages from row count)", () => {
+    // Regresión: con miles de filas el pager debe aparecer. Antes dependíamos de
+    // table.getPageCount() (stale en el hijo) y podía dar 1 → pager oculto.
+    renderTable(4897, { scrollMaxHeight: "min(68dvh, 760px)" });
+    expect(screen.getByText(/Página 1 de 490/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Siguiente/i })).not.toBeDisabled();
+  });
+
   it("disables Next when on the last page", async () => {
     const user = userEvent.setup();
     renderTable(15);
