@@ -37,7 +37,8 @@ function idFromUrl(url: string | null): string | null {
 }
 
 export async function fetchEmpleosPublicosJobs(): Promise<RawJob[]> {
-  const text = await requestText(FEED, { tag: "job_radar.empleospublicos" });
+  // El feed `.txt` redirige (302) a HTML si el Accept es application/json → `*/*`.
+  const text = await requestText(FEED, { tag: "job_radar.empleospublicos", accept: "*/*" });
   if (!text) return [];
   const data = safeJsonParse(text);
   if (!Array.isArray(data)) return [];
