@@ -5,6 +5,9 @@
 import { logWarn } from "../../lib/logger.ts";
 
 export const JOB_RADAR_UA = "BioalergiaJobRadar/1.0 (+personal job search)";
+// Algunos portales (Trabajando.com nginx) responden 502 a UAs no-browser.
+export const BROWSER_UA =
+  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36";
 const TIMEOUT_MS = 15_000;
 
 export function asRecord(v: unknown): Record<string, unknown> | null {
@@ -34,6 +37,10 @@ export interface RequestOptions {
   // el Accept no matchea el content-type real. Default JSON (la mayoría de las
   // fuentes son APIs), override a XML/`*​/*` para sitemaps.
   accept?: string;
+  // UA por defecto = JOB_RADAR_UA; override a BROWSER_UA donde el portal lo exija.
+  userAgent?: string;
+  // Headers extra (ej. authorization para el BFF de muevete/Falabella).
+  headers?: Record<string, string>;
 }
 
 /**
@@ -41,14 +48,23 @@ export interface RequestOptions {
  * Nunca lanza: el sync sigue con las demás fuentes aunque una falle.
  */
 export async function requestText(url: string, opts: RequestOptions): Promise<string | null> {
-  const { method = "GET", body, tag, ctx = {}, accept = "application/json" } = opts;
+  const {
+    method = "GET",
+    body,
+    tag,
+    ctx = {},
+    accept = "application/json",
+    userAgent = JOB_RADAR_UA,
+    headers = {},
+  } = opts;
   try {
     const res = await fetch(url, {
       method,
       headers: {
-        "user-agent": JOB_RADAR_UA,
+        "user-agent": userAgent,
         accept,
         ...(body ? { "content-type": "application/json" } : {}),
+        ...headers,
       },
       body,
       redirect: "follow",

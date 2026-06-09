@@ -73,6 +73,7 @@ export function JobRadarPage() {
   const [appStatus, setAppStatus] = useState<"ALL" | JobApplicationStatus>("ALL");
   const [postingStatus, setPostingStatus] = useState<"OPEN" | "CLOSED" | "ALL">("OPEN");
   const [source, setSource] = useState<string>("ALL");
+  const [company, setCompany] = useState<string>("ALL");
   const [search, setSearch] = useState("");
   const [showSettings, setShowSettings] = useState(false);
   const [detailJob, setDetailJob] = useState<JobPostingDTO | null>(null);
@@ -83,9 +84,10 @@ export function JobRadarPage() {
     const f: JobRadarListFilters = { postingStatus };
     if (appStatus !== "ALL") f.applicationStatus = appStatus;
     if (source !== "ALL") f.source = source;
+    if (company !== "ALL") f.company = company;
     if (debouncedSearch.trim()) f.search = debouncedSearch.trim();
     return f;
-  }, [appStatus, postingStatus, source, debouncedSearch]);
+  }, [appStatus, postingStatus, source, company, debouncedSearch]);
 
   const { data: postings, isPending } = useJobPostings(filters);
   const update = useUpdateJobApplication();
@@ -184,6 +186,12 @@ export function JobRadarPage() {
     const set = new Set<string>();
     for (const p of postings ?? []) set.add(p.source);
     return [...set].sort();
+  }, [postings]);
+
+  const companies = useMemo(() => {
+    const set = new Set<string>();
+    for (const p of postings ?? []) if (p.company) set.add(p.company);
+    return [...set].sort((a, b) => a.localeCompare(b, "es"));
   }, [postings]);
 
   // Conteo por estado (sobre las filas ya deduplicadas).
@@ -403,7 +411,7 @@ export function JobRadarPage() {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
         <Select
           value={appStatus}
           onChange={(k) => k && setAppStatus(k as "ALL" | JobApplicationStatus)}
@@ -457,6 +465,24 @@ export function JobRadarPage() {
               {sources.map((s) => (
                 <ListBox.Item key={s} id={s}>
                   {s}
+                </ListBox.Item>
+              ))}
+            </ListBox>
+          </Select.Popover>
+        </Select>
+
+        <Select value={company} onChange={(k) => k && setCompany(String(k))}>
+          <Label>{t("jobRadar.filters.company")}</Label>
+          <Select.Trigger>
+            <Select.Value />
+            <Select.Indicator />
+          </Select.Trigger>
+          <Select.Popover>
+            <ListBox>
+              <ListBox.Item id="ALL">{t("jobRadar.filters.all")}</ListBox.Item>
+              {companies.map((c) => (
+                <ListBox.Item key={c} id={c}>
+                  {c}
                 </ListBox.Item>
               ))}
             </ListBox>

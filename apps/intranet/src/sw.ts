@@ -54,11 +54,17 @@ registerRoute(
   })
 );
 registerRoute(
-  ({ request }) =>
-    request.destination === "script" ||
-    request.destination === "style" ||
-    request.destination === "image" ||
-    request.destination === "font",
+  ({ request, url }) =>
+    // SOLO same-origin. Un cross-origin script/style (p.ej. el ECT de
+    // icdcdn.who.int) llega como request no-cors → opaque; StaleWhileRevalidate
+    // lo intenta cachear y termina devolviendo Response.error() ("Response
+    // served by service worker is an error"). Dejándolo sin route, el SW no lo
+    // intercepta y el browser lo carga normal por la red.
+    url.origin === self.location.origin &&
+    (request.destination === "script" ||
+      request.destination === "style" ||
+      request.destination === "image" ||
+      request.destination === "font"),
   new StaleWhileRevalidate({ cacheName: "static-cache" })
 );
 

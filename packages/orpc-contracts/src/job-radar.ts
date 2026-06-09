@@ -46,6 +46,7 @@ export const jobRadarListInputSchema = z
     postingStatus: z.enum(["OPEN", "CLOSED", "ALL"]).optional(),
     applicationStatus: jobApplicationStatusSchema.optional(),
     source: z.string().optional(),
+    company: z.string().optional(),
     search: z.string().optional(),
   })
   .optional();
@@ -104,6 +105,9 @@ export const jobSourceKindSchema = z.enum([
   "SMARTRECRUITERS",
   "WORKDAY",
   "AIRAVIRTUAL",
+  "SUCCESSFACTORS",
+  "TRABAJANDO",
+  "MUEVETE",
 ]);
 
 export const jobSourceSchema = z

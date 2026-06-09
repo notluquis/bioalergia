@@ -85,6 +85,7 @@
       "applicationStatus": "Estado postulación",
       "postingStatus": "Vigencia",
       "source": "Fuente",
+      "company": "Empresa",
       "search": "Buscar",
       "searchPlaceholder": "Cargo, empresa, área…"
     },

@@ -15227,7 +15227,10 @@ export class SchemaType implements SchemaDef {
                 ASHBY: "ASHBY",
                 SMARTRECRUITERS: "SMARTRECRUITERS",
                 WORKDAY: "WORKDAY",
-                AIRAVIRTUAL: "AIRAVIRTUAL"
+                AIRAVIRTUAL: "AIRAVIRTUAL",
+                SUCCESSFACTORS: "SUCCESSFACTORS",
+                TRABAJANDO: "TRABAJANDO",
+                MUEVETE: "MUEVETE"
             },
             attributes: [
                 { name: "@@schema", args: [{ name: "map", value: ExpressionUtils.literal("personal") }] }

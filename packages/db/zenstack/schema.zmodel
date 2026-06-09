@@ -5329,6 +5329,9 @@ enum JobSourceKind {
   SMARTRECRUITERS
   WORKDAY
   AIRAVIRTUAL
+  SUCCESSFACTORS
+  TRABAJANDO
+  MUEVETE
 
   @@schema("personal")
 }

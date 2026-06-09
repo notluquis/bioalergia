@@ -85,6 +85,7 @@
       "applicationStatus": "Application status",
       "postingStatus": "Validity",
       "source": "Source",
+      "company": "Company",
       "search": "Search",
       "searchPlaceholder": "Role, company, area…"
     },

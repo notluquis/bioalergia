@@ -22,7 +22,10 @@ import {
 import { fetchGetonbrdJobs } from "../modules/job-radar/getonbrd.ts";
 import { fetchGreenhouseJobs } from "../modules/job-radar/greenhouse.ts";
 import { fetchLeverJobs } from "../modules/job-radar/lever.ts";
+import { fetchMueveteJobs } from "../modules/job-radar/muevete.ts";
 import { fetchSmartRecruitersJobs } from "../modules/job-radar/smartrecruiters.ts";
+import { fetchSuccessFactorsJobs } from "../modules/job-radar/successfactors.ts";
+import { fetchTrabajandoJobs } from "../modules/job-radar/trabajando.ts";
 import { fetchWorkdayJobs, parseWorkdayEntry } from "../modules/job-radar/workday.ts";
 import { fetchTeamtailorJobs } from "../modules/job-radar/teamtailor.ts";
 import {
@@ -164,6 +167,28 @@ function sourceFromRow(kind: string, identifier: string, keywords: string[]): Jo
         company: identifier,
         label: `airavirtual:${identifier}`,
         fetch: () => fetchAiravirtualJobs(identifier),
+      };
+    case "SUCCESSFACTORS":
+      return {
+        source: "successfactors",
+        company: identifier,
+        label: `successfactors:${identifier}`,
+        fetch: () => fetchSuccessFactorsJobs(identifier),
+      };
+    case "TRABAJANDO":
+      return {
+        source: "trabajando",
+        company: identifier,
+        label: `trabajando:${identifier}`,
+        fetch: () => fetchTrabajandoJobs(identifier),
+      };
+    case "MUEVETE":
+      // Fuente única (agrega todo el grupo Falabella); identifier ignorado.
+      return {
+        source: "muevete",
+        company: identifier || "falabella",
+        label: "muevete",
+        fetch: fetchMueveteJobs,
       };
     case "WORKDAY": {
       const entry = parseWorkdayEntry(identifier);
@@ -494,6 +519,7 @@ export interface ListJobPostingsFilters {
   postingStatus?: "OPEN" | "CLOSED" | "ALL";
   applicationStatus?: ApplicationStatus;
   source?: string;
+  company?: string;
   search?: string;
 }
 
@@ -506,6 +532,7 @@ export async function listJobPostings(filters: ListJobPostingsFilters = {}) {
   }
   if (filters.applicationStatus) where.applicationStatus = filters.applicationStatus;
   if (filters.source) where.source = filters.source;
+  if (filters.company) where.company = filters.company;
   if (filters.search && filters.search.trim().length > 0) {
     const q = filters.search.trim();
     where.OR = [
@@ -639,7 +666,10 @@ export type JobSourceKindDTO =
   | "ASHBY"
   | "SMARTRECRUITERS"
   | "WORKDAY"
-  | "AIRAVIRTUAL";
+  | "AIRAVIRTUAL"
+  | "SUCCESSFACTORS"
+  | "TRABAJANDO"
+  | "MUEVETE";
 
 export async function listJobSources() {
   return db.jobSource.findMany({ orderBy: [{ kind: "asc" }, { identifier: "asc" }] });
