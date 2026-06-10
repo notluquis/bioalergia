@@ -131,7 +131,8 @@ export async function findOrCreatePerson(input: PersonInput): Promise<FindOrCrea
         merged.motherName !== existing.motherName ||
         merged.email !== existing.email ||
         merged.phone !== existing.phone ||
-        merged.sex !== existing.sex;
+        // null/undefined equivalentes (campo nuevo: filas/mocks sin `sex`).
+        (merged.sex ?? null) !== (existing.sex ?? null);
       if (changed) {
         await db.person.update({ where: { id: existing.id }, data: merged });
         logEvent("[people-factory] person updated", {
