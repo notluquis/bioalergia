@@ -6,6 +6,10 @@ export function useJobPostings(filters: JobRadarListFilters = {}) {
   return useQuery(jobRadarQueries.list(filters));
 }
 
+export function useJobRadarFilterOptions() {
+  return useQuery(jobRadarQueries.filterOptions());
+}
+
 export function useUpdateJobApplication() {
   const qc = useQueryClient();
   return useMutation({

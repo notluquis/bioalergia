@@ -703,6 +703,69 @@ export interface ListJobPostingsFilters {
   search?: string;
 }
 
+export interface JobRadarFilterOptionsDTO {
+  applicationStatuses: ApplicationStatus[];
+  companies: Array<{ source: string; value: string }>;
+  postingStatuses: Array<"OPEN" | "CLOSED">;
+  rawLocations: Array<string | null>;
+  sources: string[];
+}
+
+const APPLICATION_STATUS_ORDER: ApplicationStatus[] = [
+  "NEW",
+  "SEEN",
+  "INTERESTED",
+  "APPLIED",
+  "INTERVIEW",
+  "OFFER",
+  "REJECTED",
+  "DISCARDED",
+];
+const POSTING_STATUS_ORDER: Array<"OPEN" | "CLOSED"> = ["OPEN", "CLOSED"];
+
+function orderedSubset<T extends string>(values: Iterable<T>, order: readonly T[]): T[] {
+  const set = new Set(values);
+  return order.filter((value) => set.has(value));
+}
+
+export async function listJobRadarFilterOptions(): Promise<JobRadarFilterOptionsDTO> {
+  const rows = await db.jobPosting.findMany({
+    select: {
+      applicationStatus: true,
+      company: true,
+      location: true,
+      source: true,
+      status: true,
+    },
+  });
+
+  const companies = new Map<string, { source: string; value: string }>();
+  const locations = new Set<string | null>();
+  const sources = new Set<string>();
+
+  for (const row of rows) {
+    sources.add(row.source);
+    companies.set(`${row.source}\u0000${row.company}`, { source: row.source, value: row.company });
+    locations.add(row.location);
+  }
+
+  return {
+    applicationStatuses: orderedSubset(
+      rows.map((row) => row.applicationStatus as ApplicationStatus),
+      APPLICATION_STATUS_ORDER
+    ),
+    companies: [...companies.values()].sort(
+      (a, b) => a.source.localeCompare(b.source, "es") || a.value.localeCompare(b.value, "es")
+    ),
+    postingStatuses: orderedSubset(
+      rows.map((row) => row.status as "OPEN" | "CLOSED"),
+      POSTING_STATUS_ORDER
+    ),
+    rawLocations: [...locations].sort((a, b) => (a ?? "").localeCompare(b ?? "", "es")),
+    sources: [...sources].sort((a, b) => a.localeCompare(b, "es")),
+  };
+}
+
 export async function listJobPostings(filters: ListJobPostingsFilters = {}) {
   const where: Record<string, unknown> = {};
   if (filters.postingStatus && filters.postingStatus !== "ALL") {

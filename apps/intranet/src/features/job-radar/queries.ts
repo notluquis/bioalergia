@@ -5,6 +5,7 @@ export type JobRadarListFilters = NonNullable<Parameters<typeof jobRadarORPCClie
 
 export const jobRadarKeys = {
   all: ["job-radar"] as const,
+  filterOptions: () => [...jobRadarKeys.all, "filter-options"] as const,
   list: (filters: JobRadarListFilters) => [...jobRadarKeys.all, "list", filters] as const,
   settings: () => [...jobRadarKeys.all, "settings"] as const,
   sources: () => [...jobRadarKeys.all, "sources"] as const,
@@ -15,6 +16,11 @@ export const jobRadarQueries = {
     queryOptions({
       queryKey: jobRadarKeys.list(filters),
       queryFn: () => jobRadarORPCClient.list(filters),
+    }),
+  filterOptions: () =>
+    queryOptions({
+      queryKey: jobRadarKeys.filterOptions(),
+      queryFn: () => jobRadarORPCClient.filterOptions(),
     }),
   settings: () =>
     queryOptions({

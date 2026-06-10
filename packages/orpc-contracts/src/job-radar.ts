@@ -1,7 +1,7 @@
 import { oc } from "@orpc/contract";
 import { z } from "zod";
 
-export const jobApplicationStatusSchema = z.enum([
+export const JOB_APPLICATION_STATUSES = [
   "NEW",
   "SEEN",
   "INTERESTED",
@@ -10,9 +10,13 @@ export const jobApplicationStatusSchema = z.enum([
   "OFFER",
   "REJECTED",
   "DISCARDED",
-]);
+] as const;
 
-export const jobPostingStatusSchema = z.enum(["OPEN", "CLOSED"]);
+export const JOB_POSTING_STATUSES = ["OPEN", "CLOSED"] as const;
+
+export const jobApplicationStatusSchema = z.enum(JOB_APPLICATION_STATUSES);
+
+export const jobPostingStatusSchema = z.enum(JOB_POSTING_STATUSES);
 
 export const jobPostingSchema = z
   .object({
@@ -50,6 +54,14 @@ export const jobRadarListInputSchema = z
     search: z.string().optional(),
   })
   .optional();
+
+export const jobRadarFilterOptionsSchema = z.object({
+  applicationStatuses: z.array(jobApplicationStatusSchema),
+  companies: z.array(z.object({ source: z.string(), value: z.string() })),
+  postingStatuses: z.array(jobPostingStatusSchema),
+  rawLocations: z.array(z.string().nullable()),
+  sources: z.array(z.string()),
+});
 
 export const jobRadarUpdateInputSchema = z.object({
   id: z.string().min(1),
@@ -156,6 +168,9 @@ export const jobRadarContract = {
     .route({ method: "GET", path: "/postings" })
     .input(jobRadarListInputSchema)
     .output(z.array(jobPostingSchema)),
+  filterOptions: oc
+    .route({ method: "GET", path: "/postings/filter-options" })
+    .output(jobRadarFilterOptionsSchema),
   update: oc
     .route({ method: "PATCH", path: "/postings/{id}" })
     .input(jobRadarUpdateInputSchema)
@@ -189,6 +204,7 @@ export const jobRadarContract = {
 };
 
 export type JobRadarContract = typeof jobRadarContract;
+export type JobRadarFilterOptions = z.output<typeof jobRadarFilterOptionsSchema>;
 export type JobPostingDTO = z.output<typeof jobPostingSchema>;
 export type JobApplicationStatus = z.infer<typeof jobApplicationStatusSchema>;
 export type JobRadarSyncResult = z.output<typeof jobRadarSyncResultSchema>;

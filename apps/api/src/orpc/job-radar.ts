@@ -2,6 +2,7 @@ import {
   jobRadarListInputSchema,
   jobRadarBulkUpdateInputSchema,
   jobRadarBulkUpdateResultSchema,
+  jobRadarFilterOptionsSchema,
   jobRadarSettingsSchema,
   jobRadarSettingsUpdateSchema,
   jobRadarSyncProgressSchema,
@@ -29,6 +30,7 @@ import {
   deleteJobSource,
   getJobRadarSettings,
   getJobRadarSyncProgress,
+  listJobRadarFilterOptions,
   listJobPostings,
   listJobSources,
   setJobSourceEnabled,
@@ -60,6 +62,19 @@ const jobRadarORPCRouterBase = {
       await requireUser(context.hono);
       const rows = await listJobPostings(input ?? {});
       return rows as unknown as z.output<typeof jobPostingSchema>[];
+    }),
+
+  filterOptions: base
+    .route({
+      method: "GET",
+      path: "/postings/filter-options",
+      summary: "List available posting filter options",
+      tags: ["Job Radar"],
+    })
+    .output(jobRadarFilterOptionsSchema)
+    .handler(async ({ context }) => {
+      await requireUser(context.hono);
+      return listJobRadarFilterOptions();
     }),
 
   update: base

@@ -21,6 +21,7 @@ import type {
   JobPostingDTO,
   JobRadarSyncResult,
 } from "@finanzas/orpc-contracts/job-radar";
+import { JOB_APPLICATION_STATUSES, JOB_POSTING_STATUSES } from "@finanzas/orpc-contracts/job-radar";
 import { DataTable } from "@/components/data-table/DataTable";
 import { useToast } from "@/context/ToastContext";
 import { toast } from "@/lib/toast-interceptor";
@@ -29,6 +30,7 @@ import { JobRadarSettingsPanel } from "../components/JobRadarSettingsPanel";
 import { dedupePostings, type DedupedPosting } from "../dedupe";
 import {
   useBulkUpdateJobApplications,
+  useJobRadarFilterOptions,
   useJobPostings,
   useJobRadarSyncProgress,
   useSyncJobRadar,
@@ -37,21 +39,13 @@ import {
 import { SyncProgressBar } from "../components/SyncProgressBar";
 import { jobRadarKeys, type JobRadarListFilters } from "../queries";
 import {
-  buildLocationFilterOptions,
+  buildLocationFilterOptionsFromRaw,
+  type LocationFilterOption,
   matchesLocationFilter,
   normalizeJobLocation,
 } from "../location-normalizer";
 
-const APP_STATUSES: JobApplicationStatus[] = [
-  "NEW",
-  "SEEN",
-  "INTERESTED",
-  "APPLIED",
-  "INTERVIEW",
-  "OFFER",
-  "REJECTED",
-  "DISCARDED",
-];
+const APP_STATUSES: JobApplicationStatus[] = [...JOB_APPLICATION_STATUSES];
 
 type ChipColor = "default" | "success" | "warning" | "danger" | "accent";
 
@@ -66,10 +60,23 @@ const STATUS_COLOR: Record<JobApplicationStatus, ChipColor> = {
   DISCARDED: "default",
 };
 
-const POSTING_STATUS_OPTIONS = ["OPEN", "CLOSED", "ALL"] as const;
-
 function fmtDate(d: Date | null): string {
   return d ? formatChile(d, "DD/MM/YYYY") : "—";
+}
+
+function locationGroupLabel(group: LocationFilterOption["group"]): string {
+  switch (group) {
+    case "zone":
+      return "Zona";
+    case "region":
+      return "Región";
+    case "commune":
+      return "Comuna";
+    case "country":
+      return "País";
+    case "review":
+      return "Revisar";
+  }
 }
 
 // Orden por fecha null-safe (los null al fondo); evita el crash de "datetime" de
@@ -103,6 +110,7 @@ export function JobRadarPage() {
     return f;
   }, [appStatus, postingStatus, source, company, debouncedSearch]);
 
+  const { data: filterOptions } = useJobRadarFilterOptions();
   const { data: postings, isPending } = useJobPostings(filters);
   const update = useUpdateJobApplication();
   const bulkUpdate = useBulkUpdateJobApplications();
@@ -222,19 +230,42 @@ export function JobRadarPage() {
     );
   };
 
-  const sources = useMemo(() => {
-    const set = new Set<string>();
-    for (const p of postings ?? []) set.add(p.source);
-    return [...set].sort();
-  }, [postings]);
-
   const companies = useMemo(() => {
-    const set = new Set<string>();
-    for (const p of postings ?? []) if (p.company) set.add(p.company);
-    return [...set].sort((a, b) => a.localeCompare(b, "es"));
-  }, [postings]);
+    const options = filterOptions?.companies ?? [];
+    return options
+      .filter((option) => source === "ALL" || option.source === source)
+      .map((option) => option.value)
+      .filter((value, index, arr) => arr.indexOf(value) === index)
+      .sort((a, b) => a.localeCompare(b, "es"));
+  }, [filterOptions?.companies, source]);
 
-  const locations = useMemo(() => buildLocationFilterOptions(rows), [rows]);
+  const sources = filterOptions?.sources ?? [];
+  const locations = useMemo(
+    () => buildLocationFilterOptionsFromRaw(filterOptions?.rawLocations ?? []),
+    [filterOptions?.rawLocations]
+  );
+  const appStatusFilterOptions = filterOptions?.applicationStatuses ?? APP_STATUSES;
+  const postingStatusFilterOptions = filterOptions?.postingStatuses ?? [...JOB_POSTING_STATUSES];
+
+  useEffect(() => {
+    if (source !== "ALL" && sources.length > 0 && !sources.includes(source)) setSource("ALL");
+  }, [source, sources]);
+
+  useEffect(() => {
+    if (company !== "ALL" && companies.length > 0 && !companies.includes(company)) {
+      setCompany("ALL");
+    }
+  }, [company, companies]);
+
+  useEffect(() => {
+    if (
+      locationFilter !== "ALL" &&
+      locations.length > 0 &&
+      !locations.some((option) => option.key === locationFilter)
+    ) {
+      setLocationFilter("ALL");
+    }
+  }, [locationFilter, locations]);
 
   // Conteo por estado (sobre las filas ya deduplicadas).
   const counts = useMemo(() => {
@@ -512,7 +543,7 @@ export function JobRadarPage() {
           <Select.Popover>
             <ListBox>
               <ListBox.Item id="ALL">{t("jobRadar.filters.all")}</ListBox.Item>
-              {APP_STATUSES.map((s) => (
+              {appStatusFilterOptions.map((s) => (
                 <ListBox.Item key={s} id={s}>
                   {statusLabel(s)}
                 </ListBox.Item>
@@ -532,7 +563,7 @@ export function JobRadarPage() {
           </Select.Trigger>
           <Select.Popover>
             <ListBox>
-              {POSTING_STATUS_OPTIONS.map((s) => (
+              {(["ALL", ...postingStatusFilterOptions] as const).map((s) => (
                 <ListBox.Item key={s} id={s}>
                   {t(`jobRadar.posting.${s}`)}
                 </ListBox.Item>
@@ -588,7 +619,7 @@ export function JobRadarPage() {
               <ListBox.Item id="ALL">{t("jobRadar.filters.all")}</ListBox.Item>
               {locations.map((option) => (
                 <ListBox.Item key={option.key} id={option.key}>
-                  {option.label}
+                  {locationGroupLabel(option.group)} · {option.label}
                 </ListBox.Item>
               ))}
             </ListBox>
