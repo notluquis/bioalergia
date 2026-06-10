@@ -442,7 +442,12 @@ export async function generateMedicalPrescriptionPdf(
   // sobre el recetario pre-impreso. Nada acá puede depender del contenido.
   const LOGO_BAND_H = 46;
   const PATIENT_BOX_PAD = 10;
-  const PATIENT_BOX_H = 15 + 13 + 13 + 13 + 2 * PATIENT_BOX_PAD; // nombre+datos+emisión+dx
+  const PATIENT_BOX_H = 15 + 13 + 13 + 2 * PATIENT_BOX_PAD; // nombre + datos + emisión
+  // Diagnóstico (opcional, largo variable): área full-width de hasta 2 líneas
+  // DEBAJO del recuadro. Reserva FIJA (también en template) para que el overlay
+  // caiga alineado. Antes iba dentro del recuadro y se truncaba a 1 línea.
+  const DX_MAX_LINES = 2;
+  const DX_AREA_H = DX_MAX_LINES * 12 + 6;
   const typeLabel = PRESCRIPTION_TYPE_LABEL[input.prescriptionType ?? "SIMPLE"];
 
   // ── Logos (estático), banda de alto FIJO en ambos modos. ──────────────────
@@ -493,7 +498,11 @@ export async function generateMedicalPrescriptionPdf(
     const innerW = contentWidth - 2 * PATIENT_BOX_PAD;
     let py = boxTop - PATIENT_BOX_PAD - 8;
     // Fila 1: Paciente: NOMBRE (negrita) + tipo de receta a la derecha (ámbar).
-    drawField("Paciente:", input.patient.name, px, py, true);
+    // El nombre se trunca para no invadir el tag de tipo (overflow-safe).
+    const typeW = typeLabel ? bold.widthOfTextAtSize(typeLabel.toUpperCase(), 6.5) : 0;
+    const nameMaxW =
+      innerW - font.widthOfTextAtSize("Paciente: ", 8.5) - typeW - (typeLabel ? 16 : 0);
+    drawField("Paciente:", truncateToWidth(input.patient.name, bold, 9.5, nameMaxW), px, py, true);
     if (typeLabel) {
       const tw = bold.widthOfTextAtSize(typeLabel.toUpperCase(), 6.5);
       page.drawText(typeLabel.toUpperCase(), {
@@ -517,18 +526,24 @@ export async function generateMedicalPrescriptionPdf(
     py -= 13;
     // Fila 3: fecha de emisión (separada).
     drawField("Fecha de emisión:", formatDate(input.date), px, py);
-    py -= 13;
-    // Fila 4: Diagnóstico separado (1 línea truncada → alto fijo p/ overlay).
-    if (input.diagnosis?.trim()) {
-      drawField(
-        "Diagnóstico:",
-        truncateToWidth(input.diagnosis.trim(), font, 9, innerW - 70),
-        px,
-        py
-      );
+  }
+  y = boxTop - PATIENT_BOX_H - 10;
+
+  // ── Diagnóstico (data): full-width, hasta 2 líneas. Reserva fija siempre. ──
+  if (showData && input.diagnosis?.trim()) {
+    const all = wrapText(`Diagnóstico: ${input.diagnosis.trim()}`, font, 9, contentWidth);
+    const lines = all.slice(0, DX_MAX_LINES);
+    // Si se truncó, marcá la última con elipsis.
+    if (all.length > DX_MAX_LINES && lines.length > 0) {
+      lines[lines.length - 1] = truncateToWidth(`${lines[lines.length - 1]} …`, font, 9, contentWidth);
+    }
+    let dyy = y;
+    for (const line of lines) {
+      page.drawText(line, { x: margin, y: dyy, size: 9, font, color: BRAND_INK });
+      dyy -= 12;
     }
   }
-  y = boxTop - PATIENT_BOX_H - 18;
+  y -= DX_AREA_H;
 
   // ── "Rp." en itálica — etiqueta clásica de receta (chrome estático). ───────
   if (showStatic) {
@@ -547,7 +562,10 @@ export async function generateMedicalPrescriptionPdf(
       const posH = posology ? measureWrapped(posology, 9, innerW) : 0;
       const instr = medication.instructions?.trim();
       const instrH = instr ? measureWrapped(`Indicaciones: ${instr}`, 8.5, innerW) : 0;
-      const headerH = 20;
+      // El nombre del medicamento puede ser largo → se envuelve dentro de la
+      // barra de título (overflow-safe), que crece según las líneas.
+      const titleLines = wrapText(`${index + 1}. ${medication.name}`, bold, 10, innerW - 2);
+      const headerH = Math.max(20, titleLines.length * 12 + 8);
       const cardH = headerH + PATIENT_BOX_PAD + posH + instrH + PATIENT_BOX_PAD;
 
       newPageIfNeeded(cardH + FOOTER_TOP);
@@ -576,13 +594,17 @@ export async function generateMedicalPrescriptionPdf(
         height: headerH,
         color: BRAND_AMBER,
       });
-      page.drawText(`${index + 1}. ${medication.name}`, {
-        x: margin + PATIENT_BOX_PAD + 2,
-        y: cardTop - 14,
-        size: 10,
-        font: bold,
-        color: BRAND_BLUE,
-      });
+      let ty = cardTop - 13;
+      for (const line of titleLines) {
+        page.drawText(line, {
+          x: margin + PATIENT_BOX_PAD + 2,
+          y: ty,
+          size: 10,
+          font: bold,
+          color: BRAND_BLUE,
+        });
+        ty -= 12;
+      }
       let cy = cardTop - headerH - PATIENT_BOX_PAD - 9 + 4;
       if (posology) cy = drawWrapped(posology, margin + PATIENT_BOX_PAD, cy, innerW, 9);
       if (instr) {
@@ -627,15 +649,17 @@ export async function generateMedicalPrescriptionPdf(
   const total = allPages.length;
   allPages.forEach((pg, index) => {
     const lastPage = index === total - 1;
-    // Footer en DOS columnas: IZQUIERDA = identidad del médico; DERECHA =
-    // firma + verificación (QR). Nota legal única centrada al pie.
-    const leftColW = 156; // el bloque médico envuelve y no invade la col. derecha
-    // Línea de firma ARRIBA (centrada sobre la mitad derecha); debajo, las dos
-    // columnas LADO A LADO con el mismo tope: IZQUIERDA médico, DERECHA QR.
-    const colTopY = 150;
+    // Footer 2 columnas ANCLADO AL FONDO: IZQUIERDA médico, DERECHA firma+QR,
+    // ambas alineadas por su BASE (grid). Nota legal única centrada al pie.
+    const leftColW = 156;
+    const FOOTER_BASE = 62; // base inferior común de ambas columnas
+    const specLines = wrapText(doctor.specialty, font, 8, leftColW);
+    const addrLines = wrapText(doctor.address, font, 8, leftColW);
+    // Top del bloque médico para que su última línea caiga en FOOTER_BASE.
+    const docTopY = FOOTER_BASE + 12 + specLines.length * 10 + 10 + 10 + addrLines.length * 10 - 10;
     if (showStatic) {
-      // Zona de firma (arriba, mitad derecha).
-      const sigLineY = 178;
+      // Zona de firma ARRIBA del bloque médico (mitad derecha).
+      const sigLineY = docTopY + 26;
       pg.drawLine({
         start: { x: width - margin - 150, y: sigLineY },
         end: { x: width - margin, y: sigLineY },
@@ -650,11 +674,11 @@ export async function generateMedicalPrescriptionPdf(
         font,
         color: BRAND_BLUE,
       });
-      // Columna IZQUIERDA: bloque médico (mismo tope que el QR).
-      let dy = colTopY;
+      // Columna IZQUIERDA: bloque médico (top-down, termina en FOOTER_BASE).
+      let dy = docTopY;
       pg.drawText(doctor.name, { x: margin, y: dy, size: 9.5, font: bold, color: BRAND_BLUE });
       dy -= 12;
-      for (const line of wrapText(doctor.specialty, font, 8, leftColW)) {
+      for (const line of specLines) {
         pg.drawText(line, { x: margin, y: dy, size: 8, font, color: BRAND_BLUE });
         dy -= 10;
       }
@@ -668,21 +692,22 @@ export async function generateMedicalPrescriptionPdf(
       dy -= 10;
       pg.drawText(doctor.email, { x: margin, y: dy, size: 8, font, color: rgb(0.35, 0.35, 0.35) });
       dy -= 10;
-      for (const line of wrapText(doctor.address, font, 8, leftColW)) {
+      for (const line of addrLines) {
         pg.drawText(line, { x: margin, y: dy, size: 8, font, color: rgb(0.35, 0.35, 0.35) });
         dy -= 10;
       }
       drawFooterNote(pg, font, width);
     }
-    // Columna DERECHA (data): QR + texto a su izquierda, mismo tope que el médico.
+    // Columna DERECHA (data): QR alineado por su BASE con el bloque médico.
     if (showData && lastPage) {
-      const qrSize = 50;
+      const qrSize = 52;
       const qx = width - margin - qrSize;
-      const qrTop = colTopY + 2;
+      const qrBottom = FOOTER_BASE - 2;
+      const qrTop = qrBottom + qrSize;
       if (qrImage) {
-        pg.drawImage(qrImage, { x: qx, y: qrTop - qrSize, width: qrSize, height: qrSize });
+        pg.drawImage(qrImage, { x: qx, y: qrBottom, width: qrSize, height: qrSize });
       }
-      // Texto a la IZQUIERDA del QR, alineado a la derecha (pegado al QR).
+      // Texto a la IZQUIERDA del QR, centrado verticalmente sobre el QR.
       const rightEdge = qx - 8;
       const drawRight = (text: string, ty: number, size: number, f = font, color = BRAND_GRAY) => {
         pg.drawText(text, {
@@ -693,9 +718,9 @@ export async function generateMedicalPrescriptionPdf(
           color,
         });
       };
-      drawRight("Verificar autenticidad", qrTop - 8, 7.5);
-      if (input.verificationCode) drawRight(input.verificationCode, qrTop - 24, 11, bold, BRAND_BLUE);
-      if (input.folio) drawRight(`Folio: ${input.folio}`, qrTop - 40, 7.5);
+      drawRight("Verificar autenticidad", qrTop - 10, 7.5);
+      if (input.verificationCode) drawRight(input.verificationCode, qrTop - 26, 11, bold, BRAND_BLUE);
+      if (input.folio) drawRight(`Folio: ${input.folio}`, qrTop - 42, 7.5);
     }
     if (total > 1) {
       // y=46 (~16 mm) — sobre el margen inferior no imprimible de impresoras
