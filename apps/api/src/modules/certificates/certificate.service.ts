@@ -5,7 +5,7 @@ import QRCode from "qrcode";
 
 import { formatChileLongDate, formatChileShortDate } from "../../lib/time.ts";
 import { drawImageTopLeft, embedLogo, loadPdfFonts, setPdfMetadata } from "../pdf/pdf-base.ts";
-import { PdfTagger } from "../pdf/pdf-tag.ts";
+import { applyPdfaUa, PdfTagger } from "../pdf/pdf-tag.ts";
 import type { MedicalCertificateInput, MedicalPrescriptionInput } from "./certificate.schema.ts";
 import { defaultDoctorInfo } from "./certificate.schema.ts";
 
@@ -793,6 +793,13 @@ export async function generateMedicalPrescriptionPdf(
 
   // PDF/UA: construye el StructTree + ParentTree + MarkInfo antes de guardar.
   tagger.finalize();
+  // PDF/A-3a + PDF/UA nativo (sin Ghostscript, que borra los tags): OutputIntent
+  // sRGB + XMP de conformidad. Combinado con tags + fuentes embebidas + Lang.
+  applyPdfaUa(pdfDoc, {
+    title: "Receta médica",
+    docId: globalThis.crypto.randomUUID(),
+    dateIso: new Date().toISOString(),
+  });
   return await pdfDoc.save();
 }
 
