@@ -53,7 +53,6 @@ export async function buildPrescriptionPdfBytes(
   const { generateMedicalPrescriptionPdf, generateQRCode } = await import(
     "../modules/certificates/certificate.service.ts"
   );
-  const { toPdfA3 } = await import("../modules/pdf/pdf-a.ts");
   const qrCodeBuffer = verification?.code ? await generateQRCode(verification.code) : undefined;
 
   const rawPdf = await generateMedicalPrescriptionPdf(
@@ -87,8 +86,10 @@ export async function buildPrescriptionPdfBytes(
     },
     { primary: clinic?.logoUrl, secondary: clinic?.secondaryLogoUrl }
   );
-  const bytes = await toPdfA3(rawPdf, "Receta médica");
-  return { bytes, prescription };
+  // NO pasamos por Ghostscript/PDF-A: GS pdfwrite ELIMINA el StructTree (tags
+  // PDF/UA). La receta se sirve TAGGED (accesible) directo de pdf-lib; el PDF-A
+  // (archival) es menos crítico acá porque la receta se regenera desde la DB.
+  return { bytes: rawPdf, prescription };
 }
 
 /**

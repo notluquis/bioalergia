@@ -26,7 +26,6 @@ prescriptionPdfRoutes.get("/blank-template", async (c) => {
     const { generateMedicalPrescriptionPdf } = await import(
       "../modules/certificates/certificate.service.ts"
     );
-    const { toPdfA3 } = await import("../modules/pdf/pdf-a.ts");
     const rawPdf = await generateMedicalPrescriptionPdf(
       {
         patientId: 0,
@@ -42,7 +41,8 @@ prescriptionPdfRoutes.get("/blank-template", async (c) => {
       },
       { primary: clinic?.logoUrl, secondary: clinic?.secondaryLogoUrl }
     );
-    const pdfBytes = await toPdfA3(rawPdf, "Recetario");
+    // Tagged (PDF/UA), sin Ghostscript (que elimina el StructTree).
+    const pdfBytes = rawPdf;
     c.header("Content-Type", "application/pdf");
     c.header("Content-Disposition", 'inline; filename="recetario_blanco.pdf"');
     c.header("Cache-Control", "no-store");

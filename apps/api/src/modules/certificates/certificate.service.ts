@@ -5,6 +5,7 @@ import QRCode from "qrcode";
 
 import { formatChileLongDate, formatChileShortDate } from "../../lib/time.ts";
 import { drawImageTopLeft, embedLogo, loadPdfFonts, setPdfMetadata } from "../pdf/pdf-base.ts";
+import { PdfTagger } from "../pdf/pdf-tag.ts";
 import type { MedicalCertificateInput, MedicalPrescriptionInput } from "./certificate.schema.ts";
 import { defaultDoctorInfo } from "./certificate.schema.ts";
 
@@ -362,6 +363,11 @@ export async function generateMedicalPrescriptionPdf(
   const { font, bold, italic } = await loadPdfFonts(pdfDoc);
   const doctor = createDoctorInfo(input);
 
+  // PDF/UA: taggea el contenido (marked content + StructTree) para accesibilidad.
+  // `currentPageIndex` sigue la página activa (newPageIfNeeded la reasigna).
+  const tagger = new PdfTagger(pdfDoc);
+  let currentPageIndex = 0;
+
   setPdfMetadata(pdfDoc, {
     title: "Receta médica",
     subject: "Receta médica",
@@ -406,6 +412,7 @@ export async function generateMedicalPrescriptionPdf(
   const newPageIfNeeded = (minY: number) => {
     if (y >= minY) return;
     page = pdfDoc.addPage(PAGE);
+    currentPageIndex = pdfDoc.getPages().length - 1;
     y = drawContinuationHeader(page);
   };
 
@@ -452,19 +459,28 @@ export async function generateMedicalPrescriptionPdf(
 
   // ── Logos (estático), banda de alto FIJO en ambos modos. ──────────────────
   if (showStatic) {
+    const endLogos = tagger.beginTag(
+      page,
+      currentPageIndex,
+      "Figure",
+      "Logos de Bioalergia y AAAeIC"
+    );
     await drawHeaderLogos(pdfDoc, page, margin, width, y, logoUrls, 140, 116);
+    endLogos();
   }
   y -= LOGO_BAND_H + 12;
 
   // ── Título (estático, sin regla). ─────────────────────────────────────────
   if (showStatic) {
     const title = "Receta médica";
-    page.drawText(title, {
-      x: width / 2 - bold.widthOfTextAtSize(title, 13) / 2,
-      y,
-      size: 13,
-      font: bold,
-      color: BRAND_BLUE,
+    tagger.tag(page, currentPageIndex, "H1", () => {
+      page.drawText(title, {
+        x: width / 2 - bold.widthOfTextAtSize(title, 13) / 2,
+        y,
+        size: 13,
+        font: bold,
+        color: BRAND_BLUE,
+      });
     });
   }
   y -= 22;
@@ -484,17 +500,20 @@ export async function generateMedicalPrescriptionPdf(
     return x + lw + vFont.widthOfTextAtSize(value, vSize);
   };
   if (showStatic) {
-    page.drawRectangle({
-      x: margin,
-      y: boxTop - PATIENT_BOX_H,
-      width: contentWidth,
-      height: PATIENT_BOX_H,
-      borderColor: BRAND_BORDER,
-      borderWidth: 0.8,
-      color: BRAND_TINT,
+    tagger.artifact(page, () => {
+      page.drawRectangle({
+        x: margin,
+        y: boxTop - PATIENT_BOX_H,
+        width: contentWidth,
+        height: PATIENT_BOX_H,
+        borderColor: BRAND_BORDER,
+        borderWidth: 0.8,
+        color: BRAND_TINT,
+      });
     });
   }
   if (showData) {
+    const endPatient = tagger.beginTag(page, currentPageIndex, "P");
     const innerW = contentWidth - 2 * PATIENT_BOX_PAD;
     let py = boxTop - PATIENT_BOX_PAD - 8;
     // Fila 1: Paciente: NOMBRE (negrita) + tipo de receta a la derecha (ámbar).
@@ -526,11 +545,13 @@ export async function generateMedicalPrescriptionPdf(
     py -= 13;
     // Fila 3: fecha de emisión (separada).
     drawField("Fecha de emisión:", formatDate(input.date), px, py);
+    endPatient();
   }
   y = boxTop - PATIENT_BOX_H - 10;
 
   // ── Diagnóstico (data): full-width, hasta 2 líneas. Reserva fija siempre. ──
   if (showData && input.diagnosis?.trim()) {
+    const endDx = tagger.beginTag(page, currentPageIndex, "P");
     const all = wrapText(`Diagnóstico: ${input.diagnosis.trim()}`, font, 9, contentWidth);
     const lines = all.slice(0, DX_MAX_LINES);
     // Si se truncó, marcá la última con elipsis.
@@ -542,12 +563,15 @@ export async function generateMedicalPrescriptionPdf(
       page.drawText(line, { x: margin, y: dyy, size: 9, font, color: BRAND_INK });
       dyy -= 12;
     }
+    endDx();
   }
   y -= DX_AREA_H;
 
   // ── "Rp." en itálica — etiqueta clásica de receta (chrome estático). ───────
   if (showStatic) {
-    page.drawText("Rp.", { x: margin, y, size: 11, font: italic ?? bold, color: BRAND_BLUE });
+    tagger.tag(page, currentPageIndex, "P", () => {
+      page.drawText("Rp.", { x: margin, y, size: 11, font: italic ?? bold, color: BRAND_BLUE });
+    });
   }
   y -= 18;
 
@@ -570,30 +594,32 @@ export async function generateMedicalPrescriptionPdf(
 
       newPageIfNeeded(cardH + FOOTER_TOP);
       const cardTop = y + 2;
-      // borde
-      page.drawRectangle({
-        x: margin,
-        y: cardTop - cardH,
-        width: contentWidth,
-        height: cardH,
-        borderColor: BRAND_BORDER,
-        borderWidth: 0.8,
+      // recuadro + barra + filete (decorativos → Artifact).
+      tagger.artifact(page, () => {
+        page.drawRectangle({
+          x: margin,
+          y: cardTop - cardH,
+          width: contentWidth,
+          height: cardH,
+          borderColor: BRAND_BORDER,
+          borderWidth: 0.8,
+        });
+        page.drawRectangle({
+          x: margin,
+          y: cardTop - headerH,
+          width: contentWidth,
+          height: headerH,
+          color: BRAND_TINT,
+        });
+        page.drawRectangle({
+          x: margin,
+          y: cardTop - headerH,
+          width: 3,
+          height: headerH,
+          color: BRAND_AMBER,
+        });
       });
-      // barra de título + filete ámbar a la izquierda (acento de marca).
-      page.drawRectangle({
-        x: margin,
-        y: cardTop - headerH,
-        width: contentWidth,
-        height: headerH,
-        color: BRAND_TINT,
-      });
-      page.drawRectangle({
-        x: margin,
-        y: cardTop - headerH,
-        width: 3,
-        height: headerH,
-        color: BRAND_AMBER,
-      });
+      const endMed = tagger.beginTag(page, currentPageIndex, "P");
       let ty = cardTop - 13;
       for (const line of titleLines) {
         page.drawText(line, {
@@ -617,11 +643,13 @@ export async function generateMedicalPrescriptionPdf(
           font
         );
       }
+      endMed();
       y = cardTop - cardH - 12;
     }
 
     if (input.notes?.trim()) {
       newPageIfNeeded(FOOTER_TOP + 30);
+      const endNotes = tagger.beginTag(page, currentPageIndex, "P");
       y -= 2;
       page.drawText("Observaciones", {
         x: margin,
@@ -632,6 +660,7 @@ export async function generateMedicalPrescriptionPdf(
       });
       y -= 14;
       y = drawWrapped(input.notes.trim(), margin, y, contentWidth, 9);
+      endNotes();
     }
 
     // El QR + folio + código van a la esquina inferior izquierda (footer), no
@@ -658,14 +687,17 @@ export async function generateMedicalPrescriptionPdf(
     // Top del bloque médico para que su última línea caiga en FOOTER_BASE.
     const docTopY = FOOTER_BASE + 12 + specLines.length * 10 + 10 + 10 + addrLines.length * 10 - 10;
     if (showStatic) {
-      // Zona de firma ARRIBA del bloque médico (mitad derecha).
+      // Zona de firma ARRIBA del bloque médico (línea decorativa → Artifact).
       const sigLineY = docTopY + 26;
-      pg.drawLine({
-        start: { x: width - margin - 150, y: sigLineY },
-        end: { x: width - margin, y: sigLineY },
-        thickness: 0.5,
-        color: rgb(0.4, 0.4, 0.4),
+      tagger.artifact(pg, () => {
+        pg.drawLine({
+          start: { x: width - margin - 150, y: sigLineY },
+          end: { x: width - margin, y: sigLineY },
+          thickness: 0.5,
+          color: rgb(0.4, 0.4, 0.4),
+        });
       });
+      const endDoc = tagger.beginTag(pg, index, "P");
       const firma = "Firma y timbre";
       pg.drawText(firma, {
         x: width - margin - 75 - font.widthOfTextAtSize(firma, 8.5) / 2,
@@ -697,6 +729,7 @@ export async function generateMedicalPrescriptionPdf(
         dy -= 10;
       }
       drawFooterNote(pg, font, width);
+      endDoc();
     }
     // Columna DERECHA (data): QR alineado por su BASE con el bloque médico.
     if (showData && lastPage) {
@@ -705,7 +738,9 @@ export async function generateMedicalPrescriptionPdf(
       const qrBottom = FOOTER_BASE - 2;
       const qrTop = qrBottom + qrSize;
       if (qrImage) {
-        pg.drawImage(qrImage, { x: qx, y: qrBottom, width: qrSize, height: qrSize });
+        tagger.figure(pg, index, "Código QR para verificar la autenticidad en bioalergia.cl", () => {
+          pg.drawImage(qrImage, { x: qx, y: qrBottom, width: qrSize, height: qrSize });
+        });
       }
       // Texto a la IZQUIERDA del QR, centrado verticalmente sobre el QR.
       const rightEdge = qx - 8;
@@ -718,38 +753,46 @@ export async function generateMedicalPrescriptionPdf(
           color,
         });
       };
+      const endVerify = tagger.beginTag(pg, index, "P");
       drawRight("Verificar autenticidad", qrTop - 10, 7.5);
       if (input.verificationCode) drawRight(input.verificationCode, qrTop - 26, 11, bold, BRAND_BLUE);
       if (input.folio) drawRight(`Folio: ${input.folio}`, qrTop - 42, 7.5);
+      endVerify();
     }
     if (total > 1) {
       // y=46 (~16 mm) — sobre el margen inferior no imprimible de impresoras
-      // Epson (puede llegar a ~14 mm en papel normal).
-      const pageLabel = `Página ${index + 1} de ${total}`;
-      pg.drawText(pageLabel, {
-        x: width / 2 - font.widthOfTextAtSize(pageLabel, 8) / 2,
-        y: 46,
-        size: 8,
-        font,
-        color: rgb(0.5, 0.5, 0.5),
+      // Epson. Paginación → Artifact (no es contenido del documento).
+      tagger.artifact(pg, () => {
+        const pageLabel = `Página ${index + 1} de ${total}`;
+        pg.drawText(pageLabel, {
+          x: width / 2 - font.widthOfTextAtSize(pageLabel, 8) / 2,
+          y: 46,
+          size: 8,
+          font,
+          color: rgb(0.5, 0.5, 0.5),
+        });
       });
     }
     // Marca de agua diagonal "ANULADA" para recetas anuladas (re-descarga).
     if (input.status === "ANNULLED") {
-      const label = "ANULADA";
-      const size = 64;
-      pg.drawText(label, {
-        x: width / 2 - bold.widthOfTextAtSize(label, size) / 2 + 30,
-        y: height / 2 - 90,
-        size,
-        font: bold,
-        color: rgb(0.86, 0.15, 0.15),
-        rotate: degrees(45),
-        opacity: 0.18,
+      tagger.artifact(pg, () => {
+        const label = "ANULADA";
+        const size = 64;
+        pg.drawText(label, {
+          x: width / 2 - bold.widthOfTextAtSize(label, size) / 2 + 30,
+          y: height / 2 - 90,
+          size,
+          font: bold,
+          color: rgb(0.86, 0.15, 0.15),
+          rotate: degrees(45),
+          opacity: 0.18,
+        });
       });
     }
   });
 
+  // PDF/UA: construye el StructTree + ParentTree + MarkInfo antes de guardar.
+  tagger.finalize();
   return await pdfDoc.save();
 }
 
