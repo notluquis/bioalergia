@@ -114,6 +114,7 @@ const COMMUNE_ALIASES = new Map(
     "Valparaíso",
     "Viña del Mar",
     "Concón",
+    "Quillota",
     "Quilpué",
     "Villa Alemana",
     "Antofagasta",
@@ -186,6 +187,7 @@ const COMMUNE_REGION: Record<string, string> = {
   "Puerto Montt": "Los Lagos",
   "Puerto Natales": "Magallanes",
   "Punta Arenas": "Magallanes",
+  Quillota: "Valparaíso",
   Rancagua: "O'Higgins",
   Salamanca: "Coquimbo",
   "San Antonio": "Valparaíso",
@@ -409,8 +411,9 @@ function findCommune(parts: string[], normalizedRaw: string): string | null {
     const direct = COMMUNE_ALIASES.get(norm(part));
     if (direct) return direct;
   }
+  const paddedRaw = ` ${normalizedRaw} `;
   for (const [alias, commune] of COMMUNE_ALIASES) {
-    if (normalizedRaw.includes(alias)) return commune;
+    if (paddedRaw.includes(` ${alias} `)) return commune;
   }
   return null;
 }

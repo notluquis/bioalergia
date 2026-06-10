@@ -52,6 +52,17 @@ describe("normalizeJobLocation", () => {
     expect(location.filterKeys).toContain("zone:gran-concepcion");
   });
 
+  it("does not match commune aliases inside longer words", () => {
+    const location = normalizeJobLocation("Quillota, CL");
+
+    expect(location.normalized).toBe(true);
+    expect(location.label).toBe("Quillota, Valparaíso");
+    expect(location.filterKeys).toContain("commune:quillota");
+    expect(location.filterKeys).toContain("region:valparaiso");
+    expect(location.filterKeys).not.toContain("commune:lota");
+    expect(location.filterKeys).not.toContain("zone:gran-concepcion");
+  });
+
   it("keeps the raw value visible when automatic normalization is not possible", () => {
     const location = normalizeJobLocation("Boadilla del Monte");
 
