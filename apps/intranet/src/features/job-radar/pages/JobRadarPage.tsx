@@ -16,7 +16,11 @@ import { Ban, ExternalLink, Eye, ListChecks, RefreshCw, Send, Sparkles, Star } f
 import { useQueryClient } from "@tanstack/react-query";
 import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import type { JobApplicationStatus, JobPostingDTO } from "@finanzas/orpc-contracts/job-radar";
+import type {
+  JobApplicationStatus,
+  JobPostingDTO,
+  JobRadarSyncResult,
+} from "@finanzas/orpc-contracts/job-radar";
 import { DataTable } from "@/components/data-table/DataTable";
 import { useToast } from "@/context/ToastContext";
 import { toast } from "@/lib/toast-interceptor";
@@ -87,6 +91,7 @@ export function JobRadarPage() {
   const [showSettings, setShowSettings] = useState(false);
   const [detailJob, setDetailJob] = useState<JobPostingDTO | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [lastSyncResult, setLastSyncResult] = useState<JobRadarSyncResult | null>(null);
   const [debouncedSearch] = useDebouncedValue(search, { wait: 300 });
 
   const filters: JobRadarListFilters = useMemo(() => {
@@ -120,6 +125,7 @@ export function JobRadarPage() {
     if (p.running) sawRunning.current = true;
     else if (sawRunning.current) {
       sawRunning.current = false;
+      if (p.result) setLastSyncResult(p.result);
       setSyncing(false);
       void queryClient.invalidateQueries({ queryKey: jobRadarKeys.all });
     }
@@ -445,8 +451,11 @@ export function JobRadarPage() {
             variant="primary"
             isPending={sync.isPending}
             onPress={() => {
+              setLastSyncResult(null);
               setSyncing(true);
-              sync.mutate();
+              sync.mutate(undefined, {
+                onSuccess: (result) => setLastSyncResult(result),
+              });
             }}
           >
             <RefreshCw size={16} aria-hidden />
@@ -455,6 +464,29 @@ export function JobRadarPage() {
       </header>
 
       <SyncProgressBar progress={syncProgress.data} active={syncing || sync.isPending} />
+
+      {lastSyncResult && (
+        <div className="flex flex-wrap gap-2 rounded-medium bg-default-100 p-3">
+          <Chip size="sm" variant="soft">
+            {t("jobRadar.syncResult.fetched", { count: lastSyncResult.fetched })}
+          </Chip>
+          <Chip color="success" size="sm" variant="soft">
+            {t("jobRadar.syncResult.inserted", { count: lastSyncResult.inserted })}
+          </Chip>
+          <Chip color="warning" size="sm" variant="soft">
+            {t("jobRadar.syncResult.updated", { count: lastSyncResult.updated })}
+          </Chip>
+          <Chip size="sm" variant="soft">
+            {t("jobRadar.syncResult.unchanged", { count: lastSyncResult.unchanged })}
+          </Chip>
+          <Chip color="danger" size="sm" variant="soft">
+            {t("jobRadar.syncResult.closed", { count: lastSyncResult.closed })}
+          </Chip>
+          <Chip color="accent" size="sm" variant="soft">
+            {t("jobRadar.syncResult.notified", { count: lastSyncResult.notified })}
+          </Chip>
+        </div>
+      )}
 
       {showSettings && <JobRadarSettingsPanel />}
 

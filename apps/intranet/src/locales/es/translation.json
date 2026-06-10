@@ -17,6 +17,14 @@
         "done": "Listo"
       }
     },
+    "syncResult": {
+      "fetched": "{{count}} encontradas",
+      "inserted": "{{count}} nuevas",
+      "updated": "{{count}} modificadas",
+      "unchanged": "{{count}} sin cambios",
+      "closed": "{{count}} cerradas",
+      "notified": "{{count}} notificadas"
+    },
     "loading": "Cargando ofertas",
     "empty": "No hay ofertas con estos filtros.",
     "matched": "Match perfil",

@@ -330,6 +330,7 @@ export interface JobRadarSyncResult {
   fetched: number;
   inserted: number;
   updated: number;
+  unchanged: number;
   closed: number;
   notified: number;
 }
@@ -365,9 +366,10 @@ async function upsertSourceJobs(
   src: JobSource,
   jobs: RawJob[],
   filter: ProfileFilter
-): Promise<{ inserted: number; updated: number; closed: number }> {
+): Promise<{ inserted: number; updated: number; unchanged: number; closed: number }> {
   let inserted = 0;
   let updated = 0;
+  let unchanged = 0;
   const now = new Date();
   const presentIds: string[] = jobs.map((j) => j.externalId);
 
@@ -401,8 +403,22 @@ async function upsertSourceJobs(
         description_html = EXCLUDED.description_html, published_at = EXCLUDED.published_at,
         lastmod = EXCLUDED.lastmod, status = 'OPEN'::personal."JobPostingStatus",
         matched = EXCLUDED.matched, last_seen_at = EXCLUDED.last_seen_at, raw = EXCLUDED.raw
+      WHERE
+        personal.job_postings.title IS DISTINCT FROM EXCLUDED.title OR
+        personal.job_postings.url IS DISTINCT FROM EXCLUDED.url OR
+        personal.job_postings.department IS DISTINCT FROM EXCLUDED.department OR
+        personal.job_postings.location IS DISTINCT FROM EXCLUDED.location OR
+        personal.job_postings.remote IS DISTINCT FROM EXCLUDED.remote OR
+        personal.job_postings.salary IS DISTINCT FROM EXCLUDED.salary OR
+        personal.job_postings.description_html IS DISTINCT FROM EXCLUDED.description_html OR
+        personal.job_postings.published_at IS DISTINCT FROM EXCLUDED.published_at OR
+        personal.job_postings.lastmod IS DISTINCT FROM EXCLUDED.lastmod OR
+        personal.job_postings.status IS DISTINCT FROM 'OPEN'::personal."JobPostingStatus" OR
+        personal.job_postings.matched IS DISTINCT FROM EXCLUDED.matched OR
+        personal.job_postings.raw IS DISTINCT FROM EXCLUDED.raw
       RETURNING (xmax = 0) AS inserted
     `.execute(kysely);
+    unchanged += chunk.length - result.rows.length;
     for (const r of result.rows) {
       if (r.inserted) inserted += 1;
       else updated += 1;
@@ -430,7 +446,7 @@ async function upsertSourceJobs(
     closed = res.count ?? 0;
   }
 
-  return { inserted, updated, closed };
+  return { inserted, updated, unchanged, closed };
 }
 
 // Clave de dedup cross-source (título normalizado + empleador). getonbrd guarda
@@ -524,6 +540,7 @@ export interface JobRadarSyncProgress {
   currentLabel: string | null;
   startedAt: number | null;
   finishedAt: number | null;
+  result: JobRadarSyncResult | null;
 }
 
 let syncProgress: JobRadarSyncProgress = {
@@ -535,6 +552,7 @@ let syncProgress: JobRadarSyncProgress = {
   currentLabel: null,
   startedAt: null,
   finishedAt: null,
+  result: null,
 };
 
 export function getJobRadarSyncProgress(): JobRadarSyncProgress {
@@ -558,7 +576,15 @@ export async function syncJobRadar(options: JobRadarSyncOptions = {}): Promise<J
   // corre siempre.
   if (trigger === "cron" && !config.enabled) {
     logEvent("job_radar.skipped_disabled", { trigger });
-    return { sources: [], fetched: 0, inserted: 0, updated: 0, closed: 0, notified: 0 };
+    return {
+      sources: [],
+      fetched: 0,
+      inserted: 0,
+      updated: 0,
+      unchanged: 0,
+      closed: 0,
+      notified: 0,
+    };
   }
 
   const sources = await getSources(config);
@@ -577,6 +603,7 @@ export async function syncJobRadar(options: JobRadarSyncOptions = {}): Promise<J
   let fetched = 0;
   let inserted = 0;
   let updated = 0;
+  let unchanged = 0;
   let closed = 0;
 
   syncProgress = {
@@ -588,6 +615,7 @@ export async function syncJobRadar(options: JobRadarSyncOptions = {}): Promise<J
     currentLabel: null,
     startedAt: started,
     finishedAt: null,
+    result: null,
   };
 
   // Fetch de todas las fuentes EN PARALELO (la parte lenta es la red). Cada
@@ -622,32 +650,37 @@ export async function syncJobRadar(options: JobRadarSyncOptions = {}): Promise<J
     const r = await upsertSourceJobs(src, jobs, filter);
     inserted += r.inserted;
     updated += r.updated;
+    unchanged += r.unchanged;
     closed += r.closed;
     syncProgress = { ...syncProgress, done: syncProgress.done + 1 };
   }
 
   syncProgress = { ...syncProgress, phase: "notifying", currentLabel: null };
   const notified = await notifyNewMatches(config.telegram);
+  const result = {
+    sources: sources.map((s) => s.label),
+    fetched,
+    inserted,
+    updated,
+    unchanged,
+    closed,
+    notified,
+  };
   syncProgress = {
     ...syncProgress,
     running: false,
     phase: "done",
     finishedAt: Date.now(),
+    result,
   };
 
-  const labels = sources.map((s) => s.label);
   logEvent("job_radar.done", {
     ms: Date.now() - started,
     triggerSource: trigger,
-    sources: labels,
-    fetched,
-    inserted,
-    updated,
-    closed,
-    notified,
+    ...result,
   });
 
-  return { sources: labels, fetched, inserted, updated, closed, notified };
+  return result;
 }
 
 // ── Dashboard (lectura + gestión manual de estados) ──────────────────────────

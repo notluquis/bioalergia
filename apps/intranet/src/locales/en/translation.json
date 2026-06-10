@@ -17,6 +17,14 @@
         "done": "Done"
       }
     },
+    "syncResult": {
+      "fetched": "{{count}} found",
+      "inserted": "{{count}} new",
+      "updated": "{{count}} changed",
+      "unchanged": "{{count}} unchanged",
+      "closed": "{{count}} closed",
+      "notified": "{{count}} notified"
+    },
     "loading": "Loading openings",
     "empty": "No openings match these filters.",
     "matched": "Profile match",
