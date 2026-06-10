@@ -253,9 +253,7 @@ export function PrescriptionPage() {
   const [createPatientOpen, setCreatePatientOpen] = useState(false);
   const [patient, setPatient] = useState<SelectedPatient | null>(null);
   const [date, setDate] = useState(today());
-  const [prescriptionType, setPrescriptionType] = useState<"SIMPLE" | "RETENIDA" | "CHEQUE">(
-    "SIMPLE"
-  );
+  const [prescriptionType, setPrescriptionType] = useState<"SIMPLE" | "RETENIDA">("SIMPLE");
   const [selectedDiagnoses, setSelectedDiagnoses] = useState<PrescriptionDiagnosis[]>([]);
   const [customDiagnosis, setCustomDiagnosis] = useState("");
   const [notes, setNotes] = useState("");
@@ -270,7 +268,7 @@ export function PrescriptionPage() {
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
   const [dateField, setDateField] = useState<"date" | "issuedAt">("issuedAt");
-  const [filterType, setFilterType] = useState<"ALL" | "SIMPLE" | "RETENIDA" | "CHEQUE">("ALL");
+  const [filterType, setFilterType] = useState<"ALL" | "SIMPLE" | "RETENIDA">("ALL");
   const [filterStatus, setFilterStatus] = useState<"ALL" | "ISSUED" | "ANNULLED">("ALL");
   const hasFilters =
     Boolean(debouncedSearch || fromDate || toDate) ||
@@ -424,9 +422,7 @@ export function PrescriptionPage() {
   const handleEditPrescription = (item: MedicalPrescription) => {
     setPatient({ id: item.patient.id, person: item.patient.person });
     setDate(formatChile(item.date, "YYYY-MM-DD"));
-    setPrescriptionType(
-      (item.prescriptionType as "SIMPLE" | "RETENIDA" | "CHEQUE" | null) ?? "SIMPLE"
-    );
+    setPrescriptionType((item.prescriptionType as "SIMPLE" | "RETENIDA" | null) ?? "SIMPLE");
     setSelectedDiagnoses(
       Array.isArray(item.diagnoses) ? (item.diagnoses as PrescriptionDiagnosis[]) : []
     );
@@ -645,7 +641,6 @@ const TYPE_FILTER_OPTIONS: CodeDisplay[] = [
   { code: "ALL", display: "Todos los tipos" },
   { code: "SIMPLE", display: "Simple" },
   { code: "RETENIDA", display: "Retenida" },
-  { code: "CHEQUE", display: "Cheque" },
 ];
 const STATUS_FILTER_OPTIONS: CodeDisplay[] = [
   { code: "ALL", display: "Todos los estados" },
@@ -673,7 +668,7 @@ function PrescriptionFilters({
 }: {
   dateField: "date" | "issuedAt";
   filterStatus: "ALL" | "ISSUED" | "ANNULLED";
-  filterType: "ALL" | "SIMPLE" | "RETENIDA" | "CHEQUE";
+  filterType: "ALL" | "SIMPLE" | "RETENIDA";
   fromDate: string;
   hasFilters: boolean;
   onClear: () => void;
@@ -682,7 +677,7 @@ function PrescriptionFilters({
   onSearchChange: (v: string) => void;
   onStatusChange: (v: "ALL" | "ISSUED" | "ANNULLED") => void;
   onToChange: (v: string) => void;
-  onTypeChange: (v: "ALL" | "SIMPLE" | "RETENIDA" | "CHEQUE") => void;
+  onTypeChange: (v: "ALL" | "SIMPLE" | "RETENIDA") => void;
   search: string;
   toDate: string;
 }) {
@@ -695,7 +690,7 @@ function PrescriptionFilters({
         </TextField>
         <CodeSelect
           label="Tipo"
-          onChange={(c) => onTypeChange(c as "ALL" | "SIMPLE" | "RETENIDA" | "CHEQUE")}
+          onChange={(c) => onTypeChange(c as "ALL" | "SIMPLE" | "RETENIDA")}
           options={TYPE_FILTER_OPTIONS}
           value={filterType}
         />
@@ -1285,11 +1280,11 @@ function PrescriptionModal({
   onMedicationChange: (id: string, patch: Partial<MedicationDraft>) => void;
   onMedicationRemove: (id: string) => void;
   onNotesChange: (value: string) => void;
-  onPrescriptionTypeChange: (value: "SIMPLE" | "RETENIDA" | "CHEQUE") => void;
+  onPrescriptionTypeChange: (value: "SIMPLE" | "RETENIDA") => void;
   onRemoveDiagnosis: (id: string) => void;
   onSubmit: () => Promise<void>;
   patientLabel: string;
-  prescriptionType: "SIMPLE" | "RETENIDA" | "CHEQUE";
+  prescriptionType: "SIMPLE" | "RETENIDA";
   submitError: string | null;
 }) {
   return (
@@ -1328,13 +1323,10 @@ function PrescriptionModal({
                     <AppDatePicker label="Fecha" onChange={onDateChange} value={date} />
                     <CodeSelect
                       label="Tipo de receta"
-                      onChange={(code) =>
-                        onPrescriptionTypeChange(code as "SIMPLE" | "RETENIDA" | "CHEQUE")
-                      }
+                      onChange={(code) => onPrescriptionTypeChange(code as "SIMPLE" | "RETENIDA")}
                       options={[
                         { code: "SIMPLE", display: "Simple" },
                         { code: "RETENIDA", display: "Retenida" },
-                        { code: "CHEQUE", display: "Cheque" },
                       ]}
                       value={prescriptionType}
                     />

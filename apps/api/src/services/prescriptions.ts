@@ -71,8 +71,7 @@ export async function buildPrescriptionPdfBytes(
       verificationCode: verification?.code ?? undefined,
       prescriptionType: (prescription.prescriptionType ?? "SIMPLE") as
         | "SIMPLE"
-        | "RETENIDA"
-        | "CHEQUE",
+        | "RETENIDA",
       doctorLicense: prescription.doctorLicense ?? undefined,
       patientAge: ageFromBirthDate(patient?.birthDate),
       patientBirthDate: patient?.birthDate

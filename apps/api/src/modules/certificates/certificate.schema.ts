@@ -70,7 +70,7 @@ export const medicalPrescriptionSchema = z.object({
   diagnoses: z.array(prescriptionDiagnosisSchema).max(8).optional(),
   medications: z.array(prescriptionMedicationSchema).min(1).max(12),
   notes: z.string().max(1000).optional(),
-  prescriptionType: z.enum(["SIMPLE", "RETENIDA", "CHEQUE"]).optional(),
+  prescriptionType: z.enum(["SIMPLE", "RETENIDA"]).optional(),
   // Modificar = re-emitir: si viene, la receta original se anula al crear esta.
   supersedesId: z.string().optional(),
   doctorName: z.string().optional(),
