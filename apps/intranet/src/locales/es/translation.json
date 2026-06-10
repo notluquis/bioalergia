@@ -20,6 +20,9 @@
     "loading": "Cargando ofertas",
     "empty": "No hay ofertas con estos filtros.",
     "matched": "Match perfil",
+    "location": {
+      "unnormalized": "No normalizada"
+    },
     "changeStatus": "Cambiar estado",
     "statusUpdated": "Estado: {{status}}",
     "bulkUpdated": "{{count}} ofertas → {{status}}",
@@ -97,6 +100,7 @@
       "postingStatus": "Vigencia",
       "source": "Fuente",
       "company": "Empresa",
+      "location": "Ubicación",
       "search": "Buscar",
       "searchPlaceholder": "Cargo, empresa, área…"
     },

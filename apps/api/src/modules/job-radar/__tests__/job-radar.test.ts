@@ -3,7 +3,7 @@ import { fetchAiravirtualJobs } from "../airavirtual.ts";
 import { fetchAshbyJobs } from "../ashby.ts";
 import { fetchBciJobs } from "../bci.ts";
 import { fetchEmpleosPublicosJobs } from "../empleospublicos.ts";
-import { matchesProfile, type ProfileFilter } from "../filter.ts";
+import { learnedKeywordsFromText, matchesProfile, type ProfileFilter } from "../filter.ts";
 import { fetchGetonbrdJobs } from "../getonbrd.ts";
 import { fetchGreenhouseJobs } from "../greenhouse.ts";
 import { fetchLeverJobs } from "../lever.ts";
@@ -556,9 +556,41 @@ describe("matchesProfile", () => {
     expect(matchesProfile(makeJob({ title: "Diseñador" }), filter)).toBe(false);
   });
 
+  it("normalizes accents and searches inside descriptions", () => {
+    const filter: ProfileFilter = { keywords: ["gestion operacional"], departments: [] };
+    expect(
+      matchesProfile(
+        makeJob({ descriptionHtml: "<p>Gestión operacional y análisis de continuidad</p>" }),
+        filter
+      )
+    ).toBe(true);
+  });
+
   it("matches department exactly", () => {
     const filter: ProfileFilter = { keywords: [], departments: ["riesgo"] };
     expect(matchesProfile(makeJob({ department: "Riesgo" }), filter)).toBe(true);
     expect(matchesProfile(makeJob({ department: "Comercial" }), filter)).toBe(false);
+  });
+
+  it("learns repeated keywords from interested and applied samples", () => {
+    expect(
+      learnedKeywordsFromText([
+        "Analista de Riesgo Operacional",
+        "Especialista Riesgo Operacional",
+        "Product Owner Datos",
+      ])
+    ).toEqual(expect.arrayContaining(["riesgo", "operacional", "riesgo operacional"]));
+  });
+
+  it("does not learn html/entity noise from descriptions", () => {
+    expect(
+      learnedKeywordsFromText([
+        '<span class="x"><a href="https://x">Data Engineer</a></span>',
+        '<span class="x"><a href="https://x">Data Analyst</a></span>',
+      ])
+    ).toEqual(expect.arrayContaining(["data"]));
+    expect(
+      learnedKeywordsFromText(['<span class="x">x</span>', '<span class="x">x</span>'])
+    ).toEqual([]);
   });
 });

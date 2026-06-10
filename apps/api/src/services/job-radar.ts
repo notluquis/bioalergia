@@ -24,6 +24,8 @@ import { fetchSfClassicJobs } from "../modules/job-radar/sfclassic.ts";
 import { fetchEmpleosPublicosJobs } from "../modules/job-radar/empleospublicos.ts";
 import {
   DEFAULT_KEYWORDS,
+  learnedKeywordsFromText,
+  mergeProfileKeywords,
   matchesProfile,
   type ProfileFilter,
 } from "../modules/job-radar/filter.ts";
@@ -306,6 +308,19 @@ async function getSources(config: JobRadarConfig): Promise<JobSource[]> {
   return sources;
 }
 
+async function getLearnedProfileKeywords(): Promise<string[]> {
+  const rows = await db.jobPosting.findMany({
+    where: { applicationStatus: { in: ["INTERESTED", "APPLIED"] } },
+    select: { title: true, department: true, descriptionHtml: true },
+    take: 200,
+    orderBy: [{ statusUpdatedAt: "desc" }, { firstSeenAt: "desc" }],
+  });
+
+  return learnedKeywordsFromText(
+    rows.map((row) => `${row.title} ${row.department ?? ""} ${row.descriptionHtml ?? ""}`)
+  );
+}
+
 export interface JobRadarSyncOptions {
   triggerSource?: "cron" | "manual";
 }
@@ -553,7 +568,11 @@ export async function syncJobRadar(options: JobRadarSyncOptions = {}): Promise<J
       "Sin fuentes configuradas (agrega fuentes o activa BCI/GetOnBoard en ajustes)"
     );
   }
-  const filter: ProfileFilter = { keywords: config.keywords, departments: config.departments };
+  const learnedKeywords = await getLearnedProfileKeywords();
+  const filter: ProfileFilter = {
+    keywords: mergeProfileKeywords(config.keywords, learnedKeywords),
+    departments: config.departments,
+  };
 
   let fetched = 0;
   let inserted = 0;

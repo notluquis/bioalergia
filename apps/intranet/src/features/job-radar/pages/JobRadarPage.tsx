@@ -32,6 +32,11 @@ import {
 } from "../hooks/useJobRadar";
 import { SyncProgressBar } from "../components/SyncProgressBar";
 import { jobRadarKeys, type JobRadarListFilters } from "../queries";
+import {
+  buildLocationFilterOptions,
+  matchesLocationFilter,
+  normalizeJobLocation,
+} from "../location-normalizer";
 
 const APP_STATUSES: JobApplicationStatus[] = [
   "NEW",
@@ -77,6 +82,7 @@ export function JobRadarPage() {
   const [postingStatus, setPostingStatus] = useState<"OPEN" | "CLOSED" | "ALL">("OPEN");
   const [source, setSource] = useState<string>("ALL");
   const [company, setCompany] = useState<string>("ALL");
+  const [locationFilter, setLocationFilter] = useState<string>("ALL");
   const [search, setSearch] = useState("");
   const [showSettings, setShowSettings] = useState(false);
   const [detailJob, setDetailJob] = useState<JobPostingDTO | null>(null);
@@ -157,6 +163,10 @@ export function JobRadarPage() {
 
   // Dedup cross-source en display (la DB conserva todas las filas).
   const rows = useMemo(() => dedupePostings(postings ?? []), [postings]);
+  const filteredRows = useMemo(
+    () => rows.filter((row) => matchesLocationFilter(row, locationFilter)),
+    [rows, locationFilter]
+  );
 
   // El DataTable usa el `id` de la fila como clave de selección (getStableRowId).
   const rowSelection = useMemo<RowSelectionState>(
@@ -218,12 +228,14 @@ export function JobRadarPage() {
     return [...set].sort((a, b) => a.localeCompare(b, "es"));
   }, [postings]);
 
+  const locations = useMemo(() => buildLocationFilterOptions(rows), [rows]);
+
   // Conteo por estado (sobre las filas ya deduplicadas).
   const counts = useMemo(() => {
     const c = new Map<JobApplicationStatus, number>();
-    for (const p of rows) c.set(p.applicationStatus, (c.get(p.applicationStatus) ?? 0) + 1);
+    for (const p of filteredRows) c.set(p.applicationStatus, (c.get(p.applicationStatus) ?? 0) + 1);
     return c;
-  }, [rows]);
+  }, [filteredRows]);
 
   const columns = useMemo<ColumnDef<DedupedPosting>[]>(
     () => [
@@ -279,7 +291,20 @@ export function JobRadarPage() {
         header: t("jobRadar.col.location"),
         cell: ({ row }) => {
           const { location, remote } = row.original;
-          return [location, remote].filter(Boolean).join(" · ") || "—";
+          const normalized = normalizeJobLocation(location);
+          const text = [location, remote].filter(Boolean).join(" · ") || "—";
+          return (
+            <span className="flex max-w-[28ch] flex-wrap items-center gap-1">
+              <span className="truncate" title={text}>
+                {text}
+              </span>
+              {location && !normalized.normalized ? (
+                <Chip size="sm" variant="soft" color="warning">
+                  {t("jobRadar.location.unnormalized")}
+                </Chip>
+              ) : null}
+            </span>
+          );
         },
       },
       {
@@ -406,7 +431,9 @@ export function JobRadarPage() {
       <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div className="space-y-1">
           <h2 className="text-xl font-semibold">{t("jobRadar.title")}</h2>
-          <p className="text-sm text-default-500">{t("jobRadar.count", { count: rows.length })}</p>
+          <p className="text-sm text-default-500">
+            {t("jobRadar.count", { count: filteredRows.length })}
+          </p>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="tertiary" onPress={() => setShowSettings((v) => !v)}>
@@ -440,7 +467,7 @@ export function JobRadarPage() {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-6">
         <Select
           value={appStatus}
           onChange={(k) => k && setAppStatus(k as "ALL" | JobApplicationStatus)}
@@ -518,6 +545,24 @@ export function JobRadarPage() {
           </Select.Popover>
         </Select>
 
+        <Select value={locationFilter} onChange={(k) => k && setLocationFilter(String(k))}>
+          <Label>{t("jobRadar.filters.location")}</Label>
+          <Select.Trigger>
+            <Select.Value />
+            <Select.Indicator />
+          </Select.Trigger>
+          <Select.Popover>
+            <ListBox>
+              <ListBox.Item id="ALL">{t("jobRadar.filters.all")}</ListBox.Item>
+              {locations.map((option) => (
+                <ListBox.Item key={option.key} id={option.key}>
+                  {option.label}
+                </ListBox.Item>
+              ))}
+            </ListBox>
+          </Select.Popover>
+        </Select>
+
         <TextField value={search} onChange={setSearch}>
           <Label>{t("jobRadar.filters.search")}</Label>
           <Input placeholder={t("jobRadar.filters.searchPlaceholder")} />
@@ -553,7 +598,7 @@ export function JobRadarPage() {
 
       <DataTable
         columns={columns}
-        data={rows}
+        data={filteredRows}
         isLoading={isPending}
         enableGlobalFilter={false}
         enableExport={false}
