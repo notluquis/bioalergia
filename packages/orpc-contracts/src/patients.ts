@@ -31,6 +31,10 @@ export const createPatientInputSchema = z.object({
   sex: z.enum(["M", "F", "X"]).optional(),
 });
 
+export const updatePatientInputSchema = createPatientInputSchema.partial().extend({
+  patientId: z.number().int().positive(),
+});
+
 export const createConsultationInputSchema = z.object({
   date: z.string().min(1),
   diagnosis: z.string().optional(),
@@ -300,6 +304,10 @@ export const patientsContract = {
   create: oc
     .route({ method: "POST", path: "/" })
     .input(createPatientInputSchema)
+    .output(patientResponseSchema),
+  update: oc
+    .route({ method: "PUT", path: "/{patientId}" })
+    .input(updatePatientInputSchema)
     .output(patientResponseSchema),
   createAttachment: oc
     .route({ method: "POST", path: "/attachments" })

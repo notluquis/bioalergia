@@ -64,6 +64,10 @@ const createPatientInputSchema = z.object({
   sex: z.enum(["M", "F", "X"]).optional(),
 });
 
+const updatePatientInputSchema = createPatientInputSchema.partial().extend({
+  patientId: z.number().int().positive(),
+});
+
 const createConsultationInputSchema = z.object({
   date: z.string().min(1),
   diagnosis: z.string().optional(),
@@ -465,6 +469,54 @@ const patientsORPCRouterBase = {
         patient,
         status: "ok",
       };
+    }),
+
+  update: updatePatients
+    .route({ method: "PUT", path: "/{patientId}", tags: ["Patients"] })
+    .input(updatePatientInputSchema)
+    .output(patientResponseSchema)
+    .handler(async ({ input }) => {
+      const patient = await db.patient.findUnique({
+        where: { id: input.patientId },
+        include: { person: true },
+      });
+      if (!patient) throw new ORPCError("NOT_FOUND", { message: "Paciente no encontrado" });
+
+      let canonicalRut: string | undefined;
+      if (input.rut) {
+        try {
+          canonicalRut = requireCanonicalRut(input.rut);
+        } catch {
+          throw new ORPCError("BAD_REQUEST", { message: "RUT inválido" });
+        }
+      }
+
+      await db.person.update({
+        where: { id: patient.personId },
+        data: {
+          ...(canonicalRut ? { rut: canonicalRut } : {}),
+          ...(input.names !== undefined ? { names: input.names } : {}),
+          ...(input.fatherName !== undefined ? { fatherName: input.fatherName } : {}),
+          ...(input.motherName !== undefined ? { motherName: input.motherName } : {}),
+          ...(input.email !== undefined ? { email: input.email } : {}),
+          ...(input.phone !== undefined ? { phone: input.phone } : {}),
+          ...(input.sex !== undefined ? { sex: input.sex } : {}),
+        },
+      });
+
+      const updated = await db.patient.update({
+        where: { id: input.patientId },
+        data: {
+          ...(input.birthDate !== undefined
+            ? { birthDate: input.birthDate ? parseDateOnly(input.birthDate) : null }
+            : {}),
+          ...(input.bloodType !== undefined ? { bloodType: input.bloodType } : {}),
+          ...(input.notes !== undefined ? { notes: input.notes } : {}),
+        },
+        include: { person: true },
+      });
+
+      return { patient: updated, status: "ok" };
     }),
 
   createAttachment: updatePatients

@@ -13,6 +13,7 @@ export const PersonSchema = z.object({
   personType: z.string(),
   phone: z.string().nullable().optional(),
   rut: z.string().nullable(),
+  sex: z.string().nullable().optional(),
   updatedAt: z.coerce.date(),
 });
 

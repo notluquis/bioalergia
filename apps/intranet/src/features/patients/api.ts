@@ -72,6 +72,27 @@ export async function createPatient(input: {
   }
 }
 
+export async function updatePatient(input: {
+  patientId: number;
+  birthDate?: string;
+  bloodType?: string;
+  email?: string;
+  fatherName?: string;
+  motherName?: string;
+  names?: string;
+  notes?: string;
+  phone?: string;
+  rut?: string;
+  sex?: "M" | "F" | "X";
+}) {
+  try {
+    const response = await patientsORPCClient.update(input);
+    return PatientListSchema.element.parse(normalizeDecimalValues(response.patient));
+  } catch (error) {
+    throw toPatientsApiError(error);
+  }
+}
+
 export async function createPatientConsultation(input: {
   date: string;
   diagnosis?: string;

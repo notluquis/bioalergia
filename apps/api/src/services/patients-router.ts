@@ -515,7 +515,8 @@ patientsRoutes.put(
         input.motherName ||
         input.email !== undefined ||
         input.phone ||
-        input.rut
+        input.rut ||
+        input.sex
       ) {
         const canonicalRut = input.rut ? canonicalRutFilter(input.rut) : undefined;
         if (input.rut && !canonicalRut) {
@@ -530,6 +531,7 @@ patientsRoutes.put(
             motherName: input.motherName,
             email: input.email,
             phone: input.phone,
+            sex: input.sex,
           },
         });
       }

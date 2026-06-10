@@ -14,6 +14,7 @@ import {
   FileText,
   FlaskConical,
   Mail,
+  Pencil,
   Phone,
   PlusCircle,
   Trash2,
@@ -26,6 +27,7 @@ import { PatientEmailOptInToggle } from "@/features/email/components/PatientEmai
 import { fetchPatient } from "@/features/patients/api";
 import { PatientRecordsTimeline } from "@/features/clinical-records/components/PatientRecordsTimeline";
 import { ClinicalSeriesList } from "@/features/patients/components/ClinicalSeriesList";
+import { EditPatientModal } from "@/features/patients/components/EditPatientModal";
 import { NewAttachmentModal } from "@/features/patients/components/NewAttachmentModal";
 import { SkinTestsList } from "@/features/patients/components/SkinTestsList";
 import { useLazyTabs } from "@/hooks/use-lazy-tabs";
@@ -45,6 +47,7 @@ export function PatientDetailsPage() {
   const { id } = routeApi.useParams();
   const navigate = useNavigate();
   const [isAttachmentModalOpen, setIsAttachmentModalOpen] = useState(false);
+  const [isEditOpen, setIsEditOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<
     | "budgets"
     | "certificates"
@@ -91,11 +94,17 @@ export function PatientDetailsPage() {
 
   return (
     <section className="mx-auto max-w-6xl space-y-6">
+      <EditPatientModal
+        isOpen={isEditOpen}
+        onClose={() => setIsEditOpen(false)}
+        patient={patient}
+      />
       <PatientDetailsHeader
         age={age}
         birthDate={patient.birthDate}
         id={id}
         navigate={navigate}
+        onEdit={() => setIsEditOpen(true)}
         person={person}
         patientName={patientName}
       />
@@ -545,6 +554,7 @@ function PatientDetailsHeader({
   birthDate,
   id,
   navigate,
+  onEdit,
   patientName,
   person,
 }: {
@@ -552,6 +562,7 @@ function PatientDetailsHeader({
   birthDate: null | string | undefined;
   id: string;
   navigate: ReturnType<typeof useNavigate>;
+  onEdit: () => void;
   patientName: string;
   person: Person;
 }) {
@@ -618,6 +629,10 @@ function PatientDetailsHeader({
         <Button className="gap-2" onPress={goToMedicalCertificate} variant="outline">
           <FileText size={18} />
           Emitir Certificado
+        </Button>
+        <Button aria-label="Editar paciente" className="gap-2" onPress={onEdit} variant="outline">
+          <Pencil size={18} />
+          Editar
         </Button>
       </div>
     </div>
