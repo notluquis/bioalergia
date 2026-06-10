@@ -3,7 +3,7 @@
 // card lleva el título (en `<p class="d-none">`, el nombre completo) y el link
 // `/s/{token}` (token = externalId). `identifier` = slug del subdominio (ej hites).
 
-import { BROWSER_UA, requestText } from "./_shared.ts";
+import { BROWSER_UA, deriveLocationFromText, deriveRemoteFromText, requestText } from "./_shared.ts";
 import type { RawJob } from "./types.ts";
 
 const MAX_PAGES = 20;
@@ -30,8 +30,8 @@ function parseCards(html: string, slug: string): RawJob[] {
       title,
       url: `https://${slug}.buk.cl/s/${token}`,
       department: bold ? clean(bold[1]) : null,
-      location: null, // no expuesta en la lista (queda en el detalle)
-      remote: null,
+      location: deriveLocationFromText(title),
+      remote: deriveRemoteFromText(title, block),
       salary: null,
       descriptionHtml: null,
       publishedAt: null,

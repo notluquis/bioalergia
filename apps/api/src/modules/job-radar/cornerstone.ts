@@ -11,7 +11,15 @@
 // `identifier` = "{tenant}:{cid}" (cid = careersite, ej Cencosud Chile = 5,
 // Banco Security = 1). corp = tenant.
 
-import { BROWSER_UA, asRecord, asString, requestText, safeJsonParse } from "./_shared.ts";
+import {
+  BROWSER_UA,
+  asRecord,
+  asString,
+  deriveLocationFromText,
+  deriveRemoteFromText,
+  requestText,
+  safeJsonParse,
+} from "./_shared.ts";
 import type { RawJob } from "./types.ts";
 
 const PAGE_SIZE = 50;
@@ -130,6 +138,7 @@ export async function fetchCornerstoneJobs(identifier: string): Promise<RawJob[]
       const title = asString(req.displayJobTitle);
       if (!externalId || !title || seen.has(externalId)) continue;
       const { location, country } = locationOf(req);
+      const descriptionHtml = asString(req.externalDescription);
       if (country && country.toUpperCase() !== "CL") continue; // solo Chile
       seen.add(externalId);
       out.push({
@@ -139,13 +148,13 @@ export async function fetchCornerstoneJobs(identifier: string): Promise<RawJob[]
         title,
         url: `https://${tenant}.csod.com/ux/ats/careersite/${cid}/home/requisition/${externalId}?c=${tenant}`,
         department: null,
-        location,
-        remote: null,
+        location: location ?? deriveLocationFromText(title, descriptionHtml),
+        remote: deriveRemoteFromText(title, descriptionHtml),
         salary: null,
-        descriptionHtml: asString(req.externalDescription),
+        descriptionHtml,
         publishedAt: parseMdy(req.postingEffectiveDate),
         lastmod: parseMdy(req.postingExpirationDate) ?? parseMdy(req.postingEffectiveDate),
-        raw: { requisitionId: externalId, title, desc: stripHtml(asString(req.externalDescription))?.slice(0, 200) ?? null },
+        raw: { requisitionId: externalId, title, desc: stripHtml(descriptionHtml)?.slice(0, 200) ?? null },
       });
       added++;
     }

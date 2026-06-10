@@ -2,12 +2,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { fetchAiravirtualJobs } from "../airavirtual.ts";
 import { fetchAshbyJobs } from "../ashby.ts";
 import { fetchBciJobs } from "../bci.ts";
+import { fetchBukJobs } from "../buk.ts";
 import { fetchEmpleosPublicosJobs } from "../empleospublicos.ts";
 import { learnedKeywordsFromText, matchesProfile, type ProfileFilter } from "../filter.ts";
 import { fetchGetonbrdJobs } from "../getonbrd.ts";
 import { fetchGreenhouseJobs } from "../greenhouse.ts";
+import { fetchHirefrontJobs } from "../hirefront.ts";
 import { fetchLeverJobs } from "../lever.ts";
 import { fetchSmartRecruitersJobs } from "../smartrecruiters.ts";
+import { fetchSuccessFactorsJobs } from "../successfactors.ts";
 import { fetchTeamtailorJobs } from "../teamtailor.ts";
 import { fetchWorkdayJobs, parseWorkdayEntry } from "../workday.ts";
 import type { RawJob } from "../types.ts";
@@ -88,6 +91,75 @@ describe("fetchTeamtailorJobs", () => {
   it("returns [] when sitemap fetch fails", async () => {
     fetchSpy.mockResolvedValue(res("", false, 500));
     expect(await fetchTeamtailorJobs("acme")).toEqual([]);
+  });
+
+  it("falls back to description text for location and remote mode", async () => {
+    const jobsJson = JSON.stringify({
+      version: "https://jsonfeed.org/version/1.1",
+      items: [
+        {
+          id: "uuid-2",
+          title: "Analista Contable",
+          url: "https://acme.teamtailor.com/jobs/200-disenador-grafico",
+          date_published: "2026-06-03T10:00:00-04:00",
+          content_html: "<p>Posición basada en Argentina bajo modalidad híbrida.</p>",
+          _jobposting: { "@type": "JobPosting" },
+        },
+      ],
+    });
+    fetchSpy.mockImplementation((input) => {
+      const url = String(input);
+      if (url.endsWith("/sitemap.xml")) return Promise.resolve(res(SITEMAP));
+      if (url.endsWith("/jobs.json")) return Promise.resolve(res(jobsJson));
+      return Promise.resolve(res("", false, 404));
+    });
+
+    const jobs = await fetchTeamtailorJobs("acme");
+    const fallback = jobs.find((j) => j.externalId === "200");
+    expect(fallback).toMatchObject({ location: "Argentina", remote: "Híbrido" });
+  });
+});
+
+describe("job location fallbacks", () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  it("derives SuccessFactors RMK location from the URL/title when the tile field is absent", async () => {
+    const html = `
+      <li class="job-tile job-id-1333755362">
+        <a class="jobTitle-link" data-url="/job/LOS-LAGOS-Supervisor-Mantenimiento-Proceso-Planta-Calbuco-X-regi%C3%B3n-LOS/1333755362/">Supervisor Mantenimiento Proceso - Planta Calbuco - X región</a>
+      </li>`;
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(res(html)).mockResolvedValue(res(""));
+
+    const jobs = await fetchSuccessFactorsJobs("trabajos.aquachile.com");
+
+    expect(jobs[0]).toMatchObject({ location: "Calbuco" });
+  });
+
+  it("derives Buk location and remote mode from card text", async () => {
+    const html = `
+      <div class="jobs__card">
+        <p class="d-none">Quilicura Desarrollador Salesforce remoto</p>
+        <b>Desarrollador Salesforce</b>
+        <a href="/s/47jSAE1zSjwqZftH">ver</a>
+      </div>`;
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(res(html)).mockResolvedValue(res(""));
+
+    const jobs = await fetchBukJobs("tattersall");
+
+    expect(jobs[0]).toMatchObject({ location: "Quilicura", remote: "Remoto" });
+  });
+
+  it("derives Hirefront region from the embedded title", async () => {
+    const html = `
+      <a href="/oferta-de-empleo/19829/ranking-auxiliar-de-servicios-varias-comunas-region-de-atacama-10/">
+        <h3>Ranking: Auxiliar de Servicios. Varias Comunas. Región de Atacama <small>Publicado hace 2 días</small></h3>
+        <i class="fa-clock-o"></i> Completa
+      </a>`;
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(res(html)).mockResolvedValue(res(""));
+
+    const jobs = await fetchHirefrontJobs("junji");
+
+    expect(jobs[0]).toMatchObject({ location: "Atacama" });
   });
 });
 

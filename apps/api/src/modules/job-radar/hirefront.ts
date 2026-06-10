@@ -3,7 +3,7 @@
 // (`/?page=N`). Cada oferta = link `/oferta-de-empleo/{id}/{slug}/` con el título
 // en un <h3>. `identifier` = slug del subdominio (ej junji).
 
-import { BROWSER_UA, parseRelativeEs, requestText } from "./_shared.ts";
+import { BROWSER_UA, deriveLocationFromText, parseRelativeEs, requestText } from "./_shared.ts";
 import type { RawJob } from "./types.ts";
 
 const MAX_PAGES = 30;
@@ -42,7 +42,7 @@ function parseCards(html: string, slug: string): RawJob[] {
       title,
       url: `https://${slug}.myfront.cl/oferta-de-empleo/${id}/${titleSlug}/`,
       department: null,
-      location: null, // junji embebe la región en el título; sin campo separado
+      location: deriveLocationFromText(title),
       remote: null,
       salary: null,
       descriptionHtml: null,

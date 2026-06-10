@@ -8,7 +8,7 @@
 //   trabajos.achs.cl · empleos.codelco.cl · jobs.arauco.com · www.nuevotalento.cl/Essbio
 // Construimos `https://{identifier}/tile-search-results/?q=&startrow=N`.
 
-import { BROWSER_UA, requestText } from "./_shared.ts";
+import { BROWSER_UA, deriveLocationFromText, deriveRemoteFromText, requestText } from "./_shared.ts";
 import type { RawJob } from "./types.ts";
 
 const MAX_PAGES = 40; // tope de seguridad
@@ -54,6 +54,10 @@ function mapRemote(modalidad: string | null): string | null {
   return null; // Presencial → sin chip
 }
 
+function locationUrlText(path: string): string {
+  return decodeURIComponent(path).split("/job/").at(-1) ?? path;
+}
+
 function parseTiles(html: string, baseUrl: string): RawJob[] {
   const out: RawJob[] = [];
   // Cada tile arranca en `job-tile job-id-{id}` y termina donde empieza el siguiente.
@@ -74,6 +78,8 @@ function parseTiles(html: string, baseUrl: string): RawJob[] {
       .trim();
     if (title.length === 0) continue;
 
+    const location = fieldValue(tile, "customfield3", "Lugar de Trabajo");
+    const modalidad = fieldValue(tile, "customfield5", "Modalidad de Trabajo");
     out.push({
       source: "successfactors",
       company: baseUrl,
@@ -81,8 +87,8 @@ function parseTiles(html: string, baseUrl: string): RawJob[] {
       title,
       url: `https://${baseUrl.split("/")[0]}${urlM[1]}`,
       department: fieldValue(tile, "customfield2", "Gerencia"),
-      location: fieldValue(tile, "customfield3", "Lugar de Trabajo"),
-      remote: mapRemote(fieldValue(tile, "customfield5", "Modalidad de Trabajo")),
+      location: location ?? deriveLocationFromText(title, locationUrlText(urlM[1])),
+      remote: mapRemote(modalidad) ?? deriveRemoteFromText(modalidad, title, tile),
       salary: null,
       descriptionHtml: null, // la descripción se inyecta por JS en la página de detalle
       publishedAt: parseSpanishDate(fieldValue(tile, "date", "Fecha de publicación")),

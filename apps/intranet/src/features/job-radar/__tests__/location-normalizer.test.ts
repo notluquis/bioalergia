@@ -6,7 +6,7 @@ import {
   normalizeJobLocation,
 } from "../location-normalizer";
 
-function p(location: string | null): JobPostingDTO {
+function p(location: string | null, remote: string | null = null): JobPostingDTO {
   return {
     id: Math.random().toString(36),
     source: "muevete",
@@ -16,7 +16,7 @@ function p(location: string | null): JobPostingDTO {
     url: "https://x",
     department: null,
     location,
-    remote: null,
+    remote,
     salary: null,
     descriptionHtml: null,
     publishedAt: null,
@@ -74,17 +74,32 @@ describe("normalizeJobLocation", () => {
     expect(location.filterKeys).toEqual(["unnormalized"]);
   });
 
+  it("uses remote mode as a filterable location signal", () => {
+    const location = normalizeJobLocation(null, "Remoto");
+
+    expect(location.normalized).toBe(true);
+    expect(location.label).toBe("Remoto");
+    expect(location.filterKeys).toEqual(["mode:remoto"]);
+  });
+
   it("builds filter options and matches rows by zone", () => {
-    const rows = [p("Viña del Mar, Valparaíso, Chile"), p("Madrid"), p("AIR Office")];
+    const rows = [
+      p("Viña del Mar, Valparaíso, Chile"),
+      p("Madrid"),
+      p("AIR Office"),
+      p(null, "Híbrido"),
+    ];
     const options = buildLocationFilterOptions(rows);
 
     expect(options.some((option) => option.key === "zone:gran-valparaiso")).toBe(true);
     expect(options.find((option) => option.key === "zone:gran-valparaiso")?.group).toBe("zone");
     expect(options.some((option) => option.key === "zone:gran-santiago")).toBe(false);
     expect(options.find((option) => option.key === "country:espana")?.group).toBe("country");
+    expect(options.find((option) => option.key === "mode:hibrido")?.group).toBe("mode");
     expect(options.find((option) => option.key === "unnormalized")?.group).toBe("review");
     expect(matchesLocationFilter(rows[0]!, "zone:gran-valparaiso")).toBe(true);
     expect(matchesLocationFilter(rows[1]!, "country:espana")).toBe(true);
     expect(matchesLocationFilter(rows[2]!, "unnormalized")).toBe(true);
+    expect(matchesLocationFilter(rows[3]!, "mode:hibrido")).toBe(true);
   });
 });

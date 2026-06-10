@@ -74,6 +74,8 @@ function locationGroupLabel(group: LocationFilterOption["group"]): string {
       return "Comuna";
     case "country":
       return "País";
+    case "mode":
+      return "Modo";
     case "review":
       return "Revisar";
   }
@@ -241,8 +243,12 @@ export function JobRadarPage() {
 
   const sources = filterOptions?.sources ?? [];
   const locations = useMemo(
-    () => buildLocationFilterOptionsFromRaw(filterOptions?.rawLocations ?? []),
-    [filterOptions?.rawLocations]
+    () =>
+      buildLocationFilterOptionsFromRaw(
+        filterOptions?.rawLocations ?? [],
+        filterOptions?.remoteModes ?? []
+      ),
+    [filterOptions?.rawLocations, filterOptions?.remoteModes]
   );
   const appStatusFilterOptions = filterOptions?.applicationStatuses ?? APP_STATUSES;
   const postingStatusFilterOptions = filterOptions?.postingStatuses ?? [...JOB_POSTING_STATUSES];

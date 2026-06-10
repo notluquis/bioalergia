@@ -60,6 +60,7 @@ export const jobRadarFilterOptionsSchema = z.object({
   companies: z.array(z.object({ source: z.string(), value: z.string() })),
   postingStatuses: z.array(jobPostingStatusSchema),
   rawLocations: z.array(z.string().nullable()),
+  remoteModes: z.array(z.string()),
   sources: z.array(z.string()),
 });
 

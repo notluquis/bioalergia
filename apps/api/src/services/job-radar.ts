@@ -708,6 +708,7 @@ export interface JobRadarFilterOptionsDTO {
   companies: Array<{ source: string; value: string }>;
   postingStatuses: Array<"OPEN" | "CLOSED">;
   rawLocations: Array<string | null>;
+  remoteModes: string[];
   sources: string[];
 }
 
@@ -734,6 +735,7 @@ export async function listJobRadarFilterOptions(): Promise<JobRadarFilterOptions
       applicationStatus: true,
       company: true,
       location: true,
+      remote: true,
       source: true,
       status: true,
     },
@@ -741,12 +743,14 @@ export async function listJobRadarFilterOptions(): Promise<JobRadarFilterOptions
 
   const companies = new Map<string, { source: string; value: string }>();
   const locations = new Set<string | null>();
+  const remoteModes = new Set<string>();
   const sources = new Set<string>();
 
   for (const row of rows) {
     sources.add(row.source);
     companies.set(`${row.source}\u0000${row.company}`, { source: row.source, value: row.company });
     locations.add(row.location);
+    if (row.remote) remoteModes.add(row.remote);
   }
 
   return {
@@ -762,6 +766,7 @@ export async function listJobRadarFilterOptions(): Promise<JobRadarFilterOptions
       POSTING_STATUS_ORDER
     ),
     rawLocations: [...locations].sort((a, b) => (a ?? "").localeCompare(b ?? "", "es")),
+    remoteModes: [...remoteModes].sort((a, b) => a.localeCompare(b, "es")),
     sources: [...sources].sort((a, b) => a.localeCompare(b, "es")),
   };
 }

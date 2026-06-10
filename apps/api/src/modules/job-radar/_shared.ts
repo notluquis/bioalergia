@@ -20,6 +20,110 @@ export function asString(v: unknown): string | null {
   return null;
 }
 
+export function stripHtmlText(html: string | null): string | null {
+  if (!html) return null;
+  const text = html
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;|&#160;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&#13;|&#10;/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  return text.length > 0 ? text : null;
+}
+
+function normText(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+const LOCATION_HINTS: Array<[string, string]> = [
+  ["region metropolitana", "Región Metropolitana"],
+  ["metropolitana", "Región Metropolitana"],
+  ["santiago", "Santiago"],
+  ["quilicura", "Quilicura"],
+  ["providencia", "Providencia"],
+  ["las condes", "Las Condes"],
+  ["nunoa", "Ñuñoa"],
+  ["maipu", "Maipú"],
+  ["valparaiso", "Valparaíso"],
+  ["vina del mar", "Viña del Mar"],
+  ["biobio", "Biobío"],
+  ["bio bio", "Biobío"],
+  ["concepcion", "Concepción"],
+  ["antofagasta", "Antofagasta"],
+  ["atacama", "Atacama"],
+  ["copiapo", "Copiapó"],
+  ["chanaral", "Chañaral"],
+  ["coquimbo", "Coquimbo"],
+  ["la serena", "La Serena"],
+  ["maule", "Maule"],
+  ["constitucion", "Constitución"],
+  ["curico", "Curicó"],
+  ["tarapaca", "Tarapacá"],
+  ["iquique", "Iquique"],
+  ["los lagos", "Los Lagos"],
+  ["x region", "Los Lagos"],
+  ["calbuco", "Calbuco"],
+  ["chonchi", "Los Lagos"],
+  ["pargua", "Los Lagos"],
+  ["puerto montt", "Puerto Montt"],
+  ["araucania", "La Araucanía"],
+  ["ix region", "La Araucanía"],
+  ["melipeuco", "La Araucanía"],
+  ["curarrehue", "La Araucanía"],
+  ["temuco", "Temuco"],
+  ["ohiggins", "O'Higgins"],
+  ["santa cruz", "Santa Cruz"],
+  ["san vicente", "San Vicente"],
+  ["nuble", "Ñuble"],
+  ["chillan", "Chillán"],
+  ["magallanes", "Magallanes"],
+  ["xii region", "Magallanes"],
+  ["puerto natales", "Magallanes"],
+  ["valdivia", "Valdivia"],
+  ["arauco", "Arauco"],
+  ["los angeles", "Los Ángeles"],
+  ["argentina", "Argentina"],
+  ["mexico", "México"],
+  ["peru", "Perú"],
+  ["brasil", "Brasil"],
+  ["colombia", "Colombia"],
+  ["espana", "España"],
+  ["estados unidos", "Estados Unidos"],
+  ["united states", "Estados Unidos"],
+  ["chile", "Chile"],
+];
+
+export function deriveLocationFromText(...values: Array<string | null | undefined>): string | null {
+  const raw = values.filter((value): value is string => Boolean(value)).join(" ");
+  if (!raw) return null;
+  const text = normText(stripHtmlText(raw) ?? raw);
+  let best: { index: number; length: number; label: string } | null = null;
+  for (const [needle, label] of LOCATION_HINTS) {
+    const index = text.indexOf(needle);
+    if (index === -1) continue;
+    if (!best || index < best.index || (index === best.index && needle.length > best.length)) {
+      best = { index, length: needle.length, label };
+    }
+  }
+  return best?.label ?? null;
+}
+
+export function deriveRemoteFromText(...values: Array<string | null | undefined>): string | null {
+  const raw = values.filter((value): value is string => Boolean(value)).join(" ");
+  if (!raw) return null;
+  const text = normText(stripHtmlText(raw) ?? raw);
+  if (/\b(remoto|remote|teletrabajo|telecommute|home office)\b/.test(text)) return "Remoto";
+  if (/\b(hibrid\w*|hybrid|mixto)\b/.test(text)) return "Híbrido";
+  if (/\b(presencial|onsite|on site)\b/.test(text)) return "Presencial";
+  return null;
+}
+
 // "Publicado hace 4 días", "hace 23 horas", "hace 3 días, 23 horas" → Date aprox
 // (now - delta). `now` se pasa para tests; default Date.now().
 export function parseRelativeEs(text: string | null, now: number = Date.now()): Date | null {

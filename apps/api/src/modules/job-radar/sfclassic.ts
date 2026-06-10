@@ -11,7 +11,7 @@
 //   career5.successfactors.eu:careers:Telefonica:es_ES (Telefónica/Movistar)
 //   career2.successfactors.eu:careers:nestleHRprdBX:es_CL (Nestlé)
 
-import { BROWSER_UA, requestText } from "./_shared.ts";
+import { BROWSER_UA, deriveLocationFromText, deriveRemoteFromText, requestText } from "./_shared.ts";
 import type { RawJob } from "./types.ts";
 
 export interface SfClassicEntry {
@@ -100,7 +100,7 @@ export async function fetchSfClassicJobs(identifier: string): Promise<RawJob[]> 
     const descHtml = cdata(block, "Job-Description");
     const city = pick(filters, "city", "ciudad");
     const country = pick(filters, "country", "país", "pais");
-    const location = [city, country].filter(Boolean).join(", ") || null;
+    const location = [city, country].filter(Boolean).join(", ") || deriveLocationFromText(title, descHtml);
     out.push({
       source: "sfclassic",
       company: e.company,
@@ -112,7 +112,7 @@ export async function fetchSfClassicJobs(identifier: string): Promise<RawJob[]> 
         `&selected_lang=${encodeURIComponent(e.locale)}`,
       department: pick(filters, "functional area", "area", "área"),
       location,
-      remote: descHtml && /remot|teletrabajo|h[íi]brid|hybrid/i.test(descHtml) ? "Remoto" : null,
+      remote: deriveRemoteFromText(descHtml, title),
       salary: null,
       descriptionHtml: descHtml,
       publishedAt: parseMdy(cdata(block, "Posted-Date")),

@@ -9,7 +9,14 @@
 // si un job del sitemap no aparece en el feed, title se deriva del slug).
 // Todo público, sin auth, sin browser (fetch nativo).
 
-import { asRecord, asString, requestText, safeJsonParse } from "./_shared.ts";
+import {
+  asRecord,
+  asString,
+  deriveLocationFromText,
+  deriveRemoteFromText,
+  requestText,
+  safeJsonParse,
+} from "./_shared.ts";
 import type { RawJob } from "./types.ts";
 
 interface SitemapEntry {
@@ -98,7 +105,8 @@ function extractJobPosting(jp: Record<string, unknown> | null): {
       asString(address.addressCountry))
     : null;
   const locType = asString(jp.jobLocationType); // "TELECOMMUTE" si remoto (algunas empresas)
-  const remote = locType === "TELECOMMUTE" ? "Remoto" : null;
+  const description = asString(jp.description);
+  const remote = locType === "TELECOMMUTE" ? "Remoto" : deriveRemoteFromText(description);
   return { location, remote, department: null };
 }
 
@@ -118,8 +126,8 @@ function parseJobsJson(text: string): Map<string, FeedMeta> {
       title: asString(rec.title),
       url,
       department: jp.department,
-      location: jp.location,
-      remote: jp.remote,
+      location: jp.location ?? deriveLocationFromText(asString(rec.content_html), asString(rec.title)),
+      remote: jp.remote ?? deriveRemoteFromText(asString(rec.content_html), asString(rec.title)),
       descriptionHtml: asString(rec.content_html),
       publishedAt: parseDate(rec.date_published),
       raw: item,
