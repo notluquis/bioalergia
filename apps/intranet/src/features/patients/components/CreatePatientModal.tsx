@@ -37,10 +37,14 @@ interface PatientFormState {
   phone: string;
   birthDate: DateValue | null;
   bloodType: string;
+  sex: string;
   notes: string;
 }
 
-type PatientPayload = Omit<PatientFormState, "birthDate"> & { birthDate?: string };
+type PatientPayload = Omit<PatientFormState, "birthDate" | "sex"> & {
+  birthDate?: string;
+  sex?: "M" | "F" | "X";
+};
 
 interface CreatePatientModalProps {
   isOpen: boolean;
@@ -74,6 +78,7 @@ export function CreatePatientModal({ isOpen, onClose }: Readonly<CreatePatientMo
       phone: "",
       birthDate: null,
       bloodType: "",
+      sex: "",
       notes: "",
     } as PatientFormState,
     onSubmit: async ({ value }) => {
@@ -84,6 +89,7 @@ export function CreatePatientModal({ isOpen, onClose }: Readonly<CreatePatientMo
       await createPatientMutation.mutateAsync({
         ...value,
         birthDate: value.birthDate?.toString() ?? undefined,
+        sex: value.sex ? (value.sex as "M" | "F" | "X") : undefined,
       });
     },
   });
@@ -288,6 +294,39 @@ export function CreatePatientModal({ isOpen, onClose }: Readonly<CreatePatientMo
                       </Calendar>
                     </DatePicker.Popover>
                   </DatePicker>
+                )}
+              </form.Field>
+
+              <form.Field name="sex">
+                {(field) => (
+                  <Select
+                    onChange={(val) =>
+                      field.handleChange(val === "__no_sex__" ? "" : (val as string))
+                    }
+                    value={field.state.value || "__no_sex__"}
+                  >
+                    <Label>Sexo</Label>
+                    <Select.Trigger>
+                      <Select.Value />
+                      <Select.Indicator />
+                    </Select.Trigger>
+                    <Select.Popover>
+                      <ListBox>
+                        <ListBox.Item id="__no_sex__" key="__no_sex__">
+                          Sin especificar
+                        </ListBox.Item>
+                        <ListBox.Item id="M" key="M">
+                          Masculino
+                        </ListBox.Item>
+                        <ListBox.Item id="F" key="F">
+                          Femenino
+                        </ListBox.Item>
+                        <ListBox.Item id="X" key="X">
+                          Otro / Indeterminado
+                        </ListBox.Item>
+                      </ListBox>
+                    </Select.Popover>
+                  </Select>
                 )}
               </form.Field>
 

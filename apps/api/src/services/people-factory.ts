@@ -31,6 +31,7 @@ export type PersonInput = {
   motherName?: string | null;
   email?: string | null;
   phone?: string | null;
+  sex?: string | null;
   personType?: PersonTypeEnum;
   /**
    * `enrich` (default): only fill columns that are NULL/empty on the
@@ -105,6 +106,7 @@ export async function findOrCreatePerson(input: PersonInput): Promise<FindOrCrea
       const inputMother = trimOrNull(input.motherName ?? null);
       const inputEmail = trimOrNull(input.email ?? null);
       const inputPhone = trimOrNull(input.phone ?? null);
+      const inputSex = trimOrNull(input.sex ?? null);
       const merged =
         strategy === "overwrite"
           ? {
@@ -113,6 +115,7 @@ export async function findOrCreatePerson(input: PersonInput): Promise<FindOrCrea
               motherName: inputMother ?? existing.motherName,
               email: inputEmail ?? existing.email,
               phone: inputPhone ?? existing.phone,
+              sex: inputSex ?? existing.sex,
             }
           : {
               names: preferLonger(existing.names, names) ?? existing.names,
@@ -120,13 +123,15 @@ export async function findOrCreatePerson(input: PersonInput): Promise<FindOrCrea
               motherName: preferLonger(existing.motherName, inputMother),
               email: existing.email ?? inputEmail,
               phone: existing.phone ?? inputPhone,
+              sex: existing.sex ?? inputSex,
             };
       const changed =
         merged.names !== existing.names ||
         merged.fatherName !== existing.fatherName ||
         merged.motherName !== existing.motherName ||
         merged.email !== existing.email ||
-        merged.phone !== existing.phone;
+        merged.phone !== existing.phone ||
+        merged.sex !== existing.sex;
       if (changed) {
         await db.person.update({ where: { id: existing.id }, data: merged });
         logEvent("[people-factory] person updated", {
@@ -154,6 +159,7 @@ export async function findOrCreatePerson(input: PersonInput): Promise<FindOrCrea
       motherName: trimOrNull(input.motherName ?? null),
       email: trimOrNull(input.email ?? null),
       phone: trimOrNull(input.phone ?? null),
+      sex: trimOrNull(input.sex ?? null),
       personType: input.personType ?? "NATURAL",
     },
   });
@@ -179,6 +185,7 @@ export async function createPersonWithoutRut(input: PersonInput): Promise<number
       motherName: trimOrNull(input.motherName ?? null),
       email: trimOrNull(input.email ?? null),
       phone: trimOrNull(input.phone ?? null),
+      sex: trimOrNull(input.sex ?? null),
       personType: input.personType ?? "NATURAL",
     },
   });

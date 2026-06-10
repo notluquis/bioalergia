@@ -27,6 +27,8 @@ export const createPatientInputSchema = z.object({
   notes: z.string().optional(),
   phone: z.string().optional(),
   rut: z.string().min(1),
+  // Sexo registral M | F | X (requisito receta médica, Art. 101).
+  sex: z.enum(["M", "F", "X"]).optional(),
 });
 
 export const createConsultationInputSchema = z.object({
@@ -123,6 +125,7 @@ export const personSchema = z.object({
   personType: z.string(),
   phone: z.string().nullable().optional(),
   rut: z.string().nullable(),
+  sex: z.string().nullable().optional(),
   updatedAt: z.coerce.date(),
 });
 

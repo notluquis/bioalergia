@@ -324,8 +324,9 @@ export type MedicalPrescriptionPdfInput = MedicalPrescriptionInput & {
   folio?: string;
   doctorLicense?: string;
   patientAge?: number;
-  // Fecha de nacimiento (YYYY-MM-DD) — requisito Código Sanitario Art. 101.
+  // Fecha de nacimiento (YYYY-MM-DD) + sexo — requisito Código Sanitario Art. 101.
   patientBirthDate?: string;
+  patientSex?: string;
   mode?: PrescriptionPdfMode;
   // ISSUED | ANNULLED — ANNULLED estampa marca de agua "ANULADA".
   status?: string;
@@ -510,6 +511,7 @@ export async function generateMedicalPrescriptionPdf(
       ? `${input.patientBirthDate.slice(8, 10)}/${input.patientBirthDate.slice(5, 7)}/${input.patientBirthDate.slice(0, 4)}`
       : "—";
     let fx = drawField("RUT:", input.patient.rut ?? "Sin RUT", px, py, true);
+    fx = drawField("Sexo:", input.patientSex?.trim() || "—", fx + 14, py);
     fx = drawField("Nac:", birthText, fx + 14, py);
     drawField("Edad:", ageText, fx + 14, py);
     py -= 13;

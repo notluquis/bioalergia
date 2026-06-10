@@ -50,6 +50,12 @@ export class SchemaType implements SchemaDef {
                     optional: true,
                     attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("mother_name") }] }] as readonly AttributeApplication[]
                 },
+                sex: {
+                    name: "sex",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(1) }] }] as readonly AttributeApplication[]
+                },
                 email: {
                     name: "email",
                     type: "String",

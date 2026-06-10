@@ -41,7 +41,7 @@ export async function buildPrescriptionPdfBytes(
 
   const patient = await db.patient.findUnique({
     where: { id: prescription.patientId },
-    select: { birthDate: true },
+    select: { birthDate: true, person: { select: { sex: true } } },
   });
   const clinic = await db.clinicSettings.findUnique({ where: { id: 1 } });
   // Código de verificación (vive en DocumentVerification, no en la receta) →
@@ -77,6 +77,7 @@ export async function buildPrescriptionPdfBytes(
       patientBirthDate: patient?.birthDate
         ? patient.birthDate.toISOString().slice(0, 10)
         : undefined,
+      patientSex: patient?.person?.sex ?? undefined,
       doctorName: prescription.doctorName ?? undefined,
       doctorSpecialty: prescription.doctorSpecialty ?? undefined,
       doctorRut: prescription.doctorRut ?? undefined,

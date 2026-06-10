@@ -62,6 +62,7 @@ export async function createPatient(input: {
   notes?: string;
   phone?: string;
   rut: string;
+  sex?: "M" | "F" | "X";
 }) {
   try {
     const response = await patientsORPCClient.create(input);

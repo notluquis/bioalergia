@@ -61,6 +61,7 @@ const createPatientInputSchema = z.object({
   notes: z.string().optional(),
   phone: z.string().optional(),
   rut: z.string().min(1),
+  sex: z.enum(["M", "F", "X"]).optional(),
 });
 
 const createConsultationInputSchema = z.object({
@@ -443,6 +444,7 @@ const patientsORPCRouterBase = {
         motherName: input.motherName,
         email: input.email,
         phone: input.phone,
+        sex: input.sex,
         // Operator-typed values win on patient registration.
         mergeStrategy: "overwrite",
       });

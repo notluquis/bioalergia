@@ -45,6 +45,11 @@ export class SchemaType implements SchemaDef {
                     type: "String",
                     optional: true
                 },
+                sex: {
+                    name: "sex",
+                    type: "String",
+                    optional: true
+                },
                 email: {
                     name: "email",
                     type: "String",

@@ -40,6 +40,9 @@ model Person {
   names      String
   fatherName String?    @map("father_name")
   motherName String?    @map("mother_name")
+  // Sexo registral (M | F | X) — requisito de receta médica (Código Sanitario
+  // Art. 101). Nullable: los pacientes históricos no lo tienen cargado.
+  sex        String?    @db.VarChar(1)
   email      String?    @unique
   phone      String?
   personType PersonType @default(NATURAL) @map("person_type")

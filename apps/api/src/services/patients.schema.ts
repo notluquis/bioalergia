@@ -12,6 +12,7 @@ export const createPatientSchema = z.object({
   email: z.email("Email inválido").optional().or(z.literal("")),
   phone: z.string().optional(),
   address: z.string().optional(),
+  sex: z.enum(["M", "F", "X"]).optional(),
 
   // Patient fields
   birthDate: z

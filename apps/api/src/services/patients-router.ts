@@ -447,6 +447,7 @@ patientsRoutes.post(
         motherName: input.motherName,
         email: input.email,
         phone: input.phone,
+        sex: input.sex,
         mergeStrategy: "overwrite",
       });
 
