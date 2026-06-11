@@ -78,6 +78,31 @@ export async function sendPasswordResetLinkEmail(args: {
 }
 
 /**
+ * #4 — Shop magic-link sign-in: one-time login link for bioalergia.cl.
+ * The full URL is built by the caller (shop origin, not appUrl()).
+ */
+export async function sendMagicLinkEmail(args: {
+  to: string;
+  name: string;
+  url: string;
+}): Promise<EmailSendResult> {
+  const html = shell(
+    "Tu enlace de acceso",
+    `<p>Hola ${args.name},</p>
+     <p>Usa este botón para ingresar a tu cuenta de Bioalergia (válido por 15 minutos):</p>
+     <p><a href="${args.url}" style="display:inline-block;background:#0e64b7;color:#fff;text-decoration:none;padding:12px 20px;border-radius:8px">Ingresar a mi cuenta</a></p>
+     <p style="font-size:13px;color:#6b7280">Si no solicitaste este acceso, ignora este correo.</p>`
+  );
+  return sendEmail({
+    to: args.to,
+    subject: "Tu enlace de acceso — Bioalergia",
+    html,
+    text: `Hola ${args.name}, ingresa a tu cuenta aquí (válido 15 minutos): ${args.url}`,
+    idempotencyKey: `magiclink/${idemDigest(args.url)}`,
+  });
+}
+
+/**
  * #2 — Honorarios: send the monthly summary email with the PDF attached.
  */
 export async function sendTimesheetEmail(args: {

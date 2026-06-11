@@ -294,6 +294,9 @@ const authRateLimiter = rateLimiter({
 // space is unused but kept covered as defense in depth.
 app.use("/api/orpc/auth/rpc/*", authRateLimiter);
 app.use("/api/auth/*", authRateLimiter);
+// Public shop auth (magic link / register / login) shares the same budget —
+// it creates users and sends email, so it must never be unthrottled.
+app.use("/api/orpc/site-auth/rpc/*", authRateLimiter);
 
 // CSRF: validate Origin / Sec-Fetch-Site for all state-changing API calls.
 // Defense in depth on top of SameSite=Lax cookies + the CORS allow-list.

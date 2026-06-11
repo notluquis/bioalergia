@@ -26,7 +26,13 @@ import type { Context as HonoContext } from "hono";
 import { deleteCookie, getCookie, setCookie } from "hono/cookie";
 
 import { getSiteSessionUser, SITE_COOKIE_NAME } from "../lib/auth.ts";
-import { hashPassword, verifyPassword } from "../lib/crypto.ts";
+import { isLockedNow, recordLoginFailure, recordLoginSuccess } from "../lib/account-lockout.ts";
+import { fakeVerifyPassword, hashPassword, verifyPassword } from "../lib/crypto.ts";
+import {
+  clearEmailLoginFailure,
+  isEmailThrottled,
+  recordEmailLoginFailure,
+} from "../lib/login-throttle.ts";
 import { logError } from "../lib/logger.ts";
 import { signToken } from "../lib/paseto.ts";
 import { configureSuperjson } from "../lib/superjson-config.ts";
@@ -189,6 +195,17 @@ const siteAuthRouterBase = {
     .output(siteAuthMagicLinkStatusSchema)
     .handler(async ({ input }) => {
       const email = normalizeEmail(input.email);
+
+      // Per-email throttle: bounds magic-link mail volume and user-shell
+      // creation per address (the per-IP rate limiter in app.ts bounds the
+      // rest). Each request counts against the same budget as a failed login.
+      const throttle = isEmailThrottled(email);
+      if (throttle.blocked) {
+        // Anti-enumeration: same "ok" as the happy path.
+        return { status: "ok" as const };
+      }
+      recordEmailLoginFailure(email);
+
       const existing = await findUserByEmail(email);
       let user = existing;
       if (!user) {
@@ -224,12 +241,20 @@ const siteAuthRouterBase = {
         data: { userId: user.id, tokenHash, expiresAt },
       });
 
-      // TODO: replace console.log with Resend (or chosen transactional ESP)
-      // — for now we surface the link in api logs so the operator can
-      // verify the flow end-to-end before SMTP credentials land.
       const url = `${SHOP_ORIGIN}/mi-cuenta/auth/callback?token=${encodeURIComponent(token)}`;
-      // eslint-disable-next-line no-console
-      console.log(`[site-auth] Magic link for ${email}: ${url}`);
+      // Send via the transactional email service. NEVER log the link: the
+      // token is a single-factor login credential and Railway logs persist.
+      const { sendMagicLinkEmail } = await import("../services/email/transactional.ts");
+      const result = await sendMagicLinkEmail({
+        to: email,
+        name: user.person?.names ?? email.split("@")[0] ?? "",
+        url,
+      });
+      if (!result.ok) {
+        logError("site-auth.magic-link.send", new Error(result.error ?? "send failed"), {
+          email,
+        });
+      }
 
       return { status: "ok" as const };
     }),
@@ -273,17 +298,36 @@ const siteAuthRouterBase = {
     .output(siteAuthLoginResponseSchema)
     .handler(async ({ context, input }) => {
       const email = normalizeEmail(input.email);
+
+      // Same defenses as the intranet login: per-email throttle (covers the
+      // user-not-found path against enumeration), constant-time fake verify,
+      // and per-user lockout. Without these this public endpoint was free
+      // credential-stuffing surface.
+      const throttle = isEmailThrottled(email);
+      if (throttle.blocked) {
+        authError("UNAUTHORIZED", "Demasiados intentos. Vuelve a intentarlo más tarde.");
+      }
+
       const user = await findUserByEmail(email);
       if (!user || !user.passwordHash) {
+        await fakeVerifyPassword(input.password);
+        recordEmailLoginFailure(email);
         authError("UNAUTHORIZED", "Credenciales incorrectas");
+      }
+      if (isLockedNow(user)) {
+        authError("UNAUTHORIZED", "Cuenta bloqueada temporalmente. Intenta más tarde.");
       }
       const { valid } = await verifyPassword(input.password, user.passwordHash);
       if (!valid) {
+        await recordLoginFailure(user.id);
+        recordEmailLoginFailure(email);
         authError("UNAUTHORIZED", "Credenciales incorrectas");
       }
       if (user.status === "SUSPENDED") {
         authError("UNAUTHORIZED", "Cuenta no disponible");
       }
+      await recordLoginSuccess(user.id, null);
+      clearEmailLoginFailure(email);
       await setSiteSessionCookieAndIssue(context.hono, user);
       return { status: "ok" as const, user: buildSiteUser(user) };
     }),
