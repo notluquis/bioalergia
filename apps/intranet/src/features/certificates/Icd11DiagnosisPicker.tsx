@@ -1,4 +1,4 @@
-import { Input, Label, Spinner, TextField, ScrollShadow } from "@heroui/react";
+import { Input, Label, Spinner, TextField, ScrollShadow, Card, Button } from "@heroui/react";
 import { ChevronDown, Info, Search } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -88,7 +88,7 @@ export function Icd11DiagnosisPicker({
       </TextField>
 
       {showPanel ? (
-        <div className="absolute left-0 right-0 top-full z-50 mt-1 overflow-hidden rounded-lg border border-default-200 bg-content1 shadow-medium">
+        <Card className="absolute left-0 right-0 top-full z-50 mt-1 shadow-md rounded-lg overflow-hidden border border-default-200 bg-content1">
           {loading ? (
             <div className="flex items-center gap-2 text-default-500 text-sm p-3">
               <Spinner size="sm" />
@@ -98,17 +98,17 @@ export function Icd11DiagnosisPicker({
             <div className="text-default-500 text-sm p-3">Sin resultados CIE-11</div>
           ) : (
             <ScrollShadow className="max-h-80 w-full overflow-y-auto">
-              <ul className="divide-y divide-default-100">
-                {results.map((result) => {
+              <div className="flex flex-col w-full">
+                {results.map((result, index) => {
                   const cie10 = result.code ? cie10Equivalent(result.code) : undefined;
                   const expanded = expandedId === result.id;
                   return (
-                    <li key={result.id}>
-                      <div className="flex items-stretch">
-                        <button
-                          className="flex min-w-0 flex-1 items-start gap-2 px-3 py-2 text-left transition hover:bg-default-100"
-                          onClick={() => pick(result)}
-                          type="button"
+                    <div key={result.id} className="flex flex-col w-full">
+                      {index > 0 && <hr className="border-default-100" />}
+                      <div className="flex items-stretch w-full">
+                        <Button
+                          className="h-auto flex-1 justify-start gap-2 bg-transparent p-3 rounded-none data-[hover=true]:bg-default-100"
+                          onPress={() => pick(result)}
                         >
                           <Search className="mt-0.5 size-3.5 shrink-0 text-default-400" />
                           {result.code ? (
@@ -116,45 +116,48 @@ export function Icd11DiagnosisPicker({
                               {result.code}
                             </span>
                           ) : null}
-                          <span className="min-w-0 flex-1">
-                            <span className="block truncate text-sm">{result.title}</span>
+                          <div className="flex min-w-0 flex-1 flex-col items-start text-left">
+                            <span className="block w-full truncate text-sm font-normal text-foreground">
+                              {result.title}
+                            </span>
                             {result.matchedTerm ? (
-                              <span className="block truncate text-default-400 text-xs">
+                              <span className="block w-full truncate text-default-400 text-xs font-normal">
                                 coincide: {result.matchedTerm}
                               </span>
                             ) : null}
-                          </span>
+                          </div>
                           {cie10 ? (
-                            <span className="mt-0.5 shrink-0 text-default-400 text-xs">
+                            <span className="mt-0.5 shrink-0 text-default-400 text-xs font-normal">
                               ≈CIE-10 {cie10}
                             </span>
                           ) : null}
-                        </button>
-                        <button
-                          aria-expanded={expanded}
+                        </Button>
+                        <div className="w-[1px] bg-default-100 my-2" />
+                        <Button
+                          isIconOnly
+                          className="h-auto w-12 shrink-0 bg-transparent rounded-none text-default-400 data-[hover=true]:bg-default-100 data-[hover=true]:text-primary"
+                          onPress={() => setExpandedId(expanded ? null : result.id)}
                           aria-label={`Detalles de ${result.title}`}
-                          className="flex shrink-0 items-center border-default-100 border-l pl-3 pr-5 text-default-400 transition hover:bg-default-100 hover:text-primary"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setExpandedId(expanded ? null : result.id);
-                          }}
-                          type="button"
+                          aria-expanded={expanded}
                         >
                           {expanded ? <ChevronDown size={14} /> : <Info size={14} />}
-                        </button>
+                        </Button>
                       </div>
                       {expanded ? (
-                        <div className="bg-default-50 px-3 py-2">
-                          <Icd11DetailPanel uri={result.id} />
+                        <div className="flex flex-col w-full">
+                          <hr className="border-default-100" />
+                          <div className="bg-default-50 px-3 py-2">
+                            <Icd11DetailPanel uri={result.id} />
+                          </div>
                         </div>
                       ) : null}
-                    </li>
+                    </div>
                   );
                 })}
-              </ul>
+              </div>
             </ScrollShadow>
           )}
-        </div>
+        </Card>
       ) : null}
     </div>
   );
