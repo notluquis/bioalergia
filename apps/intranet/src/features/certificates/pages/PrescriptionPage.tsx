@@ -16,6 +16,7 @@ import {
 } from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { getRouteApi } from "@tanstack/react-router";
+import { clsx } from "clsx";
 import type {
   GenerateMedicalPrescriptionInput,
   MedicalPrescription,
@@ -827,10 +828,20 @@ function PrescriptionHistory({
 
   const renderRow = (item: MedicalPrescription) => (
     <article
-      className="flex flex-col gap-2 border-default-100 border-b p-3 last:border-b-0 sm:flex-row sm:items-start"
+      className={clsx(
+        "relative flex flex-col gap-2 border-default-100 border-b p-3 last:border-b-0 sm:flex-row sm:items-start overflow-hidden",
+        item.status === "ANNULLED" ? "bg-danger-50/20" : ""
+      )}
       key={item.id}
     >
-      <div className="flex min-w-0 flex-1 gap-3">
+      {item.status === "ANNULLED" && (
+        <div className="pointer-events-none absolute inset-0 z-0 flex items-center justify-center opacity-50 select-none">
+          <span className="rotate-[-12deg] text-6xl font-black tracking-widest text-danger-500/10">
+            ANULADA
+          </span>
+        </div>
+      )}
+      <div className="relative z-10 flex min-w-0 flex-1 gap-3">
         <span className="mt-1 flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
           <FileText size={16} />
         </span>
@@ -869,12 +880,7 @@ function PrescriptionHistory({
       <div className="flex shrink-0 items-center gap-1 sm:self-start">
         <Dropdown>
           <Dropdown.Trigger>
-            <Button
-              className="gap-2"
-              isDisabled={item.status === "ANNULLED"}
-              size="sm"
-              variant="outline"
-            >
+            <Button className="gap-2" size="sm" variant="outline">
               <Printer size={14} />
               Imprimir
               <ChevronDown className="ml-1 opacity-70" size={14} />
