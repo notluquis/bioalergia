@@ -92,8 +92,17 @@ export function Icd11DiagnosisPicker({
     <div className="space-y-2">
       <Popover isOpen={showPanel}>
         <Popover.Trigger>
-          <div ref={triggerRef} className="w-full cursor-text">
-            <TextField onChange={onQueryChange} value={query}>
+          <div
+            ref={triggerRef}
+            className="w-full cursor-text"
+            onKeyDownCapture={(e) => {
+              // Prevent Popover.Trigger from stealing Space and Enter keys
+              if (e.key === " " || e.key === "Enter") {
+                e.stopPropagation();
+              }
+            }}
+          >
+            <TextField className="w-full" onChange={onQueryChange} value={query}>
               <Label>Buscar diagnóstico CIE-11</Label>
               <Input placeholder="Ej: rinitis, urticaria, asma alérgica…" />
             </TextField>
