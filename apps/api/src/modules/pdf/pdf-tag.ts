@@ -13,6 +13,7 @@ import fs from "node:fs";
 import path from "node:path";
 import {
   type PDFDocument,
+  PDFHexString,
   PDFName,
   PDFNumber,
   PDFOperator,
@@ -22,7 +23,16 @@ import {
   PDFString,
 } from "pdf-lib";
 
-type StructEntry = { type: string; pageIndex: number; mcid: number; alt?: string };
+type StructEntry = {
+  type: string;
+  pageIndex: number;
+  mcid: number;
+  alt?: string;
+  // Si viene, el contenido es clickeable: se emite un /Link StructElem que
+  // envuelve la Figure + una anotación Link (OBJR) — requisito PDF/UA para
+  // anotaciones (deben estar en el árbol de estructura).
+  link?: { rect: [number, number, number, number]; url: string };
+};
 
 export class PdfTagger {
   private readonly entries: StructEntry[] = [];
@@ -47,7 +57,10 @@ export class PdfTagger {
     // ORDEN: BDC primero → draw escribe en el stream → EMC. Secuencial, no spread
     // (el draw de pdf-lib escribe directo sobre el content stream de la página).
     page.pushOperators(
-      PDFOperator.of(PDFOperatorNames.BeginMarkedContentSequence, [PDFName.of(type), props as never])
+      PDFOperator.of(PDFOperatorNames.BeginMarkedContentSequence, [
+        PDFName.of(type),
+        props as never,
+      ])
     );
     draw();
     page.pushOperators(PDFOperator.of(PDFOperatorNames.EndMarkedContent, []));
@@ -66,12 +79,39 @@ export class PdfTagger {
     const mcid = this.nextMcid(pageIndex);
     const props = this.pdfDoc.context.obj({ MCID: mcid });
     page.pushOperators(
-      PDFOperator.of(PDFOperatorNames.BeginMarkedContentSequence, [PDFName.of(type), props as never])
+      PDFOperator.of(PDFOperatorNames.BeginMarkedContentSequence, [
+        PDFName.of(type),
+        props as never,
+      ])
     );
     return () => {
       page.pushOperators(PDFOperator.of(PDFOperatorNames.EndMarkedContent, []));
       this.entries.push({ type, pageIndex, mcid, alt });
     };
+  }
+
+  /** Imagen CLICKEABLE (p. ej. QR → URL de verificación): dibuja la Figure y
+   *  registra una anotación Link tagged (Link → Figure + OBJR), accesible. El
+   *  `rect` va en coordenadas PDF [x1,y1,x2,y2]. `alt` describe el destino. */
+  addLink(
+    page: PDFPage,
+    pageIndex: number,
+    rect: [number, number, number, number],
+    url: string,
+    alt: string,
+    draw: () => void
+  ): void {
+    const mcid = this.nextMcid(pageIndex);
+    const props = this.pdfDoc.context.obj({ MCID: mcid });
+    page.pushOperators(
+      PDFOperator.of(PDFOperatorNames.BeginMarkedContentSequence, [
+        PDFName.of("Figure"),
+        props as never,
+      ])
+    );
+    draw();
+    page.pushOperators(PDFOperator.of(PDFOperatorNames.EndMarkedContent, []));
+    this.entries.push({ type: "Figure", pageIndex, mcid, alt, link: { rect, url } });
   }
 
   /** Contenido DECORATIVO (rectángulos, líneas, marcas de agua, fondos): se
@@ -94,17 +134,84 @@ export class PdfTagger {
     const structTreeRootRef = ctx.nextRef();
     const documentRef = ctx.nextRef();
 
-    const elemRefs = this.entries.map((entry) => {
-      const fields: Record<string, unknown> = {
-        Type: "StructElem",
-        S: PDFName.of(entry.type),
-        P: documentRef,
-        Pg: pages[entry.pageIndex].ref,
-        K: entry.mcid,
-      };
-      if (entry.alt) fields.Alt = PDFString.of(entry.alt);
-      return ctx.register(ctx.obj(fields as never));
-    });
+    // Hijos directos del Document (en orden de lectura) + mapa página→mcid→
+    // StructElem padre inmediato del marked content (para el ParentTree). Las
+    // claves StructParent de anotaciones (Link) arrancan DESPUÉS de las páginas.
+    const documentKids: PDFRef[] = [];
+    const pageMcidParent = new Map<number, Map<number, PDFRef>>();
+    const annotNums: { key: number; ref: PDFRef }[] = [];
+    let nextStructParentKey = pages.length;
+
+    const putMcid = (pageIndex: number, mcid: number, ref: PDFRef) => {
+      let m = pageMcidParent.get(pageIndex);
+      if (!m) {
+        m = new Map();
+        pageMcidParent.set(pageIndex, m);
+      }
+      m.set(mcid, ref);
+    };
+
+    for (const entry of this.entries) {
+      const pageRef = pages[entry.pageIndex].ref;
+      if (entry.link) {
+        // Link → [Figure(MCID), OBJR(annot)]. La Figure cuelga del Link, el Link
+        // del Document. La anotación apunta de vuelta al Link vía StructParent.
+        const linkRef = ctx.nextRef();
+        const figureFields: Record<string, unknown> = {
+          Type: "StructElem",
+          S: PDFName.of("Figure"),
+          P: linkRef,
+          Pg: pageRef,
+          K: entry.mcid,
+        };
+        if (entry.alt) figureFields.Alt = PDFHexString.fromText(entry.alt);
+        const figureRef = ctx.register(ctx.obj(figureFields as never));
+
+        const structParentKey = nextStructParentKey++;
+        const annotFields: Record<string, unknown> = {
+          Type: "Annot",
+          Subtype: "Link",
+          Rect: entry.link.rect,
+          Border: [0, 0, 0],
+          F: 4, // Print
+          A: ctx.obj({ S: PDFName.of("URI"), URI: PDFString.of(entry.link.url) }),
+          StructParent: structParentKey,
+          Contents: PDFHexString.fromText(entry.alt ?? ""),
+        };
+        const annotRef = ctx.register(ctx.obj(annotFields as never));
+        pages[entry.pageIndex].node.addAnnot(annotRef);
+        // PDF/UA 7.18.3: una página con anotaciones debe declarar /Tabs /S
+        // (orden de tabulación por estructura).
+        pages[entry.pageIndex].node.set(PDFName.of("Tabs"), PDFName.of("S"));
+
+        const objr = ctx.obj({ Type: "OBJR", Obj: annotRef, Pg: pageRef });
+        ctx.assign(
+          linkRef,
+          ctx.obj({
+            Type: "StructElem",
+            S: PDFName.of("Link"),
+            P: documentRef,
+            Pg: pageRef,
+            K: [figureRef, objr] as never,
+          })
+        );
+        documentKids.push(linkRef);
+        putMcid(entry.pageIndex, entry.mcid, figureRef);
+        annotNums.push({ key: structParentKey, ref: linkRef });
+      } else {
+        const fields: Record<string, unknown> = {
+          Type: "StructElem",
+          S: PDFName.of(entry.type),
+          P: documentRef,
+          Pg: pageRef,
+          K: entry.mcid,
+        };
+        if (entry.alt) fields.Alt = PDFHexString.fromText(entry.alt);
+        const ref = ctx.register(ctx.obj(fields as never));
+        documentKids.push(ref);
+        putMcid(entry.pageIndex, entry.mcid, ref);
+      }
+    }
 
     ctx.assign(
       documentRef,
@@ -112,21 +219,26 @@ export class PdfTagger {
         Type: "StructElem",
         S: PDFName.of("Document"),
         P: structTreeRootRef,
-        K: elemRefs,
+        K: documentKids,
       })
     );
 
     const nums: (PDFNumber | PDFRef)[] = [];
     pages.forEach((page, pageIndex) => {
-      const onPage = this.entries
-        .map((entry, idx) => ({ entry, ref: elemRefs[idx] }))
-        .filter((x) => x.entry.pageIndex === pageIndex)
-        .sort((a, b) => a.entry.mcid - b.entry.mcid);
-      if (onPage.length === 0) return;
-      const arrRef = ctx.register(ctx.obj(onPage.map((x) => x.ref)));
+      const m = pageMcidParent.get(pageIndex);
+      if (!m || m.size === 0) return;
+      const maxMcid = Math.max(...m.keys());
+      const arr: PDFRef[] = [];
+      for (let i = 0; i <= maxMcid; i++) {
+        const r = m.get(i);
+        if (r) arr.push(r);
+      }
+      const arrRef = ctx.register(ctx.obj(arr));
       nums.push(PDFNumber.of(pageIndex), arrRef);
       page.node.set(PDFName.of("StructParents"), PDFNumber.of(pageIndex));
     });
+    // Claves de anotaciones (ascendentes, posteriores a las de página).
+    for (const a of annotNums) nums.push(PDFNumber.of(a.key), a.ref);
     const parentTreeRef = ctx.register(ctx.obj({ Nums: nums }));
 
     ctx.assign(
@@ -135,7 +247,7 @@ export class PdfTagger {
         Type: "StructTreeRoot",
         K: documentRef,
         ParentTree: parentTreeRef,
-        ParentTreeNextKey: pages.length,
+        ParentTreeNextKey: nextStructParentKey,
       })
     );
 

@@ -47,11 +47,7 @@ function BarRow({ label, count, max }: { label: string; count: number; max: numb
       <span className="w-40 shrink-0 truncate text-sm" title={label}>
         {label}
       </span>
-      <ProgressBar
-        aria-label={label}
-        value={max > 0 ? (count / max) * 100 : 0}
-        className="flex-1"
-      >
+      <ProgressBar aria-label={label} value={max > 0 ? (count / max) * 100 : 0} className="flex-1">
         <ProgressBar.Track>
           <ProgressBar.Fill />
         </ProgressBar.Track>

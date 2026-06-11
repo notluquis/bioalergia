@@ -99,10 +99,8 @@ export function useCancelBulkJob() {
 export function useApproveClinicalRecordImports() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (input: {
-      items: Array<{ id: string; patientId: number }>;
-      notes?: string;
-    }) => clinicalRecordsORPCClient.approveImports(input),
+    mutationFn: (input: { items: Array<{ id: string; patientId: number }>; notes?: string }) =>
+      clinicalRecordsORPCClient.approveImports(input),
     onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
   });
 }
@@ -119,8 +117,7 @@ export function useRejectClinicalRecordImports() {
 export function useStartAutoApprove() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (input: { minScore: number }) =>
-      clinicalRecordsORPCClient.startAutoApprove(input),
+    mutationFn: (input: { minScore: number }) => clinicalRecordsORPCClient.startAutoApprove(input),
     onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
   });
 }

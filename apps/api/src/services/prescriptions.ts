@@ -6,9 +6,7 @@ import { sendEmail } from "./email/index.ts";
 
 export type PrescriptionPdfMode = "full" | "overlay" | "template";
 
-type PrescriptionRow = NonNullable<
-  Awaited<ReturnType<typeof db.medicalPrescription.findUnique>>
->;
+type PrescriptionRow = NonNullable<Awaited<ReturnType<typeof db.medicalPrescription.findUnique>>>;
 
 function mapMedications(value: unknown): Array<{
   name: string;
@@ -50,9 +48,8 @@ export async function buildPrescriptionPdfBytes(
     where: { prescriptionId: id },
     select: { code: true },
   });
-  const { generateMedicalPrescriptionPdf, generateQRCode } = await import(
-    "../modules/certificates/certificate.service.ts"
-  );
+  const { generateMedicalPrescriptionPdf, generateQRCode } =
+    await import("../modules/certificates/certificate.service.ts");
   const qrCodeBuffer = verification?.code ? await generateQRCode(verification.code) : undefined;
 
   const rawPdf = await generateMedicalPrescriptionPdf(
@@ -68,9 +65,7 @@ export async function buildPrescriptionPdfBytes(
       folio: prescription.folio ?? undefined,
       qrCodeBuffer,
       verificationCode: verification?.code ?? undefined,
-      prescriptionType: (prescription.prescriptionType ?? "SIMPLE") as
-        | "SIMPLE"
-        | "RETENIDA",
+      prescriptionType: (prescription.prescriptionType ?? "SIMPLE") as "SIMPLE" | "RETENIDA",
       doctorLicense: prescription.doctorLicense ?? undefined,
       patientAge: ageFromBirthDate(patient?.birthDate),
       patientBirthDate: patient?.birthDate
@@ -83,6 +78,7 @@ export async function buildPrescriptionPdfBytes(
       doctorEmail: prescription.doctorEmail ?? undefined,
       doctorAddress: prescription.doctorAddress ?? undefined,
       patient: { name: prescription.patientName, rut: prescription.patientRut },
+      clinicName: clinic?.name ?? undefined,
     },
     { primary: clinic?.logoUrl, secondary: clinic?.secondaryLogoUrl }
   );

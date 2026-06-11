@@ -23,9 +23,8 @@ prescriptionPdfRoutes.get("/blank-template", async (c) => {
   }
   try {
     const clinic = await db.clinicSettings.findUnique({ where: { id: 1 } });
-    const { generateMedicalPrescriptionPdf } = await import(
-      "../modules/certificates/certificate.service.ts"
-    );
+    const { generateMedicalPrescriptionPdf } =
+      await import("../modules/certificates/certificate.service.ts");
     const rawPdf = await generateMedicalPrescriptionPdf(
       {
         patientId: 0,
@@ -38,6 +37,7 @@ prescriptionPdfRoutes.get("/blank-template", async (c) => {
         doctorRut: clinic?.doctorRut ?? undefined,
         doctorLicense: clinic?.superintendenciaNumber ?? undefined,
         patient: { name: "", rut: null },
+        clinicName: clinic?.name ?? undefined,
       },
       { primary: clinic?.logoUrl, secondary: clinic?.secondaryLogoUrl }
     );

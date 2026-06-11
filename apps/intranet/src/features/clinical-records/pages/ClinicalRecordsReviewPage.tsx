@@ -115,8 +115,7 @@ export function ClinicalRecordsReviewPage() {
     () => (list.data?.items ?? []).filter((it) => it.status === "PENDING_REVIEW"),
     [list.data?.items]
   );
-  const allSelected =
-    pendingItems.length > 0 && pendingItems.every((it) => selected.has(it.id));
+  const allSelected = pendingItems.length > 0 && pendingItems.every((it) => selected.has(it.id));
 
   function toggleOne(id: string) {
     setSelected((prev) => {
