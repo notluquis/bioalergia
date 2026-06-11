@@ -110,7 +110,7 @@ export function CreateMedicalCertificateModal({ isOpen, onClose }: Props) {
           }}
         >
           <Modal.Container placement="center">
-            <Modal.Dialog className="w-full max-w-3xl overflow-y-auto rounded-[28px] bg-background p-6 shadow-2xl">
+            <Modal.Dialog className="relative max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-[28px] bg-background p-6 shadow-2xl">
               <Modal.Header className="mb-4">
                 <Modal.Heading className="font-semibold text-primary text-xl">
                   Generar Certificado Médico
@@ -277,9 +277,9 @@ export function CreateMedicalCertificateModal({ isOpen, onClose }: Props) {
                         <form.Field name="purpose">
                           {(field) => (
                             <Select
-                              value={field.state.value || null}
-                              onChange={(key) => {
-                                if (typeof key === "string") {
+                              selectedKey={field.state.value || null}
+                              onSelectionChange={(key) => {
+                                if (key) {
                                   field.handleChange(key as typeof field.state.value);
                                 }
                               }}

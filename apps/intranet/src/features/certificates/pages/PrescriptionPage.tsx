@@ -122,7 +122,11 @@ function CodeSelect({
   className?: string;
 }) {
   return (
-    <Select className={className} onChange={(key) => onChange(String(key))} value={value}>
+    <Select
+      className={className}
+      onSelectionChange={(key) => onChange(String(key))}
+      selectedKey={value}
+    >
       <Label>{label}</Label>
       <Select.Trigger>
         <Select.Value />
