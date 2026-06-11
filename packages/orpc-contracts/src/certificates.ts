@@ -59,7 +59,6 @@ export const generateMedicalPrescriptionInputSchema = z.object({
   doctorSpecialty: z.string().optional(),
   medications: z.array(prescriptionMedicationSchema).min(1).max(12),
   notes: z.string().max(1000).optional(),
-  prescriptionType: z.enum(["SIMPLE", "RETENIDA"]).optional(),
   // Modificar = re-emitir: si viene, la receta original se anula al crear esta.
   supersedesId: z.string().optional(),
   patientId: z.number().int().positive(),
@@ -102,7 +101,6 @@ export const listMedicalPrescriptionsInputSchema = z
       .optional(),
     // Qué fecha filtrar: la de la receta o la de emisión (default).
     dateField: z.enum(["date", "issuedAt"]).optional(),
-    prescriptionType: z.enum(["SIMPLE", "RETENIDA"]).optional(),
     status: z.enum(["ISSUED", "ANNULLED"]).optional(),
   })
   .optional();
@@ -116,7 +114,6 @@ export const medicalPrescriptionSchema = z.object({
   driveFileId: z.string().nullable().optional(),
   folio: z.string().nullable().optional(),
   id: z.string(),
-  prescriptionType: z.string().nullable().optional(),
   status: z.string().nullable().optional(),
   issuedAt: z.coerce.date(),
   medications: z.unknown(),

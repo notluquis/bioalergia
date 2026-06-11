@@ -1,5 +1,6 @@
 import {
   Button,
+  ButtonGroup,
   Card,
   Checkbox,
   Chip,
@@ -62,6 +63,7 @@ import { certificatesORPCClient, toCertificatesApiError } from "@/features/certi
 import { PatientSelectModal } from "@/features/exam-reports/components/PatientSelectModal";
 import { fetchPatient, updatePatient } from "@/features/patients/api";
 import { CreatePatientModal } from "@/features/patients/components/CreatePatientModal";
+import { EmailPrescriptionModal } from "@/features/certificates/components/EmailPrescriptionModal";
 import { confirmAction } from "@/components/ui/ConfirmDialog";
 import { chileDay, endOfWeek, formatChile, getISOWeek, startOfWeek, today } from "@/lib/dates";
 import { toast } from "@/lib/toast-interceptor";
@@ -257,7 +259,6 @@ export function PrescriptionPage() {
   const [createPatientOpen, setCreatePatientOpen] = useState(false);
   const [patient, setPatient] = useState<SelectedPatient | null>(null);
   const [date, setDate] = useState(today());
-  const [prescriptionType, setPrescriptionType] = useState<"SIMPLE" | "RETENIDA">("SIMPLE");
   const [selectedDiagnoses, setSelectedDiagnoses] = useState<PrescriptionDiagnosis[]>([]);
   const [customDiagnosis, setCustomDiagnosis] = useState("");
   const [notes, setNotes] = useState("");
@@ -272,12 +273,8 @@ export function PrescriptionPage() {
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
   const [dateField, setDateField] = useState<"date" | "issuedAt">("issuedAt");
-  const [filterType, setFilterType] = useState<"ALL" | "SIMPLE" | "RETENIDA">("ALL");
   const [filterStatus, setFilterStatus] = useState<"ALL" | "ISSUED" | "ANNULLED">("ALL");
-  const hasFilters =
-    Boolean(debouncedSearch || fromDate || toDate) ||
-    filterType !== "ALL" ||
-    filterStatus !== "ALL";
+  const hasFilters = Boolean(debouncedSearch || fromDate || toDate) || filterStatus !== "ALL";
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedSearch(searchText.trim()), 300);
@@ -320,7 +317,6 @@ export function PrescriptionPage() {
       fromDate,
       toDate,
       dateField,
-      filterType,
       filterStatus,
     ],
     queryFn: async () =>
@@ -331,7 +327,6 @@ export function PrescriptionPage() {
         from: fromDate || undefined,
         to: toDate || undefined,
         dateField,
-        prescriptionType: filterType === "ALL" ? undefined : filterType,
         status: filterStatus === "ALL" ? undefined : filterStatus,
       }),
   });
@@ -440,7 +435,6 @@ export function PrescriptionPage() {
   const handleEditPrescription = (item: MedicalPrescription) => {
     setPatient({ id: item.patient.id, person: item.patient.person });
     setDate(formatChile(item.date, "YYYY-MM-DD"));
-    setPrescriptionType((item.prescriptionType as "SIMPLE" | "RETENIDA" | null) ?? "SIMPLE");
     setSelectedDiagnoses(
       Array.isArray(item.diagnoses) ? (item.diagnoses as PrescriptionDiagnosis[]) : []
     );
@@ -512,7 +506,6 @@ export function PrescriptionPage() {
       medications: cleanMedications,
       notes: notes.trim() || undefined,
       patientId: patient.id,
-      prescriptionType,
       supersedesId: supersedesId ?? undefined,
     });
     // Re-emisión completada: limpia el vínculo y deja el formulario fresco.
@@ -552,7 +545,6 @@ export function PrescriptionPage() {
       <PrescriptionFilters
         dateField={dateField}
         filterStatus={filterStatus}
-        filterType={filterType}
         fromDate={fromDate}
         hasFilters={hasFilters}
         onClear={clearFilters}
@@ -561,7 +553,6 @@ export function PrescriptionPage() {
         onSearchChange={setSearchText}
         onStatusChange={setFilterStatus}
         onToChange={setToDate}
-        onTypeChange={setFilterType}
         search={searchText}
         toDate={toDate}
       />
@@ -576,19 +567,11 @@ export function PrescriptionPage() {
       />
 
       <EmailPrescriptionModal
-        isPending={emailMutation.isPending}
-        onClose={() => setEmailTarget(null)}
-        onSend={(to, message, saveEmail) =>
-          emailTarget &&
-          emailMutation.mutate({
-            id: emailTarget.id,
-            message,
-            to,
-            saveEmail,
-            patientId: emailTarget.patientId,
-          })
-        }
-        target={emailTarget}
+        isOpen={emailTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) setEmailTarget(null);
+        }}
+        prescription={emailTarget}
       />
 
       {patient ? (
@@ -612,11 +595,9 @@ export function PrescriptionPage() {
           onMedicationChange={updateMedication}
           onMedicationRemove={removeMedication}
           onNotesChange={setNotes}
-          onPrescriptionTypeChange={setPrescriptionType}
           onRemoveDiagnosis={removeDiagnosis}
           onSubmit={handleSubmit}
           patientLabel={patientLabel}
-          prescriptionType={prescriptionType}
           submitError={submitError}
         />
       ) : null}
@@ -662,11 +643,6 @@ const DATE_FIELD_OPTIONS: CodeDisplay[] = [
   { code: "issuedAt", display: "Fecha de emisión" },
   { code: "date", display: "Fecha de receta" },
 ];
-const TYPE_FILTER_OPTIONS: CodeDisplay[] = [
-  { code: "ALL", display: "Todos los tipos" },
-  { code: "SIMPLE", display: "Simple" },
-  { code: "RETENIDA", display: "Retenida" },
-];
 const STATUS_FILTER_OPTIONS: CodeDisplay[] = [
   { code: "ALL", display: "Todos los estados" },
   { code: "ISSUED", display: "Vigente" },
@@ -678,7 +654,6 @@ const STATUS_FILTER_OPTIONS: CodeDisplay[] = [
 function PrescriptionFilters({
   dateField,
   filterStatus,
-  filterType,
   fromDate,
   hasFilters,
   onClear,
@@ -687,13 +662,11 @@ function PrescriptionFilters({
   onSearchChange,
   onStatusChange,
   onToChange,
-  onTypeChange,
   search,
   toDate,
 }: {
   dateField: "date" | "issuedAt";
   filterStatus: "ALL" | "ISSUED" | "ANNULLED";
-  filterType: "ALL" | "SIMPLE" | "RETENIDA";
   fromDate: string;
   hasFilters: boolean;
   onClear: () => void;
@@ -702,7 +675,6 @@ function PrescriptionFilters({
   onSearchChange: (v: string) => void;
   onStatusChange: (v: "ALL" | "ISSUED" | "ANNULLED") => void;
   onToChange: (v: string) => void;
-  onTypeChange: (v: "ALL" | "SIMPLE" | "RETENIDA") => void;
   search: string;
   toDate: string;
 }) {
@@ -713,12 +685,7 @@ function PrescriptionFilters({
           <Label>Buscar</Label>
           <Input placeholder="Paciente, RUT, diagnóstico o medicamento…" />
         </TextField>
-        <CodeSelect
-          label="Tipo"
-          onChange={(c) => onTypeChange(c as "ALL" | "SIMPLE" | "RETENIDA")}
-          options={TYPE_FILTER_OPTIONS}
-          value={filterType}
-        />
+        <div />
         <CodeSelect
           label="Estado"
           onChange={(c) => onStatusChange(c as "ALL" | "ISSUED" | "ANNULLED")}
@@ -900,6 +867,13 @@ function PrescriptionHistory({
 }) {
   const grouped = groupPrescriptions(items);
 
+  const currentIso = chileDay(today());
+  const currentYear = Number(currentIso.slice(0, 4));
+  const currentMonth = Number(currentIso.slice(5, 7)) - 1;
+  const currentWeek = getISOWeek(today());
+  const currentMonthKey = `${currentYear}-${currentMonth}`;
+  const currentWeekKey = `${currentYear}-W${currentWeek}`;
+
   const renderRow = (item: MedicalPrescription) => (
     <article
       className="flex flex-col gap-2 border-default-100 border-b p-3 last:border-b-0 sm:flex-row sm:items-start"
@@ -942,25 +916,76 @@ function PrescriptionHistory({
         </div>
       </div>
       <div className="flex shrink-0 items-center gap-1 sm:self-start">
+        <ButtonGroup>
+          <Button
+            className="gap-2"
+            isDisabled={item.status === "ANNULLED"}
+            onPress={() => printPrescriptionPdf(item.id, "full")}
+            size="sm"
+            variant="primary"
+          >
+            <Printer size={14} />
+            Imprimir
+          </Button>
+          <Dropdown>
+            <Dropdown.Trigger>
+              <Button
+                isDisabled={item.status === "ANNULLED"}
+                isIconOnly
+                size="sm"
+                variant="primary"
+              >
+                <ChevronDown size={14} />
+              </Button>
+            </Dropdown.Trigger>
+            <Dropdown.Popover placement="bottom end">
+              <Dropdown.Menu
+                onAction={(key) => printPrescriptionPdf(item.id, key as "full" | "data")}
+              >
+                <Dropdown.Item id="full">Imprimir receta completa</Dropdown.Item>
+                <Dropdown.Item id="data">Imprimir solo datos</Dropdown.Item>
+              </Dropdown.Menu>
+            </Dropdown.Popover>
+          </Dropdown>
+        </ButtonGroup>
+
+        <ButtonGroup>
+          <Button
+            className="gap-2"
+            onPress={() => void downloadPrescriptionPdf(item.id, "full")}
+            size="sm"
+            variant="outline"
+          >
+            <Download size={14} />
+            Descargar
+          </Button>
+          <Dropdown>
+            <Dropdown.Trigger>
+              <Button isIconOnly size="sm" variant="outline">
+                <ChevronDown size={14} />
+              </Button>
+            </Dropdown.Trigger>
+            <Dropdown.Popover placement="bottom end">
+              <Dropdown.Menu
+                onAction={(key) => void downloadPrescriptionPdf(item.id, key as "full" | "data")}
+              >
+                <Dropdown.Item id="full">Descargar receta completa</Dropdown.Item>
+                <Dropdown.Item id="data">Descargar solo datos</Dropdown.Item>
+              </Dropdown.Menu>
+            </Dropdown.Popover>
+          </Dropdown>
+        </ButtonGroup>
+
         <Button
-          className="gap-2"
-          isDisabled={item.status === "ANNULLED"}
-          onPress={() => printPrescriptionPdf(item.id, "full")}
-          size="sm"
-          variant="primary"
-        >
-          <Printer size={14} />
-          Imprimir
-        </Button>
-        <Button
-          className="gap-2"
-          onPress={() => void downloadPrescriptionPdf(item.id, "full")}
+          isIconOnly
           size="sm"
           variant="outline"
+          onPress={() => onEmail(item)}
+          aria-label="Enviar por email"
         >
-          <Download size={14} />
-          Descargar
+          <Mail size={14} />
         </Button>
+
         <PrescriptionRowMenu item={item} onAnnul={onAnnul} onEdit={onEdit} onEmail={onEmail} />
       </div>
     </article>
@@ -983,7 +1008,7 @@ function PrescriptionHistory({
       ) : (
         <div className="space-y-2">
           {grouped.map((yearGroup) => (
-            <Disclosure defaultExpanded key={yearGroup.year}>
+            <Disclosure defaultExpanded={yearGroup.year === currentYear} key={yearGroup.year}>
               <Disclosure.Heading>
                 <Button
                   className="group flex w-full items-center justify-between px-3 py-2"
@@ -1004,7 +1029,9 @@ function PrescriptionHistory({
                 <Disclosure.Body className="space-y-2 p-2 pl-4">
                   {yearGroup.months.map((monthGroup) => (
                     <Disclosure
-                      defaultExpanded={yearGroup.months.length === 1}
+                      defaultExpanded={
+                        yearGroup.months.length === 1 || monthGroup.key === currentMonthKey
+                      }
                       key={monthGroup.key}
                     >
                       <Disclosure.Heading>
@@ -1025,7 +1052,9 @@ function PrescriptionHistory({
                         <Disclosure.Body className="space-y-1 p-1 pl-3">
                           {monthGroup.weeks.map((weekGroup) => (
                             <Disclosure
-                              defaultExpanded={monthGroup.weeks.length === 1}
+                              defaultExpanded={
+                                monthGroup.weeks.length === 1 || weekGroup.key === currentWeekKey
+                              }
                               key={weekGroup.key}
                             >
                               <Disclosure.Heading>
@@ -1062,164 +1091,6 @@ function PrescriptionHistory({
         </div>
       )}
     </Card>
-  );
-}
-
-function EmailPrescriptionModal({
-  isPending,
-  onClose,
-  onSend,
-  target,
-}: {
-  isPending: boolean;
-  onClose: () => void;
-  onSend: (to: string, message?: string, saveEmail?: boolean) => void;
-  target: MedicalPrescription | null;
-}) {
-  const patientEmail = target?.patient?.person?.email;
-
-  const [sendType, setSendType] = useState<"registered" | "custom">("custom");
-  const [customTo, setCustomTo] = useState("");
-  const [message, setMessage] = useState("");
-  const [saveEmail, setSaveEmail] = useState(false);
-
-  // Prefilla el tipo y resetea campos al abrir.
-  useEffect(() => {
-    if (target) {
-      if (target.patient?.person?.email) {
-        setSendType("registered");
-      } else {
-        setSendType("custom");
-      }
-      setCustomTo("");
-      setMessage("");
-      setSaveEmail(false);
-    }
-  }, [target]);
-
-  if (!target) return null;
-
-  const finalTo = sendType === "registered" && patientEmail ? patientEmail : customTo.trim();
-  const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(finalTo);
-
-  return (
-    <Modal>
-      <Modal.Backdrop
-        className="bg-black/40 backdrop-blur-[2px]"
-        isOpen
-        onOpenChange={(open) => {
-          if (!open) onClose();
-        }}
-      >
-        <Modal.Container placement="center">
-          <Modal.Dialog className="relative w-full max-w-md rounded-[28px] bg-background p-6 shadow-2xl overflow-y-auto max-h-[90vh]">
-            <Modal.Header className="mb-4">
-              <Modal.Heading className="font-semibold text-primary text-xl">
-                Enviar receta por email
-              </Modal.Heading>
-              <p className="text-default-600 text-sm">
-                {target.patientName}
-                {target.folio ? ` · ${target.folio}` : ""}
-              </p>
-            </Modal.Header>
-            <Modal.Body>
-              <Form
-                onSubmit={(event: React.FormEvent<HTMLFormElement>) => {
-                  event.preventDefault();
-                  event.stopPropagation();
-                  if (validEmail)
-                    onSend(finalTo, message.trim() || undefined, !patientEmail && saveEmail);
-                }}
-              >
-                <div className="space-y-4 w-full">
-                  {patientEmail ? (
-                    <RadioGroup
-                      className="w-full"
-                      name="email-target"
-                      value={sendType}
-                      onChange={(val) => setSendType(val as "registered" | "custom")}
-                    >
-                      <Label>Destinatario</Label>
-                      <Radio
-                        className="group flex max-w-full cursor-pointer gap-3 rounded-xl border border-default-200 bg-default-50 p-3 hover:bg-default-100 data-[selected=true]:border-primary data-[selected=true]:bg-primary/5"
-                        value="registered"
-                      >
-                        <Radio.Control className="mt-1">
-                          <Radio.Indicator />
-                        </Radio.Control>
-                        <Radio.Content className="flex min-w-0 flex-1 flex-col gap-0.5">
-                          <Label className="cursor-pointer text-sm font-medium">
-                            Email registrado
-                          </Label>
-                          <Description className="truncate text-xs">{patientEmail}</Description>
-                        </Radio.Content>
-                      </Radio>
-                      <Radio
-                        className="group flex max-w-full cursor-pointer gap-3 rounded-xl border border-default-200 bg-default-50 p-3 hover:bg-default-100 data-[selected=true]:border-primary data-[selected=true]:bg-primary/5"
-                        value="custom"
-                      >
-                        <Radio.Control className="mt-1">
-                          <Radio.Indicator />
-                        </Radio.Control>
-                        <Radio.Content className="flex min-w-0 flex-1 w-full flex-col gap-0.5">
-                          <Label className="cursor-pointer text-sm font-medium">Otro correo</Label>
-                          {sendType === "custom" && (
-                            <div className="mt-2 w-full" onClick={(e) => e.stopPropagation()}>
-                              <TextField
-                                aria-label="Ingresar otro correo"
-                                autoFocus
-                                className="w-full"
-                                value={customTo}
-                                onChange={setCustomTo}
-                              >
-                                <Input placeholder="paciente@correo.cl" type="email" />
-                              </TextField>
-                            </div>
-                          )}
-                        </Radio.Content>
-                      </Radio>
-                    </RadioGroup>
-                  ) : (
-                    <div className="space-y-2">
-                      <TextField className="w-full" value={customTo} onChange={setCustomTo}>
-                        <Label>Email del destinatario</Label>
-                        <Input placeholder="paciente@correo.cl" type="email" />
-                      </TextField>
-                      <Checkbox
-                        isSelected={saveEmail}
-                        onChange={setSaveEmail}
-                        className="mt-2 flex gap-2"
-                      >
-                        <Checkbox.Control>
-                          <Checkbox.Indicator />
-                        </Checkbox.Control>
-                        <Checkbox.Content>
-                          Guardar este correo en el perfil del paciente
-                        </Checkbox.Content>
-                      </Checkbox>
-                    </div>
-                  )}
-
-                  <TextField className="w-full" value={message} onChange={setMessage}>
-                    <Label>Mensaje (opcional)</Label>
-                    <TextArea placeholder="Mensaje adicional para el paciente" rows={3} />
-                  </TextField>
-                  <div className="flex w-full justify-end gap-2 pt-2">
-                    <Button onPress={onClose} type="button" variant="ghost">
-                      Cancelar
-                    </Button>
-                    <Button isDisabled={!validEmail || isPending} type="submit">
-                      <Mail size={16} />
-                      {isPending ? "Enviando..." : "Enviar"}
-                    </Button>
-                  </div>
-                </div>
-              </Form>
-            </Modal.Body>
-          </Modal.Dialog>
-        </Modal.Container>
-      </Modal.Backdrop>
-    </Modal>
   );
 }
 
@@ -1359,11 +1230,9 @@ function PrescriptionModal({
   onMedicationChange,
   onMedicationRemove,
   onNotesChange,
-  onPrescriptionTypeChange,
   onRemoveDiagnosis,
   onSubmit,
   patientLabel,
-  prescriptionType,
   submitError,
 }: {
   customDiagnosis: string;
@@ -1382,11 +1251,9 @@ function PrescriptionModal({
   onMedicationChange: (id: string, patch: Partial<MedicationDraft>) => void;
   onMedicationRemove: (id: string) => void;
   onNotesChange: (value: string) => void;
-  onPrescriptionTypeChange: (value: "SIMPLE" | "RETENIDA") => void;
   onRemoveDiagnosis: (id: string) => void;
   onSubmit: () => Promise<void>;
   patientLabel: string;
-  prescriptionType: "SIMPLE" | "RETENIDA";
   submitError: string | null;
 }) {
   return (
@@ -1421,18 +1288,7 @@ function PrescriptionModal({
                 validationBehavior="aria"
               >
                 <div className="grid gap-4">
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <AppDatePicker label="Fecha" onChange={onDateChange} value={date} />
-                    <CodeSelect
-                      label="Tipo de receta"
-                      onChange={(code) => onPrescriptionTypeChange(code as "SIMPLE" | "RETENIDA")}
-                      options={[
-                        { code: "SIMPLE", display: "Simple" },
-                        { code: "RETENIDA", display: "Retenida" },
-                      ]}
-                      value={prescriptionType}
-                    />
-                  </div>
+                  <AppDatePicker label="Fecha" onChange={onDateChange} value={date} />
 
                   <DiagnosisPicker
                     customDiagnosis={customDiagnosis}

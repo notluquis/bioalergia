@@ -49,9 +49,7 @@ const base = {
   qrCodeBuffer,
 };
 
-for (const prescriptionType of ["SIMPLE", "RETENIDA"]) {
-  const bytes = await generateMedicalPrescriptionPdf({ ...base, prescriptionType, mode: "full" });
-  const out = `${outDir}/receta_${prescriptionType}.pdf`;
-  writeFileSync(out, bytes);
-  console.log(`wrote ${out} (${bytes.length} bytes)`);
-}
+const bytes = await generateMedicalPrescriptionPdf({ ...base, mode: "full" });
+const out = `${outDir}/receta_simple.pdf`;
+writeFileSync(out, bytes);
+console.log(`wrote ${out} (${bytes.length} bytes)`);

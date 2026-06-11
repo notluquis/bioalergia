@@ -6971,11 +6971,6 @@ export class SchemaType implements SchemaDef {
                     type: "Int",
                     optional: true
                 },
-                prescriptionType: {
-                    name: "prescriptionType",
-                    type: "String",
-                    default: "SIMPLE" as FieldDefault
-                },
                 doctorLicense: {
                     name: "doctorLicense",
                     type: "String",

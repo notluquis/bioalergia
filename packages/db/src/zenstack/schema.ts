@@ -8517,12 +8517,6 @@ export class SchemaType implements SchemaDef {
                     optional: true,
                     attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("folio_seq") }] }] as readonly AttributeApplication[]
                 },
-                prescriptionType: {
-                    name: "prescriptionType",
-                    type: "String",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("SIMPLE") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("prescription_type") }] }] as readonly AttributeApplication[],
-                    default: "SIMPLE" as FieldDefault
-                },
                 doctorLicense: {
                     name: "doctorLicense",
                     type: "String",
