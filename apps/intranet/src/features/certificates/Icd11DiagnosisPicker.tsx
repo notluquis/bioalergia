@@ -90,8 +90,13 @@ export function Icd11DiagnosisPicker({
         </TextField>
       </div>
 
-      <Popover isOpen={showPanel} placement="bottom start" triggerRef={triggerRef} offset={4}>
-        <Popover.Content className="w-[var(--trigger-width)] p-0">
+      <Popover isOpen={showPanel}>
+        <Popover.Content
+          className="w-[var(--trigger-width)] p-0"
+          placement="bottom start"
+          triggerRef={triggerRef}
+          offset={4}
+        >
           <Popover.Dialog className="p-0 rounded-lg overflow-hidden border border-default-200 bg-content1 shadow-md">
             {loading ? (
               <div className="flex items-center gap-2 text-default-500 text-sm p-3">
