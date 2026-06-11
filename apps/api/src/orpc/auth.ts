@@ -360,7 +360,11 @@ const authORPCRouterBase = {
 
       if (user.mfaEnabled) {
         // Don't reset failure count yet — completion happens after MFA.
-        return { status: "mfa_required" as const, userId: user.id };
+        // Issue an ephemeral proof that the password step succeeded; loginMfa
+        // requires it so the first factor can't be skipped (OWASP ASVS 5.0
+        // multi-step authentication).
+        const mfaToken = await signToken({ typ: "mfa-pending", sub: user.id }, "5m");
+        return { status: "mfa_required" as const, userId: user.id, mfaToken };
       }
 
       await recordLoginSuccess(user.id, ipFromContext(context.hono));
@@ -417,8 +421,22 @@ const authORPCRouterBase = {
     .input(authMfaLoginSchema)
     .output(authLoginOkResponseSchema)
     .handler(async ({ context, input }) => {
+      // First factor proof: the pending token issued by `login` after a
+      // successful password check. Rejecting anything else means a bare
+      // userId can never mint a session.
+      let pendingUserId: number;
+      try {
+        const pending = await verifyToken(input.mfaToken);
+        if (pending.typ !== "mfa-pending" || typeof pending.sub !== "number") {
+          throw new Error("invalid mfa-pending token");
+        }
+        pendingUserId = pending.sub;
+      } catch {
+        authError("UNAUTHORIZED", "Sesión MFA expirada. Ingresa tu contraseña nuevamente.");
+      }
+
       const user = await db.user.findUnique({
-        where: { id: input.userId },
+        where: { id: pendingUserId },
         include: {
           person: true,
           roles: { include: { role: true } },
@@ -429,9 +447,13 @@ const authORPCRouterBase = {
         authError("BAD_REQUEST", "MFA no configurado");
       }
 
-      const { verifyMfaToken } = await import("../services/mfa.ts");
+      const { verifyMfaToken, isTotpReplay, recordTotpAccepted } = await import(
+        "../services/mfa.ts"
+      );
       const { decryptSecret } = await import("../lib/secret-cipher.ts");
-      const isValid = await verifyMfaToken(input.token, decryptSecret(user.mfaSecret) ?? "");
+      const isValid =
+        !isTotpReplay(user.id, input.token) &&
+        (await verifyMfaToken(input.token, decryptSecret(user.mfaSecret) ?? ""));
 
       if (!isValid) {
         const failure = await recordLoginFailure(user.id);
@@ -444,6 +466,7 @@ const authORPCRouterBase = {
         authError("UNAUTHORIZED", "Código incorrecto");
       }
 
+      recordTotpAccepted(user.id, input.token);
       await recordLoginSuccess(user.id, ipFromContext(context.hono));
       await logAuditFromContext(context.hono, {
         kind: "MFA_SUCCESS",
@@ -846,7 +869,9 @@ const authORPCRouterBase = {
       const options = await generateAuthenticationOptions({
         allowCredentials: [],
         rpID: RP_ID,
-        userVerification: "preferred",
+        // PHI app: the authenticator must verify the human (PIN/biometric),
+        // not just be present. Pairs with requireUserVerification below.
+        userVerification: "required",
       });
 
       storeChallenge(`login:${options.challenge}`, options.challenge);
@@ -914,7 +939,7 @@ const authORPCRouterBase = {
               expectedChallenge: input.challenge,
               expectedOrigin: ORIGIN,
               expectedRPID: RP_ID,
-              requireUserVerification: false,
+              requireUserVerification: true,
               response: responseBody,
             })
         );
@@ -1001,7 +1026,7 @@ const authORPCRouterBase = {
         authenticatorSelection: {
           authenticatorAttachment: "platform",
           residentKey: "required",
-          userVerification: "preferred",
+          userVerification: "required",
         },
         rpID: RP_ID,
         rpName: RP_NAME,

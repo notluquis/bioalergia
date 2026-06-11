@@ -68,7 +68,11 @@ export function useAuth() {
 
     if (payload.status === "mfa_required") {
       logger.info("[auth] login:mfa_required", { userId: payload.userId });
-      return { status: "mfa_required", userId: payload.userId ?? 0 };
+      return {
+        status: "mfa_required",
+        userId: payload.userId ?? 0,
+        mfaToken: payload.mfaToken ?? "",
+      };
     }
 
     if (payload.status === "ok" && payload.user) {
@@ -80,9 +84,11 @@ export function useAuth() {
     throw new Error("Respuesta inesperada del servidor");
   };
 
-  const loginWithMfa = async (userId: number, token: string) => {
-    logger.info("[auth] mfa:start", { userId });
-    const payload = LoginMfaResponseSchema.parse(await authORPCClient.loginMfa({ token, userId }));
+  const loginWithMfa = async (mfaToken: string, token: string) => {
+    logger.info("[auth] mfa:start");
+    const payload = LoginMfaResponseSchema.parse(
+      await authORPCClient.loginMfa({ token, mfaToken })
+    );
 
     if (payload.status !== "ok" || !payload.user) {
       throw new Error(payload.message ?? "Código MFA inválido");
@@ -207,7 +213,7 @@ export type AuthContextType = {
   impersonatedRole: Role | null;
   initializing: boolean;
   login: (email: string, password: string) => Promise<LoginResult>;
-  loginWithMfa: (userId: number, token: string) => Promise<void>;
+  loginWithMfa: (mfaToken: string, token: string) => Promise<void>;
   loginWithPasskey: (authResponse: unknown, challenge: string) => Promise<void>;
   logout: () => Promise<void>;
   refreshSession: () => Promise<void>;

@@ -37,6 +37,7 @@ export const LoginResponseSchema = z.strictObject({
   status: z.string(),
   user: AuthUserSchema.optional(),
   userId: z.number().optional(),
+  mfaToken: z.string().optional(),
 });
 
 export const LoginMfaResponseSchema = z.strictObject({

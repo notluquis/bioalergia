@@ -23,7 +23,10 @@ const dataUri = `data:image/png;base64,${readFileSync(srcIcon).toString("base64"
 
 const browser = await chromium.launch();
 try {
-  const page = await browser.newPage({ viewport: { width: 512, height: 512 }, deviceScaleFactor: 1 });
+  const page = await browser.newPage({
+    viewport: { width: 512, height: 512 },
+    deviceScaleFactor: 1,
+  });
   // White full-bleed (the brand surface — the logo lives on white); logo at 72%
   // centered so it stays within the safe circle under any adaptive mask.
   await page.setContent(

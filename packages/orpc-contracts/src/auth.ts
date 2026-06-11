@@ -8,7 +8,10 @@ export const authLoginSchema = z.object({
 
 export const authMfaLoginSchema = z.object({
   token: z.string().min(6, "Token inválido"),
-  userId: z.number().int(),
+  // Short-lived proof that the password step succeeded (PASETO, typ
+  // "mfa-pending"). Without it loginMfa would accept a bare userId and the
+  // password factor could be skipped entirely.
+  mfaToken: z.string().min(1, "Sesión MFA inválida"),
 });
 
 export const authMfaEnableSchema = z.object({
@@ -68,6 +71,8 @@ export const authLoginOkResponseSchema = z.object({
 export const authLoginMfaRequiredResponseSchema = z.object({
   status: z.literal("mfa_required"),
   userId: z.number().int(),
+  // Ephemeral password-step proof the client must echo back in loginMfa.
+  mfaToken: z.string(),
 });
 
 export const authLoginResponseSchema = z.union([

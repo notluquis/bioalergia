@@ -13,7 +13,7 @@ export interface LoginState {
   password: string;
   mfaCode: string;
   step: LoginStep;
-  tempUserId: null | number;
+  tempMfaToken: null | string;
   formError: null | string;
   isSuccess: boolean;
 }
@@ -23,7 +23,7 @@ const INITIAL_STATE: LoginState = {
   password: "",
   mfaCode: "",
   step: "passkey",
-  tempUserId: null,
+  tempMfaToken: null,
   formError: null,
   isSuccess: false,
 };
@@ -32,7 +32,7 @@ export function useLoginLogic(from: string) {
   const { login, loginWithMfa, loginWithPasskey } = useAuth();
   const navigate = useNavigate();
   const [state, setState] = useState<LoginState>(INITIAL_STATE);
-  const { email, password, mfaCode, tempUserId } = state;
+  const { email, password, mfaCode, tempMfaToken } = state;
   const updateState = useCallback(
     (updates: Partial<LoginState>) => setState((p) => ({ ...p, ...updates })),
     []
@@ -49,13 +49,13 @@ export function useLoginLogic(from: string) {
     mutationFn: async () => {
       const r = await login(email, password);
       return r.status === "mfa_required"
-        ? { requiresMfa: true, userId: r.userId }
+        ? { requiresMfa: true, mfaToken: r.mfaToken }
         : { requiresMfa: false };
     },
     onSuccess: (d) => {
       if (d.requiresMfa) {
-        updateState({ tempUserId: d.userId, step: "mfa" });
-        logger.info("[login-page] MFA required", { userId: d.userId });
+        updateState({ tempMfaToken: d.mfaToken, step: "mfa" });
+        logger.info("[login-page] MFA required");
       } else {
         logger.info("[login-page] credentials login success", { user: email });
         redirectAfterSuccess();
@@ -69,13 +69,13 @@ export function useLoginLogic(from: string) {
   });
   const mfaMutation = useMutation({
     mutationFn: async () => {
-      if (!tempUserId) {
-        throw new Error("No user");
+      if (!tempMfaToken) {
+        throw new Error("No MFA token");
       }
-      await loginWithMfa(tempUserId, mfaCode);
+      await loginWithMfa(tempMfaToken, mfaCode);
     },
     onSuccess: () => {
-      logger.info("[login-page] MFA success", { userId: tempUserId });
+      logger.info("[login-page] MFA success");
       redirectAfterSuccess();
     },
     onError: (e) => {

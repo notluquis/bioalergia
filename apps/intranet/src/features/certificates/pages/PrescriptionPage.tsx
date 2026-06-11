@@ -1,6 +1,7 @@
 import {
   Button,
   Card,
+  Checkbox,
   Chip,
   Description,
   Disclosure,
@@ -59,7 +60,7 @@ import {
 } from "@/features/certificates/snre-valuesets";
 import { certificatesORPCClient, toCertificatesApiError } from "@/features/certificates/orpc";
 import { PatientSelectModal } from "@/features/exam-reports/components/PatientSelectModal";
-import { fetchPatient } from "@/features/patients/api";
+import { fetchPatient, updatePatient } from "@/features/patients/api";
 import { CreatePatientModal } from "@/features/patients/components/CreatePatientModal";
 import { confirmAction } from "@/components/ui/ConfirmDialog";
 import { chileDay, endOfWeek, formatChile, getISOWeek, startOfWeek, today } from "@/lib/dates";
@@ -395,9 +396,23 @@ export function PrescriptionPage() {
   });
 
   const emailMutation = useMutation({
-    mutationFn: async (args: { id: string; to: string; message?: string }) => {
+    mutationFn: async (args: {
+      id: string;
+      to: string;
+      message?: string;
+      saveEmail?: boolean;
+      patientId?: number;
+    }) => {
       try {
-        return await certificatesORPCClient.emailPrescription(args);
+        const result = await certificatesORPCClient.emailPrescription({
+          id: args.id,
+          to: args.to,
+          message: args.message,
+        });
+        if (args.saveEmail && args.patientId) {
+          await updatePatient({ patientId: args.patientId, email: args.to });
+        }
+        return result;
       } catch (error) {
         throw toCertificatesApiError(error);
       }
@@ -563,8 +578,15 @@ export function PrescriptionPage() {
       <EmailPrescriptionModal
         isPending={emailMutation.isPending}
         onClose={() => setEmailTarget(null)}
-        onSend={(to, message) =>
-          emailTarget && emailMutation.mutate({ id: emailTarget.id, message, to })
+        onSend={(to, message, saveEmail) =>
+          emailTarget &&
+          emailMutation.mutate({
+            id: emailTarget.id,
+            message,
+            to,
+            saveEmail,
+            patientId: emailTarget.patientId,
+          })
         }
         target={emailTarget}
       />
@@ -1051,7 +1073,7 @@ function EmailPrescriptionModal({
 }: {
   isPending: boolean;
   onClose: () => void;
-  onSend: (to: string, message?: string) => void;
+  onSend: (to: string, message?: string, saveEmail?: boolean) => void;
   target: MedicalPrescription | null;
 }) {
   const patientEmail = target?.patient?.person?.email;
@@ -1059,6 +1081,7 @@ function EmailPrescriptionModal({
   const [sendType, setSendType] = useState<"registered" | "custom">("custom");
   const [customTo, setCustomTo] = useState("");
   const [message, setMessage] = useState("");
+  const [saveEmail, setSaveEmail] = useState(false);
 
   // Prefilla el tipo y resetea campos al abrir.
   useEffect(() => {
@@ -1070,6 +1093,7 @@ function EmailPrescriptionModal({
       }
       setCustomTo("");
       setMessage("");
+      setSaveEmail(false);
     }
   }, [target]);
 
@@ -1103,7 +1127,8 @@ function EmailPrescriptionModal({
                 onSubmit={(event: React.FormEvent<HTMLFormElement>) => {
                   event.preventDefault();
                   event.stopPropagation();
-                  if (validEmail) onSend(finalTo, message.trim() || undefined);
+                  if (validEmail)
+                    onSend(finalTo, message.trim() || undefined, !patientEmail && saveEmail);
                 }}
               >
                 <div className="space-y-4 w-full">
@@ -1155,10 +1180,24 @@ function EmailPrescriptionModal({
                       </Radio>
                     </RadioGroup>
                   ) : (
-                    <TextField className="w-full" value={customTo} onChange={setCustomTo}>
-                      <Label>Email del destinatario</Label>
-                      <Input placeholder="paciente@correo.cl" type="email" />
-                    </TextField>
+                    <div className="space-y-2">
+                      <TextField className="w-full" value={customTo} onChange={setCustomTo}>
+                        <Label>Email del destinatario</Label>
+                        <Input placeholder="paciente@correo.cl" type="email" />
+                      </TextField>
+                      <Checkbox
+                        isSelected={saveEmail}
+                        onChange={setSaveEmail}
+                        className="mt-2 flex gap-2"
+                      >
+                        <Checkbox.Control>
+                          <Checkbox.Indicator />
+                        </Checkbox.Control>
+                        <Checkbox.Content>
+                          Guardar este correo en el perfil del paciente
+                        </Checkbox.Content>
+                      </Checkbox>
+                    </div>
                   )}
 
                   <TextField className="w-full" value={message} onChange={setMessage}>
@@ -1169,7 +1208,7 @@ function EmailPrescriptionModal({
                     <Button onPress={onClose} type="button" variant="ghost">
                       Cancelar
                     </Button>
-                    <Button color="primary" isDisabled={!validEmail || isPending} type="submit">
+                    <Button isDisabled={!validEmail || isPending} type="submit">
                       <Mail size={16} />
                       {isPending ? "Enviando..." : "Enviar"}
                     </Button>
