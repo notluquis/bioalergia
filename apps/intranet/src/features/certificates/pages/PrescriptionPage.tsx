@@ -1,6 +1,5 @@
 import {
   Button,
-  ButtonGroup,
   Card,
   Chip,
   Disclosure,
@@ -689,12 +688,12 @@ function PrescriptionRowMenu({
 }) {
   const annulled = item.status === "ANNULLED";
   // Receta inmutable: NO se elimina (documento legal). Solo anular o re-emitir.
-  const menuItems = (annulled
-      ? []
-      : [
-          { icon: <Pencil size={14} />, id: "edit", label: "Modificar (re-emitir)" },
-          { icon: <Ban size={14} />, id: "annul", label: "Anular" },
-        ]);
+  const menuItems = annulled
+    ? []
+    : [
+        { icon: <Pencil size={14} />, id: "edit", label: "Modificar (re-emitir)" },
+        { icon: <Ban size={14} />, id: "annul", label: "Anular" },
+      ];
 
   if (menuItems.length === 0) return null;
 
@@ -868,72 +867,53 @@ function PrescriptionHistory({
         </div>
       </div>
       <div className="flex shrink-0 items-center gap-1 sm:self-start">
-        <ButtonGroup>
-          <Button
-            className="gap-2"
-            isDisabled={item.status === "ANNULLED"}
-            onPress={() => printPrescriptionPdf(item.id, "full")}
-            size="sm"
-            variant="outline"
-          >
-            <Printer size={14} />
-            Imprimir
-          </Button>
-          <Dropdown>
-            <Dropdown.Trigger>
-              <Button
-                isDisabled={item.status === "ANNULLED"}
-                isIconOnly
-                size="sm"
-                variant="outline"
-              >
-                <ChevronDown size={14} />
-              </Button>
-            </Dropdown.Trigger>
-            <Dropdown.Popover placement="bottom end">
-              <Dropdown.Menu
-                onAction={(key) => printPrescriptionPdf(item.id, key as "full" | "overlay")}
-              >
-                <Dropdown.Item id="full">Imprimir receta completa</Dropdown.Item>
-                <Dropdown.Item id="overlay">Imprimir solo datos</Dropdown.Item>
-              </Dropdown.Menu>
-            </Dropdown.Popover>
-          </Dropdown>
-        </ButtonGroup>
+        <Dropdown>
+          <Dropdown.Trigger>
+            <Button
+              className="gap-2"
+              isDisabled={item.status === "ANNULLED"}
+              size="sm"
+              variant="outline"
+            >
+              <Printer size={14} />
+              Imprimir
+              <ChevronDown className="ml-1 opacity-70" size={14} />
+            </Button>
+          </Dropdown.Trigger>
+          <Dropdown.Popover placement="bottom end">
+            <Dropdown.Menu
+              onAction={(key) => printPrescriptionPdf(item.id, key as "full" | "overlay")}
+            >
+              <Dropdown.Item id="full">Imprimir receta completa</Dropdown.Item>
+              <Dropdown.Item id="overlay">Imprimir solo datos</Dropdown.Item>
+            </Dropdown.Menu>
+          </Dropdown.Popover>
+        </Dropdown>
 
-        <ButtonGroup>
-          <Button
-            className="gap-2"
-            onPress={() => void downloadPrescriptionPdf(item.id, "full")}
-            size="sm"
-            variant="outline"
-          >
-            <Download size={14} />
-            Descargar
-          </Button>
-          <Dropdown>
-            <Dropdown.Trigger>
-              <Button isIconOnly size="sm" variant="outline">
-                <ChevronDown size={14} />
-              </Button>
-            </Dropdown.Trigger>
-            <Dropdown.Popover placement="bottom end">
-              <Dropdown.Menu
-                onAction={(key) => void downloadPrescriptionPdf(item.id, key as "full" | "overlay")}
-              >
-                <Dropdown.Item id="full">Descargar receta completa</Dropdown.Item>
-                <Dropdown.Item id="overlay">Descargar solo datos</Dropdown.Item>
-              </Dropdown.Menu>
-            </Dropdown.Popover>
-          </Dropdown>
-        </ButtonGroup>
+        <Dropdown>
+          <Dropdown.Trigger>
+            <Button className="gap-2" size="sm" variant="outline">
+              <Download size={14} />
+              Descargar
+              <ChevronDown className="ml-1 opacity-70" size={14} />
+            </Button>
+          </Dropdown.Trigger>
+          <Dropdown.Popover placement="bottom end">
+            <Dropdown.Menu
+              onAction={(key) => void downloadPrescriptionPdf(item.id, key as "full" | "overlay")}
+            >
+              <Dropdown.Item id="full">Descargar receta completa</Dropdown.Item>
+              <Dropdown.Item id="overlay">Descargar solo datos</Dropdown.Item>
+            </Dropdown.Menu>
+          </Dropdown.Popover>
+        </Dropdown>
 
         <Button
           isIconOnly
+          aria-label="Enviar por email"
+          onPress={() => onEmail(item)}
           size="sm"
           variant="outline"
-          onPress={() => onEmail(item)}
-          aria-label="Enviar por email"
         >
           <Mail size={14} />
         </Button>
