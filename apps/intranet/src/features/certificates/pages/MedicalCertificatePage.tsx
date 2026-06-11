@@ -4,15 +4,20 @@ import { useMutation } from "@tanstack/react-query";
 import { getRouteApi } from "@tanstack/react-router";
 import { addDays, formatChile, today } from "@/lib/dates";
 import { z } from "zod";
+import { certificatesORPCClient, toCertificatesApiError } from "@/features/certificates/orpc";
 import {
   TanStackInputField,
   TanStackTextAreaField,
 } from "@/components/forms/TanStackFieldControls";
-import { certificatesORPCClient, toCertificatesApiError } from "@/features/certificates/orpc";
+import { AppDatePicker, AppDateRangePicker } from "@/components/forms/AppDatePicker";
+import { PatientSelectModal } from "@/features/exam-reports/components/PatientSelectModal";
+import { CreatePatientModal } from "@/features/patients/components/CreatePatientModal";
+import { findPersonByRut } from "@/features/people/api";
 import { toast } from "@/lib/toast-interceptor";
 import { DocumentPatientSection } from "@/components/documents/DocumentPatientSection";
 import { useDocumentPatientAutofill } from "@/components/documents/useDocumentPatientAutofill";
-import { AppDatePicker, AppDateRangePicker } from "@/components/forms/AppDatePicker";
+import { Search } from "lucide-react";
+import { useState } from "react";
 
 const routeApi = getRouteApi("/_authed/certificates/medical");
 
@@ -36,6 +41,8 @@ type FormData = z.infer<typeof medicalCertificateSchema>;
 
 export function MedicalCertificatePage() {
   const search = routeApi.useSearch();
+  const [selectPatientOpen, setSelectPatientOpen] = useState(false);
+  const [createPatientOpen, setCreatePatientOpen] = useState(false);
 
   const generateMutation = useMutation({
     mutationFn: async (data: FormData) => {
@@ -101,6 +108,17 @@ export function MedicalCertificatePage() {
       >
         <div className="space-y-6">
           <DocumentPatientSection
+            actionButton={
+              <Button
+                size="sm"
+                variant="outline"
+                className="gap-2"
+                onPress={() => setSelectPatientOpen(true)}
+              >
+                <Search size={14} />
+                Seleccionar Paciente
+              </Button>
+            }
             patientNameField={
               <form.Field name="patientName">
                 {(field) => <TanStackInputField field={field} label="Nombre Completo" />}
@@ -294,6 +312,62 @@ export function MedicalCertificatePage() {
           </div>
         </div>
       </Form>
+
+      <PatientSelectModal
+        isOpen={selectPatientOpen}
+        onClose={() => setSelectPatientOpen(false)}
+        onCreateNew={() => {
+          setSelectPatientOpen(false);
+          setCreatePatientOpen(true);
+        }}
+        onSelect={async (selected) => {
+          setSelectPatientOpen(false);
+          if (selected.person.rut) {
+            try {
+              const data = await findPersonByRut(selected.person.rut);
+              if (!data) throw new Error("Person not found");
+              form.setFieldValue("patientName", data.names);
+              form.setFieldValue("rut", selected.person.rut);
+              if (data.birthDate) form.setFieldValue("birthDate", data.birthDate);
+
+              const personRecord = data as unknown as Record<string, unknown>;
+              if (personRecord.address) {
+                const addr = personRecord.address;
+                const fullAddr =
+                  Array.isArray(addr) && addr.length > 0
+                    ? `${addr[0].street} ${addr[0].streetNumber || ""}`.trim()
+                    : typeof addr === "string"
+                      ? addr
+                      : typeof addr === "object" && addr !== null && "street" in addr
+                        ? `${(addr as Record<string, unknown>).street} ${(addr as Record<string, unknown>).streetNumber || ""}`.trim()
+                        : "";
+                if (fullAddr) {
+                  form.setFieldValue("address", fullAddr);
+                }
+              }
+            } catch (e) {
+              // Si falla (poco probable porque viene de DB), hacemos fallback básico
+              form.setFieldValue(
+                "patientName",
+                [selected.person.names, selected.person.fatherName].filter(Boolean).join(" ")
+              );
+              form.setFieldValue("rut", selected.person.rut);
+            }
+          } else {
+            form.setFieldValue(
+              "patientName",
+              [selected.person.names, selected.person.fatherName].filter(Boolean).join(" ")
+            );
+          }
+        }}
+      />
+      <CreatePatientModal
+        isOpen={createPatientOpen}
+        onClose={() => {
+          setCreatePatientOpen(false);
+          setSelectPatientOpen(true);
+        }}
+      />
     </Card>
   );
 }

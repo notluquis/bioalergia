@@ -8,7 +8,8 @@ export interface AutofillFieldMappings<TFormData> {
 }
 
 interface MinimalFormApi<TFormData> {
-  setFieldValue: (field: keyof TFormData, value: unknown) => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  setFieldValue: (field: keyof TFormData, value: any) => void;
 }
 
 /**
@@ -33,7 +34,7 @@ export function useDocumentPatientAutofill<TFormData>(
           form.setFieldValue(fields.birthDate, person.birthDate);
         }
 
-        const personRecord = person as Record<string, unknown>;
+        const personRecord = person as unknown as Record<string, unknown>;
         if (personRecord.address && fields.address) {
           const addr = personRecord.address;
           const fullAddr =

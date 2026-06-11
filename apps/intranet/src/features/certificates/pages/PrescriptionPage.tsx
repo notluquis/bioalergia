@@ -1352,7 +1352,7 @@ function PrescriptionModal({
                           }
                         />
 
-                        <div className="grid gap-3 sm:grid-cols-[6rem_1fr_1fr]">
+                        <div className="grid gap-3 sm:grid-cols-[1.5fr_1.5fr_1.5fr]">
                           <TextField
                             value={medication.doseValue}
                             onChange={(value) =>
@@ -1379,44 +1379,57 @@ function PrescriptionModal({
                         </div>
 
                         <div className="grid gap-3 sm:grid-cols-2">
-                          <div className="grid grid-cols-[auto_5rem_1fr] items-end gap-2">
-                            <span className="pb-2 text-default-600 text-sm">cada</span>
+                          <div className="flex gap-2 items-end">
                             <TextField
+                              className="flex-1"
                               value={medication.freqValue}
                               onChange={(value) =>
                                 onMedicationChange(medication.id, { freqValue: value })
                               }
                             >
-                              <Label>Frecuencia</Label>
+                              <Label>Frecuencia (Cada...)</Label>
                               <Input inputMode="numeric" placeholder="8" />
                             </TextField>
                             <CodeSelect
-                              label="​"
+                              label="Tiempo"
                               onChange={(code) =>
                                 onMedicationChange(medication.id, { freqUnit: code })
                               }
                               options={SNRE_TIME_UNITS}
                               value={medication.freqUnit}
+                              className="flex-1"
                             />
                           </div>
-                          <div className="grid grid-cols-[5rem_1fr] items-end gap-2">
+                          <div className="flex gap-2 items-end">
                             <TextField
+                              className="flex-1"
                               value={medication.durValue}
                               onChange={(value) =>
                                 onMedicationChange(medication.id, { durValue: value })
                               }
                             >
-                              <Label>Duración</Label>
+                              <Label>Duración (Por...)</Label>
                               <Input inputMode="numeric" placeholder="7" />
                             </TextField>
                             <CodeSelect
-                              label="​"
+                              label="Tiempo"
                               onChange={(code) =>
                                 onMedicationChange(medication.id, { durUnit: code })
                               }
                               options={SNRE_TIME_UNITS}
                               value={medication.durUnit}
+                              className="flex-1"
                             />
+                            <Button
+                              aria-label="Eliminar medicamento"
+                              className="mb-[2px] ml-1 shrink-0 text-danger"
+                              isIconOnly
+                              onPress={() => onMedicationRemove(medication.id)}
+                              size="sm"
+                              variant="ghost"
+                            >
+                              <Trash2 size={16} />
+                            </Button>
                           </div>
                         </div>
 
@@ -1455,7 +1468,7 @@ function PrescriptionModal({
                   {submitError ? <FieldError>{submitError}</FieldError> : null}
 
                   <div className="flex flex-col w-full">
-                    <hr className="border-default-200 my-4" />
+                    <div className="my-4 h-px w-full bg-default-200" />
                     <div className="flex justify-end gap-3">
                       <Button
                         isDisabled={generatePending}
