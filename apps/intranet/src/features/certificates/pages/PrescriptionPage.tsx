@@ -889,10 +889,10 @@ function PrescriptionHistory({
   const currentWeekKey = `${currentYear}-W${currentWeek}`;
 
   const renderRow = (item: MedicalPrescription) => (
-    <article
+    <Card
       className={clsx(
-        "relative flex flex-col gap-2 border-default-100 border-b p-3 last:border-b-0 sm:flex-row sm:items-start overflow-hidden",
-        item.status === "ANNULLED" ? "bg-danger-50/20" : ""
+        "relative flex flex-col gap-2 border-default-100 border-b p-3 last:border-b-0 sm:flex-row sm:items-start overflow-hidden shadow-none rounded-none",
+        item.status === "ANNULLED" ? "bg-danger-50/20" : "bg-transparent"
       )}
       key={item.id}
     >
@@ -1006,7 +1006,7 @@ function PrescriptionHistory({
 
         <PrescriptionRowMenu item={item} onAnnul={onAnnul} onEdit={onEdit} />
       </div>
-    </article>
+    </Card>
   );
   return (
     <Card className="p-6">
@@ -1337,8 +1337,8 @@ function PrescriptionModal({
                     </div>
 
                     {medications.map((medication, index) => (
-                      <div
-                        className="space-y-3 rounded-lg border border-default-200 p-3"
+                      <Card
+                        className="space-y-3 rounded-lg border border-default-200 p-3 shadow-sm"
                         key={medication.id}
                       >
                         <MedicationAutocomplete
@@ -1443,7 +1443,7 @@ function PrescriptionModal({
                             Quitar
                           </Button>
                         </div>
-                      </div>
+                      </Card>
                     ))}
                   </div>
 
@@ -1454,26 +1454,29 @@ function PrescriptionModal({
 
                   {submitError ? <FieldError>{submitError}</FieldError> : null}
 
-                  <div className="flex justify-end gap-3 border-default-200 border-t pt-4">
-                    <Button
-                      isDisabled={generatePending}
-                      onPress={onClose}
-                      type="button"
-                      variant="outline"
-                    >
-                      Cancelar
-                    </Button>
-                    <Button
-                      isDisabled={generatePending || isPreviewing}
-                      isPending={isPreviewing}
-                      onPress={() => void onPreview()}
-                      variant="outline"
-                    >
-                      Previsualización
-                    </Button>
-                    <Button isPending={generatePending} type="submit">
-                      {isEditing ? "Reemplazar receta" : "Generar receta"}
-                    </Button>
+                  <div className="flex flex-col w-full">
+                    <hr className="border-default-200 my-4" />
+                    <div className="flex justify-end gap-3">
+                      <Button
+                        isDisabled={generatePending}
+                        onPress={onClose}
+                        type="button"
+                        variant="outline"
+                      >
+                        Cancelar
+                      </Button>
+                      <Button
+                        isDisabled={generatePending || isPreviewing}
+                        isPending={isPreviewing}
+                        onPress={() => void onPreview()}
+                        variant="outline"
+                      >
+                        Previsualización
+                      </Button>
+                      <Button isPending={generatePending} type="submit">
+                        {isEditing ? "Reemplazar receta" : "Generar receta"}
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </Form>
