@@ -2,6 +2,7 @@ import {
   Button,
   Card,
   Chip,
+  Description,
   Disclosure,
   Dropdown,
   FieldError,
@@ -10,6 +11,8 @@ import {
   Label,
   ListBox,
   Modal,
+  Radio,
+  RadioGroup,
   Select,
   TextArea,
   TextField,
@@ -1051,19 +1054,29 @@ function EmailPrescriptionModal({
   onSend: (to: string, message?: string) => void;
   target: MedicalPrescription | null;
 }) {
-  const [to, setTo] = useState("");
+  const patientEmail = target?.patient?.person?.email;
+
+  const [sendType, setSendType] = useState<"registered" | "custom">("custom");
+  const [customTo, setCustomTo] = useState("");
   const [message, setMessage] = useState("");
 
-  // Prefilla el email del paciente si lo trae la persona, al abrir.
+  // Prefilla el tipo y resetea campos al abrir.
   useEffect(() => {
     if (target) {
-      setTo("");
+      if (target.patient?.person?.email) {
+        setSendType("registered");
+      } else {
+        setSendType("custom");
+      }
+      setCustomTo("");
       setMessage("");
     }
   }, [target]);
 
   if (!target) return null;
-  const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to.trim());
+
+  const finalTo = sendType === "registered" && patientEmail ? patientEmail : customTo.trim();
+  const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(finalTo);
 
   return (
     <Modal>
@@ -1075,7 +1088,7 @@ function EmailPrescriptionModal({
         }}
       >
         <Modal.Container placement="center">
-          <Modal.Dialog className="relative w-full max-w-md rounded-[28px] bg-background p-6 shadow-2xl">
+          <Modal.Dialog className="relative w-full max-w-md rounded-[28px] bg-background p-6 shadow-2xl overflow-y-auto max-h-[90vh]">
             <Modal.Header className="mb-4">
               <Modal.Heading className="font-semibold text-primary text-xl">
                 Enviar receta por email
@@ -1090,23 +1103,73 @@ function EmailPrescriptionModal({
                 onSubmit={(event: React.FormEvent<HTMLFormElement>) => {
                   event.preventDefault();
                   event.stopPropagation();
-                  if (validEmail) onSend(to.trim(), message.trim() || undefined);
+                  if (validEmail) onSend(finalTo, message.trim() || undefined);
                 }}
               >
-                <div className="space-y-3">
-                  <TextField value={to} onChange={setTo}>
-                    <Label>Email del destinatario</Label>
-                    <Input placeholder="paciente@correo.cl" type="email" />
-                  </TextField>
-                  <TextField value={message} onChange={setMessage}>
+                <div className="space-y-4 w-full">
+                  {patientEmail ? (
+                    <RadioGroup
+                      className="w-full"
+                      name="email-target"
+                      value={sendType}
+                      onChange={(val) => setSendType(val as "registered" | "custom")}
+                    >
+                      <Label>Destinatario</Label>
+                      <Radio
+                        className="group flex max-w-full cursor-pointer gap-3 rounded-xl border border-default-200 bg-default-50 p-3 hover:bg-default-100 data-[selected=true]:border-primary data-[selected=true]:bg-primary/5"
+                        value="registered"
+                      >
+                        <Radio.Control className="mt-1">
+                          <Radio.Indicator />
+                        </Radio.Control>
+                        <Radio.Content className="flex min-w-0 flex-1 flex-col gap-0.5">
+                          <Label className="cursor-pointer text-sm font-medium">
+                            Email registrado
+                          </Label>
+                          <Description className="truncate text-xs">{patientEmail}</Description>
+                        </Radio.Content>
+                      </Radio>
+                      <Radio
+                        className="group flex max-w-full cursor-pointer gap-3 rounded-xl border border-default-200 bg-default-50 p-3 hover:bg-default-100 data-[selected=true]:border-primary data-[selected=true]:bg-primary/5"
+                        value="custom"
+                      >
+                        <Radio.Control className="mt-1">
+                          <Radio.Indicator />
+                        </Radio.Control>
+                        <Radio.Content className="flex min-w-0 flex-1 w-full flex-col gap-0.5">
+                          <Label className="cursor-pointer text-sm font-medium">Otro correo</Label>
+                          {sendType === "custom" && (
+                            <div className="mt-2 w-full" onClick={(e) => e.stopPropagation()}>
+                              <TextField
+                                aria-label="Ingresar otro correo"
+                                autoFocus
+                                className="w-full"
+                                value={customTo}
+                                onChange={setCustomTo}
+                              >
+                                <Input placeholder="paciente@correo.cl" type="email" />
+                              </TextField>
+                            </div>
+                          )}
+                        </Radio.Content>
+                      </Radio>
+                    </RadioGroup>
+                  ) : (
+                    <TextField className="w-full" value={customTo} onChange={setCustomTo}>
+                      <Label>Email del destinatario</Label>
+                      <Input placeholder="paciente@correo.cl" type="email" />
+                    </TextField>
+                  )}
+
+                  <TextField className="w-full" value={message} onChange={setMessage}>
                     <Label>Mensaje (opcional)</Label>
                     <TextArea placeholder="Mensaje adicional para el paciente" rows={3} />
                   </TextField>
-                  <div className="flex justify-end gap-2 pt-2">
+                  <div className="flex w-full justify-end gap-2 pt-2">
                     <Button onPress={onClose} type="button" variant="ghost">
                       Cancelar
                     </Button>
-                    <Button isDisabled={!validEmail || isPending} type="submit">
+                    <Button color="primary" isDisabled={!validEmail || isPending} type="submit">
                       <Mail size={16} />
                       {isPending ? "Enviando..." : "Enviar"}
                     </Button>
