@@ -462,7 +462,7 @@ export async function generateMedicalPrescriptionPdf(
   // sobre el recetario pre-impreso. Nada acá puede depender del contenido.
   const LOGO_BAND_H = 46;
   const PATIENT_BOX_PAD = 10;
-  const PATIENT_BOX_H = 15 + 13 + 13 + 2 * PATIENT_BOX_PAD; // nombre + datos + emisión
+  const PATIENT_BOX_H = 15 + 15 + 15 + 2 * PATIENT_BOX_PAD; // 3 filas espaciadas
   // Diagnóstico (opcional, largo variable): área full-width de hasta 2 líneas
   // DEBAJO del recuadro. Reserva FIJA (también en template) para que el overlay
   // caiga alineado. Antes iba dentro del recuadro y se truncaba a 1 línea.
@@ -526,22 +526,19 @@ export async function generateMedicalPrescriptionPdf(
   }
   if (showData) {
     const endPatient = tagger.beginTag(page, currentPageIndex, "P");
-    const innerW = contentWidth - 2 * PATIENT_BOX_PAD;
     let py = boxTop - PATIENT_BOX_PAD - 8;
-    // Fila 1: Paciente: NOMBRE (negrita). El tipo de receta NO se imprime — la
-    // farmacia lo determina por el medicamento; mostrarlo solo confundía.
-    const nameMaxW = innerW - font.widthOfTextAtSize("Paciente: ", 8.5);
+    
+    const nameMaxW = 210 - font.widthOfTextAtSize("Paciente: ", 8.5);
     drawField("Paciente:", truncateToWidth(input.patient.name, bold, 9.5, nameMaxW), px, py, true);
+    const sex = input.patientSex?.trim();
+    if (sex) drawField("Sexo:", sex, px + 220, py);
     py -= 15;
-    // Fila 2: RUT · Sexo · Fecha de nacimiento (completa) · Edad (Código Sanitario).
+    
     const ageText = input.patientAge != null ? `${input.patientAge} años` : "-";
-    const birthText = input.patientBirthDate ? formatDate(input.patientBirthDate) : "-";
-    let fx = drawField("RUT:", input.patient.rut ?? "Sin RUT", px, py, true);
-    fx = drawField("Sexo:", input.patientSex?.trim() || "-", fx + 14, py);
-    fx = drawField("Nac:", birthText, fx + 14, py);
-    drawField("Edad:", ageText, fx + 14, py);
-    py -= 13;
-    // Fila 3: fecha de emisión (separada).
+    drawField("RUT:", input.patient.rut ?? "Sin RUT", px, py, true);
+    drawField("Edad:", ageText, px + 110, py);
+    py -= 15;
+    
     drawField("Fecha de emisión:", formatDate(input.date), px, py);
     endPatient();
   }
@@ -594,21 +591,23 @@ export async function generateMedicalPrescriptionPdf(
   if (showData) {
     for (const [index, medication] of input.medications.entries()) {
       const innerW = contentWidth - 2 * PATIENT_BOX_PAD;
-      const posology = [medication.dosage, medication.frequency, medication.duration]
-        .filter(Boolean)
-        .join("   ·   ");
+      const posParts = [];
+      if (medication.dosage) posParts.push(medication.dosage);
+      if (medication.frequency) posParts.push(medication.frequency);
+      if (medication.duration) posParts.push(medication.duration);
+      const posology = posParts.join("   ·   ");
+      
       const posH = posology ? measureWrapped(posology, 9, innerW) : 0;
       const instr = medication.instructions?.trim();
       const instrH = instr ? measureWrapped(`Indicaciones: ${instr}`, 8.5, innerW) : 0;
-      // El nombre del medicamento puede ser largo → se envuelve dentro de la
-      // barra de título (overflow-safe), que crece según las líneas.
+      
       const titleLines = wrapText(`${index + 1}. ${medication.name}`, bold, 10, innerW - 2);
       const headerH = Math.max(20, titleLines.length * 12 + 8);
       const cardH = headerH + PATIENT_BOX_PAD + posH + instrH + PATIENT_BOX_PAD;
 
       newPageIfNeeded(cardH + FOOTER_TOP);
       const cardTop = y + 2;
-      // recuadro + barra + filete (decorativos → Artifact).
+      
       tagger.artifact(page, () => {
         page.drawRectangle({
           x: margin,
@@ -633,6 +632,7 @@ export async function generateMedicalPrescriptionPdf(
           color: BRAND_AMBER,
         });
       });
+      
       const endMed = tagger.beginTag(page, currentPageIndex, "P");
       let ty = cardTop - 13;
       for (const line of titleLines) {
@@ -686,7 +686,7 @@ export async function generateMedicalPrescriptionPdf(
     const lastPage = index === total - 1;
     // Footer 2 columnas ANCLADO AL FONDO: IZQUIERDA médico, DERECHA firma+QR,
     // ambas alineadas por su BASE (grid). Nota legal única centrada al pie.
-    const leftColW = 156;
+    const leftColW = 180;
     const FOOTER_BASE = 62; // base inferior común de ambas columnas
     const specLines = wrapText(doctor.specialty, font, 8, leftColW);
     const addrLines = wrapText(doctor.address, font, 8, leftColW);
@@ -695,14 +695,13 @@ export async function generateMedicalPrescriptionPdf(
     const clinicLine = /cl[íi]nica/i.test(rawClinic) ? rawClinic : `Clínica ${rawClinic}`;
     // Top del bloque médico para que su última línea caiga en FOOTER_BASE
     // (name + clínica + spec + reg + email + addr).
-    const docTopY =
-      FOOTER_BASE + 12 + 11 + specLines.length * 10 + 10 + 10 + addrLines.length * 10 - 10;
+    const docTopY = FOOTER_BASE + 55;
     if (showStatic) {
-      // Zona de firma ARRIBA del bloque médico (línea decorativa → Artifact).
-      const sigLineY = docTopY + 26;
+      // Zona de firma fijada, para que nunca solape con el QR o texto derecho
+      const sigLineY = Math.max(docTopY + 26, FOOTER_BASE + 85);
       tagger.artifact(pg, () => {
         pg.drawLine({
-          start: { x: width - margin - 150, y: sigLineY },
+          start: { x: width - margin - 130, y: sigLineY },
           end: { x: width - margin, y: sigLineY },
           thickness: 0.5,
           color: rgb(0.4, 0.4, 0.4),
@@ -711,7 +710,7 @@ export async function generateMedicalPrescriptionPdf(
       const endDoc = tagger.beginTag(pg, index, "P");
       const firma = "Firma y timbre";
       pg.drawText(firma, {
-        x: width - margin - 75 - font.widthOfTextAtSize(firma, 8.5) / 2,
+        x: width - margin - 65 - font.widthOfTextAtSize(firma, 8.5) / 2,
         y: sigLineY - 11,
         size: 8.5,
         font,
@@ -748,7 +747,7 @@ export async function generateMedicalPrescriptionPdf(
     // QR, apilado de abajo hacia arriba: nota legal → N° medicamentos → folio →
     // código → "Verificar autenticidad". El QR es clickeable (Link → URL).
     if (showData && lastPage) {
-      const qrSize = 52;
+      const qrSize = 46;
       const qx = width - margin - qrSize;
       const qrBottom = FOOTER_BASE;
       const verifyUrl = input.verificationCode
@@ -773,49 +772,80 @@ export async function generateMedicalPrescriptionPdf(
           });
         }
       }
-      // Texto right-aligned a la izquierda del QR.
-      const rightEdge = qx - 8;
-      const drawRight = (text: string, ty: number, size: number, f = font, color = BRAND_GRAY) => {
-        pg.drawText(text, {
-          x: rightEdge - f.widthOfTextAtSize(text, size),
-          y: ty,
-          size,
-          font: f,
-          color,
-        });
-      };
-      const endVerify = tagger.beginTag(pg, index, "P");
-      let ry = FOOTER_BASE; // piso común con el bloque médico
-      drawRight("Válida solo con firma y timbre", ry, 7.5, font, BRAND_BLUE);
-      ry += 13;
-      const medCount = input.medications.length;
-      drawRight(`${medCount} ${medCount === 1 ? "medicamento" : "medicamentos"}`, ry, 7.5);
-      ry += 14;
+
+      // Folio as a vertical watermark on the right edge
       if (input.folio) {
-        drawRight(`Folio: ${input.folio}`, ry, 7.5);
-        ry += 14;
+        tagger.artifact(pg, () => {
+          pg.drawText(`Folio: ${input.folio}`, {
+            x: width - 15,
+            y: 110,
+            size: 8,
+            font,
+            color: rgb(0.7, 0.7, 0.7),
+            rotate: degrees(90),
+          });
+        });
       }
+
+      // Verification code to the LEFT of the QR code (center aligned vertically)
       if (input.verificationCode) {
-        drawRight(input.verificationCode, ry, 11, bold, BRAND_BLUE);
-        ry += 13;
+        const endVerify = tagger.beginTag(pg, index, "P");
+        const vText = "Verificar autenticidad";
+        const rightEdge = qx - 8;
+        pg.drawText(vText, {
+          x: rightEdge - font.widthOfTextAtSize(vText, 7.5),
+          y: qrBottom + 20,
+          size: 7.5, font, color: BRAND_GRAY
+        });
+        pg.drawText(input.verificationCode, {
+          x: rightEdge - bold.widthOfTextAtSize(input.verificationCode, 10),
+          y: qrBottom + 8,
+          size: 10, font: bold, color: BRAND_BLUE
+        });
+        endVerify();
       }
-      drawRight("Verificar autenticidad", ry, 7.5);
-      endVerify();
     }
-    if (total > 1) {
-      // y=46 (~16 mm) — sobre el margen inferior no imprimible de impresoras
-      // Epson. Paginación → Artifact (no es contenido del documento).
-      tagger.artifact(pg, () => {
+
+    // Centered footer notes (in ALL pages, below FOOTER_BASE)
+    tagger.artifact(pg, () => {
+      let cy = 25;
+      
+      if (showStatic) {
+        const validez = "Válida solo con firma y timbre";
+        pg.drawText(validez, {
+          x: width / 2 - font.widthOfTextAtSize(validez, 8) / 2,
+          y: cy,
+          size: 8,
+          font,
+          color: BRAND_BLUE,
+        });
+      }
+      cy += 10;
+      
+      if (showData && lastPage) {
+        const medCount = input.medications.length;
+        const medText = `${medCount} ${medCount === 1 ? "medicamento" : "medicamentos"} en total`;
+        pg.drawText(medText, {
+          x: width / 2 - font.widthOfTextAtSize(medText, 8) / 2,
+          y: cy,
+          size: 8,
+          font,
+          color: BRAND_GRAY,
+        });
+      }
+      cy += 11;
+      
+      if (showData && total > 1) {
         const pageLabel = `Página ${index + 1} de ${total}`;
         pg.drawText(pageLabel, {
           x: width / 2 - font.widthOfTextAtSize(pageLabel, 8) / 2,
-          y: 46,
+          y: cy,
           size: 8,
           font,
           color: rgb(0.5, 0.5, 0.5),
         });
-      });
-    }
+      }
+    });
     // Marca de agua diagonal "ANULADA" para recetas anuladas (re-descarga).
     if (input.status === "ANNULLED") {
       tagger.artifact(pg, () => {
