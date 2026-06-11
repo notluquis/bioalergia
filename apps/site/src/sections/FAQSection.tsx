@@ -11,7 +11,7 @@ export function FAQSection() {
       subtitle="Información clave sobre inmunoterapia, diagnóstico y seguridad clínica."
     >
       <Card className="rounded-3xl" variant="default">
-        <Card.Content className="px-6 py-6">
+        <Card.Content className="p-6">
           <Accordion
             className="grid w-full gap-3"
             variant="surface"

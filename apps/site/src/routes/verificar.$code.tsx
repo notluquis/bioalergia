@@ -47,7 +47,7 @@ function VerificarDocumentPage() {
     return (
       <Shell>
         <div className="animate-pulse space-y-3">
-          <div className="mx-auto h-12 w-12 rounded-full bg-default-200" />
+          <div className="mx-auto rounded-full bg-default-200 size-12" />
           <div className="mx-auto h-6 w-48 rounded bg-default-200" />
           <div className="h-16 rounded-xl bg-default-100" />
           <div className="h-16 rounded-xl bg-default-100" />

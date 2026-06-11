@@ -19,7 +19,7 @@ export function WhatsAppFab() {
   return (
     <a
       aria-label="Consultar por WhatsApp"
-      className="fixed bottom-4 left-4 z-50 flex items-center justify-center rounded-full bg-[#25D366] text-white shadow-lg transition hover:scale-105 sm:bottom-6 sm:left-6 sm:h-14 sm:w-14 size-12"
+      className="fixed bottom-4 left-4 z-50 flex items-center justify-center rounded-full bg-[#25D366] text-white shadow-lg transition hover:scale-105 sm:bottom-6 sm:left-6 size-12 sm:size-14"
       href={HREF}
       rel="noopener noreferrer"
       target="_blank"

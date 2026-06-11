@@ -22,7 +22,7 @@ export function ThemeToggleFab() {
   return (
     <Button
       aria-label={isDark ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
-      className="fixed top-4 left-4 z-50 rounded-full shadow-md sm:top-6 sm:left-6 sm:h-12 sm:w-12 size-10"
+      className="fixed top-4 left-4 z-50 rounded-full shadow-md sm:top-6 sm:left-6 size-10 sm:size-12"
       isIconOnly
       onPress={() => setTheme(isDark ? "light" : "dark")}
       variant="secondary"

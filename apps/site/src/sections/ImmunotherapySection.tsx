@@ -58,7 +58,7 @@ export function ImmunotherapySection() {
             {immunotherapyComparison.map((row, index) => (
               <div
                 key={row.aspect}
-                className={`-mx-4 grid grid-cols-1 gap-6 border-border border-b px-4 py-4 sm:grid-cols-3 ${
+                className={`-mx-4 grid grid-cols-1 gap-6 border-border border-b sm:grid-cols-3 p-4 ${
                   index % 2 === 0 ? "bg-(--surface-2)" : ""
                 }`}
               >

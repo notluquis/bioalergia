@@ -191,7 +191,7 @@ export function App() {
                   </Button>
                   <Button
                     aria-label={theme === "dark" ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
-                    className="rounded-full border-border text-(--ink-muted) sm:h-9 sm:w-9 size-8"
+                    className="rounded-full border-border text-(--ink-muted) size-8 sm:size-9"
                     isIconOnly
                     variant="outline"
                     onPress={toggle}
