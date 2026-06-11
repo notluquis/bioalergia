@@ -200,6 +200,23 @@ async function downloadFromUrl(url: string, filename: string): Promise<void> {
   URL.revokeObjectURL(objectUrl);
 }
 
+// Abre el PDF en una nueva pestaña usando el endpoint raw o de preview
+async function viewFromUrl(url: string, fetchOptions?: RequestInit): Promise<void> {
+  const res = await fetch(url, { credentials: "include", ...fetchOptions });
+  if (!res.ok) {
+    toast.error("No se pudo visualizar el PDF");
+    return;
+  }
+  const blob = await res.blob();
+  const objectUrl = URL.createObjectURL(blob);
+  window.open(objectUrl, "_blank");
+  // No hacemos revoke aquí para que la pestaña pueda cargarlo
+}
+
+async function viewPrescriptionPdf(id: string, mode: "full" | "overlay" = "full"): Promise<void> {
+  await viewFromUrl(`/api/certificates/prescription/${id}/pdf?mode=${mode}`);
+}
+
 // mode: "full" = digital completa · "overlay" = solo datos (sobre recetario
 // pre-impreso) · "template" = recetario en blanco.
 async function downloadPrescriptionPdf(
@@ -479,6 +496,49 @@ export function PrescriptionPage() {
     setMedications([newMedicationDraft()]);
   };
 
+  const [isPreviewing, setIsPreviewing] = useState(false);
+  const handlePreview = async () => {
+    if (!patient) {
+      setSubmitError("Selecciona un paciente");
+      return;
+    }
+    const cleanMedications = medications
+      .map((item) => ({
+        dosage: composeDosage(item),
+        duration: composeDuration(item),
+        frequency: composeFrequency(item),
+        instructions: item.instructions.trim() || undefined,
+        name: item.name.trim(),
+      }))
+      .filter((item) => item.name.length > 0);
+    if (cleanMedications.length === 0) {
+      setSubmitError("Agrega al menos un medicamento");
+      return;
+    }
+    const diagnosisText = formatPrescriptionDiagnoses(selectedDiagnoses);
+    setSubmitError(null);
+    setIsPreviewing(true);
+
+    try {
+      const payload: GenerateMedicalPrescriptionInput = {
+        date,
+        diagnosis: diagnosisText || undefined,
+        diagnoses: selectedDiagnoses.length > 0 ? selectedDiagnoses : undefined,
+        medications: cleanMedications,
+        notes: notes.trim() || undefined,
+        patientId: patient.id,
+      };
+
+      await viewFromUrl("/api/certificates/prescription/preview", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+    } finally {
+      setIsPreviewing(false);
+    }
+  };
+
   return (
     <div className="space-y-4">
       <Card className="p-6">
@@ -544,6 +604,7 @@ export function PrescriptionPage() {
           date={date}
           generatePending={generateMutation.isPending}
           isEditing={supersedesId != null}
+          isPreviewing={isPreviewing}
           medications={medications}
           notes={notes}
           selectedDiagnoses={selectedDiagnoses}
@@ -559,6 +620,7 @@ export function PrescriptionPage() {
           onMedicationChange={updateMedication}
           onMedicationRemove={removeMedication}
           onNotesChange={setNotes}
+          onPreview={handlePreview}
           onRemoveDiagnosis={removeDiagnosis}
           onSubmit={handleSubmit}
           patientLabel={patientLabel}
@@ -899,6 +961,24 @@ function PrescriptionHistory({
         <Dropdown>
           <Dropdown.Trigger>
             <Button className="gap-2" size="sm" variant="outline">
+              <FileText size={14} />
+              Ver
+              <ChevronDown className="ml-1 opacity-70" size={14} />
+            </Button>
+          </Dropdown.Trigger>
+          <Dropdown.Popover placement="bottom end">
+            <Dropdown.Menu
+              onAction={(key) => void viewPrescriptionPdf(item.id, key as "full" | "overlay")}
+            >
+              <Dropdown.Item id="full">Ver receta completa</Dropdown.Item>
+              <Dropdown.Item id="overlay">Ver solo datos</Dropdown.Item>
+            </Dropdown.Menu>
+          </Dropdown.Popover>
+        </Dropdown>
+
+        <Dropdown>
+          <Dropdown.Trigger>
+            <Button className="gap-2" size="sm" variant="outline">
               <Download size={14} />
               Descargar
               <ChevronDown className="ml-1 opacity-70" size={14} />
@@ -1156,6 +1236,7 @@ function PrescriptionModal({
   date,
   generatePending,
   isEditing,
+  isPreviewing,
   medications,
   notes,
   selectedDiagnoses,
@@ -1170,6 +1251,7 @@ function PrescriptionModal({
   onNotesChange,
   onRemoveDiagnosis,
   onSubmit,
+  onPreview,
   patientLabel,
   submitError,
 }: {
@@ -1177,6 +1259,7 @@ function PrescriptionModal({
   date: string;
   generatePending: boolean;
   isEditing: boolean;
+  isPreviewing: boolean;
   medications: MedicationDraft[];
   notes: string;
   selectedDiagnoses: PrescriptionDiagnosis[];
@@ -1191,6 +1274,7 @@ function PrescriptionModal({
   onNotesChange: (value: string) => void;
   onRemoveDiagnosis: (id: string) => void;
   onSubmit: () => Promise<void>;
+  onPreview: () => Promise<void>;
   patientLabel: string;
   submitError: string | null;
 }) {
@@ -1379,8 +1463,16 @@ function PrescriptionModal({
                     >
                       Cancelar
                     </Button>
+                    <Button
+                      isDisabled={generatePending || isPreviewing}
+                      isPending={isPreviewing}
+                      onPress={() => void onPreview()}
+                      variant="outline"
+                    >
+                      Previsualización
+                    </Button>
                     <Button isPending={generatePending} type="submit">
-                      Generar receta
+                      {isEditing ? "Reemplazar receta" : "Generar receta"}
                     </Button>
                   </div>
                 </div>

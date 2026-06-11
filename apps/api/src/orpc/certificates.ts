@@ -237,7 +237,6 @@ const certificatesORPCRouterBase = {
       const folioSeq = folioRes.rows[0]?.v ?? 0;
       const folio = buildFolio(folioSeq, Number(parsed.date.slice(0, 4)));
       const doctorLicense = clinic.superintendenciaNumber ?? undefined;
-      const prescriptionType = parsed.prescriptionType ?? "SIMPLE";
       const prescriptionId = crypto.randomUUID();
       const verificationCode = generateVerificationCode();
 
@@ -257,7 +256,6 @@ const certificatesORPCRouterBase = {
           date: parseDateOnly(parsed.date),
           folio,
           folioSeq,
-          prescriptionType,
           doctorLicense,
           diagnosis: diagnosisText,
           diagnoses: storedDiagnoses,
@@ -272,7 +270,6 @@ const certificatesORPCRouterBase = {
           // Metadata = respaldo Json plano. Optativos ausentes → `null` (JSON
           // válido), nunca `undefined`. Diagnoses van a su columna dedicada.
           metadata: {
-            prescriptionType,
             medications: storedMedications,
             diagnosis: diagnosisText ?? null,
             notes: parsed.notes ?? null,
@@ -347,7 +344,6 @@ const certificatesORPCRouterBase = {
       const f = input ?? {};
       const where: Record<string, unknown> = {};
       if (f.patientId) where.patientId = f.patientId;
-      if (f.prescriptionType) where.prescriptionType = f.prescriptionType;
       if (f.status) where.status = f.status;
 
       // Rango de fechas sobre `date` (receta) o `issuedAt` (emisión, default).

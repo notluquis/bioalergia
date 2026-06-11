@@ -9,7 +9,6 @@ import {
 const baseInput: MedicalPrescriptionPdfInput = {
   patientId: 1,
   date: "2026-06-09",
-  prescriptionType: "SIMPLE",
   patientAge: 54,
   folio: "RX-2026-000123-7K2M",
   diagnosis: "Rinitis alérgica persistente (CIE-11: CA08.0)",

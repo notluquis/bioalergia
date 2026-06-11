@@ -86,3 +86,76 @@ prescriptionPdfRoutes.get("/:id/pdf", async (c) => {
     return c.text("PDF generation failed", 500);
   }
 });
+
+// POST /api/certificates/prescription/preview
+//
+// Genera el PDF de receta en memoria a partir del input del formulario
+// SIN asignarle un folio ni guardarlo en base de datos.
+prescriptionPdfRoutes.post("/preview", async (c) => {
+  const session = await getSessionUser(c);
+  if (!session) return c.text("Unauthorized", 401);
+  if (!(await hasPermission(session, "create", "MedicalCertificate"))) {
+    return c.text("Forbidden", 403);
+  }
+
+  try {
+    const json = await c.req.json();
+    const { generateMedicalPrescriptionInputSchema } = await import(
+      "@finanzas/orpc-contracts/certificates"
+    );
+    const { medicalPrescriptionSchema } = await import(
+      "../modules/certificates/certificate.schema.ts"
+    );
+
+    const input = generateMedicalPrescriptionInputSchema.parse(json);
+    const parsed = medicalPrescriptionSchema.parse(input);
+
+    const patient = await db.patient.findUnique({
+      where: { id: parsed.patientId },
+      select: { birthDate: true, person: { select: { fatherName: true, motherName: true, names: true, rut: true, sex: true } } },
+    });
+    if (!patient) return c.text("Patient not found", 404);
+
+    const fullName = [patient.person.names, patient.person.fatherName, patient.person.motherName]
+      .filter(Boolean)
+      .join(" ");
+
+    const clinic = await db.clinicSettings.findUnique({ where: { id: 1 } });
+    const { generateMedicalPrescriptionPdf } = await import(
+      "../modules/certificates/certificate.service.ts"
+    );
+
+    const rawPdf = await generateMedicalPrescriptionPdf(
+      {
+        patientId: parsed.patientId,
+        date: parsed.date.slice(0, 10),
+        diagnosis: parsed.diagnosis ?? undefined,
+        medications: parsed.medications.map(m => ({
+          name: m.name,
+          dosage: m.dosage ?? undefined,
+          duration: m.duration ?? undefined,
+          frequency: m.frequency ?? undefined,
+          instructions: m.instructions ?? undefined,
+        })),
+        notes: parsed.notes ?? undefined,
+        mode: "full",
+        folio: "Folio no asignado",
+        doctorLicense: clinic?.superintendenciaNumber ?? undefined,
+        patientAge: patient.birthDate ? Math.floor((Date.now() - patient.birthDate.getTime()) / 31557600000) : undefined,
+        patientBirthDate: patient.birthDate?.toISOString().slice(0, 10),
+        patientSex: patient.person.sex ?? undefined,
+        patient: { name: fullName, rut: patient.person.rut },
+        clinicName: clinic?.name ?? undefined,
+      },
+      { primary: clinic?.logoUrl, secondary: clinic?.secondaryLogoUrl }
+    );
+
+    c.header("Content-Type", "application/pdf");
+    c.header("Content-Disposition", 'inline; filename="preview.pdf"');
+    c.header("Cache-Control", "no-store");
+    return c.body(rawPdf as unknown as ArrayBuffer);
+  } catch (error) {
+    logError("prescription.preview", error);
+    return c.text("PDF preview generation failed", 500);
+  }
+});
