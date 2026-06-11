@@ -1,6 +1,6 @@
 import { Input, Label, Spinner, TextField, Popover } from "@heroui/react";
 import { ChevronDown, Info, Search } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 
 import type { PrescriptionDiagnosis } from "./diagnosis-catalog";
 import { cie10Equivalent, loadIcd11To10 } from "./icd-crosswalk";
@@ -79,12 +79,20 @@ export function Icd11DiagnosisPicker({
   };
 
   const showPanel = query.trim().length >= 2;
+  const triggerRef = useRef<HTMLDivElement>(null);
+  const [triggerWidth, setTriggerWidth] = useState<number | undefined>();
+
+  useEffect(() => {
+    if (triggerRef.current) {
+      setTriggerWidth(triggerRef.current.offsetWidth);
+    }
+  }, [showPanel]);
 
   return (
     <div className="space-y-2">
       <Popover isOpen={showPanel}>
         <Popover.Trigger>
-          <div className="w-full cursor-text">
+          <div ref={triggerRef} className="w-full cursor-text">
             <TextField onChange={onQueryChange} value={query}>
               <Label>Buscar diagnóstico CIE-11</Label>
               <Input placeholder="Ej: rinitis, urticaria, asma alérgica…" />
@@ -97,9 +105,10 @@ export function Icd11DiagnosisPicker({
             isNonModal
             placement="bottom"
             offset={4}
-            className="w-[var(--trigger-width)] max-h-80 overflow-y-auto p-0 border border-default-200 items-start justify-start"
+            className="max-h-80 overflow-y-auto p-0 border border-default-200 items-start justify-start"
+            style={{ width: triggerWidth ? `${triggerWidth}px` : "auto" }}
           >
-            <Popover.Dialog className="w-full p-0 outline-none">
+            <div className="w-full p-0 outline-none">
               {loading ? (
                 <div className="flex items-center gap-2 text-default-500 text-sm p-3">
                   <Spinner size="sm" />
@@ -160,7 +169,7 @@ export function Icd11DiagnosisPicker({
                   })}
                 </ul>
               )}
-            </Popover.Dialog>
+            </div>
           </Popover.Content>
         ) : null}
       </Popover>
