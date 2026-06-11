@@ -682,38 +682,24 @@ function PrescriptionRowMenu({
   item,
   onAnnul,
   onEdit,
-  onEmail,
 }: {
   item: MedicalPrescription;
   onAnnul: (item: MedicalPrescription) => void;
   onEdit: (item: MedicalPrescription) => void;
-  onEmail: (item: MedicalPrescription) => void;
 }) {
   const annulled = item.status === "ANNULLED";
   // Receta inmutable: NO se elimina (documento legal). Solo anular o re-emitir.
-  const menuItems = [
-    { icon: <Printer size={14} />, id: "print-overlay", label: "Imprimir en recetario" },
-    { icon: <Download size={14} />, id: "download-overlay", label: "PDF solo datos" },
-    { icon: <Mail size={14} />, id: "email", label: "Enviar por email" },
-    ...(annulled
+  const menuItems = (annulled
       ? []
       : [
           { icon: <Pencil size={14} />, id: "edit", label: "Modificar (re-emitir)" },
           { icon: <Ban size={14} />, id: "annul", label: "Anular" },
-        ]),
-  ];
+        ]);
+
+  if (menuItems.length === 0) return null;
 
   const onAction = (key: string) => {
     switch (key) {
-      case "print-overlay":
-        printPrescriptionPdf(item.id, "overlay");
-        break;
-      case "download-overlay":
-        void downloadPrescriptionPdf(item.id, "overlay");
-        break;
-      case "email":
-        onEmail(item);
-        break;
       case "edit":
         onEdit(item);
         break;
@@ -738,8 +724,10 @@ function PrescriptionRowMenu({
         >
           {(entry: (typeof menuItems)[number]) => (
             <Dropdown.Item id={entry.id} key={entry.id} textValue={entry.label}>
-              {entry.icon}
-              <Label>{entry.label}</Label>
+              <div className="flex items-center gap-2">
+                {entry.icon}
+                <span className={entry.id === "annul" ? "text-danger" : ""}>{entry.label}</span>
+              </div>
             </Dropdown.Item>
           )}
         </Dropdown.Menu>
@@ -886,7 +874,7 @@ function PrescriptionHistory({
             isDisabled={item.status === "ANNULLED"}
             onPress={() => printPrescriptionPdf(item.id, "full")}
             size="sm"
-            variant="primary"
+            variant="outline"
           >
             <Printer size={14} />
             Imprimir
@@ -897,7 +885,7 @@ function PrescriptionHistory({
                 isDisabled={item.status === "ANNULLED"}
                 isIconOnly
                 size="sm"
-                variant="primary"
+                variant="outline"
               >
                 <ChevronDown size={14} />
               </Button>
@@ -950,7 +938,7 @@ function PrescriptionHistory({
           <Mail size={14} />
         </Button>
 
-        <PrescriptionRowMenu item={item} onAnnul={onAnnul} onEdit={onEdit} onEmail={onEmail} />
+        <PrescriptionRowMenu item={item} onAnnul={onAnnul} onEdit={onEdit} />
       </div>
     </article>
   );
