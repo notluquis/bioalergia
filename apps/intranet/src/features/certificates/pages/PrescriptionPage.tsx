@@ -2,9 +2,7 @@ import {
   Button,
   ButtonGroup,
   Card,
-  Checkbox,
   Chip,
-  Description,
   Disclosure,
   Dropdown,
   FieldError,
@@ -13,8 +11,6 @@ import {
   Label,
   ListBox,
   Modal,
-  Radio,
-  RadioGroup,
   Select,
   TextArea,
   TextField,
@@ -61,7 +57,7 @@ import {
 } from "@/features/certificates/snre-valuesets";
 import { certificatesORPCClient, toCertificatesApiError } from "@/features/certificates/orpc";
 import { PatientSelectModal } from "@/features/exam-reports/components/PatientSelectModal";
-import { fetchPatient, updatePatient } from "@/features/patients/api";
+import { fetchPatient } from "@/features/patients/api";
 import { CreatePatientModal } from "@/features/patients/components/CreatePatientModal";
 import { EmailPrescriptionModal } from "@/features/certificates/components/EmailPrescriptionModal";
 import { confirmAction } from "@/components/ui/ConfirmDialog";
@@ -287,7 +283,6 @@ export function PrescriptionPage() {
     setFromDate("");
     setToDate("");
     setDateField("issuedAt");
-    setFilterType("ALL");
     setFilterStatus("ALL");
   };
 
@@ -387,37 +382,6 @@ export function PrescriptionPage() {
     },
     onSuccess: () => {
       toast.success("Receta anulada");
-    },
-  });
-
-  const emailMutation = useMutation({
-    mutationFn: async (args: {
-      id: string;
-      to: string;
-      message?: string;
-      saveEmail?: boolean;
-      patientId?: number;
-    }) => {
-      try {
-        const result = await certificatesORPCClient.emailPrescription({
-          id: args.id,
-          to: args.to,
-          message: args.message,
-        });
-        if (args.saveEmail && args.patientId) {
-          await updatePatient({ patientId: args.patientId, email: args.to });
-        }
-        return result;
-      } catch (error) {
-        throw toCertificatesApiError(error);
-      }
-    },
-    onSuccess: () => {
-      setEmailTarget(null);
-      toast.success("Receta enviada por email");
-    },
-    onError: (error) => {
-      toast.error(error instanceof Error ? error.message : "Error al enviar receta");
     },
   });
 
@@ -940,10 +904,10 @@ function PrescriptionHistory({
             </Dropdown.Trigger>
             <Dropdown.Popover placement="bottom end">
               <Dropdown.Menu
-                onAction={(key) => printPrescriptionPdf(item.id, key as "full" | "data")}
+                onAction={(key) => printPrescriptionPdf(item.id, key as "full" | "overlay")}
               >
                 <Dropdown.Item id="full">Imprimir receta completa</Dropdown.Item>
-                <Dropdown.Item id="data">Imprimir solo datos</Dropdown.Item>
+                <Dropdown.Item id="overlay">Imprimir solo datos</Dropdown.Item>
               </Dropdown.Menu>
             </Dropdown.Popover>
           </Dropdown>
@@ -967,10 +931,10 @@ function PrescriptionHistory({
             </Dropdown.Trigger>
             <Dropdown.Popover placement="bottom end">
               <Dropdown.Menu
-                onAction={(key) => void downloadPrescriptionPdf(item.id, key as "full" | "data")}
+                onAction={(key) => void downloadPrescriptionPdf(item.id, key as "full" | "overlay")}
               >
                 <Dropdown.Item id="full">Descargar receta completa</Dropdown.Item>
-                <Dropdown.Item id="data">Descargar solo datos</Dropdown.Item>
+                <Dropdown.Item id="overlay">Descargar solo datos</Dropdown.Item>
               </Dropdown.Menu>
             </Dropdown.Popover>
           </Dropdown>
