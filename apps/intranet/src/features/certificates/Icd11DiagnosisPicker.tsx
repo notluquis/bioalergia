@@ -1,6 +1,6 @@
-import { Input, Label, Spinner, TextField, ScrollShadow, Button, Popover } from "@heroui/react";
+import { Input, Label, Spinner, TextField, ScrollShadow, Card, Button } from "@heroui/react";
 import { ChevronDown, Info, Search } from "lucide-react";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 
 import type { PrescriptionDiagnosis } from "./diagnosis-catalog";
 import { cie10Equivalent, loadIcd11To10 } from "./icd-crosswalk";
@@ -79,96 +79,86 @@ export function Icd11DiagnosisPicker({
   };
 
   const showPanel = query.trim().length >= 2;
-  const triggerRef = useRef<HTMLDivElement>(null);
 
   return (
     <div className="relative space-y-2">
-      <div ref={triggerRef} className="w-full">
-        <TextField className="w-full" onChange={onQueryChange} value={query}>
-          <Label>Buscar diagnóstico CIE-11</Label>
-          <Input placeholder="Ej: rinitis, urticaria, asma alérgica…" />
-        </TextField>
-      </div>
+      <TextField className="w-full" onChange={onQueryChange} value={query}>
+        <Label>Buscar diagnóstico CIE-11</Label>
+        <Input placeholder="Ej: rinitis, urticaria, asma alérgica…" />
+      </TextField>
 
-      <Popover isOpen={showPanel}>
-        <Popover.Content
-          className="w-[var(--trigger-width)] p-0"
-          placement="bottom start"
-          triggerRef={triggerRef}
-          offset={4}
-        >
-          <Popover.Dialog className="p-0 rounded-lg overflow-hidden border border-default-200 bg-content1 shadow-md">
-            {loading ? (
-              <div className="flex items-center gap-2 text-default-500 text-sm p-3">
-                <Spinner size="sm" />
-                Buscando en CIE-11…
-              </div>
-            ) : results.length === 0 ? (
-              <div className="text-default-500 text-sm p-3">Sin resultados CIE-11</div>
-            ) : (
-              <ScrollShadow className="max-h-80 w-full overflow-y-auto">
-                <div className="flex flex-col w-full">
-                  {results.map((result, index) => {
-                    const cie10 = result.code ? cie10Equivalent(result.code) : undefined;
-                    const expanded = expandedId === result.id;
-                    return (
-                      <div key={result.id} className="flex flex-col w-full">
-                        {index > 0 && <hr className="border-default-100" />}
-                        <div className="flex items-stretch w-full">
-                          <Button
-                            className="h-auto flex-1 justify-start gap-2 bg-transparent p-3 rounded-none data-[hover=true]:bg-default-100"
-                            onPress={() => pick(result)}
-                          >
-                            <Search className="mt-0.5 size-3.5 shrink-0 text-default-400" />
-                            {result.code ? (
-                              <span className="mt-0.5 shrink-0 font-mono font-semibold text-primary text-xs">
-                                {result.code}
+      {showPanel ? (
+        <Card className="absolute left-0 right-0 top-full z-50 mt-1 shadow-md rounded-lg overflow-hidden border border-default-200 bg-content1">
+          {loading ? (
+            <div className="flex items-center gap-2 text-default-500 text-sm p-3">
+              <Spinner size="sm" />
+              Buscando en CIE-11…
+            </div>
+          ) : results.length === 0 ? (
+            <div className="text-default-500 text-sm p-3">Sin resultados CIE-11</div>
+          ) : (
+            <ScrollShadow className="max-h-80 w-full overflow-y-auto">
+              <div className="flex flex-col w-full">
+                {results.map((result, index) => {
+                  const cie10 = result.code ? cie10Equivalent(result.code) : undefined;
+                  const expanded = expandedId === result.id;
+                  return (
+                    <div key={result.id} className="flex flex-col w-full">
+                      {index > 0 && <hr className="border-default-100" />}
+                      <div className="flex items-stretch w-full">
+                        <Button
+                          className="h-auto flex-1 justify-start gap-2 bg-transparent p-3 rounded-none data-[hover=true]:bg-default-100"
+                          onPress={() => pick(result)}
+                        >
+                          <Search className="mt-0.5 size-3.5 shrink-0 text-default-400" />
+                          {result.code ? (
+                            <span className="mt-0.5 shrink-0 font-mono font-semibold text-primary text-xs">
+                              {result.code}
+                            </span>
+                          ) : null}
+                          <div className="flex min-w-0 flex-1 flex-col items-start text-left">
+                            <span className="block w-full truncate text-sm font-normal text-foreground">
+                              {result.title}
+                            </span>
+                            {result.matchedTerm ? (
+                              <span className="block w-full truncate text-default-400 text-xs font-normal">
+                                coincide: {result.matchedTerm}
                               </span>
                             ) : null}
-                            <div className="flex min-w-0 flex-1 flex-col items-start text-left">
-                              <span className="block w-full truncate text-sm font-normal text-foreground">
-                                {result.title}
-                              </span>
-                              {result.matchedTerm ? (
-                                <span className="block w-full truncate text-default-400 text-xs font-normal">
-                                  coincide: {result.matchedTerm}
-                                </span>
-                              ) : null}
-                            </div>
-                            {cie10 ? (
-                              <span className="mt-0.5 shrink-0 text-default-400 text-xs font-normal">
-                                ≈CIE-10 {cie10}
-                              </span>
-                            ) : null}
-                          </Button>
-                          <div className="w-[1px] bg-default-100 my-2" />
-                          <Button
-                            isIconOnly
-                            className="h-auto w-12 shrink-0 bg-transparent rounded-none text-default-400 data-[hover=true]:bg-default-100 data-[hover=true]:text-primary"
-                            onPress={() => setExpandedId(expanded ? null : result.id)}
-                            aria-label={`Detalles de ${result.title}`}
-                            aria-expanded={expanded}
-                          >
-                            {expanded ? <ChevronDown size={14} /> : <Info size={14} />}
-                          </Button>
-                        </div>
-                        {expanded ? (
-                          <div className="flex flex-col w-full">
-                            <hr className="border-default-100" />
-                            <div className="bg-default-50 px-3 py-2">
-                              <Icd11DetailPanel uri={result.id} />
-                            </div>
                           </div>
-                        ) : null}
+                          {cie10 ? (
+                            <span className="mt-0.5 shrink-0 text-default-400 text-xs font-normal">
+                              ≈CIE-10 {cie10}
+                            </span>
+                          ) : null}
+                        </Button>
+                        <div className="w-[1px] bg-default-100 my-2" />
+                        <Button
+                          isIconOnly
+                          className="h-auto w-12 shrink-0 bg-transparent rounded-none text-default-400 data-[hover=true]:bg-default-100 data-[hover=true]:text-primary"
+                          onPress={() => setExpandedId(expanded ? null : result.id)}
+                          aria-label={`Detalles de ${result.title}`}
+                          aria-expanded={expanded}
+                        >
+                          {expanded ? <ChevronDown size={14} /> : <Info size={14} />}
+                        </Button>
                       </div>
-                    );
-                  })}
-                </div>
-              </ScrollShadow>
-            )}
-          </Popover.Dialog>
-        </Popover.Content>
-      </Popover>
+                      {expanded ? (
+                        <div className="flex flex-col w-full">
+                          <hr className="border-default-100" />
+                          <div className="bg-default-50 px-3 py-2">
+                            <Icd11DetailPanel uri={result.id} />
+                          </div>
+                        </div>
+                      ) : null}
+                    </div>
+                  );
+                })}
+              </div>
+            </ScrollShadow>
+          )}
+        </Card>
+      ) : null}
     </div>
   );
 }
