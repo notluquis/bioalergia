@@ -139,6 +139,43 @@ export const medicalPrescriptionListResponseSchema = z.object({
   items: z.array(medicalPrescriptionSchema),
 });
 
+export const certificateIdInputSchema = z.object({
+  id: z.string().min(1),
+});
+
+export const listMedicalCertificatesInputSchema = z
+  .object({
+    limit: z.number().int().positive().max(200).optional(),
+    search: z.string().max(120).optional(),
+    from: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/)
+      .optional(),
+    to: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/)
+      .optional(),
+  })
+  .optional();
+
+export const medicalCertificateListItemSchema = z.object({
+  id: z.string(),
+  patientName: z.string(),
+  patientRut: z.string().nullable(),
+  birthDate: z.coerce.date(),
+  address: z.string(),
+  diagnosis: z.string(),
+  issuedAt: z.coerce.date(),
+  issuedBy: z.number().int(),
+  driveFileId: z.string().nullable().optional(),
+  pdfHash: z.string().nullable().optional(),
+});
+
+export const medicalCertificateListResponseSchema = z.object({
+  items: z.array(medicalCertificateListItemSchema),
+  total: z.number().int().optional(),
+});
+
 export const certificateVerifyResponseSchema = z.union([
   z.object({
     diagnosis: z.string(),
@@ -193,6 +230,14 @@ export const certificatesContract = {
     .route({ method: "GET", path: "/verify/{id}" })
     .input(certificateVerifyInputSchema)
     .output(certificateVerifyResponseSchema),
+  listMedical: oc
+    .route({ method: "GET", path: "/medical" })
+    .input(listMedicalCertificatesInputSchema)
+    .output(medicalCertificateListResponseSchema),
+  deleteMedical: oc
+    .route({ method: "DELETE", path: "/medical/{id}" })
+    .input(certificateIdInputSchema)
+    .output(z.object({ ok: z.boolean() })),
 };
 
 export type CertificatesContract = typeof certificatesContract;
@@ -200,3 +245,4 @@ export type GenerateMedicalPrescriptionInput = z.infer<
   typeof generateMedicalPrescriptionInputSchema
 >;
 export type MedicalPrescription = z.infer<typeof medicalPrescriptionSchema>;
+export type MedicalCertificateListItem = z.infer<typeof medicalCertificateListItemSchema>;

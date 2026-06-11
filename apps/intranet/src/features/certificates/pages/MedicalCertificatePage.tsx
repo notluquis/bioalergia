@@ -1,373 +1,413 @@
-import { Button, Card, Form, Label, ListBox, NumberField, Select } from "@heroui/react";
-import { useForm } from "@tanstack/react-form";
-import { useMutation } from "@tanstack/react-query";
-import { getRouteApi } from "@tanstack/react-router";
-import { addDays, formatChile, today } from "@/lib/dates";
-import { z } from "zod";
-import { certificatesORPCClient, toCertificatesApiError } from "@/features/certificates/orpc";
 import {
-  TanStackInputField,
-  TanStackTextAreaField,
-} from "@/components/forms/TanStackFieldControls";
-import { AppDatePicker, AppDateRangePicker } from "@/components/forms/AppDatePicker";
-import { PatientSelectModal } from "@/features/exam-reports/components/PatientSelectModal";
-import { CreatePatientModal } from "@/features/patients/components/CreatePatientModal";
-import { findPersonByRut } from "@/features/people/api";
-import { toast } from "@/lib/toast-interceptor";
-import { DocumentPatientSection } from "@/components/documents/DocumentPatientSection";
-import { useDocumentPatientAutofill } from "@/components/documents/useDocumentPatientAutofill";
-import { Search } from "lucide-react";
-import { useState } from "react";
+  Button,
+  Chip,
+  DateField,
+  DateRangePicker,
+  Disclosure,
+  Label,
+  RangeCalendar,
+  SearchField,
+  Surface,
+} from "@heroui/react";
+import { parseDate } from "@internationalized/date";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Download, FileText, PlusCircle, Trash2 } from "lucide-react";
+import { useMemo, useState } from "react";
 
-const routeApi = getRouteApi("/_authed/certificates/medical");
+import { PageHeader } from "@/components/layouts/PageHeader";
+import { PageState } from "@/components/ui/PageState";
+import { useConfirmDialog } from "@/context/ConfirmDialogContext";
+import { useToast } from "@/context/ToastContext";
+import { useCan } from "@/hooks/use-can";
+import { chileDay, endOfWeek, formatChile, getISOWeek, startOfWeek } from "@/lib/dates";
+import { certificatesORPCClient } from "@/features/certificates/orpc";
+import { certificatesKeys } from "@/features/certificates/queries";
+import { CreateMedicalCertificateModal } from "@/features/certificates/components/CreateMedicalCertificateModal";
+import type { MedicalCertificateListItem } from "@finanzas/orpc-contracts/certificates";
+import { csrfFetch } from "@/lib/csrf-fetch";
 
-// Schema matching backend
-const medicalCertificateSchema = z.object({
-  patientName: z.string().min(1, "Nombre del paciente es requerido"),
-  rut: z.string().regex(/^\d{1,2}\.\d{3}\.\d{3}-[\dkK]$/, "RUT inválido (formato: 12.345.678-9)"),
-  birthDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Fecha inválida"),
-  address: z.string().min(1, "Domicilio es requerido"),
-  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Fecha inválida"),
-  diagnosis: z.string().min(1, "Diagnóstico es requerido"),
-  symptoms: z.string().optional(),
-  restDays: z.number().int().min(0).optional(),
-  restStartDate: z.string().optional(),
-  restEndDate: z.string().optional(),
-  purpose: z.enum(["trabajo", "estudio", "otro"]).default("trabajo"),
-  purposeDetail: z.string().optional(),
-});
-
-type FormData = z.infer<typeof medicalCertificateSchema>;
+interface Filters {
+  search: string;
+  from: string;
+  to: string;
+}
 
 export function MedicalCertificatePage() {
-  const search = routeApi.useSearch();
-  const [selectPatientOpen, setSelectPatientOpen] = useState(false);
-  const [createPatientOpen, setCreatePatientOpen] = useState(false);
+  const toast = useToast();
+  const qc = useQueryClient();
+  const confirmDialog = useConfirmDialog();
+  const { can } = useCan();
+  const canCreate = can("create", "MedicalCertificate");
+  const canDelete = can("delete", "MedicalCertificate");
+  const canRead = can("read", "MedicalCertificate");
 
-  const generateMutation = useMutation({
-    mutationFn: async (data: FormData) => {
-      try {
-        return await certificatesORPCClient.generateMedical(data);
-      } catch (error) {
-        throw toCertificatesApiError(error);
-      }
-    },
-    onSuccess: (pdfBlob, variables) => {
-      // Download PDF
-      const url = URL.createObjectURL(pdfBlob);
+  const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
+
+  const [filters, setFilters] = useState<Filters>({
+    search: "",
+    from: "",
+    to: "",
+  });
+
+  const listQ = useQuery(
+    certificatesKeys.medicalList({
+      limit: 200,
+      search: filters.search.trim() || undefined,
+      from: filters.from || undefined,
+      to: filters.to || undefined,
+    })
+  );
+
+  const items = listQ.data?.items ?? [];
+  const grouped = useMemo(() => groupByYearMonthWeek(items), [items]);
+
+  const downloadPdf = async (id: string, rut: string | null) => {
+    try {
+      setDownloadingId(id);
+      const res = await csrfFetch(`/api/certificates/medical/${id}/pdf`);
+      if (!res.ok) throw new Error("Error al descargar PDF");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `certificado_${variables.rut.replace(/\./g, "")}_${formatChile(new Date(), "YYYYMMDD")}.pdf`;
+      const safeRut = (rut ?? "sin_rut").replace(/\./g, "");
+      a.download = `certificado_${safeRut}.pdf`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setDownloadingId(null);
+    }
+  };
 
-      toast.success("Certificado generado exitosamente");
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => certificatesORPCClient.deleteMedical({ id }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: certificatesKeys.medicalLists() });
+      toast.success("Certificado eliminado");
     },
-    onError: (error) => {
-      toast.error(`Error: ${error instanceof Error ? error.message : "Error desconocido"}`);
-    },
+    onError: (e) => toast.error((e as Error).message),
   });
 
-  const form = useForm({
-    defaultValues: {
-      patientName: search.patientName || "",
-      rut: search.rut || "",
-      birthDate: search.birthDate || `${Number(today().slice(0, 4)) - 25}${today().slice(4)}`,
-      address: search.address || "",
-      date: today(),
-      diagnosis: "",
-      symptoms: "",
-      restDays: 0,
-      restStartDate: today(),
-      restEndDate: addDays(today(), 7),
-      purpose: "trabajo" as "trabajo" | "estudio" | "otro",
-      purposeDetail: "",
-    },
-    onSubmit: async ({ value }) => {
-      await generateMutation.mutateAsync(value);
-    },
-  });
-
-  const handleAutofill = useDocumentPatientAutofill(form, {
-    patientName: "patientName",
-    birthDate: "birthDate",
-    address: "address",
-  });
+  const renderRow = (r: MedicalCertificateListItem) => {
+    return (
+      <li
+        className="flex flex-col gap-2 border-default-100 border-t p-3 first:border-t-0 md:flex-row md:items-center md:justify-between"
+        key={r.id}
+      >
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <strong className="truncate">{r.patientName}</strong>
+            <span className="font-mono text-default-600 text-xs">{r.patientRut ?? "Sin RUT"}</span>
+            <Chip color="accent" size="sm" variant="primary">
+              Certificado Médico
+            </Chip>
+          </div>
+          <p className="mt-1 line-clamp-1 text-default-600 text-xs">{r.diagnosis}</p>
+          <p className="text-default-600 text-xs">
+            Emitido: {formatChile(r.issuedAt, "DD MMM YYYY · HH:mm")}
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          {canRead && (
+            <Button
+              aria-label="Descargar PDF"
+              isIconOnly
+              isPending={downloadingId === r.id}
+              onPress={() => downloadPdf(r.id, r.patientRut)}
+              size="sm"
+              variant="outline"
+            >
+              <Download className="size-4" />
+            </Button>
+          )}
+          {canDelete && (
+            <Button
+              aria-label="Eliminar"
+              isIconOnly
+              onPress={() => {
+                void (async () => {
+                  const ok = await confirmDialog({
+                    title: "Eliminar certificado",
+                    description: "¿Eliminar este certificado? La acción es irreversible.",
+                    confirmLabel: "Eliminar",
+                    confirmVariant: "danger",
+                    status: "danger",
+                  });
+                  if (ok) deleteMutation.mutate(r.id);
+                })();
+              }}
+              size="sm"
+              variant="danger"
+            >
+              <Trash2 className="size-4" />
+            </Button>
+          )}
+        </div>
+      </li>
+    );
+  };
 
   return (
-    <Card className="p-6">
-      <Form
-        onSubmit={(e: React.FormEvent<HTMLFormElement>) => {
-          e.preventDefault();
-          e.stopPropagation();
-          void form.handleSubmit();
-        }}
-        validationBehavior="aria"
-      >
-        <div className="space-y-6">
-          <DocumentPatientSection
-            actionButton={
-              <Button
-                size="sm"
-                variant="outline"
-                className="gap-2"
-                onPress={() => setSelectPatientOpen(true)}
-              >
-                <Search size={14} />
-                Seleccionar Paciente
-              </Button>
-            }
-            patientNameField={
-              <form.Field name="patientName">
-                {(field) => <TanStackInputField field={field} label="Nombre Completo" />}
-              </form.Field>
-            }
-            rutField={
-              <form.Field name="rut">
-                {(field) => (
-                  <TanStackInputField
-                    field={field}
-                    label="RUT"
-                    placeholder="12.345.678-9"
-                    onBlur={() => handleAutofill(field.state.value)}
-                  />
-                )}
-              </form.Field>
-            }
-            birthDateField={
-              <form.Field name="birthDate">
-                {(field) => (
-                  <AppDatePicker
-                    label="Fecha de Nacimiento"
-                    errorMessage={field.state.meta.errors.join(", ")}
-                    value={field.state.value}
-                    onChange={(val) => {
-                      field.handleChange(val);
-                      field.handleBlur();
-                    }}
-                    onBlur={field.handleBlur}
-                  />
-                )}
-              </form.Field>
-            }
-            addressField={
-              <form.Field name="address">
-                {(field) => <TanStackInputField field={field} label="Domicilio" />}
-              </form.Field>
-            }
-          />
-
-          {/* Medical Information */}
-          <div>
-            <h3 className="mb-4 font-semibold text-foreground text-lg">Información Médica</h3>
-            <div className="grid gap-4">
-              <form.Field name="date">
-                {(field) => (
-                  <AppDatePicker
-                    className="sm:w-1/2"
-                    label="Fecha del Certificado"
-                    errorMessage={field.state.meta.errors.join(", ")}
-                    value={field.state.value}
-                    onChange={(val) => {
-                      field.handleChange(val);
-                      field.handleBlur();
-                    }}
-                    onBlur={field.handleBlur}
-                  />
-                )}
-              </form.Field>
-
-              <form.Field name="diagnosis">
-                {(field) => (
-                  <TanStackTextAreaField
-                    field={field}
-                    label="Diagnóstico *"
-                    rows={3}
-                    placeholder="Ej: cuadro compatible con reacción alérgica"
-                  />
-                )}
-              </form.Field>
-
-              <form.Field name="symptoms">
-                {(field) => (
-                  <TanStackTextAreaField
-                    field={field}
-                    label="Síntomas (opcional)"
-                    rows={2}
-                    placeholder="Ej: dolor en diversas zonas, predominio de cefalea intensa"
-                  />
-                )}
-              </form.Field>
-            </div>
-          </div>
-
-          {/* Rest Period */}
-          <div>
-            <h3 className="mb-4 font-semibold text-foreground text-lg">Reposo Médico (opcional)</h3>
-            <div className="grid gap-4 sm:grid-cols-3">
-              <form.Field name="restDays">
-                {(field) => (
-                  <NumberField
-                    minValue={0}
-                    onBlur={field.handleBlur}
-                    onChange={(v) => field.handleChange(v ?? 0)}
-                    step={1}
-                    value={field.state.value ?? 0}
-                    variant="secondary"
-                  >
-                    <Label>Días de Reposo</Label>
-                    <NumberField.Group className="grid-cols-1">
-                      <NumberField.Input />
-                    </NumberField.Group>
-                  </NumberField>
-                )}
-              </form.Field>
-
-              <form.Field name="restStartDate">
-                {(restStartField) => (
-                  <form.Field name="restEndDate">
-                    {(restEndField) => (
-                      <AppDateRangePicker
-                        className="sm:col-span-2"
-                        label="Reposo: Desde / Hasta"
-                        startValue={restStartField.state.value}
-                        endValue={restEndField.state.value}
-                        onChange={(start: string, end: string) => {
-                          restStartField.handleChange(start);
-                          restEndField.handleChange(end);
-                        }}
-                        visibleMonths={2}
-                      />
-                    )}
-                  </form.Field>
-                )}
-              </form.Field>
-            </div>
-          </div>
-
-          {/* Purpose */}
-          <div>
-            <h3 className="mb-4 font-semibold text-foreground text-lg">Propósito</h3>
-            <div className="grid gap-4">
-              <form.Field name="purpose">
-                {(field) => (
-                  <Select
-                    value={field.state.value || null}
-                    onChange={(key) => {
-                      if (typeof key === "string") {
-                        field.handleChange(key as typeof field.state.value);
-                      }
-                    }}
-                    onBlur={field.handleBlur}
-                  >
-                    <Label>Para ser presentado en</Label>
-                    <Select.Trigger>
-                      <Select.Value />
-                      <Select.Indicator />
-                    </Select.Trigger>
-                    <Select.Popover>
-                      <ListBox>
-                        <ListBox.Item id="trabajo" textValue="Lugar de trabajo">
-                          Lugar de trabajo
-                        </ListBox.Item>
-                        <ListBox.Item id="estudio" textValue="Establecimiento educacional">
-                          Establecimiento educacional
-                        </ListBox.Item>
-                        <ListBox.Item id="otro" textValue="Otro">
-                          Otro
-                        </ListBox.Item>
-                      </ListBox>
-                    </Select.Popover>
-                  </Select>
-                )}
-              </form.Field>
-
-              <form.Subscribe selector={(state) => state.values.purpose}>
-                {(purpose) =>
-                  purpose === "otro" && (
-                    <form.Field name="purposeDetail">
-                      {(field) => <TanStackInputField field={field} label="Especificar" />}
-                    </form.Field>
-                  )
-                }
-              </form.Subscribe>
-            </div>
-          </div>
-
-          {/* Actions */}
-          <div className="flex justify-end gap-3 border-default-200 border-t pt-4">
-            <Button
-              type="button"
-              variant="outline"
-              onPress={() => form.reset()}
-              isDisabled={generateMutation.isPending}
-            >
-              Limpiar
+    <div className="mx-auto max-w-7xl space-y-6 p-4 md:p-6">
+      <PageHeader
+        title="Certificados Médicos"
+        description={`${listQ.data?.total ?? 0} certificado(s) emitidos`}
+        actions={
+          canCreate ? (
+            <Button className="gap-2" onPress={() => setCreateModalOpen(true)} size="sm">
+              <PlusCircle size={16} />
+              Nuevo Certificado
             </Button>
-            <Button type="submit" isPending={generateMutation.isPending}>
-              {generateMutation.isPending ? "Generando..." : "Generar Certificado"}
-            </Button>
-          </div>
-        </div>
-      </Form>
+          ) : null
+        }
+      />
 
-      <PatientSelectModal
-        isOpen={selectPatientOpen}
-        onClose={() => setSelectPatientOpen(false)}
-        onCreateNew={() => {
-          setSelectPatientOpen(false);
-          setCreatePatientOpen(true);
-        }}
-        onSelect={async (selected) => {
-          setSelectPatientOpen(false);
-          if (selected.person.rut) {
-            try {
-              const data = await findPersonByRut(selected.person.rut);
-              if (!data) throw new Error("Person not found");
-              form.setFieldValue("patientName", data.names);
-              form.setFieldValue("rut", selected.person.rut);
-              if (data.birthDate) form.setFieldValue("birthDate", data.birthDate);
+      {/* Filter bar */}
+      <Surface className="rounded-2xl border border-default-100 p-3" variant="default">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-12">
+          <SearchField
+            aria-label="Buscar"
+            className="md:col-span-6"
+            onChange={(v) => setFilters((f) => ({ ...f, search: v }))}
+            value={filters.search}
+          >
+            <SearchField.Group>
+              <SearchField.SearchIcon />
+              <SearchField.Input placeholder="Buscar por nombre, RUT o diagnóstico..." />
+              <SearchField.ClearButton />
+            </SearchField.Group>
+          </SearchField>
 
-              const personRecord = data as unknown as Record<string, unknown>;
-              if (personRecord.address) {
-                const addr = personRecord.address;
-                const fullAddr =
-                  Array.isArray(addr) && addr.length > 0
-                    ? `${addr[0].street} ${addr[0].streetNumber || ""}`.trim()
-                    : typeof addr === "string"
-                      ? addr
-                      : typeof addr === "object" && addr !== null && "street" in addr
-                        ? `${(addr as Record<string, unknown>).street} ${(addr as Record<string, unknown>).streetNumber || ""}`.trim()
-                        : "";
-                if (fullAddr) {
-                  form.setFieldValue("address", fullAddr);
-                }
+          <DateRangePicker
+            aria-label="Rango de fechas"
+            className="md:col-span-6"
+            onChange={(value) => {
+              if (!value) {
+                setFilters((f) => ({ ...f, from: "", to: "" }));
+                return;
               }
-            } catch (e) {
-              // Si falla (poco probable porque viene de DB), hacemos fallback básico
-              form.setFieldValue(
-                "patientName",
-                [selected.person.names, selected.person.fatherName].filter(Boolean).join(" ")
-              );
-              form.setFieldValue("rut", selected.person.rut);
+              setFilters((f) => ({
+                ...f,
+                from: value.start.toString(),
+                to: value.end.toString(),
+              }));
+            }}
+            value={
+              filters.from && filters.to
+                ? { end: parseDate(filters.to), start: parseDate(filters.from) }
+                : undefined
             }
-          } else {
-            form.setFieldValue(
-              "patientName",
-              [selected.person.names, selected.person.fatherName].filter(Boolean).join(" ")
-            );
-          }
-        }}
+          >
+            <Label className="sr-only">Rango de fechas</Label>
+            <DateField.Group className="h-9 text-sm" fullWidth variant="secondary">
+              <DateField.InputContainer>
+                <DateField.Input slot="start">
+                  {(segment) => <DateField.Segment segment={segment} />}
+                </DateField.Input>
+                <DateRangePicker.RangeSeparator />
+                <DateField.Input slot="end">
+                  {(segment) => <DateField.Segment segment={segment} />}
+                </DateField.Input>
+              </DateField.InputContainer>
+              <DateField.Suffix>
+                <DateRangePicker.Trigger>
+                  <DateRangePicker.TriggerIndicator />
+                </DateRangePicker.Trigger>
+              </DateField.Suffix>
+            </DateField.Group>
+            <DateRangePicker.Popover>
+              <RangeCalendar
+                aria-label="Seleccionar rango de fechas"
+                visibleDuration={{ months: 2 }}
+              >
+                <RangeCalendar.Header>
+                  <RangeCalendar.YearPickerTrigger>
+                    <RangeCalendar.YearPickerTriggerHeading />
+                    <RangeCalendar.YearPickerTriggerIndicator />
+                  </RangeCalendar.YearPickerTrigger>
+                  <RangeCalendar.NavButton slot="previous" />
+                  <RangeCalendar.NavButton slot="next" />
+                </RangeCalendar.Header>
+                <RangeCalendar.Grid>
+                  <RangeCalendar.GridHeader>
+                    {(day) => <RangeCalendar.HeaderCell>{day}</RangeCalendar.HeaderCell>}
+                  </RangeCalendar.GridHeader>
+                  <RangeCalendar.GridBody>
+                    {(date) => <RangeCalendar.Cell date={date} />}
+                  </RangeCalendar.GridBody>
+                </RangeCalendar.Grid>
+              </RangeCalendar>
+            </DateRangePicker.Popover>
+          </DateRangePicker>
+        </div>
+      </Surface>
+
+      {/* Grouped list */}
+      <Surface className="rounded-3xl border border-default-100 p-2" variant="default">
+        <PageState
+          query={listQ}
+          isEmpty={() => items.length === 0}
+          emptyTitle="Sin certificados para los filtros actuales."
+          loadingLabel="Cargando…"
+        >
+          {() => (
+            <div className="space-y-2 p-1">
+              {grouped.map((yearGroup) => (
+                <Disclosure defaultExpanded key={yearGroup.year}>
+                  <Disclosure.Heading>
+                    <Button
+                      className="flex w-full items-center justify-between gap-2 px-3 py-2 font-semibold text-base"
+                      size="sm"
+                      slot="trigger"
+                      variant="outline"
+                    >
+                      <span className="flex items-center gap-2">
+                        <FileText className="size-4 text-default-500" />
+                        {yearGroup.year}
+                      </span>
+                      <span className="flex items-center gap-2 text-default-500 text-xs">
+                        {yearGroup.count} certificado(s)
+                      </span>
+                    </Button>
+                  </Disclosure.Heading>
+                  <Disclosure.Content>
+                    <Disclosure.Body className="space-y-2 p-2 pl-4">
+                      {yearGroup.months.map((monthGroup) => (
+                        <Disclosure defaultExpanded={false} key={monthGroup.key}>
+                          <Disclosure.Heading>
+                            <Button
+                              className="flex w-full items-center justify-between gap-2 px-3 py-1.5 text-sm capitalize"
+                              size="sm"
+                              slot="trigger"
+                              variant="ghost"
+                            >
+                              <span>{monthGroup.label}</span>
+                              <span className="text-default-500 text-xs">{monthGroup.count}</span>
+                            </Button>
+                          </Disclosure.Heading>
+                          <Disclosure.Content>
+                            <Disclosure.Body className="space-y-1 p-1 pl-3">
+                              {monthGroup.weeks.map((weekGroup) => (
+                                <Disclosure
+                                  defaultExpanded={monthGroup.weeks.length === 1}
+                                  key={weekGroup.key}
+                                >
+                                  <Disclosure.Heading>
+                                    <Button
+                                      className="flex w-full items-center justify-between gap-2 px-3 py-1 text-default-600 text-xs"
+                                      size="sm"
+                                      slot="trigger"
+                                      variant="ghost"
+                                    >
+                                      <span>{weekGroup.label}</span>
+                                      <span>{weekGroup.items.length}</span>
+                                    </Button>
+                                  </Disclosure.Heading>
+                                  <Disclosure.Content>
+                                    <Disclosure.Body className="p-0">
+                                      <ul className="overflow-hidden rounded-xl border border-default-100">
+                                        {weekGroup.items.map(renderRow)}
+                                      </ul>
+                                    </Disclosure.Body>
+                                  </Disclosure.Content>
+                                </Disclosure>
+                              ))}
+                            </Disclosure.Body>
+                          </Disclosure.Content>
+                        </Disclosure>
+                      ))}
+                    </Disclosure.Body>
+                  </Disclosure.Content>
+                </Disclosure>
+              ))}
+            </div>
+          )}
+        </PageState>
+      </Surface>
+
+      <CreateMedicalCertificateModal
+        isOpen={createModalOpen}
+        onClose={() => setCreateModalOpen(false)}
       />
-      <CreatePatientModal
-        isOpen={createPatientOpen}
-        onClose={() => {
-          setCreatePatientOpen(false);
-          setSelectPatientOpen(true);
-        }}
-      />
-    </Card>
+    </div>
   );
+}
+
+// ── Grouping helpers ────────────────────────────────────────────────────
+
+interface WeekGroup {
+  key: string;
+  label: string;
+  items: MedicalCertificateListItem[];
+}
+
+interface MonthGroup {
+  key: string;
+  label: string;
+  count: number;
+  weeks: WeekGroup[];
+}
+
+interface YearGroup {
+  year: number;
+  count: number;
+  months: MonthGroup[];
+}
+
+function groupByYearMonthWeek(items: MedicalCertificateListItem[]): YearGroup[] {
+  const years = new Map<number, MonthGroup[]>();
+  const monthIndex = new Map<string, MonthGroup>();
+  const weekIndex = new Map<string, WeekGroup>();
+
+  for (const r of items) {
+    const iso = chileDay(r.issuedAt);
+    const year = Number(iso.slice(0, 4));
+    const month0 = Number(iso.slice(5, 7)) - 1;
+    const isoWeek = getISOWeek(r.issuedAt);
+    const monthKey = `${year}-${month0}`;
+    const weekKey = `${year}-W${isoWeek}`;
+
+    let monthGroup = monthIndex.get(monthKey);
+    if (!monthGroup) {
+      monthGroup = {
+        key: monthKey,
+        label: formatChile(r.issuedAt, "MMMM YYYY"),
+        count: 0,
+        weeks: [],
+      };
+      monthIndex.set(monthKey, monthGroup);
+      const yearBucket = years.get(year) ?? [];
+      yearBucket.push(monthGroup);
+      years.set(year, yearBucket);
+    }
+
+    let weekGroup = weekIndex.get(weekKey);
+    if (!weekGroup) {
+      const weekStart = startOfWeek(r.issuedAt);
+      const weekEnd = endOfWeek(r.issuedAt);
+      weekGroup = {
+        key: weekKey,
+        label: `Semana ${isoWeek} · ${formatChile(weekStart, "DD MMM")} – ${formatChile(weekEnd, "DD MMM")}`,
+        items: [],
+      };
+      weekIndex.set(weekKey, weekGroup);
+      monthGroup.weeks.push(weekGroup);
+    }
+
+    weekGroup.items.push(r);
+    monthGroup.count += 1;
+  }
+
+  return Array.from(years.entries())
+    .map(([year, months]) => ({
+      year,
+      count: months.reduce((acc, m) => acc + m.count, 0),
+      months,
+    }))
+    .sort((a, b) => b.year - a.year);
 }

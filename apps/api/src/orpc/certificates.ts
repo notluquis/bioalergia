@@ -8,11 +8,14 @@ import {
   annulPrescriptionResponseSchema,
   certificateVerifyInputSchema,
   certificateVerifyResponseSchema,
+  certificateIdInputSchema,
   emailPrescriptionInputSchema,
   emailPrescriptionResponseSchema,
   generateMedicalCertificateInputSchema,
   generateMedicalPrescriptionInputSchema,
+  listMedicalCertificatesInputSchema,
   listMedicalPrescriptionsInputSchema,
+  medicalCertificateListResponseSchema,
   medicalPrescriptionGenerateResponseSchema,
   medicalPrescriptionListResponseSchema,
   prescriptionIdInputSchema,
@@ -107,6 +110,14 @@ const createMedicalCertificates = authed.use(async ({ context, next }) => {
 const readMedicalCertificates = authed.use(async ({ context, next }) => {
   const canRead = await hasPermission(context.user, "read", "MedicalCertificate");
   if (!canRead) {
+    throw new ORPCError("FORBIDDEN", { message: "Forbidden" });
+  }
+  return next();
+});
+
+const deleteMedicalCertificates = authed.use(async ({ context, next }) => {
+  const canDelete = await hasPermission(context.user, "delete", "MedicalCertificate");
+  if (!canDelete) {
     throw new ORPCError("FORBIDDEN", { message: "Forbidden" });
   }
   return next();
@@ -384,6 +395,63 @@ const certificatesORPCRouterBase = {
       });
 
       return { items: prescriptions };
+    }),
+
+  listMedical: readMedicalCertificates
+    .route({
+      method: "GET",
+      path: "/medical",
+      summary: "List medical certificates",
+      tags: ["Certificates"],
+    })
+    .input(listMedicalCertificatesInputSchema)
+    .output(medicalCertificateListResponseSchema)
+    .handler(async ({ input }) => {
+      const f = input ?? {};
+      const where: Record<string, unknown> = {};
+
+      if (f.from || f.to) {
+        const range: { gte?: Date; lt?: Date } = {};
+        if (f.from) range.gte = parseDateOnly(f.from);
+        if (f.to) {
+          const toMid = parseDateOnly(f.to);
+          range.lt = new Date(toMid.getTime() + 86_400_000);
+        }
+        where.issuedAt = range;
+      }
+
+      if (f.search?.trim()) {
+        const q = f.search.trim();
+        where.OR = [
+          { patientName: { contains: q, mode: "insensitive" as const } },
+          { patientRut: { contains: q, mode: "insensitive" as const } },
+          { diagnosis: { contains: q, mode: "insensitive" as const } },
+        ];
+      }
+
+      const certificates = await db.medicalCertificate.findMany({
+        where,
+        orderBy: { issuedAt: "desc" },
+        take: f.limit ?? 200,
+      });
+
+      return { items: certificates, total: certificates.length };
+    }),
+
+  deleteMedical: deleteMedicalCertificates
+    .route({
+      method: "DELETE",
+      path: "/medical/{id}",
+      summary: "Delete a medical certificate",
+      tags: ["Certificates"],
+    })
+    .input(certificateIdInputSchema)
+    .output(z.object({ ok: z.boolean() }))
+    .handler(async ({ input }) => {
+      await db.medicalCertificate.delete({
+        where: { id: input.id },
+      });
+      return { ok: true };
     }),
 
   verify: base
