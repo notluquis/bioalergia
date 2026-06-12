@@ -14,6 +14,8 @@ import type {
   ScitCalculationResult,
   Vial,
   VialAllergenEntry,
+  InjectionEquivalence,
+  Provider,
 } from "../data/types";
 
 // ─── Internal Helpers ────────────────────────────────────────────────────────
@@ -34,12 +36,84 @@ function buildVial(opts: {
   allergens: VialAllergenEntry[];
   injectionSite: InjectionSite;
   rationale: string;
+  equivalences?: InjectionEquivalence[];
+  injectionVolumeMl?: number;
 }): Vial {
-  return { ...opts, injectionVolumeMl: INJECTION_VOLUME_ML };
+  return {
+    ...opts,
+    injectionVolumeMl: opts.injectionVolumeMl ?? INJECTION_VOLUME_ML,
+  };
 }
 
 function nextSite(existingVials: Vial[]): InjectionSite {
   return existingVials.length % 2 === 0 ? "brazo_derecho" : "brazo_izquierdo";
+}
+
+function getEquivalences(
+  provider: Provider,
+  formulation: FormulationType
+): InjectionEquivalence[] | undefined {
+  const eqs: InjectionEquivalence[] = [];
+  const VIAL_ML = 2.5; // asumiendo volumen estándar a granel para la mayoría
+
+  if (provider === "diater") {
+    // Diater usa volúmenes distintos según si es molecular puro o mezcla
+    if (formulation === "MOL") {
+      eqs.push({
+        formulationName: "Molecular Nativo (MOL)",
+        concentrationString: "Según alérgeno (µg/mL)",
+        requiredVolumeMl: 0.8,
+        dosesPerVial: Math.floor(VIAL_ML / 0.8), // ~3 dosis
+      });
+    } else {
+      eqs.push({
+        formulationName: formulation === "MOL_MIX" ? "MOL Mix" : "Polimerizado",
+        concentrationString: "Según alérgeno (HEPD)",
+        requiredVolumeMl: 0.5,
+        dosesPerVial: Math.floor(VIAL_ML / 0.5), // 5 dosis
+      });
+    }
+    return eqs;
+  }
+
+  // Inmunotek / Roxall
+  if (formulation === "ESTANDAR") {
+    const baseName =
+      provider === "inmunotek" ? "Normal (Alutek/Clustoid)" : "Normal (Cluxin/Depot)";
+    eqs.push({
+      formulationName: baseName,
+      concentrationString: "10.000 UT/mL",
+      requiredVolumeMl: 0.5,
+      dosesPerVial: Math.floor(VIAL_ML / 0.5), // 5 dosis
+    });
+
+    if (provider === "inmunotek") {
+      eqs.push({
+        formulationName: "Clustoid FORTE",
+        concentrationString: "30.000 UT/mL",
+        // 0.5 mL de 10k = 5000 UT. En 30k -> 0.166 mL
+        requiredVolumeMl: 0.16,
+        dosesPerVial: Math.floor(VIAL_ML / 0.166666), // 15 dosis
+      });
+    }
+  } else if (formulation === "MAX") {
+    const baseName = provider === "inmunotek" ? "Clustoid MAX" : "Poliplus MAX / Cluxin";
+    eqs.push({
+      formulationName: baseName,
+      concentrationString: "10.000 UT/mL (por alérgeno)",
+      requiredVolumeMl: 0.5,
+      dosesPerVial: Math.floor(VIAL_ML / 0.5),
+    });
+  } else if (formulation === "MODIGOID") {
+    eqs.push({
+      formulationName: "Modigoid Molecular",
+      concentrationString: "4.0 μg/mL (Alt a 1)",
+      requiredVolumeMl: 0.5,
+      dosesPerVial: Math.floor(VIAL_ML / 0.5),
+    });
+  }
+
+  return eqs.length > 0 ? eqs : undefined;
 }
 
 // ─── Diater Rules Engine ───────────────────────────────────────────────────────
@@ -70,6 +144,8 @@ function calculateDiater(selectedAllergens: Allergen[]): ScitCalculationResult {
         allergens: selectedAllergens.map((a) => createEntry(a)),
         injectionSite: "brazo_derecho",
         rationale: "Fórmula molecular preensamblada exclusiva de ácaros (Der p 1 / Der p 2).",
+        equivalences: getEquivalences("diater", "MOL"),
+        injectionVolumeMl: 0.8,
       })
     );
   } else if (hasMites && selectedAllergens.length > 1) {
@@ -87,6 +163,7 @@ function calculateDiater(selectedAllergens: Allergen[]): ScitCalculationResult {
         injectionSite: "brazo_derecho",
         rationale:
           "MOLMite Mix: Base molecular de ácaros con extractos polimerizados para cubrir la polisensibilización.",
+        equivalences: getEquivalences("diater", "MOL_MIX"),
       })
     );
   } else if (isOnlyAlternaria) {
@@ -99,6 +176,8 @@ function calculateDiater(selectedAllergens: Allergen[]): ScitCalculationResult {
         allergens: selectedAllergens.map((a) => createEntry(a)),
         injectionSite: "brazo_derecho",
         rationale: "Fórmula molecular nativa de Alternaria.",
+        equivalences: getEquivalences("diater", "MOL"),
+        injectionVolumeMl: 0.8,
       })
     );
   } else if (hasAlternaria && selectedAllergens.length > 1) {
@@ -116,6 +195,7 @@ function calculateDiater(selectedAllergens: Allergen[]): ScitCalculationResult {
         injectionSite: "brazo_derecho",
         rationale:
           "Alt a 1 MOL Mix: Base molecular de Alternaria con extractos polimerizados adicionales.",
+        equivalences: getEquivalences("diater", "MOL_MIX"),
       })
     );
   } else if (isOnlyCypress) {
@@ -128,6 +208,8 @@ function calculateDiater(selectedAllergens: Allergen[]): ScitCalculationResult {
         allergens: selectedAllergens.map((a) => createEntry(a)),
         injectionSite: "brazo_derecho",
         rationale: "Fórmula molecular nativa de Ciprés.",
+        equivalences: getEquivalences("diater", "MOL"),
+        injectionVolumeMl: 0.8,
       })
     );
   } else if (hasCypress && selectedAllergens.length > 1) {
@@ -145,6 +227,7 @@ function calculateDiater(selectedAllergens: Allergen[]): ScitCalculationResult {
         injectionSite: "brazo_derecho",
         rationale:
           "Cup a 1 MOL Mix: Base molecular de Ciprés con extractos polimerizados adicionales.",
+        equivalences: getEquivalences("diater", "MOL_MIX"),
       })
     );
   } else {
@@ -167,6 +250,7 @@ function calculateDiater(selectedAllergens: Allergen[]): ScitCalculationResult {
         injectionSite: "brazo_derecho",
         rationale:
           "Formulación polimerizada a medida (sin aluminio) para combinaciones que no encajan en bases moleculares preensambladas.",
+        equivalences: getEquivalences("diater", form),
       })
     );
   }
@@ -211,6 +295,7 @@ function calculateInmunotekRoxall(
           injectionSite: nextSite(vials),
           rationale:
             "Las proteasas de los hongos destruyen otros alérgenos nativos o alergoides si conviven en solución líquida. Se aísla en Modigoid (Alergoide Molecular Alt a 1) a 4.0 μg/mL.",
+          equivalences: getEquivalences(selection.provider, "MODIGOID"),
         })
       );
     }
@@ -244,6 +329,7 @@ function calculateInmunotekRoxall(
           allergens: [createEntry(a)],
           injectionSite: nextSite(vials),
           rationale: `Formulación Estándar (${a.commercialEquivalence}) para alérgeno único.`,
+          equivalences: getEquivalences(selection.provider, "ESTANDAR"),
         })
       );
     }
@@ -273,6 +359,7 @@ function calculateInmunotekRoxall(
             group1.length > 1
               ? "Formulación MAX para preservar la dosis terapéutica de cada alérgeno en la mezcla."
               : "Formulación Estándar para alérgeno único en este vial.",
+          equivalences: getEquivalences(selection.provider, fmt1),
         })
       );
 
@@ -289,6 +376,7 @@ function calculateInmunotekRoxall(
               group2.length > 1
                 ? "Formulación MAX para preservar la dosis terapéutica de cada alérgeno en la mezcla."
                 : "Formulación Estándar para alérgeno único en este vial.",
+            equivalences: getEquivalences(selection.provider, fmt2),
           })
         );
       }
@@ -306,6 +394,7 @@ function calculateInmunotekRoxall(
             perennial.length > 1
               ? "Formulación MAX para preservar la dosis terapéutica de cada alérgeno perenne en la mezcla."
               : "Formulación Estándar para alérgeno perenne único.",
+          equivalences: getEquivalences(selection.provider, fmtP),
         })
       );
 
@@ -321,6 +410,7 @@ function calculateInmunotekRoxall(
             seasonal.length > 1
               ? "Formulación MAX para preservar la dosis terapéutica de cada alérgeno estacional en la mezcla."
               : "Formulación Estándar para alérgeno estacional único.",
+          equivalences: getEquivalences(selection.provider, fmtS),
         })
       );
     }
@@ -361,6 +451,7 @@ function calculateInmunotekRoxall(
             injectionSite: nextSite(vials),
             rationale:
               "Vial individual para el alérgeno dominante, permitiendo dosificación manual asimétrica independiente.",
+            equivalences: getEquivalences(selection.provider, "ESTANDAR"),
           })
         );
       }
@@ -374,6 +465,7 @@ function calculateInmunotekRoxall(
             allergens: [createEntry(secondary[0])],
             injectionSite: nextSite(vials),
             rationale: "Vial individual para el alérgeno secundario.",
+            equivalences: getEquivalences(selection.provider, "ESTANDAR"),
           })
         );
       } else if (secondary.length > 1) {
@@ -387,6 +479,7 @@ function calculateInmunotekRoxall(
             injectionSite: nextSite(vials),
             rationale:
               "Formulación MAX para los alérgenos secundarios, preservando la dosis terapéutica completa de cada uno en la mezcla.",
+            equivalences: getEquivalences(selection.provider, "MAX"),
           })
         );
       }
@@ -410,6 +503,7 @@ function calculateInmunotekRoxall(
           injectionSite: nextSite(vials),
           rationale:
             "Formulación MAX simétrica. Todos los alérgenos reciben 10.000 UT/mL. Se acepta tratar al dominante y secundarios al 100% de la dosis terapéutica.",
+          equivalences: getEquivalences(selection.provider, "MAX"),
         })
       );
 
@@ -432,6 +526,7 @@ function calculateInmunotekRoxall(
           injectionSite: nextSite(vials),
           rationale:
             "La tecnología MAX compensa el efecto dilucional, asegurando que cada 0.5 mL del frasco mantengan 10.000 UT de CADA alérgeno, previniendo la subdosificación.",
+          equivalences: getEquivalences(selection.provider, "MAX"),
         })
       );
     }

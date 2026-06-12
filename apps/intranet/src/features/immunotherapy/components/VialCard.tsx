@@ -74,12 +74,25 @@ export function VialCard({ vial, index }: VialCardProps) {
                 {entry.displayDose ? (
                   <p className="font-semibold text-foreground text-lg">{entry.displayDose}</p>
                 ) : (
-                  <p className="font-semibold text-foreground text-lg tabular-nums">
-                    {entry.injectedDoseUg.toLocaleString("es-CL", {
-                      maximumFractionDigits: 1,
-                    })}{" "}
-                    μg
-                  </p>
+                  <div className="flex flex-col items-end">
+                    <p className="font-semibold text-foreground text-lg tabular-nums">
+                      {entry.injectedDoseUg.toLocaleString("es-CL", {
+                        maximumFractionDigits: 1,
+                      })}{" "}
+                      μg
+                    </p>
+                    {entry.concentrationUtMl > 0 && (
+                      <Chip
+                        size="sm"
+                        variant="soft"
+                        color="accent"
+                        className="mt-1 font-mono text-[10px] leading-none px-1.5 min-h-5 h-5"
+                      >
+                        {(entry.concentrationUtMl * vial.injectionVolumeMl).toLocaleString("es-CL")}{" "}
+                        UT
+                      </Chip>
+                    )}
+                  </div>
                 )}
                 <p className="text-default-400 text-xs">
                   {entry.displayDose
@@ -93,6 +106,42 @@ export function VialCard({ vial, index }: VialCardProps) {
             </div>
           ))}
         </Card.Content>
+
+        {/* ── Body: Alternative Presentations ───────────────────────────── */}
+        {vial.equivalences && vial.equivalences.length > 0 && (
+          <div className="border-default-100 border-t bg-default-50/30 px-4 py-3">
+            <p className="mb-2 font-medium text-default-700 text-xs uppercase tracking-wider">
+              Alternativas de Inyección
+            </p>
+            <div className="grid gap-2 sm:grid-cols-2">
+              {vial.equivalences.map((eq, i) => (
+                <div
+                  key={i}
+                  className="flex flex-col rounded-lg border border-default-200 bg-background p-2"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-medium text-default-900 text-sm">
+                      {eq.formulationName}
+                    </span>
+                    <Chip size="sm" variant="soft" className="h-5 min-h-5 px-1.5 text-[10px]">
+                      {eq.concentrationString}
+                    </Chip>
+                  </div>
+                  <div className="mt-1.5 flex items-center justify-between text-default-500 text-xs">
+                    <span className="flex items-center gap-1">
+                      <Syringe size={12} className="text-primary/70" />
+                      Inyectar:{" "}
+                      <strong className="text-default-700">{eq.requiredVolumeMl} mL</strong>
+                    </span>
+                    <span>
+                      Rinde <strong className="text-default-700">{eq.dosesPerVial}</strong> dosis
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* ── Footer ──────────────────────────────────────────────────────── */}
         <Card.Footer className="flex flex-wrap items-center justify-between gap-3 border-default-100 border-t bg-default-50 px-4 py-3">

@@ -15,6 +15,7 @@ export type Provider = "inmunotek" | "roxall" | "diater";
 /** Formulaciones comerciales de SCIT disponibles en Chile */
 export type FormulationType =
   | "ESTANDAR" // 10.000 UT/mL — monosensibilización o vial individual
+  | "FORTE" // 30.000 UT/mL — monosensibilización alta concentración
   | "MAX" // Carga antigénica completa por alérgeno en mezcla (simétrico)
   | "MODIGOID" // Alergoide molecular (Alt a 1) — solo Alternaria
   // ⛔ MAX FORTE eliminado — no se importa a Chile
@@ -82,6 +83,18 @@ export interface VialAllergenEntry {
   isDominant: boolean;
 }
 
+/** Alternativa de presentación para alcanzar la dosis objetivo */
+export interface InjectionEquivalence {
+  /** Nombre de la presentación (ej. "Clustoid Normal", "Clustoid FORTE") */
+  formulationName: string;
+  /** Concentración del frasco comercial (ej. "10.000 UT/mL") */
+  concentrationString: string;
+  /** Volumen requerido a inyectar (mL) */
+  requiredVolumeMl: number;
+  /** Número matemático de dosis que rinde el vial de 2.5mL a granel */
+  dosesPerVial: number;
+}
+
 /** Representación de un frasco/vial */
 export interface Vial {
   /** Número de vial (1-based) */
@@ -92,12 +105,14 @@ export interface Vial {
   formulation: FormulationType;
   /** Alérgenos contenidos con sus dosis */
   allergens: VialAllergenEntry[];
-  /** Volumen de inyección recomendado (mL) */
+  /** Volumen de inyección recomendado por defecto (mL) */
   injectionVolumeMl: number;
   /** Sitio de inyección recomendado */
   injectionSite: InjectionSite;
   /** Justificación clínica (tooltip) */
   rationale: string;
+  /** Alternativas de inyección basadas en las presentaciones disponibles */
+  equivalences?: InjectionEquivalence[];
 }
 
 /** Alerta/advertencia generada por el motor de reglas */
@@ -160,12 +175,12 @@ export const FAMILY_CHIP_COLORS: Record<
   hongos: "danger",
 };
 
-/** Colores HeroUI Chip para cada formulación */
 export const FORMULATION_CHIP_COLORS: Record<
   FormulationType,
   "default" | "accent" | "danger" | "success" | "warning"
 > = {
   ESTANDAR: "default",
+  FORTE: "warning",
   MAX: "accent",
   MODIGOID: "danger",
   MOL: "accent",
@@ -179,6 +194,7 @@ export const FORMULATION_CHIP_COLORS: Record<
 /** Etiquetas en español para cada formulación */
 export const FORMULATION_LABELS: Record<FormulationType, string> = {
   ESTANDAR: "Estándar",
+  FORTE: "FORTE",
   MAX: "MAX",
   MODIGOID: "Modigoid",
   MOL: "MOL",
