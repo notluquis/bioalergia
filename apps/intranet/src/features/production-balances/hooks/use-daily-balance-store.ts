@@ -12,7 +12,7 @@ import type {
   WeekData,
 } from "../types";
 
-import { calculateSummary, getDayAbbrev } from "../utils";
+import { areFormDataEqual, calculateSummary, getDayAbbrev } from "../utils";
 
 const defaultFormData: DailyBalanceFormData = {
   consultas: 0,
@@ -178,7 +178,7 @@ export function useDailyBalanceStore() {
     [state.formData, summary, state.entryFinalized]
   );
   const isDirty = useMemo(
-    () => JSON.stringify(state.formData) !== JSON.stringify(state.originalData),
+    () => !areFormDataEqual(state.formData, state.originalData),
     [state.formData, state.originalData]
   );
 

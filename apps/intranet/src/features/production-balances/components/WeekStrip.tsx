@@ -6,6 +6,7 @@ import { chileDay, today } from "@/lib/dates";
 import { fmtCLP } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
+import { DAY_STATUS_DOT_CLASSES } from "../labels";
 import type { DayCell, WeekData } from "../types";
 
 const SKELETON_KEYS = Array.from({ length: 7 }, (_, index) => `skeleton-${index}`);
@@ -108,13 +109,6 @@ function DayCellButton({
   isToday: boolean;
   onPress: () => void;
 }) {
-  const statusColors = {
-    draft: "bg-warning",
-    empty: "bg-default-200",
-    finalized: "bg-success",
-    unbalanced: "bg-danger",
-  };
-
   return (
     <Button
       className={cn(
@@ -129,7 +123,12 @@ function DayCellButton({
       variant="outline"
     >
       {/* Status dot */}
-      <div className={cn("absolute top-2 right-2 size-2 rounded-full", statusColors[day.status])} />
+      <div
+        className={cn(
+          "absolute top-2 right-2 size-2 rounded-full",
+          DAY_STATUS_DOT_CLASSES[day.status]
+        )}
+      />
 
       {/* Day name */}
       <span className={cn("font-medium text-xs", isSelected ? "text-primary" : "text-default-500")}>

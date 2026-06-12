@@ -7,6 +7,7 @@ import { toast } from "@/lib/toast-interceptor";
 import { dailyBalanceApi, type ProductionBalanceItem, type ProductionBalanceStatus } from "../api";
 import { productionBalanceKeys } from "../queries";
 import type { DailyBalanceFormData, DayEntrySummary } from "../types";
+import { areFormDataEqual } from "../utils";
 import { generateWeekData, useDailyBalanceStore } from "./use-daily-balance-store";
 
 const AUTOSAVE_DELAY_MS = 2000;
@@ -47,23 +48,6 @@ function getSelectedDayItem(
   selectedDate: Date
 ): null | ProductionBalanceItem {
   return data?.find((item) => item.date === chileDay(selectedDate)) ?? null;
-}
-
-function areFormDataEqual(a: DailyBalanceFormData, b: DailyBalanceFormData): boolean {
-  return (
-    a.consultas === b.consultas &&
-    a.controles === b.controles &&
-    a.efectivo === b.efectivo &&
-    a.gastos === b.gastos &&
-    a.licencias === b.licencias &&
-    a.nota === b.nota &&
-    a.otros === b.otros &&
-    a.roxair === b.roxair &&
-    a.tarjeta === b.tarjeta &&
-    a.tests === b.tests &&
-    a.transferencia === b.transferencia &&
-    a.vacunas === b.vacunas
-  );
 }
 
 function areWeekDataEqual(

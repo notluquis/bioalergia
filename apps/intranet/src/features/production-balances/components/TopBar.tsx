@@ -4,6 +4,7 @@ import { useEffect } from "react";
 
 import { cn } from "@/lib/utils";
 
+import { DAY_STATUS_CHIP_CLASSES, DAY_STATUS_LABELS } from "../labels";
 import type { DayStatus } from "../types";
 
 import { formatDateFull } from "../utils";
@@ -15,20 +16,6 @@ interface TopBarProps {
   onSave: () => Promise<void> | void;
   status: DayStatus;
 }
-
-const STATUS_LABELS: Record<DayStatus, string> = {
-  draft: "Borrador",
-  empty: "Vacío",
-  finalized: "Finalizado",
-  unbalanced: "No cuadra",
-};
-
-const STATUS_COLORS: Record<DayStatus, string> = {
-  draft: "bg-warning/15 text-warning",
-  empty: "bg-default-100/80 text-default-500",
-  finalized: "bg-success/15 text-success",
-  unbalanced: "bg-danger/15 text-danger",
-};
 
 /**
  * Compact sticky bar with current date, status, and save action
@@ -62,11 +49,11 @@ export function TopBar({ date, isFinalized, isSaving, onSave, status }: TopBarPr
             <span
               className={cn(
                 "flex items-center gap-1 rounded-full px-2 py-0.5 font-medium text-xs",
-                STATUS_COLORS[status]
+                DAY_STATUS_CHIP_CLASSES[status]
               )}
             >
               {isFinalized && <Lock aria-hidden="true" className="size-3" />}
-              {STATUS_LABELS[status]}
+              {DAY_STATUS_LABELS[status]}
             </span>
           </div>
         </div>

@@ -2,6 +2,7 @@ import { Button, Surface } from "@heroui/react";
 import { fmtCLP } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
+import { DAY_STATUS_CHIP_CLASSES, DAY_STATUS_LABELS } from "../labels";
 import type { BalanceSummary, DayStatus } from "../types";
 
 import { formatSaveTime } from "../utils";
@@ -17,20 +18,6 @@ interface CierrePanelProps {
   status: DayStatus;
   summary: BalanceSummary;
 }
-
-const STATUS_LABELS: Record<DayStatus, string> = {
-  draft: "Borrador",
-  empty: "Vacío",
-  finalized: "Finalizado",
-  unbalanced: "No cuadra",
-};
-
-const STATUS_COLORS: Record<DayStatus, string> = {
-  draft: "bg-warning/20 text-warning",
-  empty: "bg-default-100 text-default-500",
-  finalized: "bg-success/20 text-success",
-  unbalanced: "bg-danger/20 text-danger",
-};
 
 /**
  * Sticky sidebar showing live summary and action buttons
@@ -57,8 +44,13 @@ export function CierrePanel({
         {/* Header */}
         <div className="mb-4 flex items-center justify-between">
           <h2 className="font-semibold text-lg">Cierre</h2>
-          <span className={cn("rounded-full px-3 py-1 font-medium text-xs", STATUS_COLORS[status])}>
-            {STATUS_LABELS[status]}
+          <span
+            className={cn(
+              "rounded-full px-3 py-1 font-medium text-xs",
+              DAY_STATUS_CHIP_CLASSES[status]
+            )}
+          >
+            {DAY_STATUS_LABELS[status]}
           </span>
         </div>
 
