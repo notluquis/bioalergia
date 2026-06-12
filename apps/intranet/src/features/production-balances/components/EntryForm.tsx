@@ -47,8 +47,9 @@ function CurrencyInput({
         {label}
       </Label>
       {/* Sin steppers: el grid base del Group es 40px/1fr/40px y dejaría el
-          input en la columna de 40px — una sola columna lo ocupa entero. */}
-      <NumberField.Group className="grid-cols-[1fr]">
+          input en la columna de 40px — grid-cols-1 (convención del repo) lo
+          hace ocupar todo el ancho. */}
+      <NumberField.Group className="grid-cols-1">
         <NumberField.Input />
       </NumberField.Group>
     </NumberField>
