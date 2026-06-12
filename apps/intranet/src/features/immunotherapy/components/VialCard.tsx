@@ -86,7 +86,7 @@ export function VialCard({ vial, index }: VialCardProps) {
                         size="sm"
                         variant="soft"
                         color="accent"
-                        className="mt-1 font-mono text-[10px] leading-none px-1.5 min-h-5 h-5"
+                        className="mt-1 font-mono text-xs leading-none px-1.5 min-h-5 h-5"
                       >
                         {(entry.concentrationUtMl * vial.injectionVolumeMl).toLocaleString("es-CL")}{" "}
                         UT
@@ -123,7 +123,7 @@ export function VialCard({ vial, index }: VialCardProps) {
                     <span className="font-medium text-default-900 text-sm">
                       {eq.formulationName}
                     </span>
-                    <Chip size="sm" variant="soft" className="h-5 min-h-5 px-1.5 text-[10px]">
+                    <Chip size="sm" variant="soft" className="h-5 min-h-5 px-1.5 text-xs">
                       {eq.concentrationString}
                     </Chip>
                   </div>
