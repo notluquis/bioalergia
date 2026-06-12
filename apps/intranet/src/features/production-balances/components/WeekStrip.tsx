@@ -3,13 +3,21 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 
 import { chileDay, today } from "@/lib/dates";
 
-import { fmtCLP } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
-import { DAY_STATUS_DOT_CLASSES } from "../labels";
+import { DAY_STATUS_DOT_CLASSES, DAY_STATUS_LABELS } from "../labels";
 import type { DayCell, WeekData } from "../types";
 
 const SKELETON_KEYS = Array.from({ length: 7 }, (_, index) => `skeleton-${index}`);
+
+// Totales del strip en notación compacta ("$1,9 M") — fmtCLP completo
+// desborda las celdas angostas en mobile.
+const compactCLP = new Intl.NumberFormat("es-CL", {
+  currency: "CLP",
+  maximumFractionDigits: 1,
+  notation: "compact",
+  style: "currency",
+});
 
 interface WeekStripProps {
   currentDate: Date;
@@ -42,10 +50,22 @@ export function WeekStrip({
           <Skeleton className="h-4 w-24 rounded-lg" />
         )}
         <div className="flex items-center gap-2">
-          <Button isIconOnly size="sm" variant="outline" onPress={onPrevWeek}>
+          <Button
+            aria-label="Semana anterior"
+            isIconOnly
+            size="sm"
+            variant="outline"
+            onPress={onPrevWeek}
+          >
             <ChevronLeft className="size-4" />
           </Button>
-          <Button isIconOnly size="sm" variant="outline" onPress={onNextWeek}>
+          <Button
+            aria-label="Semana siguiente"
+            isIconOnly
+            size="sm"
+            variant="outline"
+            onPress={onNextWeek}
+          >
             <ChevronRight className="size-4" />
           </Button>
         </div>
@@ -56,24 +76,34 @@ export function WeekStrip({
   return (
     <div className="mb-4 rounded-[28px] border border-default-100 bg-default-50/30 p-3 md:p-4">
       {/* Week header */}
-      <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mb-3 flex items-center justify-between gap-3">
         <div className="flex items-center gap-2 overflow-x-auto">
-          <Button isIconOnly size="sm" variant="outline" onPress={onPrevWeek}>
+          <Button
+            aria-label="Semana anterior"
+            isIconOnly
+            size="sm"
+            variant="outline"
+            onPress={onPrevWeek}
+          >
             <ChevronLeft className="size-4" />
           </Button>
-          <span className="font-medium text-default-700 text-sm">
-            SEM {weekData?.weekLabel ?? "..."}
+          <span className="whitespace-nowrap font-medium text-default-700 text-sm">
+            {weekData?.weekLabel ?? "..."}
           </span>
-          <Button isIconOnly size="sm" variant="outline" onPress={onNextWeek}>
+          <Button
+            aria-label="Semana siguiente"
+            isIconOnly
+            size="sm"
+            variant="outline"
+            onPress={onNextWeek}
+          >
             <ChevronRight className="size-4" />
           </Button>
         </div>
 
-        <div className="flex items-center gap-2">
-          <Button className="w-full sm:w-auto" variant="outline" size="sm" onPress={onGoToToday}>
-            Hoy
-          </Button>
-        </div>
+        <Button variant="outline" size="sm" onPress={onGoToToday}>
+          Hoy
+        </Button>
       </div>
 
       {/* Days grid */}
@@ -111,8 +141,11 @@ function DayCellButton({
 }) {
   return (
     <Button
+      aria-label={`${day.dayName} ${day.dayNumber}, ${DAY_STATUS_LABELS[day.status]}${
+        day.total > 0 ? `, total ${compactCLP.format(day.total)}` : ""
+      }`}
       className={cn(
-        "relative h-18! min-w-0 flex-col items-center justify-center rounded-xl p-1.5 md:h-19! md:p-2",
+        "relative h-18! min-w-0 flex-col items-center justify-center gap-0 rounded-xl p-1 md:h-19! md:p-2",
         "hover:bg-default-50",
         isSelected && "bg-primary/10 ring-1 ring-primary/60",
         isToday && !isSelected && "ring-1 ring-primary/30"
@@ -122,33 +155,37 @@ function DayCellButton({
       type="button"
       variant="outline"
     >
-      {/* Status dot */}
-      <div
-        className={cn(
-          "absolute top-2 right-2 size-2 rounded-full",
-          DAY_STATUS_DOT_CLASSES[day.status]
-        )}
-      />
+      {/* Status dot (estado también va en el aria-label, no solo color) */}
+      {day.status !== "empty" && (
+        <div
+          className={cn(
+            "absolute top-1.5 right-1.5 size-2 rounded-full md:top-2 md:right-2",
+            DAY_STATUS_DOT_CLASSES[day.status]
+          )}
+        />
+      )}
 
-      {/* Day name */}
+      {/* Day name + number */}
       <span className={cn("font-medium text-xs", isSelected ? "text-primary" : "text-default-500")}>
         {day.dayName}
       </span>
-
-      {/* Amount */}
       <span
         className={cn(
-          "mt-1 font-semibold text-sm leading-none tabular-nums",
-          day.total === 0
-            ? isSelected
-              ? "text-primary/70"
-              : "text-default-300"
-            : isSelected
-              ? "text-primary"
-              : "text-foreground"
+          "font-semibold text-base leading-tight tabular-nums",
+          isSelected ? "text-primary" : isToday ? "text-foreground" : "text-default-700"
         )}
       >
-        {day.total === 0 ? "$0" : fmtCLP(day.total)}
+        {day.dayNumber}
+      </span>
+
+      {/* Amount: solo cuando hay movimientos — siete "$0" eran puro ruido */}
+      <span
+        className={cn(
+          "mt-0.5 hidden font-medium text-xs leading-none tabular-nums sm:block",
+          day.total === 0 ? "text-default-300" : isSelected ? "text-primary" : "text-default-600"
+        )}
+      >
+        {day.total === 0 ? "—" : compactCLP.format(day.total)}
       </span>
     </Button>
   );

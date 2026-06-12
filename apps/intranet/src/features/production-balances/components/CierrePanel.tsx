@@ -14,7 +14,6 @@ interface CierrePanelProps {
   lastSaved: Date | null;
   onFinalize: () => Promise<void> | void;
   onReopen: () => Promise<void> | void;
-  onSaveDraft: () => Promise<void> | void;
   status: DayStatus;
   summary: BalanceSummary;
 }
@@ -29,11 +28,17 @@ export function CierrePanel({
   lastSaved,
   onFinalize,
   onReopen,
-  onSaveDraft,
   status,
   summary,
 }: CierrePanelProps) {
   const canFinalize = summary.cuadra && summary.totalMetodos > 0;
+  const hasMovimientos = summary.totalMetodos > 0 || summary.totalServicios > 0;
+  // Día vacío: diferencia $0 en neutro — el verde sugería "cuadra" sin datos.
+  const diferenciaTone = hasMovimientos
+    ? summary.cuadra
+      ? "text-success"
+      : "text-warning"
+    : "text-default-400";
 
   return (
     <aside className={className}>
@@ -63,20 +68,8 @@ export function CierrePanel({
           {/* Diferencia - highlighted */}
           <div className="mt-2 border-default-200 border-t pt-2">
             <div className="flex items-baseline justify-between">
-              <span
-                className={cn(
-                  "font-medium text-sm",
-                  summary.cuadra ? "text-success" : "text-warning"
-                )}
-              >
-                Diferencia
-              </span>
-              <span
-                className={cn(
-                  "font-bold text-xl tabular-nums",
-                  summary.cuadra ? "text-success" : "text-warning"
-                )}
-              >
+              <span className={cn("font-medium text-sm", diferenciaTone)}>Diferencia</span>
+              <span className={cn("font-bold text-xl tabular-nums", diferenciaTone)}>
                 {fmtCLP(summary.diferencia)}
               </span>
             </div>
@@ -98,11 +91,11 @@ export function CierrePanel({
           </div>
         )}
 
-        {/* Action buttons */}
-        <div className="mt-4 hidden gap-2 lg:flex">
+        {/* Acción principal (Guardar vive en el TopBar / barra mobile) */}
+        <div className="mt-4 hidden lg:block">
           {isFinalized ? (
             <Button
-              className="flex-1 rounded-xl"
+              className="w-full rounded-xl"
               isDisabled={isSaving}
               onPress={() => {
                 void onReopen();
@@ -114,26 +107,22 @@ export function CierrePanel({
           ) : (
             <>
               <Button
-                className="flex-1 rounded-xl"
-                isDisabled={isSaving}
-                isPending={isSaving}
-                onPress={() => {
-                  void onSaveDraft();
-                }}
-                variant="outline"
-              >
-                Guardar
-              </Button>
-              <Button
-                className="flex-1 rounded-xl"
+                className="w-full rounded-xl"
                 isDisabled={!canFinalize || isSaving}
                 onPress={() => {
                   void onFinalize();
                 }}
                 variant="primary"
               >
-                Finalizar
+                Finalizar día
               </Button>
+              {!canFinalize && (
+                <p className="mt-2 text-center text-default-400 text-xs">
+                  {hasMovimientos
+                    ? "La diferencia debe quedar en $0 para finalizar."
+                    : "Ingresa los montos del día para finalizar."}
+                </p>
+              )}
             </>
           )}
         </div>

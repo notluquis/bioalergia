@@ -71,7 +71,6 @@ export function DailyBalancePage() {
             lastSaved={lastSaved}
             onFinalize={finalize}
             onReopen={reopen}
-            onSaveDraft={save}
             status={status}
             summary={summary}
           />

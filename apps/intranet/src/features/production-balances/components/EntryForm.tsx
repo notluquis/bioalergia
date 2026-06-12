@@ -1,5 +1,5 @@
 import { Label, NumberField, Surface, TextArea } from "@heroui/react";
-import { CreditCard, Receipt } from "lucide-react";
+import { ArrowRightLeft, Banknote, CreditCard, Receipt } from "lucide-react";
 import type { ReactNode } from "react";
 
 import type { DailyBalanceFormData } from "../types";
@@ -72,7 +72,7 @@ export function EntryForm({ disabled = false, onChange, values }: EntryFormProps
         <div className="grid gap-3 sm:grid-cols-3">
           <CurrencyInput
             disabled={disabled}
-            icon={<span className="text-xs">💳</span>}
+            icon={<CreditCard aria-hidden="true" className="size-3.5 text-default-500" />}
             label="Tarjetas"
             onValueChange={(v) => {
               onChange("tarjeta", v || 0);
@@ -81,7 +81,7 @@ export function EntryForm({ disabled = false, onChange, values }: EntryFormProps
           />
           <CurrencyInput
             disabled={disabled}
-            icon={<span className="text-xs">📲</span>}
+            icon={<ArrowRightLeft aria-hidden="true" className="size-3.5 text-default-500" />}
             label="Transferencia"
             onValueChange={(v) => {
               onChange("transferencia", v || 0);
@@ -90,7 +90,7 @@ export function EntryForm({ disabled = false, onChange, values }: EntryFormProps
           />
           <CurrencyInput
             disabled={disabled}
-            icon={<span className="text-xs">💵</span>}
+            icon={<Banknote aria-hidden="true" className="size-3.5 text-default-500" />}
             label="Efectivo"
             onValueChange={(v) => {
               onChange("efectivo", v || 0);
