@@ -10,9 +10,9 @@ export const Route = createFileRoute("/_authed/clinical/calculator-scit")({
       order: 100,
       section: "Clínica",
     },
-    permission: { action: "read", subject: "Immunotherapy" },
+    permission: { action: "read", subject: "ClinicalSeries" },
     title: "Calculadora SCIT",
   },
-  beforeLoad: requirePermission("read", "Immunotherapy"),
+  beforeLoad: requirePermission("read", "ClinicalSeries"),
   component: CalculatorSCITPage,
 });
