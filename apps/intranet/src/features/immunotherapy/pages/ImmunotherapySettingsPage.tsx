@@ -1,3 +1,4 @@
+import type { ProductDto } from "@finanzas/orpc-contracts/immunotherapy";
 import {
   Button,
   Card,
@@ -11,10 +12,10 @@ import {
   TextArea,
   TextField,
 } from "@heroui/react";
-import type { ProductDto } from "@finanzas/orpc-contracts/immunotherapy";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus, Save, Trash2 } from "lucide-react";
 import { useState } from "react";
+import { confirmAction } from "@/components/ui/ConfirmDialog";
 import {
   createImmunoProduct,
   deleteImmunoProduct,
@@ -24,7 +25,6 @@ import {
   updateImmunoTerms,
 } from "@/features/immunotherapy/api";
 import { immunoKeys } from "@/features/immunotherapy/queries";
-import { confirmAction } from "@/components/ui/ConfirmDialog";
 import { PAGE_CONTAINER } from "@/lib/styles";
 import { toast } from "@/lib/toast-interceptor";
 
@@ -74,7 +74,14 @@ function emptyDraft(): Draft {
     defaultDiscountPct: 0,
     isActive: true,
     sortOrder: 0,
-    stages: [{ label: "Dosis de mantención", unitPrice: 0, defaultQty: 11, isMaintenance: true }],
+    stages: [
+      {
+        label: "Dosis de mantención",
+        unitPrice: 0,
+        defaultQty: 11,
+        isMaintenance: true,
+      },
+    ],
   };
 }
 
@@ -104,7 +111,10 @@ function draftFromProduct(p: ProductDto): Draft {
 
 export function ImmunotherapySettingsPage() {
   const queryClient = useQueryClient();
-  const productsQuery = useQuery({ queryKey: immunoKeys.products, queryFn: listImmunoProducts });
+  const productsQuery = useQuery({
+    queryKey: immunoKeys.products,
+    queryFn: listImmunoProducts,
+  });
   const [draft, setDraft] = useState<Draft>(emptyDraft());
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: immunoKeys.products });
@@ -348,7 +358,12 @@ export function ImmunotherapySettingsPage() {
                     ...d,
                     stages: [
                       ...d.stages,
-                      { label: "", unitPrice: 0, defaultQty: 1, isMaintenance: false },
+                      {
+                        label: "",
+                        unitPrice: 0,
+                        defaultQty: 1,
+                        isMaintenance: false,
+                      },
                     ],
                   }))
                 }
@@ -415,7 +430,10 @@ export function ImmunotherapySettingsPage() {
                     className="text-danger"
                     isDisabled={draft.stages.length === 1}
                     onPress={() =>
-                      setDraft((d) => ({ ...d, stages: d.stages.filter((_, i) => i !== idx) }))
+                      setDraft((d) => ({
+                        ...d,
+                        stages: d.stages.filter((_, i) => i !== idx),
+                      }))
                     }
                   >
                     <Trash2 size={16} />
@@ -460,7 +478,10 @@ export function ImmunotherapySettingsPage() {
 }
 
 function TermsEditor() {
-  const termsQuery = useQuery({ queryKey: immunoKeys.terms, queryFn: getImmunoTerms });
+  const termsQuery = useQuery({
+    queryKey: immunoKeys.terms,
+    queryFn: getImmunoTerms,
+  });
   const [legalName, setLegalName] = useState<string | null>(null);
   const [legalRut, setLegalRut] = useState<string | null>(null);
   const [terms, setTerms] = useState<string | null>(null);

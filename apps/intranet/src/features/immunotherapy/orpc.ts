@@ -1,6 +1,6 @@
+import type { ImmunotherapyContract } from "@finanzas/orpc-contracts/immunotherapy";
 import { createORPCClient, ORPCError } from "@orpc/client";
 import type { ContractRouterClient } from "@orpc/contract";
-import type { ImmunotherapyContract } from "@finanzas/orpc-contracts/immunotherapy";
 import { SuperJSONLink } from "@/features/calendar/orpc";
 import { ApiError } from "@/lib/api-client";
 import { csrfFetch } from "@/lib/csrf-fetch";

@@ -75,6 +75,7 @@ import { Route as AuthedClinicalHeatmapRouteImport } from "./routes/_authed/clin
 import { Route as AuthedClinicalDoctoraliaRouteImport } from "./routes/_authed/clinical/doctoralia"
 import { Route as AuthedClinicalDayRouteImport } from "./routes/_authed/clinical/day"
 import { Route as AuthedClinicalClassifyRouteImport } from "./routes/_authed/clinical/classify"
+import { Route as AuthedClinicalCalculatorScitRouteImport } from "./routes/_authed/clinical/calculator-scit"
 import { Route as AuthedClinicalAnalyticsRouteImport } from "./routes/_authed/clinical/analytics"
 import { Route as AuthedClinicalAgendaRouteImport } from "./routes/_authed/clinical/agenda"
 import { Route as AuthedCertificatesPrescriptionRouteImport } from "./routes/_authed/certificates/prescription"
@@ -433,6 +434,12 @@ const AuthedClinicalClassifyRoute = AuthedClinicalClassifyRouteImport.update({
   path: "/classify",
   getParentRoute: () => AuthedClinicalRoute,
 } as any)
+const AuthedClinicalCalculatorScitRoute =
+  AuthedClinicalCalculatorScitRouteImport.update({
+    id: "/calculator-scit",
+    path: "/calculator-scit",
+    getParentRoute: () => AuthedClinicalRoute,
+  } as any)
 const AuthedClinicalAnalyticsRoute = AuthedClinicalAnalyticsRouteImport.update({
   id: "/analytics",
   path: "/analytics",
@@ -556,6 +563,7 @@ export interface FileRoutesByFullPath {
   "/certificates/prescription": typeof AuthedCertificatesPrescriptionRoute
   "/clinical/agenda": typeof AuthedClinicalAgendaRoute
   "/clinical/analytics": typeof AuthedClinicalAnalyticsRoute
+  "/clinical/calculator-scit": typeof AuthedClinicalCalculatorScitRoute
   "/clinical/classify": typeof AuthedClinicalClassifyRoute
   "/clinical/day": typeof AuthedClinicalDayRoute
   "/clinical/doctoralia": typeof AuthedClinicalDoctoraliaRoute
@@ -633,6 +641,7 @@ export interface FileRoutesByTo {
   "/certificates/prescription": typeof AuthedCertificatesPrescriptionRoute
   "/clinical/agenda": typeof AuthedClinicalAgendaRoute
   "/clinical/analytics": typeof AuthedClinicalAnalyticsRoute
+  "/clinical/calculator-scit": typeof AuthedClinicalCalculatorScitRoute
   "/clinical/classify": typeof AuthedClinicalClassifyRoute
   "/clinical/day": typeof AuthedClinicalDayRoute
   "/clinical/doctoralia": typeof AuthedClinicalDoctoraliaRoute
@@ -719,6 +728,7 @@ export interface FileRoutesById {
   "/_authed/certificates/prescription": typeof AuthedCertificatesPrescriptionRoute
   "/_authed/clinical/agenda": typeof AuthedClinicalAgendaRoute
   "/_authed/clinical/analytics": typeof AuthedClinicalAnalyticsRoute
+  "/_authed/clinical/calculator-scit": typeof AuthedClinicalCalculatorScitRoute
   "/_authed/clinical/classify": typeof AuthedClinicalClassifyRoute
   "/_authed/clinical/day": typeof AuthedClinicalDayRoute
   "/_authed/clinical/doctoralia": typeof AuthedClinicalDoctoraliaRoute
@@ -805,6 +815,7 @@ export interface FileRouteTypes {
     | "/certificates/prescription"
     | "/clinical/agenda"
     | "/clinical/analytics"
+    | "/clinical/calculator-scit"
     | "/clinical/classify"
     | "/clinical/day"
     | "/clinical/doctoralia"
@@ -882,6 +893,7 @@ export interface FileRouteTypes {
     | "/certificates/prescription"
     | "/clinical/agenda"
     | "/clinical/analytics"
+    | "/clinical/calculator-scit"
     | "/clinical/classify"
     | "/clinical/day"
     | "/clinical/doctoralia"
@@ -967,6 +979,7 @@ export interface FileRouteTypes {
     | "/_authed/certificates/prescription"
     | "/_authed/clinical/agenda"
     | "/_authed/clinical/analytics"
+    | "/_authed/clinical/calculator-scit"
     | "/_authed/clinical/classify"
     | "/_authed/clinical/day"
     | "/_authed/clinical/doctoralia"
@@ -1499,6 +1512,13 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof AuthedClinicalClassifyRouteImport
       parentRoute: typeof AuthedClinicalRoute
     }
+    "/_authed/clinical/calculator-scit": {
+      id: "/_authed/clinical/calculator-scit"
+      path: "/calculator-scit"
+      fullPath: "/clinical/calculator-scit"
+      preLoaderRoute: typeof AuthedClinicalCalculatorScitRouteImport
+      parentRoute: typeof AuthedClinicalRoute
+    }
     "/_authed/clinical/analytics": {
       id: "/_authed/clinical/analytics"
       path: "/analytics"
@@ -1651,6 +1671,7 @@ const AuthedCertificatesRouteWithChildren =
 interface AuthedClinicalRouteChildren {
   AuthedClinicalAgendaRoute: typeof AuthedClinicalAgendaRoute
   AuthedClinicalAnalyticsRoute: typeof AuthedClinicalAnalyticsRoute
+  AuthedClinicalCalculatorScitRoute: typeof AuthedClinicalCalculatorScitRoute
   AuthedClinicalClassifyRoute: typeof AuthedClinicalClassifyRoute
   AuthedClinicalDayRoute: typeof AuthedClinicalDayRoute
   AuthedClinicalDoctoraliaRoute: typeof AuthedClinicalDoctoraliaRoute
@@ -1662,6 +1683,7 @@ interface AuthedClinicalRouteChildren {
 const AuthedClinicalRouteChildren: AuthedClinicalRouteChildren = {
   AuthedClinicalAgendaRoute: AuthedClinicalAgendaRoute,
   AuthedClinicalAnalyticsRoute: AuthedClinicalAnalyticsRoute,
+  AuthedClinicalCalculatorScitRoute: AuthedClinicalCalculatorScitRoute,
   AuthedClinicalClassifyRoute: AuthedClinicalClassifyRoute,
   AuthedClinicalDayRoute: AuthedClinicalDayRoute,
   AuthedClinicalDoctoraliaRoute: AuthedClinicalDoctoraliaRoute,
