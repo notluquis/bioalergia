@@ -114,13 +114,25 @@ export function parseProductionBalanceRows(rows: CsvRow[]): {
   rows.forEach((row, index) => {
     const rowNumber = index + 1;
     const rawDate = row.balanceDate;
-    const isoFromSpanish = typeof rawDate === "string" ? parseSpanishLongDate(rawDate) : null;
+
+    // Filas totalmente vacías (el sheet exporta cientos de filas sin fecha ni
+    // valores al final) se omiten en silencio — error solo si HAY datos.
+    const hasAnyValue = Object.entries(row).some(
+      ([key, value]) => key !== "balanceDate" && String(value ?? "").trim() !== ""
+    );
+    const rawDateText = String(rawDate ?? "").trim();
+    if (!rawDateText && !hasAnyValue) {
+      emptyRows += 1;
+      return;
+    }
+
+    const isoFromSpanish = rawDateText ? parseSpanishLongDate(rawDateText) : null;
     const parsedDate = isoFromSpanish
       ? isoToDbDate(isoFromSpanish)
-      : parseChileDateTime(typeof rawDate === "string" ? rawDate : String(rawDate ?? ""));
+      : parseChileDateTime(rawDateText);
 
     if (!parsedDate || Number.isNaN(parsedDate.getTime())) {
-      errors.push(`Fila ${rowNumber}: balanceDate inválida ("${String(rawDate ?? "")}").`);
+      errors.push(`Fila ${rowNumber}: balanceDate inválida ("${rawDateText}").`);
       return;
     }
 

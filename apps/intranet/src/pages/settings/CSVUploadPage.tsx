@@ -1257,53 +1257,66 @@ function buildMappingColumns({
       header: "Tipo",
     },
     {
-      cell: ({ row }) => (
-        <Select
-          className="w-full min-w-35"
-          // HeroUI v3 Select is controlled via `value` + `onChange` (Key | Key[]).
-          // For single-select we get a string Key back; map back to "" (unmapped
-          // sentinel) when the user picks the explicit ignore item. Guard against
-          // `null` (HeroUI emits it on programmatic clear) so we don't poison the
-          // mapping with non-string values.
-          onChange={(val) => {
-            onMappingChanged();
-            const nextValue = val === null || val === UNMAPPED_COLUMN_KEY ? "" : String(val);
-            setUploadedFiles((prev) =>
-              prev.map((file, idx) =>
-                idx === 0
-                  ? {
-                      ...file,
-                      columnMapping: {
-                        ...file.columnMapping,
-                        [row.original.name]: nextValue,
-                      },
-                    }
-                  : file
-              )
-            );
-          }}
-          placeholder="Sin mapear"
-          value={firstFile.columnMapping[row.original.name] || UNMAPPED_COLUMN_KEY}
-        >
-          <Label>Columna CSV</Label>
-          <Select.Trigger>
-            <Select.Value />
-            <Select.Indicator />
-          </Select.Trigger>
-          <Select.Popover>
-            <ListBox>
-              <ListBox.Item id={UNMAPPED_COLUMN_KEY} key={UNMAPPED_COLUMN_KEY}>
-                -- Ignorar / Sin mapear --
-              </ListBox.Item>
-              {firstFile.csvHeaders.map((header) => (
-                <ListBox.Item id={header} key={header}>
-                  {header}
+      cell: ({ row }) => {
+        // Headers ya asignados a OTRO campo desaparecen de esta lista —
+        // evita doble mapeo y la lista se achica a medida que avanzas.
+        // El header del propio campo se conserva para poder verlo/cambiarlo.
+        const usedByOtherFields = new Set(
+          Object.entries(firstFile.columnMapping)
+            .filter(([fieldName, header]) => fieldName !== row.original.name && header)
+            .map(([, header]) => header)
+        );
+        const availableHeaders = firstFile.csvHeaders.filter(
+          (header) => !usedByOtherFields.has(header)
+        );
+        return (
+          <Select
+            className="w-full min-w-35"
+            // HeroUI v3 Select is controlled via `value` + `onChange` (Key | Key[]).
+            // For single-select we get a string Key back; map back to "" (unmapped
+            // sentinel) when the user picks the explicit ignore item. Guard against
+            // `null` (HeroUI emits it on programmatic clear) so we don't poison the
+            // mapping with non-string values.
+            onChange={(val) => {
+              onMappingChanged();
+              const nextValue = val === null || val === UNMAPPED_COLUMN_KEY ? "" : String(val);
+              setUploadedFiles((prev) =>
+                prev.map((file, idx) =>
+                  idx === 0
+                    ? {
+                        ...file,
+                        columnMapping: {
+                          ...file.columnMapping,
+                          [row.original.name]: nextValue,
+                        },
+                      }
+                    : file
+                )
+              );
+            }}
+            placeholder="Sin mapear"
+            value={firstFile.columnMapping[row.original.name] || UNMAPPED_COLUMN_KEY}
+          >
+            <Label>Columna CSV</Label>
+            <Select.Trigger>
+              <Select.Value />
+              <Select.Indicator />
+            </Select.Trigger>
+            <Select.Popover>
+              <ListBox>
+                <ListBox.Item id={UNMAPPED_COLUMN_KEY} key={UNMAPPED_COLUMN_KEY}>
+                  -- Ignorar / Sin mapear --
                 </ListBox.Item>
-              ))}
-            </ListBox>
-          </Select.Popover>
-        </Select>
-      ),
+                {availableHeaders.map((header) => (
+                  <ListBox.Item id={header} key={header}>
+                    {header}
+                  </ListBox.Item>
+                ))}
+              </ListBox>
+            </Select.Popover>
+          </Select>
+        );
+      },
 
       header: "Columna CSV",
       id: "mapping",

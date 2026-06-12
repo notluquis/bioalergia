@@ -55,6 +55,23 @@ describe("parseProductionBalanceRows", () => {
     expect(validRows[0]?.dateKey).toBe("2026-01-07");
   });
 
+  it("silently skips fully-empty rows (trailing sheet rows arrive as {})", () => {
+    const { emptyRows, errors, validRows } = parseProductionBalanceRows([
+      {},
+      { balanceDate: "" },
+      { balanceDate: "2026-01-07", ingresoTarjetas: "1000" },
+    ]);
+    expect(errors).toEqual([]);
+    expect(emptyRows).toBe(2);
+    expect(validRows).toHaveLength(1);
+  });
+
+  it("still errors when a row has data but no valid date", () => {
+    const { errors } = parseProductionBalanceRows([{ balanceDate: "", ingresoTarjetas: "1000" }]);
+    expect(errors).toHaveLength(1);
+    expect(errors[0]).toContain("balanceDate inválida");
+  });
+
   it("skips all-zero template rows without comment", () => {
     const { emptyRows, errors, validRows } = parseProductionBalanceRows([
       { balanceDate: "jueves, 20 agosto 2026" },
