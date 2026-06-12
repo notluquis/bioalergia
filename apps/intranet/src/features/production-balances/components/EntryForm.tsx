@@ -28,7 +28,6 @@ function CurrencyInput({
 }>) {
   return (
     <NumberField
-      className="w-full"
       formatOptions={{
         currency: "CLP",
         currencyDisplay: "narrowSymbol",
@@ -36,6 +35,7 @@ function CurrencyInput({
         minimumFractionDigits: 0,
         style: "currency",
       }}
+      fullWidth
       isDisabled={disabled}
       minValue={0}
       onChange={(next) => onValueChange(Number.isNaN(next) ? null : next)}
@@ -46,8 +46,10 @@ function CurrencyInput({
         {icon}
         {label}
       </Label>
-      <NumberField.Group>
-        <NumberField.Input className="w-full" />
+      {/* Sin steppers: el grid base del Group es 40px/1fr/40px y dejaría el
+          input en la columna de 40px — una sola columna lo ocupa entero. */}
+      <NumberField.Group className="grid-cols-[1fr]">
+        <NumberField.Input />
       </NumberField.Group>
     </NumberField>
   );
