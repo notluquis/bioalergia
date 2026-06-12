@@ -24,6 +24,12 @@ import {
   insertMpImportChanges,
   type MpImportChangeInput,
 } from "../services/mercadopago-sync.ts";
+import {
+  classifyProductionBalanceRows,
+  importProductionBalances,
+  parseProductionBalanceRows,
+  summarizeProductionBalanceRow,
+} from "../services/production-balance-import.ts";
 import { SuperJSONRPCHandler } from "./superjson.ts";
 
 configureSuperjson();
@@ -110,13 +116,19 @@ const canReadCsvUpload = authed.use(async ({ context, next }) => {
   return next();
 });
 
-const canWriteWithdrawals = authed.use(async ({ context, next }) => {
-  const canCreate = await hasPermission(context.user, "create", "WithdrawTransaction");
-  if (!canCreate) {
+// Sujeto de permiso por tabla importable (espejo de PERMISSION_MAP del
+// CSVUploadPage). El chequeo va dentro del handler porque depende del input.
+const IMPORT_PERMISSION_SUBJECT: Partial<Record<string, string>> = {
+  daily_production_balances: "ProductionBalance",
+  withdrawals: "WithdrawTransaction",
+};
+
+async function assertCanImportTable(user: AuthedUser, table: string): Promise<void> {
+  const subject = IMPORT_PERMISSION_SUBJECT[table];
+  if (!subject || !(await hasPermission(user, "create", subject))) {
     throw new ORPCError("FORBIDDEN", { message: "Forbidden" });
   }
-  return next();
-});
+}
 
 function normalizeNullableString(value: unknown): null | string {
   if (value == null) {
@@ -500,7 +512,7 @@ async function importWithdrawals(input: {
 }
 
 const csvUploadORPCRouterBase = {
-  import: canWriteWithdrawals
+  import: authed
     .route({
       method: "POST",
       path: "/import",
@@ -517,6 +529,29 @@ const csvUploadORPCRouterBase = {
         context: CsvUploadAuthedContext;
         input: z.input<typeof csvUploadImportInputSchema>;
       }) => {
+        await assertCanImportTable(context.user, input.table);
+
+        if (input.table === "daily_production_balances") {
+          const mode = input.mode ?? "insert-only";
+          const { emptyRows, errors, validRows } = parseProductionBalanceRows(input.data);
+          const result = await importProductionBalances({
+            mode,
+            rows: validRows,
+            userId: context.user.id,
+          });
+          const skipped = result.skipped + emptyRows;
+          return {
+            errors: errors.length > 0 ? errors : undefined,
+            inserted: result.inserted,
+            skipped,
+            status: "ok" as const,
+            toInsert: result.inserted,
+            toSkip: skipped,
+            toUpdate: result.updated,
+            updated: result.updated,
+          };
+        }
+
         if (input.table !== "withdrawals") {
           return {
             status: "ok" as const,
@@ -633,6 +668,36 @@ const csvUploadORPCRouterBase = {
     .input(csvUploadPreviewInputSchema)
     .output(csvUploadPreviewResponseSchema)
     .handler(async ({ input }: { input: z.input<typeof csvUploadPreviewInputSchema> }) => {
+      if (input.table === "daily_production_balances") {
+        const mode = input.mode ?? "insert-only";
+        const { emptyRows, errors, validRows } = parseProductionBalanceRows(input.data);
+        const { insertRows, unchangedRows, updateRows } =
+          await classifyProductionBalanceRows(validRows);
+        const skippedByMode =
+          mode === "insert-only"
+            ? updateRows.length
+            : mode === "update-only"
+              ? insertRows.length
+              : 0;
+        return {
+          errors: errors.length > 0 ? errors.slice(0, 100) : undefined,
+          insertRowIndexes: input.includeInsertRowIndexes
+            ? insertRows.map((row) => row.rowIndex)
+            : undefined,
+          status: "ok" as const,
+          toInsert: mode === "update-only" ? 0 : insertRows.length,
+          toSkip: unchangedRows.length + skippedByMode + emptyRows,
+          toUpdate: mode === "insert-only" ? 0 : updateRows.length,
+          updateRows: input.includeUpdateRows
+            ? updateRows.map(({ row }) => ({
+                key: row.dateKey,
+                rowIndex: row.rowIndex,
+                summary: summarizeProductionBalanceRow(row),
+              }))
+            : undefined,
+        };
+      }
+
       if (input.table !== "withdrawals") {
         return {
           status: "ok" as const,

@@ -371,22 +371,27 @@ const TABLE_OPTIONS: TableOption[] = [
     value: "daily_balances",
   },
   {
+    // Aliases = headers del export de Google Sheets "BALANCE DIARIO".
+    // SUBTOTAL/TOTAL del sheet son autocalculados → sin field, se descartan.
     fields: [
-      { name: "balanceDate", required: true, type: "date" },
+      { aliases: ["fecha"], name: "balanceDate", required: true, type: "date" },
       { name: "ingresoTarjetas", required: false, type: "number" },
       { name: "ingresoTransferencias", required: false, type: "number" },
       { name: "ingresoEfectivo", required: false, type: "number" },
       { name: "gastosDiarios", required: false, type: "number" },
-      { name: "otrosAbonos", required: false, type: "number" },
-      { name: "consultasMonto", required: false, type: "number" },
-      { name: "controlesMonto", required: false, type: "number" },
-      { name: "testsMonto", required: false, type: "number" },
-      { name: "vacunasMonto", required: false, type: "number" },
-      { name: "licenciasMonto", required: false, type: "number" },
-      { name: "roxairMonto", required: false, type: "number" },
+      { aliases: ["otros/abonos", "otros"], name: "otrosAbonos", required: false, type: "number" },
+      { aliases: ["consultas"], name: "consultasMonto", required: false, type: "number" },
+      { aliases: ["controles"], name: "controlesMonto", required: false, type: "number" },
+      { aliases: ["test", "tests"], name: "testsMonto", required: false, type: "number" },
+      { aliases: ["vacunas"], name: "vacunasMonto", required: false, type: "number" },
+      { aliases: ["licencias"], name: "licenciasMonto", required: false, type: "number" },
+      {
+        aliases: ["roxair/bactek", "roxair"],
+        name: "roxairMonto",
+        required: false,
+        type: "number",
+      },
       { name: "comentarios", required: false, type: "string" },
-      { name: "status", required: false, type: "enum" },
-      { name: "changeReason", required: false, type: "string" },
     ],
 
     label: "Saldos Producción",
