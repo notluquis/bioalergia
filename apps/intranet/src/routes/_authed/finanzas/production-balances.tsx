@@ -6,7 +6,9 @@ import { DailyBalancePage } from "@/features/production-balances/DailyBalancePag
 export const Route = createFileRoute("/_authed/finanzas/production-balances")({
   staticData: {
     nav: { iconKey: "FileSpreadsheet", label: "Balance Diario", order: 40, section: "Finanzas" },
-    permission: { action: "read", subject: "DailyBalance" },
+    // Mismo subject que el middleware oRPC del backend (ProductionBalance);
+    // con DailyBalance el guard pasaba pero la query reventaba con FORBIDDEN.
+    permission: { action: "read", subject: "ProductionBalance" },
     relatedSubjects: [
       "Balance",
       "Budget",
@@ -18,6 +20,6 @@ export const Route = createFileRoute("/_authed/finanzas/production-balances")({
     ],
     title: "Balance diario de producción",
   },
-  beforeLoad: requirePermission("read", "DailyBalance"),
+  beforeLoad: requirePermission("read", "ProductionBalance"),
   component: DailyBalancePage,
 });

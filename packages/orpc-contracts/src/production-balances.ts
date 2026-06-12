@@ -6,6 +6,11 @@ export const productionBalanceQuerySchema = z.object({
   to: z.string().optional(),
 });
 
+// Ciclo de vida del balance diario: DRAFT (editable) → FINALIZED (cerrado).
+// Filas legacy con "PENDING" se normalizan a DRAFT en el serializer del API.
+export const productionBalanceStatusSchema = z.enum(["DRAFT", "FINALIZED"]);
+export type ProductionBalanceStatus = z.infer<typeof productionBalanceStatusSchema>;
+
 export const productionBalancePayloadSchema = z.object({
   comentarios: z.string().nullable().optional(),
   consultas: z.number(),
@@ -19,7 +24,7 @@ export const productionBalancePayloadSchema = z.object({
   otrosAbonos: z.number(),
   reason: z.string().nullable().optional(),
   roxair: z.number(),
-  status: z.string(),
+  status: productionBalanceStatusSchema.default("DRAFT"),
   tests: z.number(),
   vacunas: z.number(),
 });
@@ -45,16 +50,17 @@ export const productionBalanceItemSchema = z
     licenciasMonto: z.number(),
     otrosAbonos: z.number(),
     roxairMonto: z.number(),
-    status: z.string(),
+    status: productionBalanceStatusSchema,
     subtotalIngresos: z.number(),
     testsMonto: z.number(),
     total: z.number(),
     totalIngresos: z.number(),
     updatedAt: z.coerce.date(),
-    updatedByEmail: z.string().nullable(),
     vacunasMonto: z.number(),
   })
   .passthrough();
+
+export type ProductionBalanceItem = z.infer<typeof productionBalanceItemSchema>;
 
 export const productionBalancesListResponseSchema = z.object({
   from: z.string(),

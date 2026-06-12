@@ -1,4 +1,4 @@
-import { Input as HeroInput, Label, NumberField, Surface, TextArea } from "@heroui/react";
+import { Label, NumberField, Surface, TextArea } from "@heroui/react";
 import { CreditCard, Receipt } from "lucide-react";
 import type { ReactNode } from "react";
 
@@ -37,14 +37,18 @@ function CurrencyInput({
         style: "currency",
       }}
       isDisabled={disabled}
-      onChange={(next) => onValueChange(next ?? null)}
+      minValue={0}
+      onChange={(next) => onValueChange(Number.isNaN(next) ? null : next)}
       value={value}
+      variant="secondary"
     >
       <Label className="flex items-center gap-1.5 font-medium text-xs sm:text-sm">
         {icon}
         {label}
       </Label>
-      <HeroInput className="w-full" variant="secondary" />
+      <NumberField.Group>
+        <NumberField.Input className="w-full" />
+      </NumberField.Group>
     </NumberField>
   );
 }

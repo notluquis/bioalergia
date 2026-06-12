@@ -59,4 +59,15 @@ describe("mapProductionBalanceResponse → contract roundtrip", () => {
     expect(m.createdByEmail).toBeNull();
     expect(productionBalanceItemSchema.safeParse(m).success).toBe(true);
   });
+
+  it("normalizes legacy statuses (PENDING) to DRAFT and passes FINALIZED through", () => {
+    expect(mapProductionBalanceResponse({ ...sampleRow, status: "PENDING" }).status).toBe("DRAFT");
+    expect(mapProductionBalanceResponse({ ...sampleRow, status: "FINALIZED" }).status).toBe(
+      "FINALIZED"
+    );
+    const parsed = productionBalanceItemSchema.safeParse(
+      mapProductionBalanceResponse({ ...sampleRow, status: "PENDING" })
+    );
+    expect(parsed.success).toBe(true);
+  });
 });

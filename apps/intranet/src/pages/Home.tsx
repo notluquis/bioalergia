@@ -108,7 +108,7 @@ const QUICK_LINKS = [
     color: "text-emerald-500",
     description: "Actualiza saldos diarios y conciliaciones.",
     icon: Wallet,
-    subject: "DailyBalance",
+    subject: "ProductionBalance",
     title: "Registrar saldo",
     to: "/finanzas/production-balances" as const,
   },

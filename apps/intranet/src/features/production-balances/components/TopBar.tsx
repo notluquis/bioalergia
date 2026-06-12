@@ -1,5 +1,5 @@
-import { Button } from "@heroui/react";
-import { Save } from "lucide-react";
+import { Button, Kbd } from "@heroui/react";
+import { Lock, Save } from "lucide-react";
 import { useEffect } from "react";
 
 import { cn } from "@/lib/utils";
@@ -10,19 +10,37 @@ import { formatDateFull } from "../utils";
 
 interface TopBarProps {
   date: Date;
+  isFinalized: boolean;
   isSaving: boolean;
   onSave: () => Promise<void> | void;
   status: DayStatus;
 }
 
+const STATUS_LABELS: Record<DayStatus, string> = {
+  draft: "Borrador",
+  empty: "Vacío",
+  finalized: "Finalizado",
+  unbalanced: "No cuadra",
+};
+
+const STATUS_COLORS: Record<DayStatus, string> = {
+  draft: "bg-warning/15 text-warning",
+  empty: "bg-default-100/80 text-default-500",
+  finalized: "bg-success/15 text-success",
+  unbalanced: "bg-danger/15 text-danger",
+};
+
 /**
  * Compact sticky bar with current date, status, and save action
  */
-export function TopBar({ date, isSaving, onSave, status }: TopBarProps) {
+export function TopBar({ date, isFinalized, isSaving, onSave, status }: TopBarProps) {
   // Keyboard shortcut: ⌘S / Ctrl+S
   useEffect(() => {
+    if (isFinalized) {
+      return;
+    }
     const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === "s") {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "s") {
         e.preventDefault();
         void onSave();
       }
@@ -31,21 +49,7 @@ export function TopBar({ date, isSaving, onSave, status }: TopBarProps) {
     return () => {
       globalThis.removeEventListener("keydown", handleKeyDown);
     };
-  }, [onSave]);
-
-  const statusLabels: Record<DayStatus, string> = {
-    balanced: "Cuadra",
-    draft: "Borrador",
-    empty: "Vacío",
-    unbalanced: "Pendiente",
-  };
-
-  const statusColors: Record<DayStatus, string> = {
-    balanced: "bg-success/15 text-success",
-    draft: "bg-warning/15 text-warning",
-    empty: "bg-default-100/80 text-default-500",
-    unbalanced: "bg-amber-500/15 text-amber-400",
-  };
+  }, [isFinalized, onSave]);
 
   return (
     <div className="sticky top-0 z-10 mb-3 rounded-[28px] border border-default-100 bg-background/90 px-4 py-3 backdrop-blur-md sm:px-5">
@@ -56,26 +60,35 @@ export function TopBar({ date, isSaving, onSave, status }: TopBarProps) {
           </p>
           <div className="mt-1 flex items-center gap-2">
             <span
-              className={cn("rounded-full px-2 py-0.5 font-medium text-xs", statusColors[status])}
+              className={cn(
+                "flex items-center gap-1 rounded-full px-2 py-0.5 font-medium text-xs",
+                STATUS_COLORS[status]
+              )}
             >
-              {statusLabels[status]}
+              {isFinalized && <Lock aria-hidden="true" className="size-3" />}
+              {STATUS_LABELS[status]}
             </span>
           </div>
         </div>
 
-        <Button
-          className="h-11 w-full shrink-0 gap-2 rounded-2xl px-4 sm:w-auto"
-          isPending={isSaving}
-          onPress={() => {
-            void onSave();
-          }}
-          size="sm"
-          variant="primary"
-        >
-          <Save className="size-4" />
-          {isSaving ? "Guardando..." : "Guardar"}
-          <kbd className="ml-1 hidden rounded bg-black/10 px-1.5 py-0.5 text-xs sm:inline">⌘S</kbd>
-        </Button>
+        {!isFinalized && (
+          <Button
+            className="h-11 w-full shrink-0 gap-2 rounded-2xl px-4 sm:w-auto"
+            isPending={isSaving}
+            onPress={() => {
+              void onSave();
+            }}
+            size="sm"
+            variant="primary"
+          >
+            <Save aria-hidden="true" className="size-4" />
+            {isSaving ? "Guardando..." : "Guardar"}
+            <Kbd className="ml-1 hidden sm:inline-flex" variant="light">
+              <Kbd.Abbr keyValue="command" />
+              <Kbd.Content>S</Kbd.Content>
+            </Kbd>
+          </Button>
+        )}
       </div>
     </div>
   );

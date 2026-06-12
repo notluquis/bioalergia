@@ -8,40 +8,44 @@ import { formatSaveTime } from "../utils";
 
 interface CierrePanelProps {
   className?: string;
+  isFinalized: boolean;
   isSaving: boolean;
   lastSaved: Date | null;
   onFinalize: () => Promise<void> | void;
+  onReopen: () => Promise<void> | void;
   onSaveDraft: () => Promise<void> | void;
   status: DayStatus;
   summary: BalanceSummary;
 }
+
+const STATUS_LABELS: Record<DayStatus, string> = {
+  draft: "Borrador",
+  empty: "Vacío",
+  finalized: "Finalizado",
+  unbalanced: "No cuadra",
+};
+
+const STATUS_COLORS: Record<DayStatus, string> = {
+  draft: "bg-warning/20 text-warning",
+  empty: "bg-default-100 text-default-500",
+  finalized: "bg-success/20 text-success",
+  unbalanced: "bg-danger/20 text-danger",
+};
 
 /**
  * Sticky sidebar showing live summary and action buttons
  */
 export function CierrePanel({
   className,
+  isFinalized,
   isSaving,
   lastSaved,
   onFinalize,
+  onReopen,
   onSaveDraft,
   status,
   summary,
 }: CierrePanelProps) {
-  const statusLabels: Record<DayStatus, string> = {
-    balanced: "Cuadra",
-    draft: "Borrador",
-    empty: "Vacío",
-    unbalanced: "Pendiente",
-  };
-
-  const statusColors: Record<DayStatus, string> = {
-    balanced: "bg-success/20 text-success",
-    draft: "bg-warning/20 text-warning",
-    empty: "bg-default-100 text-default-500",
-    unbalanced: "bg-danger/20 text-danger",
-  };
-
   const canFinalize = summary.cuadra && summary.totalMetodos > 0;
 
   return (
@@ -53,8 +57,8 @@ export function CierrePanel({
         {/* Header */}
         <div className="mb-4 flex items-center justify-between">
           <h2 className="font-semibold text-lg">Cierre</h2>
-          <span className={cn("rounded-full px-3 py-1 font-medium text-xs", statusColors[status])}>
-            {statusLabels[status]}
+          <span className={cn("rounded-full px-3 py-1 font-medium text-xs", STATUS_COLORS[status])}>
+            {STATUS_LABELS[status]}
           </span>
         </div>
 
@@ -104,27 +108,42 @@ export function CierrePanel({
 
         {/* Action buttons */}
         <div className="mt-4 hidden gap-2 lg:flex">
-          <Button
-            variant="outline"
-            className="flex-1 rounded-xl"
-            isPending={isSaving}
-            isDisabled={isSaving}
-            onPress={() => {
-              void onSaveDraft();
-            }}
-          >
-            Guardar
-          </Button>
-          <Button
-            variant="primary"
-            className="flex-1 rounded-xl"
-            isDisabled={!canFinalize || isSaving}
-            onPress={() => {
-              void onFinalize();
-            }}
-          >
-            Finalizar
-          </Button>
+          {isFinalized ? (
+            <Button
+              className="flex-1 rounded-xl"
+              isDisabled={isSaving}
+              onPress={() => {
+                void onReopen();
+              }}
+              variant="outline"
+            >
+              Reabrir día
+            </Button>
+          ) : (
+            <>
+              <Button
+                className="flex-1 rounded-xl"
+                isDisabled={isSaving}
+                isPending={isSaving}
+                onPress={() => {
+                  void onSaveDraft();
+                }}
+                variant="outline"
+              >
+                Guardar
+              </Button>
+              <Button
+                className="flex-1 rounded-xl"
+                isDisabled={!canFinalize || isSaving}
+                onPress={() => {
+                  void onFinalize();
+                }}
+                variant="primary"
+              >
+                Finalizar
+              </Button>
+            </>
+          )}
         </div>
       </Surface>
     </aside>

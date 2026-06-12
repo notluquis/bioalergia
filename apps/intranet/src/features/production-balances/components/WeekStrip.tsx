@@ -1,8 +1,7 @@
 import { Button, Skeleton } from "@heroui/react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
-import { chileDay } from "@/lib/dates";
-import { useMemo } from "react";
+import { chileDay, today } from "@/lib/dates";
 
 import { fmtCLP } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -33,8 +32,6 @@ export function WeekStrip({
   onSelectDate,
   weekData,
 }: WeekStripProps) {
-  const today = useMemo(() => new Date(), []);
-
   if (isCollapsed) {
     return (
       <div className="mb-4 flex items-center justify-between rounded-2xl border border-default-100 bg-default-50/30 px-4 py-2">
@@ -84,7 +81,7 @@ export function WeekStrip({
           <DayCellButton
             day={day}
             isSelected={chileDay(day.date) === chileDay(currentDate)}
-            isToday={chileDay(day.date) === chileDay(today)}
+            isToday={chileDay(day.date) === today()}
             key={day.date.toISOString()}
             onPress={() => {
               onSelectDate(day.date);
@@ -112,9 +109,9 @@ function DayCellButton({
   onPress: () => void;
 }) {
   const statusColors = {
-    balanced: "bg-success",
     draft: "bg-warning",
     empty: "bg-default-200",
+    finalized: "bg-success",
     unbalanced: "bg-danger",
   };
 

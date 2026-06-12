@@ -1,9 +1,7 @@
 import { z } from "zod";
 
-// ==================== ZOD SCHEMAS ====================
-
 export const DailyBalanceFormSchema = z.object({
-  // Ingresos por servicio (optional breakdown)
+  // Ingresos por servicio (desglose)
   consultas: z.number().min(0).default(0),
   controles: z.number().min(0).default(0),
   efectivo: z.number().min(0).default(0),
@@ -24,6 +22,8 @@ export const DailyBalanceFormSchema = z.object({
   vacunas: z.number().min(0).default(0),
 });
 
+export type DailyBalanceFormData = z.infer<typeof DailyBalanceFormSchema>;
+
 export interface BalanceSummary {
   cuadra: boolean;
   diferencia: number;
@@ -32,61 +32,31 @@ export interface BalanceSummary {
   totalServicios: number;
 }
 
-// ==================== TYPES ====================
-
-export interface DailyBalanceEntry {
-  consultas: number;
-  controles: number;
-  createdAt?: Date;
-  date: string; // YYYY-MM-DD
-  efectivo: number;
-  gastos: number;
-  id?: number;
-  licencias: number;
-  nota: string;
-  otros: number;
-  roxair: number;
-  status: DayStatus;
-  tarjeta: number;
-  tests: number;
-  transferencia: number;
-  updatedAt?: Date;
-  vacunas: number;
-}
-
-export type DailyBalanceFormData = z.infer<typeof DailyBalanceFormSchema>;
+/**
+ * Estado visual de un día:
+ * - `empty`: sin entrada (o sin montos)
+ * - `draft`: entrada en borrador que cuadra
+ * - `unbalanced`: entrada en borrador que NO cuadra
+ * - `finalized`: día cerrado (status FINALIZED en API)
+ */
+export type DayStatus = "draft" | "empty" | "finalized" | "unbalanced";
 
 export interface DayCell {
   date: Date;
   dayName: string; // "L", "M", "X", "J", "V", "S", "D"
   dayNumber: number;
-  isSelected: boolean;
-  isToday: boolean;
   status: DayStatus;
   total: number;
-}
-
-export type DayStatus = "balanced" | "draft" | "empty" | "unbalanced";
-
-export interface FetchDayResponse {
-  entry: DailyBalanceEntry | null;
-  status: "ok";
-}
-
-// ==================== API TYPES ====================
-
-export interface FetchWeekResponse {
-  entries: Record<string, DailyBalanceEntry>;
-  status: "ok";
-  week: WeekData;
-}
-
-export interface SaveDayResponse {
-  entry: DailyBalanceEntry;
-  status: "ok";
 }
 
 export interface WeekData {
   days: DayCell[];
   weekLabel: string; // "5 – 11 ene 2026"
+}
+
+/** Resumen por día que alimenta el WeekStrip, derivado de la respuesta del API. */
+export interface DayEntrySummary {
+  cuadra: boolean;
+  finalized: boolean;
+  total: number;
 }

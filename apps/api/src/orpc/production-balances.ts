@@ -65,6 +65,9 @@ export function mapProductionBalanceResponse(p: ProductionBalanceRow) {
     (p.ingresoTarjetas || 0) + (p.ingresoTransferencias || 0) + (p.ingresoEfectivo || 0);
   const totalIngresos = subtotalIngresos - (p.gastosDiarios || 0);
   const total = totalIngresos + (p.otrosAbonos || 0);
+  // Filas legacy traen "PENDING"/"DRAFT" libres; el contrato expone solo
+  // DRAFT|FINALIZED, así que todo lo no-finalizado se normaliza a DRAFT.
+  const status = p.status === "FINALIZED" ? ("FINALIZED" as const) : ("DRAFT" as const);
 
   return {
     id: p.id,
@@ -85,10 +88,9 @@ export function mapProductionBalanceResponse(p: ProductionBalanceRow) {
     roxairMonto: p.roxairMonto,
     total,
     comentarios: p.comentarios,
-    status: p.status,
+    status,
     changeReason: p.changeReason,
     createdByEmail: p.user?.person?.email ?? null,
-    updatedByEmail: null,
     createdAt: p.createdAt,
     updatedAt: p.updatedAt,
   };
