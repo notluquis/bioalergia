@@ -345,7 +345,7 @@ const waRouterBase = {
         where: { accountId: input.id },
         select: { id: true, name: true, language: true },
       });
-      const existingByKey = new Map(existingRows.map((r) => [`${r.name} ${r.language}`, r.id]));
+      const existingByKey = new Map(existingRows.map((r) => [`${r.name}\u0000${r.language}`, r.id]));
       await Promise.all(
         apiTpls.map((t) => {
           const data = {
@@ -359,7 +359,7 @@ const waRouterBase = {
             metaTemplateId: t.id,
             syncedAt: new Date(),
           };
-          const existingId = existingByKey.get(`${t.name} ${t.language}`);
+          const existingId = existingByKey.get(`${t.name}\u0000${t.language}`);
           return existingId
             ? db.waTemplate.update({ where: { id: existingId }, data })
             : db.waTemplate.create({ data });
