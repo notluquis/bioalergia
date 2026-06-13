@@ -271,14 +271,27 @@ waCloudMediaRoutes.get("/:messageId", async (c) => {
     // Strip quote and any control char from caption-derived filename to
     // prevent header injection. RFC 6266 also lets us drop CR/LF.
     const safeFilename = filename.replace(/[\x00-\x1f\x7f"\\]/g, "_").slice(0, 200);
-    const disposition = wantsDownload
-      ? `attachment; filename="${safeFilename}"`
-      : `inline; filename="${safeFilename}"`;
+    // Only render trusted media types inline. The content-type comes from an
+    // untrusted contact (upstream/Meta); text/html or image/svg+xml served
+    // inline same-origin is a stored-XSS / defacement surface. Force download
+    // for anything outside the safe render allowlist.
+    const ct = contentType.toLowerCase();
+    const inlineSafe =
+      ct === "application/pdf" ||
+      (ct.startsWith("image/") && ct !== "image/svg+xml") ||
+      ct.startsWith("video/") ||
+      ct.startsWith("audio/");
+    const disposition =
+      wantsDownload || !inlineSafe
+        ? `attachment; filename="${safeFilename}"`
+        : `inline; filename="${safeFilename}"`;
     return new Response(upstream.body, {
       status: 200,
       headers: {
         "Content-Type": contentType,
         "Content-Disposition": disposition,
+        // Don't let the browser MIME-sniff around the declared content-type.
+        "X-Content-Type-Options": "nosniff",
         // Allow same-origin iframe embedding for the PDF viewer modal.
         "X-Frame-Options": "SAMEORIGIN",
         "Cache-Control": "private, max-age=300",
