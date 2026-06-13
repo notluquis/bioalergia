@@ -1,5 +1,10 @@
 name: quality-gates
 
+# Least-privilege GITHUB_TOKEN: jobs only run tests/lint; the LHCI PR comment
+# uses LHCI_GITHUB_APP_TOKEN (a GitHub App), not GITHUB_TOKEN. Read-only.
+permissions:
+  contents: read
+
 on:
   push:
     branches:

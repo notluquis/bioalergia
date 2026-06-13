@@ -3,6 +3,11 @@ name: e2e-hermetic
 # Authed e2e against an EPHEMERAL, synthetically-seeded Postgres — $0, no PHI.
 # Non-blocking until proven stable; keep OUT of branch-protection required
 # checks. Triggered manually + on PRs touching the app.
+
+# Least-privilege GITHUB_TOKEN: only checkout + run e2e; no writes.
+permissions:
+  contents: read
+
 on:
   workflow_dispatch:
   pull_request:

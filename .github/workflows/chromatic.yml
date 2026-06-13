@@ -1,5 +1,10 @@
 name: chromatic
 
+# Least-privilege GITHUB_TOKEN: only checkout + Chromatic (auth'd via
+# CHROMATIC_PROJECT_TOKEN, not GITHUB_TOKEN). Read-only by default.
+permissions:
+  contents: read
+
 on:
   push:
     branches:
