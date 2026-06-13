@@ -145,6 +145,8 @@ import {
   unblockUsers,
   updateBusinessProfile,
 } from "../modules/wa-cloud/graph-client.ts";
+import { waBroadcastJobKey } from "../modules/wa-cloud/broadcast-runner.ts";
+import { enqueueJob } from "../queue/runner.ts";
 import { SuperJSONRPCHandler } from "./superjson.ts";
 
 configureSuperjson();
@@ -1321,6 +1323,20 @@ const waRouterBase = {
           },
         },
       });
+      // Scheduled broadcast → kick off the drain chain at its send time. Drafts
+      // wait for startBroadcast. jobKey+replace = one chain per broadcast.
+      // No-ops when the queue runner is disabled (manual start stays the fallback).
+      if (bc.status === "QUEUED") {
+        await enqueueJob(
+          "send_wa_broadcast_tick",
+          { broadcastId: bc.id },
+          {
+            runAt: bc.scheduledAt ?? new Date(),
+            jobKey: waBroadcastJobKey(bc.id),
+            jobKeyMode: "replace",
+          }
+        );
+      }
       return bc;
     }),
 
@@ -1373,6 +1389,16 @@ const waRouterBase = {
         where: { id: bc.id },
         data: { status: "QUEUED", scheduledAt: bc.scheduledAt ?? new Date() },
       });
+      // Start (or restart) the drain chain. runAt = scheduledAt (now if immediate).
+      await enqueueJob(
+        "send_wa_broadcast_tick",
+        { broadcastId: updated.id },
+        {
+          runAt: updated.scheduledAt ?? new Date(),
+          jobKey: waBroadcastJobKey(updated.id),
+          jobKeyMode: "replace",
+        }
+      );
       return updated;
     }),
 
