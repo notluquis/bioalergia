@@ -61,6 +61,12 @@ registerRoute(
     // served by service worker is an error"). Dejándolo sin route, el SW no lo
     // intercepta y el browser lo carga normal por la red.
     url.origin === self.location.origin &&
+    // NUNCA cachear /api/*: las imágenes del inbox WhatsApp se sirven como
+    // <img src="/api/wa-cloud/media/..."> (destination=image, same-origin) y
+    // Cache Storage ignora el Cache-Control: private del API. Sin esta
+    // exclusión, fotos clínicas de pacientes quedaban en static-cache sin
+    // expiración y sobrevivían al logout (PHI persistida en el dispositivo).
+    !url.pathname.startsWith("/api/") &&
     (request.destination === "script" ||
       request.destination === "style" ||
       request.destination === "image" ||

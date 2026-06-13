@@ -1518,7 +1518,7 @@ model ClinicalRecord {
   sourceImport        ClinicalRecordImport @relation(fields: [sourceImportId], references: [id], onDelete: Cascade)
 
   @@deny('all', auth() == null)
-  @@allow('read', true)
+  @@allow('read', auth().status == 'ACTIVE')
   @@allow('create,update,delete', auth().status == 'ACTIVE')
 
   @@index([clinicalSeriesId])
@@ -1702,7 +1702,7 @@ model ClinicalSkinTest {
   results          ClinicalSkinTestResult[]
 
   @@deny('all', auth() == null)
-  @@allow('read', true)
+  @@allow('read', auth().status == 'ACTIVE')
   @@allow('create,update,delete', auth().status == 'ACTIVE')
 
   @@index([clinicalSeriesId])
@@ -2591,9 +2591,8 @@ model MedicalCertificate {
   verification  DocumentVerification?
 
   @@deny('all', auth() == null)
-  @@allow('read', auth().id == issuedBy)
+  @@allow('read', auth().status == 'ACTIVE')
   @@allow('create', auth().status == 'ACTIVE')
-  @@allow('read', auth() != null)
 
   @@index([patientRut])
   @@index([issuedAt])

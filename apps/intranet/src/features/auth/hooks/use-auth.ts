@@ -135,6 +135,23 @@ export function useAuth() {
       } catch (err) {
         logger.error("[auth] logout:push-unsubscribe-error", err);
       }
+      // Purge caches that may hold PHI from the previous session (WA inbox
+      // media in static-cache, files in the share-target cache). Cache
+      // Storage ignores the API's Cache-Control headers, so these must be
+      // cleared explicitly — otherwise a patient's clinical photos survive
+      // logout on a shared device.
+      try {
+        if ("caches" in globalThis) {
+          const names = await caches.keys();
+          await Promise.all(
+            names
+              .filter((n) => n === "static-cache" || n.startsWith("share-target"))
+              .map((n) => caches.delete(n))
+          );
+        }
+      } catch (err) {
+        logger.error("[auth] logout:cache-purge-error", err);
+      }
       StatusResponseSchema.parse(await authORPCClient.logout({}));
     } catch (error) {
       logger.error("[auth] logout:error", toAuthApiError(error));
