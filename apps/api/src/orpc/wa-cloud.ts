@@ -147,6 +147,7 @@ import {
 } from "../modules/wa-cloud/graph-client.ts";
 import { waBroadcastJobKey } from "../modules/wa-cloud/broadcast-runner.ts";
 import { enqueueJob } from "../queue/runner.ts";
+import { waScheduledJobKey } from "../queue/tasks/wa-scheduled-send.ts";
 import { SuperJSONRPCHandler } from "./superjson.ts";
 
 configureSuperjson();
@@ -1448,6 +1449,17 @@ const waRouterBase = {
           createdByUserId: context.user.id,
         },
       });
+      // Fire the one-shot send at its due time. jobKey+replace keeps a single
+      // job per scheduled message. No-op when the queue runner is disabled.
+      await enqueueJob(
+        "send_wa_scheduled",
+        { scheduledMessageId: created.id },
+        {
+          runAt: input.scheduledAt,
+          jobKey: waScheduledJobKey(created.id),
+          jobKeyMode: "replace",
+        }
+      );
       return {
         ...created,
         templateVars: (created.templateVars as unknown as string[]) ?? [],
