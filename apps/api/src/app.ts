@@ -399,6 +399,20 @@ const webhookRateLimiter = rateLimiter({
 });
 app.use("/api/webhooks/*", webhookRateLimiter);
 
+// Public document verification (no auth): /verificar/{code}. The response
+// exposes partial PHI (patient initials, masked RUT, doctor license #, folio)
+// and the code is only ~32 bits of entropy, so an unthrottled endpoint lets an
+// attacker enumerate codes to harvest those fields. 30/min per IP is plenty for
+// a human scanning a QR while blocking bulk enumeration.
+const verificationRateLimiter = rateLimiter({
+  windowMs: 60 * 1000,
+  limit: 30,
+  standardHeaders: "draft-6",
+  keyGenerator: (c) => clientIp(c) ?? "anonymous",
+  skip: (c) => c.req.method === "OPTIONS",
+});
+app.use("/api/orpc/verification/*", verificationRateLimiter);
+
 // Body size cap on webhook ingress: Meta payloads top out near 100KB,
 // OneDrive validation tokens are small. 1 MB is a safe ceiling that
 // blocks DoS amplification (an attacker firing 100 MB JSON to keep our
