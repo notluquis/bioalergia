@@ -164,16 +164,22 @@ app.use("*", async (c, next) => {
     c.res.headers.set("Content-Type", "application/json; charset=utf-8");
   }
 
-  // Content Security Policy - Allow Cloudflare + Vite assets. unsafe-eval
-  // only kept in dev for Vite HMR; production build does not need it.
+  // Content Security Policy. The API serves JSON for ~everything; the only
+  // HTML it emits is the Scalar OpenAPI reference (internal dev docs, renders
+  // no user data), which injects an inline init <script>. So we scope
+  // 'unsafe-inline' to HTML responses ONLY and keep a strict script-src on all
+  // JSON/API responses — that's the surface an XSS payload would actually use.
+  // unsafe-eval stays dev-only (Vite HMR; prod build doesn't need it).
   const isProd = process.env.NODE_ENV === "production";
-  const scriptSrc = isProd
-    ? "script-src 'self' 'unsafe-inline' https://cdn.cloudflare.com https://static.cloudflareinsights.com https://challenges.cloudflare.com"
-    : "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.cloudflare.com https://static.cloudflareinsights.com https://challenges.cloudflare.com";
+  const isHtml = (c.res.headers.get("Content-Type") ?? "").includes("text/html");
+  const cf =
+    "https://cdn.cloudflare.com https://static.cloudflareinsights.com https://challenges.cloudflare.com";
+  const inline = isHtml ? " 'unsafe-inline'" : "";
+  const evalSrc = isProd ? "" : " 'unsafe-eval'";
   const csp = [
     "default-src 'self'",
-    scriptSrc,
-    "script-src-elem 'self' 'unsafe-inline' https://cdn.cloudflare.com https://static.cloudflareinsights.com https://challenges.cloudflare.com",
+    `script-src 'self'${inline}${evalSrc} ${cf}`,
+    `script-src-elem 'self'${inline} ${cf}`,
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: https:",
     "media-src 'self' blob:",
