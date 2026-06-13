@@ -34,7 +34,11 @@ export async function sendScheduledMessage(
   try {
     let metaId: string | null = null;
     let preview: string;
-    let payload: Record<string, unknown> | null = null;
+    // WaMessage.payload is non-nullable (Json @default("{}")). TEXT keeps the
+    // empty object (mirrors the inline sendMessage handler, which omits it and
+    // lets the default apply); TEMPLATE overwrites with the components object.
+    // Writing null here would violate NOT NULL and fail every scheduled TEXT.
+    let payload: Record<string, unknown> = {};
 
     if (sm.type === "TEMPLATE") {
       if (!sm.templateName || !sm.templateLanguage) {

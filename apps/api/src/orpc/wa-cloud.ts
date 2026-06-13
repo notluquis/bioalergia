@@ -1335,6 +1335,11 @@ const waRouterBase = {
             runAt: bc.scheduledAt ?? new Date(),
             jobKey: waBroadcastJobKey(bc.id),
             jobKeyMode: "replace",
+            // Serialize all ticks for this broadcast: jobKey only dedups
+            // PENDING jobs, not a running one, so without a per-broadcast queue
+            // a re-enqueued/restarted tick could run concurrently and re-read
+            // the same PENDING recipients → double-send.
+            queueName: waBroadcastJobKey(bc.id),
           }
         );
       }
@@ -1398,6 +1403,7 @@ const waRouterBase = {
           runAt: updated.scheduledAt ?? new Date(),
           jobKey: waBroadcastJobKey(updated.id),
           jobKeyMode: "replace",
+          queueName: waBroadcastJobKey(updated.id), // serialize ticks (see createBroadcast)
         }
       );
       return updated;
@@ -1458,6 +1464,8 @@ const waRouterBase = {
           runAt: input.scheduledAt,
           jobKey: waScheduledJobKey(created.id),
           jobKeyMode: "replace",
+          // Serialize so a retry can't run alongside the original and double-send.
+          queueName: waScheduledJobKey(created.id),
         }
       );
       return {

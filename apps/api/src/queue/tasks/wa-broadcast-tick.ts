@@ -39,6 +39,8 @@ export const send_wa_broadcast_tick: Task = async (payload, helpers) => {
       runAt: new Date(Date.now() + RE_ENQUEUE_GAP_MS),
       jobKey: waBroadcastJobKey(broadcastId),
       jobKeyMode: "replace",
+      // Same per-broadcast queue as the handler enqueue → ticks never overlap.
+      queueName: waBroadcastJobKey(broadcastId),
     }
   );
 };
