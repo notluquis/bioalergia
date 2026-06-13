@@ -81,4 +81,17 @@ RUN for i in 1 2 3; do \
 
 COPY --from=build /app/deploy/ .
 
+# Non-root: use the built-in `node` user (uid 1000) from node:26-bookworm.
+# Safe because cookies/session persist to the DB over HTTP (CookieJar fetch) and
+# captured data is POSTed — no app-data dir needs chown. webkit.launch() writes
+# only a throwaway profile under /tmp (world-writable+sticky), and browsers were
+# installed to /ms-playwright with o+rx so uid 1000 can read+execute them. Give
+# node a real HOME + XDG cache so any browser cache write has a writable target.
+# NOTE: the webkit-as-uid-1000 path runs only on the captcha/2FA login fallback;
+# smoke-test that branch post-deploy (normal cron is HTTP-only and unaffected).
+ENV HOME=/home/node
+ENV XDG_CACHE_HOME=/home/node/.cache
+RUN mkdir -p /home/node/.cache && chown -R node:node /home/node /app
+USER node
+
 CMD ["node", "src/index.ts"]
