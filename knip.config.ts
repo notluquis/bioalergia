@@ -102,7 +102,11 @@ const config: KnipConfig = {
     },
     "apps/api": {
       entry: [
-        "src/server.ts",
+        // Real entry is src/index.ts (node src/index.ts, dev & Railway). The
+        // stale "src/server.ts" (nonexistent) rooted the dead-code graph in
+        // tests only, so knip never reached the real import tree — that's how
+        // the dead broadcast-runner poller went undetected.
+        "src/index.ts",
         "src/**/*.test.ts",
         // Operational/maintenance scripts live in both `scripts/` (root of
         // workspace) and `src/scripts/` (run with `node src/scripts/...`).

@@ -21,6 +21,14 @@
 		Permissions-Policy "camera=(), microphone=(), geolocation=()"
 		Cross-Origin-Opener-Policy "same-origin"
 		Cross-Origin-Resource-Policy "same-origin"
+		# Force HTTPS for a year incl. subdomains (matches intranet/Caddyfile).
+		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+		# NOTE: Content-Security-Policy intentionally NOT set yet. This site
+		# embeds the MercadoPago Brick (checkout) and Brick injects scripts +
+		# iframes from MP-owned origins (sdk.mercadopago.com, *.mercadopago.com/
+		# .cl, http2.mlstatic.com, api.mercadopago.com). A CSP missing any of
+		# those silently breaks payments, so it must be authored against MP's
+		# current published integration-security domain list before shipping.
 	}
 
 	# Allow embedding public brand assets (signature + clinic logo) from
