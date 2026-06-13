@@ -1,6 +1,7 @@
 import type { TransactionType } from "@finanzas/db";
-import { db } from "@finanzas/db";
+import { db, kysely } from "@finanzas/db";
 import { Decimal } from "decimal.js";
+import { sql } from "kysely";
 import { AppError } from "../lib/app-error.ts";
 import { auditRowChange } from "../lib/audit-diff.ts";
 import { getPeriodRange, toChilePeriod } from "../lib/time.ts";
@@ -541,71 +542,73 @@ async function applyAutoCategoryRuleRow(
     return count;
   }
 
-  const amountSourceExpr =
+  // amountSource / paymentMethod are trusted column EXPRESSIONS (never user
+  // input) → sql.raw. Everything derived from `rule.*` goes through ${bind}.
+  const amountSourceSql =
     rule.matchAmountOn === "gross"
-      ? "COALESCE(rt.gross_amount, st.transaction_amount, ABS(ft.amount))"
-      : "ABS(ft.amount)";
+      ? sql.raw("COALESCE(rt.gross_amount, st.transaction_amount, ABS(ft.amount))")
+      : sql.raw("ABS(ft.amount)");
+  const paymentMethodSql = sql.raw("COALESCE(rt.payment_method_type, st.payment_method_type)");
 
-  const paymentMethodExpr = "COALESCE(rt.payment_method_type, st.payment_method_type)";
-
-  const whereClauses: string[] = [`ft.type = '${rule.type}'`];
+  const conditions: ReturnType<typeof sql>[] = [sql`ft.type = ${rule.type}`];
   if (options?.onlyUncategorized) {
-    whereClauses.push("ft.category_id IS NULL");
+    conditions.push(sql`ft.category_id IS NULL`);
   } else {
-    whereClauses.push(`ft.category_id IS DISTINCT FROM ${rule.categoryId}`);
+    conditions.push(sql`ft.category_id IS DISTINCT FROM ${rule.categoryId}`);
   }
   if (rule.counterpartId != null) {
-    whereClauses.push(`ft.counterpart_id = ${rule.counterpartId}`);
+    conditions.push(sql`ft.counterpart_id = ${rule.counterpartId}`);
   }
   if (rule.commentContains != null) {
-    whereClauses.push(
-      `ft.comment ILIKE ${sqlLiteral(`%${rule.commentContains.replace(/[%_]/g, "\\$&")}%`)}`
-    );
+    // Escape LIKE metacharacters in the literal, then bind the whole pattern.
+    const pattern = `%${rule.commentContains.replace(/[%_]/g, "\\$&")}%`;
+    conditions.push(sql`ft.comment ILIKE ${pattern}`);
   }
   if (rule.descriptionContains != null) {
-    whereClauses.push(
-      `ft.description ILIKE ${sqlLiteral(`%${rule.descriptionContains.replace(/[%_]/g, "\\$&")}%`)}`
-    );
+    const pattern = `%${rule.descriptionContains.replace(/[%_]/g, "\\$&")}%`;
+    conditions.push(sql`ft.description ILIKE ${pattern}`);
   }
   if (rule.paymentMethods.length > 0) {
-    const values = rule.paymentMethods.map((method) => sqlLiteral(method)).join(", ");
-    whereClauses.push(`${paymentMethodExpr} IN (${values})`);
+    const methods = sql.join(rule.paymentMethods.map((m) => sql`${m}`));
+    conditions.push(sql`${paymentMethodSql} IN (${methods})`);
   }
   if (rule.amountsExact.length > 0) {
-    const values = rule.amountsExact.map((value) => Number(value).toFixed(4)).join(", ");
-    whereClauses.push(
-      `EXISTS (SELECT 1 FROM (VALUES (${values})) AS amounts_exact(v) WHERE ABS(${amountSourceExpr} - amounts_exact.v) <= ${AMOUNT_MATCH_EPSILON})`
+    // VALUES as N rows of 1 column (matches the amounts_exact(v) alias). The
+    // old string form built ONE N-column row, which errored at runtime for ≥2
+    // exact amounts — this parametrized form fixes that latent bug.
+    const valueRows = sql.join(rule.amountsExact.map((v) => sql`(${Number(v)})`));
+    conditions.push(
+      sql`EXISTS (
+        SELECT 1 FROM (VALUES ${valueRows}) AS amounts_exact(v)
+        WHERE ABS(${amountSourceSql} - amounts_exact.v) <= ${AMOUNT_MATCH_EPSILON}
+      )`
     );
   } else {
     if (rule.minAmount != null) {
-      whereClauses.push(`${amountSourceExpr} >= ${Number(rule.minAmount)}`);
+      conditions.push(sql`${amountSourceSql} >= ${Number(rule.minAmount)}`);
     }
     if (rule.maxAmount != null) {
-      whereClauses.push(`${amountSourceExpr} <= ${Number(rule.maxAmount)}`);
+      conditions.push(sql`${amountSourceSql} <= ${Number(rule.maxAmount)}`);
     }
   }
 
-  const sql = `
+  const where = sql.join(conditions, sql` AND `);
+  const result = await sql`
     WITH matches AS (
       SELECT DISTINCT ft.id
       FROM financial_transactions ft
       LEFT JOIN release_transactions rt ON rt.source_id = ft.source_id
       LEFT JOIN settlement_transactions st ON st.source_id = ft.source_id
-      WHERE ${whereClauses.join("\n        AND ")}
+      WHERE ${where}
     )
     UPDATE financial_transactions ft
     SET category_id = ${rule.categoryId},
         updated_at = NOW()
     FROM matches
     WHERE ft.id = matches.id
-  `;
+  `.execute(kysely);
 
-  const updated = await db.$executeRawUnsafe(sql);
-  return Number(updated);
-}
-
-function sqlLiteral(value: string) {
-  return `'${value.replace(/'/g, "''")}'`;
+  return Number(result.numAffectedRows ?? 0n);
 }
 
 async function ensurePatientsAutoCategoryRule() {
