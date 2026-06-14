@@ -24,6 +24,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as TiendaIndexRouteImport } from './routes/tienda/index'
 import { Route as NoticiasIndexRouteImport } from './routes/noticias/index'
 import { Route as MiCuentaIndexRouteImport } from './routes/mi-cuenta/index'
+import { Route as AprendeIndexRouteImport } from './routes/aprende/index'
 import { Route as VerificarCodeRouteImport } from './routes/verificar.$code'
 import { Route as ProductoSlugRouteImport } from './routes/producto/$slug'
 import { Route as PedidoNumberRouteImport } from './routes/pedido/$number'
@@ -32,6 +33,7 @@ import { Route as MiCuentaSeguridadRouteImport } from './routes/mi-cuenta/seguri
 import { Route as MiCuentaPedidosRouteImport } from './routes/mi-cuenta/pedidos'
 import { Route as MiCuentaDireccionesRouteImport } from './routes/mi-cuenta/direcciones'
 import { Route as LegalSlugRouteImport } from './routes/legal/$slug'
+import { Route as AprendeSlugRouteImport } from './routes/aprende/$slug'
 import { Route as MiCuentaPedidosNumberRouteImport } from './routes/mi-cuenta/pedidos.$number'
 import { Route as MiCuentaAuthCallbackRouteImport } from './routes/mi-cuenta/auth/callback'
 
@@ -110,6 +112,11 @@ const MiCuentaIndexRoute = MiCuentaIndexRouteImport.update({
   path: '/',
   getParentRoute: () => MiCuentaRoute,
 } as any)
+const AprendeIndexRoute = AprendeIndexRouteImport.update({
+  id: '/aprende/',
+  path: '/aprende/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const VerificarCodeRoute = VerificarCodeRouteImport.update({
   id: '/verificar/$code',
   path: '/verificar/$code',
@@ -150,6 +157,11 @@ const LegalSlugRoute = LegalSlugRouteImport.update({
   path: '/legal/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AprendeSlugRoute = AprendeSlugRouteImport.update({
+  id: '/aprende/$slug',
+  path: '/aprende/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MiCuentaPedidosNumberRoute = MiCuentaPedidosNumberRouteImport.update({
   id: '/$number',
   path: '/$number',
@@ -174,6 +186,7 @@ export interface FileRoutesByFullPath {
   '/mi-cuenta': typeof MiCuentaRouteWithChildren
   '/polen': typeof PolenRoute
   '/registro': typeof RegistroRoute
+  '/aprende/$slug': typeof AprendeSlugRoute
   '/legal/$slug': typeof LegalSlugRoute
   '/mi-cuenta/direcciones': typeof MiCuentaDireccionesRoute
   '/mi-cuenta/pedidos': typeof MiCuentaPedidosRouteWithChildren
@@ -182,6 +195,7 @@ export interface FileRoutesByFullPath {
   '/pedido/$number': typeof PedidoNumberRoute
   '/producto/$slug': typeof ProductoSlugRoute
   '/verificar/$code': typeof VerificarCodeRoute
+  '/aprende/': typeof AprendeIndexRoute
   '/mi-cuenta/': typeof MiCuentaIndexRoute
   '/noticias/': typeof NoticiasIndexRoute
   '/tienda/': typeof TiendaIndexRoute
@@ -200,6 +214,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/polen': typeof PolenRoute
   '/registro': typeof RegistroRoute
+  '/aprende/$slug': typeof AprendeSlugRoute
   '/legal/$slug': typeof LegalSlugRoute
   '/mi-cuenta/direcciones': typeof MiCuentaDireccionesRoute
   '/mi-cuenta/pedidos': typeof MiCuentaPedidosRouteWithChildren
@@ -208,6 +223,7 @@ export interface FileRoutesByTo {
   '/pedido/$number': typeof PedidoNumberRoute
   '/producto/$slug': typeof ProductoSlugRoute
   '/verificar/$code': typeof VerificarCodeRoute
+  '/aprende': typeof AprendeIndexRoute
   '/mi-cuenta': typeof MiCuentaIndexRoute
   '/noticias': typeof NoticiasIndexRoute
   '/tienda': typeof TiendaIndexRoute
@@ -228,6 +244,7 @@ export interface FileRoutesById {
   '/mi-cuenta': typeof MiCuentaRouteWithChildren
   '/polen': typeof PolenRoute
   '/registro': typeof RegistroRoute
+  '/aprende/$slug': typeof AprendeSlugRoute
   '/legal/$slug': typeof LegalSlugRoute
   '/mi-cuenta/direcciones': typeof MiCuentaDireccionesRoute
   '/mi-cuenta/pedidos': typeof MiCuentaPedidosRouteWithChildren
@@ -236,6 +253,7 @@ export interface FileRoutesById {
   '/pedido/$number': typeof PedidoNumberRoute
   '/producto/$slug': typeof ProductoSlugRoute
   '/verificar/$code': typeof VerificarCodeRoute
+  '/aprende/': typeof AprendeIndexRoute
   '/mi-cuenta/': typeof MiCuentaIndexRoute
   '/noticias/': typeof NoticiasIndexRoute
   '/tienda/': typeof TiendaIndexRoute
@@ -257,6 +275,7 @@ export interface FileRouteTypes {
     | '/mi-cuenta'
     | '/polen'
     | '/registro'
+    | '/aprende/$slug'
     | '/legal/$slug'
     | '/mi-cuenta/direcciones'
     | '/mi-cuenta/pedidos'
@@ -265,6 +284,7 @@ export interface FileRouteTypes {
     | '/pedido/$number'
     | '/producto/$slug'
     | '/verificar/$code'
+    | '/aprende/'
     | '/mi-cuenta/'
     | '/noticias/'
     | '/tienda/'
@@ -283,6 +303,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/polen'
     | '/registro'
+    | '/aprende/$slug'
     | '/legal/$slug'
     | '/mi-cuenta/direcciones'
     | '/mi-cuenta/pedidos'
@@ -291,6 +312,7 @@ export interface FileRouteTypes {
     | '/pedido/$number'
     | '/producto/$slug'
     | '/verificar/$code'
+    | '/aprende'
     | '/mi-cuenta'
     | '/noticias'
     | '/tienda'
@@ -310,6 +332,7 @@ export interface FileRouteTypes {
     | '/mi-cuenta'
     | '/polen'
     | '/registro'
+    | '/aprende/$slug'
     | '/legal/$slug'
     | '/mi-cuenta/direcciones'
     | '/mi-cuenta/pedidos'
@@ -318,6 +341,7 @@ export interface FileRouteTypes {
     | '/pedido/$number'
     | '/producto/$slug'
     | '/verificar/$code'
+    | '/aprende/'
     | '/mi-cuenta/'
     | '/noticias/'
     | '/tienda/'
@@ -338,11 +362,13 @@ export interface RootRouteChildren {
   MiCuentaRoute: typeof MiCuentaRouteWithChildren
   PolenRoute: typeof PolenRoute
   RegistroRoute: typeof RegistroRoute
+  AprendeSlugRoute: typeof AprendeSlugRoute
   LegalSlugRoute: typeof LegalSlugRoute
   NoticiasSlugRoute: typeof NoticiasSlugRoute
   PedidoNumberRoute: typeof PedidoNumberRoute
   ProductoSlugRoute: typeof ProductoSlugRoute
   VerificarCodeRoute: typeof VerificarCodeRoute
+  AprendeIndexRoute: typeof AprendeIndexRoute
   NoticiasIndexRoute: typeof NoticiasIndexRoute
   TiendaIndexRoute: typeof TiendaIndexRoute
 }
@@ -454,6 +480,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MiCuentaIndexRouteImport
       parentRoute: typeof MiCuentaRoute
     }
+    '/aprende/': {
+      id: '/aprende/'
+      path: '/aprende'
+      fullPath: '/aprende/'
+      preLoaderRoute: typeof AprendeIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/verificar/$code': {
       id: '/verificar/$code'
       path: '/verificar/$code'
@@ -508,6 +541,13 @@ declare module '@tanstack/react-router' {
       path: '/legal/$slug'
       fullPath: '/legal/$slug'
       preLoaderRoute: typeof LegalSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/aprende/$slug': {
+      id: '/aprende/$slug'
+      path: '/aprende/$slug'
+      fullPath: '/aprende/$slug'
+      preLoaderRoute: typeof AprendeSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/mi-cuenta/pedidos/$number': {
@@ -572,11 +612,13 @@ const rootRouteChildren: RootRouteChildren = {
   MiCuentaRoute: MiCuentaRouteWithChildren,
   PolenRoute: PolenRoute,
   RegistroRoute: RegistroRoute,
+  AprendeSlugRoute: AprendeSlugRoute,
   LegalSlugRoute: LegalSlugRoute,
   NoticiasSlugRoute: NoticiasSlugRoute,
   PedidoNumberRoute: PedidoNumberRoute,
   ProductoSlugRoute: ProductoSlugRoute,
   VerificarCodeRoute: VerificarCodeRoute,
+  AprendeIndexRoute: AprendeIndexRoute,
   NoticiasIndexRoute: NoticiasIndexRoute,
   TiendaIndexRoute: TiendaIndexRoute,
 }

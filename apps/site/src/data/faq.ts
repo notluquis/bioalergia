@@ -58,4 +58,34 @@ export const faqItems = [
     answer:
       "Trae antecedentes médicos, lista de síntomas, exámenes previos y medicamentos actuales. Esto acelera el diagnóstico.",
   },
+  {
+    question: "¿Cómo sé a qué soy alérgico?",
+    answer:
+      "Con una evaluación clínica más pruebas dirigidas: prick test, pruebas de parche o diagnóstico molecular (como el test ALEX2). El especialista define cuál aporta información útil en tu caso.",
+  },
+  {
+    question: "¿El polen afecta todo el año?",
+    answer:
+      "No. Cada tipo de polen tiene su temporada: árboles a fin de invierno y primavera, gramíneas en primavera-verano y malezas hacia el otoño. Por eso los síntomas suelen repetirse en ventanas específicas.",
+  },
+  {
+    question: "¿Sirve el lavado nasal con suero?",
+    answer:
+      "Sí. Es una medida segura y económica que arrastra alérgenos y mucosidad de la nariz, ayudando en la rinitis alérgica y tras la exposición al polen. Usa siempre suero estéril o agua hervida y enfriada.",
+  },
+  {
+    question: "¿La alergia se hereda?",
+    answer:
+      "Existe una predisposición hereditaria llamada atopia: si hay antecedentes familiares de alergia, asma o eczema, aumenta la probabilidad de desarrollarlas, aunque no es una regla absoluta.",
+  },
+  {
+    question: "¿Los purificadores de aire ayudan?",
+    answer:
+      "Un purificador con filtro HEPA real, bien dimensionado para la habitación, puede reducir partículas en suspensión como polen y caspa de mascotas. Es un complemento del tratamiento, no un reemplazo.",
+  },
+  {
+    question: "¿La dermatitis atópica es una alergia?",
+    answer:
+      "Es una enfermedad inflamatoria de la piel asociada a la atopia. La hidratación constante y el cuidado de la barrera cutánea son clave; el especialista evalúa si hay alérgenos involucrados.",
+  },
 ];

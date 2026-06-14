@@ -45,6 +45,7 @@ async function main() {
     "/inmunoterapia",
     "/botiquin",
     "/polen",
+    "/aprende",
     "/noticias",
     "/eres-alergico",
     "/compromiso-social",

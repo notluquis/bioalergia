@@ -15,6 +15,7 @@ export const primaryNav: NavLink[] = [
   { label: "Inmunoterapia", href: "/inmunoterapia" },
   { label: "Botiquín", href: "/botiquin" },
   { label: "Polen", href: "/polen" },
+  { label: "Aprende", href: "/aprende" },
   { label: "Noticias", href: "/noticias" },
   { label: "Contacto", href: "/#contacto" },
   { label: "Tienda", href: "/tienda", accent: true },

@@ -56,5 +56,12 @@ export const fundacionContent: FundacionContent = {
       href: "https://www.polenes.cl",
       external: true,
     },
+    {
+      name: "Sociedad Chilena de Alergia e Inmunología (SCAI)",
+      description:
+        "Sociedad científica sin fines de lucro (desde 1946) que agrupa a especialistas en alergia e inmunología en Chile y promueve la educación, la investigación y guías clínicas en la especialidad.",
+      href: "https://www.scai.cl",
+      external: true,
+    },
   ],
 };

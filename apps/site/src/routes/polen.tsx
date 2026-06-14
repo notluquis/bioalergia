@@ -40,6 +40,30 @@ function PolenPage() {
 
       <section className="grid gap-6">
         <div className="grid gap-2">
+          <h2 className="font-semibold text-(--ink) text-2xl">Escala de niveles (referencial)</h2>
+          <p className="max-w-3xl text-(--ink-muted) text-sm leading-relaxed">{polenContent.unit}</p>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {polenContent.scale.map((lvl) => (
+            <Card className="rounded-3xl" key={lvl.label} variant="default">
+              <Card.Header className="gap-3">
+                <div className="flex items-center justify-between gap-3">
+                  <Card.Title className="text-lg">{lvl.label}</Card.Title>
+                  <Chip color={lvl.tone} size="sm" variant="soft">
+                    {lvl.range}
+                  </Chip>
+                </div>
+                <Card.Description className="text-(--ink-muted) text-sm leading-relaxed">
+                  {lvl.description}
+                </Card.Description>
+              </Card.Header>
+            </Card>
+          ))}
+        </div>
+      </section>
+
+      <section className="grid gap-6">
+        <div className="grid gap-2">
           <h2 className="font-semibold text-(--ink) text-2xl">Calendario polínico (referencial)</h2>
           <p className="max-w-3xl text-(--ink-muted) text-sm leading-relaxed">
             Orientación general para la zona centro-sur de Chile, incluida la Región del Biobío. Los
@@ -105,6 +129,41 @@ function PolenPage() {
             ))}
           </Card.Content>
         </Card>
+      </section>
+
+      <section className="grid gap-6 lg:grid-cols-2">
+        <div className="grid gap-4">
+          <h2 className="font-semibold text-(--ink) text-2xl">Cómo se miden</h2>
+          <Card className="rounded-3xl" variant="default">
+            <Card.Content className="grid gap-3 py-6">
+              {polenContent.howMeasured.map((step) => (
+                <div className="flex items-start gap-3 text-sm leading-relaxed" key={step}>
+                  <span className="mt-2 rounded-full bg-(--accent) size-2" />
+                  <span className="text-(--ink-muted)">{step}</span>
+                </div>
+              ))}
+            </Card.Content>
+          </Card>
+        </div>
+        <div className="grid gap-4">
+          <h2 className="font-semibold text-(--ink) text-2xl">Estaciones de monitoreo en Chile</h2>
+          <Card className="rounded-3xl" variant="default">
+            <Card.Content className="grid gap-3 py-6">
+              {polenContent.stations.map((st) => (
+                <div
+                  className="flex items-center justify-between gap-3 border-border border-b pb-2 last:border-0 last:pb-0"
+                  key={st.city}
+                >
+                  <span className="font-medium text-(--ink) text-sm">{st.city}</span>
+                  <span className="text-(--ink-muted) text-xs">{st.region}</span>
+                </div>
+              ))}
+              <p className="text-(--ink-muted) text-xs leading-relaxed">
+                {polenContent.stationsNote}
+              </p>
+            </Card.Content>
+          </Card>
+        </div>
       </section>
 
       <section className="grid gap-6">
