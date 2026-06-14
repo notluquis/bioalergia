@@ -1,6 +1,7 @@
 import { db } from "@finanzas/db";
 import { Hono } from "hono";
 import { getSessionUser, hasPermission } from "../lib/auth.ts";
+import { logAuditFromContext } from "../lib/audit-log.ts";
 import { logError } from "../lib/logger.ts";
 
 export const medicalCertificatePdfRoutes = new Hono();
@@ -20,6 +21,15 @@ medicalCertificatePdfRoutes.get("/:id/pdf", async (c) => {
       where: { id },
     });
     if (!certificate) return c.text("Not found", 404);
+    // Clinical-document disclosure log (Decreto 41/2012 art. 9).
+    void logAuditFromContext(c, {
+      kind: "CLINICAL_DOCUMENT_VIEW",
+      userId: session.id,
+      actorLabel: session.email,
+      resource: "MedicalCertificate",
+      resourceId: id,
+      message: "pdf:served",
+    });
 
     const { generateMedicalCertificatePdf, generateQRCode } =
       await import("../modules/certificates/certificate.service.ts");

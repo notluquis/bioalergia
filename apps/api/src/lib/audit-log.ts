@@ -33,6 +33,9 @@ export type AuditEventKind =
   | "APPOINTMENT_CHANGE"
   | "IMPORT_UPSERT"
   | "FINANCIAL_CHANGE"
+  // Clinical-record access (Decreto 41/2012 art. 9 + Ley 20.584).
+  | "CLINICAL_RECORD_READ"
+  | "CLINICAL_DOCUMENT_VIEW"
   | "OTHER";
 
 export type AuditInput = {

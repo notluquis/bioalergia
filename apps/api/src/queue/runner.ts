@@ -67,6 +67,14 @@ export async function startQueueRunner(): Promise<void> {
       identifier: "orphan_cleanup",
       options: { backfillPeriod: 0 },
     },
+    {
+      // Nightly audit-log HMAC chain verification (tamper-evidence on the
+      // ficha access log). 05:00 America/Santiago, after orphan_cleanup.
+      task: "audit_chain_verify",
+      match: "0 5 * * *",
+      identifier: "audit_chain_verify",
+      options: { backfillPeriod: 0 },
+    },
   ];
 
   // Skin-test import sync + OneDrive subscription renewal — gated by the same

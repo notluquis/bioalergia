@@ -14,6 +14,7 @@ import type { Context as HonoContext } from "hono";
 import { sql } from "kysely";
 import { z } from "zod";
 import { getSessionUser, hasPermission } from "../lib/auth.ts";
+import { logAuditFromContext } from "../lib/audit-log.ts";
 import { logError } from "../lib/logger.ts";
 import { configureSuperjson } from "../lib/superjson-config.ts";
 import {
@@ -232,7 +233,7 @@ const routerBase = {
     .route({ method: "POST", path: "/by-patient", tags: ["Clinical Records"] })
     .input(z.object({ patientId: z.number().int().positive() }))
     .output(z.object({ records: z.array(clinicalRecordSchema) }))
-    .handler(async ({ input }) => {
+    .handler(async ({ context, input }) => {
       const r = await sql<Record<string, unknown>>`
         SELECT
           cr.id,
@@ -262,6 +263,16 @@ const routerBase = {
           AND cs.kind = 'MEDICAL_CONSULTATION'
         ORDER BY cr.consult_date DESC NULLS LAST, cr.created_at DESC
       `.execute(kysely);
+      // Ficha access log — full clinical records (richest PHI: history,
+      // diagnosis, medications). Decreto 41/2012 art. 9.
+      void logAuditFromContext(context.hono, {
+        kind: "CLINICAL_RECORD_READ",
+        userId: context.user.id,
+        actorLabel: context.user.email,
+        resource: "Patient",
+        resourceId: input.patientId,
+        message: "ficha:clinical-records",
+      });
       return {
         records: r.rows.map((row) => ({
           id: String(row.id),

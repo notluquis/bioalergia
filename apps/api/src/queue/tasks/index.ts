@@ -8,6 +8,7 @@
 // Both enqueued by their oRPC handlers via enqueueJob() (mirrors outreach).
 
 import type { TaskList } from "graphile-worker";
+import { audit_chain_verify } from "./audit-chain-verify.ts";
 import { doctoralia_calendar_sync } from "./doctoralia-calendar-sync.ts";
 import { dte_sync } from "./dte-sync.ts";
 import { job_radar_sync } from "./job-radar-sync.ts";
@@ -21,6 +22,7 @@ import { skin_test_sync } from "./skin-test-sync.ts";
 export const taskList: TaskList = {
   dte_sync,
   orphan_cleanup,
+  audit_chain_verify,
   skin_test_sync,
   onedrive_renew,
   doctoralia_calendar_sync,

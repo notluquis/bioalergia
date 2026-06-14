@@ -14,6 +14,7 @@ import type {
 import { createSchemaFactory, schema } from "@finanzas/db/zod";
 import { z } from "zod";
 import { getSessionUser, hasPermission } from "../lib/auth.ts";
+import { logAuditFromContext } from "../lib/audit-log.ts";
 import { logError } from "../lib/logger.ts";
 import { configureSuperjson } from "../lib/superjson-config.ts";
 import {
@@ -507,8 +508,18 @@ const patientsORPCRouterBase = {
     .route({ method: "GET", path: "/{patientId}", tags: ["Patients"] })
     .input(patientIdInputSchema)
     .output(patientDetailResponseSchema)
-    .handler(async ({ input }) => {
+    .handler(async ({ context, input }) => {
       const patient = await getPatientDetail(input.patientId);
+      // Ficha access log (Decreto 41/2012 art. 9). Fire-and-forget: never
+      // awaited into latency, never breaks the read (logAuditEvent swallows).
+      void logAuditFromContext(context.hono, {
+        kind: "CLINICAL_RECORD_READ",
+        userId: context.user.id,
+        actorLabel: context.user.email,
+        resource: "Patient",
+        resourceId: input.patientId,
+        message: "ficha:detail",
+      });
       return {
         patient,
         status: "ok",
@@ -578,8 +589,16 @@ const patientsORPCRouterBase = {
         ),
       })
     )
-    .handler(async ({ input }) => {
+    .handler(async ({ context, input }) => {
       const items = await getPatientClinicalSeries(input.patientId);
+      void logAuditFromContext(context.hono, {
+        kind: "CLINICAL_RECORD_READ",
+        userId: context.user.id,
+        actorLabel: context.user.email,
+        resource: "Patient",
+        resourceId: input.patientId,
+        message: "ficha:clinical-series",
+      });
       return { items };
     }),
 
@@ -603,8 +622,16 @@ const patientsORPCRouterBase = {
         ),
       })
     )
-    .handler(async ({ input }) => {
+    .handler(async ({ context, input }) => {
       const items = await getPatientSkinTests(input.patientId);
+      void logAuditFromContext(context.hono, {
+        kind: "CLINICAL_RECORD_READ",
+        userId: context.user.id,
+        actorLabel: context.user.email,
+        resource: "Patient",
+        resourceId: input.patientId,
+        message: "ficha:skin-tests",
+      });
       return { items };
     }),
 };

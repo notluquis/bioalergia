@@ -1024,6 +1024,10 @@ enum AuditEventKind {
   APPOINTMENT_CHANGE
   IMPORT_UPSERT
   FINANCIAL_CHANGE
+  // Clinical-record access (Decreto 41/2012 art. 9 + Ley 20.584): record who
+  // OPENED a patient ficha (READ) and who VIEWED a clinical document (PDF).
+  CLINICAL_RECORD_READ
+  CLINICAL_DOCUMENT_VIEW
   OTHER
 }
 
@@ -1078,6 +1082,8 @@ model AuditLog {
   @@index([occurredAt])
   @@index([userId, occurredAt])
   @@index([kind, occurredAt])
+  // "who accessed ficha <patientId>" — the legal access query (by subject).
+  @@index([resource, resourceId, occurredAt])
   @@deny('all', auth() == null)
   @@allow('read', auth().status == 'ACTIVE')
   // create allowed for any authed user — emitter is server-side, this

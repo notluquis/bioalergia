@@ -14644,6 +14644,8 @@ export class SchemaType implements SchemaDef {
                 APPOINTMENT_CHANGE: "APPOINTMENT_CHANGE",
                 IMPORT_UPSERT: "IMPORT_UPSERT",
                 FINANCIAL_CHANGE: "FINANCIAL_CHANGE",
+                CLINICAL_RECORD_READ: "CLINICAL_RECORD_READ",
+                CLINICAL_DOCUMENT_VIEW: "CLINICAL_DOCUMENT_VIEW",
                 OTHER: "OTHER"
             }
         },

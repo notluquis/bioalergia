@@ -3741,6 +3741,7 @@ export class SchemaType implements SchemaDef {
                 { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("DateTime", [ExpressionUtils.field("occurredAt")]) }] },
                 { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("userId"), ExpressionUtils.field("occurredAt")]) }] },
                 { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("AuditEventKind", [ExpressionUtils.field("kind"), ExpressionUtils.field("occurredAt")]) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("resource"), ExpressionUtils.field("resourceId"), ExpressionUtils.field("occurredAt")]) }] },
                 { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
                 { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
                 { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
@@ -17867,6 +17868,8 @@ export class SchemaType implements SchemaDef {
                 APPOINTMENT_CHANGE: "APPOINTMENT_CHANGE",
                 IMPORT_UPSERT: "IMPORT_UPSERT",
                 FINANCIAL_CHANGE: "FINANCIAL_CHANGE",
+                CLINICAL_RECORD_READ: "CLINICAL_RECORD_READ",
+                CLINICAL_DOCUMENT_VIEW: "CLINICAL_DOCUMENT_VIEW",
                 OTHER: "OTHER"
             }
         },
