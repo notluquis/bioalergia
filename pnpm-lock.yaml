@@ -705,6 +705,12 @@ importers:
         specifier: ^4.4.3
         version: 4.4.3
     devDependencies:
+      '@axe-core/playwright':
+        specifier: ^4.11.3
+        version: 4.11.3(playwright-core@1.60.0)
+      '@playwright/test':
+        specifier: ^1.60.0
+        version: 1.60.0
       '@storybook/addon-a11y':
         specifier: ^10.4.2
         version: 10.4.2(storybook@10.4.2(@testing-library/dom@10.4.1)(@types/react@19.2.17)(prettier@3.8.3)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))
@@ -10256,7 +10262,7 @@ packages:
     engines: {node: '>=8'}
 
   xlsx@https://cdn.sheetjs.com/xlsx-latest/xlsx-latest.tgz:
-    resolution: {integrity: sha512-oLDq3jw7AcLqKWH2AhCpVTZl8mf6X2YReP+Neh0SJUzV/BdZYjth94tG5toiMB1PPrYtxOCfaoUCkvtuH+3AJA==, tarball: https://cdn.sheetjs.com/xlsx-latest/xlsx-latest.tgz}
+    resolution: {tarball: https://cdn.sheetjs.com/xlsx-latest/xlsx-latest.tgz}
     version: 0.20.3
     engines: {node: '>=0.8'}
     hasBin: true
