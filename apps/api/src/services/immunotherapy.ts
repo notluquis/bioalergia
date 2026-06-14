@@ -1,19 +1,17 @@
 import { db } from "@finanzas/db";
 import type {
+  allergenLiteSchema,
+  clinicTermsSchema,
   CreateBudgetInput,
   CreateProductInput,
-  ProductDto,
   PrescriptionPdfInput,
+  ProductDto,
   QuoteInput,
   QuoteResult,
+  updateClinicTermsInputSchema,
   UpdateProductInput,
 } from "@finanzas/orpc-contracts/immunotherapy";
 import type { z } from "zod";
-import type {
-  allergenLiteSchema,
-  clinicTermsSchema,
-  updateClinicTermsInputSchema,
-} from "@finanzas/orpc-contracts/immunotherapy";
 import { Decimal } from "decimal.js";
 import { DomainError } from "../lib/errors.ts";
 
