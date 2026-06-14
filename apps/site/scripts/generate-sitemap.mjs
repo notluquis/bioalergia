@@ -46,6 +46,7 @@ async function main() {
     "/botiquin",
     "/polen",
     "/aprende",
+    "/equipo",
     "/noticias",
     "/eres-alergico",
     "/compromiso-social",

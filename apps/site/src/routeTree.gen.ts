@@ -16,6 +16,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as InmunoterapiaRouteImport } from './routes/inmunoterapia'
 import { Route as ExamenesRouteImport } from './routes/examenes'
 import { Route as EresAlergicoRouteImport } from './routes/eres-alergico'
+import { Route as EquipoRouteImport } from './routes/equipo'
 import { Route as CompromisoSocialRouteImport } from './routes/compromiso-social'
 import { Route as CheckoutRouteImport } from './routes/checkout'
 import { Route as CarritoRouteImport } from './routes/carrito'
@@ -70,6 +71,11 @@ const ExamenesRoute = ExamenesRouteImport.update({
 const EresAlergicoRoute = EresAlergicoRouteImport.update({
   id: '/eres-alergico',
   path: '/eres-alergico',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EquipoRoute = EquipoRouteImport.update({
+  id: '/equipo',
+  path: '/equipo',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CompromisoSocialRoute = CompromisoSocialRouteImport.update({
@@ -179,6 +185,7 @@ export interface FileRoutesByFullPath {
   '/carrito': typeof CarritoRoute
   '/checkout': typeof CheckoutRoute
   '/compromiso-social': typeof CompromisoSocialRoute
+  '/equipo': typeof EquipoRoute
   '/eres-alergico': typeof EresAlergicoRoute
   '/examenes': typeof ExamenesRoute
   '/inmunoterapia': typeof InmunoterapiaRoute
@@ -208,6 +215,7 @@ export interface FileRoutesByTo {
   '/carrito': typeof CarritoRoute
   '/checkout': typeof CheckoutRoute
   '/compromiso-social': typeof CompromisoSocialRoute
+  '/equipo': typeof EquipoRoute
   '/eres-alergico': typeof EresAlergicoRoute
   '/examenes': typeof ExamenesRoute
   '/inmunoterapia': typeof InmunoterapiaRoute
@@ -237,6 +245,7 @@ export interface FileRoutesById {
   '/carrito': typeof CarritoRoute
   '/checkout': typeof CheckoutRoute
   '/compromiso-social': typeof CompromisoSocialRoute
+  '/equipo': typeof EquipoRoute
   '/eres-alergico': typeof EresAlergicoRoute
   '/examenes': typeof ExamenesRoute
   '/inmunoterapia': typeof InmunoterapiaRoute
@@ -268,6 +277,7 @@ export interface FileRouteTypes {
     | '/carrito'
     | '/checkout'
     | '/compromiso-social'
+    | '/equipo'
     | '/eres-alergico'
     | '/examenes'
     | '/inmunoterapia'
@@ -297,6 +307,7 @@ export interface FileRouteTypes {
     | '/carrito'
     | '/checkout'
     | '/compromiso-social'
+    | '/equipo'
     | '/eres-alergico'
     | '/examenes'
     | '/inmunoterapia'
@@ -325,6 +336,7 @@ export interface FileRouteTypes {
     | '/carrito'
     | '/checkout'
     | '/compromiso-social'
+    | '/equipo'
     | '/eres-alergico'
     | '/examenes'
     | '/inmunoterapia'
@@ -355,6 +367,7 @@ export interface RootRouteChildren {
   CarritoRoute: typeof CarritoRoute
   CheckoutRoute: typeof CheckoutRoute
   CompromisoSocialRoute: typeof CompromisoSocialRoute
+  EquipoRoute: typeof EquipoRoute
   EresAlergicoRoute: typeof EresAlergicoRoute
   ExamenesRoute: typeof ExamenesRoute
   InmunoterapiaRoute: typeof InmunoterapiaRoute
@@ -422,6 +435,13 @@ declare module '@tanstack/react-router' {
       path: '/eres-alergico'
       fullPath: '/eres-alergico'
       preLoaderRoute: typeof EresAlergicoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/equipo': {
+      id: '/equipo'
+      path: '/equipo'
+      fullPath: '/equipo'
+      preLoaderRoute: typeof EquipoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/compromiso-social': {
@@ -605,6 +625,7 @@ const rootRouteChildren: RootRouteChildren = {
   CarritoRoute: CarritoRoute,
   CheckoutRoute: CheckoutRoute,
   CompromisoSocialRoute: CompromisoSocialRoute,
+  EquipoRoute: EquipoRoute,
   EresAlergicoRoute: EresAlergicoRoute,
   ExamenesRoute: ExamenesRoute,
   InmunoterapiaRoute: InmunoterapiaRoute,

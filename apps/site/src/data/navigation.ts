@@ -24,6 +24,7 @@ export const primaryNav: NavLink[] = [
 
 // Secondary links surfaced in the footer (not crowded into the top nav).
 export const secondaryNav: NavLink[] = [
+  { label: "Nuestro especialista", href: "/equipo" },
   { label: "¿Eres alérgico?", href: "/eres-alergico" },
   { label: "Servicios", href: "/#servicios" },
   { label: "Preguntas frecuentes", href: "/#faq" },

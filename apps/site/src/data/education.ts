@@ -3,7 +3,14 @@ export type EducationBlock =
   | { type: "h2"; text: string }
   | { type: "ul"; items: string[] };
 
-export type EducationCategory = "Respiratoria" | "Piel" | "Alimentaria" | "Emergencia";
+export type EducationCategory =
+  | "Respiratoria"
+  | "Piel"
+  | "Alimentaria"
+  | "Emergencia"
+  | "Medicamentos"
+  | "Ocular"
+  | "Insectos";
 
 export type EducationTopic = {
   slug: string;
@@ -256,6 +263,164 @@ export const educationTopics: EducationTopic[] = [
       {
         type: "p",
         text: "Toda persona que haya tenido una reacción alérgica grave debe ser evaluada por un especialista para confirmar la causa, recibir un plan de acción y, cuando corresponda, la indicación de adrenalina autoinyectable, que requiere receta médica. La evaluación posterior es clave para prevenir nuevos episodios. Recuerda: ante una anafilaxia en curso, primero la urgencia.",
+      },
+    ],
+  },
+  {
+    slug: "alergia-a-medicamentos",
+    title: "Alergia a medicamentos",
+    category: "Medicamentos",
+    summary:
+      "Reacción del sistema inmune frente a un fármaco. Es importante confirmarla con estudio, porque muchas reacciones atribuidas a medicamentos no son verdaderas alergias.",
+    readingMinutes: 6,
+    body: [
+      {
+        type: "p",
+        text: "La alergia a medicamentos es una reacción del sistema inmune frente a un fármaco. No toda molestia tras tomar un medicamento es una alergia: muchos efectos son secundarios conocidos o reacciones no inmunológicas. Confirmar o descartar una alergia real es importante, porque etiquetar a alguien como alérgico sin estudio puede privarlo de tratamientos útiles y obligar a usar alternativas menos adecuadas.",
+      },
+      { type: "h2", text: "Síntomas habituales" },
+      {
+        type: "ul",
+        items: [
+          "Ronchas, picor o enrojecimiento de la piel.",
+          "Hinchazón de labios, párpados o cara (angioedema).",
+          "Síntomas respiratorios o digestivos.",
+          "En casos graves, anafilaxia, que es una urgencia médica.",
+          "El tiempo entre la toma y los síntomas ayuda a orientar el tipo de reacción.",
+        ],
+      },
+      { type: "h2", text: "Fármacos frecuentemente implicados" },
+      {
+        type: "p",
+        text: "Entre los más reportados están algunos antibióticos (como los betalactámicos), antiinflamatorios y, en contextos específicos, anestésicos o medios de contraste. Que un fármaco sea frecuente no significa que tú seas alérgico a él: solo el estudio dirigido lo confirma.",
+      },
+      { type: "h2", text: "Cómo se estudia y maneja" },
+      {
+        type: "p",
+        text: "El estudio puede incluir la historia clínica detallada, pruebas cutáneas y, en casos seleccionados, pruebas de provocación controlada en un entorno preparado. El objetivo es confirmar el fármaco responsable, identificar alternativas seguras y, cuando corresponde, evaluar procedimientos de desensibilización. Todo se define y se realiza bajo supervisión médica.",
+      },
+      { type: "h2", text: "Cuándo consultar" },
+      {
+        type: "p",
+        text: "Conviene consultar si tuviste una reacción tras un medicamento, si te han dicho que eres alérgico a un fármaco sin estudio, o si necesitas un tratamiento al que crees ser alérgico. Ante una reacción con dificultad para respirar o hinchazón de la garganta, busca atención de urgencia.",
+      },
+    ],
+  },
+  {
+    slug: "conjuntivitis-alergica",
+    title: "Conjuntivitis alérgica",
+    category: "Ocular",
+    summary:
+      "Inflamación de la conjuntiva del ojo por contacto con alérgenos. Produce ojos rojos, llorosos y con picor, y suele acompañar a la rinitis alérgica.",
+    readingMinutes: 4,
+    body: [
+      {
+        type: "p",
+        text: "La conjuntivitis alérgica es la inflamación de la conjuntiva, la membrana que recubre la superficie del ojo y el interior de los párpados, cuando entra en contacto con alérgenos del ambiente. Es muy frecuente y a menudo aparece junto con la rinitis alérgica, formando lo que se conoce como rinoconjuntivitis.",
+      },
+      { type: "h2", text: "Síntomas habituales" },
+      {
+        type: "ul",
+        items: [
+          "Picor ocular, que suele ser el síntoma más característico.",
+          "Ojos rojos y sensación de arenilla.",
+          "Lagrimeo abundante.",
+          "Hinchazón leve de los párpados.",
+          "Molestia con la luz en los casos más intensos.",
+        ],
+      },
+      { type: "h2", text: "Desencadenantes frecuentes" },
+      {
+        type: "p",
+        text: "Los desencadenantes son los mismos alérgenos respiratorios: pólenes en primavera y verano, ácaros del polvo durante todo el año, hongos del ambiente y epitelios de mascotas. Frotarse los ojos, aunque alivia momentáneamente, tiende a empeorar la irritación.",
+      },
+      { type: "h2", text: "Cómo se maneja" },
+      {
+        type: "p",
+        text: "El manejo combina medidas para reducir la exposición, el uso de compresas frías y el tratamiento indicado para controlar el picor y la inflamación. Como suele asociarse a la rinitis, el abordaje conjunto da mejores resultados. Los medicamentos específicos se definen en la consulta médica.",
+      },
+      { type: "h2", text: "Cuándo consultar" },
+      {
+        type: "p",
+        text: "Consulta si el picor y el enrojecimiento se repiten, interfieren con tus actividades o no mejoran con medidas generales. Busca evaluación si aparece dolor ocular, cambios en la visión o secreción purulenta, ya que pueden indicar otra causa que requiere atención específica.",
+      },
+    ],
+  },
+  {
+    slug: "alergia-veneno-insectos",
+    title: "Alergia al veneno de insectos",
+    category: "Insectos",
+    summary:
+      "Reacción alérgica a la picadura de abejas o avispas. En personas sensibilizadas puede ser grave; la inmunoterapia con veneno reduce el riesgo de reacciones futuras.",
+    readingMinutes: 5,
+    body: [
+      {
+        type: "p",
+        text: "La mayoría de las personas presenta tras una picadura de abeja o avispa una reacción local normal: dolor, enrojecimiento e hinchazón en la zona, que cede en horas o pocos días. En las personas alérgicas al veneno, en cambio, la reacción puede ser desproporcionada o generalizada y, en algunos casos, poner en riesgo la vida.",
+      },
+      { type: "h2", text: "Tipos de reacción" },
+      {
+        type: "ul",
+        items: [
+          "Reacción local normal: hinchazón y dolor limitados a la zona de la picadura.",
+          "Reacción local extensa: hinchazón amplia que progresa en uno o dos días.",
+          "Reacción generalizada: ronchas en todo el cuerpo, hinchazón a distancia.",
+          "Anafilaxia: dificultad para respirar, mareo o desmayo; es una urgencia médica.",
+        ],
+      },
+      { type: "h2", text: "Por qué es importante el estudio" },
+      {
+        type: "p",
+        text: "Quien ha tenido una reacción generalizada a una picadura tiene mayor riesgo de presentar otra más grave en el futuro. El estudio alergológico permite confirmar la sensibilización al veneno y estimar ese riesgo, información clave para definir las medidas de prevención y tratamiento.",
+      },
+      { type: "h2", text: "Cómo se maneja" },
+      {
+        type: "p",
+        text: "Además de las medidas para evitar picaduras y de un plan de acción ante una reacción, la inmunoterapia con veneno de himenópteros es un tratamiento que, en pacientes seleccionados, reduce de forma importante el riesgo de reacciones graves futuras. La indicación, el protocolo y la eventual prescripción de adrenalina autoinyectable se definen siempre en la consulta médica.",
+      },
+      { type: "h2", text: "Cuándo consultar" },
+      {
+        type: "p",
+        text: "Consulta si tras una picadura presentaste síntomas más allá de la zona afectada, como ronchas generalizadas, hinchazón a distancia o dificultad para respirar. Ante una reacción grave en curso, primero la urgencia: usa la adrenalina si la tienes indicada y acude de inmediato a un servicio de emergencia.",
+      },
+    ],
+  },
+  {
+    slug: "alergia-al-latex",
+    title: "Alergia al látex",
+    category: "Piel",
+    summary:
+      "Reacción al caucho natural presente en guantes, globos y material médico. Afecta sobre todo a personas con exposición frecuente y puede asociarse a alergias a ciertas frutas.",
+    readingMinutes: 4,
+    body: [
+      {
+        type: "p",
+        text: "La alergia al látex es una reacción a las proteínas del caucho natural, presente en productos como guantes, globos, elásticos y diverso material sanitario. Es más frecuente en personas con exposición repetida, como trabajadores de la salud o pacientes con múltiples procedimientos, y conviene reconocerla porque condiciona precauciones en el ámbito médico.",
+      },
+      { type: "h2", text: "Síntomas habituales" },
+      {
+        type: "ul",
+        items: [
+          "Picor, enrojecimiento o ronchas en la zona de contacto con el látex.",
+          "Síntomas respiratorios al inhalar partículas, por ejemplo con guantes empolvados.",
+          "En casos más intensos, reacciones generalizadas.",
+          "Molestias al contacto con globos, guantes domésticos o material elástico.",
+        ],
+      },
+      { type: "h2", text: "Relación con algunos alimentos" },
+      {
+        type: "p",
+        text: "Algunas personas alérgicas al látex pueden reaccionar también a ciertas frutas, como plátano, kiwi, palta o castaña, debido a proteínas parecidas. Es el llamado síndrome látex-fruta, que el especialista evalúa según cada caso.",
+      },
+      { type: "h2", text: "Cómo se maneja" },
+      {
+        type: "p",
+        text: "La base del manejo es evitar el contacto con látex y avisar de la alergia en cualquier atención médica o dental para que se usen materiales libres de látex. El estudio confirma el diagnóstico y orienta las precauciones. El plan específico se define en la consulta médica.",
+      },
+      { type: "h2", text: "Cuándo consultar" },
+      {
+        type: "p",
+        text: "Consulta si notas síntomas al contacto con guantes, globos o material elástico, o si tienes exposición frecuente al látex y antecedentes de reacciones. Informar esta alergia antes de cualquier procedimiento médico es una medida de seguridad importante.",
       },
     ],
   },
