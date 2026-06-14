@@ -3,8 +3,10 @@ import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 
 import { ContentError, ContentLoading } from "@/components/ContentState";
+import { JsonLd } from "@/components/JsonLd";
 import { PageShell } from "@/components/PageShell";
 import { contentQueries } from "@/features/content/queries";
+import { breadcrumbJsonLd } from "@/lib/seo";
 
 const DATE_FORMAT: Intl.DateTimeFormatOptions = {
   day: "numeric",
@@ -17,6 +19,12 @@ function NoticiasPage() {
 
   return (
     <PageShell>
+      <JsonLd
+        data={breadcrumbJsonLd([
+          { name: "Inicio", path: "/" },
+          { name: "Noticias", path: "/noticias" },
+        ])}
+      />
       <section className="grid gap-4">
         <Breadcrumbs>
           <Breadcrumbs.Item href="/">Inicio</Breadcrumbs.Item>
@@ -101,6 +109,9 @@ export const Route = createFileRoute("/noticias/")({
         { property: "og:title", content: "Noticias y educación en alergias · Bioalergia" },
         { property: "og:type", content: "website" },
         { property: "og:url", content: url },
+        { property: "og:image", content: `${origin}/og-image.png` },
+        { name: "twitter:image", content: `${origin}/og-image.png` },
+        { name: "twitter:card", content: "summary_large_image" },
       ],
       links: [{ rel: "canonical", href: url }],
     };

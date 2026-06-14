@@ -3,8 +3,10 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 
 import { BookingCta } from "@/components/BookingCta";
+import { JsonLd } from "@/components/JsonLd";
 import { PageShell } from "@/components/PageShell";
 import { quizContent } from "@/data/quiz";
+import { breadcrumbJsonLd } from "@/lib/seo";
 
 const questions = quizContent.questions;
 const disclaimer = quizContent.disclaimer;
@@ -13,7 +15,7 @@ const resultTiers = quizContent.results;
 function EresAlergicoPage() {
   // answers[i] = índice de la opción elegida en questions[i]; undefined = sin responder.
   const [answers, setAnswers] = useState<(number | undefined)[]>(() =>
-    Array.from({ length: questions.length }, () => undefined),
+    Array.from({ length: questions.length }, () => undefined)
   );
   const [current, setCurrent] = useState(0);
 
@@ -56,6 +58,12 @@ function EresAlergicoPage() {
 
   return (
     <PageShell>
+      <JsonLd
+        data={breadcrumbJsonLd([
+          { name: "Inicio", path: "/" },
+          { name: "¿Eres alérgico?", path: "/eres-alergico" },
+        ])}
+      />
       <section className="grid gap-4">
         <Breadcrumbs>
           <Breadcrumbs.Item href="/">Inicio</Breadcrumbs.Item>
@@ -214,6 +222,9 @@ export const Route = createFileRoute("/eres-alergico")({
         { property: "og:title", content: "¿Eres alérgico? Autoevaluación · Bioalergia" },
         { property: "og:type", content: "website" },
         { property: "og:url", content: url },
+        { property: "og:image", content: `${origin}/og-image.png` },
+        { name: "twitter:image", content: `${origin}/og-image.png` },
+        { name: "twitter:card", content: "summary_large_image" },
       ],
       links: [{ rel: "canonical", href: url }],
     };

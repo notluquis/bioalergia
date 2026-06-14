@@ -132,6 +132,12 @@ export function SiteFooter() {
         </div>
       )}
 
+      {contactInfo.superintendenciaNumber ? (
+        <p className="mt-4 text-(--ink-muted) text-xs">
+          Registro Superintendencia de Salud N° {contactInfo.superintendenciaNumber}
+        </p>
+      ) : null}
+
       <div className="mt-6 flex flex-col gap-2 border-border border-t pt-4 text-(--ink-muted) text-xs sm:flex-row sm:items-center sm:justify-between">
         <span>
           © {year} {legalOwner.companyName}. Todos los derechos reservados.

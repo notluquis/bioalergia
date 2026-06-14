@@ -21,6 +21,7 @@ import { Route as EquipoRouteImport } from './routes/equipo'
 import { Route as CompromisoSocialRouteImport } from './routes/compromiso-social'
 import { Route as CheckoutRouteImport } from './routes/checkout'
 import { Route as CarritoRouteImport } from './routes/carrito'
+import { Route as BuscarRouteImport } from './routes/buscar'
 import { Route as BotiquinRouteImport } from './routes/botiquin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as TiendaIndexRouteImport } from './routes/tienda/index'
@@ -97,6 +98,11 @@ const CheckoutRoute = CheckoutRouteImport.update({
 const CarritoRoute = CarritoRouteImport.update({
   id: '/carrito',
   path: '/carrito',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BuscarRoute = BuscarRouteImport.update({
+  id: '/buscar',
+  path: '/buscar',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BotiquinRoute = BotiquinRouteImport.update({
@@ -188,6 +194,7 @@ const MiCuentaAuthCallbackRoute = MiCuentaAuthCallbackRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/botiquin': typeof BotiquinRoute
+  '/buscar': typeof BuscarRoute
   '/carrito': typeof CarritoRoute
   '/checkout': typeof CheckoutRoute
   '/compromiso-social': typeof CompromisoSocialRoute
@@ -219,6 +226,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/botiquin': typeof BotiquinRoute
+  '/buscar': typeof BuscarRoute
   '/carrito': typeof CarritoRoute
   '/checkout': typeof CheckoutRoute
   '/compromiso-social': typeof CompromisoSocialRoute
@@ -250,6 +258,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/botiquin': typeof BotiquinRoute
+  '/buscar': typeof BuscarRoute
   '/carrito': typeof CarritoRoute
   '/checkout': typeof CheckoutRoute
   '/compromiso-social': typeof CompromisoSocialRoute
@@ -283,6 +292,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/botiquin'
+    | '/buscar'
     | '/carrito'
     | '/checkout'
     | '/compromiso-social'
@@ -314,6 +324,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/botiquin'
+    | '/buscar'
     | '/carrito'
     | '/checkout'
     | '/compromiso-social'
@@ -344,6 +355,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/botiquin'
+    | '/buscar'
     | '/carrito'
     | '/checkout'
     | '/compromiso-social'
@@ -376,6 +388,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   BotiquinRoute: typeof BotiquinRoute
+  BuscarRoute: typeof BuscarRoute
   CarritoRoute: typeof CarritoRoute
   CheckoutRoute: typeof CheckoutRoute
   CompromisoSocialRoute: typeof CompromisoSocialRoute
@@ -483,6 +496,13 @@ declare module '@tanstack/react-router' {
       path: '/carrito'
       fullPath: '/carrito'
       preLoaderRoute: typeof CarritoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/buscar': {
+      id: '/buscar'
+      path: '/buscar'
+      fullPath: '/buscar'
+      preLoaderRoute: typeof BuscarRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/botiquin': {
@@ -642,6 +662,7 @@ const MiCuentaRouteWithChildren = MiCuentaRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   BotiquinRoute: BotiquinRoute,
+  BuscarRoute: BuscarRoute,
   CarritoRoute: CarritoRoute,
   CheckoutRoute: CheckoutRoute,
   CompromisoSocialRoute: CompromisoSocialRoute,

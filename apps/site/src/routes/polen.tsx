@@ -2,8 +2,10 @@ import { Breadcrumbs, Card, Chip, Link, Separator } from "@heroui/react";
 import { createFileRoute } from "@tanstack/react-router";
 
 import { BookingCta } from "@/components/BookingCta";
+import { JsonLd } from "@/components/JsonLd";
 import { PageShell } from "@/components/PageShell";
 import { polenContent, type PollenLevel } from "@/data/pollen";
+import { breadcrumbJsonLd } from "@/lib/seo";
 
 const LEVEL_LABEL: Record<PollenLevel, string> = {
   alto: "Nivel alto",
@@ -20,6 +22,12 @@ const LEVEL_COLOR: Record<PollenLevel, "danger" | "warning" | "success"> = {
 function PolenPage() {
   return (
     <PageShell>
+      <JsonLd
+        data={breadcrumbJsonLd([
+          { name: "Inicio", path: "/" },
+          { name: "Polen", path: "/polen" },
+        ])}
+      />
       <section className="grid gap-4">
         <Breadcrumbs>
           <Breadcrumbs.Item href="/">Inicio</Breadcrumbs.Item>
@@ -41,7 +49,9 @@ function PolenPage() {
       <section className="grid gap-6">
         <div className="grid gap-2">
           <h2 className="font-semibold text-(--ink) text-2xl">Escala de niveles (referencial)</h2>
-          <p className="max-w-3xl text-(--ink-muted) text-sm leading-relaxed">{polenContent.unit}</p>
+          <p className="max-w-3xl text-(--ink-muted) text-sm leading-relaxed">
+            {polenContent.unit}
+          </p>
         </div>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {polenContent.scale.map((lvl) => (
@@ -177,8 +187,8 @@ function PolenPage() {
             </div>
             <Card.Description className="text-(--ink-muted) leading-relaxed">
               En Bioalergia hacemos educación sobre el polen, pero no operamos una estación de
-              monitoreo aerobiológico. Para conocer las mediciones actualizadas de polen en distintas
-              ciudades de Chile, consulta la Red Chilena de monitoreo de pólenes.
+              monitoreo aerobiológico. Para conocer las mediciones actualizadas de polen en
+              distintas ciudades de Chile, consulta la Red Chilena de monitoreo de pólenes.
             </Card.Description>
           </Card.Header>
           <Card.Content className="grid gap-4 pb-6">
@@ -225,6 +235,9 @@ export const Route = createFileRoute("/polen")({
         { property: "og:title", content: "Niveles de polen en Chile · Bioalergia" },
         { property: "og:type", content: "website" },
         { property: "og:url", content: url },
+        { property: "og:image", content: `${origin}/og-image.png` },
+        { name: "twitter:image", content: `${origin}/og-image.png` },
+        { name: "twitter:card", content: "summary_large_image" },
       ],
       links: [{ rel: "canonical", href: url }],
     };

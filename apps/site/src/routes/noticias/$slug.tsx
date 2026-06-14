@@ -5,8 +5,10 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 
 import { BookingCta } from "@/components/BookingCta";
 import { ContentLoading } from "@/components/ContentState";
+import { JsonLd } from "@/components/JsonLd";
 import { PageShell } from "@/components/PageShell";
 import { contentQueries } from "@/features/content/queries";
+import { articleJsonLd, breadcrumbJsonLd } from "@/lib/seo";
 
 const DATE_FORMAT: Intl.DateTimeFormatOptions = {
   day: "numeric",
@@ -109,6 +111,21 @@ function ArticleDetailPage() {
 
   return (
     <PageShell>
+      <JsonLd
+        data={articleJsonLd({
+          title: article.title,
+          description: article.seo_description ?? article.excerpt,
+          path: `/noticias/${article.slug}`,
+          datePublished: isoDate,
+        })}
+      />
+      <JsonLd
+        data={breadcrumbJsonLd([
+          { name: "Inicio", path: "/" },
+          { name: "Noticias", path: "/noticias" },
+          { name: article.title, path: `/noticias/${article.slug}` },
+        ])}
+      />
       <article className="grid gap-6">
         <Breadcrumbs>
           <Breadcrumbs.Item href="/">Inicio</Breadcrumbs.Item>
@@ -173,8 +190,10 @@ export const Route = createFileRoute("/noticias/$slug")({
         { property: "og:description", content: description },
         { property: "og:type", content: "article" },
         { property: "og:url", content: url },
+        { property: "og:image", content: `${origin}/og-image.png` },
         { name: "twitter:title", content: title },
         { name: "twitter:card", content: "summary_large_image" },
+        { name: "twitter:image", content: `${origin}/og-image.png` },
       ],
       links: [{ rel: "canonical", href: url }],
     };

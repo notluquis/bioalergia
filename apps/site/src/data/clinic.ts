@@ -35,6 +35,9 @@ export const contactInfo = {
   email: "contacto@bioalergia.cl",
   phones: ["+56 9 3254 5883", "+56 9 3096 3316"],
   address: "Avenida Prat 199, Oficina A603, Edificio Centro Costanera, Concepción",
+  // TODO(user): completar N° de registro en la Superintendencia de Salud.
+  // Se muestra en el footer solo si tiene valor.
+  superintendenciaNumber: "",
 };
 
 export const ctaCopy = {

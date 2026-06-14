@@ -595,3 +595,18 @@ export const educationTopics: EducationTopic[] = [
 export function getTopic(slug: string): EducationTopic | undefined {
   return educationTopics.find((topic) => topic.slug === slug);
 }
+
+/**
+ * Other topics related to the given slug. Prefers topics in the same category;
+ * falls back to any other topics to fill up to `limit`.
+ */
+export function relatedTopics(slug: string, limit = 3): EducationTopic[] {
+  const current = getTopic(slug);
+  const others = educationTopics.filter((topic) => topic.slug !== slug);
+  if (!current) {
+    return others.slice(0, limit);
+  }
+  const sameCategory = others.filter((topic) => topic.category === current.category);
+  const rest = others.filter((topic) => topic.category !== current.category);
+  return [...sameCategory, ...rest].slice(0, limit);
+}

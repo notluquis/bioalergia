@@ -2,12 +2,20 @@ import { Breadcrumbs, Card, Chip, Link, Separator } from "@heroui/react";
 import { createFileRoute } from "@tanstack/react-router";
 
 import { BookingCta } from "@/components/BookingCta";
+import { JsonLd } from "@/components/JsonLd";
 import { PageShell } from "@/components/PageShell";
 import { botiquinContent } from "@/data/botiquin";
+import { breadcrumbJsonLd } from "@/lib/seo";
 
 function BotiquinPage() {
   return (
     <PageShell>
+      <JsonLd
+        data={breadcrumbJsonLd([
+          { name: "Inicio", path: "/" },
+          { name: "Botiquín", path: "/botiquin" },
+        ])}
+      />
       <section className="grid gap-4">
         <Breadcrumbs>
           <Breadcrumbs.Item href="/">Inicio</Breadcrumbs.Item>
@@ -105,6 +113,9 @@ export const Route = createFileRoute("/botiquin")({
         { property: "og:title", content: "Botiquín del alérgico · Bioalergia" },
         { property: "og:type", content: "website" },
         { property: "og:url", content: url },
+        { property: "og:image", content: `${origin}/og-image.png` },
+        { name: "twitter:image", content: `${origin}/og-image.png` },
+        { name: "twitter:card", content: "summary_large_image" },
       ],
       links: [{ rel: "canonical", href: url }],
     };

@@ -2,13 +2,22 @@ import { Breadcrumbs, Card, Chip, Link } from "@heroui/react";
 import { createFileRoute } from "@tanstack/react-router";
 
 import { BookingCta } from "@/components/BookingCta";
+import { JsonLd } from "@/components/JsonLd";
 import { PageShell } from "@/components/PageShell";
 import { clinicOverview } from "@/data/clinic";
 import { team } from "@/data/team";
+import { breadcrumbJsonLd, physicianJsonLd } from "@/lib/seo";
 
 function EquipoPage() {
   return (
     <PageShell>
+      <JsonLd data={physicianJsonLd()} />
+      <JsonLd
+        data={breadcrumbJsonLd([
+          { name: "Inicio", path: "/" },
+          { name: "Equipo", path: "/equipo" },
+        ])}
+      />
       <section className="grid gap-4">
         <Breadcrumbs>
           <Breadcrumbs.Item href="/">Inicio</Breadcrumbs.Item>
@@ -136,6 +145,9 @@ export const Route = createFileRoute("/equipo")({
         { property: "og:title", content: "Nuestro equipo · Bioalergia" },
         { property: "og:type", content: "website" },
         { property: "og:url", content: url },
+        { property: "og:image", content: `${origin}/og-image.png` },
+        { name: "twitter:image", content: `${origin}/og-image.png` },
+        { name: "twitter:card", content: "summary_large_image" },
       ],
       links: [{ rel: "canonical", href: url }],
     };

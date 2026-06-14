@@ -2,8 +2,10 @@ import { Breadcrumbs, Card, Chip } from "@heroui/react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 
 import { BookingCta } from "@/components/BookingCta";
+import { JsonLd } from "@/components/JsonLd";
 import { PageShell } from "@/components/PageShell";
 import { type EducationCategory, educationTopics } from "@/data/education";
+import { breadcrumbJsonLd } from "@/lib/seo";
 
 const CATEGORY_ORDER: EducationCategory[] = [
   "Respiratoria",
@@ -25,6 +27,12 @@ const groupedTopics = CATEGORY_ORDER.map((category) => ({
 function AprendeIndexPage() {
   return (
     <PageShell>
+      <JsonLd
+        data={breadcrumbJsonLd([
+          { name: "Inicio", path: "/" },
+          { name: "Aprende", path: "/aprende" },
+        ])}
+      />
       <section className="grid gap-4">
         <Breadcrumbs>
           <Breadcrumbs.Item href="/">Inicio</Breadcrumbs.Item>
@@ -103,6 +111,9 @@ export const Route = createFileRoute("/aprende/")({
         { property: "og:title", content: title },
         { property: "og:type", content: "website" },
         { property: "og:url", content: url },
+        { property: "og:image", content: `${origin}/og-image.png` },
+        { name: "twitter:image", content: `${origin}/og-image.png` },
+        { name: "twitter:card", content: "summary_large_image" },
       ],
       links: [{ rel: "canonical", href: url }],
     };

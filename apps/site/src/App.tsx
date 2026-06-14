@@ -136,6 +136,9 @@ export function App() {
     setMetaTag('meta[property="og:url"]', "content", canonicalUrl);
     setMetaTag('meta[name="twitter:title"]', "content", title);
     setMetaTag('meta[name="twitter:description"]', "content", description);
+    setMetaTag('meta[property="og:image"]', "content", `https://bioalergia.cl/og-image.png`);
+    setMetaTag('meta[name="twitter:image"]', "content", `https://bioalergia.cl/og-image.png`);
+    setMetaTag('meta[name="twitter:card"]', "content", "summary_large_image");
     setMetaTag('link[rel="canonical"]', "href", canonicalUrl);
   }, [legalDocument]);
 

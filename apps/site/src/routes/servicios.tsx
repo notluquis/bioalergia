@@ -2,8 +2,10 @@ import { Breadcrumbs, Card, Link } from "@heroui/react";
 import { createFileRoute } from "@tanstack/react-router";
 
 import { BookingCta } from "@/components/BookingCta";
+import { JsonLd } from "@/components/JsonLd";
 import { PageShell } from "@/components/PageShell";
 import { services } from "@/data/services";
+import { breadcrumbJsonLd } from "@/lib/seo";
 
 const QUICK_LINKS = [
   { label: "Exámenes y estudios", href: "/examenes" },
@@ -14,6 +16,12 @@ const QUICK_LINKS = [
 function ServiciosPage() {
   return (
     <PageShell>
+      <JsonLd
+        data={breadcrumbJsonLd([
+          { name: "Inicio", path: "/" },
+          { name: "Servicios", path: "/servicios" },
+        ])}
+      />
       <section className="grid gap-4">
         <Breadcrumbs>
           <Breadcrumbs.Item href="/">Inicio</Breadcrumbs.Item>
@@ -21,9 +29,7 @@ function ServiciosPage() {
         </Breadcrumbs>
         <div className="grid gap-3">
           <div className="text-(--ink-muted) text-xs uppercase tracking-[0.2em]">Servicios</div>
-          <h1 className="font-semibold text-(--ink) text-3xl sm:text-4xl">
-            Nuestros servicios
-          </h1>
+          <h1 className="font-semibold text-(--ink) text-3xl sm:text-4xl">Nuestros servicios</h1>
           <p className="max-w-3xl text-(--ink-muted) text-base leading-relaxed sm:text-lg">
             Acompañamos todo el proceso de las enfermedades alérgicas: desde el diagnóstico preciso
             hasta tratamientos que modifican el curso de la enfermedad, con educación y seguimiento
@@ -93,6 +99,9 @@ export const Route = createFileRoute("/servicios")({
         { property: "og:title", content: "Servicios · Bioalergia" },
         { property: "og:type", content: "website" },
         { property: "og:url", content: url },
+        { property: "og:image", content: `${origin}/og-image.png` },
+        { name: "twitter:image", content: `${origin}/og-image.png` },
+        { name: "twitter:card", content: "summary_large_image" },
       ],
       links: [{ rel: "canonical", href: url }],
     };

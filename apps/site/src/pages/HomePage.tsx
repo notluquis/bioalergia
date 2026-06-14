@@ -3,7 +3,10 @@ import { lazy, Suspense } from "react";
 
 import { ContactSection } from "@/sections/ContactSection";
 import { HeroSection } from "@/sections/HeroSection";
+import { JsonLd } from "@/components/JsonLd";
 import { SiteFooter } from "@/components/SiteFooter";
+import { faqItems } from "@/data/faq";
+import { clinicJsonLd, faqJsonLd } from "@/lib/seo";
 
 const MissionSection = lazy(() =>
   import("@/sections/MissionSection").then((m) => ({ default: m.MissionSection }))
@@ -33,6 +36,8 @@ const DoctoraliaCertificate = lazy(() =>
 export function HomePage({ onBook, onWhatsApp }: { onBook: () => void; onWhatsApp: () => void }) {
   return (
     <>
+      <JsonLd data={clinicJsonLd()} />
+      <JsonLd data={faqJsonLd(faqItems)} />
       <main className="grid gap-20">
         <HeroSection onBook={onBook} />
 

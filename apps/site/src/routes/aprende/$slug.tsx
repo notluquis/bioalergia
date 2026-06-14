@@ -2,8 +2,10 @@ import { Breadcrumbs, Card, Chip, Separator } from "@heroui/react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 
 import { BookingCta } from "@/components/BookingCta";
+import { JsonLd } from "@/components/JsonLd";
 import { PageShell } from "@/components/PageShell";
-import { type EducationBlock, getTopic } from "@/data/education";
+import { type EducationBlock, getTopic, relatedTopics } from "@/data/education";
+import { breadcrumbJsonLd } from "@/lib/seo";
 
 function humanizeSlug(slug: string): string {
   return slug
@@ -87,8 +89,17 @@ function TopicDetailPage() {
     return <TopicNotFound />;
   }
 
+  const related = relatedTopics(topic.slug, 3);
+
   return (
     <PageShell>
+      <JsonLd
+        data={breadcrumbJsonLd([
+          { name: "Inicio", path: "/" },
+          { name: "Aprende", path: "/aprende" },
+          { name: topic.title, path: `/aprende/${topic.slug}` },
+        ])}
+      />
       <article className="grid gap-6">
         <Breadcrumbs>
           <Breadcrumbs.Item href="/">Inicio</Breadcrumbs.Item>
@@ -123,6 +134,50 @@ function TopicDetailPage() {
         </Link>
       </article>
 
+      <section className="grid gap-4">
+        <h2 className="font-semibold text-(--ink) text-xl">Temas relacionados</h2>
+        {related.length > 0 ? (
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {related.map((item) => (
+              <Link
+                className="no-underline"
+                key={item.slug}
+                params={{ slug: item.slug }}
+                to="/aprende/$slug"
+              >
+                <Card
+                  className="h-full rounded-3xl transition-shadow hover:shadow-md"
+                  variant="default"
+                >
+                  <Card.Header className="gap-3">
+                    <Chip size="sm" variant="secondary">
+                      {item.category}
+                    </Chip>
+                    <Card.Title className="text-base">{item.title}</Card.Title>
+                  </Card.Header>
+                </Card>
+              </Link>
+            ))}
+          </div>
+        ) : null}
+        <p className="text-(--ink-muted) text-sm leading-relaxed">
+          ¿Buscas diagnóstico o tratamiento? Revisa{" "}
+          <Link
+            className="font-semibold text-(--accent) no-underline hover:underline"
+            to="/examenes"
+          >
+            Exámenes
+          </Link>{" "}
+          ·{" "}
+          <Link
+            className="font-semibold text-(--accent) no-underline hover:underline"
+            to="/inmunoterapia"
+          >
+            Inmunoterapia
+          </Link>
+        </p>
+      </section>
+
       <BookingCta
         title="¿Tienes dudas sobre tu caso?"
         description="Agenda una evaluación con nuestro equipo y define el estudio o tratamiento adecuado para ti."
@@ -149,8 +204,10 @@ export const Route = createFileRoute("/aprende/$slug")({
         { property: "og:description", content: description },
         { property: "og:type", content: "article" },
         { property: "og:url", content: url },
+        { property: "og:image", content: `${origin}/og-image.png` },
         { name: "twitter:title", content: title },
         { name: "twitter:card", content: "summary_large_image" },
+        { name: "twitter:image", content: `${origin}/og-image.png` },
       ],
       links: [{ rel: "canonical", href: url }],
     };

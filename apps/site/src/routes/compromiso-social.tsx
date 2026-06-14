@@ -2,12 +2,20 @@ import { Breadcrumbs, Card, Chip, Link, Separator } from "@heroui/react";
 import { createFileRoute } from "@tanstack/react-router";
 
 import { BookingCta } from "@/components/BookingCta";
+import { JsonLd } from "@/components/JsonLd";
 import { PageShell } from "@/components/PageShell";
 import { fundacionContent } from "@/data/foundation";
+import { breadcrumbJsonLd } from "@/lib/seo";
 
 function CompromisoSocialPage() {
   return (
     <PageShell>
+      <JsonLd
+        data={breadcrumbJsonLd([
+          { name: "Inicio", path: "/" },
+          { name: "Compromiso social", path: "/compromiso-social" },
+        ])}
+      />
       <section className="grid gap-4">
         <Breadcrumbs>
           <Breadcrumbs.Item href="/">Inicio</Breadcrumbs.Item>
@@ -71,9 +79,7 @@ function CompromisoSocialPage() {
                 {/* TODO(user): confirmar antes de publicar cualquier alianza/convenio concreto */}
                 <Link
                   href={resource.href}
-                  {...(resource.external
-                    ? { target: "_blank", rel: "noopener noreferrer" }
-                    : {})}
+                  {...(resource.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
                   className="text-(--accent)"
                 >
                   Visitar sitio
@@ -116,6 +122,9 @@ export const Route = createFileRoute("/compromiso-social")({
         { property: "og:title", content: "Compromiso social · Bioalergia" },
         { property: "og:type", content: "website" },
         { property: "og:url", content: url },
+        { property: "og:image", content: `${origin}/og-image.png` },
+        { name: "twitter:image", content: `${origin}/og-image.png` },
+        { name: "twitter:card", content: "summary_large_image" },
       ],
       links: [{ rel: "canonical", href: url }],
     };

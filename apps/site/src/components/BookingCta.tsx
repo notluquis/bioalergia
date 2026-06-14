@@ -4,17 +4,22 @@ import { usePostHog } from "posthog-js/react";
 import { contactInfo } from "@/data/clinic";
 import { doctoraliaLink } from "@/lib/doctoralia";
 
-const whatsappLink = (phone: string) => `https://wa.me/${phone.replace(/\D/g, "")}`;
+const whatsappLink = (phone: string, message?: string) => {
+  const base = `https://wa.me/${phone.replace(/\D/g, "")}`;
+  return message ? `${base}?text=${encodeURIComponent(message)}` : base;
+};
 
 /** Reusable conversion card for content pages. */
 export function BookingCta({
   title = "¿Tienes dudas sobre tu caso?",
   description = "Agenda una evaluación con nuestro equipo y define el estudio o tratamiento adecuado para ti.",
   location = "content_page",
+  whatsappMessage = "Hola Bioalergia, quiero agendar una evaluación.",
 }: {
   title?: string;
   description?: string;
   location?: string;
+  whatsappMessage?: string;
 }) {
   const posthog = usePostHog();
 
@@ -25,7 +30,11 @@ export function BookingCta({
 
   const handleWhatsApp = () => {
     posthog?.capture("whatsapp_click", { location });
-    window.open(whatsappLink(contactInfo.phones[0]), "_blank", "noopener,noreferrer");
+    window.open(
+      whatsappLink(contactInfo.phones[0], whatsappMessage),
+      "_blank",
+      "noopener,noreferrer"
+    );
   };
 
   return (
