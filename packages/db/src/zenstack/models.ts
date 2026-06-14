@@ -46,6 +46,7 @@ export type LoanSchedule = $ModelResult<$Schema, "LoanSchedule">;
 export type LoanSchedulePayment = $ModelResult<$Schema, "LoanSchedulePayment">;
 export type Setting = $ModelResult<$Schema, "Setting">;
 export type SecurityAlertState = $ModelResult<$Schema, "SecurityAlertState">;
+export type DataRetentionPolicy = $ModelResult<$Schema, "DataRetentionPolicy">;
 export type AuditLog = $ModelResult<$Schema, "AuditLog">;
 export type OneDriveAccount = $ModelResult<$Schema, "OneDriveAccount">;
 export type OneDriveWatchChannel = $ModelResult<$Schema, "OneDriveWatchChannel">;

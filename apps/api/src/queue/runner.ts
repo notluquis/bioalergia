@@ -75,7 +75,32 @@ export async function startQueueRunner(): Promise<void> {
       identifier: "audit_chain_verify",
       options: { backfillPeriod: 0 },
     },
+    {
+      // Automated PII retention sweep (Ley 21.719). 04:00 America/Santiago,
+      // after orphan_cleanup (03:30), before audit_chain_verify (05:00).
+      // Deletes/anonymizations gated by DB_RETENTION_SWEEP=1 (unset = dry-run).
+      // Clinical/ficha tables are hard-guarded — never swept.
+      task: "retention_sweep",
+      match: "0 4 * * *",
+      identifier: "retention_sweep",
+      options: { backfillPeriod: 0 },
+    },
   ];
+
+  // Breach / anomaly detection over audit_logs (ANCI 3h alert chain). Schedule
+  // read from DB (security.anomalyCron) at boot, default every 15 min. The
+  // thresholds themselves are read fresh per tick inside the task (no restart
+  // needed to tune them).
+  const anomalyCron =
+    (await getSetting("security.anomalyCron")) ||
+    process.env.AUDIT_ANOMALY_CRON ||
+    "*/15 * * * *";
+  cronItems.push({
+    task: "audit_anomaly",
+    match: anomalyCron,
+    identifier: "audit_anomaly",
+    options: { backfillPeriod: 0 },
+  });
 
   // Skin-test import sync + OneDrive subscription renewal — gated by the same
   // flag the old node-cron scheduler used.

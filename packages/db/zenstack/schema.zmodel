@@ -1049,6 +1049,47 @@ model SecurityAlertState {
   @@map("security_alert_state")
 }
 
+// Config-driven PII retention policy. One row per physical table whose
+// rows expire after `windowDays` measured from `dateColumn`. The nightly
+// `retention_sweep` task (lib/retention-sweep.ts) reads ENABLED rows and
+// either DELETEs or ANONYMIZEs expired rows, bounded by a SAFETY_LIMIT.
+//
+// Legal basis: Ley 21.719 (principio de proporcionalidad / limitación del
+// plazo de conservación, vigente 1-dic-2026) — la PII vencida debe
+// eliminarse o anonimizarse de forma sistemática. La FICHA CLÍNICA se
+// conserva 15 años (Decreto 41/2012) y NUNCA se toca: las tablas clínicas
+// no llevan fila aquí Y el servicio mantiene un denylist hard-coded.
+//
+// `action`:
+//   "delete"    → DELETE FROM <table> WHERE <dateColumn> < now() - windowDays
+//   "anonymize" → UPDATE <table> SET <col>=<rule> ... (per anonymizeMap)
+//
+// `anonymizeMap`: { "<column>": <rule> } where rule is one of:
+//   { "set": "null" }            → SET col = NULL
+//   { "set": "fixed", "value":X} → SET col = X (literal)
+//   { "set": "hash" }            → SET col = md5(col) (irreversible token)
+// Only consulted when action == "anonymize".
+model DataRetentionPolicy {
+  // Physical table name (snake_case), e.g. "audit_logs", "wa_messages".
+  table        String   @id
+  enabled      Boolean  @default(false)
+  // "delete" | "anonymize"
+  action       String
+  windowDays   Int      @map("window_days")
+  // Column carrying the row age. Default created_at; some tables use
+  // occurred_at / sent_at — set per policy.
+  dateColumn   String   @default("created_at") @map("date_column")
+  // Per-column anonymization rules; only used when action == "anonymize".
+  anonymizeMap Json     @default("{}") @map("anonymize_map")
+  notes        String?
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@deny('all', auth() == null)
+  @@allow('read', auth().status == 'ACTIVE')
+  @@allow('all', auth().status == 'ACTIVE')
+  @@map("data_retention_policies")
+}
+
 model AuditLog {
   id          BigInt          @id @default(autoincrement())
   occurredAt  DateTime        @default(now()) @map("occurred_at")

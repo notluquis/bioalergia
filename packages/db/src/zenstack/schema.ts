@@ -3654,6 +3654,65 @@ export class SchemaType implements SchemaDef {
                 scope_alertType: { scope: { type: "String" }, alertType: { type: "String" } }
             }
         },
+        DataRetentionPolicy: {
+            name: "DataRetentionPolicy",
+            fields: {
+                table: {
+                    name: "table",
+                    type: "String",
+                    id: true,
+                    attributes: [{ name: "@id" }] as readonly AttributeApplication[]
+                },
+                enabled: {
+                    name: "enabled",
+                    type: "Boolean",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(false) }] }] as readonly AttributeApplication[],
+                    default: false as FieldDefault
+                },
+                action: {
+                    name: "action",
+                    type: "String"
+                },
+                windowDays: {
+                    name: "windowDays",
+                    type: "Int",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("window_days") }] }] as readonly AttributeApplication[]
+                },
+                dateColumn: {
+                    name: "dateColumn",
+                    type: "String",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("created_at") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("date_column") }] }] as readonly AttributeApplication[],
+                    default: "created_at" as FieldDefault
+                },
+                anonymizeMap: {
+                    name: "anonymizeMap",
+                    type: "Json",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("{}") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("anonymize_map") }] }] as readonly AttributeApplication[],
+                    default: "{}" as FieldDefault
+                },
+                notes: {
+                    name: "notes",
+                    type: "String",
+                    optional: true
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    attributes: [{ name: "@updatedAt" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }] }] as readonly AttributeApplication[]
+                }
+            },
+            attributes: [
+                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
+                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("data_retention_policies") }] }
+            ] as readonly AttributeApplication[],
+            idFields: ["table"],
+            uniqueFields: {
+                table: { type: "String" }
+            }
+        },
         AuditLog: {
             name: "AuditLog",
             fields: {

@@ -3018,6 +3018,53 @@ export class SchemaType implements SchemaDef {
                 scope_alertType: { scope: { type: "String" }, alertType: { type: "String" } }
             }
         },
+        DataRetentionPolicy: {
+            name: "DataRetentionPolicy",
+            fields: {
+                table: {
+                    name: "table",
+                    type: "String",
+                    id: true
+                },
+                enabled: {
+                    name: "enabled",
+                    type: "Boolean",
+                    default: false as FieldDefault
+                },
+                action: {
+                    name: "action",
+                    type: "String"
+                },
+                windowDays: {
+                    name: "windowDays",
+                    type: "Int"
+                },
+                dateColumn: {
+                    name: "dateColumn",
+                    type: "String",
+                    default: "created_at" as FieldDefault
+                },
+                anonymizeMap: {
+                    name: "anonymizeMap",
+                    type: "Json",
+                    default: "{}" as FieldDefault
+                },
+                notes: {
+                    name: "notes",
+                    type: "String",
+                    optional: true
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true
+                }
+            },
+            idFields: ["table"],
+            uniqueFields: {
+                table: { type: "String" }
+            }
+        },
         AuditLog: {
             name: "AuditLog",
             fields: {
