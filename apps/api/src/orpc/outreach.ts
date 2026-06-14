@@ -1,6 +1,4 @@
-import { db } from "@finanzas/db";
 import type { OutreachCampaign, OutreachCampaignFilters } from "@finanzas/orpc-contracts/outreach";
-import { sanitizeHtml } from "../lib/html-sanitizer.ts";
 import {
   apolloEnrichInputSchema,
   apolloEnrichResponseSchema,
@@ -72,7 +70,27 @@ import { selectCandidates } from "../modules/outreach/campaign-builder.ts";
 import { discoverGooglePlaces } from "../modules/outreach/google-places.ts";
 import { hunterEnrichProspect, verifyEmail } from "../modules/outreach/hunter.ts";
 import { importMineducDataset } from "../modules/outreach/mineduc-importer.ts";
-import { launchOrResumeCampaign } from "../services/outreach-campaign.ts";
+import {
+  bulkUpdateEstablishments,
+  createCampaign,
+  createInteraction,
+  deleteCampaign,
+  deleteContact,
+  deleteInteraction,
+  getCampaignDetail,
+  getDashboard,
+  getEstablishmentDetail,
+  getFiltersMeta,
+  getLatestImportLog,
+  launchOrResumeCampaign,
+  listCampaigns,
+  listEstablishments,
+  pauseCampaign,
+  selectBulkCrawlTargets,
+  updateCampaign,
+  updateEstablishment,
+  upsertContact,
+} from "../services/outreach-campaign.ts";
 import { sendOutreachNextBatch } from "../services/outreach-email.ts";
 import { recomputeProspectScore } from "../modules/outreach/scoring.ts";
 import { renderTemplate } from "../modules/outreach/template.ts";
@@ -134,224 +152,49 @@ function normalizeCampaign(c: Record<string, unknown>): OutreachCampaign {
   };
 }
 
-function buildEstablishmentWhere(input: z.infer<typeof listEstablishmentsInputSchema>) {
-  const where: Record<string, unknown> = {};
-  if (input.soloActivos !== false) where.activo = true;
-  if (input.estados?.length) where.estado = { in: input.estados };
-  if (input.dependencias?.length) where.dependencia = { in: input.dependencias };
-  if (input.comunas?.length) where.comuna = { in: input.comunas };
-  if (input.ciudades?.length) where.ciudad = { in: input.ciudades };
-  if (input.tipos?.length) where.tipo = { in: input.tipos };
-  if (input.fuentes?.length) where.fuente = { in: input.fuentes };
-  if (input.prioridades?.length) where.prioridad = { in: input.prioridades };
-  if (input.search) {
-    const q = input.search.trim();
-    where.OR = [
-      { nombre: { contains: q, mode: "insensitive" as const } },
-      { directorMineduc: { contains: q, mode: "insensitive" as const } },
-      { emailMineduc: { contains: q, mode: "insensitive" as const } },
-      { rbd: { contains: q } },
-    ];
-  }
-  if (input.soloConEmail) {
-    where.OR = [
-      ...(Array.isArray(where.OR) ? (where.OR as unknown[]) : []),
-      { emailMineduc: { not: null } },
-    ];
-  }
-  return where;
-}
-
 const outreachRouterBase = {
   listEstablishments: readOutreach
     .route({ method: "POST", path: "/establishments/list", tags: ["Outreach"] })
     .input(listEstablishmentsInputSchema)
     .output(listEstablishmentsResponseSchema)
-    .handler(async ({ input }) => {
-      const where = buildEstablishmentWhere(input);
-      const total = await db.outreachEstablishment.count({ where });
-      const items = await db.outreachEstablishment.findMany({
-        where,
-        orderBy: { [input.sortBy]: input.sortDir },
-        skip: (input.page - 1) * input.pageSize,
-        take: input.pageSize,
-      });
-      const rbds = items.map((e) => e.rbd);
-      const contactCounts = rbds.length
-        ? await db.outreachContact.groupBy({
-            by: ["establecimientoRbd"],
-            where: { establecimientoRbd: { in: rbds } },
-            _count: { _all: true },
-          })
-        : [];
-      const interactionAgg = rbds.length
-        ? await db.outreachInteraction.groupBy({
-            by: ["establecimientoRbd"],
-            where: { establecimientoRbd: { in: rbds } },
-            _count: { _all: true },
-            _max: { fecha: true },
-          })
-        : [];
-      const cMap = new Map(
-        contactCounts.map((r: (typeof contactCounts)[number]) => [
-          r.establecimientoRbd,
-          r._count._all,
-        ])
-      );
-      const iMap = new Map<string, { count: number; last: Date | null }>(
-        interactionAgg.map(
-          (r: (typeof interactionAgg)[number]): [string, { count: number; last: Date | null }] => [
-            r.establecimientoRbd,
-            { count: r._count._all, last: r._max.fecha },
-          ]
-        )
-      );
-      return {
-        items: items.map((e) => ({
-          ...e,
-          contactosCount: cMap.get(e.rbd) ?? 0,
-          interaccionesCount: iMap.get(e.rbd)?.count ?? 0,
-          ultimaInteraccionAt: iMap.get(e.rbd)?.last ?? null,
-        })),
-        total,
-        page: input.page,
-        pageSize: input.pageSize,
-      };
-    }),
+    .handler(async ({ input }) => listEstablishments(input)),
 
   getEstablishment: readOutreach
     .route({ method: "POST", path: "/establishments/get", tags: ["Outreach"] })
     .input(establishmentRbdInputSchema)
     .output(establishmentDetailResponseSchema)
-    .handler(async ({ input }) => {
-      const establishment = await db.outreachEstablishment.findUnique({
-        where: { rbd: input.rbd },
-      });
-      if (!establishment) {
-        throw new ORPCError("NOT_FOUND", { message: "Establecimiento no encontrado" });
-      }
-      const [contactos, interacciones, envios] = await Promise.all([
-        db.outreachContact.findMany({
-          where: { establecimientoRbd: input.rbd },
-          orderBy: [{ esPrincipal: "desc" }, { createdAt: "asc" }],
-        }),
-        db.outreachInteraction.findMany({
-          where: { establecimientoRbd: input.rbd },
-          orderBy: { fecha: "desc" },
-          take: 100,
-        }),
-        db.outreachEmailDelivery.findMany({
-          where: { establecimientoRbd: input.rbd },
-          orderBy: { createdAt: "desc" },
-          take: 50,
-        }),
-      ]);
-      return { establishment, contactos, interacciones, envios };
-    }),
+    .handler(async ({ input }) => getEstablishmentDetail(input.rbd)),
 
   updateEstablishment: updateOutreach
     .route({ method: "POST", path: "/establishments/update", tags: ["Outreach"] })
     .input(updateEstablishmentInputSchema)
     .output(establishmentResponseSchema)
-    .handler(async ({ input }) => {
-      const { rbd, ...rest } = input;
-      const data: Record<string, unknown> = {};
-      for (const [k, v] of Object.entries(rest)) {
-        if (v !== undefined) data[k] = v;
-      }
-      const establishment = await db.outreachEstablishment.update({
-        where: { rbd },
-        data,
-      });
-      return { establishment };
-    }),
+    .handler(async ({ input }) => ({ establishment: await updateEstablishment(input) })),
 
   bulkUpdateEstablishments: updateOutreach
     .route({ method: "POST", path: "/establishments/bulk-update", tags: ["Outreach"] })
     .input(bulkUpdateEstablishmentsInputSchema)
     .output(z.object({ updated: z.number().int() }))
-    .handler(async ({ input }) => {
-      const data: Record<string, unknown> = {};
-      if (input.estado) data.estado = input.estado;
-      if (input.prioridad) data.prioridad = input.prioridad;
-      let updated = 0;
-      if (Object.keys(data).length > 0) {
-        const r = await db.outreachEstablishment.updateMany({
-          where: { rbd: { in: input.rbds } },
-          data,
-        });
-        updated = r.count ?? input.rbds.length;
-      }
-      if (input.agregarEtiqueta || input.removerEtiqueta) {
-        const items = await db.outreachEstablishment.findMany({
-          where: { rbd: { in: input.rbds } },
-          select: { rbd: true, etiquetas: true },
-        });
-        for (const it of items) {
-          const set = new Set(it.etiquetas);
-          if (input.agregarEtiqueta) set.add(input.agregarEtiqueta);
-          if (input.removerEtiqueta) set.delete(input.removerEtiqueta);
-          await db.outreachEstablishment.update({
-            where: { rbd: it.rbd },
-            data: { etiquetas: Array.from(set) as string[] },
-          });
-        }
-        if (!Object.keys(data).length) updated = items.length;
-      }
-      return { updated };
-    }),
+    .handler(async ({ input }) => ({ updated: await bulkUpdateEstablishments(input) })),
 
   filtersMeta: readOutreach
     .route({ method: "GET", path: "/filters", tags: ["Outreach"] })
     .input(z.object({}).optional())
     .output(filtersResponseSchema)
-    .handler(async () => {
-      const comunas = await db.outreachEstablishment.findMany({
-        distinct: ["comuna"],
-        select: { comuna: true },
-        orderBy: { comuna: "asc" },
-      });
-      const all = await db.outreachEstablishment.findMany({ select: { etiquetas: true } });
-      const tagSet = new Set<string>();
-      for (const e of all) for (const t of e.etiquetas) tagSet.add(t);
-      return {
-        comunas: comunas.map((c) => c.comuna),
-        etiquetas: Array.from(tagSet).sort(),
-      };
-    }),
+    .handler(async () => getFiltersMeta()),
 
   upsertContact: updateOutreach
     .route({ method: "POST", path: "/contacts/upsert", tags: ["Outreach"] })
     .input(upsertContactInputSchema)
     .output(contactResponseSchema)
-    .handler(async ({ input }) => {
-      if (input.esPrincipal) {
-        await db.outreachContact.updateMany({
-          where: { establecimientoRbd: input.establecimientoRbd, esPrincipal: true },
-          data: { esPrincipal: false },
-        });
-      }
-      const data = {
-        establecimientoRbd: input.establecimientoRbd,
-        nombre: input.nombre,
-        cargo: input.cargo,
-        email: input.email ?? null,
-        telefono: input.telefono ?? null,
-        esPrincipal: input.esPrincipal ?? false,
-        notas: input.notas ?? null,
-      };
-      const contacto = input.id
-        ? await db.outreachContact.update({ where: { id: input.id }, data })
-        : await db.outreachContact.create({ data });
-      return { contacto };
-    }),
+    .handler(async ({ input }) => ({ contacto: await upsertContact(input) })),
 
   deleteContact: deleteOutreach
     .route({ method: "POST", path: "/contacts/delete", tags: ["Outreach"] })
     .input(contactIdInputSchema)
     .output(okResponseSchema)
     .handler(async ({ input }) => {
-      await db.outreachContact.delete({ where: { id: input.id } });
+      await deleteContact(input.id);
       return { status: "ok" as const };
     }),
 
@@ -359,35 +202,16 @@ const outreachRouterBase = {
     .route({ method: "POST", path: "/interactions/create", tags: ["Outreach"] })
     .input(createInteractionInputSchema)
     .output(interactionResponseSchema)
-    .handler(async ({ context, input }) => {
-      const interaccion = await db.outreachInteraction.create({
-        data: {
-          establecimientoRbd: input.establecimientoRbd,
-          contactoId: input.contactoId ?? null,
-          tipo: input.tipo,
-          fecha: input.fecha,
-          asunto: input.asunto ?? null,
-          contenido: input.contenido,
-          emailDesde: input.emailDesde ?? null,
-          emailHacia: input.emailHacia ?? null,
-          resultado: input.resultado ?? null,
-          creadoPorUserId: context.user.id,
-          creadoPorNombre: context.user.email ?? null,
-        },
-      });
-      await db.outreachEstablishment.update({
-        where: { rbd: input.establecimientoRbd },
-        data: { ultimoContactoAt: input.fecha },
-      });
-      return { interaccion };
-    }),
+    .handler(async ({ context, input }) => ({
+      interaccion: await createInteraction(input, context.user),
+    })),
 
   deleteInteraction: deleteOutreach
     .route({ method: "POST", path: "/interactions/delete", tags: ["Outreach"] })
     .input(interactionIdInputSchema)
     .output(okResponseSchema)
     .handler(async ({ input }) => {
-      await db.outreachInteraction.delete({ where: { id: input.id } });
+      await deleteInteraction(input.id);
       return { status: "ok" as const };
     }),
 
@@ -396,9 +220,7 @@ const outreachRouterBase = {
     .input(z.object({}).optional())
     .output(listCampaignsResponseSchema)
     .handler(async () => {
-      const campaigns = await db.outreachEmailCampaign.findMany({
-        orderBy: { createdAt: "desc" },
-      });
+      const campaigns = await listCampaigns();
       return { campaigns: campaigns.map((c) => normalizeCampaign(c as Record<string, unknown>)) };
     }),
 
@@ -407,13 +229,7 @@ const outreachRouterBase = {
     .input(campaignIdInputSchema)
     .output(campaignDetailResponseSchema)
     .handler(async ({ input }) => {
-      const campaign = await db.outreachEmailCampaign.findUnique({ where: { id: input.id } });
-      if (!campaign) throw new ORPCError("NOT_FOUND", { message: "Campaña no encontrada" });
-      const envios = await db.outreachEmailDelivery.findMany({
-        where: { campaignId: input.id },
-        orderBy: { createdAt: "desc" },
-        take: 500,
-      });
+      const { campaign, envios } = await getCampaignDetail(input.id);
       return {
         campaign: normalizeCampaign(campaign as Record<string, unknown>),
         envios,
@@ -425,22 +241,7 @@ const outreachRouterBase = {
     .input(createCampaignInputSchema)
     .output(campaignResponseSchema)
     .handler(async ({ context, input }) => {
-      const campaign = await db.outreachEmailCampaign.create({
-        data: {
-          nombre: input.nombre,
-          asunto: input.asunto,
-          // Sanitize admin-authored campaign HTML before it is stored and later
-          // emailed to recipients (XSS defense — DOMPurify RICH config).
-          cuerpoHtml: sanitizeHtml(input.cuerpoHtml, "rich"),
-          cuerpoTexto: input.cuerpoTexto,
-          fromEmail: input.fromEmail,
-          fromNombre: input.fromNombre,
-          replyTo: input.replyTo ?? null,
-          filtros: input.filtros ?? {},
-          ratePerHour: input.ratePerHour ?? 50,
-          createdByUserId: context.user.id,
-        },
-      });
+      const campaign = await createCampaign(input, context.user);
       return { campaign: normalizeCampaign(campaign as Record<string, unknown>) };
     }),
 
@@ -449,16 +250,7 @@ const outreachRouterBase = {
     .input(updateCampaignInputSchema)
     .output(campaignResponseSchema)
     .handler(async ({ input }) => {
-      const { id, ...rest } = input;
-      const data: Record<string, unknown> = {};
-      for (const [k, v] of Object.entries(rest)) {
-        if (v !== undefined) data[k] = v;
-      }
-      // Same XSS defense as createCampaign for the editable HTML body.
-      if (typeof data.cuerpoHtml === "string") {
-        data.cuerpoHtml = sanitizeHtml(data.cuerpoHtml, "rich");
-      }
-      const campaign = await db.outreachEmailCampaign.update({ where: { id }, data });
+      const campaign = await updateCampaign(input);
       return { campaign: normalizeCampaign(campaign as Record<string, unknown>) };
     }),
 
@@ -467,7 +259,7 @@ const outreachRouterBase = {
     .input(campaignIdInputSchema)
     .output(okResponseSchema)
     .handler(async ({ input }) => {
-      await db.outreachEmailCampaign.delete({ where: { id: input.id } });
+      await deleteCampaign(input.id);
       return { status: "ok" as const };
     }),
 
@@ -524,10 +316,7 @@ const outreachRouterBase = {
     .input(campaignIdInputSchema)
     .output(campaignResponseSchema)
     .handler(async ({ input }) => {
-      const campaign = await db.outreachEmailCampaign.update({
-        where: { id: input.id },
-        data: { estado: "PAUSADA" },
-      });
+      const campaign = await pauseCampaign(input.id);
       return { campaign: normalizeCampaign(campaign as Record<string, unknown>) };
     }),
 
@@ -631,36 +420,10 @@ const outreachRouterBase = {
     .input(bulkCrawlInputSchema)
     .output(bulkCrawlStartResponseSchema)
     .handler(async ({ input }) => {
-      const where: Record<string, unknown> = { activo: true };
-      if (input.tipos?.length) where.tipo = { in: input.tipos };
-      if (input.fuentes?.length) where.fuente = { in: input.fuentes };
-      if (input.comunas?.length) where.comuna = { in: input.comunas };
-      if (input.soloConWebsite) where.websiteUrl = { not: null };
-      if (input.soloSinEmail) {
-        where.AND = [
-          { OR: [{ emailMineduc: null }, { emailMineduc: "" }] },
-          { emailsAdicionales: { equals: [] } },
-        ];
-      }
-      if (input.saltarRecientes) {
-        const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-        where.OR = [
-          ...(Array.isArray(where.OR) ? (where.OR as unknown[]) : []),
-          { crawledAt: null },
-          { crawledAt: { lt: cutoff } },
-        ];
-      }
-      const targets = await db.outreachEstablishment.findMany({
-        where,
-        select: { rbd: true },
-        take: input.limit,
-      });
-      const total = targets.length;
+      const rbds = await selectBulkCrawlTargets(input);
+      const total = rbds.length;
       const jobId = startJob("outreach-bulk-crawl", total);
-      void runBulkCrawl(
-        jobId,
-        targets.map((t) => t.rbd)
-      ).catch((err) => {
+      void runBulkCrawl(jobId, rbds).catch((err) => {
         failJob(jobId, err instanceof Error ? err.message : String(err));
       });
       return { jobId, total };
@@ -715,7 +478,7 @@ const outreachRouterBase = {
         dryRun: input.dryRun,
         createdByUserId: context.user.id,
       });
-      const log = await db.outreachImportLog.findFirst({ orderBy: { startedAt: "desc" } });
+      const log = await getLatestImportLog();
       if (!log) throw new ORPCError("INTERNAL_SERVER_ERROR", { message: "Log no encontrado" });
       return { log };
     }),
@@ -724,80 +487,7 @@ const outreachRouterBase = {
     .route({ method: "GET", path: "/dashboard", tags: ["Outreach"] })
     .input(z.object({}).optional())
     .output(dashboardResponseSchema)
-    .handler(async () => {
-      const [
-        total,
-        activos,
-        conEmail,
-        porEstado,
-        porDep,
-        porComuna,
-        porTipo,
-        porFuente,
-        porTipoEstado,
-      ] = await Promise.all([
-        db.outreachEstablishment.count(),
-        db.outreachEstablishment.count({ where: { activo: true } }),
-        db.outreachEstablishment.count({ where: { emailMineduc: { not: null } } }),
-        db.outreachEstablishment.groupBy({ by: ["estado"], _count: { _all: true } }),
-        db.outreachEstablishment.groupBy({ by: ["dependencia"], _count: { _all: true } }),
-        db.outreachEstablishment.groupBy({ by: ["comuna"], _count: { _all: true } }),
-        db.outreachEstablishment.groupBy({ by: ["tipo"], _count: { _all: true } }),
-        db.outreachEstablishment.groupBy({ by: ["fuente"], _count: { _all: true } }),
-        db.outreachEstablishment.groupBy({
-          by: ["tipo", "estado"],
-          _count: { _all: true },
-        }),
-      ]);
-      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-      const pendientesSeguimiento = await db.outreachEstablishment.count({
-        where: {
-          estado: "CONTACTADO",
-          ultimoContactoAt: { lt: sevenDaysAgo },
-        },
-      });
-      const ultimas = await db.outreachInteraction.findMany({
-        orderBy: { createdAt: "desc" },
-        take: 20,
-        include: { establishment: { select: { nombre: true } } },
-      });
-      return {
-        totales: {
-          establecimientos: total,
-          activos,
-          conEmail,
-        },
-        porEstado: porEstado.map((r: (typeof porEstado)[number]) => ({
-          estado: r.estado,
-          count: r._count._all,
-        })),
-        porTipo: porTipo.map((r: (typeof porTipo)[number]) => ({
-          tipo: r.tipo,
-          count: r._count._all,
-        })),
-        porFuente: porFuente.map((r: (typeof porFuente)[number]) => ({
-          fuente: r.fuente,
-          count: r._count._all,
-        })),
-        porDependencia: porDep.map((r: (typeof porDep)[number]) => ({
-          dependencia: r.dependencia,
-          count: r._count._all,
-        })),
-        porComuna: porComuna
-          .map((r: (typeof porComuna)[number]) => ({ comuna: r.comuna, count: r._count._all }))
-          .sort((a: { count: number }, b: { count: number }) => b.count - a.count),
-        porTipoEstado: porTipoEstado.map((r: (typeof porTipoEstado)[number]) => ({
-          tipo: r.tipo,
-          estado: r.estado,
-          count: r._count._all,
-        })),
-        pendientesSeguimiento,
-        ultimasInteracciones: ultimas.map((i) => ({
-          ...i,
-          establishmentNombre: i.establishment.nombre,
-        })),
-      };
-    }),
+    .handler(async () => getDashboard()),
 };
 
 export const outreachORPCRouter = base.prefix("/api/orpc/outreach").router(outreachRouterBase);

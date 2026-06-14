@@ -6,9 +6,10 @@ import { Hono } from "hono";
 import { sql } from "kysely";
 import type { AuthSession } from "../lib/auth.ts";
 import { AppError } from "../lib/app-error.ts";
+import { DomainError } from "../lib/errors.ts";
 import { requirePermission, requireSession } from "../lib/legacy-route.ts";
 import { canonicalRutFilter, normalizeRut, requireCanonicalRut } from "../lib/rut.ts";
-import { parseChileDateOnly } from "../lib/time.ts";
+import { dbDateToISO, instantToChileDate, parseChileDateOnly } from "../lib/time.ts";
 import { findOrCreatePerson } from "./people-factory.ts";
 import { writeTempUpload } from "../lib/temp-file.ts";
 import { zValidator } from "../lib/zod-validator.ts";
@@ -233,6 +234,437 @@ export async function syncPatientDteSaleSources(options: DteSalesSyncOptions) {
     skipped,
     updated,
   };
+}
+
+// ---------------------------------------------------------------------------
+// oRPC service layer (orpc/patients.ts handlers). Handlers stay thin: authz
+// middleware (`.use()`, runs BEFORE these) → call service → return. Services
+// own DB logic + validation and throw DomainError (mapped to HTTP by
+// orpc/error.ts::toORPCError via the SuperJSONRPCHandler onError interceptor).
+//
+// PHI note: authz is enforced by the per-procedure `.use()` middleware that
+// runs before the handler body invokes any of these. Moving findUnique +
+// NOT_FOUND into a service does NOT change ordering — an unauthorized caller
+// is rejected by middleware before reaching the service, so existence is never
+// disclosed before authorization.
+// ---------------------------------------------------------------------------
+
+type CreatePatientPayload = {
+  birthDate?: string;
+  bloodType?: string;
+  email?: string;
+  fatherName?: string;
+  motherName?: string;
+  names: string;
+  notes?: string;
+  phone?: string;
+  rut: string;
+  sex?: "M" | "F" | "X";
+};
+
+type UpdatePatientPayload = Partial<CreatePatientPayload> & { patientId: number };
+
+type CreateConsultationPayload = {
+  date: string;
+  diagnosis?: string;
+  eventId?: number;
+  notes?: string;
+  patientId: number;
+  reason: string;
+  treatment?: string;
+};
+
+type CreateBudgetPayload = {
+  discount: number;
+  items: Array<{ description: string; quantity: number; unitPrice: number }>;
+  notes?: string;
+  patientId: number;
+  title: string;
+};
+
+type CreatePaymentPayload = {
+  amount: number;
+  budgetId?: number;
+  notes?: string;
+  patientId: number;
+  paymentDate: string;
+  paymentMethod: "Transferencia" | "Efectivo" | "Tarjeta" | "Otro";
+  reference?: string;
+};
+
+type CreateAttachmentPayload = {
+  file: File;
+  name?: string;
+  patientId: number;
+  type: string;
+  uploadedBy: number;
+};
+
+type ListDteSourcesPayload = { limit?: number; period?: string; q?: string };
+
+// POST / (create): refuse-then-create. Handles the two CONFLICT cases (already
+// a patient; RUT belongs to another user) + invalid RUT BAD_REQUEST before
+// delegating to findOrCreatePerson (which dedupes silently). Mirrors the prior
+// inline handler body exactly.
+export async function createPatient(input: CreatePatientPayload) {
+  let canonicalRut: string;
+  try {
+    canonicalRut = requireCanonicalRut(input.rut);
+  } catch {
+    throw new DomainError("BAD_REQUEST", "RUT inválido");
+  }
+
+  const existing = await db.person.findFirst({ where: { rut: canonicalRut } });
+  if (existing) {
+    const existingPatient = await db.patient.findUnique({
+      where: { personId: existing.id },
+    });
+    if (existingPatient) {
+      throw new DomainError("CONFLICT", "El paciente ya está registrado");
+    }
+    const linkedUser = await db.user.findFirst({
+      where: { personId: existing.id },
+      select: { id: true },
+    });
+    const namesDiffer =
+      (existing.names ?? "") !== input.names ||
+      (existing.fatherName ?? "") !== (input.fatherName ?? "") ||
+      (existing.motherName ?? "") !== (input.motherName ?? "");
+    if (linkedUser && namesDiffer) {
+      throw new DomainError(
+        "CONFLICT",
+        `El RUT ${canonicalRut} ya pertenece a otro usuario del sistema (${existing.names ?? ""} ${existing.fatherName ?? ""} ${existing.motherName ?? ""}). Verifica el RUT del paciente.`
+      );
+    }
+  }
+
+  const { personId } = await findOrCreatePerson({
+    rut: canonicalRut,
+    names: input.names,
+    fatherName: input.fatherName,
+    motherName: input.motherName,
+    email: input.email,
+    phone: input.phone,
+    sex: input.sex,
+    // Operator-typed values win on patient registration.
+    mergeStrategy: "overwrite",
+  });
+
+  return db.patient.create({
+    data: {
+      personId,
+      birthDate: input.birthDate ? parseDateOnly(input.birthDate) : null,
+      bloodType: input.bloodType,
+      notes: input.notes,
+    },
+    include: { person: true },
+  });
+}
+
+export async function updatePatient(input: UpdatePatientPayload) {
+  const patient = await db.patient.findUnique({
+    where: { id: input.patientId },
+    include: { person: true },
+  });
+  if (!patient) throw new DomainError("NOT_FOUND", "Paciente no encontrado");
+
+  let canonicalRut: string | undefined;
+  if (input.rut) {
+    try {
+      canonicalRut = requireCanonicalRut(input.rut);
+    } catch {
+      throw new DomainError("BAD_REQUEST", "RUT inválido");
+    }
+  }
+
+  await db.person.update({
+    where: { id: patient.personId },
+    data: {
+      ...(canonicalRut ? { rut: canonicalRut } : {}),
+      ...(input.names !== undefined ? { names: input.names } : {}),
+      ...(input.fatherName !== undefined ? { fatherName: input.fatherName } : {}),
+      ...(input.motherName !== undefined ? { motherName: input.motherName } : {}),
+      ...(input.email !== undefined ? { email: input.email } : {}),
+      ...(input.phone !== undefined ? { phone: input.phone } : {}),
+      ...(input.sex !== undefined ? { sex: input.sex } : {}),
+    },
+  });
+
+  return db.patient.update({
+    where: { id: input.patientId },
+    data: {
+      ...(input.birthDate !== undefined
+        ? { birthDate: input.birthDate ? parseDateOnly(input.birthDate) : null }
+        : {}),
+      ...(input.bloodType !== undefined ? { bloodType: input.bloodType } : {}),
+      ...(input.notes !== undefined ? { notes: input.notes } : {}),
+    },
+    include: { person: true },
+  });
+}
+
+// Uploads the file to Drive then persists the attachment row. Returns the row
+// plus the (non-persisted) webViewLink added by the Drive upload.
+export async function createPatientAttachment(input: CreateAttachmentPayload) {
+  const arrayBuffer = await input.file.arrayBuffer();
+  await using temp = await writeTempUpload(Buffer.from(arrayBuffer), input.file.name);
+
+  const attachmentName = input.name?.trim() || input.file.name;
+  const { fileId, webViewLink } = await uploadPatientAttachmentToDrive(
+    temp.filepath,
+    attachmentName,
+    input.file.type || "application/octet-stream",
+    String(input.patientId)
+  );
+
+  const attachment = await db.patientAttachment.create({
+    data: {
+      driveFileId: fileId,
+      mimeType: input.file.type || null,
+      name: attachmentName,
+      patientId: input.patientId,
+      type: input.type as "CONSENT" | "EXAM" | "OTHER" | "RECIPE",
+      uploadedBy: input.uploadedBy,
+    },
+  });
+
+  return { ...attachment, webViewLink: webViewLink ?? undefined };
+}
+
+export async function createPatientBudget(input: CreateBudgetPayload) {
+  const totalAmount = input.items.reduce(
+    (sum, item) => sum + item.unitPrice * item.quantity,
+    0
+  );
+  const finalAmount = totalAmount - input.discount;
+
+  const budget = await db.budget.create({
+    data: {
+      patientId: input.patientId,
+      title: input.title,
+      totalAmount: new Decimal(totalAmount),
+      discount: new Decimal(input.discount),
+      finalAmount: new Decimal(finalAmount),
+      notes: input.notes,
+    },
+    include: { payments: true },
+  });
+
+  return { ...budget, items: [] };
+}
+
+export async function createPatientConsultation(input: CreateConsultationPayload) {
+  const patient = await db.patient.findUnique({
+    where: { id: input.patientId },
+  });
+  if (!patient) {
+    throw new DomainError("NOT_FOUND", "Paciente no encontrado");
+  }
+
+  return db.consultation.create({
+    data: {
+      patientId: input.patientId,
+      date: parseDateOnly(input.date),
+      reason: input.reason,
+      diagnosis: input.diagnosis,
+      treatment: input.treatment,
+      notes: input.notes,
+      eventId: input.eventId,
+    },
+  });
+}
+
+export async function createPatientPayment(input: CreatePaymentPayload) {
+  return db.patientPayment.create({
+    data: {
+      patientId: input.patientId,
+      budgetId: input.budgetId,
+      amount: new Decimal(input.amount),
+      paymentDate: parseDateOnly(input.paymentDate),
+      paymentMethod: input.paymentMethod,
+      reference: input.reference,
+      notes: input.notes,
+    },
+  });
+}
+
+export async function listPatientBudgets(patientId: number) {
+  const budgets = await db.budget.findMany({
+    where: { patientId },
+    include: { payments: true },
+    orderBy: { updatedAt: "desc" },
+  });
+  return budgets.map((budget) => ({ ...budget, items: [] }));
+}
+
+export async function listPatientPayments(patientId: number) {
+  return db.patientPayment.findMany({
+    where: { patientId },
+    orderBy: { paymentDate: "desc" },
+  });
+}
+
+// PHI read. NOT_FOUND surfaced from here; the read-Patient authz middleware in
+// the handler runs before this is called, so existence is never disclosed to
+// an unauthorized caller.
+export async function getPatientDetail(patientId: number) {
+  const patient = await db.patient.findUnique({
+    where: { id: patientId },
+    include: {
+      person: true,
+      consultations: {
+        orderBy: { date: "desc" },
+        take: 10,
+      },
+      medicalCertificates: {
+        orderBy: { issuedAt: "desc" },
+        take: 10,
+      },
+      medicalPrescriptions: {
+        orderBy: { issuedAt: "desc" },
+        take: 10,
+      },
+      budgets: {
+        orderBy: { updatedAt: "desc" },
+      },
+      payments: {
+        orderBy: { paymentDate: "desc" },
+      },
+      attachments: {
+        orderBy: { uploadedAt: "desc" },
+      },
+    },
+  });
+
+  if (!patient) {
+    throw new DomainError("NOT_FOUND", "Paciente no encontrado");
+  }
+
+  return {
+    ...patient,
+    budgets: patient.budgets.map((budget: (typeof patient.budgets)[number]) => ({
+      ...budget,
+      items: [],
+    })),
+  };
+}
+
+export async function listPatients(where: PatientWhereInput) {
+  return db.patient.findMany({
+    where,
+    include: { person: true },
+    orderBy: { updatedAt: "desc" },
+    take: 50,
+  });
+}
+
+export async function listPatientDteSources(input: ListDteSourcesPayload) {
+  const maxRows = Math.min(input.limit || 100, 1000);
+  return db.patientDteSaleSource.findMany({
+    where: {
+      AND: [
+        input.period ? { period: input.period } : {},
+        input.q
+          ? {
+              OR: [
+                { clientRUT: { contains: input.q, mode: "insensitive" as const } },
+                { clientName: { contains: input.q, mode: "insensitive" as const } },
+              ],
+            }
+          : {},
+      ],
+    },
+    orderBy: [{ updatedAt: "desc" }],
+    take: maxRows,
+  });
+}
+
+// PHI read. Authz (read-Patient) enforced by handler middleware before call.
+export async function getPatientClinicalSeries(patientId: number) {
+  const series = await db.clinicalSeries.findMany({
+    where: { patientId },
+    orderBy: { createdAt: "desc" },
+    select: {
+      id: true,
+      kind: true,
+      status: true,
+      displayName: true,
+      patientName: true,
+      patientRut: true,
+      createdAt: true,
+      skinTests: {
+        orderBy: { testDate: "asc" },
+        take: 1,
+        select: { testDate: true },
+      },
+      events: {
+        orderBy: [{ startDate: "asc" }, { startDateTime: "asc" }, { id: "asc" }],
+        take: 1,
+        select: {
+          endDate: true,
+          endDateTime: true,
+          startDate: true,
+          startDateTime: true,
+        },
+      },
+      _count: { select: { skinTests: true, events: true } },
+    },
+  });
+  return series.map((s) => {
+    const event = s.events[0] ?? null;
+    // start/endDate are @db.Date (dbDateToISO, UTC); start/endDateTime are
+    // @db.Timestamptz instants (instantToChileDate, local). Same priority
+    // (start over end), right rule per column type.
+    const eventDate = event
+      ? (dbDateToISO(event.startDate) ??
+        instantToChileDate(event.startDateTime) ??
+        dbDateToISO(event.endDate) ??
+        instantToChileDate(event.endDateTime))
+      : null;
+    const skinTestDate = dbDateToISO(s.skinTests[0]?.testDate);
+    return {
+      id: s.id,
+      kind: s.kind,
+      status: s.status,
+      displayName: s.displayName,
+      patientName: s.patientName,
+      patientRut: s.patientRut,
+      skinTestsCount: s._count.skinTests,
+      eventsCount: s._count.events,
+      clinicalDate: skinTestDate ?? eventDate,
+      createdAt: s.createdAt.toISOString(),
+    };
+  });
+}
+
+// PHI read. Authz (read-Patient) enforced by handler middleware before call.
+export async function getPatientSkinTests(patientId: number) {
+  const tests = await db.clinicalSkinTest.findMany({
+    where: { clinicalSeries: { patientId } },
+    orderBy: { testDate: "desc" },
+    select: {
+      id: true,
+      testDate: true,
+      patientName: true,
+      patientRut: true,
+      panelTitle: true,
+      physicianName: true,
+      clinicalSeriesId: true,
+      clinicalSeries: { select: { kind: true } },
+      _count: { select: { results: true } },
+    },
+  });
+  return tests.map((t) => ({
+    id: t.id,
+    testDate: dbDateToISO(t.testDate) ?? "",
+    patientName: t.patientName,
+    patientRut: t.patientRut,
+    panelTitle: t.panelTitle,
+    physicianName: t.physicianName,
+    resultsCount: t._count.results,
+    seriesId: t.clinicalSeriesId,
+    seriesKind: t.clinicalSeries.kind,
+  }));
 }
 
 // GET / - List patients with search

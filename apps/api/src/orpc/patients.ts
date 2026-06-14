@@ -1,4 +1,3 @@
-import { db } from "@finanzas/db";
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
 import { ORPCError, onError, os } from "@orpc/server";
@@ -16,13 +15,23 @@ import { createSchemaFactory, schema } from "@finanzas/db/zod";
 import { z } from "zod";
 import { getSessionUser, hasPermission } from "../lib/auth.ts";
 import { logError } from "../lib/logger.ts";
-import { requireCanonicalRut } from "../lib/rut.ts";
-import { dbDateToISO, instantToChileDate, parseChileDateOnly } from "../lib/time.ts";
-import { findOrCreatePerson } from "../services/people-factory.ts";
 import { configureSuperjson } from "../lib/superjson-config.ts";
-import { writeTempUpload } from "../lib/temp-file.ts";
-import { uploadPatientAttachmentToDrive } from "../services/patient-attachments-drive.ts";
-import { syncPatientDteSaleSources } from "../services/patients-router.ts";
+import {
+  createPatient,
+  createPatientAttachment,
+  createPatientBudget,
+  createPatientConsultation,
+  createPatientPayment,
+  getPatientClinicalSeries,
+  getPatientDetail,
+  getPatientSkinTests,
+  listPatientBudgets,
+  listPatientDteSources,
+  listPatientPayments,
+  listPatients,
+  syncPatientDteSaleSources,
+  updatePatient,
+} from "../services/patients-router.ts";
 import { SuperJSONRPCHandler } from "./superjson.ts";
 
 configureSuperjson();
@@ -263,10 +272,6 @@ const patientDteSyncResponseSchema = z.object({
   updated: z.number(),
 });
 
-function parseDateOnly(value: string) {
-  return parseChileDateOnly(value) ?? new Date(NaN);
-}
-
 /**
  * Build the where clause used by the patient search endpoint.
  *
@@ -406,65 +411,7 @@ const patientsORPCRouterBase = {
     .input(createPatientInputSchema)
     .output(patientResponseSchema)
     .handler(async ({ input }) => {
-      let canonicalRut: string;
-      try {
-        canonicalRut = requireCanonicalRut(input.rut);
-      } catch {
-        throw new ORPCError("BAD_REQUEST", { message: "RUT inválido" });
-      }
-
-      // Refuse-then-create: handle the two CONFLICT cases (already a
-      // patient; RUT belongs to another user) before delegating to
-      // findOrCreatePerson. The factory itself never throws CONFLICT —
-      // it dedupes silently — so the operator-facing error messages
-      // stay here.
-      const existing = await db.person.findFirst({ where: { rut: canonicalRut } });
-      if (existing) {
-        const existingPatient = await db.patient.findUnique({
-          where: { personId: existing.id },
-        });
-        if (existingPatient) {
-          throw new ORPCError("CONFLICT", { message: "El paciente ya está registrado" });
-        }
-        const linkedUser = await db.user.findFirst({
-          where: { personId: existing.id },
-          select: { id: true },
-        });
-        const namesDiffer =
-          (existing.names ?? "") !== input.names ||
-          (existing.fatherName ?? "") !== (input.fatherName ?? "") ||
-          (existing.motherName ?? "") !== (input.motherName ?? "");
-        if (linkedUser && namesDiffer) {
-          throw new ORPCError("CONFLICT", {
-            message: `El RUT ${canonicalRut} ya pertenece a otro usuario del sistema (${existing.names ?? ""} ${existing.fatherName ?? ""} ${existing.motherName ?? ""}). Verifica el RUT del paciente.`,
-          });
-        }
-      }
-
-      const { personId } = await findOrCreatePerson({
-        rut: canonicalRut,
-        names: input.names,
-        fatherName: input.fatherName,
-        motherName: input.motherName,
-        email: input.email,
-        phone: input.phone,
-        sex: input.sex,
-        // Operator-typed values win on patient registration.
-        mergeStrategy: "overwrite",
-      });
-
-      const patient = await db.patient.create({
-        data: {
-          personId,
-          birthDate: input.birthDate ? parseDateOnly(input.birthDate) : null,
-          bloodType: input.bloodType,
-          notes: input.notes,
-        },
-        include: {
-          person: true,
-        },
-      });
-
+      const patient = await createPatient(input);
       return {
         patient,
         status: "ok",
@@ -476,46 +423,7 @@ const patientsORPCRouterBase = {
     .input(updatePatientInputSchema)
     .output(patientResponseSchema)
     .handler(async ({ input }) => {
-      const patient = await db.patient.findUnique({
-        where: { id: input.patientId },
-        include: { person: true },
-      });
-      if (!patient) throw new ORPCError("NOT_FOUND", { message: "Paciente no encontrado" });
-
-      let canonicalRut: string | undefined;
-      if (input.rut) {
-        try {
-          canonicalRut = requireCanonicalRut(input.rut);
-        } catch {
-          throw new ORPCError("BAD_REQUEST", { message: "RUT inválido" });
-        }
-      }
-
-      await db.person.update({
-        where: { id: patient.personId },
-        data: {
-          ...(canonicalRut ? { rut: canonicalRut } : {}),
-          ...(input.names !== undefined ? { names: input.names } : {}),
-          ...(input.fatherName !== undefined ? { fatherName: input.fatherName } : {}),
-          ...(input.motherName !== undefined ? { motherName: input.motherName } : {}),
-          ...(input.email !== undefined ? { email: input.email } : {}),
-          ...(input.phone !== undefined ? { phone: input.phone } : {}),
-          ...(input.sex !== undefined ? { sex: input.sex } : {}),
-        },
-      });
-
-      const updated = await db.patient.update({
-        where: { id: input.patientId },
-        data: {
-          ...(input.birthDate !== undefined
-            ? { birthDate: input.birthDate ? parseDateOnly(input.birthDate) : null }
-            : {}),
-          ...(input.bloodType !== undefined ? { bloodType: input.bloodType } : {}),
-          ...(input.notes !== undefined ? { notes: input.notes } : {}),
-        },
-        include: { person: true },
-      });
-
+      const updated = await updatePatient(input);
       return { patient: updated, status: "ok" };
     }),
 
@@ -524,33 +432,13 @@ const patientsORPCRouterBase = {
     .input(createAttachmentInputSchema)
     .output(attachmentResponseSchema)
     .handler(async ({ context, input }) => {
-      const arrayBuffer = await input.file.arrayBuffer();
-      await using temp = await writeTempUpload(Buffer.from(arrayBuffer), input.file.name);
-
-      const attachmentName = input.name?.trim() || input.file.name;
-      const { fileId, webViewLink } = await uploadPatientAttachmentToDrive(
-        temp.filepath,
-        attachmentName,
-        input.file.type || "application/octet-stream",
-        String(input.patientId)
-      );
-
-      const attachment = await db.patientAttachment.create({
-        data: {
-          driveFileId: fileId,
-          mimeType: input.file.type || null,
-          name: attachmentName,
-          patientId: input.patientId,
-          type: input.type as "CONSENT" | "EXAM" | "OTHER" | "RECIPE",
-          uploadedBy: context.user.id,
-        },
+      const attachment = await createPatientAttachment({
+        ...input,
+        uploadedBy: context.user.id,
       });
 
       return {
-        attachment: {
-          ...attachment,
-          webViewLink: webViewLink ?? undefined,
-        },
+        attachment,
         status: "ok" as const,
       };
     }),
@@ -560,31 +448,9 @@ const patientsORPCRouterBase = {
     .input(createBudgetInputSchema)
     .output(budgetResponseSchema)
     .handler(async ({ input }) => {
-      const totalAmount = input.items.reduce(
-        (sum, item) => sum + item.unitPrice * item.quantity,
-        0
-      );
-      const finalAmount = totalAmount - input.discount;
-
-      const budget = await db.budget.create({
-        data: {
-          patientId: input.patientId,
-          title: input.title,
-          totalAmount: new Decimal(totalAmount),
-          discount: new Decimal(input.discount),
-          finalAmount: new Decimal(finalAmount),
-          notes: input.notes,
-        },
-        include: {
-          payments: true,
-        },
-      });
-
+      const budget = await createPatientBudget(input);
       return {
-        budget: {
-          ...budget,
-          items: [],
-        },
+        budget,
         status: "ok",
       };
     }),
@@ -594,26 +460,7 @@ const patientsORPCRouterBase = {
     .input(createConsultationInputSchema)
     .output(consultationResponseSchema)
     .handler(async ({ input }) => {
-      const patient = await db.patient.findUnique({
-        where: { id: input.patientId },
-      });
-
-      if (!patient) {
-        throw new ORPCError("NOT_FOUND", { message: "Paciente no encontrado" });
-      }
-
-      const consultation = await db.consultation.create({
-        data: {
-          patientId: input.patientId,
-          date: parseDateOnly(input.date),
-          reason: input.reason,
-          diagnosis: input.diagnosis,
-          treatment: input.treatment,
-          notes: input.notes,
-          eventId: input.eventId,
-        },
-      });
-
+      const consultation = await createPatientConsultation(input);
       return {
         consultation,
         status: "ok",
@@ -625,18 +472,7 @@ const patientsORPCRouterBase = {
     .input(createPaymentInputSchema)
     .output(paymentResponseSchema)
     .handler(async ({ input }) => {
-      const payment = await db.patientPayment.create({
-        data: {
-          patientId: input.patientId,
-          budgetId: input.budgetId,
-          amount: new Decimal(input.amount),
-          paymentDate: parseDateOnly(input.paymentDate),
-          paymentMethod: input.paymentMethod,
-          reference: input.reference,
-          notes: input.notes,
-        },
-      });
-
+      const payment = await createPatientPayment(input);
       return {
         payment,
         status: "ok",
@@ -648,17 +484,9 @@ const patientsORPCRouterBase = {
     .input(patientIdInputSchema)
     .output(budgetListResponseSchema)
     .handler(async ({ input }) => {
-      const budgets = await db.budget.findMany({
-        where: { patientId: input.patientId },
-        include: { payments: true },
-        orderBy: { updatedAt: "desc" },
-      });
-
+      const budgets = await listPatientBudgets(input.patientId);
       return {
-        budgets: budgets.map((budget) => ({
-          ...budget,
-          items: [],
-        })),
+        budgets,
         status: "ok",
       };
     }),
@@ -668,11 +496,7 @@ const patientsORPCRouterBase = {
     .input(patientIdInputSchema)
     .output(paymentListResponseSchema)
     .handler(async ({ input }) => {
-      const payments = await db.patientPayment.findMany({
-        where: { patientId: input.patientId },
-        orderBy: { paymentDate: "desc" },
-      });
-
+      const payments = await listPatientPayments(input.patientId);
       return {
         payments,
         status: "ok",
@@ -684,46 +508,9 @@ const patientsORPCRouterBase = {
     .input(patientIdInputSchema)
     .output(patientDetailResponseSchema)
     .handler(async ({ input }) => {
-      const patient = await db.patient.findUnique({
-        where: { id: input.patientId },
-        include: {
-          person: true,
-          consultations: {
-            orderBy: { date: "desc" },
-            take: 10,
-          },
-          medicalCertificates: {
-            orderBy: { issuedAt: "desc" },
-            take: 10,
-          },
-          medicalPrescriptions: {
-            orderBy: { issuedAt: "desc" },
-            take: 10,
-          },
-          budgets: {
-            orderBy: { updatedAt: "desc" },
-          },
-          payments: {
-            orderBy: { paymentDate: "desc" },
-          },
-          attachments: {
-            orderBy: { uploadedAt: "desc" },
-          },
-        },
-      });
-
-      if (!patient) {
-        throw new ORPCError("NOT_FOUND", { message: "Paciente no encontrado" });
-      }
-
+      const patient = await getPatientDetail(input.patientId);
       return {
-        patient: {
-          ...patient,
-          budgets: patient.budgets.map((budget: (typeof patient.budgets)[number]) => ({
-            ...budget,
-            items: [],
-          })),
-        },
+        patient,
         status: "ok",
       };
     }),
@@ -733,19 +520,7 @@ const patientsORPCRouterBase = {
     .input(listPatientsInputSchema)
     .output(patientListResponseSchema)
     .handler(async ({ input }) => {
-      const where = buildPatientSearchWhere(input.q);
-
-      const patients = await db.patient.findMany({
-        where,
-        include: {
-          person: true,
-        },
-        orderBy: {
-          updatedAt: "desc",
-        },
-        take: 50,
-      });
-
+      const patients = await listPatients(buildPatientSearchWhere(input.q));
       return {
         patients,
         status: "ok",
@@ -757,25 +532,7 @@ const patientsORPCRouterBase = {
     .input(listPatientDteSourcesInputSchema)
     .output(patientDteSourceListResponseSchema)
     .handler(async ({ input }) => {
-      const maxRows = Math.min(input.limit || 100, 1000);
-      const rows = await db.patientDteSaleSource.findMany({
-        where: {
-          AND: [
-            input.period ? { period: input.period } : {},
-            input.q
-              ? {
-                  OR: [
-                    { clientRUT: { contains: input.q, mode: "insensitive" as const } },
-                    { clientName: { contains: input.q, mode: "insensitive" as const } },
-                  ],
-                }
-              : {},
-          ],
-        },
-        orderBy: [{ updatedAt: "desc" }],
-        take: maxRows,
-      });
-
+      const rows = await listPatientDteSources(input);
       return {
         rows,
         status: "ok",
@@ -822,62 +579,8 @@ const patientsORPCRouterBase = {
       })
     )
     .handler(async ({ input }) => {
-      const series = await db.clinicalSeries.findMany({
-        where: { patientId: input.patientId },
-        orderBy: { createdAt: "desc" },
-        select: {
-          id: true,
-          kind: true,
-          status: true,
-          displayName: true,
-          patientName: true,
-          patientRut: true,
-          createdAt: true,
-          skinTests: {
-            orderBy: { testDate: "asc" },
-            take: 1,
-            select: { testDate: true },
-          },
-          events: {
-            orderBy: [{ startDate: "asc" }, { startDateTime: "asc" }, { id: "asc" }],
-            take: 1,
-            select: {
-              endDate: true,
-              endDateTime: true,
-              startDate: true,
-              startDateTime: true,
-            },
-          },
-          _count: { select: { skinTests: true, events: true } },
-        },
-      });
-      return {
-        items: series.map((s) => {
-          const event = s.events[0] ?? null;
-          // start/endDate are @db.Date (dbDateToISO, UTC); start/endDateTime are
-          // @db.Timestamptz instants (instantToChileDate, local). Same priority
-          // (start over end), right rule per column type.
-          const eventDate = event
-            ? (dbDateToISO(event.startDate) ??
-              instantToChileDate(event.startDateTime) ??
-              dbDateToISO(event.endDate) ??
-              instantToChileDate(event.endDateTime))
-            : null;
-          const skinTestDate = dbDateToISO(s.skinTests[0]?.testDate);
-          return {
-            id: s.id,
-            kind: s.kind,
-            status: s.status,
-            displayName: s.displayName,
-            patientName: s.patientName,
-            patientRut: s.patientRut,
-            skinTestsCount: s._count.skinTests,
-            eventsCount: s._count.events,
-            clinicalDate: skinTestDate ?? eventDate,
-            createdAt: s.createdAt.toISOString(),
-          };
-        }),
-      };
+      const items = await getPatientClinicalSeries(input.patientId);
+      return { items };
     }),
 
   getSkinTests: readPatients
@@ -901,34 +604,8 @@ const patientsORPCRouterBase = {
       })
     )
     .handler(async ({ input }) => {
-      const tests = await db.clinicalSkinTest.findMany({
-        where: { clinicalSeries: { patientId: input.patientId } },
-        orderBy: { testDate: "desc" },
-        select: {
-          id: true,
-          testDate: true,
-          patientName: true,
-          patientRut: true,
-          panelTitle: true,
-          physicianName: true,
-          clinicalSeriesId: true,
-          clinicalSeries: { select: { kind: true } },
-          _count: { select: { results: true } },
-        },
-      });
-      return {
-        items: tests.map((t) => ({
-          id: t.id,
-          testDate: dbDateToISO(t.testDate) ?? "",
-          patientName: t.patientName,
-          patientRut: t.patientRut,
-          panelTitle: t.panelTitle,
-          physicianName: t.physicianName,
-          resultsCount: t._count.results,
-          seriesId: t.clinicalSeriesId,
-          seriesKind: t.clinicalSeries.kind,
-        })),
-      };
+      const items = await getPatientSkinTests(input.patientId);
+      return { items };
     }),
 };
 
