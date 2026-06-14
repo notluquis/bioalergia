@@ -1,4 +1,3 @@
-import { db } from "@finanzas/db";
 import {
   accountIdInput,
   blockContactInputSchema,
@@ -105,30 +104,17 @@ import type { Context as HonoContext } from "hono";
 import { z } from "zod";
 import { getSessionUser, hasPermission } from "../lib/auth.ts";
 import { logError } from "../lib/logger.ts";
-import { decryptSecret, encryptSecret } from "../lib/secret-cipher.ts";
 import { configureSuperjson } from "../lib/superjson-config.ts";
 import {
   getBusinessProfile,
   getConversationAnalytics,
   getConversationalAutomation,
-  getPhoneHealth,
-  listCommerceProducts,
   requestPhoneVerificationCode,
-  sendMultiProductMessage,
-  sendSingleProductMessage,
   updateConversationalAutomation,
   verifyPhoneCode,
   addMigratingPhoneNumber,
   deregisterPhoneNumber,
-  listAccountFlows,
-  listAccountPhoneNumbers,
-  listAccountTemplates,
   registerPhoneNumber,
-  sendFlowMessage,
-  sendInteractiveListMessage,
-  sendLocationMessage,
-  sendMediaMessage,
-  sendTextMessage,
   setTwoStepPin,
   updateBusinessProfile,
 } from "../modules/wa-cloud/graph-client.ts";
@@ -184,6 +170,47 @@ import {
   unblockContact as unblockContactService,
   updateContact as updateContactService,
 } from "../services/wa-contacts.ts";
+import {
+  deleteAccount as deleteAccountService,
+  embeddedSignupComplete as embeddedSignupCompleteService,
+  listAccounts as listAccountsService,
+  listCommerceProductsForAccount as listCommerceProductsService,
+  sendMultiProduct as sendMultiProductService,
+  sendSingleProduct as sendSingleProductService,
+  setCommerceCatalog as setCommerceCatalogService,
+  syncPhoneNumbers as syncPhoneNumbersService,
+  upsertAccount as upsertAccountService,
+  upsertPhoneNumber as upsertPhoneNumberService,
+  validateAccount as validateAccountService,
+} from "../services/wa-accounts.ts";
+import {
+  archiveSnippet as archiveSnippetService,
+  listSnippets as listSnippetsService,
+  sendSnippet as sendSnippetService,
+  upsertSnippet as upsertSnippetService,
+} from "../services/wa-snippets.ts";
+import {
+  archiveSavedFlow as archiveSavedFlowService,
+  archiveSavedInteractiveList as archiveSavedInteractiveListService,
+  archiveSavedLocation as archiveSavedLocationService,
+  listSavedFlows as listSavedFlowsService,
+  listSavedInteractiveLists as listSavedInteractiveListsService,
+  listSavedLocations as listSavedLocationsService,
+  sendSavedFlow as sendSavedFlowService,
+  sendSavedList as sendSavedListService,
+  sendSavedLocation as sendSavedLocationService,
+  syncFlows as syncFlowsService,
+  upsertSavedFlow as upsertSavedFlowService,
+  upsertSavedInteractiveList as upsertSavedInteractiveListService,
+  upsertSavedLocation as upsertSavedLocationService,
+} from "../services/wa-saved.ts";
+import {
+  acknowledgeAccountEvent as acknowledgeAccountEventService,
+  getPhoneHealth as getPhoneHealthService,
+  getPhoneQualitySummary as getPhoneQualitySummaryService,
+  listAccountEvents as listAccountEventsService,
+  listWebhookLogs as listWebhookLogsService,
+} from "../services/wa-analytics.ts";
 import { SuperJSONRPCHandler } from "./superjson.ts";
 
 configureSuperjson();
@@ -211,60 +238,13 @@ const writeWa = gate("update", SUBJECT);
 const createWa = gate("create", SUBJECT);
 const deleteWa = gate("delete", SUBJECT);
 
-const WINDOW_HOURS = 24;
-
-function maskAccount(a: {
-  id: number;
-  wabaId: string;
-  metaBusinessId: string | null;
-  appId: string | null;
-  graphApiVersion: string;
-  displayName: string | null;
-  active: boolean;
-  systemUserToken: string | null;
-  appSecret: string | null;
-  webhookVerifyToken: string | null;
-  createdAt: Date;
-  updatedAt: Date;
-}) {
-  return {
-    id: a.id,
-    wabaId: a.wabaId,
-    metaBusinessId: a.metaBusinessId,
-    appId: a.appId,
-    graphApiVersion: a.graphApiVersion,
-    displayName: a.displayName,
-    active: a.active,
-    hasToken: Boolean(a.systemUserToken),
-    hasAppSecret: Boolean(a.appSecret),
-    hasVerifyToken: Boolean(a.webhookVerifyToken),
-    createdAt: a.createdAt,
-    updatedAt: a.updatedAt,
-  };
-}
-
-async function buildAccountWithPhones(id: number) {
-  const acc = await db.waBusinessAccount.findUnique({
-    where: { id },
-    include: { phoneNumbers: true },
-  });
-  if (!acc) throw new ORPCError("NOT_FOUND", { message: "Account no encontrada" });
-  return { ...maskAccount(acc), phoneNumbers: acc.phoneNumbers };
-}
-
 const waRouterBase = {
   listAccounts: readWa
     .route({ method: "GET", path: "/accounts", tags: ["WA Cloud"] })
     .input(z.object({}).optional())
     .output(listAccountsResponseSchema)
     .handler(async () => {
-      const accs = await db.waBusinessAccount.findMany({
-        include: { phoneNumbers: true },
-        orderBy: { createdAt: "desc" },
-      });
-      return {
-        accounts: accs.map((a) => ({ ...maskAccount(a), phoneNumbers: a.phoneNumbers })),
-      };
+      return listAccountsService();
     }),
 
   upsertAccount: createWa
@@ -272,40 +252,7 @@ const waRouterBase = {
     .input(upsertAccountInputSchema)
     .output(accountResponseSchema)
     .handler(async ({ input }) => {
-      // All three secrets are encrypted at rest (AES-256-GCM, prefix
-      // `enc:v1:`). Plaintext input from the operator is encrypted here
-      // before any DB write.
-      const encOrUndef = (v: string | undefined) =>
-        v === undefined ? undefined : v ? encryptSecret(v) : null;
-      const data = {
-        wabaId: input.wabaId,
-        metaBusinessId: input.metaBusinessId ?? null,
-        appId: input.appId ?? null,
-        appSecret: input.appSecret ? encryptSecret(input.appSecret) : undefined,
-        systemUserToken: input.systemUserToken ? encryptSecret(input.systemUserToken) : undefined,
-        webhookVerifyToken: input.webhookVerifyToken
-          ? encryptSecret(input.webhookVerifyToken)
-          : undefined,
-        graphApiVersion: input.graphApiVersion ?? "v21.0",
-        displayName: input.displayName ?? null,
-        active: input.active ?? true,
-      };
-      const acc = input.id
-        ? await db.waBusinessAccount.update({
-            where: { id: input.id },
-            data: {
-              ...data,
-              ...(input.appSecret !== undefined ? { appSecret: encOrUndef(input.appSecret) } : {}),
-              ...(input.systemUserToken !== undefined
-                ? { systemUserToken: encOrUndef(input.systemUserToken) }
-                : {}),
-              ...(input.webhookVerifyToken !== undefined
-                ? { webhookVerifyToken: encOrUndef(input.webhookVerifyToken) }
-                : {}),
-            },
-          })
-        : await db.waBusinessAccount.create({ data });
-      return { account: await buildAccountWithPhones(acc.id) };
+      return upsertAccountService(input);
     }),
 
   deleteAccount: deleteWa
@@ -313,7 +260,7 @@ const waRouterBase = {
     .input(accountIdInput)
     .output(waOkResponseSchema)
     .handler(async ({ input }) => {
-      await db.waBusinessAccount.delete({ where: { id: input.id } });
+      await deleteAccountService(input.id);
       return { status: "ok" as const };
     }),
 
@@ -322,23 +269,7 @@ const waRouterBase = {
     .input(accountIdInput)
     .output(validateAccountResponseSchema)
     .handler(async ({ input }) => {
-      try {
-        const phones = await listAccountPhoneNumbers(input.id);
-        const tpl = await listAccountTemplates(input.id);
-        return {
-          ok: true,
-          phoneNumbersFound: phones.length,
-          templatesFound: tpl.length,
-          error: null,
-        };
-      } catch (err) {
-        return {
-          ok: false,
-          phoneNumbersFound: 0,
-          templatesFound: 0,
-          error: err instanceof Error ? err.message : String(err),
-        };
-      }
+      return validateAccountService(input.id);
     }),
 
   syncPhoneNumbers: writeWa
@@ -346,29 +277,7 @@ const waRouterBase = {
     .input(accountIdInput)
     .output(accountResponseSchema)
     .handler(async ({ input }) => {
-      const phones = await listAccountPhoneNumbers(input.id);
-      // Batch existing rows once instead of N findUnique queries.
-      const existingRows = await db.waPhoneNumber.findMany({
-        where: { phoneNumberId: { in: phones.map((p) => p.id) } },
-      });
-      const existingByMetaId = new Map(existingRows.map((r) => [r.phoneNumberId, r]));
-      await Promise.all(
-        phones.map((p) => {
-          const existing = existingByMetaId.get(p.id);
-          const data = {
-            accountId: input.id,
-            phoneNumberId: p.id,
-            displayPhoneNumber: p.display_phone_number,
-            label: existing?.label ?? p.verified_name ?? null,
-            qualityRating: p.quality_rating ?? null,
-            active: true,
-          };
-          return existing
-            ? db.waPhoneNumber.update({ where: { id: existing.id }, data })
-            : db.waPhoneNumber.create({ data });
-        })
-      );
-      return { account: await buildAccountWithPhones(input.id) };
+      return syncPhoneNumbersService(input.id);
     }),
 
   syncTemplates: writeWa
@@ -384,19 +293,7 @@ const waRouterBase = {
     .input(upsertPhoneNumberInputSchema)
     .output(accountResponseSchema)
     .handler(async ({ input }) => {
-      const data = {
-        accountId: input.accountId,
-        phoneNumberId: input.phoneNumberId,
-        displayPhoneNumber: input.displayPhoneNumber,
-        label: input.label ?? null,
-        active: input.active ?? true,
-      };
-      if (input.id) {
-        await db.waPhoneNumber.update({ where: { id: input.id }, data });
-      } else {
-        await db.waPhoneNumber.create({ data });
-      }
-      return { account: await buildAccountWithPhones(input.accountId) };
+      return upsertPhoneNumberService(input);
     }),
 
   listConversations: readWa
@@ -716,37 +613,7 @@ const waRouterBase = {
     .input(listWebhookLogsInputSchema)
     .output(listWebhookLogsResponseSchema)
     .handler(async ({ input }) => {
-      const where = input.onlyInvalid ? { signatureValid: false } : {};
-      const logs = await db.waWebhookLog.findMany({
-        where,
-        orderBy: { receivedAt: "desc" },
-        take: input.limit,
-      });
-      return {
-        logs: logs.map((l) => {
-          const payload = l.payload as {
-            entry?: Array<{ changes?: Array<{ field?: string }> }>;
-            object?: string;
-          } | null;
-          const fields: string[] = [];
-          for (const e of payload?.entry ?? []) {
-            for (const c of e.changes ?? []) {
-              if (c.field) fields.push(c.field);
-            }
-          }
-          const preview = JSON.stringify(payload).slice(0, 200);
-          return {
-            id: l.id,
-            receivedAt: l.receivedAt,
-            signatureValid: l.signatureValid,
-            processed: l.processed,
-            eventCount: l.eventCount,
-            errorMessage: l.errorMessage,
-            fields: Array.from(new Set(fields)),
-            preview,
-          };
-        }),
-      };
+      return listWebhookLogsService(input);
     }),
 
   // ── Business profile ───────────────────────────────────────────────────────
@@ -782,30 +649,7 @@ const waRouterBase = {
     .input(listSnippetsInputSchema)
     .output(listSnippetsResponseSchema)
     .handler(async ({ input }) => {
-      const where: Record<string, unknown> = { archived: false };
-      if (input.kind) where.kind = input.kind;
-      if (input.category) where.category = input.category;
-      if (input.q && input.q.length >= 1) {
-        where.OR = [
-          { name: { contains: input.q, mode: "insensitive" } },
-          { description: { contains: input.q, mode: "insensitive" } },
-          { shortcut: { contains: input.q, mode: "insensitive" } },
-          { bodyText: { contains: input.q, mode: "insensitive" } },
-        ];
-      }
-      const rows = await db.waSnippet.findMany({
-        where,
-        orderBy: [{ hitCount: "desc" }, { name: "asc" }],
-        take: 200,
-      });
-      return {
-        snippets: rows.map((r) => ({
-          ...r,
-          replyButtons:
-            (r.replyButtons as unknown as Array<{ id: string; title: string }> | null) ?? null,
-          variables: (r.variables as unknown as string[]) ?? [],
-        })),
-      };
+      return listSnippetsService(input);
     }),
 
   upsertSnippet: createWa
@@ -813,43 +657,7 @@ const waRouterBase = {
     .input(upsertSnippetInputSchema)
     .output(snippetSchema)
     .handler(async ({ context, input }) => {
-      const data = {
-        accountId: input.accountId ?? null,
-        kind: input.kind,
-        category: input.category ?? null,
-        name: input.name,
-        description: input.description ?? null,
-        shortcut: input.shortcut ?? null,
-        bodyText: input.bodyText ?? null,
-        ctaUrl: input.ctaUrl ?? null,
-        ctaButtonText: input.ctaButtonText ?? null,
-        ctaHeader: input.ctaHeader ?? null,
-        ctaFooter: input.ctaFooter ?? null,
-        replyButtons: (input.replyButtons as never) ?? undefined,
-        replyHeader: input.replyHeader ?? null,
-        replyFooter: input.replyFooter ?? null,
-        mediaHandle: input.mediaHandle ?? null,
-        // Meta media handles valid 30 days
-        mediaHandleExpiresAt: input.mediaHandle
-          ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
-          : null,
-        mediaUrl: input.mediaUrl ?? null,
-        mediaMimeType: input.mediaMimeType ?? null,
-        mediaFilename: input.mediaFilename ?? null,
-        mediaSize: input.mediaSize ?? null,
-        variables: input.variables ?? [],
-      };
-      const row = input.id
-        ? await db.waSnippet.update({ where: { id: input.id }, data })
-        : await db.waSnippet.create({
-            data: { ...data, createdByUserId: context.user.id },
-          });
-      return {
-        ...row,
-        replyButtons:
-          (row.replyButtons as unknown as Array<{ id: string; title: string }> | null) ?? null,
-        variables: (row.variables as unknown as string[]) ?? [],
-      };
+      return upsertSnippetService(input, context.user.id);
     }),
 
   archiveSnippet: deleteWa
@@ -857,7 +665,7 @@ const waRouterBase = {
     .input(z.object({ id: z.number().int().positive() }))
     .output(waOkResponseSchema)
     .handler(async ({ input }) => {
-      await db.waSnippet.update({ where: { id: input.id }, data: { archived: true } });
+      await archiveSnippetService(input.id);
       return { status: "ok" as const };
     }),
 
@@ -866,233 +674,7 @@ const waRouterBase = {
     .input(sendSnippetInputSchema)
     .output(sendMessageResponseSchema)
     .handler(async ({ context, input }) => {
-      const snip = await db.waSnippet.findUnique({ where: { id: input.snippetId } });
-      if (!snip || snip.archived)
-        throw new ORPCError("NOT_FOUND", { message: "Snippet no existe" });
-      const conv = await db.waConversation.findUnique({
-        where: { id: input.conversationId },
-        include: { contact: true },
-      });
-      if (!conv) throw new ORPCError("NOT_FOUND", { message: "Conversación no encontrada" });
-      if (conv.contact.blockedAt) {
-        throw new ORPCError("BAD_REQUEST", { message: "Contacto bloqueado" });
-      }
-      const lastInbound = conv.lastInboundAt;
-      const windowOpen = lastInbound
-        ? Date.now() - lastInbound.getTime() < WINDOW_HOURS * 60 * 60 * 1000
-        : false;
-      if (!windowOpen) {
-        throw new ORPCError("BAD_REQUEST", {
-          message: "Ventana 24h cerrada. Snippets requieren ventana abierta (usa template).",
-        });
-      }
-
-      // Variable substitution
-      const subs = input.variableValues ?? [];
-      const resolve = (text: string | null) => {
-        if (!text) return text;
-        return text.replace(/\{\{(\d+)\}\}/g, (_, idx) => subs[Number(idx) - 1] ?? `{{${idx}}}`);
-      };
-
-      const toE164 = conv.contact.phoneE164;
-      const now = new Date();
-      let metaId: string | null = null;
-      let preview = "";
-      let messageType:
-        | "TEXT"
-        | "IMAGE"
-        | "VIDEO"
-        | "AUDIO"
-        | "DOCUMENT"
-        | "STICKER"
-        | "INTERACTIVE" = "TEXT";
-      let payload: Record<string, unknown> = { snippet_id: snip.id };
-
-      if (snip.kind === "TEXT") {
-        const body = resolve(snip.bodyText) ?? "";
-        if (!body.trim()) throw new ORPCError("BAD_REQUEST", { message: "Snippet sin body" });
-        const r = await sendTextMessage({ phoneNumberId: input.phoneNumberId, toE164, body });
-        metaId = r.messages?.[0]?.id ?? null;
-        preview = body.slice(0, 200);
-        messageType = "TEXT";
-        payload = { ...payload, body };
-      } else if (snip.kind === "CTA_URL") {
-        const body = resolve(snip.bodyText) ?? "";
-        if (!snip.ctaUrl || !snip.ctaButtonText)
-          throw new ORPCError("BAD_REQUEST", { message: "Snippet CTA sin url/buttonText" });
-        // Cloud API: interactive type=cta_url
-        const phone = await db.waPhoneNumber.findUnique({
-          where: { id: input.phoneNumberId },
-          include: { account: true },
-        });
-        const ctaToken = decryptSecret(phone?.account.systemUserToken);
-        if (!phone || !ctaToken)
-          throw new ORPCError("BAD_REQUEST", { message: "Account sin token" });
-        const interactive: Record<string, unknown> = {
-          type: "cta_url",
-          body: { text: body },
-          action: {
-            name: "cta_url",
-            parameters: { display_text: snip.ctaButtonText, url: snip.ctaUrl },
-          },
-        };
-        if (snip.ctaHeader) interactive.header = { type: "text", text: resolve(snip.ctaHeader) };
-        if (snip.ctaFooter) interactive.footer = { text: resolve(snip.ctaFooter) };
-        const url = `https://graph.facebook.com/${phone.account.graphApiVersion}/${phone.phoneNumberId}/messages`;
-        const res = await fetch(url, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${ctaToken}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            messaging_product: "whatsapp",
-            recipient_type: "individual",
-            to: toE164.replace(/^\+/, ""),
-            type: "interactive",
-            interactive,
-          }),
-        });
-        const text = await res.text();
-        if (!res.ok) {
-          throw new ORPCError("BAD_GATEWAY", {
-            message: `Meta CTA ${res.status}: ${text.slice(0, 200)}`,
-          });
-        }
-        const json = JSON.parse(text) as { messages: Array<{ id: string }> };
-        metaId = json.messages?.[0]?.id ?? null;
-        preview = `[CTA] ${snip.ctaButtonText}`;
-        messageType = "INTERACTIVE";
-        payload = {
-          ...payload,
-          interactive_type: "cta_url",
-          body,
-          button: snip.ctaButtonText,
-          url: snip.ctaUrl,
-        };
-      } else if (snip.kind === "REPLY_BUTTONS") {
-        const buttons =
-          (snip.replyButtons as unknown as Array<{ id: string; title: string }>) ?? [];
-        if (buttons.length === 0)
-          throw new ORPCError("BAD_REQUEST", { message: "Snippet sin botones" });
-        const body = resolve(snip.bodyText) ?? "";
-        const phone = await db.waPhoneNumber.findUnique({
-          where: { id: input.phoneNumberId },
-          include: { account: true },
-        });
-        const replyToken = decryptSecret(phone?.account.systemUserToken);
-        if (!phone || !replyToken)
-          throw new ORPCError("BAD_REQUEST", { message: "Account sin token" });
-        const interactive: Record<string, unknown> = {
-          type: "button",
-          body: { text: body },
-          action: {
-            buttons: buttons.map((b) => ({
-              type: "reply",
-              reply: { id: b.id, title: b.title },
-            })),
-          },
-        };
-        if (snip.replyHeader)
-          interactive.header = { type: "text", text: resolve(snip.replyHeader) };
-        if (snip.replyFooter) interactive.footer = { text: resolve(snip.replyFooter) };
-        const url = `https://graph.facebook.com/${phone.account.graphApiVersion}/${phone.phoneNumberId}/messages`;
-        const res = await fetch(url, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${replyToken}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            messaging_product: "whatsapp",
-            recipient_type: "individual",
-            to: toE164.replace(/^\+/, ""),
-            type: "interactive",
-            interactive,
-          }),
-        });
-        const text = await res.text();
-        if (!res.ok) {
-          throw new ORPCError("BAD_GATEWAY", {
-            message: `Meta buttons ${res.status}: ${text.slice(0, 200)}`,
-          });
-        }
-        const json = JSON.parse(text) as { messages: Array<{ id: string }> };
-        metaId = json.messages?.[0]?.id ?? null;
-        preview = `[botones] ${buttons.map((b) => b.title).join(" / ")}`;
-        messageType = "INTERACTIVE";
-        payload = { ...payload, interactive_type: "button", body, buttons };
-      } else if (
-        snip.kind === "MEDIA_DOCUMENT" ||
-        snip.kind === "MEDIA_IMAGE" ||
-        snip.kind === "MEDIA_VIDEO" ||
-        snip.kind === "MEDIA_AUDIO" ||
-        snip.kind === "MEDIA_STICKER"
-      ) {
-        const typeMap = {
-          MEDIA_DOCUMENT: "document",
-          MEDIA_IMAGE: "image",
-          MEDIA_VIDEO: "video",
-          MEDIA_AUDIO: "audio",
-          MEDIA_STICKER: "sticker",
-        } as const;
-        if (!snip.mediaHandle && !snip.mediaUrl)
-          throw new ORPCError("BAD_REQUEST", { message: "Snippet media sin handle/url" });
-        if (
-          snip.mediaHandle &&
-          snip.mediaHandleExpiresAt &&
-          snip.mediaHandleExpiresAt.getTime() < Date.now()
-        ) {
-          throw new ORPCError("BAD_REQUEST", {
-            message: "Media handle expirado (>30 días). Re-sube el archivo en Catálogo.",
-          });
-        }
-        const r = await sendMediaMessage({
-          phoneNumberId: input.phoneNumberId,
-          toE164,
-          type: typeMap[snip.kind as keyof typeof typeMap],
-          mediaId: snip.mediaHandle ?? undefined,
-          link: snip.mediaUrl ?? undefined,
-          caption: resolve(snip.bodyText) ?? undefined,
-          filename: snip.mediaFilename ?? undefined,
-        });
-        metaId = r.messages?.[0]?.id ?? null;
-        preview = `[${snip.kind.toLowerCase()}] ${snip.name}`;
-        messageType = typeMap[snip.kind as keyof typeof typeMap].toUpperCase() as
-          | "DOCUMENT"
-          | "IMAGE"
-          | "VIDEO"
-          | "AUDIO"
-          | "STICKER";
-        payload = { ...payload, kind: snip.kind, mediaId: snip.mediaHandle };
-      } else {
-        throw new ORPCError("BAD_REQUEST", { message: `Tipo ${snip.kind} no implementado` });
-      }
-
-      const message = await db.waMessage.create({
-        data: {
-          conversationId: conv.id,
-          contactId: conv.contactId,
-          phoneNumberId: input.phoneNumberId,
-          metaMessageId: metaId,
-          direction: "OUTBOUND",
-          type: messageType,
-          status: "SENT",
-          body: snip.bodyText,
-          sentByUserId: context.user.id,
-          payload: payload as never,
-          timestamp: now,
-        },
-      });
-      await db.waConversation.update({
-        where: { id: conv.id },
-        data: { lastMessageAt: now, lastMessagePreview: preview },
-      });
-      await db.waSnippet.update({
-        where: { id: snip.id },
-        data: { hitCount: { increment: 1 }, lastUsedAt: now },
-      });
-      return { message };
+      return sendSnippetService(input, context.user.id);
     }),
 
   // ── Saved entities catalog ────────────────────────────────────────────────
@@ -1101,55 +683,21 @@ const waRouterBase = {
     .input(z.object({}).optional())
     .output(z.object({ locations: z.array(savedLocationSchema) }))
     .handler(async () => {
-      const rows = await db.waSavedLocation.findMany({
-        where: { archived: false },
-        orderBy: [{ isDefault: "desc" }, { name: "asc" }],
-      });
-      return { locations: rows };
+      return listSavedLocationsService();
     }),
   upsertSavedLocation: createWa
     .route({ method: "POST", path: "/saved/locations/upsert", tags: ["WA Cloud"] })
     .input(upsertSavedLocationInputSchema)
     .output(savedLocationSchema)
     .handler(async ({ context, input }) => {
-      if (input.isDefault) {
-        await db.waSavedLocation.updateMany({
-          where: { isDefault: true },
-          data: { isDefault: false },
-        });
-      }
-      const row = input.id
-        ? await db.waSavedLocation.update({
-            where: { id: input.id },
-            data: {
-              name: input.name,
-              latitude: input.latitude,
-              longitude: input.longitude,
-              address: input.address ?? null,
-              isDefault: input.isDefault,
-            },
-          })
-        : await db.waSavedLocation.create({
-            data: {
-              name: input.name,
-              latitude: input.latitude,
-              longitude: input.longitude,
-              address: input.address ?? null,
-              isDefault: input.isDefault,
-              createdByUserId: context.user.id,
-            },
-          });
-      return row;
+      return upsertSavedLocationService(input, context.user.id);
     }),
   archiveSavedLocation: deleteWa
     .route({ method: "POST", path: "/saved/locations/archive", tags: ["WA Cloud"] })
     .input(z.object({ id: z.number().int().positive() }))
     .output(waOkResponseSchema)
     .handler(async ({ input }) => {
-      await db.waSavedLocation.update({
-        where: { id: input.id },
-        data: { archived: true },
-      });
+      await archiveSavedLocationService(input.id);
       return { status: "ok" as const };
     }),
 
@@ -1158,58 +706,21 @@ const waRouterBase = {
     .input(z.object({}).optional())
     .output(z.object({ lists: z.array(savedInteractiveListSchema) }))
     .handler(async () => {
-      const rows = await db.waSavedInteractiveList.findMany({
-        where: { archived: false },
-        orderBy: { name: "asc" },
-      });
-      return {
-        lists: rows.map((r) => ({
-          ...r,
-          sections:
-            (r.sections as unknown as Array<{
-              title?: string;
-              rows: Array<{ id: string; title: string; description?: string }>;
-            }>) ?? [],
-        })),
-      };
+      return listSavedInteractiveListsService();
     }),
   upsertSavedInteractiveList: createWa
     .route({ method: "POST", path: "/saved/lists/upsert", tags: ["WA Cloud"] })
     .input(upsertSavedInteractiveListInputSchema)
     .output(savedInteractiveListSchema)
     .handler(async ({ context, input }) => {
-      const data = {
-        name: input.name,
-        description: input.description ?? null,
-        headerText: input.headerText ?? null,
-        bodyText: input.bodyText,
-        footerText: input.footerText ?? null,
-        buttonText: input.buttonText,
-        sections: input.sections as never,
-      };
-      const row = input.id
-        ? await db.waSavedInteractiveList.update({ where: { id: input.id }, data })
-        : await db.waSavedInteractiveList.create({
-            data: { ...data, createdByUserId: context.user.id },
-          });
-      return {
-        ...row,
-        sections:
-          (row.sections as unknown as Array<{
-            title?: string;
-            rows: Array<{ id: string; title: string; description?: string }>;
-          }>) ?? [],
-      };
+      return upsertSavedInteractiveListService(input, context.user.id);
     }),
   archiveSavedInteractiveList: deleteWa
     .route({ method: "POST", path: "/saved/lists/archive", tags: ["WA Cloud"] })
     .input(z.object({ id: z.number().int().positive() }))
     .output(waOkResponseSchema)
     .handler(async ({ input }) => {
-      await db.waSavedInteractiveList.update({
-        where: { id: input.id },
-        data: { archived: true },
-      });
+      await archiveSavedInteractiveListService(input.id);
       return { status: "ok" as const };
     }),
 
@@ -1218,96 +729,28 @@ const waRouterBase = {
     .input(z.object({}).optional())
     .output(z.object({ flows: z.array(savedFlowSchema) }))
     .handler(async () => {
-      const rows = await db.waSavedFlow.findMany({
-        where: { archived: false },
-        orderBy: { name: "asc" },
-      });
-      return { flows: rows };
+      return listSavedFlowsService();
     }),
   upsertSavedFlow: createWa
     .route({ method: "POST", path: "/saved/flows/upsert", tags: ["WA Cloud"] })
     .input(upsertSavedFlowInputSchema)
     .output(savedFlowSchema)
     .handler(async ({ context, input }) => {
-      const data = {
-        accountId: input.accountId ?? null,
-        name: input.name,
-        description: input.description ?? null,
-        flowId: input.flowId,
-        flowToken: input.flowToken ?? null,
-        initialScreen: input.initialScreen ?? null,
-        defaultBody: input.defaultBody,
-        defaultHeader: input.defaultHeader ?? null,
-        defaultFooter: input.defaultFooter ?? null,
-        defaultCta: input.defaultCta,
-      };
-      const row = input.id
-        ? await db.waSavedFlow.update({ where: { id: input.id }, data })
-        : await db.waSavedFlow.create({
-            data: { ...data, createdByUserId: context.user.id },
-          });
-      return row;
+      return upsertSavedFlowService(input, context.user.id);
     }),
   syncFlows: writeWa
     .route({ method: "POST", path: "/saved/flows/sync", tags: ["WA Cloud"] })
     .input(syncFlowsInputSchema)
     .output(syncFlowsResponseSchema)
     .handler(async ({ context, input }) => {
-      const remote = await listAccountFlows(input.accountId);
-      const now = new Date();
-      // Batch existing rows for all remote flow ids in one query.
-      const existingRows = await db.waSavedFlow.findMany({
-        where: { flowId: { in: remote.map((f) => f.id) } },
-      });
-      const existingById = new Map(existingRows.map((r) => [r.flowId, r]));
-      await Promise.all(
-        remote.map((f) => {
-          const existing = existingById.get(f.id);
-          const meta = {
-            metaStatus: f.status ?? null,
-            metaCategories: f.categories ?? [],
-            metaHealth: f.health?.can_send_message ?? null,
-            metaSyncedAt: now,
-          };
-          return existing
-            ? db.waSavedFlow.update({
-                where: { flowId: f.id },
-                data: {
-                  ...meta,
-                  accountId: existing.accountId ?? input.accountId,
-                  // Refresh display name unless user customized it.
-                  name: existing.name === existing.flowId ? f.name : existing.name,
-                },
-              })
-            : db.waSavedFlow.create({
-                data: {
-                  accountId: input.accountId,
-                  name: f.name ?? f.id,
-                  flowId: f.id,
-                  defaultBody: `Completa el formulario "${f.name ?? f.id}"`,
-                  defaultCta: "Iniciar",
-                  ...meta,
-                  createdByUserId: context.user.id,
-                },
-              });
-        })
-      );
-      const upserted = remote.length;
-      const flows = await db.waSavedFlow.findMany({
-        where: { archived: false },
-        orderBy: { name: "asc" },
-      });
-      return { fetched: remote.length, upserted, flows };
+      return syncFlowsService(input, context.user.id);
     }),
   archiveSavedFlow: deleteWa
     .route({ method: "POST", path: "/saved/flows/archive", tags: ["WA Cloud"] })
     .input(z.object({ id: z.number().int().positive() }))
     .output(waOkResponseSchema)
     .handler(async ({ input }) => {
-      await db.waSavedFlow.update({
-        where: { id: input.id },
-        data: { archived: true },
-      });
+      await archiveSavedFlowService(input.id);
       return { status: "ok" as const };
     }),
 
@@ -1317,56 +760,7 @@ const waRouterBase = {
     .input(sendSavedLocationInputSchema)
     .output(sendMessageResponseSchema)
     .handler(async ({ context, input }) => {
-      const saved = await db.waSavedLocation.findUnique({
-        where: { id: input.savedLocationId },
-      });
-      if (!saved || saved.archived)
-        throw new ORPCError("NOT_FOUND", { message: "Ubicación no existe" });
-      const conv = await db.waConversation.findUnique({
-        where: { id: input.conversationId },
-        include: { contact: true },
-      });
-      if (!conv) throw new ORPCError("NOT_FOUND", { message: "Conversación no encontrada" });
-      const apiResp = await sendLocationMessage({
-        phoneNumberId: input.phoneNumberId,
-        toE164: conv.contact.phoneE164,
-        latitude: saved.latitude,
-        longitude: saved.longitude,
-        name: saved.name,
-        address: saved.address ?? undefined,
-        contextMessageId: input.contextMetaMessageId,
-      });
-      const metaId = apiResp.messages?.[0]?.id ?? null;
-      const now = new Date();
-      const message = await db.waMessage.create({
-        data: {
-          conversationId: conv.id,
-          contactId: conv.contactId,
-          phoneNumberId: input.phoneNumberId,
-          metaMessageId: metaId,
-          direction: "OUTBOUND",
-          type: "LOCATION",
-          status: "SENT",
-          body: saved.name,
-          sentByUserId: context.user.id,
-          contextMetaMessageId: input.contextMetaMessageId ?? null,
-          payload: {
-            location: {
-              latitude: saved.latitude,
-              longitude: saved.longitude,
-              name: saved.name,
-              address: saved.address,
-            },
-            saved_location_id: saved.id,
-          } as never,
-          timestamp: now,
-        },
-      });
-      await db.waConversation.update({
-        where: { id: conv.id },
-        data: { lastMessageAt: now, lastMessagePreview: `[ubicación] ${saved.name}` },
-      });
-      return { message };
+      return sendSavedLocationService(input, context.user.id);
     }),
 
   sendSavedList: writeWa
@@ -1374,71 +768,7 @@ const waRouterBase = {
     .input(sendSavedListInputSchema)
     .output(sendMessageResponseSchema)
     .handler(async ({ context, input }) => {
-      const saved = await db.waSavedInteractiveList.findUnique({
-        where: { id: input.savedListId },
-      });
-      if (!saved || saved.archived)
-        throw new ORPCError("NOT_FOUND", { message: "Lista no existe" });
-      const conv = await db.waConversation.findUnique({
-        where: { id: input.conversationId },
-        include: { contact: true },
-      });
-      if (!conv) throw new ORPCError("NOT_FOUND", { message: "Conversación no encontrada" });
-      const lastInbound = conv.lastInboundAt;
-      const windowOpen = lastInbound
-        ? Date.now() - lastInbound.getTime() < WINDOW_HOURS * 60 * 60 * 1000
-        : false;
-      if (!windowOpen) {
-        throw new ORPCError("BAD_REQUEST", { message: "Ventana 24h cerrada" });
-      }
-      const sections =
-        (saved.sections as unknown as Array<{
-          title?: string;
-          rows: Array<{ id: string; title: string; description?: string }>;
-        }>) ?? [];
-      const apiResp = await sendInteractiveListMessage({
-        phoneNumberId: input.phoneNumberId,
-        toE164: conv.contact.phoneE164,
-        bodyText: saved.bodyText,
-        buttonText: saved.buttonText,
-        sections,
-        headerText: saved.headerText ?? undefined,
-        footerText: saved.footerText ?? undefined,
-        contextMessageId: input.contextMetaMessageId,
-      });
-      const metaId = apiResp.messages?.[0]?.id ?? null;
-      const now = new Date();
-      const message = await db.waMessage.create({
-        data: {
-          conversationId: conv.id,
-          contactId: conv.contactId,
-          phoneNumberId: input.phoneNumberId,
-          metaMessageId: metaId,
-          direction: "OUTBOUND",
-          type: "INTERACTIVE",
-          status: "SENT",
-          body: saved.bodyText,
-          sentByUserId: context.user.id,
-          contextMetaMessageId: input.contextMetaMessageId ?? null,
-          payload: {
-            interactive_type: "list",
-            button: saved.buttonText,
-            sections,
-            saved_list_id: saved.id,
-          } as never,
-          timestamp: now,
-        },
-      });
-      await db.waConversation.update({
-        where: { id: conv.id },
-        data: { lastMessageAt: now, lastMessagePreview: `[lista] ${saved.name}` },
-      });
-      // bump hit count
-      await db.waSavedInteractiveList.update({
-        where: { id: saved.id },
-        data: { hitCount: { increment: 1 }, lastUsedAt: now },
-      });
-      return { message };
+      return sendSavedListService(input, context.user.id);
     }),
 
   sendSavedFlow: writeWa
@@ -1446,62 +776,7 @@ const waRouterBase = {
     .input(sendSavedFlowInputSchema)
     .output(sendMessageResponseSchema)
     .handler(async ({ context, input }) => {
-      const saved = await db.waSavedFlow.findUnique({ where: { id: input.savedFlowId } });
-      if (!saved || saved.archived) throw new ORPCError("NOT_FOUND", { message: "Flow no existe" });
-      const conv = await db.waConversation.findUnique({
-        where: { id: input.conversationId },
-        include: { contact: true },
-      });
-      if (!conv) throw new ORPCError("NOT_FOUND", { message: "Conversación no encontrada" });
-      const lastInbound = conv.lastInboundAt;
-      const windowOpen = lastInbound
-        ? Date.now() - lastInbound.getTime() < WINDOW_HOURS * 60 * 60 * 1000
-        : false;
-      if (!windowOpen) {
-        throw new ORPCError("BAD_REQUEST", { message: "Ventana 24h cerrada" });
-      }
-      const apiResp = await sendFlowMessage({
-        phoneNumberId: input.phoneNumberId,
-        toE164: conv.contact.phoneE164,
-        flowId: saved.flowId,
-        flowCta: input.flowCta ?? saved.defaultCta,
-        bodyText: input.bodyText ?? saved.defaultBody,
-        headerText: saved.defaultHeader ?? undefined,
-        footerText: saved.defaultFooter ?? undefined,
-        flowToken: saved.flowToken ?? undefined,
-        initialScreen: saved.initialScreen ?? undefined,
-      });
-      const metaId = apiResp.messages?.[0]?.id ?? null;
-      const now = new Date();
-      const message = await db.waMessage.create({
-        data: {
-          conversationId: conv.id,
-          contactId: conv.contactId,
-          phoneNumberId: input.phoneNumberId,
-          metaMessageId: metaId,
-          direction: "OUTBOUND",
-          type: "INTERACTIVE",
-          status: "SENT",
-          body: input.bodyText ?? saved.defaultBody,
-          sentByUserId: context.user.id,
-          payload: {
-            interactive_type: "flow",
-            flow_id: saved.flowId,
-            flow_cta: input.flowCta ?? saved.defaultCta,
-            saved_flow_id: saved.id,
-          } as never,
-          timestamp: now,
-        },
-      });
-      await db.waConversation.update({
-        where: { id: conv.id },
-        data: { lastMessageAt: now, lastMessagePreview: `[flow] ${saved.name}` },
-      });
-      await db.waSavedFlow.update({
-        where: { id: saved.id },
-        data: { hitCount: { increment: 1 }, lastUsedAt: now },
-      });
-      return { message };
+      return sendSavedFlowService(input, context.user.id);
     }),
 
   // ── Global scheduled list ─────────────────────────────────────────────────
@@ -1519,18 +794,7 @@ const waRouterBase = {
     .input(listAccountEventsInputSchema)
     .output(listAccountEventsResponseSchema)
     .handler(async ({ input }) => {
-      const where: Record<string, unknown> = {};
-      if (input.acknowledged !== undefined) where.acknowledged = input.acknowledged;
-      if (input.severity) where.severity = input.severity;
-      const [events, unacknowledgedCount] = await Promise.all([
-        db.waAccountEvent.findMany({
-          where,
-          orderBy: { receivedAt: "desc" },
-          take: input.limit,
-        }),
-        db.waAccountEvent.count({ where: { acknowledged: false } }),
-      ]);
-      return { events, unacknowledgedCount };
+      return listAccountEventsService(input);
     }),
 
   acknowledgeAccountEvent: writeWa
@@ -1538,14 +802,7 @@ const waRouterBase = {
     .input(acknowledgeAccountEventInputSchema)
     .output(waOkResponseSchema)
     .handler(async ({ context, input }) => {
-      await db.waAccountEvent.update({
-        where: { id: input.id },
-        data: {
-          acknowledged: true,
-          acknowledgedAt: new Date(),
-          acknowledgedByUserId: context.user.id,
-        },
-      });
+      await acknowledgeAccountEventService(input, context.user.id);
       return { status: "ok" as const };
     }),
 
@@ -1623,42 +880,7 @@ const waRouterBase = {
     .input(embeddedSignupInputSchema)
     .output(accountResponseSchema)
     .handler(async ({ input }) => {
-      // Upsert WaBusinessAccount by wabaId, encrypting the system-user
-      // token at rest. Reuses the same encryption path as the manual
-      // upsert handler so rotation tooling covers it automatically.
-      const existing = await db.waBusinessAccount.findUnique({
-        where: { wabaId: input.wabaId },
-      });
-      const data = {
-        wabaId: input.wabaId,
-        metaBusinessId: input.metaBusinessId ?? null,
-        appId: input.appId ?? null,
-        systemUserToken: encryptSecret(input.systemUserToken),
-        graphApiVersion: "v21.0",
-        displayName: input.displayName ?? null,
-        active: true,
-      };
-      const acc = existing
-        ? await db.waBusinessAccount.update({ where: { id: existing.id }, data })
-        : await db.waBusinessAccount.create({ data });
-      // Upsert the phone row by Meta phoneNumberId.
-      const phoneExisting = await db.waPhoneNumber.findUnique({
-        where: { phoneNumberId: input.phoneNumberId },
-      });
-      const phoneData = {
-        accountId: acc.id,
-        phoneNumberId: input.phoneNumberId,
-        displayPhoneNumber: input.displayPhoneNumber,
-        label: input.displayName ?? null,
-        active: true,
-        onboardingFlow: input.onboardingFlow ?? "embedded_signup",
-      };
-      if (phoneExisting) {
-        await db.waPhoneNumber.update({ where: { id: phoneExisting.id }, data: phoneData });
-      } else {
-        await db.waPhoneNumber.create({ data: phoneData });
-      }
-      return { account: await buildAccountWithPhones(acc.id) };
+      return embeddedSignupCompleteService(input);
     }),
 
   // ── Meta Commerce: catalog config + product browser + send ───────────────
@@ -1667,10 +889,7 @@ const waRouterBase = {
     .input(setCommerceCatalogInputSchema)
     .output(waOkResponseSchema)
     .handler(async ({ input }) => {
-      await db.waBusinessAccount.update({
-        where: { id: input.accountId },
-        data: { commerceCatalogId: input.catalogId },
-      });
+      await setCommerceCatalogService(input);
       return { status: "ok" as const };
     }),
 
@@ -1679,20 +898,7 @@ const waRouterBase = {
     .input(listCommerceProductsInputSchema)
     .output(listCommerceProductsResponseSchema)
     .handler(async ({ input }) => {
-      const account = await db.waBusinessAccount.findUnique({
-        where: { id: input.accountId },
-        select: { commerceCatalogId: true },
-      });
-      if (!account?.commerceCatalogId) {
-        return { catalogId: null, products: [] };
-      }
-      const products = await listCommerceProducts(
-        account.commerceCatalogId,
-        input.accountId,
-        input.search,
-        input.limit
-      );
-      return { catalogId: account.commerceCatalogId, products };
+      return listCommerceProductsService(input);
     }),
 
   sendSingleProduct: writeWa
@@ -1700,66 +906,7 @@ const waRouterBase = {
     .input(sendSingleProductInputSchema)
     .output(sendMessageResponseSchema)
     .handler(async ({ context, input }) => {
-      const conv = await db.waConversation.findUnique({
-        where: { id: input.conversationId },
-        include: { contact: true },
-      });
-      if (!conv) throw new ORPCError("NOT_FOUND", { message: "Conversación no encontrada" });
-      const phone = await db.waPhoneNumber.findUnique({
-        where: { id: input.phoneNumberId },
-        select: { account: { select: { commerceCatalogId: true } } },
-      });
-      if (!phone?.account.commerceCatalogId) {
-        throw new ORPCError("BAD_REQUEST", {
-          message: "Catálogo Meta Commerce no configurado en esta cuenta",
-        });
-      }
-      const lastInbound = conv.lastInboundAt;
-      const windowOpen = lastInbound
-        ? Date.now() - lastInbound.getTime() < WINDOW_HOURS * 60 * 60 * 1000
-        : false;
-      if (!windowOpen) {
-        throw new ORPCError("BAD_REQUEST", {
-          message: "Ventana 24h cerrada. El producto único requiere ventana abierta.",
-        });
-      }
-      const apiResp = await sendSingleProductMessage({
-        phoneNumberId: input.phoneNumberId,
-        toE164: conv.contact.phoneE164,
-        catalogId: phone.account.commerceCatalogId,
-        productRetailerId: input.productRetailerId,
-        bodyText: input.bodyText,
-        footerText: input.footerText,
-        contextMessageId: input.contextMetaMessageId,
-      });
-      const metaId = apiResp.messages?.[0]?.id ?? null;
-      const now = new Date();
-      const preview = `[producto] ${input.productRetailerId}`;
-      const message = await db.waMessage.create({
-        data: {
-          conversationId: conv.id,
-          contactId: conv.contactId,
-          phoneNumberId: input.phoneNumberId,
-          metaMessageId: metaId,
-          direction: "OUTBOUND",
-          type: "INTERACTIVE",
-          status: "SENT",
-          body: input.bodyText ?? null,
-          sentByUserId: context.user.id,
-          contextMetaMessageId: input.contextMetaMessageId ?? null,
-          payload: {
-            interactive_type: "product",
-            catalog_id: phone.account.commerceCatalogId,
-            product_retailer_id: input.productRetailerId,
-          } as never,
-          timestamp: now,
-        },
-      });
-      await db.waConversation.update({
-        where: { id: conv.id },
-        data: { lastMessageAt: now, lastMessagePreview: preview.slice(0, 200) },
-      });
-      return { message };
+      return sendSingleProductService(input, context.user.id);
     }),
 
   // ── Multi-Product Message (Meta Commerce) ─────────────────────────────────
@@ -1768,68 +915,7 @@ const waRouterBase = {
     .input(sendMultiProductInputSchema)
     .output(sendMessageResponseSchema)
     .handler(async ({ context, input }) => {
-      const conv = await db.waConversation.findUnique({
-        where: { id: input.conversationId },
-        include: { contact: true },
-      });
-      if (!conv) throw new ORPCError("NOT_FOUND", { message: "Conversación no encontrada" });
-      const phone = await db.waPhoneNumber.findUnique({
-        where: { id: input.phoneNumberId },
-        select: { account: { select: { commerceCatalogId: true } } },
-      });
-      if (!phone?.account.commerceCatalogId) {
-        throw new ORPCError("BAD_REQUEST", {
-          message: "Catálogo Meta Commerce no configurado en esta cuenta",
-        });
-      }
-      const lastInbound = conv.lastInboundAt;
-      const windowOpen = lastInbound
-        ? Date.now() - lastInbound.getTime() < WINDOW_HOURS * 60 * 60 * 1000
-        : false;
-      if (!windowOpen) {
-        throw new ORPCError("BAD_REQUEST", {
-          message: "Ventana 24h cerrada. MPM requiere ventana abierta.",
-        });
-      }
-      const apiResp = await sendMultiProductMessage({
-        phoneNumberId: input.phoneNumberId,
-        toE164: conv.contact.phoneE164,
-        catalogId: phone.account.commerceCatalogId,
-        bodyText: input.bodyText,
-        headerText: input.headerText,
-        footerText: input.footerText,
-        sections: input.sections,
-        contextMessageId: input.contextMetaMessageId,
-      });
-      const metaId = apiResp.messages?.[0]?.id ?? null;
-      const now = new Date();
-      const total = input.sections.reduce((n, s) => n + s.product_items.length, 0);
-      const preview = `[catálogo] ${input.headerText} (${total} productos)`;
-      const message = await db.waMessage.create({
-        data: {
-          conversationId: conv.id,
-          contactId: conv.contactId,
-          phoneNumberId: input.phoneNumberId,
-          metaMessageId: metaId,
-          direction: "OUTBOUND",
-          type: "INTERACTIVE",
-          status: "SENT",
-          body: input.bodyText,
-          sentByUserId: context.user.id,
-          contextMetaMessageId: input.contextMetaMessageId ?? null,
-          payload: {
-            interactive_type: "product_list",
-            catalog_id: phone.account.commerceCatalogId,
-            sections: input.sections,
-          } as never,
-          timestamp: now,
-        },
-      });
-      await db.waConversation.update({
-        where: { id: conv.id },
-        data: { lastMessageAt: now, lastMessagePreview: preview.slice(0, 200) },
-      });
-      return { message };
+      return sendMultiProductService(input, context.user.id);
     }),
 
   // ── Extended analytics with pricing ────────────────────────────────────────
@@ -1880,19 +966,7 @@ const waRouterBase = {
     .input(waPhoneIdInput)
     .output(phoneHealthResponseSchema)
     .handler(async ({ input }) => {
-      const h = await getPhoneHealth(input.phoneNumberId);
-      // Persist quality_rating snapshot for offline charts.
-      try {
-        if (h.quality_rating) {
-          await db.waPhoneNumber.update({
-            where: { id: input.phoneNumberId },
-            data: { qualityRating: h.quality_rating },
-          });
-        }
-      } catch (err) {
-        logError("[wa-cloud.getPhoneHealth] persist failed", { err });
-      }
-      return h;
+      return getPhoneHealthService(input);
     }),
 
   // ── Conversational automation (ice breakers + commands) ───────────────────
@@ -1938,46 +1012,7 @@ const waRouterBase = {
     .input(phoneQualitySummaryInputSchema)
     .output(phoneQualitySummaryResponseSchema)
     .handler(async ({ input }) => {
-      const phone = await db.waPhoneNumber.findUnique({
-        where: { id: input.phoneNumberId },
-        select: { id: true, qualityRating: true },
-      });
-      if (!phone) {
-        throw new ORPCError("NOT_FOUND", { message: "Phone no encontrado" });
-      }
-      const [critical, warning, last] = await Promise.all([
-        db.waAccountEvent.count({
-          where: {
-            phoneNumberId: input.phoneNumberId,
-            severity: "critical",
-            acknowledged: false,
-          },
-        }),
-        db.waAccountEvent.count({
-          where: {
-            phoneNumberId: input.phoneNumberId,
-            severity: "warning",
-            acknowledged: false,
-          },
-        }),
-        db.waAccountEvent.findFirst({
-          where: { phoneNumberId: input.phoneNumberId },
-          orderBy: { receivedAt: "desc" },
-          select: { receivedAt: true },
-        }),
-      ]);
-      const allowed = ["GREEN", "YELLOW", "RED"] as const;
-      const rating =
-        phone.qualityRating && (allowed as readonly string[]).includes(phone.qualityRating)
-          ? (phone.qualityRating as "GREEN" | "YELLOW" | "RED")
-          : null;
-      return {
-        phoneNumberId: phone.id,
-        qualityRating: rating,
-        criticalUnacknowledged: critical,
-        warningUnacknowledged: warning,
-        lastEventAt: last?.receivedAt ?? null,
-      };
+      return getPhoneQualitySummaryService(input);
     }),
 
   // ── Block / unblock ────────────────────────────────────────────────────────
