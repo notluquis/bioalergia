@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { financeTransactionsResponseSchema } from "@finanzas/orpc-contracts/finance";
 import { transactionsInsightsStatsResponseSchema } from "@finanzas/orpc-contracts/transactions-insights";
 import { financeORPCClient } from "@/features/finance/orpc";
 import {
@@ -13,10 +14,6 @@ export interface StatsResponse {
   monthly: { in: number; month: string; net: number; out: number }[];
   totals: Record<string, number>;
 }
-
-const RecentMovementsResponseSchema = z.object({
-  data: z.array(z.unknown()),
-});
 
 const StatsResponseSchema = z.object({
   byType: z.array(
@@ -38,21 +35,39 @@ const StatsResponseSchema = z.object({
 });
 
 export async function fetchRecentMovements(): Promise<Transaction[]> {
-  const data = RecentMovementsResponseSchema.parse(
+  // The oRPC contract returns `amount` / `date` / `type`, NOT the legacy
+  // `transactionAmount` / `transactionDate` / `transactionType` shape the
+  // widget consumes. Map explicitly — a blind cast left every row at $0.
+  const res = financeTransactionsResponseSchema.parse(
     await financeORPCClient.transactionsList({
       page: 1,
       pageSize: 5,
     })
   );
 
-  return data.data as Transaction[];
+  return res.data.map((t) => ({
+    description: t.description,
+    externalReference: null,
+    id: t.id,
+    paymentMethod: t.settlementPaymentMethod ?? t.releasePaymentMethod ?? null,
+    // `amount` is signed in the DB, but sign defensively by type so the
+    // amount color (success/danger) is always correct.
+    settlementNetAmount: null,
+    sourceId: t.sourceId ?? null,
+    status: null,
+    transactionAmount: t.type === "EXPENSE" ? -Math.abs(t.amount) : Math.abs(t.amount),
+    transactionDate: t.date,
+    transactionType: t.type === "EXPENSE" ? "Egreso" : "Ingreso",
+  }));
 }
 
 export async function fetchStats(from: string, to: string): Promise<StatsResponse> {
   try {
     return StatsResponseSchema.parse(
       transactionsInsightsStatsResponseSchema.parse(
-        await transactionsInsightsORPCClient.stats({ from, to })
+        // Home dashboard spans 30 days — bucket per day so the activity chart
+        // shows real daily movement instead of 1–2 month-wide blocks.
+        await transactionsInsightsORPCClient.stats({ from, granularity: "day", to })
       )
     );
   } catch (error) {

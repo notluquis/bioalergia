@@ -111,6 +111,7 @@ const transactionsInsightsORPCRouterBase = {
     .handler(async ({ input }: { input: z.input<typeof transactionsInsightsStatsQuerySchema> }) => {
       const result = await getTransactionStats({
         from: new Date(input.from),
+        granularity: input.granularity,
         to: new Date(input.to),
       });
 

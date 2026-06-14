@@ -645,6 +645,68 @@ describe("getTransactionStats running totals + categorization", () => {
     expect(res.monthly[1].in).toBe(10);
   });
 
+  it("buckets by the America/Santiago calendar day when granularity = 'day'", async () => {
+    seed({
+      settlements: [
+        // 12:00Z -> 09:00 Santiago (UTC-3 summer) -> same day, Jan 5.
+        { transactionDate: at("2026-01-05"), transactionAmount: 10, sourceId: "a" },
+        { transactionDate: at("2026-01-05"), transactionAmount: -4, sourceId: "b" },
+        { transactionDate: at("2026-01-07"), transactionAmount: 20, sourceId: "c" },
+      ],
+    });
+    const res = await getTransactionStats({
+      from: at("2026-01-01"),
+      granularity: "day",
+      to: at("2026-01-31"),
+    });
+    expect(res.monthly.map((m) => m.month)).toEqual(["2026-01-05", "2026-01-07"]);
+    expect(res.monthly[0].in).toBe(10);
+    expect(res.monthly[0].out).toBe(4);
+    expect(res.monthly[0].net).toBe(6);
+    expect(res.monthly[1].in).toBe(20);
+  });
+
+  it("buckets a near-midnight instant by its Santiago day, not its UTC day", async () => {
+    // 2026-01-06T02:30:00Z is 2026-01-05 23:30 in Santiago (UTC-3, summer DST).
+    // Old UTC dayKey put it in 2026-01-06; the Santiago bucket is 2026-01-05.
+    // A clearly-Jan-06-Santiago tx (15:00Z -> 12:00 Santiago) anchors the later day.
+    seed({
+      settlements: [
+        {
+          transactionDate: new Date("2026-01-06T02:30:00Z"),
+          transactionAmount: 10,
+          sourceId: "boundary",
+        },
+        {
+          transactionDate: new Date("2026-01-06T15:00:00Z"),
+          transactionAmount: 20,
+          sourceId: "next-day",
+        },
+      ],
+    });
+    const res = await getTransactionStats({
+      from: at("2026-01-01"),
+      granularity: "day",
+      to: at("2026-01-31"),
+    });
+    // The 02:30Z tx lands on the PREVIOUS Santiago calendar day.
+    expect(res.monthly.map((m) => m.month)).toEqual(["2026-01-05", "2026-01-06"]);
+    expect(res.monthly[0].in).toBe(10);
+    expect(res.monthly[1].in).toBe(20);
+  });
+
+  it("defaults to month buckets when granularity is omitted", async () => {
+    seed({
+      settlements: [
+        { transactionDate: at("2026-01-05"), transactionAmount: 10, sourceId: "a" },
+        { transactionDate: at("2026-01-25"), transactionAmount: 5, sourceId: "b" },
+      ],
+    });
+    const res = await getTransactionStats({ from: at("2026-01-01"), to: at("2026-01-31") });
+    expect(res.monthly.map((m) => m.month)).toEqual(["2026-01-01"]);
+    expect(res.monthly[0].in).toBe(15);
+  });
+
   it("monthly net accumulates both signs", async () => {
     seed({
       settlements: [

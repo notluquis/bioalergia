@@ -5,8 +5,10 @@
  * - `fetchStats` runs the response through the shared
  *   `transactionsInsightsStatsResponseSchema` from the orpc-contracts
  *   package; malformed payloads bubble up as ApiError.
- * - `fetchRecentMovements` returns the first 5 transactions verbatim
- *   (no client-side reordering — UI sorts by timestamp).
+ * - `fetchRecentMovements` parses the oRPC contract payload and maps the
+ *   `amount` / `date` / `type` fields onto the legacy `transactionAmount` /
+ *   `transactionDate` / `transactionType` shape the widget consumes (a blind
+ *   cast left every row rendering as $0).
  */
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -43,19 +45,58 @@ describe("dashboard/api", () => {
 
   describe("fetchRecentMovements", () => {
     it("requests page 1 with pageSize=5", async () => {
-      financeOrpc.transactionsList.mockResolvedValue({ data: [] });
+      financeOrpc.transactionsList.mockResolvedValue({ data: [], status: "ok" });
       await fetchRecentMovements();
       expect(financeOrpc.transactionsList).toHaveBeenCalledWith({ page: 1, pageSize: 5 });
     });
 
-    it("returns the `data` array unchanged", async () => {
-      const txs = [
-        { id: 1, amount: 1000, timestamp: new Date().toISOString() },
-        { id: 2, amount: -500, timestamp: new Date().toISOString() },
-      ];
-      financeOrpc.transactionsList.mockResolvedValue({ data: txs });
+    it("maps contract `amount`/`date`/`type` onto the widget shape", async () => {
+      const incomeDate = new Date("2026-06-14T00:20:00.000Z");
+      const expenseDate = new Date("2026-06-13T12:00:00.000Z");
+      financeOrpc.transactionsList.mockResolvedValue({
+        status: "ok",
+        data: [
+          {
+            id: 1,
+            amount: 1000,
+            categoryId: null,
+            counterpart: null,
+            date: incomeDate,
+            description: "Pago consulta",
+            sourceId: "src-1",
+            type: "INCOME",
+          },
+          {
+            id: 2,
+            amount: 500, // unsigned in payload — must be negated for EXPENSE
+            categoryId: null,
+            counterpart: null,
+            date: expenseDate,
+            description: "Arriendo",
+            sourceId: "src-2",
+            type: "EXPENSE",
+          },
+        ],
+      });
+
       const result = await fetchRecentMovements();
-      expect(result).toEqual(txs);
+
+      expect(result).toHaveLength(2);
+      expect(result[0]).toMatchObject({
+        id: 1,
+        description: "Pago consulta",
+        sourceId: "src-1",
+        transactionAmount: 1000,
+        transactionDate: incomeDate,
+        transactionType: "Ingreso",
+      });
+      expect(result[1]).toMatchObject({
+        id: 2,
+        description: "Arriendo",
+        transactionAmount: -500,
+        transactionDate: expenseDate,
+        transactionType: "Egreso",
+      });
     });
   });
 

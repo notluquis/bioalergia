@@ -1,5 +1,7 @@
 import { db } from "@finanzas/db";
 
+import { instantToChileDate } from "../lib/time.ts";
+
 export type TransactionFilters = {
   from?: Date;
   to?: Date;
@@ -124,8 +126,24 @@ const getMetaString = (meta: RawMeta, keys: string[]) => {
   return null;
 };
 
+// monthKey stays UTC ON PURPOSE: the finance-statistics page
+// (apps/intranet/src/features/finance/statistics) consumes monthly buckets and
+// we are NOT changing its behavior here. Only the day grain (used solely by the
+// home dashboard "últimos 30 días" chart) buckets by the Chile calendar day.
 const monthKey = (date: Date) =>
   `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}-01`;
+
+// dayKey buckets by the America/Santiago calendar day. transactionDate is a true
+// instant (a plain `DateTime`/timestamptz column read via ZenStack — NOT a
+// UTC-anchored @db.Date), so instantToChileDate (the one tz-aware helper) renders
+// the correct DST-aware local date. A tx near Chile midnight no longer lands in
+// the wrong day as it did with the old UTC getters.
+const dayKey = (date: Date) => instantToChileDate(date) ?? dayKeyUtcFallback(date);
+
+const dayKeyUtcFallback = (date: Date) =>
+  `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}-${String(date.getUTCDate()).padStart(2, "0")}`;
+
+type StatsGranularity = "day" | "month";
 
 const RELEASE_ID_OFFSET = -1_000_000_000;
 const WITHDRAW_ID_OFFSET = -2_000_000_000;
@@ -750,12 +768,18 @@ export async function getParticipantInsight(
   };
 }
 
-export async function getTransactionStats(params: { from: Date; to: Date }) {
+export async function getTransactionStats(params: {
+  from: Date;
+  granularity?: StatsGranularity;
+  to: Date;
+}) {
   const rows = await fetchMergedTransactions({
     from: params.from,
     includeTest: false,
     to: params.to,
   });
+
+  const bucketKey = params.granularity === "day" ? dayKey : monthKey;
 
   const monthlyMap = new Map<string, { in: number; net: number; out: number }>();
   const byTypeMap = new Map<string, number>();
@@ -764,8 +788,8 @@ export async function getTransactionStats(params: { from: Date; to: Date }) {
   let totalOut = 0;
 
   for (const row of rows) {
-    const month = monthKey(row.transactionDate);
-    const monthAgg = monthlyMap.get(month) ?? { in: 0, net: 0, out: 0 };
+    const bucket = bucketKey(row.transactionDate);
+    const monthAgg = monthlyMap.get(bucket) ?? { in: 0, net: 0, out: 0 };
     if (row.transactionAmount >= 0) {
       monthAgg.in += row.transactionAmount;
       totalIn += row.transactionAmount;
@@ -775,7 +799,7 @@ export async function getTransactionStats(params: { from: Date; to: Date }) {
       totalOut += outAmount;
     }
     monthAgg.net += row.transactionAmount;
-    monthlyMap.set(month, monthAgg);
+    monthlyMap.set(bucket, monthAgg);
 
     const type = row.transactionType || "unknown";
     byTypeMap.set(type, (byTypeMap.get(type) ?? 0) + row.transactionAmount);

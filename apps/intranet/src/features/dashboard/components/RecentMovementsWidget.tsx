@@ -48,7 +48,7 @@ export function RecentMovementsWidget({ rows }: { rows: Transaction[] }) {
                 key={row.id}
               >
                 <div className="min-w-0">
-                  <Chip size="sm" variant="tertiary">
+                  <Chip color={amount >= 0 ? "success" : "danger"} size="sm" variant="soft">
                     {row.transactionType || "movimiento"}
                   </Chip>
                   <p className="mt-2 line-clamp-2 font-medium text-foreground text-sm">
