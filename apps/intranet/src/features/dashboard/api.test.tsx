@@ -114,6 +114,7 @@ describe("dashboard/api", () => {
       expect(result.totals.net).toBe(500_000);
       expect(insightsOrpc.stats).toHaveBeenCalledWith({
         from: "2026-01-01",
+        granularity: "day",
         to: "2026-01-31",
       });
     });
