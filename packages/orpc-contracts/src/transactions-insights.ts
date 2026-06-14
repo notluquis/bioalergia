@@ -27,7 +27,9 @@ export const transactionsInsightsParticipantInsightInputSchema = z.object({
 });
 
 export const transactionsInsightsParticipantLeaderboardItemSchema = z.object({
+  bankAccountNumber: z.string().nullable(),
   count: z.number(),
+  identificationNumber: z.string().nullable(),
   personId: z.string(),
   personName: z.string(),
   total: z.number(),

@@ -605,7 +605,9 @@ export async function getParticipantLeaderboard(params: {
   const grouped = new Map<
     string,
     {
+      bankAccountNumber: null | string;
       displayName: string;
+      identificationNumber: null | string;
       outgoingAmount: number;
       outgoingCount: number;
     }
@@ -620,10 +622,15 @@ export async function getParticipantLeaderboard(params: {
       "unknown";
     const displayName = row.bankAccountHolder ?? row.identificationNumber ?? "Desconocido";
     const current = grouped.get(participant) ?? {
+      bankAccountNumber: null,
       displayName,
+      identificationNumber: null,
       outgoingAmount: 0,
       outgoingCount: 0,
     };
+    // Capture a representative RUT + account per person (first non-null seen).
+    current.identificationNumber ??= row.identificationNumber;
+    current.bankAccountNumber ??= row.bankAccountNumber;
     if (row.transactionAmount < 0) {
       current.outgoingAmount += Math.abs(row.transactionAmount);
       current.outgoingCount += 1;
@@ -635,7 +642,9 @@ export async function getParticipantLeaderboard(params: {
     status: "ok",
     data: Array.from(grouped.entries())
       .map(([participant, stats]) => ({
+        bankAccountNumber: stats.bankAccountNumber,
         count: stats.outgoingCount,
+        identificationNumber: stats.identificationNumber,
         personId: participant,
         personName: stats.displayName,
         total: stats.outgoingAmount,

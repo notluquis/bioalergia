@@ -23,7 +23,9 @@ export const StatsResponseSchema = z.strictObject({
 export const TopParticipantsResponseSchema = z.strictObject({
   data: z.array(
     z.strictObject({
+      bankAccountNumber: z.string().nullable().optional(),
       count: z.number(),
+      identificationNumber: z.string().nullable().optional(),
       personId: z.string(),
       personName: z.string(),
       total: z.number(),

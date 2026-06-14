@@ -52,12 +52,12 @@ export async function fetchParticipantLeaderboard(params?: {
     return {
       participants: data.data.map((item: (typeof data.data)[number]) => ({
         bankAccountHolder: null,
-        bankAccountNumber: null,
+        bankAccountNumber: item.bankAccountNumber,
         bankAccountType: null,
         bankBranch: null,
         bankName: null,
         displayName: item.personName,
-        identificationNumber: null,
+        identificationNumber: item.identificationNumber,
         incomingAmount: mode === "incoming" ? item.total : 0,
         incomingCount: mode === "incoming" ? item.count : 0,
         outgoingAmount: mode === "outgoing" ? item.total : 0,

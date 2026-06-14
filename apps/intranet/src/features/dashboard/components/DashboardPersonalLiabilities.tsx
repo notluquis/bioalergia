@@ -74,7 +74,7 @@ export function DashboardPersonalLiabilities() {
               <span className="font-semibold text-sm">
                 {formatCurrency(nextPayment.nextPaymentAmount ?? 0)}
               </span>
-              <span className="truncate text-default-500 text-xs">{nextPayment.institution}</span>
+              <span className="truncate text-default-500 text-xs">{nextPayment.bankName}</span>
             </div>
           </div>
         ) : (

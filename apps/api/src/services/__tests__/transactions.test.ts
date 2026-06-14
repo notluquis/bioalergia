@@ -762,6 +762,32 @@ describe("getParticipantLeaderboard (outgoing only)", () => {
     expect(p1?.count).toBe(2);
   });
 
+  it("populates representative identificationNumber + bankAccountNumber per person", async () => {
+    seed({
+      withdraws: [
+        {
+          identificationNumber: "RUT-1",
+          bankAccountHolder: "Ana",
+          bankAccountNumber: "ACC-100",
+          amount: 100,
+          withdrawId: "w1",
+        },
+        {
+          identificationNumber: "RUT-1",
+          bankAccountHolder: "Ana",
+          bankAccountNumber: "ACC-200",
+          amount: 50,
+          withdrawId: "w2",
+        },
+      ],
+    });
+    const res = await getParticipantLeaderboard({ limit: 10 });
+    const p1 = res.data.find((d) => d.personId === "RUT-1");
+    expect(p1?.identificationNumber).toBe("RUT-1");
+    // first non-null account seen wins
+    expect(p1?.bankAccountNumber).toBe("ACC-100");
+  });
+
   it("sorts by total desc and respects limit", async () => {
     seed({
       withdraws: [
