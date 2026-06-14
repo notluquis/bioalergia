@@ -27,7 +27,6 @@ export const team: TeamMember[] = [
       "Lidera la gestión financiera y administrativa de Bioalergia —cobranza, facturación y control de gestión— y desarrolla sus plataformas digitales: el sitio web, la intranet clínica y los sistemas internos que apoyan la atención, ordenan la información y mejoran de forma continua la experiencia de pacientes y equipo.",
     ],
     email: "lpulgar@bioalergia.cl",
-    // TODO(user): completar URL de LinkedIn de Lucas.
-    linkedin: "",
+    linkedin: "https://www.linkedin.com/in/lucasescobarpulgar/",
   },
 ];

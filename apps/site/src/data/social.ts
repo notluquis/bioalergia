@@ -10,8 +10,7 @@ export type SocialLink = {
   href: string;
 };
 
-// TODO(user): completar con las URLs reales de las cuentas de Bioalergia.
-// Ejemplos:
-//   { platform: "instagram", label: "Instagram", href: "https://www.instagram.com/<cuenta>" },
-//   { platform: "facebook",  label: "Facebook",  href: "https://www.facebook.com/<cuenta>" },
-export const socialLinks: SocialLink[] = [];
+export const socialLinks: SocialLink[] = [
+  { platform: "instagram", label: "Instagram", href: "https://www.instagram.com/bioalergia" },
+  { platform: "facebook", label: "Facebook", href: "https://www.facebook.com/bioalergia" },
+];
