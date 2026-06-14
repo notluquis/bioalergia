@@ -1,10 +1,10 @@
-import { Breadcrumbs, Card, Chip } from "@heroui/react";
+import { Breadcrumbs, Card, Chip, Link } from "@heroui/react";
 import { createFileRoute } from "@tanstack/react-router";
 
 import { BookingCta } from "@/components/BookingCta";
 import { PageShell } from "@/components/PageShell";
 import { clinicOverview } from "@/data/clinic";
-import { founderProfile } from "@/data/founder";
+import { team } from "@/data/team";
 
 function EquipoPage() {
   return (
@@ -16,33 +16,64 @@ function EquipoPage() {
         </Breadcrumbs>
         <div className="grid gap-3">
           <div className="text-(--ink-muted) text-xs uppercase tracking-[0.2em]">Equipo</div>
-          <h1 className="font-semibold text-(--ink) text-3xl sm:text-4xl">Nuestro especialista</h1>
+          <h1 className="font-semibold text-(--ink) text-3xl sm:text-4xl">Nuestro equipo</h1>
           <p className="max-w-3xl text-(--ink-muted) text-base leading-relaxed sm:text-lg">
-            Detrás de Bioalergia hay una trayectoria clínica dedicada a la alergología y la
-            inmunología, con formación nacional e internacional y un compromiso con la atención
-            cercana y basada en evidencia.
+            Detrás de Bioalergia hay un equipo que combina experiencia clínica en alergología e
+            inmunología con una gestión cercana y plataformas digitales propias, para ofrecer una
+            atención precisa, ordenada y centrada en cada paciente.
           </p>
         </div>
       </section>
 
       <section className="grid gap-6">
-        <Card className="rounded-3xl" variant="default">
-          <Card.Header className="gap-3">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <Card.Title className="text-2xl">{founderProfile.name}</Card.Title>
-              <Chip size="sm" variant="secondary">
-                Fundador y director
-              </Chip>
-            </div>
-          </Card.Header>
-          <Card.Content className="grid gap-4 pb-6">
-            {founderProfile.paragraphs.map((paragraph) => (
-              <p className="text-(--ink-muted) text-base leading-relaxed" key={paragraph.slice(0, 40)}>
-                {paragraph}
-              </p>
-            ))}
-          </Card.Content>
-        </Card>
+        {team.map((member) => (
+          <Card className="rounded-3xl" key={member.name} variant="default">
+            <Card.Header className="gap-3">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <Card.Title className="text-2xl">{member.name}</Card.Title>
+                <Chip size="sm" variant="secondary">
+                  {member.badge}
+                </Chip>
+              </div>
+              <Card.Description className="text-(--ink-muted) text-sm uppercase tracking-[0.18em]">
+                {member.role}
+              </Card.Description>
+            </Card.Header>
+            <Card.Content className="grid gap-4 pb-6">
+              {member.paragraphs.map((paragraph) => (
+                <p
+                  className="text-(--ink-muted) text-base leading-relaxed"
+                  key={paragraph.slice(0, 40)}
+                >
+                  {paragraph}
+                </p>
+              ))}
+              {(member.email || member.linkedin) && (
+                <div className="flex flex-wrap items-center gap-4 border-border border-t pt-4">
+                  {member.email ? (
+                    <Link
+                      className="font-medium text-(--accent) text-sm no-underline hover:underline"
+                      href={`mailto:${member.email}`}
+                    >
+                      {member.email}
+                    </Link>
+                  ) : null}
+                  {member.linkedin ? (
+                    <Link
+                      className="font-medium text-(--accent) text-sm no-underline hover:underline"
+                      href={member.linkedin}
+                      rel="noopener noreferrer"
+                      target="_blank"
+                    >
+                      LinkedIn
+                      <Link.Icon />
+                    </Link>
+                  ) : null}
+                </div>
+              )}
+            </Card.Content>
+          </Card>
+        ))}
       </section>
 
       <section className="grid gap-6">
@@ -96,13 +127,13 @@ export const Route = createFileRoute("/equipo")({
     const url = `${origin}/equipo`;
     return {
       meta: [
-        { title: "Nuestro especialista · Bioalergia" },
+        { title: "Nuestro equipo · Bioalergia" },
         {
           name: "description",
           content:
-            "Conoce al equipo de Bioalergia: el Dr. José Manuel Martínez, alergólogo e inmunólogo en Concepción, con formación nacional e internacional en inmunoterapia y enfermedades alérgicas.",
+            "Conoce al equipo de Bioalergia: el Dr. José Manuel Martínez, alergólogo e inmunólogo en Concepción, y el equipo de coordinación y desarrollo que sostiene la clínica.",
         },
-        { property: "og:title", content: "Nuestro especialista · Bioalergia" },
+        { property: "og:title", content: "Nuestro equipo · Bioalergia" },
         { property: "og:type", content: "website" },
         { property: "og:url", content: url },
       ],
