@@ -108,8 +108,6 @@ import { logError } from "../lib/logger.ts";
 import { decryptSecret, encryptSecret } from "../lib/secret-cipher.ts";
 import { configureSuperjson } from "../lib/superjson-config.ts";
 import {
-  blockUsers,
-  editTextMessage,
   getBusinessProfile,
   getConversationAnalytics,
   getConversationalAutomation,
@@ -125,20 +123,13 @@ import {
   listAccountFlows,
   listAccountPhoneNumbers,
   listAccountTemplates,
-  listBlockedUsers,
-  markMessageRead,
   registerPhoneNumber,
-  sendAddressMessage,
-  sendContactsMessage,
   sendFlowMessage,
   sendInteractiveListMessage,
   sendLocationMessage,
   sendMediaMessage,
-  sendReaction,
-  sendTemplateMessage,
   sendTextMessage,
   setTwoStepPin,
-  unblockUsers,
   updateBusinessProfile,
 } from "../modules/wa-cloud/graph-client.ts";
 import { waBroadcastJobKey } from "../modules/wa-cloud/broadcast-runner.ts";
@@ -165,6 +156,34 @@ import {
   listTemplates as listTemplatesService,
   syncTemplates as syncTemplatesService,
 } from "../services/wa-templates.ts";
+import {
+  getConversation as getConversationService,
+  listConversations as listConversationsService,
+  markConversationRead as markConversationReadService,
+  setConversationMute as setConversationMuteService,
+  setConversationTyping as setConversationTypingService,
+  updateConversation as updateConversationService,
+} from "../services/wa-conversations.ts";
+import {
+  editText as editTextService,
+  listConversationMedia as listConversationMediaService,
+  searchMessages as searchMessagesService,
+  sendAddress as sendAddressService,
+  sendContacts as sendContactsService,
+  sendFlow as sendFlowService,
+  sendInteractiveList as sendInteractiveListService,
+  sendLocation as sendLocationService,
+  sendMedia as sendMediaService,
+  sendReaction as sendReactionService,
+  sendTemplate as sendTemplateService,
+  sendText as sendTextService,
+} from "../services/wa-messages.ts";
+import {
+  blockContact as blockContactService,
+  listBlocked as listBlockedService,
+  unblockContact as unblockContactService,
+  updateContact as updateContactService,
+} from "../services/wa-contacts.ts";
 import { SuperJSONRPCHandler } from "./superjson.ts";
 
 configureSuperjson();
@@ -385,40 +404,7 @@ const waRouterBase = {
     .input(listConversationsInputSchema)
     .output(listConversationsResponseSchema)
     .handler(async ({ input }) => {
-      const where: Record<string, unknown> = {};
-      if (input.status) where.status = input.status;
-      if (input.assignedToUserId !== undefined) where.assignedToUserId = input.assignedToUserId;
-      if (input.phoneNumberId) {
-        where.channels = { some: { phoneNumberId: input.phoneNumberId } };
-      }
-      if (input.search) {
-        where.contact = {
-          OR: [
-            { phoneE164: { contains: input.search } },
-            { name: { contains: input.search, mode: "insensitive" } },
-            { pushName: { contains: input.search, mode: "insensitive" } },
-          ],
-        };
-      }
-      const total = await db.waConversation.count({ where });
-      const items = await db.waConversation.findMany({
-        where,
-        include: { contact: true, channels: { select: { phoneNumberId: true } } },
-        orderBy: { lastMessageAt: "desc" },
-        skip: (input.page - 1) * input.pageSize,
-        take: input.pageSize,
-      });
-      return {
-        items: items.map((c: (typeof items)[number]) => ({
-          ...c,
-          channelPhoneNumberIds: c.channels.map(
-            (ch: (typeof c.channels)[number]) => ch.phoneNumberId
-          ),
-        })),
-        total,
-        page: input.page,
-        pageSize: input.pageSize,
-      };
+      return listConversationsService(input);
     }),
 
   getConversation: readWa
@@ -426,35 +412,7 @@ const waRouterBase = {
     .input(conversationIdInput)
     .output(conversationDetailResponseSchema)
     .handler(async ({ input }) => {
-      const conv = await db.waConversation.findUnique({
-        where: { id: input.id },
-        include: {
-          contact: true,
-          channels: { include: { phoneNumber: { select: { id: true, label: true } } } },
-        },
-      });
-      if (!conv) throw new ORPCError("NOT_FOUND", { message: "Conversación no encontrada" });
-      const messages = await db.waMessage.findMany({
-        where: { conversationId: input.id },
-        orderBy: { timestamp: "asc" },
-        take: 500,
-      });
-      const lastInbound = conv.lastInboundAt;
-      const windowExpiresAt = lastInbound
-        ? new Date(lastInbound.getTime() + WINDOW_HOURS * 60 * 60 * 1000)
-        : null;
-      const windowOpen = windowExpiresAt ? windowExpiresAt > new Date() : false;
-      return {
-        conversation: conv,
-        contact: conv.contact,
-        messages,
-        channels: conv.channels.map((c: (typeof conv.channels)[number]) => ({
-          phoneNumberId: c.phoneNumberId,
-          label: c.phoneNumber.label,
-        })),
-        windowOpen,
-        windowExpiresAt,
-      };
+      return getConversationService(input.id);
     }),
 
   updateConversation: writeWa
@@ -462,12 +420,7 @@ const waRouterBase = {
     .input(updateConversationInputSchema)
     .output(waOkResponseSchema)
     .handler(async ({ input }) => {
-      const data: Record<string, unknown> = {};
-      if (input.status) data.status = input.status;
-      if (input.assignedToUserId !== undefined) data.assignedToUserId = input.assignedToUserId;
-      if (input.notas !== undefined) data.notas = input.notas;
-      if (input.etiquetas !== undefined) data.etiquetas = input.etiquetas;
-      await db.waConversation.update({ where: { id: input.id }, data });
+      await updateConversationService(input);
       return { status: "ok" as const };
     }),
 
@@ -476,29 +429,7 @@ const waRouterBase = {
     .input(markReadInputSchema)
     .output(waOkResponseSchema)
     .handler(async ({ input }) => {
-      // Tell Meta the most recent inbound message has been read so the patient
-      // sees the blue ticks. Best-effort: errors here should not block clearing
-      // the local unread badge.
-      const latestInbound = await db.waMessage.findFirst({
-        where: {
-          conversationId: input.conversationId,
-          direction: "INBOUND",
-          metaMessageId: { not: null },
-        },
-        orderBy: { timestamp: "desc" },
-        select: { metaMessageId: true, phoneNumberId: true },
-      });
-      if (latestInbound?.metaMessageId) {
-        try {
-          await markMessageRead(latestInbound.phoneNumberId, latestInbound.metaMessageId);
-        } catch (err) {
-          logError("[wa-cloud.markRead] Meta mark-read failed", { err });
-        }
-      }
-      await db.waConversation.update({
-        where: { id: input.conversationId },
-        data: { unreadCount: 0 },
-      });
+      await markConversationReadService(input);
       return { status: "ok" as const };
     }),
 
@@ -507,10 +438,7 @@ const waRouterBase = {
     .input(setMuteInputSchema)
     .output(waOkResponseSchema)
     .handler(async ({ input }) => {
-      await db.waConversation.update({
-        where: { id: input.conversationId },
-        data: { mutedUntil: input.mutedUntil ? new Date(input.mutedUntil) : null },
-      });
+      await setConversationMuteService(input);
       return { status: "ok" as const };
     }),
 
@@ -519,12 +447,7 @@ const waRouterBase = {
     .input(updateWaContactInputSchema)
     .output(waOkResponseSchema)
     .handler(async ({ input }) => {
-      const data: Record<string, unknown> = {};
-      if (input.name !== undefined) data.name = input.name;
-      if (input.notas !== undefined) data.notas = input.notas;
-      if (input.etiquetas !== undefined) data.etiquetas = input.etiquetas;
-      if (input.patientRut !== undefined) data.patientRut = input.patientRut;
-      await db.waContact.update({ where: { id: input.id }, data });
+      await updateContactService(input);
       return { status: "ok" as const };
     }),
 
@@ -533,58 +456,7 @@ const waRouterBase = {
     .input(sendTextInputSchema)
     .output(sendMessageResponseSchema)
     .handler(async ({ context, input }) => {
-      const conv = await db.waConversation.findUnique({
-        where: { id: input.conversationId },
-        include: { contact: true },
-      });
-      if (!conv) throw new ORPCError("NOT_FOUND", { message: "Conversación no encontrada" });
-      if (conv.contact.blockedAt) {
-        throw new ORPCError("BAD_REQUEST", {
-          message: "Contacto bloqueado. Desbloquéalo desde el menú de la conversación primero.",
-        });
-      }
-      const lastInbound = conv.lastInboundAt;
-      const windowOpen = lastInbound
-        ? Date.now() - lastInbound.getTime() < WINDOW_HOURS * 60 * 60 * 1000
-        : false;
-      if (!windowOpen) {
-        throw new ORPCError("BAD_REQUEST", {
-          message:
-            "Ventana 24h cerrada. Usa una plantilla aprobada (sendTemplate) para reactivar la conversación.",
-        });
-      }
-
-      const apiResp = await sendTextMessage({
-        phoneNumberId: input.phoneNumberId,
-        toE164: conv.contact.phoneE164,
-        body: input.body,
-        contextMessageId: input.contextMetaMessageId,
-      });
-      const metaId = apiResp.messages?.[0]?.id ?? null;
-      const now = new Date();
-      const message = await db.waMessage.create({
-        data: {
-          conversationId: conv.id,
-          contactId: conv.contactId,
-          phoneNumberId: input.phoneNumberId,
-          metaMessageId: metaId,
-          direction: "OUTBOUND",
-          type: "TEXT",
-          status: "SENT",
-          body: input.body,
-          sentByUserId: context.user.id,
-          contextMetaMessageId: input.contextMetaMessageId ?? null,
-          timestamp: now,
-        },
-      });
-      await db.waConversation.update({
-        where: { id: conv.id },
-        data: {
-          lastMessageAt: now,
-          lastMessagePreview: input.body.slice(0, 200),
-        },
-      });
-      return { message };
+      return sendTextService(input, context.user.id);
     }),
 
   sendTemplate: writeWa
@@ -592,121 +464,7 @@ const waRouterBase = {
     .input(sendTemplateInputSchema)
     .output(sendMessageResponseSchema)
     .handler(async ({ context, input }) => {
-      const conv = await db.waConversation.findUnique({
-        where: { id: input.conversationId },
-        include: { contact: true },
-      });
-      if (!conv) throw new ORPCError("NOT_FOUND", { message: "Conversación no encontrada" });
-      if (conv.contact.blockedAt) {
-        throw new ORPCError("BAD_REQUEST", {
-          message: "Contacto bloqueado. Desbloquéalo desde el menú de la conversación primero.",
-        });
-      }
-      const components: Array<Record<string, unknown>> = [];
-      if (input.headerParams?.length) {
-        components.push({
-          type: "header",
-          parameters: input.headerParams.map((t) => ({ type: "text", text: t })),
-        });
-      }
-      if (input.bodyParams?.length) {
-        components.push({
-          type: "body",
-          parameters: input.bodyParams.map((t) => ({ type: "text", text: t })),
-        });
-      }
-      // Carousel template (Meta 2026): build cards array with per-card image
-      // header + body params + button payloads.
-      if (input.cards && input.cards.length > 0) {
-        const cards = input.cards.map((card) => {
-          const cardComponents: Array<Record<string, unknown>> = [];
-          if (card.imageMediaId) {
-            cardComponents.push({
-              type: "header",
-              parameters: [{ type: "image", image: { id: card.imageMediaId } }],
-            });
-          }
-          if (card.bodyParams?.length) {
-            cardComponents.push({
-              type: "body",
-              parameters: card.bodyParams.map((t) => ({ type: "text", text: t })),
-            });
-          }
-          (card.quickReplyPayloads ?? []).forEach((payload, idx) => {
-            cardComponents.push({
-              type: "button",
-              sub_type: "quick_reply",
-              index: idx,
-              parameters: [{ type: "payload", payload }],
-            });
-          });
-          if (card.urlButtonSuffix) {
-            cardComponents.push({
-              type: "button",
-              sub_type: "url",
-              index: 0,
-              parameters: [{ type: "text", text: card.urlButtonSuffix }],
-            });
-          }
-          return { card_index: card.cardIndex, components: cardComponents };
-        });
-        components.push({ type: "carousel", cards });
-      }
-      // LIMITED_TIME_OFFER countdown (Meta 2026): inserts the expiration
-      // timestamp into the offer component so the patient sees the live
-      // timer in the chat bubble.
-      if (input.ltoExpirationMs) {
-        components.push({
-          type: "limited_time_offer",
-          parameters: [
-            {
-              type: "limited_time_offer",
-              limited_time_offer: { expiration_time_ms: input.ltoExpirationMs },
-            },
-          ],
-        });
-      }
-      // COPY_CODE button (Meta 2026): one-tap copy to clipboard.
-      if (input.copyCodeButton) {
-        components.push({
-          type: "button",
-          sub_type: "copy_code",
-          index: input.copyCodeButton.index,
-          parameters: [{ type: "coupon_code", coupon_code: input.copyCodeButton.value }],
-        });
-      }
-      const apiResp = await sendTemplateMessage({
-        phoneNumberId: input.phoneNumberId,
-        toE164: conv.contact.phoneE164,
-        templateName: input.templateName,
-        language: input.language,
-        components: components as never,
-      });
-      const metaId = apiResp.messages?.[0]?.id ?? null;
-      const now = new Date();
-      const preview = `[plantilla] ${input.templateName}`;
-      const message = await db.waMessage.create({
-        data: {
-          conversationId: conv.id,
-          contactId: conv.contactId,
-          phoneNumberId: input.phoneNumberId,
-          metaMessageId: metaId,
-          direction: "OUTBOUND",
-          type: "TEMPLATE",
-          status: "SENT",
-          body: preview,
-          templateName: input.templateName,
-          templateLanguage: input.language,
-          sentByUserId: context.user.id,
-          payload: { components } as never,
-          timestamp: now,
-        },
-      });
-      await db.waConversation.update({
-        where: { id: conv.id },
-        data: { lastMessageAt: now, lastMessagePreview: preview },
-      });
-      return { message };
+      return sendTemplateService(input, context.user.id);
     }),
 
   sendReaction: writeWa
@@ -714,35 +472,7 @@ const waRouterBase = {
     .input(sendReactionInputSchema)
     .output(sendMessageResponseSchema)
     .handler(async ({ context, input }) => {
-      const conv = await db.waConversation.findUnique({
-        where: { id: input.conversationId },
-        include: { contact: true },
-      });
-      if (!conv) throw new ORPCError("NOT_FOUND", { message: "Conversación no encontrada" });
-      const apiResp = await sendReaction(
-        input.phoneNumberId,
-        conv.contact.phoneE164,
-        input.metaMessageId,
-        input.emoji
-      );
-      const metaId = apiResp.messages?.[0]?.id ?? null;
-      const now = new Date();
-      const message = await db.waMessage.create({
-        data: {
-          conversationId: conv.id,
-          contactId: conv.contactId,
-          phoneNumberId: input.phoneNumberId,
-          metaMessageId: metaId,
-          direction: "OUTBOUND",
-          type: "REACTION",
-          status: "SENT",
-          body: input.emoji || null,
-          contextMetaMessageId: input.metaMessageId,
-          sentByUserId: context.user.id,
-          timestamp: now,
-        },
-      });
-      return { message };
+      return sendReactionService(input, context.user.id);
     }),
 
   sendMedia: writeWa
@@ -750,71 +480,7 @@ const waRouterBase = {
     .input(sendMediaInputSchema)
     .output(sendMessageResponseSchema)
     .handler(async ({ context, input }) => {
-      const conv = await db.waConversation.findUnique({
-        where: { id: input.conversationId },
-        include: { contact: true },
-      });
-      if (!conv) throw new ORPCError("NOT_FOUND", { message: "Conversación no encontrada" });
-      if (!input.mediaId && !input.link) {
-        throw new ORPCError("BAD_REQUEST", { message: "Falta mediaId o link" });
-      }
-      const lastInbound = conv.lastInboundAt;
-      const windowOpen = lastInbound
-        ? Date.now() - lastInbound.getTime() < WINDOW_HOURS * 60 * 60 * 1000
-        : false;
-      if (!windowOpen) {
-        throw new ORPCError("BAD_REQUEST", {
-          message: "Ventana 24h cerrada. Solo plantillas pueden reactivar la conversación.",
-        });
-      }
-      const apiResp = await sendMediaMessage({
-        phoneNumberId: input.phoneNumberId,
-        toE164: conv.contact.phoneE164,
-        type: input.type,
-        mediaId: input.mediaId,
-        link: input.link,
-        caption: input.caption,
-        filename: input.filename,
-      });
-      const metaId = apiResp.messages?.[0]?.id ?? null;
-      const now = new Date();
-      const typeMap: Record<string, "IMAGE" | "DOCUMENT" | "AUDIO" | "VIDEO" | "STICKER"> = {
-        image: "IMAGE",
-        document: "DOCUMENT",
-        audio: "AUDIO",
-        video: "VIDEO",
-        sticker: "STICKER",
-      };
-      const preview = input.caption ?? (input.filename ? input.filename : `[${input.type}]`);
-      const message = await db.waMessage.create({
-        data: {
-          conversationId: conv.id,
-          contactId: conv.contactId,
-          phoneNumberId: input.phoneNumberId,
-          metaMessageId: metaId,
-          direction: "OUTBOUND",
-          type: typeMap[input.type],
-          status: "SENT",
-          body: input.caption ?? null,
-          mediaCaption: input.caption ?? null,
-          contextMetaMessageId: input.contextMetaMessageId ?? null,
-          sentByUserId: context.user.id,
-          payload: {
-            [input.type]: {
-              id: input.mediaId,
-              link: input.link,
-              caption: input.caption,
-              filename: input.filename,
-            },
-          } as never,
-          timestamp: now,
-        },
-      });
-      await db.waConversation.update({
-        where: { id: conv.id },
-        data: { lastMessageAt: now, lastMessagePreview: preview.slice(0, 200) },
-      });
-      return { message };
+      return sendMediaService(input, context.user.id);
     }),
 
   sendFlow: writeWa
@@ -822,59 +488,7 @@ const waRouterBase = {
     .input(sendFlowInputSchema)
     .output(sendMessageResponseSchema)
     .handler(async ({ context, input }) => {
-      const conv = await db.waConversation.findUnique({
-        where: { id: input.conversationId },
-        include: { contact: true },
-      });
-      if (!conv) throw new ORPCError("NOT_FOUND", { message: "Conversación no encontrada" });
-      const lastInbound = conv.lastInboundAt;
-      const windowOpen = lastInbound
-        ? Date.now() - lastInbound.getTime() < WINDOW_HOURS * 60 * 60 * 1000
-        : false;
-      if (!windowOpen) {
-        throw new ORPCError("BAD_REQUEST", {
-          message:
-            "Ventana 24h cerrada. Solo plantillas pueden reactivar la conversación; los flows requieren ventana abierta.",
-        });
-      }
-      const apiResp = await sendFlowMessage({
-        phoneNumberId: input.phoneNumberId,
-        toE164: conv.contact.phoneE164,
-        flowId: input.flowId,
-        flowCta: input.flowCta,
-        bodyText: input.bodyText,
-        headerText: input.headerText,
-        footerText: input.footerText,
-        flowToken: input.flowToken,
-        initialScreen: input.initialScreen,
-      });
-      const metaId = apiResp.messages?.[0]?.id ?? null;
-      const now = new Date();
-      const preview = `[flow] ${input.flowCta}`;
-      const message = await db.waMessage.create({
-        data: {
-          conversationId: conv.id,
-          contactId: conv.contactId,
-          phoneNumberId: input.phoneNumberId,
-          metaMessageId: metaId,
-          direction: "OUTBOUND",
-          type: "INTERACTIVE",
-          status: "SENT",
-          body: input.bodyText,
-          sentByUserId: context.user.id,
-          payload: {
-            interactive_type: "flow",
-            flow_id: input.flowId,
-            flow_cta: input.flowCta,
-          } as never,
-          timestamp: now,
-        },
-      });
-      await db.waConversation.update({
-        where: { id: conv.id },
-        data: { lastMessageAt: now, lastMessagePreview: preview },
-      });
-      return { message };
+      return sendFlowService(input, context.user.id);
     }),
 
   sendInteractiveList: writeWa
@@ -882,58 +496,7 @@ const waRouterBase = {
     .input(sendInteractiveListInputSchema)
     .output(sendMessageResponseSchema)
     .handler(async ({ context, input }) => {
-      const conv = await db.waConversation.findUnique({
-        where: { id: input.conversationId },
-        include: { contact: true },
-      });
-      if (!conv) throw new ORPCError("NOT_FOUND", { message: "Conversación no encontrada" });
-      const lastInbound = conv.lastInboundAt;
-      const windowOpen = lastInbound
-        ? Date.now() - lastInbound.getTime() < WINDOW_HOURS * 60 * 60 * 1000
-        : false;
-      if (!windowOpen) {
-        throw new ORPCError("BAD_REQUEST", {
-          message: "Ventana 24h cerrada. Las listas interactivas requieren ventana abierta.",
-        });
-      }
-      const apiResp = await sendInteractiveListMessage({
-        phoneNumberId: input.phoneNumberId,
-        toE164: conv.contact.phoneE164,
-        bodyText: input.bodyText,
-        buttonText: input.buttonText,
-        sections: input.sections,
-        headerText: input.headerText,
-        footerText: input.footerText,
-        contextMessageId: input.contextMetaMessageId,
-        bizOpaqueCallbackData: input.bizOpaqueCallbackData,
-      });
-      const metaId = apiResp.messages?.[0]?.id ?? null;
-      const now = new Date();
-      const message = await db.waMessage.create({
-        data: {
-          conversationId: conv.id,
-          contactId: conv.contactId,
-          phoneNumberId: input.phoneNumberId,
-          metaMessageId: metaId,
-          direction: "OUTBOUND",
-          type: "INTERACTIVE",
-          status: "SENT",
-          body: input.bodyText,
-          sentByUserId: context.user.id,
-          contextMetaMessageId: input.contextMetaMessageId ?? null,
-          payload: {
-            interactive_type: "list",
-            button: input.buttonText,
-            sections: input.sections,
-          } as never,
-          timestamp: now,
-        },
-      });
-      await db.waConversation.update({
-        where: { id: conv.id },
-        data: { lastMessageAt: now, lastMessagePreview: `[lista] ${input.buttonText}` },
-      });
-      return { message };
+      return sendInteractiveListService(input, context.user.id);
     }),
 
   sendAddress: writeWa
@@ -941,55 +504,7 @@ const waRouterBase = {
     .input(sendAddressInputSchema)
     .output(sendMessageResponseSchema)
     .handler(async ({ context, input }) => {
-      const conv = await db.waConversation.findUnique({
-        where: { id: input.conversationId },
-        include: { contact: true },
-      });
-      if (!conv) throw new ORPCError("NOT_FOUND", { message: "Conversación no encontrada" });
-      const lastInbound = conv.lastInboundAt;
-      const windowOpen = lastInbound
-        ? Date.now() - lastInbound.getTime() < WINDOW_HOURS * 60 * 60 * 1000
-        : false;
-      if (!windowOpen) {
-        throw new ORPCError("BAD_REQUEST", {
-          message: "Ventana 24h cerrada. El address message requiere ventana abierta.",
-        });
-      }
-      const apiResp = await sendAddressMessage({
-        phoneNumberId: input.phoneNumberId,
-        toE164: conv.contact.phoneE164,
-        bodyText: input.bodyText,
-        country: input.country,
-        saveAddressLabel: input.saveAddressLabel,
-        contextMessageId: input.contextMetaMessageId,
-        bizOpaqueCallbackData: input.bizOpaqueCallbackData,
-      });
-      const metaId = apiResp.messages?.[0]?.id ?? null;
-      const now = new Date();
-      const message = await db.waMessage.create({
-        data: {
-          conversationId: conv.id,
-          contactId: conv.contactId,
-          phoneNumberId: input.phoneNumberId,
-          metaMessageId: metaId,
-          direction: "OUTBOUND",
-          type: "INTERACTIVE",
-          status: "SENT",
-          body: input.bodyText,
-          sentByUserId: context.user.id,
-          contextMetaMessageId: input.contextMetaMessageId ?? null,
-          payload: {
-            interactive_type: "address_message",
-            country: input.country,
-          } as never,
-          timestamp: now,
-        },
-      });
-      await db.waConversation.update({
-        where: { id: conv.id },
-        data: { lastMessageAt: now, lastMessagePreview: "[solicitar dirección]" },
-      });
-      return { message };
+      return sendAddressService(input, context.user.id);
     }),
 
   sendLocation: writeWa
@@ -997,61 +512,7 @@ const waRouterBase = {
     .input(sendLocationInputSchema)
     .output(sendMessageResponseSchema)
     .handler(async ({ context, input }) => {
-      const conv = await db.waConversation.findUnique({
-        where: { id: input.conversationId },
-        include: { contact: true },
-      });
-      if (!conv) throw new ORPCError("NOT_FOUND", { message: "Conversación no encontrada" });
-      const lastInbound = conv.lastInboundAt;
-      const windowOpen = lastInbound
-        ? Date.now() - lastInbound.getTime() < WINDOW_HOURS * 60 * 60 * 1000
-        : false;
-      if (!windowOpen) {
-        throw new ORPCError("BAD_REQUEST", {
-          message:
-            "Ventana 24h cerrada. Usa una plantilla aprobada para reactivar la conversación.",
-        });
-      }
-      const apiResp = await sendLocationMessage({
-        phoneNumberId: input.phoneNumberId,
-        toE164: conv.contact.phoneE164,
-        latitude: input.latitude,
-        longitude: input.longitude,
-        name: input.name,
-        address: input.address,
-        contextMessageId: input.contextMetaMessageId,
-      });
-      const metaId = apiResp.messages?.[0]?.id ?? null;
-      const now = new Date();
-      const preview = `[ubicación] ${input.name ?? ""}`.trim();
-      const message = await db.waMessage.create({
-        data: {
-          conversationId: conv.id,
-          contactId: conv.contactId,
-          phoneNumberId: input.phoneNumberId,
-          metaMessageId: metaId,
-          direction: "OUTBOUND",
-          type: "LOCATION",
-          status: "SENT",
-          body: input.name ?? null,
-          sentByUserId: context.user.id,
-          contextMetaMessageId: input.contextMetaMessageId ?? null,
-          payload: {
-            location: {
-              latitude: input.latitude,
-              longitude: input.longitude,
-              name: input.name,
-              address: input.address,
-            },
-          } as never,
-          timestamp: now,
-        },
-      });
-      await db.waConversation.update({
-        where: { id: conv.id },
-        data: { lastMessageAt: now, lastMessagePreview: preview },
-      });
-      return { message };
+      return sendLocationService(input, context.user.id);
     }),
 
   sendContacts: writeWa
@@ -1059,52 +520,7 @@ const waRouterBase = {
     .input(sendContactsInputSchema)
     .output(sendMessageResponseSchema)
     .handler(async ({ context, input }) => {
-      const conv = await db.waConversation.findUnique({
-        where: { id: input.conversationId },
-        include: { contact: true },
-      });
-      if (!conv) throw new ORPCError("NOT_FOUND", { message: "Conversación no encontrada" });
-      const lastInbound = conv.lastInboundAt;
-      const windowOpen = lastInbound
-        ? Date.now() - lastInbound.getTime() < WINDOW_HOURS * 60 * 60 * 1000
-        : false;
-      if (!windowOpen) {
-        throw new ORPCError("BAD_REQUEST", {
-          message:
-            "Ventana 24h cerrada. Usa una plantilla aprobada para reactivar la conversación.",
-        });
-      }
-      const apiResp = await sendContactsMessage({
-        phoneNumberId: input.phoneNumberId,
-        toE164: conv.contact.phoneE164,
-        contacts: input.contacts,
-        contextMessageId: input.contextMetaMessageId,
-      });
-      const metaId = apiResp.messages?.[0]?.id ?? null;
-      const now = new Date();
-      const names = input.contacts.map((c) => c.name.formatted_name).join(", ");
-      const preview = `[contacto] ${names}`.slice(0, 200);
-      const message = await db.waMessage.create({
-        data: {
-          conversationId: conv.id,
-          contactId: conv.contactId,
-          phoneNumberId: input.phoneNumberId,
-          metaMessageId: metaId,
-          direction: "OUTBOUND",
-          type: "CONTACTS",
-          status: "SENT",
-          body: names,
-          sentByUserId: context.user.id,
-          contextMetaMessageId: input.contextMetaMessageId ?? null,
-          payload: { contacts: input.contacts } as never,
-          timestamp: now,
-        },
-      });
-      await db.waConversation.update({
-        where: { id: conv.id },
-        data: { lastMessageAt: now, lastMessagePreview: preview },
-      });
-      return { message };
+      return sendContactsService(input, context.user.id);
     }),
 
   editText: writeWa
@@ -1112,35 +528,7 @@ const waRouterBase = {
     .input(editTextInputSchema)
     .output(sendMessageResponseSchema)
     .handler(async ({ input }) => {
-      const orig = await db.waMessage.findUnique({
-        where: { id: input.messageId },
-        include: { conversation: { include: { contact: true } } },
-      });
-      if (!orig) throw new ORPCError("NOT_FOUND", { message: "Mensaje no encontrado" });
-      if (orig.direction !== "OUTBOUND" || orig.type !== "TEXT") {
-        throw new ORPCError("BAD_REQUEST", {
-          message: "Solo mensajes de texto enviados son editables",
-        });
-      }
-      if (!orig.metaMessageId) {
-        throw new ORPCError("BAD_REQUEST", { message: "Mensaje sin metaMessageId — no editable" });
-      }
-      // Cloud API window for editing: 15 minutes from send.
-      const ageMs = Date.now() - orig.timestamp.getTime();
-      if (ageMs > 15 * 60 * 1000) {
-        throw new ORPCError("BAD_REQUEST", { message: "Ventana de edición (15 min) expirada" });
-      }
-      await editTextMessage({
-        phoneNumberId: input.phoneNumberId,
-        toE164: orig.conversation.contact.phoneE164,
-        metaMessageId: orig.metaMessageId,
-        body: input.body,
-      });
-      const updated = await db.waMessage.update({
-        where: { id: orig.id },
-        data: { body: input.body },
-      });
-      return { message: updated };
+      return editTextService(input);
     }),
 
   createTemplate: createWa
@@ -1304,28 +692,7 @@ const waRouterBase = {
     .input(searchMessagesInputSchema)
     .output(searchMessagesResponseSchema)
     .handler(async ({ input }) => {
-      const where: Record<string, unknown> = {
-        body: { contains: input.q, mode: "insensitive" },
-      };
-      if (input.conversationId) where.conversationId = input.conversationId;
-      const rows = await db.waMessage.findMany({
-        where,
-        orderBy: { timestamp: "desc" },
-        take: input.limit,
-        include: { conversation: { include: { contact: true } } },
-      });
-      return {
-        results: rows.map((r) => ({
-          messageId: r.id,
-          conversationId: r.conversationId,
-          contactName: r.conversation.contact.name ?? r.conversation.contact.pushName ?? null,
-          phoneE164: r.conversation.contact.phoneE164,
-          direction: r.direction,
-          type: r.type,
-          body: r.body,
-          timestamp: r.timestamp,
-        })),
-      };
+      return searchMessagesService(input);
     }),
 
   listConversationMedia: readWa
@@ -1333,24 +700,7 @@ const waRouterBase = {
     .input(listConversationMediaInputSchema)
     .output(listConversationMediaResponseSchema)
     .handler(async ({ input }) => {
-      const rows = await db.waMessage.findMany({
-        where: {
-          conversationId: input.conversationId,
-          type: { in: ["IMAGE", "VIDEO", "AUDIO", "DOCUMENT", "STICKER"] },
-        },
-        orderBy: { timestamp: "desc" },
-        take: input.limit,
-        select: { id: true, type: true, body: true, timestamp: true, direction: true },
-      });
-      return {
-        media: rows.map((r) => ({
-          messageId: r.id,
-          type: r.type,
-          body: r.body,
-          timestamp: r.timestamp,
-          out: r.direction === "OUTBOUND",
-        })),
-      };
+      return listConversationMediaService(input);
     }),
 
   listTemplates: readWa
@@ -2636,21 +1986,7 @@ const waRouterBase = {
     .input(blockContactInputSchema)
     .output(waOkResponseSchema)
     .handler(async ({ context, input }) => {
-      const conv = await db.waConversation.findUnique({
-        where: { id: input.conversationId },
-        include: { contact: true },
-      });
-      if (!conv) throw new ORPCError("NOT_FOUND", { message: "Conversación no encontrada" });
-      await blockUsers(input.phoneNumberId, [conv.contact.phoneE164]);
-      const now = new Date();
-      await db.waContact.update({
-        where: { id: conv.contactId },
-        data: { blockedAt: now, blockedByUserId: context.user.id },
-      });
-      await db.waConversation.update({
-        where: { id: input.conversationId },
-        data: { status: "ARCHIVED" },
-      });
+      await blockContactService(input, context.user.id);
       return { status: "ok" as const };
     }),
   unblockContact: writeWa
@@ -2658,20 +1994,7 @@ const waRouterBase = {
     .input(blockContactInputSchema)
     .output(waOkResponseSchema)
     .handler(async ({ input }) => {
-      const conv = await db.waConversation.findUnique({
-        where: { id: input.conversationId },
-        include: { contact: true },
-      });
-      if (!conv) throw new ORPCError("NOT_FOUND", { message: "Conversación no encontrada" });
-      await unblockUsers(input.phoneNumberId, [conv.contact.phoneE164]);
-      await db.waContact.update({
-        where: { id: conv.contactId },
-        data: { blockedAt: null, blockedByUserId: null },
-      });
-      await db.waConversation.update({
-        where: { id: input.conversationId },
-        data: { status: "OPEN" },
-      });
+      await unblockContactService(input);
       return { status: "ok" as const };
     }),
   listBlocked: readWa
@@ -2679,13 +2002,7 @@ const waRouterBase = {
     .input(waPhoneIdInput)
     .output(listBlockedResponseSchema)
     .handler(async ({ input }) => {
-      const r = await listBlockedUsers(input.phoneNumberId);
-      return {
-        blocked: (r.data ?? []).map((b) => ({
-          wa_id: b.wa_id ?? null,
-          input: b.input ?? null,
-        })),
-      };
+      return listBlockedService(input);
     }),
 
   // ── Typing indicator ───────────────────────────────────────────────────────
@@ -2694,22 +2011,7 @@ const waRouterBase = {
     .input(z.object({ conversationId: z.number().int().positive() }))
     .output(waOkResponseSchema)
     .handler(async ({ input }) => {
-      const latest = await db.waMessage.findFirst({
-        where: {
-          conversationId: input.conversationId,
-          direction: "INBOUND",
-          metaMessageId: { not: null },
-        },
-        orderBy: { timestamp: "desc" },
-        select: { metaMessageId: true, phoneNumberId: true },
-      });
-      if (latest?.metaMessageId) {
-        try {
-          await markMessageRead(latest.phoneNumberId, latest.metaMessageId, true);
-        } catch (err) {
-          logError("[wa-cloud.setTyping] failed", { err });
-        }
-      }
+      await setConversationTypingService(input.conversationId);
       return { status: "ok" as const };
     }),
 
