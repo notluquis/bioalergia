@@ -2,6 +2,7 @@ import { Link } from "@heroui/react";
 
 import { contactInfo } from "@/data/clinic";
 import { legalDocuments, legalOwner } from "@/data/legal";
+import { primaryNav, secondaryNav } from "@/data/navigation";
 import { doctoraliaLink } from "@/lib/doctoralia";
 
 function whatsappLink(phone: string) {
@@ -10,10 +11,11 @@ function whatsappLink(phone: string) {
 
 export function SiteFooter() {
   const year = new Date().getFullYear();
+  const siteMap = [...primaryNav, ...secondaryNav].filter((item) => item.href !== "/");
 
   return (
     <footer className="mt-10 rounded-3xl border border-border bg-(--surface)/88 px-5 py-6 shadow-[0_20px_60px_rgba(0,0,0,0.12)] backdrop-blur sm:px-6">
-      <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr_0.8fr]">
+      <div className="grid gap-6 lg:grid-cols-[1.2fr_0.9fr_0.8fr_0.8fr]">
         <div className="space-y-2">
           <p className="font-semibold text-sm text-(--ink)">{legalOwner.companyName}</p>
           <p className="max-w-xl text-(--ink-muted) text-sm">
@@ -22,6 +24,21 @@ export function SiteFooter() {
             asistencial.
           </p>
           <p className="text-(--ink-muted) text-sm">{contactInfo.address}</p>
+        </div>
+
+        <div className="space-y-2">
+          <p className="font-semibold text-sm text-(--ink)">Explora</p>
+          <div className="flex flex-col gap-1 text-sm">
+            {siteMap.map((item) => (
+              <Link
+                key={item.href}
+                className="w-fit no-underline hover:underline"
+                href={item.href}
+              >
+                {item.label}
+              </Link>
+            ))}
+          </div>
         </div>
 
         <div className="space-y-2">

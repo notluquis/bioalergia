@@ -37,11 +37,31 @@ async function main() {
     seed = { products: [], categories: [] };
   }
 
+  // Static marketing pages (TanStack file routes). Individual /noticias/<slug>
+  // articles are discovered by Google crawling /noticias links — same pattern
+  // as products above /tienda.
+  const STATIC_PAGES = [
+    "/examenes",
+    "/inmunoterapia",
+    "/botiquin",
+    "/polen",
+    "/noticias",
+    "/eres-alergico",
+    "/compromiso-social",
+  ];
+
   const entries = [
     buildUrl("/", "1.0", "weekly"),
     buildUrl("/tienda", "0.9", "daily"),
-    ...seed.categories.map((c) => buildUrl(`/tienda?categoria=${c.slug}`, "0.7", "weekly")),
-    ...seed.products.map((p) => {
+    ...STATIC_PAGES.map((path) => buildUrl(path, "0.8", "weekly")),
+    ...seed.categories
+      .filter((c) =>
+        seed.products.some(
+          (p) => p.category_slug === c.slug && (p.status ?? "ACTIVE") === "ACTIVE"
+        )
+      )
+      .map((c) => buildUrl(`/tienda?categoria=${c.slug}`, "0.7", "weekly")),
+    ...seed.products.filter((p) => (p.status ?? "ACTIVE") === "ACTIVE").map((p) => {
       const slug =
         p.slug ??
         p.name

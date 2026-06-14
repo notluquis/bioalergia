@@ -10,16 +10,24 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as RegistroRouteImport } from './routes/registro'
+import { Route as PolenRouteImport } from './routes/polen'
 import { Route as MiCuentaRouteImport } from './routes/mi-cuenta'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as InmunoterapiaRouteImport } from './routes/inmunoterapia'
+import { Route as ExamenesRouteImport } from './routes/examenes'
+import { Route as EresAlergicoRouteImport } from './routes/eres-alergico'
+import { Route as CompromisoSocialRouteImport } from './routes/compromiso-social'
 import { Route as CheckoutRouteImport } from './routes/checkout'
 import { Route as CarritoRouteImport } from './routes/carrito'
+import { Route as BotiquinRouteImport } from './routes/botiquin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as TiendaIndexRouteImport } from './routes/tienda/index'
+import { Route as NoticiasIndexRouteImport } from './routes/noticias/index'
 import { Route as MiCuentaIndexRouteImport } from './routes/mi-cuenta/index'
 import { Route as VerificarCodeRouteImport } from './routes/verificar.$code'
 import { Route as ProductoSlugRouteImport } from './routes/producto/$slug'
 import { Route as PedidoNumberRouteImport } from './routes/pedido/$number'
+import { Route as NoticiasSlugRouteImport } from './routes/noticias/$slug'
 import { Route as MiCuentaSeguridadRouteImport } from './routes/mi-cuenta/seguridad'
 import { Route as MiCuentaPedidosRouteImport } from './routes/mi-cuenta/pedidos'
 import { Route as MiCuentaDireccionesRouteImport } from './routes/mi-cuenta/direcciones'
@@ -32,6 +40,11 @@ const RegistroRoute = RegistroRouteImport.update({
   path: '/registro',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PolenRoute = PolenRouteImport.update({
+  id: '/polen',
+  path: '/polen',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MiCuentaRoute = MiCuentaRouteImport.update({
   id: '/mi-cuenta',
   path: '/mi-cuenta',
@@ -40,6 +53,26 @@ const MiCuentaRoute = MiCuentaRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InmunoterapiaRoute = InmunoterapiaRouteImport.update({
+  id: '/inmunoterapia',
+  path: '/inmunoterapia',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ExamenesRoute = ExamenesRouteImport.update({
+  id: '/examenes',
+  path: '/examenes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EresAlergicoRoute = EresAlergicoRouteImport.update({
+  id: '/eres-alergico',
+  path: '/eres-alergico',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CompromisoSocialRoute = CompromisoSocialRouteImport.update({
+  id: '/compromiso-social',
+  path: '/compromiso-social',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CheckoutRoute = CheckoutRouteImport.update({
@@ -52,6 +85,11 @@ const CarritoRoute = CarritoRouteImport.update({
   path: '/carrito',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BotiquinRoute = BotiquinRouteImport.update({
+  id: '/botiquin',
+  path: '/botiquin',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -60,6 +98,11 @@ const IndexRoute = IndexRouteImport.update({
 const TiendaIndexRoute = TiendaIndexRouteImport.update({
   id: '/tienda/',
   path: '/tienda/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NoticiasIndexRoute = NoticiasIndexRouteImport.update({
+  id: '/noticias/',
+  path: '/noticias/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MiCuentaIndexRoute = MiCuentaIndexRouteImport.update({
@@ -80,6 +123,11 @@ const ProductoSlugRoute = ProductoSlugRouteImport.update({
 const PedidoNumberRoute = PedidoNumberRouteImport.update({
   id: '/pedido/$number',
   path: '/pedido/$number',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NoticiasSlugRoute = NoticiasSlugRouteImport.update({
+  id: '/noticias/$slug',
+  path: '/noticias/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MiCuentaSeguridadRoute = MiCuentaSeguridadRouteImport.update({
@@ -115,37 +163,53 @@ const MiCuentaAuthCallbackRoute = MiCuentaAuthCallbackRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/botiquin': typeof BotiquinRoute
   '/carrito': typeof CarritoRoute
   '/checkout': typeof CheckoutRoute
+  '/compromiso-social': typeof CompromisoSocialRoute
+  '/eres-alergico': typeof EresAlergicoRoute
+  '/examenes': typeof ExamenesRoute
+  '/inmunoterapia': typeof InmunoterapiaRoute
   '/login': typeof LoginRoute
   '/mi-cuenta': typeof MiCuentaRouteWithChildren
+  '/polen': typeof PolenRoute
   '/registro': typeof RegistroRoute
   '/legal/$slug': typeof LegalSlugRoute
   '/mi-cuenta/direcciones': typeof MiCuentaDireccionesRoute
   '/mi-cuenta/pedidos': typeof MiCuentaPedidosRouteWithChildren
   '/mi-cuenta/seguridad': typeof MiCuentaSeguridadRoute
+  '/noticias/$slug': typeof NoticiasSlugRoute
   '/pedido/$number': typeof PedidoNumberRoute
   '/producto/$slug': typeof ProductoSlugRoute
   '/verificar/$code': typeof VerificarCodeRoute
   '/mi-cuenta/': typeof MiCuentaIndexRoute
+  '/noticias/': typeof NoticiasIndexRoute
   '/tienda/': typeof TiendaIndexRoute
   '/mi-cuenta/auth/callback': typeof MiCuentaAuthCallbackRoute
   '/mi-cuenta/pedidos/$number': typeof MiCuentaPedidosNumberRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/botiquin': typeof BotiquinRoute
   '/carrito': typeof CarritoRoute
   '/checkout': typeof CheckoutRoute
+  '/compromiso-social': typeof CompromisoSocialRoute
+  '/eres-alergico': typeof EresAlergicoRoute
+  '/examenes': typeof ExamenesRoute
+  '/inmunoterapia': typeof InmunoterapiaRoute
   '/login': typeof LoginRoute
+  '/polen': typeof PolenRoute
   '/registro': typeof RegistroRoute
   '/legal/$slug': typeof LegalSlugRoute
   '/mi-cuenta/direcciones': typeof MiCuentaDireccionesRoute
   '/mi-cuenta/pedidos': typeof MiCuentaPedidosRouteWithChildren
   '/mi-cuenta/seguridad': typeof MiCuentaSeguridadRoute
+  '/noticias/$slug': typeof NoticiasSlugRoute
   '/pedido/$number': typeof PedidoNumberRoute
   '/producto/$slug': typeof ProductoSlugRoute
   '/verificar/$code': typeof VerificarCodeRoute
   '/mi-cuenta': typeof MiCuentaIndexRoute
+  '/noticias': typeof NoticiasIndexRoute
   '/tienda': typeof TiendaIndexRoute
   '/mi-cuenta/auth/callback': typeof MiCuentaAuthCallbackRoute
   '/mi-cuenta/pedidos/$number': typeof MiCuentaPedidosNumberRoute
@@ -153,19 +217,27 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/botiquin': typeof BotiquinRoute
   '/carrito': typeof CarritoRoute
   '/checkout': typeof CheckoutRoute
+  '/compromiso-social': typeof CompromisoSocialRoute
+  '/eres-alergico': typeof EresAlergicoRoute
+  '/examenes': typeof ExamenesRoute
+  '/inmunoterapia': typeof InmunoterapiaRoute
   '/login': typeof LoginRoute
   '/mi-cuenta': typeof MiCuentaRouteWithChildren
+  '/polen': typeof PolenRoute
   '/registro': typeof RegistroRoute
   '/legal/$slug': typeof LegalSlugRoute
   '/mi-cuenta/direcciones': typeof MiCuentaDireccionesRoute
   '/mi-cuenta/pedidos': typeof MiCuentaPedidosRouteWithChildren
   '/mi-cuenta/seguridad': typeof MiCuentaSeguridadRoute
+  '/noticias/$slug': typeof NoticiasSlugRoute
   '/pedido/$number': typeof PedidoNumberRoute
   '/producto/$slug': typeof ProductoSlugRoute
   '/verificar/$code': typeof VerificarCodeRoute
   '/mi-cuenta/': typeof MiCuentaIndexRoute
+  '/noticias/': typeof NoticiasIndexRoute
   '/tienda/': typeof TiendaIndexRoute
   '/mi-cuenta/auth/callback': typeof MiCuentaAuthCallbackRoute
   '/mi-cuenta/pedidos/$number': typeof MiCuentaPedidosNumberRoute
@@ -174,56 +246,80 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/botiquin'
     | '/carrito'
     | '/checkout'
+    | '/compromiso-social'
+    | '/eres-alergico'
+    | '/examenes'
+    | '/inmunoterapia'
     | '/login'
     | '/mi-cuenta'
+    | '/polen'
     | '/registro'
     | '/legal/$slug'
     | '/mi-cuenta/direcciones'
     | '/mi-cuenta/pedidos'
     | '/mi-cuenta/seguridad'
+    | '/noticias/$slug'
     | '/pedido/$number'
     | '/producto/$slug'
     | '/verificar/$code'
     | '/mi-cuenta/'
+    | '/noticias/'
     | '/tienda/'
     | '/mi-cuenta/auth/callback'
     | '/mi-cuenta/pedidos/$number'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/botiquin'
     | '/carrito'
     | '/checkout'
+    | '/compromiso-social'
+    | '/eres-alergico'
+    | '/examenes'
+    | '/inmunoterapia'
     | '/login'
+    | '/polen'
     | '/registro'
     | '/legal/$slug'
     | '/mi-cuenta/direcciones'
     | '/mi-cuenta/pedidos'
     | '/mi-cuenta/seguridad'
+    | '/noticias/$slug'
     | '/pedido/$number'
     | '/producto/$slug'
     | '/verificar/$code'
     | '/mi-cuenta'
+    | '/noticias'
     | '/tienda'
     | '/mi-cuenta/auth/callback'
     | '/mi-cuenta/pedidos/$number'
   id:
     | '__root__'
     | '/'
+    | '/botiquin'
     | '/carrito'
     | '/checkout'
+    | '/compromiso-social'
+    | '/eres-alergico'
+    | '/examenes'
+    | '/inmunoterapia'
     | '/login'
     | '/mi-cuenta'
+    | '/polen'
     | '/registro'
     | '/legal/$slug'
     | '/mi-cuenta/direcciones'
     | '/mi-cuenta/pedidos'
     | '/mi-cuenta/seguridad'
+    | '/noticias/$slug'
     | '/pedido/$number'
     | '/producto/$slug'
     | '/verificar/$code'
     | '/mi-cuenta/'
+    | '/noticias/'
     | '/tienda/'
     | '/mi-cuenta/auth/callback'
     | '/mi-cuenta/pedidos/$number'
@@ -231,15 +327,23 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  BotiquinRoute: typeof BotiquinRoute
   CarritoRoute: typeof CarritoRoute
   CheckoutRoute: typeof CheckoutRoute
+  CompromisoSocialRoute: typeof CompromisoSocialRoute
+  EresAlergicoRoute: typeof EresAlergicoRoute
+  ExamenesRoute: typeof ExamenesRoute
+  InmunoterapiaRoute: typeof InmunoterapiaRoute
   LoginRoute: typeof LoginRoute
   MiCuentaRoute: typeof MiCuentaRouteWithChildren
+  PolenRoute: typeof PolenRoute
   RegistroRoute: typeof RegistroRoute
   LegalSlugRoute: typeof LegalSlugRoute
+  NoticiasSlugRoute: typeof NoticiasSlugRoute
   PedidoNumberRoute: typeof PedidoNumberRoute
   ProductoSlugRoute: typeof ProductoSlugRoute
   VerificarCodeRoute: typeof VerificarCodeRoute
+  NoticiasIndexRoute: typeof NoticiasIndexRoute
   TiendaIndexRoute: typeof TiendaIndexRoute
 }
 
@@ -250,6 +354,13 @@ declare module '@tanstack/react-router' {
       path: '/registro'
       fullPath: '/registro'
       preLoaderRoute: typeof RegistroRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/polen': {
+      id: '/polen'
+      path: '/polen'
+      fullPath: '/polen'
+      preLoaderRoute: typeof PolenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/mi-cuenta': {
@@ -266,6 +377,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/inmunoterapia': {
+      id: '/inmunoterapia'
+      path: '/inmunoterapia'
+      fullPath: '/inmunoterapia'
+      preLoaderRoute: typeof InmunoterapiaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/examenes': {
+      id: '/examenes'
+      path: '/examenes'
+      fullPath: '/examenes'
+      preLoaderRoute: typeof ExamenesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/eres-alergico': {
+      id: '/eres-alergico'
+      path: '/eres-alergico'
+      fullPath: '/eres-alergico'
+      preLoaderRoute: typeof EresAlergicoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/compromiso-social': {
+      id: '/compromiso-social'
+      path: '/compromiso-social'
+      fullPath: '/compromiso-social'
+      preLoaderRoute: typeof CompromisoSocialRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/checkout': {
       id: '/checkout'
       path: '/checkout'
@@ -280,6 +419,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CarritoRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/botiquin': {
+      id: '/botiquin'
+      path: '/botiquin'
+      fullPath: '/botiquin'
+      preLoaderRoute: typeof BotiquinRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -292,6 +438,13 @@ declare module '@tanstack/react-router' {
       path: '/tienda'
       fullPath: '/tienda/'
       preLoaderRoute: typeof TiendaIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/noticias/': {
+      id: '/noticias/'
+      path: '/noticias'
+      fullPath: '/noticias/'
+      preLoaderRoute: typeof NoticiasIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/mi-cuenta/': {
@@ -320,6 +473,13 @@ declare module '@tanstack/react-router' {
       path: '/pedido/$number'
       fullPath: '/pedido/$number'
       preLoaderRoute: typeof PedidoNumberRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/noticias/$slug': {
+      id: '/noticias/$slug'
+      path: '/noticias/$slug'
+      fullPath: '/noticias/$slug'
+      preLoaderRoute: typeof NoticiasSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/mi-cuenta/seguridad': {
@@ -401,15 +561,23 @@ const MiCuentaRouteWithChildren = MiCuentaRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  BotiquinRoute: BotiquinRoute,
   CarritoRoute: CarritoRoute,
   CheckoutRoute: CheckoutRoute,
+  CompromisoSocialRoute: CompromisoSocialRoute,
+  EresAlergicoRoute: EresAlergicoRoute,
+  ExamenesRoute: ExamenesRoute,
+  InmunoterapiaRoute: InmunoterapiaRoute,
   LoginRoute: LoginRoute,
   MiCuentaRoute: MiCuentaRouteWithChildren,
+  PolenRoute: PolenRoute,
   RegistroRoute: RegistroRoute,
   LegalSlugRoute: LegalSlugRoute,
+  NoticiasSlugRoute: NoticiasSlugRoute,
   PedidoNumberRoute: PedidoNumberRoute,
   ProductoSlugRoute: ProductoSlugRoute,
   VerificarCodeRoute: VerificarCodeRoute,
+  NoticiasIndexRoute: NoticiasIndexRoute,
   TiendaIndexRoute: TiendaIndexRoute,
 }
 export const routeTree = rootRouteImport

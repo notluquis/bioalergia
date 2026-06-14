@@ -5,6 +5,7 @@ import { useEffect, useMemo } from "react";
 
 import { contactInfo } from "@/data/clinic";
 import { legalDocuments, type LegalDocumentKey } from "@/data/legal";
+import { primaryNav } from "@/data/navigation";
 import { doctoraliaLink } from "@/lib/doctoralia";
 import { HomePage } from "@/pages/HomePage";
 import { LegalPage } from "@/pages/LegalPage";
@@ -229,47 +230,19 @@ export function App() {
                     </Link>
                   </>
                 ) : (
-                  <>
+                  primaryNav.map((item) => (
                     <Link
-                      className="no-underline transition-colors hover:text-(--ink)"
-                      href="#inicio"
+                      key={item.href}
+                      className={
+                        item.accent
+                          ? "no-underline font-semibold text-(--accent) transition-colors hover:text-(--ink)"
+                          : "no-underline transition-colors hover:text-(--ink)"
+                      }
+                      href={item.href}
                     >
-                      Inicio
+                      {item.label}
                     </Link>
-                    <Link
-                      className="no-underline transition-colors hover:text-(--ink)"
-                      href="#servicios"
-                    >
-                      Servicios
-                    </Link>
-                    <Link
-                      className="no-underline transition-colors hover:text-(--ink)"
-                      href="#inmunoterapia"
-                    >
-                      Inmunoterapia
-                    </Link>
-                    <Link className="no-underline transition-colors hover:text-(--ink)" href="#faq">
-                      FAQ
-                    </Link>
-                    <Link
-                      className="no-underline transition-colors hover:text-(--ink)"
-                      href="#contacto"
-                    >
-                      Contacto
-                    </Link>
-                    <Link
-                      className="no-underline font-semibold text-(--accent) transition-colors hover:text-(--ink)"
-                      href="/tienda"
-                    >
-                      Tienda
-                    </Link>
-                    <Link
-                      className="no-underline font-semibold text-(--accent) transition-colors hover:text-(--ink)"
-                      href="/mi-cuenta"
-                    >
-                      Mi cuenta
-                    </Link>
-                  </>
+                  ))
                 )}
               </nav>
               <div className="hidden items-center gap-2 text-sm md:flex">

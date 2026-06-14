@@ -141,6 +141,9 @@ data/
 # Excepción: crosswalk CIE-10↔CIE-11 (datos estáticos generados, deben versionarse)
 !apps/intranet/src/features/certificates/data/
 !apps/intranet/src/features/certificates/data/*.json
+# Excepción: contenido estático del site público (hardcoded, debe versionarse)
+!apps/site/src/data/
+!apps/site/src/data/*.ts
 
 # Sensitive data files
 **/credentials.json
