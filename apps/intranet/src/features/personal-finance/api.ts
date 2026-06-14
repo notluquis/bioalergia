@@ -53,7 +53,6 @@ const PersonalCreditSchema = z
     description: z.string().nullable().optional(),
     id: z.number().int(),
     installments: z.array(PersonalCreditInstallmentSchema).optional(),
-    institution: z.string().nullable().optional(),
     interestRate: z.number().nullable().optional(),
     nextPaymentAmount: z.number().nullable().optional(),
     nextPaymentDate: dateOnly.nullable().optional(),

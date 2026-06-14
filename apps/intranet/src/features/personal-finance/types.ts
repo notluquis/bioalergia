@@ -42,7 +42,6 @@ export interface PersonalCredit {
   description?: null | string;
   id: number;
   installments?: PersonalCreditInstallment[];
-  institution?: null | string;
   interestRate?: null | number;
   nextPaymentAmount?: null | number;
   nextPaymentDate?: null | string;
