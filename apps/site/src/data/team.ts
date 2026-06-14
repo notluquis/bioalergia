@@ -20,11 +20,11 @@ export const team: TeamMember[] = [
   },
   {
     name: "Lucas Pulgar Escobar",
-    role: "Coordinador financiero · Full Stack Developer",
+    role: "Coordinador financiero · Desarrollador full stack y científico de datos",
     badge: "Coordinación",
     paragraphs: [
-      "Lucas Pulgar Escobar es el coordinador financiero de Bioalergia y desarrollador full stack de la clínica. Lidera la gestión financiera y administrativa, asegurando que los procesos de cobranza, facturación y control de gestión funcionen de forma ordenada y transparente.",
-      "Como desarrollador, está a cargo de las plataformas digitales de Bioalergia: el sitio web, la intranet clínica y los sistemas internos que apoyan la atención, la trazabilidad de la información y la mejora continua de la experiencia de pacientes y equipo.",
+      "Lucas Pulgar Escobar es el coordinador financiero de Bioalergia y, además, desarrollador full stack y científico de datos. Tiene un magíster en Astronomía, formación con la que se especializó en analizar grandes volúmenes de datos y resolver problemas complejos; hoy aplica ese mismo enfoque a la gestión y la tecnología de la clínica.",
+      "Lidera la gestión financiera y administrativa de Bioalergia —cobranza, facturación y control de gestión— y desarrolla sus plataformas digitales: el sitio web, la intranet clínica y los sistemas internos que apoyan la atención, ordenan la información y mejoran de forma continua la experiencia de pacientes y equipo.",
     ],
     email: "lpulgar@bioalergia.cl",
     // TODO(user): completar URL de LinkedIn de Lucas.
