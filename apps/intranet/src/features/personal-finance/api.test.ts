@@ -107,6 +107,16 @@ describe("personal-finance/api", () => {
       orpcMocks.listCredits.mockRejectedValue(new Error("db down"));
       await expect(personalFinanceApi.listCredits()).rejects.toBeInstanceOf(ApiError);
     });
+
+    it("rejects a malformed payload at the schema layer (not a no-op assertion)", async () => {
+      // Backend drift: `bankName` is missing entirely (the exact class of bug
+      // behind the historical `institution` vs `bankName` mismatch). The string
+      // fields survive normalizeCredit untouched, so this failure can ONLY come
+      // from the real schema — the old `z.custom<PersonalCredit>()` passed ANY value.
+      const { bankName: _omit, ...rest } = makeRawCredit();
+      orpcMocks.listCredits.mockResolvedValue([rest]);
+      await expect(personalFinanceApi.listCredits()).rejects.toBeInstanceOf(ApiError);
+    });
   });
 
   describe("getCredit (detail)", () => {
