@@ -2,6 +2,7 @@ import { db } from "@finanzas/db";
 import type { ExpenseRecurrence, ExpenseScope, ExpenseSource, ExpenseStatus } from "@finanzas/db";
 import { Decimal } from "decimal.js";
 import { sql, type SelectQueryBuilder } from "kysely";
+import { DomainError } from "../lib/errors.ts";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -194,6 +195,24 @@ export async function deleteExpenseService(id: number) {
   });
 }
 
+// Thin existence-enforcing wrapper for handlers: updates and throws
+// DomainError("NOT_FOUND") if the service row is missing, so the oRPC handler
+// stays thin (no ORPCError / null-check). Mirrors the previous handler's
+// "ExpenseService not found" message + authz-vs-existence ordering (the authz
+// guard already ran in the handler middleware before this is called).
+export async function updateExpenseServiceOrThrow(
+  id: number,
+  payload: Parameters<typeof updateExpenseService>[1]
+) {
+  const existing = await getExpenseService(id);
+
+  if (!existing) {
+    throw new DomainError("NOT_FOUND", "ExpenseService not found");
+  }
+
+  return updateExpenseService(id, payload);
+}
+
 // ─── Expense helpers ──────────────────────────────────────────────────────────
 
 function buildExpenseItem(
@@ -331,6 +350,19 @@ export async function getExpense(publicId: string) {
     ...buildExpenseItem(expense, expense._count.transactions, amountApplied),
     transactions: txDetails,
   };
+}
+
+// Thin existence-enforcing wrapper for the `detail` handler: returns the
+// expense or throws DomainError("NOT_FOUND") with the same message the handler
+// used. Keeps getExpense's null-returning contract intact (tested + reused).
+export async function getExpenseOrThrow(publicId: string) {
+  const expense = await getExpense(publicId);
+
+  if (!expense) {
+    throw new DomainError("NOT_FOUND", "Expense not found");
+  }
+
+  return expense;
 }
 
 export async function createExpense(payload: {
@@ -508,6 +540,37 @@ export async function unlinkTransaction(publicId: string, transactionId: number)
   });
 
   return newAmountApplied;
+}
+
+// Thin existence-enforcing wrappers for the link/unlink handlers: return the
+// recomputed amountApplied or throw DomainError("NOT_FOUND") when the expense
+// is missing (same message the handlers used). The underlying functions keep
+// their null-returning contract (tested + reused).
+export async function linkTransactionOrThrow(
+  publicId: string,
+  transactionId: number,
+  amount?: number
+): Promise<number> {
+  const result = await linkTransaction(publicId, transactionId, amount);
+
+  if (result === null) {
+    throw new DomainError("NOT_FOUND", "Expense not found");
+  }
+
+  return result;
+}
+
+export async function unlinkTransactionOrThrow(
+  publicId: string,
+  transactionId: number
+): Promise<number> {
+  const result = await unlinkTransaction(publicId, transactionId);
+
+  if (result === null) {
+    throw new DomainError("NOT_FOUND", "Expense not found");
+  }
+
+  return result;
 }
 
 // ─── Generate from templates ──────────────────────────────────────────────────

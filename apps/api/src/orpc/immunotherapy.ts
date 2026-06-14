@@ -1,4 +1,3 @@
-import { db } from "@finanzas/db";
 import {
   allergenListInputSchema,
   allergenListResponseSchema,
@@ -25,7 +24,19 @@ import type { Context as HonoContext } from "hono";
 import { getSessionUser, hasPermission } from "../lib/auth.ts";
 import { logError } from "../lib/logger.ts";
 import { configureSuperjson } from "../lib/superjson-config.ts";
-import { computeQuote, createImmunotherapyBudget } from "../services/immunotherapy.ts";
+import {
+  computeQuote,
+  createImmunotherapyBudget,
+  createProduct,
+  deleteProduct,
+  generateBudgetPdfFile,
+  generatePrescriptionPdfFile,
+  getTerms,
+  listAllergens,
+  listProducts,
+  updateProduct,
+  updateTerms,
+} from "../services/immunotherapy.ts";
 import { SuperJSONRPCHandler } from "./superjson.ts";
 
 configureSuperjson();
@@ -51,132 +62,31 @@ const readBudgets = requirePermission("read", "Budget");
 const createBudgets = requirePermission("create", "Budget");
 const updateSettings = requirePermission("update", "Setting");
 
-type ProductWithStages = Awaited<ReturnType<typeof loadProduct>>;
-async function loadProduct(id: number) {
-  return db.immunotherapyProduct.findUnique({
-    where: { id },
-    include: { stages: { orderBy: { sortOrder: "asc" } } },
-  });
-}
-
-function num(d: { toString: () => string } | null | undefined): number | null {
-  return d == null ? null : Number(d.toString());
-}
-
-function serializeProduct(p: NonNullable<ProductWithStages>) {
-  return {
-    id: p.id,
-    name: p.name,
-    lab: p.lab,
-    vaccineProduct: p.vaccineProduct,
-    concentrationUtMl: p.concentrationUtMl,
-    perAllergen: p.perAllergen,
-    maxAllergens: p.maxAllergens,
-    maintenanceTargetMl: num(p.maintenanceTargetMl) ?? 0,
-    maintenanceStepMl: num(p.maintenanceStepMl) ?? 0,
-    maintenanceDefaultQty: p.maintenanceDefaultQty,
-    defaultDiscountPct: num(p.defaultDiscountPct),
-    isActive: p.isActive,
-    sortOrder: p.sortOrder,
-    stages: p.stages.map((s: NonNullable<ProductWithStages>["stages"][number]) => ({
-      id: s.id,
-      productId: s.productId,
-      label: s.label,
-      unitPrice: num(s.unitPrice) ?? 0,
-      defaultQty: s.defaultQty,
-      isMaintenance: s.isMaintenance,
-      sortOrder: s.sortOrder,
-    })),
-  };
-}
-
 const immunotherapyRouterBase = {
   // ── Productos (catálogo editable) ──────────────────────────────────
   listProducts: readBudgets
     .route({ method: "GET", path: "/products", tags: ["Immunotherapy"] })
     .output(productListResponseSchema)
-    .handler(async () => {
-      const products = await db.immunotherapyProduct.findMany({
-        include: { stages: { orderBy: { sortOrder: "asc" } } },
-        orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
-      });
-      return { products: products.map((p) => serializeProduct(p)) };
-    }),
+    .handler(async () => ({ products: await listProducts() })),
 
   createProduct: updateSettings
     .route({ method: "POST", path: "/products", tags: ["Immunotherapy"] })
     .input(createProductInputSchema)
     .output(productResponseSchema)
-    .handler(async ({ input }) => {
-      const created = await db.immunotherapyProduct.create({
-        data: {
-          name: input.name,
-          lab: input.lab ?? null,
-          vaccineProduct: input.vaccineProduct ?? null,
-          concentrationUtMl: input.concentrationUtMl ?? null,
-          perAllergen: input.perAllergen,
-          maxAllergens: input.maxAllergens ?? null,
-          maintenanceTargetMl: input.maintenanceTargetMl,
-          maintenanceStepMl: input.maintenanceStepMl,
-          maintenanceDefaultQty: input.maintenanceDefaultQty,
-          defaultDiscountPct: input.defaultDiscountPct ?? null,
-          isActive: input.isActive,
-          sortOrder: input.sortOrder,
-          stages: {
-            create: input.stages.map((s, i) => ({
-              label: s.label,
-              unitPrice: s.unitPrice,
-              defaultQty: s.defaultQty,
-              isMaintenance: s.isMaintenance,
-              sortOrder: s.sortOrder ?? i,
-            })),
-          },
-        },
-        include: { stages: { orderBy: { sortOrder: "asc" } } },
-      });
-      return { product: serializeProduct(created) };
-    }),
+    .handler(async ({ input }) => ({ product: await createProduct(input) })),
 
   updateProduct: updateSettings
     .route({ method: "POST", path: "/products/{id}/update", tags: ["Immunotherapy"] })
     .input(updateProductInputSchema)
     .output(productResponseSchema)
-    .handler(async ({ input }) => {
-      const existing = await db.immunotherapyProduct.findUnique({ where: { id: input.id } });
-      if (!existing) throw new ORPCError("NOT_FOUND", { message: "Producto no encontrado" });
-
-      const { id, stages, ...rest } = input;
-      const data: Record<string, unknown> = {};
-      for (const [k, v] of Object.entries(rest)) {
-        if (v !== undefined) data[k] = v;
-      }
-      // Reemplazo total de etapas si vienen en el payload.
-      if (stages !== undefined) {
-        await db.immunotherapyDoseStage.deleteMany({ where: { productId: id } });
-        data.stages = {
-          create: stages.map((s, i) => ({
-            label: s.label,
-            unitPrice: s.unitPrice,
-            defaultQty: s.defaultQty,
-            isMaintenance: s.isMaintenance,
-            sortOrder: s.sortOrder ?? i,
-          })),
-        };
-      }
-      const updated = await db.immunotherapyProduct.update({
-        where: { id },
-        data,
-        include: { stages: { orderBy: { sortOrder: "asc" } } },
-      });
-      return { product: serializeProduct(updated) };
-    }),
+    .handler(async ({ input }) => ({ product: await updateProduct(input) })),
 
   deleteProduct: updateSettings
     .route({ method: "DELETE", path: "/products/{id}", tags: ["Immunotherapy"] })
     .input(idInputSchema)
     .output(okResponseSchema)
     .handler(async ({ input }) => {
-      await db.immunotherapyProduct.delete({ where: { id: input.id } });
+      await deleteProduct(input.id);
       return { ok: true as const };
     }),
 
@@ -185,23 +95,7 @@ const immunotherapyRouterBase = {
     .route({ method: "GET", path: "/allergens", tags: ["Immunotherapy"] })
     .input(allergenListInputSchema)
     .output(allergenListResponseSchema)
-    .handler(async ({ input }) => {
-      const where: Record<string, unknown> = { isActive: true };
-      const q = input?.q?.trim();
-      if (q) {
-        where.OR = [
-          { commonName: { contains: q, mode: "insensitive" as const } },
-          { scientificName: { contains: q, mode: "insensitive" as const } },
-        ];
-      }
-      const allergens = await db.clinicalAllergen.findMany({
-        where,
-        select: { id: true, commonName: true, scientificName: true },
-        orderBy: { commonName: "asc" },
-        take: 500,
-      });
-      return { allergens };
-    }),
+    .handler(async ({ input }) => ({ allergens: await listAllergens(input?.q) })),
 
   // ── Cotización ─────────────────────────────────────────────────────
   quote: createBudgets
@@ -224,65 +118,7 @@ const immunotherapyRouterBase = {
     .input(createBudgetInputSchema)
     .output(z.file())
     .handler(async ({ input }) => {
-      const patient = await db.patient.findUnique({
-        where: { id: input.patientId },
-        select: {
-          person: { select: { names: true, fatherName: true, motherName: true, rut: true } },
-        },
-      });
-      if (!patient) throw new ORPCError("NOT_FOUND", { message: "Paciente no encontrado" });
-
-      const quote = await computeQuote(input);
-      const clinic = await db.clinicSettings.upsert({
-        where: { id: 1 },
-        update: {},
-        create: { id: 1 },
-      });
-      const product = await db.immunotherapyProduct.findUnique({
-        where: { id: input.productId },
-        select: { lab: true },
-      });
-
-      const fullName = [patient.person.names, patient.person.fatherName, patient.person.motherName]
-        .filter(Boolean)
-        .join(" ");
-
-      // Interpola la plantilla de introducción con datos del presupuesto.
-      const intro = clinic.immunoBudgetIntro
-        ? clinic.immunoBudgetIntro
-            .replaceAll("{{paciente}}", fullName)
-            .replaceAll("{{apoderado}}", input.parentName?.trim() || "apoderado/a")
-            .replaceAll("{{diagnostico}}", input.diagnosis?.trim() || "su condición alérgica")
-        : null;
-
-      // Lazy: pdf-lib pesa ~3MB en heap; cargar sólo al primer /pdf.
-      const { generateBudgetPdf } = await import("../modules/immunotherapy/budget-pdf.service.ts");
-      const { toPdfA3 } = await import("../modules/pdf/pdf-a.ts");
-      const rawPdf = await generateBudgetPdf({
-        clinic: {
-          name: clinic.name,
-          legalName: clinic.legalName,
-          legalRut: clinic.legalRut,
-          address: clinic.address,
-          phoneWhatsapp: clinic.phoneWhatsapp,
-          phoneLandline: clinic.phoneLandline,
-          email: clinic.email,
-          doctorName: clinic.doctorName,
-          doctorRut: clinic.doctorRut,
-          logoUrl: clinic.logoUrl,
-        },
-        patient: { name: fullName, rut: patient.person.rut },
-        quote,
-        lab: product?.lab ?? null,
-        terms: clinic.immunoBudgetTerms,
-        intro,
-      });
-
-      const pdfBytes = await toPdfA3(rawPdf, "Presupuesto de inmunoterapia");
-      const fileName = `presupuesto_inmunoterapia_${(patient.person.rut ?? "sin_rut").replace(
-        /\./g,
-        ""
-      )}.pdf`;
+      const { pdfBytes, fileName } = await generateBudgetPdfFile(input);
       return new File([Buffer.from(pdfBytes)], fileName, { type: "application/pdf" });
     }),
 
@@ -291,66 +127,7 @@ const immunotherapyRouterBase = {
     .input(prescriptionPdfInputSchema)
     .output(z.file())
     .handler(async ({ input }) => {
-      const patient = await db.patient.findUnique({
-        where: { id: input.patientId },
-        select: {
-          birthDate: true,
-          person: {
-            select: {
-              names: true,
-              fatherName: true,
-              motherName: true,
-              rut: true,
-              email: true,
-              phone: true,
-            },
-          },
-        },
-      });
-      if (!patient) throw new ORPCError("NOT_FOUND", { message: "Paciente no encontrado" });
-
-      const [quote, clinic, product] = await Promise.all([
-        computeQuote(input),
-        db.clinicSettings.upsert({ where: { id: 1 }, update: {}, create: { id: 1 } }),
-        db.immunotherapyProduct.findUnique({
-          where: { id: input.productId },
-          select: { name: true, vaccineProduct: true },
-        }),
-      ]);
-      if (!product) throw new ORPCError("NOT_FOUND", { message: "Producto no encontrado" });
-
-      const fullName = [patient.person.names, patient.person.fatherName, patient.person.motherName]
-        .filter(Boolean)
-        .join(" ");
-
-      const { generatePrescriptionPdf } = await import(
-        "../modules/immunotherapy/prescription-pdf.service.ts"
-      );
-      const { toPdfA3 } = await import("../modules/pdf/pdf-a.ts");
-      const rawPdf = await generatePrescriptionPdf({
-        patient: {
-          name: fullName,
-          rut: patient.person.rut,
-          birthDate: patient.birthDate,
-          phone: patient.person.phone,
-          email: patient.person.email,
-        },
-        clinic: {
-          doctorName: clinic.doctorName,
-          doctorRut: clinic.doctorRut,
-          email: clinic.email,
-        },
-        quote,
-        product,
-        diagnosis: input.diagnosis,
-        observations: input.observations,
-      });
-
-      const pdfBytes = await toPdfA3(rawPdf, "Prescripción de inmunoterapia");
-      const fileName = `receta_inmunoterapia_${(patient.person.rut ?? "sin_rut").replace(
-        /\./g,
-        ""
-      )}.pdf`;
+      const { pdfBytes, fileName } = await generatePrescriptionPdfFile(input);
       return new File([Buffer.from(pdfBytes)], fileName, { type: "application/pdf" });
     }),
 
@@ -358,37 +135,13 @@ const immunotherapyRouterBase = {
   getTerms: readBudgets
     .route({ method: "GET", path: "/terms", tags: ["Immunotherapy"] })
     .output(clinicTermsSchema)
-    .handler(async () => {
-      const s = await db.clinicSettings.upsert({ where: { id: 1 }, update: {}, create: { id: 1 } });
-      return {
-        legalName: s.legalName,
-        legalRut: s.legalRut,
-        immunoBudgetTerms: s.immunoBudgetTerms,
-        immunoBudgetIntro: s.immunoBudgetIntro,
-      };
-    }),
+    .handler(async () => getTerms()),
 
   updateTerms: updateSettings
     .route({ method: "POST", path: "/terms/update", tags: ["Immunotherapy"] })
     .input(updateClinicTermsInputSchema)
     .output(clinicTermsSchema)
-    .handler(async ({ input }) => {
-      const data: Record<string, unknown> = {};
-      for (const [k, v] of Object.entries(input)) {
-        if (v !== undefined) data[k] = v;
-      }
-      const s = await db.clinicSettings.upsert({
-        where: { id: 1 },
-        update: data,
-        create: { id: 1, ...data },
-      });
-      return {
-        legalName: s.legalName,
-        legalRut: s.legalRut,
-        immunoBudgetTerms: s.immunoBudgetTerms,
-        immunoBudgetIntro: s.immunoBudgetIntro,
-      };
-    }),
+    .handler(async ({ input }) => updateTerms(input)),
 };
 
 export const immunotherapyORPCRouter = base

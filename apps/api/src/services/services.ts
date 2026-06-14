@@ -224,6 +224,211 @@ export async function deleteService(id: number) {
   });
 }
 
+// Resuelve un servicio por id/publicId o lanza NOT_FOUND. Los handlers oRPC
+// usan esto en vez de chequear `if (!service) throw ORPCError` inline.
+export async function getServiceOrThrow(identifier: string | number) {
+  const service = await getServiceByIdOrPublicId(identifier);
+  if (!service) {
+    throw new DomainError("NOT_FOUND", "Not found");
+  }
+  return service;
+}
+
+// Borra un servicio por id/publicId, validando existencia (NOT_FOUND).
+export async function deleteServiceByIdentifier(identifier: string | number): Promise<void> {
+  const existing = await getServiceOrThrow(identifier);
+  await deleteService(existing.id);
+}
+
+export async function listSchedulesForService(serviceId: number) {
+  return await db.serviceSchedule.findMany({
+    where: { serviceId },
+    orderBy: { periodStart: "asc" },
+  });
+}
+
+export async function listSchedulesForServices(serviceIds: number[]) {
+  if (serviceIds.length === 0) {
+    return [];
+  }
+  return await db.serviceSchedule.findMany({
+    where: { serviceId: { in: serviceIds } },
+    orderBy: { periodStart: "asc" },
+  });
+}
+
+// Carga un servicio (NOT_FOUND) + sus schedules ordenados. Devuelve filas
+// crudas para que el handler las mapee a DTO.
+export async function getServiceWithSchedules(identifier: string | number) {
+  const service = await getServiceOrThrow(identifier);
+  const schedules = await listSchedulesForService(service.id);
+  return { schedules, service };
+}
+
+// Regenera schedules para un servicio (validando existencia) y devuelve el
+// servicio re-leído + sus schedules + el resultado del generador.
+export async function regenerateSchedulesForService(options: {
+  identifier: string | number;
+  months?: number;
+  fromDate?: Date;
+}) {
+  const existing = await getServiceOrThrow(options.identifier);
+
+  const result = await generateSchedules({
+    serviceId: existing.id,
+    months: options.months,
+    fromDate: options.fromDate,
+  });
+
+  const service = await getServiceByIdOrPublicId(existing.id);
+  const schedules = await listSchedulesForService(existing.id);
+
+  return { existing, result, schedules, service };
+}
+
+// Actualiza un servicio (validando existencia) y devuelve servicio + schedules.
+export async function updateServiceWithSchedules(
+  identifier: string | number,
+  payload: ServiceUpdatePayload
+) {
+  const existing = await getServiceOrThrow(identifier);
+  const service = await updateService(existing.id, payload);
+  const schedules = await listSchedulesForService(service.id);
+  return { schedules, service };
+}
+
+// Sincroniza transacciones de un único servicio (validando existencia).
+export async function syncTransactionsForService(identifier: string | number) {
+  const existing = await getServiceOrThrow(identifier);
+  return await syncServiceSchedulesWithFinancialTransactions(existing.publicId);
+}
+
+// Carga un schedule por id o lanza NOT_FOUND.
+export async function getScheduleOrThrow(id: number) {
+  const schedule = await db.serviceSchedule.findUnique({ where: { id } });
+  if (!schedule) {
+    throw new DomainError("NOT_FOUND", "Schedule no encontrado");
+  }
+  return schedule;
+}
+
+type ScheduleEditPayload = {
+  id: number;
+  dueDate?: Date;
+  expectedAmount?: number;
+  note?: null | string;
+};
+
+export async function editSchedule(payload: ScheduleEditPayload) {
+  await getScheduleOrThrow(payload.id);
+
+  const data: {
+    dueDate?: Date;
+    expectedAmount?: Decimal;
+    note?: null | string;
+  } = {};
+
+  if (payload.dueDate !== undefined) {
+    data.dueDate = payload.dueDate;
+  }
+
+  if (payload.expectedAmount !== undefined) {
+    data.expectedAmount = new Decimal(payload.expectedAmount);
+  }
+
+  if (payload.note !== undefined) {
+    data.note = payload.note;
+  }
+
+  return await db.serviceSchedule.update({
+    where: { id: payload.id },
+    data,
+  });
+}
+
+type TransactionSource = "release" | "settlement" | "withdraw";
+
+type SchedulePayPayload = {
+  id: number;
+  paidAmount: number;
+  paidDate: Date;
+  note?: null | string;
+  txRef: { rawId: number; source: TransactionSource } | null;
+};
+
+export async function paySchedule(payload: SchedulePayPayload) {
+  const schedule = await getScheduleOrThrow(payload.id);
+
+  const txRef = payload.txRef;
+  if (!txRef) {
+    throw new DomainError("BAD_REQUEST", "Referencia de transacción inválida");
+  }
+
+  if (txRef.source === "settlement") {
+    const found = await db.settlementTransaction.findUnique({ where: { id: txRef.rawId } });
+    if (!found) {
+      throw new DomainError("NOT_FOUND", "Settlement transaction no encontrada");
+    }
+  } else if (txRef.source === "release") {
+    const found = await db.releaseTransaction.findUnique({ where: { id: txRef.rawId } });
+    if (!found) {
+      throw new DomainError("NOT_FOUND", "Release transaction no encontrada");
+    }
+  } else {
+    const found = await db.withdrawTransaction.findUnique({ where: { id: txRef.rawId } });
+    if (!found) {
+      throw new DomainError("NOT_FOUND", "Withdraw transaction no encontrada");
+    }
+  }
+
+  const paidAmount = new Decimal(payload.paidAmount);
+  const dueAmount = new Decimal(schedule.effectiveAmount.toString());
+  const status = paidAmount.greaterThanOrEqualTo(dueAmount) ? "PAID" : "PARTIAL";
+
+  return await db.serviceSchedule.update({
+    where: { id: payload.id },
+    data: {
+      paidAmount,
+      paidDate: payload.paidDate,
+      note: payload.note ?? schedule.note,
+      status,
+      financialTransactionId: null,
+      settlementTransactionId: txRef.source === "settlement" ? txRef.rawId : null,
+      releaseTransactionId: txRef.source === "release" ? txRef.rawId : null,
+      withdrawTransactionId: txRef.source === "withdraw" ? txRef.rawId : null,
+    },
+  });
+}
+
+export async function skipSchedule(id: number, reason: null | string) {
+  await getScheduleOrThrow(id);
+
+  return await db.serviceSchedule.update({
+    where: { id },
+    data: {
+      note: reason,
+      status: "SKIPPED",
+    },
+  });
+}
+
+export async function unlinkSchedule(id: number) {
+  await getScheduleOrThrow(id);
+
+  return await db.serviceSchedule.update({
+    where: { id },
+    data: {
+      paidAmount: null,
+      paidDate: null,
+      status: "PENDING",
+      financialTransactionId: null,
+      settlementTransactionId: null,
+      releaseTransactionId: null,
+      withdrawTransactionId: null,
+    },
+  });
+}
+
 type GenerateSchedulesOptions = {
   serviceId: number;
   months?: number;
