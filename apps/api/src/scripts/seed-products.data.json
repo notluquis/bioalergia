@@ -5,8 +5,15 @@
     { "slug": "hidratacion-corporal", "name": "Hidratación corporal" },
     { "slug": "higiene-bebe", "name": "Higiene bebé" },
     { "slug": "cuidado-nasal", "name": "Cuidado nasal" },
-    { "slug": "cuidado-manos", "name": "Cuidado de manos" }
+    { "slug": "cuidado-manos", "name": "Cuidado de manos" },
+    { "slug": "control-ambiental", "name": "Control ambiental" },
+    { "slug": "fundas-antiacaros", "name": "Fundas antiácaros" },
+    { "slug": "purificadores-aire", "name": "Purificadores de aire" },
+    { "slug": "salud-respiratoria", "name": "Salud respiratoria" },
+    { "slug": "repelentes", "name": "Repelentes" },
+    { "slug": "anti-niquel", "name": "Anti-níquel" }
   ],
+  "$comment_drafts": "Los productos con SKU 'ALG-*' son PLANTILLAS en estado DRAFT (ocultos en la tienda, que filtra status=ACTIVE). Antes de publicarlos: reemplazar SKU por el real, fijar price_clp (CLP IVA-incluido), available_qty, brand, y cambiar status a 'ACTIVE'.",
   "products": [
     {
       "sku": "296361",
@@ -133,6 +140,169 @@
       "available_qty": 2,
       "category_slug": "cuidado-manos",
       "status": "ACTIVE"
+    },
+
+    {
+      "sku": "ALG-001",
+      "name": "Funda antiácaros para colchón 1 plaza",
+      "brand": "",
+      "price_clp": 0,
+      "available_qty": 0,
+      "category_slug": "fundas-antiacaros",
+      "status": "DRAFT"
+    },
+    {
+      "sku": "ALG-002",
+      "name": "Funda antiácaros para colchón 2 plazas",
+      "brand": "",
+      "price_clp": 0,
+      "available_qty": 0,
+      "category_slug": "fundas-antiacaros",
+      "status": "DRAFT"
+    },
+    {
+      "sku": "ALG-003",
+      "name": "Funda antiácaros para almohada",
+      "brand": "",
+      "price_clp": 0,
+      "available_qty": 0,
+      "category_slug": "fundas-antiacaros",
+      "status": "DRAFT"
+    },
+    {
+      "sku": "ALG-004",
+      "name": "Funda antiácaros para plumón 2 plazas",
+      "brand": "",
+      "price_clp": 0,
+      "available_qty": 0,
+      "category_slug": "fundas-antiacaros",
+      "status": "DRAFT"
+    },
+    {
+      "sku": "ALG-010",
+      "name": "Spray antialérgico para textiles y superficies",
+      "brand": "",
+      "price_clp": 0,
+      "available_qty": 0,
+      "category_slug": "control-ambiental",
+      "status": "DRAFT"
+    },
+    {
+      "sku": "ALG-011",
+      "name": "Detergente antialérgico concentrado",
+      "brand": "",
+      "price_clp": 0,
+      "available_qty": 0,
+      "category_slug": "control-ambiental",
+      "status": "DRAFT"
+    },
+    {
+      "sku": "ALG-012",
+      "name": "Aditivo antiácaros para lavadora",
+      "brand": "",
+      "price_clp": 0,
+      "available_qty": 0,
+      "category_slug": "control-ambiental",
+      "status": "DRAFT"
+    },
+    {
+      "sku": "ALG-020",
+      "name": "Solución de irrigación nasal — repuesto 60 sobres",
+      "brand": "",
+      "price_clp": 0,
+      "available_qty": 0,
+      "category_slug": "cuidado-nasal",
+      "status": "DRAFT"
+    },
+    {
+      "sku": "ALG-021",
+      "name": "Spray nasal de solución salina",
+      "brand": "",
+      "price_clp": 0,
+      "available_qty": 0,
+      "category_slug": "cuidado-nasal",
+      "status": "DRAFT"
+    },
+    {
+      "sku": "ALG-022",
+      "name": "Aspirador nasal",
+      "brand": "",
+      "price_clp": 0,
+      "available_qty": 0,
+      "category_slug": "cuidado-nasal",
+      "status": "DRAFT"
+    },
+    {
+      "sku": "ALG-030",
+      "name": "Purificador de aire con filtro HEPA",
+      "brand": "",
+      "price_clp": 0,
+      "available_qty": 0,
+      "category_slug": "purificadores-aire",
+      "status": "DRAFT"
+    },
+    {
+      "sku": "ALG-031",
+      "name": "Filtro HEPA de repuesto",
+      "brand": "",
+      "price_clp": 0,
+      "available_qty": 0,
+      "category_slug": "purificadores-aire",
+      "status": "DRAFT"
+    },
+    {
+      "sku": "ALG-040",
+      "name": "Espaciador (aerocámara) para inhalador",
+      "brand": "",
+      "price_clp": 0,
+      "available_qty": 0,
+      "category_slug": "salud-respiratoria",
+      "status": "DRAFT"
+    },
+    {
+      "sku": "ALG-041",
+      "name": "Medidor de flujo espiratorio (peak flow)",
+      "brand": "",
+      "price_clp": 0,
+      "available_qty": 0,
+      "category_slug": "salud-respiratoria",
+      "status": "DRAFT"
+    },
+    {
+      "sku": "ALG-050",
+      "name": "Parche alivia-picaduras",
+      "brand": "",
+      "price_clp": 0,
+      "available_qty": 0,
+      "category_slug": "repelentes",
+      "status": "DRAFT"
+    },
+    {
+      "sku": "ALG-051",
+      "name": "Pulsera repelente de mosquitos",
+      "brand": "",
+      "price_clp": 0,
+      "available_qty": 0,
+      "category_slug": "repelentes",
+      "status": "DRAFT"
+    },
+    {
+      "sku": "ALG-060",
+      "name": "Detector de níquel",
+      "brand": "",
+      "price_clp": 0,
+      "available_qty": 0,
+      "category_slug": "anti-niquel",
+      "status": "DRAFT"
+    },
+    {
+      "sku": "ALG-061",
+      "name": "Protector anti-níquel",
+      "brand": "",
+      "price_clp": 0,
+      "available_qty": 0,
+      "category_slug": "anti-niquel",
+      "status": "DRAFT"
     }
   ]
 }
