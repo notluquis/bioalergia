@@ -152,6 +152,24 @@ jobs:
           echo "E2E_USER=$E2E_USER" >> "$GITHUB_ENV"
           echo "E2E_PASS=$E2E_PASS" >> "$GITHUB_ENV"
 
+      # Layer-3 DB read-only role (hermetic only, defense in depth). The
+      # writes above (db:push, seed:synthetic, seed-e2e-user) ran as the
+      # full-access `e2e` superuser. From here the api Playwright boots
+      # connects as `e2e_readonly`: SELECT everywhere, a narrow column-level
+      # UPDATE on the auth-bookkeeping columns of `users` (keeps login's
+      # session/lockout stamp working), and INSERT on audit_logs. Every
+      # other mutation is rejected at the DB. graphile-worker is off so no
+      # background writer fights the role. Non-blocking job.
+      - name: Create e2e_readonly DB role + export readonly URL
+        run: |
+          E2E_RO_PASS="$(openssl rand -base64 32 | tr -d '=+/' | head -c 32)"
+          echo "::add-mask::$E2E_RO_PASS"
+          psql "$DATABASE_URL" \
+            -v ON_ERROR_STOP=1 \
+            -v pw="$E2E_RO_PASS" \
+            -f apps/api/scripts/setup-postgres-readonly-role.sql
+          echo "DATABASE_URL_READONLY=postgres://e2e_readonly:${E2E_RO_PASS}@localhost:5432/bioalergia_e2e" >> "$GITHUB_ENV"
+
       - name: Build intranet (preview server target)
         run: pnpm turbo run build --filter=@finanzas/intranet
       - name: Install browsers
