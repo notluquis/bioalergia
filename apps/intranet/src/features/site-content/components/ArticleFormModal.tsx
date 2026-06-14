@@ -13,6 +13,7 @@ import type { BodyBlock } from "@finanzas/orpc-contracts/site-content";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Trash2 } from "lucide-react";
 import { useState } from "react";
+import { AppDatePicker } from "@/components/forms/AppDatePicker";
 import {
   createArticle,
   deleteArticle,
@@ -263,11 +264,12 @@ export function ArticleFormModal({ isOpen, onOpenChange, articleId }: ArticleFor
                   </NumberField.Group>
                 </NumberField>
 
-                <TextField value={draft.published_at} onChange={(v) => set("published_at", v)}>
-                  <Label>Fecha de publicación</Label>
-                  <Input type="date" />
-                  <p className="text-default-500 text-xs">Vacío = sin publicar.</p>
-                </TextField>
+                <AppDatePicker
+                  label="Fecha de publicación"
+                  description="Vacío = sin publicar."
+                  value={draft.published_at}
+                  onChange={(v) => set("published_at", v)}
+                />
 
                 <TextField
                   className="sm:col-span-2"
