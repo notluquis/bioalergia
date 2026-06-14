@@ -1024,6 +1024,10 @@ enum AuditEventKind {
   APPOINTMENT_CHANGE
   IMPORT_UPSERT
   FINANCIAL_CHANGE
+  // Clinical-record access (Decreto 41/2012 art. 9 + Ley 20.584): record who
+  // OPENED a patient ficha (READ) and who VIEWED a clinical document (PDF).
+  CLINICAL_RECORD_READ
+  CLINICAL_DOCUMENT_VIEW
   OTHER
 }
 
@@ -1043,6 +1047,47 @@ model SecurityAlertState {
   @@allow('read', auth().status == 'ACTIVE')
   @@allow('create,update', auth().status == 'ACTIVE')
   @@map("security_alert_state")
+}
+
+// Config-driven PII retention policy. One row per physical table whose
+// rows expire after `windowDays` measured from `dateColumn`. The nightly
+// `retention_sweep` task (lib/retention-sweep.ts) reads ENABLED rows and
+// either DELETEs or ANONYMIZEs expired rows, bounded by a SAFETY_LIMIT.
+//
+// Legal basis: Ley 21.719 (principio de proporcionalidad / limitación del
+// plazo de conservación, vigente 1-dic-2026) — la PII vencida debe
+// eliminarse o anonimizarse de forma sistemática. La FICHA CLÍNICA se
+// conserva 15 años (Decreto 41/2012) y NUNCA se toca: las tablas clínicas
+// no llevan fila aquí Y el servicio mantiene un denylist hard-coded.
+//
+// `action`:
+//   "delete"    → DELETE FROM <table> WHERE <dateColumn> < now() - windowDays
+//   "anonymize" → UPDATE <table> SET <col>=<rule> ... (per anonymizeMap)
+//
+// `anonymizeMap`: { "<column>": <rule> } where rule is one of:
+//   { "set": "null" }            → SET col = NULL
+//   { "set": "fixed", "value":X} → SET col = X (literal)
+//   { "set": "hash" }            → SET col = md5(col) (irreversible token)
+// Only consulted when action == "anonymize".
+model DataRetentionPolicy {
+  // Physical table name (snake_case), e.g. "audit_logs", "wa_messages".
+  table        String   @id
+  enabled      Boolean  @default(false)
+  // "delete" | "anonymize"
+  action       String
+  windowDays   Int      @map("window_days")
+  // Column carrying the row age. Default created_at; some tables use
+  // occurred_at / sent_at — set per policy.
+  dateColumn   String   @default("created_at") @map("date_column")
+  // Per-column anonymization rules; only used when action == "anonymize".
+  anonymizeMap Json     @default("{}") @map("anonymize_map")
+  notes        String?
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@deny('all', auth() == null)
+  @@allow('read', auth().status == 'ACTIVE')
+  @@allow('all', auth().status == 'ACTIVE')
+  @@map("data_retention_policies")
 }
 
 model AuditLog {
@@ -1078,6 +1123,8 @@ model AuditLog {
   @@index([occurredAt])
   @@index([userId, occurredAt])
   @@index([kind, occurredAt])
+  // "who accessed ficha <patientId>" — the legal access query (by subject).
+  @@index([resource, resourceId, occurredAt])
   @@deny('all', auth() == null)
   @@allow('read', auth().status == 'ACTIVE')
   // create allowed for any authed user — emitter is server-side, this

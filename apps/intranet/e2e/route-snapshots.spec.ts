@@ -8,19 +8,30 @@
  * generated IDs, charts, avatars). `maxDiffPixelRatio: 0.01` absorbs
  * sub-pixel font/AA noise.
  *
- * IMPORTANT — baselines must be generated against Railway prod, NOT a
- * local preview server. Local preview hits a vite dev build with no real
- * data, which makes every snapshot diverge from CI. Generate baselines
- * via:
+ * IMPORTANT — baselines are generated against the HERMETIC stack: a
+ * production SPA bundle served by `vite preview` (:4173) proxying /api to
+ * a local api (:4000) that runs against an EPHEMERAL, synthetically-seeded
+ * Postgres. This is PHI-free and DETERMINISTIC: the synthetic seed pins
+ * `faker.seed(20260601)` (packages/db/scripts/seed-synthetic.ts), so the
+ * same rows render every run and screenshots are reproducible. (Prod was
+ * abandoned as a baseline source — it leaks PHI into committed PNGs and
+ * its data drifts, making diffs flap.)
  *
- *   E2E_BASE_URL=https://intranet.bioalergia.cl \
- *   E2E_USER=… E2E_PASS=… \
- *   pnpm -F @finanzas/intranet exec playwright test route-snapshots \
- *     --update-snapshots
+ * Baselines MUST be generated on Linux/CI (font/AA rendering differs from
+ * macOS — a macOS-generated PNG never matches the Linux CI diff). Do NOT
+ * commit macOS-rendered baselines. Trigger the dedicated workflow:
+ *
+ *   gh workflow run e2e-hermetic.yml \
+ *     --ref <branch> -f update_snapshots=true
+ *
+ * That job spins up the ephemeral Postgres, seeds it, sets
+ * RUN_SNAPSHOTS=true, runs `playwright test route-snapshots
+ * --update-snapshots`, and commits the PNGs back to the branch.
  *
  * Snapshots commit alongside the spec under
- * `apps/intranet/e2e/route-snapshots.spec.ts-snapshots/`. CI re-runs
- * against the same Railway URL and diffs against the committed PNGs.
+ * `apps/intranet/e2e/route-snapshots.spec.ts-snapshots/`. Regular CI
+ * (quality.yml e2e-and-a11y) leaves RUN_SNAPSHOTS unset so route-snapshots
+ * is IGNORED there (non-blocking until Linux baselines prove stable).
  *
  * Routes covered: 9. `/wa-cloud` is intentionally skipped — already
  * exercised by `wa-cloud-inbox.spec.ts` with bespoke wait/mask logic.

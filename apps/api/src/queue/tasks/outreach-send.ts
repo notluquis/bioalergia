@@ -12,17 +12,27 @@
 
 import { db } from "@finanzas/db";
 import type { Task } from "graphile-worker";
-import { logEvent } from "../../lib/logger.ts";
+import { z } from "zod";
+import { logEvent, logWarn } from "../../lib/logger.ts";
 import { sendOutreachNextBatch } from "../../services/outreach-email.ts";
 
 const BATCH = Math.max(1, Math.min(100, Number(process.env.OUTREACH_DRAIN_BATCH) || 10));
+
+// graphile-worker payloads are untrusted JSON (persisted in the DB, possibly
+// enqueued by older code). Validate before use instead of an unchecked cast.
+const sendOutreachTickPayload = z.object({ campaignId: z.number().int().positive() });
 
 export function outreachDrainJobKey(campaignId: number): string {
   return `outreach_drain_${campaignId}`;
 }
 
 export const send_outreach_tick: Task = async (payload, helpers) => {
-  const { campaignId } = payload as { campaignId: number };
+  const parsed = sendOutreachTickPayload.safeParse(payload);
+  if (!parsed.success) {
+    logWarn("queue.outreach_tick.invalid_payload", { error: parsed.error.message });
+    return;
+  }
+  const { campaignId } = parsed.data;
 
   const campaign = await db.outreachEmailCampaign.findUnique({ where: { id: campaignId } });
   if (!campaign || campaign.estado !== "ENVIANDO") {

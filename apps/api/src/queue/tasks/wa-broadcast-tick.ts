@@ -11,7 +11,8 @@
 // busy-spinning while still respecting the per-second cap.
 
 import type { Task } from "graphile-worker";
-import { logEvent } from "../../lib/logger.ts";
+import { z } from "zod";
+import { logEvent, logWarn } from "../../lib/logger.ts";
 import {
   sendBroadcastNextBatch,
   waBroadcastJobKey,
@@ -19,8 +20,16 @@ import {
 
 const RE_ENQUEUE_GAP_MS = 3_000;
 
+// Validate the untrusted graphile-worker payload before use (DB-persisted JSON).
+const sendWaBroadcastTickPayload = z.object({ broadcastId: z.number().int().positive() });
+
 export const send_wa_broadcast_tick: Task = async (payload, helpers) => {
-  const { broadcastId } = payload as { broadcastId: number };
+  const parsed = sendWaBroadcastTickPayload.safeParse(payload);
+  if (!parsed.success) {
+    logWarn("queue.wa_broadcast_tick.invalid_payload", { error: parsed.error.message });
+    return;
+  }
+  const { broadcastId } = parsed.data;
 
   const res = await sendBroadcastNextBatch(broadcastId);
   logEvent("queue.wa_broadcast_tick", { broadcastId, ...res });

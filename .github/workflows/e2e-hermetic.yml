@@ -4,12 +4,20 @@ name: e2e-hermetic
 # Non-blocking until proven stable; keep OUT of branch-protection required
 # checks. Triggered manually + on PRs touching the app.
 
-# Least-privilege GITHUB_TOKEN: only checkout + run e2e; no writes.
+# PR runs are read-only (checkout + run e2e). The manual update-snapshots
+# path needs contents:write to commit Linux-rendered baselines back to the
+# branch; scoped via the job-level permissions override on that step.
 permissions:
   contents: read
 
 on:
   workflow_dispatch:
+    inputs:
+      update_snapshots:
+        description: "Regenerate route-snapshots baselines (Linux) + commit them to the branch"
+        type: boolean
+        required: false
+        default: false
   pull_request:
     branches: [main, forthcoming-ocelot]
     paths:
@@ -21,6 +29,10 @@ on:
 jobs:
   e2e-hermetic:
     runs-on: ubuntu-latest
+    # write only needed for the manual update-snapshots commit-back; the PR
+    # path never writes (the commit step is gated on the dispatch input).
+    permissions:
+      contents: write
     env:
       # Ephemeral DB — destroyed with the job. NEVER prod.
       DATABASE_URL: postgres://e2e:e2e@localhost:5432/bioalergia_e2e
@@ -42,6 +54,11 @@ jobs:
           --health-retries 5
     steps:
       - uses: actions/checkout@v6
+        with:
+          # Token + full history so the update-snapshots path can push the
+          # regenerated baselines back to the branch (default shallow
+          # checkout can't push).
+          token: ${{ secrets.GITHUB_TOKEN }}
       - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v6
         with: { node-version: 26, cache: pnpm }
@@ -71,13 +88,65 @@ jobs:
           echo "E2E_USER=$E2E_USER" >> "$GITHUB_ENV"
           echo "E2E_PASS=$E2E_PASS" >> "$GITHUB_ENV"
 
+      # Layer-3 DB read-only role (hermetic only). All writes above
+      # (db:push, seed:synthetic, seed-e2e-user) ran under the full-access
+      # `e2e` superuser. From here on the api that Playwright boots connects
+      # as `e2e_readonly`, which the SQL grants SELECT everywhere + a narrow
+      # column-level UPDATE on the auth-bookkeeping columns of `users` (so
+      # login's session/lockout stamp still works) + INSERT on audit_logs.
+      # Any other mutation is rejected at the DB. graphile-worker is off
+      # (DISABLE_QUEUE_RUNNER=true) so no background writer fights the role.
+      # Non-blocking: this whole job is excluded from branch protection.
+      - name: Create e2e_readonly DB role + export readonly URL
+        run: |
+          E2E_RO_PASS="$(openssl rand -base64 32 | tr -d '=+/' | head -c 32)"
+          echo "::add-mask::$E2E_RO_PASS"
+          psql "$DATABASE_URL" \
+            -v ON_ERROR_STOP=1 \
+            -v pw="$E2E_RO_PASS" \
+            -f apps/api/scripts/setup-postgres-readonly-role.sql
+          echo "DATABASE_URL_READONLY=postgres://e2e_readonly:${E2E_RO_PASS}@localhost:5432/bioalergia_e2e" >> "$GITHUB_ENV"
+
       # Production SPA bundle (preview serves dist/).
       - run: pnpm -F @finanzas/intranet build
 
       # Playwright boots api(:4000)+preview(:4173) via its webServer array
       # (HERMETIC=true because DATABASE_URL is set and E2E_BASE_URL is not).
+      # The api webServer reads DATABASE_URL_READONLY → DATABASE_URL fallback
+      # in playwright.config.ts, so the booted api connects as e2e_readonly.
       - run: pnpm -F @finanzas/intranet exec playwright install --with-deps chromium webkit
-      - run: pnpm -F @finanzas/intranet exec playwright test
+
+      # Default PR/dispatch run: full hermetic suite. RUN_SNAPSHOTS unset →
+      # route-snapshots.spec is IGNORED (non-blocking until Linux baselines
+      # prove stable).
+      - name: Run hermetic e2e suite
+        if: ${{ inputs.update_snapshots != true }}
+        run: pnpm -F @finanzas/intranet exec playwright test
+
+      # Manual baseline regeneration (workflow_dispatch with
+      # update_snapshots=true): RUN_SNAPSHOTS=true opts route-snapshots in,
+      # --update-snapshots writes Linux-rendered PNGs against the
+      # synthetic-seeded ephemeral DB (PHI-free, deterministic via
+      # faker.seed). Snapshot reads only → compatible with the readonly role.
+      - name: Regenerate route-snapshots baselines (Linux)
+        if: ${{ inputs.update_snapshots == true }}
+        env:
+          RUN_SNAPSHOTS: "true"
+        run: pnpm -F @finanzas/intranet exec playwright test route-snapshots --update-snapshots
+
+      - name: Commit regenerated baselines
+        if: ${{ inputs.update_snapshots == true }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "apps/intranet/e2e/route-snapshots.spec.ts-snapshots/**" || true
+          if git diff --cached --quiet; then
+            echo "No baseline changes."
+            exit 0
+          fi
+          git commit -m "chore(snapshots): regenerate route-snapshots baselines (hermetic, Linux)"
+          git push origin "HEAD:${{ github.ref_name }}"
+
       - uses: actions/upload-artifact@v4
         if: always()
         with:

@@ -15,6 +15,12 @@ const AUTHED_URL = process.env.E2E_BASE_URL ?? PREVIEW_URL;
 // ephemeral seeded Postgres (DATABASE_URL) so authed specs run against fake
 // data, never prod/PHI. The preview server proxies /api → 127.0.0.1:4000.
 const HERMETIC = !process.env.E2E_BASE_URL && Boolean(process.env.DATABASE_URL);
+// Layer-3 DB read-only role (defense in depth). When CI provisions the
+// `e2e_readonly` Postgres role (see e2e-hermetic.yml + quality.yml) it
+// exports DATABASE_URL_READONLY; the booted api connects with it so every
+// write except the narrow login/session carve-out is rejected AT THE DB.
+// Falls back to DATABASE_URL when unset (local hermetic runs stay full-RW).
+const API_DATABASE_URL = process.env.DATABASE_URL_READONLY ?? process.env.DATABASE_URL ?? "";
 
 // Viewport anchors aligned with Chromatic Story Modes (.storybook/modes.ts).
 // A regression in any of these widths narrows to the same bucket regardless
@@ -165,7 +171,9 @@ export default defineConfig({
             reuseExistingServer: !isCI,
             timeout: 120_000,
             env: {
-              DATABASE_URL: process.env.DATABASE_URL ?? "",
+              // Prefer the read-only role when CI provides it (layer-3);
+              // otherwise the full-access hermetic DB. Never prod.
+              DATABASE_URL: API_DATABASE_URL,
               NODE_ENV: "test",
               PORT: "4000",
               DISABLE_QUEUE_RUNNER: "true",
