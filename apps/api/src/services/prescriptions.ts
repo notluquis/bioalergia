@@ -1,10 +1,50 @@
-import { db } from "@finanzas/db";
+import crypto from "node:crypto";
+import { db, kysely } from "@finanzas/db";
+import type {
+  generateMedicalPrescriptionInputSchema,
+  listMedicalPrescriptionsInputSchema,
+} from "@finanzas/orpc-contracts/certificates";
+import { sql } from "kysely";
+import type { z } from "zod";
 import { DomainError } from "../lib/errors.ts";
 import { logError } from "../lib/logger.ts";
-import { ageFromBirthDate } from "../lib/time.ts";
+import { ageFromBirthDate, parseChileDateOnly } from "../lib/time.ts";
+import {
+  medicalPrescriptionSchema,
+  toStoredDiagnoses,
+  toStoredMedications,
+} from "../modules/certificates/certificate.schema.ts";
+import { buildFolio } from "../modules/certificates/folio.ts";
+import { createVerification, generateVerificationCode } from "./verification.ts";
 import { sendEmail } from "./email/index.ts";
 
 export type PrescriptionPdfMode = "full" | "overlay" | "template";
+
+// JSON-safe recursivo local que ESPEJA el `JsonValue` de ZenStack: `null` solo
+// es válido DENTRO de objetos/arrays, no en el top-level. Mismo enfoque que
+// services/employees.ts (movido del handler oRPC sin cambios).
+type JsonInput =
+  | string
+  | number
+  | boolean
+  | { [key: string]: JsonInput | null }
+  | Array<JsonInput | null>;
+
+type ListPrescriptionsFilter = z.infer<typeof listMedicalPrescriptionsInputSchema>;
+
+// Parse "YYYY-MM-DD" as Chile-local midnight -> UTC instant (Date). Invalid -> Invalid Date.
+const parseDateOnly = (value: string): Date => parseChileDateOnly(value) ?? new Date(NaN);
+
+function formatPrescriptionDiagnoses(
+  diagnoses: Array<{ code?: string; label: string }> | undefined
+): string | undefined {
+  if (!diagnoses || diagnoses.length === 0) return undefined;
+  return diagnoses
+    .map((diagnosis) =>
+      diagnosis.code ? `${diagnosis.code} - ${diagnosis.label}` : diagnosis.label
+    )
+    .join("; ");
+}
 
 type PrescriptionRow = NonNullable<Awaited<ReturnType<typeof db.medicalPrescription.findUnique>>>;
 
@@ -106,6 +146,172 @@ export async function annulPrescription(id: string): Promise<{ id: string; statu
     select: { id: true, status: true },
   });
   return updated;
+}
+
+/**
+ * Crea una receta médica (folio + verificación). El PDF NO se genera ni sube a
+ * Drive acá: es función pura de esta fila y se regenera al descargar/imprimir/
+ * enviar (buildPrescriptionPdfBytes) → la fila es la única fuente de verdad y la
+ * receta queda inmutable. Lanza NOT_FOUND si el paciente no existe.
+ *
+ * Movido desde el handler oRPC sin alterar el ORDEN: validar paciente → upsert
+ * clínica → asignar folio (nextval correlativo + sufijo) → crear fila →
+ * verificación → anular la receta superseded (re-emisión).
+ */
+export async function createMedicalPrescription(
+  input: z.infer<typeof generateMedicalPrescriptionInputSchema>,
+  issuedBy: number
+): Promise<{ id: string }> {
+  const parsed = medicalPrescriptionSchema.parse(input);
+  const patient = await db.patient.findUnique({
+    where: { id: parsed.patientId },
+    select: {
+      person: {
+        select: {
+          fatherName: true,
+          motherName: true,
+          names: true,
+          rut: true,
+        },
+      },
+    },
+  });
+  if (!patient) throw new DomainError("NOT_FOUND", "Paciente no encontrado");
+
+  const clinic = await db.clinicSettings.upsert({
+    where: { id: 1 },
+    update: {},
+    create: { id: 1 },
+  });
+  const fullName = [patient.person.names, patient.person.fatherName, patient.person.motherName]
+    .filter(Boolean)
+    .join(" ");
+  const diagnosisText = parsed.diagnosis?.trim() || formatPrescriptionDiagnoses(parsed.diagnoses);
+
+  // Folio: correlativo desde la secuencia (auditoría) + sufijo aleatorio.
+  const folioRes = await sql<{
+    v: number;
+  }>`SELECT nextval('medical_prescription_folio_seq')::int AS v`.execute(kysely);
+  const folioSeq = folioRes.rows[0]?.v ?? 0;
+  const folio = buildFolio(folioSeq, Number(parsed.date.slice(0, 4)));
+  const doctorLicense = clinic.superintendenciaNumber ?? undefined;
+  const prescriptionId = crypto.randomUUID();
+  const verificationCode = generateVerificationCode();
+
+  // Normalización tipada → fila JSON-safe (sin claves `undefined`, que ZenStack
+  // rechaza en columnas Json).
+  const storedMedications = toStoredMedications(parsed.medications);
+  const storedDiagnoses = parsed.diagnoses ? toStoredDiagnoses(parsed.diagnoses) : undefined;
+
+  // SIN Drive ni PDF al crear: el PDF es función pura de esta fila y se genera al
+  // descargar/imprimir/enviar (buildPrescriptionPdfBytes). Esto hace el create
+  // instantáneo y mantiene la receta inmutable.
+  await db.medicalPrescription.create({
+    data: {
+      date: parseDateOnly(parsed.date),
+      folio,
+      folioSeq,
+      doctorLicense,
+      diagnosis: diagnosisText,
+      diagnoses: storedDiagnoses,
+      doctorAddress: parsed.doctorAddress,
+      doctorEmail: parsed.doctorEmail,
+      doctorName: parsed.doctorName,
+      doctorRut: parsed.doctorRut,
+      doctorSpecialty: parsed.doctorSpecialty,
+      id: prescriptionId,
+      issuedBy,
+      medications: storedMedications,
+      // Metadata = respaldo Json plano. Optativos ausentes → `null` (JSON
+      // válido), nunca `undefined`. Diagnoses van a su columna dedicada.
+      metadata: {
+        medications: storedMedications,
+        diagnosis: diagnosisText ?? null,
+        notes: parsed.notes ?? null,
+        patientName: fullName,
+        patientRut: patient.person.rut ?? null,
+        ...(storedDiagnoses ? { diagnoses: storedDiagnoses } : {}),
+        ...(parsed.supersedesId ? { supersedesId: parsed.supersedesId } : {}),
+      } as unknown as JsonInput,
+      notes: parsed.notes,
+      patientId: parsed.patientId,
+      patientName: fullName,
+      patientRut: patient.person.rut,
+    },
+  });
+
+  await createVerification({
+    documentType: "prescription",
+    prescriptionId,
+    code: verificationCode,
+  });
+
+  // Modificar = re-emitir: anula la receta original (folio viejo queda como
+  // ANULADA en auditoría), la nueva ya quedó creada con folio fresco.
+  if (parsed.supersedesId) {
+    try {
+      await annulPrescription(parsed.supersedesId);
+    } catch (error) {
+      // No romper la emisión si la vieja ya estaba anulada / no existe.
+      logError("prescription.supersede.annul", error, { supersedesId: parsed.supersedesId });
+    }
+  }
+
+  // El PDF se descarga aparte (GET raw) — devolver el File por oRPC/SuperJSON
+  // corrompe el binario. Devolvemos solo el id.
+  return { id: prescriptionId };
+}
+
+/**
+ * Lista recetas médicas con filtros (paciente / estado / rango de fechas /
+ * búsqueda libre). Where-builder movido del handler oRPC sin cambios.
+ */
+export async function listMedicalPrescriptions(
+  filter: ListPrescriptionsFilter
+): Promise<{ items: Awaited<ReturnType<typeof db.medicalPrescription.findMany>> }> {
+  const f = filter ?? {};
+  const where: Record<string, unknown> = {};
+  if (f.patientId) where.patientId = f.patientId;
+  if (f.status) where.status = f.status;
+
+  // Rango de fechas sobre `date` (receta) o `issuedAt` (emisión, default).
+  if (f.from || f.to) {
+    const range: { gte?: Date; lt?: Date } = {};
+    if (f.from) range.gte = parseDateOnly(f.from);
+    if (f.to) {
+      // `lt` al día siguiente → incluye todo el día `to` (cubre timestamps).
+      const toMid = parseDateOnly(f.to);
+      range.lt = new Date(toMid.getTime() + 86_400_000);
+    }
+    if (f.dateField === "date") where.date = range;
+    else where.issuedAt = range;
+  }
+
+  // Búsqueda libre: paciente / RUT / diagnóstico / medicamento (Json).
+  if (f.search?.trim()) {
+    const q = f.search.trim();
+    where.OR = [
+      { patientName: { contains: q, mode: "insensitive" as const } },
+      { patientRut: { contains: q, mode: "insensitive" as const } },
+      { diagnosis: { contains: q, mode: "insensitive" as const } },
+      { medications: { string_contains: q } },
+    ];
+  }
+
+  const prescriptions = await db.medicalPrescription.findMany({
+    where,
+    orderBy: { issuedAt: "desc" },
+    take: f.limit ?? 200,
+    include: {
+      patient: {
+        include: {
+          person: true,
+        },
+      },
+    },
+  });
+
+  return { items: prescriptions };
 }
 
 /**
