@@ -4,13 +4,20 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 // pulls in ./employees.ts (also imports db). We test ONLY the pure helpers, so
 // the db client is never exercised — but the import must not crash. We stub a
 // noop db with $setOptions so neither @finanzas/db nor /slices throws at import.
-const { noopDb } = vi.hoisted(() => {
-  const noopDb = { $setOptions: () => noopDb };
-  return { noopDb };
+const { noopDb, mockTimesheetFindUnique } = vi.hoisted(() => {
+  const mockTimesheetFindUnique = vi.fn();
+  const noopDb = {
+    $setOptions: () => noopDb,
+    employeeTimesheet: {
+      findUnique: (...a: unknown[]) => mockTimesheetFindUnique(...a),
+    },
+  };
+  return { noopDb, mockTimesheetFindUnique };
 });
 vi.mock("@finanzas/db", () => ({ db: noopDb }));
 vi.mock("@finanzas/db/slices", () => ({ dbClinicalSeries: noopDb }));
 
+import { DomainError } from "../../lib/errors.ts";
 import type { UpsertTimesheetPayload } from "../timesheets.ts";
 import {
   calculateWorkedMinutes,
@@ -18,6 +25,7 @@ import {
   dateOnlyStartUtc,
   dateToTimeString,
   formatDbDateOnly,
+  getTimesheetEntryById,
   monthStartUtc,
   normalizeTimeString,
   normalizeUpsertPayload,
@@ -25,6 +33,37 @@ import {
   timeStringToDate,
   timeToMinutes,
 } from "../timesheets.ts";
+
+// Assert a thrown DomainError with EXACT kind + message. Pins both so Stryker
+// mutants that swap the kind or edit the literal message die.
+function expectDomainErrorSync(fn: () => unknown, kind: DomainError["kind"], message: string) {
+  let caught: unknown;
+  try {
+    fn();
+  } catch (err) {
+    caught = err;
+  }
+  expect(caught).toBeInstanceOf(DomainError);
+  expect((caught as DomainError).kind).toBe(kind);
+  expect((caught as DomainError).message).toBe(message);
+}
+
+async function expectDomainErrorAsync(
+  promise: Promise<unknown>,
+  kind: DomainError["kind"],
+  message: string
+) {
+  await promise.then(
+    () => {
+      throw new Error("expected promise to reject");
+    },
+    (err: unknown) => {
+      expect(err).toBeInstanceOf(DomainError);
+      expect((err as DomainError).kind).toBe(kind);
+      expect((err as DomainError).message).toBe(message);
+    }
+  );
+}
 
 // Build a minimal UpsertTimesheetPayload; only the fields the function under
 // test reads matter, the rest satisfy the type.
@@ -360,5 +399,119 @@ describe("timeStringToDate default reference date (pinned clock)", () => {
     // is anchored as 09:00Z on that day (no TZ offset applied).
     const d = timeStringToDate("09:00");
     expect(d.toISOString()).toBe("2026-05-15T09:00:00.000Z");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// DomainError branches — EXACT kind + message (Stryker mutant killers)
+//
+// Las pruebas de arriba usan `.toThrow(/regex/)`, que NO ata el `kind` ni el
+// texto exacto del mensaje → un mutante que cambie el kind ("BAD_REQUEST" →
+// "NOT_FOUND") o edite el literal sobrevive. Aquí afirmamos instanceof
+// DomainError + `.kind` + `.message` literal por cada `throw` de timesheets.ts.
+// ---------------------------------------------------------------------------
+
+describe("timesheets DomainError branches (exact kind + message)", () => {
+  describe("dateOnlyStartUtc / dateOnlyEndUtc — BAD_REQUEST invalid date", () => {
+    it("dateOnlyStartUtc interpola el valor y el formato esperado", () => {
+      expectDomainErrorSync(
+        () => dateOnlyStartUtc("2026-3-9"),
+        "BAD_REQUEST",
+        "Invalid date format: 2026-3-9. Expected YYYY-MM-DD"
+      );
+    });
+
+    it("dateOnlyEndUtc interpola el valor y el formato esperado", () => {
+      expectDomainErrorSync(
+        () => dateOnlyEndUtc("nope"),
+        "BAD_REQUEST",
+        "Invalid date format: nope. Expected YYYY-MM-DD"
+      );
+    });
+  });
+
+  describe("monthStartUtc — BAD_REQUEST invalid month", () => {
+    it("rechaza una fecha completa con el mensaje exacto", () => {
+      expectDomainErrorSync(
+        () => monthStartUtc("2026-03-01"),
+        "BAD_REQUEST",
+        "Invalid month format: 2026-03-01. Expected YYYY-MM"
+      );
+    });
+
+    it("rechaza un mes fuera de rango", () => {
+      expectDomainErrorSync(
+        () => monthStartUtc("2026-13"),
+        "BAD_REQUEST",
+        "Invalid month format: 2026-13. Expected YYYY-MM"
+      );
+    });
+  });
+
+  describe("timeToMinutes — BAD_REQUEST (4 ramas)", () => {
+    it('string vacío → "Time string is required"', () => {
+      expectDomainErrorSync(() => timeToMinutes(""), "BAD_REQUEST", "Time string is required");
+    });
+
+    it('formato malo → "Invalid time format: …"', () => {
+      expectDomainErrorSync(
+        () => timeToMinutes("9h30"),
+        "BAD_REQUEST",
+        "Invalid time format: 9h30. Expected HH:MM or HH:MM:SS"
+      );
+    });
+
+    it('horas fuera de rango → "Time out of range: …"', () => {
+      expectDomainErrorSync(
+        () => timeToMinutes("24:00"),
+        "BAD_REQUEST",
+        "Time out of range: 24:00"
+      );
+    });
+
+    it('minutos fuera de rango → "Time out of range: …"', () => {
+      expectDomainErrorSync(
+        () => timeToMinutes("12:60"),
+        "BAD_REQUEST",
+        "Time out of range: 12:60"
+      );
+    });
+  });
+
+  describe("timeStringToDate — BAD_REQUEST (3 ramas)", () => {
+    it('null → "Time string is required for date conversion"', () => {
+      expectDomainErrorSync(
+        () => timeStringToDate(null),
+        "BAD_REQUEST",
+        "Time string is required for date conversion"
+      );
+    });
+
+    it('componentes HH:MM fuera de rango → "Invalid time components in: …"', () => {
+      expectDomainErrorSync(
+        () => timeStringToDate("24:00"),
+        "BAD_REQUEST",
+        "Invalid time components in: 24:00"
+      );
+    });
+
+    it('string inparseable → "Unable to parse time string: …"', () => {
+      expectDomainErrorSync(
+        () => timeStringToDate("nonsense"),
+        "BAD_REQUEST",
+        "Unable to parse time string: nonsense"
+      );
+    });
+  });
+
+  describe("getTimesheetEntryById — NOT_FOUND", () => {
+    it('registro inexistente → NOT_FOUND "Registro no encontrado"', async () => {
+      mockTimesheetFindUnique.mockResolvedValue(null);
+      await expectDomainErrorAsync(
+        getTimesheetEntryById(123),
+        "NOT_FOUND",
+        "Registro no encontrado"
+      );
+    });
   });
 });

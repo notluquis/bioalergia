@@ -22,28 +22,55 @@ const {
   mockDb,
   mockSettlementFindMany,
   mockCategoryFindMany,
+  mockCategoryFindFirst,
+  mockCategoryFindUnique,
+  mockCategoryCreate,
+  mockCategoryUpdate,
+  mockCategoryDelete,
   mockTxnGroupBy,
   mockTxnCount,
   mockTxnFindMany,
   mockReleaseFindMany,
   mockAllocationFindMany,
   mockRuleFindMany,
+  mockRuleFindUnique,
+  mockRuleCreate,
+  mockRuleUpdate,
+  mockCounterpartFindUnique,
   mockQueryRaw,
+  mockExecuteRaw,
   mockTransaction,
 } = vi.hoisted(() => {
   const mockSettlementFindMany = vi.fn();
   const mockCategoryFindMany = vi.fn();
+  const mockCategoryFindFirst = vi.fn();
+  const mockCategoryFindUnique = vi.fn();
+  const mockCategoryCreate = vi.fn();
+  const mockCategoryUpdate = vi.fn();
+  const mockCategoryDelete = vi.fn();
   const mockTxnGroupBy = vi.fn();
   const mockTxnCount = vi.fn();
   const mockTxnFindMany = vi.fn();
   const mockReleaseFindMany = vi.fn();
   const mockAllocationFindMany = vi.fn();
   const mockRuleFindMany = vi.fn();
+  const mockRuleFindUnique = vi.fn();
+  const mockRuleCreate = vi.fn();
+  const mockRuleUpdate = vi.fn();
+  const mockCounterpartFindUnique = vi.fn();
   const mockQueryRaw = vi.fn();
+  const mockExecuteRaw = vi.fn();
   const mockTransaction = vi.fn();
   const mockDb = {
     settlementTransaction: { findMany: (...a: unknown[]) => mockSettlementFindMany(...a) },
-    transactionCategory: { findMany: (...a: unknown[]) => mockCategoryFindMany(...a) },
+    transactionCategory: {
+      findMany: (...a: unknown[]) => mockCategoryFindMany(...a),
+      findFirst: (...a: unknown[]) => mockCategoryFindFirst(...a),
+      findUnique: (...a: unknown[]) => mockCategoryFindUnique(...a),
+      create: (...a: unknown[]) => mockCategoryCreate(...a),
+      update: (...a: unknown[]) => mockCategoryUpdate(...a),
+      delete: (...a: unknown[]) => mockCategoryDelete(...a),
+    },
     financialTransaction: {
       groupBy: (...a: unknown[]) => mockTxnGroupBy(...a),
       count: (...a: unknown[]) => mockTxnCount(...a),
@@ -51,8 +78,15 @@ const {
     },
     releaseTransaction: { findMany: (...a: unknown[]) => mockReleaseFindMany(...a) },
     financialTransactionAllocation: { findMany: (...a: unknown[]) => mockAllocationFindMany(...a) },
-    financialAutoCategoryRule: { findMany: (...a: unknown[]) => mockRuleFindMany(...a) },
+    financialAutoCategoryRule: {
+      findMany: (...a: unknown[]) => mockRuleFindMany(...a),
+      findUnique: (...a: unknown[]) => mockRuleFindUnique(...a),
+      create: (...a: unknown[]) => mockRuleCreate(...a),
+      update: (...a: unknown[]) => mockRuleUpdate(...a),
+    },
+    counterpart: { findUnique: (...a: unknown[]) => mockCounterpartFindUnique(...a) },
     $queryRaw: (...a: unknown[]) => mockQueryRaw(...a),
+    $executeRaw: (...a: unknown[]) => mockExecuteRaw(...a),
     $transaction: (...a: unknown[]) => mockTransaction(...a),
     $setOptions: () => mockDb,
   };
@@ -60,13 +94,23 @@ const {
     mockDb,
     mockSettlementFindMany,
     mockCategoryFindMany,
+    mockCategoryFindFirst,
+    mockCategoryFindUnique,
+    mockCategoryCreate,
+    mockCategoryUpdate,
+    mockCategoryDelete,
     mockTxnGroupBy,
     mockTxnCount,
     mockTxnFindMany,
     mockReleaseFindMany,
     mockAllocationFindMany,
     mockRuleFindMany,
+    mockRuleFindUnique,
+    mockRuleCreate,
+    mockRuleUpdate,
+    mockCounterpartFindUnique,
     mockQueryRaw,
+    mockExecuteRaw,
     mockTransaction,
   };
 });
@@ -80,7 +124,17 @@ const {
   listCompensationPeriodLedger,
   reallocateFinancialTransaction,
   listFinancialAutoCategoryRules,
+  createTransactionCategory,
+  updateTransactionCategory,
+  deleteTransactionCategory,
+  createFinancialAutoCategoryRule,
+  updateFinancialAutoCategoryRule,
+  createCompensationProfile,
+  updateCompensationProfile,
+  upsertCompensationPeriodBudget,
 } = await import("../finance.ts");
+
+const { DomainError } = await import("../../lib/errors.ts");
 
 // Default empties so getNonAccountableCategoryIds + cashback filters are no-ops
 // unless a test overrides them.
@@ -761,5 +815,217 @@ describe("listFinancialAutoCategoryRules normalization", () => {
       id: 7,
       identificationNumber: "",
     });
+  });
+});
+
+// ===========================================================================
+// DomainError branches — mutation-killing assertions.
+//
+// A recent commit converted ~15 `throw new Error(...)` into
+// `throw new DomainError(kind, message)`. Stryker mutates each: flips the
+// `kind` literal, empties the `message` string, removes the `throw`.
+// To kill ALL three classes of mutant per site we assert that the rejection
+// is a real `DomainError` instance AND carries the EXACT `.kind` and exact
+// `.message`. `instanceof` kills the throw-removal mutant; `.kind` kills the
+// kind-swap mutant; `.message` kills the string-literal mutant.
+//
+// Helper: assert a thenable rejects with a DomainError matching kind+message.
+// We `await` + try/catch (instead of rejects.toMatchObject only) so we can
+// run an explicit `instanceof DomainError` check.
+// ===========================================================================
+async function expectDomainError(
+  promise: Promise<unknown>,
+  kind: string,
+  message: string
+) {
+  let caught: unknown;
+  try {
+    await promise;
+  } catch (error) {
+    caught = error;
+  }
+  expect(caught).toBeInstanceOf(DomainError);
+  expect((caught as { kind: string }).kind).toBe(kind);
+  expect((caught as { message: string }).message).toBe(message);
+}
+
+describe("createTransactionCategory DomainError branches", () => {
+  it("BAD_REQUEST when the cleaned name is empty", async () => {
+    // mergeDuplicateTransactionCategoriesByName() reads transactionCategory.findMany → [].
+    mockCategoryFindMany.mockReset();
+    mockCategoryFindMany.mockResolvedValue([]);
+    await expectDomainError(
+      createTransactionCategory({ name: "   " }),
+      "BAD_REQUEST",
+      "El nombre de la categoría es obligatorio"
+    );
+  });
+
+  it("CONFLICT when a category with the same normalized name already exists", async () => {
+    mockCategoryFindMany.mockReset();
+    // 1st findMany: mergeDuplicate (group dedupe) — return [] so no merge.
+    // 2nd findMany: findCategoryByNormalizedName — return an existing match.
+    mockCategoryFindMany
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([{ id: 1, name: "Servicios" }]);
+    await expectDomainError(
+      createTransactionCategory({ name: "servicios" }),
+      "CONFLICT",
+      "Ya existe una categoría con ese nombre"
+    );
+  });
+});
+
+describe("updateTransactionCategory DomainError branches", () => {
+  it("BAD_REQUEST when the cleaned name is empty", async () => {
+    mockCategoryFindMany.mockReset();
+    mockCategoryFindMany.mockResolvedValue([]);
+    await expectDomainError(
+      updateTransactionCategory(5, { name: "   " }),
+      "BAD_REQUEST",
+      "El nombre de la categoría es obligatorio"
+    );
+  });
+
+  it("CONFLICT when another category (excluding self) has the same name", async () => {
+    mockCategoryFindMany.mockReset();
+    // mergeDuplicate findMany → []; findCategoryByNormalizedName findMany → a
+    // DIFFERENT id (7 ≠ updated id 5) with the same normalized name → conflict.
+    mockCategoryFindMany
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([{ id: 7, name: "Servicios" }]);
+    await expectDomainError(
+      updateTransactionCategory(5, { name: "servicios" }),
+      "CONFLICT",
+      "Ya existe una categoría con ese nombre"
+    );
+  });
+});
+
+describe("deleteTransactionCategory DomainError branches", () => {
+  it("CONFLICT when the category is still used by financial transactions", async () => {
+    mockTxnCount.mockReset();
+    mockTxnCount.mockResolvedValue(3); // usageCount > 0
+    await expectDomainError(
+      deleteTransactionCategory(5),
+      "CONFLICT",
+      "No se puede eliminar: la categoría está en uso por movimientos financieros."
+    );
+  });
+});
+
+describe("createFinancialAutoCategoryRule / ensureCategoryExists DomainError branches", () => {
+  it("NOT_FOUND when the referenced category does not exist", async () => {
+    mockCategoryFindUnique.mockReset();
+    mockCategoryFindUnique.mockResolvedValue(null); // ensureCategoryExists → null
+    await expectDomainError(
+      createFinancialAutoCategoryRule({ categoryId: 999, name: "R", type: "EXPENSE" }),
+      "NOT_FOUND",
+      "Categoría no encontrada"
+    );
+  });
+});
+
+describe("updateFinancialAutoCategoryRule DomainError branches", () => {
+  it("NOT_FOUND when the rule does not exist", async () => {
+    mockRuleFindUnique.mockReset();
+    mockRuleFindUnique.mockResolvedValue(null);
+    await expectDomainError(
+      updateFinancialAutoCategoryRule(123, { name: "X" }),
+      "NOT_FOUND",
+      "Regla no encontrada"
+    );
+  });
+});
+
+describe("createCompensationProfile DomainError branches", () => {
+  it("NOT_FOUND when the category does not exist", async () => {
+    mockCategoryFindUnique.mockReset();
+    mockCategoryFindUnique.mockResolvedValue(null);
+    await expectDomainError(
+      createCompensationProfile({ categoryId: 999, name: "P" }),
+      "NOT_FOUND",
+      "Categoría no encontrada"
+    );
+  });
+
+  it("NOT_FOUND when the counterpart does not exist", async () => {
+    mockCategoryFindUnique.mockReset();
+    mockCounterpartFindUnique.mockReset();
+    mockCategoryFindUnique.mockResolvedValue({ id: 5 }); // category OK
+    mockCounterpartFindUnique.mockResolvedValue(null); // counterpart missing
+    await expectDomainError(
+      createCompensationProfile({ categoryId: 5, counterpartId: 42, name: "P" }),
+      "NOT_FOUND",
+      "Contraparte no encontrada"
+    );
+  });
+
+  it("BAD_REQUEST when the trimmed profile name is empty", async () => {
+    mockCategoryFindUnique.mockReset();
+    mockCategoryFindUnique.mockResolvedValue({ id: 5 }); // category OK, no counterpart
+    await expectDomainError(
+      createCompensationProfile({ categoryId: 5, name: "   " }),
+      "BAD_REQUEST",
+      "El nombre del perfil es obligatorio"
+    );
+  });
+});
+
+describe("updateCompensationProfile DomainError branches", () => {
+  it("NOT_FOUND when the category does not exist", async () => {
+    mockCategoryFindUnique.mockReset();
+    mockCategoryFindUnique.mockResolvedValue(null);
+    await expectDomainError(
+      updateCompensationProfile(1, { categoryId: 999 }),
+      "NOT_FOUND",
+      "Categoría no encontrada"
+    );
+  });
+
+  it("NOT_FOUND when the counterpart does not exist", async () => {
+    mockCounterpartFindUnique.mockReset();
+    mockCounterpartFindUnique.mockResolvedValue(null);
+    await expectDomainError(
+      updateCompensationProfile(1, { counterpartId: 42 }),
+      "NOT_FOUND",
+      "Contraparte no encontrada"
+    );
+  });
+
+  it("NOT_FOUND when the compensation profile row is missing", async () => {
+    // No categoryId / counterpartId in payload → both guards skipped. The
+    // existing-profile $queryRaw returns [] → NOT_FOUND perfil.
+    mockQueryRaw.mockReset();
+    mockQueryRaw.mockResolvedValue([]);
+    await expectDomainError(
+      updateCompensationProfile(1, { name: "New" }),
+      "NOT_FOUND",
+      "Perfil de compensación no encontrado"
+    );
+  });
+});
+
+describe("upsertCompensationPeriodBudget DomainError branches", () => {
+  it("NOT_FOUND when the compensation profile does not exist", async () => {
+    // assertPeriodOrThrow passes for a valid period; profile $queryRaw → [].
+    mockQueryRaw.mockReset();
+    mockQueryRaw.mockResolvedValue([]);
+    await expectDomainError(
+      upsertCompensationPeriodBudget(1, { baseAmount: 1000, period: "2026-01" }),
+      "NOT_FOUND",
+      "Perfil de compensación no encontrado"
+    );
+  });
+});
+
+describe("listCompensationPeriodLedger DomainError branch", () => {
+  it("BAD_REQUEST when fromPeriod > toPeriod (kind + exact message)", async () => {
+    // No $queryRaw needed — the guard throws before the Promise.all queries.
+    await expectDomainError(
+      listCompensationPeriodLedger(1, "2026-05", "2026-01"),
+      "BAD_REQUEST",
+      "Rango de periodos inválido"
+    );
   });
 });

@@ -5,6 +5,14 @@
 // service layer (golden 2026: no business logic in tasks/handlers).
 
 import { db } from "@finanzas/db";
+import type {
+  listAllScheduledInputSchema,
+  listScheduledResponseSchema,
+  scheduledMessageSchema,
+  scheduleMessageInputSchema,
+} from "@finanzas/orpc-contracts/wa-cloud";
+import type { z } from "zod";
+import { DomainError } from "../lib/errors.ts";
 import { logError, logEvent } from "../lib/logger.ts";
 import { sendTemplateMessage, sendTextMessage } from "../modules/wa-cloud/graph-client.ts";
 
@@ -115,4 +123,89 @@ export async function sendScheduledMessage(
     logError("[wa-cloud.scheduled.send] failed", err, { scheduledMessageId: sm.id });
     return { status: "FAILED" };
   }
+}
+
+// ── CRUD de mensajes programados (golden 2026: lógica fuera del handler) ──────
+// El handler scheduleMessage encola send_wa_scheduled con runAt = scheduledAt;
+// ese enqueue se queda en el handler (trigger de cola). Estos servicios validan
+// + persisten y devuelven la fila para que el handler decida el enqueue.
+
+type ScheduleMessagePayload = z.infer<typeof scheduleMessageInputSchema>;
+type ListAllScheduledPayload = z.infer<typeof listAllScheduledInputSchema>;
+
+type ScheduledMessageRow = Awaited<ReturnType<typeof db.waScheduledMessage.create>>;
+type ScheduledMessageDto = z.infer<typeof scheduledMessageSchema>;
+
+function toScheduledDto(row: ScheduledMessageRow): ScheduledMessageDto {
+  return {
+    ...row,
+    templateVars: (row.templateVars as unknown as string[]) ?? [],
+  } as unknown as ScheduledMessageDto;
+}
+
+// Crea el mensaje programado. Valida que la conversación exista y que la hora
+// programada esté al menos 30s en el futuro. Devuelve la fila normalizada.
+export async function createScheduledMessage(
+  payload: ScheduleMessagePayload,
+  createdByUserId: number
+): Promise<ScheduledMessageDto> {
+  const conv = await db.waConversation.findUnique({
+    where: { id: payload.conversationId },
+    select: { id: true, contactId: true },
+  });
+  if (!conv) throw new DomainError("NOT_FOUND", "Conversación no encontrada");
+  if (payload.scheduledAt.getTime() <= Date.now() + 30_000) {
+    throw new DomainError("BAD_REQUEST", "Programa al menos 30 segundos en el futuro");
+  }
+  const created = await db.waScheduledMessage.create({
+    data: {
+      conversationId: conv.id,
+      contactId: conv.contactId,
+      phoneNumberId: payload.phoneNumberId,
+      scheduledAt: payload.scheduledAt,
+      type: payload.type,
+      body: payload.body ?? null,
+      templateName: payload.templateName ?? null,
+      templateLanguage: payload.templateLanguage ?? null,
+      templateVars: (payload.templateVars ?? []) as never,
+      contextMetaMessageId: payload.contextMetaMessageId ?? null,
+      createdByUserId,
+    },
+  });
+  return toScheduledDto(created);
+}
+
+export async function listScheduledForConversation(
+  conversationId: number
+): Promise<z.infer<typeof listScheduledResponseSchema>> {
+  const rows = await db.waScheduledMessage.findMany({
+    where: { conversationId },
+    orderBy: { scheduledAt: "asc" },
+  });
+  return { scheduled: rows.map((r) => toScheduledDto(r)) };
+}
+
+export async function cancelScheduledMessage(id: number): Promise<void> {
+  await db.waScheduledMessage.update({
+    where: { id },
+    data: { status: "CANCELLED" },
+  });
+}
+
+export async function listAllScheduled(payload: ListAllScheduledPayload) {
+  const where = payload.status ? { status: payload.status } : {};
+  const rows = await db.waScheduledMessage.findMany({
+    where,
+    orderBy: { scheduledAt: "asc" },
+    take: payload.limit,
+    include: { conversation: { include: { contact: true } } },
+  });
+  return {
+    scheduled: rows.map((r: (typeof rows)[number]) => ({
+      ...r,
+      templateVars: (r.templateVars as unknown as string[]) ?? [],
+      contactName: r.conversation.contact.name ?? r.conversation.contact.pushName ?? null,
+      phoneE164: r.conversation.contact.phoneE164,
+    })),
+  };
 }
