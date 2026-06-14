@@ -55,6 +55,34 @@ const {
 vi.mock("@finanzas/db", () => ({ db: mockDb, kysely: {} }));
 vi.mock("@finanzas/db/slices", () => ({ dbClinicalSeries: mockDb }));
 
+import { DomainError } from "../../lib/errors.ts";
+
+// Assert a thrown value is a DomainError with EXACT kind + message. Bare
+// `.rejects.toThrow(/regex/)` survives Stryker mutants that swap the kind
+// argument or tweak the message; pin both fields to kill them.
+async function expectDomainError(
+  promise: Promise<unknown>,
+  kind: DomainError["kind"],
+  message: string
+) {
+  await expect(promise).rejects.toMatchObject({
+    constructor: DomainError,
+    kind,
+    message,
+  });
+  // toMatchObject's `constructor` check is loose; assert instanceof explicitly.
+  await promise.then(
+    () => {
+      throw new Error("expected promise to reject");
+    },
+    (err: unknown) => {
+      expect(err).toBeInstanceOf(DomainError);
+      expect((err as DomainError).kind).toBe(kind);
+      expect((err as DomainError).message).toBe(message);
+    }
+  );
+}
+
 const {
   CART_COOKIE_NAME,
   generateCartToken,
@@ -486,5 +514,102 @@ describe("removeItem / clearCart", () => {
     const arg = mockItemDeleteMany.mock.calls[0][0] as { where: Record<string, unknown> };
     expect(arg.where).toEqual({ cartId: 7 });
     expect(arg.where).not.toHaveProperty("productId");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// DomainError branches — EXACT kind + message (Stryker mutant killers)
+//
+// Cada `throw new DomainError(kind, msg)` en cart.ts es un objetivo de mutación
+// (swap del kind, edición del literal del mensaje). Las pruebas de arriba sólo
+// usan `.toThrow(/regex/)`, que NO ata el kind ni el texto exacto → el mutante
+// sobrevive. Aquí afirmamos instanceof DomainError + `.kind` + `.message`
+// literal por cada rama.
+// ---------------------------------------------------------------------------
+
+describe("cart DomainError branches (exact kind + message)", () => {
+  const opts = { cartId: 1, productId: 50, qty: 3 };
+
+  describe("addItemToCart", () => {
+    it('producto inexistente → BAD_REQUEST "Producto no disponible"', async () => {
+      mockProductFindUnique.mockResolvedValue(null);
+      await expectDomainError(addItemToCart(opts), "BAD_REQUEST", "Producto no disponible");
+    });
+
+    it('producto no ACTIVE → BAD_REQUEST "Producto no disponible"', async () => {
+      mockProductFindUnique.mockResolvedValue(activeProduct({ status: "DRAFT" }));
+      await expectDomainError(addItemToCart(opts), "BAD_REQUEST", "Producto no disponible");
+    });
+
+    it('qty > sellable (línea nueva) → UNPROCESSABLE_ENTITY "Stock insuficiente (disponible: N)"', async () => {
+      // sellable = 10 - 8 = 2 < qty 3
+      mockProductFindUnique.mockResolvedValue(activeProduct({ availableQty: 10, safetyStock: 8 }));
+      await expectDomainError(
+        addItemToCart(opts),
+        "UNPROCESSABLE_ENTITY",
+        "Stock insuficiente (disponible: 2)"
+      );
+    });
+
+    it("sellable negativo → mensaje interpola Math.max(0, …) = 0", async () => {
+      // sellable = 5 - 9 = -4 → disponible mostrado 0
+      mockProductFindUnique.mockResolvedValue(activeProduct({ availableQty: 5, safetyStock: 9 }));
+      await expectDomainError(
+        addItemToCart(opts),
+        "UNPROCESSABLE_ENTITY",
+        "Stock insuficiente (disponible: 0)"
+      );
+    });
+
+    it('MERGE: total > sellable → UNPROCESSABLE_ENTITY con disponible exacto', async () => {
+      // sellable = 10 - 2 = 8; existente 6 + nueva 3 = 9 > 8
+      mockProductFindUnique.mockResolvedValue(activeProduct({ availableQty: 10, safetyStock: 2 }));
+      mockItemFindUnique.mockResolvedValue({ id: 5, qty: 6 });
+      await expectDomainError(
+        addItemToCart({ cartId: 1, productId: 50, qty: 3 }),
+        "UNPROCESSABLE_ENTITY",
+        "Stock insuficiente (disponible: 8)"
+      );
+    });
+  });
+
+  describe("updateItemQty", () => {
+    it('producto inexistente → BAD_REQUEST "Producto no disponible"', async () => {
+      mockProductFindUnique.mockResolvedValue(null);
+      await expectDomainError(
+        updateItemQty({ cartId: 1, productId: 50, qty: 2 }),
+        "BAD_REQUEST",
+        "Producto no disponible"
+      );
+    });
+
+    it('producto no ACTIVE → BAD_REQUEST "Producto no disponible"', async () => {
+      mockProductFindUnique.mockResolvedValue(activeProduct({ status: "ARCHIVED" }));
+      await expectDomainError(
+        updateItemQty({ cartId: 1, productId: 50, qty: 2 }),
+        "BAD_REQUEST",
+        "Producto no disponible"
+      );
+    });
+
+    it('qty > sellable → UNPROCESSABLE_ENTITY "Stock insuficiente (disponible: N)"', async () => {
+      // sellable = 10 - 4 = 6 < qty 7
+      mockProductFindUnique.mockResolvedValue(activeProduct({ availableQty: 10, safetyStock: 4 }));
+      await expectDomainError(
+        updateItemQty({ cartId: 1, productId: 50, qty: 7 }),
+        "UNPROCESSABLE_ENTITY",
+        "Stock insuficiente (disponible: 6)"
+      );
+    });
+
+    it("sellable negativo → disponible mostrado 0 (Math.max)", async () => {
+      // sellable = 3 - 10 = -7 → 0
+      mockProductFindUnique.mockResolvedValue(activeProduct({ availableQty: 3, safetyStock: 10 }));
+      await expectDomainError(
+        updateItemQty({ cartId: 1, productId: 50, qty: 1 }),
+        "UNPROCESSABLE_ENTITY",
+        "Stock insuficiente (disponible: 0)"
+      );
+    });
   });
 });

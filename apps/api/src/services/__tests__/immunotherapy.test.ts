@@ -40,7 +40,10 @@ const {
 vi.mock("@finanzas/db", () => ({ db: mockDb, kysely: {} }));
 vi.mock("@finanzas/db/slices", () => ({ dbClinicalSeries: mockDb }));
 
-const { computeQuote, createImmunotherapyBudget } = await import("../immunotherapy.ts");
+const { DomainError } = await import("../../lib/errors.ts");
+const { computeQuote, createImmunotherapyBudget, updateProduct } = await import(
+  "../immunotherapy.ts"
+);
 
 // Producto ejemplo (estructura del LaTeX): inicio escalonado + mantención.
 function clustoid() {
@@ -162,16 +165,34 @@ describe("computeQuote", () => {
     });
   });
 
-  it("lanza NOT_FOUND si el producto no existe", async () => {
+  it("lanza NOT_FOUND con mensaje exacto si el producto no existe", async () => {
     mockProductFindUnique.mockResolvedValue(null);
-    await expect(computeQuote({ productId: 99 })).rejects.toMatchObject({ kind: "NOT_FOUND" });
+    await expect(computeQuote({ productId: 99 })).rejects.toMatchObject({
+      kind: "NOT_FOUND",
+      message: "Producto de inmunoterapia no encontrado",
+    });
   });
 
   it("rechaza un producto sin etapas configuradas", async () => {
     mockProductFindUnique.mockResolvedValue({ ...clustoid(), stages: [] });
     await expect(computeQuote({ productId: 1 })).rejects.toMatchObject({
       kind: "BAD_REQUEST",
-      message: expect.stringMatching(/etapas/i),
+      message: "El producto no tiene etapas de dosis configuradas",
+    });
+  });
+
+  it("rechaza más alérgenos que maxAllergens con mensaje exacto interpolado", async () => {
+    mockProductFindUnique.mockResolvedValue({
+      ...clustoid(),
+      name: "Clustek Forte",
+      maxAllergens: 1,
+    });
+    mockAllergenFindMany.mockResolvedValue([]);
+    await expect(
+      computeQuote({ productId: 1, allergenIds: ["a", "b", "c"] })
+    ).rejects.toMatchObject({
+      kind: "BAD_REQUEST",
+      message: "Clustek Forte admite máximo 1 alérgeno(s); seleccionaste 3.",
     });
   });
 
@@ -194,7 +215,7 @@ describe("computeQuote", () => {
     mockAllergenFindMany.mockResolvedValue([]);
     await expect(computeQuote({ productId: 1, maintenanceMl: 0 })).rejects.toMatchObject({
       kind: "BAD_REQUEST",
-      message: expect.stringMatching(/mayor a 0/i),
+      message: "El volumen de mantención debe ser mayor a 0",
     });
   });
 
@@ -247,11 +268,11 @@ describe("createImmunotherapyBudget", () => {
     expect(JSON.parse(arg.data.notes)).toMatchObject({ kind: "immunotherapy", productId: 1 });
   });
 
-  it("lanza NOT_FOUND si el paciente no existe y NO crea Budget", async () => {
+  it("lanza NOT_FOUND con mensaje exacto si el paciente no existe y NO crea Budget", async () => {
     mockBudgetCreate.mockClear();
     mockPatientFindUnique.mockResolvedValue(null);
     await expect(createImmunotherapyBudget({ productId: 1, patientId: 999 })).rejects.toMatchObject(
-      { kind: "NOT_FOUND" }
+      { kind: "NOT_FOUND", message: "Paciente no encontrado" }
     );
     expect(mockBudgetCreate).not.toHaveBeenCalled();
   });
@@ -270,5 +291,20 @@ describe("createImmunotherapyBudget", () => {
     await createImmunotherapyBudget({ productId: 1, patientId: 7, title: "Plan personalizado" });
     const custom = mockBudgetCreate.mock.calls[0][0] as { data: { title: string } };
     expect(custom.data.title).toBe("Plan personalizado");
+  });
+});
+
+describe("updateProduct", () => {
+  it("lanza NOT_FOUND 'Producto no encontrado' si el producto a actualizar no existe", async () => {
+    mockProductFindUnique.mockResolvedValue(null);
+    try {
+      await updateProduct({ id: 404, name: "x" } as Parameters<typeof updateProduct>[0]);
+      throw new Error("no lanzó");
+    } catch (err) {
+      expect(err).toBeInstanceOf(DomainError);
+      expect((err as DomainError).kind).toBe("NOT_FOUND");
+      // Distinto del mensaje de computeQuote ("...de inmunoterapia no encontrado").
+      expect((err as DomainError).message).toBe("Producto no encontrado");
+    }
   });
 });
