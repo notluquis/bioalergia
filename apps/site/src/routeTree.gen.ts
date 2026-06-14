@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as ServiciosRouteImport } from './routes/servicios'
 import { Route as RegistroRouteImport } from './routes/registro'
 import { Route as PolenRouteImport } from './routes/polen'
 import { Route as MiCuentaRouteImport } from './routes/mi-cuenta'
@@ -38,6 +39,11 @@ import { Route as AprendeSlugRouteImport } from './routes/aprende/$slug'
 import { Route as MiCuentaPedidosNumberRouteImport } from './routes/mi-cuenta/pedidos.$number'
 import { Route as MiCuentaAuthCallbackRouteImport } from './routes/mi-cuenta/auth/callback'
 
+const ServiciosRoute = ServiciosRouteImport.update({
+  id: '/servicios',
+  path: '/servicios',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RegistroRoute = RegistroRouteImport.update({
   id: '/registro',
   path: '/registro',
@@ -193,6 +199,7 @@ export interface FileRoutesByFullPath {
   '/mi-cuenta': typeof MiCuentaRouteWithChildren
   '/polen': typeof PolenRoute
   '/registro': typeof RegistroRoute
+  '/servicios': typeof ServiciosRoute
   '/aprende/$slug': typeof AprendeSlugRoute
   '/legal/$slug': typeof LegalSlugRoute
   '/mi-cuenta/direcciones': typeof MiCuentaDireccionesRoute
@@ -222,6 +229,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/polen': typeof PolenRoute
   '/registro': typeof RegistroRoute
+  '/servicios': typeof ServiciosRoute
   '/aprende/$slug': typeof AprendeSlugRoute
   '/legal/$slug': typeof LegalSlugRoute
   '/mi-cuenta/direcciones': typeof MiCuentaDireccionesRoute
@@ -253,6 +261,7 @@ export interface FileRoutesById {
   '/mi-cuenta': typeof MiCuentaRouteWithChildren
   '/polen': typeof PolenRoute
   '/registro': typeof RegistroRoute
+  '/servicios': typeof ServiciosRoute
   '/aprende/$slug': typeof AprendeSlugRoute
   '/legal/$slug': typeof LegalSlugRoute
   '/mi-cuenta/direcciones': typeof MiCuentaDireccionesRoute
@@ -285,6 +294,7 @@ export interface FileRouteTypes {
     | '/mi-cuenta'
     | '/polen'
     | '/registro'
+    | '/servicios'
     | '/aprende/$slug'
     | '/legal/$slug'
     | '/mi-cuenta/direcciones'
@@ -314,6 +324,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/polen'
     | '/registro'
+    | '/servicios'
     | '/aprende/$slug'
     | '/legal/$slug'
     | '/mi-cuenta/direcciones'
@@ -344,6 +355,7 @@ export interface FileRouteTypes {
     | '/mi-cuenta'
     | '/polen'
     | '/registro'
+    | '/servicios'
     | '/aprende/$slug'
     | '/legal/$slug'
     | '/mi-cuenta/direcciones'
@@ -375,6 +387,7 @@ export interface RootRouteChildren {
   MiCuentaRoute: typeof MiCuentaRouteWithChildren
   PolenRoute: typeof PolenRoute
   RegistroRoute: typeof RegistroRoute
+  ServiciosRoute: typeof ServiciosRoute
   AprendeSlugRoute: typeof AprendeSlugRoute
   LegalSlugRoute: typeof LegalSlugRoute
   NoticiasSlugRoute: typeof NoticiasSlugRoute
@@ -388,6 +401,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/servicios': {
+      id: '/servicios'
+      path: '/servicios'
+      fullPath: '/servicios'
+      preLoaderRoute: typeof ServiciosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/registro': {
       id: '/registro'
       path: '/registro'
@@ -633,6 +653,7 @@ const rootRouteChildren: RootRouteChildren = {
   MiCuentaRoute: MiCuentaRouteWithChildren,
   PolenRoute: PolenRoute,
   RegistroRoute: RegistroRoute,
+  ServiciosRoute: ServiciosRoute,
   AprendeSlugRoute: AprendeSlugRoute,
   LegalSlugRoute: LegalSlugRoute,
   NoticiasSlugRoute: NoticiasSlugRoute,

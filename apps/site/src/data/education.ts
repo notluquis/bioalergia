@@ -10,7 +10,9 @@ export type EducationCategory =
   | "Emergencia"
   | "Medicamentos"
   | "Ocular"
-  | "Insectos";
+  | "Insectos"
+  | "Ocupacional"
+  | "General";
 
 export type EducationTopic = {
   slug: string;
@@ -421,6 +423,170 @@ export const educationTopics: EducationTopic[] = [
       {
         type: "p",
         text: "Consulta si notas síntomas al contacto con guantes, globos o material elástico, o si tienes exposición frecuente al látex y antecedentes de reacciones. Informar esta alergia antes de cualquier procedimiento médico es una medida de seguridad importante.",
+      },
+    ],
+  },
+  {
+    slug: "rinosinusitis-alergica",
+    title: "Rinosinusitis y sinusitis",
+    category: "Respiratoria",
+    summary:
+      "Inflamación de la nariz y los senos paranasales que suele acompañar a la rinitis alérgica. Produce congestión, presión facial y secreción persistente.",
+    readingMinutes: 5,
+    body: [
+      {
+        type: "p",
+        text: "Los senos paranasales son cavidades llenas de aire alrededor de la nariz. Cuando la mucosa de la nariz y de estos senos se inflama, hablamos de rinosinusitis. En las personas con rinitis alérgica, la inflamación mantenida de la nariz favorece que los senos se obstruyan y se inflamen, por lo que ambas condiciones suelen ir de la mano.",
+      },
+      { type: "h2", text: "Síntomas habituales" },
+      {
+        type: "ul",
+        items: [
+          "Congestión nasal persistente y sensación de nariz tapada.",
+          "Presión o dolor en la cara, la frente o alrededor de los ojos.",
+          "Secreción nasal espesa o goteo hacia la garganta.",
+          "Disminución del olfato.",
+          "Sensación de pesadez que empeora al agacharse.",
+        ],
+      },
+      { type: "h2", text: "Aguda y crónica" },
+      {
+        type: "p",
+        text: "La rinosinusitis aguda suele seguir a un resfrío y se resuelve en pocas semanas. Cuando los síntomas se prolongan por más de doce semanas hablamos de rinosinusitis crónica, en la que el componente alérgico y otros factores pueden tener un papel importante. Distinguir una de otra orienta el tratamiento.",
+      },
+      { type: "h2", text: "Cómo se maneja" },
+      {
+        type: "p",
+        text: "El manejo busca controlar la inflamación, mejorar el drenaje de los senos y tratar el componente alérgico de fondo cuando existe. El lavado nasal con suero es una medida de apoyo útil. El tratamiento específico y la necesidad de estudios se definen en la consulta médica.",
+      },
+      { type: "h2", text: "Cuándo consultar" },
+      {
+        type: "p",
+        text: "Consulta si la congestión y la presión facial se prolongan, se repiten varias veces al año o no mejoran con medidas generales. Busca atención pronta si aparece dolor facial intenso, hinchazón o enrojecimiento alrededor de un ojo, fiebre alta o alteraciones de la visión.",
+      },
+    ],
+  },
+  {
+    slug: "alergia-ocupacional",
+    title: "Alergia ocupacional",
+    category: "Ocupacional",
+    summary:
+      "Síntomas alérgicos desencadenados por exposiciones en el lugar de trabajo. Mejoran en periodos de descanso y reaparecen al volver a la actividad.",
+    readingMinutes: 5,
+    body: [
+      {
+        type: "p",
+        text: "La alergia ocupacional es aquella en la que los síntomas se desencadenan por sustancias presentes en el ambiente de trabajo. Puede manifestarse como rinitis, asma o reacciones en la piel. Una pista característica es que las molestias mejoran durante las vacaciones o los fines de semana y reaparecen al retomar la actividad laboral.",
+      },
+      { type: "h2", text: "Exposiciones frecuentes" },
+      {
+        type: "ul",
+        items: [
+          "Harinas y polvos de cereales (panaderías, molinos).",
+          "Látex y productos sanitarios (área de la salud).",
+          "Epitelios y proteínas de animales (veterinaria, laboratorios, agricultura).",
+          "Maderas, resinas, pinturas y productos químicos.",
+          "Polvos vegetales y ciertos agentes de limpieza.",
+        ],
+      },
+      { type: "h2", text: "Por qué importa reconocerla" },
+      {
+        type: "p",
+        text: "Identificar a tiempo una alergia ocupacional permite tomar medidas de protección, ajustar la exposición y prevenir que el cuadro, sobre todo el asma, se haga persistente. Además, tiene implicancias en la salud laboral que conviene abordar de forma adecuada.",
+      },
+      { type: "h2", text: "Cómo se estudia y maneja" },
+      {
+        type: "p",
+        text: "El estudio combina la historia laboral detallada, la relación de los síntomas con la jornada y pruebas dirigidas según la exposición. El manejo incluye medidas de protección y control ambiental en el trabajo, además del tratamiento de los síntomas. Todo se define en la consulta médica, de forma individual.",
+      },
+      { type: "h2", text: "Cuándo consultar" },
+      {
+        type: "p",
+        text: "Consulta si notas que tus síntomas respiratorios o cutáneos se relacionan con tu trabajo, si mejoran al alejarte de él y reaparecen al volver, o si manejas habitualmente sustancias conocidas por causar alergia. La evaluación temprana ayuda a proteger tu salud y tu actividad.",
+      },
+    ],
+  },
+  {
+    slug: "intolerancia-vs-alergia",
+    title: "Intolerancia o alergia: cuál es la diferencia",
+    category: "General",
+    summary:
+      "No toda reacción a un alimento es una alergia. Distinguir alergia de intolerancia evita dietas innecesarias y orienta el tratamiento correcto.",
+    readingMinutes: 4,
+    body: [
+      {
+        type: "p",
+        text: "Es habitual confundir alergia e intolerancia alimentaria, pero son cosas distintas. La diferencia principal está en el mecanismo: la alergia involucra al sistema inmune, mientras que la intolerancia no. Esta distinción importa porque cambia el riesgo, el estudio y el manejo de cada caso.",
+      },
+      { type: "h2", text: "Alergia alimentaria" },
+      {
+        type: "ul",
+        items: [
+          "Participa el sistema inmune.",
+          "Los síntomas suelen aparecer rápido, de minutos a un par de horas.",
+          "Puede afectar la piel, la respiración o el aparato digestivo.",
+          "Incluso pequeñas cantidades pueden desencadenar la reacción.",
+          "En casos graves puede provocar anafilaxia.",
+        ],
+      },
+      { type: "h2", text: "Intolerancia alimentaria" },
+      {
+        type: "ul",
+        items: [
+          "No participa el sistema inmune (por ejemplo, falta de una enzima).",
+          "Los síntomas suelen ser digestivos: distensión, dolor abdominal, diarrea.",
+          "Habitualmente dependen de la cantidad consumida.",
+          "No causa anafilaxia.",
+        ],
+      },
+      { type: "h2", text: "Por qué conviene aclararlo" },
+      {
+        type: "p",
+        text: "Retirar alimentos importantes de la dieta sin un diagnóstico puede llevar a restricciones innecesarias y a déficits nutricionales, además de no resolver el problema si la causa era otra. Un estudio dirigido permite confirmar qué ocurre realmente y definir un plan adecuado. El diagnóstico se realiza siempre en la consulta médica.",
+      },
+      { type: "h2", text: "Cuándo consultar" },
+      {
+        type: "p",
+        text: "Consulta si presentas síntomas reproducibles con ciertos alimentos, si te han recomendado eliminar alimentos de tu dieta o si tuviste una reacción que involucró la piel o la respiración. La evaluación evita restricciones innecesarias y orienta el manejo correcto.",
+      },
+    ],
+  },
+  {
+    slug: "fotosensibilidad",
+    title: "Reacciones de la piel al sol",
+    category: "Piel",
+    summary:
+      "Algunas personas presentan erupciones o molestias en la piel tras exponerse al sol, a veces favorecidas por medicamentos o productos aplicados sobre la piel.",
+    readingMinutes: 4,
+    body: [
+      {
+        type: "p",
+        text: "La fotosensibilidad es una respuesta anormal de la piel a la luz solar. En lugar del bronceado o el enrojecimiento habituales, aparecen erupciones, picor o ardor en las zonas expuestas. Puede deberse a una sensibilidad propia de la piel o a la interacción del sol con un medicamento o un producto aplicado sobre ella.",
+      },
+      { type: "h2", text: "Síntomas habituales" },
+      {
+        type: "ul",
+        items: [
+          "Erupción, ronchas o pequeñas vesículas en zonas expuestas (cara, escote, brazos).",
+          "Picor o ardor tras la exposición al sol.",
+          "Enrojecimiento más intenso o duradero de lo esperable.",
+          "Síntomas que respetan las zonas cubiertas por la ropa.",
+        ],
+      },
+      { type: "h2", text: "Factores que pueden influir" },
+      {
+        type: "p",
+        text: "Algunos medicamentos, perfumes, cosméticos o plantas pueden aumentar la sensibilidad de la piel al sol. En otros casos se trata de cuadros propios de la piel que aparecen al inicio de la primavera o el verano. Identificar el factor involucrado es parte de la evaluación.",
+      },
+      { type: "h2", text: "Cómo se maneja" },
+      {
+        type: "p",
+        text: "La base es la fotoprotección: usar protector solar adecuado, ropa que cubra y evitar la exposición en las horas de mayor radiación, además de revisar los productos y medicamentos que puedan estar contribuyendo. El estudio y el tratamiento específico se definen en la consulta médica.",
+      },
+      { type: "h2", text: "Cuándo consultar" },
+      {
+        type: "p",
+        text: "Consulta si presentas erupciones repetidas tras exponerte al sol, si aparecieron al iniciar un medicamento o producto nuevo, o si las molestias son intensas o persistentes. Una evaluación permite identificar la causa y orientar las medidas de protección.",
       },
     ],
   },

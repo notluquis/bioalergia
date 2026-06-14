@@ -26,7 +26,7 @@ export const primaryNav: NavLink[] = [
 export const secondaryNav: NavLink[] = [
   { label: "Nuestro especialista", href: "/equipo" },
   { label: "¿Eres alérgico?", href: "/eres-alergico" },
-  { label: "Servicios", href: "/#servicios" },
+  { label: "Servicios", href: "/servicios" },
   { label: "Preguntas frecuentes", href: "/#faq" },
   { label: "Compromiso social", href: "/compromiso-social" },
 ];

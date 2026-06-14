@@ -41,6 +41,7 @@ async function main() {
   // articles are discovered by Google crawling /noticias links — same pattern
   // as products above /tienda.
   const STATIC_PAGES = [
+    "/servicios",
     "/examenes",
     "/inmunoterapia",
     "/botiquin",
