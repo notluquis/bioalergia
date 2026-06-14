@@ -150,6 +150,12 @@ export type ExamReportSection = $ModelResult<$Schema, "ExamReportSection">;
 export type ExamReportReaction = $ModelResult<$Schema, "ExamReportReaction">;
 export type ConclusionTemplate = $ModelResult<$Schema, "ConclusionTemplate">;
 export type ClinicSettings = $ModelResult<$Schema, "ClinicSettings">;
+/**
+ * News / blog articles for /noticias on the public marketing site. `body`
+ * holds a BodyBlock[] (discriminated union p/h2/ul) validated by the oRPC
+ * contract. Public read is limited to PUBLISHED rows; staff have full CRUD.
+ */
+export type Article = $ModelResult<$Schema, "Article">;
 export type ProductCategory = $ModelResult<$Schema, "ProductCategory">;
 export type Product = $ModelResult<$Schema, "Product">;
 export type ProductReview = $ModelResult<$Schema, "ProductReview">;
@@ -324,6 +330,8 @@ export const SkinReaction = $schema.enums.SkinReaction.values;
 export type SkinReaction = (typeof SkinReaction)[keyof typeof SkinReaction];
 export const ProductStatus = $schema.enums.ProductStatus.values;
 export type ProductStatus = (typeof ProductStatus)[keyof typeof ProductStatus];
+export const ContentStatus = $schema.enums.ContentStatus.values;
+export type ContentStatus = (typeof ContentStatus)[keyof typeof ContentStatus];
 export const ReservationStatus = $schema.enums.ReservationStatus.values;
 export type ReservationStatus = (typeof ReservationStatus)[keyof typeof ReservationStatus];
 export const DocumentType = $schema.enums.DocumentType.values;

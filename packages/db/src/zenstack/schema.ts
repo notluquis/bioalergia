@@ -16003,6 +16003,97 @@ export class SchemaType implements SchemaDef {
                 id: { type: "Int" }
             }
         },
+        Article: {
+            name: "Article",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                slug: {
+                    name: "slug",
+                    type: "String",
+                    unique: true,
+                    attributes: [{ name: "@unique" }] as readonly AttributeApplication[]
+                },
+                title: {
+                    name: "title",
+                    type: "String"
+                },
+                category: {
+                    name: "category",
+                    type: "String"
+                },
+                excerpt: {
+                    name: "excerpt",
+                    type: "String"
+                },
+                readingMinutes: {
+                    name: "readingMinutes",
+                    type: "Int",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(4) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("reading_minutes") }] }] as readonly AttributeApplication[],
+                    default: 4 as FieldDefault
+                },
+                body: {
+                    name: "body",
+                    type: "Json"
+                },
+                status: {
+                    name: "status",
+                    type: "ContentStatus",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("DRAFT") }] }] as readonly AttributeApplication[],
+                    default: "DRAFT" as FieldDefault
+                },
+                seoTitle: {
+                    name: "seoTitle",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("seo_title") }] }] as readonly AttributeApplication[]
+                },
+                seoDescription: {
+                    name: "seoDescription",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("seo_description") }] }] as readonly AttributeApplication[]
+                },
+                publishedAt: {
+                    name: "publishedAt",
+                    type: "DateTime",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("published_at") }] }] as readonly AttributeApplication[]
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@updatedAt" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                }
+            },
+            attributes: [
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("ContentStatus", [ExpressionUtils.field("status")]) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("slug")]) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("DateTime", [ExpressionUtils.field("publishedAt")]) }] },
+                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()), "&&", ExpressionUtils.binary(ExpressionUtils.field("status"), "!=", ExpressionUtils.literal("PUBLISHED"))) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.field("status"), "==", ExpressionUtils.literal("PUBLISHED")) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read,create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
+                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("articles") }] }
+            ] as readonly AttributeApplication[],
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" },
+                slug: { type: "String" }
+            }
+        },
         ProductCategory: {
             name: "ProductCategory",
             fields: {
@@ -18513,6 +18604,14 @@ export class SchemaType implements SchemaDef {
             values: {
                 DRAFT: "DRAFT",
                 ACTIVE: "ACTIVE",
+                ARCHIVED: "ARCHIVED"
+            }
+        },
+        ContentStatus: {
+            name: "ContentStatus",
+            values: {
+                DRAFT: "DRAFT",
+                PUBLISHED: "PUBLISHED",
                 ARCHIVED: "ARCHIVED"
             }
         },

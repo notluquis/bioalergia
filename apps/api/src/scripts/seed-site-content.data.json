@@ -1,0 +1,247 @@
+{
+  "$comment": "Seed idempotente de artículos del blog público (/noticias). Upsert por slug. El resto del contenido del site es estático (apps/site/src/data).",
+  "articles": [
+    {
+      "slug": "alergias-de-otono-acaros-y-humedad-en-el-hogar",
+      "title": "Alergias de otoño: ácaros y humedad dentro del hogar",
+      "category": "Prevención",
+      "excerpt": "Cuando bajan las temperaturas pasamos más tiempo en interiores y los ácaros del polvo encuentran su ambiente ideal. Te explicamos por qué los síntomas pueden empeorar en otoño y qué medidas de control ambiental ayudan de verdad.",
+      "reading_minutes": 5,
+      "published_at": "2026-04-08",
+      "body": [
+        {
+          "type": "p",
+          "text": "Muchas personas asocian las alergias respiratorias solo con la primavera y el polen, pero en otoño e invierno aparece un protagonista distinto: el ácaro del polvo doméstico. Al cerrar ventanas, encender calefacción y pasar más horas en interiores, creamos justamente las condiciones de humedad y temperatura que estos microorganismos necesitan para multiplicarse."
+        },
+        {
+          "type": "h2",
+          "text": "Por qué los ácaros prosperan en esta época"
+        },
+        {
+          "type": "p",
+          "text": "Los ácaros se alimentan de las escamas de piel que desprendemos a diario y se concentran en colchones, almohadas, alfombras y tapices. No se ven a simple vista, y lo que desencadena los síntomas no es el ácaro en sí, sino las proteínas presentes en sus residuos. Cuando la humedad relativa del ambiente sube, su población crece, y con ella la carga de alérgeno que respiramos cada noche."
+        },
+        {
+          "type": "h2",
+          "text": "Señales de que el ambiente podría estar influyendo"
+        },
+        {
+          "type": "ul",
+          "items": [
+            "Congestión, estornudos o picazón nasal que empeoran al despertar.",
+            "Síntomas que mejoran al salir de casa y reaparecen al volver.",
+            "Tos seca nocturna o sensación de pecho apretado en el dormitorio.",
+            "Picazón ocular persistente durante los meses más fríos."
+          ]
+        },
+        {
+          "type": "h2",
+          "text": "Medidas de control ambiental que sí ayudan"
+        },
+        {
+          "type": "ul",
+          "items": [
+            "Usar fundas antiácaros en colchón y almohadas, y lavar la ropa de cama a 60 °C cada una o dos semanas.",
+            "Ventilar y reducir la humedad interior; mantenerla por debajo del 50 % limita la reproducción de ácaros.",
+            "Disminuir alfombras, peluches y cortinas gruesas en el dormitorio, o limpiarlos con frecuencia.",
+            "Aspirar con filtro adecuado en lugar de barrer, que solo resuspende el polvo."
+          ]
+        },
+        {
+          "type": "p",
+          "text": "El control ambiental reduce la exposición, pero no reemplaza el diagnóstico. Si los síntomas se repiten cada otoño, una evaluación con estudio dirigido permite confirmar si los ácaros son realmente el desencadenante y definir un plan de manejo a tu medida."
+        }
+      ]
+    },
+    {
+      "slug": "diagnostico-molecular-que-aporta-un-test-como-alex2",
+      "title": "Diagnóstico molecular: qué aporta un test como ALEX2",
+      "category": "Diagnóstico",
+      "excerpt": "El diagnóstico molecular permite ver, alérgeno por alérgeno, frente a qué moléculas reacciona tu sistema inmune. Te contamos en qué se diferencia de las pruebas tradicionales y cuándo aporta información clínica relevante.",
+      "reading_minutes": 6,
+      "published_at": "2026-05-20",
+      "body": [
+        {
+          "type": "p",
+          "text": "Durante años, el diagnóstico de alergias se apoyó casi exclusivamente en pruebas cutáneas y en la medición de anticuerpos frente a fuentes completas, como 'polen de pasto' o 'gato'. El diagnóstico molecular dio un paso más: en lugar de mirar la fuente como un todo, analiza las proteínas individuales que la componen."
+        },
+        {
+          "type": "h2",
+          "text": "De la fuente a la molécula"
+        },
+        {
+          "type": "p",
+          "text": "Una misma fuente alergénica contiene muchas proteínas distintas. Algunas son específicas de ese organismo y otras se comparten entre especies muy diferentes. Saber exactamente a qué molécula reacciona una persona ayuda a entender por qué presenta síntomas con ciertos alimentos o ambientes y no con otros aparentemente similares."
+        },
+        {
+          "type": "h2",
+          "text": "Qué tipo de información puede entregar"
+        },
+        {
+          "type": "ul",
+          "items": [
+            "Distinguir una sensibilización genuina de una reactividad cruzada entre alérgenos parecidos.",
+            "Aportar antecedentes que el equipo médico considera al evaluar el riesgo de reacciones más intensas.",
+            "Ayudar a interpretar casos con múltiples sensibilizaciones o resultados poco claros en pruebas previas.",
+            "Orientar la conversación sobre inmunoterapia cuando se está definiendo un tratamiento."
+          ]
+        },
+        {
+          "type": "h2",
+          "text": "Cómo se realiza"
+        },
+        {
+          "type": "p",
+          "text": "Tests como ALEX2 se obtienen a partir de una muestra de sangre y evalúan en paralelo un amplio panel de extractos y moléculas. Eso permite, en un solo examen, revisar muchas posibilidades simultáneamente. El resultado es un mapa detallado de sensibilizaciones que después debe leerse junto con la historia clínica."
+        },
+        {
+          "type": "p",
+          "text": "Un punto clave: un resultado positivo indica sensibilización, no necesariamente alergia con síntomas. Por eso el examen no se interpreta de forma aislada. Su valor aparece cuando un especialista lo cruza con lo que realmente te ocurre en el día a día, y a partir de ahí define los pasos a seguir."
+        }
+      ]
+    },
+    {
+      "slug": "como-armar-el-botiquin-del-paciente-alergico",
+      "title": "Cómo armar el botiquín del paciente alérgico",
+      "category": "Educación",
+      "excerpt": "Tener a mano lo necesario y saber usarlo marca la diferencia ante una reacción. Repasamos qué suele incluir el botiquín de una persona con alergias y por qué cada elemento debe definirse con tu médico.",
+      "reading_minutes": 4,
+      "published_at": "2026-03-12",
+      "body": [
+        {
+          "type": "p",
+          "text": "Vivir con alergias implica anticiparse. Un botiquín bien pensado no busca reemplazar la atención médica, sino permitirte actuar con calma mientras llega la ayuda o mientras controlas una molestia leve. Lo importante es que su contenido responda a tu caso particular y a las indicaciones de tu especialista."
+        },
+        {
+          "type": "h2",
+          "text": "Elementos que suelen formar parte"
+        },
+        {
+          "type": "ul",
+          "items": [
+            "El plan de acción escrito por tu médico, con los pasos a seguir según el tipo de reacción.",
+            "Los medicamentos indicados para ti, en sus dosis y presentaciones específicas.",
+            "Para quienes tienen indicación, el autoinyector de adrenalina y su instrucción de uso.",
+            "Una tarjeta o registro con tus alergias confirmadas y contactos de emergencia."
+          ]
+        },
+        {
+          "type": "h2",
+          "text": "Mantenerlo útil en el tiempo"
+        },
+        {
+          "type": "ul",
+          "items": [
+            "Revisa las fechas de vencimiento y reemplaza lo caducado.",
+            "Guarda los medicamentos según las condiciones de temperatura que indique el envase.",
+            "Lleva contigo lo esencial en viajes, paseos y actividades fuera de casa.",
+            "Asegúrate de que tu entorno cercano sepa dónde está el botiquín y cómo usarlo."
+          ]
+        },
+        {
+          "type": "p",
+          "text": "Ningún listado general reemplaza una indicación personalizada. Qué incluir, en qué dosis y en qué momento usar cada cosa son decisiones que corresponden a tu equipo tratante tras evaluar tu historia clínica."
+        }
+      ]
+    },
+    {
+      "slug": "inmunoterapia-mitos-y-realidades-de-las-vacunas-para-la-alergia",
+      "title": "Inmunoterapia: mitos y realidades de las vacunas para la alergia",
+      "category": "Tratamiento",
+      "excerpt": "La inmunoterapia es uno de los pocos tratamientos que actúa sobre la causa de la alergia y no solo sobre los síntomas. Aclaramos las dudas más frecuentes y separamos lo que es mito de lo que respalda la evidencia.",
+      "reading_minutes": 6,
+      "published_at": "2026-06-02",
+      "body": [
+        {
+          "type": "p",
+          "text": "Las llamadas 'vacunas para la alergia' o inmunoterapia con alérgenos buscan que el sistema inmune deje de reaccionar de forma exagerada frente a aquello a lo que la persona es alérgica. A diferencia de los medicamentos que alivian síntomas puntuales, este tratamiento apunta a modificar la respuesta de fondo a lo largo del tiempo."
+        },
+        {
+          "type": "h2",
+          "text": "Mitos frecuentes"
+        },
+        {
+          "type": "ul",
+          "items": [
+            "'Es lo mismo que tomar un antialérgico': no; el antialérgico controla el síntoma, la inmunoterapia trabaja sobre la tolerancia al alérgeno.",
+            "'Funciona de inmediato': es un tratamiento progresivo, pensado para sostenerse durante un período prolongado.",
+            "'Sirve para cualquier alergia': su indicación depende del tipo de alérgeno, los síntomas y la evaluación clínica.",
+            "'Es solo en inyección': existen también formas sublinguales; la vía adecuada se define caso a caso."
+          ]
+        },
+        {
+          "type": "h2",
+          "text": "Lo que respalda la evidencia"
+        },
+        {
+          "type": "p",
+          "text": "La inmunoterapia administrada de forma adecuada puede reducir la intensidad de los síntomas y la necesidad de medicación de rescate en pacientes seleccionados. También se asocia a beneficios que pueden mantenerse una vez completado el tratamiento. Estos resultados dependen de un diagnóstico correcto, una indicación precisa y la adherencia del paciente."
+        },
+        {
+          "type": "h2",
+          "text": "Qué considerar antes de empezar"
+        },
+        {
+          "type": "ul",
+          "items": [
+            "Requiere un diagnóstico que confirme frente a qué alérgeno reaccionas.",
+            "Implica un compromiso de seguimiento durante varios meses o años.",
+            "Las primeras administraciones se realizan bajo supervisión y observación.",
+            "No es un tratamiento universal: el especialista evalúa si es apropiado para tu caso."
+          ]
+        },
+        {
+          "type": "p",
+          "text": "Si te han hablado de inmunoterapia o quieres saber si podría ayudarte, lo primero es una evaluación que confirme el diagnóstico y revise tus antecedentes. A partir de ahí se define, en conjunto, si este camino tiene sentido para ti."
+        }
+      ]
+    },
+    {
+      "slug": "temporada-de-polen-en-chile-como-anticiparte",
+      "title": "Temporada de polen en Chile: cómo anticiparte",
+      "category": "Prevención",
+      "excerpt": "La primavera reactiva la rinitis y el asma alérgica en muchas personas. Conocer cuándo y cómo se eleva el polen te permite organizar tus rutinas y reducir la exposición antes de que aparezcan los síntomas.",
+      "reading_minutes": 5,
+      "published_at": "2026-08-18",
+      "body": [
+        {
+          "type": "p",
+          "text": "En Chile, la transición hacia la primavera marca el inicio de la temporada en que distintos tipos de polen se elevan en el aire. Para quienes tienen alergia respiratoria, esto puede traducirse en estornudos, congestión, picazón ocular y, en algunos casos, agravamiento del asma. Anticiparse a esta etapa ayuda a llevarla con menos molestias."
+        },
+        {
+          "type": "h2",
+          "text": "Por qué los síntomas siguen un calendario"
+        },
+        {
+          "type": "p",
+          "text": "Distintas plantas liberan polen en momentos diferentes del año, de modo que los árboles, los pastos y las malezas tienen sus propios picos. Por eso una persona puede sentirse bien durante meses y luego presentar síntomas marcados en una ventana específica, que tiende a repetirse temporada tras temporada."
+        },
+        {
+          "type": "h2",
+          "text": "Estrategias para reducir la exposición"
+        },
+        {
+          "type": "ul",
+          "items": [
+            "Mantener ventanas cerradas en las horas y días de mayor concentración de polen.",
+            "Ventilar preferentemente a primera hora de la mañana o después de una lluvia.",
+            "Ducharte y cambiarte de ropa al volver a casa para no arrastrar polen al dormitorio.",
+            "Usar anteojos de sol en exteriores para proteger los ojos del contacto directo."
+          ]
+        },
+        {
+          "type": "h2",
+          "text": "Adelantarte al primer síntoma"
+        },
+        {
+          "type": "p",
+          "text": "Si ya sabes que cada primavera te afecta, no esperes a estar con molestias para actuar. Una consulta previa a la temporada permite revisar tu historia, confirmar a qué pólenes reaccionas y dejar definido un plan de manejo, de modo que llegues preparado y no improvisando."
+        },
+        {
+          "type": "p",
+          "text": "El calendario de polen es una guía general; tu respuesta es individual. Por eso la mejor anticipación combina las medidas ambientales con un diagnóstico que aclare exactamente qué te afecta y en qué época."
+        }
+      ]
+    }
+  ]
+}

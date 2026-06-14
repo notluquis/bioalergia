@@ -44,6 +44,7 @@ import { Route as AuthedClinicalIndexRouteImport } from "./routes/_authed/clinic
 import { Route as AuthedCalendarIndexRouteImport } from "./routes/_authed/calendar/index"
 import { Route as AuthedWaCloudSplatRouteImport } from "./routes/_authed/wa-cloud/$"
 import { Route as AuthedSettingsQuotesCatalogRouteImport } from "./routes/_authed/settings/quotes-catalog"
+import { Route as AuthedSettingsNoticiasRouteImport } from "./routes/_authed/settings/noticias"
 import { Route as AuthedSettingsImmunotherapyRouteImport } from "./routes/_authed/settings/immunotherapy"
 import { Route as AuthedSettingsHaulmerRouteImport } from "./routes/_authed/settings/haulmer"
 import { Route as AuthedSettingsDoctoraliaRouteImport } from "./routes/_authed/settings/doctoralia"
@@ -269,6 +270,11 @@ const AuthedSettingsQuotesCatalogRoute =
     path: "/quotes-catalog",
     getParentRoute: () => AuthedSettingsRoute,
   } as any)
+const AuthedSettingsNoticiasRoute = AuthedSettingsNoticiasRouteImport.update({
+  id: "/noticias",
+  path: "/noticias",
+  getParentRoute: () => AuthedSettingsRoute,
+} as any)
 const AuthedSettingsImmunotherapyRoute =
   AuthedSettingsImmunotherapyRouteImport.update({
     id: "/immunotherapy",
@@ -595,6 +601,7 @@ export interface FileRoutesByFullPath {
   "/settings/doctoralia": typeof AuthedSettingsDoctoraliaRoute
   "/settings/haulmer": typeof AuthedSettingsHaulmerRoute
   "/settings/immunotherapy": typeof AuthedSettingsImmunotherapyRoute
+  "/settings/noticias": typeof AuthedSettingsNoticiasRoute
   "/settings/quotes-catalog": typeof AuthedSettingsQuotesCatalogRoute
   "/wa-cloud/$": typeof AuthedWaCloudSplatRoute
   "/calendar/": typeof AuthedCalendarIndexRoute
@@ -673,6 +680,7 @@ export interface FileRoutesByTo {
   "/settings/doctoralia": typeof AuthedSettingsDoctoraliaRoute
   "/settings/haulmer": typeof AuthedSettingsHaulmerRoute
   "/settings/immunotherapy": typeof AuthedSettingsImmunotherapyRoute
+  "/settings/noticias": typeof AuthedSettingsNoticiasRoute
   "/settings/quotes-catalog": typeof AuthedSettingsQuotesCatalogRoute
   "/wa-cloud/$": typeof AuthedWaCloudSplatRoute
   "/calendar": typeof AuthedCalendarIndexRoute
@@ -760,6 +768,7 @@ export interface FileRoutesById {
   "/_authed/settings/doctoralia": typeof AuthedSettingsDoctoraliaRoute
   "/_authed/settings/haulmer": typeof AuthedSettingsHaulmerRoute
   "/_authed/settings/immunotherapy": typeof AuthedSettingsImmunotherapyRoute
+  "/_authed/settings/noticias": typeof AuthedSettingsNoticiasRoute
   "/_authed/settings/quotes-catalog": typeof AuthedSettingsQuotesCatalogRoute
   "/_authed/wa-cloud/$": typeof AuthedWaCloudSplatRoute
   "/_authed/calendar/": typeof AuthedCalendarIndexRoute
@@ -847,6 +856,7 @@ export interface FileRouteTypes {
     | "/settings/doctoralia"
     | "/settings/haulmer"
     | "/settings/immunotherapy"
+    | "/settings/noticias"
     | "/settings/quotes-catalog"
     | "/wa-cloud/$"
     | "/calendar/"
@@ -925,6 +935,7 @@ export interface FileRouteTypes {
     | "/settings/doctoralia"
     | "/settings/haulmer"
     | "/settings/immunotherapy"
+    | "/settings/noticias"
     | "/settings/quotes-catalog"
     | "/wa-cloud/$"
     | "/calendar"
@@ -1011,6 +1022,7 @@ export interface FileRouteTypes {
     | "/_authed/settings/doctoralia"
     | "/_authed/settings/haulmer"
     | "/_authed/settings/immunotherapy"
+    | "/_authed/settings/noticias"
     | "/_authed/settings/quotes-catalog"
     | "/_authed/wa-cloud/$"
     | "/_authed/calendar/"
@@ -1293,6 +1305,13 @@ declare module "@tanstack/react-router" {
       path: "/quotes-catalog"
       fullPath: "/settings/quotes-catalog"
       preLoaderRoute: typeof AuthedSettingsQuotesCatalogRouteImport
+      parentRoute: typeof AuthedSettingsRoute
+    }
+    "/_authed/settings/noticias": {
+      id: "/_authed/settings/noticias"
+      path: "/noticias"
+      fullPath: "/settings/noticias"
+      preLoaderRoute: typeof AuthedSettingsNoticiasRouteImport
       parentRoute: typeof AuthedSettingsRoute
     }
     "/_authed/settings/immunotherapy": {
@@ -1820,6 +1839,7 @@ interface AuthedSettingsRouteChildren {
   AuthedSettingsDoctoraliaRoute: typeof AuthedSettingsDoctoraliaRoute
   AuthedSettingsHaulmerRoute: typeof AuthedSettingsHaulmerRoute
   AuthedSettingsImmunotherapyRoute: typeof AuthedSettingsImmunotherapyRoute
+  AuthedSettingsNoticiasRoute: typeof AuthedSettingsNoticiasRoute
   AuthedSettingsQuotesCatalogRoute: typeof AuthedSettingsQuotesCatalogRoute
   AuthedSettingsIndexRoute: typeof AuthedSettingsIndexRoute
 }
@@ -1828,6 +1848,7 @@ const AuthedSettingsRouteChildren: AuthedSettingsRouteChildren = {
   AuthedSettingsDoctoraliaRoute: AuthedSettingsDoctoraliaRoute,
   AuthedSettingsHaulmerRoute: AuthedSettingsHaulmerRoute,
   AuthedSettingsImmunotherapyRoute: AuthedSettingsImmunotherapyRoute,
+  AuthedSettingsNoticiasRoute: AuthedSettingsNoticiasRoute,
   AuthedSettingsQuotesCatalogRoute: AuthedSettingsQuotesCatalogRoute,
   AuthedSettingsIndexRoute: AuthedSettingsIndexRoute,
 }

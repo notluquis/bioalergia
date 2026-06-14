@@ -13116,6 +13116,79 @@ export class SchemaType implements SchemaDef {
                 id: { type: "Int" }
             }
         },
+        Article: {
+            name: "Article",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                slug: {
+                    name: "slug",
+                    type: "String",
+                    unique: true
+                },
+                title: {
+                    name: "title",
+                    type: "String"
+                },
+                category: {
+                    name: "category",
+                    type: "String"
+                },
+                excerpt: {
+                    name: "excerpt",
+                    type: "String"
+                },
+                readingMinutes: {
+                    name: "readingMinutes",
+                    type: "Int",
+                    default: 4 as FieldDefault
+                },
+                body: {
+                    name: "body",
+                    type: "Json"
+                },
+                status: {
+                    name: "status",
+                    type: "ContentStatus",
+                    default: "DRAFT" as FieldDefault
+                },
+                seoTitle: {
+                    name: "seoTitle",
+                    type: "String",
+                    optional: true
+                },
+                seoDescription: {
+                    name: "seoDescription",
+                    type: "String",
+                    optional: true
+                },
+                publishedAt: {
+                    name: "publishedAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now") as FieldDefault
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" },
+                slug: { type: "String" }
+            }
+        },
         ProductCategory: {
             name: "ProductCategory",
             fields: {
@@ -15308,6 +15381,14 @@ export class SchemaType implements SchemaDef {
             values: {
                 DRAFT: "DRAFT",
                 ACTIVE: "ACTIVE",
+                ARCHIVED: "ARCHIVED"
+            }
+        },
+        ContentStatus: {
+            name: "ContentStatus",
+            values: {
+                DRAFT: "DRAFT",
+                PUBLISHED: "PUBLISHED",
                 ARCHIVED: "ARCHIVED"
             }
         },

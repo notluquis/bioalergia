@@ -49,6 +49,7 @@ import { expensesOpenAPIHandler, expensesORPCHandler } from "./orpc/expenses.ts"
 import { financeOpenAPIHandler, financeORPCHandler } from "./orpc/finance.ts";
 import { cartOpenAPIHandler, cartORPCHandler } from "./orpc/cart.ts";
 import { catalogOpenAPIHandler, catalogORPCHandler } from "./orpc/catalog.ts";
+import { siteContentOpenAPIHandler, siteContentORPCHandler } from "./orpc/site-content.ts";
 import { checkoutOpenAPIHandler, checkoutORPCHandler } from "./orpc/checkout.ts";
 import { siteAuthORPCHandler } from "./orpc/site-auth.ts";
 import { accountORPCHandler } from "./orpc/account.ts";
@@ -1360,6 +1361,15 @@ app.use("/api/orpc/cart/rpc/*", async (c, next) => {
   return next();
 });
 
+app.use("/api/orpc/site-content/rpc/*", async (c, next) => {
+  const { matched, response } = await siteContentORPCHandler.handle(createHonoORPCRequest(c), {
+    prefix: "/api/orpc/site-content/rpc",
+    context: { hono: c },
+  });
+  if (matched) return c.newResponse(response.body, response);
+  return next();
+});
+
 app.use("/api/orpc/checkout/rpc/*", async (c, next) => {
   const { matched, response } = await checkoutORPCHandler.handle(createHonoORPCRequest(c), {
     prefix: "/api/orpc/checkout/rpc",
@@ -1804,6 +1814,14 @@ app.use("/api/orpc/dte/*", async (c, next) => {
 
 app.use("/api/orpc/catalog/*", async (c, next) => {
   const { matched, response } = await catalogOpenAPIHandler.handle(createHonoORPCRequest(c), {
+    context: { hono: c },
+  });
+  if (matched) return c.newResponse(response.body, response);
+  return next();
+});
+
+app.use("/api/orpc/site-content/*", async (c, next) => {
+  const { matched, response } = await siteContentOpenAPIHandler.handle(createHonoORPCRequest(c), {
     context: { hono: c },
   });
   if (matched) return c.newResponse(response.body, response);

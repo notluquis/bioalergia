@@ -75,6 +75,12 @@
       "import": "./dist/catalog.js",
       "default": "./dist/catalog.js"
     },
+    "./site-content": {
+      "development": "./src/site-content.ts",
+      "types": "./dist/site-content.d.ts",
+      "import": "./dist/site-content.js",
+      "default": "./dist/site-content.js"
+    },
     "./certificates": {
       "development": "./src/certificates.ts",
       "types": "./dist/certificates.d.ts",

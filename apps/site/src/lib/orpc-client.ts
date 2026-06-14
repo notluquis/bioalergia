@@ -5,6 +5,7 @@ import type { CartContract } from "@finanzas/orpc-contracts/cart";
 import type { CatalogContract } from "@finanzas/orpc-contracts/catalog";
 import type { CheckoutContract } from "@finanzas/orpc-contracts/checkout";
 import type { SiteAuthContract } from "@finanzas/orpc-contracts/site-auth";
+import type { SiteContentContract } from "@finanzas/orpc-contracts/site-content";
 import type { VerificationContract } from "@finanzas/orpc-contracts/verification";
 
 import { siteSuperJSONLink } from "@/lib/superjson-link";
@@ -33,3 +34,9 @@ export const accountClient = createORPCClient(siteSuperJSONLink, {
 export const verificationClient = createORPCClient(siteSuperJSONLink, {
   path: ["api", "orpc", "verification", "rpc"],
 }) as ContractRouterClient<VerificationContract>;
+
+// Contenido editable del site (exámenes, inmunoterapia, botiquín, polen,
+// fundación, quiz, noticias) — DB-backed, lectura pública sin auth.
+export const siteContentClient = createORPCClient(siteSuperJSONLink, {
+  path: ["api", "orpc", "site-content", "rpc"],
+}) as ContractRouterClient<SiteContentContract>;

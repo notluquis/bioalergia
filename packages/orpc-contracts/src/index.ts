@@ -9,6 +9,7 @@ export * from "./backups.ts";
 export * from "./calendar.ts";
 export * from "./cart.ts";
 export * from "./catalog.ts";
+export * from "./site-content.ts";
 export * from "./certificates.ts";
 export * from "./checkout.ts";
 export * from "./clinical-records.ts";

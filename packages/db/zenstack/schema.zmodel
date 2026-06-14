@@ -4901,6 +4901,12 @@ enum ProductStatus {
   ARCHIVED
 }
 
+enum ContentStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
 enum ReservationStatus {
   ACTIVE
   CONSUMED
@@ -4953,6 +4959,35 @@ enum SalesChannel {
   UBER_EATS
   PEDIDOS_YA
   RAPPI
+}
+
+/// News / blog articles for /noticias on the public marketing site. `body`
+/// holds a BodyBlock[] (discriminated union p/h2/ul) validated by the oRPC
+/// contract. Public read is limited to PUBLISHED rows; staff have full CRUD.
+model Article {
+  id             Int           @id @default(autoincrement())
+  slug           String        @unique
+  title          String
+  category       String
+  excerpt        String
+  readingMinutes Int           @default(4) @map("reading_minutes")
+  body           Json
+  status         ContentStatus @default(DRAFT)
+  seoTitle       String?       @map("seo_title")
+  seoDescription String?       @map("seo_description")
+  publishedAt    DateTime?     @map("published_at")
+  createdAt      DateTime      @default(now()) @map("created_at")
+  updatedAt      DateTime      @default(now()) @updatedAt @map("updated_at")
+
+  @@index([status])
+  @@index([slug])
+  @@index([publishedAt])
+
+  @@deny('all', auth() == null && status != 'PUBLISHED')
+  @@allow('read', status == 'PUBLISHED')
+  @@allow('read,create,update,delete', auth().status == 'ACTIVE')
+
+  @@map("articles")
 }
 
 model ProductCategory {
