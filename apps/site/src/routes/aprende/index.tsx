@@ -3,7 +3,24 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 
 import { BookingCta } from "@/components/BookingCta";
 import { PageShell } from "@/components/PageShell";
-import { educationTopics } from "@/data/education";
+import { type EducationCategory, educationTopics } from "@/data/education";
+
+const CATEGORY_ORDER: EducationCategory[] = [
+  "Respiratoria",
+  "Ocular",
+  "Piel",
+  "Alimentaria",
+  "Medicamentos",
+  "Insectos",
+  "Ocupacional",
+  "General",
+  "Emergencia",
+];
+
+const groupedTopics = CATEGORY_ORDER.map((category) => ({
+  category,
+  topics: educationTopics.filter((topic) => topic.category === category),
+})).filter((group) => group.topics.length > 0);
 
 function AprendeIndexPage() {
   return (
@@ -26,36 +43,41 @@ function AprendeIndexPage() {
         </div>
       </section>
 
-      <section className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {educationTopics.map((topic) => (
-          <Link
-            className="no-underline"
-            key={topic.slug}
-            params={{ slug: topic.slug }}
-            to="/aprende/$slug"
-          >
-            <Card
-              className="h-full rounded-3xl transition-shadow hover:shadow-md"
-              variant="default"
-            >
-              <Card.Header className="gap-3">
-                <Chip size="sm" variant="secondary">
-                  {topic.category}
-                </Chip>
-                <Card.Title className="text-lg">{topic.title}</Card.Title>
-                <Card.Description className="text-(--ink-muted) leading-relaxed">
-                  {topic.summary}
-                </Card.Description>
-              </Card.Header>
-              <Card.Content className="pb-6">
-                <span className="text-(--ink-muted) text-xs">
-                  {topic.readingMinutes} min de lectura
-                </span>
-              </Card.Content>
-            </Card>
-          </Link>
-        ))}
-      </section>
+      {groupedTopics.map((group) => (
+        <section className="grid gap-4" key={group.category}>
+          <h2 className="font-semibold text-(--ink) text-xl">{group.category}</h2>
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {group.topics.map((topic) => (
+              <Link
+                className="no-underline"
+                key={topic.slug}
+                params={{ slug: topic.slug }}
+                to="/aprende/$slug"
+              >
+                <Card
+                  className="h-full rounded-3xl transition-shadow hover:shadow-md"
+                  variant="default"
+                >
+                  <Card.Header className="gap-3">
+                    <Chip size="sm" variant="secondary">
+                      {topic.category}
+                    </Chip>
+                    <Card.Title className="text-lg">{topic.title}</Card.Title>
+                    <Card.Description className="text-(--ink-muted) leading-relaxed">
+                      {topic.summary}
+                    </Card.Description>
+                  </Card.Header>
+                  <Card.Content className="pb-6">
+                    <span className="text-(--ink-muted) text-xs">
+                      {topic.readingMinutes} min de lectura
+                    </span>
+                  </Card.Content>
+                </Card>
+              </Link>
+            ))}
+          </div>
+        </section>
+      ))}
 
       <BookingCta
         title="¿Tienes dudas sobre tus síntomas?"

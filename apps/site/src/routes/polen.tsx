@@ -46,13 +46,11 @@ function PolenPage() {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {polenContent.scale.map((lvl) => (
             <Card className="rounded-3xl" key={lvl.label} variant="default">
-              <Card.Header className="gap-3">
-                <div className="flex items-center justify-between gap-3">
-                  <Card.Title className="text-lg">{lvl.label}</Card.Title>
-                  <Chip color={lvl.tone} size="sm" variant="soft">
-                    {lvl.range}
-                  </Chip>
-                </div>
+              <Card.Header className="items-start gap-2">
+                <Card.Title className="text-lg">{lvl.label}</Card.Title>
+                <Chip color={lvl.tone} size="sm" variant="soft">
+                  {lvl.range}
+                </Chip>
                 <Card.Description className="text-(--ink-muted) text-sm leading-relaxed">
                   {lvl.description}
                 </Card.Description>
