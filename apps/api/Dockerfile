@@ -92,4 +92,8 @@ EXPOSE 3000
 #   in-process schedulers) land and /api/diag/heap confirms steady < 400MB.
 # - --max-semi-space-size=32: pin semi-space; Node 22+ dynamic default can
 #   shrink to 1MB causing GC thrash (nodejs/node#62723)
-CMD ["node", "--max-old-space-size=1024", "--max-semi-space-size=32", "src/index.ts"]
+# --import ./src/instrument.ts: loads Sentry's OpenTelemetry distro (and our
+# pg instrumentation) BEFORE app code is linked, so http/fetch/pg are patched
+# in time for ESM auto-instrumentation. Node 26 type-stripping applies to the
+# imported .ts loader module the same as to the entrypoint.
+CMD ["node", "--import", "./src/instrument.ts", "--max-old-space-size=1024", "--max-semi-space-size=32", "src/index.ts"]

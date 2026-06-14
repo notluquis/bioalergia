@@ -1,5 +1,9 @@
 // apps/api/src/index.ts - Server Entry Point
-import "./instrument.ts"; // MUST be first — Sentry instruments http/fetch on import
+// NOTE: Sentry/OpenTelemetry is loaded via `node --import ./src/instrument.ts`
+// (see Dockerfile CMD + package.json start/dev) so its OTel instrumentations
+// patch http/fetch/pg BEFORE any application module is imported. A top-of-file
+// `import "./instrument.ts"` is too late for ESM auto-instrumentation (modules
+// below would already be linked), so it lives in the loader instead.
 import { serve } from "@hono/node-server";
 import { db } from "@finanzas/db";
 import { app } from "./app.ts";

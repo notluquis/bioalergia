@@ -1,5 +1,6 @@
 // apps/api/src/app.ts
 import * as Sentry from "@sentry/node";
+import { httpInstrumentationMiddleware } from "@hono/otel";
 import { type Context as HonoContext, Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import { cors } from "hono/cors";
@@ -134,6 +135,14 @@ import { reply, replyRaw } from "./utils/reply.ts";
 configureSuperjson();
 
 export const app = new Hono();
+
+// OpenTelemetry per-route server spans. Mounted at the very top of the chain so
+// every request (including ones rejected by the security/auth middlewares below)
+// gets a server span. Span context flows down to the pg spans emitted by
+// PgInstrumentation (wired in instrument.ts via Sentry's OTel distro), giving a
+// request → handler → DB query trace tree. Cheap (no per-request allocation
+// beyond the span) and reports through the same Sentry exporter Sentry.init set up.
+app.use("*", httpInstrumentationMiddleware());
 
 // Standard security headers (CSP set separately below for Vite/Cloudflare)
 app.use(
