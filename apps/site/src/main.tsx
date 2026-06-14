@@ -26,6 +26,11 @@ const posthogOptions = {
   api_host: import.meta.env.VITE_PUBLIC_POSTHOG_HOST,
   person_profiles: "identified_only",
   autocapture: false, // Disable to protect sensitive health data
+  // Session replay (rrweb) records user interactions — a privacy risk on a
+  // health site, and the source of the CSP `unsafe-eval` requirement
+  // (rrweb uses new Function) + the blob: worker access-control errors.
+  // Disabling it lets the CSP stay strict (no unsafe-eval) when enforced.
+  disable_session_recording: true,
 } as const;
 
 const root = document.getElementById("root");
