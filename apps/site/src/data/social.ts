@@ -13,4 +13,5 @@ export type SocialLink = {
 export const socialLinks: SocialLink[] = [
   { platform: "instagram", label: "Instagram", href: "https://www.instagram.com/bioalergia" },
   { platform: "facebook", label: "Facebook", href: "https://www.facebook.com/bioalergia" },
+  { platform: "tiktok", label: "TikTok", href: "https://www.tiktok.com/@bioalergia" },
 ];

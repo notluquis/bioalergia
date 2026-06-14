@@ -54,7 +54,7 @@ export function HeroSection({ onBook }: HeroSectionProps) {
           <Button className="rounded-full bg-(--accent) px-6 text-white" onPress={onBook}>
             Reservar evaluación
           </Button>
-          <Link className="text-(--ink-muted) text-sm underline-offset-4" href="#servicios">
+          <Link className="text-(--ink-muted) text-sm underline-offset-4" href="/servicios">
             Ver servicios
           </Link>
           <Link
