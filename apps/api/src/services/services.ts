@@ -12,6 +12,7 @@ import {
 } from "@finanzas/db";
 import type { ServiceInclude } from "@finanzas/db/input";
 import { Decimal } from "decimal.js";
+import { DomainError } from "../lib/errors.ts";
 import { dbDateToISO, dbDateToMs, isoToDbDate } from "../lib/time.ts";
 
 type ServicePayload = {
@@ -234,7 +235,7 @@ export async function generateSchedules(options: GenerateSchedulesOptions) {
 
   const service = await db.service.findUnique({ where: { id: serviceId } });
   if (!service) {
-    throw new Error("Service not found");
+    throw new DomainError("NOT_FOUND", "Service not found");
   }
 
   if (service.recurrenceType === "ONE_OFF") {

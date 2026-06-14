@@ -1,4 +1,5 @@
 import { toChileDateString } from "../lib/time.ts";
+import { DomainError } from "../lib/errors.ts";
 import { logEvent, logWarn } from "../lib/logger.ts";
 import { doctoraliaCalendarSyncService } from "./doctoralia-calendar.ts";
 
@@ -90,7 +91,7 @@ export function requestDoctoraliaBackfillCancel(params: {
   requestedByUserId: number;
 }): DoctoraliaBackfillStatus {
   if (!state.running) {
-    throw new Error("No hay un backfill en curso");
+    throw new DomainError("NOT_FOUND", "No hay un backfill en curso");
   }
   if (!state.cancelRequested) {
     state.cancelRequested = true;
@@ -123,7 +124,7 @@ export function planDoctoraliaBackfill(
   try {
     endDateNormalized = Temporal.PlainDate.from(endDate);
   } catch {
-    throw new Error("Fecha objetivo inválida");
+    throw new DomainError("BAD_REQUEST", "Fecha objetivo inválida");
   }
 
   const minDate = Temporal.PlainDate.from(DOCTORALIA_BACKFILL_MIN_DATE);
@@ -139,7 +140,7 @@ export function planDoctoraliaBackfill(
     try {
       startNormalized = Temporal.PlainDate.from(startDate);
     } catch {
-      throw new Error("Fecha de inicio inválida");
+      throw new DomainError("BAD_REQUEST", "Fecha de inicio inválida");
     }
     startMonday = isoMonday(startNormalized);
     // Don't allow start in the future
@@ -152,7 +153,7 @@ export function planDoctoraliaBackfill(
   }
 
   if (Temporal.PlainDate.compare(effectiveEnd, startMonday.add({ weeks: 1 })) >= 0) {
-    throw new Error("La fecha final debe ser anterior a la fecha de inicio.");
+    throw new DomainError("BAD_REQUEST", "La fecha final debe ser anterior a la fecha de inicio.");
   }
 
   const targetMonday = isoMonday(effectiveEnd);
@@ -175,7 +176,7 @@ export function startDoctoraliaBackfill(params: {
   triggeredByUserId: number;
 }): DoctoraliaBackfillStatus {
   if (state.running) {
-    throw new Error("Ya hay un backfill en curso");
+    throw new DomainError("CONFLICT", "Ya hay un backfill en curso");
   }
 
   const plan = planDoctoraliaBackfill(params.endDate, params.startDate);

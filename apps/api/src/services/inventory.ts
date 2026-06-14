@@ -1,5 +1,6 @@
 import { db } from "@finanzas/db";
 import type { InventoryMovementWhereInput } from "@finanzas/db/input";
+import { DomainError } from "../lib/errors.ts";
 
 export async function listInventoryCategories() {
   return await db.inventoryCategory.findMany({
@@ -17,7 +18,8 @@ export async function deleteInventoryCategory(id: number) {
   // Check if category has items
   const count = await db.inventoryItem.count({ where: { categoryId: id } });
   if (count > 0) {
-    throw new Error(
+    throw new DomainError(
+      "BAD_REQUEST",
       "Cannot delete category with associated items. Please move or delete items first."
     );
   }

@@ -1,5 +1,6 @@
 import { dbClinicalSeries as db } from "@finanzas/db/slices";
 
+import { DomainError } from "../../../lib/errors.ts";
 import { refreshClinicalSeriesMetadata } from "../metadata.ts";
 
 export async function mergeClinicalSeries(params: {
@@ -20,10 +21,11 @@ export async function mergeClinicalSeries(params: {
     }),
   ]);
 
-  if (!source) throw new Error(`Serie fuente #${params.sourceId} no encontrada`);
-  if (!target) throw new Error(`Serie destino #${params.targetId} no encontrada`);
+  if (!source) throw new DomainError("NOT_FOUND", `Serie fuente #${params.sourceId} no encontrada`);
+  if (!target) throw new DomainError("NOT_FOUND", `Serie destino #${params.targetId} no encontrada`);
   if (source.kind !== target.kind) {
-    throw new Error(
+    throw new DomainError(
+      "BAD_REQUEST",
       `No se pueden fusionar series de distinto tipo (${source.kind} vs ${target.kind})`
     );
   }

@@ -4,6 +4,7 @@ import { Decimal } from "decimal.js";
 import { sql } from "kysely";
 import { AppError } from "../lib/app-error.ts";
 import { auditRowChange } from "../lib/audit-diff.ts";
+import { DomainError } from "../lib/errors.ts";
 import { getPeriodRange, toChilePeriod } from "../lib/time.ts";
 import {
   fetchMergedTransactions,
@@ -1616,12 +1617,12 @@ export async function createTransactionCategory(data: {
 
   const cleanName = data.name.trim().replace(/\s+/g, " ");
   if (!cleanName) {
-    throw new Error("El nombre de la categoría es obligatorio");
+    throw new DomainError("BAD_REQUEST", "El nombre de la categoría es obligatorio");
   }
 
   const duplicate = await findCategoryByNormalizedName(cleanName);
   if (duplicate) {
-    throw new Error("Ya existe una categoría con ese nombre");
+    throw new DomainError("CONFLICT", "Ya existe una categoría con ese nombre");
   }
 
   const createArgs = parseOrmArgs(db, "transactionCategory", "create", {
@@ -1647,12 +1648,12 @@ export async function updateTransactionCategory(
   if (data.name !== undefined) {
     const cleanName = data.name.trim().replace(/\s+/g, " ");
     if (!cleanName) {
-      throw new Error("El nombre de la categoría es obligatorio");
+      throw new DomainError("BAD_REQUEST", "El nombre de la categoría es obligatorio");
     }
 
     const duplicate = await findCategoryByNormalizedName(cleanName, id);
     if (duplicate) {
-      throw new Error("Ya existe una categoría con ese nombre");
+      throw new DomainError("CONFLICT", "Ya existe una categoría con ese nombre");
     }
 
     data.name = cleanName;
@@ -1677,7 +1678,10 @@ export async function deleteTransactionCategory(id: number) {
   });
 
   if (usageCount > 0) {
-    throw new Error("No se puede eliminar: la categoría está en uso por movimientos financieros.");
+    throw new DomainError(
+      "CONFLICT",
+      "No se puede eliminar: la categoría está en uso por movimientos financieros."
+    );
   }
 
   return db.transactionCategory.delete({
@@ -1707,7 +1711,7 @@ async function ensureCategoryExists(categoryId: number) {
     select: { id: true },
   });
   if (!category) {
-    throw new Error("Categoría no encontrada");
+    throw new DomainError("NOT_FOUND", "Categoría no encontrada");
   }
 }
 
@@ -1933,7 +1937,7 @@ export async function updateFinancialAutoCategoryRule(
     },
   });
   if (!existing) {
-    throw new Error("Regla no encontrada");
+    throw new DomainError("NOT_FOUND", "Regla no encontrada");
   }
 
   const nextCategoryId = data.categoryId ?? existing.categoryId;
@@ -2156,7 +2160,7 @@ export async function createCompensationProfile(data: CompensationProfileInput) 
     select: { id: true },
   });
   if (!category) {
-    throw new Error("Categoría no encontrada");
+    throw new DomainError("NOT_FOUND", "Categoría no encontrada");
   }
 
   if (data.counterpartId != null) {
@@ -2165,13 +2169,13 @@ export async function createCompensationProfile(data: CompensationProfileInput) 
       select: { id: true },
     });
     if (!counterpart) {
-      throw new Error("Contraparte no encontrada");
+      throw new DomainError("NOT_FOUND", "Contraparte no encontrada");
     }
   }
 
   const name = data.name.trim();
   if (!name) {
-    throw new Error("El nombre del perfil es obligatorio");
+    throw new DomainError("BAD_REQUEST", "El nombre del perfil es obligatorio");
   }
 
   const rows = await db.$queryRaw<Array<{ id: number }>>`
@@ -2210,7 +2214,7 @@ export async function updateCompensationProfile(
       select: { id: true },
     });
     if (!category) {
-      throw new Error("Categoría no encontrada");
+      throw new DomainError("NOT_FOUND", "Categoría no encontrada");
     }
   }
 
@@ -2220,7 +2224,7 @@ export async function updateCompensationProfile(
       select: { id: true },
     });
     if (!counterpart) {
-      throw new Error("Contraparte no encontrada");
+      throw new DomainError("NOT_FOUND", "Contraparte no encontrada");
     }
   }
 
@@ -2228,7 +2232,7 @@ export async function updateCompensationProfile(
     SELECT id FROM compensation_profiles WHERE id = ${id} LIMIT 1
   `;
   if (existing.length === 0) {
-    throw new Error("Perfil de compensación no encontrado");
+    throw new DomainError("NOT_FOUND", "Perfil de compensación no encontrado");
   }
 
   await db.$executeRaw`
@@ -2263,7 +2267,7 @@ export async function upsertCompensationPeriodBudget(
     SELECT id FROM compensation_profiles WHERE id = ${profileId} LIMIT 1
   `;
   if (profile.length === 0) {
-    throw new Error("Perfil de compensación no encontrado");
+    throw new DomainError("NOT_FOUND", "Perfil de compensación no encontrado");
   }
 
   const rows = await db.$queryRaw<
@@ -2307,7 +2311,7 @@ export async function listCompensationPeriodLedger(
   assertPeriodOrThrow(fromPeriod);
   assertPeriodOrThrow(toPeriod);
   if (fromPeriod > toPeriod) {
-    throw new Error("Rango de periodos inválido");
+    throw new DomainError("BAD_REQUEST", "Rango de periodos inválido");
   }
 
   const [budgets, allocations] = await Promise.all([

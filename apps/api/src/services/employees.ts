@@ -8,6 +8,7 @@ import type {
   EmployeeWhereInput,
   PersonUpdateInput,
 } from "../lib/db-types.ts";
+import { DomainError } from "../lib/errors.ts";
 import { requireCanonicalRut } from "../lib/rut.ts";
 import { instantToChileDate, isoToDbDate } from "../lib/time.ts";
 
@@ -153,7 +154,7 @@ export async function getEmployeeById(id: number) {
     include: { person: true },
   });
   if (!employee) {
-    throw new Error(`Employee with ID ${id} not found`);
+    throw new DomainError("NOT_FOUND", `Employee with ID ${id} not found`);
   }
   return employee;
 }
@@ -224,7 +225,7 @@ export async function updateEmployee(id: number, payload: EmployeePayload) {
   });
 
   if (!currentEmployee) {
-    throw new Error(`Employee with id ${id} not found`);
+    throw new DomainError("NOT_FOUND", `Employee with id ${id} not found`);
   }
 
   const employeeData = mapToEmployeeData(payload);

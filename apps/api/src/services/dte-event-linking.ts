@@ -2,6 +2,7 @@ import { db } from "@finanzas/db";
 import jaroWinkler from "talisman/metrics/jaro-winkler.js";
 import { symmetric as mongeElkanSymmetric } from "talisman/metrics/monge-elkan.js";
 import { joinClinicalText } from "../lib/clinical-text.ts";
+import { DomainError } from "../lib/errors.ts";
 import { normalizeRut } from "../lib/rut.ts";
 import { getMonthRange, toChileDateString } from "../lib/time.ts";
 import {
@@ -1733,7 +1734,8 @@ export async function listEventDteLinkOverview(params: {
   const trimmedQuery = params.query?.trim() ?? "";
   const hasSearch = trimmedQuery.length > 0;
   const offset = page * pageSize;
-  if (!PERIOD_REGEX.test(params.period)) throw new Error("Periodo inválido. Usa formato YYYY-MM");
+  if (!PERIOD_REGEX.test(params.period))
+    throw new DomainError("BAD_REQUEST", "Periodo inválido. Usa formato YYYY-MM");
   const today = toChileDateString(new Date());
   const { from: periodStart, to: periodEnd } = getMonthRange(params.period);
   const searchLike = `%${trimmedQuery}%`;
@@ -2100,11 +2102,11 @@ export async function confirmEventDteLink(params: {
   userId: number;
 }) {
   const event = await getEventByExternalIds(params.calendarId, params.eventId);
-  if (!event) throw new Error("Evento no encontrado");
+  if (!event) throw new DomainError("NOT_FOUND", "Evento no encontrado");
 
   const normalizedDteSaleDetailIds = [...new Set(params.dteSaleDetailIds)].slice(0, 3);
   if (normalizedDteSaleDetailIds.length === 0) {
-    throw new Error("Debes indicar al menos un DTE para confirmar el vínculo");
+    throw new DomainError("BAD_REQUEST", "Debes indicar al menos un DTE para confirmar el vínculo");
   }
 
   const dteRows = await db.$queryRaw<Array<{ id: string }>>`
@@ -2113,7 +2115,7 @@ export async function confirmEventDteLink(params: {
     WHERE s.id = ANY(${normalizedDteSaleDetailIds}::text[])
   `;
   if (dteRows.length !== normalizedDteSaleDetailIds.length) {
-    throw new Error("Uno o más DTE de venta no existen");
+    throw new DomainError("BAD_REQUEST", "Uno o más DTE de venta no existen");
   }
 
   const previousLinks = await getEventDteLinksByInternalEventId(event.eventId);
@@ -2315,7 +2317,8 @@ export async function autoLinkEventDate(params: {
 }) {
   const today = toChileDateString(new Date());
   if (params.date > today) {
-    throw new Error(
+    throw new DomainError(
+      "BAD_REQUEST",
       `No se puede auto-vincular una fecha futura (${params.date}). Hoy es ${today} en ${TIMEZONE}.`
     );
   }
@@ -2425,7 +2428,8 @@ export async function autoLinkEventPeriod(params: {
   strategy?: AutoLinkStrategy;
   userId: number;
 }) {
-  if (!PERIOD_REGEX.test(params.period)) throw new Error("Periodo inválido. Usa formato YYYY-MM");
+  if (!PERIOD_REGEX.test(params.period))
+    throw new DomainError("BAD_REQUEST", "Periodo inválido. Usa formato YYYY-MM");
 
   const today = toChileDateString(new Date());
   const { from: periodStart, to: periodEnd } = getMonthRange(params.period);
@@ -2643,7 +2647,7 @@ export function normalizeLinkDate(input: string): string {
   // whenever the process TZ was at/east of UTC (CI runs UTC → off-by-one), and
   // strict calendar validity depended on whether customParseFormat was loaded.
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(input);
-  if (!match) throw new Error("Fecha inválida. Usa formato YYYY-MM-DD");
+  if (!match) throw new DomainError("BAD_REQUEST", "Fecha inválida. Usa formato YYYY-MM-DD");
   const year = Number(match[1]);
   const month = Number(match[2]);
   const day = Number(match[3]);
@@ -2654,7 +2658,7 @@ export function normalizeLinkDate(input: string): string {
     date.getUTCMonth() !== month - 1 ||
     date.getUTCDate() !== day
   ) {
-    throw new Error("Fecha inválida. Usa formato YYYY-MM-DD");
+    throw new DomainError("BAD_REQUEST", "Fecha inválida. Usa formato YYYY-MM-DD");
   }
   return input;
 }

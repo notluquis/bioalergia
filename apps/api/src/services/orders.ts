@@ -1,4 +1,5 @@
 import { db } from "@finanzas/db";
+import { DomainError } from "../lib/errors.ts";
 
 function generateOrderNumber(): string {
   const year = new Date().getFullYear();
@@ -30,7 +31,7 @@ export async function createOrderFromCart(input: CreateOrderInput) {
     },
   });
   if (!cart || cart.items.length === 0) {
-    throw new Error("Carrito vacío");
+    throw new DomainError("BAD_REQUEST", "Carrito vacío");
   }
 
   type CartItem = (typeof cart.items)[number];

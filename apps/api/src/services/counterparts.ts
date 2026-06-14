@@ -1,4 +1,5 @@
 import { type CounterpartCategory, db } from "@finanzas/db";
+import { DomainError } from "../lib/errors.ts";
 import {
   type assignRutToPayoutsResponseSchema,
   type counterpartAccountSchema,
@@ -696,7 +697,7 @@ export async function getCounterpartById(id: number) {
   });
 
   if (!counterpart) {
-    throw new Error(`Counterpart with ID ${id} not found`);
+    throw new DomainError("NOT_FOUND", `Counterpart with ID ${id} not found`);
   }
 
   return {
@@ -716,7 +717,7 @@ export async function getCounterpartByRut(identificationNumber: string) {
   });
 
   if (!counterpart) {
-    throw new Error(`Counterpart with RUT ${identificationNumber} not found`);
+    throw new DomainError("NOT_FOUND", `Counterpart with RUT ${identificationNumber} not found`);
   }
 
   return {
@@ -734,7 +735,7 @@ export async function createCounterpart(data: CounterpartPayload) {
   });
 
   if (existing) {
-    throw new Error(`Counterpart with RUT ${rut} already exists`);
+    throw new DomainError("CONFLICT", `Counterpart with RUT ${rut} already exists`);
   }
 
   const created = await db.counterpart.create({
@@ -755,7 +756,7 @@ export async function createCounterpart(data: CounterpartPayload) {
 export async function updateCounterpart(id: number, data: CounterpartUpdatePayload) {
   const counterpart = await db.counterpart.findUnique({ where: { id } });
   if (!counterpart) {
-    throw new Error("Counterpart not found");
+    throw new DomainError("NOT_FOUND", "Counterpart not found");
   }
 
   const updateData: Partial<CounterpartPayload> = {};
@@ -858,14 +859,14 @@ export async function updateCounterpartAccount(
     select: { counterpartId: true, id: true },
   });
   if (!existingAccount) {
-    throw new Error("Counterpart account not found");
+    throw new DomainError("NOT_FOUND", "Counterpart account not found");
   }
 
   const updateData: CounterpartAccountUpdateInput = { ...payload };
   if (payload.accountNumber !== undefined) {
     const normalizedAccount = normalizeAccountNumber(payload.accountNumber);
     if (!normalizedAccount) {
-      throw new Error("Número de cuenta inválido");
+      throw new DomainError("BAD_REQUEST", "Número de cuenta inválido");
     }
 
     const conflicting = await db.counterpartAccount.findFirst({
@@ -910,14 +911,14 @@ export async function updateCounterpartAccount(
 export async function attachRutToCounterpart(counterpartId: number, rutInput: string) {
   const rut = normalizeRut(rutInput);
   if (!rut) {
-    throw new Error("RUT inválido");
+    throw new DomainError("BAD_REQUEST", "RUT inválido");
   }
 
   const counterpart = await db.counterpart.findUnique({
     where: { id: counterpartId },
   });
   if (!counterpart) {
-    throw new Error("Counterpart not found");
+    throw new DomainError("NOT_FOUND", "Counterpart not found");
   }
 
   const existingByRut = await db.counterpart.findUnique({
@@ -925,7 +926,10 @@ export async function attachRutToCounterpart(counterpartId: number, rutInput: st
   });
 
   if (existingByRut && existingByRut.id !== counterpartId) {
-    throw new Error(`El RUT ${rut} ya está vinculado a otra contraparte (ID ${existingByRut.id})`);
+    throw new DomainError(
+      "CONFLICT",
+      `El RUT ${rut} ya está vinculado a otra contraparte (ID ${existingByRut.id})`
+    );
   }
 
   if (counterpart.identificationNumber !== rut) {
@@ -968,7 +972,7 @@ export async function assignRutToPayoutAccounts(params: {
 }): Promise<AssignRutToPayoutsDto> {
   const rut = normalizeRut(params.rut);
   if (!rut) {
-    throw new Error("RUT inválido");
+    throw new DomainError("BAD_REQUEST", "RUT inválido");
   }
   const uniqueAccounts = [
     ...new Set(params.accountNumbers.map(normalizeAccountNumber).filter(Boolean)),
@@ -1046,7 +1050,7 @@ export async function getCounterpartSummary(counterpartId: number): Promise<Coun
   });
 
   if (!counterpart) {
-    throw new Error(`Counterpart with ID ${counterpartId} not found`);
+    throw new DomainError("NOT_FOUND", `Counterpart with ID ${counterpartId} not found`);
   }
 
   const identificationNumber = counterpart.identificationNumber;

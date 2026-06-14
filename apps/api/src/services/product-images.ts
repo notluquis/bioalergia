@@ -1,5 +1,6 @@
 import { db } from "@finanzas/db";
 import sharp from "sharp";
+import { DomainError } from "../lib/errors.ts";
 import { deleteR2Objects, putR2Object, r2KeyFromCdnUrl } from "../modules/cloudflare/r2.ts";
 
 // Tamaños responsivos + formatos next-gen (golden 2026). Orden de preferencia
@@ -156,7 +157,7 @@ export async function reorderProductImages(productId: number, orderedIds: number
 export async function setPrimaryImage(id: number) {
   const img = await db.productImage.findUnique({ where: { id } });
   if (!img) {
-    throw new Error("Imagen no encontrada");
+    throw new DomainError("NOT_FOUND", "Imagen no encontrada");
   }
   await db.$transaction([
     db.productImage.updateMany({

@@ -23,6 +23,7 @@ function serializeShipment(s: ShipmentRow): SerializedShipment {
   } as SerializedShipment;
 }
 import { chilexpressConfig } from "../lib/config.ts";
+import { DomainError } from "../lib/errors.ts";
 import { deleteSetting, getSetting, loadSettings, updateSetting } from "../lib/settings.ts";
 import {
   createTransportOrder,
@@ -101,7 +102,7 @@ export async function geocodeAddress(input: {
 export async function reprintShipmentLabel(shipmentId: number) {
   const cfg = requireCxConfig();
   const shipment = await db.shipment.findUnique({ where: { id: shipmentId } });
-  if (!shipment) throw new Error("Shipment no encontrado");
+  if (!shipment) throw new DomainError("NOT_FOUND", "Shipment no encontrado");
   const result = await reprintLabel(cfg, {
     transportOrderNumber: shipment.otNumber,
     labelType: shipment.labelType ?? 2,
@@ -118,7 +119,7 @@ export async function reprintShipmentLabel(shipmentId: number) {
 export async function refreshShipmentTracking(shipmentId: number) {
   const cfg = requireCxConfig();
   const shipment = await db.shipment.findUnique({ where: { id: shipmentId } });
-  if (!shipment) throw new Error("Shipment no encontrado");
+  if (!shipment) throw new DomainError("NOT_FOUND", "Shipment no encontrado");
   // Spec /tracking exige transportOrderNumber + reference + rut + showTrackingEvents.
   // shipment.reference es el deliveryReference que mandamos al crear la OT;
   // companyRut viene de la env CHILEXPRESS_COMPANY_RUT (en sandbox = 96756430).
@@ -146,7 +147,7 @@ export async function refreshShipmentTracking(shipmentId: number) {
  */
 export async function cancelShipment(shipmentId: number) {
   const shipment = await db.shipment.findUnique({ where: { id: shipmentId } });
-  if (!shipment) throw new Error("Shipment no encontrado");
+  if (!shipment) throw new DomainError("NOT_FOUND", "Shipment no encontrado");
   const updated = await db.shipment.update({
     where: { id: shipmentId },
     data: { status: "CANCELLED" },
@@ -264,7 +265,7 @@ export async function closeShipmentCertificate(input: {
   const active = await getActiveManifest();
   const certificateNumber = input.certificateNumber ?? active?.certificateNumber;
   if (certificateNumber == null) {
-    throw new Error("No hay manifiesto activo para cerrar");
+    throw new DomainError("CONFLICT", "No hay manifiesto activo para cerrar");
   }
   const result = await closeCertificate(cfg, {
     certificateNumber,
@@ -373,14 +374,15 @@ export async function createShipment(input: CreateShipmentInput) {
   let observation: string;
   if (input.deliveryMode === "home") {
     if (!input.addressId) {
-      throw new Error("Para despacho a domicilio se requiere addressId");
+      throw new DomainError("BAD_REQUEST", "Para despacho a domicilio se requiere addressId");
     }
     const address = await db.address.findUnique({ where: { id: input.addressId } });
     if (!address) {
-      throw new Error("Dirección no encontrada");
+      throw new DomainError("NOT_FOUND", "Dirección no encontrada");
     }
     if (!address.coverageCode) {
-      throw new Error(
+      throw new DomainError(
+        "BAD_REQUEST",
         "La dirección guardada no tiene coverageCode de Chilexpress; vuelve a editarla y selecciona la comuna"
       );
     }
@@ -393,7 +395,10 @@ export async function createShipment(input: CreateShipmentInput) {
     observation = address.reference ?? "";
   } else {
     if (!input.commercialOfficeId) {
-      throw new Error("Para despacho a sucursal se requiere commercialOfficeId");
+      throw new DomainError(
+        "BAD_REQUEST",
+        "Para despacho a sucursal se requiere commercialOfficeId"
+      );
     }
     streetName = "A sucursal";
     streetNumber = "0";

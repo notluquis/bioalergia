@@ -1,5 +1,7 @@
 import { db } from "@finanzas/db";
 
+import { DomainError } from "../lib/errors.ts";
+
 const DATE_ONLY_FORMAT = "YYYY-MM-DD";
 
 // Regex patterns for performance (top-level definition)
@@ -75,7 +77,7 @@ export function parseDateOnlyUtc(value: string): Temporal.PlainDate | null {
 export function dateOnlyStartUtc(value: string): Date {
   const parsed = parseDateOnlyUtc(value);
   if (!parsed) {
-    throw new Error(`Invalid date format: ${value}. Expected ${DATE_ONLY_FORMAT}`);
+    throw new DomainError("BAD_REQUEST", `Invalid date format: ${value}. Expected ${DATE_ONLY_FORMAT}`);
   }
   return new Date(`${parsed.toString()}T00:00:00.000Z`);
 }
@@ -83,7 +85,7 @@ export function dateOnlyStartUtc(value: string): Date {
 export function dateOnlyEndUtc(value: string): Date {
   const parsed = parseDateOnlyUtc(value);
   if (!parsed) {
-    throw new Error(`Invalid date format: ${value}. Expected ${DATE_ONLY_FORMAT}`);
+    throw new DomainError("BAD_REQUEST", `Invalid date format: ${value}. Expected ${DATE_ONLY_FORMAT}`);
   }
   return new Date(`${parsed.toString()}T23:59:59.999Z`);
 }
@@ -91,7 +93,7 @@ export function dateOnlyEndUtc(value: string): Date {
 /** Strict "YYYY-MM" -> PlainDate of the first day of that month (UTC). */
 export function monthStartUtc(month: string): Temporal.PlainDate {
   if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) {
-    throw new Error(`Invalid month format: ${month}. Expected YYYY-MM`);
+    throw new DomainError("BAD_REQUEST", `Invalid month format: ${month}. Expected YYYY-MM`);
   }
   const [year, m] = month.split("-").map(Number);
   return Temporal.PlainDate.from({ year, month: m, day: 1 });
@@ -112,7 +114,7 @@ export function formatDbDateOnly(value: Date | string) {
  */
 export function timeToMinutes(time: string): number {
   if (!time) {
-    throw new Error("Time string is required");
+    throw new DomainError("BAD_REQUEST", "Time string is required");
   }
   if (time.includes("T") || time.includes("-")) {
     const dt = new Date(time);
@@ -121,15 +123,15 @@ export function timeToMinutes(time: string): number {
     }
   }
   if (!TIME_FORMAT_PATTERN.test(time)) {
-    throw new Error(`Invalid time format: ${time}. Expected HH:MM or HH:MM:SS`);
+    throw new DomainError("BAD_REQUEST", `Invalid time format: ${time}. Expected HH:MM or HH:MM:SS`);
   }
   const parts = time.split(":").map(Number);
   const [hours, minutes] = parts;
   if (hours === undefined || minutes === undefined) {
-    throw new Error(`Invalid time components: ${time}`);
+    throw new DomainError("BAD_REQUEST", `Invalid time components: ${time}`);
   }
   if (hours < 0 || hours > 23 || minutes < 0 || minutes >= 60) {
-    throw new Error(`Time out of range: ${time}`);
+    throw new DomainError("BAD_REQUEST", `Time out of range: ${time}`);
   }
   return hours * 60 + minutes;
 }
@@ -187,7 +189,7 @@ export function timeStringToDate(
   referenceDate: Date = new Date()
 ): Date {
   if (!time) {
-    throw new Error("Time string is required for date conversion");
+    throw new DomainError("BAD_REQUEST", "Time string is required for date conversion");
   }
 
   // ZenStack/Prisma maps @db.Time to/from a Date by its UTC components
@@ -217,13 +219,13 @@ export function timeStringToDate(
       s < 0 ||
       s >= 60
     ) {
-      throw new Error(`Invalid time components in: ${time}`);
+      throw new DomainError("BAD_REQUEST", `Invalid time components in: ${time}`);
     }
     hours = h;
     minutes = m;
     seconds = s;
   } else {
-    throw new Error(`Unable to parse time string: ${time}`);
+    throw new DomainError("BAD_REQUEST", `Unable to parse time string: ${time}`);
   }
 
   return new Date(
@@ -274,7 +276,7 @@ export async function getTimesheetEntryById(id: number): Promise<TimesheetEntry>
     where: { id: BigInt(id) },
   });
   if (!entry) {
-    throw new Error("Registro no encontrado");
+    throw new DomainError("NOT_FOUND", "Registro no encontrado");
   }
   return mapTimesheetEntry(entry);
 }
@@ -467,7 +469,7 @@ async function buildTimesheetUpdateData(
     where: { id: BigInt(id) },
   });
   if (!existing) {
-    throw new Error("Registro no encontrado");
+    throw new DomainError("NOT_FOUND", "Registro no encontrado");
   }
 
   const referenceDate = existing.workDate;

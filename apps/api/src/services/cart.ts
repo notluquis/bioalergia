@@ -8,6 +8,8 @@
 import { db } from "@finanzas/db";
 import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 
+import { DomainError } from "../lib/errors.ts";
+
 export const CART_COOKIE_NAME = "cart_token";
 const COOKIE_MAX_AGE = 30 * 24 * 60 * 60; // 30d
 const CART_TTL_DAYS = 14;
@@ -93,11 +95,14 @@ export async function addItemToCart(opts: { cartId: number; productId: number; q
     select: { id: true, status: true, priceClp: true, availableQty: true, safetyStock: true },
   });
   if (!product || product.status !== "ACTIVE") {
-    throw new Error("Producto no disponible");
+    throw new DomainError("BAD_REQUEST", "Producto no disponible");
   }
   const sellable = product.availableQty - product.safetyStock;
   if (sellable < opts.qty) {
-    throw new Error(`Stock insuficiente (disponible: ${Math.max(0, sellable)})`);
+    throw new DomainError(
+      "UNPROCESSABLE_ENTITY",
+      `Stock insuficiente (disponible: ${Math.max(0, sellable)})`
+    );
   }
 
   const existing = await db.cartItem.findUnique({
@@ -108,7 +113,10 @@ export async function addItemToCart(opts: { cartId: number; productId: number; q
   if (existing) {
     const newQty = existing.qty + opts.qty;
     if (sellable < newQty) {
-      throw new Error(`Stock insuficiente (disponible: ${Math.max(0, sellable)})`);
+      throw new DomainError(
+      "UNPROCESSABLE_ENTITY",
+      `Stock insuficiente (disponible: ${Math.max(0, sellable)})`
+    );
     }
     await db.cartItem.update({
       where: { id: existing.id },
@@ -138,11 +146,14 @@ export async function updateItemQty(opts: { cartId: number; productId: number; q
     select: { priceClp: true, availableQty: true, safetyStock: true, status: true },
   });
   if (!product || product.status !== "ACTIVE") {
-    throw new Error("Producto no disponible");
+    throw new DomainError("BAD_REQUEST", "Producto no disponible");
   }
   const sellable = product.availableQty - product.safetyStock;
   if (sellable < opts.qty) {
-    throw new Error(`Stock insuficiente (disponible: ${Math.max(0, sellable)})`);
+    throw new DomainError(
+      "UNPROCESSABLE_ENTITY",
+      `Stock insuficiente (disponible: ${Math.max(0, sellable)})`
+    );
   }
   await db.cartItem.updateMany({
     where: { cartId: opts.cartId, productId: opts.productId },
