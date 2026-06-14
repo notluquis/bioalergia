@@ -109,16 +109,12 @@ import { decryptSecret, encryptSecret } from "../lib/secret-cipher.ts";
 import { configureSuperjson } from "../lib/superjson-config.ts";
 import {
   blockUsers,
-  cloneTemplateFromLibrary,
-  createTemplate,
-  deleteTemplate,
   editTextMessage,
   getBusinessProfile,
   getConversationAnalytics,
   getConversationalAutomation,
   getPhoneHealth,
   listCommerceProducts,
-  listTemplateLibrary,
   requestPhoneVerificationCode,
   sendMultiProductMessage,
   sendSingleProductMessage,
@@ -148,6 +144,27 @@ import {
 import { waBroadcastJobKey } from "../modules/wa-cloud/broadcast-runner.ts";
 import { enqueueJob } from "../queue/runner.ts";
 import { waScheduledJobKey } from "../queue/tasks/wa-scheduled-send.ts";
+import {
+  cancelBroadcast as cancelBroadcastService,
+  createBroadcast as createBroadcastService,
+  getBroadcastDetail as getBroadcastDetailService,
+  listBroadcasts as listBroadcastsService,
+  startBroadcast as startBroadcastService,
+} from "../services/wa-broadcasts.ts";
+import {
+  cancelScheduledMessage as cancelScheduledMessageService,
+  createScheduledMessage as createScheduledMessageService,
+  listAllScheduled as listAllScheduledService,
+  listScheduledForConversation as listScheduledForConversationService,
+} from "../services/wa-scheduled.ts";
+import {
+  cloneTemplateFromLibrary as cloneTemplateFromLibraryService,
+  createTemplate as createTemplateService,
+  deleteTemplate as deleteTemplateService,
+  listTemplateLibrary as listTemplateLibraryService,
+  listTemplates as listTemplatesService,
+  syncTemplates as syncTemplatesService,
+} from "../services/wa-templates.ts";
 import { SuperJSONRPCHandler } from "./superjson.ts";
 
 configureSuperjson();
@@ -340,45 +357,7 @@ const waRouterBase = {
     .input(accountIdInput)
     .output(syncTemplatesResponseSchema)
     .handler(async ({ input }) => {
-      const apiTpls = await listAccountTemplates(input.id);
-      // Single batched lookup: all existing templates for this account in
-      // one query, indexed by composite key (name, language). Replaces the
-      // N findUnique sequential roundtrips.
-      const existingRows = await db.waTemplate.findMany({
-        where: { accountId: input.id },
-        select: { id: true, name: true, language: true },
-      });
-      const existingByKey = new Map(existingRows.map((r) => [`${r.name}\u0000${r.language}`, r.id]));
-      await Promise.all(
-        apiTpls.map((t) => {
-          const data = {
-            accountId: input.id,
-            name: t.name,
-            language: t.language,
-            category: t.category as never,
-            status: t.status as never,
-            components: t.components as never,
-            qualityScore: t.quality_score?.score ?? null,
-            metaTemplateId: t.id,
-            syncedAt: new Date(),
-          };
-          const existingId = existingByKey.get(`${t.name}\u0000${t.language}`);
-          return existingId
-            ? db.waTemplate.update({ where: { id: existingId }, data })
-            : db.waTemplate.create({ data });
-        })
-      );
-      const all = await db.waTemplate.findMany({
-        where: { accountId: input.id },
-        orderBy: { name: "asc" },
-      });
-      return {
-        total: all.length,
-        templates: all.map((t) => ({
-          ...t,
-          components: (t.components as unknown[]) ?? [],
-        })),
-      };
+      return syncTemplatesService(input.id);
     }),
 
   upsertPhoneNumber: writeWa
@@ -1169,41 +1148,7 @@ const waRouterBase = {
     .input(createTemplateInputSchema)
     .output(createTemplateResponseSchema)
     .handler(async ({ input }) => {
-      const r = await createTemplate({
-        accountId: input.accountId,
-        name: input.name,
-        language: input.language,
-        category: input.category,
-        components: input.components,
-      });
-      // Best-effort local persistence so it shows up in the list before sync.
-      try {
-        await db.waTemplate.upsert({
-          where: {
-            accountId_name_language: {
-              accountId: input.accountId,
-              name: input.name,
-              language: input.language,
-            },
-          },
-          create: {
-            accountId: input.accountId,
-            metaTemplateId: r.id,
-            name: input.name,
-            language: input.language,
-            category: input.category,
-            status: r.status as "PENDING" | "APPROVED" | "REJECTED" | "DISABLED" | "PAUSED",
-            components: input.components as never,
-          },
-          update: {
-            metaTemplateId: r.id,
-            status: r.status as "PENDING" | "APPROVED" | "REJECTED" | "DISABLED" | "PAUSED",
-          },
-        });
-      } catch (err) {
-        logError("[wa-cloud.createTemplate] persist failed", { err });
-      }
-      return r;
+      return createTemplateService(input);
     }),
 
   // Template library (Meta-curated catalog, no approval review).
@@ -1222,23 +1167,7 @@ const waRouterBase = {
     .input(listTemplateLibraryInputSchema)
     .output(listTemplateLibraryResponseSchema)
     .handler(async ({ input }) => {
-      try {
-        const templates = await listTemplateLibrary(input.accountId, {
-          category: input.category,
-          topic: input.topic,
-          industry: input.industry,
-          language: input.language,
-          search: input.search,
-        });
-        return { templates };
-      } catch (err) {
-        const message = err instanceof Error ? err.message : String(err);
-        const isTierError =
-          message.includes("nonexisting field") || message.includes("message_template_library");
-        if (!isTierError) throw err;
-        logError("[wa-cloud.listTemplateLibrary] catalog browse not available", { message });
-        return { templates: [] };
-      }
+      return listTemplateLibraryService(input);
     }),
 
   cloneTemplateFromLibrary: createWa
@@ -1246,41 +1175,7 @@ const waRouterBase = {
     .input(cloneTemplateFromLibraryInputSchema)
     .output(cloneTemplateFromLibraryResponseSchema)
     .handler(async ({ input }) => {
-      const r = await cloneTemplateFromLibrary({
-        accountId: input.accountId,
-        libraryTemplateName: input.libraryTemplateName,
-        newName: input.newName,
-        language: input.language,
-        category: input.category,
-      });
-      // Persist locally so it appears in the templates list immediately.
-      try {
-        await db.waTemplate.upsert({
-          where: {
-            accountId_name_language: {
-              accountId: input.accountId,
-              name: input.newName ?? input.libraryTemplateName,
-              language: input.language,
-            },
-          },
-          create: {
-            accountId: input.accountId,
-            metaTemplateId: r.id,
-            name: input.newName ?? input.libraryTemplateName,
-            language: input.language,
-            category: input.category,
-            status: r.status as "PENDING" | "APPROVED" | "REJECTED" | "DISABLED" | "PAUSED",
-            components: [] as never,
-          },
-          update: {
-            metaTemplateId: r.id,
-            status: r.status as "PENDING" | "APPROVED" | "REJECTED" | "DISABLED" | "PAUSED",
-          },
-        });
-      } catch (err) {
-        logError("[wa-cloud.cloneTemplateFromLibrary] persist failed", { err });
-      }
-      return r;
+      return cloneTemplateFromLibraryService(input);
     }),
 
   deleteTemplate: deleteWa
@@ -1288,14 +1183,7 @@ const waRouterBase = {
     .input(deleteTemplateInputSchema)
     .output(waOkResponseSchema)
     .handler(async ({ input }) => {
-      await deleteTemplate(input.accountId, input.name, input.hsmId);
-      try {
-        await db.waTemplate.deleteMany({
-          where: { accountId: input.accountId, name: input.name },
-        });
-      } catch (err) {
-        logError("[wa-cloud.deleteTemplate] local cleanup failed", { err });
-      }
+      await deleteTemplateService(input.accountId, input.name, input.hsmId);
       return { status: "ok" as const };
     }),
 
@@ -1304,26 +1192,7 @@ const waRouterBase = {
     .input(createBroadcastInputSchema)
     .output(broadcastSummarySchema)
     .handler(async ({ context, input }) => {
-      const bc = await db.waBroadcast.create({
-        data: {
-          accountId: input.accountId,
-          phoneNumberId: input.phoneNumberId,
-          name: input.name,
-          templateName: input.templateName,
-          templateLanguage: input.templateLanguage,
-          scheduledAt: input.scheduledAt ?? null,
-          rateLimitPerSecond: input.rateLimitPerSecond,
-          totalRecipients: input.recipients.length,
-          createdByUserId: context.user.id,
-          status: input.scheduledAt ? "QUEUED" : "DRAFT",
-          recipients: {
-            create: input.recipients.map((r) => ({
-              phoneE164: r.phoneE164,
-              variables: r.variables as never,
-            })),
-          },
-        },
-      });
+      const bc = await createBroadcastService(input, context.user.id);
       // Scheduled broadcast → kick off the drain chain at its send time. Drafts
       // wait for startBroadcast. jobKey+replace = one chain per broadcast.
       // No-ops when the queue runner is disabled (manual start stays the fallback).
@@ -1351,11 +1220,7 @@ const waRouterBase = {
     .input(z.object({}).optional())
     .output(listBroadcastsResponseSchema)
     .handler(async () => {
-      const rows = await db.waBroadcast.findMany({
-        orderBy: { createdAt: "desc" },
-        take: 100,
-      });
-      return { broadcasts: rows };
+      return listBroadcastsService();
     }),
 
   getBroadcast: readWa
@@ -1363,20 +1228,7 @@ const waRouterBase = {
     .input(broadcastIdInputSchema)
     .output(broadcastDetailResponseSchema)
     .handler(async ({ input }) => {
-      const bc = await db.waBroadcast.findUnique({ where: { id: input.id } });
-      if (!bc) throw new ORPCError("NOT_FOUND", { message: "Broadcast no encontrado" });
-      const recipients = await db.waBroadcastRecipient.findMany({
-        where: { broadcastId: bc.id },
-        orderBy: { id: "asc" },
-        take: 1000,
-      });
-      return {
-        broadcast: bc,
-        recipients: recipients.map((r) => ({
-          ...r,
-          variables: (r.variables as unknown as string[]) ?? [],
-        })),
-      };
+      return getBroadcastDetailService(input.id);
     }),
 
   startBroadcast: writeWa
@@ -1384,17 +1236,7 @@ const waRouterBase = {
     .input(broadcastIdInputSchema)
     .output(broadcastSummarySchema)
     .handler(async ({ input }) => {
-      const bc = await db.waBroadcast.findUnique({ where: { id: input.id } });
-      if (!bc) throw new ORPCError("NOT_FOUND", { message: "Broadcast no encontrado" });
-      if (bc.status !== "DRAFT" && bc.status !== "QUEUED") {
-        throw new ORPCError("BAD_REQUEST", {
-          message: `Estado ${bc.status} no permite iniciar`,
-        });
-      }
-      const updated = await db.waBroadcast.update({
-        where: { id: bc.id },
-        data: { status: "QUEUED", scheduledAt: bc.scheduledAt ?? new Date() },
-      });
+      const updated = await startBroadcastService(input.id);
       // Start (or restart) the drain chain. runAt = scheduledAt (now if immediate).
       await enqueueJob(
         "send_wa_broadcast_tick",
@@ -1414,14 +1256,7 @@ const waRouterBase = {
     .input(broadcastIdInputSchema)
     .output(waOkResponseSchema)
     .handler(async ({ input }) => {
-      await db.waBroadcast.update({
-        where: { id: input.id },
-        data: { status: "CANCELLED", finishedAt: new Date() },
-      });
-      await db.waBroadcastRecipient.updateMany({
-        where: { broadcastId: input.id, status: "PENDING" },
-        data: { status: "SKIPPED", errorMessage: "Broadcast cancelado" },
-      });
+      await cancelBroadcastService(input.id);
       return { status: "ok" as const };
     }),
 
@@ -1430,31 +1265,7 @@ const waRouterBase = {
     .input(scheduleMessageInputSchema)
     .output(scheduledMessageSchema)
     .handler(async ({ context, input }) => {
-      const conv = await db.waConversation.findUnique({
-        where: { id: input.conversationId },
-        select: { id: true, contactId: true },
-      });
-      if (!conv) throw new ORPCError("NOT_FOUND", { message: "Conversación no encontrada" });
-      if (input.scheduledAt.getTime() <= Date.now() + 30_000) {
-        throw new ORPCError("BAD_REQUEST", {
-          message: "Programa al menos 30 segundos en el futuro",
-        });
-      }
-      const created = await db.waScheduledMessage.create({
-        data: {
-          conversationId: conv.id,
-          contactId: conv.contactId,
-          phoneNumberId: input.phoneNumberId,
-          scheduledAt: input.scheduledAt,
-          type: input.type,
-          body: input.body ?? null,
-          templateName: input.templateName ?? null,
-          templateLanguage: input.templateLanguage ?? null,
-          templateVars: (input.templateVars ?? []) as never,
-          contextMetaMessageId: input.contextMetaMessageId ?? null,
-          createdByUserId: context.user.id,
-        },
-      });
+      const created = await createScheduledMessageService(input, context.user.id);
       // Fire the one-shot send at its due time. jobKey+replace keeps a single
       // job per scheduled message. No-op when the queue runner is disabled.
       await enqueueJob(
@@ -1468,10 +1279,7 @@ const waRouterBase = {
           queueName: waScheduledJobKey(created.id),
         }
       );
-      return {
-        ...created,
-        templateVars: (created.templateVars as unknown as string[]) ?? [],
-      };
+      return created;
     }),
 
   listScheduled: readWa
@@ -1479,16 +1287,7 @@ const waRouterBase = {
     .input(listScheduledInputSchema)
     .output(listScheduledResponseSchema)
     .handler(async ({ input }) => {
-      const rows = await db.waScheduledMessage.findMany({
-        where: { conversationId: input.conversationId },
-        orderBy: { scheduledAt: "asc" },
-      });
-      return {
-        scheduled: rows.map((r) => ({
-          ...r,
-          templateVars: (r.templateVars as unknown as string[]) ?? [],
-        })),
-      };
+      return listScheduledForConversationService(input.conversationId);
     }),
 
   cancelScheduled: deleteWa
@@ -1496,10 +1295,7 @@ const waRouterBase = {
     .input(cancelScheduledInputSchema)
     .output(waOkResponseSchema)
     .handler(async ({ input }) => {
-      await db.waScheduledMessage.update({
-        where: { id: input.id },
-        data: { status: "CANCELLED" },
-      });
+      await cancelScheduledMessageService(input.id);
       return { status: "ok" as const };
     }),
 
@@ -1562,11 +1358,7 @@ const waRouterBase = {
     .input(z.object({ accountId: z.number().int().optional() }).optional())
     .output(listTemplatesResponseSchema)
     .handler(async ({ input }) => {
-      const where = input?.accountId ? { accountId: input.accountId } : {};
-      const tpls = await db.waTemplate.findMany({ where, orderBy: { name: "asc" } });
-      return {
-        templates: tpls.map((t) => ({ ...t, components: (t.components as unknown[]) ?? [] })),
-      };
+      return listTemplatesService(input?.accountId);
     }),
 
   listWebhookLogs: readWa
@@ -2368,21 +2160,7 @@ const waRouterBase = {
     .input(listAllScheduledInputSchema)
     .output(listAllScheduledResponseSchema)
     .handler(async ({ input }) => {
-      const where = input.status ? { status: input.status } : {};
-      const rows = await db.waScheduledMessage.findMany({
-        where,
-        orderBy: { scheduledAt: "asc" },
-        take: input.limit,
-        include: { conversation: { include: { contact: true } } },
-      });
-      return {
-        scheduled: rows.map((r) => ({
-          ...r,
-          templateVars: (r.templateVars as unknown as string[]) ?? [],
-          contactName: r.conversation.contact.name ?? r.conversation.contact.pushName ?? null,
-          phoneE164: r.conversation.contact.phoneE164,
-        })),
-      };
+      return listAllScheduledService(input);
     }),
 
   // ── Account events / alerts ───────────────────────────────────────────────
