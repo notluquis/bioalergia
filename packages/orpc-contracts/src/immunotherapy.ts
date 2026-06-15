@@ -193,6 +193,47 @@ export const updateClinicTermsInputSchema = z.object({
   immunoBudgetIntro: z.string().nullable().optional(),
 });
 
+// ── SCIT prescription (trazabilidad por paciente) ────────────────────
+// La calculadora SCIT vive en el frontend; aquí solo se persiste el resultado
+// (selección del médico + viales calculados) como registro inmutable por paciente.
+export const scitSelectionSchema = z.object({
+  selectedAllergenIds: z.array(z.string()),
+  provider: z.string(),
+  relevanceMode: z.string().optional(),
+  dominantAllergenId: z.string().optional(),
+});
+
+export const createScitPrescriptionInputSchema = z.object({
+  patientId: z.number().int(),
+  provider: z.string(),
+  inputs: scitSelectionSchema,
+  vials: z.array(z.unknown()),
+  alerts: z.array(z.unknown()).optional(),
+  rulesApplied: z.array(z.string()),
+  summary: z.string().optional(),
+});
+
+export const scitPrescriptionSchema = z.object({
+  id: z.string(),
+  patientId: z.number().int(),
+  patientName: z.string(),
+  patientRut: z.string().nullable(),
+  provider: z.string(),
+  inputs: z.unknown(),
+  vials: z.array(z.unknown()),
+  alerts: z.array(z.unknown()).nullable(),
+  rulesApplied: z.array(z.string()),
+  summary: z.string().nullable(),
+  createdBy: z.number().int(),
+  createdAt: z.date(),
+});
+
+export const listScitPrescriptionsInputSchema = z.object({ patientId: z.number().int() });
+export const scitPrescriptionListResponseSchema = z.object({
+  items: z.array(scitPrescriptionSchema),
+});
+export const scitPrescriptionCreatedSchema = z.object({ id: z.string() });
+
 // ── Contract ─────────────────────────────────────────────────────────
 export const immunotherapyContract = {
   // Productos (catálogo editable)
@@ -237,6 +278,15 @@ export const immunotherapyContract = {
     .route({ method: "POST", path: "/terms/update" })
     .input(updateClinicTermsInputSchema)
     .output(clinicTermsSchema),
+  // Prescripciones SCIT calculadas (trazabilidad por paciente)
+  createScitPrescription: oc
+    .route({ method: "POST", path: "/scit-prescriptions" })
+    .input(createScitPrescriptionInputSchema)
+    .output(scitPrescriptionCreatedSchema),
+  listScitPrescriptions: oc
+    .route({ method: "GET", path: "/scit-prescriptions" })
+    .input(listScitPrescriptionsInputSchema)
+    .output(scitPrescriptionListResponseSchema),
 };
 
 export type ImmunotherapyContract = typeof immunotherapyContract;
@@ -247,3 +297,5 @@ export type PrescriptionPdfInput = z.infer<typeof prescriptionPdfInputSchema>;
 export type ProductDto = z.infer<typeof productSchema>;
 export type CreateProductInput = z.infer<typeof createProductInputSchema>;
 export type UpdateProductInput = z.infer<typeof updateProductInputSchema>;
+export type CreateScitPrescriptionInput = z.infer<typeof createScitPrescriptionInputSchema>;
+export type ScitPrescriptionDto = z.infer<typeof scitPrescriptionSchema>;

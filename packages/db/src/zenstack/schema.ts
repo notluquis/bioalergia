@@ -8700,6 +8700,92 @@ export class SchemaType implements SchemaDef {
                 folio: { type: "String" }
             }
         },
+        ScitPrescription: {
+            name: "ScitPrescription",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "String",
+                    id: true,
+                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("cuid") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("cuid") as FieldDefault
+                },
+                patientId: {
+                    name: "patientId",
+                    type: "Int",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("patient_id") }] }] as readonly AttributeApplication[],
+                    foreignKeyFor: [
+                        "patient"
+                    ] as readonly string[]
+                },
+                patientName: {
+                    name: "patientName",
+                    type: "String",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("patient_name") }] }] as readonly AttributeApplication[]
+                },
+                patientRut: {
+                    name: "patientRut",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("patient_rut") }] }] as readonly AttributeApplication[]
+                },
+                provider: {
+                    name: "provider",
+                    type: "String"
+                },
+                inputs: {
+                    name: "inputs",
+                    type: "Json"
+                },
+                vials: {
+                    name: "vials",
+                    type: "Json"
+                },
+                alerts: {
+                    name: "alerts",
+                    type: "Json",
+                    optional: true
+                },
+                rulesApplied: {
+                    name: "rulesApplied",
+                    type: "String",
+                    array: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("rules_applied") }] }] as readonly AttributeApplication[]
+                },
+                summary: {
+                    name: "summary",
+                    type: "String",
+                    optional: true
+                },
+                createdBy: {
+                    name: "createdBy",
+                    type: "Int",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_by") }] }] as readonly AttributeApplication[]
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                patient: {
+                    name: "patient",
+                    type: "Patient",
+                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("patientId")]) }, { name: "references", value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("Cascade") }] }] as readonly AttributeApplication[],
+                    relation: { opposite: "scitPrescriptions", fields: ["patientId"], references: ["id"], onDelete: "Cascade" }
+                }
+            },
+            attributes: [
+                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,read") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("patientId"), ExpressionUtils.field("createdAt")]) }] },
+                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("scit_prescriptions") }] }
+            ] as readonly AttributeApplication[],
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "String" }
+            }
+        },
         Patient: {
             name: "Patient",
             fields: {
@@ -8818,6 +8904,12 @@ export class SchemaType implements SchemaDef {
                 examReports: {
                     name: "examReports",
                     type: "ExamReport",
+                    array: true,
+                    relation: { opposite: "patient" }
+                },
+                scitPrescriptions: {
+                    name: "scitPrescriptions",
+                    type: "ScitPrescription",
                     array: true,
                     relation: { opposite: "patient" }
                 }

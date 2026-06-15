@@ -2695,6 +2695,40 @@ model MedicalPrescription {
   @@map("medical_prescriptions")
 }
 
+// Prescripción de inmunoterapia subcutánea calculada (Calculadora SCIT).
+// Registro inmutable de trazabilidad: guarda la selección del médico (inputs),
+// los viales calculados, alertas y reglas aplicadas, con quién/cuándo. Sin PDF:
+// la prescripción se reconstruye desde esta fila. No se edita ni borra.
+model ScitPrescription {
+  id           String   @id @default(cuid())
+  patientId    Int      @map("patient_id")
+  patientName  String   @map("patient_name")
+  patientRut   String?  @map("patient_rut")
+
+  // inmunotek | roxall | diater
+  provider     String
+  // DoctorSelection: { selectedAllergenIds, provider, relevanceMode?, dominantAllergenId? }
+  inputs       Json
+  // Vial[] calculado (ids de alérgeno + dosis con unidad real por proveedor)
+  vials        Json
+  // ClinicalAlert[] generadas por el motor (opcional)
+  alerts       Json?
+  rulesApplied String[] @map("rules_applied")
+  summary      String?
+
+  createdBy    Int      @map("created_by")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  patient      Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@deny('all', auth() == null)
+  // Inmutable: solo create + read (documento de trazabilidad, no se edita/borra).
+  @@allow('create,read', auth().status == 'ACTIVE')
+
+  @@index([patientId, createdAt])
+  @@map("scit_prescriptions")
+}
+
 model Patient {
   id                  Int                    @id @default(autoincrement())
   personId            Int                    @unique @map("person_id")
@@ -2717,6 +2751,7 @@ model Patient {
   clinicalSeries      ClinicalSeries[]
   clinicalRecordImports ClinicalRecordImport[]
   examReports         ExamReport[]
+  scitPrescriptions   ScitPrescription[]
 
   @@deny('all', auth() == null)
   @@allow('read', auth().status == 'ACTIVE')

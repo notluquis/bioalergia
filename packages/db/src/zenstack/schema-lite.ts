@@ -7122,6 +7122,78 @@ export class SchemaType implements SchemaDef {
                 folio: { type: "String" }
             }
         },
+        ScitPrescription: {
+            name: "ScitPrescription",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "String",
+                    id: true,
+                    default: ExpressionUtils.call("cuid") as FieldDefault
+                },
+                patientId: {
+                    name: "patientId",
+                    type: "Int",
+                    foreignKeyFor: [
+                        "patient"
+                    ] as readonly string[]
+                },
+                patientName: {
+                    name: "patientName",
+                    type: "String"
+                },
+                patientRut: {
+                    name: "patientRut",
+                    type: "String",
+                    optional: true
+                },
+                provider: {
+                    name: "provider",
+                    type: "String"
+                },
+                inputs: {
+                    name: "inputs",
+                    type: "Json"
+                },
+                vials: {
+                    name: "vials",
+                    type: "Json"
+                },
+                alerts: {
+                    name: "alerts",
+                    type: "Json",
+                    optional: true
+                },
+                rulesApplied: {
+                    name: "rulesApplied",
+                    type: "String",
+                    array: true
+                },
+                summary: {
+                    name: "summary",
+                    type: "String",
+                    optional: true
+                },
+                createdBy: {
+                    name: "createdBy",
+                    type: "Int"
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                patient: {
+                    name: "patient",
+                    type: "Patient",
+                    relation: { opposite: "scitPrescriptions", fields: ["patientId"], references: ["id"], onDelete: "Cascade" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "String" }
+            }
+        },
         Patient: {
             name: "Patient",
             fields: {
@@ -7233,6 +7305,12 @@ export class SchemaType implements SchemaDef {
                 examReports: {
                     name: "examReports",
                     type: "ExamReport",
+                    array: true,
+                    relation: { opposite: "patient" }
+                },
+                scitPrescriptions: {
+                    name: "scitPrescriptions",
+                    type: "ScitPrescription",
                     array: true,
                     relation: { opposite: "patient" }
                 }

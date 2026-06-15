@@ -5,13 +5,17 @@ import {
   clinicTermsSchema,
   createBudgetInputSchema,
   createProductInputSchema,
+  createScitPrescriptionInputSchema,
   idInputSchema,
+  listScitPrescriptionsInputSchema,
   okResponseSchema,
   prescriptionPdfInputSchema,
   productListResponseSchema,
   productResponseSchema,
   quoteInputSchema,
   quoteResultSchema,
+  scitPrescriptionCreatedSchema,
+  scitPrescriptionListResponseSchema,
   updateClinicTermsInputSchema,
   updateProductInputSchema,
 } from "@finanzas/orpc-contracts/immunotherapy";
@@ -37,6 +41,10 @@ import {
   updateProduct,
   updateTerms,
 } from "../services/immunotherapy.ts";
+import {
+  createScitPrescription,
+  listScitPrescriptionsByPatient,
+} from "../services/scit-prescriptions.ts";
 import { SuperJSONRPCHandler } from "./superjson.ts";
 
 configureSuperjson();
@@ -61,6 +69,8 @@ function requirePermission(action: string, subject: string) {
 const readBudgets = requirePermission("read", "Budget");
 const createBudgets = requirePermission("create", "Budget");
 const updateSettings = requirePermission("update", "Setting");
+const readClinicalSeries = requirePermission("read", "ClinicalSeries");
+const createClinicalSeries = requirePermission("create", "ClinicalSeries");
 
 const immunotherapyRouterBase = {
   // ── Productos (catálogo editable) ──────────────────────────────────
@@ -142,6 +152,19 @@ const immunotherapyRouterBase = {
     .input(updateClinicTermsInputSchema)
     .output(clinicTermsSchema)
     .handler(async ({ input }) => updateTerms(input)),
+
+  // ── Prescripciones SCIT (trazabilidad por paciente) ────────────────
+  createScitPrescription: createClinicalSeries
+    .route({ method: "POST", path: "/scit-prescriptions", tags: ["Immunotherapy"] })
+    .input(createScitPrescriptionInputSchema)
+    .output(scitPrescriptionCreatedSchema)
+    .handler(async ({ input, context }) => createScitPrescription(input, context.user.id)),
+
+  listScitPrescriptions: readClinicalSeries
+    .route({ method: "GET", path: "/scit-prescriptions", tags: ["Immunotherapy"] })
+    .input(listScitPrescriptionsInputSchema)
+    .output(scitPrescriptionListResponseSchema)
+    .handler(async ({ input }) => listScitPrescriptionsByPatient(input.patientId)),
 };
 
 export const immunotherapyORPCRouter = base

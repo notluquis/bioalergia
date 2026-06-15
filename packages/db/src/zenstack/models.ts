@@ -89,6 +89,7 @@ export type PersonalCredit = $ModelResult<$Schema, "PersonalCredit">;
 export type PersonalCreditInstallment = $ModelResult<$Schema, "PersonalCreditInstallment">;
 export type MedicalCertificate = $ModelResult<$Schema, "MedicalCertificate">;
 export type MedicalPrescription = $ModelResult<$Schema, "MedicalPrescription">;
+export type ScitPrescription = $ModelResult<$Schema, "ScitPrescription">;
 export type Patient = $ModelResult<$Schema, "Patient">;
 export type Shipment = $ModelResult<$Schema, "Shipment">;
 export type PatientDteSaleSource = $ModelResult<$Schema, "PatientDteSaleSource">;
