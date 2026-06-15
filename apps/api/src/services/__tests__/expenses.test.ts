@@ -277,23 +277,45 @@ describe("listExpenseServices filters", () => {
   it("includes isActive:false (does not drop it via falsy check)", async () => {
     expenseServiceFindMany.mockResolvedValue([]);
     await listExpenseServices({ isActive: false });
-    expect(expenseServiceFindMany).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { isActive: false } })
-    );
+    expect(expenseServiceFindMany).toHaveBeenCalledWith({
+      where: { isActive: false },
+      orderBy: { name: "asc" },
+    });
   });
 
-  it("omits where keys entirely when filter undefined", async () => {
+  it("omits where keys entirely when filter undefined and orders by name asc", async () => {
     expenseServiceFindMany.mockResolvedValue([]);
     await listExpenseServices({});
-    expect(expenseServiceFindMany).toHaveBeenCalledWith(expect.objectContaining({ where: {} }));
+    expect(expenseServiceFindMany).toHaveBeenCalledWith({
+      where: {},
+      orderBy: { name: "asc" },
+    });
   });
 
   it("passes scope through", async () => {
     expenseServiceFindMany.mockResolvedValue([]);
     await listExpenseServices({ scope: "PERSONAL" });
-    expect(expenseServiceFindMany).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { scope: "PERSONAL" } })
-    );
+    expect(expenseServiceFindMany).toHaveBeenCalledWith({
+      where: { scope: "PERSONAL" },
+      orderBy: { name: "asc" },
+    });
+  });
+
+  it("combines isActive and scope into a single where + name-asc order", async () => {
+    expenseServiceFindMany.mockResolvedValue([]);
+    await listExpenseServices({ isActive: true, scope: "CLINIC" });
+    expect(expenseServiceFindMany).toHaveBeenCalledWith({
+      where: { isActive: true, scope: "CLINIC" },
+      orderBy: { name: "asc" },
+    });
+  });
+});
+
+describe("getExpenseService db-call shape", () => {
+  it("looks up by id via findFirst", async () => {
+    expenseServiceFindFirst.mockResolvedValue(null);
+    await getExpenseService(42);
+    expect(expenseServiceFindFirst).toHaveBeenCalledWith({ where: { id: 42 } });
   });
 });
 
@@ -369,7 +391,7 @@ describe("listExpenses where-builder", () => {
     await listExpenses({ from: "2026-01", to: "2026-03" });
     expect(expenseFindMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: expect.objectContaining({ expenseMonth: { gte: "2026-01", lte: "2026-03" } }),
+        where: { expenseMonth: { gte: "2026-01", lte: "2026-03" } },
       })
     );
   });
@@ -382,11 +404,35 @@ describe("listExpenses where-builder", () => {
     );
   });
 
+  it("keeps lte when only to is given (no clobber)", async () => {
+    expenseFindMany.mockResolvedValue([]);
+    await listExpenses({ to: "2026-09" });
+    expect(expenseFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { expenseMonth: { lte: "2026-09" } } })
+    );
+  });
+
+  it("combines scope and status into the where", async () => {
+    expenseFindMany.mockResolvedValue([]);
+    await listExpenses({ scope: "CLINIC", status: "PAID" });
+    expect(expenseFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { scope: "CLINIC", status: "PAID" } })
+    );
+  });
+
   it("passes serviceId:null through (distinct from undefined)", async () => {
     expenseFindMany.mockResolvedValue([]);
     await listExpenses({ serviceId: null });
     expect(expenseFindMany).toHaveBeenCalledWith(
       expect.objectContaining({ where: { serviceId: null } })
+    );
+  });
+
+  it("passes a numeric serviceId through", async () => {
+    expenseFindMany.mockResolvedValue([]);
+    await listExpenses({ serviceId: 7 });
+    expect(expenseFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { serviceId: 7 } })
     );
   });
 
@@ -396,6 +442,21 @@ describe("listExpenses where-builder", () => {
     const arg = expenseFindMany.mock.calls[0]?.[0] as { where: Record<string, unknown> };
     expect("serviceId" in arg.where).toBe(false);
   });
+
+  it("requests _count + tx amounts and orders by month desc, name asc", async () => {
+    expenseFindMany.mockResolvedValue([]);
+    await listExpenses({});
+    expect(expenseFindMany).toHaveBeenCalledWith({
+      where: {},
+      include: {
+        _count: { select: { transactions: true } },
+        transactions: {
+          select: { amount: true },
+        },
+      },
+      orderBy: [{ expenseMonth: "desc" }, { name: "asc" }],
+    });
+  });
 });
 
 // ─── getExpense settlement mapping (null fallbacks) ───────────────────────────
@@ -404,6 +465,20 @@ describe("getExpense", () => {
   it("returns null when expense not found", async () => {
     expenseFindFirst.mockResolvedValue(null);
     expect(await getExpense("missing")).toBeNull();
+  });
+
+  it("looks up the expense by publicId with tx include ordered by createdAt asc", async () => {
+    expenseFindFirst.mockResolvedValue(null);
+    await getExpense("exp_x");
+    expect(expenseFindFirst).toHaveBeenCalledWith({
+      where: { publicId: "exp_x" },
+      include: {
+        _count: { select: { transactions: true } },
+        transactions: {
+          orderBy: { createdAt: "asc" },
+        },
+      },
+    });
   });
 
   it("maps settlement description/direction/timestamp when present", async () => {
@@ -427,12 +502,36 @@ describe("getExpense", () => {
     });
     const e = await getExpense("exp_10");
     expect(e?.amountApplied).toBe(120);
-    expect(e?.transactions[0]).toMatchObject({
+    expect(e?.transactions[0]).toEqual({
       amount: 120,
       description: "wire",
       direction: "DEBIT",
       timestamp: txDate,
       transactionId: 77,
+    });
+    // settlement looked up by the tx id with exactly the 3 selected fields
+    expect(settlementFindFirst).toHaveBeenCalledWith({
+      where: { id: 77 },
+      select: {
+        description: true,
+        transactionDate: true,
+        transactionType: true,
+      },
+    });
+    // top-level expense fields flow through buildExpenseItem unchanged
+    expect(e).toMatchObject({
+      amountExpected: 1500,
+      category: "rent",
+      detail: "feb rent",
+      expenseMonth: "2026-02",
+      name: "Rent Feb",
+      notes: "note",
+      publicId: "exp_10",
+      scope: "CLINIC",
+      source: "MANUAL",
+      status: "PENDING",
+      tags: ["t"],
+      transactionCount: 1,
     });
   });
 
@@ -478,6 +577,48 @@ describe("createExpense", () => {
     const data = (expenseCreate.mock.calls[0]?.[0] as { data: Record<string, unknown> }).data;
     expect(data["source"]).toBe("MANUAL");
     expect(data["status"]).toBe("PENDING");
+  });
+
+  it("builds the full data object with all null/[]/default fallbacks", async () => {
+    expenseCreate.mockResolvedValue(expenseRow());
+    await createExpense({ amountExpected: 5, expenseMonth: "2026-02", name: "X", scope: "CLINIC" });
+    const data = (expenseCreate.mock.calls[0]?.[0] as { data: Record<string, unknown> }).data;
+    expect(data["category"]).toBeNull();
+    expect(data["detail"]).toBeNull();
+    expect(data["notes"]).toBeNull();
+    expect(data["serviceId"]).toBeNull();
+    expect(data["dueDate"]).toBeNull();
+    expect(data["tags"]).toEqual([]);
+    expect(data["name"]).toBe("X");
+    expect(data["scope"]).toBe("CLINIC");
+    expect(data["expenseMonth"]).toBe("2026-02");
+    expect((data["amountExpected"] as Decimal).toNumber()).toBe(5);
+  });
+
+  it("passes explicit source/status/category/notes/serviceId/tags through (no default override)", async () => {
+    expenseCreate.mockResolvedValue(expenseRow());
+    await createExpense({
+      amountExpected: 1,
+      expenseMonth: "2026-02",
+      name: "X",
+      scope: "PERSONAL",
+      source: "TEMPLATE",
+      status: "PAID",
+      category: "utilities",
+      detail: "d",
+      notes: "nn",
+      serviceId: 9,
+      tags: ["q"],
+    });
+    const data = (expenseCreate.mock.calls[0]?.[0] as { data: Record<string, unknown> }).data;
+    expect(data["source"]).toBe("TEMPLATE");
+    expect(data["status"]).toBe("PAID");
+    expect(data["category"]).toBe("utilities");
+    expect(data["detail"]).toBe("d");
+    expect(data["notes"]).toBe("nn");
+    expect(data["serviceId"]).toBe(9);
+    expect(data["tags"]).toEqual(["q"]);
+    expect(data["scope"]).toBe("PERSONAL");
   });
 
   it("wraps amountExpected in a Decimal", async () => {
@@ -545,6 +686,21 @@ describe("linkTransaction amount resolution", () => {
     const created = (expenseTransactionUpsert.mock.calls[0]?.[0] as { create: { amount: Decimal } })
       .create.amount;
     expect((created as Decimal).toNumber()).toBe(333);
+    // expense resolved by publicId selecting only id
+    expect(expenseFindFirst).toHaveBeenCalledWith({
+      where: { publicId: "exp_10" },
+      select: { id: true },
+    });
+    // settlement looked up by id selecting only transactionAmount
+    expect(settlementFindFirst).toHaveBeenCalledWith({
+      where: { id: 77 },
+      select: { transactionAmount: true },
+    });
+    // recalc reads tx amounts scoped to the expense id
+    expect(expenseTransactionFindMany).toHaveBeenCalledWith({
+      where: { expenseId: 10 },
+      select: { amount: true },
+    });
   });
 
   it("falls back to 0 when amount omitted and settlement missing", async () => {
@@ -635,6 +791,35 @@ describe("generateExpensesFromTemplates", () => {
     expect(data["notes"]).toBe("n");
     expect(data["scope"]).toBe("CLINIC");
     expect(data["tags"]).toEqual(["fixed"]);
+    // exact field set — kills mutants that add or remove a create field
+    expect(Object.keys(data).sort()).toEqual([
+      "amountExpected",
+      "category",
+      "detail",
+      "expenseMonth",
+      "name",
+      "notes",
+      "scope",
+      "serviceId",
+      "source",
+      "status",
+      "tags",
+    ]);
+    expect(data["name"]).toBe("Rent");
+  });
+
+  it("coalesces null category/detail/notes to null in the create payload", async () => {
+    expenseServiceFindMany.mockResolvedValue([
+      serviceRow({ id: 1, category: null, detail: null, notes: null, tags: [] }),
+    ]);
+    expenseFindFirst.mockResolvedValue(null);
+    expenseCreate.mockResolvedValue({});
+    await generateExpensesFromTemplates("2026-03");
+    const data = (expenseCreate.mock.calls[0]?.[0] as { data: Record<string, unknown> }).data;
+    expect(data["category"]).toBeNull();
+    expect(data["detail"]).toBeNull();
+    expect(data["notes"]).toBeNull();
+    expect(data["tags"]).toEqual([]);
   });
 
   it("skips when monthStart is strictly before startDate", async () => {
@@ -697,6 +882,24 @@ describe("generateExpensesFromTemplates", () => {
     expect(arg.data["status"]).toBe("PENDING");
     expect(arg.data["name"]).toBe("Rent");
     expect(arg.data["scope"]).toBe("CLINIC");
+    // overwrite update writes exactly these 5 fields (not the full create set)
+    expect(Object.keys(arg.data).sort()).toEqual([
+      "amountExpected",
+      "name",
+      "scope",
+      "source",
+      "status",
+    ]);
+  });
+
+  it("overwrite=true uses 0 amountExpected when defaultAmount is null (?? fallback)", async () => {
+    expenseServiceFindMany.mockResolvedValue([serviceRow({ defaultAmount: null })]);
+    expenseFindFirst.mockResolvedValue({ id: 99 });
+    expenseUpdate.mockResolvedValue({});
+    const res = await generateExpensesFromTemplates("2026-03", true);
+    expect(res).toEqual({ created: 1, skipped: 0 });
+    const arg = expenseUpdate.mock.calls[0]?.[0] as { data: Record<string, unknown> };
+    expect((arg.data["amountExpected"] as Decimal).toNumber()).toBe(0);
   });
 
   it("uses 0 as amountExpected when defaultAmount is null (?? fallback)", async () => {
@@ -774,28 +977,39 @@ describe("getExpenseStats", () => {
     expect(qbWhere).not.toHaveBeenCalled();
   });
 
-  it("adds a >= clause only for `from`", async () => {
+  it("adds a >= clause only for `from`, keyed on a column sql expr", async () => {
     qbExecute.mockResolvedValue([]);
     await getExpenseStats({ from: "2026-01" });
+    expect(qbWhere).toHaveBeenCalledTimes(1);
     const ops = qbWhere.mock.calls.map((c) => [c[1], c[2]]);
     expect(ops).toContainEqual([">=", "2026-01"]);
     expect(qbWhere.mock.calls.map((c) => c[1])).not.toContain("<=");
     expect(qbWhere.mock.calls.map((c) => c[1])).not.toContain("=");
+    // first arg is the expense_month column sql expression (truthy, object)
+    expect(qbWhere.mock.calls[0]?.[0]).toBeTruthy();
+    expect(typeof qbWhere.mock.calls[0]?.[0]).toBe("object");
   });
 
   it("adds a <= clause only for `to`", async () => {
     qbExecute.mockResolvedValue([]);
     await getExpenseStats({ to: "2026-12" });
+    expect(qbWhere).toHaveBeenCalledTimes(1);
     const ops = qbWhere.mock.calls.map((c) => [c[1], c[2]]);
     expect(ops).toContainEqual(["<=", "2026-12"]);
     expect(qbWhere.mock.calls.map((c) => c[1])).not.toContain(">=");
+    expect(qbWhere.mock.calls.map((c) => c[1])).not.toContain("=");
+    expect(qbWhere.mock.calls[0]?.[0]).toBeTruthy();
   });
 
   it("adds an = clause only for `scope`", async () => {
     qbExecute.mockResolvedValue([]);
     await getExpenseStats({ scope: "CLINIC" });
+    expect(qbWhere).toHaveBeenCalledTimes(1);
     const ops = qbWhere.mock.calls.map((c) => [c[1], c[2]]);
     expect(ops).toContainEqual(["=", "CLINIC"]);
+    expect(qbWhere.mock.calls.map((c) => c[1])).not.toContain(">=");
+    expect(qbWhere.mock.calls.map((c) => c[1])).not.toContain("<=");
+    expect(qbWhere.mock.calls[0]?.[0]).toBeTruthy();
   });
 
   it("adds all three clauses when from+to+scope are given", async () => {
@@ -806,6 +1020,25 @@ describe("getExpenseStats", () => {
     expect(ops).toContainEqual(["<=", "2026-12"]);
     expect(ops).toContainEqual(["=", "PERSONAL"]);
     expect(qbWhere).toHaveBeenCalledTimes(3);
+  });
+
+  it("does NOT use the from value for the to clause (operands not swapped)", async () => {
+    qbExecute.mockResolvedValue([]);
+    await getExpenseStats({ from: "2026-01", to: "2026-12" });
+    // the >= clause carries the from value, the <= clause carries the to value
+    const geCall = qbWhere.mock.calls.find((c) => c[1] === ">=");
+    const leCall = qbWhere.mock.calls.find((c) => c[1] === "<=");
+    expect(geCall?.[2]).toBe("2026-01");
+    expect(leCall?.[2]).toBe("2026-12");
+  });
+
+  it("executes the built query and returns its mapped rows", async () => {
+    qbExecute.mockResolvedValue([
+      { period: "2026-02", scope: "CLINIC", expenseCount: 1, totalExpected: 10, totalApplied: 5 },
+    ]);
+    const rows = await getExpenseStats();
+    expect(qbExecute).toHaveBeenCalledTimes(1);
+    expect(rows).toHaveLength(1);
   });
 });
 
@@ -921,6 +1154,61 @@ describe("updateExpenseService", () => {
       .data;
     expect(data).toEqual({ isActive: false });
   });
+
+  it("forwards every provided field into the update data (full payload)", async () => {
+    expenseServiceUpdate.mockResolvedValue(serviceRow({ id: 2 }));
+    await updateExpenseService(2, {
+      billingDay: 12,
+      category: "c",
+      defaultAmount: 90,
+      detail: "d",
+      dueDateRule: "EOM",
+      endDate: "2026-12-31",
+      isActive: true,
+      isFixed: true,
+      name: "N",
+      notes: "no",
+      recurrence: "YEARLY",
+      scope: "PERSONAL",
+      startDate: "2026-01-01",
+      tags: ["z"],
+    });
+    const arg = expenseServiceUpdate.mock.calls[0]?.[0] as {
+      where: Record<string, unknown>;
+      data: Record<string, unknown>;
+    };
+    expect(arg.where).toEqual({ id: 2 });
+    expect(arg.data["billingDay"]).toBe(12);
+    expect(arg.data["category"]).toBe("c");
+    expect((arg.data["defaultAmount"] as Decimal).toNumber()).toBe(90);
+    expect(arg.data["detail"]).toBe("d");
+    expect(arg.data["dueDateRule"]).toBe("EOM");
+    expect(arg.data["endDate"]).toBeInstanceOf(Date);
+    expect(arg.data["isActive"]).toBe(true);
+    expect(arg.data["isFixed"]).toBe(true);
+    expect(arg.data["name"]).toBe("N");
+    expect(arg.data["notes"]).toBe("no");
+    expect(arg.data["recurrence"]).toBe("YEARLY");
+    expect(arg.data["scope"]).toBe("PERSONAL");
+    expect(arg.data["startDate"]).toBeInstanceOf(Date);
+    expect(arg.data["tags"]).toEqual(["z"]);
+    expect(Object.keys(arg.data).sort()).toEqual([
+      "billingDay",
+      "category",
+      "defaultAmount",
+      "detail",
+      "dueDateRule",
+      "endDate",
+      "isActive",
+      "isFixed",
+      "name",
+      "notes",
+      "recurrence",
+      "scope",
+      "startDate",
+      "tags",
+    ]);
+  });
 });
 
 describe("deleteExpenseService", () => {
@@ -1006,6 +1294,69 @@ describe("updateExpense", () => {
     expect(data["dueDate"]).toBeNull();
   });
 
+  it("forwards every provided field into the update data (full payload)", async () => {
+    expenseUpdate.mockResolvedValue({});
+    expenseFindFirst.mockResolvedValue(expenseRow({ publicId: "exp_10" }));
+    await updateExpense("exp_10", {
+      amountExpected: 7,
+      category: "c",
+      detail: "d",
+      dueDate: "2026-04-01",
+      expenseMonth: "2026-04",
+      name: "N",
+      notes: "no",
+      scope: "PERSONAL",
+      serviceId: 3,
+      source: "TEMPLATE",
+      status: "PAID",
+      tags: ["z"],
+    });
+    const data = (expenseUpdate.mock.calls[0]?.[0] as { data: Record<string, unknown> }).data;
+    expect((data["amountExpected"] as Decimal).toNumber()).toBe(7);
+    expect(data["category"]).toBe("c");
+    expect(data["detail"]).toBe("d");
+    expect(data["dueDate"]).toBeInstanceOf(Date);
+    expect(data["expenseMonth"]).toBe("2026-04");
+    expect(data["name"]).toBe("N");
+    expect(data["notes"]).toBe("no");
+    expect(data["scope"]).toBe("PERSONAL");
+    expect(data["serviceId"]).toBe(3);
+    expect(data["source"]).toBe("TEMPLATE");
+    expect(data["status"]).toBe("PAID");
+    expect(data["tags"]).toEqual(["z"]);
+    expect(Object.keys(data).sort()).toEqual(
+      [
+        "amountExpected",
+        "category",
+        "detail",
+        "dueDate",
+        "expenseMonth",
+        "name",
+        "notes",
+        "scope",
+        "serviceId",
+        "status",
+        "source",
+        "tags",
+      ].sort()
+    );
+  });
+
+  it("re-fetches via findFirst (getExpense) after the update", async () => {
+    expenseUpdate.mockResolvedValue({});
+    expenseFindFirst.mockResolvedValue(expenseRow({ publicId: "exp_10" }));
+    await updateExpense("exp_10", { name: "x" });
+    expect(expenseFindFirst).toHaveBeenCalledWith({
+      where: { publicId: "exp_10" },
+      include: {
+        _count: { select: { transactions: true } },
+        transactions: {
+          orderBy: { createdAt: "asc" },
+        },
+      },
+    });
+  });
+
   it("throws a plain Error when the row vanishes after update (infra invariant)", async () => {
     expenseUpdate.mockResolvedValue({});
     expenseFindFirst.mockResolvedValue(null);
@@ -1067,13 +1418,17 @@ describe("linkTransaction db-call shape", () => {
     await linkTransaction("exp_10", 77, 60);
     const upsertArg = expenseTransactionUpsert.mock.calls[0]?.[0] as {
       where: { expenseId_transactionId: { expenseId: number; transactionId: number } };
-      create: { expenseId: number; transactionId: number };
+      create: { expenseId: number; transactionId: number; amount: Decimal };
       update: { amount: Decimal };
     };
     expect(upsertArg.where.expenseId_transactionId).toEqual({ expenseId: 10, transactionId: 77 });
     expect(upsertArg.create.expenseId).toBe(10);
     expect(upsertArg.create.transactionId).toBe(77);
+    expect((upsertArg.create.amount as Decimal).toNumber()).toBe(60);
     expect((upsertArg.update.amount as Decimal).toNumber()).toBe(60);
+    // upsert payload has exactly create + update + where keys (no stray fields)
+    expect(Object.keys(upsertArg).sort()).toEqual(["create", "update", "where"]);
+    expect(Object.keys(upsertArg.create).sort()).toEqual(["amount", "expenseId", "transactionId"]);
 
     const updArg = expenseUpdate.mock.calls[0]?.[0] as {
       where: { id: number };
@@ -1081,6 +1436,8 @@ describe("linkTransaction db-call shape", () => {
     };
     expect(updArg.where).toEqual({ id: 10 });
     expect((updArg.data.amountApplied as Decimal).toNumber()).toBe(60);
+    // persisted update carries only amountApplied
+    expect(Object.keys(updArg.data)).toEqual(["amountApplied"]);
   });
 });
 
@@ -1092,9 +1449,23 @@ describe("unlinkTransaction db-call shape", () => {
     expenseUpdate.mockResolvedValue({});
     const total = await unlinkTransaction("exp_10", 77);
     expect(total).toBe(0);
+    expect(expenseFindFirst).toHaveBeenCalledWith({
+      where: { publicId: "exp_10" },
+      select: { id: true },
+    });
     const delArg = expenseTransactionDelete.mock.calls[0]?.[0] as {
       where: { expenseId_transactionId: { expenseId: number; transactionId: number } };
     };
     expect(delArg.where.expenseId_transactionId).toEqual({ expenseId: 10, transactionId: 77 });
+    expect(expenseTransactionFindMany).toHaveBeenCalledWith({
+      where: { expenseId: 10 },
+      select: { amount: true },
+    });
+    const updArg = expenseUpdate.mock.calls[0]?.[0] as {
+      where: { id: number };
+      data: { amountApplied: Decimal };
+    };
+    expect(updArg.where).toEqual({ id: 10 });
+    expect((updArg.data.amountApplied as Decimal).toNumber()).toBe(0);
   });
 });
