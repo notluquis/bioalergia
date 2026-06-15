@@ -7,6 +7,7 @@ import { PAGE_CONTAINER } from "@/lib/styles";
 import { toast } from "@/lib/toast-interceptor";
 import { createScitPrescription } from "../api";
 import { CalculatorSCIT } from "../components/CalculatorSCIT";
+import { ScitPrescriptionList } from "../components/ScitPrescriptionList";
 import { getAllergenById } from "../data/allergens_db";
 import type { DoctorSelection, ScitCalculationResult } from "../data/types";
 import { immunoKeys } from "../queries";
@@ -102,6 +103,11 @@ export function PatientScitCalculatorPage() {
       </div>
 
       <CalculatorSCIT onChange={handleChange} />
+
+      <div className="mt-8 border-default-100 border-t pt-6">
+        <h2 className="mb-3 font-semibold text-foreground text-sm">Prescripciones guardadas</h2>
+        <ScitPrescriptionList patientId={patientId} />
+      </div>
     </div>
   );
 }
