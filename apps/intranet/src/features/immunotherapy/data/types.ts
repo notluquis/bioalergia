@@ -40,7 +40,17 @@ export type ClinicalRelevanceMode =
 
 // ─── Database Entity ─────────────────────────────────────────────────────────
 
-/** Alérgeno de la matriz de equivalencias moleculares */
+/**
+ * Alérgeno aeroalergénico para la calculadora SCIT.
+ *
+ * MODELO DE DOSIS (verificado 2026-06-15 contra papers + SmPC reales):
+ * cada laboratorio usa su PROPIA unidad y no son convertibles entre sí.
+ *  - Inmunotek / Roxall polimerizados: SOLO Unidades Terapéuticas (UT/TU).
+ *    NO existe cifra µg de aeroalérgeno en sus fichas. La calculadora muestra UT.
+ *  - Roxall Modigoid (alergoide molecular Alt a 1): µg reales (ficha §2 + Brindisi).
+ *  - Diater moleculares: µg/mL reales por SmPC. Polimerizados Diater usan HEPD.
+ * Por eso NO hay un único `injectedDoseUg` compartido entre proveedores.
+ */
 export interface Allergen {
   /** Identificador único (slug) */
   id: string;
@@ -52,30 +62,24 @@ export interface Allergen {
   family: AllergenFamily;
   /** Marcador molecular (proteína mayor) */
   molecularMarker: string;
-  /** Equivalencia comercial (ej. "10.000 UT/mL") */
-  commercialEquivalence: string;
-  /** Concentración en vial (μg/mL) */
-  vialConcentrationUgMl: number;
-  /** Dosis inyectada en 0.5 mL (μg) */
-  injectedDoseUg: number;
+  /** Etiqueta comercial estándar para polimerizados Inmunotek/Roxall (UT/TU). */
+  utLabel: string;
   /** true = presente todo el año (ácaros, epitelios, hongos) */
   isPerennial: boolean;
   /** true = produce enzimas proteolíticas (Alternaria, Cladosporium) */
   isProteolytic: boolean;
-  /** Clave de referencia bibliográfica; ver ALLERGEN_REFERENCES por id */
-  bibliographyRef: string;
   /**
-   * true = el VALOR µg-por-inyección está citado directamente en literatura
-   * publicada verificable.
-   * false = el valor proviene de ficha técnica del fabricante o de extrapolación
-   * (el paper de respaldo puede existir, pero NO cita la cifra µg) → requiere
-   * validación contra ficha técnica vigente antes de uso clínico.
-   *
-   * Verificación 2026-06-15 (PubMed): actualmente NINGÚN alérgeno tiene su cifra
-   * µg citada en el paper; todas son ficha técnica/extrapolación. Ver nota en
-   * allergens_db.ts. Anclaje sí verificado: ventana EAACI 5–20 µg (PMID 29631326).
+   * µg/mL de proteína mayor del alergoide MOLECULAR Roxall Modigoid, cuando
+   * aplica (Alt a 1 = 4.0). Verificado: ficha Modigoid §2 + Brindisi 2025/2023.
    */
-  referenceVerified: boolean;
+  modigoidUgPerMl?: number;
+  /**
+   * µg/mL del producto MOLECULAR Diater (vial B mantención, SmPC), cuando existe
+   * (Alt a 1 0.46; Cup a 1 3.0; Der p 1 0.25). Los polimerizados Diater usan HEPD.
+   */
+  diaterMolecularUgPerMl?: number;
+  /** Cita de respaldo verificada (PMID/ficha verbatim). */
+  bibliographyRef: string;
 }
 
 // ─── Rules Engine Output ─────────────────────────────────────────────────────
@@ -83,14 +87,20 @@ export interface Allergen {
 /** Un alérgeno dentro de un vial con su dosis calculada */
 export interface VialAllergenEntry {
   allergen: Allergen;
-  /** Concentración en este vial (UT/mL) — 0 para Modigoid molecular */
-  concentrationUtMl: number;
-  /** Dosis inyectada en μg para este alérgeno */
-  injectedDoseUg: number;
-  /** Dosis inyectada en HEPD (potencia biológica) para polimerizados Diater */
-  injectedDoseHepd?: number;
-  /** String preformateado para la UI cuando la dosis es mixta o no-ug */
-  displayDose?: string;
+  /**
+   * Dosis ya formateada con la unidad CORRECTA del producto:
+   * "5.000 UT" (Inmunotek/Roxall), "2,0 µg" (Modigoid), "0,46 µg/mL molecular"
+   * (Diater molecular), "HEPD" (polimerizado Diater), "Según ficha" (sin cifra).
+   */
+  doseDisplay: string;
+  /**
+   * µg de proteína mayor inyectados, SOLO cuando hay una cifra µg verificada que
+   * cae bajo la ventana terapéutica convencional (Modigoid). undefined para UT,
+   * HEPD, molecular Diater (paradigma de baja dosis, exento de la ventana 5–20 µg).
+   */
+  injectedUg?: number;
+  /** Fuente verbatim de la cifra de dosis (tooltip). */
+  doseSource?: string;
   /** true si este alérgeno fue marcado como dominante por el médico */
   isDominant: boolean;
 }

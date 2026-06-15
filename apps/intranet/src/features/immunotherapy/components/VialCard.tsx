@@ -19,8 +19,8 @@ const SITE_LABELS = {
 } as const;
 
 export function VialCard({ vial, index }: VialCardProps) {
-  const hasMixedUnits = vial.allergens.some((e) => e.displayDose);
-  const totalDose = vial.allergens.reduce((sum, e) => sum + e.injectedDoseUg, 0);
+  const totalUg = vial.allergens.reduce((sum, e) => sum + (e.injectedUg ?? 0), 0);
+  const showTotalUg = totalUg > 0;
 
   return (
     <div
@@ -63,22 +63,6 @@ export function VialCard({ vial, index }: VialCardProps) {
                   <Chip color={FAMILY_CHIP_COLORS[entry.allergen.family]} size="sm" variant="soft">
                     {FAMILY_LABELS[entry.allergen.family]}
                   </Chip>
-                  {!entry.allergen.referenceVerified && (
-                    <Tooltip>
-                      <Tooltip.Trigger>
-                        <Chip color="warning" size="sm" variant="soft">
-                          ⚠ µg sin cita
-                        </Chip>
-                      </Tooltip.Trigger>
-                      <Tooltip.Content className="max-w-xs">
-                        <p className="text-sm">
-                          Cifra µg de ficha técnica / extrapolación, sin cita directa del valor en
-                          literatura ({entry.allergen.bibliographyRef}). Verifique contra la ficha
-                          técnica vigente.
-                        </p>
-                      </Tooltip.Content>
-                    </Tooltip>
-                  )}
                 </div>
                 <p className="text-default-500 text-xs italic">{entry.allergen.scientificName}</p>
                 <p className="text-default-600 text-xs">
@@ -86,38 +70,33 @@ export function VialCard({ vial, index }: VialCardProps) {
                 </p>
               </div>
 
-              <div className="shrink-0 text-right">
-                {entry.displayDose ? (
-                  <p className="font-semibold text-foreground text-lg">{entry.displayDose}</p>
-                ) : (
-                  <div className="flex flex-col items-end">
-                    <p className="font-semibold text-foreground text-lg tabular-nums">
-                      {entry.injectedDoseUg.toLocaleString("es-CL", {
-                        maximumFractionDigits: 1,
-                      })}{" "}
-                      μg
-                    </p>
-                    {entry.concentrationUtMl > 0 && (
-                      <Chip
-                        size="sm"
-                        variant="soft"
-                        color="accent"
-                        className="mt-1 font-mono text-xs leading-none px-1.5 min-h-5 h-5"
+              <div className="flex shrink-0 items-center gap-1 text-right">
+                <div>
+                  <p className="font-semibold text-foreground text-base tabular-nums">
+                    {entry.doseDisplay}
+                  </p>
+                  <p className="text-default-400 text-xs">
+                    en {vial.injectionVolumeMl} mL ·{" "}
+                    {entry.allergen.molecularMarker.split("+")[0]?.trim() ??
+                      entry.allergen.molecularMarker}
+                  </p>
+                </div>
+                {entry.doseSource && (
+                  <Tooltip>
+                    <Tooltip.Trigger>
+                      <button
+                        type="button"
+                        className="rounded-full p-0.5 text-default-400 transition-colors hover:text-default-600"
+                        aria-label="Fuente de la dosis"
                       >
-                        {(entry.concentrationUtMl * vial.injectionVolumeMl).toLocaleString("es-CL")}{" "}
-                        UT
-                      </Chip>
-                    )}
-                  </div>
+                        <Info size={13} />
+                      </button>
+                    </Tooltip.Trigger>
+                    <Tooltip.Content className="max-w-xs">
+                      <p className="text-sm">Fuente: {entry.doseSource}</p>
+                    </Tooltip.Content>
+                  </Tooltip>
                 )}
-                <p className="text-default-400 text-xs">
-                  {entry.displayDose
-                    ? "potencia biológica"
-                    : `de ${
-                        entry.allergen.molecularMarker.split("+")[0]?.trim() ??
-                        entry.allergen.molecularMarker
-                      }`}
-                </p>
               </div>
             </div>
           ))}
@@ -167,9 +146,9 @@ export function VialCard({ vial, index }: VialCardProps) {
               <span className="font-medium">{vial.injectionVolumeMl} mL</span>
             </div>
             <div className="text-default-500 text-sm">{SITE_LABELS[vial.injectionSite]}</div>
-            {!hasMixedUnits && (
+            {showTotalUg && (
               <div className="font-semibold text-primary text-sm">
-                Total: {totalDose.toLocaleString("es-CL", { maximumFractionDigits: 1 })} μg
+                Total: {totalUg.toLocaleString("es-CL", { maximumFractionDigits: 2 })} µg
               </div>
             )}
           </div>

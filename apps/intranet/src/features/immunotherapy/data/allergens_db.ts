@@ -3,23 +3,30 @@ import type { Allergen, AllergenFamily } from "./types";
 // ═══════════════════════════════════════════════════════════════════════════
 // NOTA DE VERIFICACIÓN BIBLIOGRÁFICA (2026-06-15)
 // ───────────────────────────────────────────────────────────────────────────
-// Se cotejaron contra PubMed todas las citas del documento fuente
-// (07_CALCULADORA_DOSIS_SCIT.md). Hallazgos:
-//   • Los papers EXISTEN y los temas calzan (productos Modigoid/Clustoid/Alxoid
-//     y principios cualitativos confirmados).
-//   • PERO los valores µg-por-inyección NO aparecen en los papers: provienen de
-//     fichas técnicas del fabricante o de extrapolación. Trátense como tales y
-//     verifíquense contra la ficha vigente antes de prescribir.
-//   • Misatribución corregida: el extracto de Abedul es Mösges et al. 2025
-//     (Allergy, PMID 39520181), NO "Pfaar 2023". El paper usa 23.000 mTU T502;
-//     el "35 µg/mL" del documento NO está respaldado → referenceVerified=false.
-//   • Cladosporium: Abel-Fernández 2023 (J Fungi, PMID 37233293) CONFIRMA que
-//     los extractos fúngicos están insuficientemente estandarizados → sin dosis.
-//   • Ancla de seguridad VERIFICADA: ventana 5–20 µg de alérgeno mayor por
-//     inyección (Leatherman/Cox, "Evidence-based dosing of maintenance SCIT",
-//     PMID 29631326), alineada con EAACI. Es la única cifra con cita directa.
-//   • Ninguna de estas referencias figura en la bibliografía verificada del POE
-//     (04_BIBLIOGRAFIA_BASE.md): viven solo en el documento de la calculadora.
+// Datos cotejados contra los papers y SmPC reales del directorio de proveedores
+// (.../proveedores/{inmunotek,roxall,diater_espana}/). Conclusiones:
+//
+//  • Inmunotek y Roxall (polimerizados) NO dosifican aeroalérgenos en µg: solo
+//    en UT/TU (unidad de potencia biológica). NINGUNA ficha de aeroalérgeno trae
+//    µg. Por eso la calculadora muestra UT para estos productos, no µg.
+//  • Las cifras µg previas (Der p 8.3, gramíneas 12, abedul 17.5, ambrosia 5)
+//    eran inválidas: 8.3 era el valor POR mL de un producto de investigación
+//    (Nieto 2022, PM-HDM), abedul y ambrosia eran INVENTADAS, y gramíneas 24 µg/mL
+//    es de Klimek 2014 = Clustoid de ROXALL, grupo 1+5 combinados. ELIMINADAS.
+//  • µg REALES y verificados (verbatim):
+//      - Roxall Modigoid Alt a 1: 4.0 µg/mL → 2.0 µg/0.5 mL (ficha §2 + Brindisi
+//        2025/2023). Cup a 1 Modigoid = 12 µg/mL.
+//      - Diater molecular (SmPC vial B mantención): Der p 1 0.25; Alt a 1 0.46;
+//        Cup a 1 3.0 µg/mL. Polimerizados Diater = HEPD (sin µg).
+//  • Cladosporium: SIN producto molecular/estandarizado en ningún proveedor
+//    (solo extracto nativo TSU). Dosis NO calculable → se aísla y se advierte.
+//  • Racional de aislar Alternaria: el documentado en las fuentes es ESTRUCTURAL
+//    (Alt a 1 dímero ββ-barrel, epítopos IgE), NO "proteasas que degradan". Texto
+//    corregido en el motor.
+//  • Ancla de seguridad VERIFICADA: ventana 5–20 µg de alérgeno mayor por
+//    inyección para extractos CONVENCIONALES (PMID 29631326). Los alergoides
+//    moleculares (Modigoid, Diater molecular) usan un paradigma de baja dosis y
+//    están exentos de esa ventana.
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Constants ───────────────────────────────────────────────────────────────
@@ -27,14 +34,16 @@ import type { Allergen, AllergenFamily } from "./types";
 /** Volumen de inyección estándar (mL) */
 export const INJECTION_VOLUME_ML = 0.5;
 
-/** Concentración estándar para extractos Inmunotek/Roxall (UT/mL) */
+/** Concentración estándar UT/mL para extractos polimerizados Inmunotek/Roxall. */
 export const STANDARD_CONCENTRATION_UT_ML = 10_000;
 
+/** Concentración FORTE UT/mL (monosensibilización alta concentración). */
+export const FORTE_CONCENTRATION_UT_ML = 30_000;
+
 /**
- * Ventana terapéutica segura/efectiva por inyección (µg de proteína mayor).
- * Verificado: 5–20 µg de alérgeno mayor por inyección (PMID 29631326,
- * "Evidence-based dosing of maintenance SCIT"), alineado con EAACI.
- * Dosis fuera de este rango disparan una alerta clínica.
+ * Ventana terapéutica de extractos CONVENCIONALES (µg de proteína mayor por
+ * inyección). Verificado 5–20 µg (PMID 29631326), alineado con EAACI. Los
+ * alergoides moleculares quedan exentos.
  */
 export const THERAPEUTIC_WINDOW_MIN_UG = 5;
 export const THERAPEUTIC_WINDOW_MAX_UG = 20;
@@ -46,90 +55,84 @@ export const PERENNIAL_FAMILIES: ReadonlySet<AllergenFamily> = new Set([
   "hongos",
 ]);
 
-// ─── Referencia bibliográfica por alérgeno ───────────────────────────────────
+// ─── Referencia bibliográfica por alérgeno (verificada 2026-06-15) ────────────
 
 export interface AllergenReference {
   pmidOrSource: string;
   description: string;
 }
 
-/** Mapa de refs bibliográficas indexado por id de alérgeno */
+/** Mapa de refs bibliográficas indexado por id de alérgeno. */
 export const ALLERGEN_REFERENCES: Record<string, AllergenReference> = {
   acaro_dpt: {
-    pmidOrSource: "Nieto et al., 2022",
+    pmidOrSource: "Inmunotek/Roxall UT; Diater SmPC MOLMite",
     description:
-      "Efficacy and safety of polymerized allergoid of D. pteronyssinus and D. farinae (PM-HDM).",
+      "Polimerizados dosificados en UT/TU (sin µg). Diater MOLMite vial B: Der p 1 0,25 µg/mL (SmPC).",
   },
   acaro_df: {
-    pmidOrSource: "Nieto et al., 2022",
-    description:
-      "Efficacy and safety of polymerized allergoid of D. pteronyssinus and D. farinae (PM-HDM).",
+    pmidOrSource: "Inmunotek/Roxall UT",
+    description: "D. farinae dosificado en UT/TU; sin cifra µg en ficha.",
   },
   acaro_bt: {
-    pmidOrSource: "Literatura interna Inmunotek (Línea PM-HDM)",
-    description: "Extrapolación de carga antigénica para Blo t 5 en extractos polimerizados.",
+    pmidOrSource: "Inmunotek/Roxall UT; Diater polimerizado HEPD",
+    description: "Blomia tropicalis: UT/TU; en Diater MOLMite Mix va como polimerizado (0,1 HEPD).",
   },
   gramineas_mix: {
-    pmidOrSource: "Klimek et al., 2014",
+    pmidOrSource: "Klimek 2014 (PMID 25130503) — Clustoid Roxall",
     description:
-      "Cluster immunotherapy with a high polymerized allergen extract of a grass/rye pollen mixture (Clustoid).",
+      "10.000 TU/mL = 24 µg grupo 1+5 COMBINADOS (no un marcador). Producto Roxall, no Inmunotek.",
   },
   olivo: {
-    pmidOrSource: "Literatura Interna / Allergovac 2019",
-    description: "Estandarización ELISA para extractos depot de Olea europaea.",
+    pmidOrSource: "Inmunotek/Roxall UT; Diater polimerizado HEPD",
+    description: "Olea europaea: UT/TU; en Diater Mix va como polimerizado (0,77 HEPD).",
   },
   abedul: {
-    pmidOrSource: "Pfaar et al., 2023 (PMID: 39520181)",
-    description: "Dosis-respuesta de IgG4 para alergoide de polen de Abedul manano-conjugado.",
+    pmidOrSource: "Sin cifra µg verificada",
+    description:
+      "Sin producto/ficha µg en el corpus. El único µg de abedul es LETI Depigoid (~300 µg/mL pre-depig, otro fabricante).",
   },
   platano_oriental: {
-    pmidOrSource: "Ficha Técnica Alxoid/Clustoid",
-    description: "Validación de masa ELISA de captura Inmunotek.",
+    pmidOrSource: "Inmunotek/Roxall UT",
+    description: "Platanus: UT/TU; sin cifra µg en ficha.",
   },
   cipres: {
-    pmidOrSource: "Ficha Técnica Alxoid/Clustoid",
-    description: "Validación de masa ELISA de captura Inmunotek.",
+    pmidOrSource: "Inmunotek/Roxall UT; Diater Cup a 1 MOL SmPC",
+    description: "Cupressus: UT/TU; Diater Cup a 1 MOL vial B = 3,0 µg/mL (SmPC).",
   },
   ambrosia: {
-    pmidOrSource: "PMID: 38932364 (2024)",
-    description:
-      "Heterogenous Induction of Blocking Antibodies against Ragweed Allergen Molecules (Clustoid vs Diater).",
+    pmidOrSource: "Sin cifra µg verificada",
+    description: "Ambrosia: UT/TU; no hay cifra µg en ninguna fuente del corpus.",
   },
   parietaria: {
-    pmidOrSource: "PMID: 30326788 (2018)",
-    description:
-      "Tolerability and efficacy after subcutaneous immunotherapy with Parietaria judaica depot extract (Allergovac).",
+    pmidOrSource: "PMID 30326788 (2018) — Parietaria depot SCIT",
+    description: "Tolerabilidad/eficacia de Parietaria judaica depot; sin cifra µg.",
   },
   gato: {
-    pmidOrSource: "Consenso General Epitelios EAACI",
-    description: "Promedio de carga de Fel d 1 en extractos estandarizados de Inmunotek.",
+    pmidOrSource: "Inmunotek/Roxall UT",
+    description: "Fel d 1: UT/TU; sin cifra µg en ficha.",
   },
   perro: {
-    pmidOrSource: "Consenso General Epitelios EAACI",
-    description: "Promedio de carga de Can f 1 en extractos estandarizados de Inmunotek.",
+    pmidOrSource: "Inmunotek/Roxall UT",
+    description: "Can f 1: UT/TU; sin cifra µg en ficha.",
   },
   alternaria: {
-    pmidOrSource: "PMID: 40095008 (2025)",
+    pmidOrSource: "Modigoid ficha §2 + Brindisi 2025 (PMID 40095008)",
     description:
-      "Polymerized Molecular Allergoid Alt a1: Effective SCIT in Pediatric Asthma Patients (Modigoid).",
+      "Roxall Modigoid: 4,0 µg/mL Alt a 1 → 2,0 µg/0,5 mL (verbatim). Diater Alt a 1 MOL = 0,46 µg/mL (SmPC).",
   },
   cladosporium: {
-    pmidOrSource: "PMID: 37233293 (2023)",
+    pmidOrSource: "Abel-Fernández 2023 (PMID 37233293)",
     description:
-      "Going over Fungal Allergy: Alternaria and Cladosporium (Evidencia de falta de estandarización exacta).",
+      "Extractos fúngicos insuficientemente estandarizados; sin producto molecular ni cifra µg.",
   },
 };
 
 // ─── Allergen Database ───────────────────────────────────────────────────────
 
 /**
- * Base de datos oficial de Bioalergia para la Calculadora de Dosis SCIT.
- *
- * microgramsPerMl: Cantidad de alérgeno mayor (µg) en 1 mL de extracto comercial.
- *   Fuente: Papers clínicos y fichas técnicas. `null` si no hay estandarización publicada.
- *
- * Los campos vialConcentrationUgMl e injectedDoseUg reflejan la dosis
- * inyectada en 0.5 mL del frasco de mantenimiento (10.000 UT/mL o equivalente).
+ * Base de datos de aeroalérgenos para la Calculadora SCIT.
+ * La unidad de dosis depende del proveedor (ver nota arriba): el motor de reglas
+ * (useScitCalculator) calcula la dosis con la unidad correcta por producto.
  */
 export const ALLERGENS_DB: Allergen[] = [
   // ── Ácaros ─────────────────────────────────────────────────────────────
@@ -139,13 +142,11 @@ export const ALLERGENS_DB: Allergen[] = [
     scientificName: "Dermatophagoides pteronyssinus",
     family: "acaros",
     molecularMarker: "Der p 1 + Der p 2",
-    commercialEquivalence: "10.000 UT/mL",
-    vialConcentrationUgMl: 16.6,
-    injectedDoseUg: 8.3,
+    utLabel: "10.000 UT/mL",
     isPerennial: true,
     isProteolytic: false,
-    bibliographyRef: "Polimerizado Dpt/Df (Alxoid 10.000 TU/mL); 8.3 µg = ficha técnica",
-    referenceVerified: false,
+    diaterMolecularUgPerMl: 0.25,
+    bibliographyRef: "Inmunotek/Roxall UT; Diater SmPC MOLMite (Der p 1 0,25 µg/mL)",
   },
   {
     id: "acaro_df",
@@ -153,13 +154,10 @@ export const ALLERGENS_DB: Allergen[] = [
     scientificName: "Dermatophagoides farinae",
     family: "acaros",
     molecularMarker: "Der f 1 + Der f 2",
-    commercialEquivalence: "10.000 UT/mL",
-    vialConcentrationUgMl: 16.6,
-    injectedDoseUg: 8.3,
+    utLabel: "10.000 UT/mL",
     isPerennial: true,
     isProteolytic: false,
-    bibliographyRef: "Polimerizado Dpt/Df (Alxoid 10.000 TU/mL); 8.3 µg = ficha técnica",
-    referenceVerified: false,
+    bibliographyRef: "Inmunotek/Roxall UT (sin cifra µg en ficha)",
   },
   {
     id: "acaro_bt",
@@ -167,13 +165,10 @@ export const ALLERGENS_DB: Allergen[] = [
     scientificName: "Blomia tropicalis",
     family: "acaros",
     molecularMarker: "Blo t 5",
-    commercialEquivalence: "10.000 UT/mL",
-    vialConcentrationUgMl: 15.0,
-    injectedDoseUg: 7.5,
+    utLabel: "10.000 UT/mL",
     isPerennial: true,
     isProteolytic: false,
-    bibliographyRef: "Extrapolación línea PM-HDM (sin cita)",
-    referenceVerified: false,
+    bibliographyRef: "Inmunotek/Roxall UT; Diater polimerizado (0,1 HEPD)",
   },
 
   // ── Gramíneas ──────────────────────────────────────────────────────────
@@ -183,13 +178,10 @@ export const ALLERGENS_DB: Allergen[] = [
     scientificName: "Phleum pratense, Dactylis glomerata, etc.",
     family: "gramineas",
     molecularMarker: "Phl p 1 + Phl p 5",
-    commercialEquivalence: "10.000 UT/mL",
-    vialConcentrationUgMl: 24.0,
-    injectedDoseUg: 12.0,
+    utLabel: "10.000 UT/mL",
     isPerennial: false,
     isProteolytic: false,
-    bibliographyRef: "Klimek 2014 (PMID 25130503); 24 µg = ficha técnica, no en el paper",
-    referenceVerified: false,
+    bibliographyRef: "Klimek 2014 (PMID 25130503, Clustoid Roxall); UT",
   },
 
   // ── Árboles ────────────────────────────────────────────────────────────
@@ -199,13 +191,10 @@ export const ALLERGENS_DB: Allergen[] = [
     scientificName: "Olea europaea",
     family: "arboles",
     molecularMarker: "Ole e 1",
-    commercialEquivalence: "10.000 UT/mL",
-    vialConcentrationUgMl: 20.0,
-    injectedDoseUg: 10.0,
+    utLabel: "10.000 UT/mL",
     isPerennial: false,
     isProteolytic: false,
-    bibliographyRef: "Literatura interna Inmunotek (sin cita)",
-    referenceVerified: false,
+    bibliographyRef: "Inmunotek/Roxall UT; Diater polimerizado (0,77 HEPD)",
   },
   {
     id: "abedul",
@@ -213,13 +202,10 @@ export const ALLERGENS_DB: Allergen[] = [
     scientificName: "Betula verrucosa",
     family: "arboles",
     molecularMarker: "Bet v 1",
-    commercialEquivalence: "23.000 mTU/mL",
-    vialConcentrationUgMl: 35.0,
-    injectedDoseUg: 17.5,
+    utLabel: "10.000 UT/mL",
     isPerennial: false,
     isProteolytic: false,
-    bibliographyRef: "Mösges 2025 (PMID 39520181) — 35 µg/mL NO está en el paper",
-    referenceVerified: false,
+    bibliographyRef: "UT (sin cifra µg verificada en el corpus)",
   },
   {
     id: "platano_oriental",
@@ -227,13 +213,10 @@ export const ALLERGENS_DB: Allergen[] = [
     scientificName: "Platanus acerifolia",
     family: "arboles",
     molecularMarker: "Pla a 1",
-    commercialEquivalence: "10.000 UT/mL",
-    vialConcentrationUgMl: 15.0,
-    injectedDoseUg: 7.5,
+    utLabel: "10.000 UT/mL",
     isPerennial: false,
     isProteolytic: false,
-    bibliographyRef: "Ficha técnica Alxoid/Clustoid (sin cita)",
-    referenceVerified: false,
+    bibliographyRef: "Inmunotek/Roxall UT (sin cifra µg en ficha)",
   },
   {
     id: "cipres",
@@ -241,13 +224,11 @@ export const ALLERGENS_DB: Allergen[] = [
     scientificName: "Cupressus arizonica / sempervirens",
     family: "arboles",
     molecularMarker: "Cup a 1",
-    commercialEquivalence: "10.000 UT/mL",
-    vialConcentrationUgMl: 12.0,
-    injectedDoseUg: 6.0,
+    utLabel: "10.000 UT/mL",
     isPerennial: false,
     isProteolytic: false,
-    bibliographyRef: "Ficha técnica Alxoid/Clustoid (sin cita)",
-    referenceVerified: false,
+    diaterMolecularUgPerMl: 3.0,
+    bibliographyRef: "Inmunotek/Roxall UT; Diater Cup a 1 MOL (3,0 µg/mL, SmPC)",
   },
 
   // ── Malezas ────────────────────────────────────────────────────────────
@@ -257,13 +238,10 @@ export const ALLERGENS_DB: Allergen[] = [
     scientificName: "Ambrosia artemisiifolia",
     family: "malezas",
     molecularMarker: "Amb a 1",
-    commercialEquivalence: "10.000 UT/mL",
-    vialConcentrationUgMl: 10.0,
-    injectedDoseUg: 5.0,
+    utLabel: "10.000 UT/mL",
     isPerennial: false,
     isProteolytic: false,
-    bibliographyRef: "Zbîrcea 2024 (PMID 38932364) — sobre anticuerpos, µg no citado",
-    referenceVerified: false,
+    bibliographyRef: "UT (sin cifra µg verificada)",
   },
   {
     id: "parietaria",
@@ -271,13 +249,10 @@ export const ALLERGENS_DB: Allergen[] = [
     scientificName: "Parietaria judaica",
     family: "malezas",
     molecularMarker: "Par j 1 + Par j 2",
-    commercialEquivalence: "10.000 UT/mL",
-    vialConcentrationUgMl: 14.0,
-    injectedDoseUg: 7.0,
+    utLabel: "10.000 UT/mL",
     isPerennial: false,
     isProteolytic: false,
-    bibliographyRef: "PMID 30326788 (2018) — Parietaria depot SCIT, µg no citado",
-    referenceVerified: false,
+    bibliographyRef: "PMID 30326788 (2018) Parietaria depot SCIT; UT",
   },
 
   // ── Epitelios ──────────────────────────────────────────────────────────
@@ -287,13 +262,10 @@ export const ALLERGENS_DB: Allergen[] = [
     scientificName: "Felis domesticus",
     family: "epitelios",
     molecularMarker: "Fel d 1",
-    commercialEquivalence: "10.000 UT/mL",
-    vialConcentrationUgMl: 10.0,
-    injectedDoseUg: 5.0,
+    utLabel: "10.000 UT/mL",
     isPerennial: true,
     isProteolytic: false,
-    bibliographyRef: "Consenso general epitelios EAACI (sin cita específica)",
-    referenceVerified: false,
+    bibliographyRef: "Inmunotek/Roxall UT (sin cifra µg en ficha)",
   },
   {
     id: "perro",
@@ -301,13 +273,10 @@ export const ALLERGENS_DB: Allergen[] = [
     scientificName: "Canis familiaris",
     family: "epitelios",
     molecularMarker: "Can f 1",
-    commercialEquivalence: "10.000 UT/mL",
-    vialConcentrationUgMl: 8.0,
-    injectedDoseUg: 4.0,
+    utLabel: "10.000 UT/mL",
     isPerennial: true,
     isProteolytic: false,
-    bibliographyRef: "Consenso general epitelios EAACI (sin cita específica)",
-    referenceVerified: false,
+    bibliographyRef: "Inmunotek/Roxall UT (sin cifra µg en ficha)",
   },
 
   // ── Hongos ─────────────────────────────────────────────────────────────
@@ -317,13 +286,12 @@ export const ALLERGENS_DB: Allergen[] = [
     scientificName: "Alternaria alternata",
     family: "hongos",
     molecularMarker: "Alt a 1",
-    commercialEquivalence: "4.0 μg/mL (Molecular)",
-    vialConcentrationUgMl: 4.0,
-    injectedDoseUg: 2.0,
+    utLabel: "Modigoid 4,0 µg/mL (Roxall)",
     isPerennial: true,
     isProteolytic: true,
-    bibliographyRef: "Brindisi 2025 (PMID 40095008) — Modigoid Alt a1; 4 µg/mL = ficha",
-    referenceVerified: false,
+    modigoidUgPerMl: 4.0,
+    diaterMolecularUgPerMl: 0.46,
+    bibliographyRef: "Modigoid ficha §2 + Brindisi 2025 (PMID 40095008); Diater 0,46 µg/mL",
   },
   {
     id: "cladosporium",
@@ -331,14 +299,10 @@ export const ALLERGENS_DB: Allergen[] = [
     scientificName: "Cladosporium herbarum",
     family: "hongos",
     molecularMarker: "Cla h 8 (Mezcla)",
-    commercialEquivalence: "Sin estandarización molecular",
-    // No estandarizado molecularmente a nivel clínico aún
-    vialConcentrationUgMl: 0,
-    injectedDoseUg: 0,
+    utLabel: "Sin estandarización molecular",
     isPerennial: true,
     isProteolytic: true,
-    bibliographyRef: "Abel-Fernández 2023 (PMID 37233293) — extractos fúngicos no estandarizados",
-    referenceVerified: false,
+    bibliographyRef: "Abel-Fernández 2023 (PMID 37233293) — no estandarizado",
   },
 ];
 

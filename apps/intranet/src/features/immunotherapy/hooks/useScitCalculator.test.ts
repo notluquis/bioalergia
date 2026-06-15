@@ -22,12 +22,21 @@ describe("calculate — empty / guards", () => {
   });
 });
 
-describe("Regla 1 — Monosensibilización", () => {
-  it("single non-fungal allergen → 1 ESTANDAR vial", () => {
+describe("Regla 1 — Monosensibilización (Inmunotek/Roxall = UT, no µg)", () => {
+  it("single non-fungal allergen → 1 ESTANDAR vial dosed in UT", () => {
     const r = calculate(sel({ selectedAllergenIds: ["acaro_dpt"] }));
     expect(r.vials).toHaveLength(1);
     expect(r.vials[0]?.formulation).toBe("ESTANDAR");
+    const entry = r.vials[0]?.allergens[0];
+    expect(entry?.doseDisplay).toContain("UT");
+    expect(entry?.doseDisplay).not.toContain("µg");
+    expect(entry?.injectedUg).toBeUndefined();
     expect(r.rulesApplied).toContain("Regla 1: Monosensibilización");
+  });
+
+  it("standard maintenance shows 5.000 UT (10.000 UT/mL × 0.5 mL)", () => {
+    const r = calculate(sel({ selectedAllergenIds: ["gato"] }));
+    expect(r.vials[0]?.allergens[0]?.doseDisplay).toBe("5.000 UT");
   });
 });
 
@@ -99,7 +108,6 @@ describe("Regla 4 — Saturación molecular (N>3) — máx 3 por frasco", () => 
       sel({ selectedAllergenIds: ["acaro_dpt", "acaro_df", "acaro_bt", "gato", "perro"] })
     );
     expect(r.rulesApplied).toContain("Regla 4: Saturación Molecular");
-    // Never more than 3 allergens in any vial
     expect(r.vials.every((v) => v.allergens.length <= 3)).toBe(true);
     expect(r.vials).toHaveLength(2);
     expect(r.vials.map((v) => v.label)).toEqual(["Perennes 1", "Perennes 2"]);
@@ -115,7 +123,7 @@ describe("Regla 4 — Saturación molecular (N>3) — máx 3 por frasco", () => 
     expect(r.vials.every((v) => v.allergens.length <= 3)).toBe(true);
   });
 
-  it("8 seasonals → 3 vials (3+3+2), none over the cap", () => {
+  it("7 seasonals → 3 vials (3+3+1), none over the cap", () => {
     const r = calculate(
       sel({
         selectedAllergenIds: [
@@ -133,22 +141,33 @@ describe("Regla 4 — Saturación molecular (N>3) — máx 3 por frasco", () => 
   });
 });
 
-describe("Regla 5 — Excepción proteolítica", () => {
-  it("Alternaria isolated in a MODIGOID vial + warning", () => {
-    const r = calculate(sel({ selectedAllergenIds: ["alternaria"] }));
+describe("Regla 5 — Hongos aislados (provider-specific)", () => {
+  it("Roxall + Alternaria → MODIGOID vial with verified 2 µg dose + source", () => {
+    const r = calculate(sel({ provider: "roxall", selectedAllergenIds: ["alternaria"] }));
     expect(r.vials).toHaveLength(1);
     expect(r.vials[0]?.formulation).toBe("MODIGOID");
+    const entry = r.vials[0]?.allergens[0];
+    expect(entry?.injectedUg).toBeCloseTo(2.0);
+    expect(entry?.doseDisplay).toContain("µg");
+    expect(entry?.doseSource).toContain("Modigoid");
     expect(r.alerts.some((a) => a.ruleTriggered === "Regla 5" && a.severity === "warning")).toBe(
       true
     );
   });
 
-  it("Cladosporium (no molecular standard) → DEPOT vial + danger alert, no Modigoid", () => {
+  it("Inmunotek + Alternaria → isolated ESTANDAR (Alternaria polimerizada, UT), not Modigoid", () => {
+    const r = calculate(sel({ provider: "inmunotek", selectedAllergenIds: ["alternaria"] }));
+    expect(r.vials).toHaveLength(1);
+    expect(r.vials[0]?.formulation).toBe("ESTANDAR");
+    expect(r.vials[0]?.allergens[0]?.doseDisplay).toContain("UT");
+  });
+
+  it("Cladosporium (no molecular standard) → DEPOT vial + danger alert", () => {
     const r = calculate(sel({ selectedAllergenIds: ["cladosporium"] }));
     expect(r.vials).toHaveLength(1);
     expect(r.vials[0]?.formulation).toBe("DEPOT");
-    expect(r.vials[0]?.formulation).not.toBe("MODIGOID");
-    expect(r.vials[0]?.allergens[0]?.displayDose).toBe("Sin estandarizar");
+    expect(r.vials[0]?.allergens[0]?.doseDisplay).toBe("Según ficha (no estandarizado)");
+    expect(r.vials[0]?.allergens[0]?.injectedUg).toBeUndefined();
     expect(r.alerts.some((a) => a.ruleTriggered === "Regla 5" && a.severity === "danger")).toBe(
       true
     );
@@ -161,8 +180,8 @@ describe("Regla 5 — Excepción proteolítica", () => {
     expect(warn?.message).not.toContain("Alternaria");
   });
 
-  it("Alternaria + non-fungal → Modigoid vial separate from the rest", () => {
-    const r = calculate(sel({ selectedAllergenIds: ["alternaria", "gato"] }));
+  it("Roxall: Alternaria + non-fungal → Modigoid vial separate from the rest", () => {
+    const r = calculate(sel({ provider: "roxall", selectedAllergenIds: ["alternaria", "gato"] }));
     expect(r.vials).toHaveLength(2);
     const modigoid = r.vials.find((v) => v.formulation === "MODIGOID");
     expect(modigoid?.allergens).toHaveLength(1);
@@ -170,32 +189,35 @@ describe("Regla 5 — Excepción proteolítica", () => {
   });
 });
 
-describe("Ventana terapéutica EAACI (5–20 µg)", () => {
-  it("flags a sub-therapeutic dose (Perro = 4 µg < 5)", () => {
+describe("Ventana terapéutica — solo aplica a µg convencional", () => {
+  it("UT-path allergens carry no µg → no window alert (Perro)", () => {
     const r = calculate(sel({ selectedAllergenIds: ["perro"] }));
-    expect(r.alerts.some((a) => a.ruleTriggered === "Ventana terapéutica")).toBe(true);
-  });
-
-  it("does NOT flag a dose inside the window (Gato = 5 µg)", () => {
-    const r = calculate(sel({ selectedAllergenIds: ["gato"] }));
     expect(r.alerts.some((a) => a.ruleTriggered === "Ventana terapéutica")).toBe(false);
   });
 
-  it("does NOT flag Modigoid (Alternaria 2 µg is outside the UT matrix)", () => {
-    const r = calculate(sel({ selectedAllergenIds: ["alternaria"] }));
+  it("Modigoid molecular allergoid is exempt (2 µg does not flag)", () => {
+    const r = calculate(sel({ provider: "roxall", selectedAllergenIds: ["alternaria"] }));
     expect(r.alerts.some((a) => a.ruleTriggered === "Ventana terapéutica")).toBe(false);
   });
 });
 
-describe("Diater — unidades", () => {
-  it("never reports UT and always uses displayDose; emits ficha-técnica notice", () => {
+describe("Diater — unidades reales del SmPC", () => {
+  it("molecular mites: µg/mL real, never UT, with SmPC source + Diater notice", () => {
     const r = calculate(
       sel({ provider: "diater", selectedAllergenIds: ["acaro_dpt", "acaro_df"] })
     );
     const entries = r.vials.flatMap((v) => v.allergens);
     expect(entries.length).toBeGreaterThan(0);
-    expect(entries.every((e) => e.concentrationUtMl === 0)).toBe(true);
-    expect(entries.every((e) => Boolean(e.displayDose))).toBe(true);
+    expect(entries.every((e) => !e.doseDisplay.includes("UT"))).toBe(true);
+    expect(entries.every((e) => Boolean(e.doseSource))).toBe(true);
+    // Der p 1 has a verified molecular µg/mL; Der f has none → qualitative
+    const dpt = entries.find((e) => e.allergen.id === "acaro_dpt");
+    expect(dpt?.doseDisplay).toContain("µg/mL molecular");
     expect(r.alerts.some((a) => a.ruleTriggered === "Diater")).toBe(true);
+  });
+
+  it("polymerized fallback (no molecular base) → relative-dilution display", () => {
+    const r = calculate(sel({ provider: "diater", selectedAllergenIds: ["gramineas_mix"] }));
+    expect(r.vials[0]?.allergens[0]?.doseDisplay).toBe("Dilución relativa (ficha)");
   });
 });
