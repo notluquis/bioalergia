@@ -86,6 +86,7 @@ import { Route as AuthedAdminUsersRouteImport } from "./routes/_authed/admin/use
 import { Route as AuthedAdminDatabaseRouteImport } from "./routes/_authed/admin/database"
 import { Route as AuthedPatientsIdIndexRouteImport } from "./routes/_authed/patients/$id/index"
 import { Route as AuthedServicesIdEditRouteImport } from "./routes/_authed/services/$id.edit"
+import { Route as AuthedPatientsIdScitCalculatorRouteImport } from "./routes/_authed/patients/$id/scit-calculator"
 import { Route as AuthedPatientsIdNewPaymentRouteImport } from "./routes/_authed/patients/$id/new-payment"
 import { Route as AuthedPatientsIdNewConsultationRouteImport } from "./routes/_authed/patients/$id/new-consultation"
 import { Route as AuthedPatientsIdNewBudgetRouteImport } from "./routes/_authed/patients/$id/new-budget"
@@ -493,6 +494,12 @@ const AuthedServicesIdEditRoute = AuthedServicesIdEditRouteImport.update({
   path: "/$id/edit",
   getParentRoute: () => AuthedServicesRoute,
 } as any)
+const AuthedPatientsIdScitCalculatorRoute =
+  AuthedPatientsIdScitCalculatorRouteImport.update({
+    id: "/patients/$id/scit-calculator",
+    path: "/patients/$id/scit-calculator",
+    getParentRoute: () => AuthedRoute,
+  } as any)
 const AuthedPatientsIdNewPaymentRoute =
   AuthedPatientsIdNewPaymentRouteImport.update({
     id: "/patients/$id/new-payment",
@@ -625,6 +632,7 @@ export interface FileRoutesByFullPath {
   "/patients/$id/new-budget": typeof AuthedPatientsIdNewBudgetRoute
   "/patients/$id/new-consultation": typeof AuthedPatientsIdNewConsultationRoute
   "/patients/$id/new-payment": typeof AuthedPatientsIdNewPaymentRoute
+  "/patients/$id/scit-calculator": typeof AuthedPatientsIdScitCalculatorRoute
   "/services/$id/edit": typeof AuthedServicesIdEditRoute
   "/patients/$id/": typeof AuthedPatientsIdIndexRoute
 }
@@ -704,6 +712,7 @@ export interface FileRoutesByTo {
   "/patients/$id/new-budget": typeof AuthedPatientsIdNewBudgetRoute
   "/patients/$id/new-consultation": typeof AuthedPatientsIdNewConsultationRoute
   "/patients/$id/new-payment": typeof AuthedPatientsIdNewPaymentRoute
+  "/patients/$id/scit-calculator": typeof AuthedPatientsIdScitCalculatorRoute
   "/services/$id/edit": typeof AuthedServicesIdEditRoute
   "/patients/$id": typeof AuthedPatientsIdIndexRoute
 }
@@ -792,6 +801,7 @@ export interface FileRoutesById {
   "/_authed/patients/$id/new-budget": typeof AuthedPatientsIdNewBudgetRoute
   "/_authed/patients/$id/new-consultation": typeof AuthedPatientsIdNewConsultationRoute
   "/_authed/patients/$id/new-payment": typeof AuthedPatientsIdNewPaymentRoute
+  "/_authed/patients/$id/scit-calculator": typeof AuthedPatientsIdScitCalculatorRoute
   "/_authed/services/$id/edit": typeof AuthedServicesIdEditRoute
   "/_authed/patients/$id/": typeof AuthedPatientsIdIndexRoute
 }
@@ -880,6 +890,7 @@ export interface FileRouteTypes {
     | "/patients/$id/new-budget"
     | "/patients/$id/new-consultation"
     | "/patients/$id/new-payment"
+    | "/patients/$id/scit-calculator"
     | "/services/$id/edit"
     | "/patients/$id/"
   fileRoutesByTo: FileRoutesByTo
@@ -959,6 +970,7 @@ export interface FileRouteTypes {
     | "/patients/$id/new-budget"
     | "/patients/$id/new-consultation"
     | "/patients/$id/new-payment"
+    | "/patients/$id/scit-calculator"
     | "/services/$id/edit"
     | "/patients/$id"
   id:
@@ -1046,6 +1058,7 @@ export interface FileRouteTypes {
     | "/_authed/patients/$id/new-budget"
     | "/_authed/patients/$id/new-consultation"
     | "/_authed/patients/$id/new-payment"
+    | "/_authed/patients/$id/scit-calculator"
     | "/_authed/services/$id/edit"
     | "/_authed/patients/$id/"
   fileRoutesById: FileRoutesById
@@ -1601,6 +1614,13 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof AuthedServicesIdEditRouteImport
       parentRoute: typeof AuthedServicesRoute
     }
+    "/_authed/patients/$id/scit-calculator": {
+      id: "/_authed/patients/$id/scit-calculator"
+      path: "/patients/$id/scit-calculator"
+      fullPath: "/patients/$id/scit-calculator"
+      preLoaderRoute: typeof AuthedPatientsIdScitCalculatorRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     "/_authed/patients/$id/new-payment": {
       id: "/_authed/patients/$id/new-payment"
       path: "/patients/$id/new-payment"
@@ -1905,6 +1925,7 @@ interface AuthedRouteChildren {
   AuthedPatientsIdNewBudgetRoute: typeof AuthedPatientsIdNewBudgetRoute
   AuthedPatientsIdNewConsultationRoute: typeof AuthedPatientsIdNewConsultationRoute
   AuthedPatientsIdNewPaymentRoute: typeof AuthedPatientsIdNewPaymentRoute
+  AuthedPatientsIdScitCalculatorRoute: typeof AuthedPatientsIdScitCalculatorRoute
   AuthedPatientsIdIndexRoute: typeof AuthedPatientsIdIndexRoute
 }
 
@@ -1943,6 +1964,7 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedPatientsIdNewBudgetRoute: AuthedPatientsIdNewBudgetRoute,
   AuthedPatientsIdNewConsultationRoute: AuthedPatientsIdNewConsultationRoute,
   AuthedPatientsIdNewPaymentRoute: AuthedPatientsIdNewPaymentRoute,
+  AuthedPatientsIdScitCalculatorRoute: AuthedPatientsIdScitCalculatorRoute,
   AuthedPatientsIdIndexRoute: AuthedPatientsIdIndexRoute,
 }
 

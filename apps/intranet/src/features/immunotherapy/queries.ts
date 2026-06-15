@@ -18,4 +18,5 @@ export const immunoKeys = {
   products: ["immuno", "products"] as const,
   quote: (quoteInput: unknown) => ["immuno", "quote", quoteInput] as const,
   terms: ["immuno", "terms"] as const,
+  scitPrescriptions: (patientId: number) => ["immuno", "scit-prescriptions", patientId] as const,
 } as const;

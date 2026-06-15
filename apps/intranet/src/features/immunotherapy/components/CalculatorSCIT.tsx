@@ -2,7 +2,12 @@ import { Alert, Card, Chip, RadioGroup, Radio } from "@heroui/react";
 import { Calculator, FlaskConical, ShieldAlert, Syringe } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { getAllergenById } from "../data/allergens_db";
-import type { ClinicalRelevanceMode, DoctorSelection, Provider } from "../data/types";
+import type {
+  ClinicalRelevanceMode,
+  DoctorSelection,
+  Provider,
+  ScitCalculationResult,
+} from "../data/types";
 
 const PROVIDERS: readonly Provider[] = ["inmunotek", "diater", "roxall"];
 
@@ -15,7 +20,12 @@ import { ClinicalAlerts } from "./ClinicalAlerts";
 import { RelevanceSelector } from "./RelevanceSelector";
 import { VialCard } from "./VialCard";
 
-export function CalculatorSCIT() {
+interface CalculatorSCITProps {
+  /** Notifica al padre cada cálculo (para guardar la prescripción por paciente). */
+  onChange?: (selection: DoctorSelection, result: ScitCalculationResult) => void;
+}
+
+export function CalculatorSCIT({ onChange }: CalculatorSCITProps = {}) {
   const [provider, setProvider] = useState<Provider>("inmunotek");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [relevanceMode, setRelevanceMode] = useState<ClinicalRelevanceMode | undefined>();
@@ -60,6 +70,11 @@ export function CalculatorSCIT() {
   );
 
   const result = useScitCalculator(selection);
+
+  // Notifica al padre (página por-paciente) para habilitar "Guardar prescripción".
+  useEffect(() => {
+    onChange?.(selection, result);
+  }, [onChange, selection, result]);
 
   // ── Handlers ───────────────────────────────────────────────────────────
   const handleAdd = useCallback((id: string) => {

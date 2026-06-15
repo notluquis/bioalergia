@@ -258,7 +258,21 @@ export function PatientDetailsPage() {
             <Tabs.Panel id="budgets" className="space-y-4 py-4">
               {isTabMounted("budgets") ? (
                 <>
-                  <div className="flex justify-end gap-2">
+                  <div className="flex flex-wrap justify-end gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="gap-2"
+                      onPress={() => {
+                        void navigate({
+                          to: "/patients/$id/scit-calculator",
+                          params: { id: String(id) },
+                        });
+                      }}
+                    >
+                      <PlusCircle size={16} />
+                      Prescripción SCIT
+                    </Button>
                     <Button
                       size="sm"
                       variant="outline"

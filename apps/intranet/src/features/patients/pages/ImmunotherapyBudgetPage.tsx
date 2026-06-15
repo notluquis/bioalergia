@@ -21,7 +21,7 @@ import type { HideableSection, ProductDto } from "@finanzas/orpc-contracts/immun
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { getRouteApi, useNavigate } from "@tanstack/react-router";
 import { ChevronLeft, Download, Save, X } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   createImmunoBudget,
   downloadImmunoBudgetPdf,
@@ -56,6 +56,7 @@ const EMPTY_ALLERGENS: { id: string; commonName: string; scientificName: string 
 
 export function ImmunotherapyBudgetPage() {
   const { id } = routeApi.useParams();
+  const { prefillAllergens } = routeApi.useSearch();
   const patientId = Number(id);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -174,6 +175,29 @@ export function ImmunotherapyBudgetPage() {
     [allergenIds, allergens]
   );
   const [pickerKey, setPickerKey] = useState(0);
+
+  // Precarga desde la prescripción SCIT: matchea nombres científicos (best-effort)
+  // contra el catálogo de alérgenos del presupuesto (espacios de ids distintos).
+  const prefillApplied = useRef(false);
+  useEffect(() => {
+    if (prefillApplied.current || !prefillAllergens || allergens.length === 0) return;
+    const wanted = prefillAllergens
+      .split("|")
+      .map((s) => s.trim().toLowerCase())
+      .filter(Boolean);
+    if (wanted.length === 0) return;
+    const matched = allergens
+      .filter((a) => {
+        const sci = a.scientificName?.toLowerCase();
+        if (!sci) return false;
+        return wanted.some((w) => sci.includes(w) || w.includes(sci));
+      })
+      .map((a) => a.id);
+    if (matched.length > 0) {
+      setAllergenIds(matched);
+      prefillApplied.current = true;
+    }
+  }, [prefillAllergens, allergens]);
 
   return (
     <div className={PAGE_CONTAINER}>

@@ -1,6 +1,7 @@
 import type {
   CreateBudgetInput,
   CreateProductInput,
+  CreateScitPrescriptionInput,
   PrescriptionPdfInput,
   QuoteInput,
   UpdateProductInput,
@@ -62,6 +63,24 @@ export async function quoteImmunotherapy(input: QuoteInput) {
 export async function createImmunoBudget(input: CreateBudgetInput) {
   try {
     return await immunotherapyORPCClient.createBudget(input);
+  } catch (error) {
+    throw toImmunotherapyApiError(error);
+  }
+}
+
+// ── Prescripciones SCIT (trazabilidad por paciente) ──────────────────
+export async function createScitPrescription(input: CreateScitPrescriptionInput) {
+  try {
+    return await immunotherapyORPCClient.createScitPrescription(input);
+  } catch (error) {
+    throw toImmunotherapyApiError(error);
+  }
+}
+
+export async function listScitPrescriptions(patientId: number) {
+  try {
+    const res = await immunotherapyORPCClient.listScitPrescriptions({ patientId });
+    return res.items;
   } catch (error) {
     throw toImmunotherapyApiError(error);
   }
