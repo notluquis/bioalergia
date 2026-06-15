@@ -34,7 +34,7 @@
   "thresholds": {
     "high": 80,
     "low": 60,
-    "break": 62
+    "break": 64
   },
   "ignorePatterns": [
     "dist",
