@@ -1,6 +1,8 @@
 import { Decimal } from "decimal.js";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { DomainError } from "../../lib/errors.ts";
+
 /**
  * loans.ts keeps its pure financial logic (generateSchedules amortization,
  * computeSummary, mapScheduleStatus date-derivation, getDueDateForInstallment,
@@ -21,6 +23,7 @@ type AnyRow = Record<string, unknown>;
 const { mockDb, state } = vi.hoisted(() => {
   const state: {
     createdSchedules: AnyRow[];
+    createdSingleSchedules: AnyRow[];
     detailLoan: AnyRow | null;
     detailSchedules: AnyRow[];
     refreshedLoan: AnyRow | null;
@@ -31,8 +34,10 @@ const { mockDb, state } = vi.hoisted(() => {
     updatedSchedule: AnyRow | null;
     loanUpdates: AnyRow[];
     statusUpdates: AnyRow[];
+    candidateTransactions: AnyRow[];
   } = {
     createdSchedules: [],
+    createdSingleSchedules: [],
     detailLoan: null,
     detailSchedules: [],
     refreshedLoan: null,
@@ -43,6 +48,7 @@ const { mockDb, state } = vi.hoisted(() => {
     updatedSchedule: null,
     loanUpdates: [],
     statusUpdates: [],
+    candidateTransactions: [],
   };
 
   const mockDb = {
@@ -72,6 +78,10 @@ const { mockDb, state } = vi.hoisted(() => {
         state.createdSchedules = args.data;
         return Promise.resolve({ count: args.data.length });
       }),
+      create: vi.fn((args: { data: AnyRow }) => {
+        state.createdSingleSchedules.push(args.data);
+        return Promise.resolve({ id: state.createdSingleSchedules.length, ...args.data });
+      }),
       deleteMany: vi.fn(() => Promise.resolve({ count: 0 })),
       findMany: vi.fn(() => Promise.resolve(state.findManySchedules)),
       findUnique: vi.fn(() => Promise.resolve(state.scheduleRow)),
@@ -99,6 +109,7 @@ const { mockDb, state } = vi.hoisted(() => {
     },
     financialTransaction: {
       findUnique: vi.fn(() => Promise.resolve(state.transactionRow)),
+      findMany: vi.fn(() => Promise.resolve(state.candidateTransactions)),
     },
   };
 
@@ -113,11 +124,15 @@ vi.mock("@finanzas/db/slices", () => {
 
 const {
   createLoan,
+  createStructuredLoan,
   getLoanDetail,
   listLoans,
+  listLoanPaymentCandidates,
   registerLoanPayment,
   unlinkLoanPayment,
   regenerateLoanSchedules,
+  updateLoan,
+  updateLoanSchedule,
   deleteLoan,
 } = await import("../loans.ts");
 
@@ -125,6 +140,14 @@ const {
 // Helpers to read back generateSchedules output captured from createMany.
 // ---------------------------------------------------------------------------
 const num = (v: unknown) => Number(v as Decimal);
+
+// gs26: loans throws DomainError (kind+message), mapped to HTTP by toORPCError.
+async function expectDomainError(p: Promise<unknown>, kind: string, message: string) {
+  const err = await p.then(() => null).catch((e: unknown) => e);
+  expect(err).toBeInstanceOf(DomainError);
+  expect((err as DomainError).kind).toBe(kind);
+  expect((err as DomainError).message).toBe(message);
+}
 
 async function generatedSchedulesFor(loan: {
   frequency?: string;
@@ -179,6 +202,7 @@ async function generatedSchedulesFor(loan: {
 beforeEach(() => {
   vi.clearAllMocks();
   state.createdSchedules = [];
+  state.createdSingleSchedules = [];
   state.detailLoan = null;
   state.detailSchedules = [];
   state.refreshedLoan = null;
@@ -189,6 +213,7 @@ beforeEach(() => {
   state.updatedSchedule = null;
   state.loanUpdates = [];
   state.statusUpdates = [];
+  state.candidateTransactions = [];
 });
 
 // ===========================================================================
@@ -557,9 +582,7 @@ describe("computeSummary — totals, remaining, counts", () => {
 
 describe("mapScheduleStatus — derivation", () => {
   it("PENDING with past due date is rendered as OVERDUE", async () => {
-    const schedules = [
-      schedule({ status: "PENDING", dueDate: new Date("2000-01-01T00:00:00Z") }),
-    ];
+    const schedules = [schedule({ status: "PENDING", dueDate: new Date("2000-01-01T00:00:00Z") })];
     state.detailLoan = detailLoanWith(schedules);
     state.detailSchedules = schedules;
     const { schedules: out } = await getLoanDetail("loan_abc");
@@ -567,9 +590,7 @@ describe("mapScheduleStatus — derivation", () => {
   });
 
   it("PENDING with future due date stays PENDING", async () => {
-    const schedules = [
-      schedule({ status: "PENDING", dueDate: new Date("2099-01-01T00:00:00Z") }),
-    ];
+    const schedules = [schedule({ status: "PENDING", dueDate: new Date("2099-01-01T00:00:00Z") })];
     state.detailLoan = detailLoanWith(schedules);
     state.detailSchedules = schedules;
     const { schedules: out } = await getLoanDetail("loan_abc");
@@ -578,7 +599,11 @@ describe("mapScheduleStatus — derivation", () => {
 
   it("PAID/PARTIAL/SKIPPED are preserved regardless of due date", async () => {
     const schedules = [
-      schedule({ status: "PAID", dueDate: new Date("2000-01-01T00:00:00Z"), paidAmount: new Decimal(100) }),
+      schedule({
+        status: "PAID",
+        dueDate: new Date("2000-01-01T00:00:00Z"),
+        paidAmount: new Decimal(100),
+      }),
       schedule({ status: "PARTIAL", dueDate: new Date("2000-01-01T00:00:00Z"), id: 2 }),
       schedule({ status: "SKIPPED", dueDate: new Date("2000-01-01T00:00:00Z"), id: 3 }),
     ];
@@ -863,20 +888,22 @@ describe("regenerateLoanSchedules — payment lock", () => {
       schedule({ paidAmount: new Decimal(50), transactionId: null }),
     ]);
     state.detailSchedules = state.detailLoan.schedules as AnyRow[];
-    await expect(
-      regenerateLoanSchedules("loan_abc", { totalInstallments: 6 })
-    ).rejects.toMatchObject({ code: "LOAN_SCHEDULES_LOCKED", status: 409 });
+    await expectDomainError(
+      regenerateLoanSchedules("loan_abc", { totalInstallments: 6 }),
+      "CONFLICT",
+      "No se puede regenerar un préstamo que ya tiene pagos registrados"
+    );
   });
 
   it("throws 409 when a schedule has a transactionId (paidAmount null)", async () => {
     // Isolates the RIGHT side of the guard — kills right-operand removal.
-    state.detailLoan = detailLoanWith([
-      schedule({ paidAmount: null, transactionId: 3 }),
-    ]);
+    state.detailLoan = detailLoanWith([schedule({ paidAmount: null, transactionId: 3 })]);
     state.detailSchedules = state.detailLoan.schedules as AnyRow[];
-    await expect(
-      regenerateLoanSchedules("loan_abc", { totalInstallments: 6 })
-    ).rejects.toMatchObject({ code: "LOAN_SCHEDULES_LOCKED", status: 409 });
+    await expectDomainError(
+      regenerateLoanSchedules("loan_abc", { totalInstallments: 6 }),
+      "CONFLICT",
+      "No se puede regenerar un préstamo que ya tiene pagos registrados"
+    );
   });
 
   it("regenerates when no payments registered", async () => {
@@ -907,22 +934,21 @@ describe("regenerateLoanSchedules — payment lock", () => {
 describe("not-found guards", () => {
   it("getLoanDetail throws 404 when loan missing", async () => {
     state.detailLoan = null;
-    await expect(getLoanDetail("nope")).rejects.toMatchObject({
-      code: "LOAN_NOT_FOUND",
-      status: 404,
-    });
+    await expectDomainError(getLoanDetail("nope"), "NOT_FOUND", "Préstamo no encontrado");
   });
 
   it("deleteLoan throws 404 when loan missing", async () => {
     state.detailLoan = null;
-    await expect(deleteLoan("nope")).rejects.toMatchObject({ code: "LOAN_NOT_FOUND" });
+    await expectDomainError(deleteLoan("nope"), "NOT_FOUND", "Préstamo no encontrado");
   });
 
   it("registerLoanPayment throws 404 when schedule missing", async () => {
     state.scheduleRow = null;
-    await expect(
-      registerLoanPayment(99, { paidAmount: 10, paidDate: "2026-01-01", transactionId: 1 })
-    ).rejects.toMatchObject({ code: "LOAN_SCHEDULE_NOT_FOUND", status: 404 });
+    await expectDomainError(
+      registerLoanPayment(99, { paidAmount: 10, paidDate: "2026-01-01", transactionId: 1 }),
+      "NOT_FOUND",
+      "Cuota no encontrada"
+    );
   });
 
   it("registerLoanPayment throws 404 when transaction missing", async () => {
@@ -934,8 +960,612 @@ describe("not-found guards", () => {
       loan: { id: 1 },
     };
     state.transactionRow = null;
-    await expect(
-      registerLoanPayment(5, { paidAmount: 10, paidDate: "2026-01-01", transactionId: 999 })
-    ).rejects.toMatchObject({ code: "TRANSACTION_NOT_FOUND", status: 404 });
+    await expectDomainError(
+      registerLoanPayment(5, { paidAmount: 10, paidDate: "2026-01-01", transactionId: 999 }),
+      "NOT_FOUND",
+      "Transacción no encontrada"
+    );
+  });
+});
+
+// ===========================================================================
+// createStructuredLoan — buildStructuredSources + buildEqualStructuredSchedules
+//   + summarizePayments + manual installments + getDueDateFromBase
+// ===========================================================================
+describe("createStructuredLoan", () => {
+  beforeEach(() => {
+    // getLoanDetail at the end always needs a loan to return.
+    state.detailLoan = detailLoanWith([]);
+    state.detailSchedules = [];
+  });
+
+  it("requires either equalSchedule or manualInstallments (400 guard)", async () => {
+    await expectDomainError(
+      createStructuredLoan({
+        borrowerName: "X",
+        borrowerType: "PERSON",
+        sources: [{ label: "S", principalAmount: 1000 }],
+        startDate: "2026-01-01",
+        title: "T",
+      }),
+      "BAD_REQUEST",
+      "Debes entregar cuotas manuales o una configuración de cuotas iguales"
+    );
+  });
+
+  it("derives source interest/total/fee and aggregates loan principal", async () => {
+    await createStructuredLoan({
+      borrowerName: "  Empresa  ",
+      borrowerType: "COMPANY",
+      sources: [
+        // interest = 100000 * 10 / 100 = 10000; total default = 100000+10000+500 = 110500.
+        { label: " Banco ", principalAmount: 100000, fixedInterestRate: 10, feeAmount: 500 },
+        // no rate/fee → interest 0, total = principal = 50000.
+        { label: "Tarjeta", principalAmount: 50000, sourceType: "CREDIT_CARD" },
+      ],
+      equalSchedule: { firstDueDate: "2026-02-01", frequency: "MONTHLY", installments: 2 },
+      startDate: "2026-01-01",
+      title: "  Crédito  ",
+    });
+
+    const createArg = mockDb.loan.create.mock.calls[0]?.[0] as { data: AnyRow };
+    expect(createArg.data.title).toBe("Crédito");
+    expect(createArg.data.borrowerName).toBe("Empresa");
+    // principalAmount = totalAmount of all sources = 110500 + 50000 = 160500.
+    expect(Number(createArg.data.principalAmount as Decimal)).toBe(160500);
+    expect(createArg.data.frequency).toBe("MONTHLY");
+    expect(Number(createArg.data.interestRate as Decimal)).toBe(0);
+    expect(createArg.data.interestType).toBe("SIMPLE");
+    expect(createArg.data.totalInstallments).toBe(2);
+
+    const sources = (createArg.data.sources as { create: AnyRow[] }).create;
+    expect(sources).toHaveLength(2);
+    expect(sources[0].label).toBe("Banco"); // trimmed
+    expect(Number(sources[0].interestAmount as Decimal)).toBe(10000);
+    expect(Number(sources[0].feeAmount as Decimal)).toBe(500);
+    expect(Number(sources[0].totalAmount as Decimal)).toBe(110500);
+    expect(sources[0].sourceType).toBe("OTHER"); // default
+    expect(sources[1].sourceType).toBe("CREDIT_CARD");
+    expect(Number(sources[1].interestAmount as Decimal)).toBe(0);
+  });
+
+  it("honors an explicit totalAmount on a source (interest = total - principal - fee)", async () => {
+    await createStructuredLoan({
+      borrowerName: "X",
+      borrowerType: "PERSON",
+      sources: [{ label: "S", principalAmount: 1000, feeAmount: 50, totalAmount: 1200 }],
+      equalSchedule: { firstDueDate: "2026-02-01", frequency: "MONTHLY", installments: 1 },
+      startDate: "2026-01-01",
+      title: "T",
+    });
+    const createArg = mockDb.loan.create.mock.calls[0]?.[0] as { data: AnyRow };
+    const src = (createArg.data.sources as { create: AnyRow[] }).create[0];
+    // interest = 1200 - 1000 - 50 = 150.
+    expect(Number(src.interestAmount as Decimal)).toBe(150);
+    expect(Number(src.totalAmount as Decimal)).toBe(1200);
+  });
+
+  it("equalSchedule splits totals evenly, last installment absorbs remainder", async () => {
+    await createStructuredLoan({
+      borrowerName: "X",
+      borrowerType: "PERSON",
+      sources: [{ label: "S", principalAmount: 1000, totalAmount: 1000 }],
+      equalSchedule: { firstDueDate: "2026-01-31", frequency: "MONTHLY", installments: 3 },
+      startDate: "2026-01-01",
+      title: "T",
+    });
+    const rows = (mockDb.loanSchedule.createMany.mock.calls[0]?.[0] as { data: AnyRow[] }).data;
+    expect(rows).toHaveLength(3);
+    // baseAmount = 1000/3 = 333.33; last = 1000 - 666.66 = 333.34.
+    expect(rows.map((r) => Number(r.expectedAmount as Decimal))).toEqual([333.33, 333.33, 333.34]);
+    // installment 1 keeps firstDueDate exactly; 2 = +1 month, 3 = +2 months (clamp).
+    const iso = (d: Date) => d.toISOString().slice(0, 10);
+    expect(rows.map((r) => iso(r.dueDate as Date))).toEqual([
+      "2026-01-31",
+      "2026-02-28",
+      "2026-03-31",
+    ]);
+    const sum = rows.reduce((a, r) => a + Number(r.expectedAmount as Decimal), 0);
+    expect(Number(sum.toFixed(2))).toBe(1000);
+  });
+
+  it("equalSchedule WEEKLY/BIWEEKLY due-date stepping via getDueDateFromBase", async () => {
+    await createStructuredLoan({
+      borrowerName: "X",
+      borrowerType: "PERSON",
+      sources: [{ label: "S", principalAmount: 300, totalAmount: 300 }],
+      equalSchedule: { firstDueDate: "2026-01-01", frequency: "BIWEEKLY", installments: 3 },
+      startDate: "2026-01-01",
+      title: "T",
+    });
+    const rows = (mockDb.loanSchedule.createMany.mock.calls[0]?.[0] as { data: AnyRow[] }).data;
+    const iso = (d: Date) => d.toISOString().slice(0, 10);
+    // installment 1 → base; 2 → +2 weeks; 3 → +4 weeks.
+    expect(rows.map((r) => iso(r.dueDate as Date))).toEqual([
+      "2026-01-01",
+      "2026-01-15",
+      "2026-01-29",
+    ]);
+  });
+
+  it("manual installments: PAID when payments >= expected, summarizePayments picks latest date", async () => {
+    await createStructuredLoan({
+      borrowerName: "X",
+      borrowerType: "PERSON",
+      sources: [{ label: "S", principalAmount: 1000, totalAmount: 1000 }],
+      manualInstallments: [
+        {
+          dueDate: "2026-02-01",
+          expectedAmount: 500,
+          expectedPrincipal: 480,
+          expectedInterest: 20,
+          note: "  cuota 1  ",
+          payments: [
+            { amount: 200, paidDate: "2026-02-05" },
+            { amount: 300, paidDate: "2026-02-10", kind: "PAYMENT", transactionId: 9 },
+          ],
+        },
+        { dueDate: "2026-03-01", expectedAmount: 500 },
+      ],
+      startDate: "2026-01-01",
+      title: "T",
+    });
+
+    expect(state.createdSingleSchedules).toHaveLength(2);
+    const first = state.createdSingleSchedules[0];
+    expect(first.installmentNumber).toBe(1);
+    expect(Number(first.expectedAmount as Decimal)).toBe(500);
+    expect(Number(first.expectedPrincipal as Decimal)).toBe(480);
+    expect(Number(first.expectedInterest as Decimal)).toBe(20);
+    expect(first.note).toBe("cuota 1"); // trimmed
+    // totalPaid = 500 >= expected 500 → PAID; paidDate = latest = 2026-02-10.
+    expect(first.status).toBe("PAID");
+    expect(Number(first.paidAmount as Decimal)).toBe(500);
+    expect((first.paidDate as Date).toISOString().slice(0, 10)).toBe("2026-02-10");
+    const createdPayments = (first.payments as { create: AnyRow[] }).create;
+    expect(createdPayments).toHaveLength(2);
+    expect(createdPayments[0].kind).toBe("PAYMENT"); // default
+    expect(createdPayments[1].transactionId).toBe(9);
+
+    const second = state.createdSingleSchedules[1];
+    // no payments → PENDING, paidAmount null, expectedPrincipal defaults to expectedAmount.
+    expect(second.status).toBe("PENDING");
+    expect(second.paidAmount).toBeNull();
+    expect(Number(second.expectedPrincipal as Decimal)).toBe(500);
+    expect(Number(second.expectedInterest as Decimal)).toBe(0);
+  });
+
+  it("manual installment with partial payment → PARTIAL", async () => {
+    await createStructuredLoan({
+      borrowerName: "X",
+      borrowerType: "PERSON",
+      sources: [{ label: "S", principalAmount: 1000, totalAmount: 1000 }],
+      manualInstallments: [
+        {
+          dueDate: "2026-02-01",
+          expectedAmount: 500,
+          payments: [{ amount: 100, paidDate: "2026-02-05" }],
+        },
+      ],
+      startDate: "2026-01-01",
+      title: "T",
+    });
+    const first = state.createdSingleSchedules[0];
+    expect(first.status).toBe("PARTIAL");
+    expect(Number(first.paidAmount as Decimal)).toBe(100);
+  });
+});
+
+// ===========================================================================
+// updateLoan — conditional field spread
+// ===========================================================================
+describe("updateLoan", () => {
+  beforeEach(() => {
+    state.detailLoan = detailLoanWith([]);
+    state.detailSchedules = [];
+  });
+
+  it("only writes provided fields, trims/normalizes them", async () => {
+    await updateLoan("loan_abc", {
+      title: "  New  ",
+      borrowerName: "  Bob  ",
+      notes: "   ",
+      interestRate: 15,
+      principalAmount: 2000,
+      startDate: "2026-05-01",
+    });
+    const data = mockDb.loan.update.mock.calls[0]?.[0]?.data as AnyRow;
+    expect(data.title).toBe("New");
+    expect(data.borrowerName).toBe("Bob");
+    expect(data.notes).toBeNull(); // blank → null
+    expect(Number(data.interestRate as Decimal)).toBe(15);
+    expect(Number(data.principalAmount as Decimal)).toBe(2000);
+    expect((data.startDate as Date).toISOString().slice(0, 10)).toBe("2026-05-01");
+    // untouched fields are absent (not undefined-spread)
+    expect("borrowerType" in data).toBe(false);
+    expect("frequency" in data).toBe(false);
+    expect("status" in data).toBe(false);
+  });
+
+  it("empty payload writes no fields", async () => {
+    await updateLoan("loan_abc", {});
+    const data = mockDb.loan.update.mock.calls[0]?.[0]?.data as AnyRow;
+    expect(Object.keys(data)).toHaveLength(0);
+  });
+
+  it("throws 404 when loan missing", async () => {
+    state.detailLoan = null;
+    await expectDomainError(
+      updateLoan("nope", { title: "x" }),
+      "NOT_FOUND",
+      "Préstamo no encontrado"
+    );
+  });
+});
+
+// ===========================================================================
+// updateLoanSchedule — conditional spread + refresh
+// ===========================================================================
+describe("updateLoanSchedule", () => {
+  beforeEach(() => {
+    state.scheduleRow = {
+      id: 5,
+      loanId: 1,
+      dueDate: new Date("2099-01-01T00:00:00Z"),
+      expectedAmount: new Decimal(100),
+      paidAmount: null,
+      paidDate: null,
+      transactionId: null,
+      loan: { id: 1 },
+    };
+    state.updatedSchedule = schedule({ id: 5 });
+    state.findManySchedules = [schedule({ status: "PENDING" })];
+  });
+
+  it("only writes provided schedule fields", async () => {
+    await updateLoanSchedule(5, {
+      expectedAmount: 250,
+      note: "  ajuste  ",
+    });
+    const data = mockDb.loanSchedule.update.mock.calls[0]?.[0]?.data as AnyRow;
+    expect(Number(data.expectedAmount as Decimal)).toBe(250);
+    expect(data.note).toBe("ajuste");
+    expect("dueDate" in data).toBe(false);
+    expect("expectedInterest" in data).toBe(false);
+  });
+
+  it("404 when schedule missing", async () => {
+    state.scheduleRow = null;
+    await expectDomainError(
+      updateLoanSchedule(99, { note: "x" }),
+      "NOT_FOUND",
+      "Cuota no encontrada"
+    );
+  });
+});
+
+// ===========================================================================
+// refreshSchedulePaymentSummary — split payments path (via registerLoanPayment)
+// ===========================================================================
+describe("refreshSchedulePaymentSummary — split payments", () => {
+  it("sums split payments, takes latest paidDate, picks primary txn id", async () => {
+    state.scheduleRow = {
+      id: 5,
+      loanId: 1,
+      dueDate: new Date("2099-01-01T00:00:00Z"),
+      expectedAmount: new Decimal(300),
+      paidAmount: null,
+      paidDate: null,
+      transactionId: null,
+      loan: { id: 1 },
+    };
+    // Pre-seed two existing split payments; registerLoanPayment adds a third.
+    state.schedulePayments = [
+      {
+        id: 1,
+        amount: new Decimal(100),
+        paidDate: new Date("2026-02-01T00:00:00Z"),
+        transactionId: null,
+      },
+      {
+        id: 2,
+        amount: new Decimal(120),
+        paidDate: new Date("2026-02-10T00:00:00Z"),
+        transactionId: 42,
+      },
+    ];
+    state.transactionRow = { id: 7 };
+    state.updatedSchedule = schedule({ id: 5 });
+    state.findManySchedules = [schedule({ status: "PENDING" })];
+
+    await registerLoanPayment(5, { paidAmount: 80, paidDate: "2026-02-05", transactionId: 7 });
+
+    const data = mockDb.loanSchedule.update.mock.calls[0]?.[0]?.data as AnyRow;
+    // total = 100 + 120 + 80 = 300 == expected → PAID.
+    expect(Number(data.paidAmount as Decimal)).toBe(300);
+    expect(data.status).toBe("PAID");
+    // latest paidDate among the 3 = 2026-02-10.
+    expect((data.paidDate as Date).toISOString().slice(0, 10)).toBe("2026-02-10");
+    // first payment with a non-null transactionId = id 42.
+    expect(data.transactionId).toBe(42);
+  });
+
+  it("zero total → status OVERDUE/PENDING by due date, paidAmount null", async () => {
+    state.scheduleRow = {
+      id: 5,
+      loanId: 1,
+      dueDate: new Date("2000-01-01T00:00:00Z"),
+      expectedAmount: new Decimal(100),
+      paidAmount: null,
+      paidDate: null,
+      transactionId: null,
+      loan: { id: 1 },
+    };
+    state.transactionRow = { id: 7 };
+    state.updatedSchedule = schedule({ id: 5 });
+    state.findManySchedules = [schedule({ status: "PENDING" })];
+
+    // amount 0 → totalPaid is zero → OVERDUE (past due) + paidAmount null.
+    await registerLoanPayment(5, { paidAmount: 0, paidDate: "2026-02-05", transactionId: 7 });
+    const data = mockDb.loanSchedule.update.mock.calls[0]?.[0]?.data as AnyRow;
+    expect(data.status).toBe("OVERDUE");
+    expect(data.paidAmount).toBeNull();
+  });
+});
+
+// ===========================================================================
+// syncLoanStatus — SKIPPED schedules count as completed
+// ===========================================================================
+describe("syncLoanStatus — SKIPPED completion", () => {
+  it("loan COMPLETED when every schedule is PAID or SKIPPED", async () => {
+    state.scheduleRow = {
+      id: 5,
+      loanId: 1,
+      dueDate: new Date("2026-06-01T00:00:00Z"),
+      expectedAmount: new Decimal(100),
+      loan: { id: 1 },
+    };
+    state.transactionRow = { id: 9 };
+    state.updatedSchedule = schedule({ id: 5 });
+    state.findManySchedules = [
+      schedule({ status: "PAID", paidAmount: new Decimal(100) }),
+      schedule({ status: "SKIPPED", id: 2 }),
+    ];
+    await registerLoanPayment(5, { paidAmount: 100, paidDate: "2026-06-01", transactionId: 9 });
+    const loanUpdate = mockDb.loan.update.mock.calls[0]?.[0] as { data: AnyRow };
+    expect(loanUpdate.data.status).toBe("COMPLETED");
+  });
+});
+
+// ===========================================================================
+// getLoanDetail — sources + payment serialization (mapSource / mapSchedulePayment)
+// ===========================================================================
+describe("getLoanDetail — sources & payment serialization", () => {
+  it("maps sources via mapSource with Decimal→number + date formatting", async () => {
+    const schedules = [schedule({ status: "PENDING" })];
+    state.detailLoan = {
+      ...detailLoanWith(schedules),
+      sources: [
+        {
+          id: 3,
+          label: "Banco",
+          sourceType: "BANK_CREDIT",
+          note: "nota",
+          disbursementDate: new Date("2026-01-15T00:00:00Z"),
+          feeAmount: new Decimal(500),
+          fixedInterestRate: new Decimal(10),
+          interestAmount: new Decimal(10000),
+          principalAmount: new Decimal(100000),
+          totalAmount: new Decimal(110500),
+        },
+      ],
+    };
+    state.detailSchedules = schedules;
+    const { sources } = await getLoanDetail("loan_abc");
+    expect(sources).toEqual([
+      {
+        disbursement_date: "2026-01-15",
+        fee_amount: 500,
+        fixed_interest_rate: 10,
+        id: 3,
+        interest_amount: 10000,
+        label: "Banco",
+        note: "nota",
+        principal_amount: 100000,
+        source_type: "BANK_CREDIT",
+        total_amount: 110500,
+      },
+    ]);
+  });
+
+  it("null disbursementDate maps to null; absent sources → empty array", async () => {
+    const schedules = [schedule({ status: "PENDING" })];
+    state.detailLoan = {
+      ...detailLoanWith(schedules),
+      sources: [
+        {
+          id: 4,
+          label: "S",
+          sourceType: "OTHER",
+          note: null,
+          disbursementDate: null,
+          feeAmount: new Decimal(0),
+          fixedInterestRate: new Decimal(0),
+          interestAmount: new Decimal(0),
+          principalAmount: new Decimal(0),
+          totalAmount: new Decimal(0),
+        },
+      ],
+    };
+    state.detailSchedules = schedules;
+    const { sources } = await getLoanDetail("loan_abc");
+    expect(sources[0]?.disbursement_date).toBeNull();
+  });
+
+  it("serializes schedule split payments (mapSchedulePayment)", async () => {
+    const schedules = [
+      schedule({
+        status: "PARTIAL",
+        paidAmount: new Decimal(150),
+        payments: [
+          {
+            amount: new Decimal(150),
+            id: 11,
+            kind: "PAYMENT",
+            note: "abono",
+            paidDate: new Date("2026-02-10T00:00:00Z"),
+            transactionId: 9,
+            transaction: {
+              amount: new Decimal(150),
+              date: new Date("2026-02-10T12:00:00Z"),
+              description: "transferencia",
+              id: 9,
+            },
+          },
+        ],
+      }),
+    ];
+    state.detailLoan = detailLoanWith(schedules);
+    state.detailSchedules = schedules;
+    const { schedules: out } = await getLoanDetail("loan_abc");
+    expect(out[0]?.payments).toEqual([
+      {
+        amount: 150,
+        id: 11,
+        kind: "PAYMENT",
+        note: "abono",
+        paid_date: "2026-02-10",
+        transaction: {
+          amount: 150,
+          description: "transferencia",
+          id: 9,
+          timestamp: new Date("2026-02-10T12:00:00Z"),
+        },
+        transaction_id: 9,
+      },
+    ]);
+  });
+
+  it("schedule without payments serializes to empty payments array", async () => {
+    const schedules = [schedule({ status: "PENDING" })];
+    state.detailLoan = detailLoanWith(schedules);
+    state.detailSchedules = schedules;
+    const { schedules: out } = await getLoanDetail("loan_abc");
+    expect(out[0]?.payments).toEqual([]);
+  });
+});
+
+// ===========================================================================
+// listLoanPaymentCandidates — addDays window + scoring (mapTransaction-free)
+// ===========================================================================
+describe("listLoanPaymentCandidates", () => {
+  it("returns [] when the loan has no counterpart", async () => {
+    state.scheduleRow = {
+      id: 5,
+      dueDate: new Date("2026-06-01T00:00:00Z"),
+      expectedAmount: new Decimal(100),
+      paidAmount: null,
+      loan: { counterpartId: null },
+    };
+    expect(await listLoanPaymentCandidates(5, { daysBefore: 5, daysAfter: 5, limit: 10 })).toEqual(
+      []
+    );
+    expect(mockDb.financialTransaction.findMany).not.toHaveBeenCalled();
+  });
+
+  it("404 when schedule missing", async () => {
+    state.scheduleRow = null;
+    await expectDomainError(
+      listLoanPaymentCandidates(99, { daysBefore: 5, daysAfter: 5, limit: 10 }),
+      "NOT_FOUND",
+      "Cuota no encontrada"
+    );
+  });
+
+  it("builds the date window from dueDate ± days and queries by counterpart", async () => {
+    state.scheduleRow = {
+      id: 5,
+      dueDate: new Date("2026-06-15T00:00:00Z"),
+      expectedAmount: new Decimal(100),
+      paidAmount: null,
+      loan: { counterpartId: 77 },
+    };
+    state.candidateTransactions = [];
+    await listLoanPaymentCandidates(5, { daysBefore: 3, daysAfter: 2, limit: 25 });
+    const arg = mockDb.financialTransaction.findMany.mock.calls[0]?.[0] as {
+      where: { counterpartId: number; date: { gte: Date; lte: Date } };
+      take: number;
+    };
+    expect(arg.where.counterpartId).toBe(77);
+    expect(arg.where.date.gte.toISOString().slice(0, 10)).toBe("2026-06-12"); // -3 days
+    expect(arg.where.date.lte.toISOString().slice(0, 10)).toBe("2026-06-17"); // +2 days
+    expect(arg.take).toBe(25);
+  });
+
+  it("scores candidates: exact amount + on-due = max score; sorts desc", async () => {
+    state.scheduleRow = {
+      id: 5,
+      dueDate: new Date("2026-06-15T00:00:00Z"),
+      expectedAmount: new Decimal(100000),
+      paidAmount: null,
+      loan: { counterpartId: 77 },
+    };
+    state.candidateTransactions = [
+      // exact amount, exact date → amountScore 100, dateScore 30, no penalty = 130.
+      {
+        id: 1,
+        amount: new Decimal(-100000),
+        date: new Date("2026-06-15T00:00:00Z"),
+        description: "pago exacto",
+        sourceId: 9,
+        loanSchedulePayments: [],
+      },
+      // off by 5 days, already linked → dateScore = 30-20=10, penalty 25.
+      {
+        id: 2,
+        amount: new Decimal(100000),
+        date: new Date("2026-06-20T00:00:00Z"),
+        description: "linkeado",
+        sourceId: null,
+        loanSchedulePayments: [{ id: 1, amount: new Decimal(50000), scheduleId: 9 }],
+      },
+    ];
+    const out = await listLoanPaymentCandidates(5, { daysBefore: 30, daysAfter: 30, limit: 10 });
+    expect(out).toHaveLength(2);
+    // candidate 1 ranks first (higher score).
+    expect(out[0]?.id).toBe(1);
+    expect(out[0]?.score).toBe(130);
+    expect(out[0]?.days_from_due).toBe(0);
+    expect(out[0]?.is_linked).toBe(false);
+    expect(out[0]?.already_linked_amount).toBe(0);
+    // candidate 2: amountScore 100 (exact), dateScore 10, penalty 25 = 85.
+    expect(out[1]?.id).toBe(2);
+    expect(out[1]?.score).toBe(85);
+    expect(out[1]?.days_from_due).toBe(5);
+    expect(out[1]?.is_linked).toBe(true);
+    expect(out[1]?.already_linked_amount).toBe(50000);
+  });
+
+  it("amount mismatch lowers amountScore; remainingExpected subtracts paidAmount", async () => {
+    state.scheduleRow = {
+      id: 5,
+      dueDate: new Date("2026-06-15T00:00:00Z"),
+      expectedAmount: new Decimal(100000),
+      paidAmount: new Decimal(40000), // remaining expected = 60000.
+      loan: { counterpartId: 77 },
+    };
+    state.candidateTransactions = [
+      {
+        id: 1,
+        amount: new Decimal(60000), // matches remaining → amountScore 100.
+        date: new Date("2026-06-15T00:00:00Z"),
+        description: "resto",
+        sourceId: null,
+        loanSchedulePayments: [],
+      },
+    ];
+    const out = await listLoanPaymentCandidates(5, { daysBefore: 30, daysAfter: 30, limit: 10 });
+    // delta = |60000 - 60000| = 0 → amountScore 100, dateScore 30 → 130.
+    expect(out[0]?.score).toBe(130);
   });
 });

@@ -77,7 +77,10 @@ export function parseDateOnlyUtc(value: string): Temporal.PlainDate | null {
 export function dateOnlyStartUtc(value: string): Date {
   const parsed = parseDateOnlyUtc(value);
   if (!parsed) {
-    throw new DomainError("BAD_REQUEST", `Invalid date format: ${value}. Expected ${DATE_ONLY_FORMAT}`);
+    throw new DomainError(
+      "BAD_REQUEST",
+      `Invalid date format: ${value}. Expected ${DATE_ONLY_FORMAT}`
+    );
   }
   return new Date(`${parsed.toString()}T00:00:00.000Z`);
 }
@@ -85,7 +88,10 @@ export function dateOnlyStartUtc(value: string): Date {
 export function dateOnlyEndUtc(value: string): Date {
   const parsed = parseDateOnlyUtc(value);
   if (!parsed) {
-    throw new DomainError("BAD_REQUEST", `Invalid date format: ${value}. Expected ${DATE_ONLY_FORMAT}`);
+    throw new DomainError(
+      "BAD_REQUEST",
+      `Invalid date format: ${value}. Expected ${DATE_ONLY_FORMAT}`
+    );
   }
   return new Date(`${parsed.toString()}T23:59:59.999Z`);
 }
@@ -123,7 +129,10 @@ export function timeToMinutes(time: string): number {
     }
   }
   if (!TIME_FORMAT_PATTERN.test(time)) {
-    throw new DomainError("BAD_REQUEST", `Invalid time format: ${time}. Expected HH:MM or HH:MM:SS`);
+    throw new DomainError(
+      "BAD_REQUEST",
+      `Invalid time format: ${time}. Expected HH:MM or HH:MM:SS`
+    );
   }
   const parts = time.split(":").map(Number);
   const [hours, minutes] = parts;

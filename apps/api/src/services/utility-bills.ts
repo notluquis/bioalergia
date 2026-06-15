@@ -4,6 +4,7 @@
 
 import { db } from "@finanzas/db";
 import { Decimal } from "decimal.js";
+import { DomainError } from "../lib/errors.ts";
 
 type UtilityProvider =
   | "CGE"
@@ -527,7 +528,7 @@ async function fetchBillForProvider(
     };
   }
 
-  throw new Error(`No scraper implemented for provider: ${provider}`);
+  throw new DomainError("BAD_REQUEST", `No scraper implemented for provider: ${provider}`);
 }
 
 // ─── UtilityAccount CRUD ──────────────────────────────────────────────────────
@@ -701,13 +702,17 @@ export function periodToEmissionDate(period: string): null | string {
 export async function importEssbioHistory(accountId: number) {
   const account = await db.utilityAccount.findFirst({ where: { id: accountId } });
   if (!account) {
-    throw new Error(`UtilityAccount ${accountId} no existe`);
+    throw new DomainError("NOT_FOUND", `UtilityAccount ${accountId} no existe`);
   }
   if (account.provider !== "ESSBIO") {
-    throw new Error(`importEssbioHistory solo aplica a ESSBIO, no ${account.provider}`);
+    throw new DomainError(
+      "BAD_REQUEST",
+      `importEssbioHistory solo aplica a ESSBIO, no ${account.provider}`
+    );
   }
   if (!account.externalAccountId) {
-    throw new Error(
+    throw new DomainError(
+      "BAD_REQUEST",
       "Falta externalAccountId (id_servicio Essbio). Setéalo en la cuenta para importar historial."
     );
   }
@@ -776,10 +781,13 @@ function yyyymmddToISO(value: null | string | undefined): null | string {
 export async function importCgeConsumoHistory(accountId: number) {
   const account = await db.utilityAccount.findFirst({ where: { id: accountId } });
   if (!account) {
-    throw new Error(`UtilityAccount ${accountId} no existe`);
+    throw new DomainError("NOT_FOUND", `UtilityAccount ${accountId} no existe`);
   }
   if (account.provider !== "CGE") {
-    throw new Error(`importCgeConsumoHistory solo aplica a CGE, no ${account.provider}`);
+    throw new DomainError(
+      "BAD_REQUEST",
+      `importCgeConsumoHistory solo aplica a CGE, no ${account.provider}`
+    );
   }
 
   const raw = (await fetchCgeConsumoHistorico(account.serviceNumber)) as {

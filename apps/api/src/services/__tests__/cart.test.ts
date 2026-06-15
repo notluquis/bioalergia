@@ -93,6 +93,8 @@ const {
   updateItemQty,
   removeItem,
   clearCart,
+  findCartByToken,
+  createCartWithToken,
 } = await import("../cart.ts");
 
 beforeEach(() => {
@@ -133,9 +135,7 @@ describe("hashCartToken", () => {
   });
 
   it("coincide con sha256 hex de referencia", () => {
-    expect(hashCartToken("hola")).toBe(
-      createHash("sha256").update("hola").digest("hex")
-    );
+    expect(hashCartToken("hola")).toBe(createHash("sha256").update("hola").digest("hex"));
   });
 
   it("hashea el token EXACTO (distinto input → distinto hash)", () => {
@@ -184,6 +184,112 @@ describe("buildCartCookie", () => {
 
   it("path es root '/'", () => {
     expect(buildCartCookie("t", true).path).toBe("/");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// findCartByToken — hash lookup + exact include shape (db-call args)
+// ---------------------------------------------------------------------------
+
+describe("findCartByToken", () => {
+  it("hashea el token y busca por tokenHash (no por token plano)", async () => {
+    mockCartFindUnique.mockResolvedValue(null);
+    await findCartByToken("plain-tok");
+    expect(mockCartFindUnique).toHaveBeenCalledTimes(1);
+    const arg = mockCartFindUnique.mock.calls[0][0] as { where: { tokenHash: string } };
+    const expectedHash = createHash("sha256").update("plain-tok").digest("hex");
+    expect(arg.where).toEqual({ tokenHash: expectedHash });
+    // NO debe filtrar por el token plano
+    expect(arg.where.tokenHash).not.toBe("plain-tok");
+  });
+
+  it("incluye items→product→images (isPrimary, take 1) ordenados por id asc", async () => {
+    mockCartFindUnique.mockResolvedValue(null);
+    await findCartByToken("t");
+    const arg = mockCartFindUnique.mock.calls[0][0] as {
+      include: {
+        items: {
+          include: {
+            product: {
+              include: { images: { where: { isPrimary: boolean }; take: number } };
+            };
+          };
+          orderBy: { id: string };
+        };
+      };
+    };
+    expect(arg.include.items.orderBy).toEqual({ id: "asc" });
+    expect(arg.include.items.include.product.include.images.where).toEqual({ isPrimary: true });
+    expect(arg.include.items.include.product.include.images.take).toBe(1);
+  });
+
+  it("devuelve null cuando no hay cart (passthrough del findUnique)", async () => {
+    mockCartFindUnique.mockResolvedValue(null);
+    expect(await findCartByToken("t")).toBeNull();
+  });
+
+  it("devuelve el cart tal cual cuando existe (passthrough)", async () => {
+    const row = { id: 42, items: [] };
+    mockCartFindUnique.mockResolvedValue(row);
+    expect(await findCartByToken("t")).toBe(row);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// createCartWithToken — exact create args + TTL math + currency literal
+// ---------------------------------------------------------------------------
+
+describe("createCartWithToken", () => {
+  it("crea el cart con tokenHash, userId, currency=CLP y expiresAt = now + 14 días", async () => {
+    mockCartCreate.mockResolvedValue({ id: 1, items: [] });
+    const before = Date.now();
+    await createCartWithToken("the-hash", 7);
+    const after = Date.now();
+    expect(mockCartCreate).toHaveBeenCalledTimes(1);
+    const arg = mockCartCreate.mock.calls[0][0] as {
+      data: { tokenHash: string; userId: number | null; currency: string; expiresAt: Date };
+    };
+    expect(arg.data.tokenHash).toBe("the-hash");
+    expect(arg.data.userId).toBe(7);
+    expect(arg.data.currency).toBe("CLP");
+    // expiresAt = now + 14d (en ms). Comprobamos el delta dentro de la ventana
+    // [before, after] para matar mutantes que toquen 14 / 24 / 60 / 1000.
+    const ttlMs = 14 * 24 * 60 * 60 * 1000;
+    const ts = arg.data.expiresAt.getTime();
+    expect(ts).toBeGreaterThanOrEqual(before + ttlMs);
+    expect(ts).toBeLessThanOrEqual(after + ttlMs);
+    // y NO es exactamente 13 ni 15 días (boundary del literal de días)
+    expect(ts).toBeGreaterThan(after + 13 * 24 * 60 * 60 * 1000);
+    expect(ts).toBeLessThan(before + 15 * 24 * 60 * 60 * 1000);
+  });
+
+  it("acepta userId null (carrito guest)", async () => {
+    mockCartCreate.mockResolvedValue({ id: 2, items: [] });
+    await createCartWithToken("h", null);
+    const arg = mockCartCreate.mock.calls[0][0] as { data: { userId: number | null } };
+    expect(arg.data.userId).toBeNull();
+  });
+
+  it("incluye items→product→images (isPrimary, take 1) en el create", async () => {
+    mockCartCreate.mockResolvedValue({ id: 3, items: [] });
+    await createCartWithToken("h", null);
+    const arg = mockCartCreate.mock.calls[0][0] as {
+      include: {
+        items: {
+          include: {
+            product: { include: { images: { where: { isPrimary: boolean }; take: number } } };
+          };
+        };
+      };
+    };
+    expect(arg.include.items.include.product.include.images.where).toEqual({ isPrimary: true });
+    expect(arg.include.items.include.product.include.images.take).toBe(1);
+  });
+
+  it("devuelve el cart creado (passthrough del create)", async () => {
+    const created = { id: 99, items: [] };
+    mockCartCreate.mockResolvedValue(created);
+    expect(await createCartWithToken("h", 1)).toBe(created);
   });
 });
 
@@ -331,7 +437,10 @@ describe("serializeCart", () => {
 
   it("toma la PRIMERA imagen como primary (images[0])", () => {
     const it0 = item();
-    it0.product.images = [{ cdnUrl: "https://cdn/first.png" }, { cdnUrl: "https://cdn/second.png" }];
+    it0.product.images = [
+      { cdnUrl: "https://cdn/first.png" },
+      { cdnUrl: "https://cdn/second.png" },
+    ];
     const out = serialize(rawCart([it0]));
     expect(out.items[0].product.primary_image_url).toBe("https://cdn/first.png");
   });
@@ -352,7 +461,14 @@ describe("serializeCart", () => {
 // addItemToCart — validación de stock + merge de líneas
 // ---------------------------------------------------------------------------
 
-function activeProduct(over: Partial<{ priceClp: number; availableQty: number; safetyStock: number; status: string }> = {}) {
+function activeProduct(
+  over: Partial<{
+    priceClp: number;
+    availableQty: number;
+    safetyStock: number;
+    status: string;
+  }> = {}
+) {
   return {
     id: 50,
     status: over.status ?? "ACTIVE",
@@ -386,11 +502,15 @@ describe("addItemToCart", () => {
 
   it("permite qty EXACTAMENTE igual a sellable (límite es <, no <=)", async () => {
     // sellable = 10 - 7 = 3 == qty 3
-    mockProductFindUnique.mockResolvedValue(activeProduct({ availableQty: 10, safetyStock: 7, priceClp: 999 }));
+    mockProductFindUnique.mockResolvedValue(
+      activeProduct({ availableQty: 10, safetyStock: 7, priceClp: 999 })
+    );
     mockItemFindUnique.mockResolvedValue(null);
     await addItemToCart(opts);
     expect(mockItemCreate).toHaveBeenCalledTimes(1);
-    const arg = mockItemCreate.mock.calls[0][0] as { data: { qty: number; unitPriceClp: number; cartId: number; productId: number } };
+    const arg = mockItemCreate.mock.calls[0][0] as {
+      data: { qty: number; unitPriceClp: number; cartId: number; productId: number };
+    };
     expect(arg.data).toMatchObject({ qty: 3, unitPriceClp: 999, cartId: 1, productId: 50 });
   });
 
@@ -404,13 +524,56 @@ describe("addItemToCart", () => {
     expect(arg.data.unitPriceClp).toBe(1234);
   });
 
+  it("busca el producto por id con el select de stock exacto", async () => {
+    mockProductFindUnique.mockResolvedValue(activeProduct());
+    mockItemFindUnique.mockResolvedValue(null);
+    await addItemToCart({ cartId: 1, productId: 50, qty: 1 });
+    const arg = mockProductFindUnique.mock.calls[0][0] as {
+      where: { id: number };
+      select: Record<string, boolean>;
+    };
+    expect(arg.where).toEqual({ id: 50 });
+    expect(arg.select).toEqual({
+      id: true,
+      status: true,
+      priceClp: true,
+      availableQty: true,
+      safetyStock: true,
+    });
+  });
+
+  it("busca la línea existente por la clave compuesta cartId_productId", async () => {
+    mockProductFindUnique.mockResolvedValue(activeProduct());
+    mockItemFindUnique.mockResolvedValue(null);
+    await addItemToCart({ cartId: 4, productId: 50, qty: 1 });
+    const arg = mockItemFindUnique.mock.calls[0][0] as {
+      where: { cartId_productId: { cartId: number; productId: number } };
+    };
+    expect(arg.where).toEqual({ cartId_productId: { cartId: 4, productId: 50 } });
+  });
+
+  it("la línea nueva lleva cartId/productId/qty/unitPriceClp exactos", async () => {
+    mockProductFindUnique.mockResolvedValue(activeProduct({ priceClp: 5000 }));
+    mockItemFindUnique.mockResolvedValue(null);
+    await addItemToCart({ cartId: 8, productId: 50, qty: 2 });
+    const arg = mockItemCreate.mock.calls[0][0] as {
+      data: { cartId: number; productId: number; qty: number; unitPriceClp: number };
+    };
+    expect(arg.data).toEqual({ cartId: 8, productId: 50, qty: 2, unitPriceClp: 5000 });
+  });
+
   it("MERGE: suma qty existente + nueva en la misma línea", async () => {
-    mockProductFindUnique.mockResolvedValue(activeProduct({ availableQty: 20, safetyStock: 0, priceClp: 700 }));
+    mockProductFindUnique.mockResolvedValue(
+      activeProduct({ availableQty: 20, safetyStock: 0, priceClp: 700 })
+    );
     mockItemFindUnique.mockResolvedValue({ id: 999, qty: 4 });
     await addItemToCart({ cartId: 1, productId: 50, qty: 3 });
     expect(mockItemCreate).not.toHaveBeenCalled();
     expect(mockItemUpdate).toHaveBeenCalledTimes(1);
-    const arg = mockItemUpdate.mock.calls[0][0] as { where: { id: number }; data: { qty: number; unitPriceClp: number } };
+    const arg = mockItemUpdate.mock.calls[0][0] as {
+      where: { id: number };
+      data: { qty: number; unitPriceClp: number };
+    };
     expect(arg.where.id).toBe(999);
     expect(arg.data.qty).toBe(7); // 4 + 3
     expect(arg.data.unitPriceClp).toBe(700);
@@ -451,7 +614,9 @@ describe("updateItemQty", () => {
   it("qty=0 → borra la línea sin tocar producto", async () => {
     await updateItemQty({ cartId: 1, productId: 50, qty: 0 });
     expect(mockItemDeleteMany).toHaveBeenCalledTimes(1);
-    const arg = mockItemDeleteMany.mock.calls[0][0] as { where: { cartId: number; productId: number } };
+    const arg = mockItemDeleteMany.mock.calls[0][0] as {
+      where: { cartId: number; productId: number };
+    };
     expect(arg.where).toEqual({ cartId: 1, productId: 50 });
     expect(mockProductFindUnique).not.toHaveBeenCalled();
     expect(mockItemUpdateMany).not.toHaveBeenCalled();
@@ -459,13 +624,17 @@ describe("updateItemQty", () => {
 
   it("qty>0 con producto inexistente → rechaza", async () => {
     mockProductFindUnique.mockResolvedValue(null);
-    await expect(updateItemQty({ cartId: 1, productId: 50, qty: 2 })).rejects.toThrow(/no disponible/);
+    await expect(updateItemQty({ cartId: 1, productId: 50, qty: 2 })).rejects.toThrow(
+      /no disponible/
+    );
     expect(mockItemUpdateMany).not.toHaveBeenCalled();
   });
 
   it("qty>0 con producto no ACTIVE → rechaza", async () => {
     mockProductFindUnique.mockResolvedValue(activeProduct({ status: "ARCHIVED" }));
-    await expect(updateItemQty({ cartId: 1, productId: 50, qty: 2 })).rejects.toThrow(/no disponible/);
+    await expect(updateItemQty({ cartId: 1, productId: 50, qty: 2 })).rejects.toThrow(
+      /no disponible/
+    );
     expect(mockItemUpdateMany).not.toHaveBeenCalled();
   });
 
@@ -479,7 +648,9 @@ describe("updateItemQty", () => {
   });
 
   it("setea qty ABSOLUTA (no suma) + snapshot de precio", async () => {
-    mockProductFindUnique.mockResolvedValue(activeProduct({ availableQty: 50, safetyStock: 0, priceClp: 888 }));
+    mockProductFindUnique.mockResolvedValue(
+      activeProduct({ availableQty: 50, safetyStock: 0, priceClp: 888 })
+    );
     await updateItemQty({ cartId: 2, productId: 50, qty: 4 });
     expect(mockItemUpdateMany).toHaveBeenCalledTimes(1);
     const arg = mockItemUpdateMany.mock.calls[0][0] as {
@@ -496,6 +667,37 @@ describe("updateItemQty", () => {
     await updateItemQty({ cartId: 1, productId: 50, qty: 6 });
     expect(mockItemUpdateMany).toHaveBeenCalledTimes(1);
   });
+
+  it("rechaza qty JUSTO por encima de sellable (boundary <)", async () => {
+    // sellable = 10 - 4 = 6; qty 7 > 6 → rechaza
+    mockProductFindUnique.mockResolvedValue(activeProduct({ availableQty: 10, safetyStock: 4 }));
+    await expect(updateItemQty({ cartId: 1, productId: 50, qty: 7 })).rejects.toBeInstanceOf(
+      DomainError
+    );
+    expect(mockItemUpdateMany).not.toHaveBeenCalled();
+  });
+
+  it("busca el producto por id con el select de stock exacto", async () => {
+    mockProductFindUnique.mockResolvedValue(activeProduct({ availableQty: 50, safetyStock: 0 }));
+    await updateItemQty({ cartId: 1, productId: 50, qty: 2 });
+    const arg = mockProductFindUnique.mock.calls[0][0] as {
+      where: { id: number };
+      select: Record<string, boolean>;
+    };
+    expect(arg.where).toEqual({ id: 50 });
+    expect(arg.select).toEqual({
+      priceClp: true,
+      availableQty: true,
+      safetyStock: true,
+      status: true,
+    });
+  });
+
+  it("NO borra la línea cuando qty>0 (deleteMany solo en qty=0)", async () => {
+    mockProductFindUnique.mockResolvedValue(activeProduct({ availableQty: 50, safetyStock: 0 }));
+    await updateItemQty({ cartId: 1, productId: 50, qty: 2 });
+    expect(mockItemDeleteMany).not.toHaveBeenCalled();
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -505,7 +707,9 @@ describe("updateItemQty", () => {
 describe("removeItem / clearCart", () => {
   it("removeItem borra por cartId + productId", async () => {
     await removeItem(7, 13);
-    const arg = mockItemDeleteMany.mock.calls[0][0] as { where: { cartId: number; productId: number } };
+    const arg = mockItemDeleteMany.mock.calls[0][0] as {
+      where: { cartId: number; productId: number };
+    };
     expect(arg.where).toEqual({ cartId: 7, productId: 13 });
   });
 
@@ -561,7 +765,7 @@ describe("cart DomainError branches (exact kind + message)", () => {
       );
     });
 
-    it('MERGE: total > sellable → UNPROCESSABLE_ENTITY con disponible exacto', async () => {
+    it("MERGE: total > sellable → UNPROCESSABLE_ENTITY con disponible exacto", async () => {
       // sellable = 10 - 2 = 8; existente 6 + nueva 3 = 9 > 8
       mockProductFindUnique.mockResolvedValue(activeProduct({ availableQty: 10, safetyStock: 2 }));
       mockItemFindUnique.mockResolvedValue({ id: 5, qty: 6 });

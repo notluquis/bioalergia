@@ -1,6 +1,8 @@
 import { Decimal } from "decimal.js";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { DomainError } from "../../lib/errors.ts";
+
 // expenses.ts is mostly DB-glue, but several PURE logic paths live inside the
 // exported async functions and are only reachable by driving them with mocked
 // rows: the defaultAmount normalization in mapExpenseService (4 branches), the
@@ -19,6 +21,9 @@ const {
   mockDb,
   expenseServiceFindMany,
   expenseServiceFindFirst,
+  expenseServiceCreate,
+  expenseServiceUpdate,
+  expenseServiceDelete,
   expenseFindMany,
   expenseFindFirst,
   expenseCreate,
@@ -32,6 +37,9 @@ const {
 } = vi.hoisted(() => {
   const expenseServiceFindMany = vi.fn();
   const expenseServiceFindFirst = vi.fn();
+  const expenseServiceCreate = vi.fn();
+  const expenseServiceUpdate = vi.fn();
+  const expenseServiceDelete = vi.fn();
   const expenseFindMany = vi.fn();
   const expenseFindFirst = vi.fn();
   const expenseCreate = vi.fn();
@@ -62,6 +70,9 @@ const {
     expenseService: {
       findMany: (...a: unknown[]) => expenseServiceFindMany(...a),
       findFirst: (...a: unknown[]) => expenseServiceFindFirst(...a),
+      create: (...a: unknown[]) => expenseServiceCreate(...a),
+      update: (...a: unknown[]) => expenseServiceUpdate(...a),
+      delete: (...a: unknown[]) => expenseServiceDelete(...a),
     },
     expense: {
       findMany: (...a: unknown[]) => expenseFindMany(...a),
@@ -84,6 +95,9 @@ const {
     mockDb,
     expenseServiceFindMany,
     expenseServiceFindFirst,
+    expenseServiceCreate,
+    expenseServiceUpdate,
+    expenseServiceDelete,
     expenseFindMany,
     expenseFindFirst,
     expenseCreate,
@@ -103,11 +117,19 @@ vi.mock("@finanzas/db/slices", () => ({ dbClinicalSeries: mockDb }));
 const {
   listExpenseServices,
   getExpenseService,
+  createExpenseService,
+  updateExpenseService,
+  deleteExpenseService,
+  updateExpenseServiceOrThrow,
   listExpenses,
   getExpense,
+  getExpenseOrThrow,
   createExpense,
+  updateExpense,
   linkTransaction,
   unlinkTransaction,
+  linkTransactionOrThrow,
+  unlinkTransactionOrThrow,
   generateExpensesFromTemplates,
   getExpenseStats,
 } = await import("../expenses.ts");
@@ -324,7 +346,13 @@ describe("listExpenses amountApplied summation", () => {
   it("preserves passthrough fields (scope/source/status/tags/dueDate)", async () => {
     const dueDate = new Date("2026-02-10T00:00:00Z");
     expenseFindMany.mockResolvedValue([
-      expenseRow({ scope: "PERSONAL", source: "TEMPLATE", status: "PAID", tags: ["x", "y"], dueDate }),
+      expenseRow({
+        scope: "PERSONAL",
+        source: "TEMPLATE",
+        status: "PAID",
+        tags: ["x", "y"],
+        dueDate,
+      }),
     ]);
     const [e] = await listExpenses();
     expect(e.scope).toBe("PERSONAL");
@@ -570,23 +598,58 @@ describe("generateExpensesFromTemplates", () => {
   const D = (iso: string) => new Date(iso);
 
   it("creates an expense when no bounds and none exists", async () => {
-    expenseServiceFindMany.mockResolvedValue([serviceRow({ startDate: null, endDate: null })]);
+    expenseServiceFindMany.mockResolvedValue([
+      serviceRow({
+        id: 1,
+        startDate: null,
+        endDate: null,
+        defaultAmount: 1000,
+        category: "rent",
+        detail: "office rent",
+        notes: "n",
+        scope: "CLINIC",
+        tags: ["fixed"],
+      }),
+    ]);
     expenseFindFirst.mockResolvedValue(null);
     expenseCreate.mockResolvedValue({});
     const res = await generateExpensesFromTemplates("2026-03");
     expect(res).toEqual({ created: 1, skipped: 0 });
     expect(expenseCreate).toHaveBeenCalledTimes(1);
+    // queries active monthly templates only
+    expect(expenseServiceFindMany).toHaveBeenCalledWith({
+      where: { isActive: true, recurrence: "MONTHLY" },
+    });
+    // dedupe lookup scoped to (month, serviceId)
+    expect(expenseFindFirst).toHaveBeenCalledWith({
+      where: { expenseMonth: "2026-03", serviceId: 1 },
+    });
+    const data = (expenseCreate.mock.calls[0]?.[0] as { data: Record<string, unknown> }).data;
+    expect((data["amountExpected"] as Decimal).toNumber()).toBe(1000);
+    expect(data["expenseMonth"]).toBe("2026-03");
+    expect(data["serviceId"]).toBe(1);
+    expect(data["source"]).toBe("TEMPLATE");
+    expect(data["status"]).toBe("PENDING");
+    expect(data["category"]).toBe("rent");
+    expect(data["detail"]).toBe("office rent");
+    expect(data["notes"]).toBe("n");
+    expect(data["scope"]).toBe("CLINIC");
+    expect(data["tags"]).toEqual(["fixed"]);
   });
 
   it("skips when monthStart is strictly before startDate", async () => {
-    expenseServiceFindMany.mockResolvedValue([serviceRow({ startDate: D("2026-04-01T00:00:00Z") })]);
+    expenseServiceFindMany.mockResolvedValue([
+      serviceRow({ startDate: D("2026-04-01T00:00:00Z") }),
+    ]);
     const res = await generateExpensesFromTemplates("2026-03");
     expect(res).toEqual({ created: 0, skipped: 1 });
     expect(expenseCreate).not.toHaveBeenCalled();
   });
 
   it("does NOT skip when monthStart equals startDate (boundary, inclusive)", async () => {
-    expenseServiceFindMany.mockResolvedValue([serviceRow({ startDate: D("2026-03-01T00:00:00Z") })]);
+    expenseServiceFindMany.mockResolvedValue([
+      serviceRow({ startDate: D("2026-03-01T00:00:00Z") }),
+    ]);
     expenseFindFirst.mockResolvedValue(null);
     expenseCreate.mockResolvedValue({});
     const res = await generateExpensesFromTemplates("2026-03");
@@ -624,10 +687,16 @@ describe("generateExpensesFromTemplates", () => {
     expect(res).toEqual({ created: 1, skipped: 0 });
     expect(expenseUpdate).toHaveBeenCalledTimes(1);
     expect(expenseCreate).not.toHaveBeenCalled();
-    const data = (expenseUpdate.mock.calls[0]?.[0] as { data: Record<string, unknown> }).data;
-    expect((data["amountExpected"] as Decimal).toNumber()).toBe(800);
-    expect(data["source"]).toBe("TEMPLATE");
-    expect(data["status"]).toBe("PENDING");
+    const arg = expenseUpdate.mock.calls[0]?.[0] as {
+      where: Record<string, unknown>;
+      data: Record<string, unknown>;
+    };
+    expect(arg.where).toEqual({ id: 99 });
+    expect((arg.data["amountExpected"] as Decimal).toNumber()).toBe(800);
+    expect(arg.data["source"]).toBe("TEMPLATE");
+    expect(arg.data["status"]).toBe("PENDING");
+    expect(arg.data["name"]).toBe("Rent");
+    expect(arg.data["scope"]).toBe("CLINIC");
   });
 
   it("uses 0 as amountExpected when defaultAmount is null (?? fallback)", async () => {
@@ -737,5 +806,295 @@ describe("getExpenseStats", () => {
     expect(ops).toContainEqual(["<=", "2026-12"]);
     expect(ops).toContainEqual(["=", "PERSONAL"]);
     expect(qbWhere).toHaveBeenCalledTimes(3);
+  });
+});
+
+// ─── createExpenseService: defaults + Decimal + Date coercion ─────────────────
+
+describe("createExpenseService", () => {
+  it("applies defaults (isActive true, isFixed false, MONTHLY, nulls, []) and maps", async () => {
+    expenseServiceCreate.mockResolvedValue(serviceRow());
+    const r = await createExpenseService({ name: "Internet", scope: "CLINIC" });
+    expect(r.id).toBe(1);
+    const data = (expenseServiceCreate.mock.calls[0]?.[0] as { data: Record<string, unknown> })
+      .data;
+    expect(data).toEqual({
+      billingDay: null,
+      category: null,
+      defaultAmount: null,
+      detail: null,
+      dueDateRule: null,
+      endDate: null,
+      isActive: true,
+      isFixed: false,
+      name: "Internet",
+      notes: null,
+      recurrence: "MONTHLY",
+      scope: "CLINIC",
+      startDate: null,
+      tags: [],
+    });
+  });
+
+  it("wraps defaultAmount in a Decimal and coerces start/end date strings to Date", async () => {
+    expenseServiceCreate.mockResolvedValue(serviceRow());
+    await createExpenseService({
+      name: "Rent",
+      scope: "CLINIC",
+      defaultAmount: 12345,
+      startDate: "2026-01-01",
+      endDate: "2026-12-31",
+      billingDay: 10,
+      category: "office",
+      detail: "d",
+      dueDateRule: "EOM",
+      isActive: false,
+      isFixed: true,
+      notes: "n",
+      recurrence: "YEARLY",
+      tags: ["a", "b"],
+    });
+    const data = (expenseServiceCreate.mock.calls[0]?.[0] as { data: Record<string, unknown> })
+      .data;
+    expect(data["defaultAmount"]).toBeInstanceOf(Decimal);
+    expect((data["defaultAmount"] as Decimal).toNumber()).toBe(12345);
+    expect(data["startDate"]).toBeInstanceOf(Date);
+    expect(data["endDate"]).toBeInstanceOf(Date);
+    expect(data["isActive"]).toBe(false);
+    expect(data["isFixed"]).toBe(true);
+    expect(data["recurrence"]).toBe("YEARLY");
+    expect(data["tags"]).toEqual(["a", "b"]);
+    expect(data["billingDay"]).toBe(10);
+  });
+
+  it("keeps defaultAmount null when explicitly null (no Decimal)", async () => {
+    expenseServiceCreate.mockResolvedValue(serviceRow());
+    await createExpenseService({ name: "X", scope: "CLINIC", defaultAmount: null });
+    const data = (expenseServiceCreate.mock.calls[0]?.[0] as { data: Record<string, unknown> })
+      .data;
+    expect(data["defaultAmount"]).toBeNull();
+  });
+});
+
+// ─── updateExpenseService: partial spread (only provided keys) ────────────────
+
+describe("updateExpenseService", () => {
+  it("targets the row by id and only sends provided keys", async () => {
+    expenseServiceUpdate.mockResolvedValue(serviceRow({ id: 8 }));
+    await updateExpenseService(8, { name: "New name" });
+    const arg = expenseServiceUpdate.mock.calls[0]?.[0] as {
+      where: Record<string, unknown>;
+      data: Record<string, unknown>;
+    };
+    expect(arg.where).toEqual({ id: 8 });
+    expect(arg.data).toEqual({ name: "New name" });
+    expect("scope" in arg.data).toBe(false);
+    expect("defaultAmount" in arg.data).toBe(false);
+  });
+
+  it("wraps a provided defaultAmount in Decimal, null stays null", async () => {
+    expenseServiceUpdate.mockResolvedValue(serviceRow());
+    await updateExpenseService(1, { defaultAmount: 500 });
+    let data = (expenseServiceUpdate.mock.calls[0]?.[0] as { data: Record<string, unknown> }).data;
+    expect((data["defaultAmount"] as Decimal).toNumber()).toBe(500);
+
+    expenseServiceUpdate.mockClear();
+    expenseServiceUpdate.mockResolvedValue(serviceRow());
+    await updateExpenseService(1, { defaultAmount: null });
+    data = (expenseServiceUpdate.mock.calls[0]?.[0] as { data: Record<string, unknown> }).data;
+    expect(data["defaultAmount"]).toBeNull();
+  });
+
+  it("coerces start/end date strings to Date and nullifies empty", async () => {
+    expenseServiceUpdate.mockResolvedValue(serviceRow());
+    await updateExpenseService(1, { startDate: "2026-05-01", endDate: null });
+    const data = (expenseServiceUpdate.mock.calls[0]?.[0] as { data: Record<string, unknown> })
+      .data;
+    expect(data["startDate"]).toBeInstanceOf(Date);
+    expect(data["endDate"]).toBeNull();
+  });
+
+  it("includes isActive:false (does not drop a falsy provided value)", async () => {
+    expenseServiceUpdate.mockResolvedValue(serviceRow());
+    await updateExpenseService(1, { isActive: false });
+    const data = (expenseServiceUpdate.mock.calls[0]?.[0] as { data: Record<string, unknown> })
+      .data;
+    expect(data).toEqual({ isActive: false });
+  });
+});
+
+describe("deleteExpenseService", () => {
+  it("deletes by id", async () => {
+    expenseServiceDelete.mockResolvedValue({ id: 4 });
+    await deleteExpenseService(4);
+    expect(expenseServiceDelete).toHaveBeenCalledWith({ where: { id: 4 } });
+  });
+});
+
+// ─── updateExpenseServiceOrThrow: NOT_FOUND guard ─────────────────────────────
+
+describe("updateExpenseServiceOrThrow", () => {
+  it("throws DomainError NOT_FOUND when the service is missing", async () => {
+    expenseServiceFindFirst.mockResolvedValue(null);
+    const err = await updateExpenseServiceOrThrow(99, { name: "x" }).catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(DomainError);
+    expect((err as DomainError).kind).toBe("NOT_FOUND");
+    expect((err as DomainError).message).toBe("ExpenseService not found");
+    expect(expenseServiceUpdate).not.toHaveBeenCalled();
+  });
+
+  it("updates and returns the mapped service when it exists", async () => {
+    expenseServiceFindFirst.mockResolvedValue(serviceRow({ id: 5 }));
+    expenseServiceUpdate.mockResolvedValue(serviceRow({ id: 5, name: "Updated" }));
+    const r = await updateExpenseServiceOrThrow(5, { name: "Updated" });
+    expect(r.name).toBe("Updated");
+    expect(expenseServiceUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: 5 } })
+    );
+  });
+});
+
+// ─── getExpenseOrThrow: NOT_FOUND guard ───────────────────────────────────────
+
+describe("getExpenseOrThrow", () => {
+  it("throws DomainError NOT_FOUND when the expense is missing", async () => {
+    expenseFindFirst.mockResolvedValue(null);
+    const err = await getExpenseOrThrow("nope").catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(DomainError);
+    expect((err as DomainError).kind).toBe("NOT_FOUND");
+    expect((err as DomainError).message).toBe("Expense not found");
+  });
+
+  it("returns the expense when found", async () => {
+    expenseFindFirst.mockResolvedValue(expenseRow({ publicId: "exp_10", transactions: [] }));
+    const r = await getExpenseOrThrow("exp_10");
+    expect(r.publicId).toBe("exp_10");
+  });
+});
+
+// ─── updateExpense: partial spread + re-fetch + plain-Error fallback ───────────
+
+describe("updateExpense", () => {
+  it("targets by publicId, sends only provided keys, then re-fetches", async () => {
+    expenseUpdate.mockResolvedValue({});
+    expenseFindFirst.mockResolvedValue(expenseRow({ publicId: "exp_10", name: "Renamed" }));
+    const r = await updateExpense("exp_10", { name: "Renamed" });
+    const arg = expenseUpdate.mock.calls[0]?.[0] as {
+      where: Record<string, unknown>;
+      data: Record<string, unknown>;
+    };
+    expect(arg.where).toEqual({ publicId: "exp_10" });
+    expect(arg.data).toEqual({ name: "Renamed" });
+    expect("scope" in arg.data).toBe(false);
+    expect(r.name).toBe("Renamed");
+  });
+
+  it("wraps amountExpected in Decimal and coerces dueDate string to Date", async () => {
+    expenseUpdate.mockResolvedValue({});
+    expenseFindFirst.mockResolvedValue(expenseRow({ publicId: "exp_10" }));
+    await updateExpense("exp_10", { amountExpected: 42, dueDate: "2026-03-01" });
+    const data = (expenseUpdate.mock.calls[0]?.[0] as { data: Record<string, unknown> }).data;
+    expect((data["amountExpected"] as Decimal).toNumber()).toBe(42);
+    expect(data["dueDate"]).toBeInstanceOf(Date);
+  });
+
+  it("nullifies dueDate when an empty string/null is provided", async () => {
+    expenseUpdate.mockResolvedValue({});
+    expenseFindFirst.mockResolvedValue(expenseRow({ publicId: "exp_10" }));
+    await updateExpense("exp_10", { dueDate: null });
+    const data = (expenseUpdate.mock.calls[0]?.[0] as { data: Record<string, unknown> }).data;
+    expect(data["dueDate"]).toBeNull();
+  });
+
+  it("throws a plain Error when the row vanishes after update (infra invariant)", async () => {
+    expenseUpdate.mockResolvedValue({});
+    expenseFindFirst.mockResolvedValue(null);
+    const err = await updateExpense("gone", { name: "x" }).catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(Error);
+    expect(err).not.toBeInstanceOf(DomainError);
+    expect((err as Error).message).toBe("Expense gone not found after update");
+  });
+});
+
+// ─── linkTransactionOrThrow / unlinkTransactionOrThrow: NOT_FOUND guards ───────
+
+describe("linkTransactionOrThrow", () => {
+  it("throws DomainError NOT_FOUND when the expense is missing", async () => {
+    expenseFindFirst.mockResolvedValue(null);
+    const err = await linkTransactionOrThrow("nope", 1, 100).catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(DomainError);
+    expect((err as DomainError).kind).toBe("NOT_FOUND");
+    expect((err as DomainError).message).toBe("Expense not found");
+  });
+
+  it("returns the recomputed amountApplied on success", async () => {
+    expenseFindFirst.mockResolvedValue({ id: 10 });
+    expenseTransactionUpsert.mockResolvedValue({});
+    expenseTransactionFindMany.mockResolvedValue([{ amount: 100 }, { amount: 25 }]);
+    expenseUpdate.mockResolvedValue({});
+    const r = await linkTransactionOrThrow("exp_10", 7, 100);
+    expect(r).toBe(125);
+  });
+});
+
+describe("unlinkTransactionOrThrow", () => {
+  it("throws DomainError NOT_FOUND when the expense is missing", async () => {
+    expenseFindFirst.mockResolvedValue(null);
+    const err = await unlinkTransactionOrThrow("nope", 1).catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(DomainError);
+    expect((err as DomainError).kind).toBe("NOT_FOUND");
+    expect((err as DomainError).message).toBe("Expense not found");
+  });
+
+  it("returns the recomputed amountApplied on success", async () => {
+    expenseFindFirst.mockResolvedValue({ id: 10 });
+    expenseTransactionDelete.mockResolvedValue({});
+    expenseTransactionFindMany.mockResolvedValue([{ amount: 40 }]);
+    expenseUpdate.mockResolvedValue({});
+    const r = await unlinkTransactionOrThrow("exp_10", 7);
+    expect(r).toBe(40);
+  });
+});
+
+// ─── linkTransaction: upsert keys + persisted amountApplied ────────────────────
+
+describe("linkTransaction db-call shape", () => {
+  it("scopes the upsert by the composite expenseId_transactionId key and persists", async () => {
+    expenseFindFirst.mockResolvedValue({ id: 10 });
+    expenseTransactionUpsert.mockResolvedValue({});
+    expenseTransactionFindMany.mockResolvedValue([{ amount: 60 }]);
+    expenseUpdate.mockResolvedValue({});
+    await linkTransaction("exp_10", 77, 60);
+    const upsertArg = expenseTransactionUpsert.mock.calls[0]?.[0] as {
+      where: { expenseId_transactionId: { expenseId: number; transactionId: number } };
+      create: { expenseId: number; transactionId: number };
+      update: { amount: Decimal };
+    };
+    expect(upsertArg.where.expenseId_transactionId).toEqual({ expenseId: 10, transactionId: 77 });
+    expect(upsertArg.create.expenseId).toBe(10);
+    expect(upsertArg.create.transactionId).toBe(77);
+    expect((upsertArg.update.amount as Decimal).toNumber()).toBe(60);
+
+    const updArg = expenseUpdate.mock.calls[0]?.[0] as {
+      where: { id: number };
+      data: { amountApplied: Decimal };
+    };
+    expect(updArg.where).toEqual({ id: 10 });
+    expect((updArg.data.amountApplied as Decimal).toNumber()).toBe(60);
+  });
+});
+
+describe("unlinkTransaction db-call shape", () => {
+  it("deletes by the composite key before recomputing", async () => {
+    expenseFindFirst.mockResolvedValue({ id: 10 });
+    expenseTransactionDelete.mockResolvedValue({});
+    expenseTransactionFindMany.mockResolvedValue([]);
+    expenseUpdate.mockResolvedValue({});
+    const total = await unlinkTransaction("exp_10", 77);
+    expect(total).toBe(0);
+    const delArg = expenseTransactionDelete.mock.calls[0]?.[0] as {
+      where: { expenseId_transactionId: { expenseId: number; transactionId: number } };
+    };
+    expect(delArg.where.expenseId_transactionId).toEqual({ expenseId: 10, transactionId: 77 });
   });
 });

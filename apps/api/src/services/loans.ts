@@ -1,7 +1,7 @@
 import { db } from "@finanzas/db";
 import { randomUUID } from "node:crypto";
 import { Decimal } from "decimal.js";
-import { AppError } from "../lib/app-error.ts";
+import { DomainError } from "../lib/errors.ts";
 import { dbDateToISO, isoToDbDate, toChileDateString } from "../lib/time.ts";
 
 type LoanStatus = "ACTIVE" | "COMPLETED" | "DEFAULTED";
@@ -666,10 +666,7 @@ const syncLoanStatus = async (loanId: number) => {
 const ensureLoanExists = async (publicId: string) => {
   const loan = await getLoanWithSchedules(publicId);
   if (!loan) {
-    throw new AppError(404, {
-      code: "LOAN_NOT_FOUND",
-      message: "Préstamo no encontrado",
-    });
+    throw new DomainError("NOT_FOUND", "Préstamo no encontrado");
   }
   return loan;
 };
@@ -683,10 +680,7 @@ const ensureScheduleExists = async (scheduleId: number) => {
   });
 
   if (!schedule) {
-    throw new AppError(404, {
-      code: "LOAN_SCHEDULE_NOT_FOUND",
-      message: "Cuota no encontrada",
-    });
+    throw new DomainError("NOT_FOUND", "Cuota no encontrada");
   }
 
   return schedule;
@@ -729,7 +723,9 @@ const refreshSchedulePaymentSummary = async (scheduleId: number) => {
       paidAmount: totalPaid.isZero() ? null : toMoney(totalPaid),
       paidDate,
       status: nextStatus,
-      transactionId: hasSplitPayments ? (primaryPayment?.transactionId ?? null) : (schedule.transactionId ?? null),
+      transactionId: hasSplitPayments
+        ? (primaryPayment?.transactionId ?? null)
+        : (schedule.transactionId ?? null),
     },
     include: {
       payments: {
@@ -825,10 +821,10 @@ export async function createLoan(data: LoanPayload) {
 
 export async function createStructuredLoan(data: StructuredLoanPayload) {
   if (!data.equalSchedule && !data.manualInstallments?.length) {
-    throw new AppError(400, {
-      code: "LOAN_SCHEDULE_REQUIRED",
-      message: "Debes entregar cuotas manuales o una configuración de cuotas iguales",
-    });
+    throw new DomainError(
+      "BAD_REQUEST",
+      "Debes entregar cuotas manuales o una configuración de cuotas iguales"
+    );
   }
 
   const sources = buildStructuredSources(data.sources);
@@ -967,10 +963,10 @@ export async function regenerateLoanSchedules(
       schedule.paidAmount !== null || schedule.transactionId !== null
   );
   if (hasRegisteredPayments) {
-    throw new AppError(409, {
-      code: "LOAN_SCHEDULES_LOCKED",
-      message: "No se puede regenerar un préstamo que ya tiene pagos registrados",
-    });
+    throw new DomainError(
+      "CONFLICT",
+      "No se puede regenerar un préstamo que ya tiene pagos registrados"
+    );
   }
 
   await db.loan.update({
@@ -1010,10 +1006,7 @@ export async function registerLoanPayment(scheduleId: number, data: LoanPaymentP
     });
 
     if (!transaction) {
-      throw new AppError(404, {
-        code: "TRANSACTION_NOT_FOUND",
-        message: "Transacción no encontrada",
-      });
+      throw new DomainError("NOT_FOUND", "Transacción no encontrada");
     }
   }
 
@@ -1050,10 +1043,7 @@ export async function listLoanPaymentCandidates(
   });
 
   if (!schedule) {
-    throw new AppError(404, {
-      code: "LOAN_SCHEDULE_NOT_FOUND",
-      message: "Cuota no encontrada",
-    });
+    throw new DomainError("NOT_FOUND", "Cuota no encontrada");
   }
 
   if (!schedule.loan.counterpartId) {

@@ -449,9 +449,8 @@ export async function generatePrescriptionPdfFile(
     .filter(Boolean)
     .join(" ");
 
-  const { generatePrescriptionPdf } = await import(
-    "../modules/immunotherapy/prescription-pdf.service.ts"
-  );
+  const { generatePrescriptionPdf } =
+    await import("../modules/immunotherapy/prescription-pdf.service.ts");
   const { toPdfA3 } = await import("../modules/pdf/pdf-a.ts");
   const rawPdf = await generatePrescriptionPdf({
     patient: {

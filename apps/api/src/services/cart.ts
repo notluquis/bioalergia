@@ -114,9 +114,9 @@ export async function addItemToCart(opts: { cartId: number; productId: number; q
     const newQty = existing.qty + opts.qty;
     if (sellable < newQty) {
       throw new DomainError(
-      "UNPROCESSABLE_ENTITY",
-      `Stock insuficiente (disponible: ${Math.max(0, sellable)})`
-    );
+        "UNPROCESSABLE_ENTITY",
+        `Stock insuficiente (disponible: ${Math.max(0, sellable)})`
+      );
     }
     await db.cartItem.update({
       where: { id: existing.id },

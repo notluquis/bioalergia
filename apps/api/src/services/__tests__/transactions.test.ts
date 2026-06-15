@@ -77,6 +77,7 @@ const {
   getParticipantLeaderboard,
   getParticipantInsight,
   getTransactionStats,
+  listTransactions,
 } = await import("../transactions.ts");
 
 function seed(opts: {
@@ -264,12 +265,22 @@ describe("reconcileTransactions matching", () => {
     expect(rows).toHaveLength(1);
     expect(rows[0].source).toBe("release");
     expect(rows[0].status).toBe("done"); // withdraw.status preferred
+    expect(rows[0].id).toBe(-1_000_000_000 - 1); // keeps release id
+    expect(rows[0].transactionAmount).toBe(-500); // release amount (credit-debit)
+    expect(rows[0].withdrawId).toBe("MATCH1"); // withdraw id flows in
+    expect(rows.filter((r) => r.source === "withdraw")).toHaveLength(0);
   });
 
   it("does NOT merge when amounts differ beyond epsilon", async () => {
     seed({
       releases: [
-        { id: 1, sourceId: "K", netCreditAmount: 0, netDebitAmount: 500, payoutBankAccountNumber: "1" },
+        {
+          id: 1,
+          sourceId: "K",
+          netCreditAmount: 0,
+          netDebitAmount: 500,
+          payoutBankAccountNumber: "1",
+        },
       ],
       withdraws: [{ id: 1, withdrawId: "K", amount: 499, bankAccountNumber: "1" }],
     });
@@ -298,7 +309,13 @@ describe("reconcileTransactions matching", () => {
     // release amount = -500, withdraw amount = -500; sameAmount uses abs
     seed({
       releases: [
-        { id: 1, sourceId: "K", netCreditAmount: 0, netDebitAmount: 500, payoutBankAccountNumber: "1" },
+        {
+          id: 1,
+          sourceId: "K",
+          netCreditAmount: 0,
+          netDebitAmount: 500,
+          payoutBankAccountNumber: "1",
+        },
       ],
       withdraws: [{ id: 1, withdrawId: "K", amount: 500, bankAccountNumber: "1" }],
     });
@@ -309,7 +326,13 @@ describe("reconcileTransactions matching", () => {
   it("sameAccount returns true when one account is empty/missing -> still merges", async () => {
     seed({
       releases: [
-        { id: 1, sourceId: "K", netCreditAmount: 0, netDebitAmount: 500, payoutBankAccountNumber: null },
+        {
+          id: 1,
+          sourceId: "K",
+          netCreditAmount: 0,
+          netDebitAmount: 500,
+          payoutBankAccountNumber: null,
+        },
       ],
       withdraws: [{ id: 1, withdrawId: "K", amount: 500, bankAccountNumber: "999" }],
     });
@@ -320,7 +343,13 @@ describe("reconcileTransactions matching", () => {
   it("does NOT merge when both accounts present and differ", async () => {
     seed({
       releases: [
-        { id: 1, sourceId: "K", netCreditAmount: 0, netDebitAmount: 500, payoutBankAccountNumber: "111" },
+        {
+          id: 1,
+          sourceId: "K",
+          netCreditAmount: 0,
+          netDebitAmount: 500,
+          payoutBankAccountNumber: "111",
+        },
       ],
       withdraws: [{ id: 1, withdrawId: "K", amount: 500, bankAccountNumber: "222" }],
     });
@@ -348,8 +377,20 @@ describe("reconcileTransactions matching", () => {
   it("one withdraw consumed by only one release (usedWithdraw guard)", async () => {
     seed({
       releases: [
-        { id: 1, sourceId: "K", netCreditAmount: 0, netDebitAmount: 500, payoutBankAccountNumber: "1" },
-        { id: 2, sourceId: "K", netCreditAmount: 0, netDebitAmount: 500, payoutBankAccountNumber: "1" },
+        {
+          id: 1,
+          sourceId: "K",
+          netCreditAmount: 0,
+          netDebitAmount: 500,
+          payoutBankAccountNumber: "1",
+        },
+        {
+          id: 2,
+          sourceId: "K",
+          netCreditAmount: 0,
+          netDebitAmount: 500,
+          payoutBankAccountNumber: "1",
+        },
       ],
       withdraws: [{ id: 1, withdrawId: "K", amount: 500, bankAccountNumber: "1" }],
     });
@@ -361,9 +402,7 @@ describe("reconcileTransactions matching", () => {
 
   it("release without matching withdraw is kept untouched", async () => {
     seed({
-      releases: [
-        { id: 1, sourceId: "NOMATCH", netCreditAmount: 100, netDebitAmount: 0 },
-      ],
+      releases: [{ id: 1, sourceId: "NOMATCH", netCreditAmount: 100, netDebitAmount: 0 }],
     });
     const rows = await fetchMergedTransactions({ includeTest: true });
     expect(rows).toHaveLength(1);
@@ -445,7 +484,13 @@ describe("reconcileTransactions matching", () => {
   it("does NOT merge when withdraw amount is JUST over epsilon (0.02)", async () => {
     seed({
       releases: [
-        { id: 1, sourceId: "K", netCreditAmount: 0, netDebitAmount: 500, payoutBankAccountNumber: "1" },
+        {
+          id: 1,
+          sourceId: "K",
+          netCreditAmount: 0,
+          netDebitAmount: 500,
+          payoutBankAccountNumber: "1",
+        },
       ],
       withdraws: [{ id: 1, withdrawId: "K", amount: 500.02, bankAccountNumber: "1" }],
     });
@@ -456,7 +501,13 @@ describe("reconcileTransactions matching", () => {
   it("reconcile key trims whitespace on both sides (' K ' release == withdraw 'K')", async () => {
     seed({
       releases: [
-        { id: 1, sourceId: " K ", netCreditAmount: 0, netDebitAmount: 500, payoutBankAccountNumber: "1" },
+        {
+          id: 1,
+          sourceId: " K ",
+          netCreditAmount: 0,
+          netDebitAmount: 500,
+          payoutBankAccountNumber: "1",
+        },
       ],
       withdraws: [{ id: 1, withdrawId: "K", amount: 500, bankAccountNumber: "1" }],
     });
@@ -469,7 +520,13 @@ describe("reconcileTransactions matching", () => {
     // an empty withdrawId yields empty key -> not bucketed -> no merge.
     seed({
       releases: [
-        { id: 1, sourceId: "", netCreditAmount: 0, netDebitAmount: 500, payoutBankAccountNumber: "1" },
+        {
+          id: 1,
+          sourceId: "",
+          netCreditAmount: 0,
+          netDebitAmount: 500,
+          payoutBankAccountNumber: "1",
+        },
       ],
       withdraws: [{ id: 1, withdrawId: "", amount: 500, bankAccountNumber: "1" }],
     });
@@ -490,7 +547,13 @@ describe("reconcileTransactions matching", () => {
         },
       ],
       withdraws: [
-        { id: 1, withdrawId: "K", amount: 500, bankAccountNumber: "1", dateCreated: at("2026-01-20") },
+        {
+          id: 1,
+          withdrawId: "K",
+          amount: 500,
+          bankAccountNumber: "1",
+          dateCreated: at("2026-01-20"),
+        },
       ],
     });
     const rows = await fetchMergedTransactions({ includeTest: true });
@@ -895,8 +958,20 @@ describe("getParticipantInsight monthly + counterpart buckets", () => {
   it("counterparts sorted by outgoingAmount descending", async () => {
     seed({
       withdraws: [
-        { identificationNumber: "P", bankAccountHolder: "Small", bankAccountNumber: "S", amount: 10, withdrawId: "w1" },
-        { identificationNumber: "P", bankAccountHolder: "Big", bankAccountNumber: "B", amount: 900, withdrawId: "w2" },
+        {
+          identificationNumber: "P",
+          bankAccountHolder: "Small",
+          bankAccountNumber: "S",
+          amount: 10,
+          withdrawId: "w1",
+        },
+        {
+          identificationNumber: "P",
+          bankAccountHolder: "Big",
+          bankAccountNumber: "B",
+          amount: 900,
+          withdrawId: "w2",
+        },
       ],
     });
     const res = await getParticipantInsight("P", {});
@@ -919,5 +994,606 @@ describe("getParticipantInsight monthly + counterpart buckets", () => {
     expect(res.counterparts).toHaveLength(1);
     expect(res.counterparts[0].counterpartId).toBe("ACC9");
     expect(res.counterparts[0].outgoingAmount).toBe(80);
+  });
+});
+
+// ─── db query args: date-where building + select shape ────────────────────────
+
+describe("fetchMergedTransactions db query args", () => {
+  it("passes where:undefined to all three tables when no from/to", async () => {
+    seed({});
+    await fetchMergedTransactions({});
+    expect((mockSettlementFindMany.mock.calls[0][0] as { where?: unknown }).where).toBeUndefined();
+    expect((mockReleaseFindMany.mock.calls[0][0] as { where?: unknown }).where).toBeUndefined();
+    expect((mockWithdrawFindMany.mock.calls[0][0] as { where?: unknown }).where).toBeUndefined();
+  });
+
+  it("builds gte+lte windows on the correct column per table when from AND to given", async () => {
+    seed({});
+    const from = at("2026-01-01");
+    const to = at("2026-01-31");
+    await fetchMergedTransactions({ from, to });
+    expect((mockSettlementFindMany.mock.calls[0][0] as { where: unknown }).where).toEqual({
+      transactionDate: { gte: from, lte: to },
+    });
+    expect((mockReleaseFindMany.mock.calls[0][0] as { where: unknown }).where).toEqual({
+      date: { gte: from, lte: to },
+    });
+    expect((mockWithdrawFindMany.mock.calls[0][0] as { where: unknown }).where).toEqual({
+      dateCreated: { gte: from, lte: to },
+    });
+  });
+
+  it("includes only gte when from given without to", async () => {
+    seed({});
+    const from = at("2026-02-01");
+    await fetchMergedTransactions({ from });
+    expect((mockSettlementFindMany.mock.calls[0][0] as { where: unknown }).where).toEqual({
+      transactionDate: { gte: from },
+    });
+    expect((mockReleaseFindMany.mock.calls[0][0] as { where: unknown }).where).toEqual({
+      date: { gte: from },
+    });
+    expect((mockWithdrawFindMany.mock.calls[0][0] as { where: unknown }).where).toEqual({
+      dateCreated: { gte: from },
+    });
+  });
+
+  it("includes only lte when to given without from", async () => {
+    seed({});
+    const to = at("2026-03-01");
+    await fetchMergedTransactions({ to });
+    expect((mockSettlementFindMany.mock.calls[0][0] as { where: unknown }).where).toEqual({
+      transactionDate: { lte: to },
+    });
+    expect((mockReleaseFindMany.mock.calls[0][0] as { where: unknown }).where).toEqual({
+      date: { lte: to },
+    });
+    expect((mockWithdrawFindMany.mock.calls[0][0] as { where: unknown }).where).toEqual({
+      dateCreated: { lte: to },
+    });
+  });
+
+  it("selects the exact column set for each table", async () => {
+    seed({});
+    await fetchMergedTransactions({});
+    const settlementSelect = (
+      mockSettlementFindMany.mock.calls[0][0] as { select: Record<string, boolean> }
+    ).select;
+    expect(settlementSelect).toEqual({
+      id: true,
+      metadata: true,
+      description: true,
+      externalReference: true,
+      identificationNumber: true,
+      paymentMethod: true,
+      paymentMethodType: true,
+      settlementNetAmount: true,
+      sourceId: true,
+      transactionAmount: true,
+      transactionDate: true,
+      transactionType: true,
+    });
+    const releaseSelect = (
+      mockReleaseFindMany.mock.calls[0][0] as { select: Record<string, boolean> }
+    ).select;
+    expect(releaseSelect.netCreditAmount).toBe(true);
+    expect(releaseSelect.netDebitAmount).toBe(true);
+    expect(releaseSelect.payoutBankAccountNumber).toBe(true);
+    expect(releaseSelect.date).toBe(true);
+    const withdrawSelect = (
+      mockWithdrawFindMany.mock.calls[0][0] as { select: Record<string, boolean> }
+    ).select;
+    expect(withdrawSelect.amount).toBe(true);
+    expect(withdrawSelect.withdrawId).toBe(true);
+    expect(withdrawSelect.dateCreated).toBe(true);
+  });
+});
+
+describe("fetchMergedTransactionsBySourceIds db query args", () => {
+  it("queries settlement+release by sourceId.in and withdraw by withdrawId.in", async () => {
+    seed({});
+    await fetchMergedTransactionsBySourceIds(["abc", "def"]);
+    expect((mockSettlementFindMany.mock.calls[0][0] as { where: unknown }).where).toEqual({
+      sourceId: { in: ["abc", "def"] },
+    });
+    expect((mockReleaseFindMany.mock.calls[0][0] as { where: unknown }).where).toEqual({
+      sourceId: { in: ["abc", "def"] },
+    });
+    expect((mockWithdrawFindMany.mock.calls[0][0] as { where: unknown }).where).toEqual({
+      withdrawId: { in: ["abc", "def"] },
+    });
+  });
+
+  it("does not touch any table for empty ids (short-circuits before Promise.all)", async () => {
+    await fetchMergedTransactionsBySourceIds([]);
+    expect(mockSettlementFindMany).not.toHaveBeenCalled();
+    expect(mockReleaseFindMany).not.toHaveBeenCalled();
+    expect(mockWithdrawFindMany).not.toHaveBeenCalled();
+  });
+});
+
+// ─── metadata extraction (getMetaString key precedence + trimming) ────────────
+
+describe("settlement metadata extraction", () => {
+  it("pulls bank/holder/account/type fields from metadata with first-key precedence", async () => {
+    seed({
+      settlements: [
+        {
+          transactionAmount: 1,
+          metadata: {
+            bank_account_holder_name: "Holder One",
+            name: "ignored",
+            bank_account_number: "  ACC-77  ",
+            bank_account_type: "savings",
+            bank_name: "Banco X",
+            withdraw_id: "WX",
+          },
+        },
+      ],
+    });
+    const [tx] = await fetchMergedTransactions({ includeTest: true });
+    expect(tx.bankAccountHolder).toBe("Holder One");
+    expect(tx.bankAccountNumber).toBe("ACC-77"); // trimmed
+    expect(tx.bankAccountType).toBe("savings");
+    expect(tx.bankName).toBe("Banco X");
+    expect(tx.withdrawId).toBe("WX");
+  });
+
+  it("falls back to the second key when the first is missing/blank", async () => {
+    seed({
+      settlements: [
+        {
+          transactionAmount: 1,
+          metadata: { name: "Second Holder", account_number: "ACC-2", bank: "Banco2" },
+        },
+      ],
+    });
+    const [tx] = await fetchMergedTransactions({ includeTest: true });
+    expect(tx.bankAccountHolder).toBe("Second Holder");
+    expect(tx.bankAccountNumber).toBe("ACC-2");
+    expect(tx.bankName).toBe("Banco2");
+  });
+
+  it("ignores whitespace-only metadata values (treated as absent)", async () => {
+    seed({
+      settlements: [{ transactionAmount: 1, metadata: { bank_account_holder_name: "   " } }],
+    });
+    const [tx] = await fetchMergedTransactions({ includeTest: true });
+    expect(tx.bankAccountHolder).toBeNull();
+  });
+
+  it("ignores non-object metadata (array / primitive) -> all meta fields null", async () => {
+    seed({
+      settlements: [{ transactionAmount: 1, metadata: ["bank_account_number", "x"] }],
+    });
+    const [tx] = await fetchMergedTransactions({ includeTest: true });
+    expect(tx.bankAccountNumber).toBeNull();
+    expect(tx.bankAccountHolder).toBeNull();
+  });
+
+  it("identificationNumber prefers the column over metadata recipient_rut", async () => {
+    seed({
+      settlements: [
+        {
+          transactionAmount: 1,
+          identificationNumber: "COL-RUT",
+          metadata: { recipient_rut: "META" },
+        },
+      ],
+    });
+    const [tx] = await fetchMergedTransactions({ includeTest: true });
+    expect(tx.identificationNumber).toBe("COL-RUT");
+  });
+
+  it("identificationNumber falls back to metadata recipient_rut when column null", async () => {
+    seed({
+      settlements: [
+        {
+          transactionAmount: 1,
+          identificationNumber: null,
+          metadata: { recipient_rut: "META-RUT" },
+        },
+      ],
+    });
+    const [tx] = await fetchMergedTransactions({ includeTest: true });
+    expect(tx.identificationNumber).toBe("META-RUT");
+  });
+
+  it("settlement settlementNetAmount coerced when present, null when absent", async () => {
+    seed({ settlements: [{ transactionAmount: 1, settlementNetAmount: "88.5" }] });
+    const [withNet] = await fetchMergedTransactions({ includeTest: true });
+    expect(withNet.settlementNetAmount).toBe(88.5);
+    seed({ settlements: [{ transactionAmount: 1, settlementNetAmount: null }] });
+    const [withoutNet] = await fetchMergedTransactions({ includeTest: true });
+    expect(withoutNet.settlementNetAmount).toBeNull();
+  });
+
+  it("settlement static fields: source=settlement, status=null, passthrough sourceId/extRef/paymentMethod", async () => {
+    seed({
+      settlements: [
+        {
+          transactionAmount: 1,
+          sourceId: "SRC-1",
+          externalReference: "EXT-1",
+          paymentMethod: "visa",
+          paymentMethodType: "credit_card",
+        },
+      ],
+    });
+    const [tx] = await fetchMergedTransactions({ includeTest: true });
+    expect(tx.source).toBe("settlement");
+    expect(tx.status).toBeNull();
+    expect(tx.sourceId).toBe("SRC-1");
+    expect(tx.externalReference).toBe("EXT-1");
+    expect(tx.paymentMethod).toBe("visa");
+    expect(tx.paymentMethodType).toBe("credit_card");
+    expect(tx.id).toBe(1); // settlement id is NOT offset
+  });
+});
+
+describe("release metadata + bankAccountNumber precedence", () => {
+  it("bankAccountNumber prefers payoutBankAccountNumber column over metadata", async () => {
+    seed({
+      releases: [
+        {
+          grossAmount: 1,
+          payoutBankAccountNumber: "PAYOUT-1",
+          metadata: { payout_bank_account_number: "META-1" },
+        },
+      ],
+    });
+    const [tx] = await fetchMergedTransactions({ includeTest: true });
+    expect(tx.bankAccountNumber).toBe("PAYOUT-1");
+  });
+
+  it("bankAccountNumber falls back to metadata payout key when column null", async () => {
+    seed({
+      releases: [
+        {
+          grossAmount: 1,
+          payoutBankAccountNumber: null,
+          metadata: { payout_bank_account_number: "META-PAY" },
+        },
+      ],
+    });
+    const [tx] = await fetchMergedTransactions({ includeTest: true });
+    expect(tx.bankAccountNumber).toBe("META-PAY");
+  });
+
+  it("release settlementNetAmount mirrors netCreditAmount (coerced / null)", async () => {
+    seed({ releases: [{ netCreditAmount: 70, netDebitAmount: 0 }] });
+    const [withCredit] = await fetchMergedTransactions({ includeTest: true });
+    expect(withCredit.settlementNetAmount).toBe(70);
+    seed({ releases: [{ netCreditAmount: null, netDebitAmount: null, grossAmount: 1 }] });
+    const [noCredit] = await fetchMergedTransactions({ includeTest: true });
+    expect(noCredit.settlementNetAmount).toBeNull();
+  });
+
+  it("release grossAmount populated when present, null when absent", async () => {
+    seed({ releases: [{ netCreditAmount: 5, netDebitAmount: 0, grossAmount: 99 }] });
+    const [withGross] = await fetchMergedTransactions({ includeTest: true });
+    expect(withGross.grossAmount).toBe(99);
+    seed({ releases: [{ netCreditAmount: 5, netDebitAmount: 0, grossAmount: null }] });
+    const [noGross] = await fetchMergedTransactions({ includeTest: true });
+    expect(noGross.grossAmount).toBeNull();
+  });
+
+  it("release static fields: source=release, status=null, withdrawId=null", async () => {
+    seed({ releases: [{ grossAmount: 1, sourceId: "REL-SRC" }] });
+    const [tx] = await fetchMergedTransactions({ includeTest: true });
+    expect(tx.source).toBe("release");
+    expect(tx.status).toBeNull();
+    expect(tx.withdrawId).toBeNull();
+    expect(tx.sourceId).toBe("REL-SRC");
+  });
+});
+
+describe("withdraw mapping static fields", () => {
+  it("withdraw with no withdrawId uses bare 'withdraw' description and offset id", async () => {
+    seed({ withdraws: [{ id: 4, withdrawId: "", amount: 10, status: "pending" }] });
+    const [tx] = await fetchMergedTransactions({ includeTest: true });
+    expect(tx.description).toBe("withdraw");
+    expect(tx.id).toBe(-2_000_000_000 - 4);
+    expect(tx.source).toBe("withdraw");
+    expect(tx.transactionType).toBe("withdraw");
+    expect(tx.status).toBe("pending");
+    expect(tx.grossAmount).toBeNull();
+    expect(tx.settlementNetAmount).toBeNull();
+    expect(tx.paymentMethod).toBeNull();
+  });
+
+  it("withdraw externalReference + sourceId mirror withdrawId, bank fields passthrough", async () => {
+    seed({
+      withdraws: [
+        {
+          withdrawId: "WID",
+          amount: 5,
+          bankAccountHolder: "H",
+          bankAccountNumber: "N",
+          bankAccountType: "T",
+          bankName: "B",
+          identificationNumber: "RUT",
+        },
+      ],
+    });
+    const [tx] = await fetchMergedTransactions({ includeTest: true });
+    expect(tx.externalReference).toBe("WID");
+    expect(tx.sourceId).toBe("WID");
+    expect(tx.withdrawId).toBe("WID");
+    expect(tx.bankAccountHolder).toBe("H");
+    expect(tx.bankAccountNumber).toBe("N");
+    expect(tx.bankAccountType).toBe("T");
+    expect(tx.bankName).toBe("B");
+    expect(tx.identificationNumber).toBe("RUT");
+  });
+});
+
+// ─── listTransactions (offset/limit slice + includeTotal) ─────────────────────
+
+describe("listTransactions pagination", () => {
+  function seedN(n: number) {
+    // distinct dates descending so order is deterministic
+    seed({
+      settlements: Array.from({ length: n }, (_, i) => ({
+        transactionAmount: i + 1,
+        sourceId: `s${i}`,
+        transactionDate: at(`2026-01-${String(i + 1).padStart(2, "0")}`),
+      })),
+    });
+  }
+
+  it("returns total = full count and the first `limit` rows", async () => {
+    seedN(5);
+    const res = await listTransactions({}, 2, 0);
+    expect(res.total).toBe(5);
+    expect(res.transactions).toHaveLength(2);
+  });
+
+  it("slices by offset (offset+limit window)", async () => {
+    seedN(5);
+    const res = await listTransactions({}, 2, 2);
+    expect(res.transactions).toHaveLength(2);
+    // sorted desc by date: ids s4,s3,s2,s1,s0 -> offset 2 = s2,s1
+    expect(res.transactions.map((t) => t.sourceId)).toEqual(["s2", "s1"]);
+  });
+
+  it("includeTotal=false yields total undefined but still slices", async () => {
+    seedN(5);
+    const res = await listTransactions({}, 2, 0, false);
+    expect(res.total).toBeUndefined();
+    expect(res.transactions).toHaveLength(2);
+  });
+
+  it("defaults limit=100 offset=0 includeTotal=true", async () => {
+    seedN(3);
+    const res = await listTransactions({});
+    expect(res.total).toBe(3);
+    expect(res.transactions).toHaveLength(3);
+  });
+});
+
+// ─── leaderboard participant key + displayName fallbacks ──────────────────────
+
+describe("getParticipantLeaderboard participant identity", () => {
+  it("groups by identificationNumber first; displayName prefers holder", async () => {
+    seed({
+      withdraws: [
+        { identificationNumber: "RUT", bankAccountHolder: "Ana", amount: 100, withdrawId: "w" },
+      ],
+    });
+    const res = await getParticipantLeaderboard({});
+    expect(res.data[0].personId).toBe("RUT");
+    expect(res.data[0].personName).toBe("Ana");
+  });
+
+  it("falls back personId to bankAccountNumber when no rut/holder/withdrawId", async () => {
+    // a settlement with only a metadata bank account number, no rut
+    seed({
+      settlements: [
+        {
+          transactionAmount: -10,
+          sourceId: "s",
+          metadata: { bank_account_number: "ACCKEY" },
+        },
+      ],
+    });
+    const res = await getParticipantLeaderboard({});
+    expect(res.data[0].personId).toBe("ACCKEY");
+    expect(res.data[0].total).toBe(10);
+  });
+
+  it("displayName defaults to 'Desconocido' when neither holder nor rut", async () => {
+    seed({
+      settlements: [
+        { transactionAmount: -10, sourceId: "s", metadata: { bank_account_number: "ACCKEY" } },
+      ],
+    });
+    const res = await getParticipantLeaderboard({});
+    expect(res.data[0].personName).toBe("Desconocido");
+  });
+
+  it("unknown participant key used when no identifying field at all", async () => {
+    seed({ settlements: [{ transactionAmount: -10, sourceId: "s" }] });
+    const res = await getParticipantLeaderboard({});
+    expect(res.data[0].personId).toBe("unknown");
+  });
+
+  it("status='ok' wrapper is returned", async () => {
+    seed({ withdraws: [{ identificationNumber: "A", amount: 1, withdrawId: "w" }] });
+    const res = await getParticipantLeaderboard({});
+    expect(res.status).toBe("ok");
+  });
+
+  it("no limit -> all rows returned (MAX_SAFE_INTEGER slice keeps everyone)", async () => {
+    seed({
+      withdraws: [
+        { identificationNumber: "A", amount: 10, withdrawId: "a" },
+        { identificationNumber: "B", amount: 20, withdrawId: "b" },
+        { identificationNumber: "C", amount: 30, withdrawId: "c" },
+      ],
+    });
+    const res = await getParticipantLeaderboard({});
+    expect(res.data).toHaveLength(3);
+    expect(res.data.map((d) => d.personId)).toEqual(["C", "B", "A"]);
+  });
+
+  it("accumulates outgoing across rows of the same participant (sum, not overwrite)", async () => {
+    seed({
+      withdraws: [
+        { identificationNumber: "P", amount: 100, withdrawId: "w1" },
+        { identificationNumber: "P", amount: 250, withdrawId: "w2" },
+      ],
+    });
+    const res = await getParticipantLeaderboard({});
+    expect(res.data[0].total).toBe(350);
+    expect(res.data[0].count).toBe(2);
+  });
+
+  it("first non-null rut/account wins (??= does not overwrite with later values)", async () => {
+    seed({
+      withdraws: [
+        {
+          identificationNumber: "P",
+          bankAccountNumber: null,
+          amount: 10,
+          withdrawId: "w1",
+        },
+        {
+          identificationNumber: "P",
+          bankAccountNumber: "LATE-ACC",
+          amount: 10,
+          withdrawId: "w2",
+        },
+      ],
+    });
+    const res = await getParticipantLeaderboard({});
+    // grouped by "P"; first row had null account, second supplies it via ??=
+    expect(res.data[0].bankAccountNumber).toBe("LATE-ACC");
+  });
+});
+
+// ─── insight counterpart aggregation depth ────────────────────────────────────
+
+describe("getParticipantInsight aggregation details", () => {
+  it("matches participant by sourceId too (not only rut/account/holder)", async () => {
+    seed({
+      settlements: [
+        { transactionAmount: 50, sourceId: "MATCH-SRC", transactionDate: at("2026-02-10") },
+      ],
+    });
+    const res = await getParticipantInsight("MATCH-SRC", {});
+    expect(res.monthly).toHaveLength(1);
+    expect(res.monthly[0].incomingAmount).toBe(50);
+  });
+
+  it("counterpart incoming accumulates and counterpart='Desconocido' when no holder", async () => {
+    seed({
+      settlements: [
+        {
+          identificationNumber: "P",
+          transactionAmount: 10,
+          sourceId: "s1",
+          transactionDate: at("2026-01-05"),
+        },
+        {
+          identificationNumber: "P",
+          transactionAmount: 30,
+          sourceId: "s2",
+          transactionDate: at("2026-01-06"),
+        },
+      ],
+    });
+    const res = await getParticipantInsight("P", {});
+    expect(res.counterparts).toHaveLength(1);
+    expect(res.counterparts[0].counterpart).toBe("Desconocido");
+    expect(res.counterparts[0].incomingAmount).toBe(40);
+    expect(res.counterparts[0].incomingCount).toBe(2);
+  });
+
+  it("identificationType is always 'RUT' and bankBranch always null", async () => {
+    seed({ withdraws: [{ identificationNumber: "P", amount: 5, withdrawId: "w" }] });
+    const res = await getParticipantInsight("P", {});
+    expect(res.counterparts[0].identificationType).toBe("RUT");
+    expect(res.counterparts[0].bankBranch).toBeNull();
+  });
+
+  it("participant + status='ok' echoed in the response", async () => {
+    seed({ settlements: [{ identificationNumber: "P", transactionAmount: 1, sourceId: "s" }] });
+    const res = await getParticipantInsight("P", {});
+    expect(res.status).toBe("ok");
+    expect(res.participant).toBe("P");
+  });
+
+  it("monthly incoming vs outgoing split: outgoing uses abs, incoming raw", async () => {
+    seed({
+      settlements: [
+        {
+          identificationNumber: "P",
+          transactionAmount: 200,
+          sourceId: "in",
+          transactionDate: at("2026-05-10"),
+        },
+      ],
+      withdraws: [
+        { identificationNumber: "P", amount: 75, withdrawId: "out", dateCreated: at("2026-05-15") },
+      ],
+    });
+    const res = await getParticipantInsight("P", {});
+    const may = res.monthly.find((m) => m.month === "2026-05-01");
+    expect(may?.incomingAmount).toBe(200);
+    expect(may?.outgoingAmount).toBe(75); // abs(-75)
+    expect(may?.incomingCount).toBe(1);
+    expect(may?.outgoingCount).toBe(1);
+  });
+});
+
+// ─── stats byType total sign + accumulation ───────────────────────────────────
+
+describe("getTransactionStats byType accumulation", () => {
+  it("accumulates the SIGNED total per type then reports abs + direction", async () => {
+    seed({
+      settlements: [
+        { transactionType: "t", transactionAmount: 100, sourceId: "a" },
+        { transactionType: "t", transactionAmount: -30, sourceId: "b" },
+      ],
+    });
+    const res = await getTransactionStats({ from: at("2026-01-01"), to: at("2026-01-31") });
+    const t = res.byType.find((x) => x.description === "t");
+    expect(t?.total).toBe(70); // abs(100 - 30)
+    expect(t?.direction).toBe("IN"); // signed total 70 > 0
+  });
+
+  it("net signed total drives OUT when negatives dominate", async () => {
+    seed({
+      settlements: [
+        { transactionType: "t", transactionAmount: 10, sourceId: "a" },
+        { transactionType: "t", transactionAmount: -40, sourceId: "b" },
+      ],
+    });
+    const res = await getTransactionStats({ from: at("2026-01-01"), to: at("2026-01-31") });
+    const t = res.byType.find((x) => x.description === "t");
+    expect(t?.total).toBe(30); // abs(10 - 40)
+    expect(t?.direction).toBe("OUT");
+  });
+
+  it("totals.net is exactly in minus out", async () => {
+    seed({
+      settlements: [
+        { transactionAmount: 250, sourceId: "a" },
+        { transactionAmount: -90, sourceId: "b" },
+        { transactionAmount: -10, sourceId: "c" },
+      ],
+    });
+    const res = await getTransactionStats({ from: at("2026-01-01"), to: at("2026-01-31") });
+    expect(res.totals.in).toBe(250);
+    expect(res.totals.out).toBe(100);
+    expect(res.totals.net).toBe(150);
+  });
+
+  it("status='ok' wrapper returned", async () => {
+    seed({ settlements: [{ transactionAmount: 1, sourceId: "a" }] });
+    const res = await getTransactionStats({ from: at("2026-01-01"), to: at("2026-01-31") });
+    expect(res.status).toBe("ok");
   });
 });

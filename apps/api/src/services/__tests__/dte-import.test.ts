@@ -249,4 +249,52 @@ describe("buildDteSaleDetail", () => {
     expect(String(detail.ivaAmount)).toBe("0");
     expect(String(detail.totalAmount)).toBe("40000");
   });
+
+  it("applies every SII literal default for an empty row", () => {
+    const detail = buildDteSaleDetail({});
+    expect(detail.registerNumber).toBe(0);
+    expect(detail.documentType).toBe(41);
+    expect(detail.saleType).toBe("Del Giro");
+    expect(detail.clientRUT).toBe("66666666-6");
+    expect(detail.clientName).toBe("Cliente sin identificar");
+    expect(detail.folio).toBe("");
+    expect(detail.period).toBe("");
+    expect(detail.origin).toBe("UPLOAD");
+    // optional string columns stay undefined (not "")
+    expect(detail.emitterRUT).toBeUndefined();
+    expect(detail.branchCode).toBeUndefined();
+    expect(detail.internalNumber).toBeUndefined();
+  });
+
+  it("respects explicit non-default identity values", () => {
+    const detail = buildDteSaleDetail({
+      registerNumber: "12",
+      documentType: "33",
+      saleType: "Exportación",
+      clientRUT: "11111111-1",
+      clientName: "ACME",
+      folio: "999",
+      period: "202605",
+      origin: "HAULMER",
+      emitterRUT: "76000000-0",
+      internalNumber: "5",
+    });
+    expect(detail.registerNumber).toBe(12);
+    expect(detail.documentType).toBe(33);
+    expect(detail.saleType).toBe("Exportación");
+    expect(detail.clientRUT).toBe("11111111-1");
+    expect(detail.clientName).toBe("ACME");
+    expect(detail.folio).toBe("999");
+    expect(detail.period).toBe("202605");
+    expect(detail.origin).toBe("HAULMER");
+    expect(detail.emitterRUT).toBe("76000000-0");
+    expect(detail.internalNumber).toBe(5);
+  });
+
+  it("documentDate/receiptDate alias: receiptDate falls back to documentDate", () => {
+    const detail = buildDteSaleDetail({ folio: "1", documentDate: "2026-05-10" });
+    expect((detail.documentDate as Date).toISOString()).toBe("2026-05-10T00:00:00.000Z");
+    // no receiptDate column → falls back to documentDate
+    expect((detail.receiptDate as Date).toISOString()).toBe("2026-05-10T00:00:00.000Z");
+  });
 });
