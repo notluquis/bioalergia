@@ -4,6 +4,8 @@ import {
   INJECTION_VOLUME_ML,
   PERENNIAL_FAMILIES,
   STANDARD_CONCENTRATION_UT_ML,
+  THERAPEUTIC_WINDOW_MAX_UG,
+  THERAPEUTIC_WINDOW_MIN_UG,
 } from "../data/allergens_db";
 import type {
   Allergen,
@@ -18,14 +20,23 @@ import type {
   Provider,
 } from "../data/types";
 
+/** Máximo de alérgenos por frasco (estabilidad proteica / competición antigénica). */
+const MAX_ALLERGENS_PER_VIAL = 3;
+
 // ─── Internal Helpers ────────────────────────────────────────────────────────
 
-function createEntry(allergen: Allergen, isDominant = false): VialAllergenEntry {
+function createEntry(
+  allergen: Allergen,
+  opts: { isDominant?: boolean; provider: Provider }
+): VialAllergenEntry {
+  // Diater no se dosifica en UT (usa molecular/HEPD según ficha); los proteolíticos
+  // aislados tampoco llevan UT. En ambos casos la concentración UT no aplica.
+  const isDiater = opts.provider === "diater";
   return {
     allergen,
-    concentrationUtMl: allergen.isProteolytic ? 0 : STANDARD_CONCENTRATION_UT_ML,
+    concentrationUtMl: isDiater || allergen.isProteolytic ? 0 : STANDARD_CONCENTRATION_UT_ML,
     injectedDoseUg: allergen.injectedDoseUg,
-    isDominant,
+    isDominant: opts.isDominant ?? false,
   };
 }
 
@@ -47,6 +58,54 @@ function buildVial(opts: {
 
 function nextSite(existingVials: Vial[]): InjectionSite {
   return existingVials.length % 2 === 0 ? "brazo_derecho" : "brazo_izquierdo";
+}
+
+function chunk<T>(arr: T[], size: number): T[][] {
+  const out: T[][] = [];
+  for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
+  return out;
+}
+
+/**
+ * Valida cada dosis numérica (µg) contra la ventana terapéutica EAACI (5–20 µg)
+ * y agrega una alerta si alguna queda fuera. Se omiten:
+ *  - viales MODIGOID (alergoide molecular, fuera de la matriz UT),
+ *  - entradas con displayDose (Diater / HEPD / no estandarizado),
+ *  - dosis 0 (no estandarizadas, ya advertidas aparte).
+ */
+function appendTherapeuticWindowAlerts(vials: Vial[], alerts: ClinicalAlert[]): void {
+  const below: string[] = [];
+  const above: string[] = [];
+
+  for (const vial of vials) {
+    if (vial.formulation === "MODIGOID") continue;
+    for (const entry of vial.allergens) {
+      if (entry.displayDose) continue;
+      const dose = entry.injectedDoseUg;
+      if (dose <= 0) continue;
+      if (dose < THERAPEUTIC_WINDOW_MIN_UG) below.push(`${entry.allergen.name} (${dose} µg)`);
+      else if (dose > THERAPEUTIC_WINDOW_MAX_UG) above.push(`${entry.allergen.name} (${dose} µg)`);
+    }
+  }
+
+  if (below.length > 0) {
+    alerts.push({
+      severity: "warning",
+      ruleTriggered: "Ventana terapéutica",
+      message: `Dosis por debajo del mínimo EAACI (${THERAPEUTIC_WINDOW_MIN_UG} µg): ${below.join(
+        ", "
+      )}. Riesgo de subdosificación; verifique la concentración disponible en ficha técnica.`,
+    });
+  }
+  if (above.length > 0) {
+    alerts.push({
+      severity: "warning",
+      ruleTriggered: "Ventana terapéutica",
+      message: `Dosis por encima del máximo EAACI (${THERAPEUTIC_WINDOW_MAX_UG} µg): ${above.join(
+        ", "
+      )}. Riesgo de reacción sistémica; considere ajustar el volumen inyectado.`,
+    });
+  }
 }
 
 function getEquivalences(
@@ -88,12 +147,14 @@ function getEquivalences(
     });
 
     if (provider === "inmunotek") {
+      // FORTE monosensibilización (30.000 UT/mL) — SÍ se importa a Chile.
+      // (La que NO se importa es MAX FORTE, la asimétrica 30k/10k.)
+      const forteVolume = 0.17; // 5000 UT a 30.000 UT/mL ≈ 0.17 mL
       eqs.push({
         formulationName: "Clustoid FORTE",
         concentrationString: "30.000 UT/mL",
-        // 0.5 mL de 10k = 5000 UT. En 30k -> 0.166 mL
-        requiredVolumeMl: 0.16,
-        dosesPerVial: Math.floor(VIAL_ML / 0.166666), // 15 dosis
+        requiredVolumeMl: forteVolume,
+        dosesPerVial: Math.floor(VIAL_ML / forteVolume), // ~14 dosis
       });
     }
   } else if (formulation === "MAX") {
@@ -107,7 +168,14 @@ function getEquivalences(
   } else if (formulation === "MODIGOID") {
     eqs.push({
       formulationName: "Modigoid Molecular",
-      concentrationString: "4.0 μg/mL (Alt a 1)",
+      concentrationString: "4.0 µg/mL (Alt a 1)",
+      requiredVolumeMl: 0.5,
+      dosesPerVial: Math.floor(VIAL_ML / 0.5),
+    });
+  } else if (formulation === "DEPOT") {
+    eqs.push({
+      formulationName: "Extracto depot nativo",
+      concentrationString: "Según ficha técnica",
       requiredVolumeMl: 0.5,
       dosesPerVial: Math.floor(VIAL_ML / 0.5),
     });
@@ -122,6 +190,19 @@ function calculateDiater(selectedAllergens: Allergen[]): ScitCalculationResult {
   const vials: Vial[] = [];
   const alerts: ClinicalAlert[] = [];
   const rulesApplied: string[] = [];
+
+  // Diater no se dosifica con la matriz de microgramos de Inmunotek; sus extractos
+  // moleculares/polimerizados siguen su propia ficha técnica (µg/HEPD).
+  const molEntry = (a: Allergen): VialAllergenEntry => {
+    const entry = createEntry(a, { provider: "diater" });
+    entry.displayDose = "Molecular";
+    return entry;
+  };
+  const hepdEntry = (a: Allergen): VialAllergenEntry => {
+    const entry = createEntry(a, { provider: "diater" });
+    entry.displayDose = "HEPD";
+    return entry;
+  };
 
   const isOnlyAlternaria = selectedAllergens.length === 1 && selectedAllergens[0]?.isProteolytic;
   const hasAlternaria = selectedAllergens.some((a) => a.isProteolytic);
@@ -141,7 +222,7 @@ function calculateDiater(selectedAllergens: Allergen[]): ScitCalculationResult {
         vialNumber: 1,
         label: "MOLMite",
         formulation: "MOL",
-        allergens: selectedAllergens.map((a) => createEntry(a)),
+        allergens: selectedAllergens.map(molEntry),
         injectionSite: "brazo_derecho",
         rationale: "Fórmula molecular preensamblada exclusiva de ácaros (Der p 1 / Der p 2).",
         equivalences: getEquivalences("diater", "MOL"),
@@ -155,11 +236,9 @@ function calculateDiater(selectedAllergens: Allergen[]): ScitCalculationResult {
         vialNumber: 1,
         label: "MOLMite Mix",
         formulation: "MOL_MIX",
-        allergens: selectedAllergens.map((a) => {
-          const entry = createEntry(a);
-          if (a.family !== "acaros") entry.displayDose = "HEPD";
-          return entry;
-        }),
+        allergens: selectedAllergens.map((a) =>
+          a.family === "acaros" ? molEntry(a) : hepdEntry(a)
+        ),
         injectionSite: "brazo_derecho",
         rationale:
           "MOLMite Mix: Base molecular de ácaros con extractos polimerizados para cubrir la polisensibilización.",
@@ -173,7 +252,7 @@ function calculateDiater(selectedAllergens: Allergen[]): ScitCalculationResult {
         vialNumber: 1,
         label: "Alt a 1 MOL",
         formulation: "MOL",
-        allergens: selectedAllergens.map((a) => createEntry(a)),
+        allergens: selectedAllergens.map(molEntry),
         injectionSite: "brazo_derecho",
         rationale: "Fórmula molecular nativa de Alternaria.",
         equivalences: getEquivalences("diater", "MOL"),
@@ -187,11 +266,7 @@ function calculateDiater(selectedAllergens: Allergen[]): ScitCalculationResult {
         vialNumber: 1,
         label: "Alt a 1 MOL Mix",
         formulation: "MOL_MIX",
-        allergens: selectedAllergens.map((a) => {
-          const entry = createEntry(a);
-          if (!a.isProteolytic) entry.displayDose = "HEPD";
-          return entry;
-        }),
+        allergens: selectedAllergens.map((a) => (a.isProteolytic ? molEntry(a) : hepdEntry(a))),
         injectionSite: "brazo_derecho",
         rationale:
           "Alt a 1 MOL Mix: Base molecular de Alternaria con extractos polimerizados adicionales.",
@@ -205,7 +280,7 @@ function calculateDiater(selectedAllergens: Allergen[]): ScitCalculationResult {
         vialNumber: 1,
         label: "Cup a 1 MOL",
         formulation: "MOL",
-        allergens: selectedAllergens.map((a) => createEntry(a)),
+        allergens: selectedAllergens.map(molEntry),
         injectionSite: "brazo_derecho",
         rationale: "Fórmula molecular nativa de Ciprés.",
         equivalences: getEquivalences("diater", "MOL"),
@@ -219,11 +294,7 @@ function calculateDiater(selectedAllergens: Allergen[]): ScitCalculationResult {
         vialNumber: 1,
         label: "Cup a 1 MOL Mix",
         formulation: "MOL_MIX",
-        allergens: selectedAllergens.map((a) => {
-          const entry = createEntry(a);
-          if (a.id !== "cipres") entry.displayDose = "HEPD";
-          return entry;
-        }),
+        allergens: selectedAllergens.map((a) => (a.id === "cipres" ? molEntry(a) : hepdEntry(a))),
         injectionSite: "brazo_derecho",
         rationale:
           "Cup a 1 MOL Mix: Base molecular de Ciprés con extractos polimerizados adicionales.",
@@ -242,11 +313,7 @@ function calculateDiater(selectedAllergens: Allergen[]): ScitCalculationResult {
         vialNumber: 1,
         label: label,
         formulation: form,
-        allergens: selectedAllergens.map((a) => {
-          const entry = createEntry(a);
-          entry.displayDose = "HEPD";
-          return entry;
-        }),
+        allergens: selectedAllergens.map(hepdEntry),
         injectionSite: "brazo_derecho",
         rationale:
           "Formulación polimerizada a medida (sin aluminio) para combinaciones que no encajan en bases moleculares preensambladas.",
@@ -254,6 +321,13 @@ function calculateDiater(selectedAllergens: Allergen[]): ScitCalculationResult {
       })
     );
   }
+
+  alerts.push({
+    severity: "info",
+    ruleTriggered: "Diater",
+    message:
+      "La dosificación de Diater sigue la ficha técnica del fabricante (molecular / HEPD). No aplica la matriz de microgramos de Inmunotek/Roxall que se muestra para los otros laboratorios.",
+  });
 
   const totalA = selectedAllergens.length;
   const totalV = vials.length;
@@ -268,16 +342,18 @@ function calculateInmunotekRoxall(
   selection: DoctorSelection,
   selectedAllergens: Allergen[]
 ): ScitCalculationResult {
-  const { relevanceMode, dominantAllergenId } = selection;
+  const { relevanceMode, dominantAllergenId, provider } = selection;
 
   const vials: Vial[] = [];
   const alerts: ClinicalAlert[] = [];
   const rulesApplied: string[] = [];
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // REGLA 5 — Excepción Proteolítica (Alternaria)
-  // Las proteasas de hongos destruyen otros alérgenos en solución.
-  // Se aísla SIEMPRE en un frasco Modigoid separado.
+  // REGLA 5 — Excepción Proteolítica (hongos: Alternaria, Cladosporium)
+  // Las proteasas de hongos destruyen otros alérgenos en solución → se aíslan.
+  //  - Alternaria: estandarizada como Modigoid (Alt a 1, 4.0 µg/mL).
+  //  - Cladosporium u otros sin estandarización molecular: extracto depot nativo,
+  //    dosis NO calculable automáticamente → se advierte.
   // ═══════════════════════════════════════════════════════════════════════════
   const proteolytic = selectedAllergens.filter((a) => a.isProteolytic);
   const remaining = selectedAllergens.filter((a) => !a.isProteolytic);
@@ -285,27 +361,58 @@ function calculateInmunotekRoxall(
   if (proteolytic.length > 0) {
     rulesApplied.push("Regla 5: Excepción Proteolítica");
 
-    for (const alt of proteolytic) {
-      vials.push(
-        buildVial({
-          vialNumber: vials.length + 1,
-          label: `${alt.name} (aislado)`,
-          formulation: "MODIGOID",
-          allergens: [createEntry(alt)],
-          injectionSite: nextSite(vials),
-          rationale:
-            "Las proteasas de los hongos destruyen otros alérgenos nativos o alergoides si conviven en solución líquida. Se aísla en Modigoid (Alergoide Molecular Alt a 1) a 4.0 μg/mL.",
-          equivalences: getEquivalences(selection.provider, "MODIGOID"),
-        })
-      );
+    for (const fungus of proteolytic) {
+      const standardized = fungus.injectedDoseUg > 0; // Alternaria (Modigoid)
+
+      if (standardized) {
+        vials.push(
+          buildVial({
+            vialNumber: vials.length + 1,
+            label: `${fungus.name} (aislado)`,
+            formulation: "MODIGOID",
+            allergens: [createEntry(fungus, { provider })],
+            injectionSite: nextSite(vials),
+            rationale:
+              "Las proteasas fúngicas destruyen otros alérgenos en solución líquida. Alternaria se aísla en Modigoid (alergoide molecular Alt a 1) a 4.0 µg/mL.",
+            equivalences: getEquivalences(provider, "MODIGOID"),
+          })
+        );
+      } else {
+        const entry = createEntry(fungus, { provider });
+        entry.displayDose = "Sin estandarizar";
+        vials.push(
+          buildVial({
+            vialNumber: vials.length + 1,
+            label: `${fungus.name} (aislado)`,
+            formulation: "DEPOT",
+            allergens: [entry],
+            injectionSite: nextSite(vials),
+            rationale:
+              "Hongo proteolítico sin estandarización molecular publicada. Se aísla en extracto depot nativo; la dosis se ajusta según ficha técnica del fabricante.",
+            equivalences: getEquivalences(provider, "DEPOT"),
+          })
+        );
+      }
     }
 
+    const names = proteolytic.map((a) => a.name).join(", ");
     alerts.push({
       severity: "warning",
       ruleTriggered: "Regla 5",
-      message:
-        "Alternaria ha sido aislada automáticamente en un frasco Modigoid separado. Sus proteasas degradan otros alérgenos en solución.",
+      message: `${names} ${
+        proteolytic.length > 1 ? "han sido aislados" : "ha sido aislado"
+      } en frasco(s) separado(s). Las proteasas fúngicas degradan otros alérgenos en solución.`,
     });
+
+    const nonStandardized = proteolytic.filter((a) => a.injectedDoseUg <= 0);
+    if (nonStandardized.length > 0) {
+      const nsNames = nonStandardized.map((a) => a.name).join(", ");
+      alerts.push({
+        severity: "danger",
+        ruleTriggered: "Regla 5",
+        message: `${nsNames} no tiene estandarización molecular publicada; la dosis no es calculable automáticamente. Prescriba según la ficha técnica del fabricante.`,
+      });
+    }
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -314,7 +421,7 @@ function calculateInmunotekRoxall(
   const N = remaining.length;
 
   if (N === 0) {
-    // Solo se seleccionó Alternaria u hongos proteolíticos
+    // Solo se seleccionaron hongos proteolíticos
   } else if (N === 1) {
     // ─── REGLA 1 — Monosensibilización ─────────────────────────────────
     rulesApplied.push("Regla 1: Monosensibilización");
@@ -326,91 +433,51 @@ function calculateInmunotekRoxall(
           vialNumber: vials.length + 1,
           label: a.name,
           formulation: "ESTANDAR",
-          allergens: [createEntry(a)],
+          allergens: [createEntry(a, { provider })],
           injectionSite: nextSite(vials),
           rationale: `Formulación Estándar (${a.commercialEquivalence}) para alérgeno único.`,
-          equivalences: getEquivalences(selection.provider, "ESTANDAR"),
+          equivalences: getEquivalences(provider, "ESTANDAR"),
         })
       );
     }
-  } else if (N > 3) {
+  } else if (N > MAX_ALLERGENS_PER_VIAL) {
     // ─── REGLA 4 — Saturación Molecular (N > 3) ───────────────────────
+    // Se separa en perennes vs estacionales y, dentro de cada grupo, se
+    // fracciona en frascos de máximo 3 alérgenos (estabilidad / competición).
     rulesApplied.push("Regla 4: Saturación Molecular");
 
     const perennial = remaining.filter((a) => PERENNIAL_FAMILIES.has(a.family));
     const seasonal = remaining.filter((a) => !PERENNIAL_FAMILIES.has(a.family));
 
-    // Si todos caen en una sola categoría, dividir en 2 grupos balanceados
-    if (perennial.length === 0 || seasonal.length === 0) {
-      const all = perennial.length > 0 ? perennial : seasonal;
-      const mid = Math.ceil(all.length / 2);
-      const group1 = all.slice(0, mid);
-      const group2 = all.slice(mid);
+    const groups: { baseLabel: string; allergens: Allergen[] }[] = [];
+    for (const c of chunk(perennial, MAX_ALLERGENS_PER_VIAL))
+      groups.push({ baseLabel: "Perennes", allergens: c });
+    for (const c of chunk(seasonal, MAX_ALLERGENS_PER_VIAL))
+      groups.push({ baseLabel: "Estacionales", allergens: c });
 
-      const fmt1: FormulationType = group1.length > 1 ? "MAX" : "ESTANDAR";
+    for (const group of groups) {
+      const sameBase = groups.filter((g) => g.baseLabel === group.baseLabel);
+      const label =
+        sameBase.length > 1 ? `${group.baseLabel} ${sameBase.indexOf(group) + 1}` : group.baseLabel;
+      const fmt: FormulationType = group.allergens.length > 1 ? "MAX" : "ESTANDAR";
+      const isPerennialGroup = group.baseLabel === "Perennes";
+
       vials.push(
         buildVial({
           vialNumber: vials.length + 1,
-          label: "Grupo 1",
-          formulation: fmt1,
-          allergens: group1.map((a) => createEntry(a)),
-          injectionSite: "brazo_derecho",
+          label,
+          formulation: fmt,
+          allergens: group.allergens.map((a) => createEntry(a, { provider })),
+          injectionSite: nextSite(vials),
           rationale:
-            group1.length > 1
-              ? "Formulación MAX para preservar la dosis terapéutica de cada alérgeno en la mezcla."
-              : "Formulación Estándar para alérgeno único en este vial.",
-          equivalences: getEquivalences(selection.provider, fmt1),
-        })
-      );
-
-      if (group2.length > 0) {
-        const fmt2: FormulationType = group2.length > 1 ? "MAX" : "ESTANDAR";
-        vials.push(
-          buildVial({
-            vialNumber: vials.length + 1,
-            label: "Grupo 2",
-            formulation: fmt2,
-            allergens: group2.map((a) => createEntry(a)),
-            injectionSite: "brazo_izquierdo",
-            rationale:
-              group2.length > 1
-                ? "Formulación MAX para preservar la dosis terapéutica de cada alérgeno en la mezcla."
-                : "Formulación Estándar para alérgeno único en este vial.",
-            equivalences: getEquivalences(selection.provider, fmt2),
-          })
-        );
-      }
-    } else {
-      // Split natural: perennes vs estacionales
-      const fmtP: FormulationType = perennial.length > 1 ? "MAX" : "ESTANDAR";
-      vials.push(
-        buildVial({
-          vialNumber: vials.length + 1,
-          label: "Perennes",
-          formulation: fmtP,
-          allergens: perennial.map((a) => createEntry(a)),
-          injectionSite: "brazo_derecho",
-          rationale:
-            perennial.length > 1
-              ? "Formulación MAX para preservar la dosis terapéutica de cada alérgeno perenne en la mezcla."
-              : "Formulación Estándar para alérgeno perenne único.",
-          equivalences: getEquivalences(selection.provider, fmtP),
-        })
-      );
-
-      const fmtS: FormulationType = seasonal.length > 1 ? "MAX" : "ESTANDAR";
-      vials.push(
-        buildVial({
-          vialNumber: vials.length + 1,
-          label: "Estacionales",
-          formulation: fmtS,
-          allergens: seasonal.map((a) => createEntry(a)),
-          injectionSite: "brazo_izquierdo",
-          rationale:
-            seasonal.length > 1
-              ? "Formulación MAX para preservar la dosis terapéutica de cada alérgeno estacional en la mezcla."
-              : "Formulación Estándar para alérgeno estacional único.",
-          equivalences: getEquivalences(selection.provider, fmtS),
+            group.allergens.length > 1
+              ? `Formulación MAX para preservar la dosis terapéutica de cada alérgeno ${
+                  isPerennialGroup ? "perenne" : "estacional"
+                } en la mezcla.`
+              : `Formulación Estándar para alérgeno ${
+                  isPerennialGroup ? "perenne" : "estacional"
+                } único.`,
+          equivalences: getEquivalences(provider, fmt),
         })
       );
     }
@@ -418,19 +485,8 @@ function calculateInmunotekRoxall(
     alerts.push({
       severity: "warning",
       ruleTriggered: "Regla 4",
-      message: `Se han seleccionado ${N} alérgenos no-proteolíticos. Se recomienda separar en 2 frascos para evitar degradación proteica y competición antigénica. Pauta: 0.5 mL por brazo, con 30 minutos de separación (Pauta Cluster Clásica).`,
+      message: `Se han seleccionado ${N} alérgenos no-proteolíticos. Se separan en ${groups.length} frascos (máximo ${MAX_ALLERGENS_PER_VIAL} alérgenos cada uno) para evitar degradación proteica y competición antigénica. Pauta: 0.5 mL por brazo, con 30 minutos de separación (Pauta Cluster Clásica).`,
     });
-
-    // Advertir si algún vial excede 3 alérgenos
-    const overloaded = vials.filter((v) => v.formulation !== "MODIGOID" && v.allergens.length > 3);
-    if (overloaded.length > 0) {
-      alerts.push({
-        severity: "danger",
-        ruleTriggered: "Regla 4",
-        message:
-          "Uno de los viales contiene más de 3 alérgenos. Existe riesgo de degradación proteica y competición a nivel de Células Dendríticas. Considere redistribuir manualmente.",
-      });
-    }
   } else {
     // ─── N = 2 o N = 3 ────────────────────────────────────────────────
 
@@ -447,11 +503,11 @@ function calculateInmunotekRoxall(
             vialNumber: vials.length + 1,
             label: `${dominant.name} (Dominante)`,
             formulation: "ESTANDAR",
-            allergens: [createEntry(dominant, true)],
+            allergens: [createEntry(dominant, { provider, isDominant: true })],
             injectionSite: nextSite(vials),
             rationale:
               "Vial individual para el alérgeno dominante, permitiendo dosificación manual asimétrica independiente.",
-            equivalences: getEquivalences(selection.provider, "ESTANDAR"),
+            equivalences: getEquivalences(provider, "ESTANDAR"),
           })
         );
       }
@@ -462,10 +518,10 @@ function calculateInmunotekRoxall(
             vialNumber: vials.length + 1,
             label: `${secondary[0].name} (Secundario)`,
             formulation: "ESTANDAR",
-            allergens: [createEntry(secondary[0])],
+            allergens: [createEntry(secondary[0], { provider })],
             injectionSite: nextSite(vials),
             rationale: "Vial individual para el alérgeno secundario.",
-            equivalences: getEquivalences(selection.provider, "ESTANDAR"),
+            equivalences: getEquivalences(provider, "ESTANDAR"),
           })
         );
       } else if (secondary.length > 1) {
@@ -475,11 +531,11 @@ function calculateInmunotekRoxall(
             vialNumber: vials.length + 1,
             label: "Secundarios",
             formulation: "MAX",
-            allergens: secondary.map((a) => createEntry(a)),
+            allergens: secondary.map((a) => createEntry(a, { provider })),
             injectionSite: nextSite(vials),
             rationale:
               "Formulación MAX para los alérgenos secundarios, preservando la dosis terapéutica completa de cada uno en la mezcla.",
-            equivalences: getEquivalences(selection.provider, "MAX"),
+            equivalences: getEquivalences(provider, "MAX"),
           })
         );
       }
@@ -488,7 +544,7 @@ function calculateInmunotekRoxall(
         severity: "info",
         ruleTriggered: "Regla 3",
         message:
-          "Al no contar con viales premezclados asimétricos (Forte) en el mercado local, la separación en viales independientes es la única forma de escalar la dosis del alérgeno dominante sin sobre-exponer al paciente al alérgeno secundario.",
+          "Al no contar con viales premezclados asimétricos (MAX FORTE) en el mercado local, la separación en viales independientes es la única forma de escalar la dosis del alérgeno dominante sin sobre-exponer al paciente al alérgeno secundario.",
       });
     } else if (relevanceMode === "dominant_max" && dominantAllergenId) {
       // ─── REGLA 3: Asimétrica → usar MAX simétrico ─────────────────
@@ -499,11 +555,13 @@ function calculateInmunotekRoxall(
           vialNumber: vials.length + 1,
           label: "Mezcla MAX",
           formulation: "MAX",
-          allergens: remaining.map((a) => createEntry(a, a.id === dominantAllergenId)),
+          allergens: remaining.map((a) =>
+            createEntry(a, { provider, isDominant: a.id === dominantAllergenId })
+          ),
           injectionSite: nextSite(vials),
           rationale:
             "Formulación MAX simétrica. Todos los alérgenos reciben 10.000 UT/mL. Se acepta tratar al dominante y secundarios al 100% de la dosis terapéutica.",
-          equivalences: getEquivalences(selection.provider, "MAX"),
+          equivalences: getEquivalences(provider, "MAX"),
         })
       );
 
@@ -522,15 +580,20 @@ function calculateInmunotekRoxall(
           vialNumber: vials.length + 1,
           label: "Mezcla MAX",
           formulation: "MAX",
-          allergens: remaining.map((a) => createEntry(a)),
+          allergens: remaining.map((a) => createEntry(a, { provider })),
           injectionSite: nextSite(vials),
           rationale:
             "La tecnología MAX compensa el efecto dilucional, asegurando que cada 0.5 mL del frasco mantengan 10.000 UT de CADA alérgeno, previniendo la subdosificación.",
-          equivalences: getEquivalences(selection.provider, "MAX"),
+          equivalences: getEquivalences(provider, "MAX"),
         })
       );
     }
   }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Validación de ventana terapéutica EAACI (5–20 µg)
+  // ═══════════════════════════════════════════════════════════════════════════
+  appendTherapeuticWindowAlerts(vials, alerts);
 
   // ═══════════════════════════════════════════════════════════════════════════
   // Resumen textual
@@ -544,7 +607,10 @@ function calculateInmunotekRoxall(
 
 // ─── Wrapper Engine ──────────────────────────────────────────────────────────
 
-function calculate(selection: DoctorSelection): ScitCalculationResult {
+/**
+ * Motor de reglas SCIT puro (sin React). Exportado para tests unitarios.
+ */
+export function calculate(selection: DoctorSelection): ScitCalculationResult {
   const { selectedAllergenIds, provider } = selection;
 
   if (selectedAllergenIds.length === 0) {
@@ -568,13 +634,15 @@ function calculate(selection: DoctorSelection): ScitCalculationResult {
  * Hook que implementa el motor de reglas SCIT.
  *
  * Orden de evaluación:
- * 1. Regla 5 — Aislar hongos proteolíticos (Alternaria) en Modigoid
- * 2. Regla 4 — Si N > 3, dividir en Perennes + Estacionales
+ * 1. Regla 5 — Aislar hongos proteolíticos (Alternaria→Modigoid; resto→depot)
+ * 2. Regla 4 — Si N > 3, dividir en Perennes + Estacionales (máx 3 por frasco)
  * 3. Regla 1 — Si N = 1, formulación Estándar
  * 4. Regla 2 — Si N = 2–3 y simétrico, formulación MAX
  * 5. Regla 3 — Si N = 2–3 y dominante, separar o MAX simétrico
+ * + Validación de ventana terapéutica EAACI (5–20 µg) sobre las dosis finales.
  *
- * ⛔ MAX FORTE no disponible en Chile — eliminado del motor.
+ * ⛔ MAX FORTE (asimétrica 30k/10k) no disponible en Chile — eliminado del motor.
+ *    FORTE monosensibilización (30k) sí se importa y se ofrece como alternativa.
  */
 export function useScitCalculator(selection: DoctorSelection): ScitCalculationResult {
   const idsKey = selection.selectedAllergenIds.join(",");

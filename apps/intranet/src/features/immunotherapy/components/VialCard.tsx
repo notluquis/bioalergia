@@ -63,6 +63,22 @@ export function VialCard({ vial, index }: VialCardProps) {
                   <Chip color={FAMILY_CHIP_COLORS[entry.allergen.family]} size="sm" variant="soft">
                     {FAMILY_LABELS[entry.allergen.family]}
                   </Chip>
+                  {!entry.allergen.referenceVerified && (
+                    <Tooltip>
+                      <Tooltip.Trigger>
+                        <Chip color="warning" size="sm" variant="soft">
+                          ⚠ µg sin cita
+                        </Chip>
+                      </Tooltip.Trigger>
+                      <Tooltip.Content className="max-w-xs">
+                        <p className="text-sm">
+                          Cifra µg de ficha técnica / extrapolación, sin cita directa del valor en
+                          literatura ({entry.allergen.bibliographyRef}). Verifique contra la ficha
+                          técnica vigente.
+                        </p>
+                      </Tooltip.Content>
+                    </Tooltip>
+                  )}
                 </div>
                 <p className="text-default-500 text-xs italic">{entry.allergen.scientificName}</p>
                 <p className="text-default-600 text-xs">

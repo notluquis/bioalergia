@@ -60,10 +60,22 @@ export interface Allergen {
   injectedDoseUg: number;
   /** true = presente todo el año (ácaros, epitelios, hongos) */
   isPerennial: boolean;
-  /** true = produce enzimas proteolíticas (Alternaria) */
+  /** true = produce enzimas proteolíticas (Alternaria, Cladosporium) */
   isProteolytic: boolean;
-  /** Clave de referencia bibliográfica [1]–[7] */
+  /** Clave de referencia bibliográfica; ver ALLERGEN_REFERENCES por id */
   bibliographyRef: string;
+  /**
+   * true = el VALOR µg-por-inyección está citado directamente en literatura
+   * publicada verificable.
+   * false = el valor proviene de ficha técnica del fabricante o de extrapolación
+   * (el paper de respaldo puede existir, pero NO cita la cifra µg) → requiere
+   * validación contra ficha técnica vigente antes de uso clínico.
+   *
+   * Verificación 2026-06-15 (PubMed): actualmente NINGÚN alérgeno tiene su cifra
+   * µg citada en el paper; todas son ficha técnica/extrapolación. Ver nota en
+   * allergens_db.ts. Anclaje sí verificado: ventana EAACI 5–20 µg (PMID 29631326).
+   */
+  referenceVerified: boolean;
 }
 
 // ─── Rules Engine Output ─────────────────────────────────────────────────────

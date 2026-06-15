@@ -4,7 +4,7 @@ import tailwindcss from "@tailwindcss/vite";
 import { TanStackRouterVite } from "@tanstack/router-vite-plugin";
 import react from "@vitejs/plugin-react";
 import { visualizer } from "rollup-plugin-visualizer";
-import { defineConfig } from "vite";
+import { configDefaults, defineConfig } from "vitest/config";
 
 export default defineConfig(({ mode }) => ({
   plugins: [
@@ -47,5 +47,10 @@ export default defineConfig(({ mode }) => ({
       // Removes manual chunks for optimal HTTP/3 multiplexing
     },
     chunkSizeWarningLimit: 600,
+  },
+  test: {
+    // Playwright specs live in e2e/ and run via playwright.config.ts — keep
+    // vitest from picking up their *.spec.ts (else "test() called here" error).
+    exclude: [...configDefaults.exclude, "e2e/**"],
   },
 }));

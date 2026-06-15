@@ -1,5 +1,27 @@
 import type { Allergen, AllergenFamily } from "./types";
 
+// ═══════════════════════════════════════════════════════════════════════════
+// NOTA DE VERIFICACIÓN BIBLIOGRÁFICA (2026-06-15)
+// ───────────────────────────────────────────────────────────────────────────
+// Se cotejaron contra PubMed todas las citas del documento fuente
+// (07_CALCULADORA_DOSIS_SCIT.md). Hallazgos:
+//   • Los papers EXISTEN y los temas calzan (productos Modigoid/Clustoid/Alxoid
+//     y principios cualitativos confirmados).
+//   • PERO los valores µg-por-inyección NO aparecen en los papers: provienen de
+//     fichas técnicas del fabricante o de extrapolación. Trátense como tales y
+//     verifíquense contra la ficha vigente antes de prescribir.
+//   • Misatribución corregida: el extracto de Abedul es Mösges et al. 2025
+//     (Allergy, PMID 39520181), NO "Pfaar 2023". El paper usa 23.000 mTU T502;
+//     el "35 µg/mL" del documento NO está respaldado → referenceVerified=false.
+//   • Cladosporium: Abel-Fernández 2023 (J Fungi, PMID 37233293) CONFIRMA que
+//     los extractos fúngicos están insuficientemente estandarizados → sin dosis.
+//   • Ancla de seguridad VERIFICADA: ventana 5–20 µg de alérgeno mayor por
+//     inyección (Leatherman/Cox, "Evidence-based dosing of maintenance SCIT",
+//     PMID 29631326), alineada con EAACI. Es la única cifra con cita directa.
+//   • Ninguna de estas referencias figura en la bibliografía verificada del POE
+//     (04_BIBLIOGRAFIA_BASE.md): viven solo en el documento de la calculadora.
+// ═══════════════════════════════════════════════════════════════════════════
+
 // ─── Constants ───────────────────────────────────────────────────────────────
 
 /** Volumen de inyección estándar (mL) */
@@ -7,6 +29,15 @@ export const INJECTION_VOLUME_ML = 0.5;
 
 /** Concentración estándar para extractos Inmunotek/Roxall (UT/mL) */
 export const STANDARD_CONCENTRATION_UT_ML = 10_000;
+
+/**
+ * Ventana terapéutica segura/efectiva por inyección (µg de proteína mayor).
+ * Verificado: 5–20 µg de alérgeno mayor por inyección (PMID 29631326,
+ * "Evidence-based dosing of maintenance SCIT"), alineado con EAACI.
+ * Dosis fuera de este rango disparan una alerta clínica.
+ */
+export const THERAPEUTIC_WINDOW_MIN_UG = 5;
+export const THERAPEUTIC_WINDOW_MAX_UG = 20;
 
 /** Familias consideradas perennes para la separación en la Regla 4 */
 export const PERENNIAL_FAMILIES: ReadonlySet<AllergenFamily> = new Set([
@@ -113,7 +144,8 @@ export const ALLERGENS_DB: Allergen[] = [
     injectedDoseUg: 8.3,
     isPerennial: true,
     isProteolytic: false,
-    bibliographyRef: "[1]",
+    bibliographyRef: "Polimerizado Dpt/Df (Alxoid 10.000 TU/mL); 8.3 µg = ficha técnica",
+    referenceVerified: false,
   },
   {
     id: "acaro_df",
@@ -126,7 +158,8 @@ export const ALLERGENS_DB: Allergen[] = [
     injectedDoseUg: 8.3,
     isPerennial: true,
     isProteolytic: false,
-    bibliographyRef: "[1]",
+    bibliographyRef: "Polimerizado Dpt/Df (Alxoid 10.000 TU/mL); 8.3 µg = ficha técnica",
+    referenceVerified: false,
   },
   {
     id: "acaro_bt",
@@ -139,7 +172,8 @@ export const ALLERGENS_DB: Allergen[] = [
     injectedDoseUg: 7.5,
     isPerennial: true,
     isProteolytic: false,
-    bibliographyRef: "[2]",
+    bibliographyRef: "Extrapolación línea PM-HDM (sin cita)",
+    referenceVerified: false,
   },
 
   // ── Gramíneas ──────────────────────────────────────────────────────────
@@ -154,7 +188,8 @@ export const ALLERGENS_DB: Allergen[] = [
     injectedDoseUg: 12.0,
     isPerennial: false,
     isProteolytic: false,
-    bibliographyRef: "[3]",
+    bibliographyRef: "Klimek 2014 (PMID 25130503); 24 µg = ficha técnica, no en el paper",
+    referenceVerified: false,
   },
 
   // ── Árboles ────────────────────────────────────────────────────────────
@@ -169,7 +204,8 @@ export const ALLERGENS_DB: Allergen[] = [
     injectedDoseUg: 10.0,
     isPerennial: false,
     isProteolytic: false,
-    bibliographyRef: "[4]",
+    bibliographyRef: "Literatura interna Inmunotek (sin cita)",
+    referenceVerified: false,
   },
   {
     id: "abedul",
@@ -182,7 +218,8 @@ export const ALLERGENS_DB: Allergen[] = [
     injectedDoseUg: 17.5,
     isPerennial: false,
     isProteolytic: false,
-    bibliographyRef: "[5]",
+    bibliographyRef: "Mösges 2025 (PMID 39520181) — 35 µg/mL NO está en el paper",
+    referenceVerified: false,
   },
   {
     id: "platano_oriental",
@@ -195,7 +232,8 @@ export const ALLERGENS_DB: Allergen[] = [
     injectedDoseUg: 7.5,
     isPerennial: false,
     isProteolytic: false,
-    bibliographyRef: "[6]",
+    bibliographyRef: "Ficha técnica Alxoid/Clustoid (sin cita)",
+    referenceVerified: false,
   },
   {
     id: "cipres",
@@ -208,7 +246,8 @@ export const ALLERGENS_DB: Allergen[] = [
     injectedDoseUg: 6.0,
     isPerennial: false,
     isProteolytic: false,
-    bibliographyRef: "[6]",
+    bibliographyRef: "Ficha técnica Alxoid/Clustoid (sin cita)",
+    referenceVerified: false,
   },
 
   // ── Malezas ────────────────────────────────────────────────────────────
@@ -223,7 +262,8 @@ export const ALLERGENS_DB: Allergen[] = [
     injectedDoseUg: 5.0,
     isPerennial: false,
     isProteolytic: false,
-    bibliographyRef: "[7]",
+    bibliographyRef: "Zbîrcea 2024 (PMID 38932364) — sobre anticuerpos, µg no citado",
+    referenceVerified: false,
   },
   {
     id: "parietaria",
@@ -236,7 +276,8 @@ export const ALLERGENS_DB: Allergen[] = [
     injectedDoseUg: 7.0,
     isPerennial: false,
     isProteolytic: false,
-    bibliographyRef: "[8]",
+    bibliographyRef: "PMID 30326788 (2018) — Parietaria depot SCIT, µg no citado",
+    referenceVerified: false,
   },
 
   // ── Epitelios ──────────────────────────────────────────────────────────
@@ -251,7 +292,8 @@ export const ALLERGENS_DB: Allergen[] = [
     injectedDoseUg: 5.0,
     isPerennial: true,
     isProteolytic: false,
-    bibliographyRef: "[9]",
+    bibliographyRef: "Consenso general epitelios EAACI (sin cita específica)",
+    referenceVerified: false,
   },
   {
     id: "perro",
@@ -264,7 +306,8 @@ export const ALLERGENS_DB: Allergen[] = [
     injectedDoseUg: 4.0,
     isPerennial: true,
     isProteolytic: false,
-    bibliographyRef: "[9]",
+    bibliographyRef: "Consenso general epitelios EAACI (sin cita específica)",
+    referenceVerified: false,
   },
 
   // ── Hongos ─────────────────────────────────────────────────────────────
@@ -279,7 +322,8 @@ export const ALLERGENS_DB: Allergen[] = [
     injectedDoseUg: 2.0,
     isPerennial: true,
     isProteolytic: true,
-    bibliographyRef: "[10]",
+    bibliographyRef: "Brindisi 2025 (PMID 40095008) — Modigoid Alt a1; 4 µg/mL = ficha",
+    referenceVerified: false,
   },
   {
     id: "cladosporium",
@@ -287,13 +331,14 @@ export const ALLERGENS_DB: Allergen[] = [
     scientificName: "Cladosporium herbarum",
     family: "hongos",
     molecularMarker: "Cla h 8 (Mezcla)",
-    commercialEquivalence: "10.000 UT/mL",
+    commercialEquivalence: "Sin estandarización molecular",
     // No estandarizado molecularmente a nivel clínico aún
     vialConcentrationUgMl: 0,
     injectedDoseUg: 0,
     isPerennial: true,
     isProteolytic: true,
-    bibliographyRef: "[11]",
+    bibliographyRef: "Abel-Fernández 2023 (PMID 37233293) — extractos fúngicos no estandarizados",
+    referenceVerified: false,
   },
 ];
 

@@ -1,8 +1,14 @@
-import { Card, Chip, RadioGroup, Radio } from "@heroui/react";
-import { Calculator, FlaskConical, Syringe } from "lucide-react";
+import { Alert, Card, Chip, RadioGroup, Radio } from "@heroui/react";
+import { Calculator, FlaskConical, ShieldAlert, Syringe } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { getAllergenById } from "../data/allergens_db";
 import type { ClinicalRelevanceMode, DoctorSelection, Provider } from "../data/types";
+
+const PROVIDERS: readonly Provider[] = ["inmunotek", "diater", "roxall"];
+
+function isProvider(value: string): value is Provider {
+  return (PROVIDERS as readonly string[]).includes(value);
+}
 import { useScitCalculator } from "../hooks/useScitCalculator";
 import { AllergenSelector } from "./AllergenSelector";
 import { ClinicalAlerts } from "./ClinicalAlerts";
@@ -89,6 +95,23 @@ export function CalculatorSCIT() {
       </div>
 
       {/* ════════════════════════════════════════════════════════════════════
+           CLINICAL DISCLAIMER
+         ════════════════════════════════════════════════════════════════════ */}
+      <Alert status="warning">
+        <Alert.Indicator>
+          <ShieldAlert size={18} />
+        </Alert.Indicator>
+        <Alert.Content>
+          <Alert.Title>Herramienta de apoyo a la decisión clínica</Alert.Title>
+          <Alert.Description>
+            Las dosis y formulaciones sugeridas no reemplazan el criterio médico. Verifique siempre
+            la concentración y el volumen contra la ficha técnica vigente del fabricante antes de
+            prescribir. La indicación final es responsabilidad del médico tratante.
+          </Alert.Description>
+        </Alert.Content>
+      </Alert>
+
+      {/* ════════════════════════════════════════════════════════════════════
            STEP 1: PROVIDER SELECTOR
          ════════════════════════════════════════════════════════════════════ */}
       <Card className="p-5">
@@ -107,7 +130,9 @@ export function CalculatorSCIT() {
           <RadioGroup
             orientation="horizontal"
             value={provider}
-            onChange={(e) => setProvider(e as unknown as Provider)}
+            onChange={(value) => {
+              if (isProvider(value)) setProvider(value);
+            }}
             className="gap-4 flex-row"
           >
             <Radio
