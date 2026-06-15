@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import type * as TimeModule from "../../lib/time.ts";
+
 // Coverage tests for the DB-orchestration layer of dte-event-linking.ts that the
 // pre-existing scoring / domain-error suites never reach: getEventDteSuggestions,
 // listEventDteLinksByDate, getEventDteLinksByInternalEventId, unlinkEventDteLink,
@@ -74,7 +76,7 @@ vi.mock("../clinical-series.ts", () => ({
 }));
 
 vi.mock("../../lib/time.ts", async () => {
-  const actual = await vi.importActual<typeof import("../../lib/time.ts")>("../../lib/time.ts");
+  const actual = await vi.importActual<TimeModule>("../../lib/time.ts");
   return {
     ...actual,
     toChileDateString: () => "2026-05-15",
