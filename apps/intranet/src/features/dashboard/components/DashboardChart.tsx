@@ -102,6 +102,7 @@ export function DashboardChart({
           })}
         </div>
 
+        {/* design-lint-ignore: small-text -- etiquetas de eje (ticks de mes), tamaño denso intencional */}
         <div className="mt-2 flex gap-px text-[10px] text-default-500">
           {data.map((row, index) => (
             <span className="flex-1 text-center" key={`label-${row.month}`}>
