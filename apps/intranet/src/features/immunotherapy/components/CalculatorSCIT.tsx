@@ -100,12 +100,9 @@ export function CalculatorSCIT({ onChange }: CalculatorSCITProps = {}) {
           <div>
             <h1 className="font-bold text-foreground text-xl tracking-tight">Calculadora SCIT</h1>
             <p className="text-default-500 text-sm">
-              Selector de alérgenos y dosificación por microgramos
+              Selector de alérgenos y dosificación por laboratorio
             </p>
           </div>
-          <Chip color="accent" size="sm" variant="soft">
-            v1.0
-          </Chip>
         </div>
       </div>
 
