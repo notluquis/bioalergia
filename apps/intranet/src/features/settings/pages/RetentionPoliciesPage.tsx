@@ -158,12 +158,7 @@ export function RetentionPoliciesPage() {
           <Button size="sm" variant="ghost" onPress={() => onEdit(row.original)}>
             Editar
           </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            color="danger"
-            onPress={() => void onDelete(row.original)}
-          >
+          <Button size="sm" variant="danger" onPress={() => void onDelete(row.original)}>
             <Trash2 size={14} />
           </Button>
         </div>
@@ -192,7 +187,7 @@ export function RetentionPoliciesPage() {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <TextField value={form.table} onChange={(v) => setForm((f) => ({ ...f, table: v }))}>
             <Label>Tabla (física)</Label>
-            <Input placeholder="ej. audit_logs" isDisabled={editing} />
+            <Input placeholder="ej. audit_logs" disabled={editing} />
           </TextField>
           <div className="space-y-1">
             <Label className="font-medium text-sm">Acción</Label>
