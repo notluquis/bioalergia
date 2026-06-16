@@ -383,25 +383,16 @@ async function recordAutoLinkAttempt(params: {
       ? Math.max(0, Math.min(100, params.confidenceScore))
       : null;
 
-  await db.$executeRaw`
-    INSERT INTO event_dte_auto_link_attempts (
-      event_id,
-      candidate_dte_sale_detail_id,
-      status,
-      reason,
-      confidence_score,
-      created_by,
-      created_at
-    ) VALUES (
-      ${params.eventId},
-      ${params.dteSaleDetailId ?? null},
-      ${params.status},
-      ${params.reason},
-      ${normalizedScore},
-      ${params.userId},
-      NOW()
-    )
-  `;
+  await db.eventDteAutoLinkAttempt.create({
+    data: {
+      eventId: params.eventId,
+      candidateDteSaleDetailId: params.dteSaleDetailId ?? null,
+      status: params.status,
+      reason: params.reason,
+      confidenceScore: normalizedScore,
+      createdBy: params.userId,
+    },
+  });
 }
 
 async function recordMatchReview(params: {
@@ -412,25 +403,17 @@ async function recordMatchReview(params: {
   hypothesis?: unknown;
   hypothesisKind?: null | HypothesisKind;
 }) {
-  await db.$executeRaw`
-    INSERT INTO event_dte_match_reviews (
-      event_id,
-      action,
-      hypothesis_kind,
-      dte_sale_detail_ids,
-      hypothesis,
-      created_by,
-      created_at
-    ) VALUES (
-      ${params.eventId},
-      ${params.action},
-      ${params.hypothesisKind ?? null},
-      ${JSON.stringify(params.dteSaleDetailIds)}::jsonb,
-      ${params.hypothesis ? JSON.stringify(params.hypothesis) : null}::jsonb,
-      ${params.createdBy ?? null},
-      NOW()
-    )
-  `;
+  await db.eventDteMatchReview.create({
+    data: {
+      eventId: params.eventId,
+      action: params.action,
+      hypothesisKind: params.hypothesisKind ?? null,
+      // Json: pasar el valor, NO JSON.stringify (ZenStack serializa).
+      dteSaleDetailIds: params.dteSaleDetailIds,
+      hypothesis: (params.hypothesis ?? null) as never,
+      createdBy: params.createdBy ?? null,
+    },
+  });
 }
 
 function normalizeText(value: string): string {
@@ -2120,11 +2103,11 @@ export async function confirmEventDteLink(params: {
 
   const previousLinks = await getEventDteLinksByInternalEventId(event.eventId);
 
-  await db.$executeRaw`
-    DELETE FROM event_dte_sale_links
-    WHERE event_id = ${event.eventId}
-       OR dte_sale_detail_id = ANY(${normalizedDteSaleDetailIds}::text[])
-  `;
+  await db.eventDteSaleLink.deleteMany({
+    where: {
+      OR: [{ eventId: event.eventId }, { dteSaleDetailId: { in: normalizedDteSaleDetailIds } }],
+    },
+  });
 
   const evidence = JSON.stringify(
     params.hypothesis ?? {
@@ -2197,10 +2180,9 @@ export async function unlinkEventDteLink(params: {
   if (!event) return { deleted: false };
 
   const previousLinks = await getEventDteLinksByInternalEventId(event.eventId);
-  const deleted = await db.$executeRaw`
-    DELETE FROM event_dte_sale_links
-    WHERE event_id = ${event.eventId}
-  `;
+  const { count: deleted } = await db.eventDteSaleLink.deleteMany({
+    where: { eventId: event.eventId },
+  });
 
   if (previousLinks.length > 0) {
     await recordMatchReview({
@@ -2213,7 +2195,7 @@ export async function unlinkEventDteLink(params: {
     });
   }
 
-  return { deleted: Number(deleted) > 0 };
+  return { deleted: deleted > 0 };
 }
 
 function hypothesisSkipReason(

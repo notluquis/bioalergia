@@ -29,6 +29,9 @@ const {
   executeRawCalls,
   mockQueryRaw,
   mockExecuteRaw,
+  mockAttemptCreate,
+  mockReviewCreate,
+  mockLinkDeleteMany,
 } = vi.hoisted(() => {
   const queryRawQueue: unknown[] = [];
   const queryRawCalls: string[] = [];
@@ -46,6 +49,10 @@ const {
     executeRawCalls.push(stringify(a));
     return Promise.resolve(executeRawQueue.length > 0 ? executeRawQueue.shift() : 0);
   });
+  // ORM accessors que reemplazaron raw SQL en las 4 tablas modeladas + sale-links.
+  const mockAttemptCreate = vi.fn(() => Promise.resolve({ id: 1n }));
+  const mockReviewCreate = vi.fn(() => Promise.resolve({ id: 1n }));
+  const mockLinkDeleteMany = vi.fn(() => Promise.resolve({ count: 0 }));
   return {
     queryRawQueue,
     queryRawCalls,
@@ -53,6 +60,9 @@ const {
     executeRawCalls,
     mockQueryRaw,
     mockExecuteRaw,
+    mockAttemptCreate,
+    mockReviewCreate,
+    mockLinkDeleteMany,
   };
 });
 
@@ -60,6 +70,9 @@ vi.mock("@finanzas/db", () => ({
   db: {
     $queryRaw: (...a: unknown[]) => mockQueryRaw(...a),
     $executeRaw: (...a: unknown[]) => mockExecuteRaw(...a),
+    eventDteAutoLinkAttempt: { create: (...a: unknown[]) => mockAttemptCreate(...a) },
+    eventDteMatchReview: { create: (...a: unknown[]) => mockReviewCreate(...a) },
+    eventDteSaleLink: { deleteMany: (...a: unknown[]) => mockLinkDeleteMany(...a) },
   },
 }));
 
@@ -106,6 +119,9 @@ function reset() {
   executeRawCalls.length = 0;
   mockQueryRaw.mockClear();
   mockExecuteRaw.mockClear();
+  mockAttemptCreate.mockClear();
+  mockReviewCreate.mockClear();
+  mockLinkDeleteMany.mockClear();
   mockExtractIdentityHints.mockReset();
   mockGetSnapshot.mockReset();
   mockSyncSeries.mockReset();
@@ -250,25 +266,23 @@ describe("unlinkEventDteLink", () => {
         totalAmount: 1,
       },
     ]); // previousLinks → 1
-    executeRawQueue.push(1); // DELETE affected 1 row
-    executeRawQueue.push(undefined); // recordMatchReview insert
+    mockLinkDeleteMany.mockResolvedValueOnce({ count: 1 }); // DELETE affected 1 row
 
     const r = await unlinkEventDteLink({ calendarId: "c", eventId: "e", userId: 5 });
     expect(r).toEqual({ deleted: true });
-    expect(mockExecuteRaw).toHaveBeenCalledTimes(2);
-    // first execute is the DELETE, second is the review INSERT with action 'unlinked'
-    expect(executeRawCalls[0]).toContain("DELETE FROM event_dte_sale_links");
-    expect(executeRawCalls[1]).toContain("event_dte_match_reviews");
+    expect(mockLinkDeleteMany).toHaveBeenCalledTimes(1);
+    // previousLinks=1 → a review is recorded with action 'unlinked'
+    expect(mockReviewCreate).toHaveBeenCalledTimes(1);
   });
 
   it("reports deleted:false when the DELETE affected zero rows", async () => {
     queryRawQueue.push([{ eventId: 7, externalEventId: "e" }]);
     queryRawQueue.push([]); // no previous links
-    executeRawQueue.push(0); // DELETE affected nothing
+    // mockLinkDeleteMany default → { count: 0 } → nothing deleted
     const r = await unlinkEventDteLink({ calendarId: "c", eventId: "e" });
     expect(r).toEqual({ deleted: false });
-    // previousLinks empty → no review insert, only the DELETE
-    expect(mockExecuteRaw).toHaveBeenCalledTimes(1);
+    // previousLinks empty → no review insert
+    expect(mockReviewCreate).not.toHaveBeenCalled();
   });
 });
 
@@ -291,12 +305,12 @@ describe("confirmEventDteLink — happy path", () => {
       userId: 8,
     });
     expect(r).toEqual([]);
-    // 1 DELETE + 2 INSERT links + 1 review INSERT = 4 executeRaw
-    expect(mockExecuteRaw).toHaveBeenCalledTimes(4);
-    expect(executeRawCalls[0]).toContain("DELETE FROM event_dte_sale_links");
+    // 1 deleteMany (ORM) + 2 INSERT links (raw, ON CONFLICT) + 1 review create (ORM)
+    expect(mockLinkDeleteMany).toHaveBeenCalledTimes(1);
+    expect(mockExecuteRaw).toHaveBeenCalledTimes(2);
+    expect(executeRawCalls[0]).toContain("INSERT INTO event_dte_sale_links");
     expect(executeRawCalls[1]).toContain("INSERT INTO event_dte_sale_links");
-    expect(executeRawCalls[2]).toContain("INSERT INTO event_dte_sale_links");
-    expect(executeRawCalls[3]).toContain("event_dte_match_reviews");
+    expect(mockReviewCreate).toHaveBeenCalledTimes(1);
   });
 
   it("records 'manual_override' when prior links existed", async () => {
@@ -332,9 +346,10 @@ describe("confirmEventDteLink — happy path", () => {
       dteSaleDetailIds: ["d-1"],
       userId: 8,
     });
-    // 1 DELETE + 1 INSERT + 1 review = 3
-    expect(mockExecuteRaw).toHaveBeenCalledTimes(3);
-    expect(executeRawCalls[2]).toContain("event_dte_match_reviews");
+    // 1 deleteMany (ORM) + 1 INSERT (raw) + 1 review create (ORM)
+    expect(mockLinkDeleteMany).toHaveBeenCalledTimes(1);
+    expect(mockExecuteRaw).toHaveBeenCalledTimes(1);
+    expect(mockReviewCreate).toHaveBeenCalledTimes(1);
   });
 
   it("caps the dteSaleDetailIds at the first three", async () => {
@@ -350,8 +365,10 @@ describe("confirmEventDteLink — happy path", () => {
       dteSaleDetailIds: ["a", "b", "c", "d", "e"], // 5 → trimmed to 3
       userId: 8,
     });
-    // 1 DELETE + 3 INSERT + 1 review = 5
-    expect(mockExecuteRaw).toHaveBeenCalledTimes(5);
+    // deleteMany (ORM) + 3 INSERT (raw) + review create (ORM) → 3 raw executes
+    expect(mockExecuteRaw).toHaveBeenCalledTimes(3);
+    expect(mockLinkDeleteMany).toHaveBeenCalledTimes(1);
+    expect(mockReviewCreate).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -846,7 +863,7 @@ describe("autoLinkEventDate", () => {
     expect(r.totalEvents).toBe(1);
     expect(r.details[0].reason).toMatch(/^Auto-linked \(96\)$/);
     // a LINKED auto-link attempt was recorded
-    expect(executeRawCalls.some((c) => c.includes("event_dte_auto_link_attempts"))).toBe(true);
+    expect(mockAttemptCreate).toHaveBeenCalled();
   });
 
   it("skips and records a SKIPPED attempt when no hypothesis clears the bar", async () => {
@@ -867,7 +884,7 @@ describe("autoLinkEventDate", () => {
     expect(r.details[0].reason).toBe("Sin candidatos");
     expect(r.skippedByReason).toEqual([{ count: 1, reason: "Sin candidatos" }]);
     // SKIPPED attempt recorded
-    expect(executeRawCalls.some((c) => c.includes("event_dte_auto_link_attempts"))).toBe(true);
+    expect(mockAttemptCreate).toHaveBeenCalled();
   });
 
   it("relink_all strategy processes already-linked events too", async () => {
@@ -1067,9 +1084,7 @@ describe("autoLinkEventPeriod", () => {
     expect(queryRawCalls[0]).toContain("SELECT DISTINCT");
     expect(queryRawCalls[0]).toContain('AS "eventDate"');
     // a LINKED and a SKIPPED attempt were recorded
-    expect(executeRawCalls.filter((c) => c.includes("event_dte_auto_link_attempts"))).toHaveLength(
-      2
-    );
+    expect(mockAttemptCreate).toHaveBeenCalledTimes(2);
   });
 
   it("merges identical skip reasons across multiple dates into one count", async () => {
