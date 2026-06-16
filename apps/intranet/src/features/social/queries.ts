@@ -106,6 +106,42 @@ export function useUpdateSocialSettings() {
   });
 }
 
+export function useMetaConfig() {
+  return useQuery({
+    queryKey: [...socialKeys.all, "meta-config"] as const,
+    queryFn: async () => {
+      try {
+        const result = await socialORPCClient.getMetaConfig({});
+        return result.config;
+      } catch (error) {
+        throw toSocialApiError(error);
+      }
+    },
+  });
+}
+
+export function useUpdateMetaConfig() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: {
+      appId: string;
+      appSecret?: string;
+      configId: string;
+      graphVersion?: string;
+    }) => {
+      try {
+        const result = await socialORPCClient.updateMetaConfig(input);
+        return result.config;
+      } catch (error) {
+        throw toSocialApiError(error);
+      }
+    },
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: [...socialKeys.all, "meta-config"] });
+    },
+  });
+}
+
 export function useCreateSocialPost() {
   const qc = useQueryClient();
   return useMutation({

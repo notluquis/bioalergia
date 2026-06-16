@@ -307,6 +307,26 @@ export const socialHandlers = [
   http.post("*/api/orpc/social/rpc/listAccounts", () => ok({ accounts: [SAMPLE_SOCIAL_ACCOUNT] })),
   http.post("*/api/orpc/social/rpc/getSettings", () => ok({ settings: { dryRun: true } })),
   http.post("*/api/orpc/social/rpc/updateSettings", () => ok({ settings: { dryRun: false } })),
+  http.post("*/api/orpc/social/rpc/getMetaConfig", () =>
+    ok({
+      config: {
+        appId: "1234567890",
+        configId: "9876543210",
+        graphVersion: "v23.0",
+        hasSecret: true,
+      },
+    })
+  ),
+  http.post("*/api/orpc/social/rpc/updateMetaConfig", () =>
+    ok({
+      config: {
+        appId: "1234567890",
+        configId: "9876543210",
+        graphVersion: "v23.0",
+        hasSecret: true,
+      },
+    })
+  ),
   http.post("*/api/orpc/social/rpc/create", () =>
     ok({ post: SAMPLE_SOCIAL_POST_DRAFT, status: "ok" })
   ),

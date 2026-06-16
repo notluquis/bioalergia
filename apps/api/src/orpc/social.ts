@@ -3,6 +3,7 @@ import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
 import {
   connectMetaAccountInputSchema,
   createSocialPostInputSchema,
+  metaConfigResponseSchema,
   listSocialPostsInputSchema,
   rejectSocialPostInputSchema,
   renderSocialPostInputSchema,
@@ -14,6 +15,7 @@ import {
   socialPostsResponseSchema,
   socialSettingsResponseSchema,
   socialSettingsSchema,
+  updateMetaConfigInputSchema,
   updateSocialPostInputSchema,
 } from "@finanzas/orpc-contracts/social";
 import { ORPCError, onError, os } from "@orpc/server";
@@ -30,6 +32,7 @@ import {
   approveSocialPost,
   connectMetaAccount,
   createSocialPost,
+  getMetaConfig,
   getSocialPost,
   getSocialSettings,
   listSocialAccounts,
@@ -38,6 +41,7 @@ import {
   rejectSocialPost,
   renderSocialMedia,
   scheduleSocialPost,
+  updateMetaConfig,
   updateSocialPost,
   updateSocialSettings,
 } from "../services/social.ts";
@@ -180,6 +184,18 @@ const socialORPCRouterBase = {
     .input(connectMetaAccountInputSchema)
     .output(socialAccountResponseSchema)
     .handler(async ({ input }) => ({ account: await connectMetaAccount(input), status: "ok" as const })),
+
+  getMetaConfig: requireAccount("read")
+    .route({ method: "GET", path: "/meta-config" })
+    .input(z.object({}))
+    .output(metaConfigResponseSchema)
+    .handler(async () => ({ config: await getMetaConfig() })),
+
+  updateMetaConfig: requireAccount("create")
+    .route({ method: "PUT", path: "/meta-config" })
+    .input(updateMetaConfigInputSchema)
+    .output(metaConfigResponseSchema)
+    .handler(async ({ input }) => ({ config: await updateMetaConfig(input) })),
 
   getSettings: requireAccount("read")
     .route({ method: "GET", path: "/settings" })

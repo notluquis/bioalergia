@@ -180,6 +180,24 @@ export const socialSettingsSchema = z.object({
 });
 export const socialSettingsResponseSchema = z.object({ settings: socialSettingsSchema });
 
+// ── Meta App config (en DB, no env) ──
+// El appSecret NUNCA se devuelve: `hasSecret` indica si ya hay uno guardado.
+export const metaConfigSchema = z.object({
+  appId: z.string(),
+  configId: z.string(),
+  graphVersion: z.string(),
+  hasSecret: z.boolean(),
+});
+export const metaConfigResponseSchema = z.object({ config: metaConfigSchema });
+
+export const updateMetaConfigInputSchema = z.object({
+  appId: z.string().min(1),
+  // Opcional: si viene vacío se conserva el secret existente.
+  appSecret: z.string().optional(),
+  configId: z.string().min(1),
+  graphVersion: z.string().optional(),
+});
+
 export const socialContract = {
   getSettings: oc.route({ method: "GET", path: "/settings" }).input(z.object({})).output(socialSettingsResponseSchema),
   updateSettings: oc
@@ -212,6 +230,11 @@ export const socialContract = {
     .input(connectMetaAccountInputSchema)
     .output(socialAccountResponseSchema),
   listAccounts: oc.route({ method: "GET", path: "/accounts" }).input(z.object({})).output(socialAccountsResponseSchema),
+  getMetaConfig: oc.route({ method: "GET", path: "/meta-config" }).input(z.object({})).output(metaConfigResponseSchema),
+  updateMetaConfig: oc
+    .route({ method: "PUT", path: "/meta-config" })
+    .input(updateMetaConfigInputSchema)
+    .output(metaConfigResponseSchema),
 };
 
 export type SocialContract = typeof socialContract;

@@ -9,10 +9,19 @@ import { useToast } from "@/context/ToastContext";
 import { formatChile } from "@/lib/dates";
 import {
   useConnectAccount,
+  useMetaConfig,
   useSocialAccounts,
   useSocialSettings,
+  useUpdateMetaConfig,
   useUpdateSocialSettings,
 } from "../queries";
+
+interface MetaConfigFormState {
+  appId: string;
+  appSecret: string;
+  configId: string;
+  graphVersion: string;
+}
 
 interface ConnectFormState {
   displayName: string;
@@ -29,8 +38,35 @@ export function AccountsPanel() {
   const connectMutation = useConnectAccount();
   const settingsQuery = useSocialSettings();
   const updateSettings = useUpdateSocialSettings();
+  const metaConfigQuery = useMetaConfig();
+  const updateMetaConfig = useUpdateMetaConfig();
 
   const dryRun = settingsQuery.data?.dryRun ?? true;
+  const metaConfig = metaConfigQuery.data;
+  const metaReady = !!metaConfig?.appId && !!metaConfig?.configId && !!metaConfig?.hasSecret;
+
+  const metaForm = useForm({
+    defaultValues: {
+      appId: "",
+      appSecret: "",
+      configId: "",
+      graphVersion: "v23.0",
+    } as MetaConfigFormState,
+    onSubmit: async ({ value }) => {
+      try {
+        await updateMetaConfig.mutateAsync({
+          appId: value.appId.trim(),
+          configId: value.configId.trim(),
+          ...(value.appSecret.trim() ? { appSecret: value.appSecret.trim() } : {}),
+          ...(value.graphVersion.trim() ? { graphVersion: value.graphVersion.trim() } : {}),
+        });
+        toast.success("Configuración Meta guardada");
+        metaForm.reset();
+      } catch (error) {
+        toast.error(error, "No se pudo guardar la configuración");
+      }
+    },
+  });
 
   const handleToggleReal = async (realMode: boolean) => {
     if (realMode) {
@@ -108,6 +144,87 @@ export function AccountsPanel() {
           </Switch.Control>
           <Switch.Content>Publicación real</Switch.Content>
         </Switch>
+      </section>
+
+      <section className="space-y-3 rounded-xl border border-divider p-4">
+        <div className="flex items-center justify-between gap-3">
+          <div className="space-y-1">
+            <h3 className="font-semibold text-foreground text-sm">Conexión con Meta (OAuth)</h3>
+            <p className="text-default-500 text-xs">
+              {metaReady
+                ? "App Meta configurada. Conecta una cuenta con el flujo oficial de Meta."
+                : "Configura el App ID, App Secret y config_id de la app de Meta para habilitar el OAuth."}
+            </p>
+          </div>
+          <Button
+            isDisabled={!metaReady}
+            variant="primary"
+            onPress={() => {
+              window.location.href = "/api/social/oauth/start";
+            }}
+          >
+            <PlugZap size={16} /> Conectar con Meta
+          </Button>
+        </div>
+        <Form
+          className="grid gap-3 sm:grid-cols-2"
+          onSubmit={(e: React.FormEvent<HTMLFormElement>) => {
+            e.preventDefault();
+            e.stopPropagation();
+            void metaForm.handleSubmit();
+          }}
+          validationBehavior="aria"
+        >
+          <metaForm.Field
+            name="appId"
+            validators={{ onBlur: ({ value }) => (value.trim() ? undefined : "App ID requerido") }}
+          >
+            {(field) => (
+              <TanStackInputField
+                field={field}
+                label="App ID"
+                placeholder={metaConfig?.appId ?? ""}
+                required
+              />
+            )}
+          </metaForm.Field>
+          <metaForm.Field
+            name="configId"
+            validators={{
+              onBlur: ({ value }) => (value.trim() ? undefined : "config_id requerido"),
+            }}
+          >
+            {(field) => (
+              <TanStackInputField
+                field={field}
+                label="config_id (Login for Business)"
+                placeholder={metaConfig?.configId ?? ""}
+                required
+              />
+            )}
+          </metaForm.Field>
+          <metaForm.Field name="appSecret">
+            {(field) => (
+              <TanStackInputField
+                field={field}
+                label={
+                  metaConfig?.hasSecret ? "App Secret (dejar vacío = conservar)" : "App Secret"
+                }
+                type="password"
+              />
+            )}
+          </metaForm.Field>
+          <metaForm.Field name="graphVersion">
+            {(field) => (
+              <TanStackInputField field={field} label="Graph version" placeholder="v23.0" />
+            )}
+          </metaForm.Field>
+          <div className="flex justify-end pt-1 sm:col-span-2">
+            <Button isPending={updateMetaConfig.isPending} type="submit" variant="outline">
+              Guardar configuración Meta
+            </Button>
+          </div>
+        </Form>
       </section>
 
       <div className="grid gap-6 lg:grid-cols-[1fr_1fr]">

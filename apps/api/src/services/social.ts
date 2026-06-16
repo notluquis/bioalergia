@@ -15,7 +15,13 @@ import type { z } from "zod";
 import { DomainError } from "../lib/errors.ts";
 import { encryptSecret } from "../lib/secret-cipher.ts";
 import { logEvent } from "../lib/logger.ts";
-import { getSocialDryRun, setSocialDryRun } from "../lib/social-settings.ts";
+import {
+  getMetaAppPublicConfig,
+  getSocialDryRun,
+  setMetaAppConfig,
+  setSocialDryRun,
+  type SetMetaAppConfigInput,
+} from "../lib/social-settings.ts";
 import type { SocialAspectRatio } from "@finanzas/social-render";
 import { renderAndUploadSocialImage } from "../modules/social/render.ts";
 
@@ -220,6 +226,18 @@ export async function getSocialSettings() {
 export async function updateSocialSettings(input: { dryRun: boolean }) {
   await setSocialDryRun(input.dryRun);
   return { dryRun: input.dryRun };
+}
+
+export async function getMetaConfig() {
+  return getMetaAppPublicConfig();
+}
+
+export async function updateMetaConfig(input: SetMetaAppConfigInput) {
+  if (!input.appId.trim()) throw new DomainError("BAD_REQUEST", "App ID requerido");
+  if (!input.configId.trim()) throw new DomainError("BAD_REQUEST", "config_id requerido");
+  const config = await setMetaAppConfig(input);
+  logEvent("social.meta.config.updated", { appId: config.appId, hasSecret: config.hasSecret });
+  return config;
 }
 
 export async function listSocialAccounts() {
