@@ -1,5 +1,5 @@
 import { kysely } from "@finanzas/db";
-import { createHmac } from "node:crypto";
+import { createHash, createHmac } from "node:crypto";
 import { sql } from "kysely";
 
 // Standalone verifier for the audit_logs HMAC chain. Mirrors the
@@ -20,12 +20,51 @@ const ZERO_HASH = Buffer.alloc(32);
 function hmacKey(): Buffer {
   const raw = process.env.AUDIT_HMAC_KEY;
   if (!raw) {
-    // Mirror the trigger's dev fallback: digest('audit-log-dev-' || db, 'sha256').
-    // The DB name lookup must match what Postgres sees.
     throw new Error("AUDIT_HMAC_KEY env required to verify chain in production");
   }
   if (/^[0-9a-fA-F]{64}$/.test(raw)) return Buffer.from(raw, "hex");
   return createHmac("sha256", "fallback").update(raw).digest();
+}
+
+// Mirror the trigger's dev fallback (migration 20260512010000):
+//   k := digest('audit-log-dev-' || current_database(), 'sha256')
+// This is a plain SHA-256 (pgcrypto digest), NOT an HMAC. Rows inserted
+// before AUDIT_HMAC_KEY was set in the env were chained with this key
+// because the GUC `app.audit_hmac_key` was never set on the connection
+// (client.ts only sets it when the env var is present). We need it so
+// the verifier can validate the legacy prefix of the chain.
+export function devFallbackKey(dbName: string): Buffer {
+  return createHash("sha256").update(`audit-log-dev-${dbName}`).digest();
+}
+
+// Pure verifier over an already-fetched, id-ASC ordered chain. Extracted so
+// the latch logic is unit-testable without a DB. Returns the id of the first
+// row that fails its link or HMAC, or null if the chain is intact.
+//
+// Forward latch: rows before the key cutover were chained with the dev
+// fallback, rows after with the real key. We don't store the boundary id —
+// instead we accept either key until the first row that verifies with the
+// real key, then latch and require the real key for every subsequent row.
+// This rejects a dev-key downgrade-forge on post-cutover rows (the dev key is
+// derivable from the DB name, so it must not be accepted once the real key is
+// in force) while tolerating the redeploy transition. Any ambiguous edge fails
+// closed (returns a tampered id → critical alert), never open.
+export function verifyRows(rows: AuditRow[], realKey: Buffer, devKey: Buffer): bigint | null {
+  let prev = ZERO_HASH;
+  let latchedReal = false;
+  for (const row of rows) {
+    if (!Buffer.from(row.prevHash).equals(prev)) {
+      return BigInt(row.id);
+    }
+    const entry = Buffer.from(row.entryHash);
+    if (rowDigest(prev, row, realKey).equals(entry)) {
+      latchedReal = true;
+    } else if (latchedReal || !rowDigest(prev, row, devKey).equals(entry)) {
+      return BigInt(row.id);
+    }
+    prev = entry;
+  }
+  return null;
 }
 
 function rowDigest(prev: Buffer, row: AuditRow, key: Buffer): Buffer {
@@ -46,7 +85,7 @@ function rowDigest(prev: Buffer, row: AuditRow, key: Buffer): Buffer {
   return createHmac("sha256", key).update(concat).digest();
 }
 
-type AuditRow = {
+export type AuditRow = {
   id: string;
   occurredAt: Date;
   kind: string;
@@ -64,7 +103,12 @@ type AuditRow = {
 };
 
 export async function verifyAuditChain(limit = 10_000): Promise<bigint | null> {
-  const key = hmacKey();
+  const realKey = hmacKey();
+  // Legacy prefix of the chain was HMAC'd with the per-DB dev fallback
+  // (AUDIT_HMAC_KEY was unset until it was provisioned in Railway). The DB
+  // name must match what Postgres saw at insert time.
+  const dbNameRow = await sql<{ db: string }>`SELECT current_database() AS db`.execute(kysely);
+  const devKey = devFallbackKey(dbNameRow.rows[0]?.db ?? "");
   const result = await sql<AuditRow>`
     SELECT
       id::text,
@@ -85,16 +129,5 @@ export async function verifyAuditChain(limit = 10_000): Promise<bigint | null> {
     ORDER BY id ASC
     LIMIT ${limit}
   `.execute(kysely);
-  let prev = ZERO_HASH;
-  for (const row of result.rows) {
-    if (!Buffer.from(row.prevHash).equals(prev)) {
-      return BigInt(row.id);
-    }
-    const recomputed = rowDigest(prev, row, key);
-    if (!recomputed.equals(Buffer.from(row.entryHash))) {
-      return BigInt(row.id);
-    }
-    prev = Buffer.from(row.entryHash);
-  }
-  return null;
+  return verifyRows(result.rows, realKey, devKey);
 }
