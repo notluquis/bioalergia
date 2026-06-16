@@ -185,10 +185,13 @@ export const medicalPrescriptionSchema = z.object({
   diagnoses: z.unknown().nullable().optional(),
   doctorAddress: z.string().nullable().optional(),
   doctorEmail: z.string().nullable().optional(),
+  doctorLicense: z.string().nullable().optional(),
   doctorName: z.string().nullable().optional(),
   doctorRut: z.string().nullable().optional(),
   doctorSpecialty: z.string().nullable().optional(),
-  driveFileId: z.string(),
+  driveFileId: z.string().nullable().optional(),
+  folio: z.string().nullable().optional(),
+  folioSeq: z.number().int().nullable().optional(),
   id: z.string(),
   issuedAt: z.coerce.date(),
   issuedBy: z.number().int(),
@@ -198,7 +201,8 @@ export const medicalPrescriptionSchema = z.object({
   patientId: z.number().int(),
   patientName: z.string(),
   patientRut: z.string().nullable().optional(),
-  pdfHash: z.string(),
+  pdfHash: z.string().nullable().optional(),
+  status: z.string(),
 });
 
 export const patientListItemSchema = z.object({
