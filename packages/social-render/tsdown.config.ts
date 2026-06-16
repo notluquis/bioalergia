@@ -4,7 +4,10 @@ import { defineConfig } from "tsdown";
 // @finanzas/db). apps/api consumes the .mjs directly. satori + @resvg/resvg-js
 // stay external (native bindings / own deps).
 export default defineConfig({
-  entry: ["src/index.ts"],
+  // Separate `brand` entry so consumers (e.g. @finanzas/social-video / Remotion
+  // webpack) can import BRAND tokens WITHOUT pulling in satori/@resvg native
+  // bindings that the barrel (index) imports — webpack can't bundle .node files.
+  entry: ["src/index.ts", "src/brand.ts"],
   format: ["esm"],
   platform: "node",
   target: "node26",

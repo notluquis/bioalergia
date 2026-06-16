@@ -4,6 +4,7 @@
     { "path": "./packages/db" },
     { "path": "./packages/orpc-contracts" },
     { "path": "./packages/social-render" },
+    { "path": "./packages/social-video" },
     { "path": "./apps/api" },
     { "path": "./apps/intranet" },
     { "path": "./apps/site" }

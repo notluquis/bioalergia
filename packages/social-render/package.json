@@ -12,6 +12,11 @@
       "types": "./dist/index.d.mts",
       "import": "./dist/index.mjs",
       "default": "./dist/index.mjs"
+    },
+    "./brand": {
+      "types": "./dist/brand.d.mts",
+      "import": "./dist/brand.mjs",
+      "default": "./dist/brand.mjs"
     }
   },
   "scripts": {

@@ -1,0 +1,20 @@
+{
+  "compilerOptions": {
+    // social-video is consumed as SOURCE by apps/api's render script via Node 26
+    // type-stripping (render.ts is plain TS, no JSX). The .tsx compositions are
+    // bundled by Remotion's own webpack at render time (NOT by tsc/Node). So
+    // TypeScript here is purely a type-checker — no emit, no composite.
+    "module": "preserve",
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "target": "esnext",
+    "lib": ["esnext", "dom", "dom.iterable"],
+    "jsx": "react-jsx",
+    "strict": true,
+    "skipLibCheck": true,
+    "noUncheckedSideEffectImports": true,
+    "noEmit": true
+  },
+  "include": ["src/**/*", "remotion.config.ts"],
+  "exclude": ["node_modules", "dist"]
+}
