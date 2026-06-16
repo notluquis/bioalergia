@@ -1,10 +1,14 @@
 import { db } from "@finanzas/db";
 import {
+  retentionPoliciesResponseSchema,
+  retentionPolicySchema,
+  retentionTableInputSchema,
   settingsInternalResponseSchema,
   settingsSchema,
   settingsStatusResponseSchema,
   settingsUpdateInternalSchema,
   settingsUploadAssetSchema,
+  upsertRetentionPolicyInputSchema,
 } from "@finanzas/orpc-contracts/settings";
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
@@ -17,6 +21,11 @@ import { logError } from "../lib/logger.ts";
 import { type AppSettings, settingsKeyToDbKey } from "../lib/settings.ts";
 import { configureSuperjson } from "../lib/superjson-config.ts";
 import { loadSettings, updateSettings as persistSettings } from "../services/settings.ts";
+import {
+  deleteRetentionPolicy,
+  listRetentionPolicies,
+  upsertRetentionPolicy,
+} from "../services/retention-policies.ts";
 import { SuperJSONRPCHandler } from "./superjson.ts";
 
 configureSuperjson();
@@ -135,6 +144,28 @@ const settingsORPCRouterBase = {
       message: `${input.assetType} upload not implemented yet`,
       status: "error",
     })),
+
+  // ── Retención de datos (Ley 21.719) ────────────────────────────────
+  listRetentionPolicies: readSettings
+    .route({ method: "GET", path: "/retention-policies" })
+    .output(retentionPoliciesResponseSchema)
+    .handler(async () => listRetentionPolicies()),
+
+  upsertRetentionPolicy: updateSettings
+    .route({ method: "POST", path: "/retention-policies" })
+    .input(upsertRetentionPolicyInputSchema)
+    .output(retentionPolicySchema)
+    .handler(async ({ input }: { input: z.infer<typeof upsertRetentionPolicyInputSchema> }) =>
+      upsertRetentionPolicy(input)
+    ),
+
+  deleteRetentionPolicy: updateSettings
+    .route({ method: "DELETE", path: "/retention-policies" })
+    .input(retentionTableInputSchema)
+    .output(settingsStatusResponseSchema)
+    .handler(async ({ input }: { input: z.infer<typeof retentionTableInputSchema> }) =>
+      deleteRetentionPolicy(input.table)
+    ),
 };
 
 export const settingsORPCRouter = base.prefix("/api/orpc/settings").router(settingsORPCRouterBase);
