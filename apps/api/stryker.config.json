@@ -23,9 +23,14 @@
     "src/services/attendance.ts",
     "src/services/timesheet-email-template.ts",
     "src/services/utility-bills.ts",
+    "src/services/social.ts",
+    "src/modules/social/publish-runner.ts",
     "!src/services/**/*.test.ts",
     "!src/services/**/__tests__/**",
-    "!src/services/**/*.d.ts"
+    "!src/services/**/*.d.ts",
+    "!src/modules/**/*.test.ts",
+    "!src/modules/**/__tests__/**",
+    "!src/modules/**/*.d.ts"
   ],
   "incremental": true,
   "incrementalFile": "reports/stryker-incremental.json",
@@ -36,10 +41,6 @@
     "low": 60,
     "break": 64
   },
-  "ignorePatterns": [
-    "dist",
-    "coverage",
-    "node_modules"
-  ],
+  "ignorePatterns": ["dist", "coverage", "node_modules"],
   "reporters": ["html", "clear-text", "progress"]
 }

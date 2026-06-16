@@ -28,7 +28,11 @@ vi.mock("@finanzas/db/slices", () => {
   const noopDb = { $setOptions: () => noopDb };
   return { dbClinicalSeries: noopDb };
 });
-vi.mock("../../../lib/logger.ts", () => ({ logEvent: vi.fn(), logWarn: vi.fn(), logError: vi.fn() }));
+vi.mock("../../../lib/logger.ts", () => ({
+  logEvent: vi.fn(),
+  logWarn: vi.fn(),
+  logError: vi.fn(),
+}));
 vi.mock("../../../lib/social-settings.ts", () => ({ getSocialDryRun: vi.fn() }));
 vi.mock("../graph/_http.ts", () => ({
   loadSocialAccount: vi.fn(async (id: number) => ({
@@ -72,7 +76,20 @@ beforeEach(() => {
 describe("advanceSocialPost — dry-run (Fase A)", () => {
   it("publica todos los targets y cierra el post en PUBLISHED", async () => {
     mockDb.socialPost.findUnique.mockResolvedValue(
-      post({ targets: [{ id: 10, accountId: 1, network: "INSTAGRAM", placement: "IG_FEED", status: "PENDING", containerId: null, captionOverride: null, attempts: 0 }] }),
+      post({
+        targets: [
+          {
+            id: 10,
+            accountId: 1,
+            network: "INSTAGRAM",
+            placement: "IG_FEED",
+            status: "PENDING",
+            containerId: null,
+            captionOverride: null,
+            attempts: 0,
+          },
+        ],
+      })
     );
     mockDb.socialPostTarget.update.mockResolvedValue({});
     mockDb.socialPostTarget.findMany.mockResolvedValue([{ id: 10, status: "PUBLISHED" }]);
@@ -82,9 +99,121 @@ describe("advanceSocialPost — dry-run (Fase A)", () => {
 
     expect(res).toEqual({ status: "PUBLISHED", pending: 0 });
     expect(igMock.createImageContainer).not.toHaveBeenCalled(); // dry-run no toca Graph
+    // post-level close: no fallos → errorMessage null
     expect(mockDb.socialPost.update).toHaveBeenCalledWith(
-      expect.objectContaining({ data: expect.objectContaining({ status: "PUBLISHED" }) }),
+      expect.objectContaining({
+        data: expect.objectContaining({ status: "PUBLISHED", errorMessage: null }),
+      })
     );
+  });
+
+  it("simula con externalId dryrun_ y suma un intento (attempts+1)", async () => {
+    mockDb.socialPost.findUnique.mockResolvedValue(
+      post({
+        targets: [
+          {
+            id: 10,
+            accountId: 1,
+            network: "INSTAGRAM",
+            placement: "IG_FEED",
+            status: "PENDING",
+            containerId: null,
+            captionOverride: null,
+            attempts: 2,
+          },
+        ],
+      })
+    );
+    mockDb.socialPostTarget.update.mockResolvedValue({});
+    mockDb.socialPostTarget.findMany.mockResolvedValue([{ id: 10, status: "PUBLISHED" }]);
+    mockDb.socialPost.update.mockResolvedValue({});
+
+    await advanceSocialPost(1);
+
+    const patch = mockDb.socialPostTarget.update.mock.calls[0][0].data;
+    expect(patch.status).toBe("PUBLISHED");
+    expect(patch.externalId).toMatch(/^dryrun_\d+$/);
+    expect(patch.permalink).toBeNull();
+    expect(patch.attempts).toBe(3); // 2 + 1
+    expect(patch.errorCode).toBeNull();
+    expect(patch.errorMessage).toBeNull();
+  });
+
+  it("salta los targets ya terminales (no los re-procesa)", async () => {
+    mockDb.socialPost.findUnique.mockResolvedValue(
+      post({
+        targets: [
+          {
+            id: 10,
+            accountId: 1,
+            network: "INSTAGRAM",
+            placement: "IG_FEED",
+            status: "PUBLISHED",
+            containerId: null,
+            captionOverride: null,
+            attempts: 1,
+          },
+        ],
+      })
+    );
+    mockDb.socialPostTarget.findMany.mockResolvedValue([{ id: 10, status: "PUBLISHED" }]);
+    mockDb.socialPost.update.mockResolvedValue({});
+
+    await advanceSocialPost(1);
+
+    expect(mockDb.socialPostTarget.update).not.toHaveBeenCalled(); // TERMINAL → continue
+  });
+
+  it("mezcla de fallos: 1 PUBLISHED + 1 FAILED → post PUBLISHED con errorMessage parcial", async () => {
+    mockDb.socialPost.findUnique.mockResolvedValue(post({ targets: [] }));
+    mockDb.socialPostTarget.findMany.mockResolvedValue([
+      { id: 10, status: "PUBLISHED" },
+      { id: 11, status: "FAILED" },
+    ]);
+    mockDb.socialPost.update.mockResolvedValue({});
+
+    const res = await advanceSocialPost(1);
+
+    expect(res).toEqual({ status: "PUBLISHED", pending: 0 });
+    expect(mockDb.socialPost.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          status: "PUBLISHED",
+          errorMessage: "Algunos destinos fallaron",
+        }),
+      })
+    );
+  });
+
+  it("todos FAILED → post FAILED con errorMessage 'Publicación fallida'", async () => {
+    mockDb.socialPost.findUnique.mockResolvedValue(post({ targets: [] }));
+    mockDb.socialPostTarget.findMany.mockResolvedValue([
+      { id: 10, status: "FAILED" },
+      { id: 11, status: "FAILED" },
+    ]);
+    mockDb.socialPost.update.mockResolvedValue({});
+
+    const res = await advanceSocialPost(1);
+
+    expect(res).toEqual({ status: "FAILED", pending: 0 });
+    expect(mockDb.socialPost.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ status: "FAILED", errorMessage: "Publicación fallida" }),
+      })
+    );
+  });
+
+  it("hay un target aún pendiente → no cierra el post (pending>0)", async () => {
+    mockDb.socialPost.findUnique.mockResolvedValue(post({ targets: [] }));
+    mockDb.socialPostTarget.findMany.mockResolvedValue([
+      { id: 10, status: "PUBLISHED" },
+      { id: 11, status: "CREATING" },
+    ]);
+
+    const res = await advanceSocialPost(1);
+
+    expect(res).toEqual({ status: "PUBLISHING", pending: 1 });
+    expect(mockDb.socialPost.update).not.toHaveBeenCalled(); // sigue abierto
   });
 
   it("no avanza si el post no está en PUBLISHING", async () => {
@@ -105,7 +234,20 @@ describe("advanceSocialPost — real Graph (Fase B)", () => {
 
   it("IG feed PENDING → crea container y queda CREATING (pendiente)", async () => {
     mockDb.socialPost.findUnique.mockResolvedValue(
-      post({ targets: [{ id: 10, accountId: 1, network: "INSTAGRAM", placement: "IG_FEED", status: "PENDING", containerId: null, captionOverride: null, attempts: 0 }] }),
+      post({
+        targets: [
+          {
+            id: 10,
+            accountId: 1,
+            network: "INSTAGRAM",
+            placement: "IG_FEED",
+            status: "PENDING",
+            containerId: null,
+            captionOverride: null,
+            attempts: 0,
+          },
+        ],
+      })
     );
     igMock.createImageContainer.mockResolvedValue("cont_1");
     mockDb.socialPostTarget.update.mockResolvedValue({});
@@ -113,16 +255,35 @@ describe("advanceSocialPost — real Graph (Fase B)", () => {
 
     const res = await advanceSocialPost(1);
 
-    expect(igMock.createImageContainer).toHaveBeenCalledWith(expect.anything(), "https://cdn/x.png", expect.stringContaining("hola"));
+    expect(igMock.createImageContainer).toHaveBeenCalledWith(
+      expect.anything(),
+      "https://cdn/x.png",
+      expect.stringContaining("hola")
+    );
     expect(mockDb.socialPostTarget.update).toHaveBeenCalledWith(
-      expect.objectContaining({ data: expect.objectContaining({ status: "CREATING", containerId: "cont_1" }) }),
+      expect.objectContaining({
+        data: expect.objectContaining({ status: "CREATING", containerId: "cont_1" }),
+      })
     );
     expect(res).toEqual({ status: "PUBLISHING", pending: 1 });
   });
 
   it("IG feed CREATING + container FINISHED → publica y queda PUBLISHED", async () => {
     mockDb.socialPost.findUnique.mockResolvedValue(
-      post({ targets: [{ id: 10, accountId: 1, network: "INSTAGRAM", placement: "IG_FEED", status: "CREATING", containerId: "cont_1", captionOverride: null, attempts: 1 }] }),
+      post({
+        targets: [
+          {
+            id: 10,
+            accountId: 1,
+            network: "INSTAGRAM",
+            placement: "IG_FEED",
+            status: "CREATING",
+            containerId: "cont_1",
+            captionOverride: null,
+            attempts: 1,
+          },
+        ],
+      })
     );
     igMock.getContainerStatus.mockResolvedValue("FINISHED");
     igMock.publishContainer.mockResolvedValue("media_99");
@@ -135,14 +296,33 @@ describe("advanceSocialPost — real Graph (Fase B)", () => {
 
     expect(igMock.publishContainer).toHaveBeenCalledWith(expect.anything(), "cont_1");
     expect(mockDb.socialPostTarget.update).toHaveBeenCalledWith(
-      expect.objectContaining({ data: expect.objectContaining({ status: "PUBLISHED", externalId: "media_99", permalink: "https://instagram.com/p/abc" }) }),
+      expect.objectContaining({
+        data: expect.objectContaining({
+          status: "PUBLISHED",
+          externalId: "media_99",
+          permalink: "https://instagram.com/p/abc",
+        }),
+      })
     );
     expect(res.status).toBe("PUBLISHED");
   });
 
   it("IG container IN_PROGRESS → sigue pendiente (no publica)", async () => {
     mockDb.socialPost.findUnique.mockResolvedValue(
-      post({ targets: [{ id: 10, accountId: 1, network: "INSTAGRAM", placement: "IG_FEED", status: "CREATING", containerId: "cont_1", captionOverride: null, attempts: 1 }] }),
+      post({
+        targets: [
+          {
+            id: 10,
+            accountId: 1,
+            network: "INSTAGRAM",
+            placement: "IG_FEED",
+            status: "CREATING",
+            containerId: "cont_1",
+            captionOverride: null,
+            attempts: 1,
+          },
+        ],
+      })
     );
     igMock.getContainerStatus.mockResolvedValue("IN_PROGRESS");
     mockDb.socialPostTarget.update.mockResolvedValue({});
@@ -156,7 +336,20 @@ describe("advanceSocialPost — real Graph (Fase B)", () => {
 
   it("FB feed PENDING → publica foto síncrona y queda PUBLISHED", async () => {
     mockDb.socialPost.findUnique.mockResolvedValue(
-      post({ targets: [{ id: 11, accountId: 1, network: "FACEBOOK", placement: "FB_FEED", status: "PENDING", containerId: null, captionOverride: null, attempts: 0 }] }),
+      post({
+        targets: [
+          {
+            id: 11,
+            accountId: 1,
+            network: "FACEBOOK",
+            placement: "FB_FEED",
+            status: "PENDING",
+            containerId: null,
+            captionOverride: null,
+            attempts: 0,
+          },
+        ],
+      })
     );
     fbMock.publishFbPhoto.mockResolvedValue("fbpost_1");
     mockDb.socialPostTarget.update.mockResolvedValue({});
@@ -167,15 +360,30 @@ describe("advanceSocialPost — real Graph (Fase B)", () => {
 
     expect(fbMock.publishFbPhoto).toHaveBeenCalled();
     expect(mockDb.socialPostTarget.update).toHaveBeenCalledWith(
-      expect.objectContaining({ data: expect.objectContaining({ status: "PUBLISHED", externalId: "fbpost_1" }) }),
+      expect.objectContaining({
+        data: expect.objectContaining({ status: "PUBLISHED", externalId: "fbpost_1" }),
+      })
     );
   });
 
-  it("cuenta inexistente → target FAILED", async () => {
+  it("cuenta inexistente → target FAILED (post FAILED, msg recortado a 500)", async () => {
     const { loadSocialAccount } = await import("../graph/_http.ts");
     vi.mocked(loadSocialAccount).mockResolvedValueOnce(null);
     mockDb.socialPost.findUnique.mockResolvedValue(
-      post({ targets: [{ id: 12, accountId: 999, network: "INSTAGRAM", placement: "IG_FEED", status: "PENDING", containerId: null, captionOverride: null, attempts: 0 }] }),
+      post({
+        targets: [
+          {
+            id: 12,
+            accountId: 999,
+            network: "INSTAGRAM",
+            placement: "IG_FEED",
+            status: "PENDING",
+            containerId: null,
+            captionOverride: null,
+            attempts: 3,
+          },
+        ],
+      })
     );
     mockDb.socialPostTarget.update.mockResolvedValue({});
     mockDb.socialPostTarget.findMany.mockResolvedValue([{ id: 12, status: "FAILED" }]);
@@ -183,8 +391,356 @@ describe("advanceSocialPost — real Graph (Fase B)", () => {
 
     await advanceSocialPost(1);
 
+    const targetPatch = mockDb.socialPostTarget.update.mock.calls[0][0].data;
+    expect(targetPatch.status).toBe("FAILED");
+    expect(targetPatch.errorMessage).toContain("999");
+    expect(targetPatch.errorMessage.length).toBeLessThanOrEqual(500);
+    expect(targetPatch.attempts).toBe(4); // 3 + 1
+    // único target falló → post FAILED
+    expect(mockDb.socialPost.update).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ status: "FAILED" }) })
+    );
+  });
+
+  it("caption: antepone # a hashtags sin prefijo y trimea (no dobla los que ya lo tienen)", async () => {
+    mockDb.socialPost.findUnique.mockResolvedValue(
+      post({
+        caption: "hola",
+        hashtags: ["alergia", "#salud"],
+        targets: [
+          {
+            id: 10,
+            accountId: 1,
+            network: "INSTAGRAM",
+            placement: "IG_FEED",
+            status: "PENDING",
+            containerId: null,
+            captionOverride: null,
+            attempts: 0,
+          },
+        ],
+      })
+    );
+    igMock.createImageContainer.mockResolvedValue("cont_1");
+    mockDb.socialPostTarget.update.mockResolvedValue({});
+    mockDb.socialPostTarget.findMany.mockResolvedValue([{ id: 10, status: "CREATING" }]);
+
+    await advanceSocialPost(1);
+
+    const caption = igMock.createImageContainer.mock.calls[0][2] as string;
+    expect(caption).toContain("#alergia"); // sin prefijo → se le agrega
+    expect(caption).toContain("#salud"); // ya tenía # → no se dobla
+    expect(caption).not.toContain("##");
+    expect(caption.startsWith("hola")).toBe(true); // trimeado, empieza con el base
+  });
+
+  it("caption override del target gana sobre el caption del post", async () => {
+    mockDb.socialPost.findUnique.mockResolvedValue(
+      post({
+        caption: "post-caption",
+        hashtags: [],
+        targets: [
+          {
+            id: 10,
+            accountId: 1,
+            network: "INSTAGRAM",
+            placement: "IG_FEED",
+            status: "PENDING",
+            containerId: null,
+            captionOverride: "override!",
+            attempts: 0,
+          },
+        ],
+      })
+    );
+    igMock.createImageContainer.mockResolvedValue("cont_1");
+    mockDb.socialPostTarget.update.mockResolvedValue({});
+    mockDb.socialPostTarget.findMany.mockResolvedValue([{ id: 10, status: "CREATING" }]);
+
+    await advanceSocialPost(1);
+
+    expect(igMock.createImageContainer).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.anything(),
+      "override!"
+    );
+  });
+
+  it("story NO lleva caption (undefined) y usa createStoryContainer con isVideo", async () => {
+    mockDb.socialPost.findUnique.mockResolvedValue(
+      post({
+        media: [{ url: "https://cdn/v.mp4", type: "video" }],
+        targets: [
+          {
+            id: 10,
+            accountId: 1,
+            network: "INSTAGRAM",
+            placement: "IG_STORY",
+            status: "PENDING",
+            containerId: null,
+            captionOverride: null,
+            attempts: 0,
+          },
+        ],
+      })
+    );
+    igMock.createStoryContainer.mockResolvedValue("cont_story");
+    mockDb.socialPostTarget.update.mockResolvedValue({});
+    mockDb.socialPostTarget.findMany.mockResolvedValue([{ id: 10, status: "CREATING" }]);
+
+    await advanceSocialPost(1);
+
+    expect(igMock.createStoryContainer).toHaveBeenCalledWith(
+      expect.anything(),
+      "https://cdn/v.mp4",
+      true
+    );
     expect(mockDb.socialPostTarget.update).toHaveBeenCalledWith(
-      expect.objectContaining({ data: expect.objectContaining({ status: "FAILED" }) }),
+      expect.objectContaining({
+        data: expect.objectContaining({ status: "CREATING", containerId: "cont_story" }),
+      })
+    );
+  });
+
+  it("story sin media → target FAILED", async () => {
+    mockDb.socialPost.findUnique.mockResolvedValue(
+      post({
+        media: [],
+        targets: [
+          {
+            id: 10,
+            accountId: 1,
+            network: "INSTAGRAM",
+            placement: "IG_STORY",
+            status: "PENDING",
+            containerId: null,
+            captionOverride: null,
+            attempts: 0,
+          },
+        ],
+      })
+    );
+    mockDb.socialPostTarget.update.mockResolvedValue({});
+    mockDb.socialPostTarget.findMany.mockResolvedValue([{ id: 10, status: "FAILED" }]);
+    mockDb.socialPost.update.mockResolvedValue({});
+
+    await advanceSocialPost(1);
+
+    expect(igMock.createStoryContainer).not.toHaveBeenCalled();
+    expect(mockDb.socialPostTarget.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ status: "FAILED", errorMessage: "Story sin media" }),
+      })
+    );
+  });
+
+  it("reel → createReelContainer con caption", async () => {
+    mockDb.socialPost.findUnique.mockResolvedValue(
+      post({
+        media: [{ url: "https://cdn/v.mp4", type: "video" }],
+        targets: [
+          {
+            id: 10,
+            accountId: 1,
+            network: "INSTAGRAM",
+            placement: "IG_REEL",
+            status: "PENDING",
+            containerId: null,
+            captionOverride: null,
+            attempts: 0,
+          },
+        ],
+      })
+    );
+    igMock.createReelContainer.mockResolvedValue("cont_reel");
+    mockDb.socialPostTarget.update.mockResolvedValue({});
+    mockDb.socialPostTarget.findMany.mockResolvedValue([{ id: 10, status: "CREATING" }]);
+
+    await advanceSocialPost(1);
+
+    expect(igMock.createReelContainer).toHaveBeenCalledWith(
+      expect.anything(),
+      "https://cdn/v.mp4",
+      expect.stringContaining("hola")
+    );
+  });
+
+  it("carousel → createCarouselContainer con items mapeados (isVideo por type)", async () => {
+    mockDb.socialPost.findUnique.mockResolvedValue(
+      post({
+        mediaType: "CAROUSEL",
+        media: [
+          { url: "https://cdn/a.png", type: "image" },
+          { url: "https://cdn/b.mp4", type: "video" },
+        ],
+        targets: [
+          {
+            id: 10,
+            accountId: 1,
+            network: "INSTAGRAM",
+            placement: "IG_FEED",
+            status: "PENDING",
+            containerId: null,
+            captionOverride: null,
+            attempts: 0,
+          },
+        ],
+      })
+    );
+    igMock.createCarouselContainer.mockResolvedValue("cont_carousel");
+    mockDb.socialPostTarget.update.mockResolvedValue({});
+    mockDb.socialPostTarget.findMany.mockResolvedValue([{ id: 10, status: "CREATING" }]);
+
+    await advanceSocialPost(1);
+
+    expect(igMock.createCarouselContainer).toHaveBeenCalledWith(
+      expect.anything(),
+      [
+        { url: "https://cdn/a.png", isVideo: false },
+        { url: "https://cdn/b.mp4", isVideo: true },
+      ],
+      expect.any(String)
+    );
+  });
+
+  it("IG image PENDING sin media → target FAILED ('Post sin media')", async () => {
+    mockDb.socialPost.findUnique.mockResolvedValue(
+      post({
+        media: [],
+        targets: [
+          {
+            id: 10,
+            accountId: 1,
+            network: "INSTAGRAM",
+            placement: "IG_FEED",
+            status: "PENDING",
+            containerId: null,
+            captionOverride: null,
+            attempts: 0,
+          },
+        ],
+      })
+    );
+    mockDb.socialPostTarget.update.mockResolvedValue({});
+    mockDb.socialPostTarget.findMany.mockResolvedValue([{ id: 10, status: "FAILED" }]);
+    mockDb.socialPost.update.mockResolvedValue({});
+
+    await advanceSocialPost(1);
+
+    expect(igMock.createImageContainer).not.toHaveBeenCalled();
+    expect(mockDb.socialPostTarget.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ status: "FAILED", errorMessage: "Post sin media" }),
+      })
+    );
+  });
+
+  it("IG container ERROR → target FAILED", async () => {
+    mockDb.socialPost.findUnique.mockResolvedValue(
+      post({
+        targets: [
+          {
+            id: 10,
+            accountId: 1,
+            network: "INSTAGRAM",
+            placement: "IG_FEED",
+            status: "CREATING",
+            containerId: "cont_1",
+            captionOverride: null,
+            attempts: 1,
+          },
+        ],
+      })
+    );
+    igMock.getContainerStatus.mockResolvedValue("ERROR");
+    mockDb.socialPostTarget.update.mockResolvedValue({});
+    mockDb.socialPostTarget.findMany.mockResolvedValue([{ id: 10, status: "FAILED" }]);
+    mockDb.socialPost.update.mockResolvedValue({});
+
+    await advanceSocialPost(1);
+
+    expect(igMock.publishContainer).not.toHaveBeenCalled();
+    expect(mockDb.socialPostTarget.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          status: "FAILED",
+          errorMessage: expect.stringContaining("ERROR"),
+        }),
+      })
+    );
+  });
+
+  it("FB feed sin foto → publishFbFeed con texto (caption ?? '')", async () => {
+    mockDb.socialPost.findUnique.mockResolvedValue(
+      post({
+        caption: "solo texto",
+        hashtags: [],
+        media: [],
+        targets: [
+          {
+            id: 11,
+            accountId: 1,
+            network: "FACEBOOK",
+            placement: "FB_FEED",
+            status: "PENDING",
+            containerId: null,
+            captionOverride: null,
+            attempts: 0,
+          },
+        ],
+      })
+    );
+    fbMock.publishFbFeed.mockResolvedValue("fbfeed_1");
+    mockDb.socialPostTarget.update.mockResolvedValue({});
+    mockDb.socialPostTarget.findMany.mockResolvedValue([{ id: 11, status: "PUBLISHED" }]);
+    mockDb.socialPost.update.mockResolvedValue({});
+
+    await advanceSocialPost(1);
+
+    expect(fbMock.publishFbPhoto).not.toHaveBeenCalled();
+    expect(fbMock.publishFbFeed).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.stringContaining("solo texto")
+    );
+    expect(mockDb.socialPostTarget.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ status: "PUBLISHED", externalId: "fbfeed_1" }),
+      })
+    );
+  });
+
+  it("placement de Facebook no soportado → target FAILED", async () => {
+    mockDb.socialPost.findUnique.mockResolvedValue(
+      post({
+        targets: [
+          {
+            id: 11,
+            accountId: 1,
+            network: "FACEBOOK",
+            placement: "FB_STORY",
+            status: "PENDING",
+            containerId: null,
+            captionOverride: null,
+            attempts: 0,
+          },
+        ],
+      })
+    );
+    mockDb.socialPostTarget.update.mockResolvedValue({});
+    mockDb.socialPostTarget.findMany.mockResolvedValue([{ id: 11, status: "FAILED" }]);
+    mockDb.socialPost.update.mockResolvedValue({});
+
+    await advanceSocialPost(1);
+
+    expect(fbMock.publishFbPhoto).not.toHaveBeenCalled();
+    expect(fbMock.publishFbFeed).not.toHaveBeenCalled();
+    expect(mockDb.socialPostTarget.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          status: "FAILED",
+          errorMessage: expect.stringContaining("FB_STORY"),
+        }),
+      })
     );
   });
 });
@@ -200,12 +756,33 @@ describe("publishSocialPost", () => {
     await publishSocialPost(5);
 
     expect(mockDb.socialPost.update).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { id: 5 }, data: { status: "PUBLISHING" } }),
+      expect.objectContaining({ where: { id: 5 }, data: { status: "PUBLISHING" } })
     );
   });
 
   it("no hace nada si el post no está en SCHEDULED/PUBLISHING", async () => {
     mockDb.socialPost.findUnique.mockResolvedValue({ id: 6, status: "DRAFT" });
     expect(await publishSocialPost(6)).toEqual({ status: "DRAFT", pending: 0 });
+    expect(mockDb.socialPost.update).not.toHaveBeenCalled(); // guard cortó antes del update
+  });
+
+  it("post inexistente → missing sin tocar la DB", async () => {
+    mockDb.socialPost.findUnique.mockResolvedValue(null);
+    expect(await publishSocialPost(7)).toEqual({ status: "missing", pending: 0 });
+    expect(mockDb.socialPost.update).not.toHaveBeenCalled();
+  });
+
+  it("post ya en PUBLISHING → re-marca PUBLISHING y avanza", async () => {
+    mockDb.socialPost.findUnique
+      .mockResolvedValueOnce({ id: 8, status: "PUBLISHING" })
+      .mockResolvedValueOnce(post({ id: 8, targets: [] }));
+    mockDb.socialPost.update.mockResolvedValue({});
+    mockDb.socialPostTarget.findMany.mockResolvedValue([]);
+
+    await publishSocialPost(8);
+
+    expect(mockDb.socialPost.update).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: 8 }, data: { status: "PUBLISHING" } })
+    );
   });
 });
