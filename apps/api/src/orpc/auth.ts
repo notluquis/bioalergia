@@ -1,5 +1,6 @@
 import type { AnyAbility, RawRuleOf } from "@casl/ability";
 import { db } from "@finanzas/db";
+import { sql } from "kysely";
 import {
   authDebugScopeSchema,
   authEmptySchema,
@@ -151,23 +152,23 @@ function getChallenge(key: string): { challenge: string; userId?: number } | nul
 }
 
 async function findUserByLoginIdentifier(email: string) {
-  const rows = await db.$queryRaw<
-    Array<{ id: number; loginEmail: null | string; notificationEmail: null | string }>
-  >`
-    SELECT
-      u.id AS "id",
-      u.login_email AS "loginEmail",
-      p.email AS "notificationEmail"
-    FROM users u
-    JOIN people p ON p.id = u.person_id
-    WHERE lower(coalesce(nullif(u.login_email, ''), p.email)) = lower(${email})
-    LIMIT 1
-  `;
+  // login_email gana si no es vacío; si no, cae a person.email. Comparación
+  // case-insensitive. Dentro del sql`` fragment las columnas son físicas (snake_case);
+  // el builder (selectFrom/join/select) usa nombres de modelo camelCase.
+  const row = await db.$qb
+    .selectFrom("User as u")
+    .innerJoin("Person as p", "p.id", "u.personId")
+    .select(["u.id as id", "u.loginEmail as loginEmail", "p.email as notificationEmail"])
+    .where(sql<boolean>`lower(coalesce(nullif(u.login_email, ''), p.email)) = lower(${email})`)
+    .limit(1)
+    .executeTakeFirst();
 
-  return rows[0] ?? null;
+  return row ?? null;
 }
 
 async function getEffectiveLoginEmailByUserId(userId: number, fallbackEmail: string) {
+  // kept raw: read trivial (2 cols por user id); migrarlo a findUnique chocaría
+  // con el mock de user.findUnique del handler. Bajo valor (corre como sistema).
   const rows = await db.$queryRaw<
     Array<{ loginEmail: null | string; notificationEmail: null | string }>
   >`
@@ -441,9 +442,8 @@ const authORPCRouterBase = {
         authError("BAD_REQUEST", "MFA no configurado");
       }
 
-      const { verifyMfaToken, isTotpReplay, recordTotpAccepted } = await import(
-        "../services/mfa.ts"
-      );
+      const { verifyMfaToken, isTotpReplay, recordTotpAccepted } =
+        await import("../services/mfa.ts");
       const { decryptSecret } = await import("../lib/secret-cipher.ts");
       const isValid =
         !isTotpReplay(user.id, input.token) &&

@@ -9,37 +9,51 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 // minimal fake Hono context and full lib mocks. A regression here breaks
 // login for a medical clinic, so these tests pin behavior precisely.
 
-const {
-  mockDb,
-  mockUserFindUnique,
-  mockUserUpdate,
-  mockQueryRaw,
-  mockAuditCreate,
-} = vi.hoisted(() => {
-  const mockUserFindUnique = vi.fn();
-  const mockUserUpdate = vi.fn().mockResolvedValue({});
-  const mockQueryRaw = vi.fn();
-  const mockAuditCreate = vi.fn().mockResolvedValue({});
-  const mockDb = {
-    user: {
-      findUnique: (...a: unknown[]) => mockUserFindUnique(...a),
-      update: (...a: unknown[]) => mockUserUpdate(...a),
-    },
-    auditLog: { create: (...a: unknown[]) => mockAuditCreate(...a) },
-    pushSubscription: { deleteMany: vi.fn().mockResolvedValue({}) },
-    $queryRaw: (...a: unknown[]) => mockQueryRaw(...a),
-  };
-  return { mockDb, mockUserFindUnique, mockUserUpdate, mockQueryRaw, mockAuditCreate };
-});
+const { mockDb, mockUserFindUnique, mockUserUpdate, mockQueryRaw, mockAuditCreate } = vi.hoisted(
+  () => {
+    const mockUserFindUnique = vi.fn();
+    const mockUserUpdate = vi.fn().mockResolvedValue({});
+    const mockQueryRaw = vi.fn();
+    const mockAuditCreate = vi.fn().mockResolvedValue({});
+    // $qb chainable que delega en mockQueryRaw: executeTakeFirst desenvuelve el
+    // array (findUserByLoginIdentifier ahora usa db.$qb.…executeTakeFirst()).
+    const qb: Record<string, unknown> = {};
+    for (const m of [
+      "selectFrom",
+      "innerJoin",
+      "leftJoin",
+      "select",
+      "where",
+      "limit",
+      "offset",
+      "orderBy",
+      "groupBy",
+    ]) {
+      qb[m] = () => qb;
+    }
+    qb.executeTakeFirst = async (...a: unknown[]) => {
+      const r = await mockQueryRaw(...a);
+      return Array.isArray(r) ? r[0] : r;
+    };
+    qb.execute = (...a: unknown[]) => mockQueryRaw(...a);
+    const mockDb = {
+      user: {
+        findUnique: (...a: unknown[]) => mockUserFindUnique(...a),
+        update: (...a: unknown[]) => mockUserUpdate(...a),
+      },
+      auditLog: { create: (...a: unknown[]) => mockAuditCreate(...a) },
+      pushSubscription: { deleteMany: vi.fn().mockResolvedValue({}) },
+      $queryRaw: (...a: unknown[]) => mockQueryRaw(...a),
+      $qb: qb,
+    };
+    return { mockDb, mockUserFindUnique, mockUserUpdate, mockQueryRaw, mockAuditCreate };
+  }
+);
 vi.mock("@finanzas/db", () => ({ db: mockDb, kysely: {} }));
 vi.mock("@finanzas/db/slices", () => ({ dbClinicalSeries: mockDb }));
 
 // --- lib mocks ------------------------------------------------------------
-const {
-  mockFakeVerify,
-  mockVerifyPassword,
-  mockHashPassword,
-} = vi.hoisted(() => ({
+const { mockFakeVerify, mockVerifyPassword, mockHashPassword } = vi.hoisted(() => ({
   mockFakeVerify: vi.fn().mockResolvedValue(undefined),
   mockVerifyPassword: vi.fn(),
   mockHashPassword: vi.fn().mockResolvedValue("$argon2id$new-hash"),
@@ -59,11 +73,7 @@ vi.mock("../../lib/paseto.ts", () => ({
   verifyToken: mockVerifyToken,
 }));
 
-const {
-  mockIsLockedNow,
-  mockRecordLoginFailure,
-  mockRecordLoginSuccess,
-} = vi.hoisted(() => ({
+const { mockIsLockedNow, mockRecordLoginFailure, mockRecordLoginSuccess } = vi.hoisted(() => ({
   mockIsLockedNow: vi.fn().mockReturnValue(false),
   mockRecordLoginFailure: vi.fn().mockResolvedValue({ attempts: 1, lockedUntil: null }),
   mockRecordLoginSuccess: vi.fn().mockResolvedValue(undefined),
@@ -74,15 +84,12 @@ vi.mock("../../lib/account-lockout.ts", () => ({
   recordLoginSuccess: mockRecordLoginSuccess,
 }));
 
-const {
-  mockIsEmailThrottled,
-  mockRecordEmailLoginFailure,
-  mockClearEmailLoginFailure,
-} = vi.hoisted(() => ({
-  mockIsEmailThrottled: vi.fn().mockReturnValue({ blocked: false, retryAfterMs: 0 }),
-  mockRecordEmailLoginFailure: vi.fn(),
-  mockClearEmailLoginFailure: vi.fn(),
-}));
+const { mockIsEmailThrottled, mockRecordEmailLoginFailure, mockClearEmailLoginFailure } =
+  vi.hoisted(() => ({
+    mockIsEmailThrottled: vi.fn().mockReturnValue({ blocked: false, retryAfterMs: 0 }),
+    mockRecordEmailLoginFailure: vi.fn(),
+    mockClearEmailLoginFailure: vi.fn(),
+  }));
 vi.mock("../../lib/login-throttle.ts", () => ({
   isEmailThrottled: mockIsEmailThrottled,
   recordEmailLoginFailure: mockRecordEmailLoginFailure,
@@ -96,11 +103,7 @@ vi.mock("../../lib/authz.ts", () => ({
   getAbilityRulesForUser: mockGetAbilityRulesForUser,
 }));
 
-const {
-  mockVerifyMfaToken,
-  mockIsTotpReplay,
-  mockRecordTotpAccepted,
-} = vi.hoisted(() => ({
+const { mockVerifyMfaToken, mockIsTotpReplay, mockRecordTotpAccepted } = vi.hoisted(() => ({
   mockVerifyMfaToken: vi.fn().mockResolvedValue(true),
   mockIsTotpReplay: vi.fn().mockReturnValue(false),
   mockRecordTotpAccepted: vi.fn(),
@@ -237,7 +240,11 @@ describe("auth.login", () => {
 
     const { context } = makeCtx();
     await expect(
-      call(authORPCRouter.login, { email: "nobody@bioalergia.cl", password: "pw123456" }, { context })
+      call(
+        authORPCRouter.login,
+        { email: "nobody@bioalergia.cl", password: "pw123456" },
+        { context }
+      )
     ).rejects.toMatchObject({ message: "Credenciales incorrectas" });
 
     expect(mockFakeVerify).toHaveBeenCalledWith("pw123456");
@@ -322,7 +329,8 @@ describe("auth.login", () => {
     expect(
       mockUserUpdate.mock.calls.some(
         (c) =>
-          (c[0] as { data?: { passwordHash?: unknown } }).data?.passwordHash === "$argon2id$new-hash"
+          (c[0] as { data?: { passwordHash?: unknown } }).data?.passwordHash ===
+          "$argon2id$new-hash"
       )
     ).toBe(true);
   });

@@ -32,6 +32,27 @@ const {
   const mockMagicCreate = mk().mockResolvedValue({});
   const mockMagicUpdate = mk().mockResolvedValue({});
   const mockCartUpdate = mk().mockResolvedValue({});
+  // $qb chainable que delega en mockQueryRaw: executeTakeFirst desenvuelve el
+  // array (findUserByEmail ahora usa db.$qb.…executeTakeFirst()).
+  const qb: Record<string, unknown> = {};
+  for (const m of [
+    "selectFrom",
+    "innerJoin",
+    "leftJoin",
+    "select",
+    "where",
+    "limit",
+    "offset",
+    "orderBy",
+    "groupBy",
+  ]) {
+    qb[m] = () => qb;
+  }
+  qb.executeTakeFirst = async (...a: unknown[]) => {
+    const r = await mockQueryRaw(...a);
+    return Array.isArray(r) ? r[0] : r;
+  };
+  qb.execute = (...a: unknown[]) => mockQueryRaw(...a);
   const mockDb = {
     user: {
       findUnique: (...a: unknown[]) => mockUserFindUnique(...a),
@@ -50,6 +71,7 @@ const {
     },
     cart: { update: (...a: unknown[]) => mockCartUpdate(...a) },
     $queryRaw: (...a: unknown[]) => mockQueryRaw(...a),
+    $qb: qb,
   };
   return {
     mockDb,

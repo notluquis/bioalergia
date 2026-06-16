@@ -1,4 +1,5 @@
 import { db } from "@finanzas/db";
+import { sql } from "kysely";
 import {
   siteAuthConsumeMagicLinkInputSchema,
   siteAuthLoginPasswordInputSchema,
@@ -114,16 +115,20 @@ async function ensureUserHasShopCustomerRole(userId: number): Promise<void> {
 
 async function findUserByEmail(email: string) {
   // Match by Person.email (notification) OR User.loginEmail (explicit).
-  const rows = await db.$queryRaw<Array<{ id: number }>>`
-    SELECT u.id
-    FROM users u
-    JOIN people p ON p.id = u.person_id
-    WHERE lower(coalesce(nullif(u.login_email, ''), p.email)) = lower(${email})
-    LIMIT 1
-  `;
-  if (rows.length === 0) return null;
+  // The effective email is coalesce(nullif(login_email, ''), person.email):
+  // login_email wins when present and non-empty, else fall back to person.email.
+  // Compared case-insensitively. Inside the sql`` fragment columns are physical
+  // (snake_case); the typed builder join/select use camelCase model fields.
+  const row = await db.$qb
+    .selectFrom("User as u")
+    .innerJoin("Person as p", "p.id", "u.personId")
+    .select("u.id as id")
+    .where(sql<boolean>`lower(coalesce(nullif(u.login_email, ''), p.email)) = lower(${email})`)
+    .limit(1)
+    .executeTakeFirst();
+  if (!row) return null;
   return db.user.findUnique({
-    where: { id: rows[0].id },
+    where: { id: row.id },
     include: {
       person: true,
       passkeys: { select: { id: true } },
