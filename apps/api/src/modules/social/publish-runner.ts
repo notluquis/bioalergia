@@ -1,16 +1,54 @@
 // State machine de publicación social (espejo liviano de wa-cloud/broadcast-runner).
 //
-// Fase A: el boundary real a Meta está en DRY-RUN (SOCIAL_PUBLISH_DRYRUN != "false"
-// por defecto) — simula la publicación para ejercitar todo el flujo
-// generar→aprobar→agendar→publicar sin App Review. En Fase B se reemplaza
-// `publishTargetToMeta` por las llamadas reales al Graph API (instagram.ts/
-// facebook.ts) y el tick de poll cobra sentido (container create→poll→publish).
+// Fase A (SOCIAL_PUBLISH_DRYRUN != "false", default): simula la publicación en
+// una vuelta para ejercitar generar→aprobar→agendar→publicar sin App Review.
+// Fase B (DRYRUN="false"): flujo real del Graph API — IG por container de 3 pasos
+// (create → poll FINISHED → media_publish) drenado por el tick; FB síncrono.
 
 import { db } from "@finanzas/db";
 
 import { logEvent } from "../../lib/logger.ts";
+import { loadSocialAccount } from "./graph/_http.ts";
+import {
+  createCarouselContainer,
+  createImageContainer,
+  createReelContainer,
+  createStoryContainer,
+  getContainerStatus,
+  getPermalink,
+  publishContainer,
+} from "./graph/instagram.ts";
+import { publishFbFeed, publishFbPhoto } from "./graph/facebook.ts";
+import { getValidPageToken } from "./graph/oauth.ts";
+import { checkAndIncrementBuc } from "./graph/rate-limit.ts";
 
 const TERMINAL: ReadonlySet<string> = new Set(["PUBLISHED", "FAILED", "SKIPPED"]);
+
+interface MediaItem {
+  url: string;
+  type: "image" | "video";
+}
+
+interface TargetRow {
+  id: number;
+  accountId: number;
+  network: string;
+  placement: string;
+  status: string;
+  containerId: string | null;
+  captionOverride: string | null;
+  attempts: number;
+}
+
+interface PostRow {
+  id: number;
+  status: string;
+  caption: string | null;
+  hashtags: string[];
+  mediaType: string;
+  media: unknown;
+  targets: TargetRow[];
+}
 
 function isDryRun(): boolean {
   return process.env.SOCIAL_PUBLISH_DRYRUN !== "false";
@@ -34,25 +72,20 @@ export async function publishSocialPost(postId: number): Promise<AdvanceResult> 
 
 /** Avanza cada target pendiente; cierra el post cuando todos quedan terminales. */
 export async function advanceSocialPost(postId: number): Promise<AdvanceResult> {
-  const post = await db.socialPost.findUnique({ where: { id: postId }, include: { targets: true } });
+  const post = (await db.socialPost.findUnique({
+    where: { id: postId },
+    include: { targets: true },
+  })) as PostRow | null;
   if (!post) return { status: "missing", pending: 0 };
   if (post.status !== "PUBLISHING") return { status: post.status, pending: 0 };
 
   for (const target of post.targets) {
     if (TERMINAL.has(target.status)) continue;
     try {
-      const result = await publishTargetToMeta(target.id);
+      const patch = isDryRun() ? simulateTarget() : await stepTargetReal(post, target);
       await db.socialPostTarget.update({
         where: { id: target.id },
-        data: {
-          status: "PUBLISHED",
-          externalId: result.externalId,
-          permalink: result.permalink,
-          publishedAt: new Date(),
-          attempts: target.attempts + 1,
-          errorCode: null,
-          errorMessage: null,
-        },
+        data: { ...patch, attempts: target.attempts + 1, errorCode: null, errorMessage: null },
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
@@ -84,14 +117,92 @@ export async function advanceSocialPost(postId: number): Promise<AdvanceResult> 
   return { status: "PUBLISHING", pending };
 }
 
+// ── Patches ──
+type TargetStatus = "PENDING" | "CREATING" | "CONTAINER_READY" | "PUBLISHING" | "PUBLISHED" | "FAILED" | "SKIPPED";
+type TargetPatch = {
+  status: TargetStatus;
+  containerId?: string | null;
+  externalId?: string;
+  permalink?: string | null;
+  publishedAt?: Date;
+};
+
+function simulateTarget(): TargetPatch {
+  return { status: "PUBLISHED", externalId: `dryrun_${Date.now()}`, permalink: null, publishedAt: new Date() };
+}
+
+function buildCaption(post: PostRow, target: TargetRow): string | undefined {
+  if (target.placement.endsWith("STORY")) return undefined; // las stories no llevan caption
+  const base = target.captionOverride ?? post.caption ?? "";
+  const tags = post.hashtags.length
+    ? `\n\n${post.hashtags.map((h) => (h.startsWith("#") ? h : `#${h}`)).join(" ")}`
+    : "";
+  const caption = `${base}${tags}`.trim();
+  return caption.length > 0 ? caption : undefined;
+}
+
 /**
- * Boundary único Fase A→B. Hoy: DRY-RUN (simula). Fase B: reemplazar por el
- * flujo real del Graph API (container create → poll FINISHED → media_publish).
+ * Avanza UN target contra el Graph real. IG: PENDING→crea container (CREATING);
+ * CREATING→poll (FINISHED→publish→PUBLISHED, IN_PROGRESS→sigue pendiente,
+ * ERROR/EXPIRED→throw). FB: publica síncrono.
  */
-async function publishTargetToMeta(targetId: number): Promise<{ externalId: string; permalink: string | null }> {
-  if (isDryRun()) {
-    return { externalId: `dryrun_${targetId}`, permalink: null };
+async function stepTargetReal(post: PostRow, target: TargetRow): Promise<TargetPatch> {
+  const loaded = await loadSocialAccount(target.accountId);
+  if (!loaded) throw new Error(`SocialAccount ${target.accountId} no existe`);
+  loaded.pageAccessToken = await getValidPageToken(loaded);
+  const media = (post.media ?? []) as MediaItem[];
+  const caption = buildCaption(post, target);
+
+  // ── Facebook (síncrono) ──
+  if (target.network === "FACEBOOK") {
+    if (target.placement === "FB_FEED") {
+      await checkAndIncrementBuc(loaded.id);
+      const externalId = media[0]
+        ? await publishFbPhoto(loaded, media[0].url, caption)
+        : await publishFbFeed(loaded, caption ?? "");
+      return { status: "PUBLISHED", externalId, publishedAt: new Date() };
+    }
+    throw new Error(`Placement ${target.placement} de Facebook aún no soportado (Fase B+)`);
   }
-  // Fase B: implementar en apps/api/src/modules/social/graph/{instagram,facebook}.ts
-  throw new Error("Publicación real (Fase B) no implementada: conecta la Meta App y desactiva SOCIAL_PUBLISH_DRYRUN");
+
+  // ── Instagram (container 3 pasos) ──
+  if (!target.containerId) {
+    await checkAndIncrementBuc(loaded.id);
+    let containerId: string;
+    if (target.placement === "IG_STORY") {
+      const item = media[0];
+      if (!item) throw new Error("Story sin media");
+      containerId = await createStoryContainer(loaded, item.url, item.type === "video");
+    } else if (target.placement === "IG_REEL") {
+      const item = media[0];
+      if (!item) throw new Error("Reel sin media");
+      containerId = await createReelContainer(loaded, item.url, caption);
+    } else if (post.mediaType === "CAROUSEL") {
+      containerId = await createCarouselContainer(
+        loaded,
+        media.map((m) => ({ url: m.url, isVideo: m.type === "video" })),
+        caption,
+      );
+    } else {
+      const item = media[0];
+      if (!item) throw new Error("Post sin media");
+      containerId = await createImageContainer(loaded, item.url, caption);
+    }
+    return { status: "CREATING", containerId };
+  }
+
+  // Ya hay container → pollear estado.
+  await checkAndIncrementBuc(loaded.id);
+  const status = await getContainerStatus(loaded, target.containerId);
+  if (status === "IN_PROGRESS") {
+    return { status: "CREATING", containerId: target.containerId }; // sigue pendiente
+  }
+  if (status === "ERROR" || status === "EXPIRED") {
+    throw new Error(`Container ${status} en Instagram`);
+  }
+  // FINISHED → publicar
+  await checkAndIncrementBuc(loaded.id);
+  const mediaId = await publishContainer(loaded, target.containerId);
+  const permalink = await getPermalink(loaded, mediaId);
+  return { status: "PUBLISHED", externalId: mediaId, permalink, publishedAt: new Date() };
 }
