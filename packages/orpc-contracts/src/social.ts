@@ -174,7 +174,18 @@ export const socialAccountsResponseSchema = z.object({
   accounts: z.array(socialAccountSchema),
 });
 
+export const socialSettingsSchema = z.object({
+  // dryRun=true simula (no publica a Meta). Config en DB, no env.
+  dryRun: z.boolean(),
+});
+export const socialSettingsResponseSchema = z.object({ settings: socialSettingsSchema });
+
 export const socialContract = {
+  getSettings: oc.route({ method: "GET", path: "/settings" }).input(z.object({})).output(socialSettingsResponseSchema),
+  updateSettings: oc
+    .route({ method: "PUT", path: "/settings" })
+    .input(socialSettingsSchema)
+    .output(socialSettingsResponseSchema),
   list: oc.route({ method: "GET", path: "/" }).input(listSocialPostsInputSchema).output(socialPostsResponseSchema),
   detail: oc.route({ method: "GET", path: "/{id}" }).input(socialIdInputSchema).output(socialPostResponseSchema),
   create: oc.route({ method: "POST", path: "/" }).input(createSocialPostInputSchema).output(socialPostResponseSchema),

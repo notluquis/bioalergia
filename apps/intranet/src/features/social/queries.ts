@@ -23,6 +23,7 @@ export const socialKeys = {
   details: () => [...socialKeys.all, "detail"] as const,
   detail: (id: number) => [...socialKeys.details(), id] as const,
   accounts: () => [...socialKeys.all, "accounts"] as const,
+  settings: () => [...socialKeys.all, "settings"] as const,
 };
 
 async function fetchSocialPosts(status?: SocialPostStatus): Promise<SocialPost[]> {
@@ -71,6 +72,37 @@ export function useSocialAccounts() {
   return useQuery({
     queryKey: socialKeys.accounts(),
     queryFn: fetchSocialAccounts,
+  });
+}
+
+export function useSocialSettings() {
+  return useQuery({
+    queryKey: socialKeys.settings(),
+    queryFn: async () => {
+      try {
+        const result = await socialORPCClient.getSettings({});
+        return result.settings;
+      } catch (error) {
+        throw toSocialApiError(error);
+      }
+    },
+  });
+}
+
+export function useUpdateSocialSettings() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: { dryRun: boolean }) => {
+      try {
+        const result = await socialORPCClient.updateSettings(input);
+        return result.settings;
+      } catch (error) {
+        throw toSocialApiError(error);
+      }
+    },
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: socialKeys.settings() });
+    },
   });
 }
 

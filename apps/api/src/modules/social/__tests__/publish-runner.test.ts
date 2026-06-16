@@ -29,6 +29,7 @@ vi.mock("@finanzas/db/slices", () => {
   return { dbClinicalSeries: noopDb };
 });
 vi.mock("../../../lib/logger.ts", () => ({ logEvent: vi.fn(), logWarn: vi.fn(), logError: vi.fn() }));
+vi.mock("../../../lib/social-settings.ts", () => ({ getSocialDryRun: vi.fn() }));
 vi.mock("../graph/_http.ts", () => ({
   loadSocialAccount: vi.fn(async (id: number) => ({
     id,
@@ -48,6 +49,7 @@ vi.mock("../graph/instagram.ts", () => igMock);
 vi.mock("../graph/facebook.ts", () => fbMock);
 
 const { advanceSocialPost, publishSocialPost } = await import("../publish-runner.ts");
+const { getSocialDryRun } = await import("../../../lib/social-settings.ts");
 
 function post(over: Record<string, unknown> = {}) {
   return {
@@ -64,7 +66,7 @@ function post(over: Record<string, unknown> = {}) {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  delete process.env.SOCIAL_PUBLISH_DRYRUN; // default = dry-run
+  vi.mocked(getSocialDryRun).mockResolvedValue(true); // default = dry-run
 });
 
 describe("advanceSocialPost — dry-run (Fase A)", () => {
@@ -98,7 +100,7 @@ describe("advanceSocialPost — dry-run (Fase A)", () => {
 
 describe("advanceSocialPost — real Graph (Fase B)", () => {
   beforeEach(() => {
-    process.env.SOCIAL_PUBLISH_DRYRUN = "false";
+    vi.mocked(getSocialDryRun).mockResolvedValue(false);
   });
 
   it("IG feed PENDING → crea container y queda CREATING (pendiente)", async () => {

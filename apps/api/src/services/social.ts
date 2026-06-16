@@ -15,6 +15,7 @@ import type { z } from "zod";
 import { DomainError } from "../lib/errors.ts";
 import { encryptSecret } from "../lib/secret-cipher.ts";
 import { logEvent } from "../lib/logger.ts";
+import { getSocialDryRun, setSocialDryRun } from "../lib/social-settings.ts";
 import type { SocialAspectRatio } from "@finanzas/social-render";
 import { renderAndUploadSocialImage } from "../modules/social/render.ts";
 
@@ -210,6 +211,15 @@ function serializeAccount(account: AccountRow) {
     createdAt: account.createdAt,
     updatedAt: account.updatedAt,
   };
+}
+
+export async function getSocialSettings() {
+  return { dryRun: await getSocialDryRun() };
+}
+
+export async function updateSocialSettings(input: { dryRun: boolean }) {
+  await setSocialDryRun(input.dryRun);
+  return { dryRun: input.dryRun };
 }
 
 export async function listSocialAccounts() {

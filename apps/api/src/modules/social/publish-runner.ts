@@ -8,6 +8,7 @@
 import { db } from "@finanzas/db";
 
 import { logEvent } from "../../lib/logger.ts";
+import { getSocialDryRun } from "../../lib/social-settings.ts";
 import { loadSocialAccount } from "./graph/_http.ts";
 import {
   createCarouselContainer,
@@ -50,10 +51,6 @@ interface PostRow {
   targets: TargetRow[];
 }
 
-function isDryRun(): boolean {
-  return process.env.SOCIAL_PUBLISH_DRYRUN !== "false";
-}
-
 export interface AdvanceResult {
   status: string;
   pending: number;
@@ -79,10 +76,12 @@ export async function advanceSocialPost(postId: number): Promise<AdvanceResult> 
   if (!post) return { status: "missing", pending: 0 };
   if (post.status !== "PUBLISHING") return { status: post.status, pending: 0 };
 
+  const dryRun = await getSocialDryRun();
+
   for (const target of post.targets) {
     if (TERMINAL.has(target.status)) continue;
     try {
-      const patch = isDryRun() ? simulateTarget() : await stepTargetReal(post, target);
+      const patch = dryRun ? simulateTarget() : await stepTargetReal(post, target);
       await db.socialPostTarget.update({
         where: { id: target.id },
         data: { ...patch, attempts: target.attempts + 1, errorCode: null, errorMessage: null },

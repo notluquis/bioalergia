@@ -12,6 +12,8 @@ import {
   socialIdInputSchema,
   socialPostResponseSchema,
   socialPostsResponseSchema,
+  socialSettingsResponseSchema,
+  socialSettingsSchema,
   updateSocialPostInputSchema,
 } from "@finanzas/orpc-contracts/social";
 import { ORPCError, onError, os } from "@orpc/server";
@@ -29,6 +31,7 @@ import {
   connectMetaAccount,
   createSocialPost,
   getSocialPost,
+  getSocialSettings,
   listSocialAccounts,
   listSocialPosts,
   publishNowSocialPost,
@@ -36,6 +39,7 @@ import {
   renderSocialMedia,
   scheduleSocialPost,
   updateSocialPost,
+  updateSocialSettings,
 } from "../services/social.ts";
 import { SuperJSONRPCHandler } from "./superjson.ts";
 
@@ -176,6 +180,18 @@ const socialORPCRouterBase = {
     .input(connectMetaAccountInputSchema)
     .output(socialAccountResponseSchema)
     .handler(async ({ input }) => ({ account: await connectMetaAccount(input), status: "ok" as const })),
+
+  getSettings: requireAccount("read")
+    .route({ method: "GET", path: "/settings" })
+    .input(z.object({}))
+    .output(socialSettingsResponseSchema)
+    .handler(async () => ({ settings: await getSocialSettings() })),
+
+  updateSettings: requireAccount("create")
+    .route({ method: "PUT", path: "/settings" })
+    .input(socialSettingsSchema)
+    .output(socialSettingsResponseSchema)
+    .handler(async ({ input }) => ({ settings: await updateSocialSettings(input) })),
 };
 
 export const socialORPCRouter = base.prefix("/api/orpc/social").tag("Social").router(socialORPCRouterBase);

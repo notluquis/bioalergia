@@ -305,6 +305,8 @@ export const socialHandlers = [
     ok({ post: SAMPLE_SOCIAL_POST_DRAFT, status: "ok" })
   ),
   http.post("*/api/orpc/social/rpc/listAccounts", () => ok({ accounts: [SAMPLE_SOCIAL_ACCOUNT] })),
+  http.post("*/api/orpc/social/rpc/getSettings", () => ok({ settings: { dryRun: true } })),
+  http.post("*/api/orpc/social/rpc/updateSettings", () => ok({ settings: { dryRun: false } })),
   http.post("*/api/orpc/social/rpc/create", () =>
     ok({ post: SAMPLE_SOCIAL_POST_DRAFT, status: "ok" })
   ),
