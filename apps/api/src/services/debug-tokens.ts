@@ -1,4 +1,4 @@
-import { kysely } from "@finanzas/db";
+import { db } from "@finanzas/db";
 import { sql } from "kysely";
 
 export type DebugAudience = "debug-cli" | "debug-playwright";
@@ -99,47 +99,46 @@ export async function createDebugTokenRecord(params: {
 }) {
   const normalizedScopes = normalizeDebugScopes(params.scopes);
 
-  await sql`
-    INSERT INTO public.debug_tokens (
-      jti,
-      issued_by_user_id,
-      target_user_id,
-      audience,
-      reason,
-      scopes,
-      expires_at
-    )
-    VALUES (
-      ${params.jti},
-      ${params.issuedByUserId},
-      ${params.targetUserId},
-      ${params.audience},
-      ${params.reason},
-      ${JSON.stringify(normalizedScopes)}::jsonb,
-      ${params.expiresAt.toISOString()}
-    )
-  `.execute(kysely);
+  await db.debugToken.create({
+    data: {
+      jti: params.jti,
+      issuedByUserId: params.issuedByUserId,
+      targetUserId: params.targetUserId,
+      audience: params.audience,
+      reason: params.reason,
+      // Json field: pass the value, ZenStack serializes (no JSON.stringify).
+      scopes: normalizedScopes as never,
+      expiresAt: params.expiresAt,
+    },
+  });
 }
 
 export async function consumeDebugTokenRecord(jti: string): Promise<null | StoredDebugToken> {
-  const result = await sql<StoredDebugTokenRow>`
-    UPDATE public.debug_tokens
-    SET used_at = NOW()
-    WHERE jti = ${jti}
-      AND used_at IS NULL
-      AND expires_at > NOW()
-    RETURNING
-      id,
-      jti,
-      issued_by_user_id AS "issuedByUserId",
-      target_user_id AS "targetUserId",
-      audience,
-      reason,
-      scopes,
-      expires_at AS "expiresAt",
-      used_at AS "usedAt"
-  `.execute(kysely);
+  // Atomic conditional consume: only flip used_at when still unused AND
+  // unexpired, in a single UPDATE ... RETURNING (guards the double-consume race).
+  // ORM `update` matches only the unique field and `updateMany` returns no rows,
+  // so the typed query builder ($qb) is the right tool to keep exact semantics.
+  const row = await db.$qb
+    .updateTable("DebugToken")
+    .set({ usedAt: sql`NOW()` })
+    .where("jti", "=", jti)
+    .where("usedAt", "is", null)
+    .where(sql<boolean>`expires_at > NOW()`)
+    .returning([
+      "id",
+      "jti",
+      "issuedByUserId",
+      "targetUserId",
+      "audience",
+      "reason",
+      "scopes",
+      "expiresAt",
+      "usedAt",
+    ])
+    .executeTakeFirst();
 
-  const row = result.rows[0];
-  return row ? mapStoredToken(row) : null;
+  // $qb types timestamptz columns as string; pg returns Date at runtime (same as
+  // the prior raw sql<StoredDebugTokenRow>). Cast through unknown to the row shape
+  // mapStoredToken expects — identical pattern to google-calendar-queries.ts.
+  return row ? mapStoredToken(row as unknown as StoredDebugTokenRow) : null;
 }

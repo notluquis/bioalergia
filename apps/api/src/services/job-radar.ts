@@ -378,6 +378,14 @@ async function upsertSourceJobs(
   // miles de ofertas contra la DB remota). `xmax = 0` distingue insert de update.
   // ON CONFLICT NO toca first_seen_at/notified/application_status/notes/appliedAt
   // (estado del usuario), solo refresca los campos de la oferta + status OPEN.
+  //
+  // kept raw: ZenStack ORM no tiene equivalente semánticamente idéntico. createMany
+  // ({ skipDuplicates }) SALTA los conflictos (no actualiza) y solo devuelve un
+  // total de inserts → se pierden los contadores `updated`/`unchanged`. upsert es
+  // per-fila (reintroduce los N round-trips que este chunked upsert eliminó). El
+  // discriminador insert/update (xmax = 0) y el filtro `IS DISTINCT FROM` que
+  // produce el bucket `unchanged` no tienen primitiva ORM. Bucket-D del prompt
+  // (INSERT … ON CONFLICT bulk queda raw).
   for (let i = 0; i < jobs.length; i += UPSERT_CHUNK) {
     const chunk = jobs.slice(i, i + UPSERT_CHUNK);
     const values = chunk.map((job) => {

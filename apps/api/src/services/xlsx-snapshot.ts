@@ -1,5 +1,4 @@
-import { kysely } from "@finanzas/db";
-import { sql } from "kysely";
+import { db } from "@finanzas/db";
 import * as xlsx from "xlsx";
 
 // Shared OneDrive XLSX snapshot layer. This module OWNS the feature-agnostic
@@ -259,40 +258,42 @@ export type XlsxSnapshotRecord = {
 
 // Read the stored snapshot for a scanned library file (by clinical_xlsx_files.id).
 export async function readXlsxFileSnapshot(xlsxFileId: string): Promise<XlsxSnapshotRecord | null> {
-  const r = await sql<{
-    snapshot_status: string | null;
-    snapshot_json: XlsxSnapshot | null;
-    snapshot_etag: string | null;
-    snapshot_ctag: string | null;
-  }>`
-    SELECT snapshot_status, snapshot_json, snapshot_etag, snapshot_ctag
-    FROM clinical_xlsx_files WHERE id = ${xlsxFileId}
-  `.execute(kysely);
-  const row = r.rows[0];
+  const row = await db.clinicalXlsxFile.findUnique({
+    where: { id: xlsxFileId },
+    select: {
+      snapshotStatus: true,
+      snapshotJson: true,
+      snapshotEtag: true,
+      snapshotCtag: true,
+    },
+  });
   if (!row) return null;
   return {
-    status: row.snapshot_status,
-    snapshot: row.snapshot_json,
-    etag: row.snapshot_etag,
-    ctag: row.snapshot_ctag,
+    status: row.snapshotStatus,
+    snapshot: row.snapshotJson as XlsxSnapshot | null,
+    etag: row.snapshotEtag,
+    ctag: row.snapshotCtag,
   };
 }
 
 // Locate the shared library row for an OneDrive item (the snapshot host).
+// The original SQL used `IS NOT DISTINCT FROM` so a null accountId/driveId
+// matches rows where that column is also null. ZenStack reproduces this by
+// branching: `{ field: null }` → `IS NULL`, `{ field: value }` → `= value`.
 export async function findXlsxFileByOneDriveItem(
   accountId: string | null,
   driveId: string | null,
   itemId: string
 ): Promise<{ id: string; etag: string | null; ctag: string | null } | null> {
-  const r = await sql<{ id: string; onedrive_etag: string | null; onedrive_ctag: string | null }>`
-    SELECT id, onedrive_etag, onedrive_ctag FROM clinical_xlsx_files
-    WHERE onedrive_account_id IS NOT DISTINCT FROM ${accountId}
-      AND onedrive_drive_id IS NOT DISTINCT FROM ${driveId}
-      AND onedrive_item_id = ${itemId}
-    LIMIT 1
-  `.execute(kysely);
-  const row = r.rows[0];
-  return row ? { id: row.id, etag: row.onedrive_etag, ctag: row.onedrive_ctag } : null;
+  const row = await db.clinicalXlsxFile.findFirst({
+    where: {
+      oneDriveAccountId: accountId,
+      oneDriveDriveId: driveId,
+      oneDriveItemId: itemId,
+    },
+    select: { id: true, oneDriveETag: true, oneDriveCTag: true },
+  });
+  return row ? { id: row.id, etag: row.oneDriveETag, ctag: row.oneDriveCTag } : null;
 }
 
 // Extract + store the snapshot on the library row. Idempotent (overwrites).
@@ -303,19 +304,21 @@ export async function persistXlsxFileSnapshot(
 ): Promise<{ cellCount: number; snapshot: XlsxSnapshot }> {
   const snapshot = await extractXlsxSnapshot(buffer);
   const cellCount = snapshot.sheet.cells.length;
-  await sql`
-    UPDATE clinical_xlsx_files SET
-      snapshot_status = 'ARCHIVED',
-      snapshot_json = ${JSON.stringify(snapshot)}::jsonb,
-      snapshot_etag = ${tags.etag ?? null},
-      snapshot_ctag = ${tags.ctag ?? null},
-      snapshot_extractor_version = ${XLSX_SNAPSHOT_EXTRACTOR_VERSION},
-      snapshot_cell_count = ${cellCount},
-      snapshot_archived_at = now(),
-      snapshot_error = null,
-      updated_at = now()
-    WHERE id = ${xlsxFileId}
-  `.execute(kysely);
+  await db.clinicalXlsxFile.update({
+    where: { id: xlsxFileId },
+    data: {
+      snapshotStatus: "ARCHIVED",
+      // ZenStack serializes Json values; pass the object, not JSON.stringify.
+      snapshotJson: snapshot as never,
+      snapshotEtag: tags.etag ?? null,
+      snapshotCtag: tags.ctag ?? null,
+      snapshotExtractorVersion: XLSX_SNAPSHOT_EXTRACTOR_VERSION,
+      snapshotCellCount: cellCount,
+      snapshotArchivedAt: new Date(),
+      snapshotError: null,
+      // updatedAt is @updatedAt — ZenStack stamps it automatically.
+    },
+  });
   return { cellCount, snapshot };
 }
 

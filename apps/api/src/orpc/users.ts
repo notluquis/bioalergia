@@ -61,11 +61,10 @@ async function getUserLoginEmailMap(userIds: number[]) {
     return new Map<number, null | string>();
   }
 
-  const rows = await db.$queryRaw<Array<{ id: number; loginEmail: null | string }>>`
-    SELECT u.id AS "id", u.login_email AS "loginEmail"
-    FROM users u
-    WHERE u.id = ANY(${userIds})
-  `;
+  const rows = await db.user.findMany({
+    where: { id: { in: userIds } },
+    select: { id: true, loginEmail: true },
+  });
 
   return new Map<number, null | string>(rows.map((row) => [row.id, row.loginEmail]));
 }
@@ -362,14 +361,12 @@ const usersORPCRouterBase = {
         throw new ORPCError("NOT_FOUND", { message: "Datos personales no encontrados" });
       }
 
-      const loginEmailRow = await db.$queryRaw<Array<{ loginEmail: null | string }>>`
-        SELECT u.login_email AS "loginEmail"
-        FROM users u
-        WHERE u.id = ${context.user.id}
-        LIMIT 1
-      `;
+      const loginEmailRow = await db.user.findUnique({
+        where: { id: context.user.id },
+        select: { loginEmail: true },
+      });
 
-      const explicitLoginEmail = loginEmailRow[0]?.loginEmail?.trim() || null;
+      const explicitLoginEmail = loginEmailRow?.loginEmail?.trim() || null;
       const notificationEmail = user.person.email ?? "";
       const effectiveLoginEmail = explicitLoginEmail || notificationEmail;
 
@@ -545,11 +542,10 @@ const usersORPCRouterBase = {
             ? normalizedLoginEmail
             : null;
 
-        await db.$executeRaw`
-        UPDATE users
-        SET login_email = ${explicitLoginEmail}
-        WHERE id = ${context.user.id}
-      `;
+        await db.user.update({
+          where: { id: context.user.id },
+          data: { loginEmail: explicitLoginEmail },
+        });
 
         return { status: "ok" as const, message: "Configuración completada" };
       }

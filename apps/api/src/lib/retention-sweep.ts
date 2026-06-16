@@ -55,10 +55,7 @@ function executeEnabled(): boolean {
 
 export type PolicyAction = "delete" | "anonymize";
 
-export type AnonymizeRule =
-  | { set: "null" }
-  | { set: "hash" }
-  | { set: "fixed"; value: string };
+export type AnonymizeRule = { set: "null" } | { set: "hash" } | { set: "fixed"; value: string };
 
 export type RetentionPolicyResult = {
   table: string;
@@ -103,6 +100,10 @@ function validIdent(name: string): boolean {
 // Count rows matching the age predicate (always runs — dry-run + execute both
 // report `matched`). Bounded by SAFETY_LIMIT so the count mirrors the cap.
 async function countExpired(table: string, dateColumn: string, windowDays: number) {
+  // kept raw: table/dateColumn are runtime identifiers from the policy row, not
+  // a static model — neither db.X.count nor $qb.selectFrom can take an arbitrary
+  // table name without sql.table() interpolation anyway. Plus the SAFETY_LIMIT
+  // cap requires the `SELECT 1 ... LIMIT` capped subselect.
   const res = await sql<{ n: number }>`
     SELECT COUNT(*)::int AS n FROM (
       SELECT 1 FROM ${sql.table(table)}
@@ -114,7 +115,9 @@ async function countExpired(table: string, dateColumn: string, windowDays: numbe
 }
 
 async function deleteExpired(table: string, dateColumn: string, windowDays: number) {
-  // Bounded DELETE via ctid subselect (Postgres has no DELETE ... LIMIT).
+  // kept raw: dynamic table identifier + bounded DELETE via ctid subselect
+  // (Postgres has no DELETE ... LIMIT). The ctid trick is not expressible in
+  // ORM/$qb; ORM deleteMany has no LIMIT, so the SAFETY_LIMIT guard would be lost.
   const res = await sql`
     DELETE FROM ${sql.table(table)}
     WHERE ctid IN (
@@ -131,8 +134,9 @@ function ruleToAssignment(column: string, rule: AnonymizeRule) {
     return sql`${sql.ref(column)} = NULL`;
   }
   if (rule.set === "hash") {
-    // md5(text) — irreversible token; preserves join-ability for stats while
-    // dropping the PII. NULL-safe (md5(NULL) = NULL).
+    // kept raw: md5(text) SQL function — irreversible token; preserves
+    // join-ability for stats while dropping the PII. NULL-safe (md5(NULL) =
+    // NULL). Not expressible via ORM updateMany scalar assignment.
     return sql`${sql.ref(column)} = md5(${sql.ref(column)}::text)`;
   }
   // fixed
@@ -150,6 +154,9 @@ async function anonymizeExpired(
     .map(([col, rule]) => ruleToAssignment(col, rule));
   if (assignments.length === 0) return 0;
 
+  // kept raw: dynamic table + dynamic SET columns (incl. md5() hashing) +
+  // bounded UPDATE via ctid subselect (SAFETY_LIMIT cap). None expressible in
+  // ORM/$qb without raw sql.table()/sql.ref() — and updateMany lacks LIMIT.
   const res = await sql`
     UPDATE ${sql.table(table)}
     SET ${sql.join(assignments, sql`, `)}
@@ -239,11 +246,7 @@ export async function runRetentionSweep(): Promise<RetentionSweepReport> {
 
       if (execute && matched > 0) {
         if (action === "delete") {
-          base.affected = await deleteExpired(
-            policy.table,
-            policy.dateColumn,
-            policy.windowDays
-          );
+          base.affected = await deleteExpired(policy.table, policy.dateColumn, policy.windowDays);
         } else {
           const map: Record<string, AnonymizeRule> = {};
           if (typeof policy.anonymizeMap === "object" && policy.anonymizeMap !== null) {

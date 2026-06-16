@@ -1,4 +1,4 @@
-import { kysely } from "@finanzas/db";
+import { db } from "@finanzas/db";
 import {
   clinicalRecordAnalyticsSchema,
   clinicalRecordImportSchema,
@@ -114,51 +114,25 @@ const routerBase = {
     )
     .handler(async ({ input }) => {
       const offset = (input.page - 1) * input.pageSize;
-      const status = input.status ?? null;
-      const search = input.search?.trim() ?? null;
-      const where = sql.join(
-        [
-          status ? sql`status = ${status}::"ClinicalRecordImportStatus"` : null,
-          search ? sql`filename ILIKE ${`%${search}%`}` : null,
-        ].filter(Boolean) as ReturnType<typeof sql>[],
-        sql` AND `
-      );
-      const whereClause = status || search ? sql`WHERE ${where}` : sql``;
-      const rows = await sql<Record<string, unknown>>`
-        SELECT
-          id, filename, status::text AS status,
-          parser_version       AS "parserVersion",
-          confidence,
-          error,
-          issues,
-          parsed_payload       AS "parsedPayload",
-          matched_patient_id   AS "matchedPatientId",
-          matched_clinical_series_id AS "matchedClinicalSeriesId",
-          match_candidates     AS "matchCandidates",
-          reviewed_by          AS "reviewedBy",
-          reviewed_at          AS "reviewedAt",
-          review_notes         AS "reviewNotes",
-          imported_at          AS "importedAt",
-          onedrive_account_id  AS "oneDriveAccountId",
-          onedrive_item_id     AS "oneDriveItemId",
-          onedrive_web_url     AS "oneDriveWebUrl",
-          modified_at          AS "modifiedAt",
-          created_at           AS "createdAt",
-          updated_at           AS "updatedAt"
-        FROM clinical_record_imports
-        ${whereClause}
-        ORDER BY created_at DESC
-        LIMIT ${input.pageSize}
-        OFFSET ${offset}
-      `.execute(kysely);
-      const total = await sql<{ c: string }>`
-        SELECT COUNT(*)::text AS c FROM clinical_record_imports ${whereClause}
-      `.execute(kysely);
+      const search = input.search?.trim();
+      const where = {
+        ...(input.status ? { status: input.status } : {}),
+        ...(search ? { filename: { contains: search, mode: "insensitive" as const } } : {}),
+      };
+      const [rows, total] = await Promise.all([
+        db.clinicalRecordImport.findMany({
+          where,
+          orderBy: { createdAt: "desc" },
+          skip: offset,
+          take: input.pageSize,
+        }),
+        db.clinicalRecordImport.count({ where }),
+      ]);
       return {
-        items: rows.rows.map(rowToImport),
+        items: rows.map((row) => rowToImport(row as unknown as Record<string, unknown>)),
         page: input.page,
         pageSize: input.pageSize,
-        total: Number.parseInt(total.rows[0]?.c ?? "0", 10),
+        total,
       };
     }),
 
@@ -167,27 +141,9 @@ const routerBase = {
     .input(z.object({ id: z.string().min(1) }))
     .output(clinicalRecordImportSchema)
     .handler(async ({ input }) => {
-      const r = await sql<Record<string, unknown>>`
-        SELECT
-          id, filename, status::text AS status,
-          parser_version       AS "parserVersion",
-          confidence, error, issues,
-          parsed_payload       AS "parsedPayload",
-          matched_patient_id   AS "matchedPatientId",
-          matched_clinical_series_id AS "matchedClinicalSeriesId",
-          match_candidates     AS "matchCandidates",
-          reviewed_by AS "reviewedBy", reviewed_at AS "reviewedAt", review_notes AS "reviewNotes",
-          imported_at AS "importedAt",
-          onedrive_account_id AS "oneDriveAccountId",
-          onedrive_item_id    AS "oneDriveItemId",
-          onedrive_web_url    AS "oneDriveWebUrl",
-          modified_at         AS "modifiedAt",
-          created_at AS "createdAt", updated_at AS "updatedAt"
-        FROM clinical_record_imports WHERE id = ${input.id}
-      `.execute(kysely);
-      const row = r.rows[0];
+      const row = await db.clinicalRecordImport.findUnique({ where: { id: input.id } });
       if (!row) throw new ORPCError("NOT_FOUND", { message: "Import no encontrado" });
-      return rowToImport(row);
+      return rowToImport(row as unknown as Record<string, unknown>);
     }),
 
   reprocessImport: updateClinicalRecords
@@ -234,35 +190,41 @@ const routerBase = {
     .input(z.object({ patientId: z.number().int().positive() }))
     .output(z.object({ records: z.array(clinicalRecordSchema) }))
     .handler(async ({ context, input }) => {
-      const r = await sql<Record<string, unknown>>`
-        SELECT
-          cr.id,
-          cr.clinical_series_id   AS "clinicalSeriesId",
-          cr.source_import_id     AS "sourceImportId",
-          to_char(cr.consult_date, 'YYYY-MM-DD') AS "consultDate",
-          cr.patient_name         AS "patientName",
-          cr.age_label            AS "ageLabel",
-          cr.history,
-          cr.physical_exam        AS "physicalExam",
-          cr.diagnosis,
-          cr.indications,
-          cr.antecedents,
-          cr.medications,
-          cr.known_allergies      AS "knownAllergies",
-          cr.observations,
-          cr.weight_kg            AS "weightKg",
-          cr.height_cm            AS "heightCm",
-          cr.head_circumference_cm AS "headCircumferenceCm",
-          cr.anthropometric,
-          cr.raw_header           AS "rawHeader",
-          cr.created_at           AS "createdAt",
-          cr.updated_at           AS "updatedAt"
-        FROM clinical_records cr
-        JOIN clinical_series cs ON cs.id = cr.clinical_series_id
-        WHERE cs.patient_id = ${input.patientId}
-          AND cs.kind = 'MEDICAL_CONSULTATION'
-        ORDER BY cr.consult_date DESC NULLS LAST, cr.created_at DESC
-      `.execute(kysely);
+      // $qb (Kysely) tipado: aliases 'cr' (ClinicalRecord) / 'cs' (ClinicalSeries).
+      // to_char(consult_date) + `DESC NULLS LAST` se mantienen como fragmentos
+      // sql crudos (snake_case físico) porque el ORM orderBy no expone control
+      // de nulls; el resto (join, where, select) es builder tipado.
+      const rows = await db.$qb
+        .selectFrom("ClinicalRecord as cr")
+        .innerJoin("ClinicalSeries as cs", "cs.id", "cr.clinicalSeriesId")
+        .where("cs.patientId", "=", input.patientId)
+        .where("cs.kind", "=", "MEDICAL_CONSULTATION")
+        .select([
+          "cr.id",
+          "cr.clinicalSeriesId as clinicalSeriesId",
+          "cr.sourceImportId as sourceImportId",
+          sql<string | null>`to_char(cr.consult_date, 'YYYY-MM-DD')`.as("consultDate"),
+          "cr.patientName as patientName",
+          "cr.ageLabel as ageLabel",
+          "cr.history",
+          "cr.physicalExam as physicalExam",
+          "cr.diagnosis",
+          "cr.indications",
+          "cr.antecedents",
+          "cr.medications",
+          "cr.knownAllergies as knownAllergies",
+          "cr.observations",
+          "cr.weightKg as weightKg",
+          "cr.heightCm as heightCm",
+          "cr.headCircumferenceCm as headCircumferenceCm",
+          "cr.anthropometric",
+          "cr.rawHeader as rawHeader",
+          "cr.createdAt as createdAt",
+          "cr.updatedAt as updatedAt",
+        ])
+        .orderBy(sql`cr.consult_date desc nulls last`)
+        .orderBy("cr.createdAt", "desc")
+        .execute();
       // Ficha access log — full clinical records (richest PHI: history,
       // diagnosis, medications). Decreto 41/2012 art. 9.
       void logAuditFromContext(context.hono, {
@@ -274,7 +236,7 @@ const routerBase = {
         message: "ficha:clinical-records",
       });
       return {
-        records: r.rows.map((row) => ({
+        records: (rows as unknown as Record<string, unknown>[]).map((row) => ({
           id: String(row.id),
           clinicalSeriesId: Number(row.clinicalSeriesId),
           sourceImportId: String(row.sourceImportId),

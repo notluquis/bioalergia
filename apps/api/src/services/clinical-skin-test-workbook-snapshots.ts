@@ -1,7 +1,6 @@
 import { createId } from "@paralleldrive/cuid2";
-import { sql } from "kysely";
 import { createHash } from "node:crypto";
-import { kysely } from "@finanzas/db";
+import { db } from "@finanzas/db";
 import {
   extractXlsxSnapshot,
   XLSX_SNAPSHOT_EXTRACTOR_VERSION,
@@ -54,88 +53,72 @@ export async function persistSkinTestWorkbookSnapshot({
   const fileId = createId();
   const snapshotId = createId();
 
-  const fileResult = await sql<{ id: string }>`
-    INSERT INTO clinical_skin_test_workbook_files (
-      id,
-      extractor_version,
+  const sizeBytes = sourceSizeBytes ?? buffer.byteLength;
+  const sheetName = snapshot.sheet.name;
+  const cellCount = snapshot.sheet.cells.length;
+  const mergeCount = snapshot.sheet.merges.length;
+
+  // Upsert on the (sha256, extractor_version) unique. ON CONFLICT DO UPDATE
+  // never touches sha256 (the conflict key) nor created_at; updated_at is
+  // @updatedAt so the ORM stamps it automatically on both create and update.
+  const fileRecord = await db.clinicalSkinTestWorkbookFile.upsert({
+    where: {
+      sha256_extractorVersion: { sha256, extractorVersion: XLSX_SNAPSHOT_EXTRACTOR_VERSION },
+    },
+    create: {
+      id: fileId,
+      extractorVersion: XLSX_SNAPSHOT_EXTRACTOR_VERSION,
       sha256,
-      size_bytes,
-      sheet_name,
-      cell_count,
-      merge_count,
-      text_hash,
-      snapshot_json,
-      created_at,
-      updated_at
-    )
-    VALUES (
-      ${fileId},
-      ${XLSX_SNAPSHOT_EXTRACTOR_VERSION},
-      ${sha256},
-      ${sourceSizeBytes ?? buffer.byteLength},
-      ${snapshot.sheet.name},
-      ${snapshot.sheet.cells.length},
-      ${snapshot.sheet.merges.length},
-      ${textHash},
-      ${JSON.stringify(snapshot)}::jsonb,
-      now(),
-      now()
-    )
-    ON CONFLICT (sha256, extractor_version)
-    DO UPDATE SET
-      extractor_version = EXCLUDED.extractor_version,
-      size_bytes = EXCLUDED.size_bytes,
-      sheet_name = EXCLUDED.sheet_name,
-      cell_count = EXCLUDED.cell_count,
-      merge_count = EXCLUDED.merge_count,
-      text_hash = EXCLUDED.text_hash,
-      snapshot_json = EXCLUDED.snapshot_json,
-      updated_at = now()
-    RETURNING id
-  `.execute(kysely);
-  const workbookFileId = fileResult.rows[0]?.id ?? fileId;
+      sizeBytes,
+      sheetName,
+      cellCount,
+      mergeCount,
+      textHash,
+      snapshotJson: snapshot as never,
+    },
+    update: {
+      extractorVersion: XLSX_SNAPSHOT_EXTRACTOR_VERSION,
+      sizeBytes,
+      sheetName,
+      cellCount,
+      mergeCount,
+      textHash,
+      snapshotJson: snapshot as never,
+    },
+    select: { id: true },
+  });
+  const workbookFileId = fileRecord?.id ?? fileId;
 
-  await sql`
-    INSERT INTO clinical_skin_test_workbook_snapshots (
-      id,
-      source_import_id,
-      workbook_file_id,
-      source_etag,
-      source_ctag,
-      status,
-      error,
-      created_at,
-      updated_at
-    )
-    VALUES (
-      ${snapshotId},
-      ${importId},
-      ${workbookFileId},
-      ${sourceETag ?? null},
-      ${sourceCTag ?? null},
-      'ARCHIVED'::"ClinicalSkinTestWorkbookSnapshotStatus",
-      null,
-      now(),
-      now()
-    )
-    ON CONFLICT (source_import_id)
-    DO UPDATE SET
-      workbook_file_id = EXCLUDED.workbook_file_id,
-      source_etag = EXCLUDED.source_etag,
-      source_ctag = EXCLUDED.source_ctag,
-      status = EXCLUDED.status,
-      error = null,
-      updated_at = now()
-  `.execute(kysely);
+  // Upsert on the source_import_id unique. error is reset to null on update;
+  // status forced to ARCHIVED (matches 'ARCHIVED'::enum cast).
+  await db.clinicalSkinTestWorkbookSnapshot.upsert({
+    where: { sourceImportId: importId },
+    create: {
+      id: snapshotId,
+      sourceImportId: importId,
+      workbookFileId,
+      sourceETag: sourceETag ?? null,
+      sourceCTag: sourceCTag ?? null,
+      status: "ARCHIVED",
+      error: null,
+    },
+    update: {
+      workbookFileId,
+      sourceETag: sourceETag ?? null,
+      sourceCTag: sourceCTag ?? null,
+      status: "ARCHIVED",
+      error: null,
+    },
+  });
 
-  await sql`
-    UPDATE clinical_skin_test_imports
-    SET workbook_snapshot_status = 'ARCHIVED',
-        workbook_snapshot_error = null,
-        workbook_snapshot_archived_at = now(),
-        updated_at = now()
-    WHERE id = ${importId}
-  `.execute(kysely);
+  await db.clinicalSkinTestImport.update({
+    where: { id: importId },
+    data: {
+      workbookSnapshotStatus: "ARCHIVED",
+      workbookSnapshotError: null,
+      workbookSnapshotArchivedAt: new Date(),
+    },
+  });
 
   return {
     cellCount: snapshot.sheet.cells.length,

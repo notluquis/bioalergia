@@ -21,6 +21,13 @@ import { TIMEZONE } from "./constants.ts";
 export async function updateAllSeriesStatuses(): Promise<{ updated: number }> {
   const today = toChileDateString(new Date());
   const now = new Date();
+  // kept raw: set-based bulk UPDATE with a per-row correlated CTE
+  // (event_dates over each cs.id), MAX/MIN(CASE ...) aggregates, AT TIME ZONE
+  // conversions, interval date math and ::"ClinicalSeriesStatus" enum casts.
+  // ZenStack updateMany only takes static data values (no correlated subquery
+  // / CASE per row); $qb updateTable would still embed the whole CTE+CASE in
+  // sql`` fragments (no raw reduction) and risks a subtle timezone/enum-cast
+  // regression with no test covering this path.
   const result = await db.$executeRaw`
     UPDATE clinical_series cs
     SET status = (

@@ -1,5 +1,4 @@
-import { kysely } from "@finanzas/db";
-import { sql } from "kysely";
+import { db } from "@finanzas/db";
 import { logEvent, logWarn } from "./logger.ts";
 
 // Orphan cleanup sweep. Runs nightly after the duplicate-merge work
@@ -47,7 +46,7 @@ function executeEnabled(): boolean {
   return raw === "1" || raw?.toLowerCase() === "true";
 }
 
-async function cleanupOrphanClinicalSeries(execute: boolean) {
+async function cleanupOrphanClinicalSeries(execute: boolean, cutoff: Date) {
   // Empty series safe to delete — guard with three filters so the
   // sweep never removes legitimately-tracked identities:
   //
@@ -64,82 +63,89 @@ async function cleanupOrphanClinicalSeries(execute: boolean) {
   // SUBCUTANEOUS_TREATMENT and MEDICAL_CONSULTATION excluded entirely
   // — treatments + fichas clínicas roll up via a single per-patient
   // series whose emptiness is meaningful.
-  const candidates = await sql<{ id: number }>`
-    SELECT cs.id
-    FROM clinical_series cs
-    LEFT JOIN events e               ON e.clinical_series_id = cs.id
-    LEFT JOIN clinical_skin_tests t  ON t.clinical_series_id = cs.id
-    LEFT JOIN clinical_records r     ON r.clinical_series_id = cs.id
-    WHERE cs.kind IN ('SKIN_TEST', 'PATCH_TEST')
-      AND cs.status NOT IN ('ACTIVE', 'PLANNED')
-      AND cs.patient_rut IS NULL
-      AND cs.created_at < (now() - interval '${sql.raw(String(AGE_THRESHOLD_DAYS))} days')
-    GROUP BY cs.id
-    HAVING COUNT(e.id) = 0 AND COUNT(t.id) = 0 AND COUNT(r.id) = 0
-    LIMIT ${SAFETY_LIMIT}
-  `.execute(kysely);
-  if (!execute || candidates.rows.length === 0) {
-    return { scanned: candidates.rows.length, deleted: 0 };
+  //
+  // The old anti-join (LEFT JOIN ... GROUP BY ... HAVING COUNT(child)=0)
+  // is the relation `{ none: {} }` filter; the three child relations are
+  // events / skinTests / records on ClinicalSeries.
+  const candidates = await db.clinicalSeries.findMany({
+    where: {
+      kind: { in: ["SKIN_TEST", "PATCH_TEST"] },
+      status: { notIn: ["ACTIVE", "PLANNED"] },
+      patientRut: null,
+      createdAt: { lt: cutoff },
+      events: { none: {} },
+      skinTests: { none: {} },
+      records: { none: {} },
+    },
+    select: { id: true },
+    take: SAFETY_LIMIT,
+  });
+  if (!execute || candidates.length === 0) {
+    return { scanned: candidates.length, deleted: 0 };
   }
-  const ids = candidates.rows.map((r) => r.id);
-  await sql`DELETE FROM clinical_series WHERE id = ANY(${ids})`.execute(kysely);
-  return { scanned: candidates.rows.length, deleted: ids.length };
+  const ids = candidates.map((r) => r.id);
+  const { count } = await db.clinicalSeries.deleteMany({ where: { id: { in: ids } } });
+  return { scanned: candidates.length, deleted: count };
 }
 
-async function cleanupOrphanPatients(execute: boolean) {
+async function cleanupOrphanPatients(execute: boolean, cutoff: Date) {
   // Only patients older than the age threshold and with NO child rows
   // anywhere — a fresh patient created seconds ago by a half-completed
   // form should not vanish before the operator finishes typing.
-  const candidates = await sql<{ id: number }>`
-    SELECT p.id
-    FROM patients p
-    LEFT JOIN clinical_series cs   ON cs.patient_id = p.id
-    LEFT JOIN consultations c      ON c.patient_id = p.id
-    LEFT JOIN patient_payments pp  ON pp.patient_id = p.id
-    LEFT JOIN budgets b            ON b.patient_id = p.id
-    LEFT JOIN shipments s          ON s.patient_id = p.id
-    LEFT JOIN medical_certificates mc ON mc.patient_id = p.id
-    LEFT JOIN patient_attachments pa  ON pa.patient_id = p.id
-    LEFT JOIN patient_dte_sale_sources pds ON pds.patient_id = p.id
-    WHERE p.created_at < (now() - interval '${sql.raw(String(AGE_THRESHOLD_DAYS))} days')
-    GROUP BY p.id
-    HAVING COUNT(cs.id) = 0 AND COUNT(c.id) = 0 AND COUNT(pp.id) = 0
-       AND COUNT(b.id) = 0 AND COUNT(s.id) = 0 AND COUNT(mc.id) = 0
-       AND COUNT(pa.id) = 0 AND COUNT(pds.id) = 0
-    LIMIT ${SAFETY_LIMIT}
-  `.execute(kysely);
-  if (!execute || candidates.rows.length === 0) {
-    return { scanned: candidates.rows.length, deleted: 0 };
+  //
+  // Each LEFT JOIN ... HAVING COUNT(child)=0 in the old anti-join is a
+  // `{ none: {} }` relation filter; the eight child relations are
+  // clinicalSeries / consultations / payments / budgets / shipments /
+  // medicalCertificates / attachments / dteSaleSources on Patient.
+  const candidates = await db.patient.findMany({
+    where: {
+      createdAt: { lt: cutoff },
+      clinicalSeries: { none: {} },
+      consultations: { none: {} },
+      payments: { none: {} },
+      budgets: { none: {} },
+      shipments: { none: {} },
+      medicalCertificates: { none: {} },
+      attachments: { none: {} },
+      dteSaleSources: { none: {} },
+    },
+    select: { id: true },
+    take: SAFETY_LIMIT,
+  });
+  if (!execute || candidates.length === 0) {
+    return { scanned: candidates.length, deleted: 0 };
   }
-  const ids = candidates.rows.map((r) => r.id);
-  await sql`DELETE FROM patients WHERE id = ANY(${ids})`.execute(kysely);
-  return { scanned: candidates.rows.length, deleted: ids.length };
+  const ids = candidates.map((r) => r.id);
+  const { count } = await db.patient.deleteMany({ where: { id: { in: ids } } });
+  return { scanned: candidates.length, deleted: count };
 }
 
-async function cleanupOrphanPeople(execute: boolean) {
+async function cleanupOrphanPeople(execute: boolean, cutoff: Date) {
   // Same age threshold as patients. Also keep any row carrying a
   // valid RUT — even if every link is gone, a populated RUT is
   // identity evidence the operator may want to merge later.
-  const candidates = await sql<{ id: number }>`
-    SELECT pe.id
-    FROM people pe
-    LEFT JOIN patients pa  ON pa.person_id = pe.id
-    LEFT JOIN users u      ON u.person_id  = pe.id
-    LEFT JOIN employees em ON em.person_id = pe.id
-    LEFT JOIN addresses ad ON ad.person_id = pe.id
-    WHERE pe.created_at < (now() - interval '${sql.raw(String(AGE_THRESHOLD_DAYS))} days')
-      AND pe.rut IS NULL
-    GROUP BY pe.id
-    HAVING COUNT(pa.id) = 0 AND COUNT(u.id) = 0
-       AND COUNT(em.id) = 0 AND COUNT(ad.id) = 0
-    LIMIT ${SAFETY_LIMIT}
-  `.execute(kysely);
-  if (!execute || candidates.rows.length === 0) {
-    return { scanned: candidates.rows.length, deleted: 0 };
+  //
+  // patient / user / employee are nullable to-one relations → `{ is: null }`;
+  // addresses is to-many → `{ none: {} }`. Together they replace the old
+  // LEFT JOIN ... HAVING COUNT(child)=0 anti-join.
+  const candidates = await db.person.findMany({
+    where: {
+      createdAt: { lt: cutoff },
+      rut: null,
+      patient: { is: null },
+      user: { is: null },
+      employee: { is: null },
+      addresses: { none: {} },
+    },
+    select: { id: true },
+    take: SAFETY_LIMIT,
+  });
+  if (!execute || candidates.length === 0) {
+    return { scanned: candidates.length, deleted: 0 };
   }
-  const ids = candidates.rows.map((r) => r.id);
-  await sql`DELETE FROM people WHERE id = ANY(${ids})`.execute(kysely);
-  return { scanned: candidates.rows.length, deleted: ids.length };
+  const ids = candidates.map((r) => r.id);
+  const { count } = await db.person.deleteMany({ where: { id: { in: ids } } });
+  return { scanned: candidates.length, deleted: count };
 }
 
 export async function runOrphanCleanup(): Promise<OrphanCleanupReport> {
@@ -156,16 +162,21 @@ export async function runOrphanCleanup(): Promise<OrphanCleanupReport> {
     dryRun: !execute,
   };
 
+  // Single shared cutoff for the whole sweep (was an independent `now() -
+  // interval '30 days'` per step). Computing it once in JS keeps the three
+  // steps consistent and is equivalent within sub-second clock skew.
+  const cutoff = new Date(startedAt - AGE_THRESHOLD_DAYS * 24 * 60 * 60 * 1000);
+
   try {
-    const cs = await cleanupOrphanClinicalSeries(execute);
+    const cs = await cleanupOrphanClinicalSeries(execute, cutoff);
     report.clinicalSeriesScanned = cs.scanned;
     report.clinicalSeriesDeleted = cs.deleted;
 
-    const pa = await cleanupOrphanPatients(execute);
+    const pa = await cleanupOrphanPatients(execute, cutoff);
     report.patientsScanned = pa.scanned;
     report.patientsDeleted = pa.deleted;
 
-    const pe = await cleanupOrphanPeople(execute);
+    const pe = await cleanupOrphanPeople(execute, cutoff);
     report.peopleScanned = pe.scanned;
     report.peopleDeleted = pe.deleted;
   } catch (err) {
