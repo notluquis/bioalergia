@@ -32,15 +32,25 @@ function ug(value: number): string {
 
 // ─── Entry builders (unidad correcta por producto) ───────────────────────────
 
-/** Inmunotek / Roxall polimerizado: unidad UT, sin µg. */
+/**
+ * Inmunotek / Roxall polimerizado: unidad UT, sin µg. Para alérgenos-mezcla
+ * (Dpt+Df) el UT del slot se REPARTE entre las especies (10.000 → 5.000 c/u).
+ */
 function utEntry(
   allergen: Allergen,
   opts: { utPerMl: number; volumeMl: number; isDominant?: boolean }
 ): VialAllergenEntry {
   const ut = Math.round(opts.utPerMl * opts.volumeMl);
+  const comps = allergen.componentLabels;
+  const doseDisplay =
+    comps && comps.length > 1
+      ? `${ut.toLocaleString("es-CL")} UT (${Math.round(ut / comps.length).toLocaleString(
+          "es-CL"
+        )} UT c/u: ${comps.join(" · ")})`
+      : `${ut.toLocaleString("es-CL")} UT`;
   return {
     allergen,
-    doseDisplay: `${ut.toLocaleString("es-CL")} UT`,
+    doseDisplay,
     isDominant: opts.isDominant ?? false,
   };
 }
@@ -194,10 +204,9 @@ function getEquivalences(
     return eqs;
   }
 
-  // Inmunotek / Roxall
+  // Inmunotek / Roxall (homólogos: Clustek↔Cluxin estándar; Clustek MAX↔Poliplus)
   if (formulation === "ESTANDAR") {
-    const baseName =
-      provider === "inmunotek" ? "Normal (Alutek/Clustoid)" : "Normal (Cluxin/Depot)";
+    const baseName = provider === "inmunotek" ? "Clustek/Clustoid (Inmunotek)" : "Cluxin (Roxall)";
     eqs.push({
       formulationName: baseName,
       concentrationString: "10.000 UT/mL",
@@ -207,21 +216,21 @@ function getEquivalences(
 
     if (provider === "inmunotek") {
       // FORTE monosensibilización (30.000 UT/mL) — SÍ se importa a Chile.
-      // (La que NO se importa es MAX FORTE, asimétrica 30k/10k.)
+      // Roxall NO tiene homólogo de FORTE. MAX FORTE no se trae a Chile.
       const forteVolume = 0.17; // 5000 UT a 30.000 UT/mL ≈ 0.17 mL
       eqs.push({
-        formulationName: "Clustoid FORTE",
-        concentrationString: "30.000 UT/mL",
+        formulationName: "Clustek FORTE",
+        concentrationString: "30.000 UT/mL (1 extracto)",
         requiredVolumeMl: forteVolume,
         dosesPerVial: Math.floor(VIAL_ML / forteVolume),
       });
     }
   } else if (formulation === "MAX") {
-    const baseName = provider === "inmunotek" ? "Clustoid MAX" : "Allergovac Poliplus";
+    // Poliplus (Roxall) = homólogo de Clustek MAX: 10.000 UT/mL por alérgeno, máx 3.
+    const baseName = provider === "inmunotek" ? "Clustek MAX (Inmunotek)" : "Poliplus (Roxall)";
     eqs.push({
       formulationName: baseName,
-      concentrationString:
-        provider === "inmunotek" ? "10.000 UT/mL por alérgeno (máx 3)" : "20.000 TU/mL (máx 3)",
+      concentrationString: "10.000 UT/mL por alérgeno (máx 3, sin dilución entre slots)",
       requiredVolumeMl: 0.5,
       dosesPerVial: Math.floor(VIAL_ML / 0.5),
     });

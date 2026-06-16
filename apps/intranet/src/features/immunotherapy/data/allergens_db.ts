@@ -170,6 +170,21 @@ export const ALLERGENS_DB: Allergen[] = [
     isProteolytic: false,
     bibliographyRef: "Inmunotek/Roxall UT; Diater polimerizado (0,1 HEPD)",
   },
+  {
+    // Mezcla comercial Dpt+Df vendida como UN alérgeno (1 slot): el UT se reparte
+    // entre las dos especies (10.000 UT → 5.000 UT c/u). Alternativa a elegir Dpt
+    // y Df por separado (2 slots, 10.000 UT c/u en MAX/Poliplus).
+    id: "mezcla_acaros",
+    name: "Mezcla de Ácaros (Dpt + Df)",
+    scientificName: "Dermatophagoides pteronyssinus + D. farinae",
+    family: "acaros",
+    molecularMarker: "Der p 1 + Der f 1",
+    utLabel: "10.000 UT/mL (mezcla)",
+    componentLabels: ["Der p (Dpt)", "Der f (Df)"],
+    isPerennial: true,
+    isProteolytic: false,
+    bibliographyRef: "Inmunotek/Roxall: mezcla Dpt+Df = 1 alérgeno (catálogo, verbatim)",
+  },
 
   // ── Gramíneas ──────────────────────────────────────────────────────────
   {

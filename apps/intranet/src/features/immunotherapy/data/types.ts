@@ -64,6 +64,13 @@ export interface Allergen {
   molecularMarker: string;
   /** Etiqueta comercial estándar para polimerizados Inmunotek/Roxall (UT/TU). */
   utLabel: string;
+  /**
+   * Para alérgenos-MEZCLA vendidos como UN solo slot (Dpt+Df = "mezcla ácaros"):
+   * las especies que comparten la concentración del slot. El UT del slot se
+   * REPARTE entre ellas (ej. 10.000 UT → 5.000 UT por especie). undefined = una
+   * sola especie (ocupa el slot completo). La mezcla cuenta como 1 de los máx 3.
+   */
+  componentLabels?: string[];
   /** true = presente todo el año (ácaros, epitelios, hongos) */
   isPerennial: boolean;
   /** true = produce enzimas proteolíticas (Alternaria, Cladosporium) */

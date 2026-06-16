@@ -201,6 +201,40 @@ describe("Ventana terapéutica — solo aplica a µg convencional", () => {
   });
 });
 
+describe("Mezcla de ácaros (1 slot, reparte UT) + homología de labs", () => {
+  it("mezcla Dpt+Df reparte el UT del slot entre las dos especies", () => {
+    const r = calculate(sel({ selectedAllergenIds: ["mezcla_acaros"] }));
+    const display = r.vials[0]?.allergens[0]?.doseDisplay ?? "";
+    // 10.000 UT/mL × 0.5 mL = 5.000 UT inyectados, repartidos 2.500 c/u
+    expect(display).toContain("5.000 UT");
+    expect(display).toContain("c/u");
+    expect(display).toContain("2.500");
+  });
+
+  it("Dpt y Df SEPARADOS no reparten: cada uno a dosis completa", () => {
+    const r = calculate(sel({ selectedAllergenIds: ["acaro_dpt"] }));
+    expect(r.vials[0]?.allergens[0]?.doseDisplay).toBe("5.000 UT");
+  });
+
+  it("Roxall MAX se rotula Poliplus (homólogo Clustek MAX, 10k por alérgeno)", () => {
+    const r = calculate(
+      sel({ provider: "roxall", selectedAllergenIds: ["acaro_dpt", "gramineas_mix"] })
+    );
+    const eq = r.vials.find((v) => v.formulation === "MAX")?.equivalences?.[0];
+    expect(eq?.formulationName).toContain("Poliplus");
+    expect(eq?.concentrationString).toContain("10.000 UT/mL por alérgeno");
+  });
+
+  it("Inmunotek mono ofrece FORTE; Roxall no tiene homólogo FORTE", () => {
+    const inmunotek = calculate(sel({ provider: "inmunotek", selectedAllergenIds: ["olivo"] }));
+    const roxall = calculate(sel({ provider: "roxall", selectedAllergenIds: ["olivo"] }));
+    const inmunoNames = inmunotek.vials[0]?.equivalences?.map((e) => e.formulationName) ?? [];
+    const roxallNames = roxall.vials[0]?.equivalences?.map((e) => e.formulationName) ?? [];
+    expect(inmunoNames.some((n) => n.includes("FORTE"))).toBe(true);
+    expect(roxallNames.some((n) => n.includes("FORTE"))).toBe(false);
+  });
+});
+
 describe("Diater — unidades reales del SmPC", () => {
   it("molecular mites: µg/mL real, never UT, with SmPC source + Diater notice", () => {
     const r = calculate(

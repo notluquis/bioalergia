@@ -157,7 +157,7 @@ export function CalculatorSCIT({ onChange }: CalculatorSCITProps = {}) {
               <Radio.Content>
                 <div className="flex flex-col gap-0.5">
                   <span className="font-semibold text-sm">Inmunotek</span>
-                  <span className="text-default-500 text-xs">Alutek, Clustek, Modigoid</span>
+                  <span className="text-default-500 text-xs">Clustek, Clustoid, Alxoid</span>
                 </div>
               </Radio.Content>
             </Radio>
@@ -185,7 +185,7 @@ export function CalculatorSCIT({ onChange }: CalculatorSCITProps = {}) {
               <Radio.Content>
                 <div className="flex flex-col gap-0.5">
                   <span className="font-semibold text-sm">Roxall</span>
-                  <span className="text-default-500 text-xs">Cluxin, Modigoid</span>
+                  <span className="text-default-500 text-xs">Cluxin, Poliplus, Modigoid</span>
                 </div>
               </Radio.Content>
             </Radio>
