@@ -2,6 +2,7 @@ import type {
   CreateBudgetInput,
   CreateProductInput,
   CreateScitPrescriptionInput,
+  HideableSection,
   PrescriptionPdfInput,
   QuoteInput,
   UpdateProductInput,
@@ -116,6 +117,34 @@ export async function downloadImmunoBudgetPdf(input: CreateBudgetInput): Promise
     const a = document.createElement("a");
     a.href = url;
     a.download = file instanceof File && file.name ? file.name : "presupuesto_inmunoterapia.pdf";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  } catch (error) {
+    throw toImmunotherapyApiError(error);
+  }
+}
+
+/**
+ * Prescripción para el paciente = PDF del plan de inmunoterapia SIN precios.
+ * Reusa el generador del presupuesto forzando ocultar precios + descuento (es el
+ * mismo plan comercial que la cotización, presentado como prescripción).
+ */
+export async function downloadImmunoPatientPrescriptionPdf(
+  input: CreateBudgetInput
+): Promise<void> {
+  const hidden = new Set<HideableSection>(input.hiddenSections ?? []);
+  hidden.add("prices");
+  hidden.add("discount");
+  const planOnly: CreateBudgetInput = { ...input, hiddenSections: Array.from(hidden) };
+  try {
+    const file = await immunotherapyORPCClient.generatePdf(planOnly);
+    const blob = file instanceof Blob ? file : new Blob([file as BlobPart]);
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "prescripcion_inmunoterapia.pdf";
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);

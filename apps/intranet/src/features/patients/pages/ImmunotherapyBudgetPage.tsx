@@ -25,6 +25,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   createImmunoBudget,
   downloadImmunoBudgetPdf,
+  downloadImmunoPatientPrescriptionPdf,
   downloadImmunoPrescriptionPdf,
   listImmunoAllergens,
   listImmunoProducts,
@@ -157,6 +158,14 @@ export function ImmunotherapyBudgetPage() {
       }),
     onError: (error) => {
       toast.error(error instanceof Error ? error.message : "No se pudo generar la receta");
+    },
+  });
+
+  // Prescripción para el paciente = el mismo plan, SIN precios.
+  const patientPrescriptionPdfMutation = useMutation({
+    mutationFn: () => downloadImmunoPatientPrescriptionPdf(buildBudgetInput()),
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : "No se pudo generar la prescripción");
     },
   });
 
@@ -461,7 +470,16 @@ export function ImmunotherapyBudgetPage() {
                   onPress={() => prescriptionPdfMutation.mutate()}
                 >
                   <Download size={18} />
-                  Generar receta
+                  Receta (laboratorio)
+                </Button>
+                <Button
+                  variant="outline"
+                  className="gap-2"
+                  isPending={patientPrescriptionPdfMutation.isPending}
+                  onPress={() => patientPrescriptionPdfMutation.mutate()}
+                >
+                  <Download size={18} />
+                  Prescripción (paciente)
                 </Button>
                 <Button
                   className="gap-2"
