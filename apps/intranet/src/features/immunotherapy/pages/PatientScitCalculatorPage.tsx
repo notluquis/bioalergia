@@ -7,6 +7,7 @@ import { PAGE_CONTAINER } from "@/lib/styles";
 import { toast } from "@/lib/toast-interceptor";
 import { createScitPrescription } from "../api";
 import { CalculatorSCIT } from "../components/CalculatorSCIT";
+import { CarnetInmunoterapia } from "../components/CarnetInmunoterapia";
 import { ScitPrescriptionList } from "../components/ScitPrescriptionList";
 import { getAllergenById } from "../data/allergens_db";
 import type { DoctorSelection, ScitCalculationResult } from "../data/types";
@@ -111,6 +112,14 @@ export function PatientScitCalculatorPage() {
       <div className="mt-8 border-default-100 border-t pt-6">
         <h2 className="mb-3 font-semibold text-foreground text-sm">Prescripciones guardadas</h2>
         <ScitPrescriptionList patientId={patientId} />
+      </div>
+
+      <div className="mt-8 border-default-100 border-t pt-6">
+        <h2 className="mb-1 font-semibold text-foreground text-sm">Carnet de inmunoterapia</h2>
+        <p className="mb-3 text-default-500 text-xs">
+          Registro por dosis: vial/lote, sitio, observación 30 min y reacción (escala WAO).
+        </p>
+        <CarnetInmunoterapia patientId={patientId} />
       </div>
     </div>
   );

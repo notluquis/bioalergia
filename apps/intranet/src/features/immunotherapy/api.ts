@@ -1,5 +1,6 @@
 import type {
   CreateBudgetInput,
+  CreateImmunoAdministrationInput,
   CreateProductInput,
   CreateScitPrescriptionInput,
   HideableSection,
@@ -81,6 +82,24 @@ export async function createScitPrescription(input: CreateScitPrescriptionInput)
 export async function listScitPrescriptions(patientId: number) {
   try {
     const res = await immunotherapyORPCClient.listScitPrescriptions({ patientId });
+    return res.items;
+  } catch (error) {
+    throw toImmunotherapyApiError(error);
+  }
+}
+
+// ── Carnet de inmunoterapia (administración de dosis) ────────────────
+export async function createImmunoAdministration(input: CreateImmunoAdministrationInput) {
+  try {
+    return await immunotherapyORPCClient.createImmunoAdministration(input);
+  } catch (error) {
+    throw toImmunotherapyApiError(error);
+  }
+}
+
+export async function listImmunoAdministrations(patientId: number) {
+  try {
+    const res = await immunotherapyORPCClient.listImmunoAdministrations({ patientId });
     return res.items;
   } catch (error) {
     throw toImmunotherapyApiError(error);

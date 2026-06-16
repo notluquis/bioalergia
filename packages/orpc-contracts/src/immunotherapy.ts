@@ -234,6 +234,62 @@ export const scitPrescriptionListResponseSchema = z.object({
 });
 export const scitPrescriptionCreatedSchema = z.object({ id: z.string() });
 
+// ── Carnet de inmunoterapia: administración de dosis (seguridad clínica) ──────
+// Grado WAO 2024: 0=ninguna, 1=leve 1 sistema, 2=>1 sistema, 3=resp/CV, 4=shock, 5=muerte.
+export const waoGradeSchema = z.number().int().min(0).max(5);
+export const injectionSiteSchema = z.enum(["brazo_izquierdo", "brazo_derecho"]);
+
+export const createImmunoAdministrationInputSchema = z.object({
+  patientId: z.number().int(),
+  clinicalSeriesId: z.number().int().optional(),
+  eventId: z.number().int().optional(),
+  administeredAt: z.date(),
+  doseLabel: z.string().optional(),
+  doseMl: z.number().min(0).optional(),
+  vialDescription: z.string().optional(),
+  vialLot: z.string().optional(),
+  vialExpiry: z.date().optional(),
+  injectionSite: injectionSiteSchema.optional(),
+  observationMinutes: z.number().int().min(0).default(30),
+  observationCompleted: z.boolean().default(false),
+  hadLocalReaction: z.boolean().default(false),
+  localReactionNote: z.string().optional(),
+  systemicReactionGrade: waoGradeSchema.optional(),
+  reactionNote: z.string().optional(),
+  premedication: z.string().optional(),
+  notes: z.string().optional(),
+});
+
+export const immunoAdministrationSchema = z.object({
+  id: z.string(),
+  patientId: z.number().int(),
+  clinicalSeriesId: z.number().int().nullable(),
+  eventId: z.number().int().nullable(),
+  administeredAt: z.date(),
+  doseLabel: z.string().nullable(),
+  doseMl: z.number().nullable(),
+  vialDescription: z.string().nullable(),
+  vialLot: z.string().nullable(),
+  vialExpiry: z.date().nullable(),
+  injectionSite: z.string().nullable(),
+  observationMinutes: z.number().int(),
+  observationCompleted: z.boolean(),
+  hadLocalReaction: z.boolean(),
+  localReactionNote: z.string().nullable(),
+  systemicReactionGrade: z.number().int().nullable(),
+  reactionNote: z.string().nullable(),
+  premedication: z.string().nullable(),
+  notes: z.string().nullable(),
+  administeredBy: z.number().int(),
+  createdAt: z.date(),
+});
+
+export const listImmunoAdministrationsInputSchema = z.object({ patientId: z.number().int() });
+export const immunoAdministrationListResponseSchema = z.object({
+  items: z.array(immunoAdministrationSchema),
+});
+export const immunoAdministrationCreatedSchema = z.object({ id: z.string() });
+
 // ── Contract ─────────────────────────────────────────────────────────
 export const immunotherapyContract = {
   // Productos (catálogo editable)
@@ -287,6 +343,15 @@ export const immunotherapyContract = {
     .route({ method: "GET", path: "/scit-prescriptions" })
     .input(listScitPrescriptionsInputSchema)
     .output(scitPrescriptionListResponseSchema),
+  // Carnet de inmunoterapia (administración de dosis)
+  createImmunoAdministration: oc
+    .route({ method: "POST", path: "/administrations" })
+    .input(createImmunoAdministrationInputSchema)
+    .output(immunoAdministrationCreatedSchema),
+  listImmunoAdministrations: oc
+    .route({ method: "GET", path: "/administrations" })
+    .input(listImmunoAdministrationsInputSchema)
+    .output(immunoAdministrationListResponseSchema),
 };
 
 export type ImmunotherapyContract = typeof immunotherapyContract;
@@ -299,3 +364,7 @@ export type CreateProductInput = z.infer<typeof createProductInputSchema>;
 export type UpdateProductInput = z.infer<typeof updateProductInputSchema>;
 export type CreateScitPrescriptionInput = z.infer<typeof createScitPrescriptionInputSchema>;
 export type ScitPrescriptionDto = z.infer<typeof scitPrescriptionSchema>;
+export type CreateImmunoAdministrationInput = z.infer<
+  typeof createImmunoAdministrationInputSchema
+>;
+export type ImmunoAdministrationDto = z.infer<typeof immunoAdministrationSchema>;

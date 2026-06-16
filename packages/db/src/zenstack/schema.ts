@@ -4517,6 +4517,163 @@ export class SchemaType implements SchemaDef {
                 calendarId_externalEventId: { calendarId: { type: "Int" }, externalEventId: { type: "String" } }
             }
         },
+        ImmunotherapyAdministration: {
+            name: "ImmunotherapyAdministration",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "String",
+                    id: true,
+                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("cuid") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("cuid") as FieldDefault
+                },
+                patientId: {
+                    name: "patientId",
+                    type: "Int",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("patient_id") }] }] as readonly AttributeApplication[],
+                    foreignKeyFor: [
+                        "patient"
+                    ] as readonly string[]
+                },
+                clinicalSeriesId: {
+                    name: "clinicalSeriesId",
+                    type: "Int",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("clinical_series_id") }] }] as readonly AttributeApplication[],
+                    foreignKeyFor: [
+                        "clinicalSeries"
+                    ] as readonly string[]
+                },
+                eventId: {
+                    name: "eventId",
+                    type: "Int",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("event_id") }] }] as readonly AttributeApplication[]
+                },
+                administeredAt: {
+                    name: "administeredAt",
+                    type: "DateTime",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("administered_at") }] }] as readonly AttributeApplication[]
+                },
+                doseLabel: {
+                    name: "doseLabel",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("dose_label") }] }] as readonly AttributeApplication[]
+                },
+                doseMl: {
+                    name: "doseMl",
+                    type: "Float",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("dose_ml") }] }] as readonly AttributeApplication[]
+                },
+                vialDescription: {
+                    name: "vialDescription",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("vial_description") }] }] as readonly AttributeApplication[]
+                },
+                vialLot: {
+                    name: "vialLot",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("vial_lot") }] }] as readonly AttributeApplication[]
+                },
+                vialExpiry: {
+                    name: "vialExpiry",
+                    type: "DateTime",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("vial_expiry") }] }, { name: "@db.Date" }] as readonly AttributeApplication[]
+                },
+                injectionSite: {
+                    name: "injectionSite",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("injection_site") }] }] as readonly AttributeApplication[]
+                },
+                observationMinutes: {
+                    name: "observationMinutes",
+                    type: "Int",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(30) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("observation_minutes") }] }] as readonly AttributeApplication[],
+                    default: 30 as FieldDefault
+                },
+                observationCompleted: {
+                    name: "observationCompleted",
+                    type: "Boolean",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(false) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("observation_completed") }] }] as readonly AttributeApplication[],
+                    default: false as FieldDefault
+                },
+                hadLocalReaction: {
+                    name: "hadLocalReaction",
+                    type: "Boolean",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(false) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("had_local_reaction") }] }] as readonly AttributeApplication[],
+                    default: false as FieldDefault
+                },
+                localReactionNote: {
+                    name: "localReactionNote",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("local_reaction_note") }] }] as readonly AttributeApplication[]
+                },
+                systemicReactionGrade: {
+                    name: "systemicReactionGrade",
+                    type: "Int",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("systemic_reaction_grade") }] }] as readonly AttributeApplication[]
+                },
+                reactionNote: {
+                    name: "reactionNote",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("reaction_note") }] }] as readonly AttributeApplication[]
+                },
+                premedication: {
+                    name: "premedication",
+                    type: "String",
+                    optional: true
+                },
+                notes: {
+                    name: "notes",
+                    type: "String",
+                    optional: true
+                },
+                administeredBy: {
+                    name: "administeredBy",
+                    type: "Int",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("administered_by") }] }] as readonly AttributeApplication[]
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                patient: {
+                    name: "patient",
+                    type: "Patient",
+                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("patientId")]) }, { name: "references", value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("Cascade") }] }] as readonly AttributeApplication[],
+                    relation: { opposite: "immunotherapyAdministrations", fields: ["patientId"], references: ["id"], onDelete: "Cascade" }
+                },
+                clinicalSeries: {
+                    name: "clinicalSeries",
+                    type: "ClinicalSeries",
+                    optional: true,
+                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("clinicalSeriesId")]) }, { name: "references", value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("SetNull") }] }] as readonly AttributeApplication[],
+                    relation: { opposite: "immunotherapyAdministrations", fields: ["clinicalSeriesId"], references: ["id"], onDelete: "SetNull" }
+                }
+            },
+            attributes: [
+                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,read,update") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("patientId"), ExpressionUtils.field("administeredAt")]) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("clinicalSeriesId")]) }] },
+                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("immunotherapy_administrations") }] }
+            ] as readonly AttributeApplication[],
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "String" }
+            }
+        },
         ClinicalSeries: {
             name: "ClinicalSeries",
             fields: {
@@ -4696,6 +4853,12 @@ export class SchemaType implements SchemaDef {
                     type: "ClinicalRecordImport",
                     array: true,
                     relation: { opposite: "matchedClinicalSeries" }
+                },
+                immunotherapyAdministrations: {
+                    name: "immunotherapyAdministrations",
+                    type: "ImmunotherapyAdministration",
+                    array: true,
+                    relation: { opposite: "clinicalSeries" }
                 }
             },
             attributes: [
@@ -8910,6 +9073,12 @@ export class SchemaType implements SchemaDef {
                 scitPrescriptions: {
                     name: "scitPrescriptions",
                     type: "ScitPrescription",
+                    array: true,
+                    relation: { opposite: "patient" }
+                },
+                immunotherapyAdministrations: {
+                    name: "immunotherapyAdministrations",
+                    type: "ImmunotherapyAdministration",
                     array: true,
                     relation: { opposite: "patient" }
                 }

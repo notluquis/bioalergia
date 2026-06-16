@@ -3731,6 +3731,135 @@ export class SchemaType implements SchemaDef {
                 calendarId_externalEventId: { calendarId: { type: "Int" }, externalEventId: { type: "String" } }
             }
         },
+        ImmunotherapyAdministration: {
+            name: "ImmunotherapyAdministration",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "String",
+                    id: true,
+                    default: ExpressionUtils.call("cuid") as FieldDefault
+                },
+                patientId: {
+                    name: "patientId",
+                    type: "Int",
+                    foreignKeyFor: [
+                        "patient"
+                    ] as readonly string[]
+                },
+                clinicalSeriesId: {
+                    name: "clinicalSeriesId",
+                    type: "Int",
+                    optional: true,
+                    foreignKeyFor: [
+                        "clinicalSeries"
+                    ] as readonly string[]
+                },
+                eventId: {
+                    name: "eventId",
+                    type: "Int",
+                    optional: true
+                },
+                administeredAt: {
+                    name: "administeredAt",
+                    type: "DateTime"
+                },
+                doseLabel: {
+                    name: "doseLabel",
+                    type: "String",
+                    optional: true
+                },
+                doseMl: {
+                    name: "doseMl",
+                    type: "Float",
+                    optional: true
+                },
+                vialDescription: {
+                    name: "vialDescription",
+                    type: "String",
+                    optional: true
+                },
+                vialLot: {
+                    name: "vialLot",
+                    type: "String",
+                    optional: true
+                },
+                vialExpiry: {
+                    name: "vialExpiry",
+                    type: "DateTime",
+                    optional: true
+                },
+                injectionSite: {
+                    name: "injectionSite",
+                    type: "String",
+                    optional: true
+                },
+                observationMinutes: {
+                    name: "observationMinutes",
+                    type: "Int",
+                    default: 30 as FieldDefault
+                },
+                observationCompleted: {
+                    name: "observationCompleted",
+                    type: "Boolean",
+                    default: false as FieldDefault
+                },
+                hadLocalReaction: {
+                    name: "hadLocalReaction",
+                    type: "Boolean",
+                    default: false as FieldDefault
+                },
+                localReactionNote: {
+                    name: "localReactionNote",
+                    type: "String",
+                    optional: true
+                },
+                systemicReactionGrade: {
+                    name: "systemicReactionGrade",
+                    type: "Int",
+                    optional: true
+                },
+                reactionNote: {
+                    name: "reactionNote",
+                    type: "String",
+                    optional: true
+                },
+                premedication: {
+                    name: "premedication",
+                    type: "String",
+                    optional: true
+                },
+                notes: {
+                    name: "notes",
+                    type: "String",
+                    optional: true
+                },
+                administeredBy: {
+                    name: "administeredBy",
+                    type: "Int"
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                patient: {
+                    name: "patient",
+                    type: "Patient",
+                    relation: { opposite: "immunotherapyAdministrations", fields: ["patientId"], references: ["id"], onDelete: "Cascade" }
+                },
+                clinicalSeries: {
+                    name: "clinicalSeries",
+                    type: "ClinicalSeries",
+                    optional: true,
+                    relation: { opposite: "immunotherapyAdministrations", fields: ["clinicalSeriesId"], references: ["id"], onDelete: "SetNull" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "String" }
+            }
+        },
         ClinicalSeries: {
             name: "ClinicalSeries",
             fields: {
@@ -3890,6 +4019,12 @@ export class SchemaType implements SchemaDef {
                     type: "ClinicalRecordImport",
                     array: true,
                     relation: { opposite: "matchedClinicalSeries" }
+                },
+                immunotherapyAdministrations: {
+                    name: "immunotherapyAdministrations",
+                    type: "ImmunotherapyAdministration",
+                    array: true,
+                    relation: { opposite: "clinicalSeries" }
                 }
             },
             idFields: ["id"],
@@ -7311,6 +7446,12 @@ export class SchemaType implements SchemaDef {
                 scitPrescriptions: {
                     name: "scitPrescriptions",
                     type: "ScitPrescription",
+                    array: true,
+                    relation: { opposite: "patient" }
+                },
+                immunotherapyAdministrations: {
+                    name: "immunotherapyAdministrations",
+                    type: "ImmunotherapyAdministration",
                     array: true,
                     relation: { opposite: "patient" }
                 }

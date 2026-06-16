@@ -1304,6 +1304,53 @@ model Event {
   @@map("events")
 }
 
+// Carnet de inmunoterapia: registro clínico de CADA dosis administrada (la capa
+// de seguridad que el Event sincronizado de calendario no tiene). Captura qué se
+// inyectó (vial/lote/sitio), la observación obligatoria de 30 min post-SCIT, y la
+// reacción sistémica en la escala WAO 2024 (grados 0–5). 90% de las reacciones
+// sistémicas ocurren en los 30 min post-inyección (03_REGLAS_CLINICAS §3, §9).
+model ImmunotherapyAdministration {
+  id                    String    @id @default(cuid())
+  patientId             Int       @map("patient_id")
+  clinicalSeriesId      Int?      @map("clinical_series_id")
+  eventId               Int?      @map("event_id")
+
+  administeredAt        DateTime  @map("administered_at")
+  // Qué se administró
+  doseLabel             String?   @map("dose_label")
+  doseMl                Float?    @map("dose_ml")
+  vialDescription       String?   @map("vial_description")
+  vialLot               String?   @map("vial_lot")
+  vialExpiry            DateTime? @map("vial_expiry") @db.Date
+  // brazo_izquierdo | brazo_derecho
+  injectionSite         String?   @map("injection_site")
+
+  // Seguridad post-inyección
+  observationMinutes    Int       @default(30) @map("observation_minutes")
+  observationCompleted  Boolean   @default(false) @map("observation_completed")
+  hadLocalReaction      Boolean   @default(false) @map("had_local_reaction")
+  localReactionNote     String?   @map("local_reaction_note")
+  // Escala WAO 2024: 0=ninguna, 1=leve 1 sistema, 2=>1 sistema, 3=resp/CV,
+  // 4=colapso/shock, 5=muerte. null = no evaluada.
+  systemicReactionGrade Int?      @map("systemic_reaction_grade")
+  reactionNote          String?   @map("reaction_note")
+  premedication         String?
+  notes                 String?
+
+  administeredBy        Int       @map("administered_by")
+  createdAt             DateTime  @default(now()) @map("created_at")
+
+  patient               Patient         @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  clinicalSeries        ClinicalSeries? @relation(fields: [clinicalSeriesId], references: [id], onDelete: SetNull)
+
+  @@deny('all', auth() == null)
+  @@allow('create,read,update', auth().status == 'ACTIVE')
+
+  @@index([patientId, administeredAt])
+  @@index([clinicalSeriesId])
+  @@map("immunotherapy_administrations")
+}
+
 model ClinicalSeries {
   id               Int                       @id @default(autoincrement())
   kind             ClinicalSeriesKind
@@ -1334,6 +1381,7 @@ model ClinicalSeries {
   documentImports ClinicalDocumentImport[]
   records    ClinicalRecord[]
   recordImports ClinicalRecordImport[]
+  immunotherapyAdministrations ImmunotherapyAdministration[]
 
   @@deny('all', auth() == null)
   @@allow('read', true)
@@ -2752,6 +2800,7 @@ model Patient {
   clinicalRecordImports ClinicalRecordImport[]
   examReports         ExamReport[]
   scitPrescriptions   ScitPrescription[]
+  immunotherapyAdministrations ImmunotherapyAdministration[]
 
   @@deny('all', auth() == null)
   @@allow('read', auth().status == 'ACTIVE')

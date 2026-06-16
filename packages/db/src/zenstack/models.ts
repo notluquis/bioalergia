@@ -54,6 +54,7 @@ export type PushSubscription = $ModelResult<$Schema, "PushSubscription">;
 export type Calendar = $ModelResult<$Schema, "Calendar">;
 export type CalendarWatchChannel = $ModelResult<$Schema, "CalendarWatchChannel">;
 export type Event = $ModelResult<$Schema, "Event">;
+export type ImmunotherapyAdministration = $ModelResult<$Schema, "ImmunotherapyAdministration">;
 export type ClinicalSeries = $ModelResult<$Schema, "ClinicalSeries">;
 export type ClinicalXlsxFile = $ModelResult<$Schema, "ClinicalXlsxFile">;
 export type ClinicalSkinTestImport = $ModelResult<$Schema, "ClinicalSkinTestImport">;

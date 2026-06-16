@@ -5,8 +5,12 @@ import {
   clinicTermsSchema,
   createBudgetInputSchema,
   createProductInputSchema,
+  createImmunoAdministrationInputSchema,
   createScitPrescriptionInputSchema,
   idInputSchema,
+  immunoAdministrationCreatedSchema,
+  immunoAdministrationListResponseSchema,
+  listImmunoAdministrationsInputSchema,
   listScitPrescriptionsInputSchema,
   okResponseSchema,
   prescriptionPdfInputSchema,
@@ -41,6 +45,10 @@ import {
   updateProduct,
   updateTerms,
 } from "../services/immunotherapy.ts";
+import {
+  createImmunoAdministration,
+  listImmunoAdministrationsByPatient,
+} from "../services/immunotherapy-administrations.ts";
 import {
   createScitPrescription,
   listScitPrescriptionsByPatient,
@@ -165,6 +173,19 @@ const immunotherapyRouterBase = {
     .input(listScitPrescriptionsInputSchema)
     .output(scitPrescriptionListResponseSchema)
     .handler(async ({ input }) => listScitPrescriptionsByPatient(input.patientId)),
+
+  // ── Carnet de inmunoterapia (administración de dosis) ──────────────
+  createImmunoAdministration: createClinicalSeries
+    .route({ method: "POST", path: "/administrations", tags: ["Immunotherapy"] })
+    .input(createImmunoAdministrationInputSchema)
+    .output(immunoAdministrationCreatedSchema)
+    .handler(async ({ input, context }) => createImmunoAdministration(input, context.user.id)),
+
+  listImmunoAdministrations: readClinicalSeries
+    .route({ method: "GET", path: "/administrations", tags: ["Immunotherapy"] })
+    .input(listImmunoAdministrationsInputSchema)
+    .output(immunoAdministrationListResponseSchema)
+    .handler(async ({ input }) => listImmunoAdministrationsByPatient(input.patientId)),
 };
 
 export const immunotherapyORPCRouter = base
