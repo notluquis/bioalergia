@@ -20,6 +20,8 @@ import { send_outreach_tick } from "./outreach-send.ts";
 import { send_wa_broadcast_tick } from "./wa-broadcast-tick.ts";
 import { send_wa_scheduled } from "./wa-scheduled-send.ts";
 import { skin_test_sync } from "./skin-test-sync.ts";
+import { social_publish } from "./social-publish.ts";
+import { social_publish_tick } from "./social-publish-tick.ts";
 
 export const taskList: TaskList = {
   dte_sync,
@@ -34,4 +36,6 @@ export const taskList: TaskList = {
   send_outreach_tick,
   send_wa_broadcast_tick,
   send_wa_scheduled,
+  social_publish,
+  social_publish_tick,
 };

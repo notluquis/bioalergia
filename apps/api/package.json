@@ -36,6 +36,7 @@
     "@casl/ability": "^7.0.0",
     "@finanzas/db": "workspace:*",
     "@finanzas/orpc-contracts": "workspace:*",
+    "@finanzas/social-render": "workspace:*",
     "@googleapis/calendar": "^15.0.0",
     "@googleapis/drive": "^20.2.0",
     "@hono/node-server": "^2.0.4",
@@ -109,6 +110,9 @@
       "injected": true
     },
     "@finanzas/orpc-contracts": {
+      "injected": true
+    },
+    "@finanzas/social-render": {
       "injected": true
     }
   },

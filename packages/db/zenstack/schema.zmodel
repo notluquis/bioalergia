@@ -4600,6 +4600,145 @@ model WaScheduledMessage {
   @@map("wa_scheduled_messages")
 }
 
+// ─── Social media publishing ───────────────────────────────────────────────────
+
+enum SocialNetwork {
+  INSTAGRAM
+  FACEBOOK
+  TIKTOK
+}
+
+enum SocialPlacement {
+  IG_FEED
+  IG_REEL
+  IG_STORY
+  FB_FEED
+  FB_REEL
+  FB_STORY
+  TIKTOK_VIDEO
+}
+
+enum SocialMediaType {
+  IMAGE
+  VIDEO
+  CAROUSEL
+}
+
+enum SocialAspectRatio {
+  RATIO_4_5
+  RATIO_1_1
+  RATIO_9_16
+}
+
+enum SocialPostStatus {
+  DRAFT
+  PENDING_APPROVAL
+  SCHEDULED
+  PUBLISHING
+  PUBLISHED
+  FAILED
+}
+
+enum SocialTargetStatus {
+  PENDING
+  CREATING
+  CONTAINER_READY
+  PUBLISHING
+  PUBLISHED
+  FAILED
+  SKIPPED
+}
+
+enum SocialAccountProvider {
+  META
+}
+
+model SocialAccount {
+  id              Int                   @id @default(autoincrement())
+  provider        SocialAccountProvider @default(META)
+  displayName     String?               @map("display_name")
+  metaBusinessId  String?               @map("meta_business_id")
+  fbPageId        String?               @map("fb_page_id")
+  igUserId        String?               @map("ig_user_id")
+  pageAccessToken String?               @map("page_access_token")
+  userAccessToken String?               @map("user_access_token")
+  tokenExpiresAt  DateTime?             @map("token_expires_at")
+  appId           String?               @map("app_id")
+  appSecret       String?               @map("app_secret")
+  graphApiVersion String                @default("v23.0") @map("graph_api_version")
+  active          Boolean               @default(true)
+  callWindowStart DateTime?             @map("call_window_start")
+  callCount       Int                   @default(0) @map("call_count")
+  createdAt       DateTime              @default(now()) @map("created_at")
+  updatedAt       DateTime              @default(now()) @updatedAt @map("updated_at")
+
+  targets         SocialPostTarget[]
+
+  @@index([provider])
+  @@deny('all', auth() == null)
+  @@allow('read,create,update,delete', auth().status == 'ACTIVE')
+  @@map("social_accounts")
+}
+
+model SocialPost {
+  id               Int                @id @default(autoincrement())
+  title            String?
+  status           SocialPostStatus   @default(DRAFT)
+  mediaType        SocialMediaType    @map("media_type")
+  aspectRatio      SocialAspectRatio  @map("aspect_ratio")
+  caption          String?
+  hashtags         String[]           @default([])
+  media            Json               @default("[]")
+  generationMeta   Json               @default("{}") @map("generation_meta")
+  scheduledAt      DateTime?          @map("scheduled_at")
+  approvedByUserId Int?               @map("approved_by_user_id")
+  approvedAt       DateTime?          @map("approved_at")
+  rejectedReason   String?            @map("rejected_reason")
+  createdByUserId  Int                @map("created_by_user_id")
+  publishedAt      DateTime?          @map("published_at")
+  errorMessage     String?            @map("error_message")
+  createdAt        DateTime           @default(now()) @map("created_at")
+  updatedAt        DateTime           @default(now()) @updatedAt @map("updated_at")
+
+  targets          SocialPostTarget[]
+
+  @@index([status])
+  @@index([scheduledAt])
+  @@deny('all', auth() == null)
+  @@allow('read,create,update,delete', auth().status == 'ACTIVE')
+  @@map("social_posts")
+}
+
+model SocialPostTarget {
+  id                 Int                @id @default(autoincrement())
+  postId             Int                @map("post_id")
+  accountId          Int                @map("account_id")
+  network            SocialNetwork
+  placement          SocialPlacement
+  status             SocialTargetStatus @default(PENDING)
+  containerId        String?            @map("container_id")
+  externalId         String?            @map("external_id")
+  permalink          String?
+  captionOverride    String?            @map("caption_override")
+  attempts           Int                @default(0)
+  errorCode          String?            @map("error_code")
+  errorMessage       String?            @map("error_message")
+  containerCreatedAt DateTime?          @map("container_created_at")
+  publishedAt        DateTime?          @map("published_at")
+  createdAt          DateTime           @default(now()) @map("created_at")
+  updatedAt          DateTime           @default(now()) @updatedAt @map("updated_at")
+
+  post               SocialPost         @relation(fields: [postId], references: [id], onDelete: Cascade)
+  account            SocialAccount      @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, network, placement])
+  @@index([postId, status])
+  @@index([status])
+  @@deny('all', auth() == null)
+  @@allow('read,create,update,delete', auth().status == 'ACTIVE')
+  @@map("social_post_targets")
+}
+
 // ─── Expenses ────────────────────────────────────────────────────────────────
 
 enum ExpenseScope {

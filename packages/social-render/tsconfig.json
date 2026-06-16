@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    // social-render is type-checked here and COMPILED by tsdown (.mjs + .d.mts),
+    // same golden-2026 pattern as @finanzas/db: TypeScript is purely a
+    // type-checker (no tsc emit, no composite). Bundler resolution + explicit
+    // `.ts` imports in source.
+    "module": "preserve",
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "target": "esnext",
+    "lib": ["esnext"],
+    "strict": true,
+    "skipLibCheck": true,
+    "noUncheckedSideEffectImports": true,
+    "noEmit": true
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
+}

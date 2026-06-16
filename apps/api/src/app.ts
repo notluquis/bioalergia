@@ -47,6 +47,7 @@ import { dteAnalyticsOpenAPIHandler, dteAnalyticsORPCHandler } from "./orpc/dte-
 import { dteEventLinksOpenAPIHandler, dteEventLinksORPCHandler } from "./orpc/dte-event-links.ts";
 import { employeesOpenAPIHandler, employeesORPCHandler } from "./orpc/employees.ts";
 import { expensesOpenAPIHandler, expensesORPCHandler } from "./orpc/expenses.ts";
+import { socialOpenAPIHandler, socialORPCHandler } from "./orpc/social.ts";
 import { financeOpenAPIHandler, financeORPCHandler } from "./orpc/finance.ts";
 import { cartOpenAPIHandler, cartORPCHandler } from "./orpc/cart.ts";
 import { catalogOpenAPIHandler, catalogORPCHandler } from "./orpc/catalog.ts";
@@ -1274,6 +1275,19 @@ app.use("/api/orpc/expenses/rpc/*", async (c, next) => {
   return next();
 });
 
+app.use("/api/orpc/social/rpc/*", async (c, next) => {
+  const { matched, response } = await socialORPCHandler.handle(createHonoORPCRequest(c), {
+    prefix: "/api/orpc/social/rpc",
+    context: { hono: c },
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  return next();
+});
+
 app.use("/api/orpc/csv-upload/rpc/*", async (c, next) => {
   const { matched, response } = await csvUploadORPCHandler.handle(createHonoORPCRequest(c), {
     prefix: "/api/orpc/csv-upload/rpc",
@@ -1931,6 +1945,18 @@ app.use("/api/orpc/employees/*", async (c, next) => {
 
 app.use("/api/orpc/expenses/*", async (c, next) => {
   const { matched, response } = await expensesOpenAPIHandler.handle(createHonoORPCRequest(c), {
+    context: { hono: c },
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  return next();
+});
+
+app.use("/api/orpc/social/*", async (c, next) => {
+  const { matched, response } = await socialOpenAPIHandler.handle(createHonoORPCRequest(c), {
     context: { hono: c },
   });
 

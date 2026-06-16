@@ -1,0 +1,36 @@
+{
+  "name": "@finanzas/social-render",
+  "version": "0.0.1",
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "main": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs",
+      "default": "./dist/index.mjs"
+    }
+  },
+  "scripts": {
+    "build": "tsdown",
+    "type-check": "tsgo --noEmit",
+    "clean": "rm -rf dist",
+    "lint": "oxlint",
+    "lint:fix": "oxlint --fix && oxfmt --write ."
+  },
+  "dependencies": {
+    "@resvg/resvg-js": "^2.6.2",
+    "satori": "^0.12.2"
+  },
+  "devDependencies": {
+    "@types/node": "^25.9.2",
+    "tsdown": "^0.22.2",
+    "typescript": "^6.0.3"
+  },
+  "engines": {
+    "node": ">=26"
+  }
+}

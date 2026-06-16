@@ -3,6 +3,7 @@
   "references": [
     { "path": "./packages/db" },
     { "path": "./packages/orpc-contracts" },
+    { "path": "./packages/social-render" },
     { "path": "./apps/api" },
     { "path": "./apps/intranet" },
     { "path": "./apps/site" }

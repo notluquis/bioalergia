@@ -67,6 +67,7 @@ export * from "./notifications.ts";
 export * from "./outreach.ts";
 export { patientsContract, type PatientsContract } from "./patients.ts";
 export * from "./patient-campaigns.ts";
+export { socialContract, type SocialContract } from "./social.ts";
 export * from "./people.ts";
 export * from "./personal-finance.ts";
 export * from "./job-radar.ts";

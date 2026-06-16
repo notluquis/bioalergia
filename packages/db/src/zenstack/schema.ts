@@ -15107,6 +15107,392 @@ export class SchemaType implements SchemaDef {
                 id: { type: "Int" }
             }
         },
+        SocialAccount: {
+            name: "SocialAccount",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                provider: {
+                    name: "provider",
+                    type: "SocialAccountProvider",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("META") }] }] as readonly AttributeApplication[],
+                    default: "META" as FieldDefault
+                },
+                displayName: {
+                    name: "displayName",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("display_name") }] }] as readonly AttributeApplication[]
+                },
+                metaBusinessId: {
+                    name: "metaBusinessId",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("meta_business_id") }] }] as readonly AttributeApplication[]
+                },
+                fbPageId: {
+                    name: "fbPageId",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("fb_page_id") }] }] as readonly AttributeApplication[]
+                },
+                igUserId: {
+                    name: "igUserId",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("ig_user_id") }] }] as readonly AttributeApplication[]
+                },
+                pageAccessToken: {
+                    name: "pageAccessToken",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("page_access_token") }] }] as readonly AttributeApplication[]
+                },
+                userAccessToken: {
+                    name: "userAccessToken",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("user_access_token") }] }] as readonly AttributeApplication[]
+                },
+                tokenExpiresAt: {
+                    name: "tokenExpiresAt",
+                    type: "DateTime",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("token_expires_at") }] }] as readonly AttributeApplication[]
+                },
+                appId: {
+                    name: "appId",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("app_id") }] }] as readonly AttributeApplication[]
+                },
+                appSecret: {
+                    name: "appSecret",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("app_secret") }] }] as readonly AttributeApplication[]
+                },
+                graphApiVersion: {
+                    name: "graphApiVersion",
+                    type: "String",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("v23.0") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("graph_api_version") }] }] as readonly AttributeApplication[],
+                    default: "v23.0" as FieldDefault
+                },
+                active: {
+                    name: "active",
+                    type: "Boolean",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(true) }] }] as readonly AttributeApplication[],
+                    default: true as FieldDefault
+                },
+                callWindowStart: {
+                    name: "callWindowStart",
+                    type: "DateTime",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("call_window_start") }] }] as readonly AttributeApplication[]
+                },
+                callCount: {
+                    name: "callCount",
+                    type: "Int",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("call_count") }] }] as readonly AttributeApplication[],
+                    default: 0 as FieldDefault
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@updatedAt" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                targets: {
+                    name: "targets",
+                    type: "SocialPostTarget",
+                    array: true,
+                    relation: { opposite: "account" }
+                }
+            },
+            attributes: [
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("SocialAccountProvider", [ExpressionUtils.field("provider")]) }] },
+                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read,create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
+                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("social_accounts") }] }
+            ] as readonly AttributeApplication[],
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" }
+            }
+        },
+        SocialPost: {
+            name: "SocialPost",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                title: {
+                    name: "title",
+                    type: "String",
+                    optional: true
+                },
+                status: {
+                    name: "status",
+                    type: "SocialPostStatus",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("DRAFT") }] }] as readonly AttributeApplication[],
+                    default: "DRAFT" as FieldDefault
+                },
+                mediaType: {
+                    name: "mediaType",
+                    type: "SocialMediaType",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("media_type") }] }] as readonly AttributeApplication[]
+                },
+                aspectRatio: {
+                    name: "aspectRatio",
+                    type: "SocialAspectRatio",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("aspect_ratio") }] }] as readonly AttributeApplication[]
+                },
+                caption: {
+                    name: "caption",
+                    type: "String",
+                    optional: true
+                },
+                hashtags: {
+                    name: "hashtags",
+                    type: "String",
+                    array: true,
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.array("Any", []) }] }] as readonly AttributeApplication[],
+                    default: [] as FieldDefault
+                },
+                media: {
+                    name: "media",
+                    type: "Json",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("[]") }] }] as readonly AttributeApplication[],
+                    default: "[]" as FieldDefault
+                },
+                generationMeta: {
+                    name: "generationMeta",
+                    type: "Json",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("{}") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("generation_meta") }] }] as readonly AttributeApplication[],
+                    default: "{}" as FieldDefault
+                },
+                scheduledAt: {
+                    name: "scheduledAt",
+                    type: "DateTime",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("scheduled_at") }] }] as readonly AttributeApplication[]
+                },
+                approvedByUserId: {
+                    name: "approvedByUserId",
+                    type: "Int",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("approved_by_user_id") }] }] as readonly AttributeApplication[]
+                },
+                approvedAt: {
+                    name: "approvedAt",
+                    type: "DateTime",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("approved_at") }] }] as readonly AttributeApplication[]
+                },
+                rejectedReason: {
+                    name: "rejectedReason",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("rejected_reason") }] }] as readonly AttributeApplication[]
+                },
+                createdByUserId: {
+                    name: "createdByUserId",
+                    type: "Int",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_by_user_id") }] }] as readonly AttributeApplication[]
+                },
+                publishedAt: {
+                    name: "publishedAt",
+                    type: "DateTime",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("published_at") }] }] as readonly AttributeApplication[]
+                },
+                errorMessage: {
+                    name: "errorMessage",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("error_message") }] }] as readonly AttributeApplication[]
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@updatedAt" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                targets: {
+                    name: "targets",
+                    type: "SocialPostTarget",
+                    array: true,
+                    relation: { opposite: "post" }
+                }
+            },
+            attributes: [
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("SocialPostStatus", [ExpressionUtils.field("status")]) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("DateTime", [ExpressionUtils.field("scheduledAt")]) }] },
+                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read,create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
+                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("social_posts") }] }
+            ] as readonly AttributeApplication[],
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" }
+            }
+        },
+        SocialPostTarget: {
+            name: "SocialPostTarget",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                postId: {
+                    name: "postId",
+                    type: "Int",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("post_id") }] }] as readonly AttributeApplication[],
+                    foreignKeyFor: [
+                        "post"
+                    ] as readonly string[]
+                },
+                accountId: {
+                    name: "accountId",
+                    type: "Int",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("account_id") }] }] as readonly AttributeApplication[],
+                    foreignKeyFor: [
+                        "account"
+                    ] as readonly string[]
+                },
+                network: {
+                    name: "network",
+                    type: "SocialNetwork"
+                },
+                placement: {
+                    name: "placement",
+                    type: "SocialPlacement"
+                },
+                status: {
+                    name: "status",
+                    type: "SocialTargetStatus",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("PENDING") }] }] as readonly AttributeApplication[],
+                    default: "PENDING" as FieldDefault
+                },
+                containerId: {
+                    name: "containerId",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("container_id") }] }] as readonly AttributeApplication[]
+                },
+                externalId: {
+                    name: "externalId",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("external_id") }] }] as readonly AttributeApplication[]
+                },
+                permalink: {
+                    name: "permalink",
+                    type: "String",
+                    optional: true
+                },
+                captionOverride: {
+                    name: "captionOverride",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("caption_override") }] }] as readonly AttributeApplication[]
+                },
+                attempts: {
+                    name: "attempts",
+                    type: "Int",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }] as readonly AttributeApplication[],
+                    default: 0 as FieldDefault
+                },
+                errorCode: {
+                    name: "errorCode",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("error_code") }] }] as readonly AttributeApplication[]
+                },
+                errorMessage: {
+                    name: "errorMessage",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("error_message") }] }] as readonly AttributeApplication[]
+                },
+                containerCreatedAt: {
+                    name: "containerCreatedAt",
+                    type: "DateTime",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("container_created_at") }] }] as readonly AttributeApplication[]
+                },
+                publishedAt: {
+                    name: "publishedAt",
+                    type: "DateTime",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("published_at") }] }] as readonly AttributeApplication[]
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@updatedAt" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                post: {
+                    name: "post",
+                    type: "SocialPost",
+                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("postId")]) }, { name: "references", value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("Cascade") }] }] as readonly AttributeApplication[],
+                    relation: { opposite: "targets", fields: ["postId"], references: ["id"], onDelete: "Cascade" }
+                },
+                account: {
+                    name: "account",
+                    type: "SocialAccount",
+                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("accountId")]) }, { name: "references", value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("Cascade") }] }] as readonly AttributeApplication[],
+                    relation: { opposite: "targets", fields: ["accountId"], references: ["id"], onDelete: "Cascade" }
+                }
+            },
+            attributes: [
+                { name: "@@unique", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("postId"), ExpressionUtils.field("network"), ExpressionUtils.field("placement")]) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("postId"), ExpressionUtils.field("status")]) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("SocialTargetStatus", [ExpressionUtils.field("status")]) }] },
+                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read,create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
+                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("social_post_targets") }] }
+            ] as readonly AttributeApplication[],
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" },
+                postId_network_placement: { postId: { type: "Int" }, network: { type: "SocialNetwork" }, placement: { type: "SocialPlacement" } }
+            }
+        },
         ExpenseService: {
             name: "ExpenseService",
             fields: {
@@ -18853,6 +19239,71 @@ export class SchemaType implements SchemaDef {
                 SENT: "SENT",
                 FAILED: "FAILED",
                 SKIPPED: "SKIPPED"
+            }
+        },
+        SocialNetwork: {
+            name: "SocialNetwork",
+            values: {
+                INSTAGRAM: "INSTAGRAM",
+                FACEBOOK: "FACEBOOK",
+                TIKTOK: "TIKTOK"
+            }
+        },
+        SocialPlacement: {
+            name: "SocialPlacement",
+            values: {
+                IG_FEED: "IG_FEED",
+                IG_REEL: "IG_REEL",
+                IG_STORY: "IG_STORY",
+                FB_FEED: "FB_FEED",
+                FB_REEL: "FB_REEL",
+                FB_STORY: "FB_STORY",
+                TIKTOK_VIDEO: "TIKTOK_VIDEO"
+            }
+        },
+        SocialMediaType: {
+            name: "SocialMediaType",
+            values: {
+                IMAGE: "IMAGE",
+                VIDEO: "VIDEO",
+                CAROUSEL: "CAROUSEL"
+            }
+        },
+        SocialAspectRatio: {
+            name: "SocialAspectRatio",
+            values: {
+                RATIO_4_5: "RATIO_4_5",
+                RATIO_1_1: "RATIO_1_1",
+                RATIO_9_16: "RATIO_9_16"
+            }
+        },
+        SocialPostStatus: {
+            name: "SocialPostStatus",
+            values: {
+                DRAFT: "DRAFT",
+                PENDING_APPROVAL: "PENDING_APPROVAL",
+                SCHEDULED: "SCHEDULED",
+                PUBLISHING: "PUBLISHING",
+                PUBLISHED: "PUBLISHED",
+                FAILED: "FAILED"
+            }
+        },
+        SocialTargetStatus: {
+            name: "SocialTargetStatus",
+            values: {
+                PENDING: "PENDING",
+                CREATING: "CREATING",
+                CONTAINER_READY: "CONTAINER_READY",
+                PUBLISHING: "PUBLISHING",
+                PUBLISHED: "PUBLISHED",
+                FAILED: "FAILED",
+                SKIPPED: "SKIPPED"
+            }
+        },
+        SocialAccountProvider: {
+            name: "SocialAccountProvider",
+            values: {
+                META: "META"
             }
         },
         ExpenseScope: {

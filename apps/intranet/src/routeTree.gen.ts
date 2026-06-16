@@ -31,6 +31,7 @@ import { Route as AuthedCalendarRouteImport } from "./routes/_authed/calendar"
 import { Route as AuthedAccountRouteImport } from "./routes/_authed/account"
 import { Route as AuthedWaCloudIndexRouteImport } from "./routes/_authed/wa-cloud/index"
 import { Route as AuthedStoreIndexRouteImport } from "./routes/_authed/store/index"
+import { Route as AuthedSocialIndexRouteImport } from "./routes/_authed/social/index"
 import { Route as AuthedSettingsIndexRouteImport } from "./routes/_authed/settings/index"
 import { Route as AuthedServicesIndexRouteImport } from "./routes/_authed/services/index"
 import { Route as AuthedQuotesIndexRouteImport } from "./routes/_authed/quotes/index"
@@ -204,6 +205,11 @@ const AuthedWaCloudIndexRoute = AuthedWaCloudIndexRouteImport.update({
 const AuthedStoreIndexRoute = AuthedStoreIndexRouteImport.update({
   id: "/store/",
   path: "/store/",
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedSocialIndexRoute = AuthedSocialIndexRouteImport.update({
+  id: "/social/",
+  path: "/social/",
   getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedSettingsIndexRoute = AuthedSettingsIndexRouteImport.update({
@@ -630,6 +636,7 @@ export interface FileRoutesByFullPath {
   "/quotes/": typeof AuthedQuotesIndexRoute
   "/services/": typeof AuthedServicesIndexRoute
   "/settings/": typeof AuthedSettingsIndexRoute
+  "/social/": typeof AuthedSocialIndexRoute
   "/store/": typeof AuthedStoreIndexRoute
   "/wa-cloud/": typeof AuthedWaCloudIndexRoute
   "/finanzas/personal/$creditId": typeof AuthedFinanzasPersonalCreditIdRoute
@@ -711,6 +718,7 @@ export interface FileRoutesByTo {
   "/quotes": typeof AuthedQuotesIndexRoute
   "/services": typeof AuthedServicesIndexRoute
   "/settings": typeof AuthedSettingsIndexRoute
+  "/social": typeof AuthedSocialIndexRoute
   "/store": typeof AuthedStoreIndexRoute
   "/wa-cloud": typeof AuthedWaCloudIndexRoute
   "/finanzas/personal/$creditId": typeof AuthedFinanzasPersonalCreditIdRoute
@@ -801,6 +809,7 @@ export interface FileRoutesById {
   "/_authed/quotes/": typeof AuthedQuotesIndexRoute
   "/_authed/services/": typeof AuthedServicesIndexRoute
   "/_authed/settings/": typeof AuthedSettingsIndexRoute
+  "/_authed/social/": typeof AuthedSocialIndexRoute
   "/_authed/store/": typeof AuthedStoreIndexRoute
   "/_authed/wa-cloud/": typeof AuthedWaCloudIndexRoute
   "/_authed/finanzas/personal/$creditId": typeof AuthedFinanzasPersonalCreditIdRoute
@@ -891,6 +900,7 @@ export interface FileRouteTypes {
     | "/quotes/"
     | "/services/"
     | "/settings/"
+    | "/social/"
     | "/store/"
     | "/wa-cloud/"
     | "/finanzas/personal/$creditId"
@@ -972,6 +982,7 @@ export interface FileRouteTypes {
     | "/quotes"
     | "/services"
     | "/settings"
+    | "/social"
     | "/store"
     | "/wa-cloud"
     | "/finanzas/personal/$creditId"
@@ -1061,6 +1072,7 @@ export interface FileRouteTypes {
     | "/_authed/quotes/"
     | "/_authed/services/"
     | "/_authed/settings/"
+    | "/_authed/social/"
     | "/_authed/store/"
     | "/_authed/wa-cloud/"
     | "/_authed/finanzas/personal/$creditId"
@@ -1240,6 +1252,13 @@ declare module "@tanstack/react-router" {
       path: "/store"
       fullPath: "/store/"
       preLoaderRoute: typeof AuthedStoreIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    "/_authed/social/": {
+      id: "/_authed/social/"
+      path: "/social"
+      fullPath: "/social/"
+      preLoaderRoute: typeof AuthedSocialIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
     "/_authed/settings/": {
@@ -1942,6 +1961,7 @@ interface AuthedRouteChildren {
   AuthedInventoryIndexRoute: typeof AuthedInventoryIndexRoute
   AuthedPatientsIndexRoute: typeof AuthedPatientsIndexRoute
   AuthedQuotesIndexRoute: typeof AuthedQuotesIndexRoute
+  AuthedSocialIndexRoute: typeof AuthedSocialIndexRoute
   AuthedStoreIndexRoute: typeof AuthedStoreIndexRoute
   AuthedPatientsIdImmunotherapyBudgetRoute: typeof AuthedPatientsIdImmunotherapyBudgetRoute
   AuthedPatientsIdNewBudgetRoute: typeof AuthedPatientsIdNewBudgetRoute
@@ -1980,6 +2000,7 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedInventoryIndexRoute: AuthedInventoryIndexRoute,
   AuthedPatientsIndexRoute: AuthedPatientsIndexRoute,
   AuthedQuotesIndexRoute: AuthedQuotesIndexRoute,
+  AuthedSocialIndexRoute: AuthedSocialIndexRoute,
   AuthedStoreIndexRoute: AuthedStoreIndexRoute,
   AuthedPatientsIdImmunotherapyBudgetRoute:
     AuthedPatientsIdImmunotherapyBudgetRoute,

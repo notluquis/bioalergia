@@ -1,5 +1,6 @@
 import { addressSchema } from "@finanzas/orpc-contracts/addresses";
 import { personSchema } from "@finanzas/orpc-contracts/patients";
+import { socialAccountSchema, socialPostSchema } from "@finanzas/orpc-contracts/social";
 import { http, HttpResponse } from "msw";
 import type { z } from "zod";
 
@@ -93,6 +94,243 @@ const SAMPLE_PATIENT = {
 assertFixture(addressSchema, SAMPLE_ADDRESS, "SAMPLE_ADDRESS");
 assertFixture(personSchema, SAMPLE_PERSON, "SAMPLE_PERSON");
 
+// ── Social media approval panel ──────────────────────────────────────────
+// Posts across the status lifecycle: a DRAFT with rendered media awaiting
+// approval, a SCHEDULED post queued to publish, and a PUBLISHED post whose
+// targets carry live permalinks. Validated against socialPostSchema at load.
+const ISO = (s: string) => new Date(s).toISOString();
+
+const SAMPLE_SOCIAL_POST_DRAFT = {
+  id: 101,
+  title: "Promo invierno — alergias",
+  status: "DRAFT",
+  mediaType: "IMAGE",
+  aspectRatio: "RATIO_4_5",
+  caption:
+    "¿Estornudos sin parar este invierno? Agenda tu test de alergias y arma tu plan de inmunoterapia con nuestro equipo.",
+  hashtags: ["alergia", "inmunoterapia", "salud"],
+  media: [
+    {
+      key: "renders/post-101/cover.png",
+      url: "https://picsum.photos/seed/social101/600/750",
+      type: "image",
+      width: 1080,
+      height: 1350,
+    },
+  ],
+  scheduledAt: null,
+  approvedByUserId: null,
+  approvedAt: null,
+  rejectedReason: null,
+  createdByUserId: 1,
+  publishedAt: null,
+  errorMessage: null,
+  createdAt: ISO("2026-06-10T12:00:00Z"),
+  updatedAt: ISO("2026-06-10T12:00:00Z"),
+  targets: [
+    {
+      id: 9001,
+      postId: 101,
+      accountId: 1,
+      network: "INSTAGRAM",
+      placement: "IG_FEED",
+      status: "PENDING",
+      externalId: null,
+      permalink: null,
+      errorMessage: null,
+      attempts: 0,
+      createdAt: ISO("2026-06-10T12:00:00Z"),
+      updatedAt: ISO("2026-06-10T12:00:00Z"),
+    },
+    {
+      id: 9002,
+      postId: 101,
+      accountId: 1,
+      network: "FACEBOOK",
+      placement: "FB_FEED",
+      status: "PENDING",
+      externalId: null,
+      permalink: null,
+      errorMessage: null,
+      attempts: 0,
+      createdAt: ISO("2026-06-10T12:00:00Z"),
+      updatedAt: ISO("2026-06-10T12:00:00Z"),
+    },
+  ],
+};
+
+const SAMPLE_SOCIAL_POST_SCHEDULED = {
+  id: 102,
+  title: "Día Mundial de la Alergia",
+  status: "SCHEDULED",
+  mediaType: "VIDEO",
+  aspectRatio: "RATIO_9_16",
+  caption: "Mañana es el Día Mundial de la Alergia. Te contamos los mitos más comunes.",
+  hashtags: ["diamundialdelaalergia", "bioalergia"],
+  media: [
+    {
+      key: "renders/post-102/reel.png",
+      url: "https://picsum.photos/seed/social102/600/1066",
+      type: "image",
+      width: 1080,
+      height: 1920,
+    },
+  ],
+  scheduledAt: ISO("2026-06-30T17:00:00Z"),
+  approvedByUserId: 1,
+  approvedAt: ISO("2026-06-11T09:00:00Z"),
+  rejectedReason: null,
+  createdByUserId: 1,
+  publishedAt: null,
+  errorMessage: null,
+  createdAt: ISO("2026-06-11T08:00:00Z"),
+  updatedAt: ISO("2026-06-11T09:00:00Z"),
+  targets: [
+    {
+      id: 9003,
+      postId: 102,
+      accountId: 1,
+      network: "INSTAGRAM",
+      placement: "IG_REEL",
+      status: "PENDING",
+      externalId: null,
+      permalink: null,
+      errorMessage: null,
+      attempts: 0,
+      createdAt: ISO("2026-06-11T08:00:00Z"),
+      updatedAt: ISO("2026-06-11T09:00:00Z"),
+    },
+  ],
+};
+
+const SAMPLE_SOCIAL_POST_PUBLISHED = {
+  id: 103,
+  title: "Testimonios de pacientes",
+  status: "PUBLISHED",
+  mediaType: "CAROUSEL",
+  aspectRatio: "RATIO_1_1",
+  caption: "Gracias por confiar en nosotros. Estos son algunos testimonios de nuestros pacientes.",
+  hashtags: ["testimonios", "pacientes"],
+  media: [
+    {
+      key: "renders/post-103/slide1.png",
+      url: "https://picsum.photos/seed/social103a/600/600",
+      type: "image",
+      width: 1080,
+      height: 1080,
+    },
+    {
+      key: "renders/post-103/slide2.png",
+      url: "https://picsum.photos/seed/social103b/600/600",
+      type: "image",
+      width: 1080,
+      height: 1080,
+    },
+  ],
+  scheduledAt: ISO("2026-06-05T15:00:00Z"),
+  approvedByUserId: 1,
+  approvedAt: ISO("2026-06-04T10:00:00Z"),
+  rejectedReason: null,
+  createdByUserId: 1,
+  publishedAt: ISO("2026-06-05T15:00:30Z"),
+  errorMessage: null,
+  createdAt: ISO("2026-06-04T09:00:00Z"),
+  updatedAt: ISO("2026-06-05T15:00:30Z"),
+  targets: [
+    {
+      id: 9004,
+      postId: 103,
+      accountId: 1,
+      network: "INSTAGRAM",
+      placement: "IG_FEED",
+      status: "PUBLISHED",
+      externalId: "17900000000000000",
+      permalink: "https://www.instagram.com/p/Cxample103/",
+      errorMessage: null,
+      attempts: 1,
+      publishedAt: ISO("2026-06-05T15:00:30Z"),
+      createdAt: ISO("2026-06-04T09:00:00Z"),
+      updatedAt: ISO("2026-06-05T15:00:30Z"),
+    },
+    {
+      id: 9005,
+      postId: 103,
+      accountId: 1,
+      network: "FACEBOOK",
+      placement: "FB_FEED",
+      status: "PUBLISHED",
+      externalId: "12200000000000000",
+      permalink: "https://www.facebook.com/bioalergia/posts/103",
+      errorMessage: null,
+      attempts: 1,
+      publishedAt: ISO("2026-06-05T15:00:30Z"),
+      createdAt: ISO("2026-06-04T09:00:00Z"),
+      updatedAt: ISO("2026-06-05T15:00:30Z"),
+    },
+  ],
+};
+
+const SAMPLE_SOCIAL_ACCOUNT = {
+  id: 1,
+  provider: "META",
+  displayName: "Bioalergia (Meta)",
+  metaBusinessId: "100000000000000",
+  fbPageId: "200000000000000",
+  igUserId: "17800000000000000",
+  tokenExpiresAt: ISO("2026-09-01T00:00:00Z"),
+  graphApiVersion: "v21.0",
+  active: true,
+  createdAt: ISO("2026-01-01T00:00:00Z"),
+  updatedAt: ISO("2026-06-01T00:00:00Z"),
+};
+
+// Contract-anchored: drift in socialPostSchema / socialAccountSchema throws here.
+assertFixture(socialPostSchema, SAMPLE_SOCIAL_POST_DRAFT, "SAMPLE_SOCIAL_POST_DRAFT");
+assertFixture(socialPostSchema, SAMPLE_SOCIAL_POST_SCHEDULED, "SAMPLE_SOCIAL_POST_SCHEDULED");
+assertFixture(socialPostSchema, SAMPLE_SOCIAL_POST_PUBLISHED, "SAMPLE_SOCIAL_POST_PUBLISHED");
+assertFixture(socialAccountSchema, SAMPLE_SOCIAL_ACCOUNT, "SAMPLE_SOCIAL_ACCOUNT");
+
+export const SOCIAL_FIXTURES = {
+  draft: SAMPLE_SOCIAL_POST_DRAFT,
+  scheduled: SAMPLE_SOCIAL_POST_SCHEDULED,
+  published: SAMPLE_SOCIAL_POST_PUBLISHED,
+  account: SAMPLE_SOCIAL_ACCOUNT,
+  allPosts: [SAMPLE_SOCIAL_POST_DRAFT, SAMPLE_SOCIAL_POST_SCHEDULED, SAMPLE_SOCIAL_POST_PUBLISHED],
+};
+
+/** Social handlers: list/detail/listAccounts return fixtures; mutations succeed. */
+export const socialHandlers = [
+  http.post("*/api/orpc/social/rpc/list", () => ok({ posts: SOCIAL_FIXTURES.allPosts })),
+  http.post("*/api/orpc/social/rpc/detail", () =>
+    ok({ post: SAMPLE_SOCIAL_POST_DRAFT, status: "ok" })
+  ),
+  http.post("*/api/orpc/social/rpc/listAccounts", () => ok({ accounts: [SAMPLE_SOCIAL_ACCOUNT] })),
+  http.post("*/api/orpc/social/rpc/create", () =>
+    ok({ post: SAMPLE_SOCIAL_POST_DRAFT, status: "ok" })
+  ),
+  http.post("*/api/orpc/social/rpc/update", () =>
+    ok({ post: SAMPLE_SOCIAL_POST_DRAFT, status: "ok" })
+  ),
+  http.post("*/api/orpc/social/rpc/render", () =>
+    ok({ post: SAMPLE_SOCIAL_POST_DRAFT, status: "ok" })
+  ),
+  http.post("*/api/orpc/social/rpc/approve", () =>
+    ok({ post: { ...SAMPLE_SOCIAL_POST_DRAFT, status: "PENDING_APPROVAL" }, status: "ok" })
+  ),
+  http.post("*/api/orpc/social/rpc/reject", () =>
+    ok({ post: { ...SAMPLE_SOCIAL_POST_DRAFT, status: "FAILED" }, status: "ok" })
+  ),
+  http.post("*/api/orpc/social/rpc/schedule", () =>
+    ok({ post: SAMPLE_SOCIAL_POST_SCHEDULED, status: "ok" })
+  ),
+  http.post("*/api/orpc/social/rpc/publishNow", () =>
+    ok({ post: { ...SAMPLE_SOCIAL_POST_SCHEDULED, status: "PUBLISHING" }, status: "ok" })
+  ),
+  http.post("*/api/orpc/social/rpc/connectAccount", () =>
+    ok({ account: SAMPLE_SOCIAL_ACCOUNT, status: "ok" })
+  ),
+];
+
 export const handlers = [
   // CSRF token — every csrfFetch fetches this first.
   http.get("*/api/csrf", () => HttpResponse.json({ token: "msw-fake-csrf" })),
@@ -126,6 +364,9 @@ export const handlers = [
     })
   ),
   http.post("*/api/orpc/shipments/rpc/list", () => ok({ shipments: [] })),
+
+  // Social media approval panel.
+  ...socialHandlers,
 
   // Catchall: every other oRPC endpoint resolves to a generic success.
   // Destructive verbs (delete/cancel/send/broadcast) fall through to here

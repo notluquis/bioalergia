@@ -12385,6 +12385,322 @@ export class SchemaType implements SchemaDef {
                 id: { type: "Int" }
             }
         },
+        SocialAccount: {
+            name: "SocialAccount",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                provider: {
+                    name: "provider",
+                    type: "SocialAccountProvider",
+                    default: "META" as FieldDefault
+                },
+                displayName: {
+                    name: "displayName",
+                    type: "String",
+                    optional: true
+                },
+                metaBusinessId: {
+                    name: "metaBusinessId",
+                    type: "String",
+                    optional: true
+                },
+                fbPageId: {
+                    name: "fbPageId",
+                    type: "String",
+                    optional: true
+                },
+                igUserId: {
+                    name: "igUserId",
+                    type: "String",
+                    optional: true
+                },
+                pageAccessToken: {
+                    name: "pageAccessToken",
+                    type: "String",
+                    optional: true
+                },
+                userAccessToken: {
+                    name: "userAccessToken",
+                    type: "String",
+                    optional: true
+                },
+                tokenExpiresAt: {
+                    name: "tokenExpiresAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                appId: {
+                    name: "appId",
+                    type: "String",
+                    optional: true
+                },
+                appSecret: {
+                    name: "appSecret",
+                    type: "String",
+                    optional: true
+                },
+                graphApiVersion: {
+                    name: "graphApiVersion",
+                    type: "String",
+                    default: "v23.0" as FieldDefault
+                },
+                active: {
+                    name: "active",
+                    type: "Boolean",
+                    default: true as FieldDefault
+                },
+                callWindowStart: {
+                    name: "callWindowStart",
+                    type: "DateTime",
+                    optional: true
+                },
+                callCount: {
+                    name: "callCount",
+                    type: "Int",
+                    default: 0 as FieldDefault
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                targets: {
+                    name: "targets",
+                    type: "SocialPostTarget",
+                    array: true,
+                    relation: { opposite: "account" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" }
+            }
+        },
+        SocialPost: {
+            name: "SocialPost",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                title: {
+                    name: "title",
+                    type: "String",
+                    optional: true
+                },
+                status: {
+                    name: "status",
+                    type: "SocialPostStatus",
+                    default: "DRAFT" as FieldDefault
+                },
+                mediaType: {
+                    name: "mediaType",
+                    type: "SocialMediaType"
+                },
+                aspectRatio: {
+                    name: "aspectRatio",
+                    type: "SocialAspectRatio"
+                },
+                caption: {
+                    name: "caption",
+                    type: "String",
+                    optional: true
+                },
+                hashtags: {
+                    name: "hashtags",
+                    type: "String",
+                    array: true,
+                    default: [] as FieldDefault
+                },
+                media: {
+                    name: "media",
+                    type: "Json",
+                    default: "[]" as FieldDefault
+                },
+                generationMeta: {
+                    name: "generationMeta",
+                    type: "Json",
+                    default: "{}" as FieldDefault
+                },
+                scheduledAt: {
+                    name: "scheduledAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                approvedByUserId: {
+                    name: "approvedByUserId",
+                    type: "Int",
+                    optional: true
+                },
+                approvedAt: {
+                    name: "approvedAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                rejectedReason: {
+                    name: "rejectedReason",
+                    type: "String",
+                    optional: true
+                },
+                createdByUserId: {
+                    name: "createdByUserId",
+                    type: "Int"
+                },
+                publishedAt: {
+                    name: "publishedAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                errorMessage: {
+                    name: "errorMessage",
+                    type: "String",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                targets: {
+                    name: "targets",
+                    type: "SocialPostTarget",
+                    array: true,
+                    relation: { opposite: "post" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" }
+            }
+        },
+        SocialPostTarget: {
+            name: "SocialPostTarget",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                postId: {
+                    name: "postId",
+                    type: "Int",
+                    foreignKeyFor: [
+                        "post"
+                    ] as readonly string[]
+                },
+                accountId: {
+                    name: "accountId",
+                    type: "Int",
+                    foreignKeyFor: [
+                        "account"
+                    ] as readonly string[]
+                },
+                network: {
+                    name: "network",
+                    type: "SocialNetwork"
+                },
+                placement: {
+                    name: "placement",
+                    type: "SocialPlacement"
+                },
+                status: {
+                    name: "status",
+                    type: "SocialTargetStatus",
+                    default: "PENDING" as FieldDefault
+                },
+                containerId: {
+                    name: "containerId",
+                    type: "String",
+                    optional: true
+                },
+                externalId: {
+                    name: "externalId",
+                    type: "String",
+                    optional: true
+                },
+                permalink: {
+                    name: "permalink",
+                    type: "String",
+                    optional: true
+                },
+                captionOverride: {
+                    name: "captionOverride",
+                    type: "String",
+                    optional: true
+                },
+                attempts: {
+                    name: "attempts",
+                    type: "Int",
+                    default: 0 as FieldDefault
+                },
+                errorCode: {
+                    name: "errorCode",
+                    type: "String",
+                    optional: true
+                },
+                errorMessage: {
+                    name: "errorMessage",
+                    type: "String",
+                    optional: true
+                },
+                containerCreatedAt: {
+                    name: "containerCreatedAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                publishedAt: {
+                    name: "publishedAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                post: {
+                    name: "post",
+                    type: "SocialPost",
+                    relation: { opposite: "targets", fields: ["postId"], references: ["id"], onDelete: "Cascade" }
+                },
+                account: {
+                    name: "account",
+                    type: "SocialAccount",
+                    relation: { opposite: "targets", fields: ["accountId"], references: ["id"], onDelete: "Cascade" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" },
+                postId_network_placement: { postId: { type: "Int" }, network: { type: "SocialNetwork" }, placement: { type: "SocialPlacement" } }
+            }
+        },
         ExpenseService: {
             name: "ExpenseService",
             fields: {
@@ -15572,6 +15888,71 @@ export class SchemaType implements SchemaDef {
                 SENT: "SENT",
                 FAILED: "FAILED",
                 SKIPPED: "SKIPPED"
+            }
+        },
+        SocialNetwork: {
+            name: "SocialNetwork",
+            values: {
+                INSTAGRAM: "INSTAGRAM",
+                FACEBOOK: "FACEBOOK",
+                TIKTOK: "TIKTOK"
+            }
+        },
+        SocialPlacement: {
+            name: "SocialPlacement",
+            values: {
+                IG_FEED: "IG_FEED",
+                IG_REEL: "IG_REEL",
+                IG_STORY: "IG_STORY",
+                FB_FEED: "FB_FEED",
+                FB_REEL: "FB_REEL",
+                FB_STORY: "FB_STORY",
+                TIKTOK_VIDEO: "TIKTOK_VIDEO"
+            }
+        },
+        SocialMediaType: {
+            name: "SocialMediaType",
+            values: {
+                IMAGE: "IMAGE",
+                VIDEO: "VIDEO",
+                CAROUSEL: "CAROUSEL"
+            }
+        },
+        SocialAspectRatio: {
+            name: "SocialAspectRatio",
+            values: {
+                RATIO_4_5: "RATIO_4_5",
+                RATIO_1_1: "RATIO_1_1",
+                RATIO_9_16: "RATIO_9_16"
+            }
+        },
+        SocialPostStatus: {
+            name: "SocialPostStatus",
+            values: {
+                DRAFT: "DRAFT",
+                PENDING_APPROVAL: "PENDING_APPROVAL",
+                SCHEDULED: "SCHEDULED",
+                PUBLISHING: "PUBLISHING",
+                PUBLISHED: "PUBLISHED",
+                FAILED: "FAILED"
+            }
+        },
+        SocialTargetStatus: {
+            name: "SocialTargetStatus",
+            values: {
+                PENDING: "PENDING",
+                CREATING: "CREATING",
+                CONTAINER_READY: "CONTAINER_READY",
+                PUBLISHING: "PUBLISHING",
+                PUBLISHED: "PUBLISHED",
+                FAILED: "FAILED",
+                SKIPPED: "SKIPPED"
+            }
+        },
+        SocialAccountProvider: {
+            name: "SocialAccountProvider",
+            values: {
+                META: "META"
             }
         },
         ExpenseScope: {

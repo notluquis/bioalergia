@@ -21,6 +21,12 @@
       "import": "./dist/account.js",
       "default": "./dist/account.js"
     },
+    "./social": {
+      "development": "./src/social.ts",
+      "types": "./dist/social.d.ts",
+      "import": "./dist/social.js",
+      "default": "./dist/social.js"
+    },
     "./addresses": {
       "development": "./src/addresses.ts",
       "types": "./dist/addresses.d.ts",
