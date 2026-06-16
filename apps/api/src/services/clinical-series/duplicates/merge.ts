@@ -22,7 +22,8 @@ export async function mergeClinicalSeries(params: {
   ]);
 
   if (!source) throw new DomainError("NOT_FOUND", `Serie fuente #${params.sourceId} no encontrada`);
-  if (!target) throw new DomainError("NOT_FOUND", `Serie destino #${params.targetId} no encontrada`);
+  if (!target)
+    throw new DomainError("NOT_FOUND", `Serie destino #${params.targetId} no encontrada`);
   if (source.kind !== target.kind) {
     throw new DomainError(
       "BAD_REQUEST",
@@ -69,13 +70,16 @@ export async function mergeClinicalSeries(params: {
       WHERE series_id = ${params.sourceId}
     `;
 
-    await tx.$executeRaw`
-      INSERT INTO clinical_series_merge_log
-        (source_id, target_id, events_moved, merged_by, merge_reason, is_auto)
-      VALUES
-        (${params.sourceId}, ${params.targetId}, ${events.count},
-         ${params.mergedBy ?? null}, ${params.mergeReason ?? null}, ${params.isAuto ?? false})
-    `;
+    await tx.clinicalSeriesMergeLog.create({
+      data: {
+        sourceId: params.sourceId,
+        targetId: params.targetId,
+        eventsMoved: events.count,
+        mergedBy: params.mergedBy ?? null,
+        mergeReason: params.mergeReason ?? null,
+        isAuto: params.isAuto ?? false,
+      },
+    });
 
     await tx.clinicalSeries.delete({ where: { id: params.sourceId } });
 

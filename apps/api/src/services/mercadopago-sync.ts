@@ -89,59 +89,19 @@ export async function insertMpImportChanges(changes: MpImportChangeInput[]) {
     return 0;
   }
 
-  // Keys MUST be snake_case to match the jsonb_to_recordset column names below
-  // (it matches JSON keys to output column names case-sensitively; camelCase
-  // keys silently yield NULL for every column → not-null violation on
-  // sync_log_id).
-  const payload = JSON.stringify(
-    changes.map((change) => ({
-      field_name: change.fieldName,
-      new_value: change.newValue ?? null,
-      old_value: change.oldValue ?? null,
-      report_type: change.reportType,
-      source_id: change.sourceId,
-      sync_log_id: change.syncLogId.toString(),
-    }))
-  );
+  const result = await db.mercadoPagoImportChange.createMany({
+    data: changes.map((change) => ({
+      syncLogId: change.syncLogId,
+      reportType: change.reportType,
+      sourceId: change.sourceId,
+      fieldName: change.fieldName,
+      // Json: pasar el valor (no JSON.stringify); ZenStack serializa.
+      oldValue: (change.oldValue ?? null) as never,
+      newValue: (change.newValue ?? null) as never,
+    })),
+  });
 
-  const result = await sql<{ id: bigint }>`
-    WITH input AS (
-      SELECT
-        sync_log_id::bigint AS sync_log_id,
-        report_type,
-        source_id,
-        field_name,
-        old_value,
-        new_value
-      FROM jsonb_to_recordset(${payload}::jsonb) AS x(
-        sync_log_id text,
-        report_type text,
-        source_id text,
-        field_name text,
-        old_value jsonb,
-        new_value jsonb
-      )
-    )
-    INSERT INTO mercadopago_import_changes (
-      sync_log_id,
-      report_type,
-      source_id,
-      field_name,
-      old_value,
-      new_value
-    )
-    SELECT
-      sync_log_id,
-      report_type,
-      source_id,
-      field_name,
-      old_value,
-      new_value
-    FROM input
-    RETURNING id
-  `.execute(kysely);
-
-  return result.rows.length;
+  return result.count;
 }
 
 export async function listMpImportChanges(options: {
