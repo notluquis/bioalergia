@@ -2,6 +2,7 @@ import { oc } from "@orpc/contract";
 import { z } from "zod";
 
 // ── Enums (espejo de packages/db/zenstack/schema.zmodel) ──
+export const socialAccountProviderSchema = z.enum(["META", "TIKTOK"]);
 export const socialNetworkSchema = z.enum(["INSTAGRAM", "FACEBOOK", "TIKTOK"]);
 export const socialPlacementSchema = z.enum([
   "IG_FEED",
@@ -85,7 +86,7 @@ export const socialPostSchema = z.object({
 
 export const socialAccountSchema = z.object({
   id: z.number().int(),
-  provider: z.literal("META"),
+  provider: socialAccountProviderSchema,
   displayName: z.string().nullable().optional(),
   metaBusinessId: z.string().nullable().optional(),
   fbPageId: z.string().nullable().optional(),
@@ -198,17 +199,49 @@ export const updateMetaConfigInputSchema = z.object({
   graphVersion: z.string().optional(),
 });
 
+// ── TikTok App config (en DB, no env) ──
+// El clientSecret NUNCA se devuelve: `hasSecret` indica si ya hay uno guardado.
+export const tiktokConfigSchema = z.object({
+  clientKey: z.string(),
+  hasSecret: z.boolean(),
+});
+export const tiktokConfigResponseSchema = z.object({ config: tiktokConfigSchema });
+
+export const updateTiktokConfigInputSchema = z.object({
+  clientKey: z.string().min(1),
+  // Opcional: si viene vacío se conserva el secret existente.
+  clientSecret: z.string().optional(),
+});
+
 export const socialContract = {
-  getSettings: oc.route({ method: "GET", path: "/settings" }).input(z.object({})).output(socialSettingsResponseSchema),
+  getSettings: oc
+    .route({ method: "GET", path: "/settings" })
+    .input(z.object({}))
+    .output(socialSettingsResponseSchema),
   updateSettings: oc
     .route({ method: "PUT", path: "/settings" })
     .input(socialSettingsSchema)
     .output(socialSettingsResponseSchema),
-  list: oc.route({ method: "GET", path: "/" }).input(listSocialPostsInputSchema).output(socialPostsResponseSchema),
-  detail: oc.route({ method: "GET", path: "/{id}" }).input(socialIdInputSchema).output(socialPostResponseSchema),
-  create: oc.route({ method: "POST", path: "/" }).input(createSocialPostInputSchema).output(socialPostResponseSchema),
-  update: oc.route({ method: "PUT", path: "/{id}" }).input(updateSocialPostInputSchema).output(socialPostResponseSchema),
-  approve: oc.route({ method: "POST", path: "/{id}/approve" }).input(socialIdInputSchema).output(socialPostResponseSchema),
+  list: oc
+    .route({ method: "GET", path: "/" })
+    .input(listSocialPostsInputSchema)
+    .output(socialPostsResponseSchema),
+  detail: oc
+    .route({ method: "GET", path: "/{id}" })
+    .input(socialIdInputSchema)
+    .output(socialPostResponseSchema),
+  create: oc
+    .route({ method: "POST", path: "/" })
+    .input(createSocialPostInputSchema)
+    .output(socialPostResponseSchema),
+  update: oc
+    .route({ method: "PUT", path: "/{id}" })
+    .input(updateSocialPostInputSchema)
+    .output(socialPostResponseSchema),
+  approve: oc
+    .route({ method: "POST", path: "/{id}/approve" })
+    .input(socialIdInputSchema)
+    .output(socialPostResponseSchema),
   reject: oc
     .route({ method: "POST", path: "/{id}/reject" })
     .input(rejectSocialPostInputSchema)
@@ -229,12 +262,26 @@ export const socialContract = {
     .route({ method: "POST", path: "/accounts/connect" })
     .input(connectMetaAccountInputSchema)
     .output(socialAccountResponseSchema),
-  listAccounts: oc.route({ method: "GET", path: "/accounts" }).input(z.object({})).output(socialAccountsResponseSchema),
-  getMetaConfig: oc.route({ method: "GET", path: "/meta-config" }).input(z.object({})).output(metaConfigResponseSchema),
+  listAccounts: oc
+    .route({ method: "GET", path: "/accounts" })
+    .input(z.object({}))
+    .output(socialAccountsResponseSchema),
+  getMetaConfig: oc
+    .route({ method: "GET", path: "/meta-config" })
+    .input(z.object({}))
+    .output(metaConfigResponseSchema),
   updateMetaConfig: oc
     .route({ method: "PUT", path: "/meta-config" })
     .input(updateMetaConfigInputSchema)
     .output(metaConfigResponseSchema),
+  getTiktokConfig: oc
+    .route({ method: "GET", path: "/tiktok-config" })
+    .input(z.object({}))
+    .output(tiktokConfigResponseSchema),
+  updateTiktokConfig: oc
+    .route({ method: "PUT", path: "/tiktok-config" })
+    .input(updateTiktokConfigInputSchema)
+    .output(tiktokConfigResponseSchema),
 };
 
 export type SocialContract = typeof socialContract;

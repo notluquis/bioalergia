@@ -12,8 +12,10 @@ import {
   useMetaConfig,
   useSocialAccounts,
   useSocialSettings,
+  useTiktokConfig,
   useUpdateMetaConfig,
   useUpdateSocialSettings,
+  useUpdateTiktokConfig,
 } from "../queries";
 
 interface MetaConfigFormState {
@@ -21,6 +23,11 @@ interface MetaConfigFormState {
   appSecret: string;
   configId: string;
   graphVersion: string;
+}
+
+interface TiktokConfigFormState {
+  clientKey: string;
+  clientSecret: string;
 }
 
 interface ConnectFormState {
@@ -40,10 +47,14 @@ export function AccountsPanel() {
   const updateSettings = useUpdateSocialSettings();
   const metaConfigQuery = useMetaConfig();
   const updateMetaConfig = useUpdateMetaConfig();
+  const tiktokConfigQuery = useTiktokConfig();
+  const updateTiktokConfig = useUpdateTiktokConfig();
 
   const dryRun = settingsQuery.data?.dryRun ?? true;
   const metaConfig = metaConfigQuery.data;
   const metaReady = !!metaConfig?.appId && !!metaConfig?.configId && !!metaConfig?.hasSecret;
+  const tiktokConfig = tiktokConfigQuery.data;
+  const tiktokReady = !!tiktokConfig?.clientKey && !!tiktokConfig?.hasSecret;
 
   const metaForm = useForm({
     defaultValues: {
@@ -62,6 +73,25 @@ export function AccountsPanel() {
         });
         toast.success("Configuración Meta guardada");
         metaForm.reset();
+      } catch (error) {
+        toast.error(error, "No se pudo guardar la configuración");
+      }
+    },
+  });
+
+  const tiktokForm = useForm({
+    defaultValues: {
+      clientKey: "",
+      clientSecret: "",
+    } as TiktokConfigFormState,
+    onSubmit: async ({ value }) => {
+      try {
+        await updateTiktokConfig.mutateAsync({
+          clientKey: value.clientKey.trim(),
+          ...(value.clientSecret.trim() ? { clientSecret: value.clientSecret.trim() } : {}),
+        });
+        toast.success("Configuración TikTok guardada");
+        tiktokForm.reset();
       } catch (error) {
         toast.error(error, "No se pudo guardar la configuración");
       }
@@ -222,6 +252,71 @@ export function AccountsPanel() {
           <div className="flex justify-end pt-1 sm:col-span-2">
             <Button isPending={updateMetaConfig.isPending} type="submit" variant="outline">
               Guardar configuración Meta
+            </Button>
+          </div>
+        </Form>
+      </section>
+
+      <section className="space-y-3 rounded-xl border border-divider p-4">
+        <div className="flex items-center justify-between gap-3">
+          <div className="space-y-1">
+            <h3 className="font-semibold text-foreground text-sm">Conexión con TikTok (OAuth)</h3>
+            <p className="text-default-500 text-xs">
+              {tiktokReady
+                ? "App TikTok configurada. Conecta tu cuenta con el flujo oficial de TikTok. Hasta aprobar el audit de video.publish, las publicaciones son privadas (solo tú)."
+                : "Configura el Client Key y Client Secret de la app de TikTok for Developers para habilitar el OAuth."}
+            </p>
+          </div>
+          <Button
+            isDisabled={!tiktokReady}
+            variant="primary"
+            onPress={() => {
+              window.location.href = "/api/social/tiktok/oauth/start";
+            }}
+          >
+            <PlugZap size={16} /> Conectar con TikTok
+          </Button>
+        </div>
+        <Form
+          className="grid gap-3 sm:grid-cols-2"
+          onSubmit={(e: React.FormEvent<HTMLFormElement>) => {
+            e.preventDefault();
+            e.stopPropagation();
+            void tiktokForm.handleSubmit();
+          }}
+          validationBehavior="aria"
+        >
+          <tiktokForm.Field
+            name="clientKey"
+            validators={{
+              onBlur: ({ value }) => (value.trim() ? undefined : "Client Key requerido"),
+            }}
+          >
+            {(field) => (
+              <TanStackInputField
+                field={field}
+                label="Client Key"
+                placeholder={tiktokConfig?.clientKey ?? ""}
+                required
+              />
+            )}
+          </tiktokForm.Field>
+          <tiktokForm.Field name="clientSecret">
+            {(field) => (
+              <TanStackInputField
+                field={field}
+                label={
+                  tiktokConfig?.hasSecret
+                    ? "Client Secret (dejar vacío = conservar)"
+                    : "Client Secret"
+                }
+                type="password"
+              />
+            )}
+          </tiktokForm.Field>
+          <div className="flex justify-end pt-1 sm:col-span-2">
+            <Button isPending={updateTiktokConfig.isPending} type="submit" variant="outline">
+              Guardar configuración TikTok
             </Button>
           </div>
         </Form>

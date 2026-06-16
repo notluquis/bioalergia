@@ -100,3 +100,61 @@ export async function setMetaAppConfig(input: SetMetaAppConfigInput): Promise<Me
 export async function clearMetaAppSecret(): Promise<void> {
   await deleteSetting(META_APP_SECRET_KEY).catch(() => undefined);
 }
+
+// ─── TikTok App config ────────────────────────────────────────────────────
+// clientKey + clientSecret (encriptado) de la app de TikTok for Developers.
+
+const TIKTOK_CLIENT_KEY_KEY = "social.tiktok.clientKey";
+const TIKTOK_CLIENT_SECRET_KEY = "social.tiktok.clientSecret";
+
+/** Config pública de la app de TikTok (SIN clientSecret) — segura para el cliente. */
+export interface TiktokAppPublicConfig {
+  clientKey: string;
+  hasSecret: boolean;
+}
+
+/** Config completa server-side (clientSecret desencriptado) para el OAuth. */
+export interface TiktokAppConfig extends TiktokAppPublicConfig {
+  clientSecret: string;
+}
+
+/** Lee la config completa de la app de TikTok (clientSecret desencriptado). Server-only. */
+export async function getTiktokConfig(): Promise<TiktokAppConfig> {
+  const [clientKey, clientSecretEnc] = await Promise.all([
+    getSetting(TIKTOK_CLIENT_KEY_KEY),
+    getSetting(TIKTOK_CLIENT_SECRET_KEY),
+  ]);
+  const clientSecret = decryptSecret(clientSecretEnc) ?? "";
+  return {
+    clientKey: clientKey ?? "",
+    clientSecret,
+    hasSecret: clientSecret.length > 0,
+  };
+}
+
+/** Lee la config pública (SIN clientSecret) — para devolver al cliente. */
+export async function getTiktokPublicConfig(): Promise<TiktokAppPublicConfig> {
+  const full = await getTiktokConfig();
+  return { clientKey: full.clientKey, hasSecret: full.hasSecret };
+}
+
+export interface SetTiktokConfigInput {
+  clientKey: string;
+  /** Si viene vacío/undefined, se conserva el secret existente. */
+  clientSecret?: string;
+}
+
+/** Persiste la config de la app de TikTok. El clientSecret se guarda encriptado. */
+export async function setTiktokConfig(input: SetTiktokConfigInput): Promise<TiktokAppPublicConfig> {
+  await updateSetting(TIKTOK_CLIENT_KEY_KEY, input.clientKey.trim());
+  const secret = input.clientSecret?.trim();
+  if (secret) {
+    await updateSetting(TIKTOK_CLIENT_SECRET_KEY, encryptSecret(secret));
+  }
+  return getTiktokPublicConfig();
+}
+
+/** Borra el clientSecret guardado (p.ej. al rotar credenciales). */
+export async function clearTiktokSecret(): Promise<void> {
+  await deleteSetting(TIKTOK_CLIENT_SECRET_KEY).catch(() => undefined);
+}

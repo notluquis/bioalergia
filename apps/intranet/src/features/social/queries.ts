@@ -142,6 +142,37 @@ export function useUpdateMetaConfig() {
   });
 }
 
+export function useTiktokConfig() {
+  return useQuery({
+    queryKey: [...socialKeys.all, "tiktok-config"] as const,
+    queryFn: async () => {
+      try {
+        const result = await socialORPCClient.getTiktokConfig({});
+        return result.config;
+      } catch (error) {
+        throw toSocialApiError(error);
+      }
+    },
+  });
+}
+
+export function useUpdateTiktokConfig() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: { clientKey: string; clientSecret?: string }) => {
+      try {
+        const result = await socialORPCClient.updateTiktokConfig(input);
+        return result.config;
+      } catch (error) {
+        throw toSocialApiError(error);
+      }
+    },
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: [...socialKeys.all, "tiktok-config"] });
+    },
+  });
+}
+
 export function useCreateSocialPost() {
   const qc = useQueryClient();
   return useMutation({

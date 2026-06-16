@@ -18,9 +18,12 @@ import { logEvent } from "../lib/logger.ts";
 import {
   getMetaAppPublicConfig,
   getSocialDryRun,
+  getTiktokPublicConfig,
   setMetaAppConfig,
   setSocialDryRun,
+  setTiktokConfig,
   type SetMetaAppConfigInput,
+  type SetTiktokConfigInput,
 } from "../lib/social-settings.ts";
 import type { SocialAspectRatio } from "@finanzas/social-render";
 import { renderAndUploadSocialImage } from "../modules/social/render.ts";
@@ -107,7 +110,12 @@ export async function updateSocialPost(input: UpdateInput) {
       caption: input.caption ?? undefined,
       hashtags: input.hashtags ?? undefined,
       media: input.media ? (normalizeMedia(input.media) as never) : undefined,
-      scheduledAt: input.scheduledAt === undefined ? undefined : input.scheduledAt ? new Date(input.scheduledAt) : null,
+      scheduledAt:
+        input.scheduledAt === undefined
+          ? undefined
+          : input.scheduledAt
+            ? new Date(input.scheduledAt)
+            : null,
     },
     include: POST_INCLUDE,
   });
@@ -134,7 +142,10 @@ export async function renderSocialMedia(input: RenderInput) {
 export async function rejectSocialPost(id: number, reason: string) {
   const post = await findPostOrThrow(id);
   if (post.status === "PUBLISHED" || post.status === "PUBLISHING") {
-    throw new DomainError("CONFLICT", "No se puede rechazar una publicación ya publicada o en curso");
+    throw new DomainError(
+      "CONFLICT",
+      "No se puede rechazar una publicación ya publicada o en curso"
+    );
   }
   const updated = await db.socialPost.update({
     where: { id },
@@ -185,13 +196,19 @@ export async function scheduleSocialPost(id: number, scheduledAtIso: string) {
 
 export async function publishNowSocialPost(id: number) {
   const post = await findPostOrThrow(id);
-  if (!post.approvedAt) throw new DomainError("CONFLICT", "Aprueba la publicación antes de publicar");
-  const updated = await db.socialPost.update({ where: { id }, data: { status: "PUBLISHING" }, include: POST_INCLUDE });
+  if (!post.approvedAt)
+    throw new DomainError("CONFLICT", "Aprueba la publicación antes de publicar");
+  const updated = await db.socialPost.update({
+    where: { id },
+    data: { status: "PUBLISHING" },
+    include: POST_INCLUDE,
+  });
   return serializePost(updated);
 }
 
 interface AccountRow {
   id: number;
+  provider: "META" | "TIKTOK";
   displayName: string | null;
   metaBusinessId: string | null;
   fbPageId: string | null;
@@ -206,7 +223,7 @@ interface AccountRow {
 function serializeAccount(account: AccountRow) {
   return {
     id: account.id,
-    provider: "META" as const,
+    provider: account.provider,
     displayName: account.displayName,
     metaBusinessId: account.metaBusinessId,
     fbPageId: account.fbPageId,
@@ -237,6 +254,20 @@ export async function updateMetaConfig(input: SetMetaAppConfigInput) {
   if (!input.configId.trim()) throw new DomainError("BAD_REQUEST", "config_id requerido");
   const config = await setMetaAppConfig(input);
   logEvent("social.meta.config.updated", { appId: config.appId, hasSecret: config.hasSecret });
+  return config;
+}
+
+export async function getTiktokConfig() {
+  return getTiktokPublicConfig();
+}
+
+export async function updateTiktokConfig(input: SetTiktokConfigInput) {
+  if (!input.clientKey.trim()) throw new DomainError("BAD_REQUEST", "Client Key requerido");
+  const config = await setTiktokConfig(input);
+  logEvent("social.tiktok.config.updated", {
+    clientKey: config.clientKey,
+    hasSecret: config.hasSecret,
+  });
   return config;
 }
 

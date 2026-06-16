@@ -3875,6 +3875,381 @@ export class SchemaType implements SchemaDef {
                 id: { type: "String" }
             }
         },
+        DataRightsRequest: {
+            name: "DataRightsRequest",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "String",
+                    id: true,
+                    default: ExpressionUtils.call("cuid") as FieldDefault
+                },
+                type: {
+                    name: "type",
+                    type: "String"
+                },
+                status: {
+                    name: "status",
+                    type: "String",
+                    default: "RECEIVED" as FieldDefault
+                },
+                requesterName: {
+                    name: "requesterName",
+                    type: "String"
+                },
+                requesterRut: {
+                    name: "requesterRut",
+                    type: "String",
+                    optional: true
+                },
+                requesterEmail: {
+                    name: "requesterEmail",
+                    type: "String",
+                    optional: true
+                },
+                patientId: {
+                    name: "patientId",
+                    type: "Int",
+                    optional: true,
+                    foreignKeyFor: [
+                        "patient"
+                    ] as readonly string[]
+                },
+                receivedAt: {
+                    name: "receivedAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                dueAt: {
+                    name: "dueAt",
+                    type: "DateTime"
+                },
+                resolvedAt: {
+                    name: "resolvedAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                resolution: {
+                    name: "resolution",
+                    type: "String",
+                    optional: true
+                },
+                handledBy: {
+                    name: "handledBy",
+                    type: "Int",
+                    optional: true
+                },
+                notes: {
+                    name: "notes",
+                    type: "String",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true
+                },
+                patient: {
+                    name: "patient",
+                    type: "Patient",
+                    optional: true,
+                    relation: { opposite: "dataRightsRequests", fields: ["patientId"], references: ["id"], onDelete: "SetNull" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "String" }
+            }
+        },
+        BreachIncident: {
+            name: "BreachIncident",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "String",
+                    id: true,
+                    default: ExpressionUtils.call("cuid") as FieldDefault
+                },
+                detectedAt: {
+                    name: "detectedAt",
+                    type: "DateTime"
+                },
+                description: {
+                    name: "description",
+                    type: "String"
+                },
+                severity: {
+                    name: "severity",
+                    type: "String",
+                    default: "MEDIUM" as FieldDefault
+                },
+                affectedData: {
+                    name: "affectedData",
+                    type: "String",
+                    optional: true
+                },
+                affectedCount: {
+                    name: "affectedCount",
+                    type: "Int",
+                    optional: true
+                },
+                status: {
+                    name: "status",
+                    type: "String",
+                    default: "DETECTED" as FieldDefault
+                },
+                agencyNotifiedAt: {
+                    name: "agencyNotifiedAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                subjectsNotifiedAt: {
+                    name: "subjectsNotifiedAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                handledBy: {
+                    name: "handledBy",
+                    type: "Int",
+                    optional: true
+                },
+                notes: {
+                    name: "notes",
+                    type: "String",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "String" }
+            }
+        },
+        PriceListItem: {
+            name: "PriceListItem",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "String",
+                    id: true,
+                    default: ExpressionUtils.call("cuid") as FieldDefault
+                },
+                code: {
+                    name: "code",
+                    type: "String",
+                    unique: true,
+                    optional: true
+                },
+                name: {
+                    name: "name",
+                    type: "String"
+                },
+                category: {
+                    name: "category",
+                    type: "String"
+                },
+                unit: {
+                    name: "unit",
+                    type: "String",
+                    default: "unidad" as FieldDefault
+                },
+                priceClp: {
+                    name: "priceClp",
+                    type: "Int"
+                },
+                isActive: {
+                    name: "isActive",
+                    type: "Boolean",
+                    default: true as FieldDefault
+                },
+                sortOrder: {
+                    name: "sortOrder",
+                    type: "Int",
+                    default: 0 as FieldDefault
+                },
+                notes: {
+                    name: "notes",
+                    type: "String",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "String" },
+                code: { type: "String" }
+            }
+        },
+        Complaint: {
+            name: "Complaint",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "String",
+                    id: true,
+                    default: ExpressionUtils.call("cuid") as FieldDefault
+                },
+                channel: {
+                    name: "channel",
+                    type: "String",
+                    default: "PRESENCIAL" as FieldDefault
+                },
+                complainantName: {
+                    name: "complainantName",
+                    type: "String"
+                },
+                complainantRut: {
+                    name: "complainantRut",
+                    type: "String",
+                    optional: true
+                },
+                contact: {
+                    name: "contact",
+                    type: "String",
+                    optional: true
+                },
+                patientId: {
+                    name: "patientId",
+                    type: "Int",
+                    optional: true,
+                    foreignKeyFor: [
+                        "patient"
+                    ] as readonly string[]
+                },
+                category: {
+                    name: "category",
+                    type: "String",
+                    optional: true
+                },
+                description: {
+                    name: "description",
+                    type: "String"
+                },
+                status: {
+                    name: "status",
+                    type: "String",
+                    default: "RECEIVED" as FieldDefault
+                },
+                receivedAt: {
+                    name: "receivedAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                dueAt: {
+                    name: "dueAt",
+                    type: "DateTime"
+                },
+                resolvedAt: {
+                    name: "resolvedAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                resolution: {
+                    name: "resolution",
+                    type: "String",
+                    optional: true
+                },
+                handledBy: {
+                    name: "handledBy",
+                    type: "Int",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true
+                },
+                patient: {
+                    name: "patient",
+                    type: "Patient",
+                    optional: true,
+                    relation: { opposite: "complaints", fields: ["patientId"], references: ["id"], onDelete: "SetNull" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "String" }
+            }
+        },
+        FoliatedBookEntry: {
+            name: "FoliatedBookEntry",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "String",
+                    id: true,
+                    default: ExpressionUtils.call("cuid") as FieldDefault
+                },
+                book: {
+                    name: "book",
+                    type: "String"
+                },
+                folio: {
+                    name: "folio",
+                    type: "Int"
+                },
+                entryDate: {
+                    name: "entryDate",
+                    type: "DateTime"
+                },
+                summary: {
+                    name: "summary",
+                    type: "String"
+                },
+                refType: {
+                    name: "refType",
+                    type: "String",
+                    optional: true
+                },
+                refId: {
+                    name: "refId",
+                    type: "String",
+                    optional: true
+                },
+                createdBy: {
+                    name: "createdBy",
+                    type: "Int"
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "String" },
+                book_folio: { book: { type: "String" }, folio: { type: "Int" } }
+            }
+        },
         ClinicalSeries: {
             name: "ClinicalSeries",
             fields: {
@@ -7467,6 +7842,18 @@ export class SchemaType implements SchemaDef {
                 immunotherapyAdministrations: {
                     name: "immunotherapyAdministrations",
                     type: "ImmunotherapyAdministration",
+                    array: true,
+                    relation: { opposite: "patient" }
+                },
+                dataRightsRequests: {
+                    name: "dataRightsRequests",
+                    type: "DataRightsRequest",
+                    array: true,
+                    relation: { opposite: "patient" }
+                },
+                complaints: {
+                    name: "complaints",
+                    type: "Complaint",
                     array: true,
                     relation: { opposite: "patient" }
                 }
@@ -12429,6 +12816,21 @@ export class SchemaType implements SchemaDef {
                     type: "String",
                     optional: true
                 },
+                refreshToken: {
+                    name: "refreshToken",
+                    type: "String",
+                    optional: true
+                },
+                refreshExpiresAt: {
+                    name: "refreshExpiresAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                externalUserId: {
+                    name: "externalUserId",
+                    type: "String",
+                    optional: true
+                },
                 tokenExpiresAt: {
                     name: "tokenExpiresAt",
                     type: "DateTime",
@@ -15952,7 +16354,8 @@ export class SchemaType implements SchemaDef {
         SocialAccountProvider: {
             name: "SocialAccountProvider",
             values: {
-                META: "META"
+                META: "META",
+                TIKTOK: "TIKTOK"
             }
         },
         ExpenseScope: {

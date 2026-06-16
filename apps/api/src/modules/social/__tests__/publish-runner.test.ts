@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 // vuelta) y el flujo real del Graph (Fase B: IG container create→poll→publish,
 // FB síncrono) con los submódulos graph mockeados.
 
-const { mockDb, igMock, fbMock } = vi.hoisted(() => {
+const { mockDb, igMock, fbMock, ttMock } = vi.hoisted(() => {
   const mockDb = {
     socialPost: { findUnique: vi.fn(), update: vi.fn() },
     socialPostTarget: { update: vi.fn(), findMany: vi.fn() },
@@ -20,7 +20,12 @@ const { mockDb, igMock, fbMock } = vi.hoisted(() => {
     getPermalink: vi.fn(),
   };
   const fbMock = { publishFbPhoto: vi.fn(), publishFbFeed: vi.fn() };
-  return { mockDb, igMock, fbMock };
+  const ttMock = {
+    queryCreatorInfo: vi.fn(),
+    initVideoPost: vi.fn(),
+    fetchPublishStatus: vi.fn(),
+  };
+  return { mockDb, igMock, fbMock, ttMock };
 });
 
 vi.mock("@finanzas/db", () => ({ db: mockDb }));
@@ -51,6 +56,25 @@ vi.mock("../graph/oauth.ts", () => ({ getValidPageToken: vi.fn(async () => "tok"
 vi.mock("../graph/rate-limit.ts", () => ({ checkAndIncrementBuc: vi.fn() }));
 vi.mock("../graph/instagram.ts", () => igMock);
 vi.mock("../graph/facebook.ts", () => fbMock);
+vi.mock("../tiktok/_http.ts", () => ({
+  loadTiktokAccount: vi.fn(async (id: number) => ({
+    id,
+    openId: "open_1",
+    accessToken: "tt_tok",
+    refreshToken: "tt_refresh",
+    tokenExpiresAt: null,
+    refreshExpiresAt: null,
+    clientKey: "ck",
+    clientSecret: "cs",
+  })),
+}));
+vi.mock("../tiktok/oauth.ts", () => ({ getValidTiktokAccessToken: vi.fn(async () => "tt_tok") }));
+vi.mock("../tiktok/publish.ts", () => ({
+  DEFAULT_PRIVACY_LEVEL: "SELF_ONLY",
+  queryCreatorInfo: ttMock.queryCreatorInfo,
+  initVideoPost: ttMock.initVideoPost,
+  fetchPublishStatus: ttMock.fetchPublishStatus,
+}));
 
 const { advanceSocialPost, publishSocialPost } = await import("../publish-runner.ts");
 const { getSocialDryRun } = await import("../../../lib/social-settings.ts");
@@ -739,6 +763,169 @@ describe("advanceSocialPost — real Graph (Fase B)", () => {
         data: expect.objectContaining({
           status: "FAILED",
           errorMessage: expect.stringContaining("FB_STORY"),
+        }),
+      })
+    );
+  });
+});
+
+describe("advanceSocialPost — TikTok (Fase B)", () => {
+  beforeEach(() => {
+    vi.mocked(getSocialDryRun).mockResolvedValue(false);
+  });
+
+  function ttTarget(over: Record<string, unknown> = {}) {
+    return {
+      id: 20,
+      accountId: 1,
+      network: "TIKTOK",
+      placement: "TIKTOK_VIDEO",
+      status: "PENDING",
+      containerId: null,
+      captionOverride: null,
+      attempts: 0,
+      ...over,
+    };
+  }
+
+  it("PENDING → queryCreatorInfo + init PULL_FROM_URL → CREATING con publish_id", async () => {
+    mockDb.socialPost.findUnique.mockResolvedValue(
+      post({
+        caption: "video tip",
+        mediaType: "VIDEO",
+        media: [{ url: "https://cdn/v.mp4", type: "video" }],
+        targets: [ttTarget()],
+      })
+    );
+    ttMock.queryCreatorInfo.mockResolvedValue({
+      privacyLevelOptions: ["SELF_ONLY"],
+      maxVideoPostDurationSec: 600,
+      commentDisabled: false,
+      duetDisabled: false,
+      stitchDisabled: false,
+    });
+    ttMock.initVideoPost.mockResolvedValue("publish_123");
+    mockDb.socialPostTarget.update.mockResolvedValue({});
+    mockDb.socialPostTarget.findMany.mockResolvedValue([{ id: 20, status: "CREATING" }]);
+
+    const res = await advanceSocialPost(1);
+
+    expect(ttMock.queryCreatorInfo).toHaveBeenCalled();
+    expect(ttMock.initVideoPost).toHaveBeenCalledWith(
+      expect.anything(),
+      "tt_tok",
+      expect.objectContaining({
+        videoUrl: "https://cdn/v.mp4",
+        privacyLevel: "SELF_ONLY", // pre-audit default
+        title: "video tip",
+      })
+    );
+    expect(mockDb.socialPostTarget.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ status: "CREATING", containerId: "publish_123" }),
+      })
+    );
+    expect(res).toEqual({ status: "PUBLISHING", pending: 1 });
+  });
+
+  it("CREATING + status PUBLISH_COMPLETE → PUBLISHED con externalId del post", async () => {
+    mockDb.socialPost.findUnique.mockResolvedValue(
+      post({
+        mediaType: "VIDEO",
+        media: [{ url: "https://cdn/v.mp4", type: "video" }],
+        targets: [ttTarget({ status: "CREATING", containerId: "publish_123", attempts: 1 })],
+      })
+    );
+    ttMock.fetchPublishStatus.mockResolvedValue({
+      status: "PUBLISH_COMPLETE",
+      postId: "tt_post_99",
+    });
+    mockDb.socialPostTarget.update.mockResolvedValue({});
+    mockDb.socialPostTarget.findMany.mockResolvedValue([{ id: 20, status: "PUBLISHED" }]);
+    mockDb.socialPost.update.mockResolvedValue({});
+
+    const res = await advanceSocialPost(1);
+
+    expect(ttMock.fetchPublishStatus).toHaveBeenCalledWith(
+      expect.anything(),
+      "tt_tok",
+      "publish_123"
+    );
+    expect(mockDb.socialPostTarget.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ status: "PUBLISHED", externalId: "tt_post_99" }),
+      })
+    );
+    expect(res.status).toBe("PUBLISHED");
+  });
+
+  it("CREATING + status PROCESSING → sigue pendiente (no publica)", async () => {
+    mockDb.socialPost.findUnique.mockResolvedValue(
+      post({
+        mediaType: "VIDEO",
+        media: [{ url: "https://cdn/v.mp4", type: "video" }],
+        targets: [ttTarget({ status: "CREATING", containerId: "publish_123", attempts: 1 })],
+      })
+    );
+    ttMock.fetchPublishStatus.mockResolvedValue({ status: "PROCESSING_DOWNLOAD" });
+    mockDb.socialPostTarget.update.mockResolvedValue({});
+    mockDb.socialPostTarget.findMany.mockResolvedValue([{ id: 20, status: "CREATING" }]);
+
+    const res = await advanceSocialPost(1);
+
+    expect(mockDb.socialPostTarget.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ status: "CREATING", containerId: "publish_123" }),
+      })
+    );
+    expect(res).toEqual({ status: "PUBLISHING", pending: 1 });
+  });
+
+  it("status FAILED → target FAILED con fail_reason", async () => {
+    mockDb.socialPost.findUnique.mockResolvedValue(
+      post({
+        mediaType: "VIDEO",
+        media: [{ url: "https://cdn/v.mp4", type: "video" }],
+        targets: [ttTarget({ status: "CREATING", containerId: "publish_123", attempts: 1 })],
+      })
+    );
+    ttMock.fetchPublishStatus.mockResolvedValue({ status: "FAILED", failReason: "url_not_reachable" });
+    mockDb.socialPostTarget.update.mockResolvedValue({});
+    mockDb.socialPostTarget.findMany.mockResolvedValue([{ id: 20, status: "FAILED" }]);
+    mockDb.socialPost.update.mockResolvedValue({});
+
+    await advanceSocialPost(1);
+
+    expect(mockDb.socialPostTarget.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          status: "FAILED",
+          errorMessage: expect.stringContaining("url_not_reachable"),
+        }),
+      })
+    );
+  });
+
+  it("post sin video (solo imagen) → target FAILED con mensaje claro", async () => {
+    mockDb.socialPost.findUnique.mockResolvedValue(
+      post({
+        mediaType: "IMAGE",
+        media: [{ url: "https://cdn/x.png", type: "image" }],
+        targets: [ttTarget()],
+      })
+    );
+    mockDb.socialPostTarget.update.mockResolvedValue({});
+    mockDb.socialPostTarget.findMany.mockResolvedValue([{ id: 20, status: "FAILED" }]);
+    mockDb.socialPost.update.mockResolvedValue({});
+
+    await advanceSocialPost(1);
+
+    expect(ttMock.initVideoPost).not.toHaveBeenCalled();
+    expect(mockDb.socialPostTarget.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          status: "FAILED",
+          errorMessage: expect.stringContaining("video"),
         }),
       })
     );

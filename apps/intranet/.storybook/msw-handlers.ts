@@ -284,11 +284,26 @@ const SAMPLE_SOCIAL_ACCOUNT = {
   updatedAt: ISO("2026-06-01T00:00:00Z"),
 };
 
+const SAMPLE_TIKTOK_ACCOUNT = {
+  id: 2,
+  provider: "TIKTOK",
+  displayName: "Bioalergia (TikTok)",
+  metaBusinessId: null,
+  fbPageId: null,
+  igUserId: null,
+  tokenExpiresAt: ISO("2026-06-17T00:00:00Z"),
+  graphApiVersion: "v23.0",
+  active: true,
+  createdAt: ISO("2026-06-01T00:00:00Z"),
+  updatedAt: ISO("2026-06-15T00:00:00Z"),
+};
+
 // Contract-anchored: drift in socialPostSchema / socialAccountSchema throws here.
 assertFixture(socialPostSchema, SAMPLE_SOCIAL_POST_DRAFT, "SAMPLE_SOCIAL_POST_DRAFT");
 assertFixture(socialPostSchema, SAMPLE_SOCIAL_POST_SCHEDULED, "SAMPLE_SOCIAL_POST_SCHEDULED");
 assertFixture(socialPostSchema, SAMPLE_SOCIAL_POST_PUBLISHED, "SAMPLE_SOCIAL_POST_PUBLISHED");
 assertFixture(socialAccountSchema, SAMPLE_SOCIAL_ACCOUNT, "SAMPLE_SOCIAL_ACCOUNT");
+assertFixture(socialAccountSchema, SAMPLE_TIKTOK_ACCOUNT, "SAMPLE_TIKTOK_ACCOUNT");
 
 export const SOCIAL_FIXTURES = {
   draft: SAMPLE_SOCIAL_POST_DRAFT,
@@ -304,7 +319,9 @@ export const socialHandlers = [
   http.post("*/api/orpc/social/rpc/detail", () =>
     ok({ post: SAMPLE_SOCIAL_POST_DRAFT, status: "ok" })
   ),
-  http.post("*/api/orpc/social/rpc/listAccounts", () => ok({ accounts: [SAMPLE_SOCIAL_ACCOUNT] })),
+  http.post("*/api/orpc/social/rpc/listAccounts", () =>
+    ok({ accounts: [SAMPLE_SOCIAL_ACCOUNT, SAMPLE_TIKTOK_ACCOUNT] })
+  ),
   http.post("*/api/orpc/social/rpc/getSettings", () => ok({ settings: { dryRun: true } })),
   http.post("*/api/orpc/social/rpc/updateSettings", () => ok({ settings: { dryRun: false } })),
   http.post("*/api/orpc/social/rpc/getMetaConfig", () =>
@@ -326,6 +343,12 @@ export const socialHandlers = [
         hasSecret: true,
       },
     })
+  ),
+  http.post("*/api/orpc/social/rpc/getTiktokConfig", () =>
+    ok({ config: { clientKey: "awxyz123456", hasSecret: true } })
+  ),
+  http.post("*/api/orpc/social/rpc/updateTiktokConfig", () =>
+    ok({ config: { clientKey: "awxyz123456", hasSecret: true } })
   ),
   http.post("*/api/orpc/social/rpc/create", () =>
     ok({ post: SAMPLE_SOCIAL_POST_DRAFT, status: "ok" })

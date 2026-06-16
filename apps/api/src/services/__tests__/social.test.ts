@@ -25,6 +25,8 @@ vi.mock("../../lib/social-settings.ts", () => ({
   setSocialDryRun: vi.fn(),
   getMetaAppPublicConfig: vi.fn(),
   setMetaAppConfig: vi.fn(),
+  getTiktokPublicConfig: vi.fn(),
+  setTiktokConfig: vi.fn(),
 }));
 vi.mock("../../modules/social/render.ts", () => ({
   renderAndUploadSocialImage: vi.fn(async () => ({
@@ -52,12 +54,15 @@ const {
   updateSocialSettings,
   getMetaConfig,
   updateMetaConfig,
+  getTiktokConfig,
+  updateTiktokConfig,
 } = await import("../social.ts");
 const settings = await import("../../lib/social-settings.ts");
 
 function account(over: Record<string, unknown> = {}) {
   return {
     id: 1,
+    provider: "META",
     displayName: "Bio",
     metaBusinessId: "biz1",
     fbPageId: "fb1",
@@ -378,10 +383,30 @@ describe("settings y meta config", () => {
     expect(settings.setMetaAppConfig).toHaveBeenCalledWith({ appId: "a", configId: "c" });
     expect(res).toEqual(cfg);
   });
+
+  it("getTiktokConfig delega en el helper público", async () => {
+    const cfg = { clientKey: "ck", hasSecret: true };
+    vi.mocked(settings.getTiktokPublicConfig).mockResolvedValue(cfg);
+    expect(await getTiktokConfig()).toEqual(cfg);
+  });
+
+  it("updateTiktokConfig rechaza clientKey vacío (BAD_REQUEST)", async () => {
+    await expect(updateTiktokConfig({ clientKey: "  " })).rejects.toSatisfy(
+      (e) => isDomainError(e) && e.kind === "BAD_REQUEST"
+    );
+  });
+
+  it("updateTiktokConfig válido → persiste vía helper", async () => {
+    const cfg = { clientKey: "ck", hasSecret: false };
+    vi.mocked(settings.setTiktokConfig).mockResolvedValue(cfg);
+    const res = await updateTiktokConfig({ clientKey: "ck" });
+    expect(settings.setTiktokConfig).toHaveBeenCalledWith({ clientKey: "ck" });
+    expect(res).toEqual(cfg);
+  });
 });
 
 describe("listSocialAccounts", () => {
-  it("serializa cuentas con provider META fijo", async () => {
+  it("serializa cuentas reflejando el provider de la fila (META)", async () => {
     mockDb.socialAccount.findMany.mockResolvedValue([account({ id: 3 })]);
     const res = await listSocialAccounts();
     expect(res).toHaveLength(1);
@@ -390,6 +415,12 @@ describe("listSocialAccounts", () => {
     expect(res[0].fbPageId).toBe("fb1");
     expect(res[0].graphApiVersion).toBe("v23.0");
     expect(mockDb.socialAccount.findMany.mock.calls[0][0].orderBy).toEqual({ id: "asc" });
+  });
+
+  it("refleja provider TIKTOK cuando la fila lo tiene", async () => {
+    mockDb.socialAccount.findMany.mockResolvedValue([account({ id: 5, provider: "TIKTOK" })]);
+    const res = await listSocialAccounts();
+    expect(res[0].provider).toBe("TIKTOK");
   });
 });
 

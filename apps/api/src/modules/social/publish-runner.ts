@@ -22,6 +22,14 @@ import {
 import { publishFbFeed, publishFbPhoto } from "./graph/facebook.ts";
 import { getValidPageToken } from "./graph/oauth.ts";
 import { checkAndIncrementBuc } from "./graph/rate-limit.ts";
+import { loadTiktokAccount } from "./tiktok/_http.ts";
+import { getValidTiktokAccessToken } from "./tiktok/oauth.ts";
+import {
+  DEFAULT_PRIVACY_LEVEL,
+  fetchPublishStatus,
+  initVideoPost,
+  queryCreatorInfo,
+} from "./tiktok/publish.ts";
 
 const TERMINAL: ReadonlySet<string> = new Set(["PUBLISHED", "FAILED", "SKIPPED"]);
 
@@ -90,7 +98,11 @@ export async function advanceSocialPost(postId: number): Promise<AdvanceResult> 
       const message = err instanceof Error ? err.message : String(err);
       await db.socialPostTarget.update({
         where: { id: target.id },
-        data: { status: "FAILED", errorMessage: message.slice(0, 500), attempts: target.attempts + 1 },
+        data: {
+          status: "FAILED",
+          errorMessage: message.slice(0, 500),
+          attempts: target.attempts + 1,
+        },
       });
     }
   }
@@ -106,10 +118,19 @@ export async function advanceSocialPost(postId: number): Promise<AdvanceResult> 
       data: {
         status: allFailed ? "FAILED" : "PUBLISHED",
         publishedAt: new Date(),
-        errorMessage: anyFailed && !allFailed ? "Algunos destinos fallaron" : allFailed ? "Publicación fallida" : null,
+        errorMessage:
+          anyFailed && !allFailed
+            ? "Algunos destinos fallaron"
+            : allFailed
+              ? "Publicación fallida"
+              : null,
       },
     });
-    logEvent("social.publish.done", { postId, status: allFailed ? "FAILED" : "PUBLISHED", failed: anyFailed });
+    logEvent("social.publish.done", {
+      postId,
+      status: allFailed ? "FAILED" : "PUBLISHED",
+      failed: anyFailed,
+    });
     return { status: allFailed ? "FAILED" : "PUBLISHED", pending: 0 };
   }
 
@@ -117,7 +138,14 @@ export async function advanceSocialPost(postId: number): Promise<AdvanceResult> 
 }
 
 // ── Patches ──
-type TargetStatus = "PENDING" | "CREATING" | "CONTAINER_READY" | "PUBLISHING" | "PUBLISHED" | "FAILED" | "SKIPPED";
+type TargetStatus =
+  | "PENDING"
+  | "CREATING"
+  | "CONTAINER_READY"
+  | "PUBLISHING"
+  | "PUBLISHED"
+  | "FAILED"
+  | "SKIPPED";
 type TargetPatch = {
   status: TargetStatus;
   containerId?: string | null;
@@ -127,7 +155,12 @@ type TargetPatch = {
 };
 
 function simulateTarget(): TargetPatch {
-  return { status: "PUBLISHED", externalId: `dryrun_${Date.now()}`, permalink: null, publishedAt: new Date() };
+  return {
+    status: "PUBLISHED",
+    externalId: `dryrun_${Date.now()}`,
+    permalink: null,
+    publishedAt: new Date(),
+  };
 }
 
 function buildCaption(post: PostRow, target: TargetRow): string | undefined {
@@ -146,11 +179,17 @@ function buildCaption(post: PostRow, target: TargetRow): string | undefined {
  * ERROR/EXPIRED→throw). FB: publica síncrono.
  */
 async function stepTargetReal(post: PostRow, target: TargetRow): Promise<TargetPatch> {
+  const media = (post.media ?? []) as MediaItem[];
+  const caption = buildCaption(post, target);
+
+  // ── TikTok (Content Posting API, PULL_FROM_URL) ──
+  if (target.network === "TIKTOK") {
+    return stepTiktokTarget(post, target, media);
+  }
+
   const loaded = await loadSocialAccount(target.accountId);
   if (!loaded) throw new Error(`SocialAccount ${target.accountId} no existe`);
   loaded.pageAccessToken = await getValidPageToken(loaded);
-  const media = (post.media ?? []) as MediaItem[];
-  const caption = buildCaption(post, target);
 
   // ── Facebook (síncrono) ──
   if (target.network === "FACEBOOK") {
@@ -180,7 +219,7 @@ async function stepTargetReal(post: PostRow, target: TargetRow): Promise<TargetP
       containerId = await createCarouselContainer(
         loaded,
         media.map((m) => ({ url: m.url, isVideo: m.type === "video" })),
-        caption,
+        caption
       );
     } else {
       const item = media[0];
@@ -204,4 +243,59 @@ async function stepTargetReal(post: PostRow, target: TargetRow): Promise<TargetP
   const mediaId = await publishContainer(loaded, target.containerId);
   const permalink = await getPermalink(loaded, mediaId);
   return { status: "PUBLISHED", externalId: mediaId, permalink, publishedAt: new Date() };
+}
+
+/**
+ * Avanza UN target de TikTok (placement TIKTOK_VIDEO). PENDING → queryCreatorInfo
+ * + init PULL_FROM_URL (guarda publish_id como containerId, CREATING). CREATING →
+ * status/fetch → PUBLISH_COMPLETE → PUBLISHED; FAILED → throw; else sigue CREATING.
+ * Pre-audit el privacy_level es SELF_ONLY (post privado del creador).
+ */
+async function stepTiktokTarget(
+  post: PostRow,
+  target: TargetRow,
+  media: MediaItem[]
+): Promise<TargetPatch> {
+  const loaded = await loadTiktokAccount(target.accountId);
+  if (!loaded) throw new Error(`SocialAccount ${target.accountId} no existe`);
+  const token = await getValidTiktokAccessToken(loaded);
+
+  // PENDING → init.
+  if (!target.containerId) {
+    const videoItem = media.find((m) => m.type === "video");
+    if (!videoItem) {
+      throw new Error("TikTok requiere un video (no hay media de tipo video en el post)");
+    }
+    const creator = await queryCreatorInfo(loaded, token);
+    // Pre-audit solo SELF_ONLY está disponible; tras el audit el creator devuelve
+    // los niveles públicos. Elegimos SELF_ONLY si está, sino el primero disponible.
+    const privacyLevel = creator.privacyLevelOptions.includes(DEFAULT_PRIVACY_LEVEL)
+      ? DEFAULT_PRIVACY_LEVEL
+      : (creator.privacyLevelOptions[0] ?? DEFAULT_PRIVACY_LEVEL);
+    const title = (target.captionOverride ?? post.caption ?? "").trim();
+    const publishId = await initVideoPost(loaded, token, {
+      videoUrl: videoItem.url,
+      title,
+      privacyLevel,
+      disableComment: creator.commentDisabled,
+      disableDuet: creator.duetDisabled,
+      disableStitch: creator.stitchDisabled,
+    });
+    return { status: "CREATING", containerId: publishId };
+  }
+
+  // Ya hay publish_id → pollear estado.
+  const result = await fetchPublishStatus(loaded, token, target.containerId);
+  if (result.status === "PUBLISH_COMPLETE") {
+    return {
+      status: "PUBLISHED",
+      externalId: result.postId ?? target.containerId,
+      publishedAt: new Date(),
+    };
+  }
+  if (result.status === "FAILED") {
+    throw new Error(`TikTok publish FAILED: ${result.failReason ?? "sin detalle"}`);
+  }
+  // PROCESSING_* / SEND_TO_USER_INBOX → sigue pendiente.
+  return { status: "CREATING", containerId: target.containerId };
 }

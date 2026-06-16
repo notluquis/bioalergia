@@ -15,8 +15,10 @@ import {
   socialPostsResponseSchema,
   socialSettingsResponseSchema,
   socialSettingsSchema,
+  tiktokConfigResponseSchema,
   updateMetaConfigInputSchema,
   updateSocialPostInputSchema,
+  updateTiktokConfigInputSchema,
 } from "@finanzas/orpc-contracts/social";
 import { ORPCError, onError, os } from "@orpc/server";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
@@ -35,6 +37,7 @@ import {
   getMetaConfig,
   getSocialPost,
   getSocialSettings,
+  getTiktokConfig,
   listSocialAccounts,
   listSocialPosts,
   publishNowSocialPost,
@@ -44,6 +47,7 @@ import {
   updateMetaConfig,
   updateSocialPost,
   updateSocialSettings,
+  updateTiktokConfig,
 } from "../services/social.ts";
 import { SuperJSONRPCHandler } from "./superjson.ts";
 
@@ -88,18 +92,26 @@ const updatePost = requirePost("update");
 // Dispara la cola tras una transición del service. SCHEDULED → enqueue a runAt;
 // PUBLISHING (publicar ahora) → enqueue inmediato con fallback inline si no hay
 // runner (DISABLE_QUEUE_RUNNER). Devuelve el post ya actualizado.
-async function triggerPublish(post: { id: number; status: string; scheduledAt?: Date | string | null }) {
+async function triggerPublish(post: {
+  id: number;
+  status: string;
+  scheduledAt?: Date | string | null;
+}) {
   if (post.status === "SCHEDULED" && post.scheduledAt) {
     await enqueueJob(
       "social_publish",
       { postId: post.id },
-      { runAt: new Date(post.scheduledAt), jobKey: socialPublishJobKey(post.id), jobKeyMode: "replace" },
+      {
+        runAt: new Date(post.scheduledAt),
+        jobKey: socialPublishJobKey(post.id),
+        jobKeyMode: "replace",
+      }
     );
   } else if (post.status === "PUBLISHING") {
     const enqueued = await enqueueJob(
       "social_publish",
       { postId: post.id },
-      { jobKey: socialPublishJobKey(post.id), jobKeyMode: "replace" },
+      { jobKey: socialPublishJobKey(post.id), jobKeyMode: "replace" }
     );
     if (!enqueued) await publishSocialPost(post.id);
   }
@@ -138,7 +150,10 @@ const socialORPCRouterBase = {
     .route({ method: "POST", path: "/{id}/render" })
     .input(renderSocialPostInputSchema)
     .output(socialPostResponseSchema)
-    .handler(async ({ input }) => ({ post: await renderSocialMedia(input), status: "ok" as const })),
+    .handler(async ({ input }) => ({
+      post: await renderSocialMedia(input),
+      status: "ok" as const,
+    })),
 
   approve: updatePost
     .route({ method: "POST", path: "/{id}/approve" })
@@ -153,7 +168,10 @@ const socialORPCRouterBase = {
     .route({ method: "POST", path: "/{id}/reject" })
     .input(rejectSocialPostInputSchema)
     .output(socialPostResponseSchema)
-    .handler(async ({ input }) => ({ post: await rejectSocialPost(input.id, input.reason), status: "ok" as const })),
+    .handler(async ({ input }) => ({
+      post: await rejectSocialPost(input.id, input.reason),
+      status: "ok" as const,
+    })),
 
   schedule: updatePost
     .route({ method: "POST", path: "/{id}/schedule" })
@@ -183,7 +201,10 @@ const socialORPCRouterBase = {
     .route({ method: "POST", path: "/accounts/connect" })
     .input(connectMetaAccountInputSchema)
     .output(socialAccountResponseSchema)
-    .handler(async ({ input }) => ({ account: await connectMetaAccount(input), status: "ok" as const })),
+    .handler(async ({ input }) => ({
+      account: await connectMetaAccount(input),
+      status: "ok" as const,
+    })),
 
   getMetaConfig: requireAccount("read")
     .route({ method: "GET", path: "/meta-config" })
@@ -196,6 +217,18 @@ const socialORPCRouterBase = {
     .input(updateMetaConfigInputSchema)
     .output(metaConfigResponseSchema)
     .handler(async ({ input }) => ({ config: await updateMetaConfig(input) })),
+
+  getTiktokConfig: requireAccount("read")
+    .route({ method: "GET", path: "/tiktok-config" })
+    .input(z.object({}))
+    .output(tiktokConfigResponseSchema)
+    .handler(async () => ({ config: await getTiktokConfig() })),
+
+  updateTiktokConfig: requireAccount("create")
+    .route({ method: "PUT", path: "/tiktok-config" })
+    .input(updateTiktokConfigInputSchema)
+    .output(tiktokConfigResponseSchema)
+    .handler(async ({ input }) => ({ config: await updateTiktokConfig(input) })),
 
   getSettings: requireAccount("read")
     .route({ method: "GET", path: "/settings" })
@@ -210,7 +243,10 @@ const socialORPCRouterBase = {
     .handler(async ({ input }) => ({ settings: await updateSocialSettings(input) })),
 };
 
-export const socialORPCRouter = base.prefix("/api/orpc/social").tag("Social").router(socialORPCRouterBase);
+export const socialORPCRouter = base
+  .prefix("/api/orpc/social")
+  .tag("Social")
+  .router(socialORPCRouterBase);
 
 export const socialORPCHandler = new SuperJSONRPCHandler(socialORPCRouter, {
   interceptors: [

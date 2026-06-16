@@ -49,6 +49,7 @@ import { employeesOpenAPIHandler, employeesORPCHandler } from "./orpc/employees.
 import { expensesOpenAPIHandler, expensesORPCHandler } from "./orpc/expenses.ts";
 import { socialOpenAPIHandler, socialORPCHandler } from "./orpc/social.ts";
 import { registerSocialOauthRoutes } from "./modules/social/graph/oauth-routes.ts";
+import { registerTiktokOauthRoutes } from "./modules/social/tiktok/oauth-routes.ts";
 import { financeOpenAPIHandler, financeORPCHandler } from "./orpc/finance.ts";
 import { cartOpenAPIHandler, cartORPCHandler } from "./orpc/cart.ts";
 import { catalogOpenAPIHandler, catalogORPCHandler } from "./orpc/catalog.ts";
@@ -1296,6 +1297,8 @@ app.use("/api/orpc/social/rpc/*", async (c, next) => {
 
 // OAuth oficial de Meta (rutas Hono planas: redirect del navegador, no oRPC).
 registerSocialOauthRoutes(app);
+// OAuth (PKCE) de TikTok Content Posting (rutas Hono planas, redirect navegador).
+registerTiktokOauthRoutes(app);
 
 app.use("/api/orpc/csv-upload/rpc/*", async (c, next) => {
   const { matched, response } = await csvUploadORPCHandler.handle(createHonoORPCRequest(c), {

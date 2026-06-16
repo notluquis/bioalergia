@@ -4778,6 +4778,7 @@ enum SocialTargetStatus {
 
 enum SocialAccountProvider {
   META
+  TIKTOK
 }
 
 model SocialAccount {
@@ -4789,6 +4790,9 @@ model SocialAccount {
   igUserId        String?               @map("ig_user_id")
   pageAccessToken String?               @map("page_access_token")
   userAccessToken String?               @map("user_access_token")
+  refreshToken    String?               @map("refresh_token")
+  refreshExpiresAt DateTime?            @map("refresh_expires_at")
+  externalUserId  String?               @map("external_user_id")
   tokenExpiresAt  DateTime?             @map("token_expires_at")
   appId           String?               @map("app_id")
   appSecret       String?               @map("app_secret")
