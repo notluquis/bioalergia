@@ -1356,6 +1356,131 @@ model ImmunotherapyAdministration {
   @@map("immunotherapy_administrations")
 }
 
+// ═══ Cumplimiento (Ley 21.719 datos personales / Ley 20.584 / Decreto 35) ═══
+
+// #3 — Derechos del titular (ARCO+): acceso/rectificación/supresión/portabilidad/
+// oposición/bloqueo. SLA 30 días corridos (dueAt = receivedAt + 30d).
+model DataRightsRequest {
+  id             String    @id @default(cuid())
+  // ACCESS | RECTIFICATION | DELETION | PORTABILITY | OPPOSITION | BLOCKING
+  type           String
+  // RECEIVED | IN_PROGRESS | RESOLVED | REJECTED
+  status         String    @default("RECEIVED")
+  requesterName  String    @map("requester_name")
+  requesterRut   String?   @map("requester_rut")
+  requesterEmail String?   @map("requester_email")
+  patientId      Int?      @map("patient_id")
+  receivedAt     DateTime  @default(now()) @map("received_at")
+  dueAt          DateTime  @map("due_at")
+  resolvedAt     DateTime? @map("resolved_at")
+  resolution     String?
+  handledBy      Int?      @map("handled_by")
+  notes          String?
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+  patient        Patient?  @relation(fields: [patientId], references: [id], onDelete: SetNull)
+
+  @@deny('all', auth() == null)
+  @@allow('create,read,update', auth().status == 'ACTIVE')
+  @@index([status, dueAt])
+  @@map("data_rights_requests")
+}
+
+// #4 — Incidentes de brecha: detección → notificación Agencia + titulares (72h).
+model BreachIncident {
+  id                 String    @id @default(cuid())
+  detectedAt         DateTime  @map("detected_at")
+  description        String
+  // LOW | MEDIUM | HIGH | CRITICAL
+  severity           String    @default("MEDIUM")
+  affectedData       String?   @map("affected_data")
+  affectedCount      Int?      @map("affected_count")
+  // DETECTED | NOTIFYING | NOTIFIED | CLOSED
+  status             String    @default("DETECTED")
+  agencyNotifiedAt   DateTime? @map("agency_notified_at")
+  subjectsNotifiedAt DateTime? @map("subjects_notified_at")
+  handledBy          Int?      @map("handled_by")
+  notes              String?
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+
+  @@deny('all', auth() == null)
+  @@allow('create,read,update', auth().status == 'ACTIVE')
+  @@index([status, detectedAt])
+  @@map("breach_incidents")
+}
+
+// #10 — Lista de precios de prestaciones/insumos (visible; cobro por dosis-unitaria).
+model PriceListItem {
+  id        String   @id @default(cuid())
+  code      String?  @unique
+  name      String
+  category  String
+  // unidad | dosis | sesion | mL
+  unit      String   @default("unidad")
+  priceClp  Int      @map("price_clp")
+  isActive  Boolean  @default(true) @map("is_active")
+  sortOrder Int      @default(0) @map("sort_order")
+  notes     String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@deny('all', auth() == null)
+  // Precios visibles a cualquiera (lista pública); edición solo staff activo.
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+  @@index([category, sortOrder])
+  @@map("price_list_items")
+}
+
+// #11 — Reclamos/sugerencias (Decreto 35: acuse + respuesta 15 días hábiles).
+model Complaint {
+  id              String    @id @default(cuid())
+  // PRESENCIAL | WEB | TELEFONO | EMAIL | LIBRO
+  channel         String    @default("PRESENCIAL")
+  complainantName String    @map("complainant_name")
+  complainantRut  String?   @map("complainant_rut")
+  contact         String?
+  patientId       Int?      @map("patient_id")
+  category        String?
+  description     String
+  // RECEIVED | IN_PROGRESS | RESOLVED | ESCALATED
+  status          String    @default("RECEIVED")
+  receivedAt      DateTime  @default(now()) @map("received_at")
+  dueAt           DateTime  @map("due_at")
+  resolvedAt      DateTime? @map("resolved_at")
+  resolution      String?
+  handledBy       Int?      @map("handled_by")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  patient         Patient?  @relation(fields: [patientId], references: [id], onDelete: SetNull)
+
+  @@deny('all', auth() == null)
+  @@allow('create,read,update', auth().status == 'ACTIVE')
+  @@index([status, dueAt])
+  @@map("complaints")
+}
+
+// #11 — Libros foliados electrónicos (procedimientos / reclamos / inspecciones).
+model FoliatedBookEntry {
+  id        String   @id @default(cuid())
+  // PROCEDURES | COMPLAINTS | INSPECTIONS
+  book      String
+  folio     Int
+  entryDate DateTime @map("entry_date")
+  summary   String
+  refType   String?  @map("ref_type")
+  refId     String?  @map("ref_id")
+  createdBy Int      @map("created_by")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@deny('all', auth() == null)
+  @@allow('create,read', auth().status == 'ACTIVE')
+  @@unique([book, folio])
+  @@index([book, entryDate])
+  @@map("foliated_book_entries")
+}
+
 model ClinicalSeries {
   id               Int                       @id @default(autoincrement())
   kind             ClinicalSeriesKind
@@ -2806,6 +2931,8 @@ model Patient {
   examReports         ExamReport[]
   scitPrescriptions   ScitPrescription[]
   immunotherapyAdministrations ImmunotherapyAdministration[]
+  dataRightsRequests  DataRightsRequest[]
+  complaints          Complaint[]
 
   @@deny('all', auth() == null)
   @@allow('read', auth().status == 'ACTIVE')

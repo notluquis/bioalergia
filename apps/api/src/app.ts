@@ -101,6 +101,11 @@ import {
 import { rolesOpenAPIHandler, rolesORPCHandler } from "./orpc/roles.ts";
 import { servicesOpenAPIHandler, servicesORPCHandler } from "./orpc/services.ts";
 import { settingsOpenAPIHandler, settingsORPCHandler } from "./orpc/settings.ts";
+import { priceListORPCHandler } from "./orpc/price-list.ts";
+import { dataRightsORPCHandler } from "./orpc/data-rights.ts";
+import { breachIncidentsORPCHandler } from "./orpc/breach-incidents.ts";
+import { complaintsORPCHandler } from "./orpc/complaints.ts";
+import { securityAlertsORPCHandler } from "./orpc/security-alerts.ts";
 import {
   settlementTransactionsOpenAPIHandler,
   settlementTransactionsORPCHandler,
@@ -1596,6 +1601,71 @@ app.use("/api/orpc/job-radar/rpc/*", async (c, next) => {
 app.use("/api/orpc/settings/rpc/*", async (c, next) => {
   const { matched, response } = await settingsORPCHandler.handle(createHonoORPCRequest(c), {
     prefix: "/api/orpc/settings/rpc",
+    context: { hono: c },
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  return next();
+});
+
+app.use("/api/orpc/price-list/rpc/*", async (c, next) => {
+  const { matched, response } = await priceListORPCHandler.handle(createHonoORPCRequest(c), {
+    prefix: "/api/orpc/price-list/rpc",
+    context: { hono: c },
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  return next();
+});
+
+app.use("/api/orpc/data-rights/rpc/*", async (c, next) => {
+  const { matched, response } = await dataRightsORPCHandler.handle(createHonoORPCRequest(c), {
+    prefix: "/api/orpc/data-rights/rpc",
+    context: { hono: c },
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  return next();
+});
+
+app.use("/api/orpc/breach-incidents/rpc/*", async (c, next) => {
+  const { matched, response } = await breachIncidentsORPCHandler.handle(createHonoORPCRequest(c), {
+    prefix: "/api/orpc/breach-incidents/rpc",
+    context: { hono: c },
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  return next();
+});
+
+app.use("/api/orpc/complaints/rpc/*", async (c, next) => {
+  const { matched, response } = await complaintsORPCHandler.handle(createHonoORPCRequest(c), {
+    prefix: "/api/orpc/complaints/rpc",
+    context: { hono: c },
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  return next();
+});
+
+app.use("/api/orpc/security-alerts/rpc/*", async (c, next) => {
+  const { matched, response } = await securityAlertsORPCHandler.handle(createHonoORPCRequest(c), {
+    prefix: "/api/orpc/security-alerts/rpc",
     context: { hono: c },
   });
 

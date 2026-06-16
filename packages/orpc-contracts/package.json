@@ -327,6 +327,36 @@
       "import": "./dist/settings.js",
       "default": "./dist/settings.js"
     },
+    "./price-list": {
+      "development": "./src/price-list.ts",
+      "types": "./dist/price-list.d.ts",
+      "import": "./dist/price-list.js",
+      "default": "./dist/price-list.js"
+    },
+    "./data-rights": {
+      "development": "./src/data-rights.ts",
+      "types": "./dist/data-rights.d.ts",
+      "import": "./dist/data-rights.js",
+      "default": "./dist/data-rights.js"
+    },
+    "./breach-incidents": {
+      "development": "./src/breach-incidents.ts",
+      "types": "./dist/breach-incidents.d.ts",
+      "import": "./dist/breach-incidents.js",
+      "default": "./dist/breach-incidents.js"
+    },
+    "./complaints": {
+      "development": "./src/complaints.ts",
+      "types": "./dist/complaints.d.ts",
+      "import": "./dist/complaints.js",
+      "default": "./dist/complaints.js"
+    },
+    "./security-alerts": {
+      "development": "./src/security-alerts.ts",
+      "types": "./dist/security-alerts.d.ts",
+      "import": "./dist/security-alerts.js",
+      "default": "./dist/security-alerts.js"
+    },
     "./quotes": {
       "development": "./src/quotes.ts",
       "types": "./dist/quotes.d.ts",
