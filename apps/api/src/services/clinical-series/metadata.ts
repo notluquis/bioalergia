@@ -23,15 +23,11 @@ import type { ClinicalSeriesKind } from "./types.ts";
  */
 async function resolvePersonNameByRut(rut: null | string): Promise<null | string> {
   if (!rut) return null;
-  const rows = await db.$queryRaw<
-    Array<{ fatherName: null | string; motherName: null | string; names: string }>
-  >`
-    SELECT names, father_name AS "fatherName", mother_name AS "motherName"
-    FROM people
-    WHERE rut = ${rut}
-    LIMIT 1
-  `;
-  const composed = [rows[0]?.names, rows[0]?.fatherName, rows[0]?.motherName]
+  const person = await db.person.findFirst({
+    where: { rut },
+    select: { fatherName: true, motherName: true, names: true },
+  });
+  const composed = [person?.names, person?.fatherName, person?.motherName]
     .filter(Boolean)
     .join(" ")
     .trim();
@@ -86,12 +82,12 @@ export async function refreshClinicalSeriesMetadata(seriesId: number): Promise<v
   // current name (e.g. calendar has "villegas krausse" but the DTE
   // has "JULIO RODRIGO VILLEGAS KRAUSE").
   if (patientRut) {
-    const dteByPatientRut = await db.$queryRaw<Array<{ clientName: string; clientRUT: string }>>`
-      SELECT DISTINCT s.client_name AS "clientName", s.client_rut AS "clientRUT"
-      FROM dte_sale_details s
-      WHERE s.client_rut = ${patientRut}
-      LIMIT 5
-    `;
+    const dteByPatientRut = await db.dTESaleDetail.findMany({
+      where: { clientRUT: patientRut },
+      select: { clientName: true, clientRUT: true },
+      distinct: ["clientName", "clientRUT"],
+      take: 5,
+    });
 
     if (dteByPatientRut.length > 0) {
       const upgraded = upgradePatientNameFromDte(patientName, dteByPatientRut);
@@ -103,14 +99,12 @@ export async function refreshClinicalSeriesMetadata(seriesId: number): Promise<v
   // upgrade the beneficiary name and promote beneficiary → patient
   // (since the beneficiary is effectively the patient in this case).
   if (!patientRut && beneficiaryRut) {
-    const dteByBeneficiaryRut = await db.$queryRaw<
-      Array<{ clientName: string; clientRUT: string }>
-    >`
-      SELECT DISTINCT s.client_name AS "clientName", s.client_rut AS "clientRUT"
-      FROM dte_sale_details s
-      WHERE s.client_rut = ${beneficiaryRut}
-      LIMIT 5
-    `;
+    const dteByBeneficiaryRut = await db.dTESaleDetail.findMany({
+      where: { clientRUT: beneficiaryRut },
+      select: { clientName: true, clientRUT: true },
+      distinct: ["clientName", "clientRUT"],
+      take: 5,
+    });
 
     if (dteByBeneficiaryRut.length > 0) {
       const upgradedBenef = upgradePatientNameFromDte(beneficiaryName, dteByBeneficiaryRut);
@@ -137,16 +131,15 @@ export async function refreshClinicalSeriesMetadata(seriesId: number): Promise<v
   }
 
   if (!beneficiaryRut || !beneficiaryName) {
-    const linkedDocuments = await db.$queryRaw<Array<{ clientName: string; clientRUT: string }>>`
-      SELECT DISTINCT
-        s.client_name AS "clientName",
-        s.client_rut AS "clientRUT"
-      FROM event_dte_sale_links l
-      JOIN events e ON e.id = l.event_id
-      JOIN dte_sale_details s ON s.id = l.dte_sale_detail_id
-      WHERE e.clinical_series_id = ${seriesId}
-        AND l.status != 'REJECTED'
-    `;
+    const linkedDocuments = await db.$qb
+      .selectFrom("EventDteSaleLink as l")
+      .innerJoin("Event as e", "e.id", "l.eventId")
+      .innerJoin("DTESaleDetail as s", "s.id", "l.dteSaleDetailId")
+      .where("e.clinicalSeriesId", "=", seriesId)
+      .where("l.status", "!=", "REJECTED")
+      .select(["s.clientName as clientName", "s.clientRUT as clientRUT"])
+      .distinct()
+      .execute();
 
     if (linkedDocuments.length === 1) {
       beneficiaryRut ||= linkedDocuments[0]?.clientRUT ?? null;
@@ -160,15 +153,16 @@ export async function refreshClinicalSeriesMetadata(seriesId: number): Promise<v
   // there is still no patient RUT and the linked boletas agree on a single
   // client RUT, promote it to the patient identity.
   if (!patientRut) {
-    const linkedSales = await db.$queryRaw<Array<{ clientName: string; clientRUT: string }>>`
-      SELECT DISTINCT s.client_name AS "clientName", s.client_rut AS "clientRUT"
-      FROM event_dte_sale_links l
-      JOIN events e ON e.id = l.event_id
-      JOIN dte_sale_details s ON s.id = l.dte_sale_detail_id
-      WHERE e.clinical_series_id = ${seriesId}
-        AND l.status != 'REJECTED'
-        AND s.client_rut <> ''
-    `;
+    const linkedSales = await db.$qb
+      .selectFrom("EventDteSaleLink as l")
+      .innerJoin("Event as e", "e.id", "l.eventId")
+      .innerJoin("DTESaleDetail as s", "s.id", "l.dteSaleDetailId")
+      .where("e.clinicalSeriesId", "=", seriesId)
+      .where("l.status", "!=", "REJECTED")
+      .where("s.clientRUT", "!=", "")
+      .select(["s.clientName as clientName", "s.clientRUT as clientRUT"])
+      .distinct()
+      .execute();
     const distinctRuts = new Set(linkedSales.map((sale) => sale.clientRUT));
     if (distinctRuts.size === 1 && linkedSales[0]) {
       patientRut = sanitizeRut(linkedSales[0].clientRUT);

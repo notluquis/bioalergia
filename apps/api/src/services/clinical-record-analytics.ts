@@ -1,4 +1,4 @@
-import { kysely } from "@finanzas/db";
+import { db } from "@finanzas/db";
 import type { clinicalRecordAnalyticsSchema } from "@finanzas/orpc-contracts/clinical-records";
 import { sql } from "kysely";
 import type { z } from "zod";
@@ -12,29 +12,33 @@ type Analytics = z.infer<typeof clinicalRecordAnalyticsSchema>;
 
 type DateRange = { dateFrom?: string; dateTo?: string };
 
-function consultDateWhere(range: DateRange) {
-  const parts = [
-    sql`cr.consult_date IS NOT NULL`,
-    range.dateFrom ? sql`cr.consult_date >= ${range.dateFrom}::date` : null,
-    range.dateTo ? sql`cr.consult_date <= ${range.dateTo}::date` : null,
-  ].filter(Boolean) as ReturnType<typeof sql>[];
-  return sql.join(parts, sql` AND `);
+// Base clinical_records query bounded by consult_date. Mirrors the old
+// consultDateWhere() sql.join: cr.consult_date IS NOT NULL [AND >= from::date]
+// [AND <= to::date]. Column refs in .where() use camelCase ("cr.consultDate");
+// the ::date cast bounds stay in raw sql fragments (physical snake_case).
+// Reused as-is by byMonth/topDiagnoses and extended with a join for topPatients
+// (Kysely query builders are immutable; join order vs where is irrelevant).
+function consultDateBaseQuery(range: DateRange) {
+  let q = db.$qb.selectFrom("ClinicalRecord as cr").where("cr.consultDate", "is not", null);
+  if (range.dateFrom) {
+    q = q.where(sql<boolean>`cr.consult_date >= ${range.dateFrom}::date`);
+  }
+  if (range.dateTo) {
+    q = q.where(sql<boolean>`cr.consult_date <= ${range.dateTo}::date`);
+  }
+  return q;
 }
 
 export async function getClinicalRecordAnalytics(range: DateRange): Promise<Analytics> {
-  const where = consultDateWhere(range);
-
-  const statusRows = (
-    await sql<{ status: string; c: string }>`
-      SELECT status::text AS status, COUNT(*)::text AS c
-      FROM clinical_record_imports
-      GROUP BY status
-    `.execute(kysely)
-  ).rows;
+  type StatusGroupRow = { status: string; _count: { _all: number } };
+  const statusRows = (await db.clinicalRecordImport.groupBy({
+    by: ["status"],
+    _count: { _all: true },
+  })) as StatusGroupRow[];
 
   const byStatus = statusRows.map((r) => ({
     status: r.status as Analytics["byStatus"][number]["status"],
-    count: Number.parseInt(r.c, 10),
+    count: r._count._all,
   }));
   const countFor = (s: string) => byStatus.find((b) => b.status === s)?.count ?? 0;
   const imported = countFor("IMPORTED");
@@ -46,57 +50,55 @@ export async function getClinicalRecordAnalytics(range: DateRange): Promise<Anal
   const decided = imported + pending + rejected;
   const matchRate = decided > 0 ? imported / decided : 0;
 
-  const recordsRow = (
-    await sql<{ total: string; with_date: string }>`
-      SELECT
-        COUNT(*)::text AS total,
-        COUNT(*) FILTER (WHERE consult_date IS NOT NULL)::text AS with_date
-      FROM clinical_records
-    `.execute(kysely)
-  ).rows[0];
+  const [recordsTotal, recordsWithDate] = await Promise.all([
+    db.clinicalRecord.count(),
+    db.clinicalRecord.count({ where: { consultDate: { not: null } } }),
+  ]);
 
+  const monthExpr = sql<string>`to_char(cr.consult_date, 'YYYY-MM')`;
   const byMonth = (
-    await sql<{ month: string; c: string }>`
-      SELECT to_char(cr.consult_date, 'YYYY-MM') AS month, COUNT(*)::text AS c
-      FROM clinical_records cr
-      WHERE ${where}
-      GROUP BY 1
-      ORDER BY 1 ASC
-    `.execute(kysely)
-  ).rows.map((r) => ({ month: r.month, count: Number.parseInt(r.c, 10) }));
+    await consultDateBaseQuery(range)
+      .select([monthExpr.as("month"), sql<number>`count(*)`.as("c")])
+      .groupBy(monthExpr)
+      .orderBy(monthExpr, "asc")
+      .execute()
+  ).map((r) => ({ month: String(r.month), count: Number(r.c) }));
 
+  const diagnosisLabelExpr = sql<string>`trim(split_part(cr.diagnosis, E'\n', 1))`;
   const topDiagnoses = (
-    await sql<{ label: string; c: string }>`
-      SELECT trim(split_part(cr.diagnosis, E'\n', 1)) AS label, COUNT(*)::text AS c
-      FROM clinical_records cr
-      WHERE ${where} AND cr.diagnosis IS NOT NULL AND trim(cr.diagnosis) <> ''
-      GROUP BY 1
-      ORDER BY COUNT(*) DESC, 1 ASC
-      LIMIT 15
-    `.execute(kysely)
-  ).rows
+    await consultDateBaseQuery(range)
+      .where(sql<boolean>`cr.diagnosis IS NOT NULL`)
+      .where(sql<boolean>`trim(cr.diagnosis) <> ''`)
+      .select([diagnosisLabelExpr.as("label"), sql<number>`count(*)`.as("c")])
+      .groupBy(diagnosisLabelExpr)
+      .orderBy(sql`count(*)`, "desc")
+      .orderBy(diagnosisLabelExpr, "asc")
+      .limit(15)
+      .execute()
+  )
     .filter((r) => r.label)
-    .map((r) => ({ label: r.label, count: Number.parseInt(r.c, 10) }));
+    .map((r) => ({ label: String(r.label), count: Number(r.c) }));
 
   const topPatients = (
-    await sql<{ name: string; c: string }>`
-      SELECT cs.patient_name AS name, COUNT(*)::text AS c
-      FROM clinical_records cr
-      JOIN clinical_series cs ON cs.id = cr.clinical_series_id
-      WHERE ${where} AND cs.kind = 'MEDICAL_CONSULTATION' AND cs.patient_name IS NOT NULL
-      GROUP BY cs.patient_name
-      ORDER BY COUNT(*) DESC, cs.patient_name ASC
-      LIMIT 15
-    `.execute(kysely)
-  ).rows.map((r) => ({ patientName: r.name, count: Number.parseInt(r.c, 10) }));
+    await consultDateBaseQuery(range)
+      .innerJoin("ClinicalSeries as cs", "cs.id", "cr.clinicalSeriesId")
+      .where("cs.kind", "=", "MEDICAL_CONSULTATION")
+      .where("cs.patientName", "is not", null)
+      .select(["cs.patientName as name", sql<number>`count(*)`.as("c")])
+      .groupBy("cs.patientName")
+      .orderBy(sql`count(*)`, "desc")
+      .orderBy("cs.patientName", "asc")
+      .limit(15)
+      .execute()
+  ).map((r) => ({ patientName: String(r.name), count: Number(r.c) }));
 
   return {
     byStatus,
     totals: { imports, imported, pending, discovered, errors, rejected },
     matchRate,
     records: {
-      total: Number.parseInt(recordsRow?.total ?? "0", 10),
-      withDate: Number.parseInt(recordsRow?.with_date ?? "0", 10),
+      total: Number(recordsTotal),
+      withDate: Number(recordsWithDate),
     },
     byMonth,
     topDiagnoses,

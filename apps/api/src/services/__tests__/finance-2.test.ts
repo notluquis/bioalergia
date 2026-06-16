@@ -45,9 +45,41 @@ const { mockDb, m, mockAuditRowChange, mockFetchMerged, mockFetchMergedBySourceI
       txnDelete: mk(),
       releaseFindMany: mk(),
       settlementFindMany: mk(),
+      profileFindUnique: mk(),
+      profileCreate: mk(),
+      profileUpdate: mk(),
+      qbRows: mk(),
       queryRaw: mk(),
       executeRaw: mk(),
       transaction: mk(),
+    };
+    // Minimal Kysely-shaped builder: every chained method returns the same
+    // builder; execute()/executeTakeFirst() resolve from m.qbRows() so tests
+    // control the returned rows. Used by listCompensationProfiles +
+    // getCompensationProfileById ($qb join migration).
+    const makeQb = () => {
+      const builder: Record<string, unknown> = {};
+      const chain = () => builder;
+      for (const method of [
+        "selectFrom",
+        "innerJoin",
+        "leftJoin",
+        "select",
+        "where",
+        "orderBy",
+        "limit",
+      ]) {
+        builder[method] = chain;
+      }
+      builder.execute = async () => {
+        const rows = m.qbRows();
+        return Array.isArray(rows) ? rows : [];
+      };
+      builder.executeTakeFirst = async () => {
+        const rows = m.qbRows();
+        return Array.isArray(rows) ? rows[0] : rows;
+      };
+      return builder;
     };
     const mockDb = {
       counterpart: {
@@ -84,6 +116,14 @@ const { mockDb, m, mockAuditRowChange, mockFetchMerged, mockFetchMergedBySourceI
       },
       releaseTransaction: { findMany: (...a: unknown[]) => m.releaseFindMany(...a) },
       settlementTransaction: { findMany: (...a: unknown[]) => m.settlementFindMany(...a) },
+      compensationProfile: {
+        findUnique: (...a: unknown[]) => m.profileFindUnique(...a),
+        create: (...a: unknown[]) => m.profileCreate(...a),
+        update: (...a: unknown[]) => m.profileUpdate(...a),
+      },
+      get $qb() {
+        return makeQb();
+      },
       $queryRaw: (...a: unknown[]) => m.queryRaw(...a),
       $executeRaw: (...a: unknown[]) => m.executeRaw(...a),
       $transaction: (...a: unknown[]) => m.transaction(...a),
@@ -1530,8 +1570,8 @@ describe("deleteFinancialAutoCategoryRule", () => {
 // ─── listCompensationProfiles ──────────────────────────────────────────────────
 
 describe("listCompensationProfiles", () => {
-  it("maps raw rows: counterpart null when no counterpartId, defaults string fields", async () => {
-    m.queryRaw.mockResolvedValue([
+  it("maps $qb join rows: counterpart null when no counterpartId, defaults string fields", async () => {
+    m.qbRows.mockReturnValue([
       {
         id: 1,
         name: "P1",
@@ -1572,8 +1612,9 @@ describe("listCompensationProfiles", () => {
 describe("createCompensationProfile happy path", () => {
   it("inserts then re-reads the created profile by id", async () => {
     m.categoryFindUnique.mockResolvedValue({ id: 5 });
-    // 1st $queryRaw = INSERT … RETURNING id; 2nd = getCompensationProfileById.
-    m.queryRaw.mockResolvedValueOnce([{ id: 77 }]).mockResolvedValueOnce([
+    // ORM create → { id }; then getCompensationProfileById ($qb) → row.
+    m.profileCreate.mockResolvedValue({ id: 77 });
+    m.qbRows.mockReturnValue([
       {
         id: 77,
         name: "Perfil",
@@ -1590,19 +1631,20 @@ describe("createCompensationProfile happy path", () => {
     const r = await createCompensationProfile({ categoryId: 5, name: "  Perfil  " });
     expect(r.id).toBe(77);
     expect(r.name).toBe("Perfil");
-    // INSERT bound the trimmed name as a value
-    const insertValues = m.queryRaw.mock.calls[0] as unknown[];
-    expect(insertValues).toContain("Perfil");
-    // defaults: counterpartId null, isActive true, timezone America/Santiago.
-    expect(insertValues).toContain(5); // categoryId
-    expect(insertValues).toContain(null); // counterpartId default
-    expect(insertValues).toContain(true); // isActive default
-    expect(insertValues).toContain("America/Santiago"); // timezone default
+    // create() received the trimmed name + defaults in its data payload.
+    const createData = (m.profileCreate.mock.calls[0]?.[0] as { data: Record<string, unknown> })
+      .data;
+    expect(createData.name).toBe("Perfil"); // trimmed
+    expect(createData.categoryId).toBe(5);
+    expect(createData.counterpartId).toBeNull(); // default
+    expect(createData.isActive).toBe(true); // default
+    expect(createData.timezone).toBe("America/Santiago"); // default
   });
 
   it("uses a provided non-blank timezone instead of the default", async () => {
     m.categoryFindUnique.mockResolvedValue({ id: 5 });
-    m.queryRaw.mockResolvedValueOnce([{ id: 78 }]).mockResolvedValueOnce([
+    m.profileCreate.mockResolvedValue({ id: 78 });
+    m.qbRows.mockReturnValue([
       {
         id: 78,
         name: "P",
@@ -1621,15 +1663,16 @@ describe("createCompensationProfile happy path", () => {
       timezone: "  UTC  ",
       isActive: false,
     });
-    const insertValues = m.queryRaw.mock.calls[0] as unknown[];
-    // trimmed timezone bound; isActive false bound (not the default true).
-    expect(insertValues).toContain("UTC");
-    expect(insertValues).toContain(false);
+    const createData = (m.profileCreate.mock.calls[0]?.[0] as { data: Record<string, unknown> })
+      .data;
+    // trimmed timezone; isActive false (not the default true).
+    expect(createData.timezone).toBe("UTC");
+    expect(createData.isActive).toBe(false);
   });
 
   it("throws when the INSERT returns no id", async () => {
     m.categoryFindUnique.mockResolvedValue({ id: 5 });
-    m.queryRaw.mockResolvedValueOnce([]); // no RETURNING row
+    m.profileCreate.mockResolvedValue(undefined); // no created row
     await expect(createCompensationProfile({ categoryId: 5, name: "P" })).rejects.toThrow(
       "No se pudo crear el perfil de compensación"
     );
@@ -1640,31 +1683,36 @@ describe("createCompensationProfile happy path", () => {
 
 describe("updateCompensationProfile happy path", () => {
   it("updates an existing profile and re-reads it", async () => {
-    // no categoryId/counterpartId guards. existing $queryRaw → [{id}], then
-    // $executeRaw (UPDATE), then getCompensationProfileById $queryRaw → row.
-    m.queryRaw
-      .mockResolvedValueOnce([{ id: 1 }]) // existing
-      .mockResolvedValueOnce([
-        {
-          id: 1,
-          name: "New",
-          isActive: true,
-          timezone: "America/Santiago",
-          categoryId: 5,
-          categoryName: "Cat",
-          counterpartId: null,
-          counterpartBankAccountHolder: null,
-          counterpartIdentificationNumber: null,
-        },
-      ]);
-    m.executeRaw.mockResolvedValue(1);
+    // no categoryId/counterpartId guards. findUnique → existing, then ORM
+    // update(), then getCompensationProfileById ($qb) → row.
+    m.profileFindUnique.mockResolvedValue({ id: 1 });
+    m.profileUpdate.mockResolvedValue({ id: 1 });
+    m.qbRows.mockReturnValue([
+      {
+        id: 1,
+        name: "New",
+        isActive: true,
+        timezone: "America/Santiago",
+        categoryId: 5,
+        categoryName: "Cat",
+        counterpartId: null,
+        counterpartBankAccountHolder: null,
+        counterpartIdentificationNumber: null,
+      },
+    ]);
 
     const r = await updateCompensationProfile(1, { name: "New" });
     expect(r.name).toBe("New");
     expect(r.id).toBe(1);
     expect(r.category).toEqual({ id: 5, name: "Cat" });
     expect(r.counterpart).toBeNull();
-    expect(m.executeRaw).toHaveBeenCalledTimes(1);
+    expect(m.profileUpdate).toHaveBeenCalledTimes(1);
+    // only name was provided → update data carries name and nothing else.
+    const updateData = (m.profileUpdate.mock.calls[0]?.[0] as { data: Record<string, unknown> })
+      .data;
+    expect(updateData.name).toBe("New");
+    expect("counterpartId" in updateData).toBe(false);
+    expect("categoryId" in updateData).toBe(false);
   });
 });
 
@@ -1672,11 +1720,11 @@ describe("updateCompensationProfile happy path", () => {
 
 describe("upsertCompensationPeriodBudget happy path", () => {
   it("upserts and returns the persisted budget row", async () => {
-    m.queryRaw
-      .mockResolvedValueOnce([{ id: 1 }]) // profile exists
-      .mockResolvedValueOnce([
-        { id: 50, profileId: 1, period: "2026-01", baseAmount: 1000, isLocked: false },
-      ]); // RETURNING row
+    m.profileFindUnique.mockResolvedValue({ id: 1 }); // profile exists (ORM)
+    // INSERT … ON CONFLICT … RETURNING stays raw (bucket-D upsert).
+    m.queryRaw.mockResolvedValueOnce([
+      { id: 50, profileId: 1, period: "2026-01", baseAmount: 1000, isLocked: false },
+    ]); // RETURNING row
     const r = await upsertCompensationPeriodBudget(1, { baseAmount: 1000, period: "2026-01" });
     expect(r).toEqual({
       id: 50,
@@ -1685,8 +1733,8 @@ describe("upsertCompensationPeriodBudget happy path", () => {
       baseAmount: 1000,
       isLocked: false,
     });
-    // the period bound into both the existence check and the insert
-    const insertCall = m.queryRaw.mock.calls[1] as unknown[];
+    // the period bound into the upsert insert
+    const insertCall = m.queryRaw.mock.calls[0] as unknown[];
     expect(insertCall).toContain("2026-01");
     // isLocked defaults to false (the `?? false` fallback) and the baseAmount is
     // wrapped in a Decimal bound value.
@@ -1697,18 +1745,17 @@ describe("upsertCompensationPeriodBudget happy path", () => {
   });
 
   it("binds isLocked true when provided", async () => {
-    m.queryRaw
-      .mockResolvedValueOnce([{ id: 1 }])
-      .mockResolvedValueOnce([
-        { id: 51, profileId: 1, period: "2026-02", baseAmount: 2000, isLocked: true },
-      ]);
+    m.profileFindUnique.mockResolvedValue({ id: 1 });
+    m.queryRaw.mockResolvedValueOnce([
+      { id: 51, profileId: 1, period: "2026-02", baseAmount: 2000, isLocked: true },
+    ]);
     const r = await upsertCompensationPeriodBudget(1, {
       baseAmount: 2000,
       period: "2026-02",
       isLocked: true,
     });
     expect(r.isLocked).toBe(true);
-    const insertCall = m.queryRaw.mock.calls[1] as unknown[];
+    const insertCall = m.queryRaw.mock.calls[0] as unknown[];
     expect(insertCall).toContain(true);
   });
 
@@ -1717,5 +1764,6 @@ describe("upsertCompensationPeriodBudget happy path", () => {
       upsertCompensationPeriodBudget(1, { baseAmount: 1000, period: "2026-13" })
     ).rejects.toThrow();
     expect(m.queryRaw).not.toHaveBeenCalled();
+    expect(m.profileFindUnique).not.toHaveBeenCalled();
   });
 });

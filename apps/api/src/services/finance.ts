@@ -398,6 +398,8 @@ async function applyPersonalDrPatternCategoryToExistingTransactions(
   categoryId: number,
   options?: { onlyUncategorized?: boolean }
 ) {
+  // kept raw: POSIX case-insensitive regex match (~*) on comment — ORM has no
+  // regex filter operator.
   if (options?.onlyUncategorized) {
     const updatedRows = await db.$executeRaw`
       UPDATE financial_transactions
@@ -431,6 +433,9 @@ async function applyPatientsPatternCategoryToExistingTransactions(
   const normalizedKeyword = normalizeSearchText(keyword) || PATIENTS_KEYWORD;
   const likePattern = `%${normalizedKeyword}%`;
 
+  // kept raw: correlated EXISTS subqueries against release/settlement by
+  // source_id with ILIKE on sale_detail — multi-table correlated existence not
+  // expressible via the financial_transactions ORM relations.
   if (options?.onlyUncategorized) {
     const updatedRows = await db.$executeRaw`
       UPDATE financial_transactions ft
@@ -593,6 +598,9 @@ async function applyAutoCategoryRuleRow(
     }
   }
 
+  // kept raw: CTE (WITH matches) + UPDATE … FROM with parametrized VALUES rows
+  // and multi-table LEFT JOINs; the parametrization here is correctness-critical
+  // (see VALUES-rows note above) — keep the audited raw form.
   const where = sql.join(conditions, sql` AND `);
   const result = await sql`
     WITH matches AS (
@@ -1112,6 +1120,8 @@ export async function listFinancialTransactions(params: {
     assertPeriodOrThrow(params.effectivePeriod);
     const { from, to } = getPeriodRange(params.effectivePeriod);
     const [periodAllocations, periodTransactionsWithoutAllocations] = await Promise.all([
+      // kept raw: per-row CASE-based signed SUM (ROLLOVER_OUT negates) inside a
+      // GROUP BY — not expressible via ORM groupBy aggregates.
       db.$queryRaw<Array<{ netAmount: number; transactionId: number }>>`
         SELECT
           transaction_id AS "transactionId",
@@ -1129,17 +1139,13 @@ export async function listFinancialTransactions(params: {
         WHERE period = ${params.effectivePeriod}
         GROUP BY transaction_id
       `,
-      db.$queryRaw<Array<{ id: number }>>`
-        SELECT ft.id
-        FROM financial_transactions ft
-        WHERE ft.date >= ${from}
-          AND ft.date <= ${to}
-          AND NOT EXISTS (
-            SELECT 1
-            FROM financial_transaction_allocations fta
-            WHERE fta.transaction_id = ft.id
-          )
-      `,
+      db.financialTransaction.findMany({
+        where: {
+          date: { gte: from, lte: to },
+          allocations: { none: {} },
+        },
+        select: { id: true },
+      }),
     ]);
 
     const effectiveTransactionIds = Array.from(
@@ -1325,6 +1331,8 @@ export async function listFinancialTransactions(params: {
 }
 
 export async function listAvailableFinancialTransactionMonths() {
+  // kept raw: UNION of two GROUP BY queries with date_trunc/to_char period
+  // formatting + a IS DISTINCT FROM cashback filter across joins — no clean ORM form.
   const rows = await db.$queryRaw<Array<{ month: string }>>`
     SELECT month
     FROM (
@@ -2112,46 +2120,37 @@ function mapCompensationProfileRow(row: CompensationProfileRow) {
   };
 }
 
+const compensationProfileBaseQuery = () =>
+  db.$qb
+    .selectFrom("CompensationProfile as cp")
+    .innerJoin("TransactionCategory as tc", "tc.id", "cp.categoryId")
+    .leftJoin("Counterpart as c", "c.id", "cp.counterpartId")
+    .select([
+      "cp.id as id",
+      "cp.name as name",
+      "cp.isActive as isActive",
+      "cp.timezone as timezone",
+      "cp.categoryId as categoryId",
+      "tc.name as categoryName",
+      "cp.counterpartId as counterpartId",
+      "c.bankAccountHolder as counterpartBankAccountHolder",
+      "c.identificationNumber as counterpartIdentificationNumber",
+    ]);
+
 async function getCompensationProfileById(id: number) {
-  const rows = await db.$queryRaw<CompensationProfileRow[]>`
-    SELECT
-      cp.id AS id,
-      cp.name AS name,
-      cp.is_active AS "isActive",
-      cp.timezone AS timezone,
-      cp.category_id AS "categoryId",
-      tc.name AS "categoryName",
-      cp.counterpart_id AS "counterpartId",
-      c.bank_account_holder AS "counterpartBankAccountHolder",
-      c.identification_number AS "counterpartIdentificationNumber"
-    FROM compensation_profiles cp
-    INNER JOIN transaction_categories tc ON tc.id = cp.category_id
-    LEFT JOIN counterparts c ON c.id = cp.counterpart_id
-    WHERE cp.id = ${id}
-    LIMIT 1
-  `;
-  const row = rows[0];
-  return row ? mapCompensationProfileRow(row) : null;
+  const row = await compensationProfileBaseQuery()
+    .where("cp.id", "=", id)
+    .limit(1)
+    .executeTakeFirst();
+  return row ? mapCompensationProfileRow(row as unknown as CompensationProfileRow) : null;
 }
 
 export async function listCompensationProfiles() {
-  const rows = await db.$queryRaw<CompensationProfileRow[]>`
-    SELECT
-      cp.id AS id,
-      cp.name AS name,
-      cp.is_active AS "isActive",
-      cp.timezone AS timezone,
-      cp.category_id AS "categoryId",
-      tc.name AS "categoryName",
-      cp.counterpart_id AS "counterpartId",
-      c.bank_account_holder AS "counterpartBankAccountHolder",
-      c.identification_number AS "counterpartIdentificationNumber"
-    FROM compensation_profiles cp
-    INNER JOIN transaction_categories tc ON tc.id = cp.category_id
-    LEFT JOIN counterparts c ON c.id = cp.counterpart_id
-    ORDER BY cp.is_active DESC, cp.name ASC
-  `;
-  return rows.map(mapCompensationProfileRow);
+  const rows = await compensationProfileBaseQuery()
+    .orderBy("cp.isActive", "desc")
+    .orderBy("cp.name", "asc")
+    .execute();
+  return (rows as unknown as CompensationProfileRow[]).map(mapCompensationProfileRow);
 }
 
 export async function createCompensationProfile(data: CompensationProfileInput) {
@@ -2178,22 +2177,17 @@ export async function createCompensationProfile(data: CompensationProfileInput) 
     throw new DomainError("BAD_REQUEST", "El nombre del perfil es obligatorio");
   }
 
-  const rows = await db.$queryRaw<Array<{ id: number }>>`
-    INSERT INTO compensation_profiles (
-      name, category_id, counterpart_id, is_active, timezone, created_at, updated_at
-    )
-    VALUES (
-      ${name},
-      ${data.categoryId},
-      ${data.counterpartId ?? null},
-      ${data.isActive ?? true},
-      ${data.timezone?.trim() || "America/Santiago"},
-      NOW(),
-      NOW()
-    )
-    RETURNING id
-  `;
-  const createdId = rows[0]?.id;
+  const createdRow = await db.compensationProfile.create({
+    data: {
+      name,
+      categoryId: data.categoryId,
+      counterpartId: data.counterpartId ?? null,
+      isActive: data.isActive ?? true,
+      timezone: data.timezone?.trim() || "America/Santiago",
+    },
+    select: { id: true },
+  });
+  const createdId = createdRow?.id;
   if (!createdId) {
     throw new Error("No se pudo crear el perfil de compensación");
   }
@@ -2228,28 +2222,30 @@ export async function updateCompensationProfile(
     }
   }
 
-  const existing = await db.$queryRaw<Array<{ id: number }>>`
-    SELECT id FROM compensation_profiles WHERE id = ${id} LIMIT 1
-  `;
-  if (existing.length === 0) {
+  const existing = await db.compensationProfile.findUnique({
+    where: { id },
+    select: { id: true },
+  });
+  if (!existing) {
     throw new DomainError("NOT_FOUND", "Perfil de compensación no encontrado");
   }
 
-  await db.$executeRaw`
-    UPDATE compensation_profiles
-    SET
-      name = COALESCE(${data.name?.trim() || null}, name),
-      category_id = COALESCE(${data.categoryId ?? null}, category_id),
-      counterpart_id = CASE
-        WHEN ${data.counterpartId !== undefined}
-        THEN ${data.counterpartId ?? null}
-        ELSE counterpart_id
-      END,
-      is_active = COALESCE(${data.isActive ?? null}, is_active),
-      timezone = COALESCE(${data.timezone?.trim() || null}, timezone),
-      updated_at = NOW()
-    WHERE id = ${id}
-  `;
+  // Mirrors the prior COALESCE/CASE semantics: name/categoryId/isActive/timezone
+  // only overwrite when a non-blank value is provided; counterpartId is written
+  // whenever the key is present (including an explicit null = clear), matching the
+  // old `CASE WHEN ${counterpartId !== undefined}` branch.
+  const trimmedName = data.name?.trim() || null;
+  const trimmedTimezone = data.timezone?.trim() || null;
+  await db.compensationProfile.update({
+    where: { id },
+    data: {
+      ...(trimmedName != null && { name: trimmedName }),
+      ...(data.categoryId != null && { categoryId: data.categoryId }),
+      ...(data.counterpartId !== undefined && { counterpartId: data.counterpartId ?? null }),
+      ...(data.isActive != null && { isActive: data.isActive }),
+      ...(trimmedTimezone != null && { timezone: trimmedTimezone }),
+    },
+  });
 
   const updated = await getCompensationProfileById(id);
   if (!updated) {
@@ -2263,13 +2259,16 @@ export async function upsertCompensationPeriodBudget(
   data: CompensationBudgetInput
 ) {
   assertPeriodOrThrow(data.period);
-  const profile = await db.$queryRaw<Array<{ id: number }>>`
-    SELECT id FROM compensation_profiles WHERE id = ${profileId} LIMIT 1
-  `;
-  if (profile.length === 0) {
+  const profile = await db.compensationProfile.findUnique({
+    where: { id: profileId },
+    select: { id: true },
+  });
+  if (!profile) {
     throw new DomainError("NOT_FOUND", "Perfil de compensación no encontrado");
   }
 
+  // kept raw: INSERT … ON CONFLICT (profile_id, period) DO UPDATE upsert
+  // (bucket-D) — preserved as raw per migration policy.
   const rows = await db.$queryRaw<
     Array<{ baseAmount: number; id: number; isLocked: boolean; period: string; profileId: number }>
   >`
@@ -2315,28 +2314,22 @@ export async function listCompensationPeriodLedger(
   }
 
   const [budgets, allocations] = await Promise.all([
-    db.$queryRaw<Array<{ baseAmount: number; isLocked: boolean; period: string }>>`
-      SELECT
-        period,
-        base_amount AS "baseAmount",
-        is_locked AS "isLocked"
-      FROM compensation_period_budgets
-      WHERE profile_id = ${profileId}
-        AND period >= ${fromPeriod}
-        AND period <= ${toPeriod}
-      ORDER BY period ASC
-    `,
-    db.$queryRaw<Array<{ allocationType: string; amount: number; period: string }>>`
-      SELECT
-        period,
-        allocation_type AS "allocationType",
-        amount
-      FROM financial_transaction_allocations
-      WHERE profile_id = ${profileId}
-        AND period >= ${fromPeriod}
-        AND period <= ${toPeriod}
-      ORDER BY period ASC
-    `,
+    db.compensationPeriodBudget.findMany({
+      where: {
+        profileId,
+        period: { gte: fromPeriod, lte: toPeriod },
+      },
+      select: { baseAmount: true, isLocked: true, period: true },
+      orderBy: { period: "asc" },
+    }),
+    db.financialTransactionAllocation.findMany({
+      where: {
+        profileId,
+        period: { gte: fromPeriod, lte: toPeriod },
+      },
+      select: { allocationType: true, amount: true, period: true },
+      orderBy: { period: "asc" },
+    }),
   ]);
 
   const periods: string[] = [];

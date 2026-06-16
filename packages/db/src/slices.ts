@@ -38,6 +38,9 @@ export const dbClinicalSeries = db.$setOptions({
       "DTESaleDetail",
       "EventDteSaleLink",
       "ClinicalSeriesMergeLog",
+      // Person: tier-1 authoritative name lookup by RUT in
+      // services/clinical-series/metadata.ts (resolvePersonNameByRut).
+      "Person",
     ],
   },
 }) as unknown as ClientContract<SchemaType>;

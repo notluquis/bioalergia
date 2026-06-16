@@ -37,6 +37,10 @@ const {
   mockRuleCreate,
   mockRuleUpdate,
   mockCounterpartFindUnique,
+  mockProfileFindUnique,
+  mockProfileUpdate,
+  mockBudgetFindMany,
+  mockQbRows,
   mockQueryRaw,
   mockExecuteRaw,
   mockTransaction,
@@ -58,9 +62,40 @@ const {
   const mockRuleCreate = vi.fn();
   const mockRuleUpdate = vi.fn();
   const mockCounterpartFindUnique = vi.fn();
+  const mockProfileFindUnique = vi.fn();
+  const mockProfileUpdate = vi.fn();
+  const mockBudgetFindMany = vi.fn();
+  const mockQbRows = vi.fn();
   const mockQueryRaw = vi.fn();
   const mockExecuteRaw = vi.fn();
   const mockTransaction = vi.fn();
+  // Minimal Kysely-shaped builder for the compensation-profile $qb join path
+  // (getCompensationProfileById). Chained methods return the builder; terminal
+  // execute()/executeTakeFirst() resolve from mockQbRows().
+  const makeQb = () => {
+    const builder: Record<string, unknown> = {};
+    const chain = () => builder;
+    for (const method of [
+      "selectFrom",
+      "innerJoin",
+      "leftJoin",
+      "select",
+      "where",
+      "orderBy",
+      "limit",
+    ]) {
+      builder[method] = chain;
+    }
+    builder.execute = async () => {
+      const rows = mockQbRows();
+      return Array.isArray(rows) ? rows : [];
+    };
+    builder.executeTakeFirst = async () => {
+      const rows = mockQbRows();
+      return Array.isArray(rows) ? rows[0] : rows;
+    };
+    return builder;
+  };
   const mockDb = {
     settlementTransaction: { findMany: (...a: unknown[]) => mockSettlementFindMany(...a) },
     transactionCategory: {
@@ -85,6 +120,14 @@ const {
       update: (...a: unknown[]) => mockRuleUpdate(...a),
     },
     counterpart: { findUnique: (...a: unknown[]) => mockCounterpartFindUnique(...a) },
+    compensationProfile: {
+      findUnique: (...a: unknown[]) => mockProfileFindUnique(...a),
+      update: (...a: unknown[]) => mockProfileUpdate(...a),
+    },
+    compensationPeriodBudget: { findMany: (...a: unknown[]) => mockBudgetFindMany(...a) },
+    get $qb() {
+      return makeQb();
+    },
     $queryRaw: (...a: unknown[]) => mockQueryRaw(...a),
     $executeRaw: (...a: unknown[]) => mockExecuteRaw(...a),
     $transaction: (...a: unknown[]) => mockTransaction(...a),
@@ -109,6 +152,10 @@ const {
     mockRuleCreate,
     mockRuleUpdate,
     mockCounterpartFindUnique,
+    mockProfileFindUnique,
+    mockProfileUpdate,
+    mockBudgetFindMany,
+    mockQbRows,
     mockQueryRaw,
     mockExecuteRaw,
     mockTransaction,
@@ -410,9 +457,12 @@ describe("listCompensationPeriodLedger", () => {
   type Alloc = { allocationType: string; amount: number; period: string };
 
   function run(from: string, to: string, budgets: Budget[], allocations: Alloc[]) {
-    mockQueryRaw.mockReset();
-    // call order inside listCompensationPeriodLedger: Promise.all([budgets, allocations])
-    mockQueryRaw.mockResolvedValueOnce(budgets).mockResolvedValueOnce(allocations);
+    // Migrated to ORM: budgets → compensationPeriodBudget.findMany,
+    // allocations → financialTransactionAllocation.findMany (Promise.all).
+    mockBudgetFindMany.mockReset();
+    mockAllocationFindMany.mockReset();
+    mockBudgetFindMany.mockResolvedValue(budgets);
+    mockAllocationFindMany.mockResolvedValue(allocations);
     return listCompensationPeriodLedger(1, from, to);
   }
 
@@ -510,15 +560,15 @@ describe("reallocateFinancialTransaction validation", () => {
   });
 
   it("rejects amount <= 0 (boundary zero)", async () => {
-    await expect(
-      reallocateFinancialTransaction(1, { ...base, amount: 0 })
-    ).rejects.toMatchObject({ code: "INVALID_AMOUNT" });
+    await expect(reallocateFinancialTransaction(1, { ...base, amount: 0 })).rejects.toMatchObject({
+      code: "INVALID_AMOUNT",
+    });
   });
 
   it("rejects negative amount", async () => {
-    await expect(
-      reallocateFinancialTransaction(1, { ...base, amount: -1 })
-    ).rejects.toMatchObject({ code: "INVALID_AMOUNT" });
+    await expect(reallocateFinancialTransaction(1, { ...base, amount: -1 })).rejects.toMatchObject({
+      code: "INVALID_AMOUNT",
+    });
   });
 
   it("rejects non-finite amount", async () => {
@@ -558,9 +608,9 @@ describe("reallocateFinancialTransaction validation", () => {
     };
     mockTransaction.mockImplementation((cb: (tx: typeof txStub) => unknown) => cb(txStub));
 
-    await expect(
-      reallocateFinancialTransaction(1, { ...base, amount: 200 })
-    ).rejects.toMatchObject({ code: "INSUFFICIENT_AMOUNT_IN_SOURCE_PERIOD" });
+    await expect(reallocateFinancialTransaction(1, { ...base, amount: 200 })).rejects.toMatchObject(
+      { code: "INSUFFICIENT_AMOUNT_IN_SOURCE_PERIOD" }
+    );
   });
 
   it("allows reallocation when amount equals available (boundary: amount == available)", async () => {
@@ -635,9 +685,9 @@ describe("reallocateFinancialTransaction validation", () => {
     };
     mockTransaction.mockImplementation((cb: (tx: typeof txStub) => unknown) => cb(txStub));
 
-    await expect(
-      reallocateFinancialTransaction(1, { ...base, amount: 10 })
-    ).rejects.toMatchObject({ code: "LOCKED_PERIOD" });
+    await expect(reallocateFinancialTransaction(1, { ...base, amount: 10 })).rejects.toMatchObject({
+      code: "LOCKED_PERIOD",
+    });
   });
 
   it("rejects category mismatch between transaction and profile", async () => {
@@ -662,9 +712,9 @@ describe("reallocateFinancialTransaction validation", () => {
     };
     mockTransaction.mockImplementation((cb: (tx: typeof txStub) => unknown) => cb(txStub));
 
-    await expect(
-      reallocateFinancialTransaction(1, { ...base, amount: 10 })
-    ).rejects.toMatchObject({ code: "PROFILE_CATEGORY_MISMATCH" });
+    await expect(reallocateFinancialTransaction(1, { ...base, amount: 10 })).rejects.toMatchObject({
+      code: "PROFILE_CATEGORY_MISMATCH",
+    });
   });
 });
 
@@ -833,11 +883,7 @@ describe("listFinancialAutoCategoryRules normalization", () => {
 // We `await` + try/catch (instead of rejects.toMatchObject only) so we can
 // run an explicit `instanceof DomainError` check.
 // ===========================================================================
-async function expectDomainError(
-  promise: Promise<unknown>,
-  kind: string,
-  message: string
-) {
+async function expectDomainError(promise: Promise<unknown>, kind: string, message: string) {
   let caught: unknown;
   try {
     await promise;
@@ -995,9 +1041,9 @@ describe("updateCompensationProfile DomainError branches", () => {
 
   it("NOT_FOUND when the compensation profile row is missing", async () => {
     // No categoryId / counterpartId in payload → both guards skipped. The
-    // existing-profile $queryRaw returns [] → NOT_FOUND perfil.
-    mockQueryRaw.mockReset();
-    mockQueryRaw.mockResolvedValue([]);
+    // existing-profile lookup (ORM findUnique) returns null → NOT_FOUND perfil.
+    mockProfileFindUnique.mockReset();
+    mockProfileFindUnique.mockResolvedValue(null);
     await expectDomainError(
       updateCompensationProfile(1, { name: "New" }),
       "NOT_FOUND",
@@ -1008,9 +1054,9 @@ describe("updateCompensationProfile DomainError branches", () => {
 
 describe("upsertCompensationPeriodBudget DomainError branches", () => {
   it("NOT_FOUND when the compensation profile does not exist", async () => {
-    // assertPeriodOrThrow passes for a valid period; profile $queryRaw → [].
-    mockQueryRaw.mockReset();
-    mockQueryRaw.mockResolvedValue([]);
+    // assertPeriodOrThrow passes for a valid period; profile findUnique → null.
+    mockProfileFindUnique.mockReset();
+    mockProfileFindUnique.mockResolvedValue(null);
     await expectDomainError(
       upsertCompensationPeriodBudget(1, { baseAmount: 1000, period: "2026-01" }),
       "NOT_FOUND",

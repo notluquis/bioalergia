@@ -178,7 +178,9 @@ export async function getPurchasesSummary(input: PeriodParams): Promise<SummaryR
     .orderBy(sql`to_char(p.document_date, 'YYYY-MM')`, "desc");
 
   if (input.startPeriod) {
-    query = query.where(sql<boolean>`p.document_date >= ${periodStartDate(input.startPeriod)}::date`);
+    query = query.where(
+      sql<boolean>`p.document_date >= ${periodStartDate(input.startPeriod)}::date`
+    );
   }
   if (input.endPeriod) {
     query = query.where(sql<boolean>`p.document_date <= ${periodEndDate(input.endPeriod)}::date`);
@@ -333,7 +335,9 @@ export async function getSalesSummary(input: PeriodParams): Promise<SummaryRespo
     .orderBy(sql`to_char(s.document_date, 'YYYY-MM')`, "desc");
 
   if (input.startPeriod) {
-    query = query.where(sql<boolean>`s.document_date >= ${periodStartDate(input.startPeriod)}::date`);
+    query = query.where(
+      sql<boolean>`s.document_date >= ${periodStartDate(input.startPeriod)}::date`
+    );
   }
   if (input.endPeriod) {
     query = query.where(sql<boolean>`s.document_date <= ${periodEndDate(input.endPeriod)}::date`);
@@ -364,62 +368,38 @@ export async function getSalesSummary(input: PeriodParams): Promise<SummaryRespo
 export async function getSalesLinkedEvents(
   input: SalesLinkedEventsQuery
 ): Promise<SalesLinkedEventsResponse> {
-  const dte = await db.$queryRaw<
-    Array<{
-      clientName: string;
-      clientRUT: string;
-      documentDate: Date;
-      documentType: number;
-      emitterRUT: null | string;
-      exemptAmount: number;
-      folio: string;
-      id: string;
-      ivaAmount: number;
-      lineItemsCount: number;
-      linkedEventsCount: number;
-      netAmount: number;
-      referenceDocFolio: null | string;
-      referenceDocType: null | string;
-      saleType: string;
-      totalAmount: number;
-    }>
-  >`
-    SELECT
-      s.id AS "id",
-      s.document_type AS "documentType",
-      s.sale_type AS "saleType",
-      s.client_rut AS "clientRUT",
-      s.client_name AS "clientName",
-      s.folio AS "folio",
-      s.document_date AS "documentDate",
-      COALESCE(s.exempt_amount, 0)::float AS "exemptAmount",
-      COALESCE(s.net_amount, 0)::float AS "netAmount",
-      COALESCE(s.iva_amount, 0)::float AS "ivaAmount",
-      COALESCE(s.total_amount, 0)::float AS "totalAmount",
-      s.emitter_rut AS "emitterRUT",
-      s.reference_doc_type AS "referenceDocType",
-      s.reference_doc_folio AS "referenceDocFolio",
-      (
-        SELECT COUNT(*)::int
-        FROM event_dte_sale_links l
-        WHERE l.dte_sale_detail_id = s.id
-      ) AS "linkedEventsCount",
-      (
-        SELECT COUNT(*)::int
-        FROM dte_line_items li
-        WHERE li.dte_sale_detail_id = s.id
-      ) AS "lineItemsCount"
-    FROM dte_sale_details s
-    WHERE s.id = ${input.dteSaleDetailId}
-    LIMIT 1
-  `;
-
-  const dteRow = dte[0];
+  const dteRow = await db.dTESaleDetail.findUnique({
+    where: { id: input.dteSaleDetailId },
+    select: {
+      id: true,
+      documentType: true,
+      saleType: true,
+      clientRUT: true,
+      clientName: true,
+      folio: true,
+      documentDate: true,
+      exemptAmount: true,
+      netAmount: true,
+      ivaAmount: true,
+      totalAmount: true,
+      emitterRUT: true,
+      referenceDocType: true,
+      referenceDocFolio: true,
+      // linkedEventsCount = all event_dte_sale_links rows; lineItemsCount =
+      // all dte_line_items rows (no status filter — mirrors the raw subqueries).
+      _count: { select: { eventLinks: true, lineItems: true } },
+    },
+  });
 
   if (!dteRow) {
     throw new DomainError("NOT_FOUND", "DTE de venta no encontrado");
   }
 
+  // kept raw: flattened 3-join projection (event_dte_sale_links → events →
+  // calendars, LEFT JOIN clinical_series) with AT TIME ZONE date/time coalesce
+  // + to_char formatting + multi-key ORDER BY ... NULLS LAST. No relational
+  // shape to round-trip via ORM and no test guards the exact ordering/TZ
+  // semantics — safer raw than a subtly-different $qb rewrite.
   const linkedEvents = await db.$queryRaw<
     Array<{
       amountExpected: null | number;
@@ -472,12 +452,12 @@ export async function getSalesLinkedEvents(
         folio: dteRow.folio,
         id: dteRow.id,
         ivaAmount: Number(dteRow.ivaAmount),
-        lineItemsCount: Number(dteRow.lineItemsCount),
+        lineItemsCount: Number(dteRow._count.lineItems),
         netAmount: Number(dteRow.netAmount),
         referenceDocFolio: dteRow.referenceDocFolio,
         referenceDocType: dteRow.referenceDocType,
         saleType: dteRow.saleType,
-        linkedEventsCount: Number(dteRow.linkedEventsCount),
+        linkedEventsCount: Number(dteRow._count.eventLinks),
         totalAmount: Number(dteRow.totalAmount),
       },
       linkedEvents,
@@ -487,43 +467,16 @@ export async function getSalesLinkedEvents(
 }
 
 export async function getLineItems(input: LineItemsQuery): Promise<LineItemsResponse> {
-  const fkColumn = input.direction === "sale" ? "dte_sale_detail_id" : "dte_purchase_detail_id";
+  // Polymorphic FK: one of dteSaleDetailId / dtePurchaseDetailId is set per row.
+  const where =
+    input.direction === "sale"
+      ? { dteSaleDetailId: input.dteId }
+      : { dtePurchaseDetailId: input.dteId };
 
-  const rows = await db.$queryRaw<
-    Array<{
-      id: string;
-      lineNumber: number;
-      itemName: string;
-      itemDescription: null | string;
-      quantity: number;
-      unit: null | string;
-      unitPrice: number;
-      amount: number;
-      isExempt: boolean;
-      itemCode: null | string;
-      itemCodeType: null | string;
-      discountPercent: null | number;
-      discountAmount: null | number;
-    }>
-  >`
-    SELECT
-      li.id AS "id",
-      li.line_number AS "lineNumber",
-      li.item_name AS "itemName",
-      li.item_description AS "itemDescription",
-      li.quantity::float AS "quantity",
-      li.unit AS "unit",
-      li.unit_price::float AS "unitPrice",
-      li.amount::float AS "amount",
-      li.is_exempt AS "isExempt",
-      li.item_code AS "itemCode",
-      li.item_code_type AS "itemCodeType",
-      li.discount_percent::float AS "discountPercent",
-      li.discount_amount::float AS "discountAmount"
-    FROM dte_line_items li
-    WHERE ${sql.raw(`li.${fkColumn}`)} = ${input.dteId}
-    ORDER BY li.line_number ASC
-  `;
+  const rows = await db.dTELineItem.findMany({
+    where,
+    orderBy: { lineNumber: "asc" },
+  });
 
   return {
     data: rows.map((row) => ({
@@ -556,6 +509,10 @@ export async function selectDtesForXmlFetch(input: {
   const startDate = periodStartDate(input.period);
   const endDate = periodEndDate(input.period);
 
+  // kept raw: @db.Date date-to-date boundary comparison via `${...}::date`
+  // literals is load-bearing (the file's recurring TZ-boundary gotcha), and the
+  // conditional NOT EXISTS branch has no test guarding it — an ORM gte/lte with
+  // JS Date + `lineItems: { none: {} }` rewrite could shift boundary-day rows.
   if (input.direction === "sales") {
     const rows = await db.$queryRaw<Array<{ id: string }>>`
       SELECT s.id FROM dte_sale_details s

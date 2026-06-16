@@ -1,4 +1,4 @@
-import { kysely } from "@finanzas/db";
+import { db } from "@finanzas/db";
 import { sql } from "kysely";
 import {
   cancelJob,
@@ -64,22 +64,31 @@ async function fetchPendingBatch(
   limit: number,
   after: PendingCursor
 ): Promise<Array<{ id: string; createdAt: Date }>> {
-  const rows = await sql<{ id: string; created_at: Date }>`
-    SELECT id, created_at FROM clinical_record_imports
-    WHERE status IN ('PENDING_REVIEW', 'ERROR')
-      ${after ? sql`AND (created_at, id) > (${after.createdAt}::timestamptz, ${after.id})` : sql``}
-    ORDER BY created_at ASC, id ASC
-    LIMIT ${limit}
-  `.execute(kysely);
-  return rows.rows.map((r) => ({ id: r.id, createdAt: r.created_at }));
+  let q = db.$qb
+    .selectFrom("ClinicalRecordImport as cri")
+    .select(["cri.id as id", "cri.createdAt as createdAt"])
+    .where("cri.status", "in", ["PENDING_REVIEW", "ERROR"]);
+  if (after) {
+    // Keyset tuple comparison kept as a raw fragment (Kysely's tuple ops don't
+    // express row-value `>` cleanly): physical snake_case columns inside `sql`.
+    q = q.where(
+      sql<boolean>`(cri.created_at, cri.id) > (${after.createdAt}::timestamptz, ${after.id})`
+    );
+  }
+  const rows = await q
+    .orderBy("cri.createdAt", "asc")
+    .orderBy("cri.id", "asc")
+    .limit(limit)
+    .execute();
+  // $qb tipa la columna timestamp como string; el parser pg la entrega Date en
+  // runtime — coercionar mantiene el tipo de retorno (Date) y el cursor keyset.
+  return rows.map((r) => ({ id: r.id, createdAt: new Date(r.createdAt) }));
 }
 
 async function countPending(): Promise<number> {
-  const r = await sql<{ c: string }>`
-    SELECT COUNT(*)::text AS c FROM clinical_record_imports
-    WHERE status IN ('PENDING_REVIEW', 'ERROR')
-  `.execute(kysely);
-  return Number.parseInt(r.rows[0]?.c ?? "0", 10);
+  return db.clinicalRecordImport.count({
+    where: { status: { in: ["PENDING_REVIEW", "ERROR"] } },
+  });
 }
 
 export function startBulkClinicalRecordReprocessJob(options?: {
@@ -226,21 +235,22 @@ export function startAutoApproveHighConfidenceJob(options: {
   void (async () => {
     try {
       type Cand = { patientId: number; score: number };
-      const rows = (
-        await sql<{ id: string; cands: Cand[] | null }>`
-          SELECT id, match_candidates AS cands
-          FROM clinical_record_imports
-          WHERE status = 'PENDING_REVIEW'
-            AND match_candidates IS NOT NULL
-            AND jsonb_array_length(match_candidates::jsonb) > 0
-          ORDER BY created_at ASC
-        `.execute(kysely)
-      ).rows;
+      // ORM equivalent of the old raw select. The DB-side
+      // `jsonb_array_length(match_candidates) > 0` filter is folded into the JS
+      // loop below: an empty/null array yields best=null and is never pushed to
+      // `eligible`, so the eligible set is identical.
+      // El filtro jsonb_array_length>0 se pliega al loop JS (empty/null → best=null
+      // → nunca se pushea a `eligible`), así evitamos el filtro Json-null del ORM.
+      const rows = (await db.clinicalRecordImport.findMany({
+        where: { status: "PENDING_REVIEW" },
+        select: { id: true, matchCandidates: true },
+        orderBy: { createdAt: "asc" },
+      })) as Array<{ id: string; matchCandidates: Cand[] | null }>;
 
       const eligible: Array<{ id: string; patientId: number }> = [];
       for (const r of rows) {
         let best: Cand | null = null;
-        for (const c of r.cands ?? []) {
+        for (const c of r.matchCandidates ?? []) {
           if (!best || c.score > best.score) best = c;
         }
         if (best && best.score >= options.minScore) {

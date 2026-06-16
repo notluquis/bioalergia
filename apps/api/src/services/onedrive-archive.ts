@@ -1,4 +1,4 @@
-import { kysely } from "@finanzas/db";
+import { db, kysely } from "@finanzas/db";
 import { sql } from "kysely";
 import {
   cancelJob,
@@ -44,6 +44,9 @@ export type ArchiveXlsxOptions = {
 
 type LibCursor = { createdAt: Date; id: string } | null;
 
+// kept raw: column-to-column NULL-safe comparison (snapshot_etag IS DISTINCT FROM
+// onedrive_etag, etc.) + enum cast; ZenStack ORM where can't express IS DISTINCT
+// FROM between two columns. Shared filter fragment for count + keyset fetch.
 function whereClause(opts: ArchiveXlsxOptions) {
   const parts = [
     sql`onedrive_item_id IS NOT NULL`,
@@ -78,6 +81,9 @@ type LibRow = {
   ctag: string | null;
 };
 
+// kept raw: keyset pagination uses a row-value tuple comparison
+// `(created_at, id) > (?, ?)` not expressible via ZenStack ORM where; query
+// also consumes the raw whereClause fragment above.
 async function fetchLibraryBatch(
   opts: ArchiveXlsxOptions,
   limit: number,
@@ -130,7 +136,13 @@ export function startArchiveXlsxSnapshotsJob(options: ArchiveXlsxOptions = {}): 
         return;
       }
       const concurrency = resolveConcurrency();
-      updateJobProgress(jobId, 0, `Archivando ${total} XLSX`, { phase: "running", concurrency }, total);
+      updateJobProgress(
+        jobId,
+        0,
+        `Archivando ${total} XLSX`,
+        { phase: "running", concurrency },
+        total
+      );
 
       let processed = 0;
       let archived = 0;
@@ -160,11 +172,11 @@ export function startArchiveXlsxSnapshotsJob(options: ArchiveXlsxOptions = {}): 
             } catch (err) {
               errors += 1;
               const msg = err instanceof Error ? err.message : String(err);
-              await sql`
-                UPDATE clinical_xlsx_files
-                SET snapshot_status = 'ERROR', snapshot_error = ${msg}, updated_at = now()
-                WHERE id = ${row.id}
-              `.execute(kysely);
+              // updated_at is @updatedAt — ZenStack stamps it; do not pass now().
+              await db.clinicalXlsxFile.update({
+                where: { id: row.id },
+                data: { snapshotStatus: "ERROR", snapshotError: msg },
+              });
             }
             processed += 1;
             if (processed % 25 === 0 || processed === total) {
