@@ -1,105 +1,116 @@
-import { createHmac } from "node:crypto";
 import { describe, expect, it } from "vitest";
-import { type AuditRow, devFallbackKey, verifyRows } from "./audit-log-verify.ts";
+import { type RowCheck, verifyRows } from "./audit-log-verify.ts";
 
-// Mirror of rowDigest() in audit-log-verify.ts (and the SQL trigger). These
-// tests target the latch / link / tamper logic of verifyRows, given a correct
-// digest — so replicating the digest construction here is intentional.
-const ZERO = Buffer.alloc(32);
+// verifyRows is the pure link-membership + key-latch state machine over the
+// per-row data the database returns. The HMAC recompute itself lives in SQL
+// (see verifyAuditChain) to avoid JS/Postgres serialization drift, so these
+// tests target only the link/latch logic.
 
-function digest(prev: Buffer, row: Omit<AuditRow, "prevHash" | "entryHash">, key: Buffer): Buffer {
-  const concat = Buffer.concat([
-    prev,
-    Buffer.from(row.occurredAt.toISOString().replace("T", " ").replace("Z", ""), "utf8"),
-    Buffer.from(row.kind ?? "", "utf8"),
-    Buffer.from(row.userId == null ? "" : String(row.userId), "utf8"),
-    Buffer.from(row.actorLabel ?? "", "utf8"),
-    Buffer.from(row.ip ?? "", "utf8"),
-    Buffer.from(row.userAgent ?? "", "utf8"),
-    Buffer.from(row.resource ?? "", "utf8"),
-    Buffer.from(row.resourceId ?? "", "utf8"),
-    Buffer.from(row.outcome ?? "", "utf8"),
-    Buffer.from(row.message ?? "", "utf8"),
-    Buffer.from(row.metadata == null ? "" : JSON.stringify(row.metadata), "utf8"),
-  ]);
-  return createHmac("sha256", key).update(concat).digest();
-}
+const ZERO = "00".repeat(32);
+// Deterministic fake hashes — content is opaque to verifyRows, only identity
+// (which prev_hash points at which entry_hash) matters.
+const h = (n: number) => `${n.toString(16).padStart(2, "0")}`.repeat(32);
 
-const REAL_KEY = Buffer.from("a".repeat(64), "hex");
-const DEV_KEY = devFallbackKey("bioalergia");
-
-function row(id: number, prev: Buffer, key: Buffer): AuditRow {
-  const fields: Omit<AuditRow, "prevHash" | "entryHash"> = {
+/** A row whose prev_hash points at `prevN`'s entry_hash and whose own entry is `entryN`. */
+function row(
+  id: number,
+  prevN: number | "zero",
+  key: "dev" | "real" | "none",
+): RowCheck {
+  return {
     id: String(id),
-    occurredAt: new Date(Date.UTC(2026, 0, id, 0, 0, 0)),
-    kind: "ficha.read",
-    userId: id,
-    actorLabel: `user-${id}`,
-    ip: "127.0.0.1",
-    userAgent: "test",
-    resource: "patient",
-    resourceId: String(id),
-    outcome: "ok",
-    message: null,
-    metadata: { i: id },
+    prevHashHex: prevN === "zero" ? ZERO : h(prevN),
+    entryHashHex: h(id),
+    matchesReal: key === "real",
+    matchesDev: key === "dev",
   };
-  return { ...fields, prevHash: prev, entryHash: digest(prev, fields, key) };
-}
-
-/** Build an id-ASC chain: first `devCount` rows dev-keyed, rest real-keyed. */
-function chain(devCount: number, realCount: number): AuditRow[] {
-  const rows: AuditRow[] = [];
-  let prev = ZERO;
-  for (let i = 1; i <= devCount + realCount; i++) {
-    const key = i <= devCount ? DEV_KEY : REAL_KEY;
-    const r = row(i, prev, key);
-    rows.push(r);
-    prev = r.entryHash;
-  }
-  return rows;
 }
 
 describe("verifyRows", () => {
-  it("returns null for an intact all-dev chain (pre-cutover)", () => {
-    expect(verifyRows(chain(5, 0), REAL_KEY, DEV_KEY)).toBeNull();
+  it("returns null for an intact all-dev linear chain (pre-cutover)", () => {
+    expect(verifyRows([
+      row(1, "zero", "dev"),
+      row(2, 1, "dev"),
+      row(3, 2, "dev"),
+    ])).toBeNull();
   });
 
   it("returns null for an intact all-real chain (post-cutover)", () => {
-    expect(verifyRows(chain(0, 5), REAL_KEY, DEV_KEY)).toBeNull();
+    expect(verifyRows([
+      row(1, "zero", "real"),
+      row(2, 1, "real"),
+      row(3, 2, "real"),
+    ])).toBeNull();
   });
 
   it("returns null across the dev→real cutover transition", () => {
-    expect(verifyRows(chain(3, 4), REAL_KEY, DEV_KEY)).toBeNull();
+    expect(verifyRows([
+      row(1, "zero", "dev"),
+      row(2, 1, "dev"),
+      row(3, 2, "real"),
+      row(4, 3, "real"),
+    ])).toBeNull();
+  });
+
+  it("tolerates a concurrent fork (two rows share a predecessor)", () => {
+    // Rows 3 and 4 both point at row 2's entry_hash — the trigger's
+    // non-serialized prev_hash pick under concurrent inserts.
+    expect(verifyRows([
+      row(1, "zero", "dev"),
+      row(2, 1, "dev"),
+      row(3, 2, "dev"),
+      row(4, 2, "dev"),
+      row(5, 4, "dev"),
+    ])).toBeNull();
   });
 
   it("returns null for an empty chain", () => {
-    expect(verifyRows([], REAL_KEY, DEV_KEY)).toBeNull();
+    expect(verifyRows([])).toBeNull();
   });
 
-  it("detects a tampered field (HMAC mismatch)", () => {
-    const rows = chain(2, 3);
-    rows[3] = { ...rows[3]!, message: "tampered" };
-    expect(verifyRows(rows, REAL_KEY, DEV_KEY)).toBe(4n);
+  it("detects a row matching neither key (HMAC mismatch / tamper)", () => {
+    expect(verifyRows([
+      row(1, "zero", "dev"),
+      row(2, 1, "dev"),
+      row(3, 2, "none"),
+    ])).toBe(3n);
   });
 
-  it("detects a broken prev_hash link", () => {
-    const rows = chain(0, 4);
-    rows[2] = { ...rows[2]!, prevHash: Buffer.alloc(32, 0xff) };
-    expect(verifyRows(rows, REAL_KEY, DEV_KEY)).toBe(3n);
+  it("detects an orphan link — prev_hash matches no earlier row (deletion)", () => {
+    // Row 3 points at entry 9, which never appears → row 2 was deleted/altered.
+    expect(verifyRows([
+      row(1, "zero", "dev"),
+      row(2, 1, "dev"),
+      row(3, 9, "dev"),
+    ])).toBe(3n);
+  });
+
+  it("rejects a forward link — prev_hash points at a later row", () => {
+    // Row 2 points at entry 5, not yet seen → not in `seen`.
+    expect(verifyRows([
+      row(1, "zero", "dev"),
+      row(2, 5, "dev"),
+    ])).toBe(2n);
   });
 
   it("rejects a dev-keyed row after the real key has latched (downgrade-forge)", () => {
-    // 2 dev rows, 2 real rows (latches), then a 5th row re-chained with the
-    // dev key — an attacker who knows the derivable dev key forging a new row.
-    const rows = chain(2, 2);
-    const forged = row(5, rows[3]!.entryHash, DEV_KEY);
-    rows.push(forged);
-    expect(verifyRows(rows, REAL_KEY, DEV_KEY)).toBe(5n);
+    expect(verifyRows([
+      row(1, "zero", "dev"),
+      row(2, 1, "dev"),
+      row(3, 2, "real"),
+      row(4, 3, "real"),
+      row(5, 4, "dev"),
+    ])).toBe(5n);
   });
 
   it("detects tampering of the very first row", () => {
-    const rows = chain(0, 3);
-    rows[0] = { ...rows[0]!, outcome: "fail" };
-    expect(verifyRows(rows, REAL_KEY, DEV_KEY)).toBe(1n);
+    expect(verifyRows([
+      row(1, "zero", "none"),
+      row(2, 1, "real"),
+    ])).toBe(1n);
+  });
+
+  it("rejects a first row whose prev_hash is not the genesis zero hash", () => {
+    expect(verifyRows([row(1, 9, "dev")])).toBe(1n);
   });
 });

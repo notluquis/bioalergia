@@ -4,7 +4,12 @@ const { mockDb } = vi.hoisted(() => {
   const mockDb = {
     patient: { findUnique: vi.fn() },
     clinicalSeries: { findUnique: vi.fn() },
-    immunotherapyAdministration: { create: vi.fn(), findMany: vi.fn() },
+    immunotherapyAdministration: {
+      create: vi.fn(),
+      findMany: vi.fn(),
+      findUnique: vi.fn(),
+      update: vi.fn(),
+    },
   };
   return { mockDb };
 });
@@ -12,9 +17,12 @@ const { mockDb } = vi.hoisted(() => {
 vi.mock("@finanzas/db", () => ({ db: mockDb }));
 vi.mock("@finanzas/db/slices", () => ({ dbClinicalSeries: mockDb }));
 
-const { createImmunoAdministration, listImmunoAdministrationsByPatient } = await import(
-  "../immunotherapy-administrations.ts"
-);
+const {
+  createImmunoAdministration,
+  listImmunoAdministrationsByPatient,
+  listAdverseReactions,
+  markIspReported,
+} = await import("../immunotherapy-administrations.ts");
 
 const baseInput = {
   patientId: 42,
@@ -39,7 +47,9 @@ beforeEach(() => {
 describe("createImmunoAdministration", () => {
   it("throws NOT_FOUND when the patient does not exist", async () => {
     mockDb.patient.findUnique.mockResolvedValue(null);
-    await expect(createImmunoAdministration(baseInput, 9)).rejects.toThrow(/Paciente no encontrado/);
+    await expect(createImmunoAdministration(baseInput, 9)).rejects.toThrow(
+      /Paciente no encontrado/
+    );
     expect(mockDb.immunotherapyAdministration.create).not.toHaveBeenCalled();
   });
 
@@ -76,5 +86,73 @@ describe("listImmunoAdministrationsByPatient", () => {
       orderBy: { administeredAt: "desc" },
       take: 200,
     });
+  });
+});
+
+describe("listAdverseReactions", () => {
+  it("filters to systemic WAO >= 1 OR local reaction, and denormalizes patient name", async () => {
+    mockDb.immunotherapyAdministration.findMany.mockResolvedValue([
+      {
+        id: "a1",
+        patientId: 42,
+        administeredAt: new Date("2026-06-15T10:00:00Z"),
+        doseLabel: "Mantención",
+        vialDescription: null,
+        vialLot: null,
+        injectionSite: "brazo_derecho",
+        systemicReactionGrade: 2,
+        hadLocalReaction: false,
+        localReactionNote: null,
+        reactionNote: "urticaria",
+        reportedToIsp: false,
+        ispReportedAt: null,
+        ispNotes: null,
+        patient: { person: { names: "Ana", fatherName: "Pérez", motherName: null } },
+      },
+    ]);
+    const res = await listAdverseReactions();
+    const where = mockDb.immunotherapyAdministration.findMany.mock.calls[0][0].where;
+    expect(where.OR).toEqual([{ systemicReactionGrade: { gte: 1 } }, { hadLocalReaction: true }]);
+    expect(res.items[0]?.patientName).toBe("Ana Pérez");
+    expect(res.items[0]?.systemicReactionGrade).toBe(2);
+  });
+});
+
+describe("markIspReported", () => {
+  it("throws NOT_FOUND when the record does not exist", async () => {
+    mockDb.immunotherapyAdministration.findUnique.mockResolvedValue(null);
+    await expect(markIspReported("nope", true)).rejects.toThrow(/Registro no encontrado/);
+  });
+
+  it("sets ispReportedAt when marking reported, null when unmarking", async () => {
+    mockDb.immunotherapyAdministration.findUnique.mockResolvedValue({ id: "a1" });
+    mockDb.immunotherapyAdministration.update.mockResolvedValue({
+      id: "a1",
+      patientId: 42,
+      administeredAt: new Date(),
+      doseLabel: null,
+      vialDescription: null,
+      vialLot: null,
+      injectionSite: null,
+      systemicReactionGrade: 1,
+      hadLocalReaction: false,
+      localReactionNote: null,
+      reactionNote: null,
+      reportedToIsp: true,
+      ispReportedAt: new Date(),
+      ispNotes: null,
+      patient: { person: { names: "Ana", fatherName: null, motherName: null } },
+    });
+
+    await markIspReported("a1", true, "folio 123");
+    const reported = mockDb.immunotherapyAdministration.update.mock.calls[0][0].data;
+    expect(reported.reportedToIsp).toBe(true);
+    expect(reported.ispReportedAt).toBeInstanceOf(Date);
+    expect(reported.ispNotes).toBe("folio 123");
+
+    await markIspReported("a1", false);
+    const unreported = mockDb.immunotherapyAdministration.update.mock.calls[1][0].data;
+    expect(unreported.reportedToIsp).toBe(false);
+    expect(unreported.ispReportedAt).toBeNull();
   });
 });

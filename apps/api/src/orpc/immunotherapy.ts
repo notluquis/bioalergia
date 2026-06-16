@@ -5,6 +5,8 @@ import {
   clinicTermsSchema,
   createBudgetInputSchema,
   createProductInputSchema,
+  adverseReactionListResponseSchema,
+  adverseReactionSchema,
   createImmunoAdministrationInputSchema,
   createScitPrescriptionInputSchema,
   idInputSchema,
@@ -12,6 +14,7 @@ import {
   immunoAdministrationListResponseSchema,
   listImmunoAdministrationsInputSchema,
   listScitPrescriptionsInputSchema,
+  markIspReportedInputSchema,
   okResponseSchema,
   prescriptionPdfInputSchema,
   productListResponseSchema,
@@ -47,7 +50,9 @@ import {
 } from "../services/immunotherapy.ts";
 import {
   createImmunoAdministration,
+  listAdverseReactions,
   listImmunoAdministrationsByPatient,
+  markIspReported,
 } from "../services/immunotherapy-administrations.ts";
 import {
   createScitPrescription,
@@ -186,6 +191,18 @@ const immunotherapyRouterBase = {
     .input(listImmunoAdministrationsInputSchema)
     .output(immunoAdministrationListResponseSchema)
     .handler(async ({ input }) => listImmunoAdministrationsByPatient(input.patientId)),
+
+  // ── Farmacovigilancia (registro de RAM → ISP) ──────────────────────
+  listAdverseReactions: readClinicalSeries
+    .route({ method: "GET", path: "/adverse-reactions", tags: ["Immunotherapy"] })
+    .output(adverseReactionListResponseSchema)
+    .handler(async () => listAdverseReactions()),
+
+  markIspReported: createClinicalSeries
+    .route({ method: "POST", path: "/adverse-reactions/isp", tags: ["Immunotherapy"] })
+    .input(markIspReportedInputSchema)
+    .output(adverseReactionSchema)
+    .handler(async ({ input }) => markIspReported(input.id, input.reportedToIsp, input.ispNotes)),
 };
 
 export const immunotherapyORPCRouter = base

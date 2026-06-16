@@ -4,6 +4,7 @@ import type {
   CreateProductInput,
   CreateScitPrescriptionInput,
   HideableSection,
+  MarkIspReportedInput,
   PrescriptionPdfInput,
   QuoteInput,
   UpdateProductInput,
@@ -101,6 +102,24 @@ export async function listImmunoAdministrations(patientId: number) {
   try {
     const res = await immunotherapyORPCClient.listImmunoAdministrations({ patientId });
     return res.items;
+  } catch (error) {
+    throw toImmunotherapyApiError(error);
+  }
+}
+
+// ── Farmacovigilancia (RAM → ISP) ────────────────────────────────────
+export async function listAdverseReactions() {
+  try {
+    const res = await immunotherapyORPCClient.listAdverseReactions();
+    return res.items;
+  } catch (error) {
+    throw toImmunotherapyApiError(error);
+  }
+}
+
+export async function markIspReported(input: MarkIspReportedInput) {
+  try {
+    return await immunotherapyORPCClient.markIspReported(input);
   } catch (error) {
     throw toImmunotherapyApiError(error);
   }

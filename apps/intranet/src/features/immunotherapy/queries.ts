@@ -20,4 +20,5 @@ export const immunoKeys = {
   terms: ["immuno", "terms"] as const,
   scitPrescriptions: (patientId: number) => ["immuno", "scit-prescriptions", patientId] as const,
   administrations: (patientId: number) => ["immuno", "administrations", patientId] as const,
+  adverseReactions: ["immuno", "adverse-reactions"] as const,
 } as const;

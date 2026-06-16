@@ -1337,6 +1337,11 @@ model ImmunotherapyAdministration {
   premedication         String?
   notes                 String?
 
+  // Farmacovigilancia: trazabilidad de notificación de RAM al ISP (Norma 140).
+  reportedToIsp         Boolean   @default(false) @map("reported_to_isp")
+  ispReportedAt         DateTime? @map("isp_reported_at")
+  ispNotes              String?   @map("isp_notes")
+
   administeredBy        Int       @map("administered_by")
   createdAt             DateTime  @default(now()) @map("created_at")
 

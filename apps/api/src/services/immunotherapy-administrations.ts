@@ -67,3 +67,117 @@ export async function listImmunoAdministrationsByPatient(
   });
   return { items };
 }
+
+function fullPatientName(person: {
+  names: string | null;
+  fatherName: string | null;
+  motherName: string | null;
+}): string {
+  return [person.names, person.fatherName, person.motherName].filter(Boolean).join(" ") || "—";
+}
+
+interface AdverseReactionRow {
+  id: string;
+  patientId: number;
+  patientName: string;
+  administeredAt: Date;
+  doseLabel: string | null;
+  vialDescription: string | null;
+  vialLot: string | null;
+  injectionSite: string | null;
+  systemicReactionGrade: number | null;
+  hadLocalReaction: boolean;
+  localReactionNote: string | null;
+  reactionNote: string | null;
+  reportedToIsp: boolean;
+  ispReportedAt: Date | null;
+  ispNotes: string | null;
+}
+
+/**
+ * Farmacovigilancia: dosis con reacción adversa (sistémica WAO ≥ 1 o local), de
+ * todos los pacientes, para el registro de notificación al ISP (Norma 140).
+ */
+export async function listAdverseReactions(): Promise<{ items: AdverseReactionRow[] }> {
+  const rows = await db.immunotherapyAdministration.findMany({
+    where: {
+      OR: [{ systemicReactionGrade: { gte: 1 } }, { hadLocalReaction: true }],
+    },
+    orderBy: { administeredAt: "desc" },
+    take: 500,
+    include: {
+      patient: {
+        select: {
+          person: { select: { names: true, fatherName: true, motherName: true } },
+        },
+      },
+    },
+  });
+
+  const items = rows.map(
+    (r): AdverseReactionRow => ({
+      id: r.id,
+      patientId: r.patientId,
+      patientName: fullPatientName(r.patient.person),
+      administeredAt: r.administeredAt,
+      doseLabel: r.doseLabel,
+      vialDescription: r.vialDescription,
+      vialLot: r.vialLot,
+      injectionSite: r.injectionSite,
+      systemicReactionGrade: r.systemicReactionGrade,
+      hadLocalReaction: r.hadLocalReaction,
+      localReactionNote: r.localReactionNote,
+      reactionNote: r.reactionNote,
+      reportedToIsp: r.reportedToIsp,
+      ispReportedAt: r.ispReportedAt,
+      ispNotes: r.ispNotes,
+    })
+  );
+
+  return { items };
+}
+
+/** Marca/desmarca una RAM como notificada al ISP. */
+export async function markIspReported(
+  id: string,
+  reportedToIsp: boolean,
+  ispNotes?: string
+): Promise<AdverseReactionRow> {
+  const found = await db.immunotherapyAdministration.findUnique({
+    where: { id },
+    select: { id: true },
+  });
+  if (!found) throw new DomainError("NOT_FOUND", "Registro no encontrado");
+
+  const updated = await db.immunotherapyAdministration.update({
+    where: { id },
+    data: {
+      reportedToIsp,
+      ispReportedAt: reportedToIsp ? new Date() : null,
+      ispNotes: ispNotes ?? null,
+    },
+    include: {
+      patient: {
+        select: { person: { select: { names: true, fatherName: true, motherName: true } } },
+      },
+    },
+  });
+
+  return {
+    id: updated.id,
+    patientId: updated.patientId,
+    patientName: fullPatientName(updated.patient.person),
+    administeredAt: updated.administeredAt,
+    doseLabel: updated.doseLabel,
+    vialDescription: updated.vialDescription,
+    vialLot: updated.vialLot,
+    injectionSite: updated.injectionSite,
+    systemicReactionGrade: updated.systemicReactionGrade,
+    hadLocalReaction: updated.hadLocalReaction,
+    localReactionNote: updated.localReactionNote,
+    reactionNote: updated.reactionNote,
+    reportedToIsp: updated.reportedToIsp,
+    ispReportedAt: updated.ispReportedAt,
+    ispNotes: updated.ispNotes,
+  };
+}

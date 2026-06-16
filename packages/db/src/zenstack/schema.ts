@@ -4637,6 +4637,24 @@ export class SchemaType implements SchemaDef {
                     type: "String",
                     optional: true
                 },
+                reportedToIsp: {
+                    name: "reportedToIsp",
+                    type: "Boolean",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(false) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("reported_to_isp") }] }] as readonly AttributeApplication[],
+                    default: false as FieldDefault
+                },
+                ispReportedAt: {
+                    name: "ispReportedAt",
+                    type: "DateTime",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("isp_reported_at") }] }] as readonly AttributeApplication[]
+                },
+                ispNotes: {
+                    name: "ispNotes",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("isp_notes") }] }] as readonly AttributeApplication[]
+                },
                 administeredBy: {
                     name: "administeredBy",
                     type: "Int",

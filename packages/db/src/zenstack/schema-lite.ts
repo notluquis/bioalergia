@@ -3834,6 +3834,21 @@ export class SchemaType implements SchemaDef {
                     type: "String",
                     optional: true
                 },
+                reportedToIsp: {
+                    name: "reportedToIsp",
+                    type: "Boolean",
+                    default: false as FieldDefault
+                },
+                ispReportedAt: {
+                    name: "ispReportedAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                ispNotes: {
+                    name: "ispNotes",
+                    type: "String",
+                    optional: true
+                },
                 administeredBy: {
                     name: "administeredBy",
                     type: "Int"

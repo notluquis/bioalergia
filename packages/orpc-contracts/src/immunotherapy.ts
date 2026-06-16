@@ -290,6 +290,33 @@ export const immunoAdministrationListResponseSchema = z.object({
 });
 export const immunoAdministrationCreatedSchema = z.object({ id: z.string() });
 
+// ── Farmacovigilancia: registro de RAM (reacciones adversas) → ISP ────────────
+export const adverseReactionSchema = z.object({
+  id: z.string(),
+  patientId: z.number().int(),
+  patientName: z.string(),
+  administeredAt: z.date(),
+  doseLabel: z.string().nullable(),
+  vialDescription: z.string().nullable(),
+  vialLot: z.string().nullable(),
+  injectionSite: z.string().nullable(),
+  systemicReactionGrade: z.number().int().nullable(),
+  hadLocalReaction: z.boolean(),
+  localReactionNote: z.string().nullable(),
+  reactionNote: z.string().nullable(),
+  reportedToIsp: z.boolean(),
+  ispReportedAt: z.date().nullable(),
+  ispNotes: z.string().nullable(),
+});
+export const adverseReactionListResponseSchema = z.object({
+  items: z.array(adverseReactionSchema),
+});
+export const markIspReportedInputSchema = z.object({
+  id: z.string(),
+  reportedToIsp: z.boolean(),
+  ispNotes: z.string().optional(),
+});
+
 // ── Contract ─────────────────────────────────────────────────────────
 export const immunotherapyContract = {
   // Productos (catálogo editable)
@@ -352,6 +379,14 @@ export const immunotherapyContract = {
     .route({ method: "GET", path: "/administrations" })
     .input(listImmunoAdministrationsInputSchema)
     .output(immunoAdministrationListResponseSchema),
+  // Farmacovigilancia (registro de RAM → ISP)
+  listAdverseReactions: oc
+    .route({ method: "GET", path: "/adverse-reactions" })
+    .output(adverseReactionListResponseSchema),
+  markIspReported: oc
+    .route({ method: "POST", path: "/adverse-reactions/isp" })
+    .input(markIspReportedInputSchema)
+    .output(adverseReactionSchema),
 };
 
 export type ImmunotherapyContract = typeof immunotherapyContract;
@@ -364,7 +399,7 @@ export type CreateProductInput = z.infer<typeof createProductInputSchema>;
 export type UpdateProductInput = z.infer<typeof updateProductInputSchema>;
 export type CreateScitPrescriptionInput = z.infer<typeof createScitPrescriptionInputSchema>;
 export type ScitPrescriptionDto = z.infer<typeof scitPrescriptionSchema>;
-export type CreateImmunoAdministrationInput = z.infer<
-  typeof createImmunoAdministrationInputSchema
->;
+export type CreateImmunoAdministrationInput = z.infer<typeof createImmunoAdministrationInputSchema>;
 export type ImmunoAdministrationDto = z.infer<typeof immunoAdministrationSchema>;
+export type AdverseReactionDto = z.infer<typeof adverseReactionSchema>;
+export type MarkIspReportedInput = z.infer<typeof markIspReportedInputSchema>;

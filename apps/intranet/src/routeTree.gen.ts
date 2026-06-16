@@ -73,6 +73,7 @@ import { Route as AuthedDevRoutesAuditRouteImport } from "./routes/_authed/dev/r
 import { Route as AuthedCompaniesIdRouteImport } from "./routes/_authed/companies/$id"
 import { Route as AuthedClinicalRecordsRouteImport } from "./routes/_authed/clinical/records"
 import { Route as AuthedClinicalHeatmapRouteImport } from "./routes/_authed/clinical/heatmap"
+import { Route as AuthedClinicalFarmacovigilanciaRouteImport } from "./routes/_authed/clinical/farmacovigilancia"
 import { Route as AuthedClinicalDoctoraliaRouteImport } from "./routes/_authed/clinical/doctoralia"
 import { Route as AuthedClinicalDayRouteImport } from "./routes/_authed/clinical/day"
 import { Route as AuthedClinicalClassifyRouteImport } from "./routes/_authed/clinical/classify"
@@ -425,6 +426,12 @@ const AuthedClinicalHeatmapRoute = AuthedClinicalHeatmapRouteImport.update({
   path: "/heatmap",
   getParentRoute: () => AuthedClinicalRoute,
 } as any)
+const AuthedClinicalFarmacovigilanciaRoute =
+  AuthedClinicalFarmacovigilanciaRouteImport.update({
+    id: "/farmacovigilancia",
+    path: "/farmacovigilancia",
+    getParentRoute: () => AuthedClinicalRoute,
+  } as any)
 const AuthedClinicalDoctoraliaRoute =
   AuthedClinicalDoctoraliaRouteImport.update({
     id: "/doctoralia",
@@ -580,6 +587,7 @@ export interface FileRoutesByFullPath {
   "/clinical/classify": typeof AuthedClinicalClassifyRoute
   "/clinical/day": typeof AuthedClinicalDayRoute
   "/clinical/doctoralia": typeof AuthedClinicalDoctoraliaRoute
+  "/clinical/farmacovigilancia": typeof AuthedClinicalFarmacovigilanciaRoute
   "/clinical/heatmap": typeof AuthedClinicalHeatmapRoute
   "/clinical/records": typeof AuthedClinicalRecordsRoute
   "/companies/$id": typeof AuthedCompaniesIdRoute
@@ -660,6 +668,7 @@ export interface FileRoutesByTo {
   "/clinical/classify": typeof AuthedClinicalClassifyRoute
   "/clinical/day": typeof AuthedClinicalDayRoute
   "/clinical/doctoralia": typeof AuthedClinicalDoctoraliaRoute
+  "/clinical/farmacovigilancia": typeof AuthedClinicalFarmacovigilanciaRoute
   "/clinical/heatmap": typeof AuthedClinicalHeatmapRoute
   "/clinical/records": typeof AuthedClinicalRecordsRoute
   "/companies/$id": typeof AuthedCompaniesIdRoute
@@ -749,6 +758,7 @@ export interface FileRoutesById {
   "/_authed/clinical/classify": typeof AuthedClinicalClassifyRoute
   "/_authed/clinical/day": typeof AuthedClinicalDayRoute
   "/_authed/clinical/doctoralia": typeof AuthedClinicalDoctoraliaRoute
+  "/_authed/clinical/farmacovigilancia": typeof AuthedClinicalFarmacovigilanciaRoute
   "/_authed/clinical/heatmap": typeof AuthedClinicalHeatmapRoute
   "/_authed/clinical/records": typeof AuthedClinicalRecordsRoute
   "/_authed/companies/$id": typeof AuthedCompaniesIdRoute
@@ -838,6 +848,7 @@ export interface FileRouteTypes {
     | "/clinical/classify"
     | "/clinical/day"
     | "/clinical/doctoralia"
+    | "/clinical/farmacovigilancia"
     | "/clinical/heatmap"
     | "/clinical/records"
     | "/companies/$id"
@@ -918,6 +929,7 @@ export interface FileRouteTypes {
     | "/clinical/classify"
     | "/clinical/day"
     | "/clinical/doctoralia"
+    | "/clinical/farmacovigilancia"
     | "/clinical/heatmap"
     | "/clinical/records"
     | "/companies/$id"
@@ -1006,6 +1018,7 @@ export interface FileRouteTypes {
     | "/_authed/clinical/classify"
     | "/_authed/clinical/day"
     | "/_authed/clinical/doctoralia"
+    | "/_authed/clinical/farmacovigilancia"
     | "/_authed/clinical/heatmap"
     | "/_authed/clinical/records"
     | "/_authed/companies/$id"
@@ -1523,6 +1536,13 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof AuthedClinicalHeatmapRouteImport
       parentRoute: typeof AuthedClinicalRoute
     }
+    "/_authed/clinical/farmacovigilancia": {
+      id: "/_authed/clinical/farmacovigilancia"
+      path: "/farmacovigilancia"
+      fullPath: "/clinical/farmacovigilancia"
+      preLoaderRoute: typeof AuthedClinicalFarmacovigilanciaRouteImport
+      parentRoute: typeof AuthedClinicalRoute
+    }
     "/_authed/clinical/doctoralia": {
       id: "/_authed/clinical/doctoralia"
       path: "/doctoralia"
@@ -1714,6 +1734,7 @@ interface AuthedClinicalRouteChildren {
   AuthedClinicalClassifyRoute: typeof AuthedClinicalClassifyRoute
   AuthedClinicalDayRoute: typeof AuthedClinicalDayRoute
   AuthedClinicalDoctoraliaRoute: typeof AuthedClinicalDoctoraliaRoute
+  AuthedClinicalFarmacovigilanciaRoute: typeof AuthedClinicalFarmacovigilanciaRoute
   AuthedClinicalHeatmapRoute: typeof AuthedClinicalHeatmapRoute
   AuthedClinicalRecordsRoute: typeof AuthedClinicalRecordsRoute
   AuthedClinicalIndexRoute: typeof AuthedClinicalIndexRoute
@@ -1726,6 +1747,7 @@ const AuthedClinicalRouteChildren: AuthedClinicalRouteChildren = {
   AuthedClinicalClassifyRoute: AuthedClinicalClassifyRoute,
   AuthedClinicalDayRoute: AuthedClinicalDayRoute,
   AuthedClinicalDoctoraliaRoute: AuthedClinicalDoctoraliaRoute,
+  AuthedClinicalFarmacovigilanciaRoute: AuthedClinicalFarmacovigilanciaRoute,
   AuthedClinicalHeatmapRoute: AuthedClinicalHeatmapRoute,
   AuthedClinicalRecordsRoute: AuthedClinicalRecordsRoute,
   AuthedClinicalIndexRoute: AuthedClinicalIndexRoute,
