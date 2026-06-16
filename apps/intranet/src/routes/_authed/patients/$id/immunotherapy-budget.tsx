@@ -7,11 +7,10 @@ export const Route = createFileRoute("/_authed/patients/$id/immunotherapy-budget
     title: "Presupuesto de Inmunoterapia",
     hideFromNav: true,
   },
-  // prefillAllergens: nombres científicos separados por "|" desde la prescripción
-  // SCIT, para precargar el selector de alérgenos (match best-effort por nombre).
-  validateSearch: (search: Record<string, unknown>): { prefillAllergens?: string } => ({
-    prefillAllergens:
-      typeof search.prefillAllergens === "string" ? search.prefillAllergens : undefined,
+  // prefillIds: ids de catálogo (alg_*) separados por "," desde la prescripción
+  // SCIT, para precargar el selector de alérgenos por id (fuente de verdad única).
+  validateSearch: (search: Record<string, unknown>): { prefillIds?: string } => ({
+    prefillIds: typeof search.prefillIds === "string" ? search.prefillIds : undefined,
   }),
   component: ImmunotherapyBudgetPage,
 });

@@ -56,7 +56,7 @@ const EMPTY_ALLERGENS: { id: string; commonName: string; scientificName: string 
 
 export function ImmunotherapyBudgetPage() {
   const { id } = routeApi.useParams();
-  const { prefillAllergens } = routeApi.useSearch();
+  const { prefillIds } = routeApi.useSearch();
   const patientId = Number(id);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -176,28 +176,24 @@ export function ImmunotherapyBudgetPage() {
   );
   const [pickerKey, setPickerKey] = useState(0);
 
-  // Precarga desde la prescripción SCIT: matchea nombres científicos (best-effort)
-  // contra el catálogo de alérgenos del presupuesto (espacios de ids distintos).
+  // Precarga desde la prescripción SCIT por id de catálogo (alg_*): la calc y el
+  // presupuesto comparten el mismo espacio de ids (ClinicalAllergen).
   const prefillApplied = useRef(false);
   useEffect(() => {
-    if (prefillApplied.current || !prefillAllergens || allergens.length === 0) return;
-    const wanted = prefillAllergens
-      .split("|")
-      .map((s) => s.trim().toLowerCase())
-      .filter(Boolean);
-    if (wanted.length === 0) return;
-    const matched = allergens
-      .filter((a) => {
-        const sci = a.scientificName?.toLowerCase();
-        if (!sci) return false;
-        return wanted.some((w) => sci.includes(w) || w.includes(sci));
-      })
-      .map((a) => a.id);
+    if (prefillApplied.current || !prefillIds || allergens.length === 0) return;
+    const wanted = new Set(
+      prefillIds
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean)
+    );
+    if (wanted.size === 0) return;
+    const matched = allergens.filter((a) => wanted.has(a.id)).map((a) => a.id);
     if (matched.length > 0) {
       setAllergenIds(matched);
       prefillApplied.current = true;
     }
-  }, [prefillAllergens, allergens]);
+  }, [prefillIds, allergens]);
 
   return (
     <div className={PAGE_CONTAINER}>

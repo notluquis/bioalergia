@@ -62,16 +62,20 @@ export function PatientScitCalculatorPage() {
   });
 
   const goToBudget = () => {
-    // Precarga best-effort: pasa los nombres científicos; el presupuesto los
-    // matchea contra su catálogo de alérgenos (espacios de ids distintos).
-    const prefillAllergens = (snapshot?.selection.selectedAllergenIds ?? [])
-      .map((aid) => getAllergenById(aid)?.scientificName)
-      .filter((name): name is string => Boolean(name))
-      .join("|");
+    // Precarga por id de catálogo (alg_*): calc y presupuesto comparten el mismo
+    // espacio de ids (ClinicalAllergen). Las mezclas aportan sus componentes.
+    const prefillIds = (snapshot?.selection.selectedAllergenIds ?? [])
+      .flatMap((aid) => {
+        const a = getAllergenById(aid);
+        if (!a) return [];
+        if (a.catalogId) return [a.catalogId];
+        return a.componentCatalogIds ?? [];
+      })
+      .join(",");
     void navigate({
       to: "/patients/$id/immunotherapy-budget",
       params: { id: String(id) },
-      search: { prefillAllergens: prefillAllergens || undefined },
+      search: { prefillIds: prefillIds || undefined },
     });
   };
 

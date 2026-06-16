@@ -62,6 +62,15 @@ export interface Allergen {
   family: AllergenFamily;
   /** Marcador molecular (proteína mayor) */
   molecularMarker: string;
+  /**
+   * Id del catálogo clínico unificado (`ClinicalAllergen`, `alg_NNNN`) — fuente de
+   * verdad única compartida con presupuesto/exam-reports. Permite cruzar la calc
+   * con el resto de la app por id (no por nombre). undefined = mezcla comercial
+   * sin fila propia (usa componentCatalogIds).
+   */
+  catalogId?: string;
+  /** Para mezclas comerciales: los ids de catálogo de las especies que la componen. */
+  componentCatalogIds?: string[];
   /** Etiqueta comercial estándar para polimerizados Inmunotek/Roxall (UT/TU). */
   utLabel: string;
   /**
