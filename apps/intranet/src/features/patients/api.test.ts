@@ -164,7 +164,10 @@ function makeMedicalPrescription(overrides: Record<string, unknown> = {}) {
     doctorName: "Dra. Ana Contreras",
     doctorRut: "12.345.678-9",
     doctorSpecialty: "Inmunología",
-    driveFileId: "drive_prescription",
+    doctorLicense: "12345",
+    driveFileId: null,
+    folio: "RX-2026-000001-AB12",
+    folioSeq: 1,
     id: "prescription_1",
     issuedAt: "2026-06-08",
     issuedBy: 9,
@@ -182,7 +185,8 @@ function makeMedicalPrescription(overrides: Record<string, unknown> = {}) {
     patientId: 42,
     patientName: "María José Pérez González",
     patientRut: "16.123.456-5",
-    pdfHash: "hash_prescription",
+    pdfHash: null,
+    status: "ISSUED",
     ...overrides,
   };
 }
