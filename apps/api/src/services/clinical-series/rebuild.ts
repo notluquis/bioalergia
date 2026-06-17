@@ -1,4 +1,5 @@
 import { dbClinicalSeries as db } from "@finanzas/db/slices";
+import { sql } from "kysely";
 
 import {
   clearRebuildJobAfter,
@@ -22,23 +23,26 @@ export async function rebuildClinicalSeries(
   processed: number;
   to: null | string;
 }> {
-  const rows = await db.$queryRaw<Array<{ eventId: number }>>`
-    SELECT e.id AS "eventId"
-    FROM events e
-    WHERE (
-      e.category IN ('Test y exámenes', 'Tratamiento subcutáneo')
-      OR e.clinical_series_id IS NOT NULL
-    )
-      AND (
-        ${params?.from ?? null}::date IS NULL
-        OR COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date) >= ${params?.from ?? null}::date
-      )
-      AND (
-        ${params?.to ?? null}::date IS NULL
-        OR COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date) <= ${params?.to ?? null}::date
-      )
-    ORDER BY COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date) ASC, e.id ASC
-  `;
+  // La fecha civil del evento = start_date si existe, si no la parte date de
+  // start_date_time convertida a la zona local. Se mantiene como fragmento sql``
+  // (columnas físicas snake_case) porque Kysely no tipa AT TIME ZONE/COALESCE.
+  const eventDate = sql<Date>`COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date)`;
+  let query = db.$qb
+    .selectFrom("Event as e")
+    .select("e.id as eventId")
+    .where((eb) =>
+      eb.or([
+        eb("e.category", "in", ["Test y exámenes", "Tratamiento subcutáneo"]),
+        eb("e.clinicalSeriesId", "is not", null),
+      ])
+    );
+  if (params?.from) {
+    query = query.where(sql<boolean>`${eventDate} >= ${params.from}::date`);
+  }
+  if (params?.to) {
+    query = query.where(sql<boolean>`${eventDate} <= ${params.to}::date`);
+  }
+  const rows = await query.orderBy(eventDate, "asc").orderBy("e.id", "asc").execute();
 
   const total = rows.length;
   // Signal total is now known before processing starts

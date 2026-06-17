@@ -2092,11 +2092,10 @@ export async function confirmEventDteLink(params: {
     throw new DomainError("BAD_REQUEST", "Debes indicar al menos un DTE para confirmar el vínculo");
   }
 
-  const dteRows = await db.$queryRaw<Array<{ id: string }>>`
-    SELECT s.id
-    FROM dte_sale_details s
-    WHERE s.id = ANY(${normalizedDteSaleDetailIds}::text[])
-  `;
+  const dteRows = await db.dTESaleDetail.findMany({
+    where: { id: { in: normalizedDteSaleDetailIds } },
+    select: { id: true },
+  });
   if (dteRows.length !== normalizedDteSaleDetailIds.length) {
     throw new DomainError("BAD_REQUEST", "Uno o más DTE de venta no existen");
   }

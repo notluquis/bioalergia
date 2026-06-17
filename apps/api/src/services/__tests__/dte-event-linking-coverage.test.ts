@@ -32,6 +32,7 @@ const {
   mockAttemptCreate,
   mockReviewCreate,
   mockLinkDeleteMany,
+  mockDteFindMany,
 } = vi.hoisted(() => {
   const queryRawQueue: unknown[] = [];
   const queryRawCalls: string[] = [];
@@ -53,6 +54,11 @@ const {
   const mockAttemptCreate = vi.fn(() => Promise.resolve({ id: 1n }));
   const mockReviewCreate = vi.fn(() => Promise.resolve({ id: 1n }));
   const mockLinkDeleteMany = vi.fn(() => Promise.resolve({ count: 0 }));
+  // Chequeo de existencia de DTE migró de db.$queryRaw a db.dTESaleDetail.findMany.
+  // Default: todos los ids pedidos existen (echo). Overridable por test.
+  const mockDteFindMany = vi.fn((args: { where?: { id?: { in?: string[] } } }) =>
+    Promise.resolve((args?.where?.id?.in ?? []).map((id) => ({ id })))
+  );
   return {
     queryRawQueue,
     queryRawCalls,
@@ -63,6 +69,7 @@ const {
     mockAttemptCreate,
     mockReviewCreate,
     mockLinkDeleteMany,
+    mockDteFindMany,
   };
 });
 
@@ -73,6 +80,7 @@ vi.mock("@finanzas/db", () => ({
     eventDteAutoLinkAttempt: { create: (...a: unknown[]) => mockAttemptCreate(...a) },
     eventDteMatchReview: { create: (...a: unknown[]) => mockReviewCreate(...a) },
     eventDteSaleLink: { deleteMany: (...a: unknown[]) => mockLinkDeleteMany(...a) },
+    dTESaleDetail: { findMany: (...a: unknown[]) => mockDteFindMany(...a) },
   },
 }));
 
@@ -122,6 +130,7 @@ function reset() {
   mockAttemptCreate.mockClear();
   mockReviewCreate.mockClear();
   mockLinkDeleteMany.mockClear();
+  mockDteFindMany.mockClear();
   mockExtractIdentityHints.mockReset();
   mockGetSnapshot.mockReset();
   mockSyncSeries.mockReset();
@@ -294,7 +303,7 @@ describe("unlinkEventDteLink", () => {
 describe("confirmEventDteLink — happy path", () => {
   it("dedupes + inserts one link per DTE and records 'confirmed' when no prior links", async () => {
     queryRawQueue.push([{ eventId: 11, externalEventId: "e" }]); // getEventByExternalIds
-    queryRawQueue.push([{ id: "d-1" }, { id: "d-2" }]); // existence check → both exist
+    // existence check ahora vía db.dTESaleDetail.findMany (mock echo → ambos existen)
     queryRawQueue.push([]); // previousLinks (getEventDteLinksByInternalEventId) → none
     queryRawQueue.push([]); // final getEventDteLinksByInternalEventId return
 
@@ -315,7 +324,7 @@ describe("confirmEventDteLink — happy path", () => {
 
   it("records 'manual_override' when prior links existed", async () => {
     queryRawQueue.push([{ eventId: 11, externalEventId: "e" }]);
-    queryRawQueue.push([{ id: "d-1" }]);
+    // existence check vía db.dTESaleDetail.findMany (mock echo → existe)
     queryRawQueue.push([
       {
         id: 1,
@@ -354,8 +363,7 @@ describe("confirmEventDteLink — happy path", () => {
 
   it("caps the dteSaleDetailIds at the first three", async () => {
     queryRawQueue.push([{ eventId: 11, externalEventId: "e" }]);
-    // existence check must return exactly 3 to pass the length guard
-    queryRawQueue.push([{ id: "a" }, { id: "b" }, { id: "c" }]);
+    // existence check vía db.dTESaleDetail.findMany (mock echo → los 3 trimmed existen)
     queryRawQueue.push([]); // previousLinks
     queryRawQueue.push([]); // final read
 
@@ -853,7 +861,7 @@ describe("autoLinkEventDate", () => {
     ]); // candidates
     // ── confirmEventDteLink internals ──
     queryRawQueue.push([eventRow()]); // getEventByExternalIds
-    queryRawQueue.push([{ id: "dte-1" }]); // existence
+    // existence vía db.dTESaleDetail.findMany (mock echo)
     queryRawQueue.push([]); // previousLinks
     queryRawQueue.push([]); // final read
 
@@ -1014,7 +1022,7 @@ function queueLinkDate(date: string) {
     },
   ]); // candidates
   queryRawQueue.push([eventRow({ eventDate: date })]); // confirm: getEventByExternalIds
-  queryRawQueue.push([{ id: "dte-1" }]); // confirm: existence
+  // confirm: existence vía db.dTESaleDetail.findMany (mock echo)
   queryRawQueue.push([]); // confirm: previousLinks
   queryRawQueue.push([]); // confirm: final read
 }

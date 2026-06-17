@@ -15,19 +15,25 @@ vi.mock("@finanzas/db/slices", () => {
   return { dbClinicalSeries: noopDb };
 });
 
-const { queryRawQueue, mockQueryRaw } = vi.hoisted(() => {
+const { queryRawQueue, mockQueryRaw, mockDteFindMany } = vi.hoisted(() => {
   const queryRawQueue: unknown[] = [];
   const mockQueryRaw = vi.fn(() => {
     // db.$queryRaw is tagged-template; we ignore args and shift the queue.
     return Promise.resolve(queryRawQueue.length > 0 ? queryRawQueue.shift() : []);
   });
-  return { queryRawQueue, mockQueryRaw };
+  // Chequeo de existencia migró a db.dTESaleDetail.findMany. Default echo (todos
+  // los ids pedidos existen); overridable para la rama "no existen".
+  const mockDteFindMany = vi.fn((args: { where?: { id?: { in?: string[] } } }) =>
+    Promise.resolve((args?.where?.id?.in ?? []).map((id) => ({ id })))
+  );
+  return { queryRawQueue, mockQueryRaw, mockDteFindMany };
 });
 
 vi.mock("@finanzas/db", () => ({
   db: {
     $queryRaw: (...a: unknown[]) => mockQueryRaw(...a),
     $executeRaw: () => Promise.resolve(undefined),
+    dTESaleDetail: { findMany: (...a: unknown[]) => mockDteFindMany(...a) },
   },
 }));
 
@@ -177,9 +183,9 @@ describe("confirmEventDteLink", () => {
 
   it("lanza BAD_REQUEST cuando uno o más DTE no existen", async () => {
     resetQueue();
-    // 1ª query: evento existe. 2ª query: piden 2 DTE pero la DB devuelve 1.
+    // Evento existe; piden 2 DTE pero la existencia (findMany) devuelve solo 1.
     queryRawQueue.push([{ eventId: 42, externalEventId: "evt-1" }]);
-    queryRawQueue.push([{ id: "d1" }]);
+    mockDteFindMany.mockResolvedValueOnce([{ id: "d1" }]);
     try {
       await confirmEventDteLink({ ...baseParams, dteSaleDetailIds: ["d1", "d2"] });
       throw new Error("no lanzó");
