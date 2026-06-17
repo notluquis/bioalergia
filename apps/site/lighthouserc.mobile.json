@@ -21,7 +21,6 @@
       "numberOfRuns": 1,
       "settings": {
         "//": "No preset → Lighthouse default = mobile emulation (Moto G) + throttling.",
-        "preset": "mobile",
         "chromeFlags": "--no-sandbox --headless=new",
         "skipAudits": [
           "uses-http2",
