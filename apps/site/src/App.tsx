@@ -3,9 +3,9 @@ import { useTheme } from "next-themes";
 import { usePostHog } from "posthog-js/react";
 import { useEffect, useMemo } from "react";
 
+import { PrimaryNav } from "@/components/PrimaryNav";
 import { contactInfo } from "@/data/clinic";
 import { legalDocuments, type LegalDocumentKey } from "@/data/legal";
-import { primaryNav } from "@/data/navigation";
 import { doctoraliaLink } from "@/lib/doctoralia";
 import { HomePage } from "@/pages/HomePage";
 import { LegalPage } from "@/pages/LegalPage";
@@ -207,50 +207,36 @@ export function App() {
             </div>
 
             {/* Row 2: full-width nav */}
-            <nav
-              aria-label="Navegación principal"
-              className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 border-border border-t px-4 py-2.5 text-(--ink-muted) text-sm lg:px-5"
-            >
-              {legalDocument ? (
-                <>
-                  <Link className="no-underline transition-colors hover:text-(--ink)" href="/">
-                    Inicio
-                  </Link>
-                  <Link
-                    className="no-underline transition-colors hover:text-(--ink)"
-                    href={legalDocuments.privacy.canonicalPath}
-                  >
-                    Privacidad
-                  </Link>
-                  <Link
-                    className="no-underline transition-colors hover:text-(--ink)"
-                    href={legalDocuments.terms.canonicalPath}
-                  >
-                    Términos
-                  </Link>
-                  <Link
-                    className="no-underline transition-colors hover:text-(--ink)"
-                    href={legalDocuments.dataDeletion.canonicalPath}
-                  >
-                    Eliminación de datos
-                  </Link>
-                </>
-              ) : (
-                primaryNav.map((item) => (
-                  <Link
-                    key={item.href}
-                    className={
-                      item.accent
-                        ? "no-underline font-semibold text-(--accent) transition-colors hover:text-(--ink)"
-                        : "no-underline transition-colors hover:text-(--ink)"
-                    }
-                    href={item.href}
-                  >
-                    {item.label}
-                  </Link>
-                ))
-              )}
-            </nav>
+            {legalDocument ? (
+              <nav
+                aria-label="Navegación principal"
+                className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 border-border border-t px-4 py-2.5 text-(--ink-muted) text-sm lg:px-5"
+              >
+                <Link className="no-underline transition-colors hover:text-(--ink)" href="/">
+                  Inicio
+                </Link>
+                <Link
+                  className="no-underline transition-colors hover:text-(--ink)"
+                  href={legalDocuments.privacy.canonicalPath}
+                >
+                  Privacidad
+                </Link>
+                <Link
+                  className="no-underline transition-colors hover:text-(--ink)"
+                  href={legalDocuments.terms.canonicalPath}
+                >
+                  Términos
+                </Link>
+                <Link
+                  className="no-underline transition-colors hover:text-(--ink)"
+                  href={legalDocuments.dataDeletion.canonicalPath}
+                >
+                  Eliminación de datos
+                </Link>
+              </nav>
+            ) : (
+              <PrimaryNav pathname={pathname} />
+            )}
           </div>
         </header>
 

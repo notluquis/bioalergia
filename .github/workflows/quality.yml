@@ -12,6 +12,7 @@ on:
       - forthcoming-ocelot
     paths:
       - "apps/intranet/**"
+      - "apps/site/**"
       - "packages/**"
       - "package.json"
       - "pnpm-lock.yaml"
@@ -226,3 +227,88 @@ jobs:
           CHROME_PATH: ${{ steps.setup-chrome.outputs.chrome-path }}
           LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
         run: pnpm -F @finanzas/intranet audit:perf:mobile
+
+  site-e2e-a11y:
+    name: site playwright + axe (gating)
+    runs-on: ubuntu-latest
+    # GATING: public marketing site (incl. tienda) e2e + a11y. BACKEND-FREE —
+    # apps/site/playwright.config.ts boots `vite build && vite preview` itself
+    # and the shop specs mock the oRPC network layer, so NO Postgres/api service
+    # is needed (unlike the hermetic intranet job). Just build the workspace
+    # deps the site imports from dist, install chromium, run the suite.
+    env:
+      CI: "true"
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v6
+        with: { node-version: "${{ env.NODE_VERSION }}", cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      # Workspace deps the site imports from dist (@finanzas/db ships .mjs;
+      # orpc-contracts + orpc-client supply the typed client the site consumes).
+      - name: Build workspace deps
+        run: pnpm turbo run build --filter=@finanzas/db --filter=@finanzas/orpc-contracts --filter=@finanzas/orpc-client
+      - name: Install browsers
+        run: pnpm -F @finanzas/site exec playwright install --with-deps chromium
+      - name: Run site e2e + a11y suite
+        # The Playwright webServer builds + previews the site (vite build &&
+        # vite preview --port 4173); specs mock oRPC, so no DB is touched.
+        run: pnpm -F @finanzas/site audit:e2e
+      - name: Upload Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: site-playwright-report
+          path: apps/site/e2e-report
+          retention-days: 7
+
+  site-lighthouse:
+    name: site lighthouse-ci (perf budgets)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v6
+        with: { node-version: "${{ env.NODE_VERSION }}", cache: pnpm }
+      - name: Install Google Chrome
+        # @lhci/cli's chrome-launcher needs a real Chrome binary, not just
+        # Playwright's chromium-headless-shell. setup-chrome installs Chrome
+        # for Testing under /opt/hostedtoolcache and exports its path.
+        id: setup-chrome
+        uses: browser-actions/setup-chrome@v2
+        with: { chrome-version: stable }
+      - run: pnpm install --frozen-lockfile
+      - name: Build site (lhci serves dist via preview)
+        # Build workspace deps + the site; lhci's startServerCommand runs
+        # `vite preview` against the produced dist for the public routes.
+        run: pnpm turbo run build --filter=@finanzas/site
+      - name: Run Lighthouse CI
+        # NON-GATING: perf assertions in lighthouserc.json are `warn` to avoid
+        # flaky failures on CI throttling. Public routes only (no PHI/auth).
+        env:
+          CHROME_PATH: ${{ steps.setup-chrome.outputs.chrome-path }}
+          LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
+        run: pnpm -F @finanzas/site audit:perf
+
+  site-coverage:
+    name: site vitest coverage (gating)
+    runs-on: ubuntu-latest
+    # GATING: enforces the thresholds in apps/site/vite.config.ts, scoped to the
+    # site's PURE-LOGIC surface (src/lib + features/**/lib). The UI layer is
+    # covered by Chromatic + the site-e2e-a11y job, not by jsdom render tests,
+    # so it is intentionally out of this denominator. Ratchet thresholds UP as
+    # more pure modules (with tests) are added to the coverage `include` list.
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v6
+        with: { node-version: "${{ env.NODE_VERSION }}", cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm -F @finanzas/site test:coverage
+      - name: Upload coverage HTML report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: site-coverage-html
+          path: apps/site/coverage
+          retention-days: 14

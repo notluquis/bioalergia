@@ -30,6 +30,9 @@ export function storefrontUrl(): string {
 
 const FALLBACK_LOW_STOCK = 3;
 
+/* v8 ignore start -- React hooks; covered by Storybook (msw) + e2e render, not
+   unit-reachable without a React renderer. The pure logic they delegate to
+   (makeStockState) is fully unit-tested in shop-config.test.ts. */
 export function useShopConfig() {
   const { data } = useQuery({
     queryKey: ["shop", "public-config"],
@@ -45,3 +48,4 @@ export function useStockState(availableQty: number, safetyStock: number): StockS
   const { lowStockThreshold } = useShopConfig();
   return makeStockState(availableQty, safetyStock, lowStockThreshold);
 }
+/* v8 ignore stop */

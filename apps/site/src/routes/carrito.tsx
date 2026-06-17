@@ -1,5 +1,5 @@
 import type { CartContract } from "@finanzas/orpc-contracts/cart";
-import { Breadcrumbs, Button, Card, NumberField, Skeleton } from "@heroui/react";
+import { Breadcrumbs, Button, Card, Label, NumberField, Skeleton } from "@heroui/react";
 import type { InferContractRouterOutputs } from "@orpc/contract";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
@@ -99,6 +99,7 @@ function CarritoPage() {
                     }
                     value={item.qty}
                   >
+                    <Label className="sr-only">{`Cantidad de ${item.product.name}`}</Label>
                     <NumberField.Group>
                       <NumberField.DecrementButton />
                       <NumberField.Input className="w-12 text-center" />

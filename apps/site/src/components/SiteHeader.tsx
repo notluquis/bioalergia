@@ -2,8 +2,8 @@ import { Button, Link } from "@heroui/react";
 import { useTheme } from "next-themes";
 import { usePostHog } from "posthog-js/react";
 
+import { PrimaryNav } from "@/components/PrimaryNav";
 import { contactInfo } from "@/data/clinic";
-import { primaryNav } from "@/data/navigation";
 import { doctoraliaLink } from "@/lib/doctoralia";
 
 function ThemeIcon({ theme }: { theme: "light" | "dark" }) {
@@ -109,24 +109,7 @@ export function SiteHeader() {
         </div>
 
         {/* Row 2: full-width nav */}
-        <nav
-          aria-label="Navegación principal"
-          className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 border-border border-t px-4 py-2.5 text-(--ink-muted) text-sm lg:px-5"
-        >
-          {primaryNav.map((item) => (
-            <Link
-              key={item.href}
-              className={
-                item.accent
-                  ? "no-underline font-semibold text-(--accent) transition-colors hover:text-(--ink)"
-                  : "no-underline transition-colors hover:text-(--ink)"
-              }
-              href={item.href}
-            >
-              {item.label}
-            </Link>
-          ))}
-        </nav>
+        <PrimaryNav />
       </div>
     </header>
   );

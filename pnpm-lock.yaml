@@ -680,7 +680,7 @@ importers:
         version: 3.1.0(@react-spectrum/provider@3.11.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(tailwindcss@4.3.0)
       '@heroui/styles':
         specifier: ^3.1.0
-        version: 3.1.0(tailwind-merge@3.6.0)(tailwindcss@4.3.0)
+        version: 3.1.0(tailwind-merge@3.4.0)(tailwindcss@4.3.0)
       '@mercadopago/sdk-react':
         specifier: ^1.0.7
         version: 1.0.7(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -760,6 +760,9 @@ importers:
       '@vitejs/plugin-react':
         specifier: ^6.0.2
         version: 6.0.2(@rolldown/plugin-babel@0.2.3(@babel/core@7.29.7)(@babel/runtime@7.29.7)(rolldown@1.1.0)(vite@8.0.16(@types/node@25.9.2)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.48.0)(yaml@2.9.0)))(babel-plugin-react-compiler@1.0.0)(vite@8.0.16(@types/node@25.9.2)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.48.0)(yaml@2.9.0))
+      '@vitest/coverage-v8':
+        specifier: ^4.1.8
+        version: 4.1.8(@vitest/browser@4.1.8)(vitest@4.1.8)
       chromatic:
         specifier: ^17.3.0
         version: 17.3.0
