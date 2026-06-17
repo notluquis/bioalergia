@@ -1,4 +1,14 @@
+import type {
+  Consultation,
+  MedicalCertificate,
+  MedicalPrescription,
+  Patient,
+  PatientAttachment,
+  PatientPayment,
+  Person,
+} from "@finanzas/db/models";
 import { z } from "zod";
+import type { SchemaCoversModel } from "@/lib/api-validate";
 import { zApiDateOnly, zDateString } from "@/lib/api-validate";
 
 const DecimalSchema = z.union([z.number(), z.string()]);
@@ -158,3 +168,33 @@ export const PatientDetailSchema = z.strictObject({
 export const PatientBudgetListSchema = z.array(BudgetSchema);
 export const PatientPaymentListSchema = z.array(PatientPaymentSchema);
 export const PatientAttachmentListSchema = z.array(AttachmentSchema);
+
+// --- Drift guards (type-only, zero runtime/bundle) ---------------------------
+// Bind each response schema to its ZenStack model: if the model gains/renames a
+// field the server now sends, `tsgo` fails type-check in CI instead of the SPA
+// crashing at runtime with a Zod "unrecognized_keys"/"invalid_type" navigation
+// error (the MedicalPrescription folio/status drift, 2026-06). The server's
+// output schema is already model-derived (db `makeModelSchema`); this keeps the
+// hand-written client schemas honest without shipping the 1MB ZenStack runtime
+// into the bundle. PersonSchema intentionally projects a subset (the patient
+// view never reads marketing/legacy columns), encoded via Omit so a *new*
+// non-omitted Person field still trips the guard.
+type PersonProjected = Omit<
+  Person,
+  | "emailMarketingOptIn"
+  | "emailMarketingOptInAt"
+  | "emailUnsubscribeToken"
+  | "emailUnsubscribedAt"
+  | "rutLegacyInvalid"
+>;
+
+const _driftGuards: [
+  SchemaCoversModel<PersonProjected, z.infer<typeof PersonSchema>>,
+  SchemaCoversModel<Patient, z.infer<typeof PatientDetailSchema>>,
+  SchemaCoversModel<Consultation, z.infer<typeof ConsultationSchema>>,
+  SchemaCoversModel<MedicalCertificate, z.infer<typeof MedicalCertificateSchema>>,
+  SchemaCoversModel<MedicalPrescription, z.infer<typeof MedicalPrescriptionSchema>>,
+  SchemaCoversModel<PatientPayment, z.infer<typeof PatientPaymentSchema>>,
+  SchemaCoversModel<PatientAttachment, z.infer<typeof AttachmentSchema>>,
+] = [true, true, true, true, true, true, true];
+void _driftGuards;
