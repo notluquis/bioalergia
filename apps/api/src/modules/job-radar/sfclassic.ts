@@ -11,7 +11,12 @@
 //   career5.successfactors.eu:careers:Telefonica:es_ES (Telefónica/Movistar)
 //   career2.successfactors.eu:careers:nestleHRprdBX:es_CL (Nestlé)
 
-import { BROWSER_UA, deriveLocationFromText, deriveRemoteFromText, requestText } from "./_shared.ts";
+import {
+  BROWSER_UA,
+  deriveLocationFromText,
+  deriveRemoteFromText,
+  requestText,
+} from "./_shared.ts";
 import type { RawJob } from "./types.ts";
 
 export interface SfClassicEntry {
@@ -31,7 +36,9 @@ export function parseSfClassicEntry(identifier: string): SfClassicEntry | null {
 }
 
 function cdata(block: string, tag: string): string | null {
-  const m = block.match(new RegExp(`<${tag}>(?:<!\\[CDATA\\[)?([\\s\\S]*?)(?:\\]\\]>)?</${tag}>`, "i"));
+  const m = block.match(
+    new RegExp(`<${tag}>(?:<!\\[CDATA\\[)?([\\s\\S]*?)(?:\\]\\]>)?</${tag}>`, "i")
+  );
   if (!m) return null;
   const v = m[1].trim();
   return v.length > 0 ? v : null;
@@ -41,8 +48,13 @@ function cdata(block: string, tag: string): string | null {
 // por el TEXTO del label (Area/City/Country varían de posición), no por índice.
 function filtersByLabel(block: string): Map<string, string> {
   const map = new Map<string, string>();
-  for (const m of block.matchAll(/<filter\d+>\s*<label>([\s\S]*?)<\/label>\s*<value>([\s\S]*?)<\/value>/gi)) {
-    const label = m[1].replace(/<!\[CDATA\[|\]\]>/g, "").trim().toLowerCase();
+  for (const m of block.matchAll(
+    /<filter\d+>\s*<label>([\s\S]*?)<\/label>\s*<value>([\s\S]*?)<\/value>/gi
+  )) {
+    const label = m[1]
+      .replace(/<!\[CDATA\[|\]\]>/g, "")
+      .trim()
+      .toLowerCase();
     const value = m[2].replace(/<!\[CDATA\[|\]\]>/g, "").trim();
     if (label && value && !map.has(label)) map.set(label, value);
   }
@@ -66,7 +78,11 @@ function parseMdy(raw: string | null): Date | null {
 
 function stripHtml(html: string | null): string | null {
   if (!html) return null;
-  const t = html.replace(/<[^>]+>/g, " ").replace(/&nbsp;/g, " ").replace(/\s+/g, " ").trim();
+  const t = html
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
   return t.length > 0 ? t : null;
 }
 
@@ -100,7 +116,8 @@ export async function fetchSfClassicJobs(identifier: string): Promise<RawJob[]> 
     const descHtml = cdata(block, "Job-Description");
     const city = pick(filters, "city", "ciudad");
     const country = pick(filters, "country", "país", "pais");
-    const location = [city, country].filter(Boolean).join(", ") || deriveLocationFromText(title, descHtml);
+    const location =
+      [city, country].filter(Boolean).join(", ") || deriveLocationFromText(title, descHtml);
     out.push({
       source: "sfclassic",
       company: e.company,

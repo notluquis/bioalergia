@@ -238,7 +238,8 @@ export const onedriveOpenAPIHandler = new OpenAPIHandler(onedriveORPCRouter, {
       specGenerateOptions: {
         info: {
           title: "Bioalergia OneDrive oRPC",
-          description: "Gestión genérica de cuentas, carpetas y webhooks de OneDrive / Microsoft Graph.",
+          description:
+            "Gestión genérica de cuentas, carpetas y webhooks de OneDrive / Microsoft Graph.",
           version: "1.0.0",
         },
       },

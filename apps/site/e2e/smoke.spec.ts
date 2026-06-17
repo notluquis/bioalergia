@@ -86,7 +86,9 @@ test("primary nav links all point to routes that load (no 404)", async ({ page }
 
 test("/aprende shows topic cards and a card opens a topic page with content", async ({ page }) => {
   await page.goto("/aprende", { waitUntil: "domcontentloaded" });
-  await expect(page.getByRole("heading", { level: 1, name: /^Aprende sobre alergias$/ })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { level: 1, name: /^Aprende sobre alergias$/ })
+  ).toBeVisible();
 
   // Topic cards are <a href="/aprende/<slug>"> wrapping a Card. Find them by
   // the link href pattern so the assertion doesn't depend on specific copy.

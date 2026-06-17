@@ -14,7 +14,16 @@ import type { RawJob } from "./types.ts";
 
 const MAX_PAGES = 20;
 // Países extranjeros: HiringRoom mezcla tenants multi-país (makrohr=AR). Filtramos a CL.
-const FOREIGN = ["argentina", "méxico", "mexico", "perú", "peru", "colombia", "uruguay", "paraguay"];
+const FOREIGN = [
+  "argentina",
+  "méxico",
+  "mexico",
+  "perú",
+  "peru",
+  "colombia",
+  "uruguay",
+  "paraguay",
+];
 
 function clean(html: string): string {
   return html

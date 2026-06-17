@@ -53,9 +53,7 @@ describe("getExamReport", () => {
       createdAt: new Date("2026-02-01T10:00:00Z"),
       updatedAt: new Date("2026-02-02T10:00:00Z"),
       patient: { id: 9, birthDate: new Date("1990-01-15T00:00:00Z"), person: {} },
-      sections: [
-        { id: 1, reactions: [{ id: 1, papuleMm: decimal(3.2) }] },
-      ],
+      sections: [{ id: 1, reactions: [{ id: 1, papuleMm: decimal(3.2) }] }],
     });
 
     const res = await getExamReport({ id: 1 });

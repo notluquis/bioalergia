@@ -47,9 +47,7 @@ describe("toStoredDiagnoses", () => {
   });
 
   it("preserves custom=false explicitly", () => {
-    const out = toStoredDiagnoses([
-      { id: "x", label: "Y", source: "CUSTOM", custom: false },
-    ]);
+    const out = toStoredDiagnoses([{ id: "x", label: "Y", source: "CUSTOM", custom: false }]);
     expect(out[0].custom).toBe(false);
   });
 });

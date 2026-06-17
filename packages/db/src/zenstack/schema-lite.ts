@@ -127,6 +127,12 @@ export class SchemaType implements SchemaDef {
                     type: "CompanyContact",
                     array: true,
                     relation: { opposite: "person" }
+                },
+                consentRecords: {
+                    name: "consentRecords",
+                    type: "ConsentRecord",
+                    array: true,
+                    relation: { opposite: "person" }
                 }
             },
             idFields: ["id"],
@@ -3924,6 +3930,11 @@ export class SchemaType implements SchemaDef {
                     name: "dueAt",
                     type: "DateTime"
                 },
+                extendedAt: {
+                    name: "extendedAt",
+                    type: "DateTime",
+                    optional: true
+                },
                 resolvedAt: {
                     name: "resolvedAt",
                     type: "DateTime",
@@ -4248,6 +4259,271 @@ export class SchemaType implements SchemaDef {
             uniqueFields: {
                 id: { type: "String" },
                 book_folio: { book: { type: "String" }, folio: { type: "Int" } }
+            }
+        },
+        ProcessingActivity: {
+            name: "ProcessingActivity",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "String",
+                    id: true,
+                    default: ExpressionUtils.call("cuid") as FieldDefault
+                },
+                name: {
+                    name: "name",
+                    type: "String"
+                },
+                purpose: {
+                    name: "purpose",
+                    type: "String"
+                },
+                legalBasis: {
+                    name: "legalBasis",
+                    type: "String"
+                },
+                dataCategories: {
+                    name: "dataCategories",
+                    type: "String"
+                },
+                dataSubjects: {
+                    name: "dataSubjects",
+                    type: "String"
+                },
+                recipients: {
+                    name: "recipients",
+                    type: "String",
+                    optional: true
+                },
+                retentionPeriod: {
+                    name: "retentionPeriod",
+                    type: "String",
+                    optional: true
+                },
+                securityMeasures: {
+                    name: "securityMeasures",
+                    type: "String",
+                    optional: true
+                },
+                internationalTransfer: {
+                    name: "internationalTransfer",
+                    type: "Boolean",
+                    default: false as FieldDefault
+                },
+                isActive: {
+                    name: "isActive",
+                    type: "Boolean",
+                    default: true as FieldDefault
+                },
+                notes: {
+                    name: "notes",
+                    type: "String",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "String" }
+            }
+        },
+        ConsentRecord: {
+            name: "ConsentRecord",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "String",
+                    id: true,
+                    default: ExpressionUtils.call("cuid") as FieldDefault
+                },
+                personId: {
+                    name: "personId",
+                    type: "Int",
+                    foreignKeyFor: [
+                        "person"
+                    ] as readonly string[]
+                },
+                purpose: {
+                    name: "purpose",
+                    type: "String"
+                },
+                status: {
+                    name: "status",
+                    type: "String",
+                    default: "GRANTED" as FieldDefault
+                },
+                grantedAt: {
+                    name: "grantedAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                withdrawnAt: {
+                    name: "withdrawnAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                channel: {
+                    name: "channel",
+                    type: "String",
+                    default: "PRESENCIAL" as FieldDefault
+                },
+                policyVersion: {
+                    name: "policyVersion",
+                    type: "String"
+                },
+                evidenceText: {
+                    name: "evidenceText",
+                    type: "String",
+                    optional: true
+                },
+                source: {
+                    name: "source",
+                    type: "String",
+                    optional: true
+                },
+                recordedBy: {
+                    name: "recordedBy",
+                    type: "Int",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                person: {
+                    name: "person",
+                    type: "Person",
+                    relation: { opposite: "consentRecords", fields: ["personId"], references: ["id"], onDelete: "Cascade" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "String" }
+            }
+        },
+        ClinicalConsent: {
+            name: "ClinicalConsent",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "String",
+                    id: true,
+                    default: ExpressionUtils.call("cuid") as FieldDefault
+                },
+                patientId: {
+                    name: "patientId",
+                    type: "Int",
+                    foreignKeyFor: [
+                        "patient"
+                    ] as readonly string[]
+                },
+                procedureType: {
+                    name: "procedureType",
+                    type: "String"
+                },
+                procedureName: {
+                    name: "procedureName",
+                    type: "String"
+                },
+                templateVersion: {
+                    name: "templateVersion",
+                    type: "String"
+                },
+                contentSnapshot: {
+                    name: "contentSnapshot",
+                    type: "String"
+                },
+                risksDisclosed: {
+                    name: "risksDisclosed",
+                    type: "String",
+                    optional: true
+                },
+                alternativesDisclosed: {
+                    name: "alternativesDisclosed",
+                    type: "String",
+                    optional: true
+                },
+                status: {
+                    name: "status",
+                    type: "String",
+                    default: "PENDING" as FieldDefault
+                },
+                signatureMethod: {
+                    name: "signatureMethod",
+                    type: "String"
+                },
+                signerName: {
+                    name: "signerName",
+                    type: "String"
+                },
+                signerRut: {
+                    name: "signerRut",
+                    type: "String",
+                    optional: true
+                },
+                signerRelationship: {
+                    name: "signerRelationship",
+                    type: "String",
+                    optional: true
+                },
+                clinicianId: {
+                    name: "clinicianId",
+                    type: "Int",
+                    optional: true
+                },
+                signedAt: {
+                    name: "signedAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                refusedReason: {
+                    name: "refusedReason",
+                    type: "String",
+                    optional: true
+                },
+                revokedAt: {
+                    name: "revokedAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                notes: {
+                    name: "notes",
+                    type: "String",
+                    optional: true
+                },
+                createdBy: {
+                    name: "createdBy",
+                    type: "Int"
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true
+                },
+                patient: {
+                    name: "patient",
+                    type: "Patient",
+                    relation: { opposite: "clinicalConsents", fields: ["patientId"], references: ["id"], onDelete: "Cascade" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "String" }
             }
         },
         ClinicalSeries: {
@@ -7854,6 +8130,12 @@ export class SchemaType implements SchemaDef {
                 complaints: {
                     name: "complaints",
                     type: "Complaint",
+                    array: true,
+                    relation: { opposite: "patient" }
+                },
+                clinicalConsents: {
+                    name: "clinicalConsents",
+                    type: "ClinicalConsent",
                     array: true,
                     relation: { opposite: "patient" }
                 }

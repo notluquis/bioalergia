@@ -67,9 +67,8 @@ vi.mock("../../lib/logger.ts", () => ({ logError: vi.fn(), logEvent: vi.fn() }))
 vi.mock("../../lib/secret-cipher.ts", () => cipherMock);
 vi.mock("../../modules/wa-cloud/graph-client.ts", () => graphMock);
 
-const { listSnippets, upsertSnippet, archiveSnippet, sendSnippet } = await import(
-  "../wa-snippets.ts"
-);
+const { listSnippets, upsertSnippet, archiveSnippet, sendSnippet } =
+  await import("../wa-snippets.ts");
 const {
   listSavedLocations,
   upsertSavedLocation,
@@ -112,9 +111,7 @@ beforeEach(() => {
 // ── Snippets ─────────────────────────────────────────────────────────────────
 describe("listSnippets", () => {
   it("arma where con archived:false + q OR insensitive y mapea Json→array", async () => {
-    mockDb.waSnippet.findMany.mockResolvedValue([
-      { id: 1, replyButtons: null, variables: null },
-    ]);
+    mockDb.waSnippet.findMany.mockResolvedValue([{ id: 1, replyButtons: null, variables: null }]);
     const out = await listSnippets({ q: "hola", kind: "TEXT" });
     const args = mockDb.waSnippet.findMany.mock.calls[0]![0];
     expect(args.where.archived).toBe(false);
@@ -150,10 +147,9 @@ describe("archiveSnippet", () => {
 describe("sendSnippet", () => {
   it("lanza NOT_FOUND si el snippet no existe o está archivado", async () => {
     mockDb.waSnippet.findUnique.mockResolvedValue(null);
-    const err = await sendSnippet(
-      { snippetId: 1, conversationId: 2, phoneNumberId: 3 },
-      9
-    ).catch((e: unknown) => e);
+    const err = await sendSnippet({ snippetId: 1, conversationId: 2, phoneNumberId: 3 }, 9).catch(
+      (e: unknown) => e
+    );
     expect(isDomainError(err)).toBe(true);
     expect((err as { kind: string }).kind).toBe("NOT_FOUND");
     expect((err as Error).message).toBe("Snippet no existe");
@@ -167,10 +163,9 @@ describe("sendSnippet", () => {
       lastInboundAt: CLOSED(),
       contact: { phoneE164: "+569", blockedAt: null },
     });
-    const err = await sendSnippet(
-      { snippetId: 1, conversationId: 2, phoneNumberId: 3 },
-      9
-    ).catch((e: unknown) => e);
+    const err = await sendSnippet({ snippetId: 1, conversationId: 2, phoneNumberId: 3 }, 9).catch(
+      (e: unknown) => e
+    );
     expect((err as { kind: string }).kind).toBe("BAD_REQUEST");
     expect((err as Error).message).toContain("Ventana 24h cerrada");
     expect(graphMock.sendTextMessage).not.toHaveBeenCalled();
@@ -231,10 +226,9 @@ describe("sendSnippet", () => {
       .fn()
       .mockResolvedValue({ ok: false, status: 400, text: async () => "boom" });
     vi.stubGlobal("fetch", fetchMock);
-    const err = await sendSnippet(
-      { snippetId: 1, conversationId: 2, phoneNumberId: 3 },
-      9
-    ).catch((e: unknown) => e);
+    const err = await sendSnippet({ snippetId: 1, conversationId: 2, phoneNumberId: 3 }, 9).catch(
+      (e: unknown) => e
+    );
     // ORPCError BAD_GATEWAY preserved (not a DomainError)
     expect(isDomainError(err)).toBe(false);
     expect((err as Error).message).toContain("Meta CTA 400");
@@ -475,7 +469,12 @@ describe("validateAccount", () => {
 describe("syncPhoneNumbers", () => {
   it("batchea existentes y upsertea cada phone remoto", async () => {
     graphMock.listAccountPhoneNumbers.mockResolvedValue([
-      { id: "PN1", display_phone_number: "+56 9", verified_name: "Recepción", quality_rating: "GREEN" },
+      {
+        id: "PN1",
+        display_phone_number: "+56 9",
+        verified_name: "Recepción",
+        quality_rating: "GREEN",
+      },
     ]);
     mockDb.waPhoneNumber.findMany.mockResolvedValue([]);
     mockDb.waPhoneNumber.create.mockResolvedValue({});

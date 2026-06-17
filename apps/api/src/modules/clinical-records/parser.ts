@@ -386,7 +386,8 @@ function applyPositionalConsulta(rows: Row[], result: ParsedClinicalRecord): voi
     }
     if (other && !c1) {
       seenAntecedent = true;
-      if (/padre|madre|hermano|abuel|familiar|t[ií]o|t[ií]a|primo/i.test(other)) antFamily.push(other);
+      if (/padre|madre|hermano|abuel|familiar|t[ií]o|t[ií]a|primo/i.test(other))
+        antFamily.push(other);
       else antPersonal.push(other);
     }
     // Body column before the antecedentes block is HISTORIA; after it EXAMEN.
@@ -397,7 +398,8 @@ function applyPositionalConsulta(rows: Row[], result: ParsedClinicalRecord): voi
   }
 
   if (!result.history && historyLines.length > 0) result.history = historyLines.join("\n").trim();
-  if (!result.physicalExam && examLines.length > 0) result.physicalExam = examLines.join("\n").trim();
+  if (!result.physicalExam && examLines.length > 0)
+    result.physicalExam = examLines.join("\n").trim();
   if (!result.diagnosis && diagLines.length > 0) result.diagnosis = diagLines.join("\n").trim();
   if (result.indications.length === 0 && indLines.length > 0) {
     result.indications = dedupeLines(indLines);

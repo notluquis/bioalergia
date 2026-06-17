@@ -1138,7 +1138,12 @@ async function discoverOneDriveClinicalXlsxItem(
   if (
     existing &&
     !options?.force &&
-    isOneDriveItemUnchanged(existing.oneDriveETag, existing.oneDriveCTag, metadata.eTag, metadata.cTag) &&
+    isOneDriveItemUnchanged(
+      existing.oneDriveETag,
+      existing.oneDriveCTag,
+      metadata.eTag,
+      metadata.cTag
+    ) &&
     existing.classification === classification.classification
   ) {
     return {

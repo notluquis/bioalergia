@@ -12,20 +12,23 @@ function igUserId(account: LoadedSocialAccount): string {
 
 type ContainerResponse = { id: string };
 type PublishResponse = { id: string };
-type StatusResponse = { status_code?: "IN_PROGRESS" | "FINISHED" | "ERROR" | "EXPIRED"; status?: string };
+type StatusResponse = {
+  status_code?: "IN_PROGRESS" | "FINISHED" | "ERROR" | "EXPIRED";
+  status?: string;
+};
 type PermalinkResponse = { permalink?: string };
 
 export async function createImageContainer(
   account: LoadedSocialAccount,
   imageUrl: string,
-  caption?: string,
+  caption?: string
 ): Promise<string> {
   const token = requirePageToken(account);
   const res = await graphPost<ContainerResponse>(
     `/${igUserId(account)}/media`,
     { image_url: imageUrl, caption },
     token,
-    account.graphApiVersion,
+    account.graphApiVersion
   );
   return res.id;
 }
@@ -33,14 +36,14 @@ export async function createImageContainer(
 export async function createReelContainer(
   account: LoadedSocialAccount,
   videoUrl: string,
-  caption?: string,
+  caption?: string
 ): Promise<string> {
   const token = requirePageToken(account);
   const res = await graphPost<ContainerResponse>(
     `/${igUserId(account)}/media`,
     { media_type: "REELS", video_url: videoUrl, caption },
     token,
-    account.graphApiVersion,
+    account.graphApiVersion
   );
   return res.id;
 }
@@ -48,20 +51,25 @@ export async function createReelContainer(
 export async function createStoryContainer(
   account: LoadedSocialAccount,
   mediaUrl: string,
-  isVideo: boolean,
+  isVideo: boolean
 ): Promise<string> {
   const token = requirePageToken(account);
   const body = isVideo
     ? { media_type: "STORIES", video_url: mediaUrl }
     : { media_type: "STORIES", image_url: mediaUrl };
-  const res = await graphPost<ContainerResponse>(`/${igUserId(account)}/media`, body, token, account.graphApiVersion);
+  const res = await graphPost<ContainerResponse>(
+    `/${igUserId(account)}/media`,
+    body,
+    token,
+    account.graphApiVersion
+  );
   return res.id;
 }
 
 export async function createCarouselContainer(
   account: LoadedSocialAccount,
   items: { url: string; isVideo: boolean }[],
-  caption?: string,
+  caption?: string
 ): Promise<string> {
   const token = requirePageToken(account);
   if (items.length < 2 || items.length > 10) {
@@ -75,7 +83,7 @@ export async function createCarouselContainer(
         ? { is_carousel_item: true, media_type: "VIDEO", video_url: item.url }
         : { is_carousel_item: true, image_url: item.url },
       token,
-      account.graphApiVersion,
+      account.graphApiVersion
     );
     children.push(child.id);
   }
@@ -83,39 +91,49 @@ export async function createCarouselContainer(
     `/${igUserId(account)}/media`,
     { media_type: "CAROUSEL", children, caption },
     token,
-    account.graphApiVersion,
+    account.graphApiVersion
   );
   return res.id;
 }
 
 export async function getContainerStatus(
   account: LoadedSocialAccount,
-  containerId: string,
+  containerId: string
 ): Promise<"IN_PROGRESS" | "FINISHED" | "ERROR" | "EXPIRED"> {
   const token = requirePageToken(account);
   const res = await graphGet<StatusResponse>(
     `/${containerId}?fields=status_code`,
     token,
-    account.graphApiVersion,
+    account.graphApiVersion
   );
   return res.status_code ?? "IN_PROGRESS";
 }
 
-export async function publishContainer(account: LoadedSocialAccount, containerId: string): Promise<string> {
+export async function publishContainer(
+  account: LoadedSocialAccount,
+  containerId: string
+): Promise<string> {
   const token = requirePageToken(account);
   const res = await graphPost<PublishResponse>(
     `/${igUserId(account)}/media_publish`,
     { creation_id: containerId },
     token,
-    account.graphApiVersion,
+    account.graphApiVersion
   );
   return res.id;
 }
 
-export async function getPermalink(account: LoadedSocialAccount, mediaId: string): Promise<string | null> {
+export async function getPermalink(
+  account: LoadedSocialAccount,
+  mediaId: string
+): Promise<string | null> {
   const token = requirePageToken(account);
   try {
-    const res = await graphGet<PermalinkResponse>(`/${mediaId}?fields=permalink`, token, account.graphApiVersion);
+    const res = await graphGet<PermalinkResponse>(
+      `/${mediaId}?fields=permalink`,
+      token,
+      account.graphApiVersion
+    );
     return res.permalink ?? null;
   } catch {
     return null;

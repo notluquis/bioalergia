@@ -210,7 +210,9 @@ async function projectCertificate(
     issuedAt: certificate.issuedAt,
     doctor: { name: doctorName, specialty: DEFAULT_SPECIALTY },
     patientInitials: toInitials(certificate.patientName),
-    ...(maskRut(certificate.patientRut) ? { patientRutMasked: maskRut(certificate.patientRut) } : {}),
+    ...(maskRut(certificate.patientRut)
+      ? { patientRutMasked: maskRut(certificate.patientRut) }
+      : {}),
     ...integrityBadge(storedHash ?? certificate.pdfHash, expectedHash),
   };
 }
@@ -243,7 +245,9 @@ async function projectPrescription(
       ...(prescription.doctorLicense?.trim() ? { license: prescription.doctorLicense.trim() } : {}),
     },
     patientInitials: toInitials(prescription.patientName),
-    ...(maskRut(prescription.patientRut) ? { patientRutMasked: maskRut(prescription.patientRut) } : {}),
+    ...(maskRut(prescription.patientRut)
+      ? { patientRutMasked: maskRut(prescription.patientRut) }
+      : {}),
     prescriptionType:
       PRESCRIPTION_TYPE_LABEL[prescription.prescriptionType] ?? prescription.prescriptionType,
     ...(prescription.folio ? { folio: prescription.folio } : {}),

@@ -232,10 +232,8 @@ export async function upsertCampaignRecipient(
     if (person) {
       if (!patientName) {
         patientName =
-          [person.names, person.fatherName, person.motherName]
-            .filter(Boolean)
-            .join(" ")
-            .trim() || null;
+          [person.names, person.fatherName, person.motherName].filter(Boolean).join(" ").trim() ||
+          null;
       }
       if (!patientPhone) {
         patientPhone = person.phone ?? null;

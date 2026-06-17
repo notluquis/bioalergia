@@ -185,7 +185,9 @@ export async function syncFlows(
   const existingRows = await db.waSavedFlow.findMany({
     where: { flowId: { in: remote.map((f) => f.id) } },
   });
-  const existingById = new Map(existingRows.map((r: (typeof existingRows)[number]) => [r.flowId, r]));
+  const existingById = new Map(
+    existingRows.map((r: (typeof existingRows)[number]) => [r.flowId, r])
+  );
   await Promise.all(
     remote.map((f) => {
       const existing = existingById.get(f.id);

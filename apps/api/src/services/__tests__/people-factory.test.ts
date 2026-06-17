@@ -81,26 +81,26 @@ describe("findOrCreatePerson — input validation", () => {
 
   it("rechaza RUT con DV equivocado (mod-11): 24597904-K", async () => {
     resetDb();
-    await expect(
-      findOrCreatePerson({ rut: "24597904-K", names: "Juan" })
-    ).rejects.toMatchObject({ kind: "BAD_REQUEST" });
+    await expect(findOrCreatePerson({ rut: "24597904-K", names: "Juan" })).rejects.toMatchObject({
+      kind: "BAD_REQUEST",
+    });
     expect(mockFindUnique).not.toHaveBeenCalled();
     expect(mockCreate).not.toHaveBeenCalled();
   });
 
   it("rechaza RUT con formato inválido (sin dígitos)", async () => {
     resetDb();
-    await expect(
-      findOrCreatePerson({ rut: "no-es-rut!!!", names: "Juan" })
-    ).rejects.toMatchObject({ kind: "BAD_REQUEST" });
+    await expect(findOrCreatePerson({ rut: "no-es-rut!!!", names: "Juan" })).rejects.toMatchObject({
+      kind: "BAD_REQUEST",
+    });
     expect(mockCreate).not.toHaveBeenCalled();
   });
 
   it("incluye el rut original en details del DomainError al fallar validación", async () => {
     resetDb();
-    await expect(
-      findOrCreatePerson({ rut: "24597904-K", names: "Juan" })
-    ).rejects.toMatchObject({ details: { rut: "24597904-K" } });
+    await expect(findOrCreatePerson({ rut: "24597904-K", names: "Juan" })).rejects.toMatchObject({
+      details: { rut: "24597904-K" },
+    });
   });
 
   it("rechaza cuando no hay RUT (null) — fuerza al caller a entregar RUT", async () => {
@@ -122,9 +122,9 @@ describe("findOrCreatePerson — input validation", () => {
 
   it("rechaza cuando rut es undefined", async () => {
     resetDb();
-    await expect(
-      findOrCreatePerson({ rut: undefined, names: "Juan" })
-    ).rejects.toMatchObject({ kind: "BAD_REQUEST" });
+    await expect(findOrCreatePerson({ rut: undefined, names: "Juan" })).rejects.toMatchObject({
+      kind: "BAD_REQUEST",
+    });
     expect(mockFindUnique).not.toHaveBeenCalled();
   });
 
@@ -391,9 +391,7 @@ describe("findOrCreatePerson — strategy: overwrite", () => {
 
   it("overwrite escribe motherName/phone del input cuando difieren (inputX ?? existing)", async () => {
     resetDb();
-    mockFindUnique.mockResolvedValue(
-      existing({ motherName: "Vieja", phone: "+56900000000" })
-    );
+    mockFindUnique.mockResolvedValue(existing({ motherName: "Vieja", phone: "+56900000000" }));
     mockUpdate.mockResolvedValue({});
 
     await findOrCreatePerson({

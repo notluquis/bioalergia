@@ -42,7 +42,9 @@ function makeDte(overrides: Partial<DteInput> = {}): DteInput {
   };
 }
 
-type Hypothesis = Parameters<typeof selectGlobalAutoLinkHypotheses>[0][number]["hypotheses"][number];
+type Hypothesis = Parameters<
+  typeof selectGlobalAutoLinkHypotheses
+>[0][number]["hypotheses"][number];
 type Entry = Parameters<typeof selectGlobalAutoLinkHypotheses>[0][number];
 
 function makeHypothesis(overrides: Partial<Hypothesis> = {}): Hypothesis {
@@ -154,9 +156,7 @@ describe("scoreCandidate — same-series RUT", () => {
     });
 
     expect(result.confidenceScore).toBe(30);
-    expect(result.reasons).toContain(
-      "RUT ya confirmado en otro evento de la misma serie clínica"
-    );
+    expect(result.reasons).toContain("RUT ya confirmado en otro evento de la misma serie clínica");
   });
 
   it("does not double-count: a direct RUT match suppresses the same-series bonus", () => {
@@ -714,7 +714,12 @@ describe("findSkinTestBundleSuggestions — gating", () => {
     const result = findSkinTestBundleSuggestions({
       amountHint: 60000,
       candidates: [
-        makeDte({ clientRUT: "17777348-4", dteSaleDetailId: "sale-A", totalAmount: 30000, linkedEventsCount: 1 }),
+        makeDte({
+          clientRUT: "17777348-4",
+          dteSaleDetailId: "sale-A",
+          totalAmount: 30000,
+          linkedEventsCount: 1,
+        }),
         makeDte({ clientRUT: "17777348-4", dteSaleDetailId: "sale-B", totalAmount: 30000 }),
       ],
       nameHints: [],
@@ -805,8 +810,18 @@ describe("findSkinTestBundleSuggestions — gating", () => {
     const result = findSkinTestBundleSuggestions({
       amountHint: 60000,
       candidates: [
-        makeDte({ clientRUT: "17777348-4", dteSaleDetailId: "zzz", folio: "z", totalAmount: 30000 }),
-        makeDte({ clientRUT: "17777348-4", dteSaleDetailId: "aaa", folio: "a", totalAmount: 30000 }),
+        makeDte({
+          clientRUT: "17777348-4",
+          dteSaleDetailId: "zzz",
+          folio: "z",
+          totalAmount: 30000,
+        }),
+        makeDte({
+          clientRUT: "17777348-4",
+          dteSaleDetailId: "aaa",
+          folio: "a",
+          totalAmount: 30000,
+        }),
       ],
       nameHints: [],
       rutHints: ["17777348-4"],
@@ -818,8 +833,20 @@ describe("findSkinTestBundleSuggestions — gating", () => {
 
 describe("findSkinTestBundleSuggestions — method combination & reasons", () => {
   const namedPair = (name: string) => [
-    makeDte({ clientName: name, clientRUT: "17777348-4", dteSaleDetailId: "a", folio: "1", totalAmount: 30000 }),
-    makeDte({ clientName: name, clientRUT: "17777348-4", dteSaleDetailId: "b", folio: "2", totalAmount: 30000 }),
+    makeDte({
+      clientName: name,
+      clientRUT: "17777348-4",
+      dteSaleDetailId: "a",
+      folio: "1",
+      totalAmount: 30000,
+    }),
+    makeDte({
+      clientName: name,
+      clientRUT: "17777348-4",
+      dteSaleDetailId: "b",
+      folio: "2",
+      totalAmount: 30000,
+    }),
   ];
 
   it("combines to method 'rut' when there are no name hints", () => {
@@ -955,11 +982,15 @@ describe("selectGlobalAutoLinkHypotheses — exact branch-and-bound", () => {
     const selected = selectGlobalAutoLinkHypotheses([
       {
         event: makeEvent("event-a"),
-        hypotheses: [makeHypothesis({ dteSaleDetailIds: ["only-dte"], hypothesisId: "a", score: 95 })],
+        hypotheses: [
+          makeHypothesis({ dteSaleDetailIds: ["only-dte"], hypothesisId: "a", score: 95 }),
+        ],
       },
       {
         event: makeEvent("event-b"),
-        hypotheses: [makeHypothesis({ dteSaleDetailIds: ["only-dte"], hypothesisId: "b", score: 95 })],
+        hypotheses: [
+          makeHypothesis({ dteSaleDetailIds: ["only-dte"], hypothesisId: "b", score: 95 }),
+        ],
       },
     ]);
     const ids = [...selected.values()].flatMap((h) => h.dteSaleDetailIds);
@@ -1010,11 +1041,15 @@ describe("selectGlobalAutoLinkHypotheses — exact branch-and-bound", () => {
     const entries: Entry[] = [
       {
         event: makeEvent("event-hi"),
-        hypotheses: [makeHypothesis({ dteSaleDetailIds: ["dte-shared"], hypothesisId: "hi", score: 99 })],
+        hypotheses: [
+          makeHypothesis({ dteSaleDetailIds: ["dte-shared"], hypothesisId: "hi", score: 99 }),
+        ],
       },
       {
         event: makeEvent("event-lo"),
-        hypotheses: [makeHypothesis({ dteSaleDetailIds: ["dte-shared"], hypothesisId: "lo", score: 80 })],
+        hypotheses: [
+          makeHypothesis({ dteSaleDetailIds: ["dte-shared"], hypothesisId: "lo", score: 80 }),
+        ],
       },
       ...Array.from({ length: 17 }, (_, i) => ({
         event: makeEvent(`event-x${i}`),

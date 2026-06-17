@@ -2,9 +2,8 @@ import { describe, expect, it, vi } from "vitest";
 
 vi.mock("@finanzas/db", () => ({ db: {} }));
 
-const { parseProductionBalanceRows, parseSpanishLongDate } = await import(
-  "./production-balance-import.ts"
-);
+const { parseProductionBalanceRows, parseSpanishLongDate } =
+  await import("./production-balance-import.ts");
 
 describe("parseSpanishLongDate", () => {
   it("parses Google Sheets long format without 'de'", () => {

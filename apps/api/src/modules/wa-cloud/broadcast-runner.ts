@@ -18,9 +18,7 @@ export type BroadcastBatchResult = {
 // `send_wa_broadcast_tick` graphile-worker task, which re-enqueues itself until
 // `remaining === 0` or the broadcast leaves SENDING (cancelled/failed). Replaces
 // the old in-process setInterval poller (zero polling — see CLAUDE.local.md).
-export async function sendBroadcastNextBatch(
-  broadcastId: number
-): Promise<BroadcastBatchResult> {
+export async function sendBroadcastNextBatch(broadcastId: number): Promise<BroadcastBatchResult> {
   const current = await db.waBroadcast.findUnique({ where: { id: broadcastId } });
   if (!current) return { remaining: 0, status: "missing" };
 

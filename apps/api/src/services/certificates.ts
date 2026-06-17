@@ -41,9 +41,8 @@ export async function generateMedicalCertificate(
 ): Promise<File> {
   const parsed = medicalCertificateSchema.parse(input);
   const certificateId = crypto.randomUUID();
-  const { generateMedicalCertificatePdf, generateQRCode, signPdf } = await import(
-    "../modules/certificates/certificate.service.ts"
-  );
+  const { generateMedicalCertificatePdf, generateQRCode, signPdf } =
+    await import("../modules/certificates/certificate.service.ts");
   const verificationCode = generateVerificationCode();
   const qrCode = await generateQRCode(verificationCode);
   const clinic = await db.clinicSettings.upsert({

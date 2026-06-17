@@ -9,7 +9,11 @@ import type { RawJob } from "./types.ts";
 const MAX_PAGES = 30;
 
 function clean(html: string): string {
-  return html.replace(/<[^>]+>/g, " ").replace(/&amp;/g, "&").replace(/\s+/g, " ").trim();
+  return html
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function parseCards(html: string, slug: string): RawJob[] {
@@ -29,12 +33,8 @@ function parseCards(html: string, slug: string): RawJob[] {
     const title = clean(h3[1].replace(/<small[\s\S]*?<\/small>/gi, ""));
     if (!title) continue;
     // "Publicado hace X días" (relativo) → fecha aprox. Jornada de la card.
-    const publishedAt = parseRelativeEs(
-      m[3].match(/Publicado\s+hace[^<]*/i)?.[0] ?? null
-    );
-    const jornada = clean(
-      m[3].match(/fa-clock-o[^>]*><\/i>\s*([^<]{1,30})/i)?.[1] ?? ""
-    );
+    const publishedAt = parseRelativeEs(m[3].match(/Publicado\s+hace[^<]*/i)?.[0] ?? null);
+    const jornada = clean(m[3].match(/fa-clock-o[^>]*><\/i>\s*([^<]{1,30})/i)?.[1] ?? "");
     out.push({
       source: "hirefront",
       company: slug,

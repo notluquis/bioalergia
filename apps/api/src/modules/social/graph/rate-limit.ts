@@ -16,14 +16,24 @@ export async function checkAndIncrementBuc(accountId: number): Promise<void> {
   });
   if (!account) return;
   const now = Date.now();
-  const windowExpired = !account.callWindowStart || now - account.callWindowStart.getTime() > WINDOW_MS;
+  const windowExpired =
+    !account.callWindowStart || now - account.callWindowStart.getTime() > WINDOW_MS;
 
   if (windowExpired) {
-    await db.socialAccount.update({ where: { id: accountId }, data: { callWindowStart: new Date(), callCount: 1 } });
+    await db.socialAccount.update({
+      where: { id: accountId },
+      data: { callWindowStart: new Date(), callCount: 1 },
+    });
     return;
   }
   if (account.callCount >= SAFETY_CAP) {
-    throw new DomainError("RATE_LIMITED", "Límite de llamadas a Meta alcanzado (BUC). Intenta más tarde.");
+    throw new DomainError(
+      "RATE_LIMITED",
+      "Límite de llamadas a Meta alcanzado (BUC). Intenta más tarde."
+    );
   }
-  await db.socialAccount.update({ where: { id: accountId }, data: { callCount: { increment: 1 } } });
+  await db.socialAccount.update({
+    where: { id: accountId },
+    data: { callCount: { increment: 1 } },
+  });
 }

@@ -369,9 +369,7 @@ export const legalDocuments: Record<LegalDocumentKey, LegalDocument> = {
       },
       {
         id: "contacto",
-        paragraphs: [
-          `Contacto principal para estas solicitudes: ${legalOwner.privacyEmail}.`,
-        ],
+        paragraphs: [`Contacto principal para estas solicitudes: ${legalOwner.privacyEmail}.`],
         title: "8. Contacto",
       },
     ],
@@ -383,4 +381,3 @@ export const legalDocuments: Record<LegalDocumentKey, LegalDocument> = {
     title: "Instrucciones de eliminación de datos",
   },
 };
-

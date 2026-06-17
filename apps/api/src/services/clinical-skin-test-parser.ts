@@ -785,10 +785,7 @@ function isAllergenNameCell(
   // Only a code in the SAME panel makes this an allergen name. A code sitting in
   // a different column block (the left panel) must not demote a right-panel
   // section header to a name — that wiped out sections like GRAMINEAS/ALIMENTOS.
-  if (
-    cell.col - previous.col !== 1 &&
-    blockForColumn(previous.col) !== blockForColumn(cell.col)
-  ) {
+  if (cell.col - previous.col !== 1 && blockForColumn(previous.col) !== blockForColumn(cell.col)) {
     return false;
   }
   return (

@@ -81,7 +81,12 @@ function serializeArticle(row: ArticleRow) {
 
 // ── public routes (apps/site) ─────────────────────────────────────────────────
 const listArticlesRoute = base
-  .route({ method: "GET", path: "/articles", summary: "List published articles", tags: ["SiteContent"] })
+  .route({
+    method: "GET",
+    path: "/articles",
+    summary: "List published articles",
+    tags: ["SiteContent"],
+  })
   .output(articleListResponseSchema)
   .handler(async () => {
     const rows = await listPublishedArticles();
@@ -89,7 +94,12 @@ const listArticlesRoute = base
   });
 
 const getArticleBySlugRoute = base
-  .route({ method: "GET", path: "/articles/by-slug/{slug}", summary: "Get published article by slug", tags: ["SiteContent"] })
+  .route({
+    method: "GET",
+    path: "/articles/by-slug/{slug}",
+    summary: "Get published article by slug",
+    tags: ["SiteContent"],
+  })
   .input(slugInputSchema)
   .output(articleResponseSchema)
   .handler(async ({ input }) => {
@@ -99,7 +109,12 @@ const getArticleBySlugRoute = base
 
 // ── admin routes (intranet) ───────────────────────────────────────────────────
 const adminListArticlesRoute = requireStaff
-  .route({ method: "GET", path: "/admin/articles", summary: "List all articles", tags: ["SiteContent"] })
+  .route({
+    method: "GET",
+    path: "/admin/articles",
+    summary: "List all articles",
+    tags: ["SiteContent"],
+  })
   .output(adminArticleListResponseSchema)
   .handler(async () => {
     const rows = await listAllArticles();
@@ -107,7 +122,12 @@ const adminListArticlesRoute = requireStaff
   });
 
 const adminGetArticleRoute = requireStaff
-  .route({ method: "GET", path: "/admin/articles/{id}", summary: "Get article by id", tags: ["SiteContent"] })
+  .route({
+    method: "GET",
+    path: "/admin/articles/{id}",
+    summary: "Get article by id",
+    tags: ["SiteContent"],
+  })
   .input(articleIdInputSchema)
   .output(articleResponseSchema)
   .handler(async ({ input }) => {
@@ -116,7 +136,12 @@ const adminGetArticleRoute = requireStaff
   });
 
 const adminCreateArticleRoute = requireStaff
-  .route({ method: "POST", path: "/admin/articles", summary: "Create article", tags: ["SiteContent"] })
+  .route({
+    method: "POST",
+    path: "/admin/articles",
+    summary: "Create article",
+    tags: ["SiteContent"],
+  })
   .input(articleCreateInputSchema)
   .output(articleResponseSchema)
   .handler(async ({ input }) => {
@@ -125,7 +150,12 @@ const adminCreateArticleRoute = requireStaff
   });
 
 const adminUpdateArticleRoute = requireStaff
-  .route({ method: "PUT", path: "/admin/articles/{id}", summary: "Update article", tags: ["SiteContent"] })
+  .route({
+    method: "PUT",
+    path: "/admin/articles/{id}",
+    summary: "Update article",
+    tags: ["SiteContent"],
+  })
   .input(articleUpdateInputSchema)
   .output(articleResponseSchema)
   .handler(async ({ input }) => {
@@ -134,7 +164,12 @@ const adminUpdateArticleRoute = requireStaff
   });
 
 const adminDeleteArticleRoute = requireStaff
-  .route({ method: "DELETE", path: "/admin/articles/{id}", summary: "Delete article", tags: ["SiteContent"] })
+  .route({
+    method: "DELETE",
+    path: "/admin/articles/{id}",
+    summary: "Delete article",
+    tags: ["SiteContent"],
+  })
   .input(articleIdInputSchema)
   .output(articleDeleteResponseSchema)
   .handler(async ({ input }) => {

@@ -93,9 +93,7 @@ const certificatesORPCRouterBase = {
     })
     .input(generateMedicalCertificateInputSchema)
     .output(z.file())
-    .handler(async ({ context, input }) =>
-      generateMedicalCertificate(input, context.user.id)
-    ),
+    .handler(async ({ context, input }) => generateMedicalCertificate(input, context.user.id)),
 
   generatePrescription: createMedicalCertificates
     .route({
@@ -106,9 +104,7 @@ const certificatesORPCRouterBase = {
     })
     .input(generateMedicalPrescriptionInputSchema)
     .output(medicalPrescriptionGenerateResponseSchema)
-    .handler(async ({ context, input }) =>
-      createMedicalPrescription(input, context.user.id)
-    ),
+    .handler(async ({ context, input }) => createMedicalPrescription(input, context.user.id)),
 
   annulPrescription: createMedicalCertificates
     .route({

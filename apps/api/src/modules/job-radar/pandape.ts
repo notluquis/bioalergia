@@ -39,7 +39,8 @@ function parseCards(html: string, slug: string): RawJob[] {
   )) {
     const id = m[1];
     const card = m[2];
-    const titleM = card.match(/<h3[^>]*title="([^"]*)"/i) ?? card.match(/<h3[^>]*>([\s\S]*?)<\/h3>/i);
+    const titleM =
+      card.match(/<h3[^>]*title="([^"]*)"/i) ?? card.match(/<h3[^>]*>([\s\S]*?)<\/h3>/i);
     if (!titleM) continue;
     const title = clean(titleM[1]);
     if (!title) continue;

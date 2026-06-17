@@ -527,18 +527,18 @@ export async function generateMedicalPrescriptionPdf(
   if (showData) {
     const endPatient = tagger.beginTag(page, currentPageIndex, "P");
     let py = boxTop - PATIENT_BOX_PAD - 8;
-    
+
     const nameMaxW = 210 - font.widthOfTextAtSize("Paciente: ", 8.5);
     drawField("Paciente:", truncateToWidth(input.patient.name, bold, 9.5, nameMaxW), px, py, true);
     const sex = input.patientSex?.trim();
     if (sex) drawField("Sexo:", sex, px + 220, py);
     py -= 15;
-    
+
     const ageText = input.patientAge != null ? `${input.patientAge} años` : "-";
     drawField("RUT:", input.patient.rut ?? "Sin RUT", px, py, true);
     drawField("Edad:", ageText, px + 110, py);
     py -= 15;
-    
+
     drawField("Fecha de emisión:", formatDate(input.date), px, py);
     endPatient();
   }
@@ -596,18 +596,18 @@ export async function generateMedicalPrescriptionPdf(
       if (medication.frequency) posParts.push(medication.frequency);
       if (medication.duration) posParts.push(medication.duration);
       const posology = posParts.join("   ·   ");
-      
+
       const posH = posology ? measureWrapped(posology, 9, innerW) : 0;
       const instr = medication.instructions?.trim();
       const instrH = instr ? measureWrapped(`Indicaciones: ${instr}`, 8.5, innerW) : 0;
-      
+
       const titleLines = wrapText(`${index + 1}. ${medication.name}`, bold, 10, innerW - 2);
       const headerH = Math.max(20, titleLines.length * 12 + 8);
       const cardH = headerH + PATIENT_BOX_PAD + posH + instrH + PATIENT_BOX_PAD;
 
       newPageIfNeeded(cardH + FOOTER_TOP);
       const cardTop = y + 2;
-      
+
       tagger.artifact(page, () => {
         page.drawRectangle({
           x: margin,
@@ -632,7 +632,7 @@ export async function generateMedicalPrescriptionPdf(
           color: BRAND_AMBER,
         });
       });
-      
+
       const endMed = tagger.beginTag(page, currentPageIndex, "P");
       let ty = cardTop - 13;
       for (const line of titleLines) {
@@ -795,12 +795,16 @@ export async function generateMedicalPrescriptionPdf(
         pg.drawText(vText, {
           x: rightEdge - font.widthOfTextAtSize(vText, 7.5),
           y: qrBottom + 20,
-          size: 7.5, font, color: BRAND_GRAY
+          size: 7.5,
+          font,
+          color: BRAND_GRAY,
         });
         pg.drawText(input.verificationCode, {
           x: rightEdge - bold.widthOfTextAtSize(input.verificationCode, 10),
           y: qrBottom + 8,
-          size: 10, font: bold, color: BRAND_BLUE
+          size: 10,
+          font: bold,
+          color: BRAND_BLUE,
         });
         endVerify();
       }
@@ -809,7 +813,7 @@ export async function generateMedicalPrescriptionPdf(
     // Centered footer notes (in ALL pages, below FOOTER_BASE)
     tagger.artifact(pg, () => {
       let cy = 25;
-      
+
       if (showStatic) {
         const validez = "Válida solo con firma y timbre";
         pg.drawText(validez, {
@@ -821,7 +825,7 @@ export async function generateMedicalPrescriptionPdf(
         });
       }
       cy += 10;
-      
+
       if (showData && lastPage) {
         const medCount = input.medications.length;
         const medText = `${medCount} ${medCount === 1 ? "medicamento" : "medicamentos"} en total`;
@@ -834,7 +838,7 @@ export async function generateMedicalPrescriptionPdf(
         });
       }
       cy += 11;
-      
+
       if (showData && total > 1) {
         const pageLabel = `Página ${index + 1} de ${total}`;
         pg.drawText(pageLabel, {

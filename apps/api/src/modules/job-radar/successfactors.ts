@@ -8,14 +8,29 @@
 //   trabajos.achs.cl · empleos.codelco.cl · jobs.arauco.com · www.nuevotalento.cl/Essbio
 // Construimos `https://{identifier}/tile-search-results/?q=&startrow=N`.
 
-import { BROWSER_UA, deriveLocationFromText, deriveRemoteFromText, requestText } from "./_shared.ts";
+import {
+  BROWSER_UA,
+  deriveLocationFromText,
+  deriveRemoteFromText,
+  requestText,
+} from "./_shared.ts";
 import type { RawJob } from "./types.ts";
 
 const MAX_PAGES = 40; // tope de seguridad
 
 const MONTHS: Record<string, number> = {
-  ene: 0, feb: 1, mar: 2, abr: 3, may: 4, jun: 5,
-  jul: 6, ago: 7, sep: 8, oct: 9, nov: 10, dic: 11,
+  ene: 0,
+  feb: 1,
+  mar: 2,
+  abr: 3,
+  may: 4,
+  jun: 5,
+  jul: 6,
+  ago: 7,
+  sep: 8,
+  oct: 9,
+  nov: 10,
+  dic: 11,
 };
 
 // "9 jun 2026" → Date (mediodía UTC para evitar corrimientos de zona).
@@ -112,10 +127,12 @@ export async function fetchSuccessFactorsJobs(identifier: string): Promise<RawJo
   // varía por tenant: 25/40/…), no por un PAGE_SIZE fijo que saltaría filas.
   let startrow = 0;
   for (let page = 0; page < MAX_PAGES; page++) {
-    const html = await requestText(
-      `https://${base}/tile-search-results/?q=&startrow=${startrow}`,
-      { tag: "job_radar.successfactors", ctx: { base, startrow }, accept: "text/html,*/*", userAgent: BROWSER_UA }
-    );
+    const html = await requestText(`https://${base}/tile-search-results/?q=&startrow=${startrow}`, {
+      tag: "job_radar.successfactors",
+      ctx: { base, startrow },
+      accept: "text/html,*/*",
+      userAgent: BROWSER_UA,
+    });
     if (!html) break;
     const jobs = parseTiles(html, base);
     if (jobs.length === 0) break;

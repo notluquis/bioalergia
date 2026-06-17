@@ -97,7 +97,10 @@ function VerificarDocumentPage() {
           <Field
             label="Emitido por"
             value={data.doctor.name}
-            hint={[data.doctor.specialty, data.doctor.license ? `Reg. SIS N° ${data.doctor.license}` : null]
+            hint={[
+              data.doctor.specialty,
+              data.doctor.license ? `Reg. SIS N° ${data.doctor.license}` : null,
+            ]
               .filter(Boolean)
               .join(" · ")}
           />
@@ -129,7 +132,9 @@ function VerificarDocumentPage() {
 function Shell({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen items-center justify-center bg-default-100 p-4">
-      <div className="w-full max-w-lg rounded-3xl bg-background p-6 shadow-xl sm:p-8">{children}</div>
+      <div className="w-full max-w-lg rounded-3xl bg-background p-6 shadow-xl sm:p-8">
+        {children}
+      </div>
     </div>
   );
 }

@@ -19,7 +19,7 @@ export async function exchangeForLongLivedToken(
   shortToken: string,
   appId: string,
   appSecret: string,
-  version: string,
+  version: string
 ): Promise<{ token: string; expiresAt: Date | null }> {
   const url = new URL(`${GRAPH_BASE}/${version}/oauth/access_token`);
   url.searchParams.set("grant_type", "fb_exchange_token");
@@ -36,15 +36,18 @@ export async function exchangeForLongLivedToken(
 /** Deriva page token + page id + IG business id desde un user token long-lived. */
 export async function fetchPageAndIgIds(
   userToken: string,
-  version: string,
+  version: string
 ): Promise<{ fbPageId: string; pageAccessToken: string; igUserId: string | null }> {
-  const accRes = await fetch(`${GRAPH_BASE}/${version}/me/accounts?access_token=${encodeURIComponent(userToken)}`);
-  if (!accRes.ok) throw new Error(`/me/accounts ${accRes.status}: ${(await accRes.text()).slice(0, 200)}`);
+  const accRes = await fetch(
+    `${GRAPH_BASE}/${version}/me/accounts?access_token=${encodeURIComponent(userToken)}`
+  );
+  if (!accRes.ok)
+    throw new Error(`/me/accounts ${accRes.status}: ${(await accRes.text()).slice(0, 200)}`);
   const accounts = (await accRes.json()) as AccountsResponse;
   const page = accounts.data?.[0];
   if (!page) throw new Error("La cuenta no administra ninguna página de Facebook");
   const igRes = await fetch(
-    `${GRAPH_BASE}/${version}/${page.id}?fields=instagram_business_account&access_token=${encodeURIComponent(page.access_token)}`,
+    `${GRAPH_BASE}/${version}/${page.id}?fields=instagram_business_account&access_token=${encodeURIComponent(page.access_token)}`
   );
   const ig = igRes.ok ? ((await igRes.json()) as IgResponse) : {};
   return {
@@ -62,7 +65,8 @@ export async function getValidPageToken(account: LoadedSocialAccount): Promise<s
   if (!account.pageAccessToken) {
     throw new Error(`SocialAccount ${account.id} sin pageAccessToken`);
   }
-  const expiringSoon = account.tokenExpiresAt && account.tokenExpiresAt.getTime() - Date.now() < REFRESH_WINDOW_MS;
+  const expiringSoon =
+    account.tokenExpiresAt && account.tokenExpiresAt.getTime() - Date.now() < REFRESH_WINDOW_MS;
   if (!expiringSoon || !account.userAccessToken || !account.appId || !account.appSecret) {
     return account.pageAccessToken;
   }
@@ -71,7 +75,7 @@ export async function getValidPageToken(account: LoadedSocialAccount): Promise<s
       account.userAccessToken,
       account.appId,
       account.appSecret,
-      account.graphApiVersion,
+      account.graphApiVersion
     );
     const derived = await fetchPageAndIgIds(exchanged.token, account.graphApiVersion);
     await db.socialAccount.update({

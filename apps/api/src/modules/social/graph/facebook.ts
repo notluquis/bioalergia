@@ -14,20 +14,28 @@ type FeedResponse = { id: string };
 export async function publishFbPhoto(
   account: LoadedSocialAccount,
   imageUrl: string,
-  message?: string,
+  message?: string
 ): Promise<string> {
   const token = requirePageToken(account);
   const res = await graphPost<PhotoResponse>(
     `/${pageId(account)}/photos`,
     { url: imageUrl, caption: message, message },
     token,
-    account.graphApiVersion,
+    account.graphApiVersion
   );
   return res.post_id ?? res.id ?? "";
 }
 
-export async function publishFbFeed(account: LoadedSocialAccount, message: string): Promise<string> {
+export async function publishFbFeed(
+  account: LoadedSocialAccount,
+  message: string
+): Promise<string> {
   const token = requirePageToken(account);
-  const res = await graphPost<FeedResponse>(`/${pageId(account)}/feed`, { message }, token, account.graphApiVersion);
+  const res = await graphPost<FeedResponse>(
+    `/${pageId(account)}/feed`,
+    { message },
+    token,
+    account.graphApiVersion
+  );
   return res.id;
 }

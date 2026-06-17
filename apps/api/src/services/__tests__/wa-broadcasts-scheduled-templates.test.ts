@@ -43,13 +43,8 @@ vi.mock("../../lib/logger.ts", () => ({
 }));
 vi.mock("../../modules/wa-cloud/graph-client.ts", () => graphMock);
 
-const {
-  createBroadcast,
-  listBroadcasts,
-  getBroadcastDetail,
-  startBroadcast,
-  cancelBroadcast,
-} = await import("../wa-broadcasts.ts");
+const { createBroadcast, listBroadcasts, getBroadcastDetail, startBroadcast, cancelBroadcast } =
+  await import("../wa-broadcasts.ts");
 const { createScheduledMessage, listScheduledForConversation, cancelScheduledMessage } =
   await import("../wa-scheduled.ts");
 const {
@@ -288,8 +283,23 @@ describe("cancelScheduledMessage", () => {
 describe("syncTemplates", () => {
   it("upsertea por clave name+language (update si existe, create si no) y devuelve total", async () => {
     graphMock.listAccountTemplates.mockResolvedValue([
-      { id: "m1", name: "promo", language: "es", category: "MARKETING", status: "APPROVED", components: [], quality_score: { score: "GREEN" } },
-      { id: "m2", name: "nuevo", language: "es", category: "UTILITY", status: "PENDING", components: [] },
+      {
+        id: "m1",
+        name: "promo",
+        language: "es",
+        category: "MARKETING",
+        status: "APPROVED",
+        components: [],
+        quality_score: { score: "GREEN" },
+      },
+      {
+        id: "m2",
+        name: "nuevo",
+        language: "es",
+        category: "UTILITY",
+        status: "PENDING",
+        components: [],
+      },
     ]);
     mockDb.waTemplate.findMany
       .mockResolvedValueOnce([{ id: 100, name: "promo", language: "es" }]) // existing lookup
@@ -327,7 +337,11 @@ describe("listTemplates", () => {
 
 describe("createTemplate", () => {
   it("llama a Meta y devuelve su respuesta; persiste best-effort", async () => {
-    graphMock.createTemplate.mockResolvedValue({ id: "g1", status: "PENDING", category: "MARKETING" });
+    graphMock.createTemplate.mockResolvedValue({
+      id: "g1",
+      status: "PENDING",
+      category: "MARKETING",
+    });
     mockDb.waTemplate.upsert.mockResolvedValue({});
     const out = await createTemplate({
       accountId: 1,
@@ -342,7 +356,11 @@ describe("createTemplate", () => {
   });
 
   it("no rompe si la persistencia local falla (best-effort)", async () => {
-    graphMock.createTemplate.mockResolvedValue({ id: "g2", status: "PENDING", category: "UTILITY" });
+    graphMock.createTemplate.mockResolvedValue({
+      id: "g2",
+      status: "PENDING",
+      category: "UTILITY",
+    });
     mockDb.waTemplate.upsert.mockRejectedValue(new Error("db down"));
     const out = await createTemplate({
       accountId: 1,
@@ -379,7 +397,11 @@ describe("listTemplateLibrary", () => {
 
 describe("cloneTemplateFromLibrary", () => {
   it("clona en Meta y persiste con newName cuando se da", async () => {
-    graphMock.cloneTemplateFromLibrary.mockResolvedValue({ id: "c1", status: "APPROVED", category: "MARKETING" });
+    graphMock.cloneTemplateFromLibrary.mockResolvedValue({
+      id: "c1",
+      status: "APPROVED",
+      category: "MARKETING",
+    });
     mockDb.waTemplate.upsert.mockResolvedValue({});
     const out = await cloneTemplateFromLibrary({
       accountId: 1,

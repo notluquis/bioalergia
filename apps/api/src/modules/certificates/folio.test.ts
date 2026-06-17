@@ -16,9 +16,7 @@ describe("buildFolio", () => {
   });
 
   it("random suffix makes folios non-enumerable (high uniqueness)", () => {
-    const suffixes = new Set(
-      Array.from({ length: 500 }, () => buildFolio(1, 2026).split("-")[3])
-    );
+    const suffixes = new Set(Array.from({ length: 500 }, () => buildFolio(1, 2026).split("-")[3]));
     // 32^4 espacio → 500 muestras casi todas únicas.
     expect(suffixes.size).toBeGreaterThan(480);
   });

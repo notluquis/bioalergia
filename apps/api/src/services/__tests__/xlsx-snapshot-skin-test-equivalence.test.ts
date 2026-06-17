@@ -1,6 +1,9 @@
 import * as XLSX from "xlsx";
 import { describe, expect, it } from "vitest";
-import { parseSkinTestWorkbookBuffer, parseSkinTestWorksheet } from "../clinical-skin-test-parser.ts";
+import {
+  parseSkinTestWorkbookBuffer,
+  parseSkinTestWorksheet,
+} from "../clinical-skin-test-parser.ts";
 import { extractXlsxSnapshot, snapshotToWorksheet } from "../xlsx-snapshot.ts";
 
 // Phase D guard: the skin-test reprocess re-parses from the shared OneDrive

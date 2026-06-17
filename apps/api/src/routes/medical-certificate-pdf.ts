@@ -33,26 +33,28 @@ medicalCertificatePdfRoutes.get("/:id/pdf", async (c) => {
 
     const { generateMedicalCertificatePdf, generateQRCode } =
       await import("../modules/certificates/certificate.service.ts");
-    const { medicalCertificateSchema } = await import(
-      "../modules/certificates/certificate.schema.ts"
-    );
+    const { medicalCertificateSchema } =
+      await import("../modules/certificates/certificate.schema.ts");
 
     // Re-parse the stored metadata.
     // The original API call saves the exact parsed input into certificate.metadata
-    const metadata = typeof certificate.metadata === "string" ? JSON.parse(certificate.metadata) : certificate.metadata;
-    
+    const metadata =
+      typeof certificate.metadata === "string"
+        ? JSON.parse(certificate.metadata)
+        : certificate.metadata;
+
     // We recreate the QR Code with the same ID, or actually `verify/:id` is the URL.
     // Let's generate a QR Code from the actual verification URL.
     const verificationCode = certificate.id; // Or whatever was used.
     // Actually, when it was generated: const verificationCode = generateVerificationCode();
     // It is not stored... Wait, let's look at how the verificationCode is done.
-    // In `certificates.ts` it says: 
+    // In `certificates.ts` it says:
     // const verificationCode = generateVerificationCode();
     // But since it's just a UI reproduction we can just put a generic QR or just `certificate.id`.
     const qrCode = await generateQRCode(certificate.id);
 
     const clinic = await db.clinicSettings.findUnique({ where: { id: 1 } });
-    
+
     // We assume metadata matches the expected `parsed` input shape.
     const parsed = medicalCertificateSchema.parse(metadata);
 

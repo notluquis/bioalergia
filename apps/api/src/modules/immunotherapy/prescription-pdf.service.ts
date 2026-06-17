@@ -125,7 +125,11 @@ const ALLERGEN_ROWS: { pattern: RegExp; y: number; forceColumn?: TemplateColumn 
   { pattern: /gato|felis|cat/, y: 1460 },
   { pattern: /perro|canis|dog/, y: 1488 },
   { pattern: /alternaria|alternata/, y: 1556, forceColumn: "alternaria" },
-  { pattern: /bactek|pneumoniae|epidermidis|aureus|bacterias? gram/, y: 1845, forceColumn: "bacterial" },
+  {
+    pattern: /bactek|pneumoniae|epidermidis|aureus|bacterias? gram/,
+    y: 1845,
+    forceColumn: "bacterial",
+  },
   { pattern: /uromune|coli|klebsiella|faecalis|vulgaris/, y: 1895, forceColumn: "bacterial" },
 ];
 
@@ -181,7 +185,8 @@ export async function generatePrescriptionPdf(input: PrescriptionPdfInput): Prom
   drawText(input.diagnosis, 125, 265, 8);
 
   const maintenanceQty = input.quote.lines.find((line) => line.isMaintenance)?.quantity ?? 0;
-  const longPresentation = input.product.vaccineProduct === "ORAL_TEC" ? maintenanceQty >= 6 : maintenanceQty >= 10;
+  const longPresentation =
+    input.product.vaccineProduct === "ORAL_TEC" ? maintenanceQty >= 6 : maintenanceQty >= 10;
   check(longPresentation ? PRESENTATION_CHECKS[column].long : PRESENTATION_CHECKS[column].short);
 
   const unmatchedAllergens: string[] = [];

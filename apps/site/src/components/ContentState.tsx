@@ -25,8 +25,8 @@ export function ContentError() {
       <Card.Header className="gap-2">
         <Card.Title className="text-lg">No pudimos cargar esta sección</Card.Title>
         <Card.Description className="text-(--ink-muted) leading-relaxed">
-          Hubo un problema al cargar el contenido. Vuelve a intentarlo en unos minutos o
-          escríbenos si el problema persiste.
+          Hubo un problema al cargar el contenido. Vuelve a intentarlo en unos minutos o escríbenos
+          si el problema persiste.
         </Card.Description>
       </Card.Header>
     </Card>

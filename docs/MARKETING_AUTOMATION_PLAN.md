@@ -23,6 +23,7 @@ Trade-off aceptado: más trabajo de build (OAuth Meta + refresh token + media co
 > Lo que sigue abajo (capas Postiz, comparativas) queda como **registro histórico** de cómo se llegó acá. La arquitectura vigente es esta sección.
 
 ---
+
 > Decisiones tomadas (2026-06-15): **motor = Postiz self-host** · **modo = approval-first** · **generación = código React: Satori (PNG) + Remotion (MP4) + IA imagen opcional, NO Canva** · **aprobación = ambos (Postiz nativo + panel intranet)** · **generación corre en CLI/local ahora, graphile-worker en Fase 2** · este documento = entregable previo a construir.
 >
 > Estado Fase 0 (2026-06-15): IG Business/Creator linkeado a FB Page ✅ · Meta App + Business Verification iniciada ✅ (es la **misma Meta App que ya usa WhatsApp Cloud** → agregar permisos IG/FB content publish a esa app, dispara otro App Review).
@@ -32,35 +33,37 @@ Trade-off aceptado: más trabajo de build (OAuth Meta + refresh token + media co
 Automatizar la mayor parte posible del marketing en redes (Instagram, Facebook, TikTok, WhatsApp broadcast + Channels) para Bioalergia, reemplazando la contratación de un community manager por un pipeline **Claude (genera copy + HTML/Remotion) → render a PNG/MP4 → tú apruebas → Postiz publica**, con costo de software $0 (solo infra Railway que ya pagas).
 
 Dos problemas distintos, no confundir:
+
 1. **Publicar** (distribución multi-red, scheduling, OAuth) → resuelto por Postiz.
 2. **Crear** contenido nuevo (copy + arte) → resuelto por Claude + Canva MCP + reuso de `CONTENIDO`.
 
-El archivo actual en `OneDrive/BIOALERGIA/CONTENIDO/03_Elementos gráficos` es material de marca (folletos test cutáneo, BACTEK, logos, design system HTML/MD, 1 reel mp4), **no** un backlog grande de posts. Por eso la capa de *creación* pesa tanto como la de publicación.
+El archivo actual en `OneDrive/BIOALERGIA/CONTENIDO/03_Elementos gráficos` es material de marca (folletos test cutáneo, BACTEK, logos, design system HTML/MD, 1 reel mp4), **no** un backlog grande de posts. Por eso la capa de _creación_ pesa tanto como la de publicación.
 
 ---
 
 ## 1. Realidad por plataforma (verificado 2026-06)
 
-| Plataforma | API posting | Detalle | Veredicto |
-|---|---|---|---|
-| Instagram feed/reels/carrusel | ✅ completo | Meta Graph API Content Publishing. Requiere cuenta IG **Business/Creator** + FB Page linkeada + Meta App. Límite 25 posts/24h. Reels = paso de polling (~30s-2min) mientras procesa el video. | Fase 1 |
-| Facebook Page | ✅ completo | Misma Meta App / Graph API. | Fase 1 |
-| WhatsApp broadcast (opt-in) | ✅ **ya cableado** | `apps/api/src/modules/wa-cloud` + `broadcast-runner.ts` + cola graphile-worker (`send_wa_broadcast_tick`). Opt-in en `Person` ya respeta Ley 21.719. | Fase 1 (reuso) |
-| TikTok | ⚠️ parcial | Content Posting API existe pero: (a) audit de la app 1-2 semanas; (b) hasta aprobar, todo post es `SELF_ONLY` (solo el dueño lo ve); (c) **video-only**, sin carrusel de fotos; (d) 25 vids/día. | Fase 2 |
-| X / LinkedIn / Threads / etc. | ✅ vía Postiz | Postiz soporta 30+ redes con su propio OAuth. Activar si hace sentido. | Opcional |
-| **WhatsApp Channels** | ❌ **sin API oficial** | Meta NO expone API para Channels. Solo manual en la app, o APIs no-oficiales (WAHA, Whapi, Maytapi — QR scrape estilo whatsapp-web). **Riesgo de ban/ToS inaceptable para marca médica.** | Manual |
-| **WhatsApp Status** | ❌ **sin API oficial** | El "estado/historia" de WhatsApp tampoco tiene API. "Historias diarias en WhatsApp" = manual. | Manual |
+| Plataforma                    | API posting            | Detalle                                                                                                                                                                                          | Veredicto      |
+| ----------------------------- | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------- |
+| Instagram feed/reels/carrusel | ✅ completo            | Meta Graph API Content Publishing. Requiere cuenta IG **Business/Creator** + FB Page linkeada + Meta App. Límite 25 posts/24h. Reels = paso de polling (~30s-2min) mientras procesa el video.    | Fase 1         |
+| Facebook Page                 | ✅ completo            | Misma Meta App / Graph API.                                                                                                                                                                      | Fase 1         |
+| WhatsApp broadcast (opt-in)   | ✅ **ya cableado**     | `apps/api/src/modules/wa-cloud` + `broadcast-runner.ts` + cola graphile-worker (`send_wa_broadcast_tick`). Opt-in en `Person` ya respeta Ley 21.719.                                             | Fase 1 (reuso) |
+| TikTok                        | ⚠️ parcial             | Content Posting API existe pero: (a) audit de la app 1-2 semanas; (b) hasta aprobar, todo post es `SELF_ONLY` (solo el dueño lo ve); (c) **video-only**, sin carrusel de fotos; (d) 25 vids/día. | Fase 2         |
+| X / LinkedIn / Threads / etc. | ✅ vía Postiz          | Postiz soporta 30+ redes con su propio OAuth. Activar si hace sentido.                                                                                                                           | Opcional       |
+| **WhatsApp Channels**         | ❌ **sin API oficial** | Meta NO expone API para Channels. Solo manual en la app, o APIs no-oficiales (WAHA, Whapi, Maytapi — QR scrape estilo whatsapp-web). **Riesgo de ban/ToS inaceptable para marca médica.**        | Manual         |
+| **WhatsApp Status**           | ❌ **sin API oficial** | El "estado/historia" de WhatsApp tampoco tiene API. "Historias diarias en WhatsApp" = manual.                                                                                                    | Manual         |
 
 ### 1.1 Realidad por formato (posts / reels / stories)
 
-| | Post feed | Reel/video | Story |
-|---|---|---|---|
-| Instagram | ✅ API | ✅ API | ✅ API |
-| Facebook | ✅ API | ✅ API | ✅ API |
-| TikTok | foto (sin carrusel) | ✅ API (tras audit) | ❌ no existe el concepto |
-| WhatsApp | broadcast opt-in | broadcast media | ❌ Status sin API → manual |
+|           | Post feed           | Reel/video          | Story                      |
+| --------- | ------------------- | ------------------- | -------------------------- |
+| Instagram | ✅ API              | ✅ API              | ✅ API                     |
+| Facebook  | ✅ API              | ✅ API              | ✅ API                     |
+| TikTok    | foto (sin carrusel) | ✅ API (tras audit) | ❌ no existe el concepto   |
+| WhatsApp  | broadcast opt-in    | broadcast media     | ❌ Status sin API → manual |
 
 Notas:
+
 - "Stories diarias" automáticas = solo IG + FB. WhatsApp Status y Channels = manual. TikTok no tiene stories.
 - Límite IG = 25 publicaciones/24h por API e incluye stories → con stories diarias hay margen de sobra.
 - **Verificar en build si Postiz publica Stories** (su foco histórico son posts/reels). Si hay gap, las stories diarias van directo por Graph API desde nuestro código, no por Postiz.
@@ -158,7 +161,8 @@ Fuentes: [Meta IG Content Publishing](https://developers.facebook.com/docs/insta
 ### 3.5 Capa de aprobación
 
 **Decisión: ambos (correr en paralelo y comparar).**
-- **A — Postiz directo**: Claude empuja drafts como *draft/scheduled* en Postiz; aprobás en su calendario. Cero código. Disponible Fase 1 día 1.
+
+- **A — Postiz directo**: Claude empuja drafts como _draft/scheduled_ en Postiz; aprobás en su calendario. Cero código. Disponible Fase 1 día 1.
 - **B — panel intranet**: ruta nueva en `apps/intranet` (HeroUI v3 + DataTable) que lista drafts (tabla `SocialDraft` en ZenStack), aprobar/editar/rechazar. Al aprobar → push Postiz API y/o encola WA broadcast. Empezar como **redirect/embed** a Postiz (rápido), evolucionar a panel propio si gana. Un solo lugar para todo (redes + WhatsApp + pacientes), en tu stack.
 
 Plan: arrancar con A funcionando, montar B en paralelo (primero embed, después nativo). Vos decidís cuál queda tras unas semanas de uso.
@@ -172,8 +176,9 @@ Recomendación: **arrancar con A** (rápido, valida el pipeline), migrar a B si 
 **Cadencia objetivo (ajustable): 1 publicación de feed/semana + 1 story/día.**
 
 Semanal (ej. lunes):
+
 1. Claude genera el lote de la semana: 1 post feed (+reel si aplica) + 7 stories + copy/hashtags/CTA. Render: HTML→PNG (imágenes/stories), Remotion (reels).
-2. Drafts → Postiz *draft* (y/o panel intranet).
+2. Drafts → Postiz _draft_ (y/o panel intranet).
 3. Revisás (~10-15 min): editás copy, cambiás arte, ajustás fecha, aprobás/descartás todo el lote.
 4. Postiz publica en las fechas/horas aprobadas: post el día fijado, 1 story/día en IG+FB.
 5. WhatsApp broadcast a opt-in se encola al aprobar (si el draft lo marca).
@@ -196,27 +201,29 @@ Hands-off real: ~10-15 min/semana de revisión. Sin CM contratado. Stories diari
 
 ## 6. Costos
 
-| Ítem | Costo |
-|---|---|
-| Postiz (software) | $0 (open-source self-host) |
-| Railway infra Postiz (app+PG+Redis+Temporal) | ~$5/mo incremental |
-| Meta Graph API | $0 |
-| TikTok API | $0 |
-| WhatsApp Cloud broadcast | per-message Meta (ya lo asumes) |
-| Canva | plan que ya tengas; brand templates en Free/Pro |
-| Claude (generación) | tu suscripción/API actual |
-| **Community manager humano** | **$0 (eliminado)** |
+| Ítem                                         | Costo                                           |
+| -------------------------------------------- | ----------------------------------------------- |
+| Postiz (software)                            | $0 (open-source self-host)                      |
+| Railway infra Postiz (app+PG+Redis+Temporal) | ~$5/mo incremental                              |
+| Meta Graph API                               | $0                                              |
+| TikTok API                                   | $0                                              |
+| WhatsApp Cloud broadcast                     | per-message Meta (ya lo asumes)                 |
+| Canva                                        | plan que ya tengas; brand templates en Free/Pro |
+| Claude (generación)                          | tu suscripción/API actual                       |
+| **Community manager humano**                 | **$0 (eliminado)**                              |
 
 ---
 
 ## 7. Rollout por fases
 
 **Fase 0 — prerequisitos (tú, fuera de código)** ✅ hecho
+
 - [x] IG Business/Creator linkeado a FB Page.
 - [x] Meta App + Business Verification iniciada (misma app que WhatsApp Cloud → agregar perms IG/FB content publish ahí).
 - [x] Design system listo (`bioalergia_design_system.md`) — se usa como tokens, sin Canva.
 
 **Fase 1 — publicar IG/FB + reuso WA + render por código (semana 1-2)**
+
 - [ ] Deploy Postiz (Temporal) en Railway, proyecto separado, dominio.
 - [ ] Conectar IG + FB en Postiz (OAuth) — agregar perms `instagram_content_publish` etc. a la Meta App existente (dispara App Review).
 - [ ] Probar push manual de 1 post vía API de Postiz.
@@ -226,6 +233,7 @@ Hands-off real: ~10-15 min/semana de revisión. Sin CM contratado. Stories diari
 - [ ] Aprobación A (Postiz) funcionando + B embed (redirect intranet a Postiz).
 
 **Fase 2 — TikTok + video + automatización (semana 3-4)**
+
 - [ ] Setup Remotion para reels/TikTok (composición 9:16, render local).
 - [ ] Registrar app TikTok, iniciar audit (lento, `SELF_ONLY` hasta aprobar).
 - [ ] Mover generación a task graphile-worker (cron semanal, llama Claude API) → drafts en tabla `SocialDraft`.
@@ -233,6 +241,7 @@ Hands-off real: ~10-15 min/semana de revisión. Sin CM contratado. Stories diari
 - [ ] Stories diarias por Graph API directo si Postiz no las cubre.
 
 **Fase 3 — pulido**
+
 - [ ] Métricas (engagement) de vuelta a un dashboard intranet.
 - [ ] WA Channel + Status: flujo de export para publicación manual rápida.
 - [ ] Afinar cadencia según resultados.

@@ -20,7 +20,14 @@ config({ path: resolve(__dirname, "../../../../packages/db/.env") });
 
 type AspectRatio = "RATIO_4_5" | "RATIO_1_1" | "RATIO_9_16";
 type Network = "INSTAGRAM" | "FACEBOOK" | "TIKTOK";
-type Placement = "IG_FEED" | "IG_REEL" | "IG_STORY" | "FB_FEED" | "FB_REEL" | "FB_STORY" | "TIKTOK_VIDEO";
+type Placement =
+  | "IG_FEED"
+  | "IG_REEL"
+  | "IG_STORY"
+  | "FB_FEED"
+  | "FB_REEL"
+  | "FB_STORY"
+  | "TIKTOK_VIDEO";
 
 interface DraftInput {
   title?: string;
@@ -61,10 +68,16 @@ async function main() {
   }
 
   const accountId = account.id;
-  const targets = (input.targets ?? [
-    { network: "INSTAGRAM", placement: "IG_FEED" },
-    { network: "FACEBOOK", placement: "FB_FEED" },
-  ]).map((t) => ({ accountId: t.accountId ?? accountId, network: t.network, placement: t.placement }));
+  const targets = (
+    input.targets ?? [
+      { network: "INSTAGRAM", placement: "IG_FEED" },
+      { network: "FACEBOOK", placement: "FB_FEED" },
+    ]
+  ).map((t) => ({
+    accountId: t.accountId ?? accountId,
+    network: t.network,
+    placement: t.placement,
+  }));
 
   const post = await createSocialPost(
     {
@@ -77,16 +90,22 @@ async function main() {
       targets,
       scheduledAt: input.scheduledAt,
     },
-    user.id,
+    user.id
   );
 
   let mediaUrl: string | null = null;
   if (input.template) {
-    const rendered = await renderSocialMedia({ id: post.id, template: input.template, props: input.props ?? {} });
+    const rendered = await renderSocialMedia({
+      id: post.id,
+      template: input.template,
+      props: input.props ?? {},
+    });
     mediaUrl = rendered.media[0]?.url ?? null;
   }
 
-  console.log(JSON.stringify({ ok: true, postId: post.id, status: post.status, mediaUrl }, null, 2));
+  console.log(
+    JSON.stringify({ ok: true, postId: post.id, status: post.status, mediaUrl }, null, 2)
+  );
   process.exit(0);
 }
 

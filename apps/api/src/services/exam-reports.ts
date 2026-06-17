@@ -11,9 +11,7 @@ import { dbDateToISO } from "../lib/time.ts";
 // de tipos liviano) evita el TS2321 del TransactionClientContract profundo.
 
 type Contract = typeof examReportsContract;
-type Input<K extends keyof Contract> = z.infer<
-  NonNullable<Contract[K]["~orpc"]["inputSchema"]>
->;
+type Input<K extends keyof Contract> = z.infer<NonNullable<Contract[K]["~orpc"]["inputSchema"]>>;
 
 // ── Query shapes ──────────────────────────────────────────────────────────
 const allergenSelect = {

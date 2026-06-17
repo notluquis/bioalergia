@@ -35,10 +35,9 @@ async function main() {
       `TRUNCATE events, clinical_series, patients, people, calendars RESTART IDENTITY CASCADE`
     );
 
-    const cal = await q(
-      `INSERT INTO calendars (google_id) VALUES ($1) RETURNING id`,
-      [`e2e-cal-${faker.string.uuid()}`]
-    );
+    const cal = await q(`INSERT INTO calendars (google_id) VALUES ($1) RETURNING id`, [
+      `e2e-cal-${faker.string.uuid()}`,
+    ]);
     const calendarId = cal.rows[0].id as number;
 
     for (let i = 0; i < PATIENTS; i++) {

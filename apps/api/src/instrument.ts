@@ -53,9 +53,7 @@ function tracesSampler(samplingContext: {
   const name = samplingContext.name ?? "";
   const attrs = samplingContext.attributes ?? {};
   const method = String(attrs["http.request.method"] ?? attrs["http.method"] ?? "");
-  const target = String(
-    attrs["http.route"] ?? attrs["url.path"] ?? attrs["http.target"] ?? name
-  );
+  const target = String(attrs["http.route"] ?? attrs["url.path"] ?? attrs["http.target"] ?? name);
 
   // Never trace preflights — they carry no business work.
   if (method.toUpperCase() === "OPTIONS") return 0;

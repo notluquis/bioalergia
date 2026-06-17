@@ -92,9 +92,7 @@ export async function startQueueRunner(): Promise<void> {
   // thresholds themselves are read fresh per tick inside the task (no restart
   // needed to tune them).
   const anomalyCron =
-    (await getSetting("security.anomalyCron")) ||
-    process.env.AUDIT_ANOMALY_CRON ||
-    "*/15 * * * *";
+    (await getSetting("security.anomalyCron")) || process.env.AUDIT_ANOMALY_CRON || "*/15 * * * *";
   cronItems.push({
     task: "audit_anomaly",
     match: anomalyCron,

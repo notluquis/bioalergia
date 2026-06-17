@@ -45,11 +45,7 @@ export function SiteFooter() {
           <p className="font-semibold text-sm text-(--ink)">Explora</p>
           <div className="flex flex-col gap-1 text-sm">
             {siteMap.map((item) => (
-              <Link
-                key={item.href}
-                className="w-fit no-underline hover:underline"
-                href={item.href}
-              >
+              <Link key={item.href} className="w-fit no-underline hover:underline" href={item.href}>
                 {item.label}
               </Link>
             ))}
@@ -118,12 +114,7 @@ export function SiteFooter() {
                 rel="noopener noreferrer"
                 target="_blank"
               >
-                <svg
-                  aria-hidden="true"
-                  className="size-4"
-                  fill="currentColor"
-                  viewBox="0 0 24 24"
-                >
+                <svg aria-hidden="true" className="size-4" fill="currentColor" viewBox="0 0 24 24">
                   <path d={SOCIAL_ICON_PATHS[social.platform]} />
                 </svg>
               </Link>

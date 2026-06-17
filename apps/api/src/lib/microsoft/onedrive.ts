@@ -346,7 +346,9 @@ async function graphFetchDeltaPage(accountId: string, url: string): Promise<Delt
   let lastError: Error | null = null;
   let forceTokenRefresh = false;
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-    const accessToken = await getOneDriveAccessToken(accountId, { forceRefresh: forceTokenRefresh });
+    const accessToken = await getOneDriveAccessToken(accountId, {
+      forceRefresh: forceTokenRefresh,
+    });
     forceTokenRefresh = false;
     const response = await fetch(url, {
       headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },

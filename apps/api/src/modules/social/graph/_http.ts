@@ -43,7 +43,12 @@ export function requirePageToken(account: LoadedSocialAccount): string {
   return account.pageAccessToken;
 }
 
-export async function graphPost<T>(path: string, body: unknown, token: string, version: string): Promise<T> {
+export async function graphPost<T>(
+  path: string,
+  body: unknown,
+  token: string,
+  version: string
+): Promise<T> {
   const res = await fetch(`${GRAPH_BASE}/${version}${path}`, {
     method: "POST",
     headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },

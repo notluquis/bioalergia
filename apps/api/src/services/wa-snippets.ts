@@ -138,14 +138,8 @@ export async function sendSnippet(
   const now = new Date();
   let metaId: string | null = null;
   let preview = "";
-  let messageType:
-    | "TEXT"
-    | "IMAGE"
-    | "VIDEO"
-    | "AUDIO"
-    | "DOCUMENT"
-    | "STICKER"
-    | "INTERACTIVE" = "TEXT";
+  let messageType: "TEXT" | "IMAGE" | "VIDEO" | "AUDIO" | "DOCUMENT" | "STICKER" | "INTERACTIVE" =
+    "TEXT";
   let payloadJson: Record<string, unknown> = { snippet_id: snip.id };
 
   if (snip.kind === "TEXT") {

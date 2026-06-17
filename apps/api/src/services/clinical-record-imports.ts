@@ -224,7 +224,11 @@ export async function reprocessClinicalRecordImport(id: string): Promise<{
   );
   if (xlsxFile) {
     const snap = await readXlsxFileSnapshot(xlsxFile.id);
-    if (snap && isSnapshotFresh(snap, { etag: xlsxFile.etag, ctag: xlsxFile.ctag }) && snap.snapshot) {
+    if (
+      snap &&
+      isSnapshotFresh(snap, { etag: xlsxFile.etag, ctag: xlsxFile.ctag }) &&
+      snap.snapshot
+    ) {
       parsed = parseClinicalRecordRows(snapshotToRows(snap.snapshot));
     }
   }

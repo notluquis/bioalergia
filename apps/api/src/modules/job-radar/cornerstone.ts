@@ -56,7 +56,10 @@ function parseMdy(raw: unknown): Date | null {
   return m ? new Date(Date.UTC(Number(m[3]), Number(m[1]) - 1, Number(m[2]), 12)) : null;
 }
 
-function locationOf(req: Record<string, unknown>): { location: string | null; country: string | null } {
+function locationOf(req: Record<string, unknown>): {
+  location: string | null;
+  country: string | null;
+} {
   const locs = Array.isArray(req.locations) ? req.locations : [];
   const first = asRecord(locs[0]);
   if (!first) return { location: null, country: null };
@@ -71,7 +74,10 @@ function locationOf(req: Record<string, unknown>): { location: string | null; co
 
 function stripHtml(html: string | null): string | null {
   if (!html) return null;
-  const t = html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+  const t = html
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
   return t.length > 0 ? t : null;
 }
 
@@ -86,7 +92,12 @@ export async function fetchCornerstoneJobs(identifier: string): Promise<RawJob[]
 
   const html = await requestText(
     `https://${tenant}.csod.com/ux/ats/careersite/${cid}/home?c=${tenant}`,
-    { tag: "job_radar.cornerstone.page", ctx: { tenant, cid }, accept: "text/html,*/*", userAgent: BROWSER_UA }
+    {
+      tag: "job_radar.cornerstone.page",
+      ctx: { tenant, cid },
+      accept: "text/html,*/*",
+      userAgent: BROWSER_UA,
+    }
   );
   if (!html) return [];
   const token = html.match(/"token"\s*:\s*"([^"]+)"/)?.[1];
@@ -94,7 +105,8 @@ export async function fetchCornerstoneJobs(identifier: string): Promise<RawJob[]
   const cultureId = cultureFromToken(token);
   // El host del API cloud es per-tenant ({region}.api.csod.com); lo leemos de la
   // página (endpoints.cloud), fallback us.
-  const cloud = html.match(/"cloud"\s*:\s*"(https:\/\/[^"]+?)\/?"/)?.[1] ?? "https://us.api.csod.com";
+  const cloud =
+    html.match(/"cloud"\s*:\s*"(https:\/\/[^"]+?)\/?"/)?.[1] ?? "https://us.api.csod.com";
   const searchUrl = `${cloud}/rec-job-search/external/jobs`;
 
   const out: RawJob[] = [];
@@ -154,7 +166,11 @@ export async function fetchCornerstoneJobs(identifier: string): Promise<RawJob[]
         descriptionHtml,
         publishedAt: parseMdy(req.postingEffectiveDate),
         lastmod: parseMdy(req.postingExpirationDate) ?? parseMdy(req.postingEffectiveDate),
-        raw: { requisitionId: externalId, title, desc: stripHtml(descriptionHtml)?.slice(0, 200) ?? null },
+        raw: {
+          requisitionId: externalId,
+          title,
+          desc: stripHtml(descriptionHtml)?.slice(0, 200) ?? null,
+        },
       });
       added++;
     }

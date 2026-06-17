@@ -19,8 +19,8 @@ function parseDate(raw: unknown): Date | null {
 }
 
 function joinLocation(o: Record<string, unknown>): string | null {
-  const parts = [asString(o.location_city), asString(o.location_country)].filter(
-    (p): p is string => Boolean(p)
+  const parts = [asString(o.location_city), asString(o.location_country)].filter((p): p is string =>
+    Boolean(p)
   );
   return parts.length > 0 ? [...new Set(parts)].join(", ") : null;
 }

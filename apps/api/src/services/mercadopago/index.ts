@@ -160,7 +160,10 @@ export const MercadoPagoService = {
           isPendingReportStatus(task.status) &&
           (!task.file_name || !knownFileNames.has(task.file_name))
       )
-      .map((task) => ({ ...task, date_created: task.date_created ?? task.generation_date ?? null }));
+      .map((task) => ({
+        ...task,
+        date_created: task.date_created ?? task.generation_date ?? null,
+      }));
 
     // Only the first page carries the in-flight head; deeper pages stay pure
     // history so pagination math doesn't drift.

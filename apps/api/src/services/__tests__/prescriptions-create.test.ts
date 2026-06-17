@@ -40,10 +40,7 @@ vi.mock("../verification.ts", () => ({
 }));
 
 import { DomainError } from "../../lib/errors.ts";
-import {
-  createMedicalPrescription,
-  listMedicalPrescriptions,
-} from "../prescriptions.ts";
+import { createMedicalPrescription, listMedicalPrescriptions } from "../prescriptions.ts";
 
 const validInput = {
   patientId: 7,

@@ -5,9 +5,8 @@ import { describe, expect, it, vi } from "vitest";
 // enough to import the module without opening a real connection.
 vi.mock("@finanzas/db", () => ({ db: {}, kysely: {} }));
 
-const { isTerminalSkinTestImportStatus, isOneDriveItemUnchanged } = await import(
-  "../clinical-skin-test-imports.ts"
-);
+const { isTerminalSkinTestImportStatus, isOneDriveItemUnchanged } =
+  await import("../clinical-skin-test-imports.ts");
 
 // Regression guard for the OneDrive de-qualification reconcile (file renamed so
 // it stops matching isImportableSkinTestFilename — e.g. patient name ->

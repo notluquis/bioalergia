@@ -48,10 +48,7 @@ export function BookingCta({
           <Button className="rounded-full bg-(--accent) px-6 text-white" onPress={handleDoctoralia}>
             Agendar en Doctoralia
           </Button>
-          <Button
-            className="rounded-full bg-[#25D366] px-6 text-white"
-            onPress={handleWhatsApp}
-          >
+          <Button className="rounded-full bg-[#25D366] px-6 text-white" onPress={handleWhatsApp}>
             Escríbenos por WhatsApp
           </Button>
         </div>

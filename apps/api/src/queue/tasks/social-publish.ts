@@ -36,7 +36,7 @@ export const social_publish: Task = async (payload, helpers) => {
         jobKey: socialPublishJobKey(postId),
         jobKeyMode: "replace",
         queueName: socialPublishJobKey(postId),
-      },
+      }
     );
   }
 };

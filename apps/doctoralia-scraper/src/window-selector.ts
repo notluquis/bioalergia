@@ -125,11 +125,7 @@ export function forcedCurrentWeekWindow(
   return weekWindow(startOfIsoWeek(isoDate), "W0");
 }
 
-function monthAsWeekWindows(
-  localIso: string,
-  monthOffset: number,
-  tier: TierKey
-): WindowRequest[] {
+function monthAsWeekWindows(localIso: string, monthOffset: number, tier: TierKey): WindowRequest[] {
   const monthStart = addMonths(localIso, monthOffset); // first-of-month
   const monthEnd = lastOfMonth(monthStart);
   const firstMonday = startOfIsoWeek(monthStart);

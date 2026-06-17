@@ -432,10 +432,7 @@ export async function createPatientAttachment(input: CreateAttachmentPayload) {
 }
 
 export async function createPatientBudget(input: CreateBudgetPayload) {
-  const totalAmount = input.items.reduce(
-    (sum, item) => sum + item.unitPrice * item.quantity,
-    0
-  );
+  const totalAmount = input.items.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0);
   const finalAmount = totalAmount - input.discount;
 
   const budget = await db.budget.create({

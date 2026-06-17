@@ -125,7 +125,9 @@ const dteAnalyticsORPCRouterBase = {
     .route({ method: "GET", path: "/line-items" })
     .input(dteLineItemsQuerySchema)
     .output(dteLineItemsResponseSchema)
-    .handler(({ input }: { input: z.output<typeof dteLineItemsQuerySchema> }) => getLineItems(input)),
+    .handler(({ input }: { input: z.output<typeof dteLineItemsQuerySchema> }) =>
+      getLineItems(input)
+    ),
 
   fetchXml: readDteAnalytics
     .route({ method: "POST", path: "/fetch-xml" })

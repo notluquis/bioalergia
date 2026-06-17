@@ -110,19 +110,22 @@ prescriptionPdfRoutes.post("/preview", async (c) => {
 
   try {
     const json = await c.req.json();
-    const { generateMedicalPrescriptionInputSchema } = await import(
-      "@finanzas/orpc-contracts/certificates"
-    );
-    const { medicalPrescriptionSchema } = await import(
-      "../modules/certificates/certificate.schema.ts"
-    );
+    const { generateMedicalPrescriptionInputSchema } =
+      await import("@finanzas/orpc-contracts/certificates");
+    const { medicalPrescriptionSchema } =
+      await import("../modules/certificates/certificate.schema.ts");
 
     const input = generateMedicalPrescriptionInputSchema.parse(json);
     const parsed = medicalPrescriptionSchema.parse(input);
 
     const patient = await db.patient.findUnique({
       where: { id: parsed.patientId },
-      select: { birthDate: true, person: { select: { fatherName: true, motherName: true, names: true, rut: true, sex: true } } },
+      select: {
+        birthDate: true,
+        person: {
+          select: { fatherName: true, motherName: true, names: true, rut: true, sex: true },
+        },
+      },
     });
     if (!patient) return c.text("Patient not found", 404);
 
@@ -131,16 +134,15 @@ prescriptionPdfRoutes.post("/preview", async (c) => {
       .join(" ");
 
     const clinic = await db.clinicSettings.findUnique({ where: { id: 1 } });
-    const { generateMedicalPrescriptionPdf } = await import(
-      "../modules/certificates/certificate.service.ts"
-    );
+    const { generateMedicalPrescriptionPdf } =
+      await import("../modules/certificates/certificate.service.ts");
 
     const rawPdf = await generateMedicalPrescriptionPdf(
       {
         patientId: parsed.patientId,
         date: parsed.date.slice(0, 10),
         diagnosis: parsed.diagnosis ?? undefined,
-        medications: parsed.medications.map(m => ({
+        medications: parsed.medications.map((m) => ({
           name: m.name,
           dosage: m.dosage ?? undefined,
           duration: m.duration ?? undefined,
@@ -151,7 +153,9 @@ prescriptionPdfRoutes.post("/preview", async (c) => {
         mode: "full",
         folio: "Folio no asignado",
         doctorLicense: clinic?.superintendenciaNumber ?? undefined,
-        patientAge: patient.birthDate ? Math.floor((Date.now() - patient.birthDate.getTime()) / 31557600000) : undefined,
+        patientAge: patient.birthDate
+          ? Math.floor((Date.now() - patient.birthDate.getTime()) / 31557600000)
+          : undefined,
         patientBirthDate: patient.birthDate?.toISOString().slice(0, 10),
         patientSex: patient.person.sex ?? undefined,
         patient: { name: fullName, rut: patient.person.rut },

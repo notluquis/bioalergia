@@ -3,13 +3,22 @@
 // card lleva el título (en `<p class="d-none">`, el nombre completo) y el link
 // `/s/{token}` (token = externalId). `identifier` = slug del subdominio (ej hites).
 
-import { BROWSER_UA, deriveLocationFromText, deriveRemoteFromText, requestText } from "./_shared.ts";
+import {
+  BROWSER_UA,
+  deriveLocationFromText,
+  deriveRemoteFromText,
+  requestText,
+} from "./_shared.ts";
 import type { RawJob } from "./types.ts";
 
 const MAX_PAGES = 20;
 
 function clean(html: string): string {
-  return html.replace(/<[^>]+>/g, " ").replace(/&amp;/g, "&").replace(/\s+/g, " ").trim();
+  return html
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function parseCards(html: string, slug: string): RawJob[] {
@@ -51,10 +60,12 @@ export async function fetchBukJobs(identifier: string): Promise<RawJob[]> {
   const out: RawJob[] = [];
   const seen = new Set<string>();
   for (let page = 1; page <= MAX_PAGES; page++) {
-    const html = await requestText(
-      `https://${slug}.buk.cl/trabaja-con-nosotros?page=${page}`,
-      { tag: "job_radar.buk", ctx: { slug, page }, accept: "text/html,*/*", userAgent: BROWSER_UA }
-    );
+    const html = await requestText(`https://${slug}.buk.cl/trabaja-con-nosotros?page=${page}`, {
+      tag: "job_radar.buk",
+      ctx: { slug, page },
+      accept: "text/html,*/*",
+      userAgent: BROWSER_UA,
+    });
     if (!html) break;
     const cards = parseCards(html, slug);
     let added = 0;

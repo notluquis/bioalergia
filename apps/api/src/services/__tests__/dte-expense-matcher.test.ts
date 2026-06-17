@@ -339,9 +339,9 @@ describe("deriveExpenseMonth (via expenseMonth of created expense)", () => {
 
   it("falls back to documentDate when period length is not exactly 6", async () => {
     // 5 chars → not a valid YYYYMM → use the date instead
-    expect(await monthFor({ period: "20240", documentDate: new Date("2022-02-02T12:00:00Z") })).toBe(
-      "2022-02"
-    );
+    expect(
+      await monthFor({ period: "20240", documentDate: new Date("2022-02-02T12:00:00Z") })
+    ).toBe("2022-02");
   });
 
   it("falls back to documentDate for a 7-char period (boundary above 6)", async () => {

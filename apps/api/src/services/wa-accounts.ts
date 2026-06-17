@@ -88,7 +88,10 @@ async function buildAccountWithPhones(id: number): Promise<AccountResponse["acco
     include: { phoneNumbers: true },
   });
   if (!acc) throw new DomainError("NOT_FOUND", "Account no encontrada");
-  return { ...maskAccount(acc), phoneNumbers: acc.phoneNumbers } as unknown as AccountResponse["account"];
+  return {
+    ...maskAccount(acc),
+    phoneNumbers: acc.phoneNumbers,
+  } as unknown as AccountResponse["account"];
 }
 
 export async function listAccounts(): Promise<ListAccountsResponse> {

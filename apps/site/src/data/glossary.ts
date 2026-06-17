@@ -49,8 +49,7 @@ export const glossary = [
   },
   {
     term: "Urticaria",
-    definition:
-      "Aparición de ronchas (habones) con picazón en la piel; puede ser aguda o crónica.",
+    definition: "Aparición de ronchas (habones) con picazón en la piel; puede ser aguda o crónica.",
   },
   {
     term: "Polinosis",

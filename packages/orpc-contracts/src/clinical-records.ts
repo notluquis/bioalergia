@@ -264,7 +264,9 @@ export const clinicalRecordsContract = {
 
   rejectImports: oc
     .route({ method: "POST", path: "/imports/reject-many", tags: ["Clinical Records"] })
-    .input(z.object({ ids: z.array(z.string().min(1)).min(1).max(200), notes: z.string().optional() }))
+    .input(
+      z.object({ ids: z.array(z.string().min(1)).min(1).max(200), notes: z.string().optional() })
+    )
     .output(z.object({ rejected: z.number().int() })),
 
   // Auto-approve every PENDING_REVIEW import whose top match candidate clears

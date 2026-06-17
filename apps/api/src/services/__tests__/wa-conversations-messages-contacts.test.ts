@@ -13,7 +13,13 @@ import { isDomainError } from "../../lib/errors.ts";
 const { mockDb, graphMock } = vi.hoisted(() => {
   const mockDb = {
     waConversation: { findUnique: vi.fn(), findMany: vi.fn(), count: vi.fn(), update: vi.fn() },
-    waMessage: { findUnique: vi.fn(), findFirst: vi.fn(), findMany: vi.fn(), create: vi.fn(), update: vi.fn() },
+    waMessage: {
+      findUnique: vi.fn(),
+      findFirst: vi.fn(),
+      findMany: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
+    },
     waContact: { update: vi.fn() },
   };
   const graphMock = {
@@ -61,9 +67,8 @@ const {
   searchMessages,
   listConversationMedia,
 } = await import("../wa-messages.ts");
-const { updateContact, blockContact, unblockContact, listBlocked } = await import(
-  "../wa-contacts.ts"
-);
+const { updateContact, blockContact, unblockContact, listBlocked } =
+  await import("../wa-contacts.ts");
 
 // 24h window helpers
 const OPEN = () => new Date(Date.now() - 60_000); // 1 min ago → window open
@@ -343,7 +348,13 @@ describe("sendMedia", () => {
     mockDb.waMessage.create.mockResolvedValue({ id: 80 });
     mockDb.waConversation.update.mockResolvedValue({});
     await sendMedia(
-      { conversationId: 1, phoneNumberId: 7, type: "document", mediaId: "med1", filename: "rx.pdf" },
+      {
+        conversationId: 1,
+        phoneNumberId: 7,
+        type: "document",
+        mediaId: "med1",
+        filename: "rx.pdf",
+      },
       9
     );
     const data = mockDb.waMessage.create.mock.calls[0]![0].data;

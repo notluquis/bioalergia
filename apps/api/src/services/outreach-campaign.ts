@@ -146,9 +146,7 @@ export async function getEstablishmentDetail(rbd: string) {
   return { establishment, contactos, interacciones, envios };
 }
 
-export async function updateEstablishment(
-  input: z.infer<typeof updateEstablishmentInputSchema>
-) {
+export async function updateEstablishment(input: z.infer<typeof updateEstablishmentInputSchema>) {
   const { rbd, ...rest } = input;
   const data: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(rest)) {

@@ -77,7 +77,7 @@ async function exchangeCodeForUserToken(
   code: string,
   appId: string,
   appSecret: string,
-  version: string,
+  version: string
 ): Promise<string> {
   const url = new URL(`${GRAPH_BASE}/${version}/oauth/access_token`);
   url.searchParams.set("client_id", appId);
@@ -147,13 +147,13 @@ export function registerSocialOauthRoutes(app: Hono): void {
         code,
         config.appId,
         config.appSecret,
-        config.graphVersion,
+        config.graphVersion
       );
       const longLived = await exchangeForLongLivedToken(
         shortToken,
         config.appId,
         config.appSecret,
-        config.graphVersion,
+        config.graphVersion
       );
       const derived = await fetchPageAndIgIds(longLived.token, config.graphVersion);
 

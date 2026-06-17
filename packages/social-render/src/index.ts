@@ -38,7 +38,9 @@ export interface RenderSocialImageOptions {
 export async function renderSocialImage(opts: RenderSocialImageOptions): Promise<Buffer> {
   const builder = templates[opts.template];
   if (!builder) {
-    throw new Error(`Unknown social template "${opts.template}". Available: ${SOCIAL_TEMPLATES.join(", ")}`);
+    throw new Error(
+      `Unknown social template "${opts.template}". Available: ${SOCIAL_TEMPLATES.join(", ")}`
+    );
   }
   if (!opts.fonts || opts.fonts.length === 0) {
     throw new Error("renderSocialImage requires at least one font");

@@ -8,10 +8,26 @@ import { describe, expect, it } from "vitest";
 // fuentes IBM Plex reales de assets/ y verifica que cada template/ratio produce
 // un PNG válido. NO toca R2 (eso vive en render.ts, cubierto aparte).
 
-const FONTS_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..", "assets", "fonts");
+const FONTS_DIR = path.join(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "..",
+  "..",
+  "..",
+  "..",
+  "assets",
+  "fonts"
+);
 const fonts = [
-  { name: "IBM Plex Sans", data: fs.readFileSync(path.join(FONTS_DIR, "IBMPlexSans-Regular.ttf")), weight: 400 as const },
-  { name: "IBM Plex Sans", data: fs.readFileSync(path.join(FONTS_DIR, "IBMPlexSans-SemiBold.ttf")), weight: 600 as const },
+  {
+    name: "IBM Plex Sans",
+    data: fs.readFileSync(path.join(FONTS_DIR, "IBMPlexSans-Regular.ttf")),
+    weight: 400 as const,
+  },
+  {
+    name: "IBM Plex Sans",
+    data: fs.readFileSync(path.join(FONTS_DIR, "IBMPlexSans-SemiBold.ttf")),
+    weight: 600 as const,
+  },
 ];
 
 const PNG_MAGIC = Buffer.from([0x89, 0x50, 0x4e, 0x47]);
@@ -35,23 +51,30 @@ describe("renderSocialImage", () => {
         expect(png.subarray(0, 4)).toEqual(PNG_MAGIC);
       }
     },
-    RENDER_TIMEOUT,
+    RENDER_TIMEOUT
   );
 
   it(
     "respeta las dimensiones del aspect ratio",
     async () => {
-      const png = await renderSocialImage({ template: "tip-card", props: { title: "X" }, aspectRatio: "RATIO_9_16", fonts });
+      const png = await renderSocialImage({
+        template: "tip-card",
+        props: { title: "X" },
+        aspectRatio: "RATIO_9_16",
+        fonts,
+      });
       // IHDR width @ bytes 16..20 big-endian
       const width = png.readUInt32BE(16);
       const height = png.readUInt32BE(20);
       expect(width).toBe(SOCIAL_DIMENSIONS.RATIO_9_16.width);
       expect(height).toBe(SOCIAL_DIMENSIONS.RATIO_9_16.height);
     },
-    RENDER_TIMEOUT,
+    RENDER_TIMEOUT
   );
 
   it("lanza en template desconocido", async () => {
-    await expect(renderSocialImage({ template: "nope", props: {}, aspectRatio: "RATIO_1_1", fonts })).rejects.toThrow();
+    await expect(
+      renderSocialImage({ template: "nope", props: {}, aspectRatio: "RATIO_1_1", fonts })
+    ).rejects.toThrow();
   });
 });

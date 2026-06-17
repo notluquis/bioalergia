@@ -126,7 +126,8 @@ function parseJobsJson(text: string): Map<string, FeedMeta> {
       title: asString(rec.title),
       url,
       department: jp.department,
-      location: jp.location ?? deriveLocationFromText(asString(rec.content_html), asString(rec.title)),
+      location:
+        jp.location ?? deriveLocationFromText(asString(rec.content_html), asString(rec.title)),
       remote: jp.remote ?? deriveRemoteFromText(asString(rec.content_html), asString(rec.title)),
       descriptionHtml: asString(rec.content_html),
       publishedAt: parseDate(rec.date_published),

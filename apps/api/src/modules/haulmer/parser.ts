@@ -28,7 +28,7 @@ export function parseCSVText(csvText: string): CSVRow[] {
   // parser produced no rows at all.
   const data = (results.data as CSVRow[]) || [];
   const fatalErrors = results.errors.filter(
-    (e) => e.type !== "Quotes" && e.type !== "FieldMismatch",
+    (e) => e.type !== "Quotes" && e.type !== "FieldMismatch"
   );
   if (fatalErrors.length > 0 || (data.length === 0 && results.errors.length > 0)) {
     const firstError = (fatalErrors[0] ?? results.errors[0]).message;

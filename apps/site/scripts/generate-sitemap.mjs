@@ -59,22 +59,22 @@ async function main() {
     ...STATIC_PAGES.map((path) => buildUrl(path, "0.8", "weekly")),
     ...seed.categories
       .filter((c) =>
-        seed.products.some(
-          (p) => p.category_slug === c.slug && (p.status ?? "ACTIVE") === "ACTIVE"
-        )
+        seed.products.some((p) => p.category_slug === c.slug && (p.status ?? "ACTIVE") === "ACTIVE")
       )
       .map((c) => buildUrl(`/tienda?categoria=${c.slug}`, "0.7", "weekly")),
-    ...seed.products.filter((p) => (p.status ?? "ACTIVE") === "ACTIVE").map((p) => {
-      const slug =
-        p.slug ??
-        p.name
-          .toLowerCase()
-          .normalize("NFD")
-          .replace(/[̀-ͯ]/g, "")
-          .replace(/[^a-z0-9]+/g, "-")
-          .replace(/^-|-$/g, "");
-      return buildUrl(`/producto/${slug}`, "0.8", "weekly");
-    }),
+    ...seed.products
+      .filter((p) => (p.status ?? "ACTIVE") === "ACTIVE")
+      .map((p) => {
+        const slug =
+          p.slug ??
+          p.name
+            .toLowerCase()
+            .normalize("NFD")
+            .replace(/[̀-ͯ]/g, "")
+            .replace(/[^a-z0-9]+/g, "-")
+            .replace(/^-|-$/g, "");
+        return buildUrl(`/producto/${slug}`, "0.8", "weekly");
+      }),
   ];
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
