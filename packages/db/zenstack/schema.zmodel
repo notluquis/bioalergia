@@ -62,6 +62,7 @@ model Person {
   patient    Patient?
   addresses  Address[]
   companyContacts CompanyContact[]
+  consentRecords  ConsentRecord[]
 
   // Access policies
   @@deny('all', auth() == null)
@@ -1482,6 +1483,65 @@ model FoliatedBookEntry {
   @@unique([book, folio])
   @@index([book, entryDate])
   @@map("foliated_book_entries")
+}
+
+// Registro de Actividades de Tratamiento (RAT) — Ley 21.719 obliga al
+// responsable a mantener un inventario de las actividades de tratamiento de
+// datos personales: finalidad, base de licitud, categorías de datos/titulares,
+// destinatarios, plazo de conservación y medidas de seguridad.
+model ProcessingActivity {
+  id                    String   @id @default(cuid())
+  name                  String
+  purpose               String
+  // CONSENT | CONTRACT | LEGAL_OBLIGATION | VITAL_INTEREST | LEGITIMATE_INTEREST | HEALTH_CARE
+  legalBasis            String   @map("legal_basis")
+  dataCategories        String   @map("data_categories")
+  dataSubjects          String   @map("data_subjects")
+  recipients            String?
+  retentionPeriod       String?  @map("retention_period")
+  securityMeasures      String?  @map("security_measures")
+  internationalTransfer Boolean  @default(false) @map("international_transfer")
+  isActive              Boolean  @default(true) @map("is_active")
+  notes                 String?
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+
+  @@deny('all', auth() == null)
+  @@allow('create,read,update,delete', auth().status == 'ACTIVE')
+  @@index([isActive, name])
+  @@map("processing_activities")
+}
+
+// Registro de consentimiento (Ley 21.719). Historia auditable del consentimiento
+// del titular para tratamientos que lo requieren (marketing/outreach, usos
+// secundarios, investigación). NO es el consentimiento informado clínico de un
+// procedimiento. El consentimiento debe ser libre/específico/informado/inequívoco
+// (expreso para datos sensibles) y revocable; esta tabla acredita propósito,
+// fecha, canal y versión del texto. El boolean `emailMarketingOptIn` en Person es
+// el caché operativo; esta tabla es la historia probatoria.
+model ConsentRecord {
+  id            String    @id @default(cuid())
+  personId      Int       @map("person_id")
+  // MARKETING_EMAIL | MARKETING_WHATSAPP | MARKETING_SMS | DATA_PROCESSING_SECONDARY | RESEARCH | DATA_SHARING
+  purpose       String
+  // GRANTED | WITHDRAWN
+  status        String    @default("GRANTED")
+  grantedAt     DateTime  @default(now()) @map("granted_at")
+  withdrawnAt   DateTime? @map("withdrawn_at")
+  // WEB | PRESENCIAL | EMAIL | WHATSAPP | PHONE | IMPORT
+  channel       String    @default("PRESENCIAL")
+  policyVersion String    @map("policy_version")
+  evidenceText  String?   @map("evidence_text")
+  source        String?
+  recordedBy    Int?      @map("recorded_by")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  person        Person    @relation(fields: [personId], references: [id], onDelete: Cascade)
+
+  @@deny('all', auth() == null)
+  @@allow('create,read,update', auth().status == 'ACTIVE')
+  @@index([personId, purpose])
+  @@index([status])
+  @@map("consent_records")
 }
 
 model ClinicalSeries {

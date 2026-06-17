@@ -47,12 +47,14 @@ import { Route as AuthedWaCloudSplatRouteImport } from "./routes/_authed/wa-clou
 import { Route as AuthedSettingsSecurityAlertsRouteImport } from "./routes/_authed/settings/security-alerts"
 import { Route as AuthedSettingsRetentionRouteImport } from "./routes/_authed/settings/retention"
 import { Route as AuthedSettingsQuotesCatalogRouteImport } from "./routes/_authed/settings/quotes-catalog"
+import { Route as AuthedSettingsProcessingActivitiesRouteImport } from "./routes/_authed/settings/processing-activities"
 import { Route as AuthedSettingsPriceListRouteImport } from "./routes/_authed/settings/price-list"
 import { Route as AuthedSettingsNoticiasRouteImport } from "./routes/_authed/settings/noticias"
 import { Route as AuthedSettingsImmunotherapyRouteImport } from "./routes/_authed/settings/immunotherapy"
 import { Route as AuthedSettingsHaulmerRouteImport } from "./routes/_authed/settings/haulmer"
 import { Route as AuthedSettingsDoctoraliaRouteImport } from "./routes/_authed/settings/doctoralia"
 import { Route as AuthedSettingsDataRightsRouteImport } from "./routes/_authed/settings/data-rights"
+import { Route as AuthedSettingsConsentRouteImport } from "./routes/_authed/settings/consent"
 import { Route as AuthedSettingsComplaintsRouteImport } from "./routes/_authed/settings/complaints"
 import { Route as AuthedSettingsBreachIncidentsRouteImport } from "./routes/_authed/settings/breach-incidents"
 import { Route as AuthedServicesAgendaRouteImport } from "./routes/_authed/services/agenda"
@@ -295,6 +297,12 @@ const AuthedSettingsQuotesCatalogRoute =
     path: "/quotes-catalog",
     getParentRoute: () => AuthedSettingsRoute,
   } as any)
+const AuthedSettingsProcessingActivitiesRoute =
+  AuthedSettingsProcessingActivitiesRouteImport.update({
+    id: "/processing-activities",
+    path: "/processing-activities",
+    getParentRoute: () => AuthedSettingsRoute,
+  } as any)
 const AuthedSettingsPriceListRoute = AuthedSettingsPriceListRouteImport.update({
   id: "/price-list",
   path: "/price-list",
@@ -328,6 +336,11 @@ const AuthedSettingsDataRightsRoute =
     path: "/data-rights",
     getParentRoute: () => AuthedSettingsRoute,
   } as any)
+const AuthedSettingsConsentRoute = AuthedSettingsConsentRouteImport.update({
+  id: "/consent",
+  path: "/consent",
+  getParentRoute: () => AuthedSettingsRoute,
+} as any)
 const AuthedSettingsComplaintsRoute =
   AuthedSettingsComplaintsRouteImport.update({
     id: "/complaints",
@@ -661,12 +674,14 @@ export interface FileRoutesByFullPath {
   "/services/agenda": typeof AuthedServicesAgendaRoute
   "/settings/breach-incidents": typeof AuthedSettingsBreachIncidentsRoute
   "/settings/complaints": typeof AuthedSettingsComplaintsRoute
+  "/settings/consent": typeof AuthedSettingsConsentRoute
   "/settings/data-rights": typeof AuthedSettingsDataRightsRoute
   "/settings/doctoralia": typeof AuthedSettingsDoctoraliaRoute
   "/settings/haulmer": typeof AuthedSettingsHaulmerRoute
   "/settings/immunotherapy": typeof AuthedSettingsImmunotherapyRoute
   "/settings/noticias": typeof AuthedSettingsNoticiasRoute
   "/settings/price-list": typeof AuthedSettingsPriceListRoute
+  "/settings/processing-activities": typeof AuthedSettingsProcessingActivitiesRoute
   "/settings/quotes-catalog": typeof AuthedSettingsQuotesCatalogRoute
   "/settings/retention": typeof AuthedSettingsRetentionRoute
   "/settings/security-alerts": typeof AuthedSettingsSecurityAlertsRoute
@@ -749,12 +764,14 @@ export interface FileRoutesByTo {
   "/services/agenda": typeof AuthedServicesAgendaRoute
   "/settings/breach-incidents": typeof AuthedSettingsBreachIncidentsRoute
   "/settings/complaints": typeof AuthedSettingsComplaintsRoute
+  "/settings/consent": typeof AuthedSettingsConsentRoute
   "/settings/data-rights": typeof AuthedSettingsDataRightsRoute
   "/settings/doctoralia": typeof AuthedSettingsDoctoraliaRoute
   "/settings/haulmer": typeof AuthedSettingsHaulmerRoute
   "/settings/immunotherapy": typeof AuthedSettingsImmunotherapyRoute
   "/settings/noticias": typeof AuthedSettingsNoticiasRoute
   "/settings/price-list": typeof AuthedSettingsPriceListRoute
+  "/settings/processing-activities": typeof AuthedSettingsProcessingActivitiesRoute
   "/settings/quotes-catalog": typeof AuthedSettingsQuotesCatalogRoute
   "/settings/retention": typeof AuthedSettingsRetentionRoute
   "/settings/security-alerts": typeof AuthedSettingsSecurityAlertsRoute
@@ -846,12 +863,14 @@ export interface FileRoutesById {
   "/_authed/services/agenda": typeof AuthedServicesAgendaRoute
   "/_authed/settings/breach-incidents": typeof AuthedSettingsBreachIncidentsRoute
   "/_authed/settings/complaints": typeof AuthedSettingsComplaintsRoute
+  "/_authed/settings/consent": typeof AuthedSettingsConsentRoute
   "/_authed/settings/data-rights": typeof AuthedSettingsDataRightsRoute
   "/_authed/settings/doctoralia": typeof AuthedSettingsDoctoraliaRoute
   "/_authed/settings/haulmer": typeof AuthedSettingsHaulmerRoute
   "/_authed/settings/immunotherapy": typeof AuthedSettingsImmunotherapyRoute
   "/_authed/settings/noticias": typeof AuthedSettingsNoticiasRoute
   "/_authed/settings/price-list": typeof AuthedSettingsPriceListRoute
+  "/_authed/settings/processing-activities": typeof AuthedSettingsProcessingActivitiesRoute
   "/_authed/settings/quotes-catalog": typeof AuthedSettingsQuotesCatalogRoute
   "/_authed/settings/retention": typeof AuthedSettingsRetentionRoute
   "/_authed/settings/security-alerts": typeof AuthedSettingsSecurityAlertsRoute
@@ -943,12 +962,14 @@ export interface FileRouteTypes {
     | "/services/agenda"
     | "/settings/breach-incidents"
     | "/settings/complaints"
+    | "/settings/consent"
     | "/settings/data-rights"
     | "/settings/doctoralia"
     | "/settings/haulmer"
     | "/settings/immunotherapy"
     | "/settings/noticias"
     | "/settings/price-list"
+    | "/settings/processing-activities"
     | "/settings/quotes-catalog"
     | "/settings/retention"
     | "/settings/security-alerts"
@@ -1031,12 +1052,14 @@ export interface FileRouteTypes {
     | "/services/agenda"
     | "/settings/breach-incidents"
     | "/settings/complaints"
+    | "/settings/consent"
     | "/settings/data-rights"
     | "/settings/doctoralia"
     | "/settings/haulmer"
     | "/settings/immunotherapy"
     | "/settings/noticias"
     | "/settings/price-list"
+    | "/settings/processing-activities"
     | "/settings/quotes-catalog"
     | "/settings/retention"
     | "/settings/security-alerts"
@@ -1127,12 +1150,14 @@ export interface FileRouteTypes {
     | "/_authed/services/agenda"
     | "/_authed/settings/breach-incidents"
     | "/_authed/settings/complaints"
+    | "/_authed/settings/consent"
     | "/_authed/settings/data-rights"
     | "/_authed/settings/doctoralia"
     | "/_authed/settings/haulmer"
     | "/_authed/settings/immunotherapy"
     | "/_authed/settings/noticias"
     | "/_authed/settings/price-list"
+    | "/_authed/settings/processing-activities"
     | "/_authed/settings/quotes-catalog"
     | "/_authed/settings/retention"
     | "/_authed/settings/security-alerts"
@@ -1442,6 +1467,13 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof AuthedSettingsQuotesCatalogRouteImport
       parentRoute: typeof AuthedSettingsRoute
     }
+    "/_authed/settings/processing-activities": {
+      id: "/_authed/settings/processing-activities"
+      path: "/processing-activities"
+      fullPath: "/settings/processing-activities"
+      preLoaderRoute: typeof AuthedSettingsProcessingActivitiesRouteImport
+      parentRoute: typeof AuthedSettingsRoute
+    }
     "/_authed/settings/price-list": {
       id: "/_authed/settings/price-list"
       path: "/price-list"
@@ -1482,6 +1514,13 @@ declare module "@tanstack/react-router" {
       path: "/data-rights"
       fullPath: "/settings/data-rights"
       preLoaderRoute: typeof AuthedSettingsDataRightsRouteImport
+      parentRoute: typeof AuthedSettingsRoute
+    }
+    "/_authed/settings/consent": {
+      id: "/_authed/settings/consent"
+      path: "/consent"
+      fullPath: "/settings/consent"
+      preLoaderRoute: typeof AuthedSettingsConsentRouteImport
       parentRoute: typeof AuthedSettingsRoute
     }
     "/_authed/settings/complaints": {
@@ -2017,12 +2056,14 @@ const AuthedServicesRouteWithChildren = AuthedServicesRoute._addFileChildren(
 interface AuthedSettingsRouteChildren {
   AuthedSettingsBreachIncidentsRoute: typeof AuthedSettingsBreachIncidentsRoute
   AuthedSettingsComplaintsRoute: typeof AuthedSettingsComplaintsRoute
+  AuthedSettingsConsentRoute: typeof AuthedSettingsConsentRoute
   AuthedSettingsDataRightsRoute: typeof AuthedSettingsDataRightsRoute
   AuthedSettingsDoctoraliaRoute: typeof AuthedSettingsDoctoraliaRoute
   AuthedSettingsHaulmerRoute: typeof AuthedSettingsHaulmerRoute
   AuthedSettingsImmunotherapyRoute: typeof AuthedSettingsImmunotherapyRoute
   AuthedSettingsNoticiasRoute: typeof AuthedSettingsNoticiasRoute
   AuthedSettingsPriceListRoute: typeof AuthedSettingsPriceListRoute
+  AuthedSettingsProcessingActivitiesRoute: typeof AuthedSettingsProcessingActivitiesRoute
   AuthedSettingsQuotesCatalogRoute: typeof AuthedSettingsQuotesCatalogRoute
   AuthedSettingsRetentionRoute: typeof AuthedSettingsRetentionRoute
   AuthedSettingsSecurityAlertsRoute: typeof AuthedSettingsSecurityAlertsRoute
@@ -2032,12 +2073,15 @@ interface AuthedSettingsRouteChildren {
 const AuthedSettingsRouteChildren: AuthedSettingsRouteChildren = {
   AuthedSettingsBreachIncidentsRoute: AuthedSettingsBreachIncidentsRoute,
   AuthedSettingsComplaintsRoute: AuthedSettingsComplaintsRoute,
+  AuthedSettingsConsentRoute: AuthedSettingsConsentRoute,
   AuthedSettingsDataRightsRoute: AuthedSettingsDataRightsRoute,
   AuthedSettingsDoctoraliaRoute: AuthedSettingsDoctoraliaRoute,
   AuthedSettingsHaulmerRoute: AuthedSettingsHaulmerRoute,
   AuthedSettingsImmunotherapyRoute: AuthedSettingsImmunotherapyRoute,
   AuthedSettingsNoticiasRoute: AuthedSettingsNoticiasRoute,
   AuthedSettingsPriceListRoute: AuthedSettingsPriceListRoute,
+  AuthedSettingsProcessingActivitiesRoute:
+    AuthedSettingsProcessingActivitiesRoute,
   AuthedSettingsQuotesCatalogRoute: AuthedSettingsQuotesCatalogRoute,
   AuthedSettingsRetentionRoute: AuthedSettingsRetentionRoute,
   AuthedSettingsSecurityAlertsRoute: AuthedSettingsSecurityAlertsRoute,

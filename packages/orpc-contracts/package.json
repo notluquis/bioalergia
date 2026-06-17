@@ -357,6 +357,18 @@
       "import": "./dist/security-alerts.js",
       "default": "./dist/security-alerts.js"
     },
+    "./processing-activities": {
+      "development": "./src/processing-activities.ts",
+      "types": "./dist/processing-activities.d.ts",
+      "import": "./dist/processing-activities.js",
+      "default": "./dist/processing-activities.js"
+    },
+    "./consent": {
+      "development": "./src/consent.ts",
+      "types": "./dist/consent.d.ts",
+      "import": "./dist/consent.js",
+      "default": "./dist/consent.js"
+    },
     "./quotes": {
       "development": "./src/quotes.ts",
       "types": "./dist/quotes.d.ts",

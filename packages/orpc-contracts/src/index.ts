@@ -85,6 +85,11 @@ export { dataRightsContract, type DataRightsContract } from "./data-rights.ts";
 export { breachIncidentsContract, type BreachIncidentsContract } from "./breach-incidents.ts";
 export { complaintsContract, type ComplaintsContract } from "./complaints.ts";
 export { securityAlertsContract, type SecurityAlertsContract } from "./security-alerts.ts";
+export {
+  processingActivitiesContract,
+  type ProcessingActivitiesContract,
+} from "./processing-activities.ts";
+export { consentContract, type ConsentContract } from "./consent.ts";
 export * from "./system.ts";
 export * from "./timesheets.ts";
 export * from "./transactions-insights.ts";

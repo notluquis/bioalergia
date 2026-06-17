@@ -107,6 +107,8 @@ import { dataRightsORPCHandler } from "./orpc/data-rights.ts";
 import { breachIncidentsORPCHandler } from "./orpc/breach-incidents.ts";
 import { complaintsORPCHandler } from "./orpc/complaints.ts";
 import { securityAlertsORPCHandler } from "./orpc/security-alerts.ts";
+import { processingActivitiesORPCHandler } from "./orpc/processing-activities.ts";
+import { consentORPCHandler } from "./orpc/consent.ts";
 import {
   settlementTransactionsOpenAPIHandler,
   settlementTransactionsORPCHandler,
@@ -1669,6 +1671,35 @@ app.use("/api/orpc/complaints/rpc/*", async (c, next) => {
 app.use("/api/orpc/security-alerts/rpc/*", async (c, next) => {
   const { matched, response } = await securityAlertsORPCHandler.handle(createHonoORPCRequest(c), {
     prefix: "/api/orpc/security-alerts/rpc",
+    context: { hono: c },
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  return next();
+});
+
+app.use("/api/orpc/processing-activities/rpc/*", async (c, next) => {
+  const { matched, response } = await processingActivitiesORPCHandler.handle(
+    createHonoORPCRequest(c),
+    {
+      prefix: "/api/orpc/processing-activities/rpc",
+      context: { hono: c },
+    }
+  );
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  return next();
+});
+
+app.use("/api/orpc/consent/rpc/*", async (c, next) => {
+  const { matched, response } = await consentORPCHandler.handle(createHonoORPCRequest(c), {
+    prefix: "/api/orpc/consent/rpc",
     context: { hono: c },
   });
 
