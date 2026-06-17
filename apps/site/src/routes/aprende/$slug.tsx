@@ -6,13 +6,7 @@ import { JsonLd } from "@/components/JsonLd";
 import { PageShell } from "@/components/PageShell";
 import { type EducationBlock, getTopic, relatedTopics } from "@/data/education";
 import { breadcrumbJsonLd } from "@/lib/seo";
-
-function humanizeSlug(slug: string): string {
-  return slug
-    .split("-")
-    .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
-    .join(" ");
-}
+import { titleFromSlug } from "@/lib/slug";
 
 function TopicBody({ blocks }: { blocks: EducationBlock[] }) {
   return (
@@ -193,7 +187,7 @@ export const Route = createFileRoute("/aprende/$slug")({
     const origin = typeof window === "undefined" ? "https://bioalergia.cl" : window.location.origin;
     const url = `${origin}/aprende/${params.slug}`;
     const topic = getTopic(params.slug);
-    const titleHuman = topic?.title ?? humanizeSlug(params.slug);
+    const titleHuman = topic?.title ?? titleFromSlug(params.slug);
     const title = `${titleHuman} · Aprende Bioalergia`;
     const description = topic?.summary ?? `${titleHuman} en la sección educativa de Bioalergia.`;
     return {

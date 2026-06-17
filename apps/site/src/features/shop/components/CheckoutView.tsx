@@ -69,10 +69,10 @@ export function CheckoutView({
   const [isQuoting, setIsQuoting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
-  const totalClp = useMemo(() => computeOrderTotal(cart?.total_clp ?? 0, shippingClp), [
-    cart,
-    shippingClp,
-  ]);
+  const totalClp = useMemo(
+    () => computeOrderTotal(cart?.total_clp ?? 0, shippingClp),
+    [cart, shippingClp]
+  );
 
   if (!publicKey) {
     return (

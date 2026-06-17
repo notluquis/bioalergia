@@ -18,12 +18,15 @@ const meta: Meta<typeof CheckoutView> = {
   args: {
     // Stubs: the brick (MercadoPago) only mounts once the form is filled, so
     // these are never invoked in the default snapshots.
-    onQuote: () => Promise.resolve(SHOP_FIXTURES.checkoutQuote.data.options.map((o) => ({
-      service_code: o.code,
-      service_description: o.label,
-      shipping_clp: o.price_clp,
-      delivery_time_days: String(o.eta_days),
-    }))),
+    onQuote: () =>
+      Promise.resolve(
+        SHOP_FIXTURES.checkoutQuote.data.options.map((o) => ({
+          service_code: o.code,
+          service_description: o.label,
+          shipping_clp: o.price_clp,
+          delivery_time_days: String(o.eta_days),
+        }))
+      ),
     onStart: () => Promise.resolve(),
   },
 };

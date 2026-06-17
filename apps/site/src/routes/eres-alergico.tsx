@@ -6,6 +6,7 @@ import { BookingCta } from "@/components/BookingCta";
 import { JsonLd } from "@/components/JsonLd";
 import { PageShell } from "@/components/PageShell";
 import { quizContent } from "@/data/quiz";
+import { answeredCount as countAnswered, nextIndex, prevIndex } from "@/lib/quiz";
 import { breadcrumbJsonLd } from "@/lib/seo";
 
 const questions = quizContent.questions;
@@ -19,7 +20,7 @@ function EresAlergicoPage() {
   );
   const [current, setCurrent] = useState(0);
 
-  const answeredCount = answers.filter((value) => value !== undefined).length;
+  const answeredCount = countAnswered(answers);
   const allAnswered = questions.length > 0 && answeredCount === questions.length;
 
   const handleSelect = (optionIndex: number) => {
@@ -29,7 +30,7 @@ function EresAlergicoPage() {
       return next;
     });
     // Avanza a la siguiente pregunta sin responder, o a la última si ya está todo.
-    setCurrent((prevCurrent) => Math.min(prevCurrent + 1, questions.length - 1));
+    setCurrent((prevCurrent) => nextIndex(prevCurrent, questions.length));
   };
 
   const handleReset = () => {
@@ -177,7 +178,7 @@ function EresAlergicoPage() {
                   className="rounded-full"
                   isDisabled={current === 0}
                   variant="tertiary"
-                  onPress={() => setCurrent((prev) => Math.max(prev - 1, 0))}
+                  onPress={() => setCurrent((prev) => prevIndex(prev))}
                 >
                   Anterior
                 </Button>
@@ -191,7 +192,7 @@ function EresAlergicoPage() {
                     <Button
                       className="rounded-full"
                       variant="secondary"
-                      onPress={() => setCurrent((prev) => Math.min(prev + 1, questions.length - 1))}
+                      onPress={() => setCurrent((prev) => nextIndex(prev, questions.length))}
                     >
                       Siguiente
                     </Button>

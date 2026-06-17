@@ -7,6 +7,7 @@ import { ProductDetailView } from "@/features/shop/components/ProductDetailView"
 import { useShopConfig } from "@/features/shop/lib/shop-config";
 import { shopKeys } from "@/features/shop/queries";
 import { cartClient, catalogClient } from "@/lib/orpc-client";
+import { titleFromSlug } from "@/lib/slug";
 
 function ProductDetailPage() {
   const { slug } = Route.useParams();
@@ -87,10 +88,7 @@ export const Route = createFileRoute("/producto/$slug")({
   head: ({ params }) => {
     const origin = typeof window === "undefined" ? "https://bioalergia.cl" : window.location.origin;
     const url = `${origin}/producto/${params.slug}`;
-    const titleHuman = params.slug
-      .split("-")
-      .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
-      .join(" ");
+    const titleHuman = titleFromSlug(params.slug);
     const title = `${titleHuman} · Tienda Bioalergia`;
     return {
       meta: [

@@ -9,6 +9,7 @@ import { JsonLd } from "@/components/JsonLd";
 import { PageShell } from "@/components/PageShell";
 import { contentQueries } from "@/features/content/queries";
 import { articleJsonLd, breadcrumbJsonLd } from "@/lib/seo";
+import { titleFromSlug } from "@/lib/slug";
 
 const DATE_FORMAT: Intl.DateTimeFormatOptions = {
   day: "numeric",
@@ -176,10 +177,7 @@ export const Route = createFileRoute("/noticias/$slug")({
   head: ({ params }) => {
     const origin = typeof window === "undefined" ? "https://bioalergia.cl" : window.location.origin;
     const url = `${origin}/noticias/${params.slug}`;
-    const titleHuman = params.slug
-      .split("-")
-      .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
-      .join(" ");
+    const titleHuman = titleFromSlug(params.slug);
     const title = `${titleHuman} · Noticias Bioalergia`;
     const description = `${titleHuman} en las noticias de Bioalergia.`;
     return {

@@ -9,15 +9,7 @@
 import { Button } from "@heroui/react";
 import { useEffect, useState } from "react";
 
-const STORAGE_KEY = "bioalergia.cookies";
-
-type Decision = "accept" | "reject" | null;
-
-function read(): Decision {
-  if (typeof window === "undefined") return null;
-  const raw = window.localStorage.getItem(STORAGE_KEY);
-  return raw === "accept" || raw === "reject" ? raw : null;
-}
+import { type Decision, getCookieConsent, STORAGE_KEY } from "@/lib/cookie-consent";
 
 function write(d: Decision) {
   if (!d) return;
@@ -29,7 +21,7 @@ export function CookiesBanner() {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    setVisible(read() === null);
+    setVisible(getCookieConsent() === null);
   }, []);
 
   if (!visible) return null;
@@ -70,8 +62,4 @@ export function CookiesBanner() {
       </div>
     </div>
   );
-}
-
-export function getCookieConsent(): Decision {
-  return read();
 }

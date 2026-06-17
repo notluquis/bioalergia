@@ -2,6 +2,8 @@ import useEmblaCarousel from "embla-carousel-react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
+import { sortGalleryImages } from "@/features/shop/lib/gallery";
+
 type Image = {
   cdn_url: string;
   srcset?: string | null;
@@ -12,9 +14,7 @@ type Image = {
 };
 
 export function ProductGallery({ images, productName }: { images: Image[]; productName: string }) {
-  const sorted = images.length
-    ? [...images].sort((a, b) => Number(b.is_primary) - Number(a.is_primary))
-    : [];
+  const sorted = sortGalleryImages(images);
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: false });
   const [selectedIdx, setSelectedIdx] = useState(0);
 

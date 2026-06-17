@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Link, useLocation } from "@tanstack/react-router";
 import { ShoppingCart } from "lucide-react";
 
+import { cartItemCount } from "@/features/shop/lib/cart-math";
 import { shopKeys } from "@/features/shop/queries";
 
 const SHOP_PREFIXES = ["/tienda", "/producto", "/carrito", "/checkout"];
@@ -18,7 +19,7 @@ export function CartBadge() {
 
   if (!visible) return null;
 
-  const count = data?.data?.items?.reduce((acc, i) => acc + i.qty, 0) ?? 0;
+  const count = data?.data?.items ? cartItemCount(data.data.items) : 0;
 
   return (
     <div className="fixed top-4 right-4 z-50 sm:top-6 sm:right-6">

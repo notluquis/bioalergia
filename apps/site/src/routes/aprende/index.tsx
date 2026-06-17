@@ -5,6 +5,7 @@ import { BookingCta } from "@/components/BookingCta";
 import { JsonLd } from "@/components/JsonLd";
 import { PageShell } from "@/components/PageShell";
 import { type EducationCategory, educationTopics } from "@/data/education";
+import { groupTopicsByCategory } from "@/lib/education-grouping";
 import { breadcrumbJsonLd } from "@/lib/seo";
 
 const CATEGORY_ORDER: EducationCategory[] = [
@@ -19,10 +20,7 @@ const CATEGORY_ORDER: EducationCategory[] = [
   "Emergencia",
 ];
 
-const groupedTopics = CATEGORY_ORDER.map((category) => ({
-  category,
-  topics: educationTopics.filter((topic) => topic.category === category),
-})).filter((group) => group.topics.length > 0);
+const groupedTopics = groupTopicsByCategory(educationTopics, CATEGORY_ORDER);
 
 function AprendeIndexPage() {
   return (

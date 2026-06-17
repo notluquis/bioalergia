@@ -46,7 +46,10 @@ test("/tienda sort changes order and reflects in the URL", async ({ page }) => {
 
   // Pick "Precio: mayor a menor" — reverses the (price-ascending) default so the
   // first card becomes the most expensive product, a deterministic order flip.
-  await page.getByRole("button", { name: /Ordenar|Más relevantes/ }).first().click();
+  await page
+    .getByRole("button", { name: /Ordenar|Más relevantes/ })
+    .first()
+    .click();
   await page.getByRole("option", { name: "Precio: mayor a menor" }).click();
 
   await expect(page).toHaveURL(/[?&]sort=precio_desc/);
@@ -86,7 +89,10 @@ test("adding a product to the cart reflects on /carrito", async ({ page }) => {
 
   // The add-to-cart CTA (desktop primary button). On mobile the same label also
   // exists in the sticky bar — first() picks whichever is in the layout.
-  await page.getByRole("button", { name: /Agregar al carrito|^Agregar$/ }).first().click();
+  await page
+    .getByRole("button", { name: /Agregar al carrito|^Agregar$/ })
+    .first()
+    .click();
 
   // Success affordance appears (mock returns a populated cart).
   await expect(page.getByText(/Agregado al carrito/)).toBeVisible();

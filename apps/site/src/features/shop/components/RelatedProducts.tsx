@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 
 import { ProductCard } from "@/features/shop/components/ProductCard";
+import { relatedProducts } from "@/features/shop/lib/gallery";
 import { catalogClient } from "@/lib/orpc-client";
 
 export function RelatedProducts({
@@ -16,7 +17,7 @@ export function RelatedProducts({
     staleTime: 1000 * 60 * 5,
   });
 
-  const items = (data?.data ?? []).filter((p) => p.id !== excludeId).slice(0, 4);
+  const items = relatedProducts(data?.data ?? [], excludeId);
   if (items.length === 0) return null;
 
   return (

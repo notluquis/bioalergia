@@ -8,6 +8,7 @@ import { ContentError, ContentLoading } from "@/components/ContentState";
 import { PageShell } from "@/components/PageShell";
 import { educationTopics } from "@/data/education";
 import { contentQueries } from "@/features/content/queries";
+import { searchSite } from "@/lib/site-search";
 
 // Client-side search over: static marketing pages + education topics
 // (hardcoded) + DB-backed news articles (contentQueries.articles).
@@ -16,14 +17,6 @@ import { contentQueries } from "@/features/content/queries";
 const searchSchema = z.object({
   q: z.string().optional().default(""),
 });
-
-/** Strip diacritics + lowercase for accent-insensitive matching. */
-function normalize(value: string): string {
-  return value
-    .normalize("NFD")
-    .replace(/\p{Diacritic}/gu, "")
-    .toLowerCase();
-}
 
 type StaticPage = {
   title: string;
@@ -137,32 +130,21 @@ function BuscarPage() {
 
   const { data: articles, isLoading, error } = useQuery(contentQueries.articles());
 
-  const needle = normalize(q.trim());
-  const hasQuery = needle.length > 0;
+  const hasQuery = q.trim().length > 0;
 
-  const pageMatches = useMemo(() => {
-    if (!hasQuery) return [];
-    return staticPages.filter(
-      (page) =>
-        normalize(page.title).includes(needle) || normalize(page.description).includes(needle)
-    );
-  }, [needle, hasQuery]);
-
-  const topicMatches = useMemo(() => {
-    if (!hasQuery) return [];
-    return educationTopics.filter(
-      (topic) =>
-        normalize(topic.title).includes(needle) || normalize(topic.summary).includes(needle)
-    );
-  }, [needle, hasQuery]);
-
-  const articleMatches = useMemo(() => {
-    if (!hasQuery || !articles) return [];
-    return articles.filter(
-      (article) =>
-        normalize(article.title).includes(needle) || normalize(article.excerpt).includes(needle)
-    );
-  }, [needle, hasQuery, articles]);
+  const {
+    pages: pageMatches,
+    topics: topicMatches,
+    articles: articleMatches,
+  } = useMemo(
+    () =>
+      searchSite(q, {
+        pages: staticPages,
+        topics: educationTopics,
+        articles: articles ?? [],
+      }),
+    [q, articles]
+  );
 
   const totalMatches = pageMatches.length + topicMatches.length + articleMatches.length;
   const hasOtherMatches = pageMatches.length > 0 || topicMatches.length > 0;

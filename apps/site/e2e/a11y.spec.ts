@@ -73,9 +73,7 @@ async function scanForCriticalViolations(page: Page, route: string): Promise<voi
   const critical = results.violations
     .filter((v) => v.impact === "critical")
     .filter((v) => !allowed.includes(v.id));
-  const summary = critical
-    .map((v) => `${v.id} (${v.nodes.length} node(s)): ${v.help}`)
-    .join("\n");
+  const summary = critical.map((v) => `${v.id} (${v.nodes.length} node(s)): ${v.help}`).join("\n");
   expect(critical, `Unexpected critical a11y violations on ${route}:\n${summary}`).toEqual([]);
 }
 

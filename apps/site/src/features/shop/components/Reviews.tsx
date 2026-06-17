@@ -13,21 +13,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Star } from "lucide-react";
 import { type FormEvent, useState } from "react";
 
+import { formatRelative } from "@/lib/relative-time";
 import { catalogClient } from "@/lib/orpc-client";
-
-const RELATIVE = new Intl.RelativeTimeFormat("es", { numeric: "auto" });
-
-function formatRelative(date: Date | string): string {
-  const d = typeof date === "string" ? new Date(date) : date;
-  const diffSec = Math.round((d.getTime() - Date.now()) / 1000);
-  const abs = Math.abs(diffSec);
-  if (abs < 60) return RELATIVE.format(Math.round(diffSec), "second");
-  if (abs < 3600) return RELATIVE.format(Math.round(diffSec / 60), "minute");
-  if (abs < 86_400) return RELATIVE.format(Math.round(diffSec / 3600), "hour");
-  if (abs < 2_592_000) return RELATIVE.format(Math.round(diffSec / 86_400), "day");
-  if (abs < 31_536_000) return RELATIVE.format(Math.round(diffSec / 2_592_000), "month");
-  return RELATIVE.format(Math.round(diffSec / 31_536_000), "year");
-}
 
 function StarRow({
   value,
