@@ -79,3 +79,36 @@ export async function resolveDataRightsRequest(input: ResolveInput) {
     },
   });
 }
+
+/**
+ * Prórroga única (+30 días corridos sobre el `dueAt` actual), permitida por la
+ * Ley 21.719 "por una vez". `extendedAt` sella su uso: una solicitud ya
+ * prorrogada o cerrada (RESOLVED/REJECTED) no admite otra prórroga.
+ */
+export async function extendDataRightsRequest(id: string) {
+  const found = await db.dataRightsRequest.findUnique({
+    where: { id },
+    select: { id: true, status: true, dueAt: true, extendedAt: true },
+  });
+  if (!found) throw new DomainError("NOT_FOUND", "Solicitud de derechos no encontrada");
+  if (found.status === "RESOLVED" || found.status === "REJECTED") {
+    throw new DomainError("BAD_REQUEST", "No se puede prorrogar una solicitud ya cerrada");
+  }
+  if (found.extendedAt) {
+    throw new DomainError(
+      "BAD_REQUEST",
+      "La solicitud ya fue prorrogada una vez (máximo legal alcanzado)"
+    );
+  }
+
+  const now = new Date();
+  return db.dataRightsRequest.update({
+    where: { id },
+    data: {
+      dueAt: new Date(found.dueAt.getTime() + RESPONSE_DAYS * DAY_MS),
+      extendedAt: now,
+      // La prórroga implica que el trámite sigue en curso.
+      status: found.status === "RECEIVED" ? "IN_PROGRESS" : found.status,
+    },
+  });
+}

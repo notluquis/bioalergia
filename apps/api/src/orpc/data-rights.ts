@@ -1,5 +1,6 @@
 import {
   dataRightsCreateInputSchema,
+  dataRightsExtendInputSchema,
   dataRightsListInputSchema,
   dataRightsListResponseSchema,
   dataRightsRequestSchema,
@@ -13,6 +14,7 @@ import { logError } from "../lib/logger.ts";
 import { configureSuperjson } from "../lib/superjson-config.ts";
 import {
   createDataRightsRequest,
+  extendDataRightsRequest,
   listDataRightsRequests,
   resolveDataRightsRequest,
 } from "../services/data-rights.ts";
@@ -84,6 +86,14 @@ const dataRightsORPCRouterBase = {
     .output(dataRightsRequestSchema)
     .handler(async ({ input }: { input: z.infer<typeof dataRightsResolveInputSchema> }) =>
       resolveDataRightsRequest(input)
+    ),
+
+  extend: updateDataRights
+    .route({ method: "POST", path: "/requests/extend" })
+    .input(dataRightsExtendInputSchema)
+    .output(dataRightsRequestSchema)
+    .handler(async ({ input }: { input: z.infer<typeof dataRightsExtendInputSchema> }) =>
+      extendDataRightsRequest(input.id)
     ),
 };
 

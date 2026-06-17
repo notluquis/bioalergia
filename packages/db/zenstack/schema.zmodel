@@ -1372,6 +1372,9 @@ model DataRightsRequest {
   patientId      Int?      @map("patient_id")
   receivedAt     DateTime  @default(now()) @map("received_at")
   dueAt          DateTime  @map("due_at")
+  // Prórroga única (+30 días corridos) que permite la Ley 21.719. Sello de
+  // cuándo se prorrogó; no-null => ya se usó la prórroga (no repetible).
+  extendedAt     DateTime? @map("extended_at")
   resolvedAt     DateTime? @map("resolved_at")
   resolution     String?
   handledBy      Int?      @map("handled_by")

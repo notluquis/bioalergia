@@ -158,10 +158,39 @@ export function DataRightsPage() {
     onError: (e) => toast.error(e instanceof Error ? e.message : "No se pudo actualizar"),
   });
 
+  const extend = useMutation({
+    mutationFn: async (id: string) => {
+      try {
+        return await dataRightsORPCClient.extend({ id });
+      } catch (error) {
+        throw toDataRightsApiError(error);
+      }
+    },
+    onSuccess: () => {
+      toast.success("Plazo prorrogado +30 días");
+      void invalidate();
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "No se pudo prorrogar"),
+  });
+
   const onOpenResolve = (p: DataRightsRequestDto) => {
     setResolving(p);
     setResolveStatus(p.status === "REJECTED" ? "REJECTED" : "RESOLVED");
     setResolution(p.resolution ?? "");
+  };
+
+  // La Ley 21.719 permite una sola prórroga (+30 días corridos): solo si la
+  // solicitud no está cerrada y no se prorrogó antes.
+  const canExtend = (p: DataRightsRequestDto): boolean =>
+    p.extendedAt === null && p.status !== "RESOLVED" && p.status !== "REJECTED";
+
+  const onExtend = async (p: DataRightsRequestDto) => {
+    const ok = await confirmAction({
+      title: "Prorrogar plazo de respuesta",
+      description: `¿Extender el plazo de la solicitud de "${p.requesterName}" en 30 días corridos? La Ley 21.719 permite una única prórroga por solicitud.`,
+      confirmLabel: "Prorrogar",
+    });
+    if (ok) extend.mutate(p.id);
   };
 
   const onConfirmResolve = async () => {
@@ -223,10 +252,15 @@ export function DataRightsPage() {
       cell: ({ row }) => {
         const overdue = isOverdue(row.original);
         return (
-          <span className={overdue ? "font-semibold text-danger text-sm" : "text-sm"}>
-            {fmtDate(row.original.dueAt)}
-            {overdue ? " (vencida)" : ""}
-          </span>
+          <div className="flex flex-col">
+            <span className={overdue ? "font-semibold text-danger text-sm" : "text-sm"}>
+              {fmtDate(row.original.dueAt)}
+              {overdue ? " (vencida)" : ""}
+            </span>
+            {row.original.extendedAt ? (
+              <span className="text-default-400 text-xs">prorrogada</span>
+            ) : null}
+          </div>
         );
       },
     },
@@ -234,7 +268,17 @@ export function DataRightsPage() {
       header: "",
       id: "actions",
       cell: ({ row }) => (
-        <div className="flex justify-end">
+        <div className="flex justify-end gap-1">
+          {canExtend(row.original) ? (
+            <Button
+              size="sm"
+              variant="ghost"
+              isPending={extend.isPending}
+              onPress={() => void onExtend(row.original)}
+            >
+              Prorrogar
+            </Button>
+          ) : null}
           <Button size="sm" variant="ghost" onPress={() => onOpenResolve(row.original)}>
             Gestionar
           </Button>
@@ -253,7 +297,8 @@ export function DataRightsPage() {
           <h1 className="font-bold text-foreground text-xl tracking-tight">Derechos del titular</h1>
           <p className="text-default-500 text-sm">
             Solicitudes ARCO+ (Ley 21.719): acceso, rectificación, cancelación, portabilidad,
-            oposición y bloqueo. Plazo legal de respuesta: 30 días corridos.
+            oposición y bloqueo. Plazo legal de respuesta: 30 días corridos, prorrogable una vez por
+            otros 30.
           </p>
         </div>
       </div>

@@ -32,8 +32,11 @@ import { toast } from "@/lib/toast-interceptor";
 
 const KEY = ["breach-incidents"] as const;
 
-// Plazo legal de notificación a la Agencia (Ley 21.719): 72 horas desde detección.
-const DEADLINE_MS = 72 * 60 * 60 * 1000;
+// La Ley 21.719 (art. 14 sexies) exige notificar a la Agencia "por los medios
+// más expeditos posibles y sin dilaciones indebidas" — NO fija 72 h. Usamos 72 h
+// solo como gatillo operativo de urgencia (alineado con el plazo de actualización
+// de la Ley 21.663 / ANCI, que sí aplica a la clínica como servicio esencial).
+const URGENCY_TRIGGER_MS = 72 * 60 * 60 * 1000;
 
 const SEVERITY_LABEL: Record<BreachSeverity, string> = {
   LOW: "Baja",
@@ -73,9 +76,9 @@ const EMPTY_FORM = {
   affectedCount: "",
 };
 
-function isOverdue(incident: BreachIncidentDto): boolean {
+function isUrgent(incident: BreachIncidentDto): boolean {
   if (incident.status !== "DETECTED") return false;
-  return Date.now() - incident.detectedAt.getTime() > DEADLINE_MS;
+  return Date.now() - incident.detectedAt.getTime() > URGENCY_TRIGGER_MS;
 }
 
 export function BreachIncidentsPage() {
@@ -161,11 +164,11 @@ export function BreachIncidentsPage() {
       header: "Detectado",
       accessorKey: "detectedAt",
       cell: ({ row }) => {
-        const overdue = isOverdue(row.original);
+        const urgent = isUrgent(row.original);
         return (
-          <span className={overdue ? "font-semibold text-danger text-sm" : "text-sm"}>
+          <span className={urgent ? "font-semibold text-danger text-sm" : "text-sm"}>
             {formatChile(row.original.detectedAt, "DD/MM/YYYY HH:mm")}
-            {overdue ? " · plazo vencido" : ""}
+            {urgent ? " · reportar sin demora" : ""}
           </span>
         );
       },
@@ -267,8 +270,9 @@ export function BreachIncidentsPage() {
         <div>
           <h1 className="font-bold text-foreground text-xl tracking-tight">Incidentes de brecha</h1>
           <p className="text-default-500 text-sm">
-            Registro de brechas de datos personales (Ley 21.719). La Agencia debe ser notificada
-            dentro de 72 horas desde la detección.
+            Registro de brechas de datos personales (Ley 21.719, art. 14 sexies). Se debe notificar
+            a la Agencia "por los medios más expeditos posibles y sin dilaciones indebidas". El
+            gatillo de 72 h es operativo (best-practice y plazo de la Ley 21.663 / ANCI).
           </p>
         </div>
       </div>

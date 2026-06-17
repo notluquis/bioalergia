@@ -27,6 +27,7 @@ export const dataRightsRequestSchema = z.object({
   patientId: z.number().int().nullable(),
   receivedAt: z.date(),
   dueAt: z.date(),
+  extendedAt: z.date().nullable(),
   resolvedAt: z.date().nullable(),
   resolution: z.string().nullable(),
   handledBy: z.number().int().nullable(),
@@ -58,6 +59,10 @@ export const dataRightsResolveInputSchema = z.object({
   resolution: z.string().optional(),
 });
 
+export const dataRightsExtendInputSchema = z.object({
+  id: z.string().min(1),
+});
+
 export const dataRightsContract = {
   list: oc
     .route({ method: "GET", path: "/requests" })
@@ -71,6 +76,10 @@ export const dataRightsContract = {
     .route({ method: "POST", path: "/requests/resolve" })
     .input(dataRightsResolveInputSchema)
     .output(dataRightsRequestSchema),
+  extend: oc
+    .route({ method: "POST", path: "/requests/extend" })
+    .input(dataRightsExtendInputSchema)
+    .output(dataRightsRequestSchema),
 };
 
 export type DataRightsContract = typeof dataRightsContract;
@@ -80,3 +89,4 @@ export type DataRightsStatus = z.infer<typeof dataRightsStatusSchema>;
 export type DataRightsResolveStatus = z.infer<typeof dataRightsResolveStatusSchema>;
 export type DataRightsCreateInput = z.infer<typeof dataRightsCreateInputSchema>;
 export type DataRightsResolveInput = z.infer<typeof dataRightsResolveInputSchema>;
+export type DataRightsExtendInput = z.infer<typeof dataRightsExtendInputSchema>;

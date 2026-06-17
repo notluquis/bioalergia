@@ -15,8 +15,12 @@ const { mockDb } = vi.hoisted(() => {
 vi.mock("@finanzas/db", () => ({ db: mockDb }));
 vi.mock("@finanzas/db/slices", () => ({ dbClinicalSeries: mockDb }));
 
-const { listDataRightsRequests, createDataRightsRequest, resolveDataRightsRequest } =
-  await import("../data-rights.ts");
+const {
+  listDataRightsRequests,
+  createDataRightsRequest,
+  resolveDataRightsRequest,
+  extendDataRightsRequest,
+} = await import("../data-rights.ts");
 
 const DAY_MS = 86_400_000;
 
@@ -120,5 +124,63 @@ describe("resolveDataRightsRequest", () => {
     const call = mockDb.dataRightsRequest.update.mock.calls[0][0];
     expect(call.data.status).toBe("IN_PROGRESS");
     expect(call.data.resolvedAt).toBeNull();
+  });
+});
+
+describe("extendDataRightsRequest", () => {
+  it("throws NOT_FOUND when the request does not exist", async () => {
+    mockDb.dataRightsRequest.findUnique.mockResolvedValue(null);
+    await expect(extendDataRightsRequest("nope")).rejects.toThrow(/no encontrada/);
+    expect(mockDb.dataRightsRequest.update).not.toHaveBeenCalled();
+  });
+
+  it("rejects extending a closed (RESOLVED/REJECTED) request", async () => {
+    mockDb.dataRightsRequest.findUnique.mockResolvedValue({
+      id: "req_1",
+      status: "RESOLVED",
+      dueAt: new Date("2026-07-01T00:00:00Z"),
+      extendedAt: null,
+    });
+    await expect(extendDataRightsRequest("req_1")).rejects.toThrow(/cerrada/);
+    expect(mockDb.dataRightsRequest.update).not.toHaveBeenCalled();
+  });
+
+  it("rejects a second extension (single prórroga máximo legal)", async () => {
+    mockDb.dataRightsRequest.findUnique.mockResolvedValue({
+      id: "req_1",
+      status: "IN_PROGRESS",
+      dueAt: new Date("2026-07-01T00:00:00Z"),
+      extendedAt: new Date("2026-06-01T00:00:00Z"),
+    });
+    await expect(extendDataRightsRequest("req_1")).rejects.toThrow(/ya fue prorrogada/);
+    expect(mockDb.dataRightsRequest.update).not.toHaveBeenCalled();
+  });
+
+  it("adds +30 días corridos to dueAt, stamps extendedAt and promotes RECEIVED to IN_PROGRESS", async () => {
+    const due = new Date("2026-07-01T00:00:00Z");
+    mockDb.dataRightsRequest.findUnique.mockResolvedValue({
+      id: "req_1",
+      status: "RECEIVED",
+      dueAt: due,
+      extendedAt: null,
+    });
+    await extendDataRightsRequest("req_1");
+    const call = mockDb.dataRightsRequest.update.mock.calls[0][0];
+    expect(call.where).toEqual({ id: "req_1" });
+    expect((call.data.dueAt as Date).getTime()).toBe(due.getTime() + 30 * DAY_MS);
+    expect(call.data.extendedAt).toBeInstanceOf(Date);
+    expect(call.data.status).toBe("IN_PROGRESS");
+  });
+
+  it("keeps IN_PROGRESS status untouched when extending", async () => {
+    mockDb.dataRightsRequest.findUnique.mockResolvedValue({
+      id: "req_1",
+      status: "IN_PROGRESS",
+      dueAt: new Date("2026-07-01T00:00:00Z"),
+      extendedAt: null,
+    });
+    await extendDataRightsRequest("req_1");
+    const call = mockDb.dataRightsRequest.update.mock.calls[0][0];
+    expect(call.data.status).toBe("IN_PROGRESS");
   });
 });
