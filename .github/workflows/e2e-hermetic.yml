@@ -73,6 +73,8 @@ jobs:
       # migrate deploy — the rebaseline migration assumes existing tables;
       # db push is correct for a throwaway DB) + synthetic faker data.
       - run: pnpm -F @finanzas/db build
+      # api importa @finanzas/social-render desde dist .mjs al bootear nativo.
+      - run: pnpm -F @finanzas/social-render build
       - run: pnpm -F @finanzas/db db:push
       - run: pnpm -F @finanzas/db seed:synthetic
 

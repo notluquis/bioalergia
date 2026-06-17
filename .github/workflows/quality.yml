@@ -47,6 +47,9 @@ jobs:
       - run: pnpm -F @finanzas/intranet audit:datetime
       - run: pnpm -F @finanzas/api audit:datetime
       - run: pnpm -F @finanzas/intranet audit:css
+      # GATING: same stylelint gate for the public marketing site (mirrors the
+      # intranet config — defensive-css + rhythmguard, Tailwind v4 tolerant).
+      - run: pnpm -F @finanzas/site audit:css
 
   dead-code:
     # Informational: prints knip report but never fails the workflow.
@@ -152,6 +155,10 @@ jobs:
       # deploy — the rebaseline migration assumes existing tables; db push is
       # correct for a throwaway DB) + synthetic faker data.
       - run: pnpm -F @finanzas/db build
+      # api boota nativo (node src/index.ts) e importa @finanzas/social-render
+      # desde su dist .mjs (modules/social/render.ts) -> hay que buildearlo antes
+      # del webServer de Playwright, igual que db.
+      - run: pnpm -F @finanzas/social-render build
       - run: pnpm -F @finanzas/db db:push
       - run: pnpm -F @finanzas/db seed:synthetic
 
@@ -303,6 +310,14 @@ jobs:
           CHROME_PATH: ${{ steps.setup-chrome.outputs.chrome-path }}
           LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
         run: pnpm -F @finanzas/site audit:perf
+      - name: Run Lighthouse CI (mobile emulation)
+        # NON-GATING: mobile form-factor audit of the same public routes. All
+        # assertions in lighthouserc.mobile.json are `warn` to avoid flaky
+        # gating on emulated-mobile throttling. Public routes only (no PHI/auth).
+        env:
+          CHROME_PATH: ${{ steps.setup-chrome.outputs.chrome-path }}
+          LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
+        run: pnpm -F @finanzas/site audit:perf:mobile
 
   site-coverage:
     name: site vitest coverage (gating)
