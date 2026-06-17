@@ -109,6 +109,7 @@ import { complaintsORPCHandler } from "./orpc/complaints.ts";
 import { securityAlertsORPCHandler } from "./orpc/security-alerts.ts";
 import { processingActivitiesORPCHandler } from "./orpc/processing-activities.ts";
 import { consentORPCHandler } from "./orpc/consent.ts";
+import { clinicalConsentORPCHandler } from "./orpc/clinical-consent.ts";
 import {
   settlementTransactionsOpenAPIHandler,
   settlementTransactionsORPCHandler,
@@ -1710,6 +1711,19 @@ app.use("/api/orpc/consent/rpc/*", async (c, next) => {
   return next();
 });
 
+app.use("/api/orpc/clinical-consent/rpc/*", async (c, next) => {
+  const { matched, response } = await clinicalConsentORPCHandler.handle(createHonoORPCRequest(c), {
+    prefix: "/api/orpc/clinical-consent/rpc",
+    context: { hono: c },
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  return next();
+});
+
 app.use("/api/orpc/notifications/rpc/*", async (c, next) => {
   const { matched, response } = await notificationsORPCHandler.handle(createHonoORPCRequest(c), {
     prefix: "/api/orpc/notifications/rpc",
@@ -2627,7 +2641,7 @@ app.use("/api/orpc/shipments/*", async (c, next) => {
 app.use("/api/orpc/exam-reports/rpc/*", async (c, next) => {
   const { matched, response } = await examReportsORPCHandler.handle(createHonoORPCRequest(c), {
     prefix: "/api/orpc/exam-reports/rpc",
-    context: {},
+    context: { hono: c },
   });
   if (matched) return c.newResponse(response.body, response);
   return next();
@@ -2635,7 +2649,7 @@ app.use("/api/orpc/exam-reports/rpc/*", async (c, next) => {
 
 app.use("/api/orpc/exam-reports/*", async (c, next) => {
   const { matched, response } = await examReportsOpenAPIHandler.handle(createHonoORPCRequest(c), {
-    context: {},
+    context: { hono: c },
   });
   if (matched) return c.newResponse(response.body, response);
   return next();

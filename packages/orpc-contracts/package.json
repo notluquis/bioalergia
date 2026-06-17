@@ -369,6 +369,12 @@
       "import": "./dist/consent.js",
       "default": "./dist/consent.js"
     },
+    "./clinical-consent": {
+      "development": "./src/clinical-consent.ts",
+      "types": "./dist/clinical-consent.d.ts",
+      "import": "./dist/clinical-consent.js",
+      "default": "./dist/clinical-consent.js"
+    },
     "./quotes": {
       "development": "./src/quotes.ts",
       "types": "./dist/quotes.d.ts",

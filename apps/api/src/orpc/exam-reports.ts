@@ -49,6 +49,9 @@ import {
 } from "../services/exam-reports.ts";
 import { configureSuperjson } from "../lib/superjson-config.ts";
 import { logError } from "../lib/logger.ts";
+import { logAuditFromContext } from "../lib/audit-log.ts";
+import { getSessionUser } from "../lib/auth.ts";
+import type { Context as HonoContext } from "hono";
 import { SuperJSONRPCHandler } from "./superjson.ts";
 
 configureSuperjson();
@@ -64,7 +67,7 @@ configureSuperjson();
  *   - allergen catalog read (proxy over ClinicalAllergen for the picker)
  */
 
-const base = os.$context<Record<string, never>>();
+const base = os.$context<{ hono: HonoContext }>();
 
 const examReportsRouterBase = {
   list: base
@@ -77,7 +80,21 @@ const examReportsRouterBase = {
     .route({ method: "GET", path: "/{id}", tags: ["ExamReports"] })
     .input(examReportIdInputSchema)
     .output(examReportDetailSchema)
-    .handler(({ input }) => getExamReport(input)),
+    .handler(async ({ context, input }) => {
+      const report = await getExamReport(input);
+      // Acceso a documento clínico (Decreto 41/2012 art. 9 + Ley 20.584).
+      // Fire-and-forget: nunca suma latencia ni rompe la lectura.
+      const user = await getSessionUser(context.hono);
+      void logAuditFromContext(context.hono, {
+        kind: "CLINICAL_DOCUMENT_VIEW",
+        userId: user?.id ?? null,
+        actorLabel: user?.email ?? null,
+        resource: "ExamReport",
+        resourceId: input.id,
+        message: "exam-report:get",
+      });
+      return report;
+    }),
 
   create: base
     .route({ method: "POST", path: "/", tags: ["ExamReports"] })

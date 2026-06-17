@@ -56,6 +56,7 @@ import { Route as AuthedSettingsDoctoraliaRouteImport } from "./routes/_authed/s
 import { Route as AuthedSettingsDataRightsRouteImport } from "./routes/_authed/settings/data-rights"
 import { Route as AuthedSettingsConsentRouteImport } from "./routes/_authed/settings/consent"
 import { Route as AuthedSettingsComplaintsRouteImport } from "./routes/_authed/settings/complaints"
+import { Route as AuthedSettingsClinicalConsentRouteImport } from "./routes/_authed/settings/clinical-consent"
 import { Route as AuthedSettingsBreachIncidentsRouteImport } from "./routes/_authed/settings/breach-incidents"
 import { Route as AuthedServicesAgendaRouteImport } from "./routes/_authed/services/agenda"
 import { Route as AuthedQuotesNewRouteImport } from "./routes/_authed/quotes/new"
@@ -345,6 +346,12 @@ const AuthedSettingsComplaintsRoute =
   AuthedSettingsComplaintsRouteImport.update({
     id: "/complaints",
     path: "/complaints",
+    getParentRoute: () => AuthedSettingsRoute,
+  } as any)
+const AuthedSettingsClinicalConsentRoute =
+  AuthedSettingsClinicalConsentRouteImport.update({
+    id: "/clinical-consent",
+    path: "/clinical-consent",
     getParentRoute: () => AuthedSettingsRoute,
   } as any)
 const AuthedSettingsBreachIncidentsRoute =
@@ -673,6 +680,7 @@ export interface FileRoutesByFullPath {
   "/quotes/new": typeof AuthedQuotesNewRoute
   "/services/agenda": typeof AuthedServicesAgendaRoute
   "/settings/breach-incidents": typeof AuthedSettingsBreachIncidentsRoute
+  "/settings/clinical-consent": typeof AuthedSettingsClinicalConsentRoute
   "/settings/complaints": typeof AuthedSettingsComplaintsRoute
   "/settings/consent": typeof AuthedSettingsConsentRoute
   "/settings/data-rights": typeof AuthedSettingsDataRightsRoute
@@ -763,6 +771,7 @@ export interface FileRoutesByTo {
   "/quotes/new": typeof AuthedQuotesNewRoute
   "/services/agenda": typeof AuthedServicesAgendaRoute
   "/settings/breach-incidents": typeof AuthedSettingsBreachIncidentsRoute
+  "/settings/clinical-consent": typeof AuthedSettingsClinicalConsentRoute
   "/settings/complaints": typeof AuthedSettingsComplaintsRoute
   "/settings/consent": typeof AuthedSettingsConsentRoute
   "/settings/data-rights": typeof AuthedSettingsDataRightsRoute
@@ -862,6 +871,7 @@ export interface FileRoutesById {
   "/_authed/quotes/new": typeof AuthedQuotesNewRoute
   "/_authed/services/agenda": typeof AuthedServicesAgendaRoute
   "/_authed/settings/breach-incidents": typeof AuthedSettingsBreachIncidentsRoute
+  "/_authed/settings/clinical-consent": typeof AuthedSettingsClinicalConsentRoute
   "/_authed/settings/complaints": typeof AuthedSettingsComplaintsRoute
   "/_authed/settings/consent": typeof AuthedSettingsConsentRoute
   "/_authed/settings/data-rights": typeof AuthedSettingsDataRightsRoute
@@ -961,6 +971,7 @@ export interface FileRouteTypes {
     | "/quotes/new"
     | "/services/agenda"
     | "/settings/breach-incidents"
+    | "/settings/clinical-consent"
     | "/settings/complaints"
     | "/settings/consent"
     | "/settings/data-rights"
@@ -1051,6 +1062,7 @@ export interface FileRouteTypes {
     | "/quotes/new"
     | "/services/agenda"
     | "/settings/breach-incidents"
+    | "/settings/clinical-consent"
     | "/settings/complaints"
     | "/settings/consent"
     | "/settings/data-rights"
@@ -1149,6 +1161,7 @@ export interface FileRouteTypes {
     | "/_authed/quotes/new"
     | "/_authed/services/agenda"
     | "/_authed/settings/breach-incidents"
+    | "/_authed/settings/clinical-consent"
     | "/_authed/settings/complaints"
     | "/_authed/settings/consent"
     | "/_authed/settings/data-rights"
@@ -1528,6 +1541,13 @@ declare module "@tanstack/react-router" {
       path: "/complaints"
       fullPath: "/settings/complaints"
       preLoaderRoute: typeof AuthedSettingsComplaintsRouteImport
+      parentRoute: typeof AuthedSettingsRoute
+    }
+    "/_authed/settings/clinical-consent": {
+      id: "/_authed/settings/clinical-consent"
+      path: "/clinical-consent"
+      fullPath: "/settings/clinical-consent"
+      preLoaderRoute: typeof AuthedSettingsClinicalConsentRouteImport
       parentRoute: typeof AuthedSettingsRoute
     }
     "/_authed/settings/breach-incidents": {
@@ -2055,6 +2075,7 @@ const AuthedServicesRouteWithChildren = AuthedServicesRoute._addFileChildren(
 
 interface AuthedSettingsRouteChildren {
   AuthedSettingsBreachIncidentsRoute: typeof AuthedSettingsBreachIncidentsRoute
+  AuthedSettingsClinicalConsentRoute: typeof AuthedSettingsClinicalConsentRoute
   AuthedSettingsComplaintsRoute: typeof AuthedSettingsComplaintsRoute
   AuthedSettingsConsentRoute: typeof AuthedSettingsConsentRoute
   AuthedSettingsDataRightsRoute: typeof AuthedSettingsDataRightsRoute
@@ -2072,6 +2093,7 @@ interface AuthedSettingsRouteChildren {
 
 const AuthedSettingsRouteChildren: AuthedSettingsRouteChildren = {
   AuthedSettingsBreachIncidentsRoute: AuthedSettingsBreachIncidentsRoute,
+  AuthedSettingsClinicalConsentRoute: AuthedSettingsClinicalConsentRoute,
   AuthedSettingsComplaintsRoute: AuthedSettingsComplaintsRoute,
   AuthedSettingsConsentRoute: AuthedSettingsConsentRoute,
   AuthedSettingsDataRightsRoute: AuthedSettingsDataRightsRoute,

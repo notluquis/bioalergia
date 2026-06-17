@@ -90,6 +90,10 @@ export {
   type ProcessingActivitiesContract,
 } from "./processing-activities.ts";
 export { consentContract, type ConsentContract } from "./consent.ts";
+export {
+  clinicalConsentContract,
+  type ClinicalConsentContract,
+} from "./clinical-consent.ts";
 export * from "./system.ts";
 export * from "./timesheets.ts";
 export * from "./transactions-insights.ts";

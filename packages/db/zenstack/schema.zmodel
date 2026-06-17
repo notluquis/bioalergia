@@ -1544,6 +1544,47 @@ model ConsentRecord {
   @@map("consent_records")
 }
 
+// Consentimiento informado CLÍNICO (Ley 20.584) — por procedimiento concreto.
+// DISTINTO del consentimiento de datos (ConsentRecord). La ley exige registrar
+// el procedimiento, riesgos, alternativas y la DECISIÓN del titular; el texto
+// genérico NO basta, por eso se guarda el snapshot del contenido + la versión de
+// plantilla. Firma simple basta (FEA no requerida en doc clínico privado, Ley
+// 19.799). El titular puede rechazar y revocar.
+model ClinicalConsent {
+  id                    String    @id @default(cuid())
+  patientId             Int       @map("patient_id")
+  // SCIT | SKIN_TEST | PATCH_TEST | PROCEDURE | OTHER
+  procedureType         String    @map("procedure_type")
+  procedureName         String    @map("procedure_name")
+  templateVersion       String    @map("template_version")
+  contentSnapshot       String    @map("content_snapshot")
+  risksDisclosed        String?   @map("risks_disclosed")
+  alternativesDisclosed String?   @map("alternatives_disclosed")
+  // PENDING | SIGNED | REFUSED | REVOKED
+  status                String    @default("PENDING")
+  // PRESENCIAL_FISICA | ELECTRONICA_SIMPLE | VERBAL_REGISTRADA
+  signatureMethod       String    @map("signature_method")
+  signerName            String    @map("signer_name")
+  signerRut             String?   @map("signer_rut")
+  // paciente | representante_legal | apoderado | tutor
+  signerRelationship    String?   @map("signer_relationship")
+  clinicianId           Int?      @map("clinician_id")
+  signedAt              DateTime? @map("signed_at")
+  refusedReason         String?   @map("refused_reason")
+  revokedAt             DateTime? @map("revoked_at")
+  notes                 String?
+  createdBy             Int       @map("created_by")
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
+  patient               Patient   @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@deny('all', auth() == null)
+  @@allow('create,read,update', auth().status == 'ACTIVE')
+  @@index([patientId, status])
+  @@index([procedureType])
+  @@map("clinical_consents")
+}
+
 model ClinicalSeries {
   id               Int                       @id @default(autoincrement())
   kind             ClinicalSeriesKind
@@ -2996,6 +3037,7 @@ model Patient {
   immunotherapyAdministrations ImmunotherapyAdministration[]
   dataRightsRequests  DataRightsRequest[]
   complaints          Complaint[]
+  clinicalConsents    ClinicalConsent[]
 
   @@deny('all', auth() == null)
   @@allow('read', auth().status == 'ACTIVE')
