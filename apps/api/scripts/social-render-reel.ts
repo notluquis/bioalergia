@@ -71,7 +71,23 @@ async function main() {
   const input = await readInput();
 
   // Imports dinámicos: el render (Remotion) y el DB layer se cargan en runtime.
-  const { renderReel } = await import("@finanzas/social-video");
+  // social-video se importa por RUTA RELATIVA al dist del paquete (NO por nombre):
+  // así NO es dependencia de apps/api → Remotion (rspack/webpack) queda fuera del
+  // grafo de `turbo prune` del deploy de Railway (antes rompía el lockfile pruned:
+  // "no entry for css-loader@7.1.4(@rspack...)"). Este script SOLO corre en el Mac.
+  // Requiere `pnpm -F @finanzas/social-video build` antes (el comando /social-reel
+  // lo hace). dist/render.mjs trae el JSX transpilado (Node no strippea .tsx).
+  const reelModuleUrl = new URL(
+    "../../../packages/social-video/dist/render.mjs",
+    import.meta.url
+  );
+  // Tipado local de renderReel (no se importa el tipo del paquete porque ya no es
+  // dependencia de apps/api; el .d.mts vive en dist gitignored, ausente en CI).
+  type RenderReel = (
+    props: { kicker: string; title: string; bullets: string[]; cta: string },
+    outPath: string
+  ) => Promise<{ path: string; width: number; height: number; durationMs: number }>;
+  const { renderReel } = (await import(reelModuleUrl.href)) as { renderReel: RenderReel };
   const { db } = await import("@finanzas/db");
   const { createSocialPost } = await import("../src/services/social.ts");
   const { putR2Object } = await import("../src/modules/cloudflare/r2.ts");

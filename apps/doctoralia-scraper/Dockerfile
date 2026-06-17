@@ -71,15 +71,19 @@ ENV NODE_ENV=production
 ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 ENV DEBIAN_FRONTEND=noninteractive
 
-# install --with-deps webkit: baja el browser webkit (que matchea el playwright npm)
-# + libs del SO. timeout+retry por si el download/extract se cuelga (como chromium).
+# COPY deploy FIRST so el webkit instalado matchee el playwright PINEADO
+# (playwright@1.60.0 → webkit-2287). `npx -y playwright` bajaba el playwright
+# LATEST → webkit de otra revisión → "Executable doesn't exist at webkit-2287".
+COPY --from=build /app/deploy/ .
+
+# install --with-deps webkit via el binario LOCAL pineado (node_modules/.bin),
+# NO `npx -y` (que resolvía latest). Garantiza revisión webkit == playwright app.
+# timeout+retry por si el download/extract se cuelga (como chromium).
 RUN for i in 1 2 3; do \
-      timeout 300 npx -y playwright install --with-deps webkit && break; \
+      timeout 300 ./node_modules/.bin/playwright install --with-deps webkit && break; \
       echo "playwright webkit install retry $i"; sleep 5; \
     done; \
     test -d /ms-playwright && chmod -R o+rx /ms-playwright
-
-COPY --from=build /app/deploy/ .
 
 # Non-root: use the built-in `node` user (uid 1000) from node:26-bookworm.
 # Safe because cookies/session persist to the DB over HTTP (CookieJar fetch) and
