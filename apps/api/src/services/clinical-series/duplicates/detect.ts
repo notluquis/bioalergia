@@ -80,10 +80,9 @@ export async function detectDuplicateSeries(): Promise<ClinicalSeriesDuplicate[]
     },
     orderBy: { id: "asc" },
   });
-  const skinTests = await db.$queryRaw<Array<{ clinicalSeriesId: number; testDate: Date }>>`
-      SELECT clinical_series_id AS "clinicalSeriesId", test_date AS "testDate"
-      FROM clinical_skin_tests
-    `;
+  const skinTests = await db.clinicalSkinTest.findMany({
+    select: { clinicalSeriesId: true, testDate: true },
+  });
   const skinTestsBySeries = new Map<number, Array<{ testDate: Date }>>();
   for (const test of skinTests) {
     const group = skinTestsBySeries.get(test.clinicalSeriesId);

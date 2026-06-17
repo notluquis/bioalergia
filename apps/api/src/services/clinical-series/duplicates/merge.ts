@@ -36,39 +36,26 @@ export async function mergeClinicalSeries(params: {
       where: { clinicalSeriesId: params.sourceId },
       data: { clinicalSeriesId: params.targetId },
     });
-    const skinTests = await tx.$queryRaw<Array<{ count: number }>>`
-      WITH moved AS (
-        UPDATE clinical_skin_tests
-        SET clinical_series_id = ${params.targetId}, updated_at = now()
-        WHERE clinical_series_id = ${params.sourceId}
-        RETURNING 1
-      )
-      SELECT count(*)::int AS count FROM moved
-    `;
-    const records = await tx.$queryRaw<Array<{ count: number }>>`
-      WITH moved AS (
-        UPDATE clinical_records
-        SET clinical_series_id = ${params.targetId}, updated_at = now()
-        WHERE clinical_series_id = ${params.sourceId}
-        RETURNING 1
-      )
-      SELECT count(*)::int AS count FROM moved
-    `;
-    await tx.$executeRaw`
-      UPDATE clinical_document_imports
-      SET clinical_series_id = ${params.targetId}, updated_at = now()
-      WHERE clinical_series_id = ${params.sourceId}
-    `;
-    await tx.$executeRaw`
-      UPDATE clinical_record_imports
-      SET matched_clinical_series_id = ${params.targetId}, updated_at = now()
-      WHERE matched_clinical_series_id = ${params.sourceId}
-    `;
-    await tx.$executeRaw`
-      UPDATE abandonment_contacts
-      SET series_id = ${params.targetId}
-      WHERE series_id = ${params.sourceId}
-    `;
+    const skinTests = await tx.clinicalSkinTest.updateMany({
+      where: { clinicalSeriesId: params.sourceId },
+      data: { clinicalSeriesId: params.targetId },
+    });
+    const records = await tx.clinicalRecord.updateMany({
+      where: { clinicalSeriesId: params.sourceId },
+      data: { clinicalSeriesId: params.targetId },
+    });
+    await tx.clinicalDocumentImport.updateMany({
+      where: { clinicalSeriesId: params.sourceId },
+      data: { clinicalSeriesId: params.targetId },
+    });
+    await tx.clinicalRecordImport.updateMany({
+      where: { matchedClinicalSeriesId: params.sourceId },
+      data: { matchedClinicalSeriesId: params.targetId },
+    });
+    await tx.abandonmentContact.updateMany({
+      where: { seriesId: params.sourceId },
+      data: { seriesId: params.targetId },
+    });
 
     await tx.clinicalSeriesMergeLog.create({
       data: {
@@ -85,8 +72,8 @@ export async function mergeClinicalSeries(params: {
 
     return {
       eventsMovedCount: events.count,
-      recordsMovedCount: records[0]?.count ?? 0,
-      skinTestsMovedCount: skinTests[0]?.count ?? 0,
+      recordsMovedCount: records.count,
+      skinTestsMovedCount: skinTests.count,
     };
   });
 

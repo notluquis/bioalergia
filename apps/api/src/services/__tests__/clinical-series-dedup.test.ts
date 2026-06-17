@@ -20,6 +20,11 @@ const { mockFindMany, mockFindFirst, mockFindSkinTests, mockFindUnique, mockDb }
         findMany: (...args: unknown[]) => mockFindMany(...args),
         findUnique: (...args: unknown[]) => mockFindUnique(...args),
       },
+      // detectDuplicateSeries migró de db.$queryRaw a db.clinicalSkinTest.findMany;
+      // misma forma de fila {clinicalSeriesId, testDate}, mismo stub.
+      clinicalSkinTest: {
+        findMany: (...args: unknown[]) => mockFindSkinTests(...args),
+      },
     };
     return { mockFindMany, mockFindFirst, mockFindSkinTests, mockFindUnique, mockDb };
   }

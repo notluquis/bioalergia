@@ -4,6 +4,7 @@ import type {
   updateStatusSchema,
   updateUserProfileSchema,
 } from "@finanzas/orpc-contracts/users";
+import { sql } from "kysely";
 import type { z } from "zod";
 import { DomainError } from "../lib/errors.ts";
 import { normalizeRut } from "../lib/rut.ts";
@@ -36,15 +37,20 @@ export async function findUserByEffectiveLoginEmail(
   email: string,
   excludeUserId?: number
 ): Promise<{ id: number } | null> {
-  const rows = await db.$queryRaw<Array<{ id: number }>>`
-    SELECT u.id
-    FROM users u
-    JOIN people p ON p.id = u.person_id
-    WHERE lower(coalesce(nullif(u.login_email, ''), p.email)) = lower(${email})
-      AND (${excludeUserId ?? 0} = 0 OR u.id <> ${excludeUserId ?? 0})
-    LIMIT 1
-  `;
-  return rows[0] ?? null;
+  // login_email gana si no es vacío; si no, cae a person.email (case-insensitive).
+  // Dentro del sql`` fragment las columnas son físicas (snake_case); el builder
+  // usa nombres de modelo camelCase. Espeja orpc/auth.ts::findUserByLoginIdentifier.
+  let query = db.$qb
+    .selectFrom("User as u")
+    .innerJoin("Person as p", "p.id", "u.personId")
+    .select("u.id as id")
+    .where(sql<boolean>`lower(coalesce(nullif(u.login_email, ''), p.email)) = lower(${email})`)
+    .limit(1);
+  if (excludeUserId) {
+    query = query.where("u.id", "!=", excludeUserId);
+  }
+  const row = await query.executeTakeFirst();
+  return row ?? null;
 }
 
 // Edición admin de perfil (admin tool): valida unicidad de email/RUT/login y
@@ -141,11 +147,10 @@ export async function updateUserProfile(
       });
     }
 
-    await tx.$executeRaw`
-      UPDATE users
-      SET login_email = ${explicitLoginEmail}
-      WHERE id = ${userId}
-    `;
+    await tx.user.update({
+      where: { id: userId },
+      data: { loginEmail: explicitLoginEmail },
+    });
   });
 }
 
@@ -206,11 +211,10 @@ export async function updateOwnProfile(
       },
     });
 
-    await tx.$executeRaw`
-      UPDATE users
-      SET login_email = ${explicitLoginEmail}
-      WHERE id = ${userId}
-    `;
+    await tx.user.update({
+      where: { id: userId },
+      data: { loginEmail: explicitLoginEmail },
+    });
   });
 }
 

@@ -167,23 +167,13 @@ async function findUserByLoginIdentifier(email: string) {
 }
 
 async function getEffectiveLoginEmailByUserId(userId: number, fallbackEmail: string) {
-  // kept raw: read trivial (2 cols por user id); migrarlo a findUnique chocaría
-  // con el mock de user.findUnique del handler. Bajo valor (corre como sistema).
-  const rows = await db.$queryRaw<
-    Array<{ loginEmail: null | string; notificationEmail: null | string }>
-  >`
-    SELECT
-      u.login_email AS "loginEmail",
-      p.email AS "notificationEmail"
-    FROM users u
-    JOIN people p ON p.id = u.person_id
-    WHERE u.id = ${userId}
-    LIMIT 1
-  `;
-
-  const row = rows[0];
+  // login_email explícito gana; si no, el email de la persona; si no, el fallback.
+  const row = await db.user.findUnique({
+    where: { id: userId },
+    select: { loginEmail: true, person: { select: { email: true } } },
+  });
   const explicitLoginEmail = row?.loginEmail?.trim();
-  const notificationEmail = row?.notificationEmail?.trim();
+  const notificationEmail = row?.person?.email?.trim();
   return explicitLoginEmail || notificationEmail || fallbackEmail;
 }
 
