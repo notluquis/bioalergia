@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type {
   connectMetaAccountInputSchema,
   createSocialPostInputSchema,
+  renderAiHeroInputSchema,
   renderSocialPostInputSchema,
   scheduleSocialPostInputSchema,
   updateSocialPostInputSchema,
@@ -13,6 +14,7 @@ import type { SocialAccount, SocialPost, SocialPostStatus } from "./types";
 type CreateInput = z.infer<typeof createSocialPostInputSchema>;
 type UpdateInput = z.infer<typeof updateSocialPostInputSchema>;
 type RenderInput = z.infer<typeof renderSocialPostInputSchema>;
+type RenderAiHeroInput = z.infer<typeof renderAiHeroInputSchema>;
 type ScheduleInput = z.infer<typeof scheduleSocialPostInputSchema>;
 type ConnectAccountInput = z.infer<typeof connectMetaAccountInputSchema>;
 
@@ -169,6 +171,59 @@ export function useUpdateTiktokConfig() {
     },
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: [...socialKeys.all, "tiktok-config"] });
+    },
+  });
+}
+
+export function useAiConfig() {
+  return useQuery({
+    queryKey: [...socialKeys.all, "ai-config"] as const,
+    queryFn: async () => {
+      try {
+        const result = await socialORPCClient.getAiConfig({});
+        return result.config;
+      } catch (error) {
+        throw toSocialApiError(error);
+      }
+    },
+  });
+}
+
+export function useUpdateAiConfig() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: {
+      provider: "GEMINI" | "RECRAFT";
+      geminiApiKey?: string;
+      recraftApiKey?: string;
+    }) => {
+      try {
+        const result = await socialORPCClient.updateAiConfig(input);
+        return result.config;
+      } catch (error) {
+        throw toSocialApiError(error);
+      }
+    },
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: [...socialKeys.all, "ai-config"] });
+    },
+  });
+}
+
+export function useRenderAiHero() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: RenderAiHeroInput) => {
+      try {
+        const result = await socialORPCClient.renderAiHero(input);
+        return result.post;
+      } catch (error) {
+        throw toSocialApiError(error);
+      }
+    },
+    onSuccess: (post) => {
+      void qc.invalidateQueries({ queryKey: socialKeys.lists() });
+      void qc.invalidateQueries({ queryKey: socialKeys.detail(post.id) });
     },
   });
 }

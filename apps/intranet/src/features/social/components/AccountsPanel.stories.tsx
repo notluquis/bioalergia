@@ -60,5 +60,8 @@ export const Default: Story = {
 
     // Listado de cuentas conectadas incluye la cuenta TikTok del fixture.
     await expect(await canvas.findByText("Bioalergia (TikTok)")).toBeVisible();
+
+    // La sección de configuración IA (hero opcional) renderiza.
+    await expect(await canvas.findByText("Configuración IA (imagen)")).toBeVisible();
   },
 };

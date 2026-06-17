@@ -6,6 +6,7 @@ import { db } from "@finanzas/db";
 import type {
   connectMetaAccountInputSchema,
   createSocialPostInputSchema,
+  renderAiHeroInputSchema,
   renderSocialPostInputSchema,
   socialMediaItemSchema,
   updateSocialPostInputSchema,
@@ -16,22 +17,26 @@ import { DomainError } from "../lib/errors.ts";
 import { encryptSecret } from "../lib/secret-cipher.ts";
 import { logEvent } from "../lib/logger.ts";
 import {
+  getAiPublicConfig,
   getMetaAppPublicConfig,
   getSocialDryRun,
   getTiktokPublicConfig,
+  setAiConfig,
   setMetaAppConfig,
   setSocialDryRun,
   setTiktokConfig,
+  type SetAiConfigInput,
   type SetMetaAppConfigInput,
   type SetTiktokConfigInput,
 } from "../lib/social-settings.ts";
 import type { SocialAspectRatio } from "@finanzas/social-render";
-import { renderAndUploadSocialImage } from "../modules/social/render.ts";
+import { renderAiHeroAndUpload, renderAndUploadSocialImage } from "../modules/social/render.ts";
 
 type MediaItem = z.infer<typeof socialMediaItemSchema>;
 type CreateInput = z.infer<typeof createSocialPostInputSchema>;
 type UpdateInput = z.infer<typeof updateSocialPostInputSchema>;
 type RenderInput = z.infer<typeof renderSocialPostInputSchema>;
+type RenderAiHeroInput = z.infer<typeof renderAiHeroInputSchema>;
 type ConnectInput = z.infer<typeof connectMetaAccountInputSchema>;
 
 // Quita undefined de los items de media (columnas Json rechazan undefined).
@@ -136,6 +141,33 @@ export async function renderSocialMedia(input: RenderInput) {
     data: { media: media as never },
     include: POST_INCLUDE,
   });
+  return serializePost(updated);
+}
+
+// Genera (OPCIONAL) un hero/fondo vía IA y compone el texto de marca encima
+// (Satori). El texto NUNCA lo genera la IA. Solo posts editables (DRAFT /
+// PENDING_APPROVAL) para no mutar media ya publicada.
+export async function renderAiHero(input: RenderAiHeroInput) {
+  const post = await findPostOrThrow(input.id);
+  if (post.status !== "DRAFT" && post.status !== "PENDING_APPROVAL") {
+    throw new DomainError("CONFLICT", "Solo se puede generar media en un borrador o pendiente");
+  }
+  const rendered = await renderAiHeroAndUpload({
+    postId: post.id,
+    prompt: input.prompt,
+    aspectRatio: post.aspectRatio as SocialAspectRatio,
+    ...(input.kicker ? { kicker: input.kicker } : {}),
+    ...(input.title ? { title: input.title } : {}),
+    ...(input.cta ? { cta: input.cta } : {}),
+    ...(input.provider ? { provider: input.provider } : {}),
+  });
+  const media = [...((post.media ?? []) as MediaItem[]), rendered];
+  const updated = await db.socialPost.update({
+    where: { id: post.id },
+    data: { media: media as never },
+    include: POST_INCLUDE,
+  });
+  logEvent("social.ai.hero.rendered", { postId: post.id, provider: input.provider ?? "default" });
   return serializePost(updated);
 }
 
@@ -267,6 +299,20 @@ export async function updateTiktokConfig(input: SetTiktokConfigInput) {
   logEvent("social.tiktok.config.updated", {
     clientKey: config.clientKey,
     hasSecret: config.hasSecret,
+  });
+  return config;
+}
+
+export async function getAiConfig() {
+  return getAiPublicConfig();
+}
+
+export async function updateAiConfig(input: SetAiConfigInput) {
+  const config = await setAiConfig(input);
+  logEvent("social.ai.config.updated", {
+    provider: config.provider,
+    hasGeminiKey: config.hasGeminiKey,
+    hasRecraftKey: config.hasRecraftKey,
   });
   return config;
 }

@@ -14,8 +14,17 @@ import {
 } from "@finanzas/social-render";
 
 import { putR2Object } from "../cloudflare/r2.ts";
+import { generateAiImage } from "./ai-image.ts";
+import type { AiImageProvider } from "../../lib/social-settings.ts";
 
-const FONTS_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "assets", "fonts");
+const FONTS_DIR = path.join(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "..",
+  "..",
+  "..",
+  "assets",
+  "fonts"
+);
 
 let fontsCache: SocialFont[] | null = null;
 
@@ -54,6 +63,40 @@ export async function renderAndUploadSocialImage(args: {
   const dims = SOCIAL_DIMENSIONS[args.aspectRatio];
   const stamp = Date.now();
   const key = `social/${args.postId}/${args.template}-${args.aspectRatio}-${stamp}.png`;
+  const url = await putR2Object(key, png, "image/png");
+  return { key, url, type: "image", width: dims.width, height: dims.height };
+}
+
+/**
+ * Genera un hero/fondo fotográfico vía IA (OPCIONAL) y compone el TEXTO de marca
+ * encima con Satori (template "hero"). El texto NUNCA lo genera la IA. Sube el
+ * PNG resultante a R2 y devuelve el media item.
+ */
+export async function renderAiHeroAndUpload(args: {
+  postId: number;
+  prompt: string;
+  kicker?: string;
+  title?: string;
+  cta?: string;
+  provider?: AiImageProvider;
+  aspectRatio: SocialAspectRatio;
+}): Promise<RenderedMedia> {
+  const aiImage = await generateAiImage({ prompt: args.prompt, provider: args.provider });
+  const backgroundDataUri = `data:image/png;base64,${aiImage.toString("base64")}`;
+  const png = await renderSocialImage({
+    template: "hero",
+    props: {
+      backgroundDataUri,
+      ...(args.kicker ? { kicker: args.kicker } : {}),
+      ...(args.title ? { title: args.title } : {}),
+      ...(args.cta ? { cta: args.cta } : {}),
+    },
+    aspectRatio: args.aspectRatio,
+    fonts: loadFonts(),
+  });
+  const dims = SOCIAL_DIMENSIONS[args.aspectRatio];
+  const stamp = Date.now();
+  const key = `social/${args.postId}/hero-${args.aspectRatio}-${stamp}.png`;
   const url = await putR2Object(key, png, "image/png");
   return { key, url, type: "image", width: dims.width, height: dims.height };
 }

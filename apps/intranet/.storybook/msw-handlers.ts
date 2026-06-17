@@ -350,6 +350,15 @@ export const socialHandlers = [
   http.post("*/api/orpc/social/rpc/updateTiktokConfig", () =>
     ok({ config: { clientKey: "awxyz123456", hasSecret: true } })
   ),
+  http.post("*/api/orpc/social/rpc/getAiConfig", () =>
+    ok({ config: { provider: "GEMINI", hasGeminiKey: true, hasRecraftKey: false } })
+  ),
+  http.post("*/api/orpc/social/rpc/updateAiConfig", () =>
+    ok({ config: { provider: "GEMINI", hasGeminiKey: true, hasRecraftKey: false } })
+  ),
+  http.post("*/api/orpc/social/rpc/renderAiHero", () =>
+    ok({ post: SAMPLE_SOCIAL_POST_DRAFT, status: "ok" })
+  ),
   http.post("*/api/orpc/social/rpc/create", () =>
     ok({ post: SAMPLE_SOCIAL_POST_DRAFT, status: "ok" })
   ),

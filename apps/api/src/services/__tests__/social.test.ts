@@ -27,11 +27,20 @@ vi.mock("../../lib/social-settings.ts", () => ({
   setMetaAppConfig: vi.fn(),
   getTiktokPublicConfig: vi.fn(),
   setTiktokConfig: vi.fn(),
+  getAiPublicConfig: vi.fn(),
+  setAiConfig: vi.fn(),
 }));
 vi.mock("../../modules/social/render.ts", () => ({
   renderAndUploadSocialImage: vi.fn(async () => ({
     key: "social/1/x.png",
     url: "https://cdn.test/social/1/x.png",
+    type: "image" as const,
+    width: 1080,
+    height: 1350,
+  })),
+  renderAiHeroAndUpload: vi.fn(async () => ({
+    key: "social/1/hero.png",
+    url: "https://cdn.test/social/1/hero.png",
     type: "image" as const,
     width: 1080,
     height: 1350,
@@ -48,6 +57,7 @@ const {
   scheduleSocialPost,
   publishNowSocialPost,
   renderSocialMedia,
+  renderAiHero,
   connectMetaAccount,
   listSocialAccounts,
   getSocialSettings,
@@ -56,6 +66,8 @@ const {
   updateMetaConfig,
   getTiktokConfig,
   updateTiktokConfig,
+  getAiConfig,
+  updateAiConfig,
 } = await import("../social.ts");
 const settings = await import("../../lib/social-settings.ts");
 
@@ -120,7 +132,9 @@ describe("listSocialPosts", () => {
 
 describe("getSocialPost", () => {
   it("devuelve el post serializado", async () => {
-    mockDb.socialPost.findUnique.mockResolvedValue(draft({ id: 5, media: [{ key: "k", url: "u", type: "image" }] }));
+    mockDb.socialPost.findUnique.mockResolvedValue(
+      draft({ id: 5, media: [{ key: "k", url: "u", type: "image" }] })
+    );
     const res = await getSocialPost(5);
     expect(res.id).toBe(5);
     expect(res.media).toEqual([{ key: "k", url: "u", type: "image" }]);
@@ -128,7 +142,9 @@ describe("getSocialPost", () => {
 
   it("lanza NOT_FOUND si no existe", async () => {
     mockDb.socialPost.findUnique.mockResolvedValue(null);
-    await expect(getSocialPost(99)).rejects.toSatisfy((e) => isDomainError(e) && e.kind === "NOT_FOUND");
+    await expect(getSocialPost(99)).rejects.toSatisfy(
+      (e) => isDomainError(e) && e.kind === "NOT_FOUND"
+    );
   });
 });
 
@@ -435,6 +451,49 @@ describe("renderSocialMedia", () => {
     const res = await renderSocialMedia({ id: 1, template: "tip-card", props: {} });
     expect(res.media).toHaveLength(1);
     expect(mockDb.socialPost.update.mock.calls[0][0].data.media[0].url).toContain("cdn.test");
+  });
+});
+
+describe("renderAiHero", () => {
+  it("genera el hero y lo agrega a media[] (post editable)", async () => {
+    mockDb.socialPost.findUnique.mockResolvedValue(draft({ status: "DRAFT" }));
+    mockDb.socialPost.update.mockResolvedValue(
+      draft({
+        media: [
+          { key: "social/1/hero.png", url: "https://cdn.test/social/1/hero.png", type: "image" },
+        ],
+      })
+    );
+    const res = await renderAiHero({
+      id: 1,
+      prompt: "consultorio luminoso",
+      title: "Respira mejor",
+    });
+    expect(res.media).toHaveLength(1);
+    expect(mockDb.socialPost.update.mock.calls[0][0].data.media[0].url).toContain("hero.png");
+  });
+
+  it("rechaza generar en un post no editable (CONFLICT)", async () => {
+    mockDb.socialPost.findUnique.mockResolvedValue(draft({ status: "PUBLISHED" }));
+    await expect(renderAiHero({ id: 1, prompt: "x" })).rejects.toSatisfy(
+      (e) => isDomainError(e) && e.kind === "CONFLICT"
+    );
+  });
+});
+
+describe("ai config", () => {
+  it("getAiConfig delega en el helper público", async () => {
+    const cfg = { provider: "GEMINI" as const, hasGeminiKey: true, hasRecraftKey: false };
+    vi.mocked(settings.getAiPublicConfig).mockResolvedValue(cfg);
+    expect(await getAiConfig()).toEqual(cfg);
+  });
+
+  it("updateAiConfig persiste vía helper y refleja el resultado", async () => {
+    const cfg = { provider: "RECRAFT" as const, hasGeminiKey: false, hasRecraftKey: true };
+    vi.mocked(settings.setAiConfig).mockResolvedValue(cfg);
+    const res = await updateAiConfig({ provider: "RECRAFT", recraftApiKey: "k" });
+    expect(settings.setAiConfig).toHaveBeenCalledWith({ provider: "RECRAFT", recraftApiKey: "k" });
+    expect(res).toEqual(cfg);
   });
 });
 

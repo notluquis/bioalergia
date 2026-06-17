@@ -1,11 +1,13 @@
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
 import {
+  aiConfigResponseSchema,
   connectMetaAccountInputSchema,
   createSocialPostInputSchema,
   metaConfigResponseSchema,
   listSocialPostsInputSchema,
   rejectSocialPostInputSchema,
+  renderAiHeroInputSchema,
   renderSocialPostInputSchema,
   scheduleSocialPostInputSchema,
   socialAccountResponseSchema,
@@ -16,6 +18,7 @@ import {
   socialSettingsResponseSchema,
   socialSettingsSchema,
   tiktokConfigResponseSchema,
+  updateAiConfigInputSchema,
   updateMetaConfigInputSchema,
   updateSocialPostInputSchema,
   updateTiktokConfigInputSchema,
@@ -34,6 +37,7 @@ import {
   approveSocialPost,
   connectMetaAccount,
   createSocialPost,
+  getAiConfig,
   getMetaConfig,
   getSocialPost,
   getSocialSettings,
@@ -42,8 +46,10 @@ import {
   listSocialPosts,
   publishNowSocialPost,
   rejectSocialPost,
+  renderAiHero,
   renderSocialMedia,
   scheduleSocialPost,
+  updateAiConfig,
   updateMetaConfig,
   updateSocialPost,
   updateSocialSettings,
@@ -155,6 +161,15 @@ const socialORPCRouterBase = {
       status: "ok" as const,
     })),
 
+  renderAiHero: updatePost
+    .route({ method: "POST", path: "/{id}/render-ai-hero" })
+    .input(renderAiHeroInputSchema)
+    .output(socialPostResponseSchema)
+    .handler(async ({ input }) => ({
+      post: await renderAiHero(input),
+      status: "ok" as const,
+    })),
+
   approve: updatePost
     .route({ method: "POST", path: "/{id}/approve" })
     .input(socialIdInputSchema)
@@ -229,6 +244,18 @@ const socialORPCRouterBase = {
     .input(updateTiktokConfigInputSchema)
     .output(tiktokConfigResponseSchema)
     .handler(async ({ input }) => ({ config: await updateTiktokConfig(input) })),
+
+  getAiConfig: requireAccount("read")
+    .route({ method: "GET", path: "/ai-config" })
+    .input(z.object({}))
+    .output(aiConfigResponseSchema)
+    .handler(async () => ({ config: await getAiConfig() })),
+
+  updateAiConfig: requireAccount("create")
+    .route({ method: "PUT", path: "/ai-config" })
+    .input(updateAiConfigInputSchema)
+    .output(aiConfigResponseSchema)
+    .handler(async ({ input }) => ({ config: await updateAiConfig(input) })),
 
   getSettings: requireAccount("read")
     .route({ method: "GET", path: "/settings" })

@@ -213,6 +213,35 @@ export const updateTiktokConfigInputSchema = z.object({
   clientSecret: z.string().optional(),
 });
 
+// ── IA de imagen (hero opcional) — config en DB, no env ──
+// Las API keys NUNCA se devuelven: hasGeminiKey/hasRecraftKey indican si ya hay
+// una guardada. El TEXTO de marca lo compone Satori, NO la IA.
+export const aiImageProviderSchema = z.enum(["GEMINI", "RECRAFT"]);
+
+export const aiConfigSchema = z.object({
+  provider: aiImageProviderSchema,
+  hasGeminiKey: z.boolean(),
+  hasRecraftKey: z.boolean(),
+});
+export const aiConfigResponseSchema = z.object({ config: aiConfigSchema });
+
+export const updateAiConfigInputSchema = z.object({
+  provider: aiImageProviderSchema,
+  // Opcionales: si vienen vacíos se conserva la key existente.
+  geminiApiKey: z.string().optional(),
+  recraftApiKey: z.string().optional(),
+});
+
+// Genera un hero/fondo vía IA y compone el texto de marca encima (Satori).
+export const renderAiHeroInputSchema = z.object({
+  id: z.number().int().positive(),
+  prompt: z.string().min(1),
+  kicker: z.string().optional(),
+  title: z.string().optional(),
+  cta: z.string().optional(),
+  provider: aiImageProviderSchema.optional(),
+});
+
 export const socialContract = {
   getSettings: oc
     .route({ method: "GET", path: "/settings" })
@@ -282,6 +311,18 @@ export const socialContract = {
     .route({ method: "PUT", path: "/tiktok-config" })
     .input(updateTiktokConfigInputSchema)
     .output(tiktokConfigResponseSchema),
+  getAiConfig: oc
+    .route({ method: "GET", path: "/ai-config" })
+    .input(z.object({}))
+    .output(aiConfigResponseSchema),
+  updateAiConfig: oc
+    .route({ method: "PUT", path: "/ai-config" })
+    .input(updateAiConfigInputSchema)
+    .output(aiConfigResponseSchema),
+  renderAiHero: oc
+    .route({ method: "POST", path: "/{id}/render-ai-hero" })
+    .input(renderAiHeroInputSchema)
+    .output(socialPostResponseSchema),
 };
 
 export type SocialContract = typeof socialContract;

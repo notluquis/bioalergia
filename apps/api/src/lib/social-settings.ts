@@ -158,3 +158,85 @@ export async function setTiktokConfig(input: SetTiktokConfigInput): Promise<Tikt
 export async function clearTiktokSecret(): Promise<void> {
   await deleteSetting(TIKTOK_CLIENT_SECRET_KEY).catch(() => undefined);
 }
+
+// ─── IA de imagen (hero opcional) ──────────────────────────────────────────
+// Generación OPCIONAL de un hero/fondo fotográfico vía un modelo de imagen
+// (Gemini "Nano Banana" por defecto, Recraft secundario). Pay-per-use; $0 si no
+// se usa. El TEXTO de marca NUNCA lo genera la IA — se compone encima con Satori
+// (evita typos/claims en una marca médica). Las API keys se guardan ENCRIPTADAS
+// y NUNCA se devuelven al cliente (solo `hasGeminiKey`/`hasRecraftKey`).
+
+export type AiImageProvider = "GEMINI" | "RECRAFT";
+
+const AI_PROVIDER_KEY = "social.ai.provider";
+const AI_GEMINI_KEY_KEY = "social.ai.geminiApiKey";
+const AI_RECRAFT_KEY_KEY = "social.ai.recraftApiKey";
+
+export const DEFAULT_AI_PROVIDER: AiImageProvider = "GEMINI";
+
+/** Config pública de IA (SIN keys) — segura para el cliente. */
+export interface AiImagePublicConfig {
+  provider: AiImageProvider;
+  hasGeminiKey: boolean;
+  hasRecraftKey: boolean;
+}
+
+/** Config completa server-side (keys desencriptadas) para llamar al modelo. */
+export interface AiImageConfig extends AiImagePublicConfig {
+  geminiApiKey: string;
+  recraftApiKey: string;
+}
+
+function normalizeProvider(v: string | null | undefined): AiImageProvider {
+  return v === "RECRAFT" ? "RECRAFT" : DEFAULT_AI_PROVIDER;
+}
+
+/** Lee la config completa de IA (keys desencriptadas). Server-only. */
+export async function getAiConfig(): Promise<AiImageConfig> {
+  const [provider, geminiEnc, recraftEnc] = await Promise.all([
+    getSetting(AI_PROVIDER_KEY),
+    getSetting(AI_GEMINI_KEY_KEY),
+    getSetting(AI_RECRAFT_KEY_KEY),
+  ]);
+  const geminiApiKey = decryptSecret(geminiEnc) ?? "";
+  const recraftApiKey = decryptSecret(recraftEnc) ?? "";
+  return {
+    provider: normalizeProvider(provider),
+    geminiApiKey,
+    recraftApiKey,
+    hasGeminiKey: geminiApiKey.length > 0,
+    hasRecraftKey: recraftApiKey.length > 0,
+  };
+}
+
+/** Lee la config pública (SIN keys) — para devolver al cliente. */
+export async function getAiPublicConfig(): Promise<AiImagePublicConfig> {
+  const full = await getAiConfig();
+  return {
+    provider: full.provider,
+    hasGeminiKey: full.hasGeminiKey,
+    hasRecraftKey: full.hasRecraftKey,
+  };
+}
+
+export interface SetAiConfigInput {
+  provider: AiImageProvider;
+  /** Si viene vacío/undefined, se conserva la key existente. */
+  geminiApiKey?: string;
+  /** Si viene vacío/undefined, se conserva la key existente. */
+  recraftApiKey?: string;
+}
+
+/** Persiste la config de IA. Las keys se guardan encriptadas. */
+export async function setAiConfig(input: SetAiConfigInput): Promise<AiImagePublicConfig> {
+  await updateSetting(AI_PROVIDER_KEY, normalizeProvider(input.provider));
+  const gemini = input.geminiApiKey?.trim();
+  if (gemini) {
+    await updateSetting(AI_GEMINI_KEY_KEY, encryptSecret(gemini));
+  }
+  const recraft = input.recraftApiKey?.trim();
+  if (recraft) {
+    await updateSetting(AI_RECRAFT_KEY_KEY, encryptSecret(recraft));
+  }
+  return getAiPublicConfig();
+}

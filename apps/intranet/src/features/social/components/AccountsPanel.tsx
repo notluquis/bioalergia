@@ -1,6 +1,6 @@
-import { Button, Chip, Form, Switch } from "@heroui/react";
+import { Button, Chip, Form, Label, ListBox, Select, Switch } from "@heroui/react";
 import { useForm } from "@tanstack/react-form";
-import { PlugZap } from "lucide-react";
+import { PlugZap, Sparkles } from "lucide-react";
 
 import { TanStackInputField } from "@/components/forms/TanStackFieldControls";
 import { confirmAction } from "@/components/ui/ConfirmDialog";
@@ -8,15 +8,25 @@ import { PageState } from "@/components/ui/PageState";
 import { useToast } from "@/context/ToastContext";
 import { formatChile } from "@/lib/dates";
 import {
+  useAiConfig,
   useConnectAccount,
   useMetaConfig,
   useSocialAccounts,
   useSocialSettings,
   useTiktokConfig,
+  useUpdateAiConfig,
   useUpdateMetaConfig,
   useUpdateSocialSettings,
   useUpdateTiktokConfig,
 } from "../queries";
+
+type AiProvider = "GEMINI" | "RECRAFT";
+
+interface AiConfigFormState {
+  provider: AiProvider;
+  geminiApiKey: string;
+  recraftApiKey: string;
+}
 
 interface MetaConfigFormState {
   appId: string;
@@ -49,12 +59,15 @@ export function AccountsPanel() {
   const updateMetaConfig = useUpdateMetaConfig();
   const tiktokConfigQuery = useTiktokConfig();
   const updateTiktokConfig = useUpdateTiktokConfig();
+  const aiConfigQuery = useAiConfig();
+  const updateAiConfig = useUpdateAiConfig();
 
   const dryRun = settingsQuery.data?.dryRun ?? true;
   const metaConfig = metaConfigQuery.data;
   const metaReady = !!metaConfig?.appId && !!metaConfig?.configId && !!metaConfig?.hasSecret;
   const tiktokConfig = tiktokConfigQuery.data;
   const tiktokReady = !!tiktokConfig?.clientKey && !!tiktokConfig?.hasSecret;
+  const aiConfig = aiConfigQuery.data;
 
   const metaForm = useForm({
     defaultValues: {
@@ -94,6 +107,27 @@ export function AccountsPanel() {
         tiktokForm.reset();
       } catch (error) {
         toast.error(error, "No se pudo guardar la configuración");
+      }
+    },
+  });
+
+  const aiForm = useForm({
+    defaultValues: {
+      provider: (aiConfig?.provider ?? "GEMINI") as AiProvider,
+      geminiApiKey: "",
+      recraftApiKey: "",
+    } as AiConfigFormState,
+    onSubmit: async ({ value }) => {
+      try {
+        await updateAiConfig.mutateAsync({
+          provider: value.provider,
+          ...(value.geminiApiKey.trim() ? { geminiApiKey: value.geminiApiKey.trim() } : {}),
+          ...(value.recraftApiKey.trim() ? { recraftApiKey: value.recraftApiKey.trim() } : {}),
+        });
+        toast.success("Configuración IA guardada");
+        aiForm.reset();
+      } catch (error) {
+        toast.error(error, "No se pudo guardar la configuración IA");
       }
     },
   });
@@ -317,6 +351,85 @@ export function AccountsPanel() {
           <div className="flex justify-end pt-1 sm:col-span-2">
             <Button isPending={updateTiktokConfig.isPending} type="submit" variant="outline">
               Guardar configuración TikTok
+            </Button>
+          </div>
+        </Form>
+      </section>
+
+      <section className="space-y-3 rounded-xl border border-divider p-4">
+        <div className="space-y-1">
+          <h3 className="flex items-center gap-2 font-semibold text-foreground text-sm">
+            <Sparkles size={16} /> Configuración IA (imagen)
+          </h3>
+          <p className="text-default-500 text-xs">
+            Genera un hero/fondo fotográfico opcional con un modelo de IA (pay-per-use; $0 si no se
+            usa). El texto de marca NUNCA lo genera la IA: se compone encima con la plantilla.
+            Gemini tiene un free tier de ~500 imágenes/día.
+          </p>
+        </div>
+        <Form
+          className="grid gap-3 sm:grid-cols-2"
+          onSubmit={(e: React.FormEvent<HTMLFormElement>) => {
+            e.preventDefault();
+            e.stopPropagation();
+            void aiForm.handleSubmit();
+          }}
+          validationBehavior="aria"
+        >
+          <aiForm.Field name="provider">
+            {(field) => (
+              <Select
+                onChange={(val) => field.handleChange(val as AiProvider)}
+                value={field.state.value}
+              >
+                <Label>Proveedor</Label>
+                <Select.Trigger>
+                  <Select.Value />
+                  <Select.Indicator />
+                </Select.Trigger>
+                <Select.Popover>
+                  <ListBox>
+                    <ListBox.Item id="GEMINI" key="GEMINI">
+                      Gemini (Nano Banana)
+                    </ListBox.Item>
+                    <ListBox.Item id="RECRAFT" key="RECRAFT">
+                      Recraft
+                    </ListBox.Item>
+                  </ListBox>
+                </Select.Popover>
+              </Select>
+            )}
+          </aiForm.Field>
+          <div className="hidden sm:block" />
+          <aiForm.Field name="geminiApiKey">
+            {(field) => (
+              <TanStackInputField
+                field={field}
+                label={
+                  aiConfig?.hasGeminiKey
+                    ? "API key Gemini (dejar vacío = conservar)"
+                    : "API key Gemini"
+                }
+                type="password"
+              />
+            )}
+          </aiForm.Field>
+          <aiForm.Field name="recraftApiKey">
+            {(field) => (
+              <TanStackInputField
+                field={field}
+                label={
+                  aiConfig?.hasRecraftKey
+                    ? "API key Recraft (dejar vacío = conservar)"
+                    : "API key Recraft"
+                }
+                type="password"
+              />
+            )}
+          </aiForm.Field>
+          <div className="flex justify-end pt-1 sm:col-span-2">
+            <Button isPending={updateAiConfig.isPending} type="submit" variant="outline">
+              Guardar configuración IA
             </Button>
           </div>
         </Form>

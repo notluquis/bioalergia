@@ -1,13 +1,15 @@
 import { Button, Chip, Modal } from "@heroui/react";
-import { CalendarClock, CheckCircle2, ExternalLink, Send, XCircle } from "lucide-react";
+import { CalendarClock, CheckCircle2, ExternalLink, Send, Sparkles, XCircle } from "lucide-react";
 
 import { confirmAction } from "@/components/ui/ConfirmDialog";
 import { useToast } from "@/context/ToastContext";
 import { formatChile } from "@/lib/dates";
 import {
+  useAiConfig,
   useApproveSocialPost,
   usePublishNow,
   useRejectSocialPost,
+  useRenderAiHero,
   useScheduleSocialPost,
   useSocialPost,
 } from "../queries";
@@ -34,12 +36,21 @@ export function PostDetailModal({ postId, isOpen, onClose }: Readonly<PostDetail
   const rejectMutation = useRejectSocialPost();
   const scheduleMutation = useScheduleSocialPost();
   const publishMutation = usePublishNow();
+  const aiHeroMutation = useRenderAiHero();
+  const aiConfigQuery = useAiConfig();
+
+  const aiReady =
+    !!aiConfigQuery.data &&
+    (aiConfigQuery.data.provider === "RECRAFT"
+      ? aiConfigQuery.data.hasRecraftKey
+      : aiConfigQuery.data.hasGeminiKey);
 
   const isPending =
     approveMutation.isPending ||
     rejectMutation.isPending ||
     scheduleMutation.isPending ||
-    publishMutation.isPending;
+    publishMutation.isPending ||
+    aiHeroMutation.isPending;
 
   const handleApprove = async (p: SocialPost) => {
     try {
@@ -81,6 +92,34 @@ export function PostDetailModal({ postId, isOpen, onClose }: Readonly<PostDetail
       toast.success("Publicación programada");
     } catch (error) {
       toast.error(error, "No se pudo programar");
+    }
+  };
+
+  const handleGenerateHero = async (p: SocialPost) => {
+    // El prompt se siembra desde el título/texto del post (el copy de marca lo
+    // compone Satori encima — la IA solo genera el fondo). El flujo de prompt
+    // libre vive en el comando /social-batch.
+    const seed = (p.title ?? p.caption ?? "").trim();
+    const prompt = seed
+      ? `Fotografía editorial limpia y profesional para una clínica de alergias e inmunología, relacionada con: ${seed}. Sin texto ni letras en la imagen.`
+      : "Fotografía editorial limpia y profesional para una clínica de alergias e inmunología, ambiente luminoso y acogedor. Sin texto ni letras en la imagen.";
+    const ok = await confirmAction({
+      title: "Generar hero con IA",
+      description:
+        "Se generará un fondo fotográfico con IA (pay-per-use) y se compondrá el título de marca encima. El texto NO lo genera la IA.",
+      confirmLabel: "Generar hero",
+    });
+    if (!ok) return;
+    try {
+      await aiHeroMutation.mutateAsync({
+        id: p.id,
+        prompt,
+        ...(p.title ? { title: p.title } : {}),
+        kicker: "BIOALERGIA",
+      });
+      toast.success("Hero generado y agregado al post");
+    } catch (error) {
+      toast.error(error, "No se pudo generar el hero");
     }
   };
 
@@ -225,6 +264,15 @@ export function PostDetailModal({ postId, isOpen, onClose }: Readonly<PostDetail
                   </div>
 
                   <div className="flex flex-wrap justify-end gap-2 pt-2">
+                    {(post.status === "DRAFT" || post.status === "PENDING_APPROVAL") && aiReady && (
+                      <Button
+                        isDisabled={isPending}
+                        variant="outline"
+                        onPress={() => void handleGenerateHero(post)}
+                      >
+                        <Sparkles aria-hidden size={16} /> Generar hero IA
+                      </Button>
+                    )}
                     {(post.status === "DRAFT" || post.status === "PENDING_APPROVAL") && (
                       <>
                         <Button
