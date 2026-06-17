@@ -20,6 +20,9 @@
     "test": "vitest --passWithNoTests",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
+    "audit:e2e": "playwright test",
+    "audit:a11y": "playwright test a11y.spec.ts",
+    "audit:perf": "lhci autorun --config=./lighthouserc.json",
     "clean": "rm -rf dist"
   },
   "dependencies": {
@@ -45,6 +48,7 @@
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.11.3",
+    "@lhci/cli": "^0.15.1",
     "@playwright/test": "^1.60.0",
     "@storybook/addon-a11y": "^10.4.2",
     "@storybook/addon-designs": "^11.1.3",
