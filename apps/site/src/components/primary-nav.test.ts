@@ -34,6 +34,17 @@ describe("isNavItemActive", () => {
     expect(isNavItemActive(link("/polen/"), "/polen")).toBe(true);
   });
 
+  it("normalizes an empty pathname to root", () => {
+    // Exercises the `!pathname` branch of normalizePath.
+    expect(isNavItemActive(link("/"), "")).toBe(true);
+    expect(isNavItemActive(link("/tienda"), "")).toBe(false);
+  });
+
+  it("collapses an all-slashes pathname to root", () => {
+    // "//" → trailing slashes stripped → "" → the `length === 0` branch → "/".
+    expect(isNavItemActive(link("/"), "//")).toBe(true);
+  });
+
   it("never marks anchor links active by path", () => {
     expect(isNavItemActive(link("/#contacto"), "/")).toBe(false);
     expect(isNavItemActive(link("/#faq"), "/#faq")).toBe(false);

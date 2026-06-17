@@ -100,6 +100,20 @@ jobs:
       - run: pnpm turbo run build --filter=@finanzas/intranet
       - run: pnpm -F @finanzas/intranet audit:size
 
+  site-bundle:
+    name: site size-limit (bundle budget)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v6
+        with: { node-version: "${{ env.NODE_VERSION }}", cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      # Build via turbo so workspace deps (@finanzas/db, @finanzas/orpc-contracts,
+      # @finanzas/orpc-client) are produced before vite resolves their entrypoints.
+      - run: pnpm turbo run build --filter=@finanzas/site
+      - run: pnpm -F @finanzas/site audit:size
+
   e2e-and-a11y:
     name: playwright + axe (hermetic)
     runs-on: ubuntu-latest

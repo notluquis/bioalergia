@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { CLP_FORMATTER, makeStockState, storefrontUrl } from "./shop-config";
 
@@ -36,9 +36,17 @@ describe("CLP_FORMATTER", () => {
 });
 
 describe("storefrontUrl", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("returns an empty string when there is no window (SSR / static prerender)", () => {
+    // Node test env has no `window` → the `typeof window === "undefined"` branch.
+    expect(storefrontUrl()).toBe("");
+  });
+
   it("returns the window origin in a browser-like environment", () => {
-    // jsdom provides window.location.origin; the SSR ("") branch is exercised
-    // by the static prerender, not unit-reachable without deleting globalThis.window.
-    expect(typeof storefrontUrl()).toBe("string");
+    vi.stubGlobal("window", { location: { origin: "https://bioalergia.cl" } });
+    expect(storefrontUrl()).toBe("https://bioalergia.cl");
   });
 });

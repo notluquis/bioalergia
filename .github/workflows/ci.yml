@@ -91,6 +91,41 @@ jobs:
           TURBO_TELEMETRY_DISABLED: "1"
         run: pnpm -F @finanzas/intranet test:storybook
 
+  # Browser-mode Storybook component tests for the public marketing site
+  # (@storybook/addon-vitest, Chromium). Same rationale as storybook-browser:
+  # kept OUT of branch-protection required checks until proven stable, so
+  # browser flakiness / Chromium availability never blocks the fast signal.
+  site-storybook-browser:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+      - name: Use Node.js 26
+        uses: actions/setup-node@v6
+        with:
+          node-version: 26
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      # Site stories import @finanzas/* from dist; build those workspace deps
+      # before the Storybook build resolves their entrypoints.
+      - name: Build workspace deps
+        env:
+          TURBO_TELEMETRY_DISABLED: "1"
+        run: pnpm turbo run build --filter=@finanzas/orpc-contracts --filter=@finanzas/orpc-client --filter=@finanzas/db
+      - name: Install Chromium for browser-mode vitest
+        run: pnpm -F @finanzas/site exec playwright install --with-deps chromium
+      - name: Storybook component tests
+        env:
+          TURBO_TELEMETRY_DISABLED: "1"
+        run: pnpm -F @finanzas/site test:storybook
+
   build:
     needs: quality
     runs-on: ubuntu-latest

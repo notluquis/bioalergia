@@ -49,39 +49,13 @@ export default defineConfig(({ mode }) => ({
     chunkSizeWarningLimit: 600,
   },
   test: {
+    // Named so vitest.config.ts can reference it as the `unit` project
+    // alongside the headless-Chromium `storybook` project (Vitest 4 projects).
+    name: "unit",
     // Playwright specs live in e2e/ and run via playwright.config.ts — keep
     // vitest from picking up their *.spec.ts (else "test() called here" error).
-    exclude: [...configDefaults.exclude, "e2e/**"],
-    coverage: {
-      // V8 provider (Vitest 4 recommended: faster, AST-accurate remapping).
-      provider: "v8",
-      reporter: ["text", "lcov", "html"],
-      // GATING is scoped to the PURE-LOGIC surface of the site — the code that
-      // can regress silently and is unit-testable without a DOM. The UI layer
-      // (route components, HeroUI sections, shop pages) is covered by Chromatic
-      // (visual) + Playwright e2e + axe a11y instead, so it is intentionally
-      // NOT in this denominator (a jsdom render-test suite doesn't exist here).
-      // Add a module to this list — with its tests — when new pure logic lands.
-      include: ["src/lib/nav-active.ts", "src/lib/seo.ts", "src/features/shop/lib/shop-config.ts"],
-      exclude: [
-        ...(configDefaults.coverage?.exclude ?? []),
-        "**/*.test.{ts,tsx}",
-        "**/*.stories.@(ts|tsx)",
-        "**/*.d.ts",
-      ],
-      // `all: true` counts every included file even if no test imports it, so
-      // the % is honest (an untested pure module drags the gate down instead of
-      // silently vanishing from the denominator).
-      all: true,
-      // Thresholds = MEASURED actual minus a small headroom → a real, honest
-      // gate, not aspirational fiction. Ratchet UP after a test batch raises
-      // actuals. Measured 2026-06 (all:true): 100/100/100/100 on this surface.
-      thresholds: {
-        statements: 95,
-        branches: 90,
-        functions: 100,
-        lines: 95,
-      },
-    },
+    // Coverage config lives in vitest.config.ts (root-level, Vitest 4 projects
+    // API) — a project's own `test.coverage` is ignored.
+    exclude: [...configDefaults.exclude, "e2e/**", "src/**/*.stories.@(ts|tsx)"],
   },
 }));
