@@ -61,7 +61,6 @@ import { Route as AuthedSettingsBreachIncidentsRouteImport } from "./routes/_aut
 import { Route as AuthedServicesAgendaRouteImport } from "./routes/_authed/services/agenda"
 import { Route as AuthedQuotesNewRouteImport } from "./routes/_authed/quotes/new"
 import { Route as AuthedQuotesIdRouteImport } from "./routes/_authed/quotes/$id"
-import { Route as AuthedPatientsNewRouteImport } from "./routes/_authed/patients/new"
 import { Route as AuthedPatientsCampaignsRouteImport } from "./routes/_authed/patients/campaigns"
 import { Route as AuthedPatientsBroadcastRouteImport } from "./routes/_authed/patients/broadcast"
 import { Route as AuthedOutreachDirectorioRouteImport } from "./routes/_authed/outreach/directorio"
@@ -375,11 +374,6 @@ const AuthedQuotesIdRoute = AuthedQuotesIdRouteImport.update({
   path: "/quotes/$id",
   getParentRoute: () => AuthedRoute,
 } as any)
-const AuthedPatientsNewRoute = AuthedPatientsNewRouteImport.update({
-  id: "/patients/new",
-  path: "/patients/new",
-  getParentRoute: () => AuthedRoute,
-} as any)
 const AuthedPatientsCampaignsRoute = AuthedPatientsCampaignsRouteImport.update({
   id: "/patients/campaigns",
   path: "/patients/campaigns",
@@ -675,7 +669,6 @@ export interface FileRoutesByFullPath {
   "/outreach/directorio": typeof AuthedOutreachDirectorioRoute
   "/patients/broadcast": typeof AuthedPatientsBroadcastRoute
   "/patients/campaigns": typeof AuthedPatientsCampaignsRoute
-  "/patients/new": typeof AuthedPatientsNewRoute
   "/quotes/$id": typeof AuthedQuotesIdRoute
   "/quotes/new": typeof AuthedQuotesNewRoute
   "/services/agenda": typeof AuthedServicesAgendaRoute
@@ -766,7 +759,6 @@ export interface FileRoutesByTo {
   "/outreach/directorio": typeof AuthedOutreachDirectorioRoute
   "/patients/broadcast": typeof AuthedPatientsBroadcastRoute
   "/patients/campaigns": typeof AuthedPatientsCampaignsRoute
-  "/patients/new": typeof AuthedPatientsNewRoute
   "/quotes/$id": typeof AuthedQuotesIdRoute
   "/quotes/new": typeof AuthedQuotesNewRoute
   "/services/agenda": typeof AuthedServicesAgendaRoute
@@ -866,7 +858,6 @@ export interface FileRoutesById {
   "/_authed/outreach/directorio": typeof AuthedOutreachDirectorioRoute
   "/_authed/patients/broadcast": typeof AuthedPatientsBroadcastRoute
   "/_authed/patients/campaigns": typeof AuthedPatientsCampaignsRoute
-  "/_authed/patients/new": typeof AuthedPatientsNewRoute
   "/_authed/quotes/$id": typeof AuthedQuotesIdRoute
   "/_authed/quotes/new": typeof AuthedQuotesNewRoute
   "/_authed/services/agenda": typeof AuthedServicesAgendaRoute
@@ -966,7 +957,6 @@ export interface FileRouteTypes {
     | "/outreach/directorio"
     | "/patients/broadcast"
     | "/patients/campaigns"
-    | "/patients/new"
     | "/quotes/$id"
     | "/quotes/new"
     | "/services/agenda"
@@ -1057,7 +1047,6 @@ export interface FileRouteTypes {
     | "/outreach/directorio"
     | "/patients/broadcast"
     | "/patients/campaigns"
-    | "/patients/new"
     | "/quotes/$id"
     | "/quotes/new"
     | "/services/agenda"
@@ -1156,7 +1145,6 @@ export interface FileRouteTypes {
     | "/_authed/outreach/directorio"
     | "/_authed/patients/broadcast"
     | "/_authed/patients/campaigns"
-    | "/_authed/patients/new"
     | "/_authed/quotes/$id"
     | "/_authed/quotes/new"
     | "/_authed/services/agenda"
@@ -1576,13 +1564,6 @@ declare module "@tanstack/react-router" {
       path: "/quotes/$id"
       fullPath: "/quotes/$id"
       preLoaderRoute: typeof AuthedQuotesIdRouteImport
-      parentRoute: typeof AuthedRoute
-    }
-    "/_authed/patients/new": {
-      id: "/_authed/patients/new"
-      path: "/patients/new"
-      fullPath: "/patients/new"
-      preLoaderRoute: typeof AuthedPatientsNewRouteImport
       parentRoute: typeof AuthedRoute
     }
     "/_authed/patients/campaigns": {
@@ -2149,7 +2130,6 @@ interface AuthedRouteChildren {
   AuthedExamReportsIdRoute: typeof AuthedExamReportsIdRoute
   AuthedPatientsBroadcastRoute: typeof AuthedPatientsBroadcastRoute
   AuthedPatientsCampaignsRoute: typeof AuthedPatientsCampaignsRoute
-  AuthedPatientsNewRoute: typeof AuthedPatientsNewRoute
   AuthedQuotesIdRoute: typeof AuthedQuotesIdRoute
   AuthedQuotesNewRoute: typeof AuthedQuotesNewRoute
   AuthedCompaniesIndexRoute: typeof AuthedCompaniesIndexRoute
@@ -2188,7 +2168,6 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedExamReportsIdRoute: AuthedExamReportsIdRoute,
   AuthedPatientsBroadcastRoute: AuthedPatientsBroadcastRoute,
   AuthedPatientsCampaignsRoute: AuthedPatientsCampaignsRoute,
-  AuthedPatientsNewRoute: AuthedPatientsNewRoute,
   AuthedQuotesIdRoute: AuthedQuotesIdRoute,
   AuthedQuotesNewRoute: AuthedQuotesNewRoute,
   AuthedCompaniesIndexRoute: AuthedCompaniesIndexRoute,

@@ -1,10 +1,10 @@
 // oxlint-disable typescript/no-non-null-assertion -- TODO(strict-null): refactor each `!` to invariant() or explicit guard. Tracked in repo-wide non-null cleanup.
 import { SuperJSONLink } from "@finanzas/orpc-client";
 export { SuperJSONLink };
-import { createORPCClient, isORPCErrorJson, ORPCError } from "@orpc/client";
+import { createORPCClient, isORPCErrorJson } from "@orpc/client";
 import type { ContractRouterClient } from "@orpc/contract";
 import type { CalendarContract } from "@finanzas/orpc-contracts/calendar";
-import { ApiError } from "@/lib/api-client";
+import { toApiError } from "@/lib/api-client";
 import { configureSuperjson } from "@/lib/superjson-config";
 
 const superjson = configureSuperjson();
@@ -156,18 +156,4 @@ export const calendarORPCClient = createORPCClient<CalendarORPCClient>(calendarO
   path: ["api", "orpc", "calendar", "rpc"],
 });
 
-export function toCalendarApiError(error: unknown): ApiError {
-  if (error instanceof ApiError) {
-    return error;
-  }
-
-  if (error instanceof ORPCError) {
-    return new ApiError(error.message, error.status, error.data);
-  }
-
-  if (error instanceof Error) {
-    return new ApiError(error.message, 500);
-  }
-
-  return new ApiError("Error inesperado", 500, error);
-}
+export const toCalendarApiError = toApiError;
