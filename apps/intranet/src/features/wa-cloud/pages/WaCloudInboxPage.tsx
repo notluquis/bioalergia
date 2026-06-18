@@ -34,6 +34,7 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { WaConversationStatus } from "@finanzas/orpc-contracts/wa-cloud";
+import { useAuth } from "@/features/auth/hooks/use-auth";
 import { ConversationDetail } from "../components/inbox/ConversationDetail";
 import { SharedPayloadModal } from "../components/modals/SharedPayloadModal";
 import { useFaviconBadge } from "../hooks/useFaviconBadge";
@@ -123,6 +124,7 @@ export interface WaCloudInboxPageProps {
 }
 
 export function WaCloudInboxPage({ onOpenSearchDrawer }: WaCloudInboxPageProps = {}) {
+  const { user: currentUser } = useAuth();
   const accounts = useAccounts();
   const allPhones = useMemo(
     () => (accounts.data?.accounts ?? []).flatMap((a) => a.phoneNumbers),
@@ -158,6 +160,7 @@ export function WaCloudInboxPage({ onOpenSearchDrawer }: WaCloudInboxPageProps =
 
   const [status, setStatus] = useState<WaConversationStatus | "">("");
   const [phoneFilter, setPhoneFilter] = useState("");
+  const [assignFilter, setAssignFilter] = useState<"all" | "mine" | "unassigned">("all");
   const [search, setSearch] = useState("");
   const [selectedId, setSelectedId] = useState<number | null>(deepLinkedId ?? null);
   const [showHelp, setShowHelp] = useState(false);
@@ -190,9 +193,12 @@ export function WaCloudInboxPage({ onOpenSearchDrawer }: WaCloudInboxPageProps =
   const showDetail = isMobile ? selectedId !== null : true;
   const showList = isMobile ? selectedId === null : true;
 
+  const currentUserId = currentUser?.id;
   const conversations = useConversations({
     status: status || undefined,
     phoneNumberId: phoneFilter ? Number.parseInt(phoneFilter, 10) : undefined,
+    assignedToUserId:
+      assignFilter === "mine" ? currentUserId : assignFilter === "unassigned" ? null : undefined,
     search: search.trim() || undefined,
     page: 1,
     pageSize: 50,
@@ -388,6 +394,30 @@ export function WaCloudInboxPage({ onOpenSearchDrawer }: WaCloudInboxPageProps =
                   <SearchField.ClearButton />
                 </SearchField.Group>
               </SearchField>
+
+              <div className="mt-2 flex gap-1" role="group" aria-label="Filtrar por asignación">
+                {(
+                  [
+                    ["all", "Todas"],
+                    ["mine", "Mías"],
+                    ["unassigned", "Sin asignar"],
+                  ] as const
+                ).map(([val, label]) => (
+                  <button
+                    key={val}
+                    type="button"
+                    onClick={() => setAssignFilter(val)}
+                    aria-pressed={assignFilter === val}
+                    className={`min-h-9 flex-1 rounded-full px-2 py-1 font-medium text-xs transition ${
+                      assignFilter === val
+                        ? "bg-success/15 text-success"
+                        : "bg-content2 text-default-500 hover:bg-content3"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
             </header>
 
             <ActiveFilterChips

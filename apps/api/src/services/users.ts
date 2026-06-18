@@ -31,6 +31,27 @@ export function toNullableText(value: null | string | undefined): null | string 
   return trimmed.length > 0 ? trimmed : null;
 }
 
+// Nombre para mostrar de un operador (p.ej. "Andrea está respondiendo…" en la
+// bandeja compartida de WhatsApp). Una sola query: arma el nombre desde
+// person.names (+ apellidos), y si no hay persona/nombre cae al local-part del
+// email provisto por la sesión. Nunca lanza: best-effort para hints de UI.
+export async function resolveUserDisplayName(
+  userId: number,
+  fallbackEmail: string
+): Promise<string> {
+  const fallback = fallbackEmail.split("@")[0]?.trim() || `Usuario ${userId}`;
+  const user = await db.user.findUnique({
+    where: { id: userId },
+    select: { person: { select: { names: true, fatherName: true, motherName: true } } },
+  });
+  if (!user?.person) return fallback;
+  const full = [user.person.names, user.person.fatherName, user.person.motherName]
+    .filter((part): part is string => typeof part === "string" && part.trim().length > 0)
+    .join(" ")
+    .trim();
+  return full.length > 0 ? full : fallback;
+}
+
 // Busca un usuario cuyo login efectivo (login_email, o el email de la persona si
 // aquel es vacío) coincide, excluyendo opcionalmente un userId.
 export async function findUserByEffectiveLoginEmail(

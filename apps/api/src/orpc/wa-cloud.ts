@@ -156,6 +156,7 @@ import {
   setConversationTyping as setConversationTypingService,
   updateConversation as updateConversationService,
 } from "../services/wa-conversations.ts";
+import { resolveUserDisplayName } from "../services/users.ts";
 import {
   editText as editTextService,
   listConversationMedia as listConversationMediaService,
@@ -1088,8 +1089,15 @@ const waRouterBase = {
     .route({ method: "POST", path: "/conversations/typing", tags: ["WA Cloud"] })
     .input(z.object({ conversationId: z.number().int().positive() }))
     .output(waOkResponseSchema)
-    .handler(async ({ input }) => {
-      await setConversationTypingService(input.conversationId);
+    .handler(async ({ context, input }) => {
+      // Adjuntar la identidad del operador para el hint de colisión en la
+      // bandeja compartida ("Andrea está respondiendo…"). El nombre se resuelve
+      // con una sola query (cae al local-part del email si no hay persona).
+      const userName = await resolveUserDisplayName(context.user.id, context.user.email);
+      await setConversationTypingService(input.conversationId, {
+        userId: context.user.id,
+        userName,
+      });
       return { status: "ok" as const };
     }),
 

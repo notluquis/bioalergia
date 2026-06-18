@@ -1,12 +1,15 @@
 // oxlint-disable typescript/no-non-null-assertion -- TODO(strict-null): refactor each `!` to invariant() or explicit guard. Tracked in repo-wide non-null cleanup.
 import { Avatar, Button, Card, Chip, Spinner } from "@heroui/react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Ban, Bell, BellOff } from "lucide-react";
+import { Ban, Bell, BellOff, PencilLine } from "lucide-react";
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { fromNowShort } from "@/lib/dates";
 import { confirmAction } from "@/components/ui/ConfirmDialog";
+import { useAuth } from "@/features/auth/hooks/use-auth";
 import { toast } from "@/lib/toast-interceptor";
+import { AssignmentControl } from "./AssignmentControl";
 import { ChatBubble } from "./ChatBubble";
+import { ForwardPickerModal } from "./ForwardPickerModal";
 import { InternalNotesPanel } from "./InternalNotesPanel";
 import { ScrollToBottomFab } from "./ScrollToBottomFab";
 import { UnreadDivider } from "./UnreadDivider";
@@ -50,6 +53,7 @@ import {
   useSendText,
   useSetTyping,
   useTemplates,
+  useTypingPresence,
   useUnblockContact,
   useSetMute,
   useUpdateConversation,
@@ -65,6 +69,10 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
   const sendMedia = useSendMedia();
   const sendSavedSticker = useSendSavedSticker();
   const saveSticker = useSaveSticker();
+  const { user } = useAuth();
+  const typing = useTypingPresence(conversationId, user?.id);
+  const [forwardBody, setForwardBody] = useState<string | null>(null);
+  const [forwardOpen, setForwardOpen] = useState(false);
   const sendContacts = useSendContacts();
   const sendSnippet = useSendSnippet();
   const editText = useEditText();
@@ -526,6 +534,21 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
               <Chip.Label>Ventana cerrada · solo plantilla</Chip.Label>
             </Chip>
           )}
+          {typing && (
+            <Chip color="accent" variant="soft" size="sm">
+              <PencilLine size={12} />
+              <Chip.Label>{typing.userName} está respondiendo…</Chip.Label>
+            </Chip>
+          )}
+          <AssignmentControl
+            assignedToUserId={c.conversation.assignedToUserId}
+            currentUserId={user?.id}
+            onAssignToMe={() =>
+              user?.id && updateConv.mutate({ id: conversationId, assignedToUserId: user.id })
+            }
+            onRelease={() => updateConv.mutate({ id: conversationId, assignedToUserId: null })}
+            isPending={updateConv.isPending}
+          />
           <QualityBadge phoneNumberId={phoneId ? Number.parseInt(phoneId, 10) : undefined} />
           {(() => {
             const mu = c.conversation.mutedUntil;
@@ -641,6 +664,10 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
                             onError: (e) => toast.error(`Error: ${String(e)}`),
                           }
                         );
+                      }}
+                      onForward={(r) => {
+                        setForwardBody(r.body);
+                        setForwardOpen(true);
                       }}
                     />
                   </Fragment>
@@ -852,6 +879,28 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
         }
         onCancel={(id) => cancelScheduled.mutate(id)}
         isPending={scheduleMsg.isPending}
+      />
+      <ForwardPickerModal
+        isOpen={forwardOpen}
+        onClose={() => setForwardOpen(false)}
+        isPending={sendText.isPending}
+        onForward={(targetId, targetPhone) => {
+          const pn = targetPhone ?? (phoneId ? Number(phoneId) : undefined);
+          if (!pn || !forwardBody) {
+            toast.error("No se puede reenviar este mensaje");
+            return;
+          }
+          sendText.mutate(
+            { conversationId: targetId, phoneNumberId: pn, body: forwardBody },
+            {
+              onSuccess: () => {
+                toast.success("Mensaje reenviado");
+                setForwardOpen(false);
+              },
+              onError: (e) => toast.error(`Error: ${String(e)}`),
+            }
+          );
+        }}
       />
     </>
   );

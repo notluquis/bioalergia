@@ -1,6 +1,6 @@
 // oxlint-disable typescript/no-non-null-assertion -- TODO(strict-null): refactor each `!` to invariant() or explicit guard. Tracked in repo-wide non-null cleanup.
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { waCloudORPCClient } from "../orpc";
 
 // Mirror of orpc-client's CSRF cookie reader. Multipart uploads bypass the
@@ -894,6 +894,42 @@ export function useSetTyping() {
   return useMutation({
     mutationFn: (conversationId: number) => waCloudORPCClient.setTyping({ conversationId }),
   });
+}
+
+// Collision detection for the shared inbox: subscribes to the SSE "typing"
+// event (which now carries the typer's identity) and exposes the OTHER agent
+// currently composing, so the header can warn "Andrea está respondiendo…".
+// Ignores our own typing and auto-expires after 6s of silence.
+export function useTypingPresence(
+  conversationId: number | undefined,
+  currentUserId: number | undefined
+): { userId: number; userName: string } | null {
+  const [typing, setTyping] = useState<{ userId: number; userName: string } | null>(null);
+  useEffect(() => {
+    if (!conversationId) return;
+    const es = new EventSource(`/api/wa-cloud/sse/${conversationId}`, { withCredentials: true });
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    es.addEventListener("typing", (e) => {
+      try {
+        const data = JSON.parse((e as MessageEvent).data) as {
+          userId?: number;
+          userName?: string;
+        };
+        if (!data.userId || (currentUserId && data.userId === currentUserId)) return;
+        setTyping({ userId: data.userId, userName: data.userName ?? "Alguien del equipo" });
+        if (timer) clearTimeout(timer);
+        timer = setTimeout(() => setTyping(null), 6000);
+      } catch {
+        // ignore malformed events
+      }
+    });
+    return () => {
+      es.close();
+      if (timer) clearTimeout(timer);
+      setTyping(null);
+    };
+  }, [conversationId, currentUserId]);
+  return typing;
 }
 
 export function useConversationAnalytics(

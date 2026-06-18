@@ -111,7 +111,7 @@ export function ChatBubble({
     canReact: canInteract,
     canReply: canInteract,
     canEdit,
-    canForward: Boolean(onForward) && canInteract,
+    canForward: Boolean(onForward) && canInteract && row.type === "TEXT" && Boolean(row.body),
     canRetry,
     canSaveSticker,
     body: row.body,

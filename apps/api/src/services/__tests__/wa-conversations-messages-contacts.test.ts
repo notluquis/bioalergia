@@ -49,6 +49,9 @@ vi.mock("@finanzas/db/slices", () => {
 vi.mock("../../lib/logger.ts", () => ({ logError: vi.fn(), logEvent: vi.fn() }));
 vi.mock("../../modules/wa-cloud/graph-client.ts", () => graphMock);
 
+const emitWaEventMock = vi.fn();
+vi.mock("../../modules/wa-cloud/events.ts", () => ({ emitWaEvent: emitWaEventMock }));
+
 const {
   listConversations,
   getConversation,
@@ -190,8 +193,17 @@ describe("setConversationMute", () => {
 describe("setConversationTyping", () => {
   it("manda typing=true sobre el último inbound", async () => {
     mockDb.waMessage.findFirst.mockResolvedValue({ metaMessageId: "m1", phoneNumberId: 7 });
-    await setConversationTyping(3);
+    await setConversationTyping(3, { userId: 9, userName: "Andrea" });
     expect(graphMock.markMessageRead).toHaveBeenCalledWith(7, "m1", true);
+  });
+
+  it("emite un evento typing con la identidad del operador para la bandeja compartida", async () => {
+    mockDb.waMessage.findFirst.mockResolvedValue(null);
+    await setConversationTyping(42, { userId: 9, userName: "Andrea" });
+    expect(emitWaEventMock).toHaveBeenCalledWith(
+      42,
+      expect.objectContaining({ kind: "typing", userId: 9, userName: "Andrea" })
+    );
   });
 });
 
