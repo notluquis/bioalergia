@@ -11654,6 +11654,12 @@ export class SchemaType implements SchemaDef {
                     type: "WaAccountEvent",
                     array: true,
                     relation: { opposite: "account" }
+                },
+                savedStickers: {
+                    name: "savedStickers",
+                    type: "WaSavedSticker",
+                    array: true,
+                    relation: { opposite: "account" }
                 }
             },
             idFields: ["id"],
@@ -12770,6 +12776,88 @@ export class SchemaType implements SchemaDef {
             idFields: ["id"],
             uniqueFields: {
                 id: { type: "Int" }
+            }
+        },
+        WaSavedSticker: {
+            name: "WaSavedSticker",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                accountId: {
+                    name: "accountId",
+                    type: "Int",
+                    foreignKeyFor: [
+                        "account"
+                    ] as readonly string[]
+                },
+                r2Key: {
+                    name: "r2Key",
+                    type: "String"
+                },
+                mimeType: {
+                    name: "mimeType",
+                    type: "String",
+                    default: "image/webp" as FieldDefault
+                },
+                sha256: {
+                    name: "sha256",
+                    type: "String"
+                },
+                favorite: {
+                    name: "favorite",
+                    type: "Boolean",
+                    default: false as FieldDefault
+                },
+                width: {
+                    name: "width",
+                    type: "Int",
+                    optional: true
+                },
+                height: {
+                    name: "height",
+                    type: "Int",
+                    optional: true
+                },
+                hitCount: {
+                    name: "hitCount",
+                    type: "Int",
+                    default: 0 as FieldDefault
+                },
+                lastUsedAt: {
+                    name: "lastUsedAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                addedByUserId: {
+                    name: "addedByUserId",
+                    type: "Int",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                account: {
+                    name: "account",
+                    type: "WaBusinessAccount",
+                    relation: { opposite: "savedStickers", fields: ["accountId"], references: ["id"], onDelete: "Cascade" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" },
+                accountId_sha256: { accountId: { type: "Int" }, sha256: { type: "String" } }
             }
         },
         WaAccountEvent: {

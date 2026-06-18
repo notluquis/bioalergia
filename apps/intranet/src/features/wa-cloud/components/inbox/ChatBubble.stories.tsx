@@ -49,9 +49,11 @@ export default meta;
 type Story = StoryObj<typeof ChatBubble>;
 
 const noopHandlers = {
+  contactName: "María González",
   onReply: () => {},
   onReact: () => {},
   onEdit: () => {},
+  onRetry: () => {},
 };
 
 function Row({ children }: { children: React.ReactNode }) {
@@ -141,6 +143,73 @@ export const OutboundQuotedReply: Story = {
         body: "¿Podrías dejarme la receta para retirar mañana?",
         out: false,
       },
+    };
+    return (
+      <Row>
+        <ChatBubble row={row} {...noopHandlers} />
+      </Row>
+    );
+  },
+};
+
+export const GroupedConsecutive: Story = {
+  name: "Agrupados — mismo emisor (sin timestamp intermedio)",
+  render: () => {
+    const base = {
+      out: true,
+      type: "TEXT",
+      status: "READ" as const,
+      metaMessageId: "wamid.G",
+    };
+    const rows: ChatBubbleRow[] = [
+      {
+        ...base,
+        messageId: 201,
+        body: "Hola, te confirmo la receta.",
+        timestamp: new Date(Date.now() - 6 * 60 * 1000),
+        groupStart: true,
+        groupEnd: false,
+      },
+      {
+        ...base,
+        messageId: 202,
+        body: "La dejé en recepción a tu nombre.",
+        timestamp: new Date(Date.now() - 5.7 * 60 * 1000),
+        groupStart: false,
+        groupEnd: false,
+      },
+      {
+        ...base,
+        messageId: 203,
+        body: "Cualquier cosa me avisas 🙌",
+        timestamp: new Date(Date.now() - 5.5 * 60 * 1000),
+        groupStart: false,
+        groupEnd: true,
+      },
+    ];
+    return (
+      <Row>
+        {rows.map((r) => (
+          <ChatBubble key={r.messageId} row={r} {...noopHandlers} />
+        ))}
+      </Row>
+    );
+  },
+};
+
+export const FailedWithRetry: Story = {
+  name: "Saliente — falló con botón Reintentar",
+  render: () => {
+    const row: ChatBubbleRow = {
+      messageId: null,
+      metaMessageId: null,
+      pendingCid: "tmp-1",
+      out: true,
+      body: "Mensaje que no se pudo enviar por red.",
+      type: "TEXT",
+      timestamp: FIVE_MINUTES_AGO,
+      status: "FAILED",
+      errorTitle: "Error de red",
     };
     return (
       <Row>

@@ -4379,6 +4379,7 @@ model WaBusinessAccount {
   templates           WaTemplate[]
   broadcasts          WaBroadcast[]
   accountEvents       WaAccountEvent[]
+  savedStickers       WaSavedSticker[]
 
   @@deny('all', auth() == null)
   @@allow('read,create,update,delete', auth().status == 'ACTIVE')
@@ -4721,6 +4722,38 @@ model WaSnippet {
   @@deny('all', auth() == null)
   @@allow('read,create,update,delete', auth().status == 'ACTIVE')
   @@map("wa_snippets")
+}
+
+// Stickers guardados estilo WhatsApp. Cada WABA tiene su propia bandeja
+// (accountId): "Recientes" (auto-poblado al enviar) ordenado por lastUsedAt,
+// y "Guardados" (favorite=true, marcado desde un sticker recibido). El .webp
+// durable vive en R2 (r2Key) porque los media ids de Meta expiran ~30d; al
+// reenviar se re-sube desde R2 para obtener un id fresco. sha256 deduplica
+// por cuenta (un mismo sticker no se guarda dos veces).
+model WaSavedSticker {
+  id              Int      @id @default(autoincrement())
+  accountId       Int      @map("account_id")
+  r2Key           String   @map("r2_key")
+  mimeType        String   @default("image/webp") @map("mime_type")
+  sha256          String
+  favorite        Boolean  @default(false)
+  width           Int?
+  height          Int?
+  hitCount        Int      @default(0) @map("hit_count")
+  lastUsedAt      DateTime? @map("last_used_at")
+  addedByUserId   Int?     @map("added_by_user_id")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @default(now()) @updatedAt @map("updated_at")
+
+  account         WaBusinessAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@unique([accountId, sha256])
+  @@index([accountId])
+  @@index([favorite])
+  @@index([lastUsedAt])
+  @@deny('all', auth() == null)
+  @@allow('read,create,update,delete', auth().status == 'ACTIVE')
+  @@map("wa_saved_stickers")
 }
 
 enum WaScheduledStatus {

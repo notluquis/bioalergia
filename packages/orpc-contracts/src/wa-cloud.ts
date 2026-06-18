@@ -266,6 +266,16 @@ export const sendMediaInputSchema = z.object({
   contextMetaMessageId: z.string().optional(),
 });
 
+// Forward an existing message into another conversation. Server-side copy: the
+// Cloud API has no native forward, so the backend re-sends the source content
+// by type (text/media/location/contacts), re-uploading media bytes to the
+// target line (Meta media ids expire ~30d + are WABA-scoped).
+export const forwardMessageInputSchema = z.object({
+  sourceMessageId: z.number().int().positive(),
+  targetConversationId: z.number().int().positive(),
+  targetPhoneNumberId: z.number().int().positive(),
+});
+
 export const updateWaContactInputSchema = z.object({
   id: z.number().int().positive(),
   name: z.string().nullable().optional(),
@@ -748,6 +758,49 @@ export const sendSavedFlowInputSchema = z.object({
   // optional override fields
   bodyText: z.string().max(1024).optional(),
   flowCta: z.string().max(20).optional(),
+  contextMetaMessageId: z.string().optional(),
+});
+
+// ── Saved stickers (estilo WhatsApp) ─────────────────────────────────────────
+// "Recientes" = auto-poblado al enviar; "Guardados" = favorite=true. El `url`
+// apunta al proxy auth-gated /api/wa-cloud/media/saved-sticker/:id (NUNCA una
+// URL pública sin firmar de R2).
+export const savedStickerTabSchema = z.enum(["recientes", "guardados"]);
+
+export const savedStickerSchema = z.object({
+  id: z.number().int(),
+  url: z.string(),
+  favorite: z.boolean(),
+  lastUsedAt: z.coerce.date().nullable(),
+  hitCount: z.number().int(),
+});
+
+export const listSavedStickersInputSchema = z.object({
+  accountId: z.number().int().positive(),
+  tab: savedStickerTabSchema.default("recientes"),
+});
+
+export const listSavedStickersResponseSchema = z.object({
+  stickers: z.array(savedStickerSchema),
+});
+
+// Marcar un sticker recibido (de un WaMessage inbound) → "Guardados".
+export const saveStickerInputSchema = z.object({
+  messageId: z.number().int().positive(),
+});
+
+// Quitar de "Guardados" (toggle favorite=false; permanece en "Recientes" si
+// tiene historial de uso).
+export const unsaveStickerInputSchema = z.object({
+  id: z.number().int().positive(),
+});
+
+// Enviar un sticker guardado: re-sube a Meta (id fresco desde el .webp en R2),
+// envía vía el mismo path sendMedia(type:"sticker") y bumpea recientes.
+export const sendSavedStickerInputSchema = z.object({
+  conversationId: z.number().int().positive(),
+  phoneNumberId: z.number().int().positive(),
+  savedStickerId: z.number().int().positive(),
   contextMetaMessageId: z.string().optional(),
 });
 
@@ -1348,6 +1401,10 @@ export const waCloudContract = {
     .route({ method: "POST", path: "/messages/edit-text", tags: ["WA Cloud"] })
     .input(editTextInputSchema)
     .output(sendMessageResponseSchema),
+  forwardMessage: oc
+    .route({ method: "POST", path: "/messages/forward", tags: ["WA Cloud"] })
+    .input(forwardMessageInputSchema)
+    .output(sendMessageResponseSchema),
 
   createTemplate: oc
     .route({ method: "POST", path: "/templates/create", tags: ["WA Cloud"] })
@@ -1497,6 +1554,24 @@ export const waCloudContract = {
   sendSavedFlow: oc
     .route({ method: "POST", path: "/messages/send-saved-flow", tags: ["WA Cloud"] })
     .input(sendSavedFlowInputSchema)
+    .output(sendMessageResponseSchema),
+
+  // Saved stickers (estilo WhatsApp)
+  listSavedStickers: oc
+    .route({ method: "GET", path: "/saved/stickers", tags: ["WA Cloud"] })
+    .input(listSavedStickersInputSchema)
+    .output(listSavedStickersResponseSchema),
+  saveSticker: oc
+    .route({ method: "POST", path: "/saved/stickers/save", tags: ["WA Cloud"] })
+    .input(saveStickerInputSchema)
+    .output(savedStickerSchema),
+  unsaveSticker: oc
+    .route({ method: "POST", path: "/saved/stickers/unsave", tags: ["WA Cloud"] })
+    .input(unsaveStickerInputSchema)
+    .output(waOkResponseSchema),
+  sendSavedSticker: oc
+    .route({ method: "POST", path: "/messages/send-saved-sticker", tags: ["WA Cloud"] })
+    .input(sendSavedStickerInputSchema)
     .output(sendMessageResponseSchema),
 
   // Global scheduled list

@@ -19,6 +19,12 @@ import {
   savedLocationSchema,
   syncFlowsInputSchema,
   syncFlowsResponseSchema,
+  listSavedStickersInputSchema,
+  listSavedStickersResponseSchema,
+  savedStickerSchema,
+  saveStickerInputSchema,
+  sendSavedStickerInputSchema,
+  unsaveStickerInputSchema,
   sendSavedFlowInputSchema,
   sendSavedListInputSchema,
   sendSavedLocationInputSchema,
@@ -44,6 +50,7 @@ import {
   createTemplateResponseSchema,
   deleteTemplateInputSchema,
   editTextInputSchema,
+  forwardMessageInputSchema,
   listScheduledInputSchema,
   listScheduledResponseSchema,
   scheduleMessageInputSchema,
@@ -150,8 +157,10 @@ import {
   setConversationTyping as setConversationTypingService,
   updateConversation as updateConversationService,
 } from "../services/wa-conversations.ts";
+import { resolveUserDisplayName } from "../services/users.ts";
 import {
   editText as editTextService,
+  forwardMessage as forwardMessageService,
   listConversationMedia as listConversationMediaService,
   searchMessages as searchMessagesService,
   sendAddress as sendAddressService,
@@ -204,6 +213,12 @@ import {
   upsertSavedInteractiveList as upsertSavedInteractiveListService,
   upsertSavedLocation as upsertSavedLocationService,
 } from "../services/wa-saved.ts";
+import {
+  listSavedStickers as listSavedStickersService,
+  saveStickerFromMessage as saveStickerFromMessageService,
+  sendSavedSticker as sendSavedStickerService,
+  unsaveSticker as unsaveStickerService,
+} from "../services/wa-stickers.ts";
 import {
   acknowledgeAccountEvent as acknowledgeAccountEventService,
   getPhoneHealth as getPhoneHealthService,
@@ -426,6 +441,14 @@ const waRouterBase = {
     .output(sendMessageResponseSchema)
     .handler(async ({ input }) => {
       return editTextService(input);
+    }),
+
+  forwardMessage: writeWa
+    .route({ method: "POST", path: "/messages/forward", tags: ["WA Cloud"] })
+    .input(forwardMessageInputSchema)
+    .output(sendMessageResponseSchema)
+    .handler(async ({ context, input }) => {
+      return forwardMessageService(input, context.user.id);
     }),
 
   createTemplate: createWa
@@ -779,6 +802,37 @@ const waRouterBase = {
       return sendSavedFlowService(input, context.user.id);
     }),
 
+  // ── Saved stickers (estilo WhatsApp) ──────────────────────────────────────
+  listSavedStickers: readWa
+    .route({ method: "GET", path: "/saved/stickers", tags: ["WA Cloud"] })
+    .input(listSavedStickersInputSchema)
+    .output(listSavedStickersResponseSchema)
+    .handler(async ({ input }) => {
+      return listSavedStickersService(input);
+    }),
+  saveSticker: createWa
+    .route({ method: "POST", path: "/saved/stickers/save", tags: ["WA Cloud"] })
+    .input(saveStickerInputSchema)
+    .output(savedStickerSchema)
+    .handler(async ({ context, input }) => {
+      return saveStickerFromMessageService(input, context.user.id);
+    }),
+  unsaveSticker: deleteWa
+    .route({ method: "POST", path: "/saved/stickers/unsave", tags: ["WA Cloud"] })
+    .input(unsaveStickerInputSchema)
+    .output(waOkResponseSchema)
+    .handler(async ({ input }) => {
+      await unsaveStickerService(input.id);
+      return { status: "ok" as const };
+    }),
+  sendSavedSticker: writeWa
+    .route({ method: "POST", path: "/messages/send-saved-sticker", tags: ["WA Cloud"] })
+    .input(sendSavedStickerInputSchema)
+    .output(sendMessageResponseSchema)
+    .handler(async ({ context, input }) => {
+      return sendSavedStickerService(input, context.user.id);
+    }),
+
   // ── Global scheduled list ─────────────────────────────────────────────────
   listAllScheduled: readWa
     .route({ method: "POST", path: "/scheduled/list-all", tags: ["WA Cloud"] })
@@ -1045,8 +1099,15 @@ const waRouterBase = {
     .route({ method: "POST", path: "/conversations/typing", tags: ["WA Cloud"] })
     .input(z.object({ conversationId: z.number().int().positive() }))
     .output(waOkResponseSchema)
-    .handler(async ({ input }) => {
-      await setConversationTypingService(input.conversationId);
+    .handler(async ({ context, input }) => {
+      // Adjuntar la identidad del operador para el hint de colisión en la
+      // bandeja compartida ("Andrea está respondiendo…"). El nombre se resuelve
+      // con una sola query (cae al local-part del email si no hay persona).
+      const userName = await resolveUserDisplayName(context.user.id, context.user.email);
+      await setConversationTypingService(input.conversationId, {
+        userId: context.user.id,
+        userName,
+      });
       return { status: "ok" as const };
     }),
 

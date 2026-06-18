@@ -3,6 +3,7 @@ import { type Context, Hono } from "hono";
 import { getSessionUser, hasPermission } from "../lib/auth.ts";
 import { logWarn } from "../lib/logger.ts";
 import { decryptSecret } from "../lib/secret-cipher.ts";
+import { getR2Object } from "../modules/cloudflare/r2.ts";
 import {
   downloadMediaUrl,
   updateBusinessProfile,
@@ -174,6 +175,46 @@ waCloudMediaRoutes.post("/upload", async (c) => {
     const msg = err instanceof Error ? err.message : String(err);
     logWarn("[wa-cloud.media] upload failed", { error: msg });
     return c.text(msg, 502);
+  }
+});
+
+/**
+ * Stream a saved sticker (.webp) from R2. Auth-gated like the other media
+ * routes (read on WaBusinessAccount). The durable R2 copy is private — we never
+ * expose unsigned public R2 URLs — so the picker thumbnails load through here.
+ *
+ * Registered BEFORE the `/:messageId` catch-all so "saved-sticker" is matched
+ * as a static segment, not as a message id.
+ */
+waCloudMediaRoutes.get("/saved-sticker/:id", async (c) => {
+  const session = await getSessionUser(c);
+  if (!session) return c.text("Unauthorized", 401);
+  if (!(await hasPermission(session, "read", "WaBusinessAccount"))) {
+    return c.text("Forbidden", 403);
+  }
+  const id = Number.parseInt(c.req.param("id"), 10);
+  if (!Number.isFinite(id)) return c.text("Bad id", 400);
+
+  const sticker = await db.waSavedSticker.findUnique({
+    where: { id },
+    select: { r2Key: true, mimeType: true },
+  });
+  if (!sticker) return c.text("Not found", 404);
+
+  try {
+    const obj = await getR2Object(sticker.r2Key);
+    const headers: Record<string, string> = {
+      "Content-Type": sticker.mimeType || obj.contentType || "image/webp",
+      "X-Content-Type-Options": "nosniff",
+      // Content-addressed by sha256 → immutable; safe to cache aggressively.
+      "Cache-Control": "private, max-age=86400, immutable",
+    };
+    if (obj.contentLength != null) headers["Content-Length"] = String(obj.contentLength);
+    return new Response(obj.body, { status: 200, headers });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    logWarn("[wa-cloud.saved-sticker] R2 stream failed", { id, error: msg });
+    return c.text("Sticker fetch error", 502);
   }
 });
 

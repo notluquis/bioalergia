@@ -147,6 +147,7 @@ export type WaSavedLocation = $ModelResult<$Schema, "WaSavedLocation">;
 export type WaSavedInteractiveList = $ModelResult<$Schema, "WaSavedInteractiveList">;
 export type WaSavedFlow = $ModelResult<$Schema, "WaSavedFlow">;
 export type WaSnippet = $ModelResult<$Schema, "WaSnippet">;
+export type WaSavedSticker = $ModelResult<$Schema, "WaSavedSticker">;
 export type WaAccountEvent = $ModelResult<$Schema, "WaAccountEvent">;
 export type WaBroadcast = $ModelResult<$Schema, "WaBroadcast">;
 export type WaBroadcastRecipient = $ModelResult<$Schema, "WaBroadcastRecipient">;

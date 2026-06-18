@@ -18,6 +18,7 @@ import type {
 import type { z } from "zod";
 import { DomainError } from "../lib/errors.ts";
 import { logError } from "../lib/logger.ts";
+import { emitWaEvent } from "../modules/wa-cloud/events.ts";
 import { markMessageRead } from "../modules/wa-cloud/graph-client.ts";
 
 const WINDOW_HOURS = 24;
@@ -141,7 +142,24 @@ export async function setConversationMute(payload: SetMutePayload): Promise<void
 
 // Indicador "escribiendo…": reusa el read-receipt de Meta con typing=true sobre
 // el último inbound. Best-effort (no rompe si Meta falla).
-export async function setConversationTyping(conversationId: number): Promise<void> {
+//
+// Además emite un evento `typing` en el bus SSE con la identidad del operador
+// para que la bandeja compartida muestre "Andrea está respondiendo…" y evitar
+// colisiones entre operadoras sobre la misma conversación. La cadencia la
+// controla el debounce del cliente (no agregamos throttle aquí).
+export async function setConversationTyping(
+  conversationId: number,
+  actor: { userId: number; userName: string }
+): Promise<void> {
+  // Collision hint para la bandeja compartida (otros operadores con la
+  // conversación abierta). Se emite primero porque no depende de Meta.
+  emitWaEvent(conversationId, {
+    kind: "typing",
+    ts: Date.now(),
+    userId: actor.userId,
+    userName: actor.userName,
+  });
+
   const latest = await db.waMessage.findFirst({
     where: {
       conversationId,
