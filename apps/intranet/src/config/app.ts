@@ -25,6 +25,7 @@ export const APP_CONFIG = {
     secondaryColor: "oklch(var(--s))",
     shopLowStockThreshold: "3",
     supportEmail: "contacto@bioalergia.cl",
+    reactivoLeadsEmail: "contacto@bioalergia.cl",
     tagline: "Intranet",
   },
   name: "Bioalergia",

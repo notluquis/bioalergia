@@ -24,6 +24,7 @@ export const settingsSchema = z.object({
   whatsappFreeformMessage: z.string(),
   tagline: z.string(),
   shopLowStockThreshold: z.string(),
+  reactivoLeadsEmail: z.string(),
 });
 
 export const settingsInternalSchema = z.object({

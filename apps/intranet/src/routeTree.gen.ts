@@ -46,6 +46,8 @@ import { Route as AuthedCalendarIndexRouteImport } from "./routes/_authed/calend
 import { Route as AuthedWaCloudSplatRouteImport } from "./routes/_authed/wa-cloud/$"
 import { Route as AuthedSettingsSecurityAlertsRouteImport } from "./routes/_authed/settings/security-alerts"
 import { Route as AuthedSettingsRetentionRouteImport } from "./routes/_authed/settings/retention"
+import { Route as AuthedSettingsReactivosLeadsRouteImport } from "./routes/_authed/settings/reactivos-leads"
+import { Route as AuthedSettingsReactivosCatalogRouteImport } from "./routes/_authed/settings/reactivos-catalog"
 import { Route as AuthedSettingsQuotesCatalogRouteImport } from "./routes/_authed/settings/quotes-catalog"
 import { Route as AuthedSettingsProcessingActivitiesRouteImport } from "./routes/_authed/settings/processing-activities"
 import { Route as AuthedSettingsPriceListRouteImport } from "./routes/_authed/settings/price-list"
@@ -58,6 +60,7 @@ import { Route as AuthedSettingsConsentRouteImport } from "./routes/_authed/sett
 import { Route as AuthedSettingsComplaintsRouteImport } from "./routes/_authed/settings/complaints"
 import { Route as AuthedSettingsClinicalConsentRouteImport } from "./routes/_authed/settings/clinical-consent"
 import { Route as AuthedSettingsBreachIncidentsRouteImport } from "./routes/_authed/settings/breach-incidents"
+import { Route as AuthedSettingsAllergensRouteImport } from "./routes/_authed/settings/allergens"
 import { Route as AuthedServicesAgendaRouteImport } from "./routes/_authed/services/agenda"
 import { Route as AuthedQuotesNewRouteImport } from "./routes/_authed/quotes/new"
 import { Route as AuthedQuotesIdRouteImport } from "./routes/_authed/quotes/$id"
@@ -292,6 +295,18 @@ const AuthedSettingsRetentionRoute = AuthedSettingsRetentionRouteImport.update({
   path: "/retention",
   getParentRoute: () => AuthedSettingsRoute,
 } as any)
+const AuthedSettingsReactivosLeadsRoute =
+  AuthedSettingsReactivosLeadsRouteImport.update({
+    id: "/reactivos-leads",
+    path: "/reactivos-leads",
+    getParentRoute: () => AuthedSettingsRoute,
+  } as any)
+const AuthedSettingsReactivosCatalogRoute =
+  AuthedSettingsReactivosCatalogRouteImport.update({
+    id: "/reactivos-catalog",
+    path: "/reactivos-catalog",
+    getParentRoute: () => AuthedSettingsRoute,
+  } as any)
 const AuthedSettingsQuotesCatalogRoute =
   AuthedSettingsQuotesCatalogRouteImport.update({
     id: "/quotes-catalog",
@@ -360,6 +375,11 @@ const AuthedSettingsBreachIncidentsRoute =
     path: "/breach-incidents",
     getParentRoute: () => AuthedSettingsRoute,
   } as any)
+const AuthedSettingsAllergensRoute = AuthedSettingsAllergensRouteImport.update({
+  id: "/allergens",
+  path: "/allergens",
+  getParentRoute: () => AuthedSettingsRoute,
+} as any)
 const AuthedServicesAgendaRoute = AuthedServicesAgendaRouteImport.update({
   id: "/agenda",
   path: "/agenda",
@@ -679,6 +699,7 @@ export interface FileRoutesByFullPath {
   "/quotes/$id": typeof AuthedQuotesIdRoute
   "/quotes/new": typeof AuthedQuotesNewRoute
   "/services/agenda": typeof AuthedServicesAgendaRoute
+  "/settings/allergens": typeof AuthedSettingsAllergensRoute
   "/settings/breach-incidents": typeof AuthedSettingsBreachIncidentsRoute
   "/settings/clinical-consent": typeof AuthedSettingsClinicalConsentRoute
   "/settings/complaints": typeof AuthedSettingsComplaintsRoute
@@ -691,6 +712,8 @@ export interface FileRoutesByFullPath {
   "/settings/price-list": typeof AuthedSettingsPriceListRoute
   "/settings/processing-activities": typeof AuthedSettingsProcessingActivitiesRoute
   "/settings/quotes-catalog": typeof AuthedSettingsQuotesCatalogRoute
+  "/settings/reactivos-catalog": typeof AuthedSettingsReactivosCatalogRoute
+  "/settings/reactivos-leads": typeof AuthedSettingsReactivosLeadsRoute
   "/settings/retention": typeof AuthedSettingsRetentionRoute
   "/settings/security-alerts": typeof AuthedSettingsSecurityAlertsRoute
   "/wa-cloud/$": typeof AuthedWaCloudSplatRoute
@@ -770,6 +793,7 @@ export interface FileRoutesByTo {
   "/quotes/$id": typeof AuthedQuotesIdRoute
   "/quotes/new": typeof AuthedQuotesNewRoute
   "/services/agenda": typeof AuthedServicesAgendaRoute
+  "/settings/allergens": typeof AuthedSettingsAllergensRoute
   "/settings/breach-incidents": typeof AuthedSettingsBreachIncidentsRoute
   "/settings/clinical-consent": typeof AuthedSettingsClinicalConsentRoute
   "/settings/complaints": typeof AuthedSettingsComplaintsRoute
@@ -782,6 +806,8 @@ export interface FileRoutesByTo {
   "/settings/price-list": typeof AuthedSettingsPriceListRoute
   "/settings/processing-activities": typeof AuthedSettingsProcessingActivitiesRoute
   "/settings/quotes-catalog": typeof AuthedSettingsQuotesCatalogRoute
+  "/settings/reactivos-catalog": typeof AuthedSettingsReactivosCatalogRoute
+  "/settings/reactivos-leads": typeof AuthedSettingsReactivosLeadsRoute
   "/settings/retention": typeof AuthedSettingsRetentionRoute
   "/settings/security-alerts": typeof AuthedSettingsSecurityAlertsRoute
   "/wa-cloud/$": typeof AuthedWaCloudSplatRoute
@@ -870,6 +896,7 @@ export interface FileRoutesById {
   "/_authed/quotes/$id": typeof AuthedQuotesIdRoute
   "/_authed/quotes/new": typeof AuthedQuotesNewRoute
   "/_authed/services/agenda": typeof AuthedServicesAgendaRoute
+  "/_authed/settings/allergens": typeof AuthedSettingsAllergensRoute
   "/_authed/settings/breach-incidents": typeof AuthedSettingsBreachIncidentsRoute
   "/_authed/settings/clinical-consent": typeof AuthedSettingsClinicalConsentRoute
   "/_authed/settings/complaints": typeof AuthedSettingsComplaintsRoute
@@ -882,6 +909,8 @@ export interface FileRoutesById {
   "/_authed/settings/price-list": typeof AuthedSettingsPriceListRoute
   "/_authed/settings/processing-activities": typeof AuthedSettingsProcessingActivitiesRoute
   "/_authed/settings/quotes-catalog": typeof AuthedSettingsQuotesCatalogRoute
+  "/_authed/settings/reactivos-catalog": typeof AuthedSettingsReactivosCatalogRoute
+  "/_authed/settings/reactivos-leads": typeof AuthedSettingsReactivosLeadsRoute
   "/_authed/settings/retention": typeof AuthedSettingsRetentionRoute
   "/_authed/settings/security-alerts": typeof AuthedSettingsSecurityAlertsRoute
   "/_authed/wa-cloud/$": typeof AuthedWaCloudSplatRoute
@@ -970,6 +999,7 @@ export interface FileRouteTypes {
     | "/quotes/$id"
     | "/quotes/new"
     | "/services/agenda"
+    | "/settings/allergens"
     | "/settings/breach-incidents"
     | "/settings/clinical-consent"
     | "/settings/complaints"
@@ -982,6 +1012,8 @@ export interface FileRouteTypes {
     | "/settings/price-list"
     | "/settings/processing-activities"
     | "/settings/quotes-catalog"
+    | "/settings/reactivos-catalog"
+    | "/settings/reactivos-leads"
     | "/settings/retention"
     | "/settings/security-alerts"
     | "/wa-cloud/$"
@@ -1061,6 +1093,7 @@ export interface FileRouteTypes {
     | "/quotes/$id"
     | "/quotes/new"
     | "/services/agenda"
+    | "/settings/allergens"
     | "/settings/breach-incidents"
     | "/settings/clinical-consent"
     | "/settings/complaints"
@@ -1073,6 +1106,8 @@ export interface FileRouteTypes {
     | "/settings/price-list"
     | "/settings/processing-activities"
     | "/settings/quotes-catalog"
+    | "/settings/reactivos-catalog"
+    | "/settings/reactivos-leads"
     | "/settings/retention"
     | "/settings/security-alerts"
     | "/wa-cloud/$"
@@ -1160,6 +1195,7 @@ export interface FileRouteTypes {
     | "/_authed/quotes/$id"
     | "/_authed/quotes/new"
     | "/_authed/services/agenda"
+    | "/_authed/settings/allergens"
     | "/_authed/settings/breach-incidents"
     | "/_authed/settings/clinical-consent"
     | "/_authed/settings/complaints"
@@ -1172,6 +1208,8 @@ export interface FileRouteTypes {
     | "/_authed/settings/price-list"
     | "/_authed/settings/processing-activities"
     | "/_authed/settings/quotes-catalog"
+    | "/_authed/settings/reactivos-catalog"
+    | "/_authed/settings/reactivos-leads"
     | "/_authed/settings/retention"
     | "/_authed/settings/security-alerts"
     | "/_authed/wa-cloud/$"
@@ -1473,6 +1511,20 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof AuthedSettingsRetentionRouteImport
       parentRoute: typeof AuthedSettingsRoute
     }
+    "/_authed/settings/reactivos-leads": {
+      id: "/_authed/settings/reactivos-leads"
+      path: "/reactivos-leads"
+      fullPath: "/settings/reactivos-leads"
+      preLoaderRoute: typeof AuthedSettingsReactivosLeadsRouteImport
+      parentRoute: typeof AuthedSettingsRoute
+    }
+    "/_authed/settings/reactivos-catalog": {
+      id: "/_authed/settings/reactivos-catalog"
+      path: "/reactivos-catalog"
+      fullPath: "/settings/reactivos-catalog"
+      preLoaderRoute: typeof AuthedSettingsReactivosCatalogRouteImport
+      parentRoute: typeof AuthedSettingsRoute
+    }
     "/_authed/settings/quotes-catalog": {
       id: "/_authed/settings/quotes-catalog"
       path: "/quotes-catalog"
@@ -1555,6 +1607,13 @@ declare module "@tanstack/react-router" {
       path: "/breach-incidents"
       fullPath: "/settings/breach-incidents"
       preLoaderRoute: typeof AuthedSettingsBreachIncidentsRouteImport
+      parentRoute: typeof AuthedSettingsRoute
+    }
+    "/_authed/settings/allergens": {
+      id: "/_authed/settings/allergens"
+      path: "/allergens"
+      fullPath: "/settings/allergens"
+      preLoaderRoute: typeof AuthedSettingsAllergensRouteImport
       parentRoute: typeof AuthedSettingsRoute
     }
     "/_authed/services/agenda": {
@@ -2074,6 +2133,7 @@ const AuthedServicesRouteWithChildren = AuthedServicesRoute._addFileChildren(
 )
 
 interface AuthedSettingsRouteChildren {
+  AuthedSettingsAllergensRoute: typeof AuthedSettingsAllergensRoute
   AuthedSettingsBreachIncidentsRoute: typeof AuthedSettingsBreachIncidentsRoute
   AuthedSettingsClinicalConsentRoute: typeof AuthedSettingsClinicalConsentRoute
   AuthedSettingsComplaintsRoute: typeof AuthedSettingsComplaintsRoute
@@ -2086,12 +2146,15 @@ interface AuthedSettingsRouteChildren {
   AuthedSettingsPriceListRoute: typeof AuthedSettingsPriceListRoute
   AuthedSettingsProcessingActivitiesRoute: typeof AuthedSettingsProcessingActivitiesRoute
   AuthedSettingsQuotesCatalogRoute: typeof AuthedSettingsQuotesCatalogRoute
+  AuthedSettingsReactivosCatalogRoute: typeof AuthedSettingsReactivosCatalogRoute
+  AuthedSettingsReactivosLeadsRoute: typeof AuthedSettingsReactivosLeadsRoute
   AuthedSettingsRetentionRoute: typeof AuthedSettingsRetentionRoute
   AuthedSettingsSecurityAlertsRoute: typeof AuthedSettingsSecurityAlertsRoute
   AuthedSettingsIndexRoute: typeof AuthedSettingsIndexRoute
 }
 
 const AuthedSettingsRouteChildren: AuthedSettingsRouteChildren = {
+  AuthedSettingsAllergensRoute: AuthedSettingsAllergensRoute,
   AuthedSettingsBreachIncidentsRoute: AuthedSettingsBreachIncidentsRoute,
   AuthedSettingsClinicalConsentRoute: AuthedSettingsClinicalConsentRoute,
   AuthedSettingsComplaintsRoute: AuthedSettingsComplaintsRoute,
@@ -2105,6 +2168,8 @@ const AuthedSettingsRouteChildren: AuthedSettingsRouteChildren = {
   AuthedSettingsProcessingActivitiesRoute:
     AuthedSettingsProcessingActivitiesRoute,
   AuthedSettingsQuotesCatalogRoute: AuthedSettingsQuotesCatalogRoute,
+  AuthedSettingsReactivosCatalogRoute: AuthedSettingsReactivosCatalogRoute,
+  AuthedSettingsReactivosLeadsRoute: AuthedSettingsReactivosLeadsRoute,
   AuthedSettingsRetentionRoute: AuthedSettingsRetentionRoute,
   AuthedSettingsSecurityAlertsRoute: AuthedSettingsSecurityAlertsRoute,
   AuthedSettingsIndexRoute: AuthedSettingsIndexRoute,

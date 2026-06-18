@@ -19,6 +19,7 @@ export const primaryNav: NavLink[] = [
   { label: "Aprende", href: "/aprende" },
   { label: "Noticias", href: "/noticias" },
   { label: "Equipo", href: "/equipo" },
+  { label: "Venta empresas", href: "/venta-empresas" },
   { label: "Contacto", href: "/#contacto" },
   { label: "Tienda", href: "/tienda", accent: true },
   { label: "Mi cuenta", href: "/mi-cuenta", accent: true },

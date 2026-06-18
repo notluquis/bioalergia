@@ -82,6 +82,13 @@ export const quoteProductSchema = z.object({
   unitPrice: z.number(),
   isActive: z.boolean(),
   sortOrder: z.number().int(),
+  // Campos de vitrina B2B (página pública /venta-empresas).
+  slug: z.string().nullable(),
+  description: z.string().nullable(),
+  imageUrl: z.string().nullable(),
+  publishedOnSite: z.boolean(),
+  seoDescription: z.string().nullable(),
+  allergenId: z.string().nullable(),
 });
 
 export const createQuoteProductInputSchema = z.object({
@@ -93,6 +100,12 @@ export const createQuoteProductInputSchema = z.object({
   unitPrice: z.number().min(0),
   isActive: z.boolean().default(true),
   sortOrder: z.number().int().min(0).default(0),
+  slug: z.string().nullable().optional(),
+  description: z.string().nullable().optional(),
+  imageUrl: z.string().url().nullable().optional(),
+  publishedOnSite: z.boolean().default(false),
+  seoDescription: z.string().nullable().optional(),
+  allergenId: z.string().nullable().optional(),
 });
 
 export const updateQuoteProductInputSchema = createQuoteProductInputSchema.partial().extend({

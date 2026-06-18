@@ -381,6 +381,18 @@
       "import": "./dist/quotes.js",
       "default": "./dist/quotes.js"
     },
+    "./reactivos": {
+      "development": "./src/reactivos.ts",
+      "types": "./dist/reactivos.d.ts",
+      "import": "./dist/reactivos.js",
+      "default": "./dist/reactivos.js"
+    },
+    "./clinical-allergens": {
+      "development": "./src/clinical-allergens.ts",
+      "types": "./dist/clinical-allergens.d.ts",
+      "import": "./dist/clinical-allergens.js",
+      "default": "./dist/clinical-allergens.js"
+    },
     "./roles": {
       "development": "./src/roles.ts",
       "types": "./dist/roles.d.ts",

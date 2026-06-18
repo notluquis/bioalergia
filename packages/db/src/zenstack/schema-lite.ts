@@ -5848,6 +5848,12 @@ export class SchemaType implements SchemaDef {
                     type: "ExamReportReaction",
                     array: true,
                     relation: { opposite: "allergen" }
+                },
+                reactivos: {
+                    name: "reactivos",
+                    type: "QuoteProduct",
+                    array: true,
+                    relation: { opposite: "allergen", name: "QuoteProductAllergen" }
                 }
             },
             idFields: ["id"],
@@ -9028,6 +9034,40 @@ export class SchemaType implements SchemaDef {
                     type: "Int",
                     default: 0 as FieldDefault
                 },
+                slug: {
+                    name: "slug",
+                    type: "String",
+                    unique: true,
+                    optional: true
+                },
+                description: {
+                    name: "description",
+                    type: "String",
+                    optional: true
+                },
+                imageUrl: {
+                    name: "imageUrl",
+                    type: "String",
+                    optional: true
+                },
+                publishedOnSite: {
+                    name: "publishedOnSite",
+                    type: "Boolean",
+                    default: false as FieldDefault
+                },
+                seoDescription: {
+                    name: "seoDescription",
+                    type: "String",
+                    optional: true
+                },
+                allergenId: {
+                    name: "allergenId",
+                    type: "String",
+                    optional: true,
+                    foreignKeyFor: [
+                        "allergen"
+                    ] as readonly string[]
+                },
                 createdAt: {
                     name: "createdAt",
                     type: "DateTime",
@@ -9044,11 +9084,18 @@ export class SchemaType implements SchemaDef {
                     type: "QuoteItem",
                     array: true,
                     relation: { opposite: "product" }
+                },
+                allergen: {
+                    name: "allergen",
+                    type: "ClinicalAllergen",
+                    optional: true,
+                    relation: { opposite: "reactivos", name: "QuoteProductAllergen", fields: ["allergenId"], references: ["id"], onDelete: "SetNull" }
                 }
             },
             idFields: ["id"],
             uniqueFields: {
-                id: { type: "Int" }
+                id: { type: "Int" },
+                slug: { type: "String" }
             }
         },
         Quote: {
@@ -9267,6 +9314,75 @@ export class SchemaType implements SchemaDef {
                     type: "QuoteProduct",
                     optional: true,
                     relation: { opposite: "items", fields: ["productId"], references: ["id"], onDelete: "SetNull" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" }
+            }
+        },
+        ReactivoLead: {
+            name: "ReactivoLead",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                empresa: {
+                    name: "empresa",
+                    type: "String"
+                },
+                contactName: {
+                    name: "contactName",
+                    type: "String"
+                },
+                email: {
+                    name: "email",
+                    type: "String"
+                },
+                phone: {
+                    name: "phone",
+                    type: "String",
+                    optional: true
+                },
+                rut: {
+                    name: "rut",
+                    type: "String",
+                    optional: true
+                },
+                message: {
+                    name: "message",
+                    type: "String",
+                    optional: true
+                },
+                productsOfInterest: {
+                    name: "productsOfInterest",
+                    type: "String",
+                    array: true,
+                    default: [] as FieldDefault
+                },
+                status: {
+                    name: "status",
+                    type: "ReactivoLeadStatus",
+                    default: "NUEVO" as FieldDefault
+                },
+                source: {
+                    name: "source",
+                    type: "String",
+                    default: "venta-empresas" as FieldDefault
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now") as FieldDefault
                 }
             },
             idFields: ["id"],
@@ -16317,6 +16433,15 @@ export class SchemaType implements SchemaDef {
                 ACCEPTED: "ACCEPTED",
                 REJECTED: "REJECTED",
                 EXPIRED: "EXPIRED"
+            }
+        },
+        ReactivoLeadStatus: {
+            name: "ReactivoLeadStatus",
+            values: {
+                NUEVO: "NUEVO",
+                CONTACTADO: "CONTACTADO",
+                COTIZADO: "COTIZADO",
+                CERRADO: "CERRADO"
             }
         },
         DTEType: {

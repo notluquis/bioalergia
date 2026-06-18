@@ -102,6 +102,63 @@ export async function sendMagicLinkEmail(args: {
   });
 }
 
+function esc(s: string): string {
+  return s.replace(
+    /[&<>"']/g,
+    (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c] ?? c
+  );
+}
+
+/**
+ * #5 — Lead B2B de reactivos: avisa al equipo (interno, sin unsubscribe) que
+ * llegó una solicitud desde la vitrina pública /venta-empresas. Los datos vienen
+ * del formulario público → se escapan al renderizar el HTML.
+ */
+export async function sendReactivoLeadNotification(args: {
+  to: string;
+  lead: {
+    id: number;
+    empresa: string;
+    contactName: string;
+    email: string;
+    phone: string | null;
+    rut: string | null;
+    message: string | null;
+    productsOfInterest: string[];
+  };
+}): Promise<EmailSendResult> {
+  const l = args.lead;
+  const rows: Array<[string, string]> = [
+    ["Empresa", l.empresa],
+    ["Contacto", l.contactName],
+    ["Email", l.email],
+    ["Teléfono", l.phone || "—"],
+    ["RUT", l.rut || "—"],
+    ["Productos de interés", l.productsOfInterest.length ? l.productsOfInterest.join(", ") : "—"],
+    ["Mensaje", l.message || "—"],
+  ];
+  const tableRows = rows
+    .map(
+      ([k, v]) =>
+        `<tr><td style="padding:6px 12px;color:#6b7280;vertical-align:top;white-space:nowrap">${k}</td><td style="padding:6px 12px;font-weight:500">${esc(v)}</td></tr>`
+    )
+    .join("");
+  const html = shell(
+    "Nuevo lead de reactivos",
+    `<p>Llegó una solicitud desde la vitrina de venta a empresas:</p>
+     <table style="border-collapse:collapse;width:100%;background:#f9fafb;border-radius:8px">${tableRows}</table>
+     <p style="margin-top:16px"><a href="${appUrl()}/settings/reactivos-leads" style="color:#0e64b7">Ver en la bandeja de leads</a></p>`
+  );
+  const text = rows.map(([k, v]) => `${k}: ${v}`).join("\n");
+  return sendEmail({
+    to: args.to,
+    subject: `Nuevo lead de reactivos — ${l.empresa}`,
+    html,
+    text,
+    idempotencyKey: `reactivolead/${l.id}`,
+  });
+}
+
 /**
  * #2 — Honorarios: send the monthly summary email with the PDF attached.
  */
