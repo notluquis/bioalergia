@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { requirePermission } from "@/lib/authz/route-guards";
 
-import { Supplies } from "@/features/operations/supplies/pages/SuppliesPage";
+import { Supplies } from "@/features/supplies/pages/SuppliesPage";
 
 export const Route = createFileRoute("/_authed/operations/supplies")({
   staticData: {

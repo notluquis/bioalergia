@@ -1,19 +1,8 @@
 import { z } from "zod";
-import type { timesheetEntrySchema } from "@finanzas/orpc-contracts/timesheets";
 import { zDateString } from "@/lib/api-validate";
 import { timesheetsORPCClient, toTimesheetsApiError } from "../timesheets/orpc";
+import { TimesheetEntrySchema, normalizeTimesheetEntries } from "../timesheets/schemas";
 import type { TimesheetEntry } from "../timesheets/types";
-
-const TimesheetEntrySchema = z.looseObject({
-  comment: z.string().nullable(),
-  employee_id: z.number(),
-  end_time: z.string().nullable(),
-  id: z.number(),
-  overtime_minutes: z.number(),
-  start_time: z.string().nullable(),
-  work_date: zDateString,
-  worked_minutes: z.number(),
-});
 
 const EmployeeTimesheetsResponseSchema = z.object({
   entries: z.array(TimesheetEntrySchema),
@@ -58,21 +47,6 @@ const SalarySummarySchema = z.object({
   status: z.literal("ok"),
   to: zDateString,
 });
-
-type TimesheetEntryTransport = z.infer<typeof timesheetEntrySchema>;
-
-function normalizeTimesheetEntry(entry: TimesheetEntryTransport) {
-  const workDate = entry.work_date;
-  return {
-    ...entry,
-    work_date:
-      workDate instanceof Date ? workDate.toISOString().slice(0, 10) : (workDate as string),
-  };
-}
-
-function normalizeTimesheetEntries(entries: TimesheetEntryTransport[]) {
-  return entries.map((entry) => normalizeTimesheetEntry(entry));
-}
 
 export async function fetchEmployeeTimesheets(
   employeeId: number,
