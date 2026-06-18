@@ -2,10 +2,7 @@ import { formatChile } from "@/lib/dates";
 import {
   Alert,
   Button,
-  Calendar,
   Checkbox,
-  DateField,
-  DatePicker,
   FieldError,
   Form,
   Input as HeroInput,
@@ -18,13 +15,13 @@ import {
   TextArea,
   TextField,
 } from "@heroui/react";
-import { parseDate } from "@internationalized/date";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useForm, useStore } from "@tanstack/react-form";
 import { Plus, Trash2 } from "lucide-react";
 import type React from "react";
 import { useMemo, useState } from "react";
 import { z } from "zod";
+import { AppDatePicker } from "@/components/forms/AppDatePicker";
 import {
   createCounterpart,
   type CounterpartUpsertPayload,
@@ -181,60 +178,6 @@ function LoanMoneyField({
         <NumberField.Input />
       </NumberField.Group>
     </NumberField>
-  );
-}
-
-function LoanDateField({
-  label,
-  onChange,
-  value,
-}: {
-  label: string;
-  onChange: (value: string) => void;
-  value: string;
-}) {
-  return (
-    <DatePicker
-      onChange={(next) => {
-        onChange(next?.toString() ?? "");
-      }}
-      value={value ? parseDate(value) : undefined}
-    >
-      <Label>{label}</Label>
-      <DateField.Group>
-        <DateField.InputContainer>
-          <DateField.Input>{(segment) => <DateField.Segment segment={segment} />}</DateField.Input>
-        </DateField.InputContainer>
-        <DateField.Suffix>
-          <DatePicker.Trigger>
-            <DatePicker.TriggerIndicator />
-          </DatePicker.Trigger>
-        </DateField.Suffix>
-      </DateField.Group>
-      <DatePicker.Popover>
-        <Calendar aria-label={label}>
-          <Calendar.Header>
-            <Calendar.YearPickerTrigger>
-              <Calendar.YearPickerTriggerHeading />
-              <Calendar.YearPickerTriggerIndicator />
-            </Calendar.YearPickerTrigger>
-            <Calendar.NavButton slot="previous" />
-            <Calendar.NavButton slot="next" />
-          </Calendar.Header>
-          <Calendar.Grid>
-            <Calendar.GridHeader>
-              {(day) => <Calendar.HeaderCell>{day}</Calendar.HeaderCell>}
-            </Calendar.GridHeader>
-            <Calendar.GridBody>{(date) => <Calendar.Cell date={date} />}</Calendar.GridBody>
-          </Calendar.Grid>
-          <Calendar.YearPickerGrid>
-            <Calendar.YearPickerGridBody>
-              {({ year }) => <Calendar.YearPickerCell year={year} />}
-            </Calendar.YearPickerGridBody>
-          </Calendar.YearPickerGrid>
-        </Calendar>
-      </DatePicker.Popover>
-    </DatePicker>
   );
 }
 
@@ -765,57 +708,21 @@ export function LoanForm({ onCancel, onSubmit, onSubmitStructured }: LoanFormPro
 
           <form.Field name="startDate">
             {(field) => (
-              <DatePicker
+              <AppDatePicker
+                label="Fecha de Inicio"
                 isInvalid={field.state.meta.errors.length > 0}
                 isRequired
                 onBlur={field.handleBlur}
                 onChange={(value) => {
-                  field.handleChange(value?.toString() ?? "");
+                  field.handleChange(value);
                 }}
-                value={field.state.value ? parseDate(field.state.value) : undefined}
-              >
-                <Label>Fecha de Inicio</Label>
-                <DateField.Group>
-                  <DateField.InputContainer>
-                    <DateField.Input>
-                      {(segment) => <DateField.Segment segment={segment} />}
-                    </DateField.Input>
-                  </DateField.InputContainer>
-                  <DateField.Suffix>
-                    <DatePicker.Trigger>
-                      <DatePicker.TriggerIndicator />
-                    </DatePicker.Trigger>
-                  </DateField.Suffix>
-                </DateField.Group>
-                {field.state.meta.errors.length > 0 && (
-                  <FieldError>{formatErrors(field.state.meta.errors)}</FieldError>
-                )}
-                <DatePicker.Popover>
-                  <Calendar aria-label="Fecha de inicio">
-                    <Calendar.Header>
-                      <Calendar.YearPickerTrigger>
-                        <Calendar.YearPickerTriggerHeading />
-                        <Calendar.YearPickerTriggerIndicator />
-                      </Calendar.YearPickerTrigger>
-                      <Calendar.NavButton slot="previous" />
-                      <Calendar.NavButton slot="next" />
-                    </Calendar.Header>
-                    <Calendar.Grid>
-                      <Calendar.GridHeader>
-                        {(day) => <Calendar.HeaderCell>{day}</Calendar.HeaderCell>}
-                      </Calendar.GridHeader>
-                      <Calendar.GridBody>
-                        {(date) => <Calendar.Cell date={date} />}
-                      </Calendar.GridBody>
-                    </Calendar.Grid>
-                    <Calendar.YearPickerGrid>
-                      <Calendar.YearPickerGridBody>
-                        {({ year }) => <Calendar.YearPickerCell year={year} />}
-                      </Calendar.YearPickerGridBody>
-                    </Calendar.YearPickerGrid>
-                  </Calendar>
-                </DatePicker.Popover>
-              </DatePicker>
+                value={field.state.value}
+                errorMessage={
+                  field.state.meta.errors.length > 0
+                    ? formatErrors(field.state.meta.errors)
+                    : undefined
+                }
+              />
             )}
           </form.Field>
 
@@ -1076,7 +983,7 @@ export function LoanForm({ onCancel, onSubmit, onSubmitStructured }: LoanFormPro
                             #{installmentIndex + 1}
                           </span>
                         </div>
-                        <LoanDateField
+                        <AppDatePicker
                           label="Vencimiento"
                           onChange={(value) =>
                             updateInstallment(installment.id, { dueDate: value })
@@ -1189,7 +1096,7 @@ export function LoanForm({ onCancel, onSubmit, onSubmitStructured }: LoanFormPro
                                   </ListBox>
                                 </Select.Popover>
                               </Select>
-                              <LoanDateField
+                              <AppDatePicker
                                 label="Fecha pago"
                                 onChange={(value) =>
                                   updatePayment(installment.id, payment.id, { paidDate: value })

@@ -1,20 +1,11 @@
 import { formatChile } from "@/lib/dates";
-import {
-  Button,
-  Calendar,
-  Card,
-  DateField,
-  DatePicker,
-  FieldError,
-  Form,
-  Label,
-} from "@heroui/react";
-import { parseDate } from "@internationalized/date";
+import { Button, Card, Form } from "@heroui/react";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { ChevronLeft, Save } from "lucide-react";
 import { z } from "zod";
+import { AppDatePicker } from "@/components/forms/AppDatePicker";
 import { TanStackTextAreaField } from "@/components/forms/TanStackFieldControls";
 import { createPatientConsultation } from "@/features/patients/api";
 import { PAGE_CONTAINER } from "@/lib/styles";
@@ -103,56 +94,20 @@ function NewConsultationPage() {
             <div className="grid gap-4 sm:grid-cols-2">
               <form.Field name="date">
                 {(field) => (
-                  <DatePicker
+                  <AppDatePicker
+                    label="Fecha de Atención"
                     isInvalid={field.state.meta.errors.length > 0}
                     onBlur={field.handleBlur}
                     onChange={(value) => {
-                      field.handleChange(value?.toString() ?? "");
+                      field.handleChange(value);
                     }}
-                    value={field.state.value ? parseDate(field.state.value) : undefined}
-                  >
-                    <Label>Fecha de Atención</Label>
-                    <DateField.Group>
-                      <DateField.InputContainer>
-                        <DateField.Input>
-                          {(segment) => <DateField.Segment segment={segment} />}
-                        </DateField.Input>
-                      </DateField.InputContainer>
-                      <DateField.Suffix>
-                        <DatePicker.Trigger>
-                          <DatePicker.TriggerIndicator />
-                        </DatePicker.Trigger>
-                      </DateField.Suffix>
-                    </DateField.Group>
-                    {field.state.meta.errors.length > 0 && (
-                      <FieldError>{field.state.meta.errors.join(", ")}</FieldError>
-                    )}
-                    <DatePicker.Popover>
-                      <Calendar aria-label="Fecha de atención">
-                        <Calendar.Header>
-                          <Calendar.YearPickerTrigger>
-                            <Calendar.YearPickerTriggerHeading />
-                            <Calendar.YearPickerTriggerIndicator />
-                          </Calendar.YearPickerTrigger>
-                          <Calendar.NavButton slot="previous" />
-                          <Calendar.NavButton slot="next" />
-                        </Calendar.Header>
-                        <Calendar.Grid>
-                          <Calendar.GridHeader>
-                            {(day) => <Calendar.HeaderCell>{day}</Calendar.HeaderCell>}
-                          </Calendar.GridHeader>
-                          <Calendar.GridBody>
-                            {(date) => <Calendar.Cell date={date} />}
-                          </Calendar.GridBody>
-                        </Calendar.Grid>
-                        <Calendar.YearPickerGrid>
-                          <Calendar.YearPickerGridBody>
-                            {({ year }) => <Calendar.YearPickerCell year={year} />}
-                          </Calendar.YearPickerGridBody>
-                        </Calendar.YearPickerGrid>
-                      </Calendar>
-                    </DatePicker.Popover>
-                  </DatePicker>
+                    value={field.state.value}
+                    errorMessage={
+                      field.state.meta.errors.length > 0
+                        ? field.state.meta.errors.join(", ")
+                        : undefined
+                    }
+                  />
                 )}
               </form.Field>
             </div>

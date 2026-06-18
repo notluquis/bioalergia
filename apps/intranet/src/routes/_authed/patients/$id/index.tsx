@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { fetchPatient } from "@/features/patients/api";
+import { patientKeys } from "@/features/patients/queries";
 import { PatientDetailsPage } from "@/features/patients/pages/PatientDetailPage";
 
 type Patient = Awaited<ReturnType<typeof fetchPatient>>;
@@ -15,7 +16,7 @@ export const Route = createFileRoute("/_authed/patients/$id/")({
   },
   loader: async ({ context: { queryClient }, params: { id } }) => {
     return await queryClient.ensureQueryData({
-      queryKey: ["patient", id],
+      queryKey: patientKeys.detail(id),
       queryFn: async () => fetchPatient(Number(id)),
     });
   },

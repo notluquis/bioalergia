@@ -1,16 +1,7 @@
-import {
-  Alert,
-  Card,
-  Chip,
-  DateField,
-  DateRangePicker,
-  Label,
-  RangeCalendar,
-  Skeleton,
-} from "@heroui/react";
-import { parseDate } from "@internationalized/date";
+import { Alert, Card, Chip, Skeleton } from "@heroui/react";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
+import { AppDateRangePicker } from "@/components/forms/AppDatePicker";
 import { chileDay, diffDays, endOfMonth, formatChile, startOfMonth } from "@/lib/dates";
 import { fetchCalendarDaily } from "@/features/calendar/api";
 
@@ -67,52 +58,20 @@ export function DailyIncomePage() {
   return (
     <div className="space-y-6 p-6 md:p-8">
       <div className="flex justify-end">
-        <DateRangePicker
+        <AppDateRangePicker
+          aria-label="Rango de fechas"
           className="w-full max-w-sm"
-          onChange={(value) => {
-            if (!value) {
+          visibleMonths={2}
+          startValue={from}
+          endValue={to}
+          onChange={(start, end) => {
+            if (!start || !end) {
               return;
             }
-            setFrom(value.start.toString());
-            setTo(value.end.toString());
+            setFrom(start);
+            setTo(end);
           }}
-          value={from && to ? { end: parseDate(to), start: parseDate(from) } : undefined}
-        >
-          <Label className="sr-only">Rango de fechas</Label>
-          <DateField.Group>
-            <DateField.InputContainer>
-              <DateField.Input slot="start">
-                {(segment) => <DateField.Segment segment={segment} />}
-              </DateField.Input>
-              <DateRangePicker.RangeSeparator />
-              <DateField.Input slot="end">
-                {(segment) => <DateField.Segment segment={segment} />}
-              </DateField.Input>
-            </DateField.InputContainer>
-            <DateField.Suffix>
-              <DateRangePicker.Trigger>
-                <DateRangePicker.TriggerIndicator />
-              </DateRangePicker.Trigger>
-            </DateField.Suffix>
-          </DateField.Group>
-          <DateRangePicker.Popover>
-            <RangeCalendar visibleDuration={{ months: 2 }}>
-              <RangeCalendar.Header>
-                <RangeCalendar.Heading />
-                <RangeCalendar.NavButton slot="previous" />
-                <RangeCalendar.NavButton slot="next" />
-              </RangeCalendar.Header>
-              <RangeCalendar.Grid>
-                <RangeCalendar.GridHeader>
-                  {(day) => <RangeCalendar.HeaderCell>{day}</RangeCalendar.HeaderCell>}
-                </RangeCalendar.GridHeader>
-                <RangeCalendar.GridBody>
-                  {(date) => <RangeCalendar.Cell date={date} />}
-                </RangeCalendar.GridBody>
-              </RangeCalendar.Grid>
-            </RangeCalendar>
-          </DateRangePicker.Popover>
-        </DateRangePicker>
+        />
       </div>
 
       <div className="space-y-4">

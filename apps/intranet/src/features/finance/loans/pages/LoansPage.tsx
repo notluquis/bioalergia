@@ -2,9 +2,6 @@ import { formatChile } from "@/lib/dates";
 import {
   Alert,
   Button,
-  Calendar,
-  DateField,
-  DatePicker,
   Form,
   Input,
   Label,
@@ -14,11 +11,11 @@ import {
   TextArea,
   TextField,
 } from "@heroui/react";
-import { parseDate } from "@internationalized/date";
 import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { getRouteApi } from "@tanstack/react-router";
 import type { ChangeEvent } from "react";
 import { Suspense, useEffect, useMemo, useState } from "react";
+import { AppDatePicker } from "@/components/forms/AppDatePicker";
 import { AppModal } from "@/components/ui/AppModal";
 import { confirmAction } from "@/components/ui/ConfirmDialog";
 import { useAuth } from "@/features/auth/hooks/use-auth";
@@ -794,49 +791,13 @@ export function LoansPage() {
               </Select.Popover>
             </Select>
 
-            <DatePicker
+            <AppDatePicker
+              label="Fecha de inicio"
               onChange={(value) => {
-                setEditForm((prev) => ({ ...prev, startDate: value?.toString() ?? "" }));
+                setEditForm((prev) => ({ ...prev, startDate: value }));
               }}
-              value={editForm.startDate ? parseDate(editForm.startDate) : undefined}
-            >
-              <Label>Fecha de inicio</Label>
-              <DateField.Group>
-                <DateField.InputContainer>
-                  <DateField.Input>
-                    {(segment) => <DateField.Segment segment={segment} />}
-                  </DateField.Input>
-                </DateField.InputContainer>
-                <DateField.Suffix>
-                  <DatePicker.Trigger>
-                    <DatePicker.TriggerIndicator />
-                  </DatePicker.Trigger>
-                </DateField.Suffix>
-              </DateField.Group>
-              <DatePicker.Popover>
-                <Calendar aria-label="Fecha de inicio del préstamo">
-                  <Calendar.Header>
-                    <Calendar.YearPickerTrigger>
-                      <Calendar.YearPickerTriggerHeading />
-                      <Calendar.YearPickerTriggerIndicator />
-                    </Calendar.YearPickerTrigger>
-                    <Calendar.NavButton slot="previous" />
-                    <Calendar.NavButton slot="next" />
-                  </Calendar.Header>
-                  <Calendar.Grid>
-                    <Calendar.GridHeader>
-                      {(day) => <Calendar.HeaderCell>{day}</Calendar.HeaderCell>}
-                    </Calendar.GridHeader>
-                    <Calendar.GridBody>{(date) => <Calendar.Cell date={date} />}</Calendar.GridBody>
-                  </Calendar.Grid>
-                  <Calendar.YearPickerGrid>
-                    <Calendar.YearPickerGridBody>
-                      {({ year }) => <Calendar.YearPickerCell year={year} />}
-                    </Calendar.YearPickerGridBody>
-                  </Calendar.YearPickerGrid>
-                </Calendar>
-              </DatePicker.Popover>
-            </DatePicker>
+              value={editForm.startDate}
+            />
 
             <TextField className="md:col-span-2">
               <Label>Notas</Label>
@@ -897,50 +858,14 @@ export function LoansPage() {
             }}
             validationBehavior="aria"
           >
-            <DatePicker
+            <AppDatePicker
+              label="Vencimiento"
               isRequired
               onChange={(value) => {
-                setScheduleEditForm((prev) => ({ ...prev, dueDate: value?.toString() ?? "" }));
+                setScheduleEditForm((prev) => ({ ...prev, dueDate: value }));
               }}
-              value={scheduleEditForm.dueDate ? parseDate(scheduleEditForm.dueDate) : undefined}
-            >
-              <Label>Vencimiento</Label>
-              <DateField.Group>
-                <DateField.InputContainer>
-                  <DateField.Input>
-                    {(segment) => <DateField.Segment segment={segment} />}
-                  </DateField.Input>
-                </DateField.InputContainer>
-                <DateField.Suffix>
-                  <DatePicker.Trigger>
-                    <DatePicker.TriggerIndicator />
-                  </DatePicker.Trigger>
-                </DateField.Suffix>
-              </DateField.Group>
-              <DatePicker.Popover>
-                <Calendar aria-label="Vencimiento de cuota">
-                  <Calendar.Header>
-                    <Calendar.YearPickerTrigger>
-                      <Calendar.YearPickerTriggerHeading />
-                      <Calendar.YearPickerTriggerIndicator />
-                    </Calendar.YearPickerTrigger>
-                    <Calendar.NavButton slot="previous" />
-                    <Calendar.NavButton slot="next" />
-                  </Calendar.Header>
-                  <Calendar.Grid>
-                    <Calendar.GridHeader>
-                      {(day) => <Calendar.HeaderCell>{day}</Calendar.HeaderCell>}
-                    </Calendar.GridHeader>
-                    <Calendar.GridBody>{(date) => <Calendar.Cell date={date} />}</Calendar.GridBody>
-                  </Calendar.Grid>
-                  <Calendar.YearPickerGrid>
-                    <Calendar.YearPickerGridBody>
-                      {({ year }) => <Calendar.YearPickerCell year={year} />}
-                    </Calendar.YearPickerGridBody>
-                  </Calendar.YearPickerGrid>
-                </Calendar>
-              </DatePicker.Popover>
-            </DatePicker>
+              value={scheduleEditForm.dueDate}
+            />
 
             <NumberField
               isRequired
@@ -1175,53 +1100,17 @@ export function LoansPage() {
               </NumberField.Group>
             </NumberField>
 
-            <DatePicker
+            <AppDatePicker
+              label="Fecha de pago"
               isRequired
               onChange={(value) => {
                 setPaymentForm((prev) => ({
                   ...prev,
-                  paidDate: value?.toString() ?? "",
+                  paidDate: value,
                 }));
               }}
-              value={paymentForm.paidDate ? parseDate(paymentForm.paidDate) : undefined}
-            >
-              <Label>Fecha de pago</Label>
-              <DateField.Group>
-                <DateField.InputContainer>
-                  <DateField.Input>
-                    {(segment) => <DateField.Segment segment={segment} />}
-                  </DateField.Input>
-                </DateField.InputContainer>
-                <DateField.Suffix>
-                  <DatePicker.Trigger>
-                    <DatePicker.TriggerIndicator />
-                  </DatePicker.Trigger>
-                </DateField.Suffix>
-              </DateField.Group>
-              <DatePicker.Popover>
-                <Calendar aria-label="Fecha de pago">
-                  <Calendar.Header>
-                    <Calendar.YearPickerTrigger>
-                      <Calendar.YearPickerTriggerHeading />
-                      <Calendar.YearPickerTriggerIndicator />
-                    </Calendar.YearPickerTrigger>
-                    <Calendar.NavButton slot="previous" />
-                    <Calendar.NavButton slot="next" />
-                  </Calendar.Header>
-                  <Calendar.Grid>
-                    <Calendar.GridHeader>
-                      {(day) => <Calendar.HeaderCell>{day}</Calendar.HeaderCell>}
-                    </Calendar.GridHeader>
-                    <Calendar.GridBody>{(date) => <Calendar.Cell date={date} />}</Calendar.GridBody>
-                  </Calendar.Grid>
-                  <Calendar.YearPickerGrid>
-                    <Calendar.YearPickerGridBody>
-                      {({ year }) => <Calendar.YearPickerCell year={year} />}
-                    </Calendar.YearPickerGridBody>
-                  </Calendar.YearPickerGrid>
-                </Calendar>
-              </DatePicker.Popover>
-            </DatePicker>
+              value={paymentForm.paidDate}
+            />
 
             <TextField>
               <Label>Nota</Label>

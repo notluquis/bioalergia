@@ -1,9 +1,6 @@
 import { formatChile } from "@/lib/dates";
 import {
   Button,
-  Calendar,
-  DateField,
-  DatePicker,
   FieldError,
   Input,
   Label,
@@ -12,11 +9,11 @@ import {
   Select,
   TextField,
 } from "@heroui/react";
-import { parseDate } from "@internationalized/date";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { PlusIcon } from "lucide-react";
 import { useState } from "react";
+import { AppDatePicker } from "@/components/forms/AppDatePicker";
 import { AppModal } from "@/components/ui/AppModal";
 import { toast } from "@/lib/toast-interceptor";
 
@@ -269,62 +266,21 @@ export function CreateCreditForm() {
 
             <form.Field name="startDate">
               {(field) => (
-                <DatePicker
+                <AppDatePicker
+                  label="Fecha Inicio"
                   isRequired
                   name="startDate"
                   onBlur={field.handleBlur}
                   onChange={(value) => {
-                    field.handleChange(value?.toString() ?? "");
+                    field.handleChange(value);
                   }}
-                  value={field.state.value ? parseDate(field.state.value) : undefined}
-                >
-                  <Label>Fecha Inicio</Label>
-                  <DateField.Group>
-                    <DateField.InputContainer>
-                      <DateField.Input>
-                        {(segment) => <DateField.Segment segment={segment} />}
-                      </DateField.Input>
-                    </DateField.InputContainer>
-                    <DateField.Suffix>
-                      <DatePicker.Trigger>
-                        <DatePicker.TriggerIndicator />
-                      </DatePicker.Trigger>
-                    </DateField.Suffix>
-                  </DateField.Group>
-                  {field.state.meta.errors.length > 0 && (
-                    <FieldError>{field.state.meta.errors.join(", ")}</FieldError>
-                  )}
-                  {/* max-w-none: HeroUI 3.1 clamps the popover to trigger width
-                      (max-w-(--trigger-width)), so the fixed 252px calendar
-                      overflows a narrow grid-cell field on mobile. Let it size
-                      to the calendar; React Aria shifts it on-screen. Systemic
-                      fix for all date pickers tracked separately. */}
-                  <DatePicker.Popover className="max-w-none">
-                    <Calendar aria-label="Fecha inicio">
-                      <Calendar.Header>
-                        <Calendar.YearPickerTrigger>
-                          <Calendar.YearPickerTriggerHeading />
-                          <Calendar.YearPickerTriggerIndicator />
-                        </Calendar.YearPickerTrigger>
-                        <Calendar.NavButton slot="previous" />
-                        <Calendar.NavButton slot="next" />
-                      </Calendar.Header>
-                      <Calendar.Grid>
-                        <Calendar.GridHeader>
-                          {(day) => <Calendar.HeaderCell>{day}</Calendar.HeaderCell>}
-                        </Calendar.GridHeader>
-                        <Calendar.GridBody>
-                          {(date) => <Calendar.Cell date={date} />}
-                        </Calendar.GridBody>
-                      </Calendar.Grid>
-                      <Calendar.YearPickerGrid>
-                        <Calendar.YearPickerGridBody>
-                          {({ year }) => <Calendar.YearPickerCell year={year} />}
-                        </Calendar.YearPickerGridBody>
-                      </Calendar.YearPickerGrid>
-                    </Calendar>
-                  </DatePicker.Popover>
-                </DatePicker>
+                  value={field.state.value}
+                  errorMessage={
+                    field.state.meta.errors.length > 0
+                      ? field.state.meta.errors.join(", ")
+                      : undefined
+                  }
+                />
               )}
             </form.Field>
           </div>

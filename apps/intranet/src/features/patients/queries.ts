@@ -1,6 +1,11 @@
 import { queryOptions } from "@tanstack/react-query";
 import { findPersonByRut } from "@/features/people/api";
-import { fetchPatientClinicalSeries, fetchPatients, fetchPatientSkinTests } from "./api";
+import {
+  fetchPatientClinicalSeries,
+  fetchPatientDteSources,
+  fetchPatients,
+  fetchPatientSkinTests,
+} from "./api";
 
 // Centralized query-key factory for the patients feature.
 //
@@ -22,6 +27,11 @@ export const patientKeys = {
   clinicalSeries: (patientId: number) => ["patient-clinical-series", patientId] as const,
   // Singular "patient" detail entry, keyed by route/string id (see cross-file note).
   detail: (id: number | string) => ["patient", id] as const,
+  // DTE-source list (patient-source register tab). `dteSourcesAll` is a structural
+  // PREFIX of `dteSources`, so invalidateQueries(dteSourcesAll) refreshes every
+  // active DTE search query — same intentional prefix relationship as `all`.
+  dteSources: (q: string) => ["patients", "dte-sources", q] as const,
+  dteSourcesAll: ["patients", "dte-sources"] as const,
   nameSearch: (name: string) => ["patients", name] as const,
   personByRut: (rut: string) => ["person-by-rut", rut] as const,
   skinTests: (patientId: number) => ["patient-skin-tests", patientId] as const,
@@ -39,6 +49,11 @@ export const patientQueries = {
       queryFn: () => fetchPatientClinicalSeries(patientId),
       queryKey: patientKeys.clinicalSeries(patientId),
       staleTime: 1000 * 60,
+    }),
+  dteSources: (q: string) =>
+    queryOptions({
+      queryFn: () => fetchPatientDteSources({ limit: 300, q }),
+      queryKey: patientKeys.dteSources(q),
     }),
   nameSearch: (name: string) =>
     queryOptions({

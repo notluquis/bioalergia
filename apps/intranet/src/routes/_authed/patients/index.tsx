@@ -7,12 +7,10 @@ import { ArrowRight, Database, RefreshCw, User, UserPlus } from "lucide-react";
 import { useMemo, useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
 import { TableRegion } from "@/components/data-table/TableRegion";
-import {
-  fetchPatientDteSources,
-  fetchPatients,
-  syncPatientDteSources,
-} from "@/features/patients/api";
+import { syncPatientDteSources } from "@/features/patients/api";
+import type { fetchPatientDteSources, fetchPatients } from "@/features/patients/api";
 import { CreatePatientModal } from "@/features/patients/components/CreatePatientModal";
+import { patientKeys, patientQueries } from "@/features/patients/queries";
 import { useDisclosure } from "@/hooks/use-disclosure";
 import { useLazyTabs } from "@/hooks/use-lazy-tabs";
 import { PAGE_CONTAINER_RELAXED } from "@/lib/styles";
@@ -47,19 +45,17 @@ function PatientsListPage() {
     pageSize: 20,
   });
 
-  const { data: patients = [], isLoading: isLoadingPatients } = useQuery({
-    queryKey: ["patients", searchClinical],
-    queryFn: async () => fetchPatients(searchClinical),
-  });
+  const { data: patients = [], isLoading: isLoadingPatients } = useQuery(
+    patientQueries.nameSearch(searchClinical)
+  );
 
-  const { data: dteSources = [], isLoading: isLoadingDteSources } = useQuery({
-    queryKey: ["patients", "dte-sources", searchDte],
-    queryFn: async () => fetchPatientDteSources({ limit: 300, q: searchDte }),
-  });
+  const { data: dteSources = [], isLoading: isLoadingDteSources } = useQuery(
+    patientQueries.dteSources(searchDte)
+  );
 
   const syncDteSourcesMutation = useMutation({
     mutationFn: async () => syncPatientDteSources({ dryRun: false }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["patients", "dte-sources"] }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: patientKeys.dteSourcesAll }),
   });
 
   const patientColumns = useMemo<ColumnDef<Patient>[]>(

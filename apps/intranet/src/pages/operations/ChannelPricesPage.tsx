@@ -26,13 +26,10 @@ export function ChannelPricesPage() {
 
   return (
     <div className="space-y-6">
-      <header className="space-y-1">
-        <h1 className="font-bold text-3xl">Precios por canal</h1>
-        <p className="text-foreground/60 text-sm">
-          Configura precios distintos por canal de venta. Si un canal no tiene precio, se usa el
-          precio base del producto.
-        </p>
-      </header>
+      <p className="text-foreground/60 text-sm">
+        Configura precios distintos por canal de venta. Si un canal no tiene precio, se usa el
+        precio base del producto.
+      </p>
 
       <Card>
         <Card.Header>

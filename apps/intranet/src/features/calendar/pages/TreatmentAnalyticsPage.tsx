@@ -1,16 +1,4 @@
-import {
-  Button,
-  Card,
-  DateField,
-  DateRangePicker,
-  Description,
-  Label,
-  Popover,
-  RangeCalendar,
-  Skeleton,
-  Spinner,
-} from "@heroui/react";
-import { parseDate } from "@internationalized/date";
+import { Button, Card, Description, Popover, Skeleton, Spinner } from "@heroui/react";
 import { useQuery } from "@tanstack/react-query";
 import { getRouteApi } from "@tanstack/react-router";
 import type React from "react";
@@ -39,6 +27,7 @@ import {
 
 import type { ColumnDef } from "@tanstack/react-table";
 import { DataTable } from "@/components/data-table/DataTable";
+import { AppDateRangePicker } from "@/components/forms/AppDatePicker";
 import { Page } from "@/components/layouts/Page";
 import { calendarQueries } from "@/features/calendar/queries";
 import type { TreatmentAnalytics, TreatmentAnalyticsFilters } from "@/features/calendar/types";
@@ -914,63 +903,19 @@ function AnalyticsFilters({
           <Description className="font-semibold text-default-500 text-xs uppercase tracking-wide">
             Rango personalizado
           </Description>
-          <DateRangePicker
+          <AppDateRangePicker
+            label="Rango personalizado"
             className="w-full"
-            onChange={(value) => {
-              if (!value) {
+            visibleMonths={2}
+            startValue={filters.from}
+            endValue={filters.to}
+            onChange={(start, end) => {
+              if (!start || !end) {
                 return;
               }
-              onDateChange(value.start.toString(), value.end.toString());
+              onDateChange(start, end);
             }}
-            value={
-              filters.from && filters.to
-                ? { end: parseDate(filters.to), start: parseDate(filters.from) }
-                : undefined
-            }
-          >
-            <Label>Rango personalizado</Label>
-            <DateField.Group>
-              <DateField.InputContainer>
-                <DateField.Input slot="start">
-                  {(segment) => <DateField.Segment segment={segment} />}
-                </DateField.Input>
-                <DateRangePicker.RangeSeparator />
-                <DateField.Input slot="end">
-                  {(segment) => <DateField.Segment segment={segment} />}
-                </DateField.Input>
-              </DateField.InputContainer>
-              <DateField.Suffix>
-                <DateRangePicker.Trigger>
-                  <DateRangePicker.TriggerIndicator />
-                </DateRangePicker.Trigger>
-              </DateField.Suffix>
-            </DateField.Group>
-            <DateRangePicker.Popover>
-              <RangeCalendar aria-label="Rango personalizado" visibleDuration={{ months: 2 }}>
-                <RangeCalendar.Header>
-                  <RangeCalendar.YearPickerTrigger>
-                    <RangeCalendar.YearPickerTriggerHeading />
-                    <RangeCalendar.YearPickerTriggerIndicator />
-                  </RangeCalendar.YearPickerTrigger>
-                  <RangeCalendar.NavButton slot="previous" />
-                  <RangeCalendar.NavButton slot="next" />
-                </RangeCalendar.Header>
-                <RangeCalendar.Grid>
-                  <RangeCalendar.GridHeader>
-                    {(day) => <RangeCalendar.HeaderCell>{day}</RangeCalendar.HeaderCell>}
-                  </RangeCalendar.GridHeader>
-                  <RangeCalendar.GridBody>
-                    {(date) => <RangeCalendar.Cell date={date} />}
-                  </RangeCalendar.GridBody>
-                </RangeCalendar.Grid>
-                <RangeCalendar.YearPickerGrid>
-                  <RangeCalendar.YearPickerGridBody>
-                    {({ year }) => <RangeCalendar.YearPickerCell year={year} />}
-                  </RangeCalendar.YearPickerGridBody>
-                </RangeCalendar.YearPickerGrid>
-              </RangeCalendar>
-            </DateRangePicker.Popover>
-          </DateRangePicker>
+          />
 
           {/* Error Message */}
           {dateRangeError && (

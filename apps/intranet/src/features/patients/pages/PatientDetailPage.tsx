@@ -25,6 +25,7 @@ import { DataTable } from "@/components/data-table/DataTable";
 import { AddressList } from "@/features/addresses/components/AddressList";
 import { PatientEmailOptInToggle } from "@/features/email/components/PatientEmailOptInToggle";
 import { fetchPatient } from "@/features/patients/api";
+import { patientKeys } from "@/features/patients/queries";
 import { PatientRecordsTimeline } from "@/features/clinical-records/components/PatientRecordsTimeline";
 import { ClinicalSeriesList } from "@/features/patients/components/ClinicalSeriesList";
 import { EditPatientModal } from "@/features/patients/components/EditPatientModal";
@@ -72,7 +73,7 @@ export function PatientDetailsPage() {
   >("history");
 
   const { data: patientData, isLoading } = useQuery({
-    queryKey: ["patient", id],
+    queryKey: patientKeys.detail(id),
     queryFn: async () => fetchPatient(Number(id)),
   });
 

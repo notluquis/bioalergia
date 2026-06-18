@@ -84,7 +84,7 @@ export function EditPatientModal({
         notes: notes.trim() || undefined,
       }),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["patient", String(patient.id)] });
+      void queryClient.invalidateQueries({ queryKey: patientKeys.detail(String(patient.id)) });
       void queryClient.invalidateQueries({ queryKey: patientKeys.all });
       toast.success("Paciente actualizado");
       onClose();
