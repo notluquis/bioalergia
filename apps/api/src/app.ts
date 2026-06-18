@@ -28,6 +28,11 @@ import { medicationsOpenAPIHandler, medicationsORPCHandler } from "./orpc/medica
 import { verificationOpenAPIHandler, verificationORPCHandler } from "./orpc/verification.ts";
 import { immunotherapyOpenAPIHandler, immunotherapyORPCHandler } from "./orpc/immunotherapy.ts";
 import { quotesOpenAPIHandler, quotesORPCHandler } from "./orpc/quotes.ts";
+import { reactivosOpenAPIHandler, reactivosORPCHandler } from "./orpc/reactivos.ts";
+import {
+  clinicalAllergensOpenAPIHandler,
+  clinicalAllergensORPCHandler,
+} from "./orpc/clinical-allergens.ts";
 import { clinicalSeriesOpenAPIHandler, clinicalSeriesORPCHandler } from "./orpc/clinical-series.ts";
 import {
   clinicalRecordsOpenAPIHandler,
@@ -970,6 +975,44 @@ app.use("/api/orpc/immunotherapy/rpc/*", async (c, next) => {
 app.use("/api/orpc/quotes/rpc/*", async (c, next) => {
   const { matched, response } = await quotesORPCHandler.handle(createHonoORPCRequest(c), {
     prefix: "/api/orpc/quotes/rpc",
+    context: { hono: c },
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  return next();
+});
+
+// Lead público de reactivos: rate-limit por IP antes del handler. La creación es
+// no-autenticada (vitrina) → superficie de spam. 5/min/IP + honeypot + CSRF
+// same-origin. Mirror de `verificationRateLimiter`.
+const reactivosLeadRateLimiter = rateLimiter({
+  windowMs: 60 * 1000,
+  limit: 5,
+  standardHeaders: "draft-6",
+  keyGenerator: (c) => clientIp(c) ?? "anonymous",
+  skip: (c) => c.req.method === "OPTIONS",
+});
+app.use("/api/orpc/reactivos/rpc/createLead", reactivosLeadRateLimiter);
+
+app.use("/api/orpc/reactivos/rpc/*", async (c, next) => {
+  const { matched, response } = await reactivosORPCHandler.handle(createHonoORPCRequest(c), {
+    prefix: "/api/orpc/reactivos/rpc",
+    context: { hono: c },
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  return next();
+});
+
+app.use("/api/orpc/clinical-allergens/rpc/*", async (c, next) => {
+  const { matched, response } = await clinicalAllergensORPCHandler.handle(createHonoORPCRequest(c), {
+    prefix: "/api/orpc/clinical-allergens/rpc",
     context: { hono: c },
   });
 
@@ -2473,6 +2516,33 @@ app.use("/api/orpc/quotes/*", async (c, next) => {
   const { matched, response } = await quotesOpenAPIHandler.handle(createHonoORPCRequest(c), {
     context: { hono: c },
   });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  return next();
+});
+
+app.use("/api/orpc/reactivos/*", async (c, next) => {
+  const { matched, response } = await reactivosOpenAPIHandler.handle(createHonoORPCRequest(c), {
+    context: { hono: c },
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  return next();
+});
+
+app.use("/api/orpc/clinical-allergens/*", async (c, next) => {
+  const { matched, response } = await clinicalAllergensOpenAPIHandler.handle(
+    createHonoORPCRequest(c),
+    {
+      context: { hono: c },
+    }
+  );
 
   if (matched) {
     return c.newResponse(response.body, response);

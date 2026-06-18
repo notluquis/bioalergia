@@ -1973,6 +1973,7 @@ model ClinicalAllergen {
 
   aliases                  ClinicalAllergenAlias[]
   examReportReactions      ExamReportReaction[]
+  reactivos                QuoteProduct[]          @relation("QuoteProductAllergen")
 
   @@deny('all', auth() == null)
   @@allow('read', true)
@@ -3357,16 +3358,28 @@ model QuoteProduct {
   unitPrice Decimal  @map("unit_price") @db.Decimal(15, 2)
   isActive  Boolean  @default(true) @map("is_active")
   sortOrder Int      @default(0) @map("sort_order")
+  // Campos de vitrina B2B (página pública /venta-empresas). El precio NUNCA se
+  // expone públicamente: la lectura pública sale por `db` raw + serializer que
+  // omite `unitPrice`. `publishedOnSite` controla qué aparece en la vitrina.
+  slug            String?  @unique
+  description     String?
+  imageUrl        String?  @map("image_url")
+  publishedOnSite Boolean  @default(false) @map("published_on_site")
+  seoDescription  String?  @map("seo_description")
+  allergenId      String?  @map("allergen_id")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
 
   items     QuoteItem[]
+  allergen  ClinicalAllergen? @relation("QuoteProductAllergen", fields: [allergenId], references: [id], onDelete: SetNull)
 
   @@deny('all', auth() == null)
   @@allow('read', auth().status == 'ACTIVE')
   @@allow('create,update,delete', auth().status == 'ACTIVE')
 
   @@index([code])
+  @@index([publishedOnSite])
+  @@index([allergenId])
   @@map("quote_products")
 }
 
@@ -3439,6 +3452,38 @@ enum QuoteStatus {
   ACCEPTED
   REJECTED
   EXPIRED
+}
+
+enum ReactivoLeadStatus {
+  NUEVO
+  CONTACTADO
+  COTIZADO
+  CERRADO
+}
+
+// Lead B2B captado desde la vitrina pública /venta-empresas ("Quiero reactivos").
+// La creación es PÚBLICA (sin auth): el handler usa `db` raw, por lo que el
+// `@@deny` no la bloquea (solo gobierna `authDb`). Lectura/gestión = staff.
+model ReactivoLead {
+  id                 Int                @id @default(autoincrement())
+  empresa            String
+  contactName        String             @map("contact_name")
+  email              String
+  phone              String?
+  rut                String?
+  message            String?
+  productsOfInterest String[]           @default([]) @map("products_of_interest")
+  status             ReactivoLeadStatus @default(NUEVO)
+  source             String             @default("venta-empresas")
+  createdAt          DateTime           @default(now()) @map("created_at")
+  updatedAt          DateTime           @default(now()) @updatedAt @map("updated_at")
+
+  @@deny('all', auth() == null)
+  @@allow('read,create,update,delete', auth().status == 'ACTIVE')
+
+  @@index([status])
+  @@index([createdAt])
+  @@map("reactivo_leads")
 }
 
 // ============================================================

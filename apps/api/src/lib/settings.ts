@@ -33,6 +33,8 @@ export type AppSettings = {
   emailFrom: string;
   emailBroadcastFrom: string;
   emailReplyTo: string;
+  // Destinatario de avisos de leads B2B (vitrina /venta-empresas → "Quiero reactivos").
+  reactivoLeadsEmail: string;
 };
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -65,6 +67,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   emailFrom: "Bioalergia <noreply@send.bioalergia.cl>",
   emailBroadcastFrom: "Bioalergia <novedades@send.bioalergia.cl>",
   emailReplyTo: "contacto@bioalergia.cl",
+  reactivoLeadsEmail: "contacto@bioalergia.cl",
 };
 
 const SETTINGS_KEY_MAP: Record<keyof AppSettings, string> = {
@@ -97,6 +100,7 @@ const SETTINGS_KEY_MAP: Record<keyof AppSettings, string> = {
   emailFrom: "email.from",
   emailBroadcastFrom: "email.broadcastFrom",
   emailReplyTo: "email.replyTo",
+  reactivoLeadsEmail: "reactivos.leadsEmail",
 };
 
 export function settingsKeyToDbKey(key: keyof AppSettings): string {

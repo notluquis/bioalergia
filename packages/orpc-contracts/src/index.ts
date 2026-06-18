@@ -90,13 +90,16 @@ export {
   type ProcessingActivitiesContract,
 } from "./processing-activities.ts";
 export { consentContract, type ConsentContract } from "./consent.ts";
-export {
-  clinicalConsentContract,
-  type ClinicalConsentContract,
-} from "./clinical-consent.ts";
+export { clinicalConsentContract, type ClinicalConsentContract } from "./clinical-consent.ts";
 export * from "./system.ts";
 export * from "./timesheets.ts";
 export * from "./transactions-insights.ts";
 export * from "./users.ts";
 export * from "./utility-bills.ts";
 export * from "./wa-cloud.ts";
+// Re-export desde el root: el read-only guard del API arma su mapa de métodos
+// (read vs mutación) iterando los `*Contract` exportados desde la raíz
+// (apps/api/src/lib/orpc-procedure-methods.ts). Sin esto, bajo E2EReadOnly los
+// reads de reactivos/alérgenos no se reconocen y fallan cerrado como mutación.
+export { reactivosContract, type ReactivosContract } from "./reactivos.ts";
+export { clinicalAllergensContract, type ClinicalAllergensContract } from "./clinical-allergens.ts";

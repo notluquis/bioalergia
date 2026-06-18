@@ -7088,6 +7088,13 @@ export class SchemaType implements SchemaDef {
                     type: "ExamReportReaction",
                     array: true,
                     relation: { opposite: "allergen" }
+                },
+                reactivos: {
+                    name: "reactivos",
+                    type: "QuoteProduct",
+                    array: true,
+                    attributes: [{ name: "@relation", args: [{ name: "name", value: ExpressionUtils.literal("QuoteProductAllergen") }] }] as readonly AttributeApplication[],
+                    relation: { opposite: "allergen", name: "QuoteProductAllergen" }
                 }
             },
             attributes: [
@@ -11001,6 +11008,45 @@ export class SchemaType implements SchemaDef {
                     attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("sort_order") }] }] as readonly AttributeApplication[],
                     default: 0 as FieldDefault
                 },
+                slug: {
+                    name: "slug",
+                    type: "String",
+                    unique: true,
+                    optional: true,
+                    attributes: [{ name: "@unique" }] as readonly AttributeApplication[]
+                },
+                description: {
+                    name: "description",
+                    type: "String",
+                    optional: true
+                },
+                imageUrl: {
+                    name: "imageUrl",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("image_url") }] }] as readonly AttributeApplication[]
+                },
+                publishedOnSite: {
+                    name: "publishedOnSite",
+                    type: "Boolean",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(false) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("published_on_site") }] }] as readonly AttributeApplication[],
+                    default: false as FieldDefault
+                },
+                seoDescription: {
+                    name: "seoDescription",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("seo_description") }] }] as readonly AttributeApplication[]
+                },
+                allergenId: {
+                    name: "allergenId",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("allergen_id") }] }] as readonly AttributeApplication[],
+                    foreignKeyFor: [
+                        "allergen"
+                    ] as readonly string[]
+                },
                 createdAt: {
                     name: "createdAt",
                     type: "DateTime",
@@ -11019,6 +11065,13 @@ export class SchemaType implements SchemaDef {
                     type: "QuoteItem",
                     array: true,
                     relation: { opposite: "product" }
+                },
+                allergen: {
+                    name: "allergen",
+                    type: "ClinicalAllergen",
+                    optional: true,
+                    attributes: [{ name: "@relation", args: [{ name: "name", value: ExpressionUtils.literal("QuoteProductAllergen") }, { name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("allergenId")]) }, { name: "references", value: ExpressionUtils.array("String", [ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("SetNull") }] }] as readonly AttributeApplication[],
+                    relation: { opposite: "reactivos", name: "QuoteProductAllergen", fields: ["allergenId"], references: ["id"], onDelete: "SetNull" }
                 }
             },
             attributes: [
@@ -11026,11 +11079,14 @@ export class SchemaType implements SchemaDef {
                 { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
                 { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
                 { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("code")]) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("Boolean", [ExpressionUtils.field("publishedOnSite")]) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("allergenId")]) }] },
                 { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("quote_products") }] }
             ] as readonly AttributeApplication[],
             idFields: ["id"],
             uniqueFields: {
-                id: { type: "Int" }
+                id: { type: "Int" },
+                slug: { type: "String" }
             }
         },
         Quote: {
@@ -11295,6 +11351,89 @@ export class SchemaType implements SchemaDef {
                 { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
                 { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("quoteId")]) }] },
                 { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("quote_items") }] }
+            ] as readonly AttributeApplication[],
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" }
+            }
+        },
+        ReactivoLead: {
+            name: "ReactivoLead",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                empresa: {
+                    name: "empresa",
+                    type: "String"
+                },
+                contactName: {
+                    name: "contactName",
+                    type: "String",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("contact_name") }] }] as readonly AttributeApplication[]
+                },
+                email: {
+                    name: "email",
+                    type: "String"
+                },
+                phone: {
+                    name: "phone",
+                    type: "String",
+                    optional: true
+                },
+                rut: {
+                    name: "rut",
+                    type: "String",
+                    optional: true
+                },
+                message: {
+                    name: "message",
+                    type: "String",
+                    optional: true
+                },
+                productsOfInterest: {
+                    name: "productsOfInterest",
+                    type: "String",
+                    array: true,
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.array("Any", []) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("products_of_interest") }] }] as readonly AttributeApplication[],
+                    default: [] as FieldDefault
+                },
+                status: {
+                    name: "status",
+                    type: "ReactivoLeadStatus",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("NUEVO") }] }] as readonly AttributeApplication[],
+                    default: "NUEVO" as FieldDefault
+                },
+                source: {
+                    name: "source",
+                    type: "String",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("venta-empresas") }] }] as readonly AttributeApplication[],
+                    default: "venta-empresas" as FieldDefault
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@updatedAt" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                }
+            },
+            attributes: [
+                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read,create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("ReactivoLeadStatus", [ExpressionUtils.field("status")]) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("DateTime", [ExpressionUtils.field("createdAt")]) }] },
+                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("reactivo_leads") }] }
             ] as readonly AttributeApplication[],
             idFields: ["id"],
             uniqueFields: {
@@ -19817,6 +19956,15 @@ export class SchemaType implements SchemaDef {
                 ACCEPTED: "ACCEPTED",
                 REJECTED: "REJECTED",
                 EXPIRED: "EXPIRED"
+            }
+        },
+        ReactivoLeadStatus: {
+            name: "ReactivoLeadStatus",
+            values: {
+                NUEVO: "NUEVO",
+                CONTACTADO: "CONTACTADO",
+                COTIZADO: "COTIZADO",
+                CERRADO: "CERRADO"
             }
         },
         DTEType: {
