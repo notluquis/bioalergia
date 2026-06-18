@@ -1,13 +1,13 @@
 import { Tabs } from "@heroui/react";
 import { PAGE_CONTAINER } from "@/lib/styles";
-import { createFileRoute } from "@tanstack/react-router";
-import { requirePermission } from "@/lib/authz/route-guards";
-import { CreditCard, DollarSign, Package, ShoppingBag, Store } from "lucide-react";
+import { createFileRoute, redirect } from "@tanstack/react-router";
+import { CreditCard, DollarSign, Package, ShoppingBag, Star, Store } from "lucide-react";
 import { useCallback } from "react";
 import { z } from "zod";
 
 import { ProtectedTab } from "@/components/auth/ProtectedTab";
 import { ChannelPricesPage } from "@/pages/operations/ChannelPricesPage";
+import { ReviewsModerationPage } from "@/pages/operations/ReviewsModerationPage";
 import { StoreCanalesPanel } from "@/features/store/pages/StoreCanalesPanel";
 import { StoreMercadoLibrePanel } from "@/features/store/pages/StoreMercadoLibrePanel";
 import { StoreMercadoPagoPanel } from "@/features/store/pages/StoreMercadoPagoPanel";
@@ -15,22 +15,31 @@ import { StoreProductosPanel } from "@/features/store/pages/StoreProductosPanel"
 import { useLazyTabs } from "@/hooks/use-lazy-tabs";
 
 /**
- * Unified `/store` host (Phase 4a IA consolidation). Four tabs:
+ * Unified `/store` host (Phase 4a IA consolidation). Tabs:
  *
  *   - canales       — canal prices + shipping + low-stock threshold
  *                     (was /settings/tienda); default
  *   - productos     — store catalog (PG-master products visible online)
+ *   - precios-canal — per-channel pricing matrix
  *   - mercadopago   — MP integration (was /settings/mercadopago)
  *   - mercadolibre  — ML connection + sync (was /settings/mercadolibre)
+ *   - resenas       — review moderation (absorbió /operations/reviews)
  *
  * URL state contract:
  *   ?tab=<key>      — active tab; `replace: true` on change
  *
  * Tab-specific RBAC enforced per-panel via `<ProtectedTab>`. The outer
- * `beforeLoad` only enforces the LOOSEST permission (`read Setting`)
- * so deep-links stay valid for read-only operators.
+ * `beforeLoad` allows any permission that can reach at least one tab, so
+ * `/operations/reviews` redirects keep working for Product moderators.
  */
-const tabKey = z.enum(["canales", "productos", "precios-canal", "mercadopago", "mercadolibre"]);
+const tabKey = z.enum([
+  "canales",
+  "productos",
+  "precios-canal",
+  "mercadopago",
+  "mercadolibre",
+  "resenas",
+]);
 type StoreTab = z.infer<typeof tabKey>;
 
 const searchSchema = z.object({
@@ -50,7 +59,11 @@ export const Route = createFileRoute("/_authed/store/")({
     title: "Tienda",
   },
   validateSearch: searchSchema,
-  beforeLoad: requirePermission("read", "Setting"),
+  beforeLoad: ({ context }) => {
+    if (!context.can("read", "Setting") && !context.can("update", "Product")) {
+      throw redirect({ to: "/" });
+    }
+  },
   component: StoreHostPage,
 });
 
@@ -101,6 +114,10 @@ function StoreHostPage() {
               <ShoppingBag size={14} /> MercadoLibre
               <Tabs.Indicator />
             </Tabs.Tab>
+            <Tabs.Tab id="resenas">
+              <Star size={14} /> Reseñas
+              <Tabs.Indicator />
+            </Tabs.Tab>
           </Tabs.List>
         </Tabs.ListContainer>
 
@@ -136,6 +153,13 @@ function StoreHostPage() {
           {isTabMounted("mercadolibre") ? (
             <ProtectedTab action="update" subject="Setting">
               <StoreMercadoLibrePanel />
+            </ProtectedTab>
+          ) : null}
+        </Tabs.Panel>
+        <Tabs.Panel id="resenas" className="pt-4">
+          {isTabMounted("resenas") ? (
+            <ProtectedTab action="update" subject="Product">
+              <ReviewsModerationPage />
             </ProtectedTab>
           ) : null}
         </Tabs.Panel>

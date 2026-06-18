@@ -3,21 +3,18 @@ import {
   Button,
   Card,
   Chip,
-  DateField,
-  DateRangePicker,
   Label,
   ListBox,
-  RangeCalendar,
   Select,
   Separator,
   Skeleton,
   Spinner,
   Tabs,
 } from "@heroui/react";
-import { parseDate } from "@internationalized/date";
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { BarChart2, BarChart3, Calendar, Clock, Filter, List, TrendingUp, X } from "lucide-react";
 import { lazy, Suspense, useEffect, useState } from "react";
+import { AppDateRangePicker } from "@/components/forms/AppDatePicker";
 import { DataTable } from "@/components/data-table/DataTable";
 import { Page } from "@/components/layouts/Page";
 
@@ -373,63 +370,20 @@ function ReportsFiltersPanel({
           )}
 
           {viewMode === "range" && (
-            <DateRangePicker
+            <AppDateRangePicker
               aria-label="Rango de fechas"
               className="w-full"
-              onChange={(value) => {
-                if (!value) {
+              visibleMonths={2}
+              startValue={startDate}
+              endValue={endDate}
+              onChange={(start, end) => {
+                if (!start || !end) {
                   return;
                 }
-                setStartDate(value.start.toString());
-                setEndDate(value.end.toString());
+                setStartDate(start);
+                setEndDate(end);
               }}
-              value={{
-                start: parseDate(startDate),
-                end: parseDate(endDate),
-              }}
-            >
-              <DateField.Group>
-                <DateField.InputContainer>
-                  <DateField.Input slot="start">
-                    {(segment) => <DateField.Segment segment={segment} />}
-                  </DateField.Input>
-                  <DateRangePicker.RangeSeparator />
-                  <DateField.Input slot="end">
-                    {(segment) => <DateField.Segment segment={segment} />}
-                  </DateField.Input>
-                </DateField.InputContainer>
-                <DateField.Suffix>
-                  <DateRangePicker.Trigger>
-                    <DateRangePicker.TriggerIndicator />
-                  </DateRangePicker.Trigger>
-                </DateField.Suffix>
-              </DateField.Group>
-              <DateRangePicker.Popover>
-                <RangeCalendar aria-label="Rango de fechas" visibleDuration={{ months: 2 }}>
-                  <RangeCalendar.Header>
-                    <RangeCalendar.YearPickerTrigger>
-                      <RangeCalendar.YearPickerTriggerHeading />
-                      <RangeCalendar.YearPickerTriggerIndicator />
-                    </RangeCalendar.YearPickerTrigger>
-                    <RangeCalendar.NavButton slot="previous" />
-                    <RangeCalendar.NavButton slot="next" />
-                  </RangeCalendar.Header>
-                  <RangeCalendar.Grid>
-                    <RangeCalendar.GridHeader>
-                      {(day) => <RangeCalendar.HeaderCell>{day}</RangeCalendar.HeaderCell>}
-                    </RangeCalendar.GridHeader>
-                    <RangeCalendar.GridBody>
-                      {(date) => <RangeCalendar.Cell date={date} />}
-                    </RangeCalendar.GridBody>
-                  </RangeCalendar.Grid>
-                  <RangeCalendar.YearPickerGrid>
-                    <RangeCalendar.YearPickerGridBody>
-                      {({ year }) => <RangeCalendar.YearPickerCell year={year} />}
-                    </RangeCalendar.YearPickerGridBody>
-                  </RangeCalendar.YearPickerGrid>
-                </RangeCalendar>
-              </DateRangePicker.Popover>
-            </DateRangePicker>
+            />
           )}
 
           {viewMode === "all" && (

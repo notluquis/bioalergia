@@ -24,10 +24,11 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { BookOpen, ClipboardList, Plus } from "lucide-react";
 import { useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
+import { Page } from "@/components/layouts/Page";
+import { PageHeader } from "@/components/layouts/PageHeader";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { complaintsORPCClient, toComplaintsApiError } from "@/features/complaints/orpc";
 import { formatChile } from "@/lib/dates";
-import { PAGE_CONTAINER } from "@/lib/styles";
 import { toast } from "@/lib/toast-interceptor";
 
 const COMPLAINTS_KEY = ["complaints", "list"] as const;
@@ -493,19 +494,12 @@ function BookEntriesSection() {
 
 export function ComplaintsPage() {
   return (
-    <div className={PAGE_CONTAINER}>
-      <div className="mb-4 flex items-center gap-3">
-        <div className="flex size-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-          <ClipboardList size={22} aria-hidden="true" />
-        </div>
-        <div>
-          <h1 className="font-bold text-foreground text-xl tracking-tight">Reclamos y libros</h1>
-          <p className="text-default-500 text-sm">
-            Reclamos y sugerencias (Decreto 35: acuse y respuesta en 15 días hábiles) y libros
-            foliados electrónicos.
-          </p>
-        </div>
-      </div>
+    <Page>
+      <PageHeader
+        title="Reclamos y libros"
+        description="Reclamos y sugerencias (Decreto 35: acuse y respuesta en 15 días hábiles) y libros foliados electrónicos."
+        icon={<ClipboardList size={22} />}
+      />
 
       <Tabs defaultSelectedKey="complaints">
         <Tabs.ListContainer>
@@ -530,6 +524,6 @@ export function ComplaintsPage() {
           <BookEntriesSection />
         </Tabs.Panel>
       </Tabs>
-    </div>
+    </Page>
   );
 }

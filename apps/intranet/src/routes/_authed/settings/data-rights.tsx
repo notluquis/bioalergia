@@ -1,13 +1,8 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { requirePermission } from "@/lib/authz/route-guards";
-import { DataRightsPage } from "@/features/data-rights/pages/DataRightsPage";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_authed/settings/data-rights")({
-  staticData: {
-    nav: { iconKey: "Fingerprint", label: "Derechos del titular", order: 95, section: "Sistema" },
-    permission: { action: "read", subject: "Setting" },
-    title: "Configuración — Derechos del titular",
+  beforeLoad: () => {
+    // eslint-disable-next-line @typescript-eslint/only-throw-error
+    throw redirect({ to: "/admin/compliance", search: { tab: "derechos" } });
   },
-  beforeLoad: requirePermission("read", "Setting"),
-  component: DataRightsPage,
 });

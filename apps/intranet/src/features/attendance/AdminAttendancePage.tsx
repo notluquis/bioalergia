@@ -18,6 +18,7 @@ import { DataTable } from "@/components/data-table/DataTable";
 import { formatChile, startOfMonth, today } from "@/lib/dates";
 import { AppDateRangePicker, AppDateTimePicker } from "@/components/forms/AppDatePicker";
 import { AppModal } from "@/components/ui/AppModal";
+import { confirmAction } from "@/components/ui/ConfirmDialog";
 import type {
   attendanceMarkSchema,
   attendanceMarkTypeSchema,
@@ -503,7 +504,20 @@ function OfficeNetworksCard() {
                   <Button
                     isDisabled={busyId === network.id}
                     variant="danger-soft"
-                    onPress={() => deleteMutation.mutate(network.id)}
+                    onPress={() => {
+                      void (async () => {
+                        if (
+                          await confirmAction({
+                            title: "Eliminar red de oficina",
+                            description: `¿Eliminar la red "${network.name}" (${network.cidr})? Las marcas que hagan match con este rango dejarán de considerarse internas.`,
+                            confirmLabel: "Eliminar",
+                            variant: "danger",
+                          })
+                        ) {
+                          deleteMutation.mutate(network.id);
+                        }
+                      })();
+                    }}
                   >
                     Eliminar
                   </Button>
@@ -613,7 +627,21 @@ function AdminAttendanceContent() {
         <MarksTable
           isDeletingId={deletingId}
           marks={marks}
-          onDelete={(id) => deleteMutation.mutate(id)}
+          onDelete={(id) => {
+            void (async () => {
+              if (
+                await confirmAction({
+                  title: "Eliminar marca de asistencia",
+                  description:
+                    "¿Eliminar esta marca de asistencia? Esta acción no se puede deshacer.",
+                  confirmLabel: "Eliminar",
+                  variant: "danger",
+                })
+              ) {
+                deleteMutation.mutate(id);
+              }
+            })();
+          }}
           summary={summary}
         />
       )}

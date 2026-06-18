@@ -25,11 +25,16 @@ import { DataTable } from "@/components/data-table/DataTable";
 import { AddressList } from "@/features/addresses/components/AddressList";
 import { PatientEmailOptInToggle } from "@/features/email/components/PatientEmailOptInToggle";
 import { fetchPatient } from "@/features/patients/api";
+import { patientKeys } from "@/features/patients/queries";
 import { PatientRecordsTimeline } from "@/features/clinical-records/components/PatientRecordsTimeline";
 import { ClinicalSeriesList } from "@/features/patients/components/ClinicalSeriesList";
 import { EditPatientModal } from "@/features/patients/components/EditPatientModal";
 import { NewAttachmentModal } from "@/features/patients/components/NewAttachmentModal";
+import { NewBudgetModal } from "@/features/patients/components/NewBudgetModal";
+import { NewConsultationModal } from "@/features/patients/components/NewConsultationModal";
+import { NewPaymentModal } from "@/features/patients/components/NewPaymentModal";
 import { SkinTestsList } from "@/features/patients/components/SkinTestsList";
+import { useCan } from "@/hooks/use-can";
 import { useLazyTabs } from "@/hooks/use-lazy-tabs";
 
 const routeApi = getRouteApi("/_authed/patients/$id/");
@@ -46,8 +51,15 @@ type PatientAttachment = Patient["attachments"][number];
 export function PatientDetailsPage() {
   const { id } = routeApi.useParams();
   const navigate = useNavigate();
+  const { can } = useCan();
   const [isAttachmentModalOpen, setIsAttachmentModalOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
+  const [createModal, setCreateModal] = useState<null | "budget" | "consultation" | "payment">(
+    null
+  );
+  const canCreateConsultation = can("create", "Consultation");
+  const canCreateBudget = can("create", "Budget");
+  const canCreatePayment = can("create", "PatientPayment");
   const [activeTab, setActiveTab] = useState<
     | "budgets"
     | "certificates"
@@ -72,7 +84,7 @@ export function PatientDetailsPage() {
   >("history");
 
   const { data: patientData, isLoading } = useQuery({
-    queryKey: ["patient", id],
+    queryKey: patientKeys.detail(id),
     queryFn: async () => fetchPatient(Number(id)),
   });
 
@@ -99,12 +111,29 @@ export function PatientDetailsPage() {
         onClose={() => setIsEditOpen(false)}
         patient={patient}
       />
+      <NewConsultationModal
+        patientId={patient.id}
+        isOpen={createModal === "consultation"}
+        onClose={() => setCreateModal(null)}
+      />
+      <NewBudgetModal
+        patientId={patient.id}
+        isOpen={createModal === "budget"}
+        onClose={() => setCreateModal(null)}
+      />
+      <NewPaymentModal
+        patientId={patient.id}
+        isOpen={createModal === "payment"}
+        onClose={() => setCreateModal(null)}
+      />
       <PatientDetailsHeader
         age={age}
         birthDate={patient.birthDate}
+        canCreateConsultation={canCreateConsultation}
         id={id}
         navigate={navigate}
         onEdit={() => setIsEditOpen(true)}
+        onNewConsultation={() => setCreateModal("consultation")}
         person={person}
         patientName={patientName}
       />
@@ -287,19 +316,12 @@ export function PatientDetailsPage() {
                       <PlusCircle size={16} />
                       Presupuesto Inmunoterapia
                     </Button>
-                    <Button
-                      size="sm"
-                      className="gap-2"
-                      onPress={() => {
-                        void navigate({
-                          to: "/patients/$id/new-budget",
-                          params: { id: String(id) },
-                        });
-                      }}
-                    >
-                      <PlusCircle size={16} />
-                      Nuevo Presupuesto
-                    </Button>
+                    {canCreateBudget ? (
+                      <Button size="sm" className="gap-2" onPress={() => setCreateModal("budget")}>
+                        <PlusCircle size={16} />
+                        Nuevo Presupuesto
+                      </Button>
+                    ) : null}
                   </div>
                   <DataTable
                     columns={budgetColumns}
@@ -316,21 +338,14 @@ export function PatientDetailsPage() {
             <Tabs.Panel id="payments" className="space-y-4 py-4">
               {isTabMounted("payments") ? (
                 <>
-                  <div className="flex justify-end">
-                    <Button
-                      size="sm"
-                      className="gap-2"
-                      onPress={() => {
-                        void navigate({
-                          to: "/patients/$id/new-payment",
-                          params: { id: String(id) },
-                        });
-                      }}
-                    >
-                      <PlusCircle size={16} />
-                      Registrar Pago
-                    </Button>
-                  </div>
+                  {canCreatePayment ? (
+                    <div className="flex justify-end">
+                      <Button size="sm" className="gap-2" onPress={() => setCreateModal("payment")}>
+                        <PlusCircle size={16} />
+                        Registrar Pago
+                      </Button>
+                    </div>
+                  ) : null}
                   <DataTable
                     columns={paymentColumns}
                     data={patient.payments || []}
@@ -566,28 +581,26 @@ function PatientInfoLine({
 function PatientDetailsHeader({
   age,
   birthDate,
+  canCreateConsultation,
   id,
   navigate,
   onEdit,
+  onNewConsultation,
   patientName,
   person,
 }: {
   age: null | number;
   birthDate: null | string | undefined;
+  canCreateConsultation: boolean;
   id: string;
   navigate: ReturnType<typeof useNavigate>;
   onEdit: () => void;
+  onNewConsultation: () => void;
   patientName: string;
   person: Person;
 }) {
   const goBackToPatients = () => {
     void navigate({ to: "/patients" });
-  };
-  const goToNewConsultation = () => {
-    void navigate({
-      to: "/patients/$id/new-consultation",
-      params: { id: String(id) },
-    });
   };
   const goToMedicalCertificate = () => {
     void navigate({
@@ -636,10 +649,12 @@ function PatientDetailsHeader({
         </div>
       </div>
       <div className="flex flex-wrap gap-2">
-        <Button className="gap-2" onPress={goToNewConsultation}>
-          <PlusCircle size={18} />
-          Nueva Consulta
-        </Button>
+        {canCreateConsultation ? (
+          <Button className="gap-2" onPress={onNewConsultation}>
+            <PlusCircle size={18} />
+            Nueva Consulta
+          </Button>
+        ) : null}
         <Button className="gap-2" onPress={goToMedicalCertificate} variant="outline">
           <FileText size={18} />
           Emitir Certificado

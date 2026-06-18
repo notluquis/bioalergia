@@ -20,11 +20,12 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { Fingerprint, Plus } from "lucide-react";
 import { useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
+import { Page } from "@/components/layouts/Page";
+import { PageHeader } from "@/components/layouts/PageHeader";
 import { confirmAction } from "@/components/ui/ConfirmDialog";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { dataRightsORPCClient, toDataRightsApiError } from "@/features/data-rights/orpc";
 import { formatChile } from "@/lib/dates";
-import { PAGE_CONTAINER } from "@/lib/styles";
 import { toast } from "@/lib/toast-interceptor";
 
 const KEY = ["settings", "data-rights"] as const;
@@ -288,20 +289,12 @@ export function DataRightsPage() {
   ];
 
   return (
-    <div className={PAGE_CONTAINER}>
-      <div className="mb-4 flex items-center gap-3">
-        <div className="flex size-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-          <Fingerprint size={22} aria-hidden="true" />
-        </div>
-        <div>
-          <h1 className="font-bold text-foreground text-xl tracking-tight">Derechos del titular</h1>
-          <p className="text-default-500 text-sm">
-            Solicitudes ARCO+ (Ley 21.719): acceso, rectificación, cancelación, portabilidad,
-            oposición y bloqueo. Plazo legal de respuesta: 30 días corridos, prorrogable una vez por
-            otros 30.
-          </p>
-        </div>
-      </div>
+    <Page>
+      <PageHeader
+        title="Derechos del titular"
+        description="Solicitudes ARCO+ (Ley 21.719): acceso, rectificación, cancelación, portabilidad, oposición y bloqueo. Plazo legal de respuesta: 30 días corridos, prorrogable una vez por otros 30."
+        icon={<Fingerprint size={22} />}
+      />
 
       <Card className="mb-6 space-y-4 p-5">
         <h2 className="font-semibold text-base">Nueva solicitud</h2>
@@ -450,6 +443,6 @@ export function DataRightsPage() {
           noDataMessage="Sin solicitudes de derechos del titular."
         />
       )}
-    </div>
+    </Page>
   );
 }

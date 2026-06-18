@@ -1,7 +1,7 @@
 import { endOfMonth, startOfMonth } from "@/lib/dates";
-import { Button, Chip, DateField, DateRangePicker, Label, RangeCalendar } from "@heroui/react";
-import { parseDate } from "@internationalized/date";
-import { useMemo, useState } from "react";
+import { Button, Chip } from "@heroui/react";
+import { useState } from "react";
+import { AppDateRangePicker } from "@/components/forms/AppDatePicker";
 
 import { ExpensePlaceholder } from "../components/ExpensePlaceholder";
 import { FinancialSummaryCards } from "../components/FinancialSummaryCards";
@@ -17,18 +17,6 @@ export function FinancialDashboardPage() {
 
   const { summary, isLoading } = useFinancialSummary(dateRange);
 
-  const handleDateChange = (field: keyof DateRange, value: string) => {
-    setDateRange((prev) => ({ ...prev, [field]: value }));
-  };
-
-  const rangeValue = useMemo(
-    () => ({
-      start: parseDate(dateRange.from),
-      end: parseDate(dateRange.to),
-    }),
-    [dateRange.from, dateRange.to]
-  );
-
   return (
     <div className="space-y-8 p-6 md:p-8">
       {/* Header & Filters */}
@@ -37,52 +25,19 @@ export function FinancialDashboardPage() {
           Resumen de ingresos por tratamientos y gastos operativos.
         </p>
 
-        <DateRangePicker
+        <AppDateRangePicker
+          label="Rango de fechas"
           className="w-full md:w-auto"
-          onChange={(value) => {
-            if (!value) {
+          visibleMonths={2}
+          startValue={dateRange.from}
+          endValue={dateRange.to}
+          onChange={(start, end) => {
+            if (!start || !end) {
               return;
             }
-            handleDateChange("from", value.start.toString());
-            handleDateChange("to", value.end.toString());
+            setDateRange({ from: start, to: end });
           }}
-          value={rangeValue}
-        >
-          <Label>Rango de fechas</Label>
-          <DateField.Group>
-            <DateField.InputContainer>
-              <DateField.Input slot="start">
-                {(segment) => <DateField.Segment segment={segment} />}
-              </DateField.Input>
-              <DateRangePicker.RangeSeparator />
-              <DateField.Input slot="end">
-                {(segment) => <DateField.Segment segment={segment} />}
-              </DateField.Input>
-            </DateField.InputContainer>
-            <DateField.Suffix>
-              <DateRangePicker.Trigger>
-                <DateRangePicker.TriggerIndicator />
-              </DateRangePicker.Trigger>
-            </DateField.Suffix>
-          </DateField.Group>
-          <DateRangePicker.Popover>
-            <RangeCalendar visibleDuration={{ months: 2 }}>
-              <RangeCalendar.Header>
-                <RangeCalendar.Heading />
-                <RangeCalendar.NavButton slot="previous" />
-                <RangeCalendar.NavButton slot="next" />
-              </RangeCalendar.Header>
-              <RangeCalendar.Grid>
-                <RangeCalendar.GridHeader>
-                  {(day) => <RangeCalendar.HeaderCell>{day}</RangeCalendar.HeaderCell>}
-                </RangeCalendar.GridHeader>
-                <RangeCalendar.GridBody>
-                  {(date) => <RangeCalendar.Cell date={date} />}
-                </RangeCalendar.GridBody>
-              </RangeCalendar.Grid>
-            </RangeCalendar>
-          </DateRangePicker.Popover>
-        </DateRangePicker>
+        />
       </div>
 
       {/* Summary Cards */}

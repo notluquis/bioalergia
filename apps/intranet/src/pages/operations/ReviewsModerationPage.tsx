@@ -40,14 +40,11 @@ export function ReviewsModerationPage() {
   });
 
   return (
-    <div className="space-y-6">
-      <header className="space-y-1">
-        <h1 className="font-bold text-3xl">Reseñas pendientes</h1>
-        <p className="text-foreground/60 text-sm">
-          Aprueba o rechaza reseñas enviadas por clientes. Las aprobadas aparecen públicamente en la
-          ficha del producto.
-        </p>
-      </header>
+    <div className="space-y-4">
+      <p className="text-foreground/60 text-sm">
+        Aprueba o rechaza reseñas enviadas por clientes. Las aprobadas aparecen públicamente en la
+        ficha del producto.
+      </p>
 
       {pendingQ.isLoading && <Skeleton className="h-32 w-full" />}
 

@@ -1,19 +1,9 @@
-import {
-  Button,
-  Chip,
-  DateField,
-  DateRangePicker,
-  Disclosure,
-  Label,
-  RangeCalendar,
-  SearchField,
-  Surface,
-} from "@heroui/react";
-import { parseDate } from "@internationalized/date";
+import { Button, Chip, Disclosure, SearchField, Surface } from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Download, FileText, PlusCircle, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 
+import { AppDateRangePicker } from "@/components/forms/AppDatePicker";
 import { PageHeader } from "@/components/layouts/PageHeader";
 import { PageState } from "@/components/ui/PageState";
 import { useConfirmDialog } from "@/context/ConfirmDialogContext";
@@ -183,67 +173,16 @@ export function MedicalCertificatePage() {
             </SearchField.Group>
           </SearchField>
 
-          <DateRangePicker
+          <AppDateRangePicker
             aria-label="Rango de fechas"
             className="md:col-span-6"
-            onChange={(value) => {
-              if (!value) {
-                setFilters((f) => ({ ...f, from: "", to: "" }));
-                return;
-              }
-              setFilters((f) => ({
-                ...f,
-                from: value.start.toString(),
-                to: value.end.toString(),
-              }));
+            visibleMonths={2}
+            startValue={filters.from}
+            endValue={filters.to}
+            onChange={(start, end) => {
+              setFilters((f) => ({ ...f, from: start, to: end }));
             }}
-            value={
-              filters.from && filters.to
-                ? { end: parseDate(filters.to), start: parseDate(filters.from) }
-                : undefined
-            }
-          >
-            <Label className="sr-only">Rango de fechas</Label>
-            <DateField.Group className="h-9 text-sm" fullWidth variant="secondary">
-              <DateField.InputContainer>
-                <DateField.Input slot="start">
-                  {(segment) => <DateField.Segment segment={segment} />}
-                </DateField.Input>
-                <DateRangePicker.RangeSeparator />
-                <DateField.Input slot="end">
-                  {(segment) => <DateField.Segment segment={segment} />}
-                </DateField.Input>
-              </DateField.InputContainer>
-              <DateField.Suffix>
-                <DateRangePicker.Trigger>
-                  <DateRangePicker.TriggerIndicator />
-                </DateRangePicker.Trigger>
-              </DateField.Suffix>
-            </DateField.Group>
-            <DateRangePicker.Popover>
-              <RangeCalendar
-                aria-label="Seleccionar rango de fechas"
-                visibleDuration={{ months: 2 }}
-              >
-                <RangeCalendar.Header>
-                  <RangeCalendar.YearPickerTrigger>
-                    <RangeCalendar.YearPickerTriggerHeading />
-                    <RangeCalendar.YearPickerTriggerIndicator />
-                  </RangeCalendar.YearPickerTrigger>
-                  <RangeCalendar.NavButton slot="previous" />
-                  <RangeCalendar.NavButton slot="next" />
-                </RangeCalendar.Header>
-                <RangeCalendar.Grid>
-                  <RangeCalendar.GridHeader>
-                    {(day) => <RangeCalendar.HeaderCell>{day}</RangeCalendar.HeaderCell>}
-                  </RangeCalendar.GridHeader>
-                  <RangeCalendar.GridBody>
-                    {(date) => <RangeCalendar.Cell date={date} />}
-                  </RangeCalendar.GridBody>
-                </RangeCalendar.Grid>
-              </RangeCalendar>
-            </DateRangePicker.Popover>
-          </DateRangePicker>
+          />
         </div>
       </Surface>
 

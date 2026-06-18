@@ -1,25 +1,16 @@
-import { Button, Card, FieldError, Form, Label, NumberField } from "@heroui/react";
+import { Button, FieldError, Form, Label, NumberField } from "@heroui/react";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { ChevronLeft, Plus, Save, Trash2 } from "lucide-react";
+import { Plus, Save, Trash2 } from "lucide-react";
 import { z } from "zod";
 import {
   TanStackInputField,
   TanStackTextAreaField,
 } from "@/components/forms/TanStackFieldControls";
+import { AppModal } from "@/components/ui/AppModal";
 import { createPatientBudget } from "@/features/patients/api";
-import { PAGE_CONTAINER } from "@/lib/styles";
+import { patientKeys } from "@/features/patients/queries";
 import { toast } from "@/lib/toast-interceptor";
-
-export const Route = createFileRoute("/_authed/patients/$id/new-budget")({
-  staticData: {
-    permission: { action: "create", subject: "Budget" },
-    title: "Nuevo Presupuesto",
-    hideFromNav: true,
-  },
-  component: NewBudgetPage,
-});
 
 const budgetItemSchema = z.object({
   clientId: z.string().optional(),
@@ -44,15 +35,19 @@ const createBudgetItem = () => ({
   unitPrice: 0,
 });
 
-function NewBudgetPage() {
-  const { id } = Route.useParams();
-  const navigate = useNavigate();
+interface NewBudgetModalProps {
+  patientId: number | string;
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+export function NewBudgetModal({ patientId, isOpen, onClose }: Readonly<NewBudgetModalProps>) {
   const queryClient = useQueryClient();
 
   const mutation = useMutation({
     mutationFn: async (data: BudgetForm) => {
       return await createPatientBudget({
-        patientId: Number(id),
+        patientId: Number(patientId),
         title: data.title,
         discount: data.discount,
         notes: data.notes,
@@ -61,8 +56,8 @@ function NewBudgetPage() {
     },
     onSuccess: () => {
       toast.success("Presupuesto creado exitosamente");
-      void queryClient.invalidateQueries({ queryKey: ["patient", id] });
-      void navigate({ to: "/patients/$id", params: { id: String(id) } });
+      void queryClient.invalidateQueries({ queryKey: patientKeys.detail(String(patientId)) });
+      onClose();
     },
     onError: (error) => {
       toast.error(
@@ -84,21 +79,30 @@ function NewBudgetPage() {
   });
 
   return (
-    <div className={PAGE_CONTAINER}>
-      <div className="mb-6">
-        <Button
-          variant="outline"
-          onPress={() => {
-            void navigate({ to: "/patients/$id", params: { id: String(id) } });
-          }}
-          className="gap-2"
-        >
-          <ChevronLeft size={20} />
-          Volver
-        </Button>
-      </div>
-
+    <AppModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Nuevo Presupuesto"
+      size="xl"
+      footer={
+        <>
+          <Button type="button" variant="outline" onPress={onClose} isDisabled={mutation.isPending}>
+            Cancelar
+          </Button>
+          <Button
+            type="submit"
+            form="new-budget-form"
+            isPending={mutation.isPending}
+            className="gap-2"
+          >
+            <Save size={18} />
+            Crear Presupuesto
+          </Button>
+        </>
+      }
+    >
       <Form
+        id="new-budget-form"
         onSubmit={(e: React.FormEvent<HTMLFormElement>) => {
           e.preventDefault();
           e.stopPropagation();
@@ -107,7 +111,7 @@ function NewBudgetPage() {
         className="space-y-6"
         validationBehavior="aria"
       >
-        <Card className="space-y-4 p-6">
+        <div className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">
             <form.Field name="title">
               {(field) => (
@@ -159,9 +163,9 @@ function NewBudgetPage() {
               />
             )}
           </form.Field>
-        </Card>
+        </div>
 
-        <Card className="p-6">
+        <div>
           <div className="mb-4 flex items-center justify-between">
             <h2 className="font-semibold text-lg">Ítems del Presupuesto</h2>
             <Button
@@ -265,24 +269,8 @@ function NewBudgetPage() {
               )}
             </form.Field>
           </div>
-        </Card>
-
-        <div className="flex justify-end gap-3">
-          <Button
-            type="button"
-            variant="outline"
-            onPress={() => {
-              void navigate({ to: "/patients/$id", params: { id: String(id) } });
-            }}
-          >
-            Cancelar
-          </Button>
-          <Button type="submit" isPending={mutation.isPending} className="gap-2">
-            <Save size={18} />
-            Crear Presupuesto
-          </Button>
         </div>
       </Form>
-    </div>
+    </AppModal>
   );
 }

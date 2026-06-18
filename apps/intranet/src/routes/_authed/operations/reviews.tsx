@@ -1,14 +1,7 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { requirePermission } from "@/lib/authz/route-guards";
-
-import { ReviewsModerationPage } from "@/pages/operations/ReviewsModerationPage";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_authed/operations/reviews")({
-  staticData: {
-    nav: { iconKey: "Star", label: "Reseñas", order: 18, section: "Logística" },
-    permission: { action: "update", subject: "Product" },
-    title: "Moderación de reseñas",
+  beforeLoad: () => {
+    throw redirect({ to: "/store", search: { tab: "resenas" } });
   },
-  beforeLoad: requirePermission("update", "Product"),
-  component: ReviewsModerationPage,
 });

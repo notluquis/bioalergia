@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { requirePermission } from "@/lib/authz/route-guards";
 
 import { z } from "zod";
-import { TreatmentAnalyticsPage } from "@/features/operations/supplies/pages/TreatmentAnalyticsPage";
+import { TreatmentAnalyticsPage } from "@/features/calendar/pages/TreatmentAnalyticsPage";
 
 const MONTH_FORMAT_REGEX = /^\d{4}-\d{2}$/;
 

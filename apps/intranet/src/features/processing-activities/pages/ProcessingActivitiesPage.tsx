@@ -18,13 +18,14 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { ListChecks, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
+import { Page } from "@/components/layouts/Page";
+import { PageHeader } from "@/components/layouts/PageHeader";
 import { confirmAction } from "@/components/ui/ConfirmDialog";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import {
   processingActivitiesORPCClient,
   toProcessingActivitiesApiError,
 } from "@/features/processing-activities/orpc";
-import { PAGE_CONTAINER } from "@/lib/styles";
 import { toast } from "@/lib/toast-interceptor";
 
 const KEY = ["settings", "processing-activities"] as const;
@@ -214,21 +215,12 @@ export function ProcessingActivitiesPage() {
   ];
 
   return (
-    <div className={PAGE_CONTAINER}>
-      <div className="mb-4 flex items-center gap-3">
-        <div className="flex size-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-          <ListChecks size={22} aria-hidden="true" />
-        </div>
-        <div>
-          <h1 className="font-bold text-foreground text-xl tracking-tight">
-            Registro de tratamientos (RAT)
-          </h1>
-          <p className="text-default-500 text-sm">
-            Inventario de actividades de tratamiento de datos personales que exige la Ley 21.719:
-            finalidad, base de licitud, categorías de datos y titulares, conservación y medidas.
-          </p>
-        </div>
-      </div>
+    <Page>
+      <PageHeader
+        title="Registro de tratamientos (RAT)"
+        description="Inventario de actividades de tratamiento de datos personales que exige la Ley 21.719: finalidad, base de licitud, categorías de datos y titulares, conservación y medidas."
+        icon={<ListChecks size={22} />}
+      />
 
       <Card className="mb-6 space-y-4 p-5">
         <h2 className="font-semibold text-base">
@@ -365,6 +357,6 @@ export function ProcessingActivitiesPage() {
           noDataMessage="Sin actividades de tratamiento. Crea una arriba."
         />
       )}
-    </div>
+    </Page>
   );
 }

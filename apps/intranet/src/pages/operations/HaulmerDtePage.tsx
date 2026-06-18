@@ -1,6 +1,8 @@
 import { Card, Chip, Skeleton } from "@heroui/react";
 import { useQuery } from "@tanstack/react-query";
 
+import { Page } from "@/components/layouts/Page";
+import { PageHeader } from "@/components/layouts/PageHeader";
 import { haulmerDteClient } from "@/features/haulmer-dte/orpc";
 import { haulmerKeys } from "@/features/operations/queries";
 
@@ -33,14 +35,11 @@ export function HaulmerDtePage() {
   });
 
   return (
-    <div className="space-y-6">
-      <header className="space-y-1">
-        <h1 className="font-bold text-3xl">Haulmer DTE</h1>
-        <p className="text-foreground/60 text-sm">
-          Folios disponibles + últimos documentos emitidos. Emisión post-venta automática vía
-          checkout.
-        </p>
-      </header>
+    <Page>
+      <PageHeader
+        title="Haulmer DTE"
+        description="Folios disponibles + últimos documentos emitidos. Emisión post-venta automática vía checkout."
+      />
 
       <section className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <Card>
@@ -153,6 +152,6 @@ export function HaulmerDtePage() {
           <p className="text-danger">Error</p>
         )}
       </section>
-    </div>
+    </Page>
   );
 }
