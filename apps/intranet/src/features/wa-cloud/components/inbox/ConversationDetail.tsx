@@ -9,6 +9,7 @@ import { toast } from "@/lib/toast-interceptor";
 import { ChatBubble } from "./ChatBubble";
 import { ScrollToBottomFab } from "./ScrollToBottomFab";
 import { UnreadDivider } from "./UnreadDivider";
+import { WindowBanner } from "./WindowBanner";
 import { buildChatRows, firstUnreadKey, type RawMessage } from "../../lib/buildChatRows";
 import { useChatScroll } from "../../lib/useChatScroll";
 import { useIsTouch } from "../../lib/usePointer";
@@ -672,6 +673,13 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
               Desbloquear
             </Button>
           </div>
+        )}
+        {!c.contact.blockedAt && (
+          <WindowBanner
+            windowOpen={c.windowOpen}
+            windowExpiresAt={c.windowExpiresAt}
+            onUseTemplate={() => setMode("template")}
+          />
         )}
         <div className="border-default-200 border-t bg-background p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
           {mode === "text" ? (

@@ -2,6 +2,7 @@
 import { Button, Modal, Skeleton, Spinner } from "@heroui/react";
 import { Download, FileText, Pause, Play, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { decodeWaveform, syntheticWaveform } from "../../lib/decodeWaveform";
 
 type Props = {
   messageId: number;
@@ -89,7 +90,7 @@ export function MediaAttachment({ messageId, type, caption, out = false }: Props
         {errored ? (
           <ErrorBox label="No se pudo cargar el audio" />
         ) : visible ? (
-          <AudioPlayer src={url} out={out} onError={() => setErrored(true)} />
+          <AudioPlayer src={url} out={out} seed={messageId} onError={() => setErrored(true)} />
         ) : (
           <Skeleton className="h-12 w-64 rounded-full" />
         )}
@@ -363,7 +364,19 @@ function VideoLightbox({ src, onError }: { src: string; onError: () => void }) {
 const SPEED_CYCLE = [1, 1.5, 2] as const;
 type Speed = (typeof SPEED_CYCLE)[number];
 
-function AudioPlayer({ src, out, onError }: { src: string; out: boolean; onError: () => void }) {
+const WAVEFORM_BARS = 32;
+
+function AudioPlayer({
+  src,
+  out,
+  seed,
+  onError,
+}: {
+  src: string;
+  out: boolean;
+  seed: number;
+  onError: () => void;
+}) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const [playing, setPlaying] = useState(false);
   const [duration, setDuration] = useState(0);
@@ -371,6 +384,19 @@ function AudioPlayer({ src, out, onError }: { src: string; out: boolean; onError
   const [loaded, setLoaded] = useState(false);
   const [speed, setSpeed] = useState<Speed>(1);
   const probedRef = useRef(false);
+  // Voice-note waveform: instant synthetic bars, upgraded to real amplitude on
+  // first play (decode can fail on some opus streams → keep synthetic).
+  const [bars, setBars] = useState<number[]>(() => syntheticWaveform(seed, WAVEFORM_BARS));
+  const decodedRef = useRef(false);
+  const decodeBars = () => {
+    if (decodedRef.current) return;
+    decodedRef.current = true;
+    decodeWaveform(src, WAVEFORM_BARS)
+      .then(setBars)
+      .catch(() => {
+        /* keep synthetic */
+      });
+  };
 
   const fmt = (s: number) => {
     if (!Number.isFinite(s) || s <= 0) return "0:00";
@@ -404,6 +430,7 @@ function AudioPlayer({ src, out, onError }: { src: string; out: boolean; onError
   const toggle = () => {
     const a = audioRef.current;
     if (!a) return;
+    decodeBars();
     if (a.paused) void a.play();
     else a.pause();
   };
@@ -448,8 +475,19 @@ function AudioPlayer({ src, out, onError }: { src: string; out: boolean; onError
         )}
       </button>
       <div className="flex-1">
-        <div className={`relative h-1 w-full overflow-hidden rounded-full ${trackBg}`}>
-          <div className={`absolute top-0 left-0 h-full ${fillBg}`} style={{ width: `${pct}%` }} />
+        <div className="relative">
+          <div className="flex h-8 items-center gap-px" aria-hidden="true">
+            {bars.map((h, i) => {
+              const played = ((i + 0.5) / bars.length) * 100 <= pct;
+              return (
+                <span
+                  key={i}
+                  style={{ height: `${Math.max(8, Math.round(h * 100))}%` }}
+                  className={`min-w-px flex-1 rounded-full ${played ? fillBg : trackBg}`}
+                />
+              );
+            })}
+          </div>
           <input
             type="range"
             min={0}
@@ -458,7 +496,7 @@ function AudioPlayer({ src, out, onError }: { src: string; out: boolean; onError
             value={current}
             onChange={seek}
             disabled={!loaded}
-            className="absolute inset-0 cursor-pointer opacity-0"
+            className="absolute inset-0 size-full cursor-pointer opacity-0"
             aria-label="Posición"
           />
         </div>
