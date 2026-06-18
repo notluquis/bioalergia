@@ -409,6 +409,44 @@ export function useSendSnippet() {
   });
 }
 
+// WhatsApp-style stickers: a per-account tray that auto-fills "recientes" as
+// stickers are sent and "guardados" when a received sticker is starred.
+export function useSavedStickers(accountId: number | undefined, tab: "recientes" | "guardados") {
+  return useQuery({
+    queryKey: [...KEY, "saved-stickers", accountId, tab],
+    enabled: Boolean(accountId),
+    queryFn: () => waCloudORPCClient.listSavedStickers({ accountId: accountId!, tab }),
+    staleTime: 30_000,
+  });
+}
+export function useSendSavedSticker() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: Parameters<typeof waCloudORPCClient.sendSavedSticker>[0]) =>
+      waCloudORPCClient.sendSavedSticker(input),
+    onSuccess: (_, vars) => {
+      void qc.invalidateQueries({ queryKey: [...KEY, "conversation", vars.conversationId] });
+      void qc.invalidateQueries({ queryKey: [...KEY, "saved-stickers"] });
+    },
+  });
+}
+export function useSaveSticker() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: Parameters<typeof waCloudORPCClient.saveSticker>[0]) =>
+      waCloudORPCClient.saveSticker(input),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: [...KEY, "saved-stickers"] }),
+  });
+}
+export function useUnsaveSticker() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: Parameters<typeof waCloudORPCClient.unsaveSticker>[0]) =>
+      waCloudORPCClient.unsaveSticker(input),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: [...KEY, "saved-stickers"] }),
+  });
+}
+
 // Saved entities catalog
 export function useSavedLocations() {
   return useQuery({

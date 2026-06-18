@@ -1,5 +1,14 @@
 import { Button, Drawer, Popover } from "@heroui/react";
-import { Copy, CornerUpLeft, Forward, MoreVertical, Pencil, Plus, RotateCw } from "lucide-react";
+import {
+  Copy,
+  CornerUpLeft,
+  Forward,
+  MoreVertical,
+  Pencil,
+  Plus,
+  RotateCw,
+  Star,
+} from "lucide-react";
 import { lazy, Suspense, useState } from "react";
 import { toast } from "@/lib/toast-interceptor";
 import { QUICK_REACTIONS } from "../shared/_shared";
@@ -12,6 +21,7 @@ export type MessageActionsApi = {
   canEdit: boolean;
   canForward: boolean;
   canRetry: boolean;
+  canSaveSticker: boolean;
   body: string | null;
   /** The operator's own current reaction emoji on this message, if any. */
   ownReaction: string | null;
@@ -21,6 +31,7 @@ export type MessageActionsApi = {
   onEdit: () => void;
   onForward: () => void;
   onRetry: () => void;
+  onSaveSticker: () => void;
 };
 
 // Quick-reaction row + "+" full emoji picker, shared by the desktop popover and
@@ -151,6 +162,16 @@ function ActionRows({ api, onClose }: { api: MessageActionsApi; onClose: () => v
           label="Reenviar"
           onPress={() => {
             api.onForward();
+            onClose();
+          }}
+        />
+      )}
+      {api.canSaveSticker && (
+        <SheetRow
+          icon={<Star size={18} />}
+          label="Guardar sticker"
+          onPress={() => {
+            api.onSaveSticker();
             onClose();
           }}
         />

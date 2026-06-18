@@ -51,6 +51,7 @@ import { AppModal } from "@/components/ui/AppModal";
 import { SelectInput, TextInput } from "@/features/outreach/components/FormField";
 import { toast } from "@/lib/toast-interceptor";
 import { EmojiPickerButton } from "./EmojiPickerButton";
+import { StickerPickerButton } from "./StickerPickerButton";
 import { useIsTouch } from "../../lib/usePointer";
 import {
   useConversationMedia,
@@ -173,6 +174,8 @@ export function TextComposer({
   onSendSnippet,
   inputRef,
   onFocusComposer,
+  stickerAccountId,
+  onSendSticker,
 }: {
   body: string;
   setBody: (v: string) => void;
@@ -193,6 +196,8 @@ export function TextComposer({
   onSendSnippet: (snippetId: number) => void;
   inputRef?: React.RefObject<HTMLTextAreaElement | null>;
   onFocusComposer?: () => void;
+  stickerAccountId?: number;
+  onSendSticker?: (savedStickerId: number) => void;
 }) {
   const internalRef = useRef<HTMLTextAreaElement>(null);
   const ref = inputRef ?? internalRef;
@@ -328,6 +333,13 @@ export function TextComposer({
           isDisabled={isDisabled}
         />
         <EmojiPickerButton onSelect={insertEmoji} />
+        {onSendSticker && (
+          <StickerPickerButton
+            accountId={stickerAccountId}
+            isDisabled={isDisabled || !stickerAccountId}
+            onSend={onSendSticker}
+          />
+        )}
         <VoiceRecorderButton onSend={onAttachFile} isDisabled={isDisabled || attachPending} />
         <div className="relative order-first w-full min-w-0 md:order-none md:w-auto md:flex-1">
           <TextArea

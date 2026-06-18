@@ -33,6 +33,7 @@ const fullApi: MessageActionsApi = {
   canEdit: true,
   canForward: true,
   canRetry: true,
+  canSaveSticker: false,
   body: "Confirmada tu hora del jueves a las 16:00. ¡Nos vemos!",
   ownReaction: "👍",
   onReact: () => {},
@@ -40,6 +41,7 @@ const fullApi: MessageActionsApi = {
   onEdit: () => {},
   onForward: () => {},
   onRetry: () => {},
+  onSaveSticker: () => {},
 };
 
 // Minimal API — a failed outbound message: only retry is offered.
@@ -49,6 +51,7 @@ const retryOnlyApi: MessageActionsApi = {
   canEdit: false,
   canForward: false,
   canRetry: true,
+  canSaveSticker: false,
   body: null,
   ownReaction: null,
   onReact: () => {},
@@ -56,6 +59,7 @@ const retryOnlyApi: MessageActionsApi = {
   onEdit: () => {},
   onForward: () => {},
   onRetry: () => {},
+  onSaveSticker: () => {},
 };
 
 function Row({ children }: { children: React.ReactNode }) {

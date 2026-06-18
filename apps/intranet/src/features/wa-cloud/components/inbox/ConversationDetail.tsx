@@ -40,9 +40,11 @@ import {
   useEditText,
   useListScheduled,
   useScheduleMessage,
+  useSaveSticker,
   useSendContacts,
   useSendMedia,
   useSendReaction,
+  useSendSavedSticker,
   useSendSnippet,
   useSendTemplate,
   useSendText,
@@ -61,6 +63,8 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
   const sendTemplate = useSendTemplate();
   const sendReaction = useSendReaction();
   const sendMedia = useSendMedia();
+  const sendSavedSticker = useSendSavedSticker();
+  const saveSticker = useSaveSticker();
   const sendContacts = useSendContacts();
   const sendSnippet = useSendSnippet();
   const editText = useEditText();
@@ -628,6 +632,16 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
                       onReact={(r, emoji) => handleReact(r.metaMessageId!, emoji)}
                       onEdit={(r) => setEditTarget({ messageId: r.messageId!, body: r.body ?? "" })}
                       onRetry={(r) => r.pendingCid && retryPending(r.pendingCid)}
+                      onSaveSticker={(r) => {
+                        if (!r.messageId) return;
+                        saveSticker.mutate(
+                          { messageId: r.messageId },
+                          {
+                            onSuccess: () => toast.success("Sticker guardado"),
+                            onError: (e) => toast.error(`Error: ${String(e)}`),
+                          }
+                        );
+                      }}
                     />
                   </Fragment>
                 )
@@ -736,6 +750,17 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
                   {
                     onError: (e) => toast.error(`Error: ${String(e)}`),
                   }
+                );
+              }}
+              stickerAccountId={activeAccountId}
+              onSendSticker={(savedStickerId) => {
+                if (!phoneId) {
+                  toast.error("Selecciona un número primero");
+                  return;
+                }
+                sendSavedSticker.mutate(
+                  { conversationId, phoneNumberId: Number(phoneId), savedStickerId },
+                  { onError: (e) => toast.error(`Error: ${String(e)}`) }
                 );
               }}
             />

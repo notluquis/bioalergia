@@ -51,6 +51,7 @@ export function ChatBubble({
   onEdit,
   onRetry,
   onForward,
+  onSaveSticker,
 }: {
   row: ChatBubbleRow;
   contactName: string;
@@ -64,6 +65,7 @@ export function ChatBubble({
   onEdit: (row: { messageId: number | null; body: string | null }) => void;
   onRetry?: (row: ChatBubbleRow) => void;
   onForward?: (row: ChatBubbleRow) => void;
+  onSaveSticker?: (row: ChatBubbleRow) => void;
 }) {
   const out = row.out;
   const isPending = row.status === "PENDING";
@@ -79,8 +81,10 @@ export function ChatBubble({
     row.messageId !== null &&
     Date.now() - row.timestamp.getTime() < 15 * 60 * 1000;
   const canRetry = failed && Boolean(onRetry);
+  const canSaveSticker =
+    !out && row.type === "STICKER" && row.messageId !== null && Boolean(onSaveSticker);
   const ownReaction = row.reactions?.find((r) => r.out)?.emoji ?? null;
-  const hasActions = canInteract || canRetry;
+  const hasActions = canInteract || canRetry || canSaveSticker;
 
   const groupStart = row.groupStart ?? true;
   const groupEnd = row.groupEnd ?? true;
@@ -109,6 +113,7 @@ export function ChatBubble({
     canEdit,
     canForward: Boolean(onForward) && canInteract,
     canRetry,
+    canSaveSticker,
     body: row.body,
     ownReaction,
     onReact: (emoji) => onReact({ metaMessageId: row.metaMessageId, out }, emoji),
@@ -117,6 +122,7 @@ export function ChatBubble({
     onEdit: () => onEdit({ messageId: row.messageId, body: row.body }),
     onForward: () => onForward?.(row),
     onRetry: () => onRetry?.(row),
+    onSaveSticker: () => onSaveSticker?.(row),
   };
 
   const longPress = usePointerLongPress(() => setActionsOpen(true), {
