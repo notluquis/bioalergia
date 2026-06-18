@@ -21,13 +21,14 @@ import { Plus, ShieldCheck } from "lucide-react";
 import { useState } from "react";
 import { AppDatePicker } from "@/components/forms/AppDatePicker";
 import { DataTable } from "@/components/data-table/DataTable";
+import { Page } from "@/components/layouts/Page";
+import { PageHeader } from "@/components/layouts/PageHeader";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import {
   breachIncidentsORPCClient,
   toBreachIncidentsApiError,
 } from "@/features/breach-incidents/orpc";
 import { formatChile } from "@/lib/dates";
-import { PAGE_CONTAINER } from "@/lib/styles";
 import { toast } from "@/lib/toast-interceptor";
 
 const KEY = ["breach-incidents"] as const;
@@ -262,20 +263,14 @@ export function BreachIncidentsPage() {
   ];
 
   return (
-    <div className={PAGE_CONTAINER}>
-      <div className="mb-4 flex items-center gap-3">
-        <div className="flex size-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-          <ShieldCheck aria-hidden="true" size={22} />
-        </div>
-        <div>
-          <h1 className="font-bold text-foreground text-xl tracking-tight">Incidentes de brecha</h1>
-          <p className="text-default-500 text-sm">
-            Registro de brechas de datos personales (Ley 21.719, art. 14 sexies). Se debe notificar
-            a la Agencia "por los medios más expeditos posibles y sin dilaciones indebidas". El
-            gatillo de 72 h es operativo (best-practice y plazo de la Ley 21.663 / ANCI).
-          </p>
-        </div>
-      </div>
+    <Page>
+      <PageHeader
+        title="Incidentes de brecha"
+        description={
+          'Registro de brechas de datos personales (Ley 21.719, art. 14 sexies). Se debe notificar a la Agencia "por los medios más expeditos posibles y sin dilaciones indebidas". El gatillo de 72 h es operativo (best-practice y plazo de la Ley 21.663 / ANCI).'
+        }
+        icon={<ShieldCheck size={22} />}
+      />
 
       <Card className="mb-6 space-y-4 p-5">
         <h2 className="font-semibold text-base">Registrar incidente</h2>
@@ -355,6 +350,6 @@ export function BreachIncidentsPage() {
           noDataMessage="Sin incidentes de brecha registrados."
         />
       )}
-    </div>
+    </Page>
   );
 }

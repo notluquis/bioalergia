@@ -5,10 +5,11 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { Plus, ShieldCheck, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
+import { Page } from "@/components/layouts/Page";
+import { PageHeader } from "@/components/layouts/PageHeader";
 import { confirmAction } from "@/components/ui/ConfirmDialog";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { settingsORPCClient, toSettingsApiError } from "@/features/settings/orpc";
-import { PAGE_CONTAINER } from "@/lib/styles";
 import { toast } from "@/lib/toast-interceptor";
 
 const KEY = ["settings", "retention-policies"] as const;
@@ -167,18 +168,12 @@ export function RetentionPoliciesPage() {
   ];
 
   return (
-    <div className={PAGE_CONTAINER}>
-      <div className="mb-4 flex items-center gap-3">
-        <div className="flex size-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-          <ShieldCheck size={22} />
-        </div>
-        <div>
-          <h1 className="font-bold text-foreground text-xl tracking-tight">Retención de datos</h1>
-          <p className="text-default-500 text-sm">
-            Políticas por tabla (Ley 21.719): borrar o anonimizar filas más viejas que la ventana.
-          </p>
-        </div>
-      </div>
+    <Page>
+      <PageHeader
+        title="Retención de datos"
+        description="Políticas por tabla (Ley 21.719): borrar o anonimizar filas más viejas que la ventana."
+        icon={<ShieldCheck size={22} />}
+      />
 
       <Card className="mb-6 space-y-4 p-5">
         <h2 className="font-semibold text-base">
@@ -273,6 +268,6 @@ export function RetentionPoliciesPage() {
           noDataMessage="Sin políticas de retención. Crea una arriba."
         />
       )}
-    </div>
+    </Page>
   );
 }

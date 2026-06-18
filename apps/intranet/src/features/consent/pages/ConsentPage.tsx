@@ -20,11 +20,12 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { Plus, UserCheck } from "lucide-react";
 import { useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
+import { Page } from "@/components/layouts/Page";
+import { PageHeader } from "@/components/layouts/PageHeader";
 import { confirmAction } from "@/components/ui/ConfirmDialog";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { consentORPCClient, toConsentApiError } from "@/features/consent/orpc";
 import { formatChile } from "@/lib/dates";
-import { PAGE_CONTAINER } from "@/lib/styles";
 import { toast } from "@/lib/toast-interceptor";
 
 const KEY = ["settings", "consent"] as const;
@@ -220,20 +221,12 @@ export function ConsentPage() {
   ];
 
   return (
-    <div className={PAGE_CONTAINER}>
-      <div className="mb-4 flex items-center gap-3">
-        <div className="flex size-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-          <UserCheck size={22} aria-hidden="true" />
-        </div>
-        <div>
-          <h1 className="font-bold text-foreground text-xl tracking-tight">Consentimientos</h1>
-          <p className="text-default-500 text-sm">
-            Registro probatorio del consentimiento para el tratamiento de datos personales (Ley
-            21.719): marketing, usos secundarios, investigación, cesión. Distinto del consentimiento
-            informado clínico de un procedimiento.
-          </p>
-        </div>
-      </div>
+    <Page>
+      <PageHeader
+        title="Consentimientos"
+        description="Registro probatorio del consentimiento para el tratamiento de datos personales (Ley 21.719): marketing, usos secundarios, investigación, cesión. Distinto del consentimiento informado clínico de un procedimiento."
+        icon={<UserCheck size={22} />}
+      />
 
       <Card className="mb-6 space-y-4 p-5">
         <h2 className="font-semibold text-base">Registrar consentimiento</h2>
@@ -339,6 +332,6 @@ export function ConsentPage() {
           noDataMessage="Sin consentimientos registrados."
         />
       )}
-    </div>
+    </Page>
   );
 }

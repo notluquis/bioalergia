@@ -3,13 +3,14 @@ import { useQuery } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 import { LayoutDashboard } from "lucide-react";
 import { DataTable } from "@/components/data-table/DataTable";
+import { Page } from "@/components/layouts/Page";
+import { PageHeader } from "@/components/layouts/PageHeader";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import {
   securityAlertsORPCClient,
   toSecurityAlertsApiError,
 } from "@/features/settings/security-alerts-orpc";
 import { formatChile, fromNow } from "@/lib/dates";
-import { PAGE_CONTAINER } from "@/lib/styles";
 
 const KEY = ["settings", "security-alerts"] as const;
 
@@ -76,19 +77,12 @@ export function SecurityAlertsPage() {
   ];
 
   return (
-    <div className={PAGE_CONTAINER}>
-      <div className="mb-4 flex items-center gap-3">
-        <div className="flex size-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-          <LayoutDashboard size={22} aria-hidden="true" />
-        </div>
-        <div>
-          <h1 className="font-bold text-foreground text-xl tracking-tight">Alertas de seguridad</h1>
-          <p className="text-default-500 text-sm">
-            Estado de las alertas de seguridad ya emitidas (con deduplicación por ámbito y tipo).
-            Panel de sólo lectura.
-          </p>
-        </div>
-      </div>
+    <Page>
+      <PageHeader
+        title="Alertas de seguridad"
+        description="Estado de las alertas de seguridad ya emitidas (con deduplicación por ámbito y tipo). Panel de sólo lectura."
+        icon={<LayoutDashboard size={22} />}
+      />
 
       {isLoading ? (
         <div className="flex justify-center py-10">
@@ -112,6 +106,6 @@ export function SecurityAlertsPage() {
           noDataMessage="Sin alertas registradas"
         />
       )}
-    </div>
+    </Page>
   );
 }

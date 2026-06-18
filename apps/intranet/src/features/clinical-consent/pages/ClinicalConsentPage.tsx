@@ -21,6 +21,8 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { ClipboardCheck, Plus } from "lucide-react";
 import { useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
+import { Page } from "@/components/layouts/Page";
+import { PageHeader } from "@/components/layouts/PageHeader";
 import { confirmAction } from "@/components/ui/ConfirmDialog";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import {
@@ -28,7 +30,6 @@ import {
   toClinicalConsentApiError,
 } from "@/features/clinical-consent/orpc";
 import { formatChile } from "@/lib/dates";
-import { PAGE_CONTAINER } from "@/lib/styles";
 import { toast } from "@/lib/toast-interceptor";
 
 const KEY = ["settings", "clinical-consent"] as const;
@@ -247,22 +248,12 @@ export function ClinicalConsentPage() {
   ];
 
   return (
-    <div className={PAGE_CONTAINER}>
-      <div className="mb-4 flex items-center gap-3">
-        <div className="flex size-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-          <ClipboardCheck size={22} aria-hidden="true" />
-        </div>
-        <div>
-          <h1 className="font-bold text-foreground text-xl tracking-tight">
-            Consentimiento informado clínico
-          </h1>
-          <p className="text-default-500 text-sm">
-            Consentimiento por procedimiento (Ley 20.584): riesgos, alternativas y decisión del
-            titular. El texto genérico no basta — se guarda el contenido concreto y su versión.
-            Distinto del consentimiento de datos personales.
-          </p>
-        </div>
-      </div>
+    <Page>
+      <PageHeader
+        title="Consentimiento informado clínico"
+        description="Consentimiento por procedimiento (Ley 20.584): riesgos, alternativas y decisión del titular. El texto genérico no basta — se guarda el contenido concreto y su versión. Distinto del consentimiento de datos personales."
+        icon={<ClipboardCheck size={22} />}
+      />
 
       <Card className="mb-6 space-y-4 p-5">
         <h2 className="font-semibold text-base">Registrar consentimiento</h2>
@@ -416,6 +407,6 @@ export function ClinicalConsentPage() {
           noDataMessage="Sin consentimientos clínicos registrados."
         />
       )}
-    </div>
+    </Page>
   );
 }

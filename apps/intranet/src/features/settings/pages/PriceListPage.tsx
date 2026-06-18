@@ -15,10 +15,11 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { Coins, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
+import { Page } from "@/components/layouts/Page";
+import { PageHeader } from "@/components/layouts/PageHeader";
 import { confirmAction } from "@/components/ui/ConfirmDialog";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { priceListORPCClient, toPriceListApiError } from "@/features/settings/price-list-orpc";
-import { PAGE_CONTAINER } from "@/lib/styles";
 import { toast } from "@/lib/toast-interceptor";
 
 const KEY = ["settings", "price-list"] as const;
@@ -195,18 +196,12 @@ export function PriceListPage() {
   ];
 
   return (
-    <div className={PAGE_CONTAINER}>
-      <div className="mb-4 flex items-center gap-3">
-        <div className="flex size-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-          <Coins size={22} aria-hidden="true" />
-        </div>
-        <div>
-          <h1 className="font-bold text-foreground text-xl tracking-tight">Lista de precios</h1>
-          <p className="text-default-500 text-sm">
-            Precios públicos de prestaciones e insumos, ordenados por categoría.
-          </p>
-        </div>
-      </div>
+    <Page>
+      <PageHeader
+        title="Lista de precios"
+        description="Precios públicos de prestaciones e insumos, ordenados por categoría."
+        icon={<Coins size={22} />}
+      />
 
       <Card className="mb-6 space-y-4 p-5">
         <h2 className="font-semibold text-base">{editing ? "Editar ítem" : "Nuevo ítem"}</h2>
@@ -312,6 +307,6 @@ export function PriceListPage() {
           noDataMessage="Sin ítems en la lista de precios. Crea uno arriba."
         />
       )}
-    </div>
+    </Page>
   );
 }
