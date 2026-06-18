@@ -97,9 +97,6 @@ import { Route as AuthedAdminDatabaseRouteImport } from "./routes/_authed/admin/
 import { Route as AuthedPatientsIdIndexRouteImport } from "./routes/_authed/patients/$id/index"
 import { Route as AuthedServicesIdEditRouteImport } from "./routes/_authed/services/$id.edit"
 import { Route as AuthedPatientsIdScitCalculatorRouteImport } from "./routes/_authed/patients/$id/scit-calculator"
-import { Route as AuthedPatientsIdNewPaymentRouteImport } from "./routes/_authed/patients/$id/new-payment"
-import { Route as AuthedPatientsIdNewConsultationRouteImport } from "./routes/_authed/patients/$id/new-consultation"
-import { Route as AuthedPatientsIdNewBudgetRouteImport } from "./routes/_authed/patients/$id/new-budget"
 import { Route as AuthedPatientsIdImmunotherapyBudgetRouteImport } from "./routes/_authed/patients/$id/immunotherapy-budget"
 import { Route as AuthedOutreachEstablecimientosRbdRouteImport } from "./routes/_authed/outreach/establecimientos.$rbd"
 import { Route as AuthedOutreachCampanasNuevaRouteImport } from "./routes/_authed/outreach/campanas.nueva"
@@ -567,24 +564,6 @@ const AuthedPatientsIdScitCalculatorRoute =
     path: "/patients/$id/scit-calculator",
     getParentRoute: () => AuthedRoute,
   } as any)
-const AuthedPatientsIdNewPaymentRoute =
-  AuthedPatientsIdNewPaymentRouteImport.update({
-    id: "/patients/$id/new-payment",
-    path: "/patients/$id/new-payment",
-    getParentRoute: () => AuthedRoute,
-  } as any)
-const AuthedPatientsIdNewConsultationRoute =
-  AuthedPatientsIdNewConsultationRouteImport.update({
-    id: "/patients/$id/new-consultation",
-    path: "/patients/$id/new-consultation",
-    getParentRoute: () => AuthedRoute,
-  } as any)
-const AuthedPatientsIdNewBudgetRoute =
-  AuthedPatientsIdNewBudgetRouteImport.update({
-    id: "/patients/$id/new-budget",
-    path: "/patients/$id/new-budget",
-    getParentRoute: () => AuthedRoute,
-  } as any)
 const AuthedPatientsIdImmunotherapyBudgetRoute =
   AuthedPatientsIdImmunotherapyBudgetRouteImport.update({
     id: "/patients/$id/immunotherapy-budget",
@@ -706,9 +685,6 @@ export interface FileRoutesByFullPath {
   "/outreach/campanas/nueva": typeof AuthedOutreachCampanasNuevaRoute
   "/outreach/establecimientos/$rbd": typeof AuthedOutreachEstablecimientosRbdRoute
   "/patients/$id/immunotherapy-budget": typeof AuthedPatientsIdImmunotherapyBudgetRoute
-  "/patients/$id/new-budget": typeof AuthedPatientsIdNewBudgetRoute
-  "/patients/$id/new-consultation": typeof AuthedPatientsIdNewConsultationRoute
-  "/patients/$id/new-payment": typeof AuthedPatientsIdNewPaymentRoute
   "/patients/$id/scit-calculator": typeof AuthedPatientsIdScitCalculatorRoute
   "/services/$id/edit": typeof AuthedServicesIdEditRoute
   "/patients/$id/": typeof AuthedPatientsIdIndexRoute
@@ -796,9 +772,6 @@ export interface FileRoutesByTo {
   "/outreach/campanas/nueva": typeof AuthedOutreachCampanasNuevaRoute
   "/outreach/establecimientos/$rbd": typeof AuthedOutreachEstablecimientosRbdRoute
   "/patients/$id/immunotherapy-budget": typeof AuthedPatientsIdImmunotherapyBudgetRoute
-  "/patients/$id/new-budget": typeof AuthedPatientsIdNewBudgetRoute
-  "/patients/$id/new-consultation": typeof AuthedPatientsIdNewConsultationRoute
-  "/patients/$id/new-payment": typeof AuthedPatientsIdNewPaymentRoute
   "/patients/$id/scit-calculator": typeof AuthedPatientsIdScitCalculatorRoute
   "/services/$id/edit": typeof AuthedServicesIdEditRoute
   "/patients/$id": typeof AuthedPatientsIdIndexRoute
@@ -895,9 +868,6 @@ export interface FileRoutesById {
   "/_authed/outreach/campanas/nueva": typeof AuthedOutreachCampanasNuevaRoute
   "/_authed/outreach/establecimientos/$rbd": typeof AuthedOutreachEstablecimientosRbdRoute
   "/_authed/patients/$id/immunotherapy-budget": typeof AuthedPatientsIdImmunotherapyBudgetRoute
-  "/_authed/patients/$id/new-budget": typeof AuthedPatientsIdNewBudgetRoute
-  "/_authed/patients/$id/new-consultation": typeof AuthedPatientsIdNewConsultationRoute
-  "/_authed/patients/$id/new-payment": typeof AuthedPatientsIdNewPaymentRoute
   "/_authed/patients/$id/scit-calculator": typeof AuthedPatientsIdScitCalculatorRoute
   "/_authed/services/$id/edit": typeof AuthedServicesIdEditRoute
   "/_authed/patients/$id/": typeof AuthedPatientsIdIndexRoute
@@ -994,9 +964,6 @@ export interface FileRouteTypes {
     | "/outreach/campanas/nueva"
     | "/outreach/establecimientos/$rbd"
     | "/patients/$id/immunotherapy-budget"
-    | "/patients/$id/new-budget"
-    | "/patients/$id/new-consultation"
-    | "/patients/$id/new-payment"
     | "/patients/$id/scit-calculator"
     | "/services/$id/edit"
     | "/patients/$id/"
@@ -1084,9 +1051,6 @@ export interface FileRouteTypes {
     | "/outreach/campanas/nueva"
     | "/outreach/establecimientos/$rbd"
     | "/patients/$id/immunotherapy-budget"
-    | "/patients/$id/new-budget"
-    | "/patients/$id/new-consultation"
-    | "/patients/$id/new-payment"
     | "/patients/$id/scit-calculator"
     | "/services/$id/edit"
     | "/patients/$id"
@@ -1182,9 +1146,6 @@ export interface FileRouteTypes {
     | "/_authed/outreach/campanas/nueva"
     | "/_authed/outreach/establecimientos/$rbd"
     | "/_authed/patients/$id/immunotherapy-budget"
-    | "/_authed/patients/$id/new-budget"
-    | "/_authed/patients/$id/new-consultation"
-    | "/_authed/patients/$id/new-payment"
     | "/_authed/patients/$id/scit-calculator"
     | "/_authed/services/$id/edit"
     | "/_authed/patients/$id/"
@@ -1818,27 +1779,6 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof AuthedPatientsIdScitCalculatorRouteImport
       parentRoute: typeof AuthedRoute
     }
-    "/_authed/patients/$id/new-payment": {
-      id: "/_authed/patients/$id/new-payment"
-      path: "/patients/$id/new-payment"
-      fullPath: "/patients/$id/new-payment"
-      preLoaderRoute: typeof AuthedPatientsIdNewPaymentRouteImport
-      parentRoute: typeof AuthedRoute
-    }
-    "/_authed/patients/$id/new-consultation": {
-      id: "/_authed/patients/$id/new-consultation"
-      path: "/patients/$id/new-consultation"
-      fullPath: "/patients/$id/new-consultation"
-      preLoaderRoute: typeof AuthedPatientsIdNewConsultationRouteImport
-      parentRoute: typeof AuthedRoute
-    }
-    "/_authed/patients/$id/new-budget": {
-      id: "/_authed/patients/$id/new-budget"
-      path: "/patients/$id/new-budget"
-      fullPath: "/patients/$id/new-budget"
-      preLoaderRoute: typeof AuthedPatientsIdNewBudgetRouteImport
-      parentRoute: typeof AuthedRoute
-    }
     "/_authed/patients/$id/immunotherapy-budget": {
       id: "/_authed/patients/$id/immunotherapy-budget"
       path: "/patients/$id/immunotherapy-budget"
@@ -2140,9 +2080,6 @@ interface AuthedRouteChildren {
   AuthedSocialIndexRoute: typeof AuthedSocialIndexRoute
   AuthedStoreIndexRoute: typeof AuthedStoreIndexRoute
   AuthedPatientsIdImmunotherapyBudgetRoute: typeof AuthedPatientsIdImmunotherapyBudgetRoute
-  AuthedPatientsIdNewBudgetRoute: typeof AuthedPatientsIdNewBudgetRoute
-  AuthedPatientsIdNewConsultationRoute: typeof AuthedPatientsIdNewConsultationRoute
-  AuthedPatientsIdNewPaymentRoute: typeof AuthedPatientsIdNewPaymentRoute
   AuthedPatientsIdScitCalculatorRoute: typeof AuthedPatientsIdScitCalculatorRoute
   AuthedPatientsIdIndexRoute: typeof AuthedPatientsIdIndexRoute
 }
@@ -2179,9 +2116,6 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedStoreIndexRoute: AuthedStoreIndexRoute,
   AuthedPatientsIdImmunotherapyBudgetRoute:
     AuthedPatientsIdImmunotherapyBudgetRoute,
-  AuthedPatientsIdNewBudgetRoute: AuthedPatientsIdNewBudgetRoute,
-  AuthedPatientsIdNewConsultationRoute: AuthedPatientsIdNewConsultationRoute,
-  AuthedPatientsIdNewPaymentRoute: AuthedPatientsIdNewPaymentRoute,
   AuthedPatientsIdScitCalculatorRoute: AuthedPatientsIdScitCalculatorRoute,
   AuthedPatientsIdIndexRoute: AuthedPatientsIdIndexRoute,
 }
