@@ -1,7 +1,6 @@
 import { Tabs } from "@heroui/react";
 import { PAGE_CONTAINER } from "@/lib/styles";
-import { createFileRoute } from "@tanstack/react-router";
-import { requirePermission } from "@/lib/authz/route-guards";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { CreditCard, DollarSign, Package, ShoppingBag, Star, Store } from "lucide-react";
 import { useCallback } from "react";
 import { z } from "zod";
@@ -30,8 +29,8 @@ import { useLazyTabs } from "@/hooks/use-lazy-tabs";
  *   ?tab=<key>      — active tab; `replace: true` on change
  *
  * Tab-specific RBAC enforced per-panel via `<ProtectedTab>`. The outer
- * `beforeLoad` only enforces the LOOSEST permission (`read Setting`)
- * so deep-links stay valid for read-only operators.
+ * `beforeLoad` allows any permission that can reach at least one tab, so
+ * `/operations/reviews` redirects keep working for Product moderators.
  */
 const tabKey = z.enum([
   "canales",
@@ -60,7 +59,11 @@ export const Route = createFileRoute("/_authed/store/")({
     title: "Tienda",
   },
   validateSearch: searchSchema,
-  beforeLoad: requirePermission("read", "Setting"),
+  beforeLoad: ({ context }) => {
+    if (!context.can("read", "Setting") && !context.can("update", "Product")) {
+      throw redirect({ to: "/" });
+    }
+  },
   component: StoreHostPage,
 });
 
