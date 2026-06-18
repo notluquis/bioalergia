@@ -122,24 +122,27 @@ describe("updateAllergen", () => {
     expect(arg.data.normalizedCommonName).toBe(normalize("Ácaro doméstico"));
   });
 
-  it("replaces aliases: deletes existing then nests create", async () => {
+  it("replaces aliases atomically: nested deleteMany + create in one update", async () => {
     await updateAllergen({
       id: "alg_0001",
       aliases: [{ alias: "Nuevo", aliasType: "trade" }],
     } as never);
-    expect(mockDb.clinicalAllergenAlias.deleteMany).toHaveBeenCalledWith({
-      where: { allergenId: "alg_0001" },
-    });
+    // No separate delete: el reemplazo va anidado en el update (atómico).
+    expect(mockDb.clinicalAllergenAlias.deleteMany).not.toHaveBeenCalled();
     const arg = mockDb.clinicalAllergen.update.mock.calls[0]?.[0] as {
-      data: { aliases: { create: Record<string, unknown>[] } };
+      data: { aliases: { deleteMany: unknown; create: Record<string, unknown>[] } };
     };
+    expect(arg.data.aliases.deleteMany).toBeDefined();
     expect(arg.data.aliases.create[0]?.alias).toBe("Nuevo");
     expect(arg.data.aliases.create[0]?.normalizedAlias).toBe(normalize("Nuevo"));
   });
 
   it("does not touch aliases when the payload omits them", async () => {
     await updateAllergen({ id: "alg_0001", isActive: false } as never);
-    expect(mockDb.clinicalAllergenAlias.deleteMany).not.toHaveBeenCalled();
+    const arg = mockDb.clinicalAllergen.update.mock.calls[0]?.[0] as {
+      data: Record<string, unknown>;
+    };
+    expect(arg.data.aliases).toBeUndefined();
   });
 });
 

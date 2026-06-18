@@ -155,10 +155,12 @@ export async function updateAllergen(input: UpdateClinicalAllergenInput) {
   if (rest.tags !== undefined) data.tags = rest.tags.map((t) => t.toLowerCase());
   if (rest.isActive !== undefined) data.isActive = rest.isActive;
 
-  // Reemplazo total de aliases si vienen en el payload.
+  // Reemplazo total de aliases si vienen en el payload. Nested deleteMany+create
+  // en el MISMO update → atómico: si el create falla (alias normalizado duplicado,
+  // unique global) el delete hace rollback y los aliases previos se conservan.
   if (aliases !== undefined) {
-    await db.clinicalAllergenAlias.deleteMany({ where: { allergenId: id } });
-    data.aliases = buildAliasCreate(aliases);
+    const created = buildAliasCreate(aliases);
+    data.aliases = { deleteMany: {}, ...(created ?? {}) };
   }
 
   return db.clinicalAllergen.update({ where: { id }, data, include: allergenInclude });
