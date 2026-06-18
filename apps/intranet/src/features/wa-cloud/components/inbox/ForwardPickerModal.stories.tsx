@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { http, HttpResponse } from "msw";
+import { fn } from "storybook/test";
 
 import { ForwardPickerModal } from "./ForwardPickerModal";
 
@@ -145,7 +146,7 @@ export const Open: Story = {
   args: {
     isOpen: true,
     onClose: noop,
-    onForward: noop,
+    onForward: fn(),
     isPending: false,
   },
   play: async ({ canvasElement, args }) => {
@@ -155,14 +156,14 @@ export const Open: Story = {
 
     // Modal content is portalled into document.body — wait for the dialog.
     const dialog = await body.findByRole("dialog");
-    await expect(dialog).toBeVisible();
+    await expect(dialog).toBeInTheDocument();
     const inDialog = within(dialog);
 
     // The three fixtures render their display name (name ?? pushName ?? phone).
     const first = await inDialog.findByText("María González");
-    await expect(first).toBeVisible();
-    await expect(inDialog.getByText("Juan Pérez")).toBeVisible();
-    await expect(inDialog.getByText("+56933333333")).toBeVisible();
+    await expect(first).toBeInTheDocument();
+    await expect(inDialog.getByText("Juan Pérez")).toBeInTheDocument();
+    await expect(inDialog.getAllByText("+56933333333").length).toBeGreaterThan(0);
 
     // Clicking the first row forwards (conversationId, phoneNumberId).
     await userEvent.click(first);

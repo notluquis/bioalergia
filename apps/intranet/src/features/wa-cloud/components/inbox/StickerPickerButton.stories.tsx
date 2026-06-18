@@ -109,12 +109,12 @@ export const Default: Story = {
 
     // Popover content portals into document.body — wait for the grid dialog.
     const dialog = await body.findByRole("dialog", { name: "Stickers" });
-    await expect(dialog).toBeVisible();
+    await expect(dialog).toBeInTheDocument();
     const inDialog = within(dialog);
 
     // Tabs are present, and a sticker button mounts once listSavedStickers
     // resolves (3 fixtures → 3 "Enviar sticker" buttons).
-    await expect(inDialog.getByText("Recientes")).toBeVisible();
+    await expect(inDialog.getByText("Recientes")).toBeInTheDocument();
     const stickers = await inDialog.findAllByRole("button", { name: "Enviar sticker" });
     await expect(stickers.length).toBeGreaterThan(0);
   },

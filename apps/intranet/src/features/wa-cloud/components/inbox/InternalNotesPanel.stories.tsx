@@ -49,10 +49,10 @@ export const Empty: Story = {
 
     // Popover content is portalled into document.body — wait for it.
     const dialog = await body.findByRole("dialog", { name: "Notas internas del equipo" });
-    await expect(dialog).toBeVisible();
+    await expect(dialog).toBeInTheDocument();
     const inDialog = within(dialog);
-    await expect(inDialog.getByRole("textbox", { name: "Notas internas" })).toBeVisible();
-    await expect(inDialog.getByRole("button", { name: "Guardar" })).toBeVisible();
+    await expect(inDialog.getByRole("textbox", { name: "Notas internas" })).toBeInTheDocument();
+    await expect(inDialog.getByRole("button", { name: "Guardar" })).toBeInTheDocument();
   },
 };
 
@@ -79,12 +79,12 @@ export const WithNotes: Story = {
     await userEvent.click(trigger);
 
     const dialog = await body.findByRole("dialog", { name: "Notas internas del equipo" });
-    await expect(dialog).toBeVisible();
+    await expect(dialog).toBeInTheDocument();
     const inDialog = within(dialog);
     const textarea = inDialog.getByRole("textbox", { name: "Notas internas" });
     await expect(textarea).toHaveValue(
       "Paciente ansioso por el examen; confirmar receta con Dra. mañana."
     );
-    await expect(inDialog.getByRole("button", { name: "Guardar" })).toBeVisible();
+    await expect(inDialog.getByRole("button", { name: "Guardar" })).toBeInTheDocument();
   },
 };

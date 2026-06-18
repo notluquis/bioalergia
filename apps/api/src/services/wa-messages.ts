@@ -47,7 +47,9 @@ type SendMessageResponse = z.infer<typeof sendMessageResponseSchema>;
 type SendTextPayload = z.infer<typeof sendTextInputSchema>;
 type SendTemplatePayload = z.infer<typeof sendTemplateInputSchema>;
 type SendReactionPayload = z.infer<typeof sendReactionInputSchema>;
-type SendMediaPayload = z.infer<typeof sendMediaInputSchema>;
+type SendMediaPayload = z.infer<typeof sendMediaInputSchema> & {
+  recordAdHocSticker?: boolean;
+};
 type SendFlowPayload = z.infer<typeof sendFlowInputSchema>;
 type SendInteractiveListPayload = z.infer<typeof sendInteractiveListInputSchema>;
 type SendAddressPayload = z.infer<typeof sendAddressInputSchema>;
@@ -341,7 +343,10 @@ export async function sendMedia(
   // Auto-poblar la bandeja "Recientes" de stickers cuando se envía un .webp
   // ad-hoc (no desde el picker). Best-effort: un fallo NO debe romper el envío.
   // Import dinámico para evitar el ciclo wa-stickers → wa-messages.
-  const stickerMediaId = payload.type === "sticker" ? payload.mediaId : undefined;
+  const stickerMediaId =
+    payload.type === "sticker" && payload.recordAdHocSticker !== false
+      ? payload.mediaId
+      : undefined;
   if (stickerMediaId) {
     void (async () => {
       try {
@@ -624,7 +629,11 @@ const SEND_TYPE_BY_DB: Record<string, "image" | "video" | "audio" | "document" |
 
 // Resolve the Meta media id of a stored message: inbound keeps it in `mediaUrl`,
 // outbound persists it under `payload[type].id`.
-function extractMediaId(msg: { mediaUrl: string | null; type: string; payload: unknown }): string | null {
+function extractMediaId(msg: {
+  mediaUrl: string | null;
+  type: string;
+  payload: unknown;
+}): string | null {
   if (msg.mediaUrl) return msg.mediaUrl;
   if (msg.payload && typeof msg.payload === "object") {
     const sub = (msg.payload as Record<string, unknown>)[msg.type.toLowerCase()];
@@ -641,9 +650,10 @@ function extractLocation(
 ): { latitude: number; longitude: number; name?: string; address?: string } | null {
   if (!payload || typeof payload !== "object") return null;
   const root = payload as Record<string, unknown>;
-  const loc = (
-    root.location && typeof root.location === "object" ? root.location : root
-  ) as Record<string, unknown>;
+  const loc = (root.location && typeof root.location === "object" ? root.location : root) as Record<
+    string,
+    unknown
+  >;
   const lat = Number(loc.latitude);
   const lng = Number(loc.longitude);
   if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;

@@ -1,12 +1,13 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import { fn } from "storybook/test";
 
 import { AssignmentControl } from "./AssignmentControl";
 
 // Shared-inbox ownership control rendered in the conversation header. Pure
 // props (no data hooks / MSW). Three visual states: unassigned (outline
 // "Asignármela"), mine (chip "Asignada a ti" + release), and someone else's
-// (warning chip + "Tomar"). `on*` props are auto-spied (argTypesRegex in
-// preview), so the Unassigned play() can assert the click reaches onAssignToMe.
+// (warning chip + "Tomar"). The Unassigned story uses an explicit spy so the
+// play() can assert the click reaches onAssignToMe in Storybook browser tests.
 
 const noop = () => {};
 
@@ -41,7 +42,7 @@ export const Unassigned: Story = {
   args: {
     assignedToUserId: null,
     currentUserId: 42,
-    onAssignToMe: noop,
+    onAssignToMe: fn(),
     onRelease: noop,
     isPending: false,
   },
@@ -52,7 +53,6 @@ export const Unassigned: Story = {
     const btn = canvas.getByRole("button", { name: "Asignármela" });
     await expect(btn).toBeVisible();
     await userEvent.click(btn);
-    // args.onAssignToMe is an auto-spy (parameters.actions argTypesRegex "^on[A-Z].*").
     await expect(args.onAssignToMe).toHaveBeenCalledTimes(1);
   },
 };

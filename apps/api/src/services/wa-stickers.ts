@@ -43,7 +43,12 @@ function normalizeSha256(metaSha: string | undefined, bytes: Uint8Array): string
   return createHash("sha256").update(bytes).digest("hex");
 }
 
-function toSavedSticker(row: { id: number; favorite: boolean; lastUsedAt: Date | null; hitCount: number }): SavedSticker {
+function toSavedSticker(row: {
+  id: number;
+  favorite: boolean;
+  lastUsedAt: Date | null;
+  hitCount: number;
+}): SavedSticker {
   return {
     id: row.id,
     url: savedStickerUrl(row.id),
@@ -71,7 +76,11 @@ async function persistSticker(opts: {
   addedByUserId?: number | null;
   bumpUse?: boolean;
 }): Promise<{ id: number; favorite: boolean; lastUsedAt: Date | null; hitCount: number }> {
-  const { bytes, mimeType, sha256: metaSha } = await downloadMediaBytes(opts.mediaId, opts.accountId);
+  const {
+    bytes,
+    mimeType,
+    sha256: metaSha,
+  } = await downloadMediaBytes(opts.mediaId, opts.accountId);
   const sha256 = normalizeSha256(metaSha, bytes);
   const r2Key = r2KeyFor(opts.accountId, sha256);
 
@@ -120,7 +129,10 @@ export async function listSavedStickers(
   const where =
     payload.tab === "guardados"
       ? { accountId: payload.accountId, favorite: true }
-      : { accountId: payload.accountId };
+      : {
+          accountId: payload.accountId,
+          OR: [{ lastUsedAt: { not: null } }, { hitCount: { gt: 0 } }],
+        };
   // "recientes" y "guardados" ordenan por uso reciente; createdAt como
   // desempate. Postgres pone NULLS LAST por defecto en ORDER BY DESC… no: en
   // ASC NULLS LAST, en DESC NULLS FIRST. ZenStack/Kysely soporta `nulls`.
@@ -247,6 +259,7 @@ export async function sendSavedSticker(
       type: "sticker",
       mediaId: freshMediaId,
       contextMetaMessageId: payload.contextMetaMessageId,
+      recordAdHocSticker: false,
     },
     sentByUserId
   );
