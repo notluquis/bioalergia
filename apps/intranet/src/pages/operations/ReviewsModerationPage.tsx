@@ -2,8 +2,6 @@ import { Alert, Button, Card, Skeleton } from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Star } from "lucide-react";
 
-import { Page } from "@/components/layouts/Page";
-import { PageHeader } from "@/components/layouts/PageHeader";
 import { catalogORPCClient } from "@/features/catalog/orpc";
 
 const PENDING_KEY = ["catalog", "reviews", "pending"] as const;
@@ -42,11 +40,11 @@ export function ReviewsModerationPage() {
   });
 
   return (
-    <Page>
-      <PageHeader
-        title="Reseñas pendientes"
-        description="Aprueba o rechaza reseñas enviadas por clientes. Las aprobadas aparecen públicamente en la ficha del producto."
-      />
+    <div className="space-y-4">
+      <p className="text-foreground/60 text-sm">
+        Aprueba o rechaza reseñas enviadas por clientes. Las aprobadas aparecen públicamente en la
+        ficha del producto.
+      </p>
 
       {pendingQ.isLoading && <Skeleton className="h-32 w-full" />}
 
@@ -97,6 +95,6 @@ export function ReviewsModerationPage() {
           </Card>
         ))}
       </div>
-    </Page>
+    </div>
   );
 }

@@ -2,11 +2,12 @@ import { Tabs } from "@heroui/react";
 import { PAGE_CONTAINER } from "@/lib/styles";
 import { createFileRoute } from "@tanstack/react-router";
 import { requirePermission } from "@/lib/authz/route-guards";
-import { BarChart3, LayoutDashboard } from "lucide-react";
+import { BarChart3, LayoutDashboard, Receipt } from "lucide-react";
 import { useCallback } from "react";
 import { z } from "zod";
 
 import { ProtectedTab } from "@/components/auth/ProtectedTab";
+import { DailyIncomePage } from "@/features/finance/pages/DailyIncomePage";
 import { FinancialDashboardPage } from "@/features/finance/pages/FinancialDashboardPage";
 import { FinanzasStatsPage } from "@/features/finance/statistics/pages/FinanzasStatsPage";
 import { useLazyTabs } from "@/hooks/use-lazy-tabs";
@@ -16,12 +17,14 @@ import { useLazyTabs } from "@/hooks/use-lazy-tabs";
  *
  *   - widgets (default) — FinancialDashboardPage (widget grid + KPIs)
  *   - estadisticas      — FinanzasStatsPage (analytics + breakdowns)
+ *   - ingresos          — DailyIncomePage (ingresos diarios por evento)
  *
- * Was 2 sidebar entries ("Tablero" + "Estadísticas") collapsed into 1.
+ * Was 3 sidebar entries ("Tablero" + "Estadísticas" + "Ingresos Diarios")
+ * collapsed into 1; `/finanzas/daily` now redirects here (?tab=ingresos).
  * Outer enforces `read Event` (loosest), `<ProtectedTab>` re-gates
  * `estadisticas` on `read TransactionStats`.
  */
-const tabKey = z.enum(["widgets", "estadisticas"]);
+const tabKey = z.enum(["widgets", "estadisticas", "ingresos"]);
 type DashboardTab = z.infer<typeof tabKey>;
 
 const searchSchema = z.object({
@@ -80,6 +83,10 @@ function FinanzasDashboardHostPage() {
               <BarChart3 size={14} /> Estadísticas
               <Tabs.Indicator />
             </Tabs.Tab>
+            <Tabs.Tab id="ingresos">
+              <Receipt size={14} /> Ingresos Diarios
+              <Tabs.Indicator />
+            </Tabs.Tab>
           </Tabs.List>
         </Tabs.ListContainer>
 
@@ -94,6 +101,13 @@ function FinanzasDashboardHostPage() {
           {isTabMounted("estadisticas") ? (
             <ProtectedTab action="read" subject="TransactionStats">
               <FinanzasStatsPage />
+            </ProtectedTab>
+          ) : null}
+        </Tabs.Panel>
+        <Tabs.Panel id="ingresos" className="pt-4">
+          {isTabMounted("ingresos") ? (
+            <ProtectedTab action="read" subject="Event">
+              <DailyIncomePage />
             </ProtectedTab>
           ) : null}
         </Tabs.Panel>

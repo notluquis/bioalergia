@@ -56,7 +56,7 @@ export function DailyIncomePage() {
   const sortedDates = Object.keys(grouped).sort((a, b) => b.localeCompare(a));
 
   return (
-    <div className="space-y-6 p-6 md:p-8">
+    <div className="space-y-6">
       <div className="flex justify-end">
         <AppDateRangePicker
           aria-label="Rango de fechas"
