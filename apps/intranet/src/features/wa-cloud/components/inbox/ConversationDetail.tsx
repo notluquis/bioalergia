@@ -2,11 +2,16 @@
 import { Avatar, Button, Card, Chip, Spinner } from "@heroui/react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Ban, Bell, BellOff } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { chileDay, fromNowShort } from "@/lib/dates";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import { fromNowShort } from "@/lib/dates";
 import { confirmAction } from "@/components/ui/ConfirmDialog";
 import { toast } from "@/lib/toast-interceptor";
 import { ChatBubble } from "./ChatBubble";
+import { ScrollToBottomFab } from "./ScrollToBottomFab";
+import { UnreadDivider } from "./UnreadDivider";
+import { buildChatRows, firstUnreadKey, type RawMessage } from "../../lib/buildChatRows";
+import { useChatScroll } from "../../lib/useChatScroll";
+import { useIsTouch } from "../../lib/usePointer";
 import { CommerceSelectorModal } from "../modals/CommerceSelectorModal";
 import {
   ContactsSendModal,
@@ -22,7 +27,7 @@ import {
 } from "./ConversationParts";
 import { QualityBadge } from "../shared/QualityBadge";
 import { type CarouselCardState, type CopyCodeState, TemplateComposer } from "./TemplateComposer";
-import { dayLabel, initialsOf, type MessageStatus } from "../shared/_shared";
+import { initialsOf } from "../shared/_shared";
 import { useQualityAlerts } from "../../hooks/useQualityAlerts";
 import {
   uploadWaMedia,
@@ -98,11 +103,14 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
   const [copyCodeButtonIndex, setCopyCodeButtonIndex] = useState<number | null>(null);
   // Optimistic outbound messages keyed by client id, removed when refetch
   // brings the real message back.
+  // Optimistic outbound text, retained with the original input so a FAILED
+  // send can be retried in place.
   type Pending = {
     cid: string;
     body: string;
     timestamp: Date;
     status: "PENDING" | "FAILED";
+    input: { kind: "text"; body: string; contextMetaMessageId?: string };
   };
   const [pending, setPending] = useState<Pending[]>([]);
 
@@ -214,12 +222,72 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
   }, [tplKey, templates.data]);
 
   const scrollRef = useRef<HTMLDivElement>(null);
-  const messageCount = conv.data?.messages.length ?? 0;
+  const isTouch = useIsTouch();
+
+  // Day-grouped feed (pure builder; server messages + optimistic pending).
+  const rows = useMemo(
+    () => (conv.data ? buildChatRows(conv.data.messages as RawMessage[], pending) : []),
+    [conv.data, pending]
+  );
+  const feedCount = rows.reduce((n, r) => (r.kind === "message" ? n + 1 : n), 0);
+  let lastMessageOut = false;
+  for (let i = rows.length - 1; i >= 0; i--) {
+    const r = rows[i];
+    if (r && r.kind === "message") {
+      lastMessageOut = r.out;
+      break;
+    }
+  }
+
+  // Freeze the first-unread boundary the first time the feed is populated for a
+  // conversation, so markRead clearing unreadCount doesn't move the divider.
+  const unreadAnchorRef = useRef<{ convId: number; key: string | null; count: number } | null>(
+    null
+  );
+  if (
+    conv.data &&
+    rows.length > 0 &&
+    (unreadAnchorRef.current === null || unreadAnchorRef.current.convId !== conversationId)
+  ) {
+    const count = conv.data.conversation.unreadCount;
+    unreadAnchorRef.current = { convId: conversationId, key: firstUnreadKey(rows, count), count };
+  }
+  const unreadAnchor =
+    unreadAnchorRef.current?.convId === conversationId ? unreadAnchorRef.current : null;
+
+  // Landing: jump to first-unread (or bottom) once per conversation, and gate
+  // grow-auto-scroll until that landing happens (avoids a double jump on open).
+  const [landedConvId, setLandedConvId] = useState<number | null>(null);
+  const landed = landedConvId === conversationId;
+  const chatScroll = useChatScroll(scrollRef, {
+    messageCount: feedCount,
+    lastMessageOut,
+    enabled: landed,
+  });
+
   useEffect(() => {
+    setLandedConvId(null);
+  }, [conversationId]);
+
+  useEffect(() => {
+    if (!conv.data || landed || rows.length === 0) return;
     requestAnimationFrame(() => {
-      scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
+      const el = scrollRef.current;
+      if (!el) return;
+      const node = unreadAnchor?.key ? el.querySelector("[data-unread-divider]") : null;
+      if (node) node.scrollIntoView({ block: "center" });
+      else el.scrollTo({ top: el.scrollHeight });
     });
-  }, [messageCount, pending.length]);
+    setLandedConvId(conversationId);
+  }, [conv.data, landed, rows.length, conversationId, unreadAnchor?.key]);
+
+  // Focus the composer on open (desktop only — focusing on touch pops the
+  // on-screen keyboard unexpectedly).
+  const composerFocusRef = useRef<HTMLTextAreaElement>(null);
+  useEffect(() => {
+    if (isTouch) return;
+    composerFocusRef.current?.focus();
+  }, [conversationId, isTouch]);
 
   // Drop pending entries once the real refetch includes a message with a
   // matching clientId (we tag via context.clientId in templateName? No — we
@@ -253,7 +321,16 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
     const ctxId = replyTo?.metaMessageId;
     setBody("");
     setReplyTo(null);
-    setPending((p) => [...p, { cid, body: text, timestamp: new Date(), status: "PENDING" }]);
+    setPending((p) => [
+      ...p,
+      {
+        cid,
+        body: text,
+        timestamp: new Date(),
+        status: "PENDING",
+        input: { kind: "text", body: text, ...(ctxId ? { contextMetaMessageId: ctxId } : {}) },
+      },
+    ]);
     sendText.mutate(
       {
         conversationId,
@@ -268,6 +345,37 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
         onError: (err) => {
           setPending((p) => p.map((it) => (it.cid === cid ? { ...it, status: "FAILED" } : it)));
           toast.error(err instanceof Error ? err.message : "Error al enviar mensaje");
+        },
+      }
+    );
+  };
+
+  // Re-fire a FAILED optimistic send with its stored input.
+  const retryPending = (cid: string) => {
+    const p = pending.find((x) => x.cid === cid);
+    if (!p || !phoneId) return;
+    const pn = Number.parseInt(phoneId, 10);
+    setPending((prev) =>
+      prev.map((x) => (x.cid === cid ? { ...x, status: "PENDING" as const } : x))
+    );
+    sendText.mutate(
+      {
+        conversationId,
+        phoneNumberId: pn,
+        body: p.input.body,
+        ...(p.input.contextMetaMessageId
+          ? { contextMetaMessageId: p.input.contextMetaMessageId }
+          : {}),
+      },
+      {
+        onSuccess: () => {
+          void qc.invalidateQueries({ queryKey: ["wa-cloud", "conversation", conversationId] });
+        },
+        onError: (err) => {
+          setPending((prev) =>
+            prev.map((x) => (x.cid === cid ? { ...x, status: "FAILED" as const } : x))
+          );
+          toast.error(err instanceof Error ? err.message : "Error al reintentar");
         },
       }
     );
@@ -374,105 +482,6 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
     }
   };
 
-  // Build a unified, day-grouped feed (server messages + pending).
-  type ReactionInfo = { emoji: string; out: boolean };
-  type Row =
-    | { kind: "divider"; key: string; label: string }
-    | {
-        kind: "message";
-        key: string;
-        messageId: number | null;
-        metaMessageId: string | null;
-        out: boolean;
-        body: string | null;
-        type: string;
-        timestamp: Date;
-        status: MessageStatus;
-        errorTitle?: string | null;
-        errorDetails?: string | null;
-        templateName?: string | null;
-        quotedSnippet?: { body: string; out: boolean } | null;
-        reactions?: ReactionInfo[];
-        payload?: unknown;
-      };
-
-  // Index server messages by metaMessageId so we can resolve quoted replies.
-  const byMetaId = new Map<string, (typeof c.messages)[number]>();
-  for (const m of c.messages) {
-    if (m.metaMessageId) byMetaId.set(m.metaMessageId, m);
-  }
-  // Group REACTION messages by their target metaMessageId so they can render
-  // as floating chips on the original bubble (and not as standalone rows).
-  const reactionsByTarget = new Map<string, ReactionInfo[]>();
-  for (const m of c.messages) {
-    if (m.type === "REACTION" && m.contextMetaMessageId) {
-      const arr = reactionsByTarget.get(m.contextMetaMessageId) ?? [];
-      // Empty body = reaction removed; skip
-      if (m.body && m.body.trim()) {
-        arr.push({ emoji: m.body.trim(), out: m.direction === "OUTBOUND" });
-        reactionsByTarget.set(m.contextMetaMessageId, arr);
-      }
-    }
-  }
-
-  const allMessages: Row[] = [];
-  let lastDay = "";
-  const serverMsgs = c.messages
-    .filter((m) => m.type !== "REACTION")
-    .map((m) => ({ ...m, _src: "server" as const }));
-  const pendingMsgs = pending.map((p) => ({
-    id: p.cid,
-    direction: "OUTBOUND" as const,
-    body: p.body,
-    type: "TEXT",
-    timestamp: p.timestamp,
-    status: p.status,
-    errorTitle: null,
-    errorDetails: null,
-    templateName: null,
-    metaMessageId: null,
-    contextMetaMessageId: null,
-    _src: "pending" as const,
-  }));
-  type Combined = (typeof serverMsgs)[number] | (typeof pendingMsgs)[number];
-  const combined: Combined[] = [...serverMsgs, ...pendingMsgs].sort(
-    (a, b) => +new Date(a.timestamp) - +new Date(b.timestamp)
-  );
-  for (const m of combined) {
-    const day = chileDay(m.timestamp);
-    if (day !== lastDay) {
-      allMessages.push({ kind: "divider", key: `d-${day}`, label: dayLabel(m.timestamp) });
-      lastDay = day;
-    }
-    let quoted: { body: string; out: boolean } | null = null;
-    if (m.contextMetaMessageId) {
-      const target = byMetaId.get(m.contextMetaMessageId);
-      if (target) {
-        quoted = {
-          body: target.body ?? `[${target.type.toLowerCase()}]`,
-          out: target.direction === "OUTBOUND",
-        };
-      }
-    }
-    allMessages.push({
-      kind: "message",
-      key: `${m._src}-${m.id}`,
-      messageId: m._src === "server" ? Number(m.id) : null,
-      metaMessageId: m.metaMessageId ?? null,
-      out: m.direction === "OUTBOUND",
-      body: m.body,
-      type: m.type,
-      timestamp: new Date(m.timestamp),
-      status: m.status as MessageStatus,
-      errorTitle: m.errorTitle,
-      errorDetails: m.errorDetails,
-      templateName: m.templateName,
-      quotedSnippet: quoted,
-      reactions: m.metaMessageId ? reactionsByTarget.get(m.metaMessageId) : undefined,
-      payload: "payload" in m ? (m as { payload?: unknown }).payload : undefined,
-    });
-  }
-
   return (
     <>
       <Card.Header className="!flex !flex-row !items-center !justify-between gap-3 border-default-200 border-b p-3">
@@ -572,35 +581,57 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
       />
 
       <Card.Content className="flex flex-1 flex-col overflow-hidden p-0">
-        <div ref={scrollRef} className="flex-1 space-y-2 overflow-y-auto bg-content2 px-4 py-3">
-          {allMessages.length === 0 ? (
-            <p className="py-8 text-center text-default-400 text-sm">
-              Sin mensajes aún en esta conversación.
-            </p>
-          ) : (
-            allMessages.map((row) =>
-              row.kind === "divider" ? (
-                <div key={row.key} className="flex justify-center py-2">
-                  <Chip size="sm" variant="soft">
-                    <Chip.Label>{row.label}</Chip.Label>
-                  </Chip>
-                </div>
-              ) : (
-                <ChatBubble
-                  key={row.key}
-                  row={row}
-                  onReply={(r) =>
-                    setReplyTo({
-                      metaMessageId: r.metaMessageId!,
-                      snippet: r.body ?? `[${r.type.toLowerCase()}]`,
-                      out: r.out,
-                    })
-                  }
-                  onReact={(r, emoji) => handleReact(r.metaMessageId!, emoji)}
-                  onEdit={(r) => setEditTarget({ messageId: r.messageId!, body: r.body ?? "" })}
-                />
+        <div className="relative flex min-h-0 flex-1 flex-col">
+          <div
+            ref={scrollRef}
+            onScroll={chatScroll.onScroll}
+            role="log"
+            aria-live="polite"
+            aria-relevant="additions"
+            aria-label={`Mensajes de la conversación con ${contactName}`}
+            className="flex-1 overflow-y-auto bg-content2 px-4 py-3"
+          >
+            {rows.length === 0 ? (
+              <p className="py-8 text-center text-default-400 text-sm">
+                Sin mensajes aún en esta conversación.
+              </p>
+            ) : (
+              rows.map((row) =>
+                row.kind === "divider" ? (
+                  <div key={row.key} className="flex justify-center py-2">
+                    <Chip size="sm" variant="soft">
+                      <Chip.Label>{row.label}</Chip.Label>
+                    </Chip>
+                  </div>
+                ) : (
+                  <Fragment key={row.key}>
+                    {unreadAnchor?.key === row.key && unreadAnchor.count > 0 && (
+                      <UnreadDivider count={unreadAnchor.count} />
+                    )}
+                    <ChatBubble
+                      row={row}
+                      contactName={contactName}
+                      onReply={(r) =>
+                        setReplyTo({
+                          metaMessageId: r.metaMessageId!,
+                          snippet: r.body ?? `[${r.type.toLowerCase()}]`,
+                          out: r.out,
+                        })
+                      }
+                      onReact={(r, emoji) => handleReact(r.metaMessageId!, emoji)}
+                      onEdit={(r) => setEditTarget({ messageId: r.messageId!, body: r.body ?? "" })}
+                      onRetry={(r) => r.pendingCid && retryPending(r.pendingCid)}
+                    />
+                  </Fragment>
+                )
               )
-            )
+            )}
+          </div>
+          {chatScroll.showFab && (
+            <ScrollToBottomFab
+              newCount={chatScroll.newCount}
+              onPress={() => chatScroll.scrollToBottom("smooth")}
+            />
           )}
         </div>
 
@@ -642,9 +673,11 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
             </Button>
           </div>
         )}
-        <div className="border-default-200 border-t bg-background p-3">
+        <div className="border-default-200 border-t bg-background p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
           {mode === "text" ? (
             <TextComposer
+              inputRef={composerFocusRef}
+              onFocusComposer={() => chatScroll.scrollToBottom("smooth")}
               body={body}
               setBody={(v) => {
                 setBody(v);

@@ -81,6 +81,8 @@ export function TextComposer({
   onOpenList,
   onOpenCommerce,
   onSendSnippet,
+  inputRef,
+  onFocusComposer,
 }: {
   body: string;
   setBody: (v: string) => void;
@@ -99,8 +101,11 @@ export function TextComposer({
   onOpenList: () => void;
   onOpenCommerce: () => void;
   onSendSnippet: (snippetId: number) => void;
+  inputRef?: React.RefObject<HTMLTextAreaElement | null>;
+  onFocusComposer?: () => void;
 }) {
-  const ref = useRef<HTMLTextAreaElement>(null);
+  const internalRef = useRef<HTMLTextAreaElement>(null);
+  const ref = inputRef ?? internalRef;
   const fileRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
     const el = ref.current;
@@ -264,6 +269,7 @@ export function TextComposer({
             value={body}
             onChange={(e) => setBody(e.currentTarget.value)}
             onKeyDown={handleKey}
+            onFocus={onFocusComposer}
             placeholder={
               isDisabled
                 ? (disabledReason ?? "")

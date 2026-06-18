@@ -1,7 +1,9 @@
 import { formatChile } from "@/lib/dates";
-import { Button, Popover } from "@heroui/react";
-import { CornerUpLeft, Pencil, Smile } from "lucide-react";
+import { Button } from "@heroui/react";
+import { MoreVertical, RotateCw } from "lucide-react";
+import { useState } from "react";
 import { MediaAttachment } from "./MediaAttachment";
+import { MessageActionMenu, MessageActionSheet, type MessageActionsApi } from "./MessageActions";
 import {
   ContactsBubble,
   ForwardedBadge,
@@ -9,7 +11,8 @@ import {
   LocationBubble,
   UnsupportedBubble,
 } from "./SpecialMessage";
-import { type MessageStatus, QUICK_REACTIONS, StatusTicks } from "../shared/_shared";
+import { type MessageStatus, StatusTicks } from "../shared/_shared";
+import { useIsTouch, usePointerLongPress } from "../../lib/usePointer";
 
 export type ChatBubbleRow = {
   messageId: number | null;
@@ -25,15 +28,32 @@ export type ChatBubbleRow = {
   quotedSnippet?: { body: string; out: boolean } | null;
   reactions?: { emoji: string; out: boolean }[];
   payload?: unknown;
+  // Consecutive-message grouping flags (default true = standalone bubble).
+  groupStart?: boolean;
+  groupEnd?: boolean;
+  // Client id for optimistic rows, so retry can target the right pending entry.
+  pendingCid?: string | null;
+};
+
+const STATUS_LABEL: Record<MessageStatus, string> = {
+  PENDING: "enviando",
+  SENT: "enviado",
+  DELIVERED: "entregado",
+  READ: "leído",
+  FAILED: "falló",
 };
 
 export function ChatBubble({
   row,
+  contactName,
   onReply,
   onReact,
   onEdit,
+  onRetry,
+  onForward,
 }: {
   row: ChatBubbleRow;
+  contactName: string;
   onReply: (row: {
     metaMessageId: string | null;
     body: string | null;
@@ -42,14 +62,29 @@ export function ChatBubble({
   }) => void;
   onReact: (row: { metaMessageId: string | null; out: boolean }, emoji: string) => void;
   onEdit: (row: { messageId: number | null; body: string | null }) => void;
+  onRetry?: (row: ChatBubbleRow) => void;
+  onForward?: (row: ChatBubbleRow) => void;
 }) {
   const out = row.out;
   const isPending = row.status === "PENDING";
   const failed = row.status === "FAILED";
+  const isTouch = useIsTouch();
+  const [actionsOpen, setActionsOpen] = useState(false);
+
   const wrapper = out ? "justify-end" : "justify-start";
   const canInteract = row.metaMessageId !== null;
-  // 100% HeroUI semantic tokens. Outbound uses success (clinic green),
-  // inbound uses content1 (raised surface), failed uses danger.
+  const canEdit =
+    out &&
+    row.type === "TEXT" &&
+    row.messageId !== null &&
+    Date.now() - row.timestamp.getTime() < 15 * 60 * 1000;
+  const canRetry = failed && Boolean(onRetry);
+  const ownReaction = row.reactions?.find((r) => r.out)?.emoji ?? null;
+  const hasActions = canInteract || canRetry;
+
+  const groupStart = row.groupStart ?? true;
+  const groupEnd = row.groupEnd ?? true;
+
   const isSticker = row.type === "STICKER";
   const bubbleColor = isSticker
     ? "bg-transparent"
@@ -68,69 +103,76 @@ export function ChatBubble({
     ? `[plantilla] ${row.templateName}`
     : `[${row.type.toLowerCase()}]`;
 
-  const actions = canInteract ? (
-    <div
-      className={`absolute top-1 ${out ? "right-full mr-1" : "left-full ml-1"} flex gap-1 opacity-0 transition pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto`}
-    >
-      <Popover>
-        <Popover.Trigger>
-          <Button size="sm" variant="outline" isIconOnly aria-label="Reaccionar">
-            <Smile size={14} />
-          </Button>
-        </Popover.Trigger>
-        <Popover.Content className="rounded-full border border-default-200 bg-content1 shadow-md p-1">
-          <Popover.Dialog className="flex gap-0.5 p-0">
-            {QUICK_REACTIONS.map((e) => (
-              <Button
-                key={e}
-                size="sm"
-                variant="outline"
-                isIconOnly
-                aria-label={`Reaccionar ${e}`}
-                onPress={() => onReact({ metaMessageId: row.metaMessageId, out }, e)}
-                className="rounded-full border-0 text-lg"
-              >
-                {e}
-              </Button>
-            ))}
-          </Popover.Dialog>
-        </Popover.Content>
-      </Popover>
+  const api: MessageActionsApi = {
+    canReact: canInteract,
+    canReply: canInteract,
+    canEdit,
+    canForward: Boolean(onForward) && canInteract,
+    canRetry,
+    body: row.body,
+    ownReaction,
+    onReact: (emoji) => onReact({ metaMessageId: row.metaMessageId, out }, emoji),
+    onReply: () =>
+      onReply({ metaMessageId: row.metaMessageId, body: row.body, type: row.type, out }),
+    onEdit: () => onEdit({ messageId: row.messageId, body: row.body }),
+    onForward: () => onForward?.(row),
+    onRetry: () => onRetry?.(row),
+  };
+
+  const longPress = usePointerLongPress(() => setActionsOpen(true), {
+    enabled: isTouch && hasActions,
+  });
+
+  const ariaLabel = [
+    out ? "Tú" : contactName,
+    formatChile(row.timestamp, "HH:mm"),
+    row.body ?? fallbackLabel,
+    out ? STATUS_LABEL[row.status] : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
+  // Touch: always-visible (subtle) kebab outside the bubble. Desktop: hover/
+  // focus-revealed action menu (its own popover trigger).
+  const trigger = hasActions ? (
+    isTouch ? (
       <Button
         size="sm"
-        variant="outline"
+        variant="ghost"
         isIconOnly
-        aria-label="Responder"
-        onPress={() =>
-          onReply({
-            metaMessageId: row.metaMessageId,
-            body: row.body,
-            type: row.type,
-            out,
-          })
-        }
+        aria-label="Acciones del mensaje"
+        onPress={() => setActionsOpen(true)}
+        className={`absolute top-0 size-11 rounded-full text-default-500 opacity-70 ${
+          out ? "right-full mr-0.5" : "left-full ml-0.5"
+        }`}
       >
-        <CornerUpLeft size={14} />
+        <MoreVertical size={18} />
       </Button>
-      {out &&
-        row.type === "TEXT" &&
-        row.messageId !== null &&
-        Date.now() - row.timestamp.getTime() < 15 * 60 * 1000 && (
-          <Button
-            size="sm"
-            variant="outline"
-            isIconOnly
-            aria-label="Editar"
-            onPress={() => onEdit({ messageId: row.messageId, body: row.body })}
-          >
-            <Pencil size={14} />
-          </Button>
-        )}
-    </div>
+    ) : (
+      <div
+        className={`absolute top-1 flex opacity-0 transition group-focus-within:opacity-100 group-hover:opacity-100 ${
+          out ? "right-full mr-1" : "left-full ml-1"
+        }`}
+      >
+        <MessageActionMenu api={api} />
+      </div>
+    )
   ) : null;
 
   return (
-    <div className={`group relative flex ${wrapper}`} data-phi-block>
+    <article
+      aria-label={ariaLabel}
+      className={`group relative flex ${wrapper} ${groupStart ? "mt-2" : "mt-0.5"}`}
+      data-phi-block
+      {...(isTouch && hasActions ? longPress.handlers : {})}
+      onClickCapture={(e) => {
+        if (longPress.didFire.current) {
+          e.stopPropagation();
+          e.preventDefault();
+          longPress.didFire.current = false;
+        }
+      }}
+    >
       <div
         className={`relative ${
           isSticker
@@ -138,11 +180,11 @@ export function ChatBubble({
             : "w-fit min-w-[60px] max-w-[85%] sm:max-w-[75%] md:max-w-[65%] lg:max-w-[480px]"
         }`}
       >
-        {actions}
+        {trigger}
         <div
-          className={`${radius} ${isSticker ? "" : "w-fit min-w-[60px] max-w-full px-3 py-2 shadow-sm"} ${bubbleColor} ${
-            out ? "ml-auto" : "mr-auto"
-          } ${isPending ? "opacity-70" : ""}`}
+          className={`${radius} ${
+            isSticker ? "" : "w-fit min-w-[60px] max-w-full px-3 py-2 shadow-sm"
+          } ${bubbleColor} ${out ? "ml-auto" : "mr-auto"} ${isPending ? "opacity-70" : ""}`}
         >
           <ForwardedBadge payload={row.payload as Record<string, unknown> | null} />
           {row.quotedSnippet && (
@@ -180,28 +222,44 @@ export function ChatBubble({
               {row.body ?? fallbackLabel}
             </p>
           )}
-          <div
-            className={`flex items-center justify-end gap-1 text-xs ${
-              isSticker
-                ? "mt-0.5 text-default-500"
-                : out
-                  ? "mt-1 text-success-foreground/80"
-                  : "mt-1 text-default-500"
-            }`}
-          >
-            <span>{formatChile(row.timestamp, "HH:mm")}</span>
-            {out && <StatusTicks status={row.status} />}
-          </div>
-          {failed && row.errorTitle && (
-            <p className="mt-1 px-3 pb-1 text-xs text-danger">
-              {row.errorTitle}
-              {row.errorDetails ? `: ${row.errorDetails}` : ""}
-            </p>
+          {(groupEnd || failed) && (
+            <div
+              className={`flex items-center justify-end gap-1 text-xs ${
+                isSticker
+                  ? "mt-0.5 text-default-500"
+                  : out
+                    ? "mt-1 text-success-foreground/80"
+                    : "mt-1 text-default-500"
+              }`}
+            >
+              <span>{formatChile(row.timestamp, "HH:mm")}</span>
+              {out && <StatusTicks status={row.status} />}
+            </div>
+          )}
+          {failed && (
+            <div className="mt-1 flex items-center justify-between gap-2 px-3 pb-1">
+              <p className="text-danger text-xs">
+                {row.errorTitle ?? "No se pudo enviar"}
+                {row.errorDetails ? `: ${row.errorDetails}` : ""}
+              </p>
+              {canRetry && (
+                <Button
+                  size="sm"
+                  variant="danger-soft"
+                  onPress={() => onRetry?.(row)}
+                  aria-label="Reintentar envío"
+                  className="shrink-0"
+                >
+                  <RotateCw size={12} />
+                  Reintentar
+                </Button>
+              )}
+            </div>
           )}
         </div>
         {row.reactions && row.reactions.length > 0 && (
           <div
-            className={`absolute -bottom-2.5 ${out ? "right-2" : "left-2"} flex items-center gap-0.5 rounded-full bg-content1 px-1.5 py-0.5 shadow-sm ring-1 ring-default-200`}
+            className={`absolute -bottom-2.5 ${out ? "right-2" : "left-2"} flex items-center gap-0.5 rounded-full bg-content1 px-1.5 py-0.5 shadow-sm ring-1 ${ownReaction ? "ring-success" : "ring-default-200"}`}
           >
             {row.reactions.slice(0, 3).map((r, i) => (
               <span key={i} className="text-xs leading-none">
@@ -209,12 +267,15 @@ export function ChatBubble({
               </span>
             ))}
             {row.reactions.length > 1 && (
-              <span className="ml-0.5 text-xs text-default-500">{row.reactions.length}</span>
+              <span className="ml-0.5 text-default-500 text-xs">{row.reactions.length}</span>
             )}
           </div>
         )}
       </div>
-    </div>
+      {isTouch && hasActions && (
+        <MessageActionSheet open={actionsOpen} onOpenChange={setActionsOpen} api={api} />
+      )}
+    </article>
   );
 }
 
@@ -256,7 +317,7 @@ function CarouselPreview({
 
   return (
     <div className="space-y-1">
-      <p className="text-xs text-success-foreground/80">[carousel] {templateName ?? "plantilla"}</p>
+      <p className="text-success-foreground/80 text-xs">[carousel] {templateName ?? "plantilla"}</p>
       <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
         {cards.map((card, idx) => {
           const header = card.components?.find((c) => c.type === "header");
@@ -285,7 +346,7 @@ function CarouselPreview({
                 <div className="aspect-square w-full rounded-t-lg bg-default-100" />
               )}
               <div className="p-2">
-                <p className="font-medium text-xs text-default-500 uppercase">
+                <p className="font-medium text-default-500 text-xs uppercase">
                   Tarjeta {(card.card_index ?? idx) + 1}
                 </p>
                 {bodyText && <p className="mt-0.5 line-clamp-3 text-xs leading-snug">{bodyText}</p>}
