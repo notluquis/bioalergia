@@ -334,6 +334,30 @@ export async function sendMedia(
     where: { id: conv.id },
     data: { lastMessageAt: now, lastMessagePreview: preview.slice(0, 200) },
   });
+  // Auto-poblar la bandeja "Recientes" de stickers cuando se envía un .webp
+  // ad-hoc (no desde el picker). Best-effort: un fallo NO debe romper el envío.
+  // Import dinámico para evitar el ciclo wa-stickers → wa-messages.
+  const stickerMediaId = payload.type === "sticker" ? payload.mediaId : undefined;
+  if (stickerMediaId) {
+    void (async () => {
+      try {
+        const phone = await db.waPhoneNumber.findUnique({
+          where: { id: payload.phoneNumberId },
+          select: { accountId: true },
+        });
+        if (!phone) return;
+        const { recordAdHocStickerSent } = await import("./wa-stickers.ts");
+        await recordAdHocStickerSent({
+          accountId: phone.accountId,
+          mediaId: stickerMediaId,
+          addedByUserId: sentByUserId,
+        });
+      } catch {
+        // ya logueado dentro de recordAdHocStickerSent; tragamos cualquier
+        // fallo del lookup para no afectar el envío.
+      }
+    })();
+  }
   return { message } as unknown as SendMessageResponse;
 }
 

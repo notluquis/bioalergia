@@ -31,6 +31,7 @@ export {
 } from "./graph/messages.ts";
 export {
   type WaMediaUploadResult,
+  downloadMediaBytes,
   downloadMediaUrl,
   markMessageDelivered,
   markMessageRead,

@@ -6,7 +6,12 @@
 //   CF_R2_ACCOUNT_ID, CF_R2_ACCESS_KEY, CF_R2_SECRET,
 //   CF_R2_BUCKET, CF_R2_PUBLIC_BASE_URL
 
-import { DeleteObjectsCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import {
+  DeleteObjectsCommand,
+  GetObjectCommand,
+  PutObjectCommand,
+  S3Client,
+} from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 function getEnv(name: string): string {
@@ -177,6 +182,26 @@ export async function putR2Object(
   );
   const cdnBase = getEnv("CF_R2_PUBLIC_BASE_URL").replace(/\/+$/, "");
   return `${cdnBase}/${key}`;
+}
+
+/**
+ * Lee bytes de un objeto R2 (server-side). Devuelve el cuerpo como
+ * ReadableStream (para stream directo al browser) + content type. Lanza si el
+ * objeto no existe. Usado por rutas auth-gated que proxean blobs privados
+ * (p.ej. stickers guardados) sin exponer la R2 pública.
+ */
+export async function getR2Object(
+  key: string
+): Promise<{ body: ReadableStream<Uint8Array>; contentType: string; contentLength?: number }> {
+  const res = await getClient().send(
+    new GetObjectCommand({ Bucket: getEnv("CF_R2_BUCKET"), Key: key })
+  );
+  if (!res.Body) throw new Error(`[r2] objeto vacío: ${key}`);
+  return {
+    body: res.Body.transformToWebStream() as ReadableStream<Uint8Array>,
+    contentType: res.ContentType ?? "application/octet-stream",
+    contentLength: res.ContentLength,
+  };
 }
 
 /** Deriva la key R2 a partir de una CDN URL pública (o null si no matchea). */

@@ -19,6 +19,12 @@ import {
   savedLocationSchema,
   syncFlowsInputSchema,
   syncFlowsResponseSchema,
+  listSavedStickersInputSchema,
+  listSavedStickersResponseSchema,
+  savedStickerSchema,
+  saveStickerInputSchema,
+  sendSavedStickerInputSchema,
+  unsaveStickerInputSchema,
   sendSavedFlowInputSchema,
   sendSavedListInputSchema,
   sendSavedLocationInputSchema,
@@ -204,6 +210,12 @@ import {
   upsertSavedInteractiveList as upsertSavedInteractiveListService,
   upsertSavedLocation as upsertSavedLocationService,
 } from "../services/wa-saved.ts";
+import {
+  listSavedStickers as listSavedStickersService,
+  saveStickerFromMessage as saveStickerFromMessageService,
+  sendSavedSticker as sendSavedStickerService,
+  unsaveSticker as unsaveStickerService,
+} from "../services/wa-stickers.ts";
 import {
   acknowledgeAccountEvent as acknowledgeAccountEventService,
   getPhoneHealth as getPhoneHealthService,
@@ -777,6 +789,37 @@ const waRouterBase = {
     .output(sendMessageResponseSchema)
     .handler(async ({ context, input }) => {
       return sendSavedFlowService(input, context.user.id);
+    }),
+
+  // ── Saved stickers (estilo WhatsApp) ──────────────────────────────────────
+  listSavedStickers: readWa
+    .route({ method: "GET", path: "/saved/stickers", tags: ["WA Cloud"] })
+    .input(listSavedStickersInputSchema)
+    .output(listSavedStickersResponseSchema)
+    .handler(async ({ input }) => {
+      return listSavedStickersService(input);
+    }),
+  saveSticker: createWa
+    .route({ method: "POST", path: "/saved/stickers/save", tags: ["WA Cloud"] })
+    .input(saveStickerInputSchema)
+    .output(savedStickerSchema)
+    .handler(async ({ context, input }) => {
+      return saveStickerFromMessageService(input, context.user.id);
+    }),
+  unsaveSticker: deleteWa
+    .route({ method: "POST", path: "/saved/stickers/unsave", tags: ["WA Cloud"] })
+    .input(unsaveStickerInputSchema)
+    .output(waOkResponseSchema)
+    .handler(async ({ input }) => {
+      await unsaveStickerService(input.id);
+      return { status: "ok" as const };
+    }),
+  sendSavedSticker: writeWa
+    .route({ method: "POST", path: "/messages/send-saved-sticker", tags: ["WA Cloud"] })
+    .input(sendSavedStickerInputSchema)
+    .output(sendMessageResponseSchema)
+    .handler(async ({ context, input }) => {
+      return sendSavedStickerService(input, context.user.id);
     }),
 
   // ── Global scheduled list ─────────────────────────────────────────────────

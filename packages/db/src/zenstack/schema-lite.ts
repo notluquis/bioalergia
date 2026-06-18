@@ -5848,6 +5848,12 @@ export class SchemaType implements SchemaDef {
                     type: "ExamReportReaction",
                     array: true,
                     relation: { opposite: "allergen" }
+                },
+                reactivos: {
+                    name: "reactivos",
+                    type: "QuoteProduct",
+                    array: true,
+                    relation: { opposite: "allergen", name: "QuoteProductAllergen" }
                 }
             },
             idFields: ["id"],
@@ -9028,6 +9034,40 @@ export class SchemaType implements SchemaDef {
                     type: "Int",
                     default: 0 as FieldDefault
                 },
+                slug: {
+                    name: "slug",
+                    type: "String",
+                    unique: true,
+                    optional: true
+                },
+                description: {
+                    name: "description",
+                    type: "String",
+                    optional: true
+                },
+                imageUrl: {
+                    name: "imageUrl",
+                    type: "String",
+                    optional: true
+                },
+                publishedOnSite: {
+                    name: "publishedOnSite",
+                    type: "Boolean",
+                    default: false as FieldDefault
+                },
+                seoDescription: {
+                    name: "seoDescription",
+                    type: "String",
+                    optional: true
+                },
+                allergenId: {
+                    name: "allergenId",
+                    type: "String",
+                    optional: true,
+                    foreignKeyFor: [
+                        "allergen"
+                    ] as readonly string[]
+                },
                 createdAt: {
                     name: "createdAt",
                     type: "DateTime",
@@ -9044,11 +9084,18 @@ export class SchemaType implements SchemaDef {
                     type: "QuoteItem",
                     array: true,
                     relation: { opposite: "product" }
+                },
+                allergen: {
+                    name: "allergen",
+                    type: "ClinicalAllergen",
+                    optional: true,
+                    relation: { opposite: "reactivos", name: "QuoteProductAllergen", fields: ["allergenId"], references: ["id"], onDelete: "SetNull" }
                 }
             },
             idFields: ["id"],
             uniqueFields: {
-                id: { type: "Int" }
+                id: { type: "Int" },
+                slug: { type: "String" }
             }
         },
         Quote: {
@@ -9267,6 +9314,75 @@ export class SchemaType implements SchemaDef {
                     type: "QuoteProduct",
                     optional: true,
                     relation: { opposite: "items", fields: ["productId"], references: ["id"], onDelete: "SetNull" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" }
+            }
+        },
+        ReactivoLead: {
+            name: "ReactivoLead",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                empresa: {
+                    name: "empresa",
+                    type: "String"
+                },
+                contactName: {
+                    name: "contactName",
+                    type: "String"
+                },
+                email: {
+                    name: "email",
+                    type: "String"
+                },
+                phone: {
+                    name: "phone",
+                    type: "String",
+                    optional: true
+                },
+                rut: {
+                    name: "rut",
+                    type: "String",
+                    optional: true
+                },
+                message: {
+                    name: "message",
+                    type: "String",
+                    optional: true
+                },
+                productsOfInterest: {
+                    name: "productsOfInterest",
+                    type: "String",
+                    array: true,
+                    default: [] as FieldDefault
+                },
+                status: {
+                    name: "status",
+                    type: "ReactivoLeadStatus",
+                    default: "NUEVO" as FieldDefault
+                },
+                source: {
+                    name: "source",
+                    type: "String",
+                    default: "venta-empresas" as FieldDefault
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now") as FieldDefault
                 }
             },
             idFields: ["id"],
@@ -11538,6 +11654,12 @@ export class SchemaType implements SchemaDef {
                     type: "WaAccountEvent",
                     array: true,
                     relation: { opposite: "account" }
+                },
+                savedStickers: {
+                    name: "savedStickers",
+                    type: "WaSavedSticker",
+                    array: true,
+                    relation: { opposite: "account" }
                 }
             },
             idFields: ["id"],
@@ -12654,6 +12776,88 @@ export class SchemaType implements SchemaDef {
             idFields: ["id"],
             uniqueFields: {
                 id: { type: "Int" }
+            }
+        },
+        WaSavedSticker: {
+            name: "WaSavedSticker",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                accountId: {
+                    name: "accountId",
+                    type: "Int",
+                    foreignKeyFor: [
+                        "account"
+                    ] as readonly string[]
+                },
+                r2Key: {
+                    name: "r2Key",
+                    type: "String"
+                },
+                mimeType: {
+                    name: "mimeType",
+                    type: "String",
+                    default: "image/webp" as FieldDefault
+                },
+                sha256: {
+                    name: "sha256",
+                    type: "String"
+                },
+                favorite: {
+                    name: "favorite",
+                    type: "Boolean",
+                    default: false as FieldDefault
+                },
+                width: {
+                    name: "width",
+                    type: "Int",
+                    optional: true
+                },
+                height: {
+                    name: "height",
+                    type: "Int",
+                    optional: true
+                },
+                hitCount: {
+                    name: "hitCount",
+                    type: "Int",
+                    default: 0 as FieldDefault
+                },
+                lastUsedAt: {
+                    name: "lastUsedAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                addedByUserId: {
+                    name: "addedByUserId",
+                    type: "Int",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                account: {
+                    name: "account",
+                    type: "WaBusinessAccount",
+                    relation: { opposite: "savedStickers", fields: ["accountId"], references: ["id"], onDelete: "Cascade" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" },
+                accountId_sha256: { accountId: { type: "Int" }, sha256: { type: "String" } }
             }
         },
         WaAccountEvent: {
@@ -16317,6 +16521,15 @@ export class SchemaType implements SchemaDef {
                 ACCEPTED: "ACCEPTED",
                 REJECTED: "REJECTED",
                 EXPIRED: "EXPIRED"
+            }
+        },
+        ReactivoLeadStatus: {
+            name: "ReactivoLeadStatus",
+            values: {
+                NUEVO: "NUEVO",
+                CONTACTADO: "CONTACTADO",
+                COTIZADO: "COTIZADO",
+                CERRADO: "CERRADO"
             }
         },
         DTEType: {
