@@ -7,6 +7,7 @@ import { fromNowShort } from "@/lib/dates";
 import { confirmAction } from "@/components/ui/ConfirmDialog";
 import { toast } from "@/lib/toast-interceptor";
 import { ChatBubble } from "./ChatBubble";
+import { InternalNotesPanel } from "./InternalNotesPanel";
 import { ScrollToBottomFab } from "./ScrollToBottomFab";
 import { UnreadDivider } from "./UnreadDivider";
 import { WindowBanner } from "./WindowBanner";
@@ -545,6 +546,11 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
               </Button>
             );
           })()}
+          <InternalNotesPanel
+            notas={c.conversation.notas}
+            onSave={(notas) => updateConv.mutate({ id: conversationId, notas })}
+            isPending={updateConv.isPending}
+          />
           <ConvSettingsMenu
             conversationId={conversationId}
             phoneId={phoneId}
