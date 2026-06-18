@@ -41,6 +41,7 @@ import {
   useCancelScheduled,
   useConversation,
   useEditText,
+  useForwardMessage,
   useListScheduled,
   useScheduleMessage,
   useSaveSticker,
@@ -71,7 +72,8 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
   const saveSticker = useSaveSticker();
   const { user } = useAuth();
   const typing = useTypingPresence(conversationId, user?.id);
-  const [forwardBody, setForwardBody] = useState<string | null>(null);
+  const forwardMessage = useForwardMessage();
+  const [forwardSourceId, setForwardSourceId] = useState<number | null>(null);
   const [forwardOpen, setForwardOpen] = useState(false);
   const sendContacts = useSendContacts();
   const sendSnippet = useSendSnippet();
@@ -666,7 +668,7 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
                         );
                       }}
                       onForward={(r) => {
-                        setForwardBody(r.body);
+                        setForwardSourceId(r.messageId);
                         setForwardOpen(true);
                       }}
                     />
@@ -883,15 +885,19 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
       <ForwardPickerModal
         isOpen={forwardOpen}
         onClose={() => setForwardOpen(false)}
-        isPending={sendText.isPending}
+        isPending={forwardMessage.isPending}
         onForward={(targetId, targetPhone) => {
           const pn = targetPhone ?? (phoneId ? Number(phoneId) : undefined);
-          if (!pn || !forwardBody) {
+          if (!pn || !forwardSourceId) {
             toast.error("No se puede reenviar este mensaje");
             return;
           }
-          sendText.mutate(
-            { conversationId: targetId, phoneNumberId: pn, body: forwardBody },
+          forwardMessage.mutate(
+            {
+              sourceMessageId: forwardSourceId,
+              targetConversationId: targetId,
+              targetPhoneNumberId: pn,
+            },
             {
               onSuccess: () => {
                 toast.success("Mensaje reenviado");

@@ -690,6 +690,20 @@ export function useSendMedia() {
   });
 }
 
+export function useForwardMessage() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: Parameters<typeof waCloudORPCClient.forwardMessage>[0]) =>
+      waCloudORPCClient.forwardMessage(input),
+    onSuccess: (_, vars) => {
+      void qc.invalidateQueries({
+        queryKey: [...KEY, "conversation", vars.targetConversationId],
+      });
+      void qc.invalidateQueries({ queryKey: [...KEY, "conversations"] });
+    },
+  });
+}
+
 export async function uploadWaMedia(
   file: File,
   phoneNumberId: number

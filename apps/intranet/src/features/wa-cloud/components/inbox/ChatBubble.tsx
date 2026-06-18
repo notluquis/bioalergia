@@ -35,6 +35,17 @@ export type ChatBubbleRow = {
   pendingCid?: string | null;
 };
 
+const FORWARDABLE_TYPES = new Set([
+  "TEXT",
+  "IMAGE",
+  "VIDEO",
+  "AUDIO",
+  "DOCUMENT",
+  "STICKER",
+  "LOCATION",
+  "CONTACTS",
+]);
+
 const STATUS_LABEL: Record<MessageStatus, string> = {
   PENDING: "enviando",
   SENT: "enviado",
@@ -111,7 +122,11 @@ export function ChatBubble({
     canReact: canInteract,
     canReply: canInteract,
     canEdit,
-    canForward: Boolean(onForward) && canInteract && row.type === "TEXT" && Boolean(row.body),
+    canForward:
+      Boolean(onForward) &&
+      row.messageId !== null &&
+      FORWARDABLE_TYPES.has(row.type) &&
+      (row.type !== "TEXT" || Boolean(row.body)),
     canRetry,
     canSaveSticker,
     body: row.body,

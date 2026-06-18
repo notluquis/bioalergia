@@ -50,6 +50,7 @@ import {
   createTemplateResponseSchema,
   deleteTemplateInputSchema,
   editTextInputSchema,
+  forwardMessageInputSchema,
   listScheduledInputSchema,
   listScheduledResponseSchema,
   scheduleMessageInputSchema,
@@ -159,6 +160,7 @@ import {
 import { resolveUserDisplayName } from "../services/users.ts";
 import {
   editText as editTextService,
+  forwardMessage as forwardMessageService,
   listConversationMedia as listConversationMediaService,
   searchMessages as searchMessagesService,
   sendAddress as sendAddressService,
@@ -439,6 +441,14 @@ const waRouterBase = {
     .output(sendMessageResponseSchema)
     .handler(async ({ input }) => {
       return editTextService(input);
+    }),
+
+  forwardMessage: writeWa
+    .route({ method: "POST", path: "/messages/forward", tags: ["WA Cloud"] })
+    .input(forwardMessageInputSchema)
+    .output(sendMessageResponseSchema)
+    .handler(async ({ context, input }) => {
+      return forwardMessageService(input, context.user.id);
     }),
 
   createTemplate: createWa

@@ -8,6 +8,7 @@
 import { db } from "@finanzas/db";
 import type {
   editTextInputSchema,
+  forwardMessageInputSchema,
   listConversationMediaInputSchema,
   listConversationMediaResponseSchema,
   searchMessagesInputSchema,
@@ -26,6 +27,7 @@ import type {
 import type { z } from "zod";
 import { DomainError } from "../lib/errors.ts";
 import {
+  downloadMediaBytes,
   editTextMessage,
   sendAddressMessage,
   sendContactsMessage,
@@ -36,6 +38,7 @@ import {
   sendReaction as sendReactionGraph,
   sendTemplateMessage,
   sendTextMessage,
+  uploadMedia,
 } from "../modules/wa-cloud/graph-client.ts";
 
 const WINDOW_HOURS = 24;
@@ -51,6 +54,7 @@ type SendAddressPayload = z.infer<typeof sendAddressInputSchema>;
 type SendLocationPayload = z.infer<typeof sendLocationInputSchema>;
 type SendContactsPayload = z.infer<typeof sendContactsInputSchema>;
 type EditTextPayload = z.infer<typeof editTextInputSchema>;
+type ForwardMessagePayload = z.infer<typeof forwardMessageInputSchema>;
 type SearchMessagesPayload = z.infer<typeof searchMessagesInputSchema>;
 type SearchMessagesResponse = z.infer<typeof searchMessagesResponseSchema>;
 type ListConversationMediaPayload = z.infer<typeof listConversationMediaInputSchema>;
@@ -606,6 +610,147 @@ export async function sendContacts(
     data: { lastMessageAt: now, lastMessagePreview: preview },
   });
   return { message } as unknown as SendMessageResponse;
+}
+
+// ── Forward ─────────────────────────────────────────────────────────────────
+
+const SEND_TYPE_BY_DB: Record<string, "image" | "video" | "audio" | "document" | "sticker"> = {
+  IMAGE: "image",
+  VIDEO: "video",
+  AUDIO: "audio",
+  DOCUMENT: "document",
+  STICKER: "sticker",
+};
+
+// Resolve the Meta media id of a stored message: inbound keeps it in `mediaUrl`,
+// outbound persists it under `payload[type].id`.
+function extractMediaId(msg: { mediaUrl: string | null; type: string; payload: unknown }): string | null {
+  if (msg.mediaUrl) return msg.mediaUrl;
+  if (msg.payload && typeof msg.payload === "object") {
+    const sub = (msg.payload as Record<string, unknown>)[msg.type.toLowerCase()];
+    if (sub && typeof sub === "object") {
+      const id = (sub as { id?: unknown }).id;
+      if (typeof id === "string" && id) return id;
+    }
+  }
+  return null;
+}
+
+function extractLocation(
+  payload: unknown
+): { latitude: number; longitude: number; name?: string; address?: string } | null {
+  if (!payload || typeof payload !== "object") return null;
+  const root = payload as Record<string, unknown>;
+  const loc = (
+    root.location && typeof root.location === "object" ? root.location : root
+  ) as Record<string, unknown>;
+  const lat = Number(loc.latitude);
+  const lng = Number(loc.longitude);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+  return {
+    latitude: lat,
+    longitude: lng,
+    name: typeof loc.name === "string" ? loc.name : undefined,
+    address: typeof loc.address === "string" ? loc.address : undefined,
+  };
+}
+
+function extractContacts(payload: unknown): SendContactsPayload["contacts"] {
+  if (!payload || typeof payload !== "object") return [];
+  const root = payload as Record<string, unknown>;
+  const arr = Array.isArray(root.contacts) ? root.contacts : [];
+  const out: SendContactsPayload["contacts"] = [];
+  for (const c of arr) {
+    if (c && typeof c === "object" && "name" in c) {
+      const name = (c as { name?: unknown }).name;
+      if (
+        name &&
+        typeof name === "object" &&
+        typeof (name as { formatted_name?: unknown }).formatted_name === "string"
+      ) {
+        out.push(c as SendContactsPayload["contacts"][number]);
+      }
+    }
+  }
+  return out;
+}
+
+// Server-side forward: the Cloud API has no native forward operation, so we
+// re-send the source message's content into the target conversation through the
+// existing send* services (which enforce the TARGET's 24h window + blocked
+// contact + persistence). Media is re-downloaded from the source account and
+// re-uploaded to the target line — Meta media ids expire ~30d and aren't
+// portable across WABAs, so re-upload is the robust path.
+export async function forwardMessage(
+  payload: ForwardMessagePayload,
+  sentByUserId: number
+): Promise<SendMessageResponse> {
+  const src = await db.waMessage.findUnique({ where: { id: payload.sourceMessageId } });
+  if (!src) throw new DomainError("NOT_FOUND", "Mensaje de origen no encontrado");
+  const base = {
+    conversationId: payload.targetConversationId,
+    phoneNumberId: payload.targetPhoneNumberId,
+  };
+
+  if (src.type === "TEXT") {
+    if (!src.body?.trim()) {
+      throw new DomainError("BAD_REQUEST", "El mensaje no tiene texto para reenviar");
+    }
+    return sendText({ ...base, body: src.body }, sentByUserId);
+  }
+
+  const sendType = SEND_TYPE_BY_DB[src.type];
+  if (sendType) {
+    const mediaId = extractMediaId(src);
+    if (!mediaId) {
+      throw new DomainError("BAD_REQUEST", "El media no tiene un identificador reutilizable");
+    }
+    const srcPhone = await db.waPhoneNumber.findUnique({
+      where: { id: src.phoneNumberId },
+      select: { accountId: true },
+    });
+    if (!srcPhone) throw new DomainError("NOT_FOUND", "Número de origen no encontrado");
+    // Re-download bytes from the source account, re-upload to the target line.
+    const { bytes, mimeType } = await downloadMediaBytes(mediaId, srcPhone.accountId);
+    const ext = mimeType.split("/")[1]?.split(";")[0] ?? "bin";
+    const filename = src.mediaCaption ?? `reenvio-${src.id}.${ext}`;
+    const uploaded = await uploadMedia(
+      payload.targetPhoneNumberId,
+      new Blob([bytes] as BlobPart[], { type: mimeType }),
+      mimeType,
+      filename
+    );
+    // Caption is only valid on image/video/document (Meta rejects it on audio/sticker).
+    const caption = ["image", "video", "document"].includes(sendType)
+      ? (src.mediaCaption ?? undefined)
+      : undefined;
+    return sendMedia(
+      {
+        ...base,
+        type: sendType,
+        mediaId: uploaded.id,
+        caption,
+        filename: sendType === "document" ? filename : undefined,
+      },
+      sentByUserId
+    );
+  }
+
+  if (src.type === "LOCATION") {
+    const loc = extractLocation(src.payload);
+    if (!loc) throw new DomainError("BAD_REQUEST", "No se pudo leer la ubicación para reenviar");
+    return sendLocation({ ...base, ...loc }, sentByUserId);
+  }
+
+  if (src.type === "CONTACTS") {
+    const contacts = extractContacts(src.payload);
+    if (contacts.length === 0) {
+      throw new DomainError("BAD_REQUEST", "No se pudieron leer los contactos para reenviar");
+    }
+    return sendContacts({ ...base, contacts }, sentByUserId);
+  }
+
+  throw new DomainError("BAD_REQUEST", "Este tipo de mensaje no se puede reenviar");
 }
 
 export async function editText(payload: EditTextPayload): Promise<SendMessageResponse> {

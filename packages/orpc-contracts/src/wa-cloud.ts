@@ -266,6 +266,16 @@ export const sendMediaInputSchema = z.object({
   contextMetaMessageId: z.string().optional(),
 });
 
+// Forward an existing message into another conversation. Server-side copy: the
+// Cloud API has no native forward, so the backend re-sends the source content
+// by type (text/media/location/contacts), re-uploading media bytes to the
+// target line (Meta media ids expire ~30d + are WABA-scoped).
+export const forwardMessageInputSchema = z.object({
+  sourceMessageId: z.number().int().positive(),
+  targetConversationId: z.number().int().positive(),
+  targetPhoneNumberId: z.number().int().positive(),
+});
+
 export const updateWaContactInputSchema = z.object({
   id: z.number().int().positive(),
   name: z.string().nullable().optional(),
@@ -1390,6 +1400,10 @@ export const waCloudContract = {
   editText: oc
     .route({ method: "POST", path: "/messages/edit-text", tags: ["WA Cloud"] })
     .input(editTextInputSchema)
+    .output(sendMessageResponseSchema),
+  forwardMessage: oc
+    .route({ method: "POST", path: "/messages/forward", tags: ["WA Cloud"] })
+    .input(forwardMessageInputSchema)
     .output(sendMessageResponseSchema),
 
   createTemplate: oc
