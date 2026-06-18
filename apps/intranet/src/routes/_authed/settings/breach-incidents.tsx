@@ -1,13 +1,8 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { requirePermission } from "@/lib/authz/route-guards";
-import { BreachIncidentsPage } from "@/features/breach-incidents/pages/BreachIncidentsPage";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_authed/settings/breach-incidents")({
-  staticData: {
-    nav: { iconKey: "ShieldCheck", label: "Incidentes de brecha", order: 96, section: "Sistema" },
-    permission: { action: "read", subject: "Setting" },
-    title: "Configuración — Incidentes de brecha",
+  beforeLoad: () => {
+    // eslint-disable-next-line @typescript-eslint/only-throw-error
+    throw redirect({ to: "/admin/compliance", search: { tab: "brechas" } });
   },
-  beforeLoad: requirePermission("read", "Setting"),
-  component: BreachIncidentsPage,
 });

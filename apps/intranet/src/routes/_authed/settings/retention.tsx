@@ -1,13 +1,8 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { requirePermission } from "@/lib/authz/route-guards";
-import { RetentionPoliciesPage } from "@/features/settings/pages/RetentionPoliciesPage";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_authed/settings/retention")({
-  staticData: {
-    nav: { iconKey: "Database", label: "Retención de datos", order: 90, section: "Sistema" },
-    permission: { action: "update", subject: "Setting" },
-    title: "Configuración — Retención de datos",
+  beforeLoad: () => {
+    // eslint-disable-next-line @typescript-eslint/only-throw-error
+    throw redirect({ to: "/admin/compliance", search: { tab: "retencion" } });
   },
-  beforeLoad: requirePermission("update", "Setting"),
-  component: RetentionPoliciesPage,
 });

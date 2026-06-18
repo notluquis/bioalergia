@@ -94,6 +94,7 @@ import { Route as AuthedCertificatesMedicalRouteImport } from "./routes/_authed/
 import { Route as AuthedCalendarDteLinksRouteImport } from "./routes/_authed/calendar/dte-links"
 import { Route as AuthedAdminUsersRouteImport } from "./routes/_authed/admin/users"
 import { Route as AuthedAdminDatabaseRouteImport } from "./routes/_authed/admin/database"
+import { Route as AuthedAdminComplianceRouteImport } from "./routes/_authed/admin/compliance"
 import { Route as AuthedPatientsIdIndexRouteImport } from "./routes/_authed/patients/$id/index"
 import { Route as AuthedServicesIdEditRouteImport } from "./routes/_authed/services/$id.edit"
 import { Route as AuthedPatientsIdScitCalculatorRouteImport } from "./routes/_authed/patients/$id/scit-calculator"
@@ -548,6 +549,11 @@ const AuthedAdminDatabaseRoute = AuthedAdminDatabaseRouteImport.update({
   path: "/admin/database",
   getParentRoute: () => AuthedRoute,
 } as any)
+const AuthedAdminComplianceRoute = AuthedAdminComplianceRouteImport.update({
+  id: "/admin/compliance",
+  path: "/admin/compliance",
+  getParentRoute: () => AuthedRoute,
+} as any)
 const AuthedPatientsIdIndexRoute = AuthedPatientsIdIndexRouteImport.update({
   id: "/patients/$id/",
   path: "/patients/$id/",
@@ -615,6 +621,7 @@ export interface FileRoutesByFullPath {
   "/wa-cloud": typeof AuthedWaCloudRouteWithChildren
   "/verificar/$code": typeof VerificarCodeRoute
   "/verify/$id": typeof VerifyIdRoute
+  "/admin/compliance": typeof AuthedAdminComplianceRoute
   "/admin/database": typeof AuthedAdminDatabaseRoute
   "/admin/users": typeof AuthedAdminUsersRoute
   "/calendar/dte-links": typeof AuthedCalendarDteLinksRoute
@@ -702,6 +709,7 @@ export interface FileRoutesByTo {
   "/verificar/$code": typeof VerificarCodeRoute
   "/verify/$id": typeof VerifyIdRoute
   "/": typeof AuthedIndexRoute
+  "/admin/compliance": typeof AuthedAdminComplianceRoute
   "/admin/database": typeof AuthedAdminDatabaseRoute
   "/admin/users": typeof AuthedAdminUsersRoute
   "/calendar/dte-links": typeof AuthedCalendarDteLinksRoute
@@ -798,6 +806,7 @@ export interface FileRoutesById {
   "/verificar/$code": typeof VerificarCodeRoute
   "/verify/$id": typeof VerifyIdRoute
   "/_authed/": typeof AuthedIndexRoute
+  "/_authed/admin/compliance": typeof AuthedAdminComplianceRoute
   "/_authed/admin/database": typeof AuthedAdminDatabaseRoute
   "/_authed/admin/users": typeof AuthedAdminUsersRoute
   "/_authed/calendar/dte-links": typeof AuthedCalendarDteLinksRoute
@@ -894,6 +903,7 @@ export interface FileRouteTypes {
     | "/wa-cloud"
     | "/verificar/$code"
     | "/verify/$id"
+    | "/admin/compliance"
     | "/admin/database"
     | "/admin/users"
     | "/calendar/dte-links"
@@ -981,6 +991,7 @@ export interface FileRouteTypes {
     | "/verificar/$code"
     | "/verify/$id"
     | "/"
+    | "/admin/compliance"
     | "/admin/database"
     | "/admin/users"
     | "/calendar/dte-links"
@@ -1076,6 +1087,7 @@ export interface FileRouteTypes {
     | "/verificar/$code"
     | "/verify/$id"
     | "/_authed/"
+    | "/_authed/admin/compliance"
     | "/_authed/admin/database"
     | "/_authed/admin/users"
     | "/_authed/calendar/dte-links"
@@ -1758,6 +1770,13 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof AuthedAdminDatabaseRouteImport
       parentRoute: typeof AuthedRoute
     }
+    "/_authed/admin/compliance": {
+      id: "/_authed/admin/compliance"
+      path: "/admin/compliance"
+      fullPath: "/admin/compliance"
+      preLoaderRoute: typeof AuthedAdminComplianceRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     "/_authed/patients/$id/": {
       id: "/_authed/patients/$id/"
       path: "/patients/$id"
@@ -2063,6 +2082,7 @@ interface AuthedRouteChildren {
   AuthedSettingsRoute: typeof AuthedSettingsRouteWithChildren
   AuthedWaCloudRoute: typeof AuthedWaCloudRouteWithChildren
   AuthedIndexRoute: typeof AuthedIndexRoute
+  AuthedAdminComplianceRoute: typeof AuthedAdminComplianceRoute
   AuthedAdminDatabaseRoute: typeof AuthedAdminDatabaseRoute
   AuthedAdminUsersRoute: typeof AuthedAdminUsersRoute
   AuthedCompaniesIdRoute: typeof AuthedCompaniesIdRoute
@@ -2098,6 +2118,7 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedSettingsRoute: AuthedSettingsRouteWithChildren,
   AuthedWaCloudRoute: AuthedWaCloudRouteWithChildren,
   AuthedIndexRoute: AuthedIndexRoute,
+  AuthedAdminComplianceRoute: AuthedAdminComplianceRoute,
   AuthedAdminDatabaseRoute: AuthedAdminDatabaseRoute,
   AuthedAdminUsersRoute: AuthedAdminUsersRoute,
   AuthedCompaniesIdRoute: AuthedCompaniesIdRoute,
