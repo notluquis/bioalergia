@@ -7,6 +7,7 @@ import {
   DateField,
   DatePicker,
   Description,
+  Drawer,
   Dropdown,
   Label,
   ListBox,
@@ -50,6 +51,7 @@ import { AppModal } from "@/components/ui/AppModal";
 import { SelectInput, TextInput } from "@/features/outreach/components/FormField";
 import { toast } from "@/lib/toast-interceptor";
 import { EmojiPickerButton } from "./EmojiPickerButton";
+import { useIsTouch } from "../../lib/usePointer";
 import {
   useConversationMedia,
   useSavedFlows,
@@ -62,6 +64,94 @@ import {
 } from "../../hooks/useWaCloud";
 
 // ── Composer ────────────────────────────────────────────────────────────────
+
+type AttachItem = { id: string; icon: React.ReactNode; label: string; run: () => void };
+
+// Attach (+) menu: a compact dropdown on desktop, a finger-friendly bottom-sheet
+// with ≥44px rows on touch (the primary device for TENS/nurses).
+function AttachMenu({
+  items,
+  isDisabled,
+  isTouch,
+}: {
+  items: AttachItem[];
+  isDisabled: boolean;
+  isTouch: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  if (isTouch) {
+    return (
+      <>
+        <Button
+          size="sm"
+          variant="outline"
+          isIconOnly
+          aria-label="Adjuntar"
+          isDisabled={isDisabled}
+          onPress={() => setOpen(true)}
+        >
+          <Plus size={16} />
+        </Button>
+        <Drawer>
+          <Drawer.Backdrop isOpen={open} onOpenChange={setOpen} variant="blur">
+            <Drawer.Content placement="bottom" className="p-0">
+              <Drawer.Dialog
+                aria-label="Adjuntar"
+                className="flex flex-col gap-1 rounded-t-3xl border border-default-200 border-b-0 bg-background p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-2xl"
+              >
+                <Drawer.Handle />
+                {items.map((it) => (
+                  <button
+                    key={it.id}
+                    type="button"
+                    onClick={() => {
+                      setOpen(false);
+                      it.run();
+                    }}
+                    className="flex min-h-11 w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm transition hover:bg-default-100"
+                  >
+                    <span className="shrink-0">{it.icon}</span>
+                    {it.label}
+                  </button>
+                ))}
+              </Drawer.Dialog>
+            </Drawer.Content>
+          </Drawer.Backdrop>
+        </Drawer>
+      </>
+    );
+  }
+  return (
+    <Dropdown>
+      <Dropdown.Trigger>
+        <Button
+          size="sm"
+          variant="outline"
+          isIconOnly
+          aria-label="Adjuntar"
+          isDisabled={isDisabled}
+        >
+          <Plus size={16} />
+        </Button>
+      </Dropdown.Trigger>
+      <Dropdown.Popover className="w-56 p-1">
+        <ListBox aria-label="Adjuntar opciones" className="space-y-0.5">
+          {items.map((it) => (
+            <ListBox.Item
+              key={it.id}
+              id={it.id}
+              onAction={it.run}
+              className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm data-[hovered]:bg-default-100"
+            >
+              {it.icon}
+              <span>{it.label}</span>
+            </ListBox.Item>
+          ))}
+        </ListBox>
+      </Dropdown.Popover>
+    </Dropdown>
+  );
+}
 
 export function TextComposer({
   body,
@@ -107,6 +197,51 @@ export function TextComposer({
   const internalRef = useRef<HTMLTextAreaElement>(null);
   const ref = inputRef ?? internalRef;
   const fileRef = useRef<HTMLInputElement>(null);
+  const isTouch = useIsTouch();
+  const attachItems: AttachItem[] = [
+    {
+      id: "file",
+      icon: <Paperclip size={16} className="text-default-500" />,
+      label: "Archivo / foto / video",
+      run: () => fileRef.current?.click(),
+    },
+    {
+      id: "location",
+      icon: <MapPin size={16} className="text-success" />,
+      label: "Ubicación",
+      run: onOpenLocation,
+    },
+    {
+      id: "contact",
+      icon: <ContactIcon size={16} className="text-accent" />,
+      label: "Contacto",
+      run: onOpenContacts,
+    },
+    {
+      id: "flow",
+      icon: <Layers size={16} className="text-default-500" />,
+      label: "Formulario (Flow)",
+      run: onOpenFlow,
+    },
+    {
+      id: "list",
+      icon: <List size={16} className="text-accent" />,
+      label: "Lista interactiva",
+      run: onOpenList,
+    },
+    {
+      id: "schedule",
+      icon: <CalendarClock size={16} className="text-warning" />,
+      label: "Programar mensaje",
+      run: onOpenSchedule,
+    },
+    {
+      id: "commerce",
+      icon: <ShoppingBag size={16} className="text-success" />,
+      label: "Producto del catálogo",
+      run: onOpenCommerce,
+    },
+  ];
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
@@ -182,79 +317,11 @@ export function TextComposer({
         >
           <FileText size={16} />
         </Button>
-        <Dropdown>
-          <Dropdown.Trigger>
-            <Button
-              size="sm"
-              variant="outline"
-              isIconOnly
-              aria-label="Adjuntar"
-              isDisabled={isDisabled || attachPending}
-            >
-              <Plus size={16} />
-            </Button>
-          </Dropdown.Trigger>
-          <Dropdown.Popover className="w-56 p-1">
-            <ListBox aria-label="Adjuntar opciones" className="space-y-0.5">
-              <ListBox.Item
-                id="file"
-                onAction={() => fileRef.current?.click()}
-                className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm data-[hovered]:bg-default-100"
-              >
-                <Paperclip size={14} className="text-default-500" />
-                <span>Archivo / foto / video</span>
-              </ListBox.Item>
-              <ListBox.Item
-                id="location"
-                onAction={onOpenLocation}
-                className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm data-[hovered]:bg-default-100"
-              >
-                <MapPin size={14} className="text-success" />
-                <span>Ubicación</span>
-              </ListBox.Item>
-              <ListBox.Item
-                id="contact"
-                onAction={onOpenContacts}
-                className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm data-[hovered]:bg-default-100"
-              >
-                <ContactIcon size={14} className="text-accent" />
-                <span>Contacto</span>
-              </ListBox.Item>
-              <ListBox.Item
-                id="flow"
-                onAction={onOpenFlow}
-                className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm data-[hovered]:bg-default-100"
-              >
-                <Layers size={14} className="text-default-500" />
-                <span>Formulario (Flow)</span>
-              </ListBox.Item>
-              <ListBox.Item
-                id="list"
-                onAction={onOpenList}
-                className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm data-[hovered]:bg-default-100"
-              >
-                <List size={14} className="text-accent" />
-                <span>Lista interactiva</span>
-              </ListBox.Item>
-              <ListBox.Item
-                id="schedule"
-                onAction={onOpenSchedule}
-                className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm data-[hovered]:bg-default-100"
-              >
-                <CalendarClock size={14} className="text-warning" />
-                <span>Programar mensaje</span>
-              </ListBox.Item>
-              <ListBox.Item
-                id="commerce"
-                onAction={onOpenCommerce}
-                className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm data-[hovered]:bg-default-100"
-              >
-                <ShoppingBag size={14} className="text-success" />
-                <span>Producto del catálogo</span>
-              </ListBox.Item>
-            </ListBox>
-          </Dropdown.Popover>
-        </Dropdown>
+        <AttachMenu
+          items={attachItems}
+          isDisabled={isDisabled || attachPending}
+          isTouch={isTouch}
+        />
         <SnippetsButton
           onPickText={(text) => setBody(text)}
           onSendSnippet={onSendSnippet}
