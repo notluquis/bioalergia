@@ -32,7 +32,10 @@ const {
   mockAttemptCreate,
   mockReviewCreate,
   mockLinkDeleteMany,
+  mockLinkCount,
   mockDteFindMany,
+  mockLogError,
+  mockLogEvent,
 } = vi.hoisted(() => {
   const queryRawQueue: unknown[] = [];
   const queryRawCalls: string[] = [];
@@ -44,7 +47,8 @@ const {
   };
   const mockQueryRaw = vi.fn((...a: unknown[]) => {
     queryRawCalls.push(stringify(a));
-    return Promise.resolve(queryRawQueue.length > 0 ? queryRawQueue.shift() : []);
+    const result = queryRawQueue.length > 0 ? queryRawQueue.shift() : [];
+    return result instanceof Error ? Promise.reject(result) : Promise.resolve(result);
   });
   const mockExecuteRaw = vi.fn((...a: unknown[]) => {
     executeRawCalls.push(stringify(a));
@@ -54,6 +58,9 @@ const {
   const mockAttemptCreate = vi.fn(() => Promise.resolve({ id: 1n }));
   const mockReviewCreate = vi.fn(() => Promise.resolve({ id: 1n }));
   const mockLinkDeleteMany = vi.fn(() => Promise.resolve({ count: 0 }));
+  const mockLinkCount = vi.fn(() => Promise.resolve(0));
+  const mockLogError = vi.fn();
+  const mockLogEvent = vi.fn();
   // Chequeo de existencia de DTE migró de db.$queryRaw a db.dTESaleDetail.findMany.
   // Default: todos los ids pedidos existen (echo). Overridable por test.
   const mockDteFindMany = vi.fn((args: { where?: { id?: { in?: string[] } } }) =>
@@ -69,7 +76,10 @@ const {
     mockAttemptCreate,
     mockReviewCreate,
     mockLinkDeleteMany,
+    mockLinkCount,
     mockDteFindMany,
+    mockLogError,
+    mockLogEvent,
   };
 });
 
@@ -79,7 +89,10 @@ vi.mock("@finanzas/db", () => ({
     $executeRaw: (...a: unknown[]) => mockExecuteRaw(...a),
     eventDteAutoLinkAttempt: { create: (...a: unknown[]) => mockAttemptCreate(...a) },
     eventDteMatchReview: { create: (...a: unknown[]) => mockReviewCreate(...a) },
-    eventDteSaleLink: { deleteMany: (...a: unknown[]) => mockLinkDeleteMany(...a) },
+    eventDteSaleLink: {
+      count: (...a: unknown[]) => mockLinkCount(...a),
+      deleteMany: (...a: unknown[]) => mockLinkDeleteMany(...a),
+    },
     dTESaleDetail: { findMany: (...a: unknown[]) => mockDteFindMany(...a) },
   },
 }));
@@ -94,6 +107,11 @@ vi.mock("../clinical-series.ts", () => ({
   extractIdentityHints: (...a: unknown[]) => mockExtractIdentityHints(...a),
   getClinicalSeriesSnapshotByExternalEvent: (...a: unknown[]) => mockGetSnapshot(...a),
   syncClinicalSeriesForInternalEventId: (...a: unknown[]) => mockSyncSeries(...a),
+}));
+
+vi.mock("../../lib/logger.ts", () => ({
+  logError: (...a: unknown[]) => mockLogError(...a),
+  logEvent: (...a: unknown[]) => mockLogEvent(...a),
 }));
 
 vi.mock("../../lib/time.ts", async () => {
@@ -148,7 +166,10 @@ function reset() {
   mockAttemptCreate.mockClear();
   mockReviewCreate.mockClear();
   mockLinkDeleteMany.mockClear();
+  mockLinkCount.mockClear();
   mockDteFindMany.mockClear();
+  mockLogError.mockClear();
+  mockLogEvent.mockClear();
   mockExtractIdentityHints.mockReset();
   mockGetSnapshot.mockReset();
   mockSyncSeries.mockReset();
@@ -901,6 +922,139 @@ describe("autoLinkEventDate", () => {
     expect(reviewCreateArgs.data.event).toEqual({ connect: { id: 100 } });
     expect(reviewCreateArgs.data.creator).toEqual({ connect: { id: 1 } });
     expect(collectUndefinedPaths(reviewCreateArgs.data.hypothesis)).toEqual([]);
+  });
+
+  it("logs a review persistence failure without marking the committed link as skipped", async () => {
+    mockExtractIdentityHints.mockReturnValue({
+      patientName: "Nadia Yanez",
+      patientRut: "22.222.222-2",
+      beneficiaryName: null,
+      beneficiaryRut: null,
+    });
+    mockReviewCreate.mockRejectedValueOnce(new Error("review json failed"));
+    queryRawQueue.push([eventRow()]);
+    queryRawQueue.push([eventRow()]);
+    queryRawQueue.push([]);
+    queryRawQueue.push([
+      {
+        dteSaleDetailId: "dte-1",
+        documentType: 39,
+        clientRUT: "22222222-2",
+        clientName: "YANEZ NADIA",
+        folio: "F-9",
+        documentDate: "2026-05-10",
+        exemptAmount: 0,
+        netAmount: 4200,
+        ivaAmount: 800,
+        totalAmount: 5000,
+        linkedEventsCount: 0,
+        retrievalMeta: {
+          exactRutMatch: true,
+          sameSeriesRutMatch: false,
+          amountCandidate: true,
+          sharedSurnameMatch: false,
+          trigramSimilarity: 0,
+        },
+      },
+    ]);
+    queryRawQueue.push([eventRow()]);
+    queryRawQueue.push([]);
+    queryRawQueue.push([]);
+
+    const r = await autoLinkEventDate({ date: "2026-05-10", userId: 1 });
+
+    expect(r.linked).toBe(1);
+    expect(r.skipped).toBe(0);
+    expect(r.details).toEqual([{ eventId: "evt", reason: "Auto-linked (96)" }]);
+    expect(mockLogError).toHaveBeenCalledWith(
+      "dte.match_review.create_failed",
+      expect.any(Error),
+      expect.objectContaining({
+        eventId: 100,
+        hypothesisUndefinedPaths: [],
+        sanitizedHypothesisUndefinedPaths: [],
+      })
+    );
+    expect(mockLogError).not.toHaveBeenCalledWith(
+      "dte.autolink.event_failed",
+      expect.anything(),
+      expect.anything()
+    );
+    expect(mockAttemptCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          eventId: 100,
+          reason: "Auto-linked (96)",
+          status: "LINKED",
+        }),
+      })
+    );
+  });
+
+  it("counts a post-commit confirm failure as linked when the link was persisted", async () => {
+    mockExtractIdentityHints.mockReturnValue({
+      patientName: "Nadia Yanez",
+      patientRut: "22.222.222-2",
+      beneficiaryName: null,
+      beneficiaryRut: null,
+    });
+    mockLinkCount.mockResolvedValueOnce(1);
+    queryRawQueue.push([eventRow()]);
+    queryRawQueue.push([eventRow()]);
+    queryRawQueue.push([]);
+    queryRawQueue.push([
+      {
+        dteSaleDetailId: "dte-1",
+        documentType: 39,
+        clientRUT: "22222222-2",
+        clientName: "YANEZ NADIA",
+        folio: "F-9",
+        documentDate: "2026-05-10",
+        exemptAmount: 0,
+        netAmount: 4200,
+        ivaAmount: 800,
+        totalAmount: 5000,
+        linkedEventsCount: 0,
+        retrievalMeta: {
+          exactRutMatch: true,
+          sameSeriesRutMatch: false,
+          amountCandidate: true,
+          sharedSurnameMatch: false,
+          trigramSimilarity: 0,
+        },
+      },
+    ]);
+    queryRawQueue.push([eventRow()]);
+    queryRawQueue.push([]);
+    queryRawQueue.push(new Error("final link read failed"));
+
+    const r = await autoLinkEventDate({ date: "2026-05-10", userId: 1 });
+
+    expect(r.linked).toBe(1);
+    expect(r.skipped).toBe(0);
+    expect(r.details).toEqual([{ eventId: "evt", reason: "Auto-linked (96)" }]);
+    expect(mockLogError).toHaveBeenCalledWith(
+      "dte.autolink.post_commit_failed",
+      expect.any(Error),
+      expect.objectContaining({
+        eventId: 100,
+        externalEventId: "evt",
+      })
+    );
+    expect(mockLogError).not.toHaveBeenCalledWith(
+      "dte.autolink.event_failed",
+      expect.anything(),
+      expect.anything()
+    );
+    expect(mockAttemptCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          eventId: 100,
+          reason: "Auto-linked (96)",
+          status: "LINKED",
+        }),
+      })
+    );
   });
 
   it("skips and records a SKIPPED attempt when no hypothesis clears the bar", async () => {

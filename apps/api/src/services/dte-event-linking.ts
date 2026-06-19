@@ -3,6 +3,7 @@ import jaroWinkler from "talisman/metrics/jaro-winkler.js";
 import { symmetric as mongeElkanSymmetric } from "talisman/metrics/monge-elkan.js";
 import { joinClinicalText } from "../lib/clinical-text.ts";
 import { DomainError } from "../lib/errors.ts";
+import { logError, logEvent } from "../lib/logger.ts";
 import { normalizeRut } from "../lib/rut.ts";
 import { getMonthRange, toChileDateString } from "../lib/time.ts";
 import {
@@ -404,16 +405,49 @@ async function recordMatchReview(params: {
   hypothesisKind?: null | HypothesisKind;
 }) {
   const creator = params.createdBy != null ? { connect: { id: params.createdBy } } : undefined;
-  await db.eventDteMatchReview.create({
-    data: {
+  const rawHypothesis = params.hypothesis ?? null;
+  const dteSaleDetailIdsJson = toJsonValue(params.dteSaleDetailIds);
+  const hypothesisJson = toJsonValue(rawHypothesis);
+  const data = {
+    action: params.action,
+    event: { connect: { id: params.eventId } },
+    hypothesisKind: params.hypothesisKind ?? null,
+    dteSaleDetailIds: dteSaleDetailIdsJson as never,
+    hypothesis: hypothesisJson as never,
+    ...(creator ? { creator } : {}),
+  };
+
+  try {
+    await db.eventDteMatchReview.create({ data });
+  } catch (error) {
+    logError("dte.match_review.create_failed", error, {
       action: params.action,
-      event: { connect: { id: params.eventId } },
+      createdBy: params.createdBy ?? null,
+      dteSaleDetailIds: params.dteSaleDetailIds,
+      eventId: params.eventId,
       hypothesisKind: params.hypothesisKind ?? null,
-      dteSaleDetailIds: toJsonValue(params.dteSaleDetailIds) as never,
-      hypothesis: toJsonValue(params.hypothesis ?? null) as never,
-      ...(creator ? { creator } : {}),
+      hypothesisShape: summarizeJsonForLog(rawHypothesis),
+      hypothesisUndefinedPaths: collectUndefinedPaths(rawHypothesis),
+      sanitizedHypothesisUndefinedPaths: collectUndefinedPaths(hypothesisJson),
+    });
+  }
+}
+
+async function hasCommittedEventDteLinks(params: {
+  dteSaleDetailIds: string[];
+  eventId: number;
+}): Promise<boolean> {
+  if (params.dteSaleDetailIds.length === 0) return false;
+
+  const linkedCount = await db.eventDteSaleLink.count({
+    where: {
+      dteSaleDetailId: { in: params.dteSaleDetailIds },
+      eventId: params.eventId,
+      status: { not: "REJECTED" },
     },
   });
+
+  return linkedCount >= params.dteSaleDetailIds.length;
 }
 
 function normalizeText(value: string): string {
@@ -616,6 +650,42 @@ function toJsonValue(value: unknown): JsonValue {
   }
 
   return JSON.parse(JSON.stringify(value)) as JsonValue;
+}
+
+function collectUndefinedPaths(value: unknown, path = "$"): string[] {
+  if (value === undefined) {
+    return [path];
+  }
+
+  if (Array.isArray(value)) {
+    return value.flatMap((item, index) => collectUndefinedPaths(item, `${path}[${index}]`));
+  }
+
+  if (value !== null && typeof value === "object") {
+    return Object.entries(value).flatMap(([key, child]) =>
+      collectUndefinedPaths(child, `${path}.${key}`)
+    );
+  }
+
+  return [];
+}
+
+function summarizeJsonForLog(value: unknown): Record<string, unknown> {
+  const text = safeJsonStringify(value);
+  return {
+    jsonLength: text.length,
+    rootKind: Array.isArray(value) ? "array" : value === null ? "null" : typeof value,
+  };
+}
+
+function safeJsonStringify(value: unknown): string {
+  try {
+    return JSON.stringify(value, (_key, nestedValue) =>
+      typeof nestedValue === "bigint" ? nestedValue.toString() : nestedValue
+    );
+  } catch (error) {
+    return `[unserializable:${error instanceof Error ? error.message : String(error)}]`;
+  }
 }
 
 function toSignal(code: string, label: string, weight: number, value?: null | string): MatchSignal {
@@ -2340,6 +2410,16 @@ export async function autoLinkEventDate(params: {
   const selected = selectGlobalAutoLinkHypotheses(
     suggestionEntries.map((entry) => ({ event: entry.event, hypotheses: entry.eligible }))
   );
+  logEvent("dte.autolink.date_candidates", {
+    date: params.date,
+    eligibleEvents: suggestionEntries.filter((entry) => entry.eligible.length > 0).length,
+    eventsToProcess: eventsToProcess.length,
+    minScore,
+    selectedEvents: selected.size,
+    strategy,
+    totalEvents: events.length,
+    userId: params.userId,
+  });
 
   let linked = 0;
   let skipped = 0;
@@ -2367,41 +2447,136 @@ export async function autoLinkEventDate(params: {
       continue;
     }
 
-    await confirmEventDteLink({
-      calendarId: entry.event.googleCalendarId,
-      confidenceScore: chosen.score,
-      dteSaleDetailIds: chosen.dteSaleDetailIds,
-      eventId: entry.event.externalEventId,
-      hypothesis: chosen,
-      hypothesisKind: chosen.kind,
-      matchedBy: chosen.method,
-      matchedName: chosen.clientName,
-      matchedRUT: chosen.clientRUT,
-      policyKey: chosen.policyKey,
-      userId: params.userId,
-    });
-    await recordAutoLinkAttempt({
-      confidenceScore: chosen.score,
-      dteSaleDetailId: chosen.dteSaleDetailIds[0] ?? null,
-      eventId: entry.event.eventId,
-      reason:
-        chosen.kind === "bundle"
-          ? `Auto-linked bundle (${chosen.score})`
-          : `Auto-linked (${chosen.score})`,
-      status: "LINKED",
-      userId: params.userId,
-    });
-    linked += 1;
-    details.push({
-      eventId: entry.event.externalEventId,
-      reason:
-        chosen.kind === "bundle"
-          ? `Auto-linked bundle (${chosen.score})`
-          : `Auto-linked (${chosen.score})`,
-    });
+    const linkedReason =
+      chosen.kind === "bundle"
+        ? `Auto-linked bundle (${chosen.score})`
+        : `Auto-linked (${chosen.score})`;
+    try {
+      const linkedDocuments = await confirmEventDteLink({
+        calendarId: entry.event.googleCalendarId,
+        confidenceScore: chosen.score,
+        dteSaleDetailIds: chosen.dteSaleDetailIds,
+        eventId: entry.event.externalEventId,
+        hypothesis: chosen,
+        hypothesisKind: chosen.kind,
+        matchedBy: chosen.method,
+        matchedName: chosen.clientName,
+        matchedRUT: chosen.clientRUT,
+        policyKey: chosen.policyKey,
+        userId: params.userId,
+      });
+      linked += 1;
+      details.push({ eventId: entry.event.externalEventId, reason: linkedReason });
+      try {
+        await recordAutoLinkAttempt({
+          confidenceScore: chosen.score,
+          dteSaleDetailId: chosen.dteSaleDetailIds[0] ?? null,
+          eventId: entry.event.eventId,
+          reason: linkedReason,
+          status: "LINKED",
+          userId: params.userId,
+        });
+      } catch (attemptError) {
+        logError("dte.autolink.linked_attempt_record_failed", attemptError, {
+          date: params.date,
+          eventId: entry.event.eventId,
+          externalEventId: entry.event.externalEventId,
+          linkedDocumentCount: linkedDocuments.length,
+          userId: params.userId,
+        });
+      }
+    } catch (error) {
+      const reason = "Error al auto-vincular DTE";
+      let linkWasCommitted = false;
+      try {
+        linkWasCommitted = await hasCommittedEventDteLinks({
+          dteSaleDetailIds: chosen.dteSaleDetailIds,
+          eventId: entry.event.eventId,
+        });
+      } catch (commitCheckError) {
+        logError("dte.autolink.commit_check_failed", commitCheckError, {
+          date: params.date,
+          eventId: entry.event.eventId,
+          externalEventId: entry.event.externalEventId,
+          originalError: error instanceof Error ? error.message : String(error),
+          userId: params.userId,
+        });
+      }
+
+      if (linkWasCommitted) {
+        logError("dte.autolink.post_commit_failed", error, {
+          calendarId: entry.event.googleCalendarId,
+          candidateDteSaleDetailIds: chosen.dteSaleDetailIds,
+          date: params.date,
+          eventId: entry.event.eventId,
+          externalEventId: entry.event.externalEventId,
+          hypothesisKind: chosen.kind,
+          hypothesisScore: chosen.score,
+          hypothesisShape: summarizeJsonForLog(chosen),
+          hypothesisUndefinedPaths: collectUndefinedPaths(chosen),
+          userId: params.userId,
+        });
+        linked += 1;
+        details.push({ eventId: entry.event.externalEventId, reason: linkedReason });
+
+        try {
+          await recordAutoLinkAttempt({
+            confidenceScore: chosen.score,
+            dteSaleDetailId: chosen.dteSaleDetailIds[0] ?? null,
+            eventId: entry.event.eventId,
+            reason: linkedReason,
+            status: "LINKED",
+            userId: params.userId,
+          });
+        } catch (attemptError) {
+          logError("dte.autolink.linked_attempt_record_failed", attemptError, {
+            date: params.date,
+            eventId: entry.event.eventId,
+            externalEventId: entry.event.externalEventId,
+            userId: params.userId,
+          });
+        }
+        continue;
+      }
+
+      logError("dte.autolink.event_failed", error, {
+        calendarId: entry.event.googleCalendarId,
+        candidateDteSaleDetailIds: chosen.dteSaleDetailIds,
+        date: params.date,
+        eventId: entry.event.eventId,
+        externalEventId: entry.event.externalEventId,
+        hypothesisKind: chosen.kind,
+        hypothesisScore: chosen.score,
+        hypothesisShape: summarizeJsonForLog(chosen),
+        hypothesisUndefinedPaths: collectUndefinedPaths(chosen),
+        userId: params.userId,
+      });
+      skipped += 1;
+      incrementReason(skippedByReason, reason);
+      details.push({ eventId: entry.event.externalEventId, reason });
+
+      try {
+        await recordAutoLinkAttempt({
+          confidenceScore: chosen.score,
+          dteSaleDetailId: chosen.dteSaleDetailIds[0] ?? null,
+          eventId: entry.event.eventId,
+          reason,
+          status: "SKIPPED",
+          userId: params.userId,
+        });
+      } catch (attemptError) {
+        logError("dte.autolink.failure_attempt_record_failed", attemptError, {
+          date: params.date,
+          eventId: entry.event.eventId,
+          externalEventId: entry.event.externalEventId,
+          originalError: error instanceof Error ? error.message : String(error),
+          userId: params.userId,
+        });
+      }
+    }
   }
 
-  return {
+  const result = {
     date: params.date,
     details,
     linked,
@@ -2409,6 +2584,16 @@ export async function autoLinkEventDate(params: {
     skippedByReason: normalizeReasonCounts(skippedByReason),
     totalEvents: eventsToProcess.length,
   };
+  logEvent("dte.autolink.date_result", {
+    date: params.date,
+    linked,
+    skipped,
+    skippedByReason: result.skippedByReason,
+    totalEvents: eventsToProcess.length,
+    userId: params.userId,
+  });
+
+  return result;
 }
 
 export async function autoLinkEventPeriod(params: {

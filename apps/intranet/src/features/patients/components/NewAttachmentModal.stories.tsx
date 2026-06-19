@@ -76,10 +76,10 @@ export const Empty: Story = {
   render: () => <ModalHarness />,
   // addon-vitest interaction — modal renders, dialog reachable to AT.
   play: async ({ canvasElement }) => {
-    const { expect, within } = await import("storybook/test");
+    const { expect, within, waitFor } = await import("storybook/test");
     const root = within(canvasElement.ownerDocument.body);
     const dialog = await root.findByRole("dialog");
-    await expect(dialog).toBeVisible();
+    await waitFor(() => expect(dialog).toBeVisible());
   },
 };
 
