@@ -120,6 +120,24 @@ const {
 
 const { DomainError } = await import("../../lib/errors.ts");
 
+function collectUndefinedPaths(value: unknown, path = "$"): string[] {
+  if (value === undefined) {
+    return [path];
+  }
+
+  if (Array.isArray(value)) {
+    return value.flatMap((item, index) => collectUndefinedPaths(item, `${path}[${index}]`));
+  }
+
+  if (value !== null && typeof value === "object") {
+    return Object.entries(value).flatMap(([key, child]) =>
+      collectUndefinedPaths(child, `${path}.${key}`)
+    );
+  }
+
+  return [];
+}
+
 function reset() {
   queryRawQueue.length = 0;
   queryRawCalls.length = 0;
@@ -872,6 +890,17 @@ describe("autoLinkEventDate", () => {
     expect(r.details[0].reason).toMatch(/^Auto-linked \(96\)$/);
     // a LINKED auto-link attempt was recorded
     expect(mockAttemptCreate).toHaveBeenCalled();
+    expect(mockReviewCreate).toHaveBeenCalledTimes(1);
+    const reviewCreateArgs = mockReviewCreate.mock.calls[0]?.[0] as {
+      data: {
+        creator?: unknown;
+        event?: unknown;
+        hypothesis?: unknown;
+      };
+    };
+    expect(reviewCreateArgs.data.event).toEqual({ connect: { id: 100 } });
+    expect(reviewCreateArgs.data.creator).toEqual({ connect: { id: 1 } });
+    expect(collectUndefinedPaths(reviewCreateArgs.data.hypothesis)).toEqual([]);
   });
 
   it("skips and records a SKIPPED attempt when no hypothesis clears the bar", async () => {

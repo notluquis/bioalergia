@@ -1,4 +1,4 @@
-import { db } from "@finanzas/db";
+import { db, type JsonValue } from "@finanzas/db";
 import jaroWinkler from "talisman/metrics/jaro-winkler.js";
 import { symmetric as mongeElkanSymmetric } from "talisman/metrics/monge-elkan.js";
 import { joinClinicalText } from "../lib/clinical-text.ts";
@@ -403,15 +403,15 @@ async function recordMatchReview(params: {
   hypothesis?: unknown;
   hypothesisKind?: null | HypothesisKind;
 }) {
+  const creator = params.createdBy != null ? { connect: { id: params.createdBy } } : undefined;
   await db.eventDteMatchReview.create({
     data: {
-      eventId: params.eventId,
       action: params.action,
+      event: { connect: { id: params.eventId } },
       hypothesisKind: params.hypothesisKind ?? null,
-      // Json: pasar el valor, NO JSON.stringify (ZenStack serializa).
-      dteSaleDetailIds: params.dteSaleDetailIds,
-      hypothesis: (params.hypothesis ?? null) as never,
-      createdBy: params.createdBy ?? null,
+      dteSaleDetailIds: toJsonValue(params.dteSaleDetailIds) as never,
+      hypothesis: toJsonValue(params.hypothesis ?? null) as never,
+      ...(creator ? { creator } : {}),
     },
   });
 }
@@ -610,8 +610,16 @@ export function resolveMatchAmountHint(params: {
   return null;
 }
 
+function toJsonValue(value: unknown): JsonValue {
+  if (value === undefined) {
+    return null;
+  }
+
+  return JSON.parse(JSON.stringify(value)) as JsonValue;
+}
+
 function toSignal(code: string, label: string, weight: number, value?: null | string): MatchSignal {
-  return { code, label, value, weight };
+  return value === undefined ? { code, label, weight } : { code, label, value, weight };
 }
 
 function extractIdentityClaims(params: {
