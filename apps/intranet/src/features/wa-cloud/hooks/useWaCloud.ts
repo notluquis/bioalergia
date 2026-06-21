@@ -704,6 +704,23 @@ export function useForwardMessage() {
   });
 }
 
+// Turn a failed upload Response into a short, human Spanish message. Gateways
+// (Railway/Caddy) answer 5xx with a full HTML error page — never surface that
+// raw HTML in a toast. Prefer a JSON `{error}` body, else map by status.
+async function uploadErrorMessage(res: Response): Promise<string> {
+  const ct = res.headers.get("content-type") ?? "";
+  if (ct.includes("application/json")) {
+    const j = (await res.json().catch(() => null)) as { error?: string; message?: string } | null;
+    const msg = j?.error ?? j?.message;
+    if (msg) return msg;
+  }
+  if (res.status === 413) return "El archivo es demasiado grande.";
+  if (res.status === 415) return "Tipo de archivo no soportado.";
+  if (res.status === 401 || res.status === 403) return "Sesión expirada. Recarga la página.";
+  if (res.status >= 500) return "El servidor no está disponible. Intenta de nuevo en un momento.";
+  return `No se pudo subir el archivo (${res.status}).`;
+}
+
 export async function uploadWaMedia(
   file: File,
   phoneNumberId: number
@@ -718,8 +735,7 @@ export async function uploadWaMedia(
     headers: csrfHeaders(),
   });
   if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    throw new Error(`Upload failed (${res.status}): ${text.slice(0, 200)}`);
+    throw new Error(await uploadErrorMessage(res));
   }
   return res.json();
 }
