@@ -320,7 +320,7 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
 
   if (conv.isLoading || !conv.data) {
     return (
-      <Card.Content className="flex h-full items-center justify-center">
+      <Card.Content className="flex min-h-0 flex-1 items-center justify-center">
         <Spinner aria-label="Cargando" />
       </Card.Content>
     );
@@ -625,7 +625,7 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
             aria-live="polite"
             aria-relevant="additions"
             aria-label={`Mensajes de la conversación con ${contactName}`}
-            className="flex-1 overflow-y-auto bg-content2 px-4 py-3"
+            className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain bg-content2 px-4 py-3"
           >
             {rows.length === 0 ? (
               <p className="py-8 text-center text-default-400 text-sm">

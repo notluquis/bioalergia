@@ -326,7 +326,7 @@ export function WaCloudInboxPage({ onOpenSearchDrawer }: WaCloudInboxPageProps =
   }, [onKey]);
 
   return (
-    <div className="h-[calc(100dvh-7rem)] p-4">
+    <div className="flex h-[calc(100dvh-7rem)] min-h-0 flex-col p-4 md:h-full">
       {sharedPayload.payload && (
         <SharedPayloadModal
           payload={sharedPayload.payload}
@@ -349,9 +349,9 @@ export function WaCloudInboxPage({ onOpenSearchDrawer }: WaCloudInboxPageProps =
           }}
         />
       )}
-      <Card className="grid h-full grid-cols-1 overflow-hidden p-0 lg:grid-cols-[360px_1fr]">
+      <Card className="grid min-h-0 flex-1 grid-cols-1 overflow-hidden p-0 lg:grid-cols-[360px_1fr]">
         {showList && (
-          <aside className="flex h-full flex-col border-default-200 lg:border-r">
+          <aside className="flex min-h-0 flex-col border-default-200 lg:border-r">
             <header className="flex flex-col gap-2 border-default-200 border-b p-3">
               <div className="flex items-center justify-between gap-2">
                 <h2 className="flex items-center gap-2 font-semibold text-base">
@@ -432,7 +432,7 @@ export function WaCloudInboxPage({ onOpenSearchDrawer }: WaCloudInboxPageProps =
               orientation="vertical"
               size={32}
               hideScrollBar
-              className="flex-1 overflow-y-auto"
+              className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain"
             >
               {conversations.isLoading || !conversations.data ? (
                 <ConversationListSkeleton />
@@ -550,7 +550,7 @@ export function WaCloudInboxPage({ onOpenSearchDrawer }: WaCloudInboxPageProps =
         )}
 
         {showDetail && (
-          <section className="flex h-full flex-col overflow-hidden bg-content1">
+          <section className="flex min-h-0 flex-col overflow-hidden bg-content1">
             {isMobile && selectedId && (
               <div className="flex items-center gap-2 border-default-200 border-b bg-content2 px-2 py-1.5">
                 <Button
@@ -567,7 +567,7 @@ export function WaCloudInboxPage({ onOpenSearchDrawer }: WaCloudInboxPageProps =
             {selectedId ? (
               <ConversationDetail conversationId={selectedId} />
             ) : (
-              <div className="flex h-full flex-1 items-center justify-center bg-default-50 p-8">
+              <div className="flex min-h-0 flex-1 items-center justify-center bg-default-50 p-8">
                 <EmptyState className="max-w-sm text-center">
                   <MessageSquareText size={48} className="mx-auto text-default-300" />
                   <p className="mt-3 font-semibold text-base">Selecciona una conversación</p>
