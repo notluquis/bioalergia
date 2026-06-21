@@ -188,8 +188,23 @@ function WaCloudPage() {
   );
 
   return (
-    <div className={PAGE_CONTAINER}>
-      <Tabs aria-label="WhatsApp Cloud" selectedKey={tab} onSelectionChange={onTabChange}>
+    <div
+      className={
+        tab === "inbox"
+          ? "w-full space-y-3 md:flex md:min-h-0 md:flex-col md:overflow-hidden md:size-full"
+          : PAGE_CONTAINER
+      }
+    >
+      <Tabs
+        aria-label="WhatsApp Cloud"
+        className={
+          tab === "inbox"
+            ? "md:flex md:min-h-0 md:flex-1 md:flex-col md:overflow-hidden"
+            : undefined
+        }
+        selectedKey={tab}
+        onSelectionChange={onTabChange}
+      >
         {/* 8 tabs > 375px mobile = overflow horizontal de página. Scroll DENTRO
             del contenedor. min-w-0 es clave: como flex-item necesita poder encoger
             bajo el ancho intrínseco de los tabs para que overflow-x-auto active. */}
@@ -237,7 +252,7 @@ function WaCloudPage() {
           </Tabs.List>
         </Tabs.ListContainer>
 
-        <Tabs.Panel id="inbox" className="pt-2">
+        <Tabs.Panel id="inbox" className="min-h-0 flex-1 overflow-hidden pt-2">
           {isTabMounted("inbox") ? (
             <ProtectedTab action="read" subject="WaBusinessAccount">
               <WaCloudInboxPage onOpenSearchDrawer={() => setDrawerOpen(true)} />
