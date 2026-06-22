@@ -11714,6 +11714,12 @@ export class SchemaType implements SchemaDef {
                     optional: true,
                     attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("health_recommendations") }] }] as readonly AttributeApplication[]
                 },
+                indexDescription: {
+                    name: "indexDescription",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("index_description") }] }] as readonly AttributeApplication[]
+                },
                 fetchedAt: {
                     name: "fetchedAt",
                     type: "DateTime",

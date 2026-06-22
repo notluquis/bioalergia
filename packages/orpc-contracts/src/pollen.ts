@@ -16,9 +16,13 @@ export const pollenLevelSchema = z.enum(["nulo", "bajo", "medio", "alto"]);
 export const pollenGrassDaySchema = z.object({
   date: z.string(), // YYYY-MM-DD
   upi: z.number().int().nullable(), // Universal Pollen Index 0–5
-  category: z.string().nullable(), // "Very Low" … "Very High"
+  category: z.string().nullable(), // "Muy bajo" … "Muy alto" (languageCode=es)
   colorHex: z.string().nullable(),
   inSeason: z.boolean(),
+  // Texto humano del índice para ese día (Google `indexInfo.indexDescription`, es).
+  indexDescription: z.string().nullable(),
+  // Recomendaciones de salud del día para gramíneas (Google `healthRecommendations`, es).
+  healthRecommendations: z.array(z.string()),
 });
 
 export const pollenCalendarTaxonSchema = z.object({

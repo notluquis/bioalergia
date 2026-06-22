@@ -9617,6 +9617,11 @@ export class SchemaType implements SchemaDef {
                     type: "Json",
                     optional: true
                 },
+                indexDescription: {
+                    name: "indexDescription",
+                    type: "String",
+                    optional: true
+                },
                 fetchedAt: {
                     name: "fetchedAt",
                     type: "DateTime",

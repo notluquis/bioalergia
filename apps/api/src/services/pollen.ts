@@ -67,9 +67,15 @@ function colorToHex(color?: { red?: number; green?: number; blue?: number }): st
 type GoogleIndexInfo = {
   value?: number;
   category?: string;
+  indexDescription?: string;
   color?: { red?: number; green?: number; blue?: number };
 };
-type GooglePollenTypeInfo = { code?: string; inSeason?: boolean; indexInfo?: GoogleIndexInfo };
+type GooglePollenTypeInfo = {
+  code?: string;
+  inSeason?: boolean;
+  indexInfo?: GoogleIndexInfo;
+  healthRecommendations?: string[];
+};
 type GoogleDailyInfo = {
   date?: { year: number; month: number; day: number };
   pollenTypeInfo?: GooglePollenTypeInfo[];
@@ -106,6 +112,8 @@ export async function fetchGrassForecast(
       category: grass?.indexInfo?.category ?? null,
       colorHex: colorToHex(grass?.indexInfo?.color),
       inSeason: grass?.inSeason ?? false,
+      indexDescription: grass?.indexInfo?.indexDescription ?? null,
+      healthRecommendations: grass?.healthRecommendations ?? [],
     });
   }
   return out;
@@ -134,6 +142,8 @@ export async function syncPollenForecast(
         category: d.category,
         colorHex: d.colorHex,
         inSeason: d.inSeason,
+        indexDescription: d.indexDescription,
+        healthRecommendations: d.healthRecommendations,
         source: "GOOGLE" as const,
       })),
     });
@@ -163,6 +173,10 @@ export async function getCachedForecast(
     category: r.category,
     colorHex: r.colorHex,
     inSeason: r.inSeason,
+    indexDescription: r.indexDescription,
+    healthRecommendations: Array.isArray(r.healthRecommendations)
+      ? r.healthRecommendations.filter((x: unknown): x is string => typeof x === "string")
+      : [],
   }));
 
   const updatedAt =
