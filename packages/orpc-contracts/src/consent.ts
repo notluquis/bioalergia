@@ -11,6 +11,9 @@ export const consentPurposeSchema = z.enum([
   "DATA_PROCESSING_SECONDARY",
   "RESEARCH",
   "DATA_SHARING",
+  // Recordatorios de adherencia SCIT/SLIT — propósito distinto de marketing
+  // (gate del envío en services/adherence-reminders.ts).
+  "ADHERENCE_REMINDER",
 ]);
 
 export const consentChannelSchema = z.enum([
