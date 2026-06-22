@@ -500,7 +500,7 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
 
   return (
     <>
-      <Card.Header className="!flex !flex-row !items-center !justify-between gap-3 border-default-200 border-b p-3">
+      <Card.Header className="!flex !flex-row !items-center !justify-between gap-2 border-default-200 border-b px-3 py-2">
         <div className="flex min-w-0 items-center gap-3">
           <Avatar className="size-10 shrink-0 bg-success/15 text-success">
             <Avatar.Fallback delayMs={0} className="font-semibold text-sm">
@@ -625,7 +625,7 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
             aria-live="polite"
             aria-relevant="additions"
             aria-label={`Mensajes de la conversación con ${contactName}`}
-            className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain bg-content2 px-4 py-3"
+            className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain bg-content2 px-3 py-2"
           >
             {rows.length === 0 ? (
               <p className="py-8 text-center text-default-400 text-sm">
@@ -634,8 +634,8 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
             ) : (
               rows.map((row) =>
                 row.kind === "divider" ? (
-                  <div key={row.key} className="sticky top-1 z-10 flex justify-center py-2">
-                    <span className="rounded-full bg-content1/90 px-3 py-1 font-medium text-default-600 text-xs shadow-sm ring-1 ring-default-200 backdrop-blur">
+                  <div key={row.key} className="flex justify-center py-2">
+                    <span className="rounded-full bg-content1 px-2.5 py-0.5 font-medium text-default-500 text-xs ring-1 ring-default-200">
                       {row.label}
                     </span>
                   </div>
@@ -730,7 +730,7 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
             onUseTemplate={() => setMode("template")}
           />
         )}
-        <div className="border-default-200 border-t bg-background p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+        <div className="border-default-200 border-t bg-background px-3 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
           {mode === "text" ? (
             <TextComposer
               inputRef={composerFocusRef}

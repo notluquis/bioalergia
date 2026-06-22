@@ -188,19 +188,19 @@ function DocumentPreview({ url, caption }: { url: string; caption: string | null
 
   return (
     <>
-      <div className="flex w-72 max-w-full flex-col overflow-hidden rounded-lg border border-default-200 bg-content2">
+      <div className="flex w-72 max-w-full flex-col overflow-hidden rounded-xl border border-default-200 bg-content1">
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="flex w-full items-center gap-3 px-3 py-2 text-left transition hover:bg-content3"
+          className="flex w-full items-center gap-3 px-3 py-2.5 text-left transition hover:bg-content2"
         >
-          <div className="flex size-12 shrink-0 items-center justify-center rounded-lg bg-accent-100 text-accent-700">
+          <div className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-default-100 text-default-500">
             <FileText size={22} />
           </div>
           <div className="min-w-0 flex-1">
             <p className="truncate font-medium text-sm">{filename}</p>
             <p className="text-default-500 text-xs">
-              {isLikelyPdf ? "PDF · click para vista previa" : "Click para abrir"}
+              {isLikelyPdf ? "PDF · toca para ver" : "Toca para abrir"}
             </p>
           </div>
         </button>
@@ -208,14 +208,14 @@ function DocumentPreview({ url, caption }: { url: string; caption: string | null
           <button
             type="button"
             onClick={() => setOpen(true)}
-            className="flex flex-1 items-center justify-center gap-1 py-2 text-accent text-xs hover:bg-content3"
+            className="flex flex-1 items-center justify-center gap-1 py-2 text-accent text-xs hover:bg-content2"
           >
             <FileText size={12} /> Vista previa
           </button>
           <a
             href={`${url}?download=1`}
             download={filename}
-            className="flex flex-1 items-center justify-center gap-1 border-default-200 border-l py-2 text-default-700 text-xs hover:bg-content3"
+            className="flex flex-1 items-center justify-center gap-1 border-default-200 border-l py-2 text-default-700 text-xs hover:bg-content2"
           >
             <Download size={12} /> Descargar
           </a>
