@@ -122,6 +122,7 @@ export const financeFinancialTransactionSchema = z.object({
   counterpart: financeCounterpartLinkedSchema,
   counterpartAccountNumber: z.string().nullable().optional(),
   counterpartId: z.number().int().nullable().optional(),
+  counterpartLinkedAccountNumber: z.string().nullable().optional(),
   createdAt: z.date().optional(),
   date: z.date(),
   description: z.string(),
@@ -141,6 +142,11 @@ export const financeFinancialTransactionSchema = z.object({
   sourceId: z.string().nullable().optional(),
   type: financeTransactionTypeSchema,
   updatedAt: z.date().optional(),
+  withdrawBankAccountHolder: z.string().nullable().optional(),
+  withdrawBankAccountNumber: z.string().nullable().optional(),
+  withdrawBankAccountType: z.string().nullable().optional(),
+  withdrawBankName: z.string().nullable().optional(),
+  withdrawIdentificationNumber: z.string().nullable().optional(),
 });
 
 export const financeFinancialSummaryByCategoryEntrySchema = z.object({

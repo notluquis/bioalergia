@@ -572,7 +572,11 @@ async function applyAutoCategoryRuleRow(
   }
   if (rule.descriptionContains != null) {
     const pattern = `%${rule.descriptionContains.replace(/[%_]/g, "\\$&")}%`;
-    conditions.push(sql`ft.description ILIKE ${pattern}`);
+    conditions.push(sql`(
+      ft.description ILIKE ${pattern}
+      OR rt.sale_detail ILIKE ${pattern}
+      OR st.sale_detail ILIKE ${pattern}
+    )`);
   }
   if (rule.paymentMethods.length > 0) {
     const methods = sql.join(rule.paymentMethods.map((m) => sql`${m}`));
@@ -944,17 +948,22 @@ async function syncUnifiedTransactions(
 
       const type: TransactionType = tour.transactionAmount >= 0 ? "INCOME" : "EXPENSE";
       const comment = tour.externalReference ? `Ref: ${tour.externalReference}` : undefined;
-      const sourceSaleDetails = tour.sourceId
-        ? (saleDetailsBySourceId.get(tour.sourceId.trim()) ?? [])
-        : [];
+      const sourceIdKey = tour.sourceId?.trim() ?? "";
+      const sourceSaleDetails = sourceIdKey ? (saleDetailsBySourceId.get(sourceIdKey) ?? []) : [];
+      const sourceGrossAmount = sourceIdKey
+        ? (grossBySourceId.get(sourceIdKey) ?? tour.grossAmount ?? null)
+        : (tour.grossAmount ?? null);
+      const sourcePaymentMethodType = sourceIdKey
+        ? (paymentMethodTypeBySourceId.get(sourceIdKey) ?? tour.paymentMethodType ?? null)
+        : (tour.paymentMethodType ?? null);
       const categoryId = resolveAutoCategoryId(
         {
           amount: tour.transactionAmount,
           comment,
           counterpartId,
           description: mergeDescriptionWithSaleDetails(tour.description, sourceSaleDetails),
-          grossAmount: tour.grossAmount ?? null,
-          paymentMethodType: tour.paymentMethodType ?? null,
+          grossAmount: sourceGrossAmount,
+          paymentMethodType: sourcePaymentMethodType,
           type,
         },
         autoCategoryRules
@@ -1196,7 +1205,7 @@ export async function listFinancialTransactions(params: {
     )
   );
 
-  const [releaseRows, settlementRows] =
+  const [releaseRows, settlementRows, withdrawRows] =
     sourceIds.length > 0
       ? await Promise.all([
           db.releaseTransaction.findMany({
@@ -1218,8 +1227,19 @@ export async function listFinancialTransactions(params: {
               sourceId: true,
             },
           }),
+          db.withdrawTransaction.findMany({
+            where: { withdrawId: { in: sourceIds } },
+            select: {
+              bankAccountHolder: true,
+              bankAccountNumber: true,
+              bankAccountType: true,
+              bankName: true,
+              identificationNumber: true,
+              withdrawId: true,
+            },
+          }),
         ])
-      : [[], []];
+      : [[], [], []];
 
   const transactionIds = transactions.map((transaction) => transaction.id);
   const allocationRows =
@@ -1275,11 +1295,13 @@ export async function listFinancialTransactions(params: {
 
   const releaseBySourceId = new Map(releaseRows.map((row) => [row.sourceId, row]));
   const settlementBySourceId = new Map(settlementRows.map((row) => [row.sourceId, row]));
+  const withdrawBySourceId = new Map(withdrawRows.map((row) => [row.withdrawId, row]));
 
   const enrichedTransactions = transactions.map((transaction) => {
     const sourceId = transaction.sourceId ?? null;
     const release = sourceId ? releaseBySourceId.get(sourceId) : undefined;
     const settlement = sourceId ? settlementBySourceId.get(sourceId) : undefined;
+    const withdraw = sourceId ? withdrawBySourceId.get(sourceId) : undefined;
     const allocationSummary = allocationSummaryByTransaction.get(transaction.id);
     const reallocatedInTotal = allocationSummary?.inTotal ?? 0;
     const reallocatedOutTotal = allocationSummary?.outTotal ?? 0;
@@ -1299,6 +1321,7 @@ export async function listFinancialTransactions(params: {
     return {
       ...transaction,
       amount: effectiveAmount,
+      counterpartLinkedAccountNumber: transaction.counterpart?.accounts?.[0]?.accountNumber ?? null,
       counterpartAccountNumber:
         release?.payoutBankAccountNumber ??
         transaction.counterpart?.accounts?.[0]?.accountNumber ??
@@ -1309,6 +1332,11 @@ export async function listFinancialTransactions(params: {
       settlementPaymentMethod: settlement?.paymentMethod ?? null,
       settlementPaymentMethodType: settlement?.paymentMethodType ?? null,
       settlementSaleDetail: settlement?.saleDetail ?? null,
+      withdrawBankAccountHolder: withdraw?.bankAccountHolder ?? null,
+      withdrawBankAccountNumber: withdraw?.bankAccountNumber ?? null,
+      withdrawBankAccountType: withdraw?.bankAccountType ?? null,
+      withdrawBankName: withdraw?.bankName ?? null,
+      withdrawIdentificationNumber: withdraw?.identificationNumber ?? null,
       hasReallocation: reallocatedInTotal > 0 || reallocatedOutTotal > 0,
       hasReallocationInEffectivePeriod:
         reallocatedInEffectivePeriod > 0 || reallocatedOutEffectivePeriod > 0,

@@ -26,6 +26,7 @@ const { mockDb, m } = vi.hoisted(() => {
     txnCount: mk(),
     txnFindMany: mk(),
     releaseFindMany: mk(),
+    withdrawFindMany: mk(),
     allocationFindMany: mk(),
     queryRaw: mk(),
   };
@@ -38,6 +39,7 @@ const { mockDb, m } = vi.hoisted(() => {
       findMany: (...a: unknown[]) => m.txnFindMany(...a),
     },
     releaseTransaction: { findMany: (...a: unknown[]) => m.releaseFindMany(...a) },
+    withdrawTransaction: { findMany: (...a: unknown[]) => m.withdrawFindMany(...a) },
     financialTransactionAllocation: { findMany: (...a: unknown[]) => m.allocationFindMany(...a) },
     $queryRaw: (...a: unknown[]) => m.queryRaw(...a),
     $setOptions: () => mockDb,
@@ -61,7 +63,7 @@ afterEach(() => {
 // ─── listFinancialTransactions enrichment ──────────────────────────────────────
 
 describe("listFinancialTransactions enrichment", () => {
-  it("maps release + settlement detail fields onto the row and prefers release payout account", async () => {
+  it("maps release, settlement, withdraw, and linked counterpart detail fields onto the row", async () => {
     m.settlementFindMany
       // 1st call: cashback source ids → [] (no NOT filter)
       .mockResolvedValueOnce([])
@@ -92,18 +94,34 @@ describe("listFinancialTransactions enrichment", () => {
         saleDetail: "rel-detail",
       },
     ]);
+    m.withdrawFindMany.mockResolvedValue([
+      {
+        withdrawId: "s1",
+        bankAccountHolder: "Official Holder",
+        bankAccountNumber: "WT-ACC",
+        bankAccountType: "checking_account",
+        bankName: "Official Bank",
+        identificationNumber: "111111111",
+      },
+    ]);
     m.allocationFindMany.mockResolvedValue([]);
 
     const res = await listFinancialTransactions({});
     const row = res.data[0];
     // release payout account WINS over counterpart.accounts[0] (?? chain order).
     expect(row?.counterpartAccountNumber).toBe("REL-ACC");
+    expect(row?.counterpartLinkedAccountNumber).toBe("CP-ACC");
     expect(row?.releaseBalanceAmount).toEqual(new Decimal(42));
     expect(row?.releasePaymentMethod).toBe("rel-pm");
     expect(row?.releaseSaleDetail).toBe("rel-detail");
     expect(row?.settlementPaymentMethod).toBe("card");
     expect(row?.settlementPaymentMethodType).toBe("credit_card");
     expect(row?.settlementSaleDetail).toBe("set-detail");
+    expect(row?.withdrawBankAccountHolder).toBe("Official Holder");
+    expect(row?.withdrawBankAccountNumber).toBe("WT-ACC");
+    expect(row?.withdrawBankAccountType).toBe("checking_account");
+    expect(row?.withdrawBankName).toBe("Official Bank");
+    expect(row?.withdrawIdentificationNumber).toBe("111111111");
   });
 
   it("falls back to the counterpart account when there is no release payout account", async () => {
@@ -127,6 +145,7 @@ describe("listFinancialTransactions enrichment", () => {
         saleDetail: null,
       },
     ]);
+    m.withdrawFindMany.mockResolvedValue([]);
     m.allocationFindMany.mockResolvedValue([]);
 
     const res = await listFinancialTransactions({});
@@ -140,6 +159,7 @@ describe("listFinancialTransactions enrichment", () => {
       { id: 3, amount: new Decimal(500), sourceId: null, counterpart: null },
     ]);
     m.releaseFindMany.mockResolvedValue([]);
+    m.withdrawFindMany.mockResolvedValue([]);
     m.allocationFindMany.mockResolvedValue([]);
 
     const res = await listFinancialTransactions({});
@@ -154,6 +174,7 @@ describe("listFinancialTransactions enrichment", () => {
     m.txnCount.mockResolvedValue(0);
     m.txnFindMany.mockResolvedValue([]);
     m.releaseFindMany.mockResolvedValue([]);
+    m.withdrawFindMany.mockResolvedValue([]);
     m.allocationFindMany.mockResolvedValue([]);
 
     await listFinancialTransactions({});
@@ -167,6 +188,7 @@ describe("listFinancialTransactions enrichment", () => {
     m.txnCount.mockResolvedValue(0);
     m.txnFindMany.mockResolvedValue([]);
     m.releaseFindMany.mockResolvedValue([]);
+    m.withdrawFindMany.mockResolvedValue([]);
     m.allocationFindMany.mockResolvedValue([]);
 
     await listFinancialTransactions({
@@ -195,6 +217,7 @@ describe("listFinancialTransactions enrichment", () => {
     m.txnCount.mockResolvedValue(0);
     m.txnFindMany.mockResolvedValue([]);
     m.releaseFindMany.mockResolvedValue([]);
+    m.withdrawFindMany.mockResolvedValue([]);
     m.allocationFindMany.mockResolvedValue([]);
 
     await listFinancialTransactions({ page: 3, pageSize: 20 });
@@ -214,6 +237,7 @@ describe("listFinancialTransactions enrichment", () => {
     m.txnCount.mockResolvedValue(0);
     m.txnFindMany.mockResolvedValue([]);
     m.releaseFindMany.mockResolvedValue([]);
+    m.withdrawFindMany.mockResolvedValue([]);
     m.allocationFindMany.mockResolvedValue([]);
     // effectivePeriod path: periodAllocations → [], no-allocation txns → [].
     m.queryRaw.mockResolvedValueOnce([]).mockResolvedValueOnce([]);

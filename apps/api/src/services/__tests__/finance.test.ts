@@ -31,6 +31,7 @@ const {
   mockTxnCount,
   mockTxnFindMany,
   mockReleaseFindMany,
+  mockWithdrawFindMany,
   mockAllocationFindMany,
   mockRuleFindMany,
   mockRuleFindUnique,
@@ -56,6 +57,7 @@ const {
   const mockTxnCount = vi.fn();
   const mockTxnFindMany = vi.fn();
   const mockReleaseFindMany = vi.fn();
+  const mockWithdrawFindMany = vi.fn();
   const mockAllocationFindMany = vi.fn();
   const mockRuleFindMany = vi.fn();
   const mockRuleFindUnique = vi.fn();
@@ -112,6 +114,7 @@ const {
       findMany: (...a: unknown[]) => mockTxnFindMany(...a),
     },
     releaseTransaction: { findMany: (...a: unknown[]) => mockReleaseFindMany(...a) },
+    withdrawTransaction: { findMany: (...a: unknown[]) => mockWithdrawFindMany(...a) },
     financialTransactionAllocation: { findMany: (...a: unknown[]) => mockAllocationFindMany(...a) },
     financialAutoCategoryRule: {
       findMany: (...a: unknown[]) => mockRuleFindMany(...a),
@@ -146,6 +149,7 @@ const {
     mockTxnCount,
     mockTxnFindMany,
     mockReleaseFindMany,
+    mockWithdrawFindMany,
     mockAllocationFindMany,
     mockRuleFindMany,
     mockRuleFindUnique,
@@ -304,6 +308,7 @@ describe("listFinancialTransactions", () => {
     mockTxnCount.mockResolvedValue(opts.total);
     mockTxnFindMany.mockResolvedValue(opts.transactions);
     mockReleaseFindMany.mockResolvedValue([]);
+    mockWithdrawFindMany.mockResolvedValue([]);
     mockSettlementFindMany.mockResolvedValue([]);
     mockAllocationFindMany.mockResolvedValue(opts.allocations ?? []);
     return listFinancialTransactions({ page: opts.page, pageSize: opts.pageSize });
@@ -385,6 +390,7 @@ describe("listFinancialTransactions", () => {
     mockTxnCount.mockResolvedValue(1);
     mockTxnFindMany.mockResolvedValue([opts.transaction]);
     mockReleaseFindMany.mockResolvedValue([]);
+    mockWithdrawFindMany.mockResolvedValue([]);
     mockAllocationFindMany.mockResolvedValue(opts.allocations ?? []);
     // $queryRaw is called twice (Promise.all): periodAllocations, then
     // periodTransactionsWithoutAllocations.
