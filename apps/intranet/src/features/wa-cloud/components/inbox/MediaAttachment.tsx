@@ -66,7 +66,7 @@ export function MediaAttachment({ messageId, type, caption, out = false }: Props
             className="flex size-32 flex-col items-center justify-center gap-1 rounded-xl text-default-400 transition hover:text-default-500"
           >
             <Sticker size={26} />
-            <span className="text-[11px]">No disponible</span>
+            <span className="text-xs">No disponible</span>
           </button>
         ) : visible ? (
           <StickerImage key={url} src={url} onError={() => setErrored(true)} />

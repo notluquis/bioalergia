@@ -234,7 +234,7 @@ export function ChatBubble({
           ) : row.type === "TEMPLATE" ? (
             <div className="space-y-0.5">
               <span
-                className={`flex items-center gap-1 text-[11px] ${out ? "text-success-foreground/70" : "text-default-400"}`}
+                className={`flex items-center gap-1 text-xs ${out ? "text-success-foreground/70" : "text-default-400"}`}
               >
                 <MessageSquareText size={12} className="shrink-0" />
                 Plantilla
