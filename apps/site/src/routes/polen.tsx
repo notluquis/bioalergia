@@ -1,11 +1,125 @@
+import type { PollenLevel as ApiPollenLevel } from "@finanzas/orpc-contracts/pollen";
 import { Breadcrumbs, Card, Chip, Link, Separator } from "@heroui/react";
 import { createFileRoute } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 
 import { BookingCta } from "@/components/BookingCta";
+import { ContentLoading } from "@/components/ContentState";
 import { JsonLd } from "@/components/JsonLd";
 import { PageShell } from "@/components/PageShell";
 import { polenContent, type PollenLevel } from "@/data/pollen";
+import { pollenClient } from "@/lib/orpc-client";
 import { breadcrumbJsonLd } from "@/lib/seo";
+
+const API_LEVEL_COLOR: Record<ApiPollenLevel, "danger" | "warning" | "success" | "default"> = {
+  alto: "danger",
+  medio: "warning",
+  bajo: "success",
+  nulo: "default",
+};
+
+const API_LEVEL_LABEL: Record<ApiPollenLevel, string> = {
+  alto: "Alto",
+  medio: "Medio",
+  bajo: "Bajo",
+  nulo: "Sin actividad",
+};
+
+/**
+ * Widget de pronóstico en vivo: gramíneas desde la Google Pollen API (único
+ * tipo con datos en Chile) + calendario mensual estimado de árboles/malezas.
+ * Si el cache está vacío (sin key o cron sin correr) muestra solo el calendario.
+ */
+function PollenLiveWidget() {
+  const { data, isLoading } = useQuery({
+    queryKey: ["pollen-forecast"],
+    queryFn: () => pollenClient.getForecast(),
+  });
+
+  return (
+    <section className="grid gap-6">
+      <div className="grid gap-2">
+        <h2 className="font-semibold text-(--ink) text-2xl">Pronóstico de polen — Concepción</h2>
+        <p className="max-w-3xl text-(--ink-muted) text-sm leading-relaxed">
+          Las gramíneas se muestran en vivo; los árboles y malezas son una estimación estacional (no
+          existe una estación de monitoreo en el Biobío).
+        </p>
+      </div>
+
+      {isLoading ? (
+        <ContentLoading />
+      ) : (
+        <div className="grid gap-6">
+          {data && data.provenance.grass === "live" && data.grassForecast.length > 0 ? (
+            <Card className="rounded-3xl" variant="default">
+              <Card.Header className="gap-1">
+                <Card.Title className="text-lg">Gramíneas — próximos días</Card.Title>
+                <Card.Description className="text-(--ink-muted) text-sm">
+                  Índice de polen (0–5) en vivo.
+                </Card.Description>
+              </Card.Header>
+              <Card.Content className="flex flex-wrap gap-3 pb-6">
+                {data.grassForecast.map((day) => (
+                  <div
+                    className="flex min-w-24 flex-col items-center gap-2 rounded-2xl bg-(--surface-2) px-4 py-3"
+                    key={day.date}
+                  >
+                    <span className="text-(--ink-muted) text-xs">
+                      {new Date(`${day.date}T00:00:00`).toLocaleDateString("es-CL", {
+                        weekday: "short",
+                        day: "numeric",
+                      })}
+                    </span>
+                    <span
+                      aria-hidden="true"
+                      className="flex size-9 items-center justify-center rounded-full font-semibold text-sm text-white"
+                      style={{ backgroundColor: day.colorHex ?? "var(--accent)" }}
+                    >
+                      {day.upi ?? "–"}
+                    </span>
+                    <span className="text-(--ink-muted) text-xs">{day.category ?? "—"}</span>
+                  </div>
+                ))}
+              </Card.Content>
+            </Card>
+          ) : (
+            <Card className="rounded-3xl" variant="secondary">
+              <Card.Content className="py-5 text-(--ink-muted) text-sm leading-relaxed">
+                El pronóstico en vivo de gramíneas no está disponible en este momento. Abajo
+                encontrarás el calendario polínico estimado para la temporada.
+              </Card.Content>
+            </Card>
+          )}
+
+          {data && data.calendar.length > 0 ? (
+            <div className="grid gap-4 sm:grid-cols-3">
+              {data.calendar.map((taxon) => (
+                <Card className="rounded-3xl" key={taxon.type} variant="default">
+                  <Card.Header className="gap-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <Card.Title className="text-lg">{taxon.label}</Card.Title>
+                      <Chip color={API_LEVEL_COLOR[taxon.level]} size="sm" variant="soft">
+                        {API_LEVEL_LABEL[taxon.level]}
+                      </Chip>
+                    </div>
+                  </Card.Header>
+                  <Card.Content className="pb-6 text-(--ink-muted) text-sm leading-relaxed">
+                    {taxon.examples.join(", ")}.
+                  </Card.Content>
+                </Card>
+              ))}
+            </div>
+          ) : null}
+
+          <p className="text-(--ink-muted) text-xs leading-relaxed">
+            Gramíneas: Google Pollen API. Árboles y malezas: calendario polínico estimado para la
+            zona (referencial). Esta información es educativa y no reemplaza una evaluación médica.
+          </p>
+        </div>
+      )}
+    </section>
+  );
+}
 
 const LEVEL_LABEL: Record<PollenLevel, string> = {
   alto: "Nivel alto",
@@ -45,6 +159,8 @@ function PolenPage() {
           </p>
         </div>
       </section>
+
+      <PollenLiveWidget />
 
       <section className="grid gap-6">
         <div className="grid gap-2">

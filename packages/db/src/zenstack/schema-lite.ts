@@ -9390,6 +9390,69 @@ export class SchemaType implements SchemaDef {
                 id: { type: "Int" }
             }
         },
+        PollenForecast: {
+            name: "PollenForecast",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                locationKey: {
+                    name: "locationKey",
+                    type: "String"
+                },
+                forecastDate: {
+                    name: "forecastDate",
+                    type: "DateTime"
+                },
+                pollenType: {
+                    name: "pollenType",
+                    type: "PollenType"
+                },
+                upiValue: {
+                    name: "upiValue",
+                    type: "Int",
+                    optional: true
+                },
+                category: {
+                    name: "category",
+                    type: "String",
+                    optional: true
+                },
+                colorHex: {
+                    name: "colorHex",
+                    type: "String",
+                    optional: true
+                },
+                inSeason: {
+                    name: "inSeason",
+                    type: "Boolean",
+                    default: false as FieldDefault
+                },
+                source: {
+                    name: "source",
+                    type: "PollenSource",
+                    default: "GOOGLE" as FieldDefault
+                },
+                healthRecommendations: {
+                    name: "healthRecommendations",
+                    type: "Json",
+                    optional: true
+                },
+                fetchedAt: {
+                    name: "fetchedAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" },
+                locationKey_forecastDate_pollenType: { locationKey: { type: "String" }, forecastDate: { type: "DateTime" }, pollenType: { type: "PollenType" } }
+            }
+        },
         DTEPurchaseDetail: {
             name: "DTEPurchaseDetail",
             fields: {
@@ -16530,6 +16593,21 @@ export class SchemaType implements SchemaDef {
                 CONTACTADO: "CONTACTADO",
                 COTIZADO: "COTIZADO",
                 CERRADO: "CERRADO"
+            }
+        },
+        PollenType: {
+            name: "PollenType",
+            values: {
+                GRASS: "GRASS",
+                TREE: "TREE",
+                WEED: "WEED"
+            }
+        },
+        PollenSource: {
+            name: "PollenSource",
+            values: {
+                GOOGLE: "GOOGLE",
+                CALENDAR: "CALENDAR"
             }
         },
         DTEType: {

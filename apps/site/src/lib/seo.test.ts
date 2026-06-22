@@ -6,6 +6,7 @@ import {
   breadcrumbJsonLd,
   clinicJsonLd,
   faqJsonLd,
+  medicalWebPageJsonLd,
   physicianJsonLd,
   SITE_ORIGIN,
 } from "./seo";
@@ -60,6 +61,39 @@ describe("faqJsonLd", () => {
 
   it("handles an empty list", () => {
     expect((faqJsonLd([]).mainEntity as unknown[]).length).toBe(0);
+  });
+});
+
+describe("medicalWebPageJsonLd", () => {
+  it("includes lastReviewed + alternateName when provided", () => {
+    const ld = medicalWebPageJsonLd({
+      name: "Rinitis alérgica",
+      description: "desc",
+      path: "/condiciones/rinitis-alergica",
+      about: "Rinitis alérgica",
+      alternateName: ["fiebre del heno"],
+      lastReviewed: "2026-06-21",
+    });
+    expect(ld["@type"]).toBe("MedicalWebPage");
+    expect(ld.url).toBe(`${SITE_ORIGIN}/condiciones/rinitis-alergica`);
+    expect(ld.lastReviewed).toBe("2026-06-21");
+    const about = ld.about as { name: string; alternateName?: string[] };
+    expect(about.name).toBe("Rinitis alérgica");
+    expect(about.alternateName).toEqual(["fiebre del heno"]);
+    expect(ld.reviewedBy).toBeDefined();
+  });
+
+  it("omits lastReviewed + alternateName when absent or empty", () => {
+    const ld = medicalWebPageJsonLd({
+      name: "Asma",
+      description: "desc",
+      path: "/condiciones/asma-alergica",
+      about: "Asma",
+      alternateName: [],
+    });
+    expect(ld.lastReviewed).toBeUndefined();
+    const about = ld.about as { name: string; alternateName?: string[] };
+    expect(about.alternateName).toBeUndefined();
   });
 });
 

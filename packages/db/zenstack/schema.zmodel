@@ -3487,6 +3487,47 @@ model ReactivoLead {
 }
 
 // ============================================================
+// Pollen forecast (widget /polen)
+// ============================================================
+// Cache del pronóstico de polen para Concepción. `GRASS` viene en vivo de la
+// Google Pollen API (en Chile solo hay gramíneas); `TREE`/`WEED` provienen de un
+// calendario polínico curado (no existe sensor en Biobío). Un cron diario
+// (graphile-worker, TZ=America/Santiago) sobrescribe las filas — caché temporal
+// conforme a los Maps Service Terms (no se acumula histórico). Lectura pública
+// vía handler con `db` raw; el `@@deny` solo gobierna `authDb`.
+enum PollenType {
+  GRASS
+  TREE
+  WEED
+}
+
+enum PollenSource {
+  GOOGLE
+  CALENDAR
+}
+
+model PollenForecast {
+  id                    Int          @id @default(autoincrement())
+  locationKey           String       @map("location_key")
+  forecastDate          DateTime     @map("forecast_date") @db.Date
+  pollenType            PollenType   @map("pollen_type")
+  upiValue              Int?         @map("upi_value")
+  category              String?
+  colorHex              String?      @map("color_hex")
+  inSeason              Boolean      @default(false) @map("in_season")
+  source                PollenSource @default(GOOGLE)
+  healthRecommendations Json?        @map("health_recommendations")
+  fetchedAt             DateTime     @default(now()) @map("fetched_at")
+
+  @@deny('all', auth() == null)
+  @@allow('read,create,update,delete', auth().status == 'ACTIVE')
+
+  @@unique([locationKey, forecastDate, pollenType])
+  @@index([locationKey, forecastDate])
+  @@map("pollen_forecasts")
+}
+
+// ============================================================
 // DTE (Documentos Tributarios Electrónicos) - Accounting
 // ============================================================
 // DTE PURCHASE & SALES DETAILS

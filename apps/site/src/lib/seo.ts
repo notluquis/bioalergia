@@ -69,6 +69,36 @@ export function faqJsonLd(items: { question: string; answer: string }[]): Record
   };
 }
 
+export function medicalWebPageJsonLd(p: {
+  name: string;
+  description: string;
+  path: string;
+  about: string;
+  alternateName?: string[];
+  lastReviewed?: string;
+}): Record<string, unknown> {
+  return {
+    "@context": "https://schema.org",
+    "@type": "MedicalWebPage",
+    name: p.name,
+    description: p.description,
+    url: absoluteUrl(p.path),
+    inLanguage: "es-CL",
+    ...(p.lastReviewed ? { lastReviewed: p.lastReviewed } : {}),
+    about: {
+      "@type": "MedicalCondition",
+      name: p.about,
+      ...(p.alternateName && p.alternateName.length > 0 ? { alternateName: p.alternateName } : {}),
+    },
+    reviewedBy: physicianJsonLd(),
+    publisher: {
+      "@type": "MedicalClinic",
+      name: "Clínica Bioalergia",
+      url: SITE_ORIGIN,
+    },
+  };
+}
+
 export function breadcrumbJsonLd(trail: { name: string; path: string }[]): Record<string, unknown> {
   return {
     "@context": "https://schema.org",

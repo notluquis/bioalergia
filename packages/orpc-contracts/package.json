@@ -387,6 +387,12 @@
       "import": "./dist/reactivos.js",
       "default": "./dist/reactivos.js"
     },
+    "./pollen": {
+      "development": "./src/pollen.ts",
+      "types": "./dist/pollen.d.ts",
+      "import": "./dist/pollen.js",
+      "default": "./dist/pollen.js"
+    },
     "./clinical-allergens": {
       "development": "./src/clinical-allergens.ts",
       "types": "./dist/clinical-allergens.d.ts",
