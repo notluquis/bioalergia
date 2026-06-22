@@ -13,6 +13,7 @@ import {
   ExternalLink,
   FileText,
   FlaskConical,
+  HeartPulse,
   Mail,
   Pencil,
   Phone,
@@ -22,6 +23,7 @@ import {
 } from "lucide-react";
 import { type ReactNode, useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
+import { AdherencePanel } from "@/features/adherence-reminders/components/AdherencePanel";
 import { AddressList } from "@/features/addresses/components/AddressList";
 import { PatientEmailOptInToggle } from "@/features/email/components/PatientEmailOptInToggle";
 import { fetchPatient } from "@/features/patients/api";
@@ -61,6 +63,7 @@ export function PatientDetailsPage() {
   const canCreateBudget = can("create", "Budget");
   const canCreatePayment = can("create", "PatientPayment");
   const [activeTab, setActiveTab] = useState<
+    | "adherence"
     | "budgets"
     | "certificates"
     | "clinical-records"
@@ -72,6 +75,7 @@ export function PatientDetailsPage() {
     | "skin-tests"
   >("history");
   const { isTabMounted, markTabAsMounted } = useLazyTabs<
+    | "adherence"
     | "budgets"
     | "certificates"
     | "clinical-records"
@@ -148,6 +152,7 @@ export function PatientDetailsPage() {
             onSelectionChange={(key) => {
               const keyValue = String(key);
               const nextTab:
+                | "adherence"
                 | "budgets"
                 | "certificates"
                 | "clinical-records"
@@ -164,6 +169,7 @@ export function PatientDetailsPage() {
                 keyValue === "info" ||
                 keyValue === "clinical-series" ||
                 keyValue === "clinical-records" ||
+                keyValue === "adherence" ||
                 keyValue === "skin-tests"
                   ? keyValue
                   : "history";
@@ -219,6 +225,11 @@ export function PatientDetailsPage() {
                 <Tabs.Tab id="clinical-records" className="min-w-max gap-2 font-semibold">
                   <ClipboardList size={18} />
                   <span>Fichas clínicas</span>
+                  <Tabs.Indicator />
+                </Tabs.Tab>
+                <Tabs.Tab id="adherence" className="min-w-max gap-2 font-semibold">
+                  <HeartPulse size={18} />
+                  <span>Adherencia</span>
                   <Tabs.Indicator />
                 </Tabs.Tab>
               </Tabs.List>
@@ -397,6 +408,12 @@ export function PatientDetailsPage() {
             <Tabs.Panel id="clinical-records" className="py-4">
               {isTabMounted("clinical-records") ? (
                 <PatientRecordsTimeline patientId={patient.id} />
+              ) : null}
+            </Tabs.Panel>
+
+            <Tabs.Panel id="adherence" className="py-4">
+              {isTabMounted("adherence") ? (
+                <AdherencePanel patientId={patient.id} personId={person.id} />
               ) : null}
             </Tabs.Panel>
 

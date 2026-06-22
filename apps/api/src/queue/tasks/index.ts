@@ -8,6 +8,7 @@
 // Both enqueued by their oRPC handlers via enqueueJob() (mirrors outreach).
 
 import type { TaskList } from "graphile-worker";
+import { adherence_reminder_send } from "./adherence-reminder-send.ts";
 import { audit_anomaly } from "./audit-anomaly.ts";
 import { audit_chain_verify } from "./audit-chain-verify.ts";
 import { doctoralia_calendar_sync } from "./doctoralia-calendar-sync.ts";
@@ -40,4 +41,5 @@ export const taskList: TaskList = {
   send_wa_scheduled,
   social_publish,
   social_publish_tick,
+  adherence_reminder_send,
 };

@@ -3039,12 +3039,59 @@ model Patient {
   dataRightsRequests  DataRightsRequest[]
   complaints          Complaint[]
   clinicalConsents    ClinicalConsent[]
+  reminderSchedules   ReminderSchedule[]
 
   @@deny('all', auth() == null)
   @@allow('read', auth().status == 'ACTIVE')
   @@allow('create,update', auth().status == 'ACTIVE')
 
   @@map("patients")
+}
+
+// ============================================================
+// Recordatorios de adherencia (shared-reminder) — P2
+// ============================================================
+// Motor genérico de recordatorios por paciente (graphile-worker). Un recordatorio
+// = una fila que se envía en `runAt`. El envío es CONSENT-GATED: requiere un
+// ConsentRecord (purpose ADHERENCE_REMINDER, status GRANTED) — distinto del
+// consentimiento de marketing. Texto NEUTRO (sin diagnóstico) + opt-out. El
+// eDiary CSMS (P2 stage-2) está gateado por EIPD (Ley 21.719) — no se modela aún.
+enum ReminderChannel {
+  EMAIL
+  WHATSAPP
+}
+
+enum ReminderStatus {
+  PENDING
+  SENT
+  CANCELLED
+  FAILED
+}
+
+model ReminderSchedule {
+  id           Int             @id @default(autoincrement())
+  patientId    Int             @map("patient_id")
+  channel      ReminderChannel @default(EMAIL)
+  purpose      String          @default("ADHERENCE_REMINDER")
+  subjectType  String          @map("subject_type") // SCIT_VISIT | SLIT_VISIT | OTHER
+  title        String
+  body         String
+  runAt        DateTime        @map("run_at")
+  status       ReminderStatus  @default(PENDING)
+  sentAt       DateTime?       @map("sent_at")
+  errorMessage String?         @map("error_message")
+  createdBy    Int?            @map("created_by")
+  createdAt    DateTime        @default(now()) @map("created_at")
+  updatedAt    DateTime        @default(now()) @updatedAt @map("updated_at")
+
+  patient      Patient         @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@deny('all', auth() == null)
+  @@allow('read,create,update,delete', auth().status == 'ACTIVE')
+
+  @@index([status, runAt])
+  @@index([patientId])
+  @@map("reminder_schedules")
 }
 
 model Shipment {
