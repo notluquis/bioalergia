@@ -237,6 +237,29 @@ describe("job location fallbacks", () => {
     expect(jobs[0]).toMatchObject({ location: "Antofagasta, Chile" });
   });
 
+  it("maps SuccessFactors tile fields by label, not by customfield index (codelco)", async () => {
+    // codelco: customfield2 = Región (NO Gerencia), sin Lugar de Trabajo. El
+    // mapeo por índice metía la región en Área y basura del path en Ubicación.
+    const tiles = `
+      <li class="job-tile job-id-1401321600">
+        <a class="jobTitle-link" data-url="/job/Posada-Lilen-Convocatoria-Enfermeras-TENS-Reg_-8320000/1401321600/">Convocatoria Enfermeras &amp; TENS</a>
+        <div class="section-field customfield1 fontcolorb6a"><span>ID de proceso</span> 89626</div>
+        <div class="section-field date fontcolorb6a"><span>Fecha</span> 20 jun 2026</div>
+        <div class="section-field customfield2 fontcolorb6a"><span>Región</span> 2da.Reg.Antofagasta</div>
+        <div class="section-field zip fontcolorb6a"><span>Código postal</span> 1240000</div>
+      </li>`;
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(res(tiles)).mockResolvedValue(res(""));
+
+    const jobs = await fetchSuccessFactorsJobs("empleos.codelco.cl");
+
+    expect(jobs[0]).toMatchObject({
+      title: "Convocatoria Enfermeras & TENS", // entidad &amp; decodificada
+      department: null, // sin etiqueta de Gerencia → Área vacía, NO la región
+      location: "Antofagasta", // desde "Región 2da.Reg.Antofagasta", no del path
+      publishedAt: new Date("2026-06-20T12:00:00.000Z"),
+    });
+  });
+
   it("derives Buk location and remote mode from card text", async () => {
     const html = `
       <div class="jobs__card">

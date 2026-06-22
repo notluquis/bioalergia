@@ -345,9 +345,12 @@ function DataTableContent<TData>({
               <Table.Cell
                 className="select-text"
                 key={cell.id}
-                onPointerDownCapture={
-                  selectionEnabled ? (event) => event.stopPropagation() : undefined
-                }
+                // Bubble phase (NO capture): el press de React Aria del contenido
+                // interactivo (botones de acción, links) ocurre en el target ANTES
+                // de llegar acá; recién entonces frenamos la propagación para que la
+                // fila no dispare su selección. Con `onPointerDownCapture` el stop
+                // ocurría en bajada y el evento nunca llegaba al botón → onPress muerto.
+                onPointerDown={selectionEnabled ? (event) => event.stopPropagation() : undefined}
               >
                 {flexRender(cell.column.columnDef.cell, cell.getContext())}
               </Table.Cell>

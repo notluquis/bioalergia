@@ -47,20 +47,87 @@ function parseSpanishDate(raw: string | null): Date | null {
   return new Date(Date.UTC(year, mon, day, 12, 0, 0));
 }
 
-// Texto plano del primer `.section-field <field>` del tile, sin la etiqueta.
-function fieldValue(tile: string, field: string, label: string): string | null {
-  const re = new RegExp(`class="section-field ${field}[^"]*"[^>]*>([\\s\\S]*?)</div>`, "i");
-  const m = tile.match(re);
-  if (!m) return null;
-  const text = m[1]
-    .replace(/<[^>]+>/g, " ")
-    .replace(/&nbsp;/g, " ")
-    .replace(/&amp;/g, "&")
-    .replace(/\s+/g, " ")
-    .trim();
-  // El valor viene como "Etiqueta valor real" → quitamos el prefijo de etiqueta.
-  const stripped = text.startsWith(label) ? text.slice(label.length).trim() : text;
-  return stripped.length > 0 ? stripped : null;
+// El índice `customfieldN` NO es estable entre tenants SF: en codelco
+// `customfield2` es la Región, en otros es la Gerencia, en BHP es basura de
+// campaña. Lo único confiable es la ETIQUETA de texto embebida en cada
+// `.section-field` ("Gerencia ...", "Región ...", "Lugar de Trabajo ..."). Por
+// eso mapeamos por etiqueta, no por número de campo.
+type FieldKey = "department" | "location" | "region" | "modalidad" | "date";
+
+const FIELD_LABELS: ReadonlyArray<{ key: FieldKey | "ignore"; labels: readonly string[] }> = [
+  {
+    key: "department",
+    labels: [
+      "Gerencia",
+      "Vicepresidencia",
+      "Subgerencia",
+      "Dirección",
+      "Direccion",
+      "División",
+      "Division",
+      "Departamento",
+      "Unidad",
+      "Área",
+      "Area",
+    ],
+  },
+  {
+    key: "location",
+    labels: ["Lugar de Trabajo", "Centro de Trabajo", "Ubicación", "Ubicacion", "Localidad"],
+  },
+  { key: "region", labels: ["Región", "Region"] },
+  { key: "modalidad", labels: ["Modalidad de Trabajo", "Modalidad", "Jornada"] },
+  { key: "date", labels: ["Fecha de publicación", "Fecha de publicacion", "Fecha"] },
+  {
+    key: "ignore",
+    labels: ["ID de proceso", "Id de proceso", "Código postal", "Codigo postal", "Empresa"],
+  },
+];
+
+function normLabel(text: string): string {
+  return text
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .toLowerCase();
+}
+
+// Lee TODOS los `.section-field` del tile y los indexa por significado según la
+// etiqueta. Devuelve el valor (sin la etiqueta) del primer campo de cada tipo.
+function tileFields(tile: string): Partial<Record<FieldKey, string>> {
+  const out: Partial<Record<FieldKey, string>> = {};
+  const re = /class="section-field [a-z0-9]+[^"]*"[^>]*>([\s\S]*?)<\/div>/gi;
+  for (const m of tile.matchAll(re)) {
+    const text = cleanText(m[1]);
+    if (!text) continue;
+    const normText = normLabel(text);
+    for (const { key, labels } of FIELD_LABELS) {
+      const label = labels.find((l) => normText.startsWith(normLabel(l)));
+      if (!label) continue;
+      if (key !== "ignore" && out[key] == null) {
+        const value = text
+          .slice(label.length)
+          .replace(/^[\s:.-]+/, "")
+          .trim();
+        if (value) out[key] = value;
+      }
+      break;
+    }
+  }
+  return out;
+}
+
+// "2da.Reg.Antofagasta" / "Reg. Metropolitana" / "5ta.Reg.Valparaíso" →
+// nombre de región limpio que el normalizador de la intranet sí reconoce.
+function cleanChileRegion(raw: string): string {
+  const stripped = raw.replace(/^\s*\d*\s*[a-zºª°]*\.?\s*reg(?:i[oó]n)?\.?\s*/i, "").trim();
+  return normalizeLocation(stripped || raw) ?? raw;
+}
+
+// Valores que algunos tenants meten en el campo de ubicación pero NO son lugares
+// (estado de la requisición, campaña, confidencial).
+function isJunkLocation(value: string | null): boolean {
+  if (!value) return true;
+  return /not yet confirmed|global campaign|confidential|^\d+\s*\.\s*/i.test(value.trim());
 }
 
 function cleanText(raw: string): string {
@@ -164,34 +231,51 @@ function parseTiles(html: string, baseUrl: string): RawJob[] {
     const urlM = tile.match(/data-url="([^"]+)"/);
     const titleM = tile.match(/jobTitle-link[^>]*>([\s\S]*?)<\/a>/);
     if (!urlM || !titleM) continue;
-    const title = titleM[1]
-      .replace(/<[^>]+>/g, "")
-      .replace(/\s+/g, " ")
-      .trim();
+    // cleanText decodifica entidades (&amp; → &, &#39; → ') que el strip manual
+    // dejaba crudas en el título.
+    const title = cleanText(titleM[1]);
     if (title.length === 0) continue;
 
-    const location = normalizeLocation(fieldValue(tile, "customfield3", "Lugar de Trabajo"));
-    const modalidad = fieldValue(tile, "customfield5", "Modalidad de Trabajo");
+    const fields = tileFields(tile);
+    // Ubicación: campo explícito de lugar > Región (limpia) > derivada del texto >
+    // derivada del path. Descartamos valores-basura (estado de requisición, etc.).
+    const fieldLocation = isJunkLocation(fields.location ?? null)
+      ? null
+      : normalizeLocation(fields.location ?? null);
+    const regionLocation = fields.region ? cleanChileRegion(fields.region) : null;
     const textLocation = deriveLocationFromText(title, locationUrlText(urlM[1]));
-    const pathLocation = locationFromJobPath(urlM[1], title);
-    const resolvedLocation = location ?? textLocation ?? pathLocation;
+    const rawPathLocation = locationFromJobPath(urlM[1], title);
+    const pathLocation = isJunkLocation(rawPathLocation) ? null : rawPathLocation;
+    const resolvedLocation = fieldLocation ?? regionLocation ?? textLocation ?? pathLocation;
+    const locationSource = fieldLocation
+      ? "tile"
+      : regionLocation
+        ? "region"
+        : textLocation
+          ? "text"
+          : pathLocation
+            ? "path"
+            : null;
+    const modalidad = fields.modalidad ?? null;
     out.push({
       source: "successfactors",
       company: baseUrl,
       externalId: id,
       title,
       url: `https://${baseUrl.split("/")[0]}${urlM[1]}`,
-      department: fieldValue(tile, "customfield2", "Gerencia"),
+      // Solo se rellena Área cuando hay una etiqueta de unidad organizativa real
+      // (Gerencia/Dirección/…); evita filtrar la Región o el título a esta columna.
+      department: fields.department ?? null,
       location: resolvedLocation,
       remote: mapRemote(modalidad) ?? deriveRemoteFromText(modalidad, title, tile),
       salary: null,
       descriptionHtml: null, // la descripción se inyecta por JS en la página de detalle
-      publishedAt: parseSpanishDate(fieldValue(tile, "date", "Fecha de publicación")),
+      publishedAt: parseSpanishDate(fields.date ?? null),
       lastmod: null,
       raw: {
         id,
         url: urlM[1],
-        locationSource: location ? "tile" : textLocation ? "text" : pathLocation ? "path" : null,
+        locationSource,
       },
     });
   }
