@@ -147,7 +147,8 @@ export function MediaAttachment({ messageId, type, caption, out = false }: Props
 
 // Neutral "media no longer available" placeholder (golden 2026: expired Meta
 // media is unavailable, not a danger). Icon + short label + retry — never a red
-// or black box. role=img so the icon-only fallback is announced.
+// or black box. role=group (not role=img) so the retry Button stays reachable
+// by screen readers; the icon is decorative (label text carries the meaning).
 function MediaUnavailable({
   kind,
   onRetry,
@@ -164,13 +165,13 @@ function MediaUnavailable({
         : "Audio no disponible";
   return (
     <div
-      role="img"
+      role="group"
       aria-label={label}
       className={`flex flex-col items-center justify-center gap-1.5 rounded-xl bg-content2 text-default-500 ${
         kind === "audio" ? "h-16 w-64" : "h-40 w-60"
       }`}
     >
-      <Icon size={26} className="text-default-400" />
+      <Icon size={26} className="text-default-400" aria-hidden="true" />
       <span className="text-xs">{label}</span>
       <Button size="sm" variant="ghost" onPress={onRetry} aria-label="Reintentar carga">
         <RotateCw size={13} />

@@ -212,7 +212,10 @@ export function TemplateComposer({
         </div>
       ) : null}
       <div className="flex justify-end">
-        <Button type="submit" isPending={isPending} isDisabled={!isValid}>
+        {/* Stays enabled so the operator can submit and trigger validation —
+            onSubmit gates on isValid (sets `attempted`, shows the missing-field
+            errors + a toast). Disabling it would hide the errors forever. */}
+        <Button type="submit" isPending={isPending}>
           <Send size={14} />
           Enviar plantilla
         </Button>
