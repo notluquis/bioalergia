@@ -314,6 +314,18 @@ describe("applyAutoCategoryRuleRow raw-SQL branch (compiled Kysely)", () => {
     expect(parameters).toContain("%abc%");
   });
 
+  it("descriptionContains alone routes through the release/settlement join path", async () => {
+    await runRuleRow({ descriptionContains: "sale detail only", matchAmountOn: "net" }, 1n);
+    const { parameters, sql } = lastCaptured();
+    const lower = sql.toLowerCase();
+    expect(m.txnUpdateMany).not.toHaveBeenCalled();
+    expect(lower).toContain("left join release_transactions");
+    expect(lower).toContain("left join settlement_transactions");
+    expect(lower).toContain("rt.sale_detail ilike");
+    expect(lower).toContain("st.sale_detail ilike");
+    expect(parameters).toContain("%sale detail only%");
+  });
+
   it("paymentMethods emits IN (…) over COALESCE payment_method_type with bound values", async () => {
     await runRuleRow({ paymentMethods: ["visa", "mastercard"] }, 1n);
     const { parameters, sql } = lastCaptured();

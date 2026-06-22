@@ -514,6 +514,7 @@ async function applyAutoCategoryRuleRow(
 ) {
   const needsReleaseJoin =
     rule.matchAmountOn === "gross" ||
+    rule.descriptionContains != null ||
     rule.paymentMethods.length > 0 ||
     rule.amountsExact.length > 0;
 
