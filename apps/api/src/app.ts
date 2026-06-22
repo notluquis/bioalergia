@@ -31,7 +31,11 @@ import { quotesOpenAPIHandler, quotesORPCHandler } from "./orpc/quotes.ts";
 import { reactivosOpenAPIHandler, reactivosORPCHandler } from "./orpc/reactivos.ts";
 import { pollenOpenAPIHandler, pollenORPCHandler } from "./orpc/pollen.ts";
 import { occupationalOpenAPIHandler, occupationalORPCHandler } from "./orpc/occupational.ts";
+<<<<<<< HEAD
 import { adherenceORPCHandler } from "./orpc/adherence.ts";
+=======
+import { productDocumentsORPCHandler } from "./orpc/product-documents.ts";
+>>>>>>> 4225da11 (feat(product-docs): shared-productdoc — fichas técnicas (IFU/SDS/CoA) en R2)
 import {
   clinicalAllergensOpenAPIHandler,
   clinicalAllergensORPCHandler,
@@ -1041,9 +1045,15 @@ app.use("/api/orpc/occupational/rpc/*", async (c, next) => {
   return next();
 });
 
+<<<<<<< HEAD
 app.use("/api/orpc/adherence/rpc/*", async (c, next) => {
   const { matched, response } = await adherenceORPCHandler.handle(createHonoORPCRequest(c), {
     prefix: "/api/orpc/adherence/rpc",
+=======
+app.use("/api/orpc/product-documents/rpc/*", async (c, next) => {
+  const { matched, response } = await productDocumentsORPCHandler.handle(createHonoORPCRequest(c), {
+    prefix: "/api/orpc/product-documents/rpc",
+>>>>>>> 4225da11 (feat(product-docs): shared-productdoc — fichas técnicas (IFU/SDS/CoA) en R2)
     context: { hono: c },
   });
 

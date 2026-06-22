@@ -3,6 +3,7 @@ import type {
   CreateReactivoLeadInput,
   ReactivoLeadStatus,
 } from "@finanzas/orpc-contracts/reactivos";
+import { cdnUrlForKey } from "../modules/cloudflare/r2.ts";
 import { DomainError } from "../lib/errors.ts";
 import { logError, logEvent } from "../lib/logger.ts";
 import { loadSettings } from "../lib/settings.ts";
@@ -13,11 +14,32 @@ const vitrinaInclude = {
   allergen: {
     select: { id: true, commonName: true, scientificName: true, category: true },
   },
+  documents: {
+    select: {
+      id: true,
+      type: true,
+      title: true,
+      fileR2Key: true,
+      visibility: true,
+      sortOrder: true,
+    },
+  },
 } as const;
 
 type VitrinaRow = Awaited<
   ReturnType<typeof db.quoteProduct.findMany<{ include: typeof vitrinaInclude }>>
 >[number];
+
+// ZenStack no infiere el include de la relación to-many `documents` en el
+// genérico `findMany<{include}>`, pero la data sí viene; tipamos el subset.
+type VitrinaDocLite = {
+  id: number;
+  type: string;
+  title: string;
+  fileR2Key: string;
+  visibility: string;
+  sortOrder: number;
+};
 
 export function serializeVitrinaItem(p: VitrinaRow) {
   // NO se expone `unitPrice`: la vitrina pública nunca devuelve precios.
@@ -39,6 +61,15 @@ export function serializeVitrinaItem(p: VitrinaRow) {
           category: p.allergen.category,
         }
       : null,
+    documents: (p.documents as VitrinaDocLite[])
+      .filter((d) => d.visibility === "PUBLIC")
+      .sort((a, b) => a.sortOrder - b.sortOrder)
+      .map((d) => ({
+        id: d.id,
+        type: d.type,
+        title: d.title,
+        url: cdnUrlForKey(d.fileR2Key),
+      })),
   };
 }
 

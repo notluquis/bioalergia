@@ -22,6 +22,7 @@ import {
   updateQuoteProduct,
 } from "@/features/quotes/api";
 import { allergensKeys, listAllergens } from "@/features/allergens/api";
+import { ProductDocumentsManager } from "@/features/product-documents/components/ProductDocumentsManager";
 import { confirmAction } from "@/components/ui/ConfirmDialog";
 import { toast } from "@/lib/toast-interceptor";
 
@@ -259,6 +260,14 @@ export function QuoteProductFormModal({
                   </ScrollShadow>
                 </ComboBox.Popover>
               </ComboBox>
+
+              {/* ── Fichas técnicas (solo al editar) ──────────────────── */}
+              {product ? (
+                <div className="mt-2 border-default-200 border-t pt-4 sm:col-span-2">
+                  <h3 className="mb-3 font-medium text-default-700 text-sm">Fichas técnicas</h3>
+                  <ProductDocumentsManager productId={product.id} />
+                </div>
+              ) : null}
             </div>
           </Modal.Body>
           <Modal.Footer>

@@ -3419,6 +3419,7 @@ model QuoteProduct {
 
   items     QuoteItem[]
   allergen  ClinicalAllergen? @relation("QuoteProductAllergen", fields: [allergenId], references: [id], onDelete: SetNull)
+  documents ProductDocument[] @relation("QuoteProductDocuments")
 
   @@deny('all', auth() == null)
   @@allow('read', auth().status == 'ACTIVE')
@@ -3428,6 +3429,51 @@ model QuoteProduct {
   @@index([publishedOnSite])
   @@index([allergenId])
   @@map("quote_products")
+}
+
+// ============================================================
+// Fichas técnicas de productos (shared-productdoc)
+// ============================================================
+// Documentos por producto (IFU/SDS/CoA/spec/ISO) en R2. IFU y SDS son PÚBLICOS
+// (obligación de acceso regulatorio); CoA y contratos quedan gated tras login.
+// La lectura pública (visibility PUBLIC) sale por `db` raw en el handler; el
+// `@@deny` solo gobierna `authDb`.
+enum ProductDocumentType {
+  IFU
+  SDS
+  COA
+  SPEC_SHEET
+  ISO_CERT
+  PACKAGE_INSERT
+}
+
+enum ProductDocumentVisibility {
+  PUBLIC
+  AUTHED
+}
+
+model ProductDocument {
+  id            Int                       @id @default(autoincrement())
+  productId     Int                       @map("product_id")
+  type          ProductDocumentType
+  title         String
+  fileR2Key     String                    @map("file_r2_key")
+  visibility    ProductDocumentVisibility @default(PUBLIC)
+  lotNumber     String?                   @map("lot_number")
+  version       String?
+  language      String                    @default("es")
+  effectiveDate DateTime?                 @map("effective_date") @db.Date
+  sortOrder     Int                       @default(0) @map("sort_order")
+  createdAt     DateTime                  @default(now()) @map("created_at")
+  updatedAt     DateTime                  @default(now()) @updatedAt @map("updated_at")
+
+  product       QuoteProduct @relation("QuoteProductDocuments", fields: [productId], references: [id], onDelete: Cascade)
+
+  @@deny('all', auth() == null)
+  @@allow('read,create,update,delete', auth().status == 'ACTIVE')
+
+  @@index([productId, type])
+  @@map("product_documents")
 }
 
 model Quote {

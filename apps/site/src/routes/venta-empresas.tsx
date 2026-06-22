@@ -12,10 +12,20 @@ import {
   Form,
   Input,
   Label,
+  Link,
   Separator,
   TextArea,
   TextField,
 } from "@heroui/react";
+
+const DOC_TYPE_LABEL: Record<string, string> = {
+  IFU: "Instructivo de uso (IFU)",
+  SDS: "Hoja de seguridad (SDS)",
+  COA: "Certificado de análisis",
+  SPEC_SHEET: "Ficha técnica",
+  ISO_CERT: "Certificado ISO",
+  PACKAGE_INSERT: "Inserto",
+};
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { type FormEvent, useMemo, useState } from "react";
@@ -98,6 +108,26 @@ function VitrinaCard({ item }: { item: ReactivoVitrinaItemDto }) {
                 <em className="text-(--ink-muted)"> · {item.allergen.scientificName}</em>
               ) : null}
             </span>
+          </div>
+        ) : null}
+        {item.documents.length > 0 ? (
+          <div className="grid gap-2 rounded-2xl bg-(--surface-2) p-4 text-sm leading-relaxed">
+            <span className="font-semibold text-(--ink)">Fichas técnicas</span>
+            <ul className="grid gap-1">
+              {item.documents.map((doc) => (
+                <li key={doc.id}>
+                  <Link
+                    className="text-(--accent) text-sm"
+                    href={doc.url}
+                    rel="noopener noreferrer"
+                    target="_blank"
+                  >
+                    {DOC_TYPE_LABEL[doc.type] ?? doc.type}
+                    {doc.title ? ` · ${doc.title}` : ""}
+                  </Link>
+                </li>
+              ))}
+            </ul>
           </div>
         ) : null}
       </Card.Content>

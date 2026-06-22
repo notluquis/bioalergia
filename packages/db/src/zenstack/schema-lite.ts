@@ -9180,12 +9180,98 @@ export class SchemaType implements SchemaDef {
                     type: "ClinicalAllergen",
                     optional: true,
                     relation: { opposite: "reactivos", name: "QuoteProductAllergen", fields: ["allergenId"], references: ["id"], onDelete: "SetNull" }
+                },
+                documents: {
+                    name: "documents",
+                    type: "ProductDocument",
+                    array: true,
+                    relation: { opposite: "product", name: "QuoteProductDocuments" }
                 }
             },
             idFields: ["id"],
             uniqueFields: {
                 id: { type: "Int" },
                 slug: { type: "String" }
+            }
+        },
+        ProductDocument: {
+            name: "ProductDocument",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                productId: {
+                    name: "productId",
+                    type: "Int",
+                    foreignKeyFor: [
+                        "product"
+                    ] as readonly string[]
+                },
+                type: {
+                    name: "type",
+                    type: "ProductDocumentType"
+                },
+                title: {
+                    name: "title",
+                    type: "String"
+                },
+                fileR2Key: {
+                    name: "fileR2Key",
+                    type: "String"
+                },
+                visibility: {
+                    name: "visibility",
+                    type: "ProductDocumentVisibility",
+                    default: "PUBLIC" as FieldDefault
+                },
+                lotNumber: {
+                    name: "lotNumber",
+                    type: "String",
+                    optional: true
+                },
+                version: {
+                    name: "version",
+                    type: "String",
+                    optional: true
+                },
+                language: {
+                    name: "language",
+                    type: "String",
+                    default: "es" as FieldDefault
+                },
+                effectiveDate: {
+                    name: "effectiveDate",
+                    type: "DateTime",
+                    optional: true
+                },
+                sortOrder: {
+                    name: "sortOrder",
+                    type: "Int",
+                    default: 0 as FieldDefault
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                product: {
+                    name: "product",
+                    type: "QuoteProduct",
+                    relation: { opposite: "documents", name: "QuoteProductDocuments", fields: ["productId"], references: ["id"], onDelete: "Cascade" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" }
             }
         },
         Quote: {
@@ -16753,6 +16839,24 @@ export class SchemaType implements SchemaDef {
                 EXAM: "EXAM",
                 RECIPE: "RECIPE",
                 OTHER: "OTHER"
+            }
+        },
+        ProductDocumentType: {
+            name: "ProductDocumentType",
+            values: {
+                IFU: "IFU",
+                SDS: "SDS",
+                COA: "COA",
+                SPEC_SHEET: "SPEC_SHEET",
+                ISO_CERT: "ISO_CERT",
+                PACKAGE_INSERT: "PACKAGE_INSERT"
+            }
+        },
+        ProductDocumentVisibility: {
+            name: "ProductDocumentVisibility",
+            values: {
+                PUBLIC: "PUBLIC",
+                AUTHED: "AUTHED"
             }
         },
         QuoteStatus: {
