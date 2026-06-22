@@ -52,6 +52,16 @@ describe("normalizeJobLocation", () => {
     expect(location.filterKeys).toContain("zone:gran-concepcion");
   });
 
+  it("normalizes historical Chilean region labels from job boards", () => {
+    const negrete = normalizeJobLocation("Negrete, VIII del Biobío");
+    const mariquina = normalizeJobLocation("Mariquina, XIV de Los Ríos");
+
+    expect(negrete.label).toBe("Negrete, Biobío");
+    expect(negrete.filterKeys).toContain("region:biobio");
+    expect(mariquina.label).toBe("Mariquina, Los Ríos");
+    expect(mariquina.filterKeys).toContain("region:los rios");
+  });
+
   it("does not match commune aliases inside longer words", () => {
     const location = normalizeJobLocation("Quillota, CL");
 
@@ -90,7 +100,17 @@ describe("normalizeJobLocation", () => {
 
     expect(location.normalized).toBe(true);
     expect(location.label).toBe("Remoto");
-    expect(location.filterKeys).toEqual(["mode:remoto"]);
+    expect(location.filterKeys).toEqual(["mode:remoto", "remote:unknown"]);
+  });
+
+  it("splits remote roles by Chile versus international location", () => {
+    const chile = normalizeJobLocation("America/Santiago", "remote");
+    const argentina = normalizeJobLocation("Buenos Aires, Argentina", "Remoto");
+
+    expect(chile.filterKeys).toContain("country:chile");
+    expect(chile.filterKeys).toContain("remote:chile");
+    expect(argentina.filterKeys).toContain("country:argentina");
+    expect(argentina.filterKeys).toContain("remote:international");
   });
 
   it("builds filter options and matches rows by zone", () => {
@@ -99,6 +119,8 @@ describe("normalizeJobLocation", () => {
       p("Madrid"),
       p("AIR Office"),
       p(null, "Híbrido"),
+      p("America/Santiago", "Remote"),
+      p("Buenos Aires, Argentina", "Remoto"),
     ];
     const options = buildLocationFilterOptions(rows);
 
@@ -107,10 +129,20 @@ describe("normalizeJobLocation", () => {
     expect(options.some((option) => option.key === "zone:gran-santiago")).toBe(false);
     expect(options.find((option) => option.key === "country:espana")?.group).toBe("country");
     expect(options.find((option) => option.key === "mode:hibrido")?.group).toBe("mode");
+    expect(options.find((option) => option.key === "remote:chile")).toMatchObject({
+      group: "remote",
+      label: "Remoto Chile",
+    });
+    expect(options.find((option) => option.key === "remote:international")).toMatchObject({
+      group: "remote",
+      label: "Remoto internacional",
+    });
     expect(options.find((option) => option.key === "unnormalized")?.group).toBe("review");
     expect(matchesLocationFilter(rows[0]!, "zone:gran-valparaiso")).toBe(true);
     expect(matchesLocationFilter(rows[1]!, "country:espana")).toBe(true);
     expect(matchesLocationFilter(rows[2]!, "unnormalized")).toBe(true);
     expect(matchesLocationFilter(rows[3]!, "mode:hibrido")).toBe(true);
+    expect(matchesLocationFilter(rows[4]!, "remote:chile")).toBe(true);
+    expect(matchesLocationFilter(rows[5]!, "remote:international")).toBe(true);
   });
 });

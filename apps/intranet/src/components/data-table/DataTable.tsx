@@ -342,7 +342,13 @@ function DataTableContent<TData>({
               </Table.Cell>
             )}
             {visibleCells.map((cell) => (
-              <Table.Cell key={cell.id}>
+              <Table.Cell
+                className="select-text"
+                key={cell.id}
+                onPointerDownCapture={
+                  selectionEnabled ? (event) => event.stopPropagation() : undefined
+                }
+              >
                 {flexRender(cell.column.columnDef.cell, cell.getContext())}
               </Table.Cell>
             ))}
@@ -374,7 +380,7 @@ function DataTableContent<TData>({
         )}
         selectedKeys={selectedKeys}
         selectionBehavior="toggle"
-        selectionMode="multiple"
+        selectionMode={selectionEnabled ? "multiple" : "none"}
         sortDescriptor={sortDescriptor}
         style={
           enableVirtualization

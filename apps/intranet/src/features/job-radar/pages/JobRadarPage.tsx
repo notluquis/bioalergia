@@ -39,7 +39,7 @@ import {
 import { SyncProgressBar } from "../components/SyncProgressBar";
 import { jobRadarKeys, type JobRadarListFilters } from "../queries";
 import {
-  buildLocationFilterOptionsFromRaw,
+  buildLocationFilterOptions,
   type LocationFilterOption,
   matchesLocationFilter,
   normalizeJobLocation,
@@ -76,6 +76,8 @@ function locationGroupLabel(group: LocationFilterOption["group"]): string {
       return "País";
     case "mode":
       return "Modo";
+    case "remote":
+      return "Remoto";
     case "review":
       return "Revisar";
   }
@@ -242,14 +244,7 @@ export function JobRadarPage() {
   }, [filterOptions?.companies, source]);
 
   const sources = filterOptions?.sources ?? [];
-  const locations = useMemo(
-    () =>
-      buildLocationFilterOptionsFromRaw(
-        filterOptions?.rawLocations ?? [],
-        filterOptions?.remoteModes ?? []
-      ),
-    [filterOptions?.rawLocations, filterOptions?.remoteModes]
-  );
+  const locations = useMemo(() => buildLocationFilterOptions(rows), [rows]);
   const appStatusFilterOptions = filterOptions?.applicationStatuses ?? APP_STATUSES;
   const postingStatusFilterOptions = filterOptions?.postingStatuses ?? [...JOB_POSTING_STATUSES];
 
@@ -334,7 +329,7 @@ export function JobRadarPage() {
         header: t("jobRadar.col.location"),
         cell: ({ row }) => {
           const { location, remote } = row.original;
-          const normalized = normalizeJobLocation(location);
+          const normalized = normalizeJobLocation(location, remote);
           const text = [location, remote].filter(Boolean).join(" · ") || "—";
           return (
             <span className="flex max-w-[28ch] flex-wrap items-center gap-1">

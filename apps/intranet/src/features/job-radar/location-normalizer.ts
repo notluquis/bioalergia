@@ -8,7 +8,7 @@ export interface NormalizedJobLocation {
 }
 
 export interface LocationFilterOption {
-  group: "commune" | "country" | "mode" | "region" | "review" | "zone";
+  group: "commune" | "country" | "mode" | "region" | "remote" | "review" | "zone";
   key: string;
   label: string;
 }
@@ -22,6 +22,10 @@ const REGION_ALIAS_PAIRS: Array<[string, string]> = [
   ["biobio", "Biobío"],
   ["bio bio", "Biobío"],
   ["bíobío", "Biobío"],
+  ["viii del biobio", "Biobío"],
+  ["viii del bio bio", "Biobío"],
+  ["viii region del biobio", "Biobío"],
+  ["viii region del bio bio", "Biobío"],
   ["araucania", "La Araucanía"],
   ["la araucania", "La Araucanía"],
   ["ohiggins", "O'Higgins"],
@@ -31,6 +35,8 @@ const REGION_ALIAS_PAIRS: Array<[string, string]> = [
   ["libertador bernardo o higgins", "O'Higgins"],
   ["nuble", "Ñuble"],
   ["los rios", "Los Ríos"],
+  ["xiv de los rios", "Los Ríos"],
+  ["xiv region de los rios", "Los Ríos"],
   ["los lagos", "Los Lagos"],
   ["aysen", "Aysén"],
   ["magallanes", "Magallanes"],
@@ -143,6 +149,8 @@ const COMMUNE_ALIASES = new Map(
     "Lampa",
     "Los Andes",
     "Melipeuco",
+    "Mariquina",
+    "Negrete",
     "Puerto Natales",
     "Punta Arenas",
     "Salamanca",
@@ -183,6 +191,8 @@ const COMMUNE_REGION: Record<string, string> = {
   "Los Ángeles": "Biobío",
   "Los Andes": "Valparaíso",
   Melipeuco: "La Araucanía",
+  Mariquina: "Los Ríos",
+  Negrete: "Biobío",
   Osorno: "Los Lagos",
   "Puerto Montt": "Los Lagos",
   "Puerto Natales": "Magallanes",
@@ -363,6 +373,15 @@ const COUNTRY_ALIAS_PAIRS: Array<[string, string]> = [
   ["wroclaw", "Polonia"],
   ["chile", "Chile"],
   ["cl", "Chile"],
+  ["america santiago", "Chile"],
+  ["america lima", "Perú"],
+  ["america buenos aires", "Argentina"],
+  ["america argentina buenos aires", "Argentina"],
+  ["america bogota", "Colombia"],
+  ["america sao paulo", "Brasil"],
+  ["america mexico city", "México"],
+  ["us", "Estados Unidos"],
+  ["usa", "Estados Unidos"],
 ];
 
 const COUNTRY_ALIASES = new Map<string, string>(
@@ -396,6 +415,13 @@ function normalizeRemoteMode(remote: string | null | undefined): string | null {
   return remote.trim().length > 0 ? remote.trim() : null;
 }
 
+function remoteScopeKey(mode: string | null, country: string | null): string | null {
+  if (mode !== "Remoto") return null;
+  if (country === "Chile") return "remote:chile";
+  if (country) return "remote:international";
+  return "remote:unknown";
+}
+
 function displayParts(raw: string): string[] {
   return raw
     .split(",")
@@ -407,6 +433,7 @@ function displayParts(raw: string): string[] {
 }
 
 function findCommune(parts: string[], normalizedRaw: string): string | null {
+  if (normalizedRaw.startsWith("america ")) return null;
   for (const part of parts) {
     const direct = COMMUNE_ALIASES.get(norm(part));
     if (direct) return direct;
@@ -463,6 +490,8 @@ export function normalizeJobLocation(
   if (region) filterKeys.push(key("region", region));
   if (country) filterKeys.push(key("country", country));
   if (mode) filterKeys.push(key("mode", mode));
+  const remoteScope = remoteScopeKey(mode, country);
+  if (remoteScope) filterKeys.push(remoteScope);
   if (commune && GRAN_SANTIAGO.has(commune)) filterKeys.push("zone:gran-santiago");
   if (commune && GRAN_CONCEPCION.has(commune)) filterKeys.push("zone:gran-concepcion");
   if (commune && GRAN_VALPARAISO.has(commune)) filterKeys.push("zone:gran-valparaiso");
@@ -481,6 +510,54 @@ export function normalizeJobLocation(
   };
 }
 
+function addLocationOptions(
+  options: Map<string, LocationFilterOption>,
+  location: NormalizedJobLocation
+): void {
+  const add = (option: LocationFilterOption) => {
+    if (!options.has(option.key)) options.set(option.key, option);
+  };
+
+  for (const filterKey of location.filterKeys) {
+    if (filterKey === "missing") add({ group: "review", key: filterKey, label: "Sin ubicación" });
+    else if (filterKey === "unnormalized")
+      add({ group: "review", key: filterKey, label: "No normalizada" });
+    else if (filterKey === "zone:gran-santiago")
+      add({ group: "zone", key: filterKey, label: "Gran Santiago" });
+    else if (filterKey === "zone:gran-concepcion")
+      add({ group: "zone", key: filterKey, label: "Gran Concepción" });
+    else if (filterKey === "zone:gran-valparaiso")
+      add({ group: "zone", key: filterKey, label: "Gran Valparaíso" });
+    else if (filterKey === "remote:chile")
+      add({ group: "remote", key: filterKey, label: "Remoto Chile" });
+    else if (filterKey === "remote:international")
+      add({ group: "remote", key: filterKey, label: "Remoto internacional" });
+    else if (filterKey === "remote:unknown")
+      add({ group: "remote", key: filterKey, label: "Remoto sin país" });
+    else if (filterKey.startsWith("region:")) {
+      add({
+        group: "region",
+        key: filterKey,
+        label: location.label.split(", ").at(-1) ?? location.label,
+      });
+    } else if (filterKey.startsWith("country:")) {
+      add({
+        group: "country",
+        key: filterKey,
+        label: COUNTRY_LABELS.get(filterKey) ?? filterKey.slice("country:".length),
+      });
+    } else if (filterKey.startsWith("mode:")) {
+      add({
+        group: "mode",
+        key: filterKey,
+        label: filterKey === "mode:hibrido" ? "Híbrido" : filterKey.slice("mode:".length),
+      });
+    } else if (filterKey.startsWith("commune:")) {
+      add({ group: "commune", key: filterKey, label: location.label });
+    }
+  }
+}
+
 export function buildLocationFilterOptionsFromRaw(
   rawLocations: Array<string | null>,
   remoteModes: string[] = []
@@ -493,38 +570,7 @@ export function buildLocationFilterOptionsFromRaw(
 
   for (const rawLocation of rawLocations) {
     const location = normalizeJobLocation(rawLocation);
-    for (const filterKey of location.filterKeys) {
-      if (filterKey === "missing") add({ group: "review", key: filterKey, label: "Sin ubicación" });
-      else if (filterKey === "unnormalized")
-        add({ group: "review", key: filterKey, label: "No normalizada" });
-      else if (filterKey === "zone:gran-santiago")
-        add({ group: "zone", key: filterKey, label: "Gran Santiago" });
-      else if (filterKey === "zone:gran-concepcion")
-        add({ group: "zone", key: filterKey, label: "Gran Concepción" });
-      else if (filterKey === "zone:gran-valparaiso")
-        add({ group: "zone", key: filterKey, label: "Gran Valparaíso" });
-      else if (filterKey.startsWith("region:")) {
-        add({
-          group: "region",
-          key: filterKey,
-          label: location.label.split(", ").at(-1) ?? location.label,
-        });
-      } else if (filterKey.startsWith("country:")) {
-        add({
-          group: "country",
-          key: filterKey,
-          label: COUNTRY_LABELS.get(filterKey) ?? filterKey.slice("country:".length),
-        });
-      } else if (filterKey.startsWith("mode:")) {
-        add({
-          group: "mode",
-          key: filterKey,
-          label: filterKey === "mode:hibrido" ? "Híbrido" : filterKey.slice("mode:".length),
-        });
-      } else if (filterKey.startsWith("commune:")) {
-        add({ group: "commune", key: filterKey, label: location.label });
-      }
-    }
+    addLocationOptions(options, location);
   }
 
   for (const remoteMode of remoteModes) {
@@ -537,8 +583,9 @@ export function buildLocationFilterOptionsFromRaw(
     region: 1,
     commune: 2,
     country: 3,
-    mode: 4,
-    review: 5,
+    remote: 4,
+    mode: 5,
+    review: 6,
   };
   return [...options.values()].sort(
     (a, b) => groupOrder[a.group] - groupOrder[b.group] || a.label.localeCompare(b.label, "es")
@@ -546,9 +593,20 @@ export function buildLocationFilterOptionsFromRaw(
 }
 
 export function buildLocationFilterOptions(rows: JobPostingDTO[]): LocationFilterOption[] {
-  return buildLocationFilterOptionsFromRaw(
-    rows.map((row) => row.location),
-    rows.map((row) => row.remote).filter((remote): remote is string => Boolean(remote))
+  const options = new Map<string, LocationFilterOption>();
+  for (const row of rows)
+    addLocationOptions(options, normalizeJobLocation(row.location, row.remote));
+  const groupOrder: Record<LocationFilterOption["group"], number> = {
+    zone: 0,
+    region: 1,
+    commune: 2,
+    country: 3,
+    remote: 4,
+    mode: 5,
+    review: 6,
+  };
+  return [...options.values()].sort(
+    (a, b) => groupOrder[a.group] - groupOrder[b.group] || a.label.localeCompare(b.label, "es")
   );
 }
 
