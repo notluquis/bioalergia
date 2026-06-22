@@ -501,16 +501,16 @@ export function LabelStrip({
   const remove = (l: string) => onChange(labels.filter((x) => x !== l));
 
   return (
-    <div className="flex flex-wrap items-center gap-1.5 border-default-200 border-b bg-content1 px-3 py-2">
+    <div className="flex flex-wrap items-center gap-1.5 border-default-200 border-b bg-content1 px-3 py-1.5">
       <Tag size={12} className="text-default-400" />
       {labels.length === 0 && <span className="text-default-400 text-xs">Sin etiquetas</span>}
       {labels.map((l) => (
-        <Chip key={l} size="sm" color="accent" variant="soft">
+        <Chip key={l} size="sm" color="default" variant="soft">
           <Chip.Label>{l}</Chip.Label>
           <button
             type="button"
             onClick={() => remove(l)}
-            className="ml-1 inline-flex min-h-6 min-w-6 items-center justify-center rounded-full hover:bg-accent-200/50"
+            className="ml-1 inline-flex min-h-6 min-w-6 items-center justify-center rounded-full hover:bg-default-200/60"
             aria-label={`Quitar ${l}`}
           >
             <X size={10} />
@@ -1084,6 +1084,77 @@ function VoiceRecorderButton({
   );
 }
 
+// One media-gallery cell. Images/videos try to render a thumbnail; on error
+// (expired Meta media) or for docs/audio they fall back to a neutral icon tile
+// with a Spanish label — never a broken "?" image.
+const GALLERY_LABEL: Record<string, string> = {
+  IMAGE: "Imagen",
+  VIDEO: "Vídeo",
+  AUDIO: "Nota de voz",
+  DOCUMENT: "Documento",
+};
+function GalleryTile({
+  type,
+  body,
+  messageId,
+}: {
+  type: string;
+  body: string | null;
+  messageId: number;
+}) {
+  const url = `/api/wa-cloud/media/${messageId}`;
+  const [errored, setErrored] = useState(false);
+  const fallbackIcon = type === "VIDEO" ? Images : type === "AUDIO" ? Mic : FileText;
+  const FallbackIcon = type === "IMAGE" ? Images : fallbackIcon;
+
+  if ((type === "IMAGE" || type === "VIDEO") && !errored) {
+    return (
+      <a
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label={GALLERY_LABEL[type] ?? "Archivo"}
+        className="relative aspect-square overflow-hidden rounded-lg border border-default-200 bg-content1"
+      >
+        {type === "IMAGE" ? (
+          <img
+            src={url}
+            alt=""
+            loading="lazy"
+            className="size-full object-cover"
+            onError={() => setErrored(true)}
+          />
+        ) : (
+          <video
+            src={url}
+            aria-label="Vista previa de video"
+            className="size-full object-cover"
+            muted
+            preload="metadata"
+            onError={() => setErrored(true)}
+          >
+            <track kind="captions" />
+          </video>
+        )}
+      </a>
+    );
+  }
+
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="flex aspect-square flex-col items-center justify-center gap-1.5 rounded-lg border border-default-200 bg-content1 p-2 text-center transition hover:bg-content2"
+    >
+      <FallbackIcon size={22} className="text-default-400" />
+      <span className="line-clamp-2 text-default-500 text-xs">
+        {body?.trim() || GALLERY_LABEL[type] || "Archivo"}
+      </span>
+    </a>
+  );
+}
+
 export function MediaGalleryModal({
   isOpen,
   onClose,
@@ -1094,7 +1165,8 @@ export function MediaGalleryModal({
   conversationId: number;
 }) {
   const media = useConversationMedia(isOpen ? conversationId : undefined);
-  const items = media.data?.media ?? [];
+  // Stickers live in their own picker — they're chrome, not shareable media.
+  const items = (media.data?.media ?? []).filter((m) => m.type !== "STICKER");
 
   return (
     <Modal>
@@ -1131,68 +1203,14 @@ export function MediaGalleryModal({
                 </p>
               ) : (
                 <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
-                  {items.map((m) => {
-                    const url = `/api/wa-cloud/media/${m.messageId}`;
-                    if (m.type === "IMAGE" || m.type === "STICKER") {
-                      return (
-                        <a
-                          key={m.messageId}
-                          href={url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="aspect-square overflow-hidden rounded-lg border border-default-200 bg-default-100"
-                        >
-                          <img
-                            src={url}
-                            alt={m.body ?? m.type}
-                            loading="lazy"
-                            className="size-full object-cover"
-                          />
-                        </a>
-                      );
-                    }
-                    if (m.type === "VIDEO") {
-                      return (
-                        <a
-                          key={m.messageId}
-                          href={url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          aria-label="Abrir video"
-                          className="relative flex aspect-square items-center justify-center overflow-hidden rounded-lg border border-default-200 bg-black"
-                        >
-                          <video
-                            src={url}
-                            aria-label="Vista previa de video"
-                            className="size-full object-cover"
-                            muted
-                            preload="metadata"
-                          >
-                            <track kind="captions" />
-                          </video>
-                          <span className="absolute inset-0 flex items-center justify-center">
-                            <span className="rounded-full bg-black/60 p-2 text-white">
-                              <FileText size={14} />
-                            </span>
-                          </span>
-                        </a>
-                      );
-                    }
-                    return (
-                      <a
-                        key={m.messageId}
-                        href={url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex aspect-square flex-col items-center justify-center gap-1 rounded-lg border border-default-200 bg-content2 p-2 text-center"
-                      >
-                        <FileText size={20} className="text-accent" />
-                        <span className="line-clamp-2 text-default-700 text-xs">
-                          {m.body ?? m.type.toLowerCase()}
-                        </span>
-                      </a>
-                    );
-                  })}
+                  {items.map((m) => (
+                    <GalleryTile
+                      key={m.messageId}
+                      type={m.type}
+                      body={m.body}
+                      messageId={m.messageId}
+                    />
+                  ))}
                 </div>
               )}
             </Modal.Body>

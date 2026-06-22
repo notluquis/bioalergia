@@ -39,9 +39,9 @@ export function LocationBubble({ payload }: { payload: Payload }) {
       href={gmapsUrl}
       target="_blank"
       rel="noopener noreferrer"
-      className="flex w-72 max-w-full items-start gap-3 rounded-lg bg-content2 p-3 transition hover:bg-content3"
+      className="flex w-72 max-w-full items-start gap-3 rounded-xl border border-default-200 bg-content1 p-3 transition hover:bg-content2"
     >
-      <div className="flex size-12 shrink-0 items-center justify-center rounded-lg bg-success-100 text-success-700">
+      <div className="flex size-12 shrink-0 items-center justify-center rounded-lg bg-success/15 text-success">
         <MapPin size={24} />
       </div>
       <div className="min-w-0 flex-1">
@@ -72,9 +72,9 @@ export function ContactsBubble({ payload }: { payload: Payload }) {
       {contacts.map((c, i) => {
         const name = c.name?.formatted_name ?? c.name?.first_name ?? "Contacto";
         return (
-          <div key={i} className="rounded-lg border border-default-200 bg-content2 p-3">
+          <div key={i} className="rounded-xl border border-default-200 bg-content1 p-3">
             <div className="flex items-center gap-2">
-              <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-accent-200 text-accent-900">
+              <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-accent/15 text-accent">
                 <User size={16} />
               </div>
               <p className="min-w-0 flex-1 truncate font-medium text-sm">{name}</p>

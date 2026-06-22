@@ -101,14 +101,18 @@ export function ChatBubble({
   const groupEnd = row.groupEnd ?? true;
 
   const isSticker = row.type === "STICKER";
-  const bubbleColor = isSticker
+  // Rich self-contained cards (their own surface: map/doc/contact) render
+  // bubble-less — the outer green/content1 bubble would wrap them with a
+  // clashing background and break contrast in dark mode.
+  const richCard = isSticker || ["LOCATION", "CONTACTS", "DOCUMENT"].includes(row.type);
+  const bubbleColor = richCard
     ? "bg-transparent"
     : out
       ? failed
         ? "bg-danger text-danger-foreground"
         : "bg-success text-success-foreground"
       : "bg-content1 text-foreground border border-default-200";
-  const radius = isSticker
+  const radius = richCard
     ? ""
     : out
       ? "rounded-l-2xl rounded-tr-2xl"
@@ -198,13 +202,15 @@ export function ChatBubble({
         className={`relative ${
           isSticker
             ? "max-w-[12rem]"
-            : "w-fit min-w-[60px] max-w-[85%] sm:max-w-[75%] md:max-w-[min(75%,400px)]"
+            : richCard
+              ? "w-fit max-w-[19rem]"
+              : "w-fit min-w-[60px] max-w-[85%] sm:max-w-[75%] md:max-w-[min(75%,400px)]"
         }`}
       >
         {trigger}
         <div
           className={`${radius} ${
-            isSticker ? "" : "w-fit min-w-[60px] max-w-full px-3 py-2 shadow-sm"
+            richCard ? "" : "w-fit min-w-[60px] max-w-full px-3 py-2 shadow-sm"
           } ${bubbleColor} ${out ? "ml-auto" : "mr-auto"} ${isPending ? "opacity-70" : ""}`}
         >
           <ForwardedBadge payload={row.payload as Record<string, unknown> | null} />
@@ -256,7 +262,7 @@ export function ChatBubble({
           {(groupEnd || failed) && (
             <div
               className={`flex items-center justify-end gap-1 text-xs ${
-                isSticker
+                richCard
                   ? "mt-0.5 text-default-500"
                   : out
                     ? "mt-1 text-success-foreground/80"
@@ -268,22 +274,20 @@ export function ChatBubble({
             </div>
           )}
           {failed && (
-            <div className="mt-1 flex items-center justify-between gap-2 px-3 pb-1">
-              <p className="text-danger text-xs">
+            <div className="mt-0.5 flex items-center gap-2 text-xs">
+              <span className="text-danger-foreground/90">
                 {row.errorTitle ?? "No se pudo enviar"}
-                {row.errorDetails ? `: ${row.errorDetails}` : ""}
-              </p>
+              </span>
               {canRetry && (
-                <Button
-                  size="sm"
-                  variant="danger-soft"
-                  onPress={() => onRetry?.(row)}
+                <button
+                  type="button"
+                  onClick={() => onRetry?.(row)}
                   aria-label="Reintentar envío"
-                  className="shrink-0"
+                  className="inline-flex shrink-0 items-center gap-1 font-medium text-danger-foreground underline-offset-2 hover:underline"
                 >
-                  <RotateCw size={12} />
+                  <RotateCw size={11} />
                   Reintentar
-                </Button>
+                </button>
               )}
             </div>
           )}
