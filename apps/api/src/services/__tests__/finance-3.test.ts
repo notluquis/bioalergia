@@ -304,10 +304,13 @@ describe("applyAutoCategoryRuleRow raw-SQL branch (compiled Kysely)", () => {
     expect(parameters).toContain("%50\\%\\_x%");
   });
 
-  it("descriptionContains emits ILIKE on ft.description", async () => {
+  it("descriptionContains emits ILIKE on ft.description and MercadoPago sale_detail", async () => {
     await runRuleRow({ descriptionContains: "abc", matchAmountOn: "gross" }, 1n);
     const { parameters, sql } = lastCaptured();
-    expect(sql.toLowerCase()).toContain("ft.description ilike");
+    const lower = sql.toLowerCase();
+    expect(lower).toContain("ft.description ilike");
+    expect(lower).toContain("rt.sale_detail ilike");
+    expect(lower).toContain("st.sale_detail ilike");
     expect(parameters).toContain("%abc%");
   });
 

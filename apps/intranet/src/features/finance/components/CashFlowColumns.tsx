@@ -26,6 +26,7 @@ export type CashFlowTransaction = {
   counterpart?: CounterpartOption | null;
   counterpartAccountNumber?: null | string;
   counterpartId?: null | number;
+  counterpartLinkedAccountNumber?: null | string;
   createdAt?: Date;
   date: Date;
   description: string;
@@ -45,6 +46,11 @@ export type CashFlowTransaction = {
   sourceId?: null | string;
   type: "INCOME" | "EXPENSE";
   updatedAt?: Date;
+  withdrawBankAccountHolder?: null | string;
+  withdrawBankAccountNumber?: null | string;
+  withdrawBankAccountType?: null | string;
+  withdrawBankName?: null | string;
+  withdrawIdentificationNumber?: null | string;
 };
 
 const formatCurrency = (amount: number) => {
@@ -137,6 +143,27 @@ const COMMENT_REF_PREFIX_REGEX = /^ref:\s*/i;
 const normalizeCommentDetail = (rawValue: null | string | undefined) =>
   (rawValue ?? "").replace(COMMENT_REF_PREFIX_REGEX, "").trim();
 
+const hasWithdrawDetails = (row: CashFlowTransaction) =>
+  Boolean(
+    row.withdrawBankAccountHolder?.trim() ||
+    row.withdrawBankAccountNumber?.trim() ||
+    row.withdrawBankName?.trim()
+  );
+
+const mapAccountTypeLabel = (rawType: null | string | undefined) => {
+  const type = normalizeComparable(rawType);
+  if (type === "checking_account") return "Cuenta corriente";
+  if (type === "view_account") return "Cuenta vista";
+  return rawType?.trim() ?? "";
+};
+
+const maskAccountNumber = (rawValue: null | string | undefined) => {
+  const value = rawValue?.trim() ?? "";
+  if (!value) return "";
+  const visible = value.slice(-4);
+  return value.length <= 4 ? value : `****${visible}`;
+};
+
 const dedupeDetails = (values: string[]) => {
   const result: string[] = [];
   const seen = new Set<string>();
@@ -152,6 +179,17 @@ const dedupeDetails = (values: string[]) => {
 
   return result;
 };
+
+const buildAccountLine = (params: {
+  accountNumber: null | string | undefined;
+  accountType?: null | string;
+  bankName?: null | string;
+}) =>
+  dedupeDetails([
+    params.bankName?.trim() ?? "",
+    mapAccountTypeLabel(params.accountType),
+    maskAccountNumber(params.accountNumber),
+  ]).join(" · ");
 
 export const columns: ColumnDef<CashFlowTransaction>[] = [
   {
@@ -230,6 +268,7 @@ export const columns: ColumnDef<CashFlowTransaction>[] = [
     header: "Detalles",
     cell: ({ row }) => {
       const detailLines = dedupeDetails([
+        hasWithdrawDetails(row.original) ? "Retiro" : "",
         normalizeSaleDetail(row.original.releaseSaleDetail),
         normalizeSaleDetail(row.original.settlementSaleDetail),
         normalizeCommentDetail(row.original.comment),
@@ -267,31 +306,80 @@ export const columns: ColumnDef<CashFlowTransaction>[] = [
     maxSize: 320,
     minSize: 180,
     size: 240,
-    cell: ({ row }) =>
-      row.original.counterpart ? (
-        <div className="flex max-w-70 min-w-0 flex-col">
-          <span
-            className="block truncate text-small"
-            title={row.original.counterpart.bankAccountHolder}
-          >
-            {row.original.counterpart.bankAccountHolder}
-          </span>
-          <span
-            className="block truncate text-tiny text-default-400"
-            title={row.original.counterpart.identificationNumber}
-          >
-            {row.original.counterpart.identificationNumber}
-          </span>
-          <span
-            className="block truncate text-tiny text-default-400"
-            title={row.original.counterpartAccountNumber ?? "-"}
-          >
-            {row.original.counterpartAccountNumber ?? "-"}
-          </span>
-        </div>
-      ) : (
-        <span className="text-default-400">-</span>
-      ),
+    cell: ({ row }) => {
+      const transaction = row.original;
+      const manualAccountLine = buildAccountLine({
+        accountNumber:
+          transaction.counterpartLinkedAccountNumber ?? transaction.counterpartAccountNumber,
+      });
+      const withdrawAccountLine = buildAccountLine({
+        accountNumber: transaction.withdrawBankAccountNumber,
+        accountType: transaction.withdrawBankAccountType,
+        bankName: transaction.withdrawBankName,
+      });
+      const manualName = transaction.counterpart?.bankAccountHolder?.trim() ?? "";
+      const officialName = transaction.withdrawBankAccountHolder?.trim() ?? "";
+      const manualNameKey = normalizeComparable(manualName);
+      const officialNameKey = normalizeComparable(officialName);
+      const showOfficialWithdraw =
+        Boolean(officialNameKey || withdrawAccountLine) &&
+        (officialNameKey !== manualNameKey || withdrawAccountLine !== manualAccountLine);
+
+      if (transaction.counterpart || showOfficialWithdraw) {
+        return (
+          <div className="flex max-w-70 min-w-0 flex-col">
+            {transaction.counterpart ? (
+              <>
+                <span
+                  className="block truncate text-small"
+                  title={transaction.counterpart.bankAccountHolder}
+                >
+                  {transaction.counterpart.bankAccountHolder}
+                </span>
+                <span
+                  className="block truncate text-tiny text-default-400"
+                  title={transaction.counterpart.identificationNumber}
+                >
+                  {transaction.counterpart.identificationNumber}
+                </span>
+                <span
+                  className="block truncate text-tiny text-default-400"
+                  title={manualAccountLine}
+                >
+                  {manualAccountLine || "-"}
+                </span>
+              </>
+            ) : null}
+            {showOfficialWithdraw ? (
+              <div
+                className={transaction.counterpart ? "mt-1 border-default-200 border-t pt-1" : ""}
+              >
+                <span
+                  className="block truncate text-tiny font-medium text-default-500"
+                  title={officialName || "Retiro"}
+                >
+                  Retiro: {officialName || "sin titular"}
+                </span>
+                <span
+                  className="block truncate text-tiny text-default-400"
+                  title={transaction.withdrawIdentificationNumber ?? ""}
+                >
+                  {transaction.withdrawIdentificationNumber ?? "-"}
+                </span>
+                <span
+                  className="block truncate text-tiny text-default-400"
+                  title={withdrawAccountLine}
+                >
+                  {withdrawAccountLine || "-"}
+                </span>
+              </div>
+            ) : null}
+          </div>
+        );
+      }
+
+      return <span className="text-default-400">-</span>;
+    },
   },
   {
     accessorKey: "type",

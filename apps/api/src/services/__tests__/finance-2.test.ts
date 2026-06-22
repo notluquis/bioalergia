@@ -816,6 +816,196 @@ describe("syncFinancialTransactionsBySourceIds — auto-category matching", () =
     expect(created.data.categoryId).toBe(10);
   });
 
+  it("classifies a new MercadoPago CCA sale detail as patients without the keyword", async () => {
+    primeSyncScaffold();
+    m.ruleFindMany.mockResolvedValue([
+      ruleRow({
+        amountsExact: [30000],
+        categoryId: 10,
+        descriptionContains: "concept cca",
+        matchAmountOn: "gross",
+        maxAmount: null,
+        minAmount: null,
+        paymentMethods: ["bank_transfer"],
+      }),
+    ]);
+    m.releaseFindMany.mockResolvedValue([
+      {
+        sourceId: "pt-cca-1",
+        grossAmount: 30000,
+        paymentMethodType: "bank_transfer",
+        saleDetail: '"concept cca"',
+      },
+    ]);
+    mockFetchMergedBySourceIds.mockResolvedValue([
+      unified({ sourceId: "pt-cca-1", transactionAmount: 30000, description: "payment" }),
+    ]);
+
+    await syncFinancialTransactionsBySourceIds(["pt-cca-1"], 7);
+
+    const created = m.txnCreate.mock.calls[0]?.[0] as { data: Record<string, unknown> };
+    expect(created.data.categoryId).toBe(10);
+  });
+
+  it("classifies a learned bank-transfer sale detail and gross amount as patients", async () => {
+    primeSyncScaffold();
+    m.ruleFindMany.mockResolvedValue([
+      ruleRow({
+        amountsExact: [50000],
+        categoryId: 10,
+        descriptionContains: "sin mensaje",
+        matchAmountOn: "gross",
+        maxAmount: null,
+        minAmount: null,
+        paymentMethods: ["bank_transfer"],
+      }),
+    ]);
+    m.releaseFindMany.mockResolvedValue([
+      {
+        sourceId: "pt-sin-mensaje",
+        grossAmount: 50000,
+        paymentMethodType: "bank_transfer",
+        saleDetail: "sin mensaje",
+      },
+    ]);
+    mockFetchMergedBySourceIds.mockResolvedValue([
+      unified({ sourceId: "pt-sin-mensaje", transactionAmount: 50000, description: "payment" }),
+    ]);
+
+    await syncFinancialTransactionsBySourceIds(["pt-sin-mensaje"], 7);
+
+    const created = m.txnCreate.mock.calls[0]?.[0] as { data: Record<string, unknown> };
+    expect(created.data.categoryId).toBe(10);
+  });
+
+  it("does not classify a CCA sale detail when the payment method is outside the learned set", async () => {
+    primeSyncScaffold();
+    m.ruleFindMany.mockResolvedValue([
+      ruleRow({
+        amountsExact: [25000],
+        categoryId: 10,
+        descriptionContains: "Pago CCA",
+        matchAmountOn: "gross",
+        maxAmount: null,
+        minAmount: null,
+        paymentMethods: ["bank_transfer"],
+      }),
+    ]);
+    m.releaseFindMany.mockResolvedValue([
+      {
+        sourceId: "pt-cca-wrong-method",
+        grossAmount: 25000,
+        paymentMethodType: "debit_card",
+        saleDetail: "Pago CCA",
+      },
+    ]);
+    mockFetchMergedBySourceIds.mockResolvedValue([
+      unified({
+        sourceId: "pt-cca-wrong-method",
+        transactionAmount: 25000,
+        description: "payment",
+      }),
+    ]);
+
+    await syncFinancialTransactionsBySourceIds(["pt-cca-wrong-method"], 7);
+
+    const created = m.txnCreate.mock.calls[0]?.[0] as { data: Record<string, unknown> };
+    expect(created.data.categoryId).toBeNull();
+  });
+
+  it("does not classify a CCA sale detail when the amount belongs to another observed category", async () => {
+    primeSyncScaffold();
+    m.ruleFindMany.mockResolvedValue([
+      ruleRow({
+        amountsExact: [10000, 25000, 30000, 50000, 60000, 75000, 150000],
+        categoryId: 10,
+        descriptionContains: "concept cca",
+        matchAmountOn: "gross",
+        maxAmount: null,
+        minAmount: null,
+        paymentMethods: ["bank_transfer"],
+      }),
+    ]);
+    m.releaseFindMany.mockResolvedValue([
+      {
+        sourceId: "pt-cca-other",
+        grossAmount: 100000,
+        paymentMethodType: "bank_transfer",
+        saleDetail: "concept cca",
+      },
+    ]);
+    mockFetchMergedBySourceIds.mockResolvedValue([
+      unified({ sourceId: "pt-cca-other", transactionAmount: 100000, description: "payment" }),
+    ]);
+
+    await syncFinancialTransactionsBySourceIds(["pt-cca-other"], 7);
+
+    const created = m.txnCreate.mock.calls[0]?.[0] as { data: Record<string, unknown> };
+    expect(created.data.categoryId).toBeNull();
+  });
+
+  it("classifies link de pago by gross amount before MercadoPago commission", async () => {
+    primeSyncScaffold();
+    m.ruleFindMany.mockResolvedValue([
+      ruleRow({
+        amountsExact: [25000, 30000, 50000, 60000],
+        categoryId: 10,
+        descriptionContains: "Link de pago",
+        matchAmountOn: "gross",
+        maxAmount: null,
+        minAmount: null,
+        paymentMethods: ["account_money", "credit_card", "debit_card"],
+      }),
+    ]);
+    m.releaseFindMany.mockResolvedValue([
+      {
+        sourceId: "pt-link-1",
+        grossAmount: 30000,
+        paymentMethodType: "credit_card",
+        saleDetail: "Link de pago",
+      },
+    ]);
+    mockFetchMergedBySourceIds.mockResolvedValue([
+      unified({ sourceId: "pt-link-1", transactionAmount: 28860, description: "payment" }),
+    ]);
+
+    await syncFinancialTransactionsBySourceIds(["pt-link-1"], 7);
+
+    const created = m.txnCreate.mock.calls[0]?.[0] as { data: Record<string, unknown> };
+    expect(created.data.categoryId).toBe(10);
+  });
+
+  it("does not classify a high gross link de pago as patients", async () => {
+    primeSyncScaffold();
+    m.ruleFindMany.mockResolvedValue([
+      ruleRow({
+        amountsExact: [25000, 30000, 50000, 60000],
+        categoryId: 10,
+        descriptionContains: "Link de pago",
+        matchAmountOn: "gross",
+        maxAmount: null,
+        minAmount: null,
+        paymentMethods: ["account_money", "credit_card", "debit_card"],
+      }),
+    ]);
+    m.releaseFindMany.mockResolvedValue([
+      {
+        sourceId: "pt-link-high",
+        grossAmount: 1_500_000,
+        paymentMethodType: "credit_card",
+        saleDetail: "Link de pago",
+      },
+    ]);
+    mockFetchMergedBySourceIds.mockResolvedValue([
+      unified({ sourceId: "pt-link-high", transactionAmount: 1_443_000, description: "payment" }),
+    ]);
+
+    await syncFinancialTransactionsBySourceIds(["pt-link-high"], 7);
+
+    const created = m.txnCreate.mock.calls[0]?.[0] as { data: Record<string, unknown> };
+    expect(created.data.categoryId).toBeNull();
+  });
+
   it("matches the patients keyword ignoring accents (diacritics-insensitive)", async () => {
     primeSyncScaffold();
     // "PACIÉNTE" with an accent normalizes to "paciente" and matches.
