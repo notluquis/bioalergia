@@ -232,16 +232,14 @@ export function ChatBubble({
           ) : row.type === "UNSUPPORTED" ? (
             <UnsupportedBubble payload={row.payload as Record<string, unknown> | null} />
           ) : row.type === "TEMPLATE" ? (
-            <div className="space-y-0.5">
-              <span
-                className={`flex items-center gap-1 text-xs ${out ? "text-success-foreground/70" : "text-default-400"}`}
-              >
-                <MessageSquareText size={12} className="shrink-0" />
-                Plantilla
+            <div className="flex items-center gap-1.5">
+              <MessageSquareText
+                size={14}
+                className={`shrink-0 ${out ? "text-success-foreground/70" : "text-default-400"}`}
+              />
+              <span className="break-words text-sm leading-snug">
+                {row.templateName ?? "Plantilla"}
               </span>
-              {row.templateName && (
-                <p className="break-words text-sm leading-snug">{row.templateName}</p>
-              )}
             </div>
           ) : isMedia && row.messageId ? (
             <MediaAttachment

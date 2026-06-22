@@ -211,6 +211,9 @@ export function TextComposer({
   const ref = inputRef ?? internalRef;
   const fileRef = useRef<HTMLInputElement>(null);
   const isTouch = useIsTouch();
+  // While the voice recorder is recording/previewing it owns the composer row;
+  // hide the textarea + send button so there's a single, unambiguous send.
+  const [voiceActive, setVoiceActive] = useState(false);
   const attachItems: AttachItem[] = [
     {
       id: "file",
@@ -348,41 +351,49 @@ export function TextComposer({
             onSend={onSendSticker}
           />
         )}
-        <VoiceRecorderButton onSend={onAttachFile} isDisabled={isDisabled || attachPending} />
-        <div className="relative order-first w-full min-w-0 md:order-none md:w-auto md:flex-1">
-          <TextArea
-            ref={ref}
-            variant="secondary"
-            value={body}
-            onChange={(e) => setBody(e.currentTarget.value)}
-            onKeyDown={handleKey}
-            onFocus={onFocusComposer}
-            placeholder={
-              isDisabled
-                ? (disabledReason ?? "")
-                : "Escribe un mensaje. Enter para enviar, Shift+Enter para nueva línea. Tip: /atajo para snippets."
-            }
-            disabled={isDisabled}
-            rows={1}
-            className="w-full resize-none rounded-2xl"
-            fullWidth
-          />
-          <ShortcutAutocomplete
-            body={body}
-            setBody={setBody}
-            onSendSnippet={onSendSnippet}
-            isDisabled={isDisabled}
-          />
-        </div>
-        <Button
-          size="sm"
-          isIconOnly
-          aria-label="Enviar"
-          onPress={onSend}
-          isDisabled={isDisabled || !body.trim()}
-        >
-          <Send size={16} />
-        </Button>
+        <VoiceRecorderButton
+          onSend={onAttachFile}
+          isDisabled={isDisabled || attachPending}
+          onActiveChange={setVoiceActive}
+        />
+        {!voiceActive && (
+          <>
+            <div className="relative order-first w-full min-w-0 md:order-none md:w-auto md:flex-1">
+              <TextArea
+                ref={ref}
+                variant="secondary"
+                value={body}
+                onChange={(e) => setBody(e.currentTarget.value)}
+                onKeyDown={handleKey}
+                onFocus={onFocusComposer}
+                placeholder={
+                  isDisabled
+                    ? (disabledReason ?? "")
+                    : "Escribe un mensaje. Enter para enviar, Shift+Enter para nueva línea. Tip: /atajo para snippets."
+                }
+                disabled={isDisabled}
+                rows={1}
+                className="w-full resize-none rounded-2xl"
+                fullWidth
+              />
+              <ShortcutAutocomplete
+                body={body}
+                setBody={setBody}
+                onSendSnippet={onSendSnippet}
+                isDisabled={isDisabled}
+              />
+            </div>
+            <Button
+              size="sm"
+              isIconOnly
+              aria-label="Enviar"
+              onPress={onSend}
+              isDisabled={isDisabled || !body.trim()}
+            >
+              <Send size={16} />
+            </Button>
+          </>
+        )}
       </div>
     </div>
   );
@@ -923,9 +934,13 @@ export function ScheduleSendModal({
 function VoiceRecorderButton({
   onSend,
   isDisabled,
+  onActiveChange,
 }: {
   onSend: (file: File) => void;
   isDisabled: boolean;
+  // Notifies the composer when the recorder takes over (recording or previewing)
+  // so it can hide its textarea + send button — avoids a confusing double-send.
+  onActiveChange?: (active: boolean) => void;
 }) {
   const [recording, setRecording] = useState(false);
   const [elapsed, setElapsed] = useState(0);
@@ -941,6 +956,10 @@ function VoiceRecorderButton({
       if (tickRef.current) clearInterval(tickRef.current);
     };
   }, [preview]);
+
+  useEffect(() => {
+    onActiveChange?.(recording || preview !== null);
+  }, [recording, preview, onActiveChange]);
 
   const start = async () => {
     try {

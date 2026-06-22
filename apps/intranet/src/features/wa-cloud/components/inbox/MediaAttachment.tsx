@@ -63,9 +63,9 @@ export function MediaAttachment({ messageId, type, caption, out = false }: Props
             type="button"
             onClick={retry}
             aria-label="Sticker no disponible, reintentar"
-            className="flex size-32 flex-col items-center justify-center gap-1 rounded-xl text-default-400 transition hover:text-default-500"
+            className="flex w-32 flex-col items-center justify-center gap-1 rounded-xl bg-content2 py-4 text-default-400 transition hover:text-default-500"
           >
-            <Sticker size={26} />
+            <Sticker size={24} />
             <span className="text-xs">No disponible</span>
           </button>
         ) : visible ? (
