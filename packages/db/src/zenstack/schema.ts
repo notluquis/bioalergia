@@ -11440,6 +11440,86 @@ export class SchemaType implements SchemaDef {
                 id: { type: "Int" }
             }
         },
+        PollenForecast: {
+            name: "PollenForecast",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                locationKey: {
+                    name: "locationKey",
+                    type: "String",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("location_key") }] }] as readonly AttributeApplication[]
+                },
+                forecastDate: {
+                    name: "forecastDate",
+                    type: "DateTime",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("forecast_date") }] }, { name: "@db.Date" }] as readonly AttributeApplication[]
+                },
+                pollenType: {
+                    name: "pollenType",
+                    type: "PollenType",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("pollen_type") }] }] as readonly AttributeApplication[]
+                },
+                upiValue: {
+                    name: "upiValue",
+                    type: "Int",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("upi_value") }] }] as readonly AttributeApplication[]
+                },
+                category: {
+                    name: "category",
+                    type: "String",
+                    optional: true
+                },
+                colorHex: {
+                    name: "colorHex",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("color_hex") }] }] as readonly AttributeApplication[]
+                },
+                inSeason: {
+                    name: "inSeason",
+                    type: "Boolean",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(false) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("in_season") }] }] as readonly AttributeApplication[],
+                    default: false as FieldDefault
+                },
+                source: {
+                    name: "source",
+                    type: "PollenSource",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("GOOGLE") }] }] as readonly AttributeApplication[],
+                    default: "GOOGLE" as FieldDefault
+                },
+                healthRecommendations: {
+                    name: "healthRecommendations",
+                    type: "Json",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("health_recommendations") }] }] as readonly AttributeApplication[]
+                },
+                fetchedAt: {
+                    name: "fetchedAt",
+                    type: "DateTime",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("fetched_at") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                }
+            },
+            attributes: [
+                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read,create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
+                { name: "@@unique", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("locationKey"), ExpressionUtils.field("forecastDate"), ExpressionUtils.field("pollenType")]) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("locationKey"), ExpressionUtils.field("forecastDate")]) }] },
+                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("pollen_forecasts") }] }
+            ] as readonly AttributeApplication[],
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" },
+                locationKey_forecastDate_pollenType: { locationKey: { type: "String" }, forecastDate: { type: "DateTime" }, pollenType: { type: "PollenType" } }
+            }
+        },
         DTEPurchaseDetail: {
             name: "DTEPurchaseDetail",
             fields: {
@@ -20073,6 +20153,21 @@ export class SchemaType implements SchemaDef {
                 CONTACTADO: "CONTACTADO",
                 COTIZADO: "COTIZADO",
                 CERRADO: "CERRADO"
+            }
+        },
+        PollenType: {
+            name: "PollenType",
+            values: {
+                GRASS: "GRASS",
+                TREE: "TREE",
+                WEED: "WEED"
+            }
+        },
+        PollenSource: {
+            name: "PollenSource",
+            values: {
+                GOOGLE: "GOOGLE",
+                CALENDAR: "CALENDAR"
             }
         },
         DTEType: {
