@@ -86,12 +86,17 @@ export function TemplateComposer({
     !ltoInvalid &&
     !copyCodeInvalid;
 
+  // Only surface red validation AFTER a send attempt — showing required-field
+  // errors before the operator has touched anything reads as broken.
+  const [attempted, setAttempted] = useState(false);
+
   return (
     <Form
       validationBehavior="aria"
       className="space-y-2"
       onSubmit={(e) => {
         e.preventDefault();
+        setAttempted(true);
         if (!isValid) {
           toast.error("Completa todos los campos requeridos antes de enviar.");
           return;
@@ -107,7 +112,7 @@ export function TemplateComposer({
             onValueChange={setTplKey}
             options={tplOptions}
             isRequired
-            isInvalid={!tplKey}
+            isInvalid={attempted && !tplKey}
             errorMessage="Selecciona una plantilla aprobada."
           />
         </div>
@@ -125,7 +130,7 @@ export function TemplateComposer({
               label={`Variable {{${i + 1}}}`}
               value={v}
               isRequired
-              isInvalid={!v.trim()}
+              isInvalid={attempted && !v.trim()}
               errorMessage={`La variable {{${i + 1}}} es obligatoria.`}
               onValueChange={(val) =>
                 setTplVars((arr) => {
@@ -170,7 +175,7 @@ export function TemplateComposer({
             value={tplLtoExpiration}
             onChange={setTplLtoExpiration}
           />
-          {ltoInvalid ? (
+          {attempted && ltoInvalid ? (
             <p className="flex items-center gap-1 text-danger text-xs">
               <AlertTriangle size={12} aria-hidden />
               Selecciona fecha y hora de expiración antes de enviar.
@@ -188,7 +193,7 @@ export function TemplateComposer({
             label="Código"
             value={tplCopyCode?.value ?? ""}
             isRequired
-            isInvalid={copyCodeInvalid}
+            isInvalid={attempted && copyCodeInvalid}
             errorMessage="El código que se copia es obligatorio."
             onValueChange={(v) =>
               setTplCopyCode({ index: copyCodeButtonIndex, value: v.slice(0, 15) })
@@ -197,7 +202,7 @@ export function TemplateComposer({
           />
         </div>
       )}
-      {missingCardImages.length > 0 ? (
+      {attempted && missingCardImages.length > 0 ? (
         <div
           role="alert"
           className="flex items-start gap-2 rounded-lg border border-danger-200 bg-danger-50 px-3 py-2 text-danger-900 text-xs"
