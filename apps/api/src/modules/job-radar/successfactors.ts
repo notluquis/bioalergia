@@ -139,6 +139,13 @@ function normalizeLocation(raw: string | null): string | null {
     .join(", ");
 }
 
+function isBroadLocation(location: string | null): boolean {
+  if (!location) return true;
+  return /^(Chile|Argentina|Brasil|Brazil|Ecuador|Peru|México|Mexico|Colombia|US|USA)$/i.test(
+    location.trim()
+  );
+}
+
 function rawObject(raw: unknown): RawObject {
   return raw && typeof raw === "object" && !Array.isArray(raw) ? (raw as RawObject) : {};
 }
@@ -238,6 +245,29 @@ function parseSearchRows(html: string, baseUrl: string): RawJob[] {
 }
 
 function parseDetailLocation(html: string): string | null {
+  const propertyValues = new Map<string, string>();
+  const propertyRe = /<span[^>]*data-careersite-propertyid="([^"]+)"[^>]*>([\s\S]*?)<\/span>/gi;
+  for (const match of html.matchAll(propertyRe)) {
+    const value = normalizeLocation(cleanText(match[2]));
+    if (value) propertyValues.set(match[1].toLowerCase(), value);
+  }
+
+  const city = propertyValues.get("city");
+  const province =
+    propertyValues.get("customfield4") ??
+    propertyValues.get("state") ??
+    propertyValues.get("province") ??
+    null;
+  const country = propertyValues.get("location") ?? null;
+  const composite = [city, province, country]
+    .filter((part): part is string => Boolean(part))
+    .filter(
+      (part, index, parts) =>
+        parts.findIndex((other) => other.toLowerCase() === part.toLowerCase()) === index
+    )
+    .join(", ");
+  if (composite) return composite;
+
   const geo = html.match(/<span[^>]*class="[^"]*jobGeoLocation[^"]*"[^>]*>([\s\S]*?)<\/span>/i);
   if (geo) return normalizeLocation(cleanText(geo[1]));
 
@@ -251,7 +281,7 @@ function parseDetailLocation(html: string): string | null {
 async function enrichDetailLocations(jobs: RawJob[]): Promise<void> {
   const pending = jobs.filter((job) => {
     const raw = rawObject(job.raw);
-    return raw?.locationSource === "path" || !job.location;
+    return raw.locationSource === "path" || isBroadLocation(job.location);
   });
   let index = 0;
   const worker = async () => {

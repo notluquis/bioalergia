@@ -204,6 +204,39 @@ describe("job location fallbacks", () => {
     expect(jobs[0]).toMatchObject({ location: "El Paso, TX, US, 79915" });
   });
 
+  it("enriches broad SuccessFactors country locations with detail region fields", async () => {
+    const tiles = `
+      <li class="job-tile job-id-1400543000">
+        <a class="jobTitle-link" data-url="/job/Supervisor%28a%29-Carguio-y-Transporte-Spence/1400543000/">Supervisor(a) Carguio y Transporte | Spence</a>
+      </li>`;
+    const searchRows = `
+      <table>
+        <tr class="data-row">
+          <td class="colTitle hidden-phone"><a class="jobTitle-link" href="/job/Supervisor%28a%29-Carguio-y-Transporte-Spence/1400543000/">Supervisor(a) Carguio y Transporte | Spence</a></td>
+          <td class="colLocation hidden-phone"><span class="jobLocation">Chile</span></td>
+        </tr>
+      </table>`;
+    const detail = `
+      <span class="joblayouttoken-label">País del Empleo: </span>
+      <span data-careersite-propertyid="location">
+        <p id="job-location"><span class="jobGeoLocation">Chile </span></p>
+      </span>
+      <span class="joblayouttoken-label">Estado / Provincia del Empleo: </span>
+      <span data-careersite-propertyid="customfield4">Antofagasta </span>
+      <span class="joblayouttoken-label">Ubicación / Región del Empleo: </span>
+      <span data-careersite-propertyid="city"> </span>`;
+    vi.spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(res(tiles))
+      .mockResolvedValueOnce(res(""))
+      .mockResolvedValueOnce(res(searchRows))
+      .mockResolvedValueOnce(res(""))
+      .mockResolvedValueOnce(res(detail));
+
+    const jobs = await fetchSuccessFactorsJobs("careers.bhp.com");
+
+    expect(jobs[0]).toMatchObject({ location: "Antofagasta, Chile" });
+  });
+
   it("derives Buk location and remote mode from card text", async () => {
     const html = `
       <div class="jobs__card">
