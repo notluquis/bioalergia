@@ -423,8 +423,8 @@ export function ConvSettingsMenu({
   return (
     <Dropdown>
       <Dropdown.Trigger>
-        <Button size="sm" variant="outline" isIconOnly aria-label="Ajustes conversación">
-          <Settings2 size={16} />
+        <Button size="sm" variant="ghost" isIconOnly aria-label="Ajustes conversación">
+          <Settings2 size={15} />
         </Button>
       </Dropdown.Trigger>
       <Dropdown.Popover className="w-72 p-3">

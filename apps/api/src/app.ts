@@ -205,6 +205,12 @@ app.use("*", async (c, next) => {
     "https://cdn.cloudflare.com https://static.cloudflareinsights.com https://challenges.cloudflare.com";
   const inline = isHtml ? " 'unsafe-inline'" : "";
   const evalSrc = isProd ? "" : " 'unsafe-eval'";
+  // Media binaries (PDF/image) are embedded in a same-origin <iframe> (the
+  // document preview modal). frame-ancestors 'none' would block that, so the
+  // media proxy responses allow same-origin framing; everything else stays
+  // 'none' (clickjacking protection on the actual API surface).
+  const isMedia = c.req.path.startsWith("/api/wa-cloud/media/");
+  const frameAncestors = isMedia ? "frame-ancestors 'self'" : "frame-ancestors 'none'";
   const csp = [
     "default-src 'self'",
     `script-src 'self'${inline}${evalSrc} ${cf}`,
@@ -216,7 +222,7 @@ app.use("*", async (c, next) => {
     "connect-src 'self' https://api.cloudflare.com",
     "worker-src 'self' blob:",
     "manifest-src 'self'",
-    "frame-ancestors 'none'",
+    frameAncestors,
     "base-uri 'self'",
     "form-action 'self'",
   ].join("; ");
@@ -1055,10 +1061,13 @@ app.use("/api/orpc/adherence/rpc/*", async (c, next) => {
 });
 
 app.use("/api/orpc/clinical-allergens/rpc/*", async (c, next) => {
-  const { matched, response } = await clinicalAllergensORPCHandler.handle(createHonoORPCRequest(c), {
-    prefix: "/api/orpc/clinical-allergens/rpc",
-    context: { hono: c },
-  });
+  const { matched, response } = await clinicalAllergensORPCHandler.handle(
+    createHonoORPCRequest(c),
+    {
+      prefix: "/api/orpc/clinical-allergens/rpc",
+      context: { hono: c },
+    }
+  );
 
   if (matched) {
     return c.newResponse(response.body, response);
