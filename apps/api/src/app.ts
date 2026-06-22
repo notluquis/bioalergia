@@ -29,6 +29,7 @@ import { verificationOpenAPIHandler, verificationORPCHandler } from "./orpc/veri
 import { immunotherapyOpenAPIHandler, immunotherapyORPCHandler } from "./orpc/immunotherapy.ts";
 import { quotesOpenAPIHandler, quotesORPCHandler } from "./orpc/quotes.ts";
 import { reactivosOpenAPIHandler, reactivosORPCHandler } from "./orpc/reactivos.ts";
+import { pollenOpenAPIHandler, pollenORPCHandler } from "./orpc/pollen.ts";
 import {
   clinicalAllergensOpenAPIHandler,
   clinicalAllergensORPCHandler,
@@ -1000,6 +1001,19 @@ app.use("/api/orpc/reactivos/rpc/createLead", reactivosLeadRateLimiter);
 app.use("/api/orpc/reactivos/rpc/*", async (c, next) => {
   const { matched, response } = await reactivosORPCHandler.handle(createHonoORPCRequest(c), {
     prefix: "/api/orpc/reactivos/rpc",
+    context: { hono: c },
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  return next();
+});
+
+app.use("/api/orpc/pollen/rpc/*", async (c, next) => {
+  const { matched, response } = await pollenORPCHandler.handle(createHonoORPCRequest(c), {
+    prefix: "/api/orpc/pollen/rpc",
     context: { hono: c },
   });
 

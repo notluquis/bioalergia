@@ -102,4 +102,5 @@ export * from "./wa-cloud.ts";
 // (apps/api/src/lib/orpc-procedure-methods.ts). Sin esto, bajo E2EReadOnly los
 // reads de reactivos/alérgenos no se reconocen y fallan cerrado como mutación.
 export { reactivosContract, type ReactivosContract } from "./reactivos.ts";
+export { pollenContract, type PollenContract } from "./pollen.ts";
 export { clinicalAllergensContract, type ClinicalAllergensContract } from "./clinical-allergens.ts";

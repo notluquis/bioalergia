@@ -4,6 +4,7 @@ import type { AccountContract } from "@finanzas/orpc-contracts/account";
 import type { CartContract } from "@finanzas/orpc-contracts/cart";
 import type { CatalogContract } from "@finanzas/orpc-contracts/catalog";
 import type { CheckoutContract } from "@finanzas/orpc-contracts/checkout";
+import type { PollenContract } from "@finanzas/orpc-contracts/pollen";
 import type { ReactivosContract } from "@finanzas/orpc-contracts/reactivos";
 import type { SiteAuthContract } from "@finanzas/orpc-contracts/site-auth";
 import type { SiteContentContract } from "@finanzas/orpc-contracts/site-content";
@@ -47,3 +48,8 @@ export const siteContentClient = createORPCClient(siteSuperJSONLink, {
 export const reactivosClient = createORPCClient(siteSuperJSONLink, {
   path: ["api", "orpc", "reactivos", "rpc"],
 }) as ContractRouterClient<ReactivosContract>;
+
+// Pronóstico de polen para Concepción (gramíneas en vivo + calendario). Público.
+export const pollenClient = createORPCClient(siteSuperJSONLink, {
+  path: ["api", "orpc", "pollen", "rpc"],
+}) as ContractRouterClient<PollenContract>;

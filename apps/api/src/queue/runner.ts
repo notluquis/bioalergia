@@ -85,6 +85,14 @@ export async function startQueueRunner(): Promise<void> {
       identifier: "retention_sweep",
       options: { backfillPeriod: 0 },
     },
+    {
+      // Daily pollen forecast cache refresh (widget /polen). 06:00
+      // America/Santiago. No-op si falta GOOGLE_PLACES_API_KEY.
+      task: "pollen_sync",
+      match: "0 6 * * *",
+      identifier: "pollen_sync",
+      options: { backfillPeriod: 0 },
+    },
   ];
 
   // Breach / anomaly detection over audit_logs (ANCI 3h alert chain). Schedule
