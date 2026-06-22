@@ -81,8 +81,9 @@ export type ChatMessageRow = {
     body: string;
     out: boolean;
     type: string;
-    // messageId of the target when it's renderable media (img/video/sticker),
-    // so the quote can show a small thumbnail via the media proxy.
+    // messageId of the target when it's an image/sticker (proxy serves an image),
+    // so the quote can show a small thumbnail. Not set for video (proxy returns
+    // video bytes, not a poster).
     thumbnailMessageId?: number;
   } | null;
   reactions?: ReactionInfo[];
@@ -186,7 +187,10 @@ export function buildChatRows(messages: RawMessage[], pending: PendingRaw[]): Ch
       const target = byMetaId.get(m.contextMetaMessageId);
       if (target) {
         const t = target.type;
-        const thumbable = t === "IMAGE" || t === "VIDEO" || t === "STICKER";
+        // Only IMAGE/STICKER: the media proxy streams a video's raw bytes (not a
+        // poster), so an <img> for a VIDEO would just 404-hide. Video quotes show
+        // the type icon + noun instead.
+        const thumbable = t === "IMAGE" || t === "STICKER";
         quoted = {
           body: target.body ?? typeNoun(t),
           out: target.direction === "OUTBOUND",

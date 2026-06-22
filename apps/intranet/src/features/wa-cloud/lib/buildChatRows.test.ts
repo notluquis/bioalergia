@@ -127,6 +127,31 @@ describe("buildChatRows — reactions + quotes + pending", () => {
     });
   });
 
+  it("does not set a thumbnail for a quoted VIDEO (proxy returns video bytes, not a poster)", () => {
+    const rows = buildChatRows(
+      [
+        msg({
+          id: 30,
+          direction: "INBOUND",
+          type: "VIDEO",
+          body: null,
+          metaMessageId: "wamid.vid",
+        }),
+        msg({
+          id: 31,
+          direction: "OUTBOUND",
+          body: "mira",
+          contextMetaMessageId: "wamid.vid",
+          metaMessageId: "wamid.vr",
+        }),
+      ],
+      []
+    );
+    const reply = rows.filter((r) => r.kind === "message").find((r) => r.messageId === 31);
+    expect(reply?.quotedSnippet?.type).toBe("VIDEO");
+    expect(reply?.quotedSnippet?.thumbnailMessageId).toBeUndefined();
+  });
+
   it("does not set a thumbnail for a quoted text message", () => {
     const rows = buildChatRows(
       [
