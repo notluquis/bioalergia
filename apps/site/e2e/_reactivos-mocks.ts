@@ -44,6 +44,7 @@ export type ReactivoVitrinaItemFixture = {
   description: string | null;
   imageUrl: string | null;
   allergen: AllergenFixture | null;
+  documents: { id: number; type: string; title: string; url: string }[];
 };
 
 // A tiny inline SVG keeps the build hermetic — no network image fetch.
@@ -74,6 +75,7 @@ export const VITRINA_ITEMS: ReactivoVitrinaItemFixture[] = [
       scientificName: "Dermatophagoides pteronyssinus",
       category: "Ácaros",
     },
+    documents: [],
   },
   {
     id: 202,
@@ -91,6 +93,7 @@ export const VITRINA_ITEMS: ReactivoVitrinaItemFixture[] = [
       scientificName: "Lolium perenne",
       category: "Pólenes",
     },
+    documents: [],
   },
   {
     id: 203,
@@ -103,6 +106,7 @@ export const VITRINA_ITEMS: ReactivoVitrinaItemFixture[] = [
     description: "Control positivo para validar la respuesta cutánea.",
     imageUrl: null,
     allergen: null,
+    documents: [],
   },
 ];
 
