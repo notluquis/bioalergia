@@ -32,6 +32,9 @@ const GlossarySection = lazy(() =>
 const DoctoraliaCertificate = lazy(() =>
   import("@/sections/DoctoraliaWidgets").then((m) => ({ default: m.DoctoraliaCertificate }))
 );
+const PollenSnippet = lazy(() =>
+  import("@/sections/PollenSnippet").then((m) => ({ default: m.PollenSnippet }))
+);
 
 export function HomePage({ onBook, onWhatsApp }: { onBook: () => void; onWhatsApp: () => void }) {
   return (
@@ -48,6 +51,8 @@ export function HomePage({ onBook, onWhatsApp }: { onBook: () => void; onWhatsAp
           <FounderSection />
           <ServicesSection />
           <ImmunotherapySection />
+
+          <PollenSnippet />
 
           <section className="grid gap-6 lg:grid-cols-[0.55fr_1fr] lg:items-stretch">
             <DoctoraliaCertificate />
