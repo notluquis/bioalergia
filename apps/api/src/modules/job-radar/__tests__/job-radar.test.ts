@@ -139,6 +139,71 @@ describe("job location fallbacks", () => {
     expect(jobs[0]).toMatchObject({ location: "Calbuco" });
   });
 
+  it("uses SuccessFactors search rows as authoritative location metadata", async () => {
+    const tiles = `
+      <li class="job-tile job-id-1401666900">
+        <a class="jobTitle-link" data-url="/job/Buenos-Aires-T%C3%A9cnico-Soporte-Jr-Buen/1401666900/">Técnico Soporte Jr</a>
+      </li>
+      <li class="job-tile job-id-1334067562">
+        <a class="jobTitle-link" data-url="/FemsaSaludEcuador/job/DISTRITO-METROPOLITANO-DE-QUIT-PASANTE/1334067562/">PASANTE</a>
+      </li>`;
+    const searchRows = `
+      <table>
+        <tr class="data-row">
+          <td class="colTitle hidden-phone"><a class="jobTitle-link" href="/job/Buenos-Aires-T%C3%A9cnico-Soporte-Jr-Buen/1401666900/">Técnico Soporte Jr</a></td>
+          <td class="colLocation hidden-phone"><span class="jobLocation">Buenos Aires, Argentina</span></td>
+          <td class="colFacility hidden-phone"><span class="jobFacility">Soporte Técnico</span></td>
+          <td class="colDate hidden-phone"><span class="jobDate">19 jun 2026</span></td>
+        </tr>
+        <tr class="data-row">
+          <td class="colTitle hidden-phone"><a class="jobTitle-link" href="/FemsaSaludEcuador/job/DISTRITO-METROPOLITANO-DE-QUIT-PASANTE/1334067562/">PASANTE</a></td>
+          <td class="colLocation hidden-phone"><span class="jobLocation">DISTRITO METROPOLITANO DE QUITO, Ecuador</span></td>
+          <td class="colFacility hidden-phone"><span class="jobFacility">Corporación GPF</span></td>
+          <td class="colDate hidden-phone"><span class="jobDate">18 jun 2026</span></td>
+        </tr>
+      </table>`;
+    vi.spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(res(tiles))
+      .mockResolvedValueOnce(res(""))
+      .mockResolvedValueOnce(res(searchRows))
+      .mockResolvedValue(res(""));
+
+    const jobs = await fetchSuccessFactorsJobs("carrera.sonda.com");
+
+    expect(jobs.find((job) => job.externalId === "1401666900")).toMatchObject({
+      location: "Buenos Aires, Argentina",
+      department: "Soporte Técnico",
+      publishedAt: new Date("2026-06-19T12:00:00.000Z"),
+    });
+    expect(jobs.find((job) => job.externalId === "1334067562")).toMatchObject({
+      location: "DISTRITO METROPOLITANO DE QUITO, Ecuador",
+      department: "Corporación GPF",
+    });
+  });
+
+  it("falls back to SuccessFactors detail location when listings only expose slugs", async () => {
+    const tiles = `
+      <li class="job-tile job-id-1401690400">
+        <a class="jobTitle-link" data-url="/job/El-Paso-Technical-Coordinator-TX-79915/1401690400/">Technical Coordinator</a>
+      </li>`;
+    const detail = `
+      <span class="joblayouttoken-label">Location: </span>
+      <span data-careersite-propertyid="location">
+        <p id="job-location" class="jobLocation job-location-inline">
+          <span class="jobGeoLocation">El Paso, TX, US, 79915 </span>
+        </p>
+      </span>`;
+    vi.spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(res(tiles))
+      .mockResolvedValueOnce(res(""))
+      .mockResolvedValueOnce(res(""))
+      .mockResolvedValueOnce(res(detail));
+
+    const jobs = await fetchSuccessFactorsJobs("jobs.fcx.com");
+
+    expect(jobs[0]).toMatchObject({ location: "El Paso, TX, US, 79915" });
+  });
+
   it("derives Buk location and remote mode from card text", async () => {
     const html = `
       <div class="jobs__card">
