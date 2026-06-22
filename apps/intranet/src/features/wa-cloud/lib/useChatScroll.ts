@@ -1,6 +1,8 @@
 import { useCallback, useLayoutEffect, useRef, useState } from "react";
 
-const AT_BOTTOM_THRESHOLD_PX = 80;
+// ~150px is the community convention (stream-chat / Telegram); 80px is too
+// hair-trigger and flips the FAB on tiny scrolls.
+const AT_BOTTOM_THRESHOLD_PX = 150;
 
 export type ChatScroll = {
   /** Attach to the scroll container's `onScroll`. */

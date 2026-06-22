@@ -634,10 +634,10 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
             ) : (
               rows.map((row) =>
                 row.kind === "divider" ? (
-                  <div key={row.key} className="flex justify-center py-2">
-                    <Chip size="sm" variant="soft">
-                      <Chip.Label>{row.label}</Chip.Label>
-                    </Chip>
+                  <div key={row.key} className="sticky top-1 z-10 flex justify-center py-2">
+                    <span className="rounded-full bg-content1/90 px-3 py-1 font-medium text-default-600 text-xs shadow-sm ring-1 ring-default-200 backdrop-blur">
+                      {row.label}
+                    </span>
                   </div>
                 ) : (
                   <Fragment key={row.key}>
@@ -753,7 +753,7 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
                   : !c.windowOpen
                     ? "Ventana 24h cerrada. Cambia a plantilla."
                     : !phoneId
-                      ? "Selecciona un número en ⚙ ajustes"
+                      ? "Selecciona un número en ajustes"
                       : null
               }
               onSwitchTemplate={() => setMode("template")}

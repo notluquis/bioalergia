@@ -1,6 +1,17 @@
 // oxlint-disable typescript/no-non-null-assertion -- TODO(strict-null): refactor each `!` to invariant() or explicit guard. Tracked in repo-wide non-null cleanup.
 import { Button, Modal, Skeleton, Spinner } from "@heroui/react";
-import { Download, FileText, Pause, Play, X } from "lucide-react";
+import {
+  Download,
+  FileText,
+  ImageOff,
+  MicOff,
+  Pause,
+  Play,
+  RotateCw,
+  Sticker,
+  VideoOff,
+  X,
+} from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { decodeWaveform, syntheticWaveform } from "../../lib/decodeWaveform";
 
@@ -14,6 +25,10 @@ type Props = {
 export function MediaAttachment({ messageId, type, caption, out = false }: Props) {
   const [visible, setVisible] = useState(false);
   const [errored, setErrored] = useState(false);
+  // Bumped on retry to cache-bust the media URL. WhatsApp/Meta media ids expire
+  // (~30d), so an old message's media is "unavailable", not a true error — the
+  // operator can retry in case the upstream blip was transient.
+  const [retryNonce, setRetryNonce] = useState(0);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -32,17 +47,29 @@ export function MediaAttachment({ messageId, type, caption, out = false }: Props
     return () => obs.disconnect();
   }, [visible]);
 
-  const url = `/api/wa-cloud/media/${messageId}`;
+  const url = `/api/wa-cloud/media/${messageId}${retryNonce ? `?r=${retryNonce}` : ""}`;
+  const retry = () => {
+    setErrored(false);
+    setRetryNonce((n) => n + 1);
+  };
 
   if (type === "STICKER") {
+    // Stickers render bubble-less (transparent webp). On error keep it small +
+    // neutral — no danger box, no black square.
     return (
       <div ref={ref}>
         {errored ? (
-          <div className="flex size-32 items-center justify-center rounded-xl bg-default-100 text-danger text-xs">
-            <X size={20} />
-          </div>
+          <button
+            type="button"
+            onClick={retry}
+            aria-label="Sticker no disponible, reintentar"
+            className="flex size-32 flex-col items-center justify-center gap-1 rounded-xl text-default-400 transition hover:text-default-500"
+          >
+            <Sticker size={26} />
+            <span className="text-xs">No disponible</span>
+          </button>
         ) : visible ? (
-          <StickerImage src={url} onError={() => setErrored(true)} />
+          <StickerImage key={url} src={url} onError={() => setErrored(true)} />
         ) : (
           <Skeleton className="size-32 rounded-xl" />
         )}
@@ -54,9 +81,14 @@ export function MediaAttachment({ messageId, type, caption, out = false }: Props
     return (
       <div ref={ref}>
         {errored ? (
-          <ErrorBox label="No se pudo cargar la imagen" />
+          <MediaUnavailable kind="image" onRetry={retry} />
         ) : visible ? (
-          <ImageLightbox src={url} alt={caption ?? "imagen"} onError={() => setErrored(true)} />
+          <ImageLightbox
+            key={url}
+            src={url}
+            alt={caption ?? "imagen"}
+            onError={() => setErrored(true)}
+          />
         ) : (
           <Skeleton className="h-72 w-full max-w-xs rounded-lg" />
         )}
@@ -71,9 +103,9 @@ export function MediaAttachment({ messageId, type, caption, out = false }: Props
     return (
       <div ref={ref}>
         {errored ? (
-          <ErrorBox label="No se pudo cargar el video" />
+          <MediaUnavailable kind="video" onRetry={retry} />
         ) : visible ? (
-          <VideoLightbox src={url} onError={() => setErrored(true)} />
+          <VideoLightbox key={url} src={url} onError={() => setErrored(true)} />
         ) : (
           <Skeleton className="h-72 w-full max-w-xs rounded-lg" />
         )}
@@ -88,9 +120,15 @@ export function MediaAttachment({ messageId, type, caption, out = false }: Props
     return (
       <div ref={ref}>
         {errored ? (
-          <ErrorBox label="No se pudo cargar el audio" />
+          <MediaUnavailable kind="audio" onRetry={retry} />
         ) : visible ? (
-          <AudioPlayer src={url} out={out} seed={messageId} onError={() => setErrored(true)} />
+          <AudioPlayer
+            key={url}
+            src={url}
+            out={out}
+            seed={messageId}
+            onError={() => setErrored(true)}
+          />
         ) : (
           <Skeleton className="h-12 w-64 rounded-full" />
         )}
@@ -103,6 +141,41 @@ export function MediaAttachment({ messageId, type, caption, out = false }: Props
   return (
     <div ref={ref}>
       <DocumentPreview url={url} caption={caption ?? null} />
+    </div>
+  );
+}
+
+// Neutral "media no longer available" placeholder (golden 2026: expired Meta
+// media is unavailable, not a danger). Icon + short label + retry — never a red
+// or black box. role=img so the icon-only fallback is announced.
+function MediaUnavailable({
+  kind,
+  onRetry,
+}: {
+  kind: "image" | "video" | "audio";
+  onRetry: () => void;
+}) {
+  const Icon = kind === "image" ? ImageOff : kind === "video" ? VideoOff : MicOff;
+  const label =
+    kind === "image"
+      ? "Imagen no disponible"
+      : kind === "video"
+        ? "Video no disponible"
+        : "Audio no disponible";
+  return (
+    <div
+      role="img"
+      aria-label={label}
+      className={`flex flex-col items-center justify-center gap-1.5 rounded-xl bg-content2 text-default-500 ${
+        kind === "audio" ? "h-16 w-64" : "h-40 w-60"
+      }`}
+    >
+      <Icon size={26} className="text-default-400" />
+      <span className="text-xs">{label}</span>
+      <Button size="sm" variant="ghost" onPress={onRetry} aria-label="Reintentar carga">
+        <RotateCw size={13} />
+        Reintentar
+      </Button>
     </div>
   );
 }
@@ -197,14 +270,6 @@ function DocumentPreview({ url, caption }: { url: string; caption: string | null
         </Modal.Backdrop>
       </Modal>
     </>
-  );
-}
-
-function ErrorBox({ label }: { label: string }) {
-  return (
-    <div className="flex h-40 w-60 items-center justify-center rounded-xl bg-danger-50 text-danger text-xs">
-      {label}
-    </div>
   );
 }
 

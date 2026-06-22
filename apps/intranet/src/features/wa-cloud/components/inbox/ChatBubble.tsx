@@ -1,6 +1,6 @@
 import { formatChile } from "@/lib/dates";
 import { Button } from "@heroui/react";
-import { MoreVertical, RotateCw } from "lucide-react";
+import { MessageSquareText, MoreVertical, RotateCw } from "lucide-react";
 import { useState } from "react";
 import { MediaAttachment } from "./MediaAttachment";
 import { MessageActionMenu, MessageActionSheet, type MessageActionsApi } from "./MessageActions";
@@ -183,7 +183,7 @@ export function ChatBubble({
   return (
     <article
       aria-label={ariaLabel}
-      className={`group relative flex ${wrapper} ${groupStart ? "mt-2" : "mt-0.5"}`}
+      className={`group relative flex ${wrapper} ${groupStart ? "mt-4" : "mt-0.5"}`}
       data-phi-block
       {...(isTouch && hasActions ? longPress.handlers : {})}
       onClickCapture={(e) => {
@@ -198,7 +198,7 @@ export function ChatBubble({
         className={`relative ${
           isSticker
             ? "max-w-[12rem]"
-            : "w-fit min-w-[60px] max-w-[85%] sm:max-w-[75%] md:max-w-[65%] lg:max-w-[480px]"
+            : "w-fit min-w-[60px] max-w-[85%] sm:max-w-[75%] md:max-w-[min(75%,400px)]"
         }`}
       >
         {trigger}
@@ -231,6 +231,18 @@ export function ChatBubble({
             />
           ) : row.type === "UNSUPPORTED" ? (
             <UnsupportedBubble payload={row.payload as Record<string, unknown> | null} />
+          ) : row.type === "TEMPLATE" ? (
+            <div className="space-y-0.5">
+              <span
+                className={`flex items-center gap-1 text-xs ${out ? "text-success-foreground/70" : "text-default-400"}`}
+              >
+                <MessageSquareText size={12} className="shrink-0" />
+                Plantilla
+              </span>
+              {row.templateName && (
+                <p className="break-words text-sm leading-snug">{row.templateName}</p>
+              )}
+            </div>
           ) : isMedia && row.messageId ? (
             <MediaAttachment
               messageId={row.messageId}

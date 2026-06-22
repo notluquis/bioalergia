@@ -42,7 +42,9 @@ import {
   Settings2,
   ShoppingBag,
   Smile,
+  Square,
   Tag,
+  Trash2,
   X,
   Zap,
 } from "lucide-react";
@@ -1013,7 +1015,7 @@ function VoiceRecorderButton({
           aria-label="Descartar nota de voz"
           onPress={cancel}
         >
-          <X size={14} />
+          <Trash2 size={14} />
         </Button>
         <Button size="sm" isIconOnly aria-label="Enviar nota de voz" onPress={send}>
           <Send size={14} />
@@ -1035,7 +1037,7 @@ function VoiceRecorderButton({
           onPress={stop}
           className="ml-1"
         >
-          <Check size={14} />
+          <Square size={13} className="fill-current" />
         </Button>
       </div>
     );

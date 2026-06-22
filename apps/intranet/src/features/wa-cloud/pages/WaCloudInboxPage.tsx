@@ -1,7 +1,6 @@
 // oxlint-disable typescript/no-non-null-assertion -- TODO(strict-null): refactor each `!` to invariant() or explicit guard. Tracked in repo-wide non-null cleanup.
 import {
   Avatar,
-  Badge,
   Button,
   Card,
   Chip,
@@ -26,11 +25,21 @@ import {
   ArrowLeft,
   Bell,
   BellOff,
+  ClipboardList,
+  FileText,
   Filter,
+  Image as ImageIcon,
   Inbox,
+  List,
+  type LucideIcon,
+  MapPin,
   MessageSquareText,
+  Mic,
   Phone,
   Search,
+  Sticker,
+  User,
+  Video,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { WaConversationStatus } from "@finanzas/orpc-contracts/wa-cloud";
@@ -101,6 +110,32 @@ function initialsOf(name: string): string {
   if (parts.length === 0) return "?";
   if (parts.length === 1) return parts[0]!.slice(0, 2).toUpperCase();
   return (parts[0]![0]! + parts[parts.length - 1]![0]!).toUpperCase();
+}
+// Backend stores raw bracket placeholders ("[sticker]", "[image]"…) as the
+// last-message preview. Render them with a lucide glyph + plain label so the
+// list reads like a chat app (no emoji chrome) — icon-first, WhatsApp/Chatwoot
+// convention.
+type PreviewParts = { Icon: LucideIcon | null; label: string };
+function previewParts(preview: string | null | undefined): PreviewParts {
+  if (!preview) return { Icon: null, label: "Sin actividad" };
+  const lower = preview.toLowerCase();
+  const exact: Record<string, PreviewParts> = {
+    "[sticker]": { Icon: Sticker, label: "Sticker" },
+    "[image]": { Icon: ImageIcon, label: "Imagen" },
+    "[video]": { Icon: Video, label: "Vídeo" },
+    "[audio]": { Icon: Mic, label: "Nota de voz" },
+    "[document]": { Icon: FileText, label: "Documento" },
+  };
+  if (exact[lower]) return exact[lower]!;
+  if (lower.startsWith("[plantilla]"))
+    return { Icon: FileText, label: preview.replace(/^\[plantilla\]\s*/i, "Plantilla: ") };
+  if (lower.startsWith("[ubicación]") || lower.startsWith("[ubicacion]"))
+    return { Icon: MapPin, label: "Ubicación" };
+  if (lower.startsWith("[contacto]"))
+    return { Icon: User, label: preview.replace(/^\[contacto\]\s*/i, "") || "Contacto" };
+  if (lower.startsWith("[flow]")) return { Icon: ClipboardList, label: "Formulario" };
+  if (lower.startsWith("[lista]")) return { Icon: List, label: "Lista" };
+  return { Icon: null, label: preview };
 }
 function formatRelative(d: Date | null | undefined): string {
   if (!d) return "";
@@ -469,24 +504,21 @@ export function WaCloudInboxPage({ onOpenSearchDrawer }: WaCloudInboxPageProps =
                         className="rounded-none border-default-200 border-b transition-[background-color] duration-150 ease-out p-3"
                       >
                         <div className="flex w-full items-center gap-3" data-phi-block>
-                          {c.unreadCount > 0 ? (
-                            <Badge color="success" placement="top-right" size="sm">
-                              <Badge.Label>{c.unreadCount}</Badge.Label>
-                              <Badge.Anchor>
-                                <Avatar className={`size-11 shrink-0 ${avatarColor}`}>
-                                  <Avatar.Fallback delayMs={0} className="font-semibold text-sm">
-                                    {initials}
-                                  </Avatar.Fallback>
-                                </Avatar>
-                              </Badge.Anchor>
-                            </Badge>
-                          ) : (
-                            <Avatar className={`size-11 shrink-0 ${avatarColor}`}>
+                          <div className="relative shrink-0">
+                            <Avatar className={`size-11 ${avatarColor}`}>
                               <Avatar.Fallback delayMs={0} className="font-semibold text-sm">
                                 {initials}
                               </Avatar.Fallback>
                             </Avatar>
-                          )}
+                            {c.unreadCount > 0 && (
+                              <span
+                                aria-label={`${c.unreadCount} sin leer`}
+                                className="-top-1 -right-1 absolute flex min-h-5 min-w-5 items-center justify-center rounded-full bg-success px-1 font-semibold text-success-foreground text-xs tabular-nums shadow ring-2 ring-background"
+                              >
+                                {c.unreadCount > 99 ? "99+" : c.unreadCount}
+                              </span>
+                            )}
+                          </div>
                           <div className="min-w-0 flex-1">
                             <div className="flex items-baseline justify-between gap-2">
                               <span
@@ -501,11 +533,17 @@ export function WaCloudInboxPage({ onOpenSearchDrawer }: WaCloudInboxPageProps =
                               </span>
                             </div>
                             <div className="mt-0.5 flex items-center justify-between gap-2">
-                              <p
-                                className={`line-clamp-1 text-xs ${c.unreadCount > 0 ? "font-medium text-default-700" : "text-default-500"}`}
-                              >
-                                {c.lastMessagePreview ?? "Sin actividad"}
-                              </p>
+                              {(() => {
+                                const { Icon, label } = previewParts(c.lastMessagePreview);
+                                return (
+                                  <p
+                                    className={`flex min-w-0 items-center gap-1 text-xs ${c.unreadCount > 0 ? "font-medium text-default-700" : "text-default-500"}`}
+                                  >
+                                    {Icon && <Icon size={12} className="shrink-0 opacity-70" />}
+                                    <span className="line-clamp-1">{label}</span>
+                                  </p>
+                                );
+                              })()}
                               <ConversationStatusChip status={c.status} />
                             </div>
                           </div>

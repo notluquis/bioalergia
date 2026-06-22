@@ -1,9 +1,11 @@
 import { Chip } from "@heroui/react";
 import {
-  AlertTriangle,
   BarChart3,
   CalendarDays,
+  ClipboardList,
   ExternalLink,
+  Forward,
+  Info,
   Mail,
   MapPin,
   Phone,
@@ -17,7 +19,8 @@ export function ForwardedBadge({ payload }: { payload: Payload }) {
   if (!ctx?.forwarded) return null;
   return (
     <Chip size="sm" variant="soft" color="default" className="mb-1">
-      <Chip.Label>↪ Reenviado</Chip.Label>
+      <Forward size={11} />
+      <Chip.Label>Reenviado</Chip.Label>
     </Chip>
   );
 }
@@ -124,7 +127,8 @@ export function InteractiveBubble({ payload, body }: { payload: Payload; body: s
     return (
       <div className="space-y-1">
         <Chip size="sm" variant="soft" color="success">
-          <Chip.Label>📋 Respuesta de formulario</Chip.Label>
+          <ClipboardList size={11} />
+          <Chip.Label>Respuesta de formulario</Chip.Label>
         </Chip>
         <div className="space-y-0.5">
           {Object.entries(parsed).map(([k, v]) => (
@@ -147,7 +151,8 @@ export function InteractiveBubble({ payload, body }: { payload: Payload; body: s
     return (
       <div className="space-y-1">
         <Chip size="sm" variant="soft" color="accent">
-          <Chip.Label>📋 Formulario enviado</Chip.Label>
+          <ClipboardList size={11} />
+          <Chip.Label>Formulario enviado</Chip.Label>
         </Chip>
         <p className="text-sm">{body}</p>
         <p className="text-default-500 text-xs">CTA: {flowMeta.flow_cta}</p>
@@ -207,13 +212,19 @@ export function UnsupportedBubble({ payload }: { payload: Payload }) {
     );
   }
 
+  // Meta's error title is English + usually generic ("Message type unknown").
+  // Golden (Chatwoot): neutral, not a warning — the agent can't fix this, and
+  // it isn't dangerous. Only surface Meta's title when genuinely informative.
   const errTitle = p?.errors?.[0]?.title;
+  const isGeneric = !errTitle || /unknown|unsupported|not supported|message type/i.test(errTitle);
   return (
-    <div className="flex w-64 max-w-full items-center gap-2">
-      <AlertTriangle size={18} className="shrink-0 text-warning" />
+    <div className="flex w-64 max-w-full items-center gap-2 rounded-lg bg-content2 px-3 py-2">
+      <Info size={16} className="shrink-0 text-default-400" />
       <div className="min-w-0">
-        <p className="font-medium text-sm">Mensaje no soportado</p>
-        <p className="text-default-500 text-xs">{errTitle ?? `Tipo "${rawType}"`}</p>
+        <p className="font-medium text-sm">Mensaje no compatible</p>
+        <p className="text-default-500 text-xs">
+          {isGeneric ? "Puedes verlo en la app de WhatsApp" : errTitle}
+        </p>
       </div>
     </div>
   );

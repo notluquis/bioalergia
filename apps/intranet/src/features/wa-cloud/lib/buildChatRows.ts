@@ -8,6 +8,22 @@ import { dayLabel } from "../components/shared/_shared";
 
 const GROUP_WINDOW_MS = 5 * 60_000;
 
+// Spanish noun for a media/structured message when there's no text body (used in
+// quoted-reply snippets). Icon-first chrome lives in the UI; this is the text.
+const TYPE_NOUN: Record<string, string> = {
+  IMAGE: "Imagen",
+  VIDEO: "Vídeo",
+  AUDIO: "Nota de voz",
+  DOCUMENT: "Documento",
+  STICKER: "Sticker",
+  LOCATION: "Ubicación",
+  CONTACTS: "Contacto",
+  TEMPLATE: "Plantilla",
+};
+function typeNoun(type: string): string {
+  return TYPE_NOUN[type] ?? "Mensaje";
+}
+
 // Types that always carry their own timestamp/footer and never collapse into a
 // text group (media + structured messages).
 const STANDALONE_TYPES = new Set([
@@ -163,7 +179,7 @@ export function buildChatRows(messages: RawMessage[], pending: PendingRaw[]): Ch
       const target = byMetaId.get(m.contextMetaMessageId);
       if (target) {
         quoted = {
-          body: target.body ?? `[${target.type.toLowerCase()}]`,
+          body: target.body ?? typeNoun(target.type),
           out: target.direction === "OUTBOUND",
         };
       }
