@@ -4,15 +4,75 @@ import {
   CalendarDays,
   ClipboardList,
   ExternalLink,
+  FileText,
   Forward,
+  Image as ImageIcon,
   Info,
+  type LucideIcon,
   Mail,
   MapPin,
+  Mic,
   Phone,
+  Sticker,
   User,
+  Video,
 } from "lucide-react";
 
 type Payload = Record<string, unknown> | null | undefined;
+
+const QUOTE_ICON: Record<string, LucideIcon> = {
+  IMAGE: ImageIcon,
+  VIDEO: Video,
+  AUDIO: Mic,
+  DOCUMENT: FileText,
+  LOCATION: MapPin,
+  STICKER: Sticker,
+};
+
+// WhatsApp-style quoted reply: a colored left bar, the quoted sender's name in
+// an accent color, the type (icon + noun) or text body, and a thumbnail for
+// media. The panel uses its OWN opaque tone (not alpha over the bubble) so it
+// contrasts on both the green outbound bubble and the content1 inbound one.
+export function QuotedReply({
+  quoted,
+  contactName,
+  bubbleOut,
+}: {
+  quoted: { body: string; out: boolean; type: string; thumbnailMessageId?: number };
+  contactName: string;
+  bubbleOut: boolean;
+}) {
+  const sender = quoted.out ? "Tú" : contactName;
+  const Icon = QUOTE_ICON[quoted.type];
+  const isText = quoted.type === "TEXT";
+  const panel = bubbleOut
+    ? "border-l-success-200 bg-success-700/90"
+    : "border-l-accent bg-default-100";
+  const nameColor = bubbleOut ? "text-success-100" : "text-accent";
+  const bodyColor = bubbleOut ? "text-success-50/90" : "text-default-600";
+  return (
+    <div className={`mb-1 flex items-center gap-2 rounded border-l-4 px-2 py-1 ${panel}`}>
+      <div className="min-w-0 flex-1">
+        <p className={`font-semibold text-xs ${nameColor}`}>{sender}</p>
+        <p className={`flex items-center gap-1 text-xs ${bodyColor}`}>
+          {!isText && Icon && <Icon size={12} className="shrink-0" />}
+          <span className="truncate">{quoted.body}</span>
+        </p>
+      </div>
+      {quoted.thumbnailMessageId && (
+        <img
+          src={`/api/wa-cloud/media/${quoted.thumbnailMessageId}`}
+          alt=""
+          loading="lazy"
+          className="size-10 shrink-0 rounded object-cover ring-1 ring-black/10"
+          onError={(e) => {
+            e.currentTarget.style.display = "none";
+          }}
+        />
+      )}
+    </div>
+  );
+}
 
 export function ForwardedBadge({ payload }: { payload: Payload }) {
   const ctx = (payload as { context?: { forwarded?: boolean } } | null)?.context;

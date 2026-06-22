@@ -77,7 +77,15 @@ export type ChatMessageRow = {
   errorTitle?: string | null;
   errorDetails?: string | null;
   templateName?: string | null;
-  quotedSnippet?: { body: string; out: boolean } | null;
+  quotedSnippet?: {
+    body: string;
+    out: boolean;
+    type: string;
+    // messageId of the target when it's an image/sticker (proxy serves an image),
+    // so the quote can show a small thumbnail. Not set for video (proxy returns
+    // video bytes, not a poster).
+    thumbnailMessageId?: number;
+  } | null;
   reactions?: ReactionInfo[];
   payload?: unknown;
   groupStart: boolean;
@@ -174,13 +182,20 @@ export function buildChatRows(messages: RawMessage[], pending: PendingRaw[]): Ch
       m.timestamp.getTime() - prev.ts <= GROUP_WINDOW_MS;
     if (continuation && prev) prev.row.groupEnd = false;
 
-    let quoted: { body: string; out: boolean } | null = null;
+    let quoted: ChatMessageRow["quotedSnippet"] = null;
     if (m.contextMetaMessageId) {
       const target = byMetaId.get(m.contextMetaMessageId);
       if (target) {
+        const t = target.type;
+        // Only IMAGE/STICKER: the media proxy streams a video's raw bytes (not a
+        // poster), so an <img> for a VIDEO would just 404-hide. Video quotes show
+        // the type icon + noun instead.
+        const thumbable = t === "IMAGE" || t === "STICKER";
         quoted = {
-          body: target.body ?? typeNoun(target.type),
+          body: target.body ?? typeNoun(t),
           out: target.direction === "OUTBOUND",
+          type: t,
+          thumbnailMessageId: thumbable && typeof target.id === "number" ? target.id : undefined,
         };
       }
     }

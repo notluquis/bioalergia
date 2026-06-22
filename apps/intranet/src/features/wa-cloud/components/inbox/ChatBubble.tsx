@@ -9,6 +9,7 @@ import {
   ForwardedBadge,
   InteractiveBubble,
   LocationBubble,
+  QuotedReply,
   UnsupportedBubble,
 } from "./SpecialMessage";
 import { type MessageStatus, StatusTicks } from "../shared/_shared";
@@ -25,7 +26,12 @@ export type ChatBubbleRow = {
   errorTitle?: string | null;
   errorDetails?: string | null;
   templateName?: string | null;
-  quotedSnippet?: { body: string; out: boolean } | null;
+  quotedSnippet?: {
+    body: string;
+    out: boolean;
+    type: string;
+    thumbnailMessageId?: number;
+  } | null;
   reactions?: { emoji: string; out: boolean }[];
   payload?: unknown;
   // Consecutive-message grouping flags (default true = standalone bubble).
@@ -215,11 +221,7 @@ export function ChatBubble({
         >
           <ForwardedBadge payload={row.payload as Record<string, unknown> | null} />
           {row.quotedSnippet && (
-            <div
-              className={`mb-1 rounded border-l-4 px-2 py-1 text-xs ${row.quotedSnippet.out ? "border-l-accent bg-accent/10 text-accent-foreground/80" : "border-l-default-400 bg-default-100/40 text-default-700"}`}
-            >
-              <p className="line-clamp-2">{row.quotedSnippet.body}</p>
-            </div>
+            <QuotedReply quoted={row.quotedSnippet} contactName={contactName} bubbleOut={out} />
           )}
           {row.type === "LOCATION" ? (
             <LocationBubble payload={row.payload as Record<string, unknown> | null} />

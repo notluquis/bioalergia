@@ -99,6 +99,78 @@ describe("buildChatRows — reactions + quotes + pending", () => {
     expect(messages[0]?.reactions).toEqual([{ emoji: "👍", out: true }]);
   });
 
+  it("enriches the quoted snippet of a media reply with type + thumbnailMessageId", () => {
+    const rows = buildChatRows(
+      [
+        msg({
+          id: 10,
+          direction: "INBOUND",
+          type: "IMAGE",
+          body: null,
+          metaMessageId: "wamid.img",
+        }),
+        msg({
+          id: 11,
+          direction: "OUTBOUND",
+          body: "linda foto",
+          contextMetaMessageId: "wamid.img",
+          metaMessageId: "wamid.reply",
+        }),
+      ],
+      []
+    );
+    const reply = rows.filter((r) => r.kind === "message").find((r) => r.messageId === 11);
+    expect(reply?.quotedSnippet).toMatchObject({
+      type: "IMAGE",
+      thumbnailMessageId: 10,
+      body: "Imagen",
+    });
+  });
+
+  it("does not set a thumbnail for a quoted VIDEO (proxy returns video bytes, not a poster)", () => {
+    const rows = buildChatRows(
+      [
+        msg({
+          id: 30,
+          direction: "INBOUND",
+          type: "VIDEO",
+          body: null,
+          metaMessageId: "wamid.vid",
+        }),
+        msg({
+          id: 31,
+          direction: "OUTBOUND",
+          body: "mira",
+          contextMetaMessageId: "wamid.vid",
+          metaMessageId: "wamid.vr",
+        }),
+      ],
+      []
+    );
+    const reply = rows.filter((r) => r.kind === "message").find((r) => r.messageId === 31);
+    expect(reply?.quotedSnippet?.type).toBe("VIDEO");
+    expect(reply?.quotedSnippet?.thumbnailMessageId).toBeUndefined();
+  });
+
+  it("does not set a thumbnail for a quoted text message", () => {
+    const rows = buildChatRows(
+      [
+        msg({ id: 20, direction: "INBOUND", body: "hola", metaMessageId: "wamid.t" }),
+        msg({
+          id: 21,
+          direction: "OUTBOUND",
+          body: "responde",
+          contextMetaMessageId: "wamid.t",
+          metaMessageId: "wamid.r2",
+        }),
+      ],
+      []
+    );
+    const reply = rows.filter((r) => r.kind === "message").find((r) => r.messageId === 21);
+    expect(reply?.quotedSnippet?.type).toBe("TEXT");
+    expect(reply?.quotedSnippet?.thumbnailMessageId).toBeUndefined();
+  });
+
   it("appends optimistic pending sends after server messages", () => {
     const rows = buildChatRows(
       [msg({ id: 1, direction: "INBOUND", timestamp: at(0) })],
