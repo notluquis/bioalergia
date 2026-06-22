@@ -359,6 +359,7 @@ describe("applyAutoCategoryRuleRow raw-SQL branch (compiled Kysely)", () => {
     expect(lower).toContain("exists");
     expect(lower).toContain("values");
     expect(lower).toContain("amounts_exact");
+    expect(lower).toContain("::numeric");
     // when amountsExact present, min/max comparators are NOT emitted
     expect(lower).not.toMatch(/abs\(ft\.amount\)\s*>=/);
     // both exact amounts bound + the epsilon (0.5)

@@ -591,7 +591,7 @@ async function applyAutoCategoryRuleRow(
     // VALUES as N rows of 1 column (matches the amounts_exact(v) alias). The
     // old string form built ONE N-column row, which errored at runtime for ≥2
     // exact amounts — this parametrized form fixes that latent bug.
-    const valueRows = sql.join(rule.amountsExact.map((v) => sql`(${Number(v)})`));
+    const valueRows = sql.join(rule.amountsExact.map((v) => sql`(${Number(v)}::numeric)`));
     conditions.push(
       sql`EXISTS (
         SELECT 1 FROM (VALUES ${valueRows}) AS amounts_exact(v)
