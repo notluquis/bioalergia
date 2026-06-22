@@ -393,6 +393,12 @@
       "import": "./dist/pollen.js",
       "default": "./dist/pollen.js"
     },
+    "./occupational": {
+      "development": "./src/occupational.ts",
+      "types": "./dist/occupational.d.ts",
+      "import": "./dist/occupational.js",
+      "default": "./dist/occupational.js"
+    },
     "./clinical-allergens": {
       "development": "./src/clinical-allergens.ts",
       "types": "./dist/clinical-allergens.d.ts",

@@ -9453,6 +9453,79 @@ export class SchemaType implements SchemaDef {
                 locationKey_forecastDate_pollenType: { locationKey: { type: "String" }, forecastDate: { type: "DateTime" }, pollenType: { type: "PollenType" } }
             }
         },
+        OccupationalLead: {
+            name: "OccupationalLead",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                empresa: {
+                    name: "empresa",
+                    type: "String"
+                },
+                contactName: {
+                    name: "contactName",
+                    type: "String"
+                },
+                email: {
+                    name: "email",
+                    type: "String"
+                },
+                phone: {
+                    name: "phone",
+                    type: "String",
+                    optional: true
+                },
+                rut: {
+                    name: "rut",
+                    type: "String",
+                    optional: true
+                },
+                sector: {
+                    name: "sector",
+                    type: "OccupationalSector",
+                    default: "GENERAL" as FieldDefault
+                },
+                headcount: {
+                    name: "headcount",
+                    type: "Int",
+                    optional: true
+                },
+                message: {
+                    name: "message",
+                    type: "String",
+                    optional: true
+                },
+                status: {
+                    name: "status",
+                    type: "ReactivoLeadStatus",
+                    default: "NUEVO" as FieldDefault
+                },
+                source: {
+                    name: "source",
+                    type: "String",
+                    default: "salud-ocupacional" as FieldDefault
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now") as FieldDefault
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" }
+            }
+        },
         DTEPurchaseDetail: {
             name: "DTEPurchaseDetail",
             fields: {
@@ -16608,6 +16681,16 @@ export class SchemaType implements SchemaDef {
             values: {
                 GOOGLE: "GOOGLE",
                 CALENDAR: "CALENDAR"
+            }
+        },
+        OccupationalSector: {
+            name: "OccupationalSector",
+            values: {
+                MINERIA: "MINERIA",
+                TRANSPORTE: "TRANSPORTE",
+                CONSTRUCCION: "CONSTRUCCION",
+                GENERAL: "GENERAL",
+                OTRO: "OTRO"
             }
         },
         DTEType: {

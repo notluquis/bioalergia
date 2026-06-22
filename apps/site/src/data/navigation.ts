@@ -31,5 +31,6 @@ export const secondaryNav: NavLink[] = [
   { label: "Condiciones", href: "/condiciones" },
   { label: "¿Eres alérgico?", href: "/eres-alergico" },
   { label: "Preguntas frecuentes", href: "/#faq" },
+  { label: "Salud ocupacional", href: "/salud-ocupacional" },
   { label: "Compromiso social", href: "/compromiso-social" },
 ];

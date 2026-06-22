@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as VentaEmpresasRouteImport } from './routes/venta-empresas'
 import { Route as ServiciosRouteImport } from './routes/servicios'
+import { Route as SaludOcupacionalRouteImport } from './routes/salud-ocupacional'
 import { Route as RegistroRouteImport } from './routes/registro'
 import { Route as PolenRouteImport } from './routes/polen'
 import { Route as MiCuentaRouteImport } from './routes/mi-cuenta'
@@ -51,6 +52,11 @@ const VentaEmpresasRoute = VentaEmpresasRouteImport.update({
 const ServiciosRoute = ServiciosRouteImport.update({
   id: '/servicios',
   path: '/servicios',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SaludOcupacionalRoute = SaludOcupacionalRouteImport.update({
+  id: '/salud-ocupacional',
+  path: '/salud-ocupacional',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RegistroRoute = RegistroRouteImport.update({
@@ -224,6 +230,7 @@ export interface FileRoutesByFullPath {
   '/mi-cuenta': typeof MiCuentaRouteWithChildren
   '/polen': typeof PolenRoute
   '/registro': typeof RegistroRoute
+  '/salud-ocupacional': typeof SaludOcupacionalRoute
   '/servicios': typeof ServiciosRoute
   '/venta-empresas': typeof VentaEmpresasRoute
   '/aprende/$slug': typeof AprendeSlugRoute
@@ -258,6 +265,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/polen': typeof PolenRoute
   '/registro': typeof RegistroRoute
+  '/salud-ocupacional': typeof SaludOcupacionalRoute
   '/servicios': typeof ServiciosRoute
   '/venta-empresas': typeof VentaEmpresasRoute
   '/aprende/$slug': typeof AprendeSlugRoute
@@ -294,6 +302,7 @@ export interface FileRoutesById {
   '/mi-cuenta': typeof MiCuentaRouteWithChildren
   '/polen': typeof PolenRoute
   '/registro': typeof RegistroRoute
+  '/salud-ocupacional': typeof SaludOcupacionalRoute
   '/servicios': typeof ServiciosRoute
   '/venta-empresas': typeof VentaEmpresasRoute
   '/aprende/$slug': typeof AprendeSlugRoute
@@ -331,6 +340,7 @@ export interface FileRouteTypes {
     | '/mi-cuenta'
     | '/polen'
     | '/registro'
+    | '/salud-ocupacional'
     | '/servicios'
     | '/venta-empresas'
     | '/aprende/$slug'
@@ -365,6 +375,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/polen'
     | '/registro'
+    | '/salud-ocupacional'
     | '/servicios'
     | '/venta-empresas'
     | '/aprende/$slug'
@@ -400,6 +411,7 @@ export interface FileRouteTypes {
     | '/mi-cuenta'
     | '/polen'
     | '/registro'
+    | '/salud-ocupacional'
     | '/servicios'
     | '/venta-empresas'
     | '/aprende/$slug'
@@ -436,6 +448,7 @@ export interface RootRouteChildren {
   MiCuentaRoute: typeof MiCuentaRouteWithChildren
   PolenRoute: typeof PolenRoute
   RegistroRoute: typeof RegistroRoute
+  SaludOcupacionalRoute: typeof SaludOcupacionalRoute
   ServiciosRoute: typeof ServiciosRoute
   VentaEmpresasRoute: typeof VentaEmpresasRoute
   AprendeSlugRoute: typeof AprendeSlugRoute
@@ -465,6 +478,13 @@ declare module '@tanstack/react-router' {
       path: '/servicios'
       fullPath: '/servicios'
       preLoaderRoute: typeof ServiciosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/salud-ocupacional': {
+      id: '/salud-ocupacional'
+      path: '/salud-ocupacional'
+      fullPath: '/salud-ocupacional'
+      preLoaderRoute: typeof SaludOcupacionalRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/registro': {
@@ -734,6 +754,7 @@ const rootRouteChildren: RootRouteChildren = {
   MiCuentaRoute: MiCuentaRouteWithChildren,
   PolenRoute: PolenRoute,
   RegistroRoute: RegistroRoute,
+  SaludOcupacionalRoute: SaludOcupacionalRoute,
   ServiciosRoute: ServiciosRoute,
   VentaEmpresasRoute: VentaEmpresasRoute,
   AprendeSlugRoute: AprendeSlugRoute,

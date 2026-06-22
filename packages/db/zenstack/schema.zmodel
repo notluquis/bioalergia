@@ -3528,6 +3528,45 @@ model PollenForecast {
 }
 
 // ============================================================
+// Salud ocupacional (P7 stage-A) — captación de leads B2B
+// ============================================================
+// Lead de empresas interesadas en testeo ocupacional de drogas/alcohol +
+// reactivos. La creación es PÚBLICA (sin auth, honeypot + ratelimit), igual que
+// ReactivoLead — el handler usa `db` raw. Lectura/gestión = staff.
+// NOTA: el motor de testeo/cadena-de-custodia/confirmatorio (stage-B) está
+// bloqueado por revisión legal (RIOHS, GC-MS, Ley 21.719) — ver docs/.
+enum OccupationalSector {
+  MINERIA
+  TRANSPORTE
+  CONSTRUCCION
+  GENERAL
+  OTRO
+}
+
+model OccupationalLead {
+  id          Int                @id @default(autoincrement())
+  empresa     String
+  contactName String             @map("contact_name")
+  email       String
+  phone       String?
+  rut         String?
+  sector      OccupationalSector @default(GENERAL)
+  headcount   Int?
+  message     String?
+  status      ReactivoLeadStatus @default(NUEVO)
+  source      String             @default("salud-ocupacional")
+  createdAt   DateTime           @default(now()) @map("created_at")
+  updatedAt   DateTime           @default(now()) @updatedAt @map("updated_at")
+
+  @@deny('all', auth() == null)
+  @@allow('read,create,update,delete', auth().status == 'ACTIVE')
+
+  @@index([status])
+  @@index([createdAt])
+  @@map("occupational_leads")
+}
+
+// ============================================================
 // DTE (Documentos Tributarios Electrónicos) - Accounting
 // ============================================================
 // DTE PURCHASE & SALES DETAILS

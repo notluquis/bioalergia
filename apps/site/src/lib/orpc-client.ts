@@ -4,6 +4,7 @@ import type { AccountContract } from "@finanzas/orpc-contracts/account";
 import type { CartContract } from "@finanzas/orpc-contracts/cart";
 import type { CatalogContract } from "@finanzas/orpc-contracts/catalog";
 import type { CheckoutContract } from "@finanzas/orpc-contracts/checkout";
+import type { OccupationalContract } from "@finanzas/orpc-contracts/occupational";
 import type { PollenContract } from "@finanzas/orpc-contracts/pollen";
 import type { ReactivosContract } from "@finanzas/orpc-contracts/reactivos";
 import type { SiteAuthContract } from "@finanzas/orpc-contracts/site-auth";
@@ -53,3 +54,8 @@ export const reactivosClient = createORPCClient(siteSuperJSONLink, {
 export const pollenClient = createORPCClient(siteSuperJSONLink, {
   path: ["api", "orpc", "pollen", "rpc"],
 }) as ContractRouterClient<PollenContract>;
+
+// Salud ocupacional (B2B): captación de leads. createLead público sin auth.
+export const occupationalClient = createORPCClient(siteSuperJSONLink, {
+  path: ["api", "orpc", "occupational", "rpc"],
+}) as ContractRouterClient<OccupationalContract>;
