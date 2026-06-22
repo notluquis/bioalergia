@@ -44,7 +44,9 @@ export async function createDocument(input: CreateProductDocumentInput) {
       type: input.type,
       title: input.title.trim(),
       fileR2Key: input.fileR2Key,
-      visibility: input.visibility,
+      // Bucket R2 público → solo documentos PUBLIC por ahora (IFU/SDS). Gated
+      // (CoA/contratos) requiere bucket privado + descarga firmada (diferido).
+      visibility: "PUBLIC",
       lotNumber: input.lotNumber?.trim() || null,
       version: input.version?.trim() || null,
       language: input.language,

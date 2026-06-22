@@ -56,12 +56,16 @@ export const presignProductDocumentResponseSchema = z.object({
   expiresIn: z.number().int(),
 });
 
+// NOTA: el bucket R2 es PÚBLICO (CDN). Por eso, por ahora, TODOS los documentos
+// se crean PUBLIC y solo se suben fichas de acceso público (IFU/SDS). Los
+// documentos gated (CoA por lote, contratos) requieren un bucket privado +
+// descargas firmadas — diferido junto con el portal B2B. Por eso `visibility`
+// NO está en el input: la creación fuerza PUBLIC (default del modelo).
 export const createProductDocumentInputSchema = z.object({
   productId: z.number().int(),
   type: productDocumentTypeSchema,
   title: z.string().min(1).max(200),
   fileR2Key: z.string().min(1).max(400),
-  visibility: productDocumentVisibilitySchema.default("PUBLIC"),
   lotNumber: z.string().max(80).nullable().optional(),
   version: z.string().max(40).nullable().optional(),
   language: z.string().max(10).default("es"),

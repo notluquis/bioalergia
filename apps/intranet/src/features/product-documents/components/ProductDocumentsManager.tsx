@@ -1,4 +1,4 @@
-import { Button, Chip, Input, Label, ListBox, Select, Switch, TextField } from "@heroui/react";
+import { Button, Chip, Input, Label, ListBox, Select, TextField } from "@heroui/react";
 import type {
   ProductDocumentDto,
   ProductDocumentType,
@@ -52,7 +52,6 @@ export function ProductDocumentsManager({ productId }: ProductDocumentsManagerPr
   const [file, setFile] = useState<File | null>(null);
   const [type, setType] = useState<ProductDocumentType>("IFU");
   const [title, setTitle] = useState("");
-  const [isPublic, setIsPublic] = useState(true);
 
   const documentsQuery = useQuery({
     queryKey: productDocumentsKeys.byProduct(productId),
@@ -67,7 +66,6 @@ export function ProductDocumentsManager({ productId }: ProductDocumentsManagerPr
     setFile(null);
     setTitle("");
     setType("IFU");
-    setIsPublic(true);
     if (inputRef.current) inputRef.current.value = "";
   };
 
@@ -89,7 +87,6 @@ export function ProductDocumentsManager({ productId }: ProductDocumentsManagerPr
         type,
         title: title.trim() || file.name,
         fileR2Key: presign.r2Key,
-        visibility: isPublic ? "PUBLIC" : "AUTHED",
         language: "es",
         sortOrder: documents.length,
       });
@@ -221,10 +218,6 @@ export function ProductDocumentsManager({ productId }: ProductDocumentsManagerPr
           <Label>Título</Label>
           <Input placeholder="Ej: Instrucciones de uso — Phadia 250" />
         </TextField>
-
-        <Switch isSelected={isPublic} onChange={setIsPublic}>
-          Visible en la vitrina pública
-        </Switch>
 
         <Button
           className="gap-2"
