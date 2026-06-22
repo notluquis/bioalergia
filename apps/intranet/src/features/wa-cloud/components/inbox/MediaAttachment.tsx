@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { decodeWaveform, syntheticWaveform } from "../../lib/decodeWaveform";
+import { formatBytes, renderPdfFirstPage } from "../../lib/pdfRender";
 
 type Props = {
   messageId: number;
@@ -185,10 +186,61 @@ function DocumentPreview({ url, caption }: { url: string; caption: string | null
   const [open, setOpen] = useState(false);
   const filename = caption ?? "Documento";
   const isLikelyPdf = /\.pdf(\?|$)/i.test(filename) || filename.toLowerCase().includes("pdf");
+  const tileRef = useRef<HTMLDivElement>(null);
+  const [thumb, setThumb] = useState<string | null>(null);
+  const [meta, setMeta] = useState<{ pageCount: number; sizeBytes: number } | null>(null);
+  const renderedRef = useRef(false);
+
+  // Render the PDF's first page to a thumbnail when the tile scrolls into view
+  // (lazy: pdf.js + the file only download on demand). Falls back silently to
+  // the icon tile for non-PDFs or render failures.
+  useEffect(() => {
+    if (!isLikelyPdf) return;
+    const el = tileRef.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      ([entry]) => {
+        if (entry?.isIntersecting && !renderedRef.current) {
+          renderedRef.current = true;
+          obs.disconnect();
+          void renderPdfFirstPage(url)
+            .then((r) => {
+              setThumb(r.dataUrl);
+              setMeta({ pageCount: r.pageCount, sizeBytes: r.sizeBytes });
+            })
+            .catch(() => {
+              /* keep icon tile */
+            });
+        }
+      },
+      { rootMargin: "200px" }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [isLikelyPdf, url]);
+
+  const subtitle = meta
+    ? `${meta.pageCount} ${meta.pageCount === 1 ? "página" : "páginas"} · ${formatBytes(meta.sizeBytes)} · PDF`
+    : isLikelyPdf
+      ? "PDF · toca para ver"
+      : "Toca para abrir";
 
   return (
     <>
-      <div className="flex w-72 max-w-full flex-col overflow-hidden rounded-xl border border-default-200 bg-content1">
+      <div
+        ref={tileRef}
+        className="flex w-72 max-w-full flex-col overflow-hidden rounded-xl border border-default-200 bg-content1"
+      >
+        {thumb && (
+          <button
+            type="button"
+            onClick={() => setOpen(true)}
+            aria-label="Abrir documento"
+            className="block w-full bg-default-100"
+          >
+            <img src={thumb} alt="" className="max-h-52 w-full object-cover object-top" />
+          </button>
+        )}
         <button
           type="button"
           onClick={() => setOpen(true)}
@@ -199,9 +251,7 @@ function DocumentPreview({ url, caption }: { url: string; caption: string | null
           </div>
           <div className="min-w-0 flex-1">
             <p className="truncate font-medium text-sm">{filename}</p>
-            <p className="text-default-500 text-xs">
-              {isLikelyPdf ? "PDF · toca para ver" : "Toca para abrir"}
-            </p>
+            <p className="text-default-500 text-xs">{subtitle}</p>
           </div>
         </button>
         <div className="flex border-default-200 border-t">
