@@ -20,6 +20,13 @@ export const reactivoVitrinaAllergenSchema = z.object({
   category: z.string(),
 });
 
+export const reactivoVitrinaDocumentSchema = z.object({
+  id: z.number().int(),
+  type: z.string(),
+  title: z.string(),
+  url: z.string(),
+});
+
 export const reactivoVitrinaItemSchema = z.object({
   id: z.number().int(),
   slug: z.string().nullable(),
@@ -31,6 +38,8 @@ export const reactivoVitrinaItemSchema = z.object({
   description: z.string().nullable(),
   imageUrl: z.string().nullable(),
   allergen: reactivoVitrinaAllergenSchema.nullable(),
+  // Fichas técnicas PÚBLICAS (IFU/SDS). CoA/contrato no se exponen aquí.
+  documents: z.array(reactivoVitrinaDocumentSchema).default([]),
 });
 
 export const reactivoVitrinaResponseSchema = z.object({

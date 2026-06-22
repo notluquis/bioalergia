@@ -11182,6 +11182,13 @@ export class SchemaType implements SchemaDef {
                     optional: true,
                     attributes: [{ name: "@relation", args: [{ name: "name", value: ExpressionUtils.literal("QuoteProductAllergen") }, { name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("allergenId")]) }, { name: "references", value: ExpressionUtils.array("String", [ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("SetNull") }] }] as readonly AttributeApplication[],
                     relation: { opposite: "reactivos", name: "QuoteProductAllergen", fields: ["allergenId"], references: ["id"], onDelete: "SetNull" }
+                },
+                documents: {
+                    name: "documents",
+                    type: "ProductDocument",
+                    array: true,
+                    attributes: [{ name: "@relation", args: [{ name: "name", value: ExpressionUtils.literal("QuoteProductDocuments") }] }] as readonly AttributeApplication[],
+                    relation: { opposite: "product", name: "QuoteProductDocuments" }
                 }
             },
             attributes: [
@@ -11197,6 +11204,103 @@ export class SchemaType implements SchemaDef {
             uniqueFields: {
                 id: { type: "Int" },
                 slug: { type: "String" }
+            }
+        },
+        ProductDocument: {
+            name: "ProductDocument",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                productId: {
+                    name: "productId",
+                    type: "Int",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("product_id") }] }] as readonly AttributeApplication[],
+                    foreignKeyFor: [
+                        "product"
+                    ] as readonly string[]
+                },
+                type: {
+                    name: "type",
+                    type: "ProductDocumentType"
+                },
+                title: {
+                    name: "title",
+                    type: "String"
+                },
+                fileR2Key: {
+                    name: "fileR2Key",
+                    type: "String",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("file_r2_key") }] }] as readonly AttributeApplication[]
+                },
+                visibility: {
+                    name: "visibility",
+                    type: "ProductDocumentVisibility",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("PUBLIC") }] }] as readonly AttributeApplication[],
+                    default: "PUBLIC" as FieldDefault
+                },
+                lotNumber: {
+                    name: "lotNumber",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("lot_number") }] }] as readonly AttributeApplication[]
+                },
+                version: {
+                    name: "version",
+                    type: "String",
+                    optional: true
+                },
+                language: {
+                    name: "language",
+                    type: "String",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("es") }] }] as readonly AttributeApplication[],
+                    default: "es" as FieldDefault
+                },
+                effectiveDate: {
+                    name: "effectiveDate",
+                    type: "DateTime",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("effective_date") }] }, { name: "@db.Date" }] as readonly AttributeApplication[]
+                },
+                sortOrder: {
+                    name: "sortOrder",
+                    type: "Int",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("sort_order") }] }] as readonly AttributeApplication[],
+                    default: 0 as FieldDefault
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@updatedAt" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                product: {
+                    name: "product",
+                    type: "QuoteProduct",
+                    attributes: [{ name: "@relation", args: [{ name: "name", value: ExpressionUtils.literal("QuoteProductDocuments") }, { name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("productId")]) }, { name: "references", value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("Cascade") }] }] as readonly AttributeApplication[],
+                    relation: { opposite: "documents", name: "QuoteProductDocuments", fields: ["productId"], references: ["id"], onDelete: "Cascade" }
+                }
+            },
+            attributes: [
+                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read,create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("productId"), ExpressionUtils.field("type")]) }] },
+                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("product_documents") }] }
+            ] as readonly AttributeApplication[],
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" }
             }
         },
         Quote: {
@@ -20347,6 +20451,24 @@ export class SchemaType implements SchemaDef {
                 EXAM: "EXAM",
                 RECIPE: "RECIPE",
                 OTHER: "OTHER"
+            }
+        },
+        ProductDocumentType: {
+            name: "ProductDocumentType",
+            values: {
+                IFU: "IFU",
+                SDS: "SDS",
+                COA: "COA",
+                SPEC_SHEET: "SPEC_SHEET",
+                ISO_CERT: "ISO_CERT",
+                PACKAGE_INSERT: "PACKAGE_INSERT"
+            }
+        },
+        ProductDocumentVisibility: {
+            name: "ProductDocumentVisibility",
+            values: {
+                PUBLIC: "PUBLIC",
+                AUTHED: "AUTHED"
             }
         },
         QuoteStatus: {

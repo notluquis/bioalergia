@@ -160,10 +160,51 @@ export async function presignGenericImageUpload(opts: {
   return { url, cdnUrl: `${cdnBase}/${r2Key}`, r2Key, expiresIn: 300 };
 }
 
+const DOC_MIME = new Set(["application/pdf", "image/jpeg", "image/png"]);
+const DOC_MAX_BYTES = 20 * 1024 * 1024;
+
+/** URL pública (CDN) a partir de una key R2 almacenada. */
+export function cdnUrlForKey(r2Key: string): string {
+  const cdnBase = getEnv("CF_R2_PUBLIC_BASE_URL").replace(/\/+$/, "");
+  return `${cdnBase}/${r2Key.replace(/^\/+/, "")}`;
+}
+
+/**
+ * Presigned PUT para fichas técnicas de producto (IFU/SDS/CoA en PDF). Distinto
+ * de las imágenes: acepta application/pdf y un límite mayor.
+ */
+export async function presignProductDocumentUpload(opts: {
+  filename: string;
+  contentType: string;
+}): Promise<PresignedUpload> {
+  if (!DOC_MIME.has(opts.contentType)) {
+    throw new Error(`Tipo de documento no permitido: ${opts.contentType}`);
+  }
+  const safeName = opts.filename
+    .toLowerCase()
+    .replace(/[^a-z0-9._-]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 80);
+  const stamp = Date.now();
+  const rnd = Math.random().toString(36).slice(2, 8);
+  const r2Key = `product-documents/${stamp}-${rnd}-${safeName}`;
+
+  const cmd = new PutObjectCommand({
+    Bucket: getEnv("CF_R2_BUCKET"),
+    Key: r2Key,
+    ContentType: opts.contentType,
+  });
+  const url = await getSignedUrl(getClient(), cmd, { expiresIn: 300 });
+  const cdnBase = getEnv("CF_R2_PUBLIC_BASE_URL").replace(/\/+$/, "");
+  return { url, cdnUrl: `${cdnBase}/${r2Key}`, r2Key, expiresIn: 300 };
+}
+
 export const R2_LIMITS = {
   ALLOWED_MIME: Array.from(ALLOWED_MIME),
   CLINIC_ASSET_MIME: Array.from(CLINIC_ASSET_MIME),
+  DOC_MIME: Array.from(DOC_MIME),
   MAX_BYTES,
+  DOC_MAX_BYTES,
 } as const;
 
 /** Sube bytes directo a R2 (server-side, sin presign). Devuelve la CDN URL. */

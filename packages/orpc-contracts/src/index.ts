@@ -105,4 +105,8 @@ export { reactivosContract, type ReactivosContract } from "./reactivos.ts";
 export { pollenContract, type PollenContract } from "./pollen.ts";
 export { occupationalContract, type OccupationalContract } from "./occupational.ts";
 export { adherenceContract, type AdherenceContract } from "./adherence.ts";
+export {
+  productDocumentsContract,
+  type ProductDocumentsContract,
+} from "./product-documents.ts";
 export { clinicalAllergensContract, type ClinicalAllergensContract } from "./clinical-allergens.ts";

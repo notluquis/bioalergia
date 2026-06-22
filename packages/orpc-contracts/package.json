@@ -393,6 +393,12 @@
       "import": "./dist/pollen.js",
       "default": "./dist/pollen.js"
     },
+    "./product-documents": {
+      "development": "./src/product-documents.ts",
+      "types": "./dist/product-documents.d.ts",
+      "import": "./dist/product-documents.js",
+      "default": "./dist/product-documents.js"
+    },
     "./occupational": {
       "development": "./src/occupational.ts",
       "types": "./dist/occupational.d.ts",
