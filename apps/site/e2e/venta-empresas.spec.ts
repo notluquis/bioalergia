@@ -24,7 +24,7 @@ test("/venta-empresas renders the vitrina with product names and the allergen", 
   await page.goto("/venta-empresas", { waitUntil: "domcontentloaded" });
 
   await expect(
-    page.getByRole("heading", { level: 1, name: /Reactivos y extractos alergénicos/ })
+    page.getByRole("heading", { level: 1, name: /Reactivos y diagnóstico/ })
   ).toBeVisible();
 
   // Each mocked vitrina item surfaces its name (Card.Title).
@@ -54,10 +54,10 @@ test("/venta-empresas lead form submits and shows the thank-you state", async ({
   await page.goto("/venta-empresas", { waitUntil: "domcontentloaded" });
 
   // Click the hero CTA to scroll to the form section (also confirms the CTA).
-  await page.getByRole("button", { name: "Quiero reactivos" }).click();
+  await page.getByRole("button", { name: "Quiero cotizar" }).click();
 
   // The form card heading confirms we reached the lead form.
-  await expect(page.getByRole("heading", { name: "Quiero reactivos" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Quiero cotizar" })).toBeVisible();
 
   // Required fields (HeroUI TextField → <Label> ties the accessible name).
   await page.getByLabel("Empresa o clínica").fill("Clínica Demo SpA");
