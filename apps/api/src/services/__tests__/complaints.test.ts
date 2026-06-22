@@ -54,26 +54,35 @@ describe("listComplaints", () => {
 
 describe("createComplaint", () => {
   it("sets status RECEIVED, nullifies optional fields, computes dueAt > now", async () => {
-    const before = Date.now();
-    const data = (await createComplaint({
-      channel: "WEB",
-      complainantName: "Juana",
-      description: "No me atendieron",
-    })) as {
-      status: string;
-      complainantRut: string | null;
-      contact: string | null;
-      patientId: number | null;
-      category: string | null;
-      dueAt: Date;
-    };
-    expect(data.status).toBe("RECEIVED");
-    expect(data.complainantRut).toBeNull();
-    expect(data.contact).toBeNull();
-    expect(data.patientId).toBeNull();
-    expect(data.category).toBeNull();
-    // Decreto 35: 15 días hábiles => al menos 21 días corridos (3 fines de semana).
-    expect(data.dueAt.getTime()).toBeGreaterThan(before + 20 * 86_400_000);
+    // Anclar a un lunes: el span en días corridos de 15 hábiles depende del día
+    // de inicio (19–21), así que sin reloj fijo el assert de abajo es flaky
+    // (revienta cuando el run cae en fin de semana). Lunes => 21 días corridos.
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-06-01T12:00:00Z")); // lunes
+    try {
+      const before = Date.now();
+      const data = (await createComplaint({
+        channel: "WEB",
+        complainantName: "Juana",
+        description: "No me atendieron",
+      })) as {
+        status: string;
+        complainantRut: string | null;
+        contact: string | null;
+        patientId: number | null;
+        category: string | null;
+        dueAt: Date;
+      };
+      expect(data.status).toBe("RECEIVED");
+      expect(data.complainantRut).toBeNull();
+      expect(data.contact).toBeNull();
+      expect(data.patientId).toBeNull();
+      expect(data.category).toBeNull();
+      // Decreto 35: 15 días hábiles desde un lunes => 21 días corridos (3 findes).
+      expect(data.dueAt.getTime()).toBeGreaterThan(before + 20 * 86_400_000);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("skips weekends when computing the 15 business-day deadline", async () => {
