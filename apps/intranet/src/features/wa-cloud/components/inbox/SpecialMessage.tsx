@@ -85,6 +85,46 @@ export function ForwardedBadge({ payload }: { payload: Payload }) {
   );
 }
 
+// Static mini-map for a location. Slippy-map math (no dep) picks the tile + pin
+// offset; the tile is served by OUR backend proxy (cached in R2), NOT fetched
+// from OpenStreetMap by the operator's browser — so the patient's shared
+// location (PHI) never leaks to a third party. Square container = tile renders
+// 1:1 so the pin lands exactly on the point.
+function LocationMap({ lat, lng }: { lat: number; lng: number }) {
+  const z = 15;
+  const n = 2 ** z;
+  const latRad = (lat * Math.PI) / 180;
+  const xF = ((lng + 180) / 360) * n;
+  const yF = ((1 - Math.asinh(Math.tan(latRad)) / Math.PI) / 2) * n;
+  const x = Math.floor(xF);
+  const y = Math.floor(yF);
+  const pinLeft = (xF - x) * 100;
+  const pinTop = (yF - y) * 100;
+  const tile = `/api/wa-cloud/media/map-tile/${z}/${x}/${y}`;
+  return (
+    <div className="relative aspect-square w-full overflow-hidden bg-default-100">
+      <img
+        src={tile}
+        alt=""
+        loading="lazy"
+        className="absolute inset-0 size-full object-cover"
+        onError={(e) => {
+          e.currentTarget.style.display = "none";
+        }}
+      />
+      <span
+        className="-translate-x-1/2 -translate-y-full pointer-events-none absolute"
+        style={{ left: `${pinLeft}%`, top: `${pinTop}%` }}
+      >
+        <MapPin size={28} className="fill-danger text-danger-foreground drop-shadow-md" />
+      </span>
+      <span className="absolute right-0.5 bottom-0.5 rounded bg-black/45 px-1 text-[9px] text-white/90">
+        © OpenStreetMap
+      </span>
+    </div>
+  );
+}
+
 export function LocationBubble({ payload }: { payload: Payload }) {
   const loc = (
     payload as {
@@ -99,20 +139,18 @@ export function LocationBubble({ payload }: { payload: Payload }) {
       href={gmapsUrl}
       target="_blank"
       rel="noopener noreferrer"
-      className="flex w-72 max-w-full items-start gap-3 rounded-xl border border-default-200 bg-content1 p-3 transition hover:bg-content2"
+      className="block w-60 max-w-full overflow-hidden rounded-xl border border-default-200 bg-content1 transition hover:bg-content2"
     >
-      <div className="flex size-12 shrink-0 items-center justify-center rounded-lg bg-success/15 text-success">
-        <MapPin size={24} />
-      </div>
-      <div className="min-w-0 flex-1">
-        <p className="truncate font-medium text-sm">{name ?? "Ubicación compartida"}</p>
-        {address && <p className="mt-0.5 line-clamp-2 text-default-500 text-xs">{address}</p>}
-        <p className="mt-1 font-mono text-default-400 text-xs">
-          {latitude.toFixed(5)}, {longitude.toFixed(5)}
-        </p>
-        <p className="mt-1 inline-flex items-center gap-0.5 text-accent text-xs">
-          Abrir en Maps <ExternalLink size={10} />
-        </p>
+      <LocationMap lat={latitude} lng={longitude} />
+      <div className="flex items-start gap-2 p-2.5">
+        <MapPin size={16} className="mt-0.5 shrink-0 text-success" />
+        <div className="min-w-0 flex-1">
+          <p className="truncate font-medium text-sm">{name ?? "Ubicación compartida"}</p>
+          {address && <p className="mt-0.5 line-clamp-2 text-default-500 text-xs">{address}</p>}
+          <p className="mt-1 inline-flex items-center gap-0.5 text-accent text-xs">
+            Abrir en Maps <ExternalLink size={10} />
+          </p>
+        </div>
       </div>
     </a>
   );
