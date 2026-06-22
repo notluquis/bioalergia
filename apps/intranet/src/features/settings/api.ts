@@ -58,6 +58,13 @@ const AppSettingsSchema = z.object({
   whatsappFreeformMessage: z.string(),
   tagline: z.string(),
   shopLowStockThreshold: z.string(),
+  shipmentReturnStreet: z.string(),
+  shipmentReturnNumber: z.string(),
+  shipmentReturnSupplement: z.string(),
+  shipmentReturnCoverageCode: z.string(),
+  emailFrom: z.string(),
+  emailBroadcastFrom: z.string(),
+  emailReplyTo: z.string(),
   reactivoLeadsEmail: z.string(),
 });
 

@@ -34,6 +34,7 @@ import { fetchGreenhouseJobs } from "../modules/job-radar/greenhouse.ts";
 import { fetchLeverJobs } from "../modules/job-radar/lever.ts";
 import { fetchMueveteJobs } from "../modules/job-radar/muevete.ts";
 import { fetchSmartRecruitersJobs } from "../modules/job-radar/smartrecruiters.ts";
+import { normalizeJobSourceIdentifierAsync } from "../modules/job-radar/source-identifiers.ts";
 import { fetchSuccessFactorsJobs } from "../modules/job-radar/successfactors.ts";
 import { fetchTrabajandoJobs } from "../modules/job-radar/trabajando.ts";
 import { fetchWorkdayJobs, parseWorkdayEntry } from "../modules/job-radar/workday.ts";
@@ -948,7 +949,7 @@ export interface AddJobSourceInput {
 }
 
 export async function addJobSource(input: AddJobSourceInput) {
-  const identifier = input.identifier.trim();
+  const identifier = await normalizeJobSourceIdentifierAsync(input.kind, input.identifier);
   if (identifier.length === 0) throw new DomainError("BAD_REQUEST", "Identificador vacío");
   if (input.kind === "WORKDAY" && !parseWorkdayEntry(identifier)) {
     throw new DomainError("BAD_REQUEST", "Workday debe ser 'tenant:wd:site'");

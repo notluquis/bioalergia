@@ -10,6 +10,10 @@ import { fetchGreenhouseJobs } from "../greenhouse.ts";
 import { fetchHirefrontJobs } from "../hirefront.ts";
 import { fetchLeverJobs } from "../lever.ts";
 import { fetchSmartRecruitersJobs } from "../smartrecruiters.ts";
+import {
+  __test__ as sourceIdentifierTest,
+  normalizeJobSourceIdentifier,
+} from "../source-identifiers.ts";
 import { fetchSuccessFactorsJobs } from "../successfactors.ts";
 import { fetchTeamtailorJobs } from "../teamtailor.ts";
 import { fetchWorkdayJobs, parseWorkdayEntry } from "../workday.ts";
@@ -142,11 +146,81 @@ describe("job location fallbacks", () => {
         <b>Desarrollador Salesforce</b>
         <a href="/s/47jSAE1zSjwqZftH">ver</a>
       </div>`;
-    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(res(html)).mockResolvedValue(res(""));
+    vi.spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(res(html))
+      .mockResolvedValueOnce(res(""))
+      .mockResolvedValue(res(""));
 
     const jobs = await fetchBukJobs("tattersall");
 
     expect(jobs[0]).toMatchObject({ location: "Quilicura", remote: "Remoto" });
+  });
+
+  it("reads Buk card location from jobs__card-info", async () => {
+    const html = `
+      <div class="jobs__card">
+        <b>Analista de Gestión Personas</b>
+        <p class="d-none">Desarrollo Organizacional ANALISTA DE GESTIÓN PERSONAS</p>
+        <div class="jobs__card-info">
+          <span>Talca, VII  del Maule</span>
+        </div>
+        <a href="https://andessalud.buk.cl/s/sDoM7Gifvv8BLAv1">ver</a>
+      </div>`;
+    vi.spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(res(html))
+      .mockResolvedValueOnce(res(""))
+      .mockResolvedValue(res(""));
+
+    const jobs = await fetchBukJobs("andessalud");
+
+    expect(jobs[0]).toMatchObject({
+      company: "andessalud",
+      externalId: "sDoM7Gifvv8BLAv1",
+      location: "Talca, VII del Maule",
+    });
+  });
+
+  it("enriches Buk jobs from detail JSON-LD", async () => {
+    const listingHtml = `
+      <div class="jobs__card">
+        <b>Inbound SDR</b>
+        <p class="d-none">Inbound Inbound SDR</p>
+        <div class="jobs__card-info"><span></span></div>
+        <a href="https://buk.buk.cl/s/8Bz1mb8iARbcqx1Q">ver</a>
+      </div>`;
+    const detailHtml = `
+      <script type="application/ld+json">
+        {
+          "@context": "https://schema.org/",
+          "@type": "JobPosting",
+          "title": "Inbound SDR",
+          "description": "Únete a Buk como nuestro próximo Inbound SDR.",
+          "datePosted": "2026-06-16 11:14:37 -0400",
+          "jobLocation": {
+            "@type": "Place",
+            "address": {
+              "@type": "PostalAddress",
+              "addressLocality": "Santiago",
+              "addressRegion": "Metropolitana",
+              "addressCountry": "CL"
+            }
+          }
+        }
+      </script>`;
+    vi.spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(res(listingHtml))
+      .mockResolvedValueOnce(res(""))
+      .mockResolvedValueOnce(res(detailHtml));
+
+    const jobs = await fetchBukJobs("buk");
+
+    expect(jobs[0]).toMatchObject({
+      title: "Inbound SDR",
+      location: "Santiago, Metropolitana, CL",
+      descriptionHtml: "Únete a Buk como nuestro próximo Inbound SDR.",
+      publishedAt: new Date("2026-06-16T15:14:37.000Z"),
+      lastmod: new Date("2026-06-16T15:14:37.000Z"),
+    });
   });
 
   it("derives Hirefront region from the embedded title", async () => {
@@ -556,6 +630,43 @@ describe("fetchAiravirtualJobs", () => {
   it("returns [] on non-ok", async () => {
     fetchSpy.mockResolvedValue(res("", false, 404));
     expect(await fetchAiravirtualJobs("nope")).toEqual([]);
+  });
+});
+
+describe("normalizeJobSourceIdentifier", () => {
+  it("extracts airavirtual company slug from job-board URLs", () => {
+    expect(
+      normalizeJobSourceIdentifier(
+        "AIRAVIRTUAL",
+        "https://jobs.airavirtual.com/be_corredores_de_la_bolsa#_ver_empleos"
+      )
+    ).toBe("be_corredores_de_la_bolsa");
+  });
+
+  it("extracts airavirtual company slug from public feed URLs", () => {
+    expect(
+      normalizeJobSourceIdentifier(
+        "AIRAVIRTUAL",
+        "https://gcs-files.airavirtual.com/public/feeds/aira_be_corredores_de_la_bolsa.json"
+      )
+    ).toBe("be_corredores_de_la_bolsa");
+  });
+
+  it("extracts trabajando slug from offer URLs", () => {
+    expect(
+      normalizeJobSourceIdentifier(
+        "TRABAJANDO",
+        "https://bancoestado.trabajando.cl/trabajo/6082022-operador-mesa-de-dinero-mayoristas"
+      )
+    ).toBe("bancoestado");
+  });
+
+  it("extracts airavirtual slug from login offer HTML assets", () => {
+    expect(
+      sourceIdentifierTest.extractAiravirtualSlugFromHtml(
+        '<meta property="og:image" content="https://gcs-files.airavirtual.com/public/companies_assets/be_corredores_de_la_bolsa/WELCOME_RESOURCE-OFFER4914.jpg">'
+      )
+    ).toBe("be_corredores_de_la_bolsa");
   });
 });
 
