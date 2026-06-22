@@ -86,6 +86,18 @@
 		Cross-Origin-Resource-Policy "cross-origin"
 	}
 
+	# WA media proxy (PDF/image) is embedded in a same-origin <iframe> (the
+	# document-preview modal). The global header block sets X-Frame-Options DENY
+	# + CSP frame-ancestors 'none', which the browser applies to the proxied
+	# media response and blocks the embed. Override BOTH for media only: drop
+	# X-Frame-Options and serve a minimal CSP that allows same-origin framing.
+	# The rest of the app keeps DENY + 'none' (clickjacking protection intact).
+	@waMedia path /api/wa-cloud/media/*
+	header @waMedia {
+		-X-Frame-Options
+		Content-Security-Policy "default-src 'none'; img-src 'self'; media-src 'self'; frame-ancestors 'self'; object-src 'none'; base-uri 'none'"
+	}
+
 	# ========== LOGGING CONFIGURATION ==========
 	# Skip health checks and favicon (high-frequency, low-value logs)
 	# These go to HTTP Logs in Railway but generate noise

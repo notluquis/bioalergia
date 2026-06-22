@@ -552,62 +552,68 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
             isPending={updateConv.isPending}
           />
           <QualityBadge phoneNumberId={phoneId ? Number.parseInt(phoneId, 10) : undefined} />
-          {(() => {
-            const mu = c.conversation.mutedUntil;
-            const isMuted = mu ? new Date(mu).getTime() > Date.now() : false;
-            return (
-              <Button
-                size="sm"
-                variant={isMuted ? "secondary" : "ghost"}
-                isPending={setMute.isPending}
-                isDisabled={setMute.isPending}
-                onPress={() =>
-                  setMute.mutate({
+          {/* Icon-only actions grouped together, separated from the status
+              chips by a thin divider — all share size/variant for a tidy row. */}
+          <span className="mx-0.5 h-5 w-px shrink-0 bg-default-200" aria-hidden />
+          <div className="flex shrink-0 items-center gap-0.5">
+            {(() => {
+              const mu = c.conversation.mutedUntil;
+              const isMuted = mu ? new Date(mu).getTime() > Date.now() : false;
+              return (
+                <Button
+                  size="sm"
+                  isIconOnly
+                  variant={isMuted ? "secondary" : "ghost"}
+                  isPending={setMute.isPending}
+                  isDisabled={setMute.isPending}
+                  onPress={() =>
+                    setMute.mutate({
+                      conversationId,
+                      // Toggle: muted → unmute; unmuted → far-future mute
+                      // (year 9999 = effectively permanent until toggled).
+                      mutedUntil: isMuted ? null : "9999-12-31T23:59:59.000Z",
+                    })
+                  }
+                  aria-label={isMuted ? "Activar push" : "Silenciar push"}
+                >
+                  {isMuted ? <BellOff size={15} /> : <Bell size={15} />}
+                </Button>
+              );
+            })()}
+            <InternalNotesPanel
+              notas={c.conversation.notas}
+              onSave={(notas) => updateConv.mutate({ id: conversationId, notas })}
+              isPending={updateConv.isPending}
+            />
+            <ConvSettingsMenu
+              conversationId={conversationId}
+              phoneId={phoneId}
+              phoneOptions={phoneOptions}
+              onPhoneChange={setPhoneId}
+              onOpenGallery={() => setGalleryOpen(true)}
+              onRelease={() => updateConv.mutate({ id: conversationId, assignedToUserId: null })}
+              onBlock={() => {
+                void (async () => {
+                  if (!phoneId) {
+                    toast.error("Selecciona un número primero");
+                    return;
+                  }
+                  const ok = await confirmAction({
+                    title: "Bloquear contacto",
+                    description: "El contacto no podrá enviarte mensajes hasta que lo desbloquees.",
+                    confirmLabel: "Bloquear",
+                    variant: "danger",
+                  });
+                  if (!ok) return;
+                  blockContact.mutate({
                     conversationId,
-                    // Toggle: muted → unmute; unmuted → far-future mute
-                    // (year 9999 = effectively permanent until toggled).
-                    mutedUntil: isMuted ? null : "9999-12-31T23:59:59.000Z",
-                  })
-                }
-                aria-label={isMuted ? "Activar push" : "Silenciar push"}
-              >
-                {isMuted ? <BellOff size={14} /> : <Bell size={14} />}
-              </Button>
-            );
-          })()}
-          <InternalNotesPanel
-            notas={c.conversation.notas}
-            onSave={(notas) => updateConv.mutate({ id: conversationId, notas })}
-            isPending={updateConv.isPending}
-          />
-          <ConvSettingsMenu
-            conversationId={conversationId}
-            phoneId={phoneId}
-            phoneOptions={phoneOptions}
-            onPhoneChange={setPhoneId}
-            onOpenGallery={() => setGalleryOpen(true)}
-            onRelease={() => updateConv.mutate({ id: conversationId, assignedToUserId: null })}
-            onBlock={() => {
-              void (async () => {
-                if (!phoneId) {
-                  toast.error("Selecciona un número primero");
-                  return;
-                }
-                const ok = await confirmAction({
-                  title: "Bloquear contacto",
-                  description: "El contacto no podrá enviarte mensajes hasta que lo desbloquees.",
-                  confirmLabel: "Bloquear",
-                  variant: "danger",
-                });
-                if (!ok) return;
-                blockContact.mutate({
-                  conversationId,
-                  phoneNumberId: Number(phoneId),
-                });
-              })();
-            }}
-            blockPending={blockContact.isPending}
-          />
+                    phoneNumberId: Number(phoneId),
+                  });
+                })();
+              }}
+              blockPending={blockContact.isPending}
+            />
+          </div>
         </div>
       </Card.Header>
 

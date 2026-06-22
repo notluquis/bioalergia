@@ -121,6 +121,12 @@ export function TemplateComposer({
             Texto libre
           </Button>
         )}
+        {/* Send sits inline with the selector — for the common no-variable
+            template it's a single row (selector + send), no stacked footer. */}
+        <Button type="submit" isPending={isPending}>
+          <Send size={14} />
+          Enviar plantilla
+        </Button>
       </div>
       {tplVars.length > 0 && (
         <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
@@ -211,15 +217,6 @@ export function TemplateComposer({
           <p>Faltan imágenes en las tarjetas: {missingCardImages.map((i) => i + 1).join(", ")}</p>
         </div>
       ) : null}
-      <div className="flex justify-end">
-        {/* Stays enabled so the operator can submit and trigger validation —
-            onSubmit gates on isValid (sets `attempted`, shows the missing-field
-            errors + a toast). Disabling it would hide the errors forever. */}
-        <Button type="submit" isPending={isPending}>
-          <Send size={14} />
-          Enviar plantilla
-        </Button>
-      </div>
     </Form>
   );
 }
